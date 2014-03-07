@@ -975,6 +975,10 @@ int CbcOrClpRead_mode = 1;
 FILE * CbcOrClpReadCommand = stdin;
 extern int CbcOrClpEnvironmentIndex;
 
+int callCbc1(const char * input2, CbcModel & model,
+             int callBack(CbcModel * currentSolver, int whereFrom),
+	     CbcSolverUsefulData & parameterData);
+
 /*
   Wrappers for CbcMain0, CbcMain1. The various forms of callCbc will eventually
   resolve to a call to CbcMain0 followed by a call to callCbc1.
@@ -1026,8 +1030,15 @@ int callCbc(const char * input2, OsiClpSolverInterface& solver1)
 */
 int callCbc(const char * input2, CbcModel & babSolver)
 {
-    CbcMain0(babSolver);
-    return callCbc1(input2, babSolver);
+  CbcSolverUsefulData data;
+#ifndef CBC_NO_INTERRUPT
+    data.useSignalHandler_=true;
+#endif
+#ifndef CBC_NO_PRINTING
+    data.noPrinting_ = false;
+#endif
+  CbcMain0(babSolver, data);
+  return callCbc1(input2, babSolver, dummyCallBack, data);
 }
 
 int callCbc(const std::string input2, CbcModel & babSolver)
@@ -1070,10 +1081,9 @@ int callCbc1(const std::string input2, CbcModel & babSolver,
     free(input3);
     return returnCode;
 }
-
-static CbcSolverUsefulData staticParameterData;
 int callCbc1(const char * input2, CbcModel & model,
-             int callBack(CbcModel * currentSolver, int whereFrom))
+             int callBack(CbcModel * currentSolver, int whereFrom),
+	     CbcSolverUsefulData & parameterData)
 {
     char * input = CoinStrdup(input2);
     size_t length = strlen(input);
@@ -1119,18 +1129,28 @@ int callCbc1(const char * input2, CbcModel & model,
     }
     argv[n+1] = CoinStrdup("-quit");
     free(input);
-    // allow interrupts and printing
-    staticParameterData.noPrinting_ = false;
-    staticParameterData.useSignalHandler_=true;
     currentBranchModel = NULL;
     CbcOrClpRead_mode = 1;
     CbcOrClpReadCommand = stdin;
     int returnCode = CbcMain1(n + 2, const_cast<const char **>(argv),
-                              model, callBack,staticParameterData);
+                              model, callBack,parameterData);
     for (int k = 0; k < n + 2; k++)
         free(argv[k]);
     delete [] argv;
     return returnCode;
+}
+static CbcSolverUsefulData staticParameterData;
+int callCbc1(const char * input2, CbcModel & model,
+             int callBack(CbcModel * currentSolver, int whereFrom))
+{
+  // allow interrupts and printing
+#ifndef CBC_NO_INTERRUPT
+  staticParameterData.useSignalHandler_=true;
+#endif
+#ifndef CBC_NO_PRINTING
+  staticParameterData.noPrinting_ = false;
+#endif
+  return callCbc1(input2,model,callBack,staticParameterData);
 }
 
 CglPreProcess * cbcPreProcessPointer=NULL;
@@ -3827,15 +3847,22 @@ int CbcMain1 (int argc, const char *argv[],
 			    if (mipStartBefore.size())
 			      {
 				CbcModel tempModel=*babModel_;
+				assert (babModel_->getNumCols()==model_.getNumCols());
 				std::vector< std::string > colNames;
-				for ( int i=0 ; (i<babModel_->solver()->getNumCols()) ; ++i )
+				for ( int i=0 ; (i<model_.solver()->getNumCols()) ; ++i )
 				  colNames.push_back( model_.solver()->getColName(i) );
-				std::vector< double > x( babModel_->getNumCols(), 0.0 );
+				std::vector< double > x( model_.getNumCols(), 0.0 );
 				double obj;
 				int status = computeCompleteSolution( &tempModel, colNames, mipStartBefore, &x[0], obj );
 				// set cutoff 
-				if (!status)
+				if (!status) {
 				  babModel_->setCutoff(CoinMin(babModel_->getCutoff(),obj+1.0e-4));
+				  babModel_->setBestSolution( &x[0], static_cast<int>(x.size()), obj, false );
+				  babModel_->setSolutionCount(1);
+				  model_.setCutoff(CoinMin(model_.getCutoff(),obj+1.0e-4));
+				  model_.setBestSolution( &x[0], static_cast<int>(x.size()), obj, false );
+				  model_.setSolutionCount(1);
+				}
 			      }
                             if (preProcess && type == CBC_PARAM_ACTION_BAB) {
 #ifndef CBC_OTHER_SOLVER
@@ -3989,9 +4016,9 @@ int CbcMain1 (int argc, const char *argv[],
                                     if (tunePreProcess >= 1000000) {
                                         numberPasses = (tunePreProcess / 1000000) - 1;
                                         tunePreProcess = tunePreProcess % 1000000;
-                                    } else if (tunePreProcess >= 1000) {
-                                        numberPasses = (tunePreProcess / 1000) - 1;
-                                        tunePreProcess = tunePreProcess % 1000;
+                                    } else if (tunePreProcess >= 10000) {
+                                        numberPasses = (tunePreProcess / 10000) - 1;
+                                        tunePreProcess = tunePreProcess % 10000;
                                     }
 #ifndef CBC_OTHER_SOLVER
                                     if (doSprint > 0) {
@@ -5084,17 +5111,20 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
 #endif
                                 const int * originalColumns = preProcess ? process.originalColumns() : NULL;
-                                if (model.getMIPStart().size())
-                                   mipStart = model.getMIPStart();
-                                 if (mipStart.size())
+                                //if (model.getMIPStart().size())
+				// mipStart = model.getMIPStart();
+				if (mipStart.size() && !mipStartBefore.size())
                                 {
                                    std::vector< std::string > colNames;
                                    if (preProcess)
                                    {
+				     std::vector< std::pair< std::string, double > > mipStart2;
 				     for ( int i=0 ; (i<babModel_->solver()->getNumCols()) ; ++i ) {
 				       int iColumn = babModel_->originalColumns()[i];
 				       if (iColumn>=0) {
                                          colNames.push_back( model_.solver()->getColName( iColumn ) );
+					 babModel_->solver()->setColName(i,model_.solver()->getColName(iColumn));
+					 mipStart2.push_back(mipStart[iColumn]);
 				       } else {
 					 // created variable
 					 char newName[15];
@@ -5102,6 +5132,7 @@ int CbcMain1 (int argc, const char *argv[],
                                          colNames.push_back( newName );
 				       }
 				     }
+				     mipStart = mipStart2;
 				   } else {
                                       for ( int i=0 ; (i<babModel_->solver()->getNumCols()) ; ++i )
                                          colNames.push_back( model_.solver()->getColName(i) );

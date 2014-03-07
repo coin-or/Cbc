@@ -70,6 +70,7 @@ extern int gomory_try;
 #include "CglDuplicateRow.hpp"
 #include "CglStored.hpp"
 #include "CglClique.hpp"
+#include "CglKnapsackCover.hpp"
 
 #include "CoinTime.hpp"
 #include "CoinMpsIO.hpp"
@@ -3839,22 +3840,77 @@ void CbcModel::branchAndBound(int doStatistics)
         //const int * integerVariable = probingInfo_->integerVariable();
         if (toZero[number01]) {
             CglTreeProbingInfo info(*probingInfo_);
-#ifdef JJF_ZERO
-            /*
-              Marginal idea. Further exploration probably good. Build some extra
-              cliques from probing info. Not quite worth the effort?
-            */
-            OsiSolverInterface * fake = info.analyze(*solver_, 1);
-            if (fake) {
-                fake->writeMps("fake");
+	    if ((moreSpecialOptions_&1048576)!=0&&!parentModel_) {
+	      /*
+		Marginal idea. Further exploration probably good. Build some extra
+		cliques from probing info. Not quite worth the effort?
+	      */
+	      CglProbing generator1;
+	      generator1.setUsingObjective(false);
+	      generator1.setMaxPass(1);
+	      generator1.setMaxPassRoot(1);
+	      generator1.setMaxLook(100);
+	      generator1.setRowCuts(3);
+	      generator1.setMaxElements(300);
+	      generator1.setMaxProbeRoot(solver_->getNumCols());
+	      CoinThreadRandom randomGenerator;
+	      //CglTreeProbingInfo info(solver_);
+	      info.level = 0;
+	      info.formulation_rows = solver_->getNumRows();
+	      info.inTree = false;
+	      info.randomNumberGenerator=&randomGenerator;
+	      info.pass=4;
+	      generator1.setMode(8);
+	      OsiCuts cs;
+	      generator1.generateCutsAndModify(*solver_,cs,&info);
+	      // very clunky
+	      OsiSolverInterface * temp = generator1.cliqueModel(solver_,2);
+	      CglPreProcess dummy;
+	      OsiSolverInterface * newSolver=dummy.cliqueIt(*temp,0.0001);
+	      delete temp;
+	      OsiSolverInterface * fake = NULL;
+	      if (newSolver) {
+#if 0
+		int numberCliques = generator1.numberCliques();
+		cliqueEntry * entry = generator1.cliqueEntry();
+		cliqueType * type = new cliqueType [numberCliques];
+		int * start = new int [numberCliques+1];
+		start[numberCliques]=2*numberCliques;
+		int n=0;
+		for (int i=0;i<numberCliques;i++) {
+		  start[i]=2*i;
+		  setOneFixesInCliqueEntry(entry[2*i],true);
+		  setOneFixesInCliqueEntry(entry[2*i+1],true);
+		  type[i]=0;
+		}
+		fake = info.analyze(*solver_, 1,numberCliques,start,
+				    entry,type);
+		delete [] type;
+		delete [] entry;
+#else
+		fake = info.analyze(*newSolver, 1,-1);
+#endif
+		delete newSolver;
+	      } else {
+		fake = info.analyze(*solver_, 1);
+	      }
+	      if (fake) {
+		//fake->writeMps("fake");
                 CglFakeClique cliqueGen(fake);
                 cliqueGen.setStarCliqueReport(false);
                 cliqueGen.setRowCliqueReport(false);
                 cliqueGen.setMinViolation(0.1);
                 addCutGenerator(&cliqueGen, 1, "Fake cliques", true, false, false, -200);
                 generator_[numberCutGenerators_-1]->setTiming(true);
-            }
-#endif
+		for (int i = 0; i < numberCutGenerators_; i++) {
+		  CglKnapsackCover * cutGen =
+		  dynamic_cast<CglKnapsackCover *>(generator_[i]->generator());
+		  if (cutGen) {
+		    cutGen->createCliques(*fake,2,200,false);
+		  }
+		}
+	      }
+	    }
             if (probingInfo_->packDown()) {
 #ifdef CLP_INVESTIGATE
                 printf("%d implications on %d 0-1\n", toZero[number01], number01);
@@ -5057,6 +5113,8 @@ CbcModel::initialSolve()
     secondaryStatus_ = -1;
     originalContinuousObjective_ = solver_->getObjValue() * solver_->getObjSense();
     bestPossibleObjective_ = originalContinuousObjective_;
+    if (solver_->isProvenDualInfeasible())
+      originalContinuousObjective_ = -COIN_DBL_MAX;
     delete [] continuousSolution_;
     continuousSolution_ = CoinCopyOfArray(solver_->getColSolution(),
                                           solver_->getNumCols());
@@ -6604,7 +6662,7 @@ CbcModel::isProvenOptimal() const
 bool
 CbcModel::isProvenInfeasible() const
 {
-    if (!status_ && bestObjective_ >= 1.0e30)
+    if (!status_ && (bestObjective_ >= 1.0e30  && !secondaryStatus_))
         return true;
     else
         return false;
@@ -7899,7 +7957,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 			thisCut->effectiveness() == COIN_DBL_MAX);
 #define CHECK_DEBUGGER
 #ifdef CHECK_DEBUGGER
-		if ((specialOptions_&1) != 0 ) {
+		if ((specialOptions_&1) != 0 && ! parentModel_) {
 		  CoinAssert (!solver_->getRowCutDebuggerAlways()->invalidCut(*thisCut));
 		}
 #endif
@@ -13682,7 +13740,7 @@ bool
 CbcModel::isInitialSolveProvenOptimal() const
 {
     if (status_ != -1) {
-        return originalContinuousObjective_ < 1.0e50;
+        return fabs(originalContinuousObjective_) < 1.0e50;
     } else {
         return solver_->isProvenOptimal();
     }
@@ -17487,8 +17545,8 @@ CbcModel::maximumSecondsReached() const
     double maxSeconds = getMaximumSeconds();
     bool hitMaxTime = (totalTime >= maxSeconds);
     if (parentModel_ && !hitMaxTime) {
-        // In a sub tree so need to add both times
-        totalTime += parentModel_->getCurrentSeconds();
+        // In a sub tree
+        assert (parentModel_);
         maxSeconds = parentModel_->getMaximumSeconds();
         hitMaxTime = (totalTime >= maxSeconds);
     }

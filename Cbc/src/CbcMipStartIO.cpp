@@ -81,6 +81,27 @@ int readMIPStart( CbcModel * model, const char *fileName,
       sprintf( printLine,"mipstart values read for %d variables.", (int)colValues.size());
       model->messageHandler()->message(CBC_GENERAL, model->messages())
 	<< printLine << CoinMessageEol;
+      if (colValues.size()<model->getNumCols()) {
+	int numberColumns = model->getNumCols();
+	OsiSolverInterface * solver = model->solver();
+	vector< pair< string, double > > fullValues;
+	/* for fast search of column names */
+	map< string, int > colIdx;
+	for (int i=0;i<numberColumns;i++) {
+	  fullValues.push_back( pair<string, double>(solver->getColName(i),0.0) );
+	  colIdx[solver->getColName(i)] = i;
+	}
+	for ( int i=0 ; (i<(int)colValues.size()) ; ++i )
+	  {
+	    map< string, int >::const_iterator mIt = colIdx.find( colValues[i].first );
+	    if ( mIt != colIdx.end() ) {
+	      const int idx = mIt->second;
+	      double v = colValues[i].second;
+	      fullValues[idx].second=v;
+	    }
+	  }
+	colValues=fullValues;
+      }
    } else
    {
       sprintf( printLine, "No mipstart solution read from %s", fileName );
@@ -104,7 +125,6 @@ int computeCompleteSolution( CbcModel * model,
    OsiSolverInterface *lp = model->solver()->clone();
    map< string, int > colIdx;
    assert( ((int)colNames.size()) == lp->getNumCols() );
-
    /* for fast search of column names */
    for ( int i=0 ; (i<(int)colNames.size()) ; ++i )
       colIdx[colNames[i]] = i;
@@ -169,6 +189,7 @@ int computeCompleteSolution( CbcModel * model,
 #if JUST_FIX_INTEGER
    lp->setHintParam(OsiDoPresolveInInitial, true, OsiHintDo) ;
 #endif
+   lp->setDblParam(OsiDualObjectiveLimit,COIN_DBL_MAX);
    lp->initialSolve();
    //lp->writeMps("fixed","mps");
    if (!lp->isProvenOptimal())

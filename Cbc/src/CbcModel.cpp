@@ -6573,7 +6573,8 @@ CbcModel::isProvenOptimal() const
 bool
 CbcModel::isProvenInfeasible() const
 {
-  if (!status_ && (bestObjective_ >= 1.0e30  && !secondaryStatus_))
+  if (!status_ && (bestObjective_ >= 1.0e30  
+		   && (secondaryStatus_==0||secondaryStatus_==1)))
         return true;
     else
         return false;

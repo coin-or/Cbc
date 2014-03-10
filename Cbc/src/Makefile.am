@@ -18,7 +18,6 @@ lib_LTLIBRARIES = libCbc.la libCbcSolver.la
 
 # List all source files for this library, including headers
 libCbc_la_SOURCES = \
-	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcConfig.h \
 	CbcBranchActual.hpp \
 	CbcBranchAllDifferent.cpp CbcBranchAllDifferent.hpp \
@@ -93,6 +92,7 @@ libCbc_la_SOURCES = \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp
 
 libCbcSolver_la_SOURCES = \
+	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcCbcParam.cpp \
 	Cbc_ampl.cpp Cbc_ampl.h \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \

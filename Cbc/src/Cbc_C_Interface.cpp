@@ -231,6 +231,7 @@ Cbc_newModel()
     model->solver_    = &solver1;
     model->solver_->OsiClpSolverInterface::setHintParam(OsiDoReducePrint, true, OsiHintTry);
     model->model_     = new CbcModel(solver1);
+    CbcMain0(*model->model_);
     model->handler_   = NULL;
     model->information_ = NULL;
 
@@ -309,13 +310,8 @@ Cbc_loadProblem (Cbc_Model * model,  const int numcols, const int numrows,
     if (VERBOSE > 1) printf("%s Calling solver->loadProblem()\n", prefix);
     fflush(stdout);
 
-    if (1) {
-        solver->loadProblem(numcols, numrows, start, index, value,
-                            collb, colub, obj, rowlb, rowub);
-    } else {
-        solver->loadProblem(0, 0, NULL, NULL, NULL,
-                            NULL, NULL, NULL, NULL, NULL);
-    }
+    solver->loadProblem(numcols, numrows, start, index, value,
+                        collb, colub, obj, rowlb, rowub);
     if (VERBOSE > 1) printf("%s Finished solver->loadProblem()\n", prefix);
     fflush(stdout);
 
@@ -1478,6 +1474,23 @@ Cbc_branchAndBound(Cbc_Model * model)
     result = model->model_->status();
 
     if (VERBOSE > 0) printf("%s return %i\n", prefix, result);
+    return result;
+}
+COINLIBAPI int COINLINKAGE
+Cbc_solve(Cbc_Model * model)
+{
+    const char prefix[] = "Cbc_C_Interface::Cbc_solve(): ";
+    int result = 0;
+    const char *argv[] = {"Cbc_C_Interface","-solve", "-quit"};
+    try {
+        
+        CbcMain1(3, argv, *model->model_);
+    } catch (CoinError e) {
+        printf("%s ERROR: %s::%s, %s\n", prefix,
+               e.className().c_str(), e.methodName().c_str(), e.message().c_str());
+    }
+    result = model->model_->status();
+
     return result;
 }
 /* Sets or unsets scaling, 0 -off, 1 equilibrium, 2 geometric, 3, auto, 4 dynamic(later) */

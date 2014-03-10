@@ -399,6 +399,11 @@ extern "C" {
     COINLIBAPI int COINLINKAGE
     Cbc_branchAndBound(Cbc_Model * model)
     ;
+    /* Solve using CbcMain1. This is the recommended default solve function.
+    */
+    COINLIBAPI int COINLINKAGE
+    Cbc_solve(Cbc_Model * model)
+    ;
     /** Sets or unsets scaling, 0 -off, 1 equilibrium, 2 geometric, 3, auto, 4 dynamic(later) */
     COINLIBAPI void COINLINKAGE
     Cbc_scaling(Cbc_Model * model, int mode)

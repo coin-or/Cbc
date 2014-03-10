@@ -91,9 +91,9 @@ ositests: osiUnitTest$(EXEEXT)
 
 CInterfaceTest_SOURCES = CInterfaceTest.c
 
-CInterfaceTest_LDADD = ../src/libCbc.la $(CBCLIB_LIBS)
+CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
 
-CInterfaceTest_DEPENDENCIES = ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
+CInterfaceTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
 
 ctests: CInterfaceTest$(EXEEXT)
 	./CInterfaceTest$(EXEEXT)

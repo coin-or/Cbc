@@ -8758,6 +8758,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 				  lpSolver->initialSolve();
 				}
                                     // Write solution header (suggested by Luigi Poderico)
+				    // Refresh solver
+				    lpSolver = clpSolver->getModelPtr();
                                     lpSolver->computeObjectiveValue(false);
                                     double objValue = lpSolver->getObjValue();
                                     int iStat = lpSolver->status();

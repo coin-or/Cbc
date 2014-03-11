@@ -15,7 +15,7 @@ void testKnapsack() {
     Cbc_Model *model = Cbc_newModel();
 
     /* Simple knapsack problem
-       Minimize -5x[1] - 3x[2] - 2x[3] - 7x[4] - 4x[5]
+       Maximize  5x[1] + 3x[2] + 2x[3] + 7x[4] + 4x[5]
        s.t.      2x[1] + 8x[2] + 4x[3] + 2x[4] + 5x[5] <= 10
        All x binary
        */
@@ -25,32 +25,35 @@ void testKnapsack() {
     double value[] = {2, 8, 4, 2, 5};
     double collb[] = {0,0,0,0,0};
     double colub[] = {1,1,1,1,1};
-    double obj[] = {-5, -3, -2, -7, -4};
+    double obj[] = {5, 3, 2, 7, 4};
     double rowlb[] = {-INFINITY};
     double rowub[] = {10};
-    char integer[] = {1,1,1,1,1};
-    char *information;
     const double *sol;
     int i;
 
     Cbc_loadProblem(model, 5, 1, start, rowindex, value, collb, colub, obj, rowlb, rowub);
 
-    Cbc_copyInIntegerInformation(model, integer);
-
     assert(Cbc_getNumCols(model) == 5);
     assert(Cbc_getNumRows(model) == 1);
 
-    information = Cbc_integerInformation(model);
     for (i = 0; i < 5; i++) {
-        assert(information[i] == 1);
+        Cbc_setInteger(model, i);
+        assert(Cbc_isInteger(model,i));
     }
 
-    assert(Cbc_optimizationDirection(model) == 1);
+    Cbc_setObjSense(model, -1);
+    assert(Cbc_getObjSense(model) == -1);
 
     Cbc_solve(model);
 
     assert(Cbc_isProvenOptimal(model));
-    assert(fabs( Cbc_objectiveValue(model)- (-16.0) < 1e-6));
+    assert(!Cbc_isAbandoned(model));
+    assert(!Cbc_isProvenInfeasible(model));
+    assert(!Cbc_isContinuousUnbounded(model));
+    assert(!Cbc_isNodeLimitReached(model));
+    assert(!Cbc_isSecondsLimitReached(model));
+    assert(!Cbc_isSolutionLimitReached(model));
+    assert(fabs( Cbc_getObjValue(model)- (16.0) < 1e-6));
     
     sol = Cbc_getColSolution(model);
     
@@ -79,11 +82,10 @@ void testIntegerInfeasible() {
     double collb[] = {0.0};
     double colub[] = {1.0};
     double obj[] = {1.0};
-    char integer[] = {1};
 
     Cbc_loadProblem(model, 1, 1, start, rowindex, value, collb, colub, obj, rowlb, rowub);
 
-    Cbc_copyInIntegerInformation(model, integer);
+    Cbc_setInteger(model, 0);
 
     assert(Cbc_getNumCols(model) == 1);
     assert(Cbc_getNumRows(model) == 1);
@@ -91,7 +93,7 @@ void testIntegerInfeasible() {
     Cbc_solve(model);
     
     assert(!Cbc_isProvenOptimal(model));
-    assert(Cbc_isProvenPrimalInfeasible(model));
+    assert(Cbc_isProvenInfeasible(model));
 
 }
 
@@ -114,17 +116,16 @@ void testIntegerUnbounded() {
     double collb[] = {-INFINITY, -INFINITY};
     double colub[] = {INFINITY, INFINITY};
     double obj[] = {1.0};
-    char integer[] = {1,0};
 
     Cbc_loadProblem(model, 2, 2, start, rowindex, value, collb, colub, obj, rowlb, rowub);
 
-    Cbc_copyInIntegerInformation(model, integer);
+    Cbc_setInteger(model, 0);
 
     Cbc_solve(model);
     
     assert(!Cbc_isProvenOptimal(model));
-    assert(!Cbc_isProvenPrimalInfeasible(model));
-    assert(Cbc_isProvenDualInfeasible(model));
+    assert(!Cbc_isProvenInfeasible(model));
+    assert(Cbc_isContinuousUnbounded(model));
 
 
 

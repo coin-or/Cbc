@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 
 void testKnapsack() {
@@ -29,6 +30,8 @@ void testKnapsack() {
     double rowlb[] = {-INFINITY};
     double rowub[] = {10};
     const double *sol;
+    const char* setname = "test model";
+    char *getname = malloc(20);
     int i;
 
     Cbc_loadProblem(model, 5, 1, start, rowindex, value, collb, colub, obj, rowlb, rowub);
@@ -43,6 +46,8 @@ void testKnapsack() {
 
     Cbc_setObjSense(model, -1);
     assert(Cbc_getObjSense(model) == -1);
+
+    Cbc_setProblemName(model, setname);
 
     Cbc_solve(model);
 
@@ -62,6 +67,12 @@ void testKnapsack() {
     assert(fabs(sol[2] - 0.0) < 1e-6);
     assert(fabs(sol[3] - 1.0) < 1e-6);
     assert(fabs(sol[4] - 1.0) < 1e-6);
+
+    Cbc_problemName(model, 20, getname);
+    i = strcmp(getname,setname);
+    assert( (i == 0) );
+    
+    Cbc_deleteModel(model);
 
 }
 
@@ -94,6 +105,8 @@ void testIntegerInfeasible() {
     
     assert(!Cbc_isProvenOptimal(model));
     assert(Cbc_isProvenInfeasible(model));
+    
+    Cbc_deleteModel(model);
 
 }
 
@@ -121,12 +134,17 @@ void testIntegerUnbounded() {
 
     Cbc_setInteger(model, 0);
 
+    Cbc_setParameter(model, "log", "0");
+    
+    printf("About to solve problem silently. You should see no output except \"Done\".\n");
     Cbc_solve(model);
+    printf("Done\n");
     
     assert(!Cbc_isProvenOptimal(model));
     assert(!Cbc_isProvenInfeasible(model));
     assert(Cbc_isContinuousUnbounded(model));
 
+    Cbc_deleteModel(model);
 
 
 }

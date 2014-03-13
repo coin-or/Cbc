@@ -111,12 +111,11 @@ extern "C" {
     /*@}*/
     /**@name gets and sets - you will find some synonyms at the end of this file */
     /*@{*/
-    /** Objective offset */
-    COINLIBAPI double COINLINKAGE
-    Cbc_objectiveOffset(Cbc_Model * model)
-    ;
+    /** Set parameter "name" to value "value". Note that this
+     * translates directly to using "-name value" as a 
+     * command-line argument to Cbc.*/
     COINLIBAPI void COINLINKAGE
-    Cbc_setObjectiveOffset(Cbc_Model * model, double value)
+    Cbc_setParameter(Cbc_Model * model, const char * name, const char * value)
     ;
     /** Fills in array with problem name  */
     COINLIBAPI void COINLINKAGE
@@ -127,7 +126,7 @@ extern "C" {
       \p array must be a null-terminated string.
     */
     COINLIBAPI int COINLINKAGE
-    Cbc_setProblemName(Cbc_Model * model, int maxNumberCharacters, char * array)
+    Cbc_setProblemName(Cbc_Model * model, const char * array)
     ;
     /** Status of problem:
         0 - optimal

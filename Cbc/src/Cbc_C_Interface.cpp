@@ -236,7 +236,6 @@ Cbc_newModel()
     Cbc_Model * model = new Cbc_Model();
     OsiClpSolverInterface solver1;
     model->solver_    = &solver1;
-    model->solver_->OsiClpSolverInterface::setHintParam(OsiDoReducePrint, true, OsiHintTry);
     model->model_     = new CbcModel(solver1);
     CbcMain0(*model->model_);
     model->handler_   = NULL;
@@ -460,63 +459,29 @@ Cbc_copyNames(Cbc_Model * /*model*/, const char * const * /*rowNamesIn*/,
     if (VERBOSE > 0) printf("%s return\n", prefix);
 }
 
-/* Objective offset */
-COINLIBAPI double COINLINKAGE
-Cbc_objectiveOffset(Cbc_Model * /*model*/)
-{
-    const char prefix[] = "Cbc_C_Interface::Cbc_objectiveOffset(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
 
-    double result = 0.0;
-// cannot find names in Cbc, Osi, or OsiClp
-//tbd  return model->model_->objectiveOffset();
-    if (VERBOSE > 0) printf("%s WARNING: NOT IMPLEMENTED\n", prefix);
-
-    if (VERBOSE > 0) printf("%s return %g\n", prefix, result);
-    return result;
-}
 COINLIBAPI void COINLINKAGE
-Cbc_setObjectiveOffset(Cbc_Model * /*model*/, double /*value*/)
+Cbc_setParameter(Cbc_Model * model, const char * name, const char * value)
 {
-    const char prefix[] = "Cbc_C_Interface::Cbc_setObjectiveOffset(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
-// cannot find names in Cbc, Osi, or OsiClp
-//tbd  model->model_->solver()->setObjectiveOffset(value);
-    if (VERBOSE > 0) printf("%s WARNING: NOT IMPLEMENTED\n", prefix);
-
-    if (VERBOSE > 0) printf("%s return\n", prefix);
+    model->cmdargs_.push_back(std::string("-")+name);
+    model->cmdargs_.push_back(value);
 }
+
 /* Fills in array with problem name  */
 COINLIBAPI void COINLINKAGE
 Cbc_problemName(Cbc_Model * model, int maxNumberCharacters, char * array)
 {
-    const char prefix[] = "Cbc_C_Interface::Cbc_problemName(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
     std::string name;
     model->model_->solver()->getStrParam(OsiProbName, name);
-    maxNumberCharacters = CoinMin(maxNumberCharacters, (int)strlen(name.c_str()));
-    strncpy(array, name.c_str(), maxNumberCharacters - 1);
-    array[maxNumberCharacters-1] = '\0';
-
-    if (VERBOSE > 0) printf("%s return\n", prefix);
+    strncpy(array, name.c_str(), maxNumberCharacters);
 }
 /* Sets problem name.  Must have \0 at end.  */
 COINLIBAPI int COINLINKAGE
-Cbc_setProblemName(Cbc_Model * model, int /*maxNumberCharacters*/, char * array)
+Cbc_setProblemName(Cbc_Model * model, const char * array)
 {
-    const char prefix[] = "Cbc_C_Interface::Cbc_setProblemName(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
     bool result = false;
     result = model->model_->solver()->setStrParam(OsiProbName, array);
 
-    if (VERBOSE > 0) printf("%s return\n", prefix);
     return (result) ? 1 : 0;
 }
 /* Status of problem:
@@ -717,10 +682,16 @@ Cbc_solve(Cbc_Model * model)
 {
     const char prefix[] = "Cbc_C_Interface::Cbc_solve(): ";
     int result = 0;
-    const char *argv[] = {"Cbc_C_Interface","-solve", "-quit"};
+    std::vector<const char*> argv;
+    argv.push_back("Cbc_C_Interface");
+    for (size_t i = 0; i < model->cmdargs_.size(); i++) {
+        argv.push_back(model->cmdargs_[i].c_str());
+    }
+    argv.push_back("-solve");
+    argv.push_back("-quit");
     try {
         
-        CbcMain1(3, argv, *model->model_);
+        CbcMain1((int)argv.size(), &argv[0], *model->model_);
     } catch (CoinError e) {
         printf("%s ERROR: %s::%s, %s\n", prefix,
                e.className().c_str(), e.methodName().c_str(), e.message().c_str());

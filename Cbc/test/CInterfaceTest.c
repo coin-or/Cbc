@@ -11,6 +11,18 @@
 #include <string.h>
 
 
+static int callback_called = 0;
+
+void (COINLINKAGE_CB test_callback)(Cbc_Model * model,int  msgno, int ndouble,
+                            const double * dvec, int nint, const int * ivec,
+                            int nchar, char ** cvec) {
+
+    callback_called = 1;
+    printf("In callback: message %d\n", msgno);
+
+}
+
+
 void testKnapsack() {
 
     Cbc_Model *model = Cbc_newModel();
@@ -34,7 +46,13 @@ void testKnapsack() {
     char *getname = malloc(20);
     int i;
 
+    printf("Interface reports Cbc version %s\n", Cbc_getVersion());
+
     Cbc_loadProblem(model, 5, 1, start, rowindex, value, collb, colub, obj, rowlb, rowub);
+
+    Cbc_setColName(model, 2, "var2");
+    Cbc_setRowName(model, 0, "constr0");
+
 
     assert(Cbc_getNumCols(model) == 5);
     assert(Cbc_getNumRows(model) == 1);
@@ -49,6 +67,8 @@ void testKnapsack() {
 
     Cbc_setProblemName(model, setname);
 
+    Cbc_registerCallBack(model, test_callback);
+
     Cbc_solve(model);
 
     assert(Cbc_isProvenOptimal(model));
@@ -59,6 +79,9 @@ void testKnapsack() {
     assert(!Cbc_isSecondsLimitReached(model));
     assert(!Cbc_isSolutionLimitReached(model));
     assert(fabs( Cbc_getObjValue(model)- (16.0) < 1e-6));
+    assert(fabs( Cbc_getBestPossibleObjValue(model)- (16.0) < 1e-6));
+
+    assert(callback_called == 1);
     
     sol = Cbc_getColSolution(model);
     
@@ -71,6 +94,14 @@ void testKnapsack() {
     Cbc_problemName(model, 20, getname);
     i = strcmp(getname,setname);
     assert( (i == 0) );
+
+    Cbc_getColName(model, 2, getname, 20);
+    i = strcmp(getname, "var2");
+    assert( (i == 0) );
+    Cbc_getRowName(model, 0, getname, 20);
+    i = strcmp(getname, "constr0");
+    assert( (i == 0) );
+    assert( Cbc_maxNameLength(model) >= 7 );
     
     Cbc_deleteModel(model);
 

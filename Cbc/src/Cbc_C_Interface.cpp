@@ -3,7 +3,7 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-#include <math.h>
+#include <cmath>
 #include <cfloat>
 
 #include "CoinPragma.hpp"
@@ -219,10 +219,9 @@ Cbc_MessageHandler::setCallBack(cbc_callback callback)
 #endif
 
 /* Version */
-COINLIBAPI double COINLINKAGE Cbc_getVersion()
+COINLIBAPI const char* COINLINKAGE Cbc_getVersion()
 {
-    double v = 1.0;
-    return v;
+    return CBC_VERSION;
 }
 
 /* Default Cbc_Model constructor */
@@ -484,37 +483,10 @@ Cbc_setProblemName(Cbc_Model * model, const char * array)
 
     return (result) ? 1 : 0;
 }
-/* Status of problem:
-   0 - optimal
-   1 - primal infeasible
-   2 - dual infeasible
-   3 - stopped on iterations etc
-   4 - stopped due to errors
-*/
+
 CbcGetProperty(int, status)
 
-/* Secondary status of problem - may get extended
-   0 - none
-   1 - primal infeasible because dual limit reached
-   2 - scaled problem optimal - unscaled has primal infeasibilities
-   3 - scaled problem optimal - unscaled has dual infeasibilities
-   4 - scaled problem optimal - unscaled has both dual and primal infeasibilities
-*/
 CbcGetProperty(int, secondaryStatus)
-
-COINLIBAPI void COINLINKAGE
-Cbc_setSecondaryStatus(Cbc_Model * /*model*/, int /*status*/)
-{
-    const char prefix[] = "Cbc_C_Interface::Cbc_setSecondaryStatus(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
-// cannot find this in Cbc, Osi, or OsiClp
-//tbd  model->model_->setSecondaryStatus(status);
-    if (VERBOSE > 0) printf("%s WARNING: NOT IMPLEMENTED\n", prefix);
-
-    if (VERBOSE > 0) printf("%s return\n", prefix);
-}
 
 /* Number of elements in matrix */
 COINLIBAPI int COINLINKAGE
@@ -557,23 +529,6 @@ Cbc_getIndices(Cbc_Model * model)
     return result;
 }
 
-// Column vector lengths in matrix
-COINLIBAPI const int * COINLINKAGE
-Cbc_getVectorLengths(Cbc_Model * model)
-{
-    const char prefix[] = "Cbc_C_Interface::Cbc_getVectorLengths(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
-    const int * result = NULL;
-    const CoinPackedMatrix * matrix = NULL;
-    matrix = model->model_->solver()->getMatrixByCol();
-    result = (matrix == NULL) ? NULL : matrix->getVectorLengths();
-
-    if (VERBOSE > 0)
-        printf("%s return %p\n", prefix, static_cast<const void*>(result));
-    return result;
-}
 
 // Element values in matrix
 COINLIBAPI const double * COINLINKAGE
@@ -605,15 +560,12 @@ Cbc_registerCallBack(Cbc_Model * model,
 //  const int  VERBOSE = 1;
     if (VERBOSE > 0) printf("%s begin\n", prefix);
 
-    // reuse existing log level
-    int oldLogLevel = model->model_->messageHandler()->logLevel();
     // Will be copy of users one
     delete model->handler_;
     model->handler_ = new Cbc_MessageHandler(*(model->model_->messageHandler()));
     model->handler_->setCallBack(userCallBack);
     model->handler_->setModel(model);
     model->model_->passInMessageHandler(model->handler_);
-    model->model_->messageHandler()->setLogLevel(oldLogLevel);
 
     if (VERBOSE > 0) printf("%s return\n", prefix);
 }
@@ -631,51 +583,47 @@ Cbc_clearCallBack(Cbc_Model * model)
     if (VERBOSE > 0) printf("%s return\n", prefix);
 }
 /* length of names (0 means no names0 */
-COINLIBAPI int COINLINKAGE
-Cbc_lengthNames(Cbc_Model * /*model*/)
+COINLIBAPI size_t COINLINKAGE
+Cbc_maxNameLength(Cbc_Model * model)
 {
-    const char prefix[] = "Cbc_C_Interface::Cbc_lengthNames(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
-    int result = 0;
-// cannot find names in Cbc, Osi, or OsiClp
-//tbd  result = model->model_->lengthNames();
-    if (VERBOSE > 0) printf("%s WARNING:  NOT IMPLEMENTED\n", prefix);
-
-    if (VERBOSE > 0) printf("%s return %i\n", prefix, result);
+    size_t result = 0;
+    OsiSolverInterface::OsiNameVec const & rownames = model->model_->solver()->getRowNames();
+    for (size_t i = 0; i < rownames.size(); i++) {
+        if (rownames[i].length() > result) result = rownames[i].length();
+    }
+    OsiSolverInterface::OsiNameVec const & colnames = model->model_->solver()->getColNames();
+    for (size_t i = 0; i < colnames.size(); i++) {
+        if (colnames[i].length() > result) result = colnames[i].length();
+    }
     return result;
 }
-/* Fill in array (at least lengthNames+1 long) with a row name */
 COINLIBAPI void COINLINKAGE
-Cbc_rowName(Cbc_Model * /*model*/, int iRow, char * name)
+Cbc_getRowName(Cbc_Model * model, int iRow, char * name, size_t maxLength)
 {
-    const char prefix[] = "Cbc_C_Interface::Cbc_rowName(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
-    sprintf(name, "ROW%5i", iRow);
-// cannot find names in Cbc, Osi, or OsiClp
-//tbd  std::string rowName=model->model_->rowName(iRow);
-//tbd  strcpy(name,rowName.c_str());
-
-    if (VERBOSE > 0) printf("%s return\n", prefix);
+    std::string rowname = model->model_->solver()->getRowName(iRow);
+    strncpy(name, rowname.c_str(), maxLength);
+    name[maxLength-1] = '\0';
 }
-/* Fill in array (at least lengthNames+1 long) with a column name */
-// cannot find names in Cbc, Osi, or OsiClp
 COINLIBAPI void COINLINKAGE
-Cbc_columnName(Cbc_Model * /*model*/, int iColumn, char * name)
+Cbc_getColName(Cbc_Model * model, int iRow, char * name, size_t maxLength)
 {
-    const char prefix[] = "Cbc_C_Interface::Cbc_columnName(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
-    sprintf(name, "COL%5i", iColumn);
-//tbd  std::string columnName= model->model_->columnName(iColumn);
-//tbd  strcpy(name,columnName.c_str());
-
-    if (VERBOSE > 0) printf("%s return\n", prefix);
+    std::string colname = model->model_->solver()->getColName(iRow);
+    strncpy(name, colname.c_str(), maxLength);
+    name[maxLength-1] = '\0';
 }
+
+COINLIBAPI void COINLINKAGE
+Cbc_setColName(Cbc_Model * model, int iColumn, const char * name)
+{
+    model->model_->solver()->setColName(iColumn, name);
+}
+
+COINLIBAPI void COINLINKAGE
+Cbc_setRowName(Cbc_Model * model, int iRow, const char * name)
+{
+    model->model_->solver()->setRowName(iRow, name);
+}
+
 
 COINLIBAPI int COINLINKAGE
 Cbc_solve(Cbc_Model * model)
@@ -781,20 +729,6 @@ Cbc_setObjSense(Cbc_Model * model, double sense)
 CbcGetProperty(const double*, getRowActivity)
 CbcGetProperty(const double*, getColSolution)
 
-COINLIBAPI void COINLINKAGE
-Cbc_setColSolution(Cbc_Model * model, const double * input)
-{
-    const char prefix[] = "Cbc_C_Interface::Cbc_setColSolution(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
-    OsiSolverInterface * solver = model->model_->solver();
-    solver->setColSolution(input);
-
-    if (VERBOSE > 0) printf("%s return\n", prefix);
-    return;
-}
-
 CbcGetProperty(const double*, getRowLower)
 CbcGetProperty(const double*, getRowUpper)
 CbcGetProperty(const double*, getObjCoefficients)
@@ -802,6 +736,7 @@ CbcGetProperty(const double*, getColLower)
 CbcGetProperty(const double*, getColUpper)
 
 CbcGetProperty(double, getObjValue)
+CbcGetProperty(double, getBestPossibleObjValue)
 
 /* Print model */
 COINLIBAPI void COINLINKAGE
@@ -873,20 +808,6 @@ Cbc_isInteger(Cbc_Model * model, int i)
     return (result) ? 1 : 0;
 }
 
-COINLIBAPI double COINLINKAGE
-Cbc_cpuTime(Cbc_Model * /*model*/)
-{
-    const char prefix[] = "Cbc_C_Interface::Cbc_cpuTime(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
-    double result = 0;
-    result = CoinCpuTime() ;
-
-    if (VERBOSE > 0) printf("%s return %g\n", prefix, result);
-    return result;
-}
-
 CbcGetProperty(int, getNodeCount)
 
 /** Return a copy of this model */
@@ -901,6 +822,7 @@ Cbc_clone(Cbc_Model * model)
     result->model_     = new CbcModel(*(model->model_));
     result->solver_    = dynamic_cast< OsiClpSolverInterface*> (result->model_->solver());
     result->handler_   = NULL;
+    result->cmdargs_   = model->cmdargs_;
 
     if (VERBOSE > 0) printf("%s return\n", prefix);
     return model;
@@ -1071,20 +993,6 @@ Cbc_addSOS_Sparse(Cbc_Model * model, const int * rowStarts,
     delete [] objects;
 
     if (VERBOSE > 0) printf("%sreturn\n", prefix);
-    return;
-}
-
-/** Delete all object information */
-COINLIBAPI void  COINLINKAGE
-Cbc_deleteObjects(Cbc_Model * model)
-{
-    const char prefix[] = "Cbc_C_Interface::Cbc_deleteObjects(): ";
-//  const int  VERBOSE = 2;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
-    model->model_->deleteObjects();
-
-    if (VERBOSE > 0) printf("%s return\n", prefix);
     return;
 }
 

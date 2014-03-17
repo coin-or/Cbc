@@ -10,10 +10,11 @@
 
 /* include all defines and ugly stuff */
 #include "Coin_C_defines.h"
+#include <stddef.h>
 
-/** This is a first "C" interface to Cbc.
-    It is mostly similar to the "C" interface to Clp and
-    was contributed by Bob Entriken.
+/** This is a "C" interface to Cbc.
+    Original verison contributed by Bob Entriken,
+    significantly updated by Miles Lubin.
 */
 
 #ifdef __cplusplus
@@ -21,31 +22,26 @@ extern "C" {
 #endif
 
     /**@name Constructors and destructor
-       These do not have an exact analogue in C++.
        The user does not need to know structure of Cbc_Model.
-
-       For all functions outside this group there is an exact C++
-       analogue created by taking the first parameter out, removing the Cbc_
-       from name and applying the method to an object of type ClpSimplex.
     */
     /*@{*/
 
-    /** Version */
-    COINLIBAPI double COINLINKAGE Cbc_getVersion()
-    ;
     /** Default Cbc_Model constructor */
     COINLIBAPI Cbc_Model * COINLINKAGE
-    Cbc_newModel()
+    Cbc_newModel(void)
     ;
     /** Cbc_Model Destructor */
     COINLIBAPI void COINLINKAGE
     Cbc_deleteModel(Cbc_Model * model)
     ;
+    /** Current version of Cbc */
+    COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
+    ;
     /*@}*/
 
-    /**@name Load model - loads some stuff and initializes others */
+    /**@name Getting and setting model data */
     /*@{*/
-    /* Loads a problem (the constraints on the
+    /** Loads a problem (the constraints on the
         rows are given by lower and upper bounds). If a pointer is NULL then the
         following values are the default:
         <ul>
@@ -56,8 +52,13 @@ extern "C" {
         <li> <code>obj</code>: all variables have 0 objective coefficient
         </ul>
 
-     Just like the other loadProblem() method except that the matrix is
-     given in a standard column major ordered format (without gaps).
+     The constraint matrix is
+     given in standard compressed sparse column (without gaps).
+     <ul>
+     <li> <code>start[i]</code> stores the starting index of the ith column
+     <li> <code>index[k]</code> stores the row index of the kth nonzero element
+     <li> <code>value[k]</code> stores the coefficient of the kth nonzero element
+     </ul>
     */
     COINLIBAPI void COINLINKAGE
     Cbc_loadProblem (Cbc_Model * model,  const int numcols, const int numrows,
@@ -108,15 +109,6 @@ extern "C" {
                   const char * const * columnNamesIn)
     ;
 
-    /*@}*/
-    /**@name gets and sets - you will find some synonyms at the end of this file */
-    /*@{*/
-    /** Set parameter "name" to value "value". Note that this
-     * translates directly to using "-name value" as a 
-     * command-line argument to Cbc.*/
-    COINLIBAPI void COINLINKAGE
-    Cbc_setParameter(Cbc_Model * model, const char * name, const char * value)
-    ;
     /** Fills in array with problem name  */
     COINLIBAPI void COINLINKAGE
     Cbc_problemName(Cbc_Model * model, int maxNumberCharacters, char * array)
@@ -128,49 +120,120 @@ extern "C" {
     COINLIBAPI int COINLINKAGE
     Cbc_setProblemName(Cbc_Model * model, const char * array)
     ;
-    /** Status of problem:
-        0 - optimal
-        1 - primal infeasible
-        2 - dual infeasible
-        3 - stopped on iterations etc
-        4 - stopped due to errors
-    */
-    COINLIBAPI int COINLINKAGE
-    Cbc_status(Cbc_Model * model)
-    ;
-    /** Secondary status of problem - may get extended
-        0 - none
-        1 - primal infeasible because dual limit reached
-        2 - scaled problem optimal - unscaled has primal infeasibilities
-        3 - scaled problem optimal - unscaled has dual infeasibilities
-        4 - scaled problem optimal - unscaled has both dual and primal infeasibilities
-    */
-    COINLIBAPI int COINLINKAGE
-    Cbc_secondaryStatus(Cbc_Model * model)
-    ;
-    COINLIBAPI void COINLINKAGE
-    Cbc_setSecondaryStatus(Cbc_Model * model, int status)
-    ;
-    /** Number of elements in matrix */
+
+    /** Number of nonzero elements in constraint matrix */
     COINLIBAPI int COINLINKAGE
     Cbc_getNumElements(Cbc_Model * model)
     ;
-    /** Column starts in matrix */
+    /** "Column start" vector of constraint matrix. Same format as Cbc_loadProblem() */
     COINLIBAPI const CoinBigIndex * COINLINKAGE
     Cbc_getVectorStarts(Cbc_Model * model)
     ;
-    /** Row indices in matrix */
+    /** "Row index" vector of constraint matrix */
     COINLIBAPI const int * COINLINKAGE
     Cbc_getIndices(Cbc_Model * model)
     ;
-    /** Column vector lengths in matrix */
-    COINLIBAPI const int * COINLINKAGE
-    Cbc_getVectorLengths(Cbc_Model * model)
-    ;
-    /** Element values in matrix */
+    /** Coefficient vector of constraint matrix */
     COINLIBAPI const double * COINLINKAGE
     Cbc_getElements(Cbc_Model * model)
     ;
+
+    /** Maximum lenght of a row or column name */
+    COINLIBAPI size_t COINLINKAGE
+    Cbc_maxNameLength(Cbc_Model * model)
+    ;
+    /** Fill in first maxLength bytes of name array with a row name */
+    COINLIBAPI void COINLINKAGE
+    Cbc_getRowName(Cbc_Model * model, int iRow, char * name, size_t maxLength)
+    ;
+    /** Fill in first maxLength bytes of name array with a column name */
+    COINLIBAPI void COINLINKAGE
+    Cbc_getColName(Cbc_Model * model, int iColumn, char * name, size_t maxLength)
+    ;
+    /** Set the name of a column */
+    COINLIBAPI void COINLINKAGE
+    Cbc_setColName(Cbc_Model * model, int iColumn, const char * name)
+    ;
+    /** Set the name of a row */
+    COINLIBAPI void COINLINKAGE
+    Cbc_setRowName(Cbc_Model * model, int iRow, const char * name)
+    ;
+    /** Number of constraints in the model */
+    COINLIBAPI int COINLINKAGE
+    Cbc_getNumRows(Cbc_Model * model)
+    ;
+    /** Number of variables in the model */
+    COINLIBAPI int COINLINKAGE
+    Cbc_getNumCols(Cbc_Model * model)
+    ;
+    /** Direction of optimization (1 - minimize, -1 - maximize, 0 - ignore) */
+    COINLIBAPI void COINLINKAGE
+    Cbc_setObjSense(Cbc_Model * model, double sense)
+    ;
+    /** Direction of optimization (1 - minimize, -1 - maximize, 0 - ignore) */
+    COINLIBAPI double COINLINKAGE
+    Cbc_getObjSense(Cbc_Model * model)
+    ;
+    /** Constraint lower bounds */
+    COINLIBAPI const double* COINLINKAGE
+    Cbc_getRowLower(Cbc_Model * model)
+    ;
+    /** Constraint upper bounds */
+    COINLIBAPI const double* COINLINKAGE
+    Cbc_getRowUpper(Cbc_Model * model)
+    ;
+    /** Objective vector */
+    COINLIBAPI const double * COINLINKAGE
+    Cbc_getObjCoefficients(Cbc_Model * model)
+    ;
+    /** Variable lower bounds */
+    COINLIBAPI const double * COINLINKAGE
+    Cbc_getColLower(Cbc_Model * model)
+    ;
+    /** Variable upper bounds */
+    COINLIBAPI const double * COINLINKAGE
+    Cbc_getColUpper(Cbc_Model * model)
+    ;
+    /** Determine whether the ith variable is integer restricted */
+    COINLIBAPI int COINLINKAGE
+    Cbc_isInteger(Cbc_Model * model, int i)
+    ;
+    /** Set this variable to be continuous */
+    COINLIBAPI Cbc_Model * COINLINKAGE
+    Cbc_setContinuous(Cbc_Model * model, int iColumn)
+    ;
+    /** Set this variable to be integer */
+    COINLIBAPI Cbc_Model * COINLINKAGE
+    Cbc_setInteger(Cbc_Model * model, int iColumn)
+    ;
+    /** Add SOS constraints to the model using dense matrix */
+    COINLIBAPI void  COINLINKAGE
+    Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
+                     const int * const * which, const double * weights, const int type)
+    ;
+    /** Add SOS constraints to the model using row-order matrix */
+    COINLIBAPI void  COINLINKAGE
+    Cbc_addSOS_Sparse(Cbc_Model * model, const int * rowStarts,
+                      const int * rowIndices, const double * weights, const int type)
+    ;
+    /** Print the model */
+    COINLIBAPI void COINLINKAGE
+    Cbc_printModel(Cbc_Model * model, const char * argPrefix)
+    ;
+    /** Return a copy of this model */
+    COINLIBAPI Cbc_Model * COINLINKAGE
+    Cbc_clone(Cbc_Model * model)
+    ;
+    /*@}*/
+    /**@name Solver parameters */
+    /*@{*/
+    /** Set parameter "name" to value "value". Note that this
+     * translates directly to using "-name value" as a 
+     * command-line argument to Cbc.*/
+    COINLIBAPI void COINLINKAGE
+    Cbc_setParameter(Cbc_Model * model, const char * name, const char * value)
+    ;
+
     
     /*@}*/
     /**@name Message handling.  Call backs are handled by ONE function */
@@ -185,25 +248,13 @@ extern "C" {
     COINLIBAPI void COINLINKAGE
     Cbc_clearCallBack(Cbc_Model * model)
     ;
-    /** length of names (0 means no names0 */
-    COINLIBAPI int COINLINKAGE
-    Cbc_lengthNames(Cbc_Model * model)
-    ;
-    /** Fill in array (at least lengthNames+1 long) with a row name */
-    COINLIBAPI void COINLINKAGE
-    Cbc_rowName(Cbc_Model * model, int iRow, char * name)
-    ;
-    /** Fill in array (at least lengthNames+1 long) with a column name */
-    COINLIBAPI void COINLINKAGE
-    Cbc_columnName(Cbc_Model * model, int iColumn, char * name)
-    ;
 
     /*@}*/
 
 
-    /**@name Functions most useful to user */
+    /**@name Solving the model */
     /*@{*/
-    /* Solve using CbcMain1. This is the recommended default solve function.
+    /* Solve the model with Cbc (using CbcMain1).
     */
     COINLIBAPI int COINLINKAGE
     Cbc_solve(Cbc_Model * model)
@@ -211,8 +262,9 @@ extern "C" {
     /*@}*/
 
 
-    /**@name most useful gets and sets */
+    /**@name Accessing the solution and solution status */
     /*@{*/
+
     /** Sum of primal infeasibilities */
     COINLIBAPI double COINLINKAGE
     Cbc_sumPrimalInfeasibilities(Cbc_Model * model)
@@ -227,19 +279,7 @@ extern "C" {
     COINLIBAPI void COINLINKAGE
     Cbc_checkSolution(Cbc_Model * model)
     ;
-    /*@}*/
 
-    /******************** End of most useful part **************/
-    /**@name gets and sets - some synonyms */
-    /*@{*/
-    /** Number of rows */
-    COINLIBAPI int COINLINKAGE
-    Cbc_getNumRows(Cbc_Model * model)
-    ;
-    /** Number of columns */
-    COINLIBAPI int COINLINKAGE
-    Cbc_getNumCols(Cbc_Model * model)
-    ;
     /** Number of iterations */
     COINLIBAPI int COINLINKAGE
     Cbc_getIterationCount(Cbc_Model * model)
@@ -284,96 +324,58 @@ extern "C" {
     COINLIBAPI int COINLINKAGE
     Cbc_isInitialSolveProvenPrimalInfeasible(Cbc_Model * model)
     ;
-    /** Direction of optimization (1 - minimize, -1 - maximize, 0 - ignore) */
-    COINLIBAPI void COINLINKAGE
-    Cbc_setObjSense(Cbc_Model * model, double sense)
-    ;
-    /** Direction of optimization (1 - minimize, -1 - maximize, 0 - ignore) */
-    COINLIBAPI double COINLINKAGE
-    Cbc_getObjSense(Cbc_Model * model)
-    ;
-    /** Primal row solution
+    /** "row" solution
      *  This is the vector A*x, where A is the constraint matrix
      *  and x is the current solution. */
     COINLIBAPI const double * COINLINKAGE
     Cbc_getRowActivity(Cbc_Model * model)
     ;
-    /** Primal column solution */
+    /** Best feasible solution vector */
     COINLIBAPI const double * COINLINKAGE
     Cbc_getColSolution(Cbc_Model * model)
     ;
-    COINLIBAPI void COINLINKAGE
-    Cbc_setColSolution(Cbc_Model * model, const double * input)
-    ;
-    /** Row lower */
-    COINLIBAPI const double* COINLINKAGE
-    Cbc_getRowLower(Cbc_Model * model)
-    ;
-    /** Row upper  */
-    COINLIBAPI const double* COINLINKAGE
-    Cbc_getRowUpper(Cbc_Model * model)
-    ;
-    /** Objective */
-    COINLIBAPI const double * COINLINKAGE
-    Cbc_getObjCoefficients(Cbc_Model * model)
-    ;
-    /** Column Lower */
-    COINLIBAPI const double * COINLINKAGE
-    Cbc_getColLower(Cbc_Model * model)
-    ;
-    /** Column Upper */
-    COINLIBAPI const double * COINLINKAGE
-    Cbc_getColUpper(Cbc_Model * model)
-    ;
-    /** Objective value */
+    /** Objective value of best feasible solution */
     COINLIBAPI double COINLINKAGE
     Cbc_getObjValue(Cbc_Model * model)
     ;
-    /** Print the model */
-    COINLIBAPI void COINLINKAGE
-    Cbc_printModel(Cbc_Model * model, const char * argPrefix)
-    ;
-    /** Determine whether the variable at location i is integer restricted */
-    COINLIBAPI int COINLINKAGE
-    Cbc_isInteger(Cbc_Model * model, int i)
-    ;
-    /** Return CPU time */
+    /** Best known bound on the optimal objective value */
     COINLIBAPI double COINLINKAGE
-    Cbc_cpuTime(Cbc_Model * model)
+    Cbc_getBestPossibleObjValue(Cbc_Model * model)
     ;
     /** Number of nodes explored in B&B tree */
     COINLIBAPI int COINLINKAGE
     Cbc_getNodeCount(Cbc_Model * model)
     ;
-    /** Return a copy of this model */
-    COINLIBAPI Cbc_Model * COINLINKAGE
-    Cbc_clone(Cbc_Model * model)
-    ;
-    /** Set this the variable to be continuous */
-    COINLIBAPI Cbc_Model * COINLINKAGE
-    Cbc_setContinuous(Cbc_Model * model, int iColumn)
-    ;
-    /** Set this the variable to be integer */
-    COINLIBAPI Cbc_Model * COINLINKAGE
-    Cbc_setInteger(Cbc_Model * model, int iColumn)
-    ;
-    /** Add SOS constraints to the model using dense matrix */
-    COINLIBAPI void  COINLINKAGE
-    Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
-                     const int * const * which, const double * weights, const int type)
-    ;
-    /** Add SOS constraints to the model using row-order matrix */
-    COINLIBAPI void  COINLINKAGE
-    Cbc_addSOS_Sparse(Cbc_Model * model, const int * rowStarts,
-                      const int * rowIndices, const double * weights, const int type)
-    ;
-    /** Delete all object information */
-    COINLIBAPI void  COINLINKAGE
-    Cbc_deleteObjects(Cbc_Model * model)
-    ;
     /** Print the solution */
     COINLIBAPI void  COINLINKAGE
     Cbc_printSolution(Cbc_Model * model)
+    ;
+    /** Final status of problem
+        Some of these can be found out by is...... functions
+        -1 before branchAndBound
+        0 finished - check isProvenOptimal or isProvenInfeasible to see if solution found
+        (or check value of best solution)
+        1 stopped - on maxnodes, maxsols, maxtime
+        2 difficulties so run was abandoned
+        (5 event user programmed event occurred)
+    */
+    COINLIBAPI int COINLINKAGE
+    Cbc_status(Cbc_Model * model)
+    ;
+    /** Secondary status of problem
+        -1 unset (status_ will also be -1)
+        0 search completed with solution
+        1 linear relaxation not feasible (or worse than cutoff)
+        2 stopped on gap
+        3 stopped on nodes
+        4 stopped on time
+        5 stopped on user event
+        6 stopped on solutions
+        7 linear relaxation unbounded
+        8 stopped on iteration limit
+    */
+    COINLIBAPI int COINLINKAGE
+    Cbc_secondaryStatus(Cbc_Model * model)
     ;
     /*@}*/
 #ifdef __cplusplus

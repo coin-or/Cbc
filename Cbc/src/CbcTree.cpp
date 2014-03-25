@@ -6,6 +6,7 @@
 #include "CbcModel.hpp"
 #include "CbcNode.hpp"
 #include "CbcTree.hpp"
+#include "CbcThread.hpp"
 #include "CbcCountRowCut.hpp"
 #include "CbcCompareActual.hpp"
 #include "CbcBranchActual.hpp"
@@ -641,6 +642,21 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
     }
     delete [] nodeArray;
     delete [] depth;
+#ifdef CBC_THREAD
+    if (model->parallelMode() > 0 && model->master()) {
+      // need to adjust for ones not on tree
+      CbcBaseModel * master = model->master();
+      int numberThreads = master->numberThreads();
+      for (int i=0;i<numberThreads;i++) {
+	CbcThread * child = master->child(i);
+	if (child->node()) {
+	  // adjust
+	  double value = child->node()->objectiveValue();
+	  bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+	}
+      }
+    }
+#endif
 }
 
 // Return the best node of the heap using alternate criterion
@@ -907,6 +923,21 @@ CbcTreeArray::getBestPossibleObjective()
     if (lastNode_) {
         bestPossibleObjective = CoinMin(bestPossibleObjective, lastNode_->objectiveValue());
     }
+#ifdef CBC_THREAD
+    if (model->parallelMode() > 0 && model->master()) {
+      // need to adjust for ones not on tree
+      CbcBaseModel * master = model->master();
+      int numberThreads = master->numberThreads();
+      for (int i=0;i<numberThreads;i++) {
+	CbcThread * child = master->child(i);
+	if (child->node()) {
+	  // adjust
+	  double value = child->node()->objectiveValue();
+	  bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+	}
+      }
+    }
+#endif
     CbcCompareDefault * compareDefault
     = dynamic_cast<CbcCompareDefault *> (comparison_.test_);
     assert (compareDefault);
@@ -955,6 +986,21 @@ CbcTreeArray::cleanTree(CbcModel * model, double cutoff, double & bestPossibleOb
             nodeArray[k++] = node;
         }
     }
+#ifdef CBC_THREAD
+    if (model->parallelMode() > 0 && model->master()) {
+      // need to adjust for ones not on tree
+      CbcBaseModel * master = model->master();
+      int numberThreads = master->numberThreads();
+      for (int i=0;i<numberThreads;i++) {
+	CbcThread * child = master->child(i);
+	if (child->node()) {
+	  // adjust
+	  double value = child->node()->objectiveValue();
+	  bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+	}
+      }
+    }
+#endif
     if (lastNode_) {
         double value = lastNode_->objectiveValue();
         bestPossibleObjective = CoinMin(bestPossibleObjective, value);
@@ -1258,6 +1304,21 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
             nodeArray[k++] = node;
         }
     }
+#ifdef CBC_THREAD
+    if (model->parallelMode() > 0 && model->master()) {
+      // need to adjust for ones not on tree
+      CbcBaseModel * master = model->master();
+      int numberThreads = master->numberThreads();
+      for (int i=0;i<numberThreads;i++) {
+	CbcThread * child = master->child(i);
+	if (child->node()) {
+	  // adjust
+	  double value = child->node()->objectiveValue();
+	  bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+	}
+      }
+    }
+#endif
     /*
       Rebuild the heap using the retained nodes.
     */

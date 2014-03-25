@@ -2070,6 +2070,9 @@ public:
                 return -2;
         }
     }
+    /// Thread stuff for master
+    inline CbcBaseModel * master() const
+    { return master_;}
     /// From here to end of section - code in CbcThread.cpp until class changed
     /// Returns true if locked
     bool isLocked() const;

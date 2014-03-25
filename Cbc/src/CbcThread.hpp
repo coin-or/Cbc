@@ -388,6 +388,14 @@ public:
     inline CbcModel * model(int i) const {
         return threadModel_[i];
     }
+  
+    /// Returns pointer to a child thread
+    inline CbcThread * child(int thread) const
+    { return children_+thread;}
+
+    /// Returns number of children
+    inline int numberThreads() const
+    { return numberThreads_;}
 
     /// Sets Dantzig state in children
     void setDantzigState();

@@ -4457,6 +4457,20 @@ void CbcModel::branchAndBound(int doStatistics)
 
             //MODIF PIERRE
             bestPossibleObjective_ = tree_->getBestPossibleObjective();
+#ifdef CBC_THREAD
+	    if (parallelMode() > 0 && master_) {
+	      // need to adjust for ones not on tree
+	      int numberThreads = master_->numberThreads();
+	      for (int i=0;i<numberThreads;i++) {
+		CbcThread * child = master_->child(i);
+		if (child->node()) {
+		  // adjust
+		  double value = child->node()->objectiveValue();
+		  bestPossibleObjective_ = CoinMin(bestPossibleObjective_, value);
+		}
+	      }
+	    }
+#endif
             unlockThread();
 #ifdef CLP_INVESTIGATE
             if (getCutoff() < 1.0e20) {

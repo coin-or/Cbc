@@ -99,16 +99,6 @@ extern "C" {
                    const double * objective,
                    const int * columnStarts, const int * rows,
                    const double * elements);
-    /** Drops names - makes lengthnames 0 and names empty */
-    COINLIBAPI void COINLINKAGE
-    Cbc_dropNames(Cbc_Model * model)
-    ;
-    /** Copies in names */
-    COINLIBAPI void COINLINKAGE
-    Cbc_copyNames(Cbc_Model * model, const char * const * rowNamesIn,
-                  const char * const * columnNamesIn)
-    ;
-
     /** Fills in array with problem name  */
     COINLIBAPI void COINLINKAGE
     Cbc_problemName(Cbc_Model * model, int maxNumberCharacters, char * array)

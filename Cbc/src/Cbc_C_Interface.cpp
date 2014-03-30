@@ -412,51 +412,6 @@ Cbc_addColumns(Cbc_Model * /*model*/, int /*number*/,
 
     if (VERBOSE > 0) printf("%s return\n", prefix);
 }
-/* Drops names - makes lengthnames 0 and names empty */
-COINLIBAPI void COINLINKAGE
-Cbc_dropNames(Cbc_Model * /*model*/)
-{
-    const char prefix[] = "Cbc_C_Interface::Cbc_dropNames(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
-// cannot find names in Cbc, Osi, or OsiClp
-//tbd  model->model_->dropNames();
-    if (VERBOSE > 0) printf("%s WARNING: NOT IMPLEMENTED\n", prefix);
-
-    if (VERBOSE > 0) printf("%s return\n", prefix);
-}
-/* Copies in names */
-COINLIBAPI void COINLINKAGE
-Cbc_copyNames(Cbc_Model * /*model*/, const char * const * /*rowNamesIn*/,
-              const char * const * /*columnNamesIn*/)
-{
-    const char prefix[] = "Cbc_C_Interface::Cbc_copyNames(): ";
-//  const int  VERBOSE = 1;
-    if (VERBOSE > 0) printf("%s begin\n", prefix);
-
-// cannot find names in Cbc, Osi, or OsiClp
-    /*clean
-      int iRow;
-      std::vector<std::string> rowNames;
-      int numberRows = model->model_->getNumRows();
-      rowNames.reserve(numberRows);
-      for (iRow=0;iRow<numberRows;iRow++) {
-        rowNames.push_back(rowNamesIn[iRow]);
-      }
-
-      int iColumn;
-      std::vector<std::string> columnNames;
-      int numberColumns = model->model_->getNumCols();
-      columnNames.reserve(numberColumns);
-      for (iColumn=0;iColumn<numberColumns;iColumn++) {
-        columnNames.push_back(columnNamesIn[iColumn]);
-      }
-      model->model_->copyNames(rowNames,columnNames);
-    */
-
-    if (VERBOSE > 0) printf("%s return\n", prefix);
-}
 
 
 COINLIBAPI void COINLINKAGE

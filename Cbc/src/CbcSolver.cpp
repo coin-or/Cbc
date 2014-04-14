@@ -451,13 +451,11 @@ CbcSolver::operator=(const CbcSolver & rhs)
         delete [] userFunction_;
         for (i = 0; i < numberCutGenerators_; i++)
             delete cutGenerator_[i];
-        delete [] cutGenerator_;
         delete [] statusUserFunction_;
         delete originalSolver_;
         delete originalCoinModel_;
         statusUserFunction_ = NULL;
         delete babModel_;
-        delete [] parameters_;
         delete callBack_;
         numberUserFunctions_ = rhs.numberUserFunctions_;
         startTime_ = rhs.startTime_;
@@ -1616,7 +1614,7 @@ int CbcMain1 (int argc, const char *argv[],
                 freeArrays1(&info);
                 // modify objective if necessary
                 solver->setObjSense(info.direction);
-                solver->setDblParam(OsiObjOffset, info.offset);
+                solver->setDblParam(OsiObjOffset, -info.offset);
                 if (info.offset) {
                     sprintf(generalPrint, "Ampl objective offset is %g",
                             info.offset);
@@ -3920,8 +3918,9 @@ int CbcMain1 (int argc, const char *argv[],
                                     if ((tunePreProcess&1) != 0) {
                                         // heavy probing
                                         generator1.setMaxPassRoot(2);
-                                        generator1.setMaxElements(300);
+                                        generator1.setMaxElements(1000);
                                         generator1.setMaxProbeRoot(saveSolver->getNumCols());
+					generator1.setMaxLookRoot(saveSolver->getNumCols());
                                     }
                                     if ((babModel_->specialOptions()&65536) != 0)
                                         process.setOptions(1);
@@ -4013,13 +4012,6 @@ int CbcMain1 (int argc, const char *argv[],
                                         delete [] prohibited;
                                     }
                                     int numberPasses = 10;
-                                    if (tunePreProcess >= 1000000) {
-                                        numberPasses = (tunePreProcess / 1000000) - 1;
-                                        tunePreProcess = tunePreProcess % 1000000;
-                                    } else if (tunePreProcess >= 10000) {
-                                        numberPasses = (tunePreProcess / 10000) - 1;
-                                        tunePreProcess = tunePreProcess % 10000;
-                                    }
 #ifndef CBC_OTHER_SOLVER
                                     if (doSprint > 0) {
                                         // Sprint for primal solves
@@ -4586,7 +4578,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 if (probingAction == 10) {
                                     probingGen.setMaxPassRoot(2);
                                     probingGen.setMaxProbeRoot(numberColumns);
-                                    probingGen.setMaxLookRoot(100);
+                                    probingGen.setMaxLookRoot(numberColumns);
                                 }
                                 // If 5 then force on
                                 int iAction = translate[probingAction];

@@ -697,7 +697,10 @@ void freeArgs(ampl_info * info)
 }
 int ampl_obj_prec()
 {
-    return obj_prec();
+    int precision = obj_prec();
+    if (precision<=0)
+        precision=15;
+    return precision;
 }
 void writeAmpl(ampl_info * info)
 {

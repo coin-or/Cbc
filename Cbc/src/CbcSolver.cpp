@@ -1608,7 +1608,7 @@ int CbcMain1 (int argc, const char *argv[],
                 freeArrays1(&info);
                 // modify objective if necessary
                 solver->setObjSense(info.direction);
-                solver->setDblParam(OsiObjOffset, info.offset);
+                solver->setDblParam(OsiObjOffset, -info.offset);
                 if (info.offset) {
                     sprintf(generalPrint, "Ampl objective offset is %g",
                             info.offset);

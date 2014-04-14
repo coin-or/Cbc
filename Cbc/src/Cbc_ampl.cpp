@@ -412,7 +412,11 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     want_xpi0 = 1;
     /* for basis info */
     info->columnStatus = (int *) malloc(n_var * sizeof(int));
+    for (int i=0;i<n_var;i++)
+      info->columnStatus[i]=3;
     info->rowStatus = (int *) malloc(n_con * sizeof(int));
+    for (int i=0;i<n_con;i++)
+      info->rowStatus[i]=1;
     csd = suf_iput("sstatus", ASL_Sufkind_var, info->columnStatus);
     rsd = suf_iput("sstatus", ASL_Sufkind_con, info->rowStatus);
     if (!(nlvc + nlvo) && nonLinearType < 10) {

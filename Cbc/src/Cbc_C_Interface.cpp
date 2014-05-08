@@ -822,75 +822,16 @@ Cbc_setInteger(Cbc_Model * model, int iColumn)
     if (VERBOSE > 0) printf("%s return\n", prefix);
     return model;
 }
-/* Add an SOS constraint to the model */
-COINLIBAPI void  COINLINKAGE
-Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
-                 const int * const* which, const double * weights, const int type)
-{
-    const char prefix[] = "Cbc_C_Interface::Cbc_addSOS_Dense(): ";
-//  const int  VERBOSE = 2;
-    if (VERBOSE > 0) printf("%sbegin\n", prefix);
-
-    assert(1 > 0);// this is probably broken
-    int i, j;
-    // I think this is a different model due to overriding = operator
-    CbcModel m = *(model->model_);
-
-    CbcObject ** objects = new CbcObject * [numObjects];
-
-    if (VERBOSE > 1) printf("%s numObjects = %i\n", prefix, numObjects);
-    for (i = 0; i < numObjects; i++) {
-        if (VERBOSE > 1) {
-            printf("%s len[%i] = %i, identifier = %i, type = %i\n",
-                   prefix, i, len[i], i, type);
-            fflush(stdout);
-            for (j = 0; j < len[i]; j++) {
-                if (VERBOSE > 2 || j == 0 || j == (len[i] - 1)) {
-                    printf("%s which[%i][%i] = %d, weights[%i] = %g\n",
-                           prefix, i, j, which[i][j], j, weights[j]);
-                    fflush(stdout);
-                }
-            }
-        }
-
-        // Make a CbcSOS and assign it to objects
-        if (VERBOSE > 1) printf("%s len[%i] = %i\n", prefix, i, len[i]);
-        if (VERBOSE > 1) printf("%s new CbcSOS()\n", prefix);
-        // ***
-        objects[i] = new CbcSOS(model->model_, (int)(len[i]),
-                                (const int*)which[i], (const double*)weights, (int)i, (int)type);
-        // ***
-        if (objects[i] == NULL) {
-            printf("%s ERROR: objects[%i] == NULL\n", prefix, i);
-            fflush(stdout);
-            assert(objects[i] != NULL);
-        }
-    }
-    if (VERBOSE > 1) printf("%s calling addObjects()\n", prefix);
-    fflush(stdout);
-    model->model_->addObjects(numObjects, objects);
-    if (VERBOSE > 1) printf("%s finished addObjects()\n", prefix);
-
-    for (i = 0; i < numObjects; i++) delete objects[i];
-    delete [] objects;
-
-    if (VERBOSE > 0) printf("%sreturn\n", prefix);
-    return;
-}
 /** Add SOS constraints to the model using row-order matrix */
 COINLIBAPI void  COINLINKAGE
-Cbc_addSOS_Sparse(Cbc_Model * model, const int * rowStarts,
-                  const int * rowIndices, const double * weights, const int type)
+Cbc_addSOS(Cbc_Model * model, int numRows, const int * rowStarts,
+           const int * colIndices, const double * weights, const int type)
 {
-    const char prefix[] = "Cbc_C_Interface::Cbc_addSOS_Sparse(): ";
-//  const int  VERBOSE = 1;
+    const char prefix[] = "Cbc_C_Interface::Cbc_addSOS(): ";
+  //const int  VERBOSE = 4;
     if (VERBOSE > 0) printf("%sbegin\n", prefix);
 
-    int numRows = Cbc_getNumRows(model);
     if (VERBOSE > 0) printf("%s numRows = %i\n", prefix, numRows);
-
-    // The passed sparse matrix must have the same number of rows as the model
-    assert(numRows == Cbc_getNumRows(model));
 
     int row, i;
     const int *colIndex;
@@ -924,7 +865,7 @@ Cbc_addSOS_Sparse(Cbc_Model * model, const int * rowStarts,
         }
         const int numWeights = rowStarts[row+1] - rowStarts[row];
         if (VERBOSE > 2) printf("%s  numWeights = %i\n", prefix, numWeights);
-        colIndex    = rowIndices + rowStarts[row];
+        colIndex    = colIndices + rowStarts[row];
         colWeight   = weights + rowStarts[row];
         if (numWeights > 0) {
             // Make a CbcSOS and assign it to objects

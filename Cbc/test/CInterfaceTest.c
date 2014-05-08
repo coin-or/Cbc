@@ -110,6 +110,67 @@ void testKnapsack() {
 
 }
 
+void testSOS() {
+
+    Cbc_Model *model = Cbc_newModel();
+
+    /*
+       Minimize  5x[1] + 3x[2] + 2x[3] + 7x[4] + 4x[5]
+       s.t.       x[1] +  x[2] +  x[3] +  x[4] +  x[5] == 1
+       All x binary
+       */
+    
+    CoinBigIndex start[] = {0, 0, 0, 0, 0, 0, 0};
+    /*int rowindex[] = {};*/
+    /*double value[] = {};*/
+    double collb[] = {0,0,0,0,0};
+    double colub[] = {1,1,1,1,1};
+    double obj[] = {5, 3, 2, 7, 4};
+    /*double rowlb[] = {};*/
+    /*double rowub[] = {};*/
+    int sosrowstart[] = {0,5};
+    int soscolindex[] = {0,1,2,3,4}; 
+    const double *sol;
+    int i;
+
+    Cbc_loadProblem(model, 5, 0, start, NULL, NULL, collb, colub, obj, NULL, NULL);
+
+    assert(Cbc_getNumCols(model) == 5);
+    assert(Cbc_getNumRows(model) == 0);
+
+    for (i = 0; i < 5; i++) {
+        Cbc_setInteger(model, i);
+        assert(Cbc_isInteger(model,i));
+    }
+
+    assert(Cbc_getObjSense(model) == 1);
+    
+    Cbc_addSOS(model,1,sosrowstart,soscolindex,obj,1); 
+
+    Cbc_solve(model);
+
+    assert(Cbc_isProvenOptimal(model));
+    assert(!Cbc_isAbandoned(model));
+    assert(!Cbc_isProvenInfeasible(model));
+    assert(!Cbc_isContinuousUnbounded(model));
+    assert(!Cbc_isNodeLimitReached(model));
+    assert(!Cbc_isSecondsLimitReached(model));
+    assert(!Cbc_isSolutionLimitReached(model));
+    assert(fabs( Cbc_getObjValue(model)- (2.0) < 1e-6));
+    assert(fabs( Cbc_getBestPossibleObjValue(model)- (2.0) < 1e-6));
+
+    sol = Cbc_getColSolution(model);
+    
+    assert(fabs(sol[0] - 0.0) < 1e-6);
+    assert(fabs(sol[1] - 0.0) < 1e-6);
+    assert(fabs(sol[2] - 1.0) < 1e-6);
+    assert(fabs(sol[3] - 0.0) < 1e-6);
+    assert(fabs(sol[4] - 0.0) < 1e-6);
+
+    Cbc_deleteModel(model);
+
+}
+
 void testIntegerInfeasible() {
 
     Cbc_Model *model = Cbc_newModel();
@@ -186,8 +247,13 @@ void testIntegerUnbounded() {
 
 int main() {
 
+    printf("Knapsack test\n");
     testKnapsack();
+    printf("SOS test\n");
+    testSOS();
+    printf("Infeasible test\n");
     testIntegerInfeasible();
+    printf("Unbounded test\n");
     testIntegerUnbounded();
 
     return 0;

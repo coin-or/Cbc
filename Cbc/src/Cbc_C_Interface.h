@@ -200,15 +200,10 @@ extern "C" {
     COINLIBAPI Cbc_Model * COINLINKAGE
     Cbc_setInteger(Cbc_Model * model, int iColumn)
     ;
-    /** Add SOS constraints to the model using dense matrix */
-    COINLIBAPI void  COINLINKAGE
-    Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
-                     const int * const * which, const double * weights, const int type)
-    ;
     /** Add SOS constraints to the model using row-order matrix */
     COINLIBAPI void  COINLINKAGE
-    Cbc_addSOS_Sparse(Cbc_Model * model, const int * rowStarts,
-                      const int * rowIndices, const double * weights, const int type)
+    Cbc_addSOS(Cbc_Model * model, int numRows, const int * rowStarts,
+               const int * colIndices, const double * weights, const int type)
     ;
     /** Print the model */
     COINLIBAPI void COINLINKAGE

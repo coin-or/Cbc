@@ -76,6 +76,10 @@ extern "C" {
     COINLIBAPI void COINLINKAGE
     Cbc_writeMps(Cbc_Model * model, const char *filename)
     ;
+    /** Provide an initial feasible solution to accelerate branch-and-bound */
+    COINLIBAPI void COINLINKAGE
+    Cbc_setInitialSolution(Cbc_Model *model, const double * sol)
+    ;
     /** Deletes rows */
     COINLIBAPI void COINLINKAGE
     Cbc_deleteRows(Cbc_Model * model, int number, const int * which)

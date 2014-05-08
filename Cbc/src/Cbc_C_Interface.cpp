@@ -349,6 +349,20 @@ Cbc_writeMps(Cbc_Model * model, const char *filename)
     return;
 }
 
+
+COINLIBAPI void COINLINKAGE
+Cbc_setInitialSolution(Cbc_Model *model, const double * sol)
+{
+    int n = Cbc_getNumCols(model);
+    // We need to manually compute the objective here for some reason
+    const double *objvec = Cbc_getObjCoefficients(model);
+    double objval = 0;
+    for (int i = 0; i < n; i++) {
+        objval += objvec[i]*sol[i];
+    }
+    model->model_->setBestSolution(sol, n, objval, true);
+}
+
 /* Deletes rows */
 COINLIBAPI void COINLINKAGE
 Cbc_deleteRows(Cbc_Model * model, int number, const int * which)

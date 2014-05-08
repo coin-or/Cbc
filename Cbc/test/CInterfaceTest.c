@@ -39,6 +39,7 @@ void testKnapsack() {
     double collb[] = {0,0,0,0,0};
     double colub[] = {1,1,1,1,1};
     double obj[] = {5, 3, 2, 7, 4};
+    double feasible[] = {1,1,0,0,0};
     double rowlb[] = {-INFINITY};
     double rowub[] = {10};
     const double *sol;
@@ -68,6 +69,8 @@ void testKnapsack() {
     Cbc_setProblemName(model, setname);
 
     Cbc_registerCallBack(model, test_callback);
+
+    Cbc_setInitialSolution(model, feasible);
 
     Cbc_solve(model);
 

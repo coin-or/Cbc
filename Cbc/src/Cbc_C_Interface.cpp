@@ -33,6 +33,13 @@ Cbc_ ## prop (Cbc_Model *m) \
     return m->model_->prop(); \
 }
 
+#define CbcSetSolverProperty(T,prop) \
+COINLIBAPI void COINLINKAGE \
+Cbc_ ## prop (Cbc_Model *m, int index, T val) \
+{ \
+    m->model_->solver()->prop(index,val); \
+}
+
 const int  VERBOSE = 0;
 
 // To allow call backs
@@ -699,10 +706,15 @@ CbcGetProperty(const double*, getRowActivity)
 CbcGetProperty(const double*, getColSolution)
 
 CbcGetProperty(const double*, getRowLower)
+CbcSetSolverProperty(double, setRowLower)
 CbcGetProperty(const double*, getRowUpper)
+CbcSetSolverProperty(double, setRowUpper)
 CbcGetProperty(const double*, getObjCoefficients)
+CbcSetSolverProperty(double, setObjCoeff)
 CbcGetProperty(const double*, getColLower)
+CbcSetSolverProperty(double, setColLower)
 CbcGetProperty(const double*, getColUpper)
+CbcSetSolverProperty(double, setColUpper)
 
 CbcGetProperty(double, getObjValue)
 CbcGetProperty(double, getBestPossibleObjValue)
@@ -823,6 +835,7 @@ Cbc_setInteger(Cbc_Model * model, int iColumn)
     return model;
 }
 /** Add SOS constraints to the model using row-order matrix */
+/*
 COINLIBAPI void  COINLINKAGE
 Cbc_addSOS(Cbc_Model * model, int numRows, const int * rowStarts,
            const int * colIndices, const double * weights, const int type)
@@ -889,11 +902,11 @@ Cbc_addSOS(Cbc_Model * model, int numRows, const int * rowStarts,
     }
     if (VERBOSE > 2) {
         printf("%s calling addObjects()\n", prefix);
-        /*
-            printf("%s numObjects = %i, objects = %X\n",prefix,numObjects,objects);
-            for (row=0; row<numObjects; row++)
-              printf("%s  objects[%i] = %X\n",prefix,row,objects[row]);
-        */
+        
+        //    printf("%s numObjects = %i, objects = %X\n",prefix,numObjects,objects);
+        //    for (row=0; row<numObjects; row++)
+        //      printf("%s  objects[%i] = %X\n",prefix,row,objects[row]);
+        
     }
     fflush(stdout);
     model->model_->addObjects(numObjects, objects);
@@ -904,7 +917,7 @@ Cbc_addSOS(Cbc_Model * model, int numRows, const int * rowStarts,
 
     if (VERBOSE > 0) printf("%sreturn\n", prefix);
     return;
-}
+}*/
 
 /** Print the solution */
 COINLIBAPI void  COINLINKAGE

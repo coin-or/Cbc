@@ -172,21 +172,41 @@ extern "C" {
     COINLIBAPI const double* COINLINKAGE
     Cbc_getRowLower(Cbc_Model * model)
     ;
+    /** Set the lower bound of a single constraint */
+    COINLIBAPI void COINLINKAGE
+    Cbc_setRowLower(Cbc_Model * model, int index, double value)
+    ;
     /** Constraint upper bounds */
     COINLIBAPI const double* COINLINKAGE
     Cbc_getRowUpper(Cbc_Model * model)
+    ;
+    /** Set the upper bound of a single constraint */
+    COINLIBAPI void COINLINKAGE
+    Cbc_setRowUpper(Cbc_Model * model, int index, double value)
     ;
     /** Objective vector */
     COINLIBAPI const double * COINLINKAGE
     Cbc_getObjCoefficients(Cbc_Model * model)
     ;
+    /** Set the objective coefficient of a single variable */
+    COINLIBAPI void COINLINKAGE
+    Cbc_setObjCoeff(Cbc_Model * model, int index, double value)
+    ;
     /** Variable lower bounds */
     COINLIBAPI const double * COINLINKAGE
     Cbc_getColLower(Cbc_Model * model)
     ;
+    /** Set the lower bound of a single variable */
+    COINLIBAPI void COINLINKAGE
+    Cbc_setColLower(Cbc_Model * model, int index, double value)
+    ;
     /** Variable upper bounds */
     COINLIBAPI const double * COINLINKAGE
     Cbc_getColUpper(Cbc_Model * model)
+    ;
+    /** Set the upper bound of a single variable */
+    COINLIBAPI void COINLINKAGE
+    Cbc_setColUpper(Cbc_Model * model, int index, double value)
     ;
     /** Determine whether the ith variable is integer restricted */
     COINLIBAPI int COINLINKAGE
@@ -200,11 +220,12 @@ extern "C" {
     COINLIBAPI Cbc_Model * COINLINKAGE
     Cbc_setInteger(Cbc_Model * model, int iColumn)
     ;
-    /** Add SOS constraints to the model using row-order matrix */
-    COINLIBAPI void  COINLINKAGE
+    /* Add SOS constraints to the model using row-order matrix
+     * Unable to confirm that this function is working. */
+    /*COINLIBAPI void  COINLINKAGE
     Cbc_addSOS(Cbc_Model * model, int numRows, const int * rowStarts,
                const int * colIndices, const double * weights, const int type)
-    ;
+    ;*/
     /** Print the model */
     COINLIBAPI void COINLINKAGE
     Cbc_printModel(Cbc_Model * model, const char * argPrefix)

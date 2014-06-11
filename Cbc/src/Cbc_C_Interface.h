@@ -12,17 +12,19 @@
 #include "Coin_C_defines.h"
 #include <stddef.h>
 
-/** This is a "C" interface to Cbc.
-    Original verison contributed by Bob Entriken,
-    significantly updated by Miles Lubin.
+/*
+ * Original verison contributed by Bob Entriken,
+ * significantly updated by Miles Lubin.
 */
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
     /**@name Constructors and destructor
-       The user does not need to know structure of Cbc_Model.
+      This is a "C" interface to Cbc.
+      The user does not need to know structure of Cbc_Model.
     */
     /*@{*/
 
@@ -39,7 +41,14 @@ extern "C" {
     ;
     /*@}*/
 
-    /**@name Getting and setting model data */
+    /**@name Getting and setting model data
+     Note that problem access and modification methods,
+       such as getColLower and setColLower,
+       are *not valid* after calling Cbc_solve().
+       Therefore it is not recommended to reuse a Cbc_Model
+       object for multiple solves. A workaround is to call Cbc_clone()
+       before solving.
+     * */
     /*@{*/
     /** Loads a problem (the constraints on the
         rows are given by lower and upper bounds). If a pointer is NULL then the
@@ -80,29 +89,6 @@ extern "C" {
     COINLIBAPI void COINLINKAGE
     Cbc_setInitialSolution(Cbc_Model *model, const double * sol)
     ;
-    /** Deletes rows */
-    COINLIBAPI void COINLINKAGE
-    Cbc_deleteRows(Cbc_Model * model, int number, const int * which)
-    ;
-    /** Add rows */
-    COINLIBAPI void COINLINKAGE
-    Cbc_addRows(Cbc_Model * model, const int number, const double * rowLower,
-                const double * rowUpper,
-                const int * rowStarts, const int * columns,
-                const double * elements)
-    ;
-
-    /** Deletes columns */
-    COINLIBAPI void COINLINKAGE
-    Cbc_deleteColumns(Cbc_Model * model, int number, const int * which)
-    ;
-    /** Add columns */
-    COINLIBAPI void COINLINKAGE
-    Cbc_addColumns(Cbc_Model * model, int number, const double * columnLower,
-                   const double * columnUpper,
-                   const double * objective,
-                   const int * columnStarts, const int * rows,
-                   const double * elements);
     /** Fills in array with problem name  */
     COINLIBAPI void COINLINKAGE
     Cbc_problemName(Cbc_Model * model, int maxNumberCharacters, char * array)

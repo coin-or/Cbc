@@ -110,15 +110,16 @@ void testKnapsack() {
 
 }
 
+/*
 void testProblemModification() {
 
     Cbc_Model *model = Cbc_newModel();
 
-    /* Simple knapsack problem
+    / * Simple knapsack problem
        Maximize  5x[1] + 3x[2] + 2x[3] + 7x[4] + 4x[5]
        s.t.      2x[1] + 8x[2] + 4x[3] + 2x[4] + 5x[5] <= 10
        All x binary
-       */
+       * /
     
     CoinBigIndex start[] = {0, 1, 2, 3, 4, 5, 6};
     int rowindex[] = {0, 0, 0, 0, 0};
@@ -188,6 +189,7 @@ void testProblemModification() {
     Cbc_deleteModel(model);
 
 }
+*/
 
 /*
 void testSOS() {
@@ -333,8 +335,8 @@ int main() {
     testIntegerInfeasible();
     printf("Unbounded test\n");
     testIntegerUnbounded();
-    printf("Problem modification test\n");
-    testProblemModification();
+    /*printf("Problem modification test\n");
+    testProblemModification();*/
 
     return 0;
 }

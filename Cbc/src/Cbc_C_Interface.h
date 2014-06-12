@@ -199,11 +199,11 @@ extern "C" {
     Cbc_isInteger(Cbc_Model * model, int i)
     ;
     /** Set this variable to be continuous */
-    COINLIBAPI Cbc_Model * COINLINKAGE
+    COINLIBAPI void COINLINKAGE
     Cbc_setContinuous(Cbc_Model * model, int iColumn)
     ;
     /** Set this variable to be integer */
-    COINLIBAPI Cbc_Model * COINLINKAGE
+    COINLIBAPI void COINLINKAGE
     Cbc_setInteger(Cbc_Model * model, int iColumn)
     ;
     /* Add SOS constraints to the model using row-order matrix

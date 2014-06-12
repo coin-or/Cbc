@@ -744,7 +744,7 @@ Cbc_clone(Cbc_Model * model)
     return model;
 }
 /** Set this the variable to be continuous */
-COINLIBAPI Cbc_Model * COINLINKAGE
+COINLIBAPI void COINLINKAGE
 Cbc_setContinuous(Cbc_Model * model, int iColumn)
 {
     const char prefix[] = "Cbc_C_Interface::Cbc_setContinuous(): ";
@@ -754,10 +754,9 @@ Cbc_setContinuous(Cbc_Model * model, int iColumn)
     model->model_->solver()->setContinuous(iColumn);
 
     if (VERBOSE > 0) printf("%s return\n", prefix);
-    return model;
 }
 /** Set this the variable to be integer */
-COINLIBAPI Cbc_Model * COINLINKAGE
+COINLIBAPI void COINLINKAGE
 Cbc_setInteger(Cbc_Model * model, int iColumn)
 {
     const char prefix[] = "Cbc_C_Interface::Cbc_setContinuous(): ";
@@ -767,7 +766,6 @@ Cbc_setInteger(Cbc_Model * model, int iColumn)
     model->model_->solver()->setInteger(iColumn);
 
     if (VERBOSE > 0) printf("%s return\n", prefix);
-    return model;
 }
 /** Add SOS constraints to the model using row-order matrix */
 /*

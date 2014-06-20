@@ -768,7 +768,7 @@ Cbc_setInteger(Cbc_Model * model, int iColumn)
     if (VERBOSE > 0) printf("%s return\n", prefix);
 }
 /** Add SOS constraints to the model using row-order matrix */
-/*
+
 COINLIBAPI void  COINLINKAGE
 Cbc_addSOS(Cbc_Model * model, int numRows, const int * rowStarts,
            const int * colIndices, const double * weights, const int type)
@@ -850,7 +850,7 @@ Cbc_addSOS(Cbc_Model * model, int numRows, const int * rowStarts,
 
     if (VERBOSE > 0) printf("%sreturn\n", prefix);
     return;
-}*/
+}
 
 /** Print the solution */
 COINLIBAPI void  COINLINKAGE

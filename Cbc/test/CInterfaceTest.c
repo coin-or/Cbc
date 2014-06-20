@@ -191,16 +191,16 @@ void testProblemModification() {
 }
 */
 
-/*
+
 void testSOS() {
 
     Cbc_Model *model = Cbc_newModel();
 
-    / *
+    /*
        Maximize  5x[1] + 3x[2] + 2x[3] + 7x[4] + 4x[5]
        s.t.       x[1] +  x[2] +  x[3] +  x[4] +  x[5] == 1
        All x binary
-       * /
+       */
     
     CoinBigIndex start[] = {0, 0, 0, 0, 0, 0, 0};
     double collb[] = {0,0,0,0,0};
@@ -249,7 +249,7 @@ void testSOS() {
     Cbc_deleteModel(model);
 
 }
-*/
+
 
 void testIntegerInfeasible() {
 
@@ -329,8 +329,8 @@ int main() {
 
     printf("Knapsack test\n");
     testKnapsack();
-    /*printf("SOS test\n");
-    testSOS();*/
+    printf("SOS test\n");
+    testSOS();
     printf("Infeasible test\n");
     testIntegerInfeasible();
     printf("Unbounded test\n");

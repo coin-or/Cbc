@@ -206,12 +206,12 @@ extern "C" {
     COINLIBAPI void COINLINKAGE
     Cbc_setInteger(Cbc_Model * model, int iColumn)
     ;
-    /* Add SOS constraints to the model using row-order matrix
+    /** Add SOS constraints to the model using row-order matrix
      * Unable to confirm that this function is working. */
-    /*COINLIBAPI void  COINLINKAGE
+    COINLIBAPI void  COINLINKAGE
     Cbc_addSOS(Cbc_Model * model, int numRows, const int * rowStarts,
                const int * colIndices, const double * weights, const int type)
-    ;*/
+    ;
     /** Print the model */
     COINLIBAPI void COINLINKAGE
     Cbc_printModel(Cbc_Model * model, const char * argPrefix)

@@ -1843,6 +1843,7 @@ public:
 	27 bit (134217728) - append binding global cuts to file
 	28 bit (268435456) - idiot branching
         29 bit (536870912) - don't make fake objective
+	30 bit (1073741824) - Funny SOS or similar - be careful
     */
     inline void setMoreSpecialOptions(int value) {
         moreSpecialOptions_ = value;

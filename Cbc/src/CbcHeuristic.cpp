@@ -279,8 +279,8 @@ CbcHeuristic::shouldHeurRun(int whereFrom)
         return false;
     // No longer used for original purpose - so use for ever run at all JJF
 #ifndef JJF_ONE
-    // Don't run if hot start
-    if (model_ && model_->hotstartSolution())
+    // Don't run if hot start or no rows!
+    if (model_ && (model_->hotstartSolution()||!model_->getNumRows()))
         return false;
     else
         return true;

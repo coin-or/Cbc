@@ -2004,6 +2004,18 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
     bool feasible;
     numberSolves_ = 0 ;
+    {
+      // check
+      int numberSOS = 0;
+      for (int i = 0; i < numberObjects_; i++) {
+	CbcSOS * obj =
+	  dynamic_cast <CbcSOS *>(object_[i]) ;
+	if (obj)
+	  numberSOS++;
+      }
+      if (numberSOS)
+	moreSpecialOptions_ |= 1073741824;
+    }
     // If NLP then we assume already solved outside branchAndbound
     if (!solverCharacteristics_->solverType() || solverCharacteristics_->solverType() == 4) {
         feasible = resolve(NULL, 0) != 0 ;
@@ -9908,7 +9920,8 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
             feasible = false;
     }
     // Can't happen if strong branching as would have been found before
-    if (!numberStrong_ && numberObjects_ > numberIntegers_) {
+    if ((!numberStrong_||(moreSpecialOptions_&1073741824)!=0)
+	&& numberObjects_ > numberIntegers_) {
         int iColumn;
         int numberColumns = solver_->getNumCols();
         const double * columnLower = solver_->getColLower();
@@ -9944,7 +9957,8 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
             solver_->writeMpsNative("before-tighten.mps", NULL, NULL, 2);
         }
         if (clpSolver && (!currentNode_ || (currentNode_->depth()&2) != 0) &&
-                !solverCharacteristics_->solutionAddsCuts())
+                !solverCharacteristics_->solutionAddsCuts() &&
+	    (moreSpecialOptions_&1073741824)==0)
             nTightened = clpSolver->tightenBounds();
         if (nTightened) {
             //printf("%d bounds tightened\n",nTightened);
@@ -12518,6 +12532,7 @@ CbcModel::setBestSolution (CBC_Message how,
                            int fixVariables)
 
 {
+  
     double * solution = CoinCopyOfArray(solutionIn, solver_->getNumCols());
 #ifdef JJF_ZERO
     {
@@ -12639,7 +12654,12 @@ CbcModel::setBestSolution (CBC_Message how,
                     CoinCopyN(solution2, numberColumns, solution);
                     objectiveValue = objectiveValue2;
                 }
-            }
+	    } else {
+	      // not good
+	      messageHandler()->message(CBC_GENERAL, messages())
+		<< "On closer inspection - solution discarded" 
+		<< CoinMessageEol ;
+           }
             delete [] solution2;
             solver_->setWarmStart(basis2);
             delete basis2 ;

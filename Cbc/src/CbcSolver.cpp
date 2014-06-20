@@ -6068,6 +6068,13 @@ int CbcMain1 (int argc, const char *argv[],
 #ifndef CBC_OTHER_SOLVER
                                 osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
                                 lpSolver = osiclp->getModelPtr();
+				int hotits = parameters_[whichParam(CBC_PARAM_INT_MAXHOTITS, numberParameters_, parameters_)].intValue();
+				if (hotits>100) {
+				  osiclp->setSpecialOptions(osiclp->specialOptions()&~32);
+				  osiclp->setIntParam(OsiMaxNumIterationHotStart, hotits);
+				} else {
+				  osiclp->setIntParam(OsiMaxNumIterationHotStart, hotits);
+				}
 #elif CBC_OTHER_SOLVER==1
 #endif
                                 if ((experimentFlag >= 1 || strategyFlag >= 1) && babModel_->fastNodeDepth() == -1) {
@@ -6976,7 +6983,8 @@ int CbcMain1 (int argc, const char *argv[],
 				       if (babModel_->bestSolution()){
 					  sprintf(generalPrint + strlen(generalPrint), 
 						  "Gap:                            %.2f\n", 
-						  (babModel_->getObjValue()-babModel_->getBestPossibleObjValue())/babModel_->getBestPossibleObjValue());
+						  (babModel_->getObjValue()-babModel_->getBestPossibleObjValue())/
+						  fabs(babModel_->getBestPossibleObjValue()));
 				       }
 				    }
 				    sprintf(generalPrint + strlen(generalPrint), 

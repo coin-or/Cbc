@@ -2822,6 +2822,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                 int iColumn = dynamicObject ? dynamicObject->columnNumber() : numberColumns + iObject;
                 int preferredWay;
                 double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+		bool feasibleSolution=false;
+		double predictedChange=0.0;
                 // may have become feasible
                 if (!infeasibility) {
 		  if(strongType!=2||solver->getColLower()[iColumn]==solver->getColUpper()[iColumn])
@@ -2912,7 +2914,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                       alternative.)
                     */
                     choice.possibleBranch->way(-1) ;
-                    choice.possibleBranch->branch() ;
+                    predictedChange = choice.possibleBranch->branch() ;
                     solver->solveFromHotStart() ;
                     bool needHotStartUpdate = false;
                     numberStrongDone++;
@@ -2961,6 +2963,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 #endif
 #endif
 		    }
+		    // say infeasible if branch says so
+		    if (predictedChange==COIN_DBL_MAX)
+		      iStatus=1;
                     if (iStatus != 2 && solver->getIterationCount() >
                             realMaxHotIterations)
                         numberUnfinished++;
@@ -3006,8 +3011,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             }
 #endif
                             // See if integer solution
-                            if (model->feasibleSolution(choice.numIntInfeasDown,
-                                                        choice.numObjInfeasDown)
+                            feasibleSolution = 
+			      model->feasibleSolution(choice.numIntInfeasDown,
+						      choice.numObjInfeasDown);
+			    if (feasibleSolution 
                                     && model->problemFeasibility()->feasible(model, -1) >= 0) {
                                 if (auxiliaryInfo->solutionAddsCuts()) {
                                     needHotStartUpdate = true;
@@ -3098,7 +3105,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 #endif
 
                     // repeat the whole exercise, forcing the variable up
-                    choice.possibleBranch->branch();
+                    predictedChange=choice.possibleBranch->branch();
                     solver->solveFromHotStart() ;
                     numberStrongDone++;
                     numberStrongIterations += solver->getIterationCount();
@@ -3146,6 +3153,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 #endif
 #endif
 		    }
+		    // say infeasible if branch says so
+		    if (predictedChange==COIN_DBL_MAX)
+		      iStatus=1;
                     if (iStatus != 2 && solver->getIterationCount() >
                             realMaxHotIterations)
                         numberUnfinished++;
@@ -3190,8 +3200,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             }
 #endif
                             // See if integer solution
-                            if (model->feasibleSolution(choice.numIntInfeasUp,
-                                                        choice.numObjInfeasUp)
+                            feasibleSolution = 
+			      model->feasibleSolution(choice.numIntInfeasUp,
+						      choice.numObjInfeasUp);
+			    if (feasibleSolution 
                                     && model->problemFeasibility()->feasible(model, -1) >= 0) {
 #ifdef BONMIN
                                 std::cout << "Node has become integer feasible" << std::endl;

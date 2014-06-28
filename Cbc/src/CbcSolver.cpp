@@ -3830,6 +3830,8 @@ int CbcMain1 (int argc, const char *argv[],
 				CbcSimpleInteger * objSimpleInteger =
 				  dynamic_cast <CbcSimpleInteger *>(objects[iObj]) ;
 				if (!objSimpleInteger&&!objSOS) {
+				  // find all integers anyway
+				  babModel_->findIntegers(true);
 				  preProcess=0;
 				  break;
 				}
@@ -3982,6 +3984,10 @@ int CbcMain1 (int argc, const char *argv[],
                                     if (model_.numberObjects()) {
                                         OsiObject ** oldObjects = babModel_->objects();
                                         int numberOldObjects = babModel_->numberObjects();
+					if (!numberOldObjects) {
+					  oldObjects = model_.objects();
+					  numberOldObjects = model_.numberObjects();
+					}
                                         // SOS
                                         int numberColumns = saveSolver->getNumCols();
                                         char * prohibited = new char[numberColumns];

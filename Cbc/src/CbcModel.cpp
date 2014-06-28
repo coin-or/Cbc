@@ -2006,14 +2006,14 @@ void CbcModel::branchAndBound(int doStatistics)
     numberSolves_ = 0 ;
     {
       // check
-      int numberSOS = 0;
+      int numberOdd = 0;
       for (int i = 0; i < numberObjects_; i++) {
-	CbcSOS * obj =
-	  dynamic_cast <CbcSOS *>(object_[i]) ;
-	if (obj)
-	  numberSOS++;
+	CbcSimpleInteger * obj =
+	  dynamic_cast <CbcSimpleInteger *>(object_[i]) ;
+	if (!obj)
+	  numberOdd++;
       }
-      if (numberSOS)
+      if (numberOdd)
 	moreSpecialOptions_ |= 1073741824;
     }
     // If NLP then we assume already solved outside branchAndbound

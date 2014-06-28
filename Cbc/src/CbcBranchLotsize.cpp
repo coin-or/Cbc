@@ -504,8 +504,10 @@ CbcLotsize::feasibleRegion()
         solver->setColUpper(columnNumber_, nearest);
     } else {
         // ranges
-        solver->setColLower(columnNumber_, bound_[2*range_]);
-        solver->setColUpper(columnNumber_, bound_[2*range_+1]);
+        solver->setColLower(columnNumber_, CoinMax(bound_[2*range_],
+						   lower[columnNumber_]));
+	solver->setColUpper(columnNumber_, CoinMin(bound_[2*range_+1],
+						   upper[columnNumber_]));
         if (value > bound_[2*range_+1])
             nearest = bound_[2*range_+1];
         else if (value < bound_[2*range_])

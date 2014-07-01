@@ -2568,7 +2568,6 @@ int CbcMain1 (int argc, const char *argv[],
                             gomoryAction = action;
                             probingAction = action;
                             knapsackAction = action;
-                            zerohalfAction = action;
                             cliqueAction = action;
                             flowAction = action;
                             mixedAction = action;
@@ -2581,8 +2580,9 @@ int CbcMain1 (int argc, const char *argv[],
                             parameters_[whichParam(CBC_PARAM_STR_FLOWCUTS, numberParameters_, parameters_)].setCurrentOption(action);
                             parameters_[whichParam(CBC_PARAM_STR_MIXEDCUTS, numberParameters_, parameters_)].setCurrentOption(action);
                             parameters_[whichParam(CBC_PARAM_STR_TWOMIRCUTS, numberParameters_, parameters_)].setCurrentOption(action);
-                            parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, numberParameters_, parameters_)].setCurrentOption(action);
                             if (!action) {
+                                zerohalfAction = action;
+				parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, numberParameters_, parameters_)].setCurrentOption(action);
                                 redsplitAction = action;
                                 parameters_[whichParam(CBC_PARAM_STR_REDSPLITCUTS, numberParameters_, parameters_)].setCurrentOption(action);
                                 redsplit2Action = action;

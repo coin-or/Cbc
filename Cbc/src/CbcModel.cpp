@@ -2189,7 +2189,7 @@ void CbcModel::branchAndBound(int doStatistics)
                 numberSOS++;
         }
         if (numberOdd) {
-            if (numberHeuristics_) {
+	  if (numberHeuristics_ && (specialOptions_&1024)==0 ) {
                 int k = 0;
                 for (int i = 0; i < numberHeuristics_; i++) {
                     if (!heuristic_[i]->canDealWithOdd())

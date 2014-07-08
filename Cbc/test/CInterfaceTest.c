@@ -303,7 +303,7 @@ void testIntegerUnbounded() {
     double rowub[] = {3.0,0.0};
     double collb[] = {-INFINITY, -INFINITY};
     double colub[] = {INFINITY, INFINITY};
-    double obj[] = {1.0};
+    double obj[] = {1.0,0.0};
 
     Cbc_loadProblem(model, 2, 2, start, rowindex, value, collb, colub, obj, rowlb, rowub);
 

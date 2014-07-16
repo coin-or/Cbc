@@ -61,6 +61,9 @@ extern int gomory_try;
 #include "CbcFeasibilityBase.hpp"
 #include "CbcFathom.hpp"
 #include "CbcFullNodeInfo.hpp"
+#ifdef COIN_HAS_NTY
+#include "CbcSymmetry.hpp"
+#endif
 // include Probing
 #include "CglProbing.hpp"
 #include "CglGomory.hpp"
@@ -2277,6 +2280,19 @@ void CbcModel::branchAndBound(int doStatistics)
       constraint system (aka the continuous system).
     */
     continuousSolver_ = solver_->clone() ;
+#ifdef COIN_HAS_NTY
+    // maybe allow on fix and restart later
+    if ((moreSpecialOptions2_&(128|256))!=0&&!parentModel_) {
+      symmetryInfo_ = new CbcSymmetry();
+      symmetryInfo_->setupSymmetry(*continuousSolver_);
+      int numberGenerators = symmetryInfo_->statsOrbits(this,0);
+      if (!numberGenerators) {
+	delete symmetryInfo_;
+	symmetryInfo_=NULL;
+	moreSpecialOptions2_ &= ~128;
+      }
+    }
+#endif
 
     // add cutoff as constraint if wanted
     if (cutoffRowNumber_==-2) {
@@ -2561,6 +2577,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	rootModels[i]->setSpecialOptions(specialOptions_ |(4194304|8388608));
 	rootModels[i]->setMoreSpecialOptions(moreSpecialOptions_ & 
 					     (~134217728));
+	rootModels[i]->setMoreSpecialOptions2(moreSpecialOptions2_ & 
+					     (~128));
 	rootModels[i]->solver_->setWarmStart(basis);
 #ifdef COIN_HAS_CLP
 	OsiClpSolverInterface * clpSolver
@@ -3852,7 +3870,7 @@ void CbcModel::branchAndBound(int doStatistics)
         //const int * integerVariable = probingInfo_->integerVariable();
         if (toZero[number01]) {
             CglTreeProbingInfo info(*probingInfo_);
-	    if ((moreSpecialOptions_&1048576)!=0&&!parentModel_) {
+	    if ((moreSpecialOptions2_&64)!=0&&!parentModel_) {
 	      /*
 		Marginal idea. Further exploration probably good. Build some extra
 		cliques from probing info. Not quite worth the effort?
@@ -4519,6 +4537,10 @@ void CbcModel::branchAndBound(int doStatistics)
                 << getCurrentSeconds()
                 << CoinMessageEol ;
             }
+#ifdef COIN_HAS_NTY
+	    if (symmetryInfo_) 
+	      symmetryInfo_->statsOrbits(this,1);
+#endif
             if (eventHandler && !eventHandler->event(CbcEventHandler::treeStatus)) {
                 eventHappened_ = true; // exit
             }
@@ -4758,6 +4780,10 @@ void CbcModel::branchAndBound(int doStatistics)
         << maximumDepthActual_
         << numberDJFixed_ << numberExtraNodes_ << numberExtraIterations_
         << CoinMessageEol ;
+#ifdef COIN_HAS_NTY
+    if (symmetryInfo_) 
+      symmetryInfo_->statsOrbits(this,1);
+#endif
     if (doStatistics == 100) {
         for (int i = 0; i < numberObjects_; i++) {
             CbcSimpleIntegerDynamicPseudoCost * obj =
@@ -5274,6 +5300,9 @@ CbcModel::CbcModel()
         lastHeuristic_(NULL),
         fastNodeDepth_(-1),
         eventHandler_(NULL),
+#ifdef COIN_HAS_NTY
+	symmetryInfo_(NULL),
+#endif
         numberObjects_(0),
         object_(NULL),
         ownObjects_(true),
@@ -5439,6 +5468,9 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
         lastHeuristic_(NULL),
         fastNodeDepth_(-1),
         eventHandler_(NULL),
+#ifdef COIN_HAS_NTY
+	symmetryInfo_(NULL),
+#endif
         numberObjects_(0),
         object_(NULL),
         ownObjects_(true),
@@ -5957,6 +5989,12 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
     } else {
         lastCut_ = NULL;
     }
+#ifdef COIN_HAS_NTY
+    if (rhs.symmetryInfo_) 
+      symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
+    else
+      symmetryInfo_ = NULL;
+#endif
     synchronizeModel();
     if (cloneHandler && !defaultHandler_) {
         delete handler_;
@@ -6291,6 +6329,12 @@ CbcModel::operator=(const CbcModel & rhs)
         } else {
             lastCut_ = NULL;
         }
+#ifdef COIN_HAS_NTY
+	if (rhs.symmetryInfo_)
+	  symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
+	else
+	  symmetryInfo_ = NULL;
+#endif
         synchronizeModel();
         cbcColLower_ = NULL;
         cbcColUpper_ = NULL;
@@ -6382,6 +6426,10 @@ CbcModel::gutsOfDestructor2()
     cutModifier_ = NULL;
     topOfTree_ = NULL;
     resetModel();
+#ifdef COIN_HAS_NTY
+    delete symmetryInfo_;
+    symmetryInfo_ = NULL;
+#endif
 }
 // Clears out enough to reset CbcModel
 void
@@ -6607,6 +6655,12 @@ CbcModel::gutsOfCopy(const CbcModel & rhs, int mode)
         branchingMethod_ = NULL;
     messageHandler()->setLogLevel(rhs.messageHandler()->logLevel());
     whenCuts_ = rhs.whenCuts_;
+#ifdef COIN_HAS_NTY
+    if (rhs.symmetryInfo_)
+      symmetryInfo_ = new CbcSymmetry (*rhs.symmetryInfo_);
+    else
+      symmetryInfo_ = NULL;
+#endif
     synchronizeModel();
 }
 // Move status, nodes etc etc across
@@ -11807,6 +11861,51 @@ CbcModel::checkSolution (double cutoff, double *solution,
     if (!solverCharacteristics_->solutionAddsCuts()) {
         // Can trust solution
         int numberColumns = solver_->getNumCols();
+#ifdef COIN_HAS_CLP
+	OsiClpSolverInterface * clpContinuousSolver
+	  = dynamic_cast<OsiClpSolverInterface *> (continuousSolver_);
+	int modifiedTolerances=0;
+#ifndef CBC_LEAVE_PERTURBATION_ON_CHECK_SOLUTION
+	int savePerturbation=-1;
+#endif
+#ifndef CBC_LEAVE_TOLERANCE_ON_CHECK_SOLUTION
+	double savePrimalTolerance=0.0;
+#endif
+#ifndef CBC_LEAVE_SCALING_ON_CHECK_SOLUTION
+	int saveScaling=-1;
+#endif
+	if (clpContinuousSolver ) {
+	  // be more accurate if possible
+	  ClpSimplex * clp = clpContinuousSolver->getModelPtr();
+#ifndef CBC_LEAVE_PERTURBATION_ON_CHECK_SOLUTION
+	  savePerturbation=clp->perturbation();
+#endif
+#ifndef CBC_LEAVE_TOLERANCE_ON_CHECK_SOLUTION
+	  savePrimalTolerance=clp->primalTolerance();
+#endif
+#ifndef CBC_LEAVE_SCALING_ON_CHECK_SOLUTION
+	  saveScaling=clp->scalingFlag();
+#endif
+#ifndef CBC_LEAVE_TOLERANCE_ON_CHECK_SOLUTION
+	  if (savePrimalTolerance>0.9999999e-7) {
+	    modifiedTolerances |= 1;
+	    clp->setPrimalTolerance(1.0e-8);
+	  }
+#endif
+#ifndef CBC_LEAVE_PERTURBATION_ON_CHECK_SOLUTION
+	  if (savePerturbation<100) {
+	    modifiedTolerances |= 2;
+	    clp->setPerturbation(100);
+	  }
+#endif
+#ifndef CBC_LEAVE_SCALING_ON_CHECK_SOLUTION
+	  if (saveScaling) {
+	    modifiedTolerances |= 4;
+	    clp->scaling(0);
+	  }
+#endif
+	}
+#endif
 
         /*
           Grab the continuous solver (the pristine copy of the problem, made before
@@ -12163,6 +12262,22 @@ CbcModel::checkSolution (double cutoff, double *solution,
                     printf("checkSolution infeas! Retrying wihout basis and with primal.\n");
 #endif
                     solver_->initialSolve();
+#ifdef COIN_HAS_CLP
+                    if (!solver_->isProvenOptimal()&&modifiedTolerances) {
+		      // Restore
+		      ClpSimplex * clp = clpContinuousSolver->getModelPtr();
+#ifndef CBC_LEAVE_TOLERANCE_ON_CHECK_SOLUTION
+		      clp->setPrimalTolerance(savePrimalTolerance);
+#endif
+#ifndef CBC_LEAVE_PERTURBATION_ON_CHECK_SOLUTION
+		      clp->setPerturbation(savePerturbation);
+#endif
+#ifndef CBC_LEAVE_SCALING_ON_CHECK_SOLUTION
+		      clp->scaling(saveScaling);
+#endif
+		      solver_->resolve();
+                    }
+#endif
 #if COIN_DEVELOP>1
                     if (!solver_->isProvenOptimal()) {
                         printf("checkSolution still infeas!\n");
@@ -12356,9 +12471,9 @@ CbcModel::checkSolution (double cutoff, double *solution,
 		//printf("Bad obj values\n");
 		objectiveValue = objValue;
 		//}
-#ifdef CLP_INVESTIGATE
+#if 1 //def CLP_INVESTIGATE
                 if (largestInfeasibility > 10.0*primalTolerance)
-                    printf("largest infeasibility is %g\n", largestInfeasibility);
+                    printf("XX largest infeasibility is %g\n", largestInfeasibility);
 #endif
                 if (largestInfeasibility > 200.0*primalTolerance) {
                     handler_->message(CBC_NOTFEAS3, messages_)
@@ -12392,6 +12507,21 @@ CbcModel::checkSolution (double cutoff, double *solution,
         */
         solver_ = saveSolver;
         testSolution_ = save;
+#ifdef COIN_HAS_CLP
+	if (modifiedTolerances) {
+	  // Restore
+	  ClpSimplex * clp = clpContinuousSolver->getModelPtr();
+#ifndef CBC_LEAVE_TOLERANCE_ON_CHECK_SOLUTION
+	  clp->setPrimalTolerance(savePrimalTolerance);
+#endif
+#ifndef CBC_LEAVE_PERTURBATION_ON_CHECK_SOLUTION
+	  clp->setPerturbation(savePerturbation);
+#endif
+#ifndef CBC_LEAVE_SCALING_ON_CHECK_SOLUTION
+	  clp->scaling(saveScaling);
+#endif
+	}
+#endif
         return objectiveValue;
     } else {
         // Outer approximation or similar
@@ -14471,6 +14601,42 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
 	      ClpSimplex * clpSimplex = clpSolver->getModelPtr();
 	      save=clpSimplex->specialOptions();
 	      clpSimplex->setSpecialOptions(save | 0x11200000); // say is Cbc (and in branch and bound - but save ray)
+	    }
+#endif
+#ifdef COIN_HAS_NTY
+	    if (symmetryInfo_) {
+	      CbcNodeInfo * infoX = oldNode ? oldNode->nodeInfo() : NULL;
+	      bool worthTrying = false;
+	      if (infoX) {
+		CbcNodeInfo * info = infoX;
+		for (int i=0;i<NTY_BAD_DEPTH;i++) {
+		  if (!info->parent()) {
+		    worthTrying = true;
+		    break;
+		  }
+		  info = info->parent();
+		  if (info->symmetryWorked()) {
+		    worthTrying = true;
+		    break;
+		  }
+		}
+	      } else {
+		worthTrying=true;
+	      }
+	      if (worthTrying) {
+		int n=symmetryInfo_->orbitalFixing(solver_);
+		if (n) {
+#if PRINT_MORE==0
+		  if (logLevel()>1)
+		    printf("%d orbital fixes\n",n);
+#endif
+		  solver_->resolve();
+		  if(!isProvenOptimal()) {
+		    if (logLevel()>1)
+		      printf("infeasible after orbital fixing\n");
+		  }
+		}
+	      }
 	    }
 #endif
             if (numberBeforeTrust_ == 0 ) {
@@ -16914,7 +17080,17 @@ CbcModel::canStopOnGap() const
 			     CoinMax(fabs(bestObjective_), fabs(bestPossibleObjective_))
 			     * dblParam_[CbcAllowableFractionGap]);
     returnCode = (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0);
-  } 
+  }
+#if 1
+  if (returnCode) {
+    if (fabs(bestObjective_+1469650.0)<1.0) {
+      fprintf(stderr,"BAD - cr to continue\n");
+      fflush(stdout);
+      char xx;
+      xx=getc(stdin);
+    }
+  }
+#endif
   return returnCode;
 }
 // Adjust heuristics based on model

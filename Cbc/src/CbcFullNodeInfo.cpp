@@ -133,7 +133,7 @@ void CbcFullNodeInfo::applyToModel (CbcModel *model,
     if (!active_)
       return;
     // branch - do bounds
-    assert (active_ == 7 || active_ == 15);
+    assert ((active_&~16) == 7 || (active_&~16) == 15);
     int i;
     solver->setColLower(lower_);
     solver->setColUpper(upper_);

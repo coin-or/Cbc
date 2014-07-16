@@ -3285,6 +3285,9 @@ int CbcMain1 (int argc, const char *argv[],
                             bool miplib = type == CBC_PARAM_ACTION_MIPLIB;
                             int logLevel = parameters_[slog].intValue();
 			    int truncateColumns=COIN_INT_MAX;
+			    int truncateRows=-1;
+			    double * truncatedRhsLower=NULL;
+			    double * truncatedRhsUpper=NULL;
 			    int * newPriorities=NULL;
                             // Reduce printout
                             if (logLevel <= 1) {
@@ -4160,8 +4163,11 @@ int CbcMain1 (int argc, const char *argv[],
 				// see if extra variables wanted
 				int threshold = 
 				  parameters_[whichParam(CBC_PARAM_INT_EXTRA_VARIABLES, numberParameters_, parameters_)].intValue();
-				if (threshold) {
+				int more2 = parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, numberParameters_, parameters_)].intValue();
+				if (threshold || (more2&(512|1024)) != 0) {
 				  int numberColumns = solver2->getNumCols();
+				  truncateRows = solver2->getNumRows();
+				  bool modifiedModel=false;
 				  int highPriority=0;
 				  /*
 				    normal - no priorities
@@ -4365,10 +4371,7 @@ int CbcMain1 (int argc, const char *argv[],
 						       rowAdd,columnAdd,elementAdd,
 						       lowerNew, upperNew);
 				      sprintf(generalPrint,"Replacing model - %d new variables",numberDifferentObj);
-				      generalMessageHandler->message(CLP_GENERAL, generalMessages)
-					<< generalPrint
-					<< CoinMessageEol;
-				      truncateColumns=numberColumns;
+				      modifiedModel=true;
 				    }
 				    delete [] columnAdd;
 				    delete [] elementAdd;
@@ -4377,6 +4380,204 @@ int CbcMain1 (int argc, const char *argv[],
 				  }
 				  delete [] which;
 				  delete [] obj;
+				  if ((more2&(512|1024)) != 0) {
+				    // try for row slacks etc
+				    // later do row branching
+				    int iRow, iColumn;
+				    int numberColumns = solver2->getNumCols();
+				    int numberRows = solver2->getNumRows();
+				    int fudgeObjective = more2&512;
+				    int addSlacks = more2&1024;
+				    if (fudgeObjective) {
+				      bool moveObj = false;
+				      fudgeObjective = 0;
+				      const double * objective = solver2->getObjCoefficients();
+				      const double * columnLower = solver2->getColLower();
+				      const double * columnUpper = solver2->getColUpper();
+				      double * newValues = new double [numberColumns+1];
+				      int * newColumn = new int [numberColumns+1];
+				      bool allInteger=true;
+				      int n=0;
+				      double newLower = 0.0;
+				      double newUpper = 0.0;
+				      for (iColumn=0;iColumn<numberColumns;iColumn++) {
+					if (objective[iColumn]) {
+					  if (!solver2->isInteger(iColumn)) {
+					    allInteger=false;
+					    break;
+					  } else {
+					    double value = objective[iColumn];
+					    double nearest = floor(value+0.5);
+					    if (fabs(value-nearest)>1.0e-8) {
+					      allInteger=false;
+					      break;
+					    } else {
+					      newValues[n]=nearest;
+					      newColumn[n++]=iColumn;
+					      if (nearest>0.0) {
+						newLower += CoinMax(columnLower[iColumn],-1.0e20)*nearest;
+						newUpper += CoinMin(columnUpper[iColumn],1.0e20)*nearest;
+					      } else {
+						newUpper += CoinMax(columnLower[iColumn],-1.0e20)*nearest;
+						newLower += CoinMin(columnUpper[iColumn],1.0e20)*nearest;
+					      }
+					    }
+					  }
+					}
+				      }
+				      if (allInteger && n) {
+					fudgeObjective = n;
+					solver2->addCol(0,NULL,NULL,newLower,newUpper,0.0,"obj_col");
+					solver2->setInteger(numberColumns);
+					newValues[n]=-1.0;
+					newColumn[n++]=numberColumns;
+					solver2->addRow(n,newColumn,newValues,0.0,0.0);
+					if (moveObj) {
+					  memset(newValues,0,numberColumns*sizeof(double));
+					  newValues[numberColumns]=1.0;
+					  solver2->setObjective(newValues);
+					}
+					numberRows++;
+					numberColumns++;
+				      }
+				      delete [] newValues;
+				      delete [] newColumn;
+				    }
+				    if (addSlacks) {
+				      bool moveObj = false;
+				      addSlacks=0;
+				      // get row copy
+				      const CoinPackedMatrix * matrix = solver2->getMatrixByRow();
+				      const double * element = matrix->getElements();
+				      const int * column = matrix->getIndices();
+				      const CoinBigIndex * rowStart = matrix->getVectorStarts();
+				      const int * rowLength = matrix->getVectorLengths();
+				      const double * rowLower = solver2->getRowLower();
+				      const double * rowUpper = solver2->getRowUpper();
+				      const double * columnLower = solver2->getColLower();
+				      const double * columnUpper = solver2->getColUpper();
+				      
+				      // maximum space for additional columns
+				      CoinBigIndex * newColumnStart = new CoinBigIndex[numberRows+1];
+				      newColumnStart[0]=0;
+				      int * newRow = new int [numberRows];
+				      double * newElement = new double [numberRows]; 
+				      double * newObjective = new double [numberRows]; 
+				      double * newColumnLower = new double [numberRows]; 
+				      double * newColumnUpper = new double [numberRows];
+				      double * oldObjective = CoinCopyOfArray(solver2->getObjCoefficients(),
+									      numberColumns);
+				      for (iRow=0;iRow<numberRows;iRow++) {
+					if (rowLower[iRow]!=rowUpper[iRow]) {
+					  bool allInteger=true;
+					  double newLower = 0.0;
+					  double newUpper = 0.0;
+					  double constantObjective=0.0;
+					  for (int j=rowStart[iRow];j<rowStart[iRow]+rowLength[iRow];j++) {
+					    int iColumn = column[j];
+					    if (!solver2->isInteger(iColumn)) {
+					      allInteger=false;
+					      break;
+					    } else {
+					      double value = element[j];
+					      double nearest = floor(value+0.5);
+					      if (fabs(value-nearest)>1.0e-8) {
+						allInteger=false;
+						break;
+					      } else {
+						if (!oldObjective[iColumn])
+						  constantObjective=COIN_DBL_MAX;
+						if (!constantObjective) {
+						  constantObjective=oldObjective[iColumn]/nearest;
+						} else if (constantObjective!=COIN_DBL_MAX) {
+						  double newConstant=oldObjective[iColumn]/nearest;
+						  if (constantObjective>0.0) {
+						    if (newConstant<=0.0)
+						      constantObjective=COIN_DBL_MAX;
+						    else
+						      constantObjective=CoinMin(constantObjective,newConstant);
+						  } else {
+						    if (newConstant>=0.0)
+						      constantObjective=COIN_DBL_MAX;
+						    else
+						      constantObjective=CoinMax(constantObjective,newConstant);
+						  }
+						}
+						if (nearest>0.0) {
+						  newLower += CoinMax(columnLower[iColumn],-1.0e20)*nearest;
+						  newUpper += CoinMin(columnUpper[iColumn],1.0e20)*nearest;
+						} else {
+						  newUpper += CoinMax(columnLower[iColumn],-1.0e20)*nearest;
+						  newLower += CoinMin(columnUpper[iColumn],1.0e20)*nearest;
+						}
+					      }
+					    }
+					  }
+					  if (allInteger) {
+					    newColumnStart[addSlacks+1]=addSlacks+1;
+					    newRow[addSlacks]=iRow;
+					    newElement[addSlacks]=-1.0;
+					    newObjective[addSlacks] = 0.0;
+					    if (moveObj && constantObjective != COIN_DBL_MAX) {
+					      // move some of objective here if looks constant
+					      newObjective[addSlacks]=constantObjective;
+					      for (int j=rowStart[iRow];j<rowStart[iRow]+rowLength[iRow];j++) {
+						int iColumn = column[j];
+						double value = element[j];
+						double nearest = floor(value+0.5);
+						oldObjective[iColumn] -= nearest*constantObjective;
+					      }
+					    }
+					    newColumnLower[addSlacks] = CoinMax(newLower,ceil(rowLower[iRow]));;
+					    newColumnUpper[addSlacks] = CoinMin(newUpper,floor(rowUpper[iRow]));
+					    addSlacks++;
+					  }
+					}
+				      }
+				      if (addSlacks) {
+					solver2->setObjective(oldObjective);
+					solver2->addCols(addSlacks,newColumnStart,newRow,newElement,
+							 newColumnLower,newColumnUpper,newObjective);
+					truncatedRhsLower = CoinCopyOfArray(solver2->getRowLower(),numberRows);
+					truncatedRhsUpper = CoinCopyOfArray(solver2->getRowUpper(),numberRows);
+					for (int j=0;j<addSlacks;j++) {
+					  int iRow = newRow[j];
+					  solver2->setRowLower(iRow,0.0);
+					  solver2->setRowUpper(iRow,0.0);
+					  int iColumn = j+numberColumns;
+					  solver2->setInteger(iColumn);
+					  std::string name = solver2->getRowName(iRow);
+					  name += "_int";
+					  solver2->setColName(iColumn,name);
+					}
+				      }
+				    }
+				    if (fudgeObjective||addSlacks) {
+				      modifiedModel=true;
+				      if (fudgeObjective && addSlacks) {
+					sprintf(generalPrint,"Objective integer added with %d elements and %d Integer slacks added",
+						fudgeObjective,addSlacks);
+				      } else if (fudgeObjective) {
+					// just objective
+					sprintf(generalPrint,"Objective integer added with %d elements",
+					       fudgeObjective);
+					more2 &= ~1024;
+				      } else {
+					// just slacks
+					sprintf(generalPrint,"%d Integer slacks added",addSlacks);
+					more2 &= ~512;
+				      }
+				    } else {
+				      more2 &= ~(512|1024);
+				    }
+				    parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, numberParameters_, parameters_)].setIntValue(more2);
+				  }
+				  if (modifiedModel) {
+				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				      << generalPrint
+				      << CoinMessageEol;
+				    truncateColumns=numberColumns;
+				  }
 				}
                                 babModel_->assignSolver(solver2);
                                 babModel_->setOriginalColumns(process.originalColumns(),
@@ -6248,11 +6449,92 @@ int CbcMain1 (int argc, const char *argv[],
                                     donor.setStoredRowCuts(NULL);
                                 }
 				// We may have priorities from extra variables
+				int more2 = parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, numberParameters_, parameters_)].intValue();
 				if(newPriorities ) {
 				  if (truncateColumns<babModel_->getNumCols()) {
 				    // set new ones as high prority
 				    babModel_->passInPriorities(newPriorities,false);
 				  }
+				  delete [] newPriorities;
+				} else if ((more2&(512|1024)) != 0) {
+				  babModel_->findIntegers(true);
+				  int numberIntegers = babModel_->numberIntegers();
+				  int * newPriorities = new int [numberIntegers];
+				  int n = numberIntegers - (babModel_->getNumCols()-truncateColumns);
+				  for (int i=0;i<n;i++)
+				    newPriorities[i]=babModel_->priority(i);
+#if 1
+				  int ixxxxxx = 
+				    parameters_[whichParam(CBC_PARAM_INT_MAXNODES, numberParameters_, parameters_)].intValue();
+				  int obj_priority=1000;
+				  int slack_priority=1000;
+				  if (ixxxxxx>=1000000&&ixxxxxx<1010000) {
+				    ixxxxxx -= 1000000;
+				    if (ixxxxxx == 0) {
+				      obj_priority=1000;
+				      slack_priority=1000;
+				    } else if(ixxxxxx == 1) {
+				      obj_priority=10000;
+				      slack_priority=10000;
+				    } else if(ixxxxxx == 2) {
+				      obj_priority=100;
+				      slack_priority=100;
+				    } else if(ixxxxxx == 3) {
+				      obj_priority=100;
+				      slack_priority=10000;
+				    } else if(ixxxxxx == 4) {
+				      obj_priority=10000;
+				      slack_priority=100;
+				    } else if(ixxxxxx == 5) {
+				      obj_priority=100;
+				      slack_priority=200;
+				    } else if(ixxxxxx == 6) {
+				      obj_priority=200;
+				      slack_priority=100;
+				    } else {
+				      abort();
+				    }
+				  }
+				  if ((more2&512)!=0) {
+				    newPriorities[n++]=obj_priority;
+				  }
+				  if ((more2&1024)!=0) {
+				    for (int i=n;i<numberIntegers;i++)
+				      newPriorities[i]=slack_priority;
+				  }
+#else
+#define PRIORITY_TRY 0
+#if PRIORITY_TRY == 0
+#define OBJ_PRIORITY 1000
+#define SLACK_PRIORITY 1000
+#elif PRIORITY_TRY == 1
+#define OBJ_PRIORITY 10000
+#define SLACK_PRIORITY 10000
+#elif PRIORITY_TRY == 2
+#define OBJ_PRIORITY 100
+#define SLACK_PRIORITY 100
+#elif PRIORITY_TRY == 3
+#define OBJ_PRIORITY 100
+#define SLACK_PRIORITY 10000
+#elif PRIORITY_TRY == 4
+#define OBJ_PRIORITY 10000
+#define SLACK_PRIORITY 100
+#elif PRIORITY_TRY == 5
+#define OBJ_PRIORITY 100
+#define SLACK_PRIORITY 200
+#elif PRIORITY_TRY == 6
+#define OBJ_PRIORITY 200
+#define SLACK_PRIORITY 100
+#endif
+				  if ((more2&512)!=0) {
+				    newPriorities[n++]=OBJ_PRIORITY;
+				  }
+				  if ((more2&1024)!=0) {
+				    for (int i=n;i<numberIntegers;i++)
+				      newPriorities[i]=SLACK_PRIORITY;
+				  }
+#endif
+				  babModel_->passInPriorities(newPriorities,false);
 				  delete [] newPriorities;
 				}
 #ifdef JJF_ZERO
@@ -6368,6 +6650,14 @@ int CbcMain1 (int argc, const char *argv[],
 				if (biLinearProblem)
 				  babModel_->setSpecialOptions(babModel_->specialOptions() &(~(512|32768)));
                                 babModel_->setMoreSpecialOptions2(parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, numberParameters_, parameters_)].intValue());
+				{
+				  int jParam = whichParam(CBC_PARAM_STR_ORBITAL, 
+							numberParameters_, parameters_);
+				  if(parameters_[jParam].currentOptionAsInteger()) {
+				    int k = parameters_[jParam].currentOptionAsInteger();
+				    babModel_->setMoreSpecialOptions2(babModel_->moreSpecialOptions2() | (k*128));
+				  }
+				}
                                 babModel_->branchAndBound(statistics);
 				if (truncateColumns<babModel_->solver()->getNumCols()) {
 				  OsiSolverInterface * solverX = babModel_->solver();
@@ -6378,10 +6668,20 @@ int CbcMain1 (int argc, const char *argv[],
 				  for (int i=0;i<numberDelete;i++)
 				    delStuff[i]=i+truncateColumns;
 				  solverX->deleteCols(numberDelete,delStuff);
+				  numberDelete = numberRows-truncateRows;
 				  for (int i=0;i<numberDelete;i++)
-				    delStuff[i]=i+numberRows-numberDelete;
+				    delStuff[i]=i+truncateRows;
 				  solverX->deleteRows(numberDelete,delStuff);
 				  delete [] delStuff;
+				  if (truncatedRhsLower) {
+				    numberRows=solverX->getNumRows();
+				    for (int i=0;i<numberRows;i++) {
+				      solverX->setRowLower(i,truncatedRhsLower[i]);
+				      solverX->setRowUpper(i,truncatedRhsUpper[i]);
+				    }
+				    delete [] truncatedRhsLower;
+				    delete [] truncatedRhsUpper;
+				  }
 				}
                                 //#define CLP_FACTORIZATION_INSTRUMENT
 #ifdef CLP_FACTORIZATION_INSTRUMENT

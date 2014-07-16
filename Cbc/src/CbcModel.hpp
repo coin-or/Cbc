@@ -33,6 +33,7 @@ class OsiObject;
 class CbcThread;
 class CbcTree;
 class CbcStrategy;
+class CbcSymmetry;
 class CbcFeasibilityBase;
 class CbcStatistics;
 class CbcFullNodeInfo;
@@ -1859,6 +1860,10 @@ public:
 	3 bit (8) - skip most of setBestSolution checks
 	4 bit (16) - very lightweight preprocessing in smallB&B
 	5 bit (32) - event handler needs to be cloned when parallel
+	6 bit (64) - testing - use probing to make cliques
+	7/8 bit (128) - try orbital branching (if nauty)
+	9 bit (512) - branching on objective (later)
+	10 bit (1024) - branching on constraints (later)
     */
     inline void setMoreSpecialOptions2(int value) {
         moreSpecialOptions2_ = value;
@@ -2305,6 +2310,11 @@ public:
     inline void setMaximumNumberIterations(int value) {
         maximumNumberIterations_ = value;
     }
+#ifdef COIN_HAS_NTY
+    /// Symmetry information
+    inline CbcSymmetry * symmetryInfo() const
+    { return symmetryInfo_;}  
+#endif
     /// Set depth for fast nodes
     inline void setFastNodeDepth(int value) {
         fastNodeDepth_ = value;
@@ -2633,6 +2643,10 @@ private:
 	3 bit (8) - skip most of setBestSolution checks
 	4 bit (16) - very lightweight preprocessing in smallB&B
 	5 bit (32) - event handler needs to be cloned when parallel
+	6 bit (64) - testing - use probing to make cliques
+	7 bit (128) - try orbital branching (if nauty)
+	8 bit (256) - branching on objective (later)
+	9 bit (512) - branching on constraints (later)
     */
     int moreSpecialOptions2_;
     /// User node comparison function
@@ -2738,7 +2752,10 @@ private:
 # else
     CbcEventHandler *eventHandler_ ;
 # endif
-
+#ifdef COIN_HAS_NTY
+  /// Symmetry information
+  CbcSymmetry * symmetryInfo_;
+#endif
     /// Total number of objects
     int numberObjects_;
 

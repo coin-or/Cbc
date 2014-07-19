@@ -6650,6 +6650,7 @@ int CbcMain1 (int argc, const char *argv[],
 				if (biLinearProblem)
 				  babModel_->setSpecialOptions(babModel_->specialOptions() &(~(512|32768)));
                                 babModel_->setMoreSpecialOptions2(parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, numberParameters_, parameters_)].intValue());
+#ifdef COIN_HAS_NTY
 				{
 				  int jParam = whichParam(CBC_PARAM_STR_ORBITAL, 
 							numberParameters_, parameters_);
@@ -6658,6 +6659,7 @@ int CbcMain1 (int argc, const char *argv[],
 				    babModel_->setMoreSpecialOptions2(babModel_->moreSpecialOptions2() | (k*128));
 				  }
 				}
+#endif
                                 babModel_->branchAndBound(statistics);
 				if (truncateColumns<babModel_->solver()->getNumCols()) {
 				  OsiSolverInterface * solverX = babModel_->solver();

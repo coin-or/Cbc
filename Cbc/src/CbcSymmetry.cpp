@@ -8,7 +8,7 @@
  *
  * This file is licensed under the Eclipse Public License (EPL)
  */
-
+//#define PRINT_MORE 1
 #include <stdio.h>
 
 #ifdef COIN_HAS_NTY
@@ -107,14 +107,18 @@ CbcSymmetry::statsOrbits(CbcModel * model, int type) const
 	    nautyFixCalls_,nautyFixSucceeded_,fixSuccess,nautyTime_);
   } else {
     returnCode = nauty_info_->getNumGenerators();
-    if (returnCode)
+    if (returnCode) {
       sprintf (general,"Nauty: %d orbits, %d generators, group size: %g - dense size %d, sparse %d - going %s",
 	       nauty_info_->getNumOrbits(),
 	       nauty_info_ -> getNumGenerators () ,
 	       nauty_info_ -> getGroupSize (),
 	       whichOrbit_[0],whichOrbit_[1],nauty_info_->isSparse() ? "sparse" : "dense");
-    else
-      sprintf(general,"Nauty did not find any useful orbits");
+    } else {
+      if ((model->moreSpecialOptions2()&(128|256))!=(128|256)) 
+	sprintf(general,"Nauty did not find any useful orbits");
+      else
+	sprintf(general,"Nauty did not find any useful orbits - but keeping Nauty on");
+    }
   }
   model->messageHandler()->message(CBC_GENERAL,
 				   model->messages())
@@ -617,6 +621,8 @@ CbcSymmetry::orbitalFixing(OsiSolverInterface * solver)
     for (int i=0;i<numberColumns;i++) {
       if (status[i]!='0'&&status[i]!='1') {
 	int iOrbit=alternativeOrbits[i];
+	if (iOrbit<0)
+	  continue;
 	for (int j=i+1;j<numberColumns;j++) {
 	  if (status[j]=='0'&&alternativeOrbits[j]==iOrbit) {
 #if PRINT_MORE>1

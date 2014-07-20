@@ -2286,9 +2286,12 @@ void CbcModel::branchAndBound(int doStatistics)
       symmetryInfo_ = new CbcSymmetry();
       symmetryInfo_->setupSymmetry(*continuousSolver_);
       int numberGenerators = symmetryInfo_->statsOrbits(this,0);
-      if (!numberGenerators) {
+      if (!numberGenerators&&(moreSpecialOptions2_&(128|256))!=(128|256)) {
 	delete symmetryInfo_;
 	symmetryInfo_=NULL;
+	moreSpecialOptions2_ &= ~(128|256);
+      }
+      if ((moreSpecialOptions2_&(128|256))==(128|256)) {
 	moreSpecialOptions2_ &= ~128;
       }
     }

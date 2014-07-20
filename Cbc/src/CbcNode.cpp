@@ -3862,6 +3862,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	const int * orbits = symmetryInfo->whichOrbit();
 	if (orbits && orbits[kColumn]>=0) {
 	  int numberUsefulOrbits = symmetryInfo->numberUsefulObjects();
+	  if (solver->messageHandler()->logLevel() > 1)
+	    printf("Orbital Branching on %d - way %d n %d\n",kColumn,way(),numberUsefulOrbits);
 	  if (numberUsefulOrbits<1000) {
 	    delete branch_;
 	    branch_ = new CbcOrbitalBranchingObject(model,kColumn,1,0,NULL);

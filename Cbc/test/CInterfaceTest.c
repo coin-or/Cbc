@@ -324,6 +324,43 @@ void testIntegerUnbounded() {
 
 }
 
+void testIntegerBounds() {
+    /* max 1.1x + 100.0z
+       st     x +      z <= 3
+         0 <= x <= 3
+         0 <= z <= 1.5, Integer
+     x* = 2, z* = 1 */
+    
+    Cbc_Model *model = Cbc_newModel();
+
+    CoinBigIndex start[] = {0,1,2};
+    int rowindex[] = {0, 0};
+    double value[] = {1, 1};
+    double rowlb[] = {-INFINITY};
+    double rowub[] = {3.0};
+    double collb[] = {0.0, 0.0};
+    double colub[] = {3.0, 1.5};
+    double obj[] = {1.1,100.0};
+    const double *sol;
+
+    Cbc_loadProblem(model, 2, 1, start, rowindex, value, collb, colub, obj, rowlb, rowub);
+
+    Cbc_setInteger(model, 1);
+    Cbc_setObjSense(model, -1);
+
+    Cbc_solve(model);
+    
+    assert(Cbc_isProvenOptimal(model));
+
+    sol = Cbc_getColSolution(model);
+    
+    assert(fabs(sol[0] - 2.0) < 1e-6);
+    assert(fabs(sol[1] - 1.0) < 1e-6);
+
+    Cbc_deleteModel(model);
+
+}
+
 
 int main() {
 
@@ -337,6 +374,8 @@ int main() {
     testIntegerUnbounded();
     /*printf("Problem modification test\n");
     testProblemModification();*/
+    printf("Integer bounds test\n");
+    testIntegerBounds();
 
     return 0;
 }

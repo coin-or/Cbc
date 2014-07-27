@@ -85,7 +85,9 @@ extern "C" {
     COINLIBAPI void COINLINKAGE
     Cbc_writeMps(Cbc_Model * model, const char *filename)
     ;
-    /** Provide an initial feasible solution to accelerate branch-and-bound */
+    /** Provide an initial feasible solution to accelerate branch-and-bound 
+     Note that feasibility of the solution is *not* verified.
+    */
     COINLIBAPI void COINLINKAGE
     Cbc_setInitialSolution(Cbc_Model *model, const double * sol)
     ;

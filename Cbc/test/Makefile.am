@@ -90,6 +90,7 @@ ositests: osiUnitTest$(EXEEXT)
 ########################################################################
 
 CInterfaceTest_SOURCES = CInterfaceTest.c
+nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
 
 CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
 

@@ -90,7 +90,8 @@ LTCXXCOMPILE = $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) \
 CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(CInterfaceTest_SOURCES) $(gamsTest_SOURCES) \
+SOURCES = $(CInterfaceTest_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_SOURCES) $(gamsTest_SOURCES) \
 	$(osiUnitTest_SOURCES)
 DIST_SOURCES = $(CInterfaceTest_SOURCES) $(gamsTest_SOURCES) \
 	$(osiUnitTest_SOURCES)
@@ -453,6 +454,7 @@ osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
 #                         unitTest for CbcCInterface                   #
 ########################################################################
 CInterfaceTest_SOURCES = CInterfaceTest.c
+nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
 CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
 CInterfaceTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
 
@@ -526,7 +528,7 @@ clean-binPROGRAMS:
 	done
 CInterfaceTest$(EXEEXT): $(CInterfaceTest_OBJECTS) $(CInterfaceTest_DEPENDENCIES) 
 	@rm -f CInterfaceTest$(EXEEXT)
-	$(LINK) $(CInterfaceTest_LDFLAGS) $(CInterfaceTest_OBJECTS) $(CInterfaceTest_LDADD) $(LIBS)
+	$(CXXLINK) $(CInterfaceTest_LDFLAGS) $(CInterfaceTest_OBJECTS) $(CInterfaceTest_LDADD) $(LIBS)
 gamsTest$(EXEEXT): $(gamsTest_OBJECTS) $(gamsTest_DEPENDENCIES) 
 	@rm -f gamsTest$(EXEEXT)
 	$(CXXLINK) $(gamsTest_LDFLAGS) $(gamsTest_OBJECTS) $(gamsTest_LDADD) $(LIBS)
@@ -542,6 +544,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gamsTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osiUnitTest.Po@am__quote@
 

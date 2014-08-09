@@ -504,8 +504,10 @@ CbcLotsize::feasibleRegion()
         solver->setColUpper(columnNumber_, nearest);
     } else {
         // ranges
-        solver->setColLower(columnNumber_, bound_[2*range_]);
-        solver->setColUpper(columnNumber_, bound_[2*range_+1]);
+        solver->setColLower(columnNumber_, CoinMax(bound_[2*range_],
+						   lower[columnNumber_]));
+	solver->setColUpper(columnNumber_, CoinMin(bound_[2*range_+1],
+						   upper[columnNumber_]));
         if (value > bound_[2*range_+1])
             nearest = bound_[2*range_+1];
         else if (value < bound_[2*range_])
@@ -738,24 +740,30 @@ CbcLotsizeBranchingObject::branch()
     decrementNumberBranchesLeft();
     int iColumn = variable_;
     if (way_ < 0) {
-#ifdef CBC_DEBUG
+#ifndef NDEBUG
         { double olb, oub ;
             olb = model_->solver()->getColLower()[iColumn] ;
             oub = model_->solver()->getColUpper()[iColumn] ;
+#ifdef CBC_DEBUG
             printf("branching down on var %d: [%g,%g] => [%g,%g]\n",
                    iColumn, olb, oub, down_[0], down_[1]) ;
+#endif
+	    assert (olb<down_[0]+1.0e-7&&oub>down_[1]-1.0e-7);
         }
 #endif
         model_->solver()->setColLower(iColumn, down_[0]);
         model_->solver()->setColUpper(iColumn, down_[1]);
         way_ = 1;
     } else {
-#ifdef CBC_DEBUG
+#ifndef NDEBUG
         { double olb, oub ;
             olb = model_->solver()->getColLower()[iColumn] ;
             oub = model_->solver()->getColUpper()[iColumn] ;
+#ifdef CBC_DEBUG
             printf("branching up on var %d: [%g,%g] => [%g,%g]\n",
                    iColumn, olb, oub, up_[0], up_[1]) ;
+#endif
+	    assert (olb<up_[0]+1.0e-7&&oub>up_[1]-1.0e-7);
         }
 #endif
         model_->solver()->setColLower(iColumn, up_[0]);

@@ -460,14 +460,22 @@ CbcSOS::feasibleRegion()
             lastNonZero = j;
         }
     }
-    assert (lastNonZero - firstNonZero < sosType_) ;
-    for (j = 0; j < firstNonZero; j++) {
+    // Might get here in odd situation if so fix all
+    if (lastNonZero - firstNonZero < sosType_) {
+      for (j = 0; j < firstNonZero; j++) {
         int iColumn = members_[j];
         solver->setColUpper(iColumn, 0.0);
-    }
-    for (j = lastNonZero + 1; j < numberMembers_; j++) {
+      }
+      for (j = lastNonZero + 1; j < numberMembers_; j++) {
         int iColumn = members_[j];
         solver->setColUpper(iColumn, 0.0);
+      }
+    } else {
+      for (j = 0; j < numberMembers_; j++) {
+        int iColumn = members_[j];
+        solver->setColUpper(iColumn, 0.0);
+        solver->setColLower(iColumn, 1.0);
+      }
     }
 }
 // Redoes data when sequence numbers change
@@ -835,8 +843,8 @@ CbcSOSBranchingObject::branch()
     const int * which = set_->members();
     const double * weights = set_->weights();
     OsiSolverInterface * solver = model_->solver();
-    //const double * lower = solver->getColLower();
-    //const double * upper = solver->getColUpper();
+    const double * lower = solver->getColLower();
+    const double * upper = solver->getColUpper();
     // *** for way - up means fix all those in down section
     if (way_ < 0) {
         int i;
@@ -860,7 +868,13 @@ CbcSOSBranchingObject::branch()
         way_ = -1;	  // Swap direction
     }
     computeNonzeroRange();
-    return 0.0;
+    double predictedChange=0.0;
+    for (int i = 0; i < numberMembers; i++) {
+      int iColumn=which[i];
+      if (lower[iColumn]>upper[iColumn])
+	predictedChange=COIN_DBL_MAX;
+    }
+    return predictedChange;
 }
 /* Update bounds in solver as in 'branch' and update given bounds.
    branchState is -1 for 'down' +1 for 'up' */

@@ -1288,6 +1288,29 @@ void CbcModel::AddIntegers()
         if (continuousSolver_->isInteger(i))
             del[nDel++] = i;
     }
+    {
+      // we must not exclude current best solution (rounding errors)
+      // also not if large values
+      const int * row = continuousSolver_->getMatrixByCol()->getIndices();
+      const CoinBigIndex * columnStart = continuousSolver_->getMatrixByCol()->getVectorStarts();
+      const int * columnLength = continuousSolver_->getMatrixByCol()->getVectorLengths();
+      const double * solution = continuousSolver_->getColSolution();
+      for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+        if (!continuousSolver_->isInteger(iColumn)) {
+	  double value = bestSolution_ ? bestSolution_[iColumn] : 0.0;
+	  double value2 = solution[iColumn];
+	  if (fabs(value-floor(value+0.5))>1.0e-8 ||
+	      fabs(value2)>1.0e3) {
+	    CoinBigIndex start = columnStart[iColumn];
+	    CoinBigIndex end = start + columnLength[iColumn];
+	    for (CoinBigIndex j = start; j < end; j++) {
+	      int iRow = row[j];
+	      possibleRow[iRow]=0;
+	    }
+	  }
+	}
+      }
+    }
     int nExtra = 0;
     OsiSolverInterface * copy1 = continuousSolver_->clone();
     int nPass = 0;
@@ -2002,6 +2025,18 @@ void CbcModel::branchAndBound(int doStatistics)
     }
 #endif
     bool feasible;
+    {
+      // check
+      int numberOdd = 0;
+      for (int i = 0; i < numberObjects_; i++) {
+	CbcSimpleInteger * obj =
+	  dynamic_cast <CbcSimpleInteger *>(object_[i]) ;
+	if (!obj)
+	  numberOdd++;
+      }
+      if (numberOdd)
+	moreSpecialOptions_ |= 1073741824;
+    }
     numberSolves_ = 0 ;
     // If NLP then we assume already solved outside branchAndbound
     if (!solverCharacteristics_->solverType() || solverCharacteristics_->solverType() == 4) {
@@ -9814,7 +9849,8 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
             feasible = false;
     }
     // Can't happen if strong branching as would have been found before
-    if (!numberStrong_ && numberObjects_ > numberIntegers_) {
+    if ((!numberStrong_||(moreSpecialOptions_&1073741824)!=0)
+	&& numberObjects_ > numberIntegers_) {
         int iColumn;
         int numberColumns = solver_->getNumCols();
         const double * columnLower = solver_->getColLower();
@@ -9850,7 +9886,8 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
             solver_->writeMpsNative("before-tighten.mps", NULL, NULL, 2);
         }
         if (clpSolver && (!currentNode_ || (currentNode_->depth()&2) != 0) &&
-                !solverCharacteristics_->solutionAddsCuts())
+                !solverCharacteristics_->solutionAddsCuts() &&
+	    (moreSpecialOptions_&1073741824)==0)
             nTightened = clpSolver->tightenBounds();
         if (nTightened) {
             //printf("%d bounds tightened\n",nTightened);

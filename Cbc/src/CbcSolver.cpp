@@ -3811,6 +3811,8 @@ int CbcMain1 (int argc, const char *argv[],
 				CbcSimpleInteger * objSimpleInteger =
 				  dynamic_cast <CbcSimpleInteger *>(objects[iObj]) ;
 				if (!objSimpleInteger&&!objSOS) {
+				  // find all integers anyway
+				  babModel_->findIntegers(true);
 				  preProcess=0;
 				  break;
 				}

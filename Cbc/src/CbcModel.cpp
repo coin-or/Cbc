@@ -1231,6 +1231,7 @@ void CbcModel::AddIntegers()
     int numberRows = continuousSolver_->getNumRows();
     int * del = new int [CoinMax(numberColumns, numberRows)];
     int * original = new int [numberColumns];
+    int numberOriginalIntegers=numberIntegers_;
     char * possibleRow = new char [numberRows];
     {
         const CoinPackedMatrix * rowCopy = continuousSolver_->getMatrixByRow();
@@ -1261,15 +1262,18 @@ void CbcModel::AddIntegers()
             for (CoinBigIndex j = rowStart[i];
                     j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
+		double value = fabs(element[j]);
                 if (continuousSolver_->isInteger(iColumn)) {
-                    if (fabs(element[j]) != 1.0)
+                    if (value != 1.0)
                         possible = false;
                 } else {
                     nLeft++;
+		    if (value>100.0)
+		      allSame=-1.0; // not safe
 		    if (!allSame) {
-		      allSame = fabs(element[j]);
+		      allSame = value;
 		    } else if (allSame>0.0) {
-		      if (allSame!=fabs(element[j]))
+		      if (allSame!=value)
 			allSame = -1.0;
 		    }
                 }
@@ -1577,6 +1581,9 @@ void CbcModel::AddIntegers()
     delete [] possibleRow;
     // double check increment
     analyzeObjective();
+    // If any changes - tell code
+    if(numberOriginalIntegers<numberIntegers_) 
+      synchronizeModel();
 }
 /**
   \todo

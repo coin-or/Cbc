@@ -3649,6 +3649,8 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
                                     model_.setProblemStatus(0);
                                     model_.setSecondaryStatus(1);
+                                    // say infeasible for solution
+                                    integerStatus = 6;
                                     // and in babModel if exists
                                     if (babModel_) {
                                         babModel_->setProblemStatus(0);
@@ -4601,6 +4603,8 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
                                     model_.setProblemStatus(0);
                                     model_.setSecondaryStatus(1);
+                                    // say infeasible for solution
+                                    integerStatus = 6;
                                     // and in babModel_ if exists
                                     if (babModel_) {
                                         babModel_->setProblemStatus(0);

@@ -1288,6 +1288,9 @@ int CbcMain1 (int argc, const char *argv[],
   staticParameterData.useSignalHandler_=true;
   return CbcMain1(argc,argv,model,callBack,staticParameterData);
 }
+#ifdef GENERAL_HANDLER_PRINTING
+static void printGeneralMessage(CbcModel &model,const char * message);
+#endif
 /*
   Meaning of whereFrom:
     1 after initial solve by dualsimplex etc
@@ -1307,6 +1310,9 @@ int CbcMain1 (int argc, const char *argv[],
     double totalTime = parameterData.totalTime_;
     bool noPrinting = parameterData.noPrinting_;
     bool useSignalHandler = parameterData.useSignalHandler_;
+#ifdef GENERAL_HANDLER_PRINTING
+    //char printByHandler[1000];
+#endif
     CbcModel & model_ = model;
 #ifdef CBC_THREAD_SAFE
     // Initialize argument
@@ -3046,7 +3052,12 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
                         } else {
 #ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
+			  std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -3084,18 +3095,34 @@ int CbcMain1 (int argc, const char *argv[],
                                 delete model2;
                         } else {
 #ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
+			  std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
                     case CLP_PARAM_ACTION_TIGHTEN:
                         if (goodModel) {
                             int numberInfeasibilities = lpSolver->tightenPrimalBounds();
-                            if (numberInfeasibilities)
-                                std::cout << "** Analysis indicates model infeasible" << std::endl;
+                            if (numberInfeasibilities) {
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint,"** Analysis indicates model infeasible");
+			      printGeneralMessage(model_,generalPrint);
+#else
+			      std::cout << "** Analysis indicates model infeasible" << std::endl;
+#endif
+			    }
                         } else {
 #ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
+			  std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -3109,16 +3136,36 @@ int CbcMain1 (int argc, const char *argv[],
                                 if (newMatrix->getIndices()) {
                                     lpSolver->replaceMatrix(newMatrix);
                                     delete saveMatrix;
+#ifdef GENERAL_HANDLER_PRINTING
+				    sprintf(generalPrint, "Matrix converted to +- one matrix");
+				    printGeneralMessage(model_,generalPrint);
+#else
                                     std::cout << "Matrix converted to +- one matrix" << std::endl;
+#endif
                                 } else {
+#ifdef GENERAL_HANDLER_PRINTING
+				  sprintf(generalPrint, "Matrix can not be converted to +- 1 matrix");
+				  printGeneralMessage(model_,generalPrint);
+#else
                                     std::cout << "Matrix can not be converted to +- 1 matrix" << std::endl;
+#endif
                                 }
                             } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "Matrix not a ClpPackedMatrix");
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "Matrix not a ClpPackedMatrix" << std::endl;
+#endif
                             }
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -3138,7 +3185,12 @@ int CbcMain1 (int argc, const char *argv[],
                             << CoinMessageEol;
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
 #endif
@@ -3153,16 +3205,36 @@ int CbcMain1 (int argc, const char *argv[],
                                 if (newMatrix->getIndices()) {
                                     lpSolver->replaceMatrix(newMatrix);
                                     delete saveMatrix;
+#ifdef GENERAL_HANDLER_PRINTING
+				    sprintf(generalPrint, "Matrix converted to network matrix");
+				    printGeneralMessage(model_,generalPrint);
+#else
                                     std::cout << "Matrix converted to network matrix" << std::endl;
+#endif
                                 } else {
+#ifdef GENERAL_HANDLER_PRINTING
+				  sprintf(generalPrint, "Matrix can not be converted to network matrix");
+				  printGeneralMessage(model_,generalPrint);
+#else
                                     std::cout << "Matrix can not be converted to network matrix" << std::endl;
+#endif
                                 }
                             } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "Matrix not a ClpPackedMatrix");
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "Matrix not a ClpPackedMatrix" << std::endl;
+#endif
                             }
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -3451,7 +3523,12 @@ int CbcMain1 (int argc, const char *argv[],
                                             cbcModel->initialSolve();
                                             if (clpModel->tightenPrimalBounds() != 0) {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+					      sprintf(generalPrint, "Problem is infeasible - tightenPrimalBounds!");
+					      printGeneralMessage(model_,generalPrint);
+#else
                                                 std::cout << "Problem is infeasible - tightenPrimalBounds!" << std::endl;
+#endif
 #endif
                                                 break;
                                             }
@@ -3623,7 +3700,12 @@ int CbcMain1 (int argc, const char *argv[],
 #ifndef CBC_OTHER_SOLVER
                                 if (!complicatedInteger && preProcess == 0 && clpSolver->tightenPrimalBounds(0.0, 0, true) != 0) {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+				  sprintf(generalPrint, "Problem is infeasible - tightenPrimalBounds!");
+				  printGeneralMessage(model_,generalPrint);
+#else
                                     std::cout << "Problem is infeasible - tightenPrimalBounds!" << std::endl;
+#endif
 #endif
                                     model_.setProblemStatus(0);
                                     model_.setSecondaryStatus(1);
@@ -3728,7 +3810,12 @@ int CbcMain1 (int argc, const char *argv[],
                                 if (tightenFactor && !complicatedInteger) {
                                     if (modelC->tightenPrimalBounds(tightenFactor) != 0) {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+				      sprintf(generalPrint, "Problem is infeasible!");
+				      printGeneralMessage(model_,generalPrint);
+#else
                                         std::cout << "Problem is infeasible!" << std::endl;
+#endif
 #endif
                                         model_.setProblemStatus(0);
                                         model_.setSecondaryStatus(1);
@@ -4382,7 +4469,12 @@ int CbcMain1 (int argc, const char *argv[],
                                 //modelC->setLogLevel(0);
                                 if (!complicatedInteger && modelC->tightenPrimalBounds() != 0) {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+				  sprintf(generalPrint, "Problem is infeasible!");
+				  printGeneralMessage(model_,generalPrint);
+#else
                                     std::cout << "Problem is infeasible!" << std::endl;
+#endif
 #endif
                                     model_.setProblemStatus(0);
                                     model_.setSecondaryStatus(1);
@@ -7067,8 +7159,14 @@ int CbcMain1 (int argc, const char *argv[],
 				}
 #endif
                             } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "Model strengthened - now has %d rows",
+				      clpSolver->getNumRows());
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "Model strengthened - now has " << clpSolver->getNumRows()
                                           << " rows" << std::endl;
+#endif
                             }
                             time1 = time2;
 #ifdef COIN_HAS_ASL
@@ -7085,7 +7183,12 @@ int CbcMain1 (int argc, const char *argv[],
                             //babModel_=NULL;
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl ;
+#endif
 #endif
                         }
                         break ;
@@ -7213,11 +7316,21 @@ int CbcMain1 (int argc, const char *argv[],
                                         fclose(fp);
                                     } else {
                                         canOpen = false;
+#ifdef GENERAL_HANDLER_PRINTING
+					sprintf(generalPrint, "Unable to open file %s",gmplData.c_str());
+					printGeneralMessage(model_,generalPrint);
+#else
                                         std::cout << "Unable to open file " << gmplData << std::endl;
+#endif
                                     }
                                 }
                             } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "Unable to open file " << fileName << std::endl;
+#endif
                             }
                         }
                         if (canOpen) {
@@ -7284,8 +7397,13 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
                             } else {
                                 // errors
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "There were %d errors on input",status);
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "There were " << status <<
                                           " errors on input" << std::endl;
+#endif
                             }
                         }
                     }
@@ -7342,7 +7460,12 @@ int CbcMain1 (int argc, const char *argv[],
                                     fclose(fp);
                                     canOpen = true;
                                 } else {
+#ifdef GENERAL_HANDLER_PRINTING
+				  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+				  printGeneralMessage(model_,generalPrint);
+#else
                                     std::cout << "Unable to open file " << fileName << std::endl;
+#endif
                                 }
                             }
                             if (canOpen) {
@@ -7411,7 +7534,12 @@ int CbcMain1 (int argc, const char *argv[],
                                 fclose(fp);
                                 canOpen = true;
                             } else {
+#ifdef GENERAL_HANDLER_PRINTING
+				  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+				  printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "Unable to open file " << fileName << std::endl;
+#endif
                             }
                             if (canOpen) {
                                 // If presolve on then save presolved
@@ -7518,7 +7646,12 @@ int CbcMain1 (int argc, const char *argv[],
                             }
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -7561,7 +7694,12 @@ int CbcMain1 (int argc, const char *argv[],
                                     fclose(fp);
                                     canOpen = true;
                                 } else {
+#ifdef GENERAL_HANDLER_PRINTING
+				  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+				  printGeneralMessage(model_,generalPrint);
+#else
                                     std::cout << "Unable to open file " << fileName << std::endl;
+#endif
                                 }
                             }
                             if (canOpen) {
@@ -7577,7 +7715,12 @@ int CbcMain1 (int argc, const char *argv[],
                             }
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -7872,11 +8015,21 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
                                 fclose(fp);
                             } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "Unable to open file " << fileName << std::endl;
+#endif
                             }
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -7923,7 +8076,12 @@ int CbcMain1 (int argc, const char *argv[],
 			    }
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -8000,11 +8158,21 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
                                 fclose(fp);
                             } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "Unable to open file " << fileName << std::endl;
+#endif
                             }
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -8054,7 +8222,12 @@ int CbcMain1 (int argc, const char *argv[],
                                 fclose(fp);
                                 canOpen = true;
                             } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "Unable to open file " << fileName << std::endl;
+#endif
                             }
                             if (canOpen) {
                                 ClpSimplex * model2 = lpSolver;
@@ -8065,7 +8238,12 @@ int CbcMain1 (int argc, const char *argv[],
                             }
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -8102,7 +8280,12 @@ int CbcMain1 (int argc, const char *argv[],
                             fclose(fp);
                             canOpen = true;
                         } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "Unable to open file " << fileName << std::endl;
+#endif
                         }
                         if (canOpen) {
                             int status;
@@ -8141,7 +8324,12 @@ int CbcMain1 (int argc, const char *argv[],
                                 time1 = time2;
                             } else {
                                 // errors
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "There were errors on output");
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "There were errors on output" << std::endl;
+#endif
                             }
                         }
                     }
@@ -8179,7 +8367,12 @@ int CbcMain1 (int argc, const char *argv[],
                             fclose(fp);
                             canOpen = true;
                         } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "Unable to open file " << fileName << std::endl;
+#endif
                         }
                         if (canOpen) {
                             int status = lpSolver->restoreModel(fileName.c_str());
@@ -8190,7 +8383,12 @@ int CbcMain1 (int argc, const char *argv[],
                                 time1 = time2;
                             } else {
                                 // errors
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "There were errors on input");
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "There were errors on input" << std::endl;
+#endif
                             }
                         }
                     }
@@ -8307,8 +8505,13 @@ int CbcMain1 (int argc, const char *argv[],
                             // get bound
                             double value = CoinReadGetDoubleField(argc, argv, &valid);
                             if (!valid) {
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "Setting %s to DEBUG %g",parameters_[iParam].name().c_str(),value);
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "Setting " << parameters_[iParam].name() <<
                                           " to DEBUG " << value << std::endl;
+#endif
                                 int iRow;
                                 int numberRows = lpSolver->numberRows();
                                 double * rowLower = lpSolver->rowLower();
@@ -8545,7 +8748,12 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                             fprintf(fp, "\n");
                             fclose(fp);
                         } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "Unable to open file " << fileName << std::endl;
+#endif
                         }
                     }
                     break;
@@ -9223,11 +9431,21 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     delete [] masks;
                                 }
                             } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			      sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			      printGeneralMessage(model_,generalPrint);
+#else
                                 std::cout << "Unable to open file " << fileName << std::endl;
+#endif
                             }
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -9261,7 +9479,12 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                             saveSolution(lpSolver, fileName);
                         } else {
 #ifndef DISALLOW_PRINTING
+#ifdef GENERAL_HANDLER_PRINTING
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
+#else
                             std::cout << "** Current model not valid" << std::endl;
+#endif
 #endif
                         }
                         break;
@@ -9303,7 +9526,12 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 			       totalTime += time2 - time1;
 			       time1 = time2;
                           } else {
+#ifdef GENERAL_HANDLER_PRINTING
+			    sprintf(generalPrint, "** Current model not valid");
+			    printGeneralMessage(model_,generalPrint);
+#else
                                std::cout << "** Current model not valid" << std::endl;
+#endif
                           }
                           break;
                     default:
@@ -10097,6 +10325,15 @@ static void generateCode(CbcModel * /*model*/, const char * fileName, int type, 
     fclose(fp);
     printf("C++ file written to %s\n", fileName);
 }
+#ifdef GENERAL_HANDLER_PRINTING
+// Print a general message
+static void printGeneralMessage(CbcModel &model,const char * message)
+{
+  model.messageHandler()->message(CBC_FPUMP1, model.messages())
+    << message
+    << CoinMessageEol;
+}
+#endif
 /*
   Version 1.00.00 November 16 2005.
   This is to stop me (JJF) messing about too much.

@@ -1294,6 +1294,7 @@ int CbcMain1 (int argc, const char *argv[],
   staticParameterData.useSignalHandler_=true;
   return CbcMain1(argc,argv,model,callBack,staticParameterData);
 }
+static void printGeneralMessage(CbcModel &model,const char * message);
 /*
   Meaning of whereFrom:
     1 after initial solve by dualsimplex etc
@@ -3051,9 +3052,8 @@ int CbcMain1 (int argc, const char *argv[],
                             }
 #endif
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CLP_PARAM_ACTION_STATISTICS:
@@ -3089,20 +3089,20 @@ int CbcMain1 (int argc, const char *argv[],
                             if (deleteModel2)
                                 delete model2;
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CLP_PARAM_ACTION_TIGHTEN:
                         if (goodModel) {
                             int numberInfeasibilities = lpSolver->tightenPrimalBounds();
-                            if (numberInfeasibilities)
-                                std::cout << "** Analysis indicates model infeasible" << std::endl;
+                            if (numberInfeasibilities) {
+			      sprintf(generalPrint,"** Analysis indicates model infeasible");
+			      printGeneralMessage(model_,generalPrint);
+			    }
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CLP_PARAM_ACTION_PLUSMINUS:
@@ -3115,17 +3115,19 @@ int CbcMain1 (int argc, const char *argv[],
                                 if (newMatrix->getIndices()) {
                                     lpSolver->replaceMatrix(newMatrix);
                                     delete saveMatrix;
-                                    std::cout << "Matrix converted to +- one matrix" << std::endl;
+				    sprintf(generalPrint, "Matrix converted to +- one matrix");
+				    printGeneralMessage(model_,generalPrint);
                                 } else {
-                                    std::cout << "Matrix can not be converted to +- 1 matrix" << std::endl;
+				  sprintf(generalPrint, "Matrix can not be converted to +- 1 matrix");
+				  printGeneralMessage(model_,generalPrint);
                                 }
                             } else {
-                                std::cout << "Matrix not a ClpPackedMatrix" << std::endl;
+			      sprintf(generalPrint, "Matrix not a ClpPackedMatrix");
+			      printGeneralMessage(model_,generalPrint);
                             }
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CLP_PARAM_ACTION_OUTDUPROWS:
@@ -3143,9 +3145,8 @@ int CbcMain1 (int argc, const char *argv[],
                             << generalPrint
                             << CoinMessageEol;
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
 #endif
                         break;
@@ -3159,17 +3160,19 @@ int CbcMain1 (int argc, const char *argv[],
                                 if (newMatrix->getIndices()) {
                                     lpSolver->replaceMatrix(newMatrix);
                                     delete saveMatrix;
-                                    std::cout << "Matrix converted to network matrix" << std::endl;
+				    sprintf(generalPrint, "Matrix converted to network matrix");
+				    printGeneralMessage(model_,generalPrint);
                                 } else {
-                                    std::cout << "Matrix can not be converted to network matrix" << std::endl;
+				  sprintf(generalPrint, "Matrix can not be converted to network matrix");
+				  printGeneralMessage(model_,generalPrint);
                                 }
                             } else {
-                                std::cout << "Matrix not a ClpPackedMatrix" << std::endl;
+			      sprintf(generalPrint, "Matrix not a ClpPackedMatrix");
+			      printGeneralMessage(model_,generalPrint);
                             }
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CBC_PARAM_ACTION_DOHEURISTIC:
@@ -3472,9 +3475,8 @@ int CbcMain1 (int argc, const char *argv[],
 
                                             cbcModel->initialSolve();
                                             if (clpModel->tightenPrimalBounds() != 0) {
-#ifndef DISALLOW_PRINTING
-                                                std::cout << "Problem is infeasible - tightenPrimalBounds!" << std::endl;
-#endif
+					      sprintf(generalPrint, "Problem is infeasible - tightenPrimalBounds!");
+					      printGeneralMessage(model_,generalPrint);
                                                 break;
                                             }
                                             clpModel->dual();  // clean up
@@ -3644,9 +3646,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
 #ifndef CBC_OTHER_SOLVER
                                 if (!complicatedInteger && preProcess == 0 && clpSolver->tightenPrimalBounds(0.0, 0, true) != 0) {
-#ifndef DISALLOW_PRINTING
-                                    std::cout << "Problem is infeasible - tightenPrimalBounds!" << std::endl;
-#endif
+				  sprintf(generalPrint, "Problem is infeasible - tightenPrimalBounds!");
+				  printGeneralMessage(model_,generalPrint);
                                     model_.setProblemStatus(0);
                                     model_.setSecondaryStatus(1);
                                     // say infeasible for solution
@@ -3751,9 +3752,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 // bounds based on continuous
                                 if (tightenFactor && !complicatedInteger) {
                                     if (modelC->tightenPrimalBounds(tightenFactor) != 0) {
-#ifndef DISALLOW_PRINTING
-                                        std::cout << "Problem is infeasible!" << std::endl;
-#endif
+				      sprintf(generalPrint, "Problem is infeasible!");
+				      printGeneralMessage(model_,generalPrint);
                                         model_.setProblemStatus(0);
                                         model_.setSecondaryStatus(1);
                                         // and in babModel if exists
@@ -4598,9 +4598,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 //if (noPrinting_)
                                 //modelC->setLogLevel(0);
                                 if (!complicatedInteger && modelC->tightenPrimalBounds() != 0) {
-#ifndef DISALLOW_PRINTING
-                                    std::cout << "Problem is infeasible!" << std::endl;
-#endif
+				  sprintf(generalPrint, "Problem is infeasible!");
+				  printGeneralMessage(model_,generalPrint);
                                     model_.setProblemStatus(0);
                                     model_.setSecondaryStatus(1);
                                     // say infeasible for solution
@@ -7398,8 +7397,9 @@ int CbcMain1 (int argc, const char *argv[],
 				}
 #endif
                             } else {
-                                std::cout << "Model strengthened - now has " << clpSolver->getNumRows()
-                                          << " rows" << std::endl;
+			      sprintf(generalPrint, "Model strengthened - now has %d rows",
+				      clpSolver->getNumRows());
+			      printGeneralMessage(model_,generalPrint);
                             }
                             time1 = time2;
 #ifdef COIN_HAS_ASL
@@ -7415,9 +7415,8 @@ int CbcMain1 (int argc, const char *argv[],
                             //delete babModel_;
                             //babModel_=NULL;
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl ;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break ;
                     case CLP_PARAM_ACTION_IMPORT: {
@@ -7544,11 +7543,13 @@ int CbcMain1 (int argc, const char *argv[],
                                         fclose(fp);
                                     } else {
                                         canOpen = false;
-                                        std::cout << "Unable to open file " << gmplData << std::endl;
+					sprintf(generalPrint, "Unable to open file %s",gmplData.c_str());
+					printGeneralMessage(model_,generalPrint);
                                     }
                                 }
                             } else {
-                                std::cout << "Unable to open file " << fileName << std::endl;
+			      sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			      printGeneralMessage(model_,generalPrint);
                             }
                         }
                         if (canOpen) {
@@ -7615,8 +7616,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
                             } else {
                                 // errors
-                                std::cout << "There were " << status <<
-                                          " errors on input" << std::endl;
+			      sprintf(generalPrint, "There were %d errors on input",status);
+			      printGeneralMessage(model_,generalPrint);
                             }
                         }
                     }
@@ -7673,7 +7674,8 @@ int CbcMain1 (int argc, const char *argv[],
                                     fclose(fp);
                                     canOpen = true;
                                 } else {
-                                    std::cout << "Unable to open file " << fileName << std::endl;
+				  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+				  printGeneralMessage(model_,generalPrint);
                                 }
                             }
                             if (canOpen) {
@@ -7742,7 +7744,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 fclose(fp);
                                 canOpen = true;
                             } else {
-                                std::cout << "Unable to open file " << fileName << std::endl;
+				  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+				  printGeneralMessage(model_,generalPrint);
                             }
                             if (canOpen) {
                                 // If presolve on then save presolved
@@ -7848,9 +7851,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 time1 = time2;
                             }
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CLP_PARAM_ACTION_BASISIN:
@@ -7892,7 +7894,8 @@ int CbcMain1 (int argc, const char *argv[],
                                     fclose(fp);
                                     canOpen = true;
                                 } else {
-                                    std::cout << "Unable to open file " << fileName << std::endl;
+				  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+				  printGeneralMessage(model_,generalPrint);
                                 }
                             }
                             if (canOpen) {
@@ -7907,9 +7910,8 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
                             }
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CBC_PARAM_ACTION_PRIORITYIN:
@@ -8203,12 +8205,12 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
                                 fclose(fp);
                             } else {
-                                std::cout << "Unable to open file " << fileName << std::endl;
+			      sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			      printGeneralMessage(model_,generalPrint);
                             }
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CBC_PARAM_ACTION_MIPSTART:
@@ -8253,9 +8255,8 @@ int CbcMain1 (int argc, const char *argv[],
 				<< CoinMessageEol;
 			    }
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CLP_PARAM_ACTION_DEBUG:
@@ -8331,12 +8332,12 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
                                 fclose(fp);
                             } else {
-                                std::cout << "Unable to open file " << fileName << std::endl;
+			      sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			      printGeneralMessage(model_,generalPrint);
                             }
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CLP_PARAM_ACTION_PRINTMASK:
@@ -8385,7 +8386,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 fclose(fp);
                                 canOpen = true;
                             } else {
-                                std::cout << "Unable to open file " << fileName << std::endl;
+			      sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			      printGeneralMessage(model_,generalPrint);
                             }
                             if (canOpen) {
                                 ClpSimplex * model2 = lpSolver;
@@ -8395,9 +8397,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 time1 = time2;
                             }
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CLP_PARAM_ACTION_SAVE: {
@@ -8433,7 +8434,8 @@ int CbcMain1 (int argc, const char *argv[],
                             fclose(fp);
                             canOpen = true;
                         } else {
-                            std::cout << "Unable to open file " << fileName << std::endl;
+			  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			  printGeneralMessage(model_,generalPrint);
                         }
                         if (canOpen) {
                             int status;
@@ -8472,7 +8474,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 time1 = time2;
                             } else {
                                 // errors
-                                std::cout << "There were errors on output" << std::endl;
+			      sprintf(generalPrint, "There were errors on output");
+			      printGeneralMessage(model_,generalPrint);
                             }
                         }
                     }
@@ -8510,7 +8513,8 @@ int CbcMain1 (int argc, const char *argv[],
                             fclose(fp);
                             canOpen = true;
                         } else {
-                            std::cout << "Unable to open file " << fileName << std::endl;
+			  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			  printGeneralMessage(model_,generalPrint);
                         }
                         if (canOpen) {
                             int status = lpSolver->restoreModel(fileName.c_str());
@@ -8521,7 +8525,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 time1 = time2;
                             } else {
                                 // errors
-                                std::cout << "There were errors on input" << std::endl;
+			      sprintf(generalPrint, "There were errors on input");
+			      printGeneralMessage(model_,generalPrint);
                             }
                         }
                     }
@@ -8638,8 +8643,8 @@ int CbcMain1 (int argc, const char *argv[],
                             // get bound
                             double value = CoinReadGetDoubleField(argc, argv, &valid);
                             if (!valid) {
-                                std::cout << "Setting " << parameters_[iParam].name() <<
-                                          " to DEBUG " << value << std::endl;
+			      sprintf(generalPrint, "Setting %s to DEBUG %g",parameters_[iParam].name().c_str(),value);
+			      printGeneralMessage(model_,generalPrint);
                                 int iRow;
                                 int numberRows = lpSolver->numberRows();
                                 double * rowLower = lpSolver->rowLower();
@@ -8876,7 +8881,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                             fprintf(fp, "\n");
                             fclose(fp);
                         } else {
-                            std::cout << "Unable to open file " << fileName << std::endl;
+			  sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			  printGeneralMessage(model_,generalPrint);
                         }
                     }
                     break;
@@ -9556,12 +9562,12 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     delete [] masks;
                                 }
                             } else {
-                                std::cout << "Unable to open file " << fileName << std::endl;
+			      sprintf(generalPrint, "Unable to open file %s",fileName.c_str());
+			      printGeneralMessage(model_,generalPrint);
                             }
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CLP_PARAM_ACTION_SAVESOL:
@@ -9593,9 +9599,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                             }
                             saveSolution(lpSolver, fileName);
                         } else {
-#ifndef DISALLOW_PRINTING
-                            std::cout << "** Current model not valid" << std::endl;
-#endif
+			  sprintf(generalPrint, "** Current model not valid");
+			  printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CLP_PARAM_ACTION_DUMMY:
@@ -9636,7 +9641,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 			       totalTime += time2 - time1;
 			       time1 = time2;
                           } else {
-                               std::cout << "** Current model not valid" << std::endl;
+			    sprintf(generalPrint, "** Current model not valid");
+			    printGeneralMessage(model_,generalPrint);
                           }
                           break;
                     default:
@@ -11592,6 +11598,15 @@ static void generateCode(CbcModel * /*model*/, const char * fileName, int type, 
     }
     fclose(fp);
     printf("C++ file written to %s\n", fileName);
+}
+// Print a general message
+static void printGeneralMessage(CbcModel &model,const char * message)
+{
+#ifndef DISALLOW_PRINTING
+  model.messageHandler()->message(CBC_FPUMP1, model.messages())
+    << message
+    << CoinMessageEol;
+#endif
 }
 /*
   Version 1.00.00 November 16 2005.

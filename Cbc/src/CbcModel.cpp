@@ -2209,6 +2209,9 @@ void CbcModel::branchAndBound(int doStatistics)
             }
 	    // If odd switch off AddIntegers
 	    specialOptions_ &= ~65536;
+            // switch off fast nodes for now
+            fastNodeDepth_ = -1;
+	    moreSpecialOptions_ &= ~33554432; // no diving
         } else if (numberSOS) {
             specialOptions_ |= 128; // say can do SOS in dynamic mode
             // switch off fast nodes for now

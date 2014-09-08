@@ -7566,9 +7566,9 @@ int CbcMain1 (int argc, const char *argv[],
                                                             keepImportNames != 0);
                             } else {
 #ifdef KILL_ZERO_READLP
-                                status = lpSolver->readLp(fileName.c_str(), lpSolver->getSmallElementValue());
+                                status = clpSolver->readLp(fileName.c_str(), lpSolver->getSmallElementValue());
 #else
-                                status = lpSolver->readLp(fileName.c_str(), 1.0e-12);
+                                status = clpSolver->readLp(fileName.c_str(), 1.0e-12);
 #endif
                             }
 #else
@@ -7768,10 +7768,12 @@ int CbcMain1 (int argc, const char *argv[],
                                     sosStart = info.sosStart;
                                     sosIndices = info.sosIndices;
                                     sosReference = info.sosReference;
-                                    preSolve = false;
                                     clpSolver->setSOSData(numberSOS, info.sosType, sosStart, sosIndices, sosReference);
                                 }
 #endif
+				numberSOS = clpSolver->numberSOS();
+				if (numberSOS)
+				  preSolve = false;
 #endif
                                 if (preSolve) {
                                     ClpPresolve pinfo;
@@ -7824,8 +7826,22 @@ int CbcMain1 (int argc, const char *argv[],
                                                     CoinStrdup(model2->columnName(iColumn).c_str());
                                             }
                                         }
-                                        clpSolver->writeMpsNative(fileName.c_str(), const_cast<const char **> (rowNames), const_cast<const char **> (columnNames),
-                                                                  (outputFormat - 1) / 2, 1 + ((outputFormat - 1)&1));
+					// see if extension lp
+					bool writeLp=false;
+					{
+					  int lengthName = strlen(fileName.c_str());
+					  if (lengthName>3&&!strcmp(fileName.c_str()+lengthName-3,".lp"))
+					    writeLp=true;
+					}
+					if (!writeLp) {
+					  remove(fileName.c_str());
+					  clpSolver->writeMpsNative(fileName.c_str(), const_cast<const char **> (rowNames), const_cast<const char **> (columnNames),
+								    (outputFormat - 1) / 2, 1 + ((outputFormat - 1)&1)); 
+					} else {
+					  FILE *fp = fopen(fileName.c_str(), "w");
+					  assert (fp);
+					  clpSolver->writeLp(fp,1.0e-12);
+					}
                                         if (rowNames) {
                                             for (iRow = 0; iRow < numberRows; iRow++) {
                                                 free(rowNames[iRow]);

@@ -30,17 +30,18 @@
 // Default Constructor
 CbcSOS::CbcSOS ()
         : CbcObject(),
-        members_(NULL),
-        weights_(NULL),
-        shadowEstimateDown_(1.0),
-        shadowEstimateUp_(1.0),
-        downDynamicPseudoRatio_(0.0),
-        upDynamicPseudoRatio_(0.0),
-        numberTimesDown_(0),
-        numberTimesUp_(0),
-        numberMembers_(0),
-        sosType_(-1),
-        integerValued_(false)
+	  members_(NULL),
+	  weights_(NULL),
+	  shadowEstimateDown_(1.0),
+	  shadowEstimateUp_(1.0),
+	  downDynamicPseudoRatio_(0.0),
+	  upDynamicPseudoRatio_(0.0),
+	  numberTimesDown_(0),
+	  numberTimesUp_(0),
+	  numberMembers_(0),
+	  sosType_(-1),
+	  integerValued_(false),
+	  oddValues_(false)
 {
 }
 
@@ -55,7 +56,8 @@ CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
         numberTimesDown_(0),
         numberTimesUp_(0),
         numberMembers_(numberMembers),
-        sosType_(type)
+	  sosType_(type),
+	  oddValues_(false)
 {
     id_ = identifier;
     integerValued_ = type == 1;
@@ -73,6 +75,15 @@ CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
         }
     }
     if (numberMembers_) {
+      const OsiSolverInterface * solver = model_->solver();
+      const double * lower = solver->getColLower();
+      for (int i = 0; i < numberMembers_; i++) {
+	if (lower[which[i]]<0.0) {
+	  oddValues_ = true; // mark as odd
+	}
+      }
+
+      // check >= 0.0
         members_ = new int[numberMembers_];
         weights_ = new double[numberMembers_];
         memcpy(members_, which, numberMembers_*sizeof(int));
@@ -116,6 +127,7 @@ CbcSOS::CbcSOS ( const CbcSOS & rhs)
     numberMembers_ = rhs.numberMembers_;
     sosType_ = rhs.sosType_;
     integerValued_ = rhs.integerValued_;
+    oddValues_ = rhs.oddValues_;
     if (numberMembers_) {
         members_ = new int[numberMembers_];
         weights_ = new double[numberMembers_];
@@ -151,6 +163,7 @@ CbcSOS::operator=( const CbcSOS & rhs)
         numberMembers_ = rhs.numberMembers_;
         sosType_ = rhs.sosType_;
         integerValued_ = rhs.integerValued_;
+	oddValues_ = rhs.oddValues_;
         if (numberMembers_) {
             members_ = new int[numberMembers_];
             weights_ = new double[numberMembers_];
@@ -187,13 +200,13 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
     int lastNonZero = -1;
     OsiSolverInterface * solver = model_->solver();
     const double * solution = model_->testSolution();
-    //const double * lower = solver->getColLower();
+    const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
     //double largestValue=0.0;
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
     double weight = 0.0;
-    double sum = 0.0;
+    double sum = 0.0; 
 
     // check bounds etc
     double lastWeight = -1.0e100;
@@ -206,7 +219,7 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
 
         if (lastWeight >= weights_[j] - 1.0e-7)
             throw CoinError("Weights too close together in SOS", "infeasibility", "CbcSOS");
-        double value = CoinMax(0.0, solution[iColumn]);
+        double value = CoinMax(lower[iColumn], solution[iColumn]);
         sum += value;
         /*
           If we're not making assumptions about integrality, why check integerTolerance
@@ -215,7 +228,8 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
           The calculation of weight looks to be a relic --- in the end, the value isn't
           used to calculate either the return value or preferredWay.
         */
-        if (value > integerTolerance && upper[iColumn]) {
+        if (fabs(value) > integerTolerance && (upper[iColumn] > 0.0 ||
+					       oddValues_)) {
             // Possibly due to scaling a fixed variable might slip through
             if (value > upper[iColumn]) {
                 value = upper[iColumn];
@@ -225,6 +239,16 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
 		    value > upper[iColumn] + integerTolerance)
                     printf("** Variable %d (%d) has value %g and upper bound of %g\n",
                            iColumn, j, value, upper[iColumn]);
+#endif
+            }
+            if (value < lower[iColumn]) {
+                value = lower[iColumn];
+                // Could change to #ifdef CBC_DEBUG
+#ifndef NDEBUG
+                if (model_->messageHandler()->logLevel() > 2 &&
+		    value < lower[iColumn] - integerTolerance)
+                    printf("** Variable %d (%d) has value %g and lower bound of %g\n",
+                           iColumn, j, value, lower[iColumn]);
 #endif
             }
             weight += weights_[j] * value;
@@ -243,8 +267,10 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
 */
     if (lastNonZero - firstNonZero >= sosType_) {
         // find where to branch
-        assert (sum > 0.0);
-        weight /= sum;
+        if (!oddValues_)
+	  weight /= sum;
+	else
+	  weight = 0.5*(weights_[firstNonZero]+weights_[lastNonZero]);
         if (info->defaultDual_ >= 0.0 && info->usefulRegion_ && info->columnStart_) {
             assert (sosType_ == 1);
             int iWhere;
@@ -442,7 +468,7 @@ CbcSOS::feasibleRegion()
     int lastNonZero = -1;
     OsiSolverInterface * solver = model_->solver();
     const double * solution = model_->testSolution();
-    //const double * lower = solver->getColLower();
+    const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
@@ -451,9 +477,9 @@ CbcSOS::feasibleRegion()
 
     for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
-        double value = CoinMax(0.0, solution[iColumn]);
+        double value = CoinMax(lower[iColumn], solution[iColumn]);
         sum += value;
-        if (value > integerTolerance && upper[iColumn]) {
+        if (fabs(value) > integerTolerance && (upper[iColumn] || oddValues_)) {
             weight += weights_[j] * value;
             if (firstNonZero < 0)
                 firstNonZero = j;
@@ -464,16 +490,18 @@ CbcSOS::feasibleRegion()
     if (lastNonZero - firstNonZero < sosType_) {
       for (j = 0; j < firstNonZero; j++) {
         int iColumn = members_[j];
+        solver->setColLower(iColumn, 0.0);
         solver->setColUpper(iColumn, 0.0);
       }
       for (j = lastNonZero + 1; j < numberMembers_; j++) {
         int iColumn = members_[j];
+        solver->setColLower(iColumn, 0.0);
         solver->setColUpper(iColumn, 0.0);
       }
     } else {
       for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
-        solver->setColUpper(iColumn, 0.0);
+        solver->setColUpper(iColumn, 0.0); // make infeasible
         solver->setColLower(iColumn, 1.0);
       }
     }
@@ -509,6 +537,7 @@ CbcSOS::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformati
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
     //OsiSolverInterface * solver = model_->solver();
+    const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
     int firstNonFixed = -1;
     int lastNonFixed = -1;
@@ -518,13 +547,13 @@ CbcSOS::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformati
     double sum = 0.0;
     for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
-        if (upper[iColumn]) {
-            double value = CoinMax(0.0, solution[iColumn]);
+        if (upper[iColumn] || oddValues_) {
+            double value = CoinMax(lower[iColumn], solution[iColumn]);
             sum += value;
             if (firstNonFixed < 0)
                 firstNonFixed = j;
             lastNonFixed = j;
-            if (value > integerTolerance) {
+            if (fabs(value) > integerTolerance) {
                 weight += weights_[j] * value;
                 if (firstNonZero < 0)
                     firstNonZero = j;
@@ -534,13 +563,16 @@ CbcSOS::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformati
     }
     assert (lastNonZero - firstNonZero >= sosType_) ;
     // find where to branch
-    assert (sum > 0.0);
-    weight /= sum;
+    if (!oddValues_)
+      weight /= sum;
+    else
+      weight = 0.5*(weights_[firstNonZero]+weights_[lastNonZero]);
     int iWhere;
     double separator = 0.0;
     for (iWhere = firstNonZero; iWhere < lastNonZero; iWhere++)
         if (weight < weights_[iWhere+1])
             break;
+    assert (iWhere<lastNonZero);
     if (sosType_ == 1) {
         // SOS 1
         separator = 0.5 * (weights_[iWhere] + weights_[iWhere+1]);
@@ -698,7 +730,7 @@ CbcSOS::solverBranch() const
         // fix all on one side or other (even if fixed)
         fix[j] = 0.0;
         which[j] = iColumn;
-        if (upper[iColumn]) {
+        if (upper[iColumn] || oddValues_) {
             double value = CoinMax(0.0, solution[iColumn]);
             sum += value;
             if (firstNonFixed < 0)
@@ -714,8 +746,10 @@ CbcSOS::solverBranch() const
     }
     assert (lastNonZero - firstNonZero >= sosType_) ;
     // find where to branch
-    assert (sum > 0.0);
-    weight /= sum;
+    if (!oddValues_)
+      weight /= sum;
+    else
+      weight = 0.5*(weights_[firstNonZero]+weights_[lastNonZero]);
     // down branch fixes ones above weight to 0
     int iWhere;
     int iDownStart = 0;
@@ -853,16 +887,20 @@ CbcSOSBranchingObject::branch()
                 break;
         }
         assert (i < numberMembers);
-        for (; i < numberMembers; i++)
+        for (; i < numberMembers; i++) {
+	    solver->setColLower(which[i], 0.0);
             solver->setColUpper(which[i], 0.0);
+	}
         way_ = 1;	  // Swap direction
     } else {
         int i;
         for ( i = 0; i < numberMembers; i++) {
-            if (weights[i] >= separator_)
+	  if (weights[i] >= separator_) {
                 break;
-            else
+	  } else {
+                solver->setColLower(which[i], 0.0);
                 solver->setColUpper(which[i], 0.0);
+	  }
         }
         assert (i < numberMembers);
         way_ = -1;	  // Swap direction
@@ -880,7 +918,7 @@ CbcSOSBranchingObject::branch()
    branchState is -1 for 'down' +1 for 'up' */
 void
 CbcSOSBranchingObject::fix(OsiSolverInterface * solver,
-                           double * /*lower*/, double * upper,
+                           double * lower, double * upper,
                            int branchState) const
 {
     int numberMembers = set_->numberMembers();
@@ -897,6 +935,8 @@ CbcSOSBranchingObject::fix(OsiSolverInterface * solver,
         }
         assert (i < numberMembers);
         for (; i < numberMembers; i++) {
+            solver->setColLower(which[i], 0.0);
+            lower[which[i]] = 0.0;
             solver->setColUpper(which[i], 0.0);
             upper[which[i]] = 0.0;
         }
@@ -906,6 +946,8 @@ CbcSOSBranchingObject::fix(OsiSolverInterface * solver,
             if (weights[i] >= separator_) {
                 break;
             } else {
+                solver->setColLower(which[i], 0.0);
+                lower[which[i]] = 0.0;
                 solver->setColUpper(which[i], 0.0);
                 upper[which[i]] = 0.0;
             }

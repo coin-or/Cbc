@@ -179,6 +179,8 @@ private:
     int sosType_;
     /// Whether integer valued
     bool integerValued_;
+    /// Whether odd values e.g. negative
+    bool oddValues_;
 };
 
 /** Branching object for Special ordered sets

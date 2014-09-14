@@ -410,7 +410,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 */
     model_->solver()->resolve();
     if (!model_->solver()->isProvenOptimal()) {
-        // presumably max time or some such
+
+        delete[] integerVariable;
+        delete[] newSolution;
+        if (closestSolution)
+            delete[] closestSolution;
+        
         return 0;
     }
     numRuns_++;

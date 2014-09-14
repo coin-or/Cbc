@@ -347,6 +347,15 @@ public:
         switches_ &= ~4096;
         switches_ |= yesNo ? 4096 : 0;
     }
+    /// Whether needs refresh on copy
+    inline bool needsRefresh() const {
+        return (switches_&8192) != 0;
+    }
+    /// Set whether needs refresh on copy
+    inline void setNeedsRefresh(bool yesNo) {
+        switches_ &= ~8192;
+        switches_ |= yesNo ? 8192 : 0;
+    }
     /// Number of cuts generated at root
     inline int numberCutsAtRoot() const {
         return numberCutsAtRoot_;

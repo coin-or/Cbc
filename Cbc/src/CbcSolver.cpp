@@ -5042,6 +5042,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
                                 babModel_->addCutGenerator(&zerohalfGen, translate[zerohalfAction], "ZeroHalf");
                                 accuracyFlag[numberGenerators] = 5;
+                                babModel_->cutGenerator(numberGenerators)->
+				  setNeedsRefresh(true);
                                 switches[numberGenerators++] = 2;
                             }
                             if (dominatedCuts)

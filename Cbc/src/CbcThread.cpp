@@ -1596,7 +1596,10 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
             delete generator_[i];
             generator_[i] = new CbcCutGenerator(*baseModel->generator_[i]);
             // refreshModel was overkill as thought too many rows
-            generator_[i]->setModel(this);
+	    if (generator_[i]->needsRefresh())
+	      generator_[i]->refreshModel(this);
+	    else
+	      generator_[i]->setModel(this);
         }
     } else if (mode == 10) {
         setCutoff(baseModel->getCutoff());

@@ -282,7 +282,6 @@ int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged,
         //else
         //  printf("\n");
         //}
-        delete [] ignore;
         //increment=0.0;
         if (!numberChanged) {
             delete [] changed;

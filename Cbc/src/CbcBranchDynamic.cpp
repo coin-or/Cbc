@@ -61,10 +61,10 @@ typedef struct {
     char where_;
     char status_;
 } History;
-History * history = NULL;
-int numberHistory = 0;
-int maxHistory = 0;
-bool getHistoryStatistics_ = true;
+static History * history = NULL;
+static int numberHistory = 0;
+static int maxHistory = 0;
+static bool getHistoryStatistics_ = true;
 static void increaseHistory()
 {
     if (numberHistory == maxHistory) {

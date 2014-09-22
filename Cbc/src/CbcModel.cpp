@@ -2589,6 +2589,11 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef COIN_HAS_CLP
 	OsiClpSolverInterface * clpSolver
 	  = dynamic_cast<OsiClpSolverInterface *> (rootModels[i]->solver_);
+#define NEW_RANDOM_BASIS
+#ifdef NEW_RANDOM_BASIS
+	if (i==0)
+	  continue;
+#endif
 	if (clpSolver) {
 	  ClpSimplex * simplex = clpSolver->getModelPtr();
 	  if (defaultHandler_)
@@ -2599,18 +2604,38 @@ void CbcModel::branchAndBound(int doStatistics)
 	  if (logLevel==1)
 	    simplex->setLogLevel(0);
 	  if (i!=0) {
+#ifdef NEW_RANDOM_BASIS
+	    int numberRows = simplex->numberRows();
+	    int throwOut=20;//2+numberRows/100;
+	    for (int iThrow=0;iThrow<throwOut;iThrow++) {
+	      double random = simplex->randomNumberGenerator()->randomDouble();
+	      int iStart=static_cast<int>(random*numberRows);
+	      for (int j=iStart;j<numberRows;j++) {
+		if (simplex->getRowStatus(j)!=ClpSimplex::basic) {
+		  simplex->setRowStatus(j,ClpSimplex::basic);
+		  break;
+		}
+	      }
+	    }
+	    clpSolver->setWarmStart(NULL);
+#else
 	    double random = simplex->randomNumberGenerator()->randomDouble();
 	    int bias = static_cast<int>(random*(numberIterations/4));
 	    simplex->setMaximumIterations(numberIterations/2+bias);
 	    simplex->primal();
 	    simplex->setMaximumIterations(COIN_INT_MAX);
 	    simplex->dual();
+#endif
 	  } else {
+#ifndef NEW_RANDOM_BASIS
 	    simplex->primal();
 	    numberIterations=simplex->numberIterations();
+#endif
 	  }
+#ifdef NEW_RANDOM_BASIS
 	  simplex->setLogLevel(logLevel);
 	  clpSolver->setWarmStart(NULL);
+#endif
 	}
 #endif
 	for (int j=0;j<numberHeuristics_;j++)
@@ -5878,6 +5903,11 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
         // assume will be redone
         numberObjects_ = 0;
         object_ = NULL;
+    }
+    if (rhs.continuousSolver_) {
+        continuousSolver_ = rhs.continuousSolver_->clone() ;
+    } else {
+        continuousSolver_ = NULL ;
     }
     if (rhs.referenceSolver_)
         referenceSolver_ = rhs.referenceSolver_->clone();

@@ -126,12 +126,18 @@ bool OsiCbcSolverInterface::isAbandoned() const
 
 bool OsiCbcSolverInterface::isProvenOptimal() const
 {
-  return modelPtr_->solver()->isProvenOptimal();
+  if (modelPtr_->status()==0)
+    return modelPtr_->isProvenOptimal();
+  else
+    return modelPtr_->solver()->isProvenOptimal();
 }
 
 bool OsiCbcSolverInterface::isProvenPrimalInfeasible() const
 {
-  return modelPtr_->solver()->isProvenPrimalInfeasible();
+  if (modelPtr_->status()==0)
+    return modelPtr_->isProvenInfeasible();
+  else
+    return modelPtr_->solver()->isProvenPrimalInfeasible();
 }
 
 bool OsiCbcSolverInterface::isProvenDualInfeasible() const

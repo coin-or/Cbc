@@ -1568,6 +1568,9 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
             tree_->setComparison(*nodeCompare_) ;
         }
         continuousSolver_ = baseModel->continuousSolver_->clone();
+	// make sure solvers have correct message handler
+	solver_->passInMessageHandler(handler_);
+	continuousSolver_->passInMessageHandler(handler_);
         bool newMethod = (baseModel->branchingMethod_ && baseModel->branchingMethod_->chooseMethod());
         if (newMethod) {
             // new method uses solver - but point to base model

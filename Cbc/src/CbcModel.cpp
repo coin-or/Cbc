@@ -2571,7 +2571,6 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
       }
       CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis *> (solver_->getEmptyWarmStart());
-      int numberIterations=0;
       for (int i=0;i<numberModels;i++) { 
 	rootModels[i]=new CbcModel(*this);
 	rootModels[i]->setNumberThreads(0);
@@ -2629,7 +2628,6 @@ void CbcModel::branchAndBound(int doStatistics)
 	  } else {
 #ifndef NEW_RANDOM_BASIS
 	    simplex->primal();
-	    numberIterations=simplex->numberIterations();
 #endif
 	  }
 #ifdef NEW_RANDOM_BASIS
@@ -2782,7 +2780,6 @@ void CbcModel::branchAndBound(int doStatistics)
       adjusted accordingly).
     */
     int iObject ;
-    int preferredWay ;
     int numberUnsatisfied = 0 ;
     delete [] currentSolution_;
     currentSolution_ = new double [numberColumns];
@@ -2794,7 +2791,7 @@ void CbcModel::branchAndBound(int doStatistics)
 
     for (iObject = 0 ; iObject < numberObjects_ ; iObject++) {
         double infeasibility =
-            object_[iObject]->infeasibility(&usefulInfo, preferredWay) ;
+            object_[iObject]->checkInfeasibility(&usefulInfo) ;
         if (infeasibility ) numberUnsatisfied++ ;
     }
     // replace solverType
@@ -8672,8 +8669,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         // point to useful information
         OsiBranchingInformation usefulInfo = usefulInformation();
         for (int i = 0; i < numberObjects_ && integerFeasible; i++) {
-            int preferredWay;
-            double infeasibility = object_[i]->infeasibility(&usefulInfo, preferredWay);
+            double infeasibility = object_[i]->checkInfeasibility(&usefulInfo);
             if (infeasibility)
                 integerFeasible = false;
         }
@@ -13144,7 +13140,6 @@ CbcModel::feasibleSolution(int & numberIntegerInfeasibilities,
 {
     int numberUnsatisfied = 0;
     //double sumUnsatisfied=0.0;
-    int preferredWay;
     int j;
     // Point to current solution
     const double * save = testSolution_;
@@ -13165,7 +13160,7 @@ CbcModel::feasibleSolution(int & numberIntegerInfeasibilities,
     for (j = 0; j < numberIntegers_; j++) {
 #ifndef SIMPLE_INTEGER
         const OsiObject * object = object_[j];
-        double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+        double infeasibility = object->checkInfeasibility(&usefulInfo);
         if (infeasibility) {
             assert (infeasibility > 0);
             numberUnsatisfied++;
@@ -13185,7 +13180,7 @@ CbcModel::feasibleSolution(int & numberIntegerInfeasibilities,
     numberIntegerInfeasibilities = numberUnsatisfied;
     for (; j < numberObjects_; j++) {
         const OsiObject * object = object_[j];
-        double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+        double infeasibility = object->checkInfeasibility(&usefulInfo);
         if (infeasibility) {
             assert (infeasibility > 0);
             numberUnsatisfied++;
@@ -14726,6 +14721,16 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
             //in the present case we need to check here integer infeasibility if the node is not fathomed we will have to do the loop
             // again
             //std::cout<<solver_<<std::endl;
+
+  	    OsiCuts feasCuts;
+
+	    for (int i = 0; i < numberCutGenerators_ && (feasCuts.sizeRowCuts () == 0); i++) {
+	      if (generator_ [i] -> normal () &&
+		  (!generator_ [i] -> needsOptimalBasis () || solver_ -> basisIsAvailable ()))
+		generator_ [i] -> generateCuts (feasCuts, 1 /* = fullscan */, solver_, NULL);
+	    }
+	    solver_ -> applyCuts (feasCuts);
+
             resolve(solver_);
             double objval = solver_->getObjValue();
             lastHeuristic_ = NULL;
@@ -15784,7 +15789,6 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
             feasible = returnCode != 0;
             if (feasible) {
                 int iObject ;
-                int preferredWay ;
                 int numberUnsatisfied = 0 ;
                 memcpy(currentSolution_, solver_->getColSolution(),
                        numberColumns*sizeof(double)) ;
@@ -15793,7 +15797,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 
                 for (iObject = 0 ; iObject < numberObjects_ ; iObject++) {
                     double infeasibility =
-                        object_[iObject]->infeasibility(&usefulInfo, preferredWay) ;
+                        object_[iObject]->checkInfeasibility(&usefulInfo) ;
                     if (infeasibility ) numberUnsatisfied++ ;
                 }
                 if (returnCode > 0) {
@@ -17108,7 +17112,7 @@ CbcModel::canStopOnGap() const
 			     * dblParam_[CbcAllowableFractionGap]);
     returnCode = (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0);
   }
-#if 1
+#if 0
   if (returnCode) {
     if (fabs(bestObjective_+1469650.0)<1.0) {
       fprintf(stderr,"BAD - cr to continue\n");
@@ -18199,7 +18203,6 @@ CbcModel::strengthenedModel()
     numberNewCuts_ = 0 ;
     {
         int iObject ;
-        int preferredWay ;
         int numberUnsatisfied = 0 ;
         memcpy(currentSolution_, solver_->getColSolution(),
                numberColumns*sizeof(double)) ;
@@ -18208,7 +18211,7 @@ CbcModel::strengthenedModel()
         OsiBranchingInformation usefulInfo = usefulInformation();
         for (iObject = 0 ; iObject < numberObjects_ ; iObject++) {
             double infeasibility =
-                object_[iObject]->infeasibility(&usefulInfo, preferredWay) ;
+                object_[iObject]->checkInfeasibility(&usefulInfo) ;
             if (infeasibility) numberUnsatisfied++ ;
         }
         if (numberUnsatisfied) {

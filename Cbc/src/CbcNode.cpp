@@ -1411,8 +1411,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
                         CbcStrongInfo thisChoice = choice[i];
                         choice[i].possibleBranch = NULL;
                         const OsiObject * object = model->object(thisChoice.objectNumber);
-                        int preferredWay;
-                        double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+                        double infeasibility = object->checkInfeasibility(&usefulInfo);
                         if (!infeasibility) {
                             // take out
                             delete thisChoice.possibleBranch;
@@ -1625,8 +1624,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             OsiObject * object = model->modifiableObject(i);
             CbcObject * obj =	dynamic_cast <CbcObject *>(object) ;
             if (!obj || !obj->optionalObject()) {
-                int preferredWay;
-                double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+                double infeasibility = object->checkInfeasibility(&usefulInfo);
                 if (infeasibility) {
                     useOldWay = true;
                     break;
@@ -2046,8 +2044,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                 OsiObject * object = model->modifiableObject(i);
                 CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
                     dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
-                int preferredWay;
-                double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+                double infeasibility = object->checkInfeasibility(&usefulInfo);
                 int priorityLevel = object->priority();
                 if (hotstartSolution) {
                     // we are doing hot start
@@ -2074,22 +2071,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                     //infeasibility = fabs(1.0e6-fabs(value-targetValue));
                                     //else
                                     infeasibility = fabs(value - targetValue);
-                                    //if (targetValue==1.0)
-                                    //infeasibility += 1.0;
-                                    if (value > targetValue) {
-                                        preferredWay = -1;
-                                    } else {
-                                        preferredWay = 1;
-                                    }
                                     priorityLevel = CoinAbs(priorityLevel);
                                 } else if (priorityLevel < 0) {
                                     priorityLevel = CoinAbs(priorityLevel);
-                                    if (targetValue == saveLower[iColumn]) {
+                                    if (targetValue == saveLower[iColumn] ||
+                                    targetValue == saveUpper[iColumn]) {
                                         infeasibility = integerTolerance + 1.0e-12;
-                                        preferredWay = -1;
-                                    } else if (targetValue == saveUpper[iColumn]) {
-                                        infeasibility = integerTolerance + 1.0e-12;
-                                        preferredWay = 1;
                                     } else {
                                         // can't
                                         priorityLevel += 10000000;
@@ -3587,13 +3574,15 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	    // See if candidate still possible
 	    if (branch_) {
 	         const OsiObject * object = model->object(bestChoice);
-		 int preferredWay;
-		 double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+		 double infeasibility = object->checkInfeasibility(&usefulInfo);
 		 if (!infeasibility) {
 		   // take out
 		   delete branch_;
 		   branch_ = NULL;
 		 } else {
+		   // get preferred way
+		   int preferredWay;
+		   object->infeasibility(&usefulInfo, preferredWay);
 		   CbcBranchingObject * branchObj =
 		     dynamic_cast <CbcBranchingObject *>(branch_) ;
 		   assert (branchObj);
@@ -3828,8 +3817,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
             dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
         if (!dynamicObject)
             continue;
-        int preferredWay;
-        double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+        double infeasibility = object->checkInfeasibility(&usefulInfo);
         int iColumn = dynamicObject->columnNumber();
         if (saveUpper[iColumn] == saveLower[iColumn])
             continue;

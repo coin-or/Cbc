@@ -1631,6 +1631,8 @@ void CbcModel::branchAndBound(int doStatistics)
     dblParam_[CbcSumChange] = 0.0;
     dblParam_[CbcLargestChange] = 0.0;
     intParam_[CbcNumberBranches] = 0;
+    // when to check for restart 
+    int nextCheckRestart=50;
     // Force minimization !!!!
     bool flipObjective = (solver_->getObjSense()<0.0);
     if (flipObjective)
@@ -4100,8 +4102,12 @@ void CbcModel::branchAndBound(int doStatistics)
         } else {
             unlockThread();
         }
-        // If done 100 nodes see if worth trying reduction
-        if (numberNodes_ == 50 || numberNodes_ == 100) {
+        // If done 50/100 nodes see if worth trying reduction
+        if (numberNodes_ >= nextCheckRestart) {
+	  if (nextCheckRestart<100)
+	    nextCheckRestart=100;
+	  else
+	    nextCheckRestart=COIN_INT_MAX;
 #ifdef COIN_HAS_CLP
             OsiClpSolverInterface * clpSolver
             = dynamic_cast<OsiClpSolverInterface *> (solver_);

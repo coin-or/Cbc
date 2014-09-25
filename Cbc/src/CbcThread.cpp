@@ -174,7 +174,8 @@ static double getTime()
 {
     struct timespec absTime2;
     my_gettime(&absTime2);
-    double time2 = (double)absTime2.tv_sec + 1.0e-9 * (double)absTime2.tv_nsec;
+    double time2 = absTime2.tv_sec + 1.0e-9 * 
+      static_cast<double>(absTime2.tv_nsec);
     return time2;
 }
 // Timed wait in nanoseconds - if negative then seconds
@@ -1661,6 +1662,12 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
                     baseModel->bestSolution_ = new double[numberColumns];
                 CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
                 baseModel->setCutoff(getCutoff());
+                baseModel->handler_->message(CBC_ROUNDING, messages_)
+                << bestObjective_
+                << "heuristic"
+                << baseModel->numberIterations_
+                << baseModel->numberNodes_ << getCurrentSeconds()
+                << CoinMessageEol;
             }
             //stateOfSearch_
             if (stuff->saveStuff()[0] != searchStrategy_) {

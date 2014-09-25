@@ -1605,6 +1605,8 @@ void CbcModel::branchAndBound(int doStatistics)
     dblParam_[CbcSumChange] = 0.0;
     dblParam_[CbcLargestChange] = 0.0;
     intParam_[CbcNumberBranches] = 0;
+    // when to check for restart 
+    int nextCheckRestart=50;
     // Force minimization !!!!
     bool flipObjective = (solver_->getObjSense()<0.0);
     if (flipObjective)
@@ -4199,8 +4201,12 @@ void CbcModel::branchAndBound(int doStatistics)
         } else {
             unlockThread();
         }
-        // If done 100 nodes see if worth trying reduction
-        if (numberNodes_ == 50 || numberNodes_ == 100) {
+        // If done 50/100 nodes see if worth trying reduction
+        if (numberNodes_ >= nextCheckRestart) {
+	  if (nextCheckRestart<100)
+	    nextCheckRestart=100;
+	  else
+	    nextCheckRestart=COIN_INT_MAX;
 #ifdef COIN_HAS_CLP
             OsiClpSolverInterface * clpSolver
             = dynamic_cast<OsiClpSolverInterface *> (solver_);
@@ -6659,8 +6665,9 @@ CbcModel::gutsOfCopy(const CbcModel & rhs, int mode)
                 generator_[i] = new CbcCutGenerator(*rhs.generator_[i]);
 	    } else {
                 generator_[i] = new CbcCutGenerator(*rhs.virginGenerator_[i]);
-		// But copy across maximumTries
+		// But copy across maximumTries and switches
                 generator_[i]->setMaximumTries(rhs.generator_[i]->maximumTries());
+                generator_[i]->setSwitches(rhs.generator_[i]->switches());
 	    }
             virginGenerator_[i] = new CbcCutGenerator(*rhs.virginGenerator_[i]);
         }
@@ -16862,6 +16869,12 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                 baseModel->bestSolution_ = new double[numberColumns];
             CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
             baseModel->setCutoff(getCutoff());
+	    baseModel->handler_->message(CBC_ROUNDING, messages_)
+	      << bestObjective_
+	      << "heuristic"
+	      << baseModel->numberIterations_
+	      << baseModel->numberNodes_ << getCurrentSeconds()
+	      << CoinMessageEol;
         }
         baseModel->numberSolutions_++;
         unlockThread();

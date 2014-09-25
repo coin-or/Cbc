@@ -172,9 +172,13 @@ public:
     inline int maximumTries() const
     { return maximumTries_;}
 
-    /// Get switches (for debug)
+    /// Get switches 
     inline int switches() const {
         return switches_;
+    }
+    /// Set switches (for copying from virgin state)
+    inline void setSwitches(int value) {
+        switches_ = value;
     }
     /// Get whether the cut generator should be called in the normal place
     inline bool normal() const {

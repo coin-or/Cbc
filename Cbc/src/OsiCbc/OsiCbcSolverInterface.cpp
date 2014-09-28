@@ -121,12 +121,15 @@ OsiCbcSolverInterface::getStrParam(OsiStrParam key, std::string & value) const
 
 bool OsiCbcSolverInterface::isAbandoned() const
 {
-  return modelPtr_->solver()->isAbandoned();
+  if (modelPtr_->status()!=-1)
+    return modelPtr_->isAbandoned();
+  else
+    return modelPtr_->solver()->isAbandoned();
 }
 
 bool OsiCbcSolverInterface::isProvenOptimal() const
 {
-  if (modelPtr_->status()==0)
+  if (modelPtr_->status()!=-1)
     return modelPtr_->isProvenOptimal();
   else
     return modelPtr_->solver()->isProvenOptimal();
@@ -134,7 +137,7 @@ bool OsiCbcSolverInterface::isProvenOptimal() const
 
 bool OsiCbcSolverInterface::isProvenPrimalInfeasible() const
 {
-  if (modelPtr_->status()==0)
+  if (modelPtr_->status()!=-1)
     return modelPtr_->isProvenInfeasible();
   else
     return modelPtr_->solver()->isProvenPrimalInfeasible();
@@ -142,6 +145,9 @@ bool OsiCbcSolverInterface::isProvenPrimalInfeasible() const
 
 bool OsiCbcSolverInterface::isProvenDualInfeasible() const
 {
+  if (modelPtr_->status()!=-1)
+  return modelPtr_->isProvenDualInfeasible();
+  else
   return modelPtr_->solver()->isProvenDualInfeasible();
 }
 bool OsiCbcSolverInterface::isPrimalObjectiveLimitReached() const
@@ -156,7 +162,10 @@ bool OsiCbcSolverInterface::isDualObjectiveLimitReached() const
 
 bool OsiCbcSolverInterface::isIterationLimitReached() const
 {
-  return modelPtr_->solver()->isIterationLimitReached();
+  if (modelPtr_->status()!=-1)
+    return modelPtr_->isNodeLimitReached();
+  else
+    return modelPtr_->solver()->isIterationLimitReached();
 }
 
 //#############################################################################

@@ -14331,6 +14331,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
         // See if already within allowable gap
         bool exitNow = false;
         for (i = 0; i < numberHeuristics_; i++) {
+	    heuristic_[i]->setModelOnly(this);
             if (heuristic_[i]->exitNow(bestObjective_))
                 exitNow = true;
         }

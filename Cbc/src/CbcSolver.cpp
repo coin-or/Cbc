@@ -2988,7 +2988,7 @@ int CbcMain1 (int argc, const char *argv[],
                             }
 #ifdef COIN_HAS_ASL
                             if (statusUserFunction_[0]) {
-                                double value = model2->getObjValue() * model2->getObjSense();
+			        double value = model2->getObjValue();
                                 char buf[300];
                                 int pos = 0;
                                 int iStat = model2->status();

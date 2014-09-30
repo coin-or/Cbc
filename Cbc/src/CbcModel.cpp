@@ -1591,15 +1591,16 @@ void CbcModel::AddIntegers()
 void CbcModel::branchAndBound(int doStatistics)
 
 {
-  if (!parentModel_)
-    /*
-      Capture a time stamp before we start (unless set).
-    */
-    if (!dblParam_[CbcStartSeconds]) {
-      if (!useElapsedTime())
-	dblParam_[CbcStartSeconds] = CoinCpuTime();
-      else
-	dblParam_[CbcStartSeconds] = CoinGetTimeOfDay();
+    if (!parentModel_) {
+      /*
+	Capture a time stamp before we start (unless set).
+      */
+      if (!dblParam_[CbcStartSeconds]) {
+	if (!useElapsedTime())
+	  dblParam_[CbcStartSeconds] = CoinCpuTime();
+	else
+	  dblParam_[CbcStartSeconds] = CoinGetTimeOfDay();
+      }
     }
     dblParam_[CbcSmallestChange] = COIN_DBL_MAX;
     dblParam_[CbcSumChange] = 0.0;
@@ -2297,7 +2298,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	moreSpecialOptions2_ &= ~(128|256);
       }
       if ((moreSpecialOptions2_&(128|256))==(128|256)) {
-	moreSpecialOptions2_ &= ~128;
+	//moreSpecialOptions2_ &= ~256;
       }
     }
 #endif
@@ -2872,38 +2873,32 @@ void CbcModel::branchAndBound(int doStatistics)
 		  //globalCuts_=rowCutrowCut.addCuts(globalCuts_);
 		  //rowCut.addCuts(globalCuts_);
 		  int nTightened=0;
-		  bool feasible=true;
+		  assert(feasible);
 		  {
 		    double tolerance=1.0e-5;
 		    const double * lower = solver_->getColLower();
 		    const double * upper = solver_->getColUpper();
 		    for (int i=0;i<numberColumns;i++) {
-		      if (tightBounds[2*i+0]>tightBounds[2*i+1]) {
+		      if (tightBounds[2*i+0]>tightBounds[2*i+1]+1.0e-9) {
 			feasible=false;
-			printf("Bad bounds on %d %g,%g was %g,%g\n",
-			       i,tightBounds[2*i+0],tightBounds[2*i+1],
-			       lower[i],upper[i]);
+			char general[200];
+			sprintf(general,"Solvers give infeasible bounds on %d %g,%g was %g,%g - search finished\n",
+			       i,tightBounds[2*i+0],tightBounds[2*i+1],lower[i],upper[i]);
+			messageHandler()->message(CBC_GENERAL,messages())
+			  << general << CoinMessageEol ;
+			break;
 		      }
-		      //int k=0;
 		      double oldLower=lower[i];
 		      double oldUpper=upper[i];
 		      if (tightBounds[2*i+0]>oldLower+tolerance) {
 			nTightened++;
-			//k++;
 			solver_->setColLower(i,tightBounds[2*i+0]);
 		      }
 		      if (tightBounds[2*i+1]<oldUpper-tolerance) {
 			nTightened++;
-			//k++;
 			solver_->setColUpper(i,tightBounds[2*i+1]);
 		      }
-		      //if (k)
-		      //printf("new bounds on %d %g,%g was %g,%g\n",
-		      //       i,tightBounds[2*i+0],tightBounds[2*i+1],
-		      //       oldLower,oldUpper);
 		    }
-		    if (!feasible)
-		      abort(); // deal with later
 		  }
 		  delete [] tightBounds;
 		  tightBounds=NULL;
@@ -3009,7 +3004,8 @@ void CbcModel::branchAndBound(int doStatistics)
 		    }
 		  }
 		}
-                feasible = solveWithCuts(cuts, maximumCutPassesAtRoot_,
+		if (feasible)
+		  feasible = solveWithCuts(cuts, maximumCutPassesAtRoot_,
                                          NULL);
 		if (multipleRootTries_&&
 		    (moreSpecialOptions_&134217728)!=0) {
@@ -14661,6 +14657,8 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
 	      } else {
 		worthTrying=true;
 	      }
+	      if ((moreSpecialOptions2_&(128|256))==(128|256)&&currentDepth_>5)
+		worthTrying=false;
 	      if (worthTrying) {
 		int n=symmetryInfo_->orbitalFixing(solver_);
 		if (n) {
@@ -18914,4 +18912,3 @@ CbcModel::conflictCut(const OsiSolverInterface * solver, bool & localCuts)
 #endif
   return cut;
 }
-

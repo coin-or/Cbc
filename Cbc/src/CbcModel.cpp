@@ -2849,7 +2849,7 @@ void CbcModel::branchAndBound(int doStatistics)
 		  //globalCuts_=rowCutrowCut.addCuts(globalCuts_);
 		  //rowCut.addCuts(globalCuts_);
 		  int nTightened=0;
-		  bool feasible=true;
+		  assert (feasible);
 		  {
 		    double tolerance=1.0e-5;
 		    const double * lower = solver_->getColLower();
@@ -2857,30 +2857,24 @@ void CbcModel::branchAndBound(int doStatistics)
 		    for (int i=0;i<numberColumns;i++) {
 		      if (tightBounds[2*i+0]>tightBounds[2*i+1]) {
 			feasible=false;
-			printf("Bad bounds on %d %g,%g was %g,%g\n",
-			       i,tightBounds[2*i+0],tightBounds[2*i+1],
-			       lower[i],upper[i]);
+			char general[200];
+			sprintf(general,"Solvers give infeasible bounds on %d %g,%g was %g,%g - search finished\n",
+			       i,tightBounds[2*i+0],tightBounds[2*i+1],lower[i],upper[i]);
+			messageHandler()->message(CBC_GENERAL,messages())
+			  << general << CoinMessageEol ;
+			break;
 		      }
-		      //int k=0;
 		      double oldLower=lower[i];
 		      double oldUpper=upper[i];
 		      if (tightBounds[2*i+0]>oldLower+tolerance) {
 			nTightened++;
-			//k++;
 			solver_->setColLower(i,tightBounds[2*i+0]);
 		      }
 		      if (tightBounds[2*i+1]<oldUpper-tolerance) {
 			nTightened++;
-			//k++;
 			solver_->setColUpper(i,tightBounds[2*i+1]);
 		      }
-		      //if (k)
-		      //printf("new bounds on %d %g,%g was %g,%g\n",
-		      //       i,tightBounds[2*i+0],tightBounds[2*i+1],
-		      //       oldLower,oldUpper);
 		    }
-		    if (!feasible)
-		      abort(); // deal with later
 		  }
 		  delete [] tightBounds;
 		  tightBounds=NULL;
@@ -2986,7 +2980,8 @@ void CbcModel::branchAndBound(int doStatistics)
 		    }
 		  }
 		}
-                feasible = solveWithCuts(cuts, maximumCutPassesAtRoot_,
+		if (feasible)
+		  feasible = solveWithCuts(cuts, maximumCutPassesAtRoot_,
                                          NULL);
 		if (multipleRootTries_&&
 		    (moreSpecialOptions_&134217728)!=0) {

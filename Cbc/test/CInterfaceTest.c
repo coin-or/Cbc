@@ -11,6 +11,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef INFINITY /* workaround for non-C99 compilers */
+#define INFINITY (HUGE_VAL * 2)
+#endif
+
 
 static int callback_called = 0;
 

@@ -16655,6 +16655,8 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                     double heurValue = getCutoff() ;
                     int iHeur ;
                     int whereFrom = 3;
+		    // allow more heuristics
+		    currentPassNumber_=0;
                     for (iHeur = 0 ; iHeur < numberHeuristics_ ; iHeur++) {
                         // skip if can't run here
                         if (!heuristic_[iHeur]->shouldHeurRun(whereFrom))

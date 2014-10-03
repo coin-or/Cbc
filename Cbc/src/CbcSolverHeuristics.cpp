@@ -1477,12 +1477,23 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
             diveOptions = diveOptions2;
             diveOptions2 = 0;
         }
-        if (diveOptions < 0 || diveOptions > 9)
+        if (diveOptions < 0 || diveOptions > 29)
             diveOptions = 2;
+	int diveOptionsNotC=diveOptions;
+	if (diveOptions>10) {
+	  if (diveOptions>20) {
+	    diveOptions-=20;
+	    diveOptionsNotC-=20;
+	  } else {
+	    diveOptions -= 10;
+	    diveOptionsNotC = 4;
+	  }
+	  useDIVING = 63;
+	}
         if ((useDIVING&1) != 0) {
             CbcHeuristicDiveVectorLength heuristicDV(*model);
             heuristicDV.setHeuristicName("DiveVectorLength");
-            heuristicDV.setWhen(diveOptions);
+            heuristicDV.setWhen(diveOptionsNotC);
 	    if (diveOptions2) {
 	      heuristicDV.setMaxIterations(majorIterations);
 	      heuristicDV.setPercentageToFix(0.0);
@@ -1494,7 +1505,7 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         if ((useDIVING&2) != 0) {
             CbcHeuristicDiveGuided heuristicDG(*model);
             heuristicDG.setHeuristicName("DiveGuided");
-            heuristicDG.setWhen(diveOptions);
+            heuristicDG.setWhen(diveOptionsNotC);
 	    if (diveOptions2) {
 	      heuristicDG.setMaxIterations(majorIterations);
 	      heuristicDG.setPercentageToFix(0.0);
@@ -1506,7 +1517,7 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         if ((useDIVING&4) != 0) {
             CbcHeuristicDiveFractional heuristicDF(*model);
             heuristicDF.setHeuristicName("DiveFractional");
-            heuristicDF.setWhen(diveOptions);
+            heuristicDF.setWhen(diveOptionsNotC);
 	    if (diveOptions2) {
 	      heuristicDF.setMaxIterations(majorIterations);
 	      heuristicDF.setPercentageToFix(0.0);
@@ -1530,7 +1541,7 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         if ((useDIVING&16) != 0) {
             CbcHeuristicDiveLineSearch heuristicDL(*model);
             heuristicDL.setHeuristicName("DiveLineSearch");
-            heuristicDL.setWhen(diveOptions);
+            heuristicDL.setWhen(diveOptionsNotC);
 	    if (diveOptions2) {
 	      heuristicDL.setMaxIterations(majorIterations);
 	      heuristicDL.setPercentageToFix(0.0);
@@ -1542,7 +1553,7 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         if ((useDIVING&32) != 0) {
             CbcHeuristicDivePseudoCost heuristicDP(*model);
             heuristicDP.setHeuristicName("DivePseudoCost");
-            heuristicDP.setWhen(diveOptions /*+ diveOptions2*/);
+            heuristicDP.setWhen(diveOptionsNotC /*+ diveOptions2*/);
 	    if (diveOptions2) {
 	      heuristicDP.setMaxIterations(majorIterations);
 	      heuristicDP.setPercentageToFix(0.0);

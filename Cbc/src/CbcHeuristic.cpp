@@ -382,8 +382,8 @@ CbcHeuristic::shouldHeurRun_randomChoice()
             /* JJF adjustments
             3 only at root and if no solution
             4 only at root and if this heuristic has not got solution
-            5 as 3 but decay more
-            6 decay
+            5 decay (but only if no solution)
+            6 if depth <3 or decay
             7 run up to 2 times if solution found 4 otherwise
             */
             switch (when) {
@@ -422,6 +422,8 @@ CbcHeuristic::shouldHeurRun_randomChoice()
                     probability = 1.0 / howOften_;
                     if (model_->bestSolution())
                         probability *= 0.5;
+		} else {
+		    probability = 1.1;
                 }
                 break;
             case 7:
@@ -1271,6 +1273,11 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                         value = value + 1.0e-7*(1.0 + fabs(value));
 			value *= solver3->getObjSense();
                         model.setCutoff(value);
+			sprintf(generalPrint, "Unable to insert previous solution - using cutoff of %g",
+				value);
+                        model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+                        << generalPrint
+                        << CoinMessageEol;
 #ifdef CLP_INVESTIGATE
                         printf("NOT added seren\n");
                         solver3->writeMps("bad_seren");

@@ -290,6 +290,10 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
         random[i] = randomNumberGenerator_.randomDouble() + 0.3;
         int iColumn = integerVariable[i];
         double value = newSolution[iColumn];
+	// clean
+	value = CoinMin(value,upperBefore[iColumn]);
+	value = CoinMax(value,lowerBefore[iColumn]);
+	newSolution[iColumn] = value;
         if (fabs(floor(value + 0.5) - value) > integerTolerance) {
             numberFractionalVariables++;
         }

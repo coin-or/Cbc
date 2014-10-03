@@ -139,15 +139,17 @@ class CbcSymmetry {
 
   void Compute_Symmetry() const;
   int statsOrbits(CbcModel * model, int type) const;
-  double timeNauty () const;
+  //double timeNauty () const;
   void Print_Orbits() const;
   void fillOrbits();
   /// Fixes variables using orbits (returns number fixed)
   int orbitalFixing(OsiSolverInterface * solver);
   inline int * whichOrbit()
   { return numberUsefulOrbits_ ? whichOrbit_ : NULL;}
-  inline int numberUsefulObjects() const
+  inline int numberUsefulOrbits() const
   { return numberUsefulOrbits_;}
+  inline int numberUsefulObjects() const
+  { return numberUsefulObjects_;}
   int largestOrbit(const double * lower, const double * upper) const;
   void ChangeBounds (const double * lower, const double * upper, 
 		     int numberColumns,bool justFixedAtOne) const;
@@ -164,6 +166,7 @@ private:
   mutable CbcNauty *nauty_info_;
   int numberColumns_;
   int numberUsefulOrbits_;
+  int numberUsefulObjects_;
   int * whichOrbit_;
 };
 
@@ -214,7 +217,8 @@ public:
   void getVstat(double *v, int nv);
   inline bool isSparse() const
   { return GSparse_ != NULL;}
-
+  inline int errorStatus() const
+  { return stats_->errstatus;}
   /**
    * Methods to classify orbits.  Not horribly efficient, but gets the job done
    */

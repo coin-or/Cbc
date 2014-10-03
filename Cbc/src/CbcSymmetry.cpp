@@ -22,14 +22,20 @@
 #include "CbcSymmetry.hpp"
 #include "CbcBranchingObject.hpp"
 #include "CoinTime.hpp"
+#define NAUTY_MAX_LEVEL 2000
+#if NAUTY_MAX_LEVEL
+extern int nauty_maxalllevel;
+#endif
 /* Deliberately not threadsafe to save effort
    Just for statistics
    and not worth gathering across threads
    can redo later
  */
 static int nautyBranchCalls_ = 0;
+static int lastNautyBranchCalls_ = 0;
 static int nautyBranchSucceeded_ = 0;
 static int nautyFixCalls_ = 0;
+static int lastNautyFixCalls_ = 0;
 static int nautyFixSucceeded_ = 0;
 static double nautyTime_ = 0.0;
 static double nautyFixes_= 0.0; 
@@ -95,6 +101,7 @@ CbcSymmetry::statsOrbits(CbcModel * model, int type) const
 {
   char general[200];
   int returnCode=0;
+  bool printSomething=true;
   if (type) {
     double branchSuccess=0.0;
     if (nautyBranchSucceeded_) 
@@ -102,27 +109,42 @@ CbcSymmetry::statsOrbits(CbcModel * model, int type) const
     double fixSuccess=0.0;
     if (nautyFixSucceeded_) 
       fixSuccess = nautyFixes_/nautyFixSucceeded_;
-    sprintf(general,"Orbital branching tried %d times, succeeded %d times - average extra %7.3f, fixing %d times (%d, %7.3f) - %.2f seconds",
-	    nautyBranchCalls_,nautyBranchSucceeded_,branchSuccess,
-	    nautyFixCalls_,nautyFixSucceeded_,fixSuccess,nautyTime_);
+    if (nautyBranchCalls_>lastNautyBranchCalls_||
+	nautyFixCalls_>lastNautyFixCalls_) {
+      sprintf(general,"Orbital branching tried %d times, succeeded %d times - average extra %7.3f, fixing %d times (%d, %7.3f)",
+	      nautyBranchCalls_,nautyBranchSucceeded_,branchSuccess,
+	      nautyFixCalls_,nautyFixSucceeded_,fixSuccess);
+      lastNautyBranchCalls_=nautyBranchCalls_;
+      lastNautyFixCalls_=nautyFixCalls_;
+    } else {
+      printSomething=false;
+    }
   } else {
     returnCode = nauty_info_->getNumGenerators();
-    if (returnCode) {
-      sprintf (general,"Nauty: %d orbits, %d generators, group size: %g - dense size %d, sparse %d - going %s",
-	       nauty_info_->getNumOrbits(),
-	       nauty_info_ -> getNumGenerators () ,
-	       nauty_info_ -> getGroupSize (),
-	       whichOrbit_[0],whichOrbit_[1],nauty_info_->isSparse() ? "sparse" : "dense");
+    if (!nauty_info_->errorStatus()) {
+      if (returnCode && numberUsefulOrbits_) {
+	sprintf (general,"Nauty: %d orbits (%d useful covering %d variables), %d generators, group size: %g - dense size %d, sparse %d - took %g seconds",
+		 nauty_info_->getNumOrbits(),numberUsefulOrbits_,numberUsefulObjects_,
+		 nauty_info_ -> getNumGenerators () ,
+		 nauty_info_ -> getGroupSize (),
+		 whichOrbit_[0],whichOrbit_[1],nautyTime_);
+      } else {
+	if ((model->moreSpecialOptions2()&(128|256))!=(128|256)) 
+	  sprintf(general,"Nauty did not find any useful orbits in time %g",nautyTime_);
+	else
+	  sprintf(general,"Nauty did not find any useful orbits - but keeping Nauty on");
+      }
     } else {
-      if ((model->moreSpecialOptions2()&(128|256))!=(128|256)) 
-	sprintf(general,"Nauty did not find any useful orbits");
-      else
-	sprintf(general,"Nauty did not find any useful orbits - but keeping Nauty on");
+      // error
+      sprintf(general,"Nauty failed with error code %d (%g seconds)",
+	      nauty_info_->errorStatus(),nautyTime_);
+      model->setMoreSpecialOptions2(model->moreSpecialOptions2()&~(128|256));
     }
   }
-  model->messageHandler()->message(CBC_GENERAL,
-				   model->messages())
-    << general << CoinMessageEol ;
+  if (printSomething)
+    model->messageHandler()->message(CBC_GENERAL,
+				     model->messages())
+      << general << CoinMessageEol ;
   return returnCode;
 }
   
@@ -196,6 +218,7 @@ CbcSymmetry::fillOrbits()
   for (int i=0;i<numberColumns_;i++)
     whichOrbit_[i]=-1;
   numberUsefulOrbits_=0;
+  numberUsefulObjects_=0;
 
   std::vector<std::vector<int> > *orbits = nauty_info_ -> getOrbits ();
 
@@ -212,6 +235,7 @@ CbcSymmetry::fillOrbits()
     }
     if (nUseful>1) {
       numberUsefulOrbits_++;
+      numberUsefulObjects_ += nUseful;
     } else if (jColumn>=0) {
       assert (nUseful);
       whichOrbit_[jColumn]=-2;
@@ -291,6 +315,7 @@ void CbcSymmetry::ChangeBounds (const double * new_lb, const double * new_ub,
   }
 }
 void CbcSymmetry::setupSymmetry (const OsiSolverInterface & solver) {
+  double startCPU = CoinCpuTime ();
   const double *objective = solver.getObjCoefficients() ;
   const double *columnLower = solver.getColLower() ;
   const double *columnUpper = solver.getColUpper() ;
@@ -352,7 +377,9 @@ void CbcSymmetry::setupSymmetry (const OsiSolverInterface & solver) {
   int * d = NULL;
   int * e = NULL;
   bool sparse=false;
-  double spaceDense = ((nc+WORDSIZE-1)*(nc+WORDSIZE-1))/WORDSIZE;
+  double spaceDense = nc+WORDSIZE-1;
+  spaceDense *= nc+WORDSIZE-1;
+  spaceDense /= WORDSIZE;
   int spaceSparse = 0;
   {
     size_t numberElements = 0;
@@ -580,10 +607,17 @@ void CbcSymmetry::setupSymmetry (const OsiSolverInterface & solver) {
   nautyFixes_= 0.0; 
   nautyOtherBranches_ = 0.0;
   Compute_Symmetry ();
+  fillOrbits();
+  //whichOrbit_[2]=numberUsefulOrbits_;
   //Print_Orbits ();
   // stats in array
-  whichOrbit_[0]=spaceDense;
+  if (spaceDense<COIN_INT_MAX)
+    whichOrbit_[0]=spaceDense;
+  else
+    whichOrbit_[0]=COIN_INT_MAX;
   whichOrbit_[1]=spaceSparse;
+  double endCPU = CoinCpuTime ();
+  nautyTime_ = endCPU-startCPU;
 }
 // Fixes variables using orbits (returns number fixed)
 int 
@@ -653,6 +687,7 @@ CbcSymmetry::CbcSymmetry ()
   : nauty_info_(NULL),
     numberColumns_(0),
     numberUsefulOrbits_(0),
+    numberUsefulObjects_(0),
     whichOrbit_(NULL)
 {
 }
@@ -662,6 +697,7 @@ CbcSymmetry::CbcSymmetry ( const CbcSymmetry & rhs)
   node_info_ = rhs.node_info_;
   nauty_info_ = new CbcNauty(*rhs.nauty_info_);
   numberUsefulOrbits_ = rhs.numberUsefulOrbits_;
+  numberUsefulObjects_ = rhs.numberUsefulObjects_;
   numberColumns_ = rhs.numberColumns_;
   if (rhs.whichOrbit_) 
     whichOrbit_=CoinCopyOfArray(rhs.whichOrbit_,numberColumns_);
@@ -680,6 +716,7 @@ CbcSymmetry::operator=( const CbcSymmetry & rhs)
     delete [] whichOrbit_;
     numberColumns_ = rhs.numberColumns_;
     numberUsefulOrbits_ = rhs.numberUsefulOrbits_;
+    numberUsefulObjects_ = rhs.numberUsefulObjects_;
     if (rhs.whichOrbit_) 
       whichOrbit_=CoinCopyOfArray(rhs.whichOrbit_,numberColumns_);
     else
@@ -997,7 +1034,7 @@ CbcNauty::computeAuto()
 
   //  if (autoComputed_) return;
 
-  double startCPU = CoinCpuTime ();
+  //double startCPU = CoinCpuTime ();
 
   options_->defaultptn = FALSE;
 
@@ -1035,6 +1072,9 @@ CbcNauty::computeAuto()
     abort();
 #endif
   } else {
+#if NAUTY_MAX_LEVEL
+    nauty_maxalllevel=NAUTY_MAX_LEVEL;
+#endif
 #ifndef NTY_TRACES
     options_->dispatch = &dispatch_sparse;
     sparsenauty(GSparse_, lab_, ptn_, orbits_, options_, 
@@ -1047,9 +1087,9 @@ CbcNauty::computeAuto()
   }
   autoComputed_ = true;
 
-  double endCPU = CoinCpuTime ();
+  //double endCPU = CoinCpuTime ();
 
-  nautyTime_ += endCPU - startCPU;
+  //nautyTime_ += endCPU - startCPU;
   // Need to make sure all generators are written
   if (afp_) fflush(afp_);   
 }

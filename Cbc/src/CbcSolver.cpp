@@ -4106,6 +4106,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 if (!solver2) {
                                     // say infeasible for solution
                                     integerStatus = 6;
+				    delete saveSolver;
+				    saveSolver=NULL;
                                     model_.setProblemStatus(0);
                                     model_.setSecondaryStatus(1);
                                     babModel_->setProblemStatus(0);
@@ -4604,6 +4606,8 @@ int CbcMain1 (int argc, const char *argv[],
                                     model_.setSecondaryStatus(1);
                                     // say infeasible for solution
                                     integerStatus = 6;
+				    delete saveSolver;
+				    saveSolver=NULL;
                                     // and in babModel_ if exists
                                     if (babModel_) {
                                         babModel_->setProblemStatus(0);
@@ -6939,6 +6943,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 } else {
                                     // infeasible
                                     integerStatus = 6;
+				    delete saveSolver;
+				    saveSolver=NULL;
                                 }
                             }
                             if (babModel_->getMinimizationObjValue() < 1.0e50 && type == CBC_PARAM_ACTION_BAB) {

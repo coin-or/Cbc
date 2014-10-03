@@ -1957,7 +1957,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     choice.possibleBranch = choiceObject;
     numberPassesLeft = CoinMax(numberPassesLeft, 2);
 #ifdef COIN_HAS_NTY
-    // 1 after, 2 strong, 3 subset
+    // 1 after, 2 strong, 3 until depth 5
     int orbitOption = (model->moreSpecialOptions2()&(128|256))>>7;
 #endif
     //#define DEBUG_SOLUTION
@@ -2812,7 +2812,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	    const int * orbits = NULL;
 #endif
 #ifdef COIN_HAS_NTY
-	    if (orbitOption>1) {
+	    if (orbitOption==2 /* was >1*/) {
 	      CbcSymmetry * symmetryInfo = model->symmetryInfo();
 	      CbcNodeInfo * infoX = lastNode ? lastNode->nodeInfo() : NULL;
 	      bool worthTrying = false;
@@ -3840,8 +3840,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       } else {
 	worthTrying=true;
       }
+      if (orbitOption==3&&depth_>5)
+	worthTrying=false;
       if (symmetryInfo && worthTrying) {
-	if (orbitOption==1) {
+	if ((orbitOption&1)==1) {
 	  symmetryInfo->ChangeBounds(solver->getColLower(),
 				     solver->getColUpper(),
 				     solver->getNumCols(),false);
@@ -3853,7 +3855,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	  int numberUsefulOrbits = symmetryInfo->numberUsefulObjects();
 	  if (solver->messageHandler()->logLevel() > 1)
 	    printf("Orbital Branching on %d - way %d n %d\n",kColumn,way(),numberUsefulOrbits);
-	  if (numberUsefulOrbits<1000) {
+	  if (numberUsefulOrbits<1000||orbitOption==3) {
 	    delete branch_;
 	    branch_ = new CbcOrbitalBranchingObject(model,kColumn,1,0,NULL);
 	    if (infoX)

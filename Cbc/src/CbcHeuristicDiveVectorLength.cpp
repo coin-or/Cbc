@@ -81,6 +81,7 @@ CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface* solver,
     bestRound = -1; // -1 rounds down, +1 rounds up
     double bestScore = COIN_DBL_MAX;
     bool allTriviallyRoundableSoFar = true;
+    int bestPriority = COIN_INT_MAX;
     for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
         double value = newSolution[iColumn];
@@ -96,15 +97,21 @@ CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface* solver,
 
                 // the variable cannot be rounded
                 double obj = direction * objective[iColumn];
-                if (obj >= 0.0)
+                if (obj > smallObjective_) {
                     round = 1; // round up
-                else
+                } else if (obj < -smallObjective_) {
                     round = -1; // round down
+		} else {
+		  if (fraction<0.4)
+		    round = -1;
+		  else
+		    round = 1;
+		}
                 double objDelta;
                 if (round == 1)
-                    objDelta = (1.0 - fraction) * obj;
+		    objDelta = (1.0 - fraction) * CoinMax(obj,smallObjective_);
                 else
-                    objDelta = - fraction * obj;
+		    objDelta = - fraction * CoinMin(obj,-smallObjective_);
 
                 // we want the smaller score
                 double score = objDelta / (static_cast<double> (columnLength[iColumn]) + 1.0);
@@ -113,6 +120,18 @@ CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface* solver,
                 if (!solver->isBinary(iColumn))
                     score *= 1000.0;
 
+		// if priorities then use
+		if (priority_) {
+		  int thisRound=static_cast<int>(priority_[i].direction);
+		  if ((thisRound&1)!=0) 
+		    round = ((thisRound&2)==0) ? -1 : +1;
+		  if (priority_[i].priority>bestPriority) {
+		    score=COIN_DBL_MAX;
+		  } else if (priority_[i].priority<bestPriority) {
+		    bestPriority=static_cast<int>(priority_[i].priority);
+		    bestScore=COIN_DBL_MAX;
+		  }
+		}
                 if (score < bestScore) {
                     bestColumn = iColumn;
                     bestScore = score;

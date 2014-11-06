@@ -1835,7 +1835,7 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
             int iParam;
             iParam = whichParam(CBC_PARAM_INT_DIVEOPT, numberParameters_, parameters_);
-            parameters_[iParam].setIntValue(3);
+            parameters_[iParam].setIntValue(2);
             iParam = whichParam(CBC_PARAM_INT_FPUMPITS, numberParameters_, parameters_);
             parameters_[iParam].setIntValue(30);
             iParam = whichParam(CBC_PARAM_INT_FPUMPTUNE, numberParameters_, parameters_);
@@ -3218,8 +3218,45 @@ int CbcMain1 (int argc, const char *argv[],
 			    if (needFlip)
 			      model_.flipModel(); 
 			    //if we do then - fix priorities in clonebutmodel_.convertToDynamic();
+			    bool objectsExist = model_.objects() != NULL;
+			    if (!objectsExist) {
+			      model_.findIntegers(false);
+			      model_.convertToDynamic();
+			    }
+			    // set priorities etc
+			    if (priorities) {
+			      OsiObject ** objects = model_.objects();
+			      int numberObjects = model_.numberObjects();
+			      for (int iObj = 0; iObj < numberObjects; iObj++) {
+				CbcSimpleInteger * obj =
+				  dynamic_cast <CbcSimpleInteger *>(objects[iObj]) ;
+				if (!obj)
+				  continue;
+				int iColumn = obj->columnNumber();
+				if (branchDirection) {
+				  obj->setPreferredWay(branchDirection[iColumn]);
+				}
+				if (priorities) {
+				  int iPriority = priorities[iColumn];
+				  if (iPriority > 0)
+				    obj->setPriority(iPriority);
+				}
+				if (pseudoUp && pseudoUp[iColumn]) {
+				  CbcSimpleIntegerPseudoCost * obj1a =
+				    dynamic_cast <CbcSimpleIntegerPseudoCost *>(objects[iObj]) ;
+				  assert (obj1a);
+				  if (pseudoDown[iColumn] > 0.0)
+				    obj1a->setDownPseudoCost(pseudoDown[iColumn]);
+				  if (pseudoUp[iColumn] > 0.0)
+				    obj1a->setUpPseudoCost(pseudoUp[iColumn]);
+				}
+			      }
+			    }
                             doHeuristics(&model_, 2, parameters_,
                                          numberParameters_, noPrinting_, initialPumpTune);
+			    if (!objectsExist) {
+			      model_.deleteObjects(false);
+			    }
 			    if (needFlip)
 			      model_.flipModel();
                             if (model_.bestSolution()) {
@@ -7973,6 +8010,19 @@ int CbcMain1 (int argc, const char *argv[],
                                                          };
                                 int got[] = { -1, -1, -1, -1, -1, -1, -1, -1};
                                 int order[8];
+				bool useMasks = false;
+				if (strstr(fileName.c_str(),"mask_")) {
+				  // look more closely
+				  const char * name = fileName.c_str();
+				  int length = strlen(name);
+				  for (int i=length-1;i>=0;i--) {
+				    if (name[i]==dirsep) {
+				      name += i+1;
+				      break;
+				    }
+				  }
+				  useMasks = !strncmp(name,"mask_",5);
+				} 
                                 assert(sizeof(got) == sizeof(order));
                                 int nAcross = 0;
                                 char line[1000];
@@ -8039,9 +8089,15 @@ int CbcMain1 (int argc, const char *argv[],
                                     }
                                     if (good) {
                                         char ** columnNames = new char * [numberColumns];
-                                        pseudoDown = reinterpret_cast<double *> (malloc(numberColumns * sizeof(double)));
-                                        pseudoUp = reinterpret_cast<double *> (malloc(numberColumns * sizeof(double)));
-                                        branchDirection = reinterpret_cast<int *> (malloc(numberColumns * sizeof(int)));
+                                        //pseudoDown = NULL;
+                                        //pseudoUp = NULL;
+                                        //branchDirection = NULL;
+					//if (got[5]!=-1)
+					  pseudoDown = reinterpret_cast<double *> (malloc(numberColumns * sizeof(double)));
+					  //if (got[4]!=-1)
+					  pseudoUp = reinterpret_cast<double *> (malloc(numberColumns * sizeof(double)));
+					  //if (got[2]!=-1)
+					  branchDirection = reinterpret_cast<int *> (malloc(numberColumns * sizeof(int)));
                                         priorities = reinterpret_cast<int *> (malloc(numberColumns * sizeof(int)));
                                         free(solutionIn);
                                         solutionIn = NULL;
@@ -8061,10 +8117,13 @@ int CbcMain1 (int argc, const char *argv[],
                                         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
                                             columnNames[iColumn] =
                                                 CoinStrdup(lpSolver->columnName(iColumn).c_str());
-                                            pseudoDown[iColumn] = 0.0;
-                                            pseudoUp[iColumn] = 0.0;
-                                            branchDirection[iColumn] = 0;
-                                            priorities[iColumn] = 0;
+					    //if (got[5]!=-1)
+					      pseudoDown[iColumn] = 0.0;
+					      //if (got[4]!=-1)
+					      pseudoUp[iColumn] = 0.0;
+					      //if (got[2]!=-1)
+					      branchDirection[iColumn] = 0;
+                                            priorities[iColumn] = useMasks ? -123456789 : 0;
                                         }
                                         int nBadPseudo = 0;
                                         int nBadDir = 0;
@@ -8072,11 +8131,14 @@ int CbcMain1 (int argc, const char *argv[],
                                         int nBadName = 0;
                                         int nBadLine = 0;
                                         int nLine = 0;
-                                        while (fgets(line, 1000, fp)) {
+					iColumn = -1;
+					int lowestPriority=-COIN_INT_MAX;
+                                        while (iColumn>=0 || fgets(line, 1000, fp)) {
                                             if (!strncmp(line, "ENDATA", 6))
                                                 break;
                                             nLine++;
-                                            iColumn = -1;
+					    if (!useMasks)
+					      iColumn = -1;
                                             double up = 0.0;
                                             double down = 0.0;
                                             int pri = 0;
@@ -8114,9 +8176,29 @@ int CbcMain1 (int argc, const char *argv[],
                                                 switch (order[i]) {
                                                     // name
                                                 case 0:
-                                                    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+						  iColumn++;
+						  for (; iColumn < numberColumns; iColumn++) {
+						      if (priorities[iColumn]!=-123456789) {
                                                         if (!strcmp(columnNames[iColumn], pos))
                                                             break;
+						      } else {
+							// mask (at present ? and trailing *)
+							const char * name = columnNames[iColumn];
+							int length=strlen(name);
+							int lengthMask=strlen(pos);
+							bool asterisk = pos[lengthMask-1]=='*';
+							if (asterisk) 
+							  length=lengthMask-1;
+							int i;
+							for (i=0;i<length;i++) {
+							  if (name[i]!=pos[i]) {
+							    if (pos[i]!='?')
+							      break;
+							  }
+							}
+							if (i==length)
+							  break;
+						      }
                                                     }
                                                     if (iColumn == numberColumns)
                                                         iColumn = -1;
@@ -8147,6 +8229,7 @@ int CbcMain1 (int argc, const char *argv[],
                                                     // priority
                                                 case 3:
                                                     pri = atoi(pos);
+						    lowestPriority=CoinMax(lowestPriority,pri);
                                                     break;
                                                     // up
                                                 case 4:
@@ -8191,9 +8274,12 @@ int CbcMain1 (int argc, const char *argv[],
                                                     nBadPri++;
                                                     pri = 0;
                                                 }
-                                                pseudoDown[iColumn] = down;
-                                                pseudoUp[iColumn] = up;
-                                                branchDirection[iColumn] = dir;
+						//if (got[5]!=-1)
+						  pseudoDown[iColumn] = down;
+						  //if (got[4]!=-1)
+						  pseudoUp[iColumn] = up;
+						  //if (got[2]!=-1)
+						  branchDirection[iColumn] = dir;
                                                 priorities[iColumn] = pri;
                                                 if (solValue != COIN_DBL_MAX) {
                                                     assert (solutionIn);
@@ -8203,9 +8289,13 @@ int CbcMain1 (int argc, const char *argv[],
                                                     assert (prioritiesIn);
                                                     prioritiesIn[iColumn] = priValue;
                                                 }
-                                            } else {
+                                            } else if (!useMasks) {
                                                 nBadName++;
                                             }
+                                        }
+                                        for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+					  if (priorities[iColumn] == -123456789)
+                                            priorities[iColumn] = lowestPriority+1;
                                         }
                                         if (!noPrinting_) {
                                             printf("%d fields and %d records", nAcross, nLine);

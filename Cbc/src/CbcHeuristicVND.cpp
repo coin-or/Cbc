@@ -198,7 +198,7 @@ CbcHeuristicVND::solution(double & solutionValue,
         if ((numberNodes > 40 && numberNodes <= 50) || (numberNodes > 90 && numberNodes < 100))
             numberNodes = howOften_;
     }
-    if ((numberNodes % howOften_) == 0 && (model_->getCurrentPassNumber() == 1 ||
+    if ((numberNodes % howOften_) == 0 && (model_->getCurrentPassNumber() <= 1 ||
                                            model_->getCurrentPassNumber() == 999999)) {
         lastNode_ = model_->getNodeCount();
         OsiSolverInterface * solver = model_->solver();

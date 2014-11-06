@@ -85,6 +85,7 @@ CbcHeuristicDivePseudoCost::selectVariableToBranch(OsiSolverInterface* solver,
     bestRound = -1; // -1 rounds down, +1 rounds up
     double bestScore = -1.0;
     bool allTriviallyRoundableSoFar = true;
+    int bestPriority = COIN_INT_MAX;
     for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
         double rootValue = rootNodeLPSol[iColumn];
@@ -131,6 +132,18 @@ CbcHeuristicDivePseudoCost::selectVariableToBranch(OsiSolverInterface* solver,
                 if (solver->isBinary(iColumn))
                     score *= 1000.0;
 
+		// if priorities then use
+		if (priority_) {
+		  int thisRound=static_cast<int>(priority_[i].direction);
+		  if ((thisRound&1)!=0) 
+		    round = ((thisRound&2)==0) ? -1 : +1;
+		  if (priority_[i].priority>bestPriority) {
+		    score=COIN_DBL_MAX;
+		  } else if (priority_[i].priority<bestPriority) {
+		    bestPriority=static_cast<int>(priority_[i].priority);
+		    bestScore=COIN_DBL_MAX;
+		  }
+		}
                 if (score > bestScore) {
                     bestColumn = iColumn;
                     bestScore = score;
@@ -197,6 +210,7 @@ CbcHeuristicDivePseudoCost::fixOtherVariables(OsiSolverInterface * solver,
     int numberIntegers = model_->numberIntegers();
     const int * integerVariable = model_->integerVariable();
     const double* reducedCost = solver->getReducedCost();
+    bool fixGeneralIntegers = (switches_&65536)!=0;
     // fix other integer variables that are at their bounds
     int cnt = 0;
     int numberFree = 0;
@@ -214,6 +228,11 @@ CbcHeuristicDivePseudoCost::fixOtherVariables(OsiSolverInterface * solver,
                 candidate[cnt].var = iColumn;
                 candidate[cnt++].pseudoRedCost = CoinMax(-1.0e-2 * reducedCost[iColumn],
                                                  downArray_[i]) * random[i];
+	    } else if (fixGeneralIntegers &&
+		       fabs(floor(value + 0.5) - value) <= integerTolerance) {
+                candidate[cnt].var = iColumn;
+                candidate[cnt++].pseudoRedCost = CoinMax(-1.0e-6 * reducedCost[iColumn],
+                                                 1.0e-4*downArray_[i]) * random[i];
             }
         } else {
             numberFixedAlready++;

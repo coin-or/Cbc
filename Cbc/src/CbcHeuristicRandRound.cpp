@@ -107,7 +107,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
     bool atRoot = model_->getNodeCount() == 0;
     int passNumber = model_->getCurrentPassNumber();
     //    Just do once
-    if (!atRoot || passNumber != 1) {
+    if (!atRoot || passNumber > 1) {
         // std::cout << "Leaving the Randomized Rounding Heuristic" << std::endl;
         return 0;
     }

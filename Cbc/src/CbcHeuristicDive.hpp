@@ -61,7 +61,7 @@ public:
     virtual int solution(double & objectiveValue,
                          double * newSolution);
     /// inner part of dive
-  int solution(double & objectiveValue, int & numberNodes,
+    int solution(double & objectiveValue, int & numberNodes,
 		 int & numberCuts, OsiRowCut ** cuts,
 		 CbcSubProblem ** & nodes,
 		 double * newSolution);
@@ -74,6 +74,9 @@ public:
 
     /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
     virtual void validate();
+
+    /// Sets priorities if any
+    void setPriorities();
 
     /// Select candidate binary variables for fixing
     void selectBinaryVariables();
@@ -153,6 +156,12 @@ protected:
     /// Extra up array (number Integers long)
     double * upArray_;
 
+    /// Array of priorities
+    typedef struct {
+      unsigned int direction:3; //  0 bit off, 1 bit (0 down first, 1 up first) 2 bit non zero don't try other way
+      unsigned int priority:29;
+    } PriorityType;
+    PriorityType * priority_;
     // Indexes of binary variables with 0 objective coefficient
     // and in variable bound constraints
     std::vector<int> binVarIndex_;
@@ -163,6 +172,12 @@ protected:
     // Percentage of integer variables to fix at bounds
     double percentageToFix_;
 
+    // Maximum time allowed
+    double maxTime_;
+
+    // Small objective (i.e. treat zero objective as this)
+    double smallObjective_;
+
     // Maximum number of major iterations
     int maxIterations_;
 
@@ -171,9 +186,6 @@ protected:
 
     // Maximum number of simplex iterations at root node
     int maxSimplexIterationsAtRoot_;
-
-    // Maximum time allowed
-    double maxTime_;
 
 };
 #endif

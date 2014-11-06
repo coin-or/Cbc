@@ -333,7 +333,7 @@ CbcHeuristic::shouldHeurRun(int whereFrom)
         if (numInvocationsInDeep_ - lastRunDeep_ < howOften_) {
             return false;
         }
-        if (model_->getCurrentPassNumber() != 1) {
+        if (model_->getCurrentPassNumber() > 1) {
             // Run the heuristic only when first entering the node.
             // LL: I don't think this is right. It should run just before strong
             // LL: branching, I believe.

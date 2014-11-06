@@ -80,6 +80,7 @@ CbcHeuristicDiveCoefficient::selectVariableToBranch(OsiSolverInterface* solver,
     double bestFraction = COIN_DBL_MAX;
     int bestLocks = COIN_INT_MAX;
     bool allTriviallyRoundableSoFar = true;
+    int bestPriority = COIN_INT_MAX;
     for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
         double value = newSolution[iColumn];
@@ -116,6 +117,18 @@ CbcHeuristicDiveCoefficient::selectVariableToBranch(OsiSolverInterface* solver,
                 if (!solver->isBinary(iColumn))
                     fraction *= 1000.0;
 
+		// if priorities then use
+		if (priority_) {
+		  int thisRound=static_cast<int>(priority_[i].direction);
+		  if ((thisRound&1)!=0) 
+		    round = ((thisRound&2)==0) ? -1 : +1;
+		  if (priority_[i].priority>bestPriority) {
+		    nLocks=COIN_INT_MAX;
+		  } else if (priority_[i].priority<bestPriority) {
+		    bestPriority=static_cast<int>(priority_[i].priority);
+		    bestLocks=COIN_INT_MAX;
+		  }
+		}
                 if (nLocks < bestLocks || (nLocks == bestLocks &&
                                            fraction < bestFraction)) {
                     bestColumn = iColumn;

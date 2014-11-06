@@ -80,6 +80,7 @@ CbcHeuristicDiveLineSearch::selectVariableToBranch(OsiSolverInterface* solver,
     bestRound = -1; // -1 rounds down, +1 rounds up
     double bestRelDistance = COIN_DBL_MAX;
     bool allTriviallyRoundableSoFar = true;
+    int bestPriority = COIN_INT_MAX;
     for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
         double rootValue = rootNodeLPSol[iColumn];
@@ -110,6 +111,18 @@ CbcHeuristicDiveLineSearch::selectVariableToBranch(OsiSolverInterface* solver,
                 if (!solver->isBinary(iColumn))
                     relDistance *= 1000.0;
 
+		// if priorities then use
+		if (priority_) {
+		  int thisRound=static_cast<int>(priority_[i].direction);
+		  if ((thisRound&1)!=0) 
+		    round = ((thisRound&2)==0) ? -1 : +1;
+		  if (priority_[i].priority>bestPriority) {
+		    relDistance=COIN_DBL_MAX;
+		  } else if (priority_[i].priority<bestPriority) {
+		    bestPriority=static_cast<int>(priority_[i].priority);
+		    bestRelDistance=COIN_DBL_MAX;
+		  }
+		}
                 if (relDistance < bestRelDistance) {
                     bestColumn = iColumn;
                     bestRelDistance = relDistance;

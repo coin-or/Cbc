@@ -272,10 +272,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
             //good = (((passNumber-1)%(kOption-2))==0);
             good = false;
         }
-        if (passNumber != 1 && !good)
+        if (passNumber > 1 && !good)
             return 0;
     } else {
-        if (passNumber != 1)
+        if (passNumber > 1)
             return 0;
     }
     // loop round doing repeated pumps

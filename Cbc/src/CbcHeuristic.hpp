@@ -169,6 +169,7 @@ public:
                 try keep halving distance to known cutoff
         16 bit - needs new solution to run
         1024 bit - stop all heuristics on max time
+	65536 bit and above used for temporary communication
     */
     inline int switches() const {
         return switches_;

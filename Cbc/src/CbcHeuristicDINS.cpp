@@ -201,7 +201,7 @@ CbcHeuristicDINS::solution(double & solutionValue,
         numberKeptSolutions_ = CoinMin(numberKeptSolutions_ + 1, maximumKeepSolutions_);
     }
     int finalReturnCode = 0;
-    if (((model_->getNodeCount() % howOften_) == howOften_ / 2 || !model_->getNodeCount()) && (model_->getCurrentPassNumber() == 1 || model_->getCurrentPassNumber() == 999999)) {
+    if (((model_->getNodeCount() % howOften_) == howOften_ / 2 || !model_->getNodeCount()) && (model_->getCurrentPassNumber() <= 1 || model_->getCurrentPassNumber() == 999999)) {
         OsiSolverInterface * solver = model_->solver();
 
         //int numberIntegers = model_->numberIntegers();

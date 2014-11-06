@@ -1291,7 +1291,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
     // See if to do
     bool atRoot = model_->getNodeCount() == 0;
     int passNumber = model_->getCurrentPassNumber();
-    if (!when() || (when() == 1 && model_->phase() != 1) || !atRoot || passNumber != 1)
+    if (!when() || (when() == 1 && model_->phase() != 1) || !atRoot || passNumber > 1)
         return 0; // switched off
     // Don't do if it was this heuristic which found solution!
     if (this == model_->lastHeuristic())

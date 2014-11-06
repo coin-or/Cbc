@@ -120,7 +120,7 @@ CbcHeuristicGreedyCover::solution(double & solutionValue,
     // See if at root node
     bool atRoot = model_->getNodeCount() == 0;
     int passNumber = model_->getCurrentPassNumber();
-    if (atRoot && passNumber != 1)
+    if (atRoot && passNumber > 1)
         return 0;
     OsiSolverInterface * solver = model_->solver();
     const double * columnLower = solver->getColLower();
@@ -536,7 +536,7 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
     // See if at root node
     bool atRoot = model_->getNodeCount() == 0;
     int passNumber = model_->getCurrentPassNumber();
-    if (atRoot && passNumber != 1)
+    if (atRoot && passNumber > 1)
         return 0;
     OsiSolverInterface * solver = model_->solver();
     const double * columnLower = solver->getColLower();
@@ -972,7 +972,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
     // See if at root node
     bool atRoot = model_->getNodeCount() == 0;
     int passNumber = model_->getCurrentPassNumber();
-    if (atRoot && passNumber != 1)
+    if (atRoot && passNumber > 1)
         return 0;
     OsiSolverInterface * solver = model_->solver();
     int numberColumns = solver->getNumCols();

@@ -249,6 +249,10 @@ public:
         numberTimesUp_++;
     }
 
+    /// Number times branched
+    inline int numberTimesBranched() const {
+        return numberTimesDown_ + numberTimesUp_;
+    }
     /// Down number times infeasible
     inline int numberTimesDownInfeasible() const {
         return numberTimesDownInfeasible_;

@@ -332,6 +332,10 @@ int
     return 0; // No solution found yet
   if (numberBlocks_<3)
     return 0; // no point
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
   if (bestSolutionIn&&objectiveValue(bestSolutionIn)<bestObjective_-1.0e-5)
     passInSolution(bestSolutionIn);
   char dwPrint[200];

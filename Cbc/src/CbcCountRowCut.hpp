@@ -124,7 +124,7 @@ private:
    b) allow half baked cuts
    The whichRow_ field in OsiRowCut2 is used for a type
    0 - normal 
-   1 - processed cut
+   1 - processed cut (conflict)
    2 - unprocessed cut i.e. dual ray computation
 */
 // for hashing
@@ -153,6 +153,8 @@ public:
   int addCutIfNotDuplicateWhenGreedy(const OsiRowCut & cut,int whichType=0);
   // Add in cuts as normal cuts (and delete)
   void addCuts(OsiCuts & cs);
+  // Truncate
+  void truncate(int numberAfter);
 private:
   OsiRowCut2 ** rowCut_;
   /// Hash table

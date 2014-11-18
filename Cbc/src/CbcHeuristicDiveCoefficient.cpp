@@ -17,12 +17,14 @@
 CbcHeuristicDiveCoefficient::CbcHeuristicDiveCoefficient()
         : CbcHeuristicDive()
 {
+  whereFrom_ |= 16*(1+256);
 }
 
 // Constructor from model
 CbcHeuristicDiveCoefficient::CbcHeuristicDiveCoefficient(CbcModel & model)
         : CbcHeuristicDive(model)
 {
+  whereFrom_ |= 16*(1+256);
 }
 
 // Destructor

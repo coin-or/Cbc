@@ -2260,6 +2260,69 @@ int CbcMain1 (int argc, const char *argv[],
                                 pumpChanged = true;
                             else if (parameters_[iParam].type() == CBC_PARAM_INT_EXPERIMENT) {
   			        int addFlags=0;
+				// switch on some later features if >999
+				if (value>999) {
+				  int switchValue=value/1000;
+				  const char * message = NULL;
+				  value -= 1000*switchValue;
+				  parameters_[whichParam(CBC_PARAM_INT_EXPERIMENT, numberParameters_, parameters_)].setIntValue(0/*value*/);
+				  switch (switchValue) {
+				  default:
+				  case 4:
+				    // hotstart 500, -200 cut passes
+				    message=parameters_[whichParam(CBC_PARAM_INT_MAXHOTITS, numberParameters_, parameters_)].setIntValueWithMessage(500);
+                                    if (!noPrinting_&&message) 
+                                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                        << message << CoinMessageEol;
+				    message=parameters_[whichParam(CBC_PARAM_INT_CUTPASS, numberParameters_, parameters_)].setIntValueWithMessage(-200);
+                                    if (!noPrinting_&&message) 
+                                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                        << message << CoinMessageEol;
+				  case 3:
+				    // multiple 4
+				    message=parameters_[whichParam(CBC_PARAM_INT_MULTIPLEROOTS, numberParameters_, parameters_)].setIntValueWithMessage(4);
+                                    if (!noPrinting_&&message) 
+                                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                        << message << CoinMessageEol;
+				  case 2:
+				    // rens plus all diving at root
+				    message=parameters_[whichParam(CBC_PARAM_INT_DIVEOPT, numberParameters_, parameters_)].setIntValueWithMessage(16);
+                                    if (!noPrinting_&&message) 
+                                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                        << message << CoinMessageEol;
+				    model_.setNumberAnalyzeIterations(-value);
+				    // -tune 7 zero,lagomory,gmi at root - probing on 
+				  case 1:
+				    tunePreProcess=7;
+				    message=parameters_[whichParam(CLP_PARAM_INT_PROCESSTUNE, numberParameters_, parameters_)].setIntValueWithMessage(7);
+                                    if (!noPrinting_&&message) 
+                                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                        << message << CoinMessageEol;
+				    //message = parameters_[whichParam(CBC_PARAM_INT_MIPOPTIONS, numberParameters_, parameters_)].setIntValueWithMessage(1025);
+                                    //if (!noPrinting_&&message) 
+                                    //    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				    //  << message << CoinMessageEol;
+				    message=parameters_[whichParam(CBC_PARAM_STR_PROBINGCUTS, numberParameters_, parameters_)].setCurrentOptionWithMessage("on");
+				    probingAction = 1;
+                                    if (!noPrinting_&&message) 
+                                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                        << message << CoinMessageEol;
+				    message=parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, numberParameters_, parameters_)].setCurrentOptionWithMessage("root");
+                                    if (!noPrinting_&&message) 
+                                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                        << message << CoinMessageEol;
+				    message=parameters_[whichParam(CBC_PARAM_STR_LAGOMORYCUTS, numberParameters_, parameters_)].setCurrentOptionWithMessage("root");
+                                    if (!noPrinting_&&message) 
+                                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                        << message << CoinMessageEol;
+				    GMIAction = 2;
+				    message=parameters_[whichParam(CBC_PARAM_STR_GMICUTS, numberParameters_, parameters_)].setCurrentOptionWithMessage("root");
+                                    if (!noPrinting_&&message) 
+                                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                        << message << CoinMessageEol;
+				  }
+				  value = 0;
+				}
 				if (value>=10) {
 				  addFlags = 1048576*(value/10);
 				  value = value % 10;
@@ -3315,6 +3378,7 @@ int CbcMain1 (int argc, const char *argv[],
                     case CBC_PARAM_ACTION_MIPLIB:
                         // User can set options - main difference is lack of model and CglPreProcess
                         goodModel = true;
+			parameters_[whichParam(CBC_PARAM_INT_MULTIPLEROOTS, numberParameters_, parameters_)].setIntValue(0);
                         /*
                           Run branch-and-cut. First set a few options -- node comparison, scaling.
                           Print elapsed time at the end.
@@ -5002,7 +5066,7 @@ int CbcMain1 (int argc, const char *argv[],
                             if (flowAction) {
                                 babModel_->addCutGenerator(&flowGen, translate[flowAction], "FlowCover");
                                 accuracyFlag[numberGenerators] = 2;
-                                switches[numberGenerators++] = 1;
+                                switches[numberGenerators++] = 0;
                             }
                             if (twomirAction && (complicatedInteger != 1 ||
                                                  (twomirAction == 1 || twomirAction >= 4))) {
@@ -5235,7 +5299,7 @@ int CbcMain1 (int argc, const char *argv[],
                             // Turn this off if you get problems
                             // Used to be automatically set
                             int mipOptions = parameters_[whichParam(CBC_PARAM_INT_MIPOPTIONS, numberParameters_, parameters_)].intValue() % 10000;
-                            if (mipOptions != (1057)) {
+                            if (mipOptions != (1057) && mipOptions != 1025 ) {
                                 sprintf(generalPrint, "mip options %d", mipOptions);
                                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                                 << generalPrint
@@ -5582,8 +5646,15 @@ int CbcMain1 (int argc, const char *argv[],
                                         for (iSOS = 0; iSOS < numberSOS; iSOS++) {
                                             int iStart = starts[iSOS];
                                             int n = starts[iSOS+1] - iStart;
+					    //#define MAKE_SOS_CLIQUES
+#ifndef MAKE_SOS_CLIQUES
                                             objects[iSOS] = new CbcSOS(babModel_, n, which + iStart, weight + iStart,
                                                                        iSOS, type[iSOS]);
+#else
+                                            objects[iSOS] = 
+					      new CbcClique(babModel_, 1, n, which + iStart, 
+							    NULL,-iSOS-1);
+#endif
                                             // branch on long sets first
                                             objects[iSOS]->setPriority(numberColumns - n);
                                         }
@@ -5676,6 +5747,13 @@ int CbcMain1 (int argc, const char *argv[],
                                             dynamic_cast <CbcSOS *>(objects[iObj]) ;
                                         if (objSOS)
                                             continue;
+#ifdef MAKE_SOS_CLIQUES
+                                        // skip cliques
+                                        CbcClique * objClique =
+                                            dynamic_cast <CbcClique *>(objects[iObj]) ;
+                                        if (objClique)
+                                            continue;
+#endif
                                         int iColumn = objects[iObj]->columnNumber();
                                         assert (iColumn >= 0);
                                         if (originalColumns)
@@ -6605,8 +6683,12 @@ int CbcMain1 (int argc, const char *argv[],
 				  babModel_->setStrongStrategy(specialOptions);
 				int jParam = whichParam(CBC_PARAM_STR_CUTOFF_CONSTRAINT, 
 							numberParameters_, parameters_);
-				if(parameters_[jParam].currentOptionAsInteger())
+				if(parameters_[jParam].currentOptionAsInteger()) {
 				  babModel_->setCutoffAsConstraint(true);
+				  int moreOptions=babModel_->moreSpecialOptions();
+				  if(parameters_[jParam].currentOptionAsInteger()==4) 
+				    babModel_->setMoreSpecialOptions(moreOptions|4194304);
+				}
                                 int multipleRoot = parameters_[whichParam(CBC_PARAM_INT_MULTIPLEROOTS, numberParameters_, parameters_)].intValue();
 				if (multipleRoot<10000) {
 				  babModel_->setMultipleRootTries(multipleRoot);
@@ -6938,7 +7020,7 @@ int CbcMain1 (int argc, const char *argv[],
                                         continue;
 #ifndef CLP_INVESTIGATE
                                     CglImplication * implication = dynamic_cast<CglImplication*>(generator->generator());
-                                    if (implication)
+                                    if (implication && !generator->numberCutsInTotal())
                                         continue;
 #endif
                                     generalMessageHandler->message(CLP_GENERAL, generalMessages)

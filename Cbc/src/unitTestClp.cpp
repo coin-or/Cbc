@@ -200,6 +200,7 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
   Load up the problem vector. Note that the row counts here include the
   objective function.
 */
+#if 1
     PUSH_MPS("10teams", 230, 2025, 924, 917, 1, false);
     PUSH_MPS("air03", 124, 10757, 340160, 338864.25, 0, false);
     PUSH_MPS("air04", 823, 8904, 56137, 55535.436, 2, false);
@@ -227,6 +228,7 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
     PUSH_MPS("gt2", 29, 188, 21166.000, 13460.233074, 0, false);
     PUSH_MPS("harp2", 112, 2993, -73899798.00, -74353341.502, 6, false);
     PUSH_MPS("khb05250", 101, 1350, 106940226, 95919464.0, 0, false);
+#endif
     PUSH_MPS("l152lav", 97, 1989, 4722, 4656.36, 1, false);
     PUSH_MPS("lseu", 28, 89, 1120, 834.68, 0, false);
     PUSH_MPS("mas74", 13, 151, 11801.18573, 10482.79528, 3, false);
@@ -580,14 +582,21 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
       }
 #     endif
       if (stuff && stuff[8] >= 1) {
+	printf("CCColumns %d rows %d - depth %d\n",
+	       modelC->numberColumns(),modelC->numberRows(),
+	       model->fastNodeDepth());
 	  if (modelC->numberColumns() + modelC->numberRows() <= 10000 &&
 		  model->fastNodeDepth() == -1)
-	      model->setFastNodeDepth(-9);
+	    model->setFastNodeDepth(-10/*-9*/);
       }
     }
-    //OsiObject * obj = new CbcBranchToFixLots(model,0.3,0.0,3,3000003);
-    //model->addObjects(1,&obj);
-    //delete obj;
+#ifdef CONFLICT_CUTS
+    {
+      model->setCutoffAsConstraint(true);
+      int moreOptions=model->moreSpecialOptions();
+      model->setMoreSpecialOptions(moreOptions|4194304);
+    }
+#endif
 /*
   Finally, the actual call to solve the MIP with branch-and-cut.
 */

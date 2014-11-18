@@ -350,9 +350,9 @@ public:
     /// Make given rows (L or G) into global cuts and remove from lp
     void makeGlobalCuts(int numberRows, const int * which);
     /// Make given cut into a global cut
-    void makeGlobalCut(const OsiRowCut * cut);
+    int makeGlobalCut(const OsiRowCut * cut);
     /// Make given cut into a global cut
-    void makeGlobalCut(const OsiRowCut & cut);
+    int makeGlobalCut(const OsiRowCut & cut);
     /// Make given column cut into a global cut
     void makeGlobalCut(const OsiColCut * cut);
     /// Make given column cut into a global cut
@@ -937,6 +937,10 @@ public:
     /// Get how many Nodes were enumerated in complete fathoming B&B inside CLP
     inline int getExtraNodeCount() const {
        return numberExtraNodes_;
+    }
+    /// Get how many times complete fathoming B&B was done
+    inline int getFathomCount() const {
+       return numberFathoms_;
     }
     /** Final status of problem
         Some of these can be found out by is...... functions
@@ -1864,6 +1868,8 @@ public:
 	7/8 bit (128) - try orbital branching (if nauty)
 	9 bit (512) - branching on objective (later)
 	10 bit (1024) - branching on constraints (later)
+	11/12 bit 2048 - intermittent cuts
+	13/14 bit 8192 - go to bitter end in strong branching (first time)
     */
     inline void setMoreSpecialOptions2(int value) {
         moreSpecialOptions2_ = value;
@@ -2196,9 +2202,8 @@ public:
       If it turns out that the node should really be fathomed by bound,
       addCuts() simply treats all the cuts as loose as it does the bookkeeping.
 
-      canFix true if extra information being passed
     */
-    int addCuts(CbcNode * node, CoinWarmStartBasis *&lastws, bool canFix);
+    int addCuts(CbcNode * node, CoinWarmStartBasis *&lastws);
 
     /** Traverse the tree from node to root and prep the model
 
@@ -2280,6 +2285,10 @@ public:
     inline CbcRowCuts * globalCuts() {
         return &globalCuts_;
     }
+    /// Get rid of global cuts
+    inline void zapGlobalCuts() {
+        globalCuts_ = CbcRowCuts();
+    }
     /// Copy and set a pointer to a row cut which will be added instead of normal branching.
     void setNextRowCut(const OsiRowCut & cut);
     /// Get a pointer to current node (be careful)
@@ -2331,9 +2340,16 @@ public:
     inline void setContinuousPriority(int value) {
         continuousPriority_ = value;
     }
-    inline void incrementExtra(int nodes, int iterations) {
+    inline void incrementExtra(int nodes, int iterations, int fathoms=1) {
         numberExtraNodes_ += nodes;
         numberExtraIterations_ += iterations;
+	numberFathoms_ += fathoms;
+    }
+    /// Zero extra
+    inline void zeroExtra() {
+        numberExtraNodes_ = 0;
+        numberExtraIterations_ = 0;
+	numberFathoms_ = 0;
     }
     /// Number of extra iterations
     inline int numberExtraIterations() const {
@@ -2644,9 +2660,10 @@ private:
 	4 bit (16) - very lightweight preprocessing in smallB&B
 	5 bit (32) - event handler needs to be cloned when parallel
 	6 bit (64) - testing - use probing to make cliques
-	7 bit (128) - try orbital branching (if nauty)
-	8 bit (256) - branching on objective (later)
-	9 bit (512) - branching on constraints (later)
+	7/8 bit (128) - try orbital branching (if nauty)
+	9 bit (512) - branching on objective (later)
+	10 bit (1024) - branching on constraints (later)
+	11/12 bit 2048 - intermittent cuts
     */
     int moreSpecialOptions2_;
     /// User node comparison function
@@ -2784,6 +2801,8 @@ private:
     int numberExtraIterations_;
     /// Number of extra nodes in fast lp
     int numberExtraNodes_;
+    /// Number of times fast lp entered
+    int numberFathoms_;
     /** Value of objective at continuous
         (Well actually after initial round of cuts)
     */
@@ -2897,6 +2916,8 @@ private:
         default is 0
     */
     int threadMode_;
+    /// Number of global cuts on entry to a node
+    int numberGlobalCutsIn_;
     /// Thread stuff for master
     CbcBaseModel * master_;
     /// Pointer to masterthread

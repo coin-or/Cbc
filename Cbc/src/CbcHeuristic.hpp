@@ -459,6 +459,15 @@ public:
     void setSeed(int value) {
         seed_ = value;
     }
+    /** Check whether the heuristic should run at all
+        0 - before cuts at root node (or from doHeuristics)
+        1 - during cuts at root
+        2 - after root node cuts
+        3 - after cuts at other nodes
+        4 - during cuts at other nodes
+            8 added if previous heuristic in loop found solution
+    */
+    virtual bool shouldHeurRun(int whereFrom);
 
 protected:
     // Data

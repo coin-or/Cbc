@@ -636,7 +636,7 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
                 lastws->getArtifStatus(i + model->numberRowsAtContinuous());
             if (status != CoinWarmStartBasis::basic &&
                     model->addedCuts()[i]) {
-                if (!model->addedCuts()[i]->decrement(numberLeft))
+         	  if (!model->addedCuts()[i]->decrement(numberLeft))
                     delete model->addedCuts()[i];
             }
 	  }
@@ -645,8 +645,10 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
 	  for (int i = 0; i < model->currentNumberCuts(); i++) {
             // take off node
 	    if (model->addedCuts()[i]) {
-                if (!model->addedCuts()[i]->decrement(numberLeft))
+	        if (model->parallelMode()!=1) {
+		  if (!model->addedCuts()[i]->decrement(numberLeft))
                     delete model->addedCuts()[i];
+		}
             }
 	  }
 	}
@@ -749,7 +751,7 @@ CbcTreeArray::push(CbcNode * x)
     if (lastNode_) {
         if (lastNode_->nodeInfo()->parent() == x->nodeInfo()) {
             // x is parent of lastNode_ so put x on heap
-            //#define CBCTREE_PRINT
+	  //#define CBCTREE_PRINT
 #ifdef CBCTREE_PRINT
             printf("pushX x %x (%x at depth %d n %d) is parent of lastNode_ %x (%x at depth %d n %d)\n",
                    x, x->nodeInfo(), x->depth(), x->nodeNumber(),

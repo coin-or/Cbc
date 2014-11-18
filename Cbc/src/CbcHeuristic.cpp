@@ -1323,6 +1323,10 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		    if (clpSolver)
 		      clpSolver->zapDebugger();
 #endif
+#ifdef CONFLICT_CUTS
+		    if ((model_->moreSpecialOptions()&4194304)!=0)
+		      model.zapGlobalCuts();
+#endif
                     model.branchAndBound();
 		    model_->setHeuristicModel(NULL);
 		    model_->setSpecialOptions(saveOptions);
@@ -1751,7 +1755,7 @@ CbcRounding::CbcRounding()
     down_ = NULL;
     up_ = NULL;
     equal_ = NULL;
-    //whereFrom_ |= 16; // allow more often
+    //whereFrom_ |= 16*(1+256); // allow more often
 }
 
 // Constructor from model
@@ -1769,7 +1773,7 @@ CbcRounding::CbcRounding(CbcModel & model)
     up_ = NULL;
     equal_ = NULL;
     seed_ = 7654321;
-    //whereFrom_ |= 16; // allow more often
+    //whereFrom_ |= 16*(1+256); // allow more often
 }
 
 // Destructor
@@ -1858,6 +1862,24 @@ CbcRounding::resetModel(CbcModel * model)
     matrixByRow_ = *model_->solver()->getMatrixByRow();
     validate();
 }
+/* Check whether the heuristic should run at all
+   0 - before cuts at root node (or from doHeuristics)
+   1 - during cuts at root
+   2 - after root node cuts
+   3 - after cuts at other nodes
+   4 - during cuts at other nodes
+   8 added if previous heuristic in loop found solution
+*/
+bool 
+CbcRounding::shouldHeurRun(int whereFrom)
+{
+  if (whereFrom!=4) {
+    return CbcHeuristic::shouldHeurRun(whereFrom);
+  } else {
+    numCouldRun_++;
+    return shouldHeurRun_randomChoice();
+  }
+}
 // See if rounding will give solution
 // Sets value of solution
 // Assumes rhs for original matrix still okay
@@ -1875,6 +1897,10 @@ CbcRounding::solution(double & solutionValue,
             (when() % 10 == 2 && (model_->phase() != 2 && model_->phase() != 3)))
         return 0; // switched off
     numRuns_++;
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
     OsiSolverInterface * solver = model_->solver();
     double direction = solver->getObjSense();
     double newSolutionValue = direction * solver->getObjValue();
@@ -2773,6 +2799,10 @@ CbcHeuristicPartial::solution(double & solutionValue,
     // Return if already done
     if (fixPriority_ < 0)
         return 0; // switched off
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
     const double * hotstartSolution = model_->hotstartSolution();
     const int * hotstartPriorities = model_->hotstartPriorities();
     if (!hotstartSolution)
@@ -2912,6 +2942,10 @@ CbcSerendipity::solution(double & solutionValue,
 {
     if (!model_)
         return 0;
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
     if (!inputSolution_) {
         // get information on solver type
         OsiAuxInfo * auxInfo = model_->solver()->getAuxiliaryInfo();

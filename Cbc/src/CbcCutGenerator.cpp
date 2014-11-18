@@ -174,7 +174,9 @@ void
 CbcCutGenerator::refreshModel(CbcModel * model)
 {
     model_ = model;
-    generator_->refreshSolver(model_->solver());
+    // added test - helps if generator not thread safe
+    if (whenCutGenerator_!=-100)
+      generator_->refreshSolver(model_->solver());
 }
 /* Generate cuts for the model data contained in si.
    The generated cuts are inserted into and returned in the

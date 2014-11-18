@@ -239,6 +239,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 */
     if (!when() || (when() == 1 && model_->phase() != 1))
         return 0; // switched off
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
     // See if at root node
     bool atRoot = model_->getNodeCount() == 0;
     int passNumber = model_->getCurrentPassNumber();
@@ -2122,7 +2126,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
                             //simplex->writeMps("test.mps",2,1);
                             if (nFixed*3 > numberColumns*2)
                                 simplex->allSlackBasis(); // may as well go from all slack
+			    int logLevel=simplex->logLevel();
+			    if (logLevel<=1)
+			      simplex->setLogLevel(0);
                             simplex->primal(1);
+			    simplex->setLogLevel(logLevel);
                             clpSolver->setWarmStart(NULL);
                         }
 #endif

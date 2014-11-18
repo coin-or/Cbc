@@ -364,16 +364,18 @@ CbcRowCuts::eraseRowCut(int sequence)
     hash_[ipos]=hash_[k];
     ipos=k;
   }
-  delete cut;
+  hash_[ipos].index=-1;
   // move last to found
   numberCuts_--;
-  if (numberCuts_) {
+  assert (found==numberCuts_); // debug when fails
+  if (numberCuts_&&found<numberCuts_) {
     ipos = hashCut(*rowCut_[numberCuts_],hashSize);
     while ( true ) {
       int j1 = hash_[ipos].index;
       if (j1!=numberCuts_) {
 	int k = hash_[ipos].next;
 	ipos = k;
+	assert (ipos>=0);
       } else {
 	// change
 	hash_[ipos].index=found;
@@ -383,13 +385,77 @@ CbcRowCuts::eraseRowCut(int sequence)
       }
     }
   }
-  assert (!rowCut_[numberCuts_]);
+  delete cut;
+  rowCut_[numberCuts_]=NULL;
+  //assert (!rowCut_[numberCuts_-1]);
+}
+// Truncate
+void 
+CbcRowCuts::truncate(int numberAfter)
+{
+  if (numberAfter<0||numberAfter>=numberCuts_)
+    return;
+  for (int i=numberAfter;i<numberCuts_;i++) {
+    delete rowCut_[i];
+    rowCut_[i]=NULL;
+  }
+  numberCuts_=numberAfter;
+  int hashSize= size_*hashMultiplier_;
+  for (int i=0;i<hashSize;i++) {
+    hash_[i].index=-1;
+    hash_[i].next=-1;
+  }
+  OsiRowCut2 ** temp = new  OsiRowCut2 * [size_];
+  lastHash_=-1;
+  for (int i=0;i<numberCuts_;i++) {
+    temp[i]=rowCut_[i];
+    int ipos = hashCut(*temp[i],hashSize);
+    int found = -1;
+    int jpos=ipos;
+    while ( true ) {
+      int j1 = hash_[ipos].index;
+      if ( j1 >= 0 ) {
+	if ( !same(*temp[i],*temp[j1]) ) {
+	  int k = hash_[ipos].next;
+	  if ( k != -1 )
+	    ipos = k;
+	  else
+	    break;
+	} else {
+	  found = j1;
+	  break;
+	}
+      } else {
+	break;
+      }
+    }
+    if (found<0) {
+      assert (hash_[ipos].next==-1);
+      if (ipos==jpos) {
+	// first
+	hash_[ipos].index=i;
+      } else {
+	// find next space 
+	while ( true ) {
+	  ++lastHash_;
+	  assert (lastHash_<hashSize);
+	  if ( hash_[lastHash_].index == -1 ) 
+	    break;
+	}
+	hash_[ipos].next = lastHash_;
+	hash_[lastHash_].index = i;
+      }
+    }
+  }
+  delete [] rowCut_;
+  rowCut_ = temp;
 }
 // Return 0 if added, 1 if not, -1 if not added because of space
 int 
 CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut & cut,int whichType)
 {
   int hashSize= size_*hashMultiplier_;
+  bool globallyValid=cut.globallyValid();
   if (numberCuts_==size_) {
     size_ = 2*size_+100;
     hashSize=hashMultiplier_*size_;
@@ -400,6 +466,7 @@ CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut & cut,int whichType)
       hash_[i].index=-1;
       hash_[i].next=-1;
     }
+    lastHash_=-1;
     for (int i=0;i<numberCuts_;i++) {
       temp[i]=rowCut_[i];
       int ipos = hashCut(*temp[i],hashSize);
@@ -506,7 +573,10 @@ CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut & cut,int whichType)
       newCutPtr->setLb(newLb);
       newCutPtr->setUb(newUb);
       newCutPtr->setRow(vector);
+      newCutPtr->setGloballyValid(globallyValid);
       rowCut_[numberCuts_++]=newCutPtr;
+      //printf("addedGlobalCut of size %d to %x - cuts size %d\n",
+      //     cut.row().getNumElements(),this,numberCuts_);
       return 0;
     } else {
       return 1;
@@ -530,6 +600,7 @@ CbcRowCuts::addCutIfNotDuplicateWhenGreedy(const OsiRowCut & cut,int whichType)
       hash_[i].index=-1;
       hash_[i].next=-1;
     }
+    lastHash_=-1;
     for (int i=0;i<numberCuts_;i++) {
       temp[i]=rowCut_[i];
       int ipos = hashCut2(*temp[i],hashSize);
@@ -637,6 +708,8 @@ CbcRowCuts::addCutIfNotDuplicateWhenGreedy(const OsiRowCut & cut,int whichType)
       newCutPtr->setUb(newUb);
       newCutPtr->setRow(vector);
       rowCut_[numberCuts_++]=newCutPtr;
+      printf("addedGreedyGlobalCut of size %d to %x - cuts size %d\n",
+	     cut.row().getNumElements(),this,numberCuts_);
       return 0;
     } else {
       return 1;

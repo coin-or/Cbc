@@ -43,11 +43,35 @@ CbcClique::CbcClique (CbcModel * model, int cliqueType, int numberMembers,
                       const int * which, const char * type, int identifier, int slack)
         : CbcObject(model)
 {
-    id_ = identifier;
     numberMembers_ = numberMembers;
+    int * backward = NULL;
+    if (identifier<0) {
+      // which are variables in model - not in integers
+      identifier=-identifier;
+      int numberColumns = model->getNumCols();
+      int numberIntegers = model->numberIntegers();
+      const int * integerVariable = model->integerVariable();
+      backward = new int [numberColumns];
+      for (int i=0;i<numberColumns;i++)
+	backward[i]=-1;
+      for (int i=0;i<numberIntegers;i++) {
+	backward[integerVariable[i]]=i;
+      }
+    }
     if (numberMembers_) {
         members_ = new int[numberMembers_];
         memcpy(members_, which, numberMembers_*sizeof(int));
+	if (backward) {
+	  for (int i=0;i<numberMembers_;i++) {
+	    int iColumn = which[i];
+	    iColumn = backward[iColumn];
+	    assert (iColumn>=0);
+	    members_[i]=iColumn;
+#ifdef FULL_PRINT
+	    printf("%d column %d member %d\n",i,which[i],iColumn); 
+#endif
+	  }
+	}
         type_ = new char[numberMembers_];
         if (type) {
             memcpy(type_, type, numberMembers_*sizeof(char));
@@ -67,6 +91,8 @@ CbcClique::CbcClique (CbcModel * model, int cliqueType, int numberMembers,
             numberNonSOSMembers_++;
     cliqueType_ = cliqueType;
     slack_ = slack;
+    delete [] backward;
+    id_ = identifier;
 }
 
 // Copy constructor
@@ -282,6 +308,7 @@ CbcClique::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInform
     int numberFree = numberMembers_;
     const int * integer = model_->integerVariable();
     //OsiSolverInterface * solver = model_->solver();
+    CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis*>(solver->getWarmStart()) ;
     const double * solution = model_->testSolution();
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
@@ -311,12 +338,18 @@ CbcClique::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInform
             sort[numberUnsatis++] = value;
         } else if (upper[iColumn] > lower[iColumn]) {
             upList[--numberFree] = j;
+	    sort[numberFree] = 0.0;
+	    if (basis && basis->getStructStatus(iColumn) == CoinWarmStartBasis::basic) 
+	      sort[numberFree] = -1.0;
+	      
         }
     }
     assert (numberUnsatis);
     if (!slackValue) {
         // sort
         CoinSort_2(sort, sort + numberUnsatis, upList);
+	// also try and spread out satisfied basic
+        CoinSort_2(sort+numberFree, sort + numberMembers_, upList+numberFree);
         // put first in up etc
         int kWay = 1;
         for (j = 0; j < numberUnsatis; j++) {
@@ -458,10 +491,23 @@ CbcCliqueBranchingObject::branch()
                     printf("%d ", i + 32*iWord);
 #endif
                     // fix weak way
-                    if (clique_->type(i + 32*iWord))
+                    if (clique_->type(i + 32*iWord)) {
+#ifdef FULL_PRINT
+		      printf("member %d int %d matcol %d bound %g %g to 0.0\n",
+			     i,iColumn,integerVariables[iColumn],
+			     model_->solver()->getColLower()[integerVariables[iColumn]],
+			     model_->solver()->getColUpper()[integerVariables[iColumn]]);
+#endif
                         model_->solver()->setColUpper(integerVariables[iColumn], 0.0);
-                    else
+                    } else {
+#ifdef FULL_PRINT
+		      printf("member %d int %d matcol %d bound %g %g to 1.0\n",
+			     i,iColumn,integerVariables[iColumn],
+			     model_->solver()->getColLower()[integerVariables[iColumn]],
+			     model_->solver()->getColUpper()[integerVariables[iColumn]]);
+#endif
                         model_->solver()->setColLower(integerVariables[iColumn], 1.0);
+		    }
                 }
             }
         }
@@ -480,10 +526,23 @@ CbcCliqueBranchingObject::branch()
                     printf("%d ", i + 32*iWord);
 #endif
                     // fix weak way
-                    if (clique_->type(i + 32*iWord))
+                    if (clique_->type(i + 32*iWord)) {
+#ifdef FULL_PRINT
+		      printf("member %d int %d matcol %d bound %g %g to 0.0\n",
+			     i,iColumn,integerVariables[iColumn],
+			     model_->solver()->getColLower()[integerVariables[iColumn]],
+			     model_->solver()->getColUpper()[integerVariables[iColumn]]);
+#endif
                         model_->solver()->setColUpper(integerVariables[iColumn], 0.0);
-                    else
+                    } else {
+#ifdef FULL_PRINT
+		      printf("member %d int %d matcol %d bound %g %g to 1.0\n",
+			     i,iColumn,integerVariables[iColumn],
+			     model_->solver()->getColLower()[integerVariables[iColumn]],
+			     model_->solver()->getColUpper()[integerVariables[iColumn]]);
+#endif
                         model_->solver()->setColLower(integerVariables[iColumn], 1.0);
+		    }
                 }
             }
         }

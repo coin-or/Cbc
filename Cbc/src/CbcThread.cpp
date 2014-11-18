@@ -595,6 +595,7 @@ CbcBaseModel::CbcBaseModel (CbcModel & model,  int type)
 void
 CbcBaseModel::stopThreads(int type)
 {
+    CbcModel * baseModel = children_[0].baseModel();
     if (type < 0) {
 	// max nodes ?
 	bool finished = false;
@@ -607,11 +608,20 @@ CbcBaseModel::stopThreads(int type)
 	    }
 	  }
         }
+	for (int i = 0; i < numberThreads_; i++) {
+	  baseModel->incrementExtra(threadModel_[i]->getExtraNodeCount(),
+				    threadModel_[i]->numberExtraIterations(),
+				    threadModel_[i]->getFathomCount());
+	  threadModel_[i]->zeroExtra();
+	}
         return;
     }
     for (int i = 0; i < numberThreads_; i++) {
         children_[i].wait(1, 0);
         assert (children_[i].returnCode() == -1);
+	baseModel->incrementExtra(threadModel_[i]->getExtraNodeCount(),
+				  threadModel_[i]->numberExtraIterations(),
+				  threadModel_[i]->getFathomCount());
         threadModel_[i]->setInfoInChild(-2, NULL);
         children_[i].setReturnCode( 0);
         children_[i].exit();
@@ -1462,6 +1472,15 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
                 dynamicObject->copySome(baseObject);
             }
         }
+	// add new global cuts
+	CbcRowCuts * baseGlobal = baseModel->globalCuts();
+	CbcRowCuts * thisGlobal = globalCuts();
+	int baseNumberCuts = baseGlobal->sizeRowCuts();
+	int thisNumberCuts = thisGlobal->sizeRowCuts();
+	for (int i=thisNumberCuts;i<baseNumberCuts;i++) {
+	  thisGlobal->addCutIfNotDuplicate(*baseGlobal->cut(i));
+	}
+	numberGlobalCutsIn_ = baseNumberCuts; 
     } else if (mode == 1) {
         lockThread();
         CbcThread * stuff = reinterpret_cast<CbcThread *> (masterThread_);
@@ -1501,6 +1520,16 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
             baseModel->tree_->push(stuff->node());
         if (stuff->createdNode())
             baseModel->tree_->push(stuff->createdNode());
+	// add new global cuts to base and take off
+	CbcRowCuts * baseGlobal = baseModel->globalCuts();
+	CbcRowCuts * thisGlobal = globalCuts();
+	int thisNumberCuts = thisGlobal->sizeRowCuts();
+	for (int i=thisNumberCuts-1;i>=numberGlobalCutsIn_;i--) {
+	  baseGlobal->addCutIfNotDuplicate(*thisGlobal->cut(i),thisGlobal->cut(i)->whichRow());
+	  thisGlobal->eraseRowCut(i);
+	}
+	//thisGlobal->truncate(numberGlobalCutsIn_);
+	numberGlobalCutsIn_ = 999999; 
         unlockThread();
     } else if (mode == 2) {
         baseModel->sumChangeObjective1_ += sumChangeObjective1_;
@@ -1574,6 +1603,7 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
             tree_ = new CbcTree();
             tree_->setComparison(*nodeCompare_) ;
         }
+	delete continuousSolver_;
         continuousSolver_ = baseModel->continuousSolver_->clone();
 	// make sure solvers have correct message handler
 	solver_->passInMessageHandler(handler_);
@@ -1859,7 +1889,7 @@ CbcModel::parallelCuts(CbcBaseModel * master, OsiCuts & theseCuts,
         resizeWhichGenerator(numberBefore, numberAfter);
 
         for (j = numberRowCutsBefore; j < numberRowCutsAfter; j++) {
-            whichGenerator_[numberBefore++] = i ;
+            whichGenerator_[numberBefore++] = i  ;
             const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
             if (thisCut->lb() > thisCut->ub())
                 status = -1; // sub-problem is infeasible
@@ -1895,7 +1925,7 @@ CbcModel::parallelCuts(CbcBaseModel * master, OsiCuts & theseCuts,
                 if (messageHandler()->logLevel() > 2)
                     printf("Old cut added - violation %g\n",
                            thisCut->violated(cbcColSolution_)) ;
-                whichGenerator_[numberOld++] = -1;
+                whichGenerator_[numberOld++] = 999;
                 theseCuts.insert(*thisCut) ;
             }
         }

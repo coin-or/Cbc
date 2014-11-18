@@ -89,6 +89,10 @@ CbcHeuristicRENS::solution(double & solutionValue,
     if ((numberTries_&&(rensType_&16)==0) || numberTries_>1 || (when() < 2 && bestSolution))
         return 0;
     numberTries_++;
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
     double saveFractionSmall=fractionSmall_;
     OsiSolverInterface * solver = model_->solver();
 

@@ -45,6 +45,9 @@
 #ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #include "ClpSimplexOther.hpp"
+#include "ClpSolve.hpp"
+#include "ClpDualRowSteepest.hpp"
+#include "ClpPrimalColumnPivot.hpp"
 #endif
 using namespace std;
 #include "CglCutGenerator.hpp"
@@ -881,6 +884,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
                 bestChoice = i;
             }
         }
+	//if (!model->parentModel())
+	//solver->writeMps("query");
         // If we have hit max time don't do strong branching
         bool hitMaxTime = (model->getCurrentSeconds() >
                             model->getDblParam(CbcModel::CbcMaximumSeconds));
@@ -1613,6 +1618,16 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     delete branch_;
     branch_ = NULL;
     OsiSolverInterface * solver = model->solver();
+    //#define CHECK_DEBUGGER_PATH
+#ifdef CHECK_DEBUGGER_PATH
+    bool onOptimalPath=false;
+    if ((model->specialOptions()&1) != 0) {
+      const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
+      if (debugger) {
+	onOptimalPath = true;
+      }
+    }
+#endif
     // get information on solver type
     const OsiAuxInfo * auxInfo = solver->getAuxiliaryInfo();
     const OsiBabSolver * auxiliaryInfo = dynamic_cast<const OsiBabSolver *> (auxInfo);
@@ -1956,6 +1971,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     }
     choice.possibleBranch = choiceObject;
     numberPassesLeft = CoinMax(numberPassesLeft, 2);
+    /* How dogged to be in strong branching
+       0 - default
+       1 - go to end on first time
+       2 - always go to end
+     */
+    int goToEndInStrongBranching = (model->moreSpecialOptions2()&(3*8192))>>13;
 #ifdef COIN_HAS_NTY
     // 1 after, 2 strong, 3 until depth 5
     int orbitOption = (model->moreSpecialOptions2()&(128|256))>>7;
@@ -2626,6 +2647,15 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         assert(doneHotStart);
                         solver->unmarkHotStart();
                         model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
+#ifdef CHECK_DEBUGGER_PATH
+			if ((model->specialOptions()&1) != 0 && onOptimalPath) {
+			  const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
+			  if (!debugger) {
+			    printf("Strong branching down on %d went off optimal path\n",iObject);
+			    abort();
+			  }
+			}
+#endif
                         double newObjValue = solver->getObjSense()*solver->getObjValue();
                         objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                         solver->markHotStart();
@@ -2840,9 +2870,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 		symmetryInfo->fillOrbits();
 		orbits = symmetryInfo->whichOrbit();
 		int iColumn=-1;
-		if (orbits && symmetryInfo->numberUsefulObjects()) {
+		if (orbits && symmetryInfo->numberUsefulOrbits()) {
 		  bool doBranch=true;
-		  int numberUsefulOrbits = symmetryInfo->numberUsefulObjects();
+		  int numberUsefulOrbits = symmetryInfo->numberUsefulOrbits();
 		  if (numberUsefulOrbits<2) {
 		    assert (numberUsefulOrbits);
 		    double largest=-1.0;
@@ -2874,15 +2904,18 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 		      int nDo=0;
 		      const double * lower = solver->getColLower();
 		      const double * upper = solver->getColUpper();
+		      const int * integerVariable = model->integerVariable();
 		      for (int iOrbit = 0; iOrbit < numberUsefulOrbits; iOrbit++) {
 			double distance=1.0;
 			int iColumn = -1;
-			for (int i=0;i<numberColumns;i++) {
+			int numberIntegers = model->numberIntegers();
+			for (int j=0;j<numberIntegers;j++) {
+			  int i=integerVariable[j];
 			  if (orbits[i]==iOrbit &&lower[i]==0.0&&upper[i]==1.0) {
 			    double away = fabs(saveSolution[i]-0.5);
 			    if (away<distance&&away<0.4999) {
 			      distance=away;
-			      iColumn=i;
+			      iColumn=j;
 			    }
 			  }
 			}
@@ -3017,6 +3050,25 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     double objectiveChange ;
                     double newObjectiveValue = 1.0e100;
                     int j;
+#ifdef COIN_HAS_CLP
+		    int saveMaxHotIts=0;
+		    int saveOsiClpOptions=0;
+		    if (osiclp && goToEndInStrongBranching) {
+		      /* How dogged to be in strong branching
+			 0 - default
+			 1 - go to end on first time
+			 2 - always go to end
+		      */
+		      osiclp->getIntParam(OsiMaxNumIterationHotStart, saveMaxHotIts);
+		      saveOsiClpOptions=osiclp->specialOptions();
+		      if (goToEndInStrongBranching==2 ||
+			  dynamicObject->numberTimesBranched()==0) {
+			osiclp->setIntParam(OsiMaxNumIterationHotStart, 
+					    10*(osiclp->getNumRows()+numberColumns));
+			osiclp->setSpecialOptions(saveOsiClpOptions & (~32));
+		      }
+		    }
+#endif
                     // status is 0 finished, 1 infeasible and other
                     int iStatus;
                     /*
@@ -3059,17 +3111,30 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     } else {
                         iStatus = 1; // infeasible
 #ifdef CONFLICT_CUTS
+#undef CONFLICT_CUTS
+			//#define CONFLICT_CUTS 2
+#endif
+#ifdef CONFLICT_CUTS 
 # ifdef COIN_HAS_CLP
 			if (osiclp&&(model->moreSpecialOptions()&4194304)!=0) {
 			  const CbcFullNodeInfo * topOfTree =
 			    model->topOfTree();
 			  if (topOfTree) {
+#if CONFLICT_CUTS==2
 			    OsiRowCut * cut = osiclp->smallModelCut(topOfTree->lower(),
 								    topOfTree->upper(),
 								    model->numberRowsAtContinuous(),
 								    model->whichGenerator());
+#else
+			    OsiRowCut * cut = osiclp->modelCut(topOfTree->lower(),
+							       topOfTree->upper(),
+							       model->numberRowsAtContinuous(),
+							       model->whichGenerator(),0);
+#endif
 			    if (cut) {
-			      printf("XXXXXX found conflict cut in strong branching\n");
+			      if (model->messageHandler()->logLevel() > 1)
+				printf("Conflict cut found in strong branching (%d elements)\n",
+				       cut->row().getNumElements());
 			      //cut->print();
 			      if ((model->specialOptions()&1) != 0) {
 				const OsiRowCutDebugger *debugger = model->continuousSolver()->getRowCutDebugger() ;
@@ -3186,6 +3251,16 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     if (needHotStartUpdate) {
                         needHotStartUpdate = false;
                         model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
+#ifdef CHECK_DEBUGGER_PATH
+			if ((model->specialOptions()&1) != 0 && onOptimalPath) {
+			  const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
+			  if (!debugger) {
+			    printf("Strong branching down on %d went off optimal path\n",iObject);
+			    model->solver()->writeMps("query");
+			    abort();
+			  }
+			}
+#endif
                         double newObjValue = solver->getObjSense()*solver->getObjValue();
                         objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                         //we may again have an integer feasible solution
@@ -3232,6 +3307,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     // repeat the whole exercise, forcing the variable up
                     predictedChange=choice.possibleBranch->branch();
                     solver->solveFromHotStart() ;
+#ifdef COIN_HAS_CLP
+		    if (osiclp && goToEndInStrongBranching) {
+		      osiclp->setIntParam(OsiMaxNumIterationHotStart, saveMaxHotIts);
+		      osiclp->setSpecialOptions(saveOsiClpOptions);
+		    }
+#endif
                     numberStrongDone++;
                     numberStrongIterations += solver->getIterationCount();
                     /*
@@ -3254,12 +3335,19 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 			  const CbcFullNodeInfo * topOfTree =
 			    model->topOfTree();
 			  if (topOfTree) {
+#if CONFLICT_CUTS==2
 			    OsiRowCut * cut = osiclp->smallModelCut(topOfTree->lower(),
 								    topOfTree->upper(),
 								    model->numberRowsAtContinuous(),
 								    model->whichGenerator());
+#else
+			    OsiRowCut * cut = osiclp->modelCut(topOfTree->lower(),
+							       topOfTree->upper(),
+							       model->numberRowsAtContinuous(),
+							       model->whichGenerator(),0);
+#endif
 			    if (cut) {
-			      printf("XXXXXX found conflict cut in strong branching\n");
+			      //printf("XXXXXX found conflict cut in strong branching\n");
 			      //cut->print();
 			      if ((model->specialOptions()&1) != 0) {
 				const OsiRowCutDebugger *debugger = model->continuousSolver()->getRowCutDebugger() ;
@@ -3355,6 +3443,15 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 				}
                                 if (needHotStartUpdate) {
                                     model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
+#ifdef CHECK_DEBUGGER_PATH
+				    if ((model->specialOptions()&1) != 0 && onOptimalPath) {
+				      const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
+				      if (!debugger) {
+					printf("Strong branching up on %d went off optimal path\n",iObject);
+					abort();
+				      }
+				    }
+#endif
                                     newObjectiveValue = solver->getObjSense() * solver->getObjValue();
                                     objectiveValue_ = CoinMax(objectiveValue_,newObjectiveValue);
                                     objectiveChange = CoinMax(newObjectiveValue  - objectiveValue_, 0.0);
@@ -3390,6 +3487,15 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     if (needHotStartUpdate) {
                         needHotStartUpdate = false;
                         model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
+#ifdef CHECK_DEBUGGER_PATH
+			if ((model->specialOptions()&1) != 0 && onOptimalPath) {
+			  const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
+			  if (!debugger) {
+			    printf("Strong branching up on %d went off optimal path\n",iObject);
+			    abort();
+			  }
+			}
+#endif
                         double newObjValue = solver->getObjSense()*solver->getObjValue();
                         objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                         //we may again have an integer feasible solution
@@ -3404,6 +3510,15 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                                    objValue,
                                                    solver->getColSolution()) ;
                             model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
+#ifdef CHECK_DEBUGGER_PATH
+			    if ((model->specialOptions()&1) != 0 && onOptimalPath) {
+			      const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
+			      if (!debugger) {
+				printf("Strong branching up on %d went off optimal path\n",iObject);
+				abort();
+			      }
+			    }
+#endif
                             double newObjValue = solver->getObjSense()*solver->getObjValue();
                             objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                             cutoff = model->getCutoff();
@@ -3559,6 +3674,15 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         assert(doneHotStart);
                         solver->unmarkHotStart();
                         model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
+#ifdef CHECK_DEBUGGER_PATH
+			if ((model->specialOptions()&1) != 0 && onOptimalPath) {
+			  const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
+			  if (!debugger) {
+			    printf("Strong branching down on %d went off optimal path\n",iObject);
+			    abort();
+			  }
+			}
+#endif
                         double newObjValue = solver->getObjSense()*solver->getObjValue();
                         objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                         bool goneInfeasible = (!solver->isProvenOptimal()||solver->isDualObjectiveLimitReached());
@@ -3611,6 +3735,16 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         assert(doneHotStart);
                         solver->unmarkHotStart();
                         model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
+#ifdef CHECK_DEBUGGER_PATH
+			if ((model->specialOptions()&1) != 0 && onOptimalPath) {
+			  const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
+			  if (!debugger) {
+			    printf("Strong branching down on %d went off optimal path\n",iObject);
+			    solver->writeMps("query");
+			    abort();
+			  }
+			}
+#endif
                         double newObjValue = solver->getObjSense()*solver->getObjValue();
                         objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                         bool goneInfeasible = (!solver->isProvenOptimal()||solver->isDualObjectiveLimitReached());
@@ -3704,6 +3838,15 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     int easy = 2;
                     solver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, &easy) ;
                     model->resolve(NULL, 11, saveSolution, saveLower, saveUpper) ;
+#ifdef CHECK_DEBUGGER_PATH
+		    if ((model->specialOptions()&1) != 0 && onOptimalPath) {
+		      const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
+		      if (!debugger) {
+			printf("Strong branching went off optimal path\n");
+			abort();
+		      }
+		    }
+#endif
                     double newObjValue = solver->getObjSense()*solver->getObjValue();
                     objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                     solver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL) ;
@@ -3852,7 +3995,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	}
 	const int * orbits = symmetryInfo->whichOrbit();
 	if (orbits && orbits[kColumn]>=0) {
-	  int numberUsefulOrbits = symmetryInfo->numberUsefulObjects();
+	  int numberUsefulOrbits = symmetryInfo->numberUsefulOrbits();
 	  if (solver->messageHandler()->logLevel() > 1)
 	    printf("Orbital Branching on %d - way %d n %d\n",kColumn,way(),numberUsefulOrbits);
 	  if (numberUsefulOrbits<1000||orbitOption==3) {
@@ -3934,400 +4077,1429 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     }
     return anyAction;
 }
+// 0 is down, 1 is up
+typedef struct {
+  double initialValue; // initial value
+  double upLowerBound; // Lower bound when going up
+  double downUpperBound; // Upper bound when going down
+  double movement[2]; // cost  (and initial away from feasible)
+  double sumModified[2]; // Sum of integer changes
+  int modified[2]; // Number integers changed
+  int numIntInfeas[2]; // without odd ones
+  int numObjInfeas[2]; // just odd ones
+  bool finished[2]; // true if solver finished
+  int numIters[2]; // number of iterations in solver (-1 if never solved)
+  double * integerSolution; // output if thinks integer solution
+# ifdef COIN_HAS_CLP
+  ClpDualRowSteepest * steepest;
+#endif
+  int columnNumber; // Which column it is
+} StrongInfo;
+typedef struct {
+  double integerTolerance;
+  double * originalSolution;
+  CoinWarmStart * ws;
+# ifdef COIN_HAS_CLP
+  ClpDualRowSteepest * dualRowPivot;
+  ClpPrimalColumnPivot * primalColumnPivot;
+# endif
+  int * back;
+  int solveType;
+} StrongStaticInfo;
+typedef struct {
+  StrongStaticInfo *staticInfo;
+  StrongInfo * choice;
+  OsiSolverInterface * solver;
+  int whichChoice;
+} StrongBundle;
+/* return 1 if possible solution (for solveType 100 if infeasible)
+   2 set if down was infeasible
+   4 set if up was infeasible
+ */
+int solveAnalyze(void * info) {
+  StrongBundle * bundle = reinterpret_cast<StrongBundle *>(info);
+  StrongInfo * choice = bundle->choice;
+  StrongStaticInfo * staticInfo = bundle->staticInfo;
+  OsiSolverInterface * solver = bundle->solver;
+  int solveType = staticInfo->solveType;
+  if (solveType==77) {
+    return 0;
+  }
+  const double * saveSolution = staticInfo->originalSolution;
+  int iColumn = choice->columnNumber;
+  const int * back = staticInfo->back;
+  double newObjectiveValue = 1.0e100;
+  double integerTolerance = staticInfo->integerTolerance;
+  double bestSolutionValue=COIN_DBL_MAX;
+  int returnStatus=0;
+  // status is 0 finished, 1 infeasible and other
+  int iStatus;
+  /*
+    Try the down direction first. (Specify the initial branching alternative as
+    down with a call to way(-1). Each subsequent call to branch() performs the
+    specified branch and advances the branch object state to the next branch
+    alternative.)
+  */
+  for (int iWay=0;iWay<2;iWay++) {
+    if (choice->numIters[iWay]==0) {
+      if (solveType!=100) {
+	double saveBound;
+	if (iWay==0) {
+	  saveBound = solver->getColUpper()[iColumn];
+	  solver->setColUpper(iColumn,choice->downUpperBound);
+	} else {
+	  saveBound = solver->getColLower()[iColumn];
+	  solver->setColLower(iColumn,choice->upLowerBound);
+	}
+	if ((solveType&2)==0) {
+	  solver->solveFromHotStart() ;
+	} else {
+	  // restore basis
+	  solver->setWarmStart(staticInfo->ws);
+# ifdef COIN_HAS_CLP
+	  if (staticInfo->dualRowPivot) {
+	    OsiClpSolverInterface * osiclp = dynamic_cast<OsiClpSolverInterface *>(solver);
+	    ClpSimplex * simplex = osiclp->getModelPtr();
+	    simplex->setDualRowPivotAlgorithm(*staticInfo->dualRowPivot);
+	    //simplex->dualRowPivot()->saveWeights(simplex,4);
+	    simplex->setWhatsChanged(ALL_SAME_EXCEPT_COLUMN_BOUNDS);
+	    simplex->dual(0,5);
+	  } else {
+#endif
+	  solver->resolve();
+# ifdef COIN_HAS_CLP
+	  }
+#endif
+	}
+	if (iWay==0)
+	  solver->setColUpper(iColumn,saveBound);
+	else
+	  solver->setColLower(iColumn,saveBound);
+	/*
+	  We now have an estimate of objective degradation that we can use for strong
+	  branching. If we're over the cutoff, the variable is monotone up.
+	  If we actually made it to optimality, check for a solution, and if we have
+	  a good one, call setBestSolution to process it. Note that this may reduce the
+	  cutoff, so we check again to see if we can declare this variable monotone.
+	*/
+	if (solver->isProvenOptimal()) {
+	  iStatus = 0; // optimal
+	} else if (solver->isIterationLimitReached()
+		   && !solver->isDualObjectiveLimitReached()) {
+	  iStatus = 2; // unknown
+	} else {
+	  iStatus = 1; // infeasible
+	}
+	newObjectiveValue = solver->getObjSense() * solver->getObjValue();
+	choice->numIters[iWay] = solver->getIterationCount();
+	// Look at interaction
+	const double * thisSolution = solver->getColSolution();
+	int numberModified=0;
+	double sumModified=0.0;
+	int numberColumns=solver->getNumCols();
+	int numberInfeas=0;
+	for (int i=0;i<numberColumns;i++) {
+	  if (back[i]>=0) {
+	    double value = thisSolution[i];
+	    if (iColumn!=i) {
+	      double difference = fabs(saveSolution[i]-value);
+	      if (difference>integerTolerance) {
+		numberModified++;
+		sumModified += difference;
+	      }
+	    }
+	    if (fabs(value-floor(value+0.5))>integerTolerance)
+	      numberInfeas++;;
+	  }
+	}
+	choice->numIntInfeas[iWay]=numberInfeas;
+	choice->sumModified[iWay] = sumModified;
+	choice->modified[iWay] = numberModified;
+	if (!iStatus) {
+	  choice->finished[iWay] = true ;
+	  if (!numberInfeas) {
+	    returnStatus=1;
+	    if (!choice->integerSolution) {
+	      bestSolutionValue=newObjectiveValue;
+	      choice->integerSolution=CoinCopyOfArray(thisSolution,numberColumns);;
+	    } else if (bestSolutionValue>newObjectiveValue) {
+	      memcpy(choice->integerSolution,thisSolution,numberColumns*sizeof(double));
+	    }
+	  }
+	} else if (iStatus == 1) {
+	  newObjectiveValue = 1.0e100 ;
+	} else {
+	  // Can't say much as we did not finish
+	  choice->finished[iWay] = false ;
+	}
+	choice->movement[iWay] = newObjectiveValue ;
+      } else {
+	// doing continuous and general integer
+	solver->setColSolution(staticInfo->originalSolution);
+	solver->setWarmStart(staticInfo->ws);
+	double saveBound;
+	double newBound;
+	if (iWay==0) {
+	  solver->setObjCoeff(iColumn,1.0);
+	  saveBound=solver->getColUpper()[iColumn];
+	  solver->setColUpper(iColumn,choice->downUpperBound);
+	  newBound=choice->downUpperBound;
+	} else {
+	  solver->setObjCoeff(iColumn,-1.0);
+	  saveBound=solver->getColLower()[iColumn];
+	  solver->setColLower(iColumn,choice->upLowerBound);
+	  newBound=choice->upLowerBound;
+	}
+	solver->setHintParam(OsiDoDualInResolve, true, OsiHintDo) ;
+	solver->resolve();
+	if (iWay==0) {
+	  solver->setColUpper(iColumn,saveBound);
+	} else {
+	  solver->setColLower(iColumn,saveBound);
+	}
+	choice->numIters[iWay] = solver->getIterationCount();
+	if (solver->isProvenOptimal()) {
+	  //printf("Way %d - all way %d iterations - column %d\n",
+	  //	 iWay,solver->getIterationCount(),iColumn);
+	  // can go all way
+	  choice->movement[iWay] = newBound;
+	} else {
+	  solver->setColSolution(staticInfo->originalSolution);
+	  solver->setWarmStart(staticInfo->ws);
+	  solver->setHintParam(OsiDoDualInResolve, false, OsiHintDo) ;
+	  solver->resolve();
+	  //printf("Way %d - first solve %d iterations, second %d - column %d\n",
+	  //	 iWay,choice->numIters[iWay],solver->getIterationCount(),iColumn);
+	  choice->movement[iWay] = solver->getColSolution()[iColumn];
+	  choice->numIters[iWay] += solver->getIterationCount();
+	  if (!solver->isProvenOptimal()) {
+	    choice->modified[0]=1;
+	    returnStatus=1;
+	  }
+	}
+	solver->setObjCoeff(iColumn,0.0);
+      }
+    }
+  }
+  return returnStatus;
+}
+#ifdef CBC_THREAD
+void * cbc_parallelManager(void * stuff)
+{
+  CoinPthreadStuff * driver = reinterpret_cast<CoinPthreadStuff *>(stuff);
+  int whichThread=driver->whichThread();
+  CoinThreadInfo * threadInfo = driver->threadInfoPointer(whichThread);
+  threadInfo->status=-1;
+  int * which = threadInfo->stuff;
+  pthread_barrier_wait(driver->barrierPointer());
+#if 0
+  int status=-1;
+  while (status!=100)
+    status=timedWait(driver,1000,2);
+  pthread_cond_signal(driver->conditionPointer(1));
+  pthread_mutex_unlock(driver->mutexPointer(1,whichThread));
+#endif
+  // so now mutex_ is locked
+  int whichLocked=0;
+  while (true) {
+    pthread_mutex_t * mutexPointer = driver->mutexPointer(whichLocked,whichThread);
+    // wait
+    //printf("Child waiting for %d - status %d %d %d\n",
+    //	   whichLocked,lockedX[0],lockedX[1],lockedX[2]);
+#ifdef DETAIL_THREAD
+    printf("thread %d about to lock mutex %d\n",whichThread,whichLocked);
+#endif
+    pthread_mutex_lock (mutexPointer);
+    whichLocked++;
+    if (whichLocked==3)
+      whichLocked=0;
+    int unLock=whichLocked+1;
+    if (unLock==3)
+      unLock=0;
+    //printf("child pointer %x status %d\n",threadInfo,threadInfo->status);
+    assert(threadInfo->status>=0);
+    if (threadInfo->status==1000)
+      pthread_exit(NULL);
+    int type=threadInfo->status;
+    int & returnCode=which[0];
+    int iPass=which[1];
+    //CoinIndexedVector * array;
+    //double dummy;
+    switch(type) {
+      // dummy
+    case 0:
+      break;
+    case 1:
+      returnCode=solveAnalyze(threadInfo->extraInfo);
+      threadInfo->stuff[3]=0;
+      break;
+    case 100:
+      // initialization
+      break;
+    }
+    threadInfo->status= (type!=1) ? -1 : -2;
+#ifdef DETAIL_THREAD
+    printf("thread %d about to unlock mutex %d\n",whichThread,unLock);
+#endif
+    pthread_mutex_unlock (driver->mutexPointer(unLock,whichThread));
+  }
+}
+#endif
 int CbcNode::analyze (CbcModel *model, double * results)
 {
-    int i;
-    int numberIterationsAllowed = model->numberAnalyzeIterations();
-    OsiSolverInterface * solver = model->solver();
-    objectiveValue_ = solver->getObjSense() * solver->getObjValue();
-    double cutoff = model->getCutoff();
-    const double * lower = solver->getColLower();
-    const double * upper = solver->getColUpper();
-    const double * dj = solver->getReducedCost();
-    int numberObjects = model->numberObjects();
-    int numberColumns = model->getNumCols();
-    // Initialize arrays
-    int numberIntegers = model->numberIntegers();
-    int * back = new int[numberColumns];
-    const int * integerVariable = model->integerVariable();
-    for (i = 0; i < numberColumns; i++)
-        back[i] = -1;
-    // What results is
-    double * newLower = results;
-    double * objLower = newLower + numberIntegers;
-    double * newUpper = objLower + numberIntegers;
-    double * objUpper = newUpper + numberIntegers;
-    for (i = 0; i < numberIntegers; i++) {
-        int iColumn = integerVariable[i];
-        back[iColumn] = i;
-        newLower[i] = 0.0;
-        objLower[i] = -COIN_DBL_MAX;
-        newUpper[i] = 0.0;
-        objUpper[i] = -COIN_DBL_MAX;
+#define COIN_DETAIL
+  int i;
+  int numberIterationsAllowed = model->numberAnalyzeIterations();
+  int numberColumns = model->getNumCols();
+  int numberRows = model->getNumRows();
+  int numberObjects = model->numberObjects();
+  int numberIntegers = model->numberIntegers();
+  int numberLookIntegers=0;
+  int highestPriority=COIN_INT_MAX;
+  int * back = new int[numberColumns];
+  const int * integerVariable = model->integerVariable();
+  for (i = 0; i < numberIntegers; i++) {
+    highestPriority = CoinMin(highestPriority,model->modifiableObject(i)->priority());
+  }
+  for (i = 0; i < numberColumns; i++) 
+    back[i] = -1;
+  for (i = 0; i < numberIntegers; i++) {
+    int iColumn = integerVariable[i];
+    back[iColumn] = i;
+    if (model->modifiableObject(i)->priority()==highestPriority) {
+      numberLookIntegers++;
+    } else {
+      back[iColumn] = i+numberColumns;
     }
-    double * saveUpper = new double[numberColumns];
-    double * saveLower = new double[numberColumns];
-    // Save solution in case heuristics need good solution later
-
-    double * saveSolution = new double[numberColumns];
-    memcpy(saveSolution, solver->getColSolution(), numberColumns*sizeof(double));
-    model->reserveCurrentSolution(saveSolution);
-    for (i = 0; i < numberColumns; i++) {
-        saveLower[i] = lower[i];
-        saveUpper[i] = upper[i];
+  }
+  /*
+    0 - just look 
+    0 (1) bit - use to set priorities 
+    1 (2) bit - look at bounds on all variables and more iterations
+    2 (4) bit - do threaded (if parallelMode()==1 then not repeatable if any fixed)
+    3 (8) bit - 
+    4 (16) bit - do even if m*n>1,000,000
+    5 (32) bit - printing time
+    6 (64) bit - save mps file
+  */
+  int solveType;
+  char general[200];
+  if (numberIterationsAllowed>0) {
+    solveType = 0;
+  } else {
+    solveType = - numberIterationsAllowed;
+    if ((solveType&16)==0) {
+      double size=numberRows;
+      size*=numberLookIntegers;
+      if (size>1000000) {
+	if ((solveType&32)!=0)
+	  model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+	    << "Skipping analyze as problem too large"
+	    << CoinMessageEol;
+	return 0;
+      }
     }
-    // Get arrays to sort
-    double * sort = new double[numberObjects];
-    int * whichObject = new int[numberObjects];
-    int numberToFix = 0;
-    int numberToDo = 0;
-    double integerTolerance =
-        model->getDblParam(CbcModel::CbcIntegerTolerance);
-    // point to useful information
-    OsiBranchingInformation usefulInfo = model->usefulInformation();
-    // and modify
-    usefulInfo.depth_ = depth_;
-
-    // compute current state
-    int numberObjectInfeasibilities; // just odd ones
-    int numberIntegerInfeasibilities;
-    model->feasibleSolution(
-        numberIntegerInfeasibilities,
-        numberObjectInfeasibilities);
+    sprintf(general,"Analyze options %d",solveType);
+    model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+      << general
+      << CoinMessageEol;
+    if ((solveType&1)!=0)
+      model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+	<< "Using to set priorities (probably bad idea)"
+	<< CoinMessageEol;
+    if ((solveType&2)!=0)
+      model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+	<< "Use more iterations and look at continuous/general integer variables"
+	<< CoinMessageEol;
+    if ((solveType&4)!=0)
+      model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+	<< "Use threads"
+	<< CoinMessageEol;
+    if ((solveType&32)!=0)
+      model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+	<< "32 switches on more printing, (16 bit allows large problems)"
+	<< CoinMessageEol;
+  }
+  OsiSolverInterface * solver = model->solver();
+  objectiveValue_ = solver->getObjSense() * solver->getObjValue();
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
+  const double * dj = solver->getReducedCost();
+  // What results is
+  double * newLower = results;
+  double * objLower = newLower + numberIntegers;
+  double * newUpper = objLower + numberIntegers;
+  double * objUpper = newUpper + numberIntegers;
+  double * interAction = objUpper + numberIntegers;
+  for (i = 0; i < numberIntegers; i++) {
+    int iColumn = integerVariable[i];
+    newLower[i] = lower[iColumn];
+    objLower[i] = -COIN_DBL_MAX;
+    newUpper[i] = upper[iColumn];
+    objUpper[i] = -COIN_DBL_MAX;
+    interAction[i] = 0.0;
+  }
+  double * objMovement=new double[2*numberIntegers];
+  memset(objMovement,0,2*numberIntegers*sizeof(double));
+  double * saveUpper = new double[numberColumns];
+  double * saveLower = new double[numberColumns];
+  // Save solution in case heuristics need good solution later
+  
+  double * saveSolution = new double[numberColumns];
+  memcpy(saveSolution, solver->getColSolution(), numberColumns*sizeof(double));
+  model->reserveCurrentSolution(saveSolution);
+  for (i = 0; i < numberColumns; i++) {
+    saveLower[i] = lower[i];
+    saveUpper[i] = upper[i];
+  }
+  // Get arrays to sort
+  double * sort = new double[numberObjects];
+  int * whichObject = new int[numberObjects];
+  int numberToFix = 0;
+  int numberToDo = 0;
+  double integerTolerance =
+    model->getDblParam(CbcModel::CbcIntegerTolerance);
+  // point to useful information
+  OsiBranchingInformation usefulInfo = model->usefulInformation();
+  // and modify
+  usefulInfo.depth_ = depth_;
+  
+  // compute current state
+  int numberObjectInfeasibilities; // just odd ones
+  int numberIntegerInfeasibilities;
+  model->feasibleSolution(
+			  numberIntegerInfeasibilities,
+			  numberObjectInfeasibilities);
+  if (solveType) {
+    if ((solveType&2)==0)
+      numberIterationsAllowed=200*numberIntegerInfeasibilities;
+    else
+      numberIterationsAllowed=COIN_INT_MAX;
+  }
+  int saveAllowed=numberIterationsAllowed;
 # ifdef COIN_HAS_CLP
-    OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
-    int saveClpOptions = 0;
-    bool fastIterations = (model->specialOptions() & 8) != 0;
-    if (osiclp && fastIterations) {
-        // for faster hot start
-        saveClpOptions = osiclp->specialOptions();
-        osiclp->setSpecialOptions(saveClpOptions | 8192);
-    }
+  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
+  int saveClpOptions = 0;
+  bool fastIterations = (model->specialOptions() & 8) != 0;
+  if (osiclp) {
+    saveClpOptions = osiclp->specialOptions();
+    // for faster hot start
+    if (fastIterations) 
+      osiclp->setSpecialOptions(saveClpOptions | 8192);
+    else
+      osiclp->setSpecialOptions(saveClpOptions | 2048); // switch off crunch
+  }
 # else
-    bool fastIterations = false ;
+  bool fastIterations = false ;
 # endif
-    /*
-      Scan for branching objects that indicate infeasibility. Choose candidates
-      using priority as the first criteria, then integer infeasibility.
-
-      The algorithm is to fill the array with a set of good candidates (by
-      infeasibility) with priority bestPriority.  Finding a candidate with
-      priority better (less) than bestPriority flushes the choice array. (This
-      serves as initialization when the first candidate is found.)
-
-    */
-    numberToDo = 0;
-    for (i = 0; i < numberObjects; i++) {
-        OsiObject * object = model->modifiableObject(i);
-        CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
-            dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
-        if (!dynamicObject)
-            continue;
-        double infeasibility = object->checkInfeasibility(&usefulInfo);
-        int iColumn = dynamicObject->columnNumber();
-        if (saveUpper[iColumn] == saveLower[iColumn])
-            continue;
-        if (infeasibility)
-            sort[numberToDo] = -1.0e10 - infeasibility;
-        else
-            sort[numberToDo] = -fabs(dj[iColumn]);
-        whichObject[numberToDo++] = i;
-    }
-    // Save basis
-    CoinWarmStart * ws = solver->getWarmStart();
-    int saveLimit;
-    solver->getIntParam(OsiMaxNumIterationHotStart, saveLimit);
-    int targetIterations = CoinMax(500, numberIterationsAllowed / numberObjects);
-    if (saveLimit < targetIterations)
-        solver->setIntParam(OsiMaxNumIterationHotStart, targetIterations);
+  /*
+    Scan for branching objects that indicate infeasibility.
+    
+    The algorithm is to fill the array with a set of good candidates (by
+    infeasibility).
+    
+  */
+  numberToDo = 0;
+  for (i = 0; i < numberObjects; i++) {
+    OsiObject * object = model->modifiableObject(i);
+    CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
+      dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+    if (!dynamicObject)
+      continue;
+    if (dynamicObject->priority()!=highestPriority)
+      continue;
+    double infeasibility = object->checkInfeasibility(&usefulInfo);
+    int iColumn = dynamicObject->columnNumber();
+    if (saveUpper[iColumn] == saveLower[iColumn])
+      continue;
+    if (infeasibility)
+      sort[numberToDo] = -1.0e10 - infeasibility;
+    else
+      sort[numberToDo] = -fabs(dj[iColumn]);
+    whichObject[numberToDo++] = i;
+  }
+  // Save basis
+  CoinWarmStart * ws = solver->getWarmStart();
+  int saveLimit;
+  solver->getIntParam(OsiMaxNumIterationHotStart, saveLimit);
+  int targetIterations = CoinMax(500, numberIterationsAllowed / numberObjects);
+  if (saveLimit < targetIterations)
+    solver->setIntParam(OsiMaxNumIterationHotStart, targetIterations);
+  if ((solveType&2)==0) {
     // Mark hot start
     solver->markHotStart();
-    // Sort
-    CoinSort_2(sort, sort + numberToDo, whichObject);
-    double * currentSolution = model->currentSolution();
-    double objMin = 1.0e50;
-    double objMax = -1.0e50;
-    bool needResolve = false;
-    /*
-      Now calculate the cost forcing the variable up and down.
-    */
-    int iDo;
-    for (iDo = 0; iDo < numberToDo; iDo++) {
-        CbcStrongInfo choice;
-        int iObject = whichObject[iDo];
-        OsiObject * object = model->modifiableObject(iObject);
-        CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
-            dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
-        if (!dynamicObject)
-            continue;
-        int iColumn = dynamicObject->columnNumber();
-        int preferredWay;
-        /*
-          Update the information held in the object.
-        */
-        object->infeasibility(&usefulInfo, preferredWay);
-        double value = currentSolution[iColumn];
-        double nearest = floor(value + 0.5);
-        double lowerValue = floor(value);
-        bool satisfied = false;
-        if (fabs(value - nearest) <= integerTolerance || value < saveLower[iColumn] || value > saveUpper[iColumn]) {
-            satisfied = true;
-            double newValue;
-            if (nearest < saveUpper[iColumn]) {
-                newValue = nearest + 1.0001 * integerTolerance;
-                lowerValue = nearest;
-            } else {
-                newValue = nearest - 1.0001 * integerTolerance;
-                lowerValue = nearest - 1;
-            }
-            currentSolution[iColumn] = newValue;
-        }
-        double upperValue = lowerValue + 1.0;
-        //CbcSimpleInteger * obj =
-        //dynamic_cast <CbcSimpleInteger *>(object) ;
-        //if (obj) {
-        //choice.possibleBranch=obj->createCbcBranch(solver,&usefulInfo,preferredWay);
-        //} else {
-        CbcObject * obj =
-            dynamic_cast <CbcObject *>(object) ;
-        assert (obj);
-        choice.possibleBranch = obj->createCbcBranch(solver, &usefulInfo, preferredWay);
-        //}
-        currentSolution[iColumn] = value;
-        // Save which object it was
-        choice.objectNumber = iObject;
-        choice.numIntInfeasUp = numberUnsatisfied_;
-        choice.numIntInfeasDown = numberUnsatisfied_;
-        choice.downMovement = 0.0;
-        choice.upMovement = 0.0;
-        choice.numItersDown = 0;
-        choice.numItersUp = 0;
-        choice.fix = 0; // say not fixed
-        double objectiveChange ;
-        double newObjectiveValue = 1.0e100;
-        int j;
-        // status is 0 finished, 1 infeasible and other
-        int iStatus;
-        /*
-          Try the down direction first. (Specify the initial branching alternative as
-          down with a call to way(-1). Each subsequent call to branch() performs the
-          specified branch and advances the branch object state to the next branch
-          alternative.)
-        */
-        choice.possibleBranch->way(-1) ;
-        choice.possibleBranch->branch() ;
-        if (fabs(value - lowerValue) > integerTolerance) {
-            solver->solveFromHotStart() ;
-            /*
-              We now have an estimate of objective degradation that we can use for strong
-              branching. If we're over the cutoff, the variable is monotone up.
-              If we actually made it to optimality, check for a solution, and if we have
-              a good one, call setBestSolution to process it. Note that this may reduce the
-              cutoff, so we check again to see if we can declare this variable monotone.
-            */
-            if (solver->isProvenOptimal())
-                iStatus = 0; // optimal
-            else if (solver->isIterationLimitReached()
-                     && !solver->isDualObjectiveLimitReached())
-                iStatus = 2; // unknown
-            else
-                iStatus = 1; // infeasible
-            newObjectiveValue = solver->getObjSense() * solver->getObjValue();
-            choice.numItersDown = solver->getIterationCount();
-            numberIterationsAllowed -= choice.numItersDown;
-            objectiveChange = newObjectiveValue  - objectiveValue_;
-            if (!iStatus) {
-                choice.finishedDown = true ;
-                if (newObjectiveValue >= cutoff) {
-                    objectiveChange = 1.0e100; // say infeasible
-                } else {
-                    // See if integer solution
-                    if (model->feasibleSolution(choice.numIntInfeasDown,
-                                                choice.numObjInfeasDown)
-                            && model->problemFeasibility()->feasible(model, -1) >= 0) {
-                        model->setBestSolution(CBC_STRONGSOL,
-                                               newObjectiveValue,
-                                               solver->getColSolution()) ;
-                        model->setLastHeuristic(NULL);
-                        model->incrementUsed(solver->getColSolution());
-                        cutoff = model->getCutoff();
-                        if (newObjectiveValue >= cutoff)	//  *new* cutoff
-                            objectiveChange = 1.0e100 ;
-                    }
-                }
-            } else if (iStatus == 1) {
-                objectiveChange = 1.0e100 ;
-            } else {
-                // Can't say much as we did not finish
-                choice.finishedDown = false ;
-            }
-            choice.downMovement = objectiveChange ;
-        }
-        // restore bounds
-        for ( j = 0; j < numberColumns; j++) {
-            if (saveLower[j] != lower[j])
-                solver->setColLower(j, saveLower[j]);
-            if (saveUpper[j] != upper[j])
-                solver->setColUpper(j, saveUpper[j]);
-        }
-        // repeat the whole exercise, forcing the variable up
-        choice.possibleBranch->branch();
-        if (fabs(value - upperValue) > integerTolerance) {
-            solver->solveFromHotStart() ;
-            /*
-              We now have an estimate of objective degradation that we can use for strong
-              branching. If we're over the cutoff, the variable is monotone up.
-              If we actually made it to optimality, check for a solution, and if we have
-              a good one, call setBestSolution to process it. Note that this may reduce the
-              cutoff, so we check again to see if we can declare this variable monotone.
-            */
-            if (solver->isProvenOptimal())
-                iStatus = 0; // optimal
-            else if (solver->isIterationLimitReached()
-                     && !solver->isDualObjectiveLimitReached())
-                iStatus = 2; // unknown
-            else
-                iStatus = 1; // infeasible
-            newObjectiveValue = solver->getObjSense() * solver->getObjValue();
-            choice.numItersUp = solver->getIterationCount();
-            numberIterationsAllowed -= choice.numItersUp;
-            objectiveChange = newObjectiveValue  - objectiveValue_;
-            if (!iStatus) {
-                choice.finishedUp = true ;
-                if (newObjectiveValue >= cutoff) {
-                    objectiveChange = 1.0e100; // say infeasible
-                } else {
-                    // See if integer solution
-                    if (model->feasibleSolution(choice.numIntInfeasUp,
-                                                choice.numObjInfeasUp)
-                            && model->problemFeasibility()->feasible(model, -1) >= 0) {
-                        model->setBestSolution(CBC_STRONGSOL,
-                                               newObjectiveValue,
-                                               solver->getColSolution()) ;
-                        model->setLastHeuristic(NULL);
-                        model->incrementUsed(solver->getColSolution());
-                        cutoff = model->getCutoff();
-                        if (newObjectiveValue >= cutoff)	//  *new* cutoff
-                            objectiveChange = 1.0e100 ;
-                    }
-                }
-            } else if (iStatus == 1) {
-                objectiveChange = 1.0e100 ;
-            } else {
-                // Can't say much as we did not finish
-                choice.finishedUp = false ;
-            }
-            choice.upMovement = objectiveChange ;
-
-            // restore bounds
-            for ( j = 0; j < numberColumns; j++) {
-                if (saveLower[j] != lower[j])
-                    solver->setColLower(j, saveLower[j]);
-                if (saveUpper[j] != upper[j])
-                    solver->setColUpper(j, saveUpper[j]);
-            }
-        }
-        // If objective goes above certain amount we can set bound
-        int jInt = back[iColumn];
-        newLower[jInt] = upperValue;
-        if (choice.finishedDown)
-            objLower[jInt] = choice.downMovement + objectiveValue_;
-        else
-            objLower[jInt] = objectiveValue_;
-        newUpper[jInt] = lowerValue;
-        if (choice.finishedUp)
-            objUpper[jInt] = choice.upMovement + objectiveValue_;
-        else
-            objUpper[jInt] = objectiveValue_;
-        objMin = CoinMin(CoinMin(objLower[jInt], objUpper[jInt]), objMin);
-        /*
-          End of evaluation for this candidate variable. Possibilities are:
-          * Both sides below cutoff; this variable is a candidate for branching.
-          * Both sides infeasible or above the objective cutoff: no further action
-          here. Break from the evaluation loop and assume the node will be purged
-          by the caller.
-          * One side below cutoff: Install the branch (i.e., fix the variable). Break
-          from the evaluation loop and assume the node will be reoptimised by the
-          caller.
-        */
-        if (choice.upMovement < 1.0e100) {
-            if (choice.downMovement < 1.0e100) {
-                objMax = CoinMax(CoinMax(objLower[jInt], objUpper[jInt]), objMax);
-                // In case solution coming in was odd
-                choice.upMovement = CoinMax(0.0, choice.upMovement);
-                choice.downMovement = CoinMax(0.0, choice.downMovement);
-                // feasible -
-                model->messageHandler()->message(CBC_STRONG, *model->messagesPointer())
-                << iObject << iColumn
-                << choice.downMovement << choice.numIntInfeasDown
-                << choice.upMovement << choice.numIntInfeasUp
-                << value
-                << CoinMessageEol;
-            } else {
-                // up feasible, down infeasible
-                if (!satisfied)
-                    needResolve = true;
-                choice.fix = 1;
-                numberToFix++;
-                saveLower[iColumn] = upperValue;
-                solver->setColLower(iColumn, upperValue);
-            }
-        } else {
-            if (choice.downMovement < 1.0e100) {
-                // down feasible, up infeasible
-                if (!satisfied)
-                    needResolve = true;
-                choice.fix = -1;
-                numberToFix++;
-                saveUpper[iColumn] = lowerValue;
-                solver->setColUpper(iColumn, lowerValue);
-            } else {
-                // neither side feasible
-                COIN_DETAIL_PRINT(printf("Both infeasible for choice %d sequence %d\n", i,
-					 model->object(choice.objectNumber)->columnNumber()));
-                delete ws;
-                ws = NULL;
-                //solver->writeMps("bad");
-                numberToFix = -1;
-                delete choice.possibleBranch;
-                choice.possibleBranch = NULL;
-                break;
-            }
-        }
-        delete choice.possibleBranch;
-        if (numberIterationsAllowed <= 0)
-            break;
-        //printf("obj %d, col %d, down %g up %g value %g\n",iObject,iColumn,
-        //     choice.downMovement,choice.upMovement,value);
+  }
+  solver->setHintParam(OsiDoDualInResolve, true, OsiHintDo) ;
+  // Sort
+  CoinSort_2(sort, sort + numberToDo, whichObject);
+  double * currentSolution = model->currentSolution();
+  double objMin = 1.0e50;
+  double objMax = -1.0e50;
+  bool needResolve = false;
+  int maxChoices=1;
+  int currentChoice=0;
+  int numberThreads=0;
+  bool doAtEnd=false;
+  if (model->parallelMode() && (solveType&4)!=0) {
+    numberThreads=model->getNumberThreads();
+    sprintf(general,"Using %d threads in analysis\n",numberThreads);
+    model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+      << general
+      << CoinMessageEol;
+    if (model->parallelMode()==1) {
+      maxChoices=numberThreads;
+    } else {
+      maxChoices = numberToDo;
+      if ((solveType&2)!=0) 
+	maxChoices = numberColumns;
+      doAtEnd=true;
     }
-    COIN_DETAIL_PRINT(printf("Best possible solution %g, can fix more if solution of %g found - looked at %d variables in %d iterations\n",
-			     objMin, objMax, iDo, model->numberAnalyzeIterations() - numberIterationsAllowed));
-    model->setNumberAnalyzeIterations(numberIterationsAllowed);
+  }
+  StrongInfo * choices = new StrongInfo[maxChoices];
+  StrongStaticInfo staticInfo;
+  StrongBundle * bundles = new StrongBundle[CoinMax(1,numberThreads)];
+  /*
+    0 - available - no need to look at results
+    1 - not available
+    2 - available - need to look at results
+  */
+  int status[NUMBER_THREADS];
+  memset(status,0,sizeof(status));
+  memset(&staticInfo,0,sizeof(staticInfo));
+  staticInfo.solveType = solveType;
+  staticInfo.originalSolution=saveSolution;
+  staticInfo.back=back;
+  staticInfo.ws=ws;
+  staticInfo.integerTolerance=integerTolerance;
+  double time1 = model->getCurrentSeconds();
+#define DO_STEEPEST_SERIAL 1
+# ifdef COIN_HAS_CLP
+  if (osiclp&&(solveType&2)!=0&&(!numberThreads||DO_STEEPEST_SERIAL)) {
+    ClpSimplex * simplex = osiclp->getModelPtr();
+    simplex->setLogLevel(0);
+    simplex->dual(0,1);
+    ClpDualRowPivot * dualRowPivot=simplex->dualRowPivot();
+    ClpDualRowSteepest * steep = dynamic_cast<ClpDualRowSteepest *>(dualRowPivot);
+    if (steep) {
+      staticInfo.dualRowPivot=new ClpDualRowSteepest (*steep);
+      staticInfo.dualRowPivot->setMode(1); // full steepest edge
+      simplex->spareIntArray_[0]=0;
+      simplex->spareIntArray_[1]=numberRows;
+      staticInfo.dualRowPivot->saveWeights(simplex,7);
+    }
+  }
+#endif
+  for (int i=0;i<CoinMax(1,numberThreads);i++)
+    bundles[i].staticInfo=&staticInfo;
+#if defined (CBC_THREAD) && defined (COIN_HAS_CLP)
+#define USE_STRONG_THREADS
+  CoinPthreadStuff threadInfo(numberThreads,cbc_parallelManager);
+  int threadNeedsRefreshing[NUMBER_THREADS];
+  for (int i=0;i<numberThreads;i++) {
+    threadInfo.threadInfo_[i].extraInfo2 = solver->clone();
+    threadNeedsRefreshing[i]=0;
+  }
+# ifdef COIN_HAS_CLP
+  int numberSteepThreads=0;
+  int step=numberThreads ? (numberRows+numberThreads-1)/numberThreads : 0;
+  int first=0;
+  for (int i=0;i<numberThreads;i++) {
+    if (osiclp&&(solveType&2)!=0&&!DO_STEEPEST_SERIAL) {
+      OsiSolverInterface * solver=
+	reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[i].extraInfo2);
+      OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
+      ClpSimplex * simplex = osiclp->getModelPtr();
+      simplex->setLogLevel(0);
+      simplex->dual(0,1);
+      ClpDualRowPivot * dualRowPivot=simplex->dualRowPivot();
+      ClpDualRowSteepest * steep = dynamic_cast<ClpDualRowSteepest *>(dualRowPivot);
+      if (steep) {
+	numberSteepThreads=numberThreads;
+	ClpDualRowSteepest * dualRowPivot=new ClpDualRowSteepest (*steep);
+	dualRowPivot->setMode(1); // full steepest edge
+	simplex->spareIntArray_[0]=0;
+	simplex->spareIntArray_[1]=numberRows;
+	simplex->spareIntArray_[0]=first;
+	simplex->spareIntArray_[1]=CoinMin(first+step,numberRows);
+	first += step;
+	if (i==0)
+	  staticInfo.dualRowPivot=dualRowPivot;
+	choices[i].steepest=dualRowPivot;
+	dualRowPivot->saveWeights(simplex,7);
+      }
+    }
+  }
+  if (numberSteepThreads&&false) {
+    int numberDone=0;
+    int iDo=0;
+    staticInfo.solveType = 200;
+    while (numberDone<numberSteepThreads) {
+      int iThread;
+      threadInfo.waitParallelTask(1,iThread,iDo<numberToDo);
+      int threadStatus = 1+threadInfo.threadInfo_[iThread].status;
+      iThread=iThread;
+      if (threadStatus==0&&iDo<numberSteepThreads) {
+	StrongInfo & choice = choices[iThread];
+	StrongBundle & bundle = bundles[iThread];
+	bundle.whichChoice=iThread;
+	memset(&choice,0,sizeof(StrongInfo));
+	iDo++; //started this one
+	bundle.choice=&choice;
+	bundle.solver = solver;
+	bundle.solver=reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+	threadStatus=0;
+#ifdef DETAIL_THREAD
+	printf("Starting steep task on thread %d\n",
+	       choice.iThread);
+#endif
+	threadInfo.startParallelTask(1,iThread,&bundle);
+      }
+      if (!threadStatus) {
+	usleep(1000);
+	continue;
+      }
+      if (threadStatus) {
+	numberDone++;
+	// say available
+	threadInfo.sayIdle(iThread);
+      }
+      staticInfo.solveType = solveType;
+    }
+    OsiSolverInterface * solver0=
+      reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[0].extraInfo2);
+    CoinIndexedVector * savedWeights0 = staticInfo.dualRowPivot->savedWeights();
+    int * index0 = savedWeights0->getIndices();
+    double * weight0 = savedWeights0->denseVector();
+    int step=(numberRows+numberSteepThreads-1)/numberSteepThreads;
+    int first=step;
+    //memset(weight0+first,0,(numberRows-first)*sizeof(double));
+    for (int i=1;i<numberSteepThreads;i++) {
+      int n=CoinMin(step,numberRows-first);
+      CoinIndexedVector * savedWeights = choices[i].steepest->savedWeights();
+      int * index = savedWeights->getIndices();
+      double * weight = savedWeights->denseVector();
+      memcpy(index0+first,index+first,n*sizeof(int));
+      memcpy(weight0+first,weight+first,n*sizeof(double));
+      first += step;
+      delete choices[i].steepest;
+      choices[i].steepest=NULL;
+    }
+    //for (int j=0;j<numberRows;j++)
+    //weight0[j]=1.0;
+  }
+#endif
+#endif
+  double bestSolutionValue = model->getMinimizationObjValue();
+  double * bestSolution = NULL;
+  double cutoff;
+  solver->getDblParam(OsiDualObjectiveLimit,cutoff);
+  double maxMovement = 2.0*(cutoff-objectiveValue_)+1.0e-6;
+  /*
+    Now calculate the cost forcing the variable up and down.
+  */
+  int iDo=0;
+  int iDone=-1;
+  int numberDone=0;
+  int iThread=0;
+  int threadStatus=0;
+  int whenPrint = (numberToDo+9)/10;
+  while (numberDone<numberToDo) {
+    if ((solveType&32)!=0&&numberDone==whenPrint) {
+      whenPrint += (numberToDo+9)/10;
+      sprintf(general,"%d variables looked at - %d changed by initial strong branching (%.2f seconds - %d iterations)",numberDone,numberToFix,model->getCurrentSeconds()-time1,saveAllowed-numberIterationsAllowed);
+      model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+	<< general
+	<< CoinMessageEol;
+    }
+#ifdef USE_STRONG_THREADS
+    if (numberThreads) {
+      threadInfo.waitParallelTask(1,iThread,iDo<numberToDo);
+      threadStatus = 1+threadInfo.threadInfo_[iThread].status;
+      if (!doAtEnd)
+	currentChoice=iThread;
+      if (threadNeedsRefreshing[iThread]) { 
+	OsiSolverInterface * solver=
+	  reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+	if ((threadNeedsRefreshing[iThread]&1)!=0) 
+	  solver->setColLower(saveLower);
+	if ((threadNeedsRefreshing[iThread]&2)!=0) 
+	  solver->setColUpper(saveUpper);
+	threadNeedsRefreshing[iThread]=0;
+      }
+    }
+#endif
+    if (threadStatus==0&&iDo<numberToDo) {
+      StrongInfo & choice = choices[currentChoice];
+      StrongBundle & bundle = bundles[iThread];
+      bundle.whichChoice=currentChoice;
+      memset(&choice,0,sizeof(StrongInfo));
+      int iObject = whichObject[iDo];
+      iDo++; //started this one
+      OsiObject * object = model->modifiableObject(iObject);
+      CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
+	dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+      int iColumn = dynamicObject->columnNumber();
+      double value = currentSolution[iColumn];
+      double nearest = floor(value + 0.5);
+      double lowerValue = floor(value);
+      bool satisfied = false;
+      if (fabs(value - nearest) <= integerTolerance ||
+	  value < saveLower[iColumn] || value > saveUpper[iColumn]) {
+	satisfied = true;
+	if (nearest < saveUpper[iColumn]) {
+	  lowerValue = nearest;
+	} else {
+	  lowerValue = nearest - 1;
+	}
+      }
+      double upperValue = lowerValue + 1.0;
+      // Save which object it was
+      choice.columnNumber = iColumn;
+      choice.initialValue=value;
+      choice.upLowerBound=upperValue;
+      choice.downUpperBound=lowerValue;
+      choice.numIntInfeas[1] = numberUnsatisfied_;
+      choice.numIntInfeas[0] = numberUnsatisfied_;
+      choice.movement[0] = 0.0;
+      choice.movement[1] = 0.0;
+      choice.numIters[0] = 0;
+      choice.numIters[1] = 0;
+      if (fabs(value - lowerValue) <= integerTolerance) 
+	choice.numIters[0]=-1; // mark as not done
+      if (fabs(value - upperValue) <= integerTolerance) 
+	choice.numIters[1]=-1; // mark as not done
+      bundle.choice=&choice;
+      bundle.solver = solver;
+#ifdef USE_STRONG_THREADS
+      if (numberThreads) {
+	bundle.solver=reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+	threadStatus=0;
+#ifdef DETAIL_THREAD
+	printf("Starting task for column %d on thread %d\n",
+	       choice.columnNumber,iThread);
+#endif
+	threadInfo.startParallelTask(1,iThread,&bundle);
+      } else {
+#endif
+	threadStatus=2;
+	solveAnalyze(&bundle);
+#ifdef USE_STRONG_THREADS
+      }
+#endif
+    }
+    if (!threadStatus) {
+      usleep(1000);
+      continue;
+    }
+    if (threadStatus) {
+      int whichChoice = bundles[iThread].whichChoice;  
+      StrongInfo & choice = choices[whichChoice];
+      int iColumn=choice.columnNumber;
+      if (choice.integerSolution) {
+	double * foundSolution = choice.integerSolution;
+	solver->setColSolution(foundSolution);
+	// See if integer solution
+	int numberInfeas=0;
+	int numberOddInfeas=0;
+	if (model->feasibleSolution(numberInfeas,numberOddInfeas)
+	    && model->problemFeasibility()->feasible(model, -1) >= 0) {
+	  double newObjectiveValue;
+	  solver->getDblParam(OsiObjOffset,newObjectiveValue);
+	  newObjectiveValue=-newObjectiveValue;
+	  const double * cost = solver->getObjCoefficients();
+	  for ( int i = 0 ; i < numberColumns ; i++ )
+	    newObjectiveValue += cost[i] * foundSolution[i];
+	  if (newObjectiveValue<bestSolutionValue) {
+	    if (doAtEnd) {
+	      if (!bestSolution)
+		bestSolution = CoinCopyOfArray(foundSolution,numberColumns);
+	      else
+		memcpy(bestSolution,foundSolution,numberColumns*sizeof(double));
+	      bestSolutionValue=newObjectiveValue;
+	    } else {
+	      model->setBestSolution(CBC_STRONGSOL,
+				     newObjectiveValue,
+				     foundSolution) ;
+	      model->setLastHeuristic(NULL);
+	      model->incrementUsed(solver->getColSolution());
+	      bestSolutionValue = model->getMinimizationObjValue();
+	    }
+	  }
+	}
+	delete [] foundSolution;
+      }
+      for (int iWay=0;iWay<2;iWay++) {
+	numberIterationsAllowed -= choice.numIters[iWay];
+	choice.movement[iWay] -= objectiveValue_;
+      }
+      // If objective goes above certain amount we can set bound
+      int jInt = back[iColumn];
+      OsiObject * object = model->modifiableObject(jInt);
+      CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
+	dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+      if (dynamicObject) {
+	if (choice.numIters[0]>=0) {
+	  dynamicObject->addToSumDownCost(CoinMin(choice.movement[0],maxMovement));
+	  dynamicObject->addToSumDownChange(choice.initialValue-choice.downUpperBound);
+	}
+	if (choice.numIters[1]>=0) {
+	  dynamicObject->addToSumUpCost(CoinMin(choice.movement[1],maxMovement));
+	  dynamicObject->addToSumUpChange(choice.upLowerBound-choice.initialValue);
+	}
+      }
+      newLower[jInt] = choice.upLowerBound;
+      if (choice.finished[0])
+	objLower[jInt] = choice.movement[0] + objectiveValue_;
+      else
+	objLower[jInt] = objectiveValue_;
+      newUpper[jInt] = choice.downUpperBound;
+      if (choice.finished[1])
+	objUpper[jInt] = choice.movement[1] + objectiveValue_;
+      else
+	objUpper[jInt] = objectiveValue_;
+      objMin = CoinMin(CoinMin(objLower[jInt], objUpper[jInt]), objMin);
+      objMovement[2*jInt]=choice.movement[0];
+      objMovement[2*jInt+1]=choice.movement[1];
+      double sumModified = choice.modified[0] + choice.modified[1] +
+	1.0e-15*(choice.sumModified[0]+choice.sumModified[1]);
+      if (choice.numIters[0]>=0&&choice.numIters[1]>=0)
+	sumModified *= 0.6;
+      interAction[jInt] = sumModified;
+      /*
+	End of evaluation for this candidate variable. Possibilities are:
+	* Both sides below cutoff; this variable is a candidate for branching.
+	* Both sides infeasible or above the objective cutoff: no further action
+	here. Break from the evaluation loop and assume the node will be purged
+	by the caller.
+	* One side below cutoff: Install the branch (i.e., fix the variable). Break
+	from the evaluation loop and assume the node will be reoptimised by the
+	caller.
+      */
+      threadStatus=0;
+      currentChoice++;
+      numberDone++;
+#ifdef USE_STRONG_THREADS
+      // say available
+      if (numberThreads) {
+	threadInfo.sayIdle(iThread);
+      }
+#endif
+      if (doAtEnd)
+	continue;
+      if (choice.movement[1] < 1.0e100) {
+	if (choice.movement[0] < 1.0e100) {
+	  objMax = CoinMax(CoinMax(objLower[jInt], objUpper[jInt]), objMax);
+	  // In case solution coming in was odd
+	  choice.movement[1] = CoinMax(0.0, choice.movement[1]);
+	  choice.movement[0] = CoinMax(0.0, choice.movement[0]);
+	  // feasible -
+	  model->messageHandler()->message(CBC_STRONG, *model->messagesPointer())
+	    << iColumn << iColumn
+	    << choice.movement[0] << choice.numIntInfeas[0]
+	    << choice.movement[1] << choice.numIntInfeas[1]
+	    << choice.initialValue
+	    << CoinMessageEol;
+	} else {
+	  // up feasible, down infeasible
+	  needResolve = true;
+	  numberToFix++;
+	  saveLower[iColumn] = choice.upLowerBound;
+	  solver->setColLower(iColumn, choice.upLowerBound);
+#ifdef USE_STRONG_THREADS
+	  for (int i=0;i<numberThreads;i++) {
+	    threadNeedsRefreshing[i] |= 1;
+	  }
+#endif
+	}
+      } else {
+	if (choice.movement[0] < 1.0e100) {
+	  // down feasible, up infeasible
+	  needResolve = true;
+	  numberToFix++;
+	  saveUpper[iColumn] = choice.downUpperBound;
+	  solver->setColUpper(iColumn, choice.downUpperBound);
+#ifdef USE_STRONG_THREADS
+	  for (int i=0;i<numberThreads;i++) {
+	    threadNeedsRefreshing[i] |= 2;
+	  }
+#endif
+	} else {
+	  // neither side feasible
+	  COIN_DETAIL_PRINT(printf("Both infeasible for choice %d sequence %d\n", i,
+				   model->object(choice.objectNumber)->columnNumber()));
+	  //solver->writeMps("bad");
+	  numberToFix = -1;
+	  break;
+	}
+      }
+      if (numberIterationsAllowed <= 0)
+	break;
+      if (currentChoice==maxChoices)
+	currentChoice=0;
+    }
+    //printf("obj %d, col %d, down %g up %g value %g\n",iObject,iColumn,
+    //     choice.downMovement,choice.upMovement,value);
+  }
+  // Do at end if deterministic
+  if (doAtEnd) {
+    if (bestSolution) {
+      model->setBestSolution(CBC_STRONGSOL,
+			     bestSolutionValue,
+			     bestSolution) ;
+      model->setLastHeuristic(NULL);
+      model->incrementUsed(solver->getColSolution());
+      delete [] bestSolution;
+    }
+    for (int iDo = 0; iDo < numberLookIntegers; iDo++) {
+      StrongInfo & choice = choices[iDo];
+      int iColumn = choice.columnNumber;
+      int iObject = iColumn;
+      int jInt = back[iColumn];
+      double value = choice.initialValue;
+      double lowerValue = choice.downUpperBound;
+      double upperValue = choice.upLowerBound;
+      if (choice.movement[1] < 1.0e100) {
+	if (choice.movement[0] < 1.0e100) {
+	  objMax = CoinMax(CoinMax(objLower[jInt], objUpper[jInt]), objMax);
+	  // In case solution coming in was odd
+	  choice.movement[1] = CoinMax(0.0, choice.movement[1]);
+	  choice.movement[0] = CoinMax(0.0, choice.movement[0]);
+	  // feasible -
+	  model->messageHandler()->message(CBC_STRONG, *model->messagesPointer())
+	    << iObject << iColumn
+	    << choice.movement[0] << choice.numIntInfeas[0]
+	    << choice.movement[1] << choice.numIntInfeas[1]
+	    << value
+	    << CoinMessageEol;
+	} else {
+	  // up feasible, down infeasible
+	  numberToFix++;
+	  saveLower[iColumn] = upperValue;
+	  solver->setColLower(iColumn, upperValue);
+	}
+      } else {
+	if (choice.movement[0] < 1.0e100) {
+	  // down feasible, up infeasible
+	  needResolve = true;
+	  numberToFix++;
+	  saveUpper[iColumn] = lowerValue;
+	  solver->setColUpper(iColumn, lowerValue);
+	} else {
+	  // neither side feasible
+	  COIN_DETAIL_PRINT(printf("Both infeasible for choice %d sequence %d\n", i,
+				   model->object(choice.objectNumber)->columnNumber()));
+	  //solver->writeMps("bad");
+	  numberToFix = -1;
+	  break;
+	}
+      }
+    }
+  }
+  if (false) {
+    const double * lower = solver->getColLower();
+    const double * upper = solver->getColUpper();
+    for (int i=0;i<numberColumns;i++) {
+      if (lower[i]!=saveLower[i]||upper[i]!=saveUpper[i]) {
+	printf("%d changed- saved %g,%g now %g,%g\n",i,saveLower[i],saveUpper[i],
+	       lower[i],upper[i]);
+      }
+    }
+  }
+  COIN_DETAIL_PRINT(printf("Best possible solution %g, can fix more if solution of %g found - looked at %d variables in %d iterations\n",
+			   objMin, objMax, iDo, model->numberAnalyzeIterations() - numberIterationsAllowed));
+  model->setNumberAnalyzeIterations(numberIterationsAllowed);
+  if (numberToFix>0) {
+    sprintf(general,"%d variable bounds modified by initial strong branching (%.2f seconds - %d iterations)",numberToFix,model->getCurrentSeconds()-time1,saveAllowed-numberIterationsAllowed);
+  } else if (numberToFix<0) {
+    sprintf(general,"initial strong branching found to be infeasible (%.2f seconds - %d iterations)",model->getCurrentSeconds()-time1,saveAllowed-numberIterationsAllowed);
+  } else if ((solveType&32)!=0) {
+    sprintf(general,"No variables fixed by initial strong branching (%.2f seconds - %d iterations)",model->getCurrentSeconds()-time1,saveAllowed-numberIterationsAllowed);
+  } else {
+    general[0]='\0';
+  }
+  if (general[0]!='\0')
+    model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+      << general
+      << CoinMessageEol;
+  double smallestEffect=COIN_DBL_MAX;
+  double largestEffect=0.0;
+  for (i = 0; i < numberIntegers; i++) {
+    int iColumn=integerVariable[i];
+    if (back[iColumn]>=numberColumns)
+      continue;
+    smallestEffect = CoinMin(smallestEffect,interAction[i]);
+    largestEffect = CoinMax(largestEffect,interAction[i]);
+  }
+  double groupValue[11];
+  int groupCounts[11]={0,0,0,0,0,0,0,0,0,0,0};
+  groupValue[10]=largestEffect;
+  for (int i=0;i<10;i++)
+    groupValue[i]=smallestEffect+i*0.1*(largestEffect-smallestEffect);
+  sprintf(general,"Looked at %d integer variables - smallest interaction %g",
+	  numberLookIntegers,smallestEffect);
+  model->messageHandler()->message((solveType&32)==0 ? CBC_FPUMP2 : CBC_FPUMP1, 
+				    *model->messagesPointer())
+    << general
+    << CoinMessageEol;
+  for (int i = 0; i < numberIntegers; i++) {
+    int iColumn=integerVariable[i];
+    if (back[iColumn]>=numberColumns)
+      continue;
+    double value = interAction[i];
+    int j;
+    for (j=0;j<11;j++) {
+      if (value<=groupValue[j]||j==10)
+	break;
+    }
+    groupCounts[j]++;
+  }
+  general[0]='\0';
+  for (int i=0;i<11;i++)
+    sprintf(general+strlen(general),"%d <= %g ",groupCounts[i],groupValue[i]);
+  model->messageHandler()->message((solveType&32)==0 ? CBC_FPUMP2 : CBC_FPUMP1, 
+				    *model->messagesPointer())
+    << general
+    << CoinMessageEol;
+  smallestEffect=COIN_DBL_MAX;
+  largestEffect=0.0;
+  int numberChanged=0;
+  int numberZeroMoved=0;
+  for (i = 0; i < numberIntegers; i++) {
+    int iColumn=integerVariable[i];
+    if (back[iColumn]>=numberColumns)
+      continue;
+    for (int iWay=0;iWay<2;iWay++) {
+      double value=objMovement[2*i+iWay];
+      if (value<1.0e-7) {
+	numberZeroMoved++;
+      } else if (value<1.0e50) {
+	smallestEffect = CoinMin(smallestEffect,value);
+	largestEffect = CoinMax(largestEffect,value);
+      } else {
+	numberChanged++;
+      }
+    }
+  }
+  memset(groupCounts,0,sizeof(groupCounts));
+  groupValue[10]=largestEffect;
+  for (int i=0;i<10;i++)
+    groupValue[i]=smallestEffect+i*0.1*(largestEffect-smallestEffect);
+  sprintf(general,"Strong branching - %d bounds changed, %d zero objective changes and %d nonzero (smallest %g)",
+	  numberChanged,numberZeroMoved,
+	  2*numberLookIntegers-numberChanged-numberZeroMoved,smallestEffect);
+  model->messageHandler()->message((solveType&32)==0 ? CBC_FPUMP2 : CBC_FPUMP1, 
+				    *model->messagesPointer())
+    << general
+    << CoinMessageEol;
+  sprintf(general,"Breakdown ");
+  for (i = 0; i < numberIntegers; i++) {
+    int iColumn=integerVariable[i];
+    if (back[iColumn]>=numberColumns)
+      continue;
+    for (int iWay=0;iWay<2;iWay++) {
+      double value = objMovement[2*i+iWay];
+      int j;
+      for (j=0;j<11;j++) {
+	if (value<=groupValue[j]||j==10)
+	  break;
+      }
+      groupCounts[j]++;
+    }
+  }
+  for (int i=0;i<11;i++)
+    sprintf(general+strlen(general),"%d <= %g ",groupCounts[i],groupValue[i]);
+  model->messageHandler()->message((solveType&32)==0 ? CBC_FPUMP2 : CBC_FPUMP1, 
+				    *model->messagesPointer())
+    << general
+    << CoinMessageEol;
+  delete [] objMovement;
+  if ((solveType&2)==0) {
     // Delete the snapshot
     solver->unmarkHotStart();
-    // back to normal
-    solver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL) ;
-    solver->setIntParam(OsiMaxNumIterationHotStart, saveLimit);
-    // restore basis
-    solver->setWarmStart(ws);
-    delete ws;
-
-    delete [] sort;
-    delete [] whichObject;
-    delete [] saveLower;
-    delete [] saveUpper;
-    delete [] back;
-    // restore solution
-    solver->setColSolution(saveSolution);
+  }
+  // back to normal
+  solver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL) ;
+  solver->setIntParam(OsiMaxNumIterationHotStart, saveLimit);
+  // restore basis
+  solver->setWarmStart(ws);
+  // skip if infeasible
+  if (numberToFix<0)
+    solveType=0;
+  int numberBoundsChanged=0;
+  if ((solveType&16)==0) {
+    double size=numberRows;
+    size*=numberColumns;
+    if (size>1000000) {
+      if ((solveType&32)!=0)
+	model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+	  << "Skipping analyze on other columns as problem too large"
+	  << CoinMessageEol;
+      solveType &= ~2;
+    }
+  }
+  if ((solveType&2)!=0) {
 # ifdef COIN_HAS_CLP
-    if (osiclp)
-        osiclp->setSpecialOptions(saveClpOptions);
+  if (osiclp&&(solveType&2)!=0) {
+    ClpPrimalColumnPivot * primalColumnPivot=NULL;
+  }
+#endif
+    double * newLower = new double [2*numberColumns];
+    double * newUpper = newLower + numberColumns;
+    // look at ints/all - should be parametrics - for now primal
+    OsiSolverInterface * temp = solver->clone();
+    //temp->setHintParam(OsiDoDualInResolve, false, OsiHintDo) ;
+    temp->setHintParam(OsiDoReducePrint, true, OsiHintTry);
+    temp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
+    temp->resolve();
+    {
+      const double * lower =temp->getColLower();
+      const double * upper =temp->getColUpper();
+      for (int i=0;i<numberColumns;i++) {
+	assert (lower[i]==saveLower[i]);
+	assert (upper[i]==saveUpper[i]);
+      }
+    }
+    delete ws;
+    ws = temp->getWarmStart();
+    staticInfo.ws=ws;
+    // add constraint
+    int * indices = reinterpret_cast<int *>(newUpper);
+    double * obj = newLower;
+    memcpy(obj,solver->getObjCoefficients(),numberColumns*sizeof(double));
+    int n=0;
+    for (int i=0;i<numberColumns;i++) {
+      if (obj[i]) {
+	indices[n]=i;
+	obj[n++]=obj[i];
+      }
+    }
+    if (n) {
+      double cutoff=model->getCutoff();
+      // relax a little bit
+      cutoff += 1.0e-4;
+      double offset;
+      temp->getDblParam(OsiObjOffset, offset);
+      temp->addRow(n,indices,obj,-COIN_DBL_MAX,CoinMin(cutoff,1.0e25)+offset);
+      for (int iThread=0;iThread<numberThreads;iThread++) {
+	OsiSolverInterface * solver=
+	  reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+	solver->addRow(n,indices,obj,-COIN_DBL_MAX,CoinMin(cutoff,1.0e25)+offset);
+      }
+    }
+    // zero objective
+    for (int i = 0; i < numberColumns; i++) {
+      newLower[i]=0.0;
+    }
+    temp->setObjective(newLower);
+    for (int iThread=0;iThread<numberThreads;iThread++) {
+      OsiSolverInterface * solver=
+	reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+      solver->setObjective(newLower);
+      solver->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
+      threadNeedsRefreshing[iThread]=3;
+    }
+    for (int i = 0; i < numberColumns; i++) {
+      newLower[i]=lower[i];
+      newUpper[i]=upper[i];
+    }
+    double * thisSolution = CoinCopyOfArray(temp->getColSolution(),numberColumns);
+    double primalTolerance;
+    solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+    iDo=0;
+    iDone=-1;
+    numberDone=0;
+    int iThread=0;
+    threadStatus=0;
+    currentChoice=0;
+    staticInfo.solveType=100; //mark for analyze
+    staticInfo.originalSolution=thisSolution;
+    whenPrint=(numberColumns+9)/10;
+    while (numberDone<numberColumns) {
+      if ((solveType&32)!=0&&numberDone==whenPrint) {
+	whenPrint += (numberColumns+9)/10;
+	sprintf(general,"%d variables looked at - %d bounds changed by secondary solves (%.2f seconds - %d iterations)",numberDone,numberBoundsChanged,model->getCurrentSeconds()-time1,saveAllowed-numberIterationsAllowed);
+	model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+	  << general
+	  << CoinMessageEol;
+      }
+#ifdef USE_STRONG_THREADS
+      if (numberThreads) {
+	threadInfo.waitParallelTask(1,iThread,iDo<numberColumns);
+	threadStatus = 1+threadInfo.threadInfo_[iThread].status;
+	currentChoice=iThread;
+	if (threadNeedsRefreshing[iThread]) { 
+	  OsiSolverInterface * solver=
+	    reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+	  if ((threadNeedsRefreshing[iThread]&1)!=0) 
+	    solver->setColLower(saveLower);
+	  if ((threadNeedsRefreshing[iThread]&2)!=0) 
+	    solver->setColUpper(saveUpper);
+	  threadNeedsRefreshing[iThread]=0;
+	}
+      }
+#endif
+      if (threadStatus==0&&iDo<numberColumns) {
+	StrongInfo & choice = choices[currentChoice];
+	StrongBundle & bundle = bundles[currentChoice];
+	bundle.whichChoice=currentChoice;
+	memset(&choice,0,sizeof(StrongInfo));
+	int iColumn = iDo;
+	iDo++; //started this one
+	int typeSolve=0;
+	if (thisSolution[iColumn]>newLower[iColumn]+integerTolerance)
+	  typeSolve=1;
+	if (thisSolution[iColumn]<newUpper[iColumn]-integerTolerance)
+	  typeSolve += 2;
+	if (typeSolve&&back[iColumn]>=0) {
+	  if (thisSolution[iColumn]<newLower[iColumn]+0.9999)
+	    typeSolve &= ~1;
+	  if (thisSolution[iColumn]>newUpper[iColumn]-0.9999)
+	    typeSolve &= ~2;
+	  if (temp->isBinary(iColumn))
+	    typeSolve=0; // already done
+	}
+	if (typeSolve==0 || newUpper[iColumn]==newLower[iColumn]) {
+#ifdef USE_STRONG_THREADS
+	  // say available
+	  if (numberThreads) {
+	    threadInfo.sayIdle(iThread);
+	  }
+#endif
+	  numberDone++;
+	  continue;
+	}
+	// Save which object it was
+	choice.columnNumber = iColumn;
+	choice.initialValue=thisSolution[iColumn];
+	choice.movement[0]=COIN_DBL_MAX;
+	choice.movement[1]=-COIN_DBL_MAX;
+	choice.upLowerBound=newUpper[iColumn];
+	choice.downUpperBound=newLower[iColumn];
+	if ((typeSolve&1)==0) 
+	  choice.numIters[0]=-1; // mark as not done
+	if ((typeSolve&2)==0) 
+	  choice.numIters[1]=-1; // mark as not done
+	bundle.choice=&choice;
+	bundle.solver = temp;
+#ifdef USE_STRONG_THREADS
+	if (numberThreads) {
+	  bundle.solver=reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+	  threadStatus=0;
+#ifdef DETAIL_THREAD
+	  printf("Starting task for column %d on thread %d\n",
+		 choice.columnNumber,iThread);
+#endif
+	  threadInfo.startParallelTask(1,iThread,&bundle);
+	} else {
+#endif
+	  threadStatus=2;
+	  solveAnalyze(&bundle);
+#ifdef USE_STRONG_THREADS
+	}
+#endif
+      }
+      if (threadStatus) {
+	int whichChoice = bundles[iThread].whichChoice;  
+	StrongInfo & choice = choices[whichChoice];
+	int iColumn=choice.columnNumber;
+	if(choice.modified[0]) {
+	  numberToFix = -numberColumns-1;
+	}
+	double gotLower=COIN_DBL_MAX;
+	double gotUpper=-COIN_DBL_MAX;
+	if (choice.numIters[0]>=0) {
+	  // go down
+	  double value = choice.movement[0];
+	  if (value>newLower[iColumn]+10.0*integerTolerance) {
+	    if (back[iColumn]>=0) 
+	      value = ceil(value);
+	    else
+	      value = CoinMax(newLower[iColumn],value-1.0e-7-1.0e-8*fabs(value));
+	    if (value>newLower[iColumn]+1.0e-8*(1.0+fabs(value))) {
+	      sprintf(general,"Secondary analysis solve increases lower bound on %d from %g to %g%s",
+		      iColumn,newUpper[iColumn],value,(back[iColumn]>=0) ? "(integer)" : "");
+	      model->messageHandler()->message(CBC_FPUMP2, *model->messagesPointer())
+		<< general
+		<< CoinMessageEol;
+	      numberBoundsChanged++;
+	      if (value>newUpper[iColumn]-primalTolerance) {
+		value=newUpper[iColumn];
+		if (value>newUpper[iColumn]+10.0*primalTolerance) {
+		  // infeasible
+		  numberToFix=-numberColumns-1;
+		}
+	      }
+	      gotLower = value;
+	    }
+	  }
+	}
+	if (choice.numIters[1]>=0) {
+	  // go up
+	  double value=choice.movement[1];
+	  if (value<newUpper[iColumn]-10.0*integerTolerance) {
+	    if (back[iColumn]>=0) 
+	      value = floor(value);
+	    else
+	      value = CoinMin(newUpper[iColumn],value+1.0e-7+1.0e-8*fabs(value));
+	    if (value<newUpper[iColumn]-1.0e-8*(1.0+fabs(value))) {
+	      sprintf(general,"Secondary analysis solve decreases upper bound on %d from %g to %g%s",
+		      iColumn,newUpper[iColumn],value,(back[iColumn]>=0) ? "(integer)" : "");
+	      model->messageHandler()->message(CBC_FPUMP2, *model->messagesPointer())
+		<< general
+		<< CoinMessageEol;
+	      numberBoundsChanged++;
+	      if (value<newLower[iColumn]+primalTolerance) {
+		value=newLower[iColumn];
+		if (value<newLower[iColumn]-10.0*primalTolerance) {
+		  // infeasible
+		  numberToFix=-numberColumns-1;
+		}
+	      }
+	      gotUpper=value;
+	    }
+	  }
+	}
+	if (gotLower!=COIN_DBL_MAX) {
+	  newLower[iColumn]=gotLower;
+	  temp->setColLower(iColumn,gotLower);
+	  if (!doAtEnd)
+	    solver->setColLower(iColumn,gotLower);
+	}
+	if (gotUpper!=-COIN_DBL_MAX) {
+	  gotUpper=CoinMax(gotUpper,newLower[iColumn]);
+	  newUpper[iColumn]=gotUpper;
+	  temp->setColUpper(iColumn,gotUpper);
+	  if (!doAtEnd)
+	    solver->setColUpper(iColumn,gotUpper);
+	}
+	threadStatus=0;
+	currentChoice++;
+	numberDone++;
+	for (int iWay=0;iWay<2;iWay++) {
+	  if (choice.numIters[iWay]>0)
+	    numberIterationsAllowed -= choice.numIters[iWay];
+	}
+	if (currentChoice==maxChoices)
+	  currentChoice=0;
+#ifdef USE_STRONG_THREADS
+	// say available
+	if (numberThreads) {
+	  threadInfo.sayIdle(iThread);
+	}
+#endif
+      }
+    }
+    delete [] thisSolution;
+    delete temp;
+    delete [] newLower;
+  }
+# ifdef COIN_HAS_CLP
+  if (osiclp) {
+    delete staticInfo.dualRowPivot;
+    delete staticInfo.primalColumnPivot;
+    ClpSimplex * simplex = osiclp->getModelPtr();
+    ClpDualRowPivot * dualRowPivot=simplex->dualRowPivot();
+    ClpDualRowSteepest * steep = dynamic_cast<ClpDualRowSteepest *>(dualRowPivot);
+    if (steep) 
+      steep->setMode(3);
+  }
+#endif
+  if ((solveType&64)!=0) {
+    OsiSolverInterface * temp = solver->clone();
+    int numberRows=solver->getNumRows();
+    int numberContinuousRows=model->numberRowsAtContinuous();
+    int * del = new int[numberRows-numberContinuousRows];
+    for (int i=numberContinuousRows;i<numberRows;i++)
+      del[i-numberContinuousRows]=i;
+    temp->deleteRows(numberRows-numberContinuousRows,del);
+    delete [] del;
+# ifdef COIN_HAS_CLP
+    if (!osiclp) {
+#endif
+      solver->writeMps("analyzed");
+      temp->writeMps("analyzed2");
+# ifdef COIN_HAS_CLP
+    } else {
+      OsiClpSolverInterface * osiclp2 = dynamic_cast< OsiClpSolverInterface*> (temp);
+      osiclp->getModelPtr()->writeMps("analyzed.mps",2,1);
+      osiclp2->getModelPtr()->writeMps("analyzed2.mps",2,1);
+    }
+#endif
+    delete temp;
+    model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+      << "Models saved on 'analyzed' and 'analyzed2'"
+      << CoinMessageEol;
+  }
+  delete [] choices;
+  delete [] bundles;
+#ifdef USE_STRONG_THREADS
+  if (numberThreads) {
+    threadInfo.waitAllTasks();
+    for (int i=0;i<numberThreads;i++) {
+      delete reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[i].extraInfo2);
+    }
+  }
+#endif
+  delete ws;
+  
+  delete [] sort;
+  delete [] whichObject;
+  delete [] saveLower;
+  delete [] saveUpper;
+  delete [] back;
+  // restore solution
+  solver->setColSolution(saveSolution);
+# ifdef COIN_HAS_CLP
+  if (osiclp)
+    osiclp->setSpecialOptions(saveClpOptions);
 # endif
-    model->reserveCurrentSolution(saveSolution);
-    delete [] saveSolution;
-    if (needResolve)
-        solver->resolve();
+  delete [] saveSolution;
+  solver->resolve();
+  if (numberToFix<0&&!solver->isProvenOptimal()) {
+    // infeasible
+    model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+      << "Analysis shows problem to be infeasible"
+      << CoinMessageEol;
     return numberToFix;
+  }
+  if (numberBoundsChanged) {
+    sprintf(general,"%d bounds changed by secondary solves (%.2f seconds - %d iterations)",
+	    numberBoundsChanged,model->getCurrentSeconds()-time1,saveAllowed-numberIterationsAllowed);
+    model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+      << general
+      << CoinMessageEol;
+  } else if ((solveType&32)!=0) {
+    sprintf(general,"No bounds changed by secondary solves (%.2f seconds - %d iterations)",
+	    model->getCurrentSeconds()-time1,saveAllowed-numberIterationsAllowed);
+    model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+      << general
+      << CoinMessageEol;
+  }
+  model->reserveCurrentSolution(solver->getColSolution());
+  if ((solveType&1)!=0) {
+    if (groupCounts[0]*4>numberIntegers) {
+      // change priority on this group
+      int generalPriority=-10000000;
+      for (int i = 0; i < numberIntegers; i++) {
+	OsiObject * object = model->modifiableObject(i);
+	CbcSimpleInteger * integerObject =
+	  dynamic_cast <CbcSimpleInteger *>(object) ;
+	if (!integerObject)
+	  continue;
+	generalPriority = CoinMax(generalPriority,integerObject->priority());
+      }
+      for (int i = 0; i < numberIntegers; i++) {
+	OsiObject * object = model->modifiableObject(i);
+	CbcSimpleInteger * integerObject =
+	  dynamic_cast <CbcSimpleInteger *>(object) ;
+	if (!integerObject)
+	  continue;
+	if (!interAction[i]&&integerObject->priority()==generalPriority)
+	  integerObject->setPriority(generalPriority+1);
+      }
+    }
+  }
+  return numberToFix;
 }
 
 

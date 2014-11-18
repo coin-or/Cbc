@@ -372,6 +372,10 @@ CbcHeuristicLocal::solution(double & solutionValue,
     numberSolutions_ = model_->getSolutionCount();
     if (nodeCount<lastRunDeep_+skip ) 
       return 0;
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
     lastRunDeep_ = nodeCount;
     howOftenShallow_ = numberSolutions_;
 

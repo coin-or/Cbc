@@ -123,6 +123,10 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 
     double start = CoinCpuTime();
     numCouldRun_++; //
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
     // Todo: Ask JJHF what "number of times
     // the heuristic could run" means.
 

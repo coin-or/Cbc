@@ -91,6 +91,10 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
     numCouldRun_++; // Todo: Ask JJHF what this for.
     std::cout << "Entering Pivot-and-Fix Heuristic" << std::endl;
 
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
 #ifdef FORNOW
     std::cout << "Lucky you! You're in the Pivot-and-Fix Heuristic" << std::endl;
     // The struct should be moved to member data

@@ -117,6 +117,10 @@ CbcHeuristicGreedyCover::solution(double & solutionValue,
         return 0; // switched off
     if (model_->getNodeCount() > numberTimes_)
         return 0;
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
     // See if at root node
     bool atRoot = model_->getNodeCount() == 0;
     int passNumber = model_->getCurrentPassNumber();

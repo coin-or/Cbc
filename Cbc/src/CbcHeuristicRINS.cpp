@@ -157,6 +157,10 @@ CbcHeuristicRINS::solution(double & solutionValue,
     const double * bestSolution = model_->bestSolution();
     if (!bestSolution)
         return 0; // No solution found yet
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
     if (numberSolutions_ < model_->getSolutionCount()) {
         // new solution - add info
         numberSolutions_ = model_->getSolutionCount();

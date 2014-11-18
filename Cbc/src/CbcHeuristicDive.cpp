@@ -23,9 +23,8 @@
 //#define DIVE_FIX_BINARY_VARIABLES
 //#define DIVE_DEBUG
 #ifdef DIVE_DEBUG
-#define DIVE_PRINT
+#define DIVE_PRINT=2
 #endif
-#undef DIVE_PRINT
 
 // Default Constructor
 CbcHeuristicDive::CbcHeuristicDive()
@@ -272,7 +271,7 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
 			   CbcSubProblem ** & nodes,
 			   double * newSolution)
 {
-#ifdef DIVE_PRINT
+#if DIVE_PRINT
     int nRoundInfeasible = 0;
     int nRoundFeasible = 0;
 #endif
@@ -440,7 +439,7 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
                 }
             }
             if (direction*(solver->getObjValue() + delta) < solutionValue) {
-#ifdef DIVE_PRINT
+#if DIVE_PRINT
                 nRoundFeasible++;
 #endif
 		if (!nodes||bestColumn<0) {
@@ -487,14 +486,14 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
 		  }
 		}
 	    }
-#ifdef DIVE_PRINT
+#if DIVE_PRINT
             else
                 nRoundInfeasible++;
 #endif
         }
 
         // do reduced cost fixing
-#ifdef DIVE_PRINT
+#if DIVE_PRINT>1
         numberReducedCostFixed = reducedCostFix(solver);
 #else
         reducedCostFix(solver);
@@ -771,7 +770,8 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
 
             model_->setSpecialOptions(saveModelOptions | 2048);
             solver->resolve();
-#ifdef DIVE_PRINT
+	    numberSimplexIterations += solver->getIterationCount();
+#if DIVE_PRINT>1
 	    int numberFractionalVariables = 0;
 	    double sumFractionalVariables=0.0;
 	    int numberFixed=0;
@@ -832,7 +832,7 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
 #endif
             model_->setSpecialOptions(saveModelOptions);
             if (!solver->isAbandoned()&&!solver->isIterationLimitReached()) {
-                numberSimplexIterations += solver->getIterationCount();
+	      //numberSimplexIterations += solver->getIterationCount();
             } else {
                 numberSimplexIterations = maxSimplexIterations + 1;
 		reasonToStop += 100;
@@ -901,7 +901,7 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
         } else if (numberSimplexIterations > maxSimplexIterations) {
             reasonToStop += 4;
             // also switch off
-#ifdef DIVE_PRINT
+#if DIVE_PRINT
             printf("switching off diving as too many iterations %d, %d allowed\n",
                    numberSimplexIterations, maxSimplexIterations);
 #endif
@@ -909,7 +909,7 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
         } else if (solver->getIterationCount() > maxIterationsInOneSolve && iteration > 3 && !nodes) {
             reasonToStop += 5;
             // also switch off
-#ifdef DIVE_PRINT
+#if DIVE_PRINT
             printf("switching off diving one iteration took %d iterations (total %d)\n",
                    solver->getIterationCount(), numberSimplexIterations);
 #endif
@@ -979,6 +979,7 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
       if (!numberNodes) {
 	// was good at start! - create fake
 	clpSolver->resolve();
+	numberSimplexIterations += clpSolver->getIterationCount();
 	ClpSimplex * simplex = clpSolver->getModelPtr();
 	CbcSubProblem * sub =
 	  new CbcSubProblem(clpSolver,lowerBefore,upperBefore,
@@ -1075,8 +1076,9 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
       delete [] rowActivity;
     }
 
-#ifdef DIVE_PRINT
-    std::cout << "nRoundInfeasible = " << nRoundInfeasible
+#if DIVE_PRINT
+    std::cout << heuristicName_
+	      << " nRoundInfeasible = " << nRoundInfeasible
               << ", nRoundFeasible = " << nRoundFeasible
               << ", returnCode = " << returnCode
               << ", reasonToStop = " << reasonToStop
@@ -1119,12 +1121,17 @@ CbcHeuristicDive::solution(double & solutionValue,
             (when() % 10 == 2 && (model_->phase() != 2 && model_->phase() != 3)))
         return 0; // switched off
 #endif
+#ifdef HEURISTIC_INFORM
+    printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+	   heuristicName(),numRuns_,numCouldRun_,when_);
+#endif
 #ifdef DIVE_DEBUG
     std::cout << "solutionValue = " << solutionValue << std::endl;
 #endif
     // Get solution array for heuristic solution
     int numberColumns = model_->solver()->getNumCols();
-    double * newSolution = new double [numberColumns];
+    double * newSolution = CoinCopyOfArray(model_->solver()->getColSolution(),
+					   numberColumns);
     int numberCuts=0;
     int numberNodes=-1;
     CbcSubProblem ** nodes=NULL;

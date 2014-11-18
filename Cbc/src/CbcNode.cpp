@@ -4564,7 +4564,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
     2 - available - need to look at results
   */
 #ifndef NUMBER_THREADS
-#define NUMBER_THREADS 1
+#define NUMBER_THREADS 4
 #endif
   int status[NUMBER_THREADS];
   memset(status,0,sizeof(status));
@@ -5183,17 +5183,20 @@ int CbcNode::analyze (CbcModel *model, double * results)
       double offset;
       temp->getDblParam(OsiObjOffset, offset);
       temp->addRow(n,indices,obj,-COIN_DBL_MAX,CoinMin(cutoff,1.0e25)+offset);
+#if defined (CBC_THREAD) && defined (COIN_HAS_CLP)
       for (int iThread=0;iThread<numberThreads;iThread++) {
 	OsiSolverInterface * solver=
 	  reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
 	solver->addRow(n,indices,obj,-COIN_DBL_MAX,CoinMin(cutoff,1.0e25)+offset);
       }
+#endif
     }
     // zero objective
     for (int i = 0; i < numberColumns; i++) {
       newLower[i]=0.0;
     }
     temp->setObjective(newLower);
+#if defined (CBC_THREAD) && defined (COIN_HAS_CLP)
     for (int iThread=0;iThread<numberThreads;iThread++) {
       OsiSolverInterface * solver=
 	reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
@@ -5201,6 +5204,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
       solver->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
       threadNeedsRefreshing[iThread]=3;
     }
+#endif
     for (int i = 0; i < numberColumns; i++) {
       newLower[i]=lower[i];
       newUpper[i]=upper[i];

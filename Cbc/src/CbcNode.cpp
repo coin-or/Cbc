@@ -4563,6 +4563,9 @@ int CbcNode::analyze (CbcModel *model, double * results)
     1 - not available
     2 - available - need to look at results
   */
+#ifndef NUMBER_THREADS
+#define NUMBER_THREADS 1
+#endif
   int status[NUMBER_THREADS];
   memset(status,0,sizeof(status));
   memset(&staticInfo,0,sizeof(staticInfo));

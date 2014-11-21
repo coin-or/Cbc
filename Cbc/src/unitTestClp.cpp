@@ -228,7 +228,6 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
     PUSH_MPS("gt2", 29, 188, 21166.000, 13460.233074, 0, false);
     PUSH_MPS("harp2", 112, 2993, -73899798.00, -74353341.502, 6, false);
     PUSH_MPS("khb05250", 101, 1350, 106940226, 95919464.0, 0, false);
-#endif
     PUSH_MPS("l152lav", 97, 1989, 4722, 4656.36, 1, false);
     PUSH_MPS("lseu", 28, 89, 1120, 834.68, 0, false);
     PUSH_MPS("mas74", 13, 151, 11801.18573, 10482.79528, 3, false);
@@ -265,6 +264,7 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
     PUSH_MPS("stein45", 331, 45, 30, 22.0, 1, false);
     PUSH_MPS("swath", 884, 6805, 497.603, 334.4968581, 7, false);
     PUSH_MPS("vpm1", 234, 378, 20, 15.4167, 0, false);
+#endif
     PUSH_MPS("vpm2", 234, 378, 13.75, 9.8892645972, 0, false);
   }
 #undef PUSH_MPS

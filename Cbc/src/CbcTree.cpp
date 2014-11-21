@@ -645,13 +645,24 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
 	  for (int i = 0; i < model->currentNumberCuts(); i++) {
             // take off node
 	    if (model->addedCuts()[i]) {
-	        if (model->parallelMode()!=1) {
+	        if (model->parallelMode()!=1||true) {
 		  if (!model->addedCuts()[i]->decrement(numberLeft))
                     delete model->addedCuts()[i];
 		}
             }
 	  }
 	}
+#ifdef CBC_THREAD
+	if (model->parallelMode() > 0 && model->master()) {
+	  // delete reference to node
+	  int numberThreads = model->master()->numberThreads();
+	  for (int i=0;i<numberThreads;i++) {
+	    CbcThread * child = model->master()->child(i);
+	    if (child->createdNode()==node)
+	      child->setCreatedNode(NULL);
+	  }
+	}
+#endif
         // node should not have anything pointing to it
         if (node->nodeInfo())
             node->nodeInfo()->throwAway();

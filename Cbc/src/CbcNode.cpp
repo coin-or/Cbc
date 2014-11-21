@@ -65,7 +65,7 @@ CbcNode::CbcNode() :
         state_(0)
 {
 #ifdef CHECK_NODE
-    printf("CbcNode %x Constructor\n", this);
+    printf("CbcNode %p Constructor\n", this);
 #endif
 }
 // Print
@@ -88,7 +88,7 @@ CbcNode::CbcNode(CbcModel * model,
         state_(0)
 {
 #ifdef CHECK_NODE
-    printf("CbcNode %x Constructor from model\n", this);
+    printf("CbcNode %p Constructor from model\n", this);
 #endif
     model->setObjectiveValue(this, lastNode);
 
@@ -4099,6 +4099,7 @@ typedef struct {
   double integerTolerance;
   double * originalSolution;
   CoinWarmStart * ws;
+  double * newObjective;
 # ifdef COIN_HAS_CLP
   ClpDualRowSteepest * dualRowPivot;
   ClpPrimalColumnPivot * primalColumnPivot;
@@ -4110,6 +4111,8 @@ typedef struct {
   StrongStaticInfo *staticInfo;
   StrongInfo * choice;
   OsiSolverInterface * solver;
+  double * tempSolution;
+  CoinWarmStart * tempBasis;
   int whichChoice;
 } StrongBundle;
 /* return 1 if possible solution (for solveType 100 if infeasible)
@@ -4142,6 +4145,7 @@ int solveAnalyze(void * info) {
   */
   for (int iWay=0;iWay<2;iWay++) {
     if (choice->numIters[iWay]==0) {
+      int numberColumns=solver->getNumCols();
       if (solveType!=100) {
 	double saveBound;
 	if (iWay==0) {
@@ -4196,7 +4200,6 @@ int solveAnalyze(void * info) {
 	const double * thisSolution = solver->getColSolution();
 	int numberModified=0;
 	double sumModified=0.0;
-	int numberColumns=solver->getNumCols();
 	int numberInfeas=0;
 	for (int i=0;i<numberColumns;i++) {
 	  if (back[i]>=0) {
@@ -4234,27 +4237,52 @@ int solveAnalyze(void * info) {
 	}
 	choice->movement[iWay] = newObjectiveValue ;
       } else {
+# ifdef COIN_HAS_CLP
+	OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
+	ClpSimplex * simplex = osiclp ? osiclp->getModelPtr() : NULL;
+#endif
 	// doing continuous and general integer
 	solver->setColSolution(staticInfo->originalSolution);
 	solver->setWarmStart(staticInfo->ws);
 	double saveBound;
 	double newBound;
 	if (iWay==0) {
-	  solver->setObjCoeff(iColumn,1.0);
 	  saveBound=solver->getColUpper()[iColumn];
 	  solver->setColUpper(iColumn,choice->downUpperBound);
 	  newBound=choice->downUpperBound;
 	} else {
-	  solver->setObjCoeff(iColumn,-1.0);
 	  saveBound=solver->getColLower()[iColumn];
 	  solver->setColLower(iColumn,choice->upLowerBound);
 	  newBound=choice->upLowerBound;
 	}
+# if 0 //def COIN_HAS_CLP
+	if (simplex) {
+	  // set solution to new bound (if basic will be recomputed)
+	  simplex->primalColumnSolution()[iColumn]=newBound;
+	}
+#endif
 	solver->setHintParam(OsiDoDualInResolve, true, OsiHintDo) ;
+#define PRINT_ANALYZE  0
+#if PRINT_ANALYZE>0
+	osiclp->getModelPtr()->setLogLevel(1);
+	solver->setHintParam(OsiDoReducePrint, false, OsiHintTry);
+#endif
 	solver->resolve();
 	if (iWay==0) {
+#if PRINT_ANALYZE>0
+	  printf("column %d down original %g <= %g <= %g upper now %g - result %s\n",
+		 iColumn,solver->getColLower()[iColumn],
+		 staticInfo->originalSolution[iColumn],saveBound,
+		 newBound,solver->isProvenOptimal() ? "ok" : "infeas");
+#endif
 	  solver->setColUpper(iColumn,saveBound);
 	} else {
+#if PRINT_ANALYZE>0
+	  printf("column %d up original %g <= %g <= %g lower now %g - result %s\n",
+		 iColumn,saveBound,staticInfo->originalSolution[iColumn],
+		 solver->getColUpper()[iColumn],
+		 newBound,solver->isProvenOptimal() ? "ok" : "infeas");
+#endif
 	  solver->setColLower(iColumn,saveBound);
 	}
 	choice->numIters[iWay] = solver->getIterationCount();
@@ -4264,6 +4292,16 @@ int solveAnalyze(void * info) {
 	  // can go all way
 	  choice->movement[iWay] = newBound;
 	} else {
+	  // zero objective
+	  double offset;
+	  solver->getDblParam(OsiObjOffset,offset);
+	  solver->setDblParam(OsiObjOffset, 0.0);
+	  solver->setObjective(staticInfo->newObjective+numberColumns);
+	  if (iWay==0) {
+	    solver->setObjCoeff(iColumn,1.0);
+	  } else {
+	    solver->setObjCoeff(iColumn,-1.0);
+	  }
 	  solver->setColSolution(staticInfo->originalSolution);
 	  solver->setWarmStart(staticInfo->ws);
 	  solver->setHintParam(OsiDoDualInResolve, false, OsiHintDo) ;
@@ -4272,18 +4310,42 @@ int solveAnalyze(void * info) {
 	  //	 iWay,choice->numIters[iWay],solver->getIterationCount(),iColumn);
 	  choice->movement[iWay] = solver->getColSolution()[iColumn];
 	  choice->numIters[iWay] += solver->getIterationCount();
+#if PRINT_ANALYZE>0
+	  if (iWay==0) {
+	    printf("column %d down can get to %g - result %s\n",
+		 iColumn,solver->getColSolution()[iColumn],solver->isProvenOptimal() ? "ok" : "infeas");
+	  } else {
+	    printf("column %d up can get to %g - result %s\n",
+		 iColumn,solver->getColSolution()[iColumn],solver->isProvenOptimal() ? "ok" : "infeas");
+	  }
+#endif
+	  // reset objective
+	  solver->setDblParam(OsiObjOffset, offset);
+	  solver->setObjective(staticInfo->newObjective);
 	  if (!solver->isProvenOptimal()) {
+# ifdef COIN_HAS_CLP
+	    OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
+	    ClpSimplex * simplex = osiclp->getModelPtr();
+	    double sum = simplex->sumPrimalInfeasibilities();
+	    sum /= static_cast<double>(simplex->numberPrimalInfeasibilities());
+	    if (sum>1.0e-3) {
+#endif
 	    choice->modified[0]=1;
 	    returnStatus=1;
+	    solver->writeMps("bad","mps");
+	    abort();
+# ifdef COIN_HAS_CLP
+	    }
+#endif
 	  }
 	}
-	solver->setObjCoeff(iColumn,0.0);
+	//solver->setObjCoeff(iColumn,0.0);
       }
     }
   }
   return returnStatus;
 }
-#ifdef CBC_THREAD
+#ifdef THREADS_IN_ANALYZE
 void * cbc_parallelManager(void * stuff)
 {
   CoinPthreadStuff * driver = reinterpret_cast<CoinPthreadStuff *>(stuff);
@@ -4316,7 +4378,7 @@ void * cbc_parallelManager(void * stuff)
     int unLock=whichLocked+1;
     if (unLock==3)
       unLock=0;
-    //printf("child pointer %x status %d\n",threadInfo,threadInfo->status);
+    //printf("child pointer %p status %d\n",threadInfo,threadInfo->status);
     assert(threadInfo->status>=0);
     if (threadInfo->status==1000)
       pthread_exit(NULL);
@@ -4557,7 +4619,8 @@ int CbcNode::analyze (CbcModel *model, double * results)
   }
   StrongInfo * choices = new StrongInfo[maxChoices];
   StrongStaticInfo staticInfo;
-  StrongBundle * bundles = new StrongBundle[CoinMax(1,numberThreads)];
+  int numberBundles = CoinMax(1,numberThreads);
+  StrongBundle * bundles = new StrongBundle[numberBundles];
   /*
     0 - available - no need to look at results
     1 - not available
@@ -4592,9 +4655,11 @@ int CbcNode::analyze (CbcModel *model, double * results)
     }
   }
 #endif
-  for (int i=0;i<CoinMax(1,numberThreads);i++)
+  for (int i=0;i<numberBundles;i++) {
+    memset(bundles+i,0,sizeof(StrongBundle));
     bundles[i].staticInfo=&staticInfo;
-#if defined (CBC_THREAD) && defined (COIN_HAS_CLP)
+  }
+#if defined (THREADS_IN_ANALYZE) && defined (COIN_HAS_CLP)
 #define USE_STRONG_THREADS
   CoinPthreadStuff threadInfo(numberThreads,cbc_parallelManager);
   int threadNeedsRefreshing[NUMBER_THREADS];
@@ -5142,29 +5207,16 @@ int CbcNode::analyze (CbcModel *model, double * results)
   }
   if ((solveType&2)!=0) {
 # ifdef COIN_HAS_CLP
-  if (osiclp&&(solveType&2)!=0) {
-    ClpPrimalColumnPivot * primalColumnPivot=NULL;
-  }
+    int saveOptions = osiclp ? osiclp->specialOptions() : 0;
+    if (osiclp) {
+      //ClpPrimalColumnPivot * primalColumnPivot=NULL;
+      osiclp->setSpecialOptions(saveOptions|2048); // off crunch
+    }
 #endif
     double * newLower = new double [2*numberColumns];
     double * newUpper = newLower + numberColumns;
     // look at ints/all - should be parametrics - for now primal
     OsiSolverInterface * temp = solver->clone();
-    //temp->setHintParam(OsiDoDualInResolve, false, OsiHintDo) ;
-    temp->setHintParam(OsiDoReducePrint, true, OsiHintTry);
-    temp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
-    temp->resolve();
-    {
-      const double * lower =temp->getColLower();
-      const double * upper =temp->getColUpper();
-      for (int i=0;i<numberColumns;i++) {
-	assert (lower[i]==saveLower[i]);
-	assert (upper[i]==saveUpper[i]);
-      }
-    }
-    delete ws;
-    ws = temp->getWarmStart();
-    staticInfo.ws=ws;
     // add constraint
     int * indices = reinterpret_cast<int *>(newUpper);
     double * obj = newLower;
@@ -5183,7 +5235,8 @@ int CbcNode::analyze (CbcModel *model, double * results)
       double offset;
       temp->getDblParam(OsiObjOffset, offset);
       temp->addRow(n,indices,obj,-COIN_DBL_MAX,CoinMin(cutoff,1.0e25)+offset);
-#if defined (CBC_THREAD) && defined (COIN_HAS_CLP)
+      temp->setDblParam(OsiObjOffset, 0.0);
+#if defined (THREADS_IN_ANALYZE) && defined (COIN_HAS_CLP)
       for (int iThread=0;iThread<numberThreads;iThread++) {
 	OsiSolverInterface * solver=
 	  reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
@@ -5191,12 +5244,25 @@ int CbcNode::analyze (CbcModel *model, double * results)
       }
 #endif
     }
-    // zero objective
-    for (int i = 0; i < numberColumns; i++) {
-      newLower[i]=0.0;
+    //temp->setHintParam(OsiDoDualInResolve, false, OsiHintDo) ;
+    temp->setHintParam(OsiDoReducePrint, true, OsiHintTry);
+    temp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
+    temp->resolve();
+    {
+      const double * lower =temp->getColLower();
+      const double * upper =temp->getColUpper();
+      for (int i=0;i<numberColumns;i++) {
+	assert (lower[i]==saveLower[i]);
+	assert (upper[i]==saveUpper[i]);
+      }
     }
-    temp->setObjective(newLower);
-#if defined (CBC_THREAD) && defined (COIN_HAS_CLP)
+    delete ws;
+    ws = temp->getWarmStart();
+    staticInfo.ws=ws;
+    staticInfo.newObjective = new double[2*numberColumns];
+    memcpy(staticInfo.newObjective,solver->getObjCoefficients(),numberColumns*sizeof(double)); 
+    memset(staticInfo.newObjective+numberColumns,0,numberColumns*sizeof(double));
+#if defined (THREADS_IN_ANALYZE) && defined (COIN_HAS_CLP)
     for (int iThread=0;iThread<numberThreads;iThread++) {
       OsiSolverInterface * solver=
 	reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
@@ -5317,11 +5383,11 @@ int CbcNode::analyze (CbcModel *model, double * results)
 	if (choice.numIters[0]>=0) {
 	  // go down
 	  double value = choice.movement[0];
-	  if (value>newLower[iColumn]+10.0*integerTolerance) {
+	  if (value>newLower[iColumn]+100.0*integerTolerance) {
 	    if (back[iColumn]>=0) 
 	      value = ceil(value);
 	    else
-	      value = CoinMax(newLower[iColumn],value-1.0e-7-1.0e-8*fabs(value));
+	      value = CoinMax(newLower[iColumn],value-1.0e-5-1.0e-8*fabs(value));
 	    if (value>newLower[iColumn]+1.0e-8*(1.0+fabs(value))) {
 	      sprintf(general,"Secondary analysis solve increases lower bound on %d from %g to %g%s",
 		      iColumn,newUpper[iColumn],value,(back[iColumn]>=0) ? "(integer)" : "");
@@ -5343,11 +5409,11 @@ int CbcNode::analyze (CbcModel *model, double * results)
 	if (choice.numIters[1]>=0) {
 	  // go up
 	  double value=choice.movement[1];
-	  if (value<newUpper[iColumn]-10.0*integerTolerance) {
+	  if (value<newUpper[iColumn]-100.0*integerTolerance) {
 	    if (back[iColumn]>=0) 
 	      value = floor(value);
 	    else
-	      value = CoinMin(newUpper[iColumn],value+1.0e-7+1.0e-8*fabs(value));
+	      value = CoinMin(newUpper[iColumn],value+1.0e-5+1.0e-8*fabs(value));
 	    if (value<newUpper[iColumn]-1.0e-8*(1.0+fabs(value))) {
 	      sprintf(general,"Secondary analysis solve decreases upper bound on %d from %g to %g%s",
 		      iColumn,newUpper[iColumn],value,(back[iColumn]>=0) ? "(integer)" : "");
@@ -5399,7 +5465,14 @@ int CbcNode::analyze (CbcModel *model, double * results)
     delete [] thisSolution;
     delete temp;
     delete [] newLower;
+# ifdef COIN_HAS_CLP
+    if (osiclp) {
+      //ClpPrimalColumnPivot * primalColumnPivot=NULL;
+      osiclp->setSpecialOptions(saveOptions);
+    }
+#endif
   }
+  delete [] staticInfo.newObjective;
 # ifdef COIN_HAS_CLP
   if (osiclp) {
     delete staticInfo.dualRowPivot;
@@ -5438,6 +5511,10 @@ int CbcNode::analyze (CbcModel *model, double * results)
       << CoinMessageEol;
   }
   delete [] choices;
+  for (int i=0;i<numberBundles;i++) {
+    delete [] bundles[i].tempSolution;
+    delete bundles[i].tempBasis;
+  }
   delete [] bundles;
 #ifdef USE_STRONG_THREADS
   if (numberThreads) {
@@ -5514,7 +5591,7 @@ CbcNode::CbcNode(const CbcNode & rhs)
         : CoinTreeNode(rhs)
 {
 #ifdef CHECK_NODE
-    printf("CbcNode %x Constructor from rhs %x\n", this, &rhs);
+    printf("CbcNode %p Constructor from rhs %p\n", this, &rhs);
 #endif
     if (rhs.nodeInfo_)
         nodeInfo_ = rhs.nodeInfo_->clone();
@@ -5568,11 +5645,11 @@ CbcNode::~CbcNode ()
 {
 #ifdef CHECK_NODE
     if (nodeInfo_) {
-        printf("CbcNode %x Destructor nodeInfo %x (%d)\n",
+        printf("CbcNode %p Destructor nodeInfo %p (%d)\n",
                this, nodeInfo_, nodeInfo_->numberPointingToThis());
         //assert(nodeInfo_->numberPointingToThis()>=0);
     } else {
-        printf("CbcNode %x Destructor nodeInfo %x (?)\n",
+        printf("CbcNode %p Destructor nodeInfo %p (?)\n",
                this, nodeInfo_);
     }
 #endif
@@ -5587,7 +5664,7 @@ CbcNode::~CbcNode ()
                 nodeInfo_->nullParent();
             delete nodeInfo_;
         } else {
-            //printf("node %x nodeinfo %x parent %x\n",this,nodeInfo_,nodeInfo_->parent());
+            //printf("node %p nodeinfo %p parent %p\n",this,nodeInfo_,nodeInfo_->parent());
             // anyway decrement parent
             //if (parent)
             ///parent->decrement(1);

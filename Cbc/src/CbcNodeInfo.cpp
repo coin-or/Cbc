@@ -61,7 +61,7 @@ CbcNodeInfo::CbcNodeInfo ()
         active_(7)
 {
 #ifdef CHECK_NODE
-    printf("CbcNodeInfo %x Constructor\n", this);
+    printf("CbcNodeInfo %p Constructor\n", this);
 #endif
 }
 
@@ -107,7 +107,7 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
         active_(7)
 {
 #ifdef CHECK_NODE
-    printf("CbcNodeInfo %x Constructor from parent %x\n", this, parent_);
+    printf("CbcNodeInfo %p Constructor from parent %p\n", this, parent_);
 #endif
     //setParentBasedData();
 }
@@ -128,7 +128,7 @@ CbcNodeInfo::CbcNodeInfo (const CbcNodeInfo & rhs)
         active_(rhs.active_)
 {
 #ifdef CHECK_NODE
-    printf("CbcNodeInfo %x Copy constructor\n", this);
+    printf("CbcNodeInfo %p Copy constructor\n", this);
 #endif
     if (numberCuts_) {
         cuts_ = new CbcCountRowCut * [numberCuts_];
@@ -163,7 +163,7 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent, CbcNode * owner)
         active_(7)
 {
 #ifdef CHECK_NODE
-    printf("CbcNodeInfo %x Constructor from parent %x\n", this, parent_);
+    printf("CbcNodeInfo %p Constructor from parent %p\n", this, parent_);
 #endif
     //setParentBasedData();
 }
@@ -176,7 +176,8 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent, CbcNode * owner)
 CbcNodeInfo::~CbcNodeInfo()
 {
 #ifdef CHECK_NODE
-    printf("CbcNodeInfo %x Destructor parent %x\n", this, parent_);
+    printf("CbcNodeInfo %p Destructor parent %p\n", this, parent_);
+    printf("cuts %p - number %d\n",cuts_,numberCuts_);
 #endif
 
     assert(!numberPointingToThis_);
@@ -218,7 +219,7 @@ CbcNodeInfo::decrementCuts(int change)
         if (cuts_[i]) {
             int number = cuts_[i]->decrement(changeThis);
             if (!number) {
-                //printf("info %x del cut %d %x\n",this,i,cuts_[i]);
+                //printf("info %p del cut %d %p\n",this,i,cuts_[i]);
 #ifndef GLOBAL_CUTS_JUST_POINTERS
                 delete cuts_[i];
 #else
@@ -397,7 +398,7 @@ CbcNodeInfo::addCuts(int numberCuts, CbcCountRowCut ** cut,
         for (i = 0; i < numberCuts; i++) {
             CbcCountRowCut * thisCut = cut[i];
             thisCut->setInfo(this, numberCuts_);
-            //printf("info %x cut %d %x\n",this,i,thisCut);
+            //printf("info %p cut %d %p\n",this,i,thisCut);
             thisCut->increment(numberToBranchOn);
             cuts_[numberCuts_++] = thisCut;
 #ifdef CBC_DEBUG

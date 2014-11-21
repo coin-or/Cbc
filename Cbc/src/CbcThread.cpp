@@ -650,7 +650,6 @@ CbcBaseModel::waitForThreadsInTree(int type)
     CbcModel * baseModel = children_[0].baseModel();
     int anyLeft = 0;
     // May be able to combine parts later
-
     if (type == 0) {
         bool locked = true;
 #ifdef COIN_DEVELOP
@@ -661,8 +660,9 @@ CbcBaseModel::waitForThreadsInTree(int type)
             int iThread;
             for (iThread = 0; iThread < numberThreads_; iThread++) {
                 if (children_[iThread].status()) {
-                    if (children_[iThread].returnCode() == 0)
+		  if (children_[iThread].returnCode() == 0) {
                         break;
+		  }
                 }
             }
             if (iThread < numberThreads_) {
@@ -765,8 +765,9 @@ CbcBaseModel::waitForThreadsInTree(int type)
         int iThread;
         // Start one off if any available
         for (iThread = 0; iThread < numberThreads_; iThread++) {
-            if (children_[iThread].returnCode() == -1)
+	  if (children_[iThread].returnCode() == -1) {
                 break;
+	  }
         }
         if (iThread < numberThreads_) {
             children_[iThread].setNode(node);
@@ -888,6 +889,10 @@ CbcBaseModel::waitForThreadsInTree(int type)
             threadModel_[i]->setNumberThreads(0); // say exit
             if (children_[i].deterministic() > 0)
                 delete [] children_[i].delNode();
+	    if (children_[i].node()) {
+	      delete children_[i].node();
+	      children_[i].setNode(NULL);
+	    }
             children_[i].setReturnCode( 0);
             children_[i].unlockFromMaster();
 #ifndef NDEBUG
@@ -1427,6 +1432,16 @@ CbcModel::mergeModels(int /*numberModel*/, CbcModel ** /*model*/,
 void
 CbcModel::moveToModel(CbcModel * baseModel, int mode)
 {
+#ifdef THREAD_DEBUG
+    {
+      CbcThread * stuff = reinterpret_cast<CbcThread *> (masterThread_);
+      if (stuff) 
+	printf("mode %d node_ %p createdNode_ %p - stuff %p\n",
+	       mode,stuff->node(),stuff->createdNode(),stuff);
+      else
+	printf("mode %d null stuff\n",mode);
+    }
+#endif
     if (mode == 0) {
         setCutoff(baseModel->getCutoff());
         bestObjective_ = baseModel->bestObjective_;

@@ -4784,9 +4784,6 @@ void CbcModel::branchAndBound(int doStatistics)
     if (master_) {
         master_->stopThreads(-1);
         master_->waitForThreadsInTree(2);
-        delete master_;
-        master_ = NULL;
-        masterThread_ = NULL;
         // adjust time to allow for children on some systems
         //dblParam_[CbcStartSeconds] -= CoinCpuTimeJustChildren();
     }
@@ -4808,6 +4805,18 @@ void CbcModel::branchAndBound(int doStatistics)
         if (tree_->size()) {
             double dummyBest;
             tree_->cleanTree(this, -COIN_DBL_MAX, dummyBest) ;
+#ifdef CBC_THREAD
+	    if (parallelMode() > 0 && master_) {
+	      // see if any dangling nodes
+	      int numberThreads = master_->numberThreads();
+	      for (int i=0;i<numberThreads;i++) {
+		CbcThread * child = master_->child(i);
+		//if (child->createdNode())
+		//printf("CHILD_NODE %p\n",child->createdNode());
+		delete child->createdNode();
+	      }
+	    }
+#endif
         }
         delete nextRowCut_;
         /* order is important here:
@@ -4846,6 +4855,13 @@ void CbcModel::branchAndBound(int doStatistics)
             status_ = 5 ;
         }
     }
+#ifdef CBC_THREAD
+    if (master_) {
+        delete master_;
+        master_ = NULL;
+        masterThread_ = NULL;
+    }
+#endif
     /*
       That's it, we've exhausted the search tree, or broken out of the loop because
       we hit some limit on evaluation.
@@ -9919,6 +9935,8 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
     int numberDropped = 0;
     int firstOldCut = numberRowsAtContinuous_ ;
     int totalNumberCuts = numberNewCuts_ + numberOldActiveCuts_ ;
+    assert (numberRowsAtContinuous_+totalNumberCuts==
+	    solver_->getNumRows());
     int *solverCutIndices = new int[totalNumberCuts] ;
     int *newCutIndices = new int[numberNewCuts_] ;
     const CoinWarmStartBasis* ws ;

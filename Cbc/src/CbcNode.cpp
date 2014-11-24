@@ -698,6 +698,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
                         double targetValue = hotstartSolution[iColumn];
                         if (saveUpper[iColumn] > saveLower[iColumn]) {
                             double value = saveSolution[iColumn];
+			    // clean
+			    value = CoinMin(value,saveUpper[iColumn]);
+			    value = CoinMax(value,saveLower[iColumn]);
                             if (hotstartPriorities)
                                 priorityLevel = hotstartPriorities[iColumn];
                             //double originalLower = thisOne->originalLower();

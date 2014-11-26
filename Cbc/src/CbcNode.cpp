@@ -704,6 +704,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
                         double targetValue = hotstartSolution[iColumn];
                         if (saveUpper[iColumn] > saveLower[iColumn]) {
                             double value = saveSolution[iColumn];
+			    // clean
+			    value = CoinMin(value,saveUpper[iColumn]);
+			    value = CoinMax(value,saveLower[iColumn]);
                             if (hotstartPriorities)
                                 priorityLevel = hotstartPriorities[iColumn];
                             //double originalLower = thisOne->originalLower();
@@ -1625,7 +1628,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
       if (debugger) {
 	onOptimalPath = true;
-      }
+      } 
     }
 #endif
     // get information on solver type
@@ -5385,7 +5388,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
 	  double value = choice.movement[0];
 	  if (value>newLower[iColumn]+100.0*integerTolerance) {
 	    if (back[iColumn]>=0) 
-	      value = ceil(value);
+	      value = ceil(value-integerTolerance);
 	    else
 	      value = CoinMax(newLower[iColumn],value-1.0e-5-1.0e-8*fabs(value));
 	    if (value>newLower[iColumn]+1.0e-8*(1.0+fabs(value))) {
@@ -5411,7 +5414,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
 	  double value=choice.movement[1];
 	  if (value<newUpper[iColumn]-100.0*integerTolerance) {
 	    if (back[iColumn]>=0) 
-	      value = floor(value);
+	      value = floor(value+integerTolerance);
 	    else
 	      value = CoinMin(newUpper[iColumn],value+1.0e-5+1.0e-8*fabs(value));
 	    if (value<newUpper[iColumn]-1.0e-8*(1.0+fabs(value))) {
@@ -5445,6 +5448,16 @@ int CbcNode::analyze (CbcModel *model, double * results)
 	  if (!doAtEnd)
 	    solver->setColUpper(iColumn,gotUpper);
 	}
+#if 0
+	if ((model->specialOptions()&1) != 0) {
+	  const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
+	  if (!debugger) {
+	    abort();
+	  } else {
+	    printf("still ok\n");
+	  }
+	}
+#endif
 	threadStatus=0;
 	currentChoice++;
 	numberDone++;

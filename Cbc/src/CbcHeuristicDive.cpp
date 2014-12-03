@@ -251,7 +251,7 @@ CbcHeuristicDive::setPriorities()
 
 bool CbcHeuristicDive::canHeuristicRun()
 {
-    if (model_->bestSolution()) {
+    if (model_->bestSolution()||model_->getNodeCount()) {
       if (when_==3 || (when_==4 && numberSolutionsFound_) )
 	return false;
     }
@@ -274,6 +274,9 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
 #if DIVE_PRINT
     int nRoundInfeasible = 0;
     int nRoundFeasible = 0;
+    printf("Entering %s - fix %.1f%% maxTime %.2f maxPasses %d - max iterations %d (at root %d) - when to do %d\n",
+    heuristicName_.c_str(),percentageToFix_*100.0,maxTime_,maxIterations_,
+    maxSimplexIterations_,maxSimplexIterationsAtRoot_,when());
 #endif
     int reasonToStop = 0;
     double time1 = CoinCpuTime();

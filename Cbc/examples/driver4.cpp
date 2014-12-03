@@ -11,6 +11,12 @@
 #include "CbcModel.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "CbcSolver.hpp"
+#include "CbcHeuristicDiveCoefficient.hpp"
+#include "CbcHeuristicDiveFractional.hpp"
+#include "CbcHeuristicDiveGuided.hpp"
+#include "CbcHeuristicDiveVectorLength.hpp"
+#include "CbcHeuristicDivePseudoCost.hpp"
+#include "CbcHeuristicDiveLineSearch.hpp"
 
 #include "CoinTime.hpp"
 
@@ -69,13 +75,87 @@ static int callBack(CbcModel * model, int whereFrom)
     break;
   case 3:
     {
+      // Add in some diving heuristics with different options
+      CbcHeuristicDiveCoefficient heuristicDC(*model);
+      heuristicDC.setHeuristicName("DiveCoefficient");
+      // do if no solution
+      heuristicDC.setWhen(3);
+      // 150 passes and fix general integers
+      heuristicDC.setMaxIterations(151);
+      // make sure can do as many simplex iterations as wanted
+      heuristicDC.setMaxSimplexIterations(COIN_INT_MAX);
+      heuristicDC.setMaxSimplexIterationsAtRoot(COIN_INT_MAX);
+      model->addHeuristic(&heuristicDC) ;
+      CbcHeuristicDiveFractional heuristicDF(*model);
+      heuristicDF.setHeuristicName("DiveFractional");
+      // do if no solution
+      heuristicDF.setWhen(3);
+      // 150 passes and don't fix general integers
+      heuristicDF.setMaxIterations(150);
+      // make sure can do as many simplex iterations as wanted
+      heuristicDF.setMaxSimplexIterations(COIN_INT_MAX);
+      heuristicDF.setMaxSimplexIterationsAtRoot(COIN_INT_MAX);
+      model->addHeuristic(&heuristicDF) ;
+      CbcHeuristicDiveGuided heuristicDG(*model);
+      heuristicDG.setHeuristicName("DiveGuided");
+      // do if no solution
+      heuristicDG.setWhen(3);
+      // 200 passes and fix general integers
+      heuristicDG.setMaxIterations(201);
+      // make sure can do as many simplex iterations as wanted
+      heuristicDG.setMaxSimplexIterations(COIN_INT_MAX);
+      heuristicDG.setMaxSimplexIterationsAtRoot(COIN_INT_MAX);
+      model->addHeuristic(&heuristicDG) ;
+      CbcHeuristicDiveVectorLength heuristicDV(*model);
+      heuristicDV.setHeuristicName("DiveVectorLength");
+      // do if no solution
+      heuristicDV.setWhen(3);
+      // 150 passes and fix general integers
+      heuristicDV.setMaxIterations(151);
+      // make sure can do as many simplex iterations as wanted
+      heuristicDV.setMaxSimplexIterations(COIN_INT_MAX);
+      heuristicDV.setMaxSimplexIterationsAtRoot(COIN_INT_MAX);
+      model->addHeuristic(&heuristicDV) ;
+      // Second version!
+      CbcHeuristicDiveVectorLength heuristicDV2(*model);
+      heuristicDV2.setHeuristicName("DiveVectorLength");
+      // do if no solution
+      heuristicDV2.setWhen(3);
+      // 300 passes and don't fix general integers
+      heuristicDV2.setMaxIterations(300);
+      // fix fewer
+      heuristicDV2.setPercentageToFix(0.05);
+      // make sure can do as many simplex iterations as wanted
+      heuristicDV2.setMaxSimplexIterations(COIN_INT_MAX);
+      heuristicDV2.setMaxSimplexIterationsAtRoot(COIN_INT_MAX);
+      model->addHeuristic(&heuristicDV2) ;
+      CbcHeuristicDivePseudoCost heuristicDP(*model);
+      heuristicDP.setHeuristicName("DivePseudoCost");
+      // do if no solution
+      heuristicDP.setWhen(3);
+      // 100 passes and don't fix general integers
+      heuristicDP.setMaxIterations(100);
+      // make sure can do as many simplex iterations as wanted
+      heuristicDP.setMaxSimplexIterations(COIN_INT_MAX);
+      heuristicDP.setMaxSimplexIterationsAtRoot(COIN_INT_MAX);
+      model->addHeuristic(&heuristicDP) ;
+      CbcHeuristicDiveLineSearch heuristicDL(*model);
+      heuristicDL.setHeuristicName("DiveLineSearch");
+      // do if no solution
+      heuristicDL.setWhen(3);
+      // 150 passes and fix general integers
+      heuristicDL.setMaxIterations(151);
+      // make sure can do as many simplex iterations as wanted
+      heuristicDL.setMaxSimplexIterations(COIN_INT_MAX);
+      heuristicDL.setMaxSimplexIterationsAtRoot(COIN_INT_MAX);
+      model->addHeuristic(&heuristicDL) ;
       //CbcCompareUser compare;
       //model->setNodeComparison(compare);
     }
     break;
   case 4:
     // If not good enough could skip postprocessing
-    break;
+    break; 
   case 5:
     break;
   default:
@@ -228,18 +308,6 @@ int main (int argc, const char *argv[])
      So we need pointer to model.  Old way could use modelA. rather than model->
    */
   // Messy code below copied from CbcSolver.cpp
-#ifdef CLP_FAST_CODE
-// force new style solver
-#ifndef NEW_STYLE_SOLVER
-#define NEW_STYLE_SOLVER 1
-#endif
-#else
-// Not new style solver
-#ifndef NEW_STYLE_SOLVER
-#define NEW_STYLE_SOLVER 0
-#endif
-#endif
-#if NEW_STYLE_SOLVER==0
   // Pass to Cbc initialize defaults 
   CbcModel modelA(solver1);
   CbcModel * model = &modelA;
@@ -257,16 +325,6 @@ int main (int argc, const char *argv[])
     const char * argv2[]={"driver4","-solve","-quit"};
     CbcMain1(3,argv2,modelA,callBack);
   }
-#else
-  CbcSolver control(solver1);
-  // initialize
-  control.fillValuesInSolver();
-  // Event handler
-  MyEventHandler3 eventHandler;
-  CbcModel * model = control.model();
-  model->passInEventHandler(&eventHandler);
-  control.solve (argc-1, argv+1, 1);
-#endif
   // Solver was cloned so get current copy
   OsiSolverInterface * solver = model->solver();
   // Print solution if finished (could get from model->bestSolution() as well

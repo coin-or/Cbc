@@ -656,7 +656,7 @@ void CbcSolver::fillParameters()
     parameters_[whichParam(CBC_PARAM_STR_ROUNDING, numberParameters_, parameters_)].setCurrentOption("on");
     parameters_[whichParam(CBC_PARAM_STR_FPUMP, numberParameters_, parameters_)].setCurrentOption("on");
     parameters_[whichParam(CBC_PARAM_STR_GREEDY, numberParameters_, parameters_)].setCurrentOption("on");
-    parameters_[whichParam(CBC_PARAM_STR_COMBINE, numberParameters_, parameters_)].setCurrentOption("on");
+    parameters_[whichParam(CBC_PARAM_STR_COMBINE, numberParameters_, parameters_)].setCurrentOption("off");
     parameters_[whichParam(CBC_PARAM_STR_CROSSOVER2, numberParameters_, parameters_)].setCurrentOption("off");
     parameters_[whichParam(CBC_PARAM_STR_PIVOTANDCOMPLEMENT, numberParameters_, parameters_)].setCurrentOption("off");
     parameters_[whichParam(CBC_PARAM_STR_PIVOTANDFIX, numberParameters_, parameters_)].setCurrentOption("off");
@@ -9781,7 +9781,7 @@ void CbcMain0 (CbcModel  & model,
     parameters[whichParam(CBC_PARAM_STR_ROUNDING, numberParameters, parameters)].setCurrentOption("on");
     parameters[whichParam(CBC_PARAM_STR_FPUMP, numberParameters, parameters)].setCurrentOption("on");
     parameters[whichParam(CBC_PARAM_STR_GREEDY, numberParameters, parameters)].setCurrentOption("on");
-    parameters[whichParam(CBC_PARAM_STR_COMBINE, numberParameters, parameters)].setCurrentOption("on");
+    parameters[whichParam(CBC_PARAM_STR_COMBINE, numberParameters, parameters)].setCurrentOption("off");
     parameters[whichParam(CBC_PARAM_STR_CROSSOVER2, numberParameters, parameters)].setCurrentOption("off");
     parameters[whichParam(CBC_PARAM_STR_PIVOTANDCOMPLEMENT, numberParameters, parameters)].setCurrentOption("off");
     parameters[whichParam(CBC_PARAM_STR_PIVOTANDFIX, numberParameters, parameters)].setCurrentOption("off");

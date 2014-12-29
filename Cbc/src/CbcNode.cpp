@@ -6,6 +6,12 @@
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)
+#include <windows.h> // for Sleep()
+#ifdef small
+#undef small
+#endif
+#else
+#include <unistd.h> // for usleep()
 #endif
 
 #include "CbcConfig.h"
@@ -4726,7 +4732,11 @@ int CbcNode::analyze (CbcModel *model, double * results)
 	threadInfo.startParallelTask(1,iThread,&bundle);
       }
       if (!threadStatus) {
+#ifdef _MSC_VER
+	Sleep(1);
+#else
 	usleep(1000);
+#endif
 	continue;
       }
       if (threadStatus) {
@@ -4859,7 +4869,11 @@ int CbcNode::analyze (CbcModel *model, double * results)
 #endif
     }
     if (!threadStatus) {
-      usleep(1000);
+#ifdef _MSC_VER
+	Sleep(1);
+#else
+	usleep(1000);
+#endif
       continue;
     }
     if (threadStatus) {

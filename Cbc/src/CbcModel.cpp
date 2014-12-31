@@ -8522,7 +8522,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         if (numberRowCuts > 0 || numberColumnCuts > 0) {
             if (numberToAdd > 0) {
                 int i ;
-		int * whichGenerator = whichGenerator_-
+		int * whichGenerator = whichGenerator_ -
 		  numberRowsAtContinuous_+solver_->getNumRows();
                 // Faster to add all at once
                 addCuts = new const OsiRowCut * [numberToAdd] ;
@@ -9986,7 +9986,10 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
                     addedCuts_[oldCutIndex] = NULL ;
                     oldCutIndex++ ;
                 } else {
-                    whichGenerator_[kCut++] = whichGenerator_[oldCutIndex] ;
+		    int iGenerator = addedCuts_[oldCutIndex]->whichCutGenerator();
+		    if (iGenerator==-1)
+		      iGenerator=100;
+		    whichGenerator_[kCut++] = iGenerator ;
 		    oldCutIndex++;
                 }
             }

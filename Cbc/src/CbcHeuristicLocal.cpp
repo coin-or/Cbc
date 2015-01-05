@@ -552,7 +552,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
 */
     // Switch off if may take too long
     if (model_->getNumCols() > 10000 && model_->getNumCols() >
-            10*model_->getNumRows())
+            10*model_->getNumRows()&&swap<10)
         tryHeuristic = false;
 /*
   Try the inc/dec heuristic?
@@ -565,8 +565,30 @@ CbcHeuristicLocal::solution(double & solutionValue,
         double bestChange = 0.0;
 	// maybe just do 1000
 	int maxIntegers = numberIntegers;
-	if (((swap/10) &1) != 0) {
-	  maxIntegers = CoinMin(1000,numberIntegers);
+	// stop if too many goes
+	int maxTries=COIN_INT_MAX;
+	// integerVariable may be randomized copy!
+	int * integerVariable = 
+	  CoinCopyOfArray(model_->integerVariable(),numberIntegers);
+	if (swap>9 && numberIntegers>500) {
+	  int type=swap/10;
+	  if (type==1) {
+	    // reduce
+	    maxIntegers = CoinMin(1000,numberIntegers);
+	  } else if (type==2) {
+	    // reduce even more
+	    maxTries=100000;
+	    maxIntegers = CoinMin(500,numberIntegers);
+	  } else if (type>2) {
+	    assert (type<10);
+	    int totals[7]={1000,500,100,50,50,50,50};
+	    maxIntegers=CoinMin(totals[type-3],numberIntegers);
+	    double * weight = new double[numberIntegers];
+	    for (int i=0;i<numberIntegers;i++) {
+	      weight[i]=model_->randomNumberGenerator()->randomDouble();
+	    }
+	    CoinSort_2(weight,weight+numberIntegers,integerVariable);
+	  }
 	}
 /*
   Outer loop to walk integer variables. Call the current variable x<i>. At the
@@ -621,6 +643,9 @@ CbcHeuristicLocal::solution(double & solutionValue,
 */
               // try down
                 for (k = i + 1; k < endInner; k++) {
+		    if (!maxTries)
+		      break;
+		    maxTries--;
                     if ((way[k]&1) != 0) {
                         // try down
                         if (-objectiveCoefficient - cost[k] < bestChange) {
@@ -711,6 +736,8 @@ CbcHeuristicLocal::solution(double & solutionValue,
                 }
                 // try up
                 for (k = i + 1; k < endInner; k++) {
+		    if (!maxTries)
+		      break;
                     if ((way[k]&1) != 0) {
                         // try down
                         if (objectiveCoefficient - cost[k] < bestChange) {
@@ -896,6 +923,8 @@ CbcHeuristicLocal::solution(double & solutionValue,
 					 numberBad, sumBad));
             }
         }
+	// This is just a copy!
+	delete [] integerVariable;
     }
 /*
   We're done. Clean up.

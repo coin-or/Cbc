@@ -9175,7 +9175,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         int numberActiveGenerators = 0;
         for (i = 0; i < numberNewCuts_; i++) {
             int iGenerator = whichGenerator_[i];
-	    assert (iGenerator>=0);
+	    //assert (iGenerator>=0);
 	    if (iGenerator>=0)
 	      iGenerator=iGenerator%10000;
             if (iGenerator >= 0 && iGenerator < numberCutGenerators_)

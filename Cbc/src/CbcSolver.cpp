@@ -10088,7 +10088,7 @@ void CbcMain0 (CbcModel  & model,
     parameters[whichParam(CBC_PARAM_STR_ROUNDING, numberParameters, parameters)].setCurrentOption("on");
     parameters[whichParam(CBC_PARAM_STR_FPUMP, numberParameters, parameters)].setCurrentOption("on");
     parameters[whichParam(CBC_PARAM_STR_GREEDY, numberParameters, parameters)].setCurrentOption("on");
-    parameters[whichParam(CBC_PARAM_STR_COMBINE, numberParameters, parameters)].setCurrentOption("on");
+    parameters[whichParam(CBC_PARAM_STR_COMBINE, numberParameters, parameters)].setCurrentOption("off");
     parameters[whichParam(CBC_PARAM_STR_CROSSOVER2, numberParameters, parameters)].setCurrentOption("off");
     parameters[whichParam(CBC_PARAM_STR_PIVOTANDCOMPLEMENT, numberParameters, parameters)].setCurrentOption("off");
     parameters[whichParam(CBC_PARAM_STR_PIVOTANDFIX, numberParameters, parameters)].setCurrentOption("off");

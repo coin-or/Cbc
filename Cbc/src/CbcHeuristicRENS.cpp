@@ -32,7 +32,6 @@ CbcHeuristicRENS::CbcHeuristicRENS()
     rensType_ = 0;
     whereFrom_ = 256 + 1;
 }
-
 // Constructor with model - assumed before cuts
 
 CbcHeuristicRENS::CbcHeuristicRENS(CbcModel & model)
@@ -86,8 +85,21 @@ CbcHeuristicRENS::solution(double & solutionValue,
 {
     int returnCode = 0;
     const double * bestSolution = model_->bestSolution();
+    bool returnNow=false;
     if ((numberTries_&&(rensType_&16)==0) || numberTries_>1 || (when() < 2 && bestSolution))
+      returnNow=true;;
+    // If 32 bit set then do once with bestSolution
+    if ((rensType_&32)!=0&&bestSolution)
+      returnNow=false;
+    if (returnNow)
         return 0;
+    // switch off next time if bestSolution
+    if (bestSolution) {
+      if ((rensType_&32)!=0)
+	rensType_ &= ~32; // switch off but leave bestSolution
+      else
+	bestSolution=NULL; // null bestSolution so won't use
+    }
     numberTries_++;
 #ifdef HEURISTIC_INFORM
     printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
@@ -739,7 +751,42 @@ CbcHeuristicRENS::solution(double & solutionValue,
     int numberTightened = 0;
     int numberAtBound = 0;
     int numberContinuous = numberColumns - numberIntegers;
-
+    /*
+      0 - allow fixing
+      1 - don't allow fixing
+     */
+    char * marked = new char [numberColumns];
+    memset(marked,0,numberColumns);
+    if (bestSolution) {
+      for (i = 0; i < numberIntegers; i++) {
+        int iColumn = integerVariable[i];
+        double value = currentSolution[iColumn];
+        double lower = colLower[iColumn];
+        double upper = colUpper[iColumn];
+        value = CoinMax(value, lower);
+        value = CoinMin(value, upper);
+	if (fabs(bestSolution[iColumn]-value)>0.999) 
+	  marked[iColumn]=1;
+      }
+    }
+    if ((rensType_&(64|128))!=0&&model_->objects()) {
+      int lowPriority=-COIN_INT_MAX;
+      int highPriority=COIN_INT_MAX;
+      for (i = 0; i < numberIntegers; i++) {
+	int priority=model_->priority(i);
+	lowPriority=CoinMax(lowPriority,priority);
+	highPriority=CoinMin(highPriority,priority);
+      }
+      if (highPriority<lowPriority) {
+	int keepPriority=((rensType_&64)!=0) ? highPriority : lowPriority; 
+	for (i = 0; i < numberIntegers; i++) {
+	  int iColumn = integerVariable[i];
+	  int priority=model_->priority(i);
+	  if (priority==keepPriority)
+	    marked[iColumn]=1;
+	}
+      }
+    }
     for (i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
         double value = currentSolution[iColumn];
@@ -748,10 +795,14 @@ CbcHeuristicRENS::solution(double & solutionValue,
         value = CoinMax(value, lower);
         value = CoinMin(value, upper);
 	double djValue=dj[iColumn]*direction;
+	bool dontFix=marked[iColumn]!=0;
 #define RENS_FIX_ONLY_LOWER
 #ifndef RENS_FIX_ONLY_LOWER
         if (fabs(value - floor(value + 0.5)) < 1.0e-8) {
             value = floor(value + 0.5);
+	    if (dontFix) {
+	      continue;
+	    }
             if (value == lower || value == upper)
                 numberAtBound++;
             newSolver->setColLower(iColumn, value);
@@ -766,6 +817,9 @@ CbcHeuristicRENS::solution(double & solutionValue,
         if (fabs(value - floor(value + 0.5)) < 1.0e-8 &&
                 floor(value + 0.5) == lower &&
 	    djValue > djTolerance ) {
+	    if (dontFix) {
+	      continue;
+	    }
 	  value = floor(value + 0.5);
 	  numberAtBound++;
 	  newSolver->setColLower(iColumn, value);
@@ -775,6 +829,9 @@ CbcHeuristicRENS::solution(double & solutionValue,
                 floor(value + 0.5) == upper &&
 		   -djValue > djTolerance && (djTolerance > 0.0||type==2)) {
 	  value = floor(value + 0.5);
+	    if (dontFix) {
+	      continue;
+	    }
 	  numberAtBound++;
 	  newSolver->setColLower(iColumn, value);
 	  newSolver->setColUpper(iColumn, value);
@@ -797,6 +854,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
         }
 #endif
     }
+    delete [] marked;
     delete [] dj;
     if (numberFixed > numberIntegers / 5) {
         if ( numberFixed < numberColumns / 5) {

@@ -1390,13 +1390,15 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
 	heuristic6a.setRensType(2+16);
         model->addHeuristic(&heuristic6a) ;
     }
-    if (useRENS >= kType && useRENS <= kType + 1) {
+    if ((useRENS >= kType && useRENS <= kType + 1)||
+	useRENS>2) {
         CbcHeuristicRENS heuristic6(*model);
         heuristic6.setHeuristicName("RENS");
         heuristic6.setFractionSmall(0.4);
         heuristic6.setFeasibilityPumpOptions(1008003);
-        int nodes [] = { -2, 50, 50, 50, 200, 1000, 10000};
+        int nodes [] = { -2, 50, 50, 50, 200, 1000, 10000, -1, -1, 200};
         heuristic6.setNumberNodes(nodes[useRENS]);
+	heuristic6.setRensType(useRENS!=9 ? 0 : 32);
         model->addHeuristic(&heuristic6) ;
         anyToDo = true;
     }
@@ -1628,11 +1630,14 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         model->addHeuristic(&heuristic13);
         anyToDo = true;
     }
-    if (useCombine >= kType && useCombine <= kType + 1) {
+    if (useCombine >= kType && (useCombine-1)%3 <= kType ) {
         CbcHeuristicLocal heuristic2(*model);
         heuristic2.setHeuristicName("combine solutions");
         heuristic2.setFractionSmall(0.5);
-        heuristic2.setSearchType(1);
+	int searchType=1;
+	if (useCombine>3)
+	  searchType += 10; // experiment
+        heuristic2.setSearchType(searchType);
         model->addHeuristic(&heuristic2);
         anyToDo = true;
     }

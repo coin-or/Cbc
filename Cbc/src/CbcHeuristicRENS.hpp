@@ -66,6 +66,9 @@ protected:
         2 - fix at UB as well
 	3 - fix on 0.01*average dj
 	add 16 to allow two tries
+	32 - if solution exists use to keep more variables
+	64 - if priorities keep high priority
+	128 - if priorities keep low priority
     */
     int rensType_;
 };

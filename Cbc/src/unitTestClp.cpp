@@ -582,7 +582,7 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
       }
 #     endif
       if (stuff && stuff[8] >= 1) {
-	printf("CCColumns %d rows %d - depth %d\n",
+	printf("Fast node size Columns %d rows %d - depth %d\n",
 	       modelC->numberColumns(),modelC->numberRows(),
 	       model->fastNodeDepth());
 	  if (modelC->numberColumns() + modelC->numberRows() <= 10000 &&

@@ -618,8 +618,11 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
             for (k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
                 OsiRowCut * thisCut = cs.rowCutPtr(k) ;
 #ifdef CGL_DEBUG
-                if (debugger && debugger->onOptimalPath(*solver))
+                if (debugger && debugger->onOptimalPath(*solver)) {
                     assert(!debugger->invalidCut(*thisCut));
+                    if(debugger->invalidCut(*thisCut))
+		      abort();
+		}
 #endif
                 thisCut->mutableRow().setTestForDuplicateIndex(false);
             }

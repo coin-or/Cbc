@@ -3899,7 +3899,7 @@ void CbcModel::branchAndBound(int doStatistics)
         // This is first crude step
         if (numberAnalyzeIterations_ && !parentModel_) {
             delete [] analyzeResults_;
-	    int numberColumns = solver_->getNumCols();
+	    //int numberColumns = solver_->getNumCols();
             analyzeResults_ = new double [5*numberIntegers_];
             numberFixedAtRoot_ = newNode->analyze(this, analyzeResults_);
             if (numberFixedAtRoot_ > 0) {
@@ -7941,7 +7941,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                 double originalValue = node->objectiveValue();
                 double objectiveValue = solver_->getObjValue() * solver_->getObjSense();
                 double changeInObjective = CoinMax(0.0, objectiveValue - originalValue);
-                int iStatus = (feasible) ? 0 : 0;
                 double value = obj->value();
                 double movement;
                 if (branch)
@@ -7949,7 +7948,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                 else
                     movement = value - floor(value);
                 branchingMethod_->chooseMethod()->updateInformation(iObject, branch, changeInObjective,
-                        movement, iStatus);
+					    movement, 0 /*(feasible) ? 0 : 1; */);
             }
         }
     }

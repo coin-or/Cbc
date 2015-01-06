@@ -1294,6 +1294,12 @@ int CbcMain1 (int argc, const char *argv[],
   staticParameterData.useSignalHandler_=true;
   return CbcMain1(argc,argv,model,callBack,staticParameterData);
 }
+#if CLP_USE_OPENBLAS
+extern "C" 
+{
+  void openblas_set_num_threads(int num_threads);
+}
+#endif
 static void printGeneralMessage(CbcModel &model,const char * message);
 /*
   Meaning of whereFrom:
@@ -1319,6 +1325,9 @@ int CbcMain1 (int argc, const char *argv[],
     // Initialize argument
     int whichArgument=1;
 #endif
+#if CLP_USE_OPENBLAS
+    openblas_set_num_threads(CLP_USE_OPENBLAS);
+#endif  
 #ifdef CBC_USE_INITIAL_TIME
     if (model_.useElapsedTime())
       model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());

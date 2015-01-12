@@ -1294,22 +1294,6 @@ int CbcMain1 (int argc, const char *argv[],
   staticParameterData.useSignalHandler_=true;
   return CbcMain1(argc,argv,model,callBack,staticParameterData);
 }
-/*
-  Somehow with some BLAS we get multithreaded by default
-  For 99.99% of problems this is not a good idea.
-  The openblas_set_num_threads(1) seems to work even with other blas
- */
-#if COIN_FACTORIZATION_DENSE_CODE==1
-#ifndef CLP_USE_OPENBLAS
-#define CLP_USE_OPENBLAS 1
-#endif
-#endif
-#if CLP_USE_OPENBLAS
-extern "C" 
-{
-  void openblas_set_num_threads(int num_threads);
-}
-#endif
 static void printGeneralMessage(CbcModel &model,const char * message);
 /*
   Meaning of whereFrom:
@@ -1335,9 +1319,6 @@ int CbcMain1 (int argc, const char *argv[],
     // Initialize argument
     int whichArgument=1;
 #endif
-#if CLP_USE_OPENBLAS
-    openblas_set_num_threads(CLP_USE_OPENBLAS);
-#endif  
 #ifdef CBC_USE_INITIAL_TIME
     if (model_.useElapsedTime())
       model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());

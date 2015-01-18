@@ -1936,6 +1936,9 @@ CbcRounding::solution(double & solutionValue,
 
     int numberRows = matrix_.getNumRows();
     assert (numberRows <= solver->getNumRows());
+    if (numberRows == 0){
+       return 0;
+    }
     int numberIntegers = model_->numberIntegers();
     const int * integerVariable = model_->integerVariable();
     int i;

@@ -974,6 +974,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
             if (returnCode == 1) {
                 solver2->resolve();
                 CbcModel model(*solver2);
+		double startTime=model_->getDblParam(CbcModel::CbcStartSeconds);
+		model.setDblParam(CbcModel::CbcStartSeconds,startTime);
 		// move seed across
 		model.randomNumberGenerator()->setSeed(model_->randomNumberGenerator()->getSeed());
                 if (numberNodes >= 0) {

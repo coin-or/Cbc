@@ -708,8 +708,8 @@ CbcRowCuts::addCutIfNotDuplicateWhenGreedy(const OsiRowCut & cut,int whichType)
       newCutPtr->setUb(newUb);
       newCutPtr->setRow(vector);
       rowCut_[numberCuts_++]=newCutPtr;
-      printf("addedGreedyGlobalCut of size %d to %x - cuts size %d\n",
-	     cut.row().getNumElements(),this,numberCuts_);
+      //printf("addedGreedyGlobalCut of size %d to %p - cuts size %d\n",
+      //     cut.row().getNumElements(),this,numberCuts_);
       return 0;
     } else {
       return 1;

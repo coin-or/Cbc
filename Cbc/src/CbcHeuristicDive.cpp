@@ -216,10 +216,12 @@ CbcHeuristicDive::setPriorities()
   int priority2=COIN_INT_MAX;
   smallObjective_=0.0;
   const double * objective = model_->solver()->getObjCoefficients();
-  for (int i = 0; i < numberIntegers; i++) {
+  int numberObjects = model_->numberObjects();
+  for (int i = 0; i < numberObjects; i++) {
     OsiObject * object = model_->modifiableObject(i);
     const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object);
-    assert (thisOne);
+    if (!thisOne)
+      continue; // Not integer
     int iColumn = thisOne->columnNumber();
     smallObjective_ += objective[iColumn];
     int level=thisOne->priority();
@@ -231,9 +233,11 @@ CbcHeuristicDive::setPriorities()
   smallObjective_ = CoinMax(1.0e-10,1.0e-5*(smallObjective_/numberIntegers));
   if (gotPriorities || priority1>priority2) {
     priority_ = new PriorityType [numberIntegers];
-    for (int i = 0; i < numberIntegers; i++) {
+    for (int i = 0; i < numberObjects; i++) {
       OsiObject * object = model_->modifiableObject(i);
       const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object);
+      if (!thisOne)
+	continue; // Not integer
       int level=thisOne->priority()-priority2;
       assert (level<(1<<29));
       priority_[i].priority=static_cast<unsigned int>(level);

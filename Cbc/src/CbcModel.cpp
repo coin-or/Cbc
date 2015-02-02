@@ -7809,6 +7809,13 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     if (problemFeasibility_->feasible(this, 0) < 0) {
         feasible = false; // pretend infeasible
     }
+    //#define CHECK_KNOWN_SOLUTION
+#ifdef CHECK_KNOWN_SOLUTION
+    if (onOptimalPath && (solver_->isDualObjectiveLimitReached()||
+			  !feasible)) {
+      printf("help 1\n");
+    }
+#endif
     /*
       NEW_UPDATE_OBJECT is defined to 0 when unthreaded (CBC_THREAD undefined), 2
       when threaded. No sign of 1 as of 071220.
@@ -9181,6 +9188,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                 count[iGenerator]++ ;
         }
 	// add in any active cuts if at root node (for multiple solvers)
+#ifdef CHECK_KNOWN_SOLUTION
+    if (onOptimalPath && (solver_->isDualObjectiveLimitReached()||
+			  !feasible)) {
+      printf("help 2\n");
+    }
+#endif
 	if (!numberNodes_) {
 	  for (i = 0; i < numberCutGenerators_; i++) 
 	    count[i] += generator_[i]->numberCutsActive();
@@ -9582,6 +9595,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         delete basis;
     }
 #endif
+#ifdef CHECK_KNOWN_SOLUTION
+    if (onOptimalPath && (solver_->isDualObjectiveLimitReached()||
+			  !feasible)) {
+      printf("help\n");
+    }
+#endif
 #ifdef CBC_DEBUG
     if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
         assert(feasible) ;
@@ -9940,6 +9959,14 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
     int *newCutIndices = new int[numberNewCuts_] ;
     const CoinWarmStartBasis* ws ;
     CoinWarmStartBasis::Status status ;
+    //#define COIN_HAS_CLP_KEEP_STATUS
+#ifdef COIN_HAS_CLP_KEEP_STATUS
+    int problemStatus=-1;
+    OsiClpSolverInterface * clpSolver
+      = dynamic_cast<OsiClpSolverInterface *> (solver_);
+    if (clpSolver)
+      problemStatus=clpSolver->getModelPtr()->status();
+#endif
     bool needPurge = true ;
     /*
       The outer loop allows repetition of purge in the event that reoptimisation
@@ -10093,6 +10120,11 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
         }
     }
     
+#ifdef COIN_HAS_CLP_KEEP_STATUS
+    // need to check further that only zero duals dropped
+    if (clpSolver) // status may have got to -1
+      clpSolver->getModelPtr()->setProblemStatus(problemStatus);
+#endif
     /*
       Clean up and return.
     */
@@ -14270,7 +14302,28 @@ CbcModel::resolve(OsiSolverInterface * solver)
                 clpSolver->setSpecialOptions(save2 | 2048);
             }
         }
+#ifdef CHECK_KNOWN_SOLUTION
+	bool onOptimalPath = false;
+	if ((specialOptions_&1) != 0) {
+	  const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
+	  if (debugger) {
+	    onOptimalPath = true;
+	    printf("On optimal path before resolve\n") ;
+	  }
+	}
+#endif
         clpSolver->resolve();
+#ifdef CHECK_KNOWN_SOLUTION
+	if ((specialOptions_&1) != 0&&onOptimalPath) {
+	  const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
+	  if (debugger) {
+	    printf("On optimal path after resolve\n") ;
+	  } else {
+	    solver_->writeMpsNative("badSolve.mps", NULL, NULL, 2);
+	    printf("NOT on optimal path after resolve\n") ;
+	  }
+	}
+#endif
         if (!numberNodes_) {
             double error = CoinMax(clpSimplex->largestDualError(),
                                    clpSimplex->largestPrimalError());

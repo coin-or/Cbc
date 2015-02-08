@@ -7049,7 +7049,11 @@ CbcModel::addHeuristic(CbcHeuristic * generator, const char *name,
     heuristic_[where] = generator->clone();
     if (name)
         heuristic_[where]->setHeuristicName(name) ;
+#ifndef SAME_HEURISTIC_SEED
     heuristic_[where]->setSeed(987654321 + where);
+#else
+    heuristic_[where]->setSeed(987654321);
+#endif
     numberHeuristics_++ ;
 }
 

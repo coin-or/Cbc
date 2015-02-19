@@ -8436,23 +8436,21 @@ int CbcMain1 (int argc, const char *argv[],
                             } else {
                                 fileName = directory + field;
                             }
-			    sprintf(generalPrint,"will open mipstart file %s.",fileName.c_str() );
-			    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-			      << generalPrint
-			      << CoinMessageEol;
+                            sprintf(generalPrint,"opening mipstart file %s.",fileName.c_str() );
+                            generalMessageHandler->message(CLP_GENERAL, generalMessages) << generalPrint << CoinMessageEol;
                             double msObj;
                             readMIPStart( &model_, fileName.c_str(), mipStart, msObj );
-			    // copy to before preprocess if has .before.
-			    if (strstr(fileName.c_str(),".before.")) {
-			      mipStartBefore = mipStart;
-			      sprintf(generalPrint,"file %s will be used before preprocessing.",fileName.c_str() );
-			      generalMessageHandler->message(CLP_GENERAL, generalMessages)
-				<< generalPrint
-				<< CoinMessageEol;
-			    }
+                            // copy to before preprocess if has .before.
+                            if (strstr(fileName.c_str(),".before.")) {
+                                mipStartBefore = mipStart;
+                                sprintf(generalPrint,"file %s will be used before preprocessing.",fileName.c_str() );
+                                generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                    << generalPrint
+                                    << CoinMessageEol;
+                            }
                         } else {
-			  sprintf(generalPrint, "** Current model not valid");
-			  printGeneralMessage(model_,generalPrint);
+                            sprintf(generalPrint, "** Current model not valid");
+                            printGeneralMessage(model_,generalPrint);
                         }
                         break;
                     case CLP_PARAM_ACTION_DEBUG:

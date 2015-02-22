@@ -38,7 +38,7 @@ https://projects.coin-or.org/Cbc/newticket
 
  * Release 5.9.2
 
-   * Fix for proper installation with {{{DESTDIR}}}
+   * Fix for proper installation with ```DESTDIR```
 
  * Release 5.9.1
 

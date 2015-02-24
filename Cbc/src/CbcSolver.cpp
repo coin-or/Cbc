@@ -1083,9 +1083,9 @@ int callCbc1(const char * input2, CbcModel & model,
              int callBack(CbcModel * currentSolver, int whereFrom),
 	     CbcSolverUsefulData & parameterData)
 {
-    char * input = CoinStrdup(input2);
+    char * input = CoinStrdup(input2 ? input2 : "") ;
     size_t length = strlen(input);
-    bool blank = input[0] == '0';
+    bool blank = input[0] == ' ';
     int n = blank ? 0 : 1;
     for (size_t i = 0; i < length; i++) {
         if (blank) {

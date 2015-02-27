@@ -12358,7 +12358,11 @@ CbcModel::checkSolution (double cutoff, double *solution,
         }
         // We can switch off check
         if ((specialOptions_&4) == 0 && (moreSpecialOptions2_&10) != 8) {
-            if ((specialOptions_&2) == 0 && solverCharacteristics_->warmStart()) {
+	    // Be on safe side - unless very few integers and large
+	    bool allSlack = (specialOptions_&2) == 0 && solverCharacteristics_->warmStart();
+	    if (numberIntegers_*4>solver_->getNumCols()||solver_->getNumCols()<10000)
+	      allSlack = true;
+            if (allSlack) {
                 /*
                   Remove any existing warm start information to be sure there is no
                   residual influence on initialSolve().
@@ -12410,7 +12414,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
                 //bool saveTakeHint;
                 //OsiHintStrength saveStrength;
                 //bool savePrintHint;
-                //solver_->writeMps("infeas");
+                solver_->writeMpsNative("infeas.mps", NULL, NULL, 2);
                 //bool gotHint = (solver_->getHintParam(OsiDoReducePrint,savePrintHint,saveStrength));
                 //gotHint = (solver_->getHintParam(OsiDoScale,saveTakeHint,saveStrength));
                 //solver_->setHintParam(OsiDoScale,false,OsiHintTry);
@@ -12639,6 +12643,8 @@ CbcModel::checkSolution (double cutoff, double *solution,
 		    printf("BFeasible (%g) - obj %g %g\n", largestInfeasibility,objValue,objectiveValue);
 #if CBC_FEASIBILITY_INVESTIGATE==0
 		}
+#else
+		solver_->writeMpsNative("BFeasible.mps",NULL,NULL,2);
 #endif
 		//if (fabs(objValue-objectiveValue)>1.0e-7*fabs(objectiveValue)) {
 		//printf("Bad obj values\n");

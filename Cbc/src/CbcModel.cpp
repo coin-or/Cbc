@@ -12394,7 +12394,11 @@ CbcModel::checkSolution (double cutoff, double *solution,
         }
         // We can switch off check
         if ((specialOptions_&4) == 0 && (moreSpecialOptions2_&10) != 8) {
-            if ((specialOptions_&2) == 0 && solverCharacteristics_->warmStart()) {
+	    // Be on safe side - unless very few integers and large
+	    bool allSlack = (specialOptions_&2) == 0 && solverCharacteristics_->warmStart();
+	    if (numberIntegers_*4>solver_->getNumCols()||solver_->getNumCols()<10000)
+	      allSlack = true;
+            if (allSlack) {
                 /*
                   Remove any existing warm start information to be sure there is no
                   residual influence on initialSolve().

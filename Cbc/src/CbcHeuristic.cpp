@@ -30,6 +30,7 @@
 #include "CglGomory.hpp"
 #include "CglProbing.hpp"
 #include "OsiAuxInfo.hpp"
+#include "OsiRowCutDebugger.hpp"
 #include "OsiPresolve.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcCutGenerator.hpp"
@@ -938,6 +939,17 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 	if (!solver->defaultHandler()&&
 	    solver->messageHandler()->logLevel(0)!=-1000)
 	  process.passInMessageHandler(solver->messageHandler());
+#ifdef CGL_DEBUG
+	/*
+	  We're debugging. (specialOptions 1)
+	*/
+	if ((model_->specialOptions()&1) != 0) {
+	  const OsiRowCutDebugger *debugger = solver->getRowCutDebugger() ;
+	  if (debugger) {
+	    process.setApplicationData(const_cast<double *>(debugger->optimalSolution()));
+	  }
+	}
+#endif
 	solver2 = process.preProcessNonDefault(*solver, false,
 					       numberPasses);
 	  if (!solver2) {
@@ -971,6 +983,14 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                 << generalPrint
                 << CoinMessageEol;
             }
+#ifdef CGL_DEBUG
+	    if ((model_->specialOptions()&1) != 0) {
+	      const OsiRowCutDebugger *debugger = solver2->getRowCutDebugger() ;
+	      if (debugger) {
+		printf("On optimal path after preprocessing\n");
+	      }
+	    }
+#endif
             if (returnCode == 1) {
                 solver2->resolve();
                 CbcModel model(*solver2);
@@ -1045,6 +1065,14 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     << CoinMessageEol;
                     // going for full search and copy across more stuff
                     model.gutsOfCopy(*model_, 2);
+#ifdef CGL_DEBUG
+		    if ((model_->specialOptions()&1) != 0) {
+		      const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger() ;
+		      if (debugger) {
+			printf("On optimal path BB\n");
+		      }
+		    }
+#endif
 		    assert (!model_->heuristicModel());
 		    model_->setHeuristicModel(&model);
                     for (int i = 0; i < model.numberCutGenerators(); i++) {
@@ -1208,6 +1236,14 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		  }
 		}
                 //printf("sol %x\n",inputSolution_);
+#ifdef CGL_DEBUG
+		if ((model_->specialOptions()&1) != 0) {
+		  const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger() ;
+		  if (debugger) {
+		    printf("On optimal path CC\n");
+		  }
+		}
+#endif
                 if (inputSolution_) {
                     // translate and add a serendipity heuristic
                     int numberColumns = solver2->getNumCols();
@@ -1328,6 +1364,14 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 #ifdef CONFLICT_CUTS
 		    if ((model_->moreSpecialOptions()&4194304)!=0)
 		      model.zapGlobalCuts();
+#endif
+#ifdef CGL_DEBUG
+		    if ((model_->specialOptions()&1) != 0) {
+		      const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger() ;
+		      if (debugger) {
+			printf("On optimal path DD\n");
+		      }
+		    }
 #endif
                     model.branchAndBound();
 		    model_->setHeuristicModel(NULL);

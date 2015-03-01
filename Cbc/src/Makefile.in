@@ -707,6 +707,7 @@ includecoin_HEADERS = \
 	CbcNWay.hpp \
         CbcObject.hpp \
 	CbcObjectUpdateData.hpp \
+	CbcParam.hpp \
 	CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.hpp \

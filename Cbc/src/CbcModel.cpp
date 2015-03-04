@@ -12414,7 +12414,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
                 //bool saveTakeHint;
                 //OsiHintStrength saveStrength;
                 //bool savePrintHint;
-                solver_->writeMpsNative("infeas.mps", NULL, NULL, 2);
+                //solver_->writeMpsNative("infeas.mps", NULL, NULL, 2);
                 //bool gotHint = (solver_->getHintParam(OsiDoReducePrint,savePrintHint,saveStrength));
                 //gotHint = (solver_->getHintParam(OsiDoScale,saveTakeHint,saveStrength));
                 //solver_->setHintParam(OsiDoScale,false,OsiHintTry);

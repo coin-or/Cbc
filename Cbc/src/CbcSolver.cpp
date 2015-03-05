@@ -4244,7 +4244,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 if (preProcess == 2) {
                                     OsiClpSolverInterface * clpSolver2 = dynamic_cast< OsiClpSolverInterface*> (solver2);
                                     ClpSimplex * lpSolver = clpSolver2->getModelPtr();
-                                    lpSolver->writeMps("presolved.mps", 0, 1, lpSolver->optimizationDirection());
+                                    lpSolver->writeMps("presolved.mps", 2, 1, lpSolver->optimizationDirection());
                                     printf("Preprocessed model (minimization) on presolved.mps\n");
                                 }
                                 {
@@ -8215,12 +8215,16 @@ int CbcMain1 (int argc, const char *argv[],
                                         int nLine = 0;
 					iColumn = -1;
 					int lowestPriority=-COIN_INT_MAX;
-                                        while (iColumn>=0 || fgets(line, 1000, fp)) {
-                                            if (!strncmp(line, "ENDATA", 6))
+					bool needCard = true;
+                                        while (!needCard || fgets(line, 1000, fp)) {
+                                            if (!strncmp(line, "ENDATA", 6)||
+						!strncmp(line, "endata", 6))
                                                 break;
                                             nLine++;
-					    if (!useMasks)
+					    if (!useMasks) 
 					      iColumn = -1;
+					    else
+					      needCard=false;
                                             double up = 0.0;
                                             double down = 0.0;
                                             int pri = 0;
@@ -8282,8 +8286,10 @@ int CbcMain1 (int argc, const char *argv[],
 							  break;
 						      }
                                                     }
-                                                    if (iColumn == numberColumns)
+						    if (iColumn == numberColumns) {
                                                         iColumn = -1;
+							needCard = true;
+						    }
                                                     break;
                                                     // number
                                                 case 1:

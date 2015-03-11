@@ -51,7 +51,9 @@ https://projects.coin-or.org/Cbc/newticket
 
  * Release 2.9.0 
 
-   * Major algorithmic improvements
+   * Introduced specialized branching methods for dealing with "big Ms".
+   * Introduced new methods for dealing with symmetry (requires installation of [nauty](http://pallini.di.uniroma1.it/))
+   * Introduction of conflict cuts (off by default, turn on with `-constraint conflict`)
 
  * Release 2.8.13
 

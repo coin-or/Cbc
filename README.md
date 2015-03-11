@@ -1,4 +1,4 @@
-# CBC Version 2.9.2 README
+# CBC Version 2.9.3 README
 
 Welcome to the README for the COIN Branch and Cut Solver (CBC). CBC is
 distributed under the Eclipse Public License and is freely redistributable.
@@ -36,62 +36,74 @@ https://projects.coin-or.org/Cbc/newticket
 
 ## CHANGELOG
 
- * Release 5.9.2
+ * Release 2.9.3
+
+   * Minor bug fixes
+
+ * Release 2.9.2
 
    * Fix for proper installation with ```DESTDIR```
 
- * Release 5.9.1
+ * Release 2.9.1
 
    * Fix for dependency linking
    * Minor bug fixes
 
- * Release 5.9.0 
+ * Release 2.9.0 
+
    * Major algorithmic improvements
 
- * Release 5.8.13
+ * Release 2.8.13
+
    * Improved message handling
    * Miscellaneous bug fixes.
 
- * Release 5.8.12
+ * Release 2.8.12
+
    * Update for dependencies.
 
- * Release 5.8.11
+ * Release 2.8.11
+
    * Major overhaul of C interface
    * Fixes to SOS
    * Miscellaneous bug fixes
 
- * Release 5.8.10
+ * Release 2.8.10
+
    * More changes related to thread safety.
    * Fix bug in build system with Visual Studio compiler.
    * Miscellaneous bug fixes.
 
- * Release 5.8.9
+ * Release 2.8.9
+
    * Attempt to make Cbc thread safe.
    * Add parallel examples.
    * Add CbcSolverUsefulInfo.
    * Bug fixes.
 
- * Release 5.8.8
+ * Release 2.8.8
 
    * Added example to show how to use Cbc with installed libraries in MSVC++
    * Fixed inconsistency in addition of libCbcSolver to dependencies in
      {{{cbc_addlibs.txt}}}.
 
- * Release 5.8.7
+ * Release 2.8.7
 
    * Changed so that Doxygen builds LaTex
    * Fixes for build system
 
- * Release 5.8.6
+ * Release 2.8.6
 
    * Added option to explicitly link dependencies to comply with packaging
      requirements on Fedora and Debian, as well as allow building of MinGW
      DLLs.
 
- * Release 5.8.5
+ * Release 2.8.5
+
    * Minor fixes to build system
 
- * Release 5.8.4
+ * Release 2.8.4
+
    * Small bug fixes
    * Upgrades to build system
 

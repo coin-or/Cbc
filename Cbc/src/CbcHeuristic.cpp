@@ -2419,9 +2419,13 @@ CbcRounding::solution(double & solutionValue,
                 if (downImprovement > 0.0 && currentValue > lowerValue) {
                     way = -1.0;
                     improvement = downImprovement;
+		    if (isInteger&&currentValue<lowerValue+0.99)
+		      continue; // no good
                 } else if (upImprovement > 0.0 && currentValue < upperValue) {
                     way = 1.0;
                     improvement = upImprovement;
+		    if (isInteger&&currentValue>upperValue-0.99)
+		      continue; // no good
                 }
                 if (way) {
                     // can improve

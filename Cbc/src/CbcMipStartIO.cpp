@@ -110,6 +110,9 @@ int computeCompleteSolution( CbcModel * model,
                              const std::vector< std::pair< std::string, double > > &colValues,
                              double *sol, double &obj )
 {
+   if (!model->getNumCols())
+       return 0;
+   
    int status = 0;
    double compObj = COIN_DBL_MAX;
    bool foundIntegerSol = false;

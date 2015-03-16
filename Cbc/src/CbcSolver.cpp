@@ -5422,7 +5422,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 const int * originalColumns = preProcess ? process.originalColumns() : NULL;
                                 //if (model.getMIPStart().size())
 				// mipStart = model.getMIPStart();
-				if (mipStart.size() && !mipStartBefore.size())
+				if (mipStart.size() && !mipStartBefore.size() && babModel_->getNumCols())
                                 {
                                    std::vector< std::string > colNames;
                                    if (preProcess)
@@ -7222,6 +7222,7 @@ int CbcMain1 (int argc, const char *argv[],
 					if (osiclp)
 					  osiclp->getModelPtr()->checkUnscaledSolution();
                                     }
+
                                     assert (saveSolver->isProvenOptimal());
 #ifndef CBC_OTHER_SOLVER
                                     // and original solver

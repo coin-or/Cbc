@@ -4843,7 +4843,7 @@ void CbcModel::branchAndBound(int doStatistics)
         if (tree_->size()) {
             double dummyBest;
             tree_->cleanTree(this, -COIN_DBL_MAX, dummyBest) ;
-#ifdef CBC_THREAD
+#if 0 // Does not seem to be needed def CBC_THREAD
 	    if (parallelMode() > 0 && master_) {
 	      // see if any dangling nodes
 	      int numberThreads = master_->numberThreads();

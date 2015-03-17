@@ -2366,7 +2366,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         }
                     }
                     delete [] rowActivity;
-                    delete [] solution;
                     if (!satisfied) {
 #ifdef CLP_INVESTIGATE
                         printf("%d free ok %d free off target %d fixed off target\n",
@@ -2393,6 +2392,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             break;
                         }
                     }
+                    delete [] solution;
                 }
             } else if (iPass == 1) {
                 // looks like a solution - get paranoid

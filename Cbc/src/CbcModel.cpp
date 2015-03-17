@@ -2085,6 +2085,44 @@ void CbcModel::branchAndBound(int doStatistics)
             secondaryStatus_ = 7;
         }
         originalContinuousObjective_ = COIN_DBL_MAX;
+	if (bestSolution_ && 
+	    ((specialOptions_&8388608)==0||(specialOptions_&2048)!=0)) {
+	  // best solution found by various heuristics - set solution
+	  char general[200];
+	  sprintf(general,"Solution of %g already found by heuristic",
+		  bestObjective_);
+	  messageHandler()->message(CBC_GENERAL,
+				    messages())
+	    << general << CoinMessageEol ;
+	  setCutoff(1.0e50) ; // As best solution should be worse than cutoff
+	  // change cutoff as constraint if wanted
+	  if (cutoffRowNumber_>=0) {
+	    if (solver_->getNumRows()>cutoffRowNumber_)
+	      solver_->setRowUpper(cutoffRowNumber_,1.0e50);
+	  }
+	  // also in continuousSolver_
+	  if (continuousSolver_) {
+	    // Solvers know about direction
+	    double direction = solver_->getObjSense();
+	    continuousSolver_->setDblParam(OsiDualObjectiveLimit, 1.0e50*direction);
+	  } else {
+	    continuousSolver_ = solver_->clone();
+	  }
+	  phase_ = 5;
+	  double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
+	  if ((specialOptions_&4) == 0)
+            bestObjective_ += 100.0 * increment + 1.0e-3; // only set if we are going to solve
+	  setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1) ;
+	  continuousSolver_->resolve() ;
+	  if (!continuousSolver_->isProvenOptimal()) {
+            continuousSolver_->messageHandler()->setLogLevel(2) ;
+            continuousSolver_->initialSolve() ;
+	  }
+	  delete solver_ ;
+	  solver_ = continuousSolver_ ;
+	  setPointers(solver_);
+	  continuousSolver_ = NULL ;
+	}
         solverCharacteristics_ = NULL;
 	if (flipObjective)
 	  flipModel();

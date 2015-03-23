@@ -1712,7 +1712,11 @@ int CbcMain1 (int argc, const char *argv[],
         gomoryGen.setLimitAtRoot(1000);
         gomoryGen.setLimit(50);
         // set default action (0=off,1=on,2=root)
+#ifdef SWAP_GOMORY
         int gomoryAction = 0;
+#else
+        int gomoryAction = 3;
+#endif
 
         CglProbing probingGen;
         probingGen.setUsingObjective(1);
@@ -1753,8 +1757,12 @@ int CbcMain1 (int argc, const char *argv[],
         CglGMI GMIGen;
         //GMIGen.setLimit(100);
         // set default action (0=off,1=on,2=root)
-        // Off 
+#ifdef SWAP_GOMORY
         int GMIAction = 3;
+#else
+        // Off 
+        int GMIAction = 0;
+#endif
 
         CglFakeClique cliqueGen(NULL, false);
         //CglClique cliqueGen(false,true);
@@ -2315,8 +2323,13 @@ int CbcMain1 (int argc, const char *argv[],
                                     if (!noPrinting_&&message) 
                                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
                                         << message << CoinMessageEol;
+#ifdef SWAP_GOMORY
 				    GMIAction = 3;
 				    message=parameters_[whichParam(CBC_PARAM_STR_GMICUTS, numberParameters_, parameters_)].setCurrentOptionWithMessage("ifmove");
+#else
+				    GMIAction = 2;
+				    message=parameters_[whichParam(CBC_PARAM_STR_GMICUTS, numberParameters_, parameters_)].setCurrentOptionWithMessage("root");
+#endif
                                     if (!noPrinting_&&message) 
                                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
                                         << message << CoinMessageEol;

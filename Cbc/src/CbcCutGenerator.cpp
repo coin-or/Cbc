@@ -429,11 +429,12 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                 if (debugger && debugger->onOptimalPath(*solver)) {
                     printf("On optimal path CbcCut\n");
                     int nCols = solver->getNumCols();
-                    int i;
                     const double * optimal = debugger->optimalSolution();
                     const double * objective = solver->getObjCoefficients();
                     double objval1 = 0.0, objval2 = 0.0;
-                    for (i = 0; i < nCols; i++) {
+                    for (int i = 0; i < nCols; i++) {
+		        if (!solver->isInteger(i))
+			  continue;
 #if CGL_DEBUG>1
                         printf("%d %g %g %g %g\n", i, lower[i], solution[i], upper[i], optimal[i]);
 #endif
@@ -615,13 +616,68 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 #ifdef CGL_DEBUG
             const OsiRowCutDebugger * debugger = solver->getRowCutDebugger();
 #endif
+	    //#define WEAKEN_CUTS 1
+#ifdef WEAKEN_CUTS
+	    const double * lower = solver->getColLower();
+	    const double * upper = solver->getColUpper();
+	    const double * solution = solver->getColSolution();
+#endif
             for (k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
                 OsiRowCut * thisCut = cs.rowCutPtr(k) ;
+#ifdef WEAKEN_CUTS
+		// weaken cut if coefficients not integer
+		double lb=thisCut->lb();
+		double ub=thisCut->ub();
+		if (lb<-1.0e100||ub>1.0e100) {
+		  // normal cut
+		  CoinPackedVector rpv = thisCut->row();
+		  const int n = rpv.getNumElements();
+		  const int * indices = rpv.getIndices();
+		  const double * elements = rpv.getElements();
+		  double bound=0.0;
+		  double sum=0.0;
+		  bool integral=true;
+		  int nInteger=0;
+		  for (int k=0; k<n; k++) {
+		    double value = fabs(elements[k]);
+		    int column=indices[k];
+		    sum += value;
+		    if (value!=floor(value+0.5))
+		      integral=false;
+		    if (solver->isInteger(column)) {
+		      nInteger++;
+		      double largerBound = CoinMax(fabs(lower[column]),
+						   fabs(upper[column]));
+		      double solutionBound=fabs(solution[column])+10.0;
+		      bound += CoinMin(largerBound,solutionBound);
+		    }
+		  }
+#if WEAKEN_CUTS ==1
+		  // leave if all 0-1
+		  if (nInteger==bound)
+		    integral=true;
+#elif WEAKEN_CUTS==4||WEAKEN_CUTS==5
+		  // leave if all 0-1
+		  if (nInteger==bound && n < 40)
+		    integral=true;
+#endif
+		  if (!integral) {
+		    double weakenBy=1.0e-7*(bound+sum);
+#if WEAKEN_CUTS==3||WEAKEN_CUTS==5
+		    weakenBy *= 10.0;
+#endif		    
+		    if (lb<-1.0e100)
+		      thisCut->setUb(ub+weakenBy);
+		    else
+		      thisCut->setLb(lb-weakenBy);
+		  }
+		}
+#endif
 #ifdef CGL_DEBUG
                 if (debugger && debugger->onOptimalPath(*solver)) {
-                    assert(!debugger->invalidCut(*thisCut));
-                    if(debugger->invalidCut(*thisCut))
+		  if(debugger->invalidCut(*thisCut)) {
 		      abort();
+		  }
 		}
 #endif
                 thisCut->mutableRow().setTestForDuplicateIndex(false);

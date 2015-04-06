@@ -5441,9 +5441,10 @@ int CbcMain1 (int argc, const char *argv[],
                                    if (preProcess)
                                    {
 				     std::vector< std::pair< std::string, double > > mipStart2;
+				     int numberOriginalColumns = model_.solver()->getNumCols();
 				     for ( int i=0 ; (i<babModel_->solver()->getNumCols()) ; ++i ) {
 				       int iColumn = babModel_->originalColumns()[i];
-				       if (iColumn>=0) {
+				       if (iColumn>=0 && iColumn < numberOriginalColumns) {
                                          colNames.push_back( model_.solver()->getColName( iColumn ) );
 					 babModel_->solver()->setColName(i,model_.solver()->getColName(iColumn));
 					 mipStart2.push_back(mipStart[iColumn]);

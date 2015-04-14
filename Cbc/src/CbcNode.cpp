@@ -2340,7 +2340,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                 rowActivity[iRow] = COIN_DBL_MAX;
                             }
                         } else if (columnLower[i] < columnUpper[i]) {
-			    if (fabs(solution[i] - saveSolution[i]) > 
+			    double solutionValue = saveSolution[i];
+			    if (fabs(solution[i] - solutionValue) > 
+				integerTolerance && 
+				(solutionValue - columnLower[i]) > 
+				integerTolerance &&
+				(columnUpper[i] - solutionValue) > 
 				integerTolerance) {
                                 nFreeNon++;
                                 if (fabs(solution[i] - saveSolution[i]) > mostAway) {

@@ -676,6 +676,50 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 #ifdef CGL_DEBUG
                 if (debugger && debugger->onOptimalPath(*solver)) {
 		  if(debugger->invalidCut(*thisCut)) {
+#if CGL_DEBUG>1
+                    const double * optimal = debugger->optimalSolution();
+		    CoinPackedVector rpv = thisCut->row();
+		    const int n = rpv.getNumElements();
+		    const int * indices = rpv.getIndices();
+		    const double * elements = rpv.getElements();
+		    
+		    double lb=thisCut->lb();
+		    double ub=thisCut->ub();
+		    double sum=0.0;
+		    
+		    for (int k=0; k<n; k++){
+		      int column=indices[k];
+		      sum += optimal[column]*elements[k];
+		    }
+		    // is it nearly violated
+		    if (sum >ub - 1.0e-8 ||sum < lb + 1.0e-8) { 
+		      double violation=CoinMax(sum-ub,lb-sum);
+		      std::cout<<generatorName_<<" cut with "<<n
+			       <<" coefficients, nearly cuts off known solutions by "<<violation
+			       <<", lo="<<lb<<", ub="<<ub<<std::endl;
+		      for (int k=0; k<n; k++){
+			int column=indices[k];
+			std::cout<<"( "<<column<<" , "<<elements[k]<<" ) ";
+			if ((k%4)==3)
+			  std::cout <<std::endl;
+		      }
+		      std::cout <<std::endl;
+		      std::cout <<"Non zero solution values are"<<std::endl;
+		      int j=0;
+		      for (int k=0; k<n; k++){
+			int column=indices[k];
+			if (fabs(optimal[column])>1.0e-9) {
+			  std::cout<<"( "<<column<<" , "<<optimal[column]<<" ) ";
+			  if ((j%4)==3)
+			    std::cout <<std::endl;
+			  j++;
+			}
+		      }
+		      std::cout <<std::endl;
+		    }
+#endif
+                    assert(!debugger->invalidCut(*thisCut));
+                    if(debugger->invalidCut(*thisCut))
 		      abort();
 		  }
 		}

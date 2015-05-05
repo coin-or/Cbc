@@ -2138,7 +2138,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                         if (newSolver->isProvenOptimal()) {
                             double value = newSolver->getObjValue() * newSolver->getObjSense();
                             if (value < newSolutionValue) {
-                                //newSolver->writeMps("query","mps");
+			      //newSolver->writeMpsNative("query.mps", NULL, NULL, 2);
 #ifdef JJF_ZERO
                                 {
                                     double saveOffset;
@@ -2208,6 +2208,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                                 model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
                                 << pumpPrint
                                 << CoinMessageEol;
+			        //newSolver->writeMpsNative("query2.mps", NULL, NULL, 2);
                                 newSolutionValue = value;
                                 memcpy(betterSolution, newSolver->getColSolution(), numberColumns*sizeof(double));
                                 gotSolution = true;

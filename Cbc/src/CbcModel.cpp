@@ -8546,6 +8546,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #endif
         int numberToAdd = theseCuts.sizeRowCuts() ;
         numberNewCuts_ = lastNumberCuts + numberToAdd ;
+	// resize whichGenerator
+	resizeWhichGenerator(lastNumberCuts,numberNewCuts_);
         /*
           Now actually add the row cuts and reoptimise.
 

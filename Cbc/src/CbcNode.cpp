@@ -2717,7 +2717,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                 if (numberStrongIterations > numberIterations + CoinMin(100, 10*numberRows) && depth_ >= 4 && numberNodes > 100) {
                     if (20*numberInfeasible + 4*numberFixed < numberNodes) {
                         // Say never do
-		        if (numberBeforeTrust == 5)
+		        if (numberBeforeTrust == 10)
 			  skipAll = -1;
                     }
                 }

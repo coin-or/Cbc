@@ -13988,7 +13988,6 @@ CbcModel::makeGlobalCut(const OsiRowCut & cut)
 void
 CbcModel::makeGlobalCut(const OsiColCut * cut)
 {
-  abort(); // need to think about top of tree
   const double * lower;
   const double * upper;
   if (topOfTree_) {

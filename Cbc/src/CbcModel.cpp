@@ -7312,6 +7312,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws)
             addCuts = new const OsiRowCut* [currentNumberCuts];
             cutsToDrop = new int[currentNumberCuts] ;
             assert (currentNumberCuts + numberRowsAtContinuous_ <= lastws->getNumArtificial());
+            assert (currentNumberCuts <= maximumWhich_); // we will read from whichGenerator_[0..currentNumberCuts-1] below, so should have all these entries
             for (i = 0; i < currentNumberCuts; i++) {
                 CoinWarmStartBasis::Status status =
                     lastws->getArtifStatus(i + numberRowsAtContinuous_);
@@ -8572,8 +8573,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         if (numberRowCuts > 0 || numberColumnCuts > 0) {
             if (numberToAdd > 0) {
                 int i ;
-		int * whichGenerator = whichGenerator_ -
-		  numberRowsAtContinuous_+solver_->getNumRows();
+		int * whichGenerator = whichGenerator_ + lastNumberCuts;
                 // Faster to add all at once
                 addCuts = new const OsiRowCut * [numberToAdd] ;
                 for (i = 0 ; i < numberToAdd ; i++) {

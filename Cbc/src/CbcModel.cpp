@@ -7313,6 +7313,9 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws)
             cutsToDrop = new int[currentNumberCuts] ;
             assert (currentNumberCuts + numberRowsAtContinuous_ <= lastws->getNumArtificial());
             assert (currentNumberCuts <= maximumWhich_); // we will read from whichGenerator_[0..currentNumberCuts-1] below, so should have all these entries
+            // the above assert fails in certain situations, which indicates a bug in the code below
+            // as a workaround, resize whichGenerator_ to make sure we can read all entries without an invalid read from valgrind (and subsequent crash somewhere, seems so)
+            resizeWhichGenerator(maximumWhich_, currentNumberCuts);
             for (i = 0; i < currentNumberCuts; i++) {
                 CoinWarmStartBasis::Status status =
                     lastws->getArtifStatus(i + numberRowsAtContinuous_);

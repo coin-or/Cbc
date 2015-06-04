@@ -1640,6 +1640,7 @@ void CbcModel::branchAndBound(int doStatistics)
     dblParam_[CbcSumChange] = 0.0;
     dblParam_[CbcLargestChange] = 0.0;
     intParam_[CbcNumberBranches] = 0;
+    double lastBestPossibleObjective=-COIN_DBL_MAX;
     // when to check for restart 
     int nextCheckRestart=50;
     // Force minimization !!!!
@@ -2448,7 +2449,8 @@ void CbcModel::branchAndBound(int doStatistics)
       the active subproblem. whichGenerator will be used to record the generator
       that produced a given cut.
     */
-    maximumWhich_ = 1000 ;
+#define INITIAL_MAXIMUM_WHICH 1000
+    maximumWhich_ = INITIAL_MAXIMUM_WHICH ;
     delete [] whichGenerator_;
     whichGenerator_ = new int[maximumWhich_] ;
     memset(whichGenerator_, 0, maximumWhich_*sizeof(int));
@@ -3611,6 +3613,7 @@ void CbcModel::branchAndBound(int doStatistics)
     if (feasible) {
       // mark all cuts as globally valid
       int numberCuts=cuts.sizeRowCuts();
+      resizeWhichGenerator(0,numberCuts);
       for (int i=0;i<numberCuts;i++) {
 	cuts.rowCutPtr(i)->setGloballyValid();
 	whichGenerator_[i]=20000+(whichGenerator_[i]%10000);
@@ -4650,8 +4653,13 @@ void CbcModel::branchAndBound(int doStatistics)
             }
 #endif
             if (!intParam_[CbcPrinting]) {
+	        // Parallel may not have any nodes
+  	        if (!nNodes) 
+		  bestPossibleObjective_ = lastBestPossibleObjective;
+		else
+		  lastBestPossibleObjective = bestPossibleObjective_;
                 messageHandler()->message(CBC_STATUS, messages())
-                << numberNodes_ << nNodes << bestObjective_ << bestPossibleObjective_
+		  << numberNodes_ << CoinMax(nNodes,1) << bestObjective_ << bestPossibleObjective_
                 << getCurrentSeconds()
                 << CoinMessageEol ;
             } else if (intParam_[CbcPrinting] == 1) {
@@ -5504,7 +5512,7 @@ CbcModel::CbcModel()
         maximumCutPasses_(10),
         preferredWay_(0),
         currentPassNumber_(0),
-        maximumWhich_(1000),
+        maximumWhich_(INITIAL_MAXIMUM_WHICH),
         maximumRows_(0),
 	randomSeed_(-1),
 	multipleRootTries_(0),
@@ -5674,7 +5682,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
         maximumCutPasses_(10),
         preferredWay_(0),
         currentPassNumber_(0),
-        maximumWhich_(1000),
+        maximumWhich_(INITIAL_MAXIMUM_WHICH),
         maximumRows_(0),
 	randomSeed_(-1),
 	multipleRootTries_(0),
@@ -7137,6 +7145,7 @@ bool CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
             redoWalkBack();
         }
     }
+    resizeWhichGenerator(currentNumberCuts_,currentNumberCuts);
     currentNumberCuts_ = currentNumberCuts;
     if (currentNumberCuts > maximumNumberCuts_) {
         maximumNumberCuts_ = currentNumberCuts;
@@ -7327,6 +7336,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws)
                     printf("Using cut %d %x as row %d\n", i, addedCuts_[i],
                            numberRowsAtContinuous_ + numberToAdd);
 #	  endif
+		    assert (i<maximumWhich_);
 		    whichGenerator_[numberToAdd] = whichGenerator_[i];
                     addCuts[numberToAdd++] = addedCuts_[i];
 #if 1
@@ -7640,7 +7650,13 @@ void
 CbcModel::resizeWhichGenerator(int numberNow, int numberAfter)
 {
     if (numberAfter > maximumWhich_) {
-        maximumWhich_ = CoinMax(maximumWhich_ * 2 + 100, numberAfter) ;
+#define MAXIMUM_WHICH_INCREMENT 100
+#define MAXIMUM_WHICH_MULTIPLIER 2
+      //printf("maximumWhich from %d to %d (%d needed)\n",maximumWhich_,
+      //     CoinMax(maximumWhich_ * MAXIMUM_WHICH_MULTIPLIER + MAXIMUM_WHICH_INCREMENT, numberAfter),
+      //     numberAfter);
+        maximumWhich_ = CoinMax(maximumWhich_ * MAXIMUM_WHICH_MULTIPLIER + MAXIMUM_WHICH_INCREMENT, numberAfter) ;
+        //maximumWhich_ = numberAfter ;
         int * temp = new int[2*maximumWhich_] ;
         memcpy(temp, whichGenerator_, numberNow*sizeof(int)) ;
         delete [] whichGenerator_ ;
@@ -17914,7 +17930,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
                 }
                 delete [] newSolution;
                 // Space for type of cuts
-                maximumWhich_ = 1000;
+                maximumWhich_ = INITIAL_MAXIMUM_WHICH;
                 delete [] whichGenerator_ ;
                 whichGenerator_ = new int[maximumWhich_];
                 // save number of rows
@@ -18487,7 +18503,7 @@ CbcModel::strengthenedModel()
       the active subproblem. whichGenerator will be used to record the generator
       that produced a given cut.
     */
-    maximumWhich_ = 1000 ;
+    maximumWhich_ = INITIAL_MAXIMUM_WHICH ;
     delete [] whichGenerator_ ;
     whichGenerator_ = new int[maximumWhich_] ;
     maximumNumberCuts_ = 0 ;

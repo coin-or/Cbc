@@ -7237,7 +7237,12 @@ int CbcMain1 (int argc, const char *argv[],
 					  osiclp->getModelPtr()->checkUnscaledSolution();
                                     }
 
-                                    assert (saveSolver->isProvenOptimal());
+                                    if (!saveSolver->isProvenOptimal()) {
+				      generalMessageHandler->message(CLP_GENERAL, generalMessages)
+					<< "Accuracy problem on post-processing - maybe try without pre-processing"
+					<< CoinMessageEol;
+				    }
+                                    //assert (saveSolver->isProvenOptimal());
 #ifndef CBC_OTHER_SOLVER
                                     // and original solver
                                     originalSolver->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);

@@ -36,6 +36,10 @@
 #include "ClpNetworkMatrix.hpp"
 #include "ClpDualRowSteepest.hpp"
 #include "ClpDualRowDantzig.hpp"
+#include "ClpPEDualRowSteepest.hpp"
+#include "ClpPEDualRowDantzig.hpp"
+#include "ClpPEPrimalColumnSteepest.hpp"
+#include "ClpPEPrimalColumnDantzig.hpp"
 #include "ClpLinearObjective.hpp"
 #include "ClpPrimalColumnSteepest.hpp"
 #include "ClpPrimalColumnDantzig.hpp"
@@ -2455,9 +2459,17 @@ int CbcMain1 (int argc, const char *argv[],
                                 // partial steep
                                 ClpDualRowSteepest steep(2);
                                 lpSolver->setDualRowPivotAlgorithm(steep);
-                            } else {
+                            } else if (action == 3) {
                                 ClpDualRowSteepest steep;
                                 lpSolver->setDualRowPivotAlgorithm(steep);
+			    } else if (action == 4) {
+			      // Positive edge steepest
+			      ClpPEDualRowSteepest p(fabs(parameters_[whichParam(CLP_PARAM_DBL_PSI, numberParameters_, parameters_)].doubleValue()));
+			      lpSolver->setDualRowPivotAlgorithm(p);
+			    } else if (action == 5) {
+			      // Positive edge Dantzig
+			      ClpPEDualRowDantzig p(fabs(parameters_[whichParam(CLP_PARAM_DBL_PSI, numberParameters_, parameters_)].doubleValue()));
+			      lpSolver->setDualRowPivotAlgorithm(p);
                             }
                             break;
                         case CLP_PARAM_STR_PRIMALPIVOT:
@@ -2482,6 +2494,14 @@ int CbcMain1 (int argc, const char *argv[],
                             } else if (action == 6) {
                                 ClpPrimalColumnSteepest steep(10);
                                 lpSolver->setPrimalColumnPivotAlgorithm(steep);
+			    } else if (action == 7) {
+			      // Positive edge steepest
+			      ClpPEPrimalColumnSteepest p(fabs(parameters_[whichParam(CLP_PARAM_DBL_PSI, numberParameters_, parameters_)].doubleValue()));
+			      lpSolver->setPrimalColumnPivotAlgorithm(p);
+			    } else if (action == 8) {
+			      // Positive edge Dantzig
+			      ClpPEPrimalColumnDantzig p(fabs(parameters_[whichParam(CLP_PARAM_DBL_PSI, numberParameters_, parameters_)].doubleValue()));
+			      lpSolver->setPrimalColumnPivotAlgorithm(p);
                             }
                             break;
                         case CLP_PARAM_STR_SCALING:
@@ -2726,6 +2746,30 @@ int CbcMain1 (int argc, const char *argv[],
                             integerStatus = -1;
                             double objScale =
                                 parameters_[whichParam(CLP_PARAM_DBL_OBJSCALE2, numberParameters_, parameters_)].doubleValue();
+			    // deal with positive edge
+			    double psi = parameters_[whichParam(CLP_PARAM_DBL_PSI, numberParameters_, parameters_)].doubleValue();
+			    if (psi>0.0) {
+			      ClpDualRowPivot * dualp = lpSolver->dualRowPivot();
+			      ClpDualRowSteepest * d1 = dynamic_cast<ClpDualRowSteepest *>(dualp);
+			      ClpDualRowDantzig * d2 = dynamic_cast<ClpDualRowDantzig *>(dualp);
+			      if (d1) {
+				ClpPEDualRowSteepest p(psi,d1->mode());
+				lpSolver->setDualRowPivotAlgorithm(p);
+			      } else if (d2) {
+				ClpPEDualRowDantzig p(psi);
+				lpSolver->setDualRowPivotAlgorithm(p);
+			      }
+			      ClpPrimalColumnPivot * primalp = lpSolver->primalColumnPivot();
+			      ClpPrimalColumnSteepest * p1 = dynamic_cast<ClpPrimalColumnSteepest *>(primalp);
+			      ClpPrimalColumnDantzig * p2 = dynamic_cast<ClpPrimalColumnDantzig *>(primalp);
+			      if (p1) {
+				ClpPEPrimalColumnSteepest p(psi,p1->mode());
+				lpSolver->setPrimalColumnPivotAlgorithm(p);
+			      } else if (p2) {
+				ClpPEPrimalColumnDantzig p(psi);
+				lpSolver->setPrimalColumnPivotAlgorithm(p);
+			      }
+			    }
                             if (objScale != 1.0) {
                                 int iColumn;
                                 int numberColumns = lpSolver->numberColumns();
@@ -3407,6 +3451,30 @@ int CbcMain1 (int argc, const char *argv[],
                                 assert (si != NULL);
                                 si->getModelPtr()->scaling(doScaling);
                                 ClpSimplex * lpSolver = si->getModelPtr();
+				// deal with positive edge
+				double psi = parameters_[whichParam(CLP_PARAM_DBL_PSI, numberParameters_, parameters_)].doubleValue();
+				if (psi>0.0) {
+				  ClpDualRowPivot * dualp = lpSolver->dualRowPivot();
+				  ClpDualRowSteepest * d1 = dynamic_cast<ClpDualRowSteepest *>(dualp);
+				  ClpDualRowDantzig * d2 = dynamic_cast<ClpDualRowDantzig *>(dualp);
+				  if (d1) {
+				    ClpPEDualRowSteepest p(psi,d1->mode());
+				    lpSolver->setDualRowPivotAlgorithm(p);
+				  } else if (d2) {
+				    ClpPEDualRowDantzig p(psi);
+				    lpSolver->setDualRowPivotAlgorithm(p);
+				  }
+				  ClpPrimalColumnPivot * primalp = lpSolver->primalColumnPivot();
+				  ClpPrimalColumnSteepest * p1 = dynamic_cast<ClpPrimalColumnSteepest *>(primalp);
+				  ClpPrimalColumnDantzig * p2 = dynamic_cast<ClpPrimalColumnDantzig *>(primalp);
+				  if (p1) {
+				    ClpPEPrimalColumnSteepest p(psi,p1->mode());
+				    lpSolver->setPrimalColumnPivotAlgorithm(p);
+				  } else if (p2) {
+				    ClpPEPrimalColumnDantzig p(psi);
+				    lpSolver->setPrimalColumnPivotAlgorithm(p);
+				  }
+				}
                                 if (doVector) {
                                     ClpMatrixBase * matrix = lpSolver->clpMatrix();
                                     if (dynamic_cast< ClpPackedMatrix*>(matrix)) {

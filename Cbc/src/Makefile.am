@@ -119,6 +119,10 @@ libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 bin_PROGRAMS =
 AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_CFLAGS) $(ASL_CFLAGS)
 
+if COIN_HAS_NTY
+AM_CPPFLAGS += -I$(NTYINCDIR)
+endif
+
 ########################################################################
 #                            cbc program                               #
 ########################################################################

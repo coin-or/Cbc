@@ -53,6 +53,20 @@ class OsiObject;
 #endif
 class CbcNauty;
 
+
+
+#define COUENNE_HACKED_EPS      1.e-07
+#define COUENNE_HACKED_EPS_SYMM 1e-8
+#define COUENNE_HACKED_EXPRGROUP 8
+
+
+/** Class to deal with symmetry
+ *
+ *  Hacked from Couenne
+ *  Thanks, but it had been nice to make sure that there are no symbol collisions when building Couenne with this Cbc.
+ */
+
+class CbcSymmetry {
   class Node{
     int index;
     double coeff;
@@ -73,10 +87,6 @@ class CbcNauty;
     inline int get_sign () const {return sign;}
     inline void bounds(register double a, register double b){ lb = a; ub = b;}
   };
-
-#define COUENNE_HACKED_EPS      1.e-07
-#define COUENNE_HACKED_EPS_SYMM 1e-8
-#define COUENNE_HACKED_EXPRGROUP 8
 
   struct myclass0 {
     inline bool operator() (register const Node &a, register const Node &b) {
@@ -105,13 +115,6 @@ struct less_than_str {
   inline bool operator() (register const  char *a, register const char *b) const
   {return strcmp (a, b) < 0;}
 };
-
-/** Class to deal with symmetry
- *
- *  Hacked from Couenne
- */
-
-class CbcSymmetry {
 
  public:
 

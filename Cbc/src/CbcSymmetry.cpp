@@ -51,7 +51,7 @@ static double nautyTime_ = 0.0;
 static double nautyFixes_= 0.0; 
 static double nautyOtherBranches_ = 0.0;
 
-void Node::node(int i, double c , double l, double u, int cod, int s){
+void CbcSymmetry::Node::node(int i, double c , double l, double u, int cod, int s){
   index = i;
   coeff = c;
   lb = l;

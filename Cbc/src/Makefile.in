@@ -45,6 +45,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
+@COIN_HAS_NTY_TRUE@am__append_1 = -I$(NTYINCDIR)
 
 ########################################################################
 #                            cbc program                               #
@@ -52,7 +53,7 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
-@COIN_HAS_CLP_TRUE@am__append_1 = cbc
+@COIN_HAS_CLP_TRUE@am__append_2 = cbc
 
 ########################################################################
 #                        cbc-generic program                           #
@@ -60,12 +61,12 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
-@CBC_BUILD_CBC_GENERIC_TRUE@am__append_2 = cbc-generic
+@CBC_BUILD_CBC_GENERIC_TRUE@am__append_3 = cbc-generic
 
 # List all additionally required solver and Osi libraries
 # the linker flags for all available LP solvers should already be included in $CBCGENERIC_LIBS,
 # so just add compiler flags here (all we can think of)
-@CBC_BUILD_CBC_GENERIC_TRUE@am__append_3 = $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(SPX_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@am__append_4 = $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(SPX_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 subdir = src
 DIST_COMMON = $(includecoin_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -264,6 +265,8 @@ COIN_HAS_MSK_FALSE = @COIN_HAS_MSK_FALSE@
 COIN_HAS_MSK_TRUE = @COIN_HAS_MSK_TRUE@
 COIN_HAS_NETLIB_FALSE = @COIN_HAS_NETLIB_FALSE@
 COIN_HAS_NETLIB_TRUE = @COIN_HAS_NETLIB_TRUE@
+COIN_HAS_NTY_FALSE = @COIN_HAS_NTY_FALSE@
+COIN_HAS_NTY_TRUE = @COIN_HAS_NTY_TRUE@
 COIN_HAS_OSITESTS_FALSE = @COIN_HAS_OSITESTS_FALSE@
 COIN_HAS_OSITESTS_TRUE = @COIN_HAS_OSITESTS_TRUE@
 COIN_HAS_PKGCONFIG_FALSE = @COIN_HAS_PKGCONFIG_FALSE@
@@ -370,6 +373,8 @@ NETLIB_DATA_INSTALLED = @NETLIB_DATA_INSTALLED@
 NETLIB_DEPENDENCIES = @NETLIB_DEPENDENCIES@
 NETLIB_LIBS = @NETLIB_LIBS@
 NETLIB_LIBS_INSTALLED = @NETLIB_LIBS_INSTALLED@
+NTYINCDIR = @NTYINCDIR@
+NTYLIB = @NTYLIB@
 OBJEXT = @OBJEXT@
 OPT_CFLAGS = @OPT_CFLAGS@
 OPT_CXXFLAGS = @OPT_CXXFLAGS@
@@ -617,8 +622,8 @@ libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 
 # List additional defines
 AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_CFLAGS) \
-	$(ASL_CFLAGS) $(am__append_3) -DCOIN_NO_CLP_MESSAGE \
-	-DUSE_CBCCONFIG
+	$(ASL_CFLAGS) $(am__append_1) $(am__append_4) \
+	-DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
 
 # List all source files for this executable, including headers
 @COIN_HAS_CLP_TRUE@cbc_SOURCES = CoinSolve.cpp

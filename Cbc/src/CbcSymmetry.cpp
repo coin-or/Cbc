@@ -9,10 +9,20 @@
  * This file is licensed under the Eclipse Public License (EPL)
  */
 //#define PRINT_MORE 1
-#include <stdio.h>
+
+#include "CbcConfig.h"
 
 #ifdef COIN_HAS_NTY
 
+extern "C" {
+#include "nauty.h"
+#include "nausparse.h"
+#ifdef NTY_TRACES
+#include "traces.h"
+#endif
+}
+
+#include <stdio.h>
 #include <cassert>
 #include <vector>
 #include <algorithm>
@@ -22,7 +32,7 @@
 #include "CbcSymmetry.hpp"
 #include "CbcBranchingObject.hpp"
 #include "CoinTime.hpp"
-#define NAUTY_MAX_LEVEL 2000
+#define NAUTY_MAX_LEVEL 0
 #if NAUTY_MAX_LEVEL
 extern int nauty_maxalllevel;
 #endif

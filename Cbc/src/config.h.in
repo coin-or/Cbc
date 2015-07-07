@@ -58,6 +58,9 @@
 /* Define to 1 if the Netlib package is available */
 #undef COIN_HAS_NETLIB
 
+/* Define to 1 if the Nauty package is available */
+#undef COIN_HAS_NTY
+
 /* Define to 1 if the OsiTests package is available */
 #undef COIN_HAS_OSITESTS
 

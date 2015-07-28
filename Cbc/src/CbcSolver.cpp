@@ -7127,7 +7127,7 @@ int CbcMain1 (int argc, const char *argv[],
                             } else {
                                 if (babModel_->isProvenOptimal()) {
                                     integerStatus = 0;
-                                } else {
+                                } else if (!babModel_->bestSolution()) {
                                     // infeasible
                                     integerStatus = 6;
 				    delete saveSolver;

@@ -995,6 +995,8 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
     const CoinBigIndex * columnStart = matrix_.getVectorStarts();
     const int * columnLength = matrix_.getVectorLengths();
     int * sosRow = new int [numberColumns];
+    char * sos = new char [numberRows];
+    memset(sos,'a',numberRows);
     int nonSOS=0;
     // If bit set then use current
     if ((algorithm_&1)!=0) {
@@ -1017,8 +1019,12 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
 	  good = false;
 	} else if (rowUpper[iRow] < 1.0e10) {
 	  rhs[iRow]=rowUpper[iRow];
+	  if (rhs[iRow]<0)
+	    sos[iRow]=0; // can't be SOS
 	} else {
 	  rhs[iRow]=rowLower[iRow];
+	  if (rhs[iRow]<0)
+	    sos[iRow]=0; // can't be SOS
 	}
       }
       for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -1036,7 +1042,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
 	  if (element[j] < 0.0)
 	    good = false;
 	  int iRow = row[j];
-	  if (rhs[iRow]==-1.0) {
+	  if (rhs[iRow]==-1.0 && sos[iRow] == 'a') {
 	    if (element[j] != 1.0)
 	      good = false;
 	    iSOS=iRow;
@@ -1052,6 +1058,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       if (!good) {
 	delete [] sosRow;
 	delete [] rhs;
+	delete [] sos;
 	setWhen(0); // switch off
 	return 0;
       }
@@ -1091,21 +1098,23 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       }
     }
     double offset2 = 0.0;
-    char * sos = new char [numberRows];
     for (int iRow = 0;iRow < numberRows; iRow++) {
-      sos[iRow]=0;
-      if (rhs[iRow]<0.0) {
-	sos[iRow]=1;
-	rhs[iRow]=1.0;
-      } else if (rhs[iRow] != rowUpper[iRow]) {
-	// G row
-	sos[iRow]=-1;
-      }
-      if( slackCost[iRow] == 1.0e30) {
-	slackCost[iRow]=0.0;
-      } else {
-	offset2 += slackCost[iRow];
-	sos[iRow] = 2;
+      if (sos[iRow]=='a') {
+	// row is possible
+	sos[iRow]=0;
+	if (rhs[iRow]<0.0) {
+	  sos[iRow]=1;
+	  rhs[iRow]=1.0;
+	} else if (rhs[iRow] != rowUpper[iRow]) {
+	  // G row
+	  sos[iRow]=-1;
+	}
+	if( slackCost[iRow] == 1.0e30) {
+	  slackCost[iRow]=0.0;
+	} else {
+	  offset2 += slackCost[iRow];
+	  sos[iRow] = 2;
+	}
       }
     }
     for (int iColumn = 0; iColumn < numberColumns; iColumn++) {

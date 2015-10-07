@@ -36,6 +36,14 @@ https://projects.coin-or.org/Cbc/newticket
 
 ## CHANGELOG
 
+ * Release 2.9.6
+
+   * Small bug fixes
+
+ * Release 2.9.5
+
+   * Small bug fixes
+
  * Release 2.9.4
 
    * Small fixes for stability

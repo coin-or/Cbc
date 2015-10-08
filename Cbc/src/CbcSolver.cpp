@@ -4091,6 +4091,9 @@ int CbcMain1 (int argc, const char *argv[],
                                     if (saveSolver->getNumCols() > 3000)
                                         generator1.setMaxProbeRoot(123);
                                     generator1.setRowCuts(3);
+				    // switch off duplicate columns if we have a solution
+				    if (model_.bestSolution()/*||debugValues*/)
+				      tunePreProcess |= 4096;
                                     if ((tunePreProcess&1) != 0) {
                                         // heavy probing
                                         generator1.setMaxPassRoot(2);
@@ -4232,6 +4235,11 @@ int CbcMain1 (int argc, const char *argv[],
 					    model_.getCutoff()>1.0e30) {
 					  osiclp->getModelPtr()->setMoreSpecialOptions(saveOptions|262144);
 					}
+#ifdef CGL_WRITEMPS
+					if (debugValues) {
+					  process.setApplicationData(const_cast<double *>(debugValues));
+					}
+#endif
                                         solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                                tunePreProcess);
                                         /*solver2->writeMps("after");

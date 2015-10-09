@@ -36,6 +36,11 @@ https://projects.coin-or.org/Cbc/newticket
 
 ## CHANGELOG
 
+ * Release 2.9.7
+
+   * Small bug fixes
+   * Option to switch to line buffered output
+
  * Release 2.9.6
 
    * Small bug fixes

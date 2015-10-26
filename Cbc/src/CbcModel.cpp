@@ -2120,6 +2120,7 @@ void CbcModel::branchAndBound(int doStatistics)
             continuousSolver_->initialSolve() ;
 	  }
 	  delete solver_ ;
+	  solverCharacteristics_=NULL;
 	  solver_ = continuousSolver_ ;
 	  setPointers(solver_);
 	  continuousSolver_ = NULL ;

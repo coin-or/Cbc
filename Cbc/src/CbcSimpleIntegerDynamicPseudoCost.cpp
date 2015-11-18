@@ -429,14 +429,14 @@ CbcSimpleIntegerDynamicPseudoCost::updateAfter(const OsiObject * rhs, const OsiO
     sumDown += rhsObject->downDynamicPseudoCost_ * rhsObject->numberTimesDown_;
     assert (rhsObject->numberTimesDown_ >= baseObject->numberTimesDown_);
     assert (rhsObject->numberTimesDownInfeasible_ >= baseObject->numberTimesDownInfeasible_);
-    assert( rhsObject->sumDownCost_ >= baseObject->sumDownCost_);
+    assert( rhsObject->sumDownCost_ >= baseObject->sumDownCost_-1.0e-4);
     double sumUp = upDynamicPseudoCost_ * numberTimesUp_;
     sumUp -= baseObject->upDynamicPseudoCost_ * baseObject->numberTimesUp_;
     sumUp = CoinMax(sumUp, 0.0);
     sumUp += rhsObject->upDynamicPseudoCost_ * rhsObject->numberTimesUp_;
     assert (rhsObject->numberTimesUp_ >= baseObject->numberTimesUp_);
     assert (rhsObject->numberTimesUpInfeasible_ >= baseObject->numberTimesUpInfeasible_);
-    assert( rhsObject->sumUpCost_ >= baseObject->sumUpCost_);
+    assert( rhsObject->sumUpCost_ >= baseObject->sumUpCost_-1.0e-4);
     sumDownCost_ += rhsObject->sumDownCost_ - baseObject->sumDownCost_;
     sumUpCost_ += rhsObject->sumUpCost_ - baseObject->sumUpCost_;
     sumDownChange_ += rhsObject->sumDownChange_ - baseObject->sumDownChange_;

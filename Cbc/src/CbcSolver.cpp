@@ -5555,7 +5555,8 @@ int CbcMain1 (int argc, const char *argv[],
                                         // extend arrays in case SOS
                                         assert (originalColumns);
 					int n = CoinMin(truncateColumns,numberColumns);
-                                        n = originalColumns[n-1] + 1;
+					// allow for empty problem
+                                        n = (n) ? originalColumns[n-1] + 1 : 0;
                                         n = CoinMax(n, CoinMax(numberColumns, numberOriginalColumns));
                                         int * newColumn = new int[n];
                                         int i;

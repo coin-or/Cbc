@@ -4242,8 +4242,8 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
                                         solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                                tunePreProcess);
-                                        /*solver2->writeMps("after");
-                                          saveSolver->writeMps("before");*/
+                                        model_.setOriginalColumns( process.originalColumns() );
+
                                         osiclp->getModelPtr()->setPerturbation(savePerturbation);
 					osiclp->getModelPtr()->setMoreSpecialOptions(saveOptions);
                                     }

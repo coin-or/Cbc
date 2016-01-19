@@ -1,4 +1,5 @@
 * text=auto !eol
+/.travis.yml -text
 /AUTHORS -text
 Cbc/CbcSourceFilesTable.csv -text
 Cbc/CbcSourceFilesTable.xls -text

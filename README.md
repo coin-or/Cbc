@@ -1,5 +1,7 @@
 # CBC Version 2.9.4 README
 
+[![Build Status](https://travis-ci.org/coin-or/Cbc.svg?branch=master)](https://travis-ci.org/coin-or/Cbc)
+
 Welcome to the README for the COIN Branch and Cut Solver (CBC). CBC is
 distributed under the Eclipse Public License and is freely redistributable.
 All source code and documentation is Copyright IBM and others. This README may

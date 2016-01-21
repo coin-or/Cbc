@@ -1,10 +1,5 @@
 language: cpp
 
-addons:
-  apt:
-    packages:
-    - gfortran
-
 matrix:
   include:
     - os: osx
@@ -20,11 +15,19 @@ matrix:
       env: OSX=10.9
       compiler: clang
     - os: linux
+      addons:
+        apt:
+          packages:
+          - gfortran
+  allow_failures:
+    - os: osx
 
 before_install:
-    - git clone https://gist.github.com/tkralphs/13d4529b4d4e8889f3a6 scripts
-    - bash scripts/get.dependencies.sh fetch
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install gfortran; fi
+  - git clone https://gist.github.com/tkralphs/13d4529b4d4e8889f3a6 scripts
+  - bash scripts/get.dependencies.sh fetch > /dev/null
 
-install: bash scripts/get.dependencies.sh build
+install: bash scripts/get.dependencies.sh build > /dev/null
 
 script: make test

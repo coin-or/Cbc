@@ -4242,7 +4242,7 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
                                         solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                                tunePreProcess);
-                                        model_.setOriginalColumns( process.originalColumns() );
+                                        model_.setOriginalColumns( process.originalColumns(), solver2->getNumCols() );
 
                                         osiclp->getModelPtr()->setPerturbation(savePerturbation);
 					osiclp->getModelPtr()->setMoreSpecialOptions(saveOptions);

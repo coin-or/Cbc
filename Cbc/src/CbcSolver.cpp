@@ -4177,11 +4177,13 @@ int CbcMain1 (int argc, const char *argv[],
 					    model_.getCutoff()>1.0e30) {
 					  osiclp->getModelPtr()->setMoreSpecialOptions(saveOptions|262144);
 					}
-                                        solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
+					solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                                tunePreProcess);
-                                        model_.setOriginalColumns( process.originalColumns(), solver2->getNumCols() );
-                                        osiclp->getModelPtr()->setPerturbation(savePerturbation);
-					osiclp->getModelPtr()->setMoreSpecialOptions(saveOptions);
+					if (solver2) {
+					  model_.setOriginalColumns( process.originalColumns(), solver2->getNumCols() );
+					  osiclp->getModelPtr()->setPerturbation(savePerturbation);
+					  osiclp->getModelPtr()->setMoreSpecialOptions(saveOptions);
+					}
                                     }
 #elif CBC_OTHER_SOLVER==1
 				    cbcPreProcessPointer = & process;

@@ -8630,6 +8630,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             if ( maximumSecondsReached() ) {
                 numberTries = -1000; // exit
 		feasible = false;
+		delete [] addCuts ;
                 break;
             }
 #     ifdef CBC_DEBUG

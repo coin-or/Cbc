@@ -489,7 +489,7 @@ ac_subdirs_all="$ac_subdirs_all DyLP"
 ac_subdirs_all="$ac_subdirs_all Vol"
 ac_subdirs_all="$ac_subdirs_all Cgl"
 ac_subdirs_all="$ac_subdirs_all Cbc"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT COIN_CC_IS_CL_TRUE COIN_CC_IS_CL_FALSE MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX COIN_CXX_IS_CL_TRUE COIN_CXX_IS_CL_FALSE MPICXX ADD_FFLAGS DBG_FFLAGS OPT_FFLAGS F77 ac_ct_F77 FFLAGS MPIF77 EGREP LN_S INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS DEPENDENCY_LINKING_TRUE DEPENDENCY_LINKING_FALSE LT_LDFLAGS COIN_SKIP_PROJECTS subdirs coin_have_doxygen coin_have_latex coin_doxy_usedot coin_doxy_tagname coin_doxy_logname COIN_HAS_DOXYGEN_TRUE COIN_HAS_DOXYGEN_FALSE COIN_HAS_LATEX_TRUE COIN_HAS_LATEX_FALSE coin_doxy_tagfiles coin_doxy_excludes LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT COIN_CC_IS_CL_TRUE COIN_CC_IS_CL_FALSE MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX COIN_CXX_IS_CL_TRUE COIN_CXX_IS_CL_FALSE MPICXX ADD_FFLAGS DBG_FFLAGS OPT_FFLAGS F77 ac_ct_F77 FFLAGS MPIF77 EGREP LN_S INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS DEPENDENCY_LINKING_TRUE DEPENDENCY_LINKING_FALSE LT_LDFLAGS COIN_SKIP_PROJECTS subdirs coin_have_doxygen coin_doxy_usedot coin_doxy_tagname coin_doxy_logname coin_doxy_tagfiles coin_doxy_excludes LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1126,9 +1126,6 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
-  --disable-dependency-linking
-                          disable linking library dependencies into shared
-                          libraries
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -3944,7 +3941,7 @@ echo "$as_me: Will use MPI C++ compiler $MPICXX" >&6;}
   CXX="$MPICXX"
 fi
 
-# correct the LD variable in a build with MS or Intel-windows compiler
+# correct the LD variable in a build with MS or intel compiler
 case "$CXX" in
   clang* ) ;;
   cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
@@ -3964,7 +3961,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 case $build in
   *-cygwin* | *-mingw*)
      if test "$enable_msvc" = yes ; then
-       coin_f77_comps="ifort fl32 compile_f2c"
+       coin_f77_comps="ifort fl32 compile_f2c gfortran g95 g77"
      else
        coin_f77_comps="gfortran ifort g95 g77 fl32 compile_f2c"
      fi ;;
@@ -4188,7 +4185,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:4191:" \
+echo "$as_me:4188:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -4630,14 +4627,10 @@ echo "$as_me: Will use MPI Fortran compiler $MPIF77" >&6;}
 fi
 
 # correct the LD variable if we use the intel fortran compiler in windows
-case $build in
-  *-cygwin* | *-mingw*)
-    case "$F77" in
-      ifort* | */ifort* | IFORT* | */IFORT*)
-        LD=link
-      ;;
-    esac
-  ;;
+case "$F77" in
+  ifort* | */ifort* | IFORT* | */IFORT*)
+    LD=link
+    ;;
 esac
 
 ac_ext=c
@@ -4680,7 +4673,7 @@ echo "$as_me: WARNING: Building of DLLs not supported in this configuration." >&
 echo "$as_me: Building of DLLs not supported in this configuration." >&6;}
             ;;
           *gcc*)
-            if test x"$enable_dependency_linking" = xyes; then
+	    if test x"$enable_dependency_linking" = xyes; then
               coin_disable_shared=no
             else
               { echo "$as_me:$LINENO: WARNING: Dependency linking seems to be disabled, so shared libraries (DLLs) will not be built" >&5
@@ -6416,7 +6409,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6419 "configure"' > conftest.$ac_ext
+  echo '#line 6412 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8380,11 +8373,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8383: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8376: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8387: \$? = $ac_status" >&5
+   echo "$as_me:8380: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8648,11 +8641,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8651: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8644: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8655: \$? = $ac_status" >&5
+   echo "$as_me:8648: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8752,11 +8745,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8755: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8748: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8759: \$? = $ac_status" >&5
+   echo "$as_me:8752: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11097,7 +11090,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11100 "configure"
+#line 11093 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11197,7 +11190,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11200 "configure"
+#line 11193 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13541,11 +13534,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13544: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13537: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13548: \$? = $ac_status" >&5
+   echo "$as_me:13541: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13645,11 +13638,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13648: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13641: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13652: \$? = $ac_status" >&5
+   echo "$as_me:13645: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15215,11 +15208,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15218: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15211: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15222: \$? = $ac_status" >&5
+   echo "$as_me:15215: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15319,11 +15312,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15322: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15315: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15326: \$? = $ac_status" >&5
+   echo "$as_me:15319: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17526,11 +17519,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17529: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17522: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17533: \$? = $ac_status" >&5
+   echo "$as_me:17526: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17794,11 +17787,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17797: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17790: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17801: \$? = $ac_status" >&5
+   echo "$as_me:17794: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17898,11 +17891,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17901: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17894: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17905: \$? = $ac_status" >&5
+   echo "$as_me:17898: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -20590,6 +20583,7 @@ echo "$as_me: Build is \"$build\"." >&6;}
   case $build in
     *-mingw*)
       CYGPATH_W=echo
+      mydos2unix=
       ;;
   esac
 
@@ -20793,21 +20787,21 @@ fi;
 if test "$dependency_linking" = auto; then
   # On Cygwin and AIX, building DLLs doesn't work
   dependency_linking=no
-  if test x"$coin_disable_shared" = xno; then
+  if test x"$enable_shared" = xyes; then
     case $build in
       *-cygwin* | *-mingw*)
         case "$CC" in
           clang* )
-            dependency_linking=yes
+	    dependency_linking=yes
             ;;
           cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
-            dependency_linking=no
+	    dependency_linking=no
             ;;
           *gcc*)
-            dependency_linking=yes
+	    dependency_linking=yes
             ;;
           *)
-            dependency_linking=yes
+	    dependency_linking=yes
             ;;
         esac
         ;;
@@ -22815,42 +22809,6 @@ else
 echo "${ECHO_T}no" >&6
 fi
 
-# Extract the first word of "latex", so it can be a program name with args.
-set dummy latex; ac_word=$2
-echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
-if test "${ac_cv_prog_coin_have_latex+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  if test -n "$coin_have_latex"; then
-  ac_cv_prog_coin_have_latex="$coin_have_latex" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_coin_have_latex="yes"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-
-  test -z "$ac_cv_prog_coin_have_latex" && ac_cv_prog_coin_have_latex="no"
-fi
-fi
-coin_have_latex=$ac_cv_prog_coin_have_latex
-if test -n "$coin_have_latex"; then
-  echo "$as_me:$LINENO: result: $coin_have_latex" >&5
-echo "${ECHO_T}$coin_have_latex" >&6
-else
-  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-fi
-
 
 # Look for the dot tool from the graphviz package, unless the user has
 # disabled it.
@@ -22915,26 +22873,6 @@ coin_doxy_tagname=doxydoc/${PACKAGE}_doxy.tag
 coin_doxy_logname=doxydoc/${PACKAGE}_doxy.log
 
 
-
-if test $coin_have_doxygen = yes; then
-  COIN_HAS_DOXYGEN_TRUE=
-  COIN_HAS_DOXYGEN_FALSE='#'
-else
-  COIN_HAS_DOXYGEN_TRUE='#'
-  COIN_HAS_DOXYGEN_FALSE=
-fi
-
-
-
-if test $coin_have_latex = yes; then
-  COIN_HAS_LATEX_TRUE=
-  COIN_HAS_LATEX_FALSE='#'
-else
-  COIN_HAS_LATEX_TRUE='#'
-  COIN_HAS_LATEX_FALSE=
-fi
-
-
 # Process the list of project names and massage them into possible doxygen
 # doc'n directories. Prefer 1) classic external, source processed using
 # a project-specific doxygen.conf, we use the tag file; 2) classic
@@ -22954,28 +22892,32 @@ for proj in $tmp ; do
 echo $ECHO_N "checking for doxygen doc'n for $proj ... $ECHO_C" >&6
   doxytag=${lc_proj}_doxy.tag
   doxyfound=no
-  # proj will be configured, hence doxydoc present in build tree
-  doxysrcdir="${srcdir}/../${proj}"
-  # AC_MSG_NOTICE([Considering $doxysrcdir (base)])
-  if test -d "$doxysrcdir" ; then
-    # with a doxydoc directory?
-    doxydir="$doxysrcdir/doxydoc"
-    # AC_MSG_NOTICE([Considering $doxydir (base)])
-    # AC_MSG_NOTICE([Subdirs: $coin_subdirs)])
-    if test -d "$doxydir" ; then
-      # use tag file; don't process source
-      doxydir="../${proj}/doxydoc"
-      coin_doxy_tagfiles="$coin_doxy_tagfiles $doxydir/$doxytag=../../$doxydir/html"
-      echo "$as_me:$LINENO: result: $doxydir (tag)" >&5
+  for chkProj in $coin_subdirs ; do
+    if test "$chkProj" = "$proj" ; then
+      # proj will be configured, hence doxydoc present in build tree
+      doxysrcdir="${srcdir}/${proj}"
+      # AC_MSG_NOTICE([Considering $doxysrcdir (base)])
+      if test -d "$doxysrcdir" ; then
+	# with a doxydoc directory?
+	doxydir="$doxysrcdir/doxydoc"
+	# AC_MSG_NOTICE([Considering $doxydir (base)])
+	# AC_MSG_NOTICE([Subdirs: $coin_subdirs)])
+	if test -d "$doxydir" ; then
+	  # use tag file; don't process source
+	  eval doxydir="`pwd`/${proj}/doxydoc"
+	  coin_doxy_tagfiles="$coin_doxy_tagfiles $doxydir/$doxytag=$doxydir/html"
+	  echo "$as_me:$LINENO: result: $doxydir (tag)" >&5
 echo "${ECHO_T}$doxydir (tag)" >&6
-      coin_doxy_excludes="$coin_doxy_excludes */${proj}"
-    else
-      # will process the source -- nothing further to be done here
-      echo "$as_me:$LINENO: result: $doxysrcdir (src)" >&5
+	  coin_doxy_excludes="$coin_doxy_excludes */${proj}"
+	else
+	  # will process the source -- nothing further to be done here
+	  echo "$as_me:$LINENO: result: $doxysrcdir (src)" >&5
 echo "${ECHO_T}$doxysrcdir (src)" >&6
+	fi
+	doxyfound=yes
+      fi
     fi
-    doxyfound=yes
-  fi
+  done
   # Not built, fall back to installed tag file
   if test $doxyfound = no ; then
     eval doxydir="${datadir}/coin/doc/${proj}/doxydoc"
@@ -23240,20 +23182,6 @@ if test -z "${DEPENDENCY_LINKING_TRUE}" && test -z "${DEPENDENCY_LINKING_FALSE}"
   { { echo "$as_me:$LINENO: error: conditional \"DEPENDENCY_LINKING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"DEPENDENCY_LINKING\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_DOXYGEN_TRUE}" && test -z "${COIN_HAS_DOXYGEN_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_DOXYGEN\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_DOXYGEN\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_LATEX_TRUE}" && test -z "${COIN_HAS_LATEX_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_LATEX\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_LATEX\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -23891,14 +23819,9 @@ s,@LT_LDFLAGS@,$LT_LDFLAGS,;t t
 s,@COIN_SKIP_PROJECTS@,$COIN_SKIP_PROJECTS,;t t
 s,@subdirs@,$subdirs,;t t
 s,@coin_have_doxygen@,$coin_have_doxygen,;t t
-s,@coin_have_latex@,$coin_have_latex,;t t
 s,@coin_doxy_usedot@,$coin_doxy_usedot,;t t
 s,@coin_doxy_tagname@,$coin_doxy_tagname,;t t
 s,@coin_doxy_logname@,$coin_doxy_logname,;t t
-s,@COIN_HAS_DOXYGEN_TRUE@,$COIN_HAS_DOXYGEN_TRUE,;t t
-s,@COIN_HAS_DOXYGEN_FALSE@,$COIN_HAS_DOXYGEN_FALSE,;t t
-s,@COIN_HAS_LATEX_TRUE@,$COIN_HAS_LATEX_TRUE,;t t
-s,@COIN_HAS_LATEX_FALSE@,$COIN_HAS_LATEX_FALSE,;t t
 s,@coin_doxy_tagfiles@,$coin_doxy_tagfiles,;t t
 s,@coin_doxy_excludes@,$coin_doxy_excludes,;t t
 s,@LIBEXT@,$LIBEXT,;t t

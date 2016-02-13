@@ -20286,7 +20286,6 @@ echo "$as_me: Build is \"$build\"." >&6;}
   case $build in
     *-mingw*)
       CYGPATH_W=echo
-      mydos2unix=
       ;;
   esac
 

@@ -1,4 +1,5 @@
 * text=auto !eol
+/.travis.yml -text
 /AUTHORS -text
 Cbc/CbcSourceFilesTable.csv -text
 Cbc/CbcSourceFilesTable.xls -text
@@ -70,6 +71,7 @@ Cbc/test/osiUnitTest.cpp -text
 /LICENSE -text
 /README -text
 /README.md -text
+/appveyor.yml -text
 /config.guess -text
 /config.sub -text
 /configure -text

@@ -6159,10 +6159,16 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
         savedSolutions_ = NULL;
     }
     // Space for current solution
-    currentSolution_ = new double[numberColumns];
-    continuousSolution_ = CoinCopyOfArray(solver_->getColSolution(),numberColumns);
-    usedInSolution_ = new int[numberColumns];
-    CoinZeroN(usedInSolution_, numberColumns);
+    if (numberColumns) {
+      currentSolution_ = new double[numberColumns];
+      continuousSolution_ = CoinCopyOfArray(solver_->getColSolution(),numberColumns);
+      usedInSolution_ = new int[numberColumns];
+      CoinZeroN(usedInSolution_, numberColumns);
+    } else {
+      currentSolution_ = NULL;
+      continuousSolution_ = NULL;
+      usedInSolution_ = NULL;
+    }
     testSolution_ = currentSolution_;
     numberRowsAtContinuous_ = rhs.numberRowsAtContinuous_;
     cutoffRowNumber_ = rhs.cutoffRowNumber_;

@@ -13,13 +13,11 @@ Windows at
 ***                         DOWNLOAD                               ***
 **********************************************************************
 
-Pre-built binaries are available for some versions of Cbc on some platforms.
-They can be downloaded at
-
-  http://www.coin-or.org/download/binary/Cbc
+For the most recent information on how to install Cbc binaries, please
+see the Cbc Wiki: https://projects.coin-or.org/Cbc
 
 If you would like to build from source, you can obtain the source code for the
-Cbc package in two ways:
+Cbc package in three ways:
 
 1. Obtain the source directly from the COIN-OR subversion repository
    (recommended). For this you needs the program 'svn' installed on your
@@ -27,15 +25,28 @@ Cbc package in two ways:
    scheme". On Windows, it is recommended to get the source with the SVN
    client TortoiseSVN (http://tortoisesvn.net).
 
-   Assuming that you want to download a release version 2.7.0, as an example,
+   Assuming that you want to download a stable version 2.9, as an example,
    you would execute the command
 
-   svn co https://projects.coin-or.org/svn/Cbc/releases/2.7.0 Cbc-2.7.0
+   svn co https://projects.coin-or.org/svn/Cbc/stable/2.9 Cbc-2.9
 
-   You can similarly get source for the latest stable version or the trunk
+   You can similarly get source for the latest release or the trunk
    (development) version.
 
-2. Download the tarball from http://www.coin-or.org/download/source/Cbc 
+2. Obtain the source from Github using git. Assuming that you want to
+   download stable version 2.9, as an example, you would execute
+   the command
+
+   git clone --branch=stable/2.9 https://github.com/coin-or/Cbc Cbc-2.9
+
+   With git, you additionally, need to fetch the dependencies. To do so,
+   execute
+
+   cd Cbc-2.9
+   git clone --branch=stable/0.8 https://github.com/coin-or/BuildTools
+   BuildTools/get.dependencies fetch
+
+3. Download the tarball from http://www.coin-or.org/download/source/Cbc 
    and extract it. For example, for the release 2.7.0 you type
 
    gunzip Cbc-2.7.0.tgz

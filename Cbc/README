@@ -36,7 +36,13 @@ https://projects.coin-or.org/Cbc/newticket
 
 ## CHANGELOG
 
- * Release 2.9.7
+ * Release 2.9.8
+
+   * Update to most current releases of dependencies
+   * Small bug fixes
+   * Add support for automatic build and test with Travis and Appveyor
+
+* Release 2.9.7
 
    * Small bug fixes
    * Option to switch to line buffered output

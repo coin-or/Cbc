@@ -1,11 +1,15 @@
-# CBC Version 2.9.4 README
-
-[![Build Status](https://travis-ci.org/coin-or/Cbc.svg?branch=master)](https://travis-ci.org/coin-or/Cbc)
+# CBC Version 2.9.8 README
 
 Welcome to the README for the COIN Branch and Cut Solver (CBC). CBC is
 distributed under the Eclipse Public License and is freely redistributable.
 All source code and documentation is Copyright IBM and others. This README may
 be redistributed freely.
+
+## Current Testing Status
+
+[![Build Status](https://travis-ci.org/coin-or/Cbc.svg?branch=master)](https://travis-ci.org/coin-or/Cbc)
+
+[![Build status](https://ci.appveyor.com/api/projects/status/l2hwifsxwhswng8y/branch/master?svg=true)](https://ci.appveyor.com/project/tkralphs/cbc/branch/master)
 
 ## DOCUMENTATION
 
@@ -37,6 +41,12 @@ Bug reports should be reported on the CBC development web site at
 https://projects.coin-or.org/Cbc/newticket
 
 ## CHANGELOG
+
+ * Release 2.9.8
+
+   * Update to most current releases of dependencies
+   * Small bug fixes
+   * Add support for automatic build and test with Travis and Appveyor
 
  * Release 2.9.7
 

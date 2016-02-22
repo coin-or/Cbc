@@ -1973,6 +1973,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 #endif
     // so we can save lots of stuff
     CbcStrongInfo choice;
+    memset (&choice, 0, sizeof(CbcStrongInfo));
     CbcDynamicPseudoCostBranchingObject * choiceObject = NULL;
     if (model->allDynamic()) {
         CbcSimpleIntegerDynamicPseudoCost * object = NULL;

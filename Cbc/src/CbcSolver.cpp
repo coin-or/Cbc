@@ -4939,10 +4939,9 @@ int CbcMain1 (int argc, const char *argv[],
                                                            parameters_)].intValue();
                             int bothFlags = CoinMax(CoinMin(experimentFlag, 1), strategyFlag);
                             // add cut generators if wanted
-                            int switches[30];
-                            int accuracyFlag[30];
-			    char doAtEnd[30];
-			    memset(doAtEnd,0,30);
+                            int switches[30]={};
+                            int accuracyFlag[30]={};
+			    char doAtEnd[30]={};
                             int numberGenerators = 0;
                             int translate[] = { -100, -1, -99, -98, 1, -1098, -999, 1, 1, 1, -1};
 			    int maximumSlowPasses = 

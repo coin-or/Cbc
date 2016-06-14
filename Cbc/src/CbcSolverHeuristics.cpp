@@ -1214,9 +1214,9 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
             int r = w;
             int accumulate = r / 1000;
             r -= 1000 * accumulate;
-            if (accumulate >= 10) {
-                int which = accumulate / 10;
-                accumulate -= 10 * which;
+            if (accumulate >= 100) {
+                int which = accumulate / 100;
+                accumulate -= 100 * which;
                 which--;
                 // weights and factors
                 double weight[] = {0.01, 0.01, 0.1, 0.1, 0.5, 0.5, 1.0, 1.0, 5.0, 5.0};

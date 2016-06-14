@@ -165,12 +165,15 @@ CbcHeuristicRINS::solution(double & solutionValue,
         // new solution - add info
         numberSolutions_ = model_->getSolutionCount();
 
+        OsiSolverInterface * solver = model_->solver();
         int numberIntegers = model_->numberIntegers();
         const int * integerVariable = model_->integerVariable();
 
         int i;
         for (i = 0; i < numberIntegers; i++) {
             int iColumn = integerVariable[i];
+	    if (!isHeuristicInteger(solver,iColumn))
+	      continue;
             const OsiObject * object = model_->object(i);
             // get original bounds
             double originalLower;
@@ -222,6 +225,8 @@ CbcHeuristicRINS::solution(double & solutionValue,
         int nFix = 0;
         for (i = 0; i < numberIntegers; i++) {
             int iColumn = integerVariable[i];
+	    if (!isHeuristicInteger(solver,iColumn))
+	      continue;
             const OsiObject * object = model_->object(i);
             // get original bounds
             double originalLower;
@@ -281,7 +286,7 @@ CbcHeuristicRINS::solution(double & solutionValue,
                 const double * dj = newSolver->getReducedCost();
                 double direction = newSolver->getObjSense();
                 for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-                    if (!newSolver->isInteger(iColumn)) {
+                    if (!isHeuristicInteger(newSolver,iColumn)) {
                         double value = bestSolution[iColumn];
                         if (value < colLower[iColumn] + 1.0e-8) {
                             //double djValue = dj[iColumn]*direction;
@@ -297,7 +302,7 @@ CbcHeuristicRINS::solution(double & solutionValue,
                     //double threshold = CoinMax((0.01*sumDj)/static_cast<double>(nAtLb),1.0e-6);
                     int nFix2 = 0;
                     for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-                        if (!newSolver->isInteger(iColumn)) {
+                        if (!isHeuristicInteger(newSolver,iColumn)) {
                             double value = bestSolution[iColumn];
                             if (value < colLower[iColumn] + 1.0e-8) {
                                 double djValue = dj[iColumn] * direction;

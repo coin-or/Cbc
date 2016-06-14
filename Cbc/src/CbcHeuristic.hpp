@@ -16,7 +16,9 @@
 class OsiSolverInterface;
 
 class CbcModel;
-
+#ifdef COIN_HAS_CLP
+#include "OsiClpSolverInterface.hpp"
+#endif
 //#############################################################################
 
 class CbcHeuristicNodeList;
@@ -301,6 +303,21 @@ public:
     inline int numCouldRun() const {
         return numCouldRun_;
     }
+    /// Is it integer for heuristics?
+#ifdef COIN_HAS_CLP
+  inline bool isHeuristicInteger(const OsiSolverInterface * solver, int iColumn) const
+  {
+    const OsiClpSolverInterface * clpSolver
+    = dynamic_cast<const OsiClpSolverInterface *> (solver);
+    if (clpSolver)
+	return clpSolver->isHeuristicInteger(iColumn);
+      else
+	return solver->isInteger(iColumn);
+  }
+#else
+  inline bool isHeuristicInteger(const OsiSolverInterface * solver, int iColumn)
+  { return solver->isInteger(iColumn);}
+#endif
     /*! \brief Clone, but ...
 
       If type is

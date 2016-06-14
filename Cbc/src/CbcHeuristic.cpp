@@ -1250,7 +1250,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     const int * which = process.originalColumns();
                     OsiSolverInterface * solver3 = solver2->clone();
                     for (int i = 0; i < numberColumns; i++) {
-                        if (solver3->isInteger(i)) {
+                        if (isHeuristicInteger(solver3,i)) {
                             int k = which[i];
                             double value = inputSolution_[k];
                             //if (value)
@@ -1266,7 +1266,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                         // Try just setting nonzeros
                         OsiSolverInterface * solver4 = solver2->clone();
                         for (int i = 0; i < numberColumns; i++) {
-                            if (solver4->isInteger(i)) {
+                            if (isHeuristicInteger(solver4,i)) {
                                 int k = which[i];
                                 double value = floor(inputSolution_[k] + 0.5);
                                 if (value) {
@@ -1282,7 +1282,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                             nBad = 0;
                             const double * solution = solver4->getColSolution();
                             for (int i = 0; i < numberColumns; i++) {
-                                if (solver4->isInteger(i)) {
+                                if (isHeuristicInteger(solver4,i)) {
                                     double value = floor(solution[i] + 0.5);
                                     if (fabs(value - solution[i]) > 1.0e-6)
                                         nBad++;
@@ -1493,7 +1493,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
             const double * upperC = solverC->getColUpper();
             bool good = true;
             for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-                if (solverC->isInteger(iColumn)) {
+                if (isHeuristicInteger(solverC,iColumn)) {
                     if (lower[iColumn] > lowerC[iColumn] &&
                             upper[iColumn] < upperC[iColumn]) {
                         good = false;
@@ -1508,7 +1508,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                 double rhs = -1.0;
                 int n = 0;
                 for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-                    if (solverC->isInteger(iColumn)) {
+                    if (isHeuristicInteger(solverC,iColumn)) {
                         if (lower[iColumn] == upperC[iColumn]) {
                             rhs += lower[iColumn];
                             cut[n] = 1.0;
@@ -2074,7 +2074,6 @@ CbcRounding::solution(double & solutionValue,
     }
 
     double penalty = 0.0;
-    const char * integerType = model_->integerType();
     // see if feasible - just using singletons
     for (i = 0; i < numberRows; i++) {
         double value = rowActivity[i];
@@ -2109,7 +2108,7 @@ CbcRounding::solution(double & solutionValue,
                             // possible - check if integer
                             double distance = absInfeasibility / absElement;
                             double thisCost = -direction * objective[iColumn] * distance;
-                            if (integerType[iColumn]) {
+                            if (isHeuristicInteger(solver,iColumn)) {
                                 distance = ceil(distance - useTolerance);
                                 if (currentValue - distance >= lowerValue - useTolerance) {
                                     if (absInfeasibility - distance*absElement < -gap - useTolerance)
@@ -2134,7 +2133,7 @@ CbcRounding::solution(double & solutionValue,
                             // possible - check if integer
                             double distance = absInfeasibility / absElement;
                             double thisCost = direction * objective[iColumn] * distance;
-                            if (integerType[iColumn]) {
+                            if (isHeuristicInteger(solver,iColumn)) {
                                 distance = ceil(distance - 1.0e-7);
                                 assert (currentValue - distance <= upperValue + useTolerance);
                                 if (absInfeasibility - distance*absElement < -gap - useTolerance)
@@ -2170,7 +2169,7 @@ CbcRounding::solution(double & solutionValue,
         double penaltyChange = 0.0;
         int iColumn;
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-            if (integerType[iColumn])
+            if (isHeuristicInteger(solver,iColumn))
                 continue;
             double currentValue = newSolution[iColumn];
             double lowerValue = lower[iColumn];
@@ -2319,7 +2318,7 @@ CbcRounding::solution(double & solutionValue,
             lastChange = 0;
 	    numberPasses++;
             for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                bool isInteger = (integerType[iColumn] != 0);
+                bool isInteger = isHeuristicInteger(solver,iColumn);
                 double currentValue = newSolution[iColumn];
                 double lowerValue = lower[iColumn];
                 double upperValue = upper[iColumn];
@@ -2651,7 +2650,7 @@ CbcRounding::solution(double & solutionValue,
         int * candidate = new int [numberColumns];
         int nCandidate = 0;
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-            bool isInteger = (integerType[iColumn] != 0);
+	    bool isInteger = isHeuristicInteger(solver,iColumn);
             if (isInteger) {
                 double currentValue = newSolution[iColumn];
                 if (fabs(currentValue - floor(currentValue + 0.5)) > 1.0e-8)

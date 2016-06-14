@@ -221,7 +221,11 @@ public:
   inline bool isSparse() const
   { return GSparse_ != NULL;}
   inline int errorStatus() const
+#ifndef NTY_TRACES
   { return stats_->errstatus;}
+#else
+  { return 0;}
+#endif
   /**
    * Methods to classify orbits.  Not horribly efficient, but gets the job done
    */

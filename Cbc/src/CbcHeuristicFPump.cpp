@@ -215,7 +215,7 @@ CbcHeuristicFPump::resetModel(CbcModel * )
 // Sets value of solution
 // Returns 1 if solution, 0 if not
 int
-CbcHeuristicFPump::solution(double & solutionValue,
+CbcHeuristicFPump::solutionInternal(double & solutionValue,
                             double * betterSolution)
 {
     startTime_ = CoinCpuTime();
@@ -285,6 +285,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
     // loop round doing repeated pumps
     double cutoff;
     model_->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
+    double realCutoff=cutoff;
+    bool secondMajorPass=false;
     double direction = model_->solver()->getObjSense();
     cutoff *= direction;
     int numberBandBsolutions = 0;
@@ -335,6 +337,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
             dynamic_cast<const  OsiSimpleInteger *> (object);
         assert(integerObject || integerObject2);
 #endif
+#ifdef COIN_HAS_CLP
+	if (!isHeuristicInteger(model_->solver(),iColumn))
+	  continue;
+#endif
 	double value = initialSolution[iColumn];
 	double nearest = floor(value + 0.5);
 	sumUnsatisfied += fabs(value - nearest);
@@ -369,6 +375,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
         j = 0;
         for (i = 0; i < numberIntegers; i++) {
             int iColumn = integerVariableOrig[i];
+#ifdef COIN_HAS_CLP
+	    if (!isHeuristicInteger(model_->solver(),iColumn))
+	      continue;
+#endif
             if (upper[iColumn] - lower[iColumn] < 1.000001)
                 integerVariable[j++] = iColumn;
         }
@@ -475,8 +485,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
     OsiSolverInterface * solver = NULL;
     double artificialFactor = 0.00001;
     // also try rounding!
-    double * roundingSolution = new double[numberColumns];
-    double roundingObjective = solutionValue;
+    double * roundingSolution = new double[2*numberColumns];
+    double roundingObjective = realCutoff;
     CbcRounding roundingHeuristic(*model_);
     int dualPass = 0;
     int secondPassOpt = 0;
@@ -806,6 +816,41 @@ CbcHeuristicFPump::solution(double & solutionValue,
                 // always use same seed
                 randomNumberGenerator_.setSeed(987654321);
             }
+#ifdef COIN_HAS_CLP
+	    {
+	      OsiClpSolverInterface * clpSolver
+		= dynamic_cast<OsiClpSolverInterface *> (clonedSolver);
+	      //printf("real cutoff %g fake %g - second pass %c\n",realCutoff,cutoff,
+	      //     secondMajorPass ? 'Y' : 'N');
+	      if (clpSolver && (((accumulate_&16) != 0) || 
+				((accumulate_&8)!=0 && secondMajorPass))) {
+		// try rounding heuristic
+		OsiSolverInterface * saveSolver = model_->swapSolver(clonedSolver);
+		ClpSimplex * simplex = clpSolver->getModelPtr();
+		double * solverSolution = simplex->primalColumnSolution();
+		memcpy(solverSolution,solution,numberColumns*sizeof(double));
+		// Compute using dot product
+		double newSolutionValue = -saveOffset;
+		for (  i = 0 ; i < numberColumns ; i++ )
+		  newSolutionValue += saveObjective[i] * solution[i];
+		simplex->setObjectiveValue(newSolutionValue);
+		clpSolver->setObjective(saveObjective);
+		CbcRounding heuristic1(*model_);
+		heuristic1.setHeuristicName("rounding in feaspump!");
+		heuristic1.setWhen(1);
+		newSolutionValue=realCutoff;
+		int ifSolR = heuristic1.solution(newSolutionValue,
+						 roundingSolution+numberColumns);
+		model_->swapSolver(saveSolver);
+		if (ifSolR&&newSolutionValue<roundingObjective) {
+		  roundingObjective=newSolutionValue;
+		  //printf("rounding obj of %g?\n", roundingObjective);
+		  memcpy(roundingSolution,roundingSolution+numberColumns,
+			 numberColumns*sizeof(double));
+		}
+	      }
+	    }
+#endif
             returnCode = rounds(solver, newSolution,/*saveObjective,*/
                                 numberIntegers, integerVariable,
                                 /*pumpPrint,*/numberPasses,
@@ -816,6 +861,20 @@ CbcHeuristicFPump::solution(double & solutionValue,
                     randomNumberGenerator_.randomDouble();
             }
             numberPasses++;
+	    if (roundingObjective<realCutoff) {
+	      if (returnCode) {
+                newSolutionValue = -saveOffset;
+                for (  i = 0 ; i < numberColumns ; i++ )
+                    newSolutionValue += saveObjective[i] * newSolution[i];
+	      } else {
+		newSolutionValue = COIN_DBL_MAX;
+	      }
+	      if (roundingObjective<newSolutionValue&&false) {
+		returnCode=1;
+		memcpy(newSolution,roundingSolution,
+		       numberColumns*sizeof(double));
+	      }
+	    }
             if (returnCode) {
                 // SOLUTION IS INTEGER
                 // Put back correct objective
@@ -840,6 +899,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
                         int numberLeft = 0;
                         for (i = 0; i < numberIntegersOrig; i++) {
                             int iColumn = integerVariableOrig[i];
+#ifdef COIN_HAS_CLP
+			    if (!isHeuristicInteger(solver,iColumn))
+			      continue;
+#endif
                             double value = floor(newSolution[iColumn] + 0.5);
                             if (solver->isBinary(iColumn)) {
                                 solver->setColLower(iColumn, value);
@@ -931,7 +994,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 				  rowActivity[iRow] += value * element[j];
 				}
 				newSolutionValue += objective[iColumn] * newSolution[iColumn];
-				if (solver->isInteger(iColumn)) {
+				if (isHeuristicInteger(solver,iColumn)) {
 				  double intValue = floor(value+0.5);
 				  if (fabs(value-intValue)>largestAway) {
 				    largestAway=fabs(value-intValue);
@@ -992,6 +1055,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                                 if (saveOldSolution && saveObjectiveValue < model_->getMinimizationObjValue())
                                     model_->setBestSolution(saveOldSolution, numberColumns, saveObjectiveValue);
                                 delete [] saveOldSolution;
+				realCutoff = model_->getMinimizationObjValue();
                             }
                             if (action == 0 || model_->maximumSecondsReached()) {
                                 exitAll = true; // exit
@@ -1155,7 +1219,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                     if (!solver->isBinary(iColumn) && !doGeneral)
                         continue;
                     // deal with fixed variables (i.e., upper=lower)
-                    if (fabs(lower[iColumn] - upper[iColumn]) < primalTolerance || !solver->isInteger(iColumn)) {
+                    if (fabs(lower[iColumn] - upper[iColumn]) < primalTolerance || !isHeuristicInteger(solver,iColumn)) {
                         //if (lower[iColumn] > 1. - primalTolerance) solver->setObjCoeff(iColumn,-costValue);
                         //else                                       solver->setObjCoeff(iColumn,costValue);
                         continue;
@@ -1317,6 +1381,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
                                 int nChanged = 0;
                                 for (i = 0; i < numberIntegersOrig; i++) {
                                     int iColumn = integerVariableOrig[i];
+#ifdef COIN_HAS_CLP
+				    if (!isHeuristicInteger(solver,iColumn))
+				      continue;
+#endif
 #ifdef RAND_RAND
                                     if (nChanged > numberChanged)
                                         break;
@@ -1340,6 +1408,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
                                 if (!nChanged) {
                                     for (i = 0; i < numberIntegersOrig; i++) {
                                         int iColumn = integerVariableOrig[i];
+#ifdef COIN_HAS_CLP
+					if (!isHeuristicInteger(solver,iColumn))
+					  continue;
+#endif
                                         if (objective[iColumn] > 0.0) {
                                             if (basis->getStructStatus(iColumn) ==
                                                     CoinWarmStartBasis::basic) {
@@ -1394,7 +1466,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                     {
                         const double * newSolution = solver->getColSolution();
                         for (int iColumn = 0 ; iColumn < numberColumns ; iColumn++ ) {
-                            if (solver->isInteger(iColumn)) {
+                            if (isHeuristicInteger(solver,iColumn)) {
                                 double value = newSolution[iColumn];
                                 double nearest = floor(value + 0.5);
                                 newSumInfeas += fabs(value - nearest);
@@ -1458,7 +1530,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                             double contrib = 0.0;
                             for (  i = 0 ; i < numberColumns ; i++ ) {
                                 double value = newSolution[i];
-                                if (solver->isInteger(i)) {
+                                if (isHeuristicInteger(solver,i)) {
                                     double nearest = floor(value + 0.5);
                                     if (fabs(value - nearest) > 1.0e-6) {
                                         //printf("Column %d value %g\n",i,value);
@@ -1671,7 +1743,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                     {
                         const double * newSolution = solver->getColSolution();
                         for (  i = 0 ; i < numberColumns ; i++ ) {
-                            if (solver->isInteger(i)) {
+                            if (isHeuristicInteger(solver,i)) {
                                 double value = newSolution[i];
                                 double nearest = floor(value + 0.5);
                                 newSumInfeas += fabs(value - nearest);
@@ -1739,6 +1811,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
                     const double * objective = solver->getObjCoefficients();
                     for (i = 0; i < numberIntegersOrig; i++) {
                         int iColumn = integerVariableOrig[i];
+#ifdef COIN_HAS_CLP
+			if (!isHeuristicInteger(solver,iColumn))
+			  continue;
+#endif
                         if (objective[iColumn] > 0.0)
                             closestSolution[i] = 0;
                         else
@@ -1856,6 +1932,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
             }
             solutionValue = roundingObjective;
             newSolutionValue = solutionValue;
+	    realCutoff=solutionValue-1.0e-5;
             memcpy(betterSolution, roundingSolution, numberColumns*sizeof(double));
             solutionFound = true;
 	    numberSolutions++;
@@ -1902,6 +1979,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
                 int nFixC2 = 0;
                 for (i = 0; i < numberIntegersOrig; i++) {
                     int iColumn = integerVariableOrig[i];
+#ifdef COIN_HAS_CLP
+		    if (!isHeuristicInteger(newSolver,iColumn))
+		      continue;
+#endif
                     //const OsiObject * object = model_->object(i);
                     //double originalLower;
                     //double originalUpper;
@@ -1933,7 +2014,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                 }
                 if (fixContinuous) {
                     for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-                        if (!newSolver->isInteger(iColumn) && usedColumn[iColumn] <= allowedPass) {
+                        if (!isHeuristicInteger(newSolver,iColumn) && usedColumn[iColumn] <= allowedPass) {
                             double value = lastSolution[iColumn];
                             if (value < colLower[iColumn] + 1.0e-8) {
                                 newSolver->setColUpper(iColumn, colLower[iColumn]);
@@ -2041,7 +2122,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                     double newSumInfeas = 0.0;
                     const double * obj = newSolver->getObjCoefficients();
                     for (int i = 0 ; i < numberColumns ; i++ ) {
-                        if (newSolver->isInteger(i)) {
+                        if (isHeuristicInteger(newSolver,i)) {
                             double value = newSolution[i];
                             double nearest = floor(value + 0.5);
                             newSumInfeas += fabs(value - nearest);
@@ -2066,7 +2147,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                         const double * upper = model_->solver()->getColUpper();
                         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
                             double value = newSolution[iColumn];
-                            if (newSolver->isInteger(iColumn)) {
+                            if (isHeuristicInteger(newSolver,iColumn)) {
                                 value = floor(newSolution[iColumn] + 0.5);
                                 newSolver->setColLower(iColumn, value);
                                 newSolver->setColUpper(iColumn, value);
@@ -2149,7 +2230,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                                     int numberColumns = newSolver->getNumCols();
                                     const double * solution = newSolver->getColSolution();
                                     for (int  i = 0 ; i < numberColumns ; i++ ) {
-                                        if (newSolver->isInteger(i)) {
+                                        if (isHeuristicInteger(newSolver,i)) {
                                             double value = solution[i];
                                             double nearest = floor(value + 0.5);
                                             newSumInfeas += fabs(value - nearest);
@@ -2191,7 +2272,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                         const double * lower = model_->solver()->getColLower();
                         const double * upper = model_->solver()->getColUpper();
                         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-                            if (newSolver->isInteger(iColumn)) {
+                            if (isHeuristicInteger(newSolver,iColumn)) {
                                 double value = floor(newSolution[iColumn] + 0.5);
                                 newSolver->setColLower(iColumn, value);
                                 newSolver->setColUpper(iColumn, value);
@@ -2252,6 +2333,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
         }
         if (solutionFound) finalReturnCode = 1;
         cutoff = CoinMin(cutoff, solutionValue - model_->getCutoffIncrement());
+	realCutoff = cutoff;
         if (numberTries >= maximumRetries_ || !solutionFound || exitAll || cutoff < continuousObjectiveValue + 1.0e-7) {
             break;
         } else {
@@ -2271,6 +2353,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
             if (cutoff < continuousObjectiveValue)
                 break;
             sprintf(pumpPrint, "Round again with cutoff of %g", cutoff);
+	    secondMajorPass=true;
             model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
             << pumpPrint
             << CoinMessageEol;
@@ -2300,6 +2383,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
         double rhs = 0.0;
         for (i = 0; i < numberIntegersOrig; i++) {
             int iColumn = integerVariableOrig[i];
+#ifdef COIN_HAS_CLP
+	    if (!isHeuristicInteger(newSolver,iColumn))
+	      continue;
+#endif
             int direction = closestSolution[i];
             closestSolution[i] = iColumn;
             if (direction == 0) {
@@ -2382,6 +2469,147 @@ CbcHeuristicFPump::solution(double & solutionValue,
 }
 
 /**************************END MAIN PROCEDURE ***********************************/
+/* If general integers then adds variables to turn into binaries round
+   solution
+*/
+int 
+CbcHeuristicFPump::solution(double & objectiveValue, double * newSolution)
+{
+  double * newSolution2=NULL;
+  double objective2=COIN_DBL_MAX;
+  int returnCode2=0;
+  int oddGeneral = (accumulate_&(32|64|128))>>5;
+  if (oddGeneral) {
+    int maxAround=2;
+    bool fixSatisfied=false;
+    // clone solver and modify
+    OsiSolverInterface * solver = cloneBut(2); // wasmodel_->solver()->clone();
+    double cutoff;
+    model_->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
+    int numberColumns = model_->getNumCols();
+    int numberIntegers = model_->numberIntegers();
+    const int * integerVariableOrig = model_->integerVariable();
+    int general = 0;
+    int nAdd=0;
+    const double * lower = solver->getColLower();
+    const double * upper = solver->getColUpper();
+    const double * initialSolution = solver->getColSolution();
+    // we may be being clever so make sure solver lines up wuth model
+    for (int i = 0; i < numberColumns; i++) 
+      solver->setContinuous(i);
+    for (int i = 0; i < numberIntegers; i++) {
+      int iColumn = integerVariableOrig[i];
+#ifdef COIN_HAS_CLP
+      if (!isHeuristicInteger(solver,iColumn))
+	continue;
+#endif
+      double value = initialSolution[iColumn];
+      double nearest = floor(value + 0.5);
+      if (upper[iColumn] - lower[iColumn] > 1.000001) {
+	if (fabs(value-nearest)<1.0e-6&&fixSatisfied) {
+	  solver->setColLower(iColumn,nearest);
+	  solver->setColUpper(iColumn,nearest);
+	} else {
+	  general++;
+	  int up=static_cast<int>(upper[iColumn]);
+	  int lo=static_cast<int>(lower[iColumn]);
+	  int near=static_cast<int>(nearest);
+	  up = CoinMin(up,near+maxAround);
+	  lo = CoinMax(lo,near-maxAround);
+	  solver->setColLower(iColumn,lo);
+	  solver->setColUpper(iColumn,up);
+	  int n=up-lo;
+	  // 1 - 1, 2,3 - 2, 4567 - 3
+	  while (n) {
+	    nAdd++;
+	    n = n>>1;
+	  }
+	}
+      } else {
+	solver->setInteger(iColumn);
+      }
+    }
+    if (!general) {
+      delete solver;
+    }
+    if (general) {
+      CbcModel * saveModel = model_;
+      int * addStart = new int[nAdd+1];
+      memset(addStart,0,(nAdd+1)*sizeof(int));
+      int * addIndex = new int[general+nAdd];
+      double * addElement = new double[general+nAdd];
+      double * addLower = new double[nAdd];
+      double * addUpper = new double[nAdd];
+      for (int i=0;i<nAdd;i++) {
+	addLower[i]=0.0;
+	addUpper[i]=1.0;
+      }
+      solver->addCols(nAdd, addStart, NULL, NULL, addLower, addUpper, NULL);
+      lower = solver->getColLower();
+      upper = solver->getColUpper();
+      // now rows
+      nAdd = 0;
+      int nEl = 0;
+      int nAddRow = 0;
+      for (int i = 0; i < numberIntegers; i++) {
+	int iColumn = integerVariableOrig[i];
+#ifdef COIN_HAS_CLP
+	if (!isHeuristicInteger(solver,iColumn))
+	  continue;
+#endif
+	if (upper[iColumn] - lower[iColumn] > 1.000001) {
+	  int up=static_cast<int>(upper[iColumn]);
+	  int lo=static_cast<int>(lower[iColumn]);
+	  addLower[nAddRow] = lo;
+	  addUpper[nAddRow] = lo;
+	  addIndex[nEl] = iColumn;
+	  addElement[nEl++] = 1.0;
+	  int n=up-lo;
+	  // 1 - 1, 2,3 - 2, 4567 - 3
+	  int el=1;
+	  while (n) {
+	    addIndex[nEl] = numberColumns+nAdd;
+	    addElement[nEl++] = -el;
+	    nAdd++;
+	    n = n>>1;
+	    el = el<<1;
+	  }
+	  nAddRow++;
+	  addStart[nAddRow]=nEl;
+	}
+      }
+      for (int i=0;i<nAdd;i++)
+	solver->setInteger(i+numberColumns);
+      solver->addRows(nAddRow, addStart, addIndex, addElement, addLower, addUpper);
+      delete [] addStart;
+      delete [] addIndex;
+      delete [] addElement;
+      delete [] addLower;
+      delete [] addUpper;
+      solver->resolve();
+      solver->writeMps("test");
+      // new CbcModel
+      model_=new CbcModel(*solver);
+      model_->findIntegers(true);
+      // set cutoff
+      solver->setDblParam(OsiDualObjectiveLimit, cutoff);
+      model_->setCutoff(cutoff);
+      newSolution2 = new double [numberColumns+nAdd]; 
+      objective2=objectiveValue;
+      returnCode2=solutionInternal(objective2,newSolution2);
+      delete solver;
+      delete model_;
+      model_=saveModel;
+    }
+  }
+  int returnCode=solutionInternal(objectiveValue,newSolution);
+  if (returnCode2&&false) {
+    int numberColumns=model_->getNumCols();
+    memcpy(newSolution,newSolution2,numberColumns*sizeof(double));
+  }
+  delete [] newSolution2;
+  return returnCode;
+}
 
 // update model
 void CbcHeuristicFPump::setModel(CbcModel * model)
@@ -2432,7 +2660,7 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver, double * solution,
                 int jColumn = -1;
                 for (CoinBigIndex k = rowStart[i]; k < rowStart[i] + rowLength[i]; k++) {
                     int iColumn = column[k];
-                    if (elementByRow[k] != 1.0 || !solver->isInteger(iColumn)) {
+                    if (elementByRow[k] != 1.0 || !isHeuristicInteger(solver,iColumn)) {
                         cover = false;
                         break;
                     } else {
@@ -2478,7 +2706,7 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver, double * solution,
             bool cover = true;
             for (CoinBigIndex k = rowStart[i]; k < rowStart[i] + rowLength[i]; k++) {
                 int iColumn = column[k];
-                if (elementByRow[k] != 1.0 || !solver->isInteger(iColumn)) {
+                if (elementByRow[k] != 1.0 || !isHeuristicInteger(solver,iColumn)) {
                     cover = false;
                     break;
                 }
@@ -2699,7 +2927,7 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver, double * solution,
             double oldSum = sumInfeasibility;
             // First improve by moving continuous ones
             for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-                if (!solver->isInteger(iColumn)) {
+                if (!isHeuristicInteger(solver,iColumn)) {
                     double solValue = solution[iColumn];
                     double thetaUp = columnUpper[iColumn] - solValue;
                     double improvementUp = 0.0;

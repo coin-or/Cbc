@@ -8,7 +8,6 @@
 #  pragma warning(disable:4786)
 #endif
 
-#include "CbcHeuristicDive.hpp"
 #include "CbcStrategy.hpp"
 #include "CbcModel.hpp"
 #include "CbcSubProblem.hpp"
@@ -19,6 +18,7 @@
 #ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
+#include "CbcHeuristicDive.hpp"
 
 //#define DIVE_FIX_BINARY_VARIABLES
 //#define DIVE_DEBUG
@@ -388,6 +388,8 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
     for (int i = 0; i < numberIntegers; i++) {
         random[i] = randomNumberGenerator_.randomDouble() + 0.3;
         int iColumn = integerVariable[i];
+	if (!isHeuristicInteger(solver,iColumn))
+	  continue;
 	back[iColumn]=i;
         double value = newSolution[iColumn];
 	// clean
@@ -432,6 +434,8 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
             double delta = 0.0;
             for (int i = 0; i < numberIntegers; i++) {
                 int iColumn = integerVariable[i];
+		if (!isHeuristicInteger(solver,iColumn))
+		  continue;
                 double value = newSolution[iColumn];
                 if (fabs(floor(value + 0.5) - value) > integerTolerance) {
                     assert(downLocks_[i] == 0 || upLocks_[i] == 0);
@@ -455,6 +459,8 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
 		  // Round all the fractional variables
 		  for (int i = 0; i < numberIntegers; i++) {
                     int iColumn = integerVariable[i];
+		    if (!isHeuristicInteger(solver,iColumn))
+		      continue;
                     double value = newSolution[iColumn];
                     if (fabs(floor(value + 0.5) - value) > integerTolerance) {
 		      assert(downLocks_[i] == 0 || upLocks_[i] == 0);
@@ -475,6 +481,8 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
 		  int i;
 		  for (i = 0; i < numberIntegers; i++) {
 		    int iColumn = integerVariable[i];
+		    if (!isHeuristicInteger(solver,iColumn))
+		      continue;
 		    double value = newSolution[bestColumn];
 		    if (fabs(floor(value + 0.5) - value) > integerTolerance) {
 		      if (iColumn==bestColumn) {
@@ -619,6 +627,8 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
             int numberFixed = 0;
             for (int i = 0; i < numberIntegers; i++) {
                 int iColumn = integerVariable[i];
+		if (!isHeuristicInteger(solver,iColumn))
+		  continue;
                 if (upper[iColumn] > lower[iColumn]) {
                     numberFree++;
 		    if (priority_) {
@@ -658,6 +668,8 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
         } else {
             for (int i = 0; i < numberIntegers; i++) {
                 int iColumn = integerVariable[i];
+		if (!isHeuristicInteger(solver,iColumn))
+		  continue;
                 if (upper[iColumn] > lower[iColumn]) {
 		    if (priority_) {
 		      fixPriority = CoinMin(fixPriority,static_cast<int>(priority_[i].priority));
@@ -786,6 +798,8 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
 	    int numberFixed=0;
 	    for (int i = 0; i < numberIntegers; i++) {
 	      int iColumn = integerVariable[i];
+	      if (!isHeuristicInteger(solver,iColumn))
+		continue;
 	      double value = newSolution[iColumn];
 	      double away = fabs(floor(value + 0.5) - value);
 	      if (away > integerTolerance) {
@@ -930,6 +944,8 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
 	double sumFractionalVariables=0.0;
         for (int i = 0; i < numberIntegers; i++) {
             int iColumn = integerVariable[i];
+	    if (!isHeuristicInteger(solver,iColumn))
+	      continue;
             double value = newSolution[iColumn];
 	    double away = fabs(floor(value + 0.5) - value);
             if (away > integerTolerance) {
@@ -1065,6 +1081,8 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
       }
       for (int i = 0; i < numberIntegers; i++) {
 	int iColumn = integerVariable[i];
+	if (!isHeuristicInteger(solver,iColumn))
+	  continue;
 	double value = newSolution[iColumn];
 	if (fabs(floor(value + 0.5) - value) > integerTolerance) {
 	  feasible = false;
@@ -1278,11 +1296,14 @@ CbcHeuristicDive::validate()
     const double * element = matrix_.getElements();
     const int * row = matrix_.getIndices();
     const CoinBigIndex * columnStart = matrix_.getVectorStarts();
+    OsiSolverInterface * solver = model_->solver();
     const int * columnLength = matrix_.getVectorLengths();
-    const double * rowLower = model_->solver()->getRowLower();
-    const double * rowUpper = model_->solver()->getRowUpper();
+    const double * rowLower = solver->getRowLower();
+    const double * rowUpper = solver->getRowUpper();
     for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
+	if (!isHeuristicInteger(solver,iColumn))
+	  continue;
         int down = 0;
         int up = 0;
         if (columnLength[iColumn] > 65535) {
@@ -1328,18 +1349,19 @@ CbcHeuristicDive::selectBinaryVariables()
 
     const int numberRows = matrixByRow_.getNumRows();
     const int numberCols = matrixByRow_.getNumCols();
-
-    const double * lower = model_->solver()->getColLower();
-    const double * upper = model_->solver()->getColUpper();
-    const double * rowLower = model_->solver()->getRowLower();
-    const double * rowUpper = model_->solver()->getRowUpper();
+    
+    OsiSolverInterface * solver = model_->solver();
+    const double * lower = solver->getColLower();
+    const double * upper = solver->getColUpper();
+    const double * rowLower = solver->getRowLower();
+    const double * rowUpper = solver->getRowUpper();
 
     //  const char * integerType = model_->integerType();
 
 
     //  const int numberIntegers = model_->numberIntegers();
     //  const int * integerVariable = model_->integerVariable();
-    const double * objective = model_->solver()->getObjCoefficients();
+    const double * objective = solver->getObjCoefficients();
 
     // vector to store the row number of variable bound rows
     int* rowIndexes = new int [numberCols];
@@ -1352,13 +1374,13 @@ CbcHeuristicDive::selectBinaryVariables()
         int nNegativeOther = 0;
         for (int k = rowStart[i]; k < rowStart[i] + rowLength[i]; k++) {
             int iColumn = column[k];
-            if (model_->solver()->isInteger(iColumn) &&
+            if (isHeuristicInteger(solver,iColumn) &&
                     lower[iColumn] == 0.0 && upper[iColumn] == 1.0 &&
                     objective[iColumn] == 0.0 &&
                     elementByRow[k] > 0.0 &&
                     positiveBinary < 0)
                 positiveBinary = iColumn;
-            else if (model_->solver()->isInteger(iColumn) &&
+            else if (isHeuristicInteger(solver,iColumn) &&
                      lower[iColumn] == 0.0 && upper[iColumn] == 1.0 &&
                      objective[iColumn] == 0.0 &&
                      elementByRow[k] < 0.0 &&
@@ -1463,6 +1485,8 @@ int CbcHeuristicDive::reducedCostFix (OsiSolverInterface* solver)
 # endif
     for (int i = 0 ; i < numberIntegers ; i++) {
         int iColumn = integerVariable[i] ;
+	if (!isHeuristicInteger(solver,iColumn))
+	  continue;
         double djValue = direction * reducedCost[iColumn] ;
         if (upper[iColumn] - lower[iColumn] > integerTolerance) {
             if (solution[iColumn] < lower[iColumn] + integerTolerance && djValue > gap) {
@@ -1546,6 +1570,8 @@ CbcHeuristicDive::fixOtherVariables(OsiSolverInterface * solver,
     int numberFixedAlready = 0;
     for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
+	if (!isHeuristicInteger(solver,iColumn))
+	  continue;
         if (upper[iColumn] > lower[iColumn]) {
             numberFree++;
             double value = solution[iColumn];

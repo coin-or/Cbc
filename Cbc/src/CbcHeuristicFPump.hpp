@@ -64,7 +64,11 @@ public:
     */
     virtual int solution(double & objectiveValue,
                          double * newSolution);
-
+    /** If general integers then adds variables to turn into binaries round
+      solution
+    */
+    int solutionGeneral(double & objectiveValue, double * newSolution,
+			int maxAround=1,bool fixSatisfied=false);
     /// Set maximum Time (default off) - also sets starttime to current
     void setMaximumTime(double value);
     /// Get maximum Time (default 0.0 == time limit off)
@@ -248,6 +252,8 @@ protected:
          If we do not accumulate solutions then no mini branch and bounds will be done
          reuse - refers to initial solve after adding in new "cut"
          If we add 8 then can run after initial cuts (if no solution)
+	 16 - extra rounding
+	 32,64,128 - create binaries for general 
     */
     int accumulate_;
     /**  Set whether to fix variables on known solution
@@ -270,6 +276,8 @@ private:
                /*char * pumpPrint,*/int passNumber,
                /*bool roundExpensive=false,*/
                double downValue = 0.5, int *flip = 0);
+    /// Does real work
+  int solutionInternal(double & objectiveValue, double * newSolution);
     /* note for eagle eyed readers.
        when_ can now be exotic -
        <=10 normal

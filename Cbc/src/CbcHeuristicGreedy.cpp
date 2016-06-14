@@ -171,7 +171,7 @@ CbcHeuristicGreedyCover::solution(double & solutionValue,
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
         CoinBigIndex j;
         double value = solution[iColumn];
-        if (solver->isInteger(iColumn)) {
+        if (isHeuristicInteger(solver,iColumn)) {
             // Round down integer
             if (fabs(floor(value + 0.5) - value) < integerTolerance) {
                 value = floor(CoinMax(value + 1.0e-3, columnLower[iColumn]));
@@ -200,7 +200,7 @@ CbcHeuristicGreedyCover::solution(double & solutionValue,
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
             CoinBigIndex j;
             double value = solution[iColumn];
-            if (solver->isInteger(iColumn)) {
+            if (isHeuristicInteger(solver,iColumn)) {
                 // but round up if no activity
                 if (roundup && value >= 0.499999 && !newSolution[iColumn]) {
                     bool choose = true;
@@ -245,7 +245,7 @@ CbcHeuristicGreedyCover::solution(double & solutionValue,
             CoinBigIndex j;
             double value = newSolution[iColumn];
             double cost = direction * objective[iColumn];
-            if (solver->isInteger(iColumn)) {
+            if (isHeuristicInteger(solver,iColumn)) {
                 // use current upper or original upper
                 if (value + 0.99 < originalUpper[iColumn]) {
                     double sum = 0.0;
@@ -592,7 +592,7 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
         CoinBigIndex j;
         double value = solution[iColumn];
-        if (solver->isInteger(iColumn)) {
+        if (isHeuristicInteger(solver,iColumn)) {
             // Round down integer
             if (fabs(floor(value + 0.5) - value) < integerTolerance) {
                 value = floor(CoinMax(value + 1.0e-3, columnLower[iColumn]));
@@ -622,7 +622,7 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
             CoinBigIndex j;
             double value = solution[iColumn];
-            if (solver->isInteger(iColumn)) {
+            if (isHeuristicInteger(solver,iColumn)) {
                 // but round up if no activity
                 if (roundup && value >= 0.6 && !newSolution[iColumn]) {
                     bool choose = true;
@@ -668,7 +668,7 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
             CoinBigIndex j;
             double value = newSolution[iColumn];
             double cost = direction * objective[iColumn];
-            if (solver->isInteger(iColumn)) {
+            if (isHeuristicInteger(solver,iColumn)) {
                 // use current upper or original upper
                 if (value + 0.9999 < originalUpper[iColumn]) {
                     double movement = 1.0;
@@ -749,7 +749,7 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
         // fix all nonzero
         OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-            if (newSolver->isInteger(iColumn))
+            if (isHeuristicInteger(newSolver,iColumn))
                 newSolver->setColLower(iColumn, newSolution[iColumn]);
         }
         int returnCode = smallBranchAndBound(newSolver, 200, newSolution, newSolutionValue,
@@ -1035,7 +1035,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
 	CoinBigIndex j;
 	int nSOS=0;
 	int iSOS=-1;
-	if (!solver->isInteger(iColumn))
+	if (!isHeuristicInteger(solver,iColumn))
 	  good = false;
 	for (j = columnStart[iColumn];
 	     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
@@ -1861,7 +1861,7 @@ CbcHeuristicGreedySOS::validate()
                 good = false;
             CoinBigIndex j;
 	    int nSOS=0;
-	    if (!solver->isInteger(iColumn))
+	    if (!isHeuristicInteger(solver,iColumn))
 	      good = false;
             for (j = columnStart[iColumn];
                     j < columnStart[iColumn] + columnLength[iColumn]; j++) {

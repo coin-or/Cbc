@@ -92,6 +92,8 @@ CbcHeuristicDiveGuided::selectVariableToBranch(OsiSolverInterface* solver,
     int bestPriority = COIN_INT_MAX;
     for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
+	if (!isHeuristicInteger(solver,iColumn))
+	  continue;
         double value = newSolution[iColumn];
         double fraction = value - floor(value);
         int round = 0;

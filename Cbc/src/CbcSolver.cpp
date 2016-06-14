@@ -4361,6 +4361,12 @@ int CbcMain1 (int argc, const char *argv[],
 				    highPriority=threshold/10000;
 				    threshold -= 10000*highPriority;
 				  }
+				  // If 1000 set then don't put obj on ne variables
+				  bool moveObjective=true;
+				  if (threshold>1000) {
+				    moveObjective=false;
+				    threshold -= 1000;
+				  }
 				  const double * columnLower = solver2->getColLower();
 				  const double * columnUpper = solver2->getColUpper();
 				  const double * objective = solver2->getObjCoefficients();
@@ -4491,7 +4497,8 @@ int CbcMain1 (int argc, const char *argv[],
 					  double upper=0.0;
 					  for (int kColumn=iLast;kColumn<jColumn;kColumn++) {
 					    iColumn=which[kColumn];
-					    solver2->setObjCoeff(iColumn,0.0);
+					    if (moveObjective)
+					      solver2->setObjCoeff(iColumn,0.0);
 					    double lowerValue=columnLower[iColumn];
 					    double upperValue=columnUpper[iColumn];
 					    double elementValue=-1.0;
@@ -4500,6 +4507,8 @@ int CbcMain1 (int argc, const char *argv[],
 					      upperValue=-columnLower[iColumn];
 					      elementValue=1.0;
 					    }
+					    if (!moveObjective)
+					      objectiveNew[numberDifferentObj]=0.0;
 					    columnAdd[numberElements]=iColumn;
 					    elementAdd[numberElements++]=elementValue;
 					    if (lower!=-COIN_DBL_MAX) {
@@ -4545,10 +4554,18 @@ int CbcMain1 (int argc, const char *argv[],
 						       columnAdd+spaceNeeded, NULL, NULL,
 						       lowerNew, upperNew,objectiveNew);
 				      // add constraints and make integer if all integer in group
+#ifdef COIN_HAS_CLP
+				      OsiClpSolverInterface * clpSolver2
+					= dynamic_cast<OsiClpSolverInterface *> (solver2);
+#endif
 				      for (int iObj=0; iObj < numberDifferentObj; iObj++) {
 					lowerNew[iObj]=0.0;
 					upperNew[iObj]=0.0;
 					solver2->setInteger(numberColumns+iObj);
+#ifdef COIN_HAS_CLP
+					if (clpSolver2)
+					  clpSolver2->setOptionalInteger(numberColumns+iObj);
+#endif
 				      }
 				      solver2->addRows(numberDifferentObj, 
 						       rowAdd,columnAdd,elementAdd,

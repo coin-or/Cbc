@@ -88,6 +88,8 @@ CbcHeuristicDivePseudoCost::selectVariableToBranch(OsiSolverInterface* solver,
     int bestPriority = COIN_INT_MAX;
     for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
+	if (!isHeuristicInteger(solver,iColumn))
+	  continue;
         double rootValue = rootNodeLPSol[iColumn];
         double value = newSolution[iColumn];
         double fraction = value - floor(value);
@@ -217,6 +219,8 @@ CbcHeuristicDivePseudoCost::fixOtherVariables(OsiSolverInterface * solver,
     int numberFixedAlready = 0;
     for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
+	if (!isHeuristicInteger(solver,iColumn))
+	  continue;
         if (upper[iColumn] > lower[iColumn]) {
             numberFree++;
             double value = solution[iColumn];

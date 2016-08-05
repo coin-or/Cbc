@@ -1,7 +1,15 @@
 language: cpp
-
+env:
+  global: 
+    - secure: "KXrNrSs66/J5fb8pRYTUhIjEiXizlZ7p0xVROPla+GWfwyLJIAiswbwYOBpR1kSTn51E+j6j14UWL36GC31TK5WXRJoWoyVXi1RH+zZfvESAwqI6OmhzTWQd84fyXJ+vx5Yg0qEhPGH0HFGaNrpAvsBtr8lmsoLgocEaMikqxQ8="
+    
 matrix:
   include:
+    - os: linux
+      addons:
+        apt:
+          packages:
+            - gfortran
     - os: osx
       osx_image: osx10.11
       env: OSX=10.11
@@ -14,18 +22,23 @@ matrix:
       osx_image: beta-xcode6.2
       env: OSX=10.9
       compiler: clang
-    - os: linux
-      addons:
-        apt:
-          packages:
-          - gfortran
   allow_failures:
     - os: osx
 
 before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$OSX" != "10.9" ]]; then brew update; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$OSX" != "10.9" ]]; then brew install gcc; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then  export PLATFORM=osx$OSX-x86_64-clang`clang -dumpversion`; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$OSX" == "10.10" ]]; then brew update; brew install gcc; export PLATFORM=osx10.10-x86_64-clang`clang -dumpversion`; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PLATFORM=linux-x86_64-gcc`gcc -dumpversion`; fi
   - git clone --branch=stable/0.8 https://github.com/coin-or-tools/BuildTools
   - bash BuildTools/get.dependencies.sh fetch > /dev/null
 
-script: bash BuildTools/get.dependencies.sh build --quiet --test 
+script:
+  - bash BuildTools/get.dependencies.sh build --quiet --test
+
+after_script:
+  - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=trunk; else export VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
+  - export PROJECT=`echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2`
+  - export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz
+  - echo $TGZ_FILE
+  - tar -czvf $TGZ_FILE build/lib/* build/bin/* build/include/* build/share/*
+  - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/generic/$PROJECT/$VERSION/$TGZ_FILE

@@ -3,24 +3,43 @@ platform:
 
 environment:
   global:
-    MSYS2_BASEVER: 20150512
-    MSYS2_ARCH: x86_64
+    BINTRAY_API:
+      secure: a9n4jf90wlFCdaYa6fOmYxsF97ur2dnK8Ys3gn5R90JBzTDq6cD2GlEwmmts75mq
+    BINTRAY_USERNAME: tkralphs
   matrix:
-    - HOST_ARCH_ARG: --host=x86_64-w64-mingw32
+    - ARCH: win32-msvc9
+      HOST_ARCH_ARG: --enable-msvc=MD
       ADD_PATH: /mingw64/bin
-    - HOST_ARCH_ARG: --host=i686-w64-mingw32
+    - ARCH: win32-msvc12
+      HOST_ARCH_ARG: --enable-msvc
+      ADD_PATH: /mingw64/bin
+    - ARCH: win32-msvc14
+      HOST_ARCH_ARG: --enable-msvc
+      ADD_PATH: /mingw64/bin
+    - ARCH: x86_64-w64-mingw32
+      HOST_ARCH_ARG: --host=x86_64-w64-mingw32
+      ADD_PATH: /mingw64/bin
+    - ARCH: i686-w64-mingw32
+      HOST_ARCH_ARG: --host=i686-w64-mingw32
       ADD_PATH: /mingw32/bin
-    - HOST_ARCH_ARG: --enable-msvc
-      ADD_PATH: /mingw64/bin
 
 install:
-  - C:\"Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"
+  - for /f "delims=" %%i in ('C:\msys64\usr\bin\bash -lc "if [ $APPVEYOR_REPO_BRANCH = 'master' ]; then echo 'trunk'; else echo $APPVEYOR_REPO_BRANCH | cut -d "/" -f 2; fi"') do set VERSION=%%i
+  - echo %VERSION%
+  - IF %ARCH%==win32-msvc9 (CALL C:\"Program Files (x86)\Microsoft Visual Studio 9.0\VC\vcvarsall.bat")
+  - IF %ARCH%==win32-msvc12 (CALL C:\"Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat")
+  - IF %ARCH%==win32-msvc14 (CALL C:\"Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat")
   - C:\msys64\usr\bin\bash -lc ""
-  - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S make wget tar patch dos2unix diffutils ca-certificates mingw-w64-i686-ca-certificates mingw-w64-x86_64-ca-certificates mingw-w64-i686-gcc mingw-w64-i686-gcc-fortran mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran"
 
 build_script:
   - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; git clone --branch=stable/0.8 https://github.com/coin-or-tools/BuildTools"
   - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; BuildTools/get.dependencies.sh fetch --no-third-party"
-  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; export PATH=$PATH:$ADD_PATH; BuildTools/get.dependencies.sh build --monolithic --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --test"
+  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; export PATH=$ADD_PATH:$PATH; BuildTools/get.dependencies.sh build --monolithic --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --test"
 
-test: off
+after_build:
+  - 7z a -r %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\bin
+  - 7z a -r %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\include
+  - 7z a -r %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\lib
+  - 7z a -r %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\share
+  - curl -T %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip -utkralphs:%BINTRAY_API% -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/generic/%APPVEYOR_PROJECT_NAME%/%VERSION%/%APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip
+

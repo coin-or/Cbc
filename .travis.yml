@@ -1,7 +1,7 @@
 language: cpp
 env:
   global: 
-    - secure: "KXrNrSs66/J5fb8pRYTUhIjEiXizlZ7p0xVROPla+GWfwyLJIAiswbwYOBpR1kSTn51E+j6j14UWL36GC31TK5WXRJoWoyVXi1RH+zZfvESAwqI6OmhzTWQd84fyXJ+vx5Yg0qEhPGH0HFGaNrpAvsBtr8lmsoLgocEaMikqxQ8="
+    - secure: "WEPiGQTAVh02Fc5Qxvj2VBZoWBgNjjB6w5MdNwg6NtzFKhbhxB1OqfaVE7EJV1Cw9mf1k5Qcg2fSy9bQEJllWNclRpbRGfEcC+Crx3CyjFOebSr6e6T7lAjIspIVSRf9+y6oPEY2zR8yXoX/HAEYyw3IQzJtKCHIbSJrrZsPomc="
     
 matrix:
   include:

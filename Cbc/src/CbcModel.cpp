@@ -8448,7 +8448,16 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             }
             delete [] newSolution ;
         }
-
+	CbcEventHandler *eventHandler = getEventHandler() ;
+	if (eventHandler) {
+	  // Massage cuts??
+	  // save appData
+	  void * saveAppData = getApplicationData();
+	  // point to cuts
+	  setApplicationData(&theseCuts);
+	  eventHandler->event(CbcEventHandler::generatedCuts);
+	  setApplicationData(saveAppData);
+	}
 #ifdef JJF_ZERO
         // switch on to get all cuts printed
         theseCuts.printCuts() ;

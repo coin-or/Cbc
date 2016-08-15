@@ -105,6 +105,8 @@ public:
         heuristicPass,
         /*! When converting constraints to cuts. */
         convertToCuts,
+        /*! Having generated cuts, allows user to think. */
+        generatedCuts,
         /*! End of search. */
         endSearch
     } ;

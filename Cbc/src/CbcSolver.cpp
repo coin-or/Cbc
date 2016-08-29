@@ -9490,6 +9490,10 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 				  int numberColumns = solver->numberColumns();
 				  // column length unless rhs ranging
 				  int number = numberColumns;
+				  if (lpSolver->status()) {
+				    fprintf(fp,"**** Results not valid when LP not optimal\n");
+				    number=0;
+				  }
 				  switch (printMode) {
 				    // bound ranging
 				  case 6:
@@ -9498,7 +9502,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 				    // rhs ranging
 				  case 7:
 				    fprintf(fp,"Rhs ranging");
-				    number = numberRows;
+				    if (!lpSolver->status()) 
+				      number = numberRows;
 				    break;
 				    // objective ranging
 				  case 8:

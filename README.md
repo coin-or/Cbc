@@ -11,6 +11,12 @@ be redistributed freely.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/l2hwifsxwhswng8y/branch/master?svg=true)](https://ci.appveyor.com/project/tkralphs/cbc/branch/master)
 
+## DOWNLOAD
+
+[ ![Download](https://api.bintray.com/packages/coin-or/download/SYMPHONY/images/download.svg) ](https://bintray.com/coin-or/download/Cbc/2.9)
+
+Binaries for most platforms are available for download from [Bintray](https://bintray.com/coin-or/download/Cbc)
+
 ## DOCUMENTATION
 
 For a quick start guide, please see the INSTALL file in this distribution. A

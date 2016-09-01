@@ -5,6 +5,10 @@ distributed under the Eclipse Public License and is freely redistributable.
 All source code and documentation is Copyright IBM and others. This README may
 be redistributed freely.
 
+## DOWNLOAD
+
+Binaries for most platforms are available for download from [Bintray](https://bintray.com/coin-or/download/Cbc)
+
 ## DOCUMENTATION
 
 For a quick start guide, please see the INSTALL file in this distribution. A

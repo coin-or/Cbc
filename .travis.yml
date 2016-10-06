@@ -33,7 +33,7 @@ before_script:
   - bash BuildTools/get.dependencies.sh fetch > /dev/null
 
 script:
-  - bash BuildTools/get.dependencies.sh build --quiet --test
+  - bash BuildTools/get.dependencies.sh build --verbosity=1 --test
 
 after_script:
   - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=trunk; else export VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`; fi

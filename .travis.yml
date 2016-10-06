@@ -29,7 +29,7 @@ before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then  export PLATFORM=osx$OSX-x86_64-clang`clang -dumpversion`; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$OSX" == "10.10" ]]; then brew update; brew install gcc; export PLATFORM=osx10.10-x86_64-clang`clang -dumpversion`; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PLATFORM=linux-x86_64-gcc`gcc -dumpversion`; fi
-  - git clone --branch=stable/0.8 https://github.com/coin-or-tools/BuildTools
+  - git clone https://github.com/coin-or-tools/BuildTools
   - bash BuildTools/get.dependencies.sh fetch > /dev/null
 
 script:

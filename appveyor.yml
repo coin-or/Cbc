@@ -34,7 +34,7 @@ install:
 build_script:
   - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; git clone https://github.com/coin-or-tools/BuildTools"
   - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; BuildTools/get.dependencies.sh fetch --no-third-party"
-  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; export PATH=$ADD_PATH:$PATH; BuildTools/get.dependencies.sh build --monolithic --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --test"
+  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; export PATH=$ADD_PATH:$PATH; BuildTools/get.dependencies.sh build --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --verbosity=2 --test"
 
 after_build:
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\build\bin

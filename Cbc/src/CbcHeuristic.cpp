@@ -34,6 +34,7 @@
 #include "OsiPresolve.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcCutGenerator.hpp"
+#include "CoinMpsIO.hpp"
 //==============================================================================
 
 CbcHeuristicNode::CbcHeuristicNode(const CbcHeuristicNode& rhs)
@@ -743,18 +744,18 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
         }
     }
 #ifdef COIN_HAS_CLP
-    OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
-    if (osiclp && (osiclp->specialOptions()&65536) == 0) {
+    OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+    if (clpSolver && (clpSolver->specialOptions()&65536) == 0) {
         // go faster stripes
-        if (osiclp->getNumRows() < 300 && osiclp->getNumCols() < 500) {
-            osiclp->setupForRepeatedUse(2, 0);
+        if (clpSolver->getNumRows() < 300 && clpSolver->getNumCols() < 500) {
+            clpSolver->setupForRepeatedUse(2, 0);
         } else {
-            osiclp->setupForRepeatedUse(0, 0);
+            clpSolver->setupForRepeatedUse(0, 0);
         }
         // Turn this off if you get problems
         // Used to be automatically set
-        osiclp->setSpecialOptions(osiclp->specialOptions() | (128 + 64 - 128));
-        ClpSimplex * lpSolver = osiclp->getModelPtr();
+        clpSolver->setSpecialOptions(clpSolver->specialOptions() | (128 + 64 - 128));
+        ClpSimplex * lpSolver = clpSolver->getModelPtr();
         lpSolver->setSpecialOptions(lpSolver->specialOptions() | 0x01000000); // say is Cbc (and in branch and bound)
         lpSolver->setSpecialOptions(lpSolver->specialOptions() |
                                     (/*16384+*/4096 + 512 + 128));
@@ -948,6 +949,54 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 	  if (debugger) {
 	    process.setApplicationData(const_cast<double *>(debugger->optimalSolution()));
 	  }
+	}
+#endif
+#ifdef COIN_HAS_CLP
+	OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+	// See if SOS
+	if (clpSolver&&clpSolver->numberSOS()) {
+	  // SOS
+	  int numberSOS = clpSolver->numberSOS();
+	  const CoinSet * setInfo = clpSolver->setInfo();
+	  int *sosStart = new int [numberSOS+1];
+	  char *sosType = new char [numberSOS];
+	  int i;
+	  int nTotal = 0;
+	  sosStart[0] = 0;
+	  for ( i = 0; i < numberSOS; i++) {
+	    int type = setInfo[i].setType();
+	    int n = setInfo[i].numberEntries();
+	    sosType[i] = static_cast<char>(type);
+	    nTotal += n;
+	    sosStart[i+1] = nTotal;
+	  }
+	  int * sosIndices = new int[nTotal];
+	  double * sosReference = new double [nTotal];
+	  for (i = 0; i < numberSOS; i++) {
+	    int n = setInfo[i].numberEntries();
+	    const int * which = setInfo[i].which();
+	    const double * weights = setInfo[i].weights();
+	    int base = sosStart[i];
+	    for (int j = 0; j < n; j++) {
+	      int k = which[j];
+	      sosIndices[j+base] = k;
+	      sosReference[j+base] = weights ? weights[j] : static_cast<double> (j);
+	    }
+	  }
+	  int numberColumns = solver->getNumCols();
+	  char * prohibited = new char[numberColumns];
+	  memset(prohibited, 0, numberColumns);
+	  int n = sosStart[numberSOS];
+	  for (int i = 0; i < n; i++) {
+	    int iColumn = sosIndices[i];
+	    prohibited[iColumn] = 1;
+	  }
+	  delete [] sosIndices;
+	  delete [] sosReference;
+	  delete [] sosStart;
+	  delete [] sosType;
+	  process.passInProhibited(prohibited, numberColumns);
+	  delete [] prohibited;
 	}
 #endif
 	solver2 = process.preProcessNonDefault(*solver, false,
@@ -1438,13 +1487,48 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     }
 #endif
 		    //if (fractionSmall_ < 1000000.0) 
-		      process.postProcess(*model.solver());
+		    process.postProcess(*model.solver());
                     if (solver->isProvenOptimal() && solver->getObjValue()*solver->getObjSense() < cutoff) {
                         // Solution now back in solver
                         int numberColumns = solver->getNumCols();
                         memcpy(newSolution, solver->getColSolution(),
                                numberColumns*sizeof(double));
                         newSolutionValue = model.getMinimizationObjValue();
+#ifdef COIN_HAS_CLP
+		      if (clpSolver) {
+			if (clpSolver && clpSolver->numberSOS()) {
+			  // SOS
+			  int numberSOS = clpSolver->numberSOS();
+			  const CoinSet * setInfo = clpSolver->setInfo();
+			  int i;
+			  for ( i = 0; i < numberSOS; i++) {
+			    int type = setInfo[i].setType();
+			    int n = setInfo[i].numberEntries();
+			    const int * which = setInfo[i].which();
+			    int first = -1;
+			    int last = -1;
+			    for (int j = 0; j < n; j++) {
+			      int iColumn = which[j];
+			      if (fabs(newSolution[iColumn]) > 1.0e-7) {
+				last = j;
+				if (first < 0)
+				  first = j;
+			      }
+			    }
+			    assert (last - first < type);
+			    for (int j = 0; j < n; j++) {
+			      if (j < first || j > last) {
+				int iColumn = which[j];
+				// do I want to fix??
+				solver->setColLower(iColumn, 0.0);
+				solver->setColUpper(iColumn, 0.0);
+				newSolution[iColumn]=0.0;
+			      }
+			    }
+			  }
+			}
+		      }
+#endif
                     } else {
                         // odd - but no good
                         returnCode = 0; // so will be infeasible
@@ -3211,4 +3295,3 @@ CbcHeuristicJustOne::normalizeProbabilities()
     assert (fabs(probabilities_[numberHeuristics_-1] - 1.0) < 1.0e-5);
     probabilities_[numberHeuristics_-1] = 1.000001;
 }
-

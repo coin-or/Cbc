@@ -6573,6 +6573,125 @@ int CbcMain1 (int argc, const char *argv[],
                                     babModel_->addCutGenerator(&storedAmpl, 1, "Stored");
                                 }
 #endif
+#ifdef SOS_AS_CUTS
+#ifdef COIN_HAS_CLP
+				/* SOS as cuts
+				   Could be a bit more sophisticated e.g. only non duplicates
+				   Could do something for SOS 2?
+				*/
+				{
+				  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
+				  if (clpSolver && clpSolver->numberSOS()) {
+				    // SOS
+				    int numberSOS = clpSolver->numberSOS();
+				    const CoinSet * setInfo = clpSolver->setInfo();
+				    CglStored sosCuts;
+                                    const double * lower = clpSolver->getColLower();
+                                    const double * upper = clpSolver->getColUpper();
+				    // Start Cliques
+				    // sizes
+				    int nEls=0;
+				    for (int i = 0; i < numberSOS; i++) 
+				      nEls += setInfo[i].numberEntries();
+				    double * els = new double[nEls+2*numberSOS];
+				    for (int i=0;i<nEls;i++)
+				      els[i]=1.0;
+				    double * lo = els+nEls;
+				    double * up = lo+numberSOS;
+				    // need to get rid of sos
+				    ClpSimplex * fakeSimplex =
+				      new ClpSimplex(*clpSolver->getModelPtr());
+#if 0
+				    int numberRows=fakeSimplex->numberRows();
+				    int * starts =
+				      new int[CoinMax(numberSOS+1,numberRows)];
+				    int * columns = new int[nEls];
+				    for (int i=0;i<numberRows;i++)
+				      starts[i]=i;
+				    fakeSimplex->deleteRows(numberRows,starts);
+#else
+				    int * starts =
+				      new int[numberSOS+1];
+				    int * columns = new int[nEls];
+#endif
+				    int nAdded=0;
+				    starts[0]=0;
+				    nEls=0;
+				    
+				    // just SOS 1 with 0-1
+				    for (int i = 0; i < numberSOS; i++) {
+				      int type = setInfo[i].setType();
+				      if (type==2)
+					continue;
+				      int n = setInfo[i].numberEntries();
+				      const int * which = setInfo[i].which();
+				      for (int j=0;j<n;j++) {
+					int iColumn=which[j];
+					if (lower[iColumn]||upper[iColumn]!=1.0) {
+					  n=-1;
+					  break; // no good
+					}
+				      }
+				      if (n>0) {
+					memcpy(columns+nEls,which,n*sizeof(int));
+					lo[nAdded]=-COIN_DBL_MAX;
+					up[nAdded]=1.0;
+					nAdded++;
+					nEls += n;
+					starts[nAdded]=nEls;
+				      }
+				    }
+				    if (nAdded)
+				      fakeSimplex->addRows(nAdded,
+							   lo,up,
+							   starts,columns,els);
+				    if (nAdded) {
+				      OsiClpSolverInterface fakeSolver(fakeSimplex);
+				      CglFakeClique fakeGen(&fakeSolver,false);
+				      fakeGen.setStarCliqueReport(false);
+				      fakeGen.setRowCliqueReport(false);
+				      fakeGen.setMinViolation(0.05);
+				      babModel_->addCutGenerator(&fakeGen, 1, "SosCuts");
+				      //fakeSimplex->writeMps("bad.mps",0,1);
+				      //sosCuts.setProbingInfo(new
+				      //		     CglTreeProbingInfo(&fakeSolver));
+				    }
+				    delete fakeSimplex;
+				    // End Cliques
+				    // Start Stored
+				    nAdded=0;
+				    for (int i = 0; i < numberSOS; i++) {
+				      int type = setInfo[i].setType();
+				      int n = setInfo[i].numberEntries();
+				      const int * which = setInfo[i].which();
+				      double rhs=0.0;
+				      double previous=0.0;
+				      for (int j=0;j<n;j++) {
+					int iColumn=which[j];
+					if (lower[iColumn]) {
+					  n=-1;
+					  break; // no good
+					}
+					rhs=CoinMax(upper[iColumn]+previous,rhs);
+					if (type==2)
+					  previous=upper[iColumn];
+				      }
+				      if (n>0) {
+					sosCuts.addCut(0.0,rhs,
+						       n, which,els);
+					nAdded++;
+				      }
+				    }
+				    if (nAdded)
+				      babModel_->addCutGenerator(&sosCuts, 1, "SosCuts2");
+				    // End Stored
+				    delete [] els;
+				    delete [] columns;
+				    delete [] starts;
+				  }
+				}
+#endif
+#endif
                                 if (useSolution > 1) {
                                     // use hotstart to try and find solution
                                     CbcHeuristicPartial partial(*babModel_, 10000, useSolution);

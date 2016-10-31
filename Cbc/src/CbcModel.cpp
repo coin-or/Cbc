@@ -12338,6 +12338,56 @@ CbcModel::checkSolution (double cutoff, double *solution,
         int i;
         for (i = 0; i < numberObjects_; i++)
             object_[i]->feasibleRegion(solver_, &usefulInfo);
+	// If SOS then might have been declared infeasible (bad heuristic)
+	{
+	  int numberColumns = solver_->getNumCols();
+	  const double * columnLower = solver_->getColLower();
+	  const double * columnUpper = solver_->getColUpper();
+	  bool looksGood=true;
+	  for (int i = 0; i < numberColumns; i++) {
+	    if (columnUpper[i]<columnLower[i]) 
+	    looksGood=false;
+	  }
+	  if (!looksGood) {
+	    // not good
+	    messageHandler()->message(CBC_FPUMP2, messages())
+	      << "On closer inspection - solution discarded" 
+	      << CoinMessageEol ;
+            objectiveValue = 1.0e50 ;
+            for (int iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
+                solver_->setColLower(iColumn, saveLower[iColumn]) ;
+                solver_->setColUpper(iColumn, saveUpper[iColumn]) ;
+            }
+	    delete [] saveLower;
+	    delete [] saveUpper;
+	    
+	    solver_->setColSolution(saveSolution);
+	    delete [] saveSolution;
+	    solver_->setWarmStart(basis);
+	    delete basis ;
+	    /*
+	      Restore the usual solver.
+	    */
+	    solver_ = saveSolver;
+	    testSolution_ = save;
+#ifdef COIN_HAS_CLP
+	    if (modifiedTolerances) {
+	      // Restore
+	      ClpSimplex * clp = clpContinuousSolver->getModelPtr();
+#ifndef CBC_LEAVE_TOLERANCE_ON_CHECK_SOLUTION
+	      clp->setPrimalTolerance(savePrimalTolerance);
+#endif
+#ifndef CBC_LEAVE_PERTURBATION_ON_CHECK_SOLUTION
+	      clp->setPerturbation(savePerturbation);
+#endif
+#ifndef CBC_LEAVE_SCALING_ON_CHECK_SOLUTION
+	      clp->scaling(saveScaling);
+#endif
+	    }
+#endif
+	    return objectiveValue;
+	  }
+	}
 #if CBC_USEFUL_PRINTING>14
 	{
 	  int nBad=checkAssociated(solver_,solver_->getColSolution(),1);

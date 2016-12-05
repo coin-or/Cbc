@@ -6698,8 +6698,10 @@ int CbcMain1 (int argc, const char *argv[],
                                     partial.setHeuristicName("Partial solution given");
                                     babModel_->addHeuristic(&partial);
                                 }
-                                if (logLevel <= 1)
-                                    babModel_->solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
+                                if (logLevel <= 1 &&
+				    babModel_->solver()->messageHandler()!=
+				    babModel_->messageHandler())
+				  babModel_->solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
 #ifdef CBC_TEMP1
                                 if (osiclp->getModelPtr()->perturbation() == 50)
                                     osiclp->getModelPtr()->setPerturbation(52); // try less
@@ -7217,6 +7219,9 @@ int CbcMain1 (int argc, const char *argv[],
                                 << CoinMessageEol;
 
                                 numberGenerators = babModel_->numberCutGenerators();
+				// can get here twice!
+				delete [] statistics_number_cuts;
+				delete [] statistics_name_generators;
                                 statistics_number_cuts = new int [numberGenerators];;
                                 statistics_number_generators = numberGenerators;
                                 statistics_name_generators = new const char *[numberGenerators];

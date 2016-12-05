@@ -6214,8 +6214,12 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
     synchronizeModel();
     if (cloneHandler && !defaultHandler_) {
         delete handler_;
+	/* We have to clone handlers - otherwise will all be
+	   writing to same buffer.  So if threads user will
+	   have to sychronize */
         CoinMessageHandler * handler = rhs.handler_->clone();
         passInMessageHandler(handler);
+	defaultHandler_=true;
     }
 }
 

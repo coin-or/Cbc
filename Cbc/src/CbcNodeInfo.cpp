@@ -342,6 +342,7 @@ CbcNodeInfo::addCuts (OsiCuts & cuts, int numberToBranchOn,
     if (numberCuts) {
         int i;
         if (!numberCuts_) {
+	    delete [] cuts_;
             cuts_ = new CbcCountRowCut * [numberCuts];
         } else {
             CbcCountRowCut ** temp = new CbcCountRowCut * [numberCuts+numberCuts_];

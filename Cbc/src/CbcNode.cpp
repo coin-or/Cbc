@@ -301,15 +301,17 @@ CbcNode::createInfo (CbcModel *model,
           Hand the lot over to the CbcPartialNodeInfo constructor, then clean up and
           return.
         */
-        if (!strategy)
+        if (!strategy) {
+	    delete nodeInfo_;
             nodeInfo_ =
                 new CbcPartialNodeInfo(lastNode->nodeInfo_, this, numberChangedBounds,
                                        variables, boundChanges, basisDiff) ;
-        else
+        } else {
             nodeInfo_ =
                 strategy->partialNodeInfo(model, lastNode->nodeInfo_, this,
                                           numberChangedBounds, variables, boundChanges,
                                           basisDiff) ;
+	}
         delete basisDiff ;
         delete [] boundChanges;
         delete [] variables;

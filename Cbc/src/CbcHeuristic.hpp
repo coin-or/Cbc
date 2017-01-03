@@ -694,6 +694,5 @@ protected:
     int numberHeuristics_;
 
 };
-
 #endif
 

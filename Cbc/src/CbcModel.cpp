@@ -2842,8 +2842,26 @@ void CbcModel::branchAndBound(int doStatistics)
         memset(statistics_, 0, maximumStatistics_*sizeof(CbcStatistics *));
     }
     // See if we can add integers
-    if (noObjects && numberIntegers_ < solver_->getNumCols() && (specialOptions_&65536) != 0 && !parentModel_)
-        AddIntegers();
+    if (noObjects && numberIntegers_ < solver_->getNumCols() && (specialOptions_&65536) != 0 && !parentModel_ && false) {
+      int numberIntegers1=0;
+      int numberColumns = solver_->getNumCols();
+      for (int i=0;i<numberColumns;i++) {
+	if (solver_->isInteger(i))
+	  numberIntegers1++;
+      }
+      AddIntegers();
+      // make sure in sync
+      int numberIntegers2=0;
+      for (int i=0;i<numberColumns;i++) {
+	if (solver_->isInteger(i))
+	  numberIntegers2++;
+      }
+      if (numberIntegers1<numberIntegers2) {
+	findIntegers(true,2);
+	convertToDynamic();
+      }
+    }
+
     /*
       Do an initial round of cut generation for the root node. Depending on the
       type of underlying solver, we may want to do this even if the initial query
@@ -9244,6 +9262,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             << startObjective << thisObjective
             << currentPassNumber_
             << CoinMessageEol ;
+	    // do heuristics again! if feasibility pump still exists
+	    if ((specialOptions_&33554432)!=0&&!parentModel_) {
+	      specialOptions_ &= ~33554432;
+	      doHeuristicsAtRoot();
+	    }
 	}
         /*
           Count the number of cuts produced by each cut generator on this call. Not
@@ -14466,6 +14489,28 @@ CbcModel::resolve(OsiSolverInterface * solver)
 	}
 #endif
         if (!numberNodes_) {
+	  #if 0
+	  // make sure really feasible when not scaled
+	  if (clpSimplex->secondaryStatus()==2) {
+	    messageHandler()->message(CBC_FPUMP1, messages())
+	      << "Continuous solution cleaned for scaling" 
+	      << CoinMessageEol ;
+	    // overkill but stop odd things happeneing
+	    bool takeHint1,takeHint2;
+	    OsiHintStrength strength;
+	    clpSolver->getHintParam(OsiDoScale,takeHint1,strength);
+	    clpSolver->getHintParam(OsiDoPresolveInInitial,takeHint2,strength);
+	    //assert (takeHint);
+	    clpSolver->setHintParam(OsiDoScale,false,OsiHintTry);
+	    clpSolver->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);
+	    int saveFlag=clpSimplex->scalingFlag();
+	    clpSimplex->scaling(0);
+	    clpSolver->initialSolve();
+	    clpSolver->setHintParam(OsiDoScale,takeHint1,OsiHintTry);
+	    clpSolver->setHintParam(OsiDoPresolveInInitial,takeHint2,OsiHintTry);
+	    clpSimplex->scaling(saveFlag);
+	  }
+#endif
             double error = CoinMax(clpSimplex->largestDualError(),
                                    clpSimplex->largestPrimalError());
             if (error > 1.0e-2 || !clpSolver->isProvenOptimal()) {
@@ -15798,7 +15843,8 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
             // delete FPump
             CbcHeuristicFPump * pump
             = dynamic_cast<CbcHeuristicFPump *> (heuristic_[i]);
-            if (pump && pump->feasibilityPumpOptions() < 1000000) {
+            if (pump && pump->feasibilityPumpOptions() < 1000000
+		&& (specialOptions_&33554432)==0) {
                 delete pump;
                 numberHeuristics_ --;
                 for (int j = i; j < numberHeuristics_; j++)

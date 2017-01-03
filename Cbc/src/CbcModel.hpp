@@ -1789,6 +1789,7 @@ public:
 	22 bit (4194304) - do not initialize random seed in solver (user has)
 	23 bit (8388608) - leave solver_ with cuts
 	24 bit (16777216) - just get feasible if no cutoff
+	25 bit (33554432) - feasibility pump after root cuts
     */
     inline void setSpecialOptions(int value) {
         specialOptions_ = value;

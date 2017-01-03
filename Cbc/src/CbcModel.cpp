@@ -2842,8 +2842,9 @@ void CbcModel::branchAndBound(int doStatistics)
         memset(statistics_, 0, maximumStatistics_*sizeof(CbcStatistics *));
     }
     // See if we can add integers
-    if (noObjects && numberIntegers_ < solver_->getNumCols() && (specialOptions_&65536) != 0 && !parentModel_)
-        AddIntegers();
+    // taken out in stable as causes problems
+    if (noObjects && numberIntegers_ < solver_->getNumCols() && (specialOptions_&65536) != 0 && !parentModel_ && false) 
+      AddIntegers();
     /*
       Do an initial round of cut generation for the root node. Depending on the
       type of underlying solver, we may want to do this even if the initial query

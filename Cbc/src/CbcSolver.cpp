@@ -3973,13 +3973,14 @@ int CbcMain1 (int argc, const char *argv[],
 				std::vector< double > x( model_.getNumCols(), 0.0 );
 				double obj;
 				int status = computeCompleteSolution( &tempModel, colNames, mipStartBefore, &x[0], obj );
-				// set cutoff 
+				// set cutoff ( a trifle high) 
 				if (!status) {
-				  babModel_->setCutoff(CoinMin(babModel_->getCutoff(),obj+1.0e-4));
+				  double newCutoff = CoinMin(babModel_->getCutoff(),obj+1.0e-4);
 				  babModel_->setBestSolution( &x[0], static_cast<int>(x.size()), obj, false );
+				  babModel_->setCutoff(newCutoff);
 				  babModel_->setSolutionCount(1);
-				  model_.setCutoff(CoinMin(model_.getCutoff(),obj+1.0e-4));
 				  model_.setBestSolution( &x[0], static_cast<int>(x.size()), obj, false );
+				  model_.setCutoff(newCutoff);
 				  model_.setSolutionCount(1);
 				}
 			      }

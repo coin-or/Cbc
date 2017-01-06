@@ -27,7 +27,7 @@ matrix:
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then  export PLATFORM=osx$OSX-x86_64-clang`clang -dumpversion`; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$OSX" == "10.10" || "$OSX" == "10.11" ]]; then brew update; brew install gcc; export PLATFORM=osx10.10-x86_64-clang`clang -dumpversion`; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install gcc; brew link --overwrite gcc; gfortran --version; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PLATFORM=linux-x86_64-gcc`gcc -dumpversion`; fi
   - git clone https://github.com/coin-or-tools/BuildTools
   - bash BuildTools/get.dependencies.sh fetch > /dev/null
@@ -40,5 +40,5 @@ after_script:
   - export PROJECT=`echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2`
   - export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz
   - echo $TGZ_FILE
-  - tar -czvf $TGZ_FILE build/lib/* build/bin/* build/include/* build/share/* build/README.md build/INSTALL build/LICENSE build/Cbc/AUTHORS
+  - tar -czvf $TGZ_FILE build/lib/* build/bin/* build/include/* build/share/* README.md INSTALL LICENSE Cbc/AUTHORS
   - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE

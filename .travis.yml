@@ -10,18 +10,18 @@ matrix:
         apt:
           packages:
             - gfortran
+    - os: osx 
+          osx_image: xcode8.2
+          env: OSX=10.12
+          compiler: clang
     - os: osx
-      osx_image: osx10.11
-      env: OSX=10.11
-      compiler: clang
+          osx_image: xcode8
+          env: OSX=10.11
+          compiler: clang
     - os: osx
-      osx_image: xcode7
-      env: OSX=10.10
-      compiler: clang
-    - os: osx
-      osx_image: beta-xcode6.2
-      env: OSX=10.9
-      compiler: clang
+          osx_image: xcode6.4
+          env: OSX=10.10
+          compiler: clang
   allow_failures:
     - os: osx
 
@@ -40,5 +40,5 @@ after_script:
   - export PROJECT=`echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2`
   - export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz
   - echo $TGZ_FILE
-  - tar -czvf $TGZ_FILE build/lib/* build/bin/* build/include/* build/share/* build/README.md build/INSTALL build/LICENSE build/Cbc/AUTHORS
+  - tar -czvf $TGZ_FILE build/lib/* build/bin/* build/include/* build/share/* README.md INSTALL LICENSE Cbc/AUTHORS
   - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE

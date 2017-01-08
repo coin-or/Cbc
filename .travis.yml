@@ -11,17 +11,17 @@ matrix:
           packages:
             - gfortran
     - os: osx 
-          osx_image: xcode8.2
-          env: OSX=10.12
-          compiler: clang
+      osx_image: xcode8.2
+      env: OSX=10.12
+      compiler: clang
     - os: osx
-          osx_image: xcode8
-          env: OSX=10.11
-          compiler: clang
+      osx_image: xcode8
+      env: OSX=10.11
+      compiler: clang
     - os: osx
-          osx_image: xcode6.4
-          env: OSX=10.10
-          compiler: clang
+      osx_image: xcode6.4
+      env: OSX=10.10
+      compiler: clang
   allow_failures:
     - os: osx
 

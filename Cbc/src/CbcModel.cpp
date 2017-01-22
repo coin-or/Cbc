@@ -5259,7 +5259,7 @@ void CbcModel::branchAndBound(int doStatistics)
     globalCuts_ = CbcRowCuts() ;
     delete globalConflictCuts_;
     globalConflictCuts_=NULL;
-    if (!bestSolution_ && (specialOptions_&8388608)==0) {
+    if (!bestSolution_ && (specialOptions_&8388608)==0 && false) {
         // make sure lp solver is infeasible
         int numberColumns = solver_->getNumCols();
         const double * columnLower = solver_->getColLower();

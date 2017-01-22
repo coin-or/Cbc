@@ -2116,7 +2116,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1) ;
 	  continuousSolver_->resolve() ;
 	  if (!continuousSolver_->isProvenOptimal()) {
-            continuousSolver_->messageHandler()->setLogLevel(2) ;
+            continuousSolver_->messageHandler()->setLogLevel(1) ;
             continuousSolver_->initialSolve() ;
 	  }
 	  delete solver_ ;
@@ -5242,7 +5242,7 @@ void CbcModel::branchAndBound(int doStatistics)
     globalCuts_ = CbcRowCuts() ;
     delete globalConflictCuts_;
     globalConflictCuts_=NULL;
-    if (!bestSolution_ && (specialOptions_&8388608)==0) {
+    if (!bestSolution_ && (specialOptions_&8388608)==0 && false) {
         // make sure lp solver is infeasible
         int numberColumns = solver_->getNumCols();
         const double * columnLower = solver_->getColLower();
@@ -5251,6 +5251,18 @@ void CbcModel::branchAndBound(int doStatistics)
             if (solver_->isInteger(iColumn))
                 solver_->setColUpper(iColumn, columnLower[iColumn]);
         }
+#ifdef COIN_HAS_CLP
+	{
+	  OsiClpSolverInterface * clpSolver
+	    = dynamic_cast<OsiClpSolverInterface *> (solver_);
+	  if (clpSolver) {
+	    solver_->setHintParam(OsiDoPresolveInInitial, true, OsiHintDo) ;
+	    solver_->setHintParam(OsiDoDualInInitial, true, OsiHintDo) ;
+	    ClpSimplex * simplex = clpSolver->getModelPtr();
+	    simplex->allSlackBasis();
+	  }
+	}
+#endif
         solver_->initialSolve();
     }
 #ifdef COIN_HAS_CLP

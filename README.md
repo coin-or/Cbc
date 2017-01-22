@@ -13,7 +13,7 @@ be redistributed freely.
 
 ## DOWNLOAD
 
-[ ![Download](https://api.bintray.com/packages/coin-or/download/SYMPHONY/images/download.svg) ](https://bintray.com/coin-or/download/Cbc/2.9)
+[ ![Download](https://api.bintray.com/packages/coin-or/download/Cbc/images/download.svg) ](https://bintray.com/coin-or/download/Cbc/2.9)
 
 Binaries for most platforms are available for download from [Bintray](https://bintray.com/coin-or/download/Cbc)
 

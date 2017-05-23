@@ -2399,6 +2399,10 @@ public:
        this->mipStart_ = mips;
     }
 
+    /** may be safer to use this overload method: c++ string libraries 
+     * implementation may not be binary compatible */
+    void setMIPStart( int count, const char **colNames, const double colValues[] );
+
     const std::vector< std::pair< std::string, double > > &getMIPStart() {
        return this->mipStart_;
     }

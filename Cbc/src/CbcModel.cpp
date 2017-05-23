@@ -19363,3 +19363,11 @@ CbcModel::conflictCut(const OsiSolverInterface * solver, bool & localCuts)
 #endif
   return cut;
 }
+
+void CbcModel::setMIPStart( int count, const char **colNames, const double colValues[] )
+{
+    mipStart_.clear();
+    for ( int i=0 ; (i<count) ; ++i )
+        mipStart_.push_back( std::pair<std::string, double>( std::string(colNames[i]), colValues[i]) );
+}
+

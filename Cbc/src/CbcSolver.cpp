@@ -4342,6 +4342,32 @@ int CbcMain1 (int argc, const char *argv[],
                                                 osiclp2->setOptionalInteger(i); // say optional
                                         }
                                     }
+				    // redo existing SOS
+				    if (osiclp->numberSOS()) {
+				      int * back = new int[numberOriginalColumns];
+				      for (int i = 0; i < numberOriginalColumns; i++)
+					back[i]=-1;
+				      for (int i = 0; i < numberColumns; i++) {
+                                        int iColumn = originalColumns[i];
+					back[iColumn]=i;
+				      }
+				      int numberSOSOld=osiclp->numberSOS();
+				      int numberSOS=osiclp2->numberSOS();
+				      assert (numberSOS==numberSOSOld);
+				      CoinSet * setInfo = const_cast<CoinSet *>(osiclp2->setInfo());
+				      for (int i = 0; i < numberSOS; i++) {
+                                        //int type = setInfo[i].setType();
+                                        int n = setInfo[i].numberEntries();
+                                        int * which = const_cast<int *>(setInfo[i].which());
+					for (int j=0;j<n;j++) {
+					  int iColumn = which[j];
+					  iColumn=back[iColumn];
+					  assert(iColumn>=0);
+					  which[j]=iColumn;
+					}
+				      }
+				      delete [] back;
+				    }
                                 }
                                 // we have to keep solver2 so pass clone
                                 solver2 = solver2->clone();
@@ -5691,6 +5717,7 @@ int CbcMain1 (int argc, const char *argv[],
                                                 oldObjects[iObj]->setPriority(numberColumns + 1);
                                             int iColumn = oldObjects[iObj]->columnNumber();
                                             if (iColumn < 0 || iColumn >= numberOriginalColumns) {
+#if 0 // now done earlier
                                                 CbcSOS * obj =
                                                     dynamic_cast <CbcSOS *>(oldObjects[iObj]) ;
                                                 if (obj) {
@@ -5710,6 +5737,7 @@ int CbcMain1 (int argc, const char *argv[],
                                                     }
                                                     obj->setNumberMembers(nn);
                                                 }
+#endif
                                                 continue;
                                             }
                                             if (originalColumns)

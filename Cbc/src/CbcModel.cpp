@@ -12036,6 +12036,8 @@ CbcModel::addObjects(int numberObjects, OsiObject ** objects)
                 newNumberObjects++;
                 mark[iColumn] = i;
             }
+	} else {
+	    newNumberObjects++;
         }
     }
     delete [] integerVariable_;

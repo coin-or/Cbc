@@ -3435,6 +3435,7 @@ int CbcMain1 (int argc, const char *argv[],
                             int logLevel = parameters_[slog].intValue();
 			    int truncateColumns=COIN_INT_MAX;
 			    int truncateRows=-1;
+			    bool redoSOS=false;
 			    double * truncatedRhsLower=NULL;
 			    double * truncatedRhsUpper=NULL;
 			    int * newPriorities=NULL;
@@ -4242,6 +4243,7 @@ int CbcMain1 (int argc, const char *argv[],
 					  process.setApplicationData(const_cast<double *>(debugValues));
 					}
 #endif
+					redoSOS=true;
                                         solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                                tunePreProcess);
 					if (solver2) {
@@ -4253,6 +4255,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     }
 #elif CBC_OTHER_SOLVER==1
 				    cbcPreProcessPointer = & process;
+				    redoSOS=true;
                                     solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                            tunePreProcess);
 #endif
@@ -4344,6 +4347,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     }
 				    // redo existing SOS
 				    if (osiclp->numberSOS()) {
+				      redoSOS=false;
 				      int * back = new int[numberOriginalColumns];
 				      for (int i = 0; i < numberOriginalColumns; i++)
 					back[i]=-1;
@@ -5717,7 +5721,7 @@ int CbcMain1 (int argc, const char *argv[],
                                                 oldObjects[iObj]->setPriority(numberColumns + 1);
                                             int iColumn = oldObjects[iObj]->columnNumber();
                                             if (iColumn < 0 || iColumn >= numberOriginalColumns) {
-#if 0 // now done earlier
+					      if (redoSOS) { // now done earlier??
                                                 CbcSOS * obj =
                                                     dynamic_cast <CbcSOS *>(oldObjects[iObj]) ;
                                                 if (obj) {
@@ -5737,8 +5741,8 @@ int CbcMain1 (int argc, const char *argv[],
                                                     }
                                                     obj->setNumberMembers(nn);
                                                 }
-#endif
-                                                continue;
+					      }
+					      continue;
                                             }
                                             if (originalColumns)
                                                 iColumn = originalColumns[iColumn];

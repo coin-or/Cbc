@@ -148,14 +148,13 @@ static int hashCut (const OsiRowCut2 & x, int size)
     value += (j+1)*multiplier[k]*(xColumn+1)*xValue;
   }
   // should be compile time but too lazy for now
+  union { double d; unsigned int i[2]; } xx;
   if (sizeof(value)>sizeof(hashValue)) {
     assert (sizeof(value)==2*sizeof(hashValue));
-    union { double d; int i[2]; } xx;
     xx.d = value;
     hashValue = (xx.i[0] + xx.i[1]);
   } else {
     assert (sizeof(value)==sizeof(hashValue));
-    union { double d; unsigned int i[2]; } xx;
     xx.d = value;
     hashValue = xx.i[0];
   }

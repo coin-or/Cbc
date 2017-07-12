@@ -4023,6 +4023,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	      info.level = 0;
 	      info.formulation_rows = solver_->getNumRows();
 	      info.inTree = false;
+	      info.childModel=parentModel_ ? 1 : 0;
+	      info.originalColumns=originalColumns();
 	      info.randomNumberGenerator=&randomGenerator;
 	      info.pass=4;
 	      generator1.setMode(8);

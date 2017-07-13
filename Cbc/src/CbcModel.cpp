@@ -4023,7 +4023,14 @@ void CbcModel::branchAndBound(int doStatistics)
 	      info.level = 0;
 	      info.formulation_rows = solver_->getNumRows();
 	      info.inTree = false;
-	      info.childModel=parentModel_ ? 1 : 0;
+	      if (parentModel_) {
+		info.parentSolver=parentModel_->continuousSolver();
+		// indicate if doing full search
+		info.hasParent = ((specialOptions_&67108864)==0) ? 1 : 2; 
+	      } else {
+		info.hasParent=0;
+		info.parentSolver=NULL;
+	      }
 	      info.originalColumns=originalColumns();
 	      info.randomNumberGenerator=&randomGenerator;
 	      info.pass=4;

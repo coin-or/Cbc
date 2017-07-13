@@ -280,7 +280,14 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
         info.pass = pass;
         info.formulation_rows = model_->numberRowsAtContinuous();
         info.inTree = node != NULL;
-	info.childModel = model_->parentModel() ? 1 : 0;
+	if (model_->parentModel()) {
+	  info.parentSolver=model_->parentModel()->continuousSolver();
+	  // indicate if doing full search
+	  info.hasParent = ((model_->specialOptions()&67108864)==0) ? 1 : 2; 
+	} else {
+	  info.hasParent=0;
+	  info.parentSolver=NULL;
+	}
 	info.originalColumns = model_->originalColumns();
         info.randomNumberGenerator = randomNumberGenerator;
         info.options = (globalCutsAtRoot()) ? 8 : 0;
@@ -319,7 +326,14 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                 info2->pass = pass;
                 info2->formulation_rows = model_->numberRowsAtContinuous();
                 info2->inTree = node != NULL;
-		info2->childModel = model_->parentModel() ? 1 : 0;
+		if (model_->parentModel()) {
+		  info2->parentSolver=model_->parentModel()->continuousSolver();
+		  // indicate if doing full search
+		  info2->hasParent = ((model_->specialOptions()&67108864)==0) ? 1 : 2; 
+		} else {
+		  info2->hasParent=0;
+		  info2->parentSolver=NULL;
+		}
 		info2->originalColumns = model_->originalColumns();
                 info2->randomNumberGenerator = randomNumberGenerator;
                 generator->generateCutsAndModify(*solver, cs, info2);

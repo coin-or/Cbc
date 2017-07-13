@@ -1146,6 +1146,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     model.setCutoff(signedCutoff);
                     // make sure can't do nested search! but allow heuristics
                     model.setSpecialOptions((model.specialOptions()&(~(512 + 2048))) | 1024);
+		    // but say we are doing full search
+                    model.setSpecialOptions(model.specialOptions()|67108864);
                     bool takeHint;
                     OsiHintStrength strength;
                     // Switch off printing if asked to

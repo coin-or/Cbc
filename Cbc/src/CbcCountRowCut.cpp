@@ -182,7 +182,7 @@ static int hashCut2 (const OsiRowCut2 & x, int size)
   // should be compile time but too lazy for now
   if (sizeof(value)>sizeof(hashValue)) {
     assert (sizeof(value)==2*sizeof(hashValue));
-    union { double d; int i[2]; } xx;
+    union { double d; unsigned int i[2]; } xx;
     xx.d = value;
     hashValue = (xx.i[0] + xx.i[1]);
   } else {

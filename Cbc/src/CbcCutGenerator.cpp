@@ -823,14 +823,14 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
             }
             //printf("%s has %d cuts and %d elements\n",generatorName_,
             //     nCuts,nEls);
-            int nElsNow = solver->getMatrixByCol()->getNumElements();
+            CoinBigIndex nElsNow = solver->getMatrixByCol()->getNumElements();
             int numberColumns = solver->getNumCols();
             int numberRows = solver->getNumRows();
             //double averagePerRow = static_cast<double>(nElsNow)/
             //static_cast<double>(numberRows);
-            int nAdd;
-            int nAdd2;
-            int nReasonable;
+            CoinBigIndex nAdd;
+            CoinBigIndex nAdd2;
+            CoinBigIndex nReasonable;
             if (!model_->parentModel() && depth < 2) {
                 if (inaccuracy_ < 3) {
                     nAdd = 10000;
@@ -865,7 +865,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                 //printf("need to remove cuts\n");
                 // just add most effective
 #ifndef JJF_ONE
-                int nDelete = nEls - nReasonable;
+                CoinBigIndex nDelete = nEls - nReasonable;
 
                 nElsNow = nEls;
                 double * sort = new double [nCuts];

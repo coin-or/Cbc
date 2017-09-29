@@ -1350,7 +1350,7 @@ void CbcModel::AddIntegers()
                 del[nDel++] = i;
             } else if (possibleRow[i]) {
                 if (rowLength[i] == 1) {
-                    int k = rowStart[i];
+                    CoinBigIndex k = rowStart[i];
                     int iColumn = column[k];
                     if (!copy2->isInteger(iColumn)) {
                         double mult = 1.0 / fabs(element[k]);
@@ -8251,9 +8251,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	      // possibly extend whichGenerator
 	      resizeWhichGenerator(numberViolated, numberViolated + numberCuts);
 	      // only add new cuts up to 10% of current elements
-	      int numberElements = solver_->getNumElements();
+	      CoinBigIndex numberElements = solver_->getNumElements();
 	      int numberColumns = solver_->getNumCols();
-	      int maximumAdd = CoinMax(numberElements/10,2*numberColumns)+100;
+	      CoinBigIndex maximumAdd = CoinMax(numberElements/10,
+						static_cast<CoinBigIndex>(2*numberColumns))+100;
 	      double * violations = new double[numberCuts];
 	      int * which = new int[numberCuts];
 	      int numberPossible=0;
@@ -10671,7 +10672,7 @@ CbcModel::findCliques(bool makeEquality,
 
     for (iRow = 0; iRow < numberRows; iRow++) {
         int numberP1 = 0, numberM1 = 0;
-        int j;
+        CoinBigIndex j;
         double upperValue = rowUpper[iRow];
         double lowerValue = rowLower[iRow];
         bool good = true;
@@ -13578,7 +13579,7 @@ CbcModel::tightenVubs(int type, bool allowMultipleBinary, double useCutoff)
     if (type >= 0) {
         double * sort = new double[numberColumns];
         for (iRow = 0; iRow < numberRows; iRow++) {
-            int j;
+            CoinBigIndex j;
             int numberBinary = 0;
             int numberUnsatisfiedBinary = 0;
             int numberContinuous = 0;
@@ -14032,7 +14033,7 @@ CbcModel::makeGlobalCuts(int number, const int * which)
                 OsiRowCut  thisCut;
                 thisCut.setLb(rowLower[iRow]);
                 thisCut.setUb(rowUpper[iRow]);
-                int start = rowStart[iRow];
+                CoinBigIndex start = rowStart[iRow];
                 thisCut.setRow(rowLength[iRow], column + start, elementByRow + start, false);
                 thisCut.setGloballyValid(true);
                 globalCuts_.addCutIfNotDuplicate(thisCut) ;

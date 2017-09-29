@@ -155,7 +155,7 @@ int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged,
                     if (fabs(value1) == 1.0 && value1*value2 == -1.0 && !lower[jColumn1]
                             && !lower[jColumn2]) {
                         int n = 0;
-                        int i;
+                        CoinBigIndex i;
                         double objChange = direction * (objective[jColumn1] + objective[jColumn2]);
                         double bound = CoinMin(upper[jColumn1], upper[jColumn2]);
                         bound = CoinMin(bound, 1.0e20);

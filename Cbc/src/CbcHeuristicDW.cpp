@@ -1882,8 +1882,8 @@ CbcHeuristicDW::addDW(const double * solution,int numberBlocksUsed,
   //int numberRows = solver_->getNumRows();
   // get space to add elements
 #define MAX_ADD 100000
-  int * startsDW = new int[numberBlocks_+1+MAX_ADD];
-  int * rowDW = startsDW+numberBlocks_+1;
+  CoinBigIndex * startsDW = new CoinBigIndex[numberBlocks_+1+MAX_ADD];
+  int * rowDW = reinterpret_cast<int *>(startsDW+numberBlocks_+1);
   double * elementDW = new double[MAX_ADD+3*numberBlocks_+numberMasterRows_];
   double * newCost = elementDW+MAX_ADD;
   double * newLower = newCost+numberBlocks_;

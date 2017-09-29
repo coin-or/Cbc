@@ -396,7 +396,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
             int numberColumns = clpSolver->getNumCols();
             int iColumn;
             for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                for (int j = columnStart[iColumn];
+                for (CoinBigIndex j = columnStart[iColumn];
                         j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                     //int iRow = row[j];
                     double value1 = element[j];
@@ -423,7 +423,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
                 COIN_DETAIL_PRINT(printf("Tidying %d multiples of 0.01, %d close\n",
 					 numberInt, numberClose));
                 for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                    for (int j = columnStart[iColumn];
+                    for (CoinBigIndex j = columnStart[iColumn];
                             j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                         //int iRow = row[j];
                         double value1 = element[j];

@@ -483,7 +483,7 @@ void OsiSolverLink::resolve()
                                 const CoinBigIndex * rowStart = originalRowCopy_->getVectorStarts();
                                 //const int * rowLength = originalRowCopy_->getVectorLengths();
                                 //int numberColumns2 = coinModel_.numberColumns();
-                                for ( i = rowStart[objectiveRow_]; i < rowStart[objectiveRow_+1]; i++)
+                                for (CoinBigIndex i = rowStart[objectiveRow_]; i < rowStart[objectiveRow_+1]; i++)
                                     gradient[column2[i]] = element[i];
                                 for ( i = 0; i < numberObjects_; i++) {
                                     OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
@@ -729,7 +729,7 @@ void OsiSolverLink::resolve()
                             int i;
                             CoinZeroN(gradient, numberColumns2);
                             //const double * objective = modelPtr_->objective();
-                            for ( i = rowStart[iRow]; i < rowStart[iRow+1]; i++)
+                            for (CoinBigIndex i = rowStart[iRow]; i < rowStart[iRow+1]; i++)
                                 gradient[column2[i]] = element[i];
                             for ( i = startNonLinear_[iNon]; i < startNonLinear_[iNon+1]; i++) {
                                 OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[whichNonLinear_[i]]);
@@ -806,7 +806,7 @@ OsiSolverLink::doAOCuts(CglTemporary * cutGen, const double * solution, const do
     const CoinBigIndex * rowStart = originalRowCopy_->getVectorStarts();
     //const int * rowLength = originalRowCopy_->getVectorLengths();
     //int numberColumns2 = coinModel_.numberColumns();
-    for ( i = rowStart[objectiveRow_]; i < rowStart[objectiveRow_+1]; i++)
+    for (CoinBigIndex i = rowStart[objectiveRow_]; i < rowStart[objectiveRow_+1]; i++)
         gradient[column2[i]] = element[i];
     //const double * columnLower = modelPtr_->columnLower();
     //const double * columnUpper = modelPtr_->columnUpper();
@@ -3458,7 +3458,7 @@ OsiSolverLink::fathom(bool allFixed)
             for (i = 0; i < numberColumns; i++) {
                 if (clpModel->isInteger(i)) {
                     double value = 0.0;
-                    for (int j = columnStart[i]; j < columnStart[i] + columnLength[i]; j++) {
+                    for (CoinBigIndex j = columnStart[i]; j < columnStart[i] + columnLength[i]; j++) {
                         value += fabs(element[j]);
                     }
                     objective[i] = value;
@@ -4996,7 +4996,9 @@ OsiBiLinear::OsiBiLinear (CoinModel * coinModel, int xColumn,
     assert (xyRow_ >= -1);
     for (i = 0; i < nAdd; i++) {
         CoinBigIndex iStart = starts[i];
-        coinModel->addRow(starts[i+1] - iStart, index + iStart, element + iStart, rowLower[i], rowUpper[i]);
+        coinModel->addRow(static_cast<int>(starts[i+1] - iStart),
+			  index + iStart, element + iStart,
+			  rowLower[i], rowUpper[i]);
     }
     int n = 0;
     // order is LxLy, LxUy, UxLy and UxUy
@@ -5092,7 +5094,8 @@ OsiBiLinear::OsiBiLinear (CoinModel * coinModel, int xColumn,
     }
     for (i = 0; i < 4; i++) {
         CoinBigIndex iStart = starts[i];
-        coinModel->addColumn(starts[i+1] - iStart, index + iStart, element + iStart, columnLower[i],
+        coinModel->addColumn(static_cast<int>(starts[i+1] - iStart),
+			     index + iStart, element + iStart, columnLower[i],
                              columnUpper[i], objective[i]);
     }
     // At least one has to have a mesh
@@ -5298,9 +5301,9 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info, int & whichWay)
         const int * columnLength = info->columnLength_;
         for (j = 0; j < 4; j++) {
             int iColumn = firstLambda_ + j;
-            int iStart = columnStart[iColumn];
-            int iEnd = iStart + columnLength[iColumn];
-            int k = iStart;
+            CoinBigIndex iStart = columnStart[iColumn];
+            CoinBigIndex iEnd = iStart + columnLength[iColumn];
+            CoinBigIndex k = iStart;
             double sol = info->solution_[iColumn];
             for (; k < iEnd; k++) {
                 if (xRow_ == row[k])
@@ -5406,9 +5409,9 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info, int & whichWay)
             const int * columnLength = info->columnLength_;
             for (j = 0; j < 4; j++) {
                 int iColumn = firstLambda_ + j;
-                int iStart = columnStart[iColumn];
-                int iEnd = iStart + columnLength[iColumn];
-                int k = iStart;
+                CoinBigIndex iStart = columnStart[iColumn];
+                CoinBigIndex iEnd = iStart + columnLength[iColumn];
+                CoinBigIndex k = iStart;
                 double sol = info->solution_[iColumn];
                 for (; k < iEnd; k++) {
                     if (xyRow_ == row[k])
@@ -5746,9 +5749,9 @@ OsiBiLinear::getPseudoShadow(const OsiBranchingInformation * info)
             const int * columnLength = info->columnLength_;
             for (j = 0; j < 4; j++) {
                 int iColumn = firstLambda_ + j;
-                int iStart = columnStart[iColumn];
-                int iEnd = iStart + columnLength[iColumn];
-                int k = iStart;
+                CoinBigIndex iStart = columnStart[iColumn];
+                CoinBigIndex iEnd = iStart + columnLength[iColumn];
+                CoinBigIndex k = iStart;
                 double sol = info->solution_[iColumn];
                 for (; k < iEnd; k++) {
                     if (xyRow_ == row[k])
@@ -5851,9 +5854,9 @@ OsiBiLinear::getMovement(const OsiBranchingInformation * info)
             const int * columnLength = info->columnLength_;
             for (j = 0; j < 4; j++) {
                 int iColumn = firstLambda_ + j;
-                int iStart = columnStart[iColumn];
-                int iEnd = iStart + columnLength[iColumn];
-                int k = iStart;
+                CoinBigIndex iStart = columnStart[iColumn];
+                CoinBigIndex iEnd = iStart + columnLength[iColumn];
+                CoinBigIndex k = iStart;
                 double sol = info->solution_[iColumn];
                 for (; k < iEnd; k++) {
                     if (xyRow_ == row[k])
@@ -5940,9 +5943,9 @@ OsiBiLinear::feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInfor
         const int * columnLength = info->columnLength_;
         for (j = 0; j < 4; j++) {
             int iColumn = firstLambda_ + j;
-            int iStart = columnStart[iColumn];
-            int iEnd = iStart + columnLength[iColumn];
-            int k = iStart;
+            CoinBigIndex iStart = columnStart[iColumn];
+            CoinBigIndex iEnd = iStart + columnLength[iColumn];
+            CoinBigIndex k = iStart;
             double sol = info->solution_[iColumn];
             for (; k < iEnd; k++) {
                 if (xRow_ == row[k])
@@ -6307,9 +6310,9 @@ OsiBiLinear::getCoefficients(const OsiSolverInterface * solver, double xB[2], do
     if (yRow_ >= 0) {
         for (j = 0; j < 4; j++) {
             int iColumn = firstLambda_ + j;
-            int iStart = columnStart[iColumn];
-            int iEnd = iStart + columnLength[iColumn];
-            int k = iStart;
+            CoinBigIndex iStart = columnStart[iColumn];
+            CoinBigIndex iEnd = iStart + columnLength[iColumn];
+            CoinBigIndex k = iStart;
             double x = 0.0;
             double y = 0.0;
             xybar[j] = 0.0;
@@ -6337,9 +6340,9 @@ OsiBiLinear::getCoefficients(const OsiSolverInterface * solver, double xB[2], do
         // x==y
         for (j = 0; j < 4; j++) {
             int iColumn = firstLambda_ + j;
-            int iStart = columnStart[iColumn];
-            int iEnd = iStart + columnLength[iColumn];
-            int k = iStart;
+            CoinBigIndex iStart = columnStart[iColumn];
+            CoinBigIndex iEnd = iStart + columnLength[iColumn];
+            CoinBigIndex k = iStart;
             double x = 0.0;
             xybar[j] = 0.0;
             for (; k < iEnd; k++) {
@@ -6900,7 +6903,7 @@ OsiBiLinearEquality::newGrid(OsiSolverInterface * solver, int type) const
         for (i = 0; i < numberPoints_; i++) {
             int iColumn = i + firstLambda_;
             if (fabs(solution[iColumn]) > 1.0e-7) {
-                int k = columnStart[iColumn] + 1;
+                CoinBigIndex k = columnStart[iColumn] + 1;
                 xValue += element[k] * solution[iColumn];
                 if (first == -1) {
                     first = i;
@@ -6930,7 +6933,7 @@ OsiBiLinearEquality::newGrid(OsiSolverInterface * solver, int type) const
         int iColumn = i + firstLambda_;
         double y = coefficient_ / x;
         //assert (columnLength[iColumn]==3); - could have cuts
-        int k = columnStart[iColumn];
+        CoinBigIndex k = columnStart[iColumn];
 #ifdef KEEPXY
         // xy
         assert (row[k] == xyRow_);

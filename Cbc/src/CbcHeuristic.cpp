@@ -2096,7 +2096,7 @@ CbcRounding::solution(double & solutionValue,
     double * rowActivity = new double[numberRows];
     memset(rowActivity, 0, numberRows*sizeof(double));
     for (i = 0; i < numberColumns; i++) {
-        int j;
+        CoinBigIndex j;
         double value = newSolution[i];
         if (value < lower[i]) {
             value = lower[i];
@@ -2150,7 +2150,7 @@ CbcRounding::solution(double & solutionValue,
             newValue += move;
             newSolution[iColumn] = newValue;
             newSolutionValue += move * cost;
-            int j;
+            CoinBigIndex j;
             for (j = columnStart[iColumn];
                     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                 int iRow = row[j];
@@ -2172,7 +2172,7 @@ CbcRounding::solution(double & solutionValue,
             // See if there are any slacks I can use to fix up
             // maybe put in coding for multiple slacks?
             double bestCost = 1.0e50;
-            int k;
+            CoinBigIndex k;
             int iBest = -1;
             double addCost = 0.0;
             double newValue = 0.0;
@@ -2260,7 +2260,7 @@ CbcRounding::solution(double & solutionValue,
             double currentValue = newSolution[iColumn];
             double lowerValue = lower[iColumn];
             double upperValue = upper[iColumn];
-            int j;
+            CoinBigIndex j;
             int anyBadDown = 0;
             int anyBadUp = 0;
             double upImprovement = 0.0;
@@ -2408,7 +2408,7 @@ CbcRounding::solution(double & solutionValue,
                 double currentValue = newSolution[iColumn];
                 double lowerValue = lower[iColumn];
                 double upperValue = upper[iColumn];
-                int j;
+                CoinBigIndex j;
                 int anyBadDown = 0;
                 int anyBadUp = 0;
                 double upImprovement = 0.0;
@@ -2626,7 +2626,7 @@ CbcRounding::solution(double & solutionValue,
                         move = 0.0;
                     } else {
                         // see if we can move
-                        int j;
+                        CoinBigIndex j;
                         for (j = columnStart[iColumn];
                                 j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                             int iRow = row[j];
@@ -2640,7 +2640,7 @@ CbcRounding::solution(double & solutionValue,
                         if (good) {
                             newSolution[iColumn] = newValue;
                             newSolutionValue += move * cost;
-                            int j;
+                            CoinBigIndex j;
                             for (j = columnStart[iColumn];
                                     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                                 int iRow = row[j];
@@ -2665,7 +2665,7 @@ CbcRounding::solution(double & solutionValue,
             // paranoid check
             memset(rowActivity, 0, numberRows*sizeof(double));
             for (i = 0; i < numberColumns; i++) {
-                int j;
+                CoinBigIndex j;
                 double value = newSolution[i];
                 if (value) {
                     for (j = columnStart[i];

@@ -164,7 +164,7 @@ public:
   virtual int getNumRows() const;
   
   /// Get number of nonzero elements
-  virtual int getNumElements() const ;
+  virtual CoinBigIndex getNumElements() const ;
   
   /// Get pointer to array[getNumCols()] of column lower bounds
   virtual const double * getColLower() const;

@@ -1656,7 +1656,7 @@ CbcHeuristicFPump::solutionInternal(double & solutionValue,
                     solution = solver->getColSolution();
                     numberIterations = solver->getIterationCount();
                 } else {
-                    int * addStart = new int[2*general+1];
+                    CoinBigIndex * addStart = new CoinBigIndex[2*general+1];
                     int * addIndex = new int[4*general];
                     double * addElement = new double[4*general];
                     double * addLower = new double[2*general];
@@ -2534,8 +2534,8 @@ CbcHeuristicFPump::solution(double & objectiveValue, double * newSolution)
     }
     if (general) {
       CbcModel * saveModel = model_;
-      int * addStart = new int[nAdd+1];
-      memset(addStart,0,(nAdd+1)*sizeof(int));
+      CoinBigIndex * addStart = new CoinBigIndex[nAdd+1];
+      memset(addStart,0,(nAdd+1)*sizeof(CoinBigIndex));
       int * addIndex = new int[general+nAdd];
       double * addElement = new double[general+nAdd];
       double * addLower = new double[nAdd];

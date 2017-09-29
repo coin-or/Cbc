@@ -216,9 +216,9 @@ CbcHeuristicRandRound::solution(double & solutionValue,
     const CoinPackedMatrix* matrixByRow = clpSolver->getMatrixByRow();
     const double * matrixElements = matrixByRow->getElements();
     const int * matrixIndices = matrixByRow->getIndices();
-    const int * matrixStarts = matrixByRow->getVectorStarts();
+    const CoinBigIndex * matrixStarts = matrixByRow->getVectorStarts();
     for (int j = 0; j < numRows; j++) {
-        for (int i = matrixStarts[j]; i < matrixStarts[j+1]; i++) {
+        for (CoinBigIndex i = matrixStarts[j]; i < matrixStarts[j+1]; i++) {
             matrix[j][matrixIndices[i]] = matrixElements[i];
         }
     }

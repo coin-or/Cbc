@@ -191,7 +191,7 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver, const OsiBranch
                 bool oneRow = true;
                 // check elements
                 int numberUnsatisfied = 0;
-                for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
+                for (CoinBigIndex j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                     int iColumn = column[j];
                     double value = elementByRow[j];
                     double solValue = solution[iColumn];
@@ -208,7 +208,7 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver, const OsiBranch
                 }
                 if (oneRow && rhsValue <= 1.0 + tolerance) {
                     if (!numberUnsatisfied) {
-                        for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
+                        for (CoinBigIndex j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                             int iColumn = column[j];
                             if (dsort[iColumn] > 1.0e50) {
                                 dsort[iColumn] = 0;
@@ -264,7 +264,7 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver, const OsiBranch
         for (int i = 0; i < numberRows; i++) {
             int numberUnsatisfied = 0;
             double sum = 0.0;
-            for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
+            for (CoinBigIndex j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
                 if (solver->isInteger(iColumn)) {
                     double solValue = solution[iColumn];
@@ -285,7 +285,7 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver, const OsiBranch
             }
         }
         assert (nBest > 0);
-        for (int j = rowStart[kRow]; j < rowStart[kRow] + rowLength[kRow]; j++) {
+        for (CoinBigIndex j = rowStart[kRow]; j < rowStart[kRow] + rowLength[kRow]; j++) {
             int iColumn = column[j];
             if (solver->isInteger(iColumn)) {
                 double solValue = solution[iColumn];
@@ -446,7 +446,7 @@ CbcBranchToFixLots::shallWe() const
             bool oneRow = true;
             // check elements
             int numberUnsatisfied = 0;
-            for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
+            for (CoinBigIndex j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
                 double value = elementByRow[j];
                 double solValue = solution[iColumn];
@@ -466,7 +466,7 @@ CbcBranchToFixLots::shallWe() const
                     someToDoYet = true;
                 } else {
                     numberClean++;
-                    for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
+                    for (CoinBigIndex j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                         int iColumn = column[j];
                         if (columnLower[iColumn] != columnUpper[iColumn] && !mark[iColumn]) {
                             mark[iColumn] = 1;
@@ -523,7 +523,7 @@ CbcBranchToFixLots::infeasibility(const OsiBranchingInformation * /*info*/,
         for (int i = 0; i < numberRows; i++) {
             int numberUnsatisfied = 0;
             double sum = 0.0;
-            for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
+            for (CoinBigIndex j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
                 if (solver->isInteger(iColumn)) {
                     double solValue = solution[iColumn];

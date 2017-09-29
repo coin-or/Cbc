@@ -166,7 +166,7 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
     /* It is just possible that we could say okay as
        variables may get fixed but seems unlikely */
     for (i = 0; i < numberColumns; i++) {
-        int j;
+        CoinBigIndex j;
         double lowerValue = lower[i];
         assert (lowerValue == floor(lowerValue));
         for (j = columnStart[i];
@@ -237,7 +237,7 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
     int nbadcoeff = 0;
     // See if we can tighten bounds
     for (i = 0; i < numberColumns; i++) {
-        int j;
+        CoinBigIndex j;
         double lowerValue = lower[i];
         double gap = upper[i] - lowerValue;
         for (j = columnStart[i];
@@ -575,7 +575,7 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
                     for (i = 0; i < numberColumns; i++) {
                         if (n == columnLength[i]) {
                             bool good = true;
-                            for (int j = columnStart[i];
+                            for (CoinBigIndex j = columnStart[i];
                                     j < columnStart[i] + columnLength[i]; j++) {
                                 int iRow = row[j];
                                 double value = element[j];
@@ -601,7 +601,7 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
             double * rowActivity = new double [numberRows];
             memset(rowActivity, 0, numberRows*sizeof(double));
             for (i = 0; i < numberColumns; i++) {
-                int j;
+                CoinBigIndex j;
                 double value = betterSolution[i];
                 if (value) {
                     for (j = columnStart[i];

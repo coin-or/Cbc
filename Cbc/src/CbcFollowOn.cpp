@@ -63,7 +63,7 @@ CbcFollowOn::CbcFollowOn (CbcModel * model)
             if (floor(value) == value && value >= 1.0 && value < 10.0) {
                 // check elements
                 bool good = true;
-                for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
+                for (CoinBigIndex j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                     int iColumn = column[j];
                     if (!solver->isBinary(iColumn))
                         good = false;
@@ -151,7 +151,7 @@ CbcFollowOn::gutsOfFollowOn(int & otherRow, int & preferredWay) const
             int rhsValue = rhs_[i];
             int number1 = 0;
             int numberUnsatisfied = 0;
-            for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
+            for (CoinBigIndex j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
                 double value = elementByRow[j];
                 double solValue = solution[iColumn];
@@ -193,14 +193,14 @@ CbcFollowOn::gutsOfFollowOn(int & otherRow, int & preferredWay) const
             i = sort[k];
             int numberUnsatisfied = 0;
             int n = 0;
-            int j;
+            CoinBigIndex j;
             for (j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
                 if (columnLower[iColumn] != columnUpper[iColumn]) {
                     double solValue = solution[iColumn] - columnLower[iColumn];
                     if (solValue < 1.0 - integerTolerance && solValue > integerTolerance) {
                         numberUnsatisfied++;
-                        for (int jj = columnStart[iColumn]; jj < columnStart[iColumn] + columnLength[iColumn]; jj++) {
+                        for (CoinBigIndex jj = columnStart[iColumn]; jj < columnStart[iColumn] + columnLength[iColumn]; jj++) {
                             int iRow = row[jj];
                             if (rhs_[iRow]) {
                                 other[iRow] += solValue;
@@ -335,12 +335,12 @@ CbcFollowOn::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInfo
     int nDown = 0;
     int * upList = new int[numberColumns];
     int * downList = new int[numberColumns];
-    int j;
+    CoinBigIndex j;
     for (j = rowStart[whichRow]; j < rowStart[whichRow] + rowLength[whichRow]; j++) {
         int iColumn = column[j];
         if (columnLower[iColumn] != columnUpper[iColumn]) {
             bool up = true;
-            for (int jj = columnStart[iColumn]; jj < columnStart[iColumn] + columnLength[iColumn]; jj++) {
+            for (CoinBigIndex jj = columnStart[iColumn]; jj < columnStart[iColumn] + columnLength[iColumn]; jj++) {
                 int iRow = row[jj];
                 if (iRow == otherRow) {
                     up = false;

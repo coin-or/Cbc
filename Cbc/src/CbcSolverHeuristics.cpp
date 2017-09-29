@@ -219,7 +219,7 @@ fixVubs(CbcModel & model, int skipZero2,
 
     // Get maximum size of VUB tree
     // otherColumn is one fixed to 0 if this one zero
-    int nEl = matrixByCol.getNumElements();
+    CoinBigIndex nEl = matrixByCol.getNumElements();
     CoinBigIndex * fixColumn = new CoinBigIndex [numberColumns+1];
     int * otherColumn = new int [nEl];
     int * fix = new int[numberColumns];
@@ -488,7 +488,7 @@ fixVubs(CbcModel & model, int skipZero2,
                         }
                     }
                 }
-                for (int i = fixColumn[iColumn]; i < numberOther; i++)
+                for (CoinBigIndex i = fixColumn[iColumn]; i < numberOther; i++)
                     mark[otherColumn[i]] = 0;
                 // reset bound unless infeasible
                 if (!infeasible || !clpSolver->isInteger(iColumn))
@@ -505,7 +505,7 @@ fixVubs(CbcModel & model, int skipZero2,
     int * counts = new int [numberColumns];
     CoinZeroN(counts, numberColumns);
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-        for (int i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++)
+        for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++)
             counts[otherColumn[i]]++;
     }
     numberOther = 0;
@@ -519,7 +519,7 @@ fixVubs(CbcModel & model, int skipZero2,
     }
     // Create other way
     for ( iColumn = 0; iColumn < numberColumns; iColumn++) {
-        for (int i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
+        for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
             int jColumn = otherColumn[i];
             CoinBigIndex put = fixColumn2[jColumn] + counts[jColumn];
             counts[jColumn]++;
@@ -532,7 +532,7 @@ fixVubs(CbcModel & model, int skipZero2,
         int numberLayered = 0;
         for ( iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (fix[iColumn] == kLayer) {
-                for (int i = fixColumn2[iColumn]; i < fixColumn2[iColumn+1]; i++) {
+                for (CoinBigIndex i = fixColumn2[iColumn]; i < fixColumn2[iColumn+1]; i++) {
                     int jColumn = otherColumn2[i];
                     if (fix[jColumn] == kLayer) {
                         fix[iColumn] = kLayer + 100;
@@ -564,11 +564,11 @@ fixVubs(CbcModel & model, int skipZero2,
             for ( iColumn = 0; iColumn < numberColumns; iColumn++) {
                 if (fix[iColumn] == jLayer) {
                     numberLayered++;
-                    int nFix = fixColumn[iColumn+1] - fixColumn[iColumn];
+                    int nFix = static_cast<int>(fixColumn[iColumn+1] - fixColumn[iColumn]);
                     if (iPass) {
                         // just integers
                         nFix = 0;
-                        for (int i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
+                        for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
                             int jColumn = otherColumn[i];
                             if (clpSolver->isInteger(jColumn))
                                 nFix++;
@@ -730,11 +730,11 @@ fixVubs(CbcModel & model, int skipZero2,
                     nFixed = 0;
                     for ( iColumn = 0; iColumn < numberColumns; iColumn++) {
                         if (columnUpper[iColumn] == 0.0 && fix[iColumn] == jLayer) {
-                            for (int i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
+                            for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
                                 int jColumn = otherColumn[i];
                                 if (columnUpper[jColumn]) {
                                     bool canFix = true;
-                                    for (int k = fixColumn2[jColumn]; k < fixColumn2[jColumn+1]; k++) {
+                                    for (CoinBigIndex k = fixColumn2[jColumn]; k < fixColumn2[jColumn+1]; k++) {
                                         int kColumn = otherColumn2[k];
                                         if (state[kColumn] == 1) {
                                             canFix = false;
@@ -814,11 +814,11 @@ fixVubs(CbcModel & model, int skipZero2,
                 nFixed = 0;
                 for ( iColumn = 0; iColumn < numberColumns; iColumn++) {
                     if (columnUpper[iColumn] == 0.0 && fix[iColumn] == jLayer) {
-                        for (int i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
+                        for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
                             int jColumn = otherColumn[i];
                             if (columnUpper[jColumn]) {
                                 bool canFix = true;
-                                for (int k = fixColumn2[jColumn]; k < fixColumn2[jColumn+1]; k++) {
+                                for (CoinBigIndex k = fixColumn2[jColumn]; k < fixColumn2[jColumn+1]; k++) {
                                     int kColumn = otherColumn2[k];
                                     if (state[kColumn] == 1) {
                                         canFix = false;
@@ -858,7 +858,7 @@ fixVubs(CbcModel & model, int skipZero2,
             models[kPass] = *lpSolver;
             if (way == -1) {
                 // fix others
-                for (int i = fixColumn[iSmallest]; i < fixColumn[iSmallest+1]; i++) {
+                for (CoinBigIndex i = fixColumn[iSmallest]; i < fixColumn[iSmallest+1]; i++) {
                     int jColumn = otherColumn[i];
                     if (state[jColumn] == -1) {
                         columnUpper[jColumn] = 0.0;
@@ -890,7 +890,7 @@ fixVubs(CbcModel & model, int skipZero2,
                 columnUpper[iSmallest] = saveColumnUpper[iSmallest];
                 state[iSmallest] = 1;
                 // unfix others
-                for (int i = fixColumn[iSmallest]; i < fixColumn[iSmallest+1]; i++) {
+                for (CoinBigIndex i = fixColumn[iSmallest]; i < fixColumn[iSmallest+1]; i++) {
                     int jColumn = otherColumn[i];
                     if (state[jColumn] == 3) {
                         columnUpper[jColumn] = saveColumnUpper[jColumn];
@@ -944,7 +944,7 @@ fixVubs(CbcModel & model, int skipZero2,
                     assert (!columnUpper[iColumn]);
                     double otherValue = 0.0;
                     int nn = 0;
-                    for (int i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
+                    for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
                         int jColumn = otherColumn[i];
                         if (columnUpper[jColumn] == 0.0) {
                             if (dj[jColumn] < -1.0e-5) {
@@ -991,11 +991,11 @@ fixVubs(CbcModel & model, int skipZero2,
                     assert (lo[iColumn] == 0.0);
                     nFixed++;
                     nFixed0++;
-                    for (int i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
+                    for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
                         int jColumn = otherColumn[i];
                         if (columnUpper[jColumn]) {
                             bool canFix = true;
-                            for (int k = fixColumn2[jColumn]; k < fixColumn2[jColumn+1]; k++) {
+                            for (CoinBigIndex k = fixColumn2[jColumn]; k < fixColumn2[jColumn+1]; k++) {
                                 int kColumn = otherColumn2[k];
                                 if (state[kColumn] == 1 || state[kColumn] == -2) {
                                     canFix = false;
@@ -1022,11 +1022,11 @@ fixVubs(CbcModel & model, int skipZero2,
                 nFixed = 0;
                 for ( iColumn = 0; iColumn < numberColumns; iColumn++) {
                     if (columnUpper[iColumn] == 0.0 && fix[iColumn] == jLayer) {
-                        for (int i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
+                        for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn+1]; i++) {
                             int jColumn = otherColumn[i];
                             if (columnUpper[jColumn]) {
                                 bool canFix = true;
-                                for (int k = fixColumn2[jColumn]; k < fixColumn2[jColumn+1]; k++) {
+                                for (CoinBigIndex k = fixColumn2[jColumn]; k < fixColumn2[jColumn+1]; k++) {
                                     int kColumn = otherColumn2[k];
                                     if (state[kColumn] == 1 || state[kColumn] == -2) {
                                         canFix = false;

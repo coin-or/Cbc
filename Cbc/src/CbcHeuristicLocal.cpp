@@ -522,7 +522,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
     memset(rowActivity, 0, numberRows*sizeof(double));
 
     for (i = 0; i < numberColumns; i++) {
-        int j;
+        CoinBigIndex j;
         double value = newSolution[i];
         if (value) {
             for (j = columnStart[i];
@@ -630,7 +630,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
 
             double objectiveCoefficient = cost[i];
             int k;
-            int j;
+            CoinBigIndex j;
             int goodK = -1;
             int wayK = -1, wayI = -1;
 /*
@@ -883,7 +883,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
             memset(rowActivity, 0, numberRows*sizeof(double));
 
             for (i = 0; i < numberColumns; i++) {
-                int j;
+                CoinBigIndex j;
                 double value = newSolution[i];
                 if (value) {
                     for (j = columnStart[i];

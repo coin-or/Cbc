@@ -743,7 +743,7 @@ OsiCbcSolverInterface::getNumRows() const
 {
   return modelPtr_->solver()->getNumRows();
 }
-int 
+CoinBigIndex 
 OsiCbcSolverInterface::getNumElements() const
 {
   return modelPtr_->solver()->getNumElements();

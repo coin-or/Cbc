@@ -1058,7 +1058,7 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
       // paranoid check
       memset(rowActivity, 0, numberRows*sizeof(double));
       for (int i = 0; i < numberColumns; i++) {
-	int j;
+	CoinBigIndex j;
 	double value = newSolution[i];
 	if (value) {
 	  for (j = columnStart[i];
@@ -1372,7 +1372,7 @@ CbcHeuristicDive::selectBinaryVariables()
         int negativeBinary = -1;
         int nPositiveOther = 0;
         int nNegativeOther = 0;
-        for (int k = rowStart[i]; k < rowStart[i] + rowLength[i]; k++) {
+        for (CoinBigIndex k = rowStart[i]; k < rowStart[i] + rowLength[i]; k++) {
             int iColumn = column[k];
             if (isHeuristicInteger(solver,iColumn) &&
                     lower[iColumn] == 0.0 && upper[iColumn] == 1.0 &&

@@ -290,7 +290,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
                         int iKnapsack = whichKnapsack[i];
                         if (iKnapsack < 0) {
                             // might be able to swap - but for now can't have knapsack in
-                            for (int j = columnStart[i]; j < columnStart[i] + columnLength[i]; j++) {
+                            for (CoinBigIndex j = columnStart[i]; j < columnStart[i] + columnLength[i]; j++) {
                                 int iColumn = column[j];
                                 if (whichKnapsack[iColumn] >= 0) {
                                     canDo = 0; // no good
@@ -301,7 +301,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
                         } else {
                             // OK if in same knapsack - or maybe just one
                             int marked = markKnapsack[iKnapsack];
-                            for (int j = columnStart[i]; j < columnStart[i] + columnLength[i]; j++) {
+                            for (CoinBigIndex j = columnStart[i]; j < columnStart[i] + columnLength[i]; j++) {
                                 int iColumn = column[j];
                                 if (whichKnapsack[iColumn] != iKnapsack && whichKnapsack[iColumn] >= 0) {
                                     canDo = 0; // no good
@@ -411,7 +411,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
                 nelLargest = CoinMax(nelLargest, nLargest) + 1;
                 double * buildObj = new double [nLargest];
                 double * buildElement = new double [nelLargest];
-                int * buildStart = new int[nLargest+1];
+                CoinBigIndex * buildStart = new CoinBigIndex[nLargest+1];
                 int * buildRow = new int[nelLargest];
                 // alow for integers in knapsacks
                 OsiObject ** object = new OsiObject * [numberKnapsack+nTotal];
@@ -424,7 +424,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
                     coinModel.expandKnapsack(iRow, nCreate, buildObj, buildStart, buildRow, buildElement);
                     // Redo row numbers
                     for (iColumn = 0; iColumn < nCreate; iColumn++) {
-                        for (int j = buildStart[iColumn]; j < buildStart[iColumn+1]; j++) {
+                        for (CoinBigIndex j = buildStart[iColumn]; j < buildStart[iColumn+1]; j++) {
                             int jRow = buildRow[j];
                             jRow = lookupRow[jRow];
                             assert (jRow >= 0 && jRow < nRow);
@@ -490,7 +490,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
                         if (cutMarker[iRow] && lookupRow[iRow] >= 0) {
                             int jRow = lookupRow[iRow];
                             whichRow[nDelete++] = jRow;
-                            int start = rowStart[jRow];
+                            CoinBigIndex start = rowStart[jRow];
                             stored.addCut(rowLower[jRow], rowUpper[jRow],
                                           rowLength[jRow], column + start, elementByRow + start);
                         }

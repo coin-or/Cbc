@@ -5283,7 +5283,8 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info, int & whichWay)
     y = CoinMax(y, yB[0]);
     y = CoinMin(y, yB[1]);
     int j;
-#ifndef NDEBUG
+    // seems something wrong here
+#if 0 //ndef NDEBUG
     double xLambda = 0.0;
     double yLambda = 0.0;
     if ((branchingStrategy_&4) == 0) {

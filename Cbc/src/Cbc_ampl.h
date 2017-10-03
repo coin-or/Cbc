@@ -25,7 +25,11 @@ typedef struct {
     double * rowUpper;
     double * columnLower;
     double * columnUpper;
+#if COIN_BIG_INDEX==0
     int * starts;
+#else
+    long unsigned int * starts;
+#endif
     int * rows;
     double * elements;
     double * primalSolution;

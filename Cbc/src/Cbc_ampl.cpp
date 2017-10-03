@@ -421,7 +421,11 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     rsd = suf_iput("sstatus", ASL_Sufkind_con, info->rowStatus);
     if (!(nlvc + nlvo) && nonLinearType < 10) {
         /* read linear model*/
+#if COIN_BIG_INDEX==2
+        f_read(nl, ASL_allow_Z|ASL_use_Z);
+#else
         f_read(nl, 0);
+#endif
         // see if any sos
         if (true) {
             char *sostype;
@@ -504,7 +508,11 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
         info->rowUpper = rowUpper;
         info->columnLower = columnLower;
         info->columnUpper = columnUpper;
+#if COIN_BIG_INDEX==0
         info->starts = A_colstarts;
+#else
+        info->starts = A_colstartsZ;
+#endif
         /*A_colstarts=NULL;*/
         info->rows = A_rownos;
         /*A_rownos=NULL;*/
@@ -884,7 +892,11 @@ CoinModel::gdb( int nonLinear, const char * fileName, const void * info)
         csd = suf_iput("sstatus", ASL_Sufkind_var, columnStatus);
         rsd = suf_iput("sstatus", ASL_Sufkind_con, rowStatus);
         /* read linear model*/
+#if COIN_BIG_INDEX==2
+        f_read(nl, ASL_allow_Z|ASL_use_Z);
+#else
         f_read(nl, 0);
+#endif
         // see if any sos
         if (true) {
             char *sostype;
@@ -989,8 +1001,14 @@ CoinModel::gdb( int nonLinear, const char * fileName, const void * info)
             columnStatus = NULL;
 #endif
         }
+#if COIN_BIG_INDEX==0
         CoinPackedMatrix columnCopy(true, numberRows, numberColumns, numberElements,
                                     A_vals, A_rownos, A_colstarts, NULL);
+#else
+        CoinPackedMatrix columnCopy(true, numberRows, numberColumns, numberElements,
+                                    A_vals, A_rownos,
+				    reinterpret_cast<const CoinBigIndex *>(A_colstartsZ), NULL);
+#endif
         matrixByRow.reverseOrderedCopyOf(columnCopy);
     } else if (nonLinear == 1) {
         // quadratic

@@ -1504,7 +1504,8 @@ int CbcMain1 (int argc, const char *argv[],
 #ifdef COIN_HAS_LINK
                 if (!coinModel) {
 #endif
-                    solver->loadProblem(info.numberColumns, info.numberRows, info.starts,
+                    solver->loadProblem(info.numberColumns, info.numberRows,
+					reinterpret_cast<const CoinBigIndex *>(info.starts),
                                         info.rows, info.elements,
                                         info.columnLower, info.columnUpper, info.objective,
                                         info.rowLower, info.rowUpper);

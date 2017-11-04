@@ -20,7 +20,7 @@ int main (int argc, const char *argv[])
 
   OsiClpSolverInterface model;
  
-  int start[] = { 0, 1, 2};
+  CoinBigIndex start[] = { 0, 1, 2};
   int index[] = { 0, 0};
   double values[] = {1.0, 2.0};
   double collb[] = {0.0, 0.0};

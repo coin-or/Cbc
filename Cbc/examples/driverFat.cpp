@@ -418,7 +418,7 @@ void CbcSolverShortFat::initialSolve()
   int takeOutPass = INCREASE;
   int iPass;
   
-  const int * start = model->clpMatrix()->getVectorStarts();
+  const CoinBigIndex * start = model->clpMatrix()->getVectorStarts();
   const int * length = model->clpMatrix()->getVectorLengths();
   const int * row = model->clpMatrix()->getIndices();
   int * whichColumns = new int [numberColumns];

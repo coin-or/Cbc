@@ -647,7 +647,7 @@ CbcTreeLocal::empty()
             }
             for (int i = 0; i < n; i++) {
                 rowCut = global->rowCutPtr(i);
-                if (model_->messageHandler()->logLevel() > 0)
+                if (model_->messageHandler()->logLevel() > 1)
                     printf("%d - rhs %g %g\n",
                            i, rowCut->lb(), rowCut->ub());
             }

@@ -9335,7 +9335,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         */
         int iProbing = -1;
         double smallProblem = (0.2 * totalCuts) /
-                              static_cast<double> (numberActiveGenerators) ;
+                              static_cast<double> (numberActiveGenerators+1.0e-100) ;
         for (i = 0; i < numberCutGenerators_; i++) {
             int howOften = generator_[i]->howOften() ;
             /*  Probing can be set to just do column cuts in treee.
@@ -9358,7 +9358,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                 if (generator_[i]->numberCutsInTotal()) {
                     // If large number of probing - can be biased
                     smallProblem = (0.2 * (totalCuts - generator_[i]->numberCutsInTotal())) /
-                                   static_cast<double> (numberActiveGenerators - 1) ;
+                                   static_cast<double> (numberActiveGenerators - 1+1.0e-100) ;
                 }
                 iProbing = i;
                 if (probing->rowCuts() == -3) {

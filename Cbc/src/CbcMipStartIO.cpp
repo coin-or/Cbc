@@ -23,7 +23,8 @@ bool isNumericStr( const char *str )
    const size_t l = strlen(str);
 
    for ( size_t i=0 ; i<l ; ++i )
-     if (!(isdigit(str[i])||(str[i]=='.')||(str[i]=='-')||(str[i]=='e')))
+     if (!(isdigit(str[i])||(str[i]=='.')||
+	   (str[i]=='-')||(str[i]=='+')||(str[i]=='e')))
          return false;
 
    return true;

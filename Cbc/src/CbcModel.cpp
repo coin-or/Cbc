@@ -12783,6 +12783,14 @@ CbcModel::checkSolution (double cutoff, double *solution,
                 solver_->setHintParam(OsiDoScale, saveTakeHint, saveStrength);
 #endif
                 double largestInfeasibility = 0.0;
+#ifdef COIN_HAS_CLP
+		if (clpContinuousSolver) {
+		  ClpSimplex * clp = clpContinuousSolver->getModelPtr();
+		  if ((modifiedTolerances&1)!=0)
+		    clp->setPrimalTolerance(savePrimalTolerance);
+		  assert (savePrimalTolerance);
+		}
+#endif
                 double primalTolerance ;
                 solver_->getDblParam(OsiPrimalTolerance, primalTolerance) ;
                 const double * rowLower = solver_->getRowLower() ;

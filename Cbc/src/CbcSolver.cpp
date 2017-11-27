@@ -322,6 +322,7 @@ static void putBackOtherSolutions(CbcModel * presolvedModel, CbcModel * model,
     presolvedModel->setBestObjectiveValue(objectiveValue);
     presolvedModel->solver()->setColSolution(bestSolution);
     //presolvedModel->setBestSolution(bestSolution,numberColumns,objectiveValue);
+    delete [] bestSolution;
   }
 }
 
@@ -6906,8 +6907,14 @@ int CbcMain1 (int argc, const char *argv[],
 				  int numberSolutions = babModel_->numberSavedSolutions();
 				  if (numberSolutions>1) {
 				    for (int iSolution=numberSolutions-1;iSolution>=0;iSolution--) {
-				      model_.setBestSolution(babModel_->savedSolution(iSolution),
-							     model_.solver()->getNumCols(),
+				      const double * savedSolution =babModel_->savedSolution(iSolution);
+				      int numberColumns=model_.solver()->getNumCols();
+				      // only set if dimensions OK
+				      int numberBabColumns=static_cast<int>
+					(savedSolution[-2]);
+				      if (numberBabColumns>=numberColumns)
+					model_.setBestSolution(savedSolution,
+							     numberColumns,
 							     babModel_->savedSolutionObjective(iSolution));
 				    }
 				  }

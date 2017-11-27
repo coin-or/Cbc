@@ -1661,6 +1661,7 @@ CbcHeuristicCrossover::solution(double & solutionValue,
             }
         }
     }
+    delete [] fixed;
     int returnCode = smallBranchAndBound(solver, numberNodes_, betterSolution,
                                          solutionValue,
                                          solutionValue, "CbcHeuristicCrossover");

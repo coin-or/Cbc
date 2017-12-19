@@ -14541,16 +14541,28 @@ CbcModel::resolve(OsiSolverInterface * solver)
                        clpSimplex->largestPrimalError());
 #endif
                 if (!clpSolver->isProvenOptimal()) {
-                    clpSolver->setSpecialOptions(save2 | 2048);
-                    clpSimplex->allSlackBasis(true);
-		    clpSolver->resolve();
-		    if (!clpSolver->isProvenOptimal()) {
-		         bool takeHint;
-			 OsiHintStrength strength;
-			 clpSolver->getHintParam(OsiDoDualInResolve, takeHint, strength);
-			 clpSolver->setHintParam(OsiDoDualInResolve, false, OsiHintDo);
-			 clpSolver->resolve();
-			 clpSolver->setHintParam(OsiDoDualInResolve, takeHint, strength);
+		    // check if proven infeasible i.e. bad bounds
+		    int numberColumns = clpSolver->getNumCols();
+		    const double * columnLower = clpSolver->getColLower();
+		    const double * columnUpper = clpSolver->getColUpper();
+		    bool provenInfeasible = false;
+		    for (int i=0;i<numberColumns;i++) {
+		      if (columnLower[i]>columnUpper[i]) {
+			provenInfeasible=true;
+		      }
+		    }
+		    if (!provenInfeasible) {
+		      clpSolver->setSpecialOptions(save2 | 2048);
+		      clpSimplex->allSlackBasis(true);
+		      clpSolver->resolve();
+		      if (!clpSolver->isProvenOptimal()) {
+			bool takeHint;
+			OsiHintStrength strength;
+			clpSolver->getHintParam(OsiDoDualInResolve, takeHint, strength);
+			clpSolver->setHintParam(OsiDoDualInResolve, false, OsiHintDo);
+			clpSolver->resolve();
+			clpSolver->setHintParam(OsiDoDualInResolve, takeHint, strength);
+		      }
 		    }
                 }
                 // make cuts safer

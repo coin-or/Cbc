@@ -1047,6 +1047,38 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		model.setDblParam(CbcModel::CbcStartSeconds,startTime);
 		// move seed across
 		model.randomNumberGenerator()->setSeed(model_->randomNumberGenerator()->getSeed());
+#ifdef COIN_HAS_CLP
+		// redo SOS
+		OsiClpSolverInterface * clpSolver
+		  = dynamic_cast<OsiClpSolverInterface *> (model.solver());
+		if (clpSolver && clpSolver->numberSOS()) {
+		  int numberColumns = clpSolver->getNumCols();
+		  const int * originalColumns = process.originalColumns();
+		  CoinSet * setInfo =
+		    const_cast<CoinSet *>(clpSolver->setInfo());
+		  int numberSOS = clpSolver->numberSOS();
+		  for (int iSOS = 0; iSOS < numberSOS; iSOS++) {
+                    //int type = setInfo[iSOS].setType();
+                    int n = setInfo[iSOS].numberEntries();
+                    int * which = setInfo[iSOS].modifiableWhich();
+                    double * weights = setInfo[iSOS].modifiableWeights();
+		    int n2=0;
+		    for (int j=0;j<n;j++) {
+		      int iColumn=which[j];
+		      int i;
+		      for (i = 0; i < numberColumns; i++) {
+			if (originalColumns[i] == iColumn)
+			  break;
+		      }
+		      if (i < numberColumns) {
+			which[n2] = i;
+			weights[n2++] = weights[j];
+		      }
+		    }
+		    setInfo[iSOS].setNumberEntries(n2);
+		  }
+		}
+#endif
                 if (numberNodes >= 0) {
                     // normal
                     model.setSpecialOptions(saveModelOptions | 2048);

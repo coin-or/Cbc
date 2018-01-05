@@ -16277,6 +16277,10 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                             }
                         }
                         ClpSimplex * simplex = clpSolver->getModelPtr();
+			double * saveLower =
+			  CoinCopyOfArray(solver_->getColLower(),numberColumns);
+			double * saveUpper =
+			  CoinCopyOfArray(solver_->getColUpper(),numberColumns);
                         if (allSame && false) {
                             // change priorities on general
                             const double * lower = simplex->columnLower();
@@ -16327,6 +16331,19 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                         simplex->setPerturbation(perturbation);
                         incrementExtra(info->numberNodesExplored_,
 				       info->numberIterations_);
+			if (feasible) {
+			  double objValue=simplex->objectiveValue();
+			  feasible = solveWithCuts(cuts, 1, node);
+			  if (!feasible) {
+			    if ((specialOptions_&1) != 0)
+			      printf("small was feasible %g now infeasible! - depths %d %d\n",
+				     objValue,node->depth(),fastNodeDepth_);
+			    // switch off
+			    info->nNodes_=-99;
+			    solver_->setColLower(saveLower);
+                            solver_->setColUpper(saveUpper);
+			  }
+			}
 			char general[200];
 			int fathomStatus=info->nNodes_;
 			if (feasible)
@@ -16354,6 +16371,8 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                             // we gave up
                             //abort();
 			  fastNodeDepth_ -= (info->nNodes_==-10) ? 5 : 2;
+			  if (info->nNodes_==-99)
+			    fastNodeDepth_=-1; // switch off
 #ifndef NO_FATHOM_PRINT
 			  if ((moreSpecialOptions_&262144) != 0)
 			    handler_->message(CBC_FATHOM_CHANGE, messages_) << 
@@ -16375,12 +16394,17 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                 double * newSolution =
                                     CoinCopyOfArray(simplex->primalColumnSolution(),
                                                     numberColumns);
+				double saveBest = bestObjective_;
                                 setBestSolution(CBC_STRONGSOL, value, newSolution) ;
                                 delete [] newSolution;
-                                //solver_->setColLower(saveLower);
-                                //solver_->setColUpper(saveUpper);
-                                //delete [] saveLower;
-                                //delete [] saveUpper;
+				if (bestObjective_==saveBest) {
+				  if ((specialOptions_&1) != 0)
+				    printf("small was feasible now just infeasible! - depths %d %d\n",
+					   node->depth(),fastNodeDepth_);
+				  fastNodeDepth_=-1; // switch off
+				  solver_->setColLower(saveLower);
+				  solver_->setColUpper(saveUpper);
+				}
                             }
                             // say feasible so will redo node
                             feasible = true;
@@ -16392,11 +16416,20 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                 double * newSolution =
                                     CoinCopyOfArray(simplex->primalColumnSolution(),
                                                     numberColumns);
+				double saveBest = bestObjective_;
                                 setBestSolution(CBC_STRONGSOL, value, newSolution) ;
 				// in case of inaccuracy
 				simplex->setObjectiveValue(CoinMax(bestObjective_,
 								   simplex->objectiveValue()));
                                 delete [] newSolution;
+				if (bestObjective_==saveBest) {
+				  if ((specialOptions_&1) != 0)
+				    printf("small was feasible now just infeasible! - depths %d %d\n",
+					   node->depth(),fastNodeDepth_);
+				  fastNodeDepth_=-1; // switch off
+				  solver_->setColLower(saveLower);
+				  solver_->setColUpper(saveUpper);
+				}
                             }
                             // update pseudo costs
                             double smallest = 1.0e50;
@@ -16425,7 +16458,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                 }
                             }
                             //printf("range of costs %g to %g\n",smallest,largest);
-                        }
+			}
                         simplex->setLogLevel(saveLevel);
 #ifdef COIN_HAS_CPX
                     } else {

@@ -1355,6 +1355,9 @@ int CbcMain1 (int argc, const char *argv[],
     */
     CoinMessageHandler * generalMessageHandler = model_.messageHandler();
     generalMessageHandler->setPrefix(false);
+    int numberLotSizing=0;
+    typedef struct {double low;double high;int column;} lotStruct;   
+    lotStruct * lotsize=NULL;
 #ifndef CBC_OTHER_SOLVER
     OsiClpSolverInterface * originalSolver = dynamic_cast<OsiClpSolverInterface *> (model_.solver());
     assert (originalSolver);
@@ -4015,6 +4018,31 @@ int CbcMain1 (int argc, const char *argv[],
 			      }
 			    }
                             if (type == CBC_PARAM_ACTION_BAB) {
+			        if (preProcess==0 && numberLotSizing) {
+				  if (!babModel_->numberObjects()) {
+				    /* model may not have created objects
+				       If none then create
+				    */
+				    babModel_->findIntegers(true);
+				  }
+				  // Lotsizing
+				  int numberColumns = babModel_->solver()->getNumCols();
+				  CbcObject ** objects =
+				    new CbcObject * [numberLotSizing];
+				  double points[]={0.0,0.0,0.0,0.0};
+				  for (int i = 0; i < numberLotSizing; i++) {
+				    int iColumn = lotsize[i].column;
+				    points[2]=lotsize[i].low;
+				    points[3]=lotsize[i].high;
+				    objects[i] = new
+				      CbcLotsize (&model_,iColumn,2,
+						  points,true);
+				  }
+				  babModel_->addObjects(numberLotSizing,objects);
+				  for (int i = 0; i < numberLotSizing; i++)
+				    delete objects[i];
+				  delete [] objects;
+				}
                                 double limit;
                                 clpSolver->getDblParam(OsiDualObjectiveLimit, limit);
                                 if (clpSolver->getObjValue()*clpSolver->getObjSense() >=
@@ -4162,6 +4190,18 @@ int CbcMain1 (int argc, const char *argv[],
                                         */
                                         model_.findIntegers(true);
                                     }
+				    // Lotsizing
+				    if (numberLotSizing) {
+				      int numberColumns = saveSolver->getNumCols();
+				      char * prohibited = new char[numberColumns];
+				      memset(prohibited, 0, numberColumns);
+				      for (int i = 0; i < numberLotSizing; i++) {
+					int iColumn = lotsize[i].column;
+					prohibited[iColumn] = 1;
+				      }
+				      process.passInProhibited(prohibited, numberColumns);
+				      delete [] prohibited;
+				    }
                                     if (model_.numberObjects()) {
                                         OsiObject ** oldObjects = babModel_->objects();
                                         int numberOldObjects = babModel_->numberObjects();
@@ -4346,6 +4386,24 @@ int CbcMain1 (int argc, const char *argv[],
                                                 osiclp2->setOptionalInteger(i); // say optional
                                         }
                                     }
+				    // do lotsizing
+				    if (numberLotSizing) {
+				      CbcObject ** objects =
+					new CbcObject * [numberLotSizing];
+				      double points[]={0.0,0.0,0.0,0.0};
+				      for (int i = 0; i < numberLotSizing; i++) {
+					int iColumn = lotsize[i].column;
+					points[2]=lotsize[i].low;
+					points[3]=lotsize[i].high;
+					objects[i] = new
+					  CbcLotsize (babModel_,iColumn,2,
+						      points,true);
+				      }
+				      babModel_->addObjects(numberLotSizing,objects);
+				      for (int i = 0; i < numberLotSizing; i++)
+					delete objects[i];
+				      delete [] objects;
+				    }
 				    // redo existing SOS
 				    if (osiclp->numberSOS()) {
 				      redoSOS=false;
@@ -7949,6 +8007,8 @@ int CbcMain1 (int argc, const char *argv[],
                         }
                         if (canOpen) {
                             int status;
+			    numberLotSizing=0;
+			    delete [] lotsize;
 #ifndef CBC_OTHER_SOLVER
                             ClpSimplex * lpSolver = clpSolver->getModelPtr();
                             if (!gmpl) {
@@ -7982,10 +8042,44 @@ int CbcMain1 (int argc, const char *argv[],
                                 // sets to all slack (not necessary?)
                                 lpSolver->createStatus();
                                 // make sure integer
+				// also deal with semi-continuous
                                 int numberColumns = lpSolver->numberColumns();
-                                for (int i = 0; i < numberColumns; i++) {
+				int i;
+                                for (i = 0; i < numberColumns; i++) {
+  				    if (clpSolver->integerType(i)>2)
+				      break;
                                     if (lpSolver->isInteger(i))
                                         clpSolver->setInteger(i);
+                                }
+				if (i<numberColumns) {
+				  // semi-continuous
+				  clpSolver->setSpecialOptions(clpSolver->specialOptions()|8388608);
+				  int iStart=i;
+				  for (i=iStart; i < numberColumns; i++) {
+				    if (clpSolver->integerType(i)>2)
+				      numberLotSizing++;
+				  }
+				  lotsize = new lotStruct[numberLotSizing];
+				  numberLotSizing=0;
+				  const double * lower = clpSolver->getColLower();
+				  const double * upper = clpSolver->getColUpper();
+				  for (i=iStart; i < numberColumns; i++) {
+				    if (clpSolver->integerType(i)>2) {
+				      int iType=clpSolver->integerType(i)-3;
+				      if (!iType)
+					clpSolver->setContinuous(i);
+				      else
+                                        clpSolver->setInteger(i);
+				      lotsize[numberLotSizing].column=i;
+				      lotsize[numberLotSizing].high=upper[i];
+				      if (lower[i]) {
+					lotsize[numberLotSizing++].low=lower[i];
+					clpSolver->setColLower(i,0.0);
+				      } else {
+					lotsize[numberLotSizing++].low=1.0;
+				      }
+				    }
+				  }
                                 }
 #else
                                 lengthName = 0;
@@ -8167,7 +8261,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
 #endif
 				numberSOS = clpSolver->numberSOS();
-				if (numberSOS)
+				if (numberSOS || lotsize)
 				  preSolve = false;
 #endif
                                 if (preSolve) {
@@ -8193,13 +8287,30 @@ int CbcMain1 (int argc, const char *argv[],
                                         model2 = lpSolver;
 
                                     }
-                                    model2->writeMps(fileName.c_str(), (outputFormat - 1) / 2, 1 + ((outputFormat - 1)&1));
+				    // see if extension lp
+				    bool writeLp=false;
+				    {
+				      int lengthName = strlen(fileName.c_str());
+				      if (lengthName>3&&!strcmp(fileName.c_str()+lengthName-3,".lp"))
+					writeLp=true;
+				    }
+				    if (!writeLp) {
+				      model2->writeMps(fileName.c_str(), (outputFormat - 1) / 2, 1 + ((outputFormat - 1)&1));
+				    } else {
+				      FILE *fp = fopen(fileName.c_str(), "w");
+				      assert (fp);
+				      OsiClpSolverInterface solver(model2);
+				      solver.writeLp(fp,1.0e-12);
+				    }
                                     if (deleteModel2)
                                         delete model2;
                                 } else {
                                     printf("Saving model on %s\n",
                                            fileName.c_str());
-                                    if (numberSOS) {
+#ifdef COIN_HAS_LINK
+				    OsiSolverLink * linkSolver = dynamic_cast< OsiSolverLink*> (clpSolver);
+				    if (!linkSolver || !linkSolver->quadraticModel()) {
+#endif
                                         // Convert names
                                         int iRow;
                                         int numberRows = model2->numberRows();
@@ -8228,6 +8339,20 @@ int CbcMain1 (int argc, const char *argv[],
 					  if (lengthName>3&&!strcmp(fileName.c_str()+lengthName-3,".lp"))
 					    writeLp=true;
 					}
+					if (lotsize) {
+					  for (int i=0;i<numberLotSizing;i++) {
+					    int iColumn=lotsize[i].column;
+					    double low = lotsize[i].low;
+					    if (low!=1.0)
+					      clpSolver->setColLower(iColumn,low);
+					    int type;
+					    if (clpSolver->isInteger(iColumn)) 
+					      type = 4;
+					    else
+					      type = 3;
+					    clpSolver->setColumnType(iColumn,type);
+					  }
+					}
 					if (!writeLp) {
 					  remove(fileName.c_str());
 					  clpSolver->writeMpsNative(fileName.c_str(), const_cast<const char **> (rowNames), const_cast<const char **> (columnNames),
@@ -8247,15 +8372,22 @@ int CbcMain1 (int argc, const char *argv[],
                                             }
                                             delete [] columnNames;
                                         }
-                                    } else {
+					if (lotsize) {
+					  for (int i=0;i<numberLotSizing;i++) {
+					    int iColumn=lotsize[i].column;
+					    int itype=clpSolver->integerType(iColumn);
+					    clpSolver->setColLower(iColumn,0.0); 
+					    if (itype==3) 
+					      clpSolver->setContinuous(iColumn);
+					    else
+					      clpSolver->setInteger(iColumn);
+					  }
+					}
 #ifdef COIN_HAS_LINK
-                                        OsiSolverLink * linkSolver = dynamic_cast< OsiSolverLink*> (clpSolver);
-                                        if (!linkSolver || !linkSolver->quadraticModel())
-                                            model2->writeMps(fileName.c_str(), (outputFormat - 1) / 2, 1 + ((outputFormat - 1)&1));
-                                        else
-                                            linkSolver->quadraticModel()->writeMps(fileName.c_str(), (outputFormat - 1) / 2, 1 + ((outputFormat - 1)&1));
+                                    } else {
+				      linkSolver->quadraticModel()->writeMps(fileName.c_str(), (outputFormat - 1) / 2, 1 + ((outputFormat - 1)&1));
+				    }
 #endif
-                                    }
                                 }
                                 time2 = CoinCpuTime();
                                 totalTime += time2 - time1;
@@ -10172,6 +10304,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
       cbc_glp_tran = NULL;
     }
 #endif
+    delete [] lotsize;
     delete [] statistics_number_cuts;
     delete [] statistics_name_generators;
     // By now all memory should be freed

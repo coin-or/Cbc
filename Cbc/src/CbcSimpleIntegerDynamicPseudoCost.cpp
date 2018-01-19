@@ -618,7 +618,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
 #endif
     double sum;
 #ifndef INFEAS_MULTIPLIER 
-#define INFEAS_MULTIPLIER 1.0
+#define INFEAS_MULTIPLIER 1.5
 #endif
     double number;
     double downCost = CoinMax(value - below, 0.0);
@@ -743,8 +743,8 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
 #endif
         // was <= 10
         //if (stateOfSearch<=1||model_->currentNode()->depth()<=-10 /* was ||maxValue>0.2*distanceToCutoff*/) {
-        if (stateOfSearch <= 2) {
-            // no branching solution
+        if (stateOfSearch < 1) {
+            // no solution
 #ifdef COIN_DEVELOP
             where = 'i';
 #endif

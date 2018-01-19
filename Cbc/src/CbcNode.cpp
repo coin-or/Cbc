@@ -3079,10 +3079,13 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 		      osiclp->getIntParam(OsiMaxNumIterationHotStart, saveMaxHotIts);
 		      saveOsiClpOptions=osiclp->specialOptions();
 		      if (goToEndInStrongBranching==2 ||
-			  dynamicObject->numberTimesBranched()==0) {
+			  (dynamicObject &&
+			   dynamicObject->numberTimesBranched()==0)) {
+			if (osiclp->getNumRows()<200||goToEndInStrongBranching==2) {
 			osiclp->setIntParam(OsiMaxNumIterationHotStart, 
 					    10*(osiclp->getNumRows()+numberColumns));
 			osiclp->setSpecialOptions(saveOsiClpOptions & (~32));
+			}
 		      }
 		    }
 #endif
@@ -3249,7 +3252,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             }
                         }
                     } else if (iStatus == 1) {
-                        objectiveChange = 1.0e100 ;
+                        choice.finishedDown = true ;
+                        objectiveChange = COIN_DBL_MAX ;
                         numberStrongInfeasible++;
                     } else {
                         // Can't say much as we did not finish
@@ -3485,7 +3489,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             }
                         }
                     } else if (iStatus == 1) {
-                        objectiveChange = 1.0e100 ;
+                        choice.finishedUp = true ;
+                        objectiveChange = COIN_DBL_MAX;
                         numberStrongInfeasible++;
                     } else {
                         // Can't say much as we did not finish

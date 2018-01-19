@@ -4299,6 +4299,112 @@ void CbcModel::branchAndBound(int doStatistics)
         // See if we want dantzig row choice
         goToDantzig(100, savePivotMethod);
 #endif
+	//#define REPORT_DYNAMIC 2
+#if REPORT_DYNAMIC
+	if (numberNodes_&&!parentModel_&&(tree_->empty()||(numberNodes_%10000)==0)) {
+	  // Get average up and down costs
+	  double averageUp = 0.0;
+	  double averageDown = 0.0;
+	  int numberUp = 0;
+	  int numberDown = 0;
+	  int minTimesDown = COIN_INT_MAX;
+	  int maxTimesDown = 0;
+	  int neverBranchedDown = 0;
+	  int infeasibleTimesDown = 0;
+	  int minTimesUp = COIN_INT_MAX;
+	  int maxTimesUp = 0;
+	  int infeasibleTimesUp = 0;
+	  int neverBranchedUp = 0;
+	  int neverBranched = 0;
+	  int i;
+	  int numberInts=0;
+	  bool endOfSearch = tree_->empty();
+	  int  numberUp2 = 0;
+	  int numberDown2 = 0;
+	  for ( i = 0; i < numberObjects_; i++) {
+            OsiObject * object = object_[i];
+            CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
+	      dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+	    if (dynamicObject) {
+	      numberInts++;
+	      if (dynamicObject->numberTimesUp()||
+		  dynamicObject->numberTimesDown()) {
+		int  nUp = 0;
+		int nDown = 0;
+		double up = 0.0;
+		double down = 0.0;
+		if (dynamicObject->numberTimesUp()) {
+		  numberUp++;
+		  nUp = dynamicObject->numberTimesUp();
+		  minTimesUp = CoinMin(minTimesUp,nUp);
+		  maxTimesUp = CoinMax(maxTimesUp,nUp);
+		  up = dynamicObject->upDynamicPseudoCost();
+		  averageUp += up;
+		  numberUp2 += nUp;
+		  infeasibleTimesUp += dynamicObject->numberTimesUpInfeasible();
+		} else {
+		  neverBranchedUp++;
+		}
+		if (dynamicObject->numberTimesDown()) {
+		  numberDown++;
+		  nDown = dynamicObject->numberTimesDown();
+		  minTimesDown = CoinMin(minTimesDown,nDown);
+		  maxTimesDown = CoinMax(maxTimesDown,nDown);
+		  down = dynamicObject->downDynamicPseudoCost();
+		  averageDown += down;
+		  numberDown2 += dynamicObject->numberTimesDown();
+		  infeasibleTimesDown += dynamicObject->numberTimesDownInfeasible();
+		} else {
+		  neverBranchedDown++;
+		}
+#if REPORT_DYNAMIC > 1
+#if REPORT_DYNAMIC == 2
+		if (endOfSearch&&numberIntegers_<400) {
+#elif REPORT_DYNAMIC == 3
+		if (endOfSearch) {
+#else
+		  {
+#endif
+		  dynamicObject->print(0,0.0);
+		}
+#endif
+	      } else {
+		neverBranched++;
+#if REPORT_DYNAMIC > 2
+#if REPORT_DYNAMIC == 3
+		if (endOfSearch&&numberIntegers_<400) {
+#elif REPORT_DYNAMIC == 4
+		if (endOfSearch) {
+#else
+		  {
+#endif
+		  printf("col %d - never branched on\n",dynamicObject->columnNumber());
+		}
+#endif
+	      }
+	    }
+	  }
+	  if (numberUp)
+            averageUp /= static_cast<double> (numberUp);
+	  else
+            averageUp = 0.0;
+	  if (numberDown)
+            averageDown /= static_cast<double> (numberDown);
+	  else
+            averageDown = 0.0;
+	  printf("Report for %d variables (%d never branched on) after %d nodes - total solves down %d up %d\n",
+		 numberInts,neverBranched,numberNodes_,numberDown2,numberUp2);
+	  if ((neverBranchedDown||neverBranchedUp)&&endOfSearch)
+	    printf("odd %d never branched down and %d never branched up\n",
+		   neverBranchedDown,neverBranchedUp);
+	  printf("down average %g times (%d infeasible) average increase %g min/max times (%d,%d)\n",
+		 static_cast<double>(numberDown2)/numberDown,infeasibleTimesDown,averageDown,
+		 minTimesDown,maxTimesDown);
+	  printf("up average %g times (%d infeasible) average increase %g min/max times (%d,%d)\n",
+		 static_cast<double>(numberUp2)/numberUp,infeasibleTimesUp,averageUp,
+		 minTimesUp,maxTimesUp);
+	}
+#endif
         if (tree_->empty()) {
 #ifdef CBC_THREAD
             if (parallelMode() > 0 && master_) {
@@ -7981,6 +8087,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             update.objectNumber_ = iObject;
             // Care! We must be careful not to update the same variable in parallel threads.
             addUpdateInformation(update);
+	    // update here
+	    {
+	      CbcObject * object = dynamic_cast<CbcObject *> (update.object_);
+	      if (object)
+		object->updateInformation(update);
+	    }
             //#define CBCMODEL_TIGHTEN_BOUNDS
 #ifdef CBCMODEL_TIGHTEN_BOUNDS
             double cutoff = getCutoff() ;
@@ -15174,8 +15286,6 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
                     }
                     assert (found);
 #endif
-                    //if (object)
-                    //assert (object==object_[update->objectNumber_]);
                     if (object)
                         object->updateInformation(*update);
                 }
@@ -17094,8 +17204,6 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                     }
                     assert (found);
 #endif
-                    //if (object)
-                    //assert (object==object_[update->objectNumber_]);
                     if (object)
                         object->updateInformation(*update);
                 }

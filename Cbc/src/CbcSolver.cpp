@@ -4071,39 +4071,6 @@ int CbcMain1 (int argc, const char *argv[],
 				}
 			      }
                             if (preProcess && type == CBC_PARAM_ACTION_BAB) {
-#ifndef CBC_OTHER_SOLVER
-                                // See if sos from mps file
-                                if (numberSOS == 0 && clpSolver->numberSOS() && doSOS) {
-                                    // SOS
-                                    numberSOS = clpSolver->numberSOS();
-                                    const CoinSet * setInfo = clpSolver->setInfo();
-                                    sosStart = new int [numberSOS+1];
-                                    sosType = new char [numberSOS];
-                                    int i;
-                                    int nTotal = 0;
-                                    sosStart[0] = 0;
-                                    for ( i = 0; i < numberSOS; i++) {
-                                        int type = setInfo[i].setType();
-                                        int n = setInfo[i].numberEntries();
-                                        sosType[i] = static_cast<char>(type);
-                                        nTotal += n;
-                                        sosStart[i+1] = nTotal;
-                                    }
-                                    sosIndices = new int[nTotal];
-                                    sosReference = new double [nTotal];
-                                    for (i = 0; i < numberSOS; i++) {
-                                        int n = setInfo[i].numberEntries();
-                                        const int * which = setInfo[i].which();
-                                        const double * weights = setInfo[i].weights();
-                                        int base = sosStart[i];
-                                        for (int j = 0; j < n; j++) {
-                                            int k = which[j];
-                                            sosIndices[j+base] = k;
-                                            sosReference[j+base] = weights ? weights[j] : static_cast<double> (j);
-                                        }
-                                    }
-                                }
-#endif
                                 saveSolver = babModel_->solver()->clone();
                                 /* Do not try and produce equality cliques and
                                    do up to 10 passes */
@@ -8041,6 +8008,46 @@ int CbcMain1 (int argc, const char *argv[],
                                 goodModel = true;
                                 // sets to all slack (not necessary?)
                                 lpSolver->createStatus();
+                                // See if sos
+                                if (clpSolver->numberSOS()) {
+                                    // SOS
+                                    numberSOS = clpSolver->numberSOS();
+                                    const CoinSet * setInfo = clpSolver->setInfo();
+                                    sosStart = new int [numberSOS+1];
+                                    sosType = new char [numberSOS];
+				    const double * lower =
+				      clpSolver->getColLower();
+				    const double * upper =
+				      clpSolver->getColUpper();
+                                    int i;
+                                    int nTotal = 0;
+                                    sosStart[0] = 0;
+                                    for ( i = 0; i < numberSOS; i++) {
+                                        int type = setInfo[i].setType();
+                                        int n = setInfo[i].numberEntries();
+                                        sosType[i] = static_cast<char>(type);
+                                        nTotal += n;
+                                        sosStart[i+1] = nTotal;
+                                    }
+                                    sosIndices = new int[nTotal];
+                                    sosReference = new double [nTotal];
+                                    for (i = 0; i < numberSOS; i++) {
+                                        int n = setInfo[i].numberEntries();
+                                        const int * which = setInfo[i].which();
+                                        const double * weights = setInfo[i].weights();
+                                        int base = sosStart[i];
+                                        for (int j = 0; j < n; j++) {
+                                            int k = which[j];
+					    // don't allow free
+					    if (upper[k]>1.0e15)
+					      clpSolver->setColUpper(k,1.0e15);
+					    if (lower[k]<-1.0e15)
+					      clpSolver->setColLower(k,-1.0e15);
+                                            sosIndices[j+base] = k;
+                                            sosReference[j+base] = weights ? weights[j] : static_cast<double> (j);
+                                        }
+                                    }
+                                }
                                 // make sure integer
 				// also deal with semi-continuous
                                 int numberColumns = lpSolver->numberColumns();

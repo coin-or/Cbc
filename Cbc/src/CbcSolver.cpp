@@ -7708,8 +7708,10 @@ int CbcMain1 (int argc, const char *argv[],
 					      "No feasible solution found\n");
 				    }
 				    if (iStat2 >= 2 && iStat2 <=6){
+				      bool minimizing = babModel_->solver()->getObjSense()>0.0;
 				       sprintf(generalPrint + strlen(generalPrint), 
-					       "Lower bound:                    %.3f\n", 
+					       "%s bound:                    %.3f\n", 
+					       minimizing ? "Lower" : "Upper",
 					       babModel_->getBestPossibleObjValue());
 				       if (babModel_->bestSolution()){
 					  sprintf(generalPrint + strlen(generalPrint), 

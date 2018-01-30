@@ -105,6 +105,10 @@ int main (int argc, const char *argv[])
   time2 = cpuTime();
   std::cout<<"Presolve took "<<time2-time1<<" seconds"<<std::endl;;
   time1 = time2;
+  if (!simplex2 ||!simplex2->integerInformation()) {
+    std::cout<<"Please use a feasible problem which has integers after presolve"<<std::endl;
+    exit(77);
+  }
   OsiClpSolverInterface solver1(simplex2);
   solver1.writeMps("bad2");
   // Do initial solve to continuous

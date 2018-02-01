@@ -2297,8 +2297,11 @@ void CbcModel::branchAndBound(int doStatistics)
 	    moreSpecialOptions_ &= ~33554432; // no diving
         }
         if (numberThreads_ > 0) {
-            // switch off fast nodes for now
-            //fastNodeDepth_ = -1;
+	    /* switch off fast nodes for now
+	       Trouble is that by time mini bab finishes code is
+	       looking at a different node
+	     */
+            fastNodeDepth_ = -1;
         }
     }
     // Save objective (just so user can access it)

@@ -85,6 +85,10 @@ extern "C" {
     COINLIBAPI void COINLINKAGE
     Cbc_writeMps(Cbc_Model * model, const char *filename)
     ;
+    /** Read an lp file from the given filename */
+    COINLIBAPI int COINLINKAGE
+    Cbc_readLp(Cbc_Model * model, const char *filename)
+    ;
     /** Provide an initial feasible solution to accelerate branch-and-bound 
      Note that feasibility of the solution is *not* verified.
     */

@@ -203,8 +203,13 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
     //double largestValue=0.0;
+#define ZERO_SOS_TOLERANCE 1.0e-14
+#ifndef ZERO_SOS_TOLERANCE
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
+#else
+    double integerTolerance = ZERO_SOS_TOLERANCE;
+#endif
     double weight = 0.0;
     double sum = 0.0; 
 
@@ -470,8 +475,12 @@ CbcSOS::feasibleRegion()
     const double * solution = model_->testSolution();
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
+#ifndef ZERO_SOS_TOLERANCE
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
+#else
+    double integerTolerance = ZERO_SOS_TOLERANCE;
+#endif
     double weight = 0.0;
     double sum = 0.0;
 
@@ -534,8 +543,12 @@ CbcSOS::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformati
 {
     int j;
     const double * solution = model_->testSolution();
+#ifndef ZERO_SOS_TOLERANCE
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
+#else
+    double integerTolerance = ZERO_SOS_TOLERANCE;
+#endif
     //OsiSolverInterface * solver = model_->solver();
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
@@ -620,8 +633,12 @@ CbcSOS::createUpdateInformation(const OsiSolverInterface * solver,
 
     bool feasible = iStatus != 1;
     if (feasible) {
+#ifndef ZERO_SOS_TOLERANCE
         double integerTolerance =
-            model_->getDblParam(CbcModel::CbcIntegerTolerance);
+	  model_->getDblParam(CbcModel::CbcIntegerTolerance);
+#else
+        double integerTolerance = ZERO_SOS_TOLERANCE;
+#endif
         const int * integerVariable = model_->integerVariable();
         for (i = 0; i < numberIntegers; i++) {
             int j = integerVariable[i];
@@ -713,8 +730,12 @@ CbcSOS::solverBranch() const
 {
     int j;
     const double * solution = model_->testSolution();
+#ifndef ZERO_SOS_TOLERANCE
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
+#else
+    double integerTolerance = ZERO_SOS_TOLERANCE;
+#endif
     OsiSolverInterface * solver = model_->solver();
     const double * upper = solver->getColUpper();
     int firstNonFixed = -1;

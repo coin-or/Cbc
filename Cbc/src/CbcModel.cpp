@@ -12338,6 +12338,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
 	  if (saveScaling) {
 	    modifiedTolerances |= 4;
 	    clp->scaling(0);
+	    clpContinuousSolver->setHintParam(OsiDoScale, false, OsiHintTry);
 	  }
 #endif
 	}
@@ -12540,7 +12541,10 @@ CbcModel::checkSolution (double cutoff, double *solution,
 	      clp->setPerturbation(savePerturbation);
 #endif
 #ifndef CBC_LEAVE_SCALING_ON_CHECK_SOLUTION
-	      clp->scaling(saveScaling);
+	      if (saveScaling) {
+		clp->scaling(saveScaling); 
+		clpContinuousSolver->setHintParam(OsiDoScale, true, OsiHintTry);
+	      }
 #endif
 	    }
 #endif
@@ -12764,7 +12768,10 @@ CbcModel::checkSolution (double cutoff, double *solution,
 		      clp->setPerturbation(savePerturbation);
 #endif
 #ifndef CBC_LEAVE_SCALING_ON_CHECK_SOLUTION
-		      clp->scaling(saveScaling);
+		      if (saveScaling) {
+			clp->scaling(saveScaling); 
+			clpContinuousSolver->setHintParam(OsiDoScale, true, OsiHintTry);
+		      }
 #endif
 		      solver_->resolve();
                     }
@@ -13023,7 +13030,10 @@ CbcModel::checkSolution (double cutoff, double *solution,
 	  clp->setPerturbation(savePerturbation);
 #endif
 #ifndef CBC_LEAVE_SCALING_ON_CHECK_SOLUTION
-	  clp->scaling(saveScaling);
+	  if (saveScaling) {
+	    clp->scaling(saveScaling); 
+	    clpContinuousSolver->setHintParam(OsiDoScale, true, OsiHintTry);
+	  }
 #endif
 	}
 #endif
@@ -19547,5 +19557,81 @@ void CbcModel::setMIPStart( int count, const char **colNames, const double colVa
     mipStart_.clear();
     for ( int i=0 ; (i<count) ; ++i )
         mipStart_.push_back( std::pair<std::string, double>( std::string(colNames[i]), colValues[i]) );
+}
+/* Add SOS info to solver -
+   Overwrites SOS information in solver with information
+   in CbcModel.  Has no effect with some solvers. 
+   Also updates integer info. */
+void
+CbcModel::addSOSEtcToSolver()
+{
+  // at present just for OsiClp
+# ifdef COIN_HAS_CLP
+  OsiClpSolverInterface * clpSolver
+    = dynamic_cast<OsiClpSolverInterface *> (solver_);
+  if (clpSolver) {
+    int numberColumns = clpSolver->getNumCols();
+    for (int i=0;i<numberColumns;i++)
+      clpSolver->setContinuous(i);
+    int nOdd=0;
+    int numberSOS=0;
+    for (int i = 0; i < numberObjects_; i++) {
+      CbcObject * obj = dynamic_cast <CbcObject *>(object_[i]) ;
+      CbcSimpleInteger * thisInt = dynamic_cast <CbcSimpleInteger *> (obj);
+      OsiSOS * objSOS1 = dynamic_cast <OsiSOS *>(obj) ;
+      CbcSOS * objSOS2 = dynamic_cast <CbcSOS *>(obj) ;
+      if (thisInt) {
+	clpSolver->setInteger(thisInt->columnNumber());
+      } else if (objSOS1) {
+	numberSOS++;
+      } else if (objSOS2) {
+	numberSOS++;
+      } else {
+	nOdd++;
+      }
+    }
+    if (nOdd) {
+      char general[200];
+      sprintf(general,"%d objects not SOS or Integer - can't move to Osi",
+	      nOdd);
+      messageHandler()->message(CBC_GENERAL,
+				messages())
+	<< general << CoinMessageEol ;
+    }
+    if (numberSOS) {
+      CoinSet * setInfo = new CoinSet [numberSOS];
+      numberSOS=0;
+      for (int i = 0; i < numberObjects_; i++) {
+	CbcObject * obj = dynamic_cast <CbcObject *>(object_[i]) ;
+	OsiSOS * objSOS1 = dynamic_cast <OsiSOS *>(obj) ;
+	CbcSOS * objSOS2 = dynamic_cast <CbcSOS *>(obj) ;
+	if (objSOS1 || objSOS2) {
+	  int numberMembers;
+	  const int * members;
+	  int type;
+	  const double * weights;
+	  if (objSOS1) {
+	    numberMembers = objSOS1->numberMembers();
+	    members = objSOS1->members();
+	    type = objSOS1->sosType();
+	    weights = objSOS1->weights();
+	  } else {
+	    numberMembers = objSOS2->numberMembers();
+	    members = objSOS2->members();
+	    type = objSOS2->sosType();
+	    weights = objSOS2->weights();
+	  }
+	  CoinSosSet info(numberMembers,members,
+			  weights,type);
+	  //info.setSetType(type);
+	  //memcpy(info.modifiableWeights(),weights,
+	  //	 numberMembers*sizeof(double));
+	  setInfo[numberSOS++] = info;
+	}
+      }
+      clpSolver->replaceSetInfo(numberSOS,setInfo);
+    }
+  }
+#endif
 }
 

@@ -512,6 +512,11 @@ public:
     */
 
     void findIntegers(bool startAgain, int type = 0);
+    /** Add SOS info to solver -
+	Overwrites SOS information in solver with information
+	in CbcModel.  Has no effect with some solvers. 
+	Also updates integer info. */
+    void addSOSEtcToSolver();
 
 #ifdef SWITCH_VARIABLES
     /// Convert Dynamic to Switching 

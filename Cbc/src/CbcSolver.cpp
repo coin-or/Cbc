@@ -4026,7 +4026,7 @@ int CbcMain1 (int argc, const char *argv[],
 				    babModel_->findIntegers(true);
 				  }
 				  // Lotsizing
-				  int numberColumns = babModel_->solver()->getNumCols();
+				  //int numberColumns = babModel_->solver()->getNumCols();
 				  CbcObject ** objects =
 				    new CbcObject * [numberLotSizing];
 				  double points[]={0.0,0.0,0.0,0.0};
@@ -8015,8 +8015,8 @@ int CbcMain1 (int argc, const char *argv[],
                                     // SOS
                                     numberSOS = clpSolver->numberSOS();
                                     const CoinSet * setInfo = clpSolver->setInfo();
-                                    sosStart = new int [numberSOS+1];
-                                    sosType = new char [numberSOS];
+				    sosStart = reinterpret_cast<int *>(malloc((numberSOS+1)*sizeof(int)));
+				    sosType = reinterpret_cast<char *>(malloc(numberSOS*sizeof(char)));
 				    const double * lower =
 				      clpSolver->getColLower();
 				    const double * upper =
@@ -8031,8 +8031,8 @@ int CbcMain1 (int argc, const char *argv[],
                                         nTotal += n;
                                         sosStart[i+1] = nTotal;
                                     }
-                                    sosIndices = new int[nTotal];
-                                    sosReference = new double [nTotal];
+				    sosIndices = reinterpret_cast<int *>(malloc(nTotal*sizeof(int)));
+				    sosReference = reinterpret_cast<double *>(malloc(nTotal*sizeof(double)));
                                     for (i = 0; i < numberSOS; i++) {
                                         int n = setInfo[i].numberEntries();
                                         const int * which = setInfo[i].which();
@@ -8364,6 +8364,7 @@ int CbcMain1 (int argc, const char *argv[],
 					}
 					if (!writeLp) {
 					  remove(fileName.c_str());
+					  //model_.addSOSEtcToSolver();
 					  clpSolver->writeMpsNative(fileName.c_str(), const_cast<const char **> (rowNames), const_cast<const char **> (columnNames),
 								    (outputFormat - 1) / 2, 1 + ((outputFormat - 1)&1)); 
 					} else {

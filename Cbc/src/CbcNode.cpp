@@ -2382,6 +2382,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         if (nFreeNon) {
                             // try branching on these
                             delete branch_;
+			    numberUnsatisfied_=nFreeNon;
                             for (int i = 0; i < numberObjects; i++) {
                                 OsiObject * object = model->modifiableObject(i);
                                 CbcSimpleIntegerDynamicPseudoCost * obj =
@@ -2393,10 +2394,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                                        ? -1 : +1;
                                     usefulInfo.integerTolerance_ = 0.0;
                                     branch_ = obj->createCbcBranch(solver, &usefulInfo, preferredWay);
+				    iBestGot=i;
                                     break;
                                 }
                             }
                             anyAction = 0;
+			    delete [] solution;
                             break;
                         }
                     }

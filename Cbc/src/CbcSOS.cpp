@@ -585,7 +585,10 @@ CbcSOS::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformati
     for (iWhere = firstNonZero; iWhere < lastNonZero; iWhere++)
         if (weight < weights_[iWhere+1])
             break;
-    assert (iWhere<lastNonZero);
+    // If we are dealing with really oddly scaled problems 
+    // was assert (iWhere<lastNonZero);
+    if (iWhere==lastNonZero)
+      iWhere--;
     if (sosType_ == 1) {
         // SOS 1
         separator = 0.5 * (weights_[iWhere] + weights_[iWhere+1]);

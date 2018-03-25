@@ -1,5 +1,5 @@
-init:
-  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#init:
+#  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 platform:
   - x64
@@ -50,3 +50,5 @@ after_build:
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\Cbc\AUTHORS
   - curl -T %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip -utkralphs:%BINTRAY_API% -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/%APPVEYOR_PROJECT_NAME%/%VERSION%/%APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip
 
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

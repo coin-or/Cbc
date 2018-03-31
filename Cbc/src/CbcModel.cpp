@@ -84,6 +84,11 @@ extern int gomory_try;
 #include "CbcThread.hpp"
 /* Various functions local to CbcModel.cpp */
 
+typedef struct {
+  double useCutoff;
+  CbcModel * model;
+  int switches;
+} rootBundle;
 static void * doRootCbcThread(void * voidInfo);
 
 namespace {
@@ -2365,6 +2370,22 @@ void CbcModel::branchAndBound(int doStatistics)
     */
     delete continuousSolver_;
     continuousSolver_ = solver_->clone() ;
+#ifdef CONFLICT_CUTS
+    if ((moreSpecialOptions_&4194304)!=0) {
+#ifdef COIN_HAS_CLP
+      OsiClpSolverInterface * clpSolver
+        = dynamic_cast<OsiClpSolverInterface *> (solver_);
+      if (clpSolver) {
+	int specialOptions=clpSolver->getModelPtr()->specialOptions();
+	// 2097152 switches on rays in crunch
+	if (!parentModel_)
+	  clpSolver->getModelPtr()->setSpecialOptions(specialOptions|32|2097152);
+	else
+	  clpSolver->getModelPtr()->setSpecialOptions(specialOptions&~(32|2097152));
+      }
+    }
+#endif
+#endif
 #ifdef COIN_HAS_NTY
     // maybe allow on fix and restart later
     if ((moreSpecialOptions2_&(128|256))!=0&&!parentModel_) {
@@ -2632,8 +2653,12 @@ void CbcModel::branchAndBound(int doStatistics)
       int numberModels = multipleRootTries_%100;
 #ifdef CBC_THREAD
       numberRootThreads = (multipleRootTries_/100)%100;
-      if (!numberRootThreads)
-	numberRootThreads=numberModels;
+      if (!numberRootThreads) {
+	if (numberThreads_<2)
+	  numberRootThreads=numberModels;
+	else
+	  numberRootThreads=CoinMin(numberThreads_,numberModels);
+      }
 #endif
       int otherOptions = (multipleRootTries_/10000)%100;
       rootModels = new CbcModel * [numberModels];
@@ -2661,6 +2686,10 @@ void CbcModel::branchAndBound(int doStatistics)
 	rootModels[i]->setRandomSeed(newSeed+10000000*i);
 	rootModels[i]->randomNumberGenerator()->setSeed(newSeed+50000000*i);
 	rootModels[i]->setMultipleRootTries(0);
+#ifdef COIN_HAS_NTY
+	rootModels[i]->zapSymmetry();
+	rootModels[i]->moreSpecialOptions2_ &= ~(128|256); // off nauty
+#endif
 	// use seed
 	rootModels[i]->setSpecialOptions(specialOptions_ |(4194304|8388608));
 	rootModels[i]->setMoreSpecialOptions(moreSpecialOptions_ & 
@@ -2725,11 +2754,45 @@ void CbcModel::branchAndBound(int doStatistics)
 	  rootModels[i]->generator_[j]->generator()->refreshSolver(rootModels[i]->solver_);
       }
       delete basis;
+      char general[200];
+      /*
+	1 - bit set - first come first served
+	2 - bit set - pass on cutoffs (not deterministic if 1 set)
+       */
+#define MULTIPLE_TYPE 3
+#if MULTIPLE_TYPE == 1 || MULTIPLE_TYPE == 3
+#define FIRST_COME
+#endif
+#if MULTIPLE_TYPE == 2 || MULTIPLE_TYPE == 3
+#define SET_CUTOFF
+#endif
+#ifndef MAX_HEURISTIC_TIMES
+#define MAX_HEURISTIC_TIMES 16
+#endif
+#ifdef SET_CUTOFF
+      double bestCutoff = getCutoff();
+#endif
 #ifdef CBC_THREAD
       if (numberRootThreads==1) {
 #endif
 	for (int iModel=0;iModel<numberModels;iModel++) {
-	  doRootCbcThread(rootModels[iModel]);
+	  rootBundle bundle;
+	  bundle.useCutoff=COIN_DBL_MAX;
+	  bundle.model=rootModels[iModel];
+	  bundle.switches=0;
+#ifdef SET_CUTOFF
+	  bundle.useCutoff=bestCutoff;
+	  rootModels[iModel]->setCutoff(bestCutoff);
+#endif
+	  doRootCbcThread(&bundle);
+	  sprintf(general,"Ending multiple root solver %d out of %d",
+		  iModel+1,numberModels);
+	  messageHandler()->message(CBC_GENERAL,messages())
+	    << general << CoinMessageEol ;
+#ifdef SET_CUTOFF
+	  if (rootModels[iModel]->getCutoff()<bestCutoff)
+	    bestCutoff = rootModels[iModel]->getCutoff();
+#endif
 	  // see if solved at root node
 	  if (rootModels[iModel]->getMaximumNodes()) {
 	    feasible=false;
@@ -2738,29 +2801,99 @@ void CbcModel::branchAndBound(int doStatistics)
 	}
 #ifdef CBC_THREAD
       } else {
+	// redone so can use numberThreads_ threads more efficiently
+	// but then if changing cutoff - not deterministic
+	// BUT changing cutoff has a bug (what bug - debug)
 	Coin_pthread_t * threadId = new Coin_pthread_t [numberRootThreads];
-	for (int kModel=0;kModel<numberModels;kModel+=numberRootThreads) {
-	  bool finished=false;
-	  for (int iModel=kModel;iModel<CoinMin(numberModels,kModel+numberRootThreads);iModel++) {
-	    pthread_create(&(threadId[iModel-kModel].thr), NULL, 
-			   doRootCbcThread,
-			   rootModels[iModel]);
+	rootBundle * bundle = new rootBundle [numberRootThreads];
+	int numberDone=0;
+	int kModel=numberRootThreads;
+	for (int iModel=0;iModel<kModel;iModel++) {
+	  threadId[iModel].status=1000+iModel;
+	  bundle[iModel].useCutoff=COIN_DBL_MAX;
+	  if (numberDone>=MAX_HEURISTIC_TIMES) {
+#ifdef SET_CUTOFF
+	    bundle[iModel].useCutoff=bestCutoff;
+	    rootModels[iModel]->setCutoff(bestCutoff);
+#endif
+	    for (int i=0;i<rootModels[iModel]->numberHeuristics_;i++)
+	      delete rootModels[iModel]->heuristic_[i];
+	    delete [] rootModels[iModel]->heuristic_;
+	    rootModels[iModel]->heuristic_=NULL;
+	    numberHeuristics_=0;
 	  }
-	  // wait
-	  for (int iModel=kModel;iModel<CoinMin(numberModels,kModel+numberRootThreads);iModel++) {
-	    pthread_join(threadId[iModel-kModel].thr, NULL);
+	  bundle[iModel].model=rootModels[iModel];
+	  bundle[iModel].switches=0;
+	  pthread_create(&(threadId[iModel].thr), NULL, 
+			 doRootCbcThread,
+			 bundle+iModel);
+	}
+	bool finished=false;
+	while (numberDone<numberModels) {
+#ifdef FIRST_COME
+	  usleep(100000);
+#else
+	  for (int iModel=0;iModel<numberRootThreads;iModel++) {
+	    pthread_join(threadId[iModel].thr, NULL);
+#ifdef SET_CUTOFF
+	    int jModel = static_cast<int>(threadId[iModel].status-1000);
+	    if (rootModels[jModel]->getCutoff()<bestCutoff)
+	      bestCutoff = rootModels[jModel]->getCutoff();
+#endif
 	  }
-	  // see if solved at root node
-	  for (int iModel=kModel;iModel<CoinMin(numberModels,kModel+numberRootThreads);iModel++) {
-	    if (rootModels[iModel]->getMaximumNodes())
-	      finished=true;
-	  }
-	  if (finished) {
-	    feasible=false;
-	    break;
+#endif
+	  for (int iModel=0;iModel<numberRootThreads;iModel++) {
+	    if (threadId[iModel].status>0) {
+	      int jModel = static_cast<int>(threadId[iModel].status-1000);
+	      if (rootModels[jModel]->secondaryStatus()==123456789) {
+#ifdef FIRST_COME
+		pthread_join(threadId[iModel].thr, NULL);
+#ifdef SET_CUTOFF
+		if (rootModels[jModel]->getCutoff()<bestCutoff)
+		  bestCutoff = rootModels[jModel]->getCutoff();
+#endif
+#endif
+		sprintf(general,"Ending multiple root solver %d (%d) out of %d",
+			numberDone+1,jModel+1,numberModels);
+		messageHandler()->message(CBC_GENERAL,messages())
+		  << general << CoinMessageEol ;
+		if (rootModels[jModel]->getMaximumNodes()) {
+		  finished=true;
+		  numberDone += numberModels-kModel;
+		  kModel=numberModels;
+		}
+		numberDone++;
+		if (kModel<numberModels) {
+		  bundle[iModel].useCutoff=COIN_DBL_MAX;
+		  bundle[iModel].model=rootModels[kModel];
+		  bundle[iModel].switches=0;
+#ifdef SET_CUTOFF
+		  bundle[iModel].useCutoff=bestCutoff;
+#endif
+		  if (numberDone>=MAX_HEURISTIC_TIMES) {
+		    for (int i=0;i<rootModels[kModel]->numberHeuristics_;i++)
+		      delete rootModels[kModel]->heuristic_[i];
+		    delete [] rootModels[kModel]->heuristic_;
+		    rootModels[kModel]->heuristic_=NULL;
+		    rootModels[kModel]->numberHeuristics_=0;
+		  }
+		  threadId[iModel].status=1000+kModel;
+		  pthread_create(&(threadId[iModel].thr), NULL, 
+				 doRootCbcThread,
+				 bundle+iModel);
+		  kModel++;
+		} else {
+		  threadId[iModel].status=-1;
+		}
+	      }
+	    }
 	  }
 	}
+	// see if solved at root node
+	if (finished) 
+	  feasible=false;
 	delete [] threadId;
+	delete [] bundle;
       }
 #endif
       // sort solutions
@@ -2774,7 +2907,6 @@ void CbcModel::branchAndBound(int doStatistics)
 	    -rootModels[iModel]->getMinimizationObjValue();
 	}
       }
-      char general[100];
       rootTimeCpu=CoinCpuTime()-rootTimeCpu;
       if (numberRootThreads==1)
 	sprintf(general,"Multiple root solvers took a total of %.2f seconds\n",
@@ -4541,8 +4673,8 @@ void CbcModel::branchAndBound(int doStatistics)
                 }
 #ifdef CONFLICT_CUTS
 		// temporary
-		if ((moreSpecialOptions_&4194304)!=0)
-		  tryNewSearch=false;
+		//if ((moreSpecialOptions_&4194304)!=0)
+		//tryNewSearch=false;
 #endif
                 if (tryNewSearch) {
                     // back to solver without cuts?
@@ -7882,6 +8014,16 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     CoinBigIndex numberElementsAtStart = solver_->getNumElements();
 
     numberOldActiveCuts_ = numberRowsAtStart - numberRowsAtContinuous_ ;
+#ifndef NDEBUG
+    {
+      int n=0;
+      for (int i=0;i<currentNumberCuts_;i++) {
+	if (addedCuts_[i])
+	  n++;
+      }
+      assert (n==numberOldActiveCuts_);
+    }
+#endif
     numberNewCuts_ = cuts.sizeRowCuts();
     int lastNumberCuts = numberNewCuts_ ;
     if (numberNewCuts_) {
@@ -14622,6 +14764,21 @@ CbcModel::resolve(OsiSolverInterface * solver)
 	}
 #endif
         clpSolver->resolve();
+#ifdef CHECK_RAY
+	static int nSolves=0;
+	static int nInfSolves=0;
+	static int nRays=0;
+	nSolves++;
+	if (!parentModel_&&clpSolver->getModelPtr()->problemStatus()==1
+	    &&(clpSolver->getModelPtr()->specialOptions()&32)!=0) {
+	  nInfSolves++;
+	  if(clpSolver->getModelPtr()->infeasibilityRay()) 
+	    nRays++;
+	}
+	if ((nSolves%1000)==0)
+	  printf("ZZ %d solves, %d infeasible %d rays\n",
+		 nSolves,nInfSolves,nRays);
+#endif
 #ifdef CHECK_KNOWN_SOLUTION
 	if ((specialOptions_&1) != 0&&onOptimalPath) {
 	  const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
@@ -16557,7 +16714,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                         simplex->setPerturbation(perturbation);
                         incrementExtra(info->numberNodesExplored_,
 				       info->numberIterations_);
-			if (feasible) {
+			if (feasible&&false) { // can mess up cuts
 			  double objValue=simplex->objectiveValue();
 			  feasible = solveWithCuts(cuts, 1, node);
 			  if (!feasible) {
@@ -19144,7 +19301,10 @@ CbcModel::subBranchAndBound(const double * lower, const double * upper,
 
 static void * doRootCbcThread(void * voidInfo)
 {
-    CbcModel * model = reinterpret_cast<CbcModel *> (voidInfo);
+    rootBundle * bundle = reinterpret_cast<rootBundle *>(voidInfo);
+    CbcModel * model = bundle->model;
+    if (bundle->useCutoff<model->getCutoff())
+      model->setCutoff(bundle->useCutoff);
 #ifdef COIN_HAS_CLP
     OsiClpSolverInterface * clpSolver
       = dynamic_cast<OsiClpSolverInterface *> (model->solver());

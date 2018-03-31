@@ -98,7 +98,6 @@ bool CbcTestMpsFile(std::string& fname)
     }
     return false;
 }
-
 //#############################################################################
 /*
   jjf: testSwitch -2 unitTest, -1 normal (==2)
@@ -264,8 +263,8 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
     PUSH_MPS("stein45", 331, 45, 30, 22.0, 1, false);
     PUSH_MPS("swath", 884, 6805, 497.603, 334.4968581, 7, false);
     PUSH_MPS("vpm1", 234, 378, 20, 15.4167, 0, false);
-#endif
     PUSH_MPS("vpm2", 234, 378, 13.75, 9.8892645972, 0, false);
+#endif
   }
 #undef PUSH_MPS
 
@@ -592,7 +591,7 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
     }
 #ifdef CONFLICT_CUTS
     {
-      model->setCutoffAsConstraint(true);
+      model->setCutoffAsConstraint(true); // very slow on bell5 ??
       int moreOptions=model->moreSpecialOptions();
       model->setMoreSpecialOptions(moreOptions|4194304);
     }

@@ -4121,11 +4121,121 @@ int CbcMain1 (int argc, const char *argv[],
                                         int numberColumns = saveSolver->getNumCols();
                                         char * prohibited = new char[numberColumns];
                                         memset(prohibited, 0, numberColumns);
-                                        int n = sosStart[numberSOS];
-                                        for (int i = 0; i < n; i++) {
-                                            int iColumn = sosIndices[i];
-                                            prohibited[iColumn] = 1;
+					// worth looking to see if any members can be made integer
+
+                                        int numberRows = saveSolver->getNumRows();
+					const CoinPackedMatrix * matrixByCol = saveSolver->getMatrixByCol();
+					const double * element = matrixByCol->getElements();
+					const int * row = matrixByCol->getIndices();
+					const CoinBigIndex * columnStart = matrixByCol->getVectorStarts();
+					const int * columnLength = matrixByCol->getVectorLengths();
+					const double * columnLower = saveSolver->getColLower();
+					const double * columnUpper = saveSolver->getColUpper();
+					const double * rowLower = saveSolver->getRowLower();
+					const double * rowUpper = saveSolver->getRowUpper();
+					double * sameElement = new double [numberRows];
+					int * rowCount = new int [2*numberRows];
+					int * rowUsed = rowCount+numberRows;
+					memset(sameElement,0,numberRows*sizeof(double));
+					memset(rowCount,0,numberRows*sizeof(int));
+					int numberInteresting1=0;
+					int numberInteresting2=0;
+					int numberChanged=0;
+					for (int iSet=0;iSet<numberSOS;iSet++) {
+					  if (sosType[iSet]!=1) {
+					    for (int i = sosStart[iSet];
+						 i < sosStart[iSet+1]; i++) {
+					      numberInteresting2++;
+					      int iColumn = sosIndices[i];
+					      prohibited[iColumn] = 1;
+					    }
+					  } else {
+					    int nUsed=0;
+					    for (int i = sosStart[iSet];
+						 i < sosStart[iSet+1]; i++) {
+					      int iColumn = sosIndices[i];
+					      for (CoinBigIndex j=columnStart[iColumn];
+						   j<columnStart[iColumn]+columnLength[iColumn];j++) {
+						int iRow=row[j];
+						double el=element[j];
+						if (rowCount[iRow]) {
+						  if (el!=sameElement[iRow])
+						    sameElement[iRow]=0.0;
+						} else {
+						  sameElement[iRow]=el;
+						  rowUsed[nUsed++]=iRow;
+						}
+						rowCount[iRow]++;
+					      }
+					    }
+					    int nInSet=sosStart[iSet+1]-sosStart[iSet];
+					    double nonzeroValue=COIN_DBL_MAX;
+					    for (int iUsed=0;iUsed<nUsed;iUsed++) {
+					      int iRow=rowUsed[iUsed];
+					      if (rowCount[iRow]==nInSet&&sameElement[iRow]&&rowLower[iRow]==rowUpper[iRow]) {
+						// all entries must be 0.0 or xx
+						nonzeroValue=rowLower[iRow]/sameElement[iRow];
+					      }
+					      rowCount[iRow]=0;
+					      sameElement[iRow]=0.0;
+					    }
+					    if (nonzeroValue!=COIN_DBL_MAX) {
+					      // could do scaling otherwise
+					      if (fabs(nonzeroValue-1.0)<1.0e-8) {
+						for (int i = sosStart[iSet];
+						     i < sosStart[iSet+1]; i++) {
+						  int iColumn = sosIndices[i];
+						  if (columnUpper[iColumn]<0.0||columnLower[iColumn]>1.0) {
+						    printf("sos says infeasible\n");
+						  }
+						  if (!saveSolver->isInteger(iColumn)) {
+						    numberChanged++;
+						    saveSolver->setInteger(iColumn);
+						  }
+						  if (columnUpper[iColumn]<1.0) 
+						    saveSolver->setColUpper(iColumn,0.0);
+						  else
+						    saveSolver->setColUpper(iColumn,1.0);
+						  if (columnLower[iColumn]>0.0) 
+						    saveSolver->setColLower(iColumn,1.0);
+						  else
+						    saveSolver->setColLower(iColumn,0.0);
+#ifndef DO_LESS_PROHIBITED
+						  prohibited[iColumn] = 1;
+#endif
+						}
+					      } else {
+						for (int i = sosStart[iSet];
+						     i < sosStart[iSet+1]; i++) {
+						  int iColumn = sosIndices[i];
+#ifndef DO_LESS_PROHIBITED
+						  prohibited[iColumn] = 1;
+#endif
+						}
+					      }
+					    } else {
+					      for (int i = sosStart[iSet];
+						   i < sosStart[iSet+1]; i++) {
+						int iColumn = sosIndices[i];
+						if (!saveSolver->isInteger(iColumn)) 
+						  numberInteresting1++;
+#ifdef DO_LESS_PROHIBITED
+						if (!saveSolver->isInteger(iColumn))
+#endif
+						  prohibited[iColumn] = 1;
+					      }
+					    }
+					  }
                                         }
+					if (numberChanged||numberInteresting1||numberInteresting2) {
+					  sprintf(generalPrint,"%d variables in SOS1 sets made integer, %d non integer in SOS1, %d in SOS2\n",
+						numberChanged,numberInteresting1,numberInteresting2);
+					  generalMessageHandler->message(CLP_GENERAL, generalMessages)
+					    << generalPrint
+					    << CoinMessageEol;
+					}
+					delete [] sameElement;
+					delete [] rowCount;
                                         process.passInProhibited(prohibited, numberColumns);
                                         delete [] prohibited;
                                     }
@@ -4189,7 +4299,10 @@ int CbcMain1 (int argc, const char *argv[],
                                                 const int * which = obj->members();
                                                 for (int i = 0; i < n; i++) {
                                                     int iColumn = which[i];
-                                                    prohibited[iColumn] = 1;
+#ifdef DO_LESS_PROHIBITED
+						    if (!saveSolver->isInteger(iColumn))
+#endif
+						      prohibited[iColumn] = 1;
                                                     numberProhibited++;
                                                 }
                                             }
@@ -4388,13 +4501,27 @@ int CbcMain1 (int argc, const char *argv[],
 				      for (int i = 0; i < numberSOS; i++) {
                                         //int type = setInfo[i].setType();
                                         int n = setInfo[i].numberEntries();
-                                        int * which = const_cast<int *>(setInfo[i].which());
+                                        int * which = setInfo[i].modifiableWhich();
+#ifndef DO_LESS_PROHIBITED
 					for (int j=0;j<n;j++) {
 					  int iColumn = which[j];
 					  iColumn=back[iColumn];
 					  assert(iColumn>=0);
 					  which[j]=iColumn;
 					}
+#else
+                                        double * weights = setInfo[i].modifiableWeights();
+					int n2=0;
+					for (int j=0;j<n;j++) {
+					  int iColumn = which[j];
+					  iColumn=back[iColumn];
+					  if (iColumn>=0) {
+					    which[n2]=iColumn;
+					    weights[n2++]=weights[j];
+					  }
+					}
+					setInfo[i].setNumberEntries(n2);
+#endif
 				      }
 				      delete [] back;
 				    }
@@ -5797,7 +5924,11 @@ int CbcMain1 (int argc, const char *argv[],
                                             }
                                         }
                                         if (nMissing) {
+#ifndef DO_LESS_PROHIBITED
                                             sprintf(generalPrint, "%d SOS variables vanished due to pre processing? - check validity?", nMissing);
+#else
+                                            sprintf(generalPrint, "%d SOS variables eliminated by pre processing", nMissing);
+#endif
                                             generalMessageHandler->message(CLP_GENERAL, generalMessages)
                                             << generalPrint
                                             << CoinMessageEol;
@@ -5854,6 +5985,7 @@ int CbcMain1 (int argc, const char *argv[],
                                                     back[originalColumns[i]] = i;
                                                 // Really need better checks
                                                 int nMissing = 0;
+#ifndef DO_LESS_PROHIBITED
                                                 int n = sosStart[numberSOS];
                                                 for (i = 0; i < n; i++) {
                                                     int iColumn = sosIndices[i];
@@ -5863,10 +5995,32 @@ int CbcMain1 (int argc, const char *argv[],
                                                     else
                                                         nMissing++;
                                                 }
+#else
+						int startSet=0;
+						int iPut=0;
+						for (int j = 0; j < numberSOS; j++) {
+						  for (i = startSet; i < sosStart[j+1]; i++) {
+                                                    int iColumn = sosIndices[i];
+                                                    int jColumn = back[iColumn];
+                                                    if (jColumn >= 0) {
+						      sosReference[iPut]=sosReference[i];
+						      sosIndices[iPut++] = jColumn;
+                                                    } else {
+                                                        nMissing++;
+						    }
+						  }
+						  startSet=sosStart[j+1];
+						  sosStart[j+1]=iPut;
+                                                }
+#endif
                                                 delete [] back;
                                                 if (nMissing) {
-                                                    sprintf(generalPrint, "%d SOS variables vanished due to pre processing? - check validity?", nMissing);
-                                                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+#ifndef DO_LESS_PROHIBITED
+						  sprintf(generalPrint, "%d SOS variables vanished due to pre processing? - check validity?", nMissing);
+#else
+						  sprintf(generalPrint, "%d SOS variables eliminated by pre processing", nMissing);
+#endif
+						  generalMessageHandler->message(CLP_GENERAL, generalMessages)
                                                     << generalPrint
                                                     << CoinMessageEol;
                                                 }

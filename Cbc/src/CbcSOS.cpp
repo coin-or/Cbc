@@ -203,13 +203,14 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
     //double largestValue=0.0;
+#ifndef ZERO_ODD_TOLERANCE
 #define ZERO_SOS_TOLERANCE 1.0e-14
-#ifndef ZERO_SOS_TOLERANCE
-    double integerTolerance =
-        model_->getDblParam(CbcModel::CbcIntegerTolerance);
 #else
-    double integerTolerance = ZERO_SOS_TOLERANCE;
+#define ZERO_SOS_TOLERANCE ZERO_ODD_TOLERANCE
 #endif
+    //double integerTolerance =
+    //  model_->getDblParam(CbcModel::CbcIntegerTolerance);
+    double integerTolerance = ZERO_SOS_TOLERANCE;
     double weight = 0.0;
     double sum = 0.0; 
 

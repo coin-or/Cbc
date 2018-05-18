@@ -5357,6 +5357,9 @@ void CbcModel::branchAndBound(int doStatistics)
             bestObjective_ += 100.0 * increment + 1.0e-3; // only set if we are going to solve
         setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1) ;
         continuousSolver_->resolve() ;
+	// Deal with funny variables
+	if ((moreSpecialOptions2_&32768)!=0)
+	  cleanBounds(continuousSolver_,NULL);
         if (!continuousSolver_->isProvenOptimal()) {
             continuousSolver_->messageHandler()->setLogLevel(2) ;
             continuousSolver_->initialSolve() ;
@@ -12587,7 +12590,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
 #endif
 	    }
 #endif
-	    return objectiveValue;
+	    return 1.0e50;
 	  }
 	}
 #if CBC_USEFUL_PRINTING>14
@@ -15270,6 +15273,9 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
             }
 #endif
 #ifdef COIN_HAS_CLP
+	    // Deal with funny variables
+	    if ((moreSpecialOptions2_&32768)!=0)
+	      cleanBounds(solver_,NULL);
 	    int save=0;
 	    OsiClpSolverInterface * clpSolver
 	      = dynamic_cast<OsiClpSolverInterface *> (solver_);
@@ -19688,4 +19694,110 @@ CbcModel::addSOSEtcToSolver()
   }
 #endif
 }
+/*
+  Clean model i.e. make SOS/integer variables exactly at bound if needed
+  Only if moreSpecialOptions2_ 32768
+  Returns number of variables forced out
+  cleanVariables array will be used if exists
+*/
+int
+CbcModel::cleanBounds(OsiSolverInterface * solver, char * cleanIn)
+{
+  int numberBad=0;
+# ifdef COIN_HAS_CLP
+#ifndef ZERO_ODD_TOLERANCE
+#define ZERO_ODD_TOLERANCE 1.0e-14
+#endif
+  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
+  if (osiclp&&osiclp->isProvenOptimal()) {
+    int numberColumns = osiclp->getNumCols();
+    char * cleanVariables;
+    if (!cleanIn) {
+      cleanVariables = setupCleanVariables();
+    } else {
+      cleanVariables = cleanIn;
+    }
+    // If any small values re-do
+    ClpSimplex * clp = osiclp->getModelPtr();
+    double * solution = clp->primalColumnSolution();
+    const double * columnLower = clp->columnLower();
+    const double * columnUpper = clp->columnUpper();
+    //#define SHOW_BAD
+#ifdef SHOW_BAD
+    double sumBadLow=0.0;
+    double sumBadHigh=0.0;
+    double maxBadLow=0.0;
+    double maxBadHigh=0.0;
+#endif
+    for (int i=0;i<numberColumns;i++) {
+      if (cleanVariables[i]) {
+	if (solution[i]>columnUpper[i]+ZERO_ODD_TOLERANCE) {
+	  numberBad++;
+#ifdef SHOW_BAD
+	  sumBadHigh += solution[i]-columnUpper[i];
+	  maxBadHigh = CoinMax(maxBadHigh,solution[i]-columnUpper[i]);
+#endif
+	} else if (solution[i]<columnLower[i]-ZERO_ODD_TOLERANCE) {
+	  numberBad++;
+#ifdef SHOW_BAD
+	  sumBadLow += columnLower[i]-solution[i];
+	  maxBadLow = CoinMax(maxBadLow,columnLower[i]-solution[i]);
+#endif
+	}
+      }
+    }
+    if (numberBad) {
+#ifdef SHOW_BAD
+      printf("%d small variables low (%g max %g), high (%g max %g)\n",numberBad,sumBadLow,maxBadLow,sumBadHigh,maxBadHigh);
+#endif
+      for (int i=0;i<numberColumns;i++) {
+	if (cleanVariables[i]) {
+	  if (solution[i]>columnUpper[i]+ZERO_ODD_TOLERANCE) {
+	    solution[i]=columnUpper[i];
+	    clp->setColumnStatus(i,ClpSimplex::atUpperBound);
+	  } else if (solution[i]<columnLower[i]-ZERO_ODD_TOLERANCE) {
+	    solution[i]=columnLower[i];
+	    clp->setColumnStatus(i,ClpSimplex::atLowerBound);
+	  }
+	}
+      }
+      int saveLevel=clp->logLevel();
+      clp->setLogLevel(0);
+      clp->dual();
+      clp->setLogLevel(saveLevel);
+    }
+    if (!cleanIn)
+      delete [] cleanVariables;
+  }
+#endif
+  return numberBad;
+}
+// Sets up cleanVariables array (i.e. ones to be careful about)
+char *
+CbcModel::setupCleanVariables()
+{
+  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver_);
+  int numberColumns = osiclp->getNumCols();
+  char * cleanVariables = NULL;
+  if (osiclp) {
+    cleanVariables = new char[numberColumns];
+    memset(cleanVariables,0,numberColumns);
+    for (int i = 0; i < numberObjects_; i++) {
+      const CbcSimpleInteger * intvar = dynamic_cast<const CbcSimpleInteger *>(object_[i]);
+      const CbcSOS * sos = dynamic_cast<const CbcSOS *>(object_[i]);
+      if (intvar) {
+#ifdef CLEAN_INTEGER_VARIABLES
+	cleanVariables[intvar->columnNumber()]=1;
+#endif
+      } else if (sos) {
+	int n = sos->numberMembers();
+	const int * members = sos->members();
+	for (int j=0;j<n;j++)
+	  cleanVariables[members[j]]=2;
+      }
+    }
+  }
+  return cleanVariables;
+}
+
 

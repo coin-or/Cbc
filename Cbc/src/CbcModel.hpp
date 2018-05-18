@@ -450,7 +450,22 @@ public:
       Flip direction of optimization on all models
     */
     void flipModel();
-
+    /**
+       Clean model i.e. make SOS/integer variables exactly at bound if needed.
+       Only if moreSpecialOptions2_ 15 bit set (32768) as there is a small 
+       overhead (more2 in standalone cbc).
+       Fine tuning can be done in configure with -DCLEAN_INTEGER_VARIABLES
+       and -DZERO_ODD_TOLERANCE=1.0e-nn
+       If CLEAN_INTEGER_VARIABLES not defined then cleaning is only done for 
+       SOS variables.
+       If ZERO_ODD_TOLERANCE not defined then 1.0e-14 used.  You can define as 
+       0.0 if you are paranoid. 
+       Returns number of variables forced out
+       cleanVariables array will be used if exists
+     */
+     int cleanBounds(OsiSolverInterface * solver, char * cleanVariables);
+     /// Sets up cleanVariables array (i.e. ones to be careful about)
+     char * setupCleanVariables();
     //@}
 
     /** \name Object manipulation routines
@@ -1877,6 +1892,7 @@ public:
 	10 bit (1024) - branching on constraints (later)
 	11/12 bit 2048 - intermittent cuts
 	13/14 bit 8192 - go to bitter end in strong branching (first time)
+	15 bit 32768 - take care of very very small values for Integer/SOS variables
     */
     inline void setMoreSpecialOptions2(int value) {
         moreSpecialOptions2_ = value;

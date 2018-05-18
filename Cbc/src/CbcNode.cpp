@@ -542,13 +542,18 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
     delete branch_;
     branch_ = NULL;
     OsiSolverInterface * solver = model->solver();
+    // Mark variables which need to be clean
+    char * cleanVariables = NULL;
 # ifdef COIN_HAS_CLP
     OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
     int saveClpOptions = 0;
     if (osiclp) {
-        // for faster hot start
-        saveClpOptions = osiclp->specialOptions();
-        osiclp->setSpecialOptions(saveClpOptions | 8192);
+      // for faster hot start
+      saveClpOptions = osiclp->specialOptions();
+      osiclp->setSpecialOptions(saveClpOptions | 8192);
+      if ((model->moreSpecialOptions2()&32768)!=0) {
+	cleanVariables = model->setupCleanVariables(); // for odd ints/sos etc
+      }
     }
 # else
     OsiSolverInterface *osiclp = NULL ;
@@ -1134,6 +1139,10 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
                     }
                     if (feasible) {
                         solver->solveFromHotStart() ;
+			if ((model->moreSpecialOptions2()&32768)!=0&&solver->isProvenOptimal()) {
+			  // If any small values re-do
+			  model->cleanBounds(solver,cleanVariables);
+			}
                         numberStrongDone++;
                         numberStrongIterations += solver->getIterationCount();
                         /*
@@ -1237,6 +1246,10 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
                     }
                     if (feasible) {
                         solver->solveFromHotStart() ;
+			if ((model->moreSpecialOptions2()&32768)!=0&&solver->isProvenOptimal()) {
+			  // If any small values re-do
+			  model->cleanBounds(solver,cleanVariables);
+			}
                         numberStrongDone++;
                         numberStrongIterations += solver->getIterationCount();
                         /*
@@ -1574,6 +1587,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
     solver->setColSolution(saveSolution);
     delete [] saveSolution;
 # ifdef COIN_HAS_CLP
+    delete [] cleanVariables;
     if (osiclp)
         osiclp->setSpecialOptions(saveClpOptions);
 # endif
@@ -1851,10 +1865,15 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     // May go round twice if strong branching fixes all local candidates
     bool finished = false;
     int numberToFix = 0;
+    // Mark variables which need to be clean
+    char * cleanVariables = NULL;
 # ifdef COIN_HAS_CLP
     OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
     int saveClpOptions = 0;
     if (osiclp) {
+        if ((model->moreSpecialOptions2()&32768)!=0) {
+	  cleanVariables = model->setupCleanVariables(); // for odd ints/sos etc
+        }
         // for faster hot start
         saveClpOptions = osiclp->specialOptions();
         osiclp->setSpecialOptions(saveClpOptions | 8192);
@@ -3116,6 +3135,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 		    }
 #endif
                     solver->solveFromHotStart() ;
+		    if ((model->moreSpecialOptions2()&32768)!=0&&solver->isProvenOptimal()) {
+		      // If any small values re-do
+		      model->cleanBounds(solver,cleanVariables);
+		    }
                     bool needHotStartUpdate = false;
                     numberStrongDone++;
                     numberStrongIterations += solver->getIterationCount();
@@ -3337,6 +3360,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 		      osiclp->setSpecialOptions(saveOsiClpOptions);
 		    }
 #endif
+		    if ((model->moreSpecialOptions2()&32768)!=0&&solver->isProvenOptimal()) {
+		      // If any small values re-do
+		      model->cleanBounds(solver,cleanVariables);
+		    }
                     numberStrongDone++;
                     numberStrongIterations += solver->getIterationCount();
                     /*
@@ -4057,6 +4084,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       assert(!onOptimalPath||anyAction!=-2);
     }
 #endif
+    delete [] cleanVariables;
     /*
       Cleanup, then we're finished
     */
@@ -6144,4 +6172,3 @@ CbcNode::checkIsCutoff(double cutoff)
     branch_->checkIsCutoff(cutoff);
     return objectiveValue_;
 }
-

@@ -267,8 +267,8 @@ void verifyCutCounts (const CbcTree * branchingTree, CbcModel &model)
         CbcNode *node = branchingTree->nodePointer(j) ;
         CbcNodeInfo *nodeInfo = node->nodeInfo();
         int change = node->nodeInfo()->numberBranchesLeft() ;
-        printf("Node %d %x (info %x) var %d way %d obj %g", j, node,
-               node->nodeInfo(), node->columnNumber(), node->way(),
+        printf("Node %d %x (info %x) way %d obj %g", j, node,
+               node->nodeInfo(), node->way(),
                node->objectiveValue()) ;
 
         model.addCuts1(node, debugws) ;
@@ -4608,7 +4608,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
             lastEvery1000 = numberNodes_ + 1000;
             bool redoTree = nodeCompare_->every1000Nodes(this, numberNodes_) ;
-#ifdef CHECK_CUT_SIZE
+#if 0 //def CHECK_CUT_SIZE
             verifyCutSize (tree_, *this);
 #endif
             // redo tree if requested
@@ -4715,7 +4715,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CHECK_NODE_FULL
         verifyTreeNodes(tree_, *this) ;
 #   endif
-#   ifdef CHECK_CUT_COUNTS
+#   if 0 //def CHECK_CUT_COUNTS
         verifyCutCounts(tree_, *this) ;
 #   endif
         /*
@@ -16331,7 +16331,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                         simplex->setPerturbation(perturbation);
                         incrementExtra(info->numberNodesExplored_,
 				       info->numberIterations_);
-			if (feasible) {
+			if (feasible&&false) {
 			  double objValue=simplex->objectiveValue();
 			  feasible = solveWithCuts(cuts, 1, node);
 			  if (!feasible) {

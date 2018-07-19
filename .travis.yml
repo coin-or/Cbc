@@ -1,4 +1,4 @@
-\language: cpp
+language: cpp
 env:
   global: 
     - secure: "WEPiGQTAVh02Fc5Qxvj2VBZoWBgNjjB6w5MdNwg6NtzFKhbhxB1OqfaVE7EJV1Cw9mf1k5Qcg2fSy9bQEJllWNclRpbRGfEcC+Crx3CyjFOebSr6e6T7lAjIspIVSRf9+y6oPEY2zR8yXoX/HAEYyw3IQzJtKCHIbSJrrZsPomc="

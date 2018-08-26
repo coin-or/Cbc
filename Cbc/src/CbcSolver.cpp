@@ -7439,11 +7439,16 @@ int CbcMain1 (int argc, const char *argv[],
 
                                 numberGenerators = babModel_->numberCutGenerators();
 				// can get here twice!
-				delete [] statistics_number_cuts;
-				delete [] statistics_name_generators;
-                                statistics_number_cuts = new int [numberGenerators];;
-                                statistics_number_generators = numberGenerators;
+                                if (statistics_number_cuts!=NULL)
+                                    delete [] statistics_number_cuts;
+                                statistics_number_cuts = new int [numberGenerators];
+
+                                if (statistics_name_generators!=NULL)
+                                    delete [] statistics_name_generators;
                                 statistics_name_generators = new const char *[numberGenerators];
+
+                                statistics_number_generators = numberGenerators;
+
                                 char timing[30];
                                 for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
                                     CbcCutGenerator * generator = babModel_->cutGenerator(iGenerator);
@@ -9633,7 +9638,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     statistics_iterations, statistics_nrows, statistics_ncols,
                                     statistics_nprocessedrows, statistics_nprocessedcols);
                             for (int i = 0; i < statistics_number_generators; i++)
-                                fprintf(fp, ",%d", statistics_number_cuts[i]);
+                                fprintf(fp, ",%d", statistics_number_cuts[i]!=NULL ? statistics_number_cuts[i] : 0);
                             fprintf(fp, ",");
                             for (int i = 1; i < argc; i++) {
                                 if (strstr(argv[i], ".gz") || strstr(argv[i], ".mps"))
@@ -10469,8 +10474,11 @@ clp watson.mps -\nscaling off\nprimalsimplex"
     }
 #endif
     delete [] lotsize;
-    delete [] statistics_number_cuts;
-    delete [] statistics_name_generators;
+    if (statistics_number_cuts!=NULL)
+        delete [] statistics_number_cuts;
+
+    if (statistics_name_generators!=NULL)
+        delete [] statistics_name_generators;
     // By now all memory should be freed
 #ifdef DMALLOC
     //dmalloc_log_unfreed();

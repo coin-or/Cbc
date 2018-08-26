@@ -1341,7 +1341,7 @@ int CbcMain1 (int argc, const char *argv[],
     int statistics_nrows = 0, statistics_ncols = 0;
     int statistics_nprocessedrows = 0, statistics_nprocessedcols = 0;
     std::string statistics_result;
-    int * statistics_number_cuts = NULL;
+    int *statistics_number_cuts = NULL;
     const char ** statistics_name_generators = NULL;
     int statistics_number_generators = 0;
     memset(statusUserFunction_, 0, numberUserFunctions_*sizeof(int));
@@ -7060,6 +7060,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 << CoinMessageEol;
 
                                 numberGenerators = babModel_->numberCutGenerators();
+                                if (statistics_number_cuts)
+                                    delete[] statistics_number_cuts;
                                 statistics_number_cuts = new int [numberGenerators];;
                                 statistics_number_generators = numberGenerators;
                                 statistics_name_generators = new const char *[numberGenerators];
@@ -7092,6 +7094,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     << generalPrint
                                     << CoinMessageEol;
                                 }
+
 #ifdef COIN_DEVELOP
                                 printf("%d solutions found by heuristics\n",
                                        babModel_->getNumberHeuristicSolutions());
@@ -9142,7 +9145,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     statistics_iterations, statistics_nrows, statistics_ncols,
                                     statistics_nprocessedrows, statistics_nprocessedcols);
                             for (int i = 0; i < statistics_number_generators; i++)
-                                fprintf(fp, ",%d", statistics_number_cuts[i]);
+                                fprintf(fp, ",%d", (statistics_number_cuts!=NULL) ? statistics_number_cuts[i] : 0 );
                             fprintf(fp, ",");
                             for (int i = 1; i < argc; i++) {
                                 if (strstr(argv[i], ".gz") || strstr(argv[i], ".mps"))
@@ -9977,7 +9980,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
       cbc_glp_tran = NULL;
     }
 #endif
-    delete [] statistics_number_cuts;
+    if (statistics_number_cuts != NULL)
+        delete [] statistics_number_cuts;
     delete [] statistics_name_generators;
     // By now all memory should be freed
 #ifdef DMALLOC

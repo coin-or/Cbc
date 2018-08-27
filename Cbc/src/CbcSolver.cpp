@@ -4070,6 +4070,9 @@ int CbcMain1 (int argc, const char *argv[],
 				  model_.setSolutionCount(1);
 				}
 			      }
+                            bool hasTimePreproc = !babModel_->maximumSecondsReached();
+                            if (!hasTimePreproc)
+                                preProcess = 0;
                             if (preProcess && type == CBC_PARAM_ACTION_BAB) {
                                 saveSolver = babModel_->solver()->clone();
                                 /* Do not try and produce equality cliques and

@@ -4368,6 +4368,7 @@ int CbcMain1 (int argc, const char *argv[],
 					}
 #endif
 					redoSOS=true;
+                                        process.setTimeLimit( babModel_->getMaximumSeconds()-babModel_->getCurrentSeconds(), babModel_->useElapsedTime() );
                                         solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                                tunePreProcess);
 					if (solver2) {

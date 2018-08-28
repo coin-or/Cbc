@@ -13424,6 +13424,8 @@ CbcModel::setBestSolution (CBC_Message how,
                 << bestObjective_ << numberIterations_
                 << numberNodes_ << getCurrentSeconds()
                 << CoinMessageEol;
+		dealWithEventHandler(CbcEventHandler::solution,
+				     objectiveValue, solution);
             } else {
                 const char * name ;
                 if (lastHeuristic_)

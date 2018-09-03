@@ -253,16 +253,16 @@ CbcHeuristicRINS::solution(double & solutionValue,
 		  fix = true;
 		  break;
 		case 1:
-		if (nearest==originalLower) 
-		  fix = true;
+		  if (nearest==originalLower) 
+		    fix = true;
 		  break;
 		case 2:
-		if (nearest!=originalLower) 
-		  fix = true;
+		  if (nearest!=originalLower) 
+		    fix = true;
 		  break;
 		case 3:
-		if (nearest==originalLower && !used[iColumn]) 
-		  fix = true;
+		  if (nearest==originalLower && !used[iColumn]) 
+		    fix = true;
 		  break;
 		}
 		if (fix) {

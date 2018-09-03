@@ -1110,9 +1110,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		    }
                     model.setMaximumNodes(numberNodes);
                     model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
-		    if ((saveModelOptions&2048) == 0)
+		    if ((saveModelOptions&2048) == 0) 
 		      model.setMoreSpecialOptions(model_->moreSpecialOptions());
-		      model.setMoreSpecialOptions2(model_->moreSpecialOptions2());
+		    model.setMoreSpecialOptions2(model_->moreSpecialOptions2());
 		    // off conflict analysis
 		    model.setMoreSpecialOptions(model.moreSpecialOptions()&~4194304);
 		    
@@ -1140,6 +1140,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		      delete [] bestSolution2;
 		    }
                 } else {
+  		    // modify for event handler
                     model.setSpecialOptions(saveModelOptions);
                     model_->messageHandler()->message(CBC_RESTART, model_->messages())
                     << solver2->getNumRows() << solver2->getNumCols()
@@ -1456,6 +1457,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		      }
 		    }
 #endif
+		    model.setPreProcess(&process);
                     model.branchAndBound();
 		    model_->setHeuristicModel(NULL);
 		    model_->setSpecialOptions(saveOptions);

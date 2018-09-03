@@ -1857,25 +1857,25 @@ CbcHeuristicGreedySOS::validate()
         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
 	  if (!columnLength[iColumn])
 	    continue;
-            if (columnLower[iColumn] < 0.0 || columnUpper[iColumn] > 1.0)
-                good = false;
-            CoinBigIndex j;
-	    int nSOS=0;
-	    if (!isHeuristicInteger(solver,iColumn))
+	  if (columnLower[iColumn] < 0.0 || columnUpper[iColumn] > 1.0)
+	    good = false;
+	  CoinBigIndex j;
+	  int nSOS=0;
+	  if (!isHeuristicInteger(solver,iColumn))
+	    good = false;
+	  for (j = columnStart[iColumn];
+	       j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	    if (element[j] < 0.0)
 	      good = false;
-            for (j = columnStart[iColumn];
-                    j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-                if (element[j] < 0.0)
-                    good = false;
-		int iRow = row[j];
-		if (originalRhs_[iRow]==-1.0) {
-		  if (element[j] != 1.0)
-		    good = false;
-		  nSOS++;
-		}
-            }
-	    if (nSOS > 1)
-	      good = false;
+	    int iRow = row[j];
+	    if (originalRhs_[iRow]==-1.0) {
+	      if (element[j] != 1.0)
+		good = false;
+	      nSOS++;
+	    }
+	  }
+	  if (nSOS > 1)
+	    good = false;
         }
         if (!good)
             setWhen(0); // switch off

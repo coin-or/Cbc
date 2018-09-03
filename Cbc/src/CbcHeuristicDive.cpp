@@ -1168,8 +1168,8 @@ CbcHeuristicDive::solution(double & solutionValue,
   if (returnCode==1) 
     memcpy(betterSolution, newSolution, numberColumns*sizeof(double));
 
-    delete [] newSolution;
-    return returnCode;
+  delete [] newSolution;
+  return returnCode;
 }
 /* returns 0 if no solution, 1 if valid solution
    with better objective value than one passed in

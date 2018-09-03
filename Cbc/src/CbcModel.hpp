@@ -319,6 +319,12 @@ public:
         User has to delete process */
     void postProcess(CglPreProcess * process);
 #endif
+    /// Returns CglPreProcess used before branch and bound
+    inline CglPreProcess * preProcess( ) const
+    { return preProcess_;}
+    /// Set CglPreProcess used before branch and bound
+    inline void setPreProcess(CglPreProcess * preProcess)
+    { preProcess_ = preProcess;}
     /// Adds an update information object
     void addUpdateInformation(const CbcObjectUpdateData & data);
     /** Do one node - broken out for clarity?
@@ -437,6 +443,11 @@ public:
       Analyze problem to find a minimum change in the objective function.
     */
     void analyzeObjective();
+    /** Returns postProcessed solution in solver(called from event handler)
+     Normally used for integer solution (not really tested otherwise)
+    solutionType 1 is best integer so far, 0 is current solution 
+    (may not be integer) */
+    const OsiSolverInterface * postProcessedSolver(int solutionType=1);
 
     /**
       Add additional integers.
@@ -2602,6 +2613,8 @@ private:
       allocated size.
     */
     CbcNodeInfo ** walkback_;
+    /// preProcess used before branch and bound (optional)
+    CglPreProcess * preProcess_;
     CbcNodeInfo ** lastNodeInfo_;
     const OsiRowCut ** lastCut_;
     int lastDepth_;

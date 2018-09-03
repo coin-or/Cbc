@@ -5605,7 +5605,7 @@ CbcModel::CbcModel()
         currentSolution_(NULL),
         testSolution_(NULL),
 	globalConflictCuts_(NULL),
-        minimumDrop_(1.0e-4),
+        minimumDrop_(1.0e-7),
         numberSolutions_(0),
         numberSavedSolutions_(0),
         maximumSavedSolutions_(0),
@@ -5628,6 +5628,7 @@ CbcModel::CbcModel()
         currentNumberCuts_(0),
         maximumDepth_(0),
         walkback_(NULL),
+	preProcess_(NULL),
         lastNodeInfo_(NULL),
         lastCut_(NULL),
         lastDepth_(0),
@@ -5779,7 +5780,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
         sumChangeObjective1_(0.0),
         sumChangeObjective2_(0.0),
 	globalConflictCuts_(NULL),
-        minimumDrop_(1.0e-4),
+        minimumDrop_(1.0e-7),
         numberSolutions_(0),
         numberSavedSolutions_(0),
         maximumSavedSolutions_(0),
@@ -5801,6 +5802,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
         currentNumberCuts_(0),
         maximumDepth_(0),
         walkback_(NULL),
+	preProcess_(NULL),
         lastNodeInfo_(NULL),
         lastCut_(NULL),
         lastDepth_(0),
@@ -6112,6 +6114,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
         numberSolves_(rhs.numberSolves_),
         status_(rhs.status_),
         secondaryStatus_(rhs.secondaryStatus_),
+	preProcess_(rhs.preProcess_),
         specialOptions_(rhs.specialOptions_),
         moreSpecialOptions_(rhs.moreSpecialOptions_),
         moreSpecialOptions2_(rhs.moreSpecialOptions2_),
@@ -6512,6 +6515,7 @@ CbcModel::operator=(const CbcModel & rhs)
         numberGlobalViolations_ = rhs.numberGlobalViolations_;
         numberExtraIterations_ = rhs.numberExtraIterations_;
         numberExtraNodes_ = rhs.numberExtraNodes_;
+	preProcess_ = rhs.preProcess_;
 	numberFathoms_ = rhs.numberFathoms_;
         continuousObjective_ = rhs.continuousObjective_;
         originalContinuousObjective_ = rhs.originalContinuousObjective_;
@@ -18791,6 +18795,7 @@ CbcModel::postProcess(CglPreProcess * process)
     delete solver_;
     solver_ = process->originalModel();
 }
+
 /* Process root node and return a strengthened model
 
 The method assumes that initialSolve() has been called to solve the
@@ -19801,5 +19806,52 @@ CbcModel::setupCleanVariables()
   }
   return cleanVariables;
 }
-
-
+/* Returns postProcessed solution in solver(called from event handler)
+   Normally used for integer solution (not really tested otherwise)
+   solutionType 1 is best integer so far, 0 is current solution 
+   (may not be integer) */
+const OsiSolverInterface *
+CbcModel::postProcessedSolver(int solutionType)
+{
+  CbcModel * model = this;
+  CglPreProcess * processPointer = model->preProcess();
+  OsiSolverInterface * originalModel = NULL;
+  const double * solution = bestSolution();
+  while (processPointer) {
+    int numberSolvers = processPointer->numberSolvers();
+    OsiSolverInterface * solver =
+      processPointer->presolve(numberSolvers-1)->presolvedModel();
+    if (solutionType) {
+      // massage solution
+      int numberColumns = solver->getNumCols();
+      double * saveLower = CoinCopyOfArray(model->solver()->getColLower(),numberColumns);
+      double * saveUpper = CoinCopyOfArray(model->solver()->getColUpper(),numberColumns);
+      const double * saveSolution = testSolution_;
+      setTestSolution(solution);
+      model->solver()->setColLower(solution);
+      model->solver()->setColUpper(solution);
+      OsiBranchingInformation usefulInfo = model->usefulInformation();
+      /*
+	Run through the objects and use feasibleRegion() to set variable bounds
+	so as to fix the variables specified in the objects at their value in this
+	solution. Since the object list contains (at least) one object for every
+	integer variable, this has the effect of fixing all integer variables.
+      */
+      for (int i = 0; i < model->numberObjects(); i++)
+	model->object(i)->feasibleRegion(solver, &usefulInfo);
+      setTestSolution(saveSolution);
+      model->solver()->setColLower(saveLower);
+      model->solver()->setColUpper(saveUpper);
+      delete [] saveLower;
+      delete [] saveUpper;
+    }
+    solver->resolve();
+    processPointer->postProcess(*solver,false);
+    originalModel = processPointer->originalModel();
+    solution = originalModel->getColSolution();
+    processPointer=NULL;
+    model = model->parentModel();
+    processPointer = model ? model->preProcess() : NULL;
+  }
+  return originalModel;
+}

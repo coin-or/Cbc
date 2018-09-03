@@ -1055,7 +1055,7 @@ CbcHeuristicFPump::solutionInternal(double & solutionValue,
                                 if (saveOldSolution && saveObjectiveValue < model_->getMinimizationObjValue())
                                     model_->setBestSolution(saveOldSolution, numberColumns, saveObjectiveValue);
                                 delete [] saveOldSolution;
-				realCutoff = model_->getMinimizationObjValue();
+				realCutoff = model_->getMinimizationObjValue()-model_->getCutoffIncrement();
                             }
                             if (action == 0 || model_->maximumSecondsReached()) {
                                 exitAll = true; // exit
@@ -1932,7 +1932,7 @@ CbcHeuristicFPump::solutionInternal(double & solutionValue,
             }
             solutionValue = roundingObjective;
             newSolutionValue = solutionValue;
-	    realCutoff=solutionValue-1.0e-5;
+	    realCutoff=solutionValue-model_->getCutoffIncrement();
             memcpy(betterSolution, roundingSolution, numberColumns*sizeof(double));
             solutionFound = true;
 	    numberSolutions++;
@@ -2055,6 +2055,7 @@ CbcHeuristicFPump::solutionInternal(double & solutionValue,
                     // Give branch and bound a bit more freedom
                     double cutoff2 = newSolutionValue +
                                      CoinMax(model_->getCutoffIncrement(), 1.0e-3);
+		    cutoff2 = CoinMin(cutoff2,realCutoff);
 #if 0
 		      {
                         OsiClpSolverInterface * clpSolver

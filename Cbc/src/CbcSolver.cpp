@@ -1320,6 +1320,7 @@ int CbcMain1 (int argc, const char *argv[],
     bool noPrinting = parameterData.noPrinting_;
     bool useSignalHandler = parameterData.useSignalHandler_;
     CbcModel & model_ = model;
+    CglPreProcess * preProcessPointer=NULL;
 #ifdef CBC_THREAD_SAFE
     // Initialize argument
     int whichArgument=1;
@@ -4357,6 +4358,7 @@ int CbcMain1 (int argc, const char *argv[],
 					if ((model_.moreSpecialOptions()&65536)!=0)
 					  process.setOptions(2+4+8); // no cuts
 					cbcPreProcessPointer = & process;
+					preProcessPointer = & process; // threadsafe
 					int saveOptions = osiclp->getModelPtr()->moreSpecialOptions();
 					if ((model_.specialOptions()&16777216)!=0&&
 					    model_.getCutoff()>1.0e30) {
@@ -4380,6 +4382,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     }
 #elif CBC_OTHER_SOLVER==1
 				    cbcPreProcessPointer = & process;
+				    preProcessPointer = & process; // threadsafe
 				    redoSOS=true;
                                     solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                            tunePreProcess);
@@ -5471,7 +5474,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     else if (babModel_->getNumCols() < 5000)
                                         babModel_->setMaximumCutPassesAtRoot(100); // use minimum drop
                                     else
-                                        babModel_->setMaximumCutPassesAtRoot(20);
+                                        babModel_->setMaximumCutPassesAtRoot(50);
                                 } else {
                                     babModel_->setMaximumCutPassesAtRoot(cutPass);
                                 }
@@ -7215,7 +7218,7 @@ int CbcMain1 (int argc, const char *argv[],
 				    sprintf(generalPrint,"Ending major passes - best solution %g",-bestValues[numberSolutions-1]);
 				  else
 				    sprintf(generalPrint,"Ending major passes - no solution found");
-				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				  generalMessageHandler->message(CLP_GENERAL, generalMessages)
 				      << generalPrint
 				      << CoinMessageEol;
 				  delete [] which;
@@ -7235,6 +7238,10 @@ int CbcMain1 (int argc, const char *argv[],
 				  }
 				}
 #endif
+				// Set up pointer to preProcess
+				if (preProcessPointer) {
+				  babModel_->setPreProcess(preProcessPointer);
+				}
                                 babModel_->branchAndBound(statistics);
 				if (truncateColumns<babModel_->solver()->getNumCols()) {
 				  OsiSolverInterface * solverX = babModel_->solver();

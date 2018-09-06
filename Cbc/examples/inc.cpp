@@ -1,5 +1,5 @@
-// inc.cpp: example of callback, saving every 
-// incumbent solution to a new file
+// inc.cpp: example of event handler to save
+// every incumbent solution to a new file
 
 #include <cstdio>
 #include <cstdlib>
@@ -11,22 +11,7 @@
 #include "CbcEventHandler.hpp"
 
 static int callBack(CbcModel * model, int whereFrom)
-{/*
-    OsiSolverInterface *solver = model->solver();
-
-    printf("called code %d\n", whereFrom); fflush(stdout);
-
-    if (whereFrom==6)
-    {
-    char str[256] = "original";
-    if (solver->getPreProcessor())
-    {
-    strcpy(str, "preprocessed");
-    }
-    printf("\n< SOLUTION FOUND model is %s >\n", str);
-    fflush( stdout );
-    }*/
-
+{
     return 0;
 }
 

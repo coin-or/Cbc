@@ -5748,8 +5748,14 @@ int CbcMain1 (int argc, const char *argv[],
                                     double obj;
                                     int status = computeCompleteSolution( babModel_, colNames, mipStart, &x[0], obj );
                                     if (!status) {
-                                        babModel_->setBestSolution( &x[0], static_cast<int>(x.size()), obj, false );
-                                        babModel_->setSolutionCount(1);
+				      // need to check more babModel_->setBestSolution( &x[0], static_cast<int>(x.size()), obj, false );
+				      OsiBabSolver dummy;
+				      babModel_->passInSolverCharacteristics(&dummy);
+				      babModel_->createContinuousSolver();
+				      babModel_->setBestSolution(CBC_Message::CBC_ROUNDING,
+								 obj,&x[0], 1 );
+				      babModel_->clearContinuousSolver();
+				      babModel_->passInSolverCharacteristics(NULL);
                                     }
 				}
 

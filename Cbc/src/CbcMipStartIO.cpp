@@ -194,17 +194,72 @@ int computeCompleteSolution( CbcModel * model,
    {
       if (nContinuousFixed) {
          model->messageHandler()->message(CBC_GENERAL, model->messages())
-            << "Trying just fixing integer variables." << CoinMessageEol;
+            << "Trying just fixing integer variables (and fixingish SOS)." << CoinMessageEol;
          int numberColumns = lp->getNumCols();
          const double *oldLower = model->solver()->getColLower();
          const double *oldUpper = model->solver()->getColUpper();
+	 double * savedSol = CoinCopyOfArray(lp->getColLower(),numberColumns);
          for ( int i=0 ; i<numberColumns ; ++i ) {
             if (!lp->isInteger(i)) { 
                lp->setColLower(i,oldLower[i]);
                lp->setColUpper(i,oldUpper[i]);
             }
          }
-
+	 // but look at SOS
+	 int numberObjects = model->numberObjects();
+	 for (int i=0;i<numberObjects;i++) {
+	   const OsiSOS * object =
+	     dynamic_cast<const OsiSOS *>(model->object(i));
+	   if (object) {
+	     int n=object->numberMembers();
+	     const int * members = object->members();
+	     int sosType = object->sosType();
+	     if (sosType==1) {
+	       // non zero can take any value - others zero
+	       int iColumn=-1;
+	       for (int j=0;j<n;j++) {
+		 int jColumn=members[j];
+		 if (savedSol[jColumn]) 
+		   iColumn = jColumn;
+	       }
+	       for (int j=0;j<n;j++) {
+		 int jColumn=members[j];
+		 if (jColumn!=iColumn) {
+		   lp->setColLower(jColumn,0.0);
+		   lp->setColUpper(jColumn,0.0);
+		 }
+	       }
+	     } else if (sosType==2) {
+	       // SOS 2 - make a guess if just one nonzero
+	       int jA=-1;
+	       int jB=-1;
+	       for (int j=0;j<n;j++) {
+		 int jColumn=members[j];
+		 if (savedSol[jColumn]) {
+		   if (jA==-1)
+		     jA = j;
+		   jB = j;
+		 }
+	       }
+	       if (jB>jA+1) {
+		 jB = jA+1;
+	       } else if (jA==jB) {
+		 if (jA==n-1)
+		   jA--;
+		 else
+		   jB++;
+	       }
+	       for (int j=0;j<n;j++) {
+		 if (j!=jA&&j!=jB) {
+		   int jColumn=members[j];
+		   lp->setColLower(jColumn,0.0);
+		   lp->setColUpper(jColumn,0.0);
+		 }
+	       }
+	     }
+	   }
+	 }
+	 delete [] savedSol;
          lp->initialSolve();
       }
       else

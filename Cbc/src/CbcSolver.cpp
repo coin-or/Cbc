@@ -5746,13 +5746,13 @@ int CbcMain1 (int argc, const char *argv[],
                                     //printf("-- SIZES of models %d %d %d\n", model_.getNumCols(),  babModel_->solver()->getNumCols(), babModel_->solver()->getColNames().size() );
                                     std::vector< double > x( babModel_->getNumCols(), 0.0 );
                                     double obj;
+				    babModel_->findIntegers(true);
                                     int status = computeCompleteSolution( babModel_, colNames, mipStart, &x[0], obj );
                                     if (!status) {
 				      // need to check more babModel_->setBestSolution( &x[0], static_cast<int>(x.size()), obj, false );
 				      OsiBabSolver dummy;
 				      babModel_->passInSolverCharacteristics(&dummy);
 				      babModel_->createContinuousSolver();
-				      babModel_->findIntegers(true);
 				      babModel_->setBestSolution(CBC_Message::CBC_ROUNDING,
 								 obj,&x[0], 1 );
 				      babModel_->clearContinuousSolver();

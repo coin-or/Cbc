@@ -159,7 +159,7 @@ int computeCompleteSolution( CbcModel * model,
          if (!lp->isInteger(idx))
             continue;
 #endif
-         if (v<1e-8)
+         if (fabs(v)<1e-8)
             v = 0.0;
          if (lp->isInteger(idx))  // just to avoid small
             v = floor( v+0.5 );   // fractional garbage

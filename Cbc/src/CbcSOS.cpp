@@ -482,6 +482,10 @@ CbcSOS::feasibleRegion()
 #else
     double integerTolerance = ZERO_SOS_TOLERANCE;
 #endif
+    double integerTolerance2 =
+        model_->getDblParam(CbcModel::CbcIntegerTolerance);
+    int firstNonZero2 = -1;
+    int lastNonZero2 = -1;
     double weight = 0.0;
     double sum = 0.0;
 
@@ -495,9 +499,20 @@ CbcSOS::feasibleRegion()
                 firstNonZero = j;
             lastNonZero = j;
         }
+        if (fabs(value) > integerTolerance2 && (upper[iColumn] || oddValues_)) {
+            if (firstNonZero2 < 0)
+                firstNonZero2 = j;
+            lastNonZero2 = j;
+        }
     }
     // Might get here in odd situation if so fix all
-    if (lastNonZero - firstNonZero < sosType_) {
+    if (lastNonZero - firstNonZero < sosType_||
+	lastNonZero2 - firstNonZero2 < sosType_) {
+      if (lastNonZero - firstNonZero >= sosType_) {
+	// try with more forgiving tolerance
+	firstNonZero=firstNonZero2;
+	lastNonZero=lastNonZero2;
+      }
       for (j = 0; j < firstNonZero; j++) {
         int iColumn = members_[j];
         solver->setColLower(iColumn, 0.0);

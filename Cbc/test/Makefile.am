@@ -8,6 +8,8 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+include $(top_srcdir)/BuildTools/Makemain.inc
+
 ########################################################################
 #                         unitTest for Cbc                             #
 ########################################################################
@@ -17,6 +19,7 @@ CBC_TEST_TGTS = gamstests ositests
 if COIN_HAS_CLP
   CBC_TEST_TGTS += test_cbc ctests
 endif
+
 if CBC_BUILD_CBC_GENERIC
 if COIN_HAS_SAMPLE
   CBC_TEST_TGTS += test_cbc_generic
@@ -59,14 +62,10 @@ gamstests: gamsTest$(EXEEXT)
 bin_PROGRAMS = gamsTest osiUnitTest CInterfaceTest
 
 gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
-gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
+gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LFLAGS)
 
-AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(COINDEPEND_CFLAGS)
-AM_CPPFLAGS += $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
-
-# This line is necessary to allow VPATH compilation
-DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/src
+AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(CBCLIB_CFLAGS)
+# AM_CPPFLAGS += $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 
 ########################################################################
 #                         unitTest for OsiCbc                          #
@@ -75,12 +74,9 @@ DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/src
 osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
 
 osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-    $(CBCLIB_LIBS) $(OSITESTS_LIBS)
+    $(CBCUNITTEST_LFLAGS)
 
-osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-    $(CBCLIB_DEPENDENCIES) $(OSITESTS_DEPENDENCIES)
-
-AM_CPPFLAGS += -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc` $(OSITESTS_CFLAGS)
+AM_CPPFLAGS += -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc` $(CBCUNITTEST_CFLAGS)
 
 ositests: osiUnitTest$(EXEEXT)
 	./osiUnitTest$(EXEEXT) $(ositestsflags)
@@ -92,9 +88,7 @@ ositests: osiUnitTest$(EXEEXT)
 CInterfaceTest_SOURCES = CInterfaceTest.c
 nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
 
-CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
-
-CInterfaceTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
+CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LFLAGS)
 
 ctests: CInterfaceTest$(EXEEXT)
 	./CInterfaceTest$(EXEEXT)

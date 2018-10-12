@@ -12,7 +12,8 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT([Cbc],[trunk],[cbc@lists.coin-or.org])
+AC_INIT([Cbc],[trunk],[cbc@lists.coin-or.org],[coin-or-cbc],
+	[https://projects.coin-or.org/Cbc])
 
 AC_COPYRIGHT([
 Copyright 2006 International Business Machines and others.
@@ -21,94 +22,115 @@ This file is part of the open source package Coin which is distributed
 under the Eclipse Public License.])
 
 # List one file in the package so that the configure script can test
-# whether the package is actually there
+# whether the package is actually there.
+
 AC_CONFIG_SRCDIR(src/CbcTree.hpp)
 
-# Where should everything be installed by default?  Here, we want it
-# to be installed directly in 'bin', 'lib', 'include' subdirectories
-# of the directory where configure is run.  The default would be
-# /usr/local.
-AC_PREFIX_DEFAULT([`pwd`])
+# Do some initialization work (version numbers, change prefix default, ...)
+
+AC_COIN_INITIALIZE(Cbc)
 
 #############################################################################
 #                         Standard build tool stuff                         #
 #############################################################################
 
-# Get the system type
-AC_CANONICAL_BUILD
-
-# If this project depends on external projects, the Externals file in
-# the source root directory contains definition of where to find those
-# externals.  The following macro ensures that those externals are
-# retrieved by svn if they are not there yet.
-AC_COIN_PROJECTDIR_INIT(Cbc)
-
-# Check if user wants to produce debugging code
-AC_COIN_DEBUG_COMPILE(Cbc)
-
 # Get the name of the C++ compiler and appropriate compiler options
+
 AC_COIN_PROG_CXX
 
-# Initialize automake and libtool
-AC_COIN_INIT_AUTO_TOOLS
+# Not sure where this should be defined. Override for now.
+
+AM_CONDITIONAL(COIN_CXX_IS_CL,[test 1 = 0])
+
+# Initialize libtool
+
+AC_COIN_PROG_LIBTOOL
+
+#############################################################################
+#                   Math headers                                            #
+#############################################################################
+
+# Check for cmath/math.h, cfloat/float.h, cieeefp/ieeefp.h
+
+AC_COIN_CHECK_MATH_HDRS
 
 #############################################################################
 #                            COIN-OR components                             #
 #############################################################################
 
-AC_COIN_CHECK_PACKAGE(CoinDepend, [cgl osi coinutils], [CbcLib CbcGeneric])
-if test $coin_has_coindepend != yes ; then
-  AC_MSG_ERROR([One or more required packages CoinUtils, Osi, and Cgl are not available.])
+AC_COIN_INIT_LIBVARS([CbcLib],
+	[-L\${libdir} -lCbcsolver -lCbc],[-I\${includedir}])
+AC_COIN_INIT_LIBVARS([OsiCbcLib],[-L\${libdir} -lOsiCbc],[-I\${includedir}])
+
+m4_foreach_w([myvar],[CoinUtils Osi Cgl Clp],
+  [ AC_COIN_CHK_PKG(myvar,[CbcLib CbcGeneric])
+    if test $coin_has_[]m4_tolower(myvar) != yes ; then
+      AC_MSG_ERROR([Required package myvar is not available.])
+    fi
+  ])
+
+AC_COIN_CHK_PKG(OsiClp,[CbcLib CbcGeneric],[osi-clp])
+if test $coin_has_osiclp != yes ; then
+  AC_MSG_ERROR("Required package OsiClp unavailable.")
 fi
 
-# Clp and OsiClp are inseparable here.
+# Optional package for command line edit support
 
-AC_COIN_CHECK_PACKAGE(Clp, [osi-clp], [CbcLib CbcGeneric])
-if test $coin_has_clp != yes ; then
-  AC_MSG_ERROR("Required package Clp unavailable.")
-fi
-
-# The rest are not required for linking against Cbc
-
-AC_COIN_CHECK_PACKAGE(OsiTests, [osi-unittests])
-AC_COIN_CHECK_PACKAGE(Sample,   [coindatasample])
-AC_COIN_CHECK_PACKAGE(Netlib,   [coindatanetlib])
-AC_COIN_CHECK_PACKAGE(Miplib3,  [coindatamiplib3])
-
-# Cbc really should make these tests; right now it assumes far too much about
-# its environment. Needed for cbc-generic.
-
-AC_COIN_CHECK_CXX_CHEADER(math)
-AC_COIN_CHECK_CXX_CHEADER(float)
-AC_COIN_CHECK_CXX_CHEADER(ieeefp)
-
-AC_COIN_CHECK_GNU_READLINE(CbcLib CbcGeneric)
-
-#############################################################################
-#                    LP solvers other than CLP                              #
-#############################################################################
-
-# Check which other LP solvers are available, some of them become a dependency of CbcGeneric
-AC_COIN_CHECK_PACKAGE(DyLP, [osi-dylp],   [CbcGeneric])
-AC_COIN_CHECK_PACKAGE(Vol,  [osi-vol])
-AC_COIN_CHECK_PACKAGE(Cpx,  [osi-cplex],  [CbcLib CbcGeneric])
-AC_COIN_CHECK_PACKAGE(Glpk, [osi-glpk],   [CbcGeneric])
-AC_COIN_CHECK_PACKAGE(Grb,  [osi-gurobi])
-AC_COIN_CHECK_PACKAGE(Msk,  [osi-mosek],  [CbcGeneric])
-AC_COIN_CHECK_PACKAGE(Spx,  [osi-soplex], [CbcGeneric])
-AC_COIN_CHECK_PACKAGE(Xpr,  [osi-xpress])
+AC_COIN_CHK_GNU_READLINE([CbcLib CbcGeneric])
 
 #############################################################################
 #                       Other third party software                          #
 #############################################################################
 
 # Ampl Solver library
-AC_COIN_CHECK_PACKAGE(ASL, [coinasl], [CbcLib CbcGeneric])
+
+AC_COIN_CHK_PKG(ASL,[CbcLib CbcGeneric],[coinasl])
 
 # Nauty library (for symmetry detection)
-AC_LANG_PUSH(C)
-AC_COIN_CHECK_USER_LIBRARY([Nauty],[NTY],[nauty.h],[nauty],,[CbcLib CbcGeneric])
-AC_LANG_POP(C)
+
+# AC_COIN_CHK_LIB([Nauty],[CbcLib CbcGeneric],[-lnauty])
+
+# AC_LANG_PUSH(C)
+# AC_COIN_CHECK_USER_LIBRARY([Nauty],[NTY],[nauty.h],[nauty],,
+#			     [CbcLib CbcGeneric])
+# AC_LANG_POP(C)
+
+#############################################################################
+
+# Finalize flags for CbcLib, add the result to OsiCbc, and finalize flags for
+# it.
+
+AC_COIN_FINALIZE_FLAGS([CbcLib])
+AC_COIN_CHK_HERE([CbcLib],[OsiCbcLib])
+AC_COIN_FINALIZE_FLAGS(OsiCbcLib)
+
+# The rest are not required for linking against Cbc but are used for the unit
+# test. For the data packages, we just want XXX_DATA for use in Makefile.am.
+
+AC_COIN_CHK_PKG(OsiTests,[CbcUnitTest],[osi-unittests])
+AC_COIN_CHK_PKG(Sample,,[coindatasample],,dataonly)
+AC_COIN_CHK_PKG(Netlib,,[coindatanetlib],,dataonly)
+AC_COIN_CHK_PKG(Miplib3,,[coindatamiplib3],,dataonly)
+
+AC_COIN_FINALIZE_FLAGS(CbcUnitTest)
+
+#############################################################################
+#                    LP solvers other than CLP                              #
+#############################################################################
+
+# Check which other LP solvers are available, some of them become a dependency
+# of CbcGeneric
+
+AC_COIN_CHK_PKG(DyLP,[CbcGeneric],[osi-dylp])
+AC_COIN_CHK_PKG(Vol,,[osi-vol])
+AC_COIN_CHK_PKG(Cpx,[CbcLib CbcGeneric],[osi-cplex])
+AC_COIN_CHK_PKG(Glpk,[CbcGeneric],[osi-glpk])
+AC_COIN_CHK_PKG(Grb,,[osi-gurobi])
+AC_COIN_CHK_PKG(Msk,[CbcGeneric],[osi-mosek])
+AC_COIN_CHK_PKG(Spx,[CbcGeneric],[osi-soplex])
+AC_COIN_CHK_PKG(Xpr,,[osi-xpress])
+
+AC_COIN_FINALIZE_FLAGS(CbcGeneric)
 
 #############################################################################
 #                       CbcGeneric configuration			    #
@@ -174,33 +196,29 @@ if test "$enable_cbc_parallel" = yes; then
   # Define the preprocessor macro
   AC_DEFINE([CBC_THREAD],[1],[Define to 1 if the SMP version of Cbc should be compiled])
   if test $coin_cxx_is_cl = true ;
-  then
+  then  # Windows / cl
     # TODO we should check whether the library works and pthread.h is indeed there
     AC_ARG_WITH(pthreadsw32-lib, 
-                AC_HELP_STRING([--with-pthreadsw32-lib],
-                               [specify the name of the pthreads win32 library (for cl/icl builds only)]),
-                [CBCLIB_LIBS="$withval $CBCLIB_LIBS"
-                 CBCLIB_PCLIBS="$withval $CBCLIB_PCLIBS"],
-                [AC_MSG_WARN([--enable-cbc-parallel selected, but --with-pthreadsw32-lib not given])
-                 CBCLIB_LIBS="pthreadVCE2.lib $CBCLIB_LIBS"])
+      AC_HELP_STRING([--with-pthreadsw32-lib],
+        [specify the name of the pthreads win32 library (for cl/icl builds only)]),
+      [CBCLIB_LFLAGS="$withval $CBCLIB_LFLAGS"],
+      [AC_MSG_WARN([--enable-cbc-parallel selected, but --with-pthreadsw32-lib not given])
+       CBCLIB_LFLAGS="pthreadVCE2.lib $CBCLIB_LFLAGS"])
     
     AC_ARG_WITH(pthreadsw32-incdir,
-                AC_HELP_STRING([--with-pthreadsw32-incdir],
-                               [specify the path of the pthreads win32 header file (for cl/icl builds only)]),
-                [CXXFLAGS="$CXXFLAGS -I$withval"],
-                [AC_MSG_WARN([--enable-cbc-parallel selected, but --with-pthreadsw32-incdir not given])])
-  else
-    AC_CHECK_LIB([rt],[clock_gettime],
-                 [CBCLIB_LIBS="-lrt $CBCLIB_LIBS"
-                  CBCLIB_PCLIBS="-lrt $CBCLIB_PCLIBS"
-                  AC_DEFINE([HAVE_CLOCK_GETTIME],[1],[Define if clock_gettime and rt library is available])
-                 ],
-                 [AC_MSG_WARN([--enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime])])
+      AC_HELP_STRING([--with-pthreadsw32-incdir],
+        [specify the path of the pthreads win32 header file (for cl/icl builds only)]),
+      [CBCLIB_CFLAGS="$CBCLIB_CFLAGS -I$withval"],
+      [AC_MSG_WARN([--enable-cbc-parallel selected, but --with-pthreadsw32-incdir not given])])
+  else   # not Windows
     AC_CHECK_LIB([pthread],[pthread_create],
-                 [CBCLIB_LIBS="-lpthread $CBCLIB_LIBS"
-                  CBCLIB_PCLIBS="-lpthread $CBCLIB_PCLIBS"
+      [CBCLIB_LFLAGS="-lpthread $CBCLIB_LFLAGS"],
+      [AC_MSG_ERROR([--enable-cbc-parallel selected, but -lpthreads unavailable])])
+    AC_CHECK_LIB([rt],[clock_gettime],
+      [CBCLIB_LFLAGS="-lrt $CBCLIB_LFLAGS"
+       AC_DEFINE([HAVE_CLOCK_GETTIME],[1],[Define if clock_gettime and rt library is available])
                  ],
-                 [AC_MSG_ERROR([--enable-cbc-parallel selected, but -lpthreads unavailable])])
+      [AC_MSG_WARN([--enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime])])
   fi
   AC_MSG_NOTICE([Cbc multithreading enabled]);
 fi
@@ -346,15 +364,15 @@ AM_CONDITIONAL([OSICBC_DFLT_SOLVER_XPR],[test $osi_mc_solver = Xpr])
 # In case this is a VPATH configuration we need to make sure that the
 # input files for the examples are available in the VPATH directory.
 
-AC_COIN_VPATH_LINK(examples/sudoku_sample.csv)
-AC_COIN_VPATH_LINK(examples/quad.mps)
-AC_COIN_VPATH_LINK(examples/quad2.mps)
+# AC_COIN_VPATH_LINK(examples/sudoku_sample.csv)
+# AC_COIN_VPATH_LINK(examples/quad.mps)
+# AC_COIN_VPATH_LINK(examples/quad2.mps)
 
 #############################################################################
 #                  Check for doxygen                                        #
 #############################################################################
 
-AC_COIN_DOXYGEN(CoinUtils Osi Clp DyLP Cgl Vol)
+AC_COIN_DOXYGEN([CoinUtils Osi Clp DyLP Cgl Vol])
 
 ##############################################################################
 #                   Finishing up by writing all the output                   #
@@ -367,8 +385,8 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/OsiCbc/Makefile
                  test/Makefile
-		 cbc.pc cbc-uninstalled.pc
-		 osi-cbc.pc osi-cbc-uninstalled.pc])
+		 cbc.pc
+		 osi-cbc.pc])
 AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Here put the location and name of the configuration header file

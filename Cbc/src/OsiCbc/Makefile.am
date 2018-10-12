@@ -8,27 +8,34 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+include $(top_srcdir)/BuildTools/Makemain.inc
+
 ########################################################################
 #                             libOsiCbc                                #
 ########################################################################
 
 # Name of the library compiled in this directory.
+
 lib_LTLIBRARIES = libOsiCbc.la
 
 # List all source files for this library, including headers
+
 libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
 
 # List all additionally required libraries
+
 if DEPENDENCY_LINKING
-libOsiCbc_la_LIBADD = $(CBCLIB_LIBS) ../libCbc.la
+  libOsiCbc_la_LIBADD = $(CBCLIB_LFLAGS) ../libCbc.la
 endif
 
 # This is for libtool (on Windows)
+
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Here list all include flags, relative to this "srcdir" directory.  This
 # "cygpath" stuff is necessary to compile with native compilers on Windows.
-AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/..` $(COINDEPEND_CFLAGS)
+
+AM_CPPFLAGS = -DCBC_BUILD -I`$(CYGPATH_W) $(srcdir)/..` $(OSICBCLIB_CFLAGS)
 
 # Plus the appropriate include directories for the default solver.
 
@@ -64,14 +71,12 @@ if OSICBC_DFLT_SOLVER_XPR
   AM_CPPFLAGS += ${XPR_CFLAGS}
 endif
 
-# This line is necessary to allow VPATH compilation
-DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I..
-
 ########################################################################
 #                Headers that need to be installed                     #
 ########################################################################
 
 # Here list all the header files that are required by a user of the library,
 # and that therefore should be installed in 'include/coin'
-includecoindir = $(includedir)/coin
+
+includecoindir = $(pkgincludedir)
 includecoin_HEADERS = OsiCbcSolverInterface.hpp

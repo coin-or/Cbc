@@ -7,6 +7,8 @@ Name: CBC
 Description: COIN-OR Branch and Cut
 URL: https://projects.coin-or.org/Cbc
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lCbcSolver -lCbc @CBCLIB_PCLIBS@
-Cflags: -I${includedir}
-Requires: @CBCLIB_PCREQUIRES@
+Libs: @CBCLIB_LFLAGS_PUB@
+Libs.private: @CBCLIB_LFLAGS_NOPC@
+Cflags: @CBCLIB_CFLAGS_PUB@
+Requires: @CBCLIB_PCFILES_PUB@
+Requires.private: @CBCLIB_PCFILES@

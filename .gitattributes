@@ -7,6 +7,7 @@ Cbc/CbcSourceFilesTable2.csv -text
 Cbc/CbcSourceFilesTable2.xls -text
 Cbc/CbcSourceFilesTable3.csv -text
 Cbc/CbcSourceFilesTable3.xls -text
+Cbc/Dependencies -text
 Cbc/MSVisualStudio/v10/Cbc.sln -text
 Cbc/MSVisualStudio/v10/CbcCSosDllSample/cbcCSosDllSample.vcxproj -text
 Cbc/MSVisualStudio/v10/CbcWithInstalledLibraries/BaseCBCProject.sln -text
@@ -49,7 +50,6 @@ Cbc/MSVisualStudio/v9alt/libCbc.vcproj -text
 Cbc/MSVisualStudio/v9alt/libCbcSolver.vcproj -text
 Cbc/MSVisualStudio/v9alt/libOsiCbc.vcproj -text
 Cbc/MSVisualStudio/v9alt/osicbc.vsprops -text
-Cbc/cbc-uninstalled.pc.in -text
 Cbc/cbc.pc.in -text
 Cbc/config.guess -text
 Cbc/config.sub -text
@@ -73,7 +73,6 @@ Cbc/examples/simpleBAB.cpp -text
 Cbc/install-sh -text
 Cbc/ltmain.sh -text
 Cbc/missing -text
-Cbc/osi-cbc-uninstalled.pc.in -text
 Cbc/osi-cbc.pc.in -text
 Cbc/scripts/get.miplib2010 -text
 Cbc/scripts/parse.awk -text

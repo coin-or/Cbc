@@ -716,6 +716,8 @@ OSICBCLIB_CFLAGS
 OSICBCLIB_LFLAGS
 CBCLIB_CFLAGS_NOPC
 CBCLIB_LFLAGS_NOPC
+COIN_HAS_NAUTY_FALSE
+COIN_HAS_NAUTY_TRUE
 COIN_HAS_ASL_FALSE
 COIN_HAS_ASL_TRUE
 COIN_HAS_READLINE_FALSE
@@ -916,6 +918,9 @@ enable_readline
 with_asl
 with_asl_lflags
 with_asl_cflags
+with_nauty
+with_nauty_lflags
+with_nauty_cflags
 with_ositests
 with_ositests_lflags
 with_ositests_cflags
@@ -1675,6 +1680,15 @@ Optional Packages:
   --with-asl-lflags       Linker flags for ASL appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-asl-cflags       Compiler flags for ASL appropriate for your
+                          environment. (Most often, -I specs for header file
+                          directories.)
+  --with-nauty            Use Nauty. If an argument is given, 'yes' is
+                          equivalent to --with-nauty, 'no' is
+                          equivalent to --without-nauty. Any other argument is
+                          applied as for --with-nauty-lflags
+  --with-nauty-lflags     Linker flags for Nauty appropriate for your
+                          environment. (Most often, -l specs for libraries.)
+  --with-nauty-cflags     Compiler flags for Nauty appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
   --with-ositests         Use OsiTests. If an argument is given, 'yes' is
@@ -18378,14 +18392,274 @@ $as_echo "#define COIN_HAS_ASL 1" >>confdefs.h
   fi
 
 
-# Nauty library (for symmetry detection)
+# Nauty library (for symmetry detection). This doesn't seem to work any more;
+# compilation fails looking for zapSymmetry, which doesn't exist.
+# nauty.h
 
-# AC_COIN_CHK_LIB([Nauty],[CbcLib CbcGeneric],[-lnauty])
 
-# AC_LANG_PUSH(C)
-# AC_COIN_CHECK_USER_LIBRARY([Nauty],[NTY],[nauty.h],[nauty],,
-#			     [CbcLib CbcGeneric])
-# AC_LANG_POP(C)
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Nauty" >&5
+$as_echo_n "checking for package Nauty... " >&6; }
+
+# Make sure the necessary variables exist for each client package.
+
+
+
+
+
+
+
+# Check to see if the user has overridden configure parameters from the
+# environment.
+
+  coin_has_nauty=noInfo
+  if test x"$COIN_SKIP_PROJECTS" != x ; then
+    for pkg in $COIN_SKIP_PROJECTS ; do
+      if test "$pkg" = "$nauty" ; then
+	coin_has_nauty=skipping
+      fi
+    done
+  fi
+
+# If we're not skipping this project, define and process the command line
+# options according to the cmdopts parameter. Then invoke FIND_PRIM_PKG to do
+# the heavy lifting.
+
+  if test "$coin_has_nauty" != skipping ; then
+
+
+
+
+# Check whether --with-nauty was given.
+if test "${with_nauty+set}" = set; then :
+  withval=$with_nauty;
+fi
+
+
+
+# Check whether --with-nauty-lflags was given.
+if test "${with_nauty_lflags+set}" = set; then :
+  withval=$with_nauty_lflags;
+fi
+
+
+
+# Check whether --with-nauty-cflags was given.
+if test "${with_nauty_cflags+set}" = set; then :
+  withval=$with_nauty_cflags;
+fi
+
+
+
+
+
+  dflt_action=yes
+
+# Initialize variables for the primary library.
+
+  coin_has_nauty=noInfo
+  nauty_lflags=
+  nauty_cflags=
+  nauty_data=
+
+# --with-prim is always present. If the client specified dataonly, its value
+# is assigned to prim_data.
+
+  withval=$with_nauty
+  if test -n "$withval" ; then
+    case "$withval" in
+      no )
+	coin_has_nauty=skipping
+	;;
+      yes )
+	coin_has_nauty=requested
+	;;
+      build )
+	coin_has_nauty=build
+	;;
+      * )
+	coin_has_nauty=yes
+	nauty_lflags=$withval
+	;;
+    esac
+  fi
+
+# --with-prim-lflags and --with-prim-cflags are present unless the client
+# specified dataonly. Specifying --with-prim=no overrides the individual
+# options for lflags and cflags.
+
+  if test "$coin_has_nauty" != skipping ; then
+       withval=$with_nauty_lflags
+       if test -n "$withval" ; then
+	 case "$withval" in
+	   build | no | yes )
+	     as_fn_error $? "\"$withval\" is not valid here; please specify linker flags appropriate for your environment." "$LINENO" 5
+	     ;;
+	   * )
+	     coin_has_nauty=yes
+	     nauty_lflags=$withval
+	     ;;
+	 esac
+       fi
+
+       withval=$with_nauty_cflags
+       if test -n "$withval" ; then
+	 case "$withval" in
+	   build | no | yes )
+	     as_fn_error $? "\"$withval\" is not valid here; please specify compiler flags appropriate for your environment." "$LINENO" 5
+	     ;;
+	   * )
+	     coin_has_nauty=yes
+	     nauty_cflags="$withval"
+	     ;;
+	 esac
+       fi
+     fi
+
+# --with-prim-data will be present unless the client specified nodata.
+# Specifying --with-prim=no overrides the individual option for data.
+
+
+
+# At this point, coin_has_prim can be one of noInfo (no user options
+# specified), skipping (user said no), requested or build (user said yes
+# or build and gave no further guidance), or yes (user specified one or
+# more --with-prim options). If we're already at yes or skipping, we're
+# done looking.
+
+# If there are no user options (noInfo) and the default is no, we're skipping.
+# Otherwise, the default must be yes or build; consider the package requested.
+# A default action we don't recognise defaults to yes.
+
+  if test "$coin_has_nauty" = noInfo ; then
+    case $dflt_action in
+      no )
+	coin_has_nauty=skipping
+	;;
+      build )
+	coin_has_nauty=build
+	;;
+      * )
+        coin_has_nauty=requested
+	;;
+    esac
+  fi
+
+# Now coin_has_prim can be one of skipping, yes, build, or requested. For
+# build or requested, use the parameter values or invent some.
+
+  case $coin_has_nauty in
+    build | requested)
+      nauty_lflags=-lnauty
+         if test "$coin_has_nauty" = build ; then
+	      nauty_cflags="-I\$(pkgincludedir)/ThirdParty"
+	    fi
+
+      coin_has_nauty=yes
+      ;;
+    skipping | yes )
+      ;;
+    * )
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unexpected status \"$coin_has_nauty\" in COIN_FIND_PRIM_LIB" >&5
+$as_echo "$as_me: WARNING: Unexpected status \"$coin_has_nauty\" in COIN_FIND_PRIM_LIB" >&2;}
+      ;;
+  esac
+
+# At this point, coin_has_prim is yes or skipping.  Time to run a link check,
+# if we have a function (nauty). Use whatever we've collected for lflags, plus
+# other libraries () as the other libraries parameter to AC_SEARCH_LIBS,
+# leaving the library parameter blank.
+
+  if test $coin_has_nauty != skipping ; then
+    ac_save_LIBS=$LIBS
+       LIBS="$nauty_lflags "
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#ifdef __cplusplus
+	     extern "C"
+	   #endif
+	   void nauty();
+int
+main ()
+{
+nauty()
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+else
+  coin_has_nauty=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+       LIBS=$ac_save_LIBS
+  fi
+
+# The final value of coin_has_prim will be yes, no, or skipping. No means that
+# the link check failed. Yes means that we passed the link check, or no link
+# check was performed. Skipping means the user said `don't use.'
+
+# Change the test to enable / disable debugging output
+
+    if test 1 = 1 ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: FIND_PRIM_LIB result for nauty: \"$coin_has_nauty\"" >&5
+$as_echo "$as_me: FIND_PRIM_LIB result for nauty: \"$coin_has_nauty\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Collected values for package 'nauty'" >&5
+$as_echo "$as_me: Collected values for package 'nauty'" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: nauty_lflags is \"$nauty_lflags\"" >&5
+$as_echo "$as_me: nauty_lflags is \"$nauty_lflags\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: nauty_cflags is \"$nauty_cflags\"" >&5
+$as_echo "$as_me: nauty_cflags is \"$nauty_cflags\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: nauty_data is \"$nauty_data\"" >&5
+$as_echo "$as_me: nauty_data is \"$nauty_data\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: nauty_pcfiles is \"$nauty_pcfiles\"" >&5
+$as_echo "$as_me: nauty_pcfiles is \"$nauty_pcfiles\"" >&6;}
+    fi
+
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $coin_has_nauty" >&5
+$as_echo "$coin_has_nauty" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $coin_has_nauty due to COIN_SKIP_PROJECTS" >&5
+$as_echo "$coin_has_nauty due to COIN_SKIP_PROJECTS" >&6; }
+  fi
+
+# Possibilities are `yes', `no', or `skipping'. Normalise to `yes' or `no'.
+
+  if test "$coin_has_nauty" != yes ; then
+    coin_has_nauty=no
+  fi
+
+# Create an automake conditional COIN_HAS_PRIM.
+
+   if test $coin_has_nauty = yes; then
+  COIN_HAS_NAUTY_TRUE=
+  COIN_HAS_NAUTY_FALSE='#'
+else
+  COIN_HAS_NAUTY_TRUE='#'
+  COIN_HAS_NAUTY_FALSE=
+fi
+
+
+# If we've located the package, define preprocessor symbol COIN_HAS_PRIM
+# and augment the necessary variables for the client packages.
+
+  if test $coin_has_nauty = yes ; then
+
+$as_echo "#define COIN_HAS_NAUTY 1" >>confdefs.h
+
+    CBCLIB_LFLAGS="$nauty_lflags $CBCLIB_LFLAGS"
+       CBCLIB_CFLAGS="$nauty_cflags $CBCLIB_CFLAGS"
+      CBCGENERIC_LFLAGS="$nauty_lflags $CBCGENERIC_LFLAGS"
+       CBCGENERIC_CFLAGS="$nauty_cflags $CBCGENERIC_CFLAGS"
+
+
+# Finally, set up PRIM_DATA, unless the user specified nodata.
+
+
+  fi
+
 
 #############################################################################
 
@@ -22348,6 +22622,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_ASL_TRUE}" && test -z "${COIN_HAS_ASL_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_ASL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COIN_HAS_NAUTY_TRUE}" && test -z "${COIN_HAS_NAUTY_FALSE}"; then
+  as_fn_error $? "conditional \"COIN_HAS_NAUTY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_OSITESTS_TRUE}" && test -z "${COIN_HAS_OSITESTS_FALSE}"; then

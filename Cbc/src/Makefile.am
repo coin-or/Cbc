@@ -122,9 +122,9 @@ libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 bin_PROGRAMS =
 AM_CPPFLAGS = -DCBC_BUILD $(CBCLIB_CFLAGS)
 
-# if COIN_HAS_NAUTY
-# AM_CPPFLAGS += $(NAUTY_CFLAGS)
-# endif
+if COIN_HAS_NAUTY
+  AM_CPPFLAGS += -DCOIN_HAS_NTY $(NAUTY_CFLAGS)
+endif
 
 ########################################################################
 #                            cbc program                               #

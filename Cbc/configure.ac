@@ -86,14 +86,11 @@ AC_COIN_CHK_GNU_READLINE([CbcLib CbcGeneric])
 
 AC_COIN_CHK_PKG(ASL,[CbcLib CbcGeneric],[coinasl])
 
-# Nauty library (for symmetry detection)
+# Nauty library (for symmetry detection). This doesn't seem to work any more;
+# compilation fails looking for zapSymmetry, which doesn't exist.
+# nauty.h
 
-# AC_COIN_CHK_LIB([Nauty],[CbcLib CbcGeneric],[-lnauty])
-
-# AC_LANG_PUSH(C)
-# AC_COIN_CHECK_USER_LIBRARY([Nauty],[NTY],[nauty.h],[nauty],,
-#			     [CbcLib CbcGeneric])
-# AC_LANG_POP(C)
+AC_COIN_CHK_LIB([Nauty],[CbcLib CbcGeneric],[-lnauty],[],[],[nauty])
 
 #############################################################################
 

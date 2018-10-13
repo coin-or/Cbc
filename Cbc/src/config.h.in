@@ -52,6 +52,9 @@
 /* Define to 1 if Msk is available. */
 #undef COIN_HAS_MSK
 
+/* Define to 1 if the Nauty package is available */
+#undef COIN_HAS_NAUTY
+
 /* Define to 1 if Netlib is available. */
 #undef COIN_HAS_NETLIB
 

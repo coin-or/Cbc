@@ -55,6 +55,9 @@
 /* Define to 1 if the Msk package is available */
 #undef COIN_HAS_MSK
 
+/* Define to 1 if the Mumps package is available */
+#undef COIN_HAS_MUMPS
+
 /* Define to 1 if the Netlib package is available */
 #undef COIN_HAS_NETLIB
 

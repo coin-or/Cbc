@@ -105,6 +105,9 @@ AC_COIN_CHECK_PACKAGE(Xpr,  [osi-xpress])
 # Ampl Solver library
 AC_COIN_CHECK_PACKAGE(ASL, [coinasl], [CbcLib CbcGeneric])
 
+# MUMPS
+AC_COIN_CHECK_PACKAGE(Mumps, [coinmumps])
+
 # Nauty library (for symmetry detection)
 AC_LANG_PUSH(C)
 AC_COIN_CHECK_USER_LIBRARY([Nauty],[NTY],[nauty.h],[nauty],,[CbcLib CbcGeneric])

@@ -159,8 +159,7 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includecoindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@DEPENDENCY_LINKING_TRUE@libOsiCbc_la_DEPENDENCIES =  \
-@DEPENDENCY_LINKING_TRUE@	$(am__DEPENDENCIES_1) ../libCbc.la
+libOsiCbc_la_DEPENDENCIES = $(am__DEPENDENCIES_1) ../libCbc.la
 am_libOsiCbc_la_OBJECTS = OsiCbcSolverInterface.lo
 libOsiCbc_la_OBJECTS = $(am_libOsiCbc_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -446,7 +445,7 @@ lib_LTLIBRARIES = libOsiCbc.la
 libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
 
 # List all additionally required libraries
-@DEPENDENCY_LINKING_TRUE@libOsiCbc_la_LIBADD = $(CBCLIB_LFLAGS) ../libCbc.la
+libOsiCbc_la_LIBADD = $(CBCLIB_LFLAGS) ../libCbc.la
 
 # This is for libtool (on Windows)
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)

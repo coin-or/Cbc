@@ -175,8 +175,7 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(includecoindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@DEPENDENCY_LINKING_TRUE@libCbc_la_DEPENDENCIES =  \
-@DEPENDENCY_LINKING_TRUE@	$(am__DEPENDENCIES_1)
+libCbc_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libCbc_la_OBJECTS = CbcBranchAllDifferent.lo CbcBranchCut.lo \
 	CbcBranchDecision.lo CbcBranchDefaultDecision.lo \
 	CbcBranchDynamic.lo CbcBranchingObject.lo CbcBranchLotsize.lo \
@@ -210,8 +209,7 @@ am__v_lt_1 =
 libCbc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(libCbc_la_LDFLAGS) $(LDFLAGS) -o $@
-@DEPENDENCY_LINKING_TRUE@libCbcSolver_la_DEPENDENCIES =  \
-@DEPENDENCY_LINKING_TRUE@	$(am__DEPENDENCIES_1) libCbc.la
+libCbcSolver_la_DEPENDENCIES = $(am__DEPENDENCIES_1) libCbc.la
 am_libCbcSolver_la_OBJECTS = Cbc_C_Interface.lo CbcCbcParam.lo \
 	Cbc_ampl.lo CbcLinked.lo CbcLinkedUtils.lo unitTestClp.lo \
 	CbcSolver.lo CbcSolverHeuristics.lo CbcSolverAnalyze.lo \
@@ -609,8 +607,8 @@ libCbcSolver_la_SOURCES = \
 
 
 # List all additionally required libraries
-@DEPENDENCY_LINKING_TRUE@libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
-@DEPENDENCY_LINKING_TRUE@libCbcSolver_la_LIBADD = $(CBCLIB_LFLAGS) libCbc.la
+libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
+libCbcSolver_la_LIBADD = $(CBCLIB_LFLAGS) libCbc.la
 
 # This is for libtool
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)

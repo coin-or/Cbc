@@ -51,6 +51,7 @@ Cbc/MSVisualStudio/v9alt/libCbcSolver.vcproj -text
 Cbc/MSVisualStudio/v9alt/libOsiCbc.vcproj -text
 Cbc/MSVisualStudio/v9alt/osicbc.vsprops -text
 Cbc/cbc.pc.in -text
+Cbc/compile -text
 Cbc/config.guess -text
 Cbc/config.sub -text
 Cbc/depcomp -text

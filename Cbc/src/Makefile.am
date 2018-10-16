@@ -107,10 +107,8 @@ libCbcSolver_la_SOURCES = \
 
 # List all additionally required libraries
 
-if DEPENDENCY_LINKING
-  libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
-  libCbcSolver_la_LIBADD = $(CBCLIB_LFLAGS) libCbc.la
-endif
+libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
+libCbcSolver_la_LIBADD = $(CBCLIB_LFLAGS) libCbc.la
 
 # This is for libtool
 

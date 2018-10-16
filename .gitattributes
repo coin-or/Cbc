@@ -88,16 +88,7 @@ Cbc/test/CInterfaceTest.c -text
 Cbc/test/OsiCbcSolverInterfaceTest.cpp -text
 Cbc/test/gamsTest.cpp -text
 Cbc/test/osiUnitTest.cpp -text
-/Dependencies -text
 /LICENSE -text
 /README -text
 /README.md -text
 /appveyor.yml -text
-/config.guess -text
-/config.sub -text
-/configure -text
-/configure.ac -text
-/depcomp -text
-doxydoc/doxygen.conf.in -text
-/install-sh -text
-/missing -text

@@ -32,7 +32,7 @@ before_script:
   - bash Cbc/get.dependencies.sh fetch > /dev/null
 
 script:
-  - bash Cbc/get.dependencies.sh build --verbosity=3 --test
+  - bash Cbc/get.dependencies.sh build --verbosity=2 --test
 
 after_script:
   - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=trunk; else export VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`; fi

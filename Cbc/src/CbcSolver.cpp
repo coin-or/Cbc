@@ -676,6 +676,7 @@ void CbcSolver::fillParameters()
     parameters_[whichParam(CBC_PARAM_STR_RENS, numberParameters_, parameters_)].setCurrentOption("off");
     parameters_[whichParam(CBC_PARAM_STR_LOCALTREE, numberParameters_, parameters_)].setCurrentOption("off");
     parameters_[whichParam(CBC_PARAM_STR_COSTSTRATEGY, numberParameters_, parameters_)].setCurrentOption("off");
+    parameters_[whichParam(CBC_PARAM_STR_PREPROCNAMES, numberParameters_, parameters_)].setCurrentOption("off");
     if (createSolver)
         delete clpSolver;
 }
@@ -4370,8 +4371,11 @@ int CbcMain1 (int argc, const char *argv[],
 					}
 #endif
 					redoSOS=true;
-                                        process.setTimeLimit( babModel_->getMaximumSeconds()-babModel_->getCurrentSeconds(), babModel_->useElapsedTime() );
-                                        solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
+
+          bool keepPPN = parameters_[whichParam(CBC_PARAM_STR_PREPROCNAMES, numberParameters_, parameters_)].currentOptionAsInteger();
+          process.setKeepColumnNames( keepPPN );
+          process.setTimeLimit( babModel_->getMaximumSeconds()-babModel_->getCurrentSeconds(), babModel_->useElapsedTime() );
+          solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                                tunePreProcess);
 					if (solver2) {
 					  model_.setOriginalColumns( process.originalColumns(), solver2->getNumCols() );
@@ -12433,3 +12437,5 @@ static void printGeneralMessage(CbcModel &model,const char * message)
   Source code changes so up to 2.0
 */
                             
+//# vim: ts=2 sw=2 et
+

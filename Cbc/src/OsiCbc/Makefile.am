@@ -29,10 +29,8 @@ libOsiCbc_la_LIBADD = $(CBCLIB_LFLAGS) ../libCbc.la
 
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
-# Here list all include flags, relative to this "srcdir" directory.  This
-# "cygpath" stuff is necessary to compile with native compilers on Windows.
-
-AM_CPPFLAGS = -DCBC_BUILD -I`$(CYGPATH_W) $(srcdir)/..` $(OSICBCLIB_CFLAGS)
+# Here list all include flags, relative to this "srcdir" directory.
+AM_CPPFLAGS = -DCBC_BUILD -I$(srcdir)/.. $(OSICBCLIB_CFLAGS)
 
 # Plus the appropriate include directories for the default solver.
 

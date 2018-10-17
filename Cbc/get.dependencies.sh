@@ -76,8 +76,10 @@ function invoke_make {
         $MAKE -j $jobs $2 >& /dev/null
     elif [ $1 = 2 ]; then
         $MAKE -j $jobs $2 > /dev/null
-    else
+    elif [ $1 = 3 ]; then
         $MAKE -j $jobs $2
+    else
+        $MAKE -j $jobs V=1 $2
     fi
 }
 

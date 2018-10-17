@@ -450,12 +450,11 @@ libOsiCbc_la_LIBADD = $(CBCLIB_LFLAGS) ../libCbc.la
 # This is for libtool (on Windows)
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
-# Here list all include flags, relative to this "srcdir" directory.  This
-# "cygpath" stuff is necessary to compile with native compilers on Windows.
-AM_CPPFLAGS = -DCBC_BUILD -I`$(CYGPATH_W) $(srcdir)/..` \
-	$(OSICBCLIB_CFLAGS) $(am__append_1) $(am__append_2) \
-	$(am__append_3) $(am__append_4) $(am__append_5) \
-	$(am__append_6) $(am__append_7) $(am__append_8)
+# Here list all include flags, relative to this "srcdir" directory.
+AM_CPPFLAGS = -DCBC_BUILD -I$(srcdir)/.. $(OSICBCLIB_CFLAGS) \
+	$(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_4) $(am__append_5) $(am__append_6) \
+	$(am__append_7) $(am__append_8)
 
 ########################################################################
 #                Headers that need to be installed                     #

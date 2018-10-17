@@ -420,8 +420,8 @@ cbcflags = $(am__append_3) -unitTest $(am__append_5)
 ositestsflags = $(am__append_4) $(am__append_6)
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LFLAGS)
-AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(CBCLIB_CFLAGS) \
-	-I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc` $(CBCUNITTEST_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../src $(CBCLIB_CFLAGS) \
+	-I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
 # AM_CPPFLAGS += $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 
 ########################################################################

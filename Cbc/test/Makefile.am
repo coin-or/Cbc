@@ -64,7 +64,7 @@ bin_PROGRAMS = gamsTest osiUnitTest CInterfaceTest
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LFLAGS)
 
-AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(CBCLIB_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../src $(CBCLIB_CFLAGS)
 # AM_CPPFLAGS += $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 
 ########################################################################
@@ -76,7 +76,7 @@ osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
 osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
     $(CBCUNITTEST_LFLAGS)
 
-AM_CPPFLAGS += -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc` $(CBCUNITTEST_CFLAGS)
+AM_CPPFLAGS += -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
 
 ositests: osiUnitTest$(EXEEXT)
 	./osiUnitTest$(EXEEXT) $(ositestsflags)

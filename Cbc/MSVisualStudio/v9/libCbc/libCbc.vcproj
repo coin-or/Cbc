@@ -1005,6 +1005,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicDW.cpp"
+				>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicFPump.cpp"
 				>
 				<FileConfiguration
@@ -1795,6 +1798,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcHeuristicDiveVectorLength.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicDW.hpp"
 				>
 			</File>
 			<File

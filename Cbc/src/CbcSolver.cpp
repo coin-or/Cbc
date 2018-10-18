@@ -5758,7 +5758,7 @@ int CbcMain1 (int argc, const char *argv[],
 				      OsiBabSolver dummy;
 				      babModel_->passInSolverCharacteristics(&dummy);
 				      babModel_->createContinuousSolver();
-				      babModel_->setBestSolution(CBC_Message::CBC_ROUNDING,
+				      babModel_->setBestSolution(CBC_ROUNDING,
 								 obj,&x[0], 1 );
 				      babModel_->clearContinuousSolver();
 				      babModel_->passInSolverCharacteristics(NULL);

@@ -53,6 +53,7 @@
 #include "OsiChooseVariable.hpp"
 #include "OsiAuxInfo.hpp"
 #include "CbcMipStartIO.hpp"
+#include "CbcMessage.hpp"
 // for printing
 #ifndef CLP_OUTPUT_FORMAT
 #define CLP_OUTPUT_FORMAT %15.8g

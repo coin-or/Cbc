@@ -1007,6 +1007,7 @@
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicDW.cpp"
 				>
+                        </File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicFPump.cpp"
 				>

@@ -2353,9 +2353,13 @@ public:
     inline void setMaximumNumberIterations(int value) {
         maximumNumberIterations_ = value;
     }
+#ifdef COIN_HAS_NTY
     /// Symmetry information
     inline CbcSymmetry * symmetryInfo() const
     { return symmetryInfo_;}  
+    /// get rid of all
+    void zapSymmetry();
+#endif
     /// Set depth for fast nodes
     inline void setFastNodeDepth(int value) {
         fastNodeDepth_ = value;

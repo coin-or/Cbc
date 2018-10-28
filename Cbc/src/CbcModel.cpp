@@ -19625,6 +19625,14 @@ void CbcModel::setMIPStart( int count, const char **colNames, const double colVa
     for ( int i=0 ; (i<count) ; ++i )
         mipStart_.push_back( std::pair<std::string, double>( std::string(colNames[i]), colValues[i]) );
 }
+#ifdef COIN_HAS_NTY
+// get rid of all
+void
+CbcModel::zapSymmetry() {
+  delete symmetryInfo_;
+  symmetryInfo_=NULL;
+}
+#endif
 /* Add SOS info to solver -
    Overwrites SOS information in solver with information
    in CbcModel.  Has no effect with some solvers. 

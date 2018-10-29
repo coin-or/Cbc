@@ -10,34 +10,37 @@ environment:
       secure: a9n4jf90wlFCdaYa6fOmYxsF97ur2dnK8Ys3gn5R90JBzTDq6cD2GlEwmmts75mq
     BINTRAY_USERNAME: tkralphs
   matrix:
-    - ARCH: win32-msvc9
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      ARCH: win32-msvc9
       HOST_ARCH_ARG: --enable-msvc=MD
       ADD_PATH: /mingw64/bin
-    - ARCH: win32-msvc12
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      ARCH: win32-msvc14
       HOST_ARCH_ARG: --enable-msvc
       ADD_PATH: /mingw64/bin
-    - ARCH: win32-msvc14
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      ARCH: win32-msvc15
       HOST_ARCH_ARG: --enable-msvc
       ADD_PATH: /mingw64/bin
-    - ARCH: x86_64-w64-mingw32
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      ARCH: x86_64-w64-mingw32
       HOST_ARCH_ARG: --host=x86_64-w64-mingw32
       ADD_PATH: /mingw64/bin
-    - ARCH: i686-w64-mingw32
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      ARCH: i686-w64-mingw32
       HOST_ARCH_ARG: --host=i686-w64-mingw32
       ADD_PATH: /mingw32/bin
 
 install:
-  - for /f "delims=" %%i in ('C:\msys64\usr\bin\bash -lc "if [ $APPVEYOR_REPO_BRANCH = 'master' ]; then echo 'trunk'; else echo $APPVEYOR_REPO_BRANCH | cut -d "/" -f 2; fi"') do set VERSION=%%i
-  - echo %VERSION%
   - IF %ARCH%==win32-msvc9 (CALL C:\"Program Files (x86)\Microsoft Visual Studio 9.0\VC\vcvarsall.bat")
-  - IF %ARCH%==win32-msvc12 (CALL C:\"Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat")
   - IF %ARCH%==win32-msvc14 (CALL C:\"Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat")
+  - IF %ARCH%==win32-msvc15 (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64 8.1)
   - C:\msys64\usr\bin\bash -lc ""
 
 build_script:
-  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; git clone https://github.com/coin-or-tools/BuildTools"
-  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; BuildTools/get.dependencies.sh fetch --no-third-party"
-  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; export PATH=$ADD_PATH:$PATH; BuildTools/get.dependencies.sh build --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --verbosity=2 --test"
+  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; git clone https://github.com/coin-or/COIN-OR-OptimizationSuite COIN"
+  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER/COIN; ./coin.install.sh fetch --no-prompt --main-proj=%APPVEYOR_PROJECT_NAME% --no-third-party"
+  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER/COIN; export PATH=$ADD_PATH:$PATH; ./coin.install.sh build --no-prompt --main-proj=%APPVEYOR_PROJECT_NAME% --no-third-party" --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --verbosity=2 --test"
 
 after_build:
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\build\bin

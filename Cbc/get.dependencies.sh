@@ -5,7 +5,6 @@
 # Released Under the Eclipse Public License 
 #
 # TODO
-# - fix dependency-tracking or remove it from configure
 # - consider using pushd/popd instead of cd somewhere/cd ..
 # - look at TODO and FIXME below
 
@@ -478,9 +477,9 @@ function build {
                     print_action "Configuring $proj_dir"
                 fi
                 if [ $verbosity -ge 3 ]; then
-                    "$root_dir/$dir/configure" --disable-dependency-tracking --prefix=$1 "${!configure_options[@]}"
+                    "$root_dir/$dir/configure" --prefix=$1 "${!configure_options[@]}"
                 else
-                    "$root_dir/$dir/configure" --disable-dependency-tracking --prefix=$1 "${!configure_options[@]}" > /dev/null
+                    "$root_dir/$dir/configure" --prefix=$1 "${!configure_options[@]}" > /dev/null
                 fi
             fi
             print_action "Building $proj_dir"
@@ -521,9 +520,9 @@ function build {
             fi
             # Now, do the actual configuration
             if [ $verbosity -ge 2 ]; then
-                "$root_config" --disable-dependency-tracking --prefix=$1 "${!configure_options[@]}"
+                "$root_config" --prefix=$1 "${!configure_options[@]}"
             else
-                "$root_config" --disable-dependency-tracking --prefix=$1 "${!configure_options[@]}" > /dev/null
+                "$root_config" --prefix=$1 "${!configure_options[@]}" > /dev/null
             fi
         fi
         print_action "Building $main_proj"
@@ -561,9 +560,9 @@ function build {
         fi
         if [ ! -e config.status ] || [ $reconfigure = "true" ]; then
             if [ $verbosity != 1 ]; then
-                "$root_dir/configure" --disable-dependency-tracking --prefix=$1 "${!configure_options[@]}"
+                "$root_dir/configure" --prefix=$1 "${!configure_options[@]}"
             else
-                "$root_dir/configure" --disable-dependency-tracking --prefix=$1 "${!configure_options[@]}" > /dev/null
+                "$root_dir/configure" --prefix=$1 "${!configure_options[@]}" > /dev/null
             fi
         fi
         if [ $run_all_tests = "true" ]; then

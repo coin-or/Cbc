@@ -21,6 +21,7 @@
 #include <string>
 #include <iostream>
 
+#include "CoinUtilsConfig.h"
 #include "CoinFileIO.hpp"
 #include "CoinMpsIO.hpp"
 #include "CoinPackedMatrix.hpp"

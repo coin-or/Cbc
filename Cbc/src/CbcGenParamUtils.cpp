@@ -18,6 +18,7 @@
 #include <string>
 #include <cassert>
 
+#include "CoinUtilsConfig.h"
 #include "CoinFileIO.hpp"
 
 #include "CoinFinite.hpp"

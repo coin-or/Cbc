@@ -1,5 +1,14 @@
 /* src/config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Library Visibility Attribute */
+#undef CBCGENERIC_EXPORT
+
+/* Library Visibility Attribute */
+#undef CBCLIB_EXPORT
+
+/* Library Visibility Attribute */
+#undef CBCUNITTEST_EXPORT
+
 /* Define to the name of the default solver to be used in cbc-generic in small
    letters */
 #undef CBC_DEFAULT_SOLVER
@@ -141,6 +150,9 @@
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
+
+/* Library Visibility Attribute */
+#undef OSICBCLIB_EXPORT
 
 /* define to the name of the default solver interface class, e.g.,
    OsiClpSolverInterface */

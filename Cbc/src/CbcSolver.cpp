@@ -5766,6 +5766,8 @@ int CbcMain1 (int argc, const char *argv[],
 								 obj,&x[0], 1 );
 				      babModel_->clearContinuousSolver();
 				      babModel_->passInSolverCharacteristics(NULL);
+				      if (useSolution==0)
+					babModel_->setHotstartSolution(&x[0]);
                                     }
 				}
 
@@ -12560,7 +12562,7 @@ static int nautiedConstraints (CbcModel & model,int maxPass)
 	  }
 #endif
 	  numberPasses++;
-	  if (numberPasses<3/*maxPass*/)
+	  if (numberPasses<maxPass)
 	    changed=true;
 	}
 	delete [] size;

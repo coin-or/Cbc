@@ -58,10 +58,6 @@ AC_COIN_CHECK_MATH_HDRS
 #                            COIN-OR components                             #
 #############################################################################
 
-AC_COIN_INIT_LIBVARS([CbcLib],
-	[-L\${libdir} -lCbcsolver -lCbc],[-I\${includedir}])
-AC_COIN_INIT_LIBVARS([OsiCbcLib],[-L\${libdir} -lOsiCbc],[-I\${includedir}])
-
 m4_foreach_w([myvar],[CoinUtils Osi Cgl Clp],
   [ AC_COIN_CHK_PKG(myvar,[CbcLib CbcGeneric])
     if test $coin_has_[]m4_tolower(myvar) != yes ; then

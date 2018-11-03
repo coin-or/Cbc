@@ -743,14 +743,6 @@ COIN_HAS_PKGCONFIG_FALSE
 COIN_HAS_PKGCONFIG_TRUE
 ac_ct_PKG_CONFIG
 PKG_CONFIG
-OSICBCLIB_DATA_PUB
-OSICBCLIB_PCFILES_PUB
-OSICBCLIB_CFLAGS_PUB
-OSICBCLIB_LFLAGS_PUB
-CBCLIB_DATA_PUB
-CBCLIB_PCFILES_PUB
-CBCLIB_CFLAGS_PUB
-CBCLIB_LFLAGS_PUB
 LT_LDFLAGS
 CXXCPP
 CPP
@@ -16692,27 +16684,6 @@ done
 #############################################################################
 #                            COIN-OR components                             #
 #############################################################################
-
-
-  CBCLIB_LFLAGS_PUB="-L\${libdir} -lCbcsolver -lCbc"
-
-  CBCLIB_CFLAGS_PUB="-I\${includedir}"
-
-  CBCLIB_PCFILES_PUB=""
-
-  CBCLIB_DATA_PUB=\${datarootdir}/$PACKAGE_TARNAME
-
-
-
-  OSICBCLIB_LFLAGS_PUB="-L\${libdir} -lOsiCbc"
-
-  OSICBCLIB_CFLAGS_PUB="-I\${includedir}"
-
-  OSICBCLIB_PCFILES_PUB=""
-
-  OSICBCLIB_DATA_PUB=\${datarootdir}/$PACKAGE_TARNAME
-
-
 
 
 

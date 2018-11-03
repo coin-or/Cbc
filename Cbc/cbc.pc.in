@@ -1,14 +1,14 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
-includedir=@includedir@/coin
+includedir=@includedir@/coin-or
 
 Name: CBC
 Description: COIN-OR Branch and Cut
 URL: https://projects.coin-or.org/Cbc
 Version: @PACKAGE_VERSION@
-Libs: @CBCLIB_LFLAGS_PUB@
+Libs: -L${libdir} -lCbcsolver -lCbc
 Libs.private: @CBCLIB_LFLAGS_NOPC@
-Cflags: @CBCLIB_CFLAGS_PUB@
-Requires: @CBCLIB_PCFILES_PUB@
+Cflags: -I${includedir}
+Requires:
 Requires.private: @CBCLIB_PCFILES@

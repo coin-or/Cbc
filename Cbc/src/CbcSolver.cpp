@@ -6336,7 +6336,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     // change default
                                     if (nodeStrategy > 2) {
                                         // up or down
-                                        int way = (((nodeStrategy - 1) % 1) == 1) ? -1 : +1;
+                                        int way = (((nodeStrategy - 1) % 2) == 1) ? -1 : +1;
                                         babModel_->setPreferredWay(way);
 #ifdef JJF_ZERO
                                         OsiObject ** objects = babModel_->objects();

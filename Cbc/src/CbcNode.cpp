@@ -596,7 +596,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
     model->reserveCurrentSolution(saveSolution);
     if (hotstartSolution) {
         numberStrong = 0;
-        if ((model->moreSpecialOptions()&1024) != 0) {
+        if ((model->moreSpecialOptions()&1024) != 0||true) {
             int nBad = 0;
             int nUnsat = 0;
             int nDiff = 0;

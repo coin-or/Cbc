@@ -1500,6 +1500,25 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
         lockThread();
         CbcThread * stuff = reinterpret_cast<CbcThread *> (masterThread_);
         assert (stuff);
+	// deal with hotstart
+	static int lastHotDepth=-1;
+	if (baseModel->hotstartSolution_) {
+	  if (!baseModel->numberNodes_) {
+	    lastHotDepth=-1;
+	  } else if (stuff->node()) {
+	    if (stuff->node()->depth()>=lastHotDepth) {
+	      lastHotDepth=stuff->node()->depth();
+	      //printf("hotdepth %d\n",lastHotDepth);
+	    } else {
+	      // switch off
+	      delete [] hotstartSolution_;
+	      hotstartSolution_=NULL;
+	      delete [] baseModel->hotstartSolution_;
+	      baseModel->hotstartSolution_=NULL;
+	      //printf("off hotstart\n");
+	    }
+	  }
+	}
         //stateOfSearch_
         if (stuff->saveStuff()[0] != searchStrategy_) {
 #ifdef COIN_DEVELOP

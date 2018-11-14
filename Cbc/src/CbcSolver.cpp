@@ -4462,6 +4462,14 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
                                 //solver2->resolve();
                                 if (preProcess == 2) {
+				    // names are wrong - redo
+				    const int * originalColumns = process.originalColumns();
+				    int numberColumns = solver2->getNumCols();
+				    OsiSolverInterface * originalSolver = model.solver();
+				    for (int i=0;i<numberColumns;i++) {
+				      int iColumn = originalColumns[i];
+				      solver2->setColName(i,originalSolver->getColName(iColumn));
+				    }
                                     OsiClpSolverInterface * clpSolver2 = dynamic_cast< OsiClpSolverInterface*> (solver2);
                                     ClpSimplex * lpSolver = clpSolver2->getModelPtr();
                                     lpSolver->writeMps("presolved.mps", 0, 1, lpSolver->optimizationDirection());

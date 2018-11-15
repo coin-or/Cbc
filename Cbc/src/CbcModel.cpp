@@ -3677,7 +3677,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #define HOTSTART -1
 #if HOTSTART<0
         if (bestSolution_ && !parentModel_ && !hotstartSolution_ &&
-                (moreSpecialOptions_&1024) != 0) {
+	    (moreSpecialOptions_&1024) != 0 && (specialOptions_&2048) == 0) {
             // Set priorities so only branch on ones we need to
             // use djs and see if only few branches needed
 #ifndef NDEBUG

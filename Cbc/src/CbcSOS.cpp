@@ -40,6 +40,9 @@ CbcSOS::CbcSOS ()
 	  numberTimesUp_(0),
 	  numberMembers_(0),
 	  sosType_(-1),
+#ifdef CBC_INVESTIGATE_SOS
+	  setNumber_(-1),
+#endif
 	  integerValued_(false),
 	  oddValues_(false)
 {
@@ -57,6 +60,9 @@ CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
         numberTimesUp_(0),
         numberMembers_(numberMembers),
 	  sosType_(type),
+#ifdef CBC_INVESTIGATE_SOS
+	  setNumber_(-1),
+#endif
 	  oddValues_(false)
 {
     id_ = identifier;
@@ -126,6 +132,9 @@ CbcSOS::CbcSOS ( const CbcSOS & rhs)
     numberTimesUp_ = rhs.numberTimesUp_;
     numberMembers_ = rhs.numberMembers_;
     sosType_ = rhs.sosType_;
+#ifdef CBC_INVESTIGATE_SOS
+    setNumber_ = rhs.setNumber_;
+#endif
     integerValued_ = rhs.integerValued_;
     oddValues_ = rhs.oddValues_;
     if (numberMembers_) {
@@ -162,6 +171,9 @@ CbcSOS::operator=( const CbcSOS & rhs)
         numberTimesUp_ = rhs.numberTimesUp_;
         numberMembers_ = rhs.numberMembers_;
         sosType_ = rhs.sosType_;
+#ifdef CBC_INVESTIGATE_SOS
+	setNumber_ = rhs.setNumber_;
+#endif
         integerValued_ = rhs.integerValued_;
 	oddValues_ = rhs.oddValues_;
         if (numberMembers_) {
@@ -919,6 +931,12 @@ CbcSOSBranchingObject::branch()
     OsiSolverInterface * solver = model_->solver();
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
+#ifdef CBC_INVESTIGATE_SOS
+    const double * solution = solver->getColSolution();
+    printf("Set %d type %d way %d range %g -> %g (%d inset) separator %g tozero ",
+	   set_->whichSet(),set_->sosType(),way_,
+	   weights[0],weights[numberMembers-1],numberMembers,separator_);
+#endif
     // *** for way - up means fix all those in down section
     if (way_ < 0) {
         int i;
@@ -928,6 +946,9 @@ CbcSOSBranchingObject::branch()
         }
         assert (i < numberMembers);
         for (; i < numberMembers; i++) {
+#ifdef CBC_INVESTIGATE_SOS
+	  printf("%d (%g,%g) ",which[i],weights[i],solution[which[i]]);
+#endif
 	    solver->setColLower(which[i], 0.0);
             solver->setColUpper(which[i], 0.0);
 	}
@@ -938,6 +959,9 @@ CbcSOSBranchingObject::branch()
 	  if (weights[i] >= separator_) {
                 break;
 	  } else {
+#ifdef CBC_INVESTIGATE_SOS
+	  printf("%d (%g,%g) ",which[i],weights[i],solution[which[i]]);
+#endif
                 solver->setColLower(which[i], 0.0);
                 solver->setColUpper(which[i], 0.0);
 	  }
@@ -945,6 +969,9 @@ CbcSOSBranchingObject::branch()
         assert (i < numberMembers);
         way_ = -1;	  // Swap direction
     }
+#ifdef CBC_INVESTIGATE_SOS
+    printf("\n");
+#endif
     computeNonzeroRange();
     double predictedChange=0.0;
     for (int i = 0; i < numberMembers; i++) {

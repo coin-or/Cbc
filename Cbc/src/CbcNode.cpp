@@ -1638,7 +1638,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         depth_ = 0;
     // Go to other choose if hot start
     if (model->hotstartSolution() &&
-            (((model->moreSpecialOptions()&1024) == 0) || false))
+            (((model->moreSpecialOptions()&1024) == 0) || true))
         return -3;
     delete branch_;
     branch_ = NULL;
@@ -1753,7 +1753,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     double integerTolerance =
         model->getDblParam(CbcModel::CbcIntegerTolerance);
     if (hotstartSolution) {
-        if ((model->moreSpecialOptions()&1024) != 0) {
+        if ((model->moreSpecialOptions()&1024) != 0 || true) {
             int nBad = 0;
             int nUnsat = 0;
             int nDiff = 0;

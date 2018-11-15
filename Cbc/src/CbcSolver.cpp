@@ -1305,6 +1305,14 @@ int CbcMain1 (int argc, const char *argv[],
   staticParameterData.useSignalHandler_=true;
   return CbcMain1(argc,argv,model,callBack,staticParameterData);
 }
+// Get int value for an option
+static int intValueOfOption(CbcSolverUsefulData &parameterData,CbcOrClpParameterType type)
+{
+  CbcOrClpParam * parameters = parameterData.parameters_;
+  int numberParameters = parameterData.numberParameters_;
+  int jParam = whichParam(type,numberParameters, parameters);
+  return parameters[jParam].currentOptionAsInteger();
+}
 static void printGeneralMessage(CbcModel &model,const char * message);
 /*
   Meaning of whereFrom:
@@ -2035,7 +2043,7 @@ int CbcMain1 (int argc, const char *argv[],
                     int maxAcross = 10;
                     if ((verbose % 4) != 0)
                         maxAcross = 1;
-                    int limits[] = {1, 51, 101, 151, 201, 251, 301, 351, 401};
+                    int limits[] = {1, 51, 101, 151, 201, 301, 401, 501, 601};
                     std::vector<std::string> types;
                     types.push_back("Double parameters:");
                     types.push_back("Branch and Cut double parameters:");
@@ -2101,7 +2109,7 @@ int CbcMain1 (int argc, const char *argv[],
                 } else if (type == CBC_PARAM_FULLGENERALQUERY) {
                     std::cout << "Full list of commands is:" << std::endl;
                     int maxAcross = 5;
-                    int limits[] = {1, 51, 101, 151, 201, 251, 301, 351, 401};
+                    int limits[] = {1, 51, 101, 151, 201, 301, 401, 501, 601};
                     std::vector<std::string> types;
                     types.push_back("Double parameters:");
                     types.push_back("Branch and Cut double parameters:");
@@ -2428,7 +2436,7 @@ int CbcMain1 (int argc, const char *argv[],
                         std::cout << parameters_[iParam].name() << " has value " <<
                                   parameters_[iParam].intValue() << std::endl;
                     }
-                } else if (type < 301) {
+                } else if (type < 401) {
                     // one of several strings
                     std::string value = CoinReadGetString(argc, argv);
                     int action = parameters_[iParam].parameterOption(value);
@@ -6058,15 +6066,49 @@ int CbcMain1 (int argc, const char *argv[],
                                                     << CoinMessageEol;
                                                 }
                                             }
-                                            for (iSOS = 0; iSOS < numberSOS; iSOS++) {
+					    int sosPriorityOption =
+					      intValueOfOption(parameterData,
+							       CBC_PARAM_STR_SOSPRIORITIZE);
+					    if (sosPriorityOption) {
+					      const char * msg[4]={
+						"high with equal priority",
+						"low with equal priority",
+						"high but with decreasing priority",
+						"low and decreasing priority"};
+					      sprintf(generalPrint, "Setting %d SOS priorities %s", numberSOS,msg[sosPriorityOption-1]);
+					      generalMessageHandler->message(CLP_GENERAL, generalMessages)
+						<< generalPrint
+						<< CoinMessageEol;
+					    }
+				            for (iSOS = 0; iSOS < numberSOS; iSOS++) {
                                                 int iStart = sosStart[iSOS];
                                                 int n = sosStart[iSOS+1] - iStart;
-                                                objects[iSOS] = new CbcSOS(babModel_, n, sosIndices + iStart, sosReference + iStart,
+                                                CbcSOS * sosObject = new CbcSOS(babModel_, n, sosIndices + iStart, sosReference + iStart,
                                                                            iSOS, sosType[iSOS]);
-                                                if (sosPriority)
-                                                    objects[iSOS]->setPriority(sosPriority[iSOS]);
-                                                else if (!prioritiesIn)
-                                                    objects[iSOS]->setPriority(10);  // rather than 1000
+#ifdef CBC_INVESTIGATE_SOS
+						sosObject->setSet(iSOS);
+#endif
+                                                if (sosPriority) {
+                                                    sosObject->setPriority(sosPriority[iSOS]);
+						} else if (sosPriorityOption) {
+						  int priority=10;
+						  switch (sosPriorityOption) {
+						  case 2:
+						    priority=100000;
+						    break;
+						  case 3:
+						    // really should check <990 sets
+						    priority=10+iSOS;
+						    break;
+						  case 4:
+						    priority=100000+iSOS;
+						    break;
+						  }
+						  sosObject->setPriority(priority);
+						} else if (!prioritiesIn) {
+						  sosObject->setPriority(10);  // rather than 1000
+						}
+                                                objects[iSOS] = sosObject;
                                             }
                                             // delete any existing SOS objects
                                             int numberObjects = babModel_->numberObjects();

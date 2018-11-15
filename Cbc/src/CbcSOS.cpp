@@ -238,37 +238,10 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
         if (lastWeight >= weights_[j] - 1.0e-7)
             throw CoinError("Weights too close together in SOS", "infeasibility", "CbcSOS");
         double value = CoinMax(lower[iColumn], solution[iColumn]);
+	value = CoinMin(upper[iColumn],value);
         sum += value;
-        /*
-          If we're not making assumptions about integrality, why check integerTolerance
-          here? Convenient tolerance? Why not just check against the upper bound?
-
-          The calculation of weight looks to be a relic --- in the end, the value isn't
-          used to calculate either the return value or preferredWay.
-        */
         if (fabs(value) > integerTolerance && (upper[iColumn] > 0.0 ||
 					       oddValues_)) {
-            // Possibly due to scaling a fixed variable might slip through
-            if (value > upper[iColumn]) {
-                value = upper[iColumn];
-                // Could change to #ifdef CBC_DEBUG
-#ifndef NDEBUG
-                if (model_->messageHandler()->logLevel() > 2 &&
-		    value > upper[iColumn] + integerTolerance)
-                    printf("** Variable %d (%d) has value %g and upper bound of %g\n",
-                           iColumn, j, value, upper[iColumn]);
-#endif
-            }
-            if (value < lower[iColumn]) {
-                value = lower[iColumn];
-                // Could change to #ifdef CBC_DEBUG
-#ifndef NDEBUG
-                if (model_->messageHandler()->logLevel() > 2 &&
-		    value < lower[iColumn] - integerTolerance)
-                    printf("** Variable %d (%d) has value %g and lower bound of %g\n",
-                           iColumn, j, value, lower[iColumn]);
-#endif
-            }
             weight += weights_[j] * value;
             if (firstNonZero < 0)
                 firstNonZero = j;
@@ -504,6 +477,7 @@ CbcSOS::feasibleRegion()
     for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
         double value = CoinMax(lower[iColumn], solution[iColumn]);
+	value = CoinMin(upper[iColumn],value);
         sum += value;
         if (fabs(value) > integerTolerance && (upper[iColumn] || oddValues_)) {
             weight += weights_[j] * value;

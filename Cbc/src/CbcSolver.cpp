@@ -6085,9 +6085,6 @@ int CbcMain1 (int argc, const char *argv[],
                                                 int n = sosStart[iSOS+1] - iStart;
                                                 CbcSOS * sosObject = new CbcSOS(babModel_, n, sosIndices + iStart, sosReference + iStart,
                                                                            iSOS, sosType[iSOS]);
-#ifdef CBC_INVESTIGATE_SOS
-						sosObject->setSet(iSOS);
-#endif
                                                 if (sosPriority) {
                                                     sosObject->setPriority(sosPriority[iSOS]);
 						} else if (sosPriorityOption) {

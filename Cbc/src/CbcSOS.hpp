@@ -105,16 +105,6 @@ public:
     inline int sosType() const {
         return sosType_;
     }
-#ifdef CBC_INVESTIGATE_SOS
-    /// Set which Set
-    inline void setSet(int number) {
-      setNumber_=number;
-    }
-    /// Which set
-    inline int whichSet() const {
-      return setNumber_;
-    }
-#endif
     /// Down number times
     inline int numberTimesDown() const {
         return numberTimesDown_;
@@ -187,10 +177,6 @@ private:
     int numberMembers_;
     /// SOS type
     int sosType_;
-#ifdef CBC_INVESTIGATE_SOS
-    /// Which set
-    int setNumber_;
-#endif
     /// Whether integer valued
     bool integerValued_;
     /// Whether odd values e.g. negative

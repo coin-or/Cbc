@@ -40,9 +40,6 @@ CbcSOS::CbcSOS ()
 	  numberTimesUp_(0),
 	  numberMembers_(0),
 	  sosType_(-1),
-#ifdef CBC_INVESTIGATE_SOS
-	  setNumber_(-1),
-#endif
 	  integerValued_(false),
 	  oddValues_(false)
 {
@@ -60,9 +57,6 @@ CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
         numberTimesUp_(0),
         numberMembers_(numberMembers),
 	  sosType_(type),
-#ifdef CBC_INVESTIGATE_SOS
-	  setNumber_(-1),
-#endif
 	  oddValues_(false)
 {
     id_ = identifier;
@@ -132,9 +126,6 @@ CbcSOS::CbcSOS ( const CbcSOS & rhs)
     numberTimesUp_ = rhs.numberTimesUp_;
     numberMembers_ = rhs.numberMembers_;
     sosType_ = rhs.sosType_;
-#ifdef CBC_INVESTIGATE_SOS
-    setNumber_ = rhs.setNumber_;
-#endif
     integerValued_ = rhs.integerValued_;
     oddValues_ = rhs.oddValues_;
     if (numberMembers_) {
@@ -171,9 +162,6 @@ CbcSOS::operator=( const CbcSOS & rhs)
         numberTimesUp_ = rhs.numberTimesUp_;
         numberMembers_ = rhs.numberMembers_;
         sosType_ = rhs.sosType_;
-#ifdef CBC_INVESTIGATE_SOS
-	setNumber_ = rhs.setNumber_;
-#endif
         integerValued_ = rhs.integerValued_;
 	oddValues_ = rhs.oddValues_;
         if (numberMembers_) {
@@ -908,7 +896,7 @@ CbcSOSBranchingObject::branch()
 #ifdef CBC_INVESTIGATE_SOS
     const double * solution = solver->getColSolution();
     printf("Set %d type %d way %d range %g -> %g (%d inset) separator %g tozero ",
-	   set_->whichSet(),set_->sosType(),way_,
+	   set_->id(),set_->sosType(),way_,
 	   weights[0],weights[numberMembers-1],numberMembers,separator_);
 #endif
     // *** for way - up means fix all those in down section

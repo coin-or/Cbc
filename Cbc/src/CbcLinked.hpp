@@ -339,7 +339,7 @@ public:
                           double multiplier = 1.0);
     //@}
 
-private:
+protected:
     typedef struct {
         double multiplier; // to use in computation
         int affected; // variable or element affected
@@ -418,7 +418,6 @@ public:
         return true;
     }
 
-protected:
 private:
     /// Illegal Assignment operator
     CbcHeuristicDynamic3 & operator=(const CbcHeuristicDynamic3& rhs);
@@ -506,7 +505,7 @@ public:
         return false;
     }
 
-private:
+protected:
     /// data
 
     /// Number of links
@@ -659,7 +658,7 @@ public:
         return false;
     }
 
-private:
+protected:
     /// data
     /// Current increment for y points
     double meshSize_;
@@ -1023,7 +1022,7 @@ public:
     /** \brief Return true if branch should only bound variables
     */
     virtual bool boundBranch() const;
-private:
+protected:
     /// data
     /// 1 means branch on x, 2 branch on y
     short chosen_;
@@ -1079,7 +1078,7 @@ public:
         numberPoints_ = value;
     }
 
-private:
+protected:
     /// Number of points
     int numberPoints_;
 };

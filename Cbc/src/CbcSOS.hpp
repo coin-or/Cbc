@@ -143,7 +143,7 @@ public:
     inline void setIntegerValued(bool yesNo) {
         integerValued_ = yesNo;
     }
-private:
+protected:
     /// data
 
     /// Members (indices in range 0 ... numberColumns-1)
@@ -262,7 +262,7 @@ public:
     /** Fill out the \c firstNonzero_ and \c lastNonzero_ data members */
     void computeNonzeroRange();
 
-private:
+protected:
     /// data
     const CbcSOS * set_;
     /// separator

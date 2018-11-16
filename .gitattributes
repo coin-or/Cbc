@@ -61,6 +61,7 @@ Cbc/examples/barrier.cpp -text
 Cbc/examples/cbc_driverC_sos.c -text
 Cbc/examples/driver3.cpp -text
 Cbc/examples/driver4.cpp -text
+Cbc/examples/driver5.cpp -text
 Cbc/examples/driver6.cpp -text
 Cbc/examples/driverFat.cpp -text
 Cbc/examples/inc.cpp -text

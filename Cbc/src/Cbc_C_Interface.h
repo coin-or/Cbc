@@ -212,6 +212,16 @@ extern "C" {
     COINLIBAPI void COINLINKAGE
     Cbc_setInteger(Cbc_Model * model, int iColumn)
     ;
+    /** Adds a new column */
+    COINLIBAPI void COINLINKAGE
+    Cbc_addCol( Cbc_Model *model, const char *name, double lb, 
+            double ub, double obj, bool isInteger)
+    ;
+    /** Adds a new row */
+    COINLIBAPI void COINLINKAGE
+    Cbc_addRow( Cbc_Model *model, const char *name, int nz,
+            const int *cols, const double *coefs, char sense, double rhs )
+    ;
     /** Add SOS constraints to the model using row-order matrix */
     COINLIBAPI void  COINLINKAGE
     Cbc_addSOS(Cbc_Model * model, int numRows, const int * rowStarts,

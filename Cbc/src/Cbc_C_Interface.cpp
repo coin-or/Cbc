@@ -782,6 +782,48 @@ Cbc_setInteger(Cbc_Model * model, int iColumn)
 
     if (VERBOSE > 0) printf("%s return\n", prefix);
 }
+
+
+/** Adds a new column */
+COINLIBAPI void COINLINKAGE
+Cbc_addCol( Cbc_Model *model, const char *name, double lb, double ub, double obj, bool isInteger)
+{
+    OsiSolverInterface * solver = model->model_->solver();
+
+    /* to be used as dummy pointers */
+    int rows; double coefs;
+
+    solver->addCol( 0, &rows, &coefs, lb, ub, obj, std::string(name) );
+    if (isInteger)
+        solver->setInteger(solver->getNumCols()-1 );
+}
+
+/** Adds a new row */
+COINLIBAPI void COINLINKAGE
+Cbc_addRow( Cbc_Model *model, const char *name, int nz,
+            const int *cols, const double *coefs, char sense, double rhs )
+{
+    OsiSolverInterface * solver = model->model_->solver();
+    double rowLB = -DBL_MAX, rowUB = DBL_MAX;
+    switch (toupper(sense))
+    {
+        case 'E':
+            rowLB = rowUB = rhs;
+            break;
+        case 'L':
+            rowUB = rhs;
+            break;
+        case 'G':
+            rowLB = rhs;
+            break;
+        default:
+            fprintf( stderr, "unkow row sense." );
+            abort();
+    }
+    solver->addRow( nz, cols, coefs, rowLB, rowUB );
+    solver->setRowName( solver->getNumCols()-1, std::string(name) );
+}
+ 
 /** Add SOS constraints to the model using row-order matrix */
 
 COINLIBAPI void  COINLINKAGE

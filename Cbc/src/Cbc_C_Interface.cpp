@@ -786,7 +786,7 @@ Cbc_setInteger(Cbc_Model * model, int iColumn)
 
 /** Adds a new column */
 COINLIBAPI void COINLINKAGE
-Cbc_addCol( Cbc_Model *model, const char *name, double lb, double ub, double obj, bool isInteger)
+Cbc_addCol( Cbc_Model *model, const char *name, double lb, double ub, double obj, char isInteger)
 {
     OsiSolverInterface * solver = model->model_->solver();
 

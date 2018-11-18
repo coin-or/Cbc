@@ -215,7 +215,8 @@ extern "C" {
     /** Adds a new column */
     COINLIBAPI void COINLINKAGE
     Cbc_addCol( Cbc_Model *model, const char *name, double lb, 
-            double ub, double obj, char isInteger)
+            double ub, double obj, char isInteger,
+            int nz, int *rows, double *coefs )
     ;
     /** Adds a new row */
     COINLIBAPI void COINLINKAGE

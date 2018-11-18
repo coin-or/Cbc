@@ -786,14 +786,13 @@ Cbc_setInteger(Cbc_Model * model, int iColumn)
 
 /** Adds a new column */
 COINLIBAPI void COINLINKAGE
-Cbc_addCol( Cbc_Model *model, const char *name, double lb, double ub, double obj, char isInteger)
+Cbc_addCol( Cbc_Model *model, const char *name, double lb, 
+            double ub, double obj, char isInteger,
+            int nz, int *rows, double *coefs )
 {
     OsiSolverInterface * solver = model->model_->solver();
 
-    /* to be used as dummy pointers */
-    int rows; double coefs;
-
-    solver->addCol( 0, &rows, &coefs, lb, ub, obj, std::string(name) );
+    solver->addCol( nz, rows, coefs, lb, ub, obj, std::string(name) );
     if (isInteger)
         solver->setInteger(solver->getNumCols()-1 );
 }

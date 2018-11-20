@@ -81,13 +81,17 @@ extern "C" {
     COINLIBAPI int COINLINKAGE
     Cbc_readMps(Cbc_Model * model, const char *filename)
     ;
+    /** Read an lp file from the given filename */
+    COINLIBAPI int COINLINKAGE
+    Cbc_readLp(Cbc_Model * model, const char *filename)
+    ;
     /** Write an mps file from the given filename */
     COINLIBAPI void COINLINKAGE
     Cbc_writeMps(Cbc_Model * model, const char *filename)
     ;
-    /** Read an lp file from the given filename */
-    COINLIBAPI int COINLINKAGE
-    Cbc_readLp(Cbc_Model * model, const char *filename)
+    /** Write an lp file from the given filename */
+    COINLIBAPI void COINLINKAGE
+    Cbc_writeLp(Cbc_Model * model, const char *filename)
     ;
     /** Provide an initial feasible solution to accelerate branch-and-bound 
      Note that feasibility of the solution is *not* verified.
@@ -151,6 +155,10 @@ extern "C" {
     /** Number of variables in the model */
     COINLIBAPI int COINLINKAGE
     Cbc_getNumCols(Cbc_Model * model)
+    ;
+    /** Number of integer variables in the model */
+    COINLIBAPI int COINLINKAGE
+    Cbc_getNumIntegers(Cbc_Model * model)
     ;
     /** Direction of optimization (1 - minimize, -1 - maximize, 0 - ignore) */
     COINLIBAPI void COINLINKAGE
@@ -353,6 +361,10 @@ extern "C" {
     /** Best known bound on the optimal objective value */
     COINLIBAPI double COINLINKAGE
     Cbc_getBestPossibleObjValue(Cbc_Model * model)
+    ;
+    /** Best integer feasible solution or NULL if no integer feas sol found */
+    COINLIBAPI double*  COINLINKAGE
+    Cbc_bestSolution(Cbc_Model * model)
     ;
     /** Number of nodes explored in B&B tree */
     COINLIBAPI int COINLINKAGE

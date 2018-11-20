@@ -240,11 +240,12 @@ Cbc_newModel()
     if (VERBOSE > 0) printf("%s begin\n", prefix);
 
     Cbc_Model * model = new Cbc_Model();
-    OsiClpSolverInterface solver1;
-    model->solver_    = &solver1;
+    OsiClpSolverInterface solver1; // will be release at the end of the scope, CbcModel clones it
     model->model_     = new CbcModel(solver1);
+    model->solver_    = dynamic_cast<OsiClpSolverInterface *>(model->model_->solver());
     CbcMain0(*model->model_);
     model->handler_   = NULL;
+    model->relax_ = 0;
 
     if (VERBOSE > 0) printf("%s return\n", prefix);
     return model;
@@ -429,6 +430,14 @@ Cbc_getNumElements(Cbc_Model * model)
     return result;
 }
 
+
+COINLIBAPI int COINLINKAGE
+Cbc_getNumIntegers(Cbc_Model * model) 
+{
+    return model->model_->solver()->getNumIntegers();
+}
+
+
 // Column starts in matrix
 COINLIBAPI const CoinBigIndex * COINLINKAGE
 Cbc_getVectorStarts(Cbc_Model * model)
@@ -550,10 +559,31 @@ Cbc_setRowName(Cbc_Model * model, int iRow, const char * name)
     model->model_->solver()->setRowName(iRow, name);
 }
 
+COINLIBAPI void COINLINKAGE
+Cbc_setSolveRelax(Cbc_Model * model, char solveOnlyRelax )
+{
+    model->relax_ = solveOnlyRelax;
+}
 
 COINLIBAPI int COINLINKAGE
 Cbc_solve(Cbc_Model * model)
 {
+    OsiSolverInterface *solver = model->solver_;
+    if ( solver->getNumIntegers() == 0 || model->relax_ == 1 )
+    {
+        if ( solver->basisIsAvailable() ) {
+            solver->resolve();
+        }
+        else {
+            solver->initialSolve();
+        }
+
+        if (solver->isProvenOptimal())
+            return 0;
+        
+        return 1;
+    }
+
     const char prefix[] = "Cbc_C_Interface::Cbc_solve(): ";
     int result = 0;
     std::vector<const char*> argv;
@@ -629,13 +659,39 @@ Cbc_checkSolution(Cbc_Model * /*model*/)
 }
 
 
-
 CbcGetProperty(int, getNumCols)
 CbcGetProperty(int, getNumRows)
 CbcGetProperty(int, getIterationCount)
-CbcGetProperty(int, isAbandoned)
-CbcGetProperty(int, isProvenOptimal)
-CbcGetProperty(int, isProvenInfeasible)
+
+/** Are there a numerical difficulties? */
+COINLIBAPI int COINLINKAGE
+Cbc_isAbandoned(Cbc_Model * model) 
+{
+    if ( Cbc_getNumIntegers(model)==0 || model->relax_==1 )
+        return model->solver_->isAbandoned();
+    else 
+        return model->model_->isAbandoned();
+}
+
+/** Is optimality proven? */
+COINLIBAPI int COINLINKAGE
+Cbc_isProvenOptimal(Cbc_Model * model) 
+{
+    if ( Cbc_getNumIntegers(model)==0 || model->relax_==1 )
+        return model->solver_->isProvenOptimal();
+    else 
+        return model->model_->isProvenOptimal();
+}
+
+COINLIBAPI int COINLINKAGE
+Cbc_isProvenInfeasible(Cbc_Model * model) 
+{
+    if ( Cbc_getNumIntegers(model)==0 || model->relax_==1 )
+        return (model->solver_->isProvenDualInfeasible() || model->solver_->isProvenPrimalInfeasible());
+    else 
+        return model->model_->isProvenInfeasible();
+}
+
 CbcGetProperty(int, isContinuousUnbounded)
 CbcGetProperty(int, isNodeLimitReached)
 CbcGetProperty(int, isSecondsLimitReached)
@@ -668,6 +724,12 @@ CbcSetSolverProperty(double, setColUpper)
 
 CbcGetProperty(double, getObjValue)
 CbcGetProperty(double, getBestPossibleObjValue)
+
+COINLIBAPI double*  COINLINKAGE
+Cbc_bestSolution(Cbc_Model * model)
+{
+    return model->model_->bestSolution();
+}
 
 /* Print model */
 COINLIBAPI void COINLINKAGE
@@ -754,6 +816,7 @@ Cbc_clone(Cbc_Model * model)
     result->solver_    = dynamic_cast< OsiClpSolverInterface*> (result->model_->solver());
     result->handler_   = NULL;
     result->cmdargs_   = model->cmdargs_;
+    result->relax_     = model->relax_;
 
     if (VERBOSE > 0) printf("%s return\n", prefix);
     return model;

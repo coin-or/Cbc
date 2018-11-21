@@ -367,7 +367,7 @@ Cbc_writeLp(Cbc_Model * model, const char *filename)
     if (VERBOSE > 1) printf("%s filename = '%s'\n", prefix, filename);
 
     char outFile[512];
-    strncpy(outFile, filename, 512);
+    strncpy(outFile, filename, 511);
 
     char *s = NULL;
     if ((s = strstr(outFile, ".lp"))) {

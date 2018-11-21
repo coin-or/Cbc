@@ -718,6 +718,16 @@ Cbc_isProvenInfeasible(Cbc_Model * model)
         return model->model_->isProvenInfeasible();
 }
 
+COINLIBAPI double COINLINKAGE
+Cbc_getObjValue(Cbc_Model * model) 
+{
+    if ( Cbc_getNumIntegers(model)==0 || model->relax_==1 )
+        return (model->solver_->getObjValue());
+
+    return model->model_->getObjValue();
+}
+
+
 CbcGetProperty(int, isContinuousUnbounded)
 CbcGetProperty(int, isNodeLimitReached)
 CbcGetProperty(int, isSecondsLimitReached)
@@ -748,7 +758,6 @@ CbcSetSolverProperty(double, setColLower)
 CbcGetProperty(const double*, getColUpper)
 CbcSetSolverProperty(double, setColUpper)
 
-CbcGetProperty(double, getObjValue)
 CbcGetProperty(double, getBestPossibleObjValue)
 
 COINLIBAPI double*  COINLINKAGE

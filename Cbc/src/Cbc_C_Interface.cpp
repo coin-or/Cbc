@@ -904,17 +904,26 @@ Cbc_addRow( Cbc_Model *model, const char *name, int nz,
     double rowLB = -DBL_MAX, rowUB = DBL_MAX;
     switch (toupper(sense))
     {
+        case '=':
+            rowLB = rowUB = rhs;
+            break;
         case 'E':
             rowLB = rowUB = rhs;
             break;
+        case '<':
+            rowUB = rhs;
+            break;
         case 'L':
             rowUB = rhs;
+            break;
+        case '>':
+            rowLB = rhs;
             break;
         case 'G':
             rowLB = rhs;
             break;
         default:
-            fprintf( stderr, "unkow row sense." );
+            fprintf( stderr, "unknow row sense %c.", toupper(sense) );
             abort();
     }
     solver->addRow( nz, cols, coefs, rowLB, rowUB );

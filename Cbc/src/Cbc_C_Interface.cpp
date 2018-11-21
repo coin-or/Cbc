@@ -356,6 +356,32 @@ Cbc_writeMps(Cbc_Model * model, const char *filename)
     if (VERBOSE > 0) printf("%s return\n", prefix);
     return;
 }
+
+/* Write an mps file from the given filename */
+COINLIBAPI void COINLINKAGE
+Cbc_writeLp(Cbc_Model * model, const char *filename)
+{
+    const char prefix[] = "Cbc_C_Interface::Cbc_writeLp(): ";
+//  const int  VERBOSE = 2;
+    if (VERBOSE > 0) printf("%s begin\n", prefix);
+    if (VERBOSE > 1) printf("%s filename = '%s'\n", prefix, filename);
+
+    char outFile[512];
+    strncpy(outFile, filename, 512);
+
+    char *s = NULL;
+    if ((s = strstr(outFile, ".lp"))) {
+        if (s != outFile) // not at the start
+            *s = '\0';
+    }
+
+    model->model_->solver()->writeLp(outFile);
+
+    if (VERBOSE > 0) printf("%s return\n", prefix);
+    return;
+}
+
+
 /* Read an lp file from the given filename */
 COINLIBAPI int COINLINKAGE
 Cbc_readLp(Cbc_Model * model, const char *filename)

@@ -689,6 +689,48 @@ CbcGetProperty(int, getNumCols)
 CbcGetProperty(int, getNumRows)
 CbcGetProperty(int, getIterationCount)
 
+/** Number of non-zero entries in a row */
+COINLIBAPI int COINLINKAGE
+Cbc_getRowNz(Cbc_Model * model, int row) 
+{
+    const CoinPackedMatrix *cpmRow = model->model_->solver()->getMatrixByRow();
+    return cpmRow->getVectorLengths()[row];
+}
+
+/** Indices of variables that appear on this row */
+COINLIBAPI const int * COINLINKAGE
+Cbc_getRowIndices(Cbc_Model * model, int row)
+{
+    const CoinPackedMatrix *cpmRow = model->model_->solver()->getMatrixByRow();
+    const CoinBigIndex *starts = cpmRow->getVectorStarts();
+    const int *ridx = cpmRow->getIndices() + starts[row];
+    return ridx;
+}
+
+/** Coefficients of variables that appear on this row */
+COINLIBAPI const double * COINLINKAGE
+Cbc_getRowCoeffs(Cbc_Model * model, int row)
+{
+    const CoinPackedMatrix *cpmRow = model->model_->solver()->getMatrixByRow();
+    const CoinBigIndex *starts = cpmRow->getVectorStarts();
+    const double *rcoef = cpmRow->getElements() + starts[row];
+    return rcoef;
+}
+
+/** Right hand side of a row */
+COINLIBAPI double COINLINKAGE
+Cbc_getRowRHS(Cbc_Model * model, int row)
+{
+    return model->model_->solver()->getRightHandSide()[row];
+}
+
+/** Sense a row */
+COINLIBAPI char COINLINKAGE
+Cbc_getRowSense(Cbc_Model * model, int row)
+{
+    return model->model_->solver()->getRowSense()[row];
+}
+
 /** Are there a numerical difficulties? */
 COINLIBAPI int COINLINKAGE
 Cbc_isAbandoned(Cbc_Model * model) 

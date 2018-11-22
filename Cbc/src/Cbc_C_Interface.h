@@ -152,6 +152,26 @@ extern "C" {
     COINLIBAPI int COINLINKAGE
     Cbc_getNumRows(Cbc_Model * model)
     ;
+    /** Number of non-zero entries in a row */
+    COINLIBAPI int COINLINKAGE
+    Cbc_getRowNz(Cbc_Model * model, int row)
+    ;
+    /** Indices of variables that appear on this row */
+    COINLIBAPI const int * COINLINKAGE
+    Cbc_getRowIndices(Cbc_Model * model, int row)
+    ;
+    /** Coefficients of variables that appear on this row */
+    COINLIBAPI const double * COINLINKAGE
+    Cbc_getRowCoeffs(Cbc_Model * model, int row)
+    ;
+    /** Right hand side of a row */
+    COINLIBAPI double COINLINKAGE
+    Cbc_getRowRHS(Cbc_Model * model, int row)
+    ;
+    /** Sense a row */
+    COINLIBAPI char COINLINKAGE
+    Cbc_getRowSense(Cbc_Model * model, int row)
+    ;
     /** Number of variables in the model */
     COINLIBAPI int COINLINKAGE
     Cbc_getNumCols(Cbc_Model * model)

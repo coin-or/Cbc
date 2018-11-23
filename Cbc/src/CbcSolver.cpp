@@ -4123,7 +4123,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     // Add in generators
 				    if ((model_.moreSpecialOptions()&65536)==0)
 				      process.addCutGenerator(&generator1);
-                                    int translate[] = {9999, 0, 0, -3, 2, 3, -2, 9999, 4, 5};
+                                    int translate[] = {9999, 0, 0, -3, 2, 3, -2, 9999, 4, 5, 0};
                                     process.passInMessageHandler(babModel_->messageHandler());
                                     //process.messageHandler()->setLogLevel(babModel_->logLevel());
 #ifdef COIN_HAS_ASL
@@ -4386,6 +4386,9 @@ int CbcMain1 (int argc, const char *argv[],
 					redoSOS=true;
 
           bool keepPPN = parameters_[whichParam(CBC_PARAM_STR_PREPROCNAMES, numberParameters_, parameters_)].currentOptionAsInteger();
+#ifdef SAVE_NAUTY
+	  keepPPN=1;
+#endif
           process.setKeepColumnNames( keepPPN );
           process.setTimeLimit( babModel_->getMaximumSeconds()-babModel_->getCurrentSeconds(), babModel_->useElapsedTime() );
           solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
@@ -4469,7 +4472,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     }
                                 }
                                 //solver2->resolve();
-                                if (preProcess == 2) {
+                                if (preProcess == 2 || preProcess == 10) {
 				    // names are wrong - redo
 				    const int * originalColumns = process.originalColumns();
 				    int numberColumns = solver2->getNumCols();
@@ -4480,8 +4483,42 @@ int CbcMain1 (int argc, const char *argv[],
 				    }
                                     OsiClpSolverInterface * clpSolver2 = dynamic_cast< OsiClpSolverInterface*> (solver2);
                                     ClpSimplex * lpSolver = clpSolver2->getModelPtr();
-                                    lpSolver->writeMps("presolved.mps", 0, 1, lpSolver->optimizationDirection());
-                                    printf("Preprocessed model (minimization) on presolved.mps\n");
+				    char name[100];
+				    if (preProcess==2) {
+				      strcpy(name,"presolved.mps");
+				    } else {
+				      //strcpy(name,lpSolver->problemName().c_str());
+				      int iParam;
+				      for ( iParam = 0; iParam < numberParameters_; iParam++ ) {
+					int match = parameters_[iParam].matches("import");
+					if (match == 1)
+					  break;
+				      }
+				      strcpy(name,parameters_[iParam].stringValue().c_str());
+				      char * dot =strstr(name,".mps");
+				      if (!dot)
+					dot = strstr(name,".lp");
+				      if (dot) {
+					*dot='\0';
+					int n = static_cast<int>(dot-name);
+					int i;
+					for (i=n-1;i>=0;i--) {
+					  if (name[i]=='/')
+					    break;
+					}
+					if (i>=0)
+					  memmove(name,name+i+1,n);
+					strcat(name,"_preprocessed.mps");
+				      } else {
+					strcpy(name,"preprocessed.mps");
+				      }
+				    }
+                                    lpSolver->writeMps(name, 0, 1, lpSolver->optimizationDirection());
+                                    printf("Preprocessed model (minimization) on %s\n",name);
+				    if (preProcess==10) {
+				      printf("user wanted to stop\n");
+				      exit(0);
+				    }
                                 }
                                 {
                                     // look at new integers
@@ -12554,7 +12591,7 @@ static int nautiedConstraints (CbcModel & model,int maxPass)
 	  }
 	}
 	int iOrbit=-1;
-#define LONGEST 1
+#define LONGEST 0
 #if LONGEST
 	// choose longest
 	int maxOrbit=0;
@@ -12628,8 +12665,16 @@ static int nautiedConstraints (CbcModel & model,int maxPass)
     model.messageHandler()->message(CBC_GENERAL,
 				    model.messages())
       << general << CoinMessageEol ;
-    //printf("saving model on nauty\n");
-    //solver->writeMps("nauty");
+#ifdef SAVE_NAUTY
+    OsiClpSolverInterface * clpSolver =
+      dynamic_cast< OsiClpSolverInterface*> (solver);
+    ClpSimplex * lpSolver = clpSolver->getModelPtr();
+    char name[100];
+    strcpy(name,lpSolver->problemName().c_str());
+    strcat(name,"_nauty");
+    printf("saving model on %s\n",name);
+    solver->writeMps(name);
+#endif
   }
 #ifndef REALLY_CHANGE
   CbcRowCuts * globalCuts = model.globalCuts();

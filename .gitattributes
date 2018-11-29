@@ -30,6 +30,7 @@ Cbc/MSVisualStudio/v10alt/libCbc.vcxproj -text
 Cbc/MSVisualStudio/v10alt/libCbcSolver.vcxproj -text
 Cbc/MSVisualStudio/v10alt/libOsiCbc.vcxproj -text
 Cbc/MSVisualStudio/v10alt/osicbc.props -text
+Cbc/MSVisualStudio/v14/cbcCInterfaceDll/cbcCInterfaceDll.vcxproj -text
 Cbc/MSVisualStudio/v9/Cbc.sln -text
 Cbc/MSVisualStudio/v9/OsiCbcUnitTest/OsiCbcUnitTest.vcproj -text
 Cbc/MSVisualStudio/v9/cbc/cbc.vcproj -text

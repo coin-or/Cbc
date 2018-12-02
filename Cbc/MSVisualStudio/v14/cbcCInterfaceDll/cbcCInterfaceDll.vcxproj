@@ -102,7 +102,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libOsiClp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libCbcSolver.lib;libCbc.lib;libCgl.lib;libOsiClp.lib;libOsi.lib;libClp.lib;libCoinUtils.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
       <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -126,7 +126,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libOsiClp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libCbcSolver.lib;libCbc.lib;libCgl.lib;libOsiClp.lib;libOsi.lib;libClp.lib;libCoinUtils.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
       <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -157,7 +157,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libOsiClp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libCbcSolver.lib;libCbc.lib;libCgl.lib;libOsiClp.lib;libOsi.lib;libClp.lib;libCoinUtils.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
       <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -184,7 +184,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libOsiClp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libCbcSolver.lib;libCbc.lib;libCgl.lib;libOsiClp.lib;libOsi.lib;libClp.lib;libCoinUtils.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
       <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>

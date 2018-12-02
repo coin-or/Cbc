@@ -46,23 +46,23 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v10\Common.props" />
-    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v10\Release.props" />
+    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v14\Common.props" />
+    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v14\Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v10\Common.props" />
-    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v10\Debug.props" />
+    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v14\Common.props" />
+    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v14\Debug.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v10\Common.props" />
-    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v10\Release.props" />
+    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v14\Common.props" />
+    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v14\Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v10\Common.props" />
-    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v10\Debug.props" />
+    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v14\Common.props" />
+    <Import Project="..\..\..\..\BuildTools\MSVisualStudio\v14\Debug.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>

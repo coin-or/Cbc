@@ -164,6 +164,18 @@ extern "C" {
     COINLIBAPI const double * COINLINKAGE
     Cbc_getRowCoeffs(Cbc_Model * model, int row)
     ;
+    /** Number of non-zero entries in a column */
+    COINLIBAPI int COINLINKAGE
+    Cbc_getColNz(Cbc_Model * model, int col)
+    ;
+    /** Indices of rows that a column appears */
+    COINLIBAPI const int * COINLINKAGE
+    Cbc_getColIndices(Cbc_Model * model, int col)
+    ;
+    /** Coefficients that a column appear in rows */
+    COINLIBAPI const double * COINLINKAGE
+    Cbc_getColCoeffs(Cbc_Model * model, int col)
+    ;
     /** Right hand side of a row */
     COINLIBAPI double COINLINKAGE
     Cbc_getRowRHS(Cbc_Model * model, int row)

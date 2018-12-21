@@ -717,6 +717,34 @@ Cbc_getRowCoeffs(Cbc_Model * model, int row)
     return rcoef;
 }
 
+/** Number of non-zero entries in a column */
+COINLIBAPI int COINLINKAGE
+Cbc_getColNz(Cbc_Model * model, int col)
+{
+    const CoinPackedMatrix *cpmCol = model->model_->solver()->getMatrixByCol();
+    return cpmCol->getVectorLengths()[col];
+}
+
+/** Indices of rows that a column appears */
+COINLIBAPI const int * COINLINKAGE
+Cbc_getColIndices(Cbc_Model * model, int col)
+{
+    const CoinPackedMatrix *cpmCol = model->model_->solver()->getMatrixByCol();
+    const CoinBigIndex *starts = cpmCol->getVectorStarts();
+    const int *cidx = cpmCol->getIndices() + starts[col];
+    return cidx;
+}
+
+/** Coefficients that a column appear in rows */
+COINLIBAPI const double * COINLINKAGE
+Cbc_getColCoeffs(Cbc_Model * model, int col)
+{
+    const CoinPackedMatrix *cpmCol = model->model_->solver()->getMatrixByCol();
+    const CoinBigIndex *starts = cpmCol->getVectorStarts();
+    const double *rcoef = cpmCol->getElements() + starts[col];
+    return rcoef;
+}
+
 /** Right hand side of a row */
 COINLIBAPI double COINLINKAGE
 Cbc_getRowRHS(Cbc_Model * model, int row)

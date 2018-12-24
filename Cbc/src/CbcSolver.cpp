@@ -8194,7 +8194,9 @@ int CbcMain1 (int argc, const char *argv[],
                             {
                                 const char * c_name = field.c_str();
                                 size_t length = strlen(c_name);
-                                if (length > 3 && !strncmp(c_name + length - 3, ".lp", 3))
+                                if ((length > 3 && !strncmp(c_name + length - 3, ".lp", 3))||
+                                (length > 6 && !strncmp(c_name + length - 6, ".lp.gz", 6)) ||
+				    (length > 7 && !strncmp(c_name + length - 7, ".lp.bz2", 7)))
                                     gmpl = -1; // .lp
                             }
                             bool absolutePath;

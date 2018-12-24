@@ -982,6 +982,8 @@ static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/)
 
 int CbcOrClpRead_mode = 1;
 FILE * CbcOrClpReadCommand = stdin;
+// Alternative to environment
+extern char * alternativeEnvironment;
 extern int CbcOrClpEnvironmentIndex;
 
 int callCbc1(const char * input2, CbcModel & model,
@@ -10553,6 +10555,26 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 			    printGeneralMessage(model_,generalPrint);
                           }
                           break;
+                    case CLP_PARAM_ACTION_GUESS:
+		      if (goodModel && model_.solver()) {
+			delete [] alternativeEnvironment;
+			OsiClpSolverInterface * clpSolver =
+			  dynamic_cast<OsiClpSolverInterface *> (model_.solver());
+			assert (clpSolver);
+			lpSolver = clpSolver->getModelPtr();
+			assert (lpSolver);
+			ClpSimplexOther * model2 = 
+			  static_cast<ClpSimplexOther *> (lpSolver);
+			alternativeEnvironment = 
+			  model2->guess(1);
+			if (alternativeEnvironment)
+			  CbcOrClpEnvironmentIndex = 0;
+			else
+			  std::cout << "** Guess unable to generate commands" << std::endl;
+		      } else {
+			std::cout << "** Guess needs a valid model" << std::endl;
+		      }
+		      break;
                     default:
                         abort();
                     }

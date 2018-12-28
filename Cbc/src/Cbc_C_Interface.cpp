@@ -997,7 +997,7 @@ Cbc_addRow( Cbc_Model *model, const char *name, int nz,
             abort();
     }
     solver->addRow( nz, cols, coefs, rowLB, rowUB );
-    solver->setRowName( solver->getNumCols()-1, std::string(name) );
+    solver->setRowName( solver->getNumRows()-1, std::string(name) );
 }
  
 /** Add SOS constraints to the model using row-order matrix */

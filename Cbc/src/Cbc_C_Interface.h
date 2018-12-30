@@ -570,6 +570,46 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     COINLIBAPI const double * COINLINKAGE
     Cbc_getColSolution(Cbc_Model * model)
     ;
+
+    /** @brief Best known bound on the optimal objective value 
+     *
+     * @param model problem object
+     * @return best possible cost (lower bound)
+     **/
+    COINLIBAPI double COINLINKAGE
+    Cbc_getBestPossibleObjValue(Cbc_Model * model)
+    ;
+
+    /** @brief Best integer feasible solution 
+     *
+     * Best integer feasible solution or NULL if no integer feas sol found 
+     *
+     * @param model problem object
+     * @return vector with the best solution found or NULL if no feasible solution was found
+     **/
+    COINLIBAPI double*  COINLINKAGE
+    Cbc_bestSolution(Cbc_Model * model)
+    ;
+
+    /** @brief number of integer feasible solution saved
+     *
+     * @param model problem object 
+     * @return number of saved solutions
+     **/
+    COINLIBAPI int COINLINKAGE
+    Cbc_numberSavedSolutions(Cbc_Model * model)
+    ;
+
+
+    /** @brief Vector with the i-th saved solution
+     * 
+     * @param model problem object 
+     * @param whichSol index of the solution to be retrieved
+     * @return vector with integer feasible solution
+     **/
+    COINLIBAPI const double * COINLINKAGE
+    Cbc_savedSolution(Cbc_Model * model, int whichSol)
+    ;
     
     /** @brief Queries vector of reduced costs
      *
@@ -649,14 +689,6 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     /** Objective value of best feasible solution */
     COINLIBAPI double COINLINKAGE
     Cbc_getObjValue(Cbc_Model * model)
-    ;
-    /** Best known bound on the optimal objective value */
-    COINLIBAPI double COINLINKAGE
-    Cbc_getBestPossibleObjValue(Cbc_Model * model)
-    ;
-    /** Best integer feasible solution or NULL if no integer feas sol found */
-    COINLIBAPI double*  COINLINKAGE
-    Cbc_bestSolution(Cbc_Model * model)
     ;
     /** Number of nodes explored in B&B tree */
     COINLIBAPI int COINLINKAGE

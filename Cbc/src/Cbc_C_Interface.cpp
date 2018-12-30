@@ -806,6 +806,17 @@ Cbc_getReducedCost(Cbc_Model * model)
     return model->model_->getReducedCost();
 }
 
+COINLIBAPI int COINLINKAGE
+Cbc_numberSavedSolutions(Cbc_Model * model)
+{
+    return model->model_->numberSavedSolutions();
+}
+
+COINLIBAPI const double * COINLINKAGE
+Cbc_savedSolution(Cbc_Model * model, int whichSol)
+{
+    return model->model_->savedSolution(whichSol);
+}
 
 COINLIBAPI const double * COINLINKAGE
 Cbc_getColSolution(Cbc_Model * model)

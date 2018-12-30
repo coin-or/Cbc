@@ -797,6 +797,25 @@ Cbc_getObjValue(Cbc_Model * model)
     return model->model_->getObjValue();
 }
 
+COINLIBAPI const double * COINLINKAGE
+Cbc_getReducedCost(Cbc_Model * model)
+{
+    if ( Cbc_getNumIntegers(model)==0 || model->relax_==1 )
+        return (model->solver_->getReducedCost());
+
+    return model->model_->getReducedCost();
+}
+
+
+COINLIBAPI const double * COINLINKAGE
+Cbc_getColSolution(Cbc_Model * model)
+{
+    if ( Cbc_getNumIntegers(model)==0 || model->relax_==1 )
+        return (model->solver_->getColSolution());
+
+    return model->model_->getColSolution();
+}
+
 
 CbcGetProperty(int, isContinuousUnbounded)
 CbcGetProperty(int, isNodeLimitReached)
@@ -815,7 +834,6 @@ Cbc_setObjSense(Cbc_Model * model, double sense)
 }
 
 CbcGetProperty(const double*, getRowActivity)
-CbcGetProperty(const double*, getColSolution)
 
 CbcGetProperty(const double*, getRowLower)
 CbcSetSolverProperty(double, setRowLower)

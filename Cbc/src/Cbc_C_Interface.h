@@ -562,10 +562,29 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     /**@name Accessing the solution and solution status */
     /*@{*/
 
+    /** @brief Best feasible solution vector 
+     *
+     * @param model problem object
+     * @return vector with best solution found
+     **/
+    COINLIBAPI const double * COINLINKAGE
+    Cbc_getColSolution(Cbc_Model * model)
+    ;
+    
+    /** @brief Queries vector of reduced costs
+     *
+     * @param model problem object
+     * @return reduced cost vector
+     **/
+    COINLIBAPI const double * COINLINKAGE
+    Cbc_getReducedCost(Cbc_Model * model)
+    ;
+
     /** Sum of primal infeasibilities */
     COINLIBAPI double COINLINKAGE
     Cbc_sumPrimalInfeasibilities(Cbc_Model * model)
     ;
+
     /** Number of primal infeasibilities */
     COINLIBAPI int COINLINKAGE
     Cbc_numberPrimalInfeasibilities(Cbc_Model * model)
@@ -626,10 +645,6 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
      *  and x is the current solution. */
     COINLIBAPI const double * COINLINKAGE
     Cbc_getRowActivity(Cbc_Model * model)
-    ;
-    /** Best feasible solution vector */
-    COINLIBAPI const double * COINLINKAGE
-    Cbc_getColSolution(Cbc_Model * model)
     ;
     /** Objective value of best feasible solution */
     COINLIBAPI double COINLINKAGE

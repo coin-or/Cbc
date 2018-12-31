@@ -818,6 +818,12 @@ Cbc_savedSolution(Cbc_Model * model, int whichSol)
     return model->model_->savedSolution(whichSol);
 }
 
+COINLIBAPI double COINLINKAGE
+Cbc_savedSolutionObj(Cbc_Model * model, int whichSol)
+{
+    return model->model_->savedSolutionObjective(whichSol);
+}
+
 COINLIBAPI const double * COINLINKAGE
 Cbc_getColSolution(Cbc_Model * model)
 {

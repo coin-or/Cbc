@@ -610,6 +610,17 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     COINLIBAPI const double * COINLINKAGE
     Cbc_savedSolution(Cbc_Model * model, int whichSol)
     ;
+
+    
+    /** @brief Cost of the whichSol solution
+     *
+     * @param model problem object 
+     * @param whichSol solution index
+     * @return solution cost
+     **/
+    COINLIBAPI double COINLINKAGE
+    Cbc_savedSolutionObj(Cbc_Model * model, int whichSol)
+    ;
     
     /** @brief Queries vector of reduced costs
      *

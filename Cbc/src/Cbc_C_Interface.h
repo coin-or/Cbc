@@ -218,11 +218,21 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     Cbc_deleteModel(Cbc_Model * model)
     ;
 
+    /** @brief Creates a copy of the current model 
+     *
+     * @param model problem object 
+     * @return model copy
+     **/
+    COINLIBAPI Cbc_Model * COINLINKAGE
+    Cbc_clone(Cbc_Model * model)
+    ;
+
+
     //@}
     
-    /** \name Routines to query problem contents
-    */
-    //@{
+/** \name Routines to query problem contents
+*/
+//@{
 
  
     /** @brief Queries problem name 
@@ -516,10 +526,6 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     COINLIBAPI void COINLINKAGE
     Cbc_printModel(Cbc_Model * model, const char * argPrefix)
     ;
-    /** Return a copy of this model */
-    COINLIBAPI Cbc_Model * COINLINKAGE
-    Cbc_clone(Cbc_Model * model)
-    ;
     /*@}*/
 
     /**@name Solver parameters */
@@ -559,8 +565,8 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     /*@}*/
 
 
-    /**@name Accessing the solution and solution status */
-    /*@{*/
+/**@name Accessing the solution and optimization status */
+/*@{*/
 
     /** @brief Best feasible solution vector 
      *
@@ -610,7 +616,6 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     COINLIBAPI const double * COINLINKAGE
     Cbc_savedSolution(Cbc_Model * model, int whichSol)
     ;
-
     
     /** @brief Cost of the whichSol solution
      *
@@ -631,6 +636,93 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     Cbc_getReducedCost(Cbc_Model * model)
     ;
 
+    /** If optimization was abandoned due to numerical difficulties
+     *
+     * @param model problem object 
+     * @return 1 if numerical difficulties interrupted the optimization, 0 otherwise
+     * */
+    COINLIBAPI int COINLINKAGE
+    Cbc_isAbandoned(Cbc_Model * model)
+    ;
+
+    /** @brief If the optimal solution was found 
+     *
+     * @param model problem object 
+     * @return 1 if optimal solution was found, 0 otherwise
+     **/
+    COINLIBAPI int COINLINKAGE
+    Cbc_isProvenOptimal(Cbc_Model * model)
+    ;
+
+    /** @brief If infeasibility was proven
+     *
+     * If model is infeasible, please note that infeasibility can also be declared 
+     * if cutoff is informed and no solution better than the cutoff exists.
+     *
+     * @param model problem object 
+     * @return 1 if model is infeasible, 0 otherwise
+     **/
+    COINLIBAPI int COINLINKAGE
+    Cbc_isProvenInfeasible(Cbc_Model * model)
+    ;
+
+   /** @brief Is continuous model unbounded ?
+    *
+    * @param model problem object 
+    * @return 1 if model is unbounded, 0 otherwise
+    * */
+    COINLIBAPI int COINLINKAGE
+    Cbc_isContinuousUnbounded(Cbc_Model * model)
+    ;
+
+    /** Objective value of best feasible solution 
+     *
+     * @param model problem object
+     * @return cost of the best solution found
+     * */
+    COINLIBAPI double COINLINKAGE
+    Cbc_getObjValue(Cbc_Model * model)
+    ;
+
+    /** @brief Final optimization status
+     *
+     * Returns the optimization status. For more info check function
+     * isProvenOptimal, isProvenInfeasible, etc. Check also secondary status.
+     * Possible status are:
+     *
+     * -1 before branchAndBound
+     * 0 finished - check isProvenOptimal or isProvenInfeasible to see if solution found (or check value of best solution)
+     * 1 stopped - on maxnodes, maxsols, maxtime
+     * 2 execution abandoned due to numerical dificulties
+     * 5 user programmed interruption
+     *
+     * @param model problem object 
+     * @return problem status
+    */
+    COINLIBAPI int COINLINKAGE Cbc_status(Cbc_Model * model) ;
+
+    /** @brief Secondary status of problem
+     *
+     * Returns additional information regarding the optimization status
+     *
+     * -1 unset (status_ will also be -1)
+     *  0 search completed with solution
+     *  1 linear relaxation not feasible (or worse than cutoff)
+     *  2 stopped on gap
+     *  3 stopped on nodes
+     *  4 stopped on time
+     *  5 stopped on user event
+     *  6 stopped on solutions
+     *  7 linear relaxation unbounded
+     *  8 stopped on iteration limit
+     *
+     *  @model problem object 
+     *  @return optimization status
+    */
+    COINLIBAPI int COINLINKAGE
+    Cbc_secondaryStatus(Cbc_Model * model)
+    ;
+ 
     /** Sum of primal infeasibilities */
     COINLIBAPI double COINLINKAGE
     Cbc_sumPrimalInfeasibilities(Cbc_Model * model)
@@ -651,22 +743,7 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     COINLIBAPI int COINLINKAGE
     Cbc_getIterationCount(Cbc_Model * model)
     ;
-    /** Are there a numerical difficulties? */
-    COINLIBAPI int COINLINKAGE
-    Cbc_isAbandoned(Cbc_Model * model)
-    ;
-    /** Is optimality proven? */
-    COINLIBAPI int COINLINKAGE
-    Cbc_isProvenOptimal(Cbc_Model * model)
-    ;
-    /** Is infeasiblity proven (or none better than cutoff)? */
-    COINLIBAPI int COINLINKAGE
-    Cbc_isProvenInfeasible(Cbc_Model * model)
-    ;
-    /** Was continuous solution unbounded? */
-    COINLIBAPI int COINLINKAGE
-    Cbc_isContinuousUnbounded(Cbc_Model * model)
-    ;
+
     /** Node limit reached? */
     COINLIBAPI int COINLINKAGE
     Cbc_isNodeLimitReached(Cbc_Model * model)
@@ -697,10 +774,6 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     COINLIBAPI const double * COINLINKAGE
     Cbc_getRowActivity(Cbc_Model * model)
     ;
-    /** Objective value of best feasible solution */
-    COINLIBAPI double COINLINKAGE
-    Cbc_getObjValue(Cbc_Model * model)
-    ;
     /** Number of nodes explored in B&B tree */
     COINLIBAPI int COINLINKAGE
     Cbc_getNodeCount(Cbc_Model * model)
@@ -709,33 +782,7 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     COINLIBAPI void  COINLINKAGE
     Cbc_printSolution(Cbc_Model * model)
     ;
-    /** Final status of problem
-        Some of these can be found out by is...... functions
-        -1 before branchAndBound
-        0 finished - check isProvenOptimal or isProvenInfeasible to see if solution found
-        (or check value of best solution)
-        1 stopped - on maxnodes, maxsols, maxtime
-        2 difficulties so run was abandoned
-        (5 event user programmed event occurred)
-    */
-    COINLIBAPI int COINLINKAGE
-    Cbc_status(Cbc_Model * model)
-    ;
-    /** Secondary status of problem
-        -1 unset (status_ will also be -1)
-        0 search completed with solution
-        1 linear relaxation not feasible (or worse than cutoff)
-        2 stopped on gap
-        3 stopped on nodes
-        4 stopped on time
-        5 stopped on user event
-        6 stopped on solutions
-        7 linear relaxation unbounded
-        8 stopped on iteration limit
-    */
-    COINLIBAPI int COINLINKAGE
-    Cbc_secondaryStatus(Cbc_Model * model)
-    ;
+
     /*@}*/
 #ifdef __cplusplus
 }

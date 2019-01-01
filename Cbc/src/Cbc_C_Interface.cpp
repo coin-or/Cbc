@@ -1127,6 +1127,34 @@ Cbc_setMIPStart( Cbc_Model * model, int count, const char **colNames, const doub
     model->model_->setMIPStart( count, colNames, colValues );
 }
 
+COINLIBAPI void COINLINKAGE
+Cbc_setMIPStartI( Cbc_Model * model, int count, const int colIdxs[], const double colValues[] )
+{
+    CbcModel *cbcModel = model->model_;
+    OsiSolverInterface *solver = cbcModel->solver();
+
+    int charSpace = count;
+    for ( int i=0 ; (i<count) ; ++i )
+        charSpace += solver->getColName(colIdxs[i]).size();
+
+    char *allChars = new char[charSpace];
+    char *s = allChars;
+    char **names = new char*[count];
+    for ( int i=0 ; (i<count) ; ++i )
+    {
+        names[i] = s;
+        strcpy(s, solver->getColName(colIdxs[i]).c_str());
+        s += solver->getColName(colIdxs[i]).size()+1;
+    }
+
+    cbcModel->setMIPStart( count, (const char **) names, colValues );
+
+    delete [] names;
+    delete [] allChars;
+
+
+}
+
 /** Print the solution */
 COINLIBAPI void  COINLINKAGE
 Cbc_printSolution(Cbc_Model * model)

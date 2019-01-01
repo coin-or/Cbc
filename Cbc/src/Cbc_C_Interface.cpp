@@ -1120,6 +1120,13 @@ Cbc_addSOS(Cbc_Model * model, int numRows, const int * rowStarts,
     return;
 }
 
+
+COINLIBAPI void COINLINKAGE
+Cbc_setMIPStart( Cbc_Model * model, int count, const char **colNames, const double colValues[] )
+{
+    model->model_->setMIPStart( count, colNames, colValues );
+}
+
 /** Print the solution */
 COINLIBAPI void  COINLINKAGE
 Cbc_printSolution(Cbc_Model * model)

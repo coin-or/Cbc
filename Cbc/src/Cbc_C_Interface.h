@@ -218,6 +218,22 @@ COINLIBAPI const char* COINLINKAGE Cbc_getVersion(void)
     Cbc_deleteModel(Cbc_Model * model)
     ;
 
+    /** @brief Enter initial feasible solution 
+     *
+     * Enter an initial feasible solution. Only the non-zero main 
+     * binary/integer decision variables need to be informed. 
+     * Auxiliary and/or continuous variables are computed 
+     * automatically.
+     * 
+     * @param model problem object 
+     * @param count number of variables
+     * @param colNames names of variables
+     * @param colValues variable values
+     *
+     **/
+    COINLIBAPI void COINLINKAGE
+    Cbc_setMIPStart( Cbc_Model * model, int count, const char **colNames, const double colValues[] );
+
     /** @brief Creates a copy of the current model 
      *
      * @param model problem object 

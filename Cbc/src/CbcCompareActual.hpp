@@ -11,4 +11,3 @@
 #include "CbcCompareDepth.hpp"
 #include "CbcCompareDefault.hpp"
 #endif
-

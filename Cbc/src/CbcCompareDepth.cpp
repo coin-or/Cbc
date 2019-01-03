@@ -7,7 +7,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 #include <cassert>
 #include <cstdlib>
@@ -24,15 +24,15 @@
 /** Default Constructor
 
 */
-CbcCompareDepth::CbcCompareDepth ()
-        : CbcCompareBase()
+CbcCompareDepth::CbcCompareDepth()
+  : CbcCompareBase()
 {
-    test_ = this;
+  test_ = this;
 }
 
 // Copy constructor
-CbcCompareDepth::CbcCompareDepth ( const CbcCompareDepth & rhs)
-        : CbcCompareBase(rhs)
+CbcCompareDepth::CbcCompareDepth(const CbcCompareDepth &rhs)
+  : CbcCompareBase(rhs)
 
 {
 }
@@ -41,41 +41,38 @@ CbcCompareDepth::CbcCompareDepth ( const CbcCompareDepth & rhs)
 CbcCompareBase *
 CbcCompareDepth::clone() const
 {
-    return new CbcCompareDepth(*this);
+  return new CbcCompareDepth(*this);
 }
 
 // Assignment operator
 CbcCompareDepth &
-CbcCompareDepth::operator=( const CbcCompareDepth & rhs)
+CbcCompareDepth::operator=(const CbcCompareDepth &rhs)
 {
-    if (this != &rhs) {
-        CbcCompareBase::operator=(rhs);
-    }
-    return *this;
+  if (this != &rhs) {
+    CbcCompareBase::operator=(rhs);
+  }
+  return *this;
 }
 
 // Destructor
-CbcCompareDepth::~CbcCompareDepth ()
+CbcCompareDepth::~CbcCompareDepth()
 {
 }
 
 // Returns true if y better than x
-bool
-CbcCompareDepth::test (CbcNode * x, CbcNode * y)
+bool CbcCompareDepth::test(CbcNode *x, CbcNode *y)
 {
-    int testX = x->depth();
-    int testY = y->depth();
-    if (testX != testY)
-        return testX < testY;
-    else
-        return equalityTest(x, y); // so ties will be broken in consistent manner
+  int testX = x->depth();
+  int testY = y->depth();
+  if (testX != testY)
+    return testX < testY;
+  else
+    return equalityTest(x, y); // so ties will be broken in consistent manner
 }
 // Create C++ lines to get to current state
-void
-CbcCompareDepth::generateCpp( FILE * fp)
+void CbcCompareDepth::generateCpp(FILE *fp)
 {
-    fprintf(fp, "0#include \"CbcCompareActual.hpp\"\n");
-    fprintf(fp, "3  CbcCompareDepth compare;\n");
-    fprintf(fp, "3  cbcModel->setNodeComparison(compare);\n");
+  fprintf(fp, "0#include \"CbcCompareActual.hpp\"\n");
+  fprintf(fp, "3  CbcCompareDepth compare;\n");
+  fprintf(fp, "3  cbcModel->setNodeComparison(compare);\n");
 }
-

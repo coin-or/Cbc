@@ -26,32 +26,31 @@ class OsiRowCutDebugger;
 
 class CbcCutModifier {
 public:
-    /// Default Constructor
-    CbcCutModifier ();
+  /// Default Constructor
+  CbcCutModifier();
 
-    // Copy constructor
-    CbcCutModifier ( const CbcCutModifier &);
+  // Copy constructor
+  CbcCutModifier(const CbcCutModifier &);
 
-    /// Destructor
-    virtual ~CbcCutModifier();
+  /// Destructor
+  virtual ~CbcCutModifier();
 
-    /// Assignment
-    CbcCutModifier & operator=(const CbcCutModifier& rhs);
-/// Clone
-    virtual CbcCutModifier * clone() const = 0;
+  /// Assignment
+  CbcCutModifier &operator=(const CbcCutModifier &rhs);
+  /// Clone
+  virtual CbcCutModifier *clone() const = 0;
 
-    /** Returns
+  /** Returns
         0 unchanged
         1 strengthened
         2 weakened
         3 deleted
     */
-    virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) = 0;
-    /// Create C++ lines to get to current state
-    virtual void generateCpp( FILE * ) {}
-protected:
+  virtual int modify(const OsiSolverInterface *solver, OsiRowCut &cut) = 0;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp(FILE *) {}
 
+protected:
 };
 
 #endif //CbcCutModifier_H
-

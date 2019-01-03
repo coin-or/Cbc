@@ -5,13 +5,13 @@
 /***************************************************************************/
 
 /* Version number of project */
-#define CBC_VERSION      "trunk"
+#define CBC_VERSION "trunk"
 
 /* Major Version number of project */
-#define CBC_VERSION_MAJOR   9999
+#define CBC_VERSION_MAJOR 9999
 
 /* Minor Version number of project */
-#define CBC_VERSION_MINOR   9999
+#define CBC_VERSION_MINOR 9999
 
 /* Release Version number of project */
 #define CBC_VERSION_RELEASE 9999

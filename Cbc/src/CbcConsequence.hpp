@@ -22,28 +22,26 @@ class OsiSolverInterface;
 class CbcConsequence {
 
 public:
+  // Default Constructor
+  CbcConsequence();
 
-    // Default Constructor
-    CbcConsequence ();
+  // Copy constructor
+  CbcConsequence(const CbcConsequence &rhs);
 
-    // Copy constructor
-    CbcConsequence ( const CbcConsequence & rhs);
+  // Assignment operator
+  CbcConsequence &operator=(const CbcConsequence &rhs);
 
-    // Assignment operator
-    CbcConsequence & operator=( const CbcConsequence & rhs);
+  /// Clone
+  virtual CbcConsequence *clone() const = 0;
 
-    /// Clone
-    virtual CbcConsequence * clone() const = 0;
+  /// Destructor
+  virtual ~CbcConsequence();
 
-    /// Destructor
-    virtual ~CbcConsequence ();
-
-    /** Apply to an LP solver.  Action depends on state
+  /** Apply to an LP solver.  Action depends on state
      */
-    virtual void applyToSolver(OsiSolverInterface * solver, int state) const = 0;
+  virtual void applyToSolver(OsiSolverInterface *solver, int state) const = 0;
 
 protected:
 };
 
 #endif
-

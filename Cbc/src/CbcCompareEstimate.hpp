@@ -8,7 +8,6 @@
 #ifndef CbcCompareEstimate_H
 #define CbcCompareEstimate_H
 
-
 //#############################################################################
 /*  These are alternative strategies for node traversal.
     They can take data etc for fine tuning
@@ -24,25 +23,23 @@ class CbcModel;
 
 /* This is when rounding is being done
 */
-class CbcCompareEstimate  : public CbcCompareBase {
+class CbcCompareEstimate : public CbcCompareBase {
 public:
-    // Default Constructor
-    CbcCompareEstimate () ;
-    ~CbcCompareEstimate() ;
-    // Copy constructor
-    CbcCompareEstimate ( const CbcCompareEstimate &rhs);
+  // Default Constructor
+  CbcCompareEstimate();
+  ~CbcCompareEstimate();
+  // Copy constructor
+  CbcCompareEstimate(const CbcCompareEstimate &rhs);
 
-    // Assignment operator
-    CbcCompareEstimate & operator=( const CbcCompareEstimate& rhs);
+  // Assignment operator
+  CbcCompareEstimate &operator=(const CbcCompareEstimate &rhs);
 
-    /// Clone
-    virtual CbcCompareBase * clone() const;
-    /// Create C++ lines to get to current state
-    virtual void generateCpp( FILE * fp);
+  /// Clone
+  virtual CbcCompareBase *clone() const;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp(FILE *fp);
 
-    virtual bool test (CbcNode * x, CbcNode * y) ;
+  virtual bool test(CbcNode *x, CbcNode *y);
 };
 
-
 #endif //CbcCompareEstimate_H
-

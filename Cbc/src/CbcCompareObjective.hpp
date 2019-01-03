@@ -8,7 +8,6 @@
 #ifndef CbcCompareObjective_H
 #define CbcCompareObjective_H
 
-
 //#############################################################################
 /*  These are alternative strategies for node traversal.
     They can take data etc for fine tuning
@@ -23,27 +22,26 @@
 
 class CbcModel;
 
-class CbcCompareObjective  : public CbcCompareBase {
+class CbcCompareObjective : public CbcCompareBase {
 public:
-    // Default Constructor
-    CbcCompareObjective ();
+  // Default Constructor
+  CbcCompareObjective();
 
-    virtual ~CbcCompareObjective();
-    // Copy constructor
-    CbcCompareObjective ( const CbcCompareObjective &rhs);
+  virtual ~CbcCompareObjective();
+  // Copy constructor
+  CbcCompareObjective(const CbcCompareObjective &rhs);
 
-    // Assignment operator
-    CbcCompareObjective & operator=( const CbcCompareObjective& rhs);
+  // Assignment operator
+  CbcCompareObjective &operator=(const CbcCompareObjective &rhs);
 
-    /// Clone
-    virtual CbcCompareBase * clone() const;
-    /// Create C++ lines to get to current state
-    virtual void generateCpp( FILE * fp);
+  /// Clone
+  virtual CbcCompareBase *clone() const;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp(FILE *fp);
 
-    /* This returns true if objective value of node y is less than
+  /* This returns true if objective value of node y is less than
        objective value of node x */
-    virtual bool test (CbcNode * x, CbcNode * y);
+  virtual bool test(CbcNode *x, CbcNode *y);
 };
 
 #endif //CbcCompareObjective_H
-

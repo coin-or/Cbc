@@ -34,45 +34,45 @@
 */
 
 #ifdef COIN_HAS_CLP
-# include "OsiClpSolverInterface.hpp"
-# ifndef CBC_DEFAULT_SOLVER
-#   define CBC_DEFAULT_SOLVER "clp"
-# endif
+#include "OsiClpSolverInterface.hpp"
+#ifndef CBC_DEFAULT_SOLVER
+#define CBC_DEFAULT_SOLVER "clp"
+#endif
 #endif
 
 #ifdef COIN_HAS_CPX
-# include "OsiCpxSolverInterface.hpp"
-# ifndef CBC_DEFAULT_SOLVER
-#   define CBC_DEFAULT_SOLVER "cpx"
-# endif
+#include "OsiCpxSolverInterface.hpp"
+#ifndef CBC_DEFAULT_SOLVER
+#define CBC_DEFAULT_SOLVER "cpx"
+#endif
 #endif
 
 #ifdef COIN_HAS_DYLP
-# include "OsiDylpSolverInterface.hpp"
-# ifndef CBC_DEFAULT_SOLVER
-#   define CBC_DEFAULT_SOLVER "dylp"
-# endif
+#include "OsiDylpSolverInterface.hpp"
+#ifndef CBC_DEFAULT_SOLVER
+#define CBC_DEFAULT_SOLVER "dylp"
+#endif
 #endif
 
 #ifdef COIN_HAS_GLPK
-# include "OsiGlpkSolverInterface.hpp"
-# ifndef CBC_DEFAULT_SOLVER
-#   define CBC_DEFAULT_SOLVER "glpk"
-# endif
+#include "OsiGlpkSolverInterface.hpp"
+#ifndef CBC_DEFAULT_SOLVER
+#define CBC_DEFAULT_SOLVER "glpk"
+#endif
 #endif
 
 #ifdef COIN_HAS_MSK
-# include "OsiMskSolverInterface.hpp"
-# ifndef CBC_DEFAULT_SOLVER
-#   define CBC_DEFAULT_SOLVER "msk"
-# endif
+#include "OsiMskSolverInterface.hpp"
+#ifndef CBC_DEFAULT_SOLVER
+#define CBC_DEFAULT_SOLVER "msk"
+#endif
 #endif
 
 #ifdef COIN_HAS_SPX
-# include "OsiSpxSolverInterface.hpp"
-# ifndef CBC_DEFAULT_SOLVER
-#   define CBC_DEFAULT_SOLVER "spx"
-# endif
+#include "OsiSpxSolverInterface.hpp"
+#ifndef CBC_DEFAULT_SOLVER
+#define CBC_DEFAULT_SOLVER "spx"
+#endif
 #endif
 
 #include "CoinParam.hpp"
@@ -86,7 +86,7 @@
 
 namespace {
 
-char svnid[] = "$Id$" ;
+char svnid[] = "$Id$";
 
 }
 
@@ -100,17 +100,16 @@ namespace {
 /*
   Data types for a vector of OsiSolverInterface objects.
 */
-typedef std::map<std::string, OsiSolverInterface*> solverMap_t ;
-typedef solverMap_t::const_iterator solverMapIter_t ;
+typedef std::map<std::string, OsiSolverInterface *> solverMap_t;
+typedef solverMap_t::const_iterator solverMapIter_t;
 
 /*
   The solver map.
 */
 
-solverMap_t solvers ;
+solverMap_t solvers;
 
 } // end unnamed local namespace
-
 
 namespace CbcGenSolvers {
 
@@ -126,65 +125,65 @@ namespace CbcGenSolvers {
 
 */
 
-OsiSolverInterface *setupSolvers ()
+OsiSolverInterface *setupSolvers()
 
 {
-    /*
+  /*
       Populate the vector of OsiSolverInterface objects.
     */
-# ifdef COIN_HAS_CLP
-    solvers["clp"] = new OsiClpSolverInterface ;
-# endif
-# ifdef COIN_HAS_CPX
-    solvers["cpx"] = new OsiCpxSolverInterface ;
-# endif
-# ifdef COIN_HAS_DYLP
-    solvers["dylp"] = new OsiDylpSolverInterface  ;
-# endif
-# ifdef COIN_HAS_GLPK
-    solvers["glpk"] = new OsiGlpkSolverInterface  ;
-# endif
-# ifdef COIN_HAS_MSK
-    solvers["msk"] = new OsiMskSolverInterface  ;
-# endif
-# ifdef COIN_HAS_SPX
-    solvers["spx"] = new OsiSpxSolverInterface  ;
-# endif
-    /*
+#ifdef COIN_HAS_CLP
+  solvers["clp"] = new OsiClpSolverInterface;
+#endif
+#ifdef COIN_HAS_CPX
+  solvers["cpx"] = new OsiCpxSolverInterface;
+#endif
+#ifdef COIN_HAS_DYLP
+  solvers["dylp"] = new OsiDylpSolverInterface;
+#endif
+#ifdef COIN_HAS_GLPK
+  solvers["glpk"] = new OsiGlpkSolverInterface;
+#endif
+#ifdef COIN_HAS_MSK
+  solvers["msk"] = new OsiMskSolverInterface;
+#endif
+#ifdef COIN_HAS_SPX
+  solvers["spx"] = new OsiSpxSolverInterface;
+#endif
+  /*
       Set the standard default values in each solver.
     */
-    for (solverMapIter_t solverIter = solvers.begin() ;
-            solverIter != solvers.end() ;
-            solverIter++) {
-        OsiSolverInterface *osi = solverIter->second ;
-        osi->messageHandler()->setLogLevel(0) ;
-        CbcOsiParamUtils::setOsiSolverInterfaceDefaults(osi) ;
-    }
-    /*
+  for (solverMapIter_t solverIter = solvers.begin();
+       solverIter != solvers.end();
+       solverIter++) {
+    OsiSolverInterface *osi = solverIter->second;
+    osi->messageHandler()->setLogLevel(0);
+    CbcOsiParamUtils::setOsiSolverInterfaceDefaults(osi);
+  }
+  /*
       If we don't have a default solver, we're deeply confused.
     */
-    OsiSolverInterface *dflt_solver = solvers[CBC_DEFAULT_SOLVER] ;
-    if (dflt_solver) {
-        std::cout << "Default solver is " << CBC_DEFAULT_SOLVER << std::endl ;
-    } else {
-        std::cerr << "No solvers!" << std::endl ;
-    }
+  OsiSolverInterface *dflt_solver = solvers[CBC_DEFAULT_SOLVER];
+  if (dflt_solver) {
+    std::cout << "Default solver is " << CBC_DEFAULT_SOLVER << std::endl;
+  } else {
+    std::cerr << "No solvers!" << std::endl;
+  }
 
-    return (dflt_solver) ;
+  return (dflt_solver);
 }
-
 
 /*
   Cleanup routine to delete the vector of OsiSolverInterface objects.
 */
 
-void deleteSolvers ()
+void deleteSolvers()
 {
-    for (solverMapIter_t solverIter = solvers.begin() ;
-            solverIter != solvers.end() ;
-            solverIter++) {
-        if (solverIter->second) delete solverIter->second ;
-    }
+  for (solverMapIter_t solverIter = solvers.begin();
+       solverIter != solvers.end();
+       solverIter++) {
+    if (solverIter->second)
+      delete solverIter->second;
+  }
 }
 
 /*
@@ -194,49 +193,48 @@ void deleteSolvers ()
   current CbcModel object.
 */
 
-int changeCbcSolver (CoinParam *param)
+int changeCbcSolver(CoinParam *param)
 
 {
-    assert (param != 0) ;
-    CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param) ;
-    assert (genParam != 0) ;
-    CbcGenCtlBlk *ctlBlk = genParam->obj() ;
-    assert (ctlBlk != 0) ;
-    CoinMessageHandler *msghandler = ctlBlk->messageHandler() ;
-    /*
+  assert(param != 0);
+  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  assert(genParam != 0);
+  CbcGenCtlBlk *ctlBlk = genParam->obj();
+  assert(ctlBlk != 0);
+  CoinMessageHandler *msghandler = ctlBlk->messageHandler();
+  /*
       Setup to return nonfatal/fatal error (1/-1) by default.
     */
-    int retval ;
-    if (CoinParamUtils::isInteractive()) {
-        retval = 1 ;
-    } else {
-        retval = -1 ;
-    }
-    /*
+  int retval;
+  if (CoinParamUtils::isInteractive()) {
+    retval = 1;
+  } else {
+    retval = -1;
+  }
+  /*
       Try to locate the solver specified by the user.
     */
-    const std::string solverName = genParam->kwdVal() ;
-    OsiSolverInterface *protoOsi = solvers[solverName] ;
-    if (protoOsi == 0) {
-        std::cerr
-            << "Can't find solver \"" << solverName
-            << "\" in the solvers vector." << std::endl ;
-        return (retval) ;
-    }
-    ctlBlk->dfltSolver_ = protoOsi ;
-    /*
+  const std::string solverName = genParam->kwdVal();
+  OsiSolverInterface *protoOsi = solvers[solverName];
+  if (protoOsi == 0) {
+    std::cerr
+      << "Can't find solver \"" << solverName
+      << "\" in the solvers vector." << std::endl;
+    return (retval);
+  }
+  ctlBlk->dfltSolver_ = protoOsi;
+  /*
       We have a solver.
     */
-    ctlBlk->message(CBCGEN_NEW_SOLVER)
-    << solverName << CoinMessageEol ;
-    CbcModel *model = ctlBlk->model_ ;
-    assert (model != 0) ;
-    OsiSolverInterface *newOsi = protoOsi->clone() ;
-    model->assignSolver(newOsi) ;
+  ctlBlk->message(CBCGEN_NEW_SOLVER)
+    << solverName << CoinMessageEol;
+  CbcModel *model = ctlBlk->model_;
+  assert(model != 0);
+  OsiSolverInterface *newOsi = protoOsi->clone();
+  model->assignSolver(newOsi);
 
-    return (0) ;
+  return (0);
 }
-
 
 /*
   This routine sets up a solver parameter object. It doesn't initialise the
@@ -244,34 +242,32 @@ int changeCbcSolver (CoinParam *param)
   routine where we're setting up the cbc-generic parameter vector.
 */
 
-void setupSolverParam (CbcGenParam &solverParam)
+void setupSolverParam(CbcGenParam &solverParam)
 
 {
-    /*
+  /*
       Basic setup: parameter type, name, parameter code.
     */
-    solverParam.setType(CoinParam::coinParamKwd) ;
-    solverParam.setName("solver") ;
-    solverParam.setParamCode(CbcGenParam::SOLVER) ;
-    /*
+  solverParam.setType(CoinParam::coinParamKwd);
+  solverParam.setName("solver");
+  solverParam.setParamCode(CbcGenParam::SOLVER);
+  /*
       Add the solvers and set the default value.
     */
-    for (solverMapIter_t solverIter = solvers.begin() ;
-            solverIter != solvers.end() ;
-            solverIter++) {
-        solverParam.appendKwd(solverIter->first) ;
-    }
-    solverParam.setKwdVal(CBC_DEFAULT_SOLVER) ;
-    solverParam.setDisplay(true) ;
-    solverParam.setPushFunc(changeCbcSolver) ;
-    /*
+  for (solverMapIter_t solverIter = solvers.begin();
+       solverIter != solvers.end();
+       solverIter++) {
+    solverParam.appendKwd(solverIter->first);
+  }
+  solverParam.setKwdVal(CBC_DEFAULT_SOLVER);
+  solverParam.setDisplay(true);
+  solverParam.setPushFunc(changeCbcSolver);
+  /*
       And add the help strings.
     */
-    solverParam.setShortHelp("Specify underlying LP solver") ;
-    solverParam.setLongHelp(
-        "Select the underlying LP solver that will be used to solve the continuous relaxations of subproblems."
-    ) ;
+  solverParam.setShortHelp("Specify underlying LP solver");
+  solverParam.setLongHelp(
+    "Select the underlying LP solver that will be used to solve the continuous relaxations of subproblems.");
 }
 
 } // end namespace CbcGenSolvers
-

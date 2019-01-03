@@ -11,11 +11,11 @@
 #include "OsiBranchingObject.hpp"
 
 enum CbcRangeCompare {
-    CbcRangeSame,
-    CbcRangeDisjoint,
-    CbcRangeSubset,
-    CbcRangeSuperset,
-    CbcRangeOverlap
+  CbcRangeSame,
+  CbcRangeDisjoint,
+  CbcRangeSubset,
+  CbcRangeSuperset,
+  CbcRangeOverlap
 };
 
 #include "CbcObject.hpp"
@@ -33,46 +33,44 @@ enum CbcRangeCompare {
     with the intersection of the ranges.
 */
 static inline CbcRangeCompare
-CbcCompareRanges(double* thisBd, const double* otherBd,
-                 const bool replaceIfOverlap)
+CbcCompareRanges(double *thisBd, const double *otherBd,
+  const bool replaceIfOverlap)
 {
-    const double lbDiff = thisBd[0] - otherBd[0];
-    if (lbDiff < 0) { // lb of this < lb of other
-        if (thisBd[1] >= otherBd[1]) { // ub of this >= ub of other
-            return CbcRangeSuperset;
-        } else if (thisBd[1] < otherBd[0]) {
-            return CbcRangeDisjoint;
-        } else {
-            // overlap
-            if (replaceIfOverlap) {
-                thisBd[0] = otherBd[0];
-            }
-            return CbcRangeOverlap;
-        }
-    } else if (lbDiff > 0) { // lb of this > lb of other
-        if (thisBd[1] <= otherBd[1]) { // ub of this <= ub of other
-            return CbcRangeSubset;
-        } else if (thisBd[0] > otherBd[1]) {
-            return CbcRangeDisjoint;
-        } else {
-            // overlap
-            if (replaceIfOverlap) {
-                thisBd[1] = otherBd[1];
-            }
-            return CbcRangeOverlap;
-        }
-    } else { // lb of this == lb of other
-        if (thisBd[1] == otherBd[1]) {
-            return CbcRangeSame;
-        }
-        return thisBd[1] < otherBd[1] ? CbcRangeSubset : CbcRangeSuperset;
+  const double lbDiff = thisBd[0] - otherBd[0];
+  if (lbDiff < 0) { // lb of this < lb of other
+    if (thisBd[1] >= otherBd[1]) { // ub of this >= ub of other
+      return CbcRangeSuperset;
+    } else if (thisBd[1] < otherBd[0]) {
+      return CbcRangeDisjoint;
+    } else {
+      // overlap
+      if (replaceIfOverlap) {
+        thisBd[0] = otherBd[0];
+      }
+      return CbcRangeOverlap;
     }
+  } else if (lbDiff > 0) { // lb of this > lb of other
+    if (thisBd[1] <= otherBd[1]) { // ub of this <= ub of other
+      return CbcRangeSubset;
+    } else if (thisBd[0] > otherBd[1]) {
+      return CbcRangeDisjoint;
+    } else {
+      // overlap
+      if (replaceIfOverlap) {
+        thisBd[1] = otherBd[1];
+      }
+      return CbcRangeOverlap;
+    }
+  } else { // lb of this == lb of other
+    if (thisBd[1] == otherBd[1]) {
+      return CbcRangeSame;
+    }
+    return thisBd[1] < otherBd[1] ? CbcRangeSubset : CbcRangeSuperset;
+  }
 
-    return CbcRangeSame; // fake return
-
+  return CbcRangeSame; // fake return
 }
 
 //#############################################################################
 
 #endif
-

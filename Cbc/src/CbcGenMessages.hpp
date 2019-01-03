@@ -12,7 +12,6 @@
 #ifndef CbcGenMessages_H
 #define CbcGenMessages_H
 
-
 /*! \file
 
   This file contains the enum that defines symbolic names for for cbc-generic
@@ -34,11 +33,10 @@
 */
 
 typedef enum {
-    CBCGEN_TEST_MSG = 1,
-    CBCGEN_NEW_SOLVER,
-    CBCGEN_CONFUSION,
-    CBCGEN_DUMMY_END
-} CbcGenMsgCode ;
+  CBCGEN_TEST_MSG = 1,
+  CBCGEN_NEW_SOLVER,
+  CBCGEN_CONFUSION,
+  CBCGEN_DUMMY_END
+} CbcGenMsgCode;
 
 #endif
-

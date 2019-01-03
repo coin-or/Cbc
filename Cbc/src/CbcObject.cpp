@@ -7,7 +7,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 #include <cassert>
 #include <cstdlib>
@@ -21,69 +21,66 @@
 #include "CbcMessage.hpp"
 #include "CbcBranchBase.hpp"
 
-
 // Default Constructor
 CbcObject::CbcObject()
-        : OsiObject(),
-        model_(NULL),
-        id_(-1),
-        position_(-1),
-        preferredWay_(0)
+  : OsiObject()
+  , model_(NULL)
+  , id_(-1)
+  , position_(-1)
+  , preferredWay_(0)
 {
 }
 
 // Constructor from model
-CbcObject::CbcObject(CbcModel * model)
-        : OsiObject(),
-        model_(model),
-        id_(-1),
-        position_(-1),
-        preferredWay_(0)
+CbcObject::CbcObject(CbcModel *model)
+  : OsiObject()
+  , model_(model)
+  , id_(-1)
+  , position_(-1)
+  , preferredWay_(0)
 {
 }
 
-
 // Destructor
-CbcObject::~CbcObject ()
+CbcObject::~CbcObject()
 {
 }
 
 // Copy constructor
-CbcObject::CbcObject ( const CbcObject & rhs)
-        : OsiObject(rhs)
+CbcObject::CbcObject(const CbcObject &rhs)
+  : OsiObject(rhs)
 {
-    model_ = rhs.model_;
-    id_ = rhs.id_;
-    position_ = rhs.position_;
-    preferredWay_ = rhs.preferredWay_;
+  model_ = rhs.model_;
+  id_ = rhs.id_;
+  position_ = rhs.position_;
+  preferredWay_ = rhs.preferredWay_;
 }
 
 // Assignment operator
 CbcObject &
-CbcObject::operator=( const CbcObject & rhs)
+CbcObject::operator=(const CbcObject &rhs)
 {
-    if (this != &rhs) {
-        OsiObject::operator=(rhs);
-        model_ = rhs.model_;
-        id_ = rhs.id_;
-        position_ = rhs.position_;
-        preferredWay_ = rhs.preferredWay_;
-    }
-    return *this;
+  if (this != &rhs) {
+    OsiObject::operator=(rhs);
+    model_ = rhs.model_;
+    id_ = rhs.id_;
+    position_ = rhs.position_;
+    preferredWay_ = rhs.preferredWay_;
+  }
+  return *this;
 }
 
 /* Returns floor and ceiling i.e. closest valid points
  */
-void
-CbcObject::floorCeiling(double & floorValue, double & ceilingValue, double value,
-                        double tolerance) const
+void CbcObject::floorCeiling(double &floorValue, double &ceilingValue, double value,
+  double tolerance) const
 {
-    if (fabs(floor(value + 0.5) - value) > tolerance) {
-        floorValue = floor(value);
-    } else {
-        floorValue = floor(value + 0.5);
-    }
-    ceilingValue = floorValue + 1.0;
+  if (fabs(floor(value + 0.5) - value) > tolerance) {
+    floorValue = floor(value);
+  } else {
+    floorValue = floor(value + 0.5);
+  }
+  ceilingValue = floorValue + 1.0;
 }
 /* For the variable(s) referenced by the object,
       look at the current solution and set bounds to match the solution.
@@ -92,10 +89,10 @@ CbcObject::floorCeiling(double & floorValue, double & ceilingValue, double value
 double
 CbcObject::feasibleRegion(OsiSolverInterface * /*solver*/) const
 {
-    //assert (solver==model_->solver());
-    CbcObject * fudge = const_cast<CbcObject *>(this);
-    fudge->feasibleRegion();
-    return 0.0;
+  //assert (solver==model_->solver());
+  CbcObject *fudge = const_cast<CbcObject *>(this);
+  fudge->feasibleRegion();
+  return 0.0;
 }
 
 /* For the variable(s) referenced by the object,
@@ -104,12 +101,12 @@ CbcObject::feasibleRegion(OsiSolverInterface * /*solver*/) const
 */
 double
 CbcObject::feasibleRegion(OsiSolverInterface * /*solver*/,
-                          const OsiBranchingInformation * /*info*/) const
+  const OsiBranchingInformation * /*info*/) const
 {
-    //assert (solver==model_->solver());
-    CbcObject * fudge = const_cast<CbcObject *>(this);
-    fudge->feasibleRegion();
-    return 0.0;
+  //assert (solver==model_->solver());
+  CbcObject *fudge = const_cast<CbcObject *>(this);
+  fudge->feasibleRegion();
+  return 0.0;
 }
 /* Create a branching object and indicate which way to branch first.
 
@@ -117,13 +114,13 @@ CbcObject::feasibleRegion(OsiSolverInterface * /*solver*/,
       variables, etc.)
 */
 OsiBranchingObject *
-CbcObject::createOsiBranch(OsiSolverInterface * solver,
-                           const OsiBranchingInformation * info,
-                           int way) const
+CbcObject::createOsiBranch(OsiSolverInterface *solver,
+  const OsiBranchingInformation *info,
+  int way) const
 {
-    //assert (solver==model_->solver());
-    CbcObject * fudge = const_cast<CbcObject *>(this);
-    return fudge->createBranch(solver, info, way);
+  //assert (solver==model_->solver());
+  CbcObject *fudge = const_cast<CbcObject *>(this);
+  return fudge->createBranch(solver, info, way);
 }
 /* Create an OsiSolverBranch object
 
@@ -132,16 +129,15 @@ This returns NULL if branch not represented by bound changes
 OsiSolverBranch *
 CbcObject::solverBranch() const
 {
-    return NULL;
+  return NULL;
 }
 /* Pass in information on branch just done and create CbcObjectUpdateData instance.
    If object does not need data then backward pointer will be NULL.
    Assumes can get information from solver */
 CbcObjectUpdateData
 CbcObject::createUpdateInformation(const OsiSolverInterface * /*solver*/,
-                                   const CbcNode * /*node*/,
-                                   const CbcBranchingObject * /*branchingObject*/)
+  const CbcNode * /*node*/,
+  const CbcBranchingObject * /*branchingObject*/)
 {
-    return CbcObjectUpdateData();
+  return CbcObjectUpdateData();
 }
-

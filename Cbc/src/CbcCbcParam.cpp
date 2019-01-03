@@ -8,4 +8,3 @@
 #define COIN_HAS_CBC
 #endif
 #include "CbcOrClpParam.cpp"
-

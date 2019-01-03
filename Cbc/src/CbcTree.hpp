@@ -44,7 +44,6 @@
 #define CBC_DEBUG_HEAP 1
 */
 
-
 /*! \class CbcTree
     \brief Implementation of the live set as a heap.
 
@@ -53,167 +52,170 @@
 class CbcTree {
 
 public:
-    /*! \name Constructors and related */
-//@{
-    /// Default Constructor
-    CbcTree ();
+  /*! \name Constructors and related */
+  //@{
+  /// Default Constructor
+  CbcTree();
 
-    /// Copy constructor
-    CbcTree (const CbcTree &rhs);
+  /// Copy constructor
+  CbcTree(const CbcTree &rhs);
 
-    /// = operator
-    CbcTree & operator=(const CbcTree &rhs);
+  /// = operator
+  CbcTree &operator=(const CbcTree &rhs);
 
-    /// Destructor
-    virtual ~CbcTree();
+  /// Destructor
+  virtual ~CbcTree();
 
-    /// Clone
-    virtual CbcTree * clone() const;
+  /// Clone
+  virtual CbcTree *clone() const;
 
-    /// Create C++ lines to get to current state
-    virtual void generateCpp(FILE *) {}
-//@}
+  /// Create C++ lines to get to current state
+  virtual void generateCpp(FILE *) {}
+  //@}
 
-    /*! \name Heap access and maintenance methods */
-//@{
-    /// Set comparison function and resort heap
-    void setComparison(CbcCompareBase &compare);
+  /*! \name Heap access and maintenance methods */
+  //@{
+  /// Set comparison function and resort heap
+  void setComparison(CbcCompareBase &compare);
 
-    /// Return the top node of the heap
-    virtual CbcNode * top() const;
+  /// Return the top node of the heap
+  virtual CbcNode *top() const;
 
-    /// Add a node to the heap
-    virtual void push(CbcNode *x);
+  /// Add a node to the heap
+  virtual void push(CbcNode *x);
 
-    /// Remove the top node from the heap
-    virtual void pop() ;
+  /// Remove the top node from the heap
+  virtual void pop();
 
-    /*! \brief Gets best node and takes off heap
+  /*! \brief Gets best node and takes off heap
 
       Before returning the node from the top of the heap, the node
       is offered an opportunity to reevaluate itself. Callers should
       be prepared to check that the node returned is suitable for use.
     */
-    virtual CbcNode * bestNode(double cutoff);
+  virtual CbcNode *bestNode(double cutoff);
 
-    /*! \brief Rebuild the heap */
-    virtual void rebuild() ;
-//@}
+  /*! \brief Rebuild the heap */
+  virtual void rebuild();
+  //@}
 
-    /*! \name Direct node access methods */
-//@{
-    /// Test for an empty tree
-    virtual bool empty() ;
+  /*! \name Direct node access methods */
+  //@{
+  /// Test for an empty tree
+  virtual bool empty();
 
-    /// Return size
-    virtual int size() const { return static_cast<int>(nodes_.size()); }
+  /// Return size
+  virtual int size() const { return static_cast<int>(nodes_.size()); }
 
-    /// Return a node pointer
-    inline CbcNode * operator [] (int i) const { return nodes_[i]; }
+  /// Return a node pointer
+  inline CbcNode *operator[](int i) const { return nodes_[i]; }
 
-    /// Return a node pointer
-    inline CbcNode * nodePointer (int i) const { return nodes_[i]; }
-    void realpop();
-    /** After changing data in the top node, fix the heap */
-    void fixTop();
-    void realpush(CbcNode * node);
-//@}
+  /// Return a node pointer
+  inline CbcNode *nodePointer(int i) const { return nodes_[i]; }
+  void realpop();
+  /** After changing data in the top node, fix the heap */
+  void fixTop();
+  void realpush(CbcNode *node);
+  //@}
 
-    /*! \name Search tree maintenance */
-//@{
-    /*! \brief Prune the tree using an objective function cutoff
+  /*! \name Search tree maintenance */
+  //@{
+  /*! \brief Prune the tree using an objective function cutoff
 
       This routine removes all nodes with objective worse than the
       specified cutoff value. It also sets bestPossibleObjective to
       the best objective over remaining nodes.
     */
-    virtual void cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjective);
+  virtual void cleanTree(CbcModel *model, double cutoff, double &bestPossibleObjective);
 
-    /// Get best on list using alternate method
-    CbcNode * bestAlternate();
+  /// Get best on list using alternate method
+  CbcNode *bestAlternate();
 
-    /// We may have got an intelligent tree so give it one more chance
-    virtual void endSearch() {}
+  /// We may have got an intelligent tree so give it one more chance
+  virtual void endSearch() {}
 
-    /// Get best possible objective function in the tree
-    virtual double getBestPossibleObjective();
+  /// Get best possible objective function in the tree
+  virtual double getBestPossibleObjective();
 
-    /// Reset maximum node number
-    inline void resetNodeNumbers() { maximumNodeNumber_ = 0; }
+  /// Reset maximum node number
+  inline void resetNodeNumbers() { maximumNodeNumber_ = 0; }
 
-    /// Get maximum node number
-    inline int maximumNodeNumber() const { return maximumNodeNumber_; }
+  /// Get maximum node number
+  inline int maximumNodeNumber() const { return maximumNodeNumber_; }
 
-    /// Set number of branches
-    inline void setNumberBranching(int value) { numberBranching_ = value; }
+  /// Set number of branches
+  inline void setNumberBranching(int value) { numberBranching_ = value; }
 
-    /// Get number of branches
-    inline int getNumberBranching() const { return numberBranching_; }
+  /// Get number of branches
+  inline int getNumberBranching() const { return numberBranching_; }
 
-    /// Set maximum branches
-    inline void setMaximumBranching(int value) { maximumBranching_ = value; }
+  /// Set maximum branches
+  inline void setMaximumBranching(int value) { maximumBranching_ = value; }
 
-    /// Get maximum branches
-    inline int getMaximumBranching() const { return maximumBranching_; }
+  /// Get maximum branches
+  inline int getMaximumBranching() const { return maximumBranching_; }
 
-    /// Get branched variables
-    inline unsigned int * branched() const { return branched_; }
+  /// Get branched variables
+  inline unsigned int *branched() const { return branched_; }
 
-    /// Get bounds
-    inline int * newBounds() const { return newBound_; }
+  /// Get bounds
+  inline int *newBounds() const { return newBound_; }
 
-    /// Last objective in branch-and-cut search tree
-    inline double lastObjective() const {
-        return lastObjective_;
-    }
-    /// Last depth in branch-and-cut search tree
-    inline int lastDepth() const {
-        return lastDepth_;
-    }
-    /// Last number of objects unsatisfied
-    inline int lastUnsatisfied() const {
-        return lastUnsatisfied_;
-    }
-    /// Adds branching information to complete state
-    void addBranchingInformation(const CbcModel * model, const CbcNodeInfo * nodeInfo,
-                                 const double * currentLower,
-                                 const double * currentUpper);
-    /// Increase space for data
-    void increaseSpace();
-//@}
+  /// Last objective in branch-and-cut search tree
+  inline double lastObjective() const
+  {
+    return lastObjective_;
+  }
+  /// Last depth in branch-and-cut search tree
+  inline int lastDepth() const
+  {
+    return lastDepth_;
+  }
+  /// Last number of objects unsatisfied
+  inline int lastUnsatisfied() const
+  {
+    return lastUnsatisfied_;
+  }
+  /// Adds branching information to complete state
+  void addBranchingInformation(const CbcModel *model, const CbcNodeInfo *nodeInfo,
+    const double *currentLower,
+    const double *currentUpper);
+  /// Increase space for data
+  void increaseSpace();
+  //@}
 
-# if CBC_DEBUG_HEAP > 0
+#if CBC_DEBUG_HEAP > 0
   /*! \name Debugging methods */
   //@{
-    /*! \brief Check that the heap property is satisfied. */
-    void validateHeap() ;
+  /*! \brief Check that the heap property is satisfied. */
+  void validateHeap();
   //@}
-# endif
+#endif
 
 protected:
-    /// Storage vector for the heap
-    std::vector <CbcNode *> nodes_;
-    /// Sort predicate for heap ordering.
-    CbcCompare comparison_;
-    /// Maximum "node" number so far to split ties
-    int maximumNodeNumber_;
-    /// Size of variable list
-    int numberBranching_;
-    /// Maximum size of variable list
-    int maximumBranching_;
-    /// Objective of last node pushed on tree
-    double lastObjective_;
-    /// Depth of last node pushed on tree
-    int lastDepth_;
-    /// Number unsatisfied of last node pushed on tree
-    int lastUnsatisfied_;
-    /** Integer variables branched or bounded
+  /// Storage vector for the heap
+  std::vector<CbcNode *> nodes_;
+  /// Sort predicate for heap ordering.
+  CbcCompare comparison_;
+  /// Maximum "node" number so far to split ties
+  int maximumNodeNumber_;
+  /// Size of variable list
+  int numberBranching_;
+  /// Maximum size of variable list
+  int maximumBranching_;
+  /// Objective of last node pushed on tree
+  double lastObjective_;
+  /// Depth of last node pushed on tree
+  int lastDepth_;
+  /// Number unsatisfied of last node pushed on tree
+  int lastUnsatisfied_;
+  /** Integer variables branched or bounded
         top bit set if new upper bound
         next bit set if a branch
     */
-    unsigned int * branched_;
-    /// New bound
-    int * newBound_;
+  unsigned int *branched_;
+  /// New bound
+  int *newBound_;
 };
 
 #ifdef JJF_ZERO // not used
@@ -224,47 +226,46 @@ protected:
 class CbcTreeArray : public CbcTree {
 
 public:
+  // Default Constructor
+  CbcTreeArray();
 
-    // Default Constructor
-    CbcTreeArray ();
+  // Copy constructor
+  CbcTreeArray(const CbcTreeArray &rhs);
+  // = operator
+  CbcTreeArray &operator=(const CbcTreeArray &rhs);
 
-    // Copy constructor
-    CbcTreeArray ( const CbcTreeArray & rhs);
-    // = operator
-    CbcTreeArray & operator=(const CbcTreeArray & rhs);
+  virtual ~CbcTreeArray();
 
-    virtual ~CbcTreeArray();
+  /// Clone
+  virtual CbcTree *clone() const;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp(FILE *) {}
 
-    /// Clone
-    virtual CbcTree * clone() const;
-    /// Create C++ lines to get to current state
-    virtual void generateCpp( FILE * ) {}
+  /*! \name Heap access and maintenance methods */
+  //@{
 
-    /*! \name Heap access and maintenance methods */
-//@{
+  /// Set comparison function and resort heap
+  void setComparison(CbcCompareBase &compare);
 
-    /// Set comparison function and resort heap
-    void setComparison(CbcCompareBase  &compare);
+  /// Add a node to the heap
+  virtual void push(CbcNode *x);
 
-    /// Add a node to the heap
-    virtual void push(CbcNode * x);
+  /// Gets best node and takes off heap
+  virtual CbcNode *bestNode(double cutoff);
 
-    /// Gets best node and takes off heap
-    virtual CbcNode * bestNode(double cutoff);
+  //@}
+  /*! \name vector methods */
+  //@{
 
-//@}
-    /*! \name vector methods */
-//@{
+  /// Test if empty *** note may be overridden
+  virtual bool empty();
 
-    /// Test if empty *** note may be overridden
-    virtual bool empty() ;
+  //@}
 
-//@}
+  /*! \name Search tree maintenance */
+  //@{
 
-    /*! \name Search tree maintenance */
-//@{
-
-    /*! \brief Prune the tree using an objective function cutoff
+  /*! \brief Prune the tree using an objective function cutoff
 
       This routine removes all nodes with objective worst than the
       specified cutoff value.
@@ -272,19 +273,18 @@ public:
       of all on tree before deleting.
     */
 
-    void cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjective);
-    /// Get best possible objective function in the tree
-    virtual double getBestPossibleObjective();
-//@}
+  void cleanTree(CbcModel *model, double cutoff, double &bestPossibleObjective);
+  /// Get best possible objective function in the tree
+  virtual double getBestPossibleObjective();
+  //@}
 protected:
-    /// Returns
-    /// Last node
-    CbcNode * lastNode_;
-    /// Last node popped
-    CbcNode * lastNodePopped_;
-    /// Not used yet
-    int switches_;
-
+  /// Returns
+  /// Last node
+  CbcNode *lastNode_;
+  /// Last node popped
+  CbcNode *lastNodePopped_;
+  /// Not used yet
+  int switches_;
 };
 
 /// New style
@@ -298,67 +298,69 @@ protected:
 class CbcNewTree : public CbcTree, public CoinSearchTreeManager {
 
 public:
+  // Default Constructor
+  CbcNewTree();
 
-    // Default Constructor
-    CbcNewTree ();
+  // Copy constructor
+  CbcNewTree(const CbcNewTree &rhs);
+  // = operator
+  CbcNewTree &operator=(const CbcNewTree &rhs);
 
-    // Copy constructor
-    CbcNewTree ( const CbcNewTree & rhs);
-    // = operator
-    CbcNewTree & operator=(const CbcNewTree & rhs);
+  virtual ~CbcNewTree();
 
-    virtual ~CbcNewTree();
+  /// Clone
+  virtual CbcNewTree *clone() const;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp(FILE *) {}
 
-    /// Clone
-    virtual CbcNewTree * clone() const;
-    /// Create C++ lines to get to current state
-    virtual void generateCpp( FILE * ) {}
+  /*! \name Heap access and maintenance methods */
+  //@{
 
-    /*! \name Heap access and maintenance methods */
-//@{
+  /// Set comparison function and resort heap
+  void setComparison(CbcCompareBase &compare);
 
-    /// Set comparison function and resort heap
-    void setComparison(CbcCompareBase  &compare);
+  /// Return the top node of the heap
+  virtual CbcNode *top() const;
 
-    /// Return the top node of the heap
-    virtual CbcNode * top() const;
+  /// Add a node to the heap
+  virtual void push(CbcNode *x);
 
-    /// Add a node to the heap
-    virtual void push(CbcNode * x);
+  /// Remove the top node from the heap
+  virtual void pop();
+  /// Gets best node and takes off heap
+  virtual CbcNode *bestNode(double cutoff);
 
-    /// Remove the top node from the heap
-    virtual void pop() ;
-    /// Gets best node and takes off heap
-    virtual CbcNode * bestNode(double cutoff);
+  //@}
+  /*! \name vector methods */
+  //@{
 
-//@}
-    /*! \name vector methods */
-//@{
+  /// Test if empty *** note may be overridden
+  virtual bool empty();
 
-    /// Test if empty *** note may be overridden
-    virtual bool empty() ;
+  /// Return size
+  inline int size() const
+  {
+    return nodes_.size();
+  }
 
-    /// Return size
-    inline int size() const {
-        return nodes_.size();
-    }
+  /// [] operator
+  inline CbcNode *operator[](int i) const
+  {
+    return nodes_[i];
+  }
 
-    /// [] operator
-    inline CbcNode * operator [] (int i) const {
-        return nodes_[i];
-    }
+  /// Return a node pointer
+  inline CbcNode *nodePointer(int i) const
+  {
+    return nodes_[i];
+  }
 
-    /// Return a node pointer
-    inline CbcNode * nodePointer (int i) const {
-        return nodes_[i];
-    }
+  //@}
 
-//@}
+  /*! \name Search tree maintenance */
+  //@{
 
-    /*! \name Search tree maintenance */
-//@{
-
-    /*! \brief Prune the tree using an objective function cutoff
+  /*! \brief Prune the tree using an objective function cutoff
 
       This routine removes all nodes with objective worst than the
       specified cutoff value.
@@ -366,17 +368,15 @@ public:
       of all on tree before deleting.
     */
 
-    void cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjective);
+  void cleanTree(CbcModel *model, double cutoff, double &bestPossibleObjective);
 
-    /// Get best on list using alternate method
-    CbcNode * bestAlternate();
+  /// Get best on list using alternate method
+  CbcNode *bestAlternate();
 
-    /// We may have got an intelligent tree so give it one more chance
-    virtual void endSearch() {}
-//@}
+  /// We may have got an intelligent tree so give it one more chance
+  virtual void endSearch() {}
+  //@}
 protected:
-
-
 };
 #endif
 #else
@@ -388,73 +388,75 @@ protected:
 class CbcTree {
 
 public:
+  // Default Constructor
+  CbcTree();
 
-    // Default Constructor
-    CbcTree ();
+  // Copy constructor
+  CbcTree(const CbcTree &rhs);
+  // = operator
+  CbcTree &operator=(const CbcTree &rhs);
 
-    // Copy constructor
-    CbcTree ( const CbcTree & rhs);
-    // = operator
-    CbcTree & operator=(const CbcTree & rhs);
+  virtual ~CbcTree();
 
-    virtual ~CbcTree();
+  /// Clone
+  virtual CbcTree *clone() const;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp(FILE *fp) {}
 
-    /// Clone
-    virtual CbcTree * clone() const;
-    /// Create C++ lines to get to current state
-    virtual void generateCpp( FILE * fp) {}
+  /*! \name Heap access and maintenance methods */
+  //@{
 
-    /*! \name Heap access and maintenance methods */
-//@{
+  /// Set comparison function and resort heap
+  void setComparison(CbcCompareBase &compare);
 
-    /// Set comparison function and resort heap
-    void setComparison(CbcCompareBase  &compare);
+  /// Return the top node of the heap
+  virtual CbcNode *top() const;
 
-    /// Return the top node of the heap
-    virtual CbcNode * top() const;
+  /// Add a node to the heap
+  virtual void push(CbcNode *x);
 
-    /// Add a node to the heap
-    virtual void push(CbcNode * x);
+  /// Remove the top node from the heap
+  virtual void pop();
+  /// Gets best node and takes off heap
+  virtual CbcNode *bestNode(double cutoff);
 
-    /// Remove the top node from the heap
-    virtual void pop() ;
-    /// Gets best node and takes off heap
-    virtual CbcNode * bestNode(double cutoff);
+  //@}
+  /*! \name vector methods */
+  //@{
 
-//@}
-    /*! \name vector methods */
-//@{
+  /// Test if empty *** note may be overridden
+  //virtual bool empty() ;
 
-    /// Test if empty *** note may be overridden
-    //virtual bool empty() ;
+  /// Return size
+  inline int size() const
+  {
+    return nodes_.size();
+  }
 
-    /// Return size
-    inline int size() const {
-        return nodes_.size();
-    }
+  /// [] operator
+  inline CbcNode *operator[](int i) const
+  {
+    return nodes_[i];
+  }
 
-    /// [] operator
-    inline CbcNode * operator [] (int i) const {
-        return nodes_[i];
-    }
+  /// Return a node pointer
+  inline CbcNode *nodePointer(int i) const
+  {
+    return nodes_[i];
+  }
 
-    /// Return a node pointer
-    inline CbcNode * nodePointer (int i) const {
-        return nodes_[i];
-    }
+  virtual bool empty();
+  //inline int size() const { return size_; }
+  void realpop();
+  /** After changing data in the top node, fix the heap */
+  void fixTop();
+  void realpush(CbcNode *node);
+  //@}
 
-    virtual bool empty();
-    //inline int size() const { return size_; }
-    void realpop();
-    /** After changing data in the top node, fix the heap */
-    void fixTop();
-    void realpush(CbcNode * node);
-//@}
+  /*! \name Search tree maintenance */
+  //@{
 
-    /*! \name Search tree maintenance */
-//@{
-
-    /*! \brief Prune the tree using an objective function cutoff
+  /*! \brief Prune the tree using an objective function cutoff
 
       This routine removes all nodes with objective worst than the
       specified cutoff value.
@@ -462,29 +464,27 @@ public:
       of all on tree before deleting.
     */
 
-    void cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjective);
+  void cleanTree(CbcModel *model, double cutoff, double &bestPossibleObjective);
 
-    /// Get best on list using alternate method
-    CbcNode * bestAlternate();
+  /// Get best on list using alternate method
+  CbcNode *bestAlternate();
 
-    /// We may have got an intelligent tree so give it one more chance
-    virtual void endSearch() {}
-    /// Reset maximum node number
-    inline void resetNodeNumbers() {
-        maximumNodeNumber_ = 0;
-    }
+  /// We may have got an intelligent tree so give it one more chance
+  virtual void endSearch() {}
+  /// Reset maximum node number
+  inline void resetNodeNumbers()
+  {
+    maximumNodeNumber_ = 0;
+  }
 
-    /// Get maximum node number
-    inline int maximumNodeNumber() const { return maximumNodeNumber_; }
-//@}
+  /// Get maximum node number
+  inline int maximumNodeNumber() const { return maximumNodeNumber_; }
+  //@}
 protected:
-    std::vector <CbcNode *> nodes_;
-    CbcCompare comparison_;	///> Sort function for heap ordering.
-    /// Maximum "node" number so far to split ties
-    int maximumNodeNumber_;
-
-
+  std::vector<CbcNode *> nodes_;
+  CbcCompare comparison_; ///> Sort function for heap ordering.
+  /// Maximum "node" number so far to split ties
+  int maximumNodeNumber_;
 };
 #endif
 #endif
-

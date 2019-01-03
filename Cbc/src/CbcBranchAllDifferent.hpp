@@ -18,45 +18,41 @@
     So cut is x <= y-1 or x >= y+1
 */
 
-
 class CbcBranchAllDifferent : public CbcBranchCut {
 
 public:
+  // Default Constructor
+  CbcBranchAllDifferent();
 
-    // Default Constructor
-    CbcBranchAllDifferent ();
-
-    /** Useful constructor - passed set of integer variables which must all be different
+  /** Useful constructor - passed set of integer variables which must all be different
     */
-    CbcBranchAllDifferent (CbcModel * model, int number, const int * which);
+  CbcBranchAllDifferent(CbcModel *model, int number, const int *which);
 
-    // Copy constructor
-    CbcBranchAllDifferent ( const CbcBranchAllDifferent &);
+  // Copy constructor
+  CbcBranchAllDifferent(const CbcBranchAllDifferent &);
 
-    /// Clone
-    virtual CbcObject * clone() const;
+  /// Clone
+  virtual CbcObject *clone() const;
 
-    // Assignment operator
-    CbcBranchAllDifferent & operator=( const CbcBranchAllDifferent& rhs);
+  // Assignment operator
+  CbcBranchAllDifferent &operator=(const CbcBranchAllDifferent &rhs);
 
-    // Destructor
-    ~CbcBranchAllDifferent ();
+  // Destructor
+  ~CbcBranchAllDifferent();
 
-    /// Infeasibility - large is 0.5
-    virtual double infeasibility(const OsiBranchingInformation * info,
-                                 int &preferredWay) const;
+  /// Infeasibility - large is 0.5
+  virtual double infeasibility(const OsiBranchingInformation *info,
+    int &preferredWay) const;
 
-    /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
-
+  /// Creates a branching object
+  virtual CbcBranchingObject *createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInformation *info, int way);
 
 protected:
-    /// data
+  /// data
 
-    /// Number of entries
-    int numberInSet_;
-    /// Which variables
-    int * which_;
+  /// Number of entries
+  int numberInSet_;
+  /// Which variables
+  int *which_;
 };
 #endif
-

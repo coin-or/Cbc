@@ -1,4 +1,5 @@
 * text=auto !eol
+/.clang-format -text
 /.travis.yml -text
 /AUTHORS -text
 Cbc/CbcSourceFilesTable.csv -text

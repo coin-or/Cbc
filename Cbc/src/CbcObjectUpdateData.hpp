@@ -14,51 +14,47 @@
 class CbcObjectUpdateData {
 
 public:
+  /// Default Constructor
+  CbcObjectUpdateData();
 
-    /// Default Constructor
-    CbcObjectUpdateData ();
+  /// Useful constructor
+  CbcObjectUpdateData(CbcObject *object,
+    int way,
+    double change,
+    int status,
+    int intDecrease_,
+    double branchingValue);
 
-    /// Useful constructor
-    CbcObjectUpdateData (CbcObject * object,
-                         int way,
-                         double change,
-                         int status,
-                         int intDecrease_,
-                         double branchingValue);
+  /// Copy constructor
+  CbcObjectUpdateData(const CbcObjectUpdateData &);
 
-    /// Copy constructor
-    CbcObjectUpdateData ( const CbcObjectUpdateData &);
+  /// Assignment operator
+  CbcObjectUpdateData &operator=(const CbcObjectUpdateData &rhs);
 
-    /// Assignment operator
-    CbcObjectUpdateData & operator=( const CbcObjectUpdateData& rhs);
-
-    /// Destructor
-    virtual ~CbcObjectUpdateData ();
-
+  /// Destructor
+  virtual ~CbcObjectUpdateData();
 
 public:
-    /// data
+  /// data
 
-    /// Object
-    CbcObject * object_;
-    /// Branch as defined by instance of CbcObject
-    int way_;
-    /// Object number
-    int objectNumber_;
-    /// Change in objective
-    double change_;
-    /// Status 0 Optimal, 1 infeasible, 2 unknown
-    int status_;
-    /// Decrease in number unsatisfied
-    int intDecrease_;
-    /// Branching value
-    double branchingValue_;
-    /// Objective value before branching
-    double originalObjective_;
-    /// Current cutoff
-    double cutoff_;
-
+  /// Object
+  CbcObject *object_;
+  /// Branch as defined by instance of CbcObject
+  int way_;
+  /// Object number
+  int objectNumber_;
+  /// Change in objective
+  double change_;
+  /// Status 0 Optimal, 1 infeasible, 2 unknown
+  int status_;
+  /// Decrease in number unsatisfied
+  int intDecrease_;
+  /// Branching value
+  double branchingValue_;
+  /// Objective value before branching
+  double originalObjective_;
+  /// Current cutoff
+  double cutoff_;
 };
 
 #endif
-

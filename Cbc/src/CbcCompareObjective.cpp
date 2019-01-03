@@ -7,7 +7,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 #include <cassert>
 #include <cstdlib>
@@ -24,15 +24,15 @@
 /** Default Constructor
 
 */
-CbcCompareObjective::CbcCompareObjective ()
-        : CbcCompareBase()
+CbcCompareObjective::CbcCompareObjective()
+  : CbcCompareBase()
 {
-    test_ = this;
+  test_ = this;
 }
 
 // Copy constructor
-CbcCompareObjective::CbcCompareObjective ( const CbcCompareObjective & rhs)
-        : CbcCompareBase(rhs)
+CbcCompareObjective::CbcCompareObjective(const CbcCompareObjective &rhs)
+  : CbcCompareBase(rhs)
 
 {
 }
@@ -41,40 +41,38 @@ CbcCompareObjective::CbcCompareObjective ( const CbcCompareObjective & rhs)
 CbcCompareBase *
 CbcCompareObjective::clone() const
 {
-    return new CbcCompareObjective(*this);
+  return new CbcCompareObjective(*this);
 }
 
 // Assignment operator
 CbcCompareObjective &
-CbcCompareObjective::operator=( const CbcCompareObjective & rhs)
+CbcCompareObjective::operator=(const CbcCompareObjective &rhs)
 {
-    if (this != &rhs) {
-        CbcCompareBase::operator=(rhs);
-    }
-    return *this;
+  if (this != &rhs) {
+    CbcCompareBase::operator=(rhs);
+  }
+  return *this;
 }
 
 // Destructor
-CbcCompareObjective::~CbcCompareObjective ()
+CbcCompareObjective::~CbcCompareObjective()
 {
 }
 
 // Returns true if y better than x
-bool
-CbcCompareObjective::test (CbcNode * x, CbcNode * y)
+bool CbcCompareObjective::test(CbcNode *x, CbcNode *y)
 {
-    double testX = x->objectiveValue();
-    double testY = y->objectiveValue();
-    if (testX != testY)
-        return testX > testY;
-    else
-        return equalityTest(x, y); // so ties will be broken in consistent manner
+  double testX = x->objectiveValue();
+  double testY = y->objectiveValue();
+  if (testX != testY)
+    return testX > testY;
+  else
+    return equalityTest(x, y); // so ties will be broken in consistent manner
 }
 // Create C++ lines to get to current state
-void
-CbcCompareObjective::generateCpp( FILE * fp)
+void CbcCompareObjective::generateCpp(FILE *fp)
 {
-    fprintf(fp, "0#include \"CbcCompareActual.hpp\"\n");
-    fprintf(fp, "3  CbcCompareObjective compare;\n");
-    fprintf(fp, "3  cbcModel->setNodeComparison(compare);\n");
+  fprintf(fp, "0#include \"CbcCompareActual.hpp\"\n");
+  fprintf(fp, "3  CbcCompareObjective compare;\n");
+  fprintf(fp, "3  cbcModel->setNodeComparison(compare);\n");
 }

@@ -10,30 +10,34 @@ class CbcCompareBase;
 
 class CbcCompare {
 public:
-    CbcCompareBase * test_;
-    // Default Constructor
-    CbcCompare () {
-        test_ = NULL;
-    }
+  CbcCompareBase *test_;
+  // Default Constructor
+  CbcCompare()
+  {
+    test_ = NULL;
+  }
 
-    virtual ~CbcCompare() {}
+  virtual ~CbcCompare() {}
 
-    bool operator() (CbcNode * x, CbcNode * y) {
-        return test_->test(x, y);
-    }
-    bool compareNodes (CbcNode * x, CbcNode * y) {
-        return test_->test(x, y);
-    }
-    /// This is alternate test function
-    inline bool alternateTest (CbcNode * x, CbcNode * y) {
-        return test_->alternateTest(x, y);
-    }
+  bool operator()(CbcNode *x, CbcNode *y)
+  {
+    return test_->test(x, y);
+  }
+  bool compareNodes(CbcNode *x, CbcNode *y)
+  {
+    return test_->test(x, y);
+  }
+  /// This is alternate test function
+  inline bool alternateTest(CbcNode *x, CbcNode *y)
+  {
+    return test_->alternateTest(x, y);
+  }
 
-    /// return comparison object
-    inline CbcCompareBase * comparisonObject() const {
-        return test_;
-    }
+  /// return comparison object
+  inline CbcCompareBase *comparisonObject() const
+  {
+    return test_;
+  }
 };
 
 #endif
-

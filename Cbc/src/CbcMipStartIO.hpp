@@ -12,15 +12,15 @@ class OsiSolverInterface;
    fileName, filling colValues and obj
    returns 0 with success,
    1 otherwise */
-int readMIPStart( CbcModel * model, const char *fileName,
-                  std::vector< std::pair< std::string, double > > &colValues,
-                  double &solObj );
+int readMIPStart(CbcModel *model, const char *fileName,
+  std::vector<std::pair<std::string, double>> &colValues,
+  double &solObj);
 
 /* from a partial list of variables tries to fill the
    remaining variable values */
-int computeCompleteSolution( CbcModel * model, 
-                             const std::vector< std::string > colNames,
-                             const std::vector< std::pair< std::string, double > > &colValues,
-                             double *sol, double &obj );
+int computeCompleteSolution(CbcModel *model,
+  const std::vector<std::string> colNames,
+  const std::vector<std::pair<std::string, double>> &colValues,
+  double *sol, double &obj);
 
 #endif // MIPSTARTIO_HPP_INCLUDED

@@ -7,7 +7,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 #include "CbcConfig.h"
 #include <cassert>
@@ -33,23 +33,21 @@ CbcCutModifier::CbcCutModifier()
 {
 }
 
-
 // Destructor
-CbcCutModifier::~CbcCutModifier ()
+CbcCutModifier::~CbcCutModifier()
 {
 }
 
 // Copy constructor
-CbcCutModifier::CbcCutModifier ( const CbcCutModifier & /*rhs*/)
+CbcCutModifier::CbcCutModifier(const CbcCutModifier & /*rhs*/)
 {
 }
 
 // Assignment operator
 CbcCutModifier &
-CbcCutModifier::operator=( const CbcCutModifier & rhs)
+CbcCutModifier::operator=(const CbcCutModifier &rhs)
 {
-    if (this != &rhs) {
-    }
-    return *this;
+  if (this != &rhs) {
+  }
+  return *this;
 }
-

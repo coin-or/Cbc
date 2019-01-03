@@ -9,7 +9,6 @@
 
 #include "CbcEventHandler.hpp"
 
-
 //#############################################################################
 // Constructors / Destructor / Assignment
 //#############################################################################
@@ -18,11 +17,12 @@
 // Default Constructor
 //-------------------------------------------------------------------
 
-CbcEventHandler::CbcEventHandler (CbcModel *model)
-        : model_(model),
-        dfltAction_(CbcEventHandler::noAction),
-        eaMap_(0)
-{  /* nothing more required */ }
+CbcEventHandler::CbcEventHandler(CbcModel *model)
+  : model_(model)
+  , dfltAction_(CbcEventHandler::noAction)
+  , eaMap_(0)
+{ /* nothing more required */
+}
 
 //-------------------------------------------------------------------
 // Copy constructor
@@ -30,41 +30,41 @@ CbcEventHandler::CbcEventHandler (CbcModel *model)
 /*
   Here we need to clone the event/action map, if it exists
 */
-CbcEventHandler::CbcEventHandler (const CbcEventHandler & rhs)
-        : model_(rhs.model_),
-        dfltAction_(rhs.dfltAction_),
-        eaMap_(0)
+CbcEventHandler::CbcEventHandler(const CbcEventHandler &rhs)
+  : model_(rhs.model_)
+  , dfltAction_(rhs.dfltAction_)
+  , eaMap_(0)
 {
-    if (rhs.eaMap_ != 0) {
-        eaMap_ = new eaMapPair(*rhs.eaMap_) ;
-    }
+  if (rhs.eaMap_ != 0) {
+    eaMap_ = new eaMapPair(*rhs.eaMap_);
+  }
 }
 
 //----------------------------------------------------------------
 // Assignment operator
 //-------------------------------------------------------------------
-CbcEventHandler&
-CbcEventHandler::operator=(const CbcEventHandler & rhs)
+CbcEventHandler &
+CbcEventHandler::operator=(const CbcEventHandler &rhs)
 {
-    if (this != &rhs) {
-        model_ = rhs.model_ ;
-        dfltAction_ = rhs.dfltAction_ ;
-        if (rhs.eaMap_ != 0) {
-            eaMap_ = new eaMapPair(*rhs.eaMap_) ;
-        } else {
-            eaMap_ = 0 ;
-        }
+  if (this != &rhs) {
+    model_ = rhs.model_;
+    dfltAction_ = rhs.dfltAction_;
+    if (rhs.eaMap_ != 0) {
+      eaMap_ = new eaMapPair(*rhs.eaMap_);
+    } else {
+      eaMap_ = 0;
     }
-    return (*this) ;
+  }
+  return (*this);
 }
 
 //----------------------------------------------------------------
 // Clone
 //-------------------------------------------------------------------
-CbcEventHandler*
+CbcEventHandler *
 CbcEventHandler::clone() const
 {
-    return (new CbcEventHandler(*this)) ;
+  return (new CbcEventHandler(*this));
 }
 
 //-------------------------------------------------------------------
@@ -73,11 +73,11 @@ CbcEventHandler::clone() const
 /*
   Take care to free the event/action map.
 */
-CbcEventHandler::~CbcEventHandler ()
+CbcEventHandler::~CbcEventHandler()
 {
-    if (eaMap_ != 0) delete eaMap_ ;
+  if (eaMap_ != 0)
+    delete eaMap_;
 }
-
 
 //-------------------------------------------------------------------
 // event() -- return the action for an event.
@@ -89,16 +89,16 @@ CbcEventHandler::CbcAction CbcEventHandler::event(CbcEvent event)
   Otherwise return the default action.
 */
 {
-    if (eaMap_ != 0) {
-        eaMapPair::iterator entry = eaMap_->find(event) ;
-        if (entry != eaMap_->end()) {
-            return (entry->second) ;
-        } else {
-            return (dfltAction_) ;
-        }
+  if (eaMap_ != 0) {
+    eaMapPair::iterator entry = eaMap_->find(event);
+    if (entry != eaMap_->end()) {
+      return (entry->second);
     } else {
-        return (dfltAction_) ;
+      return (dfltAction_);
     }
+  } else {
+    return (dfltAction_);
+  }
 }
 
 //-------------------------------------------------------------------
@@ -106,21 +106,20 @@ CbcEventHandler::CbcAction CbcEventHandler::event(CbcEvent event)
 //-------------------------------------------------------------------
 
 CbcEventHandler::CbcAction CbcEventHandler::event(CbcEvent event,
-						  void * /*data*/)
+  void * /*data*/)
 /*
   If an event/action map exists and contains an entry for the event, return it.
   Otherwise return the default action.
 */
 {
-    if (eaMap_ != 0) {
-        eaMapPair::iterator entry = eaMap_->find(event) ;
-        if (entry != eaMap_->end()) {
-            return (entry->second) ;
-        } else {
-            return (dfltAction_) ;
-        }
+  if (eaMap_ != 0) {
+    eaMapPair::iterator entry = eaMap_->find(event);
+    if (entry != eaMap_->end()) {
+      return (entry->second);
     } else {
-        return (dfltAction_) ;
+      return (dfltAction_);
     }
+  } else {
+    return (dfltAction_);
+  }
 }
-

@@ -54,8 +54,8 @@ CbcStatistics::CbcStatistics(CbcNode *node, CbcModel *model)
   CbcNodeInfo *nodeInfo = node->nodeInfo();
   CbcNodeInfo *parent = nodeInfo->parent();
   int numberBranches = nodeInfo->numberBranchesLeft();
-  const CbcBranchingObject *branch = dynamic_cast<const CbcBranchingObject *>(node->branchingObject());
-  const OsiTwoWayBranchingObject *branch2 = dynamic_cast<const OsiTwoWayBranchingObject *>(node->branchingObject());
+  const CbcBranchingObject *branch = dynamic_cast< const CbcBranchingObject * >(node->branchingObject());
+  const OsiTwoWayBranchingObject *branch2 = dynamic_cast< const OsiTwoWayBranchingObject * >(node->branchingObject());
   startingObjective_ = node->objectiveValue();
   way_ = node->way();
   depth_ = node->depth();
@@ -64,7 +64,7 @@ CbcStatistics::CbcStatistics(CbcNode *node, CbcModel *model)
     sequence_ = branch->variable();
     value_ = branch->value();
   } else {
-    const OsiSimpleInteger *obj = dynamic_cast<const OsiSimpleInteger *>(branch2->originalObject());
+    const OsiSimpleInteger *obj = dynamic_cast< const OsiSimpleInteger * >(branch2->originalObject());
     assert(obj);
     sequence_ = obj->columnNumber();
     value_ = branch2->value();

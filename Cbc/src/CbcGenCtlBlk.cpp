@@ -259,7 +259,7 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getProbing(CglCutGenerator *&gen)
     probing_.proto_->setMaxElements(probing_.maxElements_);
     probing_.proto_->setRowCuts(probing_.rowCuts_);
   }
-  gen = dynamic_cast<CglCutGenerator *>(probing_.proto_);
+  gen = dynamic_cast< CglCutGenerator * >(probing_.proto_);
 
   return (probing_.action_);
 }
@@ -273,7 +273,7 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getClique(CglCutGenerator *&gen)
     clique_.proto_->setRowCliqueReport(clique_.rowCliqueReport_);
     clique_.proto_->setMinViolation(clique_.minViolation_);
   }
-  gen = dynamic_cast<CglCutGenerator *>(clique_.proto_);
+  gen = dynamic_cast< CglCutGenerator * >(clique_.proto_);
 
   return (clique_.action_);
 }
@@ -284,7 +284,7 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getFlow(CglCutGenerator *&gen)
   if (flow_.action_ != CbcGenCtlBlk::CGOff && flow_.proto_ == 0) {
     flow_.proto_ = new CglFlowCover();
   }
-  gen = dynamic_cast<CglCutGenerator *>(flow_.proto_);
+  gen = dynamic_cast< CglCutGenerator * >(flow_.proto_);
 
   return (flow_.action_);
 }
@@ -297,7 +297,7 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getGomory(CglCutGenerator *&gen)
     gomory_.proto_->setLimitAtRoot(gomory_.limitAtRoot_);
     gomory_.proto_->setLimit(gomory_.limit_);
   }
-  gen = dynamic_cast<CglCutGenerator *>(gomory_.proto_);
+  gen = dynamic_cast< CglCutGenerator * >(gomory_.proto_);
 
   return (gomory_.action_);
 }
@@ -308,7 +308,7 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getKnapsack(CglCutGenerator *&gen)
   if (knapsack_.action_ != CbcGenCtlBlk::CGOff && knapsack_.proto_ == 0) {
     knapsack_.proto_ = new CglKnapsackCover();
   }
-  gen = dynamic_cast<CglCutGenerator *>(knapsack_.proto_);
+  gen = dynamic_cast< CglCutGenerator * >(knapsack_.proto_);
 
   return (knapsack_.action_);
 }
@@ -319,7 +319,7 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getMir(CglCutGenerator *&gen)
   if (mir_.action_ != CbcGenCtlBlk::CGOff && mir_.proto_ == 0) {
     mir_.proto_ = new CglMixedIntegerRounding2();
   }
-  gen = dynamic_cast<CglCutGenerator *>(mir_.proto_);
+  gen = dynamic_cast< CglCutGenerator * >(mir_.proto_);
 
   return (mir_.action_);
 }
@@ -330,7 +330,7 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getRedSplit(CglCutGenerator *&gen)
   if (redSplit_.action_ != CbcGenCtlBlk::CGOff && redSplit_.proto_ == 0) {
     redSplit_.proto_ = new CglRedSplit();
   }
-  gen = dynamic_cast<CglCutGenerator *>(redSplit_.proto_);
+  gen = dynamic_cast< CglCutGenerator * >(redSplit_.proto_);
 
   return (redSplit_.action_);
 }
@@ -342,7 +342,7 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getTwomir(CglCutGenerator *&gen)
     twomir_.proto_ = new CglTwomir();
     twomir_.proto_->setMaxElements(twomir_.maxElements_);
   }
-  gen = dynamic_cast<CglCutGenerator *>(twomir_.proto_);
+  gen = dynamic_cast< CglCutGenerator * >(twomir_.proto_);
 
   return (twomir_.action_);
 }
@@ -359,7 +359,7 @@ CbcGenCtlBlk::getFPump(CbcHeuristic *&gen, CbcModel *model,
     fpump_.proto_ = new CbcHeuristicFPump(*model);
     fpump_.proto_->setMaximumPasses(fpump_.iters_);
   }
-  gen = dynamic_cast<CbcHeuristic *>(fpump_.proto_);
+  gen = dynamic_cast< CbcHeuristic * >(fpump_.proto_);
 
   return (fpump_.action_);
 }
@@ -376,7 +376,7 @@ CbcGenCtlBlk::getCombine(CbcHeuristic *&gen, CbcModel *model,
     combine_.proto_ = new CbcHeuristicLocal(*model);
     combine_.proto_->setSearchType(combine_.trySwap_);
   }
-  gen = dynamic_cast<CbcHeuristic *>(combine_.proto_);
+  gen = dynamic_cast< CbcHeuristic * >(combine_.proto_);
 
   return (combine_.action_);
 }
@@ -392,7 +392,7 @@ CbcGenCtlBlk::getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
     }
     greedyCover_.proto_ = new CbcHeuristicGreedyCover(*model);
   }
-  gen = dynamic_cast<CbcHeuristic *>(greedyCover_.proto_);
+  gen = dynamic_cast< CbcHeuristic * >(greedyCover_.proto_);
 
   return (greedyCover_.action_);
 }
@@ -408,7 +408,7 @@ CbcGenCtlBlk::getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
     }
     greedyEquality_.proto_ = new CbcHeuristicGreedyEquality(*model);
   }
-  gen = dynamic_cast<CbcHeuristic *>(greedyEquality_.proto_);
+  gen = dynamic_cast< CbcHeuristic * >(greedyEquality_.proto_);
 
   return (greedyEquality_.action_);
 }
@@ -424,7 +424,7 @@ CbcGenCtlBlk::getRounding(CbcHeuristic *&gen, CbcModel *model,
     }
     rounding_.proto_ = new CbcRounding(*model);
   }
-  gen = dynamic_cast<CbcHeuristic *>(rounding_.proto_);
+  gen = dynamic_cast< CbcHeuristic * >(rounding_.proto_);
 
   return (rounding_.action_);
 }

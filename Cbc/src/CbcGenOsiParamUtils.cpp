@@ -157,7 +157,7 @@ void loadOsiParamObj(const CoinParamVec paramVec, int first, int last,
       Load the OsiSolverInterface object into the parameters
     */
   for (i = first; i <= last; i++) {
-    CbcOsiParam *osiParam = dynamic_cast<CbcOsiParam *>(paramVec[i]);
+    CbcOsiParam *osiParam = dynamic_cast< CbcOsiParam * >(paramVec[i]);
     assert(osiParam != 0);
     osiParam->setObj(obj);
   }
@@ -214,7 +214,7 @@ int pushCbcOsiInt(CoinParam *param)
 {
   assert(param != 0);
 
-  CbcOsiParam *osiParam = dynamic_cast<CbcOsiParam *>(param);
+  CbcOsiParam *osiParam = dynamic_cast< CbcOsiParam * >(param);
   assert(osiParam != 0);
 
   OsiSolverInterface *osi = osiParam->obj();
@@ -271,7 +271,7 @@ int pushCbcOsiDbl(CoinParam *param)
 {
   assert(param != 0);
 
-  CbcOsiParam *osiParam = dynamic_cast<CbcOsiParam *>(param);
+  CbcOsiParam *osiParam = dynamic_cast< CbcOsiParam * >(param);
   assert(osiParam != 0);
 
   OsiSolverInterface *osi = osiParam->obj();
@@ -334,7 +334,7 @@ int pushCbcOsiKwd(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcOsiParam *osiParam = dynamic_cast<CbcOsiParam *>(param);
+  CbcOsiParam *osiParam = dynamic_cast< CbcOsiParam * >(param);
   assert(osiParam != 0);
   OsiSolverInterface *osi = osiParam->obj();
   assert(osi != 0);
@@ -399,7 +399,7 @@ int pushCbcOsiLogLevel(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcOsiParam *osiParam = dynamic_cast<CbcOsiParam *>(param);
+  CbcOsiParam *osiParam = dynamic_cast< CbcOsiParam * >(param);
   assert(osiParam != 0);
   OsiSolverInterface *osi = osiParam->obj();
   assert(osi != 0);
@@ -458,7 +458,7 @@ int pushCbcOsiHint(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcOsiParam *osiParam = dynamic_cast<CbcOsiParam *>(param);
+  CbcOsiParam *osiParam = dynamic_cast< CbcOsiParam * >(param);
   assert(osiParam != 0);
   OsiSolverInterface *osi = osiParam->obj();
   assert(osi != 0);

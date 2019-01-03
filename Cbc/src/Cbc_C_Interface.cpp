@@ -237,7 +237,7 @@ Cbc_newModel()
   Cbc_Model *model = new Cbc_Model();
   OsiClpSolverInterface solver1; // will be release at the end of the scope, CbcModel clones it
   model->model_ = new CbcModel(solver1);
-  model->solver_ = dynamic_cast<OsiClpSolverInterface *>(model->model_->solver());
+  model->solver_ = dynamic_cast< OsiClpSolverInterface * >(model->model_->solver());
   CbcMain0(*model->model_);
   model->handler_ = NULL;
   model->relax_ = 0;
@@ -309,12 +309,12 @@ Cbc_loadProblem(Cbc_Model *model, const int numcols, const int numrows,
     printf("%s numcols = %i, numrows = %i\n",
       prefix, numcols, numrows);
     printf("%s model = %p, start = %p, index = %p, value = %p\n",
-      prefix, static_cast<void *>(model), static_cast<const void *>(start),
-      static_cast<const void *>(index), static_cast<const void *>(value));
+      prefix, static_cast< void * >(model), static_cast< const void * >(start),
+      static_cast< const void * >(index), static_cast< const void * >(value));
     printf("%s collb = %p, colub = %p, obj = %p, rowlb = %p, rowub = %p\n",
-      prefix, static_cast<const void *>(collb),
-      static_cast<const void *>(colub), static_cast<const void *>(obj),
-      static_cast<const void *>(rowlb), static_cast<const void *>(rowub));
+      prefix, static_cast< const void * >(collb),
+      static_cast< const void * >(colub), static_cast< const void * >(obj),
+      static_cast< const void * >(rowlb), static_cast< const void * >(rowub));
   }
 
   if (VERBOSE > 1)
@@ -502,7 +502,7 @@ Cbc_getIndices(Cbc_Model *model)
   result = (matrix == NULL) ? NULL : matrix->getIndices();
 
   if (VERBOSE > 0)
-    printf("%s return %p\n", prefix, static_cast<const void *>(result));
+    printf("%s return %p\n", prefix, static_cast< const void * >(result));
   return result;
 }
 
@@ -521,7 +521,7 @@ Cbc_getElements(Cbc_Model *model)
   result = (matrix == NULL) ? NULL : matrix->getElements();
 
   if (VERBOSE > 0)
-    printf("%s return %p\n", prefix, static_cast<const void *>(result));
+    printf("%s return %p\n", prefix, static_cast< const void * >(result));
   return result;
 }
 // ======================================================================
@@ -630,7 +630,7 @@ Cbc_solve(Cbc_Model *model)
 
   const char prefix[] = "Cbc_C_Interface::Cbc_solve(): ";
   int result = 0;
-  std::vector<const char *> argv;
+  std::vector< const char * > argv;
   argv.push_back("Cbc_C_Interface");
   for (size_t i = 0; i < model->cmdargs_.size(); i++) {
     argv.push_back(model->cmdargs_[i].c_str());
@@ -920,8 +920,8 @@ Cbc_printModel(Cbc_Model *model, const char *argPrefix)
   printf("%s numcols = %i, numrows = %i, numelem = %i\n",
     argPrefix, numcols, numrows, numelem);
   printf("%s model = %p, start = %p, index = %p, value = %p\n",
-    argPrefix, static_cast<void *>(model), static_cast<const void *>(start),
-    static_cast<const void *>(index), static_cast<const void *>(value));
+    argPrefix, static_cast< void * >(model), static_cast< const void * >(start),
+    static_cast< const void * >(index), static_cast< const void * >(value));
   matrix->dumpMatrix(NULL);
   {
     int i;
@@ -933,9 +933,9 @@ Cbc_printModel(Cbc_Model *model, const char *argPrefix)
   }
 
   printf("%s collb = %p, colub = %p, obj = %p, rowlb = %p, rowub = %p\n",
-    argPrefix, static_cast<const void *>(collb),
-    static_cast<const void *>(colub), static_cast<const void *>(obj),
-    static_cast<const void *>(rowlb), static_cast<const void *>(rowub));
+    argPrefix, static_cast< const void * >(collb),
+    static_cast< const void * >(colub), static_cast< const void * >(obj),
+    static_cast< const void * >(rowlb), static_cast< const void * >(rowub));
   printf("%s optimization direction = %g\n", argPrefix, Cbc_getObjSense(model));
   printf("  (1 - minimize, -1 - maximize, 0 - ignore)\n");
   {
@@ -981,7 +981,7 @@ CbcGetProperty(int, getNodeCount)
 
   Cbc_Model *result = new Cbc_Model();
   result->model_ = new CbcModel(*(model->model_));
-  result->solver_ = dynamic_cast<OsiClpSolverInterface *>(result->model_->solver());
+  result->solver_ = dynamic_cast< OsiClpSolverInterface * >(result->model_->solver());
   result->handler_ = NULL;
   result->cmdargs_ = model->cmdargs_;
   result->relax_ = model->relax_;

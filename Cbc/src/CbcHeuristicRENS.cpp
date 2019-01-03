@@ -144,7 +144,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
   if (type == 3) {
     double total = 0.0;
     int n = 0;
-    CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+    CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
     if (basis && basis->getNumArtificial()) {
       for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
         if (colUpper[iColumn] > colLower[iColumn] && basis->getStructStatus(iColumn) != CoinWarmStartBasis::basic) {
@@ -153,7 +153,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
         }
       }
       if (n)
-        djTolerance = (0.01 * total) / static_cast<double>(n);
+        djTolerance = (0.01 * total) / static_cast< double >(n);
       delete basis;
     }
   } else if (type >= 5 && type <= 12) {
@@ -168,7 +168,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
       */
     // SOS type fixing
     bool fixSets = (type == 5) || (type == 7) || (type == 10) || (type == 11);
-    CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+    CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
     if (basis && basis->getNumArtificial()) {
       //const double * rowLower = solver->getRowLower();
       const double *rowUpper = solver->getRowUpper();
@@ -280,7 +280,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
       if (10 * nSOS > 8 * numberRows) {
         if (type < 10) {
           std::sort(sort, sort + nSOS);
-          int last = static_cast<int>(nSOS * 0.9 * fractionSmall_);
+          int last = static_cast< int >(nSOS * 0.9 * fractionSmall_);
           double tolerance = sort[last];
           for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (colUpper[iColumn] > colLower[iColumn]) {
@@ -363,7 +363,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
               sumRhs += rowUpper[i];
             }
           }
-          double averagePerSet = sum / static_cast<double>(numberRows);
+          double averagePerSet = sum / static_cast< double >(numberRows);
           // allow this extra
           double factor = averagePerSet * fractionSmall_ * numberRows;
           factor = 1.0 + factor / sumRhs;
@@ -440,7 +440,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
           char *mark = new char[numberColumns];
           char *nonzero = new char[numberColumns];
           // save basis and solution
-          CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(newSolver->getWarmStart());
+          CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(newSolver->getWarmStart());
           assert(basis != NULL);
           double *saveSolution = CoinCopyOfArray(newSolver->getColSolution(),
             numberColumns);
@@ -509,7 +509,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
               nonzero[iColumn]++;
           }
           int nFixed = 0;
-          int numberSetsToFix = static_cast<int>(nSOS * (1.0 - proportion));
+          int numberSetsToFix = static_cast< int >(nSOS * (1.0 - proportion));
           int *mixed = new int[numberRows];
           memset(mixed, 0, numberRows * sizeof(int));
           for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -600,7 +600,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
       }
     }
     std::sort(sort, sort + numberColumns);
-    int last = static_cast<int>(numberColumns * fractionSmall_);
+    int last = static_cast< int >(numberColumns * fractionSmall_);
     djTolerance = CoinMax(sort[last], 1.0e-5);
     delete[] sort;
   } else if (type == 12) {
@@ -654,7 +654,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
     for (int i = 0; i < numberRows; i++) {
       chunk[i] = -1;
       if (whichRow[i]) {
-        contribution[i] = -contribution[i] / static_cast<double>(whichRow[i]);
+        contribution[i] = -contribution[i] / static_cast< double >(whichRow[i]);
       } else {
         contribution[i] = COIN_DBL_MAX;
       }
@@ -855,7 +855,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
         // fix some continuous
         double *sort = new double[nAtLb];
         int *which = new int[nAtLb];
-        double threshold = CoinMax((0.01 * sumDj) / static_cast<double>(nAtLb), 1.0e-6);
+        double threshold = CoinMax((0.01 * sumDj) / static_cast< double >(nAtLb), 1.0e-6);
         int nFix2 = 0;
         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
           if (!newSolver->isInteger(iColumn)) {
@@ -912,7 +912,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
           // fix some continuous
           double *sort = new double[nAtLb];
           int *which = new int[nAtLb];
-          double threshold = CoinMax((0.01 * sumDj) / static_cast<double>(nAtLb), 1.0e-6);
+          double threshold = CoinMax((0.01 * sumDj) / static_cast< double >(nAtLb), 1.0e-6);
           int nFix2 = 0;
           for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (!newSolver->isInteger(iColumn)) {

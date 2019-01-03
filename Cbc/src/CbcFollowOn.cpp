@@ -72,7 +72,7 @@ CbcFollowOn::CbcFollowOn(CbcModel *model)
             good = false;
         }
         if (good)
-          rhs_[i] = static_cast<int>(value);
+          rhs_[i] = static_cast< int >(value);
       }
     }
   }
@@ -162,7 +162,7 @@ int CbcFollowOn::gutsOfFollowOn(int &otherRow, int &preferredWay) const
           if (solValue < 1.0 - integerTolerance && solValue > integerTolerance)
             numberUnsatisfied++;
         } else {
-          rhsValue -= static_cast<int>(value * floor(solValue + 0.5));
+          rhsValue -= static_cast< int >(value * floor(solValue + 0.5));
         }
       }
       if (numberUnsatisfied > 1) {
@@ -508,7 +508,7 @@ CbcRangeCompare
 CbcFixingBranchingObject::compareBranchingObject(const CbcBranchingObject * /*brObj*/, const bool /*replaceIfOverlap*/)
 {
 #ifdef JJF_ZERO //ndef NDEBUG
-  const CbcFixingBranchingObject *br = dynamic_cast<const CbcFixingBranchingObject *>(brObj);
+  const CbcFixingBranchingObject *br = dynamic_cast< const CbcFixingBranchingObject * >(brObj);
   assert(br);
 #endif
   // If two FixingBranchingObject's have the same base object then it's pretty

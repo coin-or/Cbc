@@ -158,7 +158,7 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
   if (true) {
     OsiSolverInterface *solver = model_->solver();
     OsiClpSolverInterface *clpSolver
-      = dynamic_cast<OsiClpSolverInterface *>(solver);
+      = dynamic_cast< OsiClpSolverInterface * >(solver);
     if (clpSolver) {
       if ((model_->moreSpecialOptions() & 33554432) == 0) {
         ClpNodeStuff *info = nodeInfo_;
@@ -169,7 +169,7 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
         // Compute "small" change in branch
         int nBranches = model_->getIntParam(CbcModel::CbcNumberBranches);
         if (nBranches) {
-          double average = model_->getDblParam(CbcModel::CbcSumChange) / static_cast<double>(nBranches);
+          double average = model_->getDblParam(CbcModel::CbcSumChange) / static_cast< double >(nBranches);
           info->smallChange_ = CoinMax(average * 1.0e-5, model_->getDblParam(CbcModel::CbcSmallestChange));
           info->smallChange_ = CoinMax(info->smallChange_, 1.0e-8);
         } else {
@@ -219,10 +219,10 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
 #endif
         for (int i = 0; i < numberIntegers; i++) {
 #ifndef NDEBUG
-          CbcSimpleIntegerDynamicPseudoCost *obj = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(objects[i]);
+          CbcSimpleIntegerDynamicPseudoCost *obj = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(objects[i]);
           assert(obj && obj->columnNumber() == integerVariable[i]);
 #else
-          CbcSimpleIntegerDynamicPseudoCost *obj = static_cast<CbcSimpleIntegerDynamicPseudoCost *>(objects[i]);
+          CbcSimpleIntegerDynamicPseudoCost *obj = static_cast< CbcSimpleIntegerDynamicPseudoCost * >(objects[i]);
 #endif
           if (info->numberUp_[i] > 0) {
             if (info->downPseudo_[i] > largest)
@@ -249,7 +249,7 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
         // See if any diving heuristics set to do dive+save
         CbcHeuristicDive *dive = NULL;
         for (int i = 0; i < model_->numberHeuristics(); i++) {
-          CbcHeuristicDive *possible = dynamic_cast<CbcHeuristicDive *>(model_->heuristic(i));
+          CbcHeuristicDive *possible = dynamic_cast< CbcHeuristicDive * >(model_->heuristic(i));
           if (possible && possible->maxSimplexIterations() == COIN_INT_MAX) {
             // if more than one then rotate later?
             //if (possible->canHeuristicRun()) {
@@ -280,7 +280,7 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
 	    }
 #endif
         //delete [] nodes;
-        model_->setTemporaryPointer(reinterpret_cast<void *>(nodes));
+        model_->setTemporaryPointer(reinterpret_cast< void * >(nodes));
         // end try diving
       }
       int numberDo = numberNodes_;
@@ -337,7 +337,7 @@ CbcGeneralDepth::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingI
   int iNode;
   //OsiSolverInterface * solver = model_->solver();
   OsiClpSolverInterface *clpSolver
-    = dynamic_cast<OsiClpSolverInterface *>(solver);
+    = dynamic_cast< OsiClpSolverInterface * >(solver);
   assert(clpSolver);
   ClpSimplex *simplex = clpSolver->getModelPtr();
   int numberColumns = simplex->numberColumns();
@@ -421,7 +421,7 @@ CbcGeneralDepth::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingI
     delete[] lowerBefore;
   } else {
     // from diving
-    CbcSubProblem **nodes = reinterpret_cast<CbcSubProblem **>(model_->temporaryPointer());
+    CbcSubProblem **nodes = reinterpret_cast< CbcSubProblem ** >(model_->temporaryPointer());
     assert(nodes);
     int adjustDepth = info->depth_;
     assert(numberDo);
@@ -548,7 +548,7 @@ CbcGeneralBranchingObject::branch()
         OsiSolverInterface *solver = model_->solver();
         thisProb->apply(solver);
         OsiClpSolverInterface *clpSolver
-          = dynamic_cast<OsiClpSolverInterface *>(solver);
+          = dynamic_cast< OsiClpSolverInterface * >(solver);
         assert(clpSolver);
         // Move status to basis
         clpSolver->setWarmStart(NULL);

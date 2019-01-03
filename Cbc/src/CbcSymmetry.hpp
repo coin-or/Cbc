@@ -130,7 +130,7 @@ public:
 
   // Symmetry Info
 
-  std::vector<int> *Find_Orbit(int) const;
+  std::vector< int > *Find_Orbit(int) const;
 
   myclass0 node_sort;
   myclass index_sort;
@@ -167,7 +167,7 @@ public:
   void setupSymmetry(const OsiSolverInterface &solver);
 
 private:
-  mutable std::vector<Node> node_info_;
+  mutable std::vector< Node > node_info_;
   mutable CbcNauty *nauty_info_;
   int numberColumns_;
   int numberUsefulOrbits_;
@@ -207,7 +207,7 @@ public:
   void computeAuto();
   void deleteElement(int ix, int jx);
   void color_node(int ix, int color) { vstat_[ix] = color; }
-  void insertRHS(int rhs, int cons) { constr_rhs.insert(std::pair<int, int>(rhs, cons)); }
+  void insertRHS(int rhs, int cons) { constr_rhs.insert(std::pair< int, int >(rhs, cons)); }
 
   double getGroupSize() const;
   //int getNautyCalls() const { return nautyCalls_; }
@@ -219,7 +219,7 @@ public:
   int getNumOrbits() const;
 
   /// Returns the orbits in a "convenient" form
-  std::vector<std::vector<int>> *getOrbits() const;
+  std::vector< std::vector< int > > *getOrbits() const;
 
   void getVstat(double *v, int nv);
   inline bool isSparse() const
@@ -278,11 +278,11 @@ private:
   //static int nautyCalls_;
   //static double nautyTime_;
 
-  std::multimap<int, int> constr_rhs;
-  std::multimap<int, int>::iterator it;
+  std::multimap< int, int > constr_rhs;
+  std::multimap< int, int >::iterator it;
 
-  std::pair<std::multimap<int, int>::iterator,
-    std::multimap<int, int>::iterator>
+  std::pair< std::multimap< int, int >::iterator,
+    std::multimap< int, int >::iterator >
     ret;
 
   // File pointer for automorphism group

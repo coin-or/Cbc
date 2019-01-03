@@ -261,7 +261,7 @@ public:
 protected:
   // Data
   /// Attempts
-  std::vector<double> attempts_;
+  std::vector< double > attempts_;
   /// Random numbers to stop same search happening
   double random_[10];
   /// Number of solutions so we only do after new solution

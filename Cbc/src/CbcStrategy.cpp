@@ -201,7 +201,7 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
   found = false;
   for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
     CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-    CglProbing *cgl = dynamic_cast<CglProbing *>(generator);
+    CglProbing *cgl = dynamic_cast< CglProbing * >(generator);
     if (cgl) {
       found = true;
       break;
@@ -213,7 +213,7 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
 
   for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
     CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-    CglGomory *cgl = dynamic_cast<CglGomory *>(generator);
+    CglGomory *cgl = dynamic_cast< CglGomory * >(generator);
     if (cgl) {
       found = true;
       break;
@@ -225,7 +225,7 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
   found = false;
   for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
     CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-    CglKnapsackCover *cgl = dynamic_cast<CglKnapsackCover *>(generator);
+    CglKnapsackCover *cgl = dynamic_cast< CglKnapsackCover * >(generator);
     if (cgl) {
       found = true;
       break;
@@ -238,7 +238,7 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
   found = false;
   for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
     CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-    CglClique *cgl = dynamic_cast<CglClique *>(generator);
+    CglClique *cgl = dynamic_cast< CglClique * >(generator);
     if (cgl) {
       found = true;
       break;
@@ -250,7 +250,7 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
   found = false;
   for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
     CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-    CglFlowCover *cgl = dynamic_cast<CglFlowCover *>(generator);
+    CglFlowCover *cgl = dynamic_cast< CglFlowCover * >(generator);
     if (cgl) {
       found = true;
       break;
@@ -262,7 +262,7 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
   found = false;
   for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
     CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-    CglMixedIntegerRounding2 *cgl = dynamic_cast<CglMixedIntegerRounding2 *>(generator);
+    CglMixedIntegerRounding2 *cgl = dynamic_cast< CglMixedIntegerRounding2 * >(generator);
     if (cgl) {
       found = true;
       break;
@@ -306,7 +306,7 @@ void CbcStrategyDefault::setupHeuristics(CbcModel &model)
   found = false;
   for (iHeuristic = 0; iHeuristic < numberHeuristics; iHeuristic++) {
     CbcHeuristic *heuristic = model.heuristic(iHeuristic);
-    CbcRounding *cgl = dynamic_cast<CbcRounding *>(heuristic);
+    CbcRounding *cgl = dynamic_cast< CbcRounding * >(heuristic);
     if (cgl) {
       found = true;
       break;
@@ -322,7 +322,7 @@ void CbcStrategyDefault::setupHeuristics(CbcModel &model)
   found = false;
   for (iHeuristic = 0; iHeuristic < numberHeuristics; iHeuristic++) {
     CbcHeuristic *heuristic = model.heuristic(iHeuristic);
-    CbcHeuristicLocal *cgl = dynamic_cast<CbcHeuristicLocal *>(heuristic);
+    CbcHeuristicLocal *cgl = dynamic_cast< CbcHeuristicLocal * >(heuristic);
     if (cgl) {
       found = true;
       break;
@@ -374,7 +374,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
     process->passInMessageHandler(model.messageHandler());
     OsiSolverInterface *solver = model.solver();
 #ifdef COIN_HAS_CLP
-    OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
     if (clpSolver && false) {
       // see if all coefficients multiple of 0.01 (close enough)
       CoinPackedMatrix *matrix = clpSolver->getModelPtr()->matrix();
@@ -399,7 +399,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
             else
               numberInt++;
           } else {
-            int iValue = static_cast<int>(100 * (value + 0.005));
+            int iValue = static_cast< int >(100 * (value + 0.005));
             double value2 = iValue;
             if (value2 == 100.0 * value) {
               numberInt++;
@@ -421,7 +421,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
             double value1 = element[j];
             double value = fabs(value1);
             if (value < 1.0e7) {
-              int iValue = static_cast<int>(100 * (value + 0.005));
+              int iValue = static_cast< int >(100 * (value + 0.005));
               double value2 = iValue;
               if (value2 != 100.0 * value) {
                 value2 *= 0.01;
@@ -457,7 +457,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       if (numberObjects) {
         OsiObject **objects = model.objects();
         for (int iObject = 0; iObject < numberObjects; iObject++) {
-          CbcSOS *obj = dynamic_cast<CbcSOS *>(objects[iObject]);
+          CbcSOS *obj = dynamic_cast< CbcSOS * >(objects[iObject]);
           if (obj) {
             // SOS
             int n = obj->numberMembers();
@@ -526,7 +526,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       if (clpSolver) {
         // model has changed
         solver = model.solver();
-        OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+        OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
         ClpSimplex *lpSolver = clpSolver->getModelPtr();
         lpSolver->passInMessageHandler(solver->messageHandler());
         if (lpSolver->tightenPrimalBounds() == 0) {
@@ -603,12 +603,12 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
               fake[originalColumns[i]] = i;
             for (int iObject = 0; iObject < model.numberObjects(); iObject++) {
               // redo ids etc
-              CbcSimpleInteger *obj = dynamic_cast<CbcSimpleInteger *>(model.modifiableObject(iObject));
+              CbcSimpleInteger *obj = dynamic_cast< CbcSimpleInteger * >(model.modifiableObject(iObject));
               if (obj) {
                 obj->resetSequenceEtc(n, fake);
               } else {
                 // redo ids etc
-                CbcObject *obj = dynamic_cast<CbcObject *>(model.modifiableObject(iObject));
+                CbcObject *obj = dynamic_cast< CbcObject * >(model.modifiableObject(iObject));
                 assert(obj);
                 obj->redoSequenceEtc(&model, n, fake);
               }
@@ -727,7 +727,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
   int howOften = 0;
   for (iGenerator = 0; iGenerator < numberParentGenerators; iGenerator++) {
     CglCutGenerator *generator = parentModel_->cutGenerator(iGenerator)->generator();
-    CglProbing *cgl = dynamic_cast<CglProbing *>(generator);
+    CglProbing *cgl = dynamic_cast< CglProbing * >(generator);
     if (cgl) {
       found = true;
       howOften = parentModel_->cutGenerator(iGenerator)->howOften();
@@ -739,7 +739,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
     found = false;
     for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
       CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-      CglProbing *cgl = dynamic_cast<CglProbing *>(generator);
+      CglProbing *cgl = dynamic_cast< CglProbing * >(generator);
       if (cgl) {
         found = true;
         break;
@@ -759,7 +759,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
   found = false;
   for (iGenerator = 0; iGenerator < numberParentGenerators; iGenerator++) {
     CglCutGenerator *generator = parentModel_->cutGenerator(iGenerator)->generator();
-    CglGomory *cgl = dynamic_cast<CglGomory *>(generator);
+    CglGomory *cgl = dynamic_cast< CglGomory * >(generator);
     if (cgl) {
       found = true;
       howOften = parentModel_->cutGenerator(iGenerator)->howOften();
@@ -770,7 +770,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
     found = false;
     for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
       CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-      CglGomory *cgl = dynamic_cast<CglGomory *>(generator);
+      CglGomory *cgl = dynamic_cast< CglGomory * >(generator);
       if (cgl) {
         found = true;
         break;
@@ -782,7 +782,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
   found = false;
   for (iGenerator = 0; iGenerator < numberParentGenerators; iGenerator++) {
     CglCutGenerator *generator = parentModel_->cutGenerator(iGenerator)->generator();
-    CglKnapsackCover *cgl = dynamic_cast<CglKnapsackCover *>(generator);
+    CglKnapsackCover *cgl = dynamic_cast< CglKnapsackCover * >(generator);
     if (cgl) {
       found = true;
       howOften = parentModel_->cutGenerator(iGenerator)->howOften();
@@ -793,7 +793,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
     found = false;
     for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
       CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-      CglKnapsackCover *cgl = dynamic_cast<CglKnapsackCover *>(generator);
+      CglKnapsackCover *cgl = dynamic_cast< CglKnapsackCover * >(generator);
       if (cgl) {
         found = true;
         break;
@@ -805,7 +805,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
   found = false;
   for (iGenerator = 0; iGenerator < numberParentGenerators; iGenerator++) {
     CglCutGenerator *generator = parentModel_->cutGenerator(iGenerator)->generator();
-    CglClique *cgl = dynamic_cast<CglClique *>(generator);
+    CglClique *cgl = dynamic_cast< CglClique * >(generator);
     if (cgl) {
       found = true;
       howOften = parentModel_->cutGenerator(iGenerator)->howOften();
@@ -816,7 +816,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
     found = false;
     for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
       CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-      CglClique *cgl = dynamic_cast<CglClique *>(generator);
+      CglClique *cgl = dynamic_cast< CglClique * >(generator);
       if (cgl) {
         found = true;
         break;
@@ -828,7 +828,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
   found = false;
   for (iGenerator = 0; iGenerator < numberParentGenerators; iGenerator++) {
     CglCutGenerator *generator = parentModel_->cutGenerator(iGenerator)->generator();
-    CglFlowCover *cgl = dynamic_cast<CglFlowCover *>(generator);
+    CglFlowCover *cgl = dynamic_cast< CglFlowCover * >(generator);
     if (cgl) {
       found = true;
       howOften = parentModel_->cutGenerator(iGenerator)->howOften();
@@ -839,7 +839,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
     found = false;
     for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
       CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-      CglFlowCover *cgl = dynamic_cast<CglFlowCover *>(generator);
+      CglFlowCover *cgl = dynamic_cast< CglFlowCover * >(generator);
       if (cgl) {
         found = true;
         break;
@@ -851,7 +851,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
   }
   for (iGenerator = 0; iGenerator < numberParentGenerators; iGenerator++) {
     CglCutGenerator *generator = parentModel_->cutGenerator(iGenerator)->generator();
-    CglMixedIntegerRounding2 *cgl = dynamic_cast<CglMixedIntegerRounding2 *>(generator);
+    CglMixedIntegerRounding2 *cgl = dynamic_cast< CglMixedIntegerRounding2 * >(generator);
     if (cgl) {
       found = true;
       howOften = parentModel_->cutGenerator(iGenerator)->howOften();
@@ -862,7 +862,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
     found = false;
     for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
       CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-      CglMixedIntegerRounding2 *cgl = dynamic_cast<CglMixedIntegerRounding2 *>(generator);
+      CglMixedIntegerRounding2 *cgl = dynamic_cast< CglMixedIntegerRounding2 * >(generator);
       if (cgl) {
         found = true;
         break;
@@ -899,7 +899,7 @@ void CbcStrategyDefaultSubTree::setupHeuristics(CbcModel &model)
   found = false;
   for (iHeuristic = 0; iHeuristic < numberHeuristics; iHeuristic++) {
     CbcHeuristic *heuristic = model.heuristic(iHeuristic);
-    CbcRounding *cgl = dynamic_cast<CbcRounding *>(heuristic);
+    CbcRounding *cgl = dynamic_cast< CbcRounding * >(heuristic);
     if (cgl) {
       found = true;
       break;
@@ -915,7 +915,7 @@ void CbcStrategyDefaultSubTree::setupHeuristics(CbcModel &model)
     found = false;
     for (iHeuristic = 0; iHeuristic < numberHeuristics; iHeuristic++) {
       CbcHeuristic *heuristic = model.heuristic(iHeuristic);
-      CbcHeuristicLocal *cgl = dynamic_cast<CbcHeuristicLocal *>(heuristic);
+      CbcHeuristicLocal *cgl = dynamic_cast< CbcHeuristicLocal * >(heuristic);
       if (cgl) {
         found = true;
         break;
@@ -932,7 +932,7 @@ void CbcStrategyDefaultSubTree::setupHeuristics(CbcModel &model)
     found = false;
     for (iHeuristic = 0; iHeuristic < numberHeuristics; iHeuristic++) {
       CbcHeuristic *heuristic = model.heuristic(iHeuristic);
-      CbcHeuristicLocal *cgl = dynamic_cast<CbcHeuristicLocal *>(heuristic);
+      CbcHeuristicLocal *cgl = dynamic_cast< CbcHeuristicLocal * >(heuristic);
       if (cgl) {
         found = true;
         break;
@@ -972,7 +972,7 @@ void setCutAndHeuristicOptions(CbcModel &model)
   int iGenerator;
   for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
     CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-    CglProbing *cglProbing = dynamic_cast<CglProbing *>(generator);
+    CglProbing *cglProbing = dynamic_cast< CglProbing * >(generator);
     if (cglProbing) {
       cglProbing->setUsingObjective(1);
       cglProbing->setMaxPass(1);
@@ -991,13 +991,13 @@ void setCutAndHeuristicOptions(CbcModel &model)
       cglProbing->setRowCuts(3);
     }
 #ifdef JJF_ZERO
-    CglGomory *cglGomory = dynamic_cast<CglGomory *>(generator);
+    CglGomory *cglGomory = dynamic_cast< CglGomory * >(generator);
     if (cglGomory) {
       // try larger limit
       cglGomory->setLimitAtRoot(1000);
       cglGomory->setLimit(50);
     }
-    CglKnapsackCover *cglKnapsackCover = dynamic_cast<CglKnapsackCover *>(generator);
+    CglKnapsackCover *cglKnapsackCover = dynamic_cast< CglKnapsackCover * >(generator);
     if (cglKnapsackCover) {
     }
 #endif

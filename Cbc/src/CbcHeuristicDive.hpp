@@ -169,10 +169,10 @@ protected:
   PriorityType *priority_;
   // Indexes of binary variables with 0 objective coefficient
   // and in variable bound constraints
-  std::vector<int> binVarIndex_;
+  std::vector< int > binVarIndex_;
 
   // Indexes of variable bound rows for each binary variable
-  std::vector<int> vbRowIndex_;
+  std::vector< int > vbRowIndex_;
 
   // Percentage of integer variables to fix at bounds
   double percentageToFix_;

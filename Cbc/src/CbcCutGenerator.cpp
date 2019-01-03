@@ -197,7 +197,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
   else
     depth = 0;
   int howOften = whenCutGenerator_;
-  if (dynamic_cast<CglProbing *>(generator_)) {
+  if (dynamic_cast< CglProbing * >(generator_)) {
     if (howOften == -100 && model_->doCutsNow(3)) {
       howOften = 1; // do anyway
     }
@@ -257,7 +257,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 #ifdef COIN_HAS_CLP
     {
       OsiClpSolverInterface *clpSolver
-        = dynamic_cast<OsiClpSolverInterface *>(solver);
+        = dynamic_cast< OsiClpSolverInterface * >(solver);
       if (clpSolver)
         randomNumberGenerator = clpSolver->getModelPtr()->randomNumberGenerator();
     }
@@ -302,7 +302,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       info.options |= 512;
     // above had &&!model_->parentModel()&&depth<2)
     incrementNumberTimesEntered();
-    CglProbing *generator = dynamic_cast<CglProbing *>(generator_);
+    CglProbing *generator = dynamic_cast< CglProbing * >(generator_);
     //if (!depth&&!pass)
     //printf("Cut generator %s when %d\n",generatorName_,whenCutGenerator_);
     if (!generator) {
@@ -359,7 +359,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
             2000123,
             2099999
           };
-          int n = static_cast<int>(sizeof(test) / sizeof(int));
+          int n = static_cast< int >(sizeof(test) / sizeof(int));
           int saveStack = generator->getMaxLook();
           int saveNumber = generator->getMaxProbe();
           int kr1 = 0;
@@ -569,7 +569,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
         // bounds changed but still optimal
 #ifdef COIN_HAS_CLP
         OsiClpSolverInterface *clpSolver
-          = dynamic_cast<OsiClpSolverInterface *>(solver);
+          = dynamic_cast< OsiClpSolverInterface * >(solver);
         if (clpSolver) {
           clpSolver->setLastAlgorithm(2);
         }
@@ -587,7 +587,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
         mark[lookedAt[j]] = 1;
       int numberObjects = model_->numberObjects();
       for (int i = 0; i < numberObjects; i++) {
-        CbcSimpleIntegerDynamicPseudoCost *obj1 = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(model_->modifiableObject(i));
+        CbcSimpleIntegerDynamicPseudoCost *obj1 = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(model_->modifiableObject(i));
         if (obj1) {
           int iColumn = obj1->columnNumber();
           if (mark[iColumn])
@@ -1281,7 +1281,7 @@ void CbcCutGenerator::setHowOften(int howOften)
   if (howOften >= 1000000) {
     // leave Probing every SCANCUTS_PROBING
     howOften = howOften % 1000000;
-    CglProbing *generator = dynamic_cast<CglProbing *>(generator_);
+    CglProbing *generator = dynamic_cast< CglProbing * >(generator_);
 
     if (generator && howOften > SCANCUTS_PROBING)
       howOften = SCANCUTS_PROBING + 1000000;

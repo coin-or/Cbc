@@ -44,7 +44,7 @@
 void testingMessage(const char *const msg);
 
 #ifdef COIN_HAS_CBC
-void CbcMiplibTest(const std::vector<OsiCbcSolverInterface *> &vecEmptySiP,
+void CbcMiplibTest(const std::vector< OsiCbcSolverInterface * > &vecEmptySiP,
   const std::string &mpsDir)
 {
   int i;
@@ -73,12 +73,12 @@ void CbcMiplibTest(const std::vector<OsiCbcSolverInterface *> &vecEmptySiP,
       after optimization (objValue) must agree to the specified tolerance
       (objValueTol).
     */
-  std::vector<std::string> mpsName;
-  std::vector<int> nRows;
-  std::vector<int> nCols;
-  std::vector<double> objValueC;
-  std::vector<double> objValue;
-  std::vector<int> strategy;
+  std::vector< std::string > mpsName;
+  std::vector< int > nRows;
+  std::vector< int > nCols;
+  std::vector< double > objValueC;
+  std::vector< double > objValue;
+  std::vector< int > strategy;
   /*
       And a macro to make the vector creation marginally readable.
     */
@@ -205,13 +205,13 @@ void CbcMiplibTest(const std::vector<OsiCbcSolverInterface *> &vecEmptySiP,
       neighbors in the vector.
     */
   int numberSolvers = vecEmptySiP.size();
-  std::vector<OsiSolverInterface *> vecSiP(numberSolvers);
+  std::vector< OsiSolverInterface * > vecSiP(numberSolvers);
 
   // Create vector to store a name for each solver interface
   // and a count on the number of problems the solver interface solved.
-  std::vector<std::string> siName;
-  std::vector<int> numProbSolved;
-  std::vector<double> timeTaken;
+  std::vector< std::string > siName;
+  std::vector< int > numProbSolved;
+  std::vector< double > timeTaken;
   for (i = 0; i < numberSolvers; i++) {
     std::string name;
     vecEmptySiP[i]->getStrParam(OsiSolverName, name);
@@ -249,7 +249,7 @@ void CbcMiplibTest(const std::vector<OsiCbcSolverInterface *> &vecEmptySiP,
               Stage 2: Call the solver to get a solution for the LP relaxation.
             */
       double startTime = CoinCpuTime();
-      OsiCbcSolverInterface *integerSolver = dynamic_cast<OsiCbcSolverInterface *>(vecSiP[i]);
+      OsiCbcSolverInterface *integerSolver = dynamic_cast< OsiCbcSolverInterface * >(vecSiP[i]);
       assert(integerSolver);
       integerSolver->initialSolve();
       /*
@@ -317,11 +317,11 @@ int mainTest(int argc, const char *argv[])
   int i;
 
   // define valid parameter keywords
-  std::set<std::string> definedKeyWords;
+  std::set< std::string > definedKeyWords;
   definedKeyWords.insert("-miplibDir");
 
   // Create a map of parameter keys and associated data
-  std::map<std::string, std::string> parms;
+  std::map< std::string, std::string > parms;
   for (i = 1; i < argc; i++) {
     std::string parm(argv[i]);
     std::string key, value;
@@ -363,7 +363,7 @@ int mainTest(int argc, const char *argv[])
 
   {
     // Create vector of solver interfaces
-    std::vector<OsiCbcSolverInterface *> vecSi;
+    std::vector< OsiCbcSolverInterface * > vecSi;
     CbcStrategyDefault strategy(0);
 #if COIN_HAS_OSL
     OsiSolverInterface *oslSi = new OsiOslSolverInterface;

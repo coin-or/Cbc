@@ -57,7 +57,7 @@ expandKnapsack(CoinModel &model, int *whichColumn, int *knapsackStart,
       int iColumn = objects[iObj]->columnNumber();
       if (iColumn >= 0 && iColumn < numberColumns) {
 #ifndef NDEBUG
-        OsiSimpleInteger *obj = dynamic_cast<OsiSimpleInteger *>(objects[iObj]);
+        OsiSimpleInteger *obj = dynamic_cast< OsiSimpleInteger * >(objects[iObj]);
 #endif
         assert(obj);
         int iPriority = priorities[iColumn];
@@ -376,7 +376,7 @@ expandKnapsack(CoinModel &model, int *whichColumn, int *knapsackStart,
           int iColumn = objects[iObj]->columnNumber();
           if (iColumn >= 0 && iColumn < nCol) {
 #ifndef NDEBUG
-            OsiSimpleInteger *obj = dynamic_cast<OsiSimpleInteger *>(objects[iObj]);
+            OsiSimpleInteger *obj = dynamic_cast< OsiSimpleInteger * >(objects[iObj]);
 #endif
             assert(obj);
             int iPriority = priorities[whichColumn[iColumn]];

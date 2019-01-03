@@ -62,7 +62,7 @@ void CbcTree::validateHeap()
       << " Invalid heap (no predicate)!" << std::endl;
     return;
   }
-  std::vector<CbcNode *>::const_iterator curNode, lastNode;
+  std::vector< CbcNode * >::const_iterator curNode, lastNode;
   curNode = nodes_.begin();
   lastNode = nodes_.end();
   int curNdx = 0;
@@ -73,8 +73,8 @@ void CbcTree::validateHeap()
     std::cout
       << " Invalid heap[" << curNdx << "] (null entry)!" << std::endl;
   }
-  std::vector<CbcNode *>::const_iterator parent;
-  std::vector<CbcNode *>::const_iterator &child = curNode;
+  std::vector< CbcNode * >::const_iterator parent;
+  std::vector< CbcNode * >::const_iterator &child = curNode;
   for (parent = curNode; ++curNode != lastNode; ++parent, ++parNdx) {
     curNdx++;
     if (*parent == 0) {
@@ -208,18 +208,18 @@ void CbcTree::addBranchingInformation(const CbcModel *model, const CbcNodeInfo *
   const double *currentUpper)
 {
   const OsiBranchingObject *objA = nodeInfo->owner()->branchingObject();
-  const CbcIntegerBranchingObject *objBranch = dynamic_cast<const CbcIntegerBranchingObject *>(objA);
+  const CbcIntegerBranchingObject *objBranch = dynamic_cast< const CbcIntegerBranchingObject * >(objA);
   if (objBranch) {
     const CbcObject *objB = objBranch->object();
-    const CbcSimpleInteger *obj = dynamic_cast<const CbcSimpleInteger *>(objB);
+    const CbcSimpleInteger *obj = dynamic_cast< const CbcSimpleInteger * >(objB);
     assert(obj);
     int iColumn = obj->columnNumber();
     const double *down = objBranch->downBounds();
     const double *up = objBranch->upBounds();
     assert(currentLower[iColumn] == down[0]);
     assert(currentUpper[iColumn] == up[1]);
-    if (dynamic_cast<const CbcPartialNodeInfo *>(nodeInfo)) {
-      const CbcPartialNodeInfo *info = dynamic_cast<const CbcPartialNodeInfo *>(nodeInfo);
+    if (dynamic_cast< const CbcPartialNodeInfo * >(nodeInfo)) {
+      const CbcPartialNodeInfo *info = dynamic_cast< const CbcPartialNodeInfo * >(nodeInfo);
       const double *newBounds = info->newBounds();
       const int *variables = info->variables();
       int numberChanged = info->numberChangedBounds();
@@ -239,11 +239,11 @@ void CbcTree::addBranchingInformation(const CbcModel *model, const CbcNodeInfo *
         }
         if (numberBranching_ == maximumBranching_)
           increaseSpace();
-        newBound_[numberBranching_] = static_cast<int>(newBounds[i]);
+        newBound_[numberBranching_] = static_cast< int >(newBounds[i]);
         branched_[numberBranching_++] = jColumn;
       }
     } else {
-      const CbcFullNodeInfo *info = dynamic_cast<const CbcFullNodeInfo *>(nodeInfo);
+      const CbcFullNodeInfo *info = dynamic_cast< const CbcFullNodeInfo * >(nodeInfo);
       int numberIntegers = model->numberIntegers();
       const int *which = model->integerVariable();
       const double *newLower = info->lower();
@@ -253,9 +253,9 @@ void CbcTree::addBranchingInformation(const CbcModel *model, const CbcNodeInfo *
       assert(newLower[iColumn] == up[0] || newUpper[iColumn] == down[1]);
       int jColumn = iColumn | 0x40000000;
       if (newLower[iColumn] == up[0]) {
-        newBound_[numberBranching_] = static_cast<int>(up[0]);
+        newBound_[numberBranching_] = static_cast< int >(up[0]);
       } else {
-        newBound_[numberBranching_] = static_cast<int>(down[1]);
+        newBound_[numberBranching_] = static_cast< int >(down[1]);
         jColumn |= 0x80000000;
       }
       branched_[numberBranching_++] = jColumn;
@@ -276,7 +276,7 @@ void CbcTree::addBranchingInformation(const CbcModel *model, const CbcNodeInfo *
           if (changed) {
             if (numberBranching_ == maximumBranching_)
               increaseSpace();
-            newBound_[numberBranching_] = static_cast<int>(value);
+            newBound_[numberBranching_] = static_cast< int >(value);
             branched_[numberBranching_++] = jColumn;
           }
         }
@@ -335,7 +335,7 @@ void CbcTree::setComparison(CbcCompareBase &compare)
   the comparison method is set (i.e., in setComparison).
   -- lh, 100921 --
 */
-  CbcCompareDefault *compareD = dynamic_cast<CbcCompareDefault *>(&compare);
+  CbcCompareDefault *compareD = dynamic_cast< CbcCompareDefault * >(&compare);
   if (compareD) {
     // clean up diving
     compareD->cleanDive();
@@ -808,7 +808,7 @@ CbcTreeArray::bestNode(double cutoff)
     if (nodeNumber + 1 == maximumNodeNumber_) {
       // diving - look further
       CbcCompareDefault *compareDefault
-        = dynamic_cast<CbcCompareDefault *>(comparison_.test_);
+        = dynamic_cast< CbcCompareDefault * >(comparison_.test_);
       assert(compareDefault);
       double bestPossible = compareDefault->getBestPossible();
       double cutoff = compareDefault->getCutoff();
@@ -926,7 +926,7 @@ double
 CbcTreeArray::getBestPossibleObjective()
 {
   double bestPossibleObjective = 1e100;
-  for (int i = 0; i < static_cast<int>(nodes_.size()); i++) {
+  for (int i = 0; i < static_cast< int >(nodes_.size()); i++) {
     if (nodes_[i] && nodes_[i]->objectiveValue() < bestPossibleObjective) {
       bestPossibleObjective = nodes_[i]->objectiveValue();
     }
@@ -950,7 +950,7 @@ CbcTreeArray::getBestPossibleObjective()
   }
 #endif
   CbcCompareDefault *compareDefault
-    = dynamic_cast<CbcCompareDefault *>(comparison_.test_);
+    = dynamic_cast< CbcCompareDefault * >(comparison_.test_);
   assert(compareDefault);
   compareDefault->setBestPossible(bestPossibleObjective);
   return bestPossibleObjective;
@@ -1021,7 +1021,7 @@ void CbcTreeArray::cleanTree(CbcModel *model, double cutoff, double &bestPossibl
     }
   }
   CbcCompareDefault *compareDefault
-    = dynamic_cast<CbcCompareDefault *>(comparison_.test_);
+    = dynamic_cast< CbcCompareDefault * >(comparison_.test_);
   assert(compareDefault);
   compareDefault->setBestPossible(bestPossibleObjective);
   compareDefault->setCutoff(cutoff);
@@ -1102,7 +1102,7 @@ void CbcTreeArray::cleanTree(CbcModel *model, double cutoff, double &bestPossibl
 void CbcTree::setComparison(CbcCompareBase &compare)
 {
   comparison_.test_ = &compare;
-  std::vector<CbcNode *> newNodes = nodes_;
+  std::vector< CbcNode * > newNodes = nodes_;
   nodes_.resize(0);
   while (newNodes.size() > 0) {
     push(newNodes.back());
@@ -1455,7 +1455,7 @@ double
 CbcTree::getBestPossibleObjective()
 {
   double r_val = 1e100;
-  for (int i = 0; i < static_cast<int>(nodes_.size()); i++) {
+  for (int i = 0; i < static_cast< int >(nodes_.size()); i++) {
     if (nodes_[i] && nodes_[i]->objectiveValue() < r_val) {
       r_val = nodes_[i]->objectiveValue();
     }

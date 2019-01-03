@@ -123,29 +123,29 @@ sos_kludge(int nsos, int *sosbeg, double *sosref, int *sosind)
 static char xxxxxx[20];
 #define VP (char *)
 static keyword keywds[] = { /* must be sorted */
-  { const_cast<char *>("barrier"), checkPhrase, (char *)xxxxxx,
-    const_cast<char *>("-barrier") },
-  { const_cast<char *>("dual"), checkPhrase, (char *)xxxxxx,
-    const_cast<char *>("-dualsimplex") },
-  { const_cast<char *>("help"), checkPhrase2, (char *)xxxxxx,
-    const_cast<char *>("-?") },
-  { const_cast<char *>("initial"), checkPhrase, (char *)xxxxxx,
-    const_cast<char *>("-initialsolve") },
-  { const_cast<char *>("max"), checkPhrase2, (char *)xxxxxx,
-    const_cast<char *>("-maximize") },
-  { const_cast<char *>("maximize"), checkPhrase2, (char *)xxxxxx,
-    const_cast<char *>("-maximize") },
-  { const_cast<char *>("primal"), checkPhrase, (char *)xxxxxx,
-    const_cast<char *>("-primalsimplex") },
-  { const_cast<char *>("quit"), checkPhrase2, (char *)xxxxxx,
-    const_cast<char *>("-quit") },
-  { const_cast<char *>("wantsol"), WS_val, NULL,
-    const_cast<char *>("write .sol file (without -AMPL)") }
+  { const_cast< char * >("barrier"), checkPhrase, (char *)xxxxxx,
+    const_cast< char * >("-barrier") },
+  { const_cast< char * >("dual"), checkPhrase, (char *)xxxxxx,
+    const_cast< char * >("-dualsimplex") },
+  { const_cast< char * >("help"), checkPhrase2, (char *)xxxxxx,
+    const_cast< char * >("-?") },
+  { const_cast< char * >("initial"), checkPhrase, (char *)xxxxxx,
+    const_cast< char * >("-initialsolve") },
+  { const_cast< char * >("max"), checkPhrase2, (char *)xxxxxx,
+    const_cast< char * >("-maximize") },
+  { const_cast< char * >("maximize"), checkPhrase2, (char *)xxxxxx,
+    const_cast< char * >("-maximize") },
+  { const_cast< char * >("primal"), checkPhrase, (char *)xxxxxx,
+    const_cast< char * >("-primalsimplex") },
+  { const_cast< char * >("quit"), checkPhrase2, (char *)xxxxxx,
+    const_cast< char * >("-quit") },
+  { const_cast< char * >("wantsol"), WS_val, NULL,
+    const_cast< char * >("write .sol file (without -AMPL)") }
 };
 static Option_Info Oinfo = {
-  const_cast<char *>("cbc"),
-  const_cast<char *>("CBC " CBC_VERSION),
-  const_cast<char *>("cbc_options"),
+  const_cast< char * >("cbc"),
+  const_cast< char * >("CBC " CBC_VERSION),
+  const_cast< char * >("cbc_options"),
   keywds,
   nkeywds,
   0,
@@ -160,32 +160,32 @@ static Option_Info Oinfo = {
 // strdup used to avoid g++ compiler warning
 static SufDecl suftab[] = {
 #ifdef JJF_ZERO
-  { const_cast<char *>("current"), 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
-  { const_cast<char *>("current"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
-  { const_cast<char *>("direction"), 0, ASL_Sufkind_var },
-  { const_cast<char *>("down"), 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
-  { const_cast<char *>("down"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
-  { const_cast<char *>("priority"), 0, ASL_Sufkind_var },
+  { const_cast< char * >("current"), 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
+  { const_cast< char * >("current"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
+  { const_cast< char * >("direction"), 0, ASL_Sufkind_var },
+  { const_cast< char * >("down"), 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
+  { const_cast< char * >("down"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
+  { const_cast< char * >("priority"), 0, ASL_Sufkind_var },
 #endif
-  { const_cast<char *>("cut"), 0, ASL_Sufkind_con },
-  { const_cast<char *>("direction"), 0, ASL_Sufkind_var },
-  { const_cast<char *>("downPseudocost"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
-  { const_cast<char *>("priority"), 0, ASL_Sufkind_var },
-  { const_cast<char *>("ref"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
-  { const_cast<char *>("sos"), 0, ASL_Sufkind_var },
-  { const_cast<char *>("sos"), 0, ASL_Sufkind_con },
-  { const_cast<char *>("sosno"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
-  { const_cast<char *>("sosref"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
-  { const_cast<char *>("special"), 0, ASL_Sufkind_var },
-  { const_cast<char *>("special"), 0, ASL_Sufkind_con },
+  { const_cast< char * >("cut"), 0, ASL_Sufkind_con },
+  { const_cast< char * >("direction"), 0, ASL_Sufkind_var },
+  { const_cast< char * >("downPseudocost"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
+  { const_cast< char * >("priority"), 0, ASL_Sufkind_var },
+  { const_cast< char * >("ref"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
+  { const_cast< char * >("sos"), 0, ASL_Sufkind_var },
+  { const_cast< char * >("sos"), 0, ASL_Sufkind_con },
+  { const_cast< char * >("sosno"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
+  { const_cast< char * >("sosref"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
+  { const_cast< char * >("special"), 0, ASL_Sufkind_var },
+  { const_cast< char * >("special"), 0, ASL_Sufkind_con },
   /*{ const_cast<char*>("special"), 0, ASL_Sufkind_con },*/
-  { const_cast<char *>("sstatus"), 0, ASL_Sufkind_var, 0 },
-  { const_cast<char *>("sstatus"), 0, ASL_Sufkind_con, 0 },
-  { const_cast<char *>("upPseudocost"), 0, ASL_Sufkind_var | ASL_Sufkind_real }
+  { const_cast< char * >("sstatus"), 0, ASL_Sufkind_var, 0 },
+  { const_cast< char * >("sstatus"), 0, ASL_Sufkind_con, 0 },
+  { const_cast< char * >("upPseudocost"), 0, ASL_Sufkind_var | ASL_Sufkind_real }
 #ifdef JJF_ZERO
-  { const_cast<char *>("unbdd"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
-  { const_cast<char *>("up"), 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
-  { const_cast<char *>("up"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly }
+  { const_cast< char * >("unbdd"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
+  { const_cast< char * >("up"), 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
+  { const_cast< char * >("up"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly }
 #endif
 };
 #include "float.h"
@@ -449,7 +449,7 @@ int readAmpl(ampl_info *info, int argc, char **argv, void **coinModel)
         for (int i = 0; i < nsos; i++) {
           char ichar = sostype[i];
           assert(ichar == '1' || ichar == '2');
-          info->sosType[i] = static_cast<char>(ichar - '0');
+          info->sosType[i] = static_cast< char >(ichar - '0');
         }
         memcpy(info->sosPriority, sospri, nsos * sizeof(int));
         memcpy(info->sosStart, sosbeg, (nsos + 1) * sizeof(int));
@@ -1005,7 +1005,7 @@ void CoinModel::gdb(int nonLinear, const char *fileName, const void *info)
 #else
     CoinPackedMatrix columnCopy(true, numberRows, numberColumns, numberElements,
       A_vals, A_rownos,
-      reinterpret_cast<const CoinBigIndex *>(A_colstartsZ), NULL);
+      reinterpret_cast< const CoinBigIndex * >(A_colstartsZ), NULL);
 #endif
     matrixByRow.reverseOrderedCopyOf(columnCopy);
   } else if (nonLinear == 1) {
@@ -1406,7 +1406,7 @@ void CoinModel::gdb(int nonLinear, const char *fileName, const void *info)
                 else
                   sprintf(temp, "%s%s", expr, temp2);
               }
-              assert(static_cast<int>(strlen(temp)) < 30 * numberColumns_);
+              assert(static_cast< int >(strlen(temp)) < 30 * numberColumns_);
               setElement(iRow, j, temp);
               if (amplInfo->logLevel > 1)
                 printf("el for row %d column c%7.7d is %s\n", iRow, j, temp);
@@ -1450,7 +1450,7 @@ void CoinModel::gdb(int nonLinear, const char *fileName, const void *info)
                 else
                   sprintf(temp, "%s%s", expr, temp2);
               }
-              assert(static_cast<int>(strlen(temp)) < 30 * numberColumns_);
+              assert(static_cast< int >(strlen(temp)) < 30 * numberColumns_);
               setObjective(j, temp);
               if (amplInfo->logLevel > 1)
                 printf("el for objective column c%7.7d is %s\n", j, temp);

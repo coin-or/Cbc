@@ -207,7 +207,7 @@ public:
     */
   virtual int compareOriginalObject(const CbcBranchingObject *brObj) const
   {
-    const CbcBranchingObject *br = dynamic_cast<const CbcBranchingObject *>(brObj);
+    const CbcBranchingObject *br = dynamic_cast< const CbcBranchingObject * >(brObj);
     return variable() - br->variable();
   }
 

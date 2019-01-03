@@ -439,7 +439,7 @@ CbcSolver::CbcSolver(const CbcSolver &rhs)
   originalSolver_ = NULL;
   if (rhs.originalSolver_) {
     OsiSolverInterface *temp = rhs.originalSolver_->clone();
-    originalSolver_ = dynamic_cast<OsiClpSolverInterface *>(temp);
+    originalSolver_ = dynamic_cast< OsiClpSolverInterface * >(temp);
     assert(originalSolver_);
   }
   originalCoinModel_ = NULL;
@@ -485,7 +485,7 @@ CbcSolver::operator=(const CbcSolver &rhs)
     originalSolver_ = NULL;
     if (rhs.originalSolver_) {
       OsiSolverInterface *temp = rhs.originalSolver_->clone();
-      originalSolver_ = dynamic_cast<OsiClpSolverInterface *>(temp);
+      originalSolver_ = dynamic_cast< OsiClpSolverInterface * >(temp);
       assert(originalSolver_);
     }
     originalCoinModel_ = NULL;
@@ -579,7 +579,7 @@ void CbcSolver::fillParameters()
   ClpSimplex *lpSolver;
   OsiClpSolverInterface *clpSolver;
   if (model_.solver()) {
-    clpSolver = dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+    clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
     assert(clpSolver);
     lpSolver = clpSolver->getModelPtr();
     assert(lpSolver);
@@ -694,7 +694,7 @@ void CbcSolver::fillParameters()
 void CbcSolver::fillValuesInSolver()
 {
   OsiSolverInterface *solver = model_.solver();
-  OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+  OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
   assert(clpSolver);
   ClpSimplex *lpSolver = clpSolver->getModelPtr();
 
@@ -769,7 +769,7 @@ void CbcSolver::setOriginalSolver(OsiClpSolverInterface *originalSolver)
 {
   delete originalSolver_;
   OsiSolverInterface *temp = originalSolver->clone();
-  originalSolver_ = dynamic_cast<OsiClpSolverInterface *>(temp);
+  originalSolver_ = dynamic_cast< OsiClpSolverInterface * >(temp);
   assert(originalSolver_);
 }
 // Copy of model on initial load
@@ -901,7 +901,7 @@ void checkSOS(CbcModel * /*babModel*/, const OsiSolverInterface * /*solver*/)
   int numberObjects = babModel->numberObjects();
   int numberColumns = solver->getNumCols();
   for (int iObj = 0; iObj < numberObjects; iObj++) {
-    CbcSOS *objSOS = dynamic_cast<CbcSOS *>(objects[iObj]);
+    CbcSOS *objSOS = dynamic_cast< CbcSOS * >(objects[iObj]);
     if (objSOS) {
       int n = objSOS->numberMembers();
       const int *which = objSOS->members();
@@ -1133,7 +1133,7 @@ int callCbc1(const char *input2, CbcModel &model,
   currentBranchModel = NULL;
   CbcOrClpRead_mode = 1;
   CbcOrClpReadCommand = stdin;
-  int returnCode = CbcMain1(n + 2, const_cast<const char **>(argv),
+  int returnCode = CbcMain1(n + 2, const_cast< const char ** >(argv),
     model, callBack, parameterData);
   for (int k = 0; k < n + 2; k++)
     free(argv[k]);
@@ -1211,7 +1211,7 @@ CoinReadGetIntField(int &whichArgument, int argc, const char *argv[], int *valid
     *valid = 1;
     std::cout << "String of " << field;
   }
-  return static_cast<int>(value);
+  return static_cast< int >(value);
 }
 static double
 CoinReadGetDoubleField(int &whichArgument, int argc, const char *argv[], int *valid)
@@ -1370,7 +1370,7 @@ int CbcMain1(int argc, const char *argv[],
   } lotStruct;
   lotStruct *lotsize = NULL;
 #ifndef CBC_OTHER_SOLVER
-  OsiClpSolverInterface *originalSolver = dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+  OsiClpSolverInterface *originalSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
   assert(originalSolver);
   // Move handler across if not default
   if (!originalSolver->defaultHandler() && originalSolver->getModelPtr()->defaultHandler())
@@ -1380,7 +1380,7 @@ int CbcMain1(int argc, const char *argv[],
   if (originalSolver->getModelPtr()->logLevel() == 0)
     noPrinting = true;
 #elif CBC_OTHER_SOLVER == 1
-  OsiCpxSolverInterface *originalSolver = dynamic_cast<OsiCpxSolverInterface *>(model_.solver());
+  OsiCpxSolverInterface *originalSolver = dynamic_cast< OsiCpxSolverInterface * >(model_.solver());
   assert(originalSolver);
   OsiClpSolverInterface dummySolver;
   OsiCpxSolverInterface *clpSolver = originalSolver;
@@ -1435,7 +1435,7 @@ int CbcMain1(int argc, const char *argv[],
     if (noPrinting_)
       setCbcOrClpPrinting(false);
 #ifndef CBC_OTHER_SOLVER
-    OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
     ClpSimplex *lpSolver = clpSolver->getModelPtr();
     if (noPrinting_) {
       lpSolver->setLogLevel(0);
@@ -1450,8 +1450,8 @@ int CbcMain1(int argc, const char *argv[],
     double *pseudoUp = NULL;
     double *solutionIn = NULL;
     int *prioritiesIn = NULL;
-    std::vector<std::pair<std::string, double>> mipStart;
-    std::vector<std::pair<std::string, double>> mipStartBefore;
+    std::vector< std::pair< std::string, double > > mipStart;
+    std::vector< std::pair< std::string, double > > mipStartBefore;
     int numberSOS = 0;
     int *sosStart = NULL;
     int *sosIndices = NULL;
@@ -1495,7 +1495,7 @@ int CbcMain1(int argc, const char *argv[],
           CoinModel *model;
         } coinModelStart;
         coinModelStart.model = NULL;
-        int returnCode = readAmpl(&info, argc, const_cast<char **>(argv), &coinModelStart.voidModel);
+        int returnCode = readAmpl(&info, argc, const_cast< char ** >(argv), &coinModelStart.voidModel);
         coinModel = coinModelStart.model;
         if (returnCode)
           return returnCode;
@@ -1519,7 +1519,7 @@ int CbcMain1(int argc, const char *argv[],
         if (!coinModel) {
 #endif
           solver->loadProblem(info.numberColumns, info.numberRows,
-            reinterpret_cast<const CoinBigIndex *>(info.starts),
+            reinterpret_cast< const CoinBigIndex * >(info.starts),
             info.rows, info.elements,
             info.columnLower, info.columnUpper, info.objective,
             info.rowLower, info.rowUpper);
@@ -1561,7 +1561,7 @@ int CbcMain1(int argc, const char *argv[],
           OsiSolverLink solver1;
           OsiSolverInterface *solver2 = solver1.clone();
           model_.assignSolver(solver2, false);
-          OsiSolverLink *si = dynamic_cast<OsiSolverLink *>(model_.solver());
+          OsiSolverLink *si = dynamic_cast< OsiSolverLink * >(model_.solver());
           assert(si != NULL);
           si->setDefaultMeshSize(0.001);
           // need some relative granularity
@@ -1572,12 +1572,12 @@ int CbcMain1(int argc, const char *argv[],
           si->setDefaultBound(100000.0);
           si->setIntegerPriority(1000);
           si->setBiLinearPriority(10000);
-          CoinModel *model2 = reinterpret_cast<CoinModel *>(coinModel);
+          CoinModel *model2 = reinterpret_cast< CoinModel * >(coinModel);
           int logLevel = parameters_[whichParam(CLP_PARAM_INT_LOGLEVEL, numberParameters_, parameters_)].intValue();
           si->load(*model2, true, logLevel);
           // redo
           solver = model_.solver();
-          clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+          clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
           lpSolver = clpSolver->getModelPtr();
           clpSolver->messageHandler()->setLogLevel(0);
           testOsiParameters = 0;
@@ -1623,10 +1623,10 @@ int CbcMain1(int argc, const char *argv[],
           unsigned char *statusArray = lpSolver->statusArray();
           int i;
           for (i = 0; i < info.numberColumns; i++)
-            statusArray[i] = static_cast<unsigned char>(info.columnStatus[i]);
+            statusArray[i] = static_cast< unsigned char >(info.columnStatus[i]);
           statusArray += info.numberColumns;
           for (i = 0; i < info.numberRows; i++)
-            statusArray[i] = static_cast<unsigned char>(info.rowStatus[i]);
+            statusArray[i] = static_cast< unsigned char >(info.rowStatus[i]);
           CoinWarmStartBasis *basis = lpSolver->getBasis();
           solver->setWarmStart(basis);
           delete basis;
@@ -1651,7 +1651,7 @@ int CbcMain1(int argc, const char *argv[],
         goodModel = true;
         // change argc etc
         argc = info.numberArguments;
-        argv = const_cast<const char **>(info.arguments);
+        argv = const_cast< const char ** >(info.arguments);
       }
     }
 #endif
@@ -1835,8 +1835,8 @@ int CbcMain1(int argc, const char *argv[],
     bool biLinearProblem = false;
     // For names
     int lengthName = 0;
-    std::vector<std::string> rowNames;
-    std::vector<std::string> columnNames;
+    std::vector< std::string > rowNames;
+    std::vector< std::string > columnNames;
     // Default strategy stuff
     {
       // try changing tolerance at root
@@ -1923,7 +1923,7 @@ int CbcMain1(int argc, const char *argv[],
       // adjust field if has odd trailing characters
       char temp[200];
       strcpy(temp, field.c_str());
-      int length = static_cast<int>(strlen(temp));
+      int length = static_cast< int >(strlen(temp));
       for (int k = length - 1; k >= 0; k--) {
         if (temp[k] < ' ')
           length--;
@@ -2042,7 +2042,7 @@ int CbcMain1(int argc, const char *argv[],
           if ((verbose % 4) != 0)
             maxAcross = 1;
           int limits[] = { 1, 51, 101, 151, 201, 301, 401, 501, 601 };
-          std::vector<std::string> types;
+          std::vector< std::string > types;
           types.push_back("Double parameters:");
           types.push_back("Branch and Cut double parameters:");
           types.push_back("Integer parameters:");
@@ -2108,7 +2108,7 @@ int CbcMain1(int argc, const char *argv[],
           std::cout << "Full list of commands is:" << std::endl;
           int maxAcross = 5;
           int limits[] = { 1, 51, 101, 151, 201, 301, 401, 501, 601 };
-          std::vector<std::string> types;
+          std::vector< std::string > types;
           types.push_back("Double parameters:");
           types.push_back("Branch and Cut double parameters:");
           types.push_back("Integer parameters:");
@@ -2172,7 +2172,7 @@ int CbcMain1(int argc, const char *argv[],
 #ifndef CBC_OTHER_SOLVER
                 if (goodModel && djFix < 1.0e20) {
                   // do some fixing
-                  clpSolver = dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+                  clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
                   clpSolver->initialSolve();
                   lpSolver = clpSolver->getModelPtr();
                   int numberColumns = lpSolver->numberColumns();
@@ -2753,8 +2753,8 @@ int CbcMain1(int argc, const char *argv[],
               double psi = parameters_[whichParam(CLP_PARAM_DBL_PSI, numberParameters_, parameters_)].doubleValue();
               if (psi > 0.0) {
                 ClpDualRowPivot *dualp = lpSolver->dualRowPivot();
-                ClpDualRowSteepest *d1 = dynamic_cast<ClpDualRowSteepest *>(dualp);
-                ClpDualRowDantzig *d2 = dynamic_cast<ClpDualRowDantzig *>(dualp);
+                ClpDualRowSteepest *d1 = dynamic_cast< ClpDualRowSteepest * >(dualp);
+                ClpDualRowDantzig *d2 = dynamic_cast< ClpDualRowDantzig * >(dualp);
                 if (d1) {
                   ClpPEDualRowSteepest p(psi, d1->mode());
                   lpSolver->setDualRowPivotAlgorithm(p);
@@ -2763,8 +2763,8 @@ int CbcMain1(int argc, const char *argv[],
                   lpSolver->setDualRowPivotAlgorithm(p);
                 }
                 ClpPrimalColumnPivot *primalp = lpSolver->primalColumnPivot();
-                ClpPrimalColumnSteepest *p1 = dynamic_cast<ClpPrimalColumnSteepest *>(primalp);
-                ClpPrimalColumnDantzig *p2 = dynamic_cast<ClpPrimalColumnDantzig *>(primalp);
+                ClpPrimalColumnSteepest *p1 = dynamic_cast< ClpPrimalColumnSteepest * >(primalp);
+                ClpPrimalColumnDantzig *p2 = dynamic_cast< ClpPrimalColumnDantzig * >(primalp);
                 if (p1) {
                   ClpPEPrimalColumnSteepest p(psi, p1->mode());
                   lpSolver->setPrimalColumnPivotAlgorithm(p);
@@ -2778,7 +2778,7 @@ int CbcMain1(int argc, const char *argv[],
                 int numberColumns = lpSolver->numberColumns();
                 double *dualColumnSolution = lpSolver->dualColumnSolution();
                 ClpObjective *obj = lpSolver->objectiveAsObject();
-                assert(dynamic_cast<ClpLinearObjective *>(obj));
+                assert(dynamic_cast< ClpLinearObjective * >(obj));
                 double offset;
                 double *objective = obj->gradient(NULL, NULL, offset, true);
                 for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -2812,7 +2812,7 @@ int CbcMain1(int argc, const char *argv[],
                   }
                 }
                 if (tryIt) {
-                  model2 = static_cast<ClpSimplexOther *>(model2)->dualOfModel(fractionRow, fractionColumn);
+                  model2 = static_cast< ClpSimplexOther * >(model2)->dualOfModel(fractionRow, fractionColumn);
                   if (model2) {
                     sprintf(generalPrint, "Dual of model has %d rows and %d columns",
                       model2->numberRows(), model2->numberColumns());
@@ -2885,8 +2885,8 @@ int CbcMain1(int argc, const char *argv[],
               solveOptions.setSpecialOption(5, printOptions);
               if (doVector) {
                 ClpMatrixBase *matrix = lpSolver->clpMatrix();
-                if (dynamic_cast<ClpPackedMatrix *>(matrix)) {
-                  ClpPackedMatrix *clpMatrix = dynamic_cast<ClpPackedMatrix *>(matrix);
+                if (dynamic_cast< ClpPackedMatrix * >(matrix)) {
+                  ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(matrix);
                   clpMatrix->makeSpecialColumnCopy();
                 }
               }
@@ -2943,7 +2943,7 @@ int CbcMain1(int argc, const char *argv[],
               model2->setMaximumSeconds(model_.getMaximumSeconds());
 #ifdef COIN_HAS_LINK
               OsiSolverInterface *coinSolver = model_.solver();
-              OsiSolverLink *linkSolver = dynamic_cast<OsiSolverLink *>(coinSolver);
+              OsiSolverLink *linkSolver = dynamic_cast< OsiSolverLink * >(coinSolver);
               if (!linkSolver) {
                 model2->initialSolve(solveOptions);
               } else {
@@ -3084,7 +3084,7 @@ int CbcMain1(int argc, const char *argv[],
               }
               basisHasValues = 1;
               if (dualize) {
-                int returnCode = static_cast<ClpSimplexOther *>(lpSolver)->restoreFromDual(model2);
+                int returnCode = static_cast< ClpSimplexOther * >(lpSolver)->restoreFromDual(model2);
                 if (model2->status() == 3)
                   returnCode = 0;
                 delete model2;
@@ -3130,17 +3130,17 @@ int CbcMain1(int argc, const char *argv[],
                   model2->getIterationCount());
                 free(info.primalSolution);
                 int numberColumns = model2->numberColumns();
-                info.primalSolution = reinterpret_cast<double *>(malloc(numberColumns * sizeof(double)));
+                info.primalSolution = reinterpret_cast< double * >(malloc(numberColumns * sizeof(double)));
                 CoinCopyN(model2->primalColumnSolution(), numberColumns, info.primalSolution);
                 int numberRows = model2->numberRows();
                 free(info.dualSolution);
-                info.dualSolution = reinterpret_cast<double *>(malloc(numberRows * sizeof(double)));
+                info.dualSolution = reinterpret_cast< double * >(malloc(numberRows * sizeof(double)));
                 CoinCopyN(model2->dualRowSolution(), numberRows, info.dualSolution);
                 CoinWarmStartBasis *basis = model2->getBasis();
                 free(info.rowStatus);
-                info.rowStatus = reinterpret_cast<int *>(malloc(numberRows * sizeof(int)));
+                info.rowStatus = reinterpret_cast< int * >(malloc(numberRows * sizeof(int)));
                 free(info.columnStatus);
-                info.columnStatus = reinterpret_cast<int *>(malloc(numberColumns * sizeof(int)));
+                info.columnStatus = reinterpret_cast< int * >(malloc(numberColumns * sizeof(int)));
                 // Put basis in
                 int i;
                 // free,basic,ub,lb are 0,1,2,3
@@ -3212,7 +3212,7 @@ int CbcMain1(int argc, const char *argv[],
           case CLP_PARAM_ACTION_PLUSMINUS:
             if (goodModel) {
               ClpMatrixBase *saveMatrix = lpSolver->clpMatrix();
-              ClpPackedMatrix *clpMatrix = dynamic_cast<ClpPackedMatrix *>(saveMatrix);
+              ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(saveMatrix);
               if (clpMatrix) {
                 ClpPlusMinusOneMatrix *newMatrix = new ClpPlusMinusOneMatrix(*(clpMatrix->matrix()));
                 if (newMatrix->getIndices()) {
@@ -3256,7 +3256,7 @@ int CbcMain1(int argc, const char *argv[],
           case CLP_PARAM_ACTION_NETWORK:
             if (goodModel) {
               ClpMatrixBase *saveMatrix = lpSolver->clpMatrix();
-              ClpPackedMatrix *clpMatrix = dynamic_cast<ClpPackedMatrix *>(saveMatrix);
+              ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(saveMatrix);
               if (clpMatrix) {
                 ClpNetworkMatrix *newMatrix = new ClpNetworkMatrix(*(clpMatrix->matrix()));
                 if (newMatrix->getIndices()) {
@@ -3331,7 +3331,7 @@ int CbcMain1(int argc, const char *argv[],
                 OsiObject **objects = model_.objects();
                 int numberObjects = model_.numberObjects();
                 for (int iObj = 0; iObj < numberObjects; iObj++) {
-                  CbcSimpleInteger *obj = dynamic_cast<CbcSimpleInteger *>(objects[iObj]);
+                  CbcSimpleInteger *obj = dynamic_cast< CbcSimpleInteger * >(objects[iObj]);
                   if (!obj)
                     continue;
                   int iColumn = obj->columnNumber();
@@ -3344,7 +3344,7 @@ int CbcMain1(int argc, const char *argv[],
                       obj->setPriority(iPriority);
                   }
                   if (pseudoUp && pseudoUp[iColumn]) {
-                    CbcSimpleIntegerPseudoCost *obj1a = dynamic_cast<CbcSimpleIntegerPseudoCost *>(objects[iObj]);
+                    CbcSimpleIntegerPseudoCost *obj1a = dynamic_cast< CbcSimpleIntegerPseudoCost * >(objects[iObj]);
                     assert(obj1a);
                     if (pseudoDown[iColumn] > 0.0)
                       obj1a->setDownPseudoCost(pseudoDown[iColumn]);
@@ -3376,17 +3376,17 @@ int CbcMain1(int argc, const char *argv[],
                   sprintf(buf + pos, "\n0 iterations");
                   free(info.primalSolution);
                   int numberColumns = lpSolver->numberColumns();
-                  info.primalSolution = reinterpret_cast<double *>(malloc(numberColumns * sizeof(double)));
+                  info.primalSolution = reinterpret_cast< double * >(malloc(numberColumns * sizeof(double)));
                   CoinCopyN(model_.bestSolution(), numberColumns, info.primalSolution);
                   int numberRows = lpSolver->numberRows();
                   free(info.dualSolution);
-                  info.dualSolution = reinterpret_cast<double *>(malloc(numberRows * sizeof(double)));
+                  info.dualSolution = reinterpret_cast< double * >(malloc(numberRows * sizeof(double)));
                   CoinZeroN(info.dualSolution, numberRows);
                   CoinWarmStartBasis *basis = lpSolver->getBasis();
                   free(info.rowStatus);
-                  info.rowStatus = reinterpret_cast<int *>(malloc(numberRows * sizeof(int)));
+                  info.rowStatus = reinterpret_cast< int * >(malloc(numberRows * sizeof(int)));
                   free(info.columnStatus);
-                  info.columnStatus = reinterpret_cast<int *>(malloc(numberColumns * sizeof(int)));
+                  info.columnStatus = reinterpret_cast< int * >(malloc(numberColumns * sizeof(int)));
                   // Put basis in
                   int i;
                   // free,basic,ub,lb are 0,1,2,3
@@ -3441,7 +3441,7 @@ int CbcMain1(int argc, const char *argv[],
               {
                 OsiSolverInterface *solver = model_.solver();
 #ifndef CBC_OTHER_SOLVER
-                OsiClpSolverInterface *si = dynamic_cast<OsiClpSolverInterface *>(solver);
+                OsiClpSolverInterface *si = dynamic_cast< OsiClpSolverInterface * >(solver);
                 assert(si != NULL);
                 si->getModelPtr()->scaling(doScaling);
                 ClpSimplex *lpSolver = si->getModelPtr();
@@ -3449,8 +3449,8 @@ int CbcMain1(int argc, const char *argv[],
                 double psi = parameters_[whichParam(CLP_PARAM_DBL_PSI, numberParameters_, parameters_)].doubleValue();
                 if (psi > 0.0) {
                   ClpDualRowPivot *dualp = lpSolver->dualRowPivot();
-                  ClpDualRowSteepest *d1 = dynamic_cast<ClpDualRowSteepest *>(dualp);
-                  ClpDualRowDantzig *d2 = dynamic_cast<ClpDualRowDantzig *>(dualp);
+                  ClpDualRowSteepest *d1 = dynamic_cast< ClpDualRowSteepest * >(dualp);
+                  ClpDualRowDantzig *d2 = dynamic_cast< ClpDualRowDantzig * >(dualp);
                   if (d1) {
                     ClpPEDualRowSteepest p(psi, d1->mode());
                     lpSolver->setDualRowPivotAlgorithm(p);
@@ -3459,8 +3459,8 @@ int CbcMain1(int argc, const char *argv[],
                     lpSolver->setDualRowPivotAlgorithm(p);
                   }
                   ClpPrimalColumnPivot *primalp = lpSolver->primalColumnPivot();
-                  ClpPrimalColumnSteepest *p1 = dynamic_cast<ClpPrimalColumnSteepest *>(primalp);
-                  ClpPrimalColumnDantzig *p2 = dynamic_cast<ClpPrimalColumnDantzig *>(primalp);
+                  ClpPrimalColumnSteepest *p1 = dynamic_cast< ClpPrimalColumnSteepest * >(primalp);
+                  ClpPrimalColumnDantzig *p2 = dynamic_cast< ClpPrimalColumnDantzig * >(primalp);
                   if (p1) {
                     ClpPEPrimalColumnSteepest p(psi, p1->mode());
                     lpSolver->setPrimalColumnPivotAlgorithm(p);
@@ -3471,13 +3471,13 @@ int CbcMain1(int argc, const char *argv[],
                 }
                 if (doVector) {
                   ClpMatrixBase *matrix = lpSolver->clpMatrix();
-                  if (dynamic_cast<ClpPackedMatrix *>(matrix)) {
-                    ClpPackedMatrix *clpMatrix = dynamic_cast<ClpPackedMatrix *>(matrix);
+                  if (dynamic_cast< ClpPackedMatrix * >(matrix)) {
+                    ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(matrix);
                     clpMatrix->makeSpecialColumnCopy();
                   }
                 }
 #elif CBC_OTHER_SOLVER == 1
-                OsiCpxSolverInterface *si = dynamic_cast<OsiCpxSolverInterface *>(solver);
+                OsiCpxSolverInterface *si = dynamic_cast< OsiCpxSolverInterface * >(solver);
                 assert(si != NULL);
 #endif
                 statistics_nrows = si->getNumRows();
@@ -3488,7 +3488,7 @@ int CbcMain1(int argc, const char *argv[],
 #ifndef CBC_OTHER_SOLVER
 #ifdef COIN_HAS_LINK
                 if (!complicatedInteger) {
-                  ClpQuadraticObjective *obj = (dynamic_cast<ClpQuadraticObjective *>(lpSolver->objectiveAsObject()));
+                  ClpQuadraticObjective *obj = (dynamic_cast< ClpQuadraticObjective * >(lpSolver->objectiveAsObject()));
                   if (obj) {
                     preProcess = 0;
                     int testOsiOptions = parameters_[whichParam(CBC_PARAM_INT_TESTOSI, numberParameters_, parameters_)].intValue();
@@ -3500,7 +3500,7 @@ int CbcMain1(int argc, const char *argv[],
                     OsiSolverLink solver1;
                     OsiSolverInterface *solver2 = solver1.clone();
                     model_.assignSolver(solver2, false);
-                    OsiSolverLink *si = dynamic_cast<OsiSolverLink *>(model_.solver());
+                    OsiSolverLink *si = dynamic_cast< OsiSolverLink * >(model_.solver());
                     assert(si != NULL);
                     si->setDefaultMeshSize(0.001);
                     // need some relative granularity
@@ -3517,13 +3517,13 @@ int CbcMain1(int argc, const char *argv[],
                     si->load(*model2, true, parameters_[log].intValue());
                     // redo
                     solver = model_.solver();
-                    clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+                    clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
                     lpSolver = clpSolver->getModelPtr();
                     clpSolver->messageHandler()->setLogLevel(0);
                     testOsiParameters = 0;
                     complicatedInteger = 2; // allow cuts
                     OsiSolverInterface *coinSolver = model_.solver();
-                    OsiSolverLink *linkSolver = dynamic_cast<OsiSolverLink *>(coinSolver);
+                    OsiSolverLink *linkSolver = dynamic_cast< OsiSolverLink * >(coinSolver);
                     if (linkSolver->quadraticModel()) {
                       ClpSimplex *qp = linkSolver->quadraticModel();
                       //linkSolver->nonlinearSLP(CoinMax(slpValue,10),1.0e-5);
@@ -3537,7 +3537,7 @@ int CbcMain1(int argc, const char *argv[],
                       // Now do requested saves and modifications
                       CbcModel *cbcModel = &model2;
                       OsiSolverInterface *osiModel = model2.solver();
-                      OsiClpSolverInterface *osiclpModel = dynamic_cast<OsiClpSolverInterface *>(osiModel);
+                      OsiClpSolverInterface *osiclpModel = dynamic_cast< OsiClpSolverInterface * >(osiModel);
                       ClpSimplex *clpModel = osiclpModel->getModelPtr();
 
                       // Set changed values
@@ -3649,7 +3649,7 @@ int CbcMain1(int argc, const char *argv[],
 #endif
                       //setCutAndHeuristicOptions(*cbcModel);
                       cbcModel->branchAndBound();
-                      OsiSolverLinearizedQuadratic *solver3 = dynamic_cast<OsiSolverLinearizedQuadratic *>(model2.solver());
+                      OsiSolverLinearizedQuadratic *solver3 = dynamic_cast< OsiSolverLinearizedQuadratic * >(model2.solver());
                       assert(solver3);
                       solution = solver3->bestSolution();
                       double bestObjectiveValue = solver3->bestObjectiveValue();
@@ -3708,7 +3708,7 @@ int CbcMain1(int argc, const char *argv[],
                 double time1a = CoinCpuTime();
                 OsiSolverInterface *solver = model_.solver();
 #ifndef CBC_OTHER_SOLVER
-                OsiClpSolverInterface *si = dynamic_cast<OsiClpSolverInterface *>(solver);
+                OsiClpSolverInterface *si = dynamic_cast< OsiClpSolverInterface * >(solver);
                 if (si)
                   si->setSpecialOptions(si->specialOptions() | 1024);
 #endif
@@ -3797,7 +3797,7 @@ int CbcMain1(int argc, const char *argv[],
                       double value = (CoinDrand48() + 0.5) * 10000;
                       value = 10;
                       value *= columnLength[i];
-                      int iValue = static_cast<int>(value) / 10;
+                      int iValue = static_cast< int >(value) / 10;
                       //iValue=1;
                       clpSolver->setObjCoeff(i, iValue);
                     }
@@ -3899,7 +3899,7 @@ int CbcMain1(int argc, const char *argv[],
                 if (!doScaling)
                   solver->setHintParam(OsiDoScale, false, OsiHintTry);
 #ifndef CBC_OTHER_SOLVER
-                OsiClpSolverInterface *si = dynamic_cast<OsiClpSolverInterface *>(solver);
+                OsiClpSolverInterface *si = dynamic_cast< OsiClpSolverInterface * >(solver);
                 assert(si != NULL);
                 // get clp itself
                 ClpSimplex *modelC = si->getModelPtr();
@@ -3935,7 +3935,7 @@ int CbcMain1(int argc, const char *argv[],
               int numberChanged = 0;
               OsiSolverInterface *solver3 = clpSolver->clone();
               babModel_->assignSolver(solver3);
-              OsiClpSolverInterface *clpSolver2 = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+              OsiClpSolverInterface *clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
               if (clpSolver2->messageHandler()->logLevel())
                 clpSolver2->messageHandler()->setLogLevel(1);
               if (logLevel > -1)
@@ -3988,8 +3988,8 @@ int CbcMain1(int argc, const char *argv[],
                 OsiObject **objects = babModel_->objects();
                 int numberObjects = babModel_->numberObjects();
                 for (int iObj = 0; iObj < numberObjects; iObj++) {
-                  CbcSOS *objSOS = dynamic_cast<CbcSOS *>(objects[iObj]);
-                  CbcSimpleInteger *objSimpleInteger = dynamic_cast<CbcSimpleInteger *>(objects[iObj]);
+                  CbcSOS *objSOS = dynamic_cast< CbcSOS * >(objects[iObj]);
+                  CbcSimpleInteger *objSimpleInteger = dynamic_cast< CbcSimpleInteger * >(objects[iObj]);
                   if (!objSimpleInteger && !objSOS) {
                     // find all integers anyway
                     babModel_->findIntegers(true);
@@ -4030,19 +4030,19 @@ int CbcMain1(int argc, const char *argv[],
               if (mipStartBefore.size()) {
                 CbcModel tempModel = *babModel_;
                 assert(babModel_->getNumCols() == model_.getNumCols());
-                std::vector<std::string> colNames;
+                std::vector< std::string > colNames;
                 for (int i = 0; (i < model_.solver()->getNumCols()); ++i)
                   colNames.push_back(model_.solver()->getColName(i));
-                std::vector<double> x(model_.getNumCols(), 0.0);
+                std::vector< double > x(model_.getNumCols(), 0.0);
                 double obj;
                 int status = computeCompleteSolution(&tempModel, colNames, mipStartBefore, &x[0], obj);
                 // set cutoff ( a trifle high)
                 if (!status) {
                   double newCutoff = CoinMin(babModel_->getCutoff(), obj + 1.0e-4);
-                  babModel_->setBestSolution(&x[0], static_cast<int>(x.size()), obj, false);
+                  babModel_->setBestSolution(&x[0], static_cast< int >(x.size()), obj, false);
                   babModel_->setCutoff(newCutoff);
                   babModel_->setSolutionCount(1);
-                  model_.setBestSolution(&x[0], static_cast<int>(x.size()), obj, false);
+                  model_.setBestSolution(&x[0], static_cast< int >(x.size()), obj, false);
                   model_.setCutoff(newCutoff);
                   model_.setSolutionCount(1);
                 }
@@ -4271,7 +4271,7 @@ int CbcMain1(int argc, const char *argv[],
                     memset(prohibited, 0, numberColumns);
                     int numberProhibited = 0;
                     for (int iObj = 0; iObj < numberOldObjects; iObj++) {
-                      CbcSOS *obj = dynamic_cast<CbcSOS *>(oldObjects[iObj]);
+                      CbcSOS *obj = dynamic_cast< CbcSOS * >(oldObjects[iObj]);
                       if (obj) {
                         int n = obj->numberMembers();
                         const int *which = obj->members();
@@ -4284,7 +4284,7 @@ int CbcMain1(int argc, const char *argv[],
                           numberProhibited++;
                         }
                       }
-                      CbcLotsize *obj2 = dynamic_cast<CbcLotsize *>(oldObjects[iObj]);
+                      CbcLotsize *obj2 = dynamic_cast< CbcLotsize * >(oldObjects[iObj]);
                       if (obj2) {
                         int iColumn = obj2->columnNumber();
                         prohibited[iColumn] = 1;
@@ -4310,7 +4310,7 @@ int CbcMain1(int argc, const char *argv[],
                       options, extraInfo, independentOptions);
                     // say use in OsiClp
                     clpSolve.setSpecialOption(6, 1);
-                    OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(saveSolver);
+                    OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
                     osiclp->setSolveOptions(clpSolve);
                     osiclp->setHintParam(OsiDoDualInResolve, false);
                     // switch off row copy
@@ -4320,7 +4320,7 @@ int CbcMain1(int argc, const char *argv[],
 #endif
 #ifndef CBC_OTHER_SOLVER
                   {
-                    OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(saveSolver);
+                    OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
                     osiclp->setSpecialOptions(osiclp->specialOptions() | 1024);
                     int savePerturbation = osiclp->getModelPtr()->perturbation();
                     //#define CBC_TEMP1
@@ -4338,7 +4338,7 @@ int CbcMain1(int argc, const char *argv[],
                     }
 #ifdef CGL_WRITEMPS
                     if (debugValues) {
-                      process.setApplicationData(const_cast<double *>(debugValues));
+                      process.setApplicationData(const_cast< double * >(debugValues));
                     }
 #endif
                     redoSOS = true;
@@ -4439,7 +4439,7 @@ int CbcMain1(int argc, const char *argv[],
                     int iColumn = originalColumns[i];
                     solver2->setColName(i, originalSolver->getColName(iColumn));
                   }
-                  OsiClpSolverInterface *clpSolver2 = dynamic_cast<OsiClpSolverInterface *>(solver2);
+                  OsiClpSolverInterface *clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(solver2);
                   ClpSimplex *lpSolver = clpSolver2->getModelPtr();
                   char name[100];
                   if (preProcess == 2) {
@@ -4458,7 +4458,7 @@ int CbcMain1(int argc, const char *argv[],
                       dot = strstr(name, ".lp");
                     if (dot) {
                       *dot = '\0';
-                      int n = static_cast<int>(dot - name);
+                      int n = static_cast< int >(dot - name);
                       int i;
                       for (i = n - 1; i >= 0; i--) {
                         if (name[i] == '/')
@@ -4482,9 +4482,9 @@ int CbcMain1(int argc, const char *argv[],
                   // look at new integers
                   int numberOriginalColumns = process.originalModel()->getNumCols();
                   const int *originalColumns = process.originalColumns();
-                  OsiClpSolverInterface *osiclp2 = dynamic_cast<OsiClpSolverInterface *>(solver2);
+                  OsiClpSolverInterface *osiclp2 = dynamic_cast< OsiClpSolverInterface * >(solver2);
                   int numberColumns = osiclp2->getNumCols();
-                  OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(saveSolver);
+                  OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
                   for (int i = 0; i < numberColumns; i++) {
                     int iColumn = originalColumns[i];
                     if (iColumn < numberOriginalColumns) {
@@ -4521,7 +4521,7 @@ int CbcMain1(int argc, const char *argv[],
                     int numberSOSOld = osiclp->numberSOS();
                     int numberSOS = osiclp2->numberSOS();
                     assert(numberSOS == numberSOSOld);
-                    CoinSet *setInfo = const_cast<CoinSet *>(osiclp2->setInfo());
+                    CoinSet *setInfo = const_cast< CoinSet * >(osiclp2->setInfo());
                     for (int i = 0; i < numberSOS; i++) {
                       //int type = setInfo[i].setType();
                       int n = setInfo[i].numberEntries();
@@ -4765,7 +4765,7 @@ int CbcMain1(int argc, const char *argv[],
                       // add constraints and make integer if all integer in group
 #ifdef COIN_HAS_CLP
                       OsiClpSolverInterface *clpSolver2
-                        = dynamic_cast<OsiClpSolverInterface *>(solver2);
+                        = dynamic_cast< OsiClpSolverInterface * >(solver2);
 #endif
                       for (int iObj = 0; iObj < numberDifferentObj; iObj++) {
                         lowerNew[iObj] = 0.0;
@@ -4999,7 +4999,7 @@ int CbcMain1(int argc, const char *argv[],
               // now tighten bounds
               if (!miplib) {
 #ifndef CBC_OTHER_SOLVER
-                OsiClpSolverInterface *si = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+                OsiClpSolverInterface *si = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                 assert(si != NULL);
                 // get clp itself
                 ClpSimplex *modelC = si->getModelPtr();
@@ -5040,7 +5040,7 @@ int CbcMain1(int argc, const char *argv[],
 #ifndef JJF_ONE
               // If linked then see if expansion wanted
               {
-                OsiSolverLink *solver3 = dynamic_cast<OsiSolverLink *>(babModel_->solver());
+                OsiSolverLink *solver3 = dynamic_cast< OsiSolverLink * >(babModel_->solver());
                 int options = parameters_[whichParam(CBC_PARAM_INT_MIPOPTIONS, numberParameters_, parameters_)].intValue() / 10000;
                 if (solver3 || (options & 16) != 0) {
                   if (options) {
@@ -5067,7 +5067,7 @@ int CbcMain1(int argc, const char *argv[],
                         saveTightenedModel);
                       if (solver) {
 #ifndef CBC_OTHER_SOLVER
-                        clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+                        clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
                         assert(clpSolver);
                         lpSolver = clpSolver->getModelPtr();
 #endif
@@ -5523,7 +5523,7 @@ int CbcMain1(int argc, const char *argv[],
               babModel_->solver()->setIntParam(OsiMaxNumIterationHotStart,
                 parameters_[whichParam(CBC_PARAM_INT_MAXHOTITS, numberParameters_, parameters_)].intValue());
 #ifndef CBC_OTHER_SOLVER
-              OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+              OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
               // go faster stripes
               if ((osiclp->getNumRows() < 300 && osiclp->getNumCols() < 500)) {
                 osiclp->setupForRepeatedUse(2, parameters_[slog].intValue());
@@ -5645,7 +5645,7 @@ int CbcMain1(int argc, const char *argv[],
                   // e.g. use elapsed time
                   babModel_->setMoreSpecialOptions(moreMipOptions | babModel_->moreSpecialOptions());
 #else
-                  OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+                  OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                   if (moreMipOptions == 10000) {
                     // test memory saving
                     moreMipOptions -= 10000;
@@ -5720,23 +5720,23 @@ int CbcMain1(int argc, const char *argv[],
                 if (model.getMIPStart().size())
                   mipStart = model.getMIPStart();
                 if (mipStart.size() && !mipStartBefore.size() && babModel_->getNumCols()) {
-                  std::vector<std::string> colNames;
+                  std::vector< std::string > colNames;
                   if (preProcess) {
                     /* translating mipstart solution */
-                    std::map<std::string, double> mipStartV;
+                    std::map< std::string, double > mipStartV;
                     for (size_t i = 0; (i < mipStart.size()); ++i)
                       mipStartV[mipStart[i].first] = mipStart[i].second;
 
-                    std::vector<std::pair<std::string, double>> mipStart2;
+                    std::vector< std::pair< std::string, double > > mipStart2;
                     for (int i = 0; (i < babModel_->solver()->getNumCols()); ++i) {
                       int iColumn = babModel_->originalColumns()[i];
                       if (iColumn >= 0) {
                         std::string cname = model_.solver()->getColName(iColumn);
                         colNames.push_back(cname);
                         babModel_->solver()->setColName(i, cname);
-                        std::map<std::string, double>::const_iterator msIt = mipStartV.find(cname);
+                        std::map< std::string, double >::const_iterator msIt = mipStartV.find(cname);
                         if (msIt != mipStartV.end())
-                          mipStart2.push_back(std::pair<std::string, double>(cname, msIt->second));
+                          mipStart2.push_back(std::pair< std::string, double >(cname, msIt->second));
                       } else {
                         // created variable
                         char newName[15];
@@ -5751,7 +5751,7 @@ int CbcMain1(int argc, const char *argv[],
                   }
                   //printf("--- %s %d\n", babModel_->solver()->getColName(0).c_str(), babModel_->solver()->getColNames().size() );
                   //printf("-- SIZES of models %d %d %d\n", model_.getNumCols(),  babModel_->solver()->getNumCols(), babModel_->solver()->getColNames().size() );
-                  std::vector<double> x(babModel_->getNumCols(), 0.0);
+                  std::vector< double > x(babModel_->getNumCols(), 0.0);
                   double obj;
                   babModel_->findIntegers(true);
                   int status = computeCompleteSolution(babModel_, colNames, mipStart, &x[0], obj);
@@ -5779,7 +5779,7 @@ int CbcMain1(int argc, const char *argv[],
                     } else {
                       n = babModel_->getNumCols();
                     }
-                    prioritiesIn = reinterpret_cast<int *>(malloc(n * sizeof(int)));
+                    prioritiesIn = reinterpret_cast< int * >(malloc(n * sizeof(int)));
                     for (int i = 0; i < n; i++)
                       prioritiesIn[i] = 100;
                   }
@@ -5872,12 +5872,12 @@ int CbcMain1(int argc, const char *argv[],
                         } else {
                           iColumn = newColumn[iColumn];
                           if (iColumn >= 0) {
-                            CbcSimpleInteger *obj = dynamic_cast<CbcSimpleInteger *>(oldObjects[iObj]);
+                            CbcSimpleInteger *obj = dynamic_cast< CbcSimpleInteger * >(oldObjects[iObj]);
                             if (obj) {
                               obj->setColumnNumber(iColumn);
                             } else {
                               // only other case allowed is lotsizing
-                              CbcLotsize *obj2 = dynamic_cast<CbcLotsize *>(oldObjects[iObj]);
+                              CbcLotsize *obj2 = dynamic_cast< CbcLotsize * >(oldObjects[iObj]);
                               assert(obj2);
                               obj2->setModelSequence(iColumn);
                             }
@@ -5898,7 +5898,7 @@ int CbcMain1(int argc, const char *argv[],
                       int iColumn = oldObjects[iObj]->columnNumber();
                       if (iColumn < 0 || iColumn >= numberOriginalColumns) {
                         if (redoSOS) { // now done earlier??
-                          CbcSOS *obj = dynamic_cast<CbcSOS *>(oldObjects[iObj]);
+                          CbcSOS *obj = dynamic_cast< CbcSOS * >(oldObjects[iObj]);
                           if (obj) {
                             int n = obj->numberMembers();
                             int *which = obj->mutableMembers();
@@ -5922,17 +5922,17 @@ int CbcMain1(int argc, const char *argv[],
                       if (originalColumns)
                         iColumn = originalColumns[iColumn];
                       if (branchDirection) {
-                        CbcSimpleInteger *obj = dynamic_cast<CbcSimpleInteger *>(oldObjects[iObj]);
+                        CbcSimpleInteger *obj = dynamic_cast< CbcSimpleInteger * >(oldObjects[iObj]);
                         if (obj) {
                           obj->setPreferredWay(branchDirection[iColumn]);
                         } else {
-                          CbcObject *obj = dynamic_cast<CbcObject *>(oldObjects[iObj]);
+                          CbcObject *obj = dynamic_cast< CbcObject * >(oldObjects[iObj]);
                           assert(obj);
                           obj->setPreferredWay(branchDirection[iColumn]);
                         }
                       }
                       if (pseudoUp) {
-                        CbcSimpleIntegerPseudoCost *obj1a = dynamic_cast<CbcSimpleIntegerPseudoCost *>(oldObjects[iObj]);
+                        CbcSimpleIntegerPseudoCost *obj1a = dynamic_cast< CbcSimpleIntegerPseudoCost * >(oldObjects[iObj]);
                         assert(obj1a);
                         if (pseudoDown[iColumn] > 0.0)
                           obj1a->setDownPseudoCost(pseudoDown[iColumn]);
@@ -6088,8 +6088,8 @@ int CbcMain1(int argc, const char *argv[],
                       int nNew = 0;
                       for (int i = 0; i < numberObjects; i++) {
                         OsiObject *objThis = oldObjects[i];
-                        CbcSOS *obj1 = dynamic_cast<CbcSOS *>(objThis);
-                        OsiSOS *obj2 = dynamic_cast<OsiSOS *>(objThis);
+                        CbcSOS *obj1 = dynamic_cast< CbcSOS * >(objThis);
+                        OsiSOS *obj2 = dynamic_cast< OsiSOS * >(objThis);
                         if (!obj1 && !obj2) {
                           oldObjects[nNew++] = objThis;
                         } else {
@@ -6107,12 +6107,12 @@ int CbcMain1(int argc, const char *argv[],
                   int numberObjects = babModel_->numberObjects();
                   for (int iObj = 0; iObj < numberObjects; iObj++) {
                     // skip sos
-                    CbcSOS *objSOS = dynamic_cast<CbcSOS *>(objects[iObj]);
+                    CbcSOS *objSOS = dynamic_cast< CbcSOS * >(objects[iObj]);
                     if (objSOS)
                       continue;
 #ifdef MAKE_SOS_CLIQUES
                     // skip cliques
-                    CbcClique *objClique = dynamic_cast<CbcClique *>(objects[iObj]);
+                    CbcClique *objClique = dynamic_cast< CbcClique * >(objects[iObj]);
                     if (objClique)
                       continue;
 #endif
@@ -6121,11 +6121,11 @@ int CbcMain1(int argc, const char *argv[],
                     if (originalColumns)
                       iColumn = originalColumns[iColumn];
                     if (branchDirection) {
-                      CbcSimpleInteger *obj = dynamic_cast<CbcSimpleInteger *>(objects[iObj]);
+                      CbcSimpleInteger *obj = dynamic_cast< CbcSimpleInteger * >(objects[iObj]);
                       if (obj) {
                         obj->setPreferredWay(branchDirection[iColumn]);
                       } else {
-                        CbcObject *obj = dynamic_cast<CbcObject *>(objects[iObj]);
+                        CbcObject *obj = dynamic_cast< CbcObject * >(objects[iObj]);
                         assert(obj);
                         obj->setPreferredWay(branchDirection[iColumn]);
                       }
@@ -6136,7 +6136,7 @@ int CbcMain1(int argc, const char *argv[],
                         objects[iObj]->setPriority(iPriority);
                     }
                     if (pseudoUp && pseudoUp[iColumn]) {
-                      CbcSimpleIntegerPseudoCost *obj1a = dynamic_cast<CbcSimpleIntegerPseudoCost *>(objects[iObj]);
+                      CbcSimpleIntegerPseudoCost *obj1a = dynamic_cast< CbcSimpleIntegerPseudoCost * >(objects[iObj]);
                       assert(obj1a);
                       if (pseudoDown[iColumn] > 0.0)
                         obj1a->setDownPseudoCost(pseudoDown[iColumn]);
@@ -6175,11 +6175,11 @@ int CbcMain1(int argc, const char *argv[],
                       if (originalColumns)
                         iColumn = originalColumns[iColumn];
                       if (branchDirection) {
-                        OsiSimpleInteger *obj = dynamic_cast<OsiSimpleInteger *>(oldObjects[iObj]);
+                        OsiSimpleInteger *obj = dynamic_cast< OsiSimpleInteger * >(oldObjects[iObj]);
                         if (obj) {
                           obj->setPreferredWay(branchDirection[iColumn]);
                         } else {
-                          OsiObject2 *obj = dynamic_cast<OsiObject2 *>(oldObjects[iObj]);
+                          OsiObject2 *obj = dynamic_cast< OsiObject2 * >(oldObjects[iObj]);
                           if (obj)
                             obj->setPreferredWay(branchDirection[iColumn]);
                         }
@@ -6255,8 +6255,8 @@ int CbcMain1(int argc, const char *argv[],
                       int nNew = 0;
                       for (int i = 0; i < numberObjects; i++) {
                         OsiObject *objThis = oldObjects[i];
-                        OsiSOS *obj1 = dynamic_cast<OsiSOS *>(objThis);
-                        OsiSOS *obj2 = dynamic_cast<OsiSOS *>(objThis);
+                        OsiSOS *obj1 = dynamic_cast< OsiSOS * >(objThis);
+                        OsiSOS *obj2 = dynamic_cast< OsiSOS * >(objThis);
                         if (!obj1 && !obj2) {
                           oldObjects[nNew++] = objThis;
                         } else {
@@ -6275,7 +6275,7 @@ int CbcMain1(int argc, const char *argv[],
                   int logLevel = parameters_[log].intValue();
                   for (int iObj = 0; iObj < numberObjects; iObj++) {
                     // skip sos
-                    OsiSOS *objSOS = dynamic_cast<OsiSOS *>(objects[iObj]);
+                    OsiSOS *objSOS = dynamic_cast< OsiSOS * >(objects[iObj]);
                     if (objSOS) {
                       if (logLevel > 2)
                         printf("Set %d is SOS - priority %d\n", iObj, objSOS->priority());
@@ -6286,11 +6286,11 @@ int CbcMain1(int argc, const char *argv[],
                       if (originalColumns)
                         iColumn = originalColumns[iColumn];
                       if (branchDirection) {
-                        OsiSimpleInteger *obj = dynamic_cast<OsiSimpleInteger *>(objects[iObj]);
+                        OsiSimpleInteger *obj = dynamic_cast< OsiSimpleInteger * >(objects[iObj]);
                         if (obj) {
                           obj->setPreferredWay(branchDirection[iColumn]);
                         } else {
-                          OsiObject2 *obj = dynamic_cast<OsiObject2 *>(objects[iObj]);
+                          OsiObject2 *obj = dynamic_cast< OsiObject2 * >(objects[iObj]);
                           if (obj)
                             obj->setPreferredWay(branchDirection[iColumn]);
                         }
@@ -6350,7 +6350,7 @@ int CbcMain1(int argc, const char *argv[],
                     OsiObject **objects = babModel_->objects();
                     int numberObjects = babModel_->numberObjects();
                     for (int iObj = 0; iObj < numberObjects; iObj++) {
-                      CbcObject *obj = dynamic_cast<CbcObject *>(objects[iObj]);
+                      CbcObject *obj = dynamic_cast< CbcObject * >(objects[iObj]);
                       assert(obj);
                       obj->setPreferredWay(way);
                     }
@@ -6377,7 +6377,7 @@ int CbcMain1(int argc, const char *argv[],
                   if (fp) {
                     // generate enough to do BAB
                     babModel_->generateCpp(fp, 1);
-                    OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+                    OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                     // Make general so do factorization
                     int factor = osiclp->getModelPtr()->factorizationFrequency();
                     osiclp->getModelPtr()->setFactorizationFrequency(200);
@@ -6407,7 +6407,7 @@ int CbcMain1(int argc, const char *argv[],
                     babModel_->solver()->findIntegersAndSOS(false);
 #ifdef COIN_HAS_LINK
                     // If linked then pass in model
-                    OsiSolverLink *solver3 = dynamic_cast<OsiSolverLink *>(babModel_->solver());
+                    OsiSolverLink *solver3 = dynamic_cast< OsiSolverLink * >(babModel_->solver());
                     if (solver3) {
                       CbcHeuristicDynamic3 serendipity(*babModel_);
                       serendipity.setHeuristicName("linked");
@@ -6469,14 +6469,14 @@ int CbcMain1(int argc, const char *argv[],
                       if (testOsiOptions >= 20)
                         testOsiOptions -= 10;
                       printf("*** Temp heuristic with mode %d\n", testOsiOptions - 10);
-                      OsiSolverLink *solver3 = dynamic_cast<OsiSolverLink *>(babModel_->solver());
+                      OsiSolverLink *solver3 = dynamic_cast< OsiSolverLink * >(babModel_->solver());
                       assert(solver3);
                       int extra1 = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, numberParameters_, parameters_)].intValue();
                       solver3->setBiLinearPriority(extra1);
                       printf("bilinear priority now %d\n", extra1);
                       int extra2 = parameters_[whichParam(CBC_PARAM_INT_EXTRA2, numberParameters_, parameters_)].intValue();
                       double saveDefault = solver3->defaultBound();
-                      solver3->setDefaultBound(static_cast<double>(extra2));
+                      solver3->setDefaultBound(static_cast< double >(extra2));
                       double *solution = solver3->heuristicSolution(slpValue > 0 ? slpValue : 40, 1.0e-5, testOsiOptions - 10);
                       solver3->setDefaultBound(saveDefault);
                       if (!solution)
@@ -6567,7 +6567,7 @@ int CbcMain1(int argc, const char *argv[],
                     options, extraInfo, independentOptions);
                   // say use in OsiClp
                   clpSolve.setSpecialOption(6, 1);
-                  OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+                  OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                   osiclp->setSolveOptions(clpSolve);
                   osiclp->setHintParam(OsiDoDualInResolve, false);
                   // switch off row copy
@@ -6630,7 +6630,7 @@ int CbcMain1(int argc, const char *argv[],
 #endif
 #ifndef CBC_OTHER_SOLVER
                 if (outputFormat == 5) {
-                  osiclp = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+                  osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                   lpSolver = osiclp->getModelPtr();
                   lpSolver->setPersistenceFlag(1);
                 }
@@ -6748,7 +6748,7 @@ int CbcMain1(int argc, const char *argv[],
                   return returnCode;
                 }
 #ifndef CBC_OTHER_SOLVER
-                osiclp = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+                osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                 lpSolver = osiclp->getModelPtr();
                 int hotits = parameters_[whichParam(CBC_PARAM_INT_MAXHOTITS, numberParameters_, parameters_)].intValue();
                 if (hotits > 100) {
@@ -6796,12 +6796,12 @@ int CbcMain1(int argc, const char *argv[],
                   for (int iGenerator = 0; iGenerator < numberGenerators;
                        iGenerator++) {
                     CbcCutGenerator *generator = babModel_->cutGenerator(iGenerator);
-                    CglGomory *gomory = dynamic_cast<CglGomory *>(generator->generator());
+                    CglGomory *gomory = dynamic_cast< CglGomory * >(generator->generator());
                     if (gomory) {
                       if (nGomory < 2) {
                         gomory->useAlternativeFactorization();
                       } else if (gomory->originalSolver()) {
-                        OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(gomory->originalSolver());
+                        OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(gomory->originalSolver());
                         if (clpSolver) {
                           ClpSimplex *simplex = clpSolver->getModelPtr();
                           simplex->factorization()->setGoOslThreshold(0);
@@ -6826,7 +6826,7 @@ int CbcMain1(int argc, const char *argv[],
 				   Could do something for SOS 2?
 				*/
                 {
-                  OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+                  OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                   if (clpSolver && clpSolver->numberSOS()) {
                     // SOS
                     int numberSOS = clpSolver->numberSOS();
@@ -6988,7 +6988,7 @@ int CbcMain1(int argc, const char *argv[],
                   babModel_->setNodeComparison(compare);
                 }
 #if CBC_OTHER_SOLVER == 1
-                if (dynamic_cast<OsiCpxSolverInterface *>(babModel_->solver()))
+                if (dynamic_cast< OsiCpxSolverInterface * >(babModel_->solver()))
                   babModel_->solver()->messageHandler()->setLogLevel(0);
 #endif
                 if (parameters_[whichParam(CBC_PARAM_STR_CPX, numberParameters_, parameters_)].currentOptionAsInteger()) {
@@ -7008,7 +7008,7 @@ int CbcMain1(int argc, const char *argv[],
                   donor.setSpecialOptions(options | 262144);
                   ClpSimplex *lpSolver2;
                   OsiClpSolverInterface *clpSolver2;
-                  clpSolver2 = dynamic_cast<OsiClpSolverInterface *>(donor.solver());
+                  clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(donor.solver());
                   assert(clpSolver2);
                   lpSolver2 = clpSolver2->getModelPtr();
                   assert(lpSolver2);
@@ -7023,7 +7023,7 @@ int CbcMain1(int argc, const char *argv[],
                     for (int iGenerator = 0; iGenerator < numberGenerators;
                          iGenerator++) {
                       CbcCutGenerator *generator = donor.cutGenerator(iGenerator);
-                      CglGomory *gomory = dynamic_cast<CglGomory *>(generator->generator());
+                      CglGomory *gomory = dynamic_cast< CglGomory * >(generator->generator());
                       if (gomory)
                         gomory->useAlternativeFactorization(false);
                     }
@@ -7133,7 +7133,7 @@ int CbcMain1(int argc, const char *argv[],
                   for (int iGenerator = 0; iGenerator < numberGenerators;
                        iGenerator++) {
                     CbcCutGenerator *generator = babModel_->cutGenerator(iGenerator);
-                    CglGomory *gomory = dynamic_cast<CglGomory *>(generator->generator());
+                    CglGomory *gomory = dynamic_cast< CglGomory * >(generator->generator());
                     if (gomory) {
                       CglGomory gomory2(*gomory);
                       gomory2.useAlternativeFactorization(!gomory->alternativeFactorization());
@@ -7199,7 +7199,7 @@ int CbcMain1(int argc, const char *argv[],
                     for (int i = 0; i < tempModel.numberHeuristics(); i++)
                       tempModel.heuristic(i)->setSeed(tempModel.heuristic(i)->getSeed() + 100000000 * iGo);
 #ifndef CBC_OTHER_SOLVER
-                    OsiClpSolverInterface *solver = dynamic_cast<OsiClpSolverInterface *>(tempModel.solver());
+                    OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(tempModel.solver());
                     ClpSimplex *simplex = solver->getModelPtr();
                     int solverSeed = simplex->randomNumberGenerator()->getSeed();
                     simplex->setRandomSeed(solverSeed + 100000000 * (iGo + 1));
@@ -7362,7 +7362,7 @@ int CbcMain1(int argc, const char *argv[],
 #endif
 #ifndef CBC_OTHER_SOLVER
                 if (outputFormat == 5) {
-                  osiclp = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+                  osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                   lpSolver = osiclp->getModelPtr();
                   lpSolver->setPersistenceFlag(1);
                 }
@@ -7381,7 +7381,7 @@ int CbcMain1(int argc, const char *argv[],
                 model_ = *babModel_;
 #ifndef CBC_OTHER_SOLVER
                 {
-                  osiclp = dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+                  osiclp = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
                   lpSolver = osiclp->getModelPtr();
                   lpSolver->setSpecialOptions(lpSolver->specialOptions() | IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
                   if (lpSolver->factorization()->goOslThreshold() > 1000) {
@@ -7390,7 +7390,7 @@ int CbcMain1(int argc, const char *argv[],
                     for (int iGenerator = 0; iGenerator < numberGenerators;
                          iGenerator++) {
                       CbcCutGenerator *generator = model_.cutGenerator(iGenerator);
-                      CglGomory *gomory = dynamic_cast<CglGomory *>(generator->generator());
+                      CglGomory *gomory = dynamic_cast< CglGomory * >(generator->generator());
                       if (gomory)
                         gomory->useAlternativeFactorization();
                     }
@@ -7438,7 +7438,7 @@ int CbcMain1(int argc, const char *argv[],
                   // Make more lightweight
                   for (int iHeur = 0; iHeur < model_.numberHeuristics(); iHeur++) {
                     CbcHeuristic *heuristic = model_.heuristic(iHeur);
-                    CbcHeuristicFPump *pump = dynamic_cast<CbcHeuristicFPump *>(heuristic);
+                    CbcHeuristicFPump *pump = dynamic_cast< CbcHeuristicFPump * >(heuristic);
                     if (pump) {
                       CbcHeuristicFPump heuristic4(model_);
                       heuristic4.setFractionSmall(0.5);
@@ -7460,7 +7460,7 @@ int CbcMain1(int argc, const char *argv[],
               }
               currentBranchModel = NULL;
 #ifndef CBC_OTHER_SOLVER
-              osiclp = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+              osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
               if (debugFile == "createAfterPre" && babModel_->bestSolution()) {
                 lpSolver = osiclp->getModelPtr();
                 //move best solution (should be there -- but ..)
@@ -7505,11 +7505,11 @@ int CbcMain1(int argc, const char *argv[],
                     strcat(generalPrint, timing);
                     statistics_cut_time += generator->timeInCutGenerator();
                   }
-                  CglStored *stored = dynamic_cast<CglStored *>(generator->generator());
+                  CglStored *stored = dynamic_cast< CglStored * >(generator->generator());
                   if (stored && !generator->numberCutsInTotal())
                     continue;
 #ifndef CLP_INVESTIGATE
-                  CglImplication *implication = dynamic_cast<CglImplication *>(generator->generator());
+                  CglImplication *implication = dynamic_cast< CglImplication * >(generator->generator());
                   if (implication && !generator->numberCutsInTotal())
                     continue;
 #endif
@@ -7563,9 +7563,9 @@ int CbcMain1(int argc, const char *argv[],
                   n = saveSolver->getNumCols();
                   bestSolution = new double[n];
 #ifndef CBC_OTHER_SOLVER
-                  OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+                  OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
 #else
-                  OsiCpxSolverInterface *clpSolver = dynamic_cast<OsiCpxSolverInterface *>(babModel_->solver());
+                  OsiCpxSolverInterface *clpSolver = dynamic_cast< OsiCpxSolverInterface * >(babModel_->solver());
 #endif
                   // Save bounds on processed model
                   const int *originalColumns = process.originalColumns();
@@ -7615,7 +7615,7 @@ int CbcMain1(int argc, const char *argv[],
                     int n = babModel_->numberObjects();
                     for (int i = 0; i < n; i++) {
                       const OsiObject *obj = babModel_->object(i);
-                      if (!dynamic_cast<const CbcSimpleInteger *>(obj)) {
+                      if (!dynamic_cast< const CbcSimpleInteger * >(obj)) {
                         tightenB = true;
                         break;
                       }
@@ -7654,7 +7654,7 @@ int CbcMain1(int argc, const char *argv[],
                   }
 #ifdef JJF_ZERO
                   // See if sos so we can fix
-                  OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(saveSolver);
+                  OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
                   if (osiclp && osiclp->numberSOS()) {
                     // SOS
                     numberSOS = osiclp->numberSOS();
@@ -7698,14 +7698,14 @@ int CbcMain1(int argc, const char *argv[],
                   saveSolver->resolve();
                   if (!saveSolver->isProvenOptimal()) {
                     // try all slack
-                    CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(babModel_->solver()->getEmptyWarmStart());
+                    CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(babModel_->solver()->getEmptyWarmStart());
                     saveSolver->setWarmStart(basis);
                     delete basis;
                     saveSolver->initialSolve();
 #ifdef COIN_DEVELOP
                     saveSolver->writeMps("inf2");
 #endif
-                    OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(saveSolver);
+                    OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
                     if (osiclp)
                       osiclp->getModelPtr()->checkUnscaledSolution();
                   }
@@ -7719,17 +7719,17 @@ int CbcMain1(int argc, const char *argv[],
                   originalSolver->setColLower(saveSolver->getColLower());
                   originalSolver->setColUpper(saveSolver->getColUpper());
                   // basis
-                  CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(babModel_->solver()->getWarmStart());
+                  CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(babModel_->solver()->getWarmStart());
                   originalSolver->setBasis(*basis);
                   delete basis;
                   originalSolver->resolve();
                   if (!originalSolver->isProvenOptimal()) {
                     // try all slack
-                    CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(babModel_->solver()->getEmptyWarmStart());
+                    CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(babModel_->solver()->getEmptyWarmStart());
                     originalSolver->setBasis(*basis);
                     delete basis;
                     originalSolver->initialSolve();
-                    OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(originalSolver);
+                    OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(originalSolver);
                     if (osiclp)
                       osiclp->getModelPtr()->checkUnscaledSolution();
                   }
@@ -7765,18 +7765,18 @@ int CbcMain1(int argc, const char *argv[],
                     }
                   }
                   // basis
-                  CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(babModel_->solver()->getWarmStart());
+                  CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(babModel_->solver()->getWarmStart());
                   originalSolver->setBasis(*basis);
                   delete basis;
                   originalSolver->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
                   originalSolver->resolve();
                   if (!originalSolver->isProvenOptimal()) {
                     // try all slack
-                    CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(babModel_->solver()->getEmptyWarmStart());
+                    CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(babModel_->solver()->getEmptyWarmStart());
                     originalSolver->setBasis(*basis);
                     delete basis;
                     originalSolver->initialSolve();
-                    OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(originalSolver);
+                    OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(originalSolver);
                     if (osiclp)
                       osiclp->getModelPtr()->checkUnscaledSolution();
 #ifdef CLP_INVESTIGATE
@@ -7825,7 +7825,7 @@ int CbcMain1(int argc, const char *argv[],
                     }
                   }
                   // basis
-                  CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(babModel_->solver()->getWarmStart());
+                  CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(babModel_->solver()->getWarmStart());
                   originalSolver->setBasis(*basis);
                   delete basis;
                 }
@@ -7836,7 +7836,7 @@ int CbcMain1(int argc, const char *argv[],
               //clpSolver = dynamic_cast< OsiClpSolverInterface*> (strengthenedModel);
 #ifdef COIN_HAS_ASL
               else if (statusUserFunction_[0])
-                clpSolver = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+                clpSolver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
 #endif
               lpSolver = clpSolver->getModelPtr();
               if (numberChanged) {
@@ -7944,7 +7944,7 @@ int CbcMain1(int argc, const char *argv[],
                 }
 #ifdef COIN_HAS_ASL
                 if (statusUserFunction_[0]) {
-                  clpSolver = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+                  clpSolver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                   lpSolver = clpSolver->getModelPtr();
                   double value = babModel_->getObjValue() * lpSolver->getObjSense();
                   char buf[300];
@@ -8024,7 +8024,7 @@ int CbcMain1(int argc, const char *argv[],
               if (statusUserFunction_[0]) {
                 // keep if going to be destroyed
                 OsiSolverInterface *solver = babModel_->solver();
-                OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+                OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
                 ClpSimplex *lpSolver2 = clpSolver->getModelPtr();
                 if (lpSolver == lpSolver2)
                   babModel_->setModelOwnsSolver(false);
@@ -8211,8 +8211,8 @@ int CbcMain1(int argc, const char *argv[],
                   // SOS
                   numberSOS = clpSolver->numberSOS();
                   const CoinSet *setInfo = clpSolver->setInfo();
-                  sosStart = reinterpret_cast<int *>(malloc((numberSOS + 1) * sizeof(int)));
-                  sosType = reinterpret_cast<char *>(malloc(numberSOS * sizeof(char)));
+                  sosStart = reinterpret_cast< int * >(malloc((numberSOS + 1) * sizeof(int)));
+                  sosType = reinterpret_cast< char * >(malloc(numberSOS * sizeof(char)));
                   const double *lower = clpSolver->getColLower();
                   const double *upper = clpSolver->getColUpper();
                   int i;
@@ -8221,12 +8221,12 @@ int CbcMain1(int argc, const char *argv[],
                   for (i = 0; i < numberSOS; i++) {
                     int type = setInfo[i].setType();
                     int n = setInfo[i].numberEntries();
-                    sosType[i] = static_cast<char>(type);
+                    sosType[i] = static_cast< char >(type);
                     nTotal += n;
                     sosStart[i + 1] = nTotal;
                   }
-                  sosIndices = reinterpret_cast<int *>(malloc(nTotal * sizeof(int)));
-                  sosReference = reinterpret_cast<double *>(malloc(nTotal * sizeof(double)));
+                  sosIndices = reinterpret_cast< int * >(malloc(nTotal * sizeof(int)));
+                  sosReference = reinterpret_cast< double * >(malloc(nTotal * sizeof(double)));
                   for (i = 0; i < numberSOS; i++) {
                     int n = setInfo[i].numberEntries();
                     const int *which = setInfo[i].which();
@@ -8240,7 +8240,7 @@ int CbcMain1(int argc, const char *argv[],
                       if (lower[k] < -1.0e15)
                         clpSolver->setColLower(k, -1.0e15);
                       sosIndices[j + base] = k;
-                      sosReference[j + base] = weights ? weights[j] : static_cast<double>(j);
+                      sosReference[j + base] = weights ? weights[j] : static_cast< double >(j);
                     }
                   }
                 }
@@ -8294,7 +8294,7 @@ int CbcMain1(int argc, const char *argv[],
                 // Go to canned file if just input file
                 if (CbcOrClpRead_mode == 2 && argc == 2) {
                   // only if ends .mps
-                  char *find = const_cast<char *>(strstr(fileName.c_str(), ".mps"));
+                  char *find = const_cast< char * >(strstr(fileName.c_str(), ".mps"));
                   if (find && find[4] == '\0') {
                     find[1] = 'p';
                     find[2] = 'a';
@@ -8375,7 +8375,7 @@ int CbcMain1(int argc, const char *argv[],
               OsiSolverLink solver1;
               OsiSolverInterface *solver2 = solver1.clone();
               model_.assignSolver(solver2, false);
-              OsiSolverLink *si = dynamic_cast<OsiSolverLink *>(model_.solver());
+              OsiSolverLink *si = dynamic_cast< OsiSolverLink * >(model_.solver());
               assert(si != NULL);
               si->setDefaultMeshSize(0.001);
               // need some relative granularity
@@ -8390,7 +8390,7 @@ int CbcMain1(int argc, const char *argv[],
               si->load(*model2);
               // redo
               solver = model_.solver();
-              clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+              clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
               lpSolver = clpSolver->getModelPtr();
               clpSolver->messageHandler()->setLogLevel(0);
               testOsiParameters = 0;
@@ -8442,7 +8442,7 @@ int CbcMain1(int argc, const char *argv[],
                 bool deleteModel2 = false;
                 ClpSimplex *model2 = lpSolver;
                 if (dualize && dualize < 3) {
-                  model2 = static_cast<ClpSimplexOther *>(model2)->dualOfModel();
+                  model2 = static_cast< ClpSimplexOther * >(model2)->dualOfModel();
                   sprintf(generalPrint, "Dual of model has %d rows and %d columns",
                     model2->numberRows(), model2->numberColumns());
                   generalMessageHandler->message(CLP_GENERAL, generalMessages)
@@ -8506,7 +8506,7 @@ int CbcMain1(int argc, const char *argv[],
                   printf("Saving model on %s\n",
                     fileName.c_str());
 #ifdef COIN_HAS_LINK
-                  OsiSolverLink *linkSolver = dynamic_cast<OsiSolverLink *>(clpSolver);
+                  OsiSolverLink *linkSolver = dynamic_cast< OsiSolverLink * >(clpSolver);
                   if (!linkSolver || !linkSolver->quadraticModel()) {
 #endif
                     // Convert names
@@ -8552,7 +8552,7 @@ int CbcMain1(int argc, const char *argv[],
                     if (!writeLp) {
                       remove(fileName.c_str());
                       //model_.addSOSEtcToSolver();
-                      clpSolver->writeMpsNative(fileName.c_str(), const_cast<const char **>(rowNames), const_cast<const char **>(columnNames),
+                      clpSolver->writeMpsNative(fileName.c_str(), const_cast< const char ** >(rowNames), const_cast< const char ** >(columnNames),
                         (outputFormat - 1) / 2, 1 + ((outputFormat - 1) & 1));
                     } else {
                       FILE *fp = fopen(fileName.c_str(), "w");
@@ -8712,7 +8712,7 @@ int CbcMain1(int argc, const char *argv[],
                   char *put = line;
                   while (*pos >= ' ' && *pos != '\n') {
                     if (*pos != ' ' && *pos != '\t') {
-                      *put = static_cast<char>(tolower(*pos));
+                      *put = static_cast< char >(tolower(*pos));
                       put++;
                     }
                     pos++;
@@ -8725,7 +8725,7 @@ int CbcMain1(int argc, const char *argv[],
                     char *comma = strchr(pos, ',');
                     if (comma)
                       *comma = '\0';
-                    for (i = 0; i < static_cast<int>(sizeof(got) / sizeof(int)); i++) {
+                    for (i = 0; i < static_cast< int >(sizeof(got) / sizeof(int)); i++) {
                       if (headings[i] == pos) {
                         if (got[i] < 0) {
                           order[nAcross] = i;
@@ -8737,7 +8737,7 @@ int CbcMain1(int argc, const char *argv[],
                         break;
                       }
                     }
-                    if (i == static_cast<int>(sizeof(got) / sizeof(int)))
+                    if (i == static_cast< int >(sizeof(got) / sizeof(int)))
                       good = false;
                     if (comma) {
                       *comma = ',';
@@ -8755,7 +8755,7 @@ int CbcMain1(int argc, const char *argv[],
                   int numberFields = 99;
                   if (good && (strstr(fileName.c_str(), ".mst") || strstr(fileName.c_str(), ".MST") || strstr(fileName.c_str(), ".csv"))) {
                     numberFields = 0;
-                    for (i = 2; i < static_cast<int>(sizeof(got) / sizeof(int)); i++) {
+                    for (i = 2; i < static_cast< int >(sizeof(got) / sizeof(int)); i++) {
                       if (got[i] >= 0)
                         numberFields++;
                     }
@@ -8771,24 +8771,24 @@ int CbcMain1(int argc, const char *argv[],
                     //pseudoUp = NULL;
                     //branchDirection = NULL;
                     //if (got[5]!=-1)
-                    pseudoDown = reinterpret_cast<double *>(malloc(numberColumns * sizeof(double)));
+                    pseudoDown = reinterpret_cast< double * >(malloc(numberColumns * sizeof(double)));
                     //if (got[4]!=-1)
-                    pseudoUp = reinterpret_cast<double *>(malloc(numberColumns * sizeof(double)));
+                    pseudoUp = reinterpret_cast< double * >(malloc(numberColumns * sizeof(double)));
                     //if (got[2]!=-1)
-                    branchDirection = reinterpret_cast<int *>(malloc(numberColumns * sizeof(int)));
-                    priorities = reinterpret_cast<int *>(malloc(numberColumns * sizeof(int)));
+                    branchDirection = reinterpret_cast< int * >(malloc(numberColumns * sizeof(int)));
+                    priorities = reinterpret_cast< int * >(malloc(numberColumns * sizeof(int)));
                     free(solutionIn);
                     solutionIn = NULL;
                     free(prioritiesIn);
                     prioritiesIn = NULL;
                     int iColumn;
                     if (got[6] >= 0) {
-                      solutionIn = reinterpret_cast<double *>(malloc(numberColumns * sizeof(double)));
+                      solutionIn = reinterpret_cast< double * >(malloc(numberColumns * sizeof(double)));
                       for (iColumn = 0; iColumn < numberColumns; iColumn++)
                         solutionIn[iColumn] = -COIN_DBL_MAX;
                     }
                     if (got[7] >= 0 || !numberFields) {
-                      prioritiesIn = reinterpret_cast<int *>(malloc(numberColumns * sizeof(int)));
+                      prioritiesIn = reinterpret_cast< int * >(malloc(numberColumns * sizeof(int)));
                       for (iColumn = 0; iColumn < numberColumns; iColumn++)
                         prioritiesIn[iColumn] = 10000;
                     }
@@ -9104,13 +9104,13 @@ int CbcMain1(int argc, const char *argv[],
                   throw("Error in fread");
                 debugValues = new double[numberDebugValues + numRows];
                 nRead = fread(debugValues, sizeof(double), numRows, fp);
-                if (nRead != static_cast<size_t>(numRows))
+                if (nRead != static_cast< size_t >(numRows))
                   throw("Error in fread");
                 nRead = fread(debugValues, sizeof(double), numRows, fp);
-                if (nRead != static_cast<size_t>(numRows))
+                if (nRead != static_cast< size_t >(numRows))
                   throw("Error in fread");
                 nRead = fread(debugValues, sizeof(double), numberDebugValues, fp);
-                if (nRead != static_cast<size_t>(numberDebugValues))
+                if (nRead != static_cast< size_t >(numberDebugValues))
                   throw("Error in fread");
                 printf("%d doubles read into debugValues\n", numberDebugValues);
 #ifdef CGL_WRITEMPS
@@ -9334,7 +9334,7 @@ int CbcMain1(int argc, const char *argv[],
               int numberColumns = lpSolver->numberColumns();
               double *dualColumnSolution = lpSolver->dualColumnSolution();
               ClpObjective *obj = lpSolver->objectiveAsObject();
-              assert(dynamic_cast<ClpLinearObjective *>(obj));
+              assert(dynamic_cast< ClpLinearObjective * >(obj));
               double offset;
               double *objective = obj->gradient(NULL, NULL, offset, true);
               for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -9467,7 +9467,7 @@ int CbcMain1(int argc, const char *argv[],
             // Replace the sample code by whatever you want
             if (goodModel) {
               // Way of using an existing piece of code
-              OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+              OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
               ClpSimplex *lpSolver = clpSolver->getModelPtr();
               // set time from integer model
               double timeToGo = model_.getMaximumSeconds();
@@ -9489,7 +9489,7 @@ int CbcMain1(int argc, const char *argv[],
             // Replace the sample code by whatever you want
             if (goodModel) {
               // Way of using an existing piece of code
-              OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+              OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
               ClpSimplex *lpSolver = clpSolver->getModelPtr();
               // set time from integer model
               double timeToGo = model_.getMaximumSeconds();
@@ -9502,7 +9502,7 @@ int CbcMain1(int argc, const char *argv[],
               int iStat2 = lpSolver->secondaryStatus();
 #endif
               // make sure solution back in correct place
-              clpSolver = dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+              clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
               lpSolver = clpSolver->getModelPtr();
 #ifdef COIN_HAS_ASL
               if (statusUserFunction_[0]) {
@@ -9634,7 +9634,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               }
               strcpy(buffer, argv[1]);
               char *slash = buffer;
-              for (int i = 0; i < static_cast<int>(strlen(buffer)); i++) {
+              for (int i = 0; i < static_cast< int >(strlen(buffer)); i++) {
                 if (buffer[i] == '/' || buffer[i] == '\\')
                   slash = buffer + i + 1;
               }
@@ -9923,7 +9923,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 const double *rowUpper = clpSolver->getRowUpper();
                 double primalTolerance;
                 clpSolver->getDblParam(OsiPrimalTolerance, primalTolerance);
-                size_t lengthPrint = static_cast<size_t>(CoinMax(lengthName, 8));
+                size_t lengthPrint = static_cast< size_t >(CoinMax(lengthName, 8));
                 bool doMask = (printMask != "" && lengthName);
                 int *maskStarts = NULL;
                 int maxMasks = 0;
@@ -9954,7 +9954,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   } else {
                     strcpy(pMask, pMask2);
                   }
-                  if (lengthMask > static_cast<size_t>(lengthName)) {
+                  if (lengthMask > static_cast< size_t >(lengthName)) {
                     printf("mask %s too long - skipping\n", pMask);
                     break;
                   }
@@ -9987,7 +9987,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                       size_t nAfter = length - nBefore;
                       // and add null
                       nAfter++;
-                      for (int i = 0; i <= lengthName - static_cast<int>(length); i++) {
+                      for (int i = 0; i <= lengthName - static_cast< int >(length); i++) {
                         char *maskOut = newMasks[nEntries];
                         memcpy(maskOut, oldMask, nBefore);
                         for (int k = 0; k < i; k++)
@@ -10009,7 +10009,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     while (length > 0 && maskThis[length - 1] == ' ')
                       length--;
                     maskThis[length] = '\0';
-                    sort[i] = static_cast<int>(length);
+                    sort[i] = static_cast< int >(length);
                   }
                   CoinSort_2(sort, sort + nEntries, masks);
                   int lastLength = -1;
@@ -10310,7 +10310,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                         fprintf(fp, ",");
                       if (newLine)
                         fprintf(fp, "\n");
-                      int value = static_cast<int>(primalColumnSolution[iColumn] + 0.5);
+                      int value = static_cast< int >(primalColumnSolution[iColumn] + 0.5);
                       fprintf(fp, "%d. ", value);
                       comma = true;
                       newLine = false;
@@ -10406,7 +10406,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               } else {
                 fileName = directory + field;
               }
-              static_cast<ClpSimplexOther *>(lpSolver)->parametrics(fileName.c_str());
+              static_cast< ClpSimplexOther * >(lpSolver)->parametrics(fileName.c_str());
               time2 = CoinCpuTime();
               totalTime += time2 - time1;
               time1 = time2;
@@ -10418,11 +10418,11 @@ clp watson.mps -\nscaling off\nprimalsimplex");
           case CLP_PARAM_ACTION_GUESS:
             if (goodModel && model_.solver()) {
               delete[] alternativeEnvironment;
-              OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+              OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
               assert(clpSolver);
               lpSolver = clpSolver->getModelPtr();
               assert(lpSolver);
-              ClpSimplexOther *model2 = static_cast<ClpSimplexOther *>(lpSolver);
+              ClpSimplexOther *model2 = static_cast< ClpSimplexOther * >(lpSolver);
               alternativeEnvironment = model2->guess(1);
               if (alternativeEnvironment)
                 CbcOrClpEnvironmentIndex = 0;
@@ -10500,9 +10500,9 @@ clp watson.mps -\nscaling off\nprimalsimplex");
   if (babModel_) {
     model_.moveInfo(*babModel_);
 #ifndef CBC_OTHER_SOLVER
-    OsiClpSolverInterface *clpSolver0 = dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
+    OsiClpSolverInterface *clpSolver0 = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
     ClpSimplex *lpSolver0 = clpSolver0->getModelPtr();
-    OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
     ClpSimplex *lpSolver = clpSolver->getModelPtr();
     if (lpSolver0 != lpSolver && lpSolver != originalSolver->getModelPtr())
       lpSolver->moveInfo(*lpSolver0);
@@ -10549,9 +10549,9 @@ void CbcMain0(CbcModel &model,
   CbcOrClpParam *parameters = parameterData.parameters_;
   int numberParameters = parameterData.numberParameters_;
 #ifndef CBC_OTHER_SOLVER
-  OsiClpSolverInterface *originalSolver = dynamic_cast<OsiClpSolverInterface *>(model.solver());
+  OsiClpSolverInterface *originalSolver = dynamic_cast< OsiClpSolverInterface * >(model.solver());
 #elif CBC_OTHER_SOLVER == 1
-  OsiCpxSolverInterface *originalSolver = dynamic_cast<OsiCpxSolverInterface *>(model.solver());
+  OsiCpxSolverInterface *originalSolver = dynamic_cast< OsiCpxSolverInterface * >(model.solver());
   // Dummy solvers
   OsiClpSolverInterface dummySolver;
   ClpSimplex *lpSolver = dummySolver.getModelPtr();
@@ -10562,7 +10562,7 @@ void CbcMain0(CbcModel &model,
   generalMessageHandler->setPrefix(true);
 #ifndef CBC_OTHER_SOLVER
   OsiSolverInterface *solver = model.solver();
-  OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+  OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
   ClpSimplex *lpSolver = clpSolver->getModelPtr();
   lpSolver->setPerturbation(50);
   lpSolver->messageHandler()->setPrefix(false);
@@ -10710,7 +10710,7 @@ static void breakdown(const char *name, int numberLook, const double *region)
     1.0e1, 1.0e2, 1.0e3, 1.0e4, 1.0e5, 1.0e8, 1.0e11, 1.0e15,
     COIN_DBL_MAX
   };
-  int nRanges = static_cast<int>(sizeof(range) / sizeof(double));
+  int nRanges = static_cast< int >(sizeof(range) / sizeof(double));
   int *number = new int[nRanges];
   memset(number, 0, nRanges * sizeof(int));
   int *numberExact = new int[nRanges];
@@ -10895,7 +10895,7 @@ static void statistics(ClpSimplex *originalModel, ClpSimplex *model)
             int *columnAdd = new int[spaceNeeded];
             double *elementAdd = new double[spaceNeeded];
             CoinBigIndex *rowAdd = new CoinBigIndex[2 * numberDifferentObj + 1];
-            int *newIsInteger = reinterpret_cast<int *>(rowAdd + numberDifferentObj + 1);
+            int *newIsInteger = reinterpret_cast< int * >(rowAdd + numberDifferentObj + 1);
             double *objectiveNew = new double[3 * numberDifferentObj];
             double *lowerNew = objectiveNew + numberDifferentObj;
             double *upperNew = lowerNew + numberDifferentObj;
@@ -11110,7 +11110,7 @@ static void statistics(ClpSimplex *originalModel, ClpSimplex *model)
   }
   printf("Column breakdown:\n");
   int k;
-  for (k = 0; k < static_cast<int>(sizeof(cType) / sizeof(int)); k++) {
+  for (k = 0; k < static_cast< int >(sizeof(cType) / sizeof(int)); k++) {
     printf("%d of type %s ", cType[k], cName[k].c_str());
     if (((k + 1) % 3) == 0)
       printf("\n");
@@ -11118,7 +11118,7 @@ static void statistics(ClpSimplex *originalModel, ClpSimplex *model)
   if ((k % 3) != 0)
     printf("\n");
   printf("Row breakdown:\n");
-  for (k = 0; k < static_cast<int>(sizeof(rType) / sizeof(int)); k++) {
+  for (k = 0; k < static_cast< int >(sizeof(rType) / sizeof(int)); k++) {
     printf("%d of type %s ", rType[k], rName[k].c_str());
     if (((k + 1) % 3) == 0)
       printf("\n");
@@ -11388,7 +11388,7 @@ static void statistics(ClpSimplex *originalModel, ClpSimplex *model)
         numberRowsDone++;
         if (thisBestValue * numberRowsDone > maximumBlockSize && numberRowsDone > halfway) {
           thisBestBreak = iRow;
-          thisBestValue = static_cast<double>(maximumBlockSize) / static_cast<double>(numberRowsDone);
+          thisBestValue = static_cast< double >(maximumBlockSize) / static_cast< double >(numberRowsDone);
         }
       }
       if (thisBestBreak == stop)
@@ -11995,7 +11995,7 @@ static void statistics(ClpSimplex *originalModel, ClpSimplex *model)
                 if (mapRow[iRow] == iRow) {
                   for (CoinBigIndex i = start; i < start + length; i++) {
                     int jColumn = column[i];
-                    backColumn2[jColumn] = static_cast<int>(i - start);
+                    backColumn2[jColumn] = static_cast< int >(i - start);
                   }
                   for (CoinBigIndex i = start; i < start + length; i++) {
                     int jColumn = column[i];
@@ -12148,7 +12148,7 @@ static void statistics(ClpSimplex *originalModel, ClpSimplex *model)
   }
   delete[] number;
   // Now do breakdown of ranges
-  breakdown("Elements", static_cast<int>(numberElements), elementByColumn);
+  breakdown("Elements", static_cast< int >(numberElements), elementByColumn);
   breakdown("RowLower", numberRows, rowLower);
   breakdown("RowUpper", numberRows, rowUpper);
   breakdown("ColumnLower", numberColumns, columnLower);
@@ -12531,7 +12531,7 @@ static int nautiedConstraints(CbcModel &model, int maxPass)
       model.messages())
       << general << CoinMessageEol;
 #ifdef SAVE_NAUTY
-    OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
     ClpSimplex *lpSolver = clpSolver->getModelPtr();
     char name[100];
     strcpy(name, lpSolver->problemName().c_str());

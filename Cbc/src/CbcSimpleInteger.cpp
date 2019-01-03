@@ -144,7 +144,7 @@ CbcSimpleInteger::feasibleRegion(OsiSolverInterface *solver, const OsiBranchingI
   solver->setColLower(columnNumber_, newValue);
   solver->setColUpper(columnNumber_, newValue);
 #ifdef SWITCH_VARIABLES
-  const CbcSwitchingBinary *sObject = dynamic_cast<const CbcSwitchingBinary *>(this);
+  const CbcSwitchingBinary *sObject = dynamic_cast< const CbcSwitchingBinary * >(this);
   if (sObject)
     sObject->setAssociatedBounds(solver, 1);
 #endif
@@ -562,7 +562,7 @@ CbcIntegerBranchingObject::branch()
   if (model_->logLevel() > 2)
     printf("for column %d - old bounds %g,%g - new %g,%g\n", iColumn, olb, oub,
       nlb, nub);
-  CbcSwitchingBinary *sObject = dynamic_cast<CbcSwitchingBinary *>(originalCbcObject_);
+  CbcSwitchingBinary *sObject = dynamic_cast< CbcSwitchingBinary * >(originalCbcObject_);
   if (sObject)
     sObject->setAssociatedBounds();
     //(dynamic_cast<CbcSimpleInteger *>(originalCbcObject_))->setAssociatedBounds();
@@ -724,7 +724,7 @@ void CbcIntegerBranchingObject::print()
 CbcRangeCompare
 CbcIntegerBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, const bool replaceIfOverlap)
 {
-  const CbcIntegerBranchingObject *br = dynamic_cast<const CbcIntegerBranchingObject *>(brObj);
+  const CbcIntegerBranchingObject *br = dynamic_cast< const CbcIntegerBranchingObject * >(brObj);
   assert(br);
   double *thisBd = way_ < 0 ? down_ : up_;
   const double *otherBd = br->way_ < 0 ? br->down_ : br->up_;

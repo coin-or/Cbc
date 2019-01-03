@@ -113,7 +113,7 @@ bool CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface *so
           objDelta = -fraction * CoinMin(obj, -smallObjective_);
 
         // we want the smaller score
-        double score = objDelta / (static_cast<double>(columnLength[iColumn]) + 1.0);
+        double score = objDelta / (static_cast< double >(columnLength[iColumn]) + 1.0);
 
         // if variable is not binary, penalize it
         if (!solver->isBinary(iColumn))
@@ -121,13 +121,13 @@ bool CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface *so
 
         // if priorities then use
         if (priority_) {
-          int thisRound = static_cast<int>(priority_[i].direction);
+          int thisRound = static_cast< int >(priority_[i].direction);
           if ((thisRound & 1) != 0)
             round = ((thisRound & 2) == 0) ? -1 : +1;
           if (priority_[i].priority > bestPriority) {
             score = COIN_DBL_MAX;
           } else if (priority_[i].priority < bestPriority) {
-            bestPriority = static_cast<int>(priority_[i].priority);
+            bestPriority = static_cast< int >(priority_[i].priority);
             bestScore = COIN_DBL_MAX;
           }
         }

@@ -2690,7 +2690,7 @@ public:
   void redoWalkBack();
   //@}
 
-  void setMIPStart(const std::vector<std::pair<std::string, double>> &mips)
+  void setMIPStart(const std::vector< std::pair< std::string, double > > &mips)
   {
     this->mipStart_ = mips;
   }
@@ -2699,7 +2699,7 @@ public:
      * implementation may not be binary compatible */
   void setMIPStart(int count, const char **colNames, const double colValues[]);
 
-  const std::vector<std::pair<std::string, double>> &getMIPStart()
+  const std::vector< std::pair< std::string, double > > &getMIPStart()
   {
     return this->mipStart_;
   }
@@ -2781,7 +2781,7 @@ private:
   /** MIPstart values
       values for integer variables which will be converted to a complete integer initial feasible solution
     */
-  std::vector<std::pair<std::string, double>> mipStart_;
+  std::vector< std::pair< std::string, double > > mipStart_;
   /** Warm start object produced by heuristic or strong branching
 
         If get a valid integer solution outside branch and bound then it can take

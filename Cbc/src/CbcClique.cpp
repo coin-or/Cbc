@@ -304,7 +304,7 @@ CbcClique::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInforma
   int numberFree = numberMembers_;
   const int *integer = model_->integerVariable();
   //OsiSolverInterface * solver = model_->solver();
-  CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+  CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
   const double *solution = model_->testSolution();
   const double *lower = solver->getColLower();
   const double *upper = solver->getColUpper();
@@ -612,7 +612,7 @@ CbcCompareCliques(const CbcClique *cl0, const CbcClique *cl1)
 */
 int CbcCliqueBranchingObject::compareOriginalObject(const CbcBranchingObject *brObj) const
 {
-  const CbcCliqueBranchingObject *br = dynamic_cast<const CbcCliqueBranchingObject *>(brObj);
+  const CbcCliqueBranchingObject *br = dynamic_cast< const CbcCliqueBranchingObject * >(brObj);
   assert(br);
   return CbcCompareCliques(clique_, br->clique_);
 }
@@ -628,12 +628,12 @@ int CbcCliqueBranchingObject::compareOriginalObject(const CbcBranchingObject *br
 CbcRangeCompare
 CbcCliqueBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, const bool /*replaceIfOverlap*/)
 {
-  const CbcCliqueBranchingObject *br = dynamic_cast<const CbcCliqueBranchingObject *>(brObj);
+  const CbcCliqueBranchingObject *br = dynamic_cast< const CbcCliqueBranchingObject * >(brObj);
   assert(br);
   unsigned int *thisMask = way_ < 0 ? upMask_ : downMask_;
   const unsigned int *otherMask = br->way_ < 0 ? br->upMask_ : br->downMask_;
-  const CoinUInt64 cl0 = (static_cast<CoinUInt64>(thisMask[0]) << 32) | thisMask[1];
-  const CoinUInt64 cl1 = (static_cast<CoinUInt64>(otherMask[0]) << 32) | otherMask[1];
+  const CoinUInt64 cl0 = (static_cast< CoinUInt64 >(thisMask[0]) << 32) | thisMask[1];
+  const CoinUInt64 cl1 = (static_cast< CoinUInt64 >(otherMask[0]) << 32) | otherMask[1];
   if (cl0 == cl1) {
     return CbcRangeSame;
   }
@@ -649,8 +649,8 @@ CbcCliqueBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj
     return CbcRangeDisjoint;
   }
   const CoinUInt64 cl_union = (cl0 | cl1);
-  thisMask[0] = static_cast<unsigned int>(cl_union >> 32);
-  thisMask[1] = static_cast<unsigned int>(cl_union & 0xffffffff);
+  thisMask[0] = static_cast< unsigned int >(cl_union >> 32);
+  thisMask[1] = static_cast< unsigned int >(cl_union & 0xffffffff);
   return CbcRangeOverlap;
 }
 
@@ -855,7 +855,7 @@ void CbcLongCliqueBranchingObject::print()
 */
 int CbcLongCliqueBranchingObject::compareOriginalObject(const CbcBranchingObject *brObj) const
 {
-  const CbcLongCliqueBranchingObject *br = dynamic_cast<const CbcLongCliqueBranchingObject *>(brObj);
+  const CbcLongCliqueBranchingObject *br = dynamic_cast< const CbcLongCliqueBranchingObject * >(brObj);
   assert(br);
   return CbcCompareCliques(clique_, br->clique_);
 }
@@ -871,7 +871,7 @@ int CbcLongCliqueBranchingObject::compareOriginalObject(const CbcBranchingObject
 CbcRangeCompare
 CbcLongCliqueBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, const bool /*replaceIfOverlap*/)
 {
-  const CbcLongCliqueBranchingObject *br = dynamic_cast<const CbcLongCliqueBranchingObject *>(brObj);
+  const CbcLongCliqueBranchingObject *br = dynamic_cast< const CbcLongCliqueBranchingObject * >(brObj);
   assert(br);
   const int numberMembers = clique_->numberMembers();
   const int numberWords = (numberMembers + 31) >> 5;

@@ -683,7 +683,7 @@ public:
 
   /*! \brief Record of parameters changed by user command */
 
-  std::vector<bool> setByUser_;
+  std::vector< bool > setByUser_;
 
   /*! \brief False if the user has made nontrivial modifications to the
            default control settings.

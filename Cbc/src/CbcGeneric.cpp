@@ -89,9 +89,9 @@ namespace {
 void markAsSetByUser(CbcGenCtlBlk &ctlBlk, CoinParam *param)
 
 {
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
-  CbcCbcParam *cbcParam = dynamic_cast<CbcCbcParam *>(param);
-  CbcOsiParam *osiParam = dynamic_cast<CbcOsiParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
+  CbcCbcParam *cbcParam = dynamic_cast< CbcCbcParam * >(param);
+  CbcOsiParam *osiParam = dynamic_cast< CbcOsiParam * >(param);
   int code = -1;
 
   if (genParam != 0) {

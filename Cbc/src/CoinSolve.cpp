@@ -321,7 +321,7 @@ int main(int argc, const char *argv[])
     MyMessageHandler2 messageHandler(&model);
     std::cout << "Testing derived message handler" << std::endl;
     model.passInMessageHandler(&messageHandler);
-    OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(model.solver());
+    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model.solver());
     // Could use different handlers (if different log levels)
     clpSolver->passInMessageHandler(&messageHandler);
     //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);

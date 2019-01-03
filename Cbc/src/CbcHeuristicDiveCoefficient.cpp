@@ -120,13 +120,13 @@ bool CbcHeuristicDiveCoefficient::selectVariableToBranch(OsiSolverInterface *sol
 
         // if priorities then use
         if (priority_) {
-          int thisRound = static_cast<int>(priority_[i].direction);
+          int thisRound = static_cast< int >(priority_[i].direction);
           if ((thisRound & 1) != 0)
             round = ((thisRound & 2) == 0) ? -1 : +1;
           if (priority_[i].priority > bestPriority) {
             nLocks = COIN_INT_MAX;
           } else if (priority_[i].priority < bestPriority) {
-            bestPriority = static_cast<int>(priority_[i].priority);
+            bestPriority = static_cast< int >(priority_[i].priority);
             bestLocks = COIN_INT_MAX;
           }
         }

@@ -214,7 +214,7 @@ int CbcBranchDefaultDecision::bestBranch(CbcBranchingObject **objects, int numbe
 
           if (numberNext < numberUnsatisfied) {
             int numberUp = numberUnsatisfied - numberInfeasibilitiesUp[i];
-            double perUnsatisfied = changeUp[i] / static_cast<double>(numberUp);
+            double perUnsatisfied = changeUp[i] / static_cast< double >(numberUp);
             double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
             if (estimatedObjective < cutoff)
               method = 3;
@@ -222,7 +222,7 @@ int CbcBranchDefaultDecision::bestBranch(CbcBranchingObject **objects, int numbe
           numberNext = numberInfeasibilitiesDown[i];
           if (numberNext < numberUnsatisfied) {
             int numberDown = numberUnsatisfied - numberInfeasibilitiesDown[i];
-            double perUnsatisfied = changeDown[i] / static_cast<double>(numberDown);
+            double perUnsatisfied = changeDown[i] / static_cast< double >(numberDown);
             double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
             if (estimatedObjective < cutoff)
               method = 3;
@@ -343,7 +343,7 @@ int CbcBranchDefaultDecision::bestBranch(CbcBranchingObject **objects, int numbe
 
         if (numberNext < numberUnsatisfied) {
           int numberUp = numberUnsatisfied - numberInfeasibilitiesUp[i];
-          double perUnsatisfied = changeUp[i] / static_cast<double>(numberUp);
+          double perUnsatisfied = changeUp[i] / static_cast< double >(numberUp);
           double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
           if (estimatedObjective < bestEstimate) {
             bestEstimate = estimatedObjective;
@@ -354,7 +354,7 @@ int CbcBranchDefaultDecision::bestBranch(CbcBranchingObject **objects, int numbe
         numberNext = numberInfeasibilitiesDown[i];
         if (numberNext < numberUnsatisfied) {
           int numberDown = numberUnsatisfied - numberInfeasibilitiesDown[i];
-          double perUnsatisfied = changeDown[i] / static_cast<double>(numberDown);
+          double perUnsatisfied = changeDown[i] / static_cast< double >(numberDown);
           double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
           if (estimatedObjective < bestEstimate) {
             bestEstimate = estimatedObjective;

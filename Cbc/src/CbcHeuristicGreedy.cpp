@@ -1714,7 +1714,7 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
       break;
     } else {
       if (iPass == 0) {
-        costBias = 10.0 * newSolutionValue / static_cast<double>(nAdded);
+        costBias = 10.0 * newSolutionValue / static_cast< double >(nAdded);
       } else {
         costBias *= 10.0;
       }

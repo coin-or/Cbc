@@ -144,7 +144,7 @@ void OsiSolverLink::initialSolve()
     if (updated || 1) {
       temp->removeGaps(1.0e-14);
       ClpMatrixBase *save = modelPtr_->clpMatrix();
-      ClpPackedMatrix *clpMatrix = dynamic_cast<ClpPackedMatrix *>(save);
+      ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(save);
       assert(clpMatrix);
       if (save->getNumRows() > temp->getNumRows()) {
         // add in cuts
@@ -237,7 +237,7 @@ void OsiSolverLink::initialSolve()
           for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
             CbcCutGenerator *generator = cbcModel_->cutGenerator(iGenerator);
             CglCutGenerator *gen = generator->generator();
-            CglStored *gen2 = dynamic_cast<CglStored *>(gen);
+            CglStored *gen2 = dynamic_cast< CglStored * >(gen);
             if (gen2) {
               // add OA cut
               double offset;
@@ -310,7 +310,7 @@ void OsiSolverLink::resolve()
     if (updated) {
       temp->removeGaps(1.0e-14);
       ClpMatrixBase *save = modelPtr_->clpMatrix();
-      ClpPackedMatrix *clpMatrix = dynamic_cast<ClpPackedMatrix *>(save);
+      ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(save);
       assert(clpMatrix);
       if (save->getNumRows() > temp->getNumRows()) {
         // add in cuts
@@ -434,7 +434,7 @@ void OsiSolverLink::resolve()
           value += solution[i] * objective[i];
         // and now rest
         for (i = 0; i < numberObjects_; i++) {
-          OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[i]);
+          OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
           if (obj) {
             value += obj->xyCoefficient(solution);
           }
@@ -446,7 +446,7 @@ void OsiSolverLink::resolve()
           bestSolution_ = CoinCopyOfArray(modelPtr_->getColSolution(), modelPtr_->getNumCols());
           bestObjectiveValue_ = value;
           if (maxIts <= 10000 && cbcModel_) {
-            OsiSolverLink *solver2 = dynamic_cast<OsiSolverLink *>(cbcModel_->solver());
+            OsiSolverLink *solver2 = dynamic_cast< OsiSolverLink * >(cbcModel_->solver());
             assert(solver2);
             if (solver2 != this) {
               // in strong branching - need to store in original solver
@@ -464,7 +464,7 @@ void OsiSolverLink::resolve()
             for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
               CbcCutGenerator *generator = cbcModel_->cutGenerator(iGenerator);
               CglCutGenerator *gen = generator->generator();
-              CglStored *gen2 = dynamic_cast<CglStored *>(gen);
+              CglStored *gen2 = dynamic_cast< CglStored * >(gen);
               if (gen2) {
                 cbcModel_->lockThread();
                 // add OA cut
@@ -484,7 +484,7 @@ void OsiSolverLink::resolve()
                 for (CoinBigIndex i = rowStart[objectiveRow_]; i < rowStart[objectiveRow_ + 1]; i++)
                   gradient[column2[i]] = element[i];
                 for (i = 0; i < numberObjects_; i++) {
-                  OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[i]);
+                  OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
                   if (obj) {
                     int xColumn = obj->xColumn();
                     int yColumn = obj->yColumn();
@@ -529,7 +529,7 @@ void OsiSolverLink::resolve()
         int numberContinuous = 0;
         double gap = 0.0;
         for (i = 0; i < numberObjects_; i++) {
-          OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[i]);
+          OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
           if (obj) {
             if (obj->xMeshSize() < 1.0 && obj->yMeshSize() < 1.0) {
               numberContinuous++;
@@ -551,7 +551,7 @@ void OsiSolverLink::resolve()
             const double *solution = getColSolution();
             double newGap = 0.0;
             for (i = 0; i < numberObjects_; i++) {
-              OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[i]);
+              OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
               if (obj && (obj->branchingStrategy() & 8) == 0) {
                 if (obj->xMeshSize() < 1.0 && obj->yMeshSize() < 1.0) {
                   numberContinuous++;
@@ -656,7 +656,7 @@ void OsiSolverLink::resolve()
           for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
             CbcCutGenerator *generator = cbcModel_->cutGenerator(iGenerator);
             CglCutGenerator *gen = generator->generator();
-            CglTemporary *gen2 = dynamic_cast<CglTemporary *>(gen);
+            CglTemporary *gen2 = dynamic_cast< CglTemporary * >(gen);
             if (gen2) {
               double *solution2 = NULL;
               int numberColumns = quadraticModel_->numberColumns();
@@ -701,7 +701,7 @@ void OsiSolverLink::resolve()
         for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
           CbcCutGenerator *generator = cbcModel_->cutGenerator(iGenerator);
           CglCutGenerator *gen = generator->generator();
-          CglTemporary *gen2 = dynamic_cast<CglTemporary *>(gen);
+          CglTemporary *gen2 = dynamic_cast< CglTemporary * >(gen);
           if (gen2) {
             const double *solution = getColSolution();
             const double *rowUpper = getRowUpper();
@@ -730,7 +730,7 @@ void OsiSolverLink::resolve()
               for (CoinBigIndex i = rowStart[iRow]; i < rowStart[iRow + 1]; i++)
                 gradient[column2[i]] = element[i];
               for (i = startNonLinear_[iNon]; i < startNonLinear_[iNon + 1]; i++) {
-                OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[whichNonLinear_[i]]);
+                OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[whichNonLinear_[i]]);
                 assert(obj);
                 int xColumn = obj->xColumn();
                 int yColumn = obj->yColumn();
@@ -808,7 +808,7 @@ int OsiSolverLink::doAOCuts(CglTemporary *cutGen, const double *solution, const 
   //const double * columnLower = modelPtr_->columnLower();
   //const double * columnUpper = modelPtr_->columnUpper();
   for (i = 0; i < numberObjects_; i++) {
-    OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[i]);
+    OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
     if (obj) {
       int xColumn = obj->xColumn();
       int yColumn = obj->yColumn();
@@ -1220,7 +1220,7 @@ void OsiSolverLink::load(CoinModel &coinModelOriginal, bool tightenBounds, int l
     int stats[3] = { 0, 0, 0 };
     double *sort = new double[nBi];
     nBi = nInt;
-    const OsiObject **justBi = const_cast<const OsiObject **>(objects + nInt);
+    const OsiObject **justBi = const_cast< const OsiObject ** >(objects + nInt);
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
       if (quadraticObjective)
         startQuadratic[iColumn] = numberQuadratic;
@@ -1418,7 +1418,7 @@ void OsiSolverLink::load(CoinModel &coinModelOriginal, bool tightenBounds, int l
       numberNonLinearRows_ = 0;
       CoinZeroN(whichRows, numberRows2);
       for (i = 0; i < numberObjects_; i++) {
-        OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[i]);
+        OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
         if (obj) {
           int xyRow = obj->xyRow();
           assert(xyRow >= 0 && xyRow < numberRows2); // even if obj we should move
@@ -1451,7 +1451,7 @@ void OsiSolverLink::load(CoinModel &coinModelOriginal, bool tightenBounds, int l
       }
       whichNonLinear_ = new int[n];
       for (i = 0; i < numberObjects_; i++) {
-        OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[i]);
+        OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
         if (obj) {
           int xyRow = obj->xyRow();
           int k = whichRows[xyRow];
@@ -1475,7 +1475,7 @@ void OsiSolverLink::load(CoinModel &coinModelOriginal, bool tightenBounds, int l
   const double *rowLower = getRowLower();
   const double *rowUpper = getRowUpper();
   for (int iObject = 0; iObject < numberObjects_; iObject++) {
-    OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[iObject]);
+    OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[iObject]);
     if (obj) {
       int xyRow = obj->xyRow();
       if (rowLength[xyRow] == 4 && false) {
@@ -1550,7 +1550,7 @@ void OsiSolverLink::addTighterConstraints()
   memset(list, 0, numberColumns * sizeof(int));
   int i;
   for (i = 0; i < numberObjects_; i++) {
-    OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[i]);
+    OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
     if (obj) {
       //obj->setBranchingStrategy(4); // ***** temp
       objW[numberW] = obj;
@@ -1737,7 +1737,7 @@ void OsiSolverLink::setBiLinearPriorities(int value, double meshSize)
   int numberOdd = 0;
   int i;
   for (i = 0; i < numberObjects_; i++) {
-    OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[i]);
+    OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
     if (obj) {
       if (obj->xMeshSize() < 1.0 && obj->yMeshSize() < 1.0) {
         double oldSatisfied = CoinMax(obj->xSatisfied(),
@@ -1775,7 +1775,7 @@ void OsiSolverLink::setBranchingStrategyOnVariables(int strategyValue, int prior
 {
   int i;
   for (i = 0; i < numberObjects_; i++) {
-    OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[i]);
+    OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
     if (obj) {
       bool change = false;
       if (obj->xMeshSize() < 1.0 && obj->yMeshSize() < 1.0 && (mode & 4) != 0)
@@ -1811,7 +1811,7 @@ void OsiSolverLink::setMeshSizes(double value)
 {
   int i;
   for (i = 0; i < numberObjects_; i++) {
-    OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[i]);
+    OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
     if (obj) {
       if (obj->xMeshSize() < 1.0 && obj->yMeshSize() < 1.0) {
 #ifdef JJF_ZERO
@@ -2509,7 +2509,7 @@ OsiSolverLink::linearizedBAB(CglStored *cut)
     // Now do requested saves and modifications
     CbcModel *cbcModel = &model2;
     OsiSolverInterface *osiModel = model2.solver();
-    OsiClpSolverInterface *osiclpModel = dynamic_cast<OsiClpSolverInterface *>(osiModel);
+    OsiClpSolverInterface *osiclpModel = dynamic_cast< OsiClpSolverInterface * >(osiModel);
     ClpSimplex *clpModel = osiclpModel->getModelPtr();
 
     // Set changed values
@@ -2606,7 +2606,7 @@ OsiSolverLink::linearizedBAB(CglStored *cut)
     clpModel->dual(); // clean up
     cbcModel->initialSolve();
     cbcModel->branchAndBound();
-    OsiSolverLinearizedQuadratic *solver3 = dynamic_cast<OsiSolverLinearizedQuadratic *>(model2.solver());
+    OsiSolverLinearizedQuadratic *solver3 = dynamic_cast< OsiSolverLinearizedQuadratic * >(model2.solver());
     assert(solver3);
     solution = solver3->bestSolution();
     bestObjectiveValue = solver3->bestObjectiveValue();
@@ -2664,7 +2664,7 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
     const double *lower = getColLower();
     const double *upper = getColUpper();
     for (int iObject = 0; iObject < numberObjects_; iObject++) {
-      OsiSimpleInteger *obj = dynamic_cast<OsiSimpleInteger *>(object_[iObject]);
+      OsiSimpleInteger *obj = dynamic_cast< OsiSimpleInteger * >(object_[iObject]);
       if (obj && (obj->priority() < biLinearPriority_ || biLinearPriority_ <= 0)) {
         int iColumn = obj->columnNumber();
         double value = solution[iColumn];
@@ -2691,7 +2691,7 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
     char *mark = new char[numberColumns];
     memset(mark, 0, numberColumns);
     for (int iObject = 0; iObject < numberObjects_; iObject++) {
-      OsiSimpleInteger *obj = dynamic_cast<OsiSimpleInteger *>(object_[iObject]);
+      OsiSimpleInteger *obj = dynamic_cast< OsiSimpleInteger * >(object_[iObject]);
       if (obj && obj->priority() < biLinearPriority_) {
         int iColumn = obj->columnNumber();
         double value = solution[iColumn];
@@ -2699,7 +2699,7 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
         tempModel.associateElement(coinModel_.columnName(iColumn), value);
         mark[iColumn] = 1;
       }
-      OsiBiLinear *objB = dynamic_cast<OsiBiLinear *>(object_[iObject]);
+      OsiBiLinear *objB = dynamic_cast< OsiBiLinear * >(object_[iObject]);
       if (objB) {
         // if one or both continuous then fix one
         if (objB->xMeshSize() < 1.0) {
@@ -2722,7 +2722,7 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
     delete[] mark;
     newSolver.loadFromCoinModel(tempModel, true);
     for (int iObject = 0; iObject < numberObjects_; iObject++) {
-      OsiSimpleInteger *obj = dynamic_cast<OsiSimpleInteger *>(object_[iObject]);
+      OsiSimpleInteger *obj = dynamic_cast< OsiSimpleInteger * >(object_[iObject]);
       if (obj && obj->priority() < biLinearPriority_) {
         int iColumn = obj->columnNumber();
         double value = solution[iColumn];
@@ -2730,7 +2730,7 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
         newSolver.setColLower(iColumn, value);
         newSolver.setColUpper(iColumn, value);
       }
-      OsiBiLinear *objB = dynamic_cast<OsiBiLinear *>(object_[iObject]);
+      OsiBiLinear *objB = dynamic_cast< OsiBiLinear * >(object_[iObject]);
       if (objB) {
         // if one or both continuous then fix one
         if (objB->xMeshSize() < 1.0) {
@@ -2751,7 +2751,7 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
   // Now do requested saves and modifications
   CbcModel *cbcModel = &model;
   OsiSolverInterface *osiModel = model.solver();
-  OsiClpSolverInterface *osiclpModel = dynamic_cast<OsiClpSolverInterface *>(osiModel);
+  OsiClpSolverInterface *osiclpModel = dynamic_cast< OsiClpSolverInterface * >(osiModel);
   ClpSimplex *clpModel = osiclpModel->getModelPtr();
   CglProbing probing;
   probing.setMaxProbe(10);
@@ -2932,7 +2932,7 @@ void OsiSolverLink::analyzeObjects()
     int i;
     int n = 0;
     for (i = startNonLinear_[iNon]; i < startNonLinear_[iNon + 1]; i++) {
-      OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[whichNonLinear_[i]]);
+      OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[whichNonLinear_[i]]);
       assert(obj);
       int xColumn = obj->xColumn();
       int yColumn = obj->yColumn();
@@ -3215,7 +3215,7 @@ int OsiSolverLink::updateCoefficients(ClpSimplex *solver, CoinPackedMatrix *matr
   double *objective = solver->objective();
   int numberChanged = 0;
   for (int iObject = 0; iObject < numberObjects_; iObject++) {
-    OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(object_[iObject]);
+    OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[iObject]);
     if (obj) {
       numberChanged += obj->updateCoefficients(lower, upper, objective, matrix, &basis_);
     }
@@ -3241,7 +3241,7 @@ void OsiSolverLink::setFixedPriority(int priorityValue)
   numberFix_ = 0;
   int i;
   for (i = 0; i < numberObjects_; i++) {
-    OsiSimpleInteger *obj = dynamic_cast<OsiSimpleInteger *>(object_[i]);
+    OsiSimpleInteger *obj = dynamic_cast< OsiSimpleInteger * >(object_[i]);
     if (obj) {
 #ifndef NDEBUG
       int iColumn = obj->columnNumber();
@@ -3260,7 +3260,7 @@ void OsiSolverLink::setFixedPriority(int priorityValue)
     char *highPriority = new char[numberColumns];
     CoinZeroN(highPriority, numberColumns);
     for (i = 0; i < numberObjects_; i++) {
-      OsiSimpleInteger *obj = dynamic_cast<OsiSimpleInteger *>(object_[i]);
+      OsiSimpleInteger *obj = dynamic_cast< OsiSimpleInteger * >(object_[i]);
       if (obj) {
         int iColumn = obj->columnNumber();
         assert(iColumn >= 0);
@@ -3421,7 +3421,7 @@ int OsiSolverLink::fathom(bool allFixed)
     int fake[] = { 5, 4, 3, 2, 0, 0, 0 };
     bool onOptimalPath = true;
     for (i = 0; i < 7; i++) {
-      if (static_cast<int>(upper[i]) != fake[i])
+      if (static_cast< int >(upper[i]) != fake[i])
         onOptimalPath = false;
     }
     if (onOptimalPath)
@@ -3449,7 +3449,7 @@ int OsiSolverLink::fathom(bool allFixed)
     // Now do requested saves and modifications
     CbcModel *cbcModel = &model;
     OsiSolverInterface *osiModel = model.solver();
-    OsiClpSolverInterface *osiclpModel = dynamic_cast<OsiClpSolverInterface *>(osiModel);
+    OsiClpSolverInterface *osiclpModel = dynamic_cast< OsiClpSolverInterface * >(osiModel);
     ClpSimplex *clpModel = osiclpModel->getModelPtr();
     CglProbing probing;
     probing.setMaxProbe(10);
@@ -3588,7 +3588,7 @@ int OsiSolverLink::fathom(bool allFixed)
         if (zeroObjective) {
           cbcModel->setMaximumSolutions(1); // just getting a solution
 #ifdef JJF_ZERO
-          OsiClpSolverInterface *osiclpModel = dynamic_cast<OsiClpSolverInterface *>(cbcModel->solver());
+          OsiClpSolverInterface *osiclpModel = dynamic_cast< OsiClpSolverInterface * >(cbcModel->solver());
           ClpSimplex *clpModel = osiclpModel->getModelPtr();
           const double *element = clpModel->matrix()->getMutableElements();
           //const int * row = clpModel->matrix()->getIndices();
@@ -3796,10 +3796,10 @@ void OsiLinkedBound::addBoundModifier(bool upperBoundAffected, bool useUpperBoun
     affected_ = temp;
   }
   boundElementAction action;
-  action.affect = static_cast<unsigned char>(upperBoundAffected ? 1 : 0);
-  action.ubUsed = static_cast<unsigned char>(useUpperBound ? 1 : 0);
+  action.affect = static_cast< unsigned char >(upperBoundAffected ? 1 : 0);
+  action.ubUsed = static_cast< unsigned char >(useUpperBound ? 1 : 0);
   action.type = 2;
-  action.affected = static_cast<short int>(whichVariable);
+  action.affected = static_cast< short int >(whichVariable);
   action.multiplier = multiplier;
   affected_[numberAffected_++] = action;
 }
@@ -3906,7 +3906,7 @@ int CbcHeuristicDynamic3::solution(double &solutionValue,
   if (!model_)
     return 0;
   OsiSolverLink *clpSolver
-    = dynamic_cast<OsiSolverLink *>(model_->solver());
+    = dynamic_cast< OsiSolverLink * >(model_->solver());
   assert(clpSolver);
   double newSolutionValue = clpSolver->bestObjectiveValue();
   const double *solution = clpSolver->bestSolution();
@@ -4104,7 +4104,7 @@ OsiOldLink::infeasibility(const OsiBranchingInformation *info, int &whichWay) co
     assert(sum > 0.0);
     weight /= sum;
     valueInfeasibility = lastNonZero - firstNonZero + 1;
-    valueInfeasibility *= 0.5 / static_cast<double>(numberMembers_);
+    valueInfeasibility *= 0.5 / static_cast< double >(numberMembers_);
     //#define DISTANCE
 #ifdef DISTANCE
     assert(sosType_ == 1); // code up
@@ -4494,7 +4494,7 @@ OsiOldLinkBranchingObject::~OsiOldLinkBranchingObject()
 double
 OsiOldLinkBranchingObject::branch(OsiSolverInterface *solver)
 {
-  const OsiOldLink *set = dynamic_cast<const OsiOldLink *>(originalObject_);
+  const OsiOldLink *set = dynamic_cast< const OsiOldLink * >(originalObject_);
   assert(set);
   int way = (!branchIndex_) ? (2 * firstBranch_ - 1) : -(2 * firstBranch_ - 1);
   branchIndex_++;
@@ -4542,7 +4542,7 @@ OsiOldLinkBranchingObject::branch(OsiSolverInterface *solver)
 // Print what would happen
 void OsiOldLinkBranchingObject::print(const OsiSolverInterface *solver)
 {
-  const OsiOldLink *set = dynamic_cast<const OsiOldLink *>(originalObject_);
+  const OsiOldLink *set = dynamic_cast< const OsiOldLink * >(originalObject_);
   assert(set);
   int way = (!branchIndex_) ? (2 * firstBranch_ - 1) : -(2 * firstBranch_ - 1);
   int numberMembers = set->numberMembers();
@@ -4828,7 +4828,7 @@ OsiBiLinear::OsiBiLinear(OsiSolverInterface *solver, int xColumn,
   // order is LxLy, LxUy, UxLy and UxUy
   for (i = numberExistingObjects - 1; i >= 0; i--) {
     const OsiObject *obj = objects[i];
-    const OsiBiLinear *obj2 = dynamic_cast<const OsiBiLinear *>(obj);
+    const OsiBiLinear *obj2 = dynamic_cast< const OsiBiLinear * >(obj);
     if (obj2) {
       if (xColumn_ == obj2->xColumn_ && !xDone) {
         // make sure y equal
@@ -4961,7 +4961,7 @@ OsiBiLinear::OsiBiLinear(CoinModel *coinModel, int xColumn,
   assert(xyRow_ >= -1);
   for (i = 0; i < nAdd; i++) {
     CoinBigIndex iStart = starts[i];
-    coinModel->addRow(static_cast<int>(starts[i + 1] - iStart),
+    coinModel->addRow(static_cast< int >(starts[i + 1] - iStart),
       index + iStart, element + iStart,
       rowLower[i], rowUpper[i]);
   }
@@ -5059,7 +5059,7 @@ OsiBiLinear::OsiBiLinear(CoinModel *coinModel, int xColumn,
   }
   for (i = 0; i < 4; i++) {
     CoinBigIndex iStart = starts[i];
-    coinModel->addColumn(static_cast<int>(starts[i + 1] - iStart),
+    coinModel->addColumn(static_cast< int >(starts[i + 1] - iStart),
       index + iStart, element + iStart, columnLower[i],
       columnUpper[i], objective[i]);
   }
@@ -5079,7 +5079,7 @@ OsiBiLinear::OsiBiLinear(CoinModel *coinModel, int xColumn,
   // order is LxLy, LxUy, UxLy and UxUy
   for (i = numberExistingObjects - 1; i >= 0; i--) {
     const OsiObject *obj = objects[i];
-    const OsiBiLinear *obj2 = dynamic_cast<const OsiBiLinear *>(obj);
+    const OsiBiLinear *obj2 = dynamic_cast< const OsiBiLinear * >(obj);
     if (obj2) {
       if (xColumn_ == obj2->xColumn_ && !xDone) {
         // make sure y equal
@@ -6546,7 +6546,7 @@ OsiBiLinearBranchingObject::OsiBiLinearBranchingObject(OsiSolverInterface *solve
   double separator,
   int chosen)
   : OsiTwoWayBranchingObject(solver, set, way, separator)
-  , chosen_(static_cast<short int>(chosen))
+  , chosen_(static_cast< short int >(chosen))
 {
   assert(chosen_ >= 0 && chosen_ < 2);
 }
@@ -6581,7 +6581,7 @@ OsiBiLinearBranchingObject::~OsiBiLinearBranchingObject()
 double
 OsiBiLinearBranchingObject::branch(OsiSolverInterface *solver)
 {
-  const OsiBiLinear *set = dynamic_cast<const OsiBiLinear *>(originalObject_);
+  const OsiBiLinear *set = dynamic_cast< const OsiBiLinear * >(originalObject_);
   assert(set);
   int way = (!branchIndex_) ? (2 * firstBranch_ - 1) : -(2 * firstBranch_ - 1);
   branchIndex_++;
@@ -6592,14 +6592,14 @@ OsiBiLinearBranchingObject::branch(OsiSolverInterface *solver)
  */
 bool OsiBiLinearBranchingObject::boundBranch() const
 {
-  const OsiBiLinear *set = dynamic_cast<const OsiBiLinear *>(originalObject_);
+  const OsiBiLinear *set = dynamic_cast< const OsiBiLinear * >(originalObject_);
   assert(set);
   return (set->branchingStrategy() & 4) != 0;
 }
 // Print what would happen
 void OsiBiLinearBranchingObject::print(const OsiSolverInterface * /*solver*/)
 {
-  const OsiBiLinear *set = dynamic_cast<const OsiBiLinear *>(originalObject_);
+  const OsiBiLinear *set = dynamic_cast< const OsiBiLinear * >(originalObject_);
   assert(set);
   int way = (!branchIndex_) ? (2 * firstBranch_ - 1) : -(2 * firstBranch_ - 1);
   int iColumn = (chosen_ == 1) ? set->xColumn() : set->yColumn();
@@ -6647,9 +6647,9 @@ OsiBiLinearEquality::OsiBiLinearEquality(OsiSolverInterface *solver, int xColumn
     solver->setColLower(xColumn_, xB[0]);
   }
   // See how many points
-  numberPoints_ = static_cast<int>((xB[1] - xB[0] + 0.5 * xMesh) / xMesh);
+  numberPoints_ = static_cast< int >((xB[1] - xB[0] + 0.5 * xMesh) / xMesh);
   // redo exactly
-  xMeshSize_ = (xB[1] - xB[0]) / static_cast<double>(numberPoints_);
+  xMeshSize_ = (xB[1] - xB[0]) / static_cast< double >(numberPoints_);
   numberPoints_++;
   //#define KEEPXY
 #ifndef KEEPXY
@@ -6862,11 +6862,11 @@ OsiBiLinearEquality::newGrid(OsiSolverInterface *solver, int type) const
     }
     // new step size
     assert(numberPoints_ > 2);
-    step = CoinMax((1.5 * step) / static_cast<double>(numberPoints_ - 1), 0.5 * step);
+    step = CoinMax((1.5 * step) / static_cast< double >(numberPoints_ - 1), 0.5 * step);
     xB[0] = CoinMax(xB[0], xValue - 0.5 * step);
     xB[1] = CoinMin(xB[1], xValue + 0.5 * step);
     // and now divide these
-    mesh = (xB[1] - xB[0]) / static_cast<double>(numberPoints_ - 1);
+    mesh = (xB[1] - xB[0]) / static_cast< double >(numberPoints_ - 1);
   } else {
     // back to original
     mesh = xMeshSize_;
@@ -7041,7 +7041,7 @@ OsiSimpleFixedInteger::infeasibility(const OsiBranchingInformation *info, int &w
   }
   if (preferredWay_ >= 0 && !satisfied)
     whichWay = preferredWay_;
-  whichWay_ = static_cast<short int>(whichWay);
+  whichWay_ = static_cast< short int >(whichWay);
   return infeasibility_;
 }
 // Creates a branching object
@@ -7146,7 +7146,7 @@ void checkQP(ClpSimplex * /*model*/)
 #ifdef JJF_ZERO
   printf("Checking quadratic model %x\n", model);
   if (model) {
-    ClpQuadraticObjective *quadraticObj = (dynamic_cast<ClpQuadraticObjective *>(model->objectiveAsObject()));
+    ClpQuadraticObjective *quadraticObj = (dynamic_cast< ClpQuadraticObjective * >(model->objectiveAsObject()));
     assert(quadraticObj);
     CoinPackedMatrix *quadraticObjective = quadraticObj->quadraticObjective();
     int numberColumns = quadraticObj->numberColumns();
@@ -7409,7 +7409,7 @@ int CoinModel::expandKnapsack(int knapsackRow, int &numberOutput, double *buildO
       gap = 1.0e8;
     assert(fabs(floor(gap + 0.5) - gap) < 1.0e-5);
     whichColumn[numJ] = iColumn;
-    bound[numJ] = static_cast<int>(gap);
+    bound[numJ] = static_cast< int >(gap);
     size[numJ++] = triple.value();
     offset += triple.value() * lowerColumn;
     triple = next(triple);
@@ -7957,8 +7957,8 @@ int OsiChooseStrongSubset::setupList(OsiBranchingInformation *info, bool initial
 {
   assert(solver_ == info->solver_);
   // Only has to work with Clp
-  OsiSolverInterface *solverA = const_cast<OsiSolverInterface *>(solver_);
-  OsiSolverLink *solver = dynamic_cast<OsiSolverLink *>(solverA);
+  OsiSolverInterface *solverA = const_cast< OsiSolverInterface * >(solver_);
+  OsiSolverLink *solver = dynamic_cast< OsiSolverLink * >(solverA);
   assert(solver);
   int numberObjects = solver->numberObjects();
   if (numberObjects > pseudoCosts_.numberObjects()) {
@@ -7975,7 +7975,7 @@ int OsiChooseStrongSubset::setupList(OsiBranchingInformation *info, bool initial
     int i;
     for (i = 0; i < numberObjects; i++) {
       OsiObject *obj = objects[i];
-      OsiBiLinear *objB = dynamic_cast<OsiBiLinear *>(obj);
+      OsiBiLinear *objB = dynamic_cast< OsiBiLinear * >(obj);
       if (!objB)
         objects[numObj++] = obj;
       else
@@ -7987,7 +7987,7 @@ int OsiChooseStrongSubset::setupList(OsiBranchingInformation *info, bool initial
     delete[] sorted;
     // See if any master objects
     for (i = 0; i < numberObjectsToUse_; i++) {
-      OsiUsesBiLinear *obj = dynamic_cast<OsiUsesBiLinear *>(objects[i]);
+      OsiUsesBiLinear *obj = dynamic_cast< OsiUsesBiLinear * >(objects[i]);
       if (obj)
         obj->addBiLinearObjects(solver);
     }
@@ -8125,7 +8125,7 @@ OsiUsesBiLinear::infeasibility(const OsiBranchingInformation *info, int &whichWa
   value = CoinMin(value, info->upper_[columnNumber_]);
   infeasibility_ = 0.0;
   for (int i = 0; i < numberBiLinear_; i++) {
-    OsiBiLinear *obj = dynamic_cast<OsiBiLinear *>(objects_[i]);
+    OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(objects_[i]);
     assert(obj);
     //obj->getPseudoShadow(info);
     //infeasibility_ += objects_[i]->infeasibility(info,whichWay);
@@ -8146,7 +8146,7 @@ OsiUsesBiLinear::infeasibility(const OsiBranchingInformation *info, int &whichWa
   }
   if (preferredWay_ >= 0 && !satisfied)
     whichWay = preferredWay_;
-  whichWay_ = static_cast<short int>(whichWay);
+  whichWay_ = static_cast< short int >(whichWay);
   return infeasibility_;
 }
 // Creates a branching object
@@ -8196,7 +8196,7 @@ void OsiUsesBiLinear::addBiLinearObjects(OsiSolverLink *solver)
   int numberObjects = solver->numberObjects();
   for (i = 0; i < numberObjects; i++) {
     OsiObject *obj = objects[i];
-    OsiBiLinear *objB = dynamic_cast<OsiBiLinear *>(obj);
+    OsiBiLinear *objB = dynamic_cast< OsiBiLinear * >(obj);
     if (objB) {
       if (objB->xColumn() == columnNumber_ || objB->yColumn() == columnNumber_)
         numberBiLinear_++;
@@ -8207,7 +8207,7 @@ void OsiUsesBiLinear::addBiLinearObjects(OsiSolverLink *solver)
     numberBiLinear_ = 0;
     for (i = 0; i < numberObjects; i++) {
       OsiObject *obj = objects[i];
-      OsiBiLinear *objB = dynamic_cast<OsiBiLinear *>(obj);
+      OsiBiLinear *objB = dynamic_cast< OsiBiLinear * >(obj);
       if (objB) {
         if (objB->xColumn() == columnNumber_ || objB->yColumn() == columnNumber_)
           objects_[numberBiLinear_++] = obj;

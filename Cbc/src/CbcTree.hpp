@@ -105,7 +105,7 @@ public:
   virtual bool empty();
 
   /// Return size
-  virtual int size() const { return static_cast<int>(nodes_.size()); }
+  virtual int size() const { return static_cast< int >(nodes_.size()); }
 
   /// Return a node pointer
   inline CbcNode *operator[](int i) const { return nodes_[i]; }
@@ -194,7 +194,7 @@ public:
 
 protected:
   /// Storage vector for the heap
-  std::vector<CbcNode *> nodes_;
+  std::vector< CbcNode * > nodes_;
   /// Sort predicate for heap ordering.
   CbcCompare comparison_;
   /// Maximum "node" number so far to split ties
@@ -481,7 +481,7 @@ public:
   inline int maximumNodeNumber() const { return maximumNodeNumber_; }
   //@}
 protected:
-  std::vector<CbcNode *> nodes_;
+  std::vector< CbcNode * > nodes_;
   CbcCompare comparison_; ///> Sort function for heap ordering.
   /// Maximum "node" number so far to split ties
   int maximumNodeNumber_;

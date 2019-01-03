@@ -29,7 +29,7 @@ bool isNumericStr(const char *str)
 }
 
 int readMIPStart(CbcModel *model, const char *fileName,
-  vector<pair<string, double>> &colValues,
+  vector< pair< string, double > > &colValues,
   double & /*solObj*/)
 {
 #define STR_SIZE 256
@@ -62,25 +62,25 @@ int readMIPStart(CbcModel *model, const char *fileName,
       char *name = col[1];
       double value = atof(col[2]);
 
-      colValues.push_back(pair<string, double>(string(name), value));
+      colValues.push_back(pair< string, double >(string(name), value));
     }
   }
 
   if (colValues.size()) {
-    sprintf(printLine, "MIPStart values read for %d variables.", static_cast<int>(colValues.size()));
+    sprintf(printLine, "MIPStart values read for %d variables.", static_cast< int >(colValues.size()));
     model->messageHandler()->message(CBC_GENERAL, model->messages()) << printLine << CoinMessageEol;
     if (colValues.size() < model->getNumCols()) {
       int numberColumns = model->getNumCols();
       OsiSolverInterface *solver = model->solver();
-      vector<pair<string, double>> fullValues;
+      vector< pair< string, double > > fullValues;
       /* for fast search of column names */
-      map<string, int> colIdx;
+      map< string, int > colIdx;
       for (int i = 0; i < numberColumns; i++) {
-        fullValues.push_back(pair<string, double>(solver->getColName(i), 0.0));
+        fullValues.push_back(pair< string, double >(solver->getColName(i), 0.0));
         colIdx[solver->getColName(i)] = i;
       }
-      for (int i = 0; (i < static_cast<int>(colValues.size())); ++i) {
-        map<string, int>::const_iterator mIt = colIdx.find(colValues[i].first);
+      for (int i = 0; (i < static_cast< int >(colValues.size())); ++i) {
+        map< string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
         if (mIt != colIdx.end()) {
           const int idx = mIt->second;
           double v = colValues[i].second;
@@ -100,8 +100,8 @@ int readMIPStart(CbcModel *model, const char *fileName,
 }
 
 int computeCompleteSolution(CbcModel *model,
-  const vector<string> colNames,
-  const std::vector<std::pair<std::string, double>> &colValues,
+  const vector< string > colNames,
+  const std::vector< std::pair< std::string, double > > &colValues,
   double *sol, double &obj)
 {
   if (!model->getNumCols())
@@ -111,10 +111,10 @@ int computeCompleteSolution(CbcModel *model,
   double compObj = COIN_DBL_MAX;
   bool foundIntegerSol = false;
   OsiSolverInterface *lp = model->solver()->clone();
-  map<string, int> colIdx;
-  assert((static_cast<int>(colNames.size())) == lp->getNumCols());
+  map< string, int > colIdx;
+  assert((static_cast< int >(colNames.size())) == lp->getNumCols());
   /* for fast search of column names */
-  for (int i = 0; (i < static_cast<int>(colNames.size())); ++i)
+  for (int i = 0; (i < static_cast< int >(colNames.size())); ++i)
     colIdx[colNames[i]] = i;
 
   char printLine[STR_SIZE];
@@ -134,8 +134,8 @@ int computeCompleteSolution(CbcModel *model,
       lp->setColBounds(i, 0.0, 0.0);
   }
 #endif
-  for (int i = 0; (i < static_cast<int>(colValues.size())); ++i) {
-    map<string, int>::const_iterator mIt = colIdx.find(colValues[i].first);
+  for (int i = 0; (i < static_cast< int >(colValues.size())); ++i) {
+    map< string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
     if (mIt == colIdx.end()) {
       if (!notFound)
         strcpy(colNotFound, colValues[i].first.c_str());
@@ -166,7 +166,7 @@ int computeCompleteSolution(CbcModel *model,
     goto TERMINATE;
   }
 
-  if (notFound >= ((static_cast<double>(colNames.size())) * 0.5)) {
+  if (notFound >= ((static_cast< double >(colNames.size())) * 0.5)) {
     sprintf(printLine, "Warning: %d column names were not found (e.g. %s) while filling solution.", notFound, colNotFound);
     model->messageHandler()->message(CBC_GENERAL, model->messages())
       << printLine << CoinMessageEol;
@@ -194,7 +194,7 @@ int computeCompleteSolution(CbcModel *model,
       // but look at SOS
       int numberObjects = model->numberObjects();
       for (int i = 0; i < numberObjects; i++) {
-        const OsiSOS *object = dynamic_cast<const OsiSOS *>(model->object(i));
+        const OsiSOS *object = dynamic_cast< const OsiSOS * >(model->object(i));
         if (object) {
           int n = object->numberMembers();
           const int *members = object->members();
@@ -273,7 +273,7 @@ int computeCompleteSolution(CbcModel *model,
 
   /* some additional effort is needed to provide an integer solution */
   if (lp->getFractionalIndices().size() > 0) {
-    sprintf(printLine, "MIPStart solution provided values for %d of %d integer variables, %d variables are still fractional.", fixed, lp->getNumIntegers(), static_cast<int>(lp->getFractionalIndices().size()));
+    sprintf(printLine, "MIPStart solution provided values for %d of %d integer variables, %d variables are still fractional.", fixed, lp->getNumIntegers(), static_cast< int >(lp->getFractionalIndices().size()));
     model->messageHandler()->message(CBC_GENERAL, model->messages())
       << printLine << CoinMessageEol;
     double start = CoinCpuTime();

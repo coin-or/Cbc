@@ -394,10 +394,10 @@ void CbcSimpleIntegerDynamicPseudoCost::copySome(const CbcSimpleIntegerDynamicPs
 void CbcSimpleIntegerDynamicPseudoCost::updateBefore(const OsiObject *rhs)
 {
 #ifndef NDEBUG
-  const CbcSimpleIntegerDynamicPseudoCost *rhsObject = dynamic_cast<const CbcSimpleIntegerDynamicPseudoCost *>(rhs);
+  const CbcSimpleIntegerDynamicPseudoCost *rhsObject = dynamic_cast< const CbcSimpleIntegerDynamicPseudoCost * >(rhs);
   assert(rhsObject);
 #else
-  const CbcSimpleIntegerDynamicPseudoCost *rhsObject = static_cast<const CbcSimpleIntegerDynamicPseudoCost *>(rhs);
+  const CbcSimpleIntegerDynamicPseudoCost *rhsObject = static_cast< const CbcSimpleIntegerDynamicPseudoCost * >(rhs);
 #endif
   copySome(rhsObject);
 }
@@ -405,13 +405,13 @@ void CbcSimpleIntegerDynamicPseudoCost::updateBefore(const OsiObject *rhs)
 void CbcSimpleIntegerDynamicPseudoCost::updateAfter(const OsiObject *rhs, const OsiObject *baseObjectX)
 {
 #ifndef NDEBUG
-  const CbcSimpleIntegerDynamicPseudoCost *rhsObject = dynamic_cast<const CbcSimpleIntegerDynamicPseudoCost *>(rhs);
+  const CbcSimpleIntegerDynamicPseudoCost *rhsObject = dynamic_cast< const CbcSimpleIntegerDynamicPseudoCost * >(rhs);
   assert(rhsObject);
-  const CbcSimpleIntegerDynamicPseudoCost *baseObject = dynamic_cast<const CbcSimpleIntegerDynamicPseudoCost *>(baseObjectX);
+  const CbcSimpleIntegerDynamicPseudoCost *baseObject = dynamic_cast< const CbcSimpleIntegerDynamicPseudoCost * >(baseObjectX);
   assert(baseObject);
 #else
-  const CbcSimpleIntegerDynamicPseudoCost *rhsObject = static_cast<const CbcSimpleIntegerDynamicPseudoCost *>(rhs);
-  const CbcSimpleIntegerDynamicPseudoCost *baseObject = static_cast<const CbcSimpleIntegerDynamicPseudoCost *>(baseObjectX);
+  const CbcSimpleIntegerDynamicPseudoCost *rhsObject = static_cast< const CbcSimpleIntegerDynamicPseudoCost * >(rhs);
+  const CbcSimpleIntegerDynamicPseudoCost *baseObject = static_cast< const CbcSimpleIntegerDynamicPseudoCost * >(baseObjectX);
 #endif
   // compute current
   double sumDown = downDynamicPseudoCost_ * numberTimesDown_;
@@ -450,10 +450,10 @@ void CbcSimpleIntegerDynamicPseudoCost::updateAfter(const OsiObject *rhs, const 
   numberTimesUpTotalFixed_ += rhsObject->numberTimesUpTotalFixed_ - baseObject->numberTimesUpTotalFixed_;
   numberTimesProbingTotal_ += rhsObject->numberTimesProbingTotal_ - baseObject->numberTimesProbingTotal_;
   if (numberTimesDown_ > 0) {
-    setDownDynamicPseudoCost(sumDown / static_cast<double>(numberTimesDown_));
+    setDownDynamicPseudoCost(sumDown / static_cast< double >(numberTimesDown_));
   }
   if (numberTimesUp_ > 0) {
-    setUpDynamicPseudoCost(sumUp / static_cast<double>(numberTimesUp_));
+    setUpDynamicPseudoCost(sumUp / static_cast< double >(numberTimesUp_));
   }
   //printf("XX %d down %d %d %g up %d %d %g\n",columnNumber_,numberTimesDown_,numberTimesDownInfeasible_,downDynamicPseudoCost_,
   // numberTimesUp_,numberTimesUpInfeasible_,upDynamicPseudoCost_);
@@ -744,14 +744,14 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
         sum = sumDownCost_;
         number = numberTimesDown_;
         if (number > 0)
-          downCost2 *= sum / static_cast<double>(number);
+          downCost2 *= sum / static_cast< double >(number);
         else
           downCost2 *= downDynamicPseudoCost_;
         double upCost2 = CoinMax((above - value), 0.0);
         sum = sumUpCost_;
         number = numberTimesUp_;
         if (number > 0)
-          upCost2 *= sum / static_cast<double>(number);
+          upCost2 *= sum / static_cast< double >(number);
         else
           upCost2 *= upDynamicPseudoCost_;
         double minValue2 = CoinMin(downCost2, upCost2);
@@ -792,8 +792,8 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
       double up = 1.0e-15;
       double down = 1.0e-15;
       if (numberTimesProbingTotal_) {
-        up += numberTimesUpTotalFixed_ / static_cast<double>(numberTimesProbingTotal_);
-        down += numberTimesDownTotalFixed_ / static_cast<double>(numberTimesProbingTotal_);
+        up += numberTimesUpTotalFixed_ / static_cast< double >(numberTimesProbingTotal_);
+        down += numberTimesDownTotalFixed_ / static_cast< double >(numberTimesProbingTotal_);
       }
       returnValue = 1 + 10.0 * CoinMin(numberTimesDownLocalFixed_, numberTimesUpLocalFixed_) + CoinMin(down, up);
       returnValue *= 1.0e-3;
@@ -932,7 +932,7 @@ void CbcSimpleIntegerDynamicPseudoCost::updateDownDynamicPseudoCost(double value
 {
   sumDownCost_ += value;
   numberTimesDown_++;
-  downDynamicPseudoCost_ = sumDownCost_ / static_cast<double>(numberTimesDown_);
+  downDynamicPseudoCost_ = sumDownCost_ / static_cast< double >(numberTimesDown_);
 }
 // Set up pseudo cost
 void CbcSimpleIntegerDynamicPseudoCost::setUpDynamicPseudoCost(double value)
@@ -957,7 +957,7 @@ void CbcSimpleIntegerDynamicPseudoCost::updateUpDynamicPseudoCost(double value)
 {
   sumUpCost_ += value;
   numberTimesUp_++;
-  upDynamicPseudoCost_ = sumUpCost_ / static_cast<double>(numberTimesUp_);
+  upDynamicPseudoCost_ = sumUpCost_ / static_cast< double >(numberTimesUp_);
 }
 /* Pass in information on branch just done and create CbcObjectUpdateData instance.
    If object does not need data then backward pointer will be NULL.
@@ -999,7 +999,7 @@ CbcSimpleIntegerDynamicPseudoCost::createUpdateInformation(const OsiSolverInterf
       if (fabs(value - nearest) > integerTolerance)
         unsatisfied++;
 #ifdef SWITCH_VARIABLES
-      const CbcSwitchingBinary *sObject = dynamic_cast<const CbcSwitchingBinary *>(this);
+      const CbcSwitchingBinary *sObject = dynamic_cast< const CbcSwitchingBinary * >(this);
       if (sObject) {
         int state[3], nBadFixed;
         unsatisfied += sObject->checkAssociatedBounds(solver, solution, 0,
@@ -1049,7 +1049,7 @@ void CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateD
       addToSumDownDecrease(data.intDecrease_);
 #if TYPE2 == 0
       addToSumDownCost(change / (1.0e-30 + movement));
-      setDownDynamicPseudoCost(sumDownCost() / static_cast<double>(numberTimesDown()));
+      setDownDynamicPseudoCost(sumDownCost() / static_cast< double >(numberTimesDown()));
 #elif TYPE2 == 1
       addToSumDownCost(change);
       setDownDynamicPseudoCost(sumDownCost() / sumDownChange());
@@ -1096,7 +1096,7 @@ void CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateD
     if (distanceToCutoff > 1.0e20)
       distanceToCutoff = 10.0 + fabs(originalValue);
     sum += INFEAS_MULTIPLIER * numberTimesDownInfeasible_ * CoinMax(distanceToCutoff, 1.0e-12 * (1.0 + fabs(originalValue)));
-    setDownDynamicPseudoCost(sum / static_cast<double>(number));
+    setDownDynamicPseudoCost(sum / static_cast< double >(number));
 #endif
   } else {
     // up
@@ -1112,7 +1112,7 @@ void CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateD
       addToSumUpDecrease(data.intDecrease_);
 #if TYPE2 == 0
       addToSumUpCost(change / (1.0e-30 + movement));
-      setUpDynamicPseudoCost(sumUpCost() / static_cast<double>(numberTimesUp()));
+      setUpDynamicPseudoCost(sumUpCost() / static_cast< double >(numberTimesUp()));
 #elif TYPE2 == 1
       addToSumUpCost(change);
       setUpDynamicPseudoCost(sumUpCost() / sumUpChange());
@@ -1159,7 +1159,7 @@ void CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateD
     if (distanceToCutoff > 1.0e20)
       distanceToCutoff = 10.0 + fabs(originalValue);
     sum += INFEAS_MULTIPLIER * numberTimesUpInfeasible_ * CoinMax(distanceToCutoff, 1.0e-12 * (1.0 + fabs(originalValue)));
-    setUpDynamicPseudoCost(sum / static_cast<double>(number));
+    setUpDynamicPseudoCost(sum / static_cast< double >(number));
 #endif
   }
   if (data.way_ < 0)
@@ -1206,11 +1206,11 @@ void CbcSimpleIntegerDynamicPseudoCost::updateAfterMini(int numberDown, int numb
   numberTimesUpInfeasible_ = numberUpInfeasible;
   sumUpCost_ = sumUp;
   if (numberTimesDown_ > 0) {
-    setDownDynamicPseudoCost(sumDownCost_ / static_cast<double>(numberTimesDown_));
+    setDownDynamicPseudoCost(sumDownCost_ / static_cast< double >(numberTimesDown_));
     assert(downDynamicPseudoCost_ > 0.0 && downDynamicPseudoCost_ < 1.0e50);
   }
   if (numberTimesUp_ > 0) {
-    setUpDynamicPseudoCost(sumUpCost_ / static_cast<double>(numberTimesUp_));
+    setUpDynamicPseudoCost(sumUpCost_ / static_cast< double >(numberTimesUp_));
     assert(upDynamicPseudoCost_ > 0.0 && upDynamicPseudoCost_ < 1.0e50);
   }
   assert(downDynamicPseudoCost_ > 1.0e-40 && upDynamicPseudoCost_ > 1.0e-40);
@@ -1231,7 +1231,7 @@ void CbcSimpleIntegerDynamicPseudoCost::print(int type, double value) const
     double meanDown = 0.0;
     double devDown = 0.0;
     if (numberTimesDown_) {
-      meanDown = sumDownCost_ / static_cast<double>(numberTimesDown_);
+      meanDown = sumDownCost_ / static_cast< double >(numberTimesDown_);
       devDown = meanDown * meanDown - 2.0 * meanDown * sumDownCost_;
       if (devDown >= 0.0)
         devDown = sqrt(devDown);
@@ -1239,7 +1239,7 @@ void CbcSimpleIntegerDynamicPseudoCost::print(int type, double value) const
     double meanUp = 0.0;
     double devUp = 0.0;
     if (numberTimesUp_) {
-      meanUp = sumUpCost_ / static_cast<double>(numberTimesUp_);
+      meanUp = sumUpCost_ / static_cast< double >(numberTimesUp_);
       devUp = meanUp * meanUp - 2.0 * meanUp * sumUpCost_;
       if (devUp >= 0.0)
         devUp = sqrt(devUp);
@@ -1272,7 +1272,7 @@ void CbcSimpleIntegerDynamicPseudoCost::print(int type, double value) const
     number = numberTimesDown();
     sum += INFEAS_MULTIPLIER * numberTimesDownInfeasible() * (distanceToCutoff / (downCost + 1.0e-12));
     if (number > 0)
-      downCost *= sum / static_cast<double>(number);
+      downCost *= sum / static_cast< double >(number);
     else
       downCost *= downDynamicPseudoCost_;
     double upCost = CoinMax((above - value), 0.0);
@@ -1281,7 +1281,7 @@ void CbcSimpleIntegerDynamicPseudoCost::print(int type, double value) const
     number = numberTimesUp();
     sum += INFEAS_MULTIPLIER * numberTimesUpInfeasible() * (distanceToCutoff / (upCost + 1.0e-12));
     if (number > 0)
-      upCost *= sum / static_cast<double>(number);
+      upCost *= sum / static_cast< double >(number);
     else
       upCost *= upDynamicPseudoCost_;
     printf("%d down %d times %g (est %g)  up %d times %g (est %g)\n",
@@ -1373,7 +1373,7 @@ CbcIntegerPseudoCostBranchingObject::branch()
 CbcRangeCompare
 CbcIntegerPseudoCostBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, const bool replaceIfOverlap)
 {
-  const CbcIntegerPseudoCostBranchingObject *br = dynamic_cast<const CbcIntegerPseudoCostBranchingObject *>(brObj);
+  const CbcIntegerPseudoCostBranchingObject *br = dynamic_cast< const CbcIntegerPseudoCostBranchingObject * >(brObj);
   assert(br);
   double *thisBd = way_ < 0 ? down_ : up_;
   const double *otherBd = br->way_ < 0 ? br->down_ : br->up_;
@@ -1587,7 +1587,7 @@ CbcSwitchingBinary::infeasibility(const OsiBranchingInformation *info,
   int &preferredWay) const
 {
   assert(downDynamicPseudoCost_ > 1.0e-40 && upDynamicPseudoCost_ > 1.0e-40);
-  double *solution = const_cast<double *>(model_->testSolution());
+  double *solution = const_cast< double * >(model_->testSolution());
   const double *lower = model_->getCbcColLower();
   const double *upper = model_->getCbcColUpper();
   double saveValue = solution[columnNumber_];
@@ -1633,7 +1633,7 @@ int CbcSwitchingBinary::setAssociatedBounds(OsiSolverInterface *solver,
     solver = model_->solver();
 #ifdef COIN_HAS_CLP
   OsiClpSolverInterface *clpSolver
-    = dynamic_cast<OsiClpSolverInterface *>(solver);
+    = dynamic_cast< OsiClpSolverInterface * >(solver);
   if (cleanBasis != 1)
     clpSolver = NULL;
 #endif

@@ -128,7 +128,7 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface *solver, const OsiBranchi
   // make smaller ?
   double tolerance = CoinMin(1.0e-8, integerTolerance);
   // How many fixed are we aiming at
-  int wantedFixed = static_cast<int>(static_cast<double>(numberIntegers) * fractionFixed_);
+  int wantedFixed = static_cast< int >(static_cast< double >(numberIntegers) * fractionFixed_);
   int nSort = 0;
   int numberFixed = 0;
   int numberColumns = solver->getNumCols();
@@ -379,7 +379,7 @@ int CbcBranchToFixLots::shallWe() const
   // make smaller ?
   double tolerance = CoinMin(1.0e-8, integerTolerance);
   // How many fixed are we aiming at
-  int wantedFixed = static_cast<int>(static_cast<double>(numberIntegers) * fractionFixed_);
+  int wantedFixed = static_cast< int >(static_cast< double >(numberIntegers) * fractionFixed_);
   if (djTolerance_ < 1.0e10) {
     int nSort = 0;
     int numberFixed = 0;

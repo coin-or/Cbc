@@ -207,7 +207,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);
@@ -334,7 +334,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
         } else {
           value = ceil(value - .5);
         }
-        int ivalue = static_cast<int>(value);
+        int ivalue = static_cast< int >(value);
         fprintf(fp, "%d.0", ivalue);
         if (++k == 10) {
           k = 0;
@@ -508,7 +508,7 @@ int CbcGenParamUtils::doPrintMaskParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);

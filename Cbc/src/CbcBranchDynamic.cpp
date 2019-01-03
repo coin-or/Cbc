@@ -201,15 +201,15 @@ void CbcBranchDynamicDecision::saveBranchingObject(OsiBranchingObject *object)
 {
   OsiBranchingObject *obj = object->clone();
 #ifndef NDEBUG
-  CbcBranchingObject *obj2 = dynamic_cast<CbcBranchingObject *>(obj);
+  CbcBranchingObject *obj2 = dynamic_cast< CbcBranchingObject * >(obj);
   assert(obj2);
 #if COIN_DEVELOP > 1
-  CbcDynamicPseudoCostBranchingObject *branchingObject = dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(obj);
+  CbcDynamicPseudoCostBranchingObject *branchingObject = dynamic_cast< CbcDynamicPseudoCostBranchingObject * >(obj);
   if (!branchingObject)
     printf("no dynamic branching object Dynamic Decision\n");
 #endif
 #else
-  CbcBranchingObject *obj2 = static_cast<CbcBranchingObject *>(obj);
+  CbcBranchingObject *obj2 = static_cast< CbcBranchingObject * >(obj);
 #endif
   //object_=branchingObject;
   object_ = obj2;
@@ -253,7 +253,7 @@ void CbcBranchDynamicDecision::updateInformation(OsiSolverInterface *solver,
 	 null object_? Nah, then we have an assert failure off the top.
 	*/
 
-  CbcDynamicPseudoCostBranchingObject *branchingObject = dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(object_);
+  CbcDynamicPseudoCostBranchingObject *branchingObject = dynamic_cast< CbcDynamicPseudoCostBranchingObject * >(object_);
   if (!branchingObject) {
     delete object_;
     object_ = NULL;
@@ -311,7 +311,7 @@ void CbcBranchDynamicDecision::updateInformation(OsiSolverInterface *solver,
       object->addToSumDownDecrease(originalUnsatisfied - unsatisfied);
 #if TYPE2 == 0
       object->addToSumDownCost(change / (nonZeroAmount + movement));
-      object->setDownDynamicPseudoCost(object->sumDownCost() / static_cast<double>(object->numberTimesDown()));
+      object->setDownDynamicPseudoCost(object->sumDownCost() / static_cast< double >(object->numberTimesDown()));
 #elif TYPE2 == 1
       object->addToSumDownCost(change);
       object->setDownDynamicPseudoCost(object->sumDownCost() / object->sumDownChange());
@@ -357,7 +357,7 @@ void CbcBranchDynamicDecision::updateInformation(OsiSolverInterface *solver,
       object->addToSumUpDecrease(unsatisfied - originalUnsatisfied);
 #if TYPE2 == 0
       object->addToSumUpCost(change / (nonZeroAmount + movement));
-      object->setUpDynamicPseudoCost(object->sumUpCost() / static_cast<double>(object->numberTimesUp()));
+      object->setUpDynamicPseudoCost(object->sumUpCost() / static_cast< double >(object->numberTimesUp()));
 #elif TYPE2 == 1
       object->addToSumUpCost(change);
       object->setUpDynamicPseudoCost(object->sumUpCost() / object->sumUpChange());
@@ -478,7 +478,7 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
       distanceToCutoffC = 1.0e2 + fabs(objectiveValue);
     distanceToCutoffC = CoinMax(distanceToCutoffC, 1.0e-12 * (1.0 + fabs(objectiveValue)));
     int numberInfC = model->getContinuousInfeasibilities();
-    double perInf = distanceToCutoffC / static_cast<double>(numberInfC);
+    double perInf = distanceToCutoffC / static_cast< double >(numberInfC);
     assert(perInf > 0.0);
     //int numberIntegers = model->numberIntegers();
     changeDown += perInf * numInfDown;
@@ -542,7 +542,7 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
     if (useValue + 0.1 * distance > useBest && useValue * 1.1 > useBest && useBest + 0.1 * distance > useValue && useBest * 1.1 > useValue) {
       // not much in it - look at unsatisfied
       if (thisNumber < numberUnsatisfied || bestNumber < numberUnsatisfied) {
-        double perInteger = distance / (static_cast<double>(numberUnsatisfied));
+        double perInteger = distance / (static_cast< double >(numberUnsatisfied));
         useValue += thisNumber * perInteger;
         useBest += bestNumber * perInteger;
       }
@@ -559,7 +559,7 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
 #ifdef COIN_DEVELOP
   History hist;
   {
-    CbcDynamicPseudoCostBranchingObject *branchingObject = dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(thisOne);
+    CbcDynamicPseudoCostBranchingObject *branchingObject = dynamic_cast< CbcDynamicPseudoCostBranchingObject * >(thisOne);
     if (branchingObject) {
       CbcSimpleIntegerDynamicPseudoCost *object = branchingObject->object();
       assert(object);
@@ -582,7 +582,7 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
     hist.status_ = 'B';
 #endif
     // maybe change better way
-    CbcDynamicPseudoCostBranchingObject *branchingObject = dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(thisOne);
+    CbcDynamicPseudoCostBranchingObject *branchingObject = dynamic_cast< CbcDynamicPseudoCostBranchingObject * >(thisOne);
     if (branchingObject) {
       CbcSimpleIntegerDynamicPseudoCost *object = branchingObject->object();
       double separator = object->upDownSeparator();
@@ -751,12 +751,12 @@ int CbcDynamicPseudoCostBranchingObject::fillStrongInfo(CbcStrongInfo &info)
   assert(info.possibleBranch == this);
   info.upMovement = object_->upDynamicPseudoCost() * (ceil(value_) - value_);
   info.downMovement = object_->downDynamicPseudoCost() * (value_ - floor(value_));
-  info.numIntInfeasUp -= static_cast<int>(object_->sumUpDecrease() / (1.0e-12 + static_cast<double>(object_->numberTimesUp())));
+  info.numIntInfeasUp -= static_cast< int >(object_->sumUpDecrease() / (1.0e-12 + static_cast< double >(object_->numberTimesUp())));
   info.numIntInfeasUp = CoinMax(info.numIntInfeasUp, 0);
   info.numObjInfeasUp = 0;
   info.finishedUp = false;
   info.numItersUp = 0;
-  info.numIntInfeasDown -= static_cast<int>(object_->sumDownDecrease() / (1.0e-12 + static_cast<double>(object_->numberTimesDown())));
+  info.numIntInfeasDown -= static_cast< int >(object_->sumDownDecrease() / (1.0e-12 + static_cast< double >(object_->numberTimesDown())));
   info.numIntInfeasDown = CoinMax(info.numIntInfeasDown, 0);
   info.numObjInfeasDown = 0;
   info.finishedDown = false;

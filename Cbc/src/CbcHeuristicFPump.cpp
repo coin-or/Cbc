@@ -326,8 +326,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     int iColumn = integerVariableOrig[i];
 #ifndef NDEBUG
     const OsiObject *object = model_->object(i);
-    const CbcSimpleInteger *integerObject = dynamic_cast<const CbcSimpleInteger *>(object);
-    const OsiSimpleInteger *integerObject2 = dynamic_cast<const OsiSimpleInteger *>(object);
+    const CbcSimpleInteger *integerObject = dynamic_cast< const CbcSimpleInteger * >(object);
+    const OsiSimpleInteger *integerObject2 = dynamic_cast< const OsiSimpleInteger * >(object);
     assert(integerObject || integerObject2);
 #endif
 #ifdef COIN_HAS_CLP
@@ -443,7 +443,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   automagically deleted on exit from the routine.
 */
   CoinWarmStartBasis saveBasis;
-  CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(model_->solver()->getWarmStart());
+  CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(model_->solver()->getWarmStart());
   if (basis) {
     saveBasis = *basis;
     delete basis;
@@ -515,7 +515,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #ifdef COIN_HAS_CLP
   {
     OsiClpSolverInterface *clpSolver
-      = dynamic_cast<OsiClpSolverInterface *>(model_->solver());
+      = dynamic_cast< OsiClpSolverInterface * >(model_->solver());
     if (clpSolver) {
       if (maximumPasses == 30) {
         if (clpSolver->fakeObjective())
@@ -564,7 +564,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #ifdef COIN_HAS_CLP
     {
       OsiClpSolverInterface *clpSolver
-        = dynamic_cast<OsiClpSolverInterface *>(solver);
+        = dynamic_cast< OsiClpSolverInterface * >(solver);
       if (clpSolver) {
         // better to clean up using primal?
         ClpSimplex *lp = clpSolver->getModelPtr();
@@ -721,7 +721,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #endif
     }
     if (scaleFactor)
-      scaleFactor = (initialWeight_ * sqrt(static_cast<double>(numberIntegers))) / sqrt(scaleFactor);
+      scaleFactor = (initialWeight_ * sqrt(static_cast< double >(numberIntegers))) / sqrt(scaleFactor);
 #ifdef CLP_INVESTIGATE
 #ifdef COIN_DEVELOP
     if (scaleFactor || nArtificial)
@@ -810,7 +810,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #ifdef COIN_HAS_CLP
       {
         OsiClpSolverInterface *clpSolver
-          = dynamic_cast<OsiClpSolverInterface *>(clonedSolver);
+          = dynamic_cast< OsiClpSolverInterface * >(clonedSolver);
         //printf("real cutoff %g fake %g - second pass %c\n",realCutoff,cutoff,
         //     secondMajorPass ? 'Y' : 'N');
         if (clpSolver && (((accumulate_ & 16) != 0) || ((accumulate_ & 8) != 0 && secondMajorPass))) {
@@ -1032,7 +1032,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             solutionFound = true;
             if (exitNow(newSolutionValue))
               exitAll = true;
-            CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+            CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
             if (basis) {
               bestBasis = *basis;
               delete basis;
@@ -1303,7 +1303,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
               << CoinMessageEol;
             if (newSolutionValue < solutionValue) {
               memcpy(betterSolution, newSolution, numberColumns * sizeof(double));
-              CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+              CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
               solutionFound = true;
               numberSolutions++;
               if (numberSolutions >= maxSolutions)
@@ -1359,7 +1359,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             solver->setHintParam(OsiDoDualInResolve, true); // dual may be better
             if (dualPass == 1 && 2 * numberChanged < numberColumns && (numberChanged < 5000 || 6 * numberChanged < numberColumns)) {
               // but we need to make infeasible
-              CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+              CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
               if (basis) {
                 // modify
                 const double *lower = solver->getColLower();
@@ -1465,7 +1465,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             if (numberPasses == 1 && secondPassOpt) {
               if (numberTries == 1 || secondPassOpt > 3) {
                 // save basis
-                CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+                CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
                 if (basis) {
                   saveBasis = *basis;
                   delete basis;
@@ -2180,7 +2180,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #endif
 #ifdef COIN_HAS_CLP
             OsiClpSolverInterface *clpSolver
-              = dynamic_cast<OsiClpSolverInterface *>(newSolver);
+              = dynamic_cast< OsiClpSolverInterface * >(newSolver);
             if (clpSolver) {
               ClpSimplex *simplex = clpSolver->getModelPtr();
               //simplex->writeBasis("test.bas",true,2);
@@ -2288,7 +2288,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             exitAll = true;
           if (exitNow(newSolutionValue))
             exitAll = true;
-          CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(newSolver->getWarmStart());
+          CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(newSolver->getWarmStart());
           if (basis) {
             bestBasis = *basis;
             delete basis;
@@ -2435,9 +2435,9 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     double nrow = model_->solver()->getNumRows();
     printf("XXX total iterations %d ratios - %g %g %g\n",
       totalNumberIterations,
-      static_cast<double>(totalNumberIterations) / nrow,
-      static_cast<double>(totalNumberIterations) / ncol,
-      static_cast<double>(totalNumberIterations) / (2 * nrow + 2 * ncol));
+      static_cast< double >(totalNumberIterations) / nrow,
+      static_cast< double >(totalNumberIterations) / ncol,
+      static_cast< double >(totalNumberIterations) / (2 * nrow + 2 * ncol));
   }
 #endif
   return finalReturnCode;
@@ -2485,9 +2485,9 @@ int CbcHeuristicFPump::solution(double &objectiveValue, double *newSolution)
           solver->setColUpper(iColumn, nearest);
         } else {
           general++;
-          int up = static_cast<int>(upper[iColumn]);
-          int lo = static_cast<int>(lower[iColumn]);
-          int near = static_cast<int>(nearest);
+          int up = static_cast< int >(upper[iColumn]);
+          int lo = static_cast< int >(lower[iColumn]);
+          int near = static_cast< int >(nearest);
           up = CoinMin(up, near + maxAround);
           lo = CoinMax(lo, near - maxAround);
           solver->setColLower(iColumn, lo);
@@ -2532,8 +2532,8 @@ int CbcHeuristicFPump::solution(double &objectiveValue, double *newSolution)
           continue;
 #endif
         if (upper[iColumn] - lower[iColumn] > 1.000001) {
-          int up = static_cast<int>(upper[iColumn]);
-          int lo = static_cast<int>(lower[iColumn]);
+          int up = static_cast< int >(upper[iColumn]);
+          int lo = static_cast< int >(lower[iColumn]);
           addLower[nAddRow] = lo;
           addUpper[nAddRow] = lo;
           addIndex[nEl] = iColumn;
@@ -2610,7 +2610,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
   int flip_up = 0;
   int flip_down = 0;
   double v = randomNumberGenerator_.randomDouble() * 20.0;
-  int nn = 10 + static_cast<int>(v);
+  int nn = 10 + static_cast< int >(v);
   int nnv = 0;
   int *list = new int[nn];
   double *val = new double[nn];
@@ -2775,7 +2775,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
     double *saveUpper = CoinCopyOfArray(columnUpper, numberColumns);
     double *saveSolution = CoinCopyOfArray(solution, numberColumns);
     double *tempSolution = CoinCopyOfArray(solution, numberColumns);
-    CoinWarmStartBasis *saveBasis = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+    CoinWarmStartBasis *saveBasis = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
     for (i = 0; i < numberIntegers; i++) {
       int iColumn = integerVariable[i];
       double value = solution[iColumn];
@@ -3230,7 +3230,7 @@ CbcDisasterHandler::CbcDisasterHandler(CbcModel *model)
 {
   if (model) {
     osiModel_
-      = dynamic_cast<OsiClpSolverInterface *>(model->solver());
+      = dynamic_cast< OsiClpSolverInterface * >(model->solver());
     if (osiModel_)
       setSimplex(osiModel_->getModelPtr());
   }
@@ -3288,7 +3288,7 @@ void CbcDisasterHandler::setCbcModel(CbcModel *model)
   cbcModel_ = model;
   if (model) {
     osiModel_
-      = dynamic_cast<OsiClpSolverInterface *>(model->solver());
+      = dynamic_cast< OsiClpSolverInterface * >(model->solver());
     if (osiModel_)
       setSimplex(osiModel_->getModelPtr());
     else

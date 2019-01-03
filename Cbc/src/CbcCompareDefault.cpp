@@ -192,9 +192,9 @@ bool CbcCompareDefault::test(CbcNode *x, CbcNode *y)
            then reverse sign as large weight good */
     double target = (1.0 - THRESH2) * bestPossible_ + THRESH2 * cutoff_;
     double weight;
-    weight = (target - x->objectiveValue()) / static_cast<double>(x->numberUnsatisfied());
+    weight = (target - x->objectiveValue()) / static_cast< double >(x->numberUnsatisfied());
     double testX = -weight;
-    weight = (target - y->objectiveValue()) / static_cast<double>(y->numberUnsatisfied());
+    weight = (target - y->objectiveValue()) / static_cast< double >(y->numberUnsatisfied());
     double testY = -weight;
 #elif TRY_THIS == 2
     // Use estimates
@@ -228,7 +228,7 @@ bool CbcCompareDefault::newSolution(CbcModel *model,
   if (model->getSolutionCount() == model->getNumberHeuristicSolutions() && model->getSolutionCount() < 5 && model->getNodeCount() < 500)
     return (false); // solution was got by rounding
   // set to get close to this solution
-  double costPerInteger = (model->getObjValue() - objectiveAtContinuous) / static_cast<double>(numberInfeasibilitiesAtContinuous);
+  double costPerInteger = (model->getObjValue() - objectiveAtContinuous) / static_cast< double >(numberInfeasibilitiesAtContinuous);
   weight_ = 0.95 * costPerInteger;
   saveWeight_ = 0.95 * weight_;
   numberSolutions_++;

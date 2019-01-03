@@ -293,7 +293,7 @@ bool CbcCutBranchingObject::boundBranch() const
 */
 int CbcCutBranchingObject::compareOriginalObject(const CbcBranchingObject *brObj) const
 {
-  const CbcCutBranchingObject *br = dynamic_cast<const CbcCutBranchingObject *>(brObj);
+  const CbcCutBranchingObject *br = dynamic_cast< const CbcCutBranchingObject * >(brObj);
   assert(br);
   const OsiRowCut &r0 = way_ == -1 ? down_ : up_;
   const OsiRowCut &r1 = br->way_ == -1 ? br->down_ : br->up_;
@@ -312,7 +312,7 @@ int CbcCutBranchingObject::compareOriginalObject(const CbcBranchingObject *brObj
 CbcRangeCompare
 CbcCutBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, const bool replaceIfOverlap)
 {
-  const CbcCutBranchingObject *br = dynamic_cast<const CbcCutBranchingObject *>(brObj);
+  const CbcCutBranchingObject *br = dynamic_cast< const CbcCutBranchingObject * >(brObj);
   assert(br);
   OsiRowCut &r0 = way_ == -1 ? down_ : up_;
   const OsiRowCut &r1 = br->way_ == -1 ? br->down_ : br->up_;

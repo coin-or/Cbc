@@ -112,13 +112,13 @@ bool CbcHeuristicDiveLineSearch::selectVariableToBranch(OsiSolverInterface *solv
 
         // if priorities then use
         if (priority_) {
-          int thisRound = static_cast<int>(priority_[i].direction);
+          int thisRound = static_cast< int >(priority_[i].direction);
           if ((thisRound & 1) != 0)
             round = ((thisRound & 2) == 0) ? -1 : +1;
           if (priority_[i].priority > bestPriority) {
             relDistance = COIN_DBL_MAX;
           } else if (priority_[i].priority < bestPriority) {
-            bestPriority = static_cast<int>(priority_[i].priority);
+            bestPriority = static_cast< int >(priority_[i].priority);
             bestRelDistance = COIN_DBL_MAX;
           }
         }

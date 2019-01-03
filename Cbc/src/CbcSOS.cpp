@@ -403,9 +403,9 @@ CbcSOS::infeasibility(const OsiBranchingInformation *info,
       double downCost = shadowEstimateDown_;
       double upCost = shadowEstimateUp_;
       if (numberTimesDown_)
-        downCost *= downDynamicPseudoRatio_ / static_cast<double>(numberTimesDown_);
+        downCost *= downDynamicPseudoRatio_ / static_cast< double >(numberTimesDown_);
       if (numberTimesUp_)
-        upCost *= upDynamicPseudoRatio_ / static_cast<double>(numberTimesUp_);
+        upCost *= upDynamicPseudoRatio_ / static_cast< double >(numberTimesUp_);
 #define WEIGHT_AFTER 0.7
 #define WEIGHT_BEFORE 0.1
       int stateOfSearch = model_->stateOfSearch() % 10;
@@ -427,7 +427,7 @@ CbcSOS::infeasibility(const OsiBranchingInformation *info,
       return returnValue;
     } else {
       double value = lastNonZero - firstNonZero + 1;
-      value *= 0.5 / static_cast<double>(numberMembers_);
+      value *= 0.5 / static_cast< double >(numberMembers_);
       return value;
     }
   } else {
@@ -1036,7 +1036,7 @@ void CbcSOSBranchingObject::print()
 */
 int CbcSOSBranchingObject::compareOriginalObject(const CbcBranchingObject *brObj) const
 {
-  const CbcSOSBranchingObject *br = dynamic_cast<const CbcSOSBranchingObject *>(brObj);
+  const CbcSOSBranchingObject *br = dynamic_cast< const CbcSOSBranchingObject * >(brObj);
   assert(br);
   const CbcSOS *s0 = set_;
   const CbcSOS *s1 = br->set_;
@@ -1066,7 +1066,7 @@ int CbcSOSBranchingObject::compareOriginalObject(const CbcBranchingObject *brObj
 CbcRangeCompare
 CbcSOSBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, const bool replaceIfOverlap)
 {
-  const CbcSOSBranchingObject *br = dynamic_cast<const CbcSOSBranchingObject *>(brObj);
+  const CbcSOSBranchingObject *br = dynamic_cast< const CbcSOSBranchingObject * >(brObj);
   assert(br);
   if (firstNonzero_ < br->firstNonzero_) {
     if (lastNonzero_ >= br->lastNonzero_) {

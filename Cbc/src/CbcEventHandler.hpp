@@ -136,7 +136,7 @@ public:
 
   /*! \brief Data type for event/action pairs */
 
-  typedef std::map<CbcEvent, CbcAction> eaMapPair;
+  typedef std::map< CbcEvent, CbcAction > eaMapPair;
 
   /*! \name Event Processing */
   //@{

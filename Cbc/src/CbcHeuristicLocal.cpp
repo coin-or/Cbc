@@ -503,7 +503,7 @@ int CbcHeuristicLocal::solution(double &solutionValue,
       iway = 1;
     if (value < originalUpper - 0.5)
       iway |= 2;
-    way[i] = static_cast<char>(iway);
+    way[i] = static_cast< char >(iway);
   }
   /*
   Calculate lhs of each constraint for groomed solution.
@@ -569,7 +569,7 @@ int CbcHeuristicLocal::solution(double &solutionValue,
     int *integerVariable = CoinCopyOfArray(model_->integerVariable(), numberIntegers);
 #ifdef COIN_HAS_CLP
     OsiClpSolverInterface *clpSolver
-      = dynamic_cast<OsiClpSolverInterface *>(model_->solver());
+      = dynamic_cast< OsiClpSolverInterface * >(model_->solver());
     if (clpSolver) {
       // take out some integers
       int nn = numberIntegers;
@@ -849,7 +849,7 @@ int CbcHeuristicLocal::solution(double &solutionValue,
           iway = 1;
         if (value < originalUpper - 0.5)
           iway |= 2;
-        way[goodK] = static_cast<char>(iway);
+        way[goodK] = static_cast< char >(iway);
         totalChange += bestChange;
       }
     }
@@ -914,7 +914,7 @@ int CbcHeuristicLocal::solution(double &solutionValue,
 */
         // new solution
         memcpy(betterSolution, newSolution, numberColumns * sizeof(double));
-        CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+        CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
         if (basis) {
           model_->setBestSolutionBasis(*basis);
           delete basis;
@@ -1088,7 +1088,7 @@ int CbcHeuristicProximity::solution(double &solutionValue,
   if (feasibilityPumpOptions_ == -3 && numCouldRun_ == 0 && !feasibilityPump_) {
     // clone feasibility pump
     for (int i = 0; i < model_->numberHeuristics(); i++) {
-      const CbcHeuristicFPump *pump = dynamic_cast<const CbcHeuristicFPump *>(model_->heuristic(i));
+      const CbcHeuristicFPump *pump = dynamic_cast< const CbcHeuristicFPump * >(model_->heuristic(i));
       if (pump) {
         feasibilityPump_ = new CbcHeuristicFPump(*pump);
         break;
@@ -1161,7 +1161,7 @@ int CbcHeuristicProximity::solution(double &solutionValue,
     // add back feasibility pump
     pumpAdded = true;
     for (int i = 0; i < model_->numberHeuristics(); i++) {
-      const CbcHeuristicFPump *pump = dynamic_cast<const CbcHeuristicFPump *>(model_->heuristic(i));
+      const CbcHeuristicFPump *pump = dynamic_cast< const CbcHeuristicFPump * >(model_->heuristic(i));
       if (pump) {
         pumpAdded = false;
         break;
@@ -1208,7 +1208,7 @@ int CbcHeuristicProximity::solution(double &solutionValue,
     for (int i = 0; i < numberColumns; i++) {
       solutionValue += obj[i] * betterSolution[i];
       if (isHeuristicInteger(solver, i)) {
-        int change = static_cast<int>(floor(solutionIn[i] - betterSolution[i] + 0.5));
+        int change = static_cast< int >(floor(solutionIn[i] - betterSolution[i] + 0.5));
         if (change > 0) {
           numberIncrease++;
           sumIncrease += change;
@@ -1344,7 +1344,7 @@ int CbcHeuristicNaive::solution(double &solutionValue,
   int i;
   bool solutionFound = false;
   CoinWarmStartBasis saveBasis;
-  CoinWarmStartBasis *basis = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+  CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
   if (basis) {
     saveBasis = *basis;
     delete basis;

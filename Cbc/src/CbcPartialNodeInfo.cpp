@@ -69,8 +69,8 @@ CbcPartialNodeInfo::CbcPartialNodeInfo(CbcNodeInfo *parent, CbcNode *owner,
   numberChangedBounds_ = numberChangedBounds;
   size_t size = numberChangedBounds_ * (sizeof(double) + sizeof(int));
   char *temp = new char[size];
-  newBounds_ = reinterpret_cast<double *>(temp);
-  variables_ = reinterpret_cast<int *>(newBounds_ + numberChangedBounds_);
+  newBounds_ = reinterpret_cast< double * >(temp);
+  variables_ = reinterpret_cast< int * >(newBounds_ + numberChangedBounds_);
 
   int i;
   for (i = 0; i < numberChangedBounds_; i++) {
@@ -92,8 +92,8 @@ CbcPartialNodeInfo::CbcPartialNodeInfo(const CbcPartialNodeInfo &rhs)
   numberChangedBounds_ = rhs.numberChangedBounds_;
   size_t size = numberChangedBounds_ * (sizeof(double) + sizeof(int));
   char *temp = new char[size];
-  newBounds_ = reinterpret_cast<double *>(temp);
-  variables_ = reinterpret_cast<int *>(newBounds_ + numberChangedBounds_);
+  newBounds_ = reinterpret_cast< double * >(temp);
+  variables_ = reinterpret_cast< int * >(newBounds_ + numberChangedBounds_);
 
   int i;
   for (i = 0; i < numberChangedBounds_; i++) {
@@ -240,8 +240,8 @@ int CbcPartialNodeInfo::applyBounds(int iColumn, double &lower, double &upper, i
   if (nAdd) {
     size_t size = (numberChangedBounds_ + nAdd) * (sizeof(double) + sizeof(int));
     char *temp = new char[size];
-    double *newBounds = reinterpret_cast<double *>(temp);
-    int *variables = reinterpret_cast<int *>(newBounds + numberChangedBounds_ + nAdd);
+    double *newBounds = reinterpret_cast< double * >(temp);
+    int *variables = reinterpret_cast< int * >(newBounds + numberChangedBounds_ + nAdd);
 
     int i;
     for (i = 0; i < numberChangedBounds_; i++) {

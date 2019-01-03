@@ -140,7 +140,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
       << std::endl;
     return (0);
   }
-  int dfltPrecision = static_cast<int>(std::cout.precision());
+  int dfltPrecision = static_cast< int >(std::cout.precision());
   /*
   Set the range of problems to be tested. testSwitch = -2 is special and is
   picked up below.
@@ -151,7 +151,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
     loSet = 0;
     hiSet = 1;
   } else if (testSwitch >= 0) {
-    loSet = static_cast<int>(stuff[6]);
+    loSet = static_cast< int >(stuff[6]);
     hiSet = testSwitch;
     std::cout
       << "Solving miplib problems in sets " << loSet
@@ -160,13 +160,13 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
   /*
   Vectors to hold test problem names and characteristics.
 */
-  std::vector<std::string> mpsName;
-  std::vector<int> nRows;
-  std::vector<int> nCols;
-  std::vector<double> objValueC;
-  std::vector<double> objValue;
-  std::vector<int> testSet;
-  std::vector<int> rowCutDebugger;
+  std::vector< std::string > mpsName;
+  std::vector< int > nRows;
+  std::vector< int > nCols;
+  std::vector< double > objValueC;
+  std::vector< double > objValue;
+  std::vector< int > testSet;
+  std::vector< int > rowCutDebugger;
 /*
   A macro to make the vector creation marginally readable. Parameters are
   name, rows, columns, integer objective, continuous objective, set ID,
@@ -274,13 +274,13 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
   #define RANDOM_ORDER
 */
   int which[100];
-  int nLoop = static_cast<int>(mpsName.size());
+  int nLoop = static_cast< int >(mpsName.size());
   assert(nLoop <= 100);
   for (int i = 0; i < nLoop; i++)
     which[i] = i;
 
 #ifdef RANDOM_ORDER
-  unsigned int iTime = static_cast<unsigned int>(CoinGetTimeOfDay() - 1.256e9);
+  unsigned int iTime = static_cast< unsigned int >(CoinGetTimeOfDay() - 1.256e9);
   std::cout << "Time (seed) " << iTime << "." << std::endl;
   double sort[100];
   CoinDrand48(true, iTime);
@@ -363,12 +363,12 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
     double startTime = CoinCpuTime() + CoinCpuTimeJustChildren();
 
     // Setup specific to clp
-    OsiClpSolverInterface *siClp = dynamic_cast<OsiClpSolverInterface *>(model->solver());
+    OsiClpSolverInterface *siClp = dynamic_cast< OsiClpSolverInterface * >(model->solver());
     ClpSimplex *modelC = NULL;
     if (siClp) {
       modelC = siClp->getModelPtr();
       ClpMatrixBase *matrix = modelC->clpMatrix();
-      ClpPackedMatrix *clpMatrix = dynamic_cast<ClpPackedMatrix *>(matrix);
+      ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(matrix);
       if (stuff && stuff[9] && clpMatrix) {
         // vector matrix!
         clpMatrix->makeSpecialColumnCopy();
@@ -564,8 +564,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
     if (siClp) {
 #ifdef CLP_MULTIPLE_FACTORIZATIONS
       if (!modelC->factorization()->isDenseOrSmall()) {
-        int denseCode = stuff ? static_cast<int>(stuff[4]) : -1;
-        int smallCode = stuff ? static_cast<int>(stuff[10]) : -1;
+        int denseCode = stuff ? static_cast< int >(stuff[4]) : -1;
+        int smallCode = stuff ? static_cast< int >(stuff[10]) : -1;
         if (stuff && stuff[8] >= 1) {
           if (denseCode < 0)
             denseCode = 40;
@@ -621,7 +621,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
       CbcCutGenerator *generator = model->cutGenerator(iGenerator);
 #ifdef CLIQUE_ANALYSIS
 #ifndef CLP_INVESTIGATE
-      CglImplication *implication = dynamic_cast<CglImplication *>(generator->generator());
+      CglImplication *implication = dynamic_cast< CglImplication * >(generator->generator());
       if (implication)
         continue;
 #endif

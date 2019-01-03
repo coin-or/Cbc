@@ -78,18 +78,18 @@ void CbcSymmetry::Compute_Symmetry() const
 
   std::sort(node_info_.begin(), node_info_.end(), node_sort);
 
-  for (std::vector<Node>::iterator i = node_info_.begin(); i != node_info_.end(); ++i)
+  for (std::vector< Node >::iterator i = node_info_.begin(); i != node_info_.end(); ++i)
     (*i).color_vertex(-1);
 
   int color = 1;
-  for (std::vector<Node>::iterator i = node_info_.begin(); i != node_info_.end(); ++i) {
+  for (std::vector< Node >::iterator i = node_info_.begin(); i != node_info_.end(); ++i) {
     if ((*i).get_color() == -1) {
       (*i).color_vertex(color);
 #ifdef PRINT_MORE
       printf("Graph vertex %d is given color %d\n", (*i).get_index(), color);
 #endif
       nauty_info_->color_node((*i).get_index(), color);
-      for (std::vector<Node>::iterator j = i + 1; j != node_info_.end(); ++j)
+      for (std::vector< Node >::iterator j = i + 1; j != node_info_.end(); ++j)
         if (compare((*i), (*j)) == 1) {
           (*j).color_vertex(color);
           nauty_info_->color_node((*j).get_index(), color);
@@ -163,7 +163,7 @@ void CbcSymmetry::Print_Orbits() const
 
   //printf ("num gens = %d, num orbits = %d \n", nauty_info_ -> getNumGenerators(), nauty_info_ -> getNumOrbits() );
 
-  std::vector<std::vector<int>> *new_orbits = nauty_info_->getOrbits();
+  std::vector< std::vector< int > > *new_orbits = nauty_info_->getOrbits();
 
   printf("Nauty: %d generators, group size: %.0g",
     //  nauty_info_->getNumOrbits(),
@@ -192,13 +192,13 @@ void CbcSymmetry::Print_Orbits() const
 
     int orbCnt = 0;
 
-    std::vector<std::vector<int>> *orbits = nauty_info_->getOrbits();
+    std::vector< std::vector< int > > *orbits = nauty_info_->getOrbits();
 
-    for (std::vector<std::vector<int>>::iterator i = orbits->begin(); i != orbits->end(); ++i) {
+    for (std::vector< std::vector< int > >::iterator i = orbits->begin(); i != orbits->end(); ++i) {
 
       printf("Orbit %d: ", orbCnt++);
 
-      for (std::vector<int>::iterator j = i->begin(); j != i->end(); ++j)
+      for (std::vector< int >::iterator j = i->begin(); j != i->end(); ++j)
         printf(" %d", *j);
 
       printf("\n");
@@ -230,12 +230,12 @@ void CbcSymmetry::fillOrbits()
   numberUsefulOrbits_ = 0;
   numberUsefulObjects_ = 0;
 
-  std::vector<std::vector<int>> *orbits = nauty_info_->getOrbits();
+  std::vector< std::vector< int > > *orbits = nauty_info_->getOrbits();
 
-  for (std::vector<std::vector<int>>::iterator i = orbits->begin(); i != orbits->end(); ++i) {
+  for (std::vector< std::vector< int > >::iterator i = orbits->begin(); i != orbits->end(); ++i) {
     int nUseful = 0;
     int jColumn = -2;
-    for (std::vector<int>::iterator j = i->begin(); j != i->end(); ++j) {
+    for (std::vector< int >::iterator j = i->begin(); j != i->end(); ++j) {
       int iColumn = *j;
       if (iColumn < numberColumns_) {
         whichOrbit_[iColumn] = numberUsefulOrbits_;
@@ -276,12 +276,12 @@ int CbcSymmetry::largestOrbit(const double *lower, const double *upper) const
   return iOrbit;
 }
 
-std::vector<int> *CbcSymmetry::Find_Orbit(int index) const
+std::vector< int > *CbcSymmetry::Find_Orbit(int index) const
 {
 
-  std::vector<int> *orbit = new std::vector<int>;
+  std::vector< int > *orbit = new std::vector< int >;
   int which_orbit = -1;
-  std::vector<std::vector<int>> *new_orbits = nauty_info_->getOrbits();
+  std::vector< std::vector< int > > *new_orbits = nauty_info_->getOrbits();
 
   for (unsigned int i = 0; i < new_orbits->size(); i++) {
     for (unsigned int j = 0; j < (*new_orbits)[i].size(); j++) {
@@ -1154,24 +1154,24 @@ int CbcNauty::getNumOrbits() const
   return (stats_->numorbits);
 }
 
-std::vector<std::vector<int>>
+std::vector< std::vector< int > >
   *CbcNauty::getOrbits() const
 {
-  std::vector<std::vector<int>> *orb = new std::vector<std::vector<int>>;
+  std::vector< std::vector< int > > *orb = new std::vector< std::vector< int > >;
   if (!autoComputed_)
     return orb;
   orb->resize(getNumOrbits());
-  std::multimap<int, int> orbmap;
-  std::set<int> orbkeys;
+  std::multimap< int, int > orbmap;
+  std::set< int > orbkeys;
   for (int j = 0; j < n_; j++) {
     orbkeys.insert(orbits_[j]);
     orbmap.insert(std::make_pair(orbits_[j], j));
   }
 
   int orbix = 0;
-  for (std::set<int>::iterator it = orbkeys.begin();
+  for (std::set< int >::iterator it = orbkeys.begin();
        it != orbkeys.end(); ++it) {
-    std::multimap<int, int>::iterator pos;
+    std::multimap< int, int >::iterator pos;
     for (pos = orbmap.lower_bound(*it);
          pos != orbmap.upper_bound(*it); ++pos) {
       (*orb)[orbix].push_back(pos->second);
@@ -1409,7 +1409,7 @@ void CbcOrbitalBranchingObject::print()
 */
 int CbcOrbitalBranchingObject::compareOriginalObject(const CbcBranchingObject *brObj) const
 {
-  const CbcOrbitalBranchingObject *br = dynamic_cast<const CbcOrbitalBranchingObject *>(brObj);
+  const CbcOrbitalBranchingObject *br = dynamic_cast< const CbcOrbitalBranchingObject * >(brObj);
   assert(!br);
   abort();
   return 0;
@@ -1426,7 +1426,7 @@ int CbcOrbitalBranchingObject::compareOriginalObject(const CbcBranchingObject *b
 CbcRangeCompare
 CbcOrbitalBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, const bool replaceIfOverlap)
 {
-  const CbcOrbitalBranchingObject *br = dynamic_cast<const CbcOrbitalBranchingObject *>(brObj);
+  const CbcOrbitalBranchingObject *br = dynamic_cast< const CbcOrbitalBranchingObject * >(brObj);
   assert(!br);
   abort();
   return CbcRangeDisjoint;

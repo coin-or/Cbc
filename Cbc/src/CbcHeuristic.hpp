@@ -59,7 +59,7 @@ private:
   void gutsOfCopy(const CbcHeuristicNodeList &rhs);
 
 private:
-  std::vector<CbcHeuristicNode *> nodes_;
+  std::vector< CbcHeuristicNode * > nodes_;
 
 public:
   CbcHeuristicNodeList() {}
@@ -75,7 +75,7 @@ public:
   }
   inline int size() const
   {
-    return static_cast<int>(nodes_.size());
+    return static_cast< int >(nodes_.size());
   }
 };
 
@@ -339,7 +339,7 @@ public:
   inline bool isHeuristicInteger(const OsiSolverInterface *solver, int iColumn) const
   {
     const OsiClpSolverInterface *clpSolver
-      = dynamic_cast<const OsiClpSolverInterface *>(solver);
+      = dynamic_cast< const OsiClpSolverInterface * >(solver);
     if (clpSolver)
       return clpSolver->isHeuristicInteger(iColumn);
     else

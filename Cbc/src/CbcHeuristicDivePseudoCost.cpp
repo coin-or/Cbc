@@ -133,13 +133,13 @@ bool CbcHeuristicDivePseudoCost::selectVariableToBranch(OsiSolverInterface *solv
 
         // if priorities then use
         if (priority_) {
-          int thisRound = static_cast<int>(priority_[i].direction);
+          int thisRound = static_cast< int >(priority_[i].direction);
           if ((thisRound & 1) != 0)
             round = ((thisRound & 2) == 0) ? -1 : +1;
           if (priority_[i].priority > bestPriority) {
             score = COIN_DBL_MAX;
           } else if (priority_[i].priority < bestPriority) {
-            bestPriority = static_cast<int>(priority_[i].priority);
+            bestPriority = static_cast< int >(priority_[i].priority);
             bestScore = COIN_DBL_MAX;
           }
         }
@@ -174,7 +174,7 @@ void CbcHeuristicDivePseudoCost::initializeData()
     int numberInts = CoinMin(model_->numberObjects(), numberIntegers);
     OsiObject **objects = model_->objects();
     for (int i = 0; i < numberInts; i++) {
-      CbcSimpleIntegerDynamicPseudoCost *obj1 = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(objects[i]);
+      CbcSimpleIntegerDynamicPseudoCost *obj1 = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(objects[i]);
       if (obj1) {
         //int iColumn = obj1->columnNumber();
         double downPseudoCost = 1.0e-2 * obj1->downDynamicPseudoCost();

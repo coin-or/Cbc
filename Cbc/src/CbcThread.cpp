@@ -70,12 +70,12 @@ void CbcSpecificThread::setUsefulStuff(CbcSpecificThread *master, void *&masterM
 #ifdef CBC_PTHREAD
   basePointer_ = master;
   if (masterMutex) {
-    masterMutex_ = reinterpret_cast<pthread_mutex_t *>(masterMutex);
+    masterMutex_ = reinterpret_cast< pthread_mutex_t * >(masterMutex);
   } else {
     // create master mutex
     masterMutex_ = new pthread_mutex_t;
     pthread_mutex_init(masterMutex_, NULL);
-    masterMutex = reinterpret_cast<void *>(masterMutex_);
+    masterMutex = reinterpret_cast< void * >(masterMutex_);
   }
 #else
 #endif
@@ -168,7 +168,7 @@ static double getTime()
 {
   struct timespec absTime2;
   my_gettime(&absTime2);
-  double time2 = absTime2.tv_sec + 1.0e-9 * static_cast<double>(absTime2.tv_nsec);
+  double time2 = absTime2.tv_sec + 1.0e-9 * static_cast< double >(absTime2.tv_nsec);
   return time2;
 }
 // Timed wait in nanoseconds - if negative then seconds
@@ -230,7 +230,7 @@ void CbcSpecificThread::exitThread()
 int CbcSpecificThread::status() const
 {
 #ifdef CBC_PTHREAD
-  return static_cast<int>(threadId_.status);
+  return static_cast< int >(threadId_.status);
 #else
 #endif
 }
@@ -248,7 +248,7 @@ void parallelHeuristics(int numberThreads,
   void *argBundle)
 {
   Coin_pthread_t *threadId = new Coin_pthread_t[numberThreads];
-  char *args = reinterpret_cast<char *>(argBundle);
+  char *args = reinterpret_cast< char * >(argBundle);
   for (int i = 0; i < numberThreads; i++) {
     pthread_create(&(threadId[i].thr), NULL, doHeurThread,
       args + i * sizeOfData);
@@ -548,7 +548,7 @@ CbcBaseModel::CbcBaseModel(CbcModel &model, int type)
 #ifdef COIN_HAS_CLP
       // Solver may need to know about model
       CbcModel *thisModel = threadModel_[i];
-      CbcOsiSolver *solver = dynamic_cast<CbcOsiSolver *>(thisModel->solver());
+      CbcOsiSolver *solver = dynamic_cast< CbcOsiSolver * >(thisModel->solver());
       if (solver)
         solver->setCbcModel(thisModel);
 #endif
@@ -654,7 +654,7 @@ int CbcBaseModel::waitForThreadsInTree(int type)
           children_[iThread].setDantzigState(1);
           CbcModel *model = children_[iThread].thisModel();
           OsiClpSolverInterface *clpSolver2
-            = dynamic_cast<OsiClpSolverInterface *>(model->solver());
+            = dynamic_cast< OsiClpSolverInterface * >(model->solver());
           assert(clpSolver2);
           ClpSimplex *simplex2 = clpSolver2->getModelPtr();
           ClpDualRowDantzig dantzig;
@@ -936,7 +936,7 @@ void CbcBaseModel::waitForThreadsInCuts(int type, OsiCuts *eachCuts,
     // Use dantzigState to signal which generator
     children_[iThread].setDantzigState(whichGenerator);
     // and delNode for eachCuts
-    children_[iThread].fakeDelNode(reinterpret_cast<CbcNode **>(eachCuts));
+    children_[iThread].fakeDelNode(reinterpret_cast< CbcNode ** >(eachCuts));
     // allow to start
     children_[iThread].setReturnCode(0);
     children_[iThread].signal();
@@ -1056,7 +1056,7 @@ void CbcBaseModel::deterministicParallel()
     }
   }
   if (scaleFactor != 1.0) {
-    int newNumber = static_cast<int>(defaultParallelNodes_ * scaleFactor + 0.5001);
+    int newNumber = static_cast< int >(defaultParallelNodes_ * scaleFactor + 0.5001);
     if (newNumber * 2 < defaultParallelIterations_) {
       if (defaultParallelNodes_ == 1)
         newNumber = 2;
@@ -1096,7 +1096,7 @@ void CbcBaseModel::setDantzigState()
 }
 static void *doNodesThread(void *voidInfo)
 {
-  CbcThread *stuff = reinterpret_cast<CbcThread *>(voidInfo);
+  CbcThread *stuff = reinterpret_cast< CbcThread * >(voidInfo);
   CbcModel *thisModel = stuff->thisModel();
   CbcModel *baseModel = stuff->baseModel();
   while (true) {
@@ -1239,14 +1239,14 @@ static void *doHeurThread(void *voidInfo)
     double *solution;
     int foundSol;
   } argBundle;
-  argBundle *stuff = reinterpret_cast<argBundle *>(voidInfo);
+  argBundle *stuff = reinterpret_cast< argBundle * >(voidInfo);
   stuff->foundSol = stuff->model->heuristic(0)->solution(stuff->solutionValue,
     stuff->solution);
   return NULL;
 }
 static void *doCutsThread(void *voidInfo)
 {
-  CbcThread *stuff = reinterpret_cast<CbcThread *>(voidInfo);
+  CbcThread *stuff = reinterpret_cast< CbcThread * >(voidInfo);
   CbcModel *thisModel = stuff->thisModel();
   while (true) {
     stuff->waitThread();
@@ -1258,7 +1258,7 @@ static void *doCutsThread(void *voidInfo)
       int fullScan = thisModel->getNodeCount() == 0 ? 1 : 0; //? was >0
       CbcCutGenerator *generator = thisModel->cutGenerator(stuff->dantzigState());
       generator->refreshModel(thisModel);
-      OsiCuts *cuts = reinterpret_cast<OsiCuts *>(stuff->delNode());
+      OsiCuts *cuts = reinterpret_cast< OsiCuts * >(stuff->delNode());
       OsiSolverInterface *thisSolver = thisModel->solver();
       generator->generateCuts(*cuts, fullScan, thisSolver, NULL);
       stuff->setReturnCode(1);
@@ -1350,7 +1350,7 @@ int CbcModel::splitModel(int numberModels, CbcModel **model,
       }
       // Make node join otherModel
       OsiBranchingObject *bobj = node->modifiableBranchingObject();
-      CbcBranchingObject *cbcobj = dynamic_cast<CbcBranchingObject *>(bobj);
+      CbcBranchingObject *cbcobj = dynamic_cast< CbcBranchingObject * >(bobj);
       //assert (cbcobj);
       if (cbcobj) {
         CbcObject *object = cbcobj->object();
@@ -1358,7 +1358,7 @@ int CbcModel::splitModel(int numberModels, CbcModel **model,
         int position = object->position();
         assert(position >= 0);
         assert(object_[position] == object);
-        CbcObject *objectNew = dynamic_cast<CbcObject *>(otherModel->object_[position]);
+        CbcObject *objectNew = dynamic_cast< CbcObject * >(otherModel->object_[position]);
         cbcobj->setOriginalObject(objectNew);
       }
       otherModel->tree_->push(node);
@@ -1392,7 +1392,7 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
 {
 #ifdef THREAD_DEBUG
   {
-    CbcThread *stuff = reinterpret_cast<CbcThread *>(masterThread_);
+    CbcThread *stuff = reinterpret_cast< CbcThread * >(masterThread_);
     if (stuff)
       printf("mode %d node_ %p createdNode_ %p - stuff %p\n",
         mode, stuff->node(), stuff->createdNode(), stuff);
@@ -1426,7 +1426,7 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
     numberOldActiveCuts_ = baseModel->numberOldActiveCuts_;
     cutModifier_ = NULL;
     assert(!analyzeResults_);
-    CbcThread *stuff = reinterpret_cast<CbcThread *>(masterThread_);
+    CbcThread *stuff = reinterpret_cast< CbcThread * >(masterThread_);
     assert(stuff);
     //if (stuff)
     stuff->setCreatedNode(NULL);
@@ -1436,9 +1436,9 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
     stateOfSearch_ = baseModel->stateOfSearch_;
     stuff->saveStuff()[1] = stateOfSearch_;
     for (int iObject = 0; iObject < numberObjects_; iObject++) {
-      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object_[iObject]);
+      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object_[iObject]);
       if (dynamicObject) {
-        CbcSimpleIntegerDynamicPseudoCost *baseObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(baseModel->object_[iObject]);
+        CbcSimpleIntegerDynamicPseudoCost *baseObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(baseModel->object_[iObject]);
         assert(baseObject);
         dynamicObject->copySome(baseObject);
       }
@@ -1454,7 +1454,7 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
     numberGlobalCutsIn_ = baseNumberCuts;
   } else if (mode == 1) {
     lockThread();
-    CbcThread *stuff = reinterpret_cast<CbcThread *>(masterThread_);
+    CbcThread *stuff = reinterpret_cast< CbcThread * >(masterThread_);
     assert(stuff);
     // deal with hotstart
     static int lastHotDepth = -1;
@@ -1494,7 +1494,7 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
       for (int i = 0; i < numberUpdateItems_; i++) {
         CbcObjectUpdateData *update = updateItems_ + i;
         int objectNumber = update->objectNumber_;
-        CbcObject *object = dynamic_cast<CbcObject *>(baseModel->object_[objectNumber]);
+        CbcObject *object = dynamic_cast< CbcObject * >(baseModel->object_[objectNumber]);
         if (object)
           object->updateInformation(*update);
       }
@@ -1646,7 +1646,7 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
     numberOldActiveCuts_ = baseModel->numberOldActiveCuts_;
     cutModifier_ = NULL;
     assert(!analyzeResults_);
-    CbcThread *stuff = reinterpret_cast<CbcThread *>(masterThread_);
+    CbcThread *stuff = reinterpret_cast< CbcThread * >(masterThread_);
     assert(stuff);
     //if (stuff)
     stuff->setCreatedNode(NULL);
@@ -1664,7 +1664,7 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
   } else if (mode == 11) {
     if (parallelMode() < 0) {
       // from deterministic
-      CbcThread *stuff = reinterpret_cast<CbcThread *>(masterThread_);
+      CbcThread *stuff = reinterpret_cast< CbcThread * >(masterThread_);
       assert(stuff);
       // Move solution etc
       // might as well mark all including continuous
@@ -1715,14 +1715,14 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
           assert(node->nodeInfo());
           // Make node join correctly
           OsiBranchingObject *bobj = node->modifiableBranchingObject();
-          CbcBranchingObject *cbcobj = dynamic_cast<CbcBranchingObject *>(bobj);
+          CbcBranchingObject *cbcobj = dynamic_cast< CbcBranchingObject * >(bobj);
           if (cbcobj) {
             CbcObject *object = cbcobj->object();
             assert(object);
             int position = object->position();
             assert(position >= 0);
             assert(object_[position] == object);
-            CbcObject *objectNew = dynamic_cast<CbcObject *>(baseModel->object_[position]);
+            CbcObject *objectNew = dynamic_cast< CbcObject * >(baseModel->object_[position]);
             cbcobj->setOriginalObject(objectNew);
           }
           baseModel->tree_->push(node);

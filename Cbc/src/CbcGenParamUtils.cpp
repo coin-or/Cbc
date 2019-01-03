@@ -599,7 +599,7 @@ void loadGenParamObj(const CoinParamVec paramVec, int first, int last,
       Load the cbc-generic object into the parameters
     */
   for (i = first; i <= last; i++) {
-    CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(paramVec[i]);
+    CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(paramVec[i]);
     assert(genParam != 0);
     genParam->setObj(ctlBlk);
   }
@@ -619,7 +619,7 @@ int doUnimplementedParam(CoinParam *param)
 {
   assert(param != 0);
 
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
 
   CbcGenCtlBlk *ctlBlk = genParam->obj();
@@ -678,7 +678,7 @@ int doVersionParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);
@@ -704,7 +704,7 @@ int doHelpParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);
@@ -747,7 +747,7 @@ int pushCbcGenDblParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);
@@ -784,7 +784,7 @@ int pushCbcGenIntParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);
@@ -833,7 +833,7 @@ int pushCbcGenKwdParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);
@@ -926,7 +926,7 @@ int pushCbcGenStrParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);
@@ -966,7 +966,7 @@ int pushCbcGenCutParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);
@@ -1154,7 +1154,7 @@ int doImportParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);
@@ -1243,7 +1243,7 @@ int doDebugParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);

@@ -88,7 +88,7 @@ double
 CbcObject::feasibleRegion(OsiSolverInterface * /*solver*/) const
 {
   //assert (solver==model_->solver());
-  CbcObject *fudge = const_cast<CbcObject *>(this);
+  CbcObject *fudge = const_cast< CbcObject * >(this);
   fudge->feasibleRegion();
   return 0.0;
 }
@@ -102,7 +102,7 @@ CbcObject::feasibleRegion(OsiSolverInterface * /*solver*/,
   const OsiBranchingInformation * /*info*/) const
 {
   //assert (solver==model_->solver());
-  CbcObject *fudge = const_cast<CbcObject *>(this);
+  CbcObject *fudge = const_cast< CbcObject * >(this);
   fudge->feasibleRegion();
   return 0.0;
 }
@@ -117,7 +117,7 @@ CbcObject::createOsiBranch(OsiSolverInterface *solver,
   int way) const
 {
   //assert (solver==model_->solver());
-  CbcObject *fudge = const_cast<CbcObject *>(this);
+  CbcObject *fudge = const_cast< CbcObject * >(this);
   return fudge->createBranch(solver, info, way);
 }
 /* Create an OsiSolverBranch object

@@ -309,7 +309,7 @@ private:
   // Minimum match
   unsigned int lengthMatch_;
   /// set of valid strings
-  std::vector<std::string> definedKeyWords_;
+  std::vector< std::string > definedKeyWords_;
   /// Name
   std::string name_;
   /// Short help

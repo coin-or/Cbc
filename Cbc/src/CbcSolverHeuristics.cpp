@@ -55,13 +55,13 @@ void crunchIt(ClpSimplex *model)
   int *whichRow = new int[3 * numberRows];
   int *whichColumn = new int[2 * numberColumns];
   int nBound;
-  ClpSimplex *small = static_cast<ClpSimplexOther *>(model)->crunch(rhs, whichRow, whichColumn,
+  ClpSimplex *small = static_cast< ClpSimplexOther * >(model)->crunch(rhs, whichRow, whichColumn,
     nBound, false, false);
   if (small) {
     small->dual();
     if (small->problemStatus() == 0) {
       model->setProblemStatus(0);
-      static_cast<ClpSimplexOther *>(model)->afterCrunch(*small, whichRow, whichColumn, nBound);
+      static_cast< ClpSimplexOther * >(model)->afterCrunch(*small, whichRow, whichColumn, nBound);
     } else if (small->problemStatus() != 3) {
       model->setProblemStatus(1);
     } else {
@@ -113,7 +113,7 @@ fixVubs(CbcModel &model, int skipZero2,
 #endif
   int leaveIntFree = extra[1];
   OsiSolverInterface *originalSolver = model.solver();
-  OsiClpSolverInterface *originalClpSolver = dynamic_cast<OsiClpSolverInterface *>(originalSolver);
+  OsiClpSolverInterface *originalClpSolver = dynamic_cast< OsiClpSolverInterface * >(originalSolver);
   ClpSimplex *originalLpSolver = originalClpSolver->getModelPtr();
   int *originalColumns = NULL;
   OsiClpSolverInterface *clpSolver;
@@ -182,7 +182,7 @@ fixVubs(CbcModel &model, int skipZero2,
     doAction = 1;
   } else {
     OsiSolverInterface *solver = originalSolver->clone();
-    clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+    clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
     lpSolver = clpSolver->getModelPtr();
   }
   // Tighten bounds
@@ -539,7 +539,7 @@ fixVubs(CbcModel &model, int skipZero2,
   for (int iPass = 0; iPass < 2; iPass++) {
     for (int jLayer = 0; jLayer < kLayer; jLayer++) {
       int check[] = { -1, 0, 1, 2, 3, 4, 5, 10, 50, 100, 500, 1000, 5000, 10000, COIN_INT_MAX };
-      int nCheck = static_cast<int>(sizeof(check) / sizeof(int));
+      int nCheck = static_cast< int >(sizeof(check) / sizeof(int));
       int countsI[20];
       int countsC[20];
       assert(nCheck <= 20);
@@ -551,7 +551,7 @@ fixVubs(CbcModel &model, int skipZero2,
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
         if (fix[iColumn] == jLayer) {
           numberLayered++;
-          int nFix = static_cast<int>(fixColumn[iColumn + 1] - fixColumn[iColumn]);
+          int nFix = static_cast< int >(fixColumn[iColumn + 1] - fixColumn[iColumn]);
           if (iPass) {
             // just integers
             nFix = 0;
@@ -665,8 +665,8 @@ fixVubs(CbcModel &model, int skipZero2,
             if (columnUpper[iColumn] > columnLower[iColumn] + 1.0e-8) {
               if (clpSolver->isInteger(iColumn)) {
                 double value = lastSolution[iColumn];
-                int iValue = static_cast<int>(value + 0.5);
-                assert(fabs(value - static_cast<double>(iValue)) < 1.0e-3);
+                int iValue = static_cast< int >(value + 0.5);
+                assert(fabs(value - static_cast< double >(iValue)) < 1.0e-3);
                 assert(iValue >= columnLower[iColumn] && iValue <= columnUpper[iColumn]);
                 columnLower[iColumn] = iValue;
                 columnUpper[iColumn] = iValue;
@@ -681,8 +681,8 @@ fixVubs(CbcModel &model, int skipZero2,
           if (columnUpper[iColumn] > columnLower[iColumn] + 1.0e-8) {
             if (clpSolver->isInteger(iColumn)) {
               double value = lastSolution[iColumn];
-              int iValue = static_cast<int>(value + 0.5);
-              assert(fabs(value - static_cast<double>(iValue)) < 1.0e-3);
+              int iValue = static_cast< int >(value + 0.5);
+              assert(fabs(value - static_cast< double >(iValue)) < 1.0e-3);
               assert(iValue >= columnLower[iColumn] && iValue <= columnUpper[iColumn]);
               if (!fix[iColumn]) {
                 if (iValue == 0) {
@@ -1040,7 +1040,7 @@ fixVubs(CbcModel &model, int skipZero2,
         }
       }
       COIN_DETAIL_PRINT(printf("This fixes %d variables in lower priorities - total %d (%d integer) - all target %d, int target %d\n",
-        nTotalFixed, nFixed, nFixedI, static_cast<int>(fractionFixed * numberColumns), static_cast<int>(fractionIntFixed * numberInteger)));
+        nTotalFixed, nFixed, nFixedI, static_cast< int >(fractionFixed * numberColumns), static_cast< int >(fractionIntFixed * numberInteger)));
       int nBad = 0;
       int nRelax = 0;
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {

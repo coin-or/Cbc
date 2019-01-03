@@ -13,14 +13,14 @@ class OsiSolverInterface;
    returns 0 with success,
    1 otherwise */
 int readMIPStart(CbcModel *model, const char *fileName,
-  std::vector<std::pair<std::string, double>> &colValues,
+  std::vector< std::pair< std::string, double > > &colValues,
   double &solObj);
 
 /* from a partial list of variables tries to fill the
    remaining variable values */
 int computeCompleteSolution(CbcModel *model,
-  const std::vector<std::string> colNames,
-  const std::vector<std::pair<std::string, double>> &colValues,
+  const std::vector< std::string > colNames,
+  const std::vector< std::pair< std::string, double > > &colValues,
   double *sol, double &obj);
 
 #endif // MIPSTARTIO_HPP_INCLUDED

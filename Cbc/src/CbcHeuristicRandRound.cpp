@@ -23,7 +23,7 @@
 
 static inline int intRand(const int range)
 {
-  return static_cast<int>(floor(CoinDrand48() * range));
+  return static_cast< int >(floor(CoinDrand48() * range));
 }
 
 // Default Constructor
@@ -129,7 +129,7 @@ int CbcHeuristicRandRound::solution(double &solutionValue,
   OsiSolverInterface *solver = model_->solver()->clone();
   double primalTolerance;
   solver->getDblParam(OsiPrimalTolerance, primalTolerance);
-  OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+  OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
   assert(clpSolver);
   ClpSimplex *simplex = clpSolver->getModelPtr();
 
@@ -220,7 +220,7 @@ int CbcHeuristicRandRound::solution(double &solutionValue,
   }
 
   double *newObj = new double[numCols];
-  srand(static_cast<unsigned int>(time(NULL) + 1));
+  srand(static_cast< unsigned int >(time(NULL) + 1));
   int randNum;
 
   // Shuffle the rows:
@@ -306,7 +306,7 @@ int CbcHeuristicRandRound::solution(double &solutionValue,
   bool feasibility = 1;
   // rlh: use some COIN max instead of 1e30 (?)
   double bestObj = 1e30;
-  std::vector<std::vector<double>> feasibles;
+  std::vector< std::vector< double > > feasibles;
   int numFeasibles = 0;
 
   // Check the feasibility of the corner points
@@ -359,7 +359,7 @@ int CbcHeuristicRandRound::solution(double &solutionValue,
 
       if (feasibility) {
         numFeasibles++;
-        feasibles.push_back(std::vector<double>(numCols));
+        feasibles.push_back(std::vector< double >(numCols));
         for (int k = 0; k < numCols; k++)
           feasibles[numFeasibles - 1][k] = cornerPoints[i][k];
         printf("obj: %f\n", objValue);
@@ -387,7 +387,7 @@ int CbcHeuristicRandRound::solution(double &solutionValue,
   // -check the feasibility of the random point
   //-------------------------------------------
 
-  srand(static_cast<unsigned int>(time(NULL) + 1));
+  srand(static_cast< unsigned int >(time(NULL) + 1));
   int numRandomPoints = 0;
   while (numRandomPoints < 50000) {
     numRandomPoints++;
@@ -457,7 +457,7 @@ int CbcHeuristicRandRound::solution(double &solutionValue,
         printf("Feasible Found.\n");
         printf("%.2f\n", CoinCpuTime() - start);
         numFeasibles++;
-        feasibles.push_back(std::vector<double>(numCols));
+        feasibles.push_back(std::vector< double >(numCols));
         for (int i = 0; i < numCols; i++)
           feasibles[numFeasibles - 1][i] = roundRp[i];
         printf("obj: %f\n", objValue);

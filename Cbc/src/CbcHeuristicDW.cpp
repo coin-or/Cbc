@@ -346,7 +346,7 @@ int CbcHeuristicDW::solution(double &solutionValue,
   int numberColumns = solver_->getNumCols();
   int logLevel = model_->messageHandler()->logLevel();
   // For moment just OsiClp
-  OsiClpSolverInterface *solver = dynamic_cast<OsiClpSolverInterface *>(solver_);
+  OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(solver_);
   ClpSimplex *simplex = solver->getModelPtr();
   double *columnLower = simplex->columnLower();
   double *columnUpper = simplex->columnUpper();
@@ -850,9 +850,9 @@ int CbcHeuristicDW::solution(double &solutionValue,
       }
     }
     if (numberInDj)
-      averageDj /= static_cast<double>(numberInDj);
+      averageDj /= static_cast< double >(numberInDj);
     if (numberInDiff)
-      averageDiff /= static_cast<double>(numberInDiff);
+      averageDiff /= static_cast< double >(numberInDiff);
     double ratioDiff = averageDj / averageDiff;
     // downplay
     ratioDiff *= 1.0e-3;
@@ -871,10 +871,10 @@ int CbcHeuristicDW::solution(double &solutionValue,
 #endif
       if (phase_ == 99)
         blockSort[i] -= 2.0 * averageDj * goodBlock[i];
-      blockSort[i] /= static_cast<double>(intsInBlock_[i]);
+      blockSort[i] /= static_cast< double >(intsInBlock_[i]);
       //blockSort[i] /= sqrt(static_cast<double>(intsInBlock_[i]));
       if (doneBlock[i]) {
-        blockSort[i] /= static_cast<double>(doneBlock[i] + 1);
+        blockSort[i] /= static_cast< double >(doneBlock[i] + 1);
         if (whenBlock[i] > pass_ - 10)
           blockSort[i] += 1.0e2 * averageDj;
       }
@@ -1434,7 +1434,7 @@ void CbcHeuristicDW::findStructure()
       numberRowsDone++;
       if (thisBestValue * numberRowsDone > maximumBlockSize && numberRowsDone > halfway) {
         thisBestBreak = iRow;
-        thisBestValue = static_cast<double>(maximumBlockSize) / static_cast<double>(numberRowsDone);
+        thisBestValue = static_cast< double >(maximumBlockSize) / static_cast< double >(numberRowsDone);
       }
     }
     if (thisBestBreak == stop)
@@ -1791,7 +1791,7 @@ void CbcHeuristicDW::findStructure()
           }
           if (sum > 65535)
             sum = 65535;
-          unsigned short value = static_cast<unsigned short>(sum);
+          unsigned short value = static_cast< unsigned short >(sum);
           affinity_[iBlock * numberBlocks + jBlock] = value;
           affinity_[jBlock * numberBlocks + iBlock] = value;
         }
@@ -1816,7 +1816,7 @@ void CbcHeuristicDW::findStructure()
         base += numberBlocks;
       }
       sprintf(dwPrint, "Total not affinity %d - average %g%%",
-        nTotalZero, 100.0 * (static_cast<double>(nTotalZero) / (numberBlocks * numberBlocks)));
+        nTotalZero, 100.0 * (static_cast< double >(nTotalZero) / (numberBlocks * numberBlocks)));
       model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
         << dwPrint
         << CoinMessageEol;
@@ -1863,7 +1863,7 @@ int CbcHeuristicDW::addDW(const double *solution, int numberBlocksUsed,
   // get space to add elements
 #define MAX_ADD 100000
   CoinBigIndex *startsDW = new CoinBigIndex[numberBlocks_ + 1 + MAX_ADD];
-  int *rowDW = reinterpret_cast<int *>(startsDW + numberBlocks_ + 1);
+  int *rowDW = reinterpret_cast< int * >(startsDW + numberBlocks_ + 1);
   double *elementDW = new double[MAX_ADD + 3 * numberBlocks_ + numberMasterRows_];
   double *newCost = elementDW + MAX_ADD;
   double *newLower = newCost + numberBlocks_;
@@ -2171,7 +2171,7 @@ void CbcHeuristicDW::setupDWStructures()
     if (iBlock < 0)
       tempColumn[numberMasterColumns++] = i;
   }
-  OsiClpSolverInterface *solver = dynamic_cast<OsiClpSolverInterface *>(solver_);
+  OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(solver_);
   ClpSimplex *tempModel = new ClpSimplex(solver->getModelPtr(),
     numberMasterRows, tempRow,
     numberMasterColumns, tempColumn);

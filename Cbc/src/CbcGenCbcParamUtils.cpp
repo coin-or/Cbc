@@ -218,7 +218,7 @@ void loadCbcParamObj(const CoinParamVec paramVec, int first, int last,
       Load the CbcModel object into the parameters
     */
   for (i = first; i <= last; i++) {
-    CbcCbcParam *cbcParam = dynamic_cast<CbcCbcParam *>(paramVec[i]);
+    CbcCbcParam *cbcParam = dynamic_cast< CbcCbcParam * >(paramVec[i]);
     assert(cbcParam != 0);
     cbcParam->setObj(obj);
   }
@@ -265,7 +265,7 @@ int pushCbcCbcDbl(CoinParam *param)
 {
   assert(param != 0);
 
-  CbcCbcParam *cbcParam = dynamic_cast<CbcCbcParam *>(param);
+  CbcCbcParam *cbcParam = dynamic_cast< CbcCbcParam * >(param);
   assert(cbcParam != 0);
 
   CbcModel *model = cbcParam->obj();
@@ -334,7 +334,7 @@ int pushCbcCbcInt(CoinParam *param)
 {
   assert(param != 0);
 
-  CbcCbcParam *cbcParam = dynamic_cast<CbcCbcParam *>(param);
+  CbcCbcParam *cbcParam = dynamic_cast< CbcCbcParam * >(param);
   assert(cbcParam != 0);
 
   CbcModel *model = cbcParam->obj();

@@ -105,7 +105,7 @@ CbcSubProblem::CbcSubProblem(const OsiSolverInterface *solver,
 #endif
   }
   const OsiClpSolverInterface *clpSolver
-    = dynamic_cast<const OsiClpSolverInterface *>(solver);
+    = dynamic_cast< const OsiClpSolverInterface * >(solver);
   assert(clpSolver);
   // Do difference
   // Current basis
@@ -292,7 +292,7 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
 #ifdef JJF_ZERO
   if ((what & 2) != 0) {
     OsiClpSolverInterface *clpSolver
-      = dynamic_cast<OsiClpSolverInterface *>(solver);
+      = dynamic_cast< OsiClpSolverInterface * >(solver);
     assert(clpSolver);
     //assert (clpSolver->getNumRows()==numberRows_);
     //clpSolver->setBasis(*status_);
@@ -315,7 +315,7 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
 #endif
   if ((what & 8) != 0) {
     OsiClpSolverInterface *clpSolver
-      = dynamic_cast<OsiClpSolverInterface *>(solver);
+      = dynamic_cast< OsiClpSolverInterface * >(solver);
     assert(clpSolver);
     clpSolver->setBasis(*status_);
     if ((what & 16) == 0) {

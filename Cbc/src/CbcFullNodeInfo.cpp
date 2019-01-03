@@ -72,13 +72,13 @@ CbcFullNodeInfo::CbcFullNodeInfo(CbcModel *model,
     upper_[i] = upper[i];
   }
 
-  basis_ = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+  basis_ = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
 }
 
 CbcFullNodeInfo::CbcFullNodeInfo(const CbcFullNodeInfo &rhs)
   : CbcNodeInfo(rhs)
 {
-  basis_ = dynamic_cast<CoinWarmStartBasis *>(rhs.basis_->clone());
+  basis_ = dynamic_cast< CoinWarmStartBasis * >(rhs.basis_->clone());
   numberIntegers_ = rhs.numberIntegers_;
   lower_ = NULL;
   upper_ = NULL;
@@ -144,7 +144,7 @@ void CbcFullNodeInfo::applyToModel(CbcModel *model,
     int numberRows = basis->getNumArtificial();
     delete basis;
     if (basis_) {
-      basis = dynamic_cast<CoinWarmStartBasis *>(basis_->clone());
+      basis = dynamic_cast< CoinWarmStartBasis * >(basis_->clone());
       basis->resize(numberRows, numberColumns);
 #ifdef CBC_CHECK_BASIS
       std::cout << "Basis (after applying root " << this << ") " << std::endl;
@@ -188,8 +188,8 @@ int CbcFullNodeInfo::applyBounds(int iColumn, double &lower, double &upper, int 
 CbcNodeInfo *
 CbcFullNodeInfo::buildRowBasis(CoinWarmStartBasis &basis) const
 {
-  const unsigned int *saved = reinterpret_cast<const unsigned int *>(basis_->getArtificialStatus());
-  unsigned int *now = reinterpret_cast<unsigned int *>(basis.getArtificialStatus());
+  const unsigned int *saved = reinterpret_cast< const unsigned int * >(basis_->getArtificialStatus());
+  unsigned int *now = reinterpret_cast< unsigned int * >(basis.getArtificialStatus());
   int number = basis_->getNumArtificial() >> 4;
   ;
   int i;

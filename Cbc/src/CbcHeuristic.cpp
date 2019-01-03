@@ -48,7 +48,7 @@ CbcHeuristicNode::CbcHeuristicNode(const CbcHeuristicNode &rhs)
 
 void CbcHeuristicNodeList::gutsOfDelete()
 {
-  for (int i = (static_cast<int>(nodes_.size())) - 1; i >= 0; --i) {
+  for (int i = (static_cast< int >(nodes_.size())) - 1; i >= 0; --i) {
     delete nodes_[i];
   }
 }
@@ -205,7 +205,7 @@ void CbcHeurDebugNodes(CbcModel *model_)
     const CbcNode *node = nodeInfo->owner();
     printf("nodeinfo: node %i\n", nodeInfo->nodeNumber());
     {
-      const CbcIntegerBranchingObject *brPrint = dynamic_cast<const CbcIntegerBranchingObject *>(nodeInfo->parentBranch());
+      const CbcIntegerBranchingObject *brPrint = dynamic_cast< const CbcIntegerBranchingObject * >(nodeInfo->parentBranch());
       if (!brPrint) {
         printf("    parentBranch: NULL\n");
       } else {
@@ -214,8 +214,8 @@ void CbcHeurDebugNodes(CbcModel *model_)
         int variable = brPrint->variable();
         int way = brPrint->way();
         printf("   parentBranch: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
-          variable, static_cast<int>(downBounds[0]), static_cast<int>(downBounds[1]),
-          static_cast<int>(upBounds[0]), static_cast<int>(upBounds[1]), way);
+          variable, static_cast< int >(downBounds[0]), static_cast< int >(downBounds[1]),
+          static_cast< int >(upBounds[0]), static_cast< int >(upBounds[1]), way);
       }
     }
     if (!node) {
@@ -224,8 +224,8 @@ void CbcHeurDebugNodes(CbcModel *model_)
       printf("    owner: node %i depth %i onTree %i active %i",
         node->nodeNumber(), node->depth(), node->onTree(), node->active());
       const OsiBranchingObject *osibr = nodeInfo->owner()->branchingObject();
-      const CbcBranchingObject *cbcbr = dynamic_cast<const CbcBranchingObject *>(osibr);
-      const CbcIntegerBranchingObject *brPrint = dynamic_cast<const CbcIntegerBranchingObject *>(cbcbr);
+      const CbcBranchingObject *cbcbr = dynamic_cast< const CbcBranchingObject * >(osibr);
+      const CbcIntegerBranchingObject *brPrint = dynamic_cast< const CbcIntegerBranchingObject * >(cbcbr);
       if (!brPrint) {
         printf("        ownerBranch: NULL\n");
       } else {
@@ -234,8 +234,8 @@ void CbcHeurDebugNodes(CbcModel *model_)
         int variable = brPrint->variable();
         int way = brPrint->way();
         printf("        ownerbranch: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
-          variable, static_cast<int>(downBounds[0]), static_cast<int>(downBounds[1]),
-          static_cast<int>(upBounds[0]), static_cast<int>(upBounds[1]), way);
+          variable, static_cast< int >(downBounds[0]), static_cast< int >(downBounds[1]),
+          static_cast< int >(upBounds[0]), static_cast< int >(upBounds[1]), way);
       }
     }
     nodeInfo = nodeInfo->parent();
@@ -400,7 +400,7 @@ bool CbcHeuristic::shouldHeurRun_randomChoice()
 #ifdef COIN_DEVELOP
             int old = howOften_;
 #endif
-            howOften_ = CoinMin(CoinMax(static_cast<int>(howOften_ * 1.1), howOften_ + 1), 1000000);
+            howOften_ = CoinMin(CoinMax(static_cast< int >(howOften_ * 1.1), howOften_ + 1), 1000000);
 #ifdef COIN_DEVELOP
             printf("Howoften changed from %d to %d for %s\n",
               old, howOften_, heuristicName_.c_str());
@@ -450,7 +450,7 @@ void CbcHeuristic::setSeed(int value)
     double time = fabs(CoinGetTimeOfDay());
     while (time >= COIN_INT_MAX)
       time *= 0.5;
-    value = static_cast<int>(time);
+    value = static_cast< int >(time);
     char printArray[100];
     sprintf(printArray, "using time of day seed was changed from %d to %d",
       randomNumberGenerator_.getSeed(), value);
@@ -543,7 +543,7 @@ CbcHeuristic::cloneBut(int type)
     solver = model_->continuousSolver()->clone();
 #ifdef COIN_HAS_CLP
   OsiClpSolverInterface *clpSolver
-    = dynamic_cast<OsiClpSolverInterface *>(solver);
+    = dynamic_cast< OsiClpSolverInterface * >(solver);
 #endif
   if ((type & 2) != 0) {
     int n = model_->numberObjects();
@@ -551,7 +551,7 @@ CbcHeuristic::cloneBut(int type)
     if (priority < COIN_INT_MAX) {
       for (int i = 0; i < n; i++) {
         const OsiObject *obj = model_->object(i);
-        const CbcSimpleInteger *thisOne = dynamic_cast<const CbcSimpleInteger *>(obj);
+        const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(obj);
         if (thisOne) {
           int iColumn = thisOne->columnNumber();
           if (thisOne->priority() >= priority)
@@ -563,7 +563,7 @@ CbcHeuristic::cloneBut(int type)
     if (clpSolver) {
       for (int i = 0; i < n; i++) {
         const OsiObject *obj = model_->object(i);
-        const CbcSimpleInteger *thisOne = dynamic_cast<const CbcSimpleInteger *>(obj);
+        const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(obj);
         if (thisOne) {
           int iColumn = thisOne->columnNumber();
           if (clpSolver->isOptionalInteger(iColumn))
@@ -718,7 +718,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     }
   }
 #ifdef COIN_HAS_CLP
-  OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+  OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
   if (clpSolver && (clpSolver->specialOptions() & 65536) == 0) {
     // go faster stripes
     if (clpSolver->getNumRows() < 300 && clpSolver->getNumCols() < 500) {
@@ -919,12 +919,12 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     if ((model_->specialOptions() & 1) != 0) {
       const OsiRowCutDebugger *debugger = solver->getRowCutDebugger();
       if (debugger) {
-        process.setApplicationData(const_cast<double *>(debugger->optimalSolution()));
+        process.setApplicationData(const_cast< double * >(debugger->optimalSolution()));
       }
     }
 #endif
 #ifdef COIN_HAS_CLP
-    OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
     // See if SOS
     if (clpSolver && clpSolver->numberSOS()) {
       // SOS
@@ -938,7 +938,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       for (i = 0; i < numberSOS; i++) {
         int type = setInfo[i].setType();
         int n = setInfo[i].numberEntries();
-        sosType[i] = static_cast<char>(type);
+        sosType[i] = static_cast< char >(type);
         nTotal += n;
         sosStart[i + 1] = nTotal;
       }
@@ -952,7 +952,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         for (int j = 0; j < n; j++) {
           int k = which[j];
           sosIndices[j + base] = k;
-          sosReference[j + base] = weights ? weights[j] : static_cast<double>(j);
+          sosReference[j + base] = weights ? weights[j] : static_cast< double >(j);
         }
       }
       int numberColumns = solver->getNumCols();
@@ -1022,11 +1022,11 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 #ifdef COIN_HAS_CLP
         // redo SOS
         OsiClpSolverInterface *clpSolver
-          = dynamic_cast<OsiClpSolverInterface *>(model.solver());
+          = dynamic_cast< OsiClpSolverInterface * >(model.solver());
         if (clpSolver && clpSolver->numberSOS()) {
           int numberColumns = clpSolver->getNumCols();
           const int *originalColumns = process.originalColumns();
-          CoinSet *setInfo = const_cast<CoinSet *>(clpSolver->setInfo());
+          CoinSet *setInfo = const_cast< CoinSet * >(clpSolver->setInfo());
           int numberSOS = clpSolver->numberSOS();
           for (int iSOS = 0; iSOS < numberSOS; iSOS++) {
             //int type = setInfo[iSOS].setType();
@@ -1070,8 +1070,8 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 		      */
             double fraction = fractionSmall_ - floor(fractionSmall_);
             if (ratio > fraction) {
-              int type = static_cast<int>(floor(fractionSmall_ * 0.1));
-              int over = static_cast<int>(ceil(ratio - fraction));
+              int type = static_cast< int >(floor(fractionSmall_ * 0.1));
+              int over = static_cast< int >(ceil(ratio - fraction));
               int maxNodes[] = { -1, 0, 5, 10 };
               if (type > over)
                 numberNodes = maxNodes[type - over];
@@ -1130,7 +1130,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           model_->setHeuristicModel(&model);
           for (int i = 0; i < model.numberCutGenerators(); i++) {
             CbcCutGenerator *generator = model.cutGenerator(i);
-            CglGomory *gomory = dynamic_cast<CglGomory *>(generator->generator());
+            CglGomory *gomory = dynamic_cast< CglGomory * >(generator->generator());
             if (gomory && gomory->originalSolver())
               gomory->passInOriginalSolver(model.solver());
             generator->setTiming(true);
@@ -1198,7 +1198,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         if (feasibilityPumpOptions_ >= 0 || feasibilityPumpOptions_ == -2) {
           CbcHeuristicFPump *fpump = NULL;
           for (int i = 0; i < model.numberHeuristics(); i++) {
-            CbcHeuristicFPump *pump = dynamic_cast<CbcHeuristicFPump *>(model.heuristic(i));
+            CbcHeuristicFPump *pump = dynamic_cast< CbcHeuristicFPump * >(model.heuristic(i));
             if (pump) {
               fpump = pump;
               break;
@@ -1280,7 +1280,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         // modify heuristics
         for (int i = 0; i < model.numberHeuristics(); i++) {
           // reset lastNode
-          CbcHeuristicRINS *rins = dynamic_cast<CbcHeuristicRINS *>(model.heuristic(i));
+          CbcHeuristicRINS *rins = dynamic_cast< CbcHeuristicRINS * >(model.heuristic(i));
           if (rins) {
             rins->setLastNode(-1000);
             rins->setSolutionCount(0);
@@ -1453,11 +1453,11 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
                 generator->numberCutsInTotal() + generator->numberColumnCuts(),
                 generator->numberCutsActive(),
                 generator->timeInCutGenerator());
-              CglStored *stored = dynamic_cast<CglStored *>(generator->generator());
+              CglStored *stored = dynamic_cast< CglStored * >(generator->generator());
               if (stored && !generator->numberCutsInTotal())
                 continue;
 #ifndef CLP_INVESTIGATE
-              CglImplication *implication = dynamic_cast<CglImplication *>(generator->generator());
+              CglImplication *implication = dynamic_cast< CglImplication * >(generator->generator());
               if (implication)
                 continue;
 #endif
@@ -1482,7 +1482,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             returnCode = 3;
             // post process
 #ifdef COIN_HAS_CLP
-          OsiClpSolverInterface *clpSolver = dynamic_cast<OsiClpSolverInterface *>(model.solver());
+          OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model.solver());
           if (clpSolver) {
             ClpSimplex *lpSolver = clpSolver->getModelPtr();
             lpSolver->setSpecialOptions(lpSolver->specialOptions() | 0x01000000); // say is Cbc (and in branch and bound)
@@ -1681,7 +1681,7 @@ void CbcHeuristicNode::gutsOfConstructor(CbcModel &model)
   int cnt = 0;
   while (nodeInfo->parentBranch() != NULL) {
     const OsiBranchingObject *br = nodeInfo->parentBranch();
-    const CbcBranchingObject *cbcbr = dynamic_cast<const CbcBranchingObject *>(br);
+    const CbcBranchingObject *cbcbr = dynamic_cast< const CbcBranchingObject * >(br);
     if (!cbcbr) {
       throw CoinError("CbcHeuristicNode can be used only with CbcBranchingObjects.\n",
         "gutsOfConstructor",
@@ -1759,22 +1759,22 @@ CbcHeuristicNode::distance(const CbcHeuristicNode *node) const
     CbcBranchingObject *br0 = brObj_[i];
     const CbcBranchingObject *br1 = node->brObj_[j];
 #ifdef PRINT_DEBUG
-    const CbcIntegerBranchingObject *brPrint0 = dynamic_cast<const CbcIntegerBranchingObject *>(br0);
+    const CbcIntegerBranchingObject *brPrint0 = dynamic_cast< const CbcIntegerBranchingObject * >(br0);
     const double *downBounds = brPrint0->downBounds();
     const double *upBounds = brPrint0->upBounds();
     int variable = brPrint0->variable();
     int way = brPrint0->way();
     printf("   br0: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
-      variable, static_cast<int>(downBounds[0]), static_cast<int>(downBounds[1]),
-      static_cast<int>(upBounds[0]), static_cast<int>(upBounds[1]), way);
-    const CbcIntegerBranchingObject *brPrint1 = dynamic_cast<const CbcIntegerBranchingObject *>(br1);
+      variable, static_cast< int >(downBounds[0]), static_cast< int >(downBounds[1]),
+      static_cast< int >(upBounds[0]), static_cast< int >(upBounds[1]), way);
+    const CbcIntegerBranchingObject *brPrint1 = dynamic_cast< const CbcIntegerBranchingObject * >(br1);
     downBounds = brPrint1->downBounds();
     upBounds = brPrint1->upBounds();
     variable = brPrint1->variable();
     way = brPrint1->way();
     printf("   br1: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
-      variable, static_cast<int>(downBounds[0]), static_cast<int>(downBounds[1]),
-      static_cast<int>(upBounds[0]), static_cast<int>(upBounds[1]), way);
+      variable, static_cast< int >(downBounds[0]), static_cast< int >(downBounds[1]),
+      static_cast< int >(upBounds[0]), static_cast< int >(upBounds[1]), way);
 #endif
     const int brComp = compare3BranchingObjects(br0, br1);
     if (brComp < 0) {
@@ -2583,7 +2583,7 @@ int CbcRounding::solution(double &solutionValue,
     int iPass;
     int start[2];
     int end[2];
-    int iRandom = static_cast<int>(randomNumber * (static_cast<double>(numberIntegers)));
+    int iRandom = static_cast< int >(randomNumber * (static_cast< double >(numberIntegers)));
     start[0] = iRandom;
     end[0] = numberIntegers;
     start[1] = 0;
@@ -3056,7 +3056,7 @@ int CbcSerendipity::solution(double &solutionValue,
   if (!inputSolution_) {
     // get information on solver type
     OsiAuxInfo *auxInfo = model_->solver()->getAuxiliaryInfo();
-    OsiBabSolver *auxiliaryInfo = dynamic_cast<OsiBabSolver *>(auxInfo);
+    OsiBabSolver *auxiliaryInfo = dynamic_cast< OsiBabSolver * >(auxInfo);
     if (auxiliaryInfo) {
       return auxiliaryInfo->solution(solutionValue, betterSolution, model_->solver()->getNumCols());
     } else {

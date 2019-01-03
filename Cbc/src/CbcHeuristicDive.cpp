@@ -213,7 +213,7 @@ void CbcHeuristicDive::setPriorities()
   int numberObjects = model_->numberObjects();
   for (int i = 0; i < numberObjects; i++) {
     OsiObject *object = model_->modifiableObject(i);
-    const CbcSimpleInteger *thisOne = dynamic_cast<const CbcSimpleInteger *>(object);
+    const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
     if (!thisOne)
       continue; // Not integer
     int iColumn = thisOne->columnNumber();
@@ -230,20 +230,20 @@ void CbcHeuristicDive::setPriorities()
     int nInteger = 0;
     for (int i = 0; i < numberObjects; i++) {
       OsiObject *object = model_->modifiableObject(i);
-      const CbcSimpleInteger *thisOne = dynamic_cast<const CbcSimpleInteger *>(object);
+      const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
       if (!thisOne)
         continue; // Not integer
       int level = thisOne->priority() - priority2;
       assert(level < (1 << 29));
       assert(nInteger < numberIntegers);
-      priority_[nInteger].priority = static_cast<unsigned int>(level);
+      priority_[nInteger].priority = static_cast< unsigned int >(level);
       int direction = 0;
       if (thisOne->preferredWay() < 0)
         direction = 1;
       else if (thisOne->preferredWay() > 0)
         direction = 1 | 1;
       // at present don't try other way is not used
-      priority_[nInteger++].direction = static_cast<unsigned char>(direction);
+      priority_[nInteger++].direction = static_cast< unsigned char >(direction);
     }
     assert(nInteger == numberIntegers);
   }
@@ -299,7 +299,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   OsiSolverInterface *solver = cloneBut(6); // was model_->solver()->clone();
 #ifdef COIN_HAS_CLP
   OsiClpSolverInterface *clpSolver
-    = dynamic_cast<OsiClpSolverInterface *>(solver);
+    = dynamic_cast< OsiClpSolverInterface * >(solver);
   if (clpSolver) {
     ClpSimplex *clpSimplex = clpSolver->getModelPtr();
     int oneSolveIts = clpSimplex->maximumIterations();
@@ -371,7 +371,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   PseudoReducedCost *candidate = new PseudoReducedCost[numberIntegers];
   double *random = new double[numberIntegers];
 
-  int maxNumberAtBoundToFix = static_cast<int>(floor(percentageToFix_ * numberIntegers));
+  int maxNumberAtBoundToFix = static_cast< int >(floor(percentageToFix_ * numberIntegers));
   assert(!maxNumberAtBoundToFix || !nodes);
 
   // count how many fractional variables
@@ -514,7 +514,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     // fix binary variables based on pseudo reduced cost
     if (binVarIndex_.size()) {
       int cnt = 0;
-      int n = static_cast<int>(binVarIndex_.size());
+      int n = static_cast< int >(binVarIndex_.size());
       for (int j = 0; j < n; j++) {
         int iColumn1 = binVarIndex_[j];
         double value = newSolution[iColumn1];
@@ -594,7 +594,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
           int iColumn = candidate[i].var;
           if (upper[iColumn] > lower[iColumn]) {
             int j = back[iColumn];
-            fixPriority = CoinMin(fixPriority, static_cast<int>(priority_[j].priority));
+            fixPriority = CoinMin(fixPriority, static_cast< int >(priority_[j].priority));
           }
         }
       }
@@ -622,7 +622,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
         if (upper[iColumn] > lower[iColumn]) {
           numberFree++;
           if (priority_) {
-            fixPriority = CoinMin(fixPriority, static_cast<int>(priority_[i].priority));
+            fixPriority = CoinMin(fixPriority, static_cast< int >(priority_[i].priority));
           }
           double value = newSolution[iColumn];
           if (fabs(floor(value + 0.5) - value) <= integerTolerance) {
@@ -661,7 +661,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
           continue;
         if (upper[iColumn] > lower[iColumn]) {
           if (priority_) {
-            fixPriority = CoinMin(fixPriority, static_cast<int>(priority_[i].priority));
+            fixPriority = CoinMin(fixPriority, static_cast< int >(priority_[i].priority));
           }
           double value = newSolution[iColumn];
           if (fabs(floor(value + 0.5) - value) <= integerTolerance) {
@@ -686,7 +686,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
               int j = back[iColumn];
               if (priority_[j].priority > fixPriority)
                 continue; // skip - only fix ones at high priority
-              int thisRound = static_cast<int>(priority_[j].direction);
+              int thisRound = static_cast< int >(priority_[j].direction);
               if ((thisRound & 1) != 0) {
                 // for now force way
                 if ((thisRound & 2) != 0)
@@ -721,7 +721,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
               int j = back[iColumn];
               if (priority_[j].priority > fixPriority)
                 continue; // skip - only fix ones at high priority
-              int thisRound = static_cast<int>(priority_[j].direction);
+              int thisRound = static_cast< int >(priority_[j].direction);
               if ((thisRound & 1) != 0) {
                 // for now force way
                 if ((thisRound & 2) == 0)
@@ -1306,8 +1306,8 @@ void CbcHeuristicDive::validate()
           down++;
       }
     }
-    downLocks_[i] = static_cast<unsigned short>(down);
-    upLocks_[i] = static_cast<unsigned short>(up);
+    downLocks_[i] = static_cast< unsigned short >(down);
+    upLocks_[i] = static_cast< unsigned short >(up);
   }
 
 #ifdef DIVE_FIX_BINARY_VARIABLES
@@ -1431,7 +1431,7 @@ int CbcHeuristicDive::reducedCostFix(OsiSolverInterface *solver)
 
 #ifdef COIN_HAS_CLP
   OsiClpSolverInterface *clpSolver
-    = dynamic_cast<OsiClpSolverInterface *>(solver);
+    = dynamic_cast< OsiClpSolverInterface * >(solver);
   ClpSimplex *clpSimplex = NULL;
   if (clpSolver)
     clpSimplex = clpSolver->getModelPtr();

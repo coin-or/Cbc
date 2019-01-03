@@ -139,7 +139,7 @@ void CbcNode::createInfo(CbcModel *model,
           basis.
         */
     bool mustDeleteBasis;
-    const CoinWarmStartBasis *ws = dynamic_cast<const CoinWarmStartBasis *>(solver->getPointerToWarmStart(mustDeleteBasis));
+    const CoinWarmStartBasis *ws = dynamic_cast< const CoinWarmStartBasis * >(solver->getPointerToWarmStart(mustDeleteBasis));
     assert(ws != NULL); // make sure not volume
     //int numberArtificials = lastws->getNumArtificial();
     int numberColumns = solver->getNumCols();
@@ -158,7 +158,7 @@ void CbcNode::createInfo(CbcModel *model,
           all the cuts: old cuts, both active and inactive (currentNumberCuts),
           and new cuts (numberNewCuts). This will become the expanded basis.
         */
-    CoinWarmStartBasis *expanded = dynamic_cast<CoinWarmStartBasis *>(ws->clone());
+    CoinWarmStartBasis *expanded = dynamic_cast< CoinWarmStartBasis * >(ws->clone());
     int iCompact = numberRowsAtContinuous + numberOldActiveCuts + numberNewCuts;
     // int nPartial = numberRowsAtContinuous+currentNumberCuts;
     int iFull = numberRowsAtContinuous + currentNumberCuts + numberNewCuts;
@@ -348,7 +348,7 @@ void CbcNode::createInfo(CbcModel *model,
     */
   else {
     bool mustDeleteBasis;
-    const CoinWarmStartBasis *ws = dynamic_cast<const CoinWarmStartBasis *>(solver->getPointerToWarmStart(mustDeleteBasis));
+    const CoinWarmStartBasis *ws = dynamic_cast< const CoinWarmStartBasis * >(solver->getPointerToWarmStart(mustDeleteBasis));
     assert(ws != NULL); // make sure not volume
     //int numberArtificials = lastws->getNumArtificial();
     int numberColumns = solver->getNumCols();
@@ -383,7 +383,7 @@ void CbcNode::createInfo(CbcModel *model,
         In the mean time, I've twiddled addCuts() to set lastws to the raw
         basis. Makes me (Lou) less nervous to compare apples to apples.
         */
-    CoinWarmStartBasis *expanded = dynamic_cast<CoinWarmStartBasis *>(ws->clone());
+    CoinWarmStartBasis *expanded = dynamic_cast< CoinWarmStartBasis * >(ws->clone());
     int numberRowsAtContinuous = model->numberRowsAtContinuous();
     int iFull = numberRowsAtContinuous + model->currentNumberCuts() + numberNewCuts;
     //int numberArtificialsNow = iFull;
@@ -531,7 +531,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
   // Mark variables which need to be clean
   char *cleanVariables = NULL;
 #ifdef COIN_HAS_CLP
-  OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(solver);
+  OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
   int saveClpOptions = 0;
   if (osiclp) {
     // for faster hot start
@@ -587,7 +587,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
       int nDiff = 0;
       for (int i = 0; i < numberObjects; i++) {
         OsiObject *object = model->modifiableObject(i);
-        const CbcSimpleInteger *thisOne = dynamic_cast<const CbcSimpleInteger *>(object);
+        const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
         if (thisOne) {
           int iColumn = thisOne->columnNumber();
           double targetValue = hotstartSolution[iColumn];
@@ -633,7 +633,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
       the user has loaded a decision method into the model.
     */
   CbcBranchDecision *decision = model->branchingMethod();
-  CbcDynamicPseudoCostBranchingObject *dynamicBranchingObject = dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(decision);
+  CbcDynamicPseudoCostBranchingObject *dynamicBranchingObject = dynamic_cast< CbcDynamicPseudoCostBranchingObject * >(decision);
   if (!decision || dynamicBranchingObject)
     decision = new CbcBranchDefaultDecision();
   decision->initialize(model);
@@ -693,7 +693,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         int priorityLevel = object->priority();
         if (hotstartSolution) {
           // we are doing hot start
-          const CbcSimpleInteger *thisOne = dynamic_cast<const CbcSimpleInteger *>(object);
+          const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
           if (thisOne) {
             int iColumn = thisOne->columnNumber();
             bool canDoThisHot = true;
@@ -781,7 +781,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
             //add to list
             choice[iSmallest].upMovement = infeasibility;
             delete choice[iSmallest].possibleBranch;
-            CbcObject *obj = dynamic_cast<CbcObject *>(object);
+            CbcObject *obj = dynamic_cast< CbcObject * >(object);
             assert(obj);
             choice[iSmallest].possibleBranch = obj->createCbcBranch(solver, &usefulInfo, preferredWay);
             numberStrong = CoinMax(numberStrong, iSmallest + 1);
@@ -811,7 +811,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         if (hotstartSolution) {
           int k = choice[0].objectNumber;
           OsiObject *object = model->modifiableObject(k);
-          const CbcSimpleInteger *thisOne = dynamic_cast<const CbcSimpleInteger *>(object);
+          const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
           assert(thisOne);
           int iColumn = thisOne->columnNumber();
           double targetValue = hotstartSolution[iColumn];
@@ -825,7 +825,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         // looks like a solution - get paranoid
         bool roundAgain = false;
         // get basis
-        CoinWarmStartBasis *ws = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+        CoinWarmStartBasis *ws = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
         if (!ws)
           break;
         for (i = 0; i < numberColumns; i++) {
@@ -870,7 +870,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
       choice[i].numIntInfeasUp = numberUnsatisfied_;
       choice[i].numIntInfeasDown = numberUnsatisfied_;
       choice[i].fix = 0; // say not fixed
-      if (!dynamic_cast<const CbcSimpleInteger *>(model->object(choice[i].objectNumber)))
+      if (!dynamic_cast< const CbcSimpleInteger * >(model->object(choice[i].objectNumber)))
         allNormal = false; // Something odd so lets skip clever fast branching
       if (!model->object(choice[i].objectNumber)->boundBranch())
         numberStrong = 0; // switch off
@@ -956,7 +956,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         int *whichRow = new int[3 * numberRows];
         int *whichColumn = new int[2 * numberColumns];
         int nBound;
-        ClpSimplex *small = static_cast<ClpSimplexOther *>(clp)->crunch(rhs, whichRow, whichColumn, nBound, true);
+        ClpSimplex *small = static_cast< ClpSimplexOther * >(clp)->crunch(rhs, whichRow, whichColumn, nBound, true);
         if (!small) {
           anyAction = -2;
           //printf("XXXX Inf by inspection\n");
@@ -999,7 +999,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         for (i = 0; i < numberStrong; i++) {
           int iObject = choice[i].objectNumber;
           const OsiObject *object = model->object(iObject);
-          const CbcSimpleInteger *simple = static_cast<const CbcSimpleInteger *>(object);
+          const CbcSimpleInteger *simple = static_cast< const CbcSimpleInteger * >(object);
           int iSequence = simple->columnNumber();
           newLower[i] = ceil(saveSolution[iSequence]);
           newUpper[i] = floor(saveSolution[iSequence]);
@@ -1034,7 +1034,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
           for (i = 0; i < numberStrong; i++) {
             int iObject = choice[i].objectNumber;
             const OsiObject *object = model->object(iObject);
-            const CbcSimpleInteger *simple = static_cast<const CbcSimpleInteger *>(object);
+            const CbcSimpleInteger *simple = static_cast< const CbcSimpleInteger * >(object);
             int iSequence = simple->columnNumber();
             which[i] = iSequence;
             double *sol = outputSolution[2 * i];
@@ -1631,7 +1631,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 #endif
   // get information on solver type
   const OsiAuxInfo *auxInfo = solver->getAuxiliaryInfo();
-  const OsiBabSolver *auxiliaryInfo = dynamic_cast<const OsiBabSolver *>(auxInfo);
+  const OsiBabSolver *auxiliaryInfo = dynamic_cast< const OsiBabSolver * >(auxInfo);
   if (!auxiliaryInfo) {
     // use one from CbcModel
     auxiliaryInfo = model->solverCharacteristics();
@@ -1644,7 +1644,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   if (numberObjects > model->numberIntegers()) {
     for (int i = model->numberIntegers(); i < numberObjects; i++) {
       OsiObject *object = model->modifiableObject(i);
-      CbcObject *obj = dynamic_cast<CbcObject *>(object);
+      CbcObject *obj = dynamic_cast< CbcObject * >(object);
       if (!obj || !obj->optionalObject()) {
         double infeasibility = object->checkInfeasibility(&usefulInfo);
         if (infeasibility) {
@@ -1670,7 +1670,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     double sumPi = 0.0;
     for (int i = 0; i < numberRows; i++)
       sumPi += fabs(pi[i]);
-    sumPi /= static_cast<double>(numberRows);
+    sumPi /= static_cast< double >(numberRows);
     // and scale back
     sumPi *= 0.01;
     usefulInfo.defaultDual_ = sumPi; // switch on
@@ -1734,7 +1734,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       int nDiff = 0;
       for (int i = 0; i < numberObjects; i++) {
         OsiObject *object = model->modifiableObject(i);
-        const CbcSimpleInteger *thisOne = dynamic_cast<const CbcSimpleInteger *>(object);
+        const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
         if (thisOne) {
           int iColumn = thisOne->columnNumber();
           double targetValue = hotstartSolution[iColumn];
@@ -1800,7 +1800,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     int i;
     for (i = 0; i < numberObjects; i++) {
       OsiObject *object = model->modifiableObject(i);
-      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
       assert(dynamicObject);
       int numberUp2 = 0;
       int numberDown2 = 0;
@@ -1823,11 +1823,11 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           dynamicObject->columnNumber(), numberUp2, up, numberDown2, down);
     }
     if (numberUp)
-      averageUp /= static_cast<double>(numberUp);
+      averageUp /= static_cast< double >(numberUp);
     else
       averageUp = 1.0;
     if (numberDown)
-      averageDown /= static_cast<double>(numberDown);
+      averageDown /= static_cast< double >(numberDown);
     else
       averageDown = 1.0;
     printf("total - up %d vars average %g, - down %d vars average %g\n",
@@ -1841,7 +1841,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   // Mark variables which need to be clean
   char *cleanVariables = NULL;
 #ifdef COIN_HAS_CLP
-  OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(solver);
+  OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
   int saveClpOptions = 0;
   if (osiclp) {
     if ((model->moreSpecialOptions2() & 32768) != 0) {
@@ -1869,7 +1869,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     int i;
     for (i = 0; i < numberObjects; i++) {
       OsiObject *object = model->modifiableObject(i);
-      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
       if (dynamicObject) {
         if (dynamicObject->numberTimesUp()) {
           numberUp++;
@@ -1882,16 +1882,16 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       }
     }
     if (numberUp)
-      averageUp /= static_cast<double>(numberUp);
+      averageUp /= static_cast< double >(numberUp);
     else
       averageUp = 1.0;
     if (numberDown)
-      averageDown /= static_cast<double>(numberDown);
+      averageDown /= static_cast< double >(numberDown);
     else
       averageDown = 1.0;
     for (i = 0; i < numberObjects; i++) {
       OsiObject *object = model->modifiableObject(i);
-      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
       if (dynamicObject) {
         if (!dynamicObject->numberTimesUp())
           dynamicObject->setUpDynamicPseudoCost(averageUp);
@@ -2081,12 +2081,12 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       bool canDoOneHot = false;
       for (i = 0; i < numberObjects; i++) {
         OsiObject *object = model->modifiableObject(i);
-        CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+        CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
         double infeasibility = object->checkInfeasibility(&usefulInfo);
         int priorityLevel = object->priority();
         if (hotstartSolution) {
           // we are doing hot start
-          const CbcSimpleInteger *thisOne = dynamic_cast<const CbcSimpleInteger *>(object);
+          const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
           if (thisOne) {
             int iColumn = thisOne->columnNumber();
             bool canDoThisHot = true;
@@ -2190,7 +2190,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 #endif
           } else {
             // see if SOS
-            CbcSOS *sosObject = dynamic_cast<CbcSOS *>(object);
+            CbcSOS *sosObject = dynamic_cast< CbcSOS * >(object);
             if (sosObject) {
               gotDown = false;
               numberThisDown = sosObject->numberTimesDown();
@@ -2372,7 +2372,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               numberUnsatisfied_ = nFreeNon;
               for (int i = 0; i < numberObjects; i++) {
                 OsiObject *object = model->modifiableObject(i);
-                CbcSimpleIntegerDynamicPseudoCost *obj = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+                CbcSimpleIntegerDynamicPseudoCost *obj = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
                 assert(obj);
                 int iColumn = obj->columnNumber();
                 if (iColumn == whichAway) {
@@ -2396,7 +2396,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         // looks like a solution - get paranoid
         bool roundAgain = false;
         // get basis
-        CoinWarmStartBasis *ws = dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart());
+        CoinWarmStartBasis *ws = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
         if (!ws)
           break;
         double tolerance;
@@ -2499,11 +2499,11 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       OsiObject *object = model->modifiableObject(iObject);
       int preferredWay;
       object->infeasibility(&usefulInfo, preferredWay);
-      CbcObject *obj = dynamic_cast<CbcObject *>(object);
+      CbcObject *obj = dynamic_cast< CbcObject * >(object);
       assert(obj);
       branch_ = obj->createCbcBranch(solver, &usefulInfo, preferredWay);
       {
-        CbcBranchingObject *branchObj = dynamic_cast<CbcBranchingObject *>(branch_);
+        CbcBranchingObject *branchObj = dynamic_cast< CbcBranchingObject * >(branch_);
         assert(branchObj);
         branchObj->way(preferredWay);
       }
@@ -2533,7 +2533,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             neededPenalties = 0;
           } else if (gap < 1.0e5) {
             // maybe allow some not needed
-            int extra = static_cast<int>((1.0e6 - needed) / numberRows);
+            int extra = static_cast< int >((1.0e6 - needed) / numberRows);
             int nStored = numberObjects - optionalPenalties;
             extra = CoinMin(extra, nStored);
             for (int i = 0; i < extra; i++) {
@@ -2579,7 +2579,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             int j = objectMark[i];
             int iObject = whichObject[j];
             OsiObject *object = model->modifiableObject(iObject);
-            CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+            CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
             // Use this object's numberBeforeTrust
             int numberBeforeTrustThis = dynamicObject->numberBeforeTrust();
             int iSequence = dynamicObject->columnNumber();
@@ -2600,7 +2600,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               min1 = 0.8 * min1 + 0.2 * max1;
               sort[j] = -min1;
             } else if (numberThisDown < numberBeforeTrustThis || numberThisUp < numberBeforeTrustThis) {
-              double invTrust = 1.0 / static_cast<double>(numberBeforeTrustThis);
+              double invTrust = 1.0 / static_cast< double >(numberBeforeTrustThis);
               if (numberThisDown < numberBeforeTrustThis) {
                 double fraction = numberThisDown * invTrust;
                 downEstimate[iObject] = fraction * downEstimate[iObject] + (1.0 - fraction) * downPenalty;
@@ -2934,7 +2934,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                 for (int iDo = 0; iDo < numberToDo; iDo++) {
                   int iObject = whichObject[iDo];
                   OsiObject *object = model->modifiableObject(iObject);
-                  CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+                  CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
                   int iColumn = dynamicObject ? dynamicObject->columnNumber() : -1;
                   if (iColumn < 0 || orbits[iColumn] >= 0)
                     whichObject[nDo++] = whichObject[iDo];
@@ -2964,7 +2964,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       for (iDo = 0; iDo < numberToDo; iDo++) {
         int iObject = whichObject[iDo];
         OsiObject *object = model->modifiableObject(iObject);
-        CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+        CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
         int iColumn = dynamicObject ? dynamicObject->columnNumber() : numberColumns + iObject;
         int preferredWay;
         double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
@@ -2981,7 +2981,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           assert(saveSolution[iColumn] == solution[iColumn]);
         }
 #endif
-        CbcSimpleInteger *obj = dynamic_cast<CbcSimpleInteger *>(object);
+        CbcSimpleInteger *obj = dynamic_cast< CbcSimpleInteger * >(object);
         if (obj) {
           if (choiceObject) {
             obj->fillCreateBranch(choiceObject, &usefulInfo, preferredWay);
@@ -2990,7 +2990,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             choice.possibleBranch = obj->createCbcBranch(solver, &usefulInfo, preferredWay);
           }
         } else {
-          CbcObject *obj = dynamic_cast<CbcObject *>(object);
+          CbcObject *obj = dynamic_cast< CbcObject * >(object);
           assert(obj);
           choice.possibleBranch = obj->createCbcBranch(solver, &usefulInfo, preferredWay);
         }
@@ -3165,7 +3165,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           choice.numItersDown = solver->getIterationCount();
           objectiveChange = CoinMax(newObjectiveValue - objectiveValue_, 0.0);
           // Update branching information if wanted
-          CbcBranchingObject *cbcobj = dynamic_cast<CbcBranchingObject *>(choice.possibleBranch);
+          CbcBranchingObject *cbcobj = dynamic_cast< CbcBranchingObject * >(choice.possibleBranch);
           if (cbcobj) {
             CbcObject *object = cbcobj->object();
             assert(object);
@@ -3380,7 +3380,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           choice.numItersUp = solver->getIterationCount();
           objectiveChange = CoinMax(newObjectiveValue - objectiveValue_, 0.0);
           // Update branching information if wanted
-          cbcobj = dynamic_cast<CbcBranchingObject *>(choice.possibleBranch);
+          cbcobj = dynamic_cast< CbcBranchingObject * >(choice.possibleBranch);
           if (cbcobj) {
             CbcObject *object = cbcobj->object();
             assert(object);
@@ -3587,7 +3587,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             int betterWay = 0;
             // If was feasible (extra strong branching) skip
             if (infeasibility) {
-              CbcBranchingObject *branchObj = dynamic_cast<CbcBranchingObject *>(branch_);
+              CbcBranchingObject *branchObj = dynamic_cast< CbcBranchingObject * >(branch_);
               if (branch_)
                 assert(branchObj);
               betterWay = decision->betterBranch(choice.possibleBranch,
@@ -3608,7 +3608,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                 choice.possibleBranch = NULL;
               }
               {
-                CbcBranchingObject *branchObj = dynamic_cast<CbcBranchingObject *>(branch_);
+                CbcBranchingObject *branchObj = dynamic_cast< CbcBranchingObject * >(branch_);
                 assert(branchObj);
                 //branchObj->way(preferredWay);
                 branchObj->way(betterWay);
@@ -3790,7 +3790,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           for (int jDo = iDo + 1; jDo < numberToDo; jDo++) {
             int iObject = whichObject[iDo];
             OsiObject *object = model->modifiableObject(iObject);
-            CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+            CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
             if (dynamicObject)
               dynamicObject->setNumberBeforeTrust(0);
           }
@@ -3809,7 +3809,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         } else {
           int iObject = whichObject[whichChoice];
           OsiObject *object = model->modifiableObject(iObject);
-          CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+          CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
           if (dynamicObject) {
             int iColumn = dynamicObject->columnNumber();
             printf("choosing %d (column %d) iChosenWhen %d numberToDo %d\n", bestChoice,
@@ -3870,7 +3870,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           // get preferred way
           int preferredWay;
           object->infeasibility(&usefulInfo, preferredWay);
-          CbcBranchingObject *branchObj = dynamic_cast<CbcBranchingObject *>(branch_);
+          CbcBranchingObject *branchObj = dynamic_cast< CbcBranchingObject * >(branch_);
           assert(branchObj);
           branchObj->way(preferredWay);
 #ifdef CBCNODE_TIGHTEN_BOUNDS
@@ -3947,8 +3947,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   guessedObjectiveValue_ = objectiveValue_ + estimatedDegradation;
   int kColumn = -1;
   if (branch_) {
-    CbcObject *obj = (dynamic_cast<CbcBranchingObject *>(branch_))->object();
-    CbcSimpleInteger *branchObj = dynamic_cast<CbcSimpleInteger *>(obj);
+    CbcObject *obj = (dynamic_cast< CbcBranchingObject * >(branch_))->object();
+    CbcSimpleInteger *branchObj = dynamic_cast< CbcSimpleInteger * >(obj);
     if (branchObj) {
       kColumn = branchObj->columnNumber();
     }
@@ -4113,7 +4113,7 @@ typedef struct {
  */
 int solveAnalyze(void *info)
 {
-  StrongBundle *bundle = reinterpret_cast<StrongBundle *>(info);
+  StrongBundle *bundle = reinterpret_cast< StrongBundle * >(info);
   StrongInfo *choice = bundle->choice;
   StrongStaticInfo *staticInfo = bundle->staticInfo;
   OsiSolverInterface *solver = bundle->solver;
@@ -4155,7 +4155,7 @@ int solveAnalyze(void *info)
           solver->setWarmStart(staticInfo->ws);
 #ifdef COIN_HAS_CLP
           if (staticInfo->dualRowPivot) {
-            OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(solver);
+            OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
             ClpSimplex *simplex = osiclp->getModelPtr();
             simplex->setDualRowPivotAlgorithm(*staticInfo->dualRowPivot);
             //simplex->dualRowPivot()->saveWeights(simplex,4);
@@ -4233,7 +4233,7 @@ int solveAnalyze(void *info)
         choice->movement[iWay] = newObjectiveValue;
       } else {
 #ifdef COIN_HAS_CLP
-        OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(solver);
+        OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
         ClpSimplex *simplex = osiclp ? osiclp->getModelPtr() : NULL;
 #endif
         // doing continuous and general integer
@@ -4319,10 +4319,10 @@ int solveAnalyze(void *info)
           solver->setObjective(staticInfo->newObjective);
           if (!solver->isProvenOptimal()) {
 #ifdef COIN_HAS_CLP
-            OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(solver);
+            OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
             ClpSimplex *simplex = osiclp->getModelPtr();
             double sum = simplex->sumPrimalInfeasibilities();
-            sum /= static_cast<double>(simplex->numberPrimalInfeasibilities());
+            sum /= static_cast< double >(simplex->numberPrimalInfeasibilities());
             if (sum > 1.0e-3) {
 #endif
               choice->modified[0] = 1;
@@ -4343,7 +4343,7 @@ int solveAnalyze(void *info)
 #ifdef THREADS_IN_ANALYZE
 void *cbc_parallelManager(void *stuff)
 {
-  CoinPthreadStuff *driver = reinterpret_cast<CoinPthreadStuff *>(stuff);
+  CoinPthreadStuff *driver = reinterpret_cast< CoinPthreadStuff * >(stuff);
   int whichThread = driver->whichThread();
   CoinThreadInfo *threadInfo = driver->threadInfoPointer(whichThread);
   threadInfo->status = -1;
@@ -4534,7 +4534,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
   }
   int saveAllowed = numberIterationsAllowed;
 #ifdef COIN_HAS_CLP
-  OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(solver);
+  OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
   int saveClpOptions = 0;
   bool fastIterations = (model->specialOptions() & 8) != 0;
   if (osiclp) {
@@ -4558,7 +4558,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
   numberToDo = 0;
   for (i = 0; i < numberObjects; i++) {
     OsiObject *object = model->modifiableObject(i);
-    CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+    CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
     if (!dynamicObject)
       continue;
     if (dynamicObject->priority() != highestPriority)
@@ -4638,7 +4638,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     simplex->setLogLevel(0);
     simplex->dual(0, 1);
     ClpDualRowPivot *dualRowPivot = simplex->dualRowPivot();
-    ClpDualRowSteepest *steep = dynamic_cast<ClpDualRowSteepest *>(dualRowPivot);
+    ClpDualRowSteepest *steep = dynamic_cast< ClpDualRowSteepest * >(dualRowPivot);
     if (steep) {
       staticInfo.dualRowPivot = new ClpDualRowSteepest(*steep);
       staticInfo.dualRowPivot->setMode(1); // full steepest edge
@@ -4666,13 +4666,13 @@ int CbcNode::analyze(CbcModel *model, double *results)
   int first = 0;
   for (int i = 0; i < numberThreads; i++) {
     if (osiclp && (solveType & 2) != 0 && !DO_STEEPEST_SERIAL) {
-      OsiSolverInterface *solver = reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[i].extraInfo2);
-      OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(solver);
+      OsiSolverInterface *solver = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[i].extraInfo2);
+      OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
       ClpSimplex *simplex = osiclp->getModelPtr();
       simplex->setLogLevel(0);
       simplex->dual(0, 1);
       ClpDualRowPivot *dualRowPivot = simplex->dualRowPivot();
-      ClpDualRowSteepest *steep = dynamic_cast<ClpDualRowSteepest *>(dualRowPivot);
+      ClpDualRowSteepest *steep = dynamic_cast< ClpDualRowSteepest * >(dualRowPivot);
       if (steep) {
         numberSteepThreads = numberThreads;
         ClpDualRowSteepest *dualRowPivot = new ClpDualRowSteepest(*steep);
@@ -4706,7 +4706,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
         iDo++; //started this one
         bundle.choice = &choice;
         bundle.solver = solver;
-        bundle.solver = reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+        bundle.solver = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[iThread].extraInfo2);
         threadStatus = 0;
 #ifdef DETAIL_THREAD
         printf("Starting steep task on thread %d\n",
@@ -4729,7 +4729,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       }
       staticInfo.solveType = solveType;
     }
-    OsiSolverInterface *solver0 = reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[0].extraInfo2);
+    OsiSolverInterface *solver0 = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[0].extraInfo2);
     CoinIndexedVector *savedWeights0 = staticInfo.dualRowPivot->savedWeights();
     int *index0 = savedWeights0->getIndices();
     double *weight0 = savedWeights0->denseVector();
@@ -4781,7 +4781,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       if (!doAtEnd)
         currentChoice = iThread;
       if (threadNeedsRefreshing[iThread]) {
-        OsiSolverInterface *solver = reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+        OsiSolverInterface *solver = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[iThread].extraInfo2);
         if ((threadNeedsRefreshing[iThread] & 1) != 0)
           solver->setColLower(saveLower);
         if ((threadNeedsRefreshing[iThread] & 2) != 0)
@@ -4798,7 +4798,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       int iObject = whichObject[iDo];
       iDo++; //started this one
       OsiObject *object = model->modifiableObject(iObject);
-      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
       int iColumn = dynamicObject->columnNumber();
       double value = currentSolution[iColumn];
       double nearest = floor(value + 0.5);
@@ -4832,7 +4832,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       bundle.solver = solver;
 #ifdef USE_STRONG_THREADS
       if (numberThreads) {
-        bundle.solver = reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+        bundle.solver = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[iThread].extraInfo2);
         threadStatus = 0;
 #ifdef DETAIL_THREAD
         printf("Starting task for column %d on thread %d\n",
@@ -4899,7 +4899,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       // If objective goes above certain amount we can set bound
       int jInt = back[iColumn];
       OsiObject *object = model->modifiableObject(jInt);
-      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(object);
+      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
       if (dynamicObject) {
         if (choice.numIters[0] >= 0) {
           dynamicObject->addToSumDownCost(CoinMin(choice.movement[0], maxMovement));
@@ -5212,7 +5212,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     // look at ints/all - should be parametrics - for now primal
     OsiSolverInterface *temp = solver->clone();
     // add constraint
-    int *indices = reinterpret_cast<int *>(newUpper);
+    int *indices = reinterpret_cast< int * >(newUpper);
     double *obj = newLower;
     memcpy(obj, solver->getObjCoefficients(), numberColumns * sizeof(double));
     int n = 0;
@@ -5232,7 +5232,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       temp->setDblParam(OsiObjOffset, 0.0);
 #if defined(THREADS_IN_ANALYZE) && defined(COIN_HAS_CLP)
       for (int iThread = 0; iThread < numberThreads; iThread++) {
-        OsiSolverInterface *solver = reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+        OsiSolverInterface *solver = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[iThread].extraInfo2);
         solver->addRow(n, indices, obj, -COIN_DBL_MAX, CoinMin(cutoff, 1.0e25) + offset);
       }
 #endif
@@ -5257,7 +5257,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     memset(staticInfo.newObjective + numberColumns, 0, numberColumns * sizeof(double));
 #if defined(THREADS_IN_ANALYZE) && defined(COIN_HAS_CLP)
     for (int iThread = 0; iThread < numberThreads; iThread++) {
-      OsiSolverInterface *solver = reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+      OsiSolverInterface *solver = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[iThread].extraInfo2);
       solver->setObjective(newLower);
       solver->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
       threadNeedsRefreshing[iThread] = 3;
@@ -5293,7 +5293,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
         threadStatus = 1 + threadInfo.threadInfo_[iThread].status;
         currentChoice = iThread;
         if (threadNeedsRefreshing[iThread]) {
-          OsiSolverInterface *solver = reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+          OsiSolverInterface *solver = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[iThread].extraInfo2);
           if ((threadNeedsRefreshing[iThread] & 1) != 0)
             solver->setColLower(saveLower);
           if ((threadNeedsRefreshing[iThread] & 2) != 0)
@@ -5347,7 +5347,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
         bundle.solver = temp;
 #ifdef USE_STRONG_THREADS
         if (numberThreads) {
-          bundle.solver = reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[iThread].extraInfo2);
+          bundle.solver = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[iThread].extraInfo2);
           threadStatus = 0;
 #ifdef DETAIL_THREAD
           printf("Starting task for column %d on thread %d\n",
@@ -5480,7 +5480,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     delete staticInfo.primalColumnPivot;
     ClpSimplex *simplex = osiclp->getModelPtr();
     ClpDualRowPivot *dualRowPivot = simplex->dualRowPivot();
-    ClpDualRowSteepest *steep = dynamic_cast<ClpDualRowSteepest *>(dualRowPivot);
+    ClpDualRowSteepest *steep = dynamic_cast< ClpDualRowSteepest * >(dualRowPivot);
     if (steep)
       steep->setMode(3);
   }
@@ -5501,7 +5501,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       temp->writeMps("analyzed2");
 #ifdef COIN_HAS_CLP
     } else {
-      OsiClpSolverInterface *osiclp2 = dynamic_cast<OsiClpSolverInterface *>(temp);
+      OsiClpSolverInterface *osiclp2 = dynamic_cast< OsiClpSolverInterface * >(temp);
       osiclp->getModelPtr()->writeMps("analyzed.mps", 2, 1);
       osiclp2->getModelPtr()->writeMps("analyzed2.mps", 2, 1);
     }
@@ -5521,7 +5521,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
   if (numberThreads) {
     threadInfo.waitAllTasks();
     for (int i = 0; i < numberThreads; i++) {
-      delete reinterpret_cast<OsiSolverInterface *>(threadInfo.threadInfo_[i].extraInfo2);
+      delete reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[i].extraInfo2);
     }
   }
 #endif
@@ -5567,14 +5567,14 @@ int CbcNode::analyze(CbcModel *model, double *results)
       int generalPriority = -10000000;
       for (int i = 0; i < numberIntegers; i++) {
         OsiObject *object = model->modifiableObject(i);
-        CbcSimpleInteger *integerObject = dynamic_cast<CbcSimpleInteger *>(object);
+        CbcSimpleInteger *integerObject = dynamic_cast< CbcSimpleInteger * >(object);
         if (!integerObject)
           continue;
         generalPriority = CoinMax(generalPriority, integerObject->priority());
       }
       for (int i = 0; i < numberIntegers; i++) {
         OsiObject *object = model->modifiableObject(i);
-        CbcSimpleInteger *integerObject = dynamic_cast<CbcSimpleInteger *>(object);
+        CbcSimpleInteger *integerObject = dynamic_cast< CbcSimpleInteger * >(object);
         if (!integerObject)
           continue;
         if (!interAction[i] && integerObject->priority() == generalPriority)
@@ -5725,7 +5725,7 @@ int CbcNode::branch(OsiSolverInterface *solver)
   int numberLeft = nodeInfo_->numberBranchesLeft();
   CbcNodeInfo *parent = nodeInfo_->parent();
   int parentNodeNumber = -1;
-  CbcBranchingObject *object1 = dynamic_cast<CbcBranchingObject *>(branch_);
+  CbcBranchingObject *object1 = dynamic_cast< CbcBranchingObject * >(branch_);
   //OsiObject * object = object1->
   //int sequence = object->columnNumber);
   int id = -1;
@@ -5770,11 +5770,11 @@ int CbcNode::branch(OsiSolverInterface *solver)
 int CbcNode::way() const
 {
   if (branch_) {
-    CbcBranchingObject *obj = dynamic_cast<CbcBranchingObject *>(branch_);
+    CbcBranchingObject *obj = dynamic_cast< CbcBranchingObject * >(branch_);
     if (obj) {
       return obj->way();
     } else {
-      OsiTwoWayBranchingObject *obj2 = dynamic_cast<OsiTwoWayBranchingObject *>(branch_);
+      OsiTwoWayBranchingObject *obj2 = dynamic_cast< OsiTwoWayBranchingObject * >(branch_);
       assert(obj2);
       return obj2->way();
     }
@@ -5952,10 +5952,10 @@ int CbcNode::chooseClpBranch(CbcModel *model,
   sumInfeasibilities_ = 0.0;
   // Note looks as if off end (hidden one)
   OsiObject *object = model->modifiableObject(numberObjects);
-  CbcGeneralDepth *thisOne = dynamic_cast<CbcGeneralDepth *>(object);
+  CbcGeneralDepth *thisOne = dynamic_cast< CbcGeneralDepth * >(object);
   assert(thisOne);
   OsiClpSolverInterface *clpSolver
-    = dynamic_cast<OsiClpSolverInterface *>(solver);
+    = dynamic_cast< OsiClpSolverInterface * >(solver);
   assert(clpSolver);
   ClpSimplex *simplex = clpSolver->getModelPtr();
   int preferredWay;
@@ -5967,7 +5967,7 @@ int CbcNode::chooseClpBranch(CbcModel *model,
       nodeInfo->applyNode(simplex, 2);
     } else {
       // from diving
-      CbcSubProblem **nodes = reinterpret_cast<CbcSubProblem **>(model->temporaryPointer());
+      CbcSubProblem **nodes = reinterpret_cast< CbcSubProblem ** >(model->temporaryPointer());
       assert(nodes);
       int numberDo = thisOne->numberNodes() - 1;
       for (int iNode = 0; iNode < numberDo; iNode++)
@@ -6050,7 +6050,7 @@ int CbcNode::chooseClpBranch(CbcModel *model,
       branch_ = thisOne->createCbcBranch(solver, &usefulInfo, preferredWay);
       if (branch_) {
         // Set to first one (and change when re-pushing)
-        CbcGeneralBranchingObject *branch = dynamic_cast<CbcGeneralBranchingObject *>(branch_);
+        CbcGeneralBranchingObject *branch = dynamic_cast< CbcGeneralBranchingObject * >(branch_);
         branch->state(objectiveValue_, sumInfeasibilities_,
           numberUnsatisfied_, 0);
         branch->setNode(this);

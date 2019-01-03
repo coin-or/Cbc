@@ -305,7 +305,7 @@ void installCutGenerators(CbcGenCtlBlk *ctlBlk, CbcModel *model)
   action = ctlBlk->getProbing(gen);
   if (action != CbcGenCtlBlk::CGOff) {
     if (action == CbcGenCtlBlk::CGForceBut) {
-      CglProbing *probingGen = dynamic_cast<CglProbing *>(gen);
+      CglProbing *probingGen = dynamic_cast< CglProbing * >(gen);
       probingGen->setRowCuts(-3);
     }
     model->addCutGenerator(gen, howOften[action], "Probing");
@@ -483,7 +483,7 @@ int doBaCParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);

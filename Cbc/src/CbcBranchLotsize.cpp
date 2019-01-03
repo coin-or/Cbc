@@ -791,7 +791,7 @@ void CbcLotsizeBranchingObject::print()
 CbcRangeCompare
 CbcLotsizeBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, const bool replaceIfOverlap)
 {
-  const CbcLotsizeBranchingObject *br = dynamic_cast<const CbcLotsizeBranchingObject *>(brObj);
+  const CbcLotsizeBranchingObject *br = dynamic_cast< const CbcLotsizeBranchingObject * >(brObj);
   assert(br);
   double *thisBd = way_ == -1 ? down_ : up_;
   const double *otherBd = br->way_ == -1 ? br->down_ : br->up_;

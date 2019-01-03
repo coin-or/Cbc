@@ -100,7 +100,7 @@ namespace {
 /*
   Data types for a vector of OsiSolverInterface objects.
 */
-typedef std::map<std::string, OsiSolverInterface *> solverMap_t;
+typedef std::map< std::string, OsiSolverInterface * > solverMap_t;
 typedef solverMap_t::const_iterator solverMapIter_t;
 
 /*
@@ -197,7 +197,7 @@ int changeCbcSolver(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param);
+  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
   assert(genParam != 0);
   CbcGenCtlBlk *ctlBlk = genParam->obj();
   assert(ctlBlk != 0);

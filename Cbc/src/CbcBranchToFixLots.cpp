@@ -561,3 +561,6 @@ void CbcBranchToFixLots::redoSequenceEtc(CbcModel *model, int numberColumns, con
   OsiSolverInterface *solver = model_->solver();
   matrixByRow_ = *solver->getMatrixByRow();
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -123,3 +123,6 @@ CbcEventHandler::CbcAction CbcEventHandler::event(CbcEvent event,
     return (dfltAction_);
   }
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

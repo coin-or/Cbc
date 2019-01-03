@@ -1438,3 +1438,6 @@ ClpSimplex *approximateSolution(CoinModel &coinModel,
   int numberPasses, double deltaTolerance,
   int mode = 0);
 #endif
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -531,3 +531,6 @@ void CbcHeuristicPivotAndFix::setModel(CbcModel *)
 {
   // probably same as resetModel
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

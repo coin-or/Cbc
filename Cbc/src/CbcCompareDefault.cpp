@@ -332,3 +332,6 @@ void CbcCompareDefault::generateCpp(FILE *fp)
     fprintf(fp, "3  compare.setWeight(%g);\n", weight_);
   fprintf(fp, "3  cbcModel->setNodeComparison(compare);\n");
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

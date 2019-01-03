@@ -1052,3 +1052,6 @@ void CbcHeuristicRENS::setModel(CbcModel *model)
 {
   model_ = model;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

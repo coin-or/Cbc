@@ -156,3 +156,6 @@ CbcGenParam &CbcGenParam::operator=(const CbcGenParam &rhs)
 CbcGenParam::~CbcGenParam()
 { /* Nothing more to do */
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

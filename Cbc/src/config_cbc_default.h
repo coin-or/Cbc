@@ -15,3 +15,6 @@
 
 /* Release Version number of project */
 #define CBC_VERSION_RELEASE 9999
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

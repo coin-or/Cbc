@@ -820,3 +820,6 @@ int ClpSimplex::loadNonLinear(void *, int &,
   return 0;
 }
 #endif
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

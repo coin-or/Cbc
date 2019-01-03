@@ -124,3 +124,6 @@ bool CbcHeuristicDiveFractional::selectVariableToBranch(OsiSolverInterface *solv
   }
   return allTriviallyRoundableSoFar;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

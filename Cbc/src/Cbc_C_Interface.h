@@ -730,3 +730,6 @@ Cbc_printSolution(Cbc_Model *model);
 }
 #endif
 #endif
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

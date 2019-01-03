@@ -153,3 +153,6 @@ CbcBranchAllDifferent::infeasibility(const OsiBranchingInformation * /*info*/,
   else
     return 0.5 * (1.0 - closest);
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -1677,3 +1677,6 @@ void CbcHeuristicCrossover::setModel(CbcModel *model)
       random_[i] = model->randomNumberGenerator()->randomDouble();
   }
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

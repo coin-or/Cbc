@@ -726,3 +726,6 @@ void CbcRowCuts::addCuts(OsiCuts &cs)
   }
   numberCuts_ = 0;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

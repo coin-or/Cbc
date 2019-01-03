@@ -410,3 +410,6 @@ void CbcHeuristicDINS::setModel(CbcModel *model)
   numberSolutions_ = 0;
   values_ = NULL;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

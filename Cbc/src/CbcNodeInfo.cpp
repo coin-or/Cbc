@@ -502,3 +502,6 @@ void CbcNodeInfo::deactivate(int mode)
     numberCuts_ = 0;
   }
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

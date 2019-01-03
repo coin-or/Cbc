@@ -6084,3 +6084,6 @@ CbcNode::checkIsCutoff(double cutoff)
   branch_->checkIsCutoff(cutoff);
   return objectiveValue_;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

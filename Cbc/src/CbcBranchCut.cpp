@@ -330,3 +330,6 @@ CbcCutBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, c
   r0.setUb(thisBd[1]);
   return comp;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

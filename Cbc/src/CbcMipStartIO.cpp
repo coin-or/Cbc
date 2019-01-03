@@ -566,3 +566,6 @@ TERMINATE:
   return status;
 }
 #undef STR_SIZE
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

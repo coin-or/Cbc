@@ -1557,3 +1557,6 @@ int CbcHeuristicDive::fixOtherVariables(OsiSolverInterface *solver,
 #endif
   return cnt;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

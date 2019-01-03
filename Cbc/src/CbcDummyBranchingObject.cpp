@@ -99,3 +99,6 @@ CbcDummyBranchingObject::compareBranchingObject(const CbcBranchingObject * /*brO
 {
   throw("must implement");
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

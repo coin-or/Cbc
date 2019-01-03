@@ -1282,3 +1282,6 @@ Cbc_printSolution(Cbc_Model *model)
 #if defined(__MWERKS__)
 #pragma export off
 #endif
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

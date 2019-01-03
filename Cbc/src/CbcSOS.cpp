@@ -1100,3 +1100,6 @@ CbcSOSBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, c
   }
   return CbcRangeSame; // fake return
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -132,3 +132,6 @@ void CbcStatistics::print(const int *sequenceLookup) const
   else
     printf("cutoff\n");
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

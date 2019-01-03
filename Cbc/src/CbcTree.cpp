@@ -1462,3 +1462,6 @@ CbcTree::getBestPossibleObjective()
   }
   return r_val;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -24,3 +24,6 @@ int computeCompleteSolution(CbcModel *model,
   double *sol, double &obj);
 
 #endif // MIPSTARTIO_HPP_INCLUDED
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

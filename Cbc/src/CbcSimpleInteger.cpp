@@ -730,3 +730,6 @@ CbcIntegerBranchingObject::compareBranchingObject(const CbcBranchingObject *brOb
   const double *otherBd = br->way_ < 0 ? br->down_ : br->up_;
   return CbcCompareRanges(thisBd, otherBd, replaceIfOverlap);
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

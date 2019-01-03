@@ -22,3 +22,6 @@ void afterKnapsack(const CoinModel &coinModel2, const int *whichColumn, const in
   const double *knapsackSolution, double *solution, int logLevel);
 
 #endif
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -416,3 +416,6 @@ int main(int argc, const char *argv[])
     */
   return (0);
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

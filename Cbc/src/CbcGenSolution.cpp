@@ -583,3 +583,6 @@ int CbcGenParamUtils::doPrintMaskParam(CoinParam *param)
 
   return (0);
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

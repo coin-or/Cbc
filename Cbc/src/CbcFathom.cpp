@@ -104,3 +104,6 @@ CbcOsiSolver::operator=(const CbcOsiSolver &rhs)
   return *this;
 }
 #endif
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

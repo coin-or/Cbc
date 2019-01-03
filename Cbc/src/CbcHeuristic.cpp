@@ -3256,3 +3256,6 @@ void CbcHeuristicJustOne::normalizeProbabilities()
   assert(fabs(probabilities_[numberHeuristics_ - 1] - 1.0) < 1.0e-5);
   probabilities_[numberHeuristics_ - 1] = 1.000001;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

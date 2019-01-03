@@ -3252,3 +3252,6 @@ int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *cu
 // For uniform setting of cut and heuristic options
 void setCutAndHeuristicOptions(CbcModel &model);
 #endif
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

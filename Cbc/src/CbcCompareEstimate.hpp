@@ -43,3 +43,6 @@ public:
 };
 
 #endif //CbcCompareEstimate_H
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

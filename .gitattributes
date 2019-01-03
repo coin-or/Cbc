@@ -93,6 +93,7 @@ Cbc/src/CbcHeuristicDW.cpp -text
 Cbc/src/CbcHeuristicDW.hpp -text
 Cbc/src/CbcSymmetry.cpp -text
 Cbc/src/CbcSymmetry.hpp -text
+Cbc/src/format-source.sh -text
 Cbc/test/CInterfaceTest.c -text
 Cbc/test/OsiCbcSolverInterfaceTest.cpp -text
 Cbc/test/gamsTest.cpp -text

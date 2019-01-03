@@ -1364,3 +1364,6 @@ void CbcCutGenerator::generateTuning(FILE *fp)
   if (whetherToUse())
     fprintf(fp, "   generator->setWhetherToUse(true);\n");
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

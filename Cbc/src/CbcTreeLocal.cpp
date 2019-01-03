@@ -1730,3 +1730,6 @@ void CbcTreeVariable::generateCpp(FILE *fp)
     fprintf(fp, "5  variableTree.setRefine(%s);\n", refine_ ? "true" : "false");
   fprintf(fp, "5  cbcModel->passInTreeHandler(variableTree);\n");
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -768,3 +768,6 @@ int CbcDynamicPseudoCostBranchingObject::fillStrongInfo(CbcStrongInfo &info)
     return 1;
   }
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -166,3 +166,6 @@ private:
   CbcFullNodeInfo &operator=(const CbcFullNodeInfo &rhs);
 };
 #endif //CbcFullNodeInfo_H
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

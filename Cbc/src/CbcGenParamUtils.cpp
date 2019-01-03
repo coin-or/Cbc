@@ -1440,3 +1440,6 @@ bool readSolution(std::string fileName,
 }
 
 } // end namespace CbcGenParamUtils
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

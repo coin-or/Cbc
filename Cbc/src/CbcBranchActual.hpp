@@ -21,3 +21,6 @@
 #include "CbcGeneralDepth.hpp"
 #include "CbcSubProblem.hpp"
 #endif
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

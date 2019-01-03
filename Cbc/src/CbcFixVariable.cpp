@@ -191,3 +191,6 @@ void CbcFixVariable::applyToSolver(OsiSolverInterface *solver, int state) const
     //printf(" => %g\n",solver->getColUpper()[iColumn]);
   }
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

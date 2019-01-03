@@ -40,3 +40,6 @@ int doHeuristics(CbcModel *model, int type, CbcOrClpParam *parameters_,
   int numberParameters_, int noPrinting_, int initialPumpTune);
 
 #endif //CbcSolverHeuristics_H
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -70,3 +70,6 @@ CbcBranchingObject::operator=(const CbcBranchingObject &rhs)
 CbcBranchingObject::~CbcBranchingObject()
 {
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

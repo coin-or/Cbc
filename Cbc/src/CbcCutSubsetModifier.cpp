@@ -105,3 +105,6 @@ int CbcCutSubsetModifier::modify(const OsiSolverInterface * /*solver*/,
   //return 3;
   return returnCode;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

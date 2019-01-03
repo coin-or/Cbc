@@ -1853,3 +1853,6 @@ void CbcHeuristicGreedySOS::validate()
       setWhen(0); // switch off
   }
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

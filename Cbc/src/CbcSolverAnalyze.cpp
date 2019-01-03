@@ -328,3 +328,6 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
   }
 }
 #endif // ifndef CBC_OTHER_SOLVER
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

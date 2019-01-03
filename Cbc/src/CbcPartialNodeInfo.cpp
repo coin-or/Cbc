@@ -281,3 +281,6 @@ CbcPartialNodeInfo::buildRowBasis(CoinWarmStartBasis &basis) const
 
   return parent_;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

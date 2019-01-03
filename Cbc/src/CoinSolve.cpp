@@ -375,3 +375,6 @@ int main(int argc, const char *argv[])
   Added first try at Ampl interface
   Made dummy program so real main can be called from other programs
 */
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

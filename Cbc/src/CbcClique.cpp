@@ -910,3 +910,6 @@ CbcLongCliqueBranchingObject::compareBranchingObject(const CbcBranchingObject *b
   }
   return CbcRangeOverlap;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -724,3 +724,6 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
 #endif
   return (returnCode);
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

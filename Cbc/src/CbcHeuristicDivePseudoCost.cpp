@@ -247,3 +247,6 @@ int CbcHeuristicDivePseudoCost::fixOtherVariables(OsiSolverInterface *solver,
   //return CbcHeuristicDive::fixOtherVariables(solver, solution,
   //				     candidate, random);
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

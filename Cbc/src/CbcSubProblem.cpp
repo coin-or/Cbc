@@ -324,3 +324,6 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
     }
   }
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

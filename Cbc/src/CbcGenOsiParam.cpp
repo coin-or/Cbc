@@ -158,3 +158,6 @@ CbcOsiParam &CbcOsiParam::operator=(const CbcOsiParam &rhs)
 CbcOsiParam::~CbcOsiParam()
 { /* Nothing more to do */
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

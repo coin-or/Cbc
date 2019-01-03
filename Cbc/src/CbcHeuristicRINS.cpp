@@ -384,3 +384,6 @@ void CbcHeuristicRINS::setModel(CbcModel *model)
   used_ = new char[numberColumns];
   memset(used_, 0, numberColumns);
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -679,3 +679,6 @@ void CbcGenCtlBlk::printBaBStatus()
 
   std::cout << "." << std::endl;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -259,3 +259,6 @@ CbcSimpleIntegerPseudoCost::downEstimate() const
   double downCost = CoinMax((value - below) * downPseudoCost_, 0.0);
   return downCost;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

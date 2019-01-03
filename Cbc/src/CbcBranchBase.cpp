@@ -347,3 +347,6 @@ CbcObjectUpdateData::operator=(const CbcObjectUpdateData &rhs)
   }
   return *this;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

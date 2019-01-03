@@ -12592,4 +12592,5 @@ static int nautiedConstraints(CbcModel &model, int maxPass)
   Source code changes so up to 2.0
 */
 
-//# vim: ts=2 sw=2 et
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

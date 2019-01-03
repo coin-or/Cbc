@@ -412,3 +412,6 @@ void testingMessage(const char *const msg)
   std::cerr << msg << std::endl;
   // std::cout << msg << std::endl ;
 }
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

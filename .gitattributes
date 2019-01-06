@@ -109,5 +109,6 @@ Cbc/test/osiUnitTest.cpp -text
 /configure.ac -text
 /depcomp -text
 doxydoc/doxygen.conf.in -text
+/format-all-sources.sh -text
 /install-sh -text
 /missing -text

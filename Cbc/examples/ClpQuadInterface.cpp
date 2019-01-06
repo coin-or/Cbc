@@ -23,21 +23,21 @@ void ClpQuadInterface::initialSolve()
   modelPtr_->scaling(0);
   modelPtr_->setLogLevel(0);
   // solve with no objective to get feasible solution
-  setBasis(basis_,modelPtr_);
+  setBasis(basis_, modelPtr_);
   modelPtr_->dual();
   basis_ = getBasis(modelPtr_);
   modelPtr_->setDualObjectiveLimit(cutoff);
   if (modelPtr_->problemStatus()) {
-    assert (modelPtr_->problemStatus()==1);
+    assert(modelPtr_->problemStatus() == 1);
     return;
   }
-  ClpObjective * saveObjective  = modelPtr_->objectiveAsObject();
+  ClpObjective *saveObjective = modelPtr_->objectiveAsObject();
   modelPtr_->setObjectivePointer(quadraticObjective_);
   //modelPtr_->setLogLevel(1);
   // Could load up any data into a solver
   modelPtr_->primal();
   modelPtr_->setDualObjectiveLimit(cutoff);
-  if (modelPtr_->objectiveValue()>cutoff)
+  if (modelPtr_->objectiveValue() > cutoff)
     modelPtr_->setProblemStatus(1);
   // zero reduced costs
   // Should not have to as convex
@@ -57,18 +57,18 @@ void ClpQuadInterface::resolve()
 //#############################################################################
 
 //-------------------------------------------------------------------
-// Default Constructor 
+// Default Constructor
 //-------------------------------------------------------------------
-ClpQuadInterface::ClpQuadInterface ()
+ClpQuadInterface::ClpQuadInterface()
   : OsiClpSolverInterface()
 {
-  quadraticObjective_=NULL;
+  quadraticObjective_ = NULL;
 }
 
 //-------------------------------------------------------------------
 // Clone
 //-------------------------------------------------------------------
-OsiSolverInterface * 
+OsiSolverInterface *
 ClpQuadInterface::clone(bool CopyData) const
 {
   if (CopyData) {
@@ -79,57 +79,55 @@ ClpQuadInterface::clone(bool CopyData) const
   }
 }
 
-
 //-------------------------------------------------------------------
-// Copy constructor 
+// Copy constructor
 //-------------------------------------------------------------------
-ClpQuadInterface::ClpQuadInterface (
-                  const ClpQuadInterface & rhs)
+ClpQuadInterface::ClpQuadInterface(
+  const ClpQuadInterface &rhs)
   : OsiClpSolverInterface(rhs)
 {
   if (rhs.quadraticObjective_)
-    quadraticObjective_=rhs.quadraticObjective_->clone();
+    quadraticObjective_ = rhs.quadraticObjective_->clone();
   else
-    quadraticObjective_=NULL;
+    quadraticObjective_ = NULL;
 }
 
 //-------------------------------------------------------------------
-// Destructor 
+// Destructor
 //-------------------------------------------------------------------
-ClpQuadInterface::~ClpQuadInterface ()
+ClpQuadInterface::~ClpQuadInterface()
 {
   delete quadraticObjective_;
 }
 
 //-------------------------------------------------------------------
-// Assignment operator 
+// Assignment operator
 //-------------------------------------------------------------------
 ClpQuadInterface &
-ClpQuadInterface::operator=(const ClpQuadInterface& rhs)
+ClpQuadInterface::operator=(const ClpQuadInterface &rhs)
 {
-  if (this != &rhs) { 
+  if (this != &rhs) {
     OsiClpSolverInterface::operator=(rhs);
     if (rhs.quadraticObjective_)
-      quadraticObjective_=rhs.quadraticObjective_->clone();
+      quadraticObjective_ = rhs.quadraticObjective_->clone();
     else
-      quadraticObjective_=NULL;
+      quadraticObjective_ = NULL;
   }
   return *this;
 }
 //-------------------------------------------------------------------
 // Real initializer
 //-------------------------------------------------------------------
-void
-ClpQuadInterface::initialize ()
+void ClpQuadInterface::initialize()
 {
   // Save true objective and create a fake one
   delete quadraticObjective_;
   quadraticObjective_ = modelPtr_->objectiveAsObject();
-  ClpLinearObjective * linearObjective = new ClpLinearObjective(NULL,modelPtr_->numberColumns());
+  ClpLinearObjective *linearObjective = new ClpLinearObjective(NULL, modelPtr_->numberColumns());
   modelPtr_->setObjectivePointer(linearObjective);
 }
 // Get objective function value (can't use default)
-double 
+double
 ClpQuadInterface::getObjValue() const
 {
   // first try easy way

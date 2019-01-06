@@ -4,8 +4,7 @@
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
 #include <cassert>
-#include <iomanip> 
-
+#include <iomanip>
 
 #include "CoinPragma.hpp"
 #include "CbcModel.hpp"
@@ -15,7 +14,6 @@
 #include "CoinTime.hpp"
 
 //#############################################################################
-
 
 /************************************************************************
 
@@ -39,7 +37,7 @@ an event handler to modify stuff.
 */
 
 class MyEventHandler3 : public ClpEventHandler {
-  
+
 public:
   /**@name Overrides */
   //@{
@@ -51,55 +49,54 @@ public:
   /** Default constructor. */
   MyEventHandler3();
   /// Constructor with pointer to model (redundant as setEventHandler does)
-  MyEventHandler3(ClpSimplex * model);
+  MyEventHandler3(ClpSimplex *model);
   /** Destructor */
   virtual ~MyEventHandler3();
   /** The copy constructor. */
-  MyEventHandler3(const MyEventHandler3 & rhs);
+  MyEventHandler3(const MyEventHandler3 &rhs);
   /// Assignment
-  MyEventHandler3& operator=(const MyEventHandler3 & rhs);
+  MyEventHandler3 &operator=(const MyEventHandler3 &rhs);
   /// Clone
-  virtual ClpEventHandler * clone() const ;
+  virtual ClpEventHandler *clone() const;
   //@}
-   
-    
+
 protected:
   // data goes here
 };
 //-------------------------------------------------------------------
-// Default Constructor 
+// Default Constructor
 //-------------------------------------------------------------------
-MyEventHandler3::MyEventHandler3 () 
+MyEventHandler3::MyEventHandler3()
   : ClpEventHandler()
 {
 }
 
 //-------------------------------------------------------------------
-// Copy constructor 
+// Copy constructor
 //-------------------------------------------------------------------
-MyEventHandler3::MyEventHandler3 (const MyEventHandler3 & rhs) 
-: ClpEventHandler(rhs)
-{  
+MyEventHandler3::MyEventHandler3(const MyEventHandler3 &rhs)
+  : ClpEventHandler(rhs)
+{
 }
 
 // Constructor with pointer to model
-MyEventHandler3::MyEventHandler3(ClpSimplex * model)
+MyEventHandler3::MyEventHandler3(ClpSimplex *model)
   : ClpEventHandler(model)
 {
 }
 
 //-------------------------------------------------------------------
-// Destructor 
+// Destructor
 //-------------------------------------------------------------------
-MyEventHandler3::~MyEventHandler3 ()
+MyEventHandler3::~MyEventHandler3()
 {
 }
 
 //----------------------------------------------------------------
-// Assignment operator 
+// Assignment operator
 //-------------------------------------------------------------------
 MyEventHandler3 &
-MyEventHandler3::operator=(const MyEventHandler3& rhs)
+MyEventHandler3::operator=(const MyEventHandler3 &rhs)
 {
   if (this != &rhs) {
     ClpEventHandler::operator=(rhs);
@@ -109,29 +106,27 @@ MyEventHandler3::operator=(const MyEventHandler3& rhs)
 //-------------------------------------------------------------------
 // Clone
 //-------------------------------------------------------------------
-ClpEventHandler * MyEventHandler3::clone() const
+ClpEventHandler *MyEventHandler3::clone() const
 {
   return new MyEventHandler3(*this);
 }
 
-int
-MyEventHandler3::event(Event whichEvent)
+int MyEventHandler3::event(Event whichEvent)
 {
   // See if just after postsolve
-  if (whichEvent==presolveAfterFirstSolve||
-      whichEvent==presolveAfterSolve) {
+  if (whichEvent == presolveAfterFirstSolve || whichEvent == presolveAfterSolve) {
     return -2; // skip clean up
   } else {
     return -1; // carry on
   }
 }
 
-int main (int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
 
   OsiClpSolverInterface solver1;
   // Say we are keeping names (a bit slower this way)
-  solver1.setIntParam(OsiNameDiscipline,1);
+  solver1.setIntParam(OsiNameDiscipline, 1);
   // Read in model using argv[1]
   // and assert that it is a clean model
   std::string mpsFileName;
@@ -143,43 +138,42 @@ int main (int argc, const char *argv[])
     exit(1);
   }
 #endif
-  if (argc>=2) mpsFileName = argv[1];
+  if (argc >= 2)
+    mpsFileName = argv[1];
   int numMpsReadErrors;
-  if (strstr(mpsFileName.c_str(),".mps"))
-    numMpsReadErrors= solver1.readMps(mpsFileName.c_str(),"");
+  if (strstr(mpsFileName.c_str(), ".mps"))
+    numMpsReadErrors = solver1.readMps(mpsFileName.c_str(), "");
   else
-    numMpsReadErrors= solver1.readLp(mpsFileName.c_str());
-  if( numMpsReadErrors != 0 )
-  {
-     printf("%d errors reading MPS file\n", numMpsReadErrors);
-     return numMpsReadErrors;
+    numMpsReadErrors = solver1.readLp(mpsFileName.c_str());
+  if (numMpsReadErrors != 0) {
+    printf("%d errors reading MPS file\n", numMpsReadErrors);
+    return numMpsReadErrors;
   }
-  ClpSimplex * model = solver1.getModelPtr();
+  ClpSimplex *model = solver1.getModelPtr();
   // Event handler
   MyEventHandler3 eventHandler(model);
   model->passInEventHandler(&eventHandler);
   // Messy code below copied from CbcSolver.cpp
-  // Pass to Cbc initialize defaults 
+  // Pass to Cbc initialize defaults
   CbcModel modelA(solver1);
-  OsiClpSolverInterface * solver =
-    dynamic_cast<OsiClpSolverInterface *>(modelA.solver());
+  OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(modelA.solver());
   model = solver->getModelPtr();
   CbcMain0(modelA);
   /* Now go into code for standalone solver
      Could copy arguments and add -quit at end to be safe
      but this will do
   */
-  if (argc>2) {
-    CbcMain1(argc-1,argv+1,modelA);
+  if (argc > 2) {
+    CbcMain1(argc - 1, argv + 1, modelA);
   } else {
-    const char * argv2[]={"clpdriver","-solve","-quit"};
-    CbcMain1(3,argv2,modelA);
+    const char *argv2[] = { "clpdriver", "-solve", "-quit" };
+    CbcMain1(3, argv2, modelA);
   }
 
   if (!model->problemStatus()) {
-    std::cout<<"Objective value "<<model->objectiveValue()<<std::endl;
+    std::cout << "Objective value " << model->objectiveValue() << std::endl;
   } else {
-    std::cout<<"Infeasible!"<<std::endl;
+    std::cout << "Infeasible!" << std::endl;
   }
   return 0;
-}    
+}

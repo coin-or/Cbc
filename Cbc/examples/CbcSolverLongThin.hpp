@@ -3,7 +3,6 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-
 #ifndef CbcSolverLongThin_H
 #define CbcSolverLongThin_H
 
@@ -22,82 +21,97 @@ public:
   //---------------------------------------------------------------------------
   /**@name Solve methods */
   //@{
-    /// Solve initial LP relaxation 
-    virtual void initialSolve();
+  /// Solve initial LP relaxation
+  virtual void initialSolve();
 
-    /// Resolve an LP relaxation after problem modification
-    virtual void resolve();
+  /// Resolve an LP relaxation after problem modification
+  virtual void resolve();
 
   //@}
-
 
   /**@name Constructors and destructors */
   //@{
-    /// Default Constructor
-    CbcSolverLongThin ();
-    
-    /// Clone
-    virtual OsiSolverInterface * clone(bool CopyData=true) const;
-    
-    /// Copy constructor 
-    CbcSolverLongThin (const CbcSolverLongThin &);
-    
-    /// Assignment operator 
-    CbcSolverLongThin & operator=(const CbcSolverLongThin& rhs);
-    
-    /// Destructor 
-    virtual ~CbcSolverLongThin ();
+  /// Default Constructor
+  CbcSolverLongThin();
+
+  /// Clone
+  virtual OsiSolverInterface *clone(bool CopyData = true) const;
+
+  /// Copy constructor
+  CbcSolverLongThin(const CbcSolverLongThin &);
+
+  /// Assignment operator
+  CbcSolverLongThin &operator=(const CbcSolverLongThin &rhs);
+
+  /// Destructor
+  virtual ~CbcSolverLongThin();
 
   //@}
-
 
   /**@name Sets and Getss */
   //@{
   /// Setup arrays - ones in keep will always be in
-  void initialize(CbcModel * model, const char * keep);
+  void initialize(CbcModel *model, const char *keep);
   /// get which ones have been used
-  inline const int * when() const
-  { return node_;}
+  inline const int *when() const
+  {
+    return node_;
+  }
   /// Get memory (i.e. how recent use should be)
   inline int getMemory() const
-  { return memory_;}
+  {
+    return memory_;
+  }
   /// Get current count
   inline int getCount() const
-  { return count_;}
+  {
+    return count_;
+  }
   /// Set memory (i.e. how recent use should be)
   inline void setMemory(int value)
-  { memory_=value;}
+  {
+    memory_ = value;
+  }
   /// Say whether to believe infeasible
   inline void setBelieveInfeasible(bool yesNo)
-  { believeInfeasible_=yesNo;}
+  {
+    believeInfeasible_ = yesNo;
+  }
   /// Say whether to just count usage
   inline void setAlgorithm(int value)
-  { algorithm_=value;}
+  {
+    algorithm_ = value;
+  }
   /// Do nested search if this fraction fixed
   inline void setNested(double value)
-  { nestedSearch_=value;}
+  {
+    nestedSearch_ = value;
+  }
   /// Say whether to just count usage
   inline int getAlgorithm() const
-  { return algorithm_;}
+  {
+    return algorithm_;
+  }
   /// Do nested search if this fraction fixed
   inline double getNested() const
-  { return nestedSearch_;}
+  {
+    return nestedSearch_;
+  }
   //@}
 
   //---------------------------------------------------------------------------
 
 private:
-  
   /**@name Private member data */
   //@{
   /// Do nested search if this fraction fixed
   double nestedSearch_;
   /// Node number when variable last in problem
-  int * node_;
+  int *node_;
   /// How many times in problem
-  int * howMany_;
+  int *howMany_;
   /// Pointer back to model
-  CbcModel * model_;
+  CbcModel *model_;
   /// Counter
   int count_;
   /// How recently it must have been used

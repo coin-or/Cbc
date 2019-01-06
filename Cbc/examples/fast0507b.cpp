@@ -38,7 +38,6 @@
 
 //#############################################################################
 
-
 /************************************************************************
 
 This main program reads in an integer model from an mps file.
@@ -62,11 +61,11 @@ A simple rounding heuristic is used.
 
 // ****** define comparison to choose best next node
 
-int main (int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
 
   // Define your favorite OsiSolver
-  
+
 #ifdef COIN_USE_CLPxx
   OsiClpSolverInterface solver1;
 #else
@@ -76,12 +75,12 @@ int main (int argc, const char *argv[])
   // Read in model using argv[1]
   // and assert that it is a clean model
   std::string mpsFileName;
-  if (argc>=2) mpsFileName = argv[1];
-  int numMpsReadErrors = solver1.readMps(mpsFileName.c_str(),"");
-  if( numMpsReadErrors != 0 )
-  {
-     printf("%d errors reading MPS file\n", numMpsReadErrors);
-     return numMpsReadErrors;
+  if (argc >= 2)
+    mpsFileName = argv[1];
+  int numMpsReadErrors = solver1.readMps(mpsFileName.c_str(), "");
+  if (numMpsReadErrors != 0) {
+    printf("%d errors reading MPS file\n", numMpsReadErrors);
+    return numMpsReadErrors;
   }
   double time1 = CoinCpuTime();
   /* Options are:
@@ -89,30 +88,30 @@ int main (int argc, const char *argv[])
      time in minutes
      if 2 parameters and numeric taken as time
   */
-  bool preProcess=false;
-  double minutes=-1.0;
-  int nGoodParam=0;
-  for (int iParam=2; iParam<argc;iParam++) {
-    if (!strcmp(argv[iParam],"preprocess")) {
-      preProcess=true;
+  bool preProcess = false;
+  double minutes = -1.0;
+  int nGoodParam = 0;
+  for (int iParam = 2; iParam < argc; iParam++) {
+    if (!strcmp(argv[iParam], "preprocess")) {
+      preProcess = true;
       nGoodParam++;
-    } else if (!strcmp(argv[iParam],"time")) {
-      if (iParam+1<argc&&isdigit(argv[iParam+1][0])) {
-        minutes=atof(argv[iParam+1]);
-        if (minutes>=0.0) {
-          nGoodParam+=2;
+    } else if (!strcmp(argv[iParam], "time")) {
+      if (iParam + 1 < argc && isdigit(argv[iParam + 1][0])) {
+        minutes = atof(argv[iParam + 1]);
+        if (minutes >= 0.0) {
+          nGoodParam += 2;
           iParam++; // skip time
         }
       }
     }
   }
-  if (nGoodParam==0&&argc==3&&isdigit(argv[2][0])) {
+  if (nGoodParam == 0 && argc == 3 && isdigit(argv[2][0])) {
     // If time is given then stop after that number of minutes
     minutes = atof(argv[2]);
-    if (minutes>=0.0) 
-      nGoodParam=1;
+    if (minutes >= 0.0)
+      nGoodParam = 1;
   }
-  if (nGoodParam!=argc-2) {
+  if (nGoodParam != argc - 2) {
     printf("Usage <file> [preprocess] [time <minutes>] or <file> <minutes>\n");
     exit(1);
   }
@@ -123,12 +122,12 @@ int main (int argc, const char *argv[])
   //solver1.setHintParam(OsiDoScale,true,OsiHintTry);
   //solver1.setCleanupScaling(1);
   // See if we want preprocessing
-  OsiSolverInterface * solver2=&solver1;
+  OsiSolverInterface *solver2 = &solver1;
   CglPreProcess process;
   if (preProcess) {
     /* Do not try and produce equality cliques and
        do up to 5 passes */
-    solver2 = process.preProcess(solver1,false,5);
+    solver2 = process.preProcess(solver1, false, 5);
     if (!solver2) {
       printf("Pre-processing says infeasible\n");
       exit(2);
@@ -137,24 +136,24 @@ int main (int argc, const char *argv[])
   }
   CbcModel model(*solver2);
   // Point to solver
-  OsiSolverInterface * solver3 = model.solver();
-  CbcSolver2 * osiclp = dynamic_cast< CbcSolver2*> (solver3);
-  assert (osiclp);
-  osiclp->initialize(&model,NULL);
+  OsiSolverInterface *solver3 = model.solver();
+  CbcSolver2 *osiclp = dynamic_cast< CbcSolver2 * >(solver3);
+  assert(osiclp);
+  osiclp->initialize(&model, NULL);
   osiclp->setAlgorithm(2);
   int numberColumns = osiclp->getNumCols();
-  int * priority = new int [numberColumns+1];
-  int n=0;
+  int *priority = new int[numberColumns + 1];
+  int n = 0;
   int iColumn;
-  for ( iColumn=0;iColumn<numberColumns;iColumn++) {
-    priority[n++]=10000;
+  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+    priority[n++] = 10000;
   }
-  priority[n]=1;
-  CbcObject * newObject =new CbcFollowOn2(&model);
-  model.addObjects(1,&newObject);
+  priority[n] = 1;
+  CbcObject *newObject = new CbcFollowOn2(&model);
+  model.addObjects(1, &newObject);
   delete newObject;
-  model.passInPriorities(priority,false);
-  delete [] priority;
+  model.passInPriorities(priority, false);
+  delete[] priority;
   // Set up some cut generators and defaults
   // Probing first as gets tight bounds on continuous
 
@@ -195,12 +194,12 @@ int main (int argc, const char *argv[])
       Aggregation and Mixed Integer Rounding to Solve MIPs
       Operations Research, 49(3), May-June 2001.
    */
-  int maxAggregate=1;
-  bool multiply=true;
-  int criterion=1;
-  CglMixedIntegerRounding2 mixedGen2(maxAggregate,multiply,criterion);
+  int maxAggregate = 1;
+  bool multiply = true;
+  int criterion = 1;
+  CglMixedIntegerRounding2 mixedGen2(maxAggregate, multiply, criterion);
   CglFlowCover flowGen;
-  
+
   // Add in generators
   // Experiment with -1 and -99 etc
   //model.addCutGenerator(&generator1,-1,"Probing");
@@ -214,8 +213,8 @@ int main (int argc, const char *argv[])
   // Say we want timings
   int numberGenerators = model.numberCutGenerators();
   int iGenerator;
-  for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
-    CbcCutGenerator * generator = model.cutGenerator(iGenerator);
+  for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
+    CbcCutGenerator *generator = model.cutGenerator(iGenerator);
     generator->setTiming(true);
   }
 
@@ -245,11 +244,11 @@ int main (int argc, const char *argv[])
 
   // Could tune more
   model.setMinimumDrop(CoinMin(1.0,
-			     fabs(model.getMinimizationObjValue())*1.0e-3+1.0e-4));
+    fabs(model.getMinimizationObjValue()) * 1.0e-3 + 1.0e-4));
 
-  if (model.getNumCols()<500)
+  if (model.getNumCols() < 500)
     model.setMaximumCutPassesAtRoot(-100); // always do 100 if possible
-  else if (model.getNumCols()<5000)
+  else if (model.getNumCols() < 5000)
     model.setMaximumCutPassesAtRoot(100); // use minimum drop
   else
     model.setMaximumCutPassesAtRoot(20);
@@ -261,15 +260,15 @@ int main (int argc, const char *argv[])
   // Switch off strong branching if wanted
   model.setNumberStrong(0);
 
-  model.solver()->setIntParam(OsiMaxNumIterationHotStart,50);
+  model.solver()->setIntParam(OsiMaxNumIterationHotStart, 50);
 
   // If time is given then stop after that number of minutes
-  if (minutes>=0.0) {
-    std::cout<<"Stopping after "<<minutes<<" minutes"<<std::endl;
-    model.setDblParam(CbcModel::CbcMaximumSeconds,60.0*minutes);
+  if (minutes >= 0.0) {
+    std::cout << "Stopping after " << minutes << " minutes" << std::endl;
+    model.setDblParam(CbcModel::CbcMaximumSeconds, 60.0 * minutes);
   }
   // Switch off most output
-  if (model.getNumCols()<3000) {
+  if (model.getNumCols() < 3000) {
     model.messageHandler()->setLogLevel(1);
     //model.solver()->messageHandler()->setLogLevel(0);
   } else {
@@ -283,61 +282,61 @@ int main (int argc, const char *argv[])
 #ifdef DEBUG_CUTS
   // Set up debugger by name (only if no preprocesing)
   if (!preProcess) {
-    std::string problemName ;
+    std::string problemName;
     //model.solver()->getStrParam(OsiProbName,problemName) ;
     //model.solver()->activateRowCutDebugger(problemName.c_str()) ;
-    model.solver()->activateRowCutDebugger("cap6000a") ;
+    model.solver()->activateRowCutDebugger("cap6000a");
   }
 #endif
 
   // Do complete search
-  
+
   model.branchAndBound();
   //void printHowMany();
   //printHowMany();
-  std::cout<<mpsFileName<<" took "<<CoinCpuTime()-time1<<" seconds, "
-	   <<model.getNodeCount()<<" nodes with objective "
-	   <<model.getObjValue()
-	   <<(!model.status() ? " Finished" : " Not finished")
-	   <<std::endl;
+  std::cout << mpsFileName << " took " << CoinCpuTime() - time1 << " seconds, "
+            << model.getNodeCount() << " nodes with objective "
+            << model.getObjValue()
+            << (!model.status() ? " Finished" : " Not finished")
+            << std::endl;
 
   // Print more statistics
-  std::cout<<"Cuts at root node changed objective from "<<model.getContinuousObjective()
-	   <<" to "<<model.rootObjectiveAfterCuts()<<std::endl;
+  std::cout << "Cuts at root node changed objective from " << model.getContinuousObjective()
+            << " to " << model.rootObjectiveAfterCuts() << std::endl;
 
-  for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
-    CbcCutGenerator * generator = model.cutGenerator(iGenerator);
-    std::cout<<generator->cutGeneratorName()<<" was tried "
-	     <<generator->numberTimesEntered()<<" times and created "
-	     <<generator->numberCutsInTotal()<<" cuts of which "
-	     <<generator->numberCutsActive()<<" were active after adding rounds of cuts";
+  for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
+    CbcCutGenerator *generator = model.cutGenerator(iGenerator);
+    std::cout << generator->cutGeneratorName() << " was tried "
+              << generator->numberTimesEntered() << " times and created "
+              << generator->numberCutsInTotal() << " cuts of which "
+              << generator->numberCutsActive() << " were active after adding rounds of cuts";
     if (generator->timing())
-      std::cout<<" ( "<<generator->timeInCutGenerator()<<" seconds)"<<std::endl;
+      std::cout << " ( " << generator->timeInCutGenerator() << " seconds)" << std::endl;
     else
-      std::cout<<std::endl;
+      std::cout << std::endl;
   }
   // Print solution if finished - we can't get names from Osi!
 
-  if (model.getMinimizationObjValue()<1.0e50) {
+  if (model.getMinimizationObjValue() < 1.0e50) {
     // post process
     if (preProcess)
       process.postProcess(*model.solver());
     int numberColumns = model.solver()->getNumCols();
-    
-    const double * solution = model.solver()->getColSolution();
-    
+
+    const double *solution = model.solver()->getColSolution();
+
     int iColumn;
-    std::cout<<std::setiosflags(std::ios::fixed|std::ios::showpoint)<<std::setw(14);
-    
-    std::cout<<"--------------------------------------"<<std::endl;
-    for (iColumn=0;iColumn<numberColumns;iColumn++) {
-      double value=solution[iColumn];
-      if (fabs(value)>1.0e-7&&model.solver()->isInteger(iColumn)) 
-	std::cout<<std::setw(6)<<iColumn<<" "<<value<<std::endl;
+    std::cout << std::setiosflags(std::ios::fixed | std::ios::showpoint) << std::setw(14);
+
+    std::cout << "--------------------------------------" << std::endl;
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      double value = solution[iColumn];
+      if (fabs(value) > 1.0e-7 && model.solver()->isInteger(iColumn))
+        std::cout << std::setw(6) << iColumn << " " << value << std::endl;
     }
-    std::cout<<"--------------------------------------"<<std::endl;
-  
-    std::cout<<std::resetiosflags(std::ios::fixed|std::ios::showpoint|std::ios::scientific);
+    std::cout << "--------------------------------------" << std::endl;
+
+    std::cout << std::resetiosflags(std::ios::fixed | std::ios::showpoint | std::ios::scientific);
   }
   return 0;
-}    
+}

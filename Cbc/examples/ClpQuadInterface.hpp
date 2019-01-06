@@ -21,34 +21,32 @@ public:
   //---------------------------------------------------------------------------
   /**@name Solve methods */
   //@{
-    /// Solve initial LP relaxation 
-    virtual void initialSolve();
+  /// Solve initial LP relaxation
+  virtual void initialSolve();
 
-    /// Resolve an LP relaxation after problem modification
-    virtual void resolve();
+  /// Resolve an LP relaxation after problem modification
+  virtual void resolve();
 
   //@}
-
 
   /**@name Constructors and destructors */
   //@{
-    /// Default Constructor
-    ClpQuadInterface ();
-    
-    /// Clone
-    virtual OsiSolverInterface * clone(bool CopyData=true) const;
-    
-    /// Copy constructor 
-    ClpQuadInterface (const ClpQuadInterface &);
-    
-    /// Assignment operator 
-    ClpQuadInterface & operator=(const ClpQuadInterface& rhs);
-    
-    /// Destructor 
-    virtual ~ClpQuadInterface ();
+  /// Default Constructor
+  ClpQuadInterface();
+
+  /// Clone
+  virtual OsiSolverInterface *clone(bool CopyData = true) const;
+
+  /// Copy constructor
+  ClpQuadInterface(const ClpQuadInterface &);
+
+  /// Assignment operator
+  ClpQuadInterface &operator=(const ClpQuadInterface &rhs);
+
+  /// Destructor
+  virtual ~ClpQuadInterface();
 
   //@}
-
 
   /**@name Sets and Getss */
   //@{
@@ -63,11 +61,10 @@ public:
   //---------------------------------------------------------------------------
 
 private:
-  
   /**@name Private member data */
   //@{
   /// True quadratic objective
-  ClpObjective * quadraticObjective_;
+  ClpObjective *quadraticObjective_;
   //@}
 };
 

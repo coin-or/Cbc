@@ -5197,10 +5197,35 @@ void CbcModel::branchAndBound(int doStatistics)
             continuousSolver_->messageHandler()->setLogLevel(2) ;
             continuousSolver_->initialSolve() ;
         }
-        delete solver_ ;
-        // above deletes solverCharacteristics_
-        solverCharacteristics_ = NULL;
-        solver_ = continuousSolver_ ;
+#ifdef COIN_HAS_CLP
+#ifndef KEEP_ORIGINAL_SOLVER
+	delete solver_;
+	// above deletes solverCharacteristics_
+	solverCharacteristics_ = NULL;
+	solver_ = continuousSolver_;
+#else
+	OsiClpSolverInterface *clpSolver
+	  = dynamic_cast< OsiClpSolverInterface * >(solver_);
+	if (clpSolver) {
+	  OsiClpSolverInterface *continuousSolver
+	    = dynamic_cast< OsiClpSolverInterface * >(continuousSolver_);
+	  //ClpSimplex *simplex = clpSolver->getModelPtr();
+	  *clpSolver = *continuousSolver;
+	  solverCharacteristics_ = NULL;
+	  delete continuousSolver_;
+	} else {
+	  delete solver_;
+	  // above deletes solverCharacteristics_
+	  solverCharacteristics_ = NULL;
+	  solver_ = continuousSolver_;
+	}
+#endif
+#else
+	delete solver_;
+	// above deletes solverCharacteristics_
+	solverCharacteristics_ = NULL;
+	solver_ = continuousSolver_;
+#endif
         setPointers(solver_);
         continuousSolver_ = NULL ;
     }

@@ -1067,6 +1067,7 @@ Cbc_getObjCoefficients(Cbc_Model *model)
 COINLIBAPI void COINLINKAGE
 Cbc_setObjCoeff(Cbc_Model *model, int index, double value)
 {
+  Cbc_flush( model );
   model->model_->solver()->setObjCoeff( index, value );
 }
 

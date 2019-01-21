@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <assert.h>
 #include <float.h>
 #include <ctype.h>
 #include <math.h>
@@ -33,7 +34,7 @@ static double try_cut( void *osiSolver, int row, const double mult, int num, int
 
 void cutcallback( void *osiSolver, void *osiCuts, void *appData )
 {
-  printf("entered callback");
+  printf("entered callback\n");
   int m = Osi_getNumRows( osiSolver );
   int n = Osi_getNumCols( osiSolver );
 
@@ -102,10 +103,12 @@ void cutcallback( void *osiSolver, void *osiCuts, void *appData )
     int nRem = 0;
 
     // removing those which are divisors of larger values
-    for ( int j=0 ; (j<nz-1) ; ++j )
+    for ( int j=0 ; (j<ndiff-1) ; ++j )
     {
-      for ( int jl=j+1 ; (jl<nz) ; ++jl )
+      for ( int jl=j+1 ; (jl<ndiff) ; ++jl )
       {
+        if (!dcoef[j])
+          continue;
         if ( dcoef[jl] % dcoef[j] == 0 )
         {
           dcoef[j] = INT_MAX;
@@ -165,7 +168,7 @@ void cutcallback( void *osiSolver, void *osiCuts, void *appData )
           if ( viol<0.001 )
             continue;
 
-          OsiCuts_addRowCut( osiCuts, nz, cidx, coef, 'L', rhsCut );
+          OsiCuts_addRowCut( osiCuts, nzCut, cidx, coef, 'L', rhsCut );
         } // constraint in the form <= 
       } // every numerator < k
     } // every denominator k
@@ -233,10 +236,11 @@ static double try_cut( void *osiSolver, int row, const double mult, int num, int
 
   double sumLHS = 0.0;
 
-  *nzCut = 0;
+  (*nzCut) = 0;
   for ( int j=0 ; j<nz ; ++j )
   {
     int col = rIdx[j];
+    assert( col >= 0 && col<Osi_getNumCols(osiSolver) );
 
     int cc = (icoef[j]*num)/den;
     if (!cc)
@@ -247,7 +251,7 @@ static double try_cut( void *osiSolver, int row, const double mult, int num, int
 
     sumLHS += ((double)cc) * x[col];
 
-    ++(*nzCut);
+    (*nzCut)++;
   }
 
   *rhs = (irhs*num)/den;
@@ -267,7 +271,12 @@ int main( int argc, char **argv )
 
   Cbc_readMps( mip, argv[1] );
 
+  Cbc_setParameter( mip, "cuts", "off" );
+  Cbc_setParameter( mip, "gomory", "ifmove" );
+  Cbc_setParameter( mip, "preprocess", "off" );
+
   Cbc_addCutCallback( mip,  cutcallback, "modk", NULL );
+
 
   Cbc_solve( mip );
 

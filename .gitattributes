@@ -74,6 +74,7 @@ Cbc/examples/driverFat.cpp -text
 Cbc/examples/inc.cpp -text
 Cbc/examples/interrupt.cpp -text
 Cbc/examples/modify.cpp -text
+Cbc/examples/modk.c -text
 Cbc/examples/parallel.cpp -text
 Cbc/examples/pool.cpp -text
 Cbc/examples/qmip2.cpp -text

@@ -431,6 +431,7 @@ Cbc_getColUpper(Cbc_Model *model);
 COINLIBAPI int COINLINKAGE
 Cbc_isInteger(Cbc_Model *model, int i);
 
+
 //@}
 
 /** \name Routines to load and save problems from disk
@@ -520,9 +521,14 @@ Cbc_setParameter(Cbc_Model *model, const char *name, const char *value);
 COINLIBAPI void COINLINKAGE
 Cbc_registerCallBack(Cbc_Model *model,
   cbc_callback userCallBack);
+
 /** Unset Callback function */
 COINLIBAPI void COINLINKAGE
 Cbc_clearCallBack(Cbc_Model *model);
+
+COINLIBAPI void COINLINKAGE Cbc_addCutCallback( 
+    Cbc_Model *model, cbc_cut_callback cutcb, 
+    const char *name, void *appData );
 
 /*@}*/
 
@@ -544,6 +550,7 @@ Cbc_solve(Cbc_Model *model);
      **/
 COINLIBAPI const double *COINLINKAGE
 Cbc_getColSolution(Cbc_Model *model);
+
 
 /** @brief Best known bound on the optimal objective value 
      *
@@ -726,6 +733,82 @@ COINLIBAPI void COINLINKAGE
 Cbc_printSolution(Cbc_Model *model);
 
 /*@}*/
+
+/** \name OsiSolverInterface related routines (used in callbacks) */
+//@{
+
+/** @brief Returns number of cols in OsiSolverInterface object */
+COINLIBAPI int COINLINKAGE
+Osi_getNumCols( void *osi );
+
+/** @brief Returns column name in OsiSolverInterface object */
+COINLIBAPI void COINLINKAGE
+Osi_getColName( void *osi, int i, char *name, int maxLen );
+
+/** @brief Returns column lower bounds in OsiSolverInterface object */
+COINLIBAPI const double * COINLINKAGE
+Osi_getColLower( void *osi );
+
+/** @brief Returns column upper bounds in OsiSolverInterface object */
+COINLIBAPI const double * COINLINKAGE
+Osi_getColUpper( void *osi );
+
+/** @brief Returns integrality information for columns in OsiSolverInterface object */
+COINLIBAPI int COINLINKAGE
+Osi_isInteger( void *osi, int col );
+
+/** @brief Returns number of rows in OsiSolverInterface object */
+COINLIBAPI int COINLINKAGE
+Osi_getNumRows( void *osi );
+
+COINLIBAPI int COINLINKAGE
+Osi_getRowNz(void *osi, int row);
+
+/** @brief Indices of variables that appear on a row */
+COINLIBAPI const int *COINLINKAGE
+Osi_getRowIndices(void *osi, int row);
+
+/** @brief Coefficients of variables that appear on this row 
+     *
+     * @param model problem object 
+     * @param row row index
+     * @return coefficients of variables that appear on this row
+     **/
+COINLIBAPI const double *COINLINKAGE
+Osi_getRowCoeffs(void *osi, int row);
+
+/** @brief Right hand side of a row 
+     *
+     * @param model problem object 
+     * @param row row index
+     * @return row right hand side
+     **/
+COINLIBAPI double COINLINKAGE
+Osi_getRowRHS(void *osi, int row);
+
+/** @brief Sense a row 
+     * @param model problem object 
+     * @param row row index
+     * @return row sense: E for =, L for <=, G for >= and R for ranged row
+     **/
+COINLIBAPI char COINLINKAGE
+Osi_getRowSense(void *osi, int row);
+
+/** @brief Returns solution vector in OsiSolverInterface object */
+COINLIBAPI const double * COINLINKAGE
+Osi_getColSolution( void *osi );
+
+/*@}*/
+
+/** \name OsiCuts related routines (used in callbacks) */
+//@{
+
+COINLIBAPI void COINLINKAGE
+OsiCuts_addRowCut( void *osiCuts, int nz, const int idx[], const double coef[], char sense, double rhs );
+
+
+/*@}*/
+
 #ifdef __cplusplus
 }
 #endif

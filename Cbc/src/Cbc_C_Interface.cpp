@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <cfloat>
+#include <cctype>
 
 #include "CoinPragma.hpp"
 //#include "CoinHelperFunctions.hpp"
@@ -16,6 +17,7 @@
 
 #include "CoinMessageHandler.hpp"
 #include "OsiClpSolverInterface.hpp"
+#include "CglCutGenerator.hpp"
 
 //  bobe including extras.h to get strdup()
 #if defined(__MWERKS__)
@@ -41,6 +43,62 @@
   }
 
 const int VERBOSE = 0;
+
+// cut generator to accept callbacks in CBC
+//
+class CglCallback : public CglCutGenerator
+{
+    public:
+        CglCallback();
+        
+        cbc_cut_callback cut_callback_;
+        void *appdata;
+        //CbcModel *model;
+
+        /// Copy constructor
+        CglCallback(const CglCallback& rhs);
+
+        /// Clone
+        virtual CglCutGenerator * clone() const;
+
+        virtual void generateCuts( const OsiSolverInterface & si, OsiCuts & cs,
+                const CglTreeInfo info = CglTreeInfo() );
+
+        virtual ~CglCallback();
+    private:
+};
+
+
+CglCallback::CglCallback()
+    : cut_callback_(NULL),
+    appdata(NULL)
+{
+}
+
+CglCallback::CglCallback(const CglCallback& rhs)
+{
+    this->cut_callback_ = rhs.cut_callback_;
+    this->appdata = rhs.appdata;
+}
+
+CglCutGenerator* CglCallback::clone() const
+{
+    CglCallback *cglcb = new CglCallback();
+    cglcb->cut_callback_ = this->cut_callback_;
+    cglcb->appdata = this->appdata;
+
+    return static_cast<CglCutGenerator*>(cglcb);
+}
+
+void CglCallback::generateCuts( const OsiSolverInterface &si, OsiCuts &cs, const CglTreeInfo info )
+{
+  this->cut_callback_( (OsiSolverInterface *) &si, &cs, this->appdata );
+}
+
+CglCallback::~CglCallback()
+{
+
+}
 
 // To allow call backs
 class Cbc_MessageHandler
@@ -804,6 +862,22 @@ Cbc_solve(Cbc_Model *model)
   return result;
 }
 
+COINLIBAPI void COINLINKAGE Cbc_addCutCallback( 
+    Cbc_Model *model, cbc_cut_callback cutcb, 
+    const char *name, void *appData )
+{
+  assert( model != NULL );
+  assert( model->model_ != NULL );
+
+  CbcModel *cbcModel = model->model_;
+
+  CglCallback cglCb;
+  cglCb.appdata = appData;
+  cglCb.cut_callback_ = cutcb;
+
+  cbcModel->addCutGenerator( &cglCb, 1, name );
+}
+
 /* Sum of primal infeasibilities */
 COINLIBAPI double COINLINKAGE
 Cbc_sumPrimalInfeasibilities(Cbc_Model * /*model*/)
@@ -1494,6 +1568,155 @@ Cbc_printSolution(Cbc_Model *model)
   if (0)
     Cbc_printModel(model, "cbc::main(): ");
   return;
+}
+
+COINLIBAPI int COINLINKAGE
+Osi_getNumCols( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  return osiSolver->getNumCols();
+}
+
+/** @brief Returns column name in OsiSolverInterface object */
+COINLIBAPI void COINLINKAGE
+Osi_getColName( void *osi, int i, char *name, int maxLen )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  strncpy( name, osiSolver->getColName(i).c_str(), maxLen );
+}
+
+/** @brief Returns column lower bounds in OsiSolverInterface object */
+COINLIBAPI const double * COINLINKAGE
+Osi_getColLower( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  return osiSolver->getColLower();
+}
+
+/** @brief Returns column upper bounds in OsiSolverInterface object */
+COINLIBAPI const double * COINLINKAGE
+Osi_getColUpper( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  return osiSolver->getColUpper();
+}
+
+/** @brief Returns integrality information for columns in OsiSolverInterface object */
+COINLIBAPI int COINLINKAGE
+Osi_isInteger( void *osi, int col )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  return osiSolver->isInteger(col);
+}
+
+/** @brief Returns number of rows in OsiSolverInterface object */
+COINLIBAPI int COINLINKAGE
+Osi_getNumRows( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  return osiSolver->getNumRows();
+}
+
+COINLIBAPI int COINLINKAGE
+Osi_getRowNz(void *osi, int row)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  const CoinPackedMatrix *cpmRow = osiSolver->getMatrixByRow();
+  return cpmRow->getVectorLengths()[row];
+}
+
+/** @brief Indices of variables that appear on a row */
+COINLIBAPI const int *COINLINKAGE
+Osi_getRowIndices(void *osi, int row)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  const CoinPackedMatrix *cpmRow = osiSolver->getMatrixByRow();
+  const CoinBigIndex *starts = cpmRow->getVectorStarts();
+  const int *ridx = cpmRow->getIndices() + starts[row];
+  return ridx;
+}
+
+/** @brief Coefficients of variables that appear on this row  */
+COINLIBAPI const double *COINLINKAGE
+Osi_getRowCoeffs(void *osi, int row)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  const CoinPackedMatrix *cpmRow = osiSolver->getMatrixByRow();
+  const CoinBigIndex *starts = cpmRow->getVectorStarts();
+  const double *rcoef = cpmRow->getElements() + starts[row];
+  return rcoef;
+}
+
+/** @brief Right hand side of a row  */
+COINLIBAPI double COINLINKAGE
+Osi_getRowRHS(void *osi, int row)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  return osiSolver->getRightHandSide()[row];
+}
+
+/** @brief Sense a row 
+     * @param model problem object 
+     * @param row row index
+     * @return row sense: E for =, L for <=, G for >= and R for ranged row
+     **/
+COINLIBAPI char COINLINKAGE
+Osi_getRowSense(void *osi, int row)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  return osiSolver->getRowSense()[row];
+}
+
+/** @brief Returns solution vector in OsiSolverInterface object */
+COINLIBAPI const double * COINLINKAGE
+Osi_getColSolution( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  return osiSolver->getColSolution();
+}
+
+COINLIBAPI void COINLINKAGE
+OsiCuts_addRowCut( void *osiCuts, int nz, const int idx[], const double coef[], char sense, double rhs )
+{
+  sense = toupper(sense);
+  OsiCuts *oc = (OsiCuts *) osiCuts;
+
+  OsiRowCut orc;
+  orc.setRow( nz, idx, coef );
+
+  switch (sense)
+  {
+    case 'L':
+    {
+      orc.setLb(-COIN_DBL_MAX);
+      orc.setUb(rhs);
+      break;
+    }
+    case 'G':
+    {
+      orc.setLb(rhs);
+      orc.setUb(COIN_DBL_MAX);
+      break;
+    }
+    case 'E':
+    {
+      orc.setLb(rhs);
+      orc.setUb(rhs);
+      break;
+    }
+    default:
+    {
+      fprintf( stderr, "sense not recognized\n" );
+      abort();
+    }
+  }
+
+  oc->insert(orc);
 }
 
 #if defined(__MWERKS__)

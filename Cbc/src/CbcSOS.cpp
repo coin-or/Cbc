@@ -482,11 +482,15 @@ void CbcSOS::feasibleRegion()
     }
     for (j = 0; j < firstNonZero; j++) {
       int iColumn = members_[j];
+      assert (lower[iColumn]<=0.0);
+      assert (upper[iColumn]>=0.0);
       solver->setColLower(iColumn, 0.0);
       solver->setColUpper(iColumn, 0.0);
     }
     for (j = lastNonZero + 1; j < numberMembers_; j++) {
       int iColumn = members_[j];
+      assert (lower[iColumn]<=0.0);
+      assert (upper[iColumn]>=0.0);
       solver->setColLower(iColumn, 0.0);
       solver->setColUpper(iColumn, 0.0);
     }
@@ -533,55 +537,73 @@ CbcSOS::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInformatio
   //OsiSolverInterface * solver = model_->solver();
   const double *lower = solver->getColLower();
   const double *upper = solver->getColUpper();
-  int firstNonFixed = -1;
-  int lastNonFixed = -1;
   int firstNonZero = -1;
   int lastNonZero = -1;
   double weight = 0.0;
   double sum = 0.0;
   for (j = 0; j < numberMembers_; j++) {
     int iColumn = members_[j];
-    if (upper[iColumn] || oddValues_) {
-      double value = CoinMax(lower[iColumn], solution[iColumn]);
-      sum += value;
-      if (firstNonFixed < 0)
-        firstNonFixed = j;
-      lastNonFixed = j;
-      if (fabs(value) > integerTolerance) {
-        weight += weights_[j] * value;
-        if (firstNonZero < 0)
-          firstNonZero = j;
-        lastNonZero = j;
-      }
+    double value = CoinMax(lower[iColumn], solution[iColumn]);
+    value = CoinMin(upper[iColumn], value);
+    sum += value;
+    if (fabs(value) > integerTolerance) {
+      weight += weights_[j] * value;
+      if (firstNonZero < 0)
+	firstNonZero = j;
+      lastNonZero = j;
     }
   }
-  assert(lastNonZero - firstNonZero >= sosType_);
+  assert (lastNonZero - firstNonZero >= sosType_) ;
   // find where to branch
   if (!oddValues_)
     weight /= sum;
   else
-    weight = 0.5 * (weights_[firstNonZero] + weights_[lastNonZero]);
+    weight = 0.5*(weights_[firstNonZero]+weights_[lastNonZero]);
   int iWhere;
   double separator = 0.0;
   for (iWhere = firstNonZero; iWhere < lastNonZero; iWhere++)
-    if (weight < weights_[iWhere + 1])
+    if (weight < weights_[iWhere+1])
       break;
-  // If we are dealing with really oddly scaled problems
+  // If we are dealing with really oddly scaled problems 
   // was assert (iWhere<lastNonZero);
-  if (iWhere == lastNonZero)
+  if (iWhere==lastNonZero)
     iWhere--;
   if (sosType_ == 1) {
     // SOS 1
-    separator = 0.5 * (weights_[iWhere] + weights_[iWhere + 1]);
+    separator = 0.5 * (weights_[iWhere] + weights_[iWhere+1]);
   } else {
     // SOS 2
-    if (iWhere == firstNonFixed)
-      iWhere++;
-    ;
-    if (iWhere == lastNonFixed - 1)
-      iWhere = lastNonFixed - 2;
-    separator = weights_[iWhere + 1];
+    if (iWhere == firstNonZero)
+      iWhere++;;
+    if (iWhere == lastNonZero - 1)
+      iWhere = lastNonZero - 2;
+    separator = weights_[iWhere+1];
   }
+#ifndef NDEBUG
+  double sum1 = 0.0;
+  double sum2 = 0.0;
+  bool firstLot=true;
+  for (j = 0; j < numberMembers_; j++) {
+    int iColumn = members_[j];
+    double value = CoinMax(lower[iColumn], solution[iColumn]);
+    value = CoinMin(upper[iColumn], value);
+    if (fabs(value) < integerTolerance)
+      value=0.0;
+    if (firstLot) {
+      if (sosType_ == 1 && weights_[j]>separator) {
+	firstLot=false;
+      } else if (sosType_ == 2 && weights_[j]==separator) {
+	firstLot=false;
+	value = 0.0; // dont count
+      }
+    }
+    if (firstLot)
+      sum1 += value;
+    else
+      sum2 += value;
+  }
+  assert (sum1!=0.0 && sum2!=0.0 );
+#endif
   // create object
   CbcBranchingObject *branch;
   branch = new CbcSOSBranchingObject(model_, this, way, separator);
@@ -718,46 +740,41 @@ CbcSOS::solverBranch() const
   double integerTolerance = ZERO_SOS_TOLERANCE;
 #endif
   OsiSolverInterface *solver = model_->solver();
-  const double *upper = solver->getColUpper();
-  int firstNonFixed = -1;
-  int lastNonFixed = -1;
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
   int firstNonZero = -1;
   int lastNonZero = -1;
   double weight = 0.0;
   double sum = 0.0;
-  double *fix = new double[numberMembers_];
-  int *which = new int[numberMembers_];
+  double * fix = new double[numberMembers_];
+  int * which = new int[numberMembers_];
   for (j = 0; j < numberMembers_; j++) {
     int iColumn = members_[j];
     // fix all on one side or other (even if fixed)
     fix[j] = 0.0;
     which[j] = iColumn;
-    if (upper[iColumn] || oddValues_) {
-      double value = CoinMax(0.0, solution[iColumn]);
-      sum += value;
-      if (firstNonFixed < 0)
-        firstNonFixed = j;
-      lastNonFixed = j;
-      if (value > integerTolerance) {
-        weight += weights_[j] * value;
-        if (firstNonZero < 0)
-          firstNonZero = j;
-        lastNonZero = j;
-      }
+    double value = CoinMax(lower[iColumn], solution[iColumn]);
+    value = CoinMin(upper[iColumn], value);
+    sum += value;
+    if (fabs(value) > integerTolerance) {
+      weight += weights_[j] * value;
+      if (firstNonZero < 0)
+	firstNonZero = j;
+      lastNonZero = j;
     }
   }
-  assert(lastNonZero - firstNonZero >= sosType_);
+  assert (lastNonZero - firstNonZero >= sosType_) ;
   // find where to branch
   if (!oddValues_)
     weight /= sum;
   else
-    weight = 0.5 * (weights_[firstNonZero] + weights_[lastNonZero]);
+    weight = 0.5*(weights_[firstNonZero]+weights_[lastNonZero]);
   // down branch fixes ones above weight to 0
   int iWhere;
   int iDownStart = 0;
   int iUpEnd = 0;
   for (iWhere = firstNonZero; iWhere < lastNonZero; iWhere++)
-    if (weight < weights_[iWhere + 1])
+    if (weight < weights_[iWhere+1])
       break;
   if (sosType_ == 1) {
     // SOS 1
@@ -765,11 +782,10 @@ CbcSOS::solverBranch() const
     iDownStart = iUpEnd;
   } else {
     // SOS 2
-    if (iWhere == firstNonFixed)
-      iWhere++;
-    ;
-    if (iWhere == lastNonFixed - 1)
-      iWhere = lastNonFixed - 2;
+    if (iWhere == firstNonZero)
+      iWhere++;;
+    if (iWhere == lastNonZero - 1)
+      iWhere = lastNonZero - 2;
     iUpEnd = iWhere + 1;
     iDownStart = iUpEnd + 1;
   }
@@ -898,8 +914,8 @@ CbcSOSBranchingObject::branch()
 #ifdef CBC_INVESTIGATE_SOS
       printf("%d (%g,%g) ", which[i], weights[i], solution[which[i]]);
 #endif
-      solver->setColLower(which[i], 0.0);
-      solver->setColUpper(which[i], 0.0);
+      solver->setColLower(which[i], CoinMin(0.0,upper[which[i]]));
+      solver->setColUpper(which[i], CoinMax(0.0,lower[which[i]]));
     }
     way_ = 1; // Swap direction
   } else {
@@ -911,8 +927,8 @@ CbcSOSBranchingObject::branch()
 #ifdef CBC_INVESTIGATE_SOS
         printf("%d (%g,%g) ", which[i], weights[i], solution[which[i]]);
 #endif
-        solver->setColLower(which[i], 0.0);
-        solver->setColUpper(which[i], 0.0);
+	solver->setColLower(which[i], CoinMin(0.0,upper[which[i]]));
+	solver->setColUpper(which[i], CoinMax(0.0,lower[which[i]]));
       }
     }
     assert(i < numberMembers);

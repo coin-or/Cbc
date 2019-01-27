@@ -1996,6 +1996,8 @@ void CbcModel::branchAndBound(int doStatistics)
     OsiClpSolverInterface *clpSolver
       = dynamic_cast< OsiClpSolverInterface * >(solver_);
     if (clpSolver) {
+      if ( this->keepNamesPreproc == false )
+        solver_->setIntParam( OsiNameDiscipline, 0 );
       ClpSimplex *clpSimplex = clpSolver->getModelPtr();
       if ((specialOptions_ & 32) == 0) {
         // take off names (unless going to be saving)

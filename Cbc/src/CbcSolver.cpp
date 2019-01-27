@@ -4349,6 +4349,8 @@ int CbcMain1(int argc, const char *argv[],
 #endif
                     process.setKeepColumnNames(keepPPN);
                     process.setTimeLimit(babModel_->getMaximumSeconds() - babModel_->getCurrentSeconds(), babModel_->useElapsedTime());
+                    if (model.getKeepNamesPreproc())
+                      process.setKeepColumnNames(true);
                     solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                       tunePreProcess);
                     if (solver2) {
@@ -4362,6 +4364,8 @@ int CbcMain1(int argc, const char *argv[],
                   cbcPreProcessPointer = &process;
                   preProcessPointer = &process; // threadsafe
                   redoSOS = true;
+                  if (model.getKeepNamesPreproc())
+                    process.setKeepColumnNames(true);
                   solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                     tunePreProcess);
 #endif

@@ -870,6 +870,7 @@ COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
   assert( model->model_ != NULL );
 
   CbcModel *cbcModel = model->model_;
+  cbcModel->setKeepNamesPreproc(true);
 
   CglCallback cglCb;
   cglCb.appdata = appData;

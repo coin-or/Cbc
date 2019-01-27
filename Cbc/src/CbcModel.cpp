@@ -1999,7 +1999,8 @@ void CbcModel::branchAndBound(int doStatistics)
       ClpSimplex *clpSimplex = clpSolver->getModelPtr();
       if ((specialOptions_ & 32) == 0) {
         // take off names (unless going to be saving)
-        if (numberAnalyzeIterations_ >= 0 || (-numberAnalyzeIterations_ & 64) == 0)
+        int nameDisc; solver_->getIntParam( OsiNameDiscipline, nameDisc );
+        if ( (numberAnalyzeIterations_ >= 0 || (-numberAnalyzeIterations_ & 64) == 0) && (!nameDisc) )
           clpSimplex->dropNames();
       }
       // no crunch if mostly continuous
@@ -5639,6 +5640,7 @@ CbcModel::CbcModel()
   , numberGlobalCutsIn_(0)
   , master_(NULL)
   , masterThread_(NULL)
+  , keepNamesPreproc(false)
 {
   memset(intParam_, 0, sizeof(intParam_));
   intParam_[CbcMaxNumNode] = 2147483647;
@@ -6614,6 +6616,8 @@ CbcModel::operator=(const CbcModel &rhs)
     phase_ = rhs.phase_;
     currentNumberCuts_ = rhs.currentNumberCuts_;
     maximumDepth_ = rhs.maximumDepth_;
+    keepNamesPreproc = rhs.keepNamesPreproc;
+    mipStart_ = rhs.mipStart_;
     delete[] addedCuts_;
     delete[] walkback_;
     // These are only used as temporary arrays so need not be filled

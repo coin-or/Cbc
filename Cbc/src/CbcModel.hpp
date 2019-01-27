@@ -2695,9 +2695,22 @@ public:
     this->mipStart_ = mips;
   }
 
+  /** if original column names will be preserved in preprocessed problem
+   */
+  void setKeepNamesPreproc( bool _keep ) 
+  {
+    this->keepNamesPreproc = _keep;
+  }
+
+  bool getKeepNamesPreproc() const 
+  {
+    return keepNamesPreproc;
+  }
+
   /** may be safer to use this overload method: c++ string libraries 
      * implementation may not be binary compatible */
   void setMIPStart(int count, const char **colNames, const double colValues[]);
+
 
   const std::vector< std::pair< std::string, double > > &getMIPStart()
   {
@@ -2782,6 +2795,13 @@ private:
       values for integer variables which will be converted to a complete integer initial feasible solution
     */
   std::vector< std::pair< std::string, double > > mipStart_;
+
+  /** keepNamesPreproc
+   *  if variables names will be preserved in the pre-processed problem
+   *  (usefull in callbacks)
+   **/
+  bool keepNamesPreproc;
+
   /** Warm start object produced by heuristic or strong branching
 
         If get a valid integer solution outside branch and bound then it can take

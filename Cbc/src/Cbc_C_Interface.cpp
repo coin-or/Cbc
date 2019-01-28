@@ -1672,17 +1672,8 @@ Osi_getRowSense(void *osi, int row)
   return osiSolver->getRowSense()[row];
 }
 
-/** @brief Returns solution vector in OsiSolverInterface object */
-COINLIBAPI const double * COINLINKAGE
-Osi_getColSolution( void *osi )
-{
-  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
-
-  return osiSolver->getColSolution();
-}
-
 COINLIBAPI void COINLINKAGE
-OsiCuts_addRowCut( void *osiCuts, int nz, const int idx[], const double coef[], char sense, double rhs )
+OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs )
 {
   sense = toupper(sense);
   OsiCuts *oc = (OsiCuts *) osiCuts;
@@ -1690,34 +1681,48 @@ OsiCuts_addRowCut( void *osiCuts, int nz, const int idx[], const double coef[], 
   OsiRowCut orc;
   orc.setRow( nz, idx, coef );
 
-  switch (sense)
-  {
-    case 'L':
-    {
-      orc.setLb(-COIN_DBL_MAX);
-      orc.setUb(rhs);
-      break;
-    }
-    case 'G':
-    {
-      orc.setLb(rhs);
-      orc.setUb(COIN_DBL_MAX);
-      break;
-    }
-    case 'E':
-    {
-      orc.setLb(rhs);
-      orc.setUb(rhs);
-      break;
-    }
-    default:
-    {
-      fprintf( stderr, "sense not recognized\n" );
-      abort();
-    }
+
+  orc.setLb(-DBL_MAX);
+  orc.setUb(DBL_MAX);
+
+  switch (toupper(sense)) {
+  case '=':
+    orc.setLb(rhs);
+    orc.setUb(rhs);
+    break;
+  case 'E':
+    orc.setLb(rhs);
+    orc.setUb(rhs);
+    break;
+  case '<':
+    orc.setUb(rhs);
+    break;
+  case 'L':
+    orc.setUb(rhs);
+    break;
+  case '>':
+    orc.setLb(rhs);
+    break;
+  case 'G':
+    orc.setLb(rhs);
+    break;
+  default:
+    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    abort();
   }
 
   oc->insert(orc);
+}
+
+
+
+/** @brief Returns solution vector in OsiSolverInterface object */
+COINLIBAPI const double * COINLINKAGE
+Osi_getColSolution( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  return osiSolver->getColSolution();
 }
 
 #if defined(__MWERKS__)

@@ -798,14 +798,15 @@ Osi_getRowSense(void *osi, int row);
 COINLIBAPI const double * COINLINKAGE
 Osi_getColSolution( void *osi );
 
+
 /*@}*/
 
 /** \name OsiCuts related routines (used in callbacks) */
 //@{
 
-COINLIBAPI void COINLINKAGE
-OsiCuts_addRowCut( void *osiCuts, int nz, const int idx[], const double coef[], char sense, double rhs );
-
+/** adds a row cut (used in callback) */
+COINLIBAPI void COINLINKAGE 
+OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs );
 
 /*@}*/
 

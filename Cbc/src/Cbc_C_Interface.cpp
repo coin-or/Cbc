@@ -13,6 +13,7 @@
 #include "CoinTime.hpp"
 
 #include "CbcModel.hpp"
+#include "CbcSolver.hpp"
 #include "CbcBranchActual.hpp"
 
 #include "CoinMessageHandler.hpp"
@@ -423,8 +424,10 @@ Cbc_newModel()
   OsiClpSolverInterface solver1; // will be release at the end of the scope, CbcModel clones it
   model->model_ = new CbcModel(solver1);
   model->solver_ = dynamic_cast< OsiClpSolverInterface * >(model->model_->solver());
-  CbcMain0(*model->model_);
+  CbcMain0(*model->model_, *model->cbcData);
   model->handler_ = NULL;
+  model->cbcData = new CbcSolverUsefulData();
+  model->cbcData->noPrinting_ = false;
   model->relax_ = 0;
 
   // initialize columns buffer
@@ -463,6 +466,8 @@ Cbc_deleteModel(Cbc_Model *model)
     printf("%s delete model->handler_\n", prefix);
   fflush(stdout);
   delete model->handler_;
+
+  delete model->cbcData;
 
   if (VERBOSE > 1)
     printf("%s delete model\n", prefix);
@@ -852,7 +857,7 @@ Cbc_solve(Cbc_Model *model)
   argv.push_back("-quit");
   try {
 
-    CbcMain1((int)argv.size(), &argv[0], *model->model_);
+    CbcMain1((int)argv.size(), &argv[0], *model->model_, NULL, *model->cbcData);
   } catch (CoinError e) {
     printf("%s ERROR: %s::%s, %s\n", prefix,
       e.className().c_str(), e.methodName().c_str(), e.message().c_str());

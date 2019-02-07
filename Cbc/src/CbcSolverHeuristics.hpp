@@ -36,8 +36,8 @@ fixVubs(CbcModel &model, int skipZero2,
         3 - for miplib test so skip some
         (out model later)
     */
-int doHeuristics(CbcModel *model, int type, CbcOrClpParam *parameters_,
-  int numberParameters_, int noPrinting_, int initialPumpTune);
+int doHeuristics(CbcModel *model, int type, std::vector< CbcOrClpParam > parameters_,
+  int noPrinting_, int initialPumpTune);
 
 #endif //CbcSolverHeuristics_H
 

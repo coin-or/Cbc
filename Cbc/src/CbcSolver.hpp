@@ -233,9 +233,7 @@ private:
   /// Cpu time at instantiation
   double startTime_;
   /// Parameters and values
-  CbcOrClpParam *parameters_;
-  /// Number of parameters
-  int numberParameters_;
+  std::vector< CbcOrClpParam > parameters_;
   /// Whether to do miplib test
   bool doMiplib_;
   /// Whether to print to std::cout
@@ -293,13 +291,11 @@ public:
   // For time
   double totalTime_;
   // Parameters
-  CbcOrClpParam parameters_[CBCMAXPARAMETERS];
+  std::vector<CbcOrClpParam> parameters_;
   // Printing
   bool noPrinting_;
   // Whether to use signal handler
   bool useSignalHandler_;
-  // Number of Parameters
-  int numberParameters_;
   // Default pump tuning
   int initialPumpTune_;
   //@}

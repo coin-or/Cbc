@@ -10,6 +10,7 @@
 #include "CbcConfig.h"
 #include "CoinPragma.hpp"
 #include "CbcModel.hpp"
+#include "CbcSolver.hpp"
 #include "OsiClpSolverInterface.hpp"
 
 /*
@@ -299,6 +300,12 @@ extern "C" {
 void openblas_set_num_threads(int num_threads);
 }
 #endif
+
+static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/)
+{
+  return 0;
+}
+
 int main(int argc, const char *argv[])
 {
   int returnCode = 0;
@@ -327,8 +334,10 @@ int main(int argc, const char *argv[])
     //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
 #endif
 
+    CbcSolverUsefulData cbcData;
+    cbcData.noPrinting_ = false;
     // initialize
-    CbcMain0(model);
+    CbcMain0(model, cbcData);
 
 #ifdef TEST_MESSAGE_HANDLER
     // Set log levels same so can use one message handler
@@ -339,7 +348,7 @@ int main(int argc, const char *argv[])
     setCbcOrClpPrinting(false);
 #endif
 
-    returnCode = CbcMain1(argc, argv, model);
+    returnCode = CbcMain1(argc, argv, model, dummyCallBack, cbcData);
   }
 
 #ifdef CLP_DEBUG_MALLOC

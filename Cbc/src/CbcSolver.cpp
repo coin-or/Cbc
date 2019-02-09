@@ -3712,7 +3712,9 @@ int CbcMain1(int argc, const char *argv[],
                 model_.setProblemStatus(iStatus);
                 model_.setSecondaryStatus(iStatus2);
                 si->setWarmStart(NULL);
-                int returnCode = callBack(&model_, 1);
+                int returnCode = 0;
+                if (callBack != NULL)
+                  callBack(&model_, 1);
                 if (returnCode) {
                   // exit if user wants
                   delete babModel_;
@@ -4385,7 +4387,9 @@ int CbcMain1(int argc, const char *argv[],
                   model_.setProblemStatus(-1);
                   babModel_->setProblemStatus(-1);
                 }
-                int returnCode = callBack(babModel_, 2);
+                int returnCode = 0;
+                if (callBack != NULL)
+                  returnCode = callBack(babModel_, 2);
                 if (returnCode) {
                   // exit if user wants
                   delete babModel_;
@@ -6713,7 +6717,9 @@ int CbcMain1(int argc, const char *argv[],
                 babModel_->setNumberThreads(numberThreads % 100);
                 babModel_->setThreadMode(numberThreads / 100);
 #endif
-                int returnCode = callBack(babModel_, 3);
+                int returnCode = 0;
+                if (callBack != NULL)
+                  returnCode = callBack(babModel_, 3);
                 if (returnCode) {
                   // exit if user wants
                   delete babModel_;
@@ -7296,7 +7302,9 @@ int CbcMain1(int argc, const char *argv[],
                 void printHistory(const char *file /*,CbcModel * model*/);
                 printHistory("branch.log" /*,babModel_*/);
 #endif
-                returnCode = callBack(babModel_, 4);
+                returnCode = 0;
+                if (callBack != NULL)
+                  returnCode = callBack(babModel_, 4);
                 if (returnCode) {
                   // exit if user wants
                   model_.moveInfo(*babModel_);
@@ -7907,7 +7915,9 @@ int CbcMain1(int argc, const char *argv[],
                     << generalPrint
                     << CoinMessageEol;
                 }
-                int returnCode = callBack(babModel_, 5);
+                int returnCode = 0;
+                if (callBack != NULL)
+                  returnCode = callBack(babModel_, 5);
                 if (returnCode) {
                   // exit if user wants
                   model_.moveInfo(*babModel_);

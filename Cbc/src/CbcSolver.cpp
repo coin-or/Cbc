@@ -415,6 +415,7 @@ CbcSolver::CbcSolver(const CbcSolver &rhs)
   , noPrinting_(rhs.noPrinting_)
   , readMode_(rhs.readMode_)
 {
+  fillParameters();
   if (rhs.babModel_)
     babModel_ = new CbcModel(*rhs.babModel_);
   userFunction_ = new CbcUser *[numberUserFunctions_];

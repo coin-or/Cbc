@@ -424,6 +424,7 @@ Cbc_newModel()
   OsiClpSolverInterface solver1; // will be release at the end of the scope, CbcModel clones it
   model->model_ = new CbcModel(solver1);
   model->solver_ = dynamic_cast< OsiClpSolverInterface * >(model->model_->solver());
+  model->cbcData = new CbcSolverUsefulData();
   CbcMain0(*model->model_, *model->cbcData);
   model->handler_ = NULL;
   model->cbcData = new CbcSolverUsefulData();

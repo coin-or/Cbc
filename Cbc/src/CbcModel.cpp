@@ -5816,6 +5816,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , numberGlobalCutsIn_(0)
   , master_(NULL)
   , masterThread_(NULL)
+  , keepNamesPreproc(false)
 {
   memset(intParam_, 0, sizeof(intParam_));
   intParam_[CbcMaxNumNode] = 2147483647;
@@ -6102,6 +6103,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , numberGlobalCutsIn_(rhs.numberGlobalCutsIn_)
   , master_(NULL)
   , masterThread_(NULL)
+  , keepNamesPreproc(rhs.keepNamesPreproc)
 {
   memcpy(intParam_, rhs.intParam_, sizeof(intParam_));
   memcpy(dblParam_, rhs.dblParam_, sizeof(dblParam_));

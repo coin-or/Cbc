@@ -1455,7 +1455,7 @@ int CbcMain1(int argc, const char *argv[],
             if (equals && atoi(equals + 1) > 0) {
               noPrinting_ = false;
               info.logLevel = atoi(equals + 1);
-              int log = whichParam(CLP_PARAM_INT_LOGLEVEL, numberParameters_, parameters_);
+              int log = whichParam(CLP_PARAM_INT_LOGLEVEL, parameters_);
               parameters_[log].setIntValue(info.logLevel);
               // mark so won't be overWritten
               info.numberRows = -1234567;
@@ -1540,14 +1540,14 @@ int CbcMain1(int argc, const char *argv[],
           si->setDefaultMeshSize(0.001);
           // need some relative granularity
           si->setDefaultBound(100.0);
-          double dextra3 = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA3, numberParameters_, parameters_)].doubleValue();
+          double dextra3 = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA3, parameters_)].doubleValue();
           if (dextra3)
             si->setDefaultMeshSize(dextra3);
           si->setDefaultBound(100000.0);
           si->setIntegerPriority(1000);
           si->setBiLinearPriority(10000);
           CoinModel *model2 = reinterpret_cast< CoinModel * >(coinModel);
-          int logLevel = parameters_[whichParam(CLP_PARAM_INT_LOGLEVEL, numberParameters_, parameters_)].intValue();
+          int logLevel = parameters_[whichParam(CLP_PARAM_INT_LOGLEVEL, parameters_)].intValue();
           si->load(*model2, true, logLevel);
           // redo
           solver = model_.solver();
@@ -1555,7 +1555,7 @@ int CbcMain1(int argc, const char *argv[],
           lpSolver = clpSolver->getModelPtr();
           clpSolver->messageHandler()->setLogLevel(0);
           testOsiParameters = 0;
-          parameters_[whichParam(CBC_PARAM_INT_TESTOSI, numberParameters_, parameters_)].setIntValue(0);
+          parameters_[whichParam(CBC_PARAM_INT_TESTOSI, parameters_)].setIntValue(0);
           complicatedInteger = 1;
           if (info.cut) {
             printf("Sorry - can't do cuts with LOS as ruins delicate row order\n");
@@ -9445,7 +9445,7 @@ int CbcMain1(int argc, const char *argv[],
               // set time from integer model
               double timeToGo = model_.getMaximumSeconds();
               lpSolver->setMaximumSeconds(timeToGo);
-              int extra1 = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, numberParameters_, parameters_)].intValue();
+              int extra1 = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, parameters_)].intValue();
               fakeMain2(*lpSolver, *clpSolver, extra1);
               lpSolver = clpSolver->getModelPtr();
 #ifdef COIN_HAS_ASL

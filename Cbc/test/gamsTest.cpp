@@ -107,7 +107,7 @@ void sos1a(int &error_count, int &warning_count)
   delete sosobject;
 
   const char *argv2[] = { "gamstest_sos1a", "-solve", "-quit" };
-  CbcMain1(3, argv2, model, data);
+  CbcMain1(3, argv2, model, NULL, data);
   cout << endl;
   if (!model.isProvenOptimal()) {
     cerr << "Error: Model sos1a not solved to optimality." << endl;
@@ -298,7 +298,7 @@ void sos2a(int &error_count, int &warning_count)
     delete sosobject;
     const char *argv2[] = { "gamstest_sos2a", "-solve", "-quit" };
     cout << "\nSolving sos2a model with w1 having lower bound " << solver1.getColLower()[0] << endl;
-    CbcMain1(3, argv2, model, data);
+    CbcMain1(3, argv2, model, NULL, data);
     cout << endl;
     if (!model.isProvenOptimal()) {
       cerr << "Error: Model sos2a not solved to optimality." << endl;
@@ -480,7 +480,7 @@ void semicon1(int &error_count, int &warning_count)
     cout << "\nSolving semicon1 model for lotsize variable being either 0 or between " << points[2] << " and 10.\n"
          << endl;
     const char *argv2[] = { "gamstest_semicon1", "-solve", "-quit" };
-    CbcMain1(3, argv2, model, data);
+    CbcMain1(3, argv2, model, NULL, data);
     cout << endl;
     if (!model.isProvenOptimal()) {
       cerr << "Error: Model semicon1 not solved to optimality." << endl;
@@ -714,7 +714,7 @@ void semiint1(int &error_count, int &warning_count)
     cout << "\nSolving semiint1 model for integer lotsize variable being either 0 or between " << points[2] << " and 10.\n"
          << endl;
     const char *argv2[] = { "gamstest_semiint1", "-solve", "-quit" };
-    CbcMain1(3, argv2, model, data);
+    CbcMain1(3, argv2, model, NULL, data);
     cout << endl;
     if (!model.isProvenOptimal()) {
       cerr << "Error: Model semiint1 not solved to optimality." << endl;

@@ -427,7 +427,6 @@ Cbc_newModel()
   model->cbcData = new CbcSolverUsefulData();
   CbcMain0(*model->model_, *model->cbcData);
   model->handler_ = NULL;
-  model->cbcData = new CbcSolverUsefulData();
   model->cbcData->noPrinting_ = false;
   model->relax_ = 0;
 

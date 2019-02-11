@@ -90,6 +90,7 @@ Cbc/scripts/parse_cbc.awk -text
 Cbc/scripts/parse_cbc_sol.awk -text
 Cbc/scripts/run.sh -text
 Cbc/scripts/run_cbc.sh -text
+Cbc/src/.ycm_extra_conf.py -text
 Cbc/src/CbcHeuristicDW.cpp -text
 Cbc/src/CbcHeuristicDW.hpp -text
 Cbc/src/CbcSymmetry.cpp -text

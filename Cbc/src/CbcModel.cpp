@@ -2354,7 +2354,7 @@ void CbcModel::branchAndBound(int doStatistics)
   // maybe allow on fix and restart later
   if ((moreSpecialOptions2_ & (128 | 256)) != 0 && !parentModel_) {
     symmetryInfo_ = new CbcSymmetry();
-    symmetryInfo_->setupSymmetry(*continuousSolver_);
+    symmetryInfo_->setupSymmetry(this);
     int numberGenerators = symmetryInfo_->statsOrbits(this, 0);
     if (!symmetryInfo_->numberUsefulOrbits() && (moreSpecialOptions2_ & (128 | 256)) != (128 | 256)) {
       delete symmetryInfo_;

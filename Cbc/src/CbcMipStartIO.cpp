@@ -13,6 +13,7 @@
 #include "CbcHeuristic.hpp"
 #include <CbcModel.hpp>
 #include "CbcMipStartIO.hpp"
+#include "CbcSOS.hpp"
 #include "CoinTime.hpp"
 
 using namespace std;
@@ -194,7 +195,7 @@ int computeCompleteSolution(CbcModel *model,
       // but look at SOS
       int numberObjects = model->numberObjects();
       for (int i = 0; i < numberObjects; i++) {
-        const OsiSOS *object = dynamic_cast< const OsiSOS * >(model->object(i));
+        const CbcSOS *object = dynamic_cast< const CbcSOS * >(model->object(i));
         if (object) {
           int n = object->numberMembers();
           const int *members = object->members();

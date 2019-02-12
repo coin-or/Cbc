@@ -236,7 +236,7 @@ CbcSOS::infeasibility(const OsiBranchingInformation *info,
     }
   }
   /* ?? */
-  preferredWay = 1;
+  preferredWay = sum > 0 ? 1 : -1;
   /*
   SOS1 allows one nonzero; SOS2 allows two consecutive nonzeros. Infeasibility
   is calculated as (.5)(range of nonzero values)/(number of members). So if

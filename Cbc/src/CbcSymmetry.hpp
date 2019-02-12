@@ -164,7 +164,7 @@ public:
   // bool index_sort (  Node  a, Node  b);
 
   /// empty if no NTY, symmetry data structure setup otherwise
-  void setupSymmetry(const OsiSolverInterface &solver);
+  void setupSymmetry(CbcModel * model);
 
 private:
   mutable std::vector< Node > node_info_;
@@ -236,6 +236,11 @@ public:
     return 0;
   }
 #endif
+  /// Pointer to options
+  inline optionblk *options() const
+  {
+    return options_;
+  }
   /**
    * Methods to classify orbits.  Not horribly efficient, but gets the job done
    */

@@ -335,6 +335,9 @@ int main(int argc, const char *argv[])
 #endif
 
     CbcSolverUsefulData cbcData;
+#ifndef CBC_NO_INTERRUPT
+    cbcData.useSignalHandler_ = true;
+#endif
     cbcData.noPrinting_ = false;
     // initialize
     CbcMain0(model, cbcData);

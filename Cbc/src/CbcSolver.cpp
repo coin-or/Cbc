@@ -1976,8 +1976,19 @@ int CbcMain1(int argc, const char *argv[],
           }
 #endif
           lpSolver = clpSolver->getModelPtr();
-          if (!lpSolver->integerInformation() && !numberSOS && !clpSolver->numberSOS() && !model_.numberObjects() && !clpSolver->numberObjects())
+          if (!lpSolver->integerInformation() && !numberSOS && !clpSolver->numberSOS() && !model_.numberObjects() && !clpSolver->numberObjects()) {
             type = CLP_PARAM_ACTION_DUALSIMPLEX;
+#ifdef CBC_MAXIMUM_BOUND
+	  } else {
+	    double * lower = lpSolver->columnLower();
+	    double * upper = lpSolver->columnUpper();
+	    int numberColumns = lpSolver->numberColumns();
+	    for (int i=0;i<numberColumns;i++) {
+	      lower[i] = CoinMax(lower[i],-CBC_MAXIMUM_BOUND);
+	      upper[i] = CoinMin(upper[i],CBC_MAXIMUM_BOUND);
+	    }
+#endif
+	  }
 #endif
         }
         if (type == CBC_PARAM_GENERALQUERY) {
@@ -5940,7 +5951,7 @@ int CbcMain1(int argc, const char *argv[],
                       //#define MAKE_SOS_CLIQUES
 #ifndef MAKE_SOS_CLIQUES
                       objects[iSOS] = new CbcSOS(babModel_, n, which + iStart, weight + iStart,
-                        iSOS, type[iSOS]);
+						 iSOS, type[iSOS]);
 #else
                       objects[iSOS] = new CbcClique(babModel_, 1, n, which + iStart,
                         NULL, -iSOS - 1);
@@ -12395,7 +12406,7 @@ static int nautiedConstraints(CbcModel &model, int maxPass)
     // for now strong is just on counts - use user option
     //int maxN=5000000;
     //OsiSolverInterface * solver = model.solver();
-    symmetryInfo.setupSymmetry(*solver);
+    symmetryInfo.setupSymmetry(&model);
     int numberGenerators = symmetryInfo.statsOrbits(&model, 0);
     if (numberGenerators) {
       //symmetryInfo.Print_Orbits();

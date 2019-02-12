@@ -73,9 +73,30 @@ inline bool CbcSymmetry::compare(register Node &a, register Node &b) const
   return 0;
 }
 
+// simple nauty definitely not thread safe
+static int calls = 0;
+static int maxLevel = 0;
+static void
+userlevelproc(int *lab, int *ptn, int level, int *orbits, statsblk *stats,
+  int tv, int index, int tcellsize,
+  int numcells, int childcount, int n)
+{
+  calls++;
+  if (level > maxLevel) {
+    printf("Level %d after %d calls\n", level, calls);
+    fprintf(stderr, "Level %d after %d calls\n", level, calls);
+    maxLevel = level;
+  }
+  if (level > 1500) {
+    throw CoinError("May take too long", "", "CbcSymmetry");
+  }
+  //}
+  return;
+}
 void CbcSymmetry::Compute_Symmetry() const
 {
 
+  nauty_info_->options()->userlevelproc = userlevelproc;
   std::sort(node_info_.begin(), node_info_.end(), node_sort);
 
   for (std::vector< Node >::iterator i = node_info_.begin(); i != node_info_.end(); ++i)
@@ -324,25 +345,26 @@ void CbcSymmetry::ChangeBounds(const double *new_lb, const double *new_ub,
     //printf("Var %d  INPUT lower bound: %f   upper bound %f \n", i, node_info_[i].get_lb(), node_info_[i].get_ub());
   }
 }
-void CbcSymmetry::setupSymmetry(const OsiSolverInterface &solver)
+void CbcSymmetry::setupSymmetry(CbcModel * model)
 {
+  OsiSolverInterface * solver = model->continuousSolver();
   double startCPU = CoinCpuTime();
-  const double *objective = solver.getObjCoefficients();
-  const double *columnLower = solver.getColLower();
-  const double *columnUpper = solver.getColUpper();
-  int numberColumns = solver.getNumCols();
-  int numberRows = solver.getNumRows();
+  const double *objective = solver->getObjCoefficients();
+  const double *columnLower = solver->getColLower();
+  const double *columnUpper = solver->getColUpper();
+  int numberColumns = solver->getNumCols();
+  int numberRows = solver->getNumRows();
   int iRow, iColumn;
 
   // Row copy
-  CoinPackedMatrix matrixByRow(*solver.getMatrixByRow());
+  CoinPackedMatrix matrixByRow(*solver->getMatrixByRow());
   const double *elementByRow = matrixByRow.getElements();
   const int *column = matrixByRow.getIndices();
   const CoinBigIndex *rowStart = matrixByRow.getVectorStarts();
   const int *rowLength = matrixByRow.getVectorLengths();
 
-  const double *rowLower = solver.getRowLower();
-  const double *rowUpper = solver.getRowUpper();
+  const double *rowLower = solver->getRowLower();
+  const double *rowUpper = solver->getRowUpper();
   //  // Find Coefficients
 
   /// initialize nauty
@@ -618,7 +640,15 @@ void CbcSymmetry::setupSymmetry(const OsiSolverInterface &solver)
   nautyTime_ = 0.0;
   nautyFixes_ = 0.0;
   nautyOtherBranches_ = 0.0;
-  Compute_Symmetry();
+  try {
+    Compute_Symmetry();
+  } catch (CoinError &e) {
+    char general[200];
+    sprintf(general, "Nauty - initial level %d - will probably take too long",
+        maxLevel);
+    model->messageHandler()->message(CBC_GENERAL,model->messages())
+      <<general <<CoinMessageEol;
+  }
   fillOrbits();
   //whichOrbit_[2]=numberUsefulOrbits_;
   //Print_Orbits ();

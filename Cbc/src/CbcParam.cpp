@@ -57,7 +57,6 @@ CbcParam::CbcParam(std::string name, std::string help,
   , display_(false)
   , intValue_(0)
   , doubleValue_(0)
-  , currentKeyWord_(-1)
   , indexNumber_(0)
 {
   lowerDoubleValue_ = lower;
@@ -79,7 +78,6 @@ CbcParam::CbcParam(std::string name, std::string help,
   , display_(false)
   , intValue_(0)
   , doubleValue_(0)
-  , currentKeyWord_(-1)
   , indexNumber_(0)
 {
   gutsOfConstructor();
@@ -105,7 +103,6 @@ CbcParam::CbcParam(std::string name, std::string help,
   , display_(false)
   , intValue_(0)
   , doubleValue_(0)
-  , currentKeyWord_(-1)
   , indexNumber_(0)
 {
   gutsOfConstructor();
@@ -129,7 +126,6 @@ CbcParam::CbcParam(std::string name, std::string help,
   , display_(false)
   , intValue_(0)
   , doubleValue_(0)
-  , currentKeyWord_(-1)
   , indexNumber_(0)
 {
   gutsOfConstructor();

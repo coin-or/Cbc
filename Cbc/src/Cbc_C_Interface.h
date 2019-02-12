@@ -513,6 +513,50 @@ Cbc_printModel(Cbc_Model *model, const char *argPrefix);
 COINLIBAPI void COINLINKAGE
 Cbc_setParameter(Cbc_Model *model, const char *name, const char *value);
 
+
+/** returns the allowable gap
+ */
+COINLIBAPI double COINLINKAGE
+Cbc_getAllowableGap(Cbc_Model *model);
+
+/** sets the allowable gap
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setAllowableGap(Cbc_Model *model, double allowedGap);
+
+/** returns the allowable fraction gap
+ */
+COINLIBAPI double COINLINKAGE
+Cbc_getAllowableFractionGap(Cbc_Model *model);
+
+/** sets the allowable fraction gap
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setAllowableFractionGap(Cbc_Model *model, double allowedFracionGap);
+
+/** returns the allowable percentage gap
+ */
+COINLIBAPI double COINLINKAGE
+Cbc_getAllowablePercentageGap(Cbc_Model *model);
+
+/** sets the allowable percentage gap
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setAllowablePercentageGap(Cbc_Model *model, double allowedPercentageGap);
+
+
+/** returns the cutoff
+ */
+COINLIBAPI double COINLINKAGE
+Cbc_getCutoff(Cbc_Model *model);
+
+/** sets the cutoff
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setCutoff(Cbc_Model *model, double cutoff);
+
+
+
 /*@}*/
 /**@name Message handling.  Call backs are handled by ONE function */
 /*@{*/

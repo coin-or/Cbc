@@ -34,7 +34,11 @@ CbcParam::CbcParam()
   , shortHelp_()
   , longHelp_()
   , action_(CBC_PARAM_NOTUSED_INVALID)
+  , display_(false)
+  , intValue_(0)
+  , doubleValue_(0)
   , currentKeyWord_(-1)
+  , indexNumber_(0)
 {
 }
 // Other constructors
@@ -50,6 +54,11 @@ CbcParam::CbcParam(std::string name, std::string help,
   , longHelp_()
   , action_(type)
   , currentKeyWord_(-1)
+  , display_(false)
+  , intValue_(0)
+  , doubleValue_(0)
+  , currentKeyWord_(-1)
+  , indexNumber_(0)
 {
   lowerDoubleValue_ = lower;
   upperDoubleValue_ = upper;
@@ -67,6 +76,11 @@ CbcParam::CbcParam(std::string name, std::string help,
   , longHelp_()
   , action_(type)
   , currentKeyWord_(-1)
+  , display_(false)
+  , intValue_(0)
+  , doubleValue_(0)
+  , currentKeyWord_(-1)
+  , indexNumber_(0)
 {
   gutsOfConstructor();
   lowerIntValue_ = lower;
@@ -88,6 +102,11 @@ CbcParam::CbcParam(std::string name, std::string help,
   , longHelp_()
   , action_(type)
   , currentKeyWord_(0)
+  , display_(false)
+  , intValue_(0)
+  , doubleValue_(0)
+  , currentKeyWord_(-1)
+  , indexNumber_(0)
 {
   gutsOfConstructor();
   definedKeyWords_.push_back(firstValue);
@@ -107,6 +126,11 @@ CbcParam::CbcParam(std::string name, std::string help,
   , longHelp_()
   , action_(type)
   , currentKeyWord_(-1)
+  , display_(false)
+  , intValue_(0)
+  , doubleValue_(0)
+  , currentKeyWord_(-1)
+  , indexNumber_(0)
 {
   gutsOfConstructor();
 }
@@ -129,6 +153,10 @@ CbcParam::CbcParam(const CbcParam &rhs)
   longHelp_ = rhs.longHelp_;
   action_ = rhs.action_;
   currentKeyWord_ = rhs.currentKeyWord_;
+  display_ = rhs.display_;
+  intValue_ = rhs.intValue_;
+  doubleValue_ = rhs.doubleValue_;
+  indexNumber_ = rhs.indexNumber_;
 }
 
 //-------------------------------------------------------------------
@@ -158,6 +186,10 @@ CbcParam::operator=(const CbcParam &rhs)
     longHelp_ = rhs.longHelp_;
     action_ = rhs.action_;
     currentKeyWord_ = rhs.currentKeyWord_;
+    display_ = rhs.display_;
+    intValue_ = rhs.intValue_;
+    doubleValue_ = rhs.doubleValue_;
+    indexNumber_ = rhs.indexNumber_;
   }
   return *this;
 }
@@ -372,6 +404,7 @@ int CbcParam::setDoubleParameter(CbcModel &model, double value) const
     case CBC_PARAM_DBL_INCREMENT:
       oldValue = model.getDblParam(CbcModel::CbcCutoffIncrement);
       model.setDblParam(CbcModel::CbcCutoffIncrement, value);
+      break;
     case CBC_PARAM_DBL_ALLOWABLEGAP:
       oldValue = model.getDblParam(CbcModel::CbcAllowableGap);
       model.setDblParam(CbcModel::CbcAllowableGap, value);

@@ -1730,6 +1730,47 @@ Osi_getColSolution( void *osi )
   return osiSolver->getColSolution();
 }
 
+double Cbc_getAllowableGap(Cbc_Model* model)
+{
+  return model->model_->getAllowableGap();
+}
+
+void Cbc_setAllowableGap(Cbc_Model* model, double allowedGap)
+{
+  model->model_->setAllowableGap(allowedGap);
+}
+
+double Cbc_getAllowableFractionGap(Cbc_Model* model)
+{
+  return model->model_->getAllowableFractionGap();
+}
+
+void Cbc_setAllowableFractionGap(Cbc_Model* model, double allowedFracionGap)
+{
+  model->model_->setAllowableFractionGap(allowedFracionGap);
+}
+
+double Cbc_getCutoff(Cbc_Model* model)
+{
+  return model->model_->getCutoff();
+}
+
+void Cbc_setCutoff(Cbc_Model* model, double cutoff)
+{
+  model->model_->setCutoff(cutoff);
+}
+
+double Cbc_getAllowablePercentageGap(Cbc_Model* model)
+{
+  return model->model_->getAllowablePercentageGap();
+}
+
+void Cbc_setAllowablePercentageGap(Cbc_Model* model,
+    double allowedPercentageGap)
+{
+  model->model_->setAllowablePercentageGap(allowedPercentageGap);
+}
+
 #if defined(__MWERKS__)
 #pragma export off
 #endif

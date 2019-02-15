@@ -2032,8 +2032,11 @@ void CbcModel::branchAndBound(int doStatistics)
       if (!obj)
         numberOdd++;
     }
-    if (numberOdd)
+    if (numberOdd) {
       moreSpecialOptions_ |= 1073741824;
+      // also switch off checking for restart (as preprocessing may be odd)
+      specialOptions_ &= ~(512|32768);
+    }
   }
   // If NLP then we assume already solved outside branchAndbound
   if (!solverCharacteristics_->solverType() || solverCharacteristics_->solverType() == 4) {
@@ -5588,12 +5591,10 @@ CbcModel::CbcModel()
   , lastHeuristic_(NULL)
   , fastNodeDepth_(-1)
   , eventHandler_(NULL)
-  ,
 #ifdef COIN_HAS_NTY
-  symmetryInfo_(NULL)
-  ,
+  , symmetryInfo_(NULL)
 #endif
-  numberObjects_(0)
+  , numberObjects_(0)
   , object_(NULL)
   , ownObjects_(true)
   , originalColumns_(NULL)
@@ -5642,7 +5643,6 @@ CbcModel::CbcModel()
   , numberGlobalCutsIn_(0)
   , master_(NULL)
   , masterThread_(NULL)
-  , keepNamesPreproc(false)
 {
   memset(intParam_, 0, sizeof(intParam_));
   intParam_[CbcMaxNumNode] = 2147483647;
@@ -5664,9 +5664,9 @@ CbcModel::CbcModel()
   strongInfo_[4] = 0;
   strongInfo_[5] = 0;
   strongInfo_[6] = 0;
+  keepNamesPreproc = false;
   solverCharacteristics_ = NULL;
   nodeCompare_ = new CbcCompareDefault();
-  ;
   problemFeasibility_ = new CbcFeasibilityBase();
   tree_ = new CbcTree();
   branchingMethod_ = NULL;
@@ -5762,12 +5762,10 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , lastHeuristic_(NULL)
   , fastNodeDepth_(-1)
   , eventHandler_(NULL)
-  ,
 #ifdef COIN_HAS_NTY
-  symmetryInfo_(NULL)
-  ,
+  , symmetryInfo_(NULL)
 #endif
-  numberObjects_(0)
+  , numberObjects_(0)
   , object_(NULL)
   , ownObjects_(true)
   , originalColumns_(NULL)
@@ -5816,7 +5814,6 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , numberGlobalCutsIn_(0)
   , master_(NULL)
   , masterThread_(NULL)
-  , keepNamesPreproc(false)
 {
   memset(intParam_, 0, sizeof(intParam_));
   intParam_[CbcMaxNumNode] = 2147483647;
@@ -5839,8 +5836,8 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   strongInfo_[5] = 0;
   strongInfo_[6] = 0;
   solverCharacteristics_ = NULL;
+  keepNamesPreproc = false;
   nodeCompare_ = new CbcCompareDefault();
-  ;
   problemFeasibility_ = new CbcFeasibilityBase();
   tree_ = new CbcTree();
   branchingMethod_ = NULL;
@@ -6103,7 +6100,6 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , numberGlobalCutsIn_(rhs.numberGlobalCutsIn_)
   , master_(NULL)
   , masterThread_(NULL)
-  , keepNamesPreproc(rhs.keepNamesPreproc)
 {
   memcpy(intParam_, rhs.intParam_, sizeof(intParam_));
   memcpy(dblParam_, rhs.dblParam_, sizeof(dblParam_));
@@ -6114,6 +6110,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   strongInfo_[4] = rhs.strongInfo_[4];
   strongInfo_[5] = rhs.strongInfo_[5];
   strongInfo_[6] = rhs.strongInfo_[6];
+  keepNamesPreproc = rhs.keepNamesPreproc;
   solverCharacteristics_ = NULL;
   if (rhs.emptyWarmStart_)
     emptyWarmStart_ = rhs.emptyWarmStart_->clone();

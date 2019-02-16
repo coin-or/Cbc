@@ -6030,8 +6030,7 @@ int CbcMain1(int argc, const char *argv[],
                             << CoinMessageEol;
                         }
                       }
-                      int sosPriorityOption = parameters_[whichParam(CBC_PARAM_STR_SOSPRIORITIZE, parameters_)].intValue();
-
+                      int sosPriorityOption = parameters_[whichParam(CBC_PARAM_STR_SOSPRIORITIZE, parameters_)].currentOptionAsInteger();
                       if (sosPriorityOption) {
                         const char *msg[4] = {
                           "high with equal priority",

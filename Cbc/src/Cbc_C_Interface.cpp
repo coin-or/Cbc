@@ -1754,6 +1754,56 @@ Cbc_setAllowableFractionGap(Cbc_Model* model, double allowedFracionGap)
   model->model_->setAllowableFractionGap(allowedFracionGap);
 }
 
+/** returns the maximum number of nodes that can be explored in the search tree
+ */
+COINLIBAPI int COINLINKAGE
+Cbc_getMaximumNodes(Cbc_Model *model)
+{
+  return model->model_->getMaximumNodes();
+}
+
+/** sets the maximum number of nodes that can be explored in the search tree
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setMaximumNodes(Cbc_Model *model, int maxNodes)
+{
+  model->model_->setMaximumNodes(maxNodes);
+}
+
+/** returns solution limit for the search process
+ */
+COINLIBAPI int COINLINKAGE
+Cbc_getMaximumSolutions(Cbc_Model *model)
+{
+  return model->model_->getMaximumSolutions();
+}
+
+/** sets a solution limit as a stopping criterion 
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setMaximumSolutions(Cbc_Model *model, int maxSolutions)
+{
+  model->model_->setMaximumSolutions(maxSolutions);
+}
+
+/** returns the current log leven
+ */
+COINLIBAPI int COINLINKAGE
+Cbc_getLogLevel(Cbc_Model *model)
+{
+  return model->model_->logLevel();
+}
+
+/** sets the log level
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setLogLevel(Cbc_Model *model, int logLevel)
+{
+  model->model_->setLogLevel(logLevel);
+}
+
+
+
 COINLIBAPI double COINLINKAGE
 Cbc_getCutoff(Cbc_Model* model)
 {

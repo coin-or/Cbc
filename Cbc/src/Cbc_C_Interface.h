@@ -544,6 +544,36 @@ Cbc_getAllowablePercentageGap(Cbc_Model *model);
 COINLIBAPI void COINLINKAGE
 Cbc_setAllowablePercentageGap(Cbc_Model *model, double allowedPercentageGap);
 
+/** returns the maximum number of nodes that can be explored in the search tree
+ */
+COINLIBAPI int COINLINKAGE
+Cbc_getMaximumNodes(Cbc_Model *model);
+
+/** sets the maximum number of nodes that can be explored in the search tree
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setMaximumNodes(Cbc_Model *model, int maxNodes);
+
+/** returns solution limit for the search process
+ */
+COINLIBAPI int COINLINKAGE
+Cbc_getMaximumSolutions(Cbc_Model *model);
+
+/** sets a solution limit as a stopping criterion 
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setMaximumSolutions(Cbc_Model *model, int maxSolutions);
+
+/** returns the current log leven
+ */
+COINLIBAPI int COINLINKAGE
+Cbc_getLogLevel(Cbc_Model *model);
+
+/** sets the log level
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setLogLevel(Cbc_Model *model, int logLevel);
+
 
 /** returns the cutoff
  */

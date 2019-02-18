@@ -1829,6 +1829,18 @@ Cbc_setAllowablePercentageGap(Cbc_Model* model,
   model->model_->setAllowablePercentageGap(allowedPercentageGap);
 }
 
+COINLIBAPI double COINLINKAGE
+Cbc_getMaximumSeconds(Cbc_Model *model)
+{
+  return model->model_->getMaximumSeconds();
+}
+
+COINLIBAPI void COINLINKAGE
+Cbc_setMaximumSeconds(Cbc_Model *model, double maxSeconds)
+{
+  model->model_->setMaximumSeconds(maxSeconds);
+}
+
 #if defined(__MWERKS__)
 #pragma export off
 #endif

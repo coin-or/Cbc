@@ -7,6 +7,7 @@
     \brief Second level routines for the cbc stand-alone solver.
 */
 
+
 #include "CbcConfig.h"
 #include "CoinPragma.hpp"
 

@@ -544,6 +544,17 @@ Cbc_getAllowablePercentageGap(Cbc_Model *model);
 COINLIBAPI void COINLINKAGE
 Cbc_setAllowablePercentageGap(Cbc_Model *model, double allowedPercentageGap);
 
+/** returns the time limit for the search process
+ */
+COINLIBAPI double COINLINKAGE
+Cbc_getMaximumSeconds(Cbc_Model *model);
+
+/** sets the time limit for the search process
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setMaximumSeconds(Cbc_Model *model, double maxSeconds);
+
+
 /** returns the maximum number of nodes that can be explored in the search tree
  */
 COINLIBAPI int COINLINKAGE

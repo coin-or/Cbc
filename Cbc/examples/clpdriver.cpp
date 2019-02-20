@@ -121,6 +121,11 @@ int MyEventHandler3::event(Event whichEvent)
   }
 }
 
+static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/)
+{
+  return 0;
+}
+
 int main(int argc, const char *argv[])
 {
 
@@ -158,16 +163,22 @@ int main(int argc, const char *argv[])
   CbcModel modelA(solver1);
   OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(modelA.solver());
   model = solver->getModelPtr();
-  CbcMain0(modelA);
+  CbcSolverUsefulData cbcData;
+#ifndef CBC_NO_INTERRUPT
+  cbcData.useSignalHandler_ = true;
+#endif
+  cbcData.noPrinting_ = false;
+  // initialize
+  CbcMain0(modelA, cbcData);
   /* Now go into code for standalone solver
      Could copy arguments and add -quit at end to be safe
      but this will do
   */
   if (argc > 2) {
-    CbcMain1(argc - 1, argv + 1, modelA);
+    CbcMain1(argc - 1, argv + 1, modelA, dummyCallBack , cbcData);
   } else {
     const char *argv2[] = { "clpdriver", "-solve", "-quit" };
-    CbcMain1(3, argv2, modelA);
+    CbcMain1(3, argv2, modelA, dummyCallBack, cbcData);
   }
 
   if (!model->problemStatus()) {

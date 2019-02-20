@@ -68,8 +68,9 @@ int main(int argc, const char *argv[])
     }
   }
   // Pass to Cbc initialize defaults
+  CbcSolverUsefulData cbcData;
   CbcModel model(solver1);
-  CbcMain0(model);
+  CbcMain0(model, cbcData);
 
   // Solve just to show there are no integers
   model.branchAndBound();
@@ -104,10 +105,10 @@ int main(int argc, const char *argv[])
      but this will do
   */
   if (argc > 2) {
-    CbcMain1(argc - 1, argv + 1, model);
+    CbcMain1(argc - 1, argv + 1, model, cbcData);
   } else {
     const char *argv2[] = { "driver3", "-solve", "-quit" };
-    CbcMain1(3, argv2, model);
+    CbcMain1(3, argv2, model, cbcData);
   }
 
   // Print solution if finished (could get from model.bestSolution() as well

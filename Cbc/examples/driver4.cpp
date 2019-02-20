@@ -254,11 +254,12 @@ MyEventHandler3::event(CbcEvent whichEvent)
       int numberColumns = model_->getNumCols();
       const double *bestSolution = model_->bestSolution();
       assert(bestSolution);
-      printf("value of solution is %g\n", model_->getObjValue());
-      for (int i = 0; i < numberColumns; i++) {
-        if (fabs(bestSolution[i]) > 1.0e-8)
-          printf("%d %g\n", i, bestSolution[i]);
-      }
+      printf("event handler received a solution with cost %g\n", model_->getObjValue());
+      // printing solution contents
+      //for (int i = 0; i < numberColumns; i++) {
+      //  if (fabs(bestSolution[i]) > 1.0e-8)
+      //    printf("%d %g\n", i, bestSolution[i]);
+      //}
       return noAction; // carry on
 #endif
     } else {

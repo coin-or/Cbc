@@ -1282,6 +1282,16 @@ int CbcMain1(int argc, const char *argv[],
   data.useSignalHandler_ = true;
   return CbcMain1(argc, argv, model, callBack, data);
 }
+// and simpler version
+int CbcMain1(int argc, const char *argv[],
+	     CbcModel &model)
+{
+  CbcSolverUsefulData data;
+  // allow interrupts and printing
+  data.noPrinting_ = false;
+  data.useSignalHandler_ = true;
+  return CbcMain1(argc, argv, model, dummyCallBack, data);
+}
 static void printGeneralMessage(CbcModel &model, const char *message);
 /*
   Meaning of whereFrom:

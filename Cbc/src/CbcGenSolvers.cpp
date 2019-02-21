@@ -68,6 +68,13 @@
 #endif
 #endif
 
+#ifdef COIN_HAS_HIGHS
+#include "OsiHiGHSSolverInterface.hpp"
+#ifndef CBC_DEFAULT_SOLVER
+#define CBC_DEFAULT_SOLVER "highs"
+#endif
+#endif
+
 #ifdef COIN_HAS_SPX
 #include "OsiSpxSolverInterface.hpp"
 #ifndef CBC_DEFAULT_SOLVER
@@ -142,6 +149,9 @@ OsiSolverInterface *setupSolvers()
 #endif
 #ifdef COIN_HAS_GLPK
   solvers["glpk"] = new OsiGlpkSolverInterface;
+#endif
+#ifdef COIN_HAS_HIGHS
+  solvers["highs"] = new OsiHiGHSSolverInterface;
 #endif
 #ifdef COIN_HAS_MSK
   solvers["msk"] = new OsiMskSolverInterface;

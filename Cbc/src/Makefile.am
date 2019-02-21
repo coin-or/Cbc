@@ -174,7 +174,7 @@ cbc_generic_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCGENERIC_DEPENDENCIES)
 # the linker flags for all available LP solvers should already be included in $CBCGENERIC_LIBS,
 # so just add compiler flags here (all we can think of)
 
-AM_CPPFLAGS += $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(SPX_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
+AM_CPPFLAGS += $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(HIGHS_CFLAGS) $(MSK_CFLAGS) $(SPX_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 
 endif
 

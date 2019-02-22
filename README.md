@@ -1,4 +1,4 @@
-# CBC Version 2.9.9 README
+# CBC Version 2.9.10 README
 
 Welcome to the README for the COIN Branch and Cut Solver (CBC). CBC is
 distributed under the Eclipse Public License and is freely redistributable.
@@ -51,6 +51,14 @@ Bug reports should be reported on the CBC development web site at
 https://projects.coin-or.org/Cbc/newticket
 
 ## CHANGELOG
+
+ * Release 2.9.10
+   * Fix a numerical issue
+   * Fix some memory leaks
+   * Fix issue when root node is obviously infeasible
+   * Performance improvements for mini-B&B
+   * Fix name of bound in final message
+   * Fix names in preprocessed problem
 
  * Release 2.9.9
 

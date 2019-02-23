@@ -1,4 +1,4 @@
-# CBC Version 2.9.10 README
+# CBC Version 2.10.0 README
 
 Welcome to the README for the COIN Branch and Cut Solver (CBC). CBC is
 distributed under the Eclipse Public License and is freely redistributable.
@@ -13,7 +13,7 @@ be redistributed freely.
 
 ## DOWNLOAD
 
-[ ![Download](https://api.bintray.com/packages/coin-or/download/Cbc/images/download.svg) ](https://bintray.com/coin-or/download/Cbc/2.9)
+[ ![Download](https://api.bintray.com/packages/coin-or/download/Cbc/images/download.svg) ](https://bintray.com/coin-or/download/Cbc/2.10)
 
 Binaries for most platforms are available for download from [Bintray](https://bintray.com/coin-or/download/Cbc)
 
@@ -52,6 +52,41 @@ https://projects.coin-or.org/Cbc/newticket
 
 ## CHANGELOG
 
+ * Release 2.10.0
+   * Improved handling of SOS, starting point, and symmetries
+   * Improved performance of primal heuristics regarding the handling of
+     implicit integer variables
+   * Mini-B&B is now disabled when solving with multiple threads
+   * Changed default value for zero half cuts parameter from off to ifmove
+   * Added CbcModel::postProcessedSolver() to obtained LP after presolve
+   * New option "PrepNames" to indicate whether column names should be
+     kept in the pre-processed model
+   * New option "sosPrioritize" to determine how to prioritize SOS
+   * Added new event "generatedCuts"
+   * CbcSolver can now read compressed .lp files (GZIP, BZIP2)
+   * New functions in the C interface: Cbc_readLp, Cbc_writeLp,
+     Cbc_addCol, Cbc_addRow, Cbc_getNumIntegers, Cbc_bestSolution,
+     Cbc_getObjValue, Cbc_getRowNz, Cbc_getRowIndices, Cbc_getRowCoeffs,
+     Cbc_getRowRHS, Cbc_getRowSense, Cbc_getColNz, Cbc_getColIndices,
+     Cbc_getColCoeffs, Cbc_getReducedCost, Cbc_numberSavedSolutions,
+     Cbc_savedSolution, Cbc_savedSolutionObj, Cbc_setMIPStart,
+     Cbc_setMIPStartI, Cbc_addCutCallback, Osi_getNumCols, Osi_getColName,
+     Osi_getColLower, Osi_getColUpper, Osi_isInteger, Osi_getNumRows,
+     Osi_getRowNz, Osi_getRowIndices, Osi_getRowCoeffs, Osi_getRowRHS,
+     Osi_getRowSense, Osi_getColSolution, OsiCuts_addRowCut,
+     Cbc_getAllowableGap, Cbc_setAllowableGap, Cbc_getAllowableFractionGap,
+     Cbc_setAllowableFractionGap, Cbc_getAllowablePercentageGap,
+     Cbc_setAllowablePercentageGap, Cbc_getCutoff, Cbc_setCutoff,
+     Cbc_getMaximumNodes, Cbc_setMaximumNodes, Cbc_getMaximumSolutions,
+     Cbc_setMaximumSolutions, Cbc_getLogLevel, Cbc_setLogLevel,
+     Cbc_getMaximumSeconds, Cbc_setMaximumSeconds
+   * New example inc.cpp to illustrate solution callback
+   * New example driver5.cpp to illustrate user-defined branching rule
+   * New example clpdriver.cpp to illustrate use of ClpEventHandler
+   * Added support for using OsiHiGHS with CbcGeneric
+   * Added MSVC 14 project files
+   * Bugfixes
+   
  * Release 2.9.10
    * Fix a numerical issue
    * Fix some memory leaks

@@ -80,6 +80,8 @@ https://projects.coin-or.org/Cbc/newticket
      Cbc_getMaximumNodes, Cbc_setMaximumNodes, Cbc_getMaximumSolutions,
      Cbc_setMaximumSolutions, Cbc_getLogLevel, Cbc_setLogLevel,
      Cbc_getMaximumSeconds, Cbc_setMaximumSeconds
+   * New action "guess" checks properties of the model to decide the best
+     parameters for solving the LP relaxation.
    * New example inc.cpp to illustrate solution callback
    * New example driver5.cpp to illustrate user-defined branching rule
    * New example clpdriver.cpp to illustrate use of ClpEventHandler

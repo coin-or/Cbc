@@ -4,6 +4,11 @@
 
 Converted the content from Docbook to Markdown.
 
+Integrated some content from the Trac Wiki:
+- some FAQ items
+- FYI (on [FAQ page](./faq))
+- Feasibility pump implementation (on [Heuristics page](./heuristics))
+
 0.2 May 2, 2005
 
 Book chapter for CBC Tutorial at INFORMS 2005 annual meeting.

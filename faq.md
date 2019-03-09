@@ -9,6 +9,9 @@ CBC is written in C++, and is primarily intended to be used as a callable librar
 (though a rudimentary stand-alone executable exists). The first
 documented release was .90.0. (JF 04/01/05)
 
+Cbc is designed to work with any OSI capable solver and in particular Clp.
+It used to be called Sbb (Simple Branch and Bound) but due to people confusing it with GAMS Sbb solver it has been renamed to Cbc.
+
 **Q:** What are some of the features of CBC?
 
 **A:** CBC allows the use of any CGL cuts and the use of heuristics and
@@ -22,8 +25,13 @@ for details on how to obtain and install COIN-OR modules.
 
 **Q:** Is CBC reliable?
 
-**A:** CBC has been tested on many problems, but more testing and
-improvement is needed before it can get to version 1.0. (JF 04/01/05)
+**A:** Cbc is at version 1.01.00 so it is no longer a pre-release version - and yes it is reliable. (JF 06/15/06)
+
+**Q:** Is it fast?
+
+**A:** It is not very fast out of the box, but is very flexible so it can be very effective with correct use of cut generators and heuristics.
+For instance, cut generators can be switched off, on every so often or only at root node (which is probably best default).
+The stand-alone code has been much improved to try and make it faster for less experienced users. (JF 06/15/06)
 
 **Q:** Is there any documentation for CBC?
 
@@ -36,10 +44,38 @@ is a list of [CBC class descriptions](http://www.coin-or.org/Doxygen/Cbc/) gener
 **A:** No. However its design is much more flexible so advanced users
 will be able to tailor CBC to their needs. (JF 04/01/05)
 
-**Q:** When will version 1.0 of CBC be available?
+**Q:** What are Cbc's advantages?
 
-**A:** It is expected that version 1.0 will be released in time for the
-2005 [INFORMS](http://www.informs.org) annual meeting. (JF 04/01/05)
+**A:** It is designed to be less heavyweight than BCP or Symphony.
+It is very easy to add new cut generators and heuristics and branching methods such as lot-sizing variables.
+I need to publish some more heuristic methods as I have several I use for my own work which at present are too problem specific. (JF 05/24/06)
+
+**Q:** How should I start to use it?
+
+**A:** There is a stand-alone code `cbc` which I need to improve, both for ease of use and for default behavior.
+There are also drivers in the examples directory.
+The sample driver in `Cbc/examples/sample1.cpp` will solve many of the miplib test set as it is.
+To add a new generator involves adding less than ten lines of code.
+It is also possible to add heuristics in the same way and to influence the search - `sample2.cpp` and `sample3.cpp` expose more of the strategy as user code. (JF 05/24/06)
+
+**Q:** What happened to the SBB code?
+
+**A:** SBB stands for Simple Branch and Bound.
+When COIN-OR LP was being written, the Osi interface demanded an integer solver.
+An exception could have been thrown but anyone can write a branch and bound code in a day.
+With Strong Branching it was 460 lines of code, without 300 lines.
+Somehow the code kept growing and eventually it was moved it to its own project.
+Now the "Simple" is not as accurate and there was confusion with Gams Sbb code so was frozen as of Halloween 2004.
+All future development has been on Cbc (COIN-OR Branch and Cut) which is just a renamed version of Sbb. (JF 06/03/06)
+
+**Q:** How does one get a list of the undocumented cbc executable options?
+
+**A:** Run the cbc executable, set the verbose option to 15, and then enter a *?* to get a list of all commands.
+```
+./bin/cbc
+verbose 15
+?
+```
 
 **Q:** What can the community do to help?
 
@@ -57,3 +93,35 @@ Some other possibilities include:
   - Break the code, or better yet -- mend it.
   - Tackle any of the "to-dos" listed in the Doxyen documentation and
     contribute back to COIN-OR.
+
+# FYI: Lessons from the Trenches
+
+ 1. *The `-csv` option*
+
+    The option `-csv <filename>` causes cbc to print one line of key output statics in commma separated format in a file named <filename>.  This option isn't currently included in the list of commands given by the `?` command in interactive mode.
+
+ 1. *The `-csv` command works great with one data file.  Is there a way to make it work with the `-miplib` option?*
+
+    At present not, according to John. (That's vindicating becuase I tried more things than I'd like to admit under the flawed assumption it did.) John sugggests creating a CbcCsv class and putting some code to do it in there. Sounds like a great enhancement, if someone's looking to contribute <hint, hint>.
+
+ 1. *Order of options in the command line of the cbc executable matter*
+
+    The command line of the cbc executable is parsed as if it were in the interactive mode. The take-away is that if your using the command line, and things aren't working as you think they should, try ordering the commands in the sequence you'd use if you were interactive mode. (I don't have any specific examples right now, but I know others have run into this too.)
+
+ 1. *How does one build and run a parallel version of cbc?*
+
+   To build a parallel enabled version of cbc when running `configure` add the option `--enable-cbc-parallel`.
+
+   To run in parallel use the `-threads` option with cbc:
+   ```
+   ./cbc -threads 6 -unitTest -dirMiplib=_MIPLIB3DIR_ -miplib
+   ```
+   where _MIPLIB3DIR_ is the name of the directory containing the miplib3 mps files.
+
+ 1. *For a miplib example, say `egout`, should the output related to egout produced by the command `./cbc - miplib` match what I'd get from executing cbc on egout directly?*
+
+    No. There's more to -miplib than simply running cbc on each of the miplib datasets (but I don't know exactly what all the differences are). 
+
+ 1. Is there a difference in the default parameter settings when you solve a problem in Cbc's interactive mode versus the command-line mode?
+
+    Should not be any difference - the commands are read at a single point in code, switching over after command line ones. <July 8, 2009>

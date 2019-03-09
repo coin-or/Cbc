@@ -31,7 +31,7 @@ information at a node.
 | `double objectiveValue() const`        | Value of objective at the node.                                                                                              |
 | `int numberUnsatisfied() const`        | Number of unsatisfied integers (assuming branching object is an integer - otherwise it might be number of unsatisfied sets). |
 | `int depth() const`                    | Depth of the node in the search tree.                                                                                        |
-| `double guessedObjectiveValue() const` | If user was setting this (e.g., if using pseudo costs).                                                                      |
+| `double guessedObjectiveValue() const` | Returns the guessed objective value, if the user was setting this (e.g., if using pseudo costs).                            |
 | `int way() const`                      | The way which branching would next occur from this node (for more advanced use).                                             |
 | `int variable() const`                 | The branching "variable" (associated with the `CbcBranchingObject` -- for more advanced use).                                |
 

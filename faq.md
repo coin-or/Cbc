@@ -110,18 +110,18 @@ Some other possibilities include:
 
  1. *How does one build and run a parallel version of cbc?*
 
-   To build a parallel enabled version of cbc when running `configure` add the option `--enable-cbc-parallel`.
+    To build a parallel enabled version of cbc when running `configure` add the option `--enable-cbc-parallel`.
 
-   To run in parallel use the `-threads` option with cbc:
-   ```
-   ./cbc -threads 6 -unitTest -dirMiplib=_MIPLIB3DIR_ -miplib
-   ```
-   where _MIPLIB3DIR_ is the name of the directory containing the miplib3 mps files.
+    To run in parallel use the `-threads` option with cbc:
+    ```
+    ./cbc -threads 6 -unitTest -dirMiplib=_MIPLIB3DIR_ -miplib
+    ```
+    where _MIPLIB3DIR_ is the name of the directory containing the miplib3 mps files.
 
  1. *For a miplib example, say `egout`, should the output related to egout produced by the command `./cbc - miplib` match what I'd get from executing cbc on egout directly?*
 
     No. There's more to -miplib than simply running cbc on each of the miplib datasets (but I don't know exactly what all the differences are). 
 
- 1. Is there a difference in the default parameter settings when you solve a problem in Cbc's interactive mode versus the command-line mode?
+ 1. *Is there a difference in the default parameter settings when you solve a problem in Cbc's interactive mode versus the command-line mode?*
 
     Should not be any difference - the commands are read at a single point in code, switching over after command line ones. <July 8, 2009>

@@ -237,6 +237,7 @@ There are three options which affect the heuristic:
        If 4/5 is set then the original method of Fischetti and Lodi is used which involves adding one constraint and variable for every general integer variable which is being pushed away from bound.
     - `f`: if set then a fraction of the original objective is added in.
       This fraction will decay at each pass.  Larger `f` gives a larger fraction.
+
     Whew!  So you think you have finished with options - no way.
 
  * `hOptions` (heuristic options).

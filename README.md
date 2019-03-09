@@ -125,7 +125,7 @@ Steps (based on VS 2013):
 ## DOCUMENTATION
 
  * [INSTALL](INSTALL) file (partially outdated)
- * [User's Guide](http://www.coin-or.org/Cbc) (somewhat outdated)
+ * [User's Guide](https://coin-or.github.io/Cbc) (from 2005)
  * [Doxygen generated documentation](http://www.coin-or.org/Doxygen/Cbc/hierarchy.html)
  * Source code [examples](Cbc/examples)
  * [Cbc command-line guide](https://projects.coin-or.org/CoinBinary/export/1059/OptimizationSuite/trunk/Installer/files/doc/cbcCommandLine.pdf)

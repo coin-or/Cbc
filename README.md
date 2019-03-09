@@ -2,7 +2,17 @@
 
 Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
 It can be used as a callable library or using a stand-alone executable.
-It can be called through AMPL (natively), GAMS (using the links provided by the [Optimization Services](http://projects.coin-or.org/OS/wiki) and [GAMSlinks](http://projects.coin-or.org/GAMSlinks/wiki) projects), MPL (through the [CoinMP](http://projects.coin-or.org/CoinMP/wiki) project), AIMMS (through the [AIMMSlinks](http://projects.coin-or.org/AIMMSlinks/wiki) project), [PuLP](https://projects.coin-or.org/PuLP), [CMPL](https://projects.coin-or.org/Cmpl),  [OpenSolver for Excel](http://opensolver.org), [JuMP](https://github.com/JuliaOpt/JuMP.jl), or [MiniZinc](http://www.minizinc.org/).
+It can be called through
+AIMMS (through the [AIMMSlinks](https://github.com/coin-o/AIMMSlinks) project),
+AMPL (natively),
+[CMPL](https://github.com/coin-or/Cmpl),
+GAMS (through the [GAMSlinks](https://github.com/coin-or/GAMSlinks) project),
+[JuMP](https://github.com/JuliaOpt/JuMP.jl),
+Mathematica,
+[MiniZinc](http://www.minizinc.org/),
+MPL (through the [CoinMP](https://github.com/coin-or/CoinMP) project),
+[PuLP](https://github.com/coin-or/PuLP), and
+[OpenSolver for Excel](http://opensolver.org), among others.
 
 Cbc links to a number of other COIN-OR projects for additional functionality, including:
  * [Clp](https://github.com/coin-or/Clp) (the default solver for LP relaxations)
@@ -11,7 +21,7 @@ Cbc links to a number of other COIN-OR projects for additional functionality, in
 For more information on supported platforms, links to dependent projects, current version, and more, click [here](http://www.coin-or.org/projects/Cbc.xml)
 
 Cbc is developed by [John Forrest](http://www.fastercoin.com), now retired from IBM Research.
-The project is currently managed by John Forrest, [Ted Ralphs](http://coral.ie.lehigh.edu/~ted/), and the rest of the [CbcTeam Cbc team].
+The project is currently managed by John Forrest, [Ted Ralphs](http://coral.ie.lehigh.edu/~ted/), Haroldo Gambini Santos, and the rest of the Cbc team (Dan Fylstra (Frontline), Lou Hafer (SFU), Bill Hart (Sandia), Bjarni Kristjannson (Maximal), Cindy Phillips (Sandia), Matthew Saltzman (Clemson), Edwin Straver (Frontline), Jean-Paul Watson (Sandia)).
 
 Cbc is written in C++ and is released as open source code under the [Eclipse Public License (EPL)](http://www.opensource.org/licenses/eclipse-1.0) and is freely redistributable.
 All source code and documentation is Copyright IBM and others. This README may be redistributed freely.
@@ -32,9 +42,7 @@ The Cbc website is https://github.com/coin-or/Cbc.
 
 ## DOWNLOAD
 
-[ ![Download](https://api.bintray.com/packages/coin-or/download/Cbc/images/download.svg) ](https://bintray.com/coin-or/download/Cbc/2.10)
-
-Binaries for most platforms are available for download from [Bintray](https://bintray.com/coin-or/download/Cbc)
+Binaries for most platforms are available for download from [Bintray](https://bintray.com/coin-or/download/Cbc): [ ![Download](https://api.bintray.com/packages/coin-or/download/Cbc/images/download.svg) ](https://bintray.com/coin-or/download/Cbc/2.10)
 
  * *Linux*: On !Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
  * *Windows*: The easiest way to get Cbc on Windows is to download the Windows installer for the [COIN-OR Optimization Suite](http://www.coin-or.org/download/binary/CoinAll), which provides Visual Studio compatible libraries and binaries.
@@ -54,7 +62,9 @@ If binaries are not available for your platform for the latest version and you w
 The recommended method is to use Git because it makes it easier to obtain updates. Below are some quick start guides for building on common platforms. *More detailed build instructions are [BuildAndInstall here].*
 
 
-## Building from source using CoinBrew
+## BUILDING from source
+
+### Using CoinBrew
 
 To build Cbc from source, obtain the `coinbrew` script from
 https://coin-or.github.io/coinbrew/
@@ -68,7 +78,7 @@ and run
 
 The `coinbrew` script will fetch [these](Dependencies) additional projects.
 
-## Building from source without CoinBrew (Expert users)
+### Without CoinBrew (Expert users)
 
  0. Install [these Dependencies](Dependencies)
  1. Obtain the source code, e.g., from https://github.com/coin-or/Cbc
@@ -77,7 +87,7 @@ The `coinbrew` script will fetch [these](Dependencies) additional projects.
  4. Run `make test` to build and run the CoinUtils unit test program
  5. Run `make install` to install library and header files.
 
-## Building from source with Microsoft Visual Studio
+### With Microsoft Visual Studio
 
 For Microsoft Visual C++ users, there are project files for version 10 available in the `MSVisualStudio` directory.
 First, obtain the source code using either a Windows git client or download a snapshot.
@@ -96,8 +106,7 @@ Assumptions:
 Steps (based on VS 2013):
 
 1. for each of the lib* projects do:
-
-   add "CBC_THREAD" under Properties -> Configuration Properties -> C/C++ -> Preprocessor -> Preprocessor Definitions (a subset of the lib* projects may be sufficient, but it doesn't hurt to do it for all)
+   add `CBC_THREAD` under Properties -> Configuration Properties -> C/C++ -> Preprocessor -> Preprocessor Definitions (a subset of the lib* projects may be sufficient, but it doesn't hurt to do it for all)
 
 2. Link against a pthreads library.
    [PThreadsWin32](https://www.sourceware.org/pthreads-win32/) works (even in 64 bits systems) and is distributed under the LGPL.
@@ -115,15 +124,12 @@ Steps (based on VS 2013):
 
 ## DOCUMENTATION
 
-For a quick start guide, please see the INSTALL file in this distribution. A
-(somehwat outdated) user's manual is available here:
+ * [INSTALL](INSTALL) file (partially outdated)
+ * [User's Guide](http://www.coin-or.org/Cbc) (somewhat outdated)
+ * [Doxygen generated documentation](http://www.coin-or.org/Doxygen/Cbc/hierarchy.html)
+ * Source code [examples](Cbc/examples)
+ * [Cbc command-line guide](https://projects.coin-or.org/CoinBinary/export/1059/OptimizationSuite/trunk/Installer/files/doc/cbcCommandLine.pdf)
 
-http://www.coin-or.org/Cbc
-
-More up-to-date automatically generated documentation of the source code can
-be found here:
-
-http://www.coin-or.org/Doxygen/Cbc/
 
 ## SUPPORT
 
@@ -473,5 +479,3 @@ https://github.com/coin-or/Cbc/issues
    * Improvements to documentation.
 
    * Minor bug fixes.
-
-

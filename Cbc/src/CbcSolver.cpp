@@ -4425,7 +4425,8 @@ int CbcMain1(int argc, const char *argv[],
                   // need to redo - in case no better found in BAB
                   // just get integer part right
                   const int *originalColumns = process.originalColumns();
-                  int numberColumns = solver2->getNumCols();
+                  int numberColumns =
+		    CoinMin(solver2->getNumCols(), babModel_->getNumCols());
                   double *bestSolution = babModel_->bestSolution();
                   const double *oldBestSolution = model_.bestSolution();
                   for (int i = 0; i < numberColumns; i++) {

@@ -7574,21 +7574,17 @@ int CbcMain1(int argc, const char *argv[],
                   // Save bounds on processed model
                   const int *originalColumns = process.originalColumns();
                   int numberColumns2 = clpSolver->getNumCols();
-                  double *solution2 = new double[n];
                   double *lower2 = new double[n];
                   double *upper2 = new double[n];
                   for (int i = 0; i < n; i++) {
-                    solution2[i] = COIN_DBL_MAX;
                     lower2[i] = COIN_DBL_MAX;
                     upper2[i] = -COIN_DBL_MAX;
                   }
                   const double *columnLower = clpSolver->getColLower();
                   const double *columnUpper = clpSolver->getColUpper();
-                  const double *solution = babModel_->bestSolution();
                   for (int i = 0; i < numberColumns2; i++) {
                     int jColumn = originalColumns[i];
                     if (jColumn < n) {
-                      solution2[jColumn] = solution[i];
                       lower2[jColumn] = columnLower[i];
                       upper2[jColumn] = columnUpper[i];
                     }
@@ -7629,7 +7625,6 @@ int CbcMain1(int argc, const char *argv[],
                   // Double check bounds
                   columnLower = saveSolver->getColLower();
                   columnUpper = saveSolver->getColUpper();
-                  solution = saveSolver->getColSolution();
                   int numberChanged = 0;
                   for (int i = 0; i < n; i++) {
                     if (!saveSolver->isInteger(i) && !tightenB)
@@ -7689,7 +7684,6 @@ int CbcMain1(int argc, const char *argv[],
                     }
                   }
 #endif
-                  delete[] solution2;
                   delete[] lower2;
                   delete[] upper2;
                   if (numberChanged) {

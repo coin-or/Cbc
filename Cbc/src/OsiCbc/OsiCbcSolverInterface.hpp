@@ -299,7 +299,7 @@ public:
 
   /*! \brief Return the name of the objective function */
 
-  virtual std::string getObjName(unsigned maxLen = std::string::npos) const;
+  virtual std::string getObjName(std::string::size_type maxLen = std::string::npos) const;
 
   /*! \brief Set the name of the objective function */
 
@@ -308,7 +308,7 @@ public:
   /*! \brief Return the name of the row.  */
 
   virtual std::string getRowName(int rowIndex,
-    unsigned maxLen = std::string::npos) const;
+    std::string::size_type maxLen = std::string::npos) const;
 
   /*! \brief Return a pointer to a vector of row names */
 
@@ -330,7 +330,7 @@ public:
   /*! \brief Return the name of the column */
 
   virtual std::string getColName(int colIndex,
-    unsigned maxLen = std::string::npos) const;
+    std::string::size_type maxLen = std::string::npos) const;
 
   /*! \brief Return a pointer to a vector of column names */
 

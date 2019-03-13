@@ -2629,7 +2629,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
     int otherOptions = (multipleRootTries_ / 10000) % 100;
     rootModels = new CbcModel *[numberModels];
-    unsigned int newSeed = randomSeed_;
+    int newSeed = randomSeed_;
     if (newSeed == 0) {
       double time = fabs(CoinGetTimeOfDay());
       while (time >= COIN_INT_MAX)

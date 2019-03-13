@@ -748,8 +748,10 @@ void OsiCbcSolverInterface::setObjSense(double s)
 // Invoke solver's built-in enumeration algorithm
 void OsiCbcSolverInterface::branchAndBound()
 {
-  *messageHandler() << "Warning: Use of OsiCbc is deprecated." << CoinMessageEol;
-  *messageHandler() << "To enjoy the full performance of Cbc, use the CbcSolver interface." << CoinMessageEol;
+  if( messageHandler()->logLevel() > 0 ) {
+    *messageHandler() << "Warning: Use of OsiCbc is deprecated." << CoinMessageEol;
+    *messageHandler() << "To enjoy the full performance of Cbc, use the CbcSolver interface." << CoinMessageEol;
+  }
   modelPtr_->branchAndBound();
 }
 

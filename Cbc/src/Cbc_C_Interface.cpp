@@ -1270,7 +1270,7 @@ Cbc_clone(Cbc_Model *model)
 
   if (VERBOSE > 0)
     printf("%s return\n", prefix);
-  return model;
+  return result;
 }
 /** Set this the variable to be continuous */
 COINLIBAPI void COINLINKAGE

@@ -1,5 +1,6 @@
 * text=auto !eol
 /.clang-format -text
+.coin-or/projDesc.xml -text
 /.travis.yml -text
 /AUTHORS -text
 Cbc/CbcSourceFilesTable.csv -text

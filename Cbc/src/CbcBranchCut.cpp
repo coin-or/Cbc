@@ -193,8 +193,8 @@ CbcCutBranchingObject::branch()
     cut = &up_;
     way_ = -1; // Swap direction
   }
-  printf("CUT %s ", (way_ == -1) ? "up" : "down");
-  cut->print();
+  // printf("CUT %s ", (way_ == -1) ? "up" : "down");
+  // cut->print();
   // See if cut just fixes variables
   double lb = cut->lb();
   double ub = cut->ub();

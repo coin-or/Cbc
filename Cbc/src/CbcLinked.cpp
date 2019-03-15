@@ -141,7 +141,7 @@ void OsiSolverLink::initialSolve()
       info_[i].updateBounds(modelPtr_);
     }
     int updated = updateCoefficients(modelPtr_, temp);
-    if (updated || 1) {
+    //if (updated || 1) {
       temp->removeGaps(1.0e-14);
       ClpMatrixBase *save = modelPtr_->clpMatrix();
       ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(save);
@@ -157,9 +157,9 @@ void OsiSolverLink::initialSolve()
         temp->bottomAppendPackedMatrix(*clpMatrix->matrix());
       }
       modelPtr_->replaceMatrix(temp, true);
-    } else {
-      delete temp;
-    }
+    //} else {
+    //  delete temp;
+    //}
   }
   if (0) {
     const double *lower = getColLower();
@@ -541,7 +541,8 @@ void OsiSolverLink::resolve()
             }
           }
         }
-        if (numberContinuous && 0) {
+#if 0
+        if (numberContinuous) {
           // iterate to get solution and fathom node
           int numberColumns2 = coinModel_.numberColumns();
           double *lower2 = CoinCopyOfArray(getColLower(), numberColumns2);
@@ -643,6 +644,7 @@ void OsiSolverLink::resolve()
           //if (isProvenOptimal())
           //writeMps("zz");
         }
+#endif
       }
       // ???  - try
       // But skip if strong branching

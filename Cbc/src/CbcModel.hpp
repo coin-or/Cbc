@@ -2690,9 +2690,9 @@ public:
   void redoWalkBack();
   //@}
 
-  void setMIPStart(const std::vector< std::pair< std::string, double > > &mips)
+  void setMIPStart(const std::vector< std::pair< std::string, double > > &mipstart)
   {
-    this->mipStart_ = mips;
+    this->mipStart_ = mipstart;
   }
 
   /** if original column names will be preserved in preprocessed problem

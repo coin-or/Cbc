@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type = "text/xsl" href = "http://www.coin-or.org/projects/autoGen.xsl"?>
+<projectData xmlns="coin-or.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="coin-or.org http://www.coin-or.org/projects/autoGen.xsd">
+  <projectBasics>
+    <projectName>CBC</projectName>
+    <projectRepo>Cbc</projectRepo>
+    <projectDescription>
+     CBC is an open-source MILP solver. It uses many of the COIN-OR components
+     and is designed to be used with CLP. It is available as a library and
+     as a standalone solver.
+    </projectDescription>
+    <projectShortDescription>
+     An LP-based branch-and-cut library.
+    </projectShortDescription>
+    <projectManager>Ted Ralphs, ted at lehigh dot edu </projectManager>
+    <projectHomePage>https://github.com/coin-or/Cbc</projectHomePage>
+    <projectLicense>Eclipse Public License 1.0</projectLicense>
+    <projectLicenseURL>http://www.opensource.org/licenses/eclipse-1.0</projectLicenseURL>
+    <coinLinkedProjects>
+      <coinProject>
+        <repoName>CoinUtils</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>Osi</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>Clp</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>Cgl</repoName>
+      </coinProject>
+    </coinLinkedProjects>
+    <otherLinkedPackages>
+      <otherPackage>
+        <packageName>GLPK</packageName>
+        <packageURL>http://www.gnu.org/software/glpk/</packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+      <otherPackage>
+        <packageName>GNU Readline</packageName>
+        <packageURL></packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+      <otherPackage>
+        <packageName>GNU History</packageName>
+        <packageURL></packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+      <otherPackage>
+        <packageName>AMPL Solver Library (ASL)</packageName>
+        <packageURL>http://www.netlib.org/ampl/solvers/</packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+      <otherPackage>
+        <packageName>BLAS</packageName>
+        <packageURL>http://www.netlib.org/blas</packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+      <otherPackage>
+        <packageName>LAPACK</packageName>
+        <packageURL>http://www.netlib.org/lapack</packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+    </otherLinkedPackages>
+    <projectLanguage>C++</projectLanguage>
+    <developmentStatus>
+      <activityStatus>Active</activityStatus>
+      <maturityLevel>5</maturityLevel>
+    </developmentStatus>
+    <testedPlatforms>
+      <platform>
+        <operatingSystem>Microsoft Windows</operatingSystem>
+        <compiler>Visual Studio, cl</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Microsoft Windows / Cygwin / Msys / MinGW</operatingSystem>
+        <compiler>gcc, cl</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Linux</operatingSystem>
+        <compiler>gcc</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Mac OS X</operatingSystem>
+        <compiler>gcc</compiler>
+      </platform>
+    </testedPlatforms>
+    <projectCategories>
+      <category>Optimization deterministic linear discrete</category>
+    </projectCategories>
+  </projectBasics>
+  <leftMenuLinks>
+    <documentation>https://coin-or.github.io/Cbc/</documentation>
+    <sourceCodeDownload>http://www.coin-or.org/download/source/Cbc</sourceCodeDownload>
+    <binaryDownload>https://bintray.com/coin-or/download/Cbc</binaryDownload>
+    <mailingList>https://list.coin-or.org/mailman/listinfo/cbc</mailingList>
+  </leftMenuLinks>
+</projectData>

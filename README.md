@@ -146,6 +146,12 @@ https://github.com/coin-or/Cbc/issues
 
 ## CHANGELOG
 
+ * Release 2.10.1
+   * Fixed Cbc_clone in C interface
+   * Fixed CbcMain1() call in examples/driver3.cpp
+   * Fixed possible issue with MIPstart if presolve added variables
+   * More minor bugfixes
+
  * Release 2.10.0
    * Improved handling of SOS, starting point, and symmetries
    * Improved performance of primal heuristics regarding the handling of

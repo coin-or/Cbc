@@ -12107,7 +12107,14 @@ void CbcModel::setCutoff(double value)
   dblParam_[CbcCurrentCutoff] = value;
   if (solver_) {
     // Solvers know about direction
+    // but Clp tries to be too clever and flips twice!
+#ifndef COIN_HAS_CLP
     double direction = solver_->getObjSense();
+#else
+    double direction = 1.0;
+    if (!dynamic_cast< OsiClpSolverInterface * >(solver_))
+      direction = solver_->getObjSense();
+#endif
     solver_->setDblParam(OsiDualObjectiveLimit, value * direction);
   }
 }

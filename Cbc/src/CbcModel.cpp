@@ -3937,10 +3937,6 @@ void CbcModel::branchAndBound(int doStatistics)
     anyAction = -1;
     // To make depth available we may need a fake node
     CbcNode fakeNode;
-    if (!currentNode_) {
-      // Not true if sub trees assert (!numberNodes_);
-      currentNode_ = &fakeNode;
-    }
     phase_ = 3;
     // only allow 1000 passes
     int numberPassesLeft = 1000;
@@ -15016,6 +15012,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
           = dynamic_cast< OsiClpSolverInterface * >(solver_);
         if (clpSolver) {
           anyAction = newNode->chooseClpBranch(this, oldNode);
+	  currentNode_ = NULL;
           if (anyAction != -1)
             break;
         }
@@ -15079,6 +15076,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
         if (anyAction == -3)
           anyAction = newNode->chooseBranch(this, oldNode, numberPassesLeft); // dynamic did nothing
       }
+      currentNode_ = NULL;
 #ifdef COIN_HAS_CLP
       if (clpSolver && (moreSpecialOptions_ & 4194304) != 0) {
         ClpSimplex *clpSimplex = clpSolver->getModelPtr();
@@ -15091,7 +15089,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
     } else {
       OsiBranchingInformation usefulInfo = usefulInformation();
       anyAction = newNode->chooseOsiBranch(this, oldNode, &usefulInfo, branchingState);
-      ; // Osi method
+      currentNode_ = NULL;
       //branchingState=0;
     }
     if (!oldNode) {

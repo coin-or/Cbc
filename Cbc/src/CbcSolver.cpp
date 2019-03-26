@@ -332,6 +332,20 @@ static void putBackOtherSolutions(CbcModel *presolvedModel, CbcModel *model,
   }
 }
 
+// For when number of column is messed up e.g. BiLinear
+static int numberPrintingColumns(const OsiSolverInterface * solver)
+{
+#ifdef COIN_HAS_LINK
+  const OsiSolverLink *linkSolver =
+    dynamic_cast< const OsiSolverLink * >(solver);
+  if (!linkSolver)
+    return solver->getNumCols();
+  return linkSolver->coinModel()->numberColumns();
+#else
+  return solver->getNumCols();
+#endif
+}
+
 /*
   CbcSolver class definitions
 */
@@ -2657,7 +2671,7 @@ int CbcMain1(int argc, const char *argv[],
               flowAction = action;
               mixedAction = action;
               twomirAction = action;
-              //landpAction = action;
+              zerohalfAction = action;
               parameters_[whichParam(CBC_PARAM_STR_GOMORYCUTS, parameters_)].setCurrentOption(action);
               parameters_[whichParam(CBC_PARAM_STR_PROBINGCUTS, parameters_)].setCurrentOption(action);
               parameters_[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, parameters_)].setCurrentOption(action);
@@ -3582,37 +3596,38 @@ int CbcMain1(int argc, const char *argv[],
                       twomir.setMaxElements(250);
                       cbcModel->addCutGenerator(&twomir, -99, "Twomir", true, false, false, -100, -1, -1);
                       cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-
-                      CbcHeuristicFPump heuristicFPump(*cbcModel);
-                      heuristicFPump.setWhen(13);
-                      heuristicFPump.setMaximumPasses(20);
-                      heuristicFPump.setMaximumRetries(7);
-                      heuristicFPump.setHeuristicName("feasibility pump");
-                      heuristicFPump.setInitialWeight(1);
-                      heuristicFPump.setFractionSmall(0.6);
-                      cbcModel->addHeuristic(&heuristicFPump);
-
-                      CbcRounding rounding(*cbcModel);
-                      rounding.setHeuristicName("rounding");
-                      cbcModel->addHeuristic(&rounding);
-
-                      CbcHeuristicLocal heuristicLocal(*cbcModel);
-                      heuristicLocal.setHeuristicName("combine solutions");
-                      heuristicLocal.setSearchType(1);
-                      heuristicLocal.setFractionSmall(0.6);
-                      cbcModel->addHeuristic(&heuristicLocal);
-
-                      CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);
-                      heuristicGreedyCover.setHeuristicName("greedy cover");
-                      cbcModel->addHeuristic(&heuristicGreedyCover);
-
-                      CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);
-                      heuristicGreedyEquality.setHeuristicName("greedy equality");
-                      cbcModel->addHeuristic(&heuristicGreedyEquality);
-
-                      CbcCompareDefault compare;
-                      cbcModel->setNodeComparison(compare);
-                      cbcModel->setNumberBeforeTrust(5);
+                      int heuristicOption = parameters_[whichParam(CBC_PARAM_STR_HEURISTICSTRATEGY, parameters_)].currentOptionAsInteger();
+		      if (heuristicOption) {
+			CbcHeuristicFPump heuristicFPump(*cbcModel);
+			heuristicFPump.setWhen(13);
+			heuristicFPump.setMaximumPasses(20);
+			heuristicFPump.setMaximumRetries(7);
+			heuristicFPump.setHeuristicName("feasibility pump");
+			heuristicFPump.setInitialWeight(1);
+			heuristicFPump.setFractionSmall(0.6);
+			cbcModel->addHeuristic(&heuristicFPump);
+			
+			CbcRounding rounding(*cbcModel);
+			rounding.setHeuristicName("rounding");
+			cbcModel->addHeuristic(&rounding);
+			
+			CbcHeuristicLocal heuristicLocal(*cbcModel);
+			heuristicLocal.setHeuristicName("combine solutions");
+			heuristicLocal.setSearchType(1);
+			heuristicLocal.setFractionSmall(0.6);
+			cbcModel->addHeuristic(&heuristicLocal);
+			
+			CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);
+			heuristicGreedyCover.setHeuristicName("greedy cover");
+			cbcModel->addHeuristic(&heuristicGreedyCover);
+			
+			CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);
+			heuristicGreedyEquality.setHeuristicName("greedy equality");
+			cbcModel->addHeuristic(&heuristicGreedyEquality);
+		      }
+		      CbcCompareDefault compare;
+		      cbcModel->setNodeComparison(compare);
+		      cbcModel->setNumberBeforeTrust(5);
                       cbcModel->setSpecialOptions(2);
                       cbcModel->messageHandler()->setLogLevel(1);
                       cbcModel->setMaximumCutPassesAtRoot(-100);
@@ -3656,7 +3671,8 @@ int CbcMain1(int argc, const char *argv[],
                       }
                       CbcHeuristicDynamic3 dynamic(model_);
                       dynamic.setHeuristicName("dynamic pass thru");
-                      model_.addHeuristic(&dynamic);
+		      if (heuristicOption) 
+			model_.addHeuristic(&dynamic);
                       // if convex
                       if ((linkSolver->specialOptions2() & 4) != 0 && solution) {
                         int numberColumns = coinModel->numberColumns();
@@ -5260,13 +5276,17 @@ int CbcMain1(int argc, const char *argv[],
                   int when = laGomory / 3;
                   char atEnd = (when < 2) ? 1 : 0;
                   int gomoryTypeMajor = 10;
-                  if (when < 3) {
+                  if (when != 3) {
                     // normal as well
                     babModel_->addCutGenerator(&gomoryGen, gType, "Gomory");
                     accuracyFlag[numberGenerators] = 3;
                     switches[numberGenerators++] = 0;
-                    if (when == 2)
+                    if (when == 2) {
                       gomoryTypeMajor = 20;
+                    } else if (when == 4) {
+                      gomoryTypeMajor = 20;
+		      when = 0;
+		    }
                   } else {
                     when--; // so on
                     gomoryTypeMajor = 20;
@@ -6411,7 +6431,9 @@ int CbcMain1(int argc, const char *argv[],
                     if (solver3) {
                       CbcHeuristicDynamic3 serendipity(*babModel_);
                       serendipity.setHeuristicName("linked");
-                      babModel_->addHeuristic(&serendipity);
+                      int heuristicOption = parameters_[whichParam(CBC_PARAM_STR_HEURISTICSTRATEGY, parameters_)].currentOptionAsInteger();
+		      if (heuristicOption) 
+			babModel_->addHeuristic(&serendipity);
                       double dextra3 = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA3, parameters_)].doubleValue();
                       if (dextra3)
                         solver3->setMeshSizes(dextra3);
@@ -9726,7 +9748,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 // See if Glpk
                 if (type == CLP_PARAM_ACTION_GMPL_SOLUTION) {
                   int numberRows = lpSolver->getNumRows();
-                  int numberColumns = lpSolver->getNumCols();
+		  int numberColumns = lpSolver->getNumCols();
                   int numberGlpkRows = numberRows + 1;
 #ifdef COIN_HAS_GLPK
                   if (cbc_glp_prob) {
@@ -10026,7 +10048,8 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 }
                 if (printMode > 5) {
                   ClpSimplex *solver = clpSolver->getModelPtr();
-                  int numberColumns = solver->numberColumns();
+		  int numberColumns = numberPrintingColumns(clpSolver);
+                  //int numberColumns = solver->numberColumns();
                   // column length unless rhs ranging
                   int number = numberColumns;
                   if (lpSolver->status()) {
@@ -10203,7 +10226,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   }
                 }
                 int iColumn;
-                int numberColumns = clpSolver->getNumCols();
+                int numberColumns = numberPrintingColumns(clpSolver);
                 const double *dualColumnSolution = clpSolver->getReducedCost();
                 const double *primalColumnSolution = clpSolver->getColSolution();
                 const double *columnLower = clpSolver->getColLower();

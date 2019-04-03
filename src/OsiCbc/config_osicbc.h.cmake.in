@@ -1,0 +1,7 @@
+#ifndef __CONFIG_${NAME}_H__
+#define __CONFIG_${NAME}_H__
+
+/* Library Visibility Attribute */
+#define ${NAME}LIB_EXPORT
+
+#endif

@@ -1,0 +1,7 @@
+#ifndef __CONFIG_${NAME}SOLVER_H__
+#define __CONFIG_${NAME}SOLVER_H__
+
+/* Library Visibility Attribute */
+#define ${NAME}SOLVERLIB_EXPORT
+
+#endif

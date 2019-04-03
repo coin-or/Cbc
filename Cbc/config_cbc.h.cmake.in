@@ -1,0 +1,13 @@
+#ifndef __CONFIG_${NAME}_H__
+#define __CONFIG_${NAME}_H__
+
+/* ${NAME}_VERSION */
+#define ${NAME}_VERSION "${VERSION}"
+/* ${NAME}_VERSION_MAJOR */
+#define ${NAME}_VERSION_MAJOR ${MAJOR}
+/* ${NAME}_VERSION_MINOR */
+#define ${NAME}_VERSION_MINOR ${MINOR}
+/* ${NAME}_VERSION_RELEASE */
+#define ${NAME}_VERSION_RELEASE ${PATCH}
+
+#endif

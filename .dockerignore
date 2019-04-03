@@ -1,0 +1,21 @@
+# Project Files unneeded by docker
+.ci/cache
+.ci/docker
+.git
+.gitignore
+.github
+.dockerignore
+.travis.yml
+.clang-format
+AUTHORS
+INSTALL
+install-sh
+missing
+README
+README.md
+
+build/
+
+# Editor directories and files
+*.user
+*.swp

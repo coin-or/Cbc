@@ -2571,6 +2571,13 @@ int CbcRounding::solution(double &solutionValue,
           penalty += value - rowUpper[i];
       }
     }
+    // but integer variables may have wandered
+    for (i = 0; i < numberIntegers; i++) {
+      int iColumn = integerVariable[i];
+      double value = newSolution[iColumn];
+      if (fabs(floor(value + 0.5) - value) > integerTolerance)
+	penalty += fabs(floor(value + 0.5) - value);
+    }
   }
 
   // Could also set SOS (using random) and repeat

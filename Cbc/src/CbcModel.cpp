@@ -5645,7 +5645,7 @@ CbcModel::CbcModel()
   intParam_[CbcMaxNumSol] = 9999999;
 
   memset(dblParam_, 0, sizeof(dblParam_));
-  dblParam_[CbcIntegerTolerance] = 1e-6;
+  dblParam_[CbcIntegerTolerance] = 1e-7;
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
@@ -5816,7 +5816,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   intParam_[CbcMaxNumSol] = 9999999;
 
   memset(dblParam_, 0, sizeof(dblParam_));
-  dblParam_[CbcIntegerTolerance] = 1e-6;
+  dblParam_[CbcIntegerTolerance] = 1e-7;
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
@@ -7589,7 +7589,7 @@ void CbcModel::synchronizeHandlers(int /*makeDefault*/)
   bool defaultHandler = defaultHandler_;
   if (!defaultHandler_) {
     // Must have clone
-    // obviously rubbish -- handler_ = handler_->clone();
+    handler_ = handler_->clone();  // Not sure - worst is small memory leak
     defaultHandler_ = true;
   }
 #ifdef COIN_HAS_CLP
@@ -12151,6 +12151,10 @@ CbcModel::checkSolution(double cutoff, double *solution,
 #ifndef CBC_LEAVE_SCALING_ON_CHECK_SOLUTION
     int saveScaling = -1;
 #endif
+#define CBC_LEAVE_CRUNCH_ON_CHECK_SOLUTION // for now
+#ifndef CBC_LEAVE_CRUNCH_ON_CHECK_SOLUTION
+    int saveSpecialOptions=0;
+#endif
     if (clpContinuousSolver) {
       // be more accurate if possible
       ClpSimplex *clp = clpContinuousSolver->getModelPtr();
@@ -12181,6 +12185,11 @@ CbcModel::checkSolution(double cutoff, double *solution,
         clp->scaling(0);
         clpContinuousSolver->setHintParam(OsiDoScale, false, OsiHintTry);
       }
+#endif
+#ifndef CBC_LEAVE_CRUNCH_ON_CHECK_SOLUTION
+      modifiedTolerances |= 8;
+      saveSpecialOptions = clpContinuousSolver->specialOptions();
+      clpContinuousSolver->setSpecialOptions(saveSpecialOptions&(~1)); // switch off crunch 
 #endif
     }
 #endif
@@ -12386,6 +12395,10 @@ CbcModel::checkSolution(double cutoff, double *solution,
             clp->scaling(saveScaling);
             clpContinuousSolver->setHintParam(OsiDoScale, true, OsiHintTry);
           }
+#endif
+#ifndef CBC_LEAVE_CRUNCH_ON_CHECK_SOLUTION
+	  // Restore
+	  clpContinuousSolver->setSpecialOptions(saveSpecialOptions);
 #endif
         }
 #endif
@@ -12622,7 +12635,7 @@ CbcModel::checkSolution(double cutoff, double *solution,
       }
       //assert(solver_->isProvenOptimal());
       solver_->setHintParam(OsiDoDualInInitial, saveTakeHint, saveStrength);
-      objectiveValue = solver_->getObjValue() * solver_->getObjSense();
+      objectiveValue = solver_->isProvenOptimal() ? solver_->getObjValue() * solver_->getObjSense() : 1.0e50;
     }
     bestSolutionBasis_ = CoinWarmStartBasis();
 
@@ -12868,6 +12881,9 @@ CbcModel::checkSolution(double cutoff, double *solution,
         clp->scaling(saveScaling);
         clpContinuousSolver->setHintParam(OsiDoScale, true, OsiHintTry);
       }
+#endif
+#ifndef CBC_LEAVE_CRUNCH_ON_CHECK_SOLUTION
+      clpContinuousSolver->setSpecialOptions(saveSpecialOptions);
 #endif
     }
 #endif

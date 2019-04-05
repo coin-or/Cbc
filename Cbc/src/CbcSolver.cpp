@@ -81,7 +81,24 @@ extern glp_prob *cbc_glp_prob;
 
 //#define USER_HAS_FAKE_CLP
 //#define USER_HAS_FAKE_CBC
+//#define NEW_DEBUG_AND_FILL // use this to make it easier to trap unset
 
+#ifdef NEW_DEBUG_AND_FILL
+#include <malloc.h>
+#include <exception>
+#include <new>
+void *operator new(size_t size)
+{
+  void * p = malloc(size);
+  char * xx = (char *) p;
+  memset(xx,0x20,size);
+  return p;
+}
+void operator delete(void *p) throw()
+{
+  free(p);
+}
+#endif // end NEW_DEBUG
 //#define CLP_MALLOC_STATISTICS
 
 #ifdef CLP_MALLOC_STATISTICS
@@ -7730,7 +7747,7 @@ int CbcMain1(int argc, const char *argv[],
                       osiclp->getModelPtr()->checkUnscaledSolution();
                   }
 
-                  assert(saveSolver->isProvenOptimal());
+                  //assert(saveSolver->isProvenOptimal());
 #ifndef CBC_OTHER_SOLVER
                   // and original solver
                   originalSolver->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
@@ -7753,7 +7770,7 @@ int CbcMain1(int argc, const char *argv[],
                     if (osiclp)
                       osiclp->getModelPtr()->checkUnscaledSolution();
                   }
-                  assert(originalSolver->isProvenOptimal());
+                  //assert(originalSolver->isProvenOptimal());
 #endif
                   babModel_->assignSolver(saveSolver);
                   memcpy(bestSolution, babModel_->solver()->getColSolution(), n * sizeof(double));
@@ -7811,7 +7828,7 @@ int CbcMain1(int argc, const char *argv[],
                     }
 #endif
                   }
-                  assert(originalSolver->isProvenOptimal());
+                  //assert(originalSolver->isProvenOptimal());
                 }
 #endif
                 checkSOS(babModel_, babModel_->solver());
@@ -10046,7 +10063,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     delete[] newMasks[i];
                   delete[] newMasks;
                 }
-                if (printMode > 5) {
+                if (printMode > 5 && printMode < 12) {
                   ClpSimplex *solver = clpSolver->getModelPtr();
 		  int numberColumns = numberPrintingColumns(clpSolver);
                   //int numberColumns = solver->numberColumns();
@@ -10231,7 +10248,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 const double *primalColumnSolution = clpSolver->getColSolution();
                 const double *columnLower = clpSolver->getColLower();
                 const double *columnUpper = clpSolver->getColUpper();
-                if (printMode != 2) {
+                if (printMode != 2 && printMode < 12) {
                   if (printMode == 5) {
                     if (lengthName)
                       fprintf(fp, "name");
@@ -10300,7 +10317,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                       saveLpSolver = NULL;
                     }
                   }
-                } else {
+                } else if (printMode==2){
                   // special format suitable for OsiRowCutDebugger
                   int n = 0;
                   bool comma = false;
@@ -10345,6 +10362,59 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     }
                   }
                   fprintf(fp, "};\n");
+		} else {
+		  // Make up a fake bounds section
+		  char outputValue[24];
+                  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+		    if (printMode==13||model_.solver()->isInteger(iColumn)) {
+		      fprintf(fp," FX BOUND001  ");
+		      const char *name = columnNames[iColumn].c_str();
+		      size_t n = strlen(name);
+		      size_t i;
+		      for (i = 0; i < n; i++)
+			fprintf(fp, "%c", name[i]);
+		      for (; i < lengthPrint; i++)
+			fprintf(fp, " ");
+		      CoinConvertDouble(5,2,primalColumnSolution[iColumn],
+					outputValue);
+		      fprintf(fp,"  %s\n",outputValue);
+		    } else {
+		      fprintf(fp," LO BOUND001  ");
+		      const char *name = columnNames[iColumn].c_str();
+		      size_t n = strlen(name);
+		      size_t i;
+		      for (i = 0; i < n; i++)
+			fprintf(fp, "%c", name[i]);
+		      for (; i < lengthPrint; i++)
+			fprintf(fp, " ");
+		      CoinConvertDouble(5,2,CoinMax(-1.0e30,columnLower[iColumn]),
+					outputValue);
+		      fprintf(fp,"  %s\n",outputValue);
+		      fprintf(fp," UP BOUND001  ");
+		      for (i = 0; i < n; i++)
+			fprintf(fp, "%c", name[i]);
+		      for (; i < lengthPrint; i++)
+			fprintf(fp, " ");
+		      CoinConvertDouble(5,2,CoinMin(1.0e30,columnUpper[iColumn]),
+					outputValue);
+		      fprintf(fp,"  %s\n",outputValue);
+		    }
+		  }
+                  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                    if (primalColumnSolution[iColumn] > columnUpper[iColumn] + primalTolerance || primalColumnSolution[iColumn] < columnLower[iColumn] - primalTolerance) {
+		      fprintf(fp," FX BOUND002  ");
+		      const char *name = columnNames[iColumn].c_str();
+		      size_t n = strlen(name);
+		      size_t i;
+		      for (i = 0; i < n; i++)
+			fprintf(fp, "%c", name[i]);
+		      for (; i < lengthPrint; i++)
+			fprintf(fp, " ");
+		      CoinConvertDouble(5,2,primalColumnSolution[iColumn],
+					outputValue);
+		      fprintf(fp,"  %s\n",outputValue);
+		    }
+		  }
                 }
                 if (fp != stdout)
                   fclose(fp);

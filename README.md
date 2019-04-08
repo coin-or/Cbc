@@ -146,6 +146,9 @@ https://github.com/coin-or/Cbc/issues
 
 ## CHANGELOG
 
+ * Release 2.10.2
+   * Bugfixes
+
  * Release 2.10.1
    * Fixed Cbc_clone in C interface
    * Fixed CbcMain1() call in examples/driver3.cpp

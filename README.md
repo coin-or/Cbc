@@ -71,9 +71,9 @@ https://coin-or.github.io/coinbrew/
 and run
 
 
-    /path/to/coinbrew fetch --mainProj=Cbc
-    /path/to/coinbrew build --mainProj=Cbc --test
-    /path/to/coinbrew install --mainProj=Cbc
+    /path/to/coinbrew fetch --main-proj=Cbc
+    /path/to/coinbrew build --main-proj=Cbc --test
+    /path/to/coinbrew install --main-proj=Cbc
 
 
 The `coinbrew` script will fetch [these](Dependencies) additional projects.

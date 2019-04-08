@@ -3937,10 +3937,6 @@ void CbcModel::branchAndBound(int doStatistics)
     anyAction = -1;
     // To make depth available we may need a fake node
     CbcNode fakeNode;
-    if (!currentNode_) {
-      // Not true if sub trees assert (!numberNodes_);
-      currentNode_ = &fakeNode;
-    }
     phase_ = 3;
     // only allow 1000 passes
     int numberPassesLeft = 1000;
@@ -5649,7 +5645,7 @@ CbcModel::CbcModel()
   intParam_[CbcMaxNumSol] = 9999999;
 
   memset(dblParam_, 0, sizeof(dblParam_));
-  dblParam_[CbcIntegerTolerance] = 1e-6;
+  dblParam_[CbcIntegerTolerance] = 1e-7;
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
@@ -5820,7 +5816,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   intParam_[CbcMaxNumSol] = 9999999;
 
   memset(dblParam_, 0, sizeof(dblParam_));
-  dblParam_[CbcIntegerTolerance] = 1e-6;
+  dblParam_[CbcIntegerTolerance] = 1e-7;
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
@@ -7593,7 +7589,7 @@ void CbcModel::synchronizeHandlers(int /*makeDefault*/)
   bool defaultHandler = defaultHandler_;
   if (!defaultHandler_) {
     // Must have clone
-    handler_ = handler_->clone();
+    handler_ = handler_->clone();  // Not sure - worst is small memory leak
     defaultHandler_ = true;
   }
 #ifdef COIN_HAS_CLP
@@ -12107,7 +12103,14 @@ void CbcModel::setCutoff(double value)
   dblParam_[CbcCurrentCutoff] = value;
   if (solver_) {
     // Solvers know about direction
+    // but Clp tries to be too clever and flips twice!
+#ifndef COIN_HAS_CLP
     double direction = solver_->getObjSense();
+#else
+    double direction = 1.0;
+    if (!dynamic_cast< OsiClpSolverInterface * >(solver_))
+      direction = solver_->getObjSense();
+#endif
     solver_->setDblParam(OsiDualObjectiveLimit, value * direction);
   }
 }
@@ -12148,6 +12151,10 @@ CbcModel::checkSolution(double cutoff, double *solution,
 #ifndef CBC_LEAVE_SCALING_ON_CHECK_SOLUTION
     int saveScaling = -1;
 #endif
+#define CBC_LEAVE_CRUNCH_ON_CHECK_SOLUTION // for now
+#ifndef CBC_LEAVE_CRUNCH_ON_CHECK_SOLUTION
+    int saveSpecialOptions=0;
+#endif
     if (clpContinuousSolver) {
       // be more accurate if possible
       ClpSimplex *clp = clpContinuousSolver->getModelPtr();
@@ -12178,6 +12185,11 @@ CbcModel::checkSolution(double cutoff, double *solution,
         clp->scaling(0);
         clpContinuousSolver->setHintParam(OsiDoScale, false, OsiHintTry);
       }
+#endif
+#ifndef CBC_LEAVE_CRUNCH_ON_CHECK_SOLUTION
+      modifiedTolerances |= 8;
+      saveSpecialOptions = clpContinuousSolver->specialOptions();
+      clpContinuousSolver->setSpecialOptions(saveSpecialOptions&(~1)); // switch off crunch 
 #endif
     }
 #endif
@@ -12383,6 +12395,10 @@ CbcModel::checkSolution(double cutoff, double *solution,
             clp->scaling(saveScaling);
             clpContinuousSolver->setHintParam(OsiDoScale, true, OsiHintTry);
           }
+#endif
+#ifndef CBC_LEAVE_CRUNCH_ON_CHECK_SOLUTION
+	  // Restore
+	  clpContinuousSolver->setSpecialOptions(saveSpecialOptions);
 #endif
         }
 #endif
@@ -12619,7 +12635,7 @@ CbcModel::checkSolution(double cutoff, double *solution,
       }
       //assert(solver_->isProvenOptimal());
       solver_->setHintParam(OsiDoDualInInitial, saveTakeHint, saveStrength);
-      objectiveValue = solver_->getObjValue() * solver_->getObjSense();
+      objectiveValue = solver_->isProvenOptimal() ? solver_->getObjValue() * solver_->getObjSense() : 1.0e50;
     }
     bestSolutionBasis_ = CoinWarmStartBasis();
 
@@ -12865,6 +12881,9 @@ CbcModel::checkSolution(double cutoff, double *solution,
         clp->scaling(saveScaling);
         clpContinuousSolver->setHintParam(OsiDoScale, true, OsiHintTry);
       }
+#endif
+#ifndef CBC_LEAVE_CRUNCH_ON_CHECK_SOLUTION
+      clpContinuousSolver->setSpecialOptions(saveSpecialOptions);
 #endif
     }
 #endif
@@ -15009,6 +15028,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
           = dynamic_cast< OsiClpSolverInterface * >(solver_);
         if (clpSolver) {
           anyAction = newNode->chooseClpBranch(this, oldNode);
+	  currentNode_ = NULL;
           if (anyAction != -1)
             break;
         }
@@ -15072,6 +15092,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
         if (anyAction == -3)
           anyAction = newNode->chooseBranch(this, oldNode, numberPassesLeft); // dynamic did nothing
       }
+      currentNode_ = NULL;
 #ifdef COIN_HAS_CLP
       if (clpSolver && (moreSpecialOptions_ & 4194304) != 0) {
         ClpSimplex *clpSimplex = clpSolver->getModelPtr();
@@ -15084,7 +15105,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
     } else {
       OsiBranchingInformation usefulInfo = usefulInformation();
       anyAction = newNode->chooseOsiBranch(this, oldNode, &usefulInfo, branchingState);
-      ; // Osi method
+      currentNode_ = NULL;
       //branchingState=0;
     }
     if (!oldNode) {

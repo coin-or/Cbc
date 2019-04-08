@@ -81,7 +81,24 @@ extern glp_prob *cbc_glp_prob;
 
 //#define USER_HAS_FAKE_CLP
 //#define USER_HAS_FAKE_CBC
+//#define NEW_DEBUG_AND_FILL // use this to make it easier to trap unset
 
+#ifdef NEW_DEBUG_AND_FILL
+#include <malloc.h>
+#include <exception>
+#include <new>
+void *operator new(size_t size)
+{
+  void * p = malloc(size);
+  char * xx = (char *) p;
+  memset(xx,0x20,size);
+  return p;
+}
+void operator delete(void *p) throw()
+{
+  free(p);
+}
+#endif // end NEW_DEBUG
 //#define CLP_MALLOC_STATISTICS
 
 #ifdef CLP_MALLOC_STATISTICS
@@ -330,6 +347,20 @@ static void putBackOtherSolutions(CbcModel *presolvedModel, CbcModel *model,
     presolvedModel->solver()->setColSolution(bestSolution);
     //presolvedModel->setBestSolution(bestSolution,numberColumns,objectiveValue);
   }
+}
+
+// For when number of column is messed up e.g. BiLinear
+static int numberPrintingColumns(const OsiSolverInterface * solver)
+{
+#ifdef COIN_HAS_LINK
+  const OsiSolverLink *linkSolver =
+    dynamic_cast< const OsiSolverLink * >(solver);
+  if (!linkSolver)
+    return solver->getNumCols();
+  return linkSolver->coinModel()->numberColumns();
+#else
+  return solver->getNumCols();
+#endif
 }
 
 /*
@@ -2657,7 +2688,7 @@ int CbcMain1(int argc, const char *argv[],
               flowAction = action;
               mixedAction = action;
               twomirAction = action;
-              //landpAction = action;
+              zerohalfAction = action;
               parameters_[whichParam(CBC_PARAM_STR_GOMORYCUTS, parameters_)].setCurrentOption(action);
               parameters_[whichParam(CBC_PARAM_STR_PROBINGCUTS, parameters_)].setCurrentOption(action);
               parameters_[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, parameters_)].setCurrentOption(action);
@@ -3582,37 +3613,38 @@ int CbcMain1(int argc, const char *argv[],
                       twomir.setMaxElements(250);
                       cbcModel->addCutGenerator(&twomir, -99, "Twomir", true, false, false, -100, -1, -1);
                       cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-
-                      CbcHeuristicFPump heuristicFPump(*cbcModel);
-                      heuristicFPump.setWhen(13);
-                      heuristicFPump.setMaximumPasses(20);
-                      heuristicFPump.setMaximumRetries(7);
-                      heuristicFPump.setHeuristicName("feasibility pump");
-                      heuristicFPump.setInitialWeight(1);
-                      heuristicFPump.setFractionSmall(0.6);
-                      cbcModel->addHeuristic(&heuristicFPump);
-
-                      CbcRounding rounding(*cbcModel);
-                      rounding.setHeuristicName("rounding");
-                      cbcModel->addHeuristic(&rounding);
-
-                      CbcHeuristicLocal heuristicLocal(*cbcModel);
-                      heuristicLocal.setHeuristicName("combine solutions");
-                      heuristicLocal.setSearchType(1);
-                      heuristicLocal.setFractionSmall(0.6);
-                      cbcModel->addHeuristic(&heuristicLocal);
-
-                      CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);
-                      heuristicGreedyCover.setHeuristicName("greedy cover");
-                      cbcModel->addHeuristic(&heuristicGreedyCover);
-
-                      CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);
-                      heuristicGreedyEquality.setHeuristicName("greedy equality");
-                      cbcModel->addHeuristic(&heuristicGreedyEquality);
-
-                      CbcCompareDefault compare;
-                      cbcModel->setNodeComparison(compare);
-                      cbcModel->setNumberBeforeTrust(5);
+                      int heuristicOption = parameters_[whichParam(CBC_PARAM_STR_HEURISTICSTRATEGY, parameters_)].currentOptionAsInteger();
+		      if (heuristicOption) {
+			CbcHeuristicFPump heuristicFPump(*cbcModel);
+			heuristicFPump.setWhen(13);
+			heuristicFPump.setMaximumPasses(20);
+			heuristicFPump.setMaximumRetries(7);
+			heuristicFPump.setHeuristicName("feasibility pump");
+			heuristicFPump.setInitialWeight(1);
+			heuristicFPump.setFractionSmall(0.6);
+			cbcModel->addHeuristic(&heuristicFPump);
+			
+			CbcRounding rounding(*cbcModel);
+			rounding.setHeuristicName("rounding");
+			cbcModel->addHeuristic(&rounding);
+			
+			CbcHeuristicLocal heuristicLocal(*cbcModel);
+			heuristicLocal.setHeuristicName("combine solutions");
+			heuristicLocal.setSearchType(1);
+			heuristicLocal.setFractionSmall(0.6);
+			cbcModel->addHeuristic(&heuristicLocal);
+			
+			CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);
+			heuristicGreedyCover.setHeuristicName("greedy cover");
+			cbcModel->addHeuristic(&heuristicGreedyCover);
+			
+			CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);
+			heuristicGreedyEquality.setHeuristicName("greedy equality");
+			cbcModel->addHeuristic(&heuristicGreedyEquality);
+		      }
+		      CbcCompareDefault compare;
+		      cbcModel->setNodeComparison(compare);
+		      cbcModel->setNumberBeforeTrust(5);
                       cbcModel->setSpecialOptions(2);
                       cbcModel->messageHandler()->setLogLevel(1);
                       cbcModel->setMaximumCutPassesAtRoot(-100);
@@ -3656,7 +3688,8 @@ int CbcMain1(int argc, const char *argv[],
                       }
                       CbcHeuristicDynamic3 dynamic(model_);
                       dynamic.setHeuristicName("dynamic pass thru");
-                      model_.addHeuristic(&dynamic);
+		      if (heuristicOption) 
+			model_.addHeuristic(&dynamic);
                       // if convex
                       if ((linkSolver->specialOptions2() & 4) != 0 && solution) {
                         int numberColumns = coinModel->numberColumns();
@@ -5260,13 +5293,17 @@ int CbcMain1(int argc, const char *argv[],
                   int when = laGomory / 3;
                   char atEnd = (when < 2) ? 1 : 0;
                   int gomoryTypeMajor = 10;
-                  if (when < 3) {
+                  if (when != 3) {
                     // normal as well
                     babModel_->addCutGenerator(&gomoryGen, gType, "Gomory");
                     accuracyFlag[numberGenerators] = 3;
                     switches[numberGenerators++] = 0;
-                    if (when == 2)
+                    if (when == 2) {
                       gomoryTypeMajor = 20;
+                    } else if (when == 4) {
+                      gomoryTypeMajor = 20;
+		      when = 0;
+		    }
                   } else {
                     when--; // so on
                     gomoryTypeMajor = 20;
@@ -6411,7 +6448,9 @@ int CbcMain1(int argc, const char *argv[],
                     if (solver3) {
                       CbcHeuristicDynamic3 serendipity(*babModel_);
                       serendipity.setHeuristicName("linked");
-                      babModel_->addHeuristic(&serendipity);
+                      int heuristicOption = parameters_[whichParam(CBC_PARAM_STR_HEURISTICSTRATEGY, parameters_)].currentOptionAsInteger();
+		      if (heuristicOption) 
+			babModel_->addHeuristic(&serendipity);
                       double dextra3 = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA3, parameters_)].doubleValue();
                       if (dextra3)
                         solver3->setMeshSizes(dextra3);
@@ -7708,7 +7747,7 @@ int CbcMain1(int argc, const char *argv[],
                       osiclp->getModelPtr()->checkUnscaledSolution();
                   }
 
-                  assert(saveSolver->isProvenOptimal());
+                  //assert(saveSolver->isProvenOptimal());
 #ifndef CBC_OTHER_SOLVER
                   // and original solver
                   originalSolver->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
@@ -7731,7 +7770,7 @@ int CbcMain1(int argc, const char *argv[],
                     if (osiclp)
                       osiclp->getModelPtr()->checkUnscaledSolution();
                   }
-                  assert(originalSolver->isProvenOptimal());
+                  //assert(originalSolver->isProvenOptimal());
 #endif
                   babModel_->assignSolver(saveSolver);
                   memcpy(bestSolution, babModel_->solver()->getColSolution(), n * sizeof(double));
@@ -7789,7 +7828,7 @@ int CbcMain1(int argc, const char *argv[],
                     }
 #endif
                   }
-                  assert(originalSolver->isProvenOptimal());
+                  //assert(originalSolver->isProvenOptimal());
                 }
 #endif
                 checkSOS(babModel_, babModel_->solver());
@@ -9726,7 +9765,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 // See if Glpk
                 if (type == CLP_PARAM_ACTION_GMPL_SOLUTION) {
                   int numberRows = lpSolver->getNumRows();
-                  int numberColumns = lpSolver->getNumCols();
+		  int numberColumns = lpSolver->getNumCols();
                   int numberGlpkRows = numberRows + 1;
 #ifdef COIN_HAS_GLPK
                   if (cbc_glp_prob) {
@@ -10024,9 +10063,10 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     delete[] newMasks[i];
                   delete[] newMasks;
                 }
-                if (printMode > 5) {
+                if (printMode > 5 && printMode < 12) {
                   ClpSimplex *solver = clpSolver->getModelPtr();
-                  int numberColumns = solver->numberColumns();
+		  int numberColumns = numberPrintingColumns(clpSolver);
+                  //int numberColumns = solver->numberColumns();
                   // column length unless rhs ranging
                   int number = numberColumns;
                   if (lpSolver->status()) {
@@ -10203,12 +10243,12 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   }
                 }
                 int iColumn;
-                int numberColumns = clpSolver->getNumCols();
+                int numberColumns = numberPrintingColumns(clpSolver);
                 const double *dualColumnSolution = clpSolver->getReducedCost();
                 const double *primalColumnSolution = clpSolver->getColSolution();
                 const double *columnLower = clpSolver->getColLower();
                 const double *columnUpper = clpSolver->getColUpper();
-                if (printMode != 2) {
+                if (printMode != 2 && printMode < 12) {
                   if (printMode == 5) {
                     if (lengthName)
                       fprintf(fp, "name");
@@ -10277,7 +10317,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                       saveLpSolver = NULL;
                     }
                   }
-                } else {
+                } else if (printMode==2){
                   // special format suitable for OsiRowCutDebugger
                   int n = 0;
                   bool comma = false;
@@ -10322,6 +10362,59 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     }
                   }
                   fprintf(fp, "};\n");
+		} else {
+		  // Make up a fake bounds section
+		  char outputValue[24];
+                  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+		    if (printMode==13||model_.solver()->isInteger(iColumn)) {
+		      fprintf(fp," FX BOUND001  ");
+		      const char *name = columnNames[iColumn].c_str();
+		      size_t n = strlen(name);
+		      size_t i;
+		      for (i = 0; i < n; i++)
+			fprintf(fp, "%c", name[i]);
+		      for (; i < lengthPrint; i++)
+			fprintf(fp, " ");
+		      CoinConvertDouble(5,2,primalColumnSolution[iColumn],
+					outputValue);
+		      fprintf(fp,"  %s\n",outputValue);
+		    } else {
+		      fprintf(fp," LO BOUND001  ");
+		      const char *name = columnNames[iColumn].c_str();
+		      size_t n = strlen(name);
+		      size_t i;
+		      for (i = 0; i < n; i++)
+			fprintf(fp, "%c", name[i]);
+		      for (; i < lengthPrint; i++)
+			fprintf(fp, " ");
+		      CoinConvertDouble(5,2,CoinMax(-1.0e30,columnLower[iColumn]),
+					outputValue);
+		      fprintf(fp,"  %s\n",outputValue);
+		      fprintf(fp," UP BOUND001  ");
+		      for (i = 0; i < n; i++)
+			fprintf(fp, "%c", name[i]);
+		      for (; i < lengthPrint; i++)
+			fprintf(fp, " ");
+		      CoinConvertDouble(5,2,CoinMin(1.0e30,columnUpper[iColumn]),
+					outputValue);
+		      fprintf(fp,"  %s\n",outputValue);
+		    }
+		  }
+                  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                    if (primalColumnSolution[iColumn] > columnUpper[iColumn] + primalTolerance || primalColumnSolution[iColumn] < columnLower[iColumn] - primalTolerance) {
+		      fprintf(fp," FX BOUND002  ");
+		      const char *name = columnNames[iColumn].c_str();
+		      size_t n = strlen(name);
+		      size_t i;
+		      for (i = 0; i < n; i++)
+			fprintf(fp, "%c", name[i]);
+		      for (; i < lengthPrint; i++)
+			fprintf(fp, " ");
+		      CoinConvertDouble(5,2,primalColumnSolution[iColumn],
+					outputValue);
+		      fprintf(fp,"  %s\n",outputValue);
+		    }
+		  }
                 }
                 if (fp != stdout)
                   fclose(fp);

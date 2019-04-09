@@ -2566,6 +2566,8 @@ public:
   {
     return currentNode_;
   }
+  /// Delete a node and possibly null out currentNode_
+  void deleteNode(CbcNode * node);
   /// Get a pointer to probing info
   inline CglTreeProbingInfo *probingInfo() const
   {

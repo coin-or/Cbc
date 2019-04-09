@@ -228,7 +228,7 @@ void OsiSolverLink::initialSolve()
         delete[] bestSolution_;
         bestSolution_ = CoinCopyOfArray(qpTemp.primalColumnSolution(), numberColumns);
         bestObjectiveValue_ = qpTemp.objectiveValue();
-        printf("better qp objective of %g\n", bestObjectiveValue_);
+        //printf("better qp objective of %g\n", bestObjectiveValue_);
         // If model has stored then add cut (if convex)
         if (cbcModel_ && (specialOptions2_ & 4) != 0) {
           int numberGenerators = cbcModel_->numberCutGenerators();
@@ -288,6 +288,9 @@ void OsiSolverLink::resolve()
       printf("printing\n");
     }
   }
+  int saveLogLevel=modelPtr_->logLevel();
+  if (saveLogLevel==1)
+    modelPtr_->setLogLevel(0);
   specialOptions_ = 0;
   modelPtr_->setWhatsChanged(0);
   bool allFixed = numberFix_ > 0;
@@ -440,7 +443,7 @@ void OsiSolverLink::resolve()
           }
         }
         if (value < bestObjectiveValue_ - 1.0e-3) {
-          printf("obj of %g\n", value);
+          // printf("obj of %g\n", value);
           //modelPtr_->setDualObjectiveLimit(value);
           delete[] bestSolution_;
           bestSolution_ = CoinCopyOfArray(modelPtr_->getColSolution(), modelPtr_->getNumCols());
@@ -675,11 +678,11 @@ void OsiSolverLink::resolve()
                 }
                 qpTemp.setLogLevel(modelPtr_->logLevel());
                 qpTemp.primal();
-                assert(!qpTemp.problemStatus());
+                // assert(!qpTemp.problemStatus());
                 if (qpTemp.objectiveValue() < bestObjectiveValue_ - 1.0e-3 && !qpTemp.problemStatus()) {
                   solution2 = CoinCopyOfArray(qpTemp.primalColumnSolution(), numberColumns);
                 } else {
-                  printf("QP says expensive - kill\n");
+                  // printf("QP says expensive - kill\n");
                   modelPtr_->setProblemStatus(1);
                   modelPtr_->setObjectiveValue(COIN_DBL_MAX);
                   break;
@@ -786,6 +789,7 @@ void OsiSolverLink::resolve()
     modelPtr_->setProblemStatus(1);
     modelPtr_->setObjectiveValue(COIN_DBL_MAX);
   }
+  modelPtr_->setLogLevel(saveLogLevel);
 }
 // Do OA cuts
 int OsiSolverLink::doAOCuts(CglTemporary *cutGen, const double *solution, const double *solution2)
@@ -7215,7 +7219,7 @@ void OsiSolverLinearizedQuadratic::initialSolve()
         delete[] bestSolution_;
         bestSolution_ = CoinCopyOfArray(qpTemp.primalColumnSolution(), numberColumns);
         bestObjectiveValue_ = qpTemp.objectiveValue();
-        printf("better qp objective of %g\n", bestObjectiveValue_);
+        //printf("better qp objective of %g\n", bestObjectiveValue_);
       }
     }
   }

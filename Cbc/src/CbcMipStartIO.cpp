@@ -103,7 +103,7 @@ int readMIPStart(CbcModel *model, const char *fileName,
 int computeCompleteSolution(CbcModel *model,
   const vector< string > colNames,
   const std::vector< std::pair< std::string, double > > &colValues,
-  double *sol, double &obj)
+			    double *sol, double &obj, int extraActions)
 {
   if (!model->getNumCols())
     return 0;
@@ -135,6 +135,46 @@ int computeCompleteSolution(CbcModel *model,
       lp->setColBounds(i, 0.0, 0.0);
   }
 #endif
+  if (extraActions) {
+    const double * objective = lp->getObjCoefficients();
+    const double * lower = lp->getColLower();
+    const double * upper = lp->getColUpper();
+    for (int i = 0; (i < lp->getNumCols()); ++i) {
+      if (lp->isInteger(i)) {
+	double objValue = objective[i];
+	double lowerValue = lower[i];
+	double upperValue = upper[i];
+	switch (extraActions) {
+	case 1:
+	  lp->setColBounds(i, lowerValue, lowerValue);
+	  break;
+	case 2:
+	  lp->setColBounds(i, upperValue, upperValue);
+	  break;
+	case 3:
+	  lp->setColBounds(i, lowerValue, lowerValue);
+	  if (objValue<0.0)
+	    lp->setColBounds(i, upperValue, upperValue);
+	  break;
+	case 4:
+	  lp->setColBounds(i, upperValue, upperValue);
+	  if (objValue>0.0)
+	    lp->setColBounds(i, lowerValue, lowerValue);
+	  break;
+	case 5:
+	  lp->setColBounds(i, lowerValue, lowerValue);
+	  if (objValue>0.0)
+	    lp->setColBounds(i, upperValue, upperValue);
+	  break;
+	case 6:
+	  lp->setColBounds(i, upperValue, upperValue);
+	  if (objValue<0.0)
+	    lp->setColBounds(i, lowerValue, lowerValue);
+	  break;
+	}
+      }
+    }
+  }
   for (int i = 0; (i < static_cast< int >(colValues.size())); ++i) {
     map< string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
     if (mIt == colIdx.end()) {
@@ -160,6 +200,8 @@ int computeCompleteSolution(CbcModel *model,
     }
   }
 
+  if (extraActions)
+    fixed = lp->getNumIntegers();
   if (!fixed) {
     model->messageHandler()->message(CBC_GENERAL, model->messages())
       << "Warning: MIPstart solution is not valid, column names do not match, ignoring it."

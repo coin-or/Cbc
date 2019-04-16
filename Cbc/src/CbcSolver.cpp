@@ -1469,6 +1469,7 @@ int CbcMain1(int argc, const char *argv[],
     int *prioritiesIn = NULL;
     std::vector< std::pair< std::string, double > > mipStart;
     std::vector< std::pair< std::string, double > > mipStartBefore;
+    std::string mipStartFile = "";
     int numberSOS = 0;
     int *sosStart = NULL;
     int *sosIndices = NULL;
@@ -4067,7 +4068,7 @@ int CbcMain1(int argc, const char *argv[],
                   colNames.push_back(model_.solver()->getColName(i));
                 std::vector< double > x(model_.getNumCols(), 0.0);
                 double obj;
-                int status = computeCompleteSolution(&tempModel, colNames, mipStartBefore, &x[0], obj);
+                int status = computeCompleteSolution(&tempModel, colNames, mipStartBefore, &x[0], obj, 0);
                 // set cutoff ( a trifle high)
                 if (!status) {
                   double newCutoff = CoinMin(babModel_->getCutoff(), obj + 1.0e-4);
@@ -5757,7 +5758,9 @@ int CbcMain1(int argc, const char *argv[],
                 const int *originalColumns = preProcess ? process.originalColumns() : NULL;
                 if (model.getMIPStart().size())
                   mipStart = model.getMIPStart();
-                if (mipStart.size() && !mipStartBefore.size() && babModel_->getNumCols()) {
+		std::string testEmpty=mipStartFile.substr(0,6);
+                if ((mipStart.size() || testEmpty=="empty.") && !mipStartBefore.size()
+		     && babModel_->getNumCols()) {
                   std::vector< std::string > colNames;
                   if (preProcess) {
                     /* translating mipstart solution */
@@ -5768,7 +5771,7 @@ int CbcMain1(int argc, const char *argv[],
                     std::vector< std::pair< std::string, double > > mipStart2;
                     for (int i = 0; (i < babModel_->solver()->getNumCols()); ++i) {
                       int iColumn = babModel_->originalColumns()[i];
-                      if (iColumn >= 0) {
+                      if (iColumn >= 0 && iColumn < model.getNumCols()) {
                         std::string cname = model_.solver()->getColName(iColumn);
                         colNames.push_back(cname);
                         babModel_->solver()->setColName(i, cname);
@@ -5792,7 +5795,19 @@ int CbcMain1(int argc, const char *argv[],
                   std::vector< double > x(babModel_->getNumCols(), 0.0);
                   double obj;
                   babModel_->findIntegers(true);
-                  int status = computeCompleteSolution(babModel_, colNames, mipStart, &x[0], obj);
+		  int extraActions = 0;
+		  int lengthFileName = mipStartFile.size();
+		  const char * checkEnd[6]={
+		    ".low",".high",".lowcheap",".highcheap",".lowexpensive",".highexpensive"};
+		  for (extraActions=0;extraActions<6;extraActions++) {
+		    if (mipStartFile.substr(lengthFileName-strlen(checkEnd[extraActions]),20)==checkEnd[extraActions])
+		      break;
+		  }
+		  if (extraActions==6)
+		    extraActions=0;
+		  else
+		    extraActions++;
+                  int status = computeCompleteSolution(babModel_, colNames, mipStart, &x[0], obj, extraActions);
                   if (!status) {
                     // need to check more babModel_->setBestSolution( &x[0], static_cast<int>(x.size()), obj, false );
                     OsiBabSolver dummy;
@@ -8242,6 +8257,27 @@ int CbcMain1(int argc, const char *argv[],
                 } else {
                   lengthName = 0;
                 }
+		// really just for testing
+		double objScale = parameters_[whichParam(CLP_PARAM_DBL_OBJSCALE2, parameters_)].doubleValue();
+		if (objScale != 1.0) {
+		  int iColumn;
+		  int numberColumns = lpSolver->numberColumns();
+		  double *dualColumnSolution = lpSolver->dualColumnSolution();
+		  ClpObjective *obj = lpSolver->objectiveAsObject();
+		  assert(dynamic_cast< ClpLinearObjective * >(obj));
+		  double offset;
+		  double *objective = obj->gradient(NULL, NULL, offset, true);
+		  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+		    dualColumnSolution[iColumn] *= objScale;
+		    objective[iColumn] *= objScale;
+		  }
+		  int iRow;
+		  int numberRows = lpSolver->numberRows();
+		  double *dualRowSolution = lpSolver->dualRowSolution();
+		  for (iRow = 0; iRow < numberRows; iRow++)
+		    dualRowSolution[iRow] *= objScale;
+		  lpSolver->setObjectiveOffset(objScale * lpSolver->objectiveOffset());
+		}
                 goodModel = true;
                 // sets to all slack (not necessary?)
                 lpSolver->createStatus();
@@ -9052,6 +9088,7 @@ int CbcMain1(int argc, const char *argv[],
             if (goodModel) {
               // get next field
               field = CoinReadGetString(argc, argv);
+	      mipStartFile = field;
               if (field == "$") {
                 field = parameters_[iParam].stringValue();
               } else if (field == "EOL") {

@@ -17,11 +17,16 @@ int readMIPStart(CbcModel *model, const char *fileName,
   double &solObj);
 
 /* from a partial list of variables tries to fill the
-   remaining variable values */
+   remaining variable values.
+   extraActions 0 -default, otherwise set integers not mentioned
+   1 - to lower bound, 2 - to upper bound
+   3,5 ones without costs as 1,2 - ones with costs to cheapest
+   4,6 ones without costs as 1,2 - ones with costs to expensive
+*/
 int computeCompleteSolution(CbcModel *model,
   const std::vector< std::string > colNames,
   const std::vector< std::pair< std::string, double > > &colValues,
-  double *sol, double &obj);
+  double *sol, double &obj, int extraActions);
 
 #endif // MIPSTARTIO_HPP_INCLUDED
 

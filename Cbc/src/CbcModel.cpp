@@ -3971,7 +3971,7 @@ void CbcModel::branchAndBound(int doStatistics)
         if (newNode->nodeInfo())
           newNode->nodeInfo()->nullParent();
       }
-      delete newNode;
+      deleteNode(newNode);
       newNode = NULL;
       feasible = false;
     }
@@ -5279,6 +5279,7 @@ void CbcModel::branchAndBound(int doStatistics)
     if ((specialOptions_ & 4) == 0)
       bestObjective_ += 100.0 * increment + 1.0e-3; // only set if we are going to solve
     setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1);
+    currentNode_ = NULL;
     continuousSolver_->resolve();
     // Deal with funny variables
     if ((moreSpecialOptions2_ & 32768) != 0)
@@ -5842,6 +5843,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   parentModel_ = NULL;
   appData_ = NULL;
   solver_ = rhs.clone();
+  ownership_ |= 0x80000000; // model now owns solver
   handler_ = new CoinMessageHandler();
   if (!solver_->defaultHandler() && solver_->messageHandler()->logLevel(0) != -1000)
     passInMessageHandler(solver_->messageHandler());
@@ -17215,7 +17217,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node, CbcNode *&newNode)
       if (parallelMode() >= 0) {
         if (!node->nodeInfo()->numberBranchesLeft())
           node->nodeInfo()->allBranchesGone(); // can clean up
-        delete node;
+        deleteNode(node);
         node = NULL;
       } else {
         node->setActive(false);
@@ -19530,6 +19532,12 @@ CbcModel::postProcessedSolver(int solutionType)
   }
   return originalModel;
 }
+// Delete a node and possibly null out currentNode_
+void
+CbcModel::deleteNode(CbcNode * node)
+{
+  delete node;
+  if (node==currentNode_)
+    currentNode_ = NULL;
+}
 
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/

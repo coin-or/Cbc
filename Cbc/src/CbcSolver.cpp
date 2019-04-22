@@ -10559,6 +10559,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
         }
       }
     }
+    delete coinModel;
   }
 #if CBC_QUIET == 0
   sprintf(generalPrint,

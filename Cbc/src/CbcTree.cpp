@@ -651,7 +651,7 @@ void CbcTree::cleanTree(CbcModel *model, double cutoff, double &bestPossibleObje
     // node should not have anything pointing to it
     if (node->nodeInfo())
       node->nodeInfo()->throwAway();
-    delete node;
+    model->deleteNode(node);
     delete lastws;
   }
   delete[] nodeArray;

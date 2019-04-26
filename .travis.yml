@@ -30,14 +30,14 @@ before_script:
   link --overwrite gcc; gfortran --version; fi
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PLATFORM=linux-x86_64-gcc`gcc
   -dumpversion`; fi
-- git clone https://github.com/coin-or/COIN-OR-OptimizationSuite COIN
+- git clone https://github.com/coin-or/coinbrew COIN
 - cd COIN
 - export PROJECT=`echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2`
-- bash ./coin.install.sh fetch --no-prompt --main-proj=$PROJECT > /dev/null
+- bash ./coinbrew fetch --no-prompt $PROJECT > /dev/null
 script:
-- bash ./coin.install.sh build --no-prompt --main-proj=$PROJECT --verbosity=2 --test
+- bash ./coinbrew build --no-prompt $PROJECT --enable-static --disable-shared --verbosity 2 --test
 after_script:
-- if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=trunk; else export VERSION=`echo
+- if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=master; else export VERSION=`echo
   $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
 - export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz
 - echo $TGZ_FILE

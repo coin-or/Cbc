@@ -41,7 +41,8 @@ after_script:
   $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
 - export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz
 - echo $TGZ_FILE
-- tar -czvf $TGZ_FILE build/lib/* build/bin/* build/include/* build/share/* $PROJECT/README.md
-  $PROJECT/INSTALL $PROJECT/LICENSE $PROJECT/$PROJECT/AUTHORS
+- cp $PROJECT/README.md $PROJECT/INSTALL $PROJECT/LICENSE $PROJECT/$PROJECT/AUTHORS build
+- cd build
+- tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md INSTALL LICENSE AUTHORS
 - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1"
   https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE

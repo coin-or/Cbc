@@ -39,19 +39,19 @@ install:
   - C:\msys64\usr\bin\bash -lc ""
 
 build_script:
-  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew"
-  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; ./coinbrew fetch %APPVEYOR_PROJECT_NAME% --no-prompt --skip-update --no-third-party"
-  - C:\msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; export PATH=$ADD_PATH:$PATH; ./coinbrew build %APPVEYOR_PROJECT_NAME% --no-prompt --no-third-party --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --verbosity=2 --test"
+  - C:\msys64\usr\bin\bash -lc "cd C:\projects; wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew"
+  - C:\msys64\usr\bin\bash -lc "cd C:\projects; ./coinbrew fetch %APPVEYOR_PROJECT_NAME% --no-prompt --skip-update --no-third-party"
+  - C:\msys64\usr\bin\bash -lc "cd C:\projects; export PATH=$ADD_PATH:$PATH; ./coinbrew build %APPVEYOR_PROJECT_NAME% --no-prompt --no-third-party --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --verbosity=2 --test"
 
 after_build:
-  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\build\bin
-  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\build\include
-  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\build\lib
-  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\build\share
-  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\%APPVEYOR_PROJECT_NAME%\README.md
-  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\%APPVEYOR_PROJECT_NAME%\LICENSE
-  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\%APPVEYOR_PROJECT_NAME%\INSTALL
-  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\%APPVEYOR_PROJECT_NAME%\%APPVEYOR_PROJECT_NAME%\AUTHORS
+  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\build\bin
+  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\build\include
+  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\build\lib
+  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\build\share
+  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\%APPVEYOR_PROJECT_NAME%\README.md
+  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\%APPVEYOR_PROJECT_NAME%\LICENSE
+  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\%APPVEYOR_PROJECT_NAME%\INSTALL
+  - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\%APPVEYOR_PROJECT_NAME%\%APPVEYOR_PROJECT_NAME%\AUTHORS
   - curl -T %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip -utkralphs:%BINTRAY_API% -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/%APPVEYOR_PROJECT_NAME%/%VERSION%/%APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip
 
 #on_finish:

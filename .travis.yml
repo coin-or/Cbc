@@ -30,19 +30,19 @@ before_script:
   link --overwrite gcc; gfortran --version; fi
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PLATFORM=linux-x86_64-gcc`gcc
   -dumpversion`; fi
-- git clone https://github.com/coin-or/coinbrew COIN
-- cd COIN
+- cd ..
+- wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
 - export PROJECT=`echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2`
-- bash ./coinbrew fetch --no-prompt $PROJECT > /dev/null
+- bash ./coinbrew fetch $PROJECT --no-prompt --skip-update > /dev/null
 script:
-- bash ./coinbrew build --no-prompt $PROJECT --enable-static --disable-shared --verbosity 2 --test
+- bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --test
 after_script:
 - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=master; else export VERSION=`echo
   $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
 - export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz
 - echo $TGZ_FILE
-- cp $PROJECT/README.md $PROJECT/INSTALL $PROJECT/LICENSE $PROJECT/$PROJECT/AUTHORS build
+- cp $PROJECT/README.md $PROJECT/LICENSE $PROJECT/$PROJECT/AUTHORS build
 - cd build
-- tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md INSTALL LICENSE AUTHORS
+- tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
 - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1"
   https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE

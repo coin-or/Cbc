@@ -638,7 +638,19 @@ Cbc_setInitialSolution(Cbc_Model *model, const double *sol)
 COINLIBAPI void COINLINKAGE
 Cbc_setParameter(Cbc_Model *model, const char *name, const char *value)
 {
-  model->cmdargs_.push_back(std::string("-") + name);
+  // checking if parameter is not included with another value
+  // if this is the case just replacing this value
+  std::string argname=std::string("-")+name;
+  for ( int i=0 ; (i<((int)model->cmdargs_.size())-1) ; ++i )
+  {
+    if (argname==model->cmdargs_[i])
+    {
+      model->cmdargs_[i+1] = std::string(value);
+      return;
+    }
+  }
+  
+  model->cmdargs_.push_back(argname);
   model->cmdargs_.push_back(value);
 }
 

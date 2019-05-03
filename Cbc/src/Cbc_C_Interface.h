@@ -615,6 +615,10 @@ COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
     Cbc_Model *model, cbc_cut_callback cutcb, 
     const char *name, void *appData );
 
+COINLIBAPI void COINLINKAGE Cbc_addIncCallback(
+    Cbc_Model *model, cbc_incumbent_callback inccb, 
+    void *appData );
+
 /*@}*/
 
 /**@name Solving the model */

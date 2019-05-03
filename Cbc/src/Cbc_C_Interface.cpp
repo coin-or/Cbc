@@ -69,7 +69,6 @@ class CglCallback : public CglCutGenerator
     private:
 };
 
-
 CglCallback::CglCallback()
     : cut_callback_(NULL),
     appdata(NULL)
@@ -99,6 +98,118 @@ void CglCallback::generateCuts( const OsiSolverInterface &si, OsiCuts &cs, const
 CglCallback::~CglCallback()
 {
 
+}
+
+class SolHandler : public CbcEventHandler {
+public:
+  virtual CbcAction event(CbcEvent whichEvent);
+  SolHandler();
+  SolHandler(CbcModel *model);
+  virtual ~SolHandler();
+  SolHandler(const SolHandler &rhs);
+  SolHandler &operator=(const SolHandler &rhs);
+  virtual CbcEventHandler *clone() const;
+
+  double bestCost;
+  cbc_incumbent_callback inc_callback;
+  void *appData;
+};
+
+SolHandler::SolHandler()
+  : CbcEventHandler()
+  , bestCost(COIN_DBL_MAX),
+  inc_callback(NULL),
+  appData(NULL)
+{
+}
+
+SolHandler::SolHandler(const SolHandler &rhs)
+  : CbcEventHandler(rhs)
+  , bestCost(rhs.bestCost)
+  , inc_callback(rhs.inc_callback)
+  , appData(rhs.appData)
+{
+}
+
+SolHandler::SolHandler(CbcModel *model)
+  : CbcEventHandler(model)
+  , bestCost(COIN_DBL_MAX)
+  , inc_callback(NULL)
+  , appData(NULL)
+{
+}
+
+SolHandler::~SolHandler()
+{
+}
+
+SolHandler &SolHandler::operator=(const SolHandler &rhs)
+{
+  if (this != &rhs) {
+    CbcEventHandler::operator=(rhs);
+    this->bestCost = rhs.bestCost;
+    this->inc_callback = rhs.inc_callback;
+    this->appData = rhs.appData;
+  }
+  return *this;
+}
+
+CbcEventHandler *SolHandler::clone() const
+{
+  return new SolHandler(*this);
+}
+
+CbcEventHandler::CbcAction SolHandler::event(CbcEvent whichEvent)
+{
+  if (this->inc_callback == NULL)
+    return noAction;
+  // If in sub tree carry on
+  if ((model_->specialOptions() & 2048) == 0) {
+    if ((whichEvent == solution || whichEvent == heuristicSolution)) {
+      OsiSolverInterface *origSolver = model_->solver();
+      const OsiSolverInterface *pps = model_->postProcessedSolver(1);
+
+      const OsiSolverInterface *solver = pps ? pps : origSolver;
+
+      if (bestCost >= solver->getObjValue() + 1e-10) {
+        bestCost = solver->getObjValue();
+       
+        int charSize = 0, nNZ = 0;
+        const double *x = solver->getColSolution();
+        for (int i = 0; (i < solver->getNumCols()); ++i) 
+        {
+          if (fabs(x[i]) <= 1e-7)
+            continue;
+          charSize += solver->getColName(i).size()+1;
+          ++nNZ;
+        } // checking non zero cols
+        char **cnames = new char*[nNZ];
+        double *xv = new double[nNZ];
+        cnames[0] = new char[charSize];
+        for ( int i=1 ; (i<nNZ) ; ++i )
+          cnames[i] = cnames[i-1] + solver->getColName(i-1).size()+1;
+
+        int cnz = 0;
+        for (int i = 0; (i < solver->getNumCols()); ++i) 
+        {
+          if (fabs(x[i]) <= 1e-7)
+            continue;
+           strcpy(cnames[cnz], solver->getColName(i).c_str());
+           xv[cnz] = x[i];
+
+           cnz++;
+        }
+
+        this->inc_callback(model_, bestCost, nNZ, cnames, xv, this->appData);
+
+        delete[] xv;
+        delete[] cnames[0];
+        delete[] cnames;
+      } // improved cost
+    } // solution found
+  } // not in subtree
+
+  return noAction;
 }
 
 // To allow call backs
@@ -429,6 +540,7 @@ Cbc_newModel()
   model->handler_ = NULL;
   model->cbcData->noPrinting_ = false;
   model->relax_ = 0;
+  model->inc_callback = NULL;
 
   // initialize columns buffer
   model->colSpace = 0;
@@ -869,14 +981,35 @@ Cbc_solve(Cbc_Model *model)
   argv.push_back("-quit");
   try {
 
+    SolHandler *sh = NULL;
+    if (model->inc_callback!=NULL)
+    {
+      sh = new SolHandler(model->model_);
+      sh->inc_callback = model->inc_callback;
+      sh->appData = model->icAppData;
+      model->model_->passInEventHandler(sh);
+    }
+
     CbcMain1((int)argv.size(), &argv[0], *model->model_, NULL, *model->cbcData);
+
+    if (sh)
+      delete sh;
   } catch (CoinError e) {
     printf("%s ERROR: %s::%s, %s\n", prefix,
       e.className().c_str(), e.methodName().c_str(), e.message().c_str());
   }
   result = model->model_->status();
 
+
   return result;
+}
+
+COINLIBAPI void COINLINKAGE Cbc_addIncCallback(
+    Cbc_Model *model, cbc_incumbent_callback inccb, 
+    void *appData )
+{
+  model->inc_callback = inccb;
+  model->icAppData = appData;
 }
 
 COINLIBAPI void COINLINKAGE Cbc_addCutCallback( 

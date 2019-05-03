@@ -186,10 +186,18 @@ CbcEventHandler::CbcAction SolHandler::event(CbcEvent whichEvent)
         char **cnames = new char*[nNZ];
         double *xv = new double[nNZ];
         cnames[0] = new char[charSize];
-        for ( int i=1 ; (i<nNZ) ; ++i )
-          cnames[i] = cnames[i-1] + solver->getColName(i-1).size()+1;
 
         int cnz = 0;
+        for (int i = 0; (i < solver->getNumCols()); ++i) 
+        {
+          if (fabs(x[i]) <= 1e-7)
+            continue;
+          if (cnz>=1)
+            cnames[cnz] = cnames[cnz-1] + solver->getColName(i).size()+1;
+          cnz++;
+        }
+ 
+        cnz = 0;
         for (int i = 0; (i < solver->getNumCols()); ++i) 
         {
           if (fabs(x[i]) <= 1e-7)

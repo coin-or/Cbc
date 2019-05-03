@@ -146,6 +146,10 @@ https://github.com/coin-or/Cbc/issues
 
 ## CHANGELOG
 
+ * Release 2.10.3 (in preparation)
+   * Improve performance of some primal heuristics, incl. feasibility pump, by making integer slacks continuous
+   * Bugfixes
+
  * Release 2.10.2
    * Bugfixes
 

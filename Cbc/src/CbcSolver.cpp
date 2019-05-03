@@ -1313,6 +1313,14 @@ int CbcMain1(int argc, const char *argv[],
   data.useSignalHandler_ = true;
   return CbcMain1(argc, argv, model, callBack, data);
 }
+
+
+static bool ends_with(std::string const & value, std::string const & ending)
+{
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
 // and simpler version
 int CbcMain1(int argc, const char *argv[],
 	     CbcModel &model)
@@ -5800,7 +5808,7 @@ int CbcMain1(int argc, const char *argv[],
 		  const char * checkEnd[6]={
 		    ".low",".high",".lowcheap",".highcheap",".lowexpensive",".highexpensive"};
 		  for (extraActions=0;extraActions<6;extraActions++) {
-		    if (mipStartFile.substr(lengthFileName-strlen(checkEnd[extraActions]),20)==checkEnd[extraActions])
+        if (ends_with(mipStartFile, std::string(checkEnd[extraActions])))
 		      break;
 		  }
 		  if (extraActions==6)

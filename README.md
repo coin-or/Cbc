@@ -146,6 +146,11 @@ https://github.com/coin-or/Cbc/issues
 
 ## CHANGELOG
 
+ * Release 2.11.0 (in preparation)
+   * Added possibility for incomplete MIP start files.
+     The filename suffix indicates which values Cbc should choose for
+     missing variables (see change r2549)
+
  * Release 2.10.3 (in preparation)
    * Improve performance of some primal heuristics, incl. feasibility pump, by making integer slacks continuous
    * Bugfixes

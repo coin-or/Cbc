@@ -146,6 +146,11 @@ https://github.com/coin-or/Cbc/issues
 
 ## CHANGELOG
 
+ * Release 2.10.3 (in preparation)
+   * Improve performance of some primal heuristics, incl. feasibility pump, by making integer slacks continuous
+   * Increased default for node limit from 10 million to 2.1 billion
+   * Bugfixes
+
  * Release 2.10.2
    * Bugfixes
 

@@ -59,6 +59,18 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
   double ub, double obj, char isInteger,
   int nz, int *rows, double *coefs);
 
+
+/** @brief Deletes some columns
+     *
+     *  Deletes some columns (variables)
+     *
+     *  @param model problem object
+     *  @param numCols 
+     *  @param cols columns that will be deleted
+     * */
+COINLIBAPI void COINLINKAGE
+Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[]);
+
 /** @brief Adds a new row 
      *
      *  Adds a new row (linear constraint) to the problem
@@ -74,6 +86,17 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
 COINLIBAPI void COINLINKAGE
 Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   const int *cols, const double *coefs, char sense, double rhs);
+
+/** @brief Deletes some rows
+     *
+     *  Deletes some rows from the model
+     *
+     *  @param model problem object
+     *  @param numRows number of rows
+     *  @param rows rows to be deleted
+     * */
+COINLIBAPI void COINLINKAGE
+Cbc_deleteRows(Cbc_Model *model, int numRows, const int rows[]);
 
 /** @brief Add SOS constraints to the model using row-order matrix */
 COINLIBAPI void COINLINKAGE

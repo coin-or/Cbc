@@ -1513,6 +1513,23 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   solver->setRowName(solver->getNumRows() - 1, std::string(name));
 }
 
+
+COINLIBAPI void COINLINKAGE
+Cbc_deleteRows(Cbc_Model *model, int numRows, const int rows[])
+{
+  Cbc_flush(model);
+  OsiSolverInterface *solver = model->model_->solver();
+  solver->deleteRows(numRows, rows);
+}
+
+COINLIBAPI void COINLINKAGE
+Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[])
+{
+  Cbc_flush(model);
+  OsiSolverInterface *solver = model->model_->solver();
+  solver->deleteCols(numCols, cols);
+}
+
 /** Add SOS constraints to the model using row-order matrix */
 
 COINLIBAPI void COINLINKAGE

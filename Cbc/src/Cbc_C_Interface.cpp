@@ -6,6 +6,8 @@
 #include <cmath>
 #include <cfloat>
 #include <cctype>
+#include <map>
+#include <string>
 
 #include "CoinPragma.hpp"
 //#include "CoinHelperFunctions.hpp"
@@ -44,6 +46,8 @@
   }
 
 const int VERBOSE = 0;
+
+typedef std::map< std::string, int > NameIndex;
 
 // cut generator to accept callbacks in CBC
 //
@@ -549,6 +553,8 @@ Cbc_newModel()
   model->cbcData->noPrinting_ = false;
   model->relax_ = 0;
   model->inc_callback = NULL;
+  model->colNameIndex = NULL;
+  model->rowNameIndex = NULL;
 
   // initialize columns buffer
   model->colSpace = 0;
@@ -576,6 +582,15 @@ Cbc_deleteModel(Cbc_Model *model)
   fflush(stdout);
 
   Cbc_deleteColBuffer(model);
+
+  if (model->colNameIndex)
+  {
+    NameIndex *m = (NameIndex *)model->colNameIndex;
+    delete m;
+    m = (NameIndex *)model->rowNameIndex;
+    assert( m != NULL );
+    delete m;
+  }
 
   if (VERBOSE > 1)
     printf("%s delete model->model_\n", prefix);
@@ -654,6 +669,25 @@ Cbc_loadProblem(Cbc_Model *model, const int numcols, const int numrows,
     printf("%s return\n", prefix);
 } //  Cbc_loadProblem()
 
+/* should be called after reading a new problem */
+static void fillAllNameIndexes(Cbc_Model *model)
+{
+  if (!model->colNameIndex)
+    return;
+
+  OsiSolverInterface *solver = model->model_->solver();
+  NameIndex &colNameIndex = *((NameIndex  *)model->colNameIndex);
+  colNameIndex.clear();
+  NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
+  rowNameIndex.clear();
+
+  for ( int i=0 ; (i<solver->getNumCols()) ; ++i )
+    colNameIndex[solver->getColName(i)] = i;
+
+  for ( int i=0 ; (i<solver->getNumRows()) ; ++i )
+    rowNameIndex[solver->getRowName(i)] = i;
+}
+
 /* Read an mps file from the given filename */
 COINLIBAPI int COINLINKAGE
 Cbc_readMps(Cbc_Model *model, const char *filename)
@@ -666,8 +700,11 @@ Cbc_readMps(Cbc_Model *model, const char *filename)
     printf("%s filename = '%s'\n", prefix, filename);
 
   int result = 1;
-  result = model->model_->solver()->readMps(filename);
+  OsiSolverInterface *solver = model->model_->solver();
+  result = solver->readMps(filename);
   assert(result == 0);
+
+  fillAllNameIndexes(model);
 
   if (VERBOSE > 0)
     printf("%s return %i\n", prefix, result);
@@ -733,8 +770,11 @@ Cbc_readLp(Cbc_Model *model, const char *filename)
   if (VERBOSE > 1)
     printf("%s filename = '%s'\n", prefix, filename);
   int result = 1;
-  result = model->model_->solver()->readLp(filename);
+  OsiSolverInterface *solver = model->model_->solver();
+  result = solver->readLp(filename);
   assert(result == 0);
+
+  fillAllNameIndexes(model);
 
   if (VERBOSE > 0)
     printf("%s return %i\n", prefix, result);
@@ -944,13 +984,33 @@ COINLIBAPI void COINLINKAGE
 Cbc_setColName(Cbc_Model *model, int iColumn, const char *name)
 {
   Cbc_flush(model);
-  model->model_->solver()->setColName(iColumn, name);
+  OsiSolverInterface *solver = model->model_->solver();
+  std::string previousName = solver->getColName(iColumn);
+  solver->setColName(iColumn, name);
+
+  if (!model->colNameIndex)
+    return;
+  NameIndex &colNameIndex = *((NameIndex  *)model->colNameIndex);
+  NameIndex::iterator it = colNameIndex.find(previousName);
+  if (it!=colNameIndex.end())
+    colNameIndex.erase(it);
+  colNameIndex[name] = iColumn;
 }
 
 COINLIBAPI void COINLINKAGE
 Cbc_setRowName(Cbc_Model *model, int iRow, const char *name)
 {
-  model->model_->solver()->setRowName(iRow, name);
+  OsiSolverInterface *solver = model->model_->solver();
+  std::string previousName = solver->getRowName(iRow);
+  solver->setRowName(iRow, name);
+
+  if (!model->rowNameIndex)
+    return;
+  NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
+  NameIndex::iterator it = rowNameIndex.find(std::string(previousName));
+  if (it!=rowNameIndex.end())
+    rowNameIndex.erase(it);
+  rowNameIndex[name] = iRow;
 }
 
 COINLIBAPI void COINLINKAGE
@@ -1476,6 +1536,12 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
     if (isInteger)
       solver->setInteger(solver->getNumCols() - 1);
   }
+
+  if (model->colNameIndex)
+  {
+    NameIndex &colNameIndex = *((NameIndex  *)model->colNameIndex);
+    colNameIndex[std::string(name)] = Cbc_getNumCols(model)-1;
+  }
 }
 
 /** Adds a new row */
@@ -1511,14 +1577,27 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   }
   solver->addRow(nz, cols, coefs, rowLB, rowUB);
   solver->setRowName(solver->getNumRows() - 1, std::string(name));
-}
 
+  if (model->rowNameIndex)
+  {
+    NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
+    rowNameIndex[std::string(name)] = Cbc_getNumRows(model)-1;
+  }
+}
 
 COINLIBAPI void COINLINKAGE
 Cbc_deleteRows(Cbc_Model *model, int numRows, const int rows[])
 {
   Cbc_flush(model);
   OsiSolverInterface *solver = model->model_->solver();
+
+  if (model->rowNameIndex)
+  {
+    NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
+    for ( int i=0 ; i<numRows; ++i )
+      rowNameIndex.erase(solver->getRowName(rows[i]));
+  }
+
   solver->deleteRows(numRows, rows);
 }
 
@@ -1527,6 +1606,14 @@ Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[])
 {
   Cbc_flush(model);
   OsiSolverInterface *solver = model->model_->solver();
+
+  if (model->colNameIndex)
+  {
+    NameIndex &colNameIndex = *((NameIndex  *)model->colNameIndex);
+    for ( int i=0 ; i<numCols; ++i )
+      colNameIndex.erase(solver->getColName(cols[i]));
+  }
+
   solver->deleteCols(numCols, cols);
 }
 
@@ -2010,6 +2097,70 @@ Cbc_setMaximumSeconds(Cbc_Model *model, double maxSeconds)
 {
   model->model_->setMaximumSeconds(maxSeconds);
 }
+
+COINLIBAPI void COINLINKAGE
+Cbc_storeNameIndexes(Cbc_Model *model, char _store)
+{
+  if (_store)
+  {
+    if (model->colNameIndex==NULL)
+    {
+      assert(model->rowNameIndex==NULL);
+      model->colNameIndex = new NameIndex();
+      model->rowNameIndex = new NameIndex();
+    }
+  }
+  else
+  {
+    if (model->colNameIndex!=NULL)
+    {
+      NameIndex *m = (NameIndex *)model->colNameIndex;
+      delete m;
+      m = (NameIndex *)model->rowNameIndex;
+      assert( m != NULL );
+      delete m;
+
+      model->colNameIndex = model->rowNameIndex = NULL;
+    }
+  }
+}
+
+COINLIBAPI int COINLINKAGE
+Cbc_getColNameIndex(Cbc_Model *model, const char *name)
+{
+  if (!model->colNameIndex)
+  {
+    fprintf(stderr, "Call Cbc_storeNameIndex to enable name index search.");
+    abort();
+  }
+
+  OsiSolverInterface *solver = model->model_->solver();
+  NameIndex &colNameIndex = *((NameIndex  *)model->colNameIndex);
+  NameIndex::iterator it = colNameIndex.find(std::string(name));
+  if (it == colNameIndex.end())
+    return -1;
+
+  return it->second;
+}
+
+COINLIBAPI int COINLINKAGE
+Cbc_getRowNameIndex(Cbc_Model *model, const char *name)
+{
+  if (!model->rowNameIndex)
+  {
+    fprintf(stderr, "Call Cbc_storeNameIndex to enable name index search.");
+    abort();
+  }
+
+  OsiSolverInterface *solver = model->model_->solver();
+  NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
+  NameIndex::iterator it = rowNameIndex.find(std::string(name));
+  if (it == rowNameIndex.end())
+    return -1;
+
+  return it->second;
+}
+
 
 #if defined(__MWERKS__)
 #pragma export off

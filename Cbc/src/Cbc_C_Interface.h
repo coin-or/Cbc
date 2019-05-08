@@ -40,6 +40,36 @@ Cbc_newModel(void);
 COINLIBAPI int COINLINKAGE
 Cbc_setProblemName(Cbc_Model *model, const char *array);
 
+/** @brief activates/deactivates name indexes
+ *
+ * @param model problem object
+ * @param store: 1 maintain indexes of column and constraints names for searching indexes, 0 not
+ **/
+COINLIBAPI void COINLINKAGE
+Cbc_storeNameIndexes(Cbc_Model *model, char _store);
+
+/** @brief searches columns by name and returns its index
+ *
+ * call Cbc_storeNameIndexes to enable search by name
+ *
+ * @param model problem object
+ * @param name column (variable) name
+ * @return column index or -1 if not found
+ **/
+COINLIBAPI int COINLINKAGE
+Cbc_getColNameIndex(Cbc_Model *model, const char *name);
+
+/** @brief searches rows by name and returns its index
+ *
+ * call Cbc_storeNameIndexes to enable search by name
+ *
+ * @param model problem object
+ * @param name row (constraint) name
+ * @return row index or -1 if not found
+ **/
+COINLIBAPI int COINLINKAGE
+Cbc_getRowNameIndex(Cbc_Model *model, const char *name);
+
 /** @brief Creates a new column
      *
      * Creates a new column (variable)

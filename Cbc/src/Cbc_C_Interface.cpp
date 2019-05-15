@@ -1467,7 +1467,6 @@ CbcGetProperty(int, getNodeCount)
 COINLIBAPI Cbc_Model *COINLINKAGE
 Cbc_clone(Cbc_Model *model)
 {
-
   const char prefix[] = "Cbc_C_Interface::Cbc_clone(): ";
   //  const int  VERBOSE = 1;
   if (VERBOSE > 0)
@@ -1477,9 +1476,24 @@ Cbc_clone(Cbc_Model *model)
   Cbc_Model *result = new Cbc_Model();
   result->model_ = new CbcModel(*(model->model_));
   result->solver_ = dynamic_cast< OsiClpSolverInterface * >(result->model_->solver());
+  result->cbcData = new CbcSolverUsefulData();
   result->handler_ = NULL;
   result->cmdargs_ = model->cmdargs_;
   result->relax_ = model->relax_;
+  result->cbcData->noPrinting_ = model->cbcData->noPrinting_;
+  result->inc_callback = model->inc_callback;
+  if (model->colNameIndex)
+    Cbc_storeNameIndexes(result, 1);
+
+  result->colSpace = 0;
+  result->nCols = 0;
+  result->cNameSpace = 0;
+  result->cNameStart = NULL;
+  result->cInt = NULL;
+  result->cNames= NULL;
+  result->cLB = NULL;
+  result->cUB = NULL;
+  result->cObj = NULL;
 
   if (VERBOSE > 0)
     printf("%s return\n", prefix);

@@ -622,9 +622,9 @@ static void Cbc_checkSpaceRowBuffer(Cbc_Model *model, int nzRow, int rowNameLen)
   
     if (model->rNameStart[model->nRows]+rowNameLen+2 >= model->rNameSpace)
     {
-      if (model->rowSpace < 8388608)
+      if (model->rNameSpace < 8388608)
       {
-        model->rowSpace *= 2;
+        model->rNameSpace *= 2;
         model->rNames = (char *)realloc(model->rNames, sizeof(char)*model->rNameSpace);
       }
       else

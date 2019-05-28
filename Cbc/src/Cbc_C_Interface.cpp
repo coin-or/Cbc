@@ -454,11 +454,13 @@ static void Cbc_flush( Cbc_Model *model, enum FlushContents fc = FCBoth )
 
       for ( int i=0 ; i<model->nRows; ++i )
       {
-        solver->setRowName( rowsBefore+i, std::string(model->rNames+model->rNameStart[i]) );
+        const int rIdx = rowsBefore+i;
+        const std::string rName = std::string(model->rNames+model->rNameStart[i]);
+        solver->setRowName(rIdx, rName);
         if (model->rowNameIndex)
         {
           NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
-          rowNameIndex[std::string(model->rNames+model->rNameStart[i])] = i+rowsBefore;
+          rowNameIndex[rName] = rIdx;
         }
       }
 
@@ -644,23 +646,24 @@ static void Cbc_addRowBuffer(
 {
   int nameLen = strlen(rName);
   Cbc_checkSpaceRowBuffer(model, nz, nameLen);
+  const int st = model->rStart[model->nRows];
 
   model->rLB[model->nRows] = rLB;
   model->rUB[model->nRows] = rUB;
-  memcpy(model->rIdx + model->rStart[model->nRows], rIdx, sizeof(int)*nz);
-  memcpy(model->rCoef + model->rStart[model->nRows], rCoef, sizeof(double)*nz);
+  memcpy(model->rIdx + st, rIdx, sizeof(int)*nz);
+  memcpy(model->rCoef + st, rCoef, sizeof(double)*nz);
 
   char *spcName = model->rNames + model->rNameStart[model->nRows];
   strcpy(spcName, rName);
 
   model->nRows++;
-  model->rStart[model->nRows] = model->rStart[model->nRows-1] + nz;
+  model->rStart[model->nRows] = st + nz;
   model->rNameStart[model->nRows] = model->rNameStart[model->nRows-1] + nameLen + 1;
 }
 
 static void Cbc_deleteRowBuffer(Cbc_Model *model)
 {
-  if (model->nRows)
+  if (model->rowSpace)
   {
     free(model->rStart);
     free(model->rLB);

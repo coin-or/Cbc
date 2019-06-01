@@ -702,28 +702,8 @@ static void Cbc_deleteRowBuffer(Cbc_Model *model)
   }
 }
 
-/* Default Cbc_Model constructor */
-COINLIBAPI Cbc_Model *COINLINKAGE
-Cbc_newModel()
+static void Cbc_iniBuffer(Cbc_Model *model) 
 {
-  const char prefix[] = "Cbc_C_Interface::Cbc_newModel(): ";
-  //  const int  VERBOSE = 1;
-  if (VERBOSE > 0)
-    printf("%s begin\n", prefix);
-
-  Cbc_Model *model = new Cbc_Model();
-  OsiClpSolverInterface solver1; // will be release at the end of the scope, CbcModel clones it
-  model->model_ = new CbcModel(solver1);
-  model->solver_ = dynamic_cast< OsiClpSolverInterface * >(model->model_->solver());
-  model->cbcData = new CbcSolverUsefulData();
-  CbcMain0(*model->model_, *model->cbcData);
-  model->handler_ = NULL;
-  model->cbcData->noPrinting_ = false;
-  model->relax_ = 0;
-  model->inc_callback = NULL;
-  model->colNameIndex = NULL;
-  model->rowNameIndex = NULL;
-
   // initialize columns buffer
   model->colSpace = 0;
   model->nCols = 0;
@@ -747,6 +727,32 @@ Cbc_newModel()
   model->rStart = NULL;
   model->rIdx = NULL;
   model->rCoef = NULL;
+}
+
+
+/* Default Cbc_Model constructor */
+COINLIBAPI Cbc_Model *COINLINKAGE
+Cbc_newModel()
+{
+  const char prefix[] = "Cbc_C_Interface::Cbc_newModel(): ";
+  //  const int  VERBOSE = 1;
+  if (VERBOSE > 0)
+    printf("%s begin\n", prefix);
+
+  Cbc_Model *model = new Cbc_Model();
+  OsiClpSolverInterface solver1; // will be release at the end of the scope, CbcModel clones it
+  model->model_ = new CbcModel(solver1);
+  model->solver_ = dynamic_cast< OsiClpSolverInterface * >(model->model_->solver());
+  model->cbcData = new CbcSolverUsefulData();
+  CbcMain0(*model->model_, *model->cbcData);
+  model->handler_ = NULL;
+  model->cbcData->noPrinting_ = false;
+  model->relax_ = 0;
+  model->inc_callback = NULL;
+  model->colNameIndex = NULL;
+  model->rowNameIndex = NULL;
+
+  Cbc_iniBuffer(model);
 
 #ifdef CBC_THREAD
   pthread_mutex_init(&(model->cbcMutex), NULL);
@@ -895,6 +901,10 @@ Cbc_readMps(Cbc_Model *model, const char *filename)
   result = solver->readMps(filename);
   assert(result == 0);
 
+  Cbc_deleteColBuffer(model);
+  Cbc_deleteRowBuffer(model);
+  Cbc_iniBuffer(model);
+
   fillAllNameIndexes(model);
 
   if (VERBOSE > 0)
@@ -964,6 +974,10 @@ Cbc_readLp(Cbc_Model *model, const char *filename)
   OsiSolverInterface *solver = model->model_->solver();
   result = solver->readLp(filename);
   assert(result == 0);
+
+  Cbc_deleteColBuffer(model);
+  Cbc_deleteRowBuffer(model);
+  Cbc_iniBuffer(model);
 
   fillAllNameIndexes(model);
 

@@ -14,46 +14,51 @@ class CbcModel;
    If weight is 0.0 then it is computed to hit first solution
    less 2%
 */
-class CbcCompareUser  : public CbcCompareBase {
+class CbcCompareUser : public CbcCompareBase {
 public:
-  // Default Constructor 
-  CbcCompareUser () ;
+  // Default Constructor
+  CbcCompareUser();
   // Constructor with weight
-  CbcCompareUser (double weight);
+  CbcCompareUser(double weight);
 
-  // Copy constructor 
-  CbcCompareUser ( const CbcCompareUser &rhs);
-   
-  // Assignment operator 
-  CbcCompareUser & operator=( const CbcCompareUser& rhs);
+  // Copy constructor
+  CbcCompareUser(const CbcCompareUser &rhs);
+
+  // Assignment operator
+  CbcCompareUser &operator=(const CbcCompareUser &rhs);
 
   /// Clone
-  virtual CbcCompareBase * clone() const;
+  virtual CbcCompareBase *clone() const;
 
-  ~CbcCompareUser() ;
+  ~CbcCompareUser();
   /* This returns true if weighted value of node y is less than
      weighted value of node x */
-  virtual bool test (CbcNode * x, CbcNode * y) ;
+  virtual bool test(CbcNode *x, CbcNode *y);
   /// This is alternate test function
-  virtual bool alternateTest (CbcNode * x, CbcNode * y);
+  virtual bool alternateTest(CbcNode *x, CbcNode *y);
   // This allows method to change behavior as it is called
   // after each solution
-  virtual bool newSolution(CbcModel * model,
-			   double objectiveAtContinuous,
-			   int numberInfeasibilitiesAtContinuous) ;
+  virtual bool newSolution(CbcModel *model,
+    double objectiveAtContinuous,
+    int numberInfeasibilitiesAtContinuous);
   /// Returns true if wants code to do scan with alternate criterion
   virtual bool fullScan() const;
-  // This allows method to change behavior 
+  // This allows method to change behavior
   // Return true if want tree re-sorted
-  virtual bool every1000Nodes(CbcModel * model,int numberNodes);
+  virtual bool every1000Nodes(CbcModel *model, int numberNodes);
 
   /* if weight == -1.0 then depth first (before solution)
      if -2.0 then do breadth first just for first 1000 nodes
   */
   inline double getWeight() const
-  { return weight_;}
+  {
+    return weight_;
+  }
   inline void setWeight(double weight)
-  { weight_ = weight;}
+  {
+    weight_ = weight;
+  }
+
 protected:
   // Weight for each infeasibility
   double weight_;

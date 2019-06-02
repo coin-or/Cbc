@@ -19,38 +19,37 @@
 /** Default Constructor
 
 */
-CbcCompareUser::CbcCompareUser ()
-  : CbcCompareBase(),
-    weight_(-1.0),
-    saveWeight_(0.0),
-    numberSolutions_(0),
-    count_(0),
-    treeSize_(0)
+CbcCompareUser::CbcCompareUser()
+  : CbcCompareBase()
+  , weight_(-1.0)
+  , saveWeight_(0.0)
+  , numberSolutions_(0)
+  , count_(0)
+  , treeSize_(0)
 {
-  test_=this;
+  test_ = this;
 }
 
 // Constructor with weight
-CbcCompareUser::CbcCompareUser (double weight) 
-  : CbcCompareBase(),
-    weight_(weight) ,
-    saveWeight_(0.0),
-    numberSolutions_(0),
-    count_(0),
-    treeSize_(0)
+CbcCompareUser::CbcCompareUser(double weight)
+  : CbcCompareBase()
+  , weight_(weight)
+  , saveWeight_(0.0)
+  , numberSolutions_(0)
+  , count_(0)
+  , treeSize_(0)
 {
-  test_=this;
+  test_ = this;
 }
 
-
-// Copy constructor 
-CbcCompareUser::CbcCompareUser ( const CbcCompareUser & rhs)
-  :CbcCompareBase(rhs)
+// Copy constructor
+CbcCompareUser::CbcCompareUser(const CbcCompareUser &rhs)
+  : CbcCompareBase(rhs)
 
 {
-  weight_=rhs.weight_;
+  weight_ = rhs.weight_;
   saveWeight_ = rhs.saveWeight_;
-  numberSolutions_=rhs.numberSolutions_;
+  numberSolutions_ = rhs.numberSolutions_;
   count_ = rhs.count_;
   treeSize_ = rhs.treeSize_;
 }
@@ -62,23 +61,23 @@ CbcCompareUser::clone() const
   return new CbcCompareUser(*this);
 }
 
-// Assignment operator 
-CbcCompareUser & 
-CbcCompareUser::operator=( const CbcCompareUser& rhs)
+// Assignment operator
+CbcCompareUser &
+CbcCompareUser::operator=(const CbcCompareUser &rhs)
 {
-  if (this!=&rhs) {
+  if (this != &rhs) {
     CbcCompareBase::operator=(rhs);
-    weight_=rhs.weight_;
+    weight_ = rhs.weight_;
     saveWeight_ = rhs.saveWeight_;
-    numberSolutions_=rhs.numberSolutions_;
+    numberSolutions_ = rhs.numberSolutions_;
     count_ = rhs.count_;
     treeSize_ = rhs.treeSize_;
   }
   return *this;
 }
 
-// Destructor 
-CbcCompareUser::~CbcCompareUser ()
+// Destructor
+CbcCompareUser::~CbcCompareUser()
 {
 }
 // For moment go to default
@@ -183,10 +182,9 @@ CbcCompareUser::alternateTest (CbcNode * x, CbcNode * y)
 #else
 
 // Returns true if y better than x
-bool 
-CbcCompareUser::test (CbcNode * x, CbcNode * y)
+bool CbcCompareUser::test(CbcNode *x, CbcNode *y)
 {
-  if (weight_==-1.0&&(y->depth()>7||x->depth()>7)) {
+  if (weight_ == -1.0 && (y->depth() > 7 || x->depth() > 7)) {
     // before solution
     /* printf("x %d %d %g, y %d %d %g\n",
        x->numberUnsatisfied(),x->depth(),x->objectiveValue(),
@@ -198,84 +196,77 @@ CbcCompareUser::test (CbcNode * x, CbcNode * y)
     } else {
       int testX = x->depth();
       int testY = y->depth();
-      if (testX!=testY)
-	return testX < testY;
+      if (testX != testY)
+        return testX < testY;
       else
-	return equalityTest(x,y); // so ties will be broken in consistent manner
+        return equalityTest(x, y); // so ties will be broken in consistent manner
     }
   } else {
     // after solution
-    double weight = CoinMax(weight_,0.0);
-    double testX =  x->objectiveValue()+ weight*x->numberUnsatisfied();
-    double testY = y->objectiveValue() + weight*y->numberUnsatisfied();
-    if (testX!=testY)
+    double weight = CoinMax(weight_, 0.0);
+    double testX = x->objectiveValue() + weight * x->numberUnsatisfied();
+    double testY = y->objectiveValue() + weight * y->numberUnsatisfied();
+    if (testX != testY)
       return testX > testY;
     else
-      return equalityTest(x,y); // so ties will be broken in consistent manner
+      return equalityTest(x, y); // so ties will be broken in consistent manner
   }
 }
 // This allows method to change behavior as it is called
 // after each solution
-bool 
-CbcCompareUser::newSolution(CbcModel * model,
-			       double objectiveAtContinuous,
-			       int numberInfeasibilitiesAtContinuous) 
+bool CbcCompareUser::newSolution(CbcModel *model,
+  double objectiveAtContinuous,
+  int numberInfeasibilitiesAtContinuous)
 {
-  if (model->getSolutionCount()==model->getNumberHeuristicSolutions()&&
-      model->getSolutionCount()<5&&model->getNodeCount()<500)
-    return (false) ; // solution was got by rounding
+  if (model->getSolutionCount() == model->getNumberHeuristicSolutions() && model->getSolutionCount() < 5 && model->getNodeCount() < 500)
+    return (false); // solution was got by rounding
   // set to get close to this solution
-  double costPerInteger = 
-    (model->getObjValue()-objectiveAtContinuous)/
-    ((double) numberInfeasibilitiesAtContinuous);
-  weight_ = 0.95*costPerInteger;
-  saveWeight_ = 0.95*weight_;
+  double costPerInteger = (model->getObjValue() - objectiveAtContinuous) / ((double)numberInfeasibilitiesAtContinuous);
+  weight_ = 0.95 * costPerInteger;
+  saveWeight_ = 0.95 * weight_;
   numberSolutions_++;
-  if (numberSolutions_>5)
-    weight_ =0.0; // this searches on objective
-  return (true) ;
+  if (numberSolutions_ > 5)
+    weight_ = 0.0; // this searches on objective
+  return (true);
 }
-// This allows method to change behavior 
-bool 
-CbcCompareUser::every1000Nodes(CbcModel * model, int numberNodes)
+// This allows method to change behavior
+bool CbcCompareUser::every1000Nodes(CbcModel *model, int numberNodes)
 {
-  double saveWeight=weight_;
-  int numberNodes1000 = numberNodes/1000;
-  if (numberNodes>10000) {
-    weight_ =0.0; // this searches on objective
+  double saveWeight = weight_;
+  int numberNodes1000 = numberNodes / 1000;
+  if (numberNodes > 10000) {
+    weight_ = 0.0; // this searches on objective
     // but try a bit of other stuff
-    if ((numberNodes1000%4)==1)
-      weight_=saveWeight_;
-  } else if (numberNodes==1000&&weight_==-2.0) {
-    weight_=-1.0; // Go to depth first
+    if ((numberNodes1000 % 4) == 1)
+      weight_ = saveWeight_;
+  } else if (numberNodes == 1000 && weight_ == -2.0) {
+    weight_ = -1.0; // Go to depth first
   }
   // get size of tree
   treeSize_ = model->tree()->size();
-  if (treeSize_>10000) {
-    int n1 = model->solver()->getNumRows()+model->solver()->getNumCols();
+  if (treeSize_ > 10000) {
+    int n1 = model->solver()->getNumRows() + model->solver()->getNumCols();
     int n2 = model->numberObjects();
-    double size = n1*0.1 + n2*2.0;
+    double size = n1 * 0.1 + n2 * 2.0;
     // set weight to reduce size most of time
-    if (treeSize_*size>5.0e7)
-      weight_=-1.0;
-    else if ((numberNodes1000%4)==0&&treeSize_*size>1.0e6)
-      weight_=-1.0;
-    else if ((numberNodes1000%4)==1)
-      weight_=0.0;
+    if (treeSize_ * size > 5.0e7)
+      weight_ = -1.0;
+    else if ((numberNodes1000 % 4) == 0 && treeSize_ * size > 1.0e6)
+      weight_ = -1.0;
+    else if ((numberNodes1000 % 4) == 1)
+      weight_ = 0.0;
     else
-      weight_=saveWeight_;
+      weight_ = saveWeight_;
   }
-  return (weight_!=saveWeight);
+  return (weight_ != saveWeight);
 }
 // Returns true if wants code to do scan with alternate criterion
-bool 
-CbcCompareUser::fullScan() const
+bool CbcCompareUser::fullScan() const
 {
   return false;
 }
 // This is alternate test function
-bool 
-CbcCompareUser::alternateTest (CbcNode * x, CbcNode * y)
+bool CbcCompareUser::alternateTest(CbcNode *x, CbcNode *y)
 {
   // not used
   abort();

@@ -28,39 +28,42 @@ class OsiRowCutDebugger;
     could weaken
 */
 
-class CbcCutSubsetModifier  : public CbcCutModifier {
+class CbcCutSubsetModifier : public CbcCutModifier {
 public:
-    /// Default Constructor
-    CbcCutSubsetModifier ();
+  /// Default Constructor
+  CbcCutSubsetModifier();
 
-    /// Useful Constructor
-    CbcCutSubsetModifier (int firstOdd);
+  /// Useful Constructor
+  CbcCutSubsetModifier(int firstOdd);
 
-    // Copy constructor
-    CbcCutSubsetModifier ( const CbcCutSubsetModifier &);
+  // Copy constructor
+  CbcCutSubsetModifier(const CbcCutSubsetModifier &);
 
-    /// Destructor
-    virtual ~CbcCutSubsetModifier();
+  /// Destructor
+  virtual ~CbcCutSubsetModifier();
 
-    /// Assignment
-    CbcCutSubsetModifier & operator=(const CbcCutSubsetModifier& rhs);
-/// Clone
-    virtual CbcCutModifier * clone() const ;
+  /// Assignment
+  CbcCutSubsetModifier &operator=(const CbcCutSubsetModifier &rhs);
+  /// Clone
+  virtual CbcCutModifier *clone() const;
 
-    /** Returns
+  /** Returns
         0 unchanged
         1 strengthened
         2 weakened
         3 deleted
     */
-    virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) ;
-    /// Create C++ lines to get to current state
-    virtual void generateCpp( FILE * ) {}
+  virtual int modify(const OsiSolverInterface *solver, OsiRowCut &cut);
+  /// Create C++ lines to get to current state
+  virtual void generateCpp(FILE *) {}
+
 protected:
-    /// data
-    /// First odd variable
-    int firstOdd_;
+  /// data
+  /// First odd variable
+  int firstOdd_;
 };
 
 #endif //CbcCutSubsetModifier_H
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

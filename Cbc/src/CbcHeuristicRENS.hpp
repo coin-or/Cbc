@@ -15,52 +15,52 @@
 
 class CbcHeuristicRENS : public CbcHeuristic {
 public:
+  // Default Constructor
+  CbcHeuristicRENS();
 
-    // Default Constructor
-    CbcHeuristicRENS ();
-
-    /* Constructor with model - assumed before cuts
+  /* Constructor with model - assumed before cuts
        Initial version does not do Lps
     */
-    CbcHeuristicRENS (CbcModel & model);
+  CbcHeuristicRENS(CbcModel &model);
 
-    // Copy constructor
-    CbcHeuristicRENS ( const CbcHeuristicRENS &);
+  // Copy constructor
+  CbcHeuristicRENS(const CbcHeuristicRENS &);
 
-    // Destructor
-    ~CbcHeuristicRENS ();
+  // Destructor
+  ~CbcHeuristicRENS();
 
-    /// Clone
-    virtual CbcHeuristic * clone() const;
+  /// Clone
+  virtual CbcHeuristic *clone() const;
 
+  /// Assignment operator
+  CbcHeuristicRENS &operator=(const CbcHeuristicRENS &rhs);
 
-    /// Assignment operator
-    CbcHeuristicRENS & operator=(const CbcHeuristicRENS& rhs);
+  /// Resets stuff if model changes
+  virtual void resetModel(CbcModel *model);
 
-    /// Resets stuff if model changes
-    virtual void resetModel(CbcModel * model);
+  /// update model (This is needed if cliques update matrix etc)
+  virtual void setModel(CbcModel *model);
 
-    /// update model (This is needed if cliques update matrix etc)
-    virtual void setModel(CbcModel * model);
-
-    using CbcHeuristic::solution ;
-    /** returns 0 if no solution, 1 if valid solution.
+  using CbcHeuristic::solution;
+  /** returns 0 if no solution, 1 if valid solution.
         Sets solution values if good, sets objective value (only if good)
         This does Relaxation Extension Neighborhood Search
         Does not run if when_<2 and a solution exists
     */
-    virtual int solution(double & objectiveValue,
-                         double * newSolution);
+  virtual int solution(double &objectiveValue,
+    double *newSolution);
 
-    /// Set type
-    inline void setRensType(int value)
-    { rensType_ = value;}
+  /// Set type
+  inline void setRensType(int value)
+  {
+    rensType_ = value;
+  }
 
 protected:
-    // Data
-    /// Number of tries
-    int numberTries_;
-    /** Type
+  // Data
+  /// Number of tries
+  int numberTries_;
+  /** Type
         0 - fix at LB
         1 - fix on dj
         2 - fix at UB as well
@@ -70,8 +70,10 @@ protected:
 	64 - if priorities keep high priority
 	128 - if priorities keep low priority
     */
-    int rensType_;
+  int rensType_;
 };
 
 #endif
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

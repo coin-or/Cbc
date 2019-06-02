@@ -7,7 +7,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 #include <cassert>
 #include <cstdlib>
@@ -28,36 +28,35 @@
 //##############################################################################
 
 // Default Constructor
-CbcDummyBranchingObject::CbcDummyBranchingObject(CbcModel * model)
-        : CbcBranchingObject(model, 0, 0, 0.5)
+CbcDummyBranchingObject::CbcDummyBranchingObject(CbcModel *model)
+  : CbcBranchingObject(model, 0, 0, 0.5)
 {
-    setNumberBranchesLeft(1);
+  setNumberBranchesLeft(1);
 }
 
-
 // Copy constructor
-CbcDummyBranchingObject::CbcDummyBranchingObject ( const CbcDummyBranchingObject & rhs) : CbcBranchingObject(rhs)
+CbcDummyBranchingObject::CbcDummyBranchingObject(const CbcDummyBranchingObject &rhs)
+  : CbcBranchingObject(rhs)
 {
 }
 
 // Assignment operator
 CbcDummyBranchingObject &
-CbcDummyBranchingObject::operator=( const CbcDummyBranchingObject & rhs)
+CbcDummyBranchingObject::operator=(const CbcDummyBranchingObject &rhs)
 {
-    if (this != &rhs) {
-        CbcBranchingObject::operator=(rhs);
-    }
-    return *this;
+  if (this != &rhs) {
+    CbcBranchingObject::operator=(rhs);
+  }
+  return *this;
 }
 CbcBranchingObject *
 CbcDummyBranchingObject::clone() const
 {
-    return (new CbcDummyBranchingObject(*this));
+  return (new CbcDummyBranchingObject(*this));
 }
 
-
 // Destructor
-CbcDummyBranchingObject::~CbcDummyBranchingObject ()
+CbcDummyBranchingObject::~CbcDummyBranchingObject()
 {
 }
 
@@ -67,14 +66,13 @@ CbcDummyBranchingObject::~CbcDummyBranchingObject ()
 double
 CbcDummyBranchingObject::branch()
 {
-    decrementNumberBranchesLeft();
-    return 0.0;
+  decrementNumberBranchesLeft();
+  return 0.0;
 }
 // Print what would happen
-void
-CbcDummyBranchingObject::print()
+void CbcDummyBranchingObject::print()
 {
-    printf("Dummy branch\n");
+  printf("Dummy branch\n");
 }
 /** Compare the original object of \c this with the original object of \c
     brObj. Assumes that there is an ordering of the original objects.
@@ -83,11 +81,9 @@ CbcDummyBranchingObject::print()
     Return negative/0/positive depending on whether \c this is
     smaller/same/larger than the argument.
 */
-int
-CbcDummyBranchingObject::compareOriginalObject
-(const CbcBranchingObject* /*brObj*/) const
+int CbcDummyBranchingObject::compareOriginalObject(const CbcBranchingObject * /*brObj*/) const
 {
-    throw("must implement");
+  throw("must implement");
 }
 
 /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
@@ -99,9 +95,10 @@ CbcDummyBranchingObject::compareOriginalObject
     whose feasible region is the overlap.
 */
 CbcRangeCompare
-CbcDummyBranchingObject::compareBranchingObject
-(const CbcBranchingObject* /*brObj*/, const bool /*replaceIfOverlap*/)
+CbcDummyBranchingObject::compareBranchingObject(const CbcBranchingObject * /*brObj*/, const bool /*replaceIfOverlap*/)
 {
-    throw("must implement");
+  throw("must implement");
 }
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

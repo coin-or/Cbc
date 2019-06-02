@@ -12,7 +12,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 
 #include <string>
@@ -27,7 +27,7 @@
 
 namespace {
 
-char svnid[] = "$Id$" ;
+char svnid[] = "$Id$";
 
 }
 
@@ -41,120 +41,121 @@ char svnid[] = "$Id$" ;
 /*
   Default constructor.
 */
-CbcGenParam::CbcGenParam ()
-        : CoinParam(),
-        paramCode_(CbcGenParamCode(0)),
-        obj_(0)
+CbcGenParam::CbcGenParam()
+  : CoinParam()
+  , paramCode_(CbcGenParamCode(0))
+  , obj_(0)
 {
-    /* Nothing to be done here */
+  /* Nothing to be done here */
 }
-
 
 /*
   Constructor for double parameter
 */
-CbcGenParam::CbcGenParam (CbcGenParamCode code,
-                          std::string name, std::string help,
-                          double lower, double upper, double dflt,
-                          bool display)
-        : CoinParam(name, help, lower, upper, dflt, display),
-        paramCode_(code),
-        obj_(0)
+CbcGenParam::CbcGenParam(CbcGenParamCode code,
+  std::string name, std::string help,
+  double lower, double upper, double dflt,
+  bool display)
+  : CoinParam(name, help, lower, upper, dflt, display)
+  , paramCode_(code)
+  , obj_(0)
 {
-    /* Nothing to be done here */
+  /* Nothing to be done here */
 }
 
 /*
   Constructor for integer parameter
 */
-CbcGenParam::CbcGenParam (CbcGenParamCode code,
-                          std::string name, std::string help,
-                          int lower, int upper, int dflt,
-                          bool display)
-        : CoinParam(name, help, lower, upper, dflt, display),
-        paramCode_(code),
-        obj_(0)
+CbcGenParam::CbcGenParam(CbcGenParamCode code,
+  std::string name, std::string help,
+  int lower, int upper, int dflt,
+  bool display)
+  : CoinParam(name, help, lower, upper, dflt, display)
+  , paramCode_(code)
+  , obj_(0)
 {
-    /* Nothing to be done here */
+  /* Nothing to be done here */
 }
 
 /*
   Constructor for keyword parameter.
 */
-CbcGenParam::CbcGenParam (CbcGenParamCode code,
-                          std::string name, std::string help,
-                          std::string firstValue, int dflt,
-                          bool display)
-        : CoinParam(name, help, firstValue, dflt, display),
-        paramCode_(code),
-        obj_(0)
+CbcGenParam::CbcGenParam(CbcGenParamCode code,
+  std::string name, std::string help,
+  std::string firstValue, int dflt,
+  bool display)
+  : CoinParam(name, help, firstValue, dflt, display)
+  , paramCode_(code)
+  , obj_(0)
 {
-    /* Nothing to be done here */
+  /* Nothing to be done here */
 }
 
 /*
   Constructor for string parameter.
 */
-CbcGenParam::CbcGenParam (CbcGenParamCode code,
-                          std::string name, std::string help,
-                          std::string dflt,
-                          bool display)
-        : CoinParam(name, help, dflt, display),
-        paramCode_(code),
-        obj_(0)
+CbcGenParam::CbcGenParam(CbcGenParamCode code,
+  std::string name, std::string help,
+  std::string dflt,
+  bool display)
+  : CoinParam(name, help, dflt, display)
+  , paramCode_(code)
+  , obj_(0)
 {
-    /* Nothing to be done here */
+  /* Nothing to be done here */
 }
 
 /*
   Constructor for action parameter.
 */
-CbcGenParam::CbcGenParam (CbcGenParamCode code,
-                          std::string name, std::string help,
-                          bool display)
-        : CoinParam(name, help, display),
-        paramCode_(code),
-        obj_(0)
+CbcGenParam::CbcGenParam(CbcGenParamCode code,
+  std::string name, std::string help,
+  bool display)
+  : CoinParam(name, help, display)
+  , paramCode_(code)
+  , obj_(0)
 {
-    /* Nothing to be done here */
+  /* Nothing to be done here */
 }
-
 
 /*
   Copy constructor.
 */
-CbcGenParam::CbcGenParam (const CbcGenParam &orig)
-        : CoinParam(orig),
-        paramCode_(orig.paramCode_),
-        obj_(orig.obj_)
+CbcGenParam::CbcGenParam(const CbcGenParam &orig)
+  : CoinParam(orig)
+  , paramCode_(orig.paramCode_)
+  , obj_(orig.obj_)
 {
-    /* Nothing to be done here */
+  /* Nothing to be done here */
 }
 
 /*
   Clone
 */
 
-CbcGenParam *CbcGenParam::clone ()
+CbcGenParam *CbcGenParam::clone()
 {
-    return (new CbcGenParam(*this)) ;
+  return (new CbcGenParam(*this));
 }
 
-CbcGenParam &CbcGenParam::operator= (const CbcGenParam & rhs)
+CbcGenParam &CbcGenParam::operator=(const CbcGenParam &rhs)
 {
-    if (this != &rhs) {
-        CoinParam::operator=(rhs) ;
+  if (this != &rhs) {
+    CoinParam::operator=(rhs);
 
-        paramCode_ = rhs.paramCode_ ;
-        obj_ = rhs.obj_ ;
-    }
+    paramCode_ = rhs.paramCode_;
+    obj_ = rhs.obj_;
+  }
 
-    return *this ;
+  return *this;
 }
 
 /*
   Destructor
 */
-CbcGenParam::~CbcGenParam ()
-{ /* Nothing more to do */ }
+CbcGenParam::~CbcGenParam()
+{ /* Nothing more to do */
+}
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

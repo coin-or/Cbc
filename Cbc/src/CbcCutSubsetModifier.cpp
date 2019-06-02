@@ -7,7 +7,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 #include "CbcConfig.h"
 #include <cassert>
@@ -29,46 +29,46 @@
 #include "CbcCutSubsetModifier.hpp"
 
 // Default Constructor
-CbcCutSubsetModifier::CbcCutSubsetModifier ()
-        : CbcCutModifier(),
-        firstOdd_(COIN_INT_MAX)
+CbcCutSubsetModifier::CbcCutSubsetModifier()
+  : CbcCutModifier()
+  , firstOdd_(COIN_INT_MAX)
 {
 }
 
 // Useful constructor
-CbcCutSubsetModifier::CbcCutSubsetModifier (int firstOdd)
-        : CbcCutModifier()
+CbcCutSubsetModifier::CbcCutSubsetModifier(int firstOdd)
+  : CbcCutModifier()
 {
-    firstOdd_ = firstOdd;
+  firstOdd_ = firstOdd;
 }
 
 // Copy constructor
-CbcCutSubsetModifier::CbcCutSubsetModifier ( const CbcCutSubsetModifier & rhs)
-        : CbcCutModifier(rhs)
+CbcCutSubsetModifier::CbcCutSubsetModifier(const CbcCutSubsetModifier &rhs)
+  : CbcCutModifier(rhs)
 {
-    firstOdd_ = rhs.firstOdd_;
+  firstOdd_ = rhs.firstOdd_;
 }
 
 // Clone
 CbcCutModifier *
 CbcCutSubsetModifier::clone() const
 {
-    return new CbcCutSubsetModifier(*this);
+  return new CbcCutSubsetModifier(*this);
 }
 
 // Assignment operator
 CbcCutSubsetModifier &
-CbcCutSubsetModifier::operator=( const CbcCutSubsetModifier & rhs)
+CbcCutSubsetModifier::operator=(const CbcCutSubsetModifier &rhs)
 {
-    if (this != &rhs) {
-        CbcCutModifier::operator=(rhs);
-        firstOdd_ = rhs.firstOdd_;
-    }
-    return *this;
+  if (this != &rhs) {
+    CbcCutModifier::operator=(rhs);
+    firstOdd_ = rhs.firstOdd_;
+  }
+  return *this;
 }
 
 // Destructor
-CbcCutSubsetModifier::~CbcCutSubsetModifier ()
+CbcCutSubsetModifier::~CbcCutSubsetModifier()
 {
 }
 /* Returns
@@ -77,33 +77,34 @@ CbcCutSubsetModifier::~CbcCutSubsetModifier ()
    2 weakened
    3 deleted
 */
-int
-CbcCutSubsetModifier::modify(const OsiSolverInterface * /*solver*/,
-                             OsiRowCut & cut)
+int CbcCutSubsetModifier::modify(const OsiSolverInterface * /*solver*/,
+  OsiRowCut &cut)
 {
-    int n = cut.row().getNumElements();
-    if (!n)
-        return 0;
-    const int * column = cut.row().getIndices();
-    //const double * element = cut.row().getElements();
-    int returnCode = 0;
-    for (int i = 0; i < n; i++) {
-        if (column[i] >= firstOdd_) {
-            returnCode = 3;
-            break;
-        }
+  int n = cut.row().getNumElements();
+  if (!n)
+    return 0;
+  const int *column = cut.row().getIndices();
+  //const double * element = cut.row().getElements();
+  int returnCode = 0;
+  for (int i = 0; i < n; i++) {
+    if (column[i] >= firstOdd_) {
+      returnCode = 3;
+      break;
     }
+  }
 #ifdef COIN_DETAIL
-    if (!returnCode) {
-        const double * element = cut.row().getElements();
-        printf("%g <= ", cut.lb());
-        for (int i = 0; i < n; i++) {
-            printf("%g*x%d ", element[i], column[i]);
-        }
-        printf("<= %g\n", cut.ub());
+  if (!returnCode) {
+    const double *element = cut.row().getElements();
+    printf("%g <= ", cut.lb());
+    for (int i = 0; i < n; i++) {
+      printf("%g*x%d ", element[i], column[i]);
     }
+    printf("<= %g\n", cut.ub());
+  }
 #endif
-    //return 3;
-    return returnCode;
+  //return 3;
+  return returnCode;
 }
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -6,7 +6,6 @@
 #ifndef CbcFeasibilityBase_H
 #define CbcFeasibilityBase_H
 
-
 //#############################################################################
 /*  There are cases where the user wants to control how CBC sees the problems feasibility.
     The user may want to examine the problem and say :
@@ -21,10 +20,10 @@
 class CbcModel;
 class CbcFeasibilityBase {
 public:
-    // Default Constructor
-    CbcFeasibilityBase () {}
+  // Default Constructor
+  CbcFeasibilityBase() {}
 
-    /**
+  /**
        On input mode:
        0 - called after a solve but before any cuts
        -1 - called after strong branching
@@ -33,24 +32,29 @@ public:
        -1 pretend infeasible
        1 pretend integer solution
     */
-    virtual int feasible(CbcModel * , int ) {
-        return 0;
-    }
+  virtual int feasible(CbcModel *, int)
+  {
+    return 0;
+  }
 
-    virtual ~CbcFeasibilityBase() {}
+  virtual ~CbcFeasibilityBase() {}
 
-    // Copy constructor
-    CbcFeasibilityBase ( const CbcFeasibilityBase & ) {}
+  // Copy constructor
+  CbcFeasibilityBase(const CbcFeasibilityBase &) {}
 
-    // Assignment operator
-    CbcFeasibilityBase & operator=( const CbcFeasibilityBase& ) {
-        return *this;
-    }
+  // Assignment operator
+  CbcFeasibilityBase &operator=(const CbcFeasibilityBase &)
+  {
+    return *this;
+  }
 
-    /// Clone
-    virtual CbcFeasibilityBase * clone() const {
-        return new CbcFeasibilityBase(*this);
-    }
+  /// Clone
+  virtual CbcFeasibilityBase *clone() const
+  {
+    return new CbcFeasibilityBase(*this);
+  }
 };
 #endif
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

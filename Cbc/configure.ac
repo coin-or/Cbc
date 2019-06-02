@@ -165,6 +165,8 @@ case $cbc_default_solver in
       ;;
    glpk)
       ;;
+  highs)
+      ;;
  soplex)
       ;;
       *)
@@ -279,6 +281,12 @@ case "${osicbc_with_solver}" in
     osi_uc_solver=GRB ;           
     osi_exists_solver=${coin_has_grb-"unavailable"}
     ;;                                             
+  @<:@H@:>@@<:@i@:>@@<:@g@:>@@<:@h@:>@@<:@s@:>@*)        
+    osi_lc_solver=highs ;                            
+    osi_mc_solver=HiGHS ;                            
+    osi_uc_solver=HIGHS ;                              
+    osi_exists_solver=${coin_has_highs-"unavailable"}
+    ;;
   @<:@Mm@:>@@<:@Ss@:>@@<:@Kk@:>@*)
     osi_lc_solver=msk ;
     osi_mc_solver=Msk
@@ -344,6 +352,7 @@ AM_CONDITIONAL([OSICBC_DFLT_SOLVER_CPX],[test $osi_mc_solver = Cpx])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_DYLP],[test $osi_mc_solver = Dylp])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GLPK],[test $osi_mc_solver = Glpk])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GRB],[test $osi_mc_solver = Grb])
+AM_CONDITIONAL([OSICBC_DFLT_SOLVER_HIGHS],[test $osi_mc_solver = HiGHS])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_MSK],[test $osi_mc_solver = Msk])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_SPX],[test $osi_mc_solver = Spx])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_SYM],[test $osi_mc_solver = Sym])

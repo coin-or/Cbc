@@ -7,7 +7,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 #include <cassert>
 #include <cstdlib>
@@ -25,132 +25,134 @@
 
 /** Default Constructor
 */
-CbcBranchAllDifferent::CbcBranchAllDifferent ()
-        : CbcBranchCut(),
-        numberInSet_(0),
-        which_(NULL)
+CbcBranchAllDifferent::CbcBranchAllDifferent()
+  : CbcBranchCut()
+  , numberInSet_(0)
+  , which_(NULL)
 {
 }
 
 /* Useful constructor - passed set of variables
 */
-CbcBranchAllDifferent::CbcBranchAllDifferent (CbcModel * model, int numberInSet,
-        const int * members)
-        : CbcBranchCut(model)
+CbcBranchAllDifferent::CbcBranchAllDifferent(CbcModel *model, int numberInSet,
+  const int *members)
+  : CbcBranchCut(model)
 {
-    numberInSet_ = numberInSet;
-    which_ = CoinCopyOfArray(members, numberInSet_);
+  numberInSet_ = numberInSet;
+  which_ = CoinCopyOfArray(members, numberInSet_);
 }
 // Copy constructor
-CbcBranchAllDifferent::CbcBranchAllDifferent ( const CbcBranchAllDifferent & rhs)
-        : CbcBranchCut(rhs)
+CbcBranchAllDifferent::CbcBranchAllDifferent(const CbcBranchAllDifferent &rhs)
+  : CbcBranchCut(rhs)
 {
-    numberInSet_ = rhs.numberInSet_;
-    which_ = CoinCopyOfArray(rhs.which_, numberInSet_);
+  numberInSet_ = rhs.numberInSet_;
+  which_ = CoinCopyOfArray(rhs.which_, numberInSet_);
 }
 
 // Clone
 CbcObject *
 CbcBranchAllDifferent::clone() const
 {
-    return new CbcBranchAllDifferent(*this);
+  return new CbcBranchAllDifferent(*this);
 }
 
 // Assignment operator
 CbcBranchAllDifferent &
-CbcBranchAllDifferent::operator=( const CbcBranchAllDifferent & rhs)
+CbcBranchAllDifferent::operator=(const CbcBranchAllDifferent &rhs)
 {
-    if (this != &rhs) {
-        CbcBranchCut::operator=(rhs);
-        delete [] which_;
-        numberInSet_ = rhs.numberInSet_;
-        which_ = CoinCopyOfArray(rhs.which_, numberInSet_);
-    }
-    return *this;
+  if (this != &rhs) {
+    CbcBranchCut::operator=(rhs);
+    delete[] which_;
+    numberInSet_ = rhs.numberInSet_;
+    which_ = CoinCopyOfArray(rhs.which_, numberInSet_);
+  }
+  return *this;
 }
 
 // Destructor
-CbcBranchAllDifferent::~CbcBranchAllDifferent ()
+CbcBranchAllDifferent::~CbcBranchAllDifferent()
 {
-    delete [] which_;
+  delete[] which_;
 }
 CbcBranchingObject *
 CbcBranchAllDifferent::createCbcBranch(OsiSolverInterface * /*solver*/
-                                       , const OsiBranchingInformation * /*info*/,
-                                       int /*way*/)
+  ,
+  const OsiBranchingInformation * /*info*/,
+  int /*way*/)
 {
-    // by default way must be -1
-    //assert (way==-1);
-    const double * solution = model_->testSolution();
-    double * values = new double[numberInSet_];
-    int * which = new int[numberInSet_];
-    int i;
-    for (i = 0; i < numberInSet_; i++) {
-        int iColumn = which_[i];
-        values[i] = solution[iColumn];
-        which[i] = iColumn;
+  // by default way must be -1
+  //assert (way==-1);
+  const double *solution = model_->testSolution();
+  double *values = new double[numberInSet_];
+  int *which = new int[numberInSet_];
+  int i;
+  for (i = 0; i < numberInSet_; i++) {
+    int iColumn = which_[i];
+    values[i] = solution[iColumn];
+    which[i] = iColumn;
+  }
+  CoinSort_2(values, values + numberInSet_, which);
+  double last = -1.0;
+  double closest = 1.0;
+  int worst = -1;
+  for (i = 0; i < numberInSet_; i++) {
+    if (values[i] - last < closest) {
+      closest = values[i] - last;
+      worst = i - 1;
     }
-    CoinSort_2(values, values + numberInSet_, which);
-    double last = -1.0;
-    double closest = 1.0;
-    int worst = -1;
-    for (i = 0; i < numberInSet_; i++) {
-        if (values[i] - last < closest) {
-            closest = values[i] - last;
-            worst = i - 1;
-        }
-        last = values[i];
-    }
-    assert (closest <= 0.99999);
-    OsiRowCut down;
-    down.setLb(-COIN_DBL_MAX);
-    down.setUb(-1.0);
-    int pair[2];
-    double elements[] = {1.0, -1.0};
-    pair[0] = which[worst];
-    pair[1] = which[worst+1];
-    delete [] values;
-    delete [] which;
-    down.setRow(2, pair, elements);
-    // up is same - just with rhs changed
-    OsiRowCut up = down;
-    up.setLb(1.0);
-    up.setUb(COIN_DBL_MAX);
-    // Say is not a fix type branch
-    CbcCutBranchingObject * newObject =
-        new CbcCutBranchingObject(model_, down, up, false);
-    if (model_->messageHandler()->logLevel() > 1)
-        printf("creating cut in CbcBranchCut\n");
-    return newObject;
+    last = values[i];
+  }
+  assert(closest <= 0.99999);
+  OsiRowCut down;
+  down.setLb(-COIN_DBL_MAX);
+  down.setUb(-1.0);
+  int pair[2];
+  double elements[] = { 1.0, -1.0 };
+  pair[0] = which[worst];
+  pair[1] = which[worst + 1];
+  delete[] values;
+  delete[] which;
+  down.setRow(2, pair, elements);
+  // up is same - just with rhs changed
+  OsiRowCut up = down;
+  up.setLb(1.0);
+  up.setUb(COIN_DBL_MAX);
+  // Say is not a fix type branch
+  CbcCutBranchingObject *newObject = new CbcCutBranchingObject(model_, down, up, false);
+  if (model_->messageHandler()->logLevel() > 1)
+    printf("creating cut in CbcBranchCut\n");
+  return newObject;
 }
 double
 CbcBranchAllDifferent::infeasibility(const OsiBranchingInformation * /*info*/,
-                                     int &preferredWay) const
+  int &preferredWay) const
 {
-    preferredWay = -1;
-    //OsiSolverInterface * solver = model_->solver();
-    const double * solution = model_->testSolution();
-    //const double * lower = solver->getColLower();
-    //const double * upper = solver->getColUpper();
-    double * values = new double[numberInSet_];
-    int i;
-    for (i = 0; i < numberInSet_; i++) {
-        int iColumn = which_[i];
-        values[i] = solution[iColumn];
+  preferredWay = -1;
+  //OsiSolverInterface * solver = model_->solver();
+  const double *solution = model_->testSolution();
+  //const double * lower = solver->getColLower();
+  //const double * upper = solver->getColUpper();
+  double *values = new double[numberInSet_];
+  int i;
+  for (i = 0; i < numberInSet_; i++) {
+    int iColumn = which_[i];
+    values[i] = solution[iColumn];
+  }
+  std::sort(values, values + numberInSet_);
+  double last = -1.0;
+  double closest = 1.0;
+  for (i = 0; i < numberInSet_; i++) {
+    if (values[i] - last < closest) {
+      closest = values[i] - last;
     }
-    std::sort(values, values + numberInSet_);
-    double last = -1.0;
-    double closest = 1.0;
-    for (i = 0; i < numberInSet_; i++) {
-        if (values[i] - last < closest) {
-            closest = values[i] - last;
-        }
-        last = values[i];
-    }
-    delete [] values;
-    if (closest > 0.99999)
-        return 0.0;
-    else
-        return 0.5*(1.0 - closest);
+    last = values[i];
+  }
+  delete[] values;
+  if (closest > 0.99999)
+    return 0.0;
+  else
+    return 0.5 * (1.0 - closest);
 }
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

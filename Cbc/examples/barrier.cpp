@@ -6,13 +6,11 @@
 #include <cassert>
 #include <iomanip>
 
-
 #include "CoinPragma.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "CoinTime.hpp"
 
 //#############################################################################
-
 
 /************************************************************************
 
@@ -30,11 +28,11 @@ created a user_driver.cpp from which the lines between ===== were taken
 
 ************************************************************************/
 
-int main (int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
 
   // Define your favorite OsiSolver
-  
+
   OsiClpSolverInterface solver1;
   // Taken from a user_driver.cpp
   // =======================
@@ -42,15 +40,15 @@ int main (int argc, const char *argv[])
   ClpSolve::PresolveType presolveType = ClpSolve::presolveOn;
   int numberPasses = 5;
 #ifndef UFL_BARRIER
-  int options[] = {0,0,0,0,0,0};
+  int options[] = { 0, 0, 0, 0, 0, 0 };
 #else
   // we can use UFL code
-  int options[] = {0,0,0,0,4,0};
+  int options[] = { 0, 0, 0, 0, 4, 0 };
 #endif
-  int extraInfo[] = {-1,-1,-1,-1,-1,-1};
-  int independentOptions[] = {0,0,3};
-  ClpSolve clpSolve(method,presolveType,numberPasses,
-                    options,extraInfo,independentOptions);
+  int extraInfo[] = { -1, -1, -1, -1, -1, -1 };
+  int independentOptions[] = { 0, 0, 3 };
+  ClpSolve clpSolve(method, presolveType, numberPasses,
+    options, extraInfo, independentOptions);
   // =======================
   // now pass options in
   solver1.setSolveOptions(clpSolve);
@@ -65,21 +63,21 @@ int main (int argc, const char *argv[])
     exit(1);
   }
 #endif
-  if (argc>=2) mpsFileName = argv[1];
-  int numMpsReadErrors = solver1.readMps(mpsFileName.c_str(),"");
-  if( numMpsReadErrors != 0 )
-  {
-     printf("%d errors reading MPS file\n", numMpsReadErrors);
-     return numMpsReadErrors;
+  if (argc >= 2)
+    mpsFileName = argv[1];
+  int numMpsReadErrors = solver1.readMps(mpsFileName.c_str(), "");
+  if (numMpsReadErrors != 0) {
+    printf("%d errors reading MPS file\n", numMpsReadErrors);
+    return numMpsReadErrors;
   }
   double time1 = CoinCpuTime();
 
   solver1.initialSolve();
 
-  std::cout<<mpsFileName<<" took "<<CoinCpuTime()-time1<<" seconds, "
-	   <<" with objective "
-	   <<solver1.getObjValue()
-	   <<std::endl;
+  std::cout << mpsFileName << " took " << CoinCpuTime() - time1 << " seconds, "
+            << " with objective "
+            << solver1.getObjValue()
+            << std::endl;
 
   return 0;
-}    
+}

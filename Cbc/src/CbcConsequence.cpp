@@ -7,7 +7,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 #include <cassert>
 #include <cstdlib>
@@ -21,23 +21,24 @@ CbcConsequence::CbcConsequence()
 {
 }
 
-
 // Destructor
-CbcConsequence::~CbcConsequence ()
+CbcConsequence::~CbcConsequence()
 {
 }
 
 // Copy constructor
-CbcConsequence::CbcConsequence ( const CbcConsequence & /*rhs*/)
+CbcConsequence::CbcConsequence(const CbcConsequence & /*rhs*/)
 {
 }
 
 // Assignment operator
 CbcConsequence &
-CbcConsequence::operator=( const CbcConsequence & rhs)
+CbcConsequence::operator=(const CbcConsequence &rhs)
 {
-    if (this != &rhs) {
-    }
-    return *this;
+  if (this != &rhs) {
+  }
+  return *this;
 }
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

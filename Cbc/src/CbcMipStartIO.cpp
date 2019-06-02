@@ -13,345 +13,363 @@
 #include "CbcHeuristic.hpp"
 #include <CbcModel.hpp>
 #include "CbcMipStartIO.hpp"
+#include "CbcSOS.hpp"
 #include "CoinTime.hpp"
 
 using namespace std;
 
-
-bool isNumericStr( const char *str )
+bool isNumericStr(const char *str)
 {
-   const size_t l = strlen(str);
+  const size_t l = strlen(str);
 
-   for ( size_t i=0 ; i<l ; ++i )
-     if (!(isdigit(str[i])||(str[i]=='.')||
-	   (str[i]=='-')||(str[i]=='+')||(str[i]=='e')))
-         return false;
+  for (size_t i = 0; i < l; ++i)
+    if (!(isdigit(str[i]) || (str[i] == '.') || (str[i] == '-') || (str[i] == '+') || (str[i] == 'e')))
+      return false;
 
-   return true;
+  return true;
 }
 
-int readMIPStart( CbcModel * model, const char *fileName,
-                  vector< pair< string, double > > &colValues,
-                  double &/*solObj*/ )
+int readMIPStart(CbcModel *model, const char *fileName,
+  vector< pair< string, double > > &colValues,
+  double & /*solObj*/)
 {
 #define STR_SIZE 256
-   FILE *f = fopen( fileName, "r" );
-   if (!f)
-      return 1;
-   char line[STR_SIZE];
+  FILE *f = fopen(fileName, "r");
+  if (!f)
+    return 1;
+  char line[STR_SIZE];
 
-   int nLine = 0;
-   char printLine[STR_SIZE];
-   while (fgets( line, STR_SIZE, f ))
-   {
-      ++nLine;
-      char col[4][STR_SIZE];
-      int nread = sscanf( line, "%s %s %s %s", col[0], col[1], col[2], col[3] );
-      if (!nread)
-         continue;
-      /* line with variable value */
-      if (strlen(col[0])&&isdigit(col[0][0])&&(nread>=3))
-      {
-         if (!isNumericStr(col[0]))
-         {
-            sprintf( printLine, "Reading: %s, line %d - first column in mipstart file should be numeric, ignoring.", fileName, nLine );
-            model->messageHandler()->message(CBC_GENERAL, model->messages()) << printLine << CoinMessageEol;
-            continue;
-         }
-         if (!isNumericStr(col[2]))
-         {
-            sprintf( printLine, "Reading: %s, line %d - Third column in mipstart file should be numeric, ignoring.", fileName, nLine  );
-            model->messageHandler()->message(CBC_GENERAL, model->messages()) << printLine << CoinMessageEol;
-            continue;
-         }
-
-         char *name = col[1];
-         double value = atof( col[2] );
-
-         colValues.push_back( pair<string, double>(string(name),value) );
+  int nLine = 0;
+  char printLine[STR_SIZE];
+  while (fgets(line, STR_SIZE, f)) {
+    ++nLine;
+    char col[4][STR_SIZE];
+    int nread = sscanf(line, "%s %s %s %s", col[0], col[1], col[2], col[3]);
+    if (!nread)
+      continue;
+    /* line with variable value */
+    if (strlen(col[0]) && isdigit(col[0][0]) && (nread >= 3)) {
+      if (!isNumericStr(col[0])) {
+        sprintf(printLine, "Reading: %s, line %d - first column in mipstart file should be numeric, ignoring.", fileName, nLine);
+        model->messageHandler()->message(CBC_GENERAL, model->messages()) << printLine << CoinMessageEol;
+        continue;
       }
-   }
-
-   if (colValues.size()) {
-      sprintf( printLine,"MIPStart values read for %d variables.", static_cast<int>(colValues.size()) );
-          model->messageHandler()->message(CBC_GENERAL, model->messages()) << printLine << CoinMessageEol;
-      if (colValues.size()<model->getNumCols()) {
-          int numberColumns = model->getNumCols();
-          OsiSolverInterface *solver = model->solver();
-          vector< pair< string, double > > fullValues;
-          /* for fast search of column names */
-          map< string, int > colIdx;
-          for (int i=0;i<numberColumns;i++) {
-              fullValues.push_back( pair<string, double>(solver->getColName(i),0.0) );
-              colIdx[solver->getColName(i)] = i;
-          }
-          for ( int i=0 ; (i<static_cast<int>(colValues.size())) ; ++i ) {
-              map< string, int >::const_iterator mIt = colIdx.find( colValues[i].first );
-              if ( mIt != colIdx.end() ) {
-                  const int idx = mIt->second;
-                  double v = colValues[i].second;
-                  fullValues[idx].second=v;
-              }
-          }
-          colValues=fullValues;
+      if (!isNumericStr(col[2])) {
+        sprintf(printLine, "Reading: %s, line %d - Third column in mipstart file should be numeric, ignoring.", fileName, nLine);
+        model->messageHandler()->message(CBC_GENERAL, model->messages()) << printLine << CoinMessageEol;
+        continue;
       }
-   } 
-   else {
-      sprintf( printLine, "No mipstart solution read from %s", fileName );
-      model->messageHandler()->message(CBC_GENERAL, model->messages()) << printLine << CoinMessageEol;
-      return 1;
-   }
 
-   fclose(f);
-   return 0;
+      char *name = col[1];
+      double value = atof(col[2]);
+
+      colValues.push_back(pair< string, double >(string(name), value));
+    }
+  }
+
+  if (colValues.size()) {
+    sprintf(printLine, "MIPStart values read for %d variables.", static_cast< int >(colValues.size()));
+    model->messageHandler()->message(CBC_GENERAL, model->messages()) << printLine << CoinMessageEol;
+    if (colValues.size() < model->getNumCols()) {
+      int numberColumns = model->getNumCols();
+      OsiSolverInterface *solver = model->solver();
+      vector< pair< string, double > > fullValues;
+      /* for fast search of column names */
+      map< string, int > colIdx;
+      for (int i = 0; i < numberColumns; i++) {
+        fullValues.push_back(pair< string, double >(solver->getColName(i), 0.0));
+        colIdx[solver->getColName(i)] = i;
+      }
+      for (int i = 0; (i < static_cast< int >(colValues.size())); ++i) {
+        map< string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
+        if (mIt != colIdx.end()) {
+          const int idx = mIt->second;
+          double v = colValues[i].second;
+          fullValues[idx].second = v;
+        }
+      }
+      colValues = fullValues;
+    }
+  } else {
+    sprintf(printLine, "No mipstart solution read from %s", fileName);
+    model->messageHandler()->message(CBC_GENERAL, model->messages()) << printLine << CoinMessageEol;
+    return 1;
+  }
+
+  fclose(f);
+  return 0;
 }
 
-int computeCompleteSolution( CbcModel * model,
-                             const vector< string > colNames,
-                             const std::vector< std::pair< std::string, double > > &colValues,
-                             double *sol, double &obj )
+int computeCompleteSolution(CbcModel *model,
+  const vector< string > colNames,
+  const std::vector< std::pair< std::string, double > > &colValues,
+			    double *sol, double &obj, int extraActions)
 {
-   if (!model->getNumCols())
-       return 0;
-   
-   int status = 0;
-   double compObj = COIN_DBL_MAX;
-   bool foundIntegerSol = false;
-   OsiSolverInterface *lp = model->solver()->clone();
-   map< string, int > colIdx;
-   assert( (static_cast<int>(colNames.size())) == lp->getNumCols() );
-   /* for fast search of column names */
-   for ( int i=0 ; (i<static_cast<int>(colNames.size())) ; ++i )
-      colIdx[colNames[i]] = i;
+  if (!model->getNumCols())
+    return 0;
 
-   char printLine[STR_SIZE];
-   int fixed = 0;
-   int notFound = 0;
-   char colNotFound[256] = "";
-   int nContinuousFixed = 0;
+  int status = 0;
+  double compObj = COIN_DBL_MAX;
+  bool foundIntegerSol = false;
+  OsiSolverInterface *lp = model->solver()->clone();
+  map< string, int > colIdx;
+  assert((static_cast< int >(colNames.size())) == lp->getNumCols());
+  /* for fast search of column names */
+  for (int i = 0; (i < static_cast< int >(colNames.size())); ++i)
+    colIdx[colNames[i]] = i;
+
+  char printLine[STR_SIZE];
+  int fixed = 0;
+  int notFound = 0;
+  char colNotFound[256] = "";
+  int nContinuousFixed = 0;
 
 #ifndef JUST_FIX_INTEGER
 #define JUST_FIX_INTEGER 0
 #endif
 
 #if JUST_FIX_INTEGER > 1
-   // all not mentioned are at zero
-   for ( int i=0 ; (i<lp->getNumCols()) ; ++i )
-   {
-       if (lp->isInteger(i))
-         lp->setColBounds( i, 0.0, 0.0 );
-   } 
+  // all not mentioned are at zero
+  for (int i = 0; (i < lp->getNumCols()); ++i) {
+    if (lp->isInteger(i))
+      lp->setColBounds(i, 0.0, 0.0);
+  }
 #endif
-   for ( int i=0 ; (i<static_cast<int>(colValues.size())) ; ++i )
-   {
-      map< string, int >::const_iterator mIt = colIdx.find( colValues[i].first );
-      if ( mIt == colIdx.end() )
-      {
-         if (!notFound)
-            strcpy( colNotFound, colValues[i].first.c_str() );
-         notFound++;
+  if (extraActions) {
+    const double * objective = lp->getObjCoefficients();
+    const double * lower = lp->getColLower();
+    const double * upper = lp->getColUpper();
+    for (int i = 0; (i < lp->getNumCols()); ++i) {
+      if (lp->isInteger(i)) {
+	double objValue = objective[i];
+	double lowerValue = lower[i];
+	double upperValue = upper[i];
+	switch (extraActions) {
+	case 1:
+	  lp->setColBounds(i, lowerValue, lowerValue);
+	  break;
+	case 2:
+	  lp->setColBounds(i, upperValue, upperValue);
+	  break;
+	case 3:
+	  lp->setColBounds(i, lowerValue, lowerValue);
+	  if (objValue<0.0)
+	    lp->setColBounds(i, upperValue, upperValue);
+	  break;
+	case 4:
+	  lp->setColBounds(i, upperValue, upperValue);
+	  if (objValue>0.0)
+	    lp->setColBounds(i, lowerValue, lowerValue);
+	  break;
+	case 5:
+	  lp->setColBounds(i, lowerValue, lowerValue);
+	  if (objValue>0.0)
+	    lp->setColBounds(i, upperValue, upperValue);
+	  break;
+	case 6:
+	  lp->setColBounds(i, upperValue, upperValue);
+	  if (objValue<0.0)
+	    lp->setColBounds(i, lowerValue, lowerValue);
+	  break;
+	}
       }
+    }
+  }
+  for (int i = 0; (i < static_cast< int >(colValues.size())); ++i) {
+    map< string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
+    if (mIt == colIdx.end()) {
+      if (!notFound)
+        strcpy(colNotFound, colValues[i].first.c_str());
+      notFound++;
+    } else {
+      const int idx = mIt->second;
+      double v = colValues[i].second;
+#if JUST_FIX_INTEGER
+      if (!lp->isInteger(idx))
+        continue;
+#endif
+      if (fabs(v) < 1e-8)
+        v = 0.0;
+      if (lp->isInteger(idx)) // just to avoid small
+        v = floor(v + 0.5); // fractional garbage
       else
-      {
-         const int idx = mIt->second;
-         double v = colValues[i].second;
+        nContinuousFixed++;
+
+      lp->setColBounds(idx, v, v);
+      ++fixed;
+    }
+  }
+
+  if (extraActions)
+    fixed = lp->getNumIntegers();
+  if (!fixed) {
+    model->messageHandler()->message(CBC_GENERAL, model->messages())
+      << "Warning: MIPstart solution is not valid, column names do not match, ignoring it."
+      << CoinMessageEol;
+    goto TERMINATE;
+  }
+
+  if (notFound >= ((static_cast< double >(colNames.size())) * 0.5)) {
+    sprintf(printLine, "Warning: %d column names were not found (e.g. %s) while filling solution.", notFound, colNotFound);
+    model->messageHandler()->message(CBC_GENERAL, model->messages())
+      << printLine << CoinMessageEol;
+  }
 #if JUST_FIX_INTEGER
-         if (!lp->isInteger(idx))
-            continue;
+  lp->setHintParam(OsiDoPresolveInInitial, true, OsiHintDo);
 #endif
-         if (fabs(v)<1e-8)
-            v = 0.0;
-         if (lp->isInteger(idx))  // just to avoid small
-            v = floor( v+0.5 );   // fractional garbage
-         else
-            nContinuousFixed++;
+  lp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
+  lp->initialSolve();
 
-         lp->setColBounds( idx, v, v );
-         ++fixed;
-      }
-   }
-
-   if (!fixed)
-   {
+  if ((lp->isProvenPrimalInfeasible()) || (lp->isProvenDualInfeasible())) {
+    if (nContinuousFixed) {
       model->messageHandler()->message(CBC_GENERAL, model->messages())
-        << "Warning: MIPstart solution is not valid, column names do not match, ignoring it."
-        << CoinMessageEol;
-      goto TERMINATE;
-   }
-
-   if ( notFound >= ( (static_cast<double>(colNames.size())) * 0.5 ) ) {
-      sprintf( printLine, "Warning: %d column names were not found (e.g. %s) while filling solution.", notFound, colNotFound );
-        model->messageHandler()->message(CBC_GENERAL, model->messages())
-        << printLine << CoinMessageEol;
-   }
-#if JUST_FIX_INTEGER
-   lp->setHintParam(OsiDoPresolveInInitial, true, OsiHintDo) ;
-#endif
-   lp->setDblParam(OsiDualObjectiveLimit,COIN_DBL_MAX);
-   lp->initialSolve();
-
-   if ( (lp->isProvenPrimalInfeasible()) || (lp->isProvenDualInfeasible()) )
-   {
-      if (nContinuousFixed) {
-         model->messageHandler()->message(CBC_GENERAL, model->messages())
-            << "Trying just fixing integer variables (and fixingish SOS)." << CoinMessageEol;
-         int numberColumns = lp->getNumCols();
-         const double *oldLower = model->solver()->getColLower();
-         const double *oldUpper = model->solver()->getColUpper();
-	 double * savedSol = CoinCopyOfArray(lp->getColLower(),numberColumns);
-         for ( int i=0 ; i<numberColumns ; ++i ) {
-            if (!lp->isInteger(i)) { 
-               lp->setColLower(i,oldLower[i]);
-               lp->setColUpper(i,oldUpper[i]);
+        << "Trying just fixing integer variables (and fixingish SOS)." << CoinMessageEol;
+      int numberColumns = lp->getNumCols();
+      const double *oldLower = model->solver()->getColLower();
+      const double *oldUpper = model->solver()->getColUpper();
+      double *savedSol = CoinCopyOfArray(lp->getColLower(), numberColumns);
+      for (int i = 0; i < numberColumns; ++i) {
+        if (!lp->isInteger(i)) {
+          lp->setColLower(i, oldLower[i]);
+          lp->setColUpper(i, oldUpper[i]);
+        }
+      }
+      // but look at SOS
+      int numberObjects = model->numberObjects();
+      for (int i = 0; i < numberObjects; i++) {
+        const CbcSOS *object = dynamic_cast< const CbcSOS * >(model->object(i));
+        if (object) {
+          int n = object->numberMembers();
+          const int *members = object->members();
+          int sosType = object->sosType();
+          if (sosType == 1) {
+            // non zero can take any value - others zero
+            int iColumn = -1;
+            for (int j = 0; j < n; j++) {
+              int jColumn = members[j];
+              if (savedSol[jColumn])
+                iColumn = jColumn;
             }
-         }
-	 // but look at SOS
-	 int numberObjects = model->numberObjects();
-	 for (int i=0;i<numberObjects;i++) {
-	   const OsiSOS * object =
-	     dynamic_cast<const OsiSOS *>(model->object(i));
-	   if (object) {
-	     int n=object->numberMembers();
-	     const int * members = object->members();
-	     int sosType = object->sosType();
-	     if (sosType==1) {
-	       // non zero can take any value - others zero
-	       int iColumn=-1;
-	       for (int j=0;j<n;j++) {
-		 int jColumn=members[j];
-		 if (savedSol[jColumn]) 
-		   iColumn = jColumn;
-	       }
-	       for (int j=0;j<n;j++) {
-		 int jColumn=members[j];
-		 if (jColumn!=iColumn) {
-		   lp->setColLower(jColumn,0.0);
-		   lp->setColUpper(jColumn,0.0);
-		 }
-	       }
-	     } else if (sosType==2) {
-	       // SOS 2 - make a guess if just one nonzero
-	       int jA=-1;
-	       int jB=-1;
-	       for (int j=0;j<n;j++) {
-		 int jColumn=members[j];
-		 if (savedSol[jColumn]) {
-		   if (jA==-1)
-		     jA = j;
-		   jB = j;
-		 }
-	       }
-	       if (jB>jA+1) {
-		 jB = jA+1;
-	       } else if (jA==jB) {
-		 if (jA==n-1)
-		   jA--;
-		 else
-		   jB++;
-	       }
-	       for (int j=0;j<n;j++) {
-		 if (j!=jA&&j!=jB) {
-		   int jColumn=members[j];
-		   lp->setColLower(jColumn,0.0);
-		   lp->setColUpper(jColumn,0.0);
-		 }
-	       }
-	     }
-	   }
-	 }
-	 delete [] savedSol;
-         lp->initialSolve();
+            for (int j = 0; j < n; j++) {
+              int jColumn = members[j];
+              if (jColumn != iColumn) {
+                lp->setColLower(jColumn, 0.0);
+                lp->setColUpper(jColumn, 0.0);
+              }
+            }
+          } else if (sosType == 2) {
+            // SOS 2 - make a guess if just one nonzero
+            int jA = -1;
+            int jB = -1;
+            for (int j = 0; j < n; j++) {
+              int jColumn = members[j];
+              if (savedSol[jColumn]) {
+                if (jA == -1)
+                  jA = j;
+                jB = j;
+              }
+            }
+            if (jB > jA + 1) {
+              jB = jA + 1;
+            } else if (jA == jB) {
+              if (jA == n - 1)
+                jA--;
+              else
+                jB++;
+            }
+            for (int j = 0; j < n; j++) {
+              if (j != jA && j != jB) {
+                int jColumn = members[j];
+                lp->setColLower(jColumn, 0.0);
+                lp->setColUpper(jColumn, 0.0);
+              }
+            }
+          }
+        }
       }
-      else
-      {
-         model->messageHandler()->message(CBC_GENERAL, model->messages())
-             << "Fixing only non-zero variables." << CoinMessageEol;
-         /* unfix all variables which are zero */
-         int notZeroAnymore = 0;
-         for ( int i=0 ; (i<lp->getNumCols()) ; ++i )
-             if ( ((fabs(lp->getColLower()[i])) <= 1e-8) && (fabs(lp->getColLower()[i]-lp->getColUpper()[i]) <= 1e-8) )
-             {
-                const double *oldLower = model->solver()->getColLower();
-                const double *oldUpper = model->solver()->getColUpper();
-                lp->setColLower(i,oldLower[i]);
-                lp->setColUpper(i,oldUpper[i]);
-                notZeroAnymore++;
-             }
-         if (notZeroAnymore)
-             lp->initialSolve();
-      }
-   }
-
-   if (!lp->isProvenOptimal())
-   {
+      delete[] savedSol;
+      lp->initialSolve();
+    } else {
       model->messageHandler()->message(CBC_GENERAL, model->messages())
-           << "Warning: mipstart values could not be used to build a solution." << CoinMessageEol;
+        << "Fixing only non-zero variables." << CoinMessageEol;
+      /* unfix all variables which are zero */
+      int notZeroAnymore = 0;
+      for (int i = 0; (i < lp->getNumCols()); ++i)
+        if (((fabs(lp->getColLower()[i])) <= 1e-8) && (fabs(lp->getColLower()[i] - lp->getColUpper()[i]) <= 1e-8)) {
+          const double *oldLower = model->solver()->getColLower();
+          const double *oldUpper = model->solver()->getColUpper();
+          lp->setColLower(i, oldLower[i]);
+          lp->setColUpper(i, oldUpper[i]);
+          notZeroAnymore++;
+        }
+      if (notZeroAnymore)
+        lp->initialSolve();
+    }
+  }
+
+  if (!lp->isProvenOptimal()) {
+    model->messageHandler()->message(CBC_GENERAL, model->messages())
+      << "Warning: mipstart values could not be used to build a solution." << CoinMessageEol;
+    status = 1;
+    goto TERMINATE;
+  }
+
+  /* some additional effort is needed to provide an integer solution */
+  if (lp->getFractionalIndices().size() > 0) {
+    sprintf(printLine, "MIPStart solution provided values for %d of %d integer variables, %d variables are still fractional.", fixed, lp->getNumIntegers(), static_cast< int >(lp->getFractionalIndices().size()));
+    model->messageHandler()->message(CBC_GENERAL, model->messages())
+      << printLine << CoinMessageEol;
+    double start = CoinCpuTime();
+#if 1
+    CbcSerendipity heuristic(*model);
+    heuristic.setFractionSmall(2.0);
+    heuristic.setFeasibilityPumpOptions(1008013);
+    int returnCode = heuristic.smallBranchAndBound(lp,
+      1000, sol,
+      compObj,
+      model->getCutoff(),
+      "ReduceInMIPStart");
+    if ((returnCode & 1) != 0) {
+      sprintf(printLine, "Mini branch and bound defined values for remaining variables in %.2f seconds.",
+        CoinCpuTime() - start);
+      model->messageHandler()->message(CBC_GENERAL, model->messages())
+        << printLine << CoinMessageEol;
+      foundIntegerSol = true;
+      obj = compObj;
+    }
+#else
+    CbcModel babModel(*lp);
+    lp->writeLp("lessFix");
+    babModel.setLogLevel(2);
+    babModel.setMaximumNodes(1000);
+    babModel.setMaximumSeconds(60);
+    babModel.branchAndBound();
+    if (babModel.bestSolution()) {
+      sprintf(printLine, "Mini branch and bound defined values for remaining variables in %.2f seconds.",
+        CoinCpuTime() - start);
+      model->messageHandler()->message(CBC_GENERAL, model->messages())
+        << printLine << CoinMessageEol;
+      copy(babModel.bestSolution(), babModel.bestSolution() + babModel.getNumCols(), sol);
+      foundIntegerSol = true;
+      obj = compObj = babModel.getObjValue();
+    }
+#endif
+    else {
+      model->messageHandler()->message(CBC_GENERAL, model->messages())
+        << "Warning: mipstart values could not be used to build a solution." << CoinMessageEol;
       status = 1;
       goto TERMINATE;
-   }
-    
-   /* some additional effort is needed to provide an integer solution */
-   if ( lp->getFractionalIndices().size() > 0 )
-   {
-      sprintf( printLine,"MIPStart solution provided values for %d of %d integer variables, %d variables are still fractional.", fixed, lp->getNumIntegers(), static_cast<int>(lp->getFractionalIndices().size()) );
-      model->messageHandler()->message(CBC_GENERAL, model->messages())
-	<< printLine << CoinMessageEol;
-      double start = CoinCpuTime();
-#if 1
-      CbcSerendipity heuristic(*model);
-      heuristic.setFractionSmall(2.0);
-      heuristic.setFeasibilityPumpOptions(1008013);
-      int returnCode = heuristic.smallBranchAndBound(lp,
-						     1000, sol,
-						     compObj,
-						     model->getCutoff(), 
-						     "ReduceInMIPStart");
-      if ((returnCode&1) != 0) {
-         sprintf( printLine,"Mini branch and bound defined values for remaining variables in %.2f seconds.", 
-		  CoinCpuTime()-start);
-	 model->messageHandler()->message(CBC_GENERAL, model->messages())
-	   << printLine << CoinMessageEol;
-         foundIntegerSol = true;
-         obj = compObj;
-      }
-#else
-      CbcModel babModel( *lp );
-      lp->writeLp("lessFix");
-      babModel.setLogLevel( 2 );
-      babModel.setMaximumNodes( 1000 );
-      babModel.setMaximumSeconds( 60 );
-      babModel.branchAndBound();
-      if (babModel.bestSolution())
-      {
-         sprintf( printLine,"Mini branch and bound defined values for remaining variables in %.2f seconds.", 
-		  CoinCpuTime()-start);
-	 model->messageHandler()->message(CBC_GENERAL, model->messages())
-	   << printLine << CoinMessageEol;
-         copy( babModel.bestSolution(), babModel.bestSolution()+babModel.getNumCols(), sol );
-         foundIntegerSol = true;
-         obj = compObj = babModel.getObjValue();
-      }
-#endif
-      else
-      {
-          model->messageHandler()->message(CBC_GENERAL, model->messages())
-              << "Warning: mipstart values could not be used to build a solution." << CoinMessageEol;
-         status = 1;
-         goto TERMINATE;
-      }
-   }
-   else
-   {
-      foundIntegerSol = true;
-      obj = compObj = lp->getObjValue();
-      copy( lp->getColSolution(), lp->getColSolution()+lp->getNumCols(), sol );
-   }
+    }
+  } else {
+    foundIntegerSol = true;
+    obj = compObj = lp->getObjValue();
+    copy(lp->getColSolution(), lp->getColSolution() + lp->getNumCols(), sol);
+  }
 
-   if ( foundIntegerSol )
-   {
-      sprintf( printLine,"MIPStart provided solution with cost %g", compObj);
-      model->messageHandler()->message(CBC_GENERAL, model->messages())
-           << printLine << CoinMessageEol;
+  if (foundIntegerSol) {
+    sprintf(printLine, "MIPStart provided solution with cost %g", compObj);
+    model->messageHandler()->message(CBC_GENERAL, model->messages())
+      << printLine << CoinMessageEol;
 #if 0
       {
 	int numberColumns=lp->getNumCols();
@@ -444,8 +462,7 @@ int computeCompleteSolution( CbcModel * model,
 	  printf("Cfeasible (%g) - obj %g\n", largestInfeasibility,objValue);
       }
 #endif
-      for ( int i=0 ; (i<lp->getNumCols()) ; ++i )
-      {
+    for (int i = 0; (i < lp->getNumCols()); ++i) {
 #if 0
          if (sol[i]<1e-8)
             sol[i] = 0.0;
@@ -453,13 +470,13 @@ int computeCompleteSolution( CbcModel * model,
             if (lp->isInteger(i))
                sol[i] = floor( sol[i]+0.5 );
 #else
-	 if (lp->isInteger(i)) {
-	   //if (fabs(sol[i] - floor( sol[i]+0.5 ))>1.0e-8) 
-	   //printf("bad sol for %d - %.12g\n",i,sol[i]);
-	   sol[i] = floor( sol[i]+0.5 );
-	 }
-#endif
+      if (lp->isInteger(i)) {
+        //if (fabs(sol[i] - floor( sol[i]+0.5 ))>1.0e-8)
+        //printf("bad sol for %d - %.12g\n",i,sol[i]);
+        sol[i] = floor(sol[i] + 0.5);
       }
+#endif
+    }
 #if 0
       {
 	int numberColumns=lp->getNumCols();
@@ -550,45 +567,48 @@ int computeCompleteSolution( CbcModel * model,
       }
 #endif
 #if JUST_FIX_INTEGER
-      const double * oldLower = model->solver()->getColLower();
-      const double * oldUpper = model->solver()->getColUpper();
-      const double * dj = lp->getReducedCost();
-      int nNaturalLB=0;
-      int nMaybeLB=0;
-      int nForcedLB=0;
-      int nNaturalUB=0;
-      int nMaybeUB=0;
-      int nForcedUB=0;
-      int nOther=0;
-      for ( int i=0 ; i<lp->getNumCols() ; ++i ) {
-	if (lp->isInteger(i)) {
-	  if (sol[i]==oldLower[i]) {
-	    if (dj[i]>1.0e-5)
-	      nNaturalLB++;
-	    else if (dj[i]<-1.0e-5)
-	      nForcedLB++;
-	    else
-	      nMaybeLB++;
-	  } else if (sol[i]==oldUpper[i]) {
-	    if (dj[i]<-1.0e-5)
-	      nNaturalUB++;
-	    else if (dj[i]>1.0e-5)
-	      nForcedUB++;
-	    else
-	      nMaybeUB++;
-	  } else {
-	    nOther++;
-	  }
-	}
+    const double *oldLower = model->solver()->getColLower();
+    const double *oldUpper = model->solver()->getColUpper();
+    const double *dj = lp->getReducedCost();
+    int nNaturalLB = 0;
+    int nMaybeLB = 0;
+    int nForcedLB = 0;
+    int nNaturalUB = 0;
+    int nMaybeUB = 0;
+    int nForcedUB = 0;
+    int nOther = 0;
+    for (int i = 0; i < lp->getNumCols(); ++i) {
+      if (lp->isInteger(i)) {
+        if (sol[i] == oldLower[i]) {
+          if (dj[i] > 1.0e-5)
+            nNaturalLB++;
+          else if (dj[i] < -1.0e-5)
+            nForcedLB++;
+          else
+            nMaybeLB++;
+        } else if (sol[i] == oldUpper[i]) {
+          if (dj[i] < -1.0e-5)
+            nNaturalUB++;
+          else if (dj[i] > 1.0e-5)
+            nForcedUB++;
+          else
+            nMaybeUB++;
+        } else {
+          nOther++;
+        }
       }
-      printf("%d other, LB %d natural, %d neutral, %d forced, UB %d natural, %d neutral, %d forced\n",
-	     nOther,nNaturalLB,nMaybeLB,nForcedLB,
-	     nNaturalUB,nMaybeUB,nForcedUB=0);
+    }
+    printf("%d other, LB %d natural, %d neutral, %d forced, UB %d natural, %d neutral, %d forced\n",
+      nOther, nNaturalLB, nMaybeLB, nForcedLB,
+      nNaturalUB, nMaybeUB, nForcedUB = 0);
 #endif
-   }
+  }
 
 TERMINATE:
-   delete lp;
-   return status;
+  delete lp;
+  return status;
 }
 #undef STR_SIZE
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

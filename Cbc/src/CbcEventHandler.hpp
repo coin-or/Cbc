@@ -51,7 +51,7 @@
 
 /* May well already be declared, but can't hurt. */
 
-class CbcModel ;
+class CbcModel;
 
 /*
   cvs/svn: $Id$
@@ -82,166 +82,167 @@ class CbcModel ;
 class CbcEventHandler {
 
 public:
+  /*! \brief Events known to cbc */
 
-    /*! \brief Events known to cbc */
+  enum CbcEvent { /*! Processing of the current node is complete. */
+    node = 200,
+    /*! A tree status interval has arrived. */
+    treeStatus,
+    /*! A solution has been found. */
+    solution,
+    /*! A heuristic solution has been found. */
+    heuristicSolution,
+    /*! A solution will be found unless user takes action (first check). */
+    beforeSolution1,
+    /*! A solution will be found unless user takes action (thorough check). */
+    beforeSolution2,
+    /*! After failed heuristic. */
+    afterHeuristic,
+    /*! On entry to small branch and bound. */
+    smallBranchAndBound,
+    /*! After a pass of heuristic. */
+    heuristicPass,
+    /*! When converting constraints to cuts. */
+    convertToCuts,
+    /*! Having generated cuts, allows user to think. */
+    generatedCuts,
+    /*! End of search. */
+    endSearch
+  };
 
-    enum CbcEvent { /*! Processing of the current node is complete. */
-        node = 200,
-        /*! A tree status interval has arrived. */
-        treeStatus,
-        /*! A solution has been found. */
-        solution,
-        /*! A heuristic solution has been found. */
-        heuristicSolution,
-        /*! A solution will be found unless user takes action (first check). */
-        beforeSolution1,
-        /*! A solution will be found unless user takes action (thorough check). */
-        beforeSolution2,
-        /*! After failed heuristic. */
-        afterHeuristic,
-        /*! On entry to small branch and bound. */
-        smallBranchAndBound,
-        /*! After a pass of heuristic. */
-        heuristicPass,
-        /*! When converting constraints to cuts. */
-        convertToCuts,
-        /*! Having generated cuts, allows user to think. */
-        generatedCuts,
-        /*! End of search. */
-        endSearch
-    } ;
-
-    /*! \brief Action codes returned by the event handler.
+  /*! \brief Action codes returned by the event handler.
 
         Specific values are chosen to match ClpEventHandler return codes.
     */
 
-    enum CbcAction { /*! Continue --- no action required. */
-        noAction = -1,
-        /*! Stop --- abort the current run at the next opportunity. */
-        stop = 0,
-        /*! Restart --- restart branch-and-cut search; do not undo root node
+  enum CbcAction { /*! Continue --- no action required. */
+    noAction = -1,
+    /*! Stop --- abort the current run at the next opportunity. */
+    stop = 0,
+    /*! Restart --- restart branch-and-cut search; do not undo root node
         processing.
         */
-        restart,
-        /*! RestartRoot --- undo root node and start branch-and-cut afresh. */
-        restartRoot,
-        /*! Add special cuts. */
-        addCuts,
-        /*! Pretend solution never happened. */
-        killSolution,
-        /*! Take action on modified data. */
-        takeAction
+    restart,
+    /*! RestartRoot --- undo root node and start branch-and-cut afresh. */
+    restartRoot,
+    /*! Add special cuts. */
+    addCuts,
+    /*! Pretend solution never happened. */
+    killSolution,
+    /*! Take action on modified data. */
+    takeAction
 
-    } ;
+  };
 
-    /*! \brief Data type for event/action pairs */
+  /*! \brief Data type for event/action pairs */
 
-    typedef std::map<CbcEvent, CbcAction> eaMapPair ;
+  typedef std::map< CbcEvent, CbcAction > eaMapPair;
 
+  /*! \name Event Processing */
+  //@{
 
-    /*! \name Event Processing */
-    //@{
-
-    /*! \brief Return the action to be taken for an event.
-
-      Return the action that should be taken in response to the event passed as
-      the parameter. The default implementation simply reads a return code
-      from a map.
-    */
-    virtual CbcAction event(CbcEvent whichEvent) ;
-
-    /*! \brief Return the action to be taken for an event - and modify data.
+  /*! \brief Return the action to be taken for an event.
 
       Return the action that should be taken in response to the event passed as
       the parameter. The default implementation simply reads a return code
       from a map.
     */
-    virtual CbcAction event(CbcEvent whichEvent, void * data) ;
+  virtual CbcAction event(CbcEvent whichEvent);
 
-    //@}
+  /*! \brief Return the action to be taken for an event - and modify data.
 
+      Return the action that should be taken in response to the event passed as
+      the parameter. The default implementation simply reads a return code
+      from a map.
+    */
+  virtual CbcAction event(CbcEvent whichEvent, void *data);
 
-    /*! \name Constructors and destructors */
-    //@{
+  //@}
 
-    /*! \brief Default constructor. */
+  /*! \name Constructors and destructors */
+  //@{
 
-    CbcEventHandler(CbcModel *model = 0 /* was NULL but 4.6 complains */) ;
+  /*! \brief Default constructor. */
 
-    /*! \brief Copy constructor. */
+  CbcEventHandler(CbcModel *model = 0 /* was NULL but 4.6 complains */);
 
-    CbcEventHandler(const CbcEventHandler &orig) ;
+  /*! \brief Copy constructor. */
 
-    /*! \brief Assignment. */
+  CbcEventHandler(const CbcEventHandler &orig);
 
-    CbcEventHandler& operator=(const CbcEventHandler &rhs) ;
+  /*! \brief Assignment. */
 
-    /*! \brief Clone (virtual) constructor. */
+  CbcEventHandler &operator=(const CbcEventHandler &rhs);
 
-    virtual CbcEventHandler* clone() const ;
+  /*! \brief Clone (virtual) constructor. */
 
-    /*! \brief Destructor. */
+  virtual CbcEventHandler *clone() const;
 
-    virtual ~CbcEventHandler() ;
+  /*! \brief Destructor. */
 
-    //@}
+  virtual ~CbcEventHandler();
 
-    /*! \name Set/Get methods */
-    //@{
+  //@}
 
-    /*! \brief Set model. */
+  /*! \name Set/Get methods */
+  //@{
 
-    inline void setModel(CbcModel *model) {
-        model_ = model ;
+  /*! \brief Set model. */
+
+  inline void setModel(CbcModel *model)
+  {
+    model_ = model;
+  }
+
+  /*! \brief Get model. */
+
+  inline const CbcModel *getModel() const
+  {
+    return model_;
+  }
+
+  /*! \brief Set the default action */
+
+  inline void setDfltAction(CbcAction action)
+  {
+    dfltAction_ = action;
+  }
+
+  /*! \brief Set the action code associated with an event */
+
+  inline void setAction(CbcEvent event, CbcAction action)
+  {
+    if (eaMap_ == 0) {
+      eaMap_ = new eaMapPair;
     }
+    (*eaMap_)[event] = action;
+  }
 
-    /*! \brief Get model. */
-
-    inline const CbcModel* getModel() const {
-        return model_ ;
-    }
-
-    /*! \brief Set the default action */
-
-    inline void setDfltAction(CbcAction action) {
-        dfltAction_ = action ;
-    }
-
-    /*! \brief Set the action code associated with an event */
-
-    inline void setAction(CbcEvent event, CbcAction action) {
-        if (eaMap_ == 0) {
-            eaMap_ = new eaMapPair ;
-        }
-        (*eaMap_)[event] = action ;
-    }
-
-    //@}
-
+  //@}
 
 protected:
-
-    /*! \name Data members
+  /*! \name Data members
 
        Protected (as opposed to private) to allow access by derived classes.
     */
-    //@{
+  //@{
 
-    /*! \brief Pointer to associated CbcModel */
+  /*! \brief Pointer to associated CbcModel */
 
-    CbcModel *model_ ;
+  CbcModel *model_;
 
-    /*! \brief Default action */
+  /*! \brief Default action */
 
-    CbcAction dfltAction_ ;
+  CbcAction dfltAction_;
 
-    /*! \brief Pointer to a map that holds non-default event/action pairs */
+  /*! \brief Pointer to a map that holds non-default event/action pairs */
 
-    eaMapPair *eaMap_ ;
+  eaMapPair *eaMap_;
 
-    //@}
-} ;
+  //@}
+};
 
 #endif
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

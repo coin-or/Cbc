@@ -66,7 +66,6 @@ class CbcGeneralBranchingObject;
   differences from the parent.
 */
 
-
 /** \brief Holds complete information for recreating a subproblem.
 
   A CbcFullNodeInfo object contains all necessary information (bounds, basis,
@@ -81,8 +80,7 @@ class CbcGeneralBranchingObject;
 class CbcFullNodeInfo : public CbcNodeInfo {
 
 public:
-
-    /** \brief Modify model according to information at node
+  /** \brief Modify model according to information at node
 
         The routine modifies the model according to bound information at node,
         creates a new basis according to information at node, but with the size
@@ -91,71 +89,83 @@ public:
       \note The basis passed in via basis is solely a vehicle for passing in
         the desired basis size. It will be deleted and a new basis returned.
     */
-    virtual void applyToModel (CbcModel *model, CoinWarmStartBasis *&basis,
-                               CbcCountRowCut **addCuts,
-                               int &currentNumberCuts) const ;
+  virtual void applyToModel(CbcModel *model, CoinWarmStartBasis *&basis,
+    CbcCountRowCut **addCuts,
+    int &currentNumberCuts) const;
 
-    /// Just apply bounds to one variable - force means overwrite by lower,upper (1=>infeasible)
-    virtual int applyBounds(int iColumn, double & lower, double & upper, int force) ;
+  /// Just apply bounds to one variable - force means overwrite by lower,upper (1=>infeasible)
+  virtual int applyBounds(int iColumn, double &lower, double &upper, int force);
 
-    /** Builds up row basis backwards (until original model).
+  /** Builds up row basis backwards (until original model).
         Returns NULL or previous one to apply .
         Depends on Free being 0 and impossible for cuts
     */
-    virtual CbcNodeInfo * buildRowBasis(CoinWarmStartBasis & basis) const ;
-    // Default Constructor
-    CbcFullNodeInfo ();
+  virtual CbcNodeInfo *buildRowBasis(CoinWarmStartBasis &basis) const;
+  // Default Constructor
+  CbcFullNodeInfo();
 
-    /** Constructor from continuous or satisfied
+  /** Constructor from continuous or satisfied
     */
-    CbcFullNodeInfo (CbcModel * model,
-                     int numberRowsAtContinuous);
+  CbcFullNodeInfo(CbcModel *model,
+    int numberRowsAtContinuous);
 
-    // Copy constructor
-    CbcFullNodeInfo ( const CbcFullNodeInfo &);
+  // Copy constructor
+  CbcFullNodeInfo(const CbcFullNodeInfo &);
 
-    // Destructor
-    ~CbcFullNodeInfo ();
+  // Destructor
+  ~CbcFullNodeInfo();
 
-    /// Clone
-    virtual CbcNodeInfo * clone() const;
-    /// Lower bounds
-    inline const double * lower() const {
-        return lower_;
-    }
-    /// Set a bound
-    inline void setColLower(int sequence, double value)
-    { lower_[sequence]=value;}
-    /// Mutable lower bounds
-    inline double * mutableLower() const {
-        return lower_;
-    }
-    /// Upper bounds
-    inline const double * upper() const {
-        return upper_;
-    }
-    /// Set a bound
-    inline void setColUpper(int sequence, double value)
-    { upper_[sequence]=value;}
-    /// Mutable upper bounds
-    inline double * mutableUpper() const {
-        return upper_;
-    }
+  /// Clone
+  virtual CbcNodeInfo *clone() const;
+  /// Lower bounds
+  inline const double *lower() const
+  {
+    return lower_;
+  }
+  /// Set a bound
+  inline void setColLower(int sequence, double value)
+  {
+    lower_[sequence] = value;
+  }
+  /// Mutable lower bounds
+  inline double *mutableLower() const
+  {
+    return lower_;
+  }
+  /// Upper bounds
+  inline const double *upper() const
+  {
+    return upper_;
+  }
+  /// Set a bound
+  inline void setColUpper(int sequence, double value)
+  {
+    upper_[sequence] = value;
+  }
+  /// Mutable upper bounds
+  inline double *mutableUpper() const
+  {
+    return upper_;
+  }
+
 protected:
-    // Data
-    /** Full basis
+  // Data
+  /** Full basis
 
       This MUST BE A POINTER to avoid cutting extra information in derived
       warm start classes.
     */
-    CoinWarmStartBasis *basis_;
-    int numberIntegers_;
-    // Bounds stored in full
-    double * lower_;
-    double * upper_;
+  CoinWarmStartBasis *basis_;
+  int numberIntegers_;
+  // Bounds stored in full
+  double *lower_;
+  double *upper_;
+
 private:
-    /// Illegal Assignment operator
-    CbcFullNodeInfo & operator=(const CbcFullNodeInfo& rhs);
+  /// Illegal Assignment operator
+  CbcFullNodeInfo &operator=(const CbcFullNodeInfo &rhs);
 };
 #endif //CbcFullNodeInfo_H
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

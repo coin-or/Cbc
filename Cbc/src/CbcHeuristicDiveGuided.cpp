@@ -5,7 +5,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 
 #include "CbcHeuristicDiveGuided.hpp"
@@ -13,18 +13,18 @@
 
 // Default Constructor
 CbcHeuristicDiveGuided::CbcHeuristicDiveGuided()
-        : CbcHeuristicDive()
+  : CbcHeuristicDive()
 {
 }
 
 // Constructor from model
-CbcHeuristicDiveGuided::CbcHeuristicDiveGuided(CbcModel & model)
-        : CbcHeuristicDive(model)
+CbcHeuristicDiveGuided::CbcHeuristicDiveGuided(CbcModel &model)
+  : CbcHeuristicDive(model)
 {
 }
 
 // Destructor
-CbcHeuristicDiveGuided::~CbcHeuristicDiveGuided ()
+CbcHeuristicDiveGuided::~CbcHeuristicDiveGuided()
 {
 }
 
@@ -32,110 +32,108 @@ CbcHeuristicDiveGuided::~CbcHeuristicDiveGuided ()
 CbcHeuristicDiveGuided *
 CbcHeuristicDiveGuided::clone() const
 {
-    return new CbcHeuristicDiveGuided(*this);
+  return new CbcHeuristicDiveGuided(*this);
 }
 
 // Create C++ lines to get to current state
-void
-CbcHeuristicDiveGuided::generateCpp( FILE * fp)
+void CbcHeuristicDiveGuided::generateCpp(FILE *fp)
 {
-    CbcHeuristicDiveGuided other;
-    fprintf(fp, "0#include \"CbcHeuristicDiveGuided.hpp\"\n");
-    fprintf(fp, "3  CbcHeuristicDiveGuided heuristicDiveGuided(*cbcModel);\n");
-    CbcHeuristic::generateCpp(fp, "heuristicDiveGuided");
-    fprintf(fp, "3  cbcModel->addHeuristic(&heuristicDiveGuided);\n");
+  CbcHeuristicDiveGuided other;
+  fprintf(fp, "0#include \"CbcHeuristicDiveGuided.hpp\"\n");
+  fprintf(fp, "3  CbcHeuristicDiveGuided heuristicDiveGuided(*cbcModel);\n");
+  CbcHeuristic::generateCpp(fp, "heuristicDiveGuided");
+  fprintf(fp, "3  cbcModel->addHeuristic(&heuristicDiveGuided);\n");
 }
 
 // Copy constructor
-CbcHeuristicDiveGuided::CbcHeuristicDiveGuided(const CbcHeuristicDiveGuided & rhs)
-        :
-        CbcHeuristicDive(rhs)
+CbcHeuristicDiveGuided::CbcHeuristicDiveGuided(const CbcHeuristicDiveGuided &rhs)
+  : CbcHeuristicDive(rhs)
 {
 }
 
 // Assignment operator
 CbcHeuristicDiveGuided &
-CbcHeuristicDiveGuided::operator=( const CbcHeuristicDiveGuided & rhs)
+CbcHeuristicDiveGuided::operator=(const CbcHeuristicDiveGuided &rhs)
 {
-    if (this != &rhs) {
-        CbcHeuristicDive::operator=(rhs);
-    }
-    return *this;
+  if (this != &rhs) {
+    CbcHeuristicDive::operator=(rhs);
+  }
+  return *this;
 }
 
-bool
-CbcHeuristicDiveGuided::canHeuristicRun()
+bool CbcHeuristicDiveGuided::canHeuristicRun()
 {
-    double* bestIntegerSolution = model_->bestSolution();
-    if (bestIntegerSolution == NULL)
-        return false; // no integer solution available. Switch off heuristic
+  double *bestIntegerSolution = model_->bestSolution();
+  if (bestIntegerSolution == NULL)
+    return false; // no integer solution available. Switch off heuristic
 
-    return CbcHeuristicDive::canHeuristicRun();
+  return CbcHeuristicDive::canHeuristicRun();
 }
 
-bool
-CbcHeuristicDiveGuided::selectVariableToBranch(OsiSolverInterface* solver,
-        const double* newSolution,
-        int& bestColumn,
-        int& bestRound)
+bool CbcHeuristicDiveGuided::selectVariableToBranch(OsiSolverInterface *solver,
+  const double *newSolution,
+  int &bestColumn,
+  int &bestRound)
 {
-    double* bestIntegerSolution = model_->bestSolution();
+  double *bestIntegerSolution = model_->bestSolution();
 
-    int numberIntegers = model_->numberIntegers();
-    const int * integerVariable = model_->integerVariable();
-    double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  int numberIntegers = model_->numberIntegers();
+  const int *integerVariable = model_->integerVariable();
+  double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
 
-    bestColumn = -1;
-    bestRound = -1; // -1 rounds down, +1 rounds up
-    double bestFraction = COIN_DBL_MAX;
-    bool allTriviallyRoundableSoFar = true;
-    int bestPriority = COIN_INT_MAX;
-    for (int i = 0; i < numberIntegers; i++) {
-        int iColumn = integerVariable[i];
-	if (!isHeuristicInteger(solver,iColumn))
-	  continue;
-        double value = newSolution[iColumn];
-        double fraction = value - floor(value);
-        int round = 0;
-        if (fabs(floor(value + 0.5) - value) > integerTolerance) {
-            if (allTriviallyRoundableSoFar || (downLocks_[i] > 0 && upLocks_[i] > 0)) {
+  bestColumn = -1;
+  bestRound = -1; // -1 rounds down, +1 rounds up
+  double bestFraction = COIN_DBL_MAX;
+  bool allTriviallyRoundableSoFar = true;
+  int bestPriority = COIN_INT_MAX;
+  for (int i = 0; i < numberIntegers; i++) {
+    int iColumn = integerVariable[i];
+    if (!isHeuristicInteger(solver, iColumn))
+      continue;
+    double value = newSolution[iColumn];
+    double fraction = value - floor(value);
+    int round = 0;
+    if (fabs(floor(value + 0.5) - value) > integerTolerance) {
+      if (allTriviallyRoundableSoFar || (downLocks_[i] > 0 && upLocks_[i] > 0)) {
 
-                if (allTriviallyRoundableSoFar && downLocks_[i] > 0 && upLocks_[i] > 0) {
-                    allTriviallyRoundableSoFar = false;
-                    bestFraction = COIN_DBL_MAX;
-                }
-
-                if (value >= bestIntegerSolution[iColumn])
-                    round = -1;
-                else {
-                    round = 1;
-                    fraction = 1.0 - fraction;
-                }
-
-                // if variable is not binary, penalize it
-                if (!solver->isBinary(iColumn))
-                    fraction *= 1000.0;
-
-		// if priorities then use
-		if (priority_) {
-		  int thisRound=static_cast<int>(priority_[i].direction);
-		  if ((thisRound&1)!=0) 
-		    round = ((thisRound&2)==0) ? -1 : +1;
-		  if (priority_[i].priority>bestPriority) {
-		    fraction=COIN_DBL_MAX;
-		  } else if (priority_[i].priority<bestPriority) {
-		    bestPriority=static_cast<int>(priority_[i].priority);
-		    bestFraction=COIN_DBL_MAX;
-		  }
-		}
-                if (fraction < bestFraction) {
-                    bestColumn = iColumn;
-                    bestFraction = fraction;
-                    bestRound = round;
-                }
-            }
+        if (allTriviallyRoundableSoFar && downLocks_[i] > 0 && upLocks_[i] > 0) {
+          allTriviallyRoundableSoFar = false;
+          bestFraction = COIN_DBL_MAX;
         }
+
+        if (value >= bestIntegerSolution[iColumn])
+          round = -1;
+        else {
+          round = 1;
+          fraction = 1.0 - fraction;
+        }
+
+        // if variable is not binary, penalize it
+        if (!solver->isBinary(iColumn))
+          fraction *= 1000.0;
+
+        // if priorities then use
+        if (priority_) {
+          int thisRound = static_cast< int >(priority_[i].direction);
+          if ((thisRound & 1) != 0)
+            round = ((thisRound & 2) == 0) ? -1 : +1;
+          if (priority_[i].priority > bestPriority) {
+            fraction = COIN_DBL_MAX;
+          } else if (priority_[i].priority < bestPriority) {
+            bestPriority = static_cast< int >(priority_[i].priority);
+            bestFraction = COIN_DBL_MAX;
+          }
+        }
+        if (fraction < bestFraction) {
+          bestColumn = iColumn;
+          bestFraction = fraction;
+          bestRound = round;
+        }
+      }
     }
-    return allTriviallyRoundableSoFar;
+  }
+  return allTriviallyRoundableSoFar;
 }
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

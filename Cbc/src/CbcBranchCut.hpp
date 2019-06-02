@@ -17,31 +17,30 @@
 class CbcBranchCut : public CbcObject {
 
 public:
+  // Default Constructor
+  CbcBranchCut();
 
-    // Default Constructor
-    CbcBranchCut ();
-
-    /** In to maintain normal methods
+  /** In to maintain normal methods
     */
-    CbcBranchCut (CbcModel * model);
-    // Copy constructor
-    CbcBranchCut ( const CbcBranchCut &);
+  CbcBranchCut(CbcModel *model);
+  // Copy constructor
+  CbcBranchCut(const CbcBranchCut &);
 
-    /// Clone
-    virtual CbcObject * clone() const;
+  /// Clone
+  virtual CbcObject *clone() const;
 
-    // Assignment operator
-    CbcBranchCut & operator=( const CbcBranchCut& rhs);
+  // Assignment operator
+  CbcBranchCut &operator=(const CbcBranchCut &rhs);
 
-    // Destructor
-    ~CbcBranchCut ();
+  // Destructor
+  ~CbcBranchCut();
 
-    /// Infeasibility
-    virtual double infeasibility(const OsiBranchingInformation * info,
-                                 int &preferredWay) const;
+  /// Infeasibility
+  virtual double infeasibility(const OsiBranchingInformation *info,
+    int &preferredWay) const;
 
-    using CbcObject::feasibleRegion ;
-    /** Set bounds to contain the current solution.
+  using CbcObject::feasibleRegion;
+  /** Set bounds to contain the current solution.
 
       More precisely, for the variable associated with this object, take the
       value given in the current solution, force it within the current bounds
@@ -50,16 +49,16 @@ public:
 
       At present this will do nothing
     */
-    virtual void feasibleRegion();
+  virtual void feasibleRegion();
 
-    /** \brief Return true if branch created by object should fix variables
+  /** \brief Return true if branch created by object should fix variables
     */
-    virtual bool boundBranch() const ;
+  virtual bool boundBranch() const;
 
-    /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
+  /// Creates a branching object
+  virtual CbcBranchingObject *createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInformation *info, int way);
 
-    /** \brief Given a valid solution (with reduced costs, etc.),
+  /** \brief Given a valid solution (with reduced costs, etc.),
         return a branching object which would give a new feasible
         point in the good direction.
 
@@ -74,9 +73,9 @@ public:
 
       At present this does nothing
     */
-    virtual CbcBranchingObject * preferredNewFeasible() const;
+  virtual CbcBranchingObject *preferredNewFeasible() const;
 
-    /** \brief Given a valid solution (with reduced costs, etc.),
+  /** \brief Given a valid solution (with reduced costs, etc.),
         return a branching object which would give a new feasible
         point in a bad direction.
 
@@ -85,20 +84,18 @@ public:
 
       At present this does nothing
     */
-    virtual CbcBranchingObject * notPreferredNewFeasible() const ;
+  virtual CbcBranchingObject *notPreferredNewFeasible() const;
 
-    using CbcObject::resetBounds ;
-    /** Reset original upper and lower bound values from the solver.
+  using CbcObject::resetBounds;
+  /** Reset original upper and lower bound values from the solver.
 
       Handy for updating bounds held in this object after bounds held in the
       solver have been tightened.
      */
-    virtual void resetBounds();
-
+  virtual void resetBounds();
 
 protected:
-    /// data
-
+  /// data
 };
 /** Cut branching object
 
@@ -108,60 +105,60 @@ protected:
 class CbcCutBranchingObject : public CbcBranchingObject {
 
 public:
+  /// Default constructor
+  CbcCutBranchingObject();
 
-    /// Default constructor
-    CbcCutBranchingObject ();
-
-    /** Create a cut branching object
+  /** Create a cut branching object
 
         Cut down will applied on way=-1, up on way==1
         Assumed down will be first so way_ set to -1
     */
-    CbcCutBranchingObject (CbcModel * model, OsiRowCut & down, OsiRowCut &up, bool canFix);
+  CbcCutBranchingObject(CbcModel *model, OsiRowCut &down, OsiRowCut &up, bool canFix);
 
-    /// Copy constructor
-    CbcCutBranchingObject ( const CbcCutBranchingObject &);
+  /// Copy constructor
+  CbcCutBranchingObject(const CbcCutBranchingObject &);
 
-    /// Assignment operator
-    CbcCutBranchingObject & operator= (const CbcCutBranchingObject& rhs);
+  /// Assignment operator
+  CbcCutBranchingObject &operator=(const CbcCutBranchingObject &rhs);
 
-    /// Clone
-    virtual CbcBranchingObject * clone() const;
+  /// Clone
+  virtual CbcBranchingObject *clone() const;
 
-    /// Destructor
-    virtual ~CbcCutBranchingObject ();
+  /// Destructor
+  virtual ~CbcCutBranchingObject();
 
-    using CbcBranchingObject::branch ;
-    /** \brief Sets the bounds for variables or adds a cut depending on the
+  using CbcBranchingObject::branch;
+  /** \brief Sets the bounds for variables or adds a cut depending on the
                current arm of the branch and advances the object state to the next arm.
            Returns change in guessed objective on next branch
     */
-    virtual double branch();
+  virtual double branch();
 
-    using CbcBranchingObject::print ;
-    /** \brief Print something about branch - only if log level high
+  using CbcBranchingObject::print;
+  /** \brief Print something about branch - only if log level high
     */
-    virtual void print();
+  virtual void print();
 
-    /** \brief Return true if branch should fix variables
+  /** \brief Return true if branch should fix variables
     */
-    virtual bool boundBranch() const;
+  virtual bool boundBranch() const;
 
-    /** Return the type (an integer identifier) of \c this */
-    virtual CbcBranchObjType type() const {
-        return CutBranchingObj;
-    }
+  /** Return the type (an integer identifier) of \c this */
+  virtual CbcBranchObjType type() const
+  {
+    return CutBranchingObj;
+  }
 
-    /** Compare the original object of \c this with the original object of \c
+  /** Compare the original object of \c this with the original object of \c
         brObj. Assumes that there is an ordering of the original objects.
         This method should be invoked only if \c this and brObj are of the same
         type.
         Return negative/0/positive depending on whether \c this is
         smaller/same/larger than the argument.
     */
-    virtual int compareOriginalObject(const CbcBranchingObject* brObj) const;
+  virtual int compareOriginalObject(const CbcBranchingObject *brObj) const;
 
-    /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
         same type and must have the same original object, but they may have
         different feasible regions.
         Return the appropriate CbcRangeCompare value (first argument being the
@@ -169,15 +166,17 @@ public:
         replaceIfOverlap is true) replace the current branching object with one
         whose feasible region is the overlap.
      */
-    virtual CbcRangeCompare compareBranchingObject
-    (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
+  virtual CbcRangeCompare compareBranchingObject(const CbcBranchingObject *brObj, const bool replaceIfOverlap = false);
 
 protected:
-    /// Cut for the down arm (way_ = -1)
-    OsiRowCut down_;
-    /// Cut for the up arm (way_ = 1)
-    OsiRowCut up_;
-    /// True if one way can fix variables
-    bool canFix_;
+  /// Cut for the down arm (way_ = -1)
+  OsiRowCut down_;
+  /// Cut for the up arm (way_ = 1)
+  OsiRowCut up_;
+  /// True if one way can fix variables
+  bool canFix_;
 };
 #endif
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -602,7 +602,6 @@ PACKAGE_BUGREPORT='cbc@lists.coin-or.org'
 PACKAGE_URL='https://projects.coin-or.org/Cbc'
 
 ac_unique_file="src/CbcTree.hpp"
-ac_default_prefix=`pwd`
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -663,6 +662,8 @@ OSICBC_DFLT_SOLVER_SPX_FALSE
 OSICBC_DFLT_SOLVER_SPX_TRUE
 OSICBC_DFLT_SOLVER_MSK_FALSE
 OSICBC_DFLT_SOLVER_MSK_TRUE
+OSICBC_DFLT_SOLVER_HIGHS_FALSE
+OSICBC_DFLT_SOLVER_HIGHS_TRUE
 OSICBC_DFLT_SOLVER_GRB_FALSE
 OSICBC_DFLT_SOLVER_GRB_TRUE
 OSICBC_DFLT_SOLVER_GLPK_FALSE
@@ -784,7 +785,6 @@ am__nodep
 AMDEPBACKSLASH
 AMDEP_FALSE
 AMDEP_TRUE
-am__quote
 am__include
 DEPDIR
 OBJEXT
@@ -873,7 +873,8 @@ PACKAGE_VERSION
 PACKAGE_TARNAME
 PACKAGE_NAME
 PATH_SEPARATOR
-SHELL'
+SHELL
+am__quote'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
@@ -2868,7 +2869,7 @@ IFS=$ac_save_IFS
 case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
-am__api_version='1.15'
+am__api_version='1.16'
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
@@ -3410,12 +3411,6 @@ else
 fi
 
 
-# Where should everything be installed by default?  The COIN default is to
-# install directly into subdirectories of the directory where configure is
-# run. The default would be to install under /usr/local.
-
-
-
 # Change the default compiler flags. This needs to run before
 # AC_CANONICAL_BUILD.
 
@@ -3531,8 +3526,8 @@ MAKEINFO=${MAKEINFO-"${am_missing_run}makeinfo"}
 
 # For better backward compatibility.  To be removed once Automake 1.9.x
 # dies out for good.  For more background, see:
-# <http://lists.gnu.org/archive/html/automake/2012-07/msg00001.html>
-# <http://lists.gnu.org/archive/html/automake/2012-07/msg00014.html>
+# <https://lists.gnu.org/archive/html/automake/2012-07/msg00001.html>
+# <https://lists.gnu.org/archive/html/automake/2012-07/msg00014.html>
 mkdir_p='$(MKDIR_P)'
 
 # We need awk for the "check" target (and possibly the TAP driver).  The
@@ -3583,7 +3578,7 @@ END
 Aborting the configuration process, to ensure you take notice of the issue.
 
 You can download and install GNU coreutils to get an 'rm' implementation
-that behaves properly: <http://www.gnu.org/software/coreutils/>.
+that behaves properly: <https://www.gnu.org/software/coreutils/>.
 
 If you want to complete the configuration process using your problematic
 'rm' anyway, export the environment variable ACCEPT_INFERIOR_RM_PROGRAM
@@ -3632,45 +3627,45 @@ DEPDIR="${am__leading_dot}deps"
 
 ac_config_commands="$ac_config_commands depfiles"
 
-
-am_make=${MAKE-make}
-cat > confinc << 'END'
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${MAKE-make} supports the include directive" >&5
+$as_echo_n "checking whether ${MAKE-make} supports the include directive... " >&6; }
+cat > confinc.mk << 'END'
 am__doit:
-	@echo this is the am__doit target
+	@echo this is the am__doit target >confinc.out
 .PHONY: am__doit
 END
-# If we don't find an include directive, just comment out the code.
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for style of include used by $am_make" >&5
-$as_echo_n "checking for style of include used by $am_make... " >&6; }
 am__include="#"
 am__quote=
-_am_result=none
-# First try GNU make style include.
-echo "include confinc" > confmf
-# Ignore all kinds of additional output from 'make'.
-case `$am_make -s -f confmf 2> /dev/null` in #(
-*the\ am__doit\ target*)
-  am__include=include
-  am__quote=
-  _am_result=GNU
-  ;;
-esac
-# Now try BSD make style include.
-if test "$am__include" = "#"; then
-   echo '.include "confinc"' > confmf
-   case `$am_make -s -f confmf 2> /dev/null` in #(
-   *the\ am__doit\ target*)
-     am__include=.include
-     am__quote="\""
-     _am_result=BSD
+# BSD make does it like this.
+echo '.include "confinc.mk" # ignored' > confmf.BSD
+# Other make implementations (GNU, Solaris 10, AIX) do it like this.
+echo 'include confinc.mk # ignored' > confmf.GNU
+_am_result=no
+for s in GNU BSD; do
+  { echo "$as_me:$LINENO: ${MAKE-make} -f confmf.$s && cat confinc.out" >&5
+   (${MAKE-make} -f confmf.$s && cat confinc.out) >&5 2>&5
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); }
+  case $?:`cat confinc.out 2>/dev/null` in #(
+  '0:this is the am__doit target') :
+    case $s in #(
+  BSD) :
+    am__include='.include' am__quote='"' ;; #(
+  *) :
+    am__include='include' am__quote='' ;;
+esac ;; #(
+  *) :
      ;;
-   esac
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $_am_result" >&5
-$as_echo "$_am_result" >&6; }
-rm -f confinc confmf
+esac
+  if test "$am__include" != "#"; then
+    _am_result="yes ($s style)"
+    break
+  fi
+done
+rm -f confinc.* confmf.*
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${_am_result}" >&5
+$as_echo "${_am_result}" >&6; }
 
 # Check whether --enable-dependency-tracking was given.
 if test "${enable_dependency_tracking+set}" = set; then :
@@ -17027,7 +17022,7 @@ fi
 
   case $coin_has_coinutils in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "" != skip ; then
         if test $coin_has_coinutils = build ; then
              pcfile=coincoinutils
            else
@@ -17051,7 +17046,7 @@ fi
   fi
 
       else
-        coin_has_coinutils=yes
+        coin_has_coinutils=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -17294,7 +17289,7 @@ fi
 
   case $coin_has_osi in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "" != skip ; then
         if test $coin_has_osi = build ; then
              pcfile=coinosi
            else
@@ -17318,7 +17313,7 @@ fi
   fi
 
       else
-        coin_has_osi=yes
+        coin_has_osi=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -17561,7 +17556,7 @@ fi
 
   case $coin_has_cgl in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "" != skip ; then
         if test $coin_has_cgl = build ; then
              pcfile=coincgl
            else
@@ -17585,7 +17580,7 @@ fi
   fi
 
       else
-        coin_has_cgl=yes
+        coin_has_cgl=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -17828,7 +17823,7 @@ fi
 
   case $coin_has_clp in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "" != skip ; then
         if test $coin_has_clp = build ; then
              pcfile=coinclp
            else
@@ -17852,7 +17847,7 @@ fi
   fi
 
       else
-        coin_has_clp=yes
+        coin_has_clp=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -18097,7 +18092,7 @@ fi
 
   case $coin_has_osiclp in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "osi-clp" != skip ; then
         pcfile="osi-clp"
 
 
@@ -18117,7 +18112,7 @@ fi
   fi
 
       else
-        coin_has_osiclp=yes
+        coin_has_osiclp=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -18201,6 +18196,8 @@ if test $coin_has_osiclp != yes ; then
 fi
 
 # Optional package for command line edit support
+
+
 
 
 
@@ -18522,7 +18519,7 @@ fi
 
   case $coin_has_asl in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "coinasl" != skip ; then
         pcfile="coinasl"
 
 
@@ -18542,7 +18539,7 @@ fi
   fi
 
       else
-        coin_has_asl=yes
+        coin_has_asl=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -18919,6 +18916,9 @@ $as_echo "$as_me: FINALIZE_FLAGS for CbcLib:" >&6;}
         # or do we also need this for GCC on Windows?
         case $CC in */compile\ cl | cl | */cl | */compile\ icl | icl | */icl )
           libexport_attribute="__declspec(dllimport)"
+          if test "$enable_static" = yes ; then
+            as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+          fi
         esac
       fi
 
@@ -18996,6 +18996,9 @@ $as_echo "$as_me: FINALIZE_FLAGS for OsiCbcLib:" >&6;}
         # or do we also need this for GCC on Windows?
         case $CC in */compile\ cl | cl | */cl | */compile\ icl | icl | */icl )
           libexport_attribute="__declspec(dllimport)"
+          if test "$enable_static" = yes ; then
+            as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+          fi
         esac
       fi
 
@@ -19182,7 +19185,7 @@ fi
 
   case $coin_has_ositests in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "osi-unittests" != skip ; then
         pcfile="osi-unittests"
 
 
@@ -19202,7 +19205,7 @@ fi
   fi
 
       else
-        coin_has_ositests=yes
+        coin_has_ositests=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -19415,7 +19418,7 @@ fi
 
   case $coin_has_sample in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "coindatasample" != skip ; then
         pcfile="coindatasample"
 
 
@@ -19435,7 +19438,7 @@ fi
   fi
 
       else
-        coin_has_sample=yes
+        coin_has_sample=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -19646,7 +19649,7 @@ fi
 
   case $coin_has_netlib in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "coindatanetlib" != skip ; then
         pcfile="coindatanetlib"
 
 
@@ -19666,7 +19669,7 @@ fi
   fi
 
       else
-        coin_has_netlib=yes
+        coin_has_netlib=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -19877,7 +19880,7 @@ fi
 
   case $coin_has_miplib3 in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "coindatamiplib3" != skip ; then
         pcfile="coindatamiplib3"
 
 
@@ -19897,7 +19900,7 @@ fi
   fi
 
       else
-        coin_has_miplib3=yes
+        coin_has_miplib3=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -19995,6 +19998,9 @@ $as_echo "$as_me: FINALIZE_FLAGS for CbcUnitTest:" >&6;}
         # or do we also need this for GCC on Windows?
         case $CC in */compile\ cl | cl | */cl | */compile\ icl | icl | */icl )
           libexport_attribute="__declspec(dllimport)"
+          if test "$enable_static" = yes ; then
+            as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+          fi
         esac
       fi
 
@@ -20185,7 +20191,7 @@ fi
 
   case $coin_has_dylp in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "osi-dylp" != skip ; then
         pcfile="osi-dylp"
 
 
@@ -20205,7 +20211,7 @@ fi
   fi
 
       else
-        coin_has_dylp=yes
+        coin_has_dylp=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -20436,7 +20442,7 @@ fi
 
   case $coin_has_vol in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "osi-vol" != skip ; then
         pcfile="osi-vol"
 
 
@@ -20456,7 +20462,7 @@ fi
   fi
 
       else
-        coin_has_vol=yes
+        coin_has_vol=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -20690,7 +20696,7 @@ fi
 
   case $coin_has_cpx in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "osi-cplex" != skip ; then
         pcfile="osi-cplex"
 
 
@@ -20710,7 +20716,7 @@ fi
   fi
 
       else
-        coin_has_cpx=yes
+        coin_has_cpx=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -20947,7 +20953,7 @@ fi
 
   case $coin_has_glpk in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "osi-glpk" != skip ; then
         pcfile="osi-glpk"
 
 
@@ -20967,7 +20973,7 @@ fi
   fi
 
       else
-        coin_has_glpk=yes
+        coin_has_glpk=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -21198,7 +21204,7 @@ fi
 
   case $coin_has_grb in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "osi-gurobi" != skip ; then
         pcfile="osi-gurobi"
 
 
@@ -21218,7 +21224,7 @@ fi
   fi
 
       else
-        coin_has_grb=yes
+        coin_has_grb=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -21449,7 +21455,7 @@ fi
 
   case $coin_has_msk in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "osi-mosek" != skip ; then
         pcfile="osi-mosek"
 
 
@@ -21469,7 +21475,7 @@ fi
   fi
 
       else
-        coin_has_msk=yes
+        coin_has_msk=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -21703,7 +21709,7 @@ fi
 
   case $coin_has_spx in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "osi-soplex" != skip ; then
         pcfile="osi-soplex"
 
 
@@ -21723,7 +21729,7 @@ fi
   fi
 
       else
-        coin_has_spx=yes
+        coin_has_spx=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -21954,7 +21960,7 @@ fi
 
   case $coin_has_xpr in
     requested | build )
-      if test -n "$PKG_CONFIG" ; then
+      if test -n "$PKG_CONFIG" -a "osi-xpress" != skip ; then
         pcfile="osi-xpress"
 
 
@@ -21974,7 +21980,7 @@ fi
   fi
 
       else
-        coin_has_xpr=yes
+        coin_has_xpr=no
         # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
       fi
       ;;
@@ -22071,6 +22077,9 @@ $as_echo "$as_me: FINALIZE_FLAGS for CbcGeneric:" >&6;}
         # or do we also need this for GCC on Windows?
         case $CC in */compile\ cl | cl | */cl | */compile\ icl | icl | */icl )
           libexport_attribute="__declspec(dllimport)"
+          if test "$enable_static" = yes ; then
+            as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+          fi
         esac
       fi
 
@@ -22149,6 +22158,8 @@ case $cbc_default_solver in
    dylp)
       ;;
    glpk)
+      ;;
+  highs)
       ;;
  soplex)
       ;;
@@ -22365,6 +22376,12 @@ case "${osicbc_with_solver}" in
     osi_uc_solver=GRB ;
     osi_exists_solver=${coin_has_grb-"unavailable"}
     ;;
+  [H][i][g][h][s]*)
+    osi_lc_solver=highs ;
+    osi_mc_solver=HiGHS ;
+    osi_uc_solver=HIGHS ;
+    osi_exists_solver=${coin_has_highs-"unavailable"}
+    ;;
   [Mm][Ss][Kk]*)
     osi_lc_solver=msk ;
     osi_mc_solver=Msk
@@ -22471,6 +22488,14 @@ fi
 else
   OSICBC_DFLT_SOLVER_GRB_TRUE='#'
   OSICBC_DFLT_SOLVER_GRB_FALSE=
+fi
+
+ if test $osi_mc_solver = HiGHS; then
+  OSICBC_DFLT_SOLVER_HIGHS_TRUE=
+  OSICBC_DFLT_SOLVER_HIGHS_FALSE='#'
+else
+  OSICBC_DFLT_SOLVER_HIGHS_TRUE='#'
+  OSICBC_DFLT_SOLVER_HIGHS_FALSE=
 fi
 
  if test $osi_mc_solver = Msk; then
@@ -22984,6 +23009,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OSICBC_DFLT_SOLVER_GRB_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_GRB_FALSE}"; then
   as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_GRB\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OSICBC_DFLT_SOLVER_HIGHS_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_HIGHS_FALSE}"; then
+  as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_HIGHS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OSICBC_DFLT_SOLVER_MSK_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_MSK_FALSE}"; then
@@ -23597,7 +23626,7 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 #
 # INIT-COMMANDS
 #
-AMDEP_TRUE="$AMDEP_TRUE" ac_aux_dir="$ac_aux_dir"
+AMDEP_TRUE="$AMDEP_TRUE" MAKE="${MAKE-make}"
 
 
 # The HP-UX ksh and POSIX shell print the target directory to stdout
@@ -24602,29 +24631,35 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
   # Older Autoconf quotes --file arguments for eval, but not when files
   # are listed without --file.  Let's play safe and only enable the eval
   # if we detect the quoting.
-  case $CONFIG_FILES in
-  *\'*) eval set x "$CONFIG_FILES" ;;
-  *)   set x $CONFIG_FILES ;;
-  esac
+  # TODO: see whether this extra hack can be removed once we start
+  # requiring Autoconf 2.70 or later.
+  case $CONFIG_FILES in #(
+  *\'*) :
+    eval set x "$CONFIG_FILES" ;; #(
+  *) :
+    set x $CONFIG_FILES ;; #(
+  *) :
+     ;;
+esac
   shift
-  for mf
+  # Used to flag and report bootstrapping failures.
+  am_rc=0
+  for am_mf
   do
     # Strip MF so we end up with the name of the file.
-    mf=`echo "$mf" | sed -e 's/:.*$//'`
-    # Check whether this is an Automake generated Makefile or not.
-    # We used to match only the files named 'Makefile.in', but
-    # some people rename them; so instead we look at the file content.
-    # Grep'ing the first line is not enough: some people post-process
-    # each Makefile.in and add a new line on top of each file to say so.
-    # Grep'ing the whole file is not good either: AIX grep has a line
+    am_mf=`$as_echo "$am_mf" | sed -e 's/:.*$//'`
+    # Check whether this is an Automake generated Makefile which includes
+    # dependency-tracking related rules and includes.
+    # Grep'ing the whole file directly is not great: AIX grep has a line
     # limit of 2048, but all sed's we know have understand at least 4000.
-    if sed -n 's,^#.*generated by automake.*,X,p' "$mf" | grep X >/dev/null 2>&1; then
-      dirpart=`$as_dirname -- "$mf" ||
-$as_expr X"$mf" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
-	 X"$mf" : 'X\(//\)[^/]' \| \
-	 X"$mf" : 'X\(//\)$' \| \
-	 X"$mf" : 'X\(/\)' \| . 2>/dev/null ||
-$as_echo X"$mf" |
+    sed -n 's,^am--depfiles:.*,X,p' "$am_mf" | grep X >/dev/null 2>&1 \
+      || continue
+    am_dirpart=`$as_dirname -- "$am_mf" ||
+$as_expr X"$am_mf" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X"$am_mf" : 'X\(//\)[^/]' \| \
+	 X"$am_mf" : 'X\(//\)$' \| \
+	 X"$am_mf" : 'X\(/\)' \| . 2>/dev/null ||
+$as_echo X"$am_mf" |
     sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
 	    s//\1/
 	    q
@@ -24642,53 +24677,48 @@ $as_echo X"$mf" |
 	    q
 	  }
 	  s/.*/./; q'`
-    else
-      continue
-    fi
-    # Extract the definition of DEPDIR, am__include, and am__quote
-    # from the Makefile without running 'make'.
-    DEPDIR=`sed -n 's/^DEPDIR = //p' < "$mf"`
-    test -z "$DEPDIR" && continue
-    am__include=`sed -n 's/^am__include = //p' < "$mf"`
-    test -z "$am__include" && continue
-    am__quote=`sed -n 's/^am__quote = //p' < "$mf"`
-    # Find all dependency output files, they are included files with
-    # $(DEPDIR) in their names.  We invoke sed twice because it is the
-    # simplest approach to changing $(DEPDIR) to its actual value in the
-    # expansion.
-    for file in `sed -n "
-      s/^$am__include $am__quote\(.*(DEPDIR).*\)$am__quote"'$/\1/p' <"$mf" | \
-	 sed -e 's/\$(DEPDIR)/'"$DEPDIR"'/g'`; do
-      # Make sure the directory exists.
-      test -f "$dirpart/$file" && continue
-      fdir=`$as_dirname -- "$file" ||
-$as_expr X"$file" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
-	 X"$file" : 'X\(//\)[^/]' \| \
-	 X"$file" : 'X\(//\)$' \| \
-	 X"$file" : 'X\(/\)' \| . 2>/dev/null ||
-$as_echo X"$file" |
-    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
+    am_filepart=`$as_basename -- "$am_mf" ||
+$as_expr X/"$am_mf" : '.*/\([^/][^/]*\)/*$' \| \
+	 X"$am_mf" : 'X\(//\)$' \| \
+	 X"$am_mf" : 'X\(/\)' \| . 2>/dev/null ||
+$as_echo X/"$am_mf" |
+    sed '/^.*\/\([^/][^/]*\)\/*$/{
 	    s//\1/
 	    q
 	  }
-	  /^X\(\/\/\)[^/].*/{
+	  /^X\/\(\/\/\)$/{
 	    s//\1/
 	    q
 	  }
-	  /^X\(\/\/\)$/{
-	    s//\1/
-	    q
-	  }
-	  /^X\(\/\).*/{
+	  /^X\/\(\/\).*/{
 	    s//\1/
 	    q
 	  }
 	  s/.*/./; q'`
-      as_dir=$dirpart/$fdir; as_fn_mkdir_p
-      # echo "creating $dirpart/$file"
-      echo '# dummy' > "$dirpart/$file"
-    done
+    { echo "$as_me:$LINENO: cd "$am_dirpart" \
+      && sed -e '/# am--include-marker/d' "$am_filepart" \
+        | $MAKE -f - am--depfiles" >&5
+   (cd "$am_dirpart" \
+      && sed -e '/# am--include-marker/d' "$am_filepart" \
+        | $MAKE -f - am--depfiles) >&5 2>&5
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); } || am_rc=$?
   done
+  if test $am_rc -ne 0; then
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "Something went wrong bootstrapping makefile fragments
+    for automatic dependency tracking.  Try re-running configure with the
+    '--disable-dependency-tracking' option to at least be able to build
+    the package (albeit without support for automatic dependency tracking).
+See \`config.log' for more details" "$LINENO" 5; }
+  fi
+  { am_dirpart=; unset am_dirpart;}
+  { am_filepart=; unset am_filepart;}
+  { am_mf=; unset am_mf;}
+  { am_rc=; unset am_rc;}
+  rm -f conftest-deps.mk
 }
  ;;
     "libtool":C)

@@ -7,7 +7,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 #include <cassert>
 #include <cstdlib>
@@ -24,15 +24,15 @@
 /** Default Constructor
 
 */
-CbcCompareEstimate::CbcCompareEstimate ()
-        : CbcCompareBase()
+CbcCompareEstimate::CbcCompareEstimate()
+  : CbcCompareBase()
 {
-    test_ = this;
+  test_ = this;
 }
 
 // Copy constructor
-CbcCompareEstimate::CbcCompareEstimate ( const CbcCompareEstimate & rhs)
-        : CbcCompareBase(rhs)
+CbcCompareEstimate::CbcCompareEstimate(const CbcCompareEstimate &rhs)
+  : CbcCompareBase(rhs)
 
 {
 }
@@ -41,42 +41,42 @@ CbcCompareEstimate::CbcCompareEstimate ( const CbcCompareEstimate & rhs)
 CbcCompareBase *
 CbcCompareEstimate::clone() const
 {
-    return new CbcCompareEstimate(*this);
+  return new CbcCompareEstimate(*this);
 }
 
 // Assignment operator
 CbcCompareEstimate &
-CbcCompareEstimate::operator=( const CbcCompareEstimate & rhs)
+CbcCompareEstimate::operator=(const CbcCompareEstimate &rhs)
 {
-    if (this != &rhs) {
-        CbcCompareBase::operator=(rhs);
-    }
-    return *this;
+  if (this != &rhs) {
+    CbcCompareBase::operator=(rhs);
+  }
+  return *this;
 }
 
 // Destructor
-CbcCompareEstimate::~CbcCompareEstimate ()
+CbcCompareEstimate::~CbcCompareEstimate()
 {
 }
 
 // Returns true if y better than x
-bool
-CbcCompareEstimate::test (CbcNode * x, CbcNode * y)
+bool CbcCompareEstimate::test(CbcNode *x, CbcNode *y)
 {
-    double testX = x->guessedObjectiveValue();
-    double testY = y->guessedObjectiveValue();
-    if (testX != testY)
-        return testX > testY;
-    else
-        return equalityTest(x, y); // so ties will be broken in consistent manner
+  double testX = x->guessedObjectiveValue();
+  double testY = y->guessedObjectiveValue();
+  if (testX != testY)
+    return testX > testY;
+  else
+    return equalityTest(x, y); // so ties will be broken in consistent manner
 }
 
 // Create C++ lines to get to current state
-void
-CbcCompareEstimate::generateCpp( FILE * fp)
+void CbcCompareEstimate::generateCpp(FILE *fp)
 {
-    fprintf(fp, "0#include \"CbcCompareActual.hpp\"\n");
-    fprintf(fp, "3  CbcCompareEstimate compare;\n");
-    fprintf(fp, "3  cbcModel->setNodeComparison(compare);\n");
+  fprintf(fp, "0#include \"CbcCompareActual.hpp\"\n");
+  fprintf(fp, "3  CbcCompareEstimate compare;\n");
+  fprintf(fp, "3  cbcModel->setNodeComparison(compare);\n");
 }
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

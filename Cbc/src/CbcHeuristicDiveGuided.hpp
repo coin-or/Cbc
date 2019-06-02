@@ -13,43 +13,43 @@
 
 class CbcHeuristicDiveGuided : public CbcHeuristicDive {
 public:
+  // Default Constructor
+  CbcHeuristicDiveGuided();
 
-    // Default Constructor
-    CbcHeuristicDiveGuided ();
+  // Constructor with model - assumed before cuts
+  CbcHeuristicDiveGuided(CbcModel &model);
 
-    // Constructor with model - assumed before cuts
-    CbcHeuristicDiveGuided (CbcModel & model);
+  // Copy constructor
+  CbcHeuristicDiveGuided(const CbcHeuristicDiveGuided &);
 
-    // Copy constructor
-    CbcHeuristicDiveGuided ( const CbcHeuristicDiveGuided &);
+  // Destructor
+  ~CbcHeuristicDiveGuided();
 
-    // Destructor
-    ~CbcHeuristicDiveGuided ();
+  /// Clone
+  virtual CbcHeuristicDiveGuided *clone() const;
 
-    /// Clone
-    virtual CbcHeuristicDiveGuided * clone() const;
+  /// Assignment operator
+  CbcHeuristicDiveGuided &operator=(const CbcHeuristicDiveGuided &rhs);
 
-    /// Assignment operator
-    CbcHeuristicDiveGuided & operator=(const CbcHeuristicDiveGuided& rhs);
+  /// Create C++ lines to get to current state
+  virtual void generateCpp(FILE *fp);
 
-    /// Create C++ lines to get to current state
-    virtual void generateCpp( FILE * fp) ;
+  /// Tests if the heuristic can run
+  virtual bool canHeuristicRun();
 
-    /// Tests if the heuristic can run
-    virtual bool canHeuristicRun();
-
-    /// Selects the next variable to branch on
-    /** Returns true if all the fractional variables can be trivially
+  /// Selects the next variable to branch on
+  /** Returns true if all the fractional variables can be trivially
         rounded. Returns false, if there is at least one fractional variable
         that is not trivially roundable. In this case, the bestColumn
         returned will not be trivially roundable.
     */
-    virtual bool selectVariableToBranch(OsiSolverInterface* solver,
-                                        const double* newSolution,
-                                        int& bestColumn,
-                                        int& bestRound);
-
+  virtual bool selectVariableToBranch(OsiSolverInterface *solver,
+    const double *newSolution,
+    int &bestColumn,
+    int &bestRound);
 };
 
 #endif
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

@@ -7,7 +7,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 #include <cassert>
 #include <cstdlib>
@@ -21,54 +21,55 @@
 #include "CbcMessage.hpp"
 #include "CbcBranchBase.hpp"
 
-
 // Default Constructor
 CbcBranchingObject::CbcBranchingObject()
-        : OsiBranchingObject()
+  : OsiBranchingObject()
 {
-    model_ = NULL;
-    originalCbcObject_ = NULL;
-    variable_ = -1;
-    way_ = 0;
+  model_ = NULL;
+  originalCbcObject_ = NULL;
+  variable_ = -1;
+  way_ = 0;
 }
 
 // Useful constructor
-CbcBranchingObject::CbcBranchingObject (CbcModel * model, int variable, int way , double value)
-        : OsiBranchingObject(model->solver(), value)
+CbcBranchingObject::CbcBranchingObject(CbcModel *model, int variable, int way, double value)
+  : OsiBranchingObject(model->solver(), value)
 {
-    model_ = model;
-    originalCbcObject_ = NULL;
-    variable_ = variable;
-    way_ = way;
+  model_ = model;
+  originalCbcObject_ = NULL;
+  variable_ = variable;
+  way_ = way;
 }
 
 // Copy constructor
-CbcBranchingObject::CbcBranchingObject ( const CbcBranchingObject & rhs)
-        : OsiBranchingObject(rhs)
+CbcBranchingObject::CbcBranchingObject(const CbcBranchingObject &rhs)
+  : OsiBranchingObject(rhs)
 {
-    model_ = rhs.model_;
-    originalCbcObject_ = rhs.originalCbcObject_;
-    variable_ = rhs.variable_;
-    way_ = rhs.way_;
-    value_ = rhs.value_;
+  model_ = rhs.model_;
+  originalCbcObject_ = rhs.originalCbcObject_;
+  variable_ = rhs.variable_;
+  way_ = rhs.way_;
+  value_ = rhs.value_;
 }
 
 // Assignment operator
 CbcBranchingObject &
-CbcBranchingObject::operator=( const CbcBranchingObject & rhs)
+CbcBranchingObject::operator=(const CbcBranchingObject &rhs)
 {
-    if (this != &rhs) {
-        OsiBranchingObject::operator=(rhs);
-        model_ = rhs.model_;
-        originalCbcObject_ = rhs.originalCbcObject_;
-        variable_ = rhs.variable_;
-        way_ = rhs.way_;
-    }
-    return *this;
+  if (this != &rhs) {
+    OsiBranchingObject::operator=(rhs);
+    model_ = rhs.model_;
+    originalCbcObject_ = rhs.originalCbcObject_;
+    variable_ = rhs.variable_;
+    way_ = rhs.way_;
+  }
+  return *this;
 }
 
 // Destructor
-CbcBranchingObject::~CbcBranchingObject ()
+CbcBranchingObject::~CbcBranchingObject()
 {
 }
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

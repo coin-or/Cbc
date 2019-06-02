@@ -10,85 +10,86 @@
 
 #include "CbcHeuristic.hpp"
 
-
 /** LocalSearch class
  */
 
 class CbcHeuristicVND : public CbcHeuristic {
 public:
+  // Default Constructor
+  CbcHeuristicVND();
 
-    // Default Constructor
-    CbcHeuristicVND ();
-
-    /* Constructor with model - assumed before cuts
+  /* Constructor with model - assumed before cuts
        Initial version does not do Lps
     */
-    CbcHeuristicVND (CbcModel & model);
+  CbcHeuristicVND(CbcModel &model);
 
-    // Copy constructor
-    CbcHeuristicVND ( const CbcHeuristicVND &);
+  // Copy constructor
+  CbcHeuristicVND(const CbcHeuristicVND &);
 
-    // Destructor
-    ~CbcHeuristicVND ();
+  // Destructor
+  ~CbcHeuristicVND();
 
-    /// Clone
-    virtual CbcHeuristic * clone() const;
+  /// Clone
+  virtual CbcHeuristic *clone() const;
 
+  /// Assignment operator
+  CbcHeuristicVND &operator=(const CbcHeuristicVND &rhs);
 
-    /// Assignment operator
-    CbcHeuristicVND & operator=(const CbcHeuristicVND& rhs);
+  /// Create C++ lines to get to current state
+  virtual void generateCpp(FILE *fp);
 
-    /// Create C++ lines to get to current state
-    virtual void generateCpp( FILE * fp) ;
+  /// Resets stuff if model changes
+  virtual void resetModel(CbcModel *model);
 
-    /// Resets stuff if model changes
-    virtual void resetModel(CbcModel * model);
+  /// update model (This is needed if cliques update matrix etc)
+  virtual void setModel(CbcModel *model);
 
-    /// update model (This is needed if cliques update matrix etc)
-    virtual void setModel(CbcModel * model);
-
-    using CbcHeuristic::solution ;
-    /** returns 0 if no solution, 1 if valid solution.
+  using CbcHeuristic::solution;
+  /** returns 0 if no solution, 1 if valid solution.
         Sets solution values if good, sets objective value (only if good)
         This does Relaxation Induced Neighborhood Search
     */
-    virtual int solution(double & objectiveValue,
-                         double * newSolution);
-    /// This version fixes stuff and does IP
-    int solutionFix(double & objectiveValue,
-                    double * newSolution,
-                    const int * keep);
+  virtual int solution(double &objectiveValue,
+    double *newSolution);
+  /// This version fixes stuff and does IP
+  int solutionFix(double &objectiveValue,
+    double *newSolution,
+    const int *keep);
 
-    /// Sets how often to do it
-    inline void setHowOften(int value) {
-        howOften_ = value;
-    }
-    /// base solution array so we can set
-    inline double * baseSolution() const {
-        return baseSolution_;
-    }
+  /// Sets how often to do it
+  inline void setHowOften(int value)
+  {
+    howOften_ = value;
+  }
+  /// base solution array so we can set
+  inline double *baseSolution() const
+  {
+    return baseSolution_;
+  }
 
 protected:
-    // Data
+  // Data
 
-    /// Number of solutions so we can do something at solution
-    int numberSolutions_;
-    /// How often to do (code can change)
-    int howOften_;
-    /// Number of successes
-    int numberSuccesses_;
-    /// Number of tries
-    int numberTries_;
-    /// Node when last done
-    int lastNode_;
-    /// Step size for decomposition
-    int stepSize_;
-    int k_;
-    int kmax_;
-    int nDifferent_;
-    /// Base solution
-    double * baseSolution_;
+  /// Number of solutions so we can do something at solution
+  int numberSolutions_;
+  /// How often to do (code can change)
+  int howOften_;
+  /// Number of successes
+  int numberSuccesses_;
+  /// Number of tries
+  int numberTries_;
+  /// Node when last done
+  int lastNode_;
+  /// Step size for decomposition
+  int stepSize_;
+  int k_;
+  int kmax_;
+  int nDifferent_;
+  /// Base solution
+  double *baseSolution_;
 };
 
 #endif
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

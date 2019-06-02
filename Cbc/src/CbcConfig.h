@@ -43,3 +43,6 @@
 #endif /* HAVE_CONFIG_H */
 
 #endif /*__CBCCONFIG_H__*/
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

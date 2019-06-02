@@ -27,22 +27,22 @@ class OsiChooseVariable;
 
 class CbcBranchDecision {
 public:
-    /// Default Constructor
-    CbcBranchDecision ();
+  /// Default Constructor
+  CbcBranchDecision();
 
-    // Copy constructor
-    CbcBranchDecision ( const CbcBranchDecision &);
+  // Copy constructor
+  CbcBranchDecision(const CbcBranchDecision &);
 
-    /// Destructor
-    virtual ~CbcBranchDecision();
+  /// Destructor
+  virtual ~CbcBranchDecision();
 
-/// Clone
-    virtual CbcBranchDecision * clone() const = 0;
+  /// Clone
+  virtual CbcBranchDecision *clone() const = 0;
 
-    /// Initialize <i>e.g.</i> before starting to choose a branch at a node
-    virtual void initialize(CbcModel * model) = 0;
+  /// Initialize <i>e.g.</i> before starting to choose a branch at a node
+  virtual void initialize(CbcModel *model) = 0;
 
-    /** \brief Compare two branching objects. Return nonzero if branching
+  /** \brief Compare two branching objects. Return nonzero if branching
            using \p thisOne is better than branching using \p bestSoFar.
 
       If \p bestSoFar is NULL, the routine should return a nonzero value.
@@ -51,49 +51,53 @@ public:
 
     */
 
-    virtual int
-    betterBranch (CbcBranchingObject * thisOne,
-                  CbcBranchingObject * bestSoFar,
-                  double changeUp, int numberInfeasibilitiesUp,
-                  double changeDown, int numberInfeasibilitiesDown) = 0 ;
+  virtual int
+  betterBranch(CbcBranchingObject *thisOne,
+    CbcBranchingObject *bestSoFar,
+    double changeUp, int numberInfeasibilitiesUp,
+    double changeDown, int numberInfeasibilitiesDown)
+    = 0;
 
-    /** \brief Compare N branching objects. Return index of best
+  /** \brief Compare N branching objects. Return index of best
         and sets way of branching in chosen object.
 
       Either this or betterBranch is used depending which user wants.
     */
 
-    virtual int
-    bestBranch (CbcBranchingObject ** objects, int numberObjects, int numberUnsatisfied,
-                double * changeUp, int * numberInfeasibilitiesUp,
-                double * changeDown, int * numberInfeasibilitiesDown,
-                double objectiveValue) ;
+  virtual int
+  bestBranch(CbcBranchingObject **objects, int numberObjects, int numberUnsatisfied,
+    double *changeUp, int *numberInfeasibilitiesUp,
+    double *changeDown, int *numberInfeasibilitiesDown,
+    double objectiveValue);
 
-    /** Says whether this method can handle both methods -
+  /** Says whether this method can handle both methods -
         1 better, 2 best, 3 both */
-    virtual int whichMethod() {
-        return 2;
-    }
+  virtual int whichMethod()
+  {
+    return 2;
+  }
 
-    /** Saves a clone of current branching object.  Can be used to update
+  /** Saves a clone of current branching object.  Can be used to update
         information on object causing branch - after branch */
-    virtual void saveBranchingObject(OsiBranchingObject * ) {}
-    /** Pass in information on branch just done.
+  virtual void saveBranchingObject(OsiBranchingObject *) {}
+  /** Pass in information on branch just done.
         assumes object can get information from solver */
-    virtual void updateInformation(OsiSolverInterface * ,
-                                   const CbcNode * ) {}
-    /** Sets or gets best criterion so far */
-    virtual void setBestCriterion(double ) {}
-    virtual double getBestCriterion() const {
-        return 0.0;
-    }
-    /// Create C++ lines to get to current state
-    virtual void generateCpp( FILE * ) {}
-    /// Model
-    inline CbcModel * cbcModel() const {
-        return model_;
-    }
-    /* If chooseMethod_ id non-null then the rest is fairly pointless
+  virtual void updateInformation(OsiSolverInterface *,
+    const CbcNode *) {}
+  /** Sets or gets best criterion so far */
+  virtual void setBestCriterion(double) {}
+  virtual double getBestCriterion() const
+  {
+    return 0.0;
+  }
+  /// Create C++ lines to get to current state
+  virtual void generateCpp(FILE *) {}
+  /// Model
+  inline CbcModel *cbcModel() const
+  {
+    return model_;
+  }
+  /* If chooseMethod_ id non-null then the rest is fairly pointless
        as choosemethod_ will be doing all work
      This comment makes more sense if you realise that there's a conversion in
      process from the Cbc branching classes to Osi branching classes. The test
@@ -104,26 +108,28 @@ public:
      CbcNode.
 	*/
 
-    OsiChooseVariable * chooseMethod() const {
-        return chooseMethod_;
-    }
-    /// Set (clone) chooseMethod
-    void setChooseMethod(const OsiChooseVariable & method);
+  OsiChooseVariable *chooseMethod() const
+  {
+    return chooseMethod_;
+  }
+  /// Set (clone) chooseMethod
+  void setChooseMethod(const OsiChooseVariable &method);
 
 protected:
-
-    // Clone of branching object
-    CbcBranchingObject * object_;
-    /// Pointer to model
-    CbcModel * model_;
-    /* If chooseMethod_ id non-null then the rest is fairly pointless
+  // Clone of branching object
+  CbcBranchingObject *object_;
+  /// Pointer to model
+  CbcModel *model_;
+  /* If chooseMethod_ id non-null then the rest is fairly pointless
        as choosemethod_ will be doing all work
     */
-    OsiChooseVariable * chooseMethod_;
-private:
-    /// Assignment is illegal
-    CbcBranchDecision & operator=(const CbcBranchDecision& rhs);
+  OsiChooseVariable *chooseMethod_;
 
+private:
+  /// Assignment is illegal
+  CbcBranchDecision &operator=(const CbcBranchDecision &rhs);
 };
 #endif
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

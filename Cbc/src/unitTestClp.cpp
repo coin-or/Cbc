@@ -3,7 +3,6 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -28,75 +27,75 @@
 //#############################################################################
 
 // Display message on stdout and stderr
-void testingMessage( const char * const msg )
+void testingMessage(const char *const msg)
 {
-    std::cout << msg;
-    //cout <<endl <<"*****************************************"
-    //     <<endl <<msg <<endl;
+  std::cout << msg;
+  //cout <<endl <<"*****************************************"
+  //     <<endl <<msg <<endl;
 }
 
 //#############################################################################
 
 static inline bool CbcTestFile(const std::string name)
 {
-    FILE *fp = fopen(name.c_str(), "r");
-    if (fp) {
-        fclose(fp);
-        return true;
-    }
-    return false;
+  FILE *fp = fopen(name.c_str(), "r");
+  if (fp) {
+    fclose(fp);
+    return true;
+  }
+  return false;
 }
 
 //#############################################################################
 
-bool CbcTestMpsFile(std::string& fname)
+bool CbcTestMpsFile(std::string &fname)
 {
-    if (CbcTestFile(fname)) {
-        return true;
+  if (CbcTestFile(fname)) {
+    return true;
+  }
+  if (CbcTestFile(fname + ".mps")) {
+    fname += ".mps";
+    return true;
+  }
+  if (CbcTestFile(fname + ".MPS")) {
+    fname += ".MPS";
+    return true;
+  }
+  if (CoinFileInput::haveGzipSupport()) {
+    if (CbcTestFile(fname + ".gz")) {
+      return true;
     }
-    if (CbcTestFile(fname + ".mps")) {
-        fname += ".mps";
-        return true;
+    if (CbcTestFile(fname + ".mps.gz")) {
+      fname += ".mps";
+      return true;
     }
-    if (CbcTestFile(fname + ".MPS")) {
-        fname += ".MPS";
-        return true;
+    if (CbcTestFile(fname + ".MPS.gz")) {
+      fname += ".MPS";
+      return true;
     }
-    if (CoinFileInput::haveGzipSupport()) {
-      if (CbcTestFile(fname + ".gz")) {
-        return true;
-      }
-      if (CbcTestFile(fname + ".mps.gz")) {
-        fname += ".mps";
-        return true;
-      }
-      if (CbcTestFile(fname + ".MPS.gz")) {
-        fname += ".MPS";
-        return true;
-      }
-      if (CbcTestFile(fname + ".MPS.GZ")) {
-        fname += ".MPS";
-        return true;
-      }
+    if (CbcTestFile(fname + ".MPS.GZ")) {
+      fname += ".MPS";
+      return true;
     }
-    if (CoinFileInput::haveBzip2Support()) {
-      if (CbcTestFile(fname + ".bz2")) {
-        return true;
-      }
-      if (CbcTestFile(fname + ".mps.bz2")) {
-        fname += ".mps";
-        return true;
-      }
-      if (CbcTestFile(fname + ".MPS.bz2")) {
-        fname += ".MPS";
-        return true;
-      }
-      if (CbcTestFile(fname + ".MPS.BZ2")) {
-        fname += ".MPS";
-        return true;
-      }
+  }
+  if (CoinFileInput::haveBzip2Support()) {
+    if (CbcTestFile(fname + ".bz2")) {
+      return true;
     }
-    return false;
+    if (CbcTestFile(fname + ".mps.bz2")) {
+      fname += ".mps";
+      return true;
+    }
+    if (CbcTestFile(fname + ".MPS.bz2")) {
+      fname += ".MPS";
+      return true;
+    }
+    if (CbcTestFile(fname + ".MPS.BZ2")) {
+      fname += ".MPS";
+      return true;
+    }
+  }
+  return false;
 }
 //#############################################################################
 /*
@@ -124,50 +123,50 @@ bool CbcTestMpsFile(std::string& fname)
   Returns 0 if all goes well, -1 if the Miplib directory is missing, otherwise
      100*(number with bad objective)+(number that exceeded node limit)
 */
-int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
-                    int testSwitch, const double *stuff)
+int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
+  int testSwitch, const double *stuff)
 {
   // Stop Windows popup
-  WindowsErrorPopupBlocker() ;
-  unsigned int m ;
+  WindowsErrorPopupBlocker();
+  unsigned int m;
 
   // Do an existence check.
-  std::string test1 = dirMiplib+"p0033";
+  std::string test1 = dirMiplib + "p0033";
   bool doTest = CbcTestMpsFile(test1);
   if (!doTest) {
     std::cout
       << "Not doing miplib run as can't find mps files." << std::endl
       << "Perhaps you're trying to read gzipped (.gz) files without libz?"
-      << std::endl ;
-    return (0) ;
+      << std::endl;
+    return (0);
   }
-  int dfltPrecision = static_cast<int>(std::cout.precision()) ;
-/*
+  int dfltPrecision = static_cast< int >(std::cout.precision());
+  /*
   Set the range of problems to be tested. testSwitch = -2 is special and is
   picked up below.
 */
-    int loSet = 0 ;
-    int hiSet = 0 ;
-    if (testSwitch == -1) {
-      loSet = 0 ;
-      hiSet = 1 ;
-    } else if (testSwitch >= 0) {
-      loSet = static_cast<int>(stuff[6]) ;
-      hiSet = testSwitch ;
-      std::cout
-        << "Solving miplib problems in sets " << loSet
-	<< ":" << hiSet << "." << std::endl ;
-    }
-/*
+  int loSet = 0;
+  int hiSet = 0;
+  if (testSwitch == -1) {
+    loSet = 0;
+    hiSet = 1;
+  } else if (testSwitch >= 0) {
+    loSet = static_cast< int >(stuff[6]);
+    hiSet = testSwitch;
+    std::cout
+      << "Solving miplib problems in sets " << loSet
+      << ":" << hiSet << "." << std::endl;
+  }
+  /*
   Vectors to hold test problem names and characteristics.
 */
-    std::vector<std::string> mpsName ;
-    std::vector<int> nRows ;
-    std::vector<int> nCols ;
-    std::vector<double> objValueC ;
-    std::vector<double> objValue ;
-    std::vector<int> testSet ;
-    std::vector<int> rowCutDebugger ;
+  std::vector< std::string > mpsName;
+  std::vector< int > nRows;
+  std::vector< int > nCols;
+  std::vector< double > objValueC;
+  std::vector< double > objValue;
+  std::vector< int > testSet;
+  std::vector< int > rowCutDebugger;
 /*
   A macro to make the vector creation marginally readable. Parameters are
   name, rows, columns, integer objective, continuous objective, set ID,
@@ -176,24 +175,24 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
   To enable the row cut debugger for a given problem, change the last
   parameter to true. Don't forget to turn it off before committing changes!
 */
-#define PUSH_MPS(zz_mpsName_zz,\
-		 zz_nRows_zz,zz_nCols_zz,zz_objValue_zz,zz_objValueC_zz, \
-                 zz_testSet_zz, zz_rcDbg_zz) \
-  mpsName.push_back(zz_mpsName_zz) ; \
-  nRows.push_back(zz_nRows_zz) ; \
-  nCols.push_back(zz_nCols_zz) ; \
-  objValueC.push_back(zz_objValueC_zz) ; \
-  testSet.push_back(zz_testSet_zz) ; \
-  objValue.push_back(zz_objValue_zz) ; \
-  rowCutDebugger.push_back(zz_rcDbg_zz) ;
-/*
+#define PUSH_MPS(zz_mpsName_zz,                              \
+  zz_nRows_zz, zz_nCols_zz, zz_objValue_zz, zz_objValueC_zz, \
+  zz_testSet_zz, zz_rcDbg_zz)                                \
+  mpsName.push_back(zz_mpsName_zz);                          \
+  nRows.push_back(zz_nRows_zz);                              \
+  nCols.push_back(zz_nCols_zz);                              \
+  objValueC.push_back(zz_objValueC_zz);                      \
+  testSet.push_back(zz_testSet_zz);                          \
+  objValue.push_back(zz_objValue_zz);                        \
+  rowCutDebugger.push_back(zz_rcDbg_zz);
+  /*
   Push the miplib problems. Except for -2 (unitTest), push all, even if we're
   not going to do all of them.
 */
   if (testSwitch == -2) {
-      PUSH_MPS("p0033", 16, 33, 3089, 2520.57, 0, false);
-      PUSH_MPS("p0201", 133, 201, 7615, 6875.0, 0, false);
-      // PUSH_MPS("flugpl", 18, 18, 1201500, 1167185.7, 0, false);
+    PUSH_MPS("p0033", 16, 33, 3089, 2520.57, 0, false);
+    PUSH_MPS("p0201", 133, 201, 7615, 6875.0, 0, false);
+    // PUSH_MPS("flugpl", 18, 18, 1201500, 1167185.7, 0, false);
   } else {
 /*
   Load up the problem vector. Note that the row counts here include the
@@ -268,30 +267,33 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
   }
 #undef PUSH_MPS
 
-/*
+  /*
   Normally the problems are executed in order. Define RANDOM_ORDER below to
   randomize.
 
   #define RANDOM_ORDER
 */
   int which[100];
-  int nLoop = static_cast<int>(mpsName.size());
-  assert (nLoop <= 100);
-  for (int i = 0; i < nLoop; i++) which[i] = i;
+  int nLoop = static_cast< int >(mpsName.size());
+  assert(nLoop <= 100);
+  for (int i = 0; i < nLoop; i++)
+    which[i] = i;
 
-# ifdef RANDOM_ORDER
-  unsigned int iTime = static_cast<unsigned int>(CoinGetTimeOfDay()-1.256e9);
-  std::cout << "Time (seed) " << iTime << "." << std::endl ;
+#ifdef RANDOM_ORDER
+  unsigned int iTime = static_cast< unsigned int >(CoinGetTimeOfDay() - 1.256e9);
+  std::cout << "Time (seed) " << iTime << "." << std::endl;
   double sort[100];
-  CoinDrand48(true,iTime);
-  for (int i = 0; i < nLoop; i++) sort[i] = CoinDrand48();
-  CoinSort_2(sort,sort+nLoop,which);
-# endif
+  CoinDrand48(true, iTime);
+  for (int i = 0; i < nLoop; i++)
+    sort[i] = CoinDrand48();
+  CoinSort_2(sort, sort + nLoop, which);
+#endif
 
   int problemCnt = 0;
-  for (m = 0 ; m < mpsName.size() ; m++) {
+  for (m = 0; m < mpsName.size(); m++) {
     int setID = testSet[m];
-    if (loSet <= setID && setID <= hiSet) problemCnt++;
+    if (loSet <= setID && setID <= hiSet)
+      problemCnt++;
   }
 
   int numberFailures = 0;
@@ -300,385 +302,384 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
   double timeTaken = 0.0;
 
 //#define CLP_FACTORIZATION_INSTRUMENT
-# ifdef CLP_FACTORIZATION_INSTRUMENT
+#ifdef CLP_FACTORIZATION_INSTRUMENT
   double timeTakenFac = 0.0;
-# endif
+#endif
 
-/*
+  /*
   Open the main loop to step through the MPS problems.
 */
-  for (unsigned int mw = 0 ; mw < mpsName.size() ; mw++) {
+  for (unsigned int mw = 0; mw < mpsName.size(); mw++) {
     m = which[mw];
     int setID = testSet[m];
     // Skip if problem is not in specified problem set(s)
-    if (!(loSet <= setID && setID <= hiSet)) continue ;
-   
+    if (!(loSet <= setID && setID <= hiSet))
+      continue;
+
     numberAttempts++;
     std::cout << "  processing mps file: " << mpsName[m]
-	      << " (" << numberAttempts << " out of "
-	      << problemCnt << ")" << std::endl ;
-/*
+              << " (" << numberAttempts << " out of "
+              << problemCnt << ")" << std::endl;
+    /*
   Stage 1: Read the MPS and make sure the size of the constraint matrix
 	   is correct.
 */
-    CbcModel *model = new CbcModel(saveModel) ;
+    CbcModel *model = new CbcModel(saveModel);
 
-    std::string fn = dirMiplib+mpsName[m] ;
+    std::string fn = dirMiplib + mpsName[m];
     if (!CbcTestMpsFile(fn)) {
-      std::cout << "ERROR: Cannot find MPS file " << fn << "." << std::endl ;
+      std::cout << "ERROR: Cannot find MPS file " << fn << "." << std::endl;
       continue;
     }
-    model->solver()->readMps(fn.c_str(), "") ;
-    assert(model->getNumRows() == nRows[m]) ;
-    assert(model->getNumCols() == nCols[m]) ;
+    model->solver()->readMps(fn.c_str(), "");
+    assert(model->getNumRows() == nRows[m]);
+    assert(model->getNumCols() == nCols[m]);
 
     // Careful! We're initialising for the benefit of other code.
-    CoinDrand48(true,1234567);
+    CoinDrand48(true, 1234567);
     //printf("RAND1 %g %g\n",CoinDrand48(true,1234567),model->randomNumberGenerator()->randomDouble());
     //printf("RAND1 %g\n",CoinDrand48(true,1234567));
 
     // Higher limits for the serious problems.
     int testMaximumNodes = 200000;
     if (hiSet > 1)
-	testMaximumNodes = 20000000;
+      testMaximumNodes = 20000000;
     if (model->getMaximumNodes() > testMaximumNodes) {
-	model->setMaximumNodes(testMaximumNodes);
+      model->setMaximumNodes(testMaximumNodes);
     }
-/*
+    /*
   Stage 2: Call solver to solve the problem.
 */
 
-#   ifdef CLP_FACTORIZATION_INSTRUMENT
+#ifdef CLP_FACTORIZATION_INSTRUMENT
     extern double factorization_instrument(int type);
     double facTime1 = factorization_instrument(0);
     std::cout
       << "Factorization - initial solve " << facTime1 << " seconds."
-      << std::endl ;
-      timeTakenFac += facTime1;
-#   endif
+      << std::endl;
+    timeTakenFac += facTime1;
+#endif
 
-    double startTime = CoinCpuTime()+CoinCpuTimeJustChildren();
+    double startTime = CoinCpuTime() + CoinCpuTimeJustChildren();
 
     // Setup specific to clp
-    OsiClpSolverInterface *siClp =
-	dynamic_cast<OsiClpSolverInterface *>(model->solver()) ;
+    OsiClpSolverInterface *siClp = dynamic_cast< OsiClpSolverInterface * >(model->solver());
     ClpSimplex *modelC = NULL;
     if (siClp) {
       modelC = siClp->getModelPtr();
-      ClpMatrixBase * matrix = modelC->clpMatrix();
-      ClpPackedMatrix * clpMatrix = dynamic_cast< ClpPackedMatrix*>(matrix);
+      ClpMatrixBase *matrix = modelC->clpMatrix();
+      ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(matrix);
       if (stuff && stuff[9] && clpMatrix) {
-	// vector matrix!
-	clpMatrix->makeSpecialColumnCopy();
+        // vector matrix!
+        clpMatrix->makeSpecialColumnCopy();
       }
 
-#     ifdef JJF_ZERO
+#ifdef JJF_ZERO
       if (clpMatrix) {
-	int numberRows = clpMatrix->getNumRows();
-	int numberColumns = clpMatrix->getNumCols();
-	double * elements = clpMatrix->getMutableElements();
-	const int * row = clpMatrix->getIndices();
-	const CoinBigIndex * columnStart = clpMatrix->getVectorStarts();
-	const int * columnLength = clpMatrix->getVectorLengths();
-	double * smallest = new double [numberRows];
-	double * largest = new double [numberRows];
-	char * flag = new char [numberRows];
-	CoinZeroN(flag, numberRows);
-	for (int i = 0; i < numberRows; i++) {
-	    smallest[i] = COIN_DBL_MAX;
-	    largest[i] = 0.0;
-	}
-	for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-	    bool isInteger = modelC->isInteger(iColumn);
-	    CoinBigIndex j;
-	    for (j = columnStart[iColumn];
-		    j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-		int iRow = row[j];
-		double value = fabs(elements[j]);
-		if (!isInteger)
-		    flag[iRow] = 1;
-		smallest[iRow] = CoinMin(smallest[iRow], value);
-		largest[iRow] = CoinMax(largest[iRow], value);
-	    }
-	}
-	double * rowLower = modelC->rowLower();
-	double * rowUpper = modelC->rowUpper();
-	bool changed = false;
-	for (int i = 0; i < numberRows; i++) {
-	    if (flag[i] && smallest[i] > 10.0 && false) {
-		smallest[i] = 1.0 / smallest[i];
-		if (rowLower[i] > -1.0e20)
-		    rowLower[i] *= smallest[i];
-		if (rowUpper[i] < 1.0e20)
-		    rowUpper[i] *= smallest[i];
-		changed = true;
-	    } else {
-		smallest[i] = 0.0;
-	    }
-	}
-	if (changed) {
-	    printf("SCALED\n");
-	    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-		CoinBigIndex j;
-		for (j = columnStart[iColumn];
-			j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-		    int iRow = row[j];
-		    if (smallest[iRow])
-			elements[j] *= smallest[iRow];
-		}
-	    }
-	}
-	delete [] smallest;
-	delete [] largest;
-	delete [] flag;
+        int numberRows = clpMatrix->getNumRows();
+        int numberColumns = clpMatrix->getNumCols();
+        double *elements = clpMatrix->getMutableElements();
+        const int *row = clpMatrix->getIndices();
+        const CoinBigIndex *columnStart = clpMatrix->getVectorStarts();
+        const int *columnLength = clpMatrix->getVectorLengths();
+        double *smallest = new double[numberRows];
+        double *largest = new double[numberRows];
+        char *flag = new char[numberRows];
+        CoinZeroN(flag, numberRows);
+        for (int i = 0; i < numberRows; i++) {
+          smallest[i] = COIN_DBL_MAX;
+          largest[i] = 0.0;
+        }
+        for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+          bool isInteger = modelC->isInteger(iColumn);
+          CoinBigIndex j;
+          for (j = columnStart[iColumn];
+               j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+            int iRow = row[j];
+            double value = fabs(elements[j]);
+            if (!isInteger)
+              flag[iRow] = 1;
+            smallest[iRow] = CoinMin(smallest[iRow], value);
+            largest[iRow] = CoinMax(largest[iRow], value);
+          }
+        }
+        double *rowLower = modelC->rowLower();
+        double *rowUpper = modelC->rowUpper();
+        bool changed = false;
+        for (int i = 0; i < numberRows; i++) {
+          if (flag[i] && smallest[i] > 10.0 && false) {
+            smallest[i] = 1.0 / smallest[i];
+            if (rowLower[i] > -1.0e20)
+              rowLower[i] *= smallest[i];
+            if (rowUpper[i] < 1.0e20)
+              rowUpper[i] *= smallest[i];
+            changed = true;
+          } else {
+            smallest[i] = 0.0;
+          }
+        }
+        if (changed) {
+          printf("SCALED\n");
+          for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+            CoinBigIndex j;
+            for (j = columnStart[iColumn];
+                 j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+              int iRow = row[j];
+              if (smallest[iRow])
+                elements[j] *= smallest[iRow];
+            }
+          }
+        }
+        delete[] smallest;
+        delete[] largest;
+        delete[] flag;
       }
-#     endif    // JJF_ZERO
+#endif // JJF_ZERO
 
       model->checkModel();
       modelC->tightenPrimalBounds(0.0, 0, true);
       model->initialSolve();
       if (modelC->dualBound() == 1.0e10) {
-	// user did not set - so modify
-	// get largest scaled away from bound
-	ClpSimplex temp = *modelC;
-	temp.dual(0, 7);
-	double largestScaled = 1.0e-12;
-	double largest = 1.0e-12;
-	int numberRows = temp.numberRows();
-	const double * rowPrimal = temp.primalRowSolution();
-	const double * rowLower = temp.rowLower();
-	const double * rowUpper = temp.rowUpper();
-	const double * rowScale = temp.rowScale();
-	int iRow;
-	for (iRow = 0; iRow < numberRows; iRow++) {
-	  double value = rowPrimal[iRow];
-	  double above = value - rowLower[iRow];
-	  double below = rowUpper[iRow] - value;
-	  if (above < 1.0e12) {
-	      largest = CoinMax(largest, above);
-	  }
-	  if (below < 1.0e12) {
-	      largest = CoinMax(largest, below);
-	  }
-	  if (rowScale) {
-	      double multiplier = rowScale[iRow];
-	      above *= multiplier;
-	      below *= multiplier;
-	  }
-	  if (above < 1.0e12) {
-	      largestScaled = CoinMax(largestScaled, above);
-	  }
-	  if (below < 1.0e12) {
-	      largestScaled = CoinMax(largestScaled, below);
-	  }
-	}
+        // user did not set - so modify
+        // get largest scaled away from bound
+        ClpSimplex temp = *modelC;
+        temp.dual(0, 7);
+        double largestScaled = 1.0e-12;
+        double largest = 1.0e-12;
+        int numberRows = temp.numberRows();
+        const double *rowPrimal = temp.primalRowSolution();
+        const double *rowLower = temp.rowLower();
+        const double *rowUpper = temp.rowUpper();
+        const double *rowScale = temp.rowScale();
+        int iRow;
+        for (iRow = 0; iRow < numberRows; iRow++) {
+          double value = rowPrimal[iRow];
+          double above = value - rowLower[iRow];
+          double below = rowUpper[iRow] - value;
+          if (above < 1.0e12) {
+            largest = CoinMax(largest, above);
+          }
+          if (below < 1.0e12) {
+            largest = CoinMax(largest, below);
+          }
+          if (rowScale) {
+            double multiplier = rowScale[iRow];
+            above *= multiplier;
+            below *= multiplier;
+          }
+          if (above < 1.0e12) {
+            largestScaled = CoinMax(largestScaled, above);
+          }
+          if (below < 1.0e12) {
+            largestScaled = CoinMax(largestScaled, below);
+          }
+        }
 
-	int numberColumns = temp.numberColumns();
-	const double * columnPrimal = temp.primalColumnSolution();
-	const double * columnLower = temp.columnLower();
-	const double * columnUpper = temp.columnUpper();
-	const double * columnScale = temp.columnScale();
-	int iColumn;
-	for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-	  double value = columnPrimal[iColumn];
-	  double above = value - columnLower[iColumn];
-	  double below = columnUpper[iColumn] - value;
-	  if (above < 1.0e12) {
-	      largest = CoinMax(largest, above);
-	  }
-	  if (below < 1.0e12) {
-	      largest = CoinMax(largest, below);
-	  }
-	  if (columnScale) {
-	      double multiplier = 1.0 / columnScale[iColumn];
-	      above *= multiplier;
-	      below *= multiplier;
-	  }
-	  if (above < 1.0e12) {
-	      largestScaled = CoinMax(largestScaled, above);
-	  }
-	  if (below < 1.0e12) {
-	      largestScaled = CoinMax(largestScaled, below);
-	  }
-	}
-	std::cout << "Largest (scaled) away from bound " << largestScaled
-		  << " unscaled " << largest << std::endl;
-#       ifdef JJF_ZERO
-	modelC->setDualBound(CoinMax(1.0001e8,
-				 CoinMin(1000.0*largestScaled,1.00001e10)));
-#       else
-	modelC->setDualBound(CoinMax(1.0001e9,
-				 CoinMin(1000.0*largestScaled,1.0001e10)));
-#       endif
+        int numberColumns = temp.numberColumns();
+        const double *columnPrimal = temp.primalColumnSolution();
+        const double *columnLower = temp.columnLower();
+        const double *columnUpper = temp.columnUpper();
+        const double *columnScale = temp.columnScale();
+        int iColumn;
+        for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+          double value = columnPrimal[iColumn];
+          double above = value - columnLower[iColumn];
+          double below = columnUpper[iColumn] - value;
+          if (above < 1.0e12) {
+            largest = CoinMax(largest, above);
+          }
+          if (below < 1.0e12) {
+            largest = CoinMax(largest, below);
+          }
+          if (columnScale) {
+            double multiplier = 1.0 / columnScale[iColumn];
+            above *= multiplier;
+            below *= multiplier;
+          }
+          if (above < 1.0e12) {
+            largestScaled = CoinMax(largestScaled, above);
+          }
+          if (below < 1.0e12) {
+            largestScaled = CoinMax(largestScaled, below);
+          }
+        }
+        std::cout << "Largest (scaled) away from bound " << largestScaled
+                  << " unscaled " << largest << std::endl;
+#ifdef JJF_ZERO
+        modelC->setDualBound(CoinMax(1.0001e8,
+          CoinMin(1000.0 * largestScaled, 1.00001e10)));
+#else
+        modelC->setDualBound(CoinMax(1.0001e9,
+          CoinMin(1000.0 * largestScaled, 1.0001e10)));
+#endif
       }
-    }    // end clp-specific setup
-/*
+    } // end clp-specific setup
+    /*
   Cut passes: For small models (n < 500) always do 100 passes, if possible
   (-100). For larger models, use minimum drop to stop (100, 20).
 */
     model->setMinimumDrop(CoinMin(5.0e-2,
-		      fabs(model->getMinimizationObjValue())*1.0e-3+1.0e-4));
+      fabs(model->getMinimizationObjValue()) * 1.0e-3 + 1.0e-4));
     if (CoinAbs(model->getMaximumCutPassesAtRoot()) <= 100) {
-	if (model->getNumCols() < 500) {
-	  model->setMaximumCutPassesAtRoot(-100);
-	} else if (model->getNumCols() < 5000) {
-	  model->setMaximumCutPassesAtRoot(100);
-	} else {
-	  model->setMaximumCutPassesAtRoot(20);
-	}
+      if (model->getNumCols() < 500) {
+        model->setMaximumCutPassesAtRoot(-100);
+      } else if (model->getNumCols() < 5000) {
+        model->setMaximumCutPassesAtRoot(100);
+      } else {
+        model->setMaximumCutPassesAtRoot(20);
+      }
     }
     // If defaults then increase trust for small models
     if (model->numberStrong() == 5 && model->numberBeforeTrust() == 10) {
-	int numberColumns = model->getNumCols();
-	if (numberColumns <= 50) {
-	    model->setNumberBeforeTrust(1000);
-	} else if (numberColumns <= 100) {
-	    model->setNumberBeforeTrust(100);
-	} else if (numberColumns <= 300) {
-	    model->setNumberBeforeTrust(50);
-	}
+      int numberColumns = model->getNumCols();
+      if (numberColumns <= 50) {
+        model->setNumberBeforeTrust(1000);
+      } else if (numberColumns <= 100) {
+        model->setNumberBeforeTrust(100);
+      } else if (numberColumns <= 300) {
+        model->setNumberBeforeTrust(50);
+      }
     }
     //if (model->getNumCols()>=500) {
     // switch off Clp stuff
     //model->setFastNodeDepth(-1);
     //}
-/*
+    /*
   Activate the row cut debugger, if requested.
 */
     if (rowCutDebugger[m] == true) {
-      std::string probName ;
-      model->solver()->getStrParam(OsiProbName,probName) ;
-      model->solver()->activateRowCutDebugger(probName.c_str()) ;
+      std::string probName;
+      model->solver()->getStrParam(OsiProbName, probName);
+      model->solver()->activateRowCutDebugger(probName.c_str());
       if (model->solver()->getRowCutDebugger())
-	std::cout << "Row cut debugger activated for " ;
+        std::cout << "Row cut debugger activated for ";
       else
-        std::cout << "Failed to activate row cut debugger for " ;
-      std::cout << mpsName[m] << "." << std::endl ;
+        std::cout << "Failed to activate row cut debugger for ";
+      std::cout << mpsName[m] << "." << std::endl;
     }
-    setCutAndHeuristicOptions(*model) ;
-/*
+    setCutAndHeuristicOptions(*model);
+    /*
   More clp-specific setup.
 */
     if (siClp) {
-#     ifdef CLP_MULTIPLE_FACTORIZATIONS
+#ifdef CLP_MULTIPLE_FACTORIZATIONS
       if (!modelC->factorization()->isDenseOrSmall()) {
-	  int denseCode = stuff ? static_cast<int> (stuff[4]) : -1;
-	  int smallCode = stuff ? static_cast<int> (stuff[10]) : -1;
-	  if (stuff && stuff[8] >= 1) {
-	      if (denseCode < 0)
-		  denseCode = 40;
-	      if (smallCode < 0)
-		  smallCode = 40;
-	  }
-	  if (denseCode > 0)
-	      modelC->factorization()->setGoDenseThreshold(denseCode);
-	  if (smallCode > 0)
-	      modelC->factorization()->setGoSmallThreshold(smallCode);
-	  if (denseCode >= modelC->numberRows()) {
-	      //printf("problem going dense\n");
-	      //modelC->factorization()->goDenseOrSmall(modelC->numberRows());
-	  }
+        int denseCode = stuff ? static_cast< int >(stuff[4]) : -1;
+        int smallCode = stuff ? static_cast< int >(stuff[10]) : -1;
+        if (stuff && stuff[8] >= 1) {
+          if (denseCode < 0)
+            denseCode = 40;
+          if (smallCode < 0)
+            smallCode = 40;
+        }
+        if (denseCode > 0)
+          modelC->factorization()->setGoDenseThreshold(denseCode);
+        if (smallCode > 0)
+          modelC->factorization()->setGoSmallThreshold(smallCode);
+        if (denseCode >= modelC->numberRows()) {
+          //printf("problem going dense\n");
+          //modelC->factorization()->goDenseOrSmall(modelC->numberRows());
+        }
       }
-#     endif
+#endif
       if (stuff && stuff[8] >= 1) {
-	printf("Fast node size Columns %d rows %d - depth %d\n",
-	       modelC->numberColumns(),modelC->numberRows(),
-	       model->fastNodeDepth());
-	  if (modelC->numberColumns() + modelC->numberRows() <= 10000 &&
-		  model->fastNodeDepth() == -1)
-	    model->setFastNodeDepth(-10/*-9*/);
+        printf("Fast node size Columns %d rows %d - depth %d\n",
+          modelC->numberColumns(), modelC->numberRows(),
+          model->fastNodeDepth());
+        if (modelC->numberColumns() + modelC->numberRows() <= 10000 && model->fastNodeDepth() == -1)
+          model->setFastNodeDepth(-10 /*-9*/);
       }
     }
 #ifdef CONFLICT_CUTS
     {
       model->setCutoffAsConstraint(true); // very slow on bell5 ??
-      int moreOptions=model->moreSpecialOptions();
-      model->setMoreSpecialOptions(moreOptions|4194304);
+      int moreOptions = model->moreSpecialOptions();
+      model->setMoreSpecialOptions(moreOptions | 4194304);
     }
 #endif
-/*
+    /*
   Finally, the actual call to solve the MIP with branch-and-cut.
 */
     model->branchAndBound();
 
-#   ifdef CLP_FACTORIZATION_INSTRUMENT
+#ifdef CLP_FACTORIZATION_INSTRUMENT
     double facTime = factorization_instrument(0);
-    std::cout << "Factorization " << facTime << " seconds." << std::endl ,
-    timeTakenFac += facTime;
-#   endif
+    std::cout << "Factorization " << facTime << " seconds." << std::endl,
+      timeTakenFac += facTime;
+#endif
 
-/*
+    /*
   Stage 3: Do the statistics and check the answer.
 */
-    double timeOfSolution = CoinCpuTime()+CoinCpuTimeJustChildren()-startTime;
+    double timeOfSolution = CoinCpuTime() + CoinCpuTimeJustChildren() - startTime;
     std::cout
       << "Cuts at root node changed objective from "
       << model->getContinuousObjective() << " to "
-      << model->rootObjectiveAfterCuts() << std::endl ;
+      << model->rootObjectiveAfterCuts() << std::endl;
     int numberGenerators = model->numberCutGenerators();
-    for (int iGenerator = 0 ; iGenerator < numberGenerators ; iGenerator++) {
+    for (int iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
       CbcCutGenerator *generator = model->cutGenerator(iGenerator);
-#     ifdef CLIQUE_ANALYSIS
-#     ifndef CLP_INVESTIGATE
-      CglImplication *implication =
-	    dynamic_cast<CglImplication*>(generator->generator());
-      if (implication) continue;
-#     endif
-#     endif
+#ifdef CLIQUE_ANALYSIS
+#ifndef CLP_INVESTIGATE
+      CglImplication *implication = dynamic_cast< CglImplication * >(generator->generator());
+      if (implication)
+        continue;
+#endif
+#endif
       std::cout
         << generator->cutGeneratorName() << " was tried "
-	<< generator->numberTimesEntered() << " times and created "
-	<< generator->numberCutsInTotal() << " cuts of which "
-	<< generator->numberCutsActive()
-	<< " were active after adding rounds of cuts";
+        << generator->numberTimesEntered() << " times and created "
+        << generator->numberCutsInTotal() << " cuts of which "
+        << generator->numberCutsActive()
+        << " were active after adding rounds of cuts";
       if (generator->timing())
-	std::cout << " (" << generator->timeInCutGenerator() << " seconds)" ;
+        std::cout << " (" << generator->timeInCutGenerator() << " seconds)";
       std::cout << "." << std::endl;
     }
     std::cout
       << model->getNumberHeuristicSolutions()
-      << " solutions found by heuristics." << std::endl ;
+      << " solutions found by heuristics." << std::endl;
     int numberHeuristics = model->numberHeuristics();
-    for (int iHeuristic = 0 ; iHeuristic < numberHeuristics ; iHeuristic++) {
+    for (int iHeuristic = 0; iHeuristic < numberHeuristics; iHeuristic++) {
       CbcHeuristic *heuristic = model->heuristic(iHeuristic);
       if (heuristic->numRuns()) {
-	std::cout
-	  << heuristic->heuristicName() << " was tried "
-	  << heuristic->numRuns() << " times out of "
-	  << heuristic->numCouldRun() << " and created "
-	  << heuristic->numberSolutionsFound() << " solutions." << std::endl ;
-	}
+        std::cout
+          << heuristic->heuristicName() << " was tried "
+          << heuristic->numRuns() << " times out of "
+          << heuristic->numCouldRun() << " and created "
+          << heuristic->numberSolutionsFound() << " solutions." << std::endl;
+      }
     }
-/*
+    /*
   Check for the correct answer.
 */
     if (!model->status()) {
 
-      double objActual = model->getObjValue() ;
-      double objExpect = objValue[m] ;
-      double tolerance = CoinMin(fabs(objActual),fabs(objExpect)) ;
-      tolerance = CoinMax(1.0e-5,1.0e-5*tolerance) ;
+      double objActual = model->getObjValue();
+      double objExpect = objValue[m];
+      double tolerance = CoinMin(fabs(objActual), fabs(objExpect));
+      tolerance = CoinMax(1.0e-5, 1.0e-5 * tolerance);
       //CoinRelFltEq eq(1.0e-3) ;
 
       std::cout
         << "cbc_clp (" << mpsName[m] << ") "
-	<< std::setprecision(10) << objActual ;
-      if (fabs(objActual-objExpect) < tolerance) {
-	std::cout << std::setprecision(dfltPrecision) << "; okay" ;
-	  numProbSolved++;
-      } else  {
-	std::cout
-	  << " != " << objExpect << std::setprecision(dfltPrecision)
-	  << "; error = " << fabs(objExpect-objActual) ;
-	  numberFailures++;
-	//#ifdef COIN_DEVELOP
-	//abort();
-	//#endif
+        << std::setprecision(10) << objActual;
+      if (fabs(objActual - objExpect) < tolerance) {
+        std::cout << std::setprecision(dfltPrecision) << "; okay";
+        numProbSolved++;
+      } else {
+        std::cout
+          << " != " << objExpect << std::setprecision(dfltPrecision)
+          << "; error = " << fabs(objExpect - objActual);
+        numberFailures++;
+        //#ifdef COIN_DEVELOP
+        //abort();
+        //#endif
       }
     } else {
       std::cout
         << "cbc_clp (" << mpsName[m] << ") status not optimal; "
-        << "assuming too many nodes" ;
+        << "assuming too many nodes";
     }
     timeTaken += timeOfSolution;
     std::cout
@@ -688,14 +689,14 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
       << std::endl;
     delete model;
   }
-/*
+  /*
   End main loop on MPS problems. Print a summary and calculate the return
   value.
 */
   int returnCode = 0;
   std::cout
     << "cbc_clp solved " << numProbSolved << " out of " << numberAttempts;
-  int numberOnNodes = numberAttempts-numProbSolved-numberFailures;
+  int numberOnNodes = numberAttempts - numProbSolved - numberFailures;
   if (numberFailures || numberOnNodes) {
     if (numberOnNodes) {
       std::cout << " (" << numberOnNodes << " stopped on nodes)";
@@ -703,7 +704,7 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
     }
     if (numberFailures) {
       std::cout << " (" << numberFailures << " gave bad answer!)";
-      returnCode += 100*numberFailures;
+      returnCode += 100 * numberFailures;
     }
   }
   std::cout
@@ -711,16 +712,18 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
 
   if (testSwitch == -2) {
     if (numberFailures || numberOnNodes) {
-      std::cout << "****** Unit Test failed." << std::endl ;
-      std::cerr << "****** Unit Test failed." << std::endl ;
+      std::cout << "****** Unit Test failed." << std::endl;
+      std::cerr << "****** Unit Test failed." << std::endl;
     } else {
-      std::cerr << "****** Unit Test succeeded." << std::endl ;
+      std::cerr << "****** Unit Test succeeded." << std::endl;
     }
   }
-# ifdef CLP_FACTORIZATION_INSTRUMENT
+#ifdef CLP_FACTORIZATION_INSTRUMENT
   std::cout
-    << "Total factorization time " << timeTakenFac << "seconds." << std::endl ;
-# endif
-  return (returnCode) ;
+    << "Total factorization time " << timeTakenFac << "seconds." << std::endl;
+#endif
+  return (returnCode);
 }
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

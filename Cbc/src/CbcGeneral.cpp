@@ -7,7 +7,7 @@
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
-#  pragma warning(disable:4786)
+#pragma warning(disable : 4786)
 #endif
 #include <cassert>
 #include <cstdlib>
@@ -27,25 +27,24 @@
 
 // Default Constructor
 CbcGeneral::CbcGeneral()
-        : CbcObject()
+  : CbcObject()
 {
 }
 
 // Constructor from model
-CbcGeneral::CbcGeneral(CbcModel * model)
-        : CbcObject(model)
+CbcGeneral::CbcGeneral(CbcModel *model)
+  : CbcObject(model)
 {
 }
 
-
 // Destructor
-CbcGeneral::~CbcGeneral ()
+CbcGeneral::~CbcGeneral()
 {
 }
 
 // Copy constructor
-CbcGeneral::CbcGeneral ( const CbcGeneral & rhs)
-        : CbcObject(rhs)
+CbcGeneral::CbcGeneral(const CbcGeneral &rhs)
+  : CbcObject(rhs)
 {
 }
 #ifdef COIN_HAS_CLP
@@ -55,26 +54,28 @@ CbcGeneral::CbcGeneral ( const CbcGeneral & rhs)
 #include "CbcBranchDynamic.hpp"
 // Assignment operator
 CbcGeneral &
-CbcGeneral::operator=( const CbcGeneral & rhs)
+CbcGeneral::operator=(const CbcGeneral &rhs)
 {
-    if (this != &rhs) {
-        CbcObject::operator=(rhs);
-    }
-    return *this;
+  if (this != &rhs) {
+    CbcObject::operator=(rhs);
+  }
+  return *this;
 }
 // Infeasibility - large is 0.5
 double
 CbcGeneral::infeasibility(const OsiBranchingInformation * /*info*/,
-                          int &/*preferredWay*/) const
+  int & /*preferredWay*/) const
 {
-    abort();
-    return 0.0;
+  abort();
+  return 0.0;
 }
 CbcBranchingObject *
 CbcGeneral::createCbcBranch(OsiSolverInterface * /*solver*/, const OsiBranchingInformation * /*info*/, int /*way*/)
 {
-    abort();
-    return NULL;
+  abort();
+  return NULL;
 }
 #endif
 
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

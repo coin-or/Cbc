@@ -4,8 +4,7 @@
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
 #include <cassert>
-#include <iomanip> 
-
+#include <iomanip>
 
 #include "CoinPragma.hpp"
 #include "CbcModel.hpp"
@@ -20,26 +19,26 @@
   In this simple version Stop may not be effective until a heuristic has exited
  */
 
-static CbcModel * currentBranchModel=NULL;
+static CbcModel *currentBranchModel = NULL;
 extern "C" {
-  static void signal_handler(int whichSignal) {
-    int gotChar='X';
-    while (toupper(gotChar)!='S'&&toupper(gotChar)!='C') {
-      // See what user wants to do
-      fprintf(stderr,"Enter S to stop, C to continue:");
-      gotChar = getchar();
-    }
-    if (currentBranchModel != NULL&&toupper(gotChar)=='S') {
-      currentBranchModel->sayEventHappened(); // say why stopped
-      if (currentBranchModel->heuristicModel())
-	currentBranchModel->heuristicModel()->sayEventHappened();
-    }
-    return;
+static void signal_handler(int whichSignal)
+{
+  int gotChar = 'X';
+  while (toupper(gotChar) != 'S' && toupper(gotChar) != 'C') {
+    // See what user wants to do
+    fprintf(stderr, "Enter S to stop, C to continue:");
+    gotChar = getchar();
   }
+  if (currentBranchModel != NULL && toupper(gotChar) == 'S') {
+    currentBranchModel->sayEventHappened(); // say why stopped
+    if (currentBranchModel->heuristicModel())
+      currentBranchModel->heuristicModel()->sayEventHappened();
+  }
+  return;
 }
-static CoinSighandler_t saveSignal=signal(SIGINT,signal_handler);
+}
+static CoinSighandler_t saveSignal = signal(SIGINT, signal_handler);
 //#############################################################################
-
 
 /************************************************************************
 
@@ -81,31 +80,28 @@ Finally it prints solution
    but initially check if status is 0 and secondary status is 1 -> infeasible
    or you can check solver status.
 */
-/* Return non-zero to return quickly */   
-static int callBack(CbcModel * model, int whereFrom)
+/* Return non-zero to return quickly */
+static int callBack(CbcModel *model, int whereFrom)
 {
-  int returnCode=0;
+  int returnCode = 0;
   switch (whereFrom) {
   case 1:
   case 2:
-    if (!model->status()&&model->secondaryStatus())
-      returnCode=1;
+    if (!model->status() && model->secondaryStatus())
+      returnCode = 1;
     break;
-  case 3:
-    {
-      // set up signal trapping
-      saveSignal=signal(SIGINT,signal_handler);
-      currentBranchModel=model;
-    }
-    break;
-  case 4:
-    {
-      // restore
-      signal(SIGINT,saveSignal);
-      currentBranchModel=NULL;
-    }
-    // If not good enough could skip postprocessing
-    break;
+  case 3: {
+    // set up signal trapping
+    saveSignal = signal(SIGINT, signal_handler);
+    currentBranchModel = model;
+  } break;
+  case 4: {
+    // restore
+    signal(SIGINT, saveSignal);
+    currentBranchModel = NULL;
+  }
+  // If not good enough could skip postprocessing
+  break;
   case 5:
     break;
   default:
@@ -121,7 +117,7 @@ static int callBack(CbcModel * model, int whereFrom)
 */
 
 class MyEventHandler3 : public CbcEventHandler {
-  
+
 public:
   /**@name Overrides */
   //@{
@@ -133,55 +129,54 @@ public:
   /** Default constructor. */
   MyEventHandler3();
   /// Constructor with pointer to model (redundant as setEventHandler does)
-  MyEventHandler3(CbcModel * model);
+  MyEventHandler3(CbcModel *model);
   /** Destructor */
   virtual ~MyEventHandler3();
   /** The copy constructor. */
-  MyEventHandler3(const MyEventHandler3 & rhs);
+  MyEventHandler3(const MyEventHandler3 &rhs);
   /// Assignment
-  MyEventHandler3& operator=(const MyEventHandler3 & rhs);
+  MyEventHandler3 &operator=(const MyEventHandler3 &rhs);
   /// Clone
-  virtual CbcEventHandler * clone() const ;
+  virtual CbcEventHandler *clone() const;
   //@}
-   
-    
+
 protected:
   // data goes here
 };
 //-------------------------------------------------------------------
-// Default Constructor 
+// Default Constructor
 //-------------------------------------------------------------------
-MyEventHandler3::MyEventHandler3 () 
+MyEventHandler3::MyEventHandler3()
   : CbcEventHandler()
 {
 }
 
 //-------------------------------------------------------------------
-// Copy constructor 
+// Copy constructor
 //-------------------------------------------------------------------
-MyEventHandler3::MyEventHandler3 (const MyEventHandler3 & rhs) 
-: CbcEventHandler(rhs)
-{  
+MyEventHandler3::MyEventHandler3(const MyEventHandler3 &rhs)
+  : CbcEventHandler(rhs)
+{
 }
 
 // Constructor with pointer to model
-MyEventHandler3::MyEventHandler3(CbcModel * model)
+MyEventHandler3::MyEventHandler3(CbcModel *model)
   : CbcEventHandler(model)
 {
 }
 
 //-------------------------------------------------------------------
-// Destructor 
+// Destructor
 //-------------------------------------------------------------------
-MyEventHandler3::~MyEventHandler3 ()
+MyEventHandler3::~MyEventHandler3()
 {
 }
 
 //----------------------------------------------------------------
-// Assignment operator 
+// Assignment operator
 //-------------------------------------------------------------------
 MyEventHandler3 &
-MyEventHandler3::operator=(const MyEventHandler3& rhs)
+MyEventHandler3::operator=(const MyEventHandler3 &rhs)
 {
   if (this != &rhs) {
     CbcEventHandler::operator=(rhs);
@@ -191,28 +186,28 @@ MyEventHandler3::operator=(const MyEventHandler3& rhs)
 //-------------------------------------------------------------------
 // Clone
 //-------------------------------------------------------------------
-CbcEventHandler * MyEventHandler3::clone() const
+CbcEventHandler *MyEventHandler3::clone() const
 {
   return new MyEventHandler3(*this);
 }
 
-CbcEventHandler::CbcAction 
+CbcEventHandler::CbcAction
 MyEventHandler3::event(CbcEvent whichEvent)
 {
   // If in sub tree carry on
   if (!model_->parentModel()) {
-    if (whichEvent==solution||whichEvent==heuristicSolution) {
+    if (whichEvent == solution || whichEvent == heuristicSolution) {
 #ifdef STOP_EARLY
       return stop; // say finished
 #else
       // If preprocessing was done solution will be to processed model
       int numberColumns = model_->getNumCols();
-      const double * bestSolution = model_->bestSolution();
-      assert (bestSolution);
-      printf("value of solution is %g\n",model_->getObjValue());
-      for (int i=0;i<numberColumns;i++) {
-	if (fabs(bestSolution[i])>1.0e-8)
-	  printf("%d %g\n",i,bestSolution[i]);
+      const double *bestSolution = model_->bestSolution();
+      assert(bestSolution);
+      printf("value of solution is %g\n", model_->getObjValue());
+      for (int i = 0; i < numberColumns; i++) {
+        if (fabs(bestSolution[i]) > 1.0e-8)
+          printf("%d %g\n", i, bestSolution[i]);
       }
       return noAction; // carry on
 #endif
@@ -220,18 +215,18 @@ MyEventHandler3::event(CbcEvent whichEvent)
       return noAction; // carry on
     }
   } else {
-      return noAction; // carry on
+    return noAction; // carry on
   }
 }
 
-int main (int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
 
   OsiClpSolverInterface solver1;
   //#define USE_OSI_NAMES
 #ifdef USE_OSI_NAMES
   // Say we are keeping names (a bit slower this way)
-  solver1.setIntParam(OsiNameDiscipline,1);
+  solver1.setIntParam(OsiNameDiscipline, 1);
 #endif
   // Read in model using argv[1]
   // and assert that it is a clean model
@@ -244,19 +239,19 @@ int main (int argc, const char *argv[])
     exit(1);
   }
 #endif
-  if (argc>=2) mpsFileName = argv[1];
-  int numMpsReadErrors = solver1.readMps(mpsFileName.c_str(),"");
-  if( numMpsReadErrors != 0 )
-  {
-     printf("%d errors reading MPS file\n", numMpsReadErrors);
-     return numMpsReadErrors;
+  if (argc >= 2)
+    mpsFileName = argv[1];
+  int numMpsReadErrors = solver1.readMps(mpsFileName.c_str(), "");
+  if (numMpsReadErrors != 0) {
+    printf("%d errors reading MPS file\n", numMpsReadErrors);
+    return numMpsReadErrors;
   }
   // Tell solver to return fast if presolve or initial solve infeasible
   solver1.getModelPtr()->setMoreSpecialOptions(3);
 
-  // Pass to Cbc initialize defaults 
+  // Pass to Cbc initialize defaults
   CbcModel modelA(solver1);
-  CbcModel * model = &modelA;
+  CbcModel *model = &modelA;
   CbcMain0(modelA);
   // Event handler
   MyEventHandler3 eventHandler;
@@ -265,48 +260,48 @@ int main (int argc, const char *argv[])
      Could copy arguments and add -quit at end to be safe
      but this will do
   */
-  if (argc>2) {
-    CbcMain1(argc-1,argv+1,modelA,callBack);
+  if (argc > 2) {
+    CbcMain1(argc - 1, argv + 1, modelA, callBack);
   } else {
-    const char * argv2[]={"driver6","-solve","-quit"};
-    CbcMain1(3,argv2,modelA,callBack);
+    const char *argv2[] = { "driver6", "-solve", "-quit" };
+    CbcMain1(3, argv2, modelA, callBack);
   }
   // Solver was cloned so get current copy
-  OsiSolverInterface * solver = model->solver();
+  OsiSolverInterface *solver = model->solver();
   // Print solution if finished (could get from model->bestSolution() as well
 
   if (model->bestSolution()) {
-    
-    const double * solution = solver->getColSolution();
-    
+
+    const double *solution = solver->getColSolution();
+
     int iColumn;
     int numberColumns = solver->getNumCols();
-    std::cout<<std::setiosflags(std::ios::fixed|std::ios::showpoint)<<std::setw(14);
-    
-    std::cout<<"--------------------------------------"<<std::endl;
+    std::cout << std::setiosflags(std::ios::fixed | std::ios::showpoint) << std::setw(14);
+
+    std::cout << "--------------------------------------" << std::endl;
 #ifdef USE_OSI_NAMES
-    
-    for (iColumn=0;iColumn<numberColumns;iColumn++) {
-      double value=solution[iColumn];
-      if (fabs(value)>1.0e-7&&solver->isInteger(iColumn)) 
-	std::cout<<std::setw(6)<<iColumn<<" "<<std::setw(8)<<setiosflags(std::ios::left)<<solver->getColName(iColumn)
-		 <<resetiosflags(std::ios::adjustfield)<<std::setw(14)<<" "<<value<<std::endl;
+
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      double value = solution[iColumn];
+      if (fabs(value) > 1.0e-7 && solver->isInteger(iColumn))
+        std::cout << std::setw(6) << iColumn << " " << std::setw(8) << setiosflags(std::ios::left) << solver->getColName(iColumn)
+                  << resetiosflags(std::ios::adjustfield) << std::setw(14) << " " << value << std::endl;
     }
 #else
     // names may not be in current solver - use original
-    
-    for (iColumn=0;iColumn<numberColumns;iColumn++) {
-      double value=solution[iColumn];
-      if (fabs(value)>1.0e-7&&solver->isInteger(iColumn)) 
-	std::cout<<std::setw(6)<<iColumn<<" "<<std::setw(8)<<setiosflags(std::ios::left)<<solver1.getModelPtr()->columnName(iColumn)
-		 <<resetiosflags(std::ios::adjustfield)<<std::setw(14)<<" "<<value<<std::endl;
+
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      double value = solution[iColumn];
+      if (fabs(value) > 1.0e-7 && solver->isInteger(iColumn))
+        std::cout << std::setw(6) << iColumn << " " << std::setw(8) << setiosflags(std::ios::left) << solver1.getModelPtr()->columnName(iColumn)
+                  << resetiosflags(std::ios::adjustfield) << std::setw(14) << " " << value << std::endl;
     }
 #endif
-    std::cout<<"--------------------------------------"<<std::endl;
-  
-    std::cout<<std::resetiosflags(std::ios::fixed|std::ios::showpoint|std::ios::scientific);
+    std::cout << "--------------------------------------" << std::endl;
+
+    std::cout << std::resetiosflags(std::ios::fixed | std::ios::showpoint | std::ios::scientific);
   } else {
-    std::cout<<" No solution!"<<std::endl;
+    std::cout << " No solution!" << std::endl;
   }
   return 0;
-}    
+}

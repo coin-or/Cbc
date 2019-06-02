@@ -7829,6 +7829,7 @@ int CbcMain1(int argc, const char *argv[],
                   originalSolver->setBasis(*basis);
                   delete basis;
                   originalSolver->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
+		  originalSolver->setHintParam(OsiDoPresolveInResolve, true, OsiHintTry);
                   originalSolver->resolve();
                   if (!originalSolver->isProvenOptimal()) {
                     // try all slack

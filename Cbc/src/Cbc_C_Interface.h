@@ -652,7 +652,7 @@ Cbc_setCutoff(Cbc_Model *model, double cutoff);
 
 
 /*@}*/
-/**@name Message handling.  Call backs are handled by ONE function */
+/**@name Message handling.  */
 /*@{*/
 /** Pass in Callback function.
      Message numbers up to 1000000 are Clp, Coin ones have 1000000 added */
@@ -664,13 +664,21 @@ Cbc_registerCallBack(Cbc_Model *model,
 COINLIBAPI void COINLINKAGE
 Cbc_clearCallBack(Cbc_Model *model);
 
+/** calback to generate cutting planes **/
 COINLIBAPI void COINLINKAGE Cbc_addCutCallback( 
     Cbc_Model *model, cbc_cut_callback cutcb, 
     const char *name, void *appData );
 
+/** callback to monitor new incumbent solutions **/
 COINLIBAPI void COINLINKAGE Cbc_addIncCallback(
     Cbc_Model *model, cbc_incumbent_callback inccb, 
     void *appData );
+
+/** callback to monitor improvements in lower or upper
+ * bounds */
+COINLIBAPI void COINLINKAGE Cbc_addProgrCallback(
+  Cbc_Model *model, cbc_progress_callback prgcbc,
+  void *appData);
 
 /*@}*/
 

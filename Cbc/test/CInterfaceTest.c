@@ -369,6 +369,7 @@ void testIntegerBounds() {
 
 void testQueens(int n) {
     int **x = malloc( sizeof(int*)*n );
+    int i, j, k, p;
     x[0] = malloc( sizeof(int)*n*n );
     for ( int i=1 ; (i<n) ; ++i )
         x[i] = x[i-1] + n;
@@ -376,7 +377,7 @@ void testQueens(int n) {
     Cbc_Model *m = Cbc_newModel();
     
     // adding variables
-    int k = 0;
+    k = 0;
     for ( int i=0 ; (i<n) ; ++i )
     {
         for ( int j=0 ; (j<n) ; ++j )
@@ -392,9 +393,9 @@ void testQueens(int n) {
     double *coef = malloc(sizeof(double)*n);
 
     // constraint one per row
-    for ( int i=0 ; (i<n) ; ++i )
+    for ( i=0 ; (i<n) ; ++i )
     {
-        for ( int j=0 ; j<n ; ++j )
+        for ( j=0 ; j<n ; ++j )
         {
             idx[j] = x[i][j];
             coef[j] = 1.0;
@@ -405,9 +406,9 @@ void testQueens(int n) {
     }
 
     // constraint one per column
-    for ( int j=0 ; (j<n) ; ++j )
+    for ( j=0 ; (j<n) ; ++j )
     {
-        for ( int i=0 ; i<n ; ++i )
+        for ( i=0 ; i<n ; ++i )
         {
             idx[i] = x[i][j];
             coef[i] = 1.0;
@@ -418,13 +419,13 @@ void testQueens(int n) {
     }
 
     // diagonal 
-    int p = 0;
-    for ( int k=2-n ; k<(n-1) ; ++k, ++p )
+    p = 0;
+    for ( k=2-n ; k<(n-1) ; ++k, ++p )
     {
         int nz = 0;
-        for ( int i=0 ; (i<n) ; ++i )
+        for ( i=0 ; (i<n) ; ++i )
         {
-            for ( int j=0 ; (j<n) ; ++j )
+            for ( j=0 ; (j<n) ; ++j )
             {
                 if (i-j==k)
                 {
@@ -441,12 +442,12 @@ void testQueens(int n) {
 
     // diagonal /
     p = 0;
-    for ( int k=3 ; k<(n+n) ; ++k, ++p )
+    for ( k=3 ; k<(n+n) ; ++k, ++p )
     {
         int nz = 0;
-        for ( int i=0 ; (i<n) ; ++i )
+        for ( i=0 ; (i<n) ; ++i )
         {
-            for ( int j=0 ; (j<n) ; ++j )
+            for ( j=0 ; (j<n) ; ++j )
             {
                 if (i+j==k)
                 {
@@ -475,25 +476,25 @@ void testQueens(int n) {
 
         // total number of queens
         int nq = 0;
-        for ( int i=0 ; (i<n) ; ++i )
-            for ( int j=0 ; (j<n) ; ++j )
+        for ( i=0 ; (i<n) ; ++i )
+            for ( j=0 ; (j<n) ; ++j )
                 if ((fabs(xs[x[i][j]]-1.0))<1e-5)
                     nq++;
         assert(nq == n);
         // one per row
-        for ( int i=0 ; (i<n) ; ++i )
+        for ( i=0 ; (i<n) ; ++i )
         {
             nq = 0;
-            for ( int j=0 ; (j<n) ; ++j )
+            for ( j=0 ; (j<n) ; ++j )
                 if ((fabs(xs[x[i][j]]-1.0))<1e-5)
                     nq++;
             assert( nq == 1);
         }
         // one per column
-        for ( int j=0 ; (j<n) ; ++j )
+        for ( j=0 ; (j<n) ; ++j )
         {
             nq = 0;
-            for ( int i=0 ; (i<n) ; ++i )
+            for ( i=0 ; (i<n) ; ++i )
                 if ((fabs(xs[x[i][j]]-1.0))<1e-5)
                     nq++;
             assert( nq == 1);

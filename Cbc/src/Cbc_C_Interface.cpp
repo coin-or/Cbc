@@ -1648,6 +1648,15 @@ Cbc_getReducedCost(Cbc_Model *model)
   return model->model_->getReducedCost();
 }
 
+COINLIBAPI const double *COINLINKAGE
+Cbc_getRowPrice(Cbc_Model *model)
+{
+  if (Cbc_getNumIntegers(model) == 0 || model->relax_ == 1)
+    return (model->solver_->getReducedCost());
+
+  return model->model_->getReducedCost();
+}
+
 COINLIBAPI int COINLINKAGE
 Cbc_numberSavedSolutions(Cbc_Model *model)
 {
@@ -1976,6 +1985,47 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
 }
 
 COINLIBAPI void COINLINKAGE
+Osi_addRow(void *osi, const char *name, int nz,
+  const int *cols, const double *coefs, char sense, double rhs)
+{
+  OsiSolverInterface *solver = (OsiSolverInterface *) osi;
+  double rowLB = -DBL_MAX, rowUB = DBL_MAX;
+  switch (toupper(sense)) {
+  case '=':
+    rowLB = rowUB = rhs;
+    break;
+  case 'E':
+    rowLB = rowUB = rhs;
+    break;
+  case '<':
+    rowUB = rhs;
+    break;
+  case 'L':
+    rowUB = rhs;
+    break;
+  case '>':
+    rowLB = rhs;
+    break;
+  case 'G':
+    rowLB = rhs;
+    break;
+  default:
+    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    abort();
+  }
+
+  solver->addRow(nz, cols, coefs, rowLB, rowUB);
+  solver->setRowName(solver->getNumRows()-1, std::string(name));
+}
+
+COINLIBAPI void COINLINKAGE
+Osi_setObjSense(void *osi, double sense)
+{
+  OsiSolverInterface *solver = (OsiSolverInterface *) osi;
+  solver->setObjSense(sense);
+}
+
+COINLIBAPI void COINLINKAGE
 Cbc_deleteRows(Cbc_Model *model, int numRows, const int rows[])
 {
   Cbc_flush(model, FCRows);
@@ -2223,6 +2273,104 @@ Cbc_printSolution(Cbc_Model *model)
   return;
 }
 
+/** @brief Creates a new OsiClpSolverInterface and returns a pointer to an OsiSolverInterface object */
+COINLIBAPI void * COINLINKAGE
+Osi_newSolver()
+{
+  OsiClpSolverInterface *clp = new OsiClpSolverInterface();
+
+  return dynamic_cast<OsiSolverInterface *>(clp);
+}
+
+COINLIBAPI void COINLINKAGE
+Osi_setObjCoef(void *osi, int index, double obj)
+{
+  OsiSolverInterface *osis = (OsiSolverInterface *)osi;
+  osis->setObjCoeff( index, obj );
+}
+
+/** @brief Solves initial LP relaxation */
+COINLIBAPI void COINLINKAGE
+Osi_initialSolve(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  osis->initialSolve();
+}
+
+/** @brief Reoptimizes linear program  */
+COINLIBAPI void COINLINKAGE
+Osi_resolve(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  osis->resolve();
+}
+
+/** @brief Performs branch and bound */
+COINLIBAPI void COINLINKAGE
+Osi_branchAndBound(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  osis->branchAndBound();
+}
+
+// solution query methods
+
+/** @brief Checks if optimization was abandoned */
+COINLIBAPI char COINLINKAGE
+Osi_isAbandoned(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isAbandoned();
+}
+
+/** @brief Checks if optimal solution was found */
+COINLIBAPI char COINLINKAGE
+Osi_isProvenOptimal(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isProvenOptimal();
+}
+
+/** @brief Checks if problem is primal infeasible */
+COINLIBAPI char COINLINKAGE
+Osi_isProvenPrimalInfeasible(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isProvenPrimalInfeasible();
+}
+
+/** @brief Checks if problem is dual infeasible */
+COINLIBAPI char COINLINKAGE
+Osi_isProvenDualInfeasible(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isProvenDualInfeasible();
+}
+
+/** @brief Checks if primal objective limit was reached */
+COINLIBAPI char COINLINKAGE
+Osi_isPrimalObjectiveLimitReached(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isPrimalObjectiveLimitReached();
+}
+
+/** @brief Checks if dual objective limit was reached */
+COINLIBAPI char COINLINKAGE
+Osi_isDualObjectiveLimitReached(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isDualObjectiveLimitReached();
+}
+
+/** @brief Checks if iteration limit was reached */
+COINLIBAPI char COINLINKAGE
+Osi_isIterationLimitReached(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isIterationLimitReached();
+}
+
 COINLIBAPI int COINLINKAGE
 Osi_getNumCols( void *osi )
 {
@@ -2268,6 +2416,22 @@ Osi_getNumRows( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
   return osiSolver->getNumRows();
+}
+
+/** @brief Returns number non-zeros in the constraint matrix */
+COINLIBAPI int COINLINKAGE
+Osi_getNumNz( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  return osiSolver->getNumElements();
+}
+
+/** @brief Returns number integer/binary variables */
+COINLIBAPI int COINLINKAGE
+Osi_getNumIntegers( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  return osiSolver->getNumIntegers();
 }
 
 COINLIBAPI int COINLINKAGE
@@ -2366,7 +2530,64 @@ OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, ch
   oc->insert(orc);
 }
 
+/** @brief Sets a variable to integer */
+COINLIBAPI void COINLINKAGE
+Osi_setInteger(void *osi, int index)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
 
+  osiSolver->setInteger(index);
+}
+
+/** @brief Sets a variable to continuous */
+COINLIBAPI void COINLINKAGE
+Osi_setContinuous(void *osi, int index)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  osiSolver->setContinuous(index);
+}
+
+COINLIBAPI int COINLINKAGE
+Osi_getColNz(void *osi, int col)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  const CoinPackedMatrix *cpmCol = osiSolver->getMatrixByCol();
+  return cpmCol->getVectorLengths()[col];
+}
+
+/** @brief Indices of rows that a column appears 
+     *
+     * @param model problem object 
+     * @param col column index
+     * @return indices of rows that this column appears
+     **/
+COINLIBAPI const int *COINLINKAGE
+Osi_getColIndices(void *osi, int col)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  const CoinPackedMatrix *cpmCol = osiSolver->getMatrixByCol();
+  const CoinBigIndex *starts = cpmCol->getVectorStarts();
+  const int *cidx = cpmCol->getIndices() + starts[col];
+  return cidx;
+}
+
+/** @brief Coefficients that a column appear in rows 
+     *
+     * @param model problem object 
+     * @param col column index
+     * @return coefficients of this column in rows
+     **/
+COINLIBAPI const double *COINLINKAGE
+Osi_getColCoeffs(void *osi, int col)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  const CoinPackedMatrix *cpmCol = osiSolver->getMatrixByCol();
+  const CoinBigIndex *starts = cpmCol->getVectorStarts();
+  const double *rcoef = cpmCol->getElements() + starts[col];
+  return rcoef;
+}
 
 /** @brief Returns solution vector in OsiSolverInterface object */
 COINLIBAPI const double * COINLINKAGE
@@ -2375,6 +2596,61 @@ Osi_getColSolution( void *osi )
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
 
   return osiSolver->getColSolution();
+}
+
+/** Adds a new column */
+COINLIBAPI void COINLINKAGE
+Osi_addCol(void *osi, const char *name, double lb,
+  double ub, double obj, char isInteger,
+  int nz, int *rows, double *coefs)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+    osiSolver->addCol(nz, rows, coefs, lb, ub, obj, std::string(name));
+    if (isInteger)
+      osiSolver->setInteger(osiSolver->getNumCols() - 1);
+}
+
+/** @brief Returns vector of reduced costs */
+COINLIBAPI const double * COINLINKAGE
+Osi_getReducedCost( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  return osiSolver->getColSolution();
+}
+
+/** @brief Returns vector dual variables */
+COINLIBAPI const double * COINLINKAGE
+Osi_getRowPrice( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  return osiSolver->getRowPrice();
+}
+
+COINLIBAPI double COINLINKAGE
+Osi_getObjValue( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  return osiSolver->getObjValue();
+}
+
+/** @brief Sets column upper bound */
+COINLIBAPI void COINLINKAGE
+Osi_setColUpper (void *osi, int elementIndex, double ub)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  osiSolver->setColUpper(elementIndex, ub);
+}
+
+/** @brief Sets column upper bound */
+COINLIBAPI void COINLINKAGE
+Osi_setColLower(void *osi, int elementIndex, double lb)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  osiSolver->setColLower(elementIndex, lb);
 }
 
 COINLIBAPI double COINLINKAGE

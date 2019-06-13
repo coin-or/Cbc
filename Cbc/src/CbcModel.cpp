@@ -5445,6 +5445,18 @@ void CbcModel::initialSolve()
   }
   solverCharacteristics_->setSolver(solver_);
   solver_->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL);
+  // doesn't seem to be uniform time limit
+#ifdef COIN_HAS_CLP
+  OsiClpSolverInterface *clpSolver
+    = dynamic_cast< OsiClpSolverInterface * >(solver_);
+  if (clpSolver) {
+    double maxTime = dblParam_[CbcMaximumSeconds]-dblParam_[CbcStartSeconds];
+    if ((moreSpecialOptions_&131072)==0)
+      clpSolver->getModelPtr()->setMaximumSeconds(maxTime);
+    else
+      clpSolver->getModelPtr()->setMaximumWallSeconds(maxTime);
+  }
+#endif
   solver_->initialSolve();
   solver_->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo, NULL);
   if (!solver_->isProvenOptimal())

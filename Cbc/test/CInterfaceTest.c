@@ -371,16 +371,16 @@ void testQueens(int n) {
     int **x = malloc( sizeof(int*)*n );
     int i, j, k, p;
     x[0] = malloc( sizeof(int)*n*n );
-    for ( int i=1 ; (i<n) ; ++i )
+    for ( i=1 ; (i<n) ; ++i )
         x[i] = x[i-1] + n;
 
     Cbc_Model *m = Cbc_newModel();
     
     // adding variables
     k = 0;
-    for ( int i=0 ; (i<n) ; ++i )
+    for ( i=0 ; (i<n) ; ++i )
     {
-        for ( int j=0 ; (j<n) ; ++j )
+        for ( j=0 ; (j<n) ; ++j )
         {
             x[i][j] = k++;
             char name[256];

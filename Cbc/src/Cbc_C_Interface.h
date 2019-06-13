@@ -26,7 +26,6 @@ extern "C" {
 COINLIBAPI const char *COINLINKAGE Cbc_getVersion(void);
 
 /** \name Problem creation and modification routines */
-//@{
 
 /** @brief Creates an empty problem */
 COINLIBAPI Cbc_Model *COINLINKAGE
@@ -291,11 +290,8 @@ Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double 
 COINLIBAPI Cbc_Model *COINLINKAGE
 Cbc_clone(Cbc_Model *model);
 
-//@}
-
 /** \name Routines to query problem contents
 */
-//@{
 
 /** @brief Queries problem name 
      *
@@ -485,11 +481,8 @@ COINLIBAPI int COINLINKAGE
 Cbc_isInteger(Cbc_Model *model, int i);
 
 
-//@}
-
 /** \name Routines to load and save problems from disk
 */
-//@{
 
 /** @brief Read an mps file from the given filename 
     * 
@@ -523,7 +516,6 @@ Cbc_writeMps(Cbc_Model *model, const char *filename);
 COINLIBAPI void COINLINKAGE
 Cbc_writeLp(Cbc_Model *model, const char *filename);
 
-//@}
 
 /**@name Getting and setting model data
      Note that problem access and modification methods,
@@ -893,7 +885,6 @@ Cbc_printSolution(Cbc_Model *model);
 /*@}*/
 
 /** \name OsiSolverInterface related routines (used in callbacks) */
-//@{
 
 /** @brief Creates a new OsiClpSolverInterface and returns a pointer to an OsiSolverInterface object */
 COINLIBAPI void * COINLINKAGE
@@ -911,7 +902,6 @@ Osi_resolve(void *osi);
 COINLIBAPI void COINLINKAGE
 Osi_branchAndBound(void *osi);
 
-// solution query methods
 
 /** @brief Checks if optimization was abandoned */
 COINLIBAPI char COINLINKAGE
@@ -1127,7 +1117,6 @@ Osi_deleteSolver( void *osi );
 /*@}*/
 
 /** \name OsiCuts related routines (used in callbacks) */
-//@{
 
 /** adds a row cut (used in callback) */
 COINLIBAPI void COINLINKAGE 

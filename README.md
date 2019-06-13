@@ -42,11 +42,13 @@ The Cbc website is https://github.com/coin-or/Cbc.
 
 ## DOWNLOAD
 
-Binaries for most platforms are available for download from [Bintray](https://bintray.com/coin-or/download/Cbc): [ ![Download](https://api.bintray.com/packages/coin-or/download/Cbc/images/download.svg) ](https://bintray.com/coin-or/download/Cbc/2.10)
+Binaries for most platforms are available for download from [Bintray](https://bintray.com/coin-or/download/Cbc)
 
- * *Linux*: On !Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
- * *Windows*: The easiest way to get Cbc on Windows is to download the Windows installer for the [COIN-OR Optimization Suite](http://www.coin-or.org/download/binary/CoinAll), which provides Visual Studio compatible libraries and binaries.
- * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through Homebrew
+[ ![Download](https://api.bintray.com/packages/coin-or/download/Cbc/images/download.svg?version=2.10) ](https://bintray.com/coin-or/download/Cbc/2.10/link)
+
+ * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
+ * *Windows*: The easiest way to get Cbc on Windows is to download from [Bintray](https://bintray.com/coin-or/download/Cbc), although an old interactive installer for the [COIN-OR Optimization Suite](http://www.coin-or.org/download/binary/CoinAll)is also still available.
+ * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through [Homebrew](https://brew.sh).
    * `brew tap coin-or-tools/coinor`
    * `brew install cbc`
  * AMPL also provides stand-alone [Cbc executables](http://ampl.com/products/solvers/open-source/#cbc) that can be used with (or without) AMPL.
@@ -57,10 +59,12 @@ If binaries are not available for your platform for the latest version and you w
 *Source code* can be obtained either by
 
  * Downloading a snapshot of the source code for the latest release version of Cbc from the [Cbc source code download page](http://www.coin-or.org/download/source/Cbc), or
- * Checking out the code from [Github](https://github.com/coin-or/Cbc)
+ * Checking out the code from [Github](https://github.com/coin-or/Cbc) or using the `coinbrew` script (recommended). 
 
-The recommended method is to use Git because it makes it easier to obtain updates. Below are some quick start guides for building on common platforms. *More detailed build instructions are [BuildAndInstall here].*
-
+Below is a quick start guide for building on common platforms. More detailed
+build instructions are
+(https://coin-or.github.io/user_introduction.html](here) (this is a work in
+progress).
 
 ## BUILDING from source
 
@@ -70,11 +74,9 @@ To build Cbc from source, obtain the `coinbrew` script from
 https://coin-or.github.io/coinbrew/
 and run
 
-
-    /path/to/coinbrew fetch --main-proj=Cbc
-    /path/to/coinbrew build --main-proj=Cbc --test
-    /path/to/coinbrew install --main-proj=Cbc
-
+    /path/to/coinbrew fetch Cbc
+    /path/to/coinbrew build =Cbc --prefix=/dir/to/install --test
+    /path/to/coinbrew install Cbc
 
 The `coinbrew` script will fetch [these](Dependencies) additional projects.
 
@@ -89,35 +91,52 @@ The `coinbrew` script will fetch [these](Dependencies) additional projects.
 
 ### With Microsoft Visual Studio
 
-For Microsoft Visual C++ users, there are project files for version 10 available in the `MSVisualStudio` directory.
-First, obtain the source code using either a Windows git client or download a snapshot.
-In MSVC++ Version 10, open the solution file (this should be converted to whatever version of MSVC+ you are using) and build the Cbc project.
-The code should build out of the box with default settings.
+For Microsoft Visual C++ users, there are project files for version 10
+available in the `MSVisualStudio` directory. First, obtain the source code
+using either a Windows git client or download a snapshot. In MSVC++ Version
+10, open the solution file (this should be converted to whatever version of
+MSVC+ you are using) and build the Cbc project. The code should build out of
+the box with default settings.
 
-It is also possible to build Cbc with the Visual Studio compiler from the command line using the procedure for Unix-like environments, using the Msys2 shell or CYGWIN.
-This is the recommended and best-supported way of building Cbc in Windows from source.
+It is also possible to build Cbc with the Visual Studio compiler from the
+command line using the procedure for Unix-like environments, using the Msys2
+shell or CYGWIN. This is the recommended and best-supported way of building
+Cbc in Windows from source.
 
-If you want to build a *parallel version* of CBC using Visual Studio you can following instructions: (thanks to Tobias Stengel and Alexis Guigue).
+If you want to build a *parallel version* of CBC using Visual Studio you can
+following instructions: (thanks to Tobias Stengel and Alexis Guigue).
 
 Assumptions:
 
-- A VS solution with all necessary projects (libCbc, libClp, libCbcSolver, libCgl, libCoinUtils, libOsi, libOsiCbc, libOsiClp). The project files can be found inside the "MSVisualStudio" folders.
+- A VS solution with all necessary projects (libCbc, libClp, libCbcSolver,
+  libCgl, libCoinUtils, libOsi, libOsiCbc, libOsiClp). The project files can
+  be found inside the "MSVisualStudio" folders. 
 
 Steps (based on VS 2013):
 
 1. for each of the lib* projects do:
-   add `CBC_THREAD` under Properties -> Configuration Properties -> C/C++ -> Preprocessor -> Preprocessor Definitions (a subset of the lib* projects may be sufficient, but it doesn't hurt to do it for all)
+   add `CBC_THREAD` under Properties -> Configuration Properties -> C/C++ ->
+   Preprocessor -> Preprocessor Definitions (a subset of the lib* projects may
+   be sufficient, but it doesn't hurt to do it for all) 
 
 2. Link against a pthreads library.
-   [PThreadsWin32](https://www.sourceware.org/pthreads-win32/) works (even in 64 bits systems) and is distributed under the LGPL.
-   If you decide to use the precompiled binaries: both pthreadVC2 and pthreadVS2 seem to work.
-   Otherwise: third party VS project files for pthreads4win can be found on github.
+   [PThreadsWin32](https://www.sourceware.org/pthreads-win32/) works (even in
+   64 bits systems) and is distributed under the LGPL. If you decide to use
+   the precompiled binaries: both pthreadVC2 and pthreadVS2 seem to work.
+   Otherwise: third party VS project files for pthreads4win can be found on
+   github.
 
-   Note: If you use C++/Cli, make sure that no callback (eventHandlers, custom cut generators, custom heuristics, ...) contains managed code.
-   Otherwise your code will crash at runtime with AssembyNotFoundExceptions inside the native threads created by Cbc. Even if not, problems with the GC are likely.
+   Note: If you use C++/Cli, make sure that no callback (eventHandlers, custom
+   cut generators, custom heuristics, ...) contains managed code. Otherwise
+   your code will crash at runtime with AssembyNotFoundExceptions inside the
+   native threads created by Cbc. Even if not, problems with the GC are
+   likely.
 
-3. If you link statically against pthreads4win, you have to define PTW32_STATIC_LIB when building your program/Cbc (e.g. via Properties -> C/C++/Preprocessor ->  Preprocessor Definitions) AND - only if you build pthreads yourself - when building pthreads.
-   Linking pthreads dynamically works without additional preprocessor definitions.
+3. If you link statically against pthreads4win, you have to define
+   PTW32_STATIC_LIB when building your program/Cbc (e.g. via Properties ->
+   C/C++/Preprocessor -> Preprocessor Definitions) AND - only if you build
+   pthreads yourself - when building pthreads. Linking pthreads dynamically
+   works without additional preprocessor definitions.
 
 4. pass "-threads" "yourNumber" to CbcMain1
 

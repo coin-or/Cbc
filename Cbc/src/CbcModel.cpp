@@ -8483,7 +8483,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           End of the loop to exercise each generator - try heuristics
           - unless at root node and first pass
         */
-    if ((numberNodes_ || currentPassNumber_ != 1) && true) {
+    if ((numberNodes_ || currentPassNumber_ != 1) && (!this->maximumSecondsReached())) {
       double *newSolution = new double[numberColumns];
       double heuristicValue = getCutoff();
       int found = -1; // no solution found
@@ -8919,7 +8919,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         }
       }
     }
-  } while (numberTries > 0 || keepGoing);
+  } while ( (numberTries > 0 || keepGoing) && (!this->maximumSecondsReached()) );
   /*
       End cut generation loop.
     */
@@ -9810,7 +9810,7 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts, 
   int switchOff = (!doCutsNow(1) && !fullScan) ? 1 : 0;
   int status = 0;
   int i;
-  for (i = 0; i < numberCutGenerators_; i++) {
+  for (i = 0; i < numberCutGenerators_ && (!this->maximumSecondsReached()) ; i++) {
     int numberRowCutsBefore = theseCuts.sizeRowCuts();
     int numberColumnCutsBefore = theseCuts.sizeColCuts();
     int numberRowCutsAfter = numberRowCutsBefore;

@@ -151,9 +151,11 @@ https://github.com/coin-or/Cbc/issues
      The filename suffix indicates which values Cbc should choose for
      missing variables (see change r2549)
 
- * Release 2.10.3 (in preparation)
+ * Release 2.10.3
    * Improve performance of some primal heuristics, incl. feasibility pump, by making integer slacks continuous
-   * Bugfixes
+   * Added additional timelimit checks
+   * Fixed initialization of Cbc_clone result
+   * Additional bugfixes
 
  * Release 2.10.2
    * Bugfixes

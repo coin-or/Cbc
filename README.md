@@ -53,6 +53,7 @@ Binaries for most platforms are available for download from [Bintray](https://bi
    * `brew install cbc`
  * AMPL also provides stand-alone [Cbc executables](http://ampl.com/products/solvers/open-source/#cbc) that can be used with (or without) AMPL.
  * The [GAMS](http://www.gams.com) distribution includes Cbc.
+
 Due to license incompatibilities, pre-compiled binaries lack some functionality.
 If binaries are not available for your platform for the latest version and you would like to request them to be built and posted, feel free to let us know on the mailing list.
 

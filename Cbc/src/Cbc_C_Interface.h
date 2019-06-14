@@ -26,7 +26,7 @@ extern "C" {
 COINLIBAPI const char *COINLINKAGE Cbc_getVersion(void);
 
 /** \name Problem creation and modification routines */
-//@{
+/**@{*/
 
 /** @brief Creates an empty problem */
 COINLIBAPI Cbc_Model *COINLINKAGE
@@ -238,11 +238,11 @@ Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double 
 COINLIBAPI Cbc_Model *COINLINKAGE
 Cbc_clone(Cbc_Model *model);
 
-//@}
+/**@}*/
 
 /** \name Routines to query problem contents
 */
-//@{
+/**@{*/
 
 /** @brief Queries problem name 
      *
@@ -432,11 +432,11 @@ COINLIBAPI int COINLINKAGE
 Cbc_isInteger(Cbc_Model *model, int i);
 
 
-//@}
+/**@}*/
 
 /** \name Routines to load and save problems from disk
 */
-//@{
+/**@{*/
 
 /** @brief Read an mps file from the given filename 
     * 
@@ -470,7 +470,7 @@ Cbc_writeMps(Cbc_Model *model, const char *filename);
 COINLIBAPI void COINLINKAGE
 Cbc_writeLp(Cbc_Model *model, const char *filename);
 
-//@}
+/**@}*/
 
 /**@name Getting and setting model data
      Note that problem access and modification methods,
@@ -480,7 +480,7 @@ Cbc_writeLp(Cbc_Model *model, const char *filename);
        object for multiple solves. A workaround is to call Cbc_clone()
        before solving.
      * */
-/*@{*/
+/**@{*/
 
 /** Provide an initial feasible solution to accelerate branch-and-bound 
      Note that feasibility of the solution is *not* verified.
@@ -503,10 +503,10 @@ Cbc_maxNameLength(Cbc_Model *model);
 /** Print the model */
 COINLIBAPI void COINLINKAGE
 Cbc_printModel(Cbc_Model *model, const char *argPrefix);
-/*@}*/
+/**@}*/
 
 /**@name Solver parameters */
-/*@{*/
+/**@{*/
 /** Set parameter "name" to value "value". Note that this
      * translates directly to using "-name value" as a 
      * command-line argument to Cbc.*/
@@ -598,9 +598,9 @@ Cbc_setCutoff(Cbc_Model *model, double cutoff);
 
 
 
-/*@}*/
+/**@}*/
 /**@name Message handling.  Call backs are handled by ONE function */
-/*@{*/
+/**@{*/
 /** Pass in Callback function.
      Message numbers up to 1000000 are Clp, Coin ones have 1000000 added */
 COINLIBAPI void COINLINKAGE
@@ -615,18 +615,18 @@ COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
     Cbc_Model *model, cbc_cut_callback cutcb, 
     const char *name, void *appData );
 
-/*@}*/
+/**@}*/
 
 /**@name Solving the model */
-/*@{*/
+/**@{*/
 /* Solve the model with Cbc (using CbcMain1).
     */
 COINLIBAPI int COINLINKAGE
 Cbc_solve(Cbc_Model *model);
-/*@}*/
+/**@}*/
 
 /**@name Accessing the solution and optimization status */
-/*@{*/
+/**@{*/
 
 /** @brief Best feasible solution vector 
      *
@@ -817,10 +817,10 @@ Cbc_getNodeCount(Cbc_Model *model);
 COINLIBAPI void COINLINKAGE
 Cbc_printSolution(Cbc_Model *model);
 
-/*@}*/
+/**@}*/
 
 /** \name OsiSolverInterface related routines (used in callbacks) */
-//@{
+/**@{*/
 
 /** @brief Returns number of cols in OsiSolverInterface object */
 COINLIBAPI int COINLINKAGE
@@ -884,16 +884,16 @@ COINLIBAPI const double * COINLINKAGE
 Osi_getColSolution( void *osi );
 
 
-/*@}*/
+/**@}*/
 
 /** \name OsiCuts related routines (used in callbacks) */
-//@{
+/**@{*/
 
 /** adds a row cut (used in callback) */
 COINLIBAPI void COINLINKAGE 
 OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs );
 
-/*@}*/
+/**@}*/
 
 #ifdef __cplusplus
 }

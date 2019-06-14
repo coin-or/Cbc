@@ -31,7 +31,7 @@ The Cbc website is https://github.com/coin-or/Cbc.
 
 ## CITE
 
-[![DOI](https://zenodo.org/badge/30382416.svg)](https://zenodo.org/badge/latestdoi/30382416)
+[![DOI](https://zenodo.org/badge/173509563.svg)](https://zenodo.org/badge/latestdoi/173509563)
 
 ## CURRENT BUILD STATUS
 

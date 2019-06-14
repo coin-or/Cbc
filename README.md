@@ -48,9 +48,7 @@ Binaries for most platforms are available for download from [Bintray](https://bi
 
  * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
  * *Windows*: The easiest way to get Cbc on Windows is to download from
- * *[Bintray](https://bintray.com/coin-or/download/Cbc), although an old
- * *interactive installer for the [COIN-OR Optimization
- * *Suite](http://www.coin-or.org/download/binary/CoinAll) is also still available.
+ * *[Bintray](https://bintray.com/coin-or/download/Cbc)*, although an old interactive installer for the [COIN-OR Optimization Suite](http://www.coin-or.org/download/binary/CoinAll) is also still available.
  * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through [Homebrew](https://brew.sh).
    * `brew tap coin-or-tools/coinor`
    * `brew install cbc`

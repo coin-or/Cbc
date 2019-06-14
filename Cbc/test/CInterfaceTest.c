@@ -368,13 +368,17 @@ void testIntegerBounds() {
 }
 
 void testQueens(int n) {
+    Cbc_Model *model;
+    int *idx;
+    double *coef;
+    const double *xs;
     int **x = malloc( sizeof(int*)*n );
     int i, j, k, p;
     x[0] = malloc( sizeof(int)*n*n );
     for ( i=1 ; (i<n) ; ++i )
         x[i] = x[i-1] + n;
 
-    Cbc_Model *model = Cbc_newModel();
+    model = Cbc_newModel();
     
     /* adding variables */
     k = 0;
@@ -382,25 +386,25 @@ void testQueens(int n) {
     {
         for ( j=0 ; (j<n) ; ++j )
         {
-            x[i][j] = k++;
             char name[256];
+            x[i][j] = k++;
             sprintf(name, "x(%d,%d)", i, j);
             Cbc_addCol(model, name, 0.0, 1.0, 0.0, 1, 0, NULL, NULL);
         }
     }
 
-    int *idx = malloc(sizeof(int)*n);
-    double *coef = malloc(sizeof(double)*n);
+    idx = malloc(sizeof(int)*n);
+    coef = malloc(sizeof(double)*n);
 
     /* constraint one per row */
     for ( i=0 ; (i<n) ; ++i )
     {
+        char name[256];
         for ( j=0 ; j<n ; ++j )
         {
             idx[j] = x[i][j];
             coef[j] = 1.0;
         }
-        char name[256];
         sprintf(name, "row(%d)", i);
         Cbc_addRow(model, name, n, idx, coef, 'E', 1.0);
     }
@@ -408,12 +412,12 @@ void testQueens(int n) {
     /* constraint one per column */
     for ( j=0 ; (j<n) ; ++j )
     {
+        char name[256];
         for ( i=0 ; i<n ; ++i )
         {
             idx[i] = x[i][j];
             coef[i] = 1.0;
         }
-        char name[256];
         sprintf(name, "col(%d)", j);
         Cbc_addRow(model, name, n, idx, coef, 'E', 1.0);
     }
@@ -422,6 +426,7 @@ void testQueens(int n) {
     p = 0;
     for ( k=2-n ; k<(n-1) ; ++k, ++p )
     {
+        char name[256];
         int nz = 0;
         for ( i=0 ; (i<n) ; ++i )
         {
@@ -435,7 +440,6 @@ void testQueens(int n) {
                 }
             }
         }
-        char name[256];
         sprintf(name, "diag1(%d)", k);
         Cbc_addRow(model, name, nz, idx, coef, 'L', 1.0);
     }
@@ -444,6 +448,7 @@ void testQueens(int n) {
     p = 0;
     for ( k=3 ; k<(n+n) ; ++k, ++p )
     {
+        char name[256];
         int nz = 0;
         for ( i=0 ; (i<n) ; ++i )
         {
@@ -457,14 +462,13 @@ void testQueens(int n) {
                 }
             }
         }
-        char name[256];
         sprintf(name, "diag2(%d)", k);
         Cbc_addRow(model, name, nz, idx, coef, 'L', 1.0);
     } 
 
     Cbc_setMaximumSeconds(model, 60);
-    int status = Cbc_solve(model);
-    const double *xs = Cbc_getColSolution(model);
+    (void) Cbc_solve(model);
+    xs = Cbc_getColSolution(model);
     if (n<=75)
     {
         /* should find the optimal for small problems */

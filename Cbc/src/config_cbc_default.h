@@ -5,7 +5,7 @@
 /***************************************************************************/
 
 /* Version number of project */
-#define CBC_VERSION "2.10.3"
+#define CBC_VERSION "2.10"
 
 /* Major Version number of project */
 #define CBC_VERSION_MAJOR 2
@@ -14,7 +14,7 @@
 #define CBC_VERSION_MINOR 10
 
 /* Release Version number of project */
-#define CBC_VERSION_RELEASE 3
+#define CBC_VERSION_RELEASE 9999
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

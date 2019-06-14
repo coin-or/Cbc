@@ -1280,9 +1280,6 @@ Cbc_clone(Cbc_Model *model)
   result->cmdargs_ = model->cmdargs_;
   result->relax_ = model->relax_;
   result->cbcData->noPrinting_ = model->cbcData->noPrinting_;
-  result->inc_callback = model->inc_callback;
-  if (model->colNameIndex)
-    Cbc_storeNameIndexes(result, 1);
 
   result->colSpace = 0;
   result->nCols = 0;

@@ -76,7 +76,7 @@ https://coin-or.github.io/coinbrew/
 and run
 
     /path/to/coinbrew fetch Cbc
-    /path/to/coinbrew build =Cbc --prefix=/dir/to/install --test
+    /path/to/coinbrew build Cbc --prefix=/dir/to/install --test
     /path/to/coinbrew install Cbc
 
 The `coinbrew` script will fetch [these](Dependencies) additional projects.
@@ -102,7 +102,8 @@ the box with default settings.
 It is also possible to build Cbc with the Visual Studio compiler from the
 command line using the procedure for Unix-like environments, using the Msys2
 shell or CYGWIN. This is the recommended and best-supported way of building
-Cbc in Windows from source.
+Cbc in Windows from source. To do so, make sure the `cl` compiler is in your
+path and add `--enable-msvc to build command of `coinbrew`.  
 
 If you want to build a *parallel version* of CBC using Visual Studio you can
 following instructions: (thanks to Tobias Stengel and Alexis Guigue).
@@ -515,7 +516,3 @@ https://github.com/coin-or/Cbc/issues
    * New options for cut generation.
 
    * Improved reporting of results.
-
-   * Improvements to documentation.
-
-   * Minor bug fixes.

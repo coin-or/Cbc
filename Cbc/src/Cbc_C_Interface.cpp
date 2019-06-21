@@ -1332,17 +1332,35 @@ Cbc_solve(Cbc_Model *model)
 
   OsiSolverInterface *solver = model->solver_;
   if (solver->getNumIntegers() == 0 || model->relax_ == 1) {
+
+    solver->messageHandler()->setLogLevel( model->model_->logLevel() );
+
+#ifdef COIN_HAS_CLP
+    double maxTime = Cbc_getMaximumSeconds(model);
+    if (maxTime != DBL_MAX) {
+      OsiClpSolverInterface *clpSolver
+        = dynamic_cast< OsiClpSolverInterface * >(solver);
+      if (clpSolver) {
+        bool useElapsedTime = model->model_->useElapsedTime();
+        if (useElapsedTime)
+          clpSolver->getModelPtr()->setMaximumWallSeconds(maxTime);
+        else
+          clpSolver->getModelPtr()->setMaximumSeconds(maxTime);
+      } // clp solver
+    } // set time limit
+#endif
+
     if (solver->basisIsAvailable()) {
       solver->resolve();
     } else {
       solver->initialSolve();
-    }
+    } // initial solve
 
     if (solver->isProvenOptimal())
       return 0;
 
     return 1;
-  }
+  } // solve only lp relaxation
 
   const char prefix[] = "Cbc_C_Interface::Cbc_solve(): ";
   int result = 0;

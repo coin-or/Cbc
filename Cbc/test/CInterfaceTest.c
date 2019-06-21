@@ -374,6 +374,7 @@ void testQueens(int n) {
     const double *xs;
     int **x = malloc( sizeof(int*)*n );
     int i, j, k, p;
+
     x[0] = malloc( sizeof(int)*n*n );
     for ( i=1 ; (i<n) ; ++i )
         x[i] = x[i-1] + n;

@@ -24,6 +24,7 @@
 #include "CoinMessageHandler.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "CglCutGenerator.hpp"
+#include "CbcCutGenerator.hpp"
 
 //  bobe including extras.h to get strdup()
 #if defined(__MWERKS__)
@@ -131,121 +132,186 @@ CglCallback::~CglCallback()
 
 }
 
-class SolHandler : public CbcEventHandler {
+class Cbc_EventHandler : public CbcEventHandler {
 public:
   virtual CbcAction event(CbcEvent whichEvent);
-  SolHandler();
-  SolHandler(CbcModel *model);
-  virtual ~SolHandler();
-  SolHandler(const SolHandler &rhs);
-  SolHandler &operator=(const SolHandler &rhs);
+  Cbc_EventHandler();
+  Cbc_EventHandler(CbcModel *model);
+  virtual ~Cbc_EventHandler();
+  Cbc_EventHandler(const Cbc_EventHandler &rhs);
+  Cbc_EventHandler &operator=(const Cbc_EventHandler &rhs);
   virtual CbcEventHandler *clone() const;
 
   double bestCost;
+  double bestBound;
   cbc_incumbent_callback inc_callback;
+  cbc_progress_callback progr_callback;
   void *appData;
+  void *pgAppData;
+#ifdef CBC_THREAD
+  pthread_mutex_t *cbcMutex;
+#endif
 };
 
-SolHandler::SolHandler()
+Cbc_EventHandler::Cbc_EventHandler()
   : CbcEventHandler()
-  , bestCost(COIN_DBL_MAX),
-  inc_callback(NULL),
-  appData(NULL)
+  , bestCost(COIN_DBL_MAX)
+  , bestBound(COIN_DBL_MIN)
+  , inc_callback(NULL)
+  , progr_callback(NULL)
+  , appData(NULL)
+  , pgAppData(NULL)
+#ifdef CBC_THREAD
+  , cbcMutex(NULL)
+#endif
 {
 }
 
-SolHandler::SolHandler(const SolHandler &rhs)
+Cbc_EventHandler::Cbc_EventHandler(const Cbc_EventHandler &rhs)
   : CbcEventHandler(rhs)
   , bestCost(rhs.bestCost)
+  , bestBound(rhs.bestBound)
   , inc_callback(rhs.inc_callback)
+  , progr_callback(rhs.progr_callback)
   , appData(rhs.appData)
+  , pgAppData(rhs.pgAppData)
+#ifdef CBC_THREAD
+  , cbcMutex(rhs.cbcMutex)
+#endif
+
 {
 }
 
-SolHandler::SolHandler(CbcModel *model)
+Cbc_EventHandler::Cbc_EventHandler(CbcModel *model)
   : CbcEventHandler(model)
   , bestCost(COIN_DBL_MAX)
+  , bestBound(COIN_DBL_MIN)
   , inc_callback(NULL)
+  , progr_callback(NULL)
   , appData(NULL)
+  , pgAppData(NULL)
+#ifdef CBC_THREAD
+  , cbcMutex(NULL)
+#endif
+
 {
 }
 
-SolHandler::~SolHandler()
+Cbc_EventHandler::~Cbc_EventHandler()
 {
 }
 
-SolHandler &SolHandler::operator=(const SolHandler &rhs)
+Cbc_EventHandler &Cbc_EventHandler::operator=(const Cbc_EventHandler &rhs)
 {
   if (this != &rhs) {
     CbcEventHandler::operator=(rhs);
     this->bestCost = rhs.bestCost;
+    this->bestBound = rhs.bestBound;
     this->inc_callback = rhs.inc_callback;
+    this->progr_callback = rhs.progr_callback;
     this->appData = rhs.appData;
+    this->pgAppData = rhs.pgAppData;
+#ifdef CBC_THREAD
+    this->cbcMutex = rhs.cbcMutex;
+#endif
   }
   return *this;
 }
 
-CbcEventHandler *SolHandler::clone() const
+CbcEventHandler *Cbc_EventHandler::clone() const
 {
-  return new SolHandler(*this);
+  return new Cbc_EventHandler(*this);
 }
 
-CbcEventHandler::CbcAction SolHandler::event(CbcEvent whichEvent)
+CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
 {
-  if (this->inc_callback == NULL)
-    return noAction;
-  // If in sub tree carry on
+  // if in sub tree carry on
   if ((model_->specialOptions() & 2048) == 0) {
     if ((whichEvent == solution || whichEvent == heuristicSolution)) {
+
       OsiSolverInterface *origSolver = model_->solver();
       const OsiSolverInterface *pps = model_->postProcessedSolver(1);
 
       const OsiSolverInterface *solver = pps ? pps : origSolver;
 
+#ifdef CBC_THREAD
+    assert(this->cbcMutex);
+    pthread_mutex_lock((this->cbcMutex));
+#endif
       if (bestCost >= solver->getObjValue() + 1e-10) {
-        bestCost = solver->getObjValue();
+          bestCost = solver->getObjValue();
 
-        int charSize = 0, nNZ = 0;
-        const double *x = solver->getColSolution();
-        for (int i = 0; (i < solver->getNumCols()); ++i)
-        {
-          if (fabs(x[i]) <= 1e-7)
-            continue;
-          charSize += solver->getColName(i).size()+1;
-          ++nNZ;
-        } // checking non zero cols
-        char **cnames = new char*[nNZ];
-        double *xv = new double[nNZ];
-        cnames[0] = new char[charSize];
+        if (this->inc_callback != NULL) {
+          int charSize = 0, nNZ = 0;
+          const double *x = solver->getColSolution();
+          for (int i = 0; (i < solver->getNumCols()); ++i) {
+            if (fabs(x[i]) <= 1e-7)
+                continue;
+            charSize += solver->getColName(i).size()+1;
+            ++nNZ;
+          } // checking non zero cols
+          char **cnames = new char*[nNZ];
+          double *xv = new double[nNZ];
+          cnames[0] = new char[charSize];
 
-        int cnz = 0;
-        for (int i = 0; (i < solver->getNumCols()); ++i)
-        {
-          if (fabs(x[i]) <= 1e-7)
-            continue;
-          if (cnz>=1)
-            cnames[cnz] = cnames[cnz-1] + solver->getColName(i).size()+1;
-          cnz++;
-        }
+          int cnz = 0;
+          for (int i = 0; (i < solver->getNumCols()); ++i)
+          {
+            if (fabs(x[i]) <= 1e-7)
+              continue;
+            if (cnz>=1)
+              cnames[cnz] = cnames[cnz-1] + solver->getColName(i).size()+1;
+            cnz++;
+          }
 
-        cnz = 0;
-        for (int i = 0; (i < solver->getNumCols()); ++i)
-        {
-          if (fabs(x[i]) <= 1e-7)
-            continue;
-           strcpy(cnames[cnz], solver->getColName(i).c_str());
-           xv[cnz] = x[i];
+          cnz = 0;
+          for (int i = 0; (i < solver->getNumCols()); ++i)
+          {
+            if (fabs(x[i]) <= 1e-7)
+                continue;
+            strcpy(cnames[cnz], solver->getColName(i).c_str());
+            xv[cnz] = x[i];
 
-           cnz++;
-        }
+            cnz++;
+          }
 
-        this->inc_callback(model_, bestCost, nNZ, cnames, xv, this->appData);
+          this->inc_callback(model_, bestCost, nNZ, cnames, xv, this->appData);
 
-        delete[] xv;
-        delete[] cnames[0];
-        delete[] cnames;
+          delete[] xv;
+          delete[] cnames[0];
+          delete[] cnames;
+        } // incumbent callback
+        if (this->progr_callback) {
+          const CbcModel *model = this->getModel();
+          double secs = model->getCurrentSeconds();
+          double lb = model->getBestPossibleObjValue();
+          this->progr_callback((void *) model, 0, model->getNodeCount(), "sol", secs, lb, bestCost, 0, NULL, this->pgAppData);
+        } // incumbent callback
       } // improved cost
+#ifdef CBC_THREAD
+    assert(this->cbcMutex);
+    pthread_mutex_unlock((this->cbcMutex));
+#endif
     } // solution found
+
+    if (this->progr_callback)
+    {
+#ifdef CBC_THREAD
+    assert(this->cbcMutex);
+    pthread_mutex_lock((this->cbcMutex));
+#endif
+      if (this->getModel()->getBestPossibleObjValue() >= this->bestBound+1e-5)
+      {
+        this->bestBound = this->getModel()->getBestPossibleObjValue();
+        const CbcModel *model = this->getModel();
+        double secs = model->getCurrentSeconds();
+        this->progr_callback((void *) model, 0, model->getNodeCount(), "bnd", secs, bestBound, bestCost, 0, NULL, this->pgAppData);
+      } // improved lower bound
+#ifdef CBC_THREAD
+    assert(this->cbcMutex);
+    pthread_mutex_unlock((this->cbcMutex));
+#endif
+    } // has progress callback
   } // not in subtree
 
   return noAction;
@@ -749,6 +815,9 @@ Cbc_newModel()
   model->cbcData->noPrinting_ = false;
   model->relax_ = 0;
   model->inc_callback = NULL;
+  model->progr_callback = NULL;
+  model->icAppData = NULL;
+  model->pgrAppData = NULL;
   model->colNameIndex = NULL;
   model->rowNameIndex = NULL;
 
@@ -1233,6 +1302,29 @@ Cbc_setSolveRelax(Cbc_Model *model, char solveOnlyRelax)
   model->relax_ = solveOnlyRelax;
 }
 
+static int cbc_callb(CbcModel *cbcModel, int whereFrom) {
+  Cbc_EventHandler *cbc_eh = dynamic_cast<Cbc_EventHandler *>(cbcModel->getEventHandler());
+  if (cbc_eh == NULL)
+    return 0;
+
+  if (cbc_eh->progr_callback != NULL)
+  {
+    switch (whereFrom)
+    {
+      case 1:
+        cbc_eh->progr_callback(cbcModel, 0, 0, "root lp relax", cbcModel->getCurrentSeconds(),
+                               cbcModel->getBestPossibleObjValue(), DBL_MAX, 0, NULL, cbc_eh->pgAppData);
+        break;
+      case 2:
+        cbc_eh->progr_callback(cbcModel, 0, 0, "pre-proc", cbcModel->getCurrentSeconds(),
+                               cbcModel->getBestPossibleObjValue(), cbcModel->getObjValue(), 0, NULL, cbc_eh->pgAppData);
+        break;
+    } // where from
+  } // has progress callback
+
+  return 0;
+}
+
 COINLIBAPI int COINLINKAGE
 Cbc_solve(Cbc_Model *model)
 {
@@ -1240,17 +1332,35 @@ Cbc_solve(Cbc_Model *model)
 
   OsiSolverInterface *solver = model->solver_;
   if (solver->getNumIntegers() == 0 || model->relax_ == 1) {
+
+    solver->messageHandler()->setLogLevel( model->model_->logLevel() );
+
+#ifdef COIN_HAS_CLP
+    double maxTime = Cbc_getMaximumSeconds(model);
+    if (maxTime != DBL_MAX) {
+      OsiClpSolverInterface *clpSolver
+        = dynamic_cast< OsiClpSolverInterface * >(solver);
+      if (clpSolver) {
+        bool useElapsedTime = model->model_->useElapsedTime();
+        if (useElapsedTime)
+          clpSolver->getModelPtr()->setMaximumWallSeconds(maxTime);
+        else
+          clpSolver->getModelPtr()->setMaximumSeconds(maxTime);
+      } // clp solver
+    } // set time limit
+#endif
+
     if (solver->basisIsAvailable()) {
       solver->resolve();
     } else {
       solver->initialSolve();
-    }
+    } // initial solve
 
     if (solver->isProvenOptimal())
       return 0;
 
     return 1;
-  }
+  } // solve only lp relaxation
 
   const char prefix[] = "Cbc_C_Interface::Cbc_solve(): ";
   int result = 0;
@@ -1263,19 +1373,33 @@ Cbc_solve(Cbc_Model *model)
   argv.push_back("-quit");
   try {
 
-    SolHandler *sh = NULL;
-    if (model->inc_callback!=NULL)
+    Cbc_EventHandler *cbc_eh = NULL;
+    if (model->inc_callback!=NULL || model->progr_callback!=NULL)
     {
-      sh = new SolHandler(model->model_);
-      sh->inc_callback = model->inc_callback;
-      sh->appData = model->icAppData;
-      model->model_->passInEventHandler(sh);
+      cbc_eh = new Cbc_EventHandler(model->model_);
+#ifdef CBC_THREAD
+      cbc_eh->cbcMutex = &(model->cbcMutex);
+#endif
+
+      if (model->inc_callback) {
+        cbc_eh->inc_callback = model->inc_callback;
+        cbc_eh->appData = model->icAppData;
+      }
+      if (model->progr_callback) {
+        cbc_eh->progr_callback = model->progr_callback;
+        cbc_eh->pgAppData = model->pgrAppData;
+      }
+
+      model->model_->passInEventHandler(cbc_eh);
     }
 
-    CbcMain1((int)argv.size(), &argv[0], *model->model_, NULL, *model->cbcData);
+    CbcMain1((int)argv.size(), &argv[0], *model->model_, cbc_callb, *model->cbcData);
 
-    if (sh)
-      delete sh;
+    if (cbc_eh)
+    {
+      delete cbc_eh;
+      cbc_eh = NULL;
+    }
   } catch (CoinError e) {
     printf("%s ERROR: %s::%s, %s\n", prefix,
       e.className().c_str(), e.methodName().c_str(), e.message().c_str());
@@ -1294,24 +1418,51 @@ COINLIBAPI void COINLINKAGE Cbc_addIncCallback(
   model->icAppData = appData;
 }
 
+COINLIBAPI void COINLINKAGE Cbc_addProgrCallback(
+  Cbc_Model *model, cbc_progress_callback prgcbc,
+  void *appData)
+{
+  model->progr_callback = prgcbc;
+  model->pgrAppData = appData;
+}
+
 COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
     Cbc_Model *model, cbc_cut_callback cutcb,
     const char *name, void *appData )
 {
+  bool deleteCb = false;
   assert( model != NULL );
   assert( model->model_ != NULL );
 
   CbcModel *cbcModel = model->model_;
   cbcModel->setKeepNamesPreproc(true);
 
-  CglCallback cglCb;
-  cglCb.appdata = appData;
-  cglCb.cut_callback_ = cutcb;
+  CglCallback *cglCb = NULL;
+  for ( int i=0 ; (i<cbcModel->numberCutGenerators()) ; ++i )
+  {
+    CbcCutGenerator *ccb = cbcModel->cutGenerators()[i];
+    CglCallback *t = dynamic_cast<CglCallback *>(ccb->generator());
+    if (t) {
+      cglCb = t;
+      break;
+    }
+  }
+  if (cglCb==NULL)
+  {
+    cglCb = new CglCallback();
+    deleteCb = true;
+  }
+
+  cglCb->appdata = appData;
+  cglCb->cut_callback_ = cutcb;
 #ifdef CBC_THREAD
-  cglCb.cbcMutex = &(model->cbcMutex);
+  cglCb->cbcMutex = &(model->cbcMutex);
 #endif
 
-  cbcModel->addCutGenerator( &cglCb, 1, name );
+  cbcModel->addCutGenerator( cglCb, 1, name );
+
+  if (deleteCb)
+    delete cglCb;
 }
 
 /* Sum of primal infeasibilities */
@@ -1508,6 +1659,15 @@ Cbc_getObjValue(Cbc_Model *model)
 
 COINLIBAPI const double *COINLINKAGE
 Cbc_getReducedCost(Cbc_Model *model)
+{
+  if (Cbc_getNumIntegers(model) == 0 || model->relax_ == 1)
+    return (model->solver_->getReducedCost());
+
+  return model->model_->getReducedCost();
+}
+
+COINLIBAPI const double *COINLINKAGE
+Cbc_getRowPrice(Cbc_Model *model)
 {
   if (Cbc_getNumIntegers(model) == 0 || model->relax_ == 1)
     return (model->solver_->getReducedCost());
@@ -1715,6 +1875,9 @@ Cbc_clone(Cbc_Model *model)
   result->relax_ = model->relax_;
   result->cbcData->noPrinting_ = model->cbcData->noPrinting_;
   result->inc_callback = model->inc_callback;
+  result->progr_callback = model->progr_callback;
+  result->icAppData = model->icAppData;
+  result->pgrAppData = model->pgrAppData;
   if (model->colNameIndex)
     Cbc_storeNameIndexes(result, 1);
 
@@ -1837,6 +2000,47 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   }
 
   Cbc_addRowBuffer(model, nz, cols, coefs, rowLB, rowUB, name);
+}
+
+COINLIBAPI void COINLINKAGE
+Osi_addRow(void *osi, const char *name, int nz,
+  const int *cols, const double *coefs, char sense, double rhs)
+{
+  OsiSolverInterface *solver = (OsiSolverInterface *) osi;
+  double rowLB = -DBL_MAX, rowUB = DBL_MAX;
+  switch (toupper(sense)) {
+  case '=':
+    rowLB = rowUB = rhs;
+    break;
+  case 'E':
+    rowLB = rowUB = rhs;
+    break;
+  case '<':
+    rowUB = rhs;
+    break;
+  case 'L':
+    rowUB = rhs;
+    break;
+  case '>':
+    rowLB = rhs;
+    break;
+  case 'G':
+    rowLB = rhs;
+    break;
+  default:
+    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    abort();
+  }
+
+  solver->addRow(nz, cols, coefs, rowLB, rowUB);
+  solver->setRowName(solver->getNumRows()-1, std::string(name));
+}
+
+COINLIBAPI void COINLINKAGE
+Osi_setObjSense(void *osi, double sense)
+{
+  OsiSolverInterface *solver = (OsiSolverInterface *) osi;
+  solver->setObjSense(sense);
 }
 
 COINLIBAPI void COINLINKAGE
@@ -2087,6 +2291,104 @@ Cbc_printSolution(Cbc_Model *model)
   return;
 }
 
+/** @brief Creates a new OsiClpSolverInterface and returns a pointer to an OsiSolverInterface object */
+COINLIBAPI void * COINLINKAGE
+Osi_newSolver()
+{
+  OsiClpSolverInterface *clp = new OsiClpSolverInterface();
+
+  return dynamic_cast<OsiSolverInterface *>(clp);
+}
+
+COINLIBAPI void COINLINKAGE
+Osi_setObjCoef(void *osi, int index, double obj)
+{
+  OsiSolverInterface *osis = (OsiSolverInterface *)osi;
+  osis->setObjCoeff( index, obj );
+}
+
+/** @brief Solves initial LP relaxation */
+COINLIBAPI void COINLINKAGE
+Osi_initialSolve(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  osis->initialSolve();
+}
+
+/** @brief Reoptimizes linear program  */
+COINLIBAPI void COINLINKAGE
+Osi_resolve(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  osis->resolve();
+}
+
+/** @brief Performs branch and bound */
+COINLIBAPI void COINLINKAGE
+Osi_branchAndBound(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  osis->branchAndBound();
+}
+
+// solution query methods
+
+/** @brief Checks if optimization was abandoned */
+COINLIBAPI char COINLINKAGE
+Osi_isAbandoned(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isAbandoned();
+}
+
+/** @brief Checks if optimal solution was found */
+COINLIBAPI char COINLINKAGE
+Osi_isProvenOptimal(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isProvenOptimal();
+}
+
+/** @brief Checks if problem is primal infeasible */
+COINLIBAPI char COINLINKAGE
+Osi_isProvenPrimalInfeasible(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isProvenPrimalInfeasible();
+}
+
+/** @brief Checks if problem is dual infeasible */
+COINLIBAPI char COINLINKAGE
+Osi_isProvenDualInfeasible(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isProvenDualInfeasible();
+}
+
+/** @brief Checks if primal objective limit was reached */
+COINLIBAPI char COINLINKAGE
+Osi_isPrimalObjectiveLimitReached(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isPrimalObjectiveLimitReached();
+}
+
+/** @brief Checks if dual objective limit was reached */
+COINLIBAPI char COINLINKAGE
+Osi_isDualObjectiveLimitReached(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isDualObjectiveLimitReached();
+}
+
+/** @brief Checks if iteration limit was reached */
+COINLIBAPI char COINLINKAGE
+Osi_isIterationLimitReached(void *osi)
+{
+  OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
+  return (char)osis->isIterationLimitReached();
+}
+
 COINLIBAPI int COINLINKAGE
 Osi_getNumCols( void *osi )
 {
@@ -2132,6 +2434,22 @@ Osi_getNumRows( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
   return osiSolver->getNumRows();
+}
+
+/** @brief Returns number non-zeros in the constraint matrix */
+COINLIBAPI int COINLINKAGE
+Osi_getNumNz( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  return osiSolver->getNumElements();
+}
+
+/** @brief Returns number integer/binary variables */
+COINLIBAPI int COINLINKAGE
+Osi_getNumIntegers( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  return osiSolver->getNumIntegers();
 }
 
 COINLIBAPI int COINLINKAGE
@@ -2230,7 +2548,64 @@ OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, ch
   oc->insert(orc);
 }
 
+/** @brief Sets a variable to integer */
+COINLIBAPI void COINLINKAGE
+Osi_setInteger(void *osi, int index)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
 
+  osiSolver->setInteger(index);
+}
+
+/** @brief Sets a variable to continuous */
+COINLIBAPI void COINLINKAGE
+Osi_setContinuous(void *osi, int index)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  osiSolver->setContinuous(index);
+}
+
+COINLIBAPI int COINLINKAGE
+Osi_getColNz(void *osi, int col)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  const CoinPackedMatrix *cpmCol = osiSolver->getMatrixByCol();
+  return cpmCol->getVectorLengths()[col];
+}
+
+/** @brief Indices of rows that a column appears 
+     *
+     * @param model problem object 
+     * @param col column index
+     * @return indices of rows that this column appears
+     **/
+COINLIBAPI const int *COINLINKAGE
+Osi_getColIndices(void *osi, int col)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  const CoinPackedMatrix *cpmCol = osiSolver->getMatrixByCol();
+  const CoinBigIndex *starts = cpmCol->getVectorStarts();
+  const int *cidx = cpmCol->getIndices() + starts[col];
+  return cidx;
+}
+
+/** @brief Coefficients that a column appear in rows 
+     *
+     * @param model problem object 
+     * @param col column index
+     * @return coefficients of this column in rows
+     **/
+COINLIBAPI const double *COINLINKAGE
+Osi_getColCoeffs(void *osi, int col)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  const CoinPackedMatrix *cpmCol = osiSolver->getMatrixByCol();
+  const CoinBigIndex *starts = cpmCol->getVectorStarts();
+  const double *rcoef = cpmCol->getElements() + starts[col];
+  return rcoef;
+}
 
 /** @brief Returns solution vector in OsiSolverInterface object */
 COINLIBAPI const double * COINLINKAGE
@@ -2239,6 +2614,61 @@ Osi_getColSolution( void *osi )
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
 
   return osiSolver->getColSolution();
+}
+
+/** Adds a new column */
+COINLIBAPI void COINLINKAGE
+Osi_addCol(void *osi, const char *name, double lb,
+  double ub, double obj, char isInteger,
+  int nz, int *rows, double *coefs)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+    osiSolver->addCol(nz, rows, coefs, lb, ub, obj, std::string(name));
+    if (isInteger)
+      osiSolver->setInteger(osiSolver->getNumCols() - 1);
+}
+
+/** @brief Returns vector of reduced costs */
+COINLIBAPI const double * COINLINKAGE
+Osi_getReducedCost( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  return osiSolver->getColSolution();
+}
+
+/** @brief Returns vector dual variables */
+COINLIBAPI const double * COINLINKAGE
+Osi_getRowPrice( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  return osiSolver->getRowPrice();
+}
+
+COINLIBAPI double COINLINKAGE
+Osi_getObjValue( void *osi )
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+
+  return osiSolver->getObjValue();
+}
+
+/** @brief Sets column upper bound */
+COINLIBAPI void COINLINKAGE
+Osi_setColUpper (void *osi, int elementIndex, double ub)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  osiSolver->setColUpper(elementIndex, ub);
+}
+
+/** @brief Sets column upper bound */
+COINLIBAPI void COINLINKAGE
+Osi_setColLower(void *osi, int elementIndex, double lb)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  osiSolver->setColLower(elementIndex, lb);
 }
 
 COINLIBAPI double COINLINKAGE

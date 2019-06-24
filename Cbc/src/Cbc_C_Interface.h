@@ -26,7 +26,6 @@ extern "C" {
 COINLIBAPI const char *COINLINKAGE Cbc_getVersion(void);
 
 /** \name Problem creation and modification routines */
-//@{
 
 /** @brief Creates an empty problem */
 COINLIBAPI Cbc_Model *COINLINKAGE
@@ -291,11 +290,8 @@ Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double 
 COINLIBAPI Cbc_Model *COINLINKAGE
 Cbc_clone(Cbc_Model *model);
 
-//@}
-
 /** \name Routines to query problem contents
 */
-//@{
 
 /** @brief Queries problem name 
      *
@@ -485,11 +481,8 @@ COINLIBAPI int COINLINKAGE
 Cbc_isInteger(Cbc_Model *model, int i);
 
 
-//@}
-
 /** \name Routines to load and save problems from disk
 */
-//@{
 
 /** @brief Read an mps file from the given filename 
     * 
@@ -523,7 +516,6 @@ Cbc_writeMps(Cbc_Model *model, const char *filename);
 COINLIBAPI void COINLINKAGE
 Cbc_writeLp(Cbc_Model *model, const char *filename);
 
-//@}
 
 /**@name Getting and setting model data
      Note that problem access and modification methods,
@@ -652,7 +644,7 @@ Cbc_setCutoff(Cbc_Model *model, double cutoff);
 
 
 /*@}*/
-/**@name Message handling.  Call backs are handled by ONE function */
+/**@name Message handling.  */
 /*@{*/
 /** Pass in Callback function.
      Message numbers up to 1000000 are Clp, Coin ones have 1000000 added */
@@ -664,13 +656,21 @@ Cbc_registerCallBack(Cbc_Model *model,
 COINLIBAPI void COINLINKAGE
 Cbc_clearCallBack(Cbc_Model *model);
 
+/** calback to generate cutting planes **/
 COINLIBAPI void COINLINKAGE Cbc_addCutCallback( 
     Cbc_Model *model, cbc_cut_callback cutcb, 
     const char *name, void *appData );
 
+/** callback to monitor new incumbent solutions **/
 COINLIBAPI void COINLINKAGE Cbc_addIncCallback(
     Cbc_Model *model, cbc_incumbent_callback inccb, 
     void *appData );
+
+/** callback to monitor improvements in lower or upper
+ * bounds */
+COINLIBAPI void COINLINKAGE Cbc_addProgrCallback(
+  Cbc_Model *model, cbc_progress_callback prgcbc,
+  void *appData);
 
 /*@}*/
 
@@ -745,6 +745,14 @@ Cbc_savedSolutionObj(Cbc_Model *model, int whichSol);
      **/
 COINLIBAPI const double *COINLINKAGE
 Cbc_getReducedCost(Cbc_Model *model);
+
+/** @brief Queries vector of row prices (values for dual variables)
+     *
+     * @param model problem object
+     * @return reduced cost vector
+     **/
+COINLIBAPI const double *COINLINKAGE
+Cbc_getRowPrice(Cbc_Model *model);
 
 /** If optimization was abandoned due to numerical difficulties
      *
@@ -877,7 +885,51 @@ Cbc_printSolution(Cbc_Model *model);
 /*@}*/
 
 /** \name OsiSolverInterface related routines (used in callbacks) */
-//@{
+
+/** @brief Creates a new OsiClpSolverInterface and returns a pointer to an OsiSolverInterface object */
+COINLIBAPI void * COINLINKAGE
+Osi_newSolver();
+
+/** @brief Solves initial LP relaxation */
+COINLIBAPI void COINLINKAGE
+Osi_initialSolve(void *osi);
+
+/** @brief Reoptimizes linear program  */
+COINLIBAPI void COINLINKAGE
+Osi_resolve(void *osi);
+
+/** @brief Performs branch and bound */
+COINLIBAPI void COINLINKAGE
+Osi_branchAndBound(void *osi);
+
+
+/** @brief Checks if optimization was abandoned */
+COINLIBAPI char COINLINKAGE
+Osi_isAbandoned(void *osi);
+
+/** @brief Checks if optimal solution was found */
+COINLIBAPI char COINLINKAGE
+Osi_isProvenOptimal(void *osi);
+
+/** @brief Checks if problem is primal infeasible */
+COINLIBAPI char COINLINKAGE
+Osi_isProvenPrimalInfeasible(void *osi);
+
+/** @brief Checks if problem is dual infeasible */
+COINLIBAPI char COINLINKAGE
+Osi_isProvenDualInfeasible(void *osi);
+
+/** @brief Checks if primal objective limit was reached */
+COINLIBAPI char COINLINKAGE
+Osi_isPrimalObjectiveLimitReached(void *osi);
+
+/** @brief Checks if dual objective limit was reached */
+COINLIBAPI char COINLINKAGE
+Osi_isDualObjectiveLimitReached(void *osi);
+
+/** @brief Checks if iteration limit was reached */
+COINLIBAPI char COINLINKAGE
+Osi_isIterationLimitReached(void *osi);
 
 /** @brief Returns number of cols in OsiSolverInterface object */
 COINLIBAPI int COINLINKAGE
@@ -902,6 +954,14 @@ Osi_isInteger( void *osi, int col );
 /** @brief Returns number of rows in OsiSolverInterface object */
 COINLIBAPI int COINLINKAGE
 Osi_getNumRows( void *osi );
+
+/** @brief Returns number non-zeros in the constraint matrix */
+COINLIBAPI int COINLINKAGE
+Osi_getNumNz( void *osi );
+
+/** @brief Returns number integer/binary variables */
+COINLIBAPI int COINLINKAGE
+Osi_getNumIntegers( void *osi );
 
 COINLIBAPI int COINLINKAGE
 Osi_getRowNz(void *osi, int row);
@@ -936,15 +996,127 @@ Osi_getRowRHS(void *osi, int row);
 COINLIBAPI char COINLINKAGE
 Osi_getRowSense(void *osi, int row);
 
+/** @brief Returns vector with objective function coefficients */
+COINLIBAPI const double * COINLINKAGE
+Osi_getObjCoefficients();
+
+/** @brief Returns the objective sense: 1 for MIN and -1 for MAX */
+COINLIBAPI double COINLINKAGE
+Osi_getObjSense();
+
 /** @brief Returns solution vector in OsiSolverInterface object */
 COINLIBAPI const double * COINLINKAGE
 Osi_getColSolution( void *osi );
 
+/** @brief Returns vector of reduced costs */
+COINLIBAPI const double * COINLINKAGE
+Osi_getReducedCost( void *osi );
+
+/** @brief Returns of dual variables */
+COINLIBAPI const double *COINLINKAGE
+Osi_getRowPrice( void *osi );
+
+/** @brief Returns the objective function value */
+COINLIBAPI double COINLINKAGE
+Osi_getObjValue( void *osi );
+
+/** @brief Sets column upper bound */
+COINLIBAPI void COINLINKAGE
+Osi_setColUpper (void *osi, int elementIndex, double ub);
+
+/** @brief Sets column upper bound */
+COINLIBAPI void COINLINKAGE
+Osi_setColLower(void *osi, int elementIndex, double lb);
+
+/** @brief Sets one objective function coefficient */
+COINLIBAPI void COINLINKAGE
+Osi_setObjCoef(void *osi, int elementIndex, double obj);
+
+/** @brief Sets optimization direction
+    *
+    * @param osi OsiSolverInterface object
+    * @param sense: direction of optimization (1 - minimize, -1 - maximize, 0 - ignore)
+    **/
+COINLIBAPI void COINLINKAGE
+Osi_setObjSense(void *osi, double sense);
+
+/** @brief Sets a variable to integer */
+COINLIBAPI void COINLINKAGE
+Osi_setInteger(void *osi, int index);
+
+/** @brief Sets a variable to continuous */
+COINLIBAPI void COINLINKAGE
+Osi_setContinuous(void *osi, int index);
+
+/** @brief Number of non-zero entries in a column 
+     *
+     * @param model problem object 
+     * @param col column index
+     * @return numbef of rows that this column appears
+     **/
+COINLIBAPI int COINLINKAGE
+Osi_getColNz(void *model, int col);
+
+/** @brief Indices of rows that a column appears 
+     *
+     * @param model problem object 
+     * @param col column index
+     * @return indices of rows that this column appears
+     **/
+COINLIBAPI const int *COINLINKAGE
+Osi_getColIndices(void *model, int col);
+
+/** @brief Coefficients that a column appear in rows 
+     *
+     * @param model problem object 
+     * @param col column index
+     * @return coefficients of this column in rows
+     **/
+COINLIBAPI const double *COINLINKAGE
+Osi_getColCoeffs(void *model, int col);
+
+/** @brief Creates a new column
+     *
+     * Creates a new column (variable)
+     *
+     * @param osi OsiSolverInterface object
+     * @param name variable name
+     * @param lb column lower bound
+     * @param ub column upper bound
+     * @param obj objective function coefficient
+     * @param isInteger 1 if variable is integral, 0 otherwise
+     * @param nz number of rows (constraints) where this column appears, can be 0 if constraints will be added later
+     * @param rows index of rows where this column appears, NULL if rows will be added later
+     * @param coefs coefficients that this column appears in its rows, NULL if rows will be added later
+     ***/
+COINLIBAPI void COINLINKAGE
+Osi_addCol(void *osi, const char *name, double lb,
+  double ub, double obj, char isInteger,
+  int nz, int *rows, double *coefs);
+
+/** @brief Adds a new row 
+     *
+     *  Adds a new row (linear constraint) to the problem
+     *
+     *  @param osi OsiSolverInterface object
+     *  @param name constraint name
+     *  @param nz number of variables with non-zero coefficients in this row
+     *  @param cols index of variables that appear in this row
+     *  @param coefs cofficients that that variables appear
+     *  @param sense constraint sense: L if <=, G if >=, E if =, R if ranged and N if free
+     *  @param rhs right hand size
+     * */
+COINLIBAPI void COINLINKAGE
+Osi_addRow(void *osi, const char *name, int nz,
+  const int *cols, const double *coefs, char sense, double rhs);
+
+/** @brief Deletes an OsiSolverInterface object */
+COINLIBAPI void COINLINKAGE
+Osi_deleteSolver( void *osi );
 
 /*@}*/
 
 /** \name OsiCuts related routines (used in callbacks) */
-//@{
 
 /** adds a row cut (used in callback) */
 COINLIBAPI void COINLINKAGE 

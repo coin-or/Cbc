@@ -1,9 +1,37 @@
-# CBC Version 2.9.9 README
+# CBC
 
-Welcome to the README for the COIN Branch and Cut Solver (CBC). CBC is
-distributed under the Eclipse Public License and is freely redistributable.
-All source code and documentation is Copyright IBM and others. This README may
-be redistributed freely.
+Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
+It can be used as a callable library or using a stand-alone executable.
+It can be called through
+AIMMS (through the [AIMMSlinks](https://github.com/coin-o/AIMMSlinks) project),
+AMPL (natively),
+[CMPL](https://github.com/coin-or/Cmpl),
+GAMS (through the [GAMSlinks](https://github.com/coin-or/GAMSlinks) project),
+[JuMP](https://github.com/JuliaOpt/JuMP.jl),
+Mathematica,
+[MiniZinc](http://www.minizinc.org/),
+MPL (through the [CoinMP](https://github.com/coin-or/CoinMP) project),
+[PuLP](https://github.com/coin-or/PuLP), and
+[OpenSolver for Excel](http://opensolver.org), among others.
+
+Cbc links to a number of other COIN-OR projects for additional functionality, including:
+ * [Clp](https://github.com/coin-or/Clp) (the default solver for LP relaxations)
+ * [Cgl](https://github.com/coin-or/Cgl) (for cut generation)
+ * [CoinUtils](https://github.com/coin-or/CoinUtils) (for reading input files and various utilities)
+For more information on supported platforms, links to dependent projects, current version, and more, click [here](http://www.coin-or.org/projects/Cbc.xml)
+
+Cbc is developed by [John Forrest](http://www.fastercoin.com), now retired from IBM Research.
+The project is currently managed by John Forrest, [Ted Ralphs](http://coral.ie.lehigh.edu/~ted/), Haroldo Gambini Santos, and the rest of the Cbc team (Dan Fylstra (Frontline), Lou Hafer (SFU), Bill Hart (Sandia), Bjarni Kristjannson (Maximal), Cindy Phillips (Sandia), Matthew Saltzman (Clemson), Edwin Straver (Frontline), Jean-Paul Watson (Sandia)).
+
+Cbc is written in C++ and is released as open source code under the [Eclipse Public License (EPL)](http://www.opensource.org/licenses/eclipse-1.0) and is freely redistributable.
+All source code and documentation is Copyright IBM and others. This README may be redistributed freely.
+
+Cbc is available from the [COIN-OR initiative](http://www.coin-or.org/).
+The Cbc website is https://github.com/coin-or/Cbc.
+
+## CITE
+
+[![DOI](https://zenodo.org/badge/173509563.svg)](https://zenodo.org/badge/latestdoi/173509563)
 
 ## CURRENT BUILD STATUS
 
@@ -11,46 +39,198 @@ be redistributed freely.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/l2hwifsxwhswng8y/branch/master?svg=true)](https://ci.appveyor.com/project/tkralphs/cbc/branch/master)
 
-## DOWNLOAD
 
-[ ![Download](https://api.bintray.com/packages/coin-or/download/Cbc/images/download.svg) ](https://bintray.com/coin-or/download/Cbc/2.9)
+## DOWNLOAD
 
 Binaries for most platforms are available for download from [Bintray](https://bintray.com/coin-or/download/Cbc)
 
-## CITE
+[ ![Download](https://api.bintray.com/packages/coin-or/download/Cbc/images/download.svg?version=2.10) ](https://bintray.com/coin-or/download/Cbc/2.10/link)
 
-[![DOI](https://zenodo.org/badge/30382416.svg)](https://zenodo.org/badge/latestdoi/30382416)
+ * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
+ * *Windows*: The easiest way to get Cbc on Windows is to download from *[Bintray](https://bintray.com/coin-or/download/Cbc)*, although an old interactive installer for the [COIN-OR Optimization Suite](http://www.coin-or.org/download/binary/CoinAll) is also still available.
+ * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through [Homebrew](https://brew.sh).
+   * `brew tap coin-or-tools/coinor`
+   * `brew install cbc`
+ * AMPL also provides stand-alone [Cbc executables](http://ampl.com/products/solvers/open-source/#cbc) that can be used with (or without) AMPL.
+ * The [GAMS](http://www.gams.com) distribution includes Cbc.
+
+Due to license incompatibilities, pre-compiled binaries lack some functionality.
+If binaries are not available for your platform for the latest version and you would like to request them to be built and posted, feel free to let us know on the mailing list.
+
+*Source code* can be obtained either by
+
+ * Downloading a snapshot of the source code for the latest release version of Cbc from the [Cbc source code download page](http://www.coin-or.org/download/source/Cbc), or
+ * Checking out the code from [Github](https://github.com/coin-or/Cbc) or using the `coinbrew` script (recommended). 
+
+Below is a quick start guide for building on common platforms. More detailed
+build instructions are
+[https://coin-or.github.io/user_introduction.html](here) (this is a work in
+progress).
+
+## BUILDING from source
+
+### Using CoinBrew
+
+To build Cbc from source, obtain the `coinbrew` script from
+https://coin-or.github.io/coinbrew/
+and run
+
+    /path/to/coinbrew fetch Cbc
+    /path/to/coinbrew build Cbc --prefix=/dir/to/install --test
+    /path/to/coinbrew install Cbc
+
+The `coinbrew` script will fetch [these](Dependencies) additional projects.
+
+### Without CoinBrew (Expert users)
+
+ 0. Install [these Dependencies](Dependencies)
+ 1. Obtain the source code, e.g., from https://github.com/coin-or/Cbc
+ 2. Run `./configure -C` to generate makefiles
+ 3. Run `make` to build the CoinUtils library
+ 4. Run `make test` to build and run the CoinUtils unit test program
+ 5. Run `make install` to install library and header files.
+
+### With Microsoft Visual Studio
+
+For Microsoft Visual C++ users, there are project files for version 10
+available in the `MSVisualStudio` directory. First, obtain the source code
+using either a Windows git client or download a snapshot. In MSVC++ Version
+10, open the solution file (this should be converted to whatever version of
+MSVC+ you are using) and build the Cbc project. The code should build out of
+the box with default settings.
+
+It is also possible to build Cbc with the Visual Studio compiler from the
+command line using the procedure for Unix-like environments, using the Msys2
+shell or CYGWIN. This is the recommended and best-supported way of building
+Cbc in Windows from source. To do so, make sure the `cl` compiler is in your
+path and add `--enable-msvc to build command of `coinbrew`.  
+
+If you want to build a *parallel version* of CBC using Visual Studio you can
+following instructions: (thanks to Tobias Stengel and Alexis Guigue).
+
+Assumptions:
+
+- A VS solution with all necessary projects (libCbc, libClp, libCbcSolver,
+  libCgl, libCoinUtils, libOsi, libOsiCbc, libOsiClp). The project files can
+  be found inside the "MSVisualStudio" folders. 
+
+Steps (based on VS 2013):
+
+1. for each of the lib* projects do:
+   add `CBC_THREAD` under Properties -> Configuration Properties -> C/C++ ->
+   Preprocessor -> Preprocessor Definitions (a subset of the lib* projects may
+   be sufficient, but it doesn't hurt to do it for all) 
+
+2. Link against a pthreads library.
+   [PThreadsWin32](https://www.sourceware.org/pthreads-win32/) works (even in
+   64 bits systems) and is distributed under the LGPL. If you decide to use
+   the precompiled binaries: both pthreadVC2 and pthreadVS2 seem to work.
+   Otherwise: third party VS project files for pthreads4win can be found on
+   github.
+
+   Note: If you use C++/Cli, make sure that no callback (eventHandlers, custom
+   cut generators, custom heuristics, ...) contains managed code. Otherwise
+   your code will crash at runtime with AssembyNotFoundExceptions inside the
+   native threads created by Cbc. Even if not, problems with the GC are
+   likely.
+
+3. If you link statically against pthreads4win, you have to define
+   PTW32_STATIC_LIB when building your program/Cbc (e.g. via Properties ->
+   C/C++/Preprocessor -> Preprocessor Definitions) AND - only if you build
+   pthreads yourself - when building pthreads. Linking pthreads dynamically
+   works without additional preprocessor definitions.
+
+4. pass "-threads" "yourNumber" to CbcMain1
+
 
 ## DOCUMENTATION
 
-For a quick start guide, please see the INSTALL file in this distribution. A
-(somehwat outdated) user's manual is available here:
+ * [INSTALL](INSTALL) file (partially outdated)
+ * [User's Guide](https://coin-or.github.io/Cbc) (from 2005)
+ * [Doxygen generated documentation](http://www.coin-or.org/Doxygen/Cbc/hierarchy.html)
+ * Source code [examples](Cbc/examples)
+ * [Cbc command-line guide](https://projects.coin-or.org/CoinBinary/export/1059/OptimizationSuite/trunk/Installer/files/doc/cbcCommandLine.pdf)
 
-http://www.coin-or.org/Cbc
-
-More up-to-date automatically generated documentation of the source code can
-be found here:
-
-http://www.coin-or.org/Doxygen/Cbc/
-
-Further information can be found here:
-
-http://projects.coin-or.org/Cbc
 
 ## SUPPORT
 
 ### List Serve
 
-CBC users should use the Cbc mailing list. To subscribe, go to 
+CBC users should use the Cbc mailing list. To subscribe, go to
 http://list.coin-or.org/mailman/listinfo/cbc
 
 ### Bug Reports
 
 Bug reports should be reported on the CBC development web site at
 
-https://projects.coin-or.org/Cbc/newticket
+https://github.com/coin-or/Cbc/issues
 
 ## CHANGELOG
+
+ * Release 2.11.0 (in preparation)
+   * Added possibility for incomplete MIP start files.
+     The filename suffix indicates which values Cbc should choose for
+     missing variables (see change r2549)
+
+ * Release 2.10.3
+   * Improve performance of some primal heuristics, incl. feasibility pump, by making integer slacks continuous
+   * Added additional timelimit checks
+   * Fixed initialization of Cbc_clone result
+   * Additional bugfixes
+
+ * Release 2.10.2
+   * Bugfixes
+
+ * Release 2.10.1
+   * Fixed Cbc_clone in C interface
+   * Fixed CbcMain1() call in examples/driver3.cpp
+   * Fixed possible issue with MIPstart if presolve added variables
+   * More minor bugfixes
+
+ * Release 2.10.0
+   * Improved handling of SOS, starting point, and symmetries
+   * Improved performance of primal heuristics regarding the handling of
+     implicit integer variables
+   * Mini-B&B is now disabled when solving with multiple threads
+   * Changed default value for zero half cuts parameter from off to ifmove
+   * Added CbcModel::postProcessedSolver() to obtained LP after presolve
+   * New option "PrepNames" to indicate whether column names should be
+     kept in the pre-processed model
+   * New option "sosPrioritize" to determine how to prioritize SOS
+   * Added new event "generatedCuts"
+   * CbcSolver can now read compressed .lp files (GZIP, BZIP2)
+   * New functions in the C interface: Cbc_readLp, Cbc_writeLp,
+     Cbc_addCol, Cbc_addRow, Cbc_getNumIntegers, Cbc_bestSolution,
+     Cbc_getObjValue, Cbc_getRowNz, Cbc_getRowIndices, Cbc_getRowCoeffs,
+     Cbc_getRowRHS, Cbc_getRowSense, Cbc_getColNz, Cbc_getColIndices,
+     Cbc_getColCoeffs, Cbc_getReducedCost, Cbc_numberSavedSolutions,
+     Cbc_savedSolution, Cbc_savedSolutionObj, Cbc_setMIPStart,
+     Cbc_setMIPStartI, Cbc_addCutCallback, Osi_getNumCols, Osi_getColName,
+     Osi_getColLower, Osi_getColUpper, Osi_isInteger, Osi_getNumRows,
+     Osi_getRowNz, Osi_getRowIndices, Osi_getRowCoeffs, Osi_getRowRHS,
+     Osi_getRowSense, Osi_getColSolution, OsiCuts_addRowCut,
+     Cbc_getAllowableGap, Cbc_setAllowableGap, Cbc_getAllowableFractionGap,
+     Cbc_setAllowableFractionGap, Cbc_getAllowablePercentageGap,
+     Cbc_setAllowablePercentageGap, Cbc_getCutoff, Cbc_setCutoff,
+     Cbc_getMaximumNodes, Cbc_setMaximumNodes, Cbc_getMaximumSolutions,
+     Cbc_setMaximumSolutions, Cbc_getLogLevel, Cbc_setLogLevel,
+     Cbc_getMaximumSeconds, Cbc_setMaximumSeconds
+   * New action "guess" checks properties of the model to decide the best
+     parameters for solving the LP relaxation.
+   * New example inc.cpp to illustrate solution callback
+   * New example driver5.cpp to illustrate user-defined branching rule
+   * New example clpdriver.cpp to illustrate use of ClpEventHandler
+   * Added support for using OsiHiGHS with CbcGeneric
+   * Added MSVC 14 project files
+   * Bugfixes
+
+ * Release 2.9.10
+   * Fix a numerical issue
+   * Fix some memory leaks
+   * Fix issue when root node is obviously infeasible
+   * Performance improvements for mini-B&B
+   * Fix name of bound in final message
+   * Fix names in preprocessed problem
 
  * Release 2.9.9
 
@@ -96,7 +276,7 @@ https://projects.coin-or.org/Cbc/newticket
    * Fix for dependency linking
    * Minor bug fixes
 
- * Release 2.9.0 
+ * Release 2.9.0
 
    * Introduced specialized branching methods for dealing with "big Ms".
    * Introduced new methods for dealing with symmetry (requires installation of [nauty](http://pallini.di.uniroma1.it/))
@@ -191,7 +371,7 @@ https://projects.coin-or.org/Cbc/newticket
      finding an improved solution by flipping a small number of binary
      variables), in particular when it is applied to the first heuristic
      solutions found at the root node.
-   
+
    * An implementation of Zero-Half-Cuts by Alberto Caprara is now available.
      By default, these cuts are off. To use add to your command line
      -zerohalfCuts root (or other options) or just -zero. So far, they may
@@ -225,7 +405,7 @@ https://projects.coin-or.org/Cbc/newticket
      these cuts just a few times - less than the more usual cuts. The default
      is 10. The cut generators identified by "may be slow" at present are just
      Lift and project and ReduceAndSplit (both versions).
-   
+
    * Allow initialization of random seed by user. Pseudo-random numbers are
      used in Cbc and Clp. In Clp they are used to break ties in degenerate
      problems, while in Cbc heuristics such as the Feasibility Pump use them
@@ -234,7 +414,7 @@ https://projects.coin-or.org/Cbc/newticket
      so different cuts and heuristic solutions. This can be switched on by
      setting randomSeed for Clp and/or randomCbcSeed for Cbc. The special
      value of 0 tells code to use time of day for initial seed.
-   
+
    * Building on this idea, Andrea Lodi, Matteo Fischetti, Michele Monaci,
      Domenico Salvagnin, Yuji Shinano, and Andrea Tramontani suggest that this
      idea be improved by running at the root node with multiple copies of
@@ -242,7 +422,7 @@ https://projects.coin-or.org/Cbc/newticket
      solutions and cuts so that the main solver has a richer set of solutions
      and possibly stronger cuts. This is switched on by setting
      -multipleRootPasses. These can also be done in parallel.
- 
+
    * Few changes to presolve for special variables and badly scaled problems
      (in CoinUtils).
 
@@ -331,14 +511,8 @@ https://projects.coin-or.org/Cbc/newticket
 
    * Updated externals to new stable versions of dependent projects.
 
-   * Improvements to heuristics. 
+   * Improvements to heuristics.
 
-   * New options for cut generation. 
+   * New options for cut generation.
 
-   * Improved reporting of results. 
-
-   * Improvements to documentation. 
-
-   * Minor bug fixes. 
-
-
+   * Improved reporting of results.

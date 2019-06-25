@@ -1,4 +1,6 @@
 * text=auto !eol
+/.clang-format -text
+.coin-or/projDesc.xml -text
 /.travis.yml -text
 /AUTHORS -text
 Cbc/CbcSourceFilesTable.csv -text
@@ -104,3 +106,4 @@ Cbc/test/osiUnitTest.cpp -text
 /README -text
 /README.md -text
 /appveyor.yml -text
+/format-all-sources.sh -text

@@ -1,7 +1,4 @@
-language: cpp
-env:
-  global:
-    secure: FoPCwIlEKUUIwpSMGomm+Dfsv/Cp7ITqFVq5u++AAWp6WniX22NkkoPhCnbq3YxXrt0RQhK0P+pe6iJeQNgtm4seYWZO/pWj+frkW52kRWiEgMgKoAWx28vHVvcuqVr5lHAiezMoyrrKrmAJEznO0mTryDc1Ez3fzjSoIoY5r653TZEJNOJ5wU07oTVgGtTkKY9gsHM1s9fNu2ikmKrLQoe8VPJZpkSQPJp5YipghijYQUbeRyHnNMkxWZk34YCRTo2XIRiFBUKfC2efGLPvzGYjwAFYDHQUEKV4lVyg9S6e1BqoFH74vfgF2Vs6DADmWqImwC3RtrADh6wRpxSkADnCv+t3wc3mhuvYX74IDx6H0BFqYvWJwrkmXmnEQonBc/0db/mSiKfz6jp9i7vJl1XEtaYZ3Teic732ziOqUIbm4HjHCBDSqlC4mIlSDJnGAFvVjfZL1W1hbkUPaG1KpmEZ5hiE7mu2kf3DkFjiBdwBSTs5wlgmqmzHvvtAg1P6TdkR2uyIUCCkX4628sWzhfIfTV9XrophJw7jS+PD8dy5tdJclZvIXlw6JbiDPRpF7Vm6orDk/cY5sQ6Sv4+CZd0ml3AaSblR8JkXLCUu21/c2jxJwewYD7MFGNLcLueAK7pycZ9o3YII2zHlfuPRNAWEjS2AjgjCnk52+xhIDW4=
+"\\language": cpp
 matrix:
   include:
   - os: linux
@@ -30,19 +27,9 @@ before_script:
   link --overwrite gcc; gfortran --version; fi
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PLATFORM=linux-x86_64-gcc`gcc
   -dumpversion`; fi
-- cd ..
-- wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
+- git clone https://github.com/coin-or/coinbrew COIN
+- cd COIN
 - export PROJECT=`echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2`
-- bash ./coinbrew fetch $PROJECT --no-prompt --skip-update > /dev/null
+- bash ./coinbrew fetch --no-prompt $PROJECT > /dev/null
 script:
-- bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --test
-after_script:
-- if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=master; else export VERSION=`echo
-  $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
-- export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz
-- echo $TGZ_FILE
-- cp $PROJECT/README.md $PROJECT/LICENSE $PROJECT/$PROJECT/AUTHORS build
-- cd build
-- tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
-- curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1"
-  https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE
+- bash ./coinbrew build --no-prompt $PROJECT --enable-static --disable-shared --verbosity 2 --test

@@ -2,7 +2,6 @@
 /.clang-format -text
 .coin-or/projDesc.xml -text
 /.travis.yml -text
-/AUTHORS -text
 Cbc/CbcSourceFilesTable.csv -text
 Cbc/CbcSourceFilesTable.xls -text
 Cbc/CbcSourceFilesTable2.csv -text
@@ -82,6 +81,7 @@ Cbc/examples/pool.cpp -text
 Cbc/examples/presolveBefore.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/examples/simpleBAB.cpp -text
+Cbc/format-all-sources.sh -text
 Cbc/install-sh -text
 Cbc/ltmain.sh -text
 Cbc/missing -text
@@ -102,8 +102,5 @@ Cbc/test/CInterfaceTest.c -text
 Cbc/test/OsiCbcSolverInterfaceTest.cpp -text
 Cbc/test/gamsTest.cpp -text
 Cbc/test/osiUnitTest.cpp -text
-/LICENSE -text
-/README -text
 /README.md -text
 /appveyor.yml -text
-/format-all-sources.sh -text

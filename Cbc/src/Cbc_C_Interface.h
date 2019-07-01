@@ -589,6 +589,28 @@ Cbc_getAllowablePercentageGap(Cbc_Model *model);
 COINLIBAPI void COINLINKAGE
 Cbc_setAllowablePercentageGap(Cbc_Model *model, double allowedPercentageGap);
 
+/** gets the tolerance for infeasibility in the LP solver
+ */
+COINLIBAPI double COINLINKAGE
+Cbc_getPrimalTolerance(Cbc_Model *model);
+
+/** sets the tolerance for infeasibility in the LP solver
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setPrimalTolerance(Cbc_Model *model, double tol);
+
+/** gets the tolerance for optimality in the LP solver
+ */
+COINLIBAPI double COINLINKAGE
+Cbc_getDualTolerance(Cbc_Model *model);
+
+/** sets the tolerance for optimality in the LP solver
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setDualTolerance(Cbc_Model *model, double tol);
+
+
+
 /** returns the time limit for the search process
  */
 COINLIBAPI double COINLINKAGE

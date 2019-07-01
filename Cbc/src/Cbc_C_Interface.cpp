@@ -2743,6 +2743,45 @@ Cbc_setLogLevel(Cbc_Model *model, int logLevel)
   model->model_->setLogLevel(logLevel);
 }
 
+/** gets the tolerance for infeasibility in the LP solver
+ */
+COINLIBAPI double COINLINKAGE
+Cbc_getPrimalTolerance(Cbc_Model *model)
+{
+  OsiSolverInterface *solver = model->solver_;
+  double r;
+  solver->getDblParam(OsiPrimalTolerance, r);
+  return r;
+}
+
+/** sets the tolerance for infeasibility in the LP solver
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setPrimalTolerance(Cbc_Model *model, double tol)
+{
+  OsiSolverInterface *solver = model->solver_;
+  solver->setDblParam(OsiPrimalTolerance, tol);
+}
+
+/** gets the tolerance for optimality in the LP solver
+ */
+COINLIBAPI double COINLINKAGE
+Cbc_getDualTolerance(Cbc_Model *model)
+{
+  OsiSolverInterface *solver = model->solver_;
+  double r;
+  solver->getDblParam(OsiDualTolerance, r);
+  return r;
+}
+
+/** sets the tolerance for optimality in the LP solver
+ */
+COINLIBAPI void COINLINKAGE
+Cbc_setDualTolerance(Cbc_Model *model, double tol)
+{
+  OsiSolverInterface *solver = model->solver_;
+  solver->setDblParam(OsiDualTolerance, tol);
+}
 
 
 COINLIBAPI double COINLINKAGE

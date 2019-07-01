@@ -172,6 +172,9 @@ https://github.com/coin-or/Cbc/issues
      The filename suffix indicates which values Cbc should choose for
      missing variables (see change r2549)
 
+ * Release 2.10.4 (in preparation)
+   * Fix parsing of optional arguments to AMPL interface.
+
  * Release 2.10.3
    * Improve performance of some primal heuristics, incl. feasibility pump, by making integer slacks continuous
    * Added additional timelimit checks

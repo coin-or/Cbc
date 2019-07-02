@@ -278,19 +278,19 @@ void sos2a(int &error_count, int &warning_count)
       solver1.setRowLower(5, .8);
       optvalue = 0.1;
       primalval[0] = .8;
-      redcost[0] = 1.;
+      redcost[0] = 0.;
       primalval[1] = .2;
       redcost[1] = 0.;
       primalval[2] = 0.;
       redcost[2] = -1.;
-      primalval[5] = 1.2;
-      redcost[5] = 0.;
-      primalval[6] = 1.2;
-      redcost[6] = 0.;
       primalval[3] = 0.;
       redcost[3] = 1.;
       primalval[4] = 0.1;
       redcost[4] = 0.;
+      primalval[5] = 1.2;
+      redcost[5] = 0.;
+      primalval[6] = 1.2;
+      redcost[6] = 0.;
       break;
     }
     CbcModel model(solver1);

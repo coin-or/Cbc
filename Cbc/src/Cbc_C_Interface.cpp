@@ -1336,18 +1336,17 @@ Cbc_solve(Cbc_Model *model)
     solver->messageHandler()->setLogLevel( model->model_->logLevel() );
 
 #ifdef COIN_HAS_CLP
-    double maxTime = Cbc_getMaximumSeconds(model);
-    if (maxTime != DBL_MAX) {
-      OsiClpSolverInterface *clpSolver
-        = dynamic_cast< OsiClpSolverInterface * >(solver);
-      if (clpSolver) {
-        bool useElapsedTime = model->model_->useElapsedTime();
-        if (useElapsedTime)
-          clpSolver->getModelPtr()->setMaximumWallSeconds(maxTime);
-        else
-          clpSolver->getModelPtr()->setMaximumSeconds(maxTime);
-      } // clp solver
-    } // set time limit
+    OsiClpSolverInterface *clpSolver
+      = dynamic_cast< OsiClpSolverInterface * >(solver);
+    if (clpSolver) {
+        ClpSimplex *clps = clpSolver->getModelPtr();
+        if (clps) {
+          clps->setPerturbation(50);
+          double maxTime = Cbc_getMaximumSeconds(model);
+          if (maxTime != DBL_MAX)
+            clps->setMaximumWallSeconds(maxTime);
+        }
+    }
 #endif
 
     if (solver->basisIsAvailable()) {

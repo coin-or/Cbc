@@ -12,6 +12,7 @@
 #include "Coin_C_defines.h"
 #include <stddef.h>
 
+
 /*
  * Original version contributed by Bob Entriken,
  * significantly updated by Miles Lubin.
@@ -21,6 +22,37 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct Cbc_Model Cbc_Model;
+
+/** typedef for cbc callback to monitor the progress of the search
+ * in terms of improved upper and lower bounds */
+typedef int(COINLINKAGE_CB *cbc_progress_callback)(void *model,
+                                                   int phase,
+                                                   int step,
+                                                   const char *phaseName,
+                                                   double seconds,
+                                                   double lb,
+                                                   double ub,
+                                                   int nint,
+                                                   int *vecint,
+                                                   void *cbData
+                                                   );
+
+typedef int (COINLINKAGE_CB *cbc_incumbent_callback)(void *cbcModel, double obj, int nz, char **vnames, double *x, void *appData);
+
+typedef void(COINLINKAGE_CB *cbc_callback)(Cbc_Model *model, int msgno, int ndouble,
+  const double *dvec, int nint, const int *ivec,
+  int nchar, char **cvec);
+
+/** typedef for cbc cut callback osiSolver needs to be an OsiSolverInterface object,
+ * osiCuts is an OsiCuts object and appdata is a pointer that will be passed to the cut
+ * generation, you can use it to point to a data structure with information about the original problem,
+ * for instance
+ **/
+typedef void(COINLINKAGE_CB *cbc_cut_callback)(void *osiSolver, void *osiCuts, void *appdata);
+
+
 
 /** Current version of Cbc */
 COINLIBAPI const char *COINLINKAGE Cbc_getVersion(void);
@@ -772,7 +804,21 @@ Cbc_getReducedCost(Cbc_Model *model);
      *
      * @param model problem object
      * @return reduced cost vector
-     **/
+     **//** typedef for cbc callback to monitor the progress of the search
+     * in terms of improved upper and lower bounds */
+    typedef int(COINLINKAGE_CB *cbc_progress_callback)(void *model,
+                                                       int phase,
+                                                       int step,
+                                                       const char *phaseName,
+                                                       double seconds,
+                                                       double lb,
+                                                       double ub,
+                                                       int nint,
+                                                       int *vecint,
+                                                       void *cbData
+                                                       );
+
+
 COINLIBAPI const double *COINLINKAGE
 Cbc_getRowPrice(Cbc_Model *model);
 

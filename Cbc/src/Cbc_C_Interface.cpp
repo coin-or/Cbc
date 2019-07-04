@@ -26,6 +26,113 @@
 #include "CglCutGenerator.hpp"
 #include "CbcCutGenerator.hpp"
 
+/**
+  *
+  *  C Interface Routines
+  *
+  */
+#include "Cbc_C_Interface.h"
+
+
+// To allow call backs
+class Cbc_MessageHandler
+  : public CoinMessageHandler {
+
+public:
+  /**@name Overrides */
+  //@{
+  virtual int print();
+  //@}
+  /**@name set and get */
+  //@{
+  /// Model
+  const Cbc_Model *model() const;
+  void setModel(Cbc_Model *model);
+  /// Call back
+  void setCallBack(cbc_callback callback);
+  //@}
+
+  /**@name Constructors, destructor */
+  //@{
+  /** Default constructor. */
+  Cbc_MessageHandler();
+  /// Constructor with pointer to model
+  Cbc_MessageHandler(Cbc_Model *model,
+    FILE *userPointer = NULL);
+  /** Destructor */
+  virtual ~Cbc_MessageHandler();
+  //@}
+
+  /**@name Copy method */
+  //@{
+  /** The copy constructor. */
+  Cbc_MessageHandler(const Cbc_MessageHandler &);
+  /** The copy constructor from an CoinSimplexMessageHandler. */
+  Cbc_MessageHandler(const CoinMessageHandler &);
+
+  Cbc_MessageHandler &operator=(const Cbc_MessageHandler &);
+  /// Clone
+  virtual CoinMessageHandler *clone() const;
+  //@}
+
+protected:
+  /**@name Data members
+       The data members are protected to allow access for derived classes. */
+  //@{
+  /// Pointer back to model
+  Cbc_Model *model_;
+  /// call back
+  cbc_callback callback_;
+  //@}
+};
+
+
+struct Cbc_Model {
+  OsiClpSolverInterface *solver_;
+  CbcModel *model_;
+  CbcSolverUsefulData *cbcData;
+  Cbc_MessageHandler *handler_;
+  std::vector< std::string > cmdargs_;
+  char relax_;
+
+  // buffer for columns
+  int colSpace;
+  int nCols;
+  int cNameSpace;
+  int *cNameStart;
+  char *cInt;
+  char *cNames;
+  double *cLB;
+  double *cUB;
+  double *cObj;
+
+  // buffer for rows
+  int rowSpace;
+  int nRows;
+  int rNameSpace;
+  int *rNameStart;
+  char *rNames;
+  double *rLB;
+  double *rUB;
+  int rElementsSpace;
+  int *rStart;
+  int *rIdx;
+  double *rCoef;
+
+  // for fast search of columns
+  void *colNameIndex;
+  void *rowNameIndex;
+
+  cbc_incumbent_callback inc_callback;
+  cbc_progress_callback progr_callback;
+  void *icAppData;
+  void *pgrAppData;
+
+#ifdef CBC_THREAD
+  pthread_mutex_t cbcMutex;
+#endif
+};
+
 //  bobe including extras.h to get strdup()
 #if defined(__MWERKS__)
 // #include <extras.h>  // bobe 06-02-14
@@ -247,7 +354,7 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
           for (int i = 0; (i < solver->getNumCols()); ++i) {
             if (fabs(x[i]) <= 1e-7)
                 continue;
-            charSize += solver->getColName(i).size()+1;
+            charSize += (int)solver->getColName(i).size()+1;
             ++nNZ;
           } // checking non zero cols
           char **cnames = new char*[nNZ];
@@ -317,57 +424,6 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
   return noAction;
 }
 
-// To allow call backs
-class Cbc_MessageHandler
-  : public CoinMessageHandler {
-
-public:
-  /**@name Overrides */
-  //@{
-  virtual int print();
-  //@}
-  /**@name set and get */
-  //@{
-  /// Model
-  const Cbc_Model *model() const;
-  void setModel(Cbc_Model *model);
-  /// Call back
-  void setCallBack(cbc_callback callback);
-  //@}
-
-  /**@name Constructors, destructor */
-  //@{
-  /** Default constructor. */
-  Cbc_MessageHandler();
-  /// Constructor with pointer to model
-  Cbc_MessageHandler(Cbc_Model *model,
-    FILE *userPointer = NULL);
-  /** Destructor */
-  virtual ~Cbc_MessageHandler();
-  //@}
-
-  /**@name Copy method */
-  //@{
-  /** The copy constructor. */
-  Cbc_MessageHandler(const Cbc_MessageHandler &);
-  /** The copy constructor from an CoinSimplexMessageHandler. */
-  Cbc_MessageHandler(const CoinMessageHandler &);
-
-  Cbc_MessageHandler &operator=(const Cbc_MessageHandler &);
-  /// Clone
-  virtual CoinMessageHandler *clone() const;
-  //@}
-
-protected:
-  /**@name Data members
-       The data members are protected to allow access for derived classes. */
-  //@{
-  /// Pointer back to model
-  Cbc_Model *model_;
-  /// call back
-  cbc_callback callback_;
-  //@}
-};
 
 //-------------------------------------------------------------------
 // Default Constructor
@@ -480,12 +536,7 @@ void Cbc_MessageHandler::setCallBack(cbc_callback callback)
 {
   callback_ = callback;
 }
-/**
-  *
-  *  C Interface Routines
-  *
-  */
-#include "Cbc_C_Interface.h"
+
 #include <string>
 #include <stdio.h>
 #include <iostream>
@@ -639,7 +690,7 @@ static void Cbc_addColBuffer( Cbc_Model *model,
 
   int ps = model->cNameStart[p];
   strcpy( model->cNames+ps, name );
-  int len = strlen(name);
+  int len = (int)strlen(name);
 
   model->nCols++;
   model->cNameStart[model->nCols] = ps + len + 1;
@@ -737,7 +788,7 @@ static void Cbc_addRowBuffer(
     double rUB,
     const char *rName)
 {
-  int nameLen = strlen(rName);
+  int nameLen = (int)strlen(rName);
   Cbc_checkSpaceRowBuffer(model, nz, nameLen);
   const int st = model->rStart[model->nRows];
 
@@ -1972,7 +2023,6 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   const int *cols, const double *coefs, char sense, double rhs)
 {
   Cbc_flush(model, FCColumns);
-  OsiSolverInterface *solver = model->model_->solver();
   double rowLB = -DBL_MAX, rowUB = DBL_MAX;
   switch (toupper(sense)) {
   case '=':

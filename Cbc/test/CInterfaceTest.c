@@ -562,13 +562,13 @@ void testTSP(char asMIP) {
         int idx[N];
         double coef[N];
         int nz = 0;
+        char name[256];
         for ( j=0 ; (j<N) ; ++j ) {
             if (d[i][j] == oo)
                 continue;
             coef[nz] = 1.0;
             idx[nz++] = x[i][j];
         }
-        char name[256];
         snprintf(name, 256, "out(%d)", i);
         Cbc_addRow(m, name, nz, idx, coef, 'E', 1.0);
     }
@@ -578,13 +578,13 @@ void testTSP(char asMIP) {
         int idx[N];
         double coef[N];
         int nz = 0;
+        char name[256];
         for ( i=0 ; (i<N) ; ++i ) {
             if (d[i][j] == oo)
                 continue;
             coef[nz] = 1.0;
             idx[nz++] = x[i][j];
         }
-        char name[256];
         snprintf(name, 256, "in(%d)", j);
         Cbc_addRow(m, name, nz, idx, coef, 'E', 1.0);
     }
@@ -592,12 +592,13 @@ void testTSP(char asMIP) {
     /* weak sub-tour elimination constraints */
     for ( i=1 ; (i<N) ; ++i ) {
         for ( j=1 ; (j<N) ; ++j ) {
-            if (d[i][j]==oo)
-                continue;
-
             int idx[3];
             double coef[3];
             int nz = 0;
+            char name[256];
+
+            if (d[i][j]==oo)
+                continue;
 
             coef[nz] = 1.0;
             idx[nz++] = y[i];
@@ -608,7 +609,6 @@ void testTSP(char asMIP) {
             coef[nz] = -(N+1);
             idx[nz++] = x[i][j];
 
-            char name[256];
             snprintf(name, 256, "from(%d)to(%d)", i, j);
             Cbc_addRow(m, name, nz, idx, coef, 'G', -N);
         }
@@ -631,20 +631,21 @@ void testTSP(char asMIP) {
                 for ( j=i+1 ; j<N ; ++j ) {
                     int arcs[6][2];
                     int nArcs = 0;
+                    double sum;
                     if (d[i][j] == oo)
                         continue;
                     arcs[nArcs][0] = i;
                     arcs[nArcs++][1] = j;
-                    double sum = s[x[i][j]];
+                    sum = s[x[i][j]];
                     if (d[j][i] != oo) {
                         arcs[nArcs][0] = j;
                         arcs[nArcs++][1] = i;
                         sum += s[x[j][i]];
                         if (sum > 1.0001) {
                             char name[256];
-                            snprintf(name, 256, "noSub(%d,%d)", i, j);
                             int idx[2] =     {x[i][j], x[j][i]};
                             double coef[2] = {    1.0,     1.0};
+                            snprintf(name, 256, "noSub(%d,%d)", i, j);
                             Cbc_addRow(m, name, 2, idx, coef, 'L', 1.0);
                             ++newConstraints;
                         }
@@ -678,10 +679,10 @@ void testTSP(char asMIP) {
                             int idx[6];
                             double coef[6] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
                             int ia;
+                            char name[256];
                             for ( ia=0 ; (ia<nArcs) ; ++ia )
                                 idx[ia] = x[arcs[ia][0]][arcs[ia][1]];
 
-                            char name[256];
                             snprintf(name, 256, "noSub(%d,%d,%d)", i, j, k);
                             Cbc_addRow(m, name, nArcs, idx, coef, 'L', 2.0);
                             ++newConstraints;

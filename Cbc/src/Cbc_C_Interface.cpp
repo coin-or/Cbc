@@ -1928,6 +1928,8 @@ Cbc_clone(Cbc_Model *model)
   result->progr_callback = model->progr_callback;
   result->icAppData = model->icAppData;
   result->pgrAppData = model->pgrAppData;
+  result->colNameIndex = NULL;
+  result->rowNameIndex = NULL;
   if (model->colNameIndex)
     Cbc_storeNameIndexes(result, 1);
 

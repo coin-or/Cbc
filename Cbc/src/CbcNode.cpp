@@ -4453,6 +4453,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
           model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
             << "Skipping analyze as problem too large"
             << CoinMessageEol;
+        delete[] back;
         return 0;
       }
     }
@@ -5113,6 +5114,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       if (value <= groupValue[j] || j == 10)
         break;
     }
+    assert( j < (int)(sizeof(groupCounts)/sizeof(int)) );
     groupCounts[j]++;
   }
   general[0] = '\0';
@@ -5165,6 +5167,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
         if (value <= groupValue[j] || j == 10)
           break;
       }
+      assert( j < (int)(sizeof(groupCounts)/sizeof(int)) );
       groupCounts[j]++;
     }
   }

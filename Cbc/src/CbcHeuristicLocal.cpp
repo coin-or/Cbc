@@ -1665,6 +1665,7 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
     returnCode &= ~2;
   }
 
+  delete[] fixed;
   delete solver;
   return returnCode;
 }

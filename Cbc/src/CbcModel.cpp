@@ -5709,7 +5709,8 @@ CbcModel::CbcModel()
 */
 
 CbcModel::CbcModel(const OsiSolverInterface &rhs)
-  : continuousSolver_(NULL)
+  : ownership_(0x80000000)
+  , continuousSolver_(NULL)
   , referenceSolver_(NULL)
   , defaultHandler_(true)
   , emptyWarmStart_(NULL)

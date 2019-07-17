@@ -1035,7 +1035,10 @@ void CbcModel::analyzeObjective()
         }
       }
     }
-    delete[] coeffMultiplier;
+    if (coeffMultiplier) {
+        delete[] coeffMultiplier;
+        coeffMultiplier = NULL;
+    }
     /*
           If the increment beats the current value for objective change, install it.
         */
@@ -1058,6 +1061,9 @@ void CbcModel::analyzeObjective()
       }
     }
   }
+
+  if (coeffMultiplier)
+      delete[] coeffMultiplier;
 
   return;
 }

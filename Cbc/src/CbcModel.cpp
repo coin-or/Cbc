@@ -13846,6 +13846,8 @@ bool CbcModel::tightenVubs(int numberSolves, const int *which,
           solver->resolve();
           if (!solver->isProvenOptimal()) {
             fprintf(stderr, "Problem is infeasible\n");
+            if (vub)
+                delete[] vub;
             return false;
           }
           delete ws;

@@ -93,6 +93,7 @@ int readMIPStart(CbcModel *model, const char *fileName,
   } else {
     sprintf(printLine, "No mipstart solution read from %s", fileName);
     model->messageHandler()->message(CBC_GENERAL, model->messages()) << printLine << CoinMessageEol;
+    fclose(f);
     return 1;
   }
 

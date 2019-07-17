@@ -13809,6 +13809,7 @@ bool CbcModel::tightenVubs(int numberSolves, const int *which,
             if (newUpper < upper[jColumn] - 1.0e-8 * (fabs(upper[jColumn]) + 1) || newLower > lower[jColumn] + 1.0e-8 * (fabs(lower[jColumn]) + 1)) {
               if (newUpper < newLower) {
                 fprintf(stderr, "Problem is infeasible\n");
+                delete[] solution;
                 return false;
               }
               if (newUpper == newLower) {

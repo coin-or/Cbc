@@ -6600,7 +6600,9 @@ CbcModel::operator=(const CbcModel &rhs)
       cutModifier_ = rhs.cutModifier_->clone();
     else
       cutModifier_ = NULL;
-    delete strategy_;
+
+    if (strategy_)
+        delete strategy_;
     if (rhs.strategy_)
       strategy_ = rhs.strategy_->clone();
     else

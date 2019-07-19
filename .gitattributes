@@ -37,6 +37,10 @@ Cbc/MSVisualStudio/v14/cbcCInterfaceDll/cbcCInterfaceDll.vcxproj -text
 Cbc/MSVisualStudio/v14/cbcExamplesSample2/cbcExamplesSample2.vcxproj -text
 Cbc/MSVisualStudio/v14/libCbc/libCbc.vcxproj -text
 Cbc/MSVisualStudio/v14/libCbcSolver/libCbcSolver.vcxproj -text
+Cbc/MSVisualStudio/v16/Cbc.sln -text
+Cbc/MSVisualStudio/v16/cbcCInterfaceDll/cbcCInterfaceDll.vcxproj -text
+Cbc/MSVisualStudio/v16/libCbc/libCbc.vcxproj -text
+Cbc/MSVisualStudio/v16/libCbcSolver/libCbcSolver.vcxproj -text
 Cbc/MSVisualStudio/v9/Cbc.sln -text
 Cbc/MSVisualStudio/v9/OsiCbcUnitTest/OsiCbcUnitTest.vcproj -text
 Cbc/MSVisualStudio/v9/cbc/cbc.vcproj -text

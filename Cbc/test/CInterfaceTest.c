@@ -510,6 +510,10 @@ void testQueens(int n) {
     free(x[0]);
     free(x);
 
+    Cbc_setProblemName(model, "CrazyQueens");
+    Cbc_writeMps(model, "q");
+    Cbc_writeLp(model, "q");
+
     Cbc_deleteModel(model);
 }
 
@@ -535,6 +539,16 @@ void testTSP(char asMIP) {
     int x[N][N];
     int y[N];
     int i, j, k;
+    int idx[N];
+    double coef[N];
+    char name[256];
+    int ia;
+    int nz = 0;
+    int newConstraints;
+    double sum;
+    double opt;
+    int arcs[6][2];
+    int nArcs;
 
     Cbc_Model *m = Cbc_newModel();
 
@@ -544,14 +558,13 @@ void testTSP(char asMIP) {
             if (d[i][j] == oo) {
                 x[i][j] = -1;
             } else {
-                char name[256]; snprintf(name, 256, "x(%d,%d)", i, j);
+                snprintf(name, 256, "x(%d,%d)", i, j);
                 x[i][j] = Cbc_getNumCols(m);
                 Cbc_addCol(m, name, 0.0, 1.0, d[i][j], asMIP, 0, NULL, NULL);
             }
         }
     }
     for ( i=0 ; (i<N) ; ++i ) {
-        char name[256];
         snprintf(name, 256, "y(%d)", i);
         y[i] = Cbc_getNumCols(m);
         Cbc_addCol(m, name, 0.0, N, 0.0, asMIP, 0, NULL, NULL);
@@ -559,10 +572,7 @@ void testTSP(char asMIP) {
 
     /* outbound arc selection */
     for ( i=0 ; (i<N) ; ++i ) {
-        int idx[N];
-        double coef[N];
-        int nz = 0;
-        char name[256];
+        nz = 0;
         for ( j=0 ; (j<N) ; ++j ) {
             if (d[i][j] == oo)
                 continue;
@@ -575,10 +585,7 @@ void testTSP(char asMIP) {
 
     /* inbound arc selection */
     for ( j=0 ; (j<N) ; ++j ) {
-        int idx[N];
-        double coef[N];
-        int nz = 0;
-        char name[256];
+        nz = 0;
         for ( i=0 ; (i<N) ; ++i ) {
             if (d[i][j] == oo)
                 continue;
@@ -592,10 +599,7 @@ void testTSP(char asMIP) {
     /* weak sub-tour elimination constraints */
     for ( i=1 ; (i<N) ; ++i ) {
         for ( j=1 ; (j<N) ; ++j ) {
-            int idx[3];
-            double coef[3];
-            int nz = 0;
-            char name[256];
+            nz = 0;
 
             if (d[i][j]==oo)
                 continue;
@@ -616,22 +620,19 @@ void testTSP(char asMIP) {
 
     Cbc_solve(m);
     assert(Cbc_isProvenOptimal(m));
-    double opt = asMIP ? 262 : 238.75;
+    opt = asMIP ? 262 : 238.75;
     assert( fabs(Cbc_getObjValue(m)-opt) <= 1e-4 );
 
     const double *s = Cbc_getColSolution(m);
 
     if (!asMIP) {
 
-        int newConstraints;
         do {
             newConstraints = 0;
             /* eliminating subtours of size 2 and 3 and reoptimize */
             for ( i=0 ; (i<N) ; ++i ) {
                 for ( j=i+1 ; j<N ; ++j ) {
-                    int arcs[6][2];
-                    int nArcs = 0;
-                    double sum;
+                    nArcs = 0;
                     if (d[i][j] == oo)
                         continue;
                     arcs[nArcs][0] = i;
@@ -641,10 +642,11 @@ void testTSP(char asMIP) {
                         arcs[nArcs][0] = j;
                         arcs[nArcs++][1] = i;
                         sum += s[x[j][i]];
-                        if (sum > 1.0001) {
-                            char name[256];
-                            int idx[2] =     {x[i][j], x[j][i]};
-                            double coef[2] = {    1.0,     1.0};
+                        if (sum > 1.01) {
+                            idx[0] = x[i][j];
+                            idx[1] = x[j][i];
+                            coef[0] = 1.0;
+                            coef[1] = 1.0;
                             snprintf(name, 256, "noSub(%d,%d)", i, j);
                             Cbc_addRow(m, name, 2, idx, coef, 'L', 1.0);
                             ++newConstraints;
@@ -674,12 +676,11 @@ void testTSP(char asMIP) {
                             sum += s[x[k][j]];
                         }
 
-                        if (sum >= 2.0001)
+                        if (sum >= 2.01)
                         {
-                            int idx[6];
-                            double coef[6] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-                            int ia;
-                            char name[256];
+                            coef[0] = coef[1] = coef[2] = 1.0;
+                            coef[3] = coef[4] = coef[5] = 1.0;
+
                             for ( ia=0 ; (ia<nArcs) ; ++ia )
                                 idx[ia] = x[arcs[ia][0]][arcs[ia][1]];
 

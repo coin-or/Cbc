@@ -1382,6 +1382,7 @@ int CbcMain1(int argc, const char *argv[],
   int *statistics_number_cuts = NULL;
   const char **statistics_name_generators = NULL;
   int statistics_number_generators = 0;
+  int currentBestSolution = 0;
   memset(statusUserFunction_, 0, numberUserFunctions_ * sizeof(int));
   /* Note
        This is meant as a stand-alone executable to do as much of coin as possible.
@@ -9918,7 +9919,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 if (printMode < 5) {
                   if (type == CLP_PARAM_ACTION_NEXTBESTSOLUTION) {
                     // save
-                    const double *nextBestSolution = model_.savedSolution(1);
+                    const double *nextBestSolution = model_.savedSolution(currentBestSolution++);
                     if (!nextBestSolution) {
                       sprintf(generalPrint, "All alternative solutions printed");
                       generalMessageHandler->message(CLP_GENERAL, generalMessages)

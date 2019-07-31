@@ -563,31 +563,28 @@ static void Cbc_flush( Cbc_Model *model, enum FlushContents fc = FCBoth )
 {
   OsiSolverInterface *solver = model->model_->solver();
 
-  if (fc == FCBoth || fc == FCColumns)
+  if (model->nCols)
   {
-    if (model->nCols)
-    {
-      int *starts = new int[model->nCols+1];
-      for ( int i=0 ; (i<model->nCols+1) ; ++i )
-        starts[i] = 0;
+    int *starts = new int[model->nCols+1];
+    for ( int i=0 ; (i<model->nCols+1) ; ++i )
+      starts[i] = 0;
 
-      int idx = 0; double coef = 0.0;
+    int idx = 0; double coef = 0.0;
 
-      int colsBefore = solver->getNumCols();
+    int colsBefore = solver->getNumCols();
 
-      solver->addCols( model->nCols, starts, &idx, &coef, model->cLB, model->cUB, model->cObj );
+    solver->addCols( model->nCols, starts, &idx, &coef, model->cLB, model->cUB, model->cObj );
 
-      for ( int i=0 ; i<model->nCols; ++i )
-        if (model->cInt[i])
-          solver->setInteger( colsBefore+i );
+    for ( int i=0 ; i<model->nCols; ++i )
+      if (model->cInt[i])
+        solver->setInteger( colsBefore+i );
 
-      for ( int i=0 ; i<model->nCols; ++i )
-        solver->setColName( colsBefore+i, std::string(model->cNames+model->cNameStart[i]) );
+    for ( int i=0 ; i<model->nCols; ++i )
+      solver->setColName( colsBefore+i, std::string(model->cNames+model->cNameStart[i]) );
 
-      model->nCols = 0;
+    model->nCols = 0;
 
-      delete[] starts;
-    }
+    delete[] starts;
   }
   if (fc == FCRows || fc == FCBoth)
   {
@@ -1588,7 +1585,6 @@ Cbc_getNumRows(Cbc_Model *model)
   return model->model_->solver()->getNumRows() + model->nRows;
 }
 
-
 CbcGetProperty(int, getIterationCount)
 
 /** Number of non-zero entries in a row */
@@ -1765,16 +1761,54 @@ CbcGetProperty(double, getObjSense)
 COINLIBAPI void COINLINKAGE
 Cbc_setObjSense(Cbc_Model *model, double sense)
 {
-  Cbc_flush(model);
+  Cbc_flush(model, FCColumns);
   model->model_->setObjSense(sense);
 }
 
-CbcGetProperty(const double *, getRowActivity)
 
-CbcGetProperty(const double *, getRowLower)
-CbcSetSolverProperty(double, setRowLower)
-CbcGetProperty(const double *, getRowUpper)
-CbcSetSolverProperty(double, setRowUpper)
+COINLIBAPI void COINLINKAGE
+Cbc_setRowLower(Cbc_Model *model, int index, double value)
+{
+  Cbc_flush(model, FCRows);
+  OsiSolverInterface *solver = model->model_->solver();
+  solver->setRowLower(index, value);
+}
+
+COINLIBAPI void COINLINKAGE
+Cbc_setRowUpper(Cbc_Model *model, int index, double value)
+{
+  Cbc_flush(model, FCRows);
+  OsiSolverInterface *solver = model->model_->solver();
+  solver->setRowUpper(index, value);
+}
+
+/** @brief Constraint lower bounds 
+  *
+  * @param model problem object 
+  * @return vector with lower bounds of constraints
+  **/
+COINLIBAPI const double *COINLINKAGE
+Cbc_getRowLower(Cbc_Model *model)
+{
+  Cbc_flush(model, FCRows);
+  OsiSolverInterface *solver = model->model_->solver();
+  return solver->getRowLower();
+}
+
+/** @brief Constraint upper bounds 
+  *
+  * @param model problem object 
+  * @return constraint upper bounds
+  **/
+COINLIBAPI const double *COINLINKAGE
+Cbc_getRowUpper(Cbc_Model *model)
+{
+  Cbc_flush(model, FCRows);
+  OsiSolverInterface *solver = model->model_->solver();
+  return solver->getRowUpper();
+}
+
+CbcGetProperty(const double *, getRowActivity)
 
 COINLIBAPI const double *COINLINKAGE
 Cbc_getColLower(Cbc_Model *model)
@@ -1795,14 +1829,14 @@ CbcGetProperty(double, getBestPossibleObjValue)
 COINLIBAPI const double *COINLINKAGE
 Cbc_getObjCoefficients(Cbc_Model *model)
 {
-  Cbc_flush(model);
+  Cbc_flush(model, FCColumns);
   return model->model_->solver()->getObjCoefficients();
 }
 
 COINLIBAPI void COINLINKAGE
 Cbc_setObjCoeff(Cbc_Model *model, int index, double value)
 {
-  Cbc_flush( model );
+  Cbc_flush( model, FCColumns );
   model->model_->solver()->setObjCoeff( index, value );
 }
 
@@ -1959,6 +1993,7 @@ Cbc_clone(Cbc_Model *model)
     printf("%s return\n", prefix);
   return result;
 }
+
 /** Set this the variable to be continuous */
 COINLIBAPI void COINLINKAGE
 Cbc_setContinuous(Cbc_Model *model, int iColumn)
@@ -2007,6 +2042,7 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
   }
   else
   {
+    Cbc_flush(model, FCRows);
     solver->addCol(nz, rows, coefs, lb, ub, obj, std::string(name));
     if (isInteger)
       solver->setInteger(solver->getNumCols() - 1);
@@ -2024,7 +2060,6 @@ COINLIBAPI void COINLINKAGE
 Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   const int *cols, const double *coefs, char sense, double rhs)
 {
-  Cbc_flush(model, FCColumns);
   double rowLB = -DBL_MAX, rowUB = DBL_MAX;
   switch (toupper(sense)) {
   case '=':
@@ -2222,14 +2257,14 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
 COINLIBAPI void COINLINKAGE
 Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double colValues[])
 {
-  Cbc_flush(model);
+  Cbc_flush(model, FCColumns);
   model->model_->setMIPStart(count, colNames, colValues);
 }
 
 COINLIBAPI void COINLINKAGE
 Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double colValues[])
 {
-  Cbc_flush(model);
+  Cbc_flush(model, FCColumns);
   CbcModel *cbcModel = model->model_;
   OsiSolverInterface *solver = cbcModel->solver();
 

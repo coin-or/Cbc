@@ -1720,9 +1720,9 @@ COINLIBAPI const double *COINLINKAGE
 Cbc_getRowPrice(Cbc_Model *model)
 {
   if (Cbc_getNumIntegers(model) == 0 || model->relax_ == 1)
-    return (model->solver_->getReducedCost());
+    return (model->solver_->getRowPrice());
 
-  return model->model_->getReducedCost();
+  return model->model_->getCbcRowPrice();
 }
 
 COINLIBAPI int COINLINKAGE

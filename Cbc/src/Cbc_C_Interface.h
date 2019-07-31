@@ -39,6 +39,7 @@ typedef int(COINLINKAGE_CB *cbc_progress_callback)(void *model,
                                                    void *cbData
                                                    );
 
+
 typedef int (COINLINKAGE_CB *cbc_incumbent_callback)(void *cbcModel, double obj, int nz, char **vnames, double *x, void *appData);
 
 typedef void(COINLINKAGE_CB *cbc_callback)(Cbc_Model *model, int msgno, int ndouble,
@@ -806,19 +807,6 @@ Cbc_getReducedCost(Cbc_Model *model);
      * @return reduced cost vector
      **//** typedef for cbc callback to monitor the progress of the search
      * in terms of improved upper and lower bounds */
-    typedef int(COINLINKAGE_CB *cbc_progress_callback)(void *model,
-                                                       int phase,
-                                                       int step,
-                                                       const char *phaseName,
-                                                       double seconds,
-                                                       double lb,
-                                                       double ub,
-                                                       int nint,
-                                                       int *vecint,
-                                                       void *cbData
-                                                       );
-
-
 COINLIBAPI const double *COINLINKAGE
 Cbc_getRowPrice(Cbc_Model *model);
 

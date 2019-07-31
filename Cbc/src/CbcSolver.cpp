@@ -983,8 +983,8 @@ static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/)
   this set of calls thread-safe.
 */
 
-int CbcOrClpRead_mode = 1;
-FILE *CbcOrClpReadCommand = stdin;
+extern int CbcOrClpRead_mode;
+extern FILE *CbcOrClpReadCommand;
 // Alternative to environment
 extern char *alternativeEnvironment;
 extern int CbcOrClpEnvironmentIndex;

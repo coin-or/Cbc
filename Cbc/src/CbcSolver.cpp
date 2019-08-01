@@ -4003,7 +4003,7 @@ int CbcMain1(int argc, const char *argv[],
               }
 
               bool mergeCliques = (parameters_[whichParam(CBC_PARAM_STR_CLIQUEMERGING, parameters_)].currentOption().compare("before")==0);
-              if (mergeCliques) {
+              if (mergeCliques && model_.solver() && model_.solver()->getNumCols() && model_.solver()->getNumRows()) {
                   model_.solver()->buildCGraph();
                   CglCliqueMerging clqMerging;
                   clqMerging.mergeCliques(*model_.solver());

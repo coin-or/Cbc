@@ -2501,8 +2501,6 @@ public:
   void synchronizeNumberBeforeTrust(int type = 0);
   /// Zap integer information in problem (may leave object info)
   void zapIntegerInformation(bool leaveObjects = true);
-  /// Use cliques for pseudocost information - return nonzero if infeasible
-  int cliquePseudoCosts(int doStatistics);
   /// Fill in useful estimates
   void pseudoShadow(int type);
   /** Return pseudo costs

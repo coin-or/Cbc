@@ -2348,9 +2348,11 @@ public:
   }
   /// From here to end of section - code in CbcThread.cpp until class changed
   /// Returns true if locked
-  bool isLocked() const;
-#ifdef CBC_THREAD
-  /**
+#ifndef CBC_THREAD
+  inline void lockThread() {}
+  inline void unlockThread() {}
+#else
+  /**i
        Locks a thread if parallel so that stuff like cut pool
        can be updated and/or used.
     */
@@ -2359,12 +2361,7 @@ public:
        Unlocks a thread if parallel to say cut pool stuff not needed
     */
   void unlockThread();
-#else
-  inline void lockThread()
-  {
-  }
-  inline void unlockThread() {}
-#endif
+  
   /** Set information in a child
         -3 pass pointer to child thread info
         -2 just stop
@@ -2389,7 +2386,7 @@ public:
   void mergeModels(int numberModel, CbcModel **model,
     int numberNodes);
   //@}
-
+#endif
   ///@name semi-private i.e. users should not use
   //@{
   /// Get how many Nodes it took to solve the problem.
@@ -3263,13 +3260,8 @@ void CbcMain0(CbcModel &babSolver);
 int CbcMain1(int argc, const char *argv[], CbcModel &babSolver);
 // two ways of calling
 int callCbc(const char *input2, CbcModel &babSolver);
-int callCbc(const std::string input2, CbcModel &babSolver);
-// And when CbcMain0 already called to initialize
-int callCbc1(const char *input2, CbcModel &babSolver);
-int callCbc1(const std::string input2, CbcModel &babSolver);
 // And when CbcMain0 already called to initialize (with call back) (see CbcMain1 for whereFrom)
 int callCbc1(const char *input2, CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
-int callCbc1(const std::string input2, CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
 int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
 // For uniform setting of cut and heuristic options
 void setCutAndHeuristicOptions(CbcModel &model);

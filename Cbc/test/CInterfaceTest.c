@@ -443,6 +443,12 @@ void testQueens(int n) {
             }
         }
         sprintf(name, "diag1(%d)", k);
+        char *s = name;
+        while (*s != '\0') {
+            if (*s == '-')
+                *s = 'm';
+            ++s;
+        }
         Cbc_addRow(model, name, nz, idx, coef, 'L', 1.0);
     }
 
@@ -465,6 +471,13 @@ void testQueens(int n) {
             }
         }
         sprintf(name, "diag2(%d)", k);
+        char *s = name;
+        while (*s != '\0') {
+            if (*s == '-')
+                *s = 'm';
+            ++s;
+        }
+ 
         Cbc_addRow(model, name, nz, idx, coef, 'L', 1.0);
     } 
 

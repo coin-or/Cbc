@@ -2427,7 +2427,6 @@ public:
     bool &resolved, CoinWarmStartBasis *lastws,
     const double *lowerBefore, const double *upperBefore,
     OsiSolverBranch *&branches);
-  int chooseBranch(CbcNode *newNode, int numberPassesLeft, bool &resolved);
 
   /** Return an empty basis object of the specified size
 

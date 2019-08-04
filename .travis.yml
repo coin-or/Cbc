@@ -32,7 +32,7 @@ before_script:
   -dumpversion`; fi
 - cd ..
 - wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
-- export PROJECT=`echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2`
+- export PROJECT=`echo https://github.com/${TRAVIS_REPO_SLUG}.git:$TRAVIS_BRANCH`
 - bash ./coinbrew fetch $PROJECT --no-prompt --skip-update > /dev/null
 script:
 - bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --test
@@ -46,3 +46,8 @@ after_script:
 - tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
 - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1"
   https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE
+  
+jobs:
+  include:
+    - stage: docs
+      script: echo "generate docs"

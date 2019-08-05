@@ -4003,8 +4003,8 @@ int CbcMain1(int argc, const char *argv[],
                 double stcg = CoinGetTimeOfDay();
                 model_.solver()->buildCGraph();
                 double edcg = CoinGetTimeOfDay();
-                model_.messageHandler()->message(CBC_CGRAPH_INFO, model_.messages())
-                  << edcg-stcg << cgraph_density(model_.solver()->getCGraph())*100.0 <<  CoinMessageEol;
+                //FIXME model_.messageHandler()->message(CBC_CGRAPH_INFO, model_.messages())
+                //FIXME   << edcg-stcg << cgraph_density(model_.solver()->getCGraph())*100.0 <<  CoinMessageEol;
 
                 CglCliqueMerging clqMerging;
                 clqMerging.mergeCliques(*model_.solver());

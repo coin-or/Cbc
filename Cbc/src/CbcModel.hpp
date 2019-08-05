@@ -2349,7 +2349,6 @@ public:
   /// From here to end of section - code in CbcThread.cpp until class changed
   /// Returns true if locked
   bool isLocked() const;
-#ifdef CBC_THREAD
   /**
        Locks a thread if parallel so that stuff like cut pool
        can be updated and/or used.
@@ -2359,12 +2358,6 @@ public:
        Unlocks a thread if parallel to say cut pool stuff not needed
     */
   void unlockThread();
-#else
-  inline void lockThread()
-  {
-  }
-  inline void unlockThread() {}
-#endif
   /** Set information in a child
         -3 pass pointer to child thread info
         -2 just stop

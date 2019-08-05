@@ -1989,6 +1989,15 @@ bool CbcModel::haveMultiThreadSupport() { return true; }
 CbcBaseModel::CbcBaseModel() {}
 
 bool CbcModel::haveMultiThreadSupport() { return false; }
+
+bool CbcModel::isLocked() const { return false; }
+void CbcModel::lockThread() {}
+void CbcModel::unlockThread() {}
+void CbcModel::setInfoInChild(int type, CbcThread *info) {}
+void CbcModel::moveToModel(CbcModel *baseModel, int mode) {}
+int CbcModel::splitModel(int numberModels, CbcModel **model, int numberNodes) { return 0; }
+void CbcModel::startSplitModel(int numberIterations) {}
+void CbcModel::mergeModels(int numberModel, CbcModel **model, int numberNodes) {}
 #endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2

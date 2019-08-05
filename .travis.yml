@@ -36,7 +36,7 @@ before_script:
   - bash ./coinbrew fetch $PROJECT_URL:$TRAVIS_BRANCH --no-prompt --skip-update > /dev/null
 
 script:
-  - bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --test
+  - bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --test ADD_CXXFLAGS="-std=c++11"
 
 after_script:
   - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=master; else export VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`; fi

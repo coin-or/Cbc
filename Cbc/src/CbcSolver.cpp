@@ -991,8 +991,6 @@ static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/)
   this set of calls thread-safe.
 */
 
-int CbcOrClpRead_mode = 1;
-FILE *CbcOrClpReadCommand = stdin;
 // Alternative to environment
 extern char *alternativeEnvironment;
 extern int CbcOrClpEnvironmentIndex;
@@ -1156,8 +1154,8 @@ int callCbc1(const char *input2, CbcModel &model,
   argv[n + 1] = CoinStrdup("-quit");
   free(input);
   currentBranchModel = NULL;
-  CbcOrClpRead_mode = 1;
-  CbcOrClpReadCommand = stdin;
+  setCbcOrClpReadMode(1);
+  setCbcOrClpReadCommand(stdin);
   int returnCode = CbcMain1(n + 2, const_cast< const char ** >(argv),
     model, callBack, parameterData);
   for (int k = 0; k < n + 2; k++)
@@ -1374,7 +1372,7 @@ int CbcMain1(int argc, const char *argv[],
 #endif
   CbcModel *babModel_ = NULL;
   int returnMode = 1;
-  CbcOrClpRead_mode = 1;
+  setCbcOrClpReadMode(1);
   int statusUserFunction_[1];
   int numberUserFunctions_ = 1; // to allow for ampl
   // Statistics
@@ -1536,7 +1534,7 @@ int CbcMain1(int argc, const char *argv[],
         coinModel = coinModelStart.model;
         if (returnCode)
           return returnCode;
-        CbcOrClpRead_mode = 2; // so will start with parameters
+        setCbcOrClpReadMode(2); // so will start with parameters
         // see if log in list (including environment)
         for (int i = 1; i < info.numberArguments; i++) {
           if (!strcmp(info.arguments[i], "log")) {
@@ -8460,7 +8458,7 @@ int CbcMain1(int argc, const char *argv[],
                 totalTime += time2 - time1;
                 time1 = time2;
                 // Go to canned file if just input file
-                if (CbcOrClpRead_mode == 2 && argc == 2) {
+                if (getCbcOrClpReadMode() == 2 && argc == 2) {
                   // only if ends .mps
                   char *find = const_cast< char * >(strstr(fileName.c_str(), ".mps"));
                   if (find && find[4] == '\0') {
@@ -8469,8 +8467,8 @@ int CbcMain1(int argc, const char *argv[],
                     find[3] = 'r';
                     FILE *fp = fopen(fileName.c_str(), "r");
                     if (fp) {
-                      CbcOrClpReadCommand = fp; // Read from that file
-                      CbcOrClpRead_mode = -1;
+                      setCbcOrClpReadCommand(fp); // Read from that file
+                      setCbcOrClpReadMode(-1);
                     }
                   }
                 }
@@ -9574,7 +9572,7 @@ int CbcMain1(int argc, const char *argv[],
             }
           } break;
           case CLP_PARAM_ACTION_STDIN:
-            CbcOrClpRead_mode = -1;
+            setCbcOrClpReadMode(-1);
             break;
           case CLP_PARAM_ACTION_NETLIB_DUAL:
           case CLP_PARAM_ACTION_NETLIB_EITHER:

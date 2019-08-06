@@ -3241,7 +3241,6 @@ void getIntegerInformation(const OsiObject *object, double &originalLower,
 // So we can call from other programs
 // Real main program
 class OsiClpSolverInterface;
-int CbcMain(int argc, const char *argv[], OsiClpSolverInterface &solver, CbcModel **babSolver);
 int CbcMain(int argc, const char *argv[], CbcModel &babSolver);
 // four ways of calling
 int callCbc(const char *input2, OsiClpSolverInterface &solver1);

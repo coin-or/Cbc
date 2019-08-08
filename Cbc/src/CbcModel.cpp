@@ -14282,7 +14282,7 @@ void CbcModel::preprocessCut(OsiCut *cut) {
   int* const origCols = originalColumns();
   if (nullptr == origCols)
     return;
-  // set up map
+  // set up map. Not cached - recreate every cut! TODO
   const int nColsPre = getNumCols();
   const int nCols = 1 + *std::max_element(origCols, origCols+nColsPre);        // just an estimate
   std::vector<int> back(nCols, -1);
@@ -14291,15 +14291,17 @@ void CbcModel::preprocessCut(OsiCut *cut) {
   /// See which kind of cut
   if (OsiRowCut* rc = dynamic_cast<OsiRowCut*>(cut)) {
     if (!remap( rc->mutableRow(), back ))                                  // just fail.  TODO
-      throw std::runtime_error("OsiRowCut: variable has been preprocessed away. Run with -preprocess off");
-  } else if (OsiColCut*cc = dynamic_cast<OsiColCut*>(cut)) {
+      throw CoinError("OsiRowCut: variable has been preprocessed away. Run with -preprocess off",
+                      "preprocessCut", "CbcModel");
+  } else if (OsiColCut* cc = dynamic_cast<OsiColCut*>(cut)) {
     CoinPackedVector lbs = cc->lbs(), ubs = cc->ubs();
     if (!remap(lbs, back) || !remap(ubs, back))                                  // just fail.  TODO
-      throw std::runtime_error("OsiColCut: variable has been preprocessed away. Run with -preprocess off");
+      throw CoinError("OsiColCut: variable has been preprocessed away. Run with -preprocess off",
+                               "preprocessCut", "CbcModel");
     cc->setLbs(lbs);
     cc->setUbs(ubs);
   } else {
-    throw std::runtime_error("preprocessCut: unknown cut type.");
+    throw CoinError("preprocessCut: unknown cut type.", "preprocessCut", "CbcModel");
   }
 }
 

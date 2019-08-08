@@ -336,15 +336,12 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
   if ((model_->specialOptions() & 2048) == 0) {
     if ((whichEvent == solution || whichEvent == heuristicSolution)) {
 
-      OsiSolverInterface *origSolver = model_->solver();
-      const OsiSolverInterface *pps = model_->postProcessedSolver(1);
-
-      const OsiSolverInterface *solver = pps ? pps : origSolver;
-
 #ifdef CBC_THREAD
     assert(this->cbcMutex);
     pthread_mutex_lock((this->cbcMutex));
 #endif
+    const OsiSolverInterface *solver = model_->originalSolver(1);
+
       if (bestCost >= solver->getObjValue() + 1e-10) {
           bestCost = solver->getObjValue();
 

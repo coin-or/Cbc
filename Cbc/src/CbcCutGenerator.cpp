@@ -309,9 +309,20 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       // Pass across model information in case it could be useful
       //void * saveData = solver->getApplicationData();
       //solver->setApplicationData(model_);
-      generator_->generateCuts(*solver, cs, info);
+      const bool origModel = generator_->needsOriginalModel();
+      const OsiSolverInterface* solverNow = origModel ?
+            model_->originalSolver(0) : solver;           // very inefficient, NOT THREAD-SAFE
+      OsiCuts cs01;
+      generator_->generateCuts(*solverNow, cs01, info);
+      if (origModel) {                        // preprocess new cuts
+        for (auto cut: cs01) {
+          model_->preprocessCut(cut);
+        }
+      }
+      cs.insert(cs01);
       //solver->setApplicationData(saveData);
     } else {
+      assert(!generator_->needsOriginalModel());
       // Probing - return tight column bounds
       CglTreeProbingInfo *info2 = model_->probingInfo();
       bool doCuts = false;

@@ -309,17 +309,18 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       // Pass across model information in case it could be useful
       //void * saveData = solver->getApplicationData();
       //solver->setApplicationData(model_);
-      const bool origModel = generator_->needsOriginalModel();
-      const OsiSolverInterface* solverNow = origModel ?
-            model_->originalSolver(0) : solver;           // very inefficient, NOT THREAD-SAFE
-      OsiCuts cs01;
-      generator_->generateCuts(*solverNow, cs01, info);
-      if (origModel) {                        // preprocess new cuts
-        for (auto cut: cs01) {
-          model_->preprocessCut(cut);
+      if (!generator_->needsOriginalModel()) {             // happy with preprocessed model
+        generator_->generateCuts(*solver, cs, info);
+      } else {
+        const OsiSolverInterface* const solverNow =
+            model_->originalSolver(0);               // not cached, MIGHT BE NOT THREAD-SAFE
+        OsiCuts cs01;
+        generator_->generateCuts(*solverNow, cs01, info);
+        for (OsiCuts::iterator it=cs01.begin(); it!=cs01.end(); ++it) {
+          model_->preprocessCut(*it);
         }
+        cs.insert(cs01);
       }
-      cs.insert(cs01);
       //solver->setApplicationData(saveData);
     } else {
       assert(!generator_->needsOriginalModel());

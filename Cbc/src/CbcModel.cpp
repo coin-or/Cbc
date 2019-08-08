@@ -14264,6 +14264,45 @@ void CbcModel::makePartialCut(const OsiRowCut *partialCut,
 void CbcModel::makeGlobalCuts()
 {
 }
+
+/// Remap each element in a vector, return success status
+static bool remap(CoinPackedVector& cpv, const std::vector<int>& map) {
+  const int numElem = cpv.getNumElements();
+  int* indices = cpv.getIndices();
+  for (int k=0;k<numElem;++k) {
+    if (indices[k]>=map.size() || map[indices[k]]<0) {
+      return false;
+    }
+    indices[k] = map[indices[k]];
+  }
+  return true;
+}
+
+void CbcModel::preprocessCut(OsiCut *cut) {
+  int* const origCols = originalColumns();
+  if (nullptr == origCols)
+    return;
+  // set up map
+  const int nColsPre = getNumCols();
+  const int nCols = 1 + *std::max_element(origCols, origCols+nColsPre);        // just an estimate
+  std::vector<int> back(nCols, -1);
+  for (int i = 0; i < nColsPre; i++)
+    back[origCols[i]] = i;
+  /// See which kind of cut
+  if (OsiRowCut* rc = dynamic_cast<OsiRowCut*>(cut)) {
+    if (!remap( rc->mutableRow(), back ))                                  // just fail.  TODO
+      throw std::runtime_error("OsiRowCut: variable has been preprocessed away. Run with -preprocess off");
+  } else if (OsiColCut*cc = dynamic_cast<OsiColCut*>(cut)) {
+    CoinPackedVector lbs = cc->lbs(), ubs = cc->ubs();
+    if (!remap(lbs, back) || !remap(ubs, back))                                  // just fail.  TODO
+      throw std::runtime_error("OsiColCut: variable has been preprocessed away. Run with -preprocess off");
+    cc->setLbs(lbs);
+    cc->setUbs(ubs);
+  } else {
+    throw std::runtime_error("preprocessCut: unknown cut type.");
+  }
+}
+
 void CbcModel::setNodeComparison(CbcCompareBase *compare)
 {
   delete nodeCompare_;

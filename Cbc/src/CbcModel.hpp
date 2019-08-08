@@ -375,6 +375,8 @@ public:
   {
     return whichGenerator_;
   }
+  /// Preprocess cut constructed for the original model
+  void preprocessCut(OsiCut* cut);
   //@}
 
   /** \name Presolve methods */

@@ -19556,6 +19556,15 @@ CbcModel::postProcessedSolver(int solutionType)
   }
   return originalModel;
 }
+
+const OsiSolverInterface *
+CbcModel::originalSolver(int solutionType)
+{
+  OsiSolverInterface *origSolver = solver();
+  const OsiSolverInterface *pps = postProcessedSolver(solutionType);
+  return pps ? pps : origSolver;
+}
+
 // Delete a node and possibly null out currentNode_
 void
 CbcModel::deleteNode(CbcNode * node)

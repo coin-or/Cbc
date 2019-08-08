@@ -448,10 +448,17 @@ public:
     */
   void analyzeObjective();
   /** Returns postProcessed solution in solver(called from event handler)
+   * or nullptr.
      Normally used for integer solution (not really tested otherwise)
-    solutionType 1 is best integer so far, 0 is current solution 
+    solutionType 1 is best integer so far, 0 is current solution
     (may not be integer) */
   const OsiSolverInterface *postProcessedSolver(int solutionType = 1);
+  /** Returns postProcessed solution in solver(called from event handler)
+   * or solution of the original model if that has not been preprocessed.
+     Normally used for integer solution (not really tested otherwise)
+    solutionType 1 is best integer so far, 0 is current solution
+    (may not be integer)  */
+  const OsiSolverInterface *originalSolver(int solutionType = 1);
 
   /**
       Add additional integers.

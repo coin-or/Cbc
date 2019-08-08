@@ -42,7 +42,7 @@ after_script:
   - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=master; else export VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
   - export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz
   - echo $TGZ_FILE
-  - cp $PROJECT/README.md $PROJECT/LICENSE $PROJECT/$PROJECT/AUTHORS build
-  - cd build
+  - cp $PROJECT/README.md $PROJECT/LICENSE $PROJECT/$PROJECT/AUTHORS dist
+  - cd dist
   - tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
   - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE

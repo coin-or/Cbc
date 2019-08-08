@@ -36,7 +36,7 @@ flags = [
     '-I../../Cgl/src/CglLandP/',
     '-I../../Cgl/src/CglResidualCapacity/',
     '-I../../Cgl/src/CglZeroHalf/',
-    '-std=c++98',
+    '-std=c++11',
     '-x',
     'c++'
 ]

@@ -314,7 +314,8 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       } else {
         model_->lockThread();                        // workaround, better have thread-spec postpro
         const OsiSolverInterface* const solverNow =
-            model_->originalSolver(0);               // not cached, MIGHT BE NOT THREAD-SAFE
+            model_->originalSolver( info.options&128 ? 1 : 0 ); // not cached - inefficient. Not thread-safe
+                                                                // argument: 1 when integer solution
         OsiCuts cs01;
         generator_->generateCuts(*solverNow, cs01, info);
         model_->unlockThread();

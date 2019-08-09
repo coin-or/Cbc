@@ -312,10 +312,12 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       if (!generator_->needsOriginalModel()) {             // happy with preprocessed model
         generator_->generateCuts(*solver, cs, info);
       } else {
+        model_->lockThread();                        // workaround, better have thread-spec postpro
         const OsiSolverInterface* const solverNow =
             model_->originalSolver(0);               // not cached, MIGHT BE NOT THREAD-SAFE
         OsiCuts cs01;
         generator_->generateCuts(*solverNow, cs01, info);
+        model_->unlockThread();
         for (OsiCuts::iterator it=cs01.begin(); it!=cs01.end(); ++it) {
           model_->preprocessCut(*it);
         }

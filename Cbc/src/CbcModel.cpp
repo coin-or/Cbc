@@ -19586,8 +19586,8 @@ CbcModel::postProcessedSolver(int solutionType)
       model->solver()->setColUpper(saveUpper);
       delete[] saveLower;
       delete[] saveUpper;
+      solver->resolve();
     }
-    solver->resolve();
     processPointer->postProcess(*solver, false);
     originalModel = processPointer->originalModel();
     solution = originalModel->getColSolution();

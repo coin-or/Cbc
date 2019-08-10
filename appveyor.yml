@@ -12,11 +12,11 @@ environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       ARCH: win32-msvc14
-      HOST_ARCH_ARG: --enable-msvc ADD_CXXFLAGS=/std:c++14
+      HOST_ARCH_ARG: --enable-msvc
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win32-msvc15
-      HOST_ARCH_ARG: --enable-msvc ADD_CXXFLAGS=/std:c++14
+      HOST_ARCH_ARG: --enable-msvc
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: x86_64-w64-mingw32

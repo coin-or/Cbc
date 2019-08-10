@@ -12,11 +12,11 @@ environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       ARCH: win32-msvc14
-      HOST_ARCH_ARG: --enable-msvc
+      HOST_ARCH_ARG: --enable-msvc ADD_CXXFLAGS=/std:c++14
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win32-msvc15
-      HOST_ARCH_ARG: --enable-msvc
+      HOST_ARCH_ARG: --enable-msvc ADD_CXXFLAGS=/std:c++14
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: x86_64-w64-mingw32
@@ -36,7 +36,7 @@ install:
 build_script:
   - C:\msys64\usr\bin\bash -lc "cd C:\projects; ln -s cbc-s1r7t Cbc;wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew"
   - C:\msys64\usr\bin\bash -lc "cd C:\projects; ./coinbrew fetch https://github.com/%APPVEYOR_REPO_NAME%:%APPVEYOR_REPO_BRANCH% --no-prompt --no-third-party --skip-update"
-  - C:\msys64\usr\bin\bash -lc "cd C:\projects; export PATH=$ADD_PATH:$PATH;  export ADD_CXXFLAGS='/std:c++14' ; ./coinbrew build %APPVEYOR_PROJECT_NAME% --no-prompt --no-third-party --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --verbosity=4 --test"
+  - C:\msys64\usr\bin\bash -lc "cd C:\projects; export PATH=$ADD_PATH:$PATH; ./coinbrew build %APPVEYOR_PROJECT_NAME% --no-prompt --no-third-party --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --verbosity=4 --test"
 
 after_build:
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\bin

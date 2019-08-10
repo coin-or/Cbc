@@ -10,4 +10,4 @@ Data/miplib3      https://projects.coin-or.org/svn/Data/miplib3/stable/1.2
 CoinUtils         https://projects.coin-or.org/svn/CoinUtils/trunk/CoinUtils
 Osi               https://projects.coin-or.org/svn/Osi/trunk/Osi
 Clp               https://projects.coin-or.org/svn/Clp/trunk/Clp
-Cgl               https://projects.coin-or.org/svn/Cgl/trunk/Cgl
+Cgl               https://github.com/glebbelov/Cgl master

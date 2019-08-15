@@ -14280,7 +14280,7 @@ static bool remap(CoinPackedVector& cpv, const std::vector<int>& map) {
 
 void CbcModel::preprocessCut(OsiCut *cut) {
   int* const origCols = originalColumns();
-  if (nullptr == origCols)
+  if (NULL == origCols)
     return;
   // set up map. Not cached - recreate every cut! TODO
   const int nColsPre = getNumCols();

@@ -1473,11 +1473,16 @@ COINLIBAPI void COINLINKAGE Cbc_addProgrCallback(
   model->pgrAppData = appData;
 }
 
-COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
-    Cbc_Model *model, cbc_cut_callback cutcb,
-    const char *name, void *appData )
+COINLIBAPI void COINLINKAGE Cbc_addCutCallback( 
+    Cbc_Model *model, 
+    cbc_cut_callback cutcb, 
+    const char *name, 
+    void *appData, 
+    int howOften,
+    char atSolution )
 {
   bool deleteCb = false;
+  bool addNewCbcCG = true;
   assert( model != NULL );
   assert( model->model_ != NULL );
 
@@ -1491,6 +1496,7 @@ COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
     CglCallback *t = dynamic_cast<CglCallback *>(ccb->generator());
     if (t) {
       cglCb = t;
+      addNewCbcCG = false;
       break;
     }
   }
@@ -1505,9 +1511,10 @@ COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
 #ifdef CBC_THREAD
   cglCb->cbcMutex = &(model->cbcMutex);
 #endif
-
-  cbcModel->addCutGenerator( cglCb, 1, name );
-
+  
+  if (addNewCbcCG)
+    cbcModel->addCutGenerator( cglCb, howOften, name, true, atSolution );
+  
   if (deleteCb)
     delete cglCb;
 }

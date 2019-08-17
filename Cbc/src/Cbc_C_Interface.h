@@ -12,6 +12,14 @@
 #include "Coin_C_defines.h"
 #include <stddef.h>
 
+/**
+ * @file Cbc_C_Interface.h
+ * @author COIN-OR CBC Development team
+ * @date 15 Aug 2019
+ *
+ * The C API for the COIN-OR Branch-and-Cut solver
+ * 
+ */
 
 /*
  * Original version contributed by Bob Entriken,
@@ -40,6 +48,8 @@ typedef int(COINLINKAGE_CB *cbc_progress_callback)(void *model,
                                                    );
 
 
+/** typedef for cbc callback to monitor the discovery
+ * of new integer feasible solutions */
 typedef int (COINLINKAGE_CB *cbc_incumbent_callback)(void *cbcModel, double obj, int nz, char **vnames, double *x, void *appData);
 
 typedef void(COINLINKAGE_CB *cbc_callback)(Cbc_Model *model, int msgno, int ndouble,
@@ -52,8 +62,6 @@ typedef void(COINLINKAGE_CB *cbc_callback)(Cbc_Model *model, int msgno, int ndou
  * for instance
  **/
 typedef void(COINLINKAGE_CB *cbc_cut_callback)(void *osiSolver, void *osiCuts, void *appdata);
-
-
 
 /** Current version of Cbc */
 COINLIBAPI const char *COINLINKAGE Cbc_getVersion(void);
@@ -74,48 +82,28 @@ Cbc_setProblemName(Cbc_Model *model, const char *array);
 
 /** @brief activates/deactivates name indexes
  *
+ * When name indexes are active column/row indexes can be queried fast. 
+ *
  * @param model problem object
  * @param store: 1 maintain indexes of column and constraints names for searching indexes, 0 not
  **/
 COINLIBAPI void COINLINKAGE
 Cbc_storeNameIndexes(Cbc_Model *model, char _store);
 
-/** @brief searches columns by name and returns its index
- *
- * call Cbc_storeNameIndexes to enable search by name
- *
- * @param model problem object
- * @param name column (variable) name
- * @return column index or -1 if not found
- **/
-COINLIBAPI int COINLINKAGE
-Cbc_getColNameIndex(Cbc_Model *model, const char *name);
-
-/** @brief searches rows by name and returns its index
- *
- * call Cbc_storeNameIndexes to enable search by name
- *
- * @param model problem object
- * @param name row (constraint) name
- * @return row index or -1 if not found
- **/
-COINLIBAPI int COINLINKAGE
-Cbc_getRowNameIndex(Cbc_Model *model, const char *name);
-
 /** @brief Creates a new column
-     *
-     * Creates a new column (variable)
-     *
-     * @param model problem object
-     * @param name variable name
-     * @param lb column lower bound
-     * @param ub column upper bound
-     * @param obj objective function coefficient
-     * @param isInteger 1 if variable is integral, 0 otherwise
-     * @param nz number of rows (constraints) where this column appears, can be 0 if constraints will be added later
-     * @param rows index of rows where this column appears, NULL if rows will be added later
-     * @param coefs coefficients that this column appears in its rows, NULL if rows will be added later
-     ***/
+  *
+  * Creates a new column (variable)
+  *
+  * @param model problem object
+  * @param name variable name
+  * @param lb column lower bound
+  * @param ub column upper bound
+  * @param obj objective function coefficient
+  * @param isInteger 1 if variable is integral, 0 otherwise
+  * @param nz number of rows (constraints) where this column appears, can be 0 if constraints will be added later
+  * @param rows index of rows where this column appears, NULL if rows will be added later
+  * @param coefs coefficients that this column appears in its rows, NULL if rows will be added later
+  ***/
 COINLIBAPI void COINLINKAGE
 Cbc_addCol(Cbc_Model *model, const char *name, double lb,
   double ub, double obj, char isInteger,
@@ -123,13 +111,13 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
 
 
 /** @brief Deletes some columns
-     *
-     *  Deletes some columns (variables)
-     *
-     *  @param model problem object
-     *  @param numCols 
-     *  @param cols columns that will be deleted
-     * */
+  *
+  *  Deletes some columns (variables)
+  *
+  *  @param model problem object
+  *  @param numCols 
+  *  @param cols columns that will be deleted
+  * */
 COINLIBAPI void COINLINKAGE
 Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[]);
 
@@ -228,11 +216,11 @@ COINLIBAPI void COINLINKAGE
 Cbc_setRowLower(Cbc_Model *model, int index, double value);
 
 /** @brief  Set the upper bound of a single constraint 
-     *
-     * @param model problem object 
-     * @param index row index
-     * @param value new row upper bound
-     **/
+  *
+  * @param model problem object 
+  * @param index row index
+  * @param value new row upper bound
+  **/
 COINLIBAPI void COINLINKAGE
 Cbc_setRowUpper(Cbc_Model *model, int index, double value);
 
@@ -279,7 +267,9 @@ Cbc_setContinuous(Cbc_Model *model, int iColumn);
 COINLIBAPI void COINLINKAGE
 Cbc_setInteger(Cbc_Model *model, int iColumn);
 
-/** @brief Frees memory of model object */
+/** @brief Frees memory of model object 
+  *
+  * @param model problem object */
 COINLIBAPI void COINLINKAGE
 Cbc_deleteModel(Cbc_Model *model);
 
@@ -344,6 +334,7 @@ COINLIBAPI int COINLINKAGE
 Cbc_getNumElements(Cbc_Model *model);
 
 /** @brief Number of variables in the model 
+ *
   * @param model problem object
   * @return number of columns (variables)
   **/
@@ -358,7 +349,7 @@ Cbc_getNumCols(Cbc_Model *model);
 COINLIBAPI int COINLINKAGE
 Cbc_getNumIntegers(Cbc_Model *model);
 
-/** Number of constraints in the model 
+/** @brief Number of constraints in the model 
   * @param model problem object
   * @return number of rows (constraints) in the model
   **/
@@ -375,7 +366,7 @@ Cbc_getNumRows(Cbc_Model *model);
 COINLIBAPI void COINLINKAGE
 Cbc_getRowName(Cbc_Model *model, int iRow, char *name, size_t maxLength);
 
-/** Queries column name
+/** @brief Queries column name
   *
   * @param model problem object 
   * @param iColumn column index
@@ -384,6 +375,28 @@ Cbc_getRowName(Cbc_Model *model, int iRow, char *name, size_t maxLength);
   **/
 COINLIBAPI void COINLINKAGE
 Cbc_getColName(Cbc_Model *model, int iColumn, char *name, size_t maxLength);
+
+/** @brief searches columns by name and returns its index
+ *
+ * call Cbc_storeNameIndexes to enable search by name
+ *
+ * @param model problem object
+ * @param name column (variable) name
+ * @return column index or -1 if not found
+ **/
+COINLIBAPI int COINLINKAGE
+Cbc_getColNameIndex(Cbc_Model *model, const char *name);
+
+/** @brief searches rows by name and returns its index
+ *
+ * call Cbc_storeNameIndexes to enable search by name
+ *
+ * @param model problem object
+ * @param name row (constraint) name
+ * @return row index or -1 if not found
+ **/
+COINLIBAPI int COINLINKAGE
+Cbc_getRowNameIndex(Cbc_Model *model, const char *name);
 
 /** @brief Number of non-zero entries in a row 
   *
@@ -474,10 +487,10 @@ COINLIBAPI const double *COINLINKAGE
 Cbc_getRowLower(Cbc_Model *model);
 
 /** @brief Constraint upper bounds 
-     *
-     * @param model problem object 
-     * @return constraint upper bounds
-     **/
+ *
+ * @param model problem object 
+ * @return constraint upper bounds
+ **/
 COINLIBAPI const double *COINLINKAGE
 Cbc_getRowUpper(Cbc_Model *model);
 
@@ -505,7 +518,7 @@ Cbc_getColLower(Cbc_Model *model);
 COINLIBAPI const double *COINLINKAGE
 Cbc_getColUpper(Cbc_Model *model);
 
-/** @brief Determine whether the ith variable is integer restricted 
+/** @brief Determine whether the i-th variable is restricted to be integral
   * 
   * @param model problem object 
   * @param i variable index
@@ -564,14 +577,15 @@ Cbc_writeLp(Cbc_Model *model, const char *filename);
     */
 COINLIBAPI void COINLINKAGE
 Cbc_setInitialSolution(Cbc_Model *model, const double *sol);
-/** "Column start" vector of constraint matrix. Same format as Cbc_loadProblem() */
 
+/** "Column start" vector of constraint matrix. Same format as Cbc_loadProblem() */
 COINLIBAPI const CoinBigIndex *COINLINKAGE
 Cbc_getVectorStarts(Cbc_Model *model);
 /** "Row index" vector of constraint matrix */
 COINLIBAPI const int *COINLINKAGE
 
 Cbc_getIndices(Cbc_Model *model);
+
 /** Coefficient vector of constraint matrix */
 COINLIBAPI const double *COINLINKAGE
 Cbc_getElements(Cbc_Model *model);
@@ -587,19 +601,29 @@ Cbc_printModel(Cbc_Model *model, const char *argPrefix);
 
 /**@name Solver parameters */
 /*@{*/
+
 /** Set parameter "name" to value "value". Note that this
-     * translates directly to using "-name value" as a 
-     * command-line argument to Cbc.*/
+  * translates directly to using "-name value" as a 
+  * command-line argument to Cbc.*/
 COINLIBAPI void COINLINKAGE
 Cbc_setParameter(Cbc_Model *model, const char *name, const char *value);
 
-/** returns the allowable gap
+/** @brief returns the allowable gap
+ *
+ * @param model model object
+ * @return the maximum allowable gap between the lower bound and the upper bound, when 
+ *         the gap decrease to a smaller value the search is concluded
  */
 COINLIBAPI double COINLINKAGE
 Cbc_getAllowableGap(Cbc_Model *model);
 
-/** sets the allowable gap
+/** @brief sets the allowable gap
+ *
+ * @param model model object
+ * @param allowedGap the maximum allowable gap between the lower bound and the upper bound, when 
+ *         the gap decrease to a smaller value the search is concluded
  */
+
 COINLIBAPI void COINLINKAGE
 Cbc_setAllowableGap(Cbc_Model *model, double allowedGap);
 
@@ -707,10 +731,24 @@ Cbc_registerCallBack(Cbc_Model *model,
 COINLIBAPI void COINLINKAGE
 Cbc_clearCallBack(Cbc_Model *model);
 
-/** calback to generate cutting planes **/
+/** @brief adds a callback to generate cutting planes
+ *
+ * @param model mip model
+ * @param cutcb cut callback function
+ * @param name cut generator name
+ * @param appData optional pointer to some additional information that the cut generator may need
+ * @param howOften 1 if the cut generator should be called at every node, > 1 at every howOften nodes negative
+ *        values have the same meaning but in this case the cut generator may be disable if not bound improvement
+ *        was obtained with these cuts. -99 for cut generators that will be called only at the root node
+ * @param atSolution if the cut generator must to be called also when an integer solution if found (=1) or zero otherwise
+ **/
 COINLIBAPI void COINLINKAGE Cbc_addCutCallback( 
-    Cbc_Model *model, cbc_cut_callback cutcb, 
-    const char *name, void *appData );
+    Cbc_Model *model, 
+    cbc_cut_callback cutcb, 
+    const char *name, 
+    void *appData, 
+    int howOften,
+    char atSolution );
 
 /** callback to monitor new incumbent solutions **/
 COINLIBAPI void COINLINKAGE Cbc_addIncCallback(

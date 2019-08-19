@@ -25,6 +25,7 @@
 #include "OsiClpSolverInterface.hpp"
 #include "CglCutGenerator.hpp"
 #include "CbcCutGenerator.hpp"
+#include <OsiAuxInfo.hpp>
 
 /**
   *
@@ -1459,6 +1460,21 @@ Cbc_solve(Cbc_Model *model)
       model->model_->passInEventHandler(cbc_eh);
     }
 
+    // checks if some cut generator is also applied to integer solutions
+    bool lazyConstraints = false;
+    for ( int i=0 ; (i<model->model_->numberCutGenerators()) ; ++i )
+      if (model->model_->cutGenerator(i)->atSolution()) {
+        lazyConstraints  = true;
+        break;
+      }
+
+    if (lazyConstraints) {
+      OsiBabSolver defaultC;
+      defaultC.setSolverType(4);
+      model->model_->solver()->setAuxiliaryInfo(&defaultC);
+      model->model_->passInSolverCharacteristics(&defaultC);
+    }
+
     CbcMain1((int)argv.size(), &argv[0], *model->model_, cbc_callb, *model->cbcData);
 
     if (cbc_eh)
@@ -1531,8 +1547,9 @@ COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
   cglCb->cbcMutex = &(model->cbcMutex);
 #endif
   
-  if (addNewCbcCG)
+  if (addNewCbcCG) {
     cbcModel->addCutGenerator( cglCb, howOften, name, true, atSolution );
+  }
   
   if (deleteCb)
     delete cglCb;

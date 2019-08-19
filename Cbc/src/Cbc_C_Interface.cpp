@@ -1002,7 +1002,11 @@ static void fillAllNameIndexes(Cbc_Model *model)
     rowNameIndex[solver->getRowName(i)] = i;
 }
 
-/* Read an mps file from the given filename */
+/** Reads an MPS file
+ *
+ * @param model problem object
+ * @param fileName file name
+ **/
 COINLIBAPI int COINLINKAGE
 Cbc_readMps(Cbc_Model *model, const char *filename)
 {
@@ -1028,7 +1032,12 @@ Cbc_readMps(Cbc_Model *model, const char *filename)
     printf("%s return %i\n", prefix, result);
   return result;
 }
-/* Write an mps file from the given filename */
+
+/** Writes an MPS file
+ *
+ * @param model problem object
+ * @param fileName file name
+ **/
 COINLIBAPI void COINLINKAGE
 Cbc_writeMps(Cbc_Model *model, const char *filename)
 {
@@ -1048,7 +1057,10 @@ Cbc_writeMps(Cbc_Model *model, const char *filename)
   return;
 }
 
-/* Write an mps file from the given filename */
+/** Writes an LP file
+ *
+ * @param model problem object
+ * @param fileName file name */
 COINLIBAPI void COINLINKAGE
 Cbc_writeLp(Cbc_Model *model, const char *filename)
 {
@@ -1077,7 +1089,10 @@ Cbc_writeLp(Cbc_Model *model, const char *filename)
   return;
 }
 
-/* Read an lp file from the given filename */
+/** Reads an LP file
+ *
+ * @param model problem object
+ * @param fileName file name */
 COINLIBAPI int COINLINKAGE
 Cbc_readLp(Cbc_Model *model, const char *filename)
 {
@@ -1103,6 +1118,10 @@ Cbc_readLp(Cbc_Model *model, const char *filename)
   return result;
 }
 
+/* Sets an initial feasible solution
+ *
+ * @param model problem object
+ **/
 COINLIBAPI void COINLINKAGE
 Cbc_setInitialSolution(Cbc_Model *model, const double *sol)
 {

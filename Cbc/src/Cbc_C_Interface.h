@@ -115,8 +115,8 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
   *  Deletes some columns (variables)
   *
   *  @param model problem object
-  *  @param numCols 
-  *  @param cols columns that will be deleted
+  *  @param numCols number of columns that will be deleted
+  *  @param cols Vector with indexes of columns that will be deleted 
   * */
 COINLIBAPI void COINLINKAGE
 Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[]);
@@ -129,7 +129,7 @@ Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[]);
   *  @param name constraint name
   *  @param nz number of variables with non-zero coefficients in this row
   *  @param cols index of variables that appear in this row
-  *  @param coefs cofficients that that variables appear
+  *  @param coefs coefficients that that variables appear
   *  @param sense constraint sense: L if <=, G if >=, E if =, R if ranged and N if free
   *  @param rhs right hand size
   * */
@@ -602,9 +602,13 @@ Cbc_printModel(Cbc_Model *model, const char *argPrefix);
 /**@name Solver parameters */
 /*@{*/
 
-/** Set parameter "name" to value "value". Note that this
-  * translates directly to using "-name value" as a 
-  * command-line argument to Cbc.*/
+/** Sets a parameter
+ *
+ * @param model problem object
+ * @param name parameter name, e.g. cuts
+ * @param name parameter value, e.g. off
+ * 
+ **/
 COINLIBAPI void COINLINKAGE
 Cbc_setParameter(Cbc_Model *model, const char *name, const char *value);
 

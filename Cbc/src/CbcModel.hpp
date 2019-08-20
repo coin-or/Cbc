@@ -191,6 +191,11 @@ public:
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastDblParam
   };
+  /// Solution type to be postprocessed
+  enum CbcSolutionType {
+    CbcCurrentRelaxed = 0,
+    CbcCurrentBestInteger = 1
+  };
 
   //---------------------------------------------------------------------------
 
@@ -452,15 +457,17 @@ public:
   /** Returns postProcessed solution in solver(called from event handler)
    * or nullptr.
      Normally used for integer solution (not really tested otherwise)
-    solutionType 1 is best integer so far, 0 is current solution
-    (may not be integer) */
-  const OsiSolverInterface *postProcessedSolver(int solutionType = 1);
+    solutionType CbcCurrentBestInteger is best integer so far, CbcCurrentRelaxed is current solution
+    (may not be integer).
+    TODO more flexibility to posgtprocess ANY solution thread-safely. */
+  const OsiSolverInterface *postProcessedSolver(CbcSolutionType solutionType = CbcCurrentBestInteger);
   /** Returns postProcessed solution in solver(called from event handler)
    * or solution of the original model if that has not been preprocessed.
      Normally used for integer solution (not really tested otherwise)
-    solutionType 1 is best integer so far, 0 is current solution
-    (may not be integer)  */
-  const OsiSolverInterface *originalSolver(int solutionType = 1);
+    solutionType CbcCurrentBestInteger is best integer so far, CbcCurrentRelaxed is current solution
+    (may not be integer).
+    TODO more flexibility to posgtprocess ANY solution thread-safely. */
+  const OsiSolverInterface *originalSolver(CbcSolutionType solutionType = CbcCurrentBestInteger);
 
   /**
       Add additional integers.

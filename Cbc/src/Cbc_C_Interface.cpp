@@ -341,7 +341,7 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
     assert(this->cbcMutex);
     pthread_mutex_lock((this->cbcMutex));
 #endif
-    const OsiSolverInterface *solver = model_->originalSolver(1);
+    const OsiSolverInterface *solver = model_->originalSolver(CbcModel::CbcCurrentBestInteger);
 
       if (bestCost >= solver->getObjValue() + 1e-10) {
           bestCost = solver->getObjValue();

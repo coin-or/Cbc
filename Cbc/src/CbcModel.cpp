@@ -19554,7 +19554,7 @@ CbcModel::setupCleanVariables()
    solutionType 1 is best integer so far, 0 is current solution 
    (may not be integer) */
 const OsiSolverInterface *
-CbcModel::postProcessedSolver(int solutionType)
+CbcModel::postProcessedSolver(CbcSolutionType solutionType)
 {
   CbcModel *model = this;
   CglPreProcess *processPointer = model->preProcess();
@@ -19563,7 +19563,7 @@ CbcModel::postProcessedSolver(int solutionType)
   while (processPointer) {
     int numberSolvers = processPointer->numberSolvers();
     OsiSolverInterface *solver = processPointer->presolve(numberSolvers - 1)->presolvedModel();
-    if (solutionType) {
+    if (CbcCurrentBestInteger == solutionType) {
       // massage solution
       int numberColumns = solver->getNumCols();
       double *saveLower = CoinCopyOfArray(model->solver()->getColLower(), numberColumns);
@@ -19599,7 +19599,7 @@ CbcModel::postProcessedSolver(int solutionType)
 }
 
 const OsiSolverInterface *
-CbcModel::originalSolver(int solutionType)
+CbcModel::originalSolver(CbcSolutionType solutionType)
 {
   OsiSolverInterface *origSolver = solver();
   const OsiSolverInterface *pps = postProcessedSolver(solutionType);

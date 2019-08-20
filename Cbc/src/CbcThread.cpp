@@ -168,7 +168,8 @@ static double getTime()
 {
   struct timespec absTime2;
   my_gettime(&absTime2);
-  double time2 = absTime2.tv_sec + 1.0e-9 * static_cast< double >(absTime2.tv_nsec);
+  double time2 = static_cast<double>(absTime2.tv_sec)
+    + 1.0e-9 * static_cast< double >(absTime2.tv_nsec);
   return time2;
 }
 // Timed wait in nanoseconds - if negative then seconds
@@ -1616,8 +1617,12 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
       heuristic_[i]->setModelOnly(this);
     }
     for (i = 0; i < numberCutGenerators_; i++) {
+      bool generatorTiming = baseModel->generator_[i]->timing();
       delete generator_[i];
       generator_[i] = new CbcCutGenerator(*baseModel->generator_[i]);
+      // zero out timing
+      if (generatorTiming)
+	generator_[i]->setTiming(true);
       // refreshModel was overkill as thought too many rows
       if (generator_[i]->needsRefresh())
         generator_[i]->refreshModel(this);

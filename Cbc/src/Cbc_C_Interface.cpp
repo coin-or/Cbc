@@ -25,6 +25,7 @@
 #include "OsiClpSolverInterface.hpp"
 #include "CglCutGenerator.hpp"
 #include "CbcCutGenerator.hpp"
+#include <OsiAuxInfo.hpp>
 
 /**
   *
@@ -999,7 +1000,11 @@ static void fillAllNameIndexes(Cbc_Model *model)
     rowNameIndex[solver->getRowName(i)] = i;
 }
 
-/* Read an mps file from the given filename */
+/** Reads an MPS file
+ *
+ * @param model problem object
+ * @param fileName file name
+ **/
 COINLIBAPI int COINLINKAGE
 Cbc_readMps(Cbc_Model *model, const char *filename)
 {
@@ -1025,7 +1030,12 @@ Cbc_readMps(Cbc_Model *model, const char *filename)
     printf("%s return %i\n", prefix, result);
   return result;
 }
-/* Write an mps file from the given filename */
+
+/** Writes an MPS file
+ *
+ * @param model problem object
+ * @param fileName file name
+ **/
 COINLIBAPI void COINLINKAGE
 Cbc_writeMps(Cbc_Model *model, const char *filename)
 {
@@ -1045,7 +1055,10 @@ Cbc_writeMps(Cbc_Model *model, const char *filename)
   return;
 }
 
-/* Write an mps file from the given filename */
+/** Writes an LP file
+ *
+ * @param model problem object
+ * @param fileName file name */
 COINLIBAPI void COINLINKAGE
 Cbc_writeLp(Cbc_Model *model, const char *filename)
 {
@@ -1074,7 +1087,10 @@ Cbc_writeLp(Cbc_Model *model, const char *filename)
   return;
 }
 
-/* Read an lp file from the given filename */
+/** Reads an LP file
+ *
+ * @param model problem object
+ * @param fileName file name */
 COINLIBAPI int COINLINKAGE
 Cbc_readLp(Cbc_Model *model, const char *filename)
 {
@@ -1100,6 +1116,10 @@ Cbc_readLp(Cbc_Model *model, const char *filename)
   return result;
 }
 
+/* Sets an initial feasible solution
+ *
+ * @param model problem object
+ **/
 COINLIBAPI void COINLINKAGE
 Cbc_setInitialSolution(Cbc_Model *model, const double *sol)
 {
@@ -1437,6 +1457,21 @@ Cbc_solve(Cbc_Model *model)
       model->model_->passInEventHandler(cbc_eh);
     }
 
+    // checks if some cut generator is also applied to integer solutions
+    bool lazyConstraints = false;
+    for ( int i=0 ; (i<model->model_->numberCutGenerators()) ; ++i )
+      if (model->model_->cutGenerator(i)->atSolution()) {
+        lazyConstraints  = true;
+        break;
+      }
+
+    if (lazyConstraints) {
+      OsiBabSolver defaultC;
+      defaultC.setSolverType(4);
+      model->model_->solver()->setAuxiliaryInfo(&defaultC);
+      model->model_->passInSolverCharacteristics(&defaultC);
+    }
+
     CbcMain1((int)argv.size(), &argv[0], *model->model_, cbc_callb, *model->cbcData);
 
     if (cbc_eh)
@@ -1470,11 +1505,16 @@ COINLIBAPI void COINLINKAGE Cbc_addProgrCallback(
   model->pgrAppData = appData;
 }
 
-COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
-    Cbc_Model *model, cbc_cut_callback cutcb,
-    const char *name, void *appData )
+COINLIBAPI void COINLINKAGE Cbc_addCutCallback( 
+    Cbc_Model *model, 
+    cbc_cut_callback cutcb, 
+    const char *name, 
+    void *appData, 
+    int howOften,
+    char atSolution )
 {
   bool deleteCb = false;
+  bool addNewCbcCG = true;
   assert( model != NULL );
   assert( model->model_ != NULL );
 
@@ -1488,6 +1528,7 @@ COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
     CglCallback *t = dynamic_cast<CglCallback *>(ccb->generator());
     if (t) {
       cglCb = t;
+      addNewCbcCG = false;
       break;
     }
   }
@@ -1502,9 +1543,11 @@ COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
 #ifdef CBC_THREAD
   cglCb->cbcMutex = &(model->cbcMutex);
 #endif
-
-  cbcModel->addCutGenerator( cglCb, 1, name );
-
+  
+  if (addNewCbcCG) {
+    cbcModel->addCutGenerator( cglCb, howOften, name, true, atSolution );
+  }
+  
   if (deleteCb)
     delete cglCb;
 }

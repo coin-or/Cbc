@@ -3247,8 +3247,8 @@ static char **to_char_vec( const vector< string > names )
 {
     size_t spaceVec = (sizeof(char*)*names.size());
     size_t totLen = names.size(); // all \0
-    for ( const auto &str : names )
-        totLen += str.size();
+    for ( int i=0 ; (i<(int)names.size()) ; ++i )
+        totLen += names[i].size();
     totLen *= sizeof(char);
 
     char **r = (char **)xmalloc(spaceVec+totLen);

@@ -2038,6 +2038,26 @@ Cbc_isSecondsLimitReached(Cbc_Model *model) {
 
 }
 
+COINLIBAPI int COINLINKAGE
+Cbc_isSolutionLimitReached(Cbc_Model *model) {
+  switch (model->lastOptimization) {
+    case ModelNotOptimized:
+      fprintf( stderr, "Information not available, model was not optimized yet.\n");
+      abort();
+      break;
+    case ContinuousOptimization:
+      fprintf( stderr, "Information only available when optimizing integer models.\n");
+      abort();
+      break;
+    case IntegerOptimization:
+      return model->cbcModel_->isSolutionLimitReached();
+  }
+
+  return false;
+}
+
+
+
 
 COINLIBAPI int COINLINKAGE
 Cbc_isInitialSolveAbandoned(Cbc_Model *model) {

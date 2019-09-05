@@ -56,10 +56,22 @@ typedef void(COINLINKAGE_CB *cbc_callback)(Cbc_Model *model, int msgno, int ndou
   const double *dvec, int nint, const int *ivec,
   int nchar, char **cvec);
 
-/** typedef for cbc cut callback osiSolver needs to be an OsiSolverInterface object,
- * osiCuts is an OsiCuts object and appdata is a pointer that will be passed to the cut
- * generation, you can use it to point to a data structure with information about the original problem,
- * for instance
+/** 
+ * \brief CBC cut callback
+ *  
+ * The CBC cut generation callback
+ *
+ * \param osiSolver an OsiSolverInterface object with the problem and the fractional solution
+ *        please note that if pre-processing is on then the number of variables and constraints 
+ *        in this problem will be smaller than the dimensions of the initial problem. if keepNames
+ *        is true than the original variable names will be preseved to ease the mapping of the
+ *        pre-processed variables and the original ones.
+ *
+ * \param osiCuts an OsiCuts object, where cuts should be added.
+ *
+ * \param appData optional pointer to an object contained some original problem informatio that
+ *        can be filled by the user.
+ *
  **/
 typedef void(COINLINKAGE_CB *cbc_cut_callback)(void *osiSolver, void *osiCuts, void *appdata);
 
@@ -594,9 +606,6 @@ Cbc_getElements(Cbc_Model *model);
 COINLIBAPI size_t COINLINKAGE
 Cbc_maxNameLength(Cbc_Model *model);
 
-/** Print the model */
-COINLIBAPI void COINLINKAGE
-Cbc_printModel(Cbc_Model *model, const char *argPrefix);
 /*@}*/
 
 /**@name Solver parameters */
@@ -640,16 +649,6 @@ Cbc_getAllowableFractionGap(Cbc_Model *model);
  */
 COINLIBAPI void COINLINKAGE
 Cbc_setAllowableFractionGap(Cbc_Model *model, double allowedFracionGap);
-
-/** returns the allowable percentage gap
- */
-COINLIBAPI double COINLINKAGE
-Cbc_getAllowablePercentageGap(Cbc_Model *model);
-
-/** sets the allowable percentage gap
- */
-COINLIBAPI void COINLINKAGE
-Cbc_setAllowablePercentageGap(Cbc_Model *model, double allowedPercentageGap);
 
 /** gets the tolerance for infeasibility in the LP solver
  */
@@ -810,7 +809,7 @@ Cbc_getBestPossibleObjValue(Cbc_Model *model);
   * @param model problem object
   * @return vector with the best solution found or NULL if no feasible solution was found
   **/
-COINLIBAPI double *COINLINKAGE
+COINLIBAPI const double *COINLINKAGE
 Cbc_bestSolution(Cbc_Model *model);
 
 /** @brief number of integer feasible solution saved
@@ -900,7 +899,7 @@ Cbc_getObjValue(Cbc_Model *model);
 
 /** @brief Final optimization status
   *
-  * Returns the optimization status. For more info check function
+  * Returns the optimization status of MIP models. For more info check function
   * isProvenOptimal, isProvenInfeasible, etc. Check also secondary status.
   * Possible status are:
   *
@@ -935,19 +934,6 @@ COINLIBAPI int COINLINKAGE Cbc_status(Cbc_Model *model);
   */
 COINLIBAPI int COINLINKAGE
 Cbc_secondaryStatus(Cbc_Model *model);
-
-/** Sum of primal infeasibilities */
-COINLIBAPI double COINLINKAGE
-Cbc_sumPrimalInfeasibilities(Cbc_Model *model);
-
-/** Number of primal infeasibilities */
-COINLIBAPI int COINLINKAGE
-Cbc_numberPrimalInfeasibilities(Cbc_Model *model);
-
-/** Just check solution (for external use) - sets sum of
-        infeasibilities etc */
-COINLIBAPI void COINLINKAGE
-Cbc_checkSolution(Cbc_Model *model);
 
 /** Number of iterations */
 COINLIBAPI int COINLINKAGE
@@ -986,10 +972,6 @@ Cbc_getRowActivity(Cbc_Model *model);
 /** Number of nodes explored in B&B tree */
 COINLIBAPI int COINLINKAGE
 Cbc_getNodeCount(Cbc_Model *model);
-
-/** Print the solution */
-COINLIBAPI void COINLINKAGE
-Cbc_printSolution(Cbc_Model *model);
 
 /*@}*/
 

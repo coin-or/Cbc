@@ -1589,6 +1589,15 @@ Cbc_solve(Cbc_Model *model)
 
     }
 
+    Cbc_MessageHandler *cbcmh  = NULL;
+
+    if (model->userCallBack) {
+      cbcmh = new Cbc_MessageHandler(*cbcModel->messageHandler());
+      cbcmh->setCallBack(model->userCallBack);
+      cbcmh->setModel(model);
+      cbcModel->passInMessageHandler(cbcmh);
+    }
+
     CbcSolverUsefulData cbcData;
     CbcMain0(*cbcModel, cbcData);
 
@@ -1616,6 +1625,9 @@ Cbc_solve(Cbc_Model *model)
 
     if (cbc_eh)
       delete cbc_eh;
+
+    if (cbcmh)
+      delete cbcmh;
   } catch (CoinError e) {
     fprintf( stderr, "%s ERROR: %s::%s, %s\n", "Cbc_solve",
       e.className().c_str(), e.methodName().c_str(), e.message().c_str());

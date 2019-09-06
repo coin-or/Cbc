@@ -1929,9 +1929,10 @@ Cbc_numberSavedSolutions(Cbc_Model *model)
       abort();
       break;
     case ContinuousOptimization:
-      fprintf( stderr, "Information only available when optimizing integer models.\n");
-      abort();
-      break;
+      if (model->solver_->isProvenOptimal())
+        return 1;
+      else
+        return 0;
     case IntegerOptimization:
       return model->cbcModel_->numberSavedSolutions();
   }

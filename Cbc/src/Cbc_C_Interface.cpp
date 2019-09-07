@@ -1511,46 +1511,6 @@ Cbc_solve(Cbc_Model *model)
   model->lastOptimization = IntegerOptimization;
   CbcModel *cbcModel = model->cbcModel_ = new CbcModel( *linearProgram );
 
-  // adds SOSs if any
-  Cbc_addAllSOS(model);
-
-  // adds MIPStart if any
-  Cbc_addMS( model );
-
-  // parameters
-  if (model->maximumSeconds_ != COIN_DBL_MAX)
-    cbcModel->setMaximumSeconds( model->maximumSeconds_ );
-  if ( model->maxSolutions_ != INT_MAX )
-    cbcModel->setMaximumSolutions( model->maxSolutions_ );
-  cbcModel->setAllowableGap( model->allowableGap_ );
-  cbcModel->setAllowableFractionGap( model->allowableFractionGap_ );
-  if ( model->maximumNodes_ != INT_MAX )
-    cbcModel->setMaximumNodes( model->maximumNodes_ );
-  cbcModel->setLogLevel( model->logLevel_ );
-  if ( model->cutoff_ != COIN_DBL_MAX )
-    cbcModel->setCutoff( model->cutoff_ );
-
-  int result = 0;
-  std::vector< string > argv;
-  argv.push_back("Cbc_C_Interface");
-
-  for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
-    string param = model->vcbcOptions[i];
-    string val = model->cbcOptions[param];
-    if (val.size()) {
-      stringstream ss;
-      ss << "-" << param << "=" << val;
-      argv.push_back(ss.str().c_str());
-    } else {
-      stringstream ss;
-      ss << "-" << param;
-      argv.push_back(ss.str());
-    }
-  }
-
-  argv.push_back("-solve");
-  argv.push_back("-quit");
-
   try {
     Cbc_EventHandler *cbc_eh = NULL;
     if (model->inc_callback!=NULL || model->progr_callback!=NULL)
@@ -1603,6 +1563,47 @@ Cbc_solve(Cbc_Model *model)
 
     cbcModel->solver()->setDblParam( OsiPrimalTolerance, model->primalTolerance_ );
     cbcModel->solver()->setDblParam( OsiDualTolerance, model->dualTolerance_ );
+    // adds SOSs if any
+    Cbc_addAllSOS(model);
+
+    // adds MIPStart if any
+    Cbc_addMS( model );
+
+    // parameters
+    if (model->maximumSeconds_ != COIN_DBL_MAX)
+      cbcModel->setMaximumSeconds( model->maximumSeconds_ );
+    if ( model->maxSolutions_ != INT_MAX )
+      cbcModel->setMaximumSolutions( model->maxSolutions_ );
+    cbcModel->setAllowableGap( model->allowableGap_ );
+    cbcModel->setAllowableFractionGap( model->allowableFractionGap_ );
+    if ( model->maximumNodes_ != INT_MAX )
+      cbcModel->setMaximumNodes( model->maximumNodes_ );
+    cbcModel->setLogLevel( model->logLevel_ );
+    if ( model->cutoff_ != COIN_DBL_MAX )
+      cbcModel->setCutoff( model->cutoff_ );
+
+    int result = 0;
+    std::vector< string > argv;
+    argv.push_back("Cbc_C_Interface");
+
+    for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
+      string param = model->vcbcOptions[i];
+      string val = model->cbcOptions[param];
+      if (val.size()) {
+        stringstream ss;
+        ss << "-" << param << "=" << val;
+        argv.push_back(ss.str().c_str());
+      } else {
+        stringstream ss;
+        ss << "-" << param;
+        argv.push_back(ss.str());
+      }
+    }
+
+    argv.push_back("-solve");
+    argv.push_back("-quit");
+
+
 
     cbcData.noPrinting_= false;
 

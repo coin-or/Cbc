@@ -32,6 +32,7 @@ environment:
       ADD_PATH: /mingw32/bin
 
 install:
+  - for /f "delims=" %%i in ('C:\msys64\usr\bin\bash -lc "if [ $APPVEYOR_REPO_BRANCH = 'master' ]; then echo 'master'; else echo $APPVEYOR_REPO_BRANCH | cut -d "/" -f 2; fi"') do set VERSION=%%i
   - IF %ARCH%==win32-msvc14 (CALL C:\"Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat")
   - IF %ARCH%==win32-msvc15 (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64)
   - IF %ARCH%==win32-msvc16 (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64)

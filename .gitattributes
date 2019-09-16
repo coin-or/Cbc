@@ -1,4 +1,8 @@
 * text=auto !eol
+.ci/.travis.post -text
+.ci/.travis.pre -text
+.ci/appveyor.post -text
+.ci/appveyor.pre -text
 /.clang-format -text
 .coin-or/projDesc.xml -text
 /.travis.yml -text

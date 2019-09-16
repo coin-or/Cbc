@@ -64,7 +64,7 @@ If binaries are not available for your platform for the latest version and you w
 
 Below is a quick start guide for building on common platforms. More detailed
 build instructions are
-[https://coin-or.github.io/user_introduction.html](here) (this is a work in
+[here](https://coin-or.github.io/user_introduction.html) (this is a work in
 progress).
 
 ## BUILDING from source

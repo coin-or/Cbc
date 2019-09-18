@@ -35,10 +35,11 @@ matrix:
       compiler: clang
 
 before_script:
-  - if [[ "$TRAVIS_OS_NAME $CC" == "osx clang" ]]; then  export PLATFORM=osx$OSX-x86_64-clang`clang -dumpversion`; fi
-  - if [[ "$TRAVIS_OS_NAME $CC" == "osx gcc" ]]; then  export PLATFORM=osx$OSX-x86_64-gcc`gcc -dumpversion`; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install bash gcc; clang --version; gfortran --version; fi
   - if [[ "$TRAVIS_OS_NAME $CC" == "osx gcc" ]]; then export CC=gcc-9 ; export CXX=g++-9 ; $CC --version; $CXX --version; fi
+  - if [[ "$TRAVIS_OS_NAME $CC" == "osx clang" ]]; then  export PLATFORM=osx$OSX-x86_64-clang`clang -dumpversion`; fi
+  - if [[ "$TRAVIS_OS_NAME $CC" == "osx gcc" ]]; then  export PLATFORM=osx$OSX-x86_64-gcc`gcc -dumpversion`; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then  export PLATFORM=linux-x86_64-gcc`gcc -dumpversion`; fi
   - cd ..
   - wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
   - export PROJECT_URL=https://github.com/$TRAVIS_REPO_SLUG

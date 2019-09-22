@@ -11,16 +11,52 @@ environment:
     BINTRAY_USERNAME: tkralphs
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      ARCH: win32-msvc14
+      ARCH: win32-msvc14-md
       HOST_ARCH_ARG: --enable-msvc=MD
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      ARCH: win32-msvc15
+      ARCH: win32-msvc15-md
       HOST_ARCH_ARG: --enable-msvc=MD
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      ARCH: win32-msvc16
+      ARCH: win32-msvc16-md
       HOST_ARCH_ARG: --enable-msvc=MD
+      ADD_PATH: /mingw64/bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      ARCH: win32-msvc14-mt
+      HOST_ARCH_ARG: --enable-msvc
+      ADD_PATH: /mingw64/bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      ARCH: win32-msvc15-mt
+      HOST_ARCH_ARG: --enable-msvc
+      ADD_PATH: /mingw64/bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      ARCH: win32-msvc16-mt
+      HOST_ARCH_ARG: --enable-msvc
+      ADD_PATH: /mingw64/bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      ARCH: win32-msvc14-mdd
+      HOST_ARCH_ARG: --enable-msvc=MD --enable-debug
+      ADD_PATH: /mingw64/bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      ARCH: win32-msvc15-mdd
+      HOST_ARCH_ARG: --enable-msvc=MD --enable-debug
+      ADD_PATH: /mingw64/bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      ARCH: win32-msvc16-mdd
+      HOST_ARCH_ARG: --enable-msvc=MD --enable-debug
+      ADD_PATH: /mingw64/bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      ARCH: win32-msvc14-mtd
+      HOST_ARCH_ARG: --enable-msvc --enable-debug
+      ADD_PATH: /mingw64/bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      ARCH: win32-msvc15-mtd
+      HOST_ARCH_ARG: --enable-msvc --enable-debug
+      ADD_PATH: /mingw64/bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      ARCH: win32-msvc16-mtd
+      HOST_ARCH_ARG: --enable-msvc --enable-debug
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: x86_64-w64-mingw32

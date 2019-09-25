@@ -26,6 +26,7 @@
 #include "CoinMessageHandler.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "CglCutGenerator.hpp"
+#include "CglStored.hpp"
 #include "CbcCutGenerator.hpp"
 #include <OsiAuxInfo.hpp>
 
@@ -222,6 +223,9 @@ struct Cbc_Model {
   double dualTolerance_;
   double cutoff_;
   double maximumSeconds_;
+
+  // lazy constraints
+  CglStored *lazyConstrs;
 };
 
 //  bobe including extras.h to get strdup()
@@ -992,6 +996,8 @@ Cbc_newModel()
   pthread_mutex_init(&(model->cbcMutex), NULL);
 #endif
 
+  model->lazyConstrs = NULL;
+
   return model;
 }
 
@@ -1038,6 +1044,9 @@ Cbc_deleteModel(Cbc_Model *model)
     }
     free(model->colValuesMS);
   }
+
+  if (model->lazyConstrs)
+    delete model->lazyConstrs;
 
   delete model;
 }
@@ -1482,7 +1491,6 @@ Cbc_solve(Cbc_Model *model)
   }
 #endif
 
-
   if (solver->getNumIntegers() == 0 || model->relax_ == 1) {
     model->lastOptimization = ContinuousOptimization;
 
@@ -1502,7 +1510,6 @@ Cbc_solve(Cbc_Model *model)
 
 
   // MIP Optimization
-
   if (model->cbcModel_) {
     delete model->cbcModel_;
   }
@@ -1512,6 +1519,11 @@ Cbc_solve(Cbc_Model *model)
   CbcModel *cbcModel = model->cbcModel_ = new CbcModel( *linearProgram );
 
   try {
+    if (model->lazyConstrs) {
+      cbcModel->addCutGenerator(model->lazyConstrs, 1, "Stored LazyConstraints", true, 1);
+      model->cutCBAtSol = 1;
+    }
+
     Cbc_EventHandler *cbc_eh = NULL;
     if (model->inc_callback!=NULL || model->progr_callback!=NULL)
     {
@@ -1546,7 +1558,6 @@ Cbc_solve(Cbc_Model *model)
       cglCb.cbcMutex = &(model->cbcMutex);
 #endif
       cbcModel->addCutGenerator( &cglCb, model->cutCBhowOften, model->cutCBName.c_str(), true, model->cutCBAtSol );
-
     }
 
     Cbc_MessageHandler *cbcmh  = NULL;
@@ -1603,8 +1614,6 @@ Cbc_solve(Cbc_Model *model)
     argv.push_back("-solve");
     argv.push_back("-quit");
 
-
-
     cbcData.noPrinting_= false;
 
     char **charCbcOpts = to_char_vec(argv);
@@ -1614,7 +1623,6 @@ Cbc_solve(Cbc_Model *model)
     OsiBabSolver defaultC;
     if (model->cutCBAtSol) {
       defaultC.setSolverType(4);
-      //model->solver_->setAuxiliaryInfo(&defaultC);
       model->cbcModel_->solver()->setAuxiliaryInfo(&defaultC);
       model->cbcModel_->passInSolverCharacteristics(&defaultC);
     }
@@ -2485,6 +2493,49 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   }
 
   Cbc_addRowBuffer(model, nz, cols, coefs, rowLB, rowUB, name);
+}
+
+
+COINLIBAPI void COINLINKAGE
+Cbc_addLazyConstraint(Cbc_Model *model, int nz,
+  int *cols, double *coefs, char sense, double rhs)
+{
+  if (model->lazyConstrs==NULL)
+    model->lazyConstrs = new CglStored();
+
+  OsiRowCut orc;
+  orc.setRow( nz, cols, coefs );
+
+  orc.setLb(-DBL_MAX);
+  orc.setUb(DBL_MAX);
+
+  switch (toupper(sense)) {
+  case '=':
+    orc.setLb(rhs);
+    orc.setUb(rhs);
+    break;
+  case 'E':
+    orc.setLb(rhs);
+    orc.setUb(rhs);
+    break;
+  case '<':
+    orc.setUb(rhs);
+    break;
+  case 'L':
+    orc.setUb(rhs);
+    break;
+  case '>':
+    orc.setLb(rhs);
+    break;
+  case 'G':
+    orc.setLb(rhs);
+    break;
+  default:
+    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    abort();
+  }
+
+  model->lazyConstrs->addCut(orc);
 }
 
 COINLIBAPI void COINLINKAGE

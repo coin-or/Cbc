@@ -149,6 +149,18 @@ COINLIBAPI void COINLINKAGE
 Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   const int *cols, const double *coefs, char sense, double rhs);
 
+
+/** @brief Adds a lazy constraint
+ *
+ *  This method adds a lazy constraint, i.e. a constraint
+ *  that will be included in the model only after the first
+ *  integer solution violating it is generated. 
+ *
+ **/
+COINLIBAPI void COINLINKAGE
+Cbc_addLazyConstraint(Cbc_Model *model, int nz,
+  int *cols, double *coefs, char sense, double rhs);
+
 /** @brief Deletes some rows
  *
  *  Deletes some rows from the model

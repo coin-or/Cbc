@@ -3104,6 +3104,16 @@ Osi_setColLower(void *osi, int elementIndex, double lb)
   osiSolver->setColLower(elementIndex, lb);
 }
 
+/** @brief integer tolerance */
+COINLIBAPI double COINLINKAGE
+Osi_getIntegerTolerance(void *osi)
+{
+  OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
+  return osiSolver->getIntegerTolerance();
+}
+
+
+
 COINLIBAPI double COINLINKAGE
 Cbc_getAllowableGap(Cbc_Model* model)
 {

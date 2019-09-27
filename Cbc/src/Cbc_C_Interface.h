@@ -1213,6 +1213,11 @@ COINLIBAPI void COINLINKAGE
 Osi_addRow(void *osi, const char *name, int nz,
   const int *cols, const double *coefs, char sense, double rhs);
 
+/** @brief Returns the integer tolerance
+ **/ 
+COINLIBAPI double COINLINKAGE
+Osi_getIntegerTolerance(void *osi);
+
 /** @brief Deletes an OsiSolverInterface object */
 COINLIBAPI void COINLINKAGE
 Osi_deleteSolver( void *osi );

@@ -2721,6 +2721,7 @@ Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double 
   }
 
   memcpy(model->colValuesMS, colValues, sizeof(double)*count );
+  model->nColsMS = count;
 }
 
 

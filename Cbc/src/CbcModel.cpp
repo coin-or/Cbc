@@ -7166,8 +7166,10 @@ void CbcModel::addCutGenerator(CglCutGenerator *generator,
 {
   CbcCutGenerator **temp = generator_;
   generator_ = new CbcCutGenerator *[numberCutGenerators_ + 1];
-  memcpy(generator_, temp, numberCutGenerators_ * sizeof(CbcCutGenerator *));
-  delete[] temp;
+  if (temp != NULL) {
+    memcpy(generator_, temp, numberCutGenerators_ * sizeof(CbcCutGenerator *));
+    delete[] temp;
+  }
   generator_[numberCutGenerators_] = new CbcCutGenerator(this, generator, howOften, name,
     normal, atSolution, whenInfeasible, howOftenInSub,
     whatDepth, whatDepthInSub);
@@ -7186,8 +7188,10 @@ void CbcModel::addHeuristic(CbcHeuristic *generator, const char *name,
 {
   CbcHeuristic **temp = heuristic_;
   heuristic_ = new CbcHeuristic *[numberHeuristics_ + 1];
-  memcpy(heuristic_, temp, numberHeuristics_ * sizeof(CbcHeuristic *));
-  delete[] temp;
+  if (temp!= NULL) {
+    memcpy(heuristic_, temp, numberHeuristics_ * sizeof(CbcHeuristic *));
+    delete[] temp;
+  }
   int where;
   if (before < 0 || before >= numberHeuristics_) {
     where = numberHeuristics_;

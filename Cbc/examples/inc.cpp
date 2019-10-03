@@ -70,7 +70,7 @@ CbcEventHandler::CbcAction SolHandler::event(CbcEvent whichEvent)
   if ((model_->specialOptions() & 2048) == 0) {
     if ((whichEvent == solution || whichEvent == heuristicSolution)) {
       OsiSolverInterface *origSolver = model_->solver();
-      const OsiSolverInterface *pps = model_->postProcessedSolver(1);
+      const OsiSolverInterface *pps = model_->postProcessedSolver(CbcModel::CbcCurrentBestInteger);
 
       const OsiSolverInterface *solver = pps ? pps : origSolver;
 

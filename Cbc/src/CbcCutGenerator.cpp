@@ -332,9 +332,24 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       // Pass across model information in case it could be useful
       //void * saveData = solver->getApplicationData();
       //solver->setApplicationData(model_);
-      generator_->generateCuts(*solver, cs, info);
+      if (!generator_->needsOriginalModel()) {             // happy with preprocessed model
+        generator_->generateCuts(*solver, cs, info);
+      } else {
+        model_->lockThread();                        // workaround, better have thread-spec postpro
+        const OsiSolverInterface* const solverNow =
+            model_->originalSolver( info.options&128 ?           // not cached - inefficient. Not thread-safe TODO
+                                      CbcModel::CbcCurrentBestInteger : CbcModel::CbcCurrentRelaxed );
+        OsiCuts cs01;
+        generator_->generateCuts(*solverNow, cs01, info);
+        model_->unlockThread();
+        for (OsiCuts::iterator it=cs01.begin(); it!=cs01.end(); ++it) {
+          model_->preprocessCut(*it);
+        }
+        cs.insert(cs01);
+      }
       //solver->setApplicationData(saveData);
     } else {
+      assert(!generator_->needsOriginalModel());
       // Probing - return tight column bounds
       CglTreeProbingInfo *info2 = model_->probingInfo();
       bool doCuts = false;

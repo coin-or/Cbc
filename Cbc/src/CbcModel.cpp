@@ -14268,6 +14268,47 @@ void CbcModel::makePartialCut(const OsiRowCut *partialCut,
 void CbcModel::makeGlobalCuts()
 {
 }
+
+/// Remap each element in a vector, return success status
+static bool remap(CoinPackedVector& cpv, const std::vector<int>& map) {
+  const int numElem = cpv.getNumElements();
+  int* indices = cpv.getIndices();
+  for (int k=0;k<numElem;++k) {
+    if (indices[k]>=map.size() || map[indices[k]]<0) {
+      return false;
+    }
+    indices[k] = map[indices[k]];
+  }
+  return true;
+}
+
+void CbcModel::preprocessCut(OsiCut *cut) {
+  int* const origCols = originalColumns();
+  if (NULL == origCols)
+    return;
+  // set up map. Not cached - recreate every cut! TODO
+  const int nColsPre = getNumCols();
+  const int nCols = 1 + *std::max_element(origCols, origCols+nColsPre);        // just an estimate
+  std::vector<int> back(nCols, -1);
+  for (int i = 0; i < nColsPre; i++)
+    back[origCols[i]] = i;
+  /// See which kind of cut
+  if (OsiRowCut* rc = dynamic_cast<OsiRowCut*>(cut)) {
+    if (!remap( rc->mutableRow(), back ))                                  // just fail.  TODO
+      throw CoinError("OsiRowCut: variable has been preprocessed away. Run with -preprocess off",
+                      "preprocessCut", "CbcModel");
+  } else if (OsiColCut* cc = dynamic_cast<OsiColCut*>(cut)) {
+    CoinPackedVector lbs = cc->lbs(), ubs = cc->ubs();
+    if (!remap(lbs, back) || !remap(ubs, back))                                  // just fail.  TODO
+      throw CoinError("OsiColCut: variable has been preprocessed away. Run with -preprocess off",
+                               "preprocessCut", "CbcModel");
+    cc->setLbs(lbs);
+    cc->setUbs(ubs);
+  } else {
+    throw CoinError("preprocessCut: unknown cut type.", "preprocessCut", "CbcModel");
+  }
+}
+
 void CbcModel::setNodeComparison(CbcCompareBase *compare)
 {
   delete nodeCompare_;
@@ -19517,7 +19558,7 @@ CbcModel::setupCleanVariables()
    solutionType 1 is best integer so far, 0 is current solution 
    (may not be integer) */
 const OsiSolverInterface *
-CbcModel::postProcessedSolver(int solutionType)
+CbcModel::postProcessedSolver(CbcSolutionType solutionType)
 {
   CbcModel *model = this;
   CglPreProcess *processPointer = model->preProcess();
@@ -19526,7 +19567,7 @@ CbcModel::postProcessedSolver(int solutionType)
   while (processPointer) {
     int numberSolvers = processPointer->numberSolvers();
     OsiSolverInterface *solver = processPointer->presolve(numberSolvers - 1)->presolvedModel();
-    if (solutionType) {
+    if (CbcCurrentBestInteger == solutionType) {
       // massage solution
       int numberColumns = solver->getNumCols();
       double *saveLower = CoinCopyOfArray(model->solver()->getColLower(), numberColumns);
@@ -19549,8 +19590,8 @@ CbcModel::postProcessedSolver(int solutionType)
       model->solver()->setColUpper(saveUpper);
       delete[] saveLower;
       delete[] saveUpper;
+      solver->resolve();
     }
-    solver->resolve();
     processPointer->postProcess(*solver, false);
     originalModel = processPointer->originalModel();
     solution = originalModel->getColSolution();
@@ -19560,6 +19601,15 @@ CbcModel::postProcessedSolver(int solutionType)
   }
   return originalModel;
 }
+
+const OsiSolverInterface *
+CbcModel::originalSolver(CbcSolutionType solutionType)
+{
+  OsiSolverInterface *origSolver = solver();
+  const OsiSolverInterface *pps = postProcessedSolver(solutionType);
+  return pps ? pps : origSolver;
+}
+
 // Delete a node and possibly null out currentNode_
 void
 CbcModel::deleteNode(CbcNode * node)

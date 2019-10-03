@@ -2349,7 +2349,6 @@ public:
   /// From here to end of section - code in CbcThread.cpp until class changed
   /// Returns true if locked
   bool isLocked() const;
-#ifdef CBC_THREAD
   /**
        Locks a thread if parallel so that stuff like cut pool
        can be updated and/or used.
@@ -2359,12 +2358,6 @@ public:
        Unlocks a thread if parallel to say cut pool stuff not needed
     */
   void unlockThread();
-#else
-  inline void lockThread()
-  {
-  }
-  inline void unlockThread() {}
-#endif
   /** Set information in a child
         -3 pass pointer to child thread info
         -2 just stop
@@ -2430,7 +2423,6 @@ public:
     bool &resolved, CoinWarmStartBasis *lastws,
     const double *lowerBefore, const double *upperBefore,
     OsiSolverBranch *&branches);
-  int chooseBranch(CbcNode *newNode, int numberPassesLeft, bool &resolved);
 
   /** Return an empty basis object of the specified size
 
@@ -2505,8 +2497,6 @@ public:
   void synchronizeNumberBeforeTrust(int type = 0);
   /// Zap integer information in problem (may leave object info)
   void zapIntegerInformation(bool leaveObjects = true);
-  /// Use cliques for pseudocost information - return nonzero if infeasible
-  int cliquePseudoCosts(int doStatistics);
   /// Fill in useful estimates
   void pseudoShadow(int type);
   /** Return pseudo costs
@@ -3251,7 +3241,6 @@ void getIntegerInformation(const OsiObject *object, double &originalLower,
 // So we can call from other programs
 // Real main program
 class OsiClpSolverInterface;
-int CbcMain(int argc, const char *argv[], OsiClpSolverInterface &solver, CbcModel **babSolver);
 int CbcMain(int argc, const char *argv[], CbcModel &babSolver);
 // four ways of calling
 int callCbc(const char *input2, OsiClpSolverInterface &solver1);
@@ -3264,12 +3253,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &babSolver);
 // two ways of calling
 int callCbc(const char *input2, CbcModel &babSolver);
 int callCbc(const std::string input2, CbcModel &babSolver);
-// And when CbcMain0 already called to initialize
-int callCbc1(const char *input2, CbcModel &babSolver);
-int callCbc1(const std::string input2, CbcModel &babSolver);
 // And when CbcMain0 already called to initialize (with call back) (see CbcMain1 for whereFrom)
 int callCbc1(const char *input2, CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
-int callCbc1(const std::string input2, CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
 int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
 // For uniform setting of cut and heuristic options
 void setCutAndHeuristicOptions(CbcModel &model);

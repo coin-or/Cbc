@@ -1035,7 +1035,10 @@ void CbcModel::analyzeObjective()
         }
       }
     }
-    delete[] coeffMultiplier;
+    if (coeffMultiplier) {
+        delete[] coeffMultiplier;
+        coeffMultiplier = NULL;
+    }
     /*
           If the increment beats the current value for objective change, install it.
         */
@@ -1058,6 +1061,9 @@ void CbcModel::analyzeObjective()
       }
     }
   }
+
+  if (coeffMultiplier)
+      delete[] coeffMultiplier;
 
   return;
 }
@@ -5703,7 +5709,8 @@ CbcModel::CbcModel()
 */
 
 CbcModel::CbcModel(const OsiSolverInterface &rhs)
-  : continuousSolver_(NULL)
+  : ownership_(0x80000000)
+  , continuousSolver_(NULL)
   , referenceSolver_(NULL)
   , defaultHandler_(true)
   , emptyWarmStart_(NULL)
@@ -6594,7 +6601,9 @@ CbcModel::operator=(const CbcModel &rhs)
       cutModifier_ = rhs.cutModifier_->clone();
     else
       cutModifier_ = NULL;
-    delete strategy_;
+
+    if (strategy_)
+        delete strategy_;
     if (rhs.strategy_)
       strategy_ = rhs.strategy_->clone();
     else
@@ -7157,8 +7166,10 @@ void CbcModel::addCutGenerator(CglCutGenerator *generator,
 {
   CbcCutGenerator **temp = generator_;
   generator_ = new CbcCutGenerator *[numberCutGenerators_ + 1];
-  memcpy(generator_, temp, numberCutGenerators_ * sizeof(CbcCutGenerator *));
-  delete[] temp;
+  if (temp != NULL) {
+    memcpy(generator_, temp, numberCutGenerators_ * sizeof(CbcCutGenerator *));
+    delete[] temp;
+  }
   generator_[numberCutGenerators_] = new CbcCutGenerator(this, generator, howOften, name,
     normal, atSolution, whenInfeasible, howOftenInSub,
     whatDepth, whatDepthInSub);
@@ -7177,8 +7188,10 @@ void CbcModel::addHeuristic(CbcHeuristic *generator, const char *name,
 {
   CbcHeuristic **temp = heuristic_;
   heuristic_ = new CbcHeuristic *[numberHeuristics_ + 1];
-  memcpy(heuristic_, temp, numberHeuristics_ * sizeof(CbcHeuristic *));
-  delete[] temp;
+  if (temp!= NULL) {
+    memcpy(heuristic_, temp, numberHeuristics_ * sizeof(CbcHeuristic *));
+    delete[] temp;
+  }
   int where;
   if (before < 0 || before >= numberHeuristics_) {
     where = numberHeuristics_;
@@ -13809,6 +13822,7 @@ bool CbcModel::tightenVubs(int numberSolves, const int *which,
             if (newUpper < upper[jColumn] - 1.0e-8 * (fabs(upper[jColumn]) + 1) || newLower > lower[jColumn] + 1.0e-8 * (fabs(lower[jColumn]) + 1)) {
               if (newUpper < newLower) {
                 fprintf(stderr, "Problem is infeasible\n");
+                delete[] solution;
                 return false;
               }
               if (newUpper == newLower) {
@@ -13846,6 +13860,8 @@ bool CbcModel::tightenVubs(int numberSolves, const int *which,
           solver->resolve();
           if (!solver->isProvenOptimal()) {
             fprintf(stderr, "Problem is infeasible\n");
+            if (vub)
+                delete[] vub;
             return false;
           }
           delete ws;

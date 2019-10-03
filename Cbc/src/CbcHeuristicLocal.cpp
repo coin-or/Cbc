@@ -599,6 +599,7 @@ int CbcHeuristicLocal::solution(double &solutionValue,
           weight[i] = model_->randomNumberGenerator()->randomDouble();
         }
         CoinSort_2(weight, weight + numberIntegers, integerVariable);
+        delete[] weight;
       }
     }
     /*
@@ -1665,6 +1666,7 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
     returnCode &= ~2;
   }
 
+  delete[] fixed;
   delete solver;
   return returnCode;
 }

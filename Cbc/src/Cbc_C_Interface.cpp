@@ -2232,9 +2232,7 @@ Cbc_getBestPossibleObjValue(Cbc_Model *model) {
       abort();
       break;
     case ContinuousOptimization:
-      fprintf( stderr, "Information only available when optimizing integer models.\n");
-      abort();
-      break;
+      return model->cbcModel_->getBestPossibleObjValue();
     case IntegerOptimization:
       return model->cbcModel_->getBestPossibleObjValue();
   }

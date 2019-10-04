@@ -2232,7 +2232,7 @@ Cbc_getBestPossibleObjValue(Cbc_Model *model) {
       abort();
       break;
     case ContinuousOptimization:
-      return model->cbcModel_->getBestPossibleObjValue();
+      return model->solver_->getObjValue();
     case IntegerOptimization:
       return model->cbcModel_->getBestPossibleObjValue();
   }

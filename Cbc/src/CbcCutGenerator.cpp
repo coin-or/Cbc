@@ -269,7 +269,10 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 #endif
     double time1 = 0.0;
     //#undef CBC_THREAD
-#if defined(_MSC_VER) || defined(__MSVCRT__) || !defined(CBC_THREAD)
+    /* TODO there should be check in configure or the Posix version C preprocessor variable
+     * to decide whether pthread_getcpuclockid is available
+     */
+#if defined(_MSC_VER) || defined(__MSVCRT__) || defined(__APPLE__) || !defined(CBC_THREAD)
     if (timing()) 
       time1 = CoinCpuTime();
 #else
@@ -1279,7 +1282,10 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
     }
     if (timing()) {
       // Using thread clock Id get the clock time
-#if defined(_MSC_VER) || defined(__MSVCRT__) || !defined(CBC_THREAD)
+      /* TODO there should be check in configure or the Posix version C preprocessor variable
+       * to decide whether pthread_getcpuclockid is available
+       */
+#if defined(_MSC_VER) || defined(__MSVCRT__) || defined(__APPLE__) || !defined(CBC_THREAD)
       timeInCutGenerator_ += CoinCpuTime() - time1;
 #else
       if (!model_->getNumberThreads()) {

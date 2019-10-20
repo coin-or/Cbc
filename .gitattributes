@@ -92,6 +92,7 @@ Cbc/examples/presolveBefore.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/examples/simpleBAB.cpp -text
 Cbc/examples/tsp-subtour.cpp -text
+Cbc/examples/ulysses22.dist -text
 Cbc/install-sh -text
 Cbc/ltmain.sh -text
 Cbc/missing -text

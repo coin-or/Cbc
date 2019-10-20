@@ -30,7 +30,7 @@ typedef struct
 
 // receves info of tsp instance and solution, returns size of
 // subtour and fills elements in els
-int find_subtour( const TSPInfo *tspi, const double *s, int *els );
+int find_subtour( const TSPInfo *tspi, const double *s, int *els, int start );
 
 class CglSubTour : public CglCutGenerator {
 public:
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
   if (model.getColSolution()) 
   {
     int *els = new int[n];
-    int sts = find_subtour(&info, model.getColSolution(), els);
+    int sts = find_subtour(&info, model.getColSolution(), els, 0);
     if (sts) 
     {
       printf("subtour with %d elements found: ", sts);
@@ -243,19 +243,18 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
   fill(coef, coef+n*n, 1.0);
 
   int *els = new int[n];
-
-  int nnodes = find_subtour(tspi, s, els);
   char *visited = new char[n];
-  fill(visited, visited+n, 0);
-  for ( int i=0 ; (i<nnodes) ; ++i )
-    visited[els[i]] = 1;
 
-  if (nnodes)
+  for ( int startn = 0 ; (startn<n) ; startn++ )
   {
-    printf("subtour found with nodes:");
+    int nnodes = find_subtour(tspi, s, els, startn);
+    if (!nnodes)
+      break;
+
+    fill(visited, visited+n, 0);
     for ( int i=0 ; (i<nnodes) ; ++i )
-      printf(" %d", els[i]);
-    printf("\n");
+      visited[els[i]] = 1;
+
 
     OsiRowCut cut;
     int nz = 0;
@@ -267,12 +266,22 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
     cut.setRow(nz, idx, coef);
     cut.setLb(-COIN_DBL_MAX);
     cut.setUb(nnodes-1);
-    cs.insert(cut);
 
-    for ( int i=0 ; (i<nz) ; ++i )
-      printf("%+g %s", coef[i], si.getColName(idx[i]).c_str());
-    printf("<= %d\n", nnodes-1); fflush(stdout);
-    printf("");
+    int ncuts = cs.sizeRowCuts();
+    cs.insertIfNotDuplicate(cut);
+
+    if (cs.sizeRowCuts() > ncuts)
+    {
+      printf("subtour found with nodes:");
+      for ( int i=0 ; (i<nnodes) ; ++i )
+        printf(" %d", els[i]);
+      printf("\n");
+
+      for ( int i=0 ; (i<nz) ; ++i )
+        printf("%+g %s", coef[i], si.getColName(idx[i]).c_str());
+      printf("<= %d\n", nnodes-1); fflush(stdout);
+      printf("");
+    }
   }
 
   delete[] visited;
@@ -281,18 +290,18 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
   delete[] coef;
 }
 
-int find_subtour( const TSPInfo *tspi, const double *s, int *els )
+int find_subtour( const TSPInfo *tspi, const double *s, int *els, int start )
 {
   int n = tspi->n;
   const int **x = (const int **)tspi->x;
   char *visited = new char[n];
-  fill(visited+1, visited+n, 0);
-  visited[0] = 1;
+  fill(visited, visited+n, 0);
+  visited[start] = 1;
 
   char has_sub = 0;
   int nnodes = 1;
-  int node = 0;
-  while (true)
+  int node = start;
+  while (nnodes<n)
   {
     for (int j=0 ; j<n ; ++j )
     {

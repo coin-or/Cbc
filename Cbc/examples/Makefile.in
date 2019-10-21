@@ -29,7 +29,10 @@ EXTRAOBJS = \
 	ClpQuadInterface.@OBJEXT@ \
 	CbcBranchFollow2.@OBJEXT@ \
 	CbcBranchUser.@OBJEXT@ \
-	CbcBranchLink.@OBJEXT@
+	CbcBranchLink.@OBJEXT@ \
+	MIP_osicbc_wrap.@OBJEXT@ \
+	mip_seccutgen.@OBJEXT@ \
+	min_cut.@OBJEXT@
 
 # CHANGEME: Additional libraries
 # e.g., for driver2, put -lOsiCbc here
@@ -127,6 +130,9 @@ CLEANFILES = $(EXTRAOBJS) \
 	longthin.@OBJEXT@ longthin@EXEEXT@ \
 	lotsize.@OBJEXT@ lotsize@EXEEXT@ \
 	minimum.@OBJEXT@ minimum@EXEEXT@ \
+	min_cut.@OBJEXT@ \
+	MIP_osicbc_wrap.@OBJEXT@ \
+	mip_seccutgen.@OBJEXT@ \
 	modify.@OBJEXT@ modify@EXEEXT@ \
 	nway.@OBJEXT@ nway@EXEEXT@ \
 	qmip.@OBJEXT@ qmip@EXEEXT@ \
@@ -139,7 +145,8 @@ CLEANFILES = $(EXTRAOBJS) \
 	sample5.@OBJEXT@ sample5@EXEEXT@ \
 	simpleBAB.@OBJEXT@ simpleBAB@EXEEXT@ \
 	sos.@OBJEXT@ sos@EXEEXT@ \
-	sudoku.@OBJEXT@ sudoku@EXEEXT@
+	sudoku.@OBJEXT@ sudoku@EXEEXT@ \
+	tsp.@OBJEXT@ tsp
 
 all: $(EXE)
 

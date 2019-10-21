@@ -2043,6 +2043,18 @@ void CbcModel::branchAndBound(int doStatistics)
       // also switch off checking for restart (as preprocessing may be odd)
       specialOptions_ &= ~(512|32768);
     }
+    if (!numberOdd) {
+      // see if lazy constraints
+      bool needCuts = false;
+      for (int i = 0; i < numberCutGenerators_; i++) {
+	bool generate = generator_[i]->atSolution();
+	if (generate) {
+	  needCuts = true;
+	}
+      }
+      if (needCuts)
+	moreSpecialOptions2_ |= 65536; // lazy constraints
+    }
   }
   // If NLP then we assume already solved outside branchAndbound
   if (!solverCharacteristics_->solverType() || solverCharacteristics_->solverType() == 4) {
@@ -8457,6 +8469,28 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         << solver_->getObjValue()
         << CoinMessageEol;
     }
+    // see if looks like solution
+    bool lazy = false;
+    if ((moreSpecialOptions2_&65536)!= 0) {
+      const double * solution = solver_->getColSolution();
+      const double * lower = solver_->getColLower();
+      const double * upper = solver_->getColUpper();
+      double integerTolerance = getIntegerTolerance();
+      int iLook;
+      for (iLook=0;iLook<numberIntegers_;iLook++) {
+	int iColumn = integerVariable_[iLook];
+	double value = solution[iColumn];
+	value = CoinMax(value, lower[iColumn]);
+	value = CoinMin(value, upper[iColumn]);
+	double nearest = floor(value + 0.5);
+	if (fabs(value-nearest)>integerTolerance)
+	  break;
+      }
+      if (iLook==numberIntegers_) { 
+	keepGoing = true; // say must go round
+	lazy = true;
+      }
+    }
     //Is Necessary for Bonmin? Always keepGoing if cuts have been generated in last iteration (taken from similar code in Cbc-2.4)
     if (solverCharacteristics_->solutionAddsCuts() && numberViolated) {
       for (i = 0; i < numberCutGenerators_; i++) {
@@ -8466,7 +8500,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         }
       }
     }
-    if (!keepGoing) {
+    if (!keepGoing || lazy) {
       // Status for single pass of cut generation
       int status = 0;
       /*
@@ -8919,6 +8953,11 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         }
         unlockThread();
       }
+      numberTries = 0;
+      keepGoing = false;
+    }
+    if (numberRowCuts == 0 && numberColumnCuts == 0 &&
+	(moreSpecialOptions2_&65536) !=0) {
       numberTries = 0;
       keepGoing = false;
     }
@@ -9956,6 +9995,8 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts, 
     int numberAfter = numberRowCutsAfter + lastNumberCuts;
     // possibly extend whichGenerator
     resizeWhichGenerator(numberBefore, numberAfter);
+    if (!numberRowCutsAfter && !numberColumnCutsAfter && (moreSpecialOptions2_&65536)!=0)
+      break;
     int j;
 
     /*
@@ -13192,6 +13233,16 @@ void CbcModel::setBestSolution(CBC_Message how,
       // Pretend solution never happened
       objectiveValue = cutoff + 1.0e30;
     }
+    /*
+      Now step through the cut generators and see if any of them are flagged to
+      run when a new solution is discovered. Only global cuts are useful. (The
+      solution being evaluated may not correspond to the current location in the
+      search tree --- discovered by heuristic, for example.)
+    */
+    if (!reallyValid()) {
+      // Don't take
+      objectiveValue = cutoff + 1.0e30;
+    }
     if (objectiveValue > cutoff || objectiveValue > 1.0e30) {
       if (objectiveValue > 1.0e30)
         handler_->message(CBC_NOTFEAS1, messages_) << CoinMessageEol;
@@ -13271,58 +13322,6 @@ void CbcModel::setBestSolution(CBC_Message how,
           << CoinMessageEol;
         dealWithEventHandler(CbcEventHandler::heuristicSolution,
           objectiveValue, solution);
-      }
-      /*
-              Now step through the cut generators and see if any of them are flagged to
-              run when a new solution is discovered. Only global cuts are useful. (The
-              solution being evaluated may not correspond to the current location in the
-              search tree --- discovered by heuristic, for example.)
-            */
-      OsiCuts theseCuts;
-      int i;
-      int lastNumberCuts = 0;
-      // reset probing info
-      //if (probingInfo_)
-      //probingInfo_->initializeFixing();
-      for (i = 0; i < numberCutGenerators_; i++) {
-        bool generate = generator_[i]->atSolution();
-        // skip if not optimal and should be (maybe a cut generator has fixed variables)
-        if (generator_[i]->needsOptimalBasis() && !solver_->basisIsAvailable())
-          generate = false;
-        if (generate) {
-          generator_[i]->generateCuts(theseCuts, 1, solver_, NULL);
-          int numberCuts = theseCuts.sizeRowCuts();
-          for (int j = lastNumberCuts; j < numberCuts; j++) {
-            const OsiRowCut *thisCut = theseCuts.rowCutPtr(j);
-            if (thisCut->globallyValid()) {
-              if ((specialOptions_ & 1) != 0) {
-                /* As these are global cuts -
-                                   a) Always get debugger object
-                                   b) Not fatal error to cutoff optimal (if we have just got optimal)
-                                */
-                const OsiRowCutDebugger *debugger = solver_->getRowCutDebuggerAlways();
-                if (debugger) {
-                  if (debugger->invalidCut(*thisCut))
-                    printf("ZZZZ Global cut - cuts off optimal solution!\n");
-                }
-              }
-              // add to global list
-              OsiRowCut newCut(*thisCut);
-              newCut.setGloballyValid(true);
-              newCut.mutableRow().setTestForDuplicateIndex(false);
-              globalCuts_.addCutIfNotDuplicate(newCut);
-              generator_[i]->incrementNumberCutsInTotal();
-            }
-          }
-        }
-      }
-      int numberCuts = theseCuts.sizeColCuts();
-      for (i = 0; i < numberCuts; i++) {
-        const OsiColCut *thisCut = theseCuts.colCutPtr(i);
-        if (thisCut->globallyValid()) {
-          // fix
-          makeGlobalCut(thisCut);
-        }
       }
     }
   } else {
@@ -19567,5 +19566,62 @@ CbcModel::deleteNode(CbcNode * node)
   delete node;
   if (node==currentNode_)
     currentNode_ = NULL;
+}
+// Check if a solution is really valid e.g. lazy constraints
+// Returns true if ok or normal cuts (i.e. no atSolution ones)
+bool
+CbcModel::reallyValid()
+{
+  if ((moreSpecialOptions2_&65536)==0)
+    return true;
+  /*
+    Now step through the cut generators and see if any of them are flagged to
+    run when a new solution is discovered. Only global cuts are useful. (The
+    solution being evaluated may not correspond to the current location in the
+    search tree --- discovered by heuristic, for example.)
+  */
+  OsiCuts theseCuts;
+  int lastNumberCuts = 0;
+  for (int i = 0; i < numberCutGenerators_; i++) {
+    bool generate = generator_[i]->atSolution();
+    // skip if not optimal and should be (maybe a cut generator has fixed variables)
+    if (generator_[i]->needsOptimalBasis() && !solver_->basisIsAvailable())
+      generate = false;
+    if (generate) {
+      generator_[i]->generateCuts(theseCuts, 1, solver_, NULL);
+      int numberCuts = theseCuts.sizeRowCuts();
+      for (int j = lastNumberCuts; j < numberCuts; j++) {
+	const OsiRowCut *thisCut = theseCuts.rowCutPtr(j);
+	if (thisCut->globallyValid()) {
+	  if ((specialOptions_ & 1) != 0) {
+	    /* As these are global cuts -
+	       a) Always get debugger object
+	       b) Not fatal error to cutoff optimal (if we have just got optimal)
+	    */
+	    const OsiRowCutDebugger *debugger = solver_->getRowCutDebuggerAlways();
+	    if (debugger) {
+	      if (debugger->invalidCut(*thisCut))
+		printf("ZZZZ Global cut - cuts off optimal solution!\n");
+	    }
+	  }
+	  // add to global list
+	  OsiRowCut newCut(*thisCut);
+	  newCut.setGloballyValid(true);
+	  newCut.mutableRow().setTestForDuplicateIndex(false);
+	  globalCuts_.addCutIfNotDuplicate(newCut);
+	  generator_[i]->incrementNumberCutsInTotal();
+	}
+      }
+    }
+  }
+  int numberCuts = theseCuts.sizeColCuts();
+  for (int i = 0; i < numberCuts; i++) {
+    const OsiColCut *thisCut = theseCuts.colCutPtr(i);
+    if (thisCut->globallyValid()) {
+      // fix
+      makeGlobalCut(thisCut);
+    }
+  }
+  return (theseCuts.sizeRowCuts() == 0 && theseCuts.sizeColCuts() == 0);
 }
 

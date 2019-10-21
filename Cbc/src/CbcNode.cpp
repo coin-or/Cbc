@@ -3205,6 +3205,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               // See if integer solution
               feasibleSolution = model->feasibleSolution(choice.numIntInfeasDown,
                 choice.numObjInfeasDown);
+	      // Check no odd cuts
+	      if (feasibleSolution)
+		feasibleSolution = model->reallyValid();
               if (feasibleSolution
                 && model->problemFeasibility()->feasible(model, -1) >= 0) {
                 if (auxiliaryInfo->solutionAddsCuts()) {
@@ -3419,6 +3422,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               // See if integer solution
               feasibleSolution = model->feasibleSolution(choice.numIntInfeasUp,
                 choice.numObjInfeasUp);
+	      // Check no odd cuts
+	      if (feasibleSolution)
+		feasibleSolution = model->reallyValid();
               if (feasibleSolution
                 && model->problemFeasibility()->feasible(model, -1) >= 0) {
 #ifdef BONMIN

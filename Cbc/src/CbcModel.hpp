@@ -1348,6 +1348,9 @@ public:
   CbcEventHandler::CbcAction dealWithEventHandler(CbcEventHandler::CbcEvent event,
     double objValue,
     const double *solution);
+  /// Check if a solution is really valid e.g. lazy constraints
+  /// Returns true if ok or normal cuts (i.e. no atSolution ones)
+  bool reallyValid();
 
   /** Call this to really test if a valid solution can be feasible
         Solution is number columns in size.
@@ -2104,6 +2107,7 @@ public:
 	11/12 bit 2048 - intermittent cuts
 	13/14 bit 8192 - go to bitter end in strong branching (first time)
 	15 bit 32768 - take care of very very small values for Integer/SOS variables
+	16 bit 65536 - lazy constraints
     */
   inline void setMoreSpecialOptions2(int value)
   {

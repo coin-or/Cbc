@@ -4141,6 +4141,21 @@ int CbcMain1(int argc, const char *argv[],
               bool hasTimePreproc = !babModel_->maximumSecondsReached();
               if (!hasTimePreproc)
                 preProcess = 0;
+	      // See if we need to skip preprocessing
+	      if (preProcess) {
+		int numberGenerators = model_.numberCutGenerators();
+		int iGenerator;
+		for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
+		  CbcCutGenerator *generator = babModel_->cutGenerator(iGenerator);
+		  if (generator->atSolution())
+		    break;
+		}
+		if (iGenerator < numberGenerators) {
+		  preProcess = 0;
+                  printGeneralMessage(model_,
+				      "PreProcessing switched off due to lazy constraints");
+		}
+	      }
               if (preProcess && type == CBC_PARAM_ACTION_BAB) {
                 saveSolver = babModel_->solver()->clone();
                 /* Do not try and produce equality cliques and

@@ -2290,6 +2290,7 @@ Cbc_bestSolution(Cbc_Model *model)
 COINLIBAPI int COINLINKAGE
 Cbc_isInteger(Cbc_Model *model, int i)
 {
+  Cbc_flush(model);
   VALIDATE_COL_INDEX( i, model );
   return model->solver_->isInteger(i);
 }

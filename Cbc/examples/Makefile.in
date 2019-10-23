@@ -29,10 +29,7 @@ EXTRAOBJS = \
 	ClpQuadInterface.@OBJEXT@ \
 	CbcBranchFollow2.@OBJEXT@ \
 	CbcBranchUser.@OBJEXT@ \
-	CbcBranchLink.@OBJEXT@ \
-	MIP_osicbc_wrap.@OBJEXT@ \
-	mip_seccutgen.@OBJEXT@ \
-	min_cut.@OBJEXT@
+	CbcBranchLink.@OBJEXT@
 
 # CHANGEME: Additional libraries
 # e.g., for driver2, put -lOsiCbc here

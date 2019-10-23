@@ -71,9 +71,6 @@ Cbc/config.guess -text
 Cbc/config.sub -text
 Cbc/depcomp -text
 Cbc/doxydoc/doxygen.conf.in -text
-Cbc/examples/MIP_osicbc_wrap.cpp -text
-Cbc/examples/MIP_osicbc_wrap.hh -text
-Cbc/examples/MIP_wrap.hh -text
 Cbc/examples/Makefile.in -text
 Cbc/examples/allCuts.cpp -text
 Cbc/examples/att48.dist -text
@@ -87,10 +84,6 @@ Cbc/examples/driver6.cpp -text
 Cbc/examples/driverFat.cpp -text
 Cbc/examples/inc.cpp -text
 Cbc/examples/interrupt.cpp -text
-Cbc/examples/min_cut.cpp -text
-Cbc/examples/min_cut.h -text
-Cbc/examples/mip_seccutgen.cpp -text
-Cbc/examples/mip_seccutgen.h -text
 Cbc/examples/modify.cpp -text
 Cbc/examples/modk.c -text
 Cbc/examples/parallel.cpp -text
@@ -102,7 +95,6 @@ Cbc/examples/tsp-subtour-mincut.cpp -text
 Cbc/examples/tsp-subtour.cpp -text
 Cbc/examples/tsp_euclid_12.json -text
 Cbc/examples/ulysses22.dist -text
-Cbc/examples/utils.hh -text
 Cbc/install-sh -text
 Cbc/ltmain.sh -text
 Cbc/missing -text

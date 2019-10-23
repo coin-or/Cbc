@@ -2229,9 +2229,7 @@ Cbc_getBestPossibleObjValue(Cbc_Model *model) {
       abort();
       break;
     case ContinuousOptimization:
-      fprintf( stderr, "Information only available when optimizing integer models.\n");
-      abort();
-      break;
+      return model->solver_->getObjValue();
     case IntegerOptimization:
       return model->cbcModel_->getBestPossibleObjValue();
   }
@@ -2289,6 +2287,7 @@ Cbc_bestSolution(Cbc_Model *model)
 COINLIBAPI int COINLINKAGE
 Cbc_isInteger(Cbc_Model *model, int i)
 {
+  Cbc_flush(model);
   VALIDATE_COL_INDEX( i, model );
   return model->solver_->isInteger(i);
 }

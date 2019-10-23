@@ -483,7 +483,7 @@ struct TSPIO {
   };
 };
 /// The function for reading instance data
-void readTSP(std::istream& is, TSPIO::Input::InstanceData& dat);
+void readTSP(std::istream& is, TSPIO::Input::InstanceData& dat, bool fJSON);
 /// The function solving TSP
 int solveTSP(const TSPIO::Input& inp, TSPIO::Output& outp);
 
@@ -554,8 +554,17 @@ namespace MiniZinc {
      std::ostringstream oss; oss << "not " << #c << ":  " << e; \
      throw std::runtime_error( oss.str() ); } } while (0)
 
-  inline bool beginswith(std::string s, std::string t) {
+  inline bool beginswith(const std::string& s, const std::string& t) {
     return s.compare(0, t.length(), t)==0;
+  }
+
+  /// https://stackoverflow.com/questions/874134/find-out-if-string-ends-with-another-string-in-c
+  inline bool endswith(std::string const &fullString, std::string const &ending) {
+      if (fullString.length() >= ending.length()) {
+          return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+      } else {
+          return false;
+      }
   }
 
   inline void checkIOStatus( bool fOk, std::string msg, bool fHard=1 )
@@ -773,7 +782,8 @@ int runTSPApp(int argc, const char* const *argv) {
       if (getParams().fVerbose)
         std::cout << "Reading instance from '" << d_inpFile << "'..." << std::endl;
       std::ifstream ifs(d_inpFile);
-      readTSP(ifs, d_inp.dat);
+      readTSP(ifs, d_inp.dat,
+              MiniZinc::endswith(d_inpFile, ".json") || MiniZinc::endswith(d_inpFile, ".JSON"));
       if (!ifs.good())
         throw std::runtime_error("I/O error.");
       if (getParams().fVerbose)
@@ -799,7 +809,14 @@ int runTSPApp(int argc, const char* const *argv) {
   return tspApp.run();
 }
 
-void readTSP(std::istream& is, TSPIO::Input::InstanceData& dat) {
+void readTSP_dist(std::istream& is, TSPIO::Input::InstanceData& dat) {
+  is >> dat.n;
+  dat.dist.resize(dat.n * dat.n);
+  for (int ij=0; (ij<dat.n*dat.n); ++ij) {
+    is >> dat.dist[ij];
+  }
+}
+void readTSP_json(std::istream& is, TSPIO::Input::InstanceData& dat) {
   pt::ptree pTree;
   pt::read_json(is, pTree);
   /// Could understand several input styles
@@ -825,6 +842,12 @@ void readTSP(std::istream& is, TSPIO::Input::InstanceData& dat) {
             std::sqrt(std::pow(X[i]-X[j], 2.0) + std::pow(Y[j]-Y[i], 2.0));
   } else
     throw std::runtime_error("None of input styles recognized.");
+}
+void readTSP(std::istream& is, TSPIO::Input::InstanceData& dat, bool fJSON) {
+  if (fJSON)
+    readTSP_json(is, dat);
+  else
+    readTSP_dist(is, dat);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////

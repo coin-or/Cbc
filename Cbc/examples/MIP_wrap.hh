@@ -48,7 +48,7 @@ class MIP_wrapper {
 public:
   class Options  {
   public:
-    bool fVerbose=false;
+    bool fVerbose=true;
     int nThreads=1;
     std::string sExportModel;
     int nTimeout=0;

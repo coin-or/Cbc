@@ -335,7 +335,8 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       // Pass across model information in case it could be useful
       //void * saveData = solver->getApplicationData();
       //solver->setApplicationData(model_);
-      if (!generator_->needsOriginalModel()) {             // happy with preprocessed model
+      if (!generator_->needsOriginalModel() ||                     // happy with preprocessed model
+            NULL==model_->preProcess()) {                           // or, no preprocessing
         generator_->generateCuts(*solver, cs, info);
       } else {
         model_->lockThread();                        // workaround, better have thread-spec postpro

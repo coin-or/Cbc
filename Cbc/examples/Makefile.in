@@ -146,7 +146,7 @@ CLEANFILES = $(EXTRAOBJS) \
 	simpleBAB.@OBJEXT@ simpleBAB@EXEEXT@ \
 	sos.@OBJEXT@ sos@EXEEXT@ \
 	sudoku.@OBJEXT@ sudoku@EXEEXT@ \
-	tsp.@OBJEXT@ tsp
+	tsp-subtour-mincut.@OBJEXT@ tsp-subtour-mincut
 
 all: $(EXE)
 

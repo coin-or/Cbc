@@ -55,7 +55,7 @@ struct TSPIO {
       int fMTZ=1;                      // whether to use MTZ formulation
       int fSEC=1;                      // whether to use SEC cuts
 
-      bool fVerbose=false;
+      bool fVerbose=true;
     };
     Param prm;
     /// Strictly speaking, this is already method's options

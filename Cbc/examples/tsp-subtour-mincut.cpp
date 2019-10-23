@@ -1985,6 +1985,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
              rc.setUb(cut.rhs);
            }
            rc.setRow(cut.rmatind.size(), cut.rmatind.data(), cut.rmatval.data());
+           rc.setGloballyValid(true);
            cs.insertIfNotDuplicate(rc);
          }
        }

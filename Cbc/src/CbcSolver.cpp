@@ -4146,8 +4146,10 @@ int CbcMain1(int argc, const char *argv[],
 		int numberGenerators = model_.numberCutGenerators();
 		int iGenerator;
 		for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
-		  CbcCutGenerator *generator = babModel_->cutGenerator(iGenerator);
-		  if (generator->atSolution())
+		  CglCutGenerator *generator =
+		    babModel_->cutGenerator(iGenerator)->generator();
+		  
+		  if (generator->needsOriginalModel())
 		    break;
 		}
 		if (iGenerator < numberGenerators) {

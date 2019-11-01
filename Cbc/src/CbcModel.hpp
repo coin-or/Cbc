@@ -2735,6 +2735,9 @@ private:
   /// A copy of the solver, taken at constructor or by saveReferenceSolver
   OsiSolverInterface *referenceSolver_;
 
+  /// A copy of the solver, taken at a solution (lazy constraints)
+  OsiSolverInterface *atSolutionSolver_;
+
   /// Message handler
   CoinMessageHandler *handler_;
 

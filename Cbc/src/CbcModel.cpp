@@ -2043,7 +2043,8 @@ void CbcModel::branchAndBound(int doStatistics)
       // also switch off checking for restart (as preprocessing may be odd)
       specialOptions_ &= ~(512|32768);
     }
-    if (!numberOdd) {
+    moreSpecialOptions2_ &= ~65536; // say no lazy constraints
+    if (!numberOdd && !parentModel_) {
       // see if lazy constraints
       bool needCuts = false;
       for (int i = 0; i < numberCutGenerators_; i++) {
@@ -2905,6 +2906,11 @@ void CbcModel::branchAndBound(int doStatistics)
     double infeasibility = object_[iObject]->checkInfeasibility(&usefulInfo);
     if (infeasibility)
       numberUnsatisfied++;
+  }
+  if (!numberUnsatisfied&&(moreSpecialOptions2_&65536)!=0) {
+    // lazy constraints - see if OK
+    if (!reallyValid())
+      numberUnsatisfied=1;
   }
   // replace solverType
   double *tightBounds = NULL;
@@ -4529,6 +4535,19 @@ void CbcModel::branchAndBound(int doStatistics)
           if (numberFixed * 10 < numberColumns && numberFixed * 4 < numberIntegers_)
             tryNewSearch = false;
         }
+	// check for odd cuts
+	{
+	  int iGenerator;
+	  for (iGenerator = 0; iGenerator < numberCutGenerators_; iGenerator++) {
+	    CglCutGenerator *generator =
+	      generator_[iGenerator]->generator();
+	    
+	    if (generator->needsOriginalModel())
+	      break;
+	  }
+	  if (iGenerator < numberCutGenerators_)
+	    tryNewSearch=false;
+	}
 #ifdef CONFLICT_CUTS
         // temporary
         //if ((moreSpecialOptions_&4194304)!=0)
@@ -5296,6 +5315,14 @@ void CbcModel::branchAndBound(int doStatistics)
     double increment = getDblParam(CbcModel::CbcCutoffIncrement);
     if ((specialOptions_ & 4) == 0)
       bestObjective_ += 100.0 * increment + 1.0e-3; // only set if we are going to solve
+    // if lazy constraints need solver with constraints
+    if (atSolutionSolver_) {
+      delete solver_;
+      solver_ = atSolutionSolver_;
+      delete continuousSolver_;
+      continuousSolver_ = solver_->clone();
+      atSolutionSolver_ = NULL;
+    }
     setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1);
     currentNode_ = NULL;
     continuousSolver_->resolve();
@@ -5544,6 +5571,7 @@ CbcModel::CbcModel()
   , ownership_(0x80000000)
   , continuousSolver_(NULL)
   , referenceSolver_(NULL)
+  , atSolutionSolver_(NULL)
   , defaultHandler_(true)
   , emptyWarmStart_(NULL)
   , bestObjective_(COIN_DBL_MAX)
@@ -5724,6 +5752,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   : ownership_(0x80000000)
   , continuousSolver_(NULL)
   , referenceSolver_(NULL)
+  , atSolutionSolver_(NULL)
   , defaultHandler_(true)
   , emptyWarmStart_(NULL)
   , bestObjective_(COIN_DBL_MAX)
@@ -5882,6 +5911,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   messages_ = CbcMessage();
   //eventHandler_ = new CbcEventHandler() ;
   referenceSolver_ = solver_->clone();
+  atSolutionSolver_ = NULL;
   ownership_ = 0x80000000;
   cbcColLower_ = NULL;
   cbcColUpper_ = NULL;
@@ -6044,6 +6074,7 @@ CbcModel *CbcModel::clone(bool cloneHandler)
 CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   : continuousSolver_(NULL)
   , referenceSolver_(NULL)
+  , atSolutionSolver_(NULL)
   , defaultHandler_(rhs.defaultHandler_)
   , emptyWarmStart_(NULL)
   , bestObjective_(rhs.bestObjective_)
@@ -6210,6 +6241,10 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
     referenceSolver_ = rhs.referenceSolver_->clone();
   else
     referenceSolver_ = NULL;
+  if (rhs.atSolutionSolver_)
+    atSolutionSolver_ = rhs.atSolutionSolver_->clone();
+  else
+    atSolutionSolver_ = NULL;
   solver_ = rhs.solver_->clone();
   if (rhs.originalColumns_) {
     int numberColumns = solver_->getNumCols();
@@ -6387,6 +6422,13 @@ CbcModel::operator=(const CbcModel &rhs)
       referenceSolver_ = rhs.referenceSolver_->clone();
     } else {
       referenceSolver_ = NULL;
+    }
+    
+    delete atSolutionSolver_;
+    if (rhs.atSolutionSolver_) {
+      atSolutionSolver_ = rhs.atSolutionSolver_->clone();
+    } else {
+      atSolutionSolver_ = NULL;
     }
 
     delete emptyWarmStart_;
@@ -6723,6 +6765,8 @@ void CbcModel::gutsOfDestructor()
 {
   delete referenceSolver_;
   referenceSolver_ = NULL;
+  delete atSolutionSolver_;
+  atSolutionSolver_ = NULL;
   int i;
   for (i = 0; i < numberCutGenerators_; i++) {
     delete generator_[i];
@@ -13118,6 +13162,12 @@ void CbcModel::setBestSolution(CBC_Message how,
     printf("obj %g\n", newTrueSolutionValue);
   }
 #endif
+  OsiSolverInterface * saveContinuousSolver = NULL;
+  if ((moreSpecialOptions2_&65536)!=0) {
+    // May need cuts that are there
+    saveContinuousSolver = continuousSolver_;
+    continuousSolver_ = solver_->clone();
+  }
   if (!solverCharacteristics_->solutionAddsCuts()) {
     // Can trust solution
     double cutoff = getCutoff();
@@ -13233,13 +13283,27 @@ void CbcModel::setBestSolution(CBC_Message how,
       // Pretend solution never happened
       objectiveValue = cutoff + 1.0e30;
     }
+    if ((moreSpecialOptions2_&65536)!=0) {
+      const double *colsol = solver_->getColSolution();
+      for (int i = 0; i < numberIntegers_; i++) {
+	int iColumn = integerVariable_[i];
+	double value = colsol[iColumn];
+	double nearest = floor(value+0.5);
+	if (fabs(value-nearest)>1.0e-4) {
+	  //printf("bad value of %g at %d\n",value,iColumn);
+	  // Pretend solution never happened
+	  objectiveValue = cutoff + 1.0e30;
+	  break;
+	}
+      }
+    }
     /*
       Now step through the cut generators and see if any of them are flagged to
       run when a new solution is discovered. Only global cuts are useful. (The
       solution being evaluated may not correspond to the current location in the
       search tree --- discovered by heuristic, for example.)
     */
-    if (!reallyValid()) {
+    if (!reallyValid() && objectiveValue < 1.0e20) {
       // Don't take
       objectiveValue = cutoff + 1.0e30;
     }
@@ -13449,6 +13513,11 @@ void CbcModel::setBestSolution(CBC_Message how,
     delete[] candidate;
   }
   delete[] solution;
+  if (saveContinuousSolver) {
+    // restore
+    delete continuousSolver_;
+    continuousSolver_ = saveContinuousSolver;
+  }
   return;
 }
 // Deals with event handler and solution
@@ -13933,6 +14002,8 @@ void CbcModel::passInMessageHandler(CoinMessageHandler *handler)
     continuousSolver_->passInMessageHandler(handler);
   if (referenceSolver_)
     referenceSolver_->passInMessageHandler(handler);
+  if (atSolutionSolver_)
+    atSolutionSolver_->passInMessageHandler(handler);
 }
 void CbcModel::passInTreeHandler(CbcTree &tree)
 {
@@ -17692,6 +17763,11 @@ void CbcModel::saveBestSolution(const double *solution, double objectiveValue)
     bestSolution_ = new double[n];
   bestObjective_ = objectiveValue;
   memcpy(bestSolution_, solution, n * sizeof(double));
+  if ((moreSpecialOptions2_&65536)!=0) {
+    // save a copy of solver with constraints
+    delete atSolutionSolver_;
+    atSolutionSolver_ = solver_->clone();
+  }
 }
 // Delete best and saved solutions
 void CbcModel::deleteSolutions()
@@ -18305,6 +18381,7 @@ void CbcModel::flipModel()
   // I think cutoff is always minimization
   double cutoff = getCutoff();
   flipSolver(referenceSolver_, cutoff);
+  flipSolver(atSolutionSolver_, cutoff);
   flipSolver(continuousSolver_, cutoff);
   flipSolver(solver_, cutoff);
 }

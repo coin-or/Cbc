@@ -767,7 +767,7 @@ int runTSPApp(int argc, const char* const *argv) {
     void printHelp() {
       std::cout
           << "CBC TSP solver." << std::endl
-          << "Usage: exe <options> input_file." << std::endl
+          << "Usage: exe <options> input_file (currently .dist or .json)." << std::endl
         << "\nGeneral options:" << std::endl
         << "  --help, -h\n    Print this help message." << std::endl
         << "  --version\n    Print version information." << std::endl

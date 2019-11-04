@@ -5323,6 +5323,20 @@ void CbcModel::branchAndBound(int doStatistics)
       continuousSolver_ = solver_->clone();
       atSolutionSolver_ = NULL;
     }
+    // was not a good idea to set max time on solvers anyway
+#if 0 //def COIN_HAS_CLP
+    OsiClpSolverInterface *clpSolver
+      = dynamic_cast< OsiClpSolverInterface * >(solver_);
+    // Reset max time on solvers if possibility of stopping
+    if (clpSolver && getMaximumSeconds()<1.0e10) {
+      OsiClpSolverInterface *continuousSolver
+	= dynamic_cast< OsiClpSolverInterface * >(continuousSolver_);
+      clpSolver->getModelPtr()->setMaximumSeconds(1.0e100);
+      clpSolver->getModelPtr()->setMaximumWallSeconds(1.0e100);
+      continuousSolver->getModelPtr()->setMaximumSeconds(1.0e100);
+      continuousSolver->getModelPtr()->setMaximumWallSeconds(1.0e100);
+    }
+#endif
     setBestSolution(CBC_END_SOLUTION, bestObjective_, bestSolution_, 1);
     currentNode_ = NULL;
     continuousSolver_->resolve();
@@ -5491,7 +5505,8 @@ void CbcModel::initialSolve()
   solverCharacteristics_->setSolver(solver_);
   solver_->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL);
   // doesn't seem to be uniform time limit
-#ifdef COIN_HAS_CLP
+  // NOT a good idea as can stop in cleanup
+#if 0 //def COIN_HAS_CLP
   OsiClpSolverInterface *clpSolver
     = dynamic_cast< OsiClpSolverInterface * >(solver_);
   if (clpSolver) {

@@ -325,6 +325,18 @@ static void putBackOtherSolutions(CbcModel * presolvedModel, CbcModel * model,
     delete [] bestSolution;
   }
 }
+// For when number of column is messed up e.g. BiLinear
+static int numberPrintingColumns(const OsiSolverInterface *solver)
+{
+#ifdef COIN_HAS_LINK
+  const OsiSolverLink *linkSolver = dynamic_cast< const OsiSolverLink * >(solver);
+  if (!linkSolver)
+    return solver->getNumCols();
+  return linkSolver->coinModel()->numberColumns();
+#else
+  return solver->getNumCols();
+#endif
+}
 
 /*
   CbcSolver class definitions
@@ -3611,6 +3623,9 @@ int CbcMain1 (int argc, const char *argv[],
 					    linkSolver->setBestObjectiveValue(bestObjectiveValue);
 					    if (solution) {
 					      linkSolver->setBestSolution(solution, solver3->getNumCols());
+					      model_.setBestSolution(solution,model_.getNumCols(),
+								     bestObjectiveValue);
+					      model_.setCutoff(bestObjectiveValue+1.0e-4);
 					    }
                                             CbcHeuristicDynamic3 dynamic(model_);
                                             dynamic.setHeuristicName("dynamic pass thru");
@@ -3638,11 +3653,13 @@ int CbcMain1 (int argc, const char *argv[],
                                                 gradient[n] = -1.0;
                                                 column[n++] = numberColumns;
                                                 storedAmpl.addCut(-COIN_DBL_MAX, offset + 1.0e-7, n, column, gradient);
+						linkSolver->addRow(n, column, gradient,
+								   -COIN_DBL_MAX, offset + 1.0e-7);
                                                 delete [] gradient;
                                                 delete [] column;
                                             }
                                             // could do three way branching round a) continuous b) best solution
-                                            printf("obj %g\n", bestObjectiveValue);
+                                            //printf("obj %g\n", bestObjectiveValue);
                                             linkSolver->initialSolve();
                                         }
                                     }
@@ -9718,7 +9735,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     }
                                 }
                                 int iColumn;
-                                int numberColumns = clpSolver->getNumCols();
+				int numberColumns = numberPrintingColumns(clpSolver);
                                 const double * dualColumnSolution =
                                     clpSolver->getReducedCost();
                                 const double * primalColumnSolution =

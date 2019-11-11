@@ -46,7 +46,7 @@ before_script:
   - wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
   - export PROJECT_URL=https://github.com/$TRAVIS_REPO_SLUG
   - export PROJECT=`echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2`
-  - bash ./coinbrew fetch $PROJECT_URL:$TRAVIS_BRANCH --no-prompt --skip-update  > /dev/null 
+  - bash ./coinbrew fetch $PROJECT_URL:$TRAVIS_BRANCH --no-prompt --skip=ThirdParty/Metis --skip-update  > /dev/null 
 
 script:
   - bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --test

@@ -73,7 +73,6 @@ Cbc/depcomp -text
 Cbc/doxydoc/doxygen.conf.in -text
 Cbc/examples/Makefile.in -text
 Cbc/examples/allCuts.cpp -text
-Cbc/examples/att48.dist -text
 Cbc/examples/barrier.cpp -text
 Cbc/examples/cbc_driverC_sos.c -text
 Cbc/examples/clpdriver.cpp -text
@@ -91,8 +90,16 @@ Cbc/examples/pool.cpp -text
 Cbc/examples/presolveBefore.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/examples/simpleBAB.cpp -text
-Cbc/examples/tsp-subtour.cpp -text
-Cbc/examples/ulysses22.dist -text
+Cbc/examples/tsp/.ycm_extra_conf.py -text
+Cbc/examples/tsp/Makefile -text
+Cbc/examples/tsp/att48.dist -text
+Cbc/examples/tsp/bays29.dist -text
+Cbc/examples/tsp/fri26.dist -text
+Cbc/examples/tsp/gr17.dist -text
+Cbc/examples/tsp/gr21.dist -text
+Cbc/examples/tsp/swiss42.dist -text
+Cbc/examples/tsp/tsp-subtour.cpp -text
+Cbc/examples/tsp/ulysses22.dist -text
 Cbc/install-sh -text
 Cbc/ltmain.sh -text
 Cbc/missing -text

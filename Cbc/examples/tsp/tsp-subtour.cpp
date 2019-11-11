@@ -19,6 +19,9 @@
 #include <cmath>
 #include <algorithm>
 
+// when separating fractional cuts
+#define MIN_VIOLATION 1e-5
+
 using namespace std;
 
 typedef struct 
@@ -28,12 +31,20 @@ typedef struct
   int **x; // indexes of x variables
 } TSPInfo;
 
-// receves info of tsp instance and solution, returns size of
+// receives info of tsp instance and an integer solution, returns size of
 // subtour and fills elements in els
 int find_subtour( const TSPInfo *tspi, const double *s, int *els, int start );
 
+
+// receives info of tsp instance and a fractional solution, returns the
+// size of the subtour found and fills elements in els
+int find_subtour_frac( const TSPInfo *tspi, const double *s, int *els, int start );
+
+// for debugging
+void print_sol(int n, const int **x, const double *s);
+
 class CglSubTour : public CglCutGenerator {
-public:
+  public:
     CglSubTour(const TSPInfo *info);
 
     CglSubTour(const CglSubTour& rhs);
@@ -41,9 +52,9 @@ public:
     virtual CglCutGenerator * clone() const;
 
     virtual void
-    generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
-		 const CglTreeInfo info = CglTreeInfo());
-   
+      generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
+          const CglTreeInfo info = CglTreeInfo());
+
     const TSPInfo *info;
 };
 
@@ -190,7 +201,7 @@ int main(int argc, char **argv)
     delete[] x[0];
     delete[] x;
   }
-  
+
   exit(0);
 }
 
@@ -211,7 +222,7 @@ CglCutGenerator *CglSubTour::clone() const
 }
 
 void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
-		 const CglTreeInfo tinfo)
+    const CglTreeInfo tinfo)
 {
   const TSPInfo *tspi = this->info;
   const double *s = si.getColSolution();
@@ -233,10 +244,9 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
 
   printf("max frac value: %g\n", maxidist);
 
-  // processing only integer solutions to include
-  // really lazy constraints
-  if (maxidist >= si.getIntegerTolerance()+1e-7)
-    return;
+  char separate_integer_sol = 0;
+  if (maxidist <= si.getIntegerTolerance())
+    separate_integer_sol = 1;
 
   int *idx = new int[n*n];
   double *coef = new double[n*n];
@@ -247,7 +257,17 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
 
   for ( int startn = 0 ; (startn<n) ; startn++ )
   {
-    int nnodes = find_subtour(tspi, s, els, startn);
+    int nnodes = 0;
+    if (separate_integer_sol)
+      nnodes = find_subtour(tspi, s, els, startn);
+    else {
+      printf("FRAC SOL:\n");
+      print_sol(n, x, s);
+      nnodes = find_subtour_frac(tspi, s, els, startn);
+      if (nnodes)
+        printf("found cut in frac sol\n");
+    }
+
     if (!nnodes)
       break;
 
@@ -255,24 +275,27 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
     for ( int i=0 ; (i<nnodes) ; ++i )
       visited[els[i]] = 1;
 
-
     OsiRowCut cut;
     int nz = 0;
     for ( int i=0 ; (i<n) ; ++i )
       for (int j=0 ; (j<n) ; ++j )
         if (i!=j && visited[i] && visited[j])
           idx[nz++] = x[i][j];
-  
+
     cut.setRow(nz, idx, coef);
     cut.setLb(-COIN_DBL_MAX);
     cut.setUb(nnodes-1);
+
+    double violation = cut.violated(s);
+    if (violation < MIN_VIOLATION)
+      continue;
 
     int ncuts = cs.sizeRowCuts();
     cs.insertIfNotDuplicate(cut);
 
     if (cs.sizeRowCuts() > ncuts)
     {
-      printf("subtour found with nodes:");
+      printf("subtour found with nodes (violation %.5f):", violation);
       for ( int i=0 ; (i<nnodes) ; ++i )
         printf(" %d", els[i]);
       printf("\n");
@@ -284,9 +307,9 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
     }
   }
 
+  delete[] idx;
   delete[] visited;
   delete[] els;
-  delete[] idx;
   delete[] coef;
 }
 
@@ -346,3 +369,110 @@ int find_subtour( const TSPInfo *tspi, const double *s, int *els, int start )
 
   return 0;
 }
+
+
+int find_subtour_frac( const TSPInfo *tspi, const double *s, int *els, int start )
+{
+  int result = 0;
+  // heuristically generates a series of sub-sets, inserting always the most connected 
+  // elemented to the already included ones and returns the most disconnected sub-set (if any)
+
+  int n = tspi->n;
+  const int **x = (const int **)tspi->x;
+  char *visited = new char[n];
+  fill(visited, visited+n, 0);
+  visited[start] = 1;
+
+  int nnodes = 1;
+  els[0] = start;
+
+  // to compute how much each node is connected to the already inserted ones
+  double *link = new double[n];
+
+  // to store which of the subsets (selected from el[0] ... el[n-1])
+  // is the most violated one
+  double most_violated = -DBL_MAX;
+
+  while (nnodes<n-1)
+  {
+    // checks for the most connected node to the node already inserted ones
+    // that still outside s
+    fill(link, link+n, 0.0);
+
+    // how much the already inserted nodes are connnected
+    double links_inside = 0.0;
+    for ( int i=0 ; (i<n) ; ++i ) { // tail
+      for ( int j=0 ; (j<n) ; ++j ) { // head
+        char tail_in_s = visited[i];
+        char head_in_s = visited[j];
+
+        switch (tail_in_s + head_in_s) {
+          case 0:
+            {
+              continue;
+            }
+          case 1:
+            {
+              if (head_in_s)
+                link[i] += s[x[i][j]];
+              else
+                link[j] += s[x[i][j]];
+              break;
+            }
+          case 2:
+            {
+              continue;
+            }
+        } // switch
+      } // head
+    } // tail
+
+    int idx_most_connected = -1;
+    double link_most_connected = -DBL_MAX;
+    for ( int i=0 ; (i<n) ; ++i ) { 
+      if (link[i] > link_most_connected) {
+        link_most_connected = link[i];
+        idx_most_connected = i;
+      }
+    }
+    links_inside += link[idx_most_connected];
+
+    // adding new node
+    els[nnodes++] = idx_most_connected;
+
+    double violation  = links_inside - (nnodes-1);
+    if (violation >= MIN_VIOLATION && violation > most_violated) {
+      most_violated = violation;
+      result = nnodes;
+    }
+  }
+
+  delete[] visited;
+  delete[] link;
+
+  return result;
+}
+
+void print_sol(int n, const int **x, const double *s) {
+  char col[256], str[256];
+  printf("    ");
+  for ( int i=0 ; (i<n) ; ++i ) {
+    sprintf(str, "%d", i);
+    printf("%7s ", str);
+  }
+  printf("\n");
+  for ( int i=0 ; (i<n) ; ++i ) {
+    sprintf(str, "%d", i);
+    printf("%3s ", str);
+
+    for ( int j=0 ; (j<n) ; ++j ) 
+      printf("%.5f ", s[x[i][j]]);
+    printf("\n");
+  }
+  printf("\n");
+}
+
+
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

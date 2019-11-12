@@ -18,9 +18,17 @@
 #include <CglCutGenerator.hpp>
 #include <cmath>
 #include <algorithm>
+#include <CoinTime.hpp>
 
 // when separating fractional cuts
 #define MIN_VIOLATION 1e-5
+
+int verbose = 1;
+
+int time_limit = 1000;
+
+// leave empty if no log log should be generated
+char results_file[] = "results.csv";
 
 using namespace std;
 
@@ -43,6 +51,9 @@ int find_subtour_frac( const TSPInfo *tspi, const double *s, int *els, int start
 // for debugging
 void print_sol(int n, const int **x, const double *s);
 
+// check in a solution which is the output arc of node i
+int out_arc(int n, const double *s, const int **x, int i);
+
 class CglSubTour : public CglCutGenerator {
   public:
     CglSubTour(const TSPInfo *info);
@@ -64,6 +75,8 @@ int main(int argc, char **argv)
     fprintf(stderr, "Enter instance name (.dist file)");
     exit(EXIT_FAILURE);
   }
+
+  double start = CoinCpuTime();
 
   int n;          // number of cities
   int **c = NULL; // distance matrix
@@ -102,6 +115,7 @@ int main(int argc, char **argv)
 
   // creating x variables
   OsiClpSolverInterface *mip = new OsiClpSolverInterface();
+  mip->messageHandler()->setLogLevel(0);
   int k = 0;
   for ( int i=0 ; (i<n) ; ++i ) {
     for ( int j=0 ; (j<n) ; ++j ) {
@@ -163,11 +177,15 @@ int main(int argc, char **argv)
 
   model.addCutGenerator( &cglst, 1, "subtour", true, true );
 
+  model.setMaximumSeconds(time_limit);
   model.branchAndBound();
+
+  double total_time = CoinCpuTime() - start;
 
   printf("Branch & Bound Finished with status: %d\n", model.status());
   printf("isProvenOptimal: %d\n", model.isProvenOptimal());
 
+  char has_subtour = 0;
   if (model.getColSolution()) 
   {
     int *els = new int[n];
@@ -178,14 +196,44 @@ int main(int argc, char **argv)
       for ( int i=0 ; (i<sts) ; ++i )
         printf(" %d", els[i]);
       printf("\n");
+      has_subtour = 1;
     }
     delete[] els;
 
     const double *s= model.getColSolution();
 
-    for ( int i=0 ; i<mip->getNumCols() ; ++i )
-      if (fabs(s[i]) >= 1e-5)
-        printf("  %s: %g\n", mip->getColName(i).c_str(), s[i]);
+    if (has_subtour == 0) {
+      int next = 0;
+      printf("Optimal route with length %g : 0 ", model.getObjValue() );
+      do {
+        next = out_arc(n, s, (const int **)x, next);
+        printf("-> %d ", next);
+      } while (next != 0);
+      printf("\n");
+      fflush(stdout);
+    }
+  }
+
+  if (strlen(results_file)){
+    char first_line = 0;
+    f = fopen(results_file, "r");
+    if (f) {
+      first_line = 0;
+      fclose(f);
+    }
+
+    char iname[256]; 
+    strcpy(iname, argv[1]);
+    char *s = strstr(iname, ".dist");
+    if (s)
+      *s = 0;
+
+    f = fopen(results_file, "a");
+    if (first_line)
+      fprintf(f, "instance,time,status,isProvenOptimal,objValue,hasSubTour\n");
+
+    fprintf(f, "%s,%.2f,%d,%d,%g,%d\n", iname, total_time, model.status(), model.isProvenOptimal(), model.getObjValue(), has_subtour );
+    fclose(f);
   }
 
   delete[] idx;
@@ -243,8 +291,12 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
   }
 
   static int cut_it = 0;
-
-  printf("\nmax frac value: %g, iteration: %d\n", maxidist, cut_it++);
+  ++cut_it;
+  
+  if (verbose == 2) {
+    printf("\nmax frac value: %g, cut generation call: %d\n", maxidist, cut_it);
+    fflush(stdout);
+  }
 
   char separate_integer_sol = 0;
   if (maxidist <= si.getIntegerTolerance())
@@ -256,6 +308,8 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
 
   int *els = new int[n];
   char *visited = new char[n];
+
+  int newCuts = 0;
 
   for ( int startn = 0 ; (startn<n) ; startn++ )
   {
@@ -295,18 +349,27 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
     int ncuts = cs.sizeRowCuts();
     cs.insertIfNotDuplicate(cut);
 
-    if (cs.sizeRowCuts() > ncuts)
-    {
-      printf("subtour found with nodes (violation %.5f):", violation);
-      for ( int i=0 ; (i<nnodes) ; ++i )
-        printf(" %d", els[i]);
-      printf("\n");
+    newCuts += (cs.sizeRowCuts() - ncuts);
 
-      for ( int i=0 ; (i<nz) ; ++i )
-        printf("%+g %s", coef[i], si.getColName(idx[i]).c_str());
-      printf("<= %d\n", nnodes-1); fflush(stdout);
-      printf("");
-    }
+    if (verbose >= 2) {
+      if (cs.sizeRowCuts() > ncuts)
+      {
+        printf("subtour found with nodes (violation %.5f):", violation);
+        for ( int i=0 ; (i<nnodes) ; ++i )
+          printf(" %d", els[i]);
+        printf("\n");
+
+        for ( int i=0 ; (i<nz) ; ++i )
+          printf("%+g %s", coef[i], si.getColName(idx[i]).c_str());
+        printf("<= %d\n", nnodes-1); fflush(stdout);
+        printf("");
+      }
+    } // verbose == 2
+  }
+
+  if (verbose == 1) {
+    printf("%d cut generation call with maxfrac: %g generated %d new sub-tour elimination constraints.\n", cut_it, maxidist, newCuts);
+    fflush(stdout);
   }
 
   delete[] idx;
@@ -477,6 +540,14 @@ void print_sol(int n, const int **x, const double *s) {
 }
 
 
+// check in a solution which is the output arc of node i
+int out_arc(int n, const double *s, const int **x, int i) {
+  for ( int j=0 ; j<n; ++j ) {
+    if (s[x[i][j]] >= 0.99)
+      return j;
+  }
+  return -1;
+}
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

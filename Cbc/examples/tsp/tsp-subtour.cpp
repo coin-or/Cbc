@@ -159,6 +159,17 @@ int main(int argc, char **argv)
   for ( int i=0 ; (i<mip->getNumCols()) ; ++i )
     mip->setInteger(i);
 
+  // 2-subtour elimination
+  /*
+  coef[0] = 1.0; coef[1] = 1.0;
+  for ( int i=0 ; (i<n-1) ; ++i ) {
+    for ( int j=i+1 ; (j<n) ; ++j ) {
+      idx[0] = x[i][j];
+      idx[1] = x[j][i];
+      mip->addRow(2, idx, coef, -COIN_DBL_MAX, 1.0);
+    }
+  }*/
+
   CbcModel model(*mip);
 
   // initial formulation is incomplete

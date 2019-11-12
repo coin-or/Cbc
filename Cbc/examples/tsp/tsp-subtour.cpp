@@ -242,7 +242,9 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
     }
   }
 
-  printf("max frac value: %g\n", maxidist);
+  static int cut_it = 0;
+
+  printf("\nmax frac value: %g, iteration: %d\n", maxidist, cut_it++);
 
   char separate_integer_sol = 0;
   if (maxidist <= si.getIntegerTolerance())
@@ -261,11 +263,11 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
     if (separate_integer_sol)
       nnodes = find_subtour(tspi, s, els, startn);
     else {
-      printf("FRAC SOL:\n");
-      print_sol(n, x, s);
+      //printf("FRAC SOL:\n");
+      //print_sol(n, x, s);
       nnodes = find_subtour_frac(tspi, s, els, startn);
-      if (nnodes)
-        printf("found cut in frac sol\n");
+      //if (nnodes)
+      //  printf("found cut in frac sol\n");
     }
 
     if (!nnodes)
@@ -393,6 +395,7 @@ int find_subtour_frac( const TSPInfo *tspi, const double *s, int *els, int start
   // is the most violated one
   double most_violated = -DBL_MAX;
 
+  double links_inside = 0.0;
   while (nnodes<n-1)
   {
     // checks for the most connected node to the node already inserted ones
@@ -400,7 +403,6 @@ int find_subtour_frac( const TSPInfo *tspi, const double *s, int *els, int start
     fill(link, link+n, 0.0);
 
     // how much the already inserted nodes are connnected
-    double links_inside = 0.0;
     for ( int i=0 ; (i<n) ; ++i ) { // tail
       for ( int j=0 ; (j<n) ; ++j ) { // head
         char tail_in_s = visited[i];
@@ -439,8 +441,10 @@ int find_subtour_frac( const TSPInfo *tspi, const double *s, int *els, int start
 
     // adding new node
     els[nnodes++] = idx_most_connected;
+    visited[idx_most_connected] = 1;
 
     double violation  = links_inside - (nnodes-1);
+    printf("violation: %g\n", violation);
     if (violation >= MIN_VIOLATION && violation > most_violated) {
       most_violated = violation;
       result = nnodes;

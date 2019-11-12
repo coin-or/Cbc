@@ -444,7 +444,7 @@ int find_subtour_frac( const TSPInfo *tspi, const double *s, int *els, int start
     visited[idx_most_connected] = 1;
 
     double violation  = links_inside - (nnodes-1);
-    printf("violation: %g\n", violation);
+    //printf("violation: %g\n", violation);
     if (violation >= MIN_VIOLATION && violation > most_violated) {
       most_violated = violation;
       result = nnodes;

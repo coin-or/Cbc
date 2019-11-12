@@ -25,7 +25,7 @@
 
 int verbose = 1;
 
-int time_limit = 1000;
+int time_limit = 3600;
 
 // leave empty if no log log should be generated
 char results_file[] = "results.csv";
@@ -215,7 +215,7 @@ int main(int argc, char **argv)
   }
 
   if (strlen(results_file)){
-    char first_line = 0;
+    char first_line = 1;
     f = fopen(results_file, "r");
     if (f) {
       first_line = 0;
@@ -232,7 +232,7 @@ int main(int argc, char **argv)
     if (first_line)
       fprintf(f, "instance,time,status,isProvenOptimal,objValue,hasSubTour\n");
 
-    fprintf(f, "%s,%.2f,%d,%d,%g,%d\n", iname, total_time, model.status(), model.isProvenOptimal(), model.getObjValue(), has_subtour );
+    fprintf(f, "%s,%.4f,%d,%d,%g,%d\n", iname, total_time, model.status(), model.isProvenOptimal(), model.getObjValue(), has_subtour );
     fclose(f);
   }
 

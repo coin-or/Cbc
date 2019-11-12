@@ -45,7 +45,7 @@ before_script:
   - bash ./coinbrew fetch $PROJECT_URL:$TRAVIS_BRANCH --no-prompt --skip=ThirdParty/Metis --skip-update  > /dev/null 
 
 script:
-  - bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --test
+  - bash ./coinbrew build $PROJECT --no-prompt --skip=ThirdParty/Metis --verbosity=2 --test
 after_script:
   - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=master; else export VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
   - export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz

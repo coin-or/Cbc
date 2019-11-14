@@ -437,6 +437,13 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
 #endif // JJF_ZERO
 
       model->checkModel();
+      OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model);
+      if (clpSolver) {
+        ClpSimplex *clps = clpSolver->getModelPtr();
+        if (clps)
+          clps->setPerturbation(50);
+      }
+
       modelC->tightenPrimalBounds(0.0, 0, true);
       model->initialSolve();
       if (modelC->dualBound() == 1.0e10) {
@@ -600,6 +607,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
     /*
   Finally, the actual call to solve the MIP with branch-and-cut.
 */
+    model->setDblParam( CbcModel::CbcAllowableGap, 0.00001 );
     model->branchAndBound();
 
 #ifdef CLP_FACTORIZATION_INSTRUMENT
@@ -658,7 +666,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
       double objActual = model->getObjValue();
       double objExpect = objValue[m];
       double tolerance = CoinMin(fabs(objActual), fabs(objExpect));
-      tolerance = CoinMax(1.0e-5, 1.0e-5 * tolerance);
+      tolerance = CoinMax(1.0e-4, 1.0e-5 * tolerance);
       //CoinRelFltEq eq(1.0e-3) ;
 
       std::cout

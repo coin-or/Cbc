@@ -82,6 +82,14 @@ build_script:
   - C:\msys64\usr\bin\bash -lc "cd C:\projects; ./coinbrew fetch https://github.com/%APPVEYOR_REPO_NAME%:%APPVEYOR_REPO_BRANCH% --no-prompt --no-third-party --skip-update"
   - C:\msys64\usr\bin\bash -lc "cd C:\projects; export PATH=$ADD_PATH:$PATH; ./coinbrew build %APPVEYOR_PROJECT_NAME% --no-prompt --no-third-party --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --verbosity 2 --test"
 after_build:
+  - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libblas.dll C:\projects\dist\bin)
+  - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\liblapack.dll C:\projects\dist\bin)
+  - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libgcc_s_seh_64-1.dll C:\projects\dist\bin)
+  - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libgfortran_64-3.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw64\bin\libblas.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw64\bin\liblapack.dll C:\projects\dist\bin)
+  - IF %ARCH%==i585-w64-mingw32 (cp C:\msys64\mingw64\bin\libgcc_s_dw2-1.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw64\bin\libgfortran-4.dll C:\projects\dist\bin)
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\bin
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\include
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\lib

@@ -607,7 +607,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
     /*
   Finally, the actual call to solve the MIP with branch-and-cut.
 */
-    model->setDblParam( CbcModel::CbcAllowableGap, 0.00001 );
+    model->setDblParam( CbcModel::CbcAllowableGap, 0.0001 );
     model->branchAndBound();
 
 #ifdef CLP_FACTORIZATION_INSTRUMENT

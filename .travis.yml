@@ -29,14 +29,10 @@ matrix:
       osx_image: xcode10
       env: OSX=10.13 
       compiler: clang
-    - os: osx
-      osx_image: xcode9.2
-      env: OSX=10.12 
-      compiler: clang      
 
 before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install bash; fi
-  - if [[ "$TRAVIS_OS_NAME $CC" == "osx gcc" ]]; then brew install gcc; export CC=gcc-9 ; export CXX=g++-9 ; $CC --version; $CXX --version; gfortran --version; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install bash gcc; fi
+  - if [[ "$TRAVIS_OS_NAME $CC" == "osx gcc" ]]; then export CC=gcc-9 ; export CXX=g++-9 ; $CC --version; $CXX --version; gfortran --version; fi
   - if [[ "$TRAVIS_OS_NAME $CC" == "osx clang" ]]; then  export PLATFORM=osx$OSX-x86_64-clang`clang -dumpversion`; fi
   - if [[ "$TRAVIS_OS_NAME $CC" == "osx gcc-9" ]]; then  export PLATFORM=osx$OSX-x86_64-gcc`gcc-9 -dumpversion`; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then  export PLATFORM=linux-x86_64-gcc`gcc -dumpversion`; fi

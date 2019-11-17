@@ -3,3 +3,7 @@
 ################################################################################
 
 /Cbc/MSVisualStudio/v10/libCbc/x64-v100-Debug
+/Cbc/MSVisualStudio/v16/libCbc/x64/Debug
+/Cbc/MSVisualStudio/v16/.vs/Cbc/v16
+/Cbc/MSVisualStudio/v16/libCbcSolver/x64/Debug
+*.user

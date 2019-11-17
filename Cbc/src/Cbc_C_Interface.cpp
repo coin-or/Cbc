@@ -10,7 +10,6 @@
 #include <cctype>
 #include <map>
 #include <string>
-#include <algorithm> 
 #ifdef CBC_THREAD
 #include <pthread.h>
 #endif
@@ -126,10 +125,10 @@ protected:
 };
 
 // command line arguments related to the lp relaxation solution
-static char cmdLPoptions[][80] = 
-  {"pertv", "idiot", "log", "seconds", "primalt", "dualt", "zerot", 
-   "pretol", "psi", "maxit", "crash", "scal" };
-static int nCmcLpOptions = 12;
+//static char cmdLPoptions[][80] = 
+//  {"pertv", "idiot", "log", "seconds", "primalt", "dualt", "zerot", 
+//   "pretol", "psi", "maxit", "crash", "scal" };
+//static int nCmcLpOptions = 12;
 
 struct Cbc_Model {
   /**
@@ -1484,110 +1483,6 @@ static void Cbc_addAllSOS( Cbc_Model *model );
 static void Cbc_addMS( Cbc_Model *model );
 
 
-std::pair<int, char **> Cbc_cmd_lp_options( Cbc_Model *model ) {
-  std::pair< int, char **> res;
-  res.first = 0;
-  res.second = NULL;
-
-  vector< string > slpo;
-  slpo.push_back("Cbc_C_Interface");
-  
-  for ( int i=0 ; (i<(int)model->vcbcOptions.size()) ; ++i ) {
-    string opt = model->vcbcOptions[i];
-    std::transform(opt.begin(), opt.end(), opt.begin(),
-        [](unsigned char c){ return std::tolower(c); });
-    
-    char isLPOption = 0;
-    for ( int j=0 ; (j<nCmcLpOptions) ; ++j ) {
-      if (strstr(cmdLPoptions[j], opt.c_str())) {
-        isLPOption = 1;
-        break;
-      }
-    }
-    if (isLPOption)  {
-      slpo.push_back(opt);
-    }
-  } // all command line options
-
-  switch (model->dualp) {
-    case DP_Auto:
-      break;
-    case DP_Dantzig:
-      slpo.push_back("-dualp=dantzig");
-      break;
-    case DP_Partial:
-      slpo.push_back("-dualp=partial");
-      break;
-    case DP_Steepest:
-      slpo.push_back("-dualp=steepest");
-      break;
-    case DP_PESteepest:
-      slpo.push_back("-dualp=pesteep");
-      break;
-  }
-
-  if (model->dbl_param[DBL_PARAM_PSI] != -1.0) {
-    char str[256];
-    sprintf(str, "-psi=%g", model->dbl_param[DBL_PARAM_PSI]);
-    slpo.push_back(str);
-  }
-
-  if (model->dbl_param[DBL_PARAM_PRIMAL_TOL] != 1e-6) {
-    char str[256];
-    sprintf(str, "-primalt=%g", model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
-    slpo.push_back(str);
-  }
-
-  if (model->dbl_param[DBL_PARAM_DUAL_TOL] != 1e-6) {
-    char str[256];
-    sprintf(str, "-dualt=%g", model->dbl_param[DBL_PARAM_DUAL_TOL]);
-  }
-
-  if (model->dbl_param[DBL_PARAM_INT_TOL] != 1e-6) {
-    char str[256];
-    sprintf(str, "-integert=%g", model->dbl_param[DBL_PARAM_INT_TOL]);
-  }
-
-  if (model->dbl_param[DBL_PARAM_PRESOLVE_TOL] != 1e-8) {
-    char str[256];
-    sprintf(str, "-pretol=%g", model->dbl_param[DBL_PARAM_PRESOLVE_TOL]);
-  }
-
-  switch (model->lp_method) {
-    case LPM_Auto:
-      slpo.push_back("-guess");
-      break;
-    case LPM_Dual:
-      slpo.push_back("-duals");
-      break;
-    case LPM_Primal:
-      slpo.push_back("-primals");
-      break;
-    case LPM_Barrier:
-      slpo.push_back("-barrier");
-      break;
-  }
-
-  int totalChars = 0;
-  for ( int i=0 ; (i<(int)slpo.size()) ; ++i ) 
-    totalChars += slpo[i].size() + 1;
-
-
-  char **vstr = NULL;
-  vstr = new char*[slpo.size()];
-  vstr[0] = new char[totalChars];
-  for ( int i=1 ; (i<(int)slpo.size()) ; ++i )
-    vstr[i] = vstr[i-1]+ slpo[i-1].size()+1;
-
-  for ( int i=0 ; (i<(int)slpo.size()) ; ++i )
-    strcpy(vstr[i], slpo[i].c_str());
-
-  res.first = (int)slpo.size();
-  res.second = vstr;
-
-  return res;
-}
-
 COINLIBAPI int COINLINKAGE
 Cbc_solve(Cbc_Model *model)
 {
@@ -1606,78 +1501,82 @@ Cbc_solve(Cbc_Model *model)
   double maxTime = Cbc_getMaximumSeconds(model);
   if (maxTime != COIN_DBL_MAX)
     clps->setMaximumWallSeconds(maxTime);
+  solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
   if (solver->getNumIntegers() == 0 || model->relax_ == 1) {
     model->lastOptimization = ContinuousOptimization;
 
-    solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
-
     if (solver->basisIsAvailable()) {
       solver->resolve();
-    } else {
-      ClpSolve clpOptions;
-      switch (model->lp_method) {
-        case LPM_Auto:
-          break;
-        case LPM_Primal:
-          clpOptions.setSolveType( ClpSolve::usePrimal );
-          break;
-        case LPM_Dual:
-          clpOptions.setSolveType( ClpSolve::useDual );
-          break;
-        case LPM_Barrier:
-          clpOptions.setSolveType( ClpSolve::useBarrier );
-          clpOptions.setSpecialOption(4, 4);
-          break;
-      }
-      if (model->int_param[INT_PARAM_IDIOT] != -1) {
-        clpOptions.setSpecialOption(1, 2, model->int_param[INT_PARAM_IDIOT]);
-      }
-      clpSolver->setSolveOptions(clpOptions);
-
-      switch (model->dualp) {
-        case DP_Auto:
-          {
-            ClpDualRowSteepest asteep(3);
-            clps->setDualRowPivotAlgorithm(asteep);
-            break;
-          }
-        case DP_Dantzig:
-          {
-            ClpDualRowDantzig dantzig;
-            clps->setDualRowPivotAlgorithm(dantzig);
-            break;
-          }
-        case DP_Partial:
-          {
-            ClpDualRowSteepest bsteep(2);
-            clps->setDualRowPivotAlgorithm(bsteep);
-            break;
-          }
-        case DP_Steepest:
-          {
-            ClpDualRowSteepest csteep;
-            clps->setDualRowPivotAlgorithm(csteep);
-            break;
-          }
-        case DP_PESteepest:
-          {
-            ClpPEDualRowSteepest p(model->dbl_param[DBL_PARAM_PSI]);
-            clps->setDualRowPivotAlgorithm(p);
-            break;
-          }
-      }
-
-      solver->initialSolve();
-      
-    } // initial solve
-
-    if (solver->isProvenOptimal())
       return 0;
-
-    return 1;
+    } // resolve
   } // solve only lp relaxation
 
+  /* for integer or linear optimization starting with LP relaxation */
+  ClpSolve clpOptions;
+  switch (model->lp_method) {
+    case LPM_Auto:
+      break;
+    case LPM_Primal:
+      clpOptions.setSolveType( ClpSolve::usePrimal );
+      break;
+    case LPM_Dual:
+      clpOptions.setSolveType( ClpSolve::useDual );
+      break;
+    case LPM_Barrier:
+      clpOptions.setSolveType( ClpSolve::useBarrier );
+      clpOptions.setSpecialOption(4, 4);
+      break;
+  }
+  if (model->int_param[INT_PARAM_IDIOT] != -1) {
+    clpOptions.setSpecialOption(1, 2, model->int_param[INT_PARAM_IDIOT]);
+  }
+  clpSolver->setSolveOptions(clpOptions);
+
+  switch (model->dualp) {
+    case DP_Auto:
+      {
+        ClpDualRowSteepest asteep(3);
+        clps->setDualRowPivotAlgorithm(asteep);
+        break;
+      }
+    case DP_Dantzig:
+      {
+        ClpDualRowDantzig dantzig;
+        clps->setDualRowPivotAlgorithm(dantzig);
+        break;
+      }
+    case DP_Partial:
+      {
+        ClpDualRowSteepest bsteep(2);
+        clps->setDualRowPivotAlgorithm(bsteep);
+        break;
+      }
+    case DP_Steepest:
+      {
+        ClpDualRowSteepest csteep;
+        clps->setDualRowPivotAlgorithm(csteep);
+        break;
+      }
+    case DP_PESteepest:
+      {
+        ClpPEDualRowSteepest p(model->dbl_param[DBL_PARAM_PSI]);
+        clps->setDualRowPivotAlgorithm(p);
+        break;
+      }
+  }
+
+  solver->initialSolve();
+
+  if (solver->isProvenPrimalInfeasible() || solver->isProvenDualInfeasible() ||
+      solver->isAbandoned() || solver->isIterationLimitReached()) {
+    model->lastOptimization = ContinuousOptimization;
+    return 0;
+  }
+
+  if (solver->getNumIntegers() == 0 || model->relax_ == 1) {
+    return 0;
+  }
 
   // MIP Optimization
   if (model->cbcModel_) {
@@ -1765,6 +1664,73 @@ Cbc_solve(Cbc_Model *model)
 
     std::vector< string > argv;
     argv.push_back("Cbc_C_Interface");
+
+    /*
+    char custom = 0;
+
+    if (model->int_param[INT_PARAM_PERT_VALUE] != 50) {
+      custom = 1;
+      char str[256];
+      sprintf(str, "-pertv=%d", model->int_param[INT_PARAM_PERT_VALUE]);
+      argv.push_back(str);
+    }
+    if (model->int_param[INT_PARAM_IDIOT] != -1) {
+      custom = 1;
+      char str[256];
+      sprintf(str, "-idiot=%d", model->int_param[INT_PARAM_IDIOT]);
+      argv.push_back(str);
+    }
+    if (model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX) {
+      char str[256];
+      sprintf(str, "-seco=%g", model->dbl_param[DBL_PARAM_TIME_LIMIT]);
+      argv.push_back(str);
+    }  */
+
+
+    // LP options should be included here
+    /*
+    switch (model->dualp) {
+      case DP_Auto:
+        break;
+      case DP_Partial:
+        argv.push_back("-dualp=partial");
+        custom = 1;
+        break;
+      case DP_PESteepest:
+        custom = 1;
+        char str[256];
+        sprintf(str, "-psi=%g", model->dbl_param[DBL_PARAM_PSI]);
+        argv.push_back(str);
+        argv.push_back("-dualp=pesteep");
+        break;
+      case DP_Dantzig:
+        custom = 1;
+        argv.push_back("-dualp=dantzig");
+        break;
+      case DP_Steepest:
+        custom = 1;
+        argv.push_back("-dualp=steep");
+        break;
+    }
+
+    switch (model->lp_method) {
+      case LPM_Auto:
+        if (custom == 0)
+          argv.push_back("-guess");
+          argv.push_back("-initialSolve");
+        break;
+      case LPM_Primal:
+        argv.push_back("-primals");
+        break;
+      case LPM_Dual:
+        argv.push_back("-duals");
+        break;
+      case LPM_Barrier:
+        argv.push_back("-chol=univ");
+        argv.push_back("-barrier");
+        break;
+
+    } */
 
     for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
       string param = model->vcbcOptions[i];
@@ -2035,8 +2001,10 @@ Cbc_isProvenInfeasible(Cbc_Model *model)
       abort();
       break;
     case ContinuousOptimization:
-      return model->solver_->isProvenPrimalInfeasible() || model->solver_->isProvenDualInfeasible();
+      return model->solver_->isProvenPrimalInfeasible();
     case IntegerOptimization:
+      if (model->cbcModel_->status() == -1)
+        return model->solver_->isProvenPrimalInfeasible();
       return model->cbcModel_->isProvenInfeasible();
   }
 
@@ -2184,6 +2152,9 @@ Cbc_isContinuousUnbounded(Cbc_Model *model) {
     case ContinuousOptimization:
       return model->solver_->isProvenDualInfeasible();
     case IntegerOptimization:
+      if (model->cbcModel_->status() == -1)
+        return model->solver_->isProvenDualInfeasible();
+
       return model->cbcModel_->isContinuousUnbounded();
   }
 

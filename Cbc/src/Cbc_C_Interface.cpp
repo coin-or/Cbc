@@ -10,6 +10,7 @@
 #include <cctype>
 #include <map>
 #include <string>
+#include <algorithm> 
 #ifdef CBC_THREAD
 #include <pthread.h>
 #endif
@@ -28,6 +29,10 @@
 #include "CglCutGenerator.hpp"
 #include "CglStored.hpp"
 #include "CbcCutGenerator.hpp"
+#include "ClpDualRowSteepest.hpp"
+#include "ClpDualRowDantzig.hpp"
+#include "ClpPEDualRowSteepest.hpp"
+#include "ClpPEDualRowDantzig.hpp"
 #include <OsiAuxInfo.hpp>
 
 using namespace std;
@@ -120,6 +125,12 @@ protected:
   //@}
 };
 
+// command line arguments related to the lp relaxation solution
+static char cmdLPoptions[][80] = 
+  {"pertv", "idiot", "log", "seconds", "primalt", "dualt", "zerot", 
+   "pretol", "psi", "maxit", "crash", "scal" };
+static int nCmcLpOptions = 12;
+
 struct Cbc_Model {
   /**
    * Problem is stored here: before optimizing 
@@ -148,7 +159,6 @@ struct Cbc_Model {
   double *cLB;
   double *cUB;
   double *cObj;
-
 
   vector< double > *iniSol;
   double iniObj;
@@ -214,18 +224,14 @@ struct Cbc_Model {
   int charSpaceMS;
 
   // parameters
-  double allowableGap_;
-  double allowableFractionGap_;
-  int maximumNodes_;
-  int maxSolutions_;
-  int logLevel_;
-  double primalTolerance_;
-  double dualTolerance_;
-  double cutoff_;
-  double maximumSeconds_;
+  enum LPMethod lp_method;
+  enum DualPivot dualp;
 
   // lazy constraints
   CglStored *lazyConstrs;
+
+  int int_param[N_INT_PARAMS];
+  double dbl_param[N_DBL_PARAMS];
 };
 
 //  bobe including extras.h to get strdup()
@@ -976,9 +982,7 @@ Cbc_newModel()
   model->cutCBData = NULL;
   model->cutCBhowOften = -1;
   model->cutCBAtSol = 0;
-
-  model->logLevel_ = 1;
-
+  
   model->lastOptimization = ModelNotOptimized;
 
   model->icAppData = NULL;
@@ -1193,12 +1197,24 @@ Cbc_setInitialSolution(Cbc_Model *model, const double *sol)
 
   if (model->iniSol) {
     model->iniSol->resize( Cbc_getNumCols(model) );
-    memcpy( &(model->iniSol[0]), sol, sizeof(double)*Cbc_getNumCols(model) );
+    double *iniSol = &((*model->iniSol)[0]);
+    memcpy( iniSol, sol, sizeof(double)*Cbc_getNumCols(model) );
   } else {
     model->iniSol = new vector<double>(sol, sol+n);
   }
 
   model->iniObj = objval;
+}
+
+
+COINLIBAPI void COINLINKAGE
+Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val) {
+  model->int_param[which] = val;
+}
+
+COINLIBAPI void COINLINKAGE
+Cbc_setDblParam(Cbc_Model *model, enum DblParam which, const double val) {
+  model->dbl_param[which] = val;
 }
 
 COINLIBAPI void COINLINKAGE
@@ -1467,6 +1483,111 @@ static void Cbc_addAllSOS( Cbc_Model *model );
 // adds mipstart if available
 static void Cbc_addMS( Cbc_Model *model );
 
+
+std::pair<int, char **> Cbc_cmd_lp_options( Cbc_Model *model ) {
+  std::pair< int, char **> res;
+  res.first = 0;
+  res.second = NULL;
+
+  vector< string > slpo;
+  slpo.push_back("Cbc_C_Interface");
+  
+  for ( int i=0 ; (i<(int)model->vcbcOptions.size()) ; ++i ) {
+    string opt = model->vcbcOptions[i];
+    std::transform(opt.begin(), opt.end(), opt.begin(),
+        [](unsigned char c){ return std::tolower(c); });
+    
+    char isLPOption = 0;
+    for ( int j=0 ; (j<nCmcLpOptions) ; ++j ) {
+      if (strstr(cmdLPoptions[j], opt.c_str())) {
+        isLPOption = 1;
+        break;
+      }
+    }
+    if (isLPOption)  {
+      slpo.push_back(opt);
+    }
+  } // all command line options
+
+  switch (model->dualp) {
+    case DP_Auto:
+      break;
+    case DP_Dantzig:
+      slpo.push_back("-dualp=dantzig");
+      break;
+    case DP_Partial:
+      slpo.push_back("-dualp=partial");
+      break;
+    case DP_Steepest:
+      slpo.push_back("-dualp=steepest");
+      break;
+    case DP_PESteepest:
+      slpo.push_back("-dualp=pesteep");
+      break;
+  }
+
+  if (model->dbl_param[DBL_PARAM_PSI] != -1.0) {
+    char str[256];
+    sprintf(str, "-psi=%g", model->dbl_param[DBL_PARAM_PSI]);
+    slpo.push_back(str);
+  }
+
+  if (model->dbl_param[DBL_PARAM_PRIMAL_TOL] != 1e-6) {
+    char str[256];
+    sprintf(str, "-primalt=%g", model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
+    slpo.push_back(str);
+  }
+
+  if (model->dbl_param[DBL_PARAM_DUAL_TOL] != 1e-6) {
+    char str[256];
+    sprintf(str, "-dualt=%g", model->dbl_param[DBL_PARAM_DUAL_TOL]);
+  }
+
+  if (model->dbl_param[DBL_PARAM_INT_TOL] != 1e-6) {
+    char str[256];
+    sprintf(str, "-integert=%g", model->dbl_param[DBL_PARAM_INT_TOL]);
+  }
+
+  if (model->dbl_param[DBL_PARAM_PRESOLVE_TOL] != 1e-8) {
+    char str[256];
+    sprintf(str, "-pretol=%g", model->dbl_param[DBL_PARAM_PRESOLVE_TOL]);
+  }
+
+  switch (model->lp_method) {
+    case LPM_Auto:
+      slpo.push_back("-guess");
+      break;
+    case LPM_Dual:
+      slpo.push_back("-duals");
+      break;
+    case LPM_Primal:
+      slpo.push_back("-primals");
+      break;
+    case LPM_Barrier:
+      slpo.push_back("-barrier");
+      break;
+  }
+
+  int totalChars = 0;
+  for ( int i=0 ; (i<(int)slpo.size()) ; ++i ) 
+    totalChars += slpo[i].size() + 1;
+
+
+  char **vstr = NULL;
+  vstr = new char*[slpo.size()];
+  vstr[0] = new char[totalChars];
+  for ( int i=1 ; (i<(int)slpo.size()) ; ++i )
+    vstr[i] = vstr[i-1]+ slpo[i-1].size()+1;
+
+  for ( int i=0 ; (i<(int)slpo.size()) ; ++i )
+    strcpy(vstr[i], slpo[i].c_str());
+
+  res.first = (int)slpo.size();
+  res.second = vstr;
+
+  return res;
+}
+
 COINLIBAPI int COINLINKAGE
 Cbc_solve(Cbc_Model *model)
 {
@@ -1474,32 +1595,81 @@ Cbc_solve(Cbc_Model *model)
 
   OsiSolverInterface *solver = model->solver_;
 
-  solver->setDblParam( OsiPrimalTolerance, model->primalTolerance_ );
-  solver->setDblParam( OsiDualTolerance, model->dualTolerance_ );
+  solver->setDblParam( OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
+  solver->setDblParam( OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL]);
 
-#ifdef COIN_HAS_CLP
-  OsiClpSolverInterface *clpSolver
-    = dynamic_cast< OsiClpSolverInterface * >(solver);
-  if (clpSolver) {
-      ClpSimplex *clps = clpSolver->getModelPtr();
-      if (clps) {
-        clps->setPerturbation(50);
-        double maxTime = Cbc_getMaximumSeconds(model);
-        if (maxTime != DBL_MAX)
-          clps->setMaximumWallSeconds(maxTime);
-      }
-  }
-#endif
+  OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
+  assert(clpSolver);
+  ClpSimplex *clps = clpSolver->getModelPtr();
+  assert(clps);
+  clps->setPerturbation(model->int_param[INT_PARAM_PERT_VALUE]);
+  double maxTime = Cbc_getMaximumSeconds(model);
+  if (maxTime != COIN_DBL_MAX)
+    clps->setMaximumWallSeconds(maxTime);
 
   if (solver->getNumIntegers() == 0 || model->relax_ == 1) {
     model->lastOptimization = ContinuousOptimization;
 
-    solver->messageHandler()->setLogLevel( model->logLevel_ );
+    solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
     if (solver->basisIsAvailable()) {
       solver->resolve();
     } else {
+      ClpSolve clpOptions;
+      switch (model->lp_method) {
+        case LPM_Auto:
+          break;
+        case LPM_Primal:
+          clpOptions.setSolveType( ClpSolve::usePrimal );
+          break;
+        case LPM_Dual:
+          clpOptions.setSolveType( ClpSolve::useDual );
+          break;
+        case LPM_Barrier:
+          clpOptions.setSolveType( ClpSolve::useBarrier );
+          clpOptions.setSpecialOption(4, 4);
+          break;
+      }
+      if (model->int_param[INT_PARAM_IDIOT] != -1) {
+        clpOptions.setSpecialOption(1, 2, model->int_param[INT_PARAM_IDIOT]);
+      }
+      clpSolver->setSolveOptions(clpOptions);
+
+      switch (model->dualp) {
+        case DP_Auto:
+          {
+            ClpDualRowSteepest asteep(3);
+            clps->setDualRowPivotAlgorithm(asteep);
+            break;
+          }
+        case DP_Dantzig:
+          {
+            ClpDualRowDantzig dantzig;
+            clps->setDualRowPivotAlgorithm(dantzig);
+            break;
+          }
+        case DP_Partial:
+          {
+            ClpDualRowSteepest bsteep(2);
+            clps->setDualRowPivotAlgorithm(bsteep);
+            break;
+          }
+        case DP_Steepest:
+          {
+            ClpDualRowSteepest csteep;
+            clps->setDualRowPivotAlgorithm(csteep);
+            break;
+          }
+        case DP_PESteepest:
+          {
+            ClpPEDualRowSteepest p(model->dbl_param[DBL_PARAM_PSI]);
+            clps->setDualRowPivotAlgorithm(p);
+            break;
+          }
+      }
+
       solver->initialSolve();
+      
     } // initial solve
 
     if (solver->isProvenOptimal())
@@ -1572,8 +1742,8 @@ Cbc_solve(Cbc_Model *model)
     CbcSolverUsefulData cbcData;
     CbcMain0(*cbcModel, cbcData);
 
-    cbcModel->solver()->setDblParam( OsiPrimalTolerance, model->primalTolerance_ );
-    cbcModel->solver()->setDblParam( OsiDualTolerance, model->dualTolerance_ );
+    cbcModel->solver()->setDblParam( OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL] );
+    cbcModel->solver()->setDblParam( OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL] );
     // adds SOSs if any
     Cbc_addAllSOS(model);
 
@@ -1581,19 +1751,18 @@ Cbc_solve(Cbc_Model *model)
     Cbc_addMS( model );
 
     // parameters
-    if (model->maximumSeconds_ != COIN_DBL_MAX)
-      cbcModel->setMaximumSeconds( model->maximumSeconds_ );
-    if ( model->maxSolutions_ != INT_MAX )
-      cbcModel->setMaximumSolutions( model->maxSolutions_ );
-    cbcModel->setAllowableGap( model->allowableGap_ );
-    cbcModel->setAllowableFractionGap( model->allowableFractionGap_ );
-    if ( model->maximumNodes_ != INT_MAX )
-      cbcModel->setMaximumNodes( model->maximumNodes_ );
-    cbcModel->setLogLevel( model->logLevel_ );
-    if ( model->cutoff_ != COIN_DBL_MAX )
-      cbcModel->setCutoff( model->cutoff_ );
+    if (model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX)
+      cbcModel->setMaximumSeconds( model->dbl_param[DBL_PARAM_TIME_LIMIT] );
+    if ( model->int_param[INT_PARAM_MAX_SOLS] != INT_MAX && model->int_param[INT_PARAM_MAX_SOLS] != -1 )
+      cbcModel->setMaximumSolutions( model->int_param[INT_PARAM_MAX_SOLS] );
+    cbcModel->setAllowableGap( model->dbl_param[DBL_PARAM_ALLOWABLE_GAP] );
+    cbcModel->setAllowableFractionGap( model->dbl_param[DBL_PARAM_GAP_RATIO] );
+    if ( model->int_param[INT_PARAM_MAX_NODES] != INT_MAX )
+      cbcModel->setMaximumNodes( model->int_param[INT_PARAM_MAX_NODES] );
+    cbcModel->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
+    if ( model->dbl_param[DBL_PARAM_CUTOFF] != COIN_DBL_MAX )
+      cbcModel->setCutoff( model->dbl_param[DBL_PARAM_CUTOFF] );
 
-    int result = 0;
     std::vector< string > argv;
     argv.push_back("Cbc_C_Interface");
 
@@ -1637,7 +1806,7 @@ Cbc_solve(Cbc_Model *model)
 
     if (cbcmh)
       delete cbcmh;
-  } catch (CoinError e) {
+  } catch (CoinError &e) {
     fprintf( stderr, "%s ERROR: %s::%s, %s\n", "Cbc_solve",
       e.className().c_str(), e.methodName().c_str(), e.message().c_str());
     abort();
@@ -2402,15 +2571,11 @@ Cbc_clone(Cbc_Model *model)
 #endif
 
   // copying parameters
-  result->allowableGap_ = model->allowableGap_;
-  result->allowableFractionGap_ = model->allowableFractionGap_;
-  result->maximumNodes_ = model->maximumNodes_;
-  result->maxSolutions_ = model->maxSolutions_;
-  result->logLevel_ = model->logLevel_;
-  result->primalTolerance_ = model->primalTolerance_;
-  result->dualTolerance_ = model->dualTolerance_;
-  result->cutoff_ = model->cutoff_;
-  result->maximumSeconds_ = model->maximumSeconds_;
+  result->lp_method = model->lp_method;
+  result->dualp = model->dualp;
+
+  memcpy(result->int_param, model->int_param, sizeof(result->int_param));
+  memcpy(result->dbl_param, model->dbl_param, sizeof(result->dbl_param));
 
   return result;
 }
@@ -2428,7 +2593,6 @@ Cbc_setContinuous(Cbc_Model *model, int iColumn)
 COINLIBAPI void COINLINKAGE
 Cbc_setInteger(Cbc_Model *model, int iColumn)
 {
-  const char prefix[] = "Cbc_C_Interface::Cbc_setContinuous(): ";
   Cbc_flush(model, FCColumns);
 
   model->solver_->setInteger(iColumn);
@@ -3112,30 +3276,28 @@ Osi_getIntegerTolerance(void *osi)
   return osiSolver->getIntegerTolerance();
 }
 
-
-
 COINLIBAPI double COINLINKAGE
 Cbc_getAllowableGap(Cbc_Model* model)
 {
-  return model->allowableGap_;
+  return model->dbl_param[DBL_PARAM_ALLOWABLE_GAP];
 }
 
 COINLIBAPI void COINLINKAGE
 Cbc_setAllowableGap(Cbc_Model* model, double allowedGap)
 {
-  model->allowableGap_ = allowedGap;
+  model->dbl_param[DBL_PARAM_ALLOWABLE_GAP] = allowedGap;
 }
 
 COINLIBAPI double COINLINKAGE
 Cbc_getAllowableFractionGap(Cbc_Model* model)
 {
-  return model->allowableFractionGap_;
+  return model->dbl_param[DBL_PARAM_GAP_RATIO];
 }
 
 COINLIBAPI void COINLINKAGE
 Cbc_setAllowableFractionGap(Cbc_Model* model, double allowedFracionGap)
 {
-  model->allowableFractionGap_ = allowedFracionGap;
+  model->dbl_param[DBL_PARAM_GAP_RATIO] = allowedFracionGap;
 }
 
 /** returns the maximum number of nodes that can be explored in the search tree
@@ -3143,7 +3305,7 @@ Cbc_setAllowableFractionGap(Cbc_Model* model, double allowedFracionGap)
 COINLIBAPI int COINLINKAGE
 Cbc_getMaximumNodes(Cbc_Model *model)
 {
-  return model->maximumNodes_;
+  return model->int_param[INT_PARAM_MAX_NODES];
 }
 
 /** sets the maximum number of nodes that can be explored in the search tree
@@ -3151,7 +3313,7 @@ Cbc_getMaximumNodes(Cbc_Model *model)
 COINLIBAPI void COINLINKAGE
 Cbc_setMaximumNodes(Cbc_Model *model, int maxNodes)
 {
-  model->maximumNodes_ = maxNodes;
+  model->int_param[INT_PARAM_MAX_NODES] = maxNodes;
 }
 
 /** returns solution limit for the search process
@@ -3159,7 +3321,7 @@ Cbc_setMaximumNodes(Cbc_Model *model, int maxNodes)
 COINLIBAPI int COINLINKAGE
 Cbc_getMaximumSolutions(Cbc_Model *model)
 {
-  return model->maxSolutions_;
+  return model->int_param[INT_PARAM_MAX_SOLS];
 }
 
 /** sets a solution limit as a stopping criterion
@@ -3167,7 +3329,7 @@ Cbc_getMaximumSolutions(Cbc_Model *model)
 COINLIBAPI void COINLINKAGE
 Cbc_setMaximumSolutions(Cbc_Model *model, int maxSolutions)
 {
-  model->maxSolutions_ = maxSolutions;
+  model->int_param[INT_PARAM_MAX_SOLS] = maxSolutions;
 }
 
 /** returns the current log leven
@@ -3175,7 +3337,7 @@ Cbc_setMaximumSolutions(Cbc_Model *model, int maxSolutions)
 COINLIBAPI int COINLINKAGE
 Cbc_getLogLevel(Cbc_Model *model)
 {
-  return model->logLevel_;
+  return model->int_param[INT_PARAM_LOG_LEVEL];
 }
 
 /** sets the log level
@@ -3183,7 +3345,7 @@ Cbc_getLogLevel(Cbc_Model *model)
 COINLIBAPI void COINLINKAGE
 Cbc_setLogLevel(Cbc_Model *model, int logLevel)
 {
-  model->logLevel_ = logLevel;
+  model->int_param[INT_PARAM_LOG_LEVEL] = logLevel;
 }
 
 /** gets the tolerance for infeasibility in the LP solver
@@ -3191,7 +3353,7 @@ Cbc_setLogLevel(Cbc_Model *model, int logLevel)
 COINLIBAPI double COINLINKAGE
 Cbc_getPrimalTolerance(Cbc_Model *model)
 {
-  return model->primalTolerance_;
+  return model->dbl_param[DBL_PARAM_PRIMAL_TOL];
 }
 
 /** sets the tolerance for infeasibility in the LP solver
@@ -3199,7 +3361,7 @@ Cbc_getPrimalTolerance(Cbc_Model *model)
 COINLIBAPI void COINLINKAGE
 Cbc_setPrimalTolerance(Cbc_Model *model, double tol)
 {
-  model->primalTolerance_ = tol;
+  model->dbl_param[DBL_PARAM_PRIMAL_TOL] = tol;
 }
 
 /** gets the tolerance for optimality in the LP solver
@@ -3207,7 +3369,7 @@ Cbc_setPrimalTolerance(Cbc_Model *model, double tol)
 COINLIBAPI double COINLINKAGE
 Cbc_getDualTolerance(Cbc_Model *model)
 {
-  return model->dualTolerance_;
+  return model->dbl_param[DBL_PARAM_DUAL_TOL];
 }
 
 /** sets the tolerance for optimality in the LP solver
@@ -3215,32 +3377,41 @@ Cbc_getDualTolerance(Cbc_Model *model)
 COINLIBAPI void COINLINKAGE
 Cbc_setDualTolerance(Cbc_Model *model, double tol)
 {
-  model->dualTolerance_ = tol;
+  model->dbl_param[DBL_PARAM_DUAL_TOL] = tol;
 }
-
 
 COINLIBAPI double COINLINKAGE
 Cbc_getCutoff(Cbc_Model* model)
 {
-  return model->cutoff_;
+  return model->dbl_param[DBL_PARAM_CUTOFF];
 }
 
 COINLIBAPI void COINLINKAGE
 Cbc_setCutoff(Cbc_Model* model, double cutoff)
 {
-  model->cutoff_ = cutoff;
+  model->dbl_param[DBL_PARAM_CUTOFF] = cutoff;
+}
+
+COINLIBAPI void COINLINKAGE
+Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm ) {
+  model->lp_method = lpm;
+}
+
+COINLIBAPI void COINLINKAGE
+Cbc_setDualPivot(Cbc_Model *model, enum DualPivot dp ) {
+  model->dualp = dp;
 }
 
 COINLIBAPI double COINLINKAGE
 Cbc_getMaximumSeconds(Cbc_Model *model)
 {
-  return model->maximumNodes_;
+  return model->dbl_param[DBL_PARAM_TIME_LIMIT];
 }
 
 COINLIBAPI void COINLINKAGE
 Cbc_setMaximumSeconds(Cbc_Model *model, double maxSeconds)
 {
-  model->maximumSeconds_ = maxSeconds;
+  model->dbl_param[DBL_PARAM_TIME_LIMIT] = maxSeconds;
 }
 
 COINLIBAPI void COINLINKAGE
@@ -3279,7 +3450,6 @@ Cbc_getColNameIndex(Cbc_Model *model, const char *name)
     abort();
   }
 
-  OsiSolverInterface *solver = model->solver_;
   NameIndex &colNameIndex = *((NameIndex  *)model->colNameIndex);
   NameIndex::iterator it = colNameIndex.find(std::string(name));
   if (it == colNameIndex.end())
@@ -3297,7 +3467,6 @@ Cbc_getRowNameIndex(Cbc_Model *model, const char *name)
     abort();
   }
 
-  OsiSolverInterface *solver = model->solver_;
   NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
   NameIndex::iterator it = rowNameIndex.find(std::string(name));
   if (it == rowNameIndex.end())
@@ -3387,15 +3556,35 @@ static void Cbc_addMS( Cbc_Model *model ) {
 }
 
 void Cbc_iniParams( Cbc_Model *model ) {
-  model->allowableGap_ = 1e-10;
-  model->allowableFractionGap_ = 0.0001;
-  model->maximumNodes_ = INT_MAX;
-  model->maxSolutions_ = INT_MAX;
-  model->logLevel_ = 1;
-  model->primalTolerance_ = 1e-6;
-  model->dualTolerance_ = 1e-6;
-  model->cutoff_ = COIN_DBL_MAX;
-  model->maximumSeconds_ = COIN_DBL_MAX;
+  model->lp_method = LPM_Auto;
+  model->dualp = DP_Auto;
+  memset(model->int_param, 0, sizeof(model->int_param) );
+  for ( int i=0 ; (i<N_DBL_PARAMS) ; ++i )
+    model->dbl_param[i] = 0.0;
+
+  model->int_param[INT_PARAM_PERT_VALUE]       =       50;
+  model->int_param[INT_PARAM_IDIOT]            =       -1;
+  model->int_param[INT_PARAM_STRONG_BRANCHING] =        5;
+  model->int_param[INT_PARAM_CUT_DEPTH]        =       -1;
+  model->int_param[INT_PARAM_MAX_NODES]        =  INT_MAX;
+  model->int_param[INT_PARAM_NUMBER_BEFORE]    =        5;
+  model->int_param[INT_PARAM_FPUMP_ITS]        =       30;
+  model->int_param[INT_PARAM_MAX_SOLS]         =       -1;
+  model->int_param[INT_PARAM_CUT_PASS_IN_TREE] =        1;
+  model->int_param[INT_PARAM_LOG_LEVEL]        =        1;
+  model->int_param[INT_PARAM_MAX_SAVED_SOLS]   =       -1;
+  model->int_param[INT_PARAM_MULTIPLE_ROOTS]   =        0;
+
+  model->dbl_param[DBL_PARAM_PRIMAL_TOL]       =          1e-6;
+  model->dbl_param[DBL_PARAM_DUAL_TOL]         =          1e-6;
+  model->dbl_param[DBL_PARAM_ZERO_TOL]         =         1e-20;
+  model->dbl_param[DBL_PARAM_INT_TOL]          =          1e-6;
+  model->dbl_param[DBL_PARAM_PRESOLVE_TOL]     =          1e-8;
+  model->dbl_param[DBL_PARAM_TIME_LIMIT]       =  COIN_DBL_MAX;
+  model->dbl_param[DBL_PARAM_PSI]              =          -1.0;
+  model->dbl_param[DBL_PARAM_CUTOFF]           =  COIN_DBL_MAX;
+  model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]    =         1e-10;
+  model->dbl_param[DBL_PARAM_GAP_RATIO]        =        0.0001;
 }
 
 #if defined(__MWERKS__)

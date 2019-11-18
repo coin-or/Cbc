@@ -298,6 +298,10 @@ public:
   bool useSignalHandler_;
   // Default pump tuning
   int initialPumpTune_;
+  // even with verbose >=1  this may not be the first call to
+  // the solver
+  bool printWelcome_;
+
   //@}
 };
 /// And this uses it

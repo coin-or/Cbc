@@ -1640,6 +1640,7 @@ Cbc_solve(Cbc_Model *model)
 
     CbcSolverUsefulData cbcData;
     CbcMain0(*cbcModel, cbcData);
+    cbcData.printWelcome_ = false;
 
     cbcModel->solver()->setDblParam( OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL] );
     cbcModel->solver()->setDblParam( OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL] );

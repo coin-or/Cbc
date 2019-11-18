@@ -1270,6 +1270,7 @@ CbcSolverUsefulData::CbcSolverUsefulData()
 {
   totalTime_ = 0.0;
   noPrinting_ = true;
+  printWelcome_ = true;
   useSignalHandler_ = false;
   establishParams(parameters_);
 }
@@ -1411,8 +1412,10 @@ int CbcMain1(int argc, const char *argv[],
     originalSolver->getModelPtr()->passInMessageHandler(originalSolver->messageHandler());
   CoinMessages generalMessages = originalSolver->getModelPtr()->messages();
   char generalPrint[10000];
-  if (originalSolver->getModelPtr()->logLevel() == 0)
+  if (originalSolver->getModelPtr()->logLevel() == 0) {
     noPrinting = true;
+    parameterData.printWelcome_ = false;
+  }
 #elif CBC_OTHER_SOLVER == 1
   OsiCpxSolverInterface *originalSolver = dynamic_cast< OsiCpxSolverInterface * >(model_.solver());
   assert(originalSolver);
@@ -1917,7 +1920,7 @@ int CbcMain1(int argc, const char *argv[],
     }
     std::string field;
 #if CBC_QUIET == 0
-    if (!noPrinting_) {
+    if ((!noPrinting_) && (parameterData.printWelcome_)) {
       sprintf(generalPrint,
         "Welcome to the CBC MILP Solver \n");
       if (strcmp(CBC_VERSION, "trunk")) {

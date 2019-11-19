@@ -25,6 +25,7 @@
 
 #include "CoinMessageHandler.hpp"
 #include "OsiClpSolverInterface.hpp"
+#include "ClpSimplexOther.hpp"
 #include "CglCutGenerator.hpp"
 #include "CglStored.hpp"
 #include "CbcCutGenerator.hpp"
@@ -32,6 +33,7 @@
 #include "ClpDualRowDantzig.hpp"
 #include "ClpPEDualRowSteepest.hpp"
 #include "ClpPEDualRowDantzig.hpp"
+#include "ClpMessage.hpp"
 #include <OsiAuxInfo.hpp>
 
 using namespace std;
@@ -129,6 +131,10 @@ protected:
 //  {"pertv", "idiot", "log", "seconds", "primalt", "dualt", "zerot", 
 //   "pretol", "psi", "maxit", "crash", "scal" };
 //static int nCmcLpOptions = 12;
+
+static bool cbc_annouced = false;
+
+
 
 struct Cbc_Model {
   /**
@@ -1486,6 +1492,8 @@ static void Cbc_addMS( Cbc_Model *model );
 COINLIBAPI int COINLINKAGE
 Cbc_solve(Cbc_Model *model)
 {
+  CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
+
   Cbc_flush( model );
 
   OsiSolverInterface *solver = model->solver_;
@@ -1503,6 +1511,33 @@ Cbc_solve(Cbc_Model *model)
     clps->setMaximumWallSeconds(maxTime);
   solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
+  if (not cbc_annouced) {
+    char generalPrint[512];
+      sprintf(generalPrint,
+        "Welcome to the CBC MILP Solver \n");
+      if (strcmp(CBC_VERSION, "trunk")) {
+        sprintf(generalPrint + strlen(generalPrint),
+          "Version: %s \n", CBC_VERSION);
+      } else {
+        sprintf(generalPrint + strlen(generalPrint),
+          "Version: Trunk\n");
+      }
+      sprintf(generalPrint + strlen(generalPrint),
+        "Build Date: %s \n", __DATE__);
+#ifdef CBC_SVN_REV
+      sprintf(generalPrint + strlen(generalPrint),
+        "Revision Number: %d \n\n", CBC_SVN_REV);
+#endif
+      //printf("%s", generalPrint); fflush(stdout);
+      //
+      solver->messageHandler()->setPrefix(false);
+      solver->messageHandler()->message(CLP_GENERAL, generalMessages)
+        << generalPrint
+        << CoinMessageEol;
+      solver->messageHandler()->setPrefix(true);
+      cbc_annouced = true;
+  }
+
   if (solver->getNumIntegers() == 0 || model->relax_ == 1) {
     model->lastOptimization = ContinuousOptimization;
 
@@ -1512,12 +1547,81 @@ Cbc_solve(Cbc_Model *model)
     } // resolve
   } // solve only lp relaxation
 
+  /* checking if options should be automatically tuned */
+  if (model->lp_method == LPM_Auto) {
+    ClpSimplexOther *clpo = static_cast<ClpSimplexOther *>(clps);
+    assert(clpo);
+    char *opts = clpo->guess(0);
+    //printf("GUESS returned: %s\n", opts);
+    if (strstr(opts, "-primals") != NULL) {
+      model->lp_method = LPM_Primal;
+      //printf("Using primal;\n");
+    }
+    else if (strstr(opts, "-duals") != NULL) {
+      model->lp_method = LPM_Dual;
+      //printf("Using dual;\n");
+    }
+    else if (strstr(opts, "-barrier") != NULL) {
+      //printf("Using barrier;\n");
+      model->lp_method = LPM_Barrier;
+    }
+    
+    char *s = NULL;
+    char str[256] = "";
+    if ((s=strstr(opts, "-idiot"))) {
+      s = strstr(s+1, " ");
+      if (s) {
+        strcpy(str, s+1);
+        if ((s = strstr(str+1, " ")))
+          *s = '\0';
+        int idiot = atoi(str);
+        //printf("Setting idiot to %d\n", idiot);
+        model->int_param[INT_PARAM_IDIOT] = idiot;
+      }
+    } // idiot
+    if ((s=strstr(opts, "-pertv"))) {
+      s = strstr(s+1, " ");
+      if (s) {
+        strcpy(str, s+1);
+        if ((s = strstr(str+1, " ")))
+          *s = '\0';
+        int pertv = atoi(str);
+        //printf("Setting pertv to %d\n", pertv);
+        model->int_param[INT_PARAM_PERT_VALUE] = pertv;
+      }
+    } // perturbation value
+    if ((s=strstr(opts, "-psi"))) {
+      s = strstr(s+1, " ");
+      if (s) {
+        strcpy(str, s+1);
+        if ((s = strstr(str+1, " ")))
+          *s = '\0';
+        double psi = atof(str);
+        //printf("Setting psi to %g\n", psi);
+        model->int_param[DBL_PARAM_PSI] = psi;
+      }
+    } // perturbation value
+    if ((s=strstr(opts, "-dualpivot"))) {
+        strcpy(str, s+1);
+        if ((s = strstr(str+1, " ")))
+          *s = '\0';
+        if (strstr(str, "pesteep")) {
+          model->dualp = DP_PESteepest;
+          //printf("Setting dual pivot to pesteep.\n");
+        }
+    } // dual pivot
+  }
+
   /* for integer or linear optimization starting with LP relaxation */
   ClpSolve clpOptions;
   switch (model->lp_method) {
     case LPM_Auto:
+      fprintf(stderr, "Method should be already configured.\n");
+      exit(1);
       break;
     case LPM_Primal:
+      if (model->int_param[INT_PARAM_IDIOT] > 0) 
+        clpOptions.setSpecialOption(1, 2, model->int_param[INT_PARAM_IDIOT]);
       clpOptions.setSolveType( ClpSolve::usePrimal );
       break;
     case LPM_Dual:
@@ -1527,9 +1631,6 @@ Cbc_solve(Cbc_Model *model)
       clpOptions.setSolveType( ClpSolve::useBarrier );
       clpOptions.setSpecialOption(4, 4);
       break;
-  }
-  if (model->int_param[INT_PARAM_IDIOT] != -1) {
-    clpOptions.setSpecialOption(1, 2, model->int_param[INT_PARAM_IDIOT]);
   }
   clpSolver->setSolveOptions(clpOptions);
 
@@ -1566,15 +1667,12 @@ Cbc_solve(Cbc_Model *model)
       }
   }
 
+  model->lastOptimization = ContinuousOptimization;
   solver->initialSolve();
 
   if (solver->isProvenPrimalInfeasible() || solver->isProvenDualInfeasible() ||
-      solver->isAbandoned() || solver->isIterationLimitReached()) {
-    model->lastOptimization = ContinuousOptimization;
-    return 0;
-  }
-
-  if (solver->getNumIntegers() == 0 || model->relax_ == 1) {
+      solver->isAbandoned() || solver->isIterationLimitReached() || model->relax_ == 1
+      || solver->getNumIntegers() == 0) {
     return 0;
   }
 
@@ -1665,73 +1763,6 @@ Cbc_solve(Cbc_Model *model)
 
     std::vector< string > argv;
     argv.push_back("Cbc_C_Interface");
-
-    /*
-    char custom = 0;
-
-    if (model->int_param[INT_PARAM_PERT_VALUE] != 50) {
-      custom = 1;
-      char str[256];
-      sprintf(str, "-pertv=%d", model->int_param[INT_PARAM_PERT_VALUE]);
-      argv.push_back(str);
-    }
-    if (model->int_param[INT_PARAM_IDIOT] != -1) {
-      custom = 1;
-      char str[256];
-      sprintf(str, "-idiot=%d", model->int_param[INT_PARAM_IDIOT]);
-      argv.push_back(str);
-    }
-    if (model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX) {
-      char str[256];
-      sprintf(str, "-seco=%g", model->dbl_param[DBL_PARAM_TIME_LIMIT]);
-      argv.push_back(str);
-    }  */
-
-
-    // LP options should be included here
-    /*
-    switch (model->dualp) {
-      case DP_Auto:
-        break;
-      case DP_Partial:
-        argv.push_back("-dualp=partial");
-        custom = 1;
-        break;
-      case DP_PESteepest:
-        custom = 1;
-        char str[256];
-        sprintf(str, "-psi=%g", model->dbl_param[DBL_PARAM_PSI]);
-        argv.push_back(str);
-        argv.push_back("-dualp=pesteep");
-        break;
-      case DP_Dantzig:
-        custom = 1;
-        argv.push_back("-dualp=dantzig");
-        break;
-      case DP_Steepest:
-        custom = 1;
-        argv.push_back("-dualp=steep");
-        break;
-    }
-
-    switch (model->lp_method) {
-      case LPM_Auto:
-        if (custom == 0)
-          argv.push_back("-guess");
-          argv.push_back("-initialSolve");
-        break;
-      case LPM_Primal:
-        argv.push_back("-primals");
-        break;
-      case LPM_Dual:
-        argv.push_back("-duals");
-        break;
-      case LPM_Barrier:
-        argv.push_back("-chol=univ");
-        argv.push_back("-barrier");
-        break;
-
-    } */
 
     for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
       string param = model->vcbcOptions[i];

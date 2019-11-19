@@ -3067,8 +3067,12 @@ private:
         3 - Set covering
     */
   int problemType_;
-  /// Print frequency
+  /// Print frequency in nodes
   int printFrequency_;
+  /// Print frequency in time
+  double secsPrintFrequency_;
+  /// Last time when progress message was printed
+  double lastSecPrintProgress_;
   /// Number of cut generators
   int numberCutGenerators_;
   // Cut generators

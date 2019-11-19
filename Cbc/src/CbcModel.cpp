@@ -4210,11 +4210,6 @@ void CbcModel::branchAndBound(int doStatistics)
     }
   }
 
-  if (printFrequency_ <= 0) {
-    printFrequency_ = 1000;
-    if (getNumCols() > 2000)
-      printFrequency_ = 100;
-  }
   /*
       It is possible that strong branching fixes one variable and then the code goes round
       again and again.  This can take too long.  So we need to warn user - just once.
@@ -4763,7 +4758,7 @@ void CbcModel::branchAndBound(int doStatistics)
       tree_->setComparison(*nodeCompare_);
       unlockThread();
     }
-    if (numberNodes_ >= lastPrintEvery) {
+    if (numberNodes_ >= lastPrintEvery && CoinWallclockTime()-lastSecPrintProgress_ > secsPrintFrequency_) {
       lastPrintEvery = numberNodes_ + printFrequency_;
       lockThread();
       int nNodes = tree_->size();
@@ -4840,6 +4835,7 @@ void CbcModel::branchAndBound(int doStatistics)
       if (eventHandler && !eventHandler->event(CbcEventHandler::treeStatus)) {
         eventHappened_ = true; // exit
       }
+      lastSecPrintProgress_ = CoinWallclockTime();
     }
     // See if can stop on gap
     if (canStopOnGap()) {
@@ -5652,7 +5648,9 @@ CbcModel::CbcModel()
   , analyzeResults_(NULL)
   , numberInfeasibleNodes_(0)
   , problemType_(0)
-  , printFrequency_(0)
+  , printFrequency_(1)
+  , secsPrintFrequency_(1)
+  , lastSecPrintProgress_( 0.0 )
   , numberCutGenerators_(0)
   , generator_(NULL)
   , virginGenerator_(NULL)
@@ -5825,7 +5823,9 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , analyzeResults_(NULL)
   , numberInfeasibleNodes_(0)
   , problemType_(0)
-  , printFrequency_(0)
+  , printFrequency_(1)
+  , secsPrintFrequency_(1)
+  , lastSecPrintProgress_( 0.0 )
   , numberCutGenerators_(0)
   , generator_(NULL)
   , virginGenerator_(NULL)
@@ -6129,6 +6129,8 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , numberInfeasibleNodes_(rhs.numberInfeasibleNodes_)
   , problemType_(rhs.problemType_)
   , printFrequency_(rhs.printFrequency_)
+  , secsPrintFrequency_(rhs.secsPrintFrequency_)
+  , lastSecPrintProgress_(rhs.lastSecPrintProgress_)
   , fastNodeDepth_(rhs.fastNodeDepth_)
   , howOftenGlobalScan_(rhs.howOftenGlobalScan_)
   , numberGlobalViolations_(rhs.numberGlobalViolations_)

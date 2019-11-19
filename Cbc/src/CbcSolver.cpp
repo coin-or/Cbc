@@ -5669,8 +5669,9 @@ int CbcMain1(int argc, const char *argv[],
                   iLevel = -iLevel;
                 }
                 babModel_->messageHandler()->setLogLevel(iLevel);
-                if (babModel_->getNumCols() > 2000 || babModel_->getNumRows() > 1500 || babModel_->messageHandler()->logLevel() > 1)
-                  babModel_->setPrintFrequency(100);
+                //if (babModel_->getNumCols() > 2000 || babModel_->getNumRows() > 1500 || babModel_->messageHandler()->logLevel() > 1)
+                //  babModel_->setPrintFrequency(100);
+                babModel_->setPrintFrequency(1);
               }
 
               babModel_->solver()->setIntParam(OsiMaxNumIterationHotStart,

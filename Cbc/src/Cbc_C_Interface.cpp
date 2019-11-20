@@ -1526,7 +1526,7 @@ Cbc_solve(Cbc_Model *model)
         "Build Date: %s \n", __DATE__);
 #ifdef CBC_SVN_REV
       sprintf(generalPrint + strlen(generalPrint),
-        "Revision Number: %d \n\n", CBC_SVN_REV);
+        "Revision Number: %d \n", CBC_SVN_REV);
 #endif
       //printf("%s", generalPrint); fflush(stdout);
       //
@@ -1614,6 +1614,7 @@ Cbc_solve(Cbc_Model *model)
 
   /* for integer or linear optimization starting with LP relaxation */
   ClpSolve clpOptions;
+  char methodName[256] = "";
   switch (model->lp_method) {
     case LPM_Auto:
       fprintf(stderr, "Method should be already configured.\n");
@@ -1623,13 +1624,16 @@ Cbc_solve(Cbc_Model *model)
       if (model->int_param[INT_PARAM_IDIOT] > 0) 
         clpOptions.setSpecialOption(1, 2, model->int_param[INT_PARAM_IDIOT]);
       clpOptions.setSolveType( ClpSolve::usePrimal );
+      sprintf(methodName, "Primal Simplex");
       break;
     case LPM_Dual:
       clpOptions.setSolveType( ClpSolve::useDual );
+      sprintf(methodName, "Dual Simplex");
       break;
     case LPM_Barrier:
       clpOptions.setSolveType( ClpSolve::useBarrier );
       clpOptions.setSpecialOption(4, 4);
+      sprintf(methodName, "Barrier");
       break;
   }
   clpSolver->setSolveOptions(clpOptions);
@@ -1665,6 +1669,19 @@ Cbc_solve(Cbc_Model *model)
         clps->setDualRowPivotAlgorithm(p);
         break;
       }
+  }
+
+  {
+    char phaseName[128] = "";
+    if (solver->getNumIntegers() && (!model->relax_))
+      sprintf(phaseName, "Linear programming relaxation problem");
+    else
+      sprintf(phaseName, "Linear programming problem");
+
+    char msg[512] = "";
+    sprintf(msg, "Starting solution of the %s using %s\n", phaseName, methodName );
+    printf("%s\n", msg); fflush(stdout);
+
   }
 
   model->lastOptimization = ContinuousOptimization;
@@ -1794,6 +1811,10 @@ Cbc_solve(Cbc_Model *model)
       model->cbcModel_->passInSolverCharacteristics(&defaultC);
     }
 
+    if (model->int_param[INT_PARAM_LOG_LEVEL] >= 1) {
+      printf("\nStarting MIP optimization\n");
+      fflush(stdout);
+    }
     CbcMain1( nargs, args, *model->cbcModel_, cbc_callb, cbcData );
 
     free(charCbcOpts);

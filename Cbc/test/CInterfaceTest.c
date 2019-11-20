@@ -323,8 +323,8 @@ void testIntegerUnbounded() {
     printf("Done\n");
     
     assert(!Cbc_isProvenOptimal(model));
-    //assert(!Cbc_isProvenInfeasible(model));
-    //assert(Cbc_isContinuousUnbounded(model));
+    assert(!Cbc_isProvenInfeasible(model));
+    assert(Cbc_isContinuousUnbounded(model));
 
     Cbc_deleteModel(model);
 

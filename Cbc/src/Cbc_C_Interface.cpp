@@ -2680,6 +2680,12 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   }
 
   Cbc_addRowBuffer(model, nz, cols, coefs, rowLB, rowUB, name);
+
+  if (model->rowNameIndex)
+  {
+    NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
+    rowNameIndex[std::string(name)] = Cbc_getNumRows(model)-1;
+  }
 }
 
 

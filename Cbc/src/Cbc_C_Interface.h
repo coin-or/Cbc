@@ -304,6 +304,15 @@ Cbc_setRowLower(Cbc_Model *model, int index, double value);
 COINLIBAPI void COINLINKAGE
 Cbc_setRowUpper(Cbc_Model *model, int index, double value);
 
+/** @brief  Sets the RHS of a constraint
+  *
+  * @param model problem object 
+  * @param row row index
+  * @param rhs value of the new RHS
+  **/
+COINLIBAPI void COINLINKAGE
+Cbc_setRowRHS(Cbc_Model *model, int row, double rhs);
+
 /** @brief Set the objective coefficient of a single variable 
   *
   * @param model problem object 

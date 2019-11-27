@@ -2358,6 +2358,31 @@ Cbc_setRowUpper(Cbc_Model *model, int index, double value)
   solver->setRowUpper(index, value);
 }
 
+COINLIBAPI void COINLINKAGE
+Cbc_setRowRHS(Cbc_Model *model, int row, double rhs)
+{
+  char sense = Cbc_getRowSense(model, row);
+  switch (sense)
+  {
+    case 'L':
+      Cbc_setRowUpper(model, row, rhs);
+      break;
+    case 'G':
+      Cbc_setRowLower(model, row, rhs);
+      break;
+    case 'E':
+      Cbc_setRowLower(model, row, rhs);
+      Cbc_setRowUpper(model, row, rhs);
+      break;
+    default:
+      fprintf(stderr, "Could not change RHS in row %d to %g in row with sense: %c\n",
+          row, rhs, sense);
+      exit(1);
+  }
+}
+
+
+
 /** @brief Constraint lower bounds 
   *
   * @param model problem object 

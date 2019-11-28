@@ -1552,7 +1552,6 @@ Cbc_solve(Cbc_Model *model)
     ClpSimplexOther *clpo = static_cast<ClpSimplexOther *>(clps);
     assert(clpo);
     char *opts = clpo->guess(0);
-    //printf("GUESS returned: %s\n", opts);
     if (strstr(opts, "-primals") != NULL) {
       model->lp_method = LPM_Primal;
       //printf("Using primal;\n");
@@ -1610,7 +1609,9 @@ Cbc_solve(Cbc_Model *model)
           //printf("Setting dual pivot to pesteep.\n");
         }
     } // dual pivot
+    delete[] opts;
   }
+
 
   /* for integer or linear optimization starting with LP relaxation */
   ClpSolve clpOptions;

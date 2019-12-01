@@ -275,7 +275,7 @@ int main( int argc, char **argv )
   Cbc_setParameter( mip, "gomory", "ifmove" );
   Cbc_setParameter( mip, "preprocess", "off" );
 
-  Cbc_addCutCallback( mip,  cutcallback, "modk", NULL );
+  Cbc_addCutCallback( mip,  cutcallback, "modk", NULL, -1, 0 );
 
 
   Cbc_solve( mip );

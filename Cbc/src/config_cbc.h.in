@@ -1,5 +1,7 @@
 /* src/config_cbc.h.in. */
 
+#ifndef CBC_VERSION
+
 /* Version number of project */
 #undef CBC_VERSION
 
@@ -11,3 +13,5 @@
 
 /* Release Version number of project */
 #undef CBC_VERSION_RELEASE
+
+#endif

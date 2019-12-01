@@ -211,7 +211,7 @@ public:
   inline void setAtSolution(bool value)
   {
     switches_ &= ~2;
-    switches_ |= value ? 2 : 0;
+    switches_ |= value ? (2+8) : 0;
   }
   /** Get whether the cut generator should be called when the subproblem is
         found to be infeasible.

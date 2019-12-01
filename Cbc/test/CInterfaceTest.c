@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #ifndef INFINITY /* workaround for non-C99 compilers */
 #define INFINITY (HUGE_VAL * 2)
@@ -86,8 +87,8 @@ void testKnapsack() {
     assert(!Cbc_isNodeLimitReached(model));
     assert(!Cbc_isSecondsLimitReached(model));
     assert(!Cbc_isSolutionLimitReached(model));
-    assert(fabs( Cbc_getObjValue(model)- (16.0) < 1e-6));
-    assert(fabs( Cbc_getBestPossibleObjValue(model)- (16.0) < 1e-6));
+    assert(fabs(Cbc_getObjValue(model)- (16.0)) < 1e-6);
+    assert(fabs(Cbc_getBestPossibleObjValue(model)- 16.0) < 1e-6);
 
     assert(callback_called == 1);
     
@@ -241,8 +242,8 @@ void testSOS() {
     assert(!Cbc_isNodeLimitReached(model));
     assert(!Cbc_isSecondsLimitReached(model));
     assert(!Cbc_isSolutionLimitReached(model));
-    assert(fabs( Cbc_getObjValue(model)- (7.0) < 1e-6));
-    assert(fabs( Cbc_getBestPossibleObjValue(model)- (7.0) < 1e-6));
+    assert(fabs(Cbc_getObjValue(model)- 7.0) < 1e-6);
+    assert(fabs(Cbc_getBestPossibleObjValue(model)-7.0) < 1e-6);
 
     sol = Cbc_getColSolution(model);
     
@@ -442,6 +443,12 @@ void testQueens(int n) {
             }
         }
         sprintf(name, "diag1(%d)", k);
+        char *s = name;
+        while (*s != '\0') {
+            if (*s == '-')
+                *s = 'm';
+            ++s;
+        }
         Cbc_addRow(model, name, nz, idx, coef, 'L', 1.0);
     }
 
@@ -464,13 +471,20 @@ void testQueens(int n) {
             }
         }
         sprintf(name, "diag2(%d)", k);
+        char *s = name;
+        while (*s != '\0') {
+            if (*s == '-')
+                *s = 'm';
+            ++s;
+        }
+ 
         Cbc_addRow(model, name, nz, idx, coef, 'L', 1.0);
     } 
 
-    Cbc_setMaximumSeconds(model, 60);
+    Cbc_setMaximumSeconds(model, 100);
     (void) Cbc_solve(model);
     xs = Cbc_getColSolution(model);
-    if (n<=75)
+    if (n<=30)
     {
         /* should find the optimal for small problems */
         assert(Cbc_isProvenOptimal(model));
@@ -479,7 +493,7 @@ void testQueens(int n) {
     if (xs) {
         /* solution check 
 
-        // total number of queens */
+         total number of queens */
         int nq = 0;
         for ( i=0 ; (i<n) ; ++i )
             for ( j=0 ; (j<n) ; ++j )
@@ -509,11 +523,205 @@ void testQueens(int n) {
     free(x[0]);
     free(x);
 
+    Cbc_setProblemName(model, "CrazyQueens");
+    Cbc_writeMps(model, "q");
+    Cbc_writeLp(model, "q");
+
     Cbc_deleteModel(model);
 }
 
-int main() {
+/* asMIP 0 solves only the LP
+ *       1 solves as MIP */
+void testTSP(char asMIP) {
+    #define N 7
+    int oo = INT_MAX;
 
+    /* distance matrix */
+    const double d[][N] = 
+            {      /* a   b   c   d   e   f   g*/
+          /* a */  { oo, 49, 80, 56, oo, oo, 47},
+          /* b */  { 50, oo, oo, 37, 21, oo, 25},
+          /* c */  { 99, oo, oo, 52, oo, 35, oo},
+          /* d */  { 67, 39, 37, oo, 15, oo, oo},
+          /* e */  { oo, 30, oo, 20, oo, 20, 49},
+          /* f */  { oo, oo, 35, oo, 20, oo, 32},
+          /* g */  { 68, 35, oo, oo, 38, 37, oo},
+            };
+
+    /* variable indexes */
+    int x[N][N];
+    int y[N];
+    int i, j, k;
+    int idx[N];
+    double coef[N];
+    char name[256];
+    int ia;
+    int nz = 0;
+    int newConstraints;
+    double sum;
+    double opt;
+    int arcs[6][2];
+    int nArcs;
+
+    Cbc_Model *m = Cbc_newModel();
+
+    /* x variables */
+    for ( i=0 ; (i<N) ; ++i ) {
+        for ( j=0 ; j<N ; ++j ) {
+            if (d[i][j] == oo) {
+                x[i][j] = -1;
+            } else {
+                snprintf(name, 256, "x(%d,%d)", i, j);
+                x[i][j] = Cbc_getNumCols(m);
+                Cbc_addCol(m, name, 0.0, 1.0, d[i][j], asMIP, 0, NULL, NULL);
+            }
+        }
+    }
+    for ( i=0 ; (i<N) ; ++i ) {
+        snprintf(name, 256, "y(%d)", i);
+        y[i] = Cbc_getNumCols(m);
+        Cbc_addCol(m, name, 0.0, N, 0.0, asMIP, 0, NULL, NULL);
+    }
+
+    /* outbound arc selection */
+    for ( i=0 ; (i<N) ; ++i ) {
+        nz = 0;
+        for ( j=0 ; (j<N) ; ++j ) {
+            if (d[i][j] == oo)
+                continue;
+            coef[nz] = 1.0;
+            idx[nz++] = x[i][j];
+        }
+        snprintf(name, 256, "out(%d)", i);
+        Cbc_addRow(m, name, nz, idx, coef, 'E', 1.0);
+    }
+
+    /* inbound arc selection */
+    for ( j=0 ; (j<N) ; ++j ) {
+        nz = 0;
+        for ( i=0 ; (i<N) ; ++i ) {
+            if (d[i][j] == oo)
+                continue;
+            coef[nz] = 1.0;
+            idx[nz++] = x[i][j];
+        }
+        snprintf(name, 256, "in(%d)", j);
+        Cbc_addRow(m, name, nz, idx, coef, 'E', 1.0);
+    }
+
+    /* weak sub-tour elimination constraints */
+    for ( i=1 ; (i<N) ; ++i ) {
+        for ( j=1 ; (j<N) ; ++j ) {
+            nz = 0;
+
+            if (d[i][j]==oo)
+                continue;
+
+            coef[nz] = 1.0;
+            idx[nz++] = y[i];
+
+            coef[nz] = -1.0;
+            idx[nz++] = y[j];
+
+            coef[nz] = -(N+1);
+            idx[nz++] = x[i][j];
+
+            snprintf(name, 256, "from(%d)to(%d)", i, j);
+            Cbc_addRow(m, name, nz, idx, coef, 'G', -N);
+        }
+    }
+
+    Cbc_solve(m);
+    assert(Cbc_isProvenOptimal(m));
+    opt = asMIP ? 262 : 238.75;
+    assert( fabs(Cbc_getObjValue(m)-opt) <= 1e-4 );
+
+    const double *s = Cbc_getColSolution(m);
+
+    if (!asMIP) {
+
+        do {
+            newConstraints = 0;
+            /* eliminating subtours of size 2 and 3 and reoptimize */
+            for ( i=0 ; (i<N) ; ++i ) {
+                for ( j=i+1 ; j<N ; ++j ) {
+                    nArcs = 0;
+                    if (d[i][j] == oo)
+                        continue;
+                    arcs[nArcs][0] = i;
+                    arcs[nArcs++][1] = j;
+                    sum = s[x[i][j]];
+                    if (d[j][i] != oo) {
+                        arcs[nArcs][0] = j;
+                        arcs[nArcs++][1] = i;
+                        sum += s[x[j][i]];
+                        if (sum > 1.01) {
+                            idx[0] = x[i][j];
+                            idx[1] = x[j][i];
+                            coef[0] = 1.0;
+                            coef[1] = 1.0;
+                            snprintf(name, 256, "noSub(%d,%d)", i, j);
+                            Cbc_addRow(m, name, 2, idx, coef, 'L', 1.0);
+                            ++newConstraints;
+                        }
+                    }
+                    for ( k=j+1 ; k<N ; ++k ) {
+                        int pNArcs = nArcs;
+                        double pSum = sum;
+                        if (d[i][k] != oo) {
+                            arcs[nArcs][0]   = i;
+                            arcs[nArcs++][1] = k;
+                            sum += s[x[i][k]];
+                        }
+                        if (d[k][i] != oo) {
+                            arcs[nArcs][0]   = k;
+                            arcs[nArcs++][1] = i;
+                            sum += s[x[k][i]];
+                        }
+                        if (d[j][k] != oo) {
+                            arcs[nArcs][0]   = j;
+                            arcs[nArcs++][1] = k;
+                            sum += s[x[j][k]];
+                        }
+                        if (d[k][j] != oo) {
+                            arcs[nArcs][0]   = k;
+                            arcs[nArcs++][1] = j;
+                            sum += s[x[k][j]];
+                        }
+
+                        if (sum >= 2.01)
+                        {
+                            coef[0] = coef[1] = coef[2] = 1.0;
+                            coef[3] = coef[4] = coef[5] = 1.0;
+
+                            for ( ia=0 ; (ia<nArcs) ; ++ia )
+                                idx[ia] = x[arcs[ia][0]][arcs[ia][1]];
+
+                            snprintf(name, 256, "noSub(%d,%d,%d)", i, j, k);
+                            Cbc_addRow(m, name, nArcs, idx, coef, 'L', 2.0);
+                            ++newConstraints;
+                        }
+                        nArcs = pNArcs;
+                        sum = pSum;
+                    }
+                }
+            }
+            
+            printf("Model strengthened with %d sub-tour elimination constraints, reoptimizing it.", newConstraints);
+            Cbc_solve(m);
+            assert(Cbc_isProvenOptimal(m));
+            printf("New bound now %g\n", Cbc_getObjValue(m));
+        } while (newConstraints); /* reoptimize loop */
+
+        assert( fabs(Cbc_getObjValue(m)-261) <= 1e-4 );
+    } /* initially not as MIP */
+
+    Cbc_deleteModel(m);
+
+    #undef N
+}
+
+int main() {
     printf("Knapsack test\n");
     testKnapsack();
     printf("SOS test\n");
@@ -529,8 +737,9 @@ int main() {
     printf("n-Queens test\n");
     testQueens(10);
     testQueens(25);
-    testQueens(50);
-    testQueens(75);
+
+    testTSP(0);
+    testTSP(1);
 
     return 0;
 }

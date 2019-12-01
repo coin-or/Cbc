@@ -168,7 +168,8 @@ static double getTime()
 {
   struct timespec absTime2;
   my_gettime(&absTime2);
-  double time2 = absTime2.tv_sec + 1.0e-9 * static_cast< double >(absTime2.tv_nsec);
+  double time2 = static_cast<double>(absTime2.tv_sec)
+    + 1.0e-9 * static_cast< double >(absTime2.tv_nsec);
   return time2;
 }
 // Timed wait in nanoseconds - if negative then seconds
@@ -1616,8 +1617,12 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
       heuristic_[i]->setModelOnly(this);
     }
     for (i = 0; i < numberCutGenerators_; i++) {
+      bool generatorTiming = baseModel->generator_[i]->timing();
       delete generator_[i];
       generator_[i] = new CbcCutGenerator(*baseModel->generator_[i]);
+      // zero out timing
+      if (generatorTiming)
+	generator_[i]->setTiming(true);
       // refreshModel was overkill as thought too many rows
       if (generator_[i]->needsRefresh())
         generator_[i]->refreshModel(this);
@@ -1989,6 +1994,15 @@ bool CbcModel::haveMultiThreadSupport() { return true; }
 CbcBaseModel::CbcBaseModel() {}
 
 bool CbcModel::haveMultiThreadSupport() { return false; }
+
+bool CbcModel::isLocked() const { return false; }
+void CbcModel::lockThread() {}
+void CbcModel::unlockThread() {}
+void CbcModel::setInfoInChild(int type, CbcThread *info) {}
+void CbcModel::moveToModel(CbcModel *baseModel, int mode) {}
+int CbcModel::splitModel(int numberModels, CbcModel **model, int numberNodes) { return 0; }
+void CbcModel::startSplitModel(int numberIterations) {}
+void CbcModel::mergeModels(int numberModel, CbcModel **model, int numberNodes) {}
 #endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2

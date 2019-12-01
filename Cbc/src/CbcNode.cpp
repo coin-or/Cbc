@@ -3205,6 +3205,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               // See if integer solution
               feasibleSolution = model->feasibleSolution(choice.numIntInfeasDown,
                 choice.numObjInfeasDown);
+	      // Check no odd cuts
+	      if (feasibleSolution)
+		feasibleSolution = model->reallyValid();
               if (feasibleSolution
                 && model->problemFeasibility()->feasible(model, -1) >= 0) {
                 if (auxiliaryInfo->solutionAddsCuts()) {
@@ -3419,6 +3422,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               // See if integer solution
               feasibleSolution = model->feasibleSolution(choice.numIntInfeasUp,
                 choice.numObjInfeasUp);
+	      // Check no odd cuts
+	      if (feasibleSolution)
+		feasibleSolution = model->reallyValid();
               if (feasibleSolution
                 && model->problemFeasibility()->feasible(model, -1) >= 0) {
 #ifdef BONMIN
@@ -4453,6 +4459,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
           model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
             << "Skipping analyze as problem too large"
             << CoinMessageEol;
+        delete[] back;
         return 0;
       }
     }
@@ -5113,6 +5120,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       if (value <= groupValue[j] || j == 10)
         break;
     }
+    assert( j < (int)(sizeof(groupCounts)/sizeof(int)) );
     groupCounts[j]++;
   }
   general[0] = '\0';
@@ -5165,6 +5173,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
         if (value <= groupValue[j] || j == 10)
           break;
       }
+      assert( j < (int)(sizeof(groupCounts)/sizeof(int)) );
       groupCounts[j]++;
     }
   }

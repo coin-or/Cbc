@@ -160,9 +160,9 @@ void sos2a(int &error_count, int &warning_count)
 {
   OsiClpSolverInterface solver1;
 
-  int numcols = 7; // w1, w2, w3, x, fx, fplus, fminus
-  int numrows = 5; // wsum, xdef, fxdef, gapplus, gapminus
-  int nnz = 15;
+  int numcols = 7; // w1, w2, w3, fplus, fminus, x, fx
+  int numrows = 6; // wsum, xdef, fxdef, defwLo, gapplus, gapminus
+  int nnz = 16;
   CoinBigIndex *start = new int[numcols + 1];
   int *index = new int[nnz];
   double *value = new double[nnz];
@@ -175,10 +175,10 @@ void sos2a(int &error_count, int &warning_count)
   obj[0] = 0.;
   obj[1] = 0.;
   obj[2] = 0.;
-  obj[3] = 0.;
-  obj[4] = 0.;
-  obj[5] = 1.;
-  obj[6] = 1.;
+  obj[3] = 1.;
+  obj[4] = 1.;
+  obj[5] = 0.;
+  obj[6] = 0.;
 
   // column bounds
   collb[0] = 0.;
@@ -187,57 +187,59 @@ void sos2a(int &error_count, int &warning_count)
   colub[1] = solver1.getInfinity();
   collb[2] = 0.;
   colub[2] = solver1.getInfinity();
-  collb[3] = -solver1.getInfinity();
+  collb[3] = 0.;
   colub[3] = solver1.getInfinity();
-  collb[4] = -solver1.getInfinity();
+  collb[4] = 0.;
   colub[4] = solver1.getInfinity();
-  collb[5] = 0.;
+  collb[5] = -solver1.getInfinity();
   colub[5] = solver1.getInfinity();
-  collb[6] = 0.;
+  collb[6] = -solver1.getInfinity();
   colub[6] = solver1.getInfinity();
   // matrix
   start[0] = 0;
   index[0] = 0;
-  value[0] = 1.;
+  value[0] = -1.;
   index[1] = 1;
-  value[1] = 1.;
+  value[1] = -1.;
   index[2] = 2;
-  value[2] = 1.;
-  start[1] = 3;
-  index[3] = 0;
+  value[2] = -1.;
+  index[3] = 5;
   value[3] = 1.;
-  index[4] = 1;
-  value[4] = 2.;
-  index[5] = 2;
-  value[5] = 2.;
-  start[2] = 6;
-  index[6] = 0;
-  value[6] = 1.;
-  index[7] = 1;
-  value[7] = 3.;
-  index[8] = 2;
-  value[8] = 3.;
-  start[3] = 9;
-  index[9] = 1;
-  value[9] = -1.;
-  start[4] = 10;
-  index[10] = 2;
-  value[10] = -1.;
-  index[11] = 3;
-  value[11] = -1.;
-  index[12] = 4;
+  start[1] = 4;
+  index[4] = 0;
+  value[4] = -1.;
+  index[5] = 1;
+  value[5] = -2.;
+  index[6] = 2;
+  value[6] = -2.;
+  start[2] = 7;
+  index[7] = 0;
+  value[7] = -1.;
+  index[8] = 1;
+  value[8] = -3.;
+  index[9] = 2;
+  value[9] = -3.;
+  start[3] = 10;
+  index[10] = 3;
+  value[10] = 1.;
+  start[4] = 11;
+  index[11] = 4;
+  value[11] = 1.;
+  start[5] = 12;
+  index[12] = 1;
   value[12] = 1.;
-  start[5] = 13;
-  index[13] = 3;
+  start[6] = 13;
+  index[13] = 2;
   value[13] = 1.;
-  start[6] = 14;
-  index[14] = 4;
-  value[14] = 1.;
-  start[7] = 15;
+  index[14] = 3;
+  value[14] = -1.;
+  index[15] = 4;
+  value[15] = 1.;
+  start[7] = 16;
 
   // row bounds
-  rowlb[0] = 1.;
-  rowub[0] = 1.;
+  rowlb[0] = -1.;
+  rowub[0] = -1.;
   rowlb[1] = 0.;
   rowub[1] = 0.;
   rowlb[2] = 0.;
@@ -246,6 +248,8 @@ void sos2a(int &error_count, int &warning_count)
   rowub[3] = solver1.getInfinity();
   rowlb[4] = 1.3;
   rowub[4] = solver1.getInfinity();
+  rowlb[5] = 0.0;   // wLo
+  rowub[5] = solver1.getInfinity();
   solver1.loadProblem(numcols, numrows, start, index, value, collb, colub, obj, rowlb, rowub);
   double *primalval = new double[numcols];
   double *redcost = new double[numcols];
@@ -253,7 +257,7 @@ void sos2a(int &error_count, int &warning_count)
   for (int testcase = 0; testcase < 2; ++testcase) {
     switch (testcase) {
     case 0:
-      solver1.setColLower(0, 0.);
+      solver1.setRowLower(5, -1.0);
       optvalue = 0.;
       primalval[0] = .7;
       redcost[0] = 0.;
@@ -261,44 +265,43 @@ void sos2a(int &error_count, int &warning_count)
       redcost[1] = 0.;
       primalval[2] = 0.;
       redcost[2] = 0.;
-      primalval[3] = 1.3;
-      redcost[3] = 0.;
-      primalval[4] = 1.3;
-      redcost[4] = 0.;
-      primalval[5] = 0.;
-      redcost[5] = 1.;
-      primalval[6] = 0.;
-      redcost[6] = 1.;
+      primalval[5] = 1.3;
+      redcost[5] = 0.;
+      primalval[6] = 1.3;
+      redcost[6] = 0.;
+      primalval[3] = 0.;
+      redcost[3] = 1.;
+      primalval[4] = 0.;
+      redcost[4] = 1.;
       break;
     case 1:
-      solver1.setColLower(0, .8);
+      solver1.setRowLower(5, .8);
       optvalue = 0.1;
       primalval[0] = .8;
-      redcost[0] = 1.;
+      redcost[0] = 0.;
       primalval[1] = .2;
       redcost[1] = 0.;
       primalval[2] = 0.;
       redcost[2] = -1.;
-      primalval[3] = 1.2;
-      redcost[3] = 0.;
-      primalval[4] = 1.2;
+      primalval[3] = 0.;
+      redcost[3] = 1.;
+      primalval[4] = 0.1;
       redcost[4] = 0.;
-      primalval[5] = 0.;
-      redcost[5] = 1.;
-      primalval[6] = 0.1;
+      primalval[5] = 1.2;
+      redcost[5] = 0.;
+      primalval[6] = 1.2;
       redcost[6] = 0.;
       break;
     }
     CbcModel model(solver1);
-    CbcSolverUsefulData data;
-    CbcMain0(model, data);
+    CbcMain0(model);
     int which[3] = { 0, 1, 2 };
     CbcObject *sosobject = new CbcSOS(&model, 3, which, NULL, 0, 2);
     model.addObjects(1, &sosobject);
     delete sosobject;
     const char *argv2[] = { "gamstest_sos2a", "-solve", "-quit" };
-    cout << "\nSolving sos2a model with w1 having lower bound " << solver1.getColLower()[0] << endl;
-    CbcMain1(3, argv2, model, NULL, data);
+    cout << "\nSolving sos2a model with last row having lhs " << solver1.getRowLower()[5] << endl;
+    CbcMain1(3, argv2, model, NULL);
     cout << endl;
     if (!model.isProvenOptimal()) {
       cerr << "Error: Model sos2a not solved to optimality." << endl;

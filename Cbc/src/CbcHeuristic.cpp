@@ -1153,6 +1153,11 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             << CoinMessageEol;
           // going for full search and copy across more stuff
           model.gutsOfCopy(*model_, 2);
+          
+          if (model.solver()->getCGraph()) {
+            model.solver()->buildCGraph();
+          }
+
 #ifdef CGL_DEBUG
           if ((model_->specialOptions() & 1) != 0) {
             const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger();

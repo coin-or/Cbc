@@ -597,7 +597,7 @@ int readAmpl(ampl_info *info, int argc, char **argv, void **coinModel)
       const char *argument = info->arguments[i];
       for (j = 0; j < sizeof(something) / sizeof(char *); j++) {
         const char *check = something[j];
-        if (!strncmp(argument, check, sizeof(check))) {
+        if (!strncmp(argument, check, strlen(check))) {
           found = (int)(j + 1);
         } else if (!strncmp(argument, "log", 3)) {
           foundLog = 1;

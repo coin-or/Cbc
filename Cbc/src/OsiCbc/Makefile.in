@@ -275,7 +275,6 @@ CBCUNITTEST_CFLAGS_NOPC = @CBCUNITTEST_CFLAGS_NOPC@
 CBCUNITTEST_LFLAGS = @CBCUNITTEST_LFLAGS@
 CBCUNITTEST_LFLAGS_NOPC = @CBCUNITTEST_LFLAGS_NOPC@
 CBCUNITTEST_PCFILES = @CBCUNITTEST_PCFILES@
-CBC_SVN_REV = @CBC_SVN_REV@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -379,7 +378,6 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
-have_svnversion = @have_svnversion@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -835,13 +833,12 @@ uninstall-doxygen-docs:
 	fi
 	rmdir $(DESTDIR)$(pkgdocdir) || true
 
-install-doc: $(DocFiles)
+install-doc:
 	$(mkdir_p) "$(DESTDIR)$(pkgdocdir)"
 	for file in $(DocFiles); do \
 	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
 	  if test -f "$$dir$$file"; then \
-	    $(INSTALL_DATA) "$$dir$$file" \
-	        "$(DESTDIR)$(pkgdocdir)/$$file"; \
+	    $(INSTALL_DATA) "$$dir$$file" "$(DESTDIR)$(pkgdocdir)/$$file"; \
 	  fi; \
 	done
 

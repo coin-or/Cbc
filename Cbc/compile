@@ -1,9 +1,9 @@
-#!/usr/bin/sh
+#! /bin/sh
 # Wrapper for compilers which do not understand '-c -o'.
 
-scriptversion=2012-10-14.11; # UTC
+scriptversion=2018-03-07.03; # UTC
 
-# Copyright (C) 1999-2015 Free Software Foundation, Inc.
+# Copyright (C) 1999-2018 Free Software Foundation, Inc.
 # Written by Tom Tromey <tromey@cygnus.com>.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@ scriptversion=2012-10-14.11; # UTC
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # As a special exception to the GNU General Public License, if you
 # distribute this file as part of a program that contains a
@@ -133,6 +133,9 @@ func_cl_wrapper ()
   lib_path=
   shared=:
   linker_opts=
+  outfile=
+  implib=
+  linking=1
   for arg
   do
     if test -n "$eat"; then
@@ -147,11 +150,13 @@ func_cl_wrapper ()
 	      func_file_conv "$2"
 	      set x "$@" -Fo"$file"
 	      shift
+	      outfile="$file"
 	      ;;
 	    *)
 	      func_file_conv "$2"
 	      set x "$@" -Fe"$file"
 	      shift
+	      outfile="$file"
 	      ;;
 	  esac
 	  ;;
@@ -193,6 +198,7 @@ func_cl_wrapper ()
 	  for flag in $arg; do
 	    IFS="$save_ifs"
 	    linker_opts="$linker_opts $flag"
+	    case "$flag" in -IMPLIB:*) implib=${flag#-IMPLIB:} ;; esac
 	  done
 	  IFS="$save_ifs"
 	  ;;
@@ -214,6 +220,11 @@ func_cl_wrapper ()
 	  set x "$@" "$file"
 	  shift
 	  ;;
+	-c)
+	  linking=0
+	  set x "$@" "$1"
+	  shift
+	  ;;
 	*)
 	  set x "$@" "$1"
 	  shift
@@ -225,8 +236,28 @@ func_cl_wrapper ()
   if test -n "$linker_opts"; then
     linker_opts="-link$linker_opts"
   fi
-  exec "$@" $linker_opts
-  exit 1
+  # remove old $implib, so we can distinguish between generated and not-generated implib below
+  if test -n "$implib" && test -f "$implib" ; then rm "$implib" ; fi
+
+  # add path to MSVC link in front on PATH if we seem to link (check isn't so accurate, but some false-positives shouldn't matter)
+  # compiler will call the link it finds in the PATH, and we don't want it to use MSYS' /bin/link
+  # we assume that MSVC link is in same directory as cl and that cl is found in PATH
+  if test "$linking" = 1 && comppath=`which cl 2>/dev/null` ; then
+    comppath=`dirname "$comppath"`
+    #echo "Adding $comppath to front of PATH"
+    PATH="$comppath:$PATH"
+  fi
+
+  #echo "compile: $@ $linker_opts"
+  "$@" $linker_opts || exit $?
+
+  # if -implib got lost or ignored, then the lib should be named ${outfile/.dll/.lib} and we rename that file
+  if test -n "$implib" && test ! -f "$implib" ; then
+    echo "compile: mv ${outfile/.dll/.lib} $implib"
+    mv "${outfile/.dll/.lib}" "$implib"
+  fi
+
+  exit 0
 }
 
 eat=
@@ -255,7 +286,9 @@ EOF
     echo "compile $scriptversion"
     exit $?
     ;;
-  cl | *[/\\]cl | cl.exe | *[/\\]cl.exe )
+  cl | *[/\\]cl | cl.exe | *[/\\]cl.exe | \
+  icl | *[/\\]icl | icl.exe | *[/\\]icl.exe | \
+  ifort | *[/\\]ifort | ifort.exe | *[/\\]ifort.exe )
     func_cl_wrapper "$@"      # Doesn't return...
     ;;
 esac
@@ -339,9 +372,9 @@ exit $ret
 # Local Variables:
 # mode: shell-script
 # sh-indentation: 2
-# eval: (add-hook 'write-file-hooks 'time-stamp)
+# eval: (add-hook 'before-save-hook 'time-stamp)
 # time-stamp-start: "scriptversion="
 # time-stamp-format: "%:y-%02m-%02d.%02H"
-# time-stamp-time-zone: "UTC"
+# time-stamp-time-zone: "UTC0"
 # time-stamp-end: "; # UTC"
 # End:

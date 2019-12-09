@@ -8260,7 +8260,7 @@ int CbcMain1(int argc, const char *argv[],
               // stdin
               canOpen = true;
               fileName = "-";
-            } else if (field == "stdin_lp") {
+            } else if (field == "-lp" || field == "stdin_lp") {
               // stdin
               canOpen = true;
               fileName = "-";

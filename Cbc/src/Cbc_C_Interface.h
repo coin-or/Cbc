@@ -1328,6 +1328,12 @@ Osi_deleteSolver( void *osi );
 COINLIBAPI void COINLINKAGE 
 OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs );
 
+/** adds a row cut (used in callback), stating that this is a globally valid cut */
+COINLIBAPI void COINLINKAGE 
+OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs );
+
+
+
 /*@}*/
 
 #ifdef __cplusplus

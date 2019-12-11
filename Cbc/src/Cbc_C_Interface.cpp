@@ -1511,7 +1511,7 @@ Cbc_solve(Cbc_Model *model)
     clps->setMaximumWallSeconds(maxTime);
   solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
-  if (not cbc_annouced) {
+  if (! cbc_annouced) {
     char generalPrint[512];
       sprintf(generalPrint,
         "Welcome to the CBC MILP Solver \n");
@@ -3200,6 +3200,53 @@ OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, ch
 
   oc->insert(orc);
 }
+
+/** adds a row cut (used in callback), stating that this is a globally valid cut */
+COINLIBAPI void COINLINKAGE 
+OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs )
+{
+  sense = toupper(sense);
+  OsiCuts *oc = (OsiCuts *) osiCuts;
+
+  OsiRowCut orc;
+  orc.setRow( nz, idx, coef );
+
+
+  orc.setLb(-DBL_MAX);
+  orc.setUb(DBL_MAX);
+
+  switch (toupper(sense)) {
+  case '=':
+    orc.setLb(rhs);
+    orc.setUb(rhs);
+    break;
+  case 'E':
+    orc.setLb(rhs);
+    orc.setUb(rhs);
+    break;
+  case '<':
+    orc.setUb(rhs);
+    break;
+  case 'L':
+    orc.setUb(rhs);
+    break;
+  case '>':
+    orc.setLb(rhs);
+    break;
+  case 'G':
+    orc.setLb(rhs);
+    break;
+  default:
+    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    abort();
+  }
+
+  orc.setGloballyValid(true);
+  oc->insert(orc);
+}
+
+
+
 
 /** @brief Sets a variable to integer */
 COINLIBAPI void COINLINKAGE

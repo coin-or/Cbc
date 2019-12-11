@@ -113,6 +113,9 @@ int computeCompleteSolution(CbcModel *model,
   double compObj = COIN_DBL_MAX;
   bool foundIntegerSol = false;
   OsiSolverInterface *lp = model->solver()->clone();
+  
+  
+
   map< string, int > colIdx;
   assert((static_cast< int >(colNames.size())) == lp->getNumCols());
   /* for fast search of column names */
@@ -124,6 +127,13 @@ int computeCompleteSolution(CbcModel *model,
   int notFound = 0;
   char colNotFound[256] = "";
   int nContinuousFixed = 0;
+
+  // assuming that variables not fixed are more likely to have zero as value,
+  // inserting as default objective function 1
+  {
+    vector< double > obj(lp->getNumCols(), 1.0);
+    lp->setObjective(&obj[0]);
+  }
 
 #ifndef JUST_FIX_INTEGER
 #define JUST_FIX_INTEGER 0

@@ -2909,7 +2909,7 @@ void CbcModel::branchAndBound(int doStatistics)
   }
   if (!numberUnsatisfied&&(moreSpecialOptions2_&65536)!=0) {
     // lazy constraints - see if OK
-    if (!reallyValid())
+    if (!reallyValid(&cuts))
       numberUnsatisfied=1;
   }
   // replace solverType
@@ -19666,7 +19666,7 @@ CbcModel::deleteNode(CbcNode * node)
 // Check if a solution is really valid e.g. lazy constraints
 // Returns true if ok or normal cuts (i.e. no atSolution ones)
 bool
-CbcModel::reallyValid()
+CbcModel::reallyValid(OsiCuts * existingCuts)
 {
   if ((moreSpecialOptions2_&65536)==0)
     return true;
@@ -19706,6 +19706,9 @@ CbcModel::reallyValid()
 	  newCut.mutableRow().setTestForDuplicateIndex(false);
 	  globalCuts_.addCutIfNotDuplicate(newCut);
 	  generator_[i]->incrementNumberCutsInTotal();
+	  // and to existing cuts
+	  if (existingCuts)
+	    existingCuts->insertIfNotDuplicate(newCut);
 	}
       }
     }

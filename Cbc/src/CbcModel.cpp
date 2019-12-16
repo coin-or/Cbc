@@ -10444,7 +10444,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom,
     if ((specialOptions_ & 1) != 0 && onOptimalPath) {
       solver_->writeMpsNative("before-tighten.mps", NULL, NULL, 2);
     }
-    if (clpSolver && (!currentNode_ || (currentNode_->depth() & 2) != 0) && !solverCharacteristics_->solutionAddsCuts() && (moreSpecialOptions_ & 1073741824) == 0)
+    if (clpSolver && (!currentNode_ || (currentNode_->depth() & 2) != 0) && !solverCharacteristics_->solutionAddsCuts() && (moreSpecialOptions_ & 1073741824) == 0 && (moreSpecialOptions2_&65536) == 0)
       nTightened = clpSolver->tightenBounds();
     if (nTightened) {
       //printf("%d bounds tightened\n",nTightened);

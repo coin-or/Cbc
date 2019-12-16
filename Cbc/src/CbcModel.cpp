@@ -19686,29 +19686,34 @@ CbcModel::reallyValid(OsiCuts * existingCuts)
     if (generate) {
       generator_[i]->generateCuts(theseCuts, 1, solver_, NULL);
       int numberCuts = theseCuts.sizeRowCuts();
+      const double * solution = solver_->getColSolution();
+      double integerTolerance = getDblParam(CbcIntegerTolerance);
       for (int j = lastNumberCuts; j < numberCuts; j++) {
 	const OsiRowCut *thisCut = theseCuts.rowCutPtr(j);
-	if (thisCut->globallyValid()) {
-	  if ((specialOptions_ & 1) != 0) {
-	    /* As these are global cuts -
-	       a) Always get debugger object
-	       b) Not fatal error to cutoff optimal (if we have just got optimal)
-	    */
-	    const OsiRowCutDebugger *debugger = solver_->getRowCutDebuggerAlways();
-	    if (debugger) {
-	      if (debugger->invalidCut(*thisCut))
-		printf("ZZZZ Global cut - cuts off optimal solution!\n");
+	// Check if cut generator is stupid
+	if (thisCut->violated(solution) > integerTolerance) {
+	  if (thisCut->globallyValid()) {
+	    if ((specialOptions_ & 1) != 0) {
+	      /* As these are global cuts -
+		 a) Always get debugger object
+		 b) Not fatal error to cutoff optimal (if we have just got optimal)
+	      */
+	      const OsiRowCutDebugger *debugger = solver_->getRowCutDebuggerAlways();
+	      if (debugger) {
+		if (debugger->invalidCut(*thisCut))
+		  printf("ZZZZ Global cut - cuts off optimal solution!\n");
+	      }
 	    }
+	    // add to global list
+	    OsiRowCut newCut(*thisCut);
+	    newCut.setGloballyValid(true);
+	    newCut.mutableRow().setTestForDuplicateIndex(false);
+	    globalCuts_.addCutIfNotDuplicate(newCut);
+	    generator_[i]->incrementNumberCutsInTotal();
+	    // and to existing cuts
+	    if (existingCuts)
+	      existingCuts->insertIfNotDuplicate(newCut);
 	  }
-	  // add to global list
-	  OsiRowCut newCut(*thisCut);
-	  newCut.setGloballyValid(true);
-	  newCut.mutableRow().setTestForDuplicateIndex(false);
-	  globalCuts_.addCutIfNotDuplicate(newCut);
-	  generator_[i]->incrementNumberCutsInTotal();
-	  // and to existing cuts
-	  if (existingCuts)
-	    existingCuts->insertIfNotDuplicate(newCut);
 	}
       }
     }

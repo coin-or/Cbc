@@ -17000,6 +17000,8 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node, CbcNode *&newNode)
           * The node was found to be infeasible, in which case it's already been
           deleted, and newNode is null.
         */
+    // Set currentNode_ so can be used in handler
+    currentNode_ = newNode;
     if (eventHandler_ && !eventHandler_->event(CbcEventHandler::node)) {
       eventHappened_ = true; // exit
     }

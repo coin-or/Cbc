@@ -1818,7 +1818,7 @@ Cbc_solve(Cbc_Model *model)
     }
 #ifdef CBC_THREAD
     if (model->int_param[INT_PARAM_THREADS] > 1)
-      *model->cbcModel_->setNumberThreads(model->int_param[INT_PARAM_THREADS]);
+      model->cbcModel_->setNumberThreads(model->int_param[INT_PARAM_THREADS]);
 #endif
     CbcMain1( nargs, args, *model->cbcModel_, cbc_callb, cbcData );
 

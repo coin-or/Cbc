@@ -209,7 +209,8 @@ struct Cbc_Model {
   void *pgrAppData;
 
 #ifdef CBC_THREAD
-  pthread_mutex_t cbcMutex;
+  pthread_mutex_t cbcMutexCG;
+  pthread_mutex_t cbcMutexEvent;
 #endif
 
 
@@ -333,7 +334,6 @@ void CglCallback::generateCuts( const OsiSolverInterface &si, OsiCuts &cs, const
 #endif
 
   this->cut_callback_( (OsiSolverInterface *) &si, &cs, this->appdata );
-
 
 #ifdef CBC_THREAD
     pthread_mutex_unlock((this->cbcMutex));
@@ -1002,7 +1002,8 @@ Cbc_newModel()
   Cbc_iniBuffer(model);
 
 #ifdef CBC_THREAD
-  pthread_mutex_init(&(model->cbcMutex), NULL);
+  pthread_mutex_init(&(model->cbcMutexCG), NULL);
+  pthread_mutex_init(&(model->cbcMutexEvent), NULL);
 #endif
 
   model->lazyConstrs = NULL;
@@ -1025,7 +1026,8 @@ Cbc_deleteModel(Cbc_Model *model)
   }
 
 #ifdef CBC_THREAD
-  pthread_mutex_destroy(&(model->cbcMutex));
+  pthread_mutex_destroy(&(model->cbcMutexCG));
+  pthread_mutex_destroy(&(model->cbcMutexEvent));
 #endif
 
   if (model->colNameIndex)
@@ -1714,7 +1716,7 @@ Cbc_solve(Cbc_Model *model)
     {
       cbc_eh = new Cbc_EventHandler(model->cbcModel_);
 #ifdef CBC_THREAD
-      cbc_eh->cbcMutex = &(model->cbcMutex);
+      cbc_eh->cbcMutex = &(model->cbcMutexEvent);
 #endif
 
       if (model->inc_callback) {
@@ -1740,7 +1742,7 @@ Cbc_solve(Cbc_Model *model)
       cglCb.appdata = model->cutCBData;
       cglCb.cut_callback_ = model->cut_callback;
 #ifdef CBC_THREAD
-      cglCb.cbcMutex = &(model->cbcMutex);
+      cglCb.cbcMutex = &(model->cbcMutexCG);
 #endif
       cbcModel->addCutGenerator( &cglCb, model->cutCBhowOften, model->cutCBName.c_str(), true, model->cutCBAtSol );
     }
@@ -2621,7 +2623,8 @@ Cbc_clone(Cbc_Model *model)
   }
 
 #ifdef CBC_THREAD
-  pthread_mutex_init(&(result->cbcMutex), NULL);
+  pthread_mutex_init(&(result->cbcMutexCG), NULL);
+  pthread_mutex_init(&(result->cbcMutexEvent), NULL);
 #endif
 
   // copying parameters

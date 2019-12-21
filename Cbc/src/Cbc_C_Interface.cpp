@@ -1816,6 +1816,10 @@ Cbc_solve(Cbc_Model *model)
       printf("\nStarting MIP optimization\n");
       fflush(stdout);
     }
+#ifdef CBC_THREAD
+    if (model->int_param[INT_PARAM_THREADS] > 1)
+      *model->cbcModel_->setNumberThreads(model->int_param[INT_PARAM_THREADS]);
+#endif
     CbcMain1( nargs, args, *model->cbcModel_, cbc_callb, cbcData );
 
     free(charCbcOpts);
@@ -3677,6 +3681,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_LOG_LEVEL]        =        1;
   model->int_param[INT_PARAM_MAX_SAVED_SOLS]   =       -1;
   model->int_param[INT_PARAM_MULTIPLE_ROOTS]   =        0;
+  model->int_param[INT_PARAM_THREADS]          =       -1;
 
   model->dbl_param[DBL_PARAM_PRIMAL_TOL]       =          1e-6;
   model->dbl_param[DBL_PARAM_DUAL_TOL]         =          1e-6;

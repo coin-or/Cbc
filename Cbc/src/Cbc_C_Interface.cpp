@@ -1735,6 +1735,10 @@ Cbc_solve(Cbc_Model *model)
 #endif
       cbcModel->addCutGenerator( &cglCb, model->cutCBhowOften, model->cutCBName.c_str(), true, model->cutCBAtSol );
     }
+    if (model->cutCBAtSol) {
+      Cbc_setParameter(model, "preprocess", "off");
+      Cbc_setParameter(model, "heur", "off");        
+    }
 
     Cbc_MessageHandler *cbcmh  = NULL;
 
@@ -2907,6 +2911,7 @@ Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double
     strcpy( model->colNamesMS[i], colNames[i] );
 
   memcpy(model->colValuesMS, colValues, sizeof(double)*count );
+  model->nColsMS = count;
 }
 
 COINLIBAPI void COINLINKAGE

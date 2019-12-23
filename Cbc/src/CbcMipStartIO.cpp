@@ -127,6 +127,8 @@ int computeCompleteSolution(CbcModel *model,
   int notFound = 0;
   char colNotFound[256] = "";
   int nContinuousFixed = 0;
+  double *realObj = new double[lp->getNumCols()];
+  memcpy(realObj, lp->getObjCoefficients(), sizeof(double)*lp->getNumCols());
 
   // assuming that variables not fixed are more likely to have zero as value,
   // inserting as default objective function 1
@@ -373,7 +375,11 @@ int computeCompleteSolution(CbcModel *model,
     }
   } else {
     foundIntegerSol = true;
-    obj = compObj = lp->getObjValue();
+    
+    obj = 0.0;
+    for ( int i=0 ; (i<lp->getNumCols()) ; ++i )
+        obj += realObj[i]*lp->getColSolution()[i];
+    compObj = obj;
     copy(lp->getColSolution(), lp->getColSolution() + lp->getNumCols(), sol);
   }
 
@@ -616,6 +622,7 @@ int computeCompleteSolution(CbcModel *model,
   }
 
 TERMINATE:
+  delete[] realObj;
   delete lp;
   return status;
 }

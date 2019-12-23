@@ -476,6 +476,12 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
 
           for ( int i=0 ; (i<(int)sol.size()) ; ++i ) 
               strcpy( cnames[i], sol[i].first.c_str() );
+          int ik = 0;
+          for (int i = 0; (i < solver->getNumCols()); ++i) {
+            if (fabs(x[i]) <= 1e-7)
+                continue;
+            xv[ik++] = x[i];
+          }
 
           this->inc_callback(model_, bestCost, nNZ, cnames, xv, this->appData);
 

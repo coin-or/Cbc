@@ -10,6 +10,7 @@
 #include <cctype>
 #include <map>
 #include <string>
+#include <vector>
 #ifdef CBC_THREAD
 #include <pthread.h>
 #endif
@@ -454,39 +455,27 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
       if (bestCost >= solver->getObjValue() + 1e-10) {
           bestCost = solver->getObjValue();
 
+          
         if (this->inc_callback != NULL) {
-          int charSize = 0, nNZ = 0;
+          int charSize = 0;
           const double *x = solver->getColSolution();
+          std::vector< std::pair<string, double> > sol;
           for (int i = 0; (i < solver->getNumCols()); ++i) {
             if (fabs(x[i]) <= 1e-7)
                 continue;
+            sol.push_back( std::pair<std::string, double>( solver->getColName(i), x[i] ));
             charSize += (int)solver->getColName(i).size()+1;
-            ++nNZ;
           } // checking non zero cols
+          size_t nNZ = sol.size();
           char **cnames = new char*[nNZ];
           double *xv = new double[nNZ];
           cnames[0] = new char[charSize];
+          
+          for ( int i=1 ; (i<(int)sol.size()) ; ++i ) 
+              cnames[i] = cnames[i-1] + sol[i-1].first.size()+1;
 
-          int cnz = 0;
-          for (int i = 0; (i < solver->getNumCols()); ++i)
-          {
-            if (fabs(x[i]) <= 1e-7)
-              continue;
-            if (cnz>=1)
-              cnames[cnz] = cnames[cnz-1] + solver->getColName(i).size()+1;
-            cnz++;
-          }
-
-          cnz = 0;
-          for (int i = 0; (i < solver->getNumCols()); ++i)
-          {
-            if (fabs(x[i]) <= 1e-7)
-                continue;
-            strcpy(cnames[cnz], solver->getColName(i).c_str());
-            xv[cnz] = x[i];
-
-            cnz++;
-          }
+          for ( int i=0 ; (i<(int)sol.size()) ; ++i ) 
+              strcpy( cnames[i], sol[i].first.c_str() );
 
           this->inc_callback(model_, bestCost, nNZ, cnames, xv, this->appData);
 

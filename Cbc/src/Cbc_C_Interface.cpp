@@ -455,7 +455,6 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
       if (bestCost >= solver->getObjValue() + 1e-10) {
           bestCost = solver->getObjValue();
 
-          
         if (this->inc_callback != NULL) {
           int charSize = 0;
           const double *x = solver->getColSolution();
@@ -470,18 +469,12 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
           char **cnames = new char*[nNZ];
           double *xv = new double[nNZ];
           cnames[0] = new char[charSize];
-          
           for ( int i=1 ; (i<(int)sol.size()) ; ++i ) 
               cnames[i] = cnames[i-1] + sol[i-1].first.size()+1;
-
           for ( int i=0 ; (i<(int)sol.size()) ; ++i ) 
               strcpy( cnames[i], sol[i].first.c_str() );
-          int ik = 0;
-          for (int i = 0; (i < solver->getNumCols()); ++i) {
-            if (fabs(x[i]) <= 1e-7)
-                continue;
-            xv[ik++] = x[i];
-          }
+          for (int i = 0; (i < (int)nNZ); ++i)
+            xv[i] = sol[i].second;
 
           this->inc_callback(model_, bestCost, nNZ, cnames, xv, this->appData);
 

@@ -5315,6 +5315,8 @@ void CbcModel::branchAndBound(int doStatistics)
     if (atSolutionSolver_) {
       delete solver_;
       solver_ = atSolutionSolver_;
+      solverCharacteristics_ =
+	dynamic_cast< OsiBabSolver * >(solver_->getAuxiliaryInfo());
       delete continuousSolver_;
       continuousSolver_ = solver_->clone();
       atSolutionSolver_ = NULL;

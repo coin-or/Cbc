@@ -34,6 +34,7 @@
 #include "ClpDualRowDantzig.hpp"
 #include "ClpPEDualRowSteepest.hpp"
 #include "ClpPEDualRowDantzig.hpp"
+#include "CbcMipStartIO.hpp"
 #include "ClpMessage.hpp"
 #include <OsiAuxInfo.hpp>
 
@@ -2759,6 +2760,34 @@ Cbc_addLazyConstraint(Cbc_Model *model, int nz,
   }
 
   model->lazyConstrs->addCut(orc);
+}
+
+COINLIBAPI void COINLINKAGE
+Cbc_readMIPStart(Cbc_Model *model, const char fileName[]) {
+  std::vector< std::pair< std::string, double > > colValues;
+  double obj;
+  CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
+  CoinMessageHandler *messHandler = model->solver_->messageHandler();
+  CbcMipStartIO::read(model->solver_, fileName, colValues, obj, messHandler, &generalMessages);
+  
+  char **cnames = new char*[colValues.size()];
+  size_t charSpace = 0;
+  for ( int i=0 ; (i<(int)colValues.size()) ; ++i )
+    charSpace += colValues[i].first.size() + 1;
+  cnames[0] = new char[charSpace];
+  for ( int i=1 ; (i<(int)colValues.size()) ; ++i )
+    cnames[i] = cnames[i-1] + colValues[i-1].first.size() + 1;
+
+  double *cval = new double[colValues.size()];
+  for ( int i=0 ; (i<(int)colValues.size()) ; ++i ) {
+    cval[i] = colValues[i].second;
+    strcpy(cnames[i], colValues[i].first.c_str());
+  }
+
+  Cbc_setMIPStart(model, colValues.size(), (const char **) cnames, cval);
+  delete[] cnames[0];
+  delete[] cnames;
+  delete[] cval;
 }
 
 COINLIBAPI void COINLINKAGE

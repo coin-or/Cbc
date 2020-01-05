@@ -97,7 +97,7 @@ CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
 CInterfaceTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
 
 ctests: CInterfaceTest$(EXEEXT)
-	./CInterfaceTest$(EXEEXT)
+	./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 
 ########################################################################
 #                          Cleaning stuff                              #

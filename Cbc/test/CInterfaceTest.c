@@ -890,10 +890,14 @@ void subTourSep(void *osiSolver, void *osiCuts, void *appdata) {
  }
 
 void testTSPUlysses22( char lazy ) {
-    if (lazy)
-        printf("Testing with lazy constraints\n");
-    else
-        printf("Testing without lazy constraints\n");
+    if (lazy) {
+        printf("TSP Test with 22 cities, with lazy constraints\n");
+        printf("==============================================\n");
+    }
+    else {
+        printf("TSP Test with 22 cities, without lazy constraints\n");
+        printf("=================================================\n");
+    }
     const int n = 22;
     double coord[22][2] = {
          {38.24, 20.42}, {39.57, 26.15}, {40.56, 25.32}, {36.26, 23.12},
@@ -1095,11 +1099,13 @@ int main() {
     printf("n-Queens test\n");
     testQueens(10);
     testQueens(25);
+    
+    /* TSP test with 7 cities */
+    testTSP(0);  /* only the LP */
+    testTSP(1);  /* solving as MIP */
 
-    printf("TSP test 1 test\n");
-    testTSP(0);
-    testTSP(1);
-
+    /* TSP test with 22 cities, with and without
+     * lazy constraints */
     testTSPUlysses22( 1 );
     testTSPUlysses22( 0 );
 

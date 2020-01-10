@@ -937,7 +937,7 @@ with_cplex_cflags
 with_glpk
 with_glpk_lflags
 with_glpk_cflags
-with_cbc_generic
+enable_cbc_generic
 with_cbc_generic_solver
 enable_cbc_parallel
 with_pthreadsw32_lib
@@ -1597,6 +1597,7 @@ Optional Features:
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-readline      do not compile with readline library
+  --enable-cbc-generic    enables build of cbc-generic
   --enable-cbc-parallel   enables compilation of the SMP version of Cbc
 
 Optional Packages:
@@ -1764,7 +1765,6 @@ Optional Packages:
   --with-glpk-cflags      Compiler flags for Glpk appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-cbc-generic      specify whether to build cbc-generic (default: no)
   --with-cbc-generic-solver
                           specify default solver for cbc-generic in lower case
                           letters (if not given, clp is assumed)
@@ -22119,22 +22119,18 @@ $as_echo "$as_me: CBCUNITTEST_CFLAGS: \"${CBCUNITTEST_CFLAGS}\"" >&6;}
 
 # Are we building cbc-generic? Default is no (false).
 
-
-# Check whether --with-cbc-generic was given.
-if test "${with_cbc_generic+set}" = set; then :
-  withval=$with_cbc_generic; case $withval in
-    yes) cbc_with_cbc_generic=true ;;
-      *) cbc_with_cbc_generic=false ;;
-   esac
+# Check whether --enable-cbc-generic was given.
+if test "${enable_cbc_generic+set}" = set; then :
+  enableval=$enable_cbc_generic; cbc_generic=$enableval
 else
-  cbc_with_cbc_generic=false
+  cbc_generic=no
 fi
 
-if test x"$cbc_with_cbc_generic" = xyes ; then
+if test x"$cbc_generic" = xyes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: building cbc-generic" >&5
 $as_echo "$as_me: building cbc-generic" >&6;}
 fi
- if test x"$cbc_with_cbc_generic" = xtrue; then
+ if test "$cbc_generic" = yes; then
   CBC_BUILD_CBC_GENERIC_TRUE=
   CBC_BUILD_CBC_GENERIC_FALSE='#'
 else
@@ -22143,6 +22139,7 @@ else
 fi
 
 
+if test "$cbc_generic" = yes ; then
 # Set the default solver for cbc-generic. In theory, any OsiXXX should work.
 # In practice, only the three listed below have had any testing.
 
@@ -22177,7 +22174,7 @@ cat >>confdefs.h <<_ACEOF
 #define CBC_DEFAULT_SOLVER "$cbc_default_solver"
 _ACEOF
 
-
+fi
 
 #############################################################################
 #                       Cbc parallel configuration	                         #

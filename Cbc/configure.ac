@@ -126,18 +126,16 @@ AC_COIN_FINALIZE_FLAGS([CbcLib CbcSolverLib CbcGeneric OsiCbcLib CbcUnitTest])
 
 # Are we building cbc-generic? Default is no (false).
 
-AC_ARG_WITH([cbc-generic],
-  AS_HELP_STRING([--with-cbc-generic],[specify whether to build cbc-generic (default: no)]),
-  [case $withval in
-    yes) cbc_with_cbc_generic=true ;;
-      *) cbc_with_cbc_generic=false ;;
-   esac],
-  [cbc_with_cbc_generic=false])
-if test x"$cbc_with_cbc_generic" = xyes ; then
+AC_ARG_ENABLE([cbc-generic],
+  AS_HELP_STRING([--enable-cbc-generic],[enables build of cbc-generic]),
+  [cbc_generic=$enableval],
+  [cbc_generic=no])
+if test x"$cbc_generic" = xyes ; then
   AC_MSG_NOTICE([building cbc-generic])
 fi
-AM_CONDITIONAL(CBC_BUILD_CBC_GENERIC, test x"$cbc_with_cbc_generic" = xtrue)
+AM_CONDITIONAL(CBC_BUILD_CBC_GENERIC, test "$cbc_generic" = yes)
 
+if test "$cbc_generic" = yes ; then
 # Set the default solver for cbc-generic. In theory, any OsiXXX should work.
 # In practice, only the three listed below have had any testing.
 
@@ -163,7 +161,7 @@ case $cbc_default_solver in
 esac
 AC_DEFINE_UNQUOTED([CBC_DEFAULT_SOLVER],"$cbc_default_solver",
   [Define to the name of the default solver to be used in cbc-generic in small letters])
-
+fi
 
 #############################################################################
 #                       Cbc parallel configuration	                         #

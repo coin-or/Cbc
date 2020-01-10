@@ -214,9 +214,9 @@ libCbc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(CXXFLAGS) $(libCbc_la_LDFLAGS) $(LDFLAGS) -o $@
 libCbcSolver_la_DEPENDENCIES = $(am__DEPENDENCIES_1) libCbc.la
 am_libCbcSolver_la_OBJECTS = Cbc_C_Interface.lo CbcCbcParam.lo \
-	Cbc_ampl.lo CbcLinked.lo CbcLinkedUtils.lo unitTestClp.lo \
-	CbcSolver.lo CbcSolverHeuristics.lo CbcSolverAnalyze.lo \
-	CbcMipStartIO.lo CbcSolverExpandKnapsack.lo
+	CbcLinked.lo CbcLinkedUtils.lo unitTestClp.lo CbcSolver.lo \
+	CbcSolverHeuristics.lo CbcSolverAnalyze.lo CbcMipStartIO.lo \
+	CbcSolverExpandKnapsack.lo
 libCbcSolver_la_OBJECTS = $(am_libCbcSolver_la_OBJECTS)
 libCbcSolver_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
@@ -317,8 +317,7 @@ am__depfiles_remade = ./$(DEPDIR)/CbcBranchAllDifferent.Plo \
 	./$(DEPDIR)/CbcSubProblem.Plo ./$(DEPDIR)/CbcSymmetry.Plo \
 	./$(DEPDIR)/CbcThread.Plo ./$(DEPDIR)/CbcTree.Plo \
 	./$(DEPDIR)/CbcTreeLocal.Plo ./$(DEPDIR)/Cbc_C_Interface.Plo \
-	./$(DEPDIR)/Cbc_ampl.Plo ./$(DEPDIR)/CoinSolve.Po \
-	./$(DEPDIR)/unitTestClp.Plo
+	./$(DEPDIR)/CoinSolve.Po ./$(DEPDIR)/unitTestClp.Plo
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -649,7 +648,6 @@ libCbc_la_SOURCES = \
 libCbcSolver_la_SOURCES = \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcCbcParam.cpp \
-	Cbc_ampl.cpp Cbc_ampl.h \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
 	unitTestClp.cpp CbcSolver.cpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
@@ -1025,7 +1023,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTree.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTreeLocal.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_C_Interface.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_ampl.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinSolve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTestClp.Plo@am__quote@ # am--include-marker
 
@@ -1266,7 +1263,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CbcTree.Plo
 	-rm -f ./$(DEPDIR)/CbcTreeLocal.Plo
 	-rm -f ./$(DEPDIR)/Cbc_C_Interface.Plo
-	-rm -f ./$(DEPDIR)/Cbc_ampl.Plo
 	-rm -f ./$(DEPDIR)/CoinSolve.Po
 	-rm -f ./$(DEPDIR)/unitTestClp.Plo
 	-rm -f Makefile
@@ -1401,7 +1397,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CbcTree.Plo
 	-rm -f ./$(DEPDIR)/CbcTreeLocal.Plo
 	-rm -f ./$(DEPDIR)/Cbc_C_Interface.Plo
-	-rm -f ./$(DEPDIR)/Cbc_ampl.Plo
 	-rm -f ./$(DEPDIR)/CoinSolve.Po
 	-rm -f ./$(DEPDIR)/unitTestClp.Plo
 	-rm -f Makefile

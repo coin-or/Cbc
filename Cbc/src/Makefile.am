@@ -97,7 +97,6 @@ libCbc_la_SOURCES = \
 libCbcSolver_la_SOURCES = \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcCbcParam.cpp \
-	Cbc_ampl.cpp Cbc_ampl.h \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
 	unitTestClp.cpp CbcSolver.cpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \

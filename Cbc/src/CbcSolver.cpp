@@ -828,10 +828,6 @@ void CbcSolver::addCutGenerator(CglCutGenerator *generator)
 #endif
 #endif
 
-#ifdef COIN_HAS_ASL
-#include "Cbc_ampl.h"
-#endif
-
 static void statistics(ClpSimplex *originalModel, ClpSimplex *model);
 static bool maskMatches(const int *starts, char **masks,
   std::string &check);
@@ -1533,7 +1529,7 @@ int CbcMain1(int argc, const char *argv[],
           CoinModel *model;
         } coinModelStart;
         coinModelStart.model = NULL;
-        int returnCode = readAmpl(&info, argc, const_cast< char ** >(argv), &coinModelStart.voidModel);
+        int returnCode = readAmpl(&info, argc, const_cast< char ** >(argv), &coinModelStart.voidModel, "cbc");
         coinModel = coinModelStart.model;
         if (returnCode)
           return returnCode;

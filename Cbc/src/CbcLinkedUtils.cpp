@@ -33,7 +33,6 @@
 #include "CoinHelperFunctions.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "OsiSolverInterface.hpp"
-#include "Cbc_ampl.h"
 #include "CoinTime.hpp"
 #include "CglStored.hpp"
 #include "CoinModel.hpp"

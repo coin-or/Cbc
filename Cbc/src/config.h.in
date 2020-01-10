@@ -76,6 +76,9 @@
 /* Define to 1 if OsiClp is available. */
 #undef COIN_HAS_OSICLP
 
+/* Define to 1 if OsiGlpk is available. */
+#undef COIN_HAS_OSIGLPK
+
 /* Define to 1 if OsiTests is available. */
 #undef COIN_HAS_OSITESTS
 

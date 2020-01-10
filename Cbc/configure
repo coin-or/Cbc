@@ -18796,8 +18796,6 @@ $as_echo_n "checking for package Nauty... " >&6; }
 
 
 
-
-
 # Check to see if the user has overridden configure parameters from the
 # environment.
 
@@ -19041,8 +19039,6 @@ $as_echo "#define COIN_HAS_NAUTY 1" >>confdefs.h
 
     CBCLIB_LFLAGS="$nauty_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$nauty_cflags $CBCLIB_CFLAGS"
-      CBCGENERIC_LFLAGS="$nauty_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$nauty_cflags $CBCGENERIC_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.
@@ -22133,18 +22129,14 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cbc_default_solver" >&5
 $as_echo "$cbc_default_solver" >&6; }
 
-# FIXME what about cplex and mosek here?
 case $cbc_default_solver in
-    clp)
-      ;;
-   dylp)
-      ;;
-   glpk)
-      ;;
-  highs)
-      ;;
- soplex)
-      ;;
+    clp) ;;
+  cplex) ;;
+   dylp) ;;
+   glpk) ;;
+  highs) ;;
+  mosek) ;;
+ soplex) ;;
       *)
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver." >&5
 $as_echo "$as_me: WARNING: Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver." >&2;}

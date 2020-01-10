@@ -85,7 +85,7 @@ AC_COIN_CHK_PKG(ASL,[CbcSolverLib],[coinasl])
 
 # Nauty library (for symmetry detection).
 
-AC_COIN_CHK_LIB([Nauty],[CbcLib CbcGeneric],[-lnauty],[],[],[nauty])
+AC_COIN_CHK_LIB([Nauty],[CbcLib],[-lnauty],[],[],[nauty])
 
 #############################################################################
 
@@ -149,18 +149,14 @@ AC_ARG_WITH([cbc-generic-solver],
             [cbc_default_solver=clp])
 AC_MSG_RESULT($cbc_default_solver)
 
-# FIXME what about cplex and mosek here?
 case $cbc_default_solver in
-    clp)
-      ;;
-   dylp)
-      ;;
-   glpk)
-      ;;
-  highs)
-      ;;
- soplex)
-      ;;
+    clp) ;;
+  cplex) ;;
+   dylp) ;;
+   glpk) ;;
+  highs) ;;
+  mosek) ;;
+ soplex) ;;
       *)
       AC_MSG_WARN([Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver.])
       ;;

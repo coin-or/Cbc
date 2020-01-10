@@ -112,7 +112,6 @@ AC_COIN_FINALIZE_FLAGS(CbcUnitTest)
 #   probably should reflect this in the name
 
 AC_COIN_CHK_PKG(DyLP,[CbcGeneric],[osi-dylp])
-AC_COIN_CHK_PKG(Vol,,[osi-vol])
 AC_COIN_CHK_PKG(Cpx,[CbcLib CbcGeneric CbcSolverLib],[osi-cplex])
 AC_COIN_CHK_LIB(Cplex,[CbcLib],[-lcplex -lpthread -lm -ldl],[],[],[CPXgetstat])
 AC_COIN_CHK_PKG(OsiGlpk,[CbcGeneric],[osi-glpk])
@@ -312,12 +311,6 @@ case "${osicbc_with_solver}" in
     osi_uc_solver=SYM
     osi_exists_solver=${coin_has_sym-"unavailable"}
     ;;
-  @<:@Vv@:>@@<:@Oo@:>@@<:@Ll@:>@*)
-    osi_lc_solver=vol ;
-    osi_mc_solver=Vol
-    osi_uc_solver=VOL
-    osi_exists_solver=${coin_has_vol-"unavailable"}
-    ;;
   @<:@Xx@:>@@<:@Pp@:>@@<:@Rr@:>@*)
     osi_lc_solver=xpr ;
     osi_mc_solver=Xpr
@@ -363,7 +356,6 @@ AM_CONDITIONAL([OSICBC_DFLT_SOLVER_HIGHS],[test $osi_mc_solver = HiGHS])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_MSK],[test $osi_mc_solver = Msk])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_SPX],[test $osi_mc_solver = Spx])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_SYM],[test $osi_mc_solver = Sym])
-AM_CONDITIONAL([OSICBC_DFLT_SOLVER_VOL],[test $osi_mc_solver = Vol])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_XPR],[test $osi_mc_solver = Xpr])
 
 ##############################################################################
@@ -381,7 +373,7 @@ AM_CONDITIONAL([OSICBC_DFLT_SOLVER_XPR],[test $osi_mc_solver = Xpr])
 #                  Check for doxygen                                        #
 #############################################################################
 
-AC_COIN_DOXYGEN([CoinUtils Osi Clp DyLP Cgl Vol])
+AC_COIN_DOXYGEN([CoinUtils Osi Clp DyLP Cgl])
 
 ##############################################################################
 #                   Finishing up by writing all the output                   #

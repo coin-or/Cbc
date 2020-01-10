@@ -654,8 +654,6 @@ coin_have_latex
 coin_have_doxygen
 OSICBC_DFLT_SOLVER_XPR_FALSE
 OSICBC_DFLT_SOLVER_XPR_TRUE
-OSICBC_DFLT_SOLVER_VOL_FALSE
-OSICBC_DFLT_SOLVER_VOL_TRUE
 OSICBC_DFLT_SOLVER_SYM_FALSE
 OSICBC_DFLT_SOLVER_SYM_TRUE
 OSICBC_DFLT_SOLVER_SPX_FALSE
@@ -703,8 +701,6 @@ COIN_HAS_CPLEX_FALSE
 COIN_HAS_CPLEX_TRUE
 COIN_HAS_CPX_FALSE
 COIN_HAS_CPX_TRUE
-COIN_HAS_VOL_FALSE
-COIN_HAS_VOL_TRUE
 COIN_HAS_DYLP_FALSE
 COIN_HAS_DYLP_TRUE
 CBCUNITTEST_CFLAGS_NOPC
@@ -931,9 +927,6 @@ with_miplib3_data
 with_dylp
 with_dylp_lflags
 with_dylp_cflags
-with_vol
-with_vol_lflags
-with_vol_cflags
 with_cpx
 with_cpx_lflags
 with_cpx_cflags
@@ -1728,15 +1721,6 @@ Optional Packages:
   --with-dylp-lflags      Linker flags for DyLP appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-dylp-cflags      Compiler flags for DyLP appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
-  --with-vol              Use Vol. If an argument is given, 'yes' is
-                          equivalent to --with-vol, 'no' is
-                          equivalent to --without-vol. Any other argument is
-                          applied as for --with-vol-lflags
-  --with-vol-lflags       Linker flags for Vol appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-vol-cflags       Compiler flags for Vol appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
   --with-cpx              Use Cpx. If an argument is given, 'yes' is
@@ -20342,254 +20326,6 @@ $as_echo "#define COIN_HAS_DYLP 1" >>confdefs.h
 
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Vol" >&5
-$as_echo_n "checking for package Vol... " >&6; }
-
-# Make sure the necessary variables exist for each client package.
-
-
-
-# Check to see if the user has set an override to skip this primary.
-
-  coin_has_vol=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in $COIN_SKIP_PROJECTS ; do
-      if test "$pkg" = "$vol" ; then
-        coin_has_vol=skipping
-      fi
-    done
-  fi
-
-# If we're not skipping this primary, define and process the command line
-# options according to the cmdopts parameter. Then invoke FIND_PRIM_PKG to do
-# the heavy lifting.
-
-  if test "$coin_has_vol" != skipping ; then
-
-
-
-
-# Check whether --with-vol was given.
-if test "${with_vol+set}" = set; then :
-  withval=$with_vol;
-fi
-
-
-
-# Check whether --with-vol-lflags was given.
-if test "${with_vol_lflags+set}" = set; then :
-  withval=$with_vol_lflags;
-fi
-
-
-
-# Check whether --with-vol-cflags was given.
-if test "${with_vol_cflags+set}" = set; then :
-  withval=$with_vol_cflags;
-fi
-
-
-
-
-
-
-
-  dflt_action=yes
-
-# Initialize variables for the primary package.
-
-  coin_has_vol=noInfo
-  vol_lflags=
-  vol_cflags=
-  vol_data=
-  vol_pcfiles=
-
-# --with-prim is always present. If the client specified dataonly, its value
-# is assigned to prim_data.
-
-  withval=$with_vol
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_vol=skipping
-        ;;
-      yes )
-        coin_has_vol=requested
-        ;;
-      build )
-        coin_has_vol=build
-        ;;
-      * )
-        coin_has_vol=yes
-        vol_lflags=$withval
-        ;;
-    esac
-  fi
-
-# --with-prim-libs and --with-prim-cflags are present unless the client
-# specified dataonly. Specifying --with-prim=no overrides the individual
-# options for libs and cflags.
-
-  if test "$coin_has_vol" != skipping ; then
-       withval=$with_vol_lflags
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not valid here; please specify linker flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_vol=yes
-             vol_lflags=$withval
-             ;;
-         esac
-       fi
-
-       withval=$with_vol_cflags
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not valid here; please specify compiler flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_vol=yes
-             vol_cflags="$withval"
-             ;;
-         esac
-       fi
-     fi
-
-# --with-prim-data will be present unless the client specified nodata.
-# Specifying --with-prim=no overrides the individual option for data.
-
-
-
-# At this point, coin_has_prim can be one of noInfo (no user options
-# specified), skipping (user said no), requested or build (user said yes
-# or build and gave no further guidance), or yes (user specified one or
-# more --with-prim options). If we're already at yes or skipping, we're
-# done looking.
-
-# If there are no user options (noInfo) and the default is no, we're skipping.
-# Otherwise, the default must be yes or build; consider the package requested.
-# A default action we don't recognise defaults to yes.
-
-  if test "$coin_has_vol" = noInfo ; then
-    case $dflt_action in
-      no )
-        coin_has_vol=skipping
-        ;;
-      build )
-        coin_has_vol=build
-        ;;
-      * )
-        coin_has_vol=requested
-        ;;
-    esac
-  fi
-
-# Now coin_has_prim can be one of skipping, yes, requested, or build. For
-# requested or build, try pkgconf, if it's available. If it's not available,
-# well, hope that the user knows their system and prim can be used with no
-# additional flags.
-
-  case $coin_has_vol in
-    requested | build )
-      if test -n "$PKG_CONFIG" -a "osi-vol" != skip ; then
-        pcfile="osi-vol"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      VOL_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_vol=yes
-           vol_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-           vol_pcfiles="$pcfile"
-    else
-      VOL_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_vol=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module vol without pkgconf\"" "$LINENO" 5
-  fi
-
-      else
-        coin_has_vol=no
-        # AC_MSG_WARN([skipped check via pkgconf as no pkgconf available])
-      fi
-      ;;
-    skipping | yes )
-      ;;
-    * )
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unexpected status \"$coin_has_vol\" in COIN_FIND_PRIM_PKG" >&5
-$as_echo "$as_me: WARNING: Unexpected status \"$coin_has_vol\" in COIN_FIND_PRIM_PKG" >&2;}
-      ;;
-  esac
-
-# The final value of coin_has_prim will be yes, no, or skipping. No means
-# we looked (with pkgconfig) and didn't find anything. Skipping means the
-# user said `don't use.' Yes means we have something, from the user or
-# from pkgconfig. Note that we haven't run a useability test!
-
-# Define BUILDTOOLS_DEBUG to enable debugging output
-
-    if test "$BUILDTOOLS_DEBUG" = 1 ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for vol: \"$coin_has_vol\"" >&5
-$as_echo "$as_me: FIND_PRIM_PKG result for vol: \"$coin_has_vol\"" >&6;}
-      { $as_echo "$as_me:${as_lineno-$LINENO}: Collected values for package 'vol'" >&5
-$as_echo "$as_me: Collected values for package 'vol'" >&6;}
-      { $as_echo "$as_me:${as_lineno-$LINENO}: vol_lflags is \"$vol_lflags\"" >&5
-$as_echo "$as_me: vol_lflags is \"$vol_lflags\"" >&6;}
-      { $as_echo "$as_me:${as_lineno-$LINENO}: vol_cflags is \"$vol_cflags\"" >&5
-$as_echo "$as_me: vol_cflags is \"$vol_cflags\"" >&6;}
-      { $as_echo "$as_me:${as_lineno-$LINENO}: vol_data is \"$vol_data\"" >&5
-$as_echo "$as_me: vol_data is \"$vol_data\"" >&6;}
-      { $as_echo "$as_me:${as_lineno-$LINENO}: vol_pcfiles is \"$vol_pcfiles\"" >&5
-$as_echo "$as_me: vol_pcfiles is \"$vol_pcfiles\"" >&6;}
-    fi
-
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $coin_has_vol" >&5
-$as_echo "$coin_has_vol" >&6; }
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $coin_has_vol due to COIN_SKIP_PROJECTS" >&5
-$as_echo "$coin_has_vol due to COIN_SKIP_PROJECTS" >&6; }
-  fi
-
-# Possibilities are `yes', 'no', or `skipping'. Normalise to `yes' or `no'.
-
-  if test "$coin_has_vol" != yes ; then
-    coin_has_vol=no
-  fi
-
-# Create an automake conditional COIN_HAS_PRIM.
-
-   if test $coin_has_vol = yes; then
-  COIN_HAS_VOL_TRUE=
-  COIN_HAS_VOL_FALSE='#'
-else
-  COIN_HAS_VOL_TRUE='#'
-  COIN_HAS_VOL_FALSE=
-fi
-
-
-# If we've located the package, define preprocessor symbol COIN_HAS_PRIM and
-# augment the necessary variables for the client packages.
-
-  if test $coin_has_vol = yes ; then
-
-$as_echo "#define COIN_HAS_VOL 1" >>confdefs.h
-
-
-
-# Finally, set up PRIM_DATA, unless the user specified nodata.
-
-
-  fi
-
-
-
-
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Cpx" >&5
 $as_echo_n "checking for package Cpx... " >&6; }
 
@@ -23192,12 +22928,6 @@ case "${osicbc_with_solver}" in
     osi_uc_solver=SYM
     osi_exists_solver=${coin_has_sym-"unavailable"}
     ;;
-  [Vv][Oo][Ll]*)
-    osi_lc_solver=vol ;
-    osi_mc_solver=Vol
-    osi_uc_solver=VOL
-    osi_exists_solver=${coin_has_vol-"unavailable"}
-    ;;
   [Xx][Pp][Rr]*)
     osi_lc_solver=xpr ;
     osi_mc_solver=Xpr
@@ -23312,14 +23042,6 @@ fi
 else
   OSICBC_DFLT_SOLVER_SYM_TRUE='#'
   OSICBC_DFLT_SOLVER_SYM_FALSE=
-fi
-
- if test $osi_mc_solver = Vol; then
-  OSICBC_DFLT_SOLVER_VOL_TRUE=
-  OSICBC_DFLT_SOLVER_VOL_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_VOL_TRUE='#'
-  OSICBC_DFLT_SOLVER_VOL_FALSE=
 fi
 
  if test $osi_mc_solver = Xpr; then
@@ -23518,7 +23240,7 @@ fi
 # as an edit during make install. See comments in Makemain.inc.
 
 coin_doxy_tagfiles=
-tmp="CoinUtils Osi Clp DyLP Cgl Vol"
+tmp="CoinUtils Osi Clp DyLP Cgl"
 for proj in $tmp ; do
   lc_proj=`echo $proj | tr [A-Z] [a-z]`
   doxytag=${lc_proj}_doxy.tag
@@ -23747,10 +23469,6 @@ if test -z "${COIN_HAS_DYLP_TRUE}" && test -z "${COIN_HAS_DYLP_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_DYLP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${COIN_HAS_VOL_TRUE}" && test -z "${COIN_HAS_VOL_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_VOL\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${COIN_HAS_CPX_TRUE}" && test -z "${COIN_HAS_CPX_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_CPX\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -23821,10 +23539,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OSICBC_DFLT_SOLVER_SYM_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_SYM_FALSE}"; then
   as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_SYM\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OSICBC_DFLT_SOLVER_VOL_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_VOL_FALSE}"; then
-  as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_VOL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OSICBC_DFLT_SOLVER_XPR_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_XPR_FALSE}"; then

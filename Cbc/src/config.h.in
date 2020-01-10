@@ -91,9 +91,6 @@
 /* Define to 1 if Spx is available. */
 #undef COIN_HAS_SPX
 
-/* Define to 1 if Vol is available. */
-#undef COIN_HAS_VOL
-
 /* Define to 1 if Xpr is available. */
 #undef COIN_HAS_XPR
 

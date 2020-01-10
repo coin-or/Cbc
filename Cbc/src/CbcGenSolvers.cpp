@@ -47,7 +47,7 @@
 #endif
 #endif
 
-#ifdef COIN_HAS_DYLP
+#ifdef COIN_HAS_OSIDYLP
 #include "OsiDylpSolverInterface.hpp"
 #ifndef CBC_DEFAULT_SOLVER
 #define CBC_DEFAULT_SOLVER "dylp"
@@ -144,7 +144,7 @@ OsiSolverInterface *setupSolvers()
 #ifdef COIN_HAS_CPX
   solvers["cpx"] = new OsiCpxSolverInterface;
 #endif
-#ifdef COIN_HAS_DYLP
+#ifdef COIN_HAS_OSIDYLP
   solvers["dylp"] = new OsiDylpSolverInterface;
 #endif
 #ifdef COIN_HAS_OSIGLPK

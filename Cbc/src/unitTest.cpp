@@ -26,7 +26,7 @@
 #ifdef COIN_HAS_SPX
 #include "OsiSpxSolverInterface.hpp"
 #endif
-#ifdef COIN_HAS_DYLP
+#ifdef COIN_HAS_OSIDYLP
 #include "OsiDylpSolverInterface.hpp"
 #endif
 #ifdef COIN_HAS_OSIGLPK
@@ -379,7 +379,7 @@ int mainTest(int argc, const char *argv[])
     clpSi->setHintParam(OsiDoReducePrint, true, OsiHintDo);
     vecSi.push_back(new OsiCbcSolverInterface(clpSi, &strategy));
 #endif
-#if COIN_HAS_DYLP
+#if COIN_HAS_OSIDYLP
     OsiSolverInterface *dylpSi = new OsiDylpSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(dylpSi, &strategy));
 #endif

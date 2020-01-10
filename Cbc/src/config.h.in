@@ -49,9 +49,6 @@
 /* Define to 1 if Cpx is available. */
 #undef COIN_HAS_CPX
 
-/* Define to 1 if DyLP is available. */
-#undef COIN_HAS_DYLP
-
 /* Define to 1 if Glpk is available. */
 #undef COIN_HAS_GLPK
 
@@ -75,6 +72,9 @@
 
 /* Define to 1 if OsiClp is available. */
 #undef COIN_HAS_OSICLP
+
+/* Define to 1 if OsiDyLP is available. */
+#undef COIN_HAS_OSIDYLP
 
 /* Define to 1 if OsiGlpk is available. */
 #undef COIN_HAS_OSIGLPK

@@ -111,7 +111,7 @@ AC_COIN_FINALIZE_FLAGS(CbcUnitTest)
 # TODO most of these are checks for the Osi interfaces of solvers, not solvers itself
 #   probably should reflect this in the name
 
-AC_COIN_CHK_PKG(DyLP,[CbcGeneric],[osi-dylp])
+AC_COIN_CHK_PKG(OsiDyLP,[CbcGeneric],[osi-dylp])
 AC_COIN_CHK_PKG(Cpx,[CbcLib CbcGeneric CbcSolverLib],[osi-cplex])
 AC_COIN_CHK_LIB(Cplex,[CbcLib],[-lcplex -lpthread -lm -ldl],[],[],[CPXgetstat])
 AC_COIN_CHK_PKG(OsiGlpk,[CbcGeneric],[osi-glpk])
@@ -267,7 +267,7 @@ case "${osicbc_with_solver}" in
     osi_lc_solver=dylp ;                           
     osi_mc_solver=Dylp                             
     osi_uc_solver=DYLP                             
-    osi_exists_solver=${coin_has_dylp-"unavailable"}
+    osi_exists_solver=${coin_has_osidylp-"unavailable"}
     ;;                                              
   @<:@Cc@:>@@<:@Pp@:>@@<:@Xx@:>@*)                  
     osi_lc_solver=cpx ;                             

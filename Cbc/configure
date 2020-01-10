@@ -2856,8 +2856,7 @@ fi
 
 
 
-# We want --enable-msvc setup and checked.
-
+  # We want --enable-msvc setup and checked
 
 
   # Check whether --enable-debug was given.
@@ -2878,8 +2877,7 @@ fi
 
 # change default compiler flags
 # - debugging enabled: enable debug symbols (-g/-Z7)
-# - debugging disabled: disable debug code (-DNDEBUG); enable (more)
-#   optimization (-O2)
+# - debugging disabled: disable debug code (-DNDEBUG); enable (more) optimization (-O2)
 # - enable exceptions for (i)cl
 
   if test "$enable_debug" = yes ; then
@@ -3726,10 +3724,13 @@ fi
 
 
   # If enable-msvc, then test for Intel (on Windows) and MS C compiler
-  # explicitly and add compile-wrapper before AC_PROG_CC, because
-  # the compile-wrapper work around issues when having the wrong link.exe
-  # in the PATH first, which would upset tests in AC_PROG_CC.
-  # Further, if CC unset and not set by user, then stop with error.
+  # explicitly and add the compile wrapper before AC_PROG_CC. The compile
+  # wrapper works around issues related to finding MS link.exe. (Unix link.exe
+  # occurs first in PATH, which causes compile and link checks to fail.) For
+  # the same reason, set LD to use the compile wrapper. If CC remains unset
+  # (neither icl or cl was found, and CC was not set by the user), stop with
+  # an error.
+
   if test $enable_msvc = yes ; then
     for ac_prog in icl cl
 do
@@ -3775,14 +3776,18 @@ done
 
     if test -n "$CC" ; then
       CC="$am_aux_dir/compile $CC"
+      ac_cv_prog_CC="$CC"
+      LD="$CC"
     else
       as_fn_error $? "Neither MS nor Intel C compiler found in PATH and CC is unset." "$LINENO" 5
     fi
   fi
 
-  # look for some C compiler and check whether it works
-  # if user has set CC or we found icl/cl above, this shouldn't overwrite CC
-  # other than CXX of F77, this macro also takes care of adding the compile-wrapper
+  # Look for some C compiler and check that it works. If the user has set CC
+  # or we found icl/cl above, this shouldn't overwrite CC. Unlike the macros
+  # that establish C++ or Fortran compilers, PROG_CC also takes care of adding
+  # the compile wrapper if needed.
+
   ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -4572,11 +4577,14 @@ fi
 
 
 
-  # If enable-msvc, then test for Intel (on Windows) and MS C++ compiler
-  # explicitly and add compile-wrapper before AC_PROG_CXX, because
-  # the compile-wrapper work around issues when having the wrong link.exe
-  # in the PATH first, which would upset tests in AC_PROG_CXX.
-  # Further, if CXX unset and not set by user, then stop with error.
+  # If enable-msvc, then test for Intel (on Windows) and MS C compiler
+  # explicitly and add the compile wrapper before AC_PROG_CXX. The compile
+  # wrapper works around issues related to finding MS link.exe. (Unix link.exe
+  # occurs first in PATH, which causes compile and link checks to fail.) For
+  # the same reason, set LD to use the compile wrapper. If CC remains unset
+  # (neither icl or cl was found, and CC was not set by the user), stop with
+  # an error.
+
   if test $enable_msvc = yes ; then
     for ac_prog in icl cl
 do
@@ -4622,13 +4630,16 @@ done
 
     if test -n "$CXX" ; then
       CXX="$am_aux_dir/compile $CXX"
+      ac_cv_prog_CXX="$CXX"
+      LD="$CXX"
     else
       as_fn_error $? "Neither MS nor Intel C++ compiler found in PATH and CXX is unset." "$LINENO" 5
     fi
   fi
 
-  # look for some C++ compiler and check whether it works
-  # if user has set CXX or we found icl/cl above, this shouldn't overwrite CXX
+  # Look for some C++ compiler and check that it works. If the user has set
+  # CXX or we found icl/cl above, this shouldn't overwrite CXX.
+
   ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -5015,7 +5026,8 @@ fi
 
 
 
-  # If the compiler does not support -c -o, then wrap the compile script around it.
+  # If the compiler does not support -c -o, wrap it with the compile script.
+
   ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -12370,9 +12382,6 @@ fi
   # before this can be enabled.
   hardcode_into_libs=yes
 
-  # Add ABI-specific directories to the system library path.
-  sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib"
-
   # Ideally, we could use ldconfig to report *all* directores which are
   # searched for libraries, however this is still not possible.  Aside from not
   # being certain /sbin/ldconfig is available, command
@@ -12381,7 +12390,7 @@ fi
   # appending ld.so.conf contents (and includes) to the search path.
   if test -f /etc/ld.so.conf; then
     lt_ld_extra=`awk '/^include / { system(sprintf("cd /etc; cat %s 2>/dev/null", \$2)); skip = 1; } { if (!skip) print \$0; skip = 0; }' < /etc/ld.so.conf | $SED -e 's/#.*//;/^[	 ]*hwcap[	 ]/d;s/[:,	]/ /g;s/=[^=]*$//;s/=[^= ]* / /g;s/"//g;/^$/d' | tr '\n' ' '`
-    sys_lib_dlsearch_path_spec="$sys_lib_dlsearch_path_spec $lt_ld_extra"
+    sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
   fi
 
   # We used to test for /lib/ld.so.1 and disable shared libraries on
@@ -16335,9 +16344,6 @@ fi
   # before this can be enabled.
   hardcode_into_libs=yes
 
-  # Add ABI-specific directories to the system library path.
-  sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib"
-
   # Ideally, we could use ldconfig to report *all* directores which are
   # searched for libraries, however this is still not possible.  Aside from not
   # being certain /sbin/ldconfig is available, command
@@ -16346,7 +16352,7 @@ fi
   # appending ld.so.conf contents (and includes) to the search path.
   if test -f /etc/ld.so.conf; then
     lt_ld_extra=`awk '/^include / { system(sprintf("cd /etc; cat %s 2>/dev/null", \$2)); skip = 1; } { if (!skip) print \$0; skip = 0; }' < /etc/ld.so.conf | $SED -e 's/#.*//;/^[	 ]*hwcap[	 ]/d;s/[:,	]/ /g;s/=[^=]*$//;s/=[^= ]* / /g;s/"//g;/^$/d' | tr '\n' ' '`
-    sys_lib_dlsearch_path_spec="$sys_lib_dlsearch_path_spec $lt_ld_extra"
+    sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
   fi
 
   # We used to test for /lib/ld.so.1 and disable shared libraries on
@@ -16729,7 +16735,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 #    and explicitly dll-exporting them, leading to warnings about duplicates
 #    regarding those that are properly marked for dll-export in the source.
 #
-# Patch libtool also to circumbent some issues when using MinGW (Msys+GCC).
+# Patch libtool also to circumvent some issues when using MinGW (Msys+GCC).
 # 1. Relax check which libraries can be used when linking a DLL.
 #    libtool's func_mode_link() would reject linking MinGW system libraries,
 #    e.g., -lmingw32, when building a DLL, because it does not find this
@@ -18893,7 +18899,7 @@ fi
 
   case $coin_has_nauty in
     build | requested)
-      nauty_lflags=-lnauty
+      nauty_lflags="-lnauty"
          if test "$coin_has_nauty" = build ; then
               nauty_cflags="-I\$(pkgincludedir)/ThirdParty"
             fi

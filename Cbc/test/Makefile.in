@@ -916,7 +916,7 @@ ositests: osiUnitTest$(EXEEXT)
 	./osiUnitTest$(EXEEXT) $(ositestsflags)
 
 ctests: CInterfaceTest$(EXEEXT)
-	./CInterfaceTest$(EXEEXT)
+	./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

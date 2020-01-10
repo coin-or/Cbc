@@ -81,7 +81,7 @@ AC_COIN_CHK_GNU_READLINE([CbcLib CbcGeneric])
 
 # Ampl Solver library
 
-AC_COIN_CHK_PKG(ASL,[CbcLib CbcGeneric],[coinasl])
+AC_COIN_CHK_PKG(ASL,[CbcSolverLib],[coinasl])
 
 # Nauty library (for symmetry detection).
 

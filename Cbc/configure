@@ -703,9 +703,6 @@ COIN_HAS_CPLEX_FALSE
 COIN_HAS_CPLEX_TRUE
 COIN_HAS_CPX_FALSE
 COIN_HAS_CPX_TRUE
-CBCSOLVERLIB_PCFILES
-CBCSOLVERLIB_CFLAGS
-CBCSOLVERLIB_LFLAGS
 COIN_HAS_VOL_FALSE
 COIN_HAS_VOL_TRUE
 COIN_HAS_DYLP_FALSE
@@ -730,6 +727,9 @@ COIN_HAS_NAUTY_FALSE
 COIN_HAS_NAUTY_TRUE
 COIN_HAS_ASL_FALSE
 COIN_HAS_ASL_TRUE
+CBCSOLVERLIB_PCFILES
+CBCSOLVERLIB_CFLAGS
+CBCSOLVERLIB_LFLAGS
 COIN_HAS_READLINE_FALSE
 COIN_HAS_READLINE_TRUE
 COIN_HAS_OSICLP_FALSE
@@ -18560,9 +18560,6 @@ $as_echo_n "checking for package ASL... " >&6; }
 
 
 
-
-
-
 # Check to see if the user has set an override to skip this primary.
 
   coin_has_asl=noInfo
@@ -18794,12 +18791,9 @@ fi
 
 $as_echo "#define COIN_HAS_ASL 1" >>confdefs.h
 
-    if test -n "$asl_pcfiles" ; then CBCLIB_PCFILES="$asl_pcfiles $CBCLIB_PCFILES" ; fi
-       CBCLIB_LFLAGS="$asl_lflags $CBCLIB_LFLAGS"
-       CBCLIB_CFLAGS="$asl_cflags $CBCLIB_CFLAGS"
-      if test -n "$asl_pcfiles" ; then CBCGENERIC_PCFILES="$asl_pcfiles $CBCGENERIC_PCFILES" ; fi
-       CBCGENERIC_LFLAGS="$asl_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$asl_cflags $CBCGENERIC_CFLAGS"
+    if test -n "$asl_pcfiles" ; then CBCSOLVERLIB_PCFILES="$asl_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
+       CBCSOLVERLIB_LFLAGS="$asl_lflags $CBCSOLVERLIB_LFLAGS"
+       CBCSOLVERLIB_CFLAGS="$asl_cflags $CBCSOLVERLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.

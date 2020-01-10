@@ -5156,7 +5156,6 @@ int CbcMain1(int argc, const char *argv[],
                 //                         babModel_->getNumCols());
               }
               int testOsiOptions = parameters_[whichParam(CBC_PARAM_INT_TESTOSI, parameters_)].intValue();
-              //#ifdef COIN_HAS_ASL
 #ifndef JJF_ONE
               // If linked then see if expansion wanted
               {

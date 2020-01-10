@@ -47,7 +47,7 @@ script:
   - mkdir build
   - pushd build
   - ../Cbc/configure $CFGFLAGS
-  - make
+  - make V=1
   - make test
   - make install
   #- pushd examples && make DRIVER=driver && ./driver && popd

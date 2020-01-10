@@ -312,6 +312,33 @@ void CbcMain0(CbcModel &babSolver, CbcSolverUsefulData &solverData);
 CBCSOLVERLIB_EXPORT
 int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcSolverUsefulData &solverData);
 
+CBCSOLVERLIB_EXPORT
+int CbcMain(int argc, const char *argv[], CbcModel &babSolver);
+// four ways of calling
+CBCSOLVERLIB_EXPORT
+int callCbc(const char *input2, OsiClpSolverInterface &solver1);
+CBCSOLVERLIB_EXPORT
+int callCbc(const char *input2);
+CBCSOLVERLIB_EXPORT
+int callCbc(const std::string input2, OsiClpSolverInterface &solver1);
+CBCSOLVERLIB_EXPORT
+int callCbc(const std::string input2);
+// When we want to load up CbcModel with options first
+CBCSOLVERLIB_EXPORT
+void CbcMain0(CbcModel &babSolver);
+CBCSOLVERLIB_EXPORT
+int CbcMain1(int argc, const char *argv[], CbcModel &babSolver);
+// two ways of calling
+CBCSOLVERLIB_EXPORT
+int callCbc(const char *input2, CbcModel &babSolver);
+CBCSOLVERLIB_EXPORT
+int callCbc(const std::string input2, CbcModel &babSolver);
+// And when CbcMain0 already called to initialize (with call back) (see CbcMain1 for whereFrom)
+CBCSOLVERLIB_EXPORT
+int callCbc1(const char *input2, CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
+CBCSOLVERLIB_EXPORT
+int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
+
 //#############################################################################
 
 /*! \brief A class to allow the use of unknown user functionality

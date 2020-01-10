@@ -108,18 +108,16 @@ AC_COIN_FINALIZE_FLAGS(CbcUnitTest)
 
 # Check which other LP solvers are available, some of them become a dependency
 # of CbcGeneric
-# TODO most of these are checks for the Osi interfaces of solvers, not solvers itself
-#   probably should reflect this in the name
 
 AC_COIN_CHK_PKG(OsiDyLP,[CbcGeneric],[osi-dylp])
-AC_COIN_CHK_PKG(Cpx,[CbcLib CbcGeneric CbcSolverLib],[osi-cplex])
+AC_COIN_CHK_PKG(OsiCpx,[CbcLib CbcGeneric CbcSolverLib],[osi-cplex])
 AC_COIN_CHK_LIB(Cplex,[CbcLib],[-lcplex -lpthread -lm -ldl],[],[],[CPXgetstat])
 AC_COIN_CHK_PKG(OsiGlpk,[CbcGeneric],[osi-glpk])
 AC_COIN_CHK_PKG(Glpk,[CbcSolverLib],,[build])
-AC_COIN_CHK_PKG(Grb,,[osi-gurobi])
-AC_COIN_CHK_PKG(Msk,[CbcGeneric],[osi-mosek])
-AC_COIN_CHK_PKG(Spx,[CbcGeneric],[osi-soplex])
-AC_COIN_CHK_PKG(Xpr,,[osi-xpress])
+AC_COIN_CHK_PKG(OsiGrb,,[osi-gurobi])
+AC_COIN_CHK_PKG(OsiMsk,[CbcGeneric],[osi-mosek])
+AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric],[osi-soplex])
+AC_COIN_CHK_PKG(OsiXpr,,[osi-xpress])
 
 #TODO organize this mess
 
@@ -261,7 +259,7 @@ case "${osicbc_with_solver}" in
     osi_lc_solver=clp ;           
     osi_mc_solver=Clp ;           
     osi_uc_solver=CLP ;           
-    osi_exists_solver=${coin_has_clp-"unavailable"}
+    osi_exists_solver=${coin_has_osiclp-"unavailable"}
     ;;                                             
   @<:@Dd@:>@@<:@Yy@:>@@<:@Ll@:>@@<:@Pp@:>@*)       
     osi_lc_solver=dylp ;                           
@@ -273,19 +271,19 @@ case "${osicbc_with_solver}" in
     osi_lc_solver=cpx ;                             
     osi_mc_solver=Cpx                               
     osi_uc_solver=CPX                               
-    osi_exists_solver=${coin_has_cpx-"unavailable"} 
+    osi_exists_solver=${coin_has_osicpx-"unavailable"} 
     ;;
   @<:@Gg@:>@@<:@Ll@:>@@<:@Pp@:>@@<:@Kk@:>@*)        
     osi_lc_solver=glpk ;                            
     osi_mc_solver=Glpk                              
     osi_uc_solver=GLPK                              
-    osi_exists_solver=${coin_has_glpk-"unavailable"}
+    osi_exists_solver=${coin_has_osiglpk-"unavailable"}
     ;;
   @<:@Gg@:>@@<:@Rr@:>@@<:@Bb@:>@*)
     osi_lc_solver=grb ;
     osi_mc_solver=Grb ;           
     osi_uc_solver=GRB ;           
-    osi_exists_solver=${coin_has_grb-"unavailable"}
+    osi_exists_solver=${coin_has_osigrb-"unavailable"}
     ;;                                             
   @<:@H@:>@@<:@i@:>@@<:@g@:>@@<:@h@:>@@<:@s@:>@*)        
     osi_lc_solver=highs ;                            
@@ -297,31 +295,31 @@ case "${osicbc_with_solver}" in
     osi_lc_solver=msk ;
     osi_mc_solver=Msk
     osi_uc_solver=MSK
-    osi_exists_solver=${coin_has_msk-"unavailable"}
+    osi_exists_solver=${coin_has_osimsk-"unavailable"}
     ;;
   @<:@Ss@:>@@<:@Pp@:>@@<:@Xx@:>@*)
     osi_lc_solver=spx ;
     osi_mc_solver=Spx
     osi_uc_solver=SPX
-    osi_exists_solver=${coin_has_spx-"unavailable"}
+    osi_exists_solver=${coin_has_osispx-"unavailable"}
     ;;
   @<:@Ss@:>@@<:@Yy@:>@@<:@Mm@:>@*)
     osi_lc_solver=sym ;
     osi_mc_solver=Sym
     osi_uc_solver=SYM
-    osi_exists_solver=${coin_has_sym-"unavailable"}
+    osi_exists_solver=${coin_has_osisym-"unavailable"}
     ;;
   @<:@Xx@:>@@<:@Pp@:>@@<:@Rr@:>@*)
     osi_lc_solver=xpr ;
     osi_mc_solver=Xpr
     osi_uc_solver=XPR
-    osi_exists_solver=${coin_has_xpr-"unavailable"}
+    osi_exists_solver=${coin_has_osixpr-"unavailable"}
     ;;
   *)
     osi_lc_solver=clp ;
     osi_mc_solver=Clp ;
     osi_uc_solver=CLP ;
-    osi_exists_solver=${coin_has_clp-"unavailable"}
+    osi_exists_solver=${coin_has_osiclp-"unavailable"}
     AC_MSG_WARN([Unrecognised solver $1; defaulting to $osi_lc_solver.])
     ;;
 esac

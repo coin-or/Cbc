@@ -44,8 +44,8 @@
 */
 
 #if CBC_OTHER_SOLVER == 1
-#ifndef COIN_HAS_CPX
-#error "Configuration did not detect cplex installation."
+#ifndef COIN_HAS_OSICPX
+#error "Configuration did not detect OsiCpx installation."
 #else
 #include "OsiCpxSolverInterface.hpp"
 #endif

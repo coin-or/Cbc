@@ -22126,10 +22126,6 @@ else
   cbc_generic=no
 fi
 
-if test x"$cbc_generic" = xyes ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: building cbc-generic" >&5
-$as_echo "$as_me: building cbc-generic" >&6;}
-fi
  if test "$cbc_generic" = yes; then
   CBC_BUILD_CBC_GENERIC_TRUE=
   CBC_BUILD_CBC_GENERIC_FALSE='#'
@@ -22140,10 +22136,10 @@ fi
 
 
 if test "$cbc_generic" = yes ; then
-# Set the default solver for cbc-generic. In theory, any OsiXXX should work.
-# In practice, only the three listed below have had any testing.
+  # Set the default solver for cbc-generic. In theory, any OsiXXX should work.
+  # In practice, only thoselisted below have had any testing long long ago or never.
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cbc-generic default solver" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cbc-generic default solver" >&5
 $as_echo_n "checking for cbc-generic default solver... " >&6; }
 
 # Check whether --with-cbc-generic-solver was given.
@@ -22153,27 +22149,29 @@ else
   cbc_default_solver=clp
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $cbc_default_solver" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cbc_default_solver" >&5
 $as_echo "$cbc_default_solver" >&6; }
 
-case $cbc_default_solver in
-    clp) ;;
-  cplex) ;;
-   dylp) ;;
-   glpk) ;;
-  highs) ;;
-  mosek) ;;
- soplex) ;;
-      *)
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver." >&5
+  case $cbc_default_solver in
+      clp) ;;
+    cplex) ;;
+     dylp) ;;
+     glpk) ;;
+    highs) ;;
+    mosek) ;;
+   soplex) ;;
+        *) { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver." >&5
 $as_echo "$as_me: WARNING: Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver." >&2;}
-      ;;
-esac
+          ;;
+  esac
 
 cat >>confdefs.h <<_ACEOF
 #define CBC_DEFAULT_SOLVER "$cbc_default_solver"
 _ACEOF
 
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: building cbc-generic with default solver $cbc_default_solver" >&5
+$as_echo "$as_me: building cbc-generic with default solver $cbc_default_solver" >&6;}
 fi
 
 #############################################################################

@@ -16,14 +16,14 @@
   available solvers.
 */
 
-#include "CbcConfig.h"
+#include "CbcGenConfig.h"
 #include "CoinPragma.hpp"
 
 #include "OsiSolverInterface.hpp"
 
 /*
   Include class definitions for the solvers that are available. If
-  CBC_DEFAULT_SOLVER is not defined in CbcConfig.h, set it to the first
+  CBC_DEFAULT_SOLVER is not defined in CbcGenConfig.h, set it to the first
   available solver.
 
   NOTE: Processing of keyword parameters is made case-independent by forcing

@@ -10,7 +10,7 @@
   This file is part of cbc-generic.
 */
 
-#include "CbcConfig.h"
+#include "CbcGenConfig.h"
 #include "CoinPragma.hpp"
 
 #include <cassert>

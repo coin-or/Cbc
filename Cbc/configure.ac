@@ -130,37 +130,35 @@ AC_ARG_ENABLE([cbc-generic],
   AS_HELP_STRING([--enable-cbc-generic],[enables build of cbc-generic]),
   [cbc_generic=$enableval],
   [cbc_generic=no])
-if test x"$cbc_generic" = xyes ; then
-  AC_MSG_NOTICE([building cbc-generic])
-fi
 AM_CONDITIONAL(CBC_BUILD_CBC_GENERIC, test "$cbc_generic" = yes)
 
 if test "$cbc_generic" = yes ; then
-# Set the default solver for cbc-generic. In theory, any OsiXXX should work.
-# In practice, only the three listed below have had any testing.
+  # Set the default solver for cbc-generic. In theory, any OsiXXX should work.
+  # In practice, only thoselisted below have had any testing long long ago or never.
 
-AC_MSG_CHECKING(for cbc-generic default solver)
-AC_ARG_WITH([cbc-generic-solver],
-            AC_HELP_STRING([--with-cbc-generic-solver],
-                           [specify default solver for cbc-generic in lower case letters (if not given, clp is assumed)]),
-            [cbc_default_solver=$withval],
-            [cbc_default_solver=clp])
-AC_MSG_RESULT($cbc_default_solver)
+  AC_MSG_CHECKING(for cbc-generic default solver)
+  AC_ARG_WITH([cbc-generic-solver],
+              AC_HELP_STRING([--with-cbc-generic-solver],
+                             [specify default solver for cbc-generic in lower case letters (if not given, clp is assumed)]),
+              [cbc_default_solver=$withval],
+              [cbc_default_solver=clp])
+  AC_MSG_RESULT($cbc_default_solver)
 
-case $cbc_default_solver in
-    clp) ;;
-  cplex) ;;
-   dylp) ;;
-   glpk) ;;
-  highs) ;;
-  mosek) ;;
- soplex) ;;
-      *)
-      AC_MSG_WARN([Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver.])
-      ;;
-esac
-AC_DEFINE_UNQUOTED([CBC_DEFAULT_SOLVER],"$cbc_default_solver",
-  [Define to the name of the default solver to be used in cbc-generic in small letters])
+  case $cbc_default_solver in
+      clp) ;;
+    cplex) ;;
+     dylp) ;;
+     glpk) ;;
+    highs) ;;
+    mosek) ;;
+   soplex) ;;
+        *) AC_MSG_WARN([Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver.])
+          ;;
+  esac
+  AC_DEFINE_UNQUOTED([CBC_DEFAULT_SOLVER],"$cbc_default_solver",
+    [Define to the name of the default solver to be used in cbc-generic in small letters])
+
+  AC_MSG_NOTICE([building cbc-generic with default solver $cbc_default_solver])
 fi
 
 #############################################################################

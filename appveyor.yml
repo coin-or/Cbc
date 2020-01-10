@@ -6,6 +6,26 @@ platform:
 
 environment:
   matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      ARCH: win64-mingw
+      ADD_PATH: /mingw64/bin
+      COINBREW_SKIPS: Data/miplib3
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      ARCH: win64-msvc16
+      COINBREW_CFGFLAGS: --enable-msvc
+      COINBREW_SKIPS: Data/miplib3 ThirdParty/Mumps
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      ARCH: win64-msvc16
+      COINBREW_CFGFLAGS: --enable-msvc --disable-shared --enable-debug
+      COINBREW_SKIPS: Data/miplib3 ThirdParty/Mumps
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      ARCH: win64-msvc15
+      COINBREW_CFGFLAGS: --enable-msvc
+      COINBREW_SKIPS: Data/miplib3 ThirdParty/Mumps
+    #- APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    #  ARCH: win64-msvc14
+    #  COINBREW_CFGFLAGS: --enable-msvc
+    #  COINBREW_SKIPS: Data/miplib3 ThirdParty/Mumps
 
 install:
   - for /f "delims=" %%i in ('C:\msys64\usr\bin\bash -lc "if [ $APPVEYOR_REPO_BRANCH = 'master' ]; then echo 'master'; else echo $APPVEYOR_REPO_BRANCH | cut -d "/" -f 2; fi"') do set VERSION=%%i
@@ -19,7 +39,7 @@ install:
 build_script:
   - C:\msys64\usr\bin\bash -lc "cd C:\projects; wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew"
   - C:\msys64\usr\bin\bash -lc "cd C:\projects; ./coinbrew fetch %APPVEYOR_PROJECT_NAME%:%APPVEYOR_REPO_BRANCH% --no-prompt --skip \"$COINBREW_SKIPS\""
-  - C:\msys64\usr\bin\bash -lc "cd C:\projects; export PATH=$ADD_PATH:$PATH; ./coinbrew build %APPVEYOR_PROJECT_NAME% --no-prompt --skip \"$COINBREW_SKIPS\" $COINBREW_CFGFLAGS --verbosity=2 --test"
+  - C:\msys64\usr\bin\bash -lc "cd C:\projects; export PATH=$ADD_PATH:$PATH; ./coinbrew build %APPVEYOR_PROJECT_NAME% --no-prompt --skip \"$COINBREW_SKIPS\" $COINBREW_CFGFLAGS --verbosity=4 --disable-silent-rules --test"
 
 
 #  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

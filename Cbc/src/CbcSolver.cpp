@@ -4134,7 +4134,7 @@ int CbcMain1(int argc, const char *argv[],
                   colNames.push_back(model_.solver()->getColName(i));
                 std::vector< double > x(model_.getNumCols(), 0.0);
                 double obj;
-                int status = computeCompleteSolution(&tempModel, colNames, mipStartBefore, &x[0], obj, 0);
+                int status = CbcMipStartIO::computeCompleteSolution(&tempModel, tempModel.solver(), colNames, mipStartBefore, &x[0], obj, 0, tempModel.messageHandler(), tempModel.messagesPointer());
                 // set cutoff ( a trifle high)
                 if (!status) {
                   double newCutoff = CoinMin(babModel_->getCutoff(), obj + 1.0e-4);
@@ -5923,7 +5923,7 @@ int CbcMain1(int argc, const char *argv[],
                     extraActions = 0;
                   else
                     extraActions++;
-                  int status = computeCompleteSolution(babModel_, colNames, mipStart, &x[0], obj, extraActions);
+                  int status = CbcMipStartIO::computeCompleteSolution(babModel_, babModel_->solver(), colNames, mipStart, &x[0], obj, extraActions, babModel_->messageHandler(), babModel_->messagesPointer());
                   if (!status) {
                     // need to check more babModel_->setBestSolution( &x[0], static_cast<int>(x.size()), obj, false );
                     OsiBabSolver dummy;
@@ -8260,7 +8260,7 @@ int CbcMain1(int argc, const char *argv[],
               // stdin
               canOpen = true;
               fileName = "-";
-            } else if (field == "stdin_lp") {
+            } else if (field == "-lp" || field == "stdin_lp") {
               // stdin
               canOpen = true;
               fileName = "-";
@@ -9232,7 +9232,8 @@ int CbcMain1(int argc, const char *argv[],
               sprintf(generalPrint, "opening mipstart file %s.", fileName.c_str());
               generalMessageHandler->message(CLP_GENERAL, generalMessages) << generalPrint << CoinMessageEol;
               double msObj;
-              readMIPStart(&model_, fileName.c_str(), mipStart, msObj);
+              
+              CbcMipStartIO::read(model_.solver(), fileName.c_str(), mipStart, msObj, model_.messageHandler(), model_.messagesPointer());
               // copy to before preprocess if has .before.
               if (strstr(fileName.c_str(), ".before.")) {
                 mipStartBefore = mipStart;

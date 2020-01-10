@@ -11,7 +11,8 @@ GAMS (through the [GAMSlinks](https://github.com/coin-or/GAMSlinks) project),
 Mathematica,
 [MiniZinc](http://www.minizinc.org/),
 MPL (through the [CoinMP](https://github.com/coin-or/CoinMP) project),
-[PuLP](https://github.com/coin-or/PuLP), and
+[PuLP](https://github.com/coin-or/PuLP),
+Python (e.g., [cbcpy](https://pypi.org/project/cbcpy)), and
 [OpenSolver for Excel](http://opensolver.org), among others.
 
 Cbc links to a number of other COIN-OR projects for additional functionality, including:
@@ -52,7 +53,6 @@ Binaries for most platforms are available for download from [Bintray](https://bi
    * `brew tap coin-or-tools/coinor`
    * `brew install cbc`
  * AMPL also provides stand-alone [Cbc executables](http://ampl.com/products/solvers/open-source/#cbc) that can be used with (or without) AMPL.
- * The [GAMS](http://www.gams.com) distribution includes Cbc.
 
 Due to license incompatibilities, pre-compiled binaries lack some functionality.
 If binaries are not available for your platform for the latest version and you would like to request them to be built and posted, feel free to let us know on the mailing list.
@@ -64,7 +64,7 @@ If binaries are not available for your platform for the latest version and you w
 
 Below is a quick start guide for building on common platforms. More detailed
 build instructions are
-[https://coin-or.github.io/user_introduction.html](here) (this is a work in
+[here](https://coin-or.github.io/user_introduction.html) (this is a work in
 progress).
 
 ## BUILDING from source
@@ -171,6 +171,9 @@ https://github.com/coin-or/Cbc/issues
    * Added possibility for incomplete MIP start files.
      The filename suffix indicates which values Cbc should choose for
      missing variables (see change r2549)
+
+ * Release 2.10.4 (in preparation)
+   * Fix parsing of optional arguments to AMPL interface.
 
  * Release 2.10.3
    * Improve performance of some primal heuristics, incl. feasibility pump, by making integer slacks continuous

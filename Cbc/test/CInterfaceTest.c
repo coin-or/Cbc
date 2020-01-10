@@ -7,6 +7,7 @@
 #include "Cbc_C_Interface.h"
 #include <assert.h>
 #include <math.h>
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -721,6 +722,367 @@ void testTSP(char asMIP) {
     #undef N
 }
 
+static char arc_var(const char *vname, int *u, int *v) {
+    // gets  arc in the name of a x variable in the format x(u,v)
+    char str[256];
+    strcpy(str, vname);
+
+    char *s = strstr(str, "x(");
+    if (!s)
+        return 0;
+    s += 2;
+    char *s2 = strstr(s, ",");
+    if (!s2)
+        return 0;
+    *s2 = '\0';
+    ++s2;
+
+    char *s3 = strstr(s2, ")");
+    if (!s3)
+        return 0;
+    *s3 = '\0';
+
+    *u = atoi(s);
+    *v = atoi(s2);
+
+    return 1;
+}
+
+static double rad(double x)
+{     /* convert input coordinate to longitude/latitude, in radians */
+      double pi = 3.141592, deg, min;
+      deg = (int)x;
+      min = x - deg;
+      return pi * (deg + 5.0 * min / 3.0) / 180.0;
+}
+
+double dist(double x1, double y1, double x2, double y2) {
+    double rrr = 6378.388;
+    double latitude_i = rad(x1);
+    double latitude_j = rad(x2);
+    double longitude_i = rad(y1);
+    double longitude_j = rad(y2);
+    double q1 = cos(longitude_i - longitude_j);
+    double q2 = cos(latitude_i - latitude_j);
+    double q3 = cos(latitude_i + latitude_j);
+    double dij = (int)(rrr * acos(0.5 * ((1.0 + q1) * q2 -
+       (1.0 - q1) *q3)) + 1.0);
+    return dij;
+}
+
+// checks a solution for the TSP, assuming that x variables 
+// are the first ones the the graph is complete
+// starting in st computes all other points in the route and stores in 
+// el - can be used to identify subtours in integer solutions
+static int tspRouteStarting(const double **xsol, int st, int n, int *el) {
+    int size = 0;
+    int next = st;
+    do {
+        el[size++] = next;
+        char found = 0;
+        for ( int i=0 ; (i<n) ; ++i ) {
+            if (xsol[next][i] >= 0.99) {
+                next = i;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            fprintf(stderr, "TSP solution does not satisfy degree constraints.");
+            abort();
+        }
+    } while ( next != st );
+
+    return size;
+}
+
+void subTourSep(void *osiSolver, void *osiCuts, void *appdata) {
+    if (!Osi_isProvenOptimal(osiSolver))
+        return;
+
+    int n = *((int *)appdata);
+    
+    const double *x = Osi_getColSolution(osiSolver);
+    double **xs = malloc( sizeof(double*)*n );
+    xs[0] = malloc( sizeof(double)*n*n );
+    for ( int i=1 ; (i<n) ; ++i )
+        xs[i] = xs[i-1] + n;
+    for ( int i=0 ; (i<(n*n)) ; ++i )
+        xs[0][i] = 0.0;
+
+    int nFrac = 0;
+    for ( int i=0 ; (i<Osi_getNumCols(osiSolver)) ; ++i ) {
+        if (fabs(x[i]) <= 1e-4)
+            continue;
+        char vname[256] = "";
+        Osi_getColName(osiSolver, i, vname, 256);
+        int u = -1, v = -1;
+
+        if (!arc_var(vname, &u, &v))
+            continue;
+
+        xs[u][v] = x[i];
+
+        if (fabs(x[i] - floor(x[i]+0.5)) > 1e-5)
+            nFrac++;
+    }
+    if (nFrac == 0) {
+        // integer sol, search for 
+        // disconnected sub-routes with DFS
+        //
+        int *el = malloc(sizeof(int)*n);
+        char *iv = malloc(sizeof(char)*n);
+        int *idx = malloc(sizeof(int)*n*n);
+        double *coef = malloc(sizeof(double)*n*n);
+        for ( int i=0 ; (i<n*n) ; ++i )
+            coef[i] = 1.0;
+
+        for ( int st=0 ; (st<n) ; ++st ) {
+            int nz = 0;
+            memset(iv, 0, sizeof(char)*n);
+            int nel = tspRouteStarting((const double **) xs, st, n, el);
+            if (nel == n)
+                break; // no sub-tour
+            else {
+                if (nel <= (n/2)) {
+                    // only for the smaller subset
+                    for ( int j=0 ; (j<nel) ; ++j )
+                        iv[el[j]] = 1;
+                    for ( int ic=0 ; (ic<Osi_getNumCols(osiSolver)) ; ++ic ) {
+                        char vname[256] = "";
+                        Osi_getColName(osiSolver, ic, vname, 256);
+                        int u = -1, v = -1;
+
+                        if (!arc_var(vname, &u, &v))
+                            continue;
+
+                        if (iv[u] + iv[v] != 2)
+                            continue;
+                        
+                        // both in subset
+                        idx[nz++] = ic;
+                    }
+                    OsiCuts_addGlobalRowCut( osiCuts, nz, idx, coef, 'L', nel-1 );
+                }
+            } // found subroute
+        } // checking for subroutes
+        free(iv);
+        free(el);
+        free(idx);
+        free(coef);
+    } // integer sol
+
+    free(xs[0]); free(xs);
+}
+
+ int newTSPSol(void *cbcModel, double obj, int nz, char **vnames, double *x, void *appData) {
+     /*printf("Found TSP Solution with Cost: %g\n", obj);
+     
+     int col = 0;
+     for ( int i=0 ; (i<nz) ; ++i ) {
+         printf("\t%s %g", vnames[i], x[i]);
+         if (++col % 5)
+             printf("\t");
+         else 
+             printf("\n");
+     } 
+     printf("\n");*/
+ }
+
+void testTSPUlysses22( char lazy ) {
+    if (lazy) {
+        printf("TSP Test with 22 cities, with lazy constraints\n");
+        printf("==============================================\n");
+    }
+    else {
+        printf("TSP Test with 22 cities, without lazy constraints\n");
+        printf("=================================================\n");
+    }
+    const int n = 22;
+    double coord[22][2] = {
+         {38.24, 20.42}, {39.57, 26.15}, {40.56, 25.32}, {36.26, 23.12},
+         {33.48, 10.54}, {37.56, 12.19}, {38.42, 13.11}, {37.52, 20.44},
+         {41.23,  9.10}, {41.17, 13.05}, {36.08, -5.21}, {38.47, 15.13},
+         {38.15, 15.35}, {37.51, 15.17}, {35.49, 14.32}, {39.36, 19.56},
+         {38.09, 24.36}, {36.09, 23.00}, {40.44, 13.57}, {40.33, 14.15},
+         {40.37, 14.23}, {37.57, 22.56}
+    };
+
+    double c[22][22];
+    for ( int i=0 ; i<22 ; ++i ) {
+        for ( int j=0 ; j<22 ; ++j ) {
+            if (i==0)
+                c[i][j] = 0;
+            else
+                c[i][j] = dist(coord[i][0], coord[i][1], coord[j][0], coord[j][1]);
+        }
+    }
+
+    int idx[22];
+    double coef[22] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+
+    Cbc_Model *m = Cbc_newModel();
+    Cbc_storeNameIndexes(m, 1);
+                              
+    int x[22][22];
+    for ( int i=0 ; (i<22) ; ++i ) {
+        for ( int j=0 ; (j<22) ; ++j ) {
+            x[i][j] = Cbc_getNumCols(m);
+            char vname[256];
+            sprintf(vname, "x(%d,%d)", i, j);
+            Cbc_addCol(m, vname, 0.0, 1.0, c[i][j], 1, 0, NULL, NULL);
+        }
+    }
+
+    // out degree
+    for ( int i=0 ; (i<n) ; ++i ) {
+        int nz = 0;
+        for ( int j=0 ; (j<n) ; ++j )  {
+            if (i==j)
+                continue;
+            idx[nz++] = x[i][j];
+        }
+        char rname[256];
+        sprintf(rname, "dout(%d)", i);
+        Cbc_addRow(m, rname, nz, idx, coef, 'E', 1.0);
+    }
+
+    // in degree
+    for ( int i=0 ; (i<n) ; ++i ) {
+        int nz = 0;
+        for ( int j=0 ; (j<n) ; ++j )  {
+            if (i==j)
+                continue;
+            idx[nz++] = x[j][i];
+        }
+        char rname[256];
+        sprintf(rname, "din(%d)", i);
+        Cbc_addRow(m, rname, nz, idx, coef, 'E', 1.0);
+    }
+
+    // subtours of size 2
+    for ( int i=0 ; (i<n) ; ++i ) {
+        for ( int j=i+1 ; (j<n) ; ++j )  {
+            char rname[256];
+            sprintf(rname, "no2sub(%d)", i);
+            idx[0] = x[i][j];
+            idx[1] = x[j][i];
+            Cbc_addRow(m, rname, 2, idx, coef, 'L', 1.0);
+        }
+    }
+
+    int y[22];
+
+    if (!lazy) {
+        // y vars
+        for ( int i=0 ; (i<n) ; ++i ) {
+            char vname[256];
+            sprintf(vname, "y(%d)", i);
+            y[i] = Cbc_getNumCols(m);
+            Cbc_addCol(m, vname, 0.0, DBL_MAX, 0, 1, 0, NULL, NULL);
+        }
+
+        // weak sub-tour elimination constraints
+        coef[1] = -(n+1);
+        coef[2] = -1.0;
+        for ( int i=1 ; (i<n) ; ++i ) {
+            for ( int j=1 ; (j<n) ; ++j )  {
+                if (i==j)
+                    continue;
+                char rname[256];
+                sprintf(rname, "noSub(%d,%d)", i, j);
+                idx[0] = y[i];
+                idx[1] = x[i][j];
+                idx[2] = y[j];
+
+                Cbc_addRow(m, rname, 3, idx, coef, 'G', -n);
+            }
+        }
+    }
+
+    
+    if (lazy)
+        Cbc_addCutCallback(m, subTourSep, "Sub-tour separator", (void *) &n, 1, 1);
+    
+    Cbc_addIncCallback(m, newTSPSol, NULL);
+    
+    // adding initial solution
+    /*char msColNames[][64] = { "x(0,10)", "x(1,16)", "x(2,1)", "x(3,21)", "x(4,14)", "x(5,4)",
+                              "x(6,5)", "x(7,0)", "x(8,9)", "x(9,18)", "x(10,8)", "x(11,15)",
+                              "x(12,11)", "x(13,12)", "x(14,13)", "x(15,7)", "x(16,2)", "x(17,3)",
+                              "x(18,20)", "x(19,6)", "x(20,19)", "x(21,17)"}; */
+
+    char msColNames[][64] = { "x(0,10)", "x(1,16)", "x(2,1)", "x(3,17)", "x(4,13)", "x(5,14)", "x(6,5)",
+                              "x(7,0)", "x(8,9)", "x(9,18)", "x(10,8)", "x(11,15)", "x(12,11)", "x(13,12)",
+                              "x(14,4)", "x(15,2)", "x(16,21)", "x(17,7)", "x(18,20)", "x(19,6)", 
+                              "x(20,19)", "x(21,3)" };
+    char **mscn = malloc(sizeof(char*)*n);
+    for ( int i=0 ; (i<n) ; ++i )
+        mscn[i] = msColNames[i];
+    double msColValues[] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 
+                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 
+                            1.0, 1.0 };
+                            
+    if (!lazy)
+        Cbc_setMIPStart(m, n, (const char **) mscn, msColValues);
+    free(mscn);
+    Cbc_setMaximumNodes(m, 5000);
+    Cbc_solve(m);
+    assert(!Cbc_isProvenInfeasible(m));
+    assert(!Cbc_isContinuousUnbounded(m));
+    assert(!Cbc_isAbandoned(m));
+    assert(Cbc_getBestPossibleObjValue(m) >= 5216-1e-4);
+    double *sol = NULL;
+    if (Cbc_isProvenOptimal(m)) {
+        printf("Optimal solution with cost %g found.\n", Cbc_getObjValue(m));
+        assert( Cbc_numberSavedSolutions(m) >= 1 );
+        assert(fabs(Cbc_getObjValue(m)-5423) < 1e-4);
+        assert(fabs(Cbc_getBestPossibleObjValue(m) - Cbc_getObjValue(m))<1e-4);
+        assert(Cbc_bestSolution(m) != NULL);
+        sol = (double *) Cbc_bestSolution(m);
+    }
+    else {
+        if (Cbc_bestSolution(m)) {
+            assert( Cbc_numberSavedSolutions(m) >= 1 );
+            assert( Cbc_getObjValue(m) >= 5423-1e-4);
+            sol = (double *) Cbc_bestSolution(m);
+        }
+    }
+
+    if (sol) {
+        double **xs = malloc( sizeof(double*)*n );
+        xs[0] = malloc( sizeof(double)*n*n );
+        for ( int i=1 ; (i<n) ; ++i )
+            xs[i] = xs[i-1] + n;
+        for ( int i=0 ; i<n ; ++i )
+            for ( int j=0 ; j<n ; ++j )
+                xs[i][j] = sol[x[i][j]];
+
+        double tot_d = 0.0;
+        int *el = malloc(sizeof(int)*(n+1));
+        int nel = tspRouteStarting((const double **) xs, 0, n, el);
+        assert( nel == n );
+        printf("route : ");
+        el[n] = 0;
+        nel++;
+        for ( int i=0 ; (i<nel) ; ++i ) {
+            if (i) {
+                printf(" -> ");
+                tot_d += c[el[i-1]][el[i]];
+            }
+            printf("%d", el[i]);
+        }
+        printf("\n");
+        printf("Total distance: %g\n", tot_d);
+        assert(fabs(tot_d - Cbc_getObjValue(m)) < 1e-4);
+
+        free(el);
+        free(xs[0]); free(xs);
+    }
+
+    Cbc_deleteModel(m);
+}
+
 int main() {
     printf("Knapsack test\n");
     testKnapsack();
@@ -737,9 +1099,15 @@ int main() {
     printf("n-Queens test\n");
     testQueens(10);
     testQueens(25);
+    
+    /* TSP test with 7 cities */
+    testTSP(0);  /* only the LP */
+    testTSP(1);  /* solving as MIP */
 
-    testTSP(0);
-    testTSP(1);
+    /* TSP test with 22 cities, with and without
+     * lazy constraints */
+    testTSPUlysses22( 1 );
+    testTSPUlysses22( 0 );
 
     return 0;
 }

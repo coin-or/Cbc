@@ -10,6 +10,7 @@
 #include <cctype>
 #include <map>
 #include <string>
+#include <vector>
 #ifdef CBC_THREAD
 #include <pthread.h>
 #endif
@@ -33,6 +34,7 @@
 #include "ClpDualRowDantzig.hpp"
 #include "ClpPEDualRowSteepest.hpp"
 #include "ClpPEDualRowDantzig.hpp"
+#include "CbcMipStartIO.hpp"
 #include "ClpMessage.hpp"
 #include <OsiAuxInfo.hpp>
 
@@ -209,7 +211,8 @@ struct Cbc_Model {
   void *pgrAppData;
 
 #ifdef CBC_THREAD
-  pthread_mutex_t cbcMutex;
+  pthread_mutex_t cbcMutexCG;
+  pthread_mutex_t cbcMutexEvent;
 #endif
 
 
@@ -334,7 +337,6 @@ void CglCallback::generateCuts( const OsiSolverInterface &si, OsiCuts &cs, const
 
   this->cut_callback_( (OsiSolverInterface *) &si, &cs, this->appdata );
 
-
 #ifdef CBC_THREAD
     pthread_mutex_unlock((this->cbcMutex));
 #endif
@@ -455,38 +457,25 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
           bestCost = solver->getObjValue();
 
         if (this->inc_callback != NULL) {
-          int charSize = 0, nNZ = 0;
+          int charSize = 0;
           const double *x = solver->getColSolution();
+          std::vector< std::pair<string, double> > sol;
           for (int i = 0; (i < solver->getNumCols()); ++i) {
             if (fabs(x[i]) <= 1e-7)
                 continue;
+            sol.push_back( std::pair<std::string, double>( solver->getColName(i), x[i] ));
             charSize += (int)solver->getColName(i).size()+1;
-            ++nNZ;
           } // checking non zero cols
+          size_t nNZ = sol.size();
           char **cnames = new char*[nNZ];
           double *xv = new double[nNZ];
           cnames[0] = new char[charSize];
-
-          int cnz = 0;
-          for (int i = 0; (i < solver->getNumCols()); ++i)
-          {
-            if (fabs(x[i]) <= 1e-7)
-              continue;
-            if (cnz>=1)
-              cnames[cnz] = cnames[cnz-1] + solver->getColName(i).size()+1;
-            cnz++;
-          }
-
-          cnz = 0;
-          for (int i = 0; (i < solver->getNumCols()); ++i)
-          {
-            if (fabs(x[i]) <= 1e-7)
-                continue;
-            strcpy(cnames[cnz], solver->getColName(i).c_str());
-            xv[cnz] = x[i];
-
-            cnz++;
-          }
+          for ( int i=1 ; (i<(int)sol.size()) ; ++i ) 
+              cnames[i] = cnames[i-1] + sol[i-1].first.size()+1;
+          for ( int i=0 ; (i<(int)sol.size()) ; ++i ) 
+              strcpy( cnames[i], sol[i].first.c_str() );
+          for (int i = 0; (i < (int)nNZ); ++i)
+            xv[i] = sol[i].second;
 
           this->inc_callback(model_, bestCost, nNZ, cnames, xv, this->appData);
 
@@ -1002,7 +991,8 @@ Cbc_newModel()
   Cbc_iniBuffer(model);
 
 #ifdef CBC_THREAD
-  pthread_mutex_init(&(model->cbcMutex), NULL);
+  pthread_mutex_init(&(model->cbcMutexCG), NULL);
+  pthread_mutex_init(&(model->cbcMutexEvent), NULL);
 #endif
 
   model->lazyConstrs = NULL;
@@ -1025,7 +1015,8 @@ Cbc_deleteModel(Cbc_Model *model)
   }
 
 #ifdef CBC_THREAD
-  pthread_mutex_destroy(&(model->cbcMutex));
+  pthread_mutex_destroy(&(model->cbcMutexCG));
+  pthread_mutex_destroy(&(model->cbcMutexEvent));
 #endif
 
   if (model->colNameIndex)
@@ -1511,7 +1502,7 @@ Cbc_solve(Cbc_Model *model)
     clps->setMaximumWallSeconds(maxTime);
   solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
-  if (not cbc_annouced) {
+  if (! cbc_annouced) {
     char generalPrint[512];
       sprintf(generalPrint,
         "Welcome to the CBC MILP Solver \n");
@@ -1714,7 +1705,7 @@ Cbc_solve(Cbc_Model *model)
     {
       cbc_eh = new Cbc_EventHandler(model->cbcModel_);
 #ifdef CBC_THREAD
-      cbc_eh->cbcMutex = &(model->cbcMutex);
+      cbc_eh->cbcMutex = &(model->cbcMutexEvent);
 #endif
 
       if (model->inc_callback) {
@@ -1740,9 +1731,13 @@ Cbc_solve(Cbc_Model *model)
       cglCb.appdata = model->cutCBData;
       cglCb.cut_callback_ = model->cut_callback;
 #ifdef CBC_THREAD
-      cglCb.cbcMutex = &(model->cbcMutex);
+      cglCb.cbcMutex = &(model->cbcMutexCG);
 #endif
       cbcModel->addCutGenerator( &cglCb, model->cutCBhowOften, model->cutCBName.c_str(), true, model->cutCBAtSol );
+    }
+    if (model->cutCBAtSol) {
+      Cbc_setParameter(model, "preprocess", "off");
+      Cbc_setParameter(model, "heur", "off");        
     }
 
     Cbc_MessageHandler *cbcmh  = NULL;
@@ -1816,6 +1811,15 @@ Cbc_solve(Cbc_Model *model)
       printf("\nStarting MIP optimization\n");
       fflush(stdout);
     }
+#ifdef CBC_THREAD
+    {
+      int numberThreads = model->int_param[INT_PARAM_THREADS];
+      if (numberThreads > 1) {
+        model->cbcModel_->setNumberThreads(numberThreads);
+        model->cbcModel_->setThreadMode(CoinMin(numberThreads / 100, 7));
+      }
+    }
+#endif
     CbcMain1( nargs, args, *model->cbcModel_, cbc_callb, cbcData );
 
     free(charCbcOpts);
@@ -2617,7 +2621,8 @@ Cbc_clone(Cbc_Model *model)
   }
 
 #ifdef CBC_THREAD
-  pthread_mutex_init(&(result->cbcMutex), NULL);
+  pthread_mutex_init(&(result->cbcMutexCG), NULL);
+  pthread_mutex_init(&(result->cbcMutexEvent), NULL);
 #endif
 
   // copying parameters
@@ -2755,6 +2760,34 @@ Cbc_addLazyConstraint(Cbc_Model *model, int nz,
   }
 
   model->lazyConstrs->addCut(orc);
+}
+
+COINLIBAPI void COINLINKAGE
+Cbc_readMIPStart(Cbc_Model *model, const char fileName[]) {
+  std::vector< std::pair< std::string, double > > colValues;
+  double obj;
+  CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
+  CoinMessageHandler *messHandler = model->solver_->messageHandler();
+  CbcMipStartIO::read(model->solver_, fileName, colValues, obj, messHandler, &generalMessages);
+  
+  char **cnames = new char*[colValues.size()];
+  size_t charSpace = 0;
+  for ( int i=0 ; (i<(int)colValues.size()) ; ++i )
+    charSpace += colValues[i].first.size() + 1;
+  cnames[0] = new char[charSpace];
+  for ( int i=1 ; (i<(int)colValues.size()) ; ++i )
+    cnames[i] = cnames[i-1] + colValues[i-1].first.size() + 1;
+
+  double *cval = new double[colValues.size()];
+  for ( int i=0 ; (i<(int)colValues.size()) ; ++i ) {
+    cval[i] = colValues[i].second;
+    strcpy(cnames[i], colValues[i].first.c_str());
+  }
+
+  Cbc_setMIPStart(model, colValues.size(), (const char **) cnames, cval);
+  delete[] cnames[0];
+  delete[] cnames;
+  delete[] cval;
 }
 
 COINLIBAPI void COINLINKAGE
@@ -2906,6 +2939,7 @@ Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double
     strcpy( model->colNamesMS[i], colNames[i] );
 
   memcpy(model->colValuesMS, colValues, sizeof(double)*count );
+  model->nColsMS = count;
 }
 
 COINLIBAPI void COINLINKAGE
@@ -3200,6 +3234,53 @@ OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, ch
 
   oc->insert(orc);
 }
+
+/** adds a row cut (used in callback), stating that this is a globally valid cut */
+COINLIBAPI void COINLINKAGE 
+OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs )
+{
+  sense = toupper(sense);
+  OsiCuts *oc = (OsiCuts *) osiCuts;
+
+  OsiRowCut orc;
+  orc.setRow( nz, idx, coef );
+
+
+  orc.setLb(-DBL_MAX);
+  orc.setUb(DBL_MAX);
+
+  switch (toupper(sense)) {
+  case '=':
+    orc.setLb(rhs);
+    orc.setUb(rhs);
+    break;
+  case 'E':
+    orc.setLb(rhs);
+    orc.setUb(rhs);
+    break;
+  case '<':
+    orc.setUb(rhs);
+    break;
+  case 'L':
+    orc.setUb(rhs);
+    break;
+  case '>':
+    orc.setLb(rhs);
+    break;
+  case 'G':
+    orc.setLb(rhs);
+    break;
+  default:
+    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    abort();
+  }
+
+  orc.setGloballyValid(true);
+  oc->insert(orc);
+}
+
+
+
 
 /** @brief Sets a variable to integer */
 COINLIBAPI void COINLINKAGE
@@ -3630,6 +3711,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_LOG_LEVEL]        =        1;
   model->int_param[INT_PARAM_MAX_SAVED_SOLS]   =       -1;
   model->int_param[INT_PARAM_MULTIPLE_ROOTS]   =        0;
+  model->int_param[INT_PARAM_THREADS]          =       -1;
 
   model->dbl_param[DBL_PARAM_PRIMAL_TOL]       =          1e-6;
   model->dbl_param[DBL_PARAM_DUAL_TOL]         =          1e-6;

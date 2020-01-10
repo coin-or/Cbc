@@ -1,0 +1,11 @@
+#init:
+#  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+platform:
+  - x64
+
+environment:
+  global:
+    BINTRAY_API:
+      secure: a9n4jf90wlFCdaYa6fOmYxsF97ur2dnK8Ys3gn5R90JBzTDq6cD2GlEwmmts75mq
+    BINTRAY_USERNAME: tkralphs

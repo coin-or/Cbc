@@ -5,6 +5,14 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseParallel|Win32">
+      <Configuration>ReleaseParallel</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseParallel|x64">
+      <Configuration>ReleaseParallel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
@@ -38,6 +46,13 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -45,6 +60,13 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
@@ -62,14 +84,25 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|Win32'">
+    <IncludePath>..\..\..\..\..\pthreads-w32\pthreads.2;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|x64'">
+    <IncludePath>..\..\..\..\..\pthreads-w32\pthreads.2;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -114,6 +147,24 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\..\..\src\;..\..\..\..\Cgl\src\CglZeroHalf;..\..\..\..\Cgl\src\CglGMI;..\..\..\..\Cgl\src\CglLandP;..\..\..\..\Cgl\src\CglTwomir;..\..\..\..\Cgl\src\CglMixedIntegerRounding;..\..\..\..\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\Cgl\src\CglFlowCover;..\..\..\..\Cgl\src\CglClique;..\..\..\..\Cgl\src\CglOddHole;..\..\..\..\Cgl\src\CglKnapsackCover;..\..\..\..\Cgl\src\CglGomory;..\..\..\..\Cgl\src\CglPreProcess;..\..\..\..\Cgl\src\CglDuplicateRow;..\..\..\..\Cgl\src\CglRedSplit;..\..\..\..\Cgl\src\CglProbing;..\..\..\..\Cgl\src;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Osi\src\Osi;..\..\..\..\CoinUtils\src;..\..\..\..\BuildTools\headers;..\..\..\..\Cgl\src\CglResidualCapacity;..\..\..\..\Cgl\src\CglRedSplit2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>CBC_THREAD;NDEBUG;_NDEBUG;CBC_BUILD;WIN32;_LIB;USE_CBCCONFIG;COIN_NO_CLP_MESSAGE;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -124,6 +175,25 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>..\..\..\src\;..\..\..\..\Cgl\src\CglZeroHalf;..\..\..\..\Cgl\src\CglGMI;..\..\..\..\Cgl\src\CglLandP;..\..\..\..\Cgl\src\CglTwomir;..\..\..\..\Cgl\src\CglMixedIntegerRounding;..\..\..\..\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\Cgl\src\CglFlowCover;..\..\..\..\Cgl\src\CglClique;..\..\..\..\Cgl\src\CglOddHole;..\..\..\..\Cgl\src\CglKnapsackCover;..\..\..\..\Cgl\src\CglGomory;..\..\..\..\Cgl\src\CglPreProcess;..\..\..\..\Cgl\src\CglDuplicateRow;..\..\..\..\Cgl\src\CglRedSplit;..\..\..\..\Cgl\src\CglProbing;..\..\..\..\Cgl\src;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Osi\src\Osi;..\..\..\..\CoinUtils\src;..\..\..\..\BuildTools\headers;..\..\..\..\Cgl\src\CglResidualCapacity;..\..\..\..\Cgl\src\CglRedSplit2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;_NDEBUG;CBC_BUILD;WIN32;_LIB;USE_CBCCONFIG;COIN_NO_CLP_MESSAGE;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\..\..\src\;..\..\..\..\Cgl\src\CglZeroHalf;..\..\..\..\Cgl\src\CglGMI;..\..\..\..\Cgl\src\CglLandP;..\..\..\..\Cgl\src\CglTwomir;..\..\..\..\Cgl\src\CglMixedIntegerRounding;..\..\..\..\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\Cgl\src\CglFlowCover;..\..\..\..\Cgl\src\CglClique;..\..\..\..\Cgl\src\CglOddHole;..\..\..\..\Cgl\src\CglKnapsackCover;..\..\..\..\Cgl\src\CglGomory;..\..\..\..\Cgl\src\CglPreProcess;..\..\..\..\Cgl\src\CglDuplicateRow;..\..\..\..\Cgl\src\CglRedSplit;..\..\..\..\Cgl\src\CglProbing;..\..\..\..\Cgl\src;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Osi\src\Osi;..\..\..\..\CoinUtils\src;..\..\..\..\BuildTools\headers;..\..\..\..\Cgl\src\CglResidualCapacity;..\..\..\..\Cgl\src\CglRedSplit2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>COIN_FAST_CODE;CLP_FAST_CODE;NEW_STYLE_SOLVER=0;CBC_QUIET=1;HAVE_PTW32_CONFIG_H;CBC_THREAD_SAFE;CBC_THREAD;NDEBUG;_NDEBUG;CBC_BUILD;WIN32;_LIB;USE_CBCCONFIG;COIN_NO_CLP_MESSAGE;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>

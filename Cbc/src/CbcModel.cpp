@@ -2909,7 +2909,7 @@ void CbcModel::branchAndBound(int doStatistics)
   }
   if (!numberUnsatisfied&&(moreSpecialOptions2_&65536)!=0) {
     // lazy constraints - see if OK
-    if (!reallyValid())
+    if (!reallyValid(&cuts))
       numberUnsatisfied=1;
   }
   // replace solverType
@@ -5315,6 +5315,8 @@ void CbcModel::branchAndBound(int doStatistics)
     if (atSolutionSolver_) {
       delete solver_;
       solver_ = atSolutionSolver_;
+      solverCharacteristics_ =
+	dynamic_cast< OsiBabSolver * >(solver_->getAuxiliaryInfo());
       delete continuousSolver_;
       continuousSolver_ = solver_->clone();
       atSolutionSolver_ = NULL;
@@ -10444,7 +10446,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom,
     if ((specialOptions_ & 1) != 0 && onOptimalPath) {
       solver_->writeMpsNative("before-tighten.mps", NULL, NULL, 2);
     }
-    if (clpSolver && (!currentNode_ || (currentNode_->depth() & 2) != 0) && !solverCharacteristics_->solutionAddsCuts() && (moreSpecialOptions_ & 1073741824) == 0)
+    if (clpSolver && (!currentNode_ || (currentNode_->depth() & 2) != 0) && !solverCharacteristics_->solutionAddsCuts() && (moreSpecialOptions_ & 1073741824) == 0 && (moreSpecialOptions2_&65536) == 0)
       nTightened = clpSolver->tightenBounds();
     if (nTightened) {
       //printf("%d bounds tightened\n",nTightened);
@@ -19666,7 +19668,7 @@ CbcModel::deleteNode(CbcNode * node)
 // Check if a solution is really valid e.g. lazy constraints
 // Returns true if ok or normal cuts (i.e. no atSolution ones)
 bool
-CbcModel::reallyValid()
+CbcModel::reallyValid(OsiCuts * existingCuts)
 {
   if ((moreSpecialOptions2_&65536)==0)
     return true;
@@ -19686,26 +19688,34 @@ CbcModel::reallyValid()
     if (generate) {
       generator_[i]->generateCuts(theseCuts, 1, solver_, NULL);
       int numberCuts = theseCuts.sizeRowCuts();
+      const double * solution = solver_->getColSolution();
+      double integerTolerance = getDblParam(CbcIntegerTolerance);
       for (int j = lastNumberCuts; j < numberCuts; j++) {
 	const OsiRowCut *thisCut = theseCuts.rowCutPtr(j);
-	if (thisCut->globallyValid()) {
-	  if ((specialOptions_ & 1) != 0) {
-	    /* As these are global cuts -
-	       a) Always get debugger object
-	       b) Not fatal error to cutoff optimal (if we have just got optimal)
-	    */
-	    const OsiRowCutDebugger *debugger = solver_->getRowCutDebuggerAlways();
-	    if (debugger) {
-	      if (debugger->invalidCut(*thisCut))
-		printf("ZZZZ Global cut - cuts off optimal solution!\n");
+	// Check if cut generator is stupid
+	if (thisCut->violated(solution) > integerTolerance) {
+	  if (thisCut->globallyValid()) {
+	    if ((specialOptions_ & 1) != 0) {
+	      /* As these are global cuts -
+		 a) Always get debugger object
+		 b) Not fatal error to cutoff optimal (if we have just got optimal)
+	      */
+	      const OsiRowCutDebugger *debugger = solver_->getRowCutDebuggerAlways();
+	      if (debugger) {
+		if (debugger->invalidCut(*thisCut))
+		  printf("ZZZZ Global cut - cuts off optimal solution!\n");
+	      }
 	    }
+	    // add to global list
+	    OsiRowCut newCut(*thisCut);
+	    newCut.setGloballyValid(true);
+	    newCut.mutableRow().setTestForDuplicateIndex(false);
+	    globalCuts_.addCutIfNotDuplicate(newCut);
+	    generator_[i]->incrementNumberCutsInTotal();
+	    // and to existing cuts
+	    if (existingCuts)
+	      existingCuts->insertIfNotDuplicate(newCut);
 	  }
-	  // add to global list
-	  OsiRowCut newCut(*thisCut);
-	  newCut.setGloballyValid(true);
-	  newCut.mutableRow().setTestForDuplicateIndex(false);
-	  globalCuts_.addCutIfNotDuplicate(newCut);
-	  generator_[i]->incrementNumberCutsInTotal();
 	}
       }
     }

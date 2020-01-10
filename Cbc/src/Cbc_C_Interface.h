@@ -394,6 +394,19 @@ Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double
 COINLIBAPI void COINLINKAGE
 Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double colValues[]);
 
+/** @brief Reads an initial feasible solution from a file
+  *
+  * Reads an initial feasible solution from a file. The file format
+  * is the same used as output by CBC. In the case of a Mixed-Integer
+  * Linear Program only the non-zero integer/binary variables need to 
+  * be informed.
+  *
+  * @param model problem object 
+  * @param fileName problem object 
+  **/
+COINLIBAPI void COINLINKAGE
+Cbc_readMIPStart(Cbc_Model *model, const char fileName[]);
+
 /** @brief Creates a copy of the current model 
   *
   * @param model problem object 
@@ -1327,6 +1340,12 @@ Osi_deleteSolver( void *osi );
 /** adds a row cut (used in callback) */
 COINLIBAPI void COINLINKAGE 
 OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs );
+
+/** adds a row cut (used in callback), stating that this is a globally valid cut */
+COINLIBAPI void COINLINKAGE 
+OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs );
+
+
 
 /*@}*/
 

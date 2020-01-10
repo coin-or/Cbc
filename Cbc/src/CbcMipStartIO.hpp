@@ -5,16 +5,19 @@
 #include <string>
 #include <utility>
 class CbcModel;
-
 class OsiSolverInterface;
+class CoinMessageHandler;
+class CoinMessages;
 
+class CbcMipStartIO{
+public:  
 /* tries to read mipstart (solution file) from
    fileName, filling colValues and obj
    returns 0 with success,
    1 otherwise */
-int readMIPStart(CbcModel *model, const char *fileName,
+static int read(OsiSolverInterface *solver, const char *fileName,
   std::vector< std::pair< std::string, double > > &colValues,
-  double &solObj);
+  double &solObj, CoinMessageHandler *messHandler, CoinMessages *pcoinmsgs);
 
 /* from a partial list of variables tries to fill the
    remaining variable values.
@@ -23,10 +26,13 @@ int readMIPStart(CbcModel *model, const char *fileName,
    3,5 ones without costs as 1,2 - ones with costs to cheapest
    4,6 ones without costs as 1,2 - ones with costs to expensive
 */
-int computeCompleteSolution(CbcModel *model,
+static int computeCompleteSolution(CbcModel *model, OsiSolverInterface *solver,
   const std::vector< std::string > colNames,
   const std::vector< std::pair< std::string, double > > &colValues,
-  double *sol, double &obj, int extraActions);
+  double *sol, double &obj, int extraActions, CoinMessageHandler *messHandler, CoinMessages *pmessages);
+  
+};
+
 
 #endif // MIPSTARTIO_HPP_INCLUDED
 

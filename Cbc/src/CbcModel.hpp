@@ -1350,7 +1350,7 @@ public:
     const double *solution);
   /// Check if a solution is really valid e.g. lazy constraints
   /// Returns true if ok or normal cuts (i.e. no atSolution ones)
-  bool reallyValid();
+  bool reallyValid(OsiCuts * existingCuts=NULL);
 
   /** Call this to really test if a valid solution can be feasible
         Solution is number columns in size.

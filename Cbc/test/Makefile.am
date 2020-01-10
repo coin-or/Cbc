@@ -91,7 +91,7 @@ nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
 CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LFLAGS)
 
 ctests: CInterfaceTest$(EXEEXT)
-	./CInterfaceTest$(EXEEXT)
+	./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 
 ########################################################################
 #                          Cleaning stuff                              #

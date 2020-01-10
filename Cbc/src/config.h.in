@@ -40,6 +40,9 @@
 /* Define to 1 if CoinUtils is available. */
 #undef COIN_HAS_COINUTILS
 
+/* Define to 1 if the Cplex package is available */
+#undef COIN_HAS_CPLEX
+
 /* Define to 1 if Cpx is available. */
 #undef COIN_HAS_CPX
 

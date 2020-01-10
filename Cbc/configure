@@ -688,6 +688,8 @@ COIN_HAS_GRB_FALSE
 COIN_HAS_GRB_TRUE
 COIN_HAS_GLPK_FALSE
 COIN_HAS_GLPK_TRUE
+COIN_HAS_CPLEX_FALSE
+COIN_HAS_CPLEX_TRUE
 COIN_HAS_CPX_FALSE
 COIN_HAS_CPX_TRUE
 COIN_HAS_VOL_FALSE
@@ -929,6 +931,9 @@ with_vol_cflags
 with_cpx
 with_cpx_lflags
 with_cpx_cflags
+with_cplex
+with_cplex_lflags
+with_cplex_cflags
 with_glpk
 with_glpk_lflags
 with_glpk_cflags
@@ -1732,6 +1737,15 @@ Optional Packages:
   --with-cpx-lflags       Linker flags for Cpx appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-cpx-cflags       Compiler flags for Cpx appropriate for your
+                          environment. (Most often, -I specs for header file
+                          directories.)
+  --with-cplex            Use Cplex. If an argument is given, 'yes' is
+                          equivalent to --with-cplex, 'no' is
+                          equivalent to --without-cplex. Any other argument is
+                          applied as for --with-cplex-lflags
+  --with-cplex-lflags     Linker flags for Cplex appropriate for your
+                          environment. (Most often, -l specs for libraries.)
+  --with-cplex-cflags     Compiler flags for Cplex appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
   --with-glpk             Use Glpk. If an argument is given, 'yes' is
@@ -20919,6 +20933,266 @@ $as_echo "#define COIN_HAS_CPX 1" >>confdefs.h
   fi
 
 
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Cplex" >&5
+$as_echo_n "checking for package Cplex... " >&6; }
+
+# Make sure the necessary variables exist for each client package.
+
+
+
+
+
+# Check to see if the user has overridden configure parameters from the
+# environment.
+
+  coin_has_cplex=noInfo
+  if test x"$COIN_SKIP_PROJECTS" != x ; then
+    for pkg in $COIN_SKIP_PROJECTS ; do
+      if test "$pkg" = "$cplex" ; then
+        coin_has_cplex=skipping
+      fi
+    done
+  fi
+
+# If we're not skipping this project, define and process the command line
+# options according to the cmdopts parameter. Then invoke FIND_PRIM_PKG to do
+# the heavy lifting.
+
+  if test "$coin_has_cplex" != skipping ; then
+
+
+
+
+# Check whether --with-cplex was given.
+if test "${with_cplex+set}" = set; then :
+  withval=$with_cplex;
+fi
+
+
+
+# Check whether --with-cplex-lflags was given.
+if test "${with_cplex_lflags+set}" = set; then :
+  withval=$with_cplex_lflags;
+fi
+
+
+
+# Check whether --with-cplex-cflags was given.
+if test "${with_cplex_cflags+set}" = set; then :
+  withval=$with_cplex_cflags;
+fi
+
+
+
+
+
+  dflt_action=yes
+
+# Initialize variables for the primary library.
+
+  coin_has_cplex=noInfo
+  cplex_lflags=
+  cplex_cflags=
+  cplex_data=
+
+# --with-prim is always present. If the client specified dataonly, its value
+# is assigned to prim_data.
+
+  withval=$with_cplex
+  if test -n "$withval" ; then
+    case "$withval" in
+      no )
+        coin_has_cplex=skipping
+        ;;
+      yes )
+        coin_has_cplex=requested
+        ;;
+      build )
+        coin_has_cplex=build
+        ;;
+      * )
+        coin_has_cplex=yes
+        cplex_lflags=$withval
+        ;;
+    esac
+  fi
+
+# --with-prim-lflags and --with-prim-cflags are present unless the client
+# specified dataonly. Specifying --with-prim=no overrides the individual
+# options for lflags and cflags.
+
+  if test "$coin_has_cplex" != skipping ; then
+       withval=$with_cplex_lflags
+       if test -n "$withval" ; then
+         case "$withval" in
+           build | no | yes )
+             as_fn_error $? "\"$withval\" is not valid here; please specify linker flags appropriate for your environment." "$LINENO" 5
+             ;;
+           * )
+             coin_has_cplex=yes
+             cplex_lflags=$withval
+             ;;
+         esac
+       fi
+
+       withval=$with_cplex_cflags
+       if test -n "$withval" ; then
+         case "$withval" in
+           build | no | yes )
+             as_fn_error $? "\"$withval\" is not valid here; please specify compiler flags appropriate for your environment." "$LINENO" 5
+             ;;
+           * )
+             coin_has_cplex=yes
+             cplex_cflags="$withval"
+             ;;
+         esac
+       fi
+     fi
+
+# --with-prim-data will be present unless the client specified nodata.
+# Specifying --with-prim=no overrides the individual option for data.
+
+
+
+# At this point, coin_has_prim can be one of noInfo (no user options
+# specified), skipping (user said no), requested or build (user said yes
+# or build and gave no further guidance), or yes (user specified one or
+# more --with-prim options). If we're already at yes or skipping, we're
+# done looking.
+
+# If there are no user options (noInfo) and the default is no, we're skipping.
+# Otherwise, the default must be yes or build; consider the package requested.
+# A default action we don't recognise defaults to yes.
+
+  if test "$coin_has_cplex" = noInfo ; then
+    case $dflt_action in
+      no )
+        coin_has_cplex=skipping
+        ;;
+      build )
+        coin_has_cplex=build
+        ;;
+      * )
+        coin_has_cplex=requested
+        ;;
+    esac
+  fi
+
+# Now coin_has_prim can be one of skipping, yes, build, or requested. For
+# build or requested, use the parameter values or invent some.
+
+  case $coin_has_cplex in
+    build | requested)
+      cplex_lflags="-lcplex -lpthread -lm -ldl"
+         if test "$coin_has_cplex" = build ; then
+              cplex_cflags="-I\$(pkgincludedir)/ThirdParty"
+            fi
+
+      coin_has_cplex=yes
+      ;;
+    skipping | yes )
+      ;;
+    * )
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unexpected status \"$coin_has_cplex\" in COIN_FIND_PRIM_LIB" >&5
+$as_echo "$as_me: WARNING: Unexpected status \"$coin_has_cplex\" in COIN_FIND_PRIM_LIB" >&2;}
+      ;;
+  esac
+
+# At this point, coin_has_prim is yes or skipping.  Time to run a link check,
+# if we have a function (CPXgetstat). Use whatever we've collected for lflags, plus
+# other libraries () as the other libraries parameter to AC_SEARCH_LIBS,
+# leaving the library parameter blank.
+
+  if test $coin_has_cplex != skipping ; then
+    ac_save_LIBS=$LIBS
+       LIBS="$cplex_lflags "
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#ifdef __cplusplus
+             extern "C"
+           #endif
+           void CPXgetstat();
+int
+main ()
+{
+CPXgetstat()
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+else
+  coin_has_cplex=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+       LIBS=$ac_save_LIBS
+  fi
+
+# The final value of coin_has_prim will be yes, no, or skipping. No means that
+# the link check failed. Yes means that we passed the link check, or no link
+# check was performed. Skipping means the user said `don't use.'
+
+# Define BUILDTOOLS_DEBUG to enable debugging output
+
+    if test "$BUILDTOOLS_DEBUG" = 1 ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: FIND_PRIM_LIB result for cplex: \"$coin_has_cplex\"" >&5
+$as_echo "$as_me: FIND_PRIM_LIB result for cplex: \"$coin_has_cplex\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Collected values for package 'cplex'" >&5
+$as_echo "$as_me: Collected values for package 'cplex'" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: cplex_lflags is \"$cplex_lflags\"" >&5
+$as_echo "$as_me: cplex_lflags is \"$cplex_lflags\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: cplex_cflags is \"$cplex_cflags\"" >&5
+$as_echo "$as_me: cplex_cflags is \"$cplex_cflags\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: cplex_data is \"$cplex_data\"" >&5
+$as_echo "$as_me: cplex_data is \"$cplex_data\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: cplex_pcfiles is \"$cplex_pcfiles\"" >&5
+$as_echo "$as_me: cplex_pcfiles is \"$cplex_pcfiles\"" >&6;}
+    fi
+
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $coin_has_cplex" >&5
+$as_echo "$coin_has_cplex" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $coin_has_cplex due to COIN_SKIP_PROJECTS" >&5
+$as_echo "$coin_has_cplex due to COIN_SKIP_PROJECTS" >&6; }
+  fi
+
+# Possibilities are `yes', `no', or `skipping'. Normalise to `yes' or `no'.
+
+  if test "$coin_has_cplex" != yes ; then
+    coin_has_cplex=no
+  fi
+
+# Create an automake conditional COIN_HAS_PRIM.
+
+   if test $coin_has_cplex = yes; then
+  COIN_HAS_CPLEX_TRUE=
+  COIN_HAS_CPLEX_FALSE='#'
+else
+  COIN_HAS_CPLEX_TRUE='#'
+  COIN_HAS_CPLEX_FALSE=
+fi
+
+
+# If we've located the package, define preprocessor symbol COIN_HAS_PRIM
+# and augment the necessary variables for the client packages.
+
+  if test $coin_has_cplex = yes ; then
+
+$as_echo "#define COIN_HAS_CPLEX 1" >>confdefs.h
+
+    CBCLIB_LFLAGS="$cplex_lflags $CBCLIB_LFLAGS"
+       CBCLIB_CFLAGS="$cplex_cflags $CBCLIB_CFLAGS"
+
+
+# Finally, set up PRIM_DATA, unless the user specified nodata.
+
+
+  fi
+
+
 
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Glpk" >&5
@@ -23088,6 +23362,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_CPX_TRUE}" && test -z "${COIN_HAS_CPX_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_CPX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COIN_HAS_CPLEX_TRUE}" && test -z "${COIN_HAS_CPLEX_FALSE}"; then
+  as_fn_error $? "conditional \"COIN_HAS_CPLEX\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_GLPK_TRUE}" && test -z "${COIN_HAS_GLPK_FALSE}"; then

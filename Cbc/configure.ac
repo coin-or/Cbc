@@ -111,13 +111,14 @@ AC_COIN_FINALIZE_FLAGS(CbcUnitTest)
 
 AC_COIN_CHK_PKG(OsiDyLP,[CbcGeneric],[osi-dylp])
 AC_COIN_CHK_PKG(OsiCpx,[CbcLib CbcGeneric CbcSolverLib],[osi-cplex])
-AC_COIN_CHK_LIB(Cplex,[CbcLib],[-lcplex -lpthread -lm -ldl],[],[],[CPXgetstat])
 AC_COIN_CHK_PKG(OsiGlpk,[CbcGeneric],[osi-glpk])
-AC_COIN_CHK_PKG(Glpk,[CbcSolverLib],,[build])
-AC_COIN_CHK_PKG(OsiGrb,,[osi-gurobi])
+#AC_COIN_CHK_PKG(OsiGrb,,[osi-gurobi])
 AC_COIN_CHK_PKG(OsiMsk,[CbcGeneric],[osi-mosek])
 AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric],[osi-soplex])
-AC_COIN_CHK_PKG(OsiXpr,,[osi-xpress])
+#AC_COIN_CHK_PKG(OsiXpr,,[osi-xpress])
+
+AC_COIN_CHK_LIB(Cplex,[CbcLib],[-lcplex -lpthread -lm -ldl],[],[],[CPXgetstat])
+AC_COIN_CHK_PKG(Glpk,[CbcSolverLib],,[build])
 
 #TODO organize this mess
 
@@ -349,12 +350,12 @@ AM_CONDITIONAL([OSICBC_DFLT_SOLVER_CLP],[test $osi_mc_solver = Clp])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_CPX],[test $osi_mc_solver = Cpx])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_DYLP],[test $osi_mc_solver = Dylp])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GLPK],[test $osi_mc_solver = Glpk])
-AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GRB],[test $osi_mc_solver = Grb])
+#AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GRB],[test $osi_mc_solver = Grb])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_HIGHS],[test $osi_mc_solver = HiGHS])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_MSK],[test $osi_mc_solver = Msk])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_SPX],[test $osi_mc_solver = Spx])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_SYM],[test $osi_mc_solver = Sym])
-AM_CONDITIONAL([OSICBC_DFLT_SOLVER_XPR],[test $osi_mc_solver = Xpr])
+#AM_CONDITIONAL([OSICBC_DFLT_SOLVER_XPR],[test $osi_mc_solver = Xpr])
 
 ##############################################################################
 #                   VPATH links for example input files                      #

@@ -114,11 +114,13 @@ host_triplet = @host@
 @OSICBC_DFLT_SOLVER_CPX_TRUE@am__append_2 = ${CPX_CFLAGS}
 @OSICBC_DFLT_SOLVER_DYLP_TRUE@am__append_3 = ${DYLP_CFLAGS}
 @OSICBC_DFLT_SOLVER_GLPK_TRUE@am__append_4 = ${GLPK_CFLAGS}
-@OSICBC_DFLT_SOLVER_GRB_TRUE@am__append_5 = ${GRB_CFLAGS}
-@OSICBC_DFLT_SOLVER_MSK_TRUE@am__append_6 = ${MSK_CFLAGS}
-@OSICBC_DFLT_SOLVER_HIGHS_TRUE@am__append_7 = ${HIGHS_CFLAGS}
-@OSICBC_DFLT_SOLVER_SYM_TRUE@am__append_8 = ${SYM_CFLAGS}
-@OSICBC_DFLT_SOLVER_XPR_TRUE@am__append_9 = ${XPR_CFLAGS}
+
+#if OSICBC_DFLT_SOLVER_GRB
+#  AM_CPPFLAGS += ${GRB_CFLAGS}
+#endif
+@OSICBC_DFLT_SOLVER_MSK_TRUE@am__append_5 = ${MSK_CFLAGS}
+@OSICBC_DFLT_SOLVER_HIGHS_TRUE@am__append_6 = ${HIGHS_CFLAGS}
+@OSICBC_DFLT_SOLVER_SYM_TRUE@am__append_7 = ${SYM_CFLAGS}
 subdir = src/OsiCbc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -454,7 +456,11 @@ libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 AM_CPPFLAGS = -DCBC_BUILD -I$(srcdir)/.. $(OSICBCLIB_CFLAGS) \
 	$(am__append_1) $(am__append_2) $(am__append_3) \
 	$(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_7) $(am__append_8) $(am__append_9)
+	$(am__append_7)
+
+#if OSICBC_DFLT_SOLVER_XPR
+#  AM_CPPFLAGS += ${XPR_CFLAGS}
+#endif
 
 ########################################################################
 #                Headers that need to be installed                     #

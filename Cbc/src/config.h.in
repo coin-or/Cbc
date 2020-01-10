@@ -73,9 +73,6 @@
 /* Define to 1 if OsiGlpk is available. */
 #undef COIN_HAS_OSIGLPK
 
-/* Define to 1 if OsiGrb is available. */
-#undef COIN_HAS_OSIGRB
-
 /* Define to 1 if OsiMsk is available. */
 #undef COIN_HAS_OSIMSK
 
@@ -84,9 +81,6 @@
 
 /* Define to 1 if OsiTests is available. */
 #undef COIN_HAS_OSITESTS
-
-/* Define to 1 if OsiXpr is available. */
-#undef COIN_HAS_OSIXPR
 
 /* Define to 1 if readline is available */
 #undef COIN_HAS_READLINE

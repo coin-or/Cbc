@@ -47,9 +47,9 @@ if OSICBC_DFLT_SOLVER_GLPK
   AM_CPPFLAGS += ${GLPK_CFLAGS}
 endif
 
-if OSICBC_DFLT_SOLVER_GRB
-  AM_CPPFLAGS += ${GRB_CFLAGS}
-endif
+#if OSICBC_DFLT_SOLVER_GRB
+#  AM_CPPFLAGS += ${GRB_CFLAGS}
+#endif
 
 if OSICBC_DFLT_SOLVER_MSK
   AM_CPPFLAGS += ${MSK_CFLAGS}
@@ -63,9 +63,9 @@ if OSICBC_DFLT_SOLVER_SYM
   AM_CPPFLAGS += ${SYM_CFLAGS}
 endif
 
-if OSICBC_DFLT_SOLVER_XPR
-  AM_CPPFLAGS += ${XPR_CFLAGS}
-endif
+#if OSICBC_DFLT_SOLVER_XPR
+#  AM_CPPFLAGS += ${XPR_CFLAGS}
+#endif
 
 ########################################################################
 #                Headers that need to be installed                     #

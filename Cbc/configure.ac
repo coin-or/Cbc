@@ -60,13 +60,13 @@ AC_COIN_CHECK_MATH_HDRS
 #############################################################################
 
 m4_foreach_w([myvar],[CoinUtils Osi Cgl Clp],
-  [ AC_COIN_CHK_PKG(myvar,[CbcLib CbcGeneric])
+  [ AC_COIN_CHK_PKG(myvar,[CbcLib CbcGeneric OsiCbcLib])
     if test $coin_has_[]m4_tolower(myvar) != yes ; then
       AC_MSG_ERROR([Required package myvar is not available.])
     fi
   ])
 
-AC_COIN_CHK_PKG(OsiClp,[CbcLib CbcGeneric],[osi-clp])
+AC_COIN_CHK_PKG(OsiClp,[CbcLib CbcGeneric OsiCbcLib],[osi-clp])
 if test $coin_has_osiclp != yes ; then
   AC_MSG_ERROR("Required package OsiClp unavailable.")
 fi
@@ -107,12 +107,12 @@ AC_COIN_CHK_PKG(Miplib3,,[coindatamiplib3],,dataonly)
 # Check which other LP solvers are available, some of them become a dependency
 # of CbcGeneric
 
-AC_COIN_CHK_PKG(OsiDyLP,[CbcGeneric],[osi-dylp])
-AC_COIN_CHK_PKG(OsiCpx,[CbcLib CbcGeneric CbcSolverLib],[osi-cplex])
-AC_COIN_CHK_PKG(OsiGlpk,[CbcGeneric],[osi-glpk])
+AC_COIN_CHK_PKG(OsiDyLP,[CbcGeneric OsiCbcLib],[osi-dylp])
+AC_COIN_CHK_PKG(OsiCpx,[CbcLib CbcGeneric CbcSolverLib OsiCbcLib],[osi-cplex])
+AC_COIN_CHK_PKG(OsiGlpk,[CbcGeneric OsiCbcLib],[osi-glpk])
 #AC_COIN_CHK_PKG(OsiGrb,,[osi-gurobi])
-AC_COIN_CHK_PKG(OsiMsk,[CbcGeneric],[osi-mosek])
-AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric],[osi-soplex])
+AC_COIN_CHK_PKG(OsiMsk,[CbcGeneric OsiCbcLib],[osi-mosek])
+AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric OsiCbcLib],[osi-soplex])
 #AC_COIN_CHK_PKG(OsiXpr,,[osi-xpress])
 
 AC_COIN_CHK_LIB(Cplex,[CbcLib],[-lcplex -lpthread -lm -ldl],[],[],[CPXgetstat])

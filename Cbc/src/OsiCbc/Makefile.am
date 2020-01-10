@@ -22,29 +22,33 @@ lib_LTLIBRARIES = libOsiCbc.la
 libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
 
 # List all additionally required libraries
-libOsiCbc_la_LIBADD = $(CBCLIB_LFLAGS) ../libCbc.la
+libOsiCbc_la_LIBADD = ../libCbc.la
 
 # This is for libtool
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Here list all include flags, relative to this "srcdir" directory.
-AM_CPPFLAGS = -DCBC_BUILD -I$(srcdir)/.. $(CBCLIB_CFLAGS)
+AM_CPPFLAGS = -DOSICBC_BUILD -I$(srcdir)/.. $(CBCLIB_CFLAGS)
 
-# Plus the appropriate include directories for the default solver.
+# Plus the appropriate include directories and libraries for the default solver.
 if OSICBC_DFLT_SOLVER_CLP
-  AM_CPPFLAGS += ${CLP_CFLAGS}
+  AM_CPPFLAGS += $(OSICLP_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSICLP_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_CPX
-  AM_CPPFLAGS += ${CPX_CFLAGS}
+  AM_CPPFLAGS += $(OSICPX_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSICPX_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_DYLP
-  AM_CPPFLAGS += ${DYLP_CFLAGS}
+  AM_CPPFLAGS += $(OSIDYLP_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSIDYLP_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_GLPK
-  AM_CPPFLAGS += ${GLPK_CFLAGS}
+  AM_CPPFLAGS += $(OSIGLPK_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSIGLPK_LFLAGS)
 endif
 
 #if OSICBC_DFLT_SOLVER_GRB
@@ -52,15 +56,18 @@ endif
 #endif
 
 if OSICBC_DFLT_SOLVER_MSK
-  AM_CPPFLAGS += ${MSK_CFLAGS}
+  AM_CPPFLAGS += $(OSIMSK_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSIMSK_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_HIGHS
-  AM_CPPFLAGS += ${HIGHS_CFLAGS}
+  AM_CPPFLAGS += $(HIGHS_CFLAGS)
+  libOsiCbc_la_LIBADD += $(HIGHS_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_SYM
-  AM_CPPFLAGS += ${SYM_CFLAGS}
+  AM_CPPFLAGS += $(OSISYM_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSISYM_LFLAGS)
 endif
 
 #if OSICBC_DFLT_SOLVER_XPR

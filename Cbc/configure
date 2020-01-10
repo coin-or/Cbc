@@ -727,6 +727,9 @@ COIN_HAS_OSI_FALSE
 COIN_HAS_OSI_TRUE
 COIN_HAS_COINUTILS_FALSE
 COIN_HAS_COINUTILS_TRUE
+OSICBCLIB_PCFILES
+OSICBCLIB_CFLAGS
+OSICBCLIB_LFLAGS
 CBCGENERIC_PCFILES
 CBCGENERIC_CFLAGS
 CBCGENERIC_LFLAGS
@@ -17015,6 +17018,9 @@ $as_echo_n "checking for package CoinUtils... " >&6; }
 
 
 
+
+
+
 # Check to see if the user has set an override to skip this primary.
 
   coin_has_coinutils=noInfo
@@ -17256,6 +17262,9 @@ $as_echo "#define COIN_HAS_COINUTILS 1" >>confdefs.h
       if test -n "$coinutils_pcfiles" ; then CBCGENERIC_PCFILES="$coinutils_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$coinutils_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$coinutils_cflags $CBCGENERIC_CFLAGS"
+      if test -n "$coinutils_pcfiles" ; then OSICBCLIB_PCFILES="$coinutils_pcfiles $OSICBCLIB_PCFILES" ; fi
+       OSICBCLIB_LFLAGS="$coinutils_lflags $OSICBCLIB_LFLAGS"
+       OSICBCLIB_CFLAGS="$coinutils_cflags $OSICBCLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.
@@ -17273,6 +17282,9 @@ $as_echo "#define COIN_HAS_COINUTILS 1" >>confdefs.h
 $as_echo_n "checking for package Osi... " >&6; }
 
 # Make sure the necessary variables exist for each client package.
+
+
+
 
 
 
@@ -17523,6 +17535,9 @@ $as_echo "#define COIN_HAS_OSI 1" >>confdefs.h
       if test -n "$osi_pcfiles" ; then CBCGENERIC_PCFILES="$osi_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osi_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osi_cflags $CBCGENERIC_CFLAGS"
+      if test -n "$osi_pcfiles" ; then OSICBCLIB_PCFILES="$osi_pcfiles $OSICBCLIB_PCFILES" ; fi
+       OSICBCLIB_LFLAGS="$osi_lflags $OSICBCLIB_LFLAGS"
+       OSICBCLIB_CFLAGS="$osi_cflags $OSICBCLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.
@@ -17540,6 +17555,9 @@ $as_echo "#define COIN_HAS_OSI 1" >>confdefs.h
 $as_echo_n "checking for package Cgl... " >&6; }
 
 # Make sure the necessary variables exist for each client package.
+
+
+
 
 
 
@@ -17790,6 +17808,9 @@ $as_echo "#define COIN_HAS_CGL 1" >>confdefs.h
       if test -n "$cgl_pcfiles" ; then CBCGENERIC_PCFILES="$cgl_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$cgl_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$cgl_cflags $CBCGENERIC_CFLAGS"
+      if test -n "$cgl_pcfiles" ; then OSICBCLIB_PCFILES="$cgl_pcfiles $OSICBCLIB_PCFILES" ; fi
+       OSICBCLIB_LFLAGS="$cgl_lflags $OSICBCLIB_LFLAGS"
+       OSICBCLIB_CFLAGS="$cgl_cflags $OSICBCLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.
@@ -17807,6 +17828,9 @@ $as_echo "#define COIN_HAS_CGL 1" >>confdefs.h
 $as_echo_n "checking for package Clp... " >&6; }
 
 # Make sure the necessary variables exist for each client package.
+
+
+
 
 
 
@@ -18057,6 +18081,9 @@ $as_echo "#define COIN_HAS_CLP 1" >>confdefs.h
       if test -n "$clp_pcfiles" ; then CBCGENERIC_PCFILES="$clp_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$clp_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$clp_cflags $CBCGENERIC_CFLAGS"
+      if test -n "$clp_pcfiles" ; then OSICBCLIB_PCFILES="$clp_pcfiles $OSICBCLIB_PCFILES" ; fi
+       OSICBCLIB_LFLAGS="$clp_lflags $OSICBCLIB_LFLAGS"
+       OSICBCLIB_CFLAGS="$clp_cflags $OSICBCLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.
@@ -18076,6 +18103,9 @@ $as_echo "#define COIN_HAS_CLP 1" >>confdefs.h
 $as_echo_n "checking for package OsiClp... " >&6; }
 
 # Make sure the necessary variables exist for each client package.
+
+
+
 
 
 
@@ -18322,6 +18352,9 @@ $as_echo "#define COIN_HAS_OSICLP 1" >>confdefs.h
       if test -n "$osiclp_pcfiles" ; then CBCGENERIC_PCFILES="$osiclp_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osiclp_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osiclp_cflags $CBCGENERIC_CFLAGS"
+      if test -n "$osiclp_pcfiles" ; then OSICBCLIB_PCFILES="$osiclp_pcfiles $OSICBCLIB_PCFILES" ; fi
+       OSICBCLIB_LFLAGS="$osiclp_lflags $OSICBCLIB_LFLAGS"
+       OSICBCLIB_CFLAGS="$osiclp_cflags $OSICBCLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.
@@ -19994,6 +20027,9 @@ $as_echo_n "checking for package OsiDyLP... " >&6; }
 
 
 
+
+
+
 # Check to see if the user has set an override to skip this primary.
 
   coin_has_osidylp=noInfo
@@ -20228,6 +20264,9 @@ $as_echo "#define COIN_HAS_OSIDYLP 1" >>confdefs.h
     if test -n "$osidylp_pcfiles" ; then CBCGENERIC_PCFILES="$osidylp_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osidylp_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osidylp_cflags $CBCGENERIC_CFLAGS"
+      if test -n "$osidylp_pcfiles" ; then OSICBCLIB_PCFILES="$osidylp_pcfiles $OSICBCLIB_PCFILES" ; fi
+       OSICBCLIB_LFLAGS="$osidylp_lflags $OSICBCLIB_LFLAGS"
+       OSICBCLIB_CFLAGS="$osidylp_cflags $OSICBCLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.
@@ -20242,6 +20281,9 @@ $as_echo "#define COIN_HAS_OSIDYLP 1" >>confdefs.h
 $as_echo_n "checking for package OsiCpx... " >&6; }
 
 # Make sure the necessary variables exist for each client package.
+
+
+
 
 
 
@@ -20494,6 +20536,9 @@ $as_echo "#define COIN_HAS_OSICPX 1" >>confdefs.h
       if test -n "$osicpx_pcfiles" ; then CBCSOLVERLIB_PCFILES="$osicpx_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
        CBCSOLVERLIB_LFLAGS="$osicpx_lflags $CBCSOLVERLIB_LFLAGS"
        CBCSOLVERLIB_CFLAGS="$osicpx_cflags $CBCSOLVERLIB_CFLAGS"
+      if test -n "$osicpx_pcfiles" ; then OSICBCLIB_PCFILES="$osicpx_pcfiles $OSICBCLIB_PCFILES" ; fi
+       OSICBCLIB_LFLAGS="$osicpx_lflags $OSICBCLIB_LFLAGS"
+       OSICBCLIB_CFLAGS="$osicpx_cflags $OSICBCLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.
@@ -20508,6 +20553,9 @@ $as_echo "#define COIN_HAS_OSICPX 1" >>confdefs.h
 $as_echo_n "checking for package OsiGlpk... " >&6; }
 
 # Make sure the necessary variables exist for each client package.
+
+
+
 
 
 
@@ -20748,6 +20796,9 @@ $as_echo "#define COIN_HAS_OSIGLPK 1" >>confdefs.h
     if test -n "$osiglpk_pcfiles" ; then CBCGENERIC_PCFILES="$osiglpk_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osiglpk_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osiglpk_cflags $CBCGENERIC_CFLAGS"
+      if test -n "$osiglpk_pcfiles" ; then OSICBCLIB_PCFILES="$osiglpk_pcfiles $OSICBCLIB_PCFILES" ; fi
+       OSICBCLIB_LFLAGS="$osiglpk_lflags $OSICBCLIB_LFLAGS"
+       OSICBCLIB_CFLAGS="$osiglpk_cflags $OSICBCLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.
@@ -20763,6 +20814,9 @@ $as_echo "#define COIN_HAS_OSIGLPK 1" >>confdefs.h
 $as_echo_n "checking for package OsiMsk... " >&6; }
 
 # Make sure the necessary variables exist for each client package.
+
+
+
 
 
 
@@ -21003,6 +21057,9 @@ $as_echo "#define COIN_HAS_OSIMSK 1" >>confdefs.h
     if test -n "$osimsk_pcfiles" ; then CBCGENERIC_PCFILES="$osimsk_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osimsk_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osimsk_cflags $CBCGENERIC_CFLAGS"
+      if test -n "$osimsk_pcfiles" ; then OSICBCLIB_PCFILES="$osimsk_pcfiles $OSICBCLIB_PCFILES" ; fi
+       OSICBCLIB_LFLAGS="$osimsk_lflags $OSICBCLIB_LFLAGS"
+       OSICBCLIB_CFLAGS="$osimsk_cflags $OSICBCLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.
@@ -21017,6 +21074,9 @@ $as_echo "#define COIN_HAS_OSIMSK 1" >>confdefs.h
 $as_echo_n "checking for package OsiSpx... " >&6; }
 
 # Make sure the necessary variables exist for each client package.
+
+
+
 
 
 
@@ -21257,6 +21317,9 @@ $as_echo "#define COIN_HAS_OSISPX 1" >>confdefs.h
     if test -n "$osispx_pcfiles" ; then CBCGENERIC_PCFILES="$osispx_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osispx_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osispx_cflags $CBCGENERIC_CFLAGS"
+      if test -n "$osispx_pcfiles" ; then OSICBCLIB_PCFILES="$osispx_pcfiles $OSICBCLIB_PCFILES" ; fi
+       OSICBCLIB_LFLAGS="$osispx_lflags $OSICBCLIB_LFLAGS"
+       OSICBCLIB_CFLAGS="$osispx_cflags $OSICBCLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.

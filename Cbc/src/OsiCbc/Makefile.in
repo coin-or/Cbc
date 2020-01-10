@@ -109,18 +109,25 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 
-# Plus the appropriate include directories for the default solver.
-@OSICBC_DFLT_SOLVER_CLP_TRUE@am__append_1 = ${CLP_CFLAGS}
-@OSICBC_DFLT_SOLVER_CPX_TRUE@am__append_2 = ${CPX_CFLAGS}
-@OSICBC_DFLT_SOLVER_DYLP_TRUE@am__append_3 = ${DYLP_CFLAGS}
-@OSICBC_DFLT_SOLVER_GLPK_TRUE@am__append_4 = ${GLPK_CFLAGS}
+# Plus the appropriate include directories and libraries for the default solver.
+@OSICBC_DFLT_SOLVER_CLP_TRUE@am__append_1 = $(OSICLP_CFLAGS)
+@OSICBC_DFLT_SOLVER_CLP_TRUE@am__append_2 = $(OSICLP_LFLAGS)
+@OSICBC_DFLT_SOLVER_CPX_TRUE@am__append_3 = $(OSICPX_CFLAGS)
+@OSICBC_DFLT_SOLVER_CPX_TRUE@am__append_4 = $(OSICPX_LFLAGS)
+@OSICBC_DFLT_SOLVER_DYLP_TRUE@am__append_5 = $(OSIDYLP_CFLAGS)
+@OSICBC_DFLT_SOLVER_DYLP_TRUE@am__append_6 = $(OSIDYLP_LFLAGS)
+@OSICBC_DFLT_SOLVER_GLPK_TRUE@am__append_7 = $(OSIGLPK_CFLAGS)
+@OSICBC_DFLT_SOLVER_GLPK_TRUE@am__append_8 = $(OSIGLPK_LFLAGS)
 
 #if OSICBC_DFLT_SOLVER_GRB
 #  AM_CPPFLAGS += ${GRB_CFLAGS}
 #endif
-@OSICBC_DFLT_SOLVER_MSK_TRUE@am__append_5 = ${MSK_CFLAGS}
-@OSICBC_DFLT_SOLVER_HIGHS_TRUE@am__append_6 = ${HIGHS_CFLAGS}
-@OSICBC_DFLT_SOLVER_SYM_TRUE@am__append_7 = ${SYM_CFLAGS}
+@OSICBC_DFLT_SOLVER_MSK_TRUE@am__append_9 = $(OSIMSK_CFLAGS)
+@OSICBC_DFLT_SOLVER_MSK_TRUE@am__append_10 = $(OSIMSK_LFLAGS)
+@OSICBC_DFLT_SOLVER_HIGHS_TRUE@am__append_11 = $(HIGHS_CFLAGS)
+@OSICBC_DFLT_SOLVER_HIGHS_TRUE@am__append_12 = $(HIGHS_LFLAGS)
+@OSICBC_DFLT_SOLVER_SYM_TRUE@am__append_13 = $(OSISYM_CFLAGS)
+@OSICBC_DFLT_SOLVER_SYM_TRUE@am__append_14 = $(OSISYM_LFLAGS)
 subdir = src/OsiCbc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -163,7 +170,10 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includecoindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libOsiCbc_la_DEPENDENCIES = $(am__DEPENDENCIES_1) ../libCbc.la
+libOsiCbc_la_DEPENDENCIES = ../libCbc.la $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_libOsiCbc_la_OBJECTS = OsiCbcSolverInterface.lo
 libOsiCbc_la_OBJECTS = $(am_libOsiCbc_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -331,8 +341,11 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OSICBCLIB_CFLAGS = @OSICBCLIB_CFLAGS@
 OSICBCLIB_CFLAGS_NOPC = @OSICBCLIB_CFLAGS_NOPC@
+OSICBCLIB_LFLAGS = @OSICBCLIB_LFLAGS@
 OSICBCLIB_LFLAGS_NOPC = @OSICBCLIB_LFLAGS_NOPC@
+OSICBCLIB_PCFILES = @OSICBCLIB_PCFILES@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -444,16 +457,18 @@ lib_LTLIBRARIES = libOsiCbc.la
 libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
 
 # List all additionally required libraries
-libOsiCbc_la_LIBADD = $(CBCLIB_LFLAGS) ../libCbc.la
+libOsiCbc_la_LIBADD = ../libCbc.la $(am__append_2) $(am__append_4) \
+	$(am__append_6) $(am__append_8) $(am__append_10) \
+	$(am__append_12) $(am__append_14)
 
 # This is for libtool
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Here list all include flags, relative to this "srcdir" directory.
-AM_CPPFLAGS = -DCBC_BUILD -I$(srcdir)/.. $(CBCLIB_CFLAGS) \
-	$(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_7)
+AM_CPPFLAGS = -DOSICBC_BUILD -I$(srcdir)/.. $(CBCLIB_CFLAGS) \
+	$(am__append_1) $(am__append_3) $(am__append_5) \
+	$(am__append_7) $(am__append_9) $(am__append_11) \
+	$(am__append_13)
 
 #if OSICBC_DFLT_SOLVER_XPR
 #  AM_CPPFLAGS += ${XPR_CFLAGS}

@@ -124,7 +124,8 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h \
 	$(top_builddir)/src/config_cbc.h \
-	$(top_builddir)/src/config_cbcsolver.h
+	$(top_builddir)/src/config_cbcsolver.h \
+	$(top_builddir)/src/OsiCbc/config_osicbc.h
 CONFIG_CLEAN_FILES = examples/Makefile cbc.pc osi-cbc.pc \
 	doxydoc/doxygen.conf
 CONFIG_CLEAN_VPATH_FILES =

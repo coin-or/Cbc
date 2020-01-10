@@ -5,9 +5,9 @@
 
 #include <cassert>
 
-#include "OsiConfig.h"
-#include "CoinTime.hpp"
+#include "OsiCbcSolverInterface.hpp"
 
+#include "CoinTime.hpp"
 #include "CoinHelperFunctions.hpp"
 #include "CoinIndexedVector.hpp"
 
@@ -37,7 +37,6 @@
 #include OSICBC_DFLT_SOLVER_HPP
 #endif
 
-#include "OsiCbcSolverInterface.hpp"
 #include "OsiCuts.hpp"
 #include "OsiRowCut.hpp"
 #include "OsiColCut.hpp"

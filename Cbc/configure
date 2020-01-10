@@ -22705,7 +22705,7 @@ ac_config_files="$ac_config_files doxydoc/doxygen.conf"
 
 
 # Here put the location and name of the configuration header file
-ac_config_headers="$ac_config_headers src/config.h src/config_cbc.h src/config_cbcsolver.h"
+ac_config_headers="$ac_config_headers src/config.h src/config_cbc.h src/config_cbcsolver.h src/OsiCbc/config_osicbc.h"
 
 
 # Finally, we let configure write all the output...
@@ -23970,6 +23970,7 @@ do
     "src/config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config.h" ;;
     "src/config_cbc.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config_cbc.h" ;;
     "src/config_cbcsolver.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config_cbcsolver.h" ;;
+    "src/OsiCbc/config_osicbc.h") CONFIG_HEADERS="$CONFIG_HEADERS src/OsiCbc/config_osicbc.h" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

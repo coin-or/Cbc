@@ -14,6 +14,7 @@
 #include "OsiSolverInterface.hpp"
 #include "CbcStrategy.hpp"
 #include "CoinWarmStartBasis.hpp"
+#include "OsiCbcConfig.h"
 
 class OsiRowCut;
 class OsiClpSolverInterface;
@@ -27,7 +28,7 @@ Instantiation of OsiCbcSolverInterface for the Model Algorithm.
 
 */
 
-class OsiCbcSolverInterface : virtual public OsiSolverInterface {
+class OSICBCLIB_EXPORT OsiCbcSolverInterface : virtual public OsiSolverInterface {
   friend void OsiCbcSolverInterfaceUnitTest(const std::string &mpsDir, const std::string &netlibDir);
 
 public:
@@ -782,6 +783,7 @@ protected:
   //@}
 };
 // So unit test can find out if NDEBUG set
+OSICBCLIB_EXPORT
 bool OsiCbcHasNDEBUG();
 
 //#############################################################################

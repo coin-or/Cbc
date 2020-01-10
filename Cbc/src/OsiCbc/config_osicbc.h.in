@@ -1,0 +1,4 @@
+/* src/config_osicbc.h.in. */
+
+/* Library Visibility Attribute */
+#undef OSICBCLIB_EXPORT

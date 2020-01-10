@@ -83,3 +83,9 @@ endif
 
 includecoindir = $(pkgincludedir)
 includecoin_HEADERS = OsiCbcSolverInterface.hpp
+
+install-exec-local:
+	$(install_sh_DATA) config_osicbc.h $(DESTDIR)$(includecoindir)/OsiCbcConfig.h
+
+uninstall-local:
+	rm -f $(DESTDIR)$(includecoindir)/OsiCbcConfig.h

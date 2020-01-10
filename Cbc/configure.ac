@@ -100,8 +100,6 @@ AC_COIN_CHK_PKG(Sample,,[coindatasample],,dataonly)
 AC_COIN_CHK_PKG(Netlib,,[coindatanetlib],,dataonly)
 AC_COIN_CHK_PKG(Miplib3,,[coindatamiplib3],,dataonly)
 
-AC_COIN_FINALIZE_FLAGS(CbcUnitTest)
-
 #############################################################################
 #                    LP solvers other than CLP                              #
 #############################################################################
@@ -120,16 +118,7 @@ AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric],[osi-soplex])
 AC_COIN_CHK_LIB(Cplex,[CbcLib],[-lcplex -lpthread -lm -ldl],[],[],[CPXgetstat])
 AC_COIN_CHK_PKG(Glpk,[CbcSolverLib],,[build])
 
-#TODO organize this mess
-
-AC_COIN_FINALIZE_FLAGS(CbcGeneric)
-
-AC_COIN_FINALIZE_FLAGS([CbcLib])
-AC_COIN_CHK_HERE([CbcLib],[OsiCbcLib])
-AC_COIN_FINALIZE_FLAGS(OsiCbcLib)
-
-AC_COIN_FINALIZE_FLAGS([CbcSolverLib])
-AC_COIN_CHK_HERE([CbcLib],[CbcSolverLib],[cbc])
+AC_COIN_FINALIZE_FLAGS([CbcLib CbcSolverLib CbcGeneric OsiCbcLib CbcUnitTest])
 
 #############################################################################
 #                       CbcGeneric configuration                            #

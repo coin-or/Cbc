@@ -28,7 +28,7 @@ libOsiCbc_la_LIBADD = $(CBCLIB_LFLAGS) ../libCbc.la
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Here list all include flags, relative to this "srcdir" directory.
-AM_CPPFLAGS = -DCBC_BUILD -I$(srcdir)/.. $(OSICBCLIB_CFLAGS)
+AM_CPPFLAGS = -DCBC_BUILD -I$(srcdir)/.. $(CBCLIB_CFLAGS)
 
 # Plus the appropriate include directories for the default solver.
 if OSICBC_DFLT_SOLVER_CLP

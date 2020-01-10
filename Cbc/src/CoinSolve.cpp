@@ -7,7 +7,14 @@
     \brief Main routine for the cbc stand-alone solver.
 */
 
-#include "CbcConfig.h"
+/* would normally be a separate config header file, but the cbc exe has only one source file */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#else /* HAVE_CONFIG_H */
+#include "config_default.h"
+#endif /* HAVE_CONFIG_H */
+#define __CBCCONFIG_H__
+
 #include "CoinPragma.hpp"
 #include "CbcModel.hpp"
 #include "CbcSolver.hpp"

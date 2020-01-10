@@ -238,8 +238,7 @@ libCbcSolver_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(LDFLAGS) -o $@
 @COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = cbc-CoinSolve.$(OBJEXT)
 cbc_OBJECTS = $(am_cbc_OBJECTS)
-@COIN_HAS_CLP_TRUE@cbc_DEPENDENCIES = libCbcSolver.la libCbc.la \
-@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1)
+@COIN_HAS_CLP_TRUE@cbc_DEPENDENCIES = libCbcSolver.la libCbc.la
 @CBC_BUILD_CBC_GENERIC_TRUE@am_cbc_generic_OBJECTS =  \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenBaB.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCbcParam.$(OBJEXT) \
@@ -498,11 +497,8 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
-OSICBCLIB_CFLAGS = @OSICBCLIB_CFLAGS@
 OSICBCLIB_CFLAGS_NOPC = @OSICBCLIB_CFLAGS_NOPC@
-OSICBCLIB_LFLAGS = @OSICBCLIB_LFLAGS@
 OSICBCLIB_LFLAGS_NOPC = @OSICBCLIB_LFLAGS_NOPC@
-OSICBCLIB_PCFILES = @OSICBCLIB_PCFILES@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -722,9 +718,9 @@ AM_CPPFLAGS = $(am__append_1) $(am__append_4) -DCOIN_NO_CLP_MESSAGE \
 @COIN_HAS_CLP_TRUE@cbc_SOURCES = CoinSolve.cpp
 
 # Additional libraries
-@COIN_HAS_CLP_TRUE@cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LFLAGS)
+@COIN_HAS_CLP_TRUE@cbc_LDADD = libCbcSolver.la libCbc.la
 
-#TODO does this missing config.h?
+# not really accurate to use these CFLAGS, but they should have everything
 @COIN_HAS_CLP_TRUE@cbc_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
 
 # List all source files for this executable, including headers

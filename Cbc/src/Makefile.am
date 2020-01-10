@@ -140,9 +140,9 @@ bin_PROGRAMS += cbc
 cbc_SOURCES = CoinSolve.cpp
 
 # Additional libraries
-cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LFLAGS)
+cbc_LDADD = libCbcSolver.la libCbc.la
 
-#TODO does this missing config.h?
+# not really accurate to use these CFLAGS, but they should have everything
 cbc_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
 
 endif

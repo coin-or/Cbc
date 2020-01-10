@@ -1,35 +1,53 @@
-"\\language": cpp
+language: cpp
+
 matrix:
   include:
-  - os: linux
-    addons:
-      apt:
-        packages:
-        - gfortran
-  - os: osx
-    osx_image: xcode10
-    env: OSX=10.13
-    compiler: clang
-  - os: osx
-    osx_image: xcode9.2
-    env: OSX=10.12
-    compiler: clang
-  - os: osx
-    osx_image: xcode8
-    env: OSX=10.11
-    compiler: clang
-  allow_failures:
-  - os: osx
+    - os: linux
+      addons:
+        apt:
+          packages:
+            - liblapack-dev
+      env: ENABLEDEBUG=true ENABLESTATIC=true
+    - os: linux
+      dist: bionic
+      addons:
+        apt:
+          packages:
+            - liblapack-dev
+    - os: osx
+      osx_image: xcode11.3
+      env: 
+        - MATRIX_EVAL="brew update && brew install bash && export CC=gcc-9 CXX=g++-9"
+    - os: osx
+      osx_image: xcode10
+      env:
+        - MATRIX_EVAL="brew update && brew install bash"
 before_script:
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then  export PLATFORM=osx$OSX-x86_64-clang`clang
-  -dumpversion`; fi
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install bash gcc; brew
-  link --overwrite gcc; gfortran --version; fi
-- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PLATFORM=linux-x86_64-gcc`gcc
-  -dumpversion`; fi
-- git clone https://github.com/coin-or/coinbrew COIN
-- cd COIN
-- export PROJECT=`echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2`
-- bash ./coinbrew fetch --no-prompt $PROJECT > /dev/null
+  - export ENABLEDEBUG=${ENABLEDEBUG:-false}
+  - export ENABLESTATIC=${ENABLESTATIC:-false}
+  - eval "${MATRIX_EVAL}"
+  - $CC --version
+  - $CXX --version
 script:
-- bash ./coinbrew build --no-prompt $PROJECT --enable-static --disable-shared --verbosity 2 --test
+  - export CFGFLAGS="--prefix=$HOME/install"
+  - if $ENABLEDEBUG ; then CFGFLAGS="$CFGFLAGS --enable-debug" ; fi
+  - if $ENABLESTATIC ; then CFGFLAGS="$CFGFLAGS --enable-static --disable-shared" ; fi
+  - git clone --depth 1 https://github.com/coin-or-tools/ThirdParty-ASL
+  - git clone --depth 1 --branch autotools-update https://github.com/coin-or-tools/Data-Sample
+  - git clone --depth 1 --branch autotools-update https://github.com/coin-or/CoinUtils
+  - git clone --depth 1 --branch autotools-update https://github.com/coin-or/Osi
+  - git clone --depth 1 --branch autotools-update https://github.com/coin-or/Clp
+  - git clone --depth 1 --branch autotools-update https://github.com/coin-or/Cgl
+  - pushd ThirdParty-ASL && ./get.ASL && ./configure $CFGFLAGS && make install && popd
+  - pushd Data-Sample && ./configure $CFGFLAGS && make install && popd
+  - pushd CoinUtils/CoinUtils && ./configure $CFGFLAGS && make install && popd
+  - pushd Osi/Osi && ./configure $CFGFLAGS && make install && popd
+  - pushd Clp/Clp && ./configure $CFGFLAGS && make install && popd
+  - pushd Cgl/Cgl && ./configure $CFGFLAGS && make install && popd
+  - mkdir build
+  - pushd build
+  - ../Cbc/configure $CFGFLAGS
+  - make
+  - make test
+  - make install
+  #- pushd examples && make DRIVER=driver && ./driver && popd

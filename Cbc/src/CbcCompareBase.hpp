@@ -23,7 +23,7 @@
 
 class CbcModel;
 class CbcTree;
-class CbcCompareBase {
+class CBCLIB_EXPORT CbcCompareBase {
 public:
   // Default Constructor
   CbcCompareBase()

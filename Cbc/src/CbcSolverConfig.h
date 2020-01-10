@@ -2,7 +2,7 @@
  * All Rights Reserved.
  * This code is published under the Eclipse Public License.
  *
- * $Id$
+ * $Id: CbcConfig.h 2583 2019-06-02 23:23:54Z lou $
  *
  * Include file for the configuration of Cbc.
  *
@@ -22,36 +22,36 @@
  *
  */
 
-#ifndef __CBCCONFIG_H__
-#define __CBCCONFIG_H__
+#ifndef __CBCSOLVERCONFIG_H__
+#define __CBCSOLVERCONFIG_H__
 
 #ifdef HAVE_CONFIG_H
-#ifdef CBC_BUILD
+#ifdef CBCSOLVER_BUILD
 #include "config.h"
 
-/* overwrite CBCLIB_EXPORT from config.h when building Cbc
+/* overwrite CBCSOLVERLIB_EXPORT from config.h when building Cbc
  * we want it to be __declspec(dllexport) when building a DLL on Windows
  * we want it to be __attribute__((__visibility__("default"))) when building with GCC,
  *   so user can compile with -fvisibility=hidden
  */
 #ifdef DLL_EXPORT
-#undef CBCLIB_EXPORT
-#define CBCLIB_EXPORT __declspec(dllexport)
+#undef CBCSOLVERLIB_EXPORT
+#define CBCSOLVERLIB_EXPORT __declspec(dllexport)
 #elif defined(__GNUC__) && __GNUC__ >= 4
-#undef CBCLIB_EXPORT
-#define CBCLIB_EXPORT __attribute__((__visibility__("default")))
+#undef CBCSOLVERLIB_EXPORT
+#define CBCSOLVERLIB_EXPORT __attribute__((__visibility__("default")))
 #endif
 
 #else
-#include "config_cbc.h"
+#include "config_cbcsolver.h"
 #endif
 
 #else /* HAVE_CONFIG_H */
 
-#ifdef CBC_BUILD
+#ifdef CBCSOLVER_BUILD
 #include "config_default.h"
 #else
-#include "config_cbc_default.h"
+#include "config_cbcsolver_default.h"
 #endif
 
 #endif /* HAVE_CONFIG_H */

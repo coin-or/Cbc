@@ -22,7 +22,7 @@
     This branching rule should be in addition to normal rules and have a high priority.
 */
 
-class CbcFollowOn : public CbcObject {
+class CBCLIB_EXPORT CbcFollowOn : public CbcObject {
 
 public:
   // Default Constructor
@@ -70,7 +70,7 @@ protected:
 /** General Branching Object class.
     Each way fixes some variables to lower bound
  */
-class CbcFixingBranchingObject : public CbcBranchingObject {
+class CBCLIB_EXPORT CbcFixingBranchingObject : public CbcBranchingObject {
 
 public:
   // Default Constructor
@@ -156,7 +156,7 @@ private:
     This branching rule should be in addition to normal rules and have a high priority.
 */
 
-class CbcIdiotBranch : public CbcObject {
+class CBCLIB_EXPORT CbcIdiotBranch : public CbcObject {
 
 public:
   // Default Constructor

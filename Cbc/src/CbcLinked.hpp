@@ -14,6 +14,7 @@
 #include "OsiClpSolverInterface.hpp"
 #include "OsiChooseVariable.hpp"
 #include "CbcFathom.hpp"
+#include "CbcSolverConfig.h"
 class CbcModel;
 class CoinPackedMatrix;
 class OsiLinkedBound;
@@ -26,7 +27,7 @@ This is to allow the user to replace initialSolve and resolve
 This version changes coefficients
 */
 
-class OsiSolverLink : public CbcOsiSolver {
+class CBCSOLVERLIB_EXPORT OsiSolverLink : public CbcOsiSolver {
 
 public:
   //---------------------------------------------------------------------------
@@ -311,7 +312,7 @@ protected:
    List of bounds which depend on other bounds
 */
 
-class OsiLinkedBound {
+class CBCSOLVERLIB_EXPORT OsiLinkedBound {
 
 public:
   //---------------------------------------------------------------------------
@@ -390,7 +391,7 @@ protected:
 /** heuristic - just picks up any good solution
  */
 
-class CbcHeuristicDynamic3 : public CbcHeuristic {
+class CBCSOLVERLIB_EXPORT CbcHeuristicDynamic3 : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicDynamic3();
@@ -444,7 +445,7 @@ private:
 */
 class CoinWarmStartBasis;
 
-class OsiOldLink : public OsiSOS {
+class CBCSOLVERLIB_EXPORT OsiOldLink : public OsiSOS {
 
 public:
   // Default Constructor
@@ -530,7 +531,7 @@ protected:
 /** Branching object for Linked ordered sets
 
  */
-class OsiOldLinkBranchingObject : public OsiSOSBranchingObject {
+class CBCSOLVERLIB_EXPORT OsiOldLinkBranchingObject : public OsiSOSBranchingObject {
 
 public:
   // Default Constructor
@@ -569,7 +570,7 @@ private:
 
 */
 
-class OsiOneLink {
+class CBCSOLVERLIB_EXPORT OsiOneLink {
 
 public:
   // Default Constructor
@@ -609,7 +610,7 @@ public:
 
 */
 
-class OsiLink : public OsiSOS {
+class CBCSOLVERLIB_EXPORT OsiLink : public OsiSOS {
 
 public:
   // Default Constructor
@@ -689,7 +690,7 @@ protected:
 /** Branching object for Linked ordered sets
 
  */
-class OsiLinkBranchingObject : public OsiTwoWayBranchingObject {
+class CBCSOLVERLIB_EXPORT OsiLinkBranchingObject : public OsiTwoWayBranchingObject {
 
 public:
   // Default Constructor
@@ -730,7 +731,7 @@ private:
 
 */
 
-class OsiBiLinear : public OsiObject2 {
+class CBCSOLVERLIB_EXPORT OsiBiLinear : public OsiObject2 {
 
 public:
   // Default Constructor
@@ -1028,7 +1029,7 @@ protected:
 /** Branching object for BiLinear objects
 
  */
-class OsiBiLinearBranchingObject : public OsiTwoWayBranchingObject {
+class CBCSOLVERLIB_EXPORT OsiBiLinearBranchingObject : public OsiTwoWayBranchingObject {
 
 public:
   // Default Constructor
@@ -1074,7 +1075,7 @@ protected:
 
 */
 
-class OsiBiLinearEquality : public OsiBiLinear {
+class CBCSOLVERLIB_EXPORT OsiBiLinearEquality : public OsiBiLinear {
 
 public:
   // Default Constructor
@@ -1125,7 +1126,7 @@ protected:
 };
 /// Define a single integer class - but one where you keep branching until fixed even if satisfied
 
-class OsiSimpleFixedInteger : public OsiSimpleInteger {
+class CBCSOLVERLIB_EXPORT OsiSimpleFixedInteger : public OsiSimpleInteger {
 
 public:
   /// Default Constructor
@@ -1173,7 +1174,7 @@ protected:
     even if not an integer variable.  If not then need to duplicate code.
 */
 
-class OsiUsesBiLinear : public OsiSimpleInteger {
+class CBCSOLVERLIB_EXPORT OsiUsesBiLinear : public OsiSimpleInteger {
 
 public:
   /// Default Constructor
@@ -1237,7 +1238,7 @@ protected:
 
 */
 
-class OsiChooseStrongSubset : public OsiChooseStrong {
+class CBCSOLVERLIB_EXPORT OsiChooseStrongSubset : public OsiChooseStrong {
 
 public:
   /// Default Constructor
@@ -1301,7 +1302,7 @@ protected:
 
 class CoinWarmStartBasis;
 /** Stored Temporary Cut Generator Class - destroyed after first use */
-class CglTemporary : public CglStored {
+class CBCSOLVERLIB_EXPORT CglTemporary : public CglStored {
 
 public:
   /**@name Generate Cuts */
@@ -1349,7 +1350,7 @@ private:
 This is to allow the user to replace initialSolve and resolve
 */
 
-class OsiSolverLinearizedQuadratic : public OsiClpSolverInterface {
+class CBCSOLVERLIB_EXPORT OsiSolverLinearizedQuadratic : public OsiClpSolverInterface {
 
 public:
   //---------------------------------------------------------------------------

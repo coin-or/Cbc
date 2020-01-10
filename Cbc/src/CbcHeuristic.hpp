@@ -12,6 +12,7 @@
 #include "OsiCuts.hpp"
 #include "CoinHelperFunctions.hpp"
 #include "OsiBranchingObject.hpp"
+#include "CbcConfig.h"
 
 class OsiSolverInterface;
 
@@ -27,7 +28,7 @@ class CbcBranchingObject;
 /** A class describing the branching decisions that were made to get
     to the node where a heuristic was invoked from */
 
-class CbcHeuristicNode {
+class CBCLIB_EXPORT CbcHeuristicNode {
 private:
   void gutsOfConstructor(CbcModel &model);
   CbcHeuristicNode();
@@ -53,7 +54,7 @@ public:
   double avgDistance(const CbcHeuristicNodeList &nodeList) const;
 };
 
-class CbcHeuristicNodeList {
+class CBCLIB_EXPORT CbcHeuristicNodeList {
 private:
   void gutsOfDelete();
   void gutsOfCopy(const CbcHeuristicNodeList &rhs);
@@ -82,7 +83,7 @@ public:
 //#############################################################################
 /** Heuristic base class */
 
-class CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristic {
 private:
   void gutsOfDelete() {}
   void gutsOfCopy(const CbcHeuristic &rhs);
@@ -454,7 +455,7 @@ protected:
 /** Rounding class
  */
 
-class CbcRounding : public CbcHeuristic {
+class CBCLIB_EXPORT CbcRounding : public CbcHeuristic {
 public:
   // Default Constructor
   CbcRounding();
@@ -544,7 +545,7 @@ protected:
     it uses hotstart information
  */
 
-class CbcHeuristicPartial : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicPartial : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicPartial();
@@ -606,7 +607,7 @@ protected:
     found by solver - see OsiBabSolver
  */
 
-class CbcSerendipity : public CbcHeuristic {
+class CBCLIB_EXPORT CbcSerendipity : public CbcHeuristic {
 public:
   // Default Constructor
   CbcSerendipity();
@@ -654,7 +655,7 @@ protected:
 /** Just One class - this chooses one at random
  */
 
-class CbcHeuristicJustOne : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicJustOne : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicJustOne();

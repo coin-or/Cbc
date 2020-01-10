@@ -149,7 +149,7 @@ enum CbcParameterType
 
 /// Very simple class for setting parameters
 
-class CbcParam {
+class CBCLIB_EXPORT CbcParam {
 
 public:
   /**@name Constructor and destructor */

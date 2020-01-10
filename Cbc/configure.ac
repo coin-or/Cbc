@@ -92,10 +92,6 @@ AC_COIN_CHK_LIB([Nauty],[CbcLib CbcGeneric],[-lnauty],[],[],[nauty])
 # Finalize flags for CbcLib, add the result to OsiCbc, and finalize flags for
 # it.
 
-AC_COIN_FINALIZE_FLAGS([CbcLib])
-AC_COIN_CHK_HERE([CbcLib],[OsiCbcLib])
-AC_COIN_FINALIZE_FLAGS(OsiCbcLib)
-
 # The rest are not required for linking against Cbc but are used for the unit
 # test. For the data packages, we just want XXX_DATA for use in Makefile.am.
 
@@ -125,7 +121,16 @@ AC_COIN_CHK_PKG(Msk,[CbcGeneric],[osi-mosek])
 AC_COIN_CHK_PKG(Spx,[CbcGeneric],[osi-soplex])
 AC_COIN_CHK_PKG(Xpr,,[osi-xpress])
 
+#TODO organize this mess
+
 AC_COIN_FINALIZE_FLAGS(CbcGeneric)
+
+AC_COIN_FINALIZE_FLAGS([CbcLib])
+AC_COIN_CHK_HERE([CbcLib],[OsiCbcLib])
+AC_COIN_FINALIZE_FLAGS(OsiCbcLib)
+
+AC_COIN_FINALIZE_FLAGS([CbcSolverLib])
+AC_COIN_CHK_HERE([CbcLib],[CbcSolverLib],[cbc])
 
 #############################################################################
 #                       CbcGeneric configuration                            #
@@ -393,7 +398,7 @@ AC_CONFIG_FILES([Makefile
 AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Here put the location and name of the configuration header file
-AC_CONFIG_HEADER([src/config.h src/config_cbc.h])
+AC_CONFIG_HEADER([src/config.h src/config_cbc.h src/config_cbcsolver.h])
 
 # Finally, we let configure write all the output...
 AC_COIN_FINALIZE

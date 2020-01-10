@@ -11,7 +11,7 @@
 /** DiveGuided class
  */
 
-class CbcHeuristicDiveGuided : public CbcHeuristicDive {
+class CBCLIB_EXPORT CbcHeuristicDiveGuided : public CbcHeuristicDive {
 public:
   // Default Constructor
   CbcHeuristicDiveGuided();

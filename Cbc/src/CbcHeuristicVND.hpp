@@ -13,7 +13,7 @@
 /** LocalSearch class
  */
 
-class CbcHeuristicVND : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicVND : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicVND();

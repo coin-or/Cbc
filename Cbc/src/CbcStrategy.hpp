@@ -15,7 +15,7 @@ class CoinWarmStartDiff;
 //#############################################################################
 /** Strategy base class */
 
-class CbcStrategy {
+class CBCLIB_EXPORT CbcStrategy {
 public:
   // Default Constructor
   CbcStrategy();
@@ -98,7 +98,7 @@ protected:
 /** Null class
  */
 
-class CbcStrategyNull : public CbcStrategy {
+class CBCLIB_EXPORT CbcStrategyNull : public CbcStrategy {
 public:
   // Default Constructor
   CbcStrategyNull() {}
@@ -137,7 +137,7 @@ private:
 /** Default class
  */
 
-class CbcStrategyDefault : public CbcStrategy {
+class CBCLIB_EXPORT CbcStrategyDefault : public CbcStrategy {
 public:
   // Default Constructor
   CbcStrategyDefault(int cutsOnlyAtRoot = 1,
@@ -216,7 +216,7 @@ private:
 /** Default class for sub trees
  */
 
-class CbcStrategyDefaultSubTree : public CbcStrategy {
+class CBCLIB_EXPORT CbcStrategyDefaultSubTree : public CbcStrategy {
 public:
   // Default Constructor
   CbcStrategyDefaultSubTree(CbcModel *parent = NULL, int cutsOnlyAtRoot = 1,

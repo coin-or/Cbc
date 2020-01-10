@@ -10,6 +10,7 @@
 #include "OsiCuts.hpp"
 #include "CglCutGenerator.hpp"
 #include "CbcCutModifier.hpp"
+#include "CbcConfig.h"
 
 class CbcModel;
 class OsiRowCut;
@@ -46,7 +47,7 @@ class OsiRowCutDebugger;
 	also be useful for instrumenting cbc.
 */
 
-class CbcCutGenerator {
+class CBCLIB_EXPORT CbcCutGenerator {
 
 public:
   /** \name Generate Cuts */

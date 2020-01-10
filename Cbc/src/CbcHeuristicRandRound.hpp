@@ -10,7 +10,7 @@
 /** LocalSearch class
  */
 
-class CbcHeuristicRandRound : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicRandRound : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicRandRound();

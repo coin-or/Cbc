@@ -11,7 +11,7 @@
 /** DiveFractional class
  */
 
-class CbcHeuristicDiveFractional : public CbcHeuristicDive {
+class CBCLIB_EXPORT CbcHeuristicDiveFractional : public CbcHeuristicDive {
 public:
   // Default Constructor
   CbcHeuristicDiveFractional();

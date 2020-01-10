@@ -28,6 +28,7 @@
 
 #include "CbcModel.hpp"
 #include "CbcOrClpParam.hpp"
+#include "CbcSolverConfig.h"
 
 class CbcUser;
 class CbcStopNow;
@@ -52,7 +53,7 @@ class CglCutGenerator;
     Parameter initialisation is at last centralised in fillParameters().
 */
 
-class CbcSolver {
+class CBCSOLVERLIB_EXPORT CbcSolver {
 
 public:
   ///@name Solve method
@@ -267,7 +268,7 @@ typedef struct {
    This is a feeble replacement.
    At present everything is public
 */
-class CbcSolverUsefulData {
+class CBCSOLVERLIB_EXPORT  CbcSolverUsefulData {
 
 public:
   ///@name Constructors and destructors etc
@@ -306,7 +307,9 @@ public:
 };
 /// And this uses it
 // When we want to load up CbcModel with options first
+CBCSOLVERLIB_EXPORT
 void CbcMain0(CbcModel &babSolver, CbcSolverUsefulData &solverData);
+CBCSOLVERLIB_EXPORT
 int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcSolverUsefulData &solverData);
 
 //#############################################################################
@@ -315,7 +318,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *cu
 
     For example, access to a modelling language (CbcAmpl).
 */
-class CbcUser {
+class CBCSOLVERLIB_EXPORT  CbcUser {
 
 public:
   ///@name import/export methods
@@ -410,7 +413,7 @@ protected:
   Definitely under construction.
 */
 
-class CbcStopNow {
+class CBCSOLVERLIB_EXPORT CbcStopNow {
 
 public:
   ///@name Decision methods

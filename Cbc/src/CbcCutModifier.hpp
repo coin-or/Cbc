@@ -11,6 +11,7 @@
 #include "OsiSolverInterface.hpp"
 #include "OsiCuts.hpp"
 #include "CglCutGenerator.hpp"
+#include "CbcConfig.h"
 
 class CbcModel;
 class OsiRowCut;
@@ -24,7 +25,7 @@ class OsiRowCutDebugger;
     d) unchanged
 */
 
-class CbcCutModifier {
+class CBCLIB_EXPORT CbcCutModifier {
 public:
   /// Default Constructor
   CbcCutModifier();

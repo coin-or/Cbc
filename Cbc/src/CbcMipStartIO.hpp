@@ -4,12 +4,15 @@
 #include <vector>
 #include <string>
 #include <utility>
+
+#include "CbcSolverConfig.h"
+
 class CbcModel;
 class OsiSolverInterface;
 class CoinMessageHandler;
 class CoinMessages;
 
-class CbcMipStartIO{
+class CBCSOLVERLIB_EXPORT CbcMipStartIO{
 public:  
 /* tries to read mipstart (solution file) from
    fileName, filling colValues and obj

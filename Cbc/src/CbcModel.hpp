@@ -97,7 +97,7 @@ class ClpNodeStuff;
   management.
 */
 
-class CbcModel {
+class CBCLIB_EXPORT CbcModel {
 
 public:
   enum CbcIntParam {
@@ -3247,27 +3247,40 @@ private:
   //@}
 };
 /// So we can use osiObject or CbcObject during transition
+CBCLIB_EXPORT
 void getIntegerInformation(const OsiObject *object, double &originalLower,
   double &originalUpper);
 // So we can call from other programs
 // Real main program
 class OsiClpSolverInterface;
+CBCLIB_EXPORT
 int CbcMain(int argc, const char *argv[], CbcModel &babSolver);
 // four ways of calling
+CBCLIB_EXPORT
 int callCbc(const char *input2, OsiClpSolverInterface &solver1);
+CBCLIB_EXPORT
 int callCbc(const char *input2);
+CBCLIB_EXPORT
 int callCbc(const std::string input2, OsiClpSolverInterface &solver1);
+CBCLIB_EXPORT
 int callCbc(const std::string input2);
 // When we want to load up CbcModel with options first
+CBCLIB_EXPORT
 void CbcMain0(CbcModel &babSolver);
+CBCLIB_EXPORT
 int CbcMain1(int argc, const char *argv[], CbcModel &babSolver);
 // two ways of calling
+CBCLIB_EXPORT
 int callCbc(const char *input2, CbcModel &babSolver);
+CBCLIB_EXPORT
 int callCbc(const std::string input2, CbcModel &babSolver);
 // And when CbcMain0 already called to initialize (with call back) (see CbcMain1 for whereFrom)
+CBCLIB_EXPORT
 int callCbc1(const char *input2, CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
+CBCLIB_EXPORT
 int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
 // For uniform setting of cut and heuristic options
+CBCLIB_EXPORT
 void setCutAndHeuristicOptions(CbcModel &model);
 #endif
 

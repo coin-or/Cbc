@@ -19,7 +19,7 @@
     b) When enough ==1 or <=1 rows have been satisfied (not fixed - satisfied)
 */
 
-class CbcBranchToFixLots : public CbcBranchCut {
+class CBCLIB_EXPORT CbcBranchToFixLots : public CbcBranchCut {
 
 public:
   // Default Constructor

@@ -77,7 +77,7 @@ class CbcGeneralBranchingObject;
 	is violated.
 */
 
-class CbcFullNodeInfo : public CbcNodeInfo {
+class CBCLIB_EXPORT CbcFullNodeInfo : public CbcNodeInfo {
 
 public:
   /** \brief Modify model according to information at node

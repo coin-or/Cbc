@@ -11,7 +11,7 @@
 /** DiveLineSearch class
  */
 
-class CbcHeuristicDiveLineSearch : public CbcHeuristicDive {
+class CBCLIB_EXPORT CbcHeuristicDiveLineSearch : public CbcHeuristicDive {
 public:
   // Default Constructor
   CbcHeuristicDiveLineSearch();

@@ -15,7 +15,7 @@
 
 */
 
-class ClpAmplObjective : public ClpObjective {
+class CBCLIB_EXPORT ClpAmplObjective : public ClpObjective {
 
 public:
   ///@name Stuff

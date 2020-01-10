@@ -2,6 +2,9 @@
 
 #ifndef CBC_VERSION
 
+/* Library Visibility Attribute */
+#undef CBCLIB_EXPORT
+
 /* Version number of project */
 #undef CBC_VERSION
 

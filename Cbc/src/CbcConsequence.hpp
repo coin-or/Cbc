@@ -10,6 +10,8 @@
 
 class OsiSolverInterface;
 
+#include "CbcConfig.h"
+
 /** Abstract base class for consequent bounds.
     When a variable is branched on it normally interacts with other variables by
     means of equations.  There are cases where we want to step outside LP and do something
@@ -19,7 +21,7 @@ class OsiSolverInterface;
 
  */
 
-class CbcConsequence {
+class CBCLIB_EXPORT CbcConsequence {
 
 public:
   // Default Constructor

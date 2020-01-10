@@ -15,7 +15,7 @@
   This is so one can carry on branching even when it looks feasible
 */
 
-class CbcDummyBranchingObject : public CbcBranchingObject {
+class CBCLIB_EXPORT CbcDummyBranchingObject : public CbcBranchingObject {
 
 public:
   /// Default constructor

@@ -20,7 +20,7 @@
 #include "ClpSimplex.hpp"
 #include "ClpNode.hpp"
 
-class CbcGeneralDepth : public CbcGeneral {
+class CBCLIB_EXPORT CbcGeneralDepth : public CbcGeneral {
 
 public:
   // Default Constructor
@@ -107,7 +107,7 @@ protected:
 
  */
 class CbcNode;
-class CbcGeneralBranchingObject : public CbcBranchingObject {
+class CBCLIB_EXPORT CbcGeneralBranchingObject : public CbcBranchingObject {
 
 public:
   // Default Constructor
@@ -216,7 +216,7 @@ public:
 /** Branching object for general objects - just one
 
  */
-class CbcOneGeneralBranchingObject : public CbcBranchingObject {
+class CBCLIB_EXPORT CbcOneGeneralBranchingObject : public CbcBranchingObject {
 
 public:
   // Default Constructor

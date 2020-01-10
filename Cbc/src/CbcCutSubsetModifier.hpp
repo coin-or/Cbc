@@ -28,7 +28,7 @@ class OsiRowCutDebugger;
     could weaken
 */
 
-class CbcCutSubsetModifier : public CbcCutModifier {
+class CBCLIB_EXPORT CbcCutSubsetModifier : public CbcCutModifier {
 public:
   /// Default Constructor
   CbcCutSubsetModifier();

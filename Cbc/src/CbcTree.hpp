@@ -49,7 +49,7 @@
 
     This class is used to hold the set of live nodes in the search tree.
 */
-class CbcTree {
+class CBCLIB_EXPORT CbcTree {
 
 public:
   /*! \name Constructors and related */
@@ -223,7 +223,7 @@ protected:
 
     This class is used to hold the set of live nodes in the search tree.
 */
-class CbcTreeArray : public CbcTree {
+class CBCLIB_EXPORT CbcTreeArray : public CbcTree {
 
 public:
   // Default Constructor
@@ -295,7 +295,7 @@ protected:
     This class is used to hold the set of live nodes in the search tree.
 */
 
-class CbcNewTree : public CbcTree, public CoinSearchTreeManager {
+class CBCLIB_EXPORT CbcNewTree : public CbcTree, public CoinSearchTreeManager {
 
 public:
   // Default Constructor
@@ -385,7 +385,7 @@ protected:
   See note at top of file. This code is highly suspect.
   -- lh, 100921 --
 */
-class CbcTree {
+class CBCLIB_EXPORT CbcTree {
 
 public:
   // Default Constructor

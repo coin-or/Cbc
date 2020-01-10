@@ -1,0 +1,4 @@
+/* src/config_cbcsolver.h.in. */
+
+/* Library Visibility Attribute */
+#undef CBCSOLVERLIB_EXPORT

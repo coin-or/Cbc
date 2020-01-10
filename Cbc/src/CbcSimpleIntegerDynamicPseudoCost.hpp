@@ -30,7 +30,7 @@
 
  */
 
-class CbcSimpleIntegerDynamicPseudoCost : public CbcSimpleInteger {
+class CBCLIB_EXPORT CbcSimpleIntegerDynamicPseudoCost : public CbcSimpleInteger {
 
 public:
   // Default Constructor
@@ -430,7 +430,7 @@ protected:
   array of the model.
 */
 
-class CbcIntegerPseudoCostBranchingObject : public CbcIntegerBranchingObject {
+class CBCLIB_EXPORT CbcIntegerPseudoCostBranchingObject : public CbcIntegerBranchingObject {
 
 public:
   /// Default constructor
@@ -512,7 +512,7 @@ protected:
     designed for badly scaled problems
  */
 
-class CbcSwitchingBinary : public CbcSimpleIntegerDynamicPseudoCost {
+class CBCLIB_EXPORT CbcSwitchingBinary : public CbcSimpleIntegerDynamicPseudoCost {
 
 public:
   // Default Constructor

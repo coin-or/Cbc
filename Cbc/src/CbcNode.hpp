@@ -46,7 +46,7 @@ class CbcGeneralBranchingObject;
   node.
 */
 
-class CbcNode : public CoinTreeNode {
+class CBCLIB_EXPORT CbcNode : public CoinTreeNode {
 
 public:
   /// Default Constructor

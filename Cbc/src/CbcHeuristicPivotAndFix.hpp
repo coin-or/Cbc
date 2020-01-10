@@ -10,7 +10,7 @@
 /** LocalSearch class
  */
 
-class CbcHeuristicPivotAndFix : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicPivotAndFix : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicPivotAndFix();

@@ -18,7 +18,7 @@
     So cut is x <= y-1 or x >= y+1
 */
 
-class CbcBranchAllDifferent : public CbcBranchCut {
+class CBCLIB_EXPORT CbcBranchAllDifferent : public CbcBranchCut {
 
 public:
   // Default Constructor

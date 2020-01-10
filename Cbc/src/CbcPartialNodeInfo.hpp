@@ -36,7 +36,7 @@ class CbcGeneralBranchingObject;
   augmenting the parent subproblem.
 */
 
-class CbcPartialNodeInfo : public CbcNodeInfo {
+class CBCLIB_EXPORT CbcPartialNodeInfo : public CbcNodeInfo {
 
 public:
   /** \brief Modify model according to information at node

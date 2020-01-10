@@ -65,7 +65,7 @@ class CbcGeneralBranchingObject;
   differences from the parent.
 */
 
-class CbcNodeInfo {
+class CBCLIB_EXPORT CbcNodeInfo {
 
 public:
   /** \name Constructors & destructors */

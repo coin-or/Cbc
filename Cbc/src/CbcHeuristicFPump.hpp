@@ -12,7 +12,7 @@
 /** Feasibility Pump class
  */
 
-class CbcHeuristicFPump : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicFPump : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicFPump();
@@ -312,7 +312,7 @@ private:
 
 #ifdef COIN_HAS_CLP
 
-class CbcDisasterHandler : public OsiClpDisasterHandler {
+class CBCLIB_EXPORT CbcDisasterHandler : public OsiClpDisasterHandler {
 public:
   /**@name Virtual methods that the derived classe should provide.
     */

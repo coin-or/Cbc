@@ -36,7 +36,7 @@
 #include "OsiRowCut.hpp"
 class CbcModel;
 
-class CbcTreeLocal : public CbcTree {
+class CBCLIB_EXPORT CbcTreeLocal : public CbcTree {
 
 public:
   // Default Constructor
@@ -212,7 +212,7 @@ private:
   bool refine_;
 };
 
-class CbcTreeVariable : public CbcTree {
+class CBCLIB_EXPORT CbcTreeVariable : public CbcTree {
 
 public:
   // Default Constructor

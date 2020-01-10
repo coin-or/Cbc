@@ -6,9 +6,11 @@
 #ifndef CbcCompare_H
 #define CbcCompare_H
 
+#include "CbcConfig.h"
+
 class CbcCompareBase;
 
-class CbcCompare {
+class CBCLIB_EXPORT CbcCompare {
 public:
   CbcCompareBase *test_;
   // Default Constructor

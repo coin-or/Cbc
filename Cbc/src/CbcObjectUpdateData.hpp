@@ -11,7 +11,7 @@
 #include "CbcObject.hpp"
 /*  This stores data so an object can be updated
  */
-class CbcObjectUpdateData {
+class CBCLIB_EXPORT CbcObjectUpdateData {
 
 public:
   /// Default Constructor

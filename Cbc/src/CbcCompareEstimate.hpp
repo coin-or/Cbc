@@ -23,7 +23,7 @@ class CbcModel;
 
 /* This is when rounding is being done
 */
-class CbcCompareEstimate : public CbcCompareBase {
+class CBCLIB_EXPORT CbcCompareEstimate : public CbcCompareBase {
 public:
   // Default Constructor
   CbcCompareEstimate();

@@ -107,7 +107,7 @@ libCbcSolver_la_SOURCES = \
 # List all additionally required libraries
 
 libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
-libCbcSolver_la_LIBADD = $(CBCLIB_LFLAGS) libCbc.la
+libCbcSolver_la_LIBADD = $(CBCSOLVERLIB_LFLAGS) libCbc.la
 
 # This is for libtool
 
@@ -116,9 +116,10 @@ libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Some common setup for cbc and cbc-generic.
 
-bin_PROGRAMS =
-AM_CPPFLAGS = -DCBC_BUILD $(CBCLIB_CFLAGS)
+libCbc_la_CPPFLAGS = -DCBC_BUILD $(CBCLIB_CFLAGS)
+libCbcSolver_la_CPPFLAGS = -DCBCSOLVER_BUILD $(CBCSOLVERLIB_CFLAGS)
 
+AM_CPPFLAGS =
 if COIN_HAS_NAUTY
   AM_CPPFLAGS += -DCOIN_HAS_NTY $(NAUTY_CFLAGS)
 endif
@@ -126,6 +127,8 @@ endif
 ########################################################################
 #                            cbc program                               #
 ########################################################################
+
+bin_PROGRAMS =
 
 if COIN_HAS_CLP
 
@@ -138,6 +141,9 @@ cbc_SOURCES = CoinSolve.cpp
 
 # Additional libraries
 cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LFLAGS)
+
+#TODO does this missing config.h?
+cbc_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
 
 endif
 
@@ -273,6 +279,7 @@ includecoin_HEADERS = \
 
 install-exec-local:
 	$(install_sh_DATA) config_cbc.h $(DESTDIR)$(includecoindir)/CbcConfig.h
+	$(install_sh_DATA) config_cbcsolver.h $(DESTDIR)$(includecoindir)/CbcSolverConfig.h
 
 uninstall-local:
-	rm -f $(DESTDIR)$(includecoindir)/CbcConfig.h
+	rm -f $(DESTDIR)$(includecoindir)/CbcConfig.h $(DESTDIR)$(includecoindir)/CbcSolverConfig.h

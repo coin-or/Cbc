@@ -64,7 +64,7 @@
 #include "CbcSolverHeuristics.hpp"
 #ifdef COIN_HAS_GLPK
 #include "glpk.h"
-extern glp_tran *cbc_glp_tran;
+extern COINUTILSLIB_EXPORT glp_tran *cbc_glp_tran;
 extern glp_prob *cbc_glp_prob;
 #else
 #define GLP_UNDEF 1

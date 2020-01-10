@@ -119,7 +119,6 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
 @COIN_HAS_CLP_TRUE@am__append_2 = cbc
-#cbc_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCLIB_DEPENDENCIES) $(ASL_DEPENDENCIES)
 
 ########################################################################
 #                        cbc-generic program                           #
@@ -128,10 +127,9 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
 @CBC_BUILD_CBC_GENERIC_TRUE@am__append_3 = cbc-generic
-# cbc_generic_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCGENERIC_DEPENDENCIES)
 
 # List all additionally required solver and Osi libraries
-# the linker flags for all available LP solvers should already be included in $CBCGENERIC_LIBS,
+# the linker flags for all available LP solvers should already be included in $CBCGENERIC_LFLAGS,
 # so just add compiler flags here (all we can think of)
 @CBC_BUILD_CBC_GENERIC_TRUE@am__append_4 = $(CBCGENERIC_CFLAGS)
 subdir = src
@@ -474,6 +472,7 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
+RPATH_FLAGS = @RPATH_FLAGS@
 SAMPLE_DATA = @SAMPLE_DATA@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -633,9 +632,9 @@ libCbc_la_SOURCES = \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.cpp \
-        CbcSimpleIntegerDynamicPseudoCost.hpp \
+	CbcSimpleIntegerDynamicPseudoCost.hpp \
 	CbcSimpleIntegerPseudoCost.cpp \
-        CbcSimpleIntegerPseudoCost.hpp \
+	CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
@@ -757,7 +756,7 @@ includecoin_HEADERS = \
 	CbcNode.hpp \
 	CbcNodeInfo.hpp \
 	CbcNWay.hpp \
-        CbcObject.hpp \
+	CbcObject.hpp \
 	CbcObjectUpdateData.hpp \
 	CbcParam.hpp \
 	CbcPartialNodeInfo.hpp \
@@ -1171,7 +1170,6 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@COIN_CXX_IS_CL_FALSE@install-exec-hook:
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
@@ -1289,8 +1287,7 @@ install-dvi-am:
 
 install-exec-am: install-binPROGRAMS install-exec-local \
 	install-libLTLIBRARIES
-	@$(NORMAL_INSTALL)
-	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
+
 install-html: install-html-am
 
 install-html-am:
@@ -1418,7 +1415,7 @@ ps-am:
 uninstall-am: uninstall-binPROGRAMS uninstall-includecoinHEADERS \
 	uninstall-libLTLIBRARIES uninstall-local
 
-.MAKE: all install-am install-exec-am install-strip
+.MAKE: all install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
 	clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
@@ -1427,15 +1424,14 @@ uninstall-am: uninstall-binPROGRAMS uninstall-includecoinHEADERS \
 	distclean-libtool distclean-tags dvi dvi-am html html-am info \
 	info-am install install-am install-binPROGRAMS install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-exec-hook install-exec-local \
-	install-html install-html-am install-includecoinHEADERS \
-	install-info install-info-am install-libLTLIBRARIES \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-binPROGRAMS \
+	install-exec-am install-exec-local install-html \
+	install-html-am install-includecoinHEADERS install-info \
+	install-info-am install-libLTLIBRARIES install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS \
 	uninstall-includecoinHEADERS uninstall-libLTLIBRARIES \
 	uninstall-local
 
@@ -1548,15 +1544,6 @@ uninstall-doc:
 .PHONY: install-doc uninstall-doc \
 	doxygen-docs pdf-doxygen-docs clean-doxygen-docs \
 	install-doxygen-docs uninstall-doxygen-docs
-
-########################################################################
-#                     Installing manifest (MSVC++)                     #
-########################################################################
-
-@COIN_CXX_IS_CL_TRUE@install-exec-hook:
-@COIN_CXX_IS_CL_TRUE@	test -s cbc.exe.manifest && \
-@COIN_CXX_IS_CL_TRUE@	mt -manifest cbc.exe.manifest -outputresource:cbc.exe;\
-@COIN_CXX_IS_CL_TRUE@	cp cbc.exe $(bindir)/cbc.exe
 
 #######################################################################
 # Create the Config.h file that has all public defines and install it #

@@ -340,6 +340,7 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
+RPATH_FLAGS = @RPATH_FLAGS@
 SAMPLE_DATA = @SAMPLE_DATA@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -440,7 +441,7 @@ libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
 # List all additionally required libraries
 libOsiCbc_la_LIBADD = $(CBCLIB_LFLAGS) ../libCbc.la
 
-# This is for libtool (on Windows)
+# This is for libtool
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Here list all include flags, relative to this "srcdir" directory.
@@ -454,7 +455,7 @@ AM_CPPFLAGS = -DCBC_BUILD -I$(srcdir)/.. $(OSICBCLIB_CFLAGS) \
 ########################################################################
 
 # Here list all the header files that are required by a user of the library,
-# and that therefore should be installed in 'include/coin'
+# and that therefore should be installed in 'include/coin-or'
 includecoindir = $(pkgincludedir)
 includecoin_HEADERS = OsiCbcSolverInterface.hpp
 all: all-am

@@ -37,20 +37,6 @@ endif
 # Here we need include all files that are not mentioned in other Makefiles
 
 EXTRA_DIST = \
-	doc/authors.xml \
-	doc/cbcexe.xml \
-	doc/cbcmodelclass.xml \
-	doc/cbcuserguide.xml \
-	doc/doxygen.xml \
-	doc/faqcontent.xml \
-	doc/faq.xml \
-	doc/intro.xml \
-	doc/legal.xml \
-	doc/messages.xml \
-	doc/moresamples.xml \
-	doc/osibuild.xml \
-	doc/otherclasses.xml \
-	doc/revhist.xml \
 	examples/CbcBranchFollow2.cpp \
 	examples/CbcBranchFollow2.hpp \
 	examples/CbcBranchLink.cpp \

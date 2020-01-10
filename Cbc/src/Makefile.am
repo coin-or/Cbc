@@ -82,9 +82,9 @@ libCbc_la_SOURCES = \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.cpp \
-        CbcSimpleIntegerDynamicPseudoCost.hpp \
+	CbcSimpleIntegerDynamicPseudoCost.hpp \
 	CbcSimpleIntegerPseudoCost.cpp \
-        CbcSimpleIntegerPseudoCost.hpp \
+	CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
@@ -138,7 +138,6 @@ cbc_SOURCES = CoinSolve.cpp
 
 # Additional libraries
 cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LFLAGS)
-#cbc_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCLIB_DEPENDENCIES) $(ASL_DEPENDENCIES)
 
 endif
 
@@ -168,10 +167,9 @@ cbc_generic_SOURCES = \
 	CbcGenSolvers.cpp
 
 cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LFLAGS)
-# cbc_generic_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCGENERIC_DEPENDENCIES)
 
 # List all additionally required solver and Osi libraries
-# the linker flags for all available LP solvers should already be included in $CBCGENERIC_LIBS,
+# the linker flags for all available LP solvers should already be included in $CBCGENERIC_LFLAGS,
 # so just add compiler flags here (all we can think of)
 
 AM_CPPFLAGS += $(CBCGENERIC_CFLAGS)
@@ -251,7 +249,7 @@ includecoin_HEADERS = \
 	CbcNode.hpp \
 	CbcNodeInfo.hpp \
 	CbcNWay.hpp \
-        CbcObject.hpp \
+	CbcObject.hpp \
 	CbcObjectUpdateData.hpp \
 	CbcParam.hpp \
 	CbcPartialNodeInfo.hpp \
@@ -268,17 +266,6 @@ includecoin_HEADERS = \
 	CbcTreeLocal.hpp \
 	ClpConstraintAmpl.hpp \
 	ClpAmplObjective.hpp 
-
-########################################################################
-#                     Installing manifest (MSVC++)                     #
-########################################################################
-
-if COIN_CXX_IS_CL
-install-exec-hook:
-	test -s cbc.exe.manifest && \
-	mt -manifest cbc.exe.manifest -outputresource:cbc.exe;\
-	cp cbc.exe $(bindir)/cbc.exe
-endif
 
 #######################################################################
 # Create the Config.h file that has all public defines and install it #

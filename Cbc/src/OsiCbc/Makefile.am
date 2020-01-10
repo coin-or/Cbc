@@ -19,21 +19,18 @@ include $(top_srcdir)/BuildTools/Makemain.inc
 lib_LTLIBRARIES = libOsiCbc.la
 
 # List all source files for this library, including headers
-
 libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
 
 # List all additionally required libraries
 libOsiCbc_la_LIBADD = $(CBCLIB_LFLAGS) ../libCbc.la
 
-# This is for libtool (on Windows)
-
+# This is for libtool
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Here list all include flags, relative to this "srcdir" directory.
 AM_CPPFLAGS = -DCBC_BUILD -I$(srcdir)/.. $(OSICBCLIB_CFLAGS)
 
 # Plus the appropriate include directories for the default solver.
-
 if OSICBC_DFLT_SOLVER_CLP
   AM_CPPFLAGS += ${CLP_CFLAGS}
 endif
@@ -75,7 +72,7 @@ endif
 ########################################################################
 
 # Here list all the header files that are required by a user of the library,
-# and that therefore should be installed in 'include/coin'
+# and that therefore should be installed in 'include/coin-or'
 
 includecoindir = $(pkgincludedir)
 includecoin_HEADERS = OsiCbcSolverInterface.hpp

@@ -746,6 +746,7 @@ COIN_HAS_PKGCONFIG_FALSE
 COIN_HAS_PKGCONFIG_TRUE
 ac_ct_PKG_CONFIG
 PKG_CONFIG
+RPATH_FLAGS
 LT_LDFLAGS
 CXXCPP
 CPP
@@ -772,8 +773,6 @@ LIBTOOL
 OBJDUMP
 DLLTOOL
 AS
-COIN_CXX_IS_CL_FALSE
-COIN_CXX_IS_CL_TRUE
 am__fastdepCXX_FALSE
 am__fastdepCXX_TRUE
 CXXDEPMODE
@@ -5110,17 +5109,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
   if test $ac_cv_prog_cxx_c_o = no ; then
     CXX="$am_aux_dir/compile $CXX"
   fi
-
-
-# Not sure where this should be defined. Override for now.
-
- if test 1 = 0; then
-  COIN_CXX_IS_CL_TRUE=
-  COIN_CXX_IS_CL_FALSE='#'
-else
-  COIN_CXX_IS_CL_TRUE='#'
-  COIN_CXX_IS_CL_FALSE=
-fi
 
 
 # Initialize libtool
@@ -16784,6 +16772,50 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
   LT_LDFLAGS="$LT_LDFLAGS -no-undefined"
 
 
+# set RPATH_FLAGS to the compiler link flags required to hardcode location
+# of the shared objects (expanded_libdir is set somewhere in configure before)
+# (use in examples Makefile)
+RPATH_FLAGS=
+
+if test $enable_shared = yes; then
+  case $build in
+    *-linux-*)
+      if test "$GCC" = "yes"; then
+        RPATH_FLAGS=
+        for dir in $expanded_libdir; do
+          RPATH_FLAGS="$RPATH_FLAGS -Wl,--rpath -Wl,$dir"
+        done
+      fi ;;
+    *-darwin*)
+        RPATH_FLAGS=nothing ;;
+    *-ibm-*)
+      case "$CC" in
+      xlc* | */xlc* | mpxlc* | */mpxlc*)
+        RPATH_FLAGS=nothing ;;
+      esac ;;
+    *-hp-*)
+        RPATH_FLAGS=nothing ;;
+    *-mingw* | *-msys* )
+        RPATH_FLAGS=nothing ;;
+    *-*-solaris*)
+        RPATH_FLAGS=
+        for dir in $expanded_libdir; do
+          RPATH_FLAGS="$RPATH_FLAGS -R$dir"
+        done
+  esac
+
+  if test "$RPATH_FLAGS" = ""; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Could not automatically determine how to tell the linker about automatic inclusion of the path for shared libraries.  The test examples might not work if you link against shared objects.  You will need to set the LD_LIBRARY_PATH, DYLP_LIBRARY_PATH, or LIBDIR variable manually." >&5
+$as_echo "$as_me: WARNING: Could not automatically determine how to tell the linker about automatic inclusion of the path for shared libraries.  The test examples might not work if you link against shared objects.  You will need to set the LD_LIBRARY_PATH, DYLP_LIBRARY_PATH, or LIBDIR variable manually." >&2;}
+  fi
+  if test "$RPATH_FLAGS" = "nothing"; then
+    RPATH_FLAGS=
+  fi
+fi
+
+
+
+
 #############################################################################
 #                   Math headers                                            #
 #############################################################################
@@ -18756,9 +18788,7 @@ $as_echo "#define COIN_HAS_ASL 1" >>confdefs.h
   fi
 
 
-# Nauty library (for symmetry detection). This doesn't seem to work any more;
-# compilation fails looking for zapSymmetry, which doesn't exist.
-# nauty.h
+# Nauty library (for symmetry detection).
 
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Nauty" >&5
@@ -20169,6 +20199,8 @@ $as_echo "$as_me: CBCUNITTEST_CFLAGS: \"${CBCUNITTEST_CFLAGS}\"" >&6;}
 
 # Check which other LP solvers are available, some of them become a dependency
 # of CbcGeneric
+# TODO most of these are checks for the Osi interfaces of solvers, not solvers itself
+#   probably should reflect this in the name
 
 
 
@@ -22503,7 +22535,7 @@ $as_echo "$as_me: CBCGENERIC_CFLAGS: \"${CBCGENERIC_CFLAGS}\"" >&6;}
 
 
 #############################################################################
-#                       CbcGeneric configuration			    #
+#                       CbcGeneric configuration                            #
 #############################################################################
 
 # Are we building cbc-generic? Default is no (false).
@@ -22573,7 +22605,7 @@ _ACEOF
 
 
 #############################################################################
-#                       Cbc parallel configuration			    #
+#                       Cbc parallel configuration	                         #
 #############################################################################
 
 # First we define a new option, --enable-cbc-parallel
@@ -22589,8 +22621,8 @@ if test "$enable_cbc_parallel" = yes; then
 
 $as_echo "#define CBC_THREAD 1" >>confdefs.h
 
-  if test $coin_cxx_is_cl = true ;
-  then  # Windows / cl
+  case "$CXX" in
+  *cl) # Windows / cl
     # TODO we should check whether the library works and pthread.h is indeed there
 
 # Check whether --with-pthreadsw32-lib was given.
@@ -22612,7 +22644,8 @@ else
 $as_echo "$as_me: WARNING: --enable-cbc-parallel selected, but --with-pthreadsw32-incdir not given" >&2;}
 fi
 
-  else   # not Windows
+    ;;
+  *) # not Windows
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthread" >&5
 $as_echo_n "checking for pthread_create in -lpthread... " >&6; }
 if ${ac_cv_lib_pthread_pthread_create+:} false; then :
@@ -22702,7 +22735,8 @@ else
 $as_echo "$as_me: WARNING: --enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime" >&2;}
 fi
 
-  fi
+  ;;
+  esac
   { $as_echo "$as_me:${as_lineno-$LINENO}: Cbc multithreading enabled" >&5
 $as_echo "$as_me: Cbc multithreading enabled" >&6;};
 fi
@@ -23294,10 +23328,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCXX_TRUE}" && test -z "${am__fastdepCXX_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCXX\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COIN_CXX_IS_CL_TRUE}" && test -z "${COIN_CXX_IS_CL_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_CXX_IS_CL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_PKGCONFIG_TRUE}" && test -z "${COIN_HAS_PKGCONFIG_FALSE}"; then

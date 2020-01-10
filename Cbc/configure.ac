@@ -38,13 +38,14 @@ AC_COIN_INITIALIZE(Cbc)
 
 AC_COIN_PROG_CXX
 
-# Not sure where this should be defined. Override for now.
-
-AM_CONDITIONAL(COIN_CXX_IS_CL,[test 1 = 0])
-
 # Initialize libtool
 
 AC_COIN_PROG_LIBTOOL
+
+# set RPATH_FLAGS to the compiler link flags required to hardcode location
+# of the shared objects (expanded_libdir is set somewhere in configure before)
+# (use in examples Makefile)
+AC_COIN_RPATH_FLAGS([$expanded_libdir])
 
 #############################################################################
 #                   Math headers                                            #
@@ -82,9 +83,7 @@ AC_COIN_CHK_GNU_READLINE([CbcLib CbcGeneric])
 
 AC_COIN_CHK_PKG(ASL,[CbcLib CbcGeneric],[coinasl])
 
-# Nauty library (for symmetry detection). This doesn't seem to work any more;
-# compilation fails looking for zapSymmetry, which doesn't exist.
-# nauty.h
+# Nauty library (for symmetry detection).
 
 AC_COIN_CHK_LIB([Nauty],[CbcLib CbcGeneric],[-lnauty],[],[],[nauty])
 
@@ -113,6 +112,8 @@ AC_COIN_FINALIZE_FLAGS(CbcUnitTest)
 
 # Check which other LP solvers are available, some of them become a dependency
 # of CbcGeneric
+# TODO most of these are checks for the Osi interfaces of solvers, not solvers itself
+#   probably should reflect this in the name
 
 AC_COIN_CHK_PKG(DyLP,[CbcGeneric],[osi-dylp])
 AC_COIN_CHK_PKG(Vol,,[osi-vol])
@@ -127,14 +128,13 @@ AC_COIN_CHK_PKG(Xpr,,[osi-xpress])
 AC_COIN_FINALIZE_FLAGS(CbcGeneric)
 
 #############################################################################
-#                       CbcGeneric configuration			    #
+#                       CbcGeneric configuration                            #
 #############################################################################
 
 # Are we building cbc-generic? Default is no (false).
 
 AC_ARG_WITH([cbc-generic],
-  AS_HELP_STRING([--with-cbc-generic],
-		 [specify whether to build cbc-generic (default: no)]),
+  AS_HELP_STRING([--with-cbc-generic],[specify whether to build cbc-generic (default: no)]),
   [case $withval in
     yes) cbc_with_cbc_generic=true ;;
       *) cbc_with_cbc_generic=false ;;
@@ -143,8 +143,7 @@ AC_ARG_WITH([cbc-generic],
 if test x"$cbc_with_cbc_generic" = xyes ; then
   AC_MSG_NOTICE([building cbc-generic])
 fi
-AM_CONDITIONAL(CBC_BUILD_CBC_GENERIC,
-	       test x"$cbc_with_cbc_generic" = xtrue)
+AM_CONDITIONAL(CBC_BUILD_CBC_GENERIC, test x"$cbc_with_cbc_generic" = xtrue)
 
 # Set the default solver for cbc-generic. In theory, any OsiXXX should work.
 # In practice, only the three listed below have had any testing.
@@ -152,8 +151,7 @@ AM_CONDITIONAL(CBC_BUILD_CBC_GENERIC,
 AC_MSG_CHECKING(for cbc-generic default solver)
 AC_ARG_WITH([cbc-generic-solver],
             AC_HELP_STRING([--with-cbc-generic-solver],
-                           [specify default solver for cbc-generic in lower
-			    case letters (if not given, clp is assumed)]),
+                           [specify default solver for cbc-generic in lower case letters (if not given, clp is assumed)]),
             [cbc_default_solver=$withval],
             [cbc_default_solver=clp])
 AC_MSG_RESULT($cbc_default_solver)
@@ -179,7 +177,7 @@ AC_DEFINE_UNQUOTED([CBC_DEFAULT_SOLVER],"$cbc_default_solver",
 
 
 #############################################################################
-#                       Cbc parallel configuration			    #
+#                       Cbc parallel configuration	                         #
 #############################################################################
 
 # First we define a new option, --enable-cbc-parallel
@@ -191,8 +189,8 @@ AC_ARG_ENABLE([cbc-parallel],
 if test "$enable_cbc_parallel" = yes; then
   # Define the preprocessor macro
   AC_DEFINE([CBC_THREAD],[1],[Define to 1 if the SMP version of Cbc should be compiled])
-  if test $coin_cxx_is_cl = true ;
-  then  # Windows / cl
+  case "$CXX" in
+  *cl) # Windows / cl
     # TODO we should check whether the library works and pthread.h is indeed there
     AC_ARG_WITH(pthreadsw32-lib, 
       AC_HELP_STRING([--with-pthreadsw32-lib],
@@ -206,7 +204,8 @@ if test "$enable_cbc_parallel" = yes; then
         [specify the path of the pthreads win32 header file (for cl/icl builds only)]),
       [CBCLIB_CFLAGS="$CBCLIB_CFLAGS -I$withval"],
       [AC_MSG_WARN([--enable-cbc-parallel selected, but --with-pthreadsw32-incdir not given])])
-  else   # not Windows
+    ;;
+  *) # not Windows
     AC_CHECK_LIB([pthread],[pthread_create],
       [CBCLIB_LFLAGS="-lpthread $CBCLIB_LFLAGS"],
       [AC_MSG_ERROR([--enable-cbc-parallel selected, but -lpthreads unavailable])])
@@ -215,7 +214,8 @@ if test "$enable_cbc_parallel" = yes; then
        AC_DEFINE([HAVE_CLOCK_GETTIME],[1],[Define if clock_gettime and rt library is available])
                  ],
       [AC_MSG_WARN([--enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime])])
-  fi
+  ;;
+  esac
   AC_MSG_NOTICE([Cbc multithreading enabled]);
 fi
 
@@ -388,8 +388,8 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/OsiCbc/Makefile
                  test/Makefile
-		 cbc.pc
-		 osi-cbc.pc])
+                 cbc.pc
+                 osi-cbc.pc])
 AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Here put the location and name of the configuration header file

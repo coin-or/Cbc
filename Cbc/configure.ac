@@ -60,13 +60,13 @@ AC_COIN_CHECK_MATH_HDRS
 #############################################################################
 
 m4_foreach_w([myvar],[CoinUtils Osi Cgl Clp],
-  [ AC_COIN_CHK_PKG(myvar,[CbcLib CbcGeneric OsiCbcLib])
+  [ AC_COIN_CHK_PKG(myvar,[CbcLib CbcSolverLib CbcGeneric OsiCbcLib])
     if test $coin_has_[]m4_tolower(myvar) != yes ; then
       AC_MSG_ERROR([Required package myvar is not available.])
     fi
   ])
 
-AC_COIN_CHK_PKG(OsiClp,[CbcLib CbcGeneric OsiCbcLib],[osi-clp])
+AC_COIN_CHK_PKG(OsiClp,[CbcLib CbcSolverLib CbcGeneric OsiCbcLib],[osi-clp])
 if test $coin_has_osiclp != yes ; then
   AC_MSG_ERROR("Required package OsiClp unavailable.")
 fi

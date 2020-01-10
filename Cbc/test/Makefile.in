@@ -132,20 +132,18 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_CInterfaceTest_OBJECTS = CInterfaceTest.$(OBJEXT)
 CInterfaceTest_OBJECTS = $(am_CInterfaceTest_OBJECTS)
-am__DEPENDENCIES_1 =
-CInterfaceTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la \
-	$(am__DEPENDENCIES_1)
+CInterfaceTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 am_gamsTest_OBJECTS = gamsTest.$(OBJEXT)
 gamsTest_OBJECTS = $(am_gamsTest_OBJECTS)
-gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la \
-	$(am__DEPENDENCIES_1)
+gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la
 am_osiUnitTest_OBJECTS = osiUnitTest.$(OBJEXT) \
 	OsiCbcSolverInterfaceTest.$(OBJEXT)
 osiUnitTest_OBJECTS = $(am_osiUnitTest_OBJECTS)
+am__DEPENDENCIES_1 =
 osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
 	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -421,10 +419,9 @@ CBC_TEST_TGTS = gamstests ositests $(am__append_1) $(am__append_2)
 cbcflags = $(am__append_3) -unitTest $(am__append_5)
 ositestsflags = $(am__append_4) $(am__append_6)
 gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LFLAGS)
+gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la
 AM_CPPFLAGS = -I$(srcdir)/../src $(CBCLIB_CFLAGS) \
 	-I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
-# AM_CPPFLAGS += $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 
 ########################################################################
 #                         unitTest for OsiCbc                          #
@@ -439,7 +436,7 @@ osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
 ########################################################################
 CInterfaceTest_SOURCES = CInterfaceTest.c
 nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
-CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LFLAGS)
+CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la
 
 ########################################################################
 #                          Cleaning stuff                              #

@@ -62,10 +62,9 @@ gamstests: gamsTest$(EXEEXT)
 bin_PROGRAMS = gamsTest osiUnitTest CInterfaceTest
 
 gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LFLAGS)
+gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la
 
 AM_CPPFLAGS = -I$(srcdir)/../src $(CBCLIB_CFLAGS)
-# AM_CPPFLAGS += $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 
 ########################################################################
 #                         unitTest for OsiCbc                          #
@@ -88,7 +87,7 @@ ositests: osiUnitTest$(EXEEXT)
 CInterfaceTest_SOURCES = CInterfaceTest.c
 nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
 
-CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LFLAGS)
+CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la
 
 ctests: CInterfaceTest$(EXEEXT)
 	./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)

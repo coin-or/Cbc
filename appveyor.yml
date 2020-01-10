@@ -4,6 +4,25 @@
 platform:
   - x64
 
+# skip miplib3 to make tests go faster
+#
+# skip Mumps on systems without fortran compiler
+#
+# skip ThirdParty/ASL with MSVC 2017 due to compiler crash:
+# libtool: compile:  /c/projects/ThirdParty/ASL/compile cl -I. -I/c/projects/ThirdParty/ASL -DNo_dtoa -DNO_RUSAGE -Dstrtoull=_strtoui64 -DNO_SSIZE_T -nologo -DNDEBUG -O2 -MD -c /c/projects/ThirdParty/ASL/solvers/avltree.c  -DDLL_EXPORT -DPIC -o solvers/.libs/avltree.obj avltree.c
+# c:\projects\thirdparty\asl\solvers\avltree.c(59) : fatal error C1001: An internal error has occurred in the compiler.
+# (compiler file 'd:\agent\_work\3\s\src\vctools\compiler\utc\src\p2\main.c', line 187)
+#  To work around this problem, try simplifying or changing the program near the locations listed above.
+# Please choose the Technical Support command on the Visual C++ 
+# Help menu, or open the Technical Support help file for more information
+#  cl!CloseTypeServerPDB()+0x3d30a
+#
+# skip MSVC2015 configuration because configure fails and I can't check what's the reason
+# checking whether the C compiler works... no
+# configure: error: in `/c/projects/build/ThirdParty/ASL/master':
+# configure: error: C compiler cannot create executables
+# See `config.log' for more details
+
 environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
@@ -21,7 +40,7 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15
       COINBREW_CFGFLAGS: --enable-msvc
-      COINBREW_SKIPS: Data/miplib3 ThirdParty/Mumps
+      COINBREW_SKIPS: Data/miplib3 ThirdParty/Mumps ThirdParty/ASL
     #- APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
     #  ARCH: win64-msvc14
     #  COINBREW_CFGFLAGS: --enable-msvc

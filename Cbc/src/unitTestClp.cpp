@@ -166,7 +166,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
   std::vector< double > objValueC;
   std::vector< double > objValue;
   std::vector< int > testSet;
-  std::vector< int > rowCutDebugger;
+  std::vector< bool > rowCutDebugger;
 /*
   A macro to make the vector creation marginally readable. Parameters are
   name, rows, columns, integer objective, continuous objective, set ID,

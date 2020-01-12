@@ -65,7 +65,7 @@
 #ifdef COIN_HAS_GLPK
 #include "glpk.h"
 extern COINUTILSLIB_EXPORT glp_tran *cbc_glp_tran;
-extern glp_prob *cbc_glp_prob;
+extern COINUTILSLIB_EXPORT glp_prob *cbc_glp_prob;
 #else
 #define GLP_UNDEF 1
 #define GLP_FEAS 2

@@ -11,4 +11,4 @@ Libs: -L${libdir} -lOsiCbc
 Libs.private: @OSICBCLIB_LFLAGS_NOPC@
 Cflags: -I${includedir}
 Requires:
-Requires.private: @OSICBCLIB_PCFILES@
+Requires.private: @OSICBCLIB_PCFILES@ cbc

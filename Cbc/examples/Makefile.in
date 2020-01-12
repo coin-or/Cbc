@@ -6,19 +6,28 @@
 
 ##########################################################################
 #    You can modify this example makefile to fit for your own program.   #
-#    Usually, you only need to change the five CHANGEME entries below.   #
+#    Usually, you only need to change CHANGEME entries below.            #
 ##########################################################################
 
-# To compile other examples, either changed the following line, or
-# add the argument DRIVER=problem_name to make
+# CHANGEME
+# To compile other examples, either change the following line, or add the
+# argument DRIVER=filename_without_extension to make, e.g.,
+# `make DRIVER=hello'
+
 DRIVER = driver
 
-# CHANGEME: This should be the name of your executable
+# CHANGEME
+# This should be the name of your executable; change if you want a name
+# that's different from the file name.
+
 EXE = $(DRIVER)@EXEEXT@
 
-# CHANGEME: Here is the name of all object files corresponding to the source
-#           code that you wrote in order to define the problem statement
-OBJS =  $(DRIVER).@OBJEXT@ 
+# CHANGEME
+# OBJS should include all object files necessary to build your program. For
+# the examples, only one file is needed for each example. You will probably
+# have more as your code grows.
+
+OBJS =  $(DRIVER).@OBJEXT@
 
 # extra object files that are required by some examples (we just link them into each one)
 EXTRAOBJS = \
@@ -31,15 +40,26 @@ EXTRAOBJS = \
 	CbcBranchUser.@OBJEXT@ \
 	CbcBranchLink.@OBJEXT@
 
-# CHANGEME: Additional libraries
-# e.g., for driver2, put -lOsiCbc here
+# CHANGEME
+# Additional libraries. The examples require only the COIN-OR libraries specified
+# as LIBS below. You may need more.
+# E.g., for driver2, put -lOsiCbc here
+
 ADDLIBS =
 
-# CHANGEME: Additional flags for compilation (e.g., include flags)
+# CHANGEME
+# Additional flags for compilation (e.g., include flags). As for libraries,
+# the examples require only COIN-OR include files, specified as part of CXXFLAGS
+# below.
+
 ADDINCFLAGS =
 
-# CHANGEME: Directory to the sources for the (example) problem definition
-# files
+# CHANGEME
+# Directory to the sources for the (example) problem definition files. VPATH
+# is used if you are building in a different directory than the source. This
+# can be handy for various reasons; if none occur to you, don't worry about
+# it.
+
 SRCDIR = @srcdir@
 VPATH = @srcdir@
 
@@ -49,64 +69,45 @@ VPATH = @srcdir@
 #  package.                                                              #
 ##########################################################################
 
-COIN_HAS_PKGCONFIG = @COIN_HAS_PKGCONFIG_TRUE@TRUE
-COIN_CXX_IS_CL = @COIN_CXX_IS_CL_TRUE@TRUE
-COIN_HAS_SAMPLE = @COIN_HAS_SAMPLE_TRUE@TRUE
-COIN_HAS_MIPLIB3 = @COIN_HAS_MIPLIB3_TRUE@TRUE
-
 # C++ Compiler command
 CXX = @CXX@
 
 # C++ Compiler options
 CXXFLAGS = @CXXFLAGS@
 
+# C Compiler command
+CC = @CC@
+
 # C Compiler options
 CFLAGS = @CFLAGS@
+
+# Sample data directory
+@COIN_HAS_SAMPLE_TRUE@CXXFLAGS += -DSAMPLEDIR=\"`$(CYGPATH_W) @SAMPLE_DATA@`\"
+@COIN_HAS_SAMPLE_TRUE@CFLAGS += -DSAMPLEDIR=\"`$(CYGPATH_W) @SAMPLE_DATA@`\"
+
+# Netlib data directory
+@COIN_HAS_MIPLIB3_TRUE@CXXFLAGS += -DMIPLIB3DIR=\"`$(CYGPATH_W) @MIPLIB3_DATA@`\"
 
 # additional C++ Compiler options for linking
 CXXLINKFLAGS = @RPATH_FLAGS@
 
-# Sample data directory
-ifeq ($(COIN_HAS_SAMPLE), TRUE)
-  ifeq ($(COIN_HAS_PKGCONFIG), TRUE)
-    CXXFLAGS += -DSAMPLEDIR=\"`PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ @PKG_CONFIG@ --variable=datadir coindatasample`\"
-      CFLAGS += -DSAMPLEDIR=\"`PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ @PKG_CONFIG@ --variable=datadir coindatasample`\"
-  else
-    CXXFLAGS += -DSAMPLEDIR=\"@SAMPLE_DATA_INSTALLED@\"
-      CFLAGS += -DSAMPLEDIR=\"@SAMPLE_DATA_INSTALLED@\"
-  endif
-endif
-
-# Miplib3 data directory
-ifeq ($(COIN_HAS_MIPLIB3), TRUE)
-  ifeq ($(COIN_HAS_PKGCONFIG), TRUE)
-    CXXFLAGS += -DMIPLIB3DIR=\"`PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ @PKG_CONFIG@ --variable=datadir coindatamiplib3`\"
-  else
-    CXXFLAGS += -DMIPLIB3DIR=\"@MIPLIB3_DATA_INSTALLED@\"
-  endif
-endif
-
-# Include directories (we use the CYGPATH_W variables to allow compilation with Windows compilers)
-ifeq ($(COIN_HAS_PKGCONFIG), TRUE)
-  INCL = `PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ @PKG_CONFIG@ --cflags cbc`
-else
-  INCL = @CBCLIB_CFLAGS_INSTALLED@
-endif
-INCL += -I@srcdir@ $(ADDINCFLAGS)
+# Include directories
+@COIN_HAS_PKGCONFIG_TRUE@INCL = `PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ @PKG_CONFIG@ --cflags cbc`
+@COIN_HAS_PKGCONFIG_FALSE@INCL = -I@includedir@/coin-or
+INCL += $(ADDINCFLAGS)
 
 # Linker flags
-ifeq ($(COIN_HAS_PKGCONFIG), TRUE)
-  LIBS = `PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ @PKG_CONFIG@ --libs cbc`
-else
-  ifeq ($(COIN_CXX_IS_CL), TRUE)
-    LIBS = -link -libpath:`$(CYGPATH_W) @abs_lib_dir@` libCbcSolver.lib libCbc.lib libOsiCbc.lib @CBCLIB_LIBS_INSTALLED@
-  else
-    LIBS = -L@abs_lib_dir@ -lCbcSolver -lCbc -lOsiCbc @CBCLIB_LIBS_INSTALLED@
-  endif
-endif
+# the --static is only necessary when linking against static libs, but we don't know in this template whether that's the case
+@COIN_HAS_PKGCONFIG_TRUE@LIBS = `PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ @PKG_CONFIG@ --libs osi-cbc --static`
+@COIN_HAS_PKGCONFIG_FALSE@LIBS = -L@libdir@ -lOsiCbc -lCbcSolver -lCbc
+LIBS += $(ADDLIBS)
 
 # The following is necessary under cygwin, if native compilers are used
 CYGPATH_W = @CYGPATH_W@
+
+# get some directories, so we can expand @libdir@ and @includedir@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
 
 # Here we list all possible generated objects or executables to delete them
 CLEANFILES = $(EXTRAOBJS) \
@@ -143,26 +144,17 @@ CLEANFILES = $(EXTRAOBJS) \
 
 all: $(EXE)
 
-.SUFFIXES: .cpp .c .o .obj
+.SUFFIXES: .cpp .c .@OBJEXT@
 
-$(EXE): $(OBJS) $(EXTRAOBJS)
-	bla=;\
-	for file in $(OBJS) $(EXTRAOBJS); do bla="$$bla `$(CYGPATH_W) $$file`"; done; \
-	$(CXX) $(CXXLINKFLAGS) $(CXXFLAGS) -o $@ $$bla $(LIBS) $(ADDLIBS)
+$(EXE): $(OBJS)
+	$(CXX) $(CXXLINKFLAGS) $(CXXFLAGS) -o $@ $< $(LIBS)
 
 clean:
-	rm -rf $(CLEANFILES) $(OBJS)
+	rm -rf $(CLEANFILES) $(OBJS) $(EXTRAOBJS)
 
-.cpp.o:
+.cpp.@OBJEXT@:
 	$(CXX) $(CXXFLAGS) $(INCL) -c -o $@ `test -f '$<' || echo '$(SRCDIR)/'`$<
 
-
-.cpp.obj:
-	$(CXX) $(CXXFLAGS) $(INCL) -c -o $@ `if test -f '$<'; then $(CYGPATH_W) '$<'; else $(CYGPATH_W) '$(SRCDIR)/$<'; fi`
-
-.c.o:
+.c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(INCL) -c -o $@ `test -f '$<' || echo '$(SRCDIR)/'`$<
 
-
-.c.obj:
-	$(CC) $(CFLAGS) $(INCL) -c -o $@ `if test -f '$<'; then $(CYGPATH_W) '$<'; else $(CYGPATH_W) '$(SRCDIR)/$<'; fi`

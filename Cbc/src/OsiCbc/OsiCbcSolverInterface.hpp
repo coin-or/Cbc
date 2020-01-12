@@ -649,7 +649,6 @@ public:
      If not then you could use underlying model pointer */
   //@{
   /// Set language
-  void newLanguage(CoinMessages::Language language);
   void setLanguage(CoinMessages::Language language)
   {
     newLanguage(language);

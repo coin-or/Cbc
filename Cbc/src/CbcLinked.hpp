@@ -1438,6 +1438,18 @@ class ClpSimplex;
 ClpSimplex *approximateSolution(CoinModel &coinModel,
   int numberPasses, double deltaTolerance,
   int mode = 0);
+
+/* Load nonlinear part of problem from AMPL info
+   Returns 0 if linear
+   1 if quadratic objective
+   2 if quadratic constraints
+   3 if nonlinear objective
+   4 if nonlinear constraints
+   -1 on failure
+*/
+int ClpSimplex_loadNonLinear(ClpSimplex& cs, void *amplInfo, int &numberConstraints,
+  ClpConstraint **&constraints);
+
 #endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2

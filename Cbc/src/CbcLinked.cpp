@@ -7355,7 +7355,7 @@ approximateSolution(CoinModel &coinModel,
     model->loadProblem(coinModel2);
     int numberConstraints;
     ClpConstraint **constraints = NULL;
-    int type = model->loadNonLinear(coinModel2.moreInfo(),
+    int type = ClpSimplex_loadNonLinear(*model, coinModel2.moreInfo(),
       numberConstraints, constraints);
     if (type == 1 || type == 3) {
       model->nonlinearSLP(numberPasses, deltaTolerance);

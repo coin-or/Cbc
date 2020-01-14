@@ -16,5 +16,14 @@
 /* Release Version number of project */
 #define CBC_VERSION_RELEASE 9999
 
+#ifndef CBCLIB_EXPORT
+#ifdef _WIN32
+/* assuming we link against a CoinUtils DLL */
+#define CBCLIB_EXPORT __declspec(dllimport)
+#else
+#define CBCLIB_EXPORT
+#endif
+#endif
+
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

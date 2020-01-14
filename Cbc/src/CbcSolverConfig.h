@@ -51,8 +51,21 @@
 #ifdef CBCSOLVER_BUILD
 #include "config_default.h"
 #else
-#include "config_cbcsolver_default.h"
+#include "config_cbc_default.h"
 #endif
+
+#ifndef CBCSOLVERLIB_EXPORT
+# ifdef _WIN32
+#  ifdef CBCSOLVER_BUILD
+#   define CBCSOLVERLIB_EXPORT __declspec(dllexport)
+#  else
+#   define CBCSOLVERLIB_EXPORT __declspec(dllimport)
+#  endif
+# elif defined(__GNUC__) && __GNUC__ >= 4
+#  define CBCSOLVERLIB_EXPORT __attribute__((__visibility__("default")))
+# endif
+#endif
+
 
 #endif /* HAVE_CONFIG_H */
 

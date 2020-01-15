@@ -20,6 +20,21 @@
 
 # Author:  Andreas Waechter           IBM    2006-04-13
 
+# Copyright (C) 2006, 2007 International Business Machines and others.
+# All Rights Reserved.
+# This file is distributed under the Eclipse Public License.
+
+# Author:  Andreas Waechter           IBM    2006-04-13
+
+########################################################################
+#        Variables for documentation and data directories              #
+########################################################################
+
+# Set these up to provide some uniformity in naming while also conforming
+# to Gnu directory standards. For reasons known only to the autoconf
+# developers, autoconf leaves datadir = $(datarootdir) but forces docdir
+# to $(datarootdir)/doc/$(PACKAGE_TARNAME).
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -76,8 +91,6 @@ am__make_running_with_option = \
   test $$has_opt = yes
 am__make_dryrun = (target_option=n; $(am__make_running_with_option))
 am__make_keepgoing = (target_option=k; $(am__make_running_with_option))
-pkgdatadir = $(datadir)/@PACKAGE@
-pkgincludedir = $(includedir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkglibexecdir = $(libexecdir)/@PACKAGE@
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
@@ -215,6 +228,8 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
+pkgdatadir = $(datadir)/$(PACKAGE_TARNAME)
+pkgincludedir = $(includedir)/coin-or
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -377,6 +392,25 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
+pkgdocdir = $(docdir)
+
+# doxydocdir is the top-level directory for doxygen documentation. It holds
+# the tag file and possibly the PDF or Postscript version. doxyhtmldir is
+# typically a subdirectory containing all the files doxygen creates for
+# html documentation.
+doxydocdir = $(pkgdocdir)/doxydoc
+doxyhtmldir = $(doxydocdir)/html
+
+########################################################################
+#                    Documentation installation                        #
+########################################################################
+DocFiles = README AUTHORS LICENSE
+COIN_HAS_DOXYGEN = @COIN_HAS_DOXYGEN_TRUE@TRUE
+COIN_HAS_LATEX = @COIN_HAS_LATEX_TRUE@TRUE
+
+# Needless to say, it's important that baredocdir_nosub not be a target for
+# autoconf substitution.
+DOXYTAG_EDIT = sed -e 's|@baredocdir_nosub@|$(datarootdir)/doc|g'
 
 ########################################################################
 #                         unitTest for Cbc                             #
@@ -415,7 +449,7 @@ all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .cpp .lo .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/BuildTools/Makemain.inc $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -435,6 +469,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__maybe_remake_depfiles)'; \
 	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__maybe_remake_depfiles);; \
 	esac;
+$(top_srcdir)/BuildTools/Makemain.inc $(am__empty):
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
@@ -757,6 +792,113 @@ uninstall-am: uninstall-binPROGRAMS
 
 .PRECIOUS: Makefile
 
+
+doxygen-docs: 
+	if test "$(COIN_HAS_DOXYGEN)" = TRUE; then \
+	  if test -d "doxydoc/"; then \
+	    if test -f doxydoc/doxygen.conf ; then \
+	      $(DOXYTAG_EDIT) \
+	        doxydoc/doxygen.conf > doxydoc/doxygen.conf.tmp ; \
+	      mv doxydoc/doxygen.conf.tmp doxydoc/doxygen.conf ; \
+	    fi ; \
+	    doxygen doxydoc/doxygen.conf;\
+	  fi;\
+	fi
+
+pdf-doxygen-docs: doxygen-docs
+	if test "$(COIN_HAS_DOXYGEN)" = TRUE; then \
+	  if test -d "doxydoc/latex"; then \
+       	    if test "$(COIN_HAS_LATEX)" = TRUE; then \
+	      cd doxydoc/latex;\
+	      $(MAKE) pdf;\
+	      cd -;\
+	    fi;\
+	  fi;\
+	fi
+
+clean-doxygen-docs:
+	if test -d "doxydoc"; then \
+	  cd doxydoc ;\
+	  rm -rf html latex *.log *.tag;\
+	fi
+
+install-doxygen-docs: doxygen-docs
+	if test "$(COIN_HAS_DOXYGEN)" = TRUE; then \
+	  if test -d "doxydoc"; then \
+	    test -d "$(DESTDIR)$(doxydocdir)" || \
+	         $(mkdir_p) "$(DESTDIR)$(doxydocdir)"; \
+	    $(INSTALL_DATA) doxydoc/@coin_doxy_tagname@ \
+	        "$(DESTDIR)$(doxydocdir)"; \
+	    if test -f "doxydoc/latex/refman.pdf"; then \
+	      $(INSTALL_DATA) doxydoc/latex/refman.pdf \
+	          "$(DESTDIR)$(doxydocdir)";\
+	    fi;\
+	    if test -d "doxydoc/html"; then \
+	      test -d "$(DESTDIR)$(doxyhtmldir)/search/" || \
+	           $(mkdir_p) "$(DESTDIR)$(doxyhtmldir)/search/"; \
+	      $(INSTALL_DATA) doxydoc/html/*.* \
+	          "$(DESTDIR)$(doxyhtmldir)";\
+	      $(INSTALL_DATA) doxydoc/html/search/*.* \
+	          "$(DESTDIR)$(doxyhtmldir)/search";\
+            fi;\
+          fi;\
+        fi
+
+# It's not clear that uninstall-doc should also remove doxygen doc'n. Write
+# the rules so that the last one will remove pkgdocdir (which should be empty
+# by then).
+
+uninstall-doxygen-docs:
+	if test -d "$(DESTDIR)$(doxydocdir)"; then \
+	  rm -rf "$(DESTDIR)$(doxydocdir)"; \
+	fi
+	rmdir $(DESTDIR)$(pkgdocdir) || true
+
+install-doc:
+	$(mkdir_p) "$(DESTDIR)$(pkgdocdir)"
+	for file in $(DocFiles); do \
+	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
+	  if test -f "$$dir$$file"; then \
+	    $(INSTALL_DATA) "$$dir$$file" "$(DESTDIR)$(pkgdocdir)/$$file"; \
+	  fi; \
+	done
+
+uninstall-doc:
+	for file in $(DocFiles); do \
+	  rm -f "$(DESTDIR)$(pkgdocdir)/$$file"; \
+	done
+	rmdir $(DESTDIR)$(pkgdocdir) || true
+
+########################################################################
+#                         Maintainer Stuff                             #
+########################################################################
+
+# Make sure acinclude is using most recent coin.m4
+@MAINTAINER_MODE_TRUE@$(srcdir)/acinclude.m4: $(BUILDTOOLSDIR)/coin.m4
+@MAINTAINER_MODE_TRUE@	cat $(LIBTOOLM4) $< > $@
+
+# Make sure the autotools scripts are up to date
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/install-sh: $(BUILDTOOLSDIR)/install-sh
+@MAINTAINER_MODE_TRUE@	cp $< $@
+
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/missing: $(BUILDTOOLSDIR)/missing
+@MAINTAINER_MODE_TRUE@	cp $< $@
+
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/config.guess: $(BUILDTOOLSDIR)/config.guess
+@MAINTAINER_MODE_TRUE@	cp $< $@
+
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/config.sub: $(BUILDTOOLSDIR)/config.sub
+@MAINTAINER_MODE_TRUE@	cp $< $@
+
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/depcomp: $(BUILDTOOLSDIR)/depcomp
+@MAINTAINER_MODE_TRUE@	cp $< $@
+
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/ltmain.sh: $(BUILDTOOLSDIR)/ltmain.sh
+@MAINTAINER_MODE_TRUE@	cp $< $@
+
+.PHONY: install-doc uninstall-doc \
+	doxygen-docs pdf-doxygen-docs clean-doxygen-docs \
+	install-doxygen-docs uninstall-doxygen-docs
 
 # We are using the solver executables to do the unit test
 

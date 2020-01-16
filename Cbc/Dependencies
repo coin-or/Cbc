@@ -1,10 +1,10 @@
 ThirdParty/ASL    https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/trunk
-ThirdParty/Glpk   https://projects.coin-or.org/svn/BuildTools/ThirdParty/Glpk/branches/autotools-update
+ThirdParty/Glpk   https://projects.coin-or.org/svn/BuildTools/ThirdParty/Glpk/trunk
 ThirdParty/Metis  https://projects.coin-or.org/svn/BuildTools/ThirdParty/Metis/trunk
 ThirdParty/Mumps  https://projects.coin-or.org/svn/BuildTools/ThirdParty/Mumps/trunk
-Data/Sample       https://projects.coin-or.org/svn/Data/Sample/branches/autotools-update
-Data/miplib3      https://projects.coin-or.org/svn/Data/miplib3/branches/autotools-update
-CoinUtils         https://projects.coin-or.org/svn/CoinUtils/branches/autotools-update/CoinUtils
-Osi               https://projects.coin-or.org/svn/Osi/branches/autotools-update/Osi
-Clp               https://projects.coin-or.org/svn/Clp/branches/autotools-update/Clp
-Cgl               https://projects.coin-or.org/svn/Cgl/branches/autotools-update/Cgl
+Data/Sample       https://projects.coin-or.org/svn/Data/Sample/trunk
+Data/miplib3      https://projects.coin-or.org/svn/Data/miplib3/trunk
+CoinUtils         https://projects.coin-or.org/svn/CoinUtils/trunk/CoinUtils
+Osi               https://projects.coin-or.org/svn/Osi/trunk/Osi
+Clp               https://projects.coin-or.org/svn/Clp/trunk/Clp
+Cgl               https://projects.coin-or.org/svn/Cgl/trunk/Cgl

@@ -33,7 +33,6 @@
 #include "CoinHelperFunctions.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "OsiSolverInterface.hpp"
-#include "Cbc_ampl.h"
 #include "CoinTime.hpp"
 #include "CglStored.hpp"
 #include "CoinModel.hpp"
@@ -780,7 +779,7 @@ void ClpConstraintAmpl::newXValues()
    4 if nonlinear constraints
    -1 on failure
 */
-int ClpSimplex::loadNonLinear(void *amplInfo, int &numberConstraints,
+int ClpSimplex_loadNonLinear(ClpSimplex& cs, void *amplInfo, int &numberConstraints,
   ClpConstraint **&constraints)
 {
   numberConstraints = 0;
@@ -793,15 +792,15 @@ int ClpSimplex::loadNonLinear(void *amplInfo, int &numberConstraints,
     // nonlinear
     if (!nlc) {
       type = 3;
-      delete objective_;
-      objective_ = new ClpAmplObjective(amplInfo);
+      delete cs->objective_;
+      cs->objective_ = new ClpAmplObjective(amplInfo);
     } else {
       type = 4;
       numberConstraints = nlc;
       constraints = new ClpConstraint *[numberConstraints];
       if (nlo) {
-        delete objective_;
-        objective_ = new ClpAmplObjective(amplInfo);
+        delete cs->objective_;
+        cs->objective_ = new ClpAmplObjective(amplInfo);
       }
       for (int i = 0; i < numberConstraints; i++) {
         constraints[i] = new ClpConstraintAmpl(i, amplInfo);
@@ -813,7 +812,7 @@ int ClpSimplex::loadNonLinear(void *amplInfo, int &numberConstraints,
 #else
 #include "ClpSimplex.hpp"
 #include "ClpConstraint.hpp"
-int ClpSimplex::loadNonLinear(void *, int &,
+int ClpSimplex_loadNonLinear(ClpSimplex& cs, void *, int &,
   ClpConstraint **&)
 {
   abort();

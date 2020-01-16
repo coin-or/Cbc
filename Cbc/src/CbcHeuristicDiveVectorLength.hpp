@@ -11,7 +11,7 @@
 /** DiveVectorLength class
  */
 
-class CbcHeuristicDiveVectorLength : public CbcHeuristicDive {
+class CBCLIB_EXPORT CbcHeuristicDiveVectorLength : public CbcHeuristicDive {
 public:
   // Default Constructor
   CbcHeuristicDiveVectorLength();

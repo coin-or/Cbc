@@ -10,7 +10,7 @@
 /** LocalSearch class
  */
 
-class CbcHeuristicLocal : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicLocal : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicLocal();
@@ -88,7 +88,7 @@ protected:
 /** Proximity Search class
  */
 class CbcHeuristicFPump;
-class CbcHeuristicProximity : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicProximity : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicProximity();
@@ -153,7 +153,7 @@ protected:
     c) Put bounds round continuous and UIs and maximize
  */
 
-class CbcHeuristicNaive : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicNaive : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicNaive();
@@ -211,7 +211,7 @@ protected:
 /** Crossover Search class
  */
 
-class CbcHeuristicCrossover : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicCrossover : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicCrossover();

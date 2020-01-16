@@ -13,7 +13,7 @@
     It tries to find a DW structure and use that
  */
 
-class CbcHeuristicDW : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicDW : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicDW();

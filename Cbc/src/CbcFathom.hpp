@@ -28,7 +28,7 @@ class CbcModel;
 
  */
 
-class CbcFathom {
+class CBCLIB_EXPORT CbcFathom {
 public:
   // Default Constructor
   CbcFathom();
@@ -85,7 +85,7 @@ This is for codes where solver needs to know about CbcModel
 
 */
 
-class CbcOsiSolver : public OsiClpSolverInterface {
+class CBCLIB_EXPORT CbcOsiSolver : public OsiClpSolverInterface {
 
 public:
   /**@name Constructors and destructors */

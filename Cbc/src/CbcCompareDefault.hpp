@@ -27,7 +27,7 @@ class CbcModel;
    If weight is 0.0 then it is computed to hit first solution
    less 5%
 */
-class CbcCompareDefault : public CbcCompareBase {
+class CBCLIB_EXPORT CbcCompareDefault : public CbcCompareBase {
 public:
   /// Default Constructor
   CbcCompareDefault();

@@ -25,7 +25,7 @@
 class CbcModel;
 class OsiChooseVariable;
 
-class CbcBranchDecision {
+class CBCLIB_EXPORT CbcBranchDecision {
 public:
   /// Default Constructor
   CbcBranchDecision();

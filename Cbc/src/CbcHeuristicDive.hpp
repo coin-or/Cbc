@@ -17,7 +17,7 @@ struct PseudoReducedCost {
 /** Dive class
  */
 
-class CbcHeuristicDive : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicDive : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicDive();

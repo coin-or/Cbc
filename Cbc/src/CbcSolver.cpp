@@ -7,7 +7,7 @@
     \brief Second level routines for the cbc stand-alone solver.
 */
 
-#include "CbcConfig.h"
+#include "CbcSolverConfig.h"
 #include "CoinPragma.hpp"
 
 #include <cassert>
@@ -64,8 +64,8 @@
 #include "CbcSolverHeuristics.hpp"
 #ifdef COIN_HAS_GLPK
 #include "glpk.h"
-extern glp_tran *cbc_glp_tran;
-extern glp_prob *cbc_glp_prob;
+extern COINUTILSLIB_EXPORT glp_tran *cbc_glp_tran;
+extern COINUTILSLIB_EXPORT glp_prob *cbc_glp_prob;
 #else
 #define GLP_UNDEF 1
 #define GLP_FEAS 2
@@ -821,15 +821,11 @@ void CbcSolver::addCutGenerator(CglCutGenerator *generator)
 */
 
 #if CBC_OTHER_SOLVER == 1
-#ifndef COIN_HAS_CPX
-#error "Configuration did not detect cplex installation."
+#ifndef COIN_HAS_OSICPX
+#error "Configuration did not detect OsiCpx installation."
 #else
 #include "OsiCpxSolverInterface.hpp"
 #endif
-#endif
-
-#ifdef COIN_HAS_ASL
-#include "Cbc_ampl.h"
 #endif
 
 static void statistics(ClpSimplex *originalModel, ClpSimplex *model);
@@ -1505,7 +1501,6 @@ int CbcMain1(int argc, const char *argv[],
     int *knapsackStart = NULL;
     int *knapsackRow = NULL;
     int numberKnapsack = 0;
-#ifdef COIN_HAS_ASL
     ampl_info info;
     {
       memset(&info, 0, sizeof(info));
@@ -1533,7 +1528,7 @@ int CbcMain1(int argc, const char *argv[],
           CoinModel *model;
         } coinModelStart;
         coinModelStart.model = NULL;
-        int returnCode = readAmpl(&info, argc, const_cast< char ** >(argv), &coinModelStart.voidModel);
+        int returnCode = readAmpl(&info, argc, const_cast< char ** >(argv), &coinModelStart.voidModel, "cbc");
         coinModel = coinModelStart.model;
         if (returnCode)
           return returnCode;
@@ -1692,7 +1687,6 @@ int CbcMain1(int argc, const char *argv[],
         argv = const_cast< const char ** >(info.arguments);
       }
     }
-#endif
     // default action on import
     int allowImportErrors = 0;
     int keepImportNames = 1;
@@ -2038,12 +2032,10 @@ int CbcMain1(int argc, const char *argv[],
           biLinearProblem = false;
           // check if any integers
 #ifndef CBC_OTHER_SOLVER
-#ifdef COIN_HAS_ASL
           if (info.numberSos && doSOS && statusUserFunction_[0]) {
             // SOS
             numberSOS = info.numberSos;
           }
-#endif
           lpSolver = clpSolver->getModelPtr();
           if (!lpSolver->integerInformation() && !numberSOS && !clpSolver->numberSOS() && !model_.numberObjects() && !clpSolver->numberObjects()) {
             type = CLP_PARAM_ACTION_DUALSIMPLEX;
@@ -2072,10 +2064,8 @@ int CbcMain1(int argc, const char *argv[],
             evenHidden = true;
             verbose &= ~8;
           }
-#ifdef COIN_HAS_ASL
           if (verbose < 4 && statusUserFunction_[0])
             verbose += 4;
-#endif
           if (verbose < 4) {
             std::cout << "In argument list keywords have leading - "
                          ", -stdin or just - switches to stdin"
@@ -2797,7 +2787,6 @@ int CbcMain1(int argc, const char *argv[],
         } else {
           // action
           if (type == CLP_PARAM_ACTION_EXIT) {
-#ifdef COIN_HAS_ASL
             if (statusUserFunction_[0]) {
               if (info.numberIntegers || info.numberBinary) {
                 // integer
@@ -2808,7 +2797,6 @@ int CbcMain1(int argc, const char *argv[],
               freeArrays2(&info);
               freeArgs(&info);
             }
-#endif
             break; // stop all
           }
           switch (type) {
@@ -3163,7 +3151,6 @@ int CbcMain1(int argc, const char *argv[],
                   lpSolver->primal(1);
                 model2 = lpSolver;
               }
-#ifdef COIN_HAS_ASL
               if (statusUserFunction_[0]) {
                 double value = model2->getObjValue();
                 char buf[300];
@@ -3227,7 +3214,6 @@ int CbcMain1(int argc, const char *argv[],
                 strcpy(info.buffer, buf);
                 delete basis;
               }
-#endif
             } else {
               sprintf(generalPrint, "** Current model not valid");
               printGeneralMessage(model_, generalPrint);
@@ -3432,7 +3418,6 @@ int CbcMain1(int argc, const char *argv[],
               if (model_.bestSolution()) {
                 model_.setProblemStatus(1);
                 model_.setSecondaryStatus(6);
-#ifdef COIN_HAS_ASL
                 if (statusUserFunction_[0]) {
                   double value = model_.getObjValue();
                   char buf[300];
@@ -3471,7 +3456,6 @@ int CbcMain1(int argc, const char *argv[],
                   strcpy(info.buffer, buf);
                   delete basis;
                 }
-#endif
               }
               int returnCode = callBack(&model, 6);
               if (returnCode) {
@@ -4204,14 +4188,12 @@ int CbcMain1(int argc, const char *argv[],
                   int translate[] = { 9999, 0, 0, -3, 2, 3, -2, 9999, 4, 5, 0 };
                   process.passInMessageHandler(babModel_->messageHandler());
                   //process.messageHandler()->setLogLevel(babModel_->logLevel());
-#ifdef COIN_HAS_ASL
                   if (info.numberSos && doSOS && statusUserFunction_[0]) {
                     // SOS
                     numberSOS = info.numberSos;
                     sosStart = info.sosStart;
                     sosIndices = info.sosIndices;
                   }
-#endif
                   if (numberSOS && doSOS) {
                     // SOS
                     int numberColumns = saveSolver->getNumCols();
@@ -4490,7 +4472,6 @@ int CbcMain1(int argc, const char *argv[],
                   if (solver2)
                     solver2->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo);
                 }
-#ifdef COIN_HAS_ASL
                 if (!solver2 && statusUserFunction_[0]) {
                   // infeasible
                   info.problemStatus = 1;
@@ -4500,7 +4481,6 @@ int CbcMain1(int argc, const char *argv[],
                   info.dualSolution = NULL;
                   break;
                 }
-#endif
                 if (!noPrinting_) {
                   if (!solver2) {
                     sprintf(generalPrint, "Pre-processing says infeasible or unbounded");
@@ -5176,7 +5156,6 @@ int CbcMain1(int argc, const char *argv[],
                 //                         babModel_->getNumCols());
               }
               int testOsiOptions = parameters_[whichParam(CBC_PARAM_INT_TESTOSI, parameters_)].intValue();
-              //#ifdef COIN_HAS_ASL
 #ifndef JJF_ONE
               // If linked then see if expansion wanted
               {
@@ -5215,11 +5194,9 @@ int CbcMain1(int argc, const char *argv[],
                         testOsiOptions = 0;
                         // allow gomory
                         complicatedInteger = 0;
-#ifdef COIN_HAS_ASL
                         // Priorities already done
                         free(info.priorities);
                         info.priorities = NULL;
-#endif
                       } else {
                         numberKnapsack = 0;
                         delete[] whichColumn;
@@ -5851,7 +5828,6 @@ int CbcMain1(int argc, const char *argv[],
                 }
               }
               if (type == CBC_PARAM_ACTION_BAB) {
-#ifdef COIN_HAS_ASL
                 if (statusUserFunction_[0]) {
                   priorities = info.priorities;
                   branchDirection = info.branchDirection;
@@ -5869,7 +5845,6 @@ int CbcMain1(int argc, const char *argv[],
                     sosPriority = info.sosPriority;
                   }
                 }
-#endif
                 const int *originalColumns = preProcess ? process.originalColumns() : NULL;
                 if (model.getMIPStart().size())
                   mipStart = model.getMIPStart();
@@ -6478,9 +6453,7 @@ int CbcMain1(int argc, const char *argv[],
                   // *************************************************************
                 }
                 int statistics = (printOptions > 0) ? printOptions : 0;
-#ifdef COIN_HAS_ASL
                 if (!statusUserFunction_[0]) {
-#endif
                   free(priorities);
                   priorities = NULL;
                   free(branchDirection);
@@ -6505,9 +6478,7 @@ int CbcMain1(int argc, const char *argv[],
                   cut = NULL;
                   free(sosPriority);
                   sosPriority = NULL;
-#ifdef COIN_HAS_ASL
                 }
-#endif
                 if (nodeStrategy) {
                   // change default
                   if (nodeStrategy > 2) {
@@ -6805,7 +6776,6 @@ int CbcMain1(int argc, const char *argv[],
                   lpSolver->setPersistenceFlag(1);
                 }
 #endif
-#ifdef COIN_HAS_ASL
                 // add in lotsizing
                 if (statusUserFunction_[0] && info.special) {
                   int numberColumns = babModel_->getNumCols();
@@ -6886,7 +6856,6 @@ int CbcMain1(int argc, const char *argv[],
                     delete[] objects;
                   }
                 }
-#endif
                 if (storedAmpl.sizeRowCuts()) {
                   //babModel_->addCutGenerator(&storedAmpl,1,"AmplStored");
                   int numberRowCuts = storedAmpl.sizeRowCuts();
@@ -8003,10 +7972,8 @@ int CbcMain1(int argc, const char *argv[],
 #ifndef CBC_OTHER_SOLVER
               //if (type==CBC_PARAM_ACTION_STRENGTHEN&&strengthenedModel)
               //clpSolver = dynamic_cast< OsiClpSolverInterface*> (strengthenedModel);
-#ifdef COIN_HAS_ASL
               else if (statusUserFunction_[0])
                 clpSolver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
-#endif
               lpSolver = clpSolver->getModelPtr();
               if (numberChanged) {
                 for (int i = 0; i < numberChanged; i++) {
@@ -8113,7 +8080,6 @@ int CbcMain1(int argc, const char *argv[],
                   babModel_ = NULL;
                   return returnCode;
                 }
-#ifdef COIN_HAS_ASL
                 if (statusUserFunction_[0]) {
                   clpSolver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                   lpSolver = clpSolver->getModelPtr();
@@ -8184,14 +8150,12 @@ int CbcMain1(int argc, const char *argv[],
                   // put buffer into info
                   strcpy(info.buffer, buf);
                 }
-#endif
               } else {
                 sprintf(generalPrint, "Model strengthened - now has %d rows",
                   clpSolver->getNumRows());
                 printGeneralMessage(model_, generalPrint);
               }
               time1 = time2;
-#ifdef COIN_HAS_ASL
               if (statusUserFunction_[0]) {
                 // keep if going to be destroyed
                 OsiSolverInterface *solver = babModel_->solver();
@@ -8200,7 +8164,6 @@ int CbcMain1(int argc, const char *argv[],
                 if (lpSolver == lpSolver2)
                   babModel_->setModelOwnsSolver(false);
               }
-#endif
               //delete babModel_;
               //babModel_=NULL;
             } else {
@@ -8209,9 +8172,7 @@ int CbcMain1(int argc, const char *argv[],
             }
             break;
           case CLP_PARAM_ACTION_IMPORT: {
-#ifdef COIN_HAS_ASL
             if (!statusUserFunction_[0]) {
-#endif
               free(priorities);
               priorities = NULL;
               free(branchDirection);
@@ -8236,9 +8197,7 @@ int CbcMain1(int argc, const char *argv[],
               cut = NULL;
               free(sosPriority);
               sosPriority = NULL;
-#ifdef COIN_HAS_ASL
             }
-#endif
             //delete babModel_;
             //babModel_=NULL;
             // get next field
@@ -8643,7 +8602,6 @@ int CbcMain1(int argc, const char *argv[],
                   model2->setOptimizationDirection(1.0);
                 }
 #ifndef CBC_OTHER_SOLVER
-#ifdef COIN_HAS_ASL
                 if (info.numberSos && doSOS && statusUserFunction_[0]) {
                   // SOS
                   numberSOS = info.numberSos;
@@ -8652,7 +8610,6 @@ int CbcMain1(int argc, const char *argv[],
                   sosReference = info.sosReference;
                   clpSolver->setSOSData(numberSOS, info.sosType, sosStart, sosIndices, sosReference);
                 }
-#endif
                 numberSOS = clpSolver->numberSOS();
                 if (numberSOS || lotsize)
                   preSolve = false;
@@ -9669,12 +9626,10 @@ int CbcMain1(int argc, const char *argv[],
               int extra1 = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, parameters_)].intValue();
               fakeMain2(*lpSolver, *clpSolver, extra1);
               lpSolver = clpSolver->getModelPtr();
-#ifdef COIN_HAS_ASL
               // My actual usage has objective only in clpSolver
               //double objectiveValue=clpSolver->getObjValue();
               //int iStat = lpSolver->status();
               //int iStat2 = lpSolver->secondaryStatus();
-#endif
             }
 #endif
             break;
@@ -9689,16 +9644,13 @@ int CbcMain1(int argc, const char *argv[],
               double timeToGo = model_.getMaximumSeconds();
               lpSolver->setMaximumSeconds(timeToGo);
               fakeMain(*lpSolver, *clpSolver, model);
-#ifdef COIN_HAS_ASL
               // My actual usage has objective only in clpSolver
               double objectiveValue = clpSolver->getObjValue();
               int iStat = lpSolver->status();
               int iStat2 = lpSolver->secondaryStatus();
-#endif
               // make sure solution back in correct place
               clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
               lpSolver = clpSolver->getModelPtr();
-#ifdef COIN_HAS_ASL
               if (statusUserFunction_[0]) {
                 int n = clpSolver->getNumCols();
                 double value = objectiveValue * lpSolver->getObjSense();
@@ -9756,7 +9708,6 @@ int CbcMain1(int argc, const char *argv[],
                 // put buffer into info
                 strcpy(info.buffer, buf);
               }
-#endif
             }
 #endif
             break;

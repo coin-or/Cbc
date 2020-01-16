@@ -11,7 +11,7 @@
 #include "CbcSimpleInteger.hpp"
 /// Define a single integer class but with pseudo costs
 
-class CbcSimpleIntegerPseudoCost : public CbcSimpleInteger {
+class CBCLIB_EXPORT CbcSimpleIntegerPseudoCost : public CbcSimpleInteger {
 
 public:
   // Default Constructor

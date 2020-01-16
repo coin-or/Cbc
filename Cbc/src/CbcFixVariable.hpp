@@ -19,7 +19,7 @@
 
  */
 
-class CbcFixVariable : public CbcConsequence {
+class CBCLIB_EXPORT CbcFixVariable : public CbcConsequence {
 
 public:
   // Default Constructor

@@ -8,74 +8,84 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+include $(top_srcdir)/BuildTools/Makemain.inc
+
 ########################################################################
 #                             libOsiCbc                                #
 ########################################################################
 
 # Name of the library compiled in this directory.
+
 lib_LTLIBRARIES = libOsiCbc.la
 
 # List all source files for this library, including headers
 libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
 
 # List all additionally required libraries
-if DEPENDENCY_LINKING
-libOsiCbc_la_LIBADD = $(CBCLIB_LIBS) ../libCbc.la
-endif
+libOsiCbc_la_LIBADD = ../libCbc.la
 
-# This is for libtool (on Windows)
+# This is for libtool
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
-# Here list all include flags, relative to this "srcdir" directory.  This
-# "cygpath" stuff is necessary to compile with native compilers on Windows.
-AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/..` $(COINDEPEND_CFLAGS)
+# Here list all include flags, relative to this "srcdir" directory.
+AM_CPPFLAGS = -DOSICBC_BUILD -I$(srcdir)/.. $(CBCLIB_CFLAGS)
 
-# Plus the appropriate include directories for the default solver.
-
+# Plus the appropriate include directories and libraries for the default solver.
 if OSICBC_DFLT_SOLVER_CLP
-  AM_CPPFLAGS += ${CLP_CFLAGS}
+  AM_CPPFLAGS += $(OSICLP_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSICLP_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_CPX
-  AM_CPPFLAGS += ${CPX_CFLAGS}
+  AM_CPPFLAGS += $(OSICPX_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSICPX_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_DYLP
-  AM_CPPFLAGS += ${DYLP_CFLAGS}
+  AM_CPPFLAGS += $(OSIDYLP_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSIDYLP_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_GLPK
-  AM_CPPFLAGS += ${GLPK_CFLAGS}
+  AM_CPPFLAGS += $(OSIGLPK_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSIGLPK_LFLAGS)
 endif
 
-if OSICBC_DFLT_SOLVER_GRB
-  AM_CPPFLAGS += ${GRB_CFLAGS}
-endif
+#if OSICBC_DFLT_SOLVER_GRB
+#  AM_CPPFLAGS += ${GRB_CFLAGS}
+#endif
 
 if OSICBC_DFLT_SOLVER_MSK
-  AM_CPPFLAGS += ${MSK_CFLAGS}
+  AM_CPPFLAGS += $(OSIMSK_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSIMSK_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_HIGHS
-  AM_CPPFLAGS += ${HIGHS_CFLAGS}
+  AM_CPPFLAGS += $(HIGHS_CFLAGS)
+  libOsiCbc_la_LIBADD += $(HIGHS_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_SYM
-  AM_CPPFLAGS += ${SYM_CFLAGS}
+  AM_CPPFLAGS += $(OSISYM_CFLAGS)
+  libOsiCbc_la_LIBADD += $(OSISYM_LFLAGS)
 endif
 
-if OSICBC_DFLT_SOLVER_XPR
-  AM_CPPFLAGS += ${XPR_CFLAGS}
-endif
-
-# This line is necessary to allow VPATH compilation
-DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I..
+#if OSICBC_DFLT_SOLVER_XPR
+#  AM_CPPFLAGS += ${XPR_CFLAGS}
+#endif
 
 ########################################################################
 #                Headers that need to be installed                     #
 ########################################################################
 
 # Here list all the header files that are required by a user of the library,
-# and that therefore should be installed in 'include/coin'
-includecoindir = $(includedir)/coin
+# and that therefore should be installed in 'include/coin-or'
+
+includecoindir = $(pkgincludedir)
 includecoin_HEADERS = OsiCbcSolverInterface.hpp
+
+install-exec-local:
+	$(install_sh_DATA) config_osicbc.h $(DESTDIR)$(includecoindir)/OsiCbcConfig.h
+
+uninstall-local:
+	rm -f $(DESTDIR)$(includecoindir)/OsiCbcConfig.h

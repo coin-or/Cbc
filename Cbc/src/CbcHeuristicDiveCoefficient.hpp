@@ -11,7 +11,7 @@
 /** DiveCoefficient class
  */
 
-class CbcHeuristicDiveCoefficient : public CbcHeuristicDive {
+class CBCLIB_EXPORT CbcHeuristicDiveCoefficient : public CbcHeuristicDive {
 public:
   // Default Constructor
   CbcHeuristicDiveCoefficient();

@@ -10,7 +10,7 @@
 /** Greedy heuristic classes
  */
 
-class CbcHeuristicGreedyCover : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicGreedyCover : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicGreedyCover();
@@ -96,7 +96,7 @@ protected:
   int numberTimes_;
 };
 
-class CbcHeuristicGreedyEquality : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicGreedyEquality : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicGreedyEquality();
@@ -196,7 +196,7 @@ protected:
 /** Greedy heuristic for SOS and L rows (and positive elements)
  */
 
-class CbcHeuristicGreedySOS : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicGreedySOS : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicGreedySOS();

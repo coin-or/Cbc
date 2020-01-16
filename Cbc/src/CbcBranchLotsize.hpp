@@ -9,7 +9,7 @@
 #include "CbcBranchBase.hpp"
 /** Lotsize class */
 
-class CbcLotsize : public CbcObject {
+class CBCLIB_EXPORT CbcLotsize : public CbcObject {
 
 public:
   // Default Constructor
@@ -169,7 +169,7 @@ private:
   array of the model.
 */
 
-class CbcLotsizeBranchingObject : public CbcBranchingObject {
+class CBCLIB_EXPORT CbcLotsizeBranchingObject : public CbcBranchingObject {
 
 public:
   /// Default constructor

@@ -6,6 +6,8 @@
 #ifndef CbcFeasibilityBase_H
 #define CbcFeasibilityBase_H
 
+#include "CbcConfig.h"
+
 //#############################################################################
 /*  There are cases where the user wants to control how CBC sees the problems feasibility.
     The user may want to examine the problem and say :
@@ -18,7 +20,7 @@
 */
 
 class CbcModel;
-class CbcFeasibilityBase {
+class CBCLIB_EXPORT CbcFeasibilityBase {
 public:
   // Default Constructor
   CbcFeasibilityBase() {}

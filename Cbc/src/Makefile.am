@@ -8,6 +8,8 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+include $(top_srcdir)/BuildTools/Makemain.inc
+
 ########################################################################
 #                               libCbc                                 #
 ########################################################################
@@ -80,9 +82,9 @@ libCbc_la_SOURCES = \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.cpp \
-        CbcSimpleIntegerDynamicPseudoCost.hpp \
+	CbcSimpleIntegerDynamicPseudoCost.hpp \
 	CbcSimpleIntegerPseudoCost.cpp \
-        CbcSimpleIntegerPseudoCost.hpp \
+	CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
@@ -95,7 +97,6 @@ libCbc_la_SOURCES = \
 libCbcSolver_la_SOURCES = \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcCbcParam.cpp \
-	Cbc_ampl.cpp Cbc_ampl.h \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
 	unitTestClp.cpp CbcSolver.cpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
@@ -104,10 +105,9 @@ libCbcSolver_la_SOURCES = \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp
 
 # List all additionally required libraries
-if DEPENDENCY_LINKING
-libCbc_la_LIBADD = $(CBCLIB_LIBS)
-libCbcSolver_la_LIBADD = $(CBCLIB_LIBS) libCbc.la
-endif
+
+libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
+libCbcSolver_la_LIBADD = $(CBCSOLVERLIB_LFLAGS) libCbc.la
 
 # This is for libtool
 
@@ -116,16 +116,19 @@ libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Some common setup for cbc and cbc-generic.
 
-bin_PROGRAMS =
-AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_CFLAGS) $(ASL_CFLAGS)
+libCbc_la_CPPFLAGS = -DCBC_BUILD $(CBCLIB_CFLAGS)
+libCbcSolver_la_CPPFLAGS = -DCBCSOLVER_BUILD $(CBCSOLVERLIB_CFLAGS)
 
-if COIN_HAS_NTY
-AM_CPPFLAGS += -I$(NTYINCDIR)
+AM_CPPFLAGS =
+if COIN_HAS_NAUTY
+  AM_CPPFLAGS += -DCOIN_HAS_NTY $(NAUTY_CFLAGS)
 endif
 
 ########################################################################
 #                            cbc program                               #
 ########################################################################
+
+bin_PROGRAMS =
 
 if COIN_HAS_CLP
 
@@ -137,8 +140,10 @@ bin_PROGRAMS += cbc
 cbc_SOURCES = CoinSolve.cpp
 
 # Additional libraries
-cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LIBS) $(ASL_LIBS)
-cbc_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCLIB_DEPENDENCIES) $(ASL_DEPENDENCIES)
+cbc_LDADD = libCbcSolver.la libCbc.la
+
+# not really accurate to use these CFLAGS, but they should have everything
+cbc_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
 
 endif
 
@@ -167,14 +172,13 @@ cbc_generic_SOURCES = \
 	CbcGenSolution.cpp \
 	CbcGenSolvers.cpp
 
-cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LIBS)
-cbc_generic_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCGENERIC_DEPENDENCIES)
+cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LFLAGS)
 
 # List all additionally required solver and Osi libraries
-# the linker flags for all available LP solvers should already be included in $CBCGENERIC_LIBS,
+# the linker flags for all available LP solvers should already be included in $CBCGENERIC_LFLAGS,
 # so just add compiler flags here (all we can think of)
 
-AM_CPPFLAGS += $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(HIGHS_CFLAGS) $(MSK_CFLAGS) $(SPX_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
+AM_CPPFLAGS += $(CBCGENERIC_CFLAGS)
 
 endif
 
@@ -183,18 +187,16 @@ endif
 ########################################################################
 
 # List additional defines
-AM_CPPFLAGS += -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
 
-# This line is necessary to allow VPATH compilation
-DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/src
+AM_CPPFLAGS += -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
 
 ########################################################################
 #                Headers that need to be installed                     #
 ########################################################################
 
 # Here list all the header files that are required by a user of the library,
-# and that therefore should be installed in 'include/coin'
-includecoindir = $(includedir)/coin
+# and that therefore should be installed in 'include/coin-or'
+includecoindir = $(pkgincludedir)
 includecoin_HEADERS = \
 	Cbc_C_Interface.h \
 	CbcBranchActual.hpp \
@@ -253,7 +255,7 @@ includecoin_HEADERS = \
 	CbcNode.hpp \
 	CbcNodeInfo.hpp \
 	CbcNWay.hpp \
-        CbcObject.hpp \
+	CbcObject.hpp \
 	CbcObjectUpdateData.hpp \
 	CbcParam.hpp \
 	CbcPartialNodeInfo.hpp \
@@ -271,23 +273,13 @@ includecoin_HEADERS = \
 	ClpConstraintAmpl.hpp \
 	ClpAmplObjective.hpp 
 
-########################################################################
-#                     Installing manifest (MSVC++)                     #
-########################################################################
-
-if COIN_CXX_IS_CL
-install-exec-hook:
-	test -s cbc.exe.manifest && \
-	mt -manifest cbc.exe.manifest -outputresource:cbc.exe;\
-	cp cbc.exe $(bindir)/cbc.exe
-endif
-
 #######################################################################
 # Create the Config.h file that has all public defines and install it #
 #######################################################################
 
 install-exec-local:
 	$(install_sh_DATA) config_cbc.h $(DESTDIR)$(includecoindir)/CbcConfig.h
+	$(install_sh_DATA) config_cbcsolver.h $(DESTDIR)$(includecoindir)/CbcSolverConfig.h
 
 uninstall-local:
-	rm -f $(DESTDIR)$(includecoindir)/CbcConfig.h
+	rm -f $(DESTDIR)$(includecoindir)/CbcConfig.h $(DESTDIR)$(includecoindir)/CbcSolverConfig.h

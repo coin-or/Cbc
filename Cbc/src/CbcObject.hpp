@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 #include "OsiBranchingObject.hpp"
+#include "CbcConfig.h"
+
 class OsiSolverInterface;
 class OsiSolverBranch;
 
@@ -64,7 +66,7 @@ typedef struct {
   int fix; // 0 if no fix, 1 if we can fix up, -1 if we can fix down
 } CbcStrongInfo;
 
-class CbcObject : public OsiObject {
+class CBCLIB_EXPORT CbcObject : public OsiObject {
 
 public:
   // Default Constructor

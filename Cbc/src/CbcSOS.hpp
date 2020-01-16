@@ -26,7 +26,7 @@
   between two discrete values). By definition the variables are non-integer.
 */
 
-class CbcSOS : public CbcObject {
+class CBCLIB_EXPORT CbcSOS : public CbcObject {
 
 public:
   // Default Constructor
@@ -197,7 +197,7 @@ protected:
     Variable_ is the set id number (redundant, as the object also holds a
     pointer to the set.
  */
-class CbcSOSBranchingObject : public CbcBranchingObject {
+class CBCLIB_EXPORT CbcSOSBranchingObject : public CbcBranchingObject {
 
 public:
   // Default Constructor

@@ -20,19 +20,16 @@
 #ifdef COIN_HAS_CBC
 #include "OsiCbcSolverInterface.hpp"
 #endif
-#ifdef COIN_HAS_OSL
-#include "OsiOslSolverInterface.hpp"
-#endif
-#ifdef COIN_HAS_SPX
+#ifdef COIN_HAS_OSISPX
 #include "OsiSpxSolverInterface.hpp"
 #endif
-#ifdef COIN_HAS_DYLP
+#ifdef COIN_HAS_OSIDYLP
 #include "OsiDylpSolverInterface.hpp"
 #endif
-#ifdef COIN_HAS_GLPK
+#ifdef COIN_HAS_OSIGLPK
 #include "OsiGlpkSolverInterface.hpp"
 #endif
-#ifdef COIN_HAS_CLP
+#ifdef COIN_HAS_OSICLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #ifdef NDEBUG
@@ -365,25 +362,21 @@ int mainTest(int argc, const char *argv[])
     // Create vector of solver interfaces
     std::vector< OsiCbcSolverInterface * > vecSi;
     CbcStrategyDefault strategy(0);
-#if COIN_HAS_OSL
-    OsiSolverInterface *oslSi = new OsiOslSolverInterface;
-    vecSi.push_back(new OsiCbcSolverInterface(oslSi, &strategy));
-#endif
-#if COIN_HAS_SPX
+#if COIN_HAS_OSISPX
     OsiSolverInterface *spxSi = new OsiSpxSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(spxSi, &strategy));
 #endif
-#if COIN_HAS_CLP
+#if COIN_HAS_OSICLP
     OsiSolverInterface *clpSi = new OsiClpSolverInterface;
     /* Quiet, already! */
     clpSi->setHintParam(OsiDoReducePrint, true, OsiHintDo);
     vecSi.push_back(new OsiCbcSolverInterface(clpSi, &strategy));
 #endif
-#if COIN_HAS_DYLP
+#if COIN_HAS_OSIDYLP
     OsiSolverInterface *dylpSi = new OsiDylpSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(dylpSi, &strategy));
 #endif
-#if COIN_HAS_GLPK
+#if COIN_HAS_OSIGLPK
     OsiSolverInterface *glpkSi = new OsiGlpkSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(glpkSi, &strategy));
 #endif

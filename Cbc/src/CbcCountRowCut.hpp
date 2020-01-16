@@ -6,6 +6,8 @@
 #ifndef CbcCountRowCut_H
 #define CbcCountRowCut_H
 
+#include "CbcConfig.h"
+
 class OsiCuts;
 class OsiRowCut;
 class CbcNodeInfo;
@@ -31,7 +33,7 @@ class CbcNodeInfo;
   CbcCountRowCut object (and its included OsiRowCut object) are then deleted.
 */
 
-class CbcCountRowCut : public OsiRowCut {
+class CBCLIB_EXPORT CbcCountRowCut : public OsiRowCut {
 
 public:
   /** @name Constructors & destructors */
@@ -129,7 +131,7 @@ private:
 typedef struct {
   int index, next;
 } CoinHashLink;
-class CbcRowCuts {
+class CBCLIB_EXPORT CbcRowCuts {
 public:
   CbcRowCuts(int initialMaxSize = 0, int hashMultiplier = 4);
   ~CbcRowCuts();

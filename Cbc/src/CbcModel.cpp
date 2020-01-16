@@ -1604,7 +1604,7 @@ static double lengthConflictCuts = 0.0;
   by the current state of the model,  of the solver, and of the constraint
   system held by the solver.
 */
-#ifdef COIN_HAS_CPX
+#if defined(COIN_HAS_OSICPX) && defined(COIN_HAS_CPLEX)
 #include "OsiCpxSolverInterface.hpp"
 #include "cplex.h"
 #endif
@@ -3406,7 +3406,7 @@ void CbcModel::branchAndBound(int doStatistics)
   // User event
   if (eventHappened_)
     feasible = false;
-#if defined(COIN_HAS_CLP) && defined(COIN_HAS_CPX)
+#if defined(COIN_HAS_OSICLP) && defined(COIN_HAS_OSICPX) && defined(COIN_HAS_CPLEX)
   /*
       This is the notion of using Cbc stuff to get going, then calling cplex to
       finish off.
@@ -16378,7 +16378,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node, CbcNode *&newNode)
         if (node->depth() >= go_fathom && (specialOptions_ & 2048) == 0
           //if (node->depth()>=FATHOM_BIAS-fastNodeDepth_&&!parentModel_
           && numberNodes_ >= numberNodesBeforeFathom && !hotstartSolution_) {
-#ifndef COIN_HAS_CPX
+#ifndef COIN_HAS_OSICPX
           specialOptions_ &= ~16384;
 #endif
           if ((specialOptions_ & 16384) == 0) {
@@ -16598,7 +16598,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node, CbcNode *&newNode)
             delete[] saveLower;
             delete[] saveUpper;
             simplex->setLogLevel(saveLevel);
-#ifdef COIN_HAS_CPX
+#if defined(COIN_HAS_OSICPX) && defined(COIN_HAS_CPLEX)
           } else {
             // try cplex
             OsiCpxSolverInterface cpxSolver;

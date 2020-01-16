@@ -15,7 +15,7 @@
   (betterBranch()) for choosing a branching variable.
 */
 
-class CbcBranchDefaultDecision : public CbcBranchDecision {
+class CBCLIB_EXPORT CbcBranchDefaultDecision : public CbcBranchDecision {
 public:
   // Default Constructor
   CbcBranchDefaultDecision();

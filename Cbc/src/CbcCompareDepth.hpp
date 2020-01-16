@@ -21,7 +21,7 @@
 #include "CbcCompare.hpp"
 class CbcModel;
 // This is default before first solution
-class CbcCompareDepth : public CbcCompareBase {
+class CBCLIB_EXPORT CbcCompareDepth : public CbcCompareBase {
 public:
   // Default Constructor
   CbcCompareDepth();

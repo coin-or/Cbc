@@ -16,7 +16,7 @@
     Basis will be made more compact later
 */
 class CoinWarmStartDiff;
-class CbcSubProblem {
+class CBCLIB_EXPORT CbcSubProblem {
 
 public:
   /// Default constructor

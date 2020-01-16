@@ -49,6 +49,8 @@
 #include <cstddef>
 #include <map>
 
+#include "CbcConfig.h"
+
 /* May well already be declared, but can't hurt. */
 
 class CbcModel;
@@ -79,7 +81,7 @@ class CbcModel;
   The return value associated with an event can be changed at any time.
 */
 
-class CbcEventHandler {
+class CBCLIB_EXPORT CbcEventHandler {
 
 public:
   /*! \brief Events known to cbc */

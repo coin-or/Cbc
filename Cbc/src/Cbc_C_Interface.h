@@ -10,6 +10,10 @@
 
 /* include all defines and ugly stuff */
 #include "Coin_C_defines.h"
+#include "CbcSolverConfig.h"
+#undef COINLIBAPI
+#define COINLIBAPI CBCSOLVERLIB_EXPORT
+
 #include <stddef.h>
 
 /**

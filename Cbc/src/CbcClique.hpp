@@ -38,7 +38,7 @@
   how many variables have -1 coefficients. The implicit rhs for a clique is
   1-numberNonSOSMembers_.
 */
-class CbcClique : public CbcObject {
+class CBCLIB_EXPORT CbcClique : public CbcObject {
 
 public:
   /// Default Constructor

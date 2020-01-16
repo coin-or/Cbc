@@ -14,7 +14,7 @@
     At present empty - all stuff in descendants
 */
 
-class CbcBranchCut : public CbcObject {
+class CBCLIB_EXPORT CbcBranchCut : public CbcObject {
 
 public:
   // Default Constructor
@@ -102,7 +102,7 @@ protected:
   This object can specify a two-way branch in terms of two cuts
 */
 
-class CbcCutBranchingObject : public CbcBranchingObject {
+class CBCLIB_EXPORT CbcCutBranchingObject : public CbcBranchingObject {
 
 public:
   /// Default constructor

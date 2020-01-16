@@ -16,7 +16,7 @@
   (betterBranch()) for choosing a branching variable when dynamic pseudo costs.
 */
 
-class CbcBranchDynamicDecision : public CbcBranchDecision {
+class CBCLIB_EXPORT CbcBranchDynamicDecision : public CbcBranchDecision {
 public:
   // Default Constructor
   CbcBranchDynamicDecision();
@@ -107,7 +107,7 @@ private:
   array of the model.
 */
 
-class CbcDynamicPseudoCostBranchingObject : public CbcIntegerBranchingObject {
+class CBCLIB_EXPORT CbcDynamicPseudoCostBranchingObject : public CbcIntegerBranchingObject {
 
 public:
   /// Default constructor

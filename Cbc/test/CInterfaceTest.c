@@ -887,6 +887,7 @@ void subTourSep(void *osiSolver, void *osiCuts, void *appdata) {
              printf("\n");
      } 
      printf("\n");*/
+     return 0;  // FIXME what is the correct return value?
  }
 
 void testTSPUlysses22( char lazy ) {

@@ -12,7 +12,7 @@
 #ifndef CbcNWay_H
 #define CbcNWay_H
 
-class CbcNWay : public CbcObject {
+class CBCLIB_EXPORT CbcNWay : public CbcObject {
 
 public:
   // Default Constructor
@@ -79,7 +79,7 @@ protected:
 /** N way branching Object class.
     Variable is number of set.
  */
-class CbcNWayBranchingObject : public CbcBranchingObject {
+class CBCLIB_EXPORT CbcNWayBranchingObject : public CbcBranchingObject {
 
 public:
   // Default Constructor

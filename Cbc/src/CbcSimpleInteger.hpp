@@ -20,7 +20,7 @@
   array of the model.
 */
 
-class CbcIntegerBranchingObject : public CbcBranchingObject {
+class CBCLIB_EXPORT CbcIntegerBranchingObject : public CbcBranchingObject {
 
 public:
   /// Default constructor
@@ -170,7 +170,7 @@ protected:
 
 /// Define a single integer class
 
-class CbcSimpleInteger : public CbcObject {
+class CBCLIB_EXPORT CbcSimpleInteger : public CbcObject {
 
 public:
   // Default Constructor

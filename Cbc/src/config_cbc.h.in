@@ -1,6 +1,10 @@
 /* src/config_cbc.h.in. */
 
-#ifndef CBC_VERSION
+#ifndef __CONFIG_CBC_H__
+#define __CONFIG_CBC_H__
+
+/* Library Visibility Attribute */
+#undef CBCLIB_EXPORT
 
 /* Version number of project */
 #undef CBC_VERSION

@@ -10,7 +10,7 @@
 
 #include "CbcHeuristic.hpp"
 
-class CbcHeuristicDINS : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicDINS : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicDINS();

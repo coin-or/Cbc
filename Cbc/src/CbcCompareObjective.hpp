@@ -22,7 +22,7 @@
 
 class CbcModel;
 
-class CbcCompareObjective : public CbcCompareBase {
+class CBCLIB_EXPORT CbcCompareObjective : public CbcCompareBase {
 public:
   // Default Constructor
   CbcCompareObjective();

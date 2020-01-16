@@ -11,7 +11,7 @@
 /** DivePseudoCost class
  */
 
-class CbcHeuristicDivePseudoCost : public CbcHeuristicDive {
+class CBCLIB_EXPORT CbcHeuristicDivePseudoCost : public CbcHeuristicDive {
 public:
   // Default Constructor
   CbcHeuristicDivePseudoCost();

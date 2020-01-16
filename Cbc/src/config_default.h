@@ -2,6 +2,16 @@
 /* include the COIN-OR-wide system specific configure header */
 #include "configall_system.h"
 
+/* this needs to come before the include of config_coinutils_default.h */
+#ifndef CBCLIB_EXPORT
+#ifdef _WIN32
+/* assuming we build a CoinUtils DLL */
+#define CBCLIB_EXPORT __declspec(dllexport)
+#else
+#define CBCLIB_EXPORT
+#endif
+#endif
+
 /* include the public project specific macros */
 #include "config_cbc_default.h"
 
@@ -10,26 +20,23 @@
 /*    These are only in effect in a setting that doesn't use configure     */
 /***************************************************************************/
 
-/* Define to the debug sanity check level (0 is no test) */
-#define COIN_CBC_CHECKLEVEL 0
-
-/* Define to the debug verbosity level (0 is no output) */
-#define COIN_CBC_VERBOSITY 0
-
-/* Define to 1 if the Cgl package is used */
-#define COIN_HAS_CGL 1
-
-/* Define to 1 if the Clp package is used */
-#define COIN_HAS_CLP 1
-
 /* Define to 1 if the CoinUtils package is used */
 #define COIN_HAS_COINUTILS 1
 
 /* Define to 1 if the Osi package is used */
 #define COIN_HAS_OSI 1
 
+/* Define to 1 if the Clp package is used */
+#define COIN_HAS_CLP 1
+
+/* Define to 1 if the Clp package is used */
+#define COIN_HAS_OSICLP 1
+
+/* Define to 1 if the Cgl package is used */
+#define COIN_HAS_CGL 1
+
 /* Define to 1 if the Vol package is used */
-#define COIN_HAS_VOL 1
+/* #define COIN_HAS_VOL 1 */
 
 /* Define to 1 if the Cplex package is used */
 /* #undef COIN_HAS_CPX */

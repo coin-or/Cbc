@@ -14,7 +14,7 @@
 /** LocalSearch class
  */
 
-class CbcHeuristicRINS : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicRINS : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicRINS();

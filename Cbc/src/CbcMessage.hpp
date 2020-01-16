@@ -21,6 +21,8 @@
  */
 
 #include "CoinMessageHandler.hpp"
+#include "CbcConfig.h"
+
 enum CBC_Message {
   CBC_END_GOOD,
   CBC_MAXNODES,
@@ -79,7 +81,7 @@ enum CBC_Message {
   CBC_DUMMY_END
 };
 
-class CbcMessage : public CoinMessages {
+class CBCLIB_EXPORT CbcMessage : public CoinMessages {
 
 public:
   /**@name Constructors etc */

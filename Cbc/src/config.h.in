@@ -1,11 +1,20 @@
 /* src/config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Library Visibility Attribute */
+#undef CBCGENERIC_EXPORT
+
+/* Library Visibility Attribute */
+#undef CBCLIB_EXPORT
+
+/* Library Visibility Attribute */
+#undef CBCSOLVERLIB_EXPORT
+
+/* Library Visibility Attribute */
+#undef CBCUNITTEST_EXPORT
+
 /* Define to the name of the default solver to be used in cbc-generic in small
    letters */
 #undef CBC_DEFAULT_SOLVER
-
-/* SVN revision number of project */
-#undef CBC_SVN_REV
 
 /* Define to 1 if the SMP version of Cbc should be compiled */
 #undef CBC_THREAD
@@ -13,77 +22,74 @@
 /* Version number of project */
 #undef CBC_VERSION
 
-/* Major Version number of project */
+/* Major version number of project. */
 #undef CBC_VERSION_MAJOR
 
-/* Minor Version number of project */
+/* Minor version number of project. */
 #undef CBC_VERSION_MINOR
 
-/* Release Version number of project */
+/* Release version number of project. */
 #undef CBC_VERSION_RELEASE
 
-/* Define to the debug sanity check level (0 is no test) */
-#undef COIN_CBC_CHECKLEVEL
-
-/* Define to the debug verbosity level (0 is no output) */
-#undef COIN_CBC_VERBOSITY
-
-/* Define to 1 if the ASL package is available */
+/* Define to 1 if ASL is available. */
 #undef COIN_HAS_ASL
 
-/* Define to 1 if the Clp package is available */
+/* Define to 1 if Cgl is available. */
+#undef COIN_HAS_CGL
+
+/* Define to 1 if Clp is available. */
 #undef COIN_HAS_CLP
 
-/* Define to 1 if the CoinDepend package is available */
-#undef COIN_HAS_COINDEPEND
+/* Define to 1 if CoinUtils is available. */
+#undef COIN_HAS_COINUTILS
 
-/* Define to 1 if the Cpx package is available */
-#undef COIN_HAS_CPX
+/* Define to 1 if the Cplex package is available */
+#undef COIN_HAS_CPLEX
 
-/* Define to 1 if the DyLP package is available */
-#undef COIN_HAS_DYLP
-
-/* Define to 1 if the Glpk package is available */
+/* Define to 1 if Glpk is available. */
 #undef COIN_HAS_GLPK
 
-/* Define to 1 if the Grb package is available */
-#undef COIN_HAS_GRB
-
-/* Define to 1 if the Highs package is available */
-#undef COIN_HAS_HIGHS
-
-/* Define to 1 if the Miplib3 package is available */
+/* Define to 1 if Miplib3 is available. */
 #undef COIN_HAS_MIPLIB3
 
-/* Define to 1 if the Msk package is available */
-#undef COIN_HAS_MSK
+/* Define to 1 if the Nauty package is available */
+#undef COIN_HAS_NAUTY
 
-/* Define to 1 if the Mumps package is available */
-#undef COIN_HAS_MUMPS
-
-/* Define to 1 if the Netlib package is available */
+/* Define to 1 if Netlib is available. */
 #undef COIN_HAS_NETLIB
 
-/* Define to 1 if the Nauty package is available */
-#undef COIN_HAS_NTY
+/* Define to 1 if Osi is available. */
+#undef COIN_HAS_OSI
 
-/* Define to 1 if the OsiTests package is available */
+/* Define to 1 if OsiClp is available. */
+#undef COIN_HAS_OSICLP
+
+/* Define to 1 if OsiCpx is available. */
+#undef COIN_HAS_OSICPX
+
+/* Define to 1 if OsiDyLP is available. */
+#undef COIN_HAS_OSIDYLP
+
+/* Define to 1 if OsiGlpk is available. */
+#undef COIN_HAS_OSIGLPK
+
+/* Define to 1 if OsiMsk is available. */
+#undef COIN_HAS_OSIMSK
+
+/* Define to 1 if OsiSpx is available. */
+#undef COIN_HAS_OSISPX
+
+/* Define to 1 if OsiTests is available. */
 #undef COIN_HAS_OSITESTS
 
 /* Define to 1 if readline is available */
 #undef COIN_HAS_READLINE
 
-/* Define to 1 if the Sample package is available */
+/* Define to 1 if Sample is available. */
 #undef COIN_HAS_SAMPLE
 
-/* Define to 1 if the Spx package is available */
-#undef COIN_HAS_SPX
-
-/* Define to 1 if the Vol package is available */
-#undef COIN_HAS_VOL
-
-/* Define to 1 if the Xpr package is available */
-#undef COIN_HAS_XPR
+/* Define to 1 if your C++ compiler doesn't accept -c and -o together. */
+#undef CXX_NO_MINUS_C_MINUS_O
 
 /* Define to 1 if you have the <cfloat> header file. */
 #undef HAVE_CFLOAT
@@ -109,14 +115,14 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the `readline' library (-lreadline). */
+#undef HAVE_LIBREADLINE
+
 /* Define to 1 if you have the <math.h> header file. */
 #undef HAVE_MATH_H
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
-
-/* Define to 1 if you have the <readline/readline.h> header file. */
-#undef HAVE_READLINE_READLINE_H
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -139,6 +145,12 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
+#undef LT_OBJDIR
+
+/* Library Visibility Attribute */
+#undef OSICBCLIB_EXPORT
+
 /* define to the name of the default solver interface class, e.g.,
    OsiClpSolverInterface */
 #undef OSICBC_DFLT_SOLVER
@@ -149,9 +161,6 @@
 /* define to the name of the .hpp file for the default solver interface class,
    e.g., "OsiClpSolverInterface.hpp" (include quotes) */
 #undef OSICBC_DFLT_SOLVER_HPP
-
-/* Name of package */
-#undef PACKAGE
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
@@ -165,11 +174,11 @@
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
 
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
-
-/* Version number of package */
-#undef VERSION

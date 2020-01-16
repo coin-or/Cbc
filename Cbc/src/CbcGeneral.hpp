@@ -13,7 +13,7 @@
     This will create a list of subproblems
 */
 
-class CbcGeneral : public CbcObject {
+class CBCLIB_EXPORT CbcGeneral : public CbcObject {
 
 public:
   // Default Constructor

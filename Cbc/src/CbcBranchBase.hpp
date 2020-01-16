@@ -18,6 +18,7 @@ enum CbcRangeCompare {
   CbcRangeOverlap
 };
 
+#include "CbcConfig.h"
 #include "CbcObject.hpp"
 #include "CbcBranchingObject.hpp"
 #include "CbcBranchDecision.hpp"

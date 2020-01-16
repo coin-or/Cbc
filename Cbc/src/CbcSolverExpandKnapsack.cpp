@@ -29,6 +29,298 @@
 
 #ifdef COIN_HAS_LINK
 
+
+/* Expands out all possible combinations for a knapsack
+   If buildObj NULL then just computes space needed - returns number elements
+   On entry numberOutput is maximum allowed, on exit it is number needed or
+   -1 (as will be number elements) if maximum exceeded.  numberOutput will have at
+   least space to return values which reconstruct input.
+   Rows returned will be original rows but no entries will be returned for
+   any rows all of whose entries are in knapsack.  So up to user to allow for this.
+   If reConstruct >=0 then returns number of entrie which make up item "reConstruct"
+   in expanded knapsack.  Values in buildRow and buildElement;
+*/
+int expandKnapsack(CoinModel& cm, int knapsackRow, int &numberOutput, double *buildObj, CoinBigIndex *buildStart,
+  int *buildRow, double *buildElement, int reConstruct = -1)
+{
+  /* mark rows
+       -2 in knapsack and other variables
+       -1 not involved
+       0 only in knapsack
+    */
+  int *markRow = new int[cm.numberRows_];
+  int iRow;
+  int iColumn;
+  int *whichColumn = new int[cm.numberColumns_];
+  for (iColumn = 0; iColumn < cm.numberColumns_; iColumn++)
+    whichColumn[iColumn] = -1;
+  int numJ = 0;
+  for (iRow = 0; iRow < cm.numberRows_; iRow++)
+    markRow[iRow] = -1;
+  CoinModelLink triple;
+  triple = cm.firstInRow(knapsackRow);
+  while (triple.column() >= 0) {
+    int iColumn = triple.column();
+#ifndef NDEBUG
+    const char *el = cm.getElementAsString(knapsackRow, iColumn);
+    assert(!strcmp("Numeric", el));
+#endif
+    whichColumn[iColumn] = numJ;
+    numJ++;
+    triple = cm.next(triple);
+  }
+  for (iRow = 0; iRow < cm.numberRows_; iRow++) {
+    triple = cm.firstInRow(iRow);
+    int type = -3;
+    while (triple.column() >= 0) {
+      int iColumn = triple.column();
+      if (whichColumn[iColumn] >= 0) {
+        if (type == -3)
+          type = 0;
+        else if (type != 0)
+          type = -2;
+      } else {
+        if (type == -3)
+          type = -1;
+        else if (type == 0)
+          type = -2;
+      }
+      triple = cm.next(triple);
+    }
+    if (type == -3)
+      type = -1;
+    markRow[iRow] = type;
+  }
+  int *bound = new int[cm.numberColumns_ + 1];
+  int *whichRow = new int[cm.numberRows_];
+  ClpSimplex tempModel;
+  CoinModel tempModel2(cm);
+  tempModel.loadProblem(tempModel2);
+  int *stack = new int[cm.numberColumns_ + 1];
+  double *size = new double[cm.numberColumns_ + 1];
+  double *rhsOffset = new double[cm.numberRows_];
+  int *build = new int[cm.numberColumns_];
+  int maxNumber = numberOutput;
+  numJ = 0;
+  double minSize = cm.getRowLower(knapsackRow);
+  double maxSize = cm.getRowUpper(knapsackRow);
+  double offset = 0.0;
+  triple = cm.firstInRow(knapsackRow);
+  while (triple.column() >= 0) {
+    iColumn = triple.column();
+    double lowerColumn = cm.columnLower(iColumn);
+    double upperColumn = cm.columnUpper(iColumn);
+    double gap = upperColumn - lowerColumn;
+    if (gap > 1.0e8)
+      gap = 1.0e8;
+    assert(fabs(floor(gap + 0.5) - gap) < 1.0e-5);
+    whichColumn[numJ] = iColumn;
+    bound[numJ] = static_cast< int >(gap);
+    size[numJ++] = triple.value();
+    offset += triple.value() * lowerColumn;
+    triple = cm.next(triple);
+  }
+  int jRow;
+  for (iRow = 0; iRow < cm.numberRows_; iRow++)
+    whichRow[iRow] = iRow;
+  ClpSimplex smallModel(&tempModel, cm.numberRows_, whichRow, numJ, whichColumn, true, true, true);
+  // modify rhs to allow for nonzero lower bounds
+  double *rowLower = smallModel.rowLower();
+  double *rowUpper = smallModel.rowUpper();
+  const double *columnLower = smallModel.columnLower();
+  //const double * columnUpper = smallModel.columnUpper();
+  const CoinPackedMatrix *matrix = smallModel.matrix();
+  const double *element = matrix->getElements();
+  const int *row = matrix->getIndices();
+  const CoinBigIndex *columnStart = matrix->getVectorStarts();
+  const int *columnLength = matrix->getVectorLengths();
+  const double *objective = smallModel.objective();
+  double objectiveOffset = 0.0;
+  CoinZeroN(rhsOffset, cm.numberRows_);
+  for (iColumn = 0; iColumn < numJ; iColumn++) {
+    double lower = columnLower[iColumn];
+    if (lower) {
+      objectiveOffset += objective[iColumn];
+      for (CoinBigIndex j = columnStart[iColumn];
+           j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+        double value = element[j] * lower;
+        int kRow = row[j];
+        rhsOffset[kRow] += value;
+        if (rowLower[kRow] > -1.0e20)
+          rowLower[kRow] -= value;
+        if (rowUpper[kRow] < 1.0e20)
+          rowUpper[kRow] -= value;
+      }
+    }
+  }
+  // relax
+  for (jRow = 0; jRow < cm.numberRows_; jRow++) {
+    if (markRow[jRow] == 0 && knapsackRow != jRow) {
+      if (rowLower[jRow] > -1.0e20)
+        rowLower[jRow] -= 1.0e-7;
+      if (rowUpper[jRow] < 1.0e20)
+        rowUpper[jRow] += 1.0e-7;
+    } else {
+      rowLower[jRow] = -COIN_DBL_MAX;
+      rowUpper[jRow] = COIN_DBL_MAX;
+    }
+  }
+  double *rowActivity = smallModel.primalRowSolution();
+  CoinZeroN(rowActivity, cm.numberRows_);
+  maxSize -= offset;
+  minSize -= offset;
+  // now generate
+  int i;
+  int iStack = numJ;
+  for (i = 0; i < numJ; i++) {
+    stack[i] = 0;
+  }
+  double tooMuch = 10.0 * maxSize;
+  stack[numJ] = 1;
+  size[numJ] = tooMuch;
+  bound[numJ] = 0;
+  double sum = tooMuch;
+  numberOutput = 0;
+  int nelCreate = 0;
+  /* typeRun is - 0 for initial sizes
+                    1 for build
+      	  2 for reconstruct
+    */
+  int typeRun = buildObj ? 1 : 0;
+  if (reConstruct >= 0) {
+    assert(buildRow && buildElement);
+    typeRun = 2;
+  }
+  if (typeRun == 1)
+    buildStart[0] = 0;
+  while (iStack >= 0) {
+    if (sum >= minSize && sum <= maxSize) {
+      double checkSize = 0.0;
+      bool good = true;
+      int nRow = 0;
+      double obj = objectiveOffset;
+      // nRow is zero? CoinZeroN(rowActivity,nRow);
+      for (iColumn = 0; iColumn < numJ; iColumn++) {
+        int iValue = stack[iColumn];
+        if (iValue > bound[iColumn]) {
+          good = false;
+          break;
+        } else if (iValue) {
+          obj += objective[iColumn] * iValue;
+          for (CoinBigIndex j = columnStart[iColumn];
+               j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+            double value = element[j] * iValue;
+            int kRow = row[j];
+            if (rowActivity[kRow]) {
+              rowActivity[kRow] += value;
+              if (!rowActivity[kRow])
+                rowActivity[kRow] = 1.0e-100;
+            } else {
+              build[nRow++] = kRow;
+              rowActivity[kRow] = value;
+            }
+          }
+        }
+      }
+      if (good) {
+        for (jRow = 0; jRow < nRow; jRow++) {
+          int kRow = build[jRow];
+          double value = rowActivity[kRow];
+          if (value > rowUpper[kRow] || value < rowLower[kRow]) {
+            good = false;
+            break;
+          }
+        }
+      }
+      if (good) {
+        if (typeRun == 1) {
+          buildObj[numberOutput] = obj;
+          for (jRow = 0; jRow < nRow; jRow++) {
+            int kRow = build[jRow];
+            double value = rowActivity[kRow];
+            if (markRow[kRow] < 0 && fabs(value) > 1.0e-13) {
+              buildElement[nelCreate] = value;
+              buildRow[nelCreate++] = kRow;
+            }
+          }
+          buildStart[numberOutput + 1] = nelCreate;
+        } else if (!typeRun) {
+          for (jRow = 0; jRow < nRow; jRow++) {
+            int kRow = build[jRow];
+            double value = rowActivity[kRow];
+            if (markRow[kRow] < 0 && fabs(value) > 1.0e-13) {
+              nelCreate++;
+            }
+          }
+        }
+        if (typeRun == 2 && reConstruct == numberOutput) {
+          // build and exit
+          nelCreate = 0;
+          for (iColumn = 0; iColumn < numJ; iColumn++) {
+            int iValue = stack[iColumn];
+            if (iValue) {
+              buildRow[nelCreate] = whichColumn[iColumn];
+              buildElement[nelCreate++] = iValue;
+            }
+          }
+          numberOutput = 1;
+          for (i = 0; i < numJ; i++) {
+            bound[i] = 0;
+          }
+          break;
+        }
+        numberOutput++;
+        if (numberOutput > maxNumber) {
+          nelCreate = -1;
+          numberOutput = -1;
+          for (i = 0; i < numJ; i++) {
+            bound[i] = 0;
+          }
+          break;
+        } else if (typeRun == 1 && numberOutput == maxNumber) {
+          // On second run
+          for (i = 0; i < numJ; i++) {
+            bound[i] = 0;
+          }
+          break;
+        }
+        for (int j = 0; j < numJ; j++) {
+          checkSize += stack[j] * size[j];
+        }
+        assert(fabs(sum - checkSize) < 1.0e-3);
+      }
+      for (jRow = 0; jRow < nRow; jRow++) {
+        int kRow = build[jRow];
+        rowActivity[kRow] = 0.0;
+      }
+    }
+    if (sum > maxSize || stack[iStack] > bound[iStack]) {
+      sum -= size[iStack] * stack[iStack];
+      stack[iStack--] = 0;
+      if (iStack >= 0) {
+        stack[iStack]++;
+        sum += size[iStack];
+      }
+    } else {
+      // must be less
+      // add to last possible
+      iStack = numJ - 1;
+      sum += size[iStack];
+      stack[iStack]++;
+    }
+  }
+  //printf("%d will be created\n",numberOutput);
+  delete[] whichColumn;
+  delete[] whichRow;
+  delete[] bound;
+  delete[] stack;
+  delete[] size;
+  delete[] rhsOffset;
+  delete[] build;
+  delete[] markRow;
+  return nelCreate;
+}
+
 OsiSolverInterface *
 expandKnapsack(CoinModel &model, int *whichColumn, int *knapsackStart,
   int *knapsackRow, int &numberKnapsack,
@@ -395,7 +687,7 @@ expandKnapsack(CoinModel &model, int *whichColumn, int *knapsackStart,
       for (iKnapsack = 0; iKnapsack < numberKnapsack; iKnapsack++) {
         iRow = knapsackRow[iKnapsack];
         int nCreate = maxTotal;
-        int nelCreate = coinModel.expandKnapsack(iRow, nCreate, NULL, NULL, NULL, NULL);
+        int nelCreate = expandKnapsack(coinModel, iRow, nCreate, NULL, NULL, NULL, NULL);
         if (nelCreate < 0)
           badModel = true;
         nTotal += nCreate;
@@ -419,7 +711,7 @@ expandKnapsack(CoinModel &model, int *whichColumn, int *knapsackStart,
           knapsackStart[iKnapsack] = finalModel->getNumCols();
           iRow = knapsackRow[iKnapsack];
           int nCreate = 10000;
-          coinModel.expandKnapsack(iRow, nCreate, buildObj, buildStart, buildRow, buildElement);
+          expandKnapsack(coinModel, iRow, nCreate, buildObj, buildStart, buildRow, buildElement);
           // Redo row numbers
           for (iColumn = 0; iColumn < nCreate; iColumn++) {
             for (CoinBigIndex j = buildStart[iColumn]; j < buildStart[iColumn + 1]; j++) {
@@ -561,7 +853,7 @@ void afterKnapsack(const CoinModel &coinModel2, const int *whichColumn, const in
     if (k >= 0) {
       int iRow = knapsackRow[iKnapsack];
       int nCreate = 10000;
-      int nel = coinModel.expandKnapsack(iRow, nCreate, NULL, NULL, buildRow, buildElement, k - knapsackStart[iKnapsack]);
+      int nel = expandKnapsack(coinModel, iRow, nCreate, NULL, NULL, buildRow, buildElement, k - knapsackStart[iKnapsack]);
       assert(nel);
       if (logLevel > 0)
         printf("expanded column %d in knapsack %d has %d nonzero entries:\n",

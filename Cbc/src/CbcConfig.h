@@ -28,6 +28,20 @@
 #ifdef HAVE_CONFIG_H
 #ifdef CBC_BUILD
 #include "config.h"
+
+/* overwrite CBCLIB_EXPORT from config.h when building Cbc
+ * we want it to be __declspec(dllexport) when building a DLL on Windows
+ * we want it to be __attribute__((__visibility__("default"))) when building with GCC,
+ *   so user can compile with -fvisibility=hidden
+ */
+#ifdef DLL_EXPORT
+#undef CBCLIB_EXPORT
+#define CBCLIB_EXPORT __declspec(dllexport)
+#elif defined(__GNUC__) && __GNUC__ >= 4
+#undef CBCLIB_EXPORT
+#define CBCLIB_EXPORT __attribute__((__visibility__("default")))
+#endif
+
 #else
 #include "config_cbc.h"
 #endif

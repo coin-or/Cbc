@@ -25,7 +25,7 @@
     2 or 3 rhs quadruples, 4,5,6,7 by 8 etc.
  */
 
-class CbcFathomDynamicProgramming : public CbcFathom {
+class CBCLIB_EXPORT CbcFathomDynamicProgramming : public CbcFathom {
 public:
   // Default Constructor
   CbcFathomDynamicProgramming();

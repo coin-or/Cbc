@@ -10,7 +10,7 @@
   This file is part of cbc-generic.
 */
 
-#include "CbcConfig.h"
+#include "CbcGenConfig.h"
 #include "CoinPragma.hpp"
 
 #include <cassert>
@@ -21,6 +21,7 @@
 #include <string>
 #include <iostream>
 
+#include "CoinUtilsConfig.h"
 #include "CoinFileIO.hpp"
 #include "CoinMpsIO.hpp"
 #include "CoinPackedMatrix.hpp"

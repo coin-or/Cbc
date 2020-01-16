@@ -48,7 +48,7 @@ enum CbcBranchObjType {
   model.
 */
 
-class CbcBranchingObject : public OsiBranchingObject {
+class CBCLIB_EXPORT CbcBranchingObject : public OsiBranchingObject {
 
 public:
   /// Default Constructor

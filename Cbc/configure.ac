@@ -168,39 +168,47 @@ fi
 # First we define a new option, --enable-cbc-parallel
 
 AC_ARG_ENABLE([cbc-parallel],
-[AC_HELP_STRING([--enable-cbc-parallel],
-                [enables compilation of the SMP version of Cbc])])
+  [AC_HELP_STRING([--disable-cbc-parallel],
+                  [disables compilation of the SMP version of Cbc])],
+  [enable_cbc_parallel=$enableval],
+  [enable_cbc_parallel=auto])
 
-if test "$enable_cbc_parallel" = yes; then
+if test "$enable_cbc_parallel" != no; then
   # Define the preprocessor macro
-  AC_DEFINE([CBC_THREAD],[1],[Define to 1 if the SMP version of Cbc should be compiled])
   case "$CXX" in
-  *cl) # Windows / cl
-    # TODO we should check whether the library works and pthread.h is indeed there
-    AC_ARG_WITH(pthreadsw32-lib, 
-      AC_HELP_STRING([--with-pthreadsw32-lib],
-        [specify the name of the pthreads win32 library (for cl/icl builds only)]),
-      [CBCLIB_LFLAGS="$withval $CBCLIB_LFLAGS"],
-      [AC_MSG_WARN([--enable-cbc-parallel selected, but --with-pthreadsw32-lib not given])
-       CBCLIB_LFLAGS="pthreadVCE2.lib $CBCLIB_LFLAGS"])
-    
-    AC_ARG_WITH(pthreadsw32-incdir,
-      AC_HELP_STRING([--with-pthreadsw32-incdir],
-        [specify the path of the pthreads win32 header file (for cl/icl builds only)]),
-      [CBCLIB_CFLAGS="$CBCLIB_CFLAGS -I$withval"],
-      [AC_MSG_WARN([--enable-cbc-parallel selected, but --with-pthreadsw32-incdir not given])])
+  *cl) # Windows / cl: look for pthreadsw32 lib
+    AC_COIN_CHK_LIB(pthreadsw32,[CbcLib],[pthreadVCE2.lib],[],[],[pthread_create])
+    if test "$coin_has_pthreadsw32" = yes ; then
+      enable_cbc_parallel=yes
+    elif test "$enable_cbc_parallel" = yes ; then
+      AC_MSG_ERROR([--enable-cbc-parallel selected, but pthreads-w32 unavailable])
+    else
+      enable_cbc_parallel=no
+    fi
     ;;
-  *) # not Windows
+  *) # not Windows / cl: look for pthread lib
     AC_CHECK_LIB([pthread],[pthread_create],
-      [CBCLIB_LFLAGS="-lpthread $CBCLIB_LFLAGS"],
-      [AC_MSG_ERROR([--enable-cbc-parallel selected, but -lpthreads unavailable])])
-    AC_CHECK_LIB([rt],[clock_gettime],
-      [CBCLIB_LFLAGS="-lrt $CBCLIB_LFLAGS"
-       AC_DEFINE([HAVE_CLOCK_GETTIME],[1],[Define if clock_gettime and rt library is available])
-                 ],
-      [AC_MSG_WARN([--enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime])])
+      [CBCLIB_LFLAGS="-lpthread $CBCLIB_LFLAGS"
+       enable_cbc_parallel=yes],
+      [if test "$enable_cbc_parallel" = yes ; then
+         AC_MSG_ERROR([--enable-cbc-parallel selected, but -lpthreads unavailable])
+       else
+         enable_cbc_parallel=no
+       fi])
+    if test "$enable_cbc_parallel" = yes ; then
+      AC_CHECK_LIB([rt],[clock_gettime],
+        [CBCLIB_LFLAGS="-lrt $CBCLIB_LFLAGS"
+         AC_DEFINE([HAVE_CLOCK_GETTIME],[1],[Define if clock_gettime and rt library is available])],
+        [AC_MSG_WARN([SMP version of Cbc selected, but -lrt unavailable; using gettimeofday instead of clock_gettime])])
+    fi
+    AM_CONDITIONAL(COIN_HAS_PTHREADSW32, false)
   ;;
   esac
+else
+  AM_CONDITIONAL(COIN_HAS_PTHREADSW32, false)
+fi
+if test "$enable_cbc_parallel" = yes ; then
+  AC_DEFINE([CBC_THREAD],[1],[Define to 1 if the SMP version of Cbc should be compiled])
   AC_MSG_NOTICE([Cbc multithreading enabled]);
 fi
 

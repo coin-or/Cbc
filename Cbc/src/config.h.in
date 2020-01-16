@@ -82,6 +82,9 @@
 /* Define to 1 if OsiTests is available. */
 #undef COIN_HAS_OSITESTS
 
+/* Define to 1 if the pthreadsw32 package is available */
+#undef COIN_HAS_PTHREADSW32
+
 /* Define to 1 if readline is available */
 #undef COIN_HAS_READLINE
 

@@ -668,6 +668,8 @@ OSICBC_DFLT_SOLVER_CPX_FALSE
 OSICBC_DFLT_SOLVER_CPX_TRUE
 OSICBC_DFLT_SOLVER_CLP_FALSE
 OSICBC_DFLT_SOLVER_CLP_TRUE
+COIN_HAS_PTHREADSW32_FALSE
+COIN_HAS_PTHREADSW32_TRUE
 CBC_BUILD_CBC_GENERIC_FALSE
 CBC_BUILD_CBC_GENERIC_TRUE
 CBCUNITTEST_CFLAGS_NOPC
@@ -940,8 +942,9 @@ with_glpk_cflags
 enable_cbc_generic
 with_cbc_generic_solver
 enable_cbc_parallel
-with_pthreadsw32_lib
-with_pthreadsw32_incdir
+with_pthreadsw32
+with_pthreadsw32_lflags
+with_pthreadsw32_cflags
 with_osicbc_default_solver
 with_dot
 '
@@ -1598,7 +1601,7 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-readline      do not compile with readline library
   --enable-cbc-generic    enables build of cbc-generic
-  --enable-cbc-parallel   enables compilation of the SMP version of Cbc
+  --disable-cbc-parallel  disables compilation of the SMP version of Cbc
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1768,11 +1771,17 @@ Optional Packages:
   --with-cbc-generic-solver
                           specify default solver for cbc-generic in lower case
                           letters (if not given, clp is assumed)
-  --with-pthreadsw32-lib  specify the name of the pthreads win32 library (for
-                          cl/icl builds only)
-  --with-pthreadsw32-incdir
-                          specify the path of the pthreads win32 header file
-                          (for cl/icl builds only)
+  --with-pthreadsw32      Use pthreadsw32. If an argument is given, 'yes' is
+                          equivalent to --with-pthreadsw32, 'no'
+                          is equivalent to --without-pthreadsw32. Any other
+                          argument is applied as for --with-pthreadsw32-lflags
+  --with-pthreadsw32-lflags
+                          Linker flags for pthreadsw32 appropriate for your
+                          environment. (Most often, -l specs for libraries.)
+  --with-pthreadsw32-cflags
+                          Compiler flags for pthreadsw32 appropriate for your
+                          environment. (Most often, -I specs for header file
+                          directories.)
   --with-osicbc-default-solver
                           specify underlying solver for OsiCbc (default clp)
   --with-dot              use dot (from graphviz) when creating documentation
@@ -22182,40 +22191,285 @@ fi
 
 # Check whether --enable-cbc-parallel was given.
 if test "${enable_cbc_parallel+set}" = set; then :
-  enableval=$enable_cbc_parallel;
+  enableval=$enable_cbc_parallel; enable_cbc_parallel=$enableval
+else
+  enable_cbc_parallel=auto
 fi
 
 
-if test "$enable_cbc_parallel" = yes; then
+if test "$enable_cbc_parallel" != no; then
   # Define the preprocessor macro
-
-$as_echo "#define CBC_THREAD 1" >>confdefs.h
-
   case "$CXX" in
-  *cl) # Windows / cl
-    # TODO we should check whether the library works and pthread.h is indeed there
+  *cl) # Windows / cl: look for pthreadsw32 lib
 
-# Check whether --with-pthreadsw32-lib was given.
-if test "${with_pthreadsw32_lib+set}" = set; then :
-  withval=$with_pthreadsw32_lib; CBCLIB_LFLAGS="$withval $CBCLIB_LFLAGS"
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --enable-cbc-parallel selected, but --with-pthreadsw32-lib not given" >&5
-$as_echo "$as_me: WARNING: --enable-cbc-parallel selected, but --with-pthreadsw32-lib not given" >&2;}
-       CBCLIB_LFLAGS="pthreadVCE2.lib $CBCLIB_LFLAGS"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package pthreadsw32" >&5
+$as_echo_n "checking for package pthreadsw32... " >&6; }
+
+# Make sure the necessary variables exist for each client package.
+
+
+
+
+
+# Check to see if the user has overridden configure parameters from the
+# environment.
+
+  coin_has_pthreadsw32=noInfo
+  if test x"$COIN_SKIP_PROJECTS" != x ; then
+    for pkg in $COIN_SKIP_PROJECTS ; do
+      if test "$pkg" = "$pthreadsw32" ; then
+        coin_has_pthreadsw32=skipping
+      fi
+    done
+  fi
+
+# If we're not skipping this project, define and process the command line
+# options according to the cmdopts parameter. Then invoke FIND_PRIM_PKG to do
+# the heavy lifting.
+
+  if test "$coin_has_pthreadsw32" != skipping ; then
+
+
+
+
+# Check whether --with-pthreadsw32 was given.
+if test "${with_pthreadsw32+set}" = set; then :
+  withval=$with_pthreadsw32;
 fi
 
 
 
-# Check whether --with-pthreadsw32-incdir was given.
-if test "${with_pthreadsw32_incdir+set}" = set; then :
-  withval=$with_pthreadsw32_incdir; CBCLIB_CFLAGS="$CBCLIB_CFLAGS -I$withval"
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --enable-cbc-parallel selected, but --with-pthreadsw32-incdir not given" >&5
-$as_echo "$as_me: WARNING: --enable-cbc-parallel selected, but --with-pthreadsw32-incdir not given" >&2;}
+# Check whether --with-pthreadsw32-lflags was given.
+if test "${with_pthreadsw32_lflags+set}" = set; then :
+  withval=$with_pthreadsw32_lflags;
 fi
 
+
+
+# Check whether --with-pthreadsw32-cflags was given.
+if test "${with_pthreadsw32_cflags+set}" = set; then :
+  withval=$with_pthreadsw32_cflags;
+fi
+
+
+
+
+
+  dflt_action=yes
+
+# Initialize variables for the primary library.
+
+  coin_has_pthreadsw32=noInfo
+  pthreadsw32_lflags=
+  pthreadsw32_cflags=
+  pthreadsw32_data=
+
+# --with-prim is always present. If the client specified dataonly, its value
+# is assigned to prim_data.
+
+  withval=$with_pthreadsw32
+  if test -n "$withval" ; then
+    case "$withval" in
+      no )
+        coin_has_pthreadsw32=skipping
+        ;;
+      yes )
+        coin_has_pthreadsw32=requested
+        ;;
+      build )
+        coin_has_pthreadsw32=build
+        ;;
+      * )
+        coin_has_pthreadsw32=yes
+        pthreadsw32_lflags=$withval
+        ;;
+    esac
+  fi
+
+# --with-prim-lflags and --with-prim-cflags are present unless the client
+# specified dataonly. Specifying --with-prim=no overrides the individual
+# options for lflags and cflags.
+
+  if test "$coin_has_pthreadsw32" != skipping ; then
+       withval=$with_pthreadsw32_lflags
+       if test -n "$withval" ; then
+         case "$withval" in
+           build | no | yes )
+             as_fn_error $? "\"$withval\" is not valid here; please specify linker flags appropriate for your environment." "$LINENO" 5
+             ;;
+           * )
+             coin_has_pthreadsw32=yes
+             pthreadsw32_lflags=$withval
+             ;;
+         esac
+       fi
+
+       withval=$with_pthreadsw32_cflags
+       if test -n "$withval" ; then
+         case "$withval" in
+           build | no | yes )
+             as_fn_error $? "\"$withval\" is not valid here; please specify compiler flags appropriate for your environment." "$LINENO" 5
+             ;;
+           * )
+             coin_has_pthreadsw32=yes
+             pthreadsw32_cflags="$withval"
+             ;;
+         esac
+       fi
+     fi
+
+# --with-prim-data will be present unless the client specified nodata.
+# Specifying --with-prim=no overrides the individual option for data.
+
+
+
+# At this point, coin_has_prim can be one of noInfo (no user options
+# specified), skipping (user said no), requested or build (user said yes
+# or build and gave no further guidance), or yes (user specified one or
+# more --with-prim options). If we're already at yes or skipping, we're
+# done looking.
+
+# If there are no user options (noInfo) and the default is no, we're skipping.
+# Otherwise, the default must be yes or build; consider the package requested.
+# A default action we don't recognise defaults to yes.
+
+  if test "$coin_has_pthreadsw32" = noInfo ; then
+    case $dflt_action in
+      no )
+        coin_has_pthreadsw32=skipping
+        ;;
+      build )
+        coin_has_pthreadsw32=build
+        ;;
+      * )
+        coin_has_pthreadsw32=requested
+        ;;
+    esac
+  fi
+
+# Now coin_has_prim can be one of skipping, yes, build, or requested. For
+# build or requested, use the parameter values or invent some.
+
+  case $coin_has_pthreadsw32 in
+    build | requested)
+      pthreadsw32_lflags="pthreadVCE2.lib"
+         if test "$coin_has_pthreadsw32" = build ; then
+              pthreadsw32_cflags="-I\$(pkgincludedir)/ThirdParty"
+            fi
+
+      coin_has_pthreadsw32=yes
+      ;;
+    skipping | yes )
+      ;;
+    * )
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unexpected status \"$coin_has_pthreadsw32\" in COIN_FIND_PRIM_LIB" >&5
+$as_echo "$as_me: WARNING: Unexpected status \"$coin_has_pthreadsw32\" in COIN_FIND_PRIM_LIB" >&2;}
+      ;;
+  esac
+
+# At this point, coin_has_prim is yes or skipping.  Time to run a link check,
+# if we have a function (pthread_create). Use whatever we've collected for lflags, plus
+# other libraries () as the other libraries parameter to AC_SEARCH_LIBS,
+# leaving the library parameter blank.
+
+  if test $coin_has_pthreadsw32 != skipping ; then
+    ac_save_LIBS=$LIBS
+       LIBS="$pthreadsw32_lflags "
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#ifdef __cplusplus
+             extern "C"
+           #endif
+           void pthread_create();
+int
+main ()
+{
+pthread_create()
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+else
+  coin_has_pthreadsw32=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+       LIBS=$ac_save_LIBS
+  fi
+
+# The final value of coin_has_prim will be yes, no, or skipping. No means that
+# the link check failed. Yes means that we passed the link check, or no link
+# check was performed. Skipping means the user said `don't use.'
+
+# Define BUILDTOOLS_DEBUG to enable debugging output
+
+    if test "$BUILDTOOLS_DEBUG" = 1 ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: FIND_PRIM_LIB result for pthreadsw32: \"$coin_has_pthreadsw32\"" >&5
+$as_echo "$as_me: FIND_PRIM_LIB result for pthreadsw32: \"$coin_has_pthreadsw32\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Collected values for package 'pthreadsw32'" >&5
+$as_echo "$as_me: Collected values for package 'pthreadsw32'" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: pthreadsw32_lflags is \"$pthreadsw32_lflags\"" >&5
+$as_echo "$as_me: pthreadsw32_lflags is \"$pthreadsw32_lflags\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: pthreadsw32_cflags is \"$pthreadsw32_cflags\"" >&5
+$as_echo "$as_me: pthreadsw32_cflags is \"$pthreadsw32_cflags\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: pthreadsw32_data is \"$pthreadsw32_data\"" >&5
+$as_echo "$as_me: pthreadsw32_data is \"$pthreadsw32_data\"" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: pthreadsw32_pcfiles is \"$pthreadsw32_pcfiles\"" >&5
+$as_echo "$as_me: pthreadsw32_pcfiles is \"$pthreadsw32_pcfiles\"" >&6;}
+    fi
+
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $coin_has_pthreadsw32" >&5
+$as_echo "$coin_has_pthreadsw32" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $coin_has_pthreadsw32 due to COIN_SKIP_PROJECTS" >&5
+$as_echo "$coin_has_pthreadsw32 due to COIN_SKIP_PROJECTS" >&6; }
+  fi
+
+# Possibilities are `yes', `no', or `skipping'. Normalise to `yes' or `no'.
+
+  if test "$coin_has_pthreadsw32" != yes ; then
+    coin_has_pthreadsw32=no
+  fi
+
+# Create an automake conditional COIN_HAS_PRIM.
+
+   if test $coin_has_pthreadsw32 = yes; then
+  COIN_HAS_PTHREADSW32_TRUE=
+  COIN_HAS_PTHREADSW32_FALSE='#'
+else
+  COIN_HAS_PTHREADSW32_TRUE='#'
+  COIN_HAS_PTHREADSW32_FALSE=
+fi
+
+
+# If we've located the package, define preprocessor symbol COIN_HAS_PRIM
+# and augment the necessary variables for the client packages.
+
+  if test $coin_has_pthreadsw32 = yes ; then
+
+$as_echo "#define COIN_HAS_PTHREADSW32 1" >>confdefs.h
+
+    CBCLIB_LFLAGS="$pthreadsw32_lflags $CBCLIB_LFLAGS"
+       CBCLIB_CFLAGS="$pthreadsw32_cflags $CBCLIB_CFLAGS"
+
+
+# Finally, set up PRIM_DATA, unless the user specified nodata.
+
+
+  fi
+
+    if test "$coin_has_pthreadsw32" = yes ; then
+      enable_cbc_parallel=yes
+    elif test "$enable_cbc_parallel" = yes ; then
+      as_fn_error $? "--enable-cbc-parallel selected, but pthreads-w32 unavailable" "$LINENO" 5
+    else
+      enable_cbc_parallel=no
+    fi
     ;;
-  *) # not Windows
+  *) # not Windows / cl: look for pthread lib
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthread" >&5
 $as_echo_n "checking for pthread_create in -lpthread... " >&6; }
 if ${ac_cv_lib_pthread_pthread_create+:} false; then :
@@ -22254,11 +22508,17 @@ fi
 $as_echo "$ac_cv_lib_pthread_pthread_create" >&6; }
 if test "x$ac_cv_lib_pthread_pthread_create" = xyes; then :
   CBCLIB_LFLAGS="-lpthread $CBCLIB_LFLAGS"
+       enable_cbc_parallel=yes
 else
-  as_fn_error $? "--enable-cbc-parallel selected, but -lpthreads unavailable" "$LINENO" 5
+  if test "$enable_cbc_parallel" = yes ; then
+         as_fn_error $? "--enable-cbc-parallel selected, but -lpthreads unavailable" "$LINENO" 5
+       else
+         enable_cbc_parallel=no
+       fi
 fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for clock_gettime in -lrt" >&5
+    if test "$enable_cbc_parallel" = yes ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for clock_gettime in -lrt" >&5
 $as_echo_n "checking for clock_gettime in -lrt... " >&6; }
 if ${ac_cv_lib_rt_clock_gettime+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -22299,14 +22559,36 @@ if test "x$ac_cv_lib_rt_clock_gettime" = xyes; then :
 
 $as_echo "#define HAVE_CLOCK_GETTIME 1" >>confdefs.h
 
-
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime" >&5
-$as_echo "$as_me: WARNING: --enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: SMP version of Cbc selected, but -lrt unavailable; using gettimeofday instead of clock_gettime" >&5
+$as_echo "$as_me: WARNING: SMP version of Cbc selected, but -lrt unavailable; using gettimeofday instead of clock_gettime" >&2;}
+fi
+
+    fi
+     if false; then
+  COIN_HAS_PTHREADSW32_TRUE=
+  COIN_HAS_PTHREADSW32_FALSE='#'
+else
+  COIN_HAS_PTHREADSW32_TRUE='#'
+  COIN_HAS_PTHREADSW32_FALSE=
 fi
 
   ;;
   esac
+else
+   if false; then
+  COIN_HAS_PTHREADSW32_TRUE=
+  COIN_HAS_PTHREADSW32_FALSE='#'
+else
+  COIN_HAS_PTHREADSW32_TRUE='#'
+  COIN_HAS_PTHREADSW32_FALSE=
+fi
+
+fi
+if test "$enable_cbc_parallel" = yes ; then
+
+$as_echo "#define CBC_THREAD 1" >>confdefs.h
+
   { $as_echo "$as_me:${as_lineno-$LINENO}: Cbc multithreading enabled" >&5
 $as_echo "$as_me: Cbc multithreading enabled" >&6;};
 fi
@@ -22954,6 +23236,18 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CBC_BUILD_CBC_GENERIC_TRUE}" && test -z "${CBC_BUILD_CBC_GENERIC_FALSE}"; then
   as_fn_error $? "conditional \"CBC_BUILD_CBC_GENERIC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COIN_HAS_PTHREADSW32_TRUE}" && test -z "${COIN_HAS_PTHREADSW32_FALSE}"; then
+  as_fn_error $? "conditional \"COIN_HAS_PTHREADSW32\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COIN_HAS_PTHREADSW32_TRUE}" && test -z "${COIN_HAS_PTHREADSW32_FALSE}"; then
+  as_fn_error $? "conditional \"COIN_HAS_PTHREADSW32\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COIN_HAS_PTHREADSW32_TRUE}" && test -z "${COIN_HAS_PTHREADSW32_FALSE}"; then
+  as_fn_error $? "conditional \"COIN_HAS_PTHREADSW32\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OSICBC_DFLT_SOLVER_CLP_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_CLP_FALSE}"; then

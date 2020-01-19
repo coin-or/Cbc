@@ -10,69 +10,71 @@ environment:
       secure: a9n4jf90wlFCdaYa6fOmYxsF97ur2dnK8Ys3gn5R90JBzTDq6cD2GlEwmmts75mq
     BINTRAY_USERNAME: tkralphs
   matrix:
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      ARCH: x86_64-w64-mingw32
-      HOST_ARCH_ARG: --host=x86_64-w64-mingw32 --enable-cbc-parallel
-      ADD_PATH: /mingw64/bin
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      ARCH: i686-w64-mingw32
-      HOST_ARCH_ARG: --host=i686-w64-mingw32 --enable-cbc-parallel
-      ADD_PATH: /mingw32/bin
+    #- APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    #  ARCH: x86_64-w64-mingw32
+    #  HOST_ARCH_ARG: --host=x86_64-w64-mingw32 --enable-cbc-parallel
+    #  ADD_PATH: /mingw64/bin
+    #- APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    #  ARCH: i686-w64-mingw32
+    #  HOST_ARCH_ARG: --host=i686-w64-mingw32 --enable-cbc-parallel
+    #  ADD_PATH: /mingw32/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       ARCH: win64-msvc14-md
-      HOST_ARCH_ARG: --enable-msvc=MD
+      HOST_ARCH_ARG: --enable-msvc
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15-md
-      HOST_ARCH_ARG: --enable-msvc=MD
+      HOST_ARCH_ARG: --enable-msvc
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: win64-msvc16-md
-      HOST_ARCH_ARG: --enable-msvc=MD
-      ADD_PATH: /mingw64/bin
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      ARCH: win64-msvc14-mt
       HOST_ARCH_ARG: --enable-msvc
       ADD_PATH: /mingw64/bin
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      ARCH: win64-msvc15-mt
-      HOST_ARCH_ARG: --enable-msvc
-      ADD_PATH: /mingw64/bin
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      ARCH: win64-msvc16-mt
-      HOST_ARCH_ARG: --enable-msvc
-      ADD_PATH: /mingw64/bin
+    #- APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    #  ARCH: win64-msvc14-mt
+    #  HOST_ARCH_ARG: --enable-msvc
+    #  ADD_PATH: /mingw64/bin
+    #- APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    #  ARCH: win64-msvc15-mt
+    #  HOST_ARCH_ARG: --enable-msvc
+    #  ADD_PATH: /mingw64/bin
+    #- APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    #  ARCH: win64-msvc16-mt
+    #  HOST_ARCH_ARG: --enable-msvc
+    #  ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       ARCH: win64-msvc14-mdd
-      HOST_ARCH_ARG: --enable-msvc=MD --enable-debug
+      HOST_ARCH_ARG: --enable-msvc --enable-debug
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15-mdd
-      HOST_ARCH_ARG: --enable-msvc=MD --enable-debug
+      HOST_ARCH_ARG: --enable-msvc --enable-debug
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: win64-msvc16-mdd
-      HOST_ARCH_ARG: --enable-msvc=MD --enable-debug
-      ADD_PATH: /mingw64/bin
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      ARCH: win64-msvc14-mtd
       HOST_ARCH_ARG: --enable-msvc --enable-debug
       ADD_PATH: /mingw64/bin
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      ARCH: win64-msvc15-mtd
-      HOST_ARCH_ARG: --enable-msvc --enable-debug
-      ADD_PATH: /mingw64/bin
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      ARCH: win64-msvc16-mtd
-      HOST_ARCH_ARG: --enable-msvc --enable-debug
-      ADD_PATH: /mingw64/bin
+    #- APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    #  ARCH: win64-msvc14-mtd
+    #  HOST_ARCH_ARG: --enable-msvc --enable-debug
+    #  ADD_PATH: /mingw64/bin
+    #- APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    #  ARCH: win64-msvc15-mtd
+    #  HOST_ARCH_ARG: --enable-msvc --enable-debug
+    #  ADD_PATH: /mingw64/bin
+    #- APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    #  ARCH: win64-msvc16-mtd
+    #  HOST_ARCH_ARG: --enable-msvc --enable-debug
+    #  ADD_PATH: /mingw64/bin
 
 install:
   - for /f "delims=" %%i in ('C:\msys64\usr\bin\bash -lc "if [ $APPVEYOR_REPO_BRANCH = 'master' ]; then echo 'master'; else echo $APPVEYOR_REPO_BRANCH | cut -d "/" -f 2; fi"') do set VERSION=%%i
-  - IF %ARCH%==win64-msvc14 (CALL "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64)
-  - IF %ARCH%==win64-msvc14 (CALL C:\"Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64)
-  - IF %ARCH%==win64-msvc15 (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat")
-  - IF %ARCH%==win64-msvc16 (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat")
+  - IF %ARCH%==win64-msvc14-md (CALL C:\"Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64)
+  - IF %ARCH%==win64-msvc15-md (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat")
+  - IF %ARCH%==win64-msvc16-md (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat")
+  - IF %ARCH%==win64-msvc14-mdd (CALL C:\"Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64)
+  - IF %ARCH%==win64-msvc15-mdd (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat")
+  - IF %ARCH%==win64-msvc16-mdd (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat")
   - IF %ARCH%==x86_64-w64-mingw32 (CALL C:\msys64\usr\bin\bash -lc "pacman -S mingw-w64-x86_64-lapack mingw-w64-x86_64-winpthreads-git --noconfirm")
   - IF %ARCH%==i686-w64-mingw32 (CALL C:\msys64\usr\bin\bash -lc "pacman -S mingw-w64-i686-lapack mingw-w64-i686-winpthreads-git --noconfirm")  
   - C:\msys64\usr\bin\bash -lc ""

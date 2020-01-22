@@ -209,6 +209,8 @@ https://github.com/coin-or/Cbc/issues
         replaced by corresponding --with-*-cflags and --with-*-lflags
         flags. Note that the include directories need to be specified
         via -I<dir> in --with-*-cflags.
+    * --enable-cbc-parallel is now enabled by default if a pthread library
+      is found. Use --disable-cbc-parallel to disable.
 
  * Release 2.10.4 (in preparation)
    * Fix parsing of optional arguments to AMPL interface.

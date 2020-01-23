@@ -213,7 +213,9 @@ https://github.com/coin-or/Cbc/issues
       is found. Use --disable-cbc-parallel to disable.
 
  * Release 2.10.4 (in preparation)
+   * Allow .lp files to be read from stdin.
    * Fix parsing of optional arguments to AMPL interface.
+   * More bugfixes.
 
  * Release 2.10.3
    * Improve performance of some primal heuristics, incl. feasibility pump, by making integer slacks continuous

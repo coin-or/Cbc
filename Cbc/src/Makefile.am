@@ -145,6 +145,8 @@ cbc_LDADD = libCbcSolver.la libCbc.la
 # not really accurate to use these CFLAGS, but they should have everything
 cbc_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
 
+cbc_LDFLAGS = $(LT_LDFLAGS)
+
 endif
 
 
@@ -173,6 +175,8 @@ cbc_generic_SOURCES = \
 	CbcGenSolvers.cpp
 
 cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LFLAGS)
+
+cbc_generic_LDFLAGS = $(LT_LDFLAGS)
 
 # List all additionally required solver and Osi libraries
 # the linker flags for all available LP solvers should already be included in $CBCGENERIC_LFLAGS,

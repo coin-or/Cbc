@@ -240,6 +240,9 @@ libCbcSolver_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 @COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = cbc-CoinSolve.$(OBJEXT)
 cbc_OBJECTS = $(am_cbc_OBJECTS)
 @COIN_HAS_CLP_TRUE@cbc_DEPENDENCIES = libCbcSolver.la libCbc.la
+cbc_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(cbc_LDFLAGS) $(LDFLAGS) -o $@
 @CBC_BUILD_CBC_GENERIC_TRUE@am_cbc_generic_OBJECTS =  \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenBaB.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCbcParam.$(OBJEXT) \
@@ -257,6 +260,9 @@ cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS)
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_DEPENDENCIES =  \
 @CBC_BUILD_CBC_GENERIC_TRUE@	libCbcSolver.la libCbc.la \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_1)
+cbc_generic_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(cbc_generic_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -728,6 +734,7 @@ AM_CPPFLAGS = $(am__append_1) $(am__append_4) -DCOIN_NO_CLP_MESSAGE \
 
 # not really accurate to use these CFLAGS, but they should have everything
 @COIN_HAS_CLP_TRUE@cbc_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
+@COIN_HAS_CLP_TRUE@cbc_LDFLAGS = $(LT_LDFLAGS)
 
 # List all source files for this executable, including headers
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_SOURCES = \
@@ -742,6 +749,7 @@ AM_CPPFLAGS = $(am__append_1) $(am__append_4) -DCOIN_NO_CLP_MESSAGE \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolvers.cpp
 
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################
 #                Headers that need to be installed                     #
@@ -985,11 +993,11 @@ libCbcSolver.la: $(libCbcSolver_la_OBJECTS) $(libCbcSolver_la_DEPENDENCIES) $(EX
 
 cbc$(EXEEXT): $(cbc_OBJECTS) $(cbc_DEPENDENCIES) $(EXTRA_cbc_DEPENDENCIES) 
 	@rm -f cbc$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(cbc_OBJECTS) $(cbc_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(cbc_LINK) $(cbc_OBJECTS) $(cbc_LDADD) $(LIBS)
 
 cbc-generic$(EXEEXT): $(cbc_generic_OBJECTS) $(cbc_generic_DEPENDENCIES) $(EXTRA_cbc_generic_DEPENDENCIES) 
 	@rm -f cbc-generic$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(cbc_generic_OBJECTS) $(cbc_generic_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(cbc_generic_LINK) $(cbc_generic_OBJECTS) $(cbc_generic_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

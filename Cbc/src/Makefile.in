@@ -220,9 +220,6 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libCbc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(libCbc_la_LDFLAGS) $(LDFLAGS) -o $@
 libCbcSolver_la_DEPENDENCIES = $(am__DEPENDENCIES_1) libCbc.la
 am_libCbcSolver_la_OBJECTS = libCbcSolver_la-Cbc_C_Interface.lo \
 	libCbcSolver_la-CbcCbcParam.lo libCbcSolver_la-CbcLinked.lo \
@@ -233,16 +230,9 @@ am_libCbcSolver_la_OBJECTS = libCbcSolver_la-Cbc_C_Interface.lo \
 	libCbcSolver_la-CbcMipStartIO.lo \
 	libCbcSolver_la-CbcSolverExpandKnapsack.lo
 libCbcSolver_la_OBJECTS = $(am_libCbcSolver_la_OBJECTS)
-libCbcSolver_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(AM_CXXFLAGS) $(CXXFLAGS) $(libCbcSolver_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
 @COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = cbc-CoinSolve.$(OBJEXT)
 cbc_OBJECTS = $(am_cbc_OBJECTS)
 @COIN_HAS_CLP_TRUE@cbc_DEPENDENCIES = libCbcSolver.la libCbc.la
-cbc_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(cbc_LDFLAGS) $(LDFLAGS) -o $@
 @CBC_BUILD_CBC_GENERIC_TRUE@am_cbc_generic_OBJECTS =  \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenBaB.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCbcParam.$(OBJEXT) \
@@ -260,9 +250,6 @@ cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS)
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_DEPENDENCIES =  \
 @CBC_BUILD_CBC_GENERIC_TRUE@	libCbcSolver.la libCbc.la \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_1)
-cbc_generic_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(cbc_generic_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -487,7 +474,9 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
-LDFLAGS = @LDFLAGS@
+
+# Additional options for libtool
+LDFLAGS = @LDFLAGS@ $(LT_LDFLAGS)
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
@@ -710,10 +699,6 @@ libCbcSolver_la_SOURCES = \
 libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
 libCbcSolver_la_LIBADD = $(CBCSOLVERLIB_LFLAGS) libCbc.la
 
-# This is for libtool
-libCbc_la_LDFLAGS = $(LT_LDFLAGS)
-libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
-
 # Some common setup for cbc and cbc-generic.
 libCbc_la_CPPFLAGS = -DCBC_BUILD $(CBCLIB_CFLAGS)
 libCbcSolver_la_CPPFLAGS = -DCBCSOLVER_BUILD $(CBCSOLVERLIB_CFLAGS)
@@ -734,7 +719,6 @@ AM_CPPFLAGS = $(am__append_1) $(am__append_4) -DCOIN_NO_CLP_MESSAGE \
 
 # not really accurate to use these CFLAGS, but they should have everything
 @COIN_HAS_CLP_TRUE@cbc_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
-@COIN_HAS_CLP_TRUE@cbc_LDFLAGS = $(LT_LDFLAGS)
 
 # List all source files for this executable, including headers
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_SOURCES = \
@@ -749,7 +733,6 @@ AM_CPPFLAGS = $(am__append_1) $(am__append_4) -DCOIN_NO_CLP_MESSAGE \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolvers.cpp
 
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LFLAGS)
-@CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################
 #                Headers that need to be installed                     #
@@ -986,18 +969,18 @@ clean-libLTLIBRARIES:
 	}
 
 libCbc.la: $(libCbc_la_OBJECTS) $(libCbc_la_DEPENDENCIES) $(EXTRA_libCbc_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(libCbc_la_LINK) -rpath $(libdir) $(libCbc_la_OBJECTS) $(libCbc_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) -rpath $(libdir) $(libCbc_la_OBJECTS) $(libCbc_la_LIBADD) $(LIBS)
 
 libCbcSolver.la: $(libCbcSolver_la_OBJECTS) $(libCbcSolver_la_DEPENDENCIES) $(EXTRA_libCbcSolver_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(libCbcSolver_la_LINK) -rpath $(libdir) $(libCbcSolver_la_OBJECTS) $(libCbcSolver_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) -rpath $(libdir) $(libCbcSolver_la_OBJECTS) $(libCbcSolver_la_LIBADD) $(LIBS)
 
 cbc$(EXEEXT): $(cbc_OBJECTS) $(cbc_DEPENDENCIES) $(EXTRA_cbc_DEPENDENCIES) 
 	@rm -f cbc$(EXEEXT)
-	$(AM_V_CXXLD)$(cbc_LINK) $(cbc_OBJECTS) $(cbc_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(cbc_OBJECTS) $(cbc_LDADD) $(LIBS)
 
 cbc-generic$(EXEEXT): $(cbc_generic_OBJECTS) $(cbc_generic_DEPENDENCIES) $(EXTRA_cbc_generic_DEPENDENCIES) 
 	@rm -f cbc-generic$(EXEEXT)
-	$(AM_V_CXXLD)$(cbc_generic_LINK) $(cbc_generic_OBJECTS) $(cbc_generic_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(cbc_generic_OBJECTS) $(cbc_generic_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

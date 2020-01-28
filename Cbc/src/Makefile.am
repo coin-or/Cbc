@@ -109,11 +109,6 @@ libCbcSolver_la_SOURCES = \
 libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
 libCbcSolver_la_LIBADD = $(CBCSOLVERLIB_LFLAGS) libCbc.la
 
-# This is for libtool
-
-libCbc_la_LDFLAGS = $(LT_LDFLAGS)
-libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
-
 # Some common setup for cbc and cbc-generic.
 
 libCbc_la_CPPFLAGS = -DCBC_BUILD $(CBCLIB_CFLAGS)
@@ -145,8 +140,6 @@ cbc_LDADD = libCbcSolver.la libCbc.la
 # not really accurate to use these CFLAGS, but they should have everything
 cbc_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
 
-cbc_LDFLAGS = $(LT_LDFLAGS)
-
 endif
 
 
@@ -176,8 +169,6 @@ cbc_generic_SOURCES = \
 
 cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LFLAGS)
 
-cbc_generic_LDFLAGS = $(LT_LDFLAGS)
-
 # List all additionally required solver and Osi libraries
 # the linker flags for all available LP solvers should already be included in $CBCGENERIC_LFLAGS,
 # so just add compiler flags here (all we can think of)
@@ -191,8 +182,10 @@ endif
 ########################################################################
 
 # List additional defines
-
 AM_CPPFLAGS += -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
+
+# Additional options for libtool
+LDFLAGS += $(LT_LDFLAGS)
 
 ########################################################################
 #                Headers that need to be installed                     #

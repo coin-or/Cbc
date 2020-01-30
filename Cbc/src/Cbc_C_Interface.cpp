@@ -29,6 +29,15 @@
 #include "ClpSimplexOther.hpp"
 #include "CglCutGenerator.hpp"
 #include "CglStored.hpp"
+#include "CglGomory.hpp"
+#include "CglZeroHalf.hpp"
+#include "CglClique.hpp"
+#include "CglBKClique.hpp"
+#include "CglKnapsackCover.hpp"
+#include "CglMixedIntegerRounding2.hpp"
+#include "CglTwomir.hpp"
+#include "CglZeroHalf.hpp"
+#include "CglLandP.hpp"
 #include "CbcCutGenerator.hpp"
 #include "ClpDualRowSteepest.hpp"
 #include "ClpDualRowDantzig.hpp"
@@ -3193,6 +3202,116 @@ Osi_getRowSense(void *osi, int row)
   return osiSolver->getRowSense()[row];
 }
 
+/** Generates cutting planes */
+void Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, int strength ) {
+  OsiClpSolverInterface *solver = (OsiClpSolverInterface *) osiClpSolver;
+  CglCutGenerator *cg[2] = {NULL, NULL};
+  OsiCuts *osiCuts = (OsiCuts *) oc;
+
+  switch (ct) {
+    case CT_Gomory:
+      cg[0] = new CglGomory();
+      break;
+    case CT_Clique:
+      if (solver->getCGraph())
+        cg[0] = new CglBKClique();
+      else
+        cg[0] = new CglClique();
+      break;
+    case CT_KnapsackCover:
+      cg[0] = new CglKnapsackCover();
+      break;
+    case CT_MIR:
+      {
+        CglMixedIntegerRounding2 *cgMIR = new CglMixedIntegerRounding2(1, true, 1);
+        cg[0] = cgMIR;
+        cgMIR->setDoPreproc(1); // safer (and better)
+        cg[1] = new CglTwomir();
+      }
+      break;
+    case CT_ZeroHalf:
+      cg[0] = new CglZeroHalf();
+      break;
+    case CT_LiftAndProject:
+      cg[0] = new CglLandP();
+      break;
+  }
+
+  for ( int i=0 ; i<2 ; ++i ) {
+    if (cg[i] == NULL) 
+      continue;
+    cg[i]->generateCuts(*solver, *osiCuts);
+
+    delete cg[i];
+  }
+}
+
+/** Creates a new cut pool and returns its pointer */
+COINLIBAPI void * COINLINKAGE 
+OsiCuts_new() {
+  OsiCuts *oc = new OsiCuts();
+  return (void *) oc;
+}
+
+/** Deletes a cut pool */
+COINLIBAPI void COINLINKAGE 
+OsiCuts_delete( void *osiCuts ) {
+  OsiCuts *oc = (OsiCuts *) osiCuts;
+  delete oc;
+}
+
+/** Returns the number of row cuts stored */
+COINLIBAPI int COINLINKAGE 
+OsiCuts_sizeRowCuts( void *osiCuts ) {
+  OsiCuts *oc = (OsiCuts *)osiCuts;
+  return oc->sizeRowCuts();
+}
+
+/** Returns the number of row cuts stored */
+COINLIBAPI int COINLINKAGE 
+OsiCuts_nzRowCut( void *osiCuts, int iRowCut ) {
+  assert(iRowCut >= 0 && iRowCut < OsiCuts_sizeRowCuts(osiCuts) );
+  OsiCuts *oc = (OsiCuts *)osiCuts;
+  const OsiRowCut &rc = oc->rowCut(iRowCut);
+  return rc.row().getNumElements();
+}
+
+/** Returns the variable indexes in a row cut */
+COINLIBAPI const int * COINLINKAGE 
+OsiCuts_idxRowCut( void *osiCuts, int iRowCut ) {
+  assert(iRowCut >= 0 && iRowCut < OsiCuts_sizeRowCuts(osiCuts) );
+  OsiCuts *oc = (OsiCuts *)osiCuts;
+  const OsiRowCut &rc = oc->rowCut(iRowCut);
+  return rc.row().getIndices();
+}
+
+/** Returns the variable coefficients in a row cut */
+COINLIBAPI const double * COINLINKAGE 
+OsiCuts_coefRowCut( void *osiCuts, int iRowCut ) {
+  assert(iRowCut >= 0 && iRowCut < OsiCuts_sizeRowCuts(osiCuts) );
+  OsiCuts *oc = (OsiCuts *)osiCuts;
+  const OsiRowCut &rc = oc->rowCut(iRowCut);
+  return rc.row().getElements();
+}
+
+/** Returns the variable coefficients in a row cut */
+COINLIBAPI double COINLINKAGE 
+OsiCuts_rhsRowCut( void *osiCuts, int iRowCut ) {
+  assert(iRowCut >= 0 && iRowCut < OsiCuts_sizeRowCuts(osiCuts) );
+  OsiCuts *oc = (OsiCuts *)osiCuts;
+  const OsiRowCut &rc = oc->rowCut(iRowCut);
+  return rc.rhs();
+}
+
+/** Returns the sense of a row cut */
+COINLIBAPI char COINLINKAGE 
+OsiCuts_senseRowCut( void *osiCuts, int iRowCut ) {
+  assert(iRowCut >= 0 && iRowCut < OsiCuts_sizeRowCuts(osiCuts) );
+  OsiCuts *oc = (OsiCuts *)osiCuts;
+  const OsiRowCut &rc = oc->rowCut(iRowCut);
+  return rc.sense();
+}
+
 COINLIBAPI void COINLINKAGE
 OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs )
 {
@@ -3278,8 +3397,6 @@ OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *co
   orc.setGloballyValid(true);
   oc->insert(orc);
 }
-
-
 
 
 /** @brief Sets a variable to integer */
@@ -3532,6 +3649,12 @@ Cbc_setCutoff(Cbc_Model* model, double cutoff)
 COINLIBAPI void COINLINKAGE
 Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm ) {
   model->lp_method = lpm;
+}
+
+
+COINLIBAPI void * COINLINKAGE
+Cbc_getSolverPtr(Cbc_Model *model) {
+  return model->solver_;
 }
 
 COINLIBAPI void COINLINKAGE

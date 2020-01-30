@@ -58,6 +58,16 @@ enum DualPivot {
   DP_PESteepest = 4  /*! Positive edge criterion, tries to avoid degenerate moves. Influenced by the psi parameter */
 };
 
+/*! Type of cutting plane */
+enum CutType {
+  CT_Gomory         = 0,  /*! Gomory cuts obtained from the tableau */
+  CT_MIR            = 1,  /*! Mixed integer rounding cuts */
+  CT_ZeroHalf       = 2,  /*! Zero-half cuts */
+  CT_Clique         = 3,  /*! Clique cuts */
+  CT_KnapsackCover  = 4,  /*! Knapsack cover cuts */
+  CT_LiftAndProject = 5   /*! Lift and project cuts */
+};
+
 /*! Double parameters
  * */
 enum DblParam {
@@ -843,6 +853,13 @@ Cbc_setCutoff(Cbc_Model *model, double cutoff);
 COINLIBAPI void COINLINKAGE
 Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm );
 
+/** Returns a pointer to the OsiClpSolverInterface object 
+ * containing the problem
+ */
+COINLIBAPI void * COINLINKAGE
+Cbc_getSolverPtr(Cbc_Model *model);
+
+
 /** sets which pivotting method should be used in the dual simplex
  */
 COINLIBAPI void COINLINKAGE
@@ -1339,7 +1356,18 @@ Osi_deleteSolver( void *osi );
 
 /*@}*/
 
+/** \name Cgl related routines */
+
+void Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *osiCuts, int strength );
+
+/*@}*/
+
+
 /** \name OsiCuts related routines (used in callbacks) */
+
+/** Creates a new cut pool and returns its pointer */
+COINLIBAPI void * COINLINKAGE 
+OsiCuts_new();
 
 /** adds a row cut (used in callback) */
 COINLIBAPI void COINLINKAGE 
@@ -1348,6 +1376,34 @@ OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, ch
 /** adds a row cut (used in callback), stating that this is a globally valid cut */
 COINLIBAPI void COINLINKAGE 
 OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs );
+
+/** Returns the number of row cuts stored */
+COINLIBAPI int COINLINKAGE 
+OsiCuts_sizeRowCuts( void *osiCuts );
+
+/** Returns the number of row cuts stored */
+COINLIBAPI int COINLINKAGE 
+OsiCuts_nzRowCut( void *osiCuts, int iRowCut );
+
+/** Returns the variable indexes in a row cut */
+COINLIBAPI const int * COINLINKAGE 
+OsiCuts_idxRowCut( void *osiCuts, int iRowCut );
+
+/** Returns the variable coefficients in a row cut */
+COINLIBAPI const double * COINLINKAGE 
+OsiCuts_coefRowCut( void *osiCuts, int iRowCut );
+
+/** Returns the variable coefficients in a row cut */
+COINLIBAPI double COINLINKAGE 
+OsiCuts_rhsRowCut( void *osiCuts, int iRowCut );
+
+/** Returns the sense of a row cut */
+COINLIBAPI char COINLINKAGE 
+OsiCuts_senseRowCut( void *osiCuts, int iRowCut );
+
+/** Deletes a cut pool */
+COINLIBAPI void COINLINKAGE 
+OsiCuts_delete( void *osiCuts );
 
 
 

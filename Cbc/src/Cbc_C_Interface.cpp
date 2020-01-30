@@ -134,7 +134,7 @@ protected:
 //   "pretol", "psi", "maxit", "crash", "scal" };
 //static int nCmcLpOptions = 12;
 
-static bool cbc_annouced = false;
+static char cbc_annouced = 0;
 
 
 
@@ -1526,7 +1526,7 @@ Cbc_solve(Cbc_Model *model)
         << generalPrint
         << CoinMessageEol;
       solver->messageHandler()->setPrefix(true);
-      cbc_annouced = true;
+      cbc_annouced = 1;
   }
 
   if (solver->getNumIntegers() == 0 || model->relax_ == 1) {

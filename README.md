@@ -211,7 +211,7 @@ https://github.com/coin-or/Cbc/issues
     * `--enable-cbc-parallel` is now enabled by default if a pthread library
       is found. Use `--disable-cbc-parallel` to disable.
 
- * Release 2.10.4 (in preparation)
+ * Release 2.10.4
    * Allow .lp files to be read from stdin.
    * Fix parsing of optional arguments to AMPL interface.
    * More bugfixes.

@@ -12,8 +12,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT([Cbc],[trunk],[cbc@lists.coin-or.org],[coin-or-cbc],
-	[https://projects.coin-or.org/Cbc])
+AC_INIT([Cbc],[trunk],[https://github.com/coin-or/Cbc/issues/new],[coin-or-cbc],[https://github.com/coin-or/Cbc])
 
 AC_COPYRIGHT([
 Copyright 2006 International Business Machines and others.

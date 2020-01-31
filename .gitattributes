@@ -4,6 +4,7 @@
 .ci/appveyor.post -text
 .ci/appveyor.pre -text
 /.clang-format -text
+.coin-or/Dependencies -text
 .coin-or/projDesc.xml -text
 /.travis.yml -text
 /CbcSourceFilesTable.csv -text
@@ -12,7 +13,6 @@
 /CbcSourceFilesTable2.xls -text
 /CbcSourceFilesTable3.csv -text
 /CbcSourceFilesTable3.xls -text
-/Dependencies -text
 MSVisualStudio/v10/Cbc.sln -text
 MSVisualStudio/v10/CbcCSosDllSample/cbcCSosDllSample.vcxproj -text
 MSVisualStudio/v10/CbcWithInstalledLibraries/BaseCBCProject.sln -text

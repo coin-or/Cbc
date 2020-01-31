@@ -38,8 +38,6 @@ The Cbc website is https://github.com/coin-or/Cbc.
 
 [![Build Status](https://travis-ci.org/coin-or/Cbc.svg?branch=master)](https://travis-ci.org/coin-or/Cbc)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/l2hwifsxwhswng8y/branch/master?svg=true)](https://ci.appveyor.com/project/tkralphs/cbc/branch/master)
-
 
 ## DOWNLOAD
 

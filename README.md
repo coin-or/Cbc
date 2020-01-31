@@ -166,7 +166,7 @@ https://github.com/coin-or/Cbc/issues
 
 ## CHANGELOG
 
- * Release 2.10.4 (in preparation)
+ * Release 2.10.4
    * Fix parsing of optional arguments to AMPL interface.
 
  * Release 2.10.3

@@ -17,8 +17,7 @@
 #define CBC_VERSION_RELEASE 9999
 
 #ifndef CBCLIB_EXPORT
-#ifdef _WIN32
-/* assuming we link against a CoinUtils DLL */
+#if defined(_WIN32) && defined(DLL_EXPORT)
 #define CBCLIB_EXPORT __declspec(dllimport)
 #else
 #define CBCLIB_EXPORT

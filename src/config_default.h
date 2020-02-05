@@ -2,10 +2,9 @@
 /* include the COIN-OR-wide system specific configure header */
 #include "configall_system.h"
 
-/* this needs to come before the include of config_coinutils_default.h */
+/* this needs to come before the include of config_cbc_default.h */
 #ifndef CBCLIB_EXPORT
-#ifdef _WIN32
-/* assuming we build a CoinUtils DLL */
+#if defined(_WIN32) && defined(DLL_EXPORT)
 #define CBCLIB_EXPORT __declspec(dllexport)
 #else
 #define CBCLIB_EXPORT

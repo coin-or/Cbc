@@ -55,7 +55,7 @@
 #endif
 
 #ifndef CBCSOLVERLIB_EXPORT
-# ifdef _WIN32
+# if defined(_WIN32) && defined(DLL_EXPORT)
 #  ifdef CBCSOLVER_BUILD
 #   define CBCSOLVERLIB_EXPORT __declspec(dllexport)
 #  else
@@ -69,7 +69,7 @@
 
 #endif /* HAVE_CONFIG_H */
 
-#endif /*__CBCCONFIG_H__*/
+#endif /*__CBCSOLVERCONFIG_H__*/
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

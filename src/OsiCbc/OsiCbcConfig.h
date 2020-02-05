@@ -49,7 +49,7 @@
 #else /* HAVE_CONFIG_H */
 
 #ifndef OSICBCLIB_EXPORT
-# ifdef _WIN32
+# if defined(_WIN32) && defined(DLL_EXPORT)
 #  ifdef OSILIB_BUILD
 #   define OSICBCLIB_EXPORT __declspec(dllexport)
 #  else

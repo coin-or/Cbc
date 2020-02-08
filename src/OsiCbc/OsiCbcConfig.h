@@ -29,7 +29,7 @@
 #ifdef OSICBC_BUILD
 #include "config.h"
 
-/* overwrite CBCSOLVERLIB_EXPORT from config.h when building Cbc
+/* overwrite OSICBCLIB_EXPORT from config.h when building OsiCbc
  * we want it to be __declspec(dllexport) when building a DLL on Windows
  * we want it to be __attribute__((__visibility__("default"))) when building with GCC,
  *   so user can compile with -fvisibility=hidden
@@ -50,7 +50,7 @@
 
 #ifndef OSICBCLIB_EXPORT
 # if defined(_WIN32) && defined(DLL_EXPORT)
-#  ifdef OSILIB_BUILD
+#  ifdef OSICBC_BUILD
 #   define OSICBCLIB_EXPORT __declspec(dllexport)
 #  else
 #   define OSICBCLIB_EXPORT __declspec(dllimport)

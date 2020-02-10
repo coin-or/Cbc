@@ -1672,6 +1672,8 @@ Cbc_solve(Cbc_Model *model)
       }
   }
 
+  
+  if (model->int_param[INT_PARAM_LOG_LEVEL] > 0)
   {
     char phaseName[128] = "";
     if (solver->getNumIntegers() && (!model->relax_))

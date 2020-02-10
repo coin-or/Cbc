@@ -1361,7 +1361,13 @@ int CbcMain1(int argc, const char *argv[],
   // Initialize argument
   int whichArgument = 1;
 #endif
-#ifdef CBC_USE_INITIAL_TIME
+  // Meaning 0 - start at very beginning
+  // 1 start at beginning of preprocessing
+  // 2 start at beginning of branch and bound
+#ifndef CBC_USE_INITIAL_TIME
+#define CBC_USE_INITIAL_TIME 1
+#endif
+#if CBC_USE_INITIAL_TIME == 0
   if (model_.useElapsedTime())
     model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
   else
@@ -2023,7 +2029,7 @@ int CbcMain1(int argc, const char *argv[],
         int valid;
         numberGoodCommands++;
         if (type == CBC_PARAM_ACTION_BAB && goodModel) {
-#ifndef CBC_USE_INITIAL_TIME
+#if CBC_USE_INITIAL_TIME==1
           if (model_.useElapsedTime())
             model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
           else
@@ -2322,7 +2328,8 @@ int CbcMain1(int argc, const char *argv[],
                 maxItBKExt = value;
               } else if (parameters_[iParam].type() == CBC_PARAM_INT_CLQEXTMETHOD) {
                 clqExtMethod = value;
-              } else if (parameters_[iParam].type() == CBC_PARAM_INT_EXPERIMENT) {
+              } else if (parameters_[iParam].type() == CBC_PARAM_INT_EXPERIMENT
+			 && value<10000) {
                 int addFlags = 0;
                 // switch on some later features if >999
                 if (value > 999) {
@@ -3336,7 +3343,7 @@ int CbcMain1(int argc, const char *argv[],
             break;
           case CBC_PARAM_ACTION_DOHEURISTIC:
             if (goodModel) {
-#ifndef CBC_USE_INITIAL_TIME
+#if CBC_USE_INITIAL_TIME==1
               if (model_.useElapsedTime())
                 model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
               else
@@ -5095,7 +5102,16 @@ int CbcMain1(int argc, const char *argv[],
                 babModel_->setOriginalColumns(process.originalColumns(),
                   truncateColumns);
                 babModel_->initialSolve();
-                babModel_->setMaximumSeconds(timeLeft - (CoinCpuTime() - time2));
+#if CBC_USE_INITIAL_TIME == 2
+		// time starts from here?
+		time1Elapsed = CoinGetTimeOfDay();
+		time1 = CoinCpuTime();
+		if (babModel_->useElapsedTime())
+		  babModel_->setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
+		else
+		  babModel_->setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
+                //babModel_->setMaximumSeconds(timeLeft - (CoinCpuTime() - time2));
+#endif
               }
 
               mergeCliques = (parameters_[whichParam(CBC_PARAM_STR_CLIQUEMERGING, parameters_)].currentOption().compare("after") == 0);
@@ -5750,7 +5766,11 @@ int CbcMain1(int argc, const char *argv[],
                 if (experimentFlag >= 5 || strategyFlag == 2) {
                   // try reduced model at root
                   babModel_->setSpecialOptions(babModel_->specialOptions() | 32768);
-                }
+		  if (experimentFlag >= 10000) {
+                  // try reduced model at root with cuts
+		    babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
+		  }
+		}
                 {
                   int depthMiniBab = parameters_[whichParam(CBC_PARAM_INT_DEPTHMINIBAB, parameters_)].intValue();
                   if (depthMiniBab != -1)
@@ -7143,7 +7163,7 @@ int CbcMain1(int argc, const char *argv[],
                   if (babModel_->fastNodeDepth() == -1)
                     babModel_->setFastNodeDepth(-2); // Use Cplex at root
                 }
-                if (experimentFlag >= 5) {
+                if (experimentFlag >= 5 && experimentFlag < 10000) {
                   CbcModel donor(*babModel_);
                   int options = babModel_->specialOptions();
                   donor.setSpecialOptions(options | 262144);
@@ -7404,6 +7424,20 @@ int CbcMain1(int argc, const char *argv[],
                 if (preProcessPointer) {
                   babModel_->setPreProcess(preProcessPointer);
                 }
+#ifndef CBC_OTHER_SOLVER
+		{
+		  OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
+		  ClpSimplex *simplex = solver->getModelPtr();
+		  // if wanted go back to old printing method
+		  double value = simplex->getMinIntervalProgressUpdate();
+		  if (value<=0.0) {
+		    babModel_->setSecsPrintFrequency(-1.0);
+		    if (value<0.0) {
+		      babModel_->setPrintFrequency(static_cast<int>(-value));
+		    }
+		  }
+		}
+#endif
                 babModel_->branchAndBound(statistics);
 #ifdef COIN_HAS_NTY
                 if (nautyAdded) {
@@ -7594,6 +7628,20 @@ int CbcMain1(int argc, const char *argv[],
                     }
                   }
                 }
+#ifndef CBC_OTHER_SOLVER
+		{
+		  OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+		  ClpSimplex *simplex = solver->getModelPtr();
+		  // if wanted go back to old printing method
+		  double value = simplex->getMinIntervalProgressUpdate();
+		  if (value<=0.0) {
+		    model_.setSecsPrintFrequency(-1.0);
+		    if (value<0.0) {
+		      model_.setPrintFrequency(static_cast<int>(-value));
+		    }
+		  }
+		}
+#endif
                 int returnCode = CbcClpUnitTest(model_, dirMiplib, extra2, stuff);
                 babModel_ = NULL;
                 return returnCode;

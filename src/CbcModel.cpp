@@ -1147,12 +1147,16 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForR
         numberFixed + numberFixed2, numberFixed2);
 #endif
       numberFixed += numberFixed2;
-      if (numberFixed * 20 < numberColumns)
+      if (numberFixed * 20 < numberColumns & (specialOptions_&512) == 0)
         tryNewSearch = false;
     }
     if (tryNewSearch) {
       // back to solver without cuts?
-      OsiSolverInterface *solver2 = continuousSolver_->clone();
+      OsiSolverInterface *solver2;
+      if ((specialOptions_&512)==0)
+	solver2 = continuousSolver_->clone();
+      else
+	solver2 = solver_;//->clone();
       const double *lower = saveSolver->getColLower();
       const double *upper = saveSolver->getColUpper();
       for (int i = 0; i < numberIntegers_; i++) {
@@ -1161,14 +1165,16 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForR
         solver2->setColUpper(iColumn, upper[iColumn]);
       }
       // swap
-      delete saveSolver;
+      if ((specialOptions_&512) == 0)
+	delete saveSolver;
       saveSolver = solver2;
       double *newSolution = new double[numberColumns];
       double objectiveValue = *checkCutoffForRestart;
       CbcSerendipity heuristic(*this);
       if (bestSolution_)
         heuristic.setInputSolution(bestSolution_, bestObjective_);
-      heuristic.setFractionSmall(0.9);
+      if ((specialOptions_&512) != 0)
+	heuristic.setFractionSmall(100.0);
       heuristic.setFeasibilityPumpOptions(1008013);
       // Use numberNodes to say how many are original rows
       heuristic.setNumberNodes(continuousSolver_->getNumRows());
@@ -2679,6 +2685,8 @@ void CbcModel::branchAndBound(int doStatistics)
       // use seed
       rootModels[i]->setSpecialOptions(specialOptions_ | (4194304 | 8388608));
       rootModels[i]->setMoreSpecialOptions(moreSpecialOptions_ & (~(134217728 | 4194304)));
+      // dual tightening may be bad because of degeneracy and random bases
+      rootModels[i]->setMoreSpecialOptions(moreSpecialOptions_ | 1073741824);
       rootModels[i]->setMoreSpecialOptions2(moreSpecialOptions2_ & (~(128 | 256)));
       rootModels[i]->solver_->setWarmStart(basis);
 #ifdef COIN_HAS_CLP
@@ -4909,6 +4917,10 @@ void CbcModel::branchAndBound(int doStatistics)
       // Deterministic parallel
       if ((tree_->size() < CoinMax(numberThreads_, 8) || hotstartSolution_) && !goneParallel) {
         node = tree_->bestNode(cutoff);
+#ifdef SAVE_NODE_INFO
+	// Save parent node (for user)
+	parentNode_ = node;
+#endif
         // Possible one on tree worse than cutoff
         if (!node || node->objectiveValue() > cutoff)
           continue;
@@ -16157,6 +16169,10 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node, CbcNode *&newNode)
 {
   int foundSolution = 0;
   int saveNumberCutGenerators = numberCutGenerators_;
+#ifdef SAVE_NODE_INFO
+  // Save parent node (for user)
+  parentNode_ = node;
+#endif
   if ((moreSpecialOptions_ & 33554432) != 0 && (specialOptions_ & 2048) == 0) {
     if (node && (node->depth() == -2 || node->depth() == 4))
       numberCutGenerators_ = 0; // so can dive and branch

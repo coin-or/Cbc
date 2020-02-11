@@ -57,6 +57,8 @@
 #  endif
 # elif defined(__GNUC__) && __GNUC__ >= 4
 #  define OSICBCLIB_EXPORT __attribute__((__visibility__("default")))
+# else
+#  define OSICBCLIB_EXPORT
 # endif
 #endif
 

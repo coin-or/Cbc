@@ -63,6 +63,8 @@
 #  endif
 # elif defined(__GNUC__) && __GNUC__ >= 4
 #  define CBCSOLVERLIB_EXPORT __attribute__((__visibility__("default")))
+# else
+#  define CBCSOLVERLIB_EXPORT
 # endif
 #endif
 

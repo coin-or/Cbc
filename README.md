@@ -3,7 +3,7 @@
 Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
 It can be used as a callable library or using a stand-alone executable.
 It can be called through
-AIMMS (through the [AIMMSlinks](https://github.com/coin-o/AIMMSlinks) project),
+AIMMS (through the [AIMMSlinks](https://github.com/coin-or/AIMMSlinks) project),
 AMPL (natively),
 [CMPL](https://github.com/coin-or/Cmpl),
 GAMS (through the [GAMSlinks](https://github.com/coin-or/GAMSlinks) project),
@@ -19,9 +19,10 @@ Cbc links to a number of other COIN-OR projects for additional functionality, in
  * [Clp](https://github.com/coin-or/Clp) (the default solver for LP relaxations)
  * [Cgl](https://github.com/coin-or/Cgl) (for cut generation)
  * [CoinUtils](https://github.com/coin-or/CoinUtils) (for reading input files and various utilities)
-For more information on supported platforms, links to dependent projects, current version, and more, click [here](http://www.coin-or.org/projects/Cbc.xml)
 
-Cbc is developed by [John Forrest](http://www.fastercoin.com), now retired from IBM Research.
+For more information on supported platforms, links to dependent projects, current version, and more, click [here](https://www.coin-or.org/projects/)
+
+Cbc is developed by John Forrest, now retired from IBM Research.
 The project is currently managed by John Forrest, [Ted Ralphs](http://coral.ie.lehigh.edu/~ted/), Haroldo Gambini Santos, and the rest of the Cbc team (Dan Fylstra (Frontline), Lou Hafer (SFU), Bill Hart (Sandia), Bjarni Kristjannson (Maximal), Cindy Phillips (Sandia), Matthew Saltzman (Clemson), Edwin Straver (Frontline), Jean-Paul Watson (Sandia)).
 
 Cbc is written in C++ and is released as open source code under the [Eclipse Public License (EPL)](http://www.opensource.org/licenses/eclipse-1.0) and is freely redistributable.
@@ -77,11 +78,11 @@ and run
     /path/to/coinbrew build Cbc --prefix=/dir/to/install --test
     /path/to/coinbrew install Cbc
 
-The `coinbrew` script will fetch [these](Dependencies) additional projects.
+The `coinbrew` script will fetch [these](.coin-or/Dependencies) additional projects.
 
 ### Without CoinBrew (Expert users)
 
- 0. Install [these Dependencies](Dependencies)
+ 0. Install [these Dependencies](.coin-or/Dependencies)
  1. Obtain the source code, e.g., from https://github.com/coin-or/Cbc
  2. Run `./configure -C` to generate makefiles
  3. Run `make` to build the CoinUtils library
@@ -143,10 +144,9 @@ Steps (based on VS 2013):
 
 ## DOCUMENTATION
 
- * [INSTALL](INSTALL) file (partially outdated)
  * [User's Guide](https://coin-or.github.io/Cbc) (from 2005)
  * [Doxygen generated documentation](http://www.coin-or.org/Doxygen/Cbc/hierarchy.html)
- * Source code [examples](Cbc/examples)
+ * Source code [examples](examples)
  * [Cbc command-line guide](https://projects.coin-or.org/CoinBinary/export/1059/OptimizationSuite/trunk/Installer/files/doc/cbcCommandLine.pdf)
 
 

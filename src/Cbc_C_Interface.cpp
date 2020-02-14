@@ -3241,8 +3241,13 @@ void Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, int streng
     case CT_Clique:
       if (solver->getCGraph())
         cg[0] = new CglBKClique();
-      else
-        cg[0] = new CglClique();
+      else {
+        CglClique *clqgen = new CglClique();
+        clqgen->setStarCliqueReport(false);
+        clqgen->setRowCliqueReport(false);
+        clqgen->setMinViolation(1e-4);
+        cg[0] = clqgen;
+      }
       break;
     case CT_KnapsackCover:
       cg[0] = new CglKnapsackCover();

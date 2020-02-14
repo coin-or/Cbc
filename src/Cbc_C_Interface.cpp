@@ -1488,9 +1488,8 @@ static void Cbc_addAllSOS( Cbc_Model *model );
 // adds mipstart if available
 static void Cbc_addMS( Cbc_Model *model );
 
-
 COINLIBAPI int COINLINKAGE
-Cbc_solve(Cbc_Model *model)
+Cbc_solveLinearProgram(Cbc_Model *model) 
 {
   CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
 
@@ -1528,8 +1527,6 @@ Cbc_solve(Cbc_Model *model)
       sprintf(generalPrint + strlen(generalPrint),
         "Revision Number: %d \n", CBC_SVN_REV);
 #endif
-      //printf("%s", generalPrint); fflush(stdout);
-      //
       solver->messageHandler()->setPrefix(false);
       solver->messageHandler()->message(CLP_GENERAL, generalMessages)
         << generalPrint
@@ -1538,14 +1535,19 @@ Cbc_solve(Cbc_Model *model)
       cbc_annouced = 1;
   }
 
-  if (solver->getNumIntegers() == 0 || model->relax_ == 1) {
-    model->lastOptimization = ContinuousOptimization;
+  model->lastOptimization = ContinuousOptimization;
 
-    if (solver->basisIsAvailable()) {
-      solver->resolve();
+  if (solver->basisIsAvailable()) {
+    solver->resolve();
+    if (solver->isProvenOptimal())
       return 0;
-    } // resolve
-  } // solve only lp relaxation
+    if (solver->isIterationLimitReached())
+      return 1;
+    if (solver->isProvenDualInfeasible())
+      return 3;
+    if (solver->isProvenPrimalInfeasible())
+      return 2;
+  } // resolve
 
   /* checking if options should be automatically tuned */
   if (model->lp_method == LPM_Auto) {
@@ -1612,7 +1614,6 @@ Cbc_solve(Cbc_Model *model)
     delete[] opts;
   }
 
-
   /* for integer or linear optimization starting with LP relaxation */
   ClpSolve clpOptions;
   char methodName[256] = "";
@@ -1671,7 +1672,6 @@ Cbc_solve(Cbc_Model *model)
         break;
       }
   }
-
   
   if (model->int_param[INT_PARAM_LOG_LEVEL] > 0)
   {
@@ -1684,11 +1684,35 @@ Cbc_solve(Cbc_Model *model)
     char msg[512] = "";
     sprintf(msg, "Starting solution of the %s using %s\n", phaseName, methodName );
     printf("%s\n", msg); fflush(stdout);
-
   }
 
   model->lastOptimization = ContinuousOptimization;
   solver->initialSolve();
+
+  if (solver->isProvenOptimal())
+    return 0;
+  if (solver->isIterationLimitReached())
+    return 1;
+  if (solver->isProvenDualInfeasible())
+    return 3;
+  if (solver->isProvenPrimalInfeasible())
+    return 2;
+
+  return -1;
+}
+
+COINLIBAPI int COINLINKAGE
+Cbc_solve(Cbc_Model *model)
+{
+  CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
+
+  int res = Cbc_solveLinearProgram(model);
+  if (res == 1)
+    return 1;
+  if (res==2 || res==3)
+    return 0;
+
+  OsiSolverInterface *solver = model->solver_;
 
   if (solver->isProvenPrimalInfeasible() || solver->isProvenDualInfeasible() ||
       solver->isAbandoned() || solver->isIterationLimitReached() || model->relax_ == 1

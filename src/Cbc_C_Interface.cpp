@@ -1539,6 +1539,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   if (solver->basisIsAvailable()) {
     solver->resolve();
+    clps->setMaximumWallSeconds(DBL_MAX);
     if (solver->isProvenOptimal())
       return 0;
     if (solver->isIterationLimitReached())
@@ -1688,6 +1689,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   model->lastOptimization = ContinuousOptimization;
   solver->initialSolve();
+  clps->setMaximumWallSeconds(DBL_MAX);
 
   if (solver->isProvenOptimal())
     return 0;

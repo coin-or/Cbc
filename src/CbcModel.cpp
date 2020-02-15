@@ -1669,6 +1669,9 @@ void CbcModel::branchAndBound(int doStatistics)
       // Initialise solvers seed (unless users says not)
       if ((specialOptions_ & 4194304) == 0)
         clpSolver->getModelPtr()->setRandomSeed(1234567);
+      // switch off max time in solver
+      clpSolver->getModelPtr()->setMaximumSeconds(1.0e50);
+      clpSolver->getModelPtr()->setMaximumWallSeconds(1.0e50);
 #ifdef JJF_ZERO
       // reduce factorization frequency
       int frequency = clpSolver->getModelPtr()->factorizationFrequency();

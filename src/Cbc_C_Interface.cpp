@@ -3231,7 +3231,7 @@ Osi_getRowSense(void *osi, int row)
 }
 
 /** Generates cutting planes */
-void Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, int strength ) {
+COINLIBAPI void COINLINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, int strength ) {
   OsiClpSolverInterface *solver = (OsiClpSolverInterface *) osiClpSolver;
   CglCutGenerator *cg[2] = {NULL, NULL};
   OsiCuts *osiCuts = (OsiCuts *) oc;

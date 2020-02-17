@@ -1370,7 +1370,7 @@ Osi_deleteSolver( void *osi );
 
 /** \name Cgl related routines */
 
-void Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *osiCuts, int strength );
+COINLIBAPI void COINLINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, int strength );
 
 /*@}*/
 

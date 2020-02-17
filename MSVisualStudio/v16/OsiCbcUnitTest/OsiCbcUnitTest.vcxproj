@@ -149,6 +149,7 @@
       <PreprocessorDefinitions>CBC_BUILD;WIN32;NDEBUG;_NDEBUG;COIN_FAST_CODE;CLP_FAST_CODE;COIN_NO_TEST_DUPLICATE;_CONSOLE;SAMPLEDIR="..\\..\\..\\..\\Data\\Sample";NETLIBDIR="..\\..\\..\\..\\Data\\Netlib";MIPLIBDIR="..\\..\\..\\..\\Data\\miplib3";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libOsiCommonTest.lib;libCoinUtils.lib;libOsi.lib;libClp.lib;libOsiClp.lib;libCgl.lib;libCbc.lib;libOsiCbc.lib;libCgl.lib;libOsiClp.lib;libClp.lib;libOsi.lib;libCoinUtils.lib;%(AdditionalDependencies)</AdditionalDependencies>

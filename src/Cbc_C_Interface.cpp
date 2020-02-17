@@ -14,7 +14,7 @@
 #ifdef CBC_THREAD
 #include <pthread.h>
 #endif
-
+ 
 #include "CoinPragma.hpp"
 //#include "CoinHelperFunctions.hpp"
 //#include "CoinPackedMatrix.hpp"
@@ -654,7 +654,7 @@ COINLIBAPI const char *COINLINKAGE Cbc_getVersion()
 {
   return CBC_VERSION;
 }
-
+ 
 enum FlushContents
 {
   FCColumns,

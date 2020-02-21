@@ -5124,10 +5124,14 @@ int CbcMain1(int argc, const char *argv[],
 
                   if (clqMerging.constraintsExtended() + clqMerging.constraintsDominated() > 0) {
                     babModel_->solver()->resolve();
-                    if (!babModel_->solver()->isProvenOptimal()) {
-                      fprintf(stderr, "Problem is infeasible after performing clique merging!\n");
-                      abort();
-                    }
+                    if (!noPrinting_) {
+                      if (babModel_->solver()->isProvenPrimalInfeasible()) {
+                        sprintf(generalPrint, "Clique-mergning says infeasible");
+                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                          << generalPrint
+                          << CoinMessageEol;
+                      } // check if infeasible
+                    } // output info
                   }
                 }
               }

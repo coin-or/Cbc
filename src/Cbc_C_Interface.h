@@ -91,17 +91,18 @@ enum IntParam {
   INT_PARAM_STRONG_BRANCHING    = 2,  /*! Number of variables to be evaluated in strong branching. */
   INT_PARAM_CUT_DEPTH           = 3,  /*! Sets the application of cuts to every depth multiple of this value. -1, the default value, let the solve decide. */
   INT_PARAM_MAX_NODES           = 4,  /*! Maximum number of nodes to be explored in the search tree */
-  INT_PARAM_NUMBER_BEFORE       = 5,  /*! Number of branche before trusting pseudocodes computed in strong branching. */
+  INT_PARAM_NUMBER_BEFORE       = 5,  /*! Number of branches before trusting pseudocodes computed in strong branching. */
   INT_PARAM_FPUMP_ITS           = 6,  /*! Maximum number of iterations in the feasibility pump method. */
   INT_PARAM_MAX_SOLS            = 7,  /*! Maximum number of solutions generated during the search. Stops the search when this number of solutions is found. */
-  INT_PARAM_CUT_PASS_IN_TREE    = 8, /*! Maxinum number of cuts passes in the search tree (with the exception of the root node). Default 1. */
-  INT_PARAM_THREADS             = 9, /*! Number of threads that can be used in the branch-and-bound method.*/
+  INT_PARAM_CUT_PASS_IN_TREE    = 8,  /*! Maximum number of cuts passes in the search tree (with the exception of the root node). Default 1. */
+  INT_PARAM_THREADS             = 9,  /*! Number of threads that can be used in the branch-and-bound method.*/
   INT_PARAM_CUT_PASS            = 10, /*! Number of cut passes in the root node. Default -1, solver decides */
   INT_PARAM_LOG_LEVEL           = 11, /*! Verbosity level, from 0 to 2 */
   INT_PARAM_MAX_SAVED_SOLS      = 12, /*! Size of the pool to save the best solutions found during the search. */
-  INT_PARAM_MULTIPLE_ROOTS      = 13 /*! Multiple root passes to get additional cuts and solutions. */
+  INT_PARAM_MULTIPLE_ROOTS      = 13, /*! Multiple root passes to get additional cuts and solutions. */
+  INT_PARAM_ROUND_INT_VARS      = 14  /*! If integer variables should be round to remove small infeasibilities. This can increase the overall amount of infeasibilities in problems with both continuous and integer variables */
 };
-#define N_INT_PARAMS 14
+#define N_INT_PARAMS 15
   
 /** typedef for cbc callback to monitor the progress of the search
  * in terms of improved upper and lower bounds */

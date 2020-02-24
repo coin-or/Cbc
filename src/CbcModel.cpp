@@ -5726,6 +5726,7 @@ CbcModel::CbcModel()
   , numberThreads_(0)
   , threadMode_(0)
   , numberGlobalCutsIn_(0)
+  , roundIntVars_(false)
   , master_(NULL)
   , masterThread_(NULL)
 {
@@ -5901,6 +5902,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , numberThreads_(0)
   , threadMode_(0)
   , numberGlobalCutsIn_(0)
+  , roundIntVars_(false)
   , master_(NULL)
   , masterThread_(NULL)
 {
@@ -6192,6 +6194,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , numberThreads_(rhs.numberThreads_)
   , threadMode_(rhs.threadMode_)
   , numberGlobalCutsIn_(rhs.numberGlobalCutsIn_)
+  , roundIntVars_(rhs.roundIntVars_)
   , master_(NULL)
   , masterThread_(NULL)
 {
@@ -6606,6 +6609,7 @@ CbcModel::operator=(const CbcModel &rhs)
     numberThreads_ = rhs.numberThreads_;
     threadMode_ = rhs.threadMode_;
     numberGlobalCutsIn_ = rhs.numberGlobalCutsIn_;
+    roundIntVars_ = rhs.roundIntVars_;
     delete master_;
     master_ = NULL;
     masterThread_ = NULL;
@@ -7022,6 +7026,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   numberThreads_ = rhs.numberThreads_;
   threadMode_ = rhs.threadMode_;
   numberGlobalCutsIn_ = rhs.numberGlobalCutsIn_;
+  roundIntVars_ = rhs.roundIntVars_;
   delete master_;
   master_ = NULL;
   masterThread_ = NULL;
@@ -17790,6 +17795,13 @@ void CbcModel::saveExtraSolution(const double *solution, double objectiveValue)
       save[0] = n;
       save[1] = objectiveValue;
       memcpy(save + 2, solution, n * sizeof(double));
+      bool allInt = (solver_->getNumIntegers() == solver_->getNumCols());
+      double *x = save + 2;
+      if (roundIntVars_ || allInt) {
+        for ( int i=0 ; (i<n) ; ++i )
+          if (solver_->isInteger(i))
+            x[i] = floor(x[i] + 0.5);
+      }
     }
   }
 }
@@ -17803,6 +17815,12 @@ void CbcModel::saveBestSolution(const double *solution, double objectiveValue)
     bestSolution_ = new double[n];
   bestObjective_ = objectiveValue;
   memcpy(bestSolution_, solution, n * sizeof(double));
+  bool allInt = (solver_->getNumIntegers() == solver_->getNumCols());
+  if (roundIntVars_ || allInt) {
+    for ( int i=0 ; (i<n) ; ++i )
+      if (solver_->isInteger(i))
+        bestSolution_[i] = floor(bestSolution_[i] + 0.5);
+  }
   if ((moreSpecialOptions2_&65536)!=0) {
     // save a copy of solver with constraints
     delete atSolutionSolver_;
@@ -19750,3 +19768,9 @@ CbcModel::reallyValid(OsiCuts * existingCuts)
   return (theseCuts.sizeRowCuts() == 0 && theseCuts.sizeColCuts() == 0);
 }
 
+void CbcModel::setRoundIntegerVariables( bool round_ ) {
+  this->roundIntVars_ = round_;
+}
+
+/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
+*/

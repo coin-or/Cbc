@@ -624,6 +624,12 @@ public:
     return getIntParam(CbcMaxNumNode);
   }
 
+  /// If integer variables should be rounded before saving a solution.
+  //  For some problems with integer and continuous variables, rounding can
+  //  increase the infeasibilities, but it can make sense if all variables
+  //  are integral. Default is false.
+  void setRoundIntegerVariables( bool round_ );
+
   /** Set the
         \link CbcModel::CbcMaxNumSol maximum number of solutions \endlink
         desired.
@@ -3261,6 +3267,11 @@ private:
   int threadMode_;
   /// Number of global cuts on entry to a node
   int numberGlobalCutsIn_;
+
+  // if values of integer variables should be rounded before saving, 
+  // default false
+  bool roundIntVars_;
+
   /// Thread stuff for master
   CbcBaseModel *master_;
   /// Pointer to masterthread

@@ -1857,6 +1857,7 @@ Cbc_solve(Cbc_Model *model)
       }
     }
 #endif
+    model->cbcModel_->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
     CbcMain1( nargs, args, *model->cbcModel_, cbc_callb, cbcData );
 
     free(charCbcOpts);
@@ -3868,6 +3869,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_MAX_SAVED_SOLS]   =       -1;
   model->int_param[INT_PARAM_MULTIPLE_ROOTS]   =        0;
   model->int_param[INT_PARAM_THREADS]          =       -1;
+  model->int_param[INT_PARAM_ROUND_INT_VARS]   =        1;
 
   model->dbl_param[DBL_PARAM_PRIMAL_TOL]       =          1e-6;
   model->dbl_param[DBL_PARAM_DUAL_TOL]         =          1e-6;

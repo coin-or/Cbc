@@ -199,9 +199,9 @@ static int initialPumpTune = -1;
 #include "CbcLinked.hpp"
 #endif
 
-#include "CglCliqueMerging.hpp"
+#include "CglCliqueStrengthening.hpp"
 #include "CglBKClique.hpp"
-#include "CglOddHoleWC.hpp"
+#include "CglOddWheel.hpp"
 
 #include "CglPreProcess.hpp"
 #include "CglCutGenerator.hpp"
@@ -672,7 +672,6 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(CBC_PARAM_STR_REDSPLITCUTS, parameters_)].setCurrentOption("off");
   parameters_[whichParam(CBC_PARAM_STR_REDSPLIT2CUTS, parameters_)].setCurrentOption("off");
   parameters_[whichParam(CBC_PARAM_STR_GMICUTS, parameters_)].setCurrentOption("off");
-  parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(CBC_PARAM_STR_MIXEDCUTS, parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(CBC_PARAM_STR_FLOWCUTS, parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(CBC_PARAM_STR_TWOMIRCUTS, parameters_)].setCurrentOption("ifmove");
@@ -692,12 +691,13 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(CBC_PARAM_STR_RENS, parameters_)].setCurrentOption("off");
   parameters_[whichParam(CBC_PARAM_STR_LOCALTREE, parameters_)].setCurrentOption("off");
   parameters_[whichParam(CBC_PARAM_STR_COSTSTRATEGY, parameters_)].setCurrentOption("off");
-  parameters_[whichParam(CBC_PARAM_STR_CLIQUEMERGING, parameters_)].setCurrentOption("off");
-  parameters_[whichParam(CBC_PARAM_STR_BKCLIQUECUTS, parameters_)].setCurrentOption("off");
-  parameters_[whichParam(CBC_PARAM_STR_ODDHOLEWCCUTS, parameters_)].setCurrentOption("off");
-  parameters_[whichParam(CBC_PARAM_INT_MAXITBK, parameters_)].setIntValue(1000);
-  parameters_[whichParam(CBC_PARAM_INT_MAXITBKEXT, parameters_)].setIntValue(100);
-  parameters_[whichParam(CBC_PARAM_INT_CLQEXTMETHOD, parameters_)].setIntValue(3);
+  parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters_)].setCurrentOption("ifmove");
+  parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].setCurrentOption("ifmove");
+  parameters_[whichParam(CBC_PARAM_INT_BKPIVOTINGSTRATEGY, parameters_)].setIntValue(3);
+  parameters_[whichParam(CBC_PARAM_INT_BKMAXCALLS, parameters_)].setIntValue(1000);
+  parameters_[whichParam(CBC_PARAM_INT_BKCLQEXTMETHOD, parameters_)].setIntValue(4);
+  parameters_[whichParam(CBC_PARAM_INT_ODDWEXTMETHOD, parameters_)].setIntValue(2);
+  parameters_[whichParam(CBC_PARAM_INT_CLQSTRENGTHENING, parameters_)].setIntValue(0);
   if (createSolver)
     delete clpSolver;
 }
@@ -1815,18 +1815,9 @@ int CbcMain1(int argc, const char *argv[],
     int GMIAction = 0;
 
     CglBKClique bkCliqueGen;
-    int bkCliqueAction = 0;
-    CglOddHoleWC oddHoleWCGen;
-    int oddHoleWCAction = 0;
-    int maxItBK = 1000, maxItBKExt = 100, clqExtMethod = 3;
-
-    CglFakeClique cliqueGen(NULL, false);
-    //CglClique cliqueGen(false,true);
-    cliqueGen.setStarCliqueReport(false);
-    cliqueGen.setRowCliqueReport(false);
-    cliqueGen.setMinViolation(0.1);
-    // set default action (0=off,1=on,2=root)
-    int cliqueAction = 3;
+    int cliqueAction = 3, bkPivotingStrategy = 3, maxCallsBK = 1000, bkClqExtMethod = 4;
+    CglOddWheel oddWheelGen;
+    int oddWheelAction = 3, oddWExtMethod = 2, clqStrMethod = 0;
 
     // maxaggr,multiply,criterion(1-3)
     CglMixedIntegerRounding2 mixedGen(1, true, 1);
@@ -2322,13 +2313,17 @@ int CbcMain1(int argc, const char *argv[],
                 strongChanged = true;
               else if (parameters_[iParam].type() == CBC_PARAM_INT_FPUMPTUNE || parameters_[iParam].type() == CBC_PARAM_INT_FPUMPTUNE2 || parameters_[iParam].type() == CBC_PARAM_INT_FPUMPITS)
                 pumpChanged = true;
-              else if (parameters_[iParam].type() == CBC_PARAM_INT_MAXITBK) {
-                maxItBK = value;
-              } else if (parameters_[iParam].type() == CBC_PARAM_INT_MAXITBKEXT) {
-                maxItBKExt = value;
-              } else if (parameters_[iParam].type() == CBC_PARAM_INT_CLQEXTMETHOD) {
-                clqExtMethod = value;
-              } else if (parameters_[iParam].type() == CBC_PARAM_INT_EXPERIMENT
+              else if (parameters_[iParam].type() == CBC_PARAM_INT_BKPIVOTINGSTRATEGY)
+                bkPivotingStrategy = value;
+              else if (parameters_[iParam].type() == CBC_PARAM_INT_BKMAXCALLS)
+                maxCallsBK = value;
+              else if (parameters_[iParam].type() == CBC_PARAM_INT_BKCLQEXTMETHOD)
+                bkClqExtMethod = value;
+              else if (parameters_[iParam].type() == CBC_PARAM_INT_ODDWEXTMETHOD)
+                oddWExtMethod = value;
+              else if (parameters_[iParam].type() == CBC_PARAM_INT_CLQSTRENGTHENING)
+                clqStrMethod = value;
+              else if (parameters_[iParam].type() == CBC_PARAM_INT_EXPERIMENT
 			 && value<10000) {
                 int addFlags = 0;
                 // switch on some later features if >999
@@ -2646,15 +2641,15 @@ int CbcMain1(int argc, const char *argv[],
             case CBC_PARAM_STR_SOS:
               doSOS = action;
               break;
-            case CBC_PARAM_STR_BKCLIQUECUTS:
+            case CBC_PARAM_STR_CLIQUECUTS:
               defaultSettings = false; // user knows what she is doing
-              bkCliqueAction = action;
-              parameters_[whichParam(CBC_PARAM_STR_BKCLIQUECUTS, parameters_)].setCurrentOption(action);
+              cliqueAction = action;
+              parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters_)].setCurrentOption(action);
               break;
-            case CBC_PARAM_STR_ODDHOLEWCCUTS:
+            case CBC_PARAM_STR_ODDWHEELCUTS:
               defaultSettings = false; // user knows what she is doing
-              oddHoleWCAction = action;
-              parameters_[whichParam(CBC_PARAM_STR_ODDHOLEWCCUTS, parameters_)].setCurrentOption(action);
+              oddWheelAction = action;
+              parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].setCurrentOption(action);
               break;
             case CBC_PARAM_STR_GOMORYCUTS:
               defaultSettings = false; // user knows what she is doing
@@ -2679,10 +2674,6 @@ int CbcMain1(int argc, const char *argv[],
             case CBC_PARAM_STR_GMICUTS:
               defaultSettings = false; // user knows what she is doing
               GMIAction = action;
-              break;
-            case CBC_PARAM_STR_CLIQUECUTS:
-              defaultSettings = false; // user knows what she is doing
-              cliqueAction = action;
               break;
             case CBC_PARAM_STR_FLOWCUTS:
               defaultSettings = false; // user knows what she is doing
@@ -3995,25 +3986,6 @@ int CbcMain1(int argc, const char *argv[],
 #endif
               }
 
-              bool mergeCliques = (parameters_[whichParam(CBC_PARAM_STR_CLIQUEMERGING, parameters_)].currentOption().compare("before") == 0);
-              if (mergeCliques && model_.solver() && model_.solver()->getNumCols() && model_.solver()->getNumRows()) {
-                double stcg = CoinGetTimeOfDay();
-                model_.solver()->buildCGraph();
-                double edcg = CoinGetTimeOfDay();
-                model_.messageHandler()->message(CBC_CGRAPH_INFO, model_.messages())
-                  << edcg-stcg << cgraph_density(model_.solver()->getCGraph())*100.0 <<  CoinMessageEol;
-
-                CglCliqueMerging clqMerging;
-                clqMerging.mergeCliques(*model_.solver());
-                if (clqMerging.constraintsExtended() + clqMerging.constraintsDominated() > 0) {
-                  model_.solver()->resolve();
-                  if (!model_.solver()->isProvenOptimal()) {
-                    fprintf(stderr, "Problem is infeasible after performing clique merging!\n");
-                    abort();
-                  }
-                }
-              }
-
               // See if we want preprocessing
               OsiSolverInterface *saveSolver = NULL;
               CglPreProcess process;
@@ -5114,25 +5086,25 @@ int CbcMain1(int argc, const char *argv[],
 #endif
               }
 
-              mergeCliques = (parameters_[whichParam(CBC_PARAM_STR_CLIQUEMERGING, parameters_)].currentOption().compare("after") == 0);
-              bool useCGraph = ((parameters_[whichParam(CBC_PARAM_STR_BKCLIQUECUTS, parameters_)].currentOption().compare("off") != 0) || (parameters_[whichParam(CBC_PARAM_STR_ODDHOLEWCCUTS, parameters_)].currentOption().compare("off") != 0));
-              if (mergeCliques || useCGraph) {
-                babModel_->solver()->buildCGraph();
-                if (mergeCliques) {
-                  CglCliqueMerging clqMerging;
-                  clqMerging.mergeCliques(*babModel_->solver());
-
-                  if (clqMerging.constraintsExtended() + clqMerging.constraintsDominated() > 0) {
-                    babModel_->solver()->resolve();
-                    if (!noPrinting_) {
-                      if (babModel_->solver()->isProvenPrimalInfeasible()) {
-                        sprintf(generalPrint, "Clique-mergning says infeasible");
-                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                          << generalPrint
-                          << CoinMessageEol;
-                      } // check if infeasible
-                    } // output info
-                  }
+              bool useCGraph = (parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters_)].currentOption().compare("off") != 0) ||
+                                (parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].currentOption().compare("off") != 0);
+              if (useCGraph) {
+                const double stCG = CoinGetTimeOfDay();
+                babModel_->solver()->setCGraph(new CoinStaticConflictGraph(babModel_->solver()->getNumCols(),
+                                                                          babModel_->solver()->getColType(),
+                                                                          babModel_->solver()->getColLower(),
+                                                                          babModel_->solver()->getColUpper(),
+                                                                          babModel_->solver()->getMatrixByRow(),
+                                                                          babModel_->solver()->getRowSense(),
+                                                                          babModel_->solver()->getRightHandSide(),
+                                                                          babModel_->solver()->getRowRange()));
+                const double etCG = CoinGetTimeOfDay();
+                babModel_->messageHandler()->message(CBC_CGRAPH_INFO, babModel_->messages())
+                  << etCG-stCG << babModel_->solver()->getCGraph()->density()*100.0 <<  CoinMessageEol;
+                //fixing variables discovered during the construction of conflict graph
+                for (const auto &p : babModel_->solver()->getCGraph()->updatedBounds()) {
+                  babModel_->solver()->setColLower(p.first, p.second.first);
+                  babModel_->solver()->setColUpper(p.first, p.second.second);
                 }
               }
 
@@ -5494,21 +5466,17 @@ int CbcMain1(int argc, const char *argv[],
                 accuracyFlag[numberGenerators] = 5;
                 switches[numberGenerators++] = 0;
               }
-              if (bkCliqueAction) {
-                bkCliqueGen.setMaxItBK(maxItBK);
-                bkCliqueGen.setMaxItBKExt(maxItBKExt);
-                bkCliqueGen.setExtendingMethod(clqExtMethod);
-                babModel_->addCutGenerator(&bkCliqueGen, translate[bkCliqueAction], "BKClique");
-                accuracyFlag[numberGenerators] = 0;
-                switches[numberGenerators++] = 0;
-              }
-              if (oddHoleWCAction) {
-                babModel_->addCutGenerator(&oddHoleWCGen, translate[oddHoleWCAction], "OddHoleWC");
-                accuracyFlag[numberGenerators] = 0;
-                switches[numberGenerators++] = 0;
-              }
               if (cliqueAction) {
-                babModel_->addCutGenerator(&cliqueGen, translate[cliqueAction], "Clique");
+                bkCliqueGen.setMaxCallsBK(maxCallsBK);
+                bkCliqueGen.setExtendingMethod(bkClqExtMethod);
+                bkCliqueGen.setPivotingStrategy(bkPivotingStrategy);
+                babModel_->addCutGenerator(&bkCliqueGen, translate[cliqueAction], "Clique");
+                accuracyFlag[numberGenerators] = 0;
+                switches[numberGenerators++] = 0;
+              }
+              if (oddWheelAction) {
+                oddWheelGen.setExtendingMethod(oddWExtMethod);
+                babModel_->addCutGenerator(&oddWheelGen, translate[oddWheelAction], "OddWheel");
                 accuracyFlag[numberGenerators] = 0;
                 switches[numberGenerators++] = 0;
               }
@@ -10911,12 +10879,13 @@ void CbcMain0(CbcModel &model,
   parameters[whichParam(CBC_PARAM_INT_THREADS, parameters)].setIntValue(0);
 #endif
   // Set up likely cut generators and defaults
-  parameters[whichParam(CBC_PARAM_STR_CLIQUEMERGING, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_BKCLIQUECUTS, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_ODDHOLEWCCUTS, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_INT_MAXITBK, parameters)].setIntValue(1000);
-  parameters[whichParam(CBC_PARAM_INT_MAXITBKEXT, parameters)].setIntValue(100);
-  parameters[whichParam(CBC_PARAM_INT_CLQEXTMETHOD, parameters)].setIntValue(3);
+  parameters[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters)].setCurrentOption("ifmove");
+  parameters[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters)].setCurrentOption("ifmove");
+  parameters[whichParam(CBC_PARAM_INT_BKPIVOTINGSTRATEGY, parameters)].setIntValue(3);
+  parameters[whichParam(CBC_PARAM_INT_BKMAXCALLS, parameters)].setIntValue(1000);
+  parameters[whichParam(CBC_PARAM_INT_BKCLQEXTMETHOD, parameters)].setIntValue(4);
+  parameters[whichParam(CBC_PARAM_INT_ODDWEXTMETHOD, parameters)].setIntValue(2);
+  parameters[whichParam(CBC_PARAM_INT_CLQSTRENGTHENING, parameters)].setIntValue(0);
   parameters[whichParam(CBC_PARAM_STR_PREPROCESS, parameters)].setCurrentOption("sos");
   parameters[whichParam(CBC_PARAM_INT_MIPOPTIONS, parameters)].setIntValue(1057);
   parameters[whichParam(CBC_PARAM_INT_CUTPASSINTREE, parameters)].setIntValue(1);
@@ -10932,7 +10901,6 @@ void CbcMain0(CbcModel &model,
   parameters[whichParam(CBC_PARAM_STR_REDSPLITCUTS, parameters)].setCurrentOption("off");
   parameters[whichParam(CBC_PARAM_STR_REDSPLIT2CUTS, parameters)].setCurrentOption("off");
   parameters[whichParam(CBC_PARAM_STR_GMICUTS, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters)].setCurrentOption("ifmove");
   parameters[whichParam(CBC_PARAM_STR_MIXEDCUTS, parameters)].setCurrentOption("ifmove");
   parameters[whichParam(CBC_PARAM_STR_FLOWCUTS, parameters)].setCurrentOption("ifmove");
   parameters[whichParam(CBC_PARAM_STR_TWOMIRCUTS, parameters)].setCurrentOption("root");

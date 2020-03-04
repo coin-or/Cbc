@@ -12,6 +12,15 @@ matrix:
             - liblapack-dev
     - os: linux
       dist: bionic
+      env: BUILD_STATIC=false
+      addons:
+        apt:
+          packages:
+            - gfortran
+            - liblapack-dev
+    - os: linux
+      dist: bionic
+      env: BUILD_STATIC=true
       addons:
         apt:
           packages:
@@ -19,15 +28,15 @@ matrix:
             - liblapack-dev
     - os: osx
       osx_image: xcode11
-      env: OSX=10.14 CC=gcc CXX=g++ 
+      env: OSX=10.14 CC=gcc CXX=g++ BUILD_STATIC=false
       compiler: clang
     - os: osx
       osx_image: xcode11
-      env: OSX=10.14 
+      env: OSX=10.14  BUILD_STATIC=false
       compiler: clang
     - os: osx
       osx_image: xcode10
-      env: OSX=10.13 
+      env: OSX=10.13  BUILD_STATIC=false
       compiler: clang
 
 before_script:
@@ -45,11 +54,13 @@ before_script:
   - bash ./coinbrew fetch $PROJECT_URL:$TRAVIS_BRANCH --no-prompt --skip-update 
 
 script:
-  - bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --test --enable-relocatable
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --tests main --enable-relocatable --fully-static; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --tests main --enable-relocatable; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --tests main --enable-relocatable; fi
 
 after_script:
   - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=master; else export VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
-  - export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz
+  - if [ $BUILD_STATIC = "false" ]; then export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz; else export TGZ_FILE=$PROJECT-$VERSION-static-$PLATFORM.tgz; fi
   - echo $TGZ_FILE
   - cp README.md LICENSE AUTHORS dist
   - cd dist

@@ -81,8 +81,8 @@ install:
 
 build_script:
   - C:\msys64\usr\bin\bash -lc "cd C:\projects; ln -s %APPVEYOR_PROJECT_SLUG% %APPVEYOR_PROJECT_NAME%; wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew"
-  - C:\msys64\usr\bin\bash -lc "cd C:\projects; ./coinbrew fetch https://github.com/%APPVEYOR_REPO_NAME%:%APPVEYOR_REPO_BRANCH% --no-prompt --skip="ThirdParty/Metis ThirdParty/Mumps" --skip-update"
-  - C:\msys64\usr\bin\bash -lc "cd C:\projects; export PATH=$ADD_PATH:$PATH; ./coinbrew build %APPVEYOR_PROJECT_NAME% --no-prompt --skip="ThirdParty/Metis ThirdParty/Mumps" --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --verbosity 2 --tests main --enable-relocatable"
+  - C:\msys64\usr\bin\bash -lc "cd C:\projects; ./coinbrew fetch https://github.com/%APPVEYOR_REPO_NAME%:%APPVEYOR_REPO_BRANCH% --no-prompt --skip='ThirdParty/Metis ThirdParty/Mumps' --skip-update"
+  - C:\msys64\usr\bin\bash -lc "cd C:\projects; export PATH=$ADD_PATH:$PATH; ./coinbrew build %APPVEYOR_PROJECT_NAME% --no-prompt --skip='ThirdParty/Metis ThirdParty/Mumps' --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --verbosity 2 --tests main --enable-relocatable"
 
 after_build:
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libblas.dll C:\projects\dist\bin)

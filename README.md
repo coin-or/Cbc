@@ -209,7 +209,7 @@ https://github.com/coin-or/Cbc/issues
     * `--enable-cbc-parallel` is now enabled by default if a pthread library
       is found. Use `--disable-cbc-parallel` to disable.
 
- * Release 2.10.5 (in preparation)
+ * Release 2.10.5
    * revert fix that stopped Clp when timelimit reached, as that lead to
      all cleanup solves afterwards to stop without proper finishing and
      giving wrong results

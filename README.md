@@ -166,7 +166,7 @@ https://github.com/coin-or/Cbc/issues
 
 ## CHANGELOG
 
- * Release 2.10.5 (in preparation)
+ * Release 2.10.5
    * revert fix that stopped Clp when timelimit reached, as that lead to
      all cleanup solves afterwards to stop without proper finishing and
      giving wrong results

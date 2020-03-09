@@ -1180,13 +1180,6 @@ int CbcClpUnitTest(const CbcModel &saveModel,
   const std::string &dirMiplib, int testSwitch,
   const double *stuff);
 
-/*
-   int CbcMain1 (int argc, const char *argv[],
-   CbcModel  & model)
-   {
-   return CbcMain1(argc, argv, model, dummyCallBack);
-   }*/
-
 #ifdef CBC_THREAD_SAFE
 // Copies of some input decoding
 
@@ -1298,45 +1291,20 @@ CbcSolverUsefulData::~CbcSolverUsefulData()
 {
 }
 
-/*
-  Meaning of whereFrom:
-    1 after initial solve by dualsimplex etc
-    2 after preprocessing
-    3 just before branchAndBound (so user can override)
-    4 just after branchAndBound (before postprocessing)
-    5 after postprocessing
-    6 after a user called heuristic phase
-*/
-
-int CbcMain1(int argc, const char *argv[],
-  CbcModel &model,
-  int callBack(CbcModel *currentSolver, int whereFrom))
-{
-  CbcSolverUsefulData data;
-  // allow interrupts and printing
-  data.noPrinting_ = false;
-  data.useSignalHandler_ = true;
-  return CbcMain1(argc, argv, model, callBack, data);
-}
-
 static bool ends_with(std::string const &value, std::string const &ending)
 {
   if (ending.size() > value.size())
     return false;
   return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
-
-// and simpler version
-int CbcMain1(int argc, const char *argv[],
-  CbcModel &model)
-{
-  CbcSolverUsefulData data;
-  // allow interrupts and printing
-  data.noPrinting_ = false;
-  data.useSignalHandler_ = true;
-  return CbcMain1(argc, argv, model, dummyCallBack, data);
-}
 static void printGeneralMessage(CbcModel &model, const char *message);
+// Version of CbcMain1 without callBack
+int CbcMain1(int argc, const char *argv[],
+  CbcModel &model,
+  CbcSolverUsefulData &parameterData)
+{
+  return CbcMain1(argc,argv,model,dummyCallBack,parameterData);
+}
 /*
   Meaning of whereFrom:
     1 after initial solve by dualsimplex etc
@@ -5352,6 +5320,10 @@ int CbcMain1(int argc, const char *argv[],
                 } else if (gomoryAction == 8) {
                   gomoryAction = 3;
                   gomoryGen.setLimitAtRoot(numberColumns);
+                  gomoryGen.setLimit(200);
+                } else if (gomoryAction == 9) {
+                  gomoryAction = 3;
+                  gomoryGen.setLimitAtRoot(500);
                   gomoryGen.setLimit(200);
                 } else if (numberColumns > 5000) {
                   //#define MORE_CUTS2
@@ -10793,11 +10765,6 @@ int CbcMain(int argc, const char *argv[],
   return CbcMain1(argc, argv, model, dummyCallBack, cbcData);
 }
 
-void CbcMain0(CbcModel &model)
-{
-  CbcSolverUsefulData solverData;
-  CbcMain0(model, solverData);
-}
 void CbcMain0(CbcModel &model,
   CbcSolverUsefulData &parameterData)
 {

@@ -365,8 +365,9 @@ int main(int argc, const char *argv[])
 #if NEW_STYLE_SOLVER == 0
   // Pass to Cbc initialize defaults
   CbcModel modelA(solver1);
+  CbcSolverUsefulData solverData;
   CbcModel *model = &modelA;
-  CbcMain0(modelA);
+  CbcMain0(modelA,solverData);
   // Event handler
   MyEventHandler3 eventHandler;
   model->passInEventHandler(&eventHandler);
@@ -375,10 +376,10 @@ int main(int argc, const char *argv[])
      but this will do
   */
   if (argc > 2) {
-    CbcMain1(argc - 1, argv + 1, modelA, callBack);
+    CbcMain1(argc - 1, argv + 1, modelA, callBack,solverData);
   } else {
     const char *argv2[] = { "driver4", "-solve", "-quit" };
-    CbcMain1(3, argv2, modelA, callBack);
+    CbcMain1(3, argv2, modelA, callBack,solverData);
   }
 #else
   CbcSolver control(solver1);

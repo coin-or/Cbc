@@ -9,6 +9,7 @@
 #include "CoinPragma.hpp"
 
 #include "CbcModel.hpp"
+#include "CbcSolver.hpp"
 
 #include "OsiClpSolverInterface.hpp"
 #include "ClpPresolve.hpp"
@@ -71,18 +72,19 @@ int main(int argc, const char *argv[])
   solver1.initialSolve();
   time1 = CoinCpuTime();
   std::cout << "Initialization " << time1 - time0 << " seconds" << std::endl;
+  CbcSolverUsefulData solverData;
   CbcModel model(solver1);
   // initialize
-  CbcMain0(model);
+  CbcMain0(model,solverData);
   /* Now go into code for standalone solver
      Could copy arguments and add -quit at end to be safe
      but this will do
   */
   if (argc > 2) {
-    CbcMain1(argc - 1, argv + 1, model);
+    CbcMain1(argc - 1, argv + 1, model,solverData);
   } else {
     const char *argv2[] = { "presolveBefore", "-solve", "-quit" };
-    CbcMain1(3, argv2, model);
+    CbcMain1(3, argv2, model,solverData);
   }
 
   if (!simplexA->problemStatus()) {

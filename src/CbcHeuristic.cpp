@@ -2118,6 +2118,12 @@ int CbcRounding::solution(double &solutionValue,
   int numberColumns = solver->getNumCols();
   double *newSolution = new double[numberColumns];
   memcpy(newSolution, solution, numberColumns * sizeof(double));
+  /* we need to know about all integer variables - including ones
+     that will be integer if others are */
+  char *isIntegerHere = new char [numberColumns];
+  memset(isIntegerHere,0,numberColumns*sizeof(char));
+  for (i=0;i<numberIntegers;i++)
+    isIntegerHere[integerVariable[i]]=1;
 
   double *rowActivity = new double[numberRows];
   memset(rowActivity, 0, numberRows * sizeof(double));
@@ -2220,7 +2226,7 @@ int CbcRounding::solution(double &solutionValue,
               // possible - check if integer
               double distance = absInfeasibility / absElement;
               double thisCost = -direction * objective[iColumn] * distance;
-              if (isHeuristicInteger(solver, iColumn)) {
+              if (isIntegerHere[iColumn]) {
                 distance = ceil(distance - useTolerance);
                 if (currentValue - distance >= lowerValue - useTolerance) {
                   if (absInfeasibility - distance * absElement < -gap - useTolerance)
@@ -2245,7 +2251,7 @@ int CbcRounding::solution(double &solutionValue,
               // possible - check if integer
               double distance = absInfeasibility / absElement;
               double thisCost = direction * objective[iColumn] * distance;
-              if (isHeuristicInteger(solver, iColumn)) {
+              if (isIntegerHere[iColumn]) {
                 distance = ceil(distance - 1.0e-7);
                 assert(currentValue - distance <= upperValue + useTolerance);
                 if (absInfeasibility - distance * absElement < -gap - useTolerance)
@@ -2281,7 +2287,7 @@ int CbcRounding::solution(double &solutionValue,
     double penaltyChange = 0.0;
     int iColumn;
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-      if (isHeuristicInteger(solver, iColumn))
+      if (isIntegerHere[iColumn])
         continue;
       double currentValue = newSolution[iColumn];
       double lowerValue = lower[iColumn];
@@ -2430,7 +2436,7 @@ int CbcRounding::solution(double &solutionValue,
       lastChange = 0;
       numberPasses++;
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-        bool isInteger = isHeuristicInteger(solver, iColumn);
+        bool isInteger = isIntegerHere[iColumn];
         double currentValue = newSolution[iColumn];
         double lowerValue = lower[iColumn];
         double upperValue = upper[iColumn];
@@ -2767,7 +2773,7 @@ int CbcRounding::solution(double &solutionValue,
     int *candidate = new int[numberColumns];
     int nCandidate = 0;
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-      bool isInteger = isHeuristicInteger(solver, iColumn);
+      bool isInteger = isIntegerHere[iColumn];
       if (isInteger) {
         double currentValue = newSolution[iColumn];
         if (fabs(currentValue - floor(currentValue + 0.5)) > 1.0e-8)
@@ -2805,6 +2811,7 @@ int CbcRounding::solution(double &solutionValue,
 #endif
   delete[] newSolution;
   delete[] rowActivity;
+  delete[] isIntegerHere;
   return returnCode;
 }
 // update model

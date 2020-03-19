@@ -202,6 +202,7 @@ static int initialPumpTune = -1;
 #include "CglCliqueStrengthening.hpp"
 #include "CglBKClique.hpp"
 #include "CglOddWheel.hpp"
+#include "CglMessage.hpp"
 
 #include "CglPreProcess.hpp"
 #include "CglCutGenerator.hpp"
@@ -2644,12 +2645,10 @@ int CbcMain1(int argc, const char *argv[],
             case CBC_PARAM_STR_CLIQUECUTS:
               defaultSettings = false; // user knows what she is doing
               cliqueAction = action;
-              parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters_)].setCurrentOption(action);
               break;
             case CBC_PARAM_STR_ODDWHEELCUTS:
               defaultSettings = false; // user knows what she is doing
               oddWheelAction = action;
-              parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].setCurrentOption(action);
               break;
             case CBC_PARAM_STR_GOMORYCUTS:
               defaultSettings = false; // user knows what she is doing
@@ -5086,8 +5085,7 @@ int CbcMain1(int argc, const char *argv[],
 #endif
               }
 
-              bool useCGraph = (parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters_)].currentOption().compare("off") != 0) ||
-                                (parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].currentOption().compare("off") != 0);
+              const bool useCGraph = ( (cliqueAction != 0) || (oddWheelAction != 0) || (clqStrMethod >= 1) );
               if (useCGraph) {
                 const double stCG = CoinGetTimeOfDay();
                 babModel_->solver()->setCGraph(new CoinStaticConflictGraph(babModel_->solver()->getNumCols(),
@@ -5101,10 +5099,33 @@ int CbcMain1(int argc, const char *argv[],
                 const double etCG = CoinGetTimeOfDay();
                 babModel_->messageHandler()->message(CBC_CGRAPH_INFO, babModel_->messages())
                   << etCG-stCG << babModel_->solver()->getCGraph()->density()*100.0 <<  CoinMessageEol;
-                //fixing variables discovered during the construction of conflict graph
+                //fixations of variables discovered during the construction of conflict graph
                 for (const auto &p : babModel_->solver()->getCGraph()->updatedBounds()) {
                   babModel_->solver()->setColLower(p.first, p.second.first);
                   babModel_->solver()->setColUpper(p.first, p.second.second);
+                }
+
+                if (clqStrMethod >= 1) {
+                  CglCliqueStrengthening clqStr;
+                  clqStr.strengthenCliques(*babModel_->solver(), clqStrMethod);
+
+                  if (clqStr.constraintsExtended() + clqStr.constraintsDominated() > 0) {
+                    babModel_->solver()->resolve();
+
+                    if (!noPrinting_) {
+                      if (babModel_->solver()->isProvenPrimalInfeasible()) {
+                        sprintf(generalPrint, "Clique Strengthening says infeasible!");
+                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                          << generalPrint
+                          << CoinMessageEol;
+                      } else {
+                      	sprintf(generalPrint, "After applying Clique Strengthening continuous objective value is %.2lf", babModel_->solver()->getObjValue());
+                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                          << generalPrint
+                          << CoinMessageEol;
+                      }
+                    }
+                  }
                 }
               }
 

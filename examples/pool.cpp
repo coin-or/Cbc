@@ -51,18 +51,19 @@ int main(int argc, const char *argv[])
 
   // Pass to Cbc initialize defaults
   CbcModel modelA(solver1);
+  CbcSolverUsefulData solverData;
   CbcModel *model = &modelA;
-  CbcMain0(modelA);
+  CbcMain0(modelA,solverData);
   modelA.setMaximumSavedSolutions(5);
   /* Now go into code for standalone solver
      Could copy arguments and add -quit at end to be safe
      but this will do
   */
   if (argc > 2) {
-    CbcMain1(argc - 1, argv + 1, modelA);
+    CbcMain1(argc - 1, argv + 1, modelA,solverData);
   } else {
     const char *argv2[] = { "driver4", "-solve", "-quit" };
-    CbcMain1(3, argv2, modelA);
+    CbcMain1(3, argv2, modelA,solverData);
   }
   // Solver was cloned so get current copy
   OsiSolverInterface *solver = model->solver();

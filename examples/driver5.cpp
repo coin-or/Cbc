@@ -499,8 +499,9 @@ int main(int argc, const char *argv[])
   // Messy code below copied from CbcSolver.cpp
   // Pass to Cbc initialize defaults
   CbcModel modelA(solver1);
+  CbcSolverUsefulData solverData;
   CbcModel *model = &modelA;
-  CbcMain0(modelA);
+  CbcMain0(modelA,solverData);
   // Event handler
   MyEventHandler3 eventHandler;
   model->passInEventHandler(&eventHandler);
@@ -509,10 +510,10 @@ int main(int argc, const char *argv[])
      but this will do
   */
   if (argc > 2) {
-    CbcMain1(argc - 1, argv + 1, modelA);
+    CbcMain1(argc - 1, argv + 1, modelA,solverData);
   } else {
     const char *argv2[] = { "driver5", "-solve", "-quit" };
-    CbcMain1(3, argv2, modelA);
+    CbcMain1(3, argv2, modelA,solverData);
   }
   // Solver was cloned so get current copy
   OsiSolverInterface *solver = model->solver();

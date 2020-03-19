@@ -69,6 +69,7 @@ MSVisualStudio/v9alt/libOsiCbc.vcproj -text
 MSVisualStudio/v9alt/osicbc.vsprops -text
 /README.md -text
 /appveyor.yml -text
+/ar-lib -text
 /cbc.pc.in -text
 /compile -text
 /config.guess -text

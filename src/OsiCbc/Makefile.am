@@ -6,16 +6,11 @@
 
 # Author:  Andreas Waechter           IBM    2006-04-13
 
-AUTOMAKE_OPTIONS = foreign
-
-include $(top_srcdir)/BuildTools/Makemain.inc
-
 ########################################################################
 #                             libOsiCbc                                #
 ########################################################################
 
 # Name of the library compiled in this directory.
-
 lib_LTLIBRARIES = libOsiCbc.la
 
 # List all source files for this library, including headers

@@ -6,10 +6,6 @@
 
 # Author:  Andreas Waechter           IBM    2006-04-13
 
-AUTOMAKE_OPTIONS = foreign
-
-include BuildTools/Makemain.inc
-
 ########################################################################
 #                          Subdirectories                              #
 ########################################################################
@@ -97,22 +93,10 @@ unitTest: test
 clean-local: clean-doxygen-docs
 	if test -r test/Makefile; then cd test; $(MAKE) clean; fi
 
-distclean-local:
-	if test -r test/Makefile; then cd test; $(MAKE) distclean; fi
-
 install-exec-local: install-doc
 
 uninstall-local: uninstall-doc uninstall-doxygen-docs
 
 .PHONY: test unitTest doxydoc
 
-########################################################################
-#                         Maintainer Stuff                             #
-########################################################################
-
-CLEANFILES =
-
-# Files that are generated and should be cleaned with make distclean
-
-DISTCLEANFILES =
-
+include BuildTools/Makemain.inc

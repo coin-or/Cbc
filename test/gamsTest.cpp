@@ -294,14 +294,15 @@ void sos2a(int &error_count, int &warning_count)
       break;
     }
     CbcModel model(solver1);
-    CbcMain0(model);
+    CbcSolverUsefulData data;
+    CbcMain0(model, data);
     int which[3] = { 0, 1, 2 };
     CbcObject *sosobject = new CbcSOS(&model, 3, which, NULL, 0, 2);
     model.addObjects(1, &sosobject);
     delete sosobject;
     const char *argv2[] = { "gamstest_sos2a", "-solve", "-quit" };
     cout << "\nSolving sos2a model with last row having lhs " << solver1.getRowLower()[5] << endl;
-    CbcMain1(3, argv2, model, NULL);
+    CbcMain1(3, argv2, model, data);
     cout << endl;
     if (!model.isProvenOptimal()) {
       cerr << "Error: Model sos2a not solved to optimality." << endl;

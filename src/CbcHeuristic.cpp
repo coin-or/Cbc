@@ -1155,7 +1155,19 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           model.gutsOfCopy(*model_, 2);
           
           if (model.solver()->getCGraph()) {
-            model.solver()->buildCGraph();
+            const double stClqStr = CoinGetTimeOfDay();
+            model.solver()->setCGraph(new CoinStaticConflictGraph(model.solver()->getNumCols(), model.solver()->getColType(),
+              model.solver()->getColLower(), model.solver()->getColUpper(), model.solver()->getMatrixByRow(), model.solver()->getRowSense(),
+              model.solver()->getRightHandSide(), model.solver()->getRowRange()));
+            const double etClqStr = CoinGetTimeOfDay();
+            model.messageHandler()->message(CBC_CGRAPH_INFO, model.messages())
+              << etClqStr-stClqStr << model.solver()->getCGraph()->density()*100.0 <<  CoinMessageEol;
+
+            //fixing variables discovered during the construction of conflict graph
+            for (const auto &p : model.solver()->getCGraph()->updatedBounds()) {
+              model.solver()->setColLower(p.first, p.second.first);
+              model.solver()->setColUpper(p.first, p.second.second);
+            }
           }
 
 #ifdef CGL_DEBUG

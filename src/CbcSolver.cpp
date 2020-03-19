@@ -698,7 +698,7 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(CBC_PARAM_INT_BKMAXCALLS, parameters_)].setIntValue(1000);
   parameters_[whichParam(CBC_PARAM_INT_BKCLQEXTMETHOD, parameters_)].setIntValue(4);
   parameters_[whichParam(CBC_PARAM_INT_ODDWEXTMETHOD, parameters_)].setIntValue(2);
-  parameters_[whichParam(CBC_PARAM_INT_CLQSTRENGTHENING, parameters_)].setIntValue(0);
+  parameters_[whichParam(CBC_PARAM_INT_CLQSTRENGTHENING, parameters_)].setIntValue(4);
   if (createSolver)
     delete clpSolver;
 }
@@ -1786,7 +1786,7 @@ int CbcMain1(int argc, const char *argv[],
     CglBKClique bkCliqueGen;
     int cliqueAction = 3, bkPivotingStrategy = 3, maxCallsBK = 1000, bkClqExtMethod = 4;
     CglOddWheel oddWheelGen;
-    int oddWheelAction = 3, oddWExtMethod = 2, clqStrMethod = 0;
+    int oddWheelAction = 3, oddWExtMethod = 2, clqStrMethod = 4;
 
     // maxaggr,multiply,criterion(1-3)
     CglMixedIntegerRounding2 mixedGen(1, true, 1);
@@ -10873,7 +10873,7 @@ void CbcMain0(CbcModel &model,
   parameters[whichParam(CBC_PARAM_INT_BKMAXCALLS, parameters)].setIntValue(1000);
   parameters[whichParam(CBC_PARAM_INT_BKCLQEXTMETHOD, parameters)].setIntValue(4);
   parameters[whichParam(CBC_PARAM_INT_ODDWEXTMETHOD, parameters)].setIntValue(2);
-  parameters[whichParam(CBC_PARAM_INT_CLQSTRENGTHENING, parameters)].setIntValue(0);
+  parameters[whichParam(CBC_PARAM_INT_CLQSTRENGTHENING, parameters)].setIntValue(4);
   parameters[whichParam(CBC_PARAM_STR_PREPROCESS, parameters)].setCurrentOption("sos");
   parameters[whichParam(CBC_PARAM_INT_MIPOPTIONS, parameters)].setIntValue(1057);
   parameters[whichParam(CBC_PARAM_INT_CUTPASSINTREE, parameters)].setIntValue(1);

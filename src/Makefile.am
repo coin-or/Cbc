@@ -111,9 +111,6 @@ libCbc_la_CPPFLAGS = $(CBCLIB_CFLAGS)
 libCbcSolver_la_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
 
 AM_CPPFLAGS =
-if COIN_HAS_NAUTY
-  AM_CPPFLAGS += -DCOIN_HAS_NTY $(NAUTY_CFLAGS)
-endif
 
 ########################################################################
 #                            cbc program                               #

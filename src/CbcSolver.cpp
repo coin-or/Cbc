@@ -833,7 +833,7 @@ static void statistics(ClpSimplex *originalModel, ClpSimplex *model);
 static bool maskMatches(const int *starts, char **masks,
   std::string &check);
 static void generateCode(CbcModel *model, const char *fileName, int type, int preProcess);
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
 // returns number of constraints added
 static int nautiedConstraints(CbcModel &model, int maxPass);
 #endif
@@ -7370,7 +7370,7 @@ int CbcMain1(int argc, const char *argv[],
                 if (biLinearProblem)
                   babModel_->setSpecialOptions(babModel_->specialOptions() & (~(512 | 32768)));
                 babModel_->setMoreSpecialOptions2(parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].intValue());
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
                 int nautyAdded = 0;
                 {
                   int jParam = whichParam(CBC_PARAM_STR_ORBITAL,
@@ -7406,7 +7406,7 @@ int CbcMain1(int argc, const char *argv[],
 		}
 #endif
                 babModel_->branchAndBound(statistics);
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
                 if (nautyAdded) {
                   int *which = new int[nautyAdded];
                   int numberOldRows = babModel_->solver()->getNumRows() - nautyAdded;
@@ -12603,7 +12603,7 @@ static void printGeneralMessage(CbcModel &model, const char *message)
     << CoinMessageEol;
 #endif
 }
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
 #include "CbcSymmetry.hpp"
 // returns number of constraints added
 static int nautiedConstraints(CbcModel &model, int maxPass)

@@ -12,7 +12,7 @@
 
 #include "CbcConfig.h"
 
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
 
 extern "C" {
 #include "nauty.h"

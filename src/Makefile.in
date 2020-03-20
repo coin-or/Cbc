@@ -100,12 +100,11 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@COIN_HAS_NAUTY_TRUE@am__append_1 = -DCOIN_HAS_NTY $(NAUTY_CFLAGS)
 bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
-@COIN_HAS_CLP_TRUE@am__append_2 = cbc
+@COIN_HAS_CLP_TRUE@am__append_1 = cbc
 
 ########################################################################
 #                        cbc-generic program                           #
@@ -113,12 +112,12 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
-@CBC_BUILD_CBC_GENERIC_TRUE@am__append_3 = cbc-generic
+@CBC_BUILD_CBC_GENERIC_TRUE@am__append_2 = cbc-generic
 
 # List all additionally required solver and Osi libraries
 # the linker flags for all available LP solvers should already be included in $CBCGENERIC_LFLAGS,
 # so just add compiler flags here (all we can think of)
-@CBC_BUILD_CBC_GENERIC_TRUE@am__append_4 = $(CBCGENERIC_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@am__append_3 = $(CBCGENERIC_CFLAGS)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -671,8 +670,7 @@ libCbcSolver_la_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
 ########################################################################
 
 # List additional defines
-AM_CPPFLAGS = $(am__append_1) $(am__append_4) -DCOIN_NO_CLP_MESSAGE \
-	-DUSE_CBCCONFIG
+AM_CPPFLAGS = $(am__append_3) -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
 
 # List all source files for this executable, including headers
 @COIN_HAS_CLP_TRUE@cbc_SOURCES = CoinSolve.cpp

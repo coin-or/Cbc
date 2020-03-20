@@ -15,7 +15,7 @@
 #endif
 
 #include "CbcConfig.h"
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
 #include "CbcSymmetry.hpp"
 #endif
 //#define DEBUG_SOLUTION
@@ -1985,7 +1985,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
        2 - always go to end
      */
   int goToEndInStrongBranching = (model->moreSpecialOptions2() & (3 * 8192)) >> 13;
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
   // 1 after, 2 strong, 3 until depth 5
   int orbitOption = (model->moreSpecialOptions2() & (128 | 256)) >> 7;
 #endif
@@ -2841,10 +2841,10 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         }
       }
 #endif
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
       const int *orbits = NULL;
 #endif
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
       if (orbitOption == 2 /* was >1*/) {
         CbcSymmetry *symmetryInfo = model->symmetryInfo();
         CbcNodeInfo *infoX = lastNode ? lastNode->nodeInfo() : NULL;
@@ -2888,7 +2888,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                 }
               }
             } else {
-#if COIN_HAS_NTY2 == 1
+#if COIN_HAS_NAUTY2 == 1
               // take largest
               int iOrbit = symmetryInfo->largestOrbit(solver->getColLower(),
                 solver->getColUpper());
@@ -3079,7 +3079,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                     */
           choice.possibleBranch->way(-1);
           predictedChange = choice.possibleBranch->branch();
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
           if (orbits) {
             // can fix all in orbit
             int fixOrbit = orbits[iObject];
@@ -3959,7 +3959,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       kColumn = branchObj->columnNumber();
     }
   }
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
   if (orbitOption && kColumn >= 0) {
     CbcSymmetry *symmetryInfo = model->symmetryInfo();
     CbcNodeInfo *infoX = lastNode ? lastNode->nodeInfo() : NULL;

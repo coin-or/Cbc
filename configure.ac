@@ -84,7 +84,7 @@ AC_COIN_CHK_PKG(ASL,[CbcSolverLib],[coinasl])
 
 # Nauty library (for symmetry detection).
 
-AC_COIN_CHK_LIB([Nauty],[CbcLib],[-lnauty],[],[],[nauty])
+AC_COIN_CHK_LIB([Nauty],[CbcLib CbcSolverLib],[-lnauty],[],[],[nauty])
 
 #############################################################################
 

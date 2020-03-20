@@ -19042,6 +19042,8 @@ $as_echo_n "checking for package Nauty... " >&6; }
 
 
 
+
+
 # Check to see if the user has overridden configure parameters from the
 # environment.
 
@@ -19285,6 +19287,8 @@ $as_echo "#define COIN_HAS_NAUTY 1" >>confdefs.h
 
     CBCLIB_LFLAGS="$nauty_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$nauty_cflags $CBCLIB_CFLAGS"
+      CBCSOLVERLIB_LFLAGS="$nauty_lflags $CBCSOLVERLIB_LFLAGS"
+       CBCSOLVERLIB_CFLAGS="$nauty_cflags $CBCSOLVERLIB_CFLAGS"
 
 
 # Finally, set up PRIM_DATA, unless the user specified nodata.
@@ -22121,7 +22125,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-      # add -DXYZ_BUILD to CFLAGS
+      # add -DXYZ_BUILD to XYZ_CFLAGS
       CBCLIB_CFLAGS="${CBCLIB_CFLAGS} -DCBCLIB_BUILD"
 
 # Define BUILDTOOLS_DEBUG to enable debugging output
@@ -22171,7 +22175,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-      # add -DXYZ_BUILD to CFLAGS
+      # add -DXYZ_BUILD to XYZ_CFLAGS
       CBCSOLVERLIB_CFLAGS="${CBCSOLVERLIB_CFLAGS} -DCBCSOLVERLIB_BUILD"
 
 # Define BUILDTOOLS_DEBUG to enable debugging output
@@ -22221,7 +22225,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-      # add -DXYZ_BUILD to CFLAGS
+      # add -DXYZ_BUILD to XYZ_CFLAGS
       CBCGENERIC_CFLAGS="${CBCGENERIC_CFLAGS} -DCBCGENERIC_BUILD"
 
 # Define BUILDTOOLS_DEBUG to enable debugging output
@@ -22271,7 +22275,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-      # add -DXYZ_BUILD to CFLAGS
+      # add -DXYZ_BUILD to XYZ_CFLAGS
       OSICBCLIB_CFLAGS="${OSICBCLIB_CFLAGS} -DOSICBCLIB_BUILD"
 
 # Define BUILDTOOLS_DEBUG to enable debugging output
@@ -22321,7 +22325,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-      # add -DXYZ_BUILD to CFLAGS
+      # add -DXYZ_BUILD to XYZ_CFLAGS
       CBCUNITTEST_CFLAGS="${CBCUNITTEST_CFLAGS} -DCBCUNITTEST_BUILD"
 
 # Define BUILDTOOLS_DEBUG to enable debugging output

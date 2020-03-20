@@ -61,7 +61,7 @@ extern int gomory_try;
 #include "CbcFeasibilityBase.hpp"
 #include "CbcFathom.hpp"
 #include "CbcFullNodeInfo.hpp"
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
 #include "CbcSymmetry.hpp"
 #endif
 // include Probing
@@ -2381,7 +2381,7 @@ void CbcModel::branchAndBound(int doStatistics)
   }
 #endif
 #endif
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
   // maybe allow on fix and restart later
   if ((moreSpecialOptions2_ & (128 | 256)) != 0 && !parentModel_) {
     symmetryInfo_ = new CbcSymmetry();
@@ -2681,7 +2681,7 @@ void CbcModel::branchAndBound(int doStatistics)
       rootModels[i]->setRandomSeed(newSeed + 10000000 * i);
       rootModels[i]->randomNumberGenerator()->setSeed(newSeed + 50000000 * i);
       rootModels[i]->setMultipleRootTries(0);
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
       rootModels[i]->zapSymmetry();
       rootModels[i]->moreSpecialOptions2_ &= ~(128 | 256); // off nauty
 #endif
@@ -4830,7 +4830,7 @@ void CbcModel::branchAndBound(int doStatistics)
           << getCurrentSeconds()
           << CoinMessageEol;
       }
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
       if (symmetryInfo_)
         symmetryInfo_->statsOrbits(this, 1);
 #endif
@@ -5118,7 +5118,7 @@ void CbcModel::branchAndBound(int doStatistics)
       << maximumDepthActual_
       << numberDJFixed_ << numberFathoms_ << numberExtraNodes_ << numberExtraIterations_
       << CoinMessageEol;
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
   if (symmetryInfo_)
     symmetryInfo_->statsOrbits(this, 1);
 #endif
@@ -5676,7 +5676,7 @@ CbcModel::CbcModel()
   , lastHeuristic_(NULL)
   , fastNodeDepth_(-1)
   , eventHandler_(NULL)
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
   , symmetryInfo_(NULL)
 #endif
   , numberObjects_(0)
@@ -5852,7 +5852,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , lastHeuristic_(NULL)
   , fastNodeDepth_(-1)
   , eventHandler_(NULL)
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
   , symmetryInfo_(NULL)
 #endif
   , numberObjects_(0)
@@ -6400,7 +6400,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   } else {
     lastCut_ = NULL;
   }
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
   if (rhs.symmetryInfo_)
     symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
   else
@@ -6759,7 +6759,7 @@ CbcModel::operator=(const CbcModel &rhs)
     } else {
       lastCut_ = NULL;
     }
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
     if (rhs.symmetryInfo_)
       symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
     else
@@ -6856,7 +6856,7 @@ void CbcModel::gutsOfDestructor2()
   cutModifier_ = NULL;
   topOfTree_ = NULL;
   resetModel();
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
   delete symmetryInfo_;
   symmetryInfo_ = NULL;
 #endif
@@ -7087,7 +7087,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
     branchingMethod_ = NULL;
   messageHandler()->setLogLevel(rhs.messageHandler()->logLevel());
   whenCuts_ = rhs.whenCuts_;
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
   if (rhs.symmetryInfo_)
     symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
   else
@@ -15186,7 +15186,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
         clpSimplex->setSpecialOptions(save | 0x11200000); // say is Cbc (and in branch and bound - but save ray)
       }
 #endif
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
       if (symmetryInfo_) {
         CbcNodeInfo *infoX = oldNode ? oldNode->nodeInfo() : NULL;
         bool worthTrying = false;
@@ -19459,7 +19459,7 @@ void CbcModel::setMIPStart(int count, const char **colNames, const double colVal
   for (int i = 0; (i < count); ++i)
     mipStart_.push_back(std::pair< std::string, double >(std::string(colNames[i]), colValues[i]));
 }
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
 // get rid of all
 void CbcModel::zapSymmetry()
 {

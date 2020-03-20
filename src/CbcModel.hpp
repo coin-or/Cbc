@@ -2615,7 +2615,7 @@ public:
   {
     maximumNumberIterations_ = value;
   }
-#ifdef COIN_HAS_NTY
+#ifdef COIN_HAS_NAUTY
   /// Symmetry information
   inline CbcSymmetry *symmetryInfo() const
   {

@@ -5053,7 +5053,9 @@ int CbcMain1(int argc, const char *argv[],
 #endif
               }
 
-              const bool useCGraph = ( (cliqueAction != 0) || (oddWheelAction != 0) || (clqStrMethod >= 1) );
+              const bool hasCols = (babModel_->solver()->getNumCols() > 0);
+              const bool hasRows = (babModel_->solver()->getNumRows() > 0);
+              const bool useCGraph = hasCols && hasRows && ((cliqueAction != 0) || (oddWheelAction != 0) || (clqStrMethod >= 1));
               if (useCGraph) {
                 const double stCG = CoinGetTimeOfDay();
                 babModel_->solver()->setCGraph(new CoinStaticConflictGraph(babModel_->solver()->getNumCols(),

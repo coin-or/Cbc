@@ -26,7 +26,7 @@
 #define __CBCSOLVERCONFIG_H__
 
 #ifdef HAVE_CONFIG_H
-#ifdef CBCSOLVER_BUILD
+#ifdef CBCSOLVERLIB_BUILD
 #include "config.h"
 
 /* overwrite CBCSOLVERLIB_EXPORT from config.h when building Cbc
@@ -48,7 +48,7 @@
 
 #else /* HAVE_CONFIG_H */
 
-#ifdef CBCSOLVER_BUILD
+#ifdef CBCSOLVERLIB_BUILD
 #include "config_default.h"
 #else
 #include "config_cbc_default.h"
@@ -56,7 +56,7 @@
 
 #ifndef CBCSOLVERLIB_EXPORT
 # if defined(_WIN32) && defined(DLL_EXPORT)
-#  ifdef CBCSOLVER_BUILD
+#  ifdef CBCSOLVERLIB_BUILD
 #   define CBCSOLVERLIB_EXPORT __declspec(dllexport)
 #  else
 #   define CBCSOLVERLIB_EXPORT __declspec(dllimport)

@@ -7,6 +7,8 @@
     \brief Main routine for the cbc stand-alone solver.
 */
 
+#undef CBCSOLVERLIB_BUILD
+
 /* would normally be a separate config header file, but the cbc exe has only one source file */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

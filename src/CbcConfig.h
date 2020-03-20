@@ -26,7 +26,7 @@
 #define __CBCCONFIG_H__
 
 #ifdef HAVE_CONFIG_H
-#ifdef CBC_BUILD
+#ifdef CBCLIB_BUILD
 #include "config.h"
 
 /* overwrite CBCLIB_EXPORT from config.h when building Cbc
@@ -48,7 +48,7 @@
 
 #else /* HAVE_CONFIG_H */
 
-#ifdef CBC_BUILD
+#ifdef CBCLIB_BUILD
 #include "config_default.h"
 #else
 #include "config_cbc_default.h"

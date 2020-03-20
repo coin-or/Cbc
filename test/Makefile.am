@@ -60,7 +60,7 @@ bin_PROGRAMS = gamsTest osiUnitTest CInterfaceTest
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la
 
-AM_CPPFLAGS = -I$(srcdir)/../src $(CBCLIB_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../src
 
 ########################################################################
 #                         unitTest for OsiCbc                          #

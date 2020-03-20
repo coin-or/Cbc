@@ -82,7 +82,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\src\OsiCbc;..\..\..\src;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Osi\src\OsiCommonTest;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>CBC_BUILD;WIN32;_DEBUG;_CONSOLE;SAMPLEDIR="..\\..\\..\\..\\Data\\Sample";NETLIBDIR="..\\..\\..\\..\\Data\\Netlib";MIPLIBDIR="..\\..\\..\\..\\Data\\miplib3";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CBCLIB_BUILD;WIN32;_DEBUG;_CONSOLE;SAMPLEDIR="..\\..\\..\\..\\Data\\Sample";NETLIBDIR="..\\..\\..\\..\\Data\\Netlib";MIPLIBDIR="..\\..\\..\\..\\Data\\miplib3";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
     </ClCompile>
@@ -100,7 +100,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\src\OsiCbc;..\..\..\src;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Osi\src\OsiCommonTest;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>CBC_BUILD;WIN32;NDEBUG;_NDEBUG;COIN_FAST_CODE;CLP_FAST_CODE;COIN_NO_TEST_DUPLICATE;_CONSOLE;SAMPLEDIR="..\\..\\..\\..\\Data\\Sample";NETLIBDIR="..\\..\\..\\..\\Data\\Netlib";MIPLIBDIR="..\\..\\..\\..\\Data\\miplib3";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CBCLIB_BUILD;WIN32;NDEBUG;_NDEBUG;COIN_FAST_CODE;CLP_FAST_CODE;COIN_NO_TEST_DUPLICATE;_CONSOLE;SAMPLEDIR="..\\..\\..\\..\\Data\\Sample";NETLIBDIR="..\\..\\..\\..\\Data\\Netlib";MIPLIBDIR="..\\..\\..\\..\\Data\\miplib3";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
     </ClCompile>
@@ -123,7 +123,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\src\OsiCbc;..\..\..\src;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Osi\src\OsiCommonTest;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>CBC_BUILD;WIN32;_DEBUG;_CONSOLE;SAMPLEDIR="..\\..\\..\\..\\Data\\Sample";NETLIBDIR="..\\..\\..\\..\\Data\\Netlib";MIPLIBDIR="..\\..\\..\\..\\Data\\miplib3";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CBCLIB_BUILD;WIN32;_DEBUG;_CONSOLE;SAMPLEDIR="..\\..\\..\\..\\Data\\Sample";NETLIBDIR="..\\..\\..\\..\\Data\\Netlib";MIPLIBDIR="..\\..\\..\\..\\Data\\miplib3";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
     </ClCompile>
@@ -144,7 +144,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\src\OsiCbc;..\..\..\src;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Osi\src\OsiCommonTest;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>CBC_BUILD;WIN32;NDEBUG;_NDEBUG;COIN_FAST_CODE;CLP_FAST_CODE;COIN_NO_TEST_DUPLICATE;_CONSOLE;SAMPLEDIR="..\\..\\..\\..\\Data\\Sample";NETLIBDIR="..\\..\\..\\..\\Data\\Netlib";MIPLIBDIR="..\\..\\..\\..\\Data\\miplib3";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CBCLIB_BUILD;WIN32;NDEBUG;_NDEBUG;COIN_FAST_CODE;CLP_FAST_CODE;COIN_NO_TEST_DUPLICATE;_CONSOLE;SAMPLEDIR="..\\..\\..\\..\\Data\\Sample";NETLIBDIR="..\\..\\..\\..\\Data\\Netlib";MIPLIBDIR="..\\..\\..\\..\\Data\\miplib3";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
     </ClCompile>

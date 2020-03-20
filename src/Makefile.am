@@ -107,8 +107,8 @@ libCbcSolver_la_LIBADD = $(CBCSOLVERLIB_LFLAGS) libCbc.la
 
 # Some common setup for cbc and cbc-generic.
 
-libCbc_la_CPPFLAGS = -DCBC_BUILD $(CBCLIB_CFLAGS)
-libCbcSolver_la_CPPFLAGS = -DCBCSOLVER_BUILD $(CBCSOLVERLIB_CFLAGS)
+libCbc_la_CPPFLAGS = $(CBCLIB_CFLAGS)
+libCbcSolver_la_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
 
 AM_CPPFLAGS =
 if COIN_HAS_NAUTY

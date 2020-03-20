@@ -19295,9 +19295,6 @@ $as_echo "#define COIN_HAS_NAUTY 1" >>confdefs.h
 
 #############################################################################
 
-# Finalize flags for CbcLib, add the result to OsiCbc, and finalize flags for
-# it.
-
 # The rest are not required for linking against Cbc but are used for the unit
 # test. For the data packages, we just want XXX_DATA for use in Makefile.am.
 
@@ -22124,6 +22121,9 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+      # add -DXYZ_BUILD to CFLAGS
+      CBCLIB_CFLAGS="${CBCLIB_CFLAGS} -DCBCLIB_BUILD"
+
 # Define BUILDTOOLS_DEBUG to enable debugging output
 
       if test "$BUILDTOOLS_DEBUG" = 1 ; then
@@ -22170,6 +22170,9 @@ cat >>confdefs.h <<_ACEOF
 #define CBCSOLVERLIB_EXPORT $libexport_attribute
 _ACEOF
 
+
+      # add -DXYZ_BUILD to CFLAGS
+      CBCSOLVERLIB_CFLAGS="${CBCSOLVERLIB_CFLAGS} -DCBCSOLVERLIB_BUILD"
 
 # Define BUILDTOOLS_DEBUG to enable debugging output
 
@@ -22218,6 +22221,9 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+      # add -DXYZ_BUILD to CFLAGS
+      CBCGENERIC_CFLAGS="${CBCGENERIC_CFLAGS} -DCBCGENERIC_BUILD"
+
 # Define BUILDTOOLS_DEBUG to enable debugging output
 
       if test "$BUILDTOOLS_DEBUG" = 1 ; then
@@ -22265,6 +22271,9 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+      # add -DXYZ_BUILD to CFLAGS
+      OSICBCLIB_CFLAGS="${OSICBCLIB_CFLAGS} -DOSICBCLIB_BUILD"
+
 # Define BUILDTOOLS_DEBUG to enable debugging output
 
       if test "$BUILDTOOLS_DEBUG" = 1 ; then
@@ -22311,6 +22320,9 @@ cat >>confdefs.h <<_ACEOF
 #define CBCUNITTEST_EXPORT $libexport_attribute
 _ACEOF
 
+
+      # add -DXYZ_BUILD to CFLAGS
+      CBCUNITTEST_CFLAGS="${CBCUNITTEST_CFLAGS} -DCBCUNITTEST_BUILD"
 
 # Define BUILDTOOLS_DEBUG to enable debugging output
 

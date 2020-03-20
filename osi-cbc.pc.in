@@ -9,7 +9,7 @@ Description: COIN-OR Open Solver Interface for CBC
 URL: https://github.com/coin-or/Cbc
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lOsiCbc
-Libs.private: @OSICBCLIB_LFLAGS_NOPC@
+Libs.private: @OSICBC_LFLAGS_NOPC@
 Cflags: -I${includedir}
 Requires:
-Requires.private: @OSICBCLIB_PCFILES@ cbc
+Requires.private: @OSICBC_PCFILES@ cbc

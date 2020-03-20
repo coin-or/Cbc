@@ -23,50 +23,42 @@ libOsiCbc_la_LIBADD = ../libCbc.la
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Here list all include flags, relative to this "srcdir" directory.
-AM_CPPFLAGS = -DOSICBC_BUILD -I$(srcdir)/.. $(CBCLIB_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/.. $(OSICBCLIB_CFLAGS)
 
-# Plus the appropriate include directories and libraries for the default solver.
+# Plus the appropriate library for the default solver.
+# (adding OSICBCLIB_LFLAGS to libOsiCbc_la_LIBADD would link against all available solvers)
 if OSICBC_DFLT_SOLVER_CLP
-  AM_CPPFLAGS += $(OSICLP_CFLAGS)
   libOsiCbc_la_LIBADD += $(OSICLP_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_CPX
-  AM_CPPFLAGS += $(OSICPX_CFLAGS)
   libOsiCbc_la_LIBADD += $(OSICPX_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_DYLP
-  AM_CPPFLAGS += $(OSIDYLP_CFLAGS)
   libOsiCbc_la_LIBADD += $(OSIDYLP_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_GLPK
-  AM_CPPFLAGS += $(OSIGLPK_CFLAGS)
   libOsiCbc_la_LIBADD += $(OSIGLPK_LFLAGS)
 endif
 
 #if OSICBC_DFLT_SOLVER_GRB
-#  AM_CPPFLAGS += ${GRB_CFLAGS}
 #endif
 
 if OSICBC_DFLT_SOLVER_MSK
-  AM_CPPFLAGS += $(OSIMSK_CFLAGS)
   libOsiCbc_la_LIBADD += $(OSIMSK_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_HIGHS
-  AM_CPPFLAGS += $(HIGHS_CFLAGS)
   libOsiCbc_la_LIBADD += $(HIGHS_LFLAGS)
 endif
 
 if OSICBC_DFLT_SOLVER_SYM
-  AM_CPPFLAGS += $(OSISYM_CFLAGS)
   libOsiCbc_la_LIBADD += $(OSISYM_LFLAGS)
 endif
 
 #if OSICBC_DFLT_SOLVER_XPR
-#  AM_CPPFLAGS += ${XPR_CFLAGS}
 #endif
 
 ########################################################################

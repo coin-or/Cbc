@@ -88,9 +88,6 @@ AC_COIN_CHK_LIB([Nauty],[CbcLib],[-lnauty],[],[],[nauty])
 
 #############################################################################
 
-# Finalize flags for CbcLib, add the result to OsiCbc, and finalize flags for
-# it.
-
 # The rest are not required for linking against Cbc but are used for the unit
 # test. For the data packages, we just want XXX_DATA for use in Makefile.am.
 

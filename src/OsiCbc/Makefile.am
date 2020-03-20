@@ -76,7 +76,7 @@ endif
 # Here list all the header files that are required by a user of the library,
 # and that therefore should be installed in 'include/coin-or'
 
-includecoindir = $(pkgincludedir)
+includecoindir = $(includedir)/coin-or
 includecoin_HEADERS = OsiCbcSolverInterface.hpp
 
 install-exec-local:

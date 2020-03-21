@@ -62,6 +62,8 @@ gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la
 
 AM_CPPFLAGS = -I$(srcdir)/../src
 
+AM_LDFLAGS = $(LT_LDFLAGS)
+
 ########################################################################
 #                         unitTest for OsiCbc                          #
 ########################################################################

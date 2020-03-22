@@ -165,7 +165,7 @@ https://github.com/coin-or/Cbc/issues
 
 ## CHANGELOG
 
- * Release 2.11.0 (in preparation)
+ * Release 3.0 (in preparation)
    * Added possibility for incomplete MIP start files.
      The filename suffix indicates which values Cbc should choose for
      missing variables (see change r2549)
@@ -208,6 +208,19 @@ https://github.com/coin-or/Cbc/issues
        via `-I<dir>` in `--with-*-cflags`.
     * `--enable-cbc-parallel` is now enabled by default if a pthread library
       is found. Use `--disable-cbc-parallel` to disable.
+    * Added a conflict graph infrastructure and conflict-based routines:
+      - `CglCliqueStrengthening`: preprocessing routine applied on set packing constraints.
+      - `CglBKClique`: clique cut separator based on an improved version of Bron-Kerbosch algorithm.
+      - `CglOddWheel`: odd-cycle separator with a lifting routine.
+      - New parameters in the command line:
+          - `clqstr`: sets the method to extend cliques in CglCliqueStrengthening (0=off; 1=random; 2=degree; 3=modified degree; 4=reduced cost; 5=reduced cost + modified degree); default = 4.
+          - `clique`: sets the use of CglBKClique (on, root, ifmove, forceOn, onglobal); default = ifmove.
+          - `bkpivot`: pivoting strategy used by Bron-Kerbosch algorithm in CglBKClique (0 = off; 1 = random; 2 = degree; 3 = weight; 4= modified degree; 5 = modified weight; 6 = modified degree + modified weight); default = 3.
+          - `bkmaxcalls`: maximum number of recursive calls that can be made by Bron-Kerbosch algorithm in CglBKClique; default = 1000.
+          - `bkclqext`: strategy used to extend violated cliques found by CglBKClique (0=off; 1=random; 2=degree; 3=modified degree; 4=reduced cost; 5=reduced cost + modified degree); default = 4.
+          - `oddwheel`: sets the use of CglOddWheel (on, root, ifmove, forceOn, onglobal); default = ifmove.
+          - `oddwext`: strategy used to search for wheel centers for the cuts found by CglOddWheel (0 = off; 1 = one variable; 2 = clique); default = 2.
+      - CglClique was replaced by CglBKClique as the default clique separator in CbcSolver.cpp.
 
  * Release 2.10.5
    * revert fix that stopped Clp when timelimit reached, as that lead to

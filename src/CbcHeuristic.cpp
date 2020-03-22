@@ -1164,9 +1164,10 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
               << etClqStr-stClqStr << model.solver()->getCGraph()->density()*100.0 <<  CoinMessageEol;
 
             //fixing variables discovered during the construction of conflict graph
-            for (const auto &p : model.solver()->getCGraph()->updatedBounds()) {
-              model.solver()->setColLower(p.first, p.second.first);
-              model.solver()->setColUpper(p.first, p.second.second);
+            const std::vector< std::pair< size_t, std::pair< double, double > > > newBounds = model.solver()->getCGraph()->updatedBounds();
+            for (size_t i = 0 ; i < newBounds.size(); i++) {
+              model.solver()->setColLower(newBounds[i].first, newBounds[i].second.first);
+              model.solver()->setColUpper(newBounds[i].first, newBounds[i].second.second);
             }
           }
 

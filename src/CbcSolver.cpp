@@ -5070,9 +5070,10 @@ int CbcMain1(int argc, const char *argv[],
                 babModel_->messageHandler()->message(CBC_CGRAPH_INFO, babModel_->messages())
                   << etCG-stCG << babModel_->solver()->getCGraph()->density()*100.0 <<  CoinMessageEol;
                 //fixations of variables discovered during the construction of conflict graph
-                for (const auto &p : babModel_->solver()->getCGraph()->updatedBounds()) {
-                  babModel_->solver()->setColLower(p.first, p.second.first);
-                  babModel_->solver()->setColUpper(p.first, p.second.second);
+                const std::vector< std::pair< size_t, std::pair< double, double > > > newBounds = babModel_->solver()->getCGraph()->updatedBounds();
+                for (size_t i = 0 ; i < newBounds.size(); i++) {
+                  babModel_->solver()->setColLower(newBounds[i].first, newBounds[i].second.first);
+                  babModel_->solver()->setColUpper(newBounds[i].first, newBounds[i].second.second);
                 }
 
                 if (clqStrMethod >= 1) {

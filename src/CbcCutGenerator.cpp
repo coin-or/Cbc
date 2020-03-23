@@ -183,20 +183,6 @@ void CbcCutGenerator::refreshModel(CbcModel *model)
   // added test - helps if generator not thread safe
   if (whenCutGenerator_ != -100)
     generator_->refreshSolver(model_->solver());
-  // Check if clique graph needed
-  if (dynamic_cast<CglCliqueStrengthening* >(generator_) ||
-      dynamic_cast<CglBKClique* >(generator_) ||
-      dynamic_cast<CglOddWheel* >(generator_)) {
-    if (!model->solver()->getCGraph())
-      model->solver()->setCGraph(new CoinStaticConflictGraph(model->solver()->getNumCols(),
-							       model->solver()->getColType(),
-							       model->solver()->getColLower(),
-							       model->solver()->getColUpper(),
-							       model->solver()->getMatrixByRow(),
-							       model->solver()->getRowSense(),
-							       model->solver()->getRightHandSide(),
-							       model->solver()->getRowRange()));
-  }
 }
 /* Generate cuts for the model data contained in si.
    The generated cuts are inserted into and returned in the

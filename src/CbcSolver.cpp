@@ -3584,12 +3584,17 @@ int CbcMain1(int argc, const char *argv[],
                       CglRedSplit redSplit;
                       cbcModel->addCutGenerator(&redSplit, -99, "RedSplit", true, false, false, -100, -1, -1);
                       cbcModel->cutGenerator(numCutGens++)->setTiming(true);
+                      
+                      CglBKClique bkClique;
+                      bkClique.setMaxCallsBK(1000);
+                      bkClique.setExtendingMethod(4);
+                      bkClique.setPivotingStrategy(3);
+                      cbcModel->addCutGenerator(&bkClique, -98, "Clique", true, false, false, -100, -1, -1);
+                      cbcModel->cutGenerator(numCutGens++)->setTiming(true);
 
-                      CglClique clique;
-                      clique.setStarCliqueReport(false);
-                      clique.setRowCliqueReport(false);
-                      clique.setMinViolation(0.1);
-                      cbcModel->addCutGenerator(&clique, -98, "Clique", true, false, false, -100, -1, -1);
+                      CglOddWheel oddWheel;
+                      oddWheel.setExtendingMethod(2);
+                      cbcModel->addCutGenerator(&oddWheel, -98, "OddWheel", true, false, false, -100, -1, -1);
                       cbcModel->cutGenerator(numCutGens++)->setTiming(true);
 
                       CglMixedIntegerRounding2 mixedIntegerRounding2;
@@ -5053,30 +5058,7 @@ int CbcMain1(int argc, const char *argv[],
 #endif
               }
 
-              const bool hasCols = (babModel_->solver()->getNumCols() > 0);
-              const bool hasRows = (babModel_->solver()->getNumRows() > 0);
-              const bool useCGraph = hasCols && hasRows && ((cliqueAction != 0) || (oddWheelAction != 0) || (clqStrMethod >= 1));
-              if (useCGraph) {
-                const double stCG = CoinGetTimeOfDay();
-                babModel_->solver()->setCGraph(new CoinStaticConflictGraph(babModel_->solver()->getNumCols(),
-                                                                          babModel_->solver()->getColType(),
-                                                                          babModel_->solver()->getColLower(),
-                                                                          babModel_->solver()->getColUpper(),
-                                                                          babModel_->solver()->getMatrixByRow(),
-                                                                          babModel_->solver()->getRowSense(),
-                                                                          babModel_->solver()->getRightHandSide(),
-                                                                          babModel_->solver()->getRowRange()));
-                const double etCG = CoinGetTimeOfDay();
-                babModel_->messageHandler()->message(CBC_CGRAPH_INFO, babModel_->messages())
-                  << etCG-stCG << babModel_->solver()->getCGraph()->density()*100.0 <<  CoinMessageEol;
-                //fixations of variables discovered during the construction of conflict graph
-                const std::vector< std::pair< size_t, std::pair< double, double > > > newBounds = babModel_->solver()->getCGraph()->updatedBounds();
-                for (size_t i = 0 ; i < newBounds.size(); i++) {
-                  babModel_->solver()->setColLower(newBounds[i].first, newBounds[i].second.first);
-                  babModel_->solver()->setColUpper(newBounds[i].first, newBounds[i].second.second);
-                }
-
-                if (clqStrMethod >= 1) {
+              if (clqStrMethod >= 1) {
                   CglCliqueStrengthening clqStr;
                   clqStr.strengthenCliques(*babModel_->solver(), clqStrMethod);
 
@@ -5097,7 +5079,6 @@ int CbcMain1(int argc, const char *argv[],
                       }
                     }
                   }
-                }
               }
 
               // now tighten bounds

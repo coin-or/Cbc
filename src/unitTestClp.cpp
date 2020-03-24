@@ -18,6 +18,7 @@
 #include "OsiClpSolverInterface.hpp"
 #include "ClpFactorization.hpp"
 #include "OsiRowCutDebugger.hpp"
+#include "CbcSolver.hpp"
 //#############################################################################
 
 #ifdef NDEBUG
@@ -105,6 +106,7 @@ bool CbcTestMpsFile(std::string &fname)
 
   TestSwitch and stuff[6] together control how much of miplib is executed:
     For testSwitch set to:
+      -3: solve 0,1 using CbcMain1
       -2: solve p0033 and p0201 only (the unit test)
       -1: solve miplib sets #0 and #1
        0: solve nothing
@@ -124,7 +126,10 @@ bool CbcTestMpsFile(std::string &fname)
      100*(number with bad objective)+(number that exceeded node limit)
 */
 int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
-  int testSwitch, const double *stuff)
+		   int testSwitch, const double *stuff, int argc,
+		   const char ** argv,
+		   int callBack(CbcModel *currentSolver, int whereFrom),
+		   CbcSolverUsefulData &parameterData)
 {
   // Stop Windows popup
   WindowsErrorPopupBlocker();
@@ -147,7 +152,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
 */
   int loSet = 0;
   int hiSet = 0;
-  if (testSwitch == -1) {
+  if (testSwitch == -1 || testSwitch == -3) {
     loSet = 0;
     hiSet = 1;
   } else if (testSwitch >= 0) {
@@ -305,10 +310,16 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
 #ifdef CLP_FACTORIZATION_INSTRUMENT
   double timeTakenFac = 0.0;
 #endif
-
+  // See if we want to use CbcMain0/1
+  bool oldStyle=true;
+  if (testSwitch==-3) {
+    oldStyle = false;
+    testSwitch=-1;
+  }
+    
   /*
   Open the main loop to step through the MPS problems.
-*/
+  */
   for (unsigned int mw = 0; mw < mpsName.size(); mw++) {
     m = which[mw];
     int setID = testSet[m];
@@ -324,301 +335,322 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
   Stage 1: Read the MPS and make sure the size of the constraint matrix
 	   is correct.
 */
-    CbcModel *model = new CbcModel(saveModel);
-
+    CbcModel *model = NULL;
     std::string fn = dirMiplib + mpsName[m];
     if (!CbcTestMpsFile(fn)) {
       std::cout << "ERROR: Cannot find MPS file " << fn << "." << std::endl;
       continue;
     }
-    model->solver()->readMps(fn.c_str(), "");
+    // Careful! We're initialising for the benefit of other code.
+    CoinDrand48(true, 1234567);
+    double startTime = CoinCpuTime() + CoinCpuTimeJustChildren();
+    if (oldStyle) {
+      model = new CbcModel(saveModel);
+      model->solver()->readMps(fn.c_str(), "");
+    } else {
+      OsiClpSolverInterface solver1;
+      const char * newArgv[200];
+      int newArgc = 2;
+      newArgv[0] = "unitTestCbc";
+      newArgv[1] = fn.c_str();
+      for (int i = 3;i < argc-1; i++)
+	newArgv[newArgc++] = argv[i];
+      /*
+	Activate the row cut debugger, if requested.
+      */
+      if (rowCutDebugger[m] == true) {
+	newArgv[newArgc++]= "-debug";
+	newArgv[newArgc++]= "unitTest";
+      }
+      newArgv[newArgc++] = "solve";
+      model = new CbcModel(solver1);
+      CbcMain1(newArgc, newArgv
+	       , *model, callBack, parameterData);
+    }
+
     assert(model->getNumRows() == nRows[m]);
     assert(model->getNumCols() == nCols[m]);
 
-    // Careful! We're initialising for the benefit of other code.
-    CoinDrand48(true, 1234567);
-    //printf("RAND1 %g %g\n",CoinDrand48(true,1234567),model->randomNumberGenerator()->randomDouble());
-    //printf("RAND1 %g\n",CoinDrand48(true,1234567));
+    if (oldStyle) {
 
-    // Higher limits for the serious problems.
-    int testMaximumNodes = 200000;
-    if (hiSet > 1)
-      testMaximumNodes = 20000000;
-    if (model->getMaximumNodes() > testMaximumNodes) {
-      model->setMaximumNodes(testMaximumNodes);
-    }
-    /*
-  Stage 2: Call solver to solve the problem.
-*/
-
+      // Higher limits for the serious problems.
+      int testMaximumNodes = 200000;
+      if (hiSet > 1)
+	testMaximumNodes = 20000000;
+      if (model->getMaximumNodes() > testMaximumNodes) {
+	model->setMaximumNodes(testMaximumNodes);
+      }
+      /*
+	Stage 2: Call solver to solve the problem.
+      */
+      
 #ifdef CLP_FACTORIZATION_INSTRUMENT
-    extern double factorization_instrument(int type);
-    double facTime1 = factorization_instrument(0);
-    std::cout
-      << "Factorization - initial solve " << facTime1 << " seconds."
-      << std::endl;
-    timeTakenFac += facTime1;
+      extern double factorization_instrument(int type);
+      double facTime1 = factorization_instrument(0);
+      std::cout
+	<< "Factorization - initial solve " << facTime1 << " seconds."
+	<< std::endl;
+      timeTakenFac += facTime1;
 #endif
-
-    double startTime = CoinCpuTime() + CoinCpuTimeJustChildren();
-
-    // Setup specific to clp
-    OsiClpSolverInterface *siClp = dynamic_cast< OsiClpSolverInterface * >(model->solver());
-    ClpSimplex *modelC = NULL;
-    if (siClp) {
-      modelC = siClp->getModelPtr();
-      ClpMatrixBase *matrix = modelC->clpMatrix();
-      ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(matrix);
-      if (stuff && stuff[9] && clpMatrix) {
-        // vector matrix!
-        clpMatrix->makeSpecialColumnCopy();
-      }
-
+      
+      
+      // Setup specific to clp
+      OsiClpSolverInterface *siClp = dynamic_cast< OsiClpSolverInterface * >(model->solver());
+      ClpSimplex *modelC = NULL;
+      if (siClp) {
+	modelC = siClp->getModelPtr();
+	ClpMatrixBase *matrix = modelC->clpMatrix();
+	ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(matrix);
+	if (stuff && stuff[9] && clpMatrix) {
+	  // vector matrix!
+	  clpMatrix->makeSpecialColumnCopy();
+	}
+	
 #ifdef JJF_ZERO
-      if (clpMatrix) {
-        int numberRows = clpMatrix->getNumRows();
-        int numberColumns = clpMatrix->getNumCols();
-        double *elements = clpMatrix->getMutableElements();
-        const int *row = clpMatrix->getIndices();
-        const CoinBigIndex *columnStart = clpMatrix->getVectorStarts();
-        const int *columnLength = clpMatrix->getVectorLengths();
-        double *smallest = new double[numberRows];
-        double *largest = new double[numberRows];
-        char *flag = new char[numberRows];
-        CoinZeroN(flag, numberRows);
-        for (int i = 0; i < numberRows; i++) {
-          smallest[i] = COIN_DBL_MAX;
-          largest[i] = 0.0;
-        }
-        for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-          bool isInteger = modelC->isInteger(iColumn);
-          CoinBigIndex j;
-          for (j = columnStart[iColumn];
-               j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-            int iRow = row[j];
-            double value = fabs(elements[j]);
-            if (!isInteger)
-              flag[iRow] = 1;
-            smallest[iRow] = CoinMin(smallest[iRow], value);
-            largest[iRow] = CoinMax(largest[iRow], value);
-          }
-        }
-        double *rowLower = modelC->rowLower();
-        double *rowUpper = modelC->rowUpper();
-        bool changed = false;
-        for (int i = 0; i < numberRows; i++) {
-          if (flag[i] && smallest[i] > 10.0 && false) {
-            smallest[i] = 1.0 / smallest[i];
-            if (rowLower[i] > -1.0e20)
-              rowLower[i] *= smallest[i];
-            if (rowUpper[i] < 1.0e20)
-              rowUpper[i] *= smallest[i];
-            changed = true;
-          } else {
-            smallest[i] = 0.0;
-          }
-        }
-        if (changed) {
-          printf("SCALED\n");
-          for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-            CoinBigIndex j;
-            for (j = columnStart[iColumn];
-                 j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-              int iRow = row[j];
-              if (smallest[iRow])
-                elements[j] *= smallest[iRow];
-            }
-          }
-        }
-        delete[] smallest;
-        delete[] largest;
-        delete[] flag;
-      }
+	if (clpMatrix) {
+	  int numberRows = clpMatrix->getNumRows();
+	  int numberColumns = clpMatrix->getNumCols();
+	  double *elements = clpMatrix->getMutableElements();
+	  const int *row = clpMatrix->getIndices();
+	  const CoinBigIndex *columnStart = clpMatrix->getVectorStarts();
+	  const int *columnLength = clpMatrix->getVectorLengths();
+	  double *smallest = new double[numberRows];
+	  double *largest = new double[numberRows];
+	  char *flag = new char[numberRows];
+	  CoinZeroN(flag, numberRows);
+	  for (int i = 0; i < numberRows; i++) {
+	    smallest[i] = COIN_DBL_MAX;
+	    largest[i] = 0.0;
+	  }
+	  for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	    bool isInteger = modelC->isInteger(iColumn);
+	    CoinBigIndex j;
+	    for (j = columnStart[iColumn];
+		 j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	      int iRow = row[j];
+	      double value = fabs(elements[j]);
+	      if (!isInteger)
+		flag[iRow] = 1;
+	      smallest[iRow] = CoinMin(smallest[iRow], value);
+	      largest[iRow] = CoinMax(largest[iRow], value);
+	    }
+	  }
+	  double *rowLower = modelC->rowLower();
+	  double *rowUpper = modelC->rowUpper();
+	  bool changed = false;
+	  for (int i = 0; i < numberRows; i++) {
+	    if (flag[i] && smallest[i] > 10.0 && false) {
+	      smallest[i] = 1.0 / smallest[i];
+	      if (rowLower[i] > -1.0e20)
+		rowLower[i] *= smallest[i];
+	      if (rowUpper[i] < 1.0e20)
+		rowUpper[i] *= smallest[i];
+	      changed = true;
+	    } else {
+	      smallest[i] = 0.0;
+	    }
+	  }
+	  if (changed) {
+	    printf("SCALED\n");
+	    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	      CoinBigIndex j;
+	      for (j = columnStart[iColumn];
+		   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		int iRow = row[j];
+		if (smallest[iRow])
+		  elements[j] *= smallest[iRow];
+	      }
+	    }
+	  }
+	  delete[] smallest;
+	  delete[] largest;
+	  delete[] flag;
+	}
 #endif // JJF_ZERO
-
-      model->checkModel();
-      OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model);
-      if (clpSolver) {
-        ClpSimplex *clps = clpSolver->getModelPtr();
-        if (clps)
-          clps->setPerturbation(50);
-      }
-
-      modelC->tightenPrimalBounds(0.0, 0, true);
-      model->initialSolve();
-      if (modelC->dualBound() == 1.0e10) {
-        // user did not set - so modify
-        // get largest scaled away from bound
-        ClpSimplex temp = *modelC;
-        temp.dual(0, 7);
-        double largestScaled = 1.0e-12;
-        double largest = 1.0e-12;
-        int numberRows = temp.numberRows();
-        const double *rowPrimal = temp.primalRowSolution();
-        const double *rowLower = temp.rowLower();
-        const double *rowUpper = temp.rowUpper();
-        const double *rowScale = temp.rowScale();
-        int iRow;
-        for (iRow = 0; iRow < numberRows; iRow++) {
-          double value = rowPrimal[iRow];
-          double above = value - rowLower[iRow];
-          double below = rowUpper[iRow] - value;
-          if (above < 1.0e12) {
-            largest = CoinMax(largest, above);
-          }
-          if (below < 1.0e12) {
-            largest = CoinMax(largest, below);
-          }
-          if (rowScale) {
-            double multiplier = rowScale[iRow];
-            above *= multiplier;
-            below *= multiplier;
-          }
-          if (above < 1.0e12) {
-            largestScaled = CoinMax(largestScaled, above);
-          }
-          if (below < 1.0e12) {
-            largestScaled = CoinMax(largestScaled, below);
-          }
-        }
-
-        int numberColumns = temp.numberColumns();
-        const double *columnPrimal = temp.primalColumnSolution();
-        const double *columnLower = temp.columnLower();
-        const double *columnUpper = temp.columnUpper();
-        const double *columnScale = temp.columnScale();
-        int iColumn;
-        for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-          double value = columnPrimal[iColumn];
-          double above = value - columnLower[iColumn];
-          double below = columnUpper[iColumn] - value;
-          if (above < 1.0e12) {
-            largest = CoinMax(largest, above);
-          }
-          if (below < 1.0e12) {
-            largest = CoinMax(largest, below);
-          }
-          if (columnScale) {
-            double multiplier = 1.0 / columnScale[iColumn];
-            above *= multiplier;
-            below *= multiplier;
-          }
-          if (above < 1.0e12) {
-            largestScaled = CoinMax(largestScaled, above);
-          }
-          if (below < 1.0e12) {
-            largestScaled = CoinMax(largestScaled, below);
-          }
-        }
-        std::cout << "Largest (scaled) away from bound " << largestScaled
-                  << " unscaled " << largest << std::endl;
+	
+	model->checkModel();
+	OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model);
+	if (clpSolver) {
+	  ClpSimplex *clps = clpSolver->getModelPtr();
+	  if (clps)
+	    clps->setPerturbation(50);
+	}
+	
+	modelC->tightenPrimalBounds(0.0, 0, true);
+	model->initialSolve();
+	if (modelC->dualBound() == 1.0e10) {
+	  // user did not set - so modify
+	  // get largest scaled away from bound
+	  ClpSimplex temp = *modelC;
+	  temp.dual(0, 7);
+	  double largestScaled = 1.0e-12;
+	  double largest = 1.0e-12;
+	  int numberRows = temp.numberRows();
+	  const double *rowPrimal = temp.primalRowSolution();
+	  const double *rowLower = temp.rowLower();
+	  const double *rowUpper = temp.rowUpper();
+	  const double *rowScale = temp.rowScale();
+	  int iRow;
+	  for (iRow = 0; iRow < numberRows; iRow++) {
+	    double value = rowPrimal[iRow];
+	    double above = value - rowLower[iRow];
+	    double below = rowUpper[iRow] - value;
+	    if (above < 1.0e12) {
+	      largest = CoinMax(largest, above);
+	    }
+	    if (below < 1.0e12) {
+	      largest = CoinMax(largest, below);
+	    }
+	    if (rowScale) {
+	      double multiplier = rowScale[iRow];
+	      above *= multiplier;
+	      below *= multiplier;
+	    }
+	    if (above < 1.0e12) {
+	      largestScaled = CoinMax(largestScaled, above);
+	    }
+	    if (below < 1.0e12) {
+	      largestScaled = CoinMax(largestScaled, below);
+	    }
+	  }
+	  
+	  int numberColumns = temp.numberColumns();
+	  const double *columnPrimal = temp.primalColumnSolution();
+	  const double *columnLower = temp.columnLower();
+	  const double *columnUpper = temp.columnUpper();
+	  const double *columnScale = temp.columnScale();
+	  int iColumn;
+	  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+	    double value = columnPrimal[iColumn];
+	    double above = value - columnLower[iColumn];
+	    double below = columnUpper[iColumn] - value;
+	    if (above < 1.0e12) {
+	      largest = CoinMax(largest, above);
+	    }
+	    if (below < 1.0e12) {
+	      largest = CoinMax(largest, below);
+	    }
+	    if (columnScale) {
+	      double multiplier = 1.0 / columnScale[iColumn];
+	      above *= multiplier;
+	      below *= multiplier;
+	    }
+	    if (above < 1.0e12) {
+	      largestScaled = CoinMax(largestScaled, above);
+	    }
+	    if (below < 1.0e12) {
+	      largestScaled = CoinMax(largestScaled, below);
+	    }
+	  }
+	  std::cout << "Largest (scaled) away from bound " << largestScaled
+		    << " unscaled " << largest << std::endl;
 #ifdef JJF_ZERO
-        modelC->setDualBound(CoinMax(1.0001e8,
-          CoinMin(1000.0 * largestScaled, 1.00001e10)));
+	  modelC->setDualBound(CoinMax(1.0001e8,
+				       CoinMin(1000.0 * largestScaled, 1.00001e10)));
 #else
-        modelC->setDualBound(CoinMax(1.0001e9,
-          CoinMin(1000.0 * largestScaled, 1.0001e10)));
+	  modelC->setDualBound(CoinMax(1.0001e9,
+				       CoinMin(1000.0 * largestScaled, 1.0001e10)));
 #endif
+	}
+      } // end clp-specific setup
+      /*
+	Cut passes: For small models (n < 500) always do 100 passes, if possible
+	(-100). For larger models, use minimum drop to stop (100, 20).
+      */
+      model->setMinimumDrop(CoinMin(5.0e-2,
+				    fabs(model->getMinimizationObjValue()) * 1.0e-3 + 1.0e-4));
+      if (CoinAbs(model->getMaximumCutPassesAtRoot()) <= 100) {
+	if (model->getNumCols() < 500) {
+	  model->setMaximumCutPassesAtRoot(-100);
+	} else if (model->getNumCols() < 5000) {
+	  model->setMaximumCutPassesAtRoot(100);
+	} else {
+	  model->setMaximumCutPassesAtRoot(20);
+	}
       }
-    } // end clp-specific setup
-    /*
-  Cut passes: For small models (n < 500) always do 100 passes, if possible
-  (-100). For larger models, use minimum drop to stop (100, 20).
-*/
-    model->setMinimumDrop(CoinMin(5.0e-2,
-      fabs(model->getMinimizationObjValue()) * 1.0e-3 + 1.0e-4));
-    if (CoinAbs(model->getMaximumCutPassesAtRoot()) <= 100) {
-      if (model->getNumCols() < 500) {
-        model->setMaximumCutPassesAtRoot(-100);
-      } else if (model->getNumCols() < 5000) {
-        model->setMaximumCutPassesAtRoot(100);
-      } else {
-        model->setMaximumCutPassesAtRoot(20);
+      // If defaults then increase trust for small models
+      if (model->numberStrong() == 5 && model->numberBeforeTrust() == 10) {
+	int numberColumns = model->getNumCols();
+	if (numberColumns <= 50) {
+	  model->setNumberBeforeTrust(1000);
+	} else if (numberColumns <= 100) {
+	  model->setNumberBeforeTrust(100);
+	} else if (numberColumns <= 300) {
+	  model->setNumberBeforeTrust(50);
+	}
       }
-    }
-    // If defaults then increase trust for small models
-    if (model->numberStrong() == 5 && model->numberBeforeTrust() == 10) {
-      int numberColumns = model->getNumCols();
-      if (numberColumns <= 50) {
-        model->setNumberBeforeTrust(1000);
-      } else if (numberColumns <= 100) {
-        model->setNumberBeforeTrust(100);
-      } else if (numberColumns <= 300) {
-        model->setNumberBeforeTrust(50);
+      //if (model->getNumCols()>=500) {
+      // switch off Clp stuff
+      //model->setFastNodeDepth(-1);
+      //}
+    /*
+      Activate the row cut debugger, if requested.
+    */
+      if (rowCutDebugger[m] == true) {
+	std::string probName;
+	model->solver()->getStrParam(OsiProbName, probName);
+	model->solver()->activateRowCutDebugger(probName.c_str());
+	if (model->solver()->getRowCutDebugger())
+	  std::cout << "Row cut debugger activated for ";
+	else
+	  std::cout << "Failed to activate row cut debugger for ";
+	std::cout << mpsName[m] << "." << std::endl;
       }
-    }
-    //if (model->getNumCols()>=500) {
-    // switch off Clp stuff
-    //model->setFastNodeDepth(-1);
-    //}
-    /*
-  Activate the row cut debugger, if requested.
-*/
-    if (rowCutDebugger[m] == true) {
-      std::string probName;
-      model->solver()->getStrParam(OsiProbName, probName);
-      model->solver()->activateRowCutDebugger(probName.c_str());
-      if (model->solver()->getRowCutDebugger())
-        std::cout << "Row cut debugger activated for ";
-      else
-        std::cout << "Failed to activate row cut debugger for ";
-      std::cout << mpsName[m] << "." << std::endl;
-    }
-    setCutAndHeuristicOptions(*model);
-    /*
-  More clp-specific setup.
-*/
-    if (siClp) {
+      setCutAndHeuristicOptions(*model);
+      /*
+	More clp-specific setup.
+      */
+      if (siClp) {
 #ifdef CLP_MULTIPLE_FACTORIZATIONS
-      if (!modelC->factorization()->isDenseOrSmall()) {
-        int denseCode = stuff ? static_cast< int >(stuff[4]) : -1;
-        int smallCode = stuff ? static_cast< int >(stuff[10]) : -1;
-        if (stuff && stuff[8] >= 1) {
-          if (denseCode < 0)
-            denseCode = 40;
-          if (smallCode < 0)
-            smallCode = 40;
-        }
-        if (denseCode > 0)
-          modelC->factorization()->setGoDenseThreshold(denseCode);
-        if (smallCode > 0)
-          modelC->factorization()->setGoSmallThreshold(smallCode);
-        if (denseCode >= modelC->numberRows()) {
-          //printf("problem going dense\n");
-          //modelC->factorization()->goDenseOrSmall(modelC->numberRows());
-        }
-      }
+	if (!modelC->factorization()->isDenseOrSmall()) {
+	  int denseCode = stuff ? static_cast< int >(stuff[4]) : -1;
+	  int smallCode = stuff ? static_cast< int >(stuff[10]) : -1;
+	  if (stuff && stuff[8] >= 1) {
+	    if (denseCode < 0)
+	      denseCode = 40;
+	    if (smallCode < 0)
+	      smallCode = 40;
+	  }
+	  if (denseCode > 0)
+	    modelC->factorization()->setGoDenseThreshold(denseCode);
+	  if (smallCode > 0)
+	    modelC->factorization()->setGoSmallThreshold(smallCode);
+	  if (denseCode >= modelC->numberRows()) {
+	    //printf("problem going dense\n");
+	    //modelC->factorization()->goDenseOrSmall(modelC->numberRows());
+	  }
+	}
 #endif
-      if (stuff && stuff[8] >= 1) {
-        printf("Fast node size Columns %d rows %d - depth %d\n",
-          modelC->numberColumns(), modelC->numberRows(),
-          model->fastNodeDepth());
-        if (modelC->numberColumns() + modelC->numberRows() <= 10000 && model->fastNodeDepth() == -1)
-          model->setFastNodeDepth(-10 /*-9*/);
+	if (stuff && stuff[8] >= 1) {
+	  printf("Fast node size Columns %d rows %d - depth %d\n",
+		 modelC->numberColumns(), modelC->numberRows(),
+		 model->fastNodeDepth());
+	  if (modelC->numberColumns() + modelC->numberRows() <= 10000 && model->fastNodeDepth() == -1)
+	    model->setFastNodeDepth(-10 /*-9*/);
+	}
       }
-    }
 #ifdef CONFLICT_CUTS
-    {
-      model->setCutoffAsConstraint(true); // very slow on bell5 ??
-      int moreOptions = model->moreSpecialOptions();
-      model->setMoreSpecialOptions(moreOptions | 4194304);
-    }
+      {
+	model->setCutoffAsConstraint(true); // very slow on bell5 ??
+	int moreOptions = model->moreSpecialOptions();
+	model->setMoreSpecialOptions(moreOptions | 4194304);
+      }
 #endif
-    /*
-  Finally, the actual call to solve the MIP with branch-and-cut.
-*/
-    model->setDblParam( CbcModel::CbcAllowableGap, 0.0001 );
-    model->branchAndBound();
-
+      /*
+	Finally, the actual call to solve the MIP with branch-and-cut.
+      */
+      model->setDblParam( CbcModel::CbcAllowableGap, 0.0001 );
+      model->branchAndBound();
+      
 #ifdef CLP_FACTORIZATION_INSTRUMENT
-    double facTime = factorization_instrument(0);
-    std::cout << "Factorization " << facTime << " seconds." << std::endl,
-      timeTakenFac += facTime;
+      double facTime = factorization_instrument(0);
+      std::cout << "Factorization " << facTime << " seconds." << std::endl,
+	timeTakenFac += facTime;
 #endif
-
+    }
     /*
-  Stage 3: Do the statistics and check the answer.
-*/
+      Stage 3: Do the statistics and check the answer.
+    */
     double timeOfSolution = CoinCpuTime() + CoinCpuTimeJustChildren() - startTime;
     std::cout
       << "Cuts at root node changed objective from "

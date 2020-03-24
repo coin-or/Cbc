@@ -1176,7 +1176,9 @@ CglPreProcess *cbcPreProcessPointer = NULL;
 
 int CbcClpUnitTest(const CbcModel &saveModel,
   const std::string &dirMiplib, int testSwitch,
-  const double *stuff);
+		   const double *stuff, int argc, const char ** argv,
+		   int callBack(CbcModel *currentSolver, int whereFrom),
+		   CbcSolverUsefulData &parameterData);
 
 /*
    int CbcMain1 (int argc, const char *argv[],
@@ -4375,6 +4377,15 @@ int CbcMain1(int argc, const char *argv[],
                       process.setApplicationData(const_cast< double * >(debugValues));
                     }
 #endif
+		    if (debugFile=="unitTest") {
+		      babModel_->solver()->activateRowCutDebugger(argv[1]);
+		      OsiRowCutDebugger * debugger =
+			babModel_->solver()->getRowCutDebuggerAlways();
+		      numberDebugValues = babModel_->getNumCols();
+		      debugValues =
+			CoinCopyOfArray(debugger->optimalSolution(),
+					numberDebugValues);
+		    }
                     redoSOS = true;
                     bool keepPPN = parameters_[whichParam(CBC_PARAM_STR_PREPROCNAMES, parameters_)].currentOptionAsInteger();
 #ifdef SAVE_NAUTY
@@ -5069,7 +5080,7 @@ int CbcMain1(int argc, const char *argv[],
                 // for debug
                 std::string problemName;
                 babModel_->solver()->getStrParam(OsiProbName, problemName);
-                babModel_->solver()->activateRowCutDebugger(problemName.c_str());
+		babModel_->solver()->activateRowCutDebugger(problemName.c_str());
                 twomirGen.probname_ = CoinStrdup(problemName.c_str());
                 // checking seems odd
                 //redsplitGen.set_given_optsol(babModel_->solver()->getRowCutDebuggerAlways()->optimalSolution(),
@@ -5472,8 +5483,8 @@ int CbcMain1(int argc, const char *argv[],
                 accuracyFlag[numberGenerators] = 5;
                 // slow ? - just do a few times
                 if (landpAction != 1) {
-                  babModel_->cutGenerator(numberGenerators)->setMaximumTries(maximumSlowPasses);
-                  babModel_->cutGenerator(numberGenerators)->setHowOften(10);
+		  babModel_->cutGenerator(numberGenerators)->setMaximumTries(maximumSlowPasses);
+		  babModel_->cutGenerator(numberGenerators)->setHowOften(10);
                 }
                 switches[numberGenerators++] = 1;
               }
@@ -7297,7 +7308,7 @@ int CbcMain1(int argc, const char *argv[],
                     } else {
 #define MAX_NAUTY_PASS 2000
                       nautyAdded = nautiedConstraints(*babModel_,
-                        MAX_NAUTY_PASS);
+						      MAX_NAUTY_PASS);
                     }
                   }
                 }
@@ -7496,7 +7507,21 @@ int CbcMain1(int argc, const char *argv[],
                     }
                   }
                 }
-                int returnCode = CbcClpUnitTest(model_, dirMiplib, extra2, stuff);
+#ifndef CBC_OTHER_SOLVER
+		{
+		  OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+		  ClpSimplex *simplex = solver->getModelPtr();
+		  // if wanted go back to old printing method
+		  double value = simplex->getMinIntervalProgressUpdate();
+		  if (value<=0.0) {
+		    model_.setSecsPrintFrequency(-1.0);
+		    if (value<0.0) {
+		      model_.setPrintFrequency(static_cast<int>(-value));
+		    }
+		  }
+		}
+#endif
+                int returnCode = CbcClpUnitTest(model_, dirMiplib, extra2, stuff,argc,argv,callBack,parameterData);
                 babModel_ = NULL;
                 return returnCode;
               } else {
@@ -9112,6 +9137,9 @@ int CbcMain1(int argc, const char *argv[],
                 if (debugFile == "create" || debugFile == "createAfterPre") {
                   printf("Will create a debug file so this run should be a good one\n");
                   break;
+		} else if (debugFile == "unitTest") {
+                  printf("debug will be done using file name of model\n");
+                  break;
                 }
               }
               std::string fileName;
@@ -9458,8 +9486,10 @@ int CbcMain1(int argc, const char *argv[],
             //return(22);
           } break;
           case CLP_PARAM_ACTION_UNITTEST: {
-            CbcClpUnitTest(model_, dirSample, -2, NULL);
-          } break;
+            CbcClpUnitTest(model_, dirMiplib, -3, NULL,argc,argv,
+			   callBack,parameterData);
+	    return(22);
+          } 
           case CLP_PARAM_ACTION_FAKEBOUND:
             if (goodModel) {
               // get bound
@@ -12689,7 +12719,4 @@ static int nautiedConstraints(CbcModel &model, int maxPass)
   Version 2.00 September 2007
   Improvements to feaspump
   Source code changes so up to 2.0
-*/
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

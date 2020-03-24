@@ -57,9 +57,9 @@ before_script:
   - bash ./coinbrew fetch $PROJECT_URL:$TRAVIS_BRANCH --no-prompt --skip-update 
 
 script:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --tests main --enable-relocatable --fully-static; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --tests main --enable-relocatable; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=2 --tests none --enable-relocatable; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --enable-relocatable --fully-static; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --tests main --enable-relocatable; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --tests none --enable-relocatable; fi
 
 after_script:
   - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=master; else export VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
@@ -69,3 +69,6 @@ after_script:
   - cd dist
   - tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
   - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE
+
+after_failure:
+  - find . -name config.log -exec tail -n 1000 {} \;

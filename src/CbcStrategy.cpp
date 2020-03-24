@@ -33,7 +33,7 @@
 #include "CglProbing.hpp"
 #include "CglKnapsackCover.hpp"
 #include "CglOddHole.hpp"
-#include "CglClique.hpp"
+#include "CglBKClique.hpp"
 #include "CglFlowCover.hpp"
 #include "CglMixedIntegerRounding2.hpp"
 
@@ -184,9 +184,10 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
   // try larger limit
   //generator4.setMaximumEntries(200);
 
-  CglClique generator5;
-  generator5.setStarCliqueReport(false);
-  generator5.setRowCliqueReport(false);
+  CglBKClique generator5;
+  generator5.setMaxCallsBK(1000);
+  generator5.setExtendingMethod(4);
+  generator5.setPivotingStrategy(3);
 
   CglMixedIntegerRounding2 mixedGen;
   CglFlowCover flowGen;
@@ -238,7 +239,7 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
   found = false;
   for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
     CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-    CglClique *cgl = dynamic_cast< CglClique * >(generator);
+    CglBKClique *cgl = dynamic_cast< CglBKClique * >(generator);
     if (cgl) {
       found = true;
       break;
@@ -710,9 +711,10 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
   // try larger limit
   //generator4.setMaximumEntries(200);
 
-  CglClique generator5;
-  generator5.setStarCliqueReport(false);
-  generator5.setRowCliqueReport(false);
+  CglBKClique generator5;
+  generator5.setMaxCallsBK(1000);
+  generator5.setExtendingMethod(4);
+  generator5.setPivotingStrategy(3);
 
   CglMixedIntegerRounding2 mixedGen;
   CglFlowCover flowGen;
@@ -805,7 +807,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
   found = false;
   for (iGenerator = 0; iGenerator < numberParentGenerators; iGenerator++) {
     CglCutGenerator *generator = parentModel_->cutGenerator(iGenerator)->generator();
-    CglClique *cgl = dynamic_cast< CglClique * >(generator);
+    CglBKClique *cgl = dynamic_cast< CglBKClique * >(generator);
     if (cgl) {
       found = true;
       howOften = parentModel_->cutGenerator(iGenerator)->howOften();
@@ -816,7 +818,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
     found = false;
     for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
       CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();
-      CglClique *cgl = dynamic_cast< CglClique * >(generator);
+      CglBKClique *cgl = dynamic_cast< CglBKClique * >(generator);
       if (cgl) {
         found = true;
         break;

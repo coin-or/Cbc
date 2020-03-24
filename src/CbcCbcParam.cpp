@@ -7,6 +7,9 @@
 #ifndef COIN_HAS_CBC
 #define COIN_HAS_CBC
 #endif
+#ifndef COIN_HAS_CLP
+#define COIN_HAS_CLP
+#endif
 #include "CbcModel.hpp"
 #include "CbcOrClpParam.cpp"
 

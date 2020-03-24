@@ -20,16 +20,16 @@
 /***************************************************************************/
 
 /* Define to 1 if the CoinUtils package is used */
-#define COIN_HAS_COINUTILS 1
+#define CBC_HAS_COINUTILS 1
 
 /* Define to 1 if the Osi package is used */
-#define COIN_HAS_OSI 1
+#define CBC_HAS_OSI 1
 
 /* Define to 1 if the Clp package is used */
-#define COIN_HAS_CLP 1
+#define CBC_HAS_CLP 1
 
 /* Define to 1 if the Clp package is used */
-#define COIN_HAS_OSICLP 1
+#define CBC_HAS_OSICLP 1
 
 /* Define to 1 if the Cgl package is used */
 #define COIN_HAS_CGL 1
@@ -44,7 +44,7 @@
 /* #undef COIN_HAS_DYLP */
 
 /* Define to 1 if the Glpk package is used */
-/* #undef COIN_HAS_GLPK */
+/* #undef CBC_HAS_GLPK */
 
 /* Define to 1 if the Mosek package is used */
 /* #undef COIN_HAS_MSK */

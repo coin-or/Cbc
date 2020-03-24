@@ -16,6 +16,66 @@
    letters */
 #undef CBC_DEFAULT_SOLVER
 
+/* Define to 1 if ASL is available. */
+#undef CBC_HAS_ASL
+
+/* Define to 1 if Cgl is available. */
+#undef CBC_HAS_CGL
+
+/* Define to 1 if Clp is available. */
+#undef CBC_HAS_CLP
+
+/* Define to 1 if CoinUtils is available. */
+#undef CBC_HAS_COINUTILS
+
+/* Define to 1 if the Cplex package is available */
+#undef CBC_HAS_CPLEX
+
+/* Define to 1 if Glpk is available. */
+#undef CBC_HAS_GLPK
+
+/* Define to 1 if Miplib3 is available. */
+#undef CBC_HAS_MIPLIB3
+
+/* Define to 1 if the Nauty package is available */
+#undef CBC_HAS_NAUTY
+
+/* Define to 1 if Netlib is available. */
+#undef CBC_HAS_NETLIB
+
+/* Define to 1 if Osi is available. */
+#undef CBC_HAS_OSI
+
+/* Define to 1 if OsiClp is available. */
+#undef CBC_HAS_OSICLP
+
+/* Define to 1 if OsiCpx is available. */
+#undef CBC_HAS_OSICPX
+
+/* Define to 1 if OsiDyLP is available. */
+#undef CBC_HAS_OSIDYLP
+
+/* Define to 1 if OsiGlpk is available. */
+#undef CBC_HAS_OSIGLPK
+
+/* Define to 1 if OsiMsk is available. */
+#undef CBC_HAS_OSIMSK
+
+/* Define to 1 if OsiSpx is available. */
+#undef CBC_HAS_OSISPX
+
+/* Define to 1 if OsiTests is available. */
+#undef CBC_HAS_OSITESTS
+
+/* Define to 1 if the pthreadsw32 package is available */
+#undef CBC_HAS_PTHREADSW32
+
+/* Define to 1 if readline is available */
+#undef CBC_HAS_READLINE
+
+/* Define to 1 if Sample is available. */
+#undef CBC_HAS_SAMPLE
+
 /* Define to 1 if the SMP version of Cbc should be compiled */
 #undef CBC_THREAD
 
@@ -30,66 +90,6 @@
 
 /* Release version number of project. */
 #undef CBC_VERSION_RELEASE
-
-/* Define to 1 if ASL is available. */
-#undef COIN_HAS_ASL
-
-/* Define to 1 if Cgl is available. */
-#undef COIN_HAS_CGL
-
-/* Define to 1 if Clp is available. */
-#undef COIN_HAS_CLP
-
-/* Define to 1 if CoinUtils is available. */
-#undef COIN_HAS_COINUTILS
-
-/* Define to 1 if the Cplex package is available */
-#undef COIN_HAS_CPLEX
-
-/* Define to 1 if Glpk is available. */
-#undef COIN_HAS_GLPK
-
-/* Define to 1 if Miplib3 is available. */
-#undef COIN_HAS_MIPLIB3
-
-/* Define to 1 if the Nauty package is available */
-#undef COIN_HAS_NAUTY
-
-/* Define to 1 if Netlib is available. */
-#undef COIN_HAS_NETLIB
-
-/* Define to 1 if Osi is available. */
-#undef COIN_HAS_OSI
-
-/* Define to 1 if OsiClp is available. */
-#undef COIN_HAS_OSICLP
-
-/* Define to 1 if OsiCpx is available. */
-#undef COIN_HAS_OSICPX
-
-/* Define to 1 if OsiDyLP is available. */
-#undef COIN_HAS_OSIDYLP
-
-/* Define to 1 if OsiGlpk is available. */
-#undef COIN_HAS_OSIGLPK
-
-/* Define to 1 if OsiMsk is available. */
-#undef COIN_HAS_OSIMSK
-
-/* Define to 1 if OsiSpx is available. */
-#undef COIN_HAS_OSISPX
-
-/* Define to 1 if OsiTests is available. */
-#undef COIN_HAS_OSITESTS
-
-/* Define to 1 if the pthreadsw32 package is available */
-#undef COIN_HAS_PTHREADSW32
-
-/* Define to 1 if readline is available */
-#undef COIN_HAS_READLINE
-
-/* Define to 1 if Sample is available. */
-#undef COIN_HAS_SAMPLE
 
 /* Define to 1 if your C++ compiler doesn't accept -c and -o together. */
 #undef CXX_NO_MINUS_C_MINUS_O

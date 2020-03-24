@@ -22,7 +22,7 @@
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
 
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 

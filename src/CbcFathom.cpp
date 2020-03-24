@@ -12,7 +12,7 @@
 #include <cmath>
 #include <cfloat>
 
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #include "CbcModel.hpp"
@@ -48,7 +48,7 @@ void CbcFathom::setModel(CbcModel *model)
 {
   model_ = model;
 }
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
 
 //#############################################################################
 // Constructors, destructors clone and assignment

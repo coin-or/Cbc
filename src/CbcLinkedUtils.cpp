@@ -20,7 +20,7 @@
 
 #include "ClpConfig.h"
 #include "CbcConfig.h"
-#ifdef COIN_HAS_ASL
+#ifdef CBC_HAS_ASL
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 #include "CoinIndexedVector.hpp"

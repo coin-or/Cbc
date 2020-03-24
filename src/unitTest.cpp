@@ -17,19 +17,19 @@
 #include "CoinHelperFunctions.hpp"
 #include "CoinFileIO.hpp"
 
-#ifdef COIN_HAS_CBC
+#ifdef CBC_HAS_OSI
 #include "OsiCbcSolverInterface.hpp"
 #endif
-#ifdef COIN_HAS_OSISPX
+#ifdef CBC_HAS_OSISPX
 #include "OsiSpxSolverInterface.hpp"
 #endif
-#ifdef COIN_HAS_OSIDYLP
+#ifdef CBC_HAS_OSIDYLP
 #include "OsiDylpSolverInterface.hpp"
 #endif
-#ifdef COIN_HAS_OSIGLPK
+#ifdef CBC_HAS_OSIGLPK
 #include "OsiGlpkSolverInterface.hpp"
 #endif
-#ifdef COIN_HAS_OSICLP
+#ifdef CBC_HAS_OSICLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #ifdef NDEBUG
@@ -40,7 +40,7 @@
 // Function Prototypes. Function definitions is in this file.
 void testingMessage(const char *const msg);
 
-#ifdef COIN_HAS_CBC
+#ifdef CBC_HAS_OSI
 void CbcMiplibTest(const std::vector< OsiCbcSolverInterface * > &vecEmptySiP,
   const std::string &mpsDir)
 {
@@ -297,7 +297,7 @@ void CbcMiplibTest(const std::vector< OsiCbcSolverInterface * > &vecEmptySiP,
       << std::endl;
   }
 }
-#endif // COIN_HAS_CBC
+#endif // CBC_HAS_OSI
 
 //----------------------------------------------------------------
 // unitTest  [-miplibDir=V2]
@@ -356,27 +356,27 @@ int mainTest(int argc, const char *argv[])
     miplibDir = parms["-miplibDir"] + dirsep;
   else
     miplibDir = dirsep == '/' ? "./Data/miplib3/" : ".\\Data\\miplib3\\";
-#ifdef COIN_HAS_CBC
+#ifdef CBC_HAS_OSI
 
   {
     // Create vector of solver interfaces
     std::vector< OsiCbcSolverInterface * > vecSi;
     CbcStrategyDefault strategy(0);
-#if COIN_HAS_OSISPX
+#if CBC_HAS_OSISPX
     OsiSolverInterface *spxSi = new OsiSpxSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(spxSi, &strategy));
 #endif
-#if COIN_HAS_OSICLP
+#if CBC_HAS_OSICLP
     OsiSolverInterface *clpSi = new OsiClpSolverInterface;
     /* Quiet, already! */
     clpSi->setHintParam(OsiDoReducePrint, true, OsiHintDo);
     vecSi.push_back(new OsiCbcSolverInterface(clpSi, &strategy));
 #endif
-#if COIN_HAS_OSIDYLP
+#if CBC_HAS_OSIDYLP
     OsiSolverInterface *dylpSi = new OsiDylpSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(dylpSi, &strategy));
 #endif
-#if COIN_HAS_OSIGLPK
+#if CBC_HAS_OSIGLPK
     OsiSolverInterface *glpkSi = new OsiGlpkSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(glpkSi, &strategy));
 #endif
@@ -388,13 +388,13 @@ int mainTest(int argc, const char *argv[])
     for (i = 0; i < vecSi.size(); i++)
       delete vecSi[i];
   }
-#else // COIN_HAS_CBC
+#else // CBC_HAS_OSI
   std::cerr
     << "cbc has been built without OsiCbc support. To enable the -miplib\n"
     << "option, you must enable libOsiCbc in Makefile.location, then\n"
     << "execute the command `make clean cbc' to rebuild the cbc program."
     << std::endl;
-#endif // COIN_HAS_CBC
+#endif // CBC_HAS_OSI
   testingMessage("All tests completed successfully\n");
   return 0;
 }

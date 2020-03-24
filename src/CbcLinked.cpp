@@ -7333,7 +7333,7 @@ OsiSolverLinearizedQuadratic::operator=(const OsiSolverLinearizedQuadratic &rhs)
 #include "ClpConstraint.hpp"
 #include "ClpConstraintLinear.hpp"
 #include "ClpConstraintQuadratic.hpp"
-#ifdef COIN_HAS_ASL
+#ifdef CBC_HAS_ASL
 //#include "ClpAmplObjective.hpp"
 #endif
 /* Return an approximate solution to a CoinModel.
@@ -7346,7 +7346,7 @@ approximateSolution(CoinModel &coinModel,
   int /*mode*/)
 {
 #ifndef JJF_ONE
-  //#ifdef COIN_HAS_ASL
+  //#ifdef CBC_HAS_ASL
   // matrix etc will be changed
   CoinModel coinModel2 = coinModel;
   if (coinModel2.moreInfo()) {

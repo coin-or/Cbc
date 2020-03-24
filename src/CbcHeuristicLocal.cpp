@@ -567,7 +567,7 @@ int CbcHeuristicLocal::solution(double &solutionValue,
     int maxTries = COIN_INT_MAX;
     // integerVariable may be randomized copy!
     int *integerVariable = CoinCopyOfArray(model_->integerVariable(), numberIntegers);
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver
       = dynamic_cast< OsiClpSolverInterface * >(model_->solver());
     if (clpSolver) {

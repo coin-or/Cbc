@@ -15,7 +15,7 @@
 #include "OsiAuxInfo.hpp"
 #include "CoinTime.hpp"
 
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #include "CbcHeuristicDive.hpp"
@@ -297,7 +297,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   }
 
   OsiSolverInterface *solver = cloneBut(6); // was model_->solver()->clone();
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver
     = dynamic_cast< OsiClpSolverInterface * >(solver);
   if (clpSolver) {
@@ -1429,7 +1429,7 @@ int CbcHeuristicDive::reducedCostFix(OsiSolverInterface *solver)
 
   int numberFixed = 0;
 
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver
     = dynamic_cast< OsiClpSolverInterface * >(solver);
   ClpSimplex *clpSimplex = NULL;
@@ -1443,7 +1443,7 @@ int CbcHeuristicDive::reducedCostFix(OsiSolverInterface *solver)
     double djValue = direction * reducedCost[iColumn];
     if (upper[iColumn] - lower[iColumn] > integerTolerance) {
       if (solution[iColumn] < lower[iColumn] + integerTolerance && djValue > gap) {
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
         // may just have been fixed before
         if (clpSimplex) {
           if (clpSimplex->getColumnStatus(iColumn) == ClpSimplex::basic) {
@@ -1460,7 +1460,7 @@ int CbcHeuristicDive::reducedCostFix(OsiSolverInterface *solver)
         solver->setColUpper(iColumn, lower[iColumn]);
         numberFixed++;
       } else if (solution[iColumn] > upper[iColumn] - integerTolerance && -djValue > gap) {
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
         // may just have been fixed before
         if (clpSimplex) {
           if (clpSimplex->getColumnStatus(iColumn) == ClpSimplex::basic) {

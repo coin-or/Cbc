@@ -33,49 +33,49 @@
 	solver parameter.
 */
 
-#ifdef COIN_HAS_OSICLP
+#ifdef CBC_HAS_OSICLP
 #include "OsiClpSolverInterface.hpp"
 #ifndef CBC_DEFAULT_SOLVER
 #define CBC_DEFAULT_SOLVER "clp"
 #endif
 #endif
 
-#ifdef COIN_HAS_OSICPX
+#ifdef CBC_HAS_OSICPX
 #include "OsiCpxSolverInterface.hpp"
 #ifndef CBC_DEFAULT_SOLVER
 #define CBC_DEFAULT_SOLVER "cpx"
 #endif
 #endif
 
-#ifdef COIN_HAS_OSIDYLP
+#ifdef CBC_HAS_OSIDYLP
 #include "OsiDylpSolverInterface.hpp"
 #ifndef CBC_DEFAULT_SOLVER
 #define CBC_DEFAULT_SOLVER "dylp"
 #endif
 #endif
 
-#ifdef COIN_HAS_OSIGLPK
+#ifdef CBC_HAS_OSIGLPK
 #include "OsiGlpkSolverInterface.hpp"
 #ifndef CBC_DEFAULT_SOLVER
 #define CBC_DEFAULT_SOLVER "glpk"
 #endif
 #endif
 
-#ifdef COIN_HAS_OSIMSK
+#ifdef CBC_HAS_OSIMSK
 #include "OsiMskSolverInterface.hpp"
 #ifndef CBC_DEFAULT_SOLVER
 #define CBC_DEFAULT_SOLVER "msk"
 #endif
 #endif
 
-#ifdef COIN_HAS_HIGHS
+#ifdef CBC_HAS_HIGHS
 #include "OsiHiGHSSolverInterface.hpp"
 #ifndef CBC_DEFAULT_SOLVER
 #define CBC_DEFAULT_SOLVER "highs"
 #endif
 #endif
 
-#ifdef COIN_HAS_OSISPX
+#ifdef CBC_HAS_OSISPX
 #include "OsiSpxSolverInterface.hpp"
 #ifndef CBC_DEFAULT_SOLVER
 #define CBC_DEFAULT_SOLVER "spx"
@@ -138,25 +138,25 @@ OsiSolverInterface *setupSolvers()
   /*
       Populate the vector of OsiSolverInterface objects.
     */
-#ifdef COIN_HAS_OSICLP
+#ifdef CBC_HAS_OSICLP
   solvers["clp"] = new OsiClpSolverInterface;
 #endif
-#ifdef COIN_HAS_OSICPX
+#ifdef CBC_HAS_OSICPX
   solvers["cpx"] = new OsiCpxSolverInterface;
 #endif
-#ifdef COIN_HAS_OSIDYLP
+#ifdef CBC_HAS_OSIDYLP
   solvers["dylp"] = new OsiDylpSolverInterface;
 #endif
-#ifdef COIN_HAS_OSIGLPK
+#ifdef CBC_HAS_OSIGLPK
   solvers["glpk"] = new OsiGlpkSolverInterface;
 #endif
-#ifdef COIN_HAS_HIGHS
+#ifdef CBC_HAS_HIGHS
   solvers["highs"] = new OsiHiGHSSolverInterface;
 #endif
-#ifdef COIN_HAS_OSIMSK
+#ifdef CBC_HAS_OSIMSK
   solvers["msk"] = new OsiMskSolverInterface;
 #endif
-#ifdef COIN_HAS_OSISPX
+#ifdef CBC_HAS_OSISPX
   solvers["spx"] = new OsiSpxSolverInterface;
 #endif
   /*

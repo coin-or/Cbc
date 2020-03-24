@@ -13,7 +13,7 @@
 #include <cmath>
 #include <cfloat>
 
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #else
 #include "OsiSolverInterface.hpp"
@@ -262,7 +262,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
   }
   if (fullScan || doThis) {
     CoinThreadRandom *randomNumberGenerator = NULL;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
     {
       OsiClpSolverInterface *clpSolver
         = dynamic_cast< OsiClpSolverInterface * >(solver);
@@ -596,7 +596,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       //returnCode=true;
       if (!returnCode) {
         // bounds changed but still optimal
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
         OsiClpSolverInterface *clpSolver
           = dynamic_cast< OsiClpSolverInterface * >(solver);
         if (clpSolver) {

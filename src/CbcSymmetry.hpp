@@ -16,7 +16,7 @@
   copy nauty.a to libnauty.a
 
   In Cbc's configure 
-  add -DCOIN_HAS_NAUTY to CXXDEFS
+  add -DCBC_HAS_NAUTY to CXXDEFS
   add -I/disk/nauty25r9 to CXXDEFS or ADD_CXXFLAGS
   add -L/disk/nauty25r9 -lnauty to LDFLAGS
 

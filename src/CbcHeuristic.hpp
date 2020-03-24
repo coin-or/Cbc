@@ -17,7 +17,7 @@
 class OsiSolverInterface;
 
 class CbcModel;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 //#############################################################################
@@ -336,7 +336,7 @@ public:
     return numCouldRun_;
   }
   /// Is it integer for heuristics?
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   inline bool isHeuristicInteger(const OsiSolverInterface *solver, int iColumn) const
   {
     const OsiClpSolverInterface *clpSolver

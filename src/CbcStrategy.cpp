@@ -16,7 +16,7 @@
 #include <cfloat>
 
 #include "OsiSolverInterface.hpp"
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #include "CbcModel.hpp"
@@ -374,7 +374,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
     // Pass in models message handler
     process->passInMessageHandler(model.messageHandler());
     OsiSolverInterface *solver = model.solver();
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
     if (clpSolver && false) {
       // see if all coefficients multiple of 0.01 (close enough)
@@ -476,7 +476,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       delete[] prohibited;
     }
     int logLevel = model.messageHandler()->logLevel();
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
     //OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
     ClpSimplex *lpSolver = NULL;
     if (clpSolver) {
@@ -523,7 +523,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       process_ = NULL;
     } else {
       // now tighten bounds
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
       if (clpSolver) {
         // model has changed
         solver = model.solver();

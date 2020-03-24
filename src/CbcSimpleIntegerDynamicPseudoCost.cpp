@@ -23,7 +23,7 @@
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
 #include "CbcSimpleIntegerDynamicPseudoCost.hpp"
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #ifdef COIN_DEVELOP
@@ -1631,7 +1631,7 @@ int CbcSwitchingBinary::setAssociatedBounds(OsiSolverInterface *solver,
 {
   if (!solver)
     solver = model_->solver();
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver
     = dynamic_cast< OsiClpSolverInterface * >(solver);
   if (cleanBasis != 1)
@@ -1641,7 +1641,7 @@ int CbcSwitchingBinary::setAssociatedBounds(OsiSolverInterface *solver,
   const double *columnUpper = solver->getColUpper();
   int nChanged = 0;
   if (!columnUpper[columnNumber_]) {
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
     if (clpSolver)
       clpSolver->setColumnStatus(columnNumber_, ClpSimplex::isFixed);
 #endif
@@ -1664,7 +1664,7 @@ int CbcSwitchingBinary::setAssociatedBounds(OsiSolverInterface *solver,
       }
     }
   } else if (columnLower[columnNumber_] == 1.0) {
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
     if (clpSolver)
       clpSolver->setColumnStatus(columnNumber_, ClpSimplex::isFixed);
 #endif

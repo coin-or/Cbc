@@ -12,7 +12,7 @@
 #include "CbcBranchBase.hpp"
 #include "CbcSubProblem.hpp"
 
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
 
 /** Define a catch all class.
     This will create a list of subproblems using partial evaluation
@@ -282,7 +282,7 @@ public:
   /// Which one
   int whichOne_;
 };
-#endif //COIN_HAS_CLP
+#endif //CBC_HAS_CLP
 #endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2

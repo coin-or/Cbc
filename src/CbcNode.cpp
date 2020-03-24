@@ -15,7 +15,7 @@
 #endif
 
 #include "CbcConfig.h"
-#ifdef COIN_HAS_NAUTY
+#ifdef CBC_HAS_NAUTY
 #include "CbcSymmetry.hpp"
 #endif
 //#define DEBUG_SOLUTION
@@ -48,7 +48,7 @@
 #include "CbcCountRowCut.hpp"
 #include "CbcFeasibilityBase.hpp"
 #include "CbcMessage.hpp"
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #include "ClpSimplexOther.hpp"
 #include "ClpSolve.hpp"
@@ -530,7 +530,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
   OsiSolverInterface *solver = model->solver();
   // Mark variables which need to be clean
   char *cleanVariables = NULL;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
   int saveClpOptions = 0;
   if (osiclp) {
@@ -908,7 +908,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
       solver->getIntParam(OsiMaxNumIterationHotStart, saveLimit);
       if (beforeSolution && saveLimit < 100)
         solver->setIntParam(OsiMaxNumIterationHotStart, 100); // go to end
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
       /* If we are doing all strong branching in one go then we create new arrays
                to store information.  If clp NULL then doing old way.
                Going down -
@@ -1065,7 +1065,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         // Mark hot start
         solver->markHotStart();
       }
-#else /* COIN_HAS_CLP */
+#else /* CBC_HAS_CLP */
 
       OsiSolverInterface *clp = NULL;
       double **outputSolution = NULL;
@@ -1075,7 +1075,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
 
       solver->markHotStart();
 
-#endif /* COIN_HAS_CLP */
+#endif /* CBC_HAS_CLP */
       /*
               Open a loop to do the strong branching LPs. For each candidate variable,
               solve an LP with the variable forced down, then up. If a direction turns
@@ -1525,7 +1525,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         delete[] numberInfeasibilitiesDown;
         delete[] objects;
       }
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
       if (osiclp && !allNormal) {
         // back to normal
         osiclp->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL);
@@ -1563,7 +1563,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
   // restore solution
   solver->setColSolution(saveSolution);
   delete[] saveSolution;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   delete[] cleanVariables;
   if (osiclp)
     osiclp->setSpecialOptions(saveClpOptions);
@@ -1703,7 +1703,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   //#define RANGING
 #ifdef RANGING
   // must have clp
-#ifndef COIN_HAS_CLP
+#ifndef CBC_HAS_CLP
 #warning("Ranging switched off as not Clp");
 #undef RANGING
 #endif
@@ -1840,7 +1840,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   int numberToFix = 0;
   // Mark variables which need to be clean
   char *cleanVariables = NULL;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
   int saveClpOptions = 0;
   if (osiclp) {
@@ -1985,7 +1985,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
        2 - always go to end
      */
   int goToEndInStrongBranching = (model->moreSpecialOptions2() & (3 * 8192)) >> 13;
-#ifdef COIN_HAS_NAUTY
+#ifdef CBC_HAS_NAUTY
   // 1 after, 2 strong, 3 until depth 5
   int orbitOption = (model->moreSpecialOptions2() & (128 | 256)) >> 7;
 #endif
@@ -2841,10 +2841,10 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         }
       }
 #endif
-#ifdef COIN_HAS_NAUTY
+#ifdef CBC_HAS_NAUTY
       const int *orbits = NULL;
 #endif
-#ifdef COIN_HAS_NAUTY
+#ifdef CBC_HAS_NAUTY
       if (orbitOption == 2 /* was >1*/) {
         CbcSymmetry *symmetryInfo = model->symmetryInfo();
         CbcNodeInfo *infoX = lastNode ? lastNode->nodeInfo() : NULL;
@@ -2888,7 +2888,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                 }
               }
             } else {
-#if COIN_HAS_NAUTY2 == 1
+#if CBC_HAS_NAUTY2 == 1
               // take largest
               int iOrbit = symmetryInfo->largestOrbit(solver->getColLower(),
                 solver->getColUpper());
@@ -3049,7 +3049,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           double objectiveChange;
           double newObjectiveValue = 1.0e100;
           int j;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
           int saveMaxHotIts = 0;
           int saveOsiClpOptions = 0;
           if (osiclp && goToEndInStrongBranching) {
@@ -3079,7 +3079,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                     */
           choice.possibleBranch->way(-1);
           predictedChange = choice.possibleBranch->branch();
-#ifdef COIN_HAS_NAUTY
+#ifdef CBC_HAS_NAUTY
           if (orbits) {
             // can fix all in orbit
             int fixOrbit = orbits[iObject];
@@ -3119,7 +3119,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             //#define CONFLICT_CUTS 2
 #endif
 #ifdef CONFLICT_CUTS
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
             if (osiclp && (model->moreSpecialOptions() & 4194304) != 0) {
               const CbcFullNodeInfo *topOfTree = model->topOfTree();
               if (topOfTree) {
@@ -3312,7 +3312,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           // repeat the whole exercise, forcing the variable up
           predictedChange = choice.possibleBranch->branch();
           solver->solveFromHotStart();
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
           if (osiclp && goToEndInStrongBranching) {
             osiclp->setIntParam(OsiMaxNumIterationHotStart, saveMaxHotIts);
             osiclp->setSpecialOptions(saveOsiClpOptions);
@@ -3339,7 +3339,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           } else {
             iStatus = 1; // infeasible
 #ifdef CONFLICT_CUTS
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
             if (osiclp && (model->moreSpecialOptions() & 4194304) != 0) {
               const CbcFullNodeInfo *topOfTree = model->topOfTree();
               if (topOfTree) {
@@ -3959,7 +3959,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       kColumn = branchObj->columnNumber();
     }
   }
-#ifdef COIN_HAS_NAUTY
+#ifdef CBC_HAS_NAUTY
   if (orbitOption && kColumn >= 0) {
     CbcSymmetry *symmetryInfo = model->symmetryInfo();
     CbcNodeInfo *infoX = lastNode ? lastNode->nodeInfo() : NULL;
@@ -4046,7 +4046,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   delete[] saveUpper;
   delete[] upEstimate;
   delete[] downEstimate;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   if (osiclp) {
     osiclp->setSpecialOptions(saveClpOptions);
   }
@@ -4088,7 +4088,7 @@ typedef struct {
   bool finished[2]; // true if solver finished
   int numIters[2]; // number of iterations in solver (-1 if never solved)
   double *integerSolution; // output if thinks integer solution
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   ClpDualRowSteepest *steepest;
 #endif
   int columnNumber; // Which column it is
@@ -4098,7 +4098,7 @@ typedef struct {
   double *originalSolution;
   CoinWarmStart *ws;
   double *newObjective;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   ClpDualRowSteepest *dualRowPivot;
   ClpPrimalColumnPivot *primalColumnPivot;
 #endif
@@ -4159,7 +4159,7 @@ int solveAnalyze(void *info)
         } else {
           // restore basis
           solver->setWarmStart(staticInfo->ws);
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
           if (staticInfo->dualRowPivot) {
             OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
             ClpSimplex *simplex = osiclp->getModelPtr();
@@ -4170,7 +4170,7 @@ int solveAnalyze(void *info)
           } else {
 #endif
             solver->resolve();
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
           }
 #endif
         }
@@ -4238,7 +4238,7 @@ int solveAnalyze(void *info)
         }
         choice->movement[iWay] = newObjectiveValue;
       } else {
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
         OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
         ClpSimplex *simplex = osiclp ? osiclp->getModelPtr() : NULL;
 #endif
@@ -4256,7 +4256,7 @@ int solveAnalyze(void *info)
           solver->setColLower(iColumn, choice->upLowerBound);
           newBound = choice->upLowerBound;
         }
-#if 0 //def COIN_HAS_CLP
+#if 0 //def CBC_HAS_CLP
 	if (simplex) {
 	  // set solution to new bound (if basic will be recomputed)
 	  simplex->primalColumnSolution()[iColumn]=newBound;
@@ -4324,7 +4324,7 @@ int solveAnalyze(void *info)
           solver->setDblParam(OsiObjOffset, offset);
           solver->setObjective(staticInfo->newObjective);
           if (!solver->isProvenOptimal()) {
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
             OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
             ClpSimplex *simplex = osiclp->getModelPtr();
             double sum = simplex->sumPrimalInfeasibilities();
@@ -4335,7 +4335,7 @@ int solveAnalyze(void *info)
               returnStatus = 1;
               solver->writeMps("bad", "mps");
               abort();
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
             }
 #endif
           }
@@ -4540,7 +4540,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       numberIterationsAllowed = COIN_INT_MAX;
   }
   int saveAllowed = numberIterationsAllowed;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
   int saveClpOptions = 0;
   bool fastIterations = (model->specialOptions() & 8) != 0;
@@ -4639,7 +4639,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
   staticInfo.integerTolerance = integerTolerance;
   double time1 = model->getCurrentSeconds();
 #define DO_STEEPEST_SERIAL 1
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   if (osiclp && (solveType & 2) != 0 && (!numberThreads || DO_STEEPEST_SERIAL)) {
     ClpSimplex *simplex = osiclp->getModelPtr();
     simplex->setLogLevel(0);
@@ -4659,7 +4659,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     memset(bundles + i, 0, sizeof(StrongBundle));
     bundles[i].staticInfo = &staticInfo;
   }
-#if defined(THREADS_IN_ANALYZE) && defined(COIN_HAS_CLP)
+#if defined(THREADS_IN_ANALYZE) && defined(CBC_HAS_CLP)
 #define USE_STRONG_THREADS
   CoinPthreadStuff threadInfo(numberThreads, cbc_parallelManager);
   int threadNeedsRefreshing[NUMBER_THREADS];
@@ -4667,7 +4667,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     threadInfo.threadInfo_[i].extraInfo2 = solver->clone();
     threadNeedsRefreshing[i] = 0;
   }
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   int numberSteepThreads = 0;
   int step = numberThreads ? (numberRows + numberThreads - 1) / numberThreads : 0;
   int first = 0;
@@ -5209,7 +5209,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     }
   }
   if ((solveType & 2) != 0) {
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
     int saveOptions = osiclp ? osiclp->specialOptions() : 0;
     if (osiclp) {
       //ClpPrimalColumnPivot * primalColumnPivot=NULL;
@@ -5239,7 +5239,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       temp->getDblParam(OsiObjOffset, offset);
       temp->addRow(n, indices, obj, -COIN_DBL_MAX, CoinMin(cutoff, 1.0e25) + offset);
       temp->setDblParam(OsiObjOffset, 0.0);
-#if defined(THREADS_IN_ANALYZE) && defined(COIN_HAS_CLP)
+#if defined(THREADS_IN_ANALYZE) && defined(CBC_HAS_CLP)
       for (int iThread = 0; iThread < numberThreads; iThread++) {
         OsiSolverInterface *solver = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[iThread].extraInfo2);
         solver->addRow(n, indices, obj, -COIN_DBL_MAX, CoinMin(cutoff, 1.0e25) + offset);
@@ -5264,7 +5264,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     staticInfo.newObjective = new double[2 * numberColumns];
     memcpy(staticInfo.newObjective, solver->getObjCoefficients(), numberColumns * sizeof(double));
     memset(staticInfo.newObjective + numberColumns, 0, numberColumns * sizeof(double));
-#if defined(THREADS_IN_ANALYZE) && defined(COIN_HAS_CLP)
+#if defined(THREADS_IN_ANALYZE) && defined(CBC_HAS_CLP)
     for (int iThread = 0; iThread < numberThreads; iThread++) {
       OsiSolverInterface *solver = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[iThread].extraInfo2);
       solver->setObjective(newLower);
@@ -5475,7 +5475,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     delete[] thisSolution;
     delete temp;
     delete[] newLower;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
     if (osiclp) {
       //ClpPrimalColumnPivot * primalColumnPivot=NULL;
       osiclp->setSpecialOptions(saveOptions);
@@ -5483,7 +5483,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
 #endif
   }
   delete[] staticInfo.newObjective;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   if (osiclp) {
     delete staticInfo.dualRowPivot;
     delete staticInfo.primalColumnPivot;
@@ -5503,12 +5503,12 @@ int CbcNode::analyze(CbcModel *model, double *results)
       del[i - numberContinuousRows] = i;
     temp->deleteRows(numberRows - numberContinuousRows, del);
     delete[] del;
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
     if (!osiclp) {
 #endif
       solver->writeMps("analyzed");
       temp->writeMps("analyzed2");
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
     } else {
       OsiClpSolverInterface *osiclp2 = dynamic_cast< OsiClpSolverInterface * >(temp);
       osiclp->getModelPtr()->writeMps("analyzed.mps", 2, 1);
@@ -5543,7 +5543,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
   delete[] back;
   // restore solution
   solver->setColSolution(saveSolution);
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
   if (osiclp)
     osiclp->setSpecialOptions(saveClpOptions);
 #endif

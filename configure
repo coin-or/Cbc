@@ -3412,8 +3412,6 @@ _ACEOF
 
 
 
-
-
 # A useful makefile conditional that is always false
 
    if false; then
@@ -17473,7 +17471,7 @@ fi
 
   if test $coin_has_coinutils = yes ; then
 
-$as_echo "#define COIN_HAS_COINUTILS 1" >>confdefs.h
+$as_echo "#define CBC_HAS_COINUTILS 1" >>confdefs.h
 
     if test -n "$coinutils_pcfiles" ; then CBCLIB_PCFILES="$coinutils_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$coinutils_lflags $CBCLIB_LFLAGS"
@@ -17752,7 +17750,7 @@ fi
 
   if test $coin_has_osi = yes ; then
 
-$as_echo "#define COIN_HAS_OSI 1" >>confdefs.h
+$as_echo "#define CBC_HAS_OSI 1" >>confdefs.h
 
     if test -n "$osi_pcfiles" ; then CBCLIB_PCFILES="$osi_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$osi_lflags $CBCLIB_LFLAGS"
@@ -18031,7 +18029,7 @@ fi
 
   if test $coin_has_cgl = yes ; then
 
-$as_echo "#define COIN_HAS_CGL 1" >>confdefs.h
+$as_echo "#define CBC_HAS_CGL 1" >>confdefs.h
 
     if test -n "$cgl_pcfiles" ; then CBCLIB_PCFILES="$cgl_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$cgl_lflags $CBCLIB_LFLAGS"
@@ -18310,7 +18308,7 @@ fi
 
   if test $coin_has_clp = yes ; then
 
-$as_echo "#define COIN_HAS_CLP 1" >>confdefs.h
+$as_echo "#define CBC_HAS_CLP 1" >>confdefs.h
 
     if test -n "$clp_pcfiles" ; then CBCLIB_PCFILES="$clp_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$clp_lflags $CBCLIB_LFLAGS"
@@ -18587,7 +18585,7 @@ fi
 
   if test $coin_has_osiclp = yes ; then
 
-$as_echo "#define COIN_HAS_OSICLP 1" >>confdefs.h
+$as_echo "#define CBC_HAS_OSICLP 1" >>confdefs.h
 
     if test -n "$osiclp_pcfiles" ; then CBCLIB_PCFILES="$osiclp_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$osiclp_lflags $CBCLIB_LFLAGS"
@@ -18749,11 +18747,11 @@ fi
 
     fi
     if test $coin_has_readline = yes ; then
-      CBCLIB_LFLAGS="-lreadline $CBCLIB_LFLAGS"
-        CBCGENERIC_LFLAGS="-lreadline $CBCGENERIC_LFLAGS"
+      CBCLIB_LFLAGS="$LIBS $CBCLIB_LFLAGS"
+        CBCGENERIC_LFLAGS="$LIBS $CBCGENERIC_LFLAGS"
 
 
-$as_echo "#define COIN_HAS_READLINE 1" >>confdefs.h
+$as_echo "#define CBC_HAS_READLINE 1" >>confdefs.h
 
     fi
     LIBS="$coin_save_LIBS"
@@ -19017,7 +19015,7 @@ fi
 
   if test $coin_has_asl = yes ; then
 
-$as_echo "#define COIN_HAS_ASL 1" >>confdefs.h
+$as_echo "#define CBC_HAS_ASL 1" >>confdefs.h
 
     if test -n "$asl_pcfiles" ; then CBCSOLVERLIB_PCFILES="$asl_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
        CBCSOLVERLIB_LFLAGS="$asl_lflags $CBCSOLVERLIB_LFLAGS"
@@ -19283,7 +19281,7 @@ fi
 
   if test $coin_has_nauty = yes ; then
 
-$as_echo "#define COIN_HAS_NAUTY 1" >>confdefs.h
+$as_echo "#define CBC_HAS_NAUTY 1" >>confdefs.h
 
     CBCLIB_LFLAGS="$nauty_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$nauty_cflags $CBCLIB_CFLAGS"
@@ -19544,7 +19542,7 @@ fi
 
   if test $coin_has_ositests = yes ; then
 
-$as_echo "#define COIN_HAS_OSITESTS 1" >>confdefs.h
+$as_echo "#define CBC_HAS_OSITESTS 1" >>confdefs.h
 
     if test -n "$ositests_pcfiles" ; then CBCUNITTEST_PCFILES="$ositests_pcfiles $CBCUNITTEST_PCFILES" ; fi
        CBCUNITTEST_LFLAGS="$ositests_lflags $CBCUNITTEST_LFLAGS"
@@ -19777,7 +19775,7 @@ fi
 
   if test $coin_has_sample = yes ; then
 
-$as_echo "#define COIN_HAS_SAMPLE 1" >>confdefs.h
+$as_echo "#define CBC_HAS_SAMPLE 1" >>confdefs.h
 
 
 
@@ -20008,7 +20006,7 @@ fi
 
   if test $coin_has_netlib = yes ; then
 
-$as_echo "#define COIN_HAS_NETLIB 1" >>confdefs.h
+$as_echo "#define CBC_HAS_NETLIB 1" >>confdefs.h
 
 
 
@@ -20239,7 +20237,7 @@ fi
 
   if test $coin_has_miplib3 = yes ; then
 
-$as_echo "#define COIN_HAS_MIPLIB3 1" >>confdefs.h
+$as_echo "#define CBC_HAS_MIPLIB3 1" >>confdefs.h
 
 
 
@@ -20502,7 +20500,7 @@ fi
 
   if test $coin_has_osidylp = yes ; then
 
-$as_echo "#define COIN_HAS_OSIDYLP 1" >>confdefs.h
+$as_echo "#define CBC_HAS_OSIDYLP 1" >>confdefs.h
 
     if test -n "$osidylp_pcfiles" ; then CBCGENERIC_PCFILES="$osidylp_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osidylp_lflags $CBCGENERIC_LFLAGS"
@@ -20768,7 +20766,7 @@ fi
 
   if test $coin_has_osicpx = yes ; then
 
-$as_echo "#define COIN_HAS_OSICPX 1" >>confdefs.h
+$as_echo "#define CBC_HAS_OSICPX 1" >>confdefs.h
 
     if test -n "$osicpx_pcfiles" ; then CBCLIB_PCFILES="$osicpx_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$osicpx_lflags $CBCLIB_LFLAGS"
@@ -21034,7 +21032,7 @@ fi
 
   if test $coin_has_osiglpk = yes ; then
 
-$as_echo "#define COIN_HAS_OSIGLPK 1" >>confdefs.h
+$as_echo "#define CBC_HAS_OSIGLPK 1" >>confdefs.h
 
     if test -n "$osiglpk_pcfiles" ; then CBCGENERIC_PCFILES="$osiglpk_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osiglpk_lflags $CBCGENERIC_LFLAGS"
@@ -21295,7 +21293,7 @@ fi
 
   if test $coin_has_osimsk = yes ; then
 
-$as_echo "#define COIN_HAS_OSIMSK 1" >>confdefs.h
+$as_echo "#define CBC_HAS_OSIMSK 1" >>confdefs.h
 
     if test -n "$osimsk_pcfiles" ; then CBCGENERIC_PCFILES="$osimsk_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osimsk_lflags $CBCGENERIC_LFLAGS"
@@ -21555,7 +21553,7 @@ fi
 
   if test $coin_has_osispx = yes ; then
 
-$as_echo "#define COIN_HAS_OSISPX 1" >>confdefs.h
+$as_echo "#define CBC_HAS_OSISPX 1" >>confdefs.h
 
     if test -n "$osispx_pcfiles" ; then CBCGENERIC_PCFILES="$osispx_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osispx_lflags $CBCGENERIC_LFLAGS"
@@ -21821,7 +21819,7 @@ fi
 
   if test $coin_has_cplex = yes ; then
 
-$as_echo "#define COIN_HAS_CPLEX 1" >>confdefs.h
+$as_echo "#define CBC_HAS_CPLEX 1" >>confdefs.h
 
     CBCLIB_LFLAGS="$cplex_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$cplex_cflags $CBCLIB_CFLAGS"
@@ -22078,7 +22076,7 @@ fi
 
   if test $coin_has_glpk = yes ; then
 
-$as_echo "#define COIN_HAS_GLPK 1" >>confdefs.h
+$as_echo "#define CBC_HAS_GLPK 1" >>confdefs.h
 
     if test -n "$glpk_pcfiles" ; then CBCSOLVERLIB_PCFILES="$glpk_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
        CBCSOLVERLIB_LFLAGS="$glpk_lflags $CBCSOLVERLIB_LFLAGS"
@@ -22673,7 +22671,7 @@ fi
 
   if test $coin_has_pthreadsw32 = yes ; then
 
-$as_echo "#define COIN_HAS_PTHREADSW32 1" >>confdefs.h
+$as_echo "#define CBC_HAS_PTHREADSW32 1" >>confdefs.h
 
     CBCLIB_LFLAGS="$pthreadsw32_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$pthreadsw32_cflags $CBCLIB_CFLAGS"

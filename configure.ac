@@ -27,7 +27,7 @@ AC_CONFIG_SRCDIR(src/CbcTree.hpp)
 
 # Do some initialization work (version numbers, change prefix default, ...)
 
-AC_COIN_INITIALIZE(Cbc)
+AC_COIN_INITIALIZE
 
 #############################################################################
 #                         Standard build tool stuff                         #

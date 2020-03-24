@@ -47,7 +47,7 @@ CbcGeneral::CbcGeneral(const CbcGeneral &rhs)
   : CbcObject(rhs)
 {
 }
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "ClpNode.hpp"

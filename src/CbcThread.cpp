@@ -546,7 +546,7 @@ CbcBaseModel::CbcBaseModel(CbcModel &model, int type)
       //threadModel_[i] = new CbcModel(model, true);
       threadModel_[i] = model.clone(true);
       threadModel_[i]->synchronizeHandlers(1);
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
       // Solver may need to know about model
       CbcModel *thisModel = threadModel_[i];
       CbcOsiSolver *solver = dynamic_cast< CbcOsiSolver * >(thisModel->solver());

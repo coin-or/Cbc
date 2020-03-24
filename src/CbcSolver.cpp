@@ -62,7 +62,7 @@
 #define CLP_STRING(s) #s
 
 #include "CbcSolverHeuristics.hpp"
-#ifdef COIN_HAS_GLPK
+#ifdef CBC_HAS_GLPK
 #include "glpk.h"
 extern COINUTILSLIB_EXPORT glp_tran *cbc_glp_tran;
 extern COINUTILSLIB_EXPORT glp_prob *cbc_glp_prob;
@@ -822,7 +822,7 @@ void CbcSolver::addCutGenerator(CglCutGenerator *generator)
 */
 
 #if CBC_OTHER_SOLVER == 1
-#ifndef COIN_HAS_OSICPX
+#ifndef CBC_HAS_OSICPX
 #error "Configuration did not detect OsiCpx installation."
 #else
 #include "OsiCpxSolverInterface.hpp"
@@ -833,7 +833,7 @@ static void statistics(ClpSimplex *originalModel, ClpSimplex *model);
 static bool maskMatches(const int *starts, char **masks,
   std::string &check);
 static void generateCode(CbcModel *model, const char *fileName, int type, int preProcess);
-#ifdef COIN_HAS_NAUTY
+#ifdef CBC_HAS_NAUTY
 // returns number of constraints added
 static int nautiedConstraints(CbcModel &model, int maxPass);
 #endif
@@ -4815,7 +4815,7 @@ int CbcMain1(int argc, const char *argv[],
                         columnAddDummy, NULL, NULL,
                         lowerNew, upperNew, objectiveNew);
                       // add constraints and make integer if all integer in group
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
                       OsiClpSolverInterface *clpSolver2
                         = dynamic_cast< OsiClpSolverInterface * >(solver2);
 #endif
@@ -4823,7 +4823,7 @@ int CbcMain1(int argc, const char *argv[],
                         lowerNew[iObj] = 0.0;
                         upperNew[iObj] = 0.0;
                         solver2->setInteger(numberColumns + iObj);
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
                         if (clpSolver2)
                           clpSolver2->setOptionalInteger(numberColumns + iObj);
 #endif
@@ -6930,7 +6930,7 @@ int CbcMain1(int argc, const char *argv[],
                 }
 #endif
 #ifdef SOS_AS_CUTS
-#ifdef COIN_HAS_CLP
+#ifdef CBC_HAS_CLP
                 /* SOS as cuts
 				   Could be a bit more sophisticated e.g. only non duplicates
 				   Could do something for SOS 2?
@@ -7352,7 +7352,7 @@ int CbcMain1(int argc, const char *argv[],
                 if (biLinearProblem)
                   babModel_->setSpecialOptions(babModel_->specialOptions() & (~(512 | 32768)));
                 babModel_->setMoreSpecialOptions2(parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].intValue());
-#ifdef COIN_HAS_NAUTY
+#ifdef CBC_HAS_NAUTY
                 int nautyAdded = 0;
                 {
                   int jParam = whichParam(CBC_PARAM_STR_ORBITAL,
@@ -7388,7 +7388,7 @@ int CbcMain1(int argc, const char *argv[],
 		}
 #endif
                 babModel_->branchAndBound(statistics);
-#ifdef COIN_HAS_NAUTY
+#ifdef CBC_HAS_NAUTY
                 if (nautyAdded) {
                   int *which = new int[nautyAdded];
                   int numberOldRows = babModel_->solver()->getNumRows() - nautyAdded;
@@ -9870,7 +9870,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   int numberRows = lpSolver->getNumRows();
                   int numberColumns = lpSolver->getNumCols();
                   int numberGlpkRows = numberRows + 1;
-#ifdef COIN_HAS_GLPK
+#ifdef CBC_HAS_GLPK
                   if (cbc_glp_prob) {
                     // from gmpl
                     numberGlpkRows = glp_get_num_rows(cbc_glp_prob);
@@ -9945,7 +9945,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     }
                   }
                   fclose(fp);
-#ifdef COIN_HAS_GLPK
+#ifdef CBC_HAS_GLPK
                   if (cbc_glp_prob) {
                     if (integerProblem) {
                       glp_read_mip(cbc_glp_prob, fileName.c_str());
@@ -10673,7 +10673,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
     << generalPrint
     << CoinMessageEol;
 #endif
-#ifdef COIN_HAS_GLPK
+#ifdef CBC_HAS_GLPK
   if (cbc_glp_prob) {
     // free up as much as possible
     glp_free(cbc_glp_prob);
@@ -12585,7 +12585,7 @@ static void printGeneralMessage(CbcModel &model, const char *message)
     << CoinMessageEol;
 #endif
 }
-#ifdef COIN_HAS_NAUTY
+#ifdef CBC_HAS_NAUTY
 #include "CbcSymmetry.hpp"
 // returns number of constraints added
 static int nautiedConstraints(CbcModel &model, int maxPass)

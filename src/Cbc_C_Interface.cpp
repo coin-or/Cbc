@@ -46,6 +46,7 @@
 #include "CbcMipStartIO.hpp"
 #include "ClpMessage.hpp"
 #include <OsiAuxInfo.hpp>
+#include "CoinFileIO.hpp"
 
 using namespace std;
 
@@ -1183,6 +1184,26 @@ Cbc_readLp(Cbc_Model *model, const char *filename)
 
   return result;
 }
+
+/** @brief If Cbc was built with gzip compressed files support
+  *
+  * @return 1 if yes, 0 otherwise
+  **/
+COINLIBAPI char COINLINKAGE
+Cbc_supportsGzip() {
+  return (char)CoinFileInput::haveGzipSupport();
+}
+
+/** @brief If Cbc was built with bzip2 compressed files support
+  *
+  * @return 1 if yes, 0 otherwise
+  **/
+COINLIBAPI char COINLINKAGE
+Cbc_supportsBzip2() {
+  return (char)CoinFileInput::haveBzip2Support();
+}
+
+
 
 /* Sets an initial feasible solution
  *

@@ -679,6 +679,20 @@ Cbc_writeMps(Cbc_Model *model, const char *filename);
 COINLIBAPI void COINLINKAGE
 Cbc_writeLp(Cbc_Model *model, const char *filename);
 
+/** @brief If Cbc was built with gzip compressed files support
+  *
+  * @return 1 if yes, 0 otherwise
+  **/
+COINLIBAPI char COINLINKAGE
+Cbc_supportsGzip();
+
+/** @brief If Cbc was built with bzip2 compressed files support
+  *
+  * @return 1 if yes, 0 otherwise
+  **/
+COINLIBAPI char COINLINKAGE
+Cbc_supportsBzip2();
+
 /**@name Getting and setting model data
      Note that problem access and modification methods,
        such as getColLower and setColLower,

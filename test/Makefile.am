@@ -28,8 +28,8 @@ if COIN_HAS_SAMPLE
   cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
   ositestsflags += -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
 endif
-cbcflags += -unitTest
 if COIN_HAS_MIPLIB3
+#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
   cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
 endif
 if COIN_HAS_NETLIB

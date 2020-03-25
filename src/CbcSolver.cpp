@@ -9581,9 +9581,15 @@ int CbcMain1(int argc, const char *argv[],
             //return(22);
           } break;
           case CLP_PARAM_ACTION_UNITTEST: {
-            CbcClpUnitTest(model_, dirMiplib, -3, NULL,argc,argv,
-			   callBack,parameterData);
-	    return(22);
+	    int returnCode;
+	    if (!strcmp(argv[1],"-dirMiplib") || !strcmp(argv[1],"-dirmiplib")) 
+	      returnCode = CbcClpUnitTest(model_, dirMiplib, -3, NULL,
+					  argc,argv,callBack,parameterData);
+	    else 
+	      returnCode = CbcClpUnitTest(model_, dirSample, -2, NULL,
+					  argc,argv,callBack,parameterData);
+	    babModel_ = NULL;
+	    return returnCode;
           } 
           case CLP_PARAM_ACTION_FAKEBOUND:
             if (goodModel) {

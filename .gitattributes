@@ -86,6 +86,7 @@ examples/driver4.cpp -text
 examples/driver5.cpp -text
 examples/driver6.cpp -text
 examples/driverFat.cpp -text
+examples/feature-extractor.cpp -text
 examples/inc.cpp -text
 examples/interrupt.cpp -text
 examples/modify.cpp -text

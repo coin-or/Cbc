@@ -25,12 +25,12 @@ endif
 cbcflags =
 ositestsflags =
 if COIN_HAS_SAMPLE
-  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
+#  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
   ositestsflags += -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
 endif
 if COIN_HAS_MIPLIB3
-#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
-  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
+  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
+#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
 endif
 if COIN_HAS_NETLIB
   ositestsflags += -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface

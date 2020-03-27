@@ -100,11 +100,11 @@ build_triplet = @build@
 host_triplet = @host@
 @COIN_HAS_CLP_TRUE@am__append_1 = test_cbc ctests
 @CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SAMPLE_TRUE@am__append_2 = test_cbc_generic
-@COIN_HAS_SAMPLE_TRUE@am__append_3 = -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_SAMPLE_TRUE@am__append_4 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
-#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
-@COIN_HAS_MIPLIB3_TRUE@am__append_5 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-@COIN_HAS_NETLIB_TRUE@am__append_6 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
+#  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
+@COIN_HAS_SAMPLE_TRUE@am__append_3 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
+@COIN_HAS_MIPLIB3_TRUE@am__append_4 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
+#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
+@COIN_HAS_NETLIB_TRUE@am__append_5 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
 bin_PROGRAMS = gamsTest$(EXEEXT) osiUnitTest$(EXEEXT) \
 	CInterfaceTest$(EXEEXT)
 subdir = test
@@ -384,8 +384,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 CBC_TEST_TGTS = gamstests ositests $(am__append_1) $(am__append_2)
-cbcflags = $(am__append_3) $(am__append_5)
-ositestsflags = $(am__append_4) $(am__append_6)
+cbcflags = $(am__append_4)
+ositestsflags = $(am__append_3) $(am__append_5)
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la
 AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/OsiCbc \

@@ -63,7 +63,7 @@ class CbcNauty;
  *  Thanks, but it had been nice to make sure that there are no symbol collisions when building Couenne with this Cbc.
  */
 
-class CbcSymmetry {
+class CBCLIB_EXPORT CbcSymmetry {
   class Node {
     int index;
     double coeff;

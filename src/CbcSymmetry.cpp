@@ -348,6 +348,8 @@ void CbcSymmetry::ChangeBounds(const double *new_lb, const double *new_ub,
 void CbcSymmetry::setupSymmetry(CbcModel * model)
 {
   OsiSolverInterface * solver = model->continuousSolver();
+  if (!solver)
+    solver = model->solver();
   double startCPU = CoinCpuTime();
   const double *objective = solver->getObjCoefficients();
   const double *columnLower = solver->getColLower();

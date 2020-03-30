@@ -342,7 +342,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
       continue;
     }
     // Careful! We're initialising for the benefit of other code.
-    CoinDrand48(true, 1234567);
+    CoinDrand48(true, 123456);
     double startTime = CoinCpuTime() + CoinCpuTimeJustChildren();
     if (oldStyle) {
       model = new CbcModel(saveModel);
@@ -364,8 +364,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
       }
       newArgv[newArgc++] = "solve";
       model = new CbcModel(solver1);
-      CbcMain1(newArgc, newArgv
-	       , *model, callBack, parameterData);
+      CbcMain0(*model,parameterData);
+      CbcMain1(newArgc, newArgv, *model, callBack, parameterData);
     }
 
     assert(model->getNumRows() == nRows[m]);

@@ -32,15 +32,15 @@ environment:
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       ARCH: win64-msvc14-mt
-      HOST_ARCH_ARG: --enable-msvc CXXFLAGS='-nologo -DNDEBUG -O2 -MT' CFLAGS='-nologo -DNDEBUG -O2 -MT'
+      HOST_ARCH_ARG: --enable-msvc --disable-shared CXXFLAGS='-nologo -DNDEBUG -O2 -MT' CFLAGS='-nologo -DNDEBUG -O2 -MT'
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15-mt
-      HOST_ARCH_ARG: --enable-msvc CXXFLAGS='-nologo -DNDEBUG -O2 -MT' CFLAGS='-nologo -DNDEBUG -O2 -MT'
+      HOST_ARCH_ARG: --enable-msvc --disable-shared CXXFLAGS='-nologo -DNDEBUG -O2 -MT' CFLAGS='-nologo -DNDEBUG -O2 -MT'
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: win64-msvc16-mt
-      HOST_ARCH_ARG: --enable-msvc CXXFLAGS='-nologo -DNDEBUG -O2 -MT' CFLAGS='-nologo -DNDEBUG -O2 -MT'
+      HOST_ARCH_ARG: --enable-msvc --disable-shared CXXFLAGS='-nologo -DNDEBUG -O2 -MT' CFLAGS='-nologo -DNDEBUG -O2 -MT'
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       ARCH: win64-msvc14-mdd
@@ -56,15 +56,15 @@ environment:
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       ARCH: win64-msvc14-mtd
-      HOST_ARCH_ARG: --enable-msvc CXXFLAGS='-nologo -EHs -Z7 -MTd' CFLAGS='-nologo -EHs -Z7 -MTd'
+      HOST_ARCH_ARG: --enable-msvc --disable-shared CXXFLAGS='-nologo -EHs -Z7 -MTd' CFLAGS='-nologo -EHs -Z7 -MTd'
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15-mtd
-      HOST_ARCH_ARG: --enable-msvc CXXFLAGS='-nologo -EHs -Z7 -MTd' CFLAGS='-nologo -EHs -Z7 -MTd'
+      HOST_ARCH_ARG: --enable-msvc --disable-shared CXXFLAGS='-nologo -EHs -Z7 -MTd' CFLAGS='-nologo -EHs -Z7 -MTd'
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: win64-msvc16-mtd
-      HOST_ARCH_ARG: --enable-msvc CXXFLAGS='-nologo -EHs -Z7 -MTd' CFLAGS='-nologo -EHs -Z7 -MTd'
+      HOST_ARCH_ARG: --enable-msvc --disable-shared CXXFLAGS='-nologo -EHs -Z7 -MTd' CFLAGS='-nologo -EHs -Z7 -MTd'
       ADD_PATH: /mingw64/bin
 
 install:
@@ -75,8 +75,8 @@ install:
   - IF %ARCH%==win64-msvc14-mdd (CALL C:\"Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64)
   - IF %ARCH%==win64-msvc15-mdd (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat")
   - IF %ARCH%==win64-msvc16-mdd (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat")
-  - IF %ARCH%==x86_64-w64-mingw32 (CALL C:\msys64\usr\bin\bash -lc "pacman -S mingw-w64-x86_64-lapack mingw-w64-x86_64-winpthreads-git --noconfirm")
-  - IF %ARCH%==i686-w64-mingw32 (CALL C:\msys64\usr\bin\bash -lc "pacman -S mingw-w64-i686-lapack mingw-w64-i686-winpthreads-git --noconfirm")  
+  - IF %ARCH%==x86_64-w64-mingw32 (CALL C:\msys64\usr\bin\bash -lc "pacman -S mingw-w64-x86_64-lapack mingw-w64-x86_64-winpthreads-git mingw-w64-x86_64-readline --noconfirm")
+  - IF %ARCH%==i686-w64-mingw32 (CALL C:\msys64\usr\bin\bash -lc "pacman -S mingw-w64-i686-lapack mingw-w64-i686-winpthreads-git mingw-w64-i686-readline --noconfirm")  
   - C:\msys64\usr\bin\bash -lc ""
 
 build_script:
@@ -93,6 +93,7 @@ after_build:
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libwinpthread-1.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libstdc++-6.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libquadmath-0.dll C:\projects\dist\bin)
+  - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libreadline8.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libblas.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\liblapack.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libgfortran-5.dll C:\projects\dist\bin)
@@ -101,6 +102,7 @@ after_build:
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libwinpthread-1.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libstdc++-6.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libquadmath-0.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libreadline8.dll C:\projects\dist\bin)
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\bin
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\include
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\lib

@@ -128,6 +128,7 @@ after_build:
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libstdc++-6.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libquadmath-0.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libreadline8.dll C:\projects\dist\bin)
+  - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libtermcap-0.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libblas.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\liblapack.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libgfortran-5.dll C:\projects\dist\bin)
@@ -137,6 +138,7 @@ after_build:
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libstdc++-6.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libquadmath-0.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libreadline8.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libtermcap-0.dll C:\projects\dist\bin)
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\bin
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\include
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\lib

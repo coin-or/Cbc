@@ -1513,6 +1513,7 @@ COINLIBAPI int COINLINKAGE
 Cbc_solveLinearProgram(Cbc_Model *model) 
 {
   CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
+  model->solver_->getModelPtr()->setRandomSeed( model->int_param[INT_PARAM_RANDOM_SEED] );
 
   Cbc_flush( model );
 
@@ -1879,6 +1880,8 @@ Cbc_solve(Cbc_Model *model)
     }
 #endif
     model->cbcModel_->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
+    model->cbcModel_->setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
+
     CbcMain1( nargs, args, *model->cbcModel_, cbc_callb, cbcData );
 
     free(charCbcOpts);

@@ -100,9 +100,10 @@ enum IntParam {
   INT_PARAM_LOG_LEVEL           = 11, /*! Verbosity level, from 0 to 2 */
   INT_PARAM_MAX_SAVED_SOLS      = 12, /*! Size of the pool to save the best solutions found during the search. */
   INT_PARAM_MULTIPLE_ROOTS      = 13, /*! Multiple root passes to get additional cuts and solutions. */
-  INT_PARAM_ROUND_INT_VARS      = 14  /*! If integer variables should be round to remove small infeasibilities. This can increase the overall amount of infeasibilities in problems with both continuous and integer variables */
+  INT_PARAM_ROUND_INT_VARS      = 14, /*! If integer variables should be round to remove small infeasibilities. This can increase the overall amount of infeasibilities in problems with both continuous and integer variables */
+  INT_PARAM_RANDOM_SEED         = 15  /*! When solving LP and MIP, randomization is used to break ties in some decisions. This changes the random seed so that multiple executions can produce different results */
 };
-#define N_INT_PARAMS 15
+#define N_INT_PARAMS 16
   
 /** typedef for cbc callback to monitor the progress of the search
  * in terms of improved upper and lower bounds */

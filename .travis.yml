@@ -13,6 +13,15 @@ matrix:
             - libgfortran-5-dev
             - liblapack-dev
     - os: linux
+      dist: precise
+      env: BUILD_STATIC=false
+      addons:
+        apt:
+          packages:
+            - gfortran
+            - libgfortran-3-dev
+            - liblapack-dev
+    - os: linux
       dist: bionic
       env: BUILD_STATIC=false
       addons:

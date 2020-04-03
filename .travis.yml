@@ -19,7 +19,6 @@ matrix:
         apt:
           packages:
             - gfortran
-            - libgfortran-3-dev
             - liblapack-dev
     - os: linux
       dist: bionic

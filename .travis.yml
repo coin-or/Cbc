@@ -17,8 +17,10 @@ matrix:
       env: BUILD_STATIC=false
       addons:
         apt:
+          sources:
+            - ppa:ubuntu-toolchain-r/test
           packages:
-            - gfortran
+            - gcc-8
             - liblapack-dev
     - os: linux
       dist: bionic

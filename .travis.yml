@@ -21,7 +21,7 @@ matrix:
             - sourceline: 'ppa:ubuntu-toolchain-r/test'
           packages:
             - gcc-8
-            - liblapack-dev1
+            - liblapack-dev
       install:
         - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
         - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 90

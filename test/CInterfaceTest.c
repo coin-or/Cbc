@@ -20,7 +20,7 @@
 
 static int callback_called = 0;
 
-void (COINLINKAGE_CB test_callback)(Cbc_Model * model,int  msgno, int ndouble,
+void (CBC_LINKAGE_CB test_callback)(Cbc_Model * model,int  msgno, int ndouble,
                             const double * dvec, int nint, const int * ivec,
                             int nchar, char ** cvec) {
 

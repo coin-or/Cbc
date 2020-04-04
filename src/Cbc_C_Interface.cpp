@@ -257,19 +257,15 @@ struct Cbc_Model {
 // #include <extras.h>  // bobe 06-02-14
 #endif
 
-// Get C stuff but with extern C
-#define CBC_EXTERN_C
-#include "Coin_C_defines.h"
-
 #define CbcGetProperty(T, prop) \
-  COINLIBAPI T COINLINKAGE      \
+  T COINLINKAGE      \
     Cbc_##prop(Cbc_Model *m)    \
   {                             \
     return m->model_->prop();   \
   }
 
 #define CbcSetSolverProperty(T, prop)          \
-  COINLIBAPI void COINLINKAGE                  \
+  void COINLINKAGE                  \
     Cbc_##prop(Cbc_Model *m, int index, T val) \
   {                                            \
     m->model_->solver()->prop(index, val);     \
@@ -651,7 +647,7 @@ void Cbc_MessageHandler::setCallBack(cbc_callback callback)
 #endif
 
 /* Version */
-COINLIBAPI const char *COINLINKAGE Cbc_getVersion()
+const char *COINLINKAGE Cbc_getVersion()
 {
   return CBC_VERSION;
 }
@@ -966,7 +962,7 @@ static void Cbc_iniBuffer(Cbc_Model *model)
 static void Cbc_iniParams( Cbc_Model *model );
 
 /* Default Cbc_Model constructor */
-COINLIBAPI Cbc_Model *COINLINKAGE
+Cbc_Model *COINLINKAGE
 Cbc_newModel()
 {
   Cbc_Model *model = new Cbc_Model();
@@ -1011,7 +1007,7 @@ Cbc_newModel()
 }
 
 /* Cbc_Model Destructor */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_deleteModel(Cbc_Model *model)
 {
   Cbc_deleteColBuffer(model);
@@ -1075,7 +1071,7 @@ Cbc_deleteModel(Cbc_Model *model)
    Just like the other loadProblem() method except that the matrix is
    given in a standard column major ordered format (without gaps).
 */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_loadProblem(Cbc_Model *model, const int numcols, const int numrows,
   const CoinBigIndex *start, const int *index,
   const double *value,
@@ -1113,7 +1109,7 @@ static void fillAllNameIndexes(Cbc_Model *model)
  * @param model problem object
  * @param fileName file name
  **/
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_readMps(Cbc_Model *model, const char *filename)
 {
   int result = 1;
@@ -1135,7 +1131,7 @@ Cbc_readMps(Cbc_Model *model, const char *filename)
  * @param model problem object
  * @param fileName file name
  **/
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_writeMps(Cbc_Model *model, const char *filename)
 {
   Cbc_flush(model);
@@ -1147,7 +1143,7 @@ Cbc_writeMps(Cbc_Model *model, const char *filename)
  *
  * @param model problem object
  * @param fileName file name */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_writeLp(Cbc_Model *model, const char *filename)
 {
   Cbc_flush(model);
@@ -1168,7 +1164,7 @@ Cbc_writeLp(Cbc_Model *model, const char *filename)
  *
  * @param model problem object
  * @param fileName file name */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_readLp(Cbc_Model *model, const char *filename)
 {
   int result = 1;
@@ -1189,7 +1185,7 @@ Cbc_readLp(Cbc_Model *model, const char *filename)
   *
   * @return 1 if yes, 0 otherwise
   **/
-COINLIBAPI char COINLINKAGE
+char COINLINKAGE
 Cbc_supportsGzip() {
   return (char)CoinFileInput::haveGzipSupport();
 }
@@ -1198,7 +1194,7 @@ Cbc_supportsGzip() {
   *
   * @return 1 if yes, 0 otherwise
   **/
-COINLIBAPI char COINLINKAGE
+char COINLINKAGE
 Cbc_supportsBzip2() {
   return (char)CoinFileInput::haveBzip2Support();
 }
@@ -1209,7 +1205,7 @@ Cbc_supportsBzip2() {
  *
  * @param model problem object
  **/
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setInitialSolution(Cbc_Model *model, const double *sol)
 {
   Cbc_flush(model);
@@ -1233,17 +1229,17 @@ Cbc_setInitialSolution(Cbc_Model *model, const double *sol)
 }
 
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val) {
   model->int_param[which] = val;
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setDblParam(Cbc_Model *model, enum DblParam which, const double val) {
   model->dbl_param[which] = val;
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setParameter(Cbc_Model *model, const char *name, const char *value)
 {
   if (model->cbcOptions.find(string(name))==model->cbcOptions.end())
@@ -1252,7 +1248,7 @@ Cbc_setParameter(Cbc_Model *model, const char *name, const char *value)
 }
 
 /* Fills in array with problem name  */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_problemName(Cbc_Model *model, int maxNumberCharacters, char *array)
 {
   std::string name;
@@ -1260,7 +1256,7 @@ Cbc_problemName(Cbc_Model *model, int maxNumberCharacters, char *array)
   strncpy(array, name.c_str(), maxNumberCharacters);
 }
 /* Sets problem name.  Must have \0 at end.  */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_setProblemName(Cbc_Model *model, const char *array)
 {
   bool result = false;
@@ -1269,7 +1265,7 @@ Cbc_setProblemName(Cbc_Model *model, const char *array)
   return (result) ? 1 : 0;
 }
 
-COINLIBAPI int COINLINKAGE Cbc_status(Cbc_Model *model) {
+int COINLINKAGE Cbc_status(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
       fprintf( stderr, "Status not available, model was not optimized yet.\n");
@@ -1287,7 +1283,7 @@ COINLIBAPI int COINLINKAGE Cbc_status(Cbc_Model *model) {
 }
 
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_secondaryStatus(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
@@ -1306,7 +1302,7 @@ Cbc_secondaryStatus(Cbc_Model *model) {
 }
 
 /* Number of elements in matrix */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getNumElements(Cbc_Model *model)
 {
   Cbc_flush(model);
@@ -1317,7 +1313,7 @@ Cbc_getNumElements(Cbc_Model *model)
   return result;
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getNumIntegers(Cbc_Model *model)
 {
   Cbc_flush(model, FCColumns);
@@ -1326,7 +1322,7 @@ Cbc_getNumIntegers(Cbc_Model *model)
 }
 
 // Column starts in matrix
-COINLIBAPI const CoinBigIndex *COINLINKAGE
+const CoinBigIndex *COINLINKAGE
 Cbc_getVectorStarts(Cbc_Model *model)
 {
   Cbc_flush(model);
@@ -1337,7 +1333,7 @@ Cbc_getVectorStarts(Cbc_Model *model)
 }
 
 // Row indices in matrix
-COINLIBAPI const int *COINLINKAGE
+const int *COINLINKAGE
 Cbc_getIndices(Cbc_Model *model)
 {
   Cbc_flush(model, FCRows);
@@ -1351,7 +1347,7 @@ Cbc_getIndices(Cbc_Model *model)
 }
 
 // Element values in matrix
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getElements(Cbc_Model *model)
 {
   Cbc_flush(model, FCRows);
@@ -1366,21 +1362,21 @@ Cbc_getElements(Cbc_Model *model)
 // ======================================================================
 
 /* Pass in Callback function */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_registerCallBack(Cbc_Model *model,
   cbc_callback userCallBack)
 {
   model->userCallBack = userCallBack;
 }
 /* Unset Callback function */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_clearCallBack(Cbc_Model *model)
 {
   model->userCallBack = NULL;
 }
 
 /* length of names (0 means no names0 */
-COINLIBAPI size_t COINLINKAGE
+size_t COINLINKAGE
 Cbc_maxNameLength(Cbc_Model *model)
 {
   size_t result = 0;
@@ -1405,7 +1401,7 @@ Cbc_maxNameLength(Cbc_Model *model)
   return result;
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_getRowName(Cbc_Model *model, int iRow, char *name, size_t maxLength)
 {
   VALIDATE_ROW_INDEX( iRow, model );
@@ -1420,7 +1416,7 @@ Cbc_getRowName(Cbc_Model *model, int iRow, char *name, size_t maxLength)
   }
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_getColName(Cbc_Model *model, int iColumn, char *name, size_t maxLength)
 {
   VALIDATE_COL_INDEX( iColumn, model );
@@ -1436,7 +1432,7 @@ Cbc_getColName(Cbc_Model *model, int iColumn, char *name, size_t maxLength)
 
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setColName(Cbc_Model *model, int iColumn, const char *name)
 {
   VALIDATE_COL_INDEX( iColumn, model );
@@ -1455,7 +1451,7 @@ Cbc_setColName(Cbc_Model *model, int iColumn, const char *name)
   colNameIndex[name] = iColumn;
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setRowName(Cbc_Model *model, int iRow, const char *name)
 {
   VALIDATE_ROW_INDEX( iRow, model );
@@ -1474,7 +1470,7 @@ Cbc_setRowName(Cbc_Model *model, int iRow, const char *name)
   rowNameIndex[name] = iRow;
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setSolveRelax(Cbc_Model *model, char solveOnlyRelax)
 {
   model->relax_ = solveOnlyRelax;
@@ -1509,7 +1505,7 @@ static void Cbc_addAllSOS( Cbc_Model *model );
 // adds mipstart if available
 static void Cbc_addMS( Cbc_Model *model );
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_solveLinearProgram(Cbc_Model *model) 
 {
   CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
@@ -1725,7 +1721,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   return -1;
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_solve(Cbc_Model *model)
 {
   CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
@@ -1901,7 +1897,7 @@ Cbc_solve(Cbc_Model *model)
   return cbcModel->status();
 }
 
-COINLIBAPI void COINLINKAGE Cbc_addIncCallback(
+void COINLINKAGE Cbc_addIncCallback(
     Cbc_Model *model, cbc_incumbent_callback inccb,
     void *appData )
 {
@@ -1909,7 +1905,7 @@ COINLIBAPI void COINLINKAGE Cbc_addIncCallback(
   model->icAppData = appData;
 }
 
-COINLIBAPI void COINLINKAGE Cbc_addProgrCallback(
+void COINLINKAGE Cbc_addProgrCallback(
   Cbc_Model *model, cbc_progress_callback prgcbc,
   void *appData)
 {
@@ -1917,7 +1913,7 @@ COINLIBAPI void COINLINKAGE Cbc_addProgrCallback(
   model->pgrAppData = appData;
 }
 
-COINLIBAPI void COINLINKAGE Cbc_addCutCallback( 
+void COINLINKAGE Cbc_addCutCallback( 
     Cbc_Model *model, 
     cbc_cut_callback cutcb, 
     const char *name, 
@@ -1932,26 +1928,26 @@ COINLIBAPI void COINLINKAGE Cbc_addCutCallback(
   model->cutCBAtSol = atSolution;
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getNumCols(Cbc_Model *model)
 {
   return model->solver_->getNumCols() + model->nCols;
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getNumRows(Cbc_Model *model)
 {
   return model->solver_->getNumRows() + model->nRows;
 }
 
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getIterationCount(Cbc_Model *model) {
   return model->cbcModel_->getIterationCount();
 }
 
 /** Number of non-zero entries in a row */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getRowNz(Cbc_Model *model, int row)
 {
   VALIDATE_ROW_INDEX( row, model);
@@ -1966,7 +1962,7 @@ Cbc_getRowNz(Cbc_Model *model, int row)
 }
 
 /** Indices of variables that appear on this row */
-COINLIBAPI const int *COINLINKAGE
+const int *COINLINKAGE
 Cbc_getRowIndices(Cbc_Model *model, int row)
 {
   VALIDATE_ROW_INDEX( row, model);
@@ -1983,7 +1979,7 @@ Cbc_getRowIndices(Cbc_Model *model, int row)
 }
 
 /** Coefficients of variables that appear on this row */
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getRowCoeffs(Cbc_Model *model, int row)
 {
   VALIDATE_ROW_INDEX( row, model);
@@ -2000,7 +1996,7 @@ Cbc_getRowCoeffs(Cbc_Model *model, int row)
 }
 
 /** Number of non-zero entries in a column */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getColNz(Cbc_Model *model, int col)
 {
   VALIDATE_COL_INDEX( col, model );
@@ -2011,7 +2007,7 @@ Cbc_getColNz(Cbc_Model *model, int col)
 }
 
 /** Indices of rows that a column appears */
-COINLIBAPI const int *COINLINKAGE
+const int *COINLINKAGE
 Cbc_getColIndices(Cbc_Model *model, int col)
 {
   VALIDATE_COL_INDEX( col, model );
@@ -2024,7 +2020,7 @@ Cbc_getColIndices(Cbc_Model *model, int col)
 }
 
 /** Coefficients that a column appear in rows */
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getColCoeffs(Cbc_Model *model, int col)
 {
   VALIDATE_COL_INDEX( col, model );
@@ -2038,7 +2034,7 @@ Cbc_getColCoeffs(Cbc_Model *model, int col)
 }
 
 /** Right hand side of a row */
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Cbc_getRowRHS(Cbc_Model *model, int row)
 {
   VALIDATE_ROW_INDEX( row, model );
@@ -2055,7 +2051,7 @@ Cbc_getRowRHS(Cbc_Model *model, int row)
 }
 
 /** Sense a row */
-COINLIBAPI char COINLINKAGE
+char COINLINKAGE
 Cbc_getRowSense(Cbc_Model *model, int row)
 {
   VALIDATE_ROW_INDEX( row, model );
@@ -2076,7 +2072,7 @@ Cbc_getRowSense(Cbc_Model *model, int row)
 }
 
 /** Are there a numerical difficulties? */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_isAbandoned(Cbc_Model *model)
 {
   switch (model->lastOptimization) {
@@ -2095,7 +2091,7 @@ Cbc_isAbandoned(Cbc_Model *model)
 }
 
 /** Is optimality proven? */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_isProvenOptimal(Cbc_Model *model)
 {
   switch (model->lastOptimization) {
@@ -2112,7 +2108,7 @@ Cbc_isProvenOptimal(Cbc_Model *model)
   return false;
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_isProvenInfeasible(Cbc_Model *model)
 {
   switch (model->lastOptimization) {
@@ -2131,7 +2127,7 @@ Cbc_isProvenInfeasible(Cbc_Model *model)
   return false;
 }
 
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Cbc_getObjValue(Cbc_Model *model)
 {
   switch (model->lastOptimization) {
@@ -2148,7 +2144,7 @@ Cbc_getObjValue(Cbc_Model *model)
   return COIN_DBL_MAX;
 }
 
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getReducedCost(Cbc_Model *model)
 {
   switch (model->lastOptimization) {
@@ -2167,7 +2163,7 @@ Cbc_getReducedCost(Cbc_Model *model)
   return NULL;
 }
 
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getRowPrice(Cbc_Model *model)
 {
   switch (model->lastOptimization) {
@@ -2186,7 +2182,7 @@ Cbc_getRowPrice(Cbc_Model *model)
   return NULL;
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_numberSavedSolutions(Cbc_Model *model)
 {
   switch (model->lastOptimization) {
@@ -2206,7 +2202,7 @@ Cbc_numberSavedSolutions(Cbc_Model *model)
   return 0;
 }
 
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_savedSolution(Cbc_Model *model, int whichSol)
 {
   switch (model->lastOptimization) {
@@ -2225,7 +2221,7 @@ Cbc_savedSolution(Cbc_Model *model, int whichSol)
   return NULL;
 }
 
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Cbc_savedSolutionObj(Cbc_Model *model, int whichSol)
 {
   switch (model->lastOptimization) {
@@ -2244,7 +2240,7 @@ Cbc_savedSolutionObj(Cbc_Model *model, int whichSol)
   return COIN_DBL_MAX;
 }
 
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getColSolution(Cbc_Model *model)
 {
   switch (model->lastOptimization) {
@@ -2262,7 +2258,7 @@ Cbc_getColSolution(Cbc_Model *model)
 }
 
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_isContinuousUnbounded(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
@@ -2282,7 +2278,7 @@ Cbc_isContinuousUnbounded(Cbc_Model *model) {
 }
 
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_isNodeLimitReached(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
@@ -2301,7 +2297,7 @@ Cbc_isNodeLimitReached(Cbc_Model *model) {
 }
 
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_isSecondsLimitReached(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
@@ -2320,7 +2316,7 @@ Cbc_isSecondsLimitReached(Cbc_Model *model) {
 
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_isSolutionLimitReached(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
@@ -2341,7 +2337,7 @@ Cbc_isSolutionLimitReached(Cbc_Model *model) {
 
 
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_isInitialSolveAbandoned(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
@@ -2359,7 +2355,7 @@ Cbc_isInitialSolveAbandoned(Cbc_Model *model) {
   return false;
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_isInitialSolveProvenOptimal(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
@@ -2378,7 +2374,7 @@ Cbc_isInitialSolveProvenOptimal(Cbc_Model *model) {
 }
 
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_isInitialSolveProvenPrimalInfeasible(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
@@ -2397,19 +2393,19 @@ Cbc_isInitialSolveProvenPrimalInfeasible(Cbc_Model *model) {
 
 }
 
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Cbc_getObjSense(Cbc_Model *model) {
   return model->solver_->getObjSense();
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setObjSense(Cbc_Model *model, double sense)
 {
   Cbc_flush(model, FCColumns);
   model->solver_->setObjSense(sense);
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setRowLower(Cbc_Model *model, int index, double value)
 {
   Cbc_flush(model, FCRows);
@@ -2417,7 +2413,7 @@ Cbc_setRowLower(Cbc_Model *model, int index, double value)
   solver->setRowLower(index, value);
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setRowUpper(Cbc_Model *model, int index, double value)
 {
   Cbc_flush(model, FCRows);
@@ -2425,7 +2421,7 @@ Cbc_setRowUpper(Cbc_Model *model, int index, double value)
   solver->setRowUpper(index, value);
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setRowRHS(Cbc_Model *model, int row, double rhs)
 {
   char sense = Cbc_getRowSense(model, row);
@@ -2455,7 +2451,7 @@ Cbc_setRowRHS(Cbc_Model *model, int row, double rhs)
   * @param model problem object 
   * @return vector with lower bounds of constraints
   **/
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getRowLower(Cbc_Model *model)
 {
   Cbc_flush(model, FCRows);
@@ -2468,7 +2464,7 @@ Cbc_getRowLower(Cbc_Model *model)
   * @param model problem object 
   * @return constraint upper bounds
   **/
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getRowUpper(Cbc_Model *model)
 {
   Cbc_flush(model, FCRows);
@@ -2477,7 +2473,7 @@ Cbc_getRowUpper(Cbc_Model *model)
 }
 
 
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getRowActivity(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
@@ -2494,14 +2490,14 @@ Cbc_getRowActivity(Cbc_Model *model) {
 
 }
 
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getColLower(Cbc_Model *model)
 {
   Cbc_flush(model, FCColumns);
   return model->solver_->getColLower();
 }
 
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getColUpper(Cbc_Model *model)
 {
   Cbc_flush(model, FCColumns);
@@ -2509,7 +2505,7 @@ Cbc_getColUpper(Cbc_Model *model)
 }
 
 
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Cbc_getBestPossibleObjValue(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
@@ -2525,28 +2521,28 @@ Cbc_getBestPossibleObjValue(Cbc_Model *model) {
   return COIN_DBL_MIN;
 }
 
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_getObjCoefficients(Cbc_Model *model)
 {
   Cbc_flush(model, FCColumns);
   return model->solver_->getObjCoefficients();
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setObjCoeff(Cbc_Model *model, int index, double value)
 {
   Cbc_flush( model, FCColumns );
   model->solver_->setObjCoeff( index, value );
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setColLower(Cbc_Model *model, int index, double value)
 {
   Cbc_flush(model, FCColumns);
   model->solver_->setColLower( index, value );
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setColUpper(Cbc_Model *model, int index, double value)
 {
   Cbc_flush(model, FCColumns);
@@ -2554,7 +2550,7 @@ Cbc_setColUpper(Cbc_Model *model, int index, double value)
 }
 
 
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Cbc_bestSolution(Cbc_Model *model)
 {
   switch (model->lastOptimization) {
@@ -2572,7 +2568,7 @@ Cbc_bestSolution(Cbc_Model *model)
 }
 
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_isInteger(Cbc_Model *model, int i)
 {
   Cbc_flush(model);
@@ -2581,7 +2577,7 @@ Cbc_isInteger(Cbc_Model *model, int i)
 }
 
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getNodeCount(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
@@ -2602,7 +2598,7 @@ Cbc_getNodeCount(Cbc_Model *model) {
 
 
 /** Return a copy of this model */
-COINLIBAPI Cbc_Model *COINLINKAGE
+Cbc_Model *COINLINKAGE
 Cbc_clone(Cbc_Model *model)
 {
   Cbc_flush(model);
@@ -2698,7 +2694,7 @@ Cbc_clone(Cbc_Model *model)
 }
 
 /** Set this the variable to be continuous */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setContinuous(Cbc_Model *model, int iColumn)
 {
   Cbc_flush(model, FCColumns);
@@ -2707,7 +2703,7 @@ Cbc_setContinuous(Cbc_Model *model, int iColumn)
 }
 
 /** Set this the variable to be integer */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setInteger(Cbc_Model *model, int iColumn)
 {
   Cbc_flush(model, FCColumns);
@@ -2716,7 +2712,7 @@ Cbc_setInteger(Cbc_Model *model, int iColumn)
 }
 
 /** Adds a new column */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_addCol(Cbc_Model *model, const char *name, double lb,
   double ub, double obj, char isInteger,
   int nz, int *rows, double *coefs)
@@ -2743,7 +2739,7 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
 }
 
 /** Adds a new row */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   const int *cols, const double *coefs, char sense, double rhs)
 {
@@ -2782,7 +2778,7 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
 }
 
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_addLazyConstraint(Cbc_Model *model, int nz,
   int *cols, double *coefs, char sense, double rhs)
 {
@@ -2824,7 +2820,7 @@ Cbc_addLazyConstraint(Cbc_Model *model, int nz,
   model->lazyConstrs->addCut(orc);
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_readMIPStart(Cbc_Model *model, const char fileName[]) {
   std::vector< std::pair< std::string, double > > colValues;
   double obj;
@@ -2852,7 +2848,7 @@ Cbc_readMIPStart(Cbc_Model *model, const char fileName[]) {
   delete[] cval;
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_addRow(void *osi, const char *name, int nz,
   const int *cols, const double *coefs, char sense, double rhs)
 {
@@ -2886,14 +2882,14 @@ Osi_addRow(void *osi, const char *name, int nz,
   solver->setRowName(solver->getNumRows()-1, std::string(name));
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_setObjSense(void *osi, double sense)
 {
   OsiSolverInterface *solver = (OsiSolverInterface *) osi;
   solver->setObjSense(sense);
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_deleteRows(Cbc_Model *model, int numRows, const int rows[])
 {
   Cbc_flush(model, FCRows);
@@ -2909,7 +2905,7 @@ Cbc_deleteRows(Cbc_Model *model, int numRows, const int rows[])
   solver->deleteRows(numRows, rows);
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[])
 {
   Cbc_flush(model, FCColumns);
@@ -2926,7 +2922,7 @@ Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[])
 }
 
 /** Add SOS constraints to the model using row-order matrix */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
   const int *colIndices, const double *weights, const int type)
 {
@@ -2972,7 +2968,7 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
   model->sosElSize += newEl;
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double colValues[])
 {
   if (model->nColsMS) {
@@ -3004,7 +3000,7 @@ Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double
   model->nColsMS = count;
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double colValues[])
 {
   OsiSolverInterface *solver = model->solver_;
@@ -3041,7 +3037,7 @@ Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double 
 
 
 /** @brief Creates a new OsiClpSolverInterface and returns a pointer to an OsiSolverInterface object */
-COINLIBAPI void * COINLINKAGE
+void * COINLINKAGE
 Osi_newSolver()
 {
   OsiClpSolverInterface *clp = new OsiClpSolverInterface();
@@ -3049,7 +3045,7 @@ Osi_newSolver()
   return dynamic_cast<OsiSolverInterface *>(clp);
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_setObjCoef(void *osi, int index, double obj)
 {
   OsiSolverInterface *osis = (OsiSolverInterface *)osi;
@@ -3057,7 +3053,7 @@ Osi_setObjCoef(void *osi, int index, double obj)
 }
 
 /** @brief Solves initial LP relaxation */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_initialSolve(void *osi)
 {
   OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
@@ -3065,7 +3061,7 @@ Osi_initialSolve(void *osi)
 }
 
 /** @brief Reoptimizes linear program  */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_resolve(void *osi)
 {
   OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
@@ -3073,7 +3069,7 @@ Osi_resolve(void *osi)
 }
 
 /** @brief Performs branch and bound */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_branchAndBound(void *osi)
 {
   OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
@@ -3082,7 +3078,7 @@ Osi_branchAndBound(void *osi)
 
 // solution query methods
 /** @brief Checks if optimization was abandoned */
-COINLIBAPI char COINLINKAGE
+char COINLINKAGE
 Osi_isAbandoned(void *osi)
 {
   OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
@@ -3090,7 +3086,7 @@ Osi_isAbandoned(void *osi)
 }
 
 /** @brief Checks if optimal solution was found */
-COINLIBAPI char COINLINKAGE
+char COINLINKAGE
 Osi_isProvenOptimal(void *osi)
 {
   OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
@@ -3098,7 +3094,7 @@ Osi_isProvenOptimal(void *osi)
 }
 
 /** @brief Checks if problem is primal infeasible */
-COINLIBAPI char COINLINKAGE
+char COINLINKAGE
 Osi_isProvenPrimalInfeasible(void *osi)
 {
   OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
@@ -3106,7 +3102,7 @@ Osi_isProvenPrimalInfeasible(void *osi)
 }
 
 /** @brief Checks if problem is dual infeasible */
-COINLIBAPI char COINLINKAGE
+char COINLINKAGE
 Osi_isProvenDualInfeasible(void *osi)
 {
   OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
@@ -3114,7 +3110,7 @@ Osi_isProvenDualInfeasible(void *osi)
 }
 
 /** @brief Checks if primal objective limit was reached */
-COINLIBAPI char COINLINKAGE
+char COINLINKAGE
 Osi_isPrimalObjectiveLimitReached(void *osi)
 {
   OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
@@ -3122,7 +3118,7 @@ Osi_isPrimalObjectiveLimitReached(void *osi)
 }
 
 /** @brief Checks if dual objective limit was reached */
-COINLIBAPI char COINLINKAGE
+char COINLINKAGE
 Osi_isDualObjectiveLimitReached(void *osi)
 {
   OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
@@ -3130,7 +3126,7 @@ Osi_isDualObjectiveLimitReached(void *osi)
 }
 
 /** @brief Checks if iteration limit was reached */
-COINLIBAPI char COINLINKAGE
+char COINLINKAGE
 Osi_isIterationLimitReached(void *osi)
 {
   OsiSolverInterface *osis = ( OsiSolverInterface *)osi;
@@ -3138,7 +3134,7 @@ Osi_isIterationLimitReached(void *osi)
 }
 
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Osi_getNumCols( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3146,7 +3142,7 @@ Osi_getNumCols( void *osi )
 }
 
 /** @brief Returns column name in OsiSolverInterface object */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_getColName( void *osi, int i, char *name, int maxLen )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3154,7 +3150,7 @@ Osi_getColName( void *osi, int i, char *name, int maxLen )
 }
 
 /** @brief Returns column lower bounds in OsiSolverInterface object */
-COINLIBAPI const double * COINLINKAGE
+const double * COINLINKAGE
 Osi_getColLower( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3162,7 +3158,7 @@ Osi_getColLower( void *osi )
 }
 
 /** @brief Returns column upper bounds in OsiSolverInterface object */
-COINLIBAPI const double * COINLINKAGE
+const double * COINLINKAGE
 Osi_getColUpper( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3170,7 +3166,7 @@ Osi_getColUpper( void *osi )
 }
 
 /** @brief Returns integrality information for columns in OsiSolverInterface object */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Osi_isInteger( void *osi, int col )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3178,7 +3174,7 @@ Osi_isInteger( void *osi, int col )
 }
 
 /** @brief Returns number of rows in OsiSolverInterface object */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Osi_getNumRows( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3186,7 +3182,7 @@ Osi_getNumRows( void *osi )
 }
 
 /** @brief Returns number non-zeros in the constraint matrix */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Osi_getNumNz( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3194,14 +3190,14 @@ Osi_getNumNz( void *osi )
 }
 
 /** @brief Returns number integer/binary variables */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Osi_getNumIntegers( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
   return osiSolver->getNumIntegers();
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Osi_getRowNz(void *osi, int row)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3211,7 +3207,7 @@ Osi_getRowNz(void *osi, int row)
 }
 
 /** @brief Indices of variables that appear on a row */
-COINLIBAPI const int *COINLINKAGE
+const int *COINLINKAGE
 Osi_getRowIndices(void *osi, int row)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3223,7 +3219,7 @@ Osi_getRowIndices(void *osi, int row)
 }
 
 /** @brief Coefficients of variables that appear on this row  */
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Osi_getRowCoeffs(void *osi, int row)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3235,7 +3231,7 @@ Osi_getRowCoeffs(void *osi, int row)
 }
 
 /** @brief Right hand side of a row  */
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Osi_getRowRHS(void *osi, int row)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3247,7 +3243,7 @@ Osi_getRowRHS(void *osi, int row)
      * @param row row index
      * @return row sense: E for =, L for <=, G for >= and R for ranged row
      **/
-COINLIBAPI char COINLINKAGE
+char COINLINKAGE
 Osi_getRowSense(void *osi, int row)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3256,7 +3252,7 @@ Osi_getRowSense(void *osi, int row)
 }
 
 /** Generates cutting planes */
-COINLIBAPI void COINLINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, int strength ) {
+void COINLINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, int strength ) {
   OsiClpSolverInterface *solver = (OsiClpSolverInterface *) osiClpSolver;
   CglCutGenerator *cg[2] = {NULL, NULL};
   OsiCuts *osiCuts = (OsiCuts *) oc;
@@ -3305,28 +3301,28 @@ COINLIBAPI void COINLINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType c
 }
 
 /** Creates a new cut pool and returns its pointer */
-COINLIBAPI void * COINLINKAGE 
+void * COINLINKAGE 
 OsiCuts_new() {
   OsiCuts *oc = new OsiCuts();
   return (void *) oc;
 }
 
 /** Deletes a cut pool */
-COINLIBAPI void COINLINKAGE 
+void COINLINKAGE 
 OsiCuts_delete( void *osiCuts ) {
   OsiCuts *oc = (OsiCuts *) osiCuts;
   delete oc;
 }
 
 /** Returns the number of row cuts stored */
-COINLIBAPI int COINLINKAGE 
+int COINLINKAGE 
 OsiCuts_sizeRowCuts( void *osiCuts ) {
   OsiCuts *oc = (OsiCuts *)osiCuts;
   return oc->sizeRowCuts();
 }
 
 /** Returns the number of row cuts stored */
-COINLIBAPI int COINLINKAGE 
+int COINLINKAGE 
 OsiCuts_nzRowCut( void *osiCuts, int iRowCut ) {
   assert(iRowCut >= 0 && iRowCut < OsiCuts_sizeRowCuts(osiCuts) );
   OsiCuts *oc = (OsiCuts *)osiCuts;
@@ -3335,7 +3331,7 @@ OsiCuts_nzRowCut( void *osiCuts, int iRowCut ) {
 }
 
 /** Returns the variable indexes in a row cut */
-COINLIBAPI const int * COINLINKAGE 
+const int * COINLINKAGE 
 OsiCuts_idxRowCut( void *osiCuts, int iRowCut ) {
   assert(iRowCut >= 0 && iRowCut < OsiCuts_sizeRowCuts(osiCuts) );
   OsiCuts *oc = (OsiCuts *)osiCuts;
@@ -3344,7 +3340,7 @@ OsiCuts_idxRowCut( void *osiCuts, int iRowCut ) {
 }
 
 /** Returns the variable coefficients in a row cut */
-COINLIBAPI const double * COINLINKAGE 
+const double * COINLINKAGE 
 OsiCuts_coefRowCut( void *osiCuts, int iRowCut ) {
   assert(iRowCut >= 0 && iRowCut < OsiCuts_sizeRowCuts(osiCuts) );
   OsiCuts *oc = (OsiCuts *)osiCuts;
@@ -3353,7 +3349,7 @@ OsiCuts_coefRowCut( void *osiCuts, int iRowCut ) {
 }
 
 /** Returns the variable coefficients in a row cut */
-COINLIBAPI double COINLINKAGE 
+double COINLINKAGE 
 OsiCuts_rhsRowCut( void *osiCuts, int iRowCut ) {
   assert(iRowCut >= 0 && iRowCut < OsiCuts_sizeRowCuts(osiCuts) );
   OsiCuts *oc = (OsiCuts *)osiCuts;
@@ -3362,7 +3358,7 @@ OsiCuts_rhsRowCut( void *osiCuts, int iRowCut ) {
 }
 
 /** Returns the sense of a row cut */
-COINLIBAPI char COINLINKAGE 
+char COINLINKAGE 
 OsiCuts_senseRowCut( void *osiCuts, int iRowCut ) {
   assert(iRowCut >= 0 && iRowCut < OsiCuts_sizeRowCuts(osiCuts) );
   OsiCuts *oc = (OsiCuts *)osiCuts;
@@ -3370,7 +3366,7 @@ OsiCuts_senseRowCut( void *osiCuts, int iRowCut ) {
   return rc.sense();
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs )
 {
   sense = toupper(sense);
@@ -3413,7 +3409,7 @@ OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, ch
 }
 
 /** adds a row cut (used in callback), stating that this is a globally valid cut */
-COINLIBAPI void COINLINKAGE 
+void COINLINKAGE 
 OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs )
 {
   sense = toupper(sense);
@@ -3458,7 +3454,7 @@ OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *co
 
 
 /** @brief Sets a variable to integer */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_setInteger(void *osi, int index)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3467,7 +3463,7 @@ Osi_setInteger(void *osi, int index)
 }
 
 /** @brief Sets a variable to continuous */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_setContinuous(void *osi, int index)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3475,7 +3471,7 @@ Osi_setContinuous(void *osi, int index)
   osiSolver->setContinuous(index);
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Osi_getColNz(void *osi, int col)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3489,7 +3485,7 @@ Osi_getColNz(void *osi, int col)
      * @param col column index
      * @return indices of rows that this column appears
      **/
-COINLIBAPI const int *COINLINKAGE
+const int *COINLINKAGE
 Osi_getColIndices(void *osi, int col)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3505,7 +3501,7 @@ Osi_getColIndices(void *osi, int col)
      * @param col column index
      * @return coefficients of this column in rows
      **/
-COINLIBAPI const double *COINLINKAGE
+const double *COINLINKAGE
 Osi_getColCoeffs(void *osi, int col)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3517,7 +3513,7 @@ Osi_getColCoeffs(void *osi, int col)
 }
 
 /** @brief Returns solution vector in OsiSolverInterface object */
-COINLIBAPI const double * COINLINKAGE
+const double * COINLINKAGE
 Osi_getColSolution( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3526,7 +3522,7 @@ Osi_getColSolution( void *osi )
 }
 
 /** Adds a new column */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_addCol(void *osi, const char *name, double lb,
   double ub, double obj, char isInteger,
   int nz, int *rows, double *coefs)
@@ -3539,7 +3535,7 @@ Osi_addCol(void *osi, const char *name, double lb,
 }
 
 /** @brief Returns vector of reduced costs */
-COINLIBAPI const double * COINLINKAGE
+const double * COINLINKAGE
 Osi_getReducedCost( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3548,7 +3544,7 @@ Osi_getReducedCost( void *osi )
 }
 
 /** @brief Returns vector dual variables */
-COINLIBAPI const double * COINLINKAGE
+const double * COINLINKAGE
 Osi_getRowPrice( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3556,7 +3552,7 @@ Osi_getRowPrice( void *osi )
   return osiSolver->getRowPrice();
 }
 
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Osi_getObjValue( void *osi )
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3565,7 +3561,7 @@ Osi_getObjValue( void *osi )
 }
 
 /** @brief Sets column upper bound */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_setColUpper (void *osi, int elementIndex, double ub)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3573,7 +3569,7 @@ Osi_setColUpper (void *osi, int elementIndex, double ub)
 }
 
 /** @brief Sets column upper bound */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Osi_setColLower(void *osi, int elementIndex, double lb)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
@@ -3581,32 +3577,32 @@ Osi_setColLower(void *osi, int elementIndex, double lb)
 }
 
 /** @brief integer tolerance */
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Osi_getIntegerTolerance(void *osi)
 {
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
   return osiSolver->getIntegerTolerance();
 }
 
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Cbc_getAllowableGap(Cbc_Model* model)
 {
   return model->dbl_param[DBL_PARAM_ALLOWABLE_GAP];
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setAllowableGap(Cbc_Model* model, double allowedGap)
 {
   model->dbl_param[DBL_PARAM_ALLOWABLE_GAP] = allowedGap;
 }
 
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Cbc_getAllowableFractionGap(Cbc_Model* model)
 {
   return model->dbl_param[DBL_PARAM_GAP_RATIO];
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setAllowableFractionGap(Cbc_Model* model, double allowedFracionGap)
 {
   model->dbl_param[DBL_PARAM_GAP_RATIO] = allowedFracionGap;
@@ -3614,7 +3610,7 @@ Cbc_setAllowableFractionGap(Cbc_Model* model, double allowedFracionGap)
 
 /** returns the maximum number of nodes that can be explored in the search tree
  */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getMaximumNodes(Cbc_Model *model)
 {
   return model->int_param[INT_PARAM_MAX_NODES];
@@ -3622,7 +3618,7 @@ Cbc_getMaximumNodes(Cbc_Model *model)
 
 /** sets the maximum number of nodes that can be explored in the search tree
  */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setMaximumNodes(Cbc_Model *model, int maxNodes)
 {
   model->int_param[INT_PARAM_MAX_NODES] = maxNodes;
@@ -3630,7 +3626,7 @@ Cbc_setMaximumNodes(Cbc_Model *model, int maxNodes)
 
 /** returns solution limit for the search process
  */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getMaximumSolutions(Cbc_Model *model)
 {
   return model->int_param[INT_PARAM_MAX_SOLS];
@@ -3638,7 +3634,7 @@ Cbc_getMaximumSolutions(Cbc_Model *model)
 
 /** sets a solution limit as a stopping criterion
  */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setMaximumSolutions(Cbc_Model *model, int maxSolutions)
 {
   model->int_param[INT_PARAM_MAX_SOLS] = maxSolutions;
@@ -3646,7 +3642,7 @@ Cbc_setMaximumSolutions(Cbc_Model *model, int maxSolutions)
 
 /** returns the current log leven
  */
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getLogLevel(Cbc_Model *model)
 {
   return model->int_param[INT_PARAM_LOG_LEVEL];
@@ -3654,7 +3650,7 @@ Cbc_getLogLevel(Cbc_Model *model)
 
 /** sets the log level
  */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setLogLevel(Cbc_Model *model, int logLevel)
 {
   model->int_param[INT_PARAM_LOG_LEVEL] = logLevel;
@@ -3662,7 +3658,7 @@ Cbc_setLogLevel(Cbc_Model *model, int logLevel)
 
 /** gets the tolerance for infeasibility in the LP solver
  */
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Cbc_getPrimalTolerance(Cbc_Model *model)
 {
   return model->dbl_param[DBL_PARAM_PRIMAL_TOL];
@@ -3670,7 +3666,7 @@ Cbc_getPrimalTolerance(Cbc_Model *model)
 
 /** sets the tolerance for infeasibility in the LP solver
  */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setPrimalTolerance(Cbc_Model *model, double tol)
 {
   model->dbl_param[DBL_PARAM_PRIMAL_TOL] = tol;
@@ -3678,7 +3674,7 @@ Cbc_setPrimalTolerance(Cbc_Model *model, double tol)
 
 /** gets the tolerance for optimality in the LP solver
  */
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Cbc_getDualTolerance(Cbc_Model *model)
 {
   return model->dbl_param[DBL_PARAM_DUAL_TOL];
@@ -3686,53 +3682,53 @@ Cbc_getDualTolerance(Cbc_Model *model)
 
 /** sets the tolerance for optimality in the LP solver
  */
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setDualTolerance(Cbc_Model *model, double tol)
 {
   model->dbl_param[DBL_PARAM_DUAL_TOL] = tol;
 }
 
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Cbc_getCutoff(Cbc_Model* model)
 {
   return model->dbl_param[DBL_PARAM_CUTOFF];
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setCutoff(Cbc_Model* model, double cutoff)
 {
   model->dbl_param[DBL_PARAM_CUTOFF] = cutoff;
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm ) {
   model->lp_method = lpm;
 }
 
 
-COINLIBAPI void * COINLINKAGE
+void * COINLINKAGE
 Cbc_getSolverPtr(Cbc_Model *model) {
   return model->solver_;
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setDualPivot(Cbc_Model *model, enum DualPivot dp ) {
   model->dualp = dp;
 }
 
-COINLIBAPI double COINLINKAGE
+double COINLINKAGE
 Cbc_getMaximumSeconds(Cbc_Model *model)
 {
   return model->dbl_param[DBL_PARAM_TIME_LIMIT];
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_setMaximumSeconds(Cbc_Model *model, double maxSeconds)
 {
   model->dbl_param[DBL_PARAM_TIME_LIMIT] = maxSeconds;
 }
 
-COINLIBAPI void COINLINKAGE
+void COINLINKAGE
 Cbc_storeNameIndexes(Cbc_Model *model, char _store)
 {
   if (_store)
@@ -3759,7 +3755,7 @@ Cbc_storeNameIndexes(Cbc_Model *model, char _store)
   }
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getColNameIndex(Cbc_Model *model, const char *name)
 {
   if (!model->colNameIndex)
@@ -3776,7 +3772,7 @@ Cbc_getColNameIndex(Cbc_Model *model, const char *name)
   return it->second;
 }
 
-COINLIBAPI int COINLINKAGE
+int COINLINKAGE
 Cbc_getRowNameIndex(Cbc_Model *model, const char *name)
 {
   if (!model->rowNameIndex)

@@ -9,8 +9,8 @@
 #define CbcModelC_H
 
 /* include all defines and ugly stuff */
-#include "Coin_C_defines.h"
 #include "CbcSolverConfig.h"
+#include "CoinTypes.h"
 
 #ifdef _MSC_VER
 #define CBC_LINKAGE __stdcall

@@ -11,10 +11,13 @@
 #include <map>
 #include <string>
 #include <vector>
+ 
+#include "Cbc_C_Interface.h"
+
 #ifdef CBC_THREAD
 #include <pthread.h>
 #endif
- 
+
 #include "CoinPragma.hpp"
 //#include "CoinHelperFunctions.hpp"
 //#include "CoinPackedMatrix.hpp"
@@ -83,7 +86,6 @@ enum OptimizationTask {
   *  C Interface Routines
   *
   */
-#include "Cbc_C_Interface.h"
 
 
 // To allow call backs

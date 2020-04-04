@@ -26,10 +26,10 @@ matrix:
             - libgfortran-8-dev
             - liblapack-dev
       install:
-        - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
-        - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 90
-        - update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-8 90
-        - update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 90
+        - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
+        - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 90
+        - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-8 90
+        - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 90
     - os: linux
       dist: bionic
       env: BUILD_STATIC=false

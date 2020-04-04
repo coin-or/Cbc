@@ -22,6 +22,8 @@ matrix:
           packages:
             - gcc-8
             - liblapack-dev
+        env:
+          - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && FC=gfortran-8 && F77=gfortran-8"
     - os: linux
       dist: bionic
       env: BUILD_STATIC=false

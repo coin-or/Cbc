@@ -12,7 +12,7 @@
 //#define CBC_DEBUG
 
 #include "CoinPragma.hpp"
-#include "CoinTypes.hpp"
+#include "CoinTypes.h"
 #include "OsiSolverInterface.hpp"
 #include "OsiSolverBranch.hpp"
 #include "CbcModel.hpp"

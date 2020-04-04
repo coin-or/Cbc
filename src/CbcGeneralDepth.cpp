@@ -15,7 +15,7 @@
 #include <cfloat>
 //#define CBC_DEBUG
 
-#include "CoinTypes.hpp"
+#include "CoinTypes.h"
 #include "OsiSolverInterface.hpp"
 #include "OsiSolverBranch.hpp"
 #include "CbcModel.hpp"

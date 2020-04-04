@@ -15,14 +15,18 @@ matrix:
     - os: linux
       dist: precise
       env: BUILD_STATIC=false
-      before_install:
-        - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-        - sudo apt-get update -qq
-        - sudo apt-get install gcc-8 liblapack-dev
-        - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
-        - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 90
-        - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-8 90
-        - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 90
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+          packages:
+            - gcc-8
+            - liblapack-dev1
+      install:
+        - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
+        - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 90
+        - update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-8 90
+        - update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 90
     - os: linux
       dist: bionic
       env: BUILD_STATIC=false

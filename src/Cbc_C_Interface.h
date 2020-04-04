@@ -12,6 +12,14 @@
 #include "Coin_C_defines.h"
 #include "CbcSolverConfig.h"
 
+#ifdef _MSC_VER
+#define CBC_LINKAGE __stdcall
+#define CBC_LINKAGE_CB __cdecl
+#else
+#define CBC_LINKAGE
+#define CBC_LINKAGE_CB
+#endif
+
 #include <stddef.h>
 
 /**
@@ -105,7 +113,7 @@ enum IntParam {
   
 /** typedef for cbc callback to monitor the progress of the search
  * in terms of improved upper and lower bounds */
-typedef int(COINLINKAGE_CB *cbc_progress_callback)(void *model,
+typedef int(CBC_LINKAGE_CB *cbc_progress_callback)(void *model,
                                                    int phase,
                                                    int step,
                                                    const char *phaseName,
@@ -120,9 +128,9 @@ typedef int(COINLINKAGE_CB *cbc_progress_callback)(void *model,
 
 /** typedef for cbc callback to monitor the discovery
  * of new integer feasible solutions */
-typedef int (COINLINKAGE_CB *cbc_incumbent_callback)(void *cbcModel, double obj, int nz, char **vnames, double *x, void *appData);
+typedef int (CBC_LINKAGE_CB *cbc_incumbent_callback)(void *cbcModel, double obj, int nz, char **vnames, double *x, void *appData);
 
-typedef void(COINLINKAGE_CB *cbc_callback)(Cbc_Model *model, int msgno, int ndouble,
+typedef void(CBC_LINKAGE_CB *cbc_callback)(Cbc_Model *model, int msgno, int ndouble,
   const double *dvec, int nint, const int *ivec,
   int nchar, char **cvec);
 
@@ -143,15 +151,15 @@ typedef void(COINLINKAGE_CB *cbc_callback)(Cbc_Model *model, int msgno, int ndou
  *        can be filled by the user.
  *
  **/
-typedef void(COINLINKAGE_CB *cbc_cut_callback)(void *osiSolver, void *osiCuts, void *appdata);
+typedef void(CBC_LINKAGE_CB *cbc_cut_callback)(void *osiSolver, void *osiCuts, void *appdata);
 
 /** Current version of Cbc */
-CBCSOLVERLIB_EXPORT const char *COINLINKAGE Cbc_getVersion(void);
+CBCSOLVERLIB_EXPORT const char *CBC_LINKAGE Cbc_getVersion(void);
 
 /** \name Problem creation and modification routines */
 
 /** @brief Creates an empty problem */
-CBCSOLVERLIB_EXPORT Cbc_Model *COINLINKAGE
+CBCSOLVERLIB_EXPORT Cbc_Model *CBC_LINKAGE
 Cbc_newModel(void);
 
 /** @brief Sets problem name.
@@ -159,7 +167,7 @@ Cbc_newModel(void);
    * @param model problem object
    * @param array string with problem name
    **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_setProblemName(Cbc_Model *model, const char *array);
 
 /** @brief activates/deactivates name indexes
@@ -169,7 +177,7 @@ Cbc_setProblemName(Cbc_Model *model, const char *array);
  * @param model problem object
  * @param store: 1 maintain indexes of column and constraints names for searching indexes, 0 not
  **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_storeNameIndexes(Cbc_Model *model, char _store);
 
 /** @brief Creates a new column
@@ -186,7 +194,7 @@ Cbc_storeNameIndexes(Cbc_Model *model, char _store);
   * @param rows index of rows where this column appears, NULL if rows will be added later
   * @param coefs coefficients that this column appears in its rows, NULL if rows will be added later
   ***/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_addCol(Cbc_Model *model, const char *name, double lb,
   double ub, double obj, char isInteger,
   int nz, int *rows, double *coefs);
@@ -200,7 +208,7 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
   *  @param numCols number of columns that will be deleted
   *  @param cols Vector with indexes of columns that will be deleted 
   * */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[]);
 
 /** @brief Adds a new row 
@@ -215,7 +223,7 @@ Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[]);
   *  @param sense constraint sense: L if <=, G if >=, E if =, R if ranged and N if free
   *  @param rhs right hand size
   * */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   const int *cols, const double *coefs, char sense, double rhs);
 
@@ -227,7 +235,7 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
  *  integer solution violating it is generated. 
  *
  **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_addLazyConstraint(Cbc_Model *model, int nz,
   int *cols, double *coefs, char sense, double rhs);
 
@@ -239,11 +247,11 @@ Cbc_addLazyConstraint(Cbc_Model *model, int nz,
  *  @param numRows number of rows
  *  @param rows rows to be deleted
  * */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_deleteRows(Cbc_Model *model, int numRows, const int rows[]);
 
 /** @brief Add SOS constraints to the model using row-order matrix */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
   const int *colIndices, const double *weights, const int type);
 
@@ -266,7 +274,7 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
        <li> <code>value[k]</code> stores the coefficient of the kth nonzero element
        </ul>
   */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_loadProblem(Cbc_Model *model, const int numcols, const int numrows,
   const CoinBigIndex *start, const int *index,
   const double *value,
@@ -280,7 +288,7 @@ Cbc_loadProblem(Cbc_Model *model, const int numcols, const int numrows,
   * @param iColumn column index
   * @param column name
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setColName(Cbc_Model *model, int iColumn, const char *name);
 
 /** @brief Set the name of a row 
@@ -289,7 +297,7 @@ Cbc_setColName(Cbc_Model *model, int iColumn, const char *name);
   * @param iRow row index
   * @param name row name
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setRowName(Cbc_Model *model, int iRow, const char *name);
 
 /** @brief Sets optimization direction
@@ -297,7 +305,7 @@ Cbc_setRowName(Cbc_Model *model, int iRow, const char *name);
   * @param model problem object 
   * @param sense: direction of optimization (1 - minimize, -1 - maximize, 0 - ignore)
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setObjSense(Cbc_Model *model, double sense);
 
 /** @brief Set the lower bound of a single constraint 
@@ -306,7 +314,7 @@ Cbc_setObjSense(Cbc_Model *model, double sense);
   * @param index row index
   * @param value new row lower bound
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setRowLower(Cbc_Model *model, int index, double value);
 
 /** @brief  Set the upper bound of a single constraint 
@@ -315,7 +323,7 @@ Cbc_setRowLower(Cbc_Model *model, int index, double value);
   * @param index row index
   * @param value new row upper bound
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setRowUpper(Cbc_Model *model, int index, double value);
 
 /** @brief  Sets the RHS of a constraint
@@ -324,7 +332,7 @@ Cbc_setRowUpper(Cbc_Model *model, int index, double value);
   * @param row row index
   * @param rhs value of the new RHS
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setRowRHS(Cbc_Model *model, int row, double rhs);
 
 /** @brief Set the objective coefficient of a single variable 
@@ -333,7 +341,7 @@ Cbc_setRowRHS(Cbc_Model *model, int row, double rhs);
   * @param index variable index
   * @param value new objective function coefficient for this variable
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setObjCoeff(Cbc_Model *model, int index, double value);
 
 /** @brief Set the lower bound of a single variable 
@@ -342,7 +350,7 @@ Cbc_setObjCoeff(Cbc_Model *model, int index, double value);
   * @param index variable index
   * @param value variable lower bound
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setColLower(Cbc_Model *model, int index, double value);
 
 /** @brief Set the upper bound of a single variable 
@@ -351,7 +359,7 @@ Cbc_setColLower(Cbc_Model *model, int index, double value);
   * @param index variable index
   * @param value new variable upper bound
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setColUpper(Cbc_Model *model, int index, double value);
 
 /** @brief Set this variable to be continuous 
@@ -359,7 +367,7 @@ Cbc_setColUpper(Cbc_Model *model, int index, double value);
   * @param model problem object 
   * @param iColumn column index
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setContinuous(Cbc_Model *model, int iColumn);
 
 /** @brief Set this variable to be integer 
@@ -367,13 +375,13 @@ Cbc_setContinuous(Cbc_Model *model, int iColumn);
   * @param model problem object 
   * @param iColumn column index
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setInteger(Cbc_Model *model, int iColumn);
 
 /** @brief Frees memory of model object 
   *
   * @param model problem object */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_deleteModel(Cbc_Model *model);
 
 /** @brief Enter initial feasible solution 
@@ -389,7 +397,7 @@ Cbc_deleteModel(Cbc_Model *model);
   * @param colValues variable values
   *
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double colValues[]);
 
 /** @brief Enter initial feasible solution 
@@ -405,7 +413,7 @@ Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double
   * @param colValues variable values
   *
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double colValues[]);
 
 /** @brief Reads an initial feasible solution from a file
@@ -418,7 +426,7 @@ Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double 
   * @param model problem object 
   * @param fileName problem object 
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_readMIPStart(Cbc_Model *model, const char fileName[]);
 
 /** @brief Creates a copy of the current model 
@@ -426,7 +434,7 @@ Cbc_readMIPStart(Cbc_Model *model, const char fileName[]);
   * @param model problem object 
   * @return model copy
   **/
-CBCSOLVERLIB_EXPORT Cbc_Model *COINLINKAGE
+CBCSOLVERLIB_EXPORT Cbc_Model *CBC_LINKAGE
 Cbc_clone(Cbc_Model *model);
 
 /** \name Routines to query problem contents
@@ -438,7 +446,7 @@ Cbc_clone(Cbc_Model *model);
   * @param maxNumberCharacters space in string array
   * @param array string where problem name will be saved
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_problemName(Cbc_Model *model, int maxNumberCharacters, char *array);
 
 /** @brief Number of nonzero elements in constraint matrix 
@@ -446,7 +454,7 @@ Cbc_problemName(Cbc_Model *model, int maxNumberCharacters, char *array);
   * @param model problem object
   * @return number of non-zero entries in constraint matrix
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getNumElements(Cbc_Model *model);
 
 /** @brief Number of variables in the model 
@@ -454,7 +462,7 @@ Cbc_getNumElements(Cbc_Model *model);
   * @param model problem object
   * @return number of columns (variables)
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getNumCols(Cbc_Model *model);
 
 /** @brief Number of integer variables in the model 
@@ -462,14 +470,14 @@ Cbc_getNumCols(Cbc_Model *model);
   * @param model problem object
   * @return number of integer variables in this model
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getNumIntegers(Cbc_Model *model);
 
 /** @brief Number of constraints in the model 
   * @param model problem object
   * @return number of rows (constraints) in the model
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getNumRows(Cbc_Model *model);
 
 /** @brief Queries row name 
@@ -479,7 +487,7 @@ Cbc_getNumRows(Cbc_Model *model);
   * @param name string where row name will be stored
   * @param string where row name will be stored
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_getRowName(Cbc_Model *model, int iRow, char *name, size_t maxLength);
 
 /** @brief Queries column name
@@ -489,7 +497,7 @@ Cbc_getRowName(Cbc_Model *model, int iRow, char *name, size_t maxLength);
   * @param name where name will be stored
   * @param maxLength maximum length of name string
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_getColName(Cbc_Model *model, int iColumn, char *name, size_t maxLength);
 
 /** @brief searches columns by name and returns its index
@@ -500,7 +508,7 @@ Cbc_getColName(Cbc_Model *model, int iColumn, char *name, size_t maxLength);
  * @param name column (variable) name
  * @return column index or -1 if not found
  **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getColNameIndex(Cbc_Model *model, const char *name);
 
 /** @brief searches rows by name and returns its index
@@ -511,7 +519,7 @@ Cbc_getColNameIndex(Cbc_Model *model, const char *name);
  * @param name row (constraint) name
  * @return row index or -1 if not found
  **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getRowNameIndex(Cbc_Model *model, const char *name);
 
 /** @brief Number of non-zero entries in a row 
@@ -520,7 +528,7 @@ Cbc_getRowNameIndex(Cbc_Model *model, const char *name);
   * @param row row index
   * @return number of non-zero entries in row
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getRowNz(Cbc_Model *model, int row);
 
 /** @brief Indices of variables that appear on a row 
@@ -529,7 +537,7 @@ Cbc_getRowNz(Cbc_Model *model, int row);
   * @param row row index
   * @return vector with indexes of columns that appear on this row
   **/
-CBCSOLVERLIB_EXPORT const int *COINLINKAGE
+CBCSOLVERLIB_EXPORT const int *CBC_LINKAGE
 Cbc_getRowIndices(Cbc_Model *model, int row);
 
 /** @brief Coefficients of variables that appear on this row 
@@ -538,7 +546,7 @@ Cbc_getRowIndices(Cbc_Model *model, int row);
   * @param row row index
   * @return coefficients of variables that appear on this row
   **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getRowCoeffs(Cbc_Model *model, int row);
 
 /** @brief Number of non-zero entries in a column 
@@ -547,7 +555,7 @@ Cbc_getRowCoeffs(Cbc_Model *model, int row);
   * @param col column index
   * @return numbef of rows that this column appears
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getColNz(Cbc_Model *model, int col);
 
 /** @brief Indices of rows that a column appears 
@@ -556,7 +564,7 @@ Cbc_getColNz(Cbc_Model *model, int col);
   * @param col column index
   * @return indices of rows that this column appears
   **/
-CBCSOLVERLIB_EXPORT const int *COINLINKAGE
+CBCSOLVERLIB_EXPORT const int *CBC_LINKAGE
 Cbc_getColIndices(Cbc_Model *model, int col);
 
 /** @brief Coefficients that a column appear in rows 
@@ -565,7 +573,7 @@ Cbc_getColIndices(Cbc_Model *model, int col);
   * @param col column index
   * @return coefficients of this column in rows
   **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getColCoeffs(Cbc_Model *model, int col);
 
 /** @brief Right hand side of a row 
@@ -574,7 +582,7 @@ Cbc_getColCoeffs(Cbc_Model *model, int col);
   * @param row row index
   * @return row right hand side
   **/
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_getRowRHS(Cbc_Model *model, int row);
 
 /** @brief Sense of a row 
@@ -583,7 +591,7 @@ Cbc_getRowRHS(Cbc_Model *model, int row);
   * @param row row index
   * @return row sense: E for =, L for <=, G for >= and R for ranged row
   **/
-CBCSOLVERLIB_EXPORT char COINLINKAGE
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
 Cbc_getRowSense(Cbc_Model *model, int row);
 
 /** @brief Direction of optimization 
@@ -591,7 +599,7 @@ Cbc_getRowSense(Cbc_Model *model, int row);
   * @param model problem object 
   * @return Direction of optimization (1 - minimize, -1 - maximize, 0 - ignore) 
   **/
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_getObjSense(Cbc_Model *model);
 
 /** @brief Constraint lower bounds 
@@ -599,7 +607,7 @@ Cbc_getObjSense(Cbc_Model *model);
   * @param model problem object 
   * @return vector with lower bounds of constraints
   **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getRowLower(Cbc_Model *model);
 
 /** @brief Constraint upper bounds 
@@ -607,7 +615,7 @@ Cbc_getRowLower(Cbc_Model *model);
  * @param model problem object 
  * @return constraint upper bounds
  **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getRowUpper(Cbc_Model *model);
 
 /** @brief Objective vector 
@@ -615,7 +623,7 @@ Cbc_getRowUpper(Cbc_Model *model);
   * @param model problem object 
   * @return vector with coefficients of variables in the objective function
   **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getObjCoefficients(Cbc_Model *model);
 
 /** @brief Variable lower bounds 
@@ -623,7 +631,7 @@ Cbc_getObjCoefficients(Cbc_Model *model);
   * @param model problem object 
   * @return vector with lower bounds of variables
   **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getColLower(Cbc_Model *model);
 
 /** @brief Variable upper bounds 
@@ -631,7 +639,7 @@ Cbc_getColLower(Cbc_Model *model);
   * @param model problem object 
   * @return vector with column upper bounds
   **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getColUpper(Cbc_Model *model);
 
 /** @brief Determine whether the i-th variable is restricted to be integral
@@ -640,7 +648,7 @@ Cbc_getColUpper(Cbc_Model *model);
   * @param i variable index
   * @return 1 if variable is integer, 0 otherwise
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isInteger(Cbc_Model *model, int i);
 
 /** \name Routines to load and save problems from disk
@@ -651,7 +659,7 @@ Cbc_isInteger(Cbc_Model *model, int i);
   * @param model problem object
   * @param fileName file name 
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_readMps(Cbc_Model *model, const char *filename);
 
 /** @brief Read a LP file from the given filename 
@@ -659,7 +667,7 @@ Cbc_readMps(Cbc_Model *model, const char *filename);
   * @param model problem object
   * @param fileName file name 
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_readLp(Cbc_Model *model, const char *filename);
 
 /** @brief Write an MPS file from the given filename 
@@ -667,7 +675,7 @@ Cbc_readLp(Cbc_Model *model, const char *filename);
   * @param model problem object
   * @param fileName file name 
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_writeMps(Cbc_Model *model, const char *filename);
 
 /** @brief Write an LP file from the given filename 
@@ -675,21 +683,21 @@ Cbc_writeMps(Cbc_Model *model, const char *filename);
   * @param model problem object
   * @param fileName file name 
   **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_writeLp(Cbc_Model *model, const char *filename);
 
 /** @brief If Cbc was built with gzip compressed files support
   *
   * @return 1 if yes, 0 otherwise
   **/
-CBCSOLVERLIB_EXPORT char COINLINKAGE
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
 Cbc_supportsGzip();
 
 /** @brief If Cbc was built with bzip2 compressed files support
   *
   * @return 1 if yes, 0 otherwise
   **/
-CBCSOLVERLIB_EXPORT char COINLINKAGE
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
 Cbc_supportsBzip2();
 
 /**@name Getting and setting model data
@@ -705,23 +713,23 @@ Cbc_supportsBzip2();
 /** Provide an initial feasible solution to accelerate branch-and-bound 
      Note that feasibility of the solution is *not* verified.
     */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setInitialSolution(Cbc_Model *model, const double *sol);
 
 /** "Column start" vector of constraint matrix. Same format as Cbc_loadProblem() */
-CBCSOLVERLIB_EXPORT const CoinBigIndex *COINLINKAGE
+CBCSOLVERLIB_EXPORT const CoinBigIndex *CBC_LINKAGE
 Cbc_getVectorStarts(Cbc_Model *model);
 /** "Row index" vector of constraint matrix */
-CBCSOLVERLIB_EXPORT const int *COINLINKAGE
+CBCSOLVERLIB_EXPORT const int *CBC_LINKAGE
 
 Cbc_getIndices(Cbc_Model *model);
 
 /** Coefficient vector of constraint matrix */
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getElements(Cbc_Model *model);
 
 /** Maximum lenght of a row or column name */
-CBCSOLVERLIB_EXPORT size_t COINLINKAGE
+CBCSOLVERLIB_EXPORT size_t CBC_LINKAGE
 Cbc_maxNameLength(Cbc_Model *model);
 
 /*@}*/
@@ -736,7 +744,7 @@ Cbc_maxNameLength(Cbc_Model *model);
  * @param name parameter value, e.g. off
  * 
  **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setParameter(Cbc_Model *model, const char *name, const char *value);
 
 /** Sets an integer parameter
@@ -746,7 +754,7 @@ Cbc_setParameter(Cbc_Model *model, const char *name, const char *value);
  * @param val  value
  * 
  **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val);
 
 /** Sets a double parameter
@@ -756,7 +764,7 @@ Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val);
  * @param val  value
  * 
  **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setDblParam(Cbc_Model *model, enum DblParam which, const double val);
 
 
@@ -769,7 +777,7 @@ Cbc_setDblParam(Cbc_Model *model, enum DblParam which, const double val);
  * @return the maximum allowable gap between the lower bound and the upper bound, when 
  *         the gap decrease to a smaller value the search is concluded
  */
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_getAllowableGap(Cbc_Model *model);
 
 /** @brief sets the allowable gap
@@ -779,104 +787,104 @@ Cbc_getAllowableGap(Cbc_Model *model);
  *         the gap decrease to a smaller value the search is concluded
  */
 
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setAllowableGap(Cbc_Model *model, double allowedGap);
 
 /** returns the allowable fraction gap
  */
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_getAllowableFractionGap(Cbc_Model *model);
 
 /** sets the allowable fraction gap
  */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setAllowableFractionGap(Cbc_Model *model, double allowedFracionGap);
 
 /** gets the tolerance for infeasibility in the LP solver
  */
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_getPrimalTolerance(Cbc_Model *model);
 
 /** sets the tolerance for infeasibility in the LP solver
  */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setPrimalTolerance(Cbc_Model *model, double tol);
 
 /** gets the tolerance for optimality in the LP solver
  */
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_getDualTolerance(Cbc_Model *model);
 
 /** sets the tolerance for optimality in the LP solver
  */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setDualTolerance(Cbc_Model *model, double tol);
 
 /** returns the time limit for the search process
  */
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_getMaximumSeconds(Cbc_Model *model);
 
 /** sets the time limit for the search process
  */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setMaximumSeconds(Cbc_Model *model, double maxSeconds);
 
 /** returns the maximum number of nodes that can be explored in the search tree
  */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getMaximumNodes(Cbc_Model *model);
 
 /** sets the maximum number of nodes that can be explored in the search tree
  */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setMaximumNodes(Cbc_Model *model, int maxNodes);
 
 /** returns solution limit for the search process
  */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getMaximumSolutions(Cbc_Model *model);
 
 /** sets a solution limit as a stopping criterion 
  */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setMaximumSolutions(Cbc_Model *model, int maxSolutions);
 
 /** returns the current log leven
  */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getLogLevel(Cbc_Model *model);
 
 /** sets the log level
  */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setLogLevel(Cbc_Model *model, int logLevel);
 
 /** returns the cutoff
  */
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_getCutoff(Cbc_Model *model);
 
 /** sets the cutoff
  */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setCutoff(Cbc_Model *model, double cutoff);
 
 /** sets which method will be used to solve the linear programming problem
  */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm );
 
 /** Returns a pointer to the OsiClpSolverInterface object 
  * containing the problem
  */
-CBCSOLVERLIB_EXPORT void * COINLINKAGE
+CBCSOLVERLIB_EXPORT void * CBC_LINKAGE
 Cbc_getSolverPtr(Cbc_Model *model);
 
 
 /** sets which pivotting method should be used in the dual simplex
  */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setDualPivot(Cbc_Model *model, enum DualPivot dp );
 
 /*@}*/
@@ -884,12 +892,12 @@ Cbc_setDualPivot(Cbc_Model *model, enum DualPivot dp );
 /*@{*/
 /** Pass in Callback function.
      Message numbers up to 1000000 are Clp, Coin ones have 1000000 added */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_registerCallBack(Cbc_Model *model,
   cbc_callback userCallBack);
 
 /** Unset Callback function */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_clearCallBack(Cbc_Model *model);
 
 /** @brief adds a callback to generate cutting planes
@@ -903,7 +911,7 @@ Cbc_clearCallBack(Cbc_Model *model);
  *        was obtained with these cuts. -99 for cut generators that will be called only at the root node
  * @param atSolution if the cut generator must to be called also when an integer solution if found (=1) or zero otherwise
  **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE Cbc_addCutCallback( 
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE Cbc_addCutCallback( 
     Cbc_Model *model, 
     cbc_cut_callback cutcb, 
     const char *name, 
@@ -912,13 +920,13 @@ CBCSOLVERLIB_EXPORT void COINLINKAGE Cbc_addCutCallback(
     char atSolution );
 
 /** callback to monitor new incumbent solutions **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE Cbc_addIncCallback(
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE Cbc_addIncCallback(
     Cbc_Model *model, cbc_incumbent_callback inccb, 
     void *appData );
 
 /** callback to monitor improvements in lower or upper
  * bounds */
-CBCSOLVERLIB_EXPORT void COINLINKAGE Cbc_addProgrCallback(
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE Cbc_addProgrCallback(
   Cbc_Model *model, cbc_progress_callback prgcbc,
   void *appData);
 
@@ -937,7 +945,7 @@ CBCSOLVERLIB_EXPORT void COINLINKAGE Cbc_addProgrCallback(
    *   2  difficulties so run was abandoned 
    *   5  event user programmed event occurred
    **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_solve(Cbc_Model *model);
 
 /** @brief Solves only the linear programming relaxation
@@ -949,7 +957,7 @@ Cbc_solve(Cbc_Model *model);
   *   2  unfeasible
   *   3  unbounded
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_solveLinearProgram(Cbc_Model *model);
 
 
@@ -963,7 +971,7 @@ Cbc_solveLinearProgram(Cbc_Model *model);
   * @param model problem object
   * @return vector with best solution found
   **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getColSolution(Cbc_Model *model);
 
 /** @brief Best known bound on the optimal objective value 
@@ -971,7 +979,7 @@ Cbc_getColSolution(Cbc_Model *model);
   * @param model problem object
   * @return best possible cost (lower bound)
   **/
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_getBestPossibleObjValue(Cbc_Model *model);
 
 /** @brief Best integer feasible solution 
@@ -981,7 +989,7 @@ Cbc_getBestPossibleObjValue(Cbc_Model *model);
   * @param model problem object
   * @return vector with the best solution found or NULL if no feasible solution was found
   **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_bestSolution(Cbc_Model *model);
 
 /** @brief number of integer feasible solution saved
@@ -989,7 +997,7 @@ Cbc_bestSolution(Cbc_Model *model);
   * @param model problem object 
   * @return number of saved solutions
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_numberSavedSolutions(Cbc_Model *model);
 
 /** @brief Vector with the i-th saved solution
@@ -998,7 +1006,7 @@ Cbc_numberSavedSolutions(Cbc_Model *model);
   * @param whichSol index of the solution to be retrieved
   * @return vector with integer feasible solution
   **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_savedSolution(Cbc_Model *model, int whichSol);
 
 /** @brief Cost of the whichSol solution
@@ -1007,7 +1015,7 @@ Cbc_savedSolution(Cbc_Model *model, int whichSol);
   * @param whichSol solution index
   * @return solution cost
   **/
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_savedSolutionObj(Cbc_Model *model, int whichSol);
 
 /** @brief Queries vector of reduced costs
@@ -1015,7 +1023,7 @@ Cbc_savedSolutionObj(Cbc_Model *model, int whichSol);
   * @param model problem object
   * @return reduced cost vector
   **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getReducedCost(Cbc_Model *model);
 
 /** @brief Queries vector of row prices (values for dual variables)
@@ -1023,7 +1031,7 @@ Cbc_getReducedCost(Cbc_Model *model);
   * @param model problem object
   * @return reduced cost vector
    */
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getRowPrice(Cbc_Model *model);
 
 /** If optimization was abandoned due to numerical difficulties
@@ -1031,7 +1039,7 @@ Cbc_getRowPrice(Cbc_Model *model);
   * @param model problem object 
   * @returns 1 if numerical difficulties interrupted the optimization, 0 otherwise
   * */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isAbandoned(Cbc_Model *model);
 
 /** @brief If the optimal solution was found 
@@ -1039,7 +1047,7 @@ Cbc_isAbandoned(Cbc_Model *model);
   * @param model problem object 
   * @return 1 if optimal solution was found, 0 otherwise
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isProvenOptimal(Cbc_Model *model);
 
 /** @brief If infeasibility was proven
@@ -1050,7 +1058,7 @@ Cbc_isProvenOptimal(Cbc_Model *model);
   * @param model problem object 
   * @return 1 if model is infeasible, 0 otherwise
   **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isProvenInfeasible(Cbc_Model *model);
 
 /** @brief Is continuous model unbounded ?
@@ -1058,7 +1066,7 @@ Cbc_isProvenInfeasible(Cbc_Model *model);
     * @param model problem object 
     * @return 1 if model is unbounded, 0 otherwise
     * */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isContinuousUnbounded(Cbc_Model *model);
 
 /** Objective value of best feasible solution 
@@ -1066,7 +1074,7 @@ Cbc_isContinuousUnbounded(Cbc_Model *model);
   * @param model problem object
   * @return cost of the best solution found
   * */
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_getObjValue(Cbc_Model *model);
 
 /** @brief Final optimization status
@@ -1084,7 +1092,7 @@ Cbc_getObjValue(Cbc_Model *model);
   * @param model problem object 
   * @return problem status
   */
-CBCSOLVERLIB_EXPORT int COINLINKAGE Cbc_status(Cbc_Model *model);
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE Cbc_status(Cbc_Model *model);
 
 /** @brief Secondary status of problem
   *
@@ -1104,45 +1112,45 @@ CBCSOLVERLIB_EXPORT int COINLINKAGE Cbc_status(Cbc_Model *model);
   *  @model problem object 
   *  @return optimization status
   */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_secondaryStatus(Cbc_Model *model);
 
 /** Number of iterations */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getIterationCount(Cbc_Model *model);
 
 /** Node limit reached? */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isNodeLimitReached(Cbc_Model *model);
 
 /** Time limit reached? */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isSecondsLimitReached(Cbc_Model *model);
 
 /** Solution limit reached? */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isSolutionLimitReached(Cbc_Model *model);
 
 /** Are there numerical difficulties (for initialSolve) ? */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isInitialSolveAbandoned(Cbc_Model *model);
 
 /** Is optimality proven (for initialSolve) ? */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isInitialSolveProvenOptimal(Cbc_Model *model);
 
 /** Is primal infeasiblity proven (for initialSolve) ? */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isInitialSolveProvenPrimalInfeasible(Cbc_Model *model);
 
 /** "row" solution
   *  This is the vector A*x, where A is the constraint matrix
   *  and x is the current solution. */
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getRowActivity(Cbc_Model *model);
 
 /** Number of nodes explored in B&B tree */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getNodeCount(Cbc_Model *model);
 
 /*@}*/
@@ -1150,87 +1158,87 @@ Cbc_getNodeCount(Cbc_Model *model);
 /** \name OsiSolverInterface related routines (used in callbacks) */
 
 /** @brief Creates a new OsiClpSolverInterface and returns a pointer to an OsiSolverInterface object */
-CBCSOLVERLIB_EXPORT void * COINLINKAGE
+CBCSOLVERLIB_EXPORT void * CBC_LINKAGE
 Osi_newSolver();
 
 /** @brief Solves initial LP relaxation */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_initialSolve(void *osi);
 
 /** @brief Reoptimizes linear program  */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_resolve(void *osi);
 
 /** @brief Performs branch and bound */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_branchAndBound(void *osi);
 
 
 /** @brief Checks if optimization was abandoned */
-CBCSOLVERLIB_EXPORT char COINLINKAGE
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
 Osi_isAbandoned(void *osi);
 
 /** @brief Checks if optimal solution was found */
-CBCSOLVERLIB_EXPORT char COINLINKAGE
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
 Osi_isProvenOptimal(void *osi);
 
 /** @brief Checks if problem is primal infeasible */
-CBCSOLVERLIB_EXPORT char COINLINKAGE
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
 Osi_isProvenPrimalInfeasible(void *osi);
 
 /** @brief Checks if problem is dual infeasible */
-CBCSOLVERLIB_EXPORT char COINLINKAGE
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
 Osi_isProvenDualInfeasible(void *osi);
 
 /** @brief Checks if primal objective limit was reached */
-CBCSOLVERLIB_EXPORT char COINLINKAGE
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
 Osi_isPrimalObjectiveLimitReached(void *osi);
 
 /** @brief Checks if dual objective limit was reached */
-CBCSOLVERLIB_EXPORT char COINLINKAGE
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
 Osi_isDualObjectiveLimitReached(void *osi);
 
 /** @brief Checks if iteration limit was reached */
-CBCSOLVERLIB_EXPORT char COINLINKAGE
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
 Osi_isIterationLimitReached(void *osi);
 
 /** @brief Returns number of cols in OsiSolverInterface object */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Osi_getNumCols( void *osi );
 
 /** @brief Returns column name in OsiSolverInterface object */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_getColName( void *osi, int i, char *name, int maxLen );
 
 /** @brief Returns column lower bounds in OsiSolverInterface object */
-CBCSOLVERLIB_EXPORT const double * COINLINKAGE
+CBCSOLVERLIB_EXPORT const double * CBC_LINKAGE
 Osi_getColLower( void *osi );
 
 /** @brief Returns column upper bounds in OsiSolverInterface object */
-CBCSOLVERLIB_EXPORT const double * COINLINKAGE
+CBCSOLVERLIB_EXPORT const double * CBC_LINKAGE
 Osi_getColUpper( void *osi );
 
 /** @brief Returns integrality information for columns in OsiSolverInterface object */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Osi_isInteger( void *osi, int col );
 
 /** @brief Returns number of rows in OsiSolverInterface object */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Osi_getNumRows( void *osi );
 
 /** @brief Returns number non-zeros in the constraint matrix */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Osi_getNumNz( void *osi );
 
 /** @brief Returns number integer/binary variables */
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Osi_getNumIntegers( void *osi );
 
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Osi_getRowNz(void *osi, int row);
 
 /** @brief Indices of variables that appear on a row */
-CBCSOLVERLIB_EXPORT const int *COINLINKAGE
+CBCSOLVERLIB_EXPORT const int *CBC_LINKAGE
 Osi_getRowIndices(void *osi, int row);
 
 /** @brief Coefficients of variables that appear on this row 
@@ -1239,7 +1247,7 @@ Osi_getRowIndices(void *osi, int row);
      * @param row row index
      * @return coefficients of variables that appear on this row
      **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Osi_getRowCoeffs(void *osi, int row);
 
 /** @brief Right hand side of a row 
@@ -1248,7 +1256,7 @@ Osi_getRowCoeffs(void *osi, int row);
      * @param row row index
      * @return row right hand side
      **/
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Osi_getRowRHS(void *osi, int row);
 
 /** @brief Sense a row 
@@ -1256,43 +1264,43 @@ Osi_getRowRHS(void *osi, int row);
      * @param row row index
      * @return row sense: E for =, L for <=, G for >= and R for ranged row
      **/
-CBCSOLVERLIB_EXPORT char COINLINKAGE
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
 Osi_getRowSense(void *osi, int row);
 
 /** @brief Returns vector with objective function coefficients */
-CBCSOLVERLIB_EXPORT const double * COINLINKAGE
+CBCSOLVERLIB_EXPORT const double * CBC_LINKAGE
 Osi_getObjCoefficients();
 
 /** @brief Returns the objective sense: 1 for MIN and -1 for MAX */
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Osi_getObjSense();
 
 /** @brief Returns solution vector in OsiSolverInterface object */
-CBCSOLVERLIB_EXPORT const double * COINLINKAGE
+CBCSOLVERLIB_EXPORT const double * CBC_LINKAGE
 Osi_getColSolution( void *osi );
 
 /** @brief Returns vector of reduced costs */
-CBCSOLVERLIB_EXPORT const double * COINLINKAGE
+CBCSOLVERLIB_EXPORT const double * CBC_LINKAGE
 Osi_getReducedCost( void *osi );
 
 /** @brief Returns of dual variables */
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Osi_getRowPrice( void *osi );
 
 /** @brief Returns the objective function value */
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Osi_getObjValue( void *osi );
 
 /** @brief Sets column upper bound */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_setColUpper (void *osi, int elementIndex, double ub);
 
 /** @brief Sets column upper bound */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_setColLower(void *osi, int elementIndex, double lb);
 
 /** @brief Sets one objective function coefficient */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_setObjCoef(void *osi, int elementIndex, double obj);
 
 /** @brief Sets optimization direction
@@ -1300,15 +1308,15 @@ Osi_setObjCoef(void *osi, int elementIndex, double obj);
     * @param osi OsiSolverInterface object
     * @param sense: direction of optimization (1 - minimize, -1 - maximize, 0 - ignore)
     **/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_setObjSense(void *osi, double sense);
 
 /** @brief Sets a variable to integer */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_setInteger(void *osi, int index);
 
 /** @brief Sets a variable to continuous */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_setContinuous(void *osi, int index);
 
 /** @brief Number of non-zero entries in a column 
@@ -1317,7 +1325,7 @@ Osi_setContinuous(void *osi, int index);
      * @param col column index
      * @return numbef of rows that this column appears
      **/
-CBCSOLVERLIB_EXPORT int COINLINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Osi_getColNz(void *model, int col);
 
 /** @brief Indices of rows that a column appears 
@@ -1326,7 +1334,7 @@ Osi_getColNz(void *model, int col);
      * @param col column index
      * @return indices of rows that this column appears
      **/
-CBCSOLVERLIB_EXPORT const int *COINLINKAGE
+CBCSOLVERLIB_EXPORT const int *CBC_LINKAGE
 Osi_getColIndices(void *model, int col);
 
 /** @brief Coefficients that a column appear in rows 
@@ -1335,7 +1343,7 @@ Osi_getColIndices(void *model, int col);
      * @param col column index
      * @return coefficients of this column in rows
      **/
-CBCSOLVERLIB_EXPORT const double *COINLINKAGE
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Osi_getColCoeffs(void *model, int col);
 
 /** @brief Creates a new column
@@ -1352,7 +1360,7 @@ Osi_getColCoeffs(void *model, int col);
      * @param rows index of rows where this column appears, NULL if rows will be added later
      * @param coefs coefficients that this column appears in its rows, NULL if rows will be added later
      ***/
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_addCol(void *osi, const char *name, double lb,
   double ub, double obj, char isInteger,
   int nz, int *rows, double *coefs);
@@ -1369,24 +1377,24 @@ Osi_addCol(void *osi, const char *name, double lb,
      *  @param sense constraint sense: L if <=, G if >=, E if =, R if ranged and N if free
      *  @param rhs right hand size
      * */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_addRow(void *osi, const char *name, int nz,
   const int *cols, const double *coefs, char sense, double rhs);
 
 /** @brief Returns the integer tolerance
  **/ 
-CBCSOLVERLIB_EXPORT double COINLINKAGE
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Osi_getIntegerTolerance(void *osi);
 
 /** @brief Deletes an OsiSolverInterface object */
-CBCSOLVERLIB_EXPORT void COINLINKAGE
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_deleteSolver( void *osi );
 
 /*@}*/
 
 /** \name Cgl related routines */
 
-CBCSOLVERLIB_EXPORT void COINLINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, int strength );
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, int strength );
 
 /*@}*/
 
@@ -1394,43 +1402,43 @@ CBCSOLVERLIB_EXPORT void COINLINKAGE Cgl_generateCuts( void *osiClpSolver, enum 
 /** \name OsiCuts related routines (used in callbacks) */
 
 /** Creates a new cut pool and returns its pointer */
-CBCSOLVERLIB_EXPORT void * COINLINKAGE 
+CBCSOLVERLIB_EXPORT void * CBC_LINKAGE 
 OsiCuts_new();
 
 /** adds a row cut (used in callback) */
-CBCSOLVERLIB_EXPORT void COINLINKAGE 
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE 
 OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs );
 
 /** adds a row cut (used in callback), stating that this is a globally valid cut */
-CBCSOLVERLIB_EXPORT void COINLINKAGE 
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE 
 OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *coef, char sense, double rhs );
 
 /** Returns the number of row cuts stored */
-CBCSOLVERLIB_EXPORT int COINLINKAGE 
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE 
 OsiCuts_sizeRowCuts( void *osiCuts );
 
 /** Returns the number of row cuts stored */
-CBCSOLVERLIB_EXPORT int COINLINKAGE 
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE 
 OsiCuts_nzRowCut( void *osiCuts, int iRowCut );
 
 /** Returns the variable indexes in a row cut */
-CBCSOLVERLIB_EXPORT const int * COINLINKAGE 
+CBCSOLVERLIB_EXPORT const int * CBC_LINKAGE 
 OsiCuts_idxRowCut( void *osiCuts, int iRowCut );
 
 /** Returns the variable coefficients in a row cut */
-CBCSOLVERLIB_EXPORT const double * COINLINKAGE 
+CBCSOLVERLIB_EXPORT const double * CBC_LINKAGE 
 OsiCuts_coefRowCut( void *osiCuts, int iRowCut );
 
 /** Returns the variable coefficients in a row cut */
-CBCSOLVERLIB_EXPORT double COINLINKAGE 
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE 
 OsiCuts_rhsRowCut( void *osiCuts, int iRowCut );
 
 /** Returns the sense of a row cut */
-CBCSOLVERLIB_EXPORT char COINLINKAGE 
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE 
 OsiCuts_senseRowCut( void *osiCuts, int iRowCut );
 
 /** Deletes a cut pool */
-CBCSOLVERLIB_EXPORT void COINLINKAGE 
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE 
 OsiCuts_delete( void *osiCuts );
 
 

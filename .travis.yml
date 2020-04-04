@@ -21,6 +21,9 @@ matrix:
             - sourceline: 'ppa:ubuntu-toolchain-r/test'
           packages:
             - gcc-8
+            - g++-8
+            - gfortran-8
+            - libgfortran-8-dev
             - liblapack-dev
       install:
         - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90

@@ -91,6 +91,10 @@ after_script:
   - [ -f /usr/lib/x86_64-linux-gnu/libgfortran.so.3 ] && cp /usr/lib/x86_64-linux-gnu/libgfortran.so.3 lib/
   - [ -f /usr/lib/x86_64-linux-gnu/libstdc++.so.6 ] && cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 lib/
   - [ -f /usr/lib/libblas/libblas.so.3gf ] && cp /usr/lib/libblas/libblas.so.3gf lib/
+  - [ -f /lib/x86_64-linux-gnu/libreadline.so.6 ] && cp /lib/x86_64-linux-gnu/libreadline.so.6 lib/
+  - [ -f /lib/x86_64-linux-gnu/libbz2.so.1.0 ] && cp /lib/x86_64-linux-gnu/libbz2.so.1.0 lib/
+  - [ -f /lib/x86_64-linux-gnu/libtinfo.so.5 ] && cp /lib/x86_64-linux-gnu/libtinfo.so.5 lib/
+  - [ -f /usr/lib/x86_64-linux-gnu/libquadmath.so.0 ] && cp /usr/lib/x86_64-linux-gnu/libquadmath.so.0 lib/
   - tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
   - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE
 

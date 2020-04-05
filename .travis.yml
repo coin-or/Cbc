@@ -86,11 +86,11 @@ after_script:
   - cp README.md LICENSE AUTHORS dist
   - cd dist
   - find /usr | grep -i liblapack.so
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then cp /usr/lib/lapack/liblapack.so.3gf lib/ 2>/dev/null || : ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then cp /usr/lib/x86_64-linux-gnu/libgfortran.so.5 lib/ 2>/dev/null || : ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then cp /usr/lib/x86_64-linux-gnu/libgfortran.so.3 lib/ 2>/dev/null || : ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 lib/ 2>/dev/null || : ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then cp /usr/lib/libblas/libblas.so.3gf lib/ 2>/dev/null || : ; fi
+  - [ -f /usr/lib/lapack/liblapack.so.3gf ] && cp /usr/lib/lapack/liblapack.so.3gf lib/
+  - [ -f /usr/lib/x86_64-linux-gnu/libgfortran.so.5 ] && cp /usr/lib/x86_64-linux-gnu/libgfortran.so.5 lib/
+  - [ -f /usr/lib/x86_64-linux-gnu/libgfortran.so.3 ] && cp /usr/lib/x86_64-linux-gnu/libgfortran.so.3 lib/
+  - [ -f /usr/lib/x86_64-linux-gnu/libstdc++.so.6 ] && cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 lib/
+  - [ -f /usr/lib/libblas/libblas.so.3gf ] && cp /usr/lib/libblas/libblas.so.3gf lib/
   - tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
   - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE
 

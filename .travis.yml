@@ -116,13 +116,13 @@ after_script:
       echo "#! /bin/sh"
       echo "# Wrapper to launch CLP and set the library path in Linux" > bin/clp
       echo "SCRIPTPATH=\"$( cd \"$(dirname \"$0\")\" >/dev/null 2>&1 ; pwd -P )\"" >> bin/clp
-      echo "LIB_PATH=$(echo $SCRIPTPATH | sed -e 's/\/bin$/\/lib/g')" >> bin/clp
-      echo "LIB_PATH=$(echo $LIB_PATH | sed -e 's/\/bin\/$/\/lib/g')" >> bin/clp
-      echo "OLD_LP=$LD_LIBRARY_PATH" >> bin/clp
-      echo "export LD_LIBRARY_PATH=$LIB_PATH:$LD_LIBRARY_PATH" >> bin/clp
-      echo "${SCRIPTPATH}/clp.bin $@" >> bin/clp
+      echo "LIB_PATH=\$(echo \$SCRIPTPATH | sed -e 's/\/bin\$/\/lib/g')" >> bin/clp
+      echo "LIB_PATH=\$(echo \$LIB_PATH | sed -e 's/\/bin\/\$/\/lib/g')" >> bin/clp
+      echo "OLD_LP=\$LD_LIBRARY_PATH" >> bin/clp
+      echo "export LD_LIBRARY_PATH=\$LIB_PATH:\$LD_LIBRARY_PATH" >> bin/clp
+      echo "\${SCRIPTPATH}/clp.bin $@" >> bin/clp
       echo "export LD_LIBRARY_PATH=$OLD_LP" >> bin/clp
-      echo "exit $?" >> bin/clp
+      echo "exit \$?" >> bin/clp
       chmod a+rx bin/clp
     fi
   - tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS

@@ -59,7 +59,7 @@ void sos1a(int &error_count, int &warning_count)
   int numcols = 3;
   int numrows = 1;
   int nnz = 3;
-  CoinBigIndex *start = new int[numcols + 1];
+  CoinBigIndex *start = new CoinBigIndex[numcols + 1];
   int *index = new int[nnz];
   double *value = new double[nnz];
   double *collb = new double[numcols];
@@ -163,7 +163,7 @@ void sos2a(int &error_count, int &warning_count)
   int numcols = 7; // w1, w2, w3, fplus, fminus, x, fx
   int numrows = 6; // wsum, xdef, fxdef, defwLo, gapplus, gapminus
   int nnz = 16;
-  CoinBigIndex *start = new int[numcols + 1];
+  CoinBigIndex *start = new CoinBigIndex[numcols + 1];
   int *index = new int[nnz];
   double *value = new double[nnz];
   double *collb = new double[numcols];
@@ -357,7 +357,7 @@ void semicon1(int &error_count, int &warning_count)
   int numcols = 4; // s, pup, plo, x
   int numrows = 3; // bigx, smallx, f
   int nnz = 6;
-  CoinBigIndex *start = new int[numcols + 1];
+  CoinBigIndex *start = new CoinBigIndex[numcols + 1];
   int *index = new int[nnz];
   double *value = new double[nnz];
   double *collb = new double[numcols];
@@ -566,7 +566,7 @@ void semiint1(int &error_count, int &warning_count)
   int numcols = 4; // s, pup, plo, x
   int numrows = 3; // bigx, smallx, f
   int nnz = 6;
-  CoinBigIndex *start = new int[numcols + 1];
+  CoinBigIndex *start = new CoinBigIndex[numcols + 1];
   int *index = new int[nnz];
   double *value = new double[nnz];
   double *collb = new double[numcols];

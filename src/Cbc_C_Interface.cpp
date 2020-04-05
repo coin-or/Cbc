@@ -191,7 +191,7 @@ struct Cbc_Model {
   double *rLB;
   double *rUB;
   int rElementsSpace;
-  int *rStart;
+  CoinBigIndex *rStart;
   int *rIdx;
   double *rCoef;
 
@@ -668,7 +668,7 @@ static void Cbc_flush( Cbc_Model *model, enum FlushContents fc = FCBoth )
 
   if (model->nCols)
   {
-    int *starts = new int[model->nCols+1];
+    CoinBigIndex *starts = new CoinBigIndex[model->nCols+1];
     for ( int i=0 ; (i<model->nCols+1) ; ++i )
       starts[i] = 0;
 
@@ -815,7 +815,7 @@ static void Cbc_checkSpaceRowBuffer(Cbc_Model *model, int nzRow, int rowNameLen)
   {
     // allocating buffer
     model->rowSpace = 8192;
-    model->rStart = (int *)xmalloc(sizeof(int)*model->rowSpace);
+    model->rStart = (CoinBigIndex *)xmalloc(sizeof(CoinBigIndex)*model->rowSpace);
     model->rStart[0] = 0;
     model->rLB = (double *)xmalloc(sizeof(double)*model->rowSpace);
     model->rUB = (double *)xmalloc(sizeof(double)*model->rowSpace);
@@ -838,7 +838,7 @@ static void Cbc_checkSpaceRowBuffer(Cbc_Model *model, int nzRow, int rowNameLen)
       if (model->rowSpace < 1048576)
       {
         model->rowSpace *= 2;
-        model->rStart = (int *)xrealloc(model->rStart, sizeof(int)*model->rowSpace);
+        model->rStart = (CoinBigIndex *)xrealloc(model->rStart, sizeof(CoinBigIndex)*model->rowSpace);
         model->rLB = (double *)xrealloc(model->rLB, sizeof(double)*model->rowSpace);
         model->rUB = (double *)xrealloc(model->rUB, sizeof(double)*model->rowSpace);
         model->rNameStart = (int *)xrealloc(model->rNameStart, sizeof(int)*model->rowSpace);

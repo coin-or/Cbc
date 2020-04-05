@@ -88,6 +88,7 @@ after_script:
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ "$TRAVIS_DIST" == "precise" ]];
     then
+      # adding required libraries
       cp /usr/lib/lapack/liblapack.so.3gf lib/
       cp /usr/lib/x86_64-linux-gnu/libgfortran.so.5 lib/
       cp /usr/lib/x86_64-linux-gnu/libgfortran.so.3 lib/
@@ -97,6 +98,32 @@ after_script:
       cp /lib/x86_64-linux-gnu/libbz2.so.1.0 lib/
       cp /lib/x86_64-linux-gnu/libtinfo.so.5 lib/
       cp /usr/lib/x86_64-linux-gnu/libquadmath.so.0 lib/
+      # CBC Launcher script
+      mv bin/cbc bin/cbc.bin
+      echo "#! /bin/sh"
+      echo "# Wrapper to launch CBC and set the library path in Linux" > bin/cbc
+      echo "SCRIPTPATH=\"$( cd \"$(dirname \"$0\")\" >/dev/null 2>&1 ; pwd -P )\"" >> bin/cbc
+      echo "LIB_PATH=$(echo $SCRIPTPATH | sed -e 's/\/bin$/\/lib/g')" >> bin/cbc
+      echo "LIB_PATH=$(echo $LIB_PATH | sed -e 's/\/bin\/$/\/lib/g')" >> bin/cbc
+      echo "OLD_LP=$LD_LIBRARY_PATH" >> bin/cbc
+      echo "export LD_LIBRARY_PATH=$LIB_PATH:$LD_LIBRARY_PATH" >> bin/cbc
+      echo "${SCRIPTPATH}/cbc.bin" >> bin/cbc
+      echo "export LD_LIBRARY_PATH=$OLD_LP" >> bin/cbc
+      echo "exit $?" >> bin/cbc
+      chmod a+rx bin/cbc
+      # CLP Launcher script
+      mv bin/clp bin/clp.bin
+      echo "#! /bin/sh"
+      echo "# Wrapper to launch CLP and set the library path in Linux" > bin/clp
+      echo "SCRIPTPATH=\"$( cd \"$(dirname \"$0\")\" >/dev/null 2>&1 ; pwd -P )\"" >> bin/clp
+      echo "LIB_PATH=$(echo $SCRIPTPATH | sed -e 's/\/bin$/\/lib/g')" >> bin/clp
+      echo "LIB_PATH=$(echo $LIB_PATH | sed -e 's/\/bin\/$/\/lib/g')" >> bin/clp
+      echo "OLD_LP=$LD_LIBRARY_PATH" >> bin/clp
+      echo "export LD_LIBRARY_PATH=$LIB_PATH:$LD_LIBRARY_PATH" >> bin/clp
+      echo "${SCRIPTPATH}/clp.bin" >> bin/clp
+      echo "export LD_LIBRARY_PATH=$OLD_LP" >> bin/clp
+      echo "exit $?" >> bin/clp
+      chmod a+rx bin/clp
     fi
   - tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
   - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE

@@ -107,7 +107,7 @@ after_script:
       echo "LIB_PATH=$(echo $LIB_PATH | sed -e 's/\/bin\/$/\/lib/g')" >> bin/cbc
       echo "OLD_LP=$LD_LIBRARY_PATH" >> bin/cbc
       echo "export LD_LIBRARY_PATH=$LIB_PATH:$LD_LIBRARY_PATH" >> bin/cbc
-      echo "${SCRIPTPATH}/cbc.bin" >> bin/cbc
+      echo "${SCRIPTPATH}/cbc.bin $@" >> bin/cbc
       echo "export LD_LIBRARY_PATH=$OLD_LP" >> bin/cbc
       echo "exit $?" >> bin/cbc
       chmod a+rx bin/cbc
@@ -120,7 +120,7 @@ after_script:
       echo "LIB_PATH=$(echo $LIB_PATH | sed -e 's/\/bin\/$/\/lib/g')" >> bin/clp
       echo "OLD_LP=$LD_LIBRARY_PATH" >> bin/clp
       echo "export LD_LIBRARY_PATH=$LIB_PATH:$LD_LIBRARY_PATH" >> bin/clp
-      echo "${SCRIPTPATH}/clp.bin" >> bin/clp
+      echo "${SCRIPTPATH}/clp.bin $@" >> bin/clp
       echo "export LD_LIBRARY_PATH=$OLD_LP" >> bin/clp
       echo "exit $?" >> bin/clp
       chmod a+rx bin/clp

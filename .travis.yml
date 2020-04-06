@@ -27,6 +27,7 @@ matrix:
             - liblapack-dev
             - libamd2.2.0
             - libcholmod1.7.1
+            - libsuitesparse-dev
       install:
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 90
@@ -47,6 +48,7 @@ matrix:
             - liblapack-dev
             - libamd2.2.0
             - libcholmod1.7.1
+            - libsuitesparse-dev
       install:
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90

@@ -90,8 +90,8 @@ before_script:
   - bash ./coinbrew fetch $PROJECT_URL:$TRAVIS_BRANCH --no-prompt --skip-update 
 
 script:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=3 --enable-relocatable --fully-static --with-lapack="-llapack -lblas -lgfortran -lquadmath -lm"; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=3 --tests main --enable-relocatable; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --enable-relocatable --fully-static --with-lapack="-llapack -lblas -lgfortran -lquadmath -lm"; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --tests main --enable-relocatable; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=3 --tests none --enable-relocatable; fi
 
 after_script:

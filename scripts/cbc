@@ -1,0 +1,7 @@
+# wrapper to launch cbc and set the library path in Linux
+SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+LIB_PATH=$(echo $SCRIPTPATH | sed -e 's/\/bin$/\/lib/g')
+LIB_PATH=$(echo $LIB_PATH | sed -e 's/\/bin\/$/\/lib/g')
+export LD_LIBRARY_PATH=$LIB_PATH:$LD_LIBRARY_PATH
+${SCRIPTPATH}/cbc.bin
+exit $?

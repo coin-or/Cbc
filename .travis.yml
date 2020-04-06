@@ -31,14 +31,23 @@ matrix:
         - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-8 90
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 90
     - os: linux
-      dist: bionic
+      dist: precise
       env: BUILD_STATIC=false
       addons:
         apt:
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
           packages:
-            - gfortran
-            - libgfortran-8-dev
+            - gcc-9
+            - g++-9
+            - gfortran-9
+            - libgfortran-9-dev
             - liblapack-dev
+      install:
+        - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
+        - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
+        - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90
+        - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - os: linux
       dist: bionic
       env: BUILD_STATIC=true
@@ -102,12 +111,12 @@ after_script:
       mv bin/cbc bin/cbc.bin
       echo "#! /bin/sh"
       echo "# Wrapper to launch CBC and set the library path in Linux" > bin/cbc
-      echo "SCRIPTPATH=\"\$( cd \"\$(dirname \"$0\")\" >/dev/null 2>&1 ; pwd -P )\"" >> bin/cbc
+      echo "SCRIPTPATH=\"\$( cd \"\$(dirname \"\$0\")\" >/dev/null 2>&1 ; pwd -P )\"" >> bin/cbc
       echo "LIB_PATH=\$(echo \$SCRIPTPATH | sed -e 's/\/bin\$/\/lib/g')" >> bin/cbc
       echo "LIB_PATH=\$(echo \$LIB_PATH | sed -e 's/\/bin\/\$/\/lib/g')" >> bin/cbc
       echo "OLD_LP=\$LD_LIBRARY_PATH" >> bin/cbc
       echo "export LD_LIBRARY_PATH=\$LIB_PATH:\$LD_LIBRARY_PATH" >> bin/cbc
-      echo "${SCRIPTPATH}/cbc.bin \$@" >> bin/cbc
+      echo "\${SCRIPTPATH}/cbc.bin \$@" >> bin/cbc
       echo "export LD_LIBRARY_PATH=\$OLD_LP" >> bin/cbc
       echo "exit \$?" >> bin/cbc
       chmod a+rx bin/cbc
@@ -120,7 +129,7 @@ after_script:
       echo "LIB_PATH=\$(echo \$LIB_PATH | sed -e 's/\/bin\/\$/\/lib/g')" >> bin/clp
       echo "OLD_LP=\$LD_LIBRARY_PATH" >> bin/clp
       echo "export LD_LIBRARY_PATH=\$LIB_PATH:\$LD_LIBRARY_PATH" >> bin/clp
-      echo "\${SCRIPTPATH}/clp.bin $\@" >> bin/clp
+      echo "\${SCRIPTPATH}/clp.bin \$@" >> bin/clp
       echo "export LD_LIBRARY_PATH=\$OLD_LP" >> bin/clp
       echo "exit \$?" >> bin/clp
       chmod a+rx bin/clp

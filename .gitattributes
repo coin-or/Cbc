@@ -127,6 +127,7 @@ examples/tsp/ulysses22.dist -text
 /ltmain.sh -text
 /missing -text
 /osi-cbc.pc.in -text
+scripts/cbc -text
 scripts/get.miplib2010 -text
 scripts/parse.awk -text
 scripts/parse_cbc.awk -text

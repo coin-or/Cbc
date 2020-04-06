@@ -25,6 +25,8 @@ matrix:
             - gfortran-8
             - libgfortran-8-dev
             - liblapack-dev
+            - libamd2.2.0
+            - libcholmod1.7.1
       install:
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 90
@@ -43,6 +45,8 @@ matrix:
             - gfortran-9
             - libgfortran-9-dev
             - liblapack-dev
+            - libamd2.2.0
+            - libcholmod1.7.1
       install:
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90

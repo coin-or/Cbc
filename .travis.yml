@@ -113,6 +113,10 @@ after_script:
       cp /lib/x86_64-linux-gnu/libbz2.so.1.0 lib/
       cp /lib/x86_64-linux-gnu/libtinfo.so.5 lib/
       cp /usr/lib/x86_64-linux-gnu/libquadmath.so.0 lib/
+      cp /usr/lib/libcholmod.so.1.7.1 lib/
+      cp /usr/lib/libamd.so.2.2.0 lib/
+      cp /usr/lib/libcolamd.so.2.7.1 lib/
+
       # CBC Launcher script
       mv bin/cbc bin/cbc.bin
       echo "#! /bin/sh"

@@ -2253,7 +2253,7 @@ Cbc_getColSolution(Cbc_Model *model)
     case ContinuousOptimization:
       return model->solver_->getColSolution();
     case IntegerOptimization:
-      return model->cbcModel_->getColSolution();
+      return model->cbcModel_->bestSolution();
   }
 
   return NULL;

@@ -1882,6 +1882,10 @@ Cbc_solve(Cbc_Model *model)
 
     CbcMain1( nargs, args, *model->cbcModel_, cbc_callb, cbcData );
 
+    if (model->int_param[INT_PARAM_ROUND_INT_VARS]) {
+      model->cbcModel_->roundIntVars();
+    }
+
     free(charCbcOpts);
     delete linearProgram;
 

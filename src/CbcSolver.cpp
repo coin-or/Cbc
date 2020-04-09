@@ -1809,6 +1809,7 @@ int CbcMain1(int argc, const char *argv[],
     int twomirAction = 3;
 #ifndef DEBUG_MALLOC
     CglLandP landpGen;
+    landpGen.parameter().maximumCutLength = 2000;
     landpGen.validator().setMinViolation(1.0e-4);
 #endif
     // set default action (0=off,1=on,2=root)
@@ -5537,6 +5538,11 @@ int CbcMain1(int argc, const char *argv[],
               }
 #ifndef DEBUG_MALLOC
               if (landpAction) {
+		if (landpAction==5) {
+		  // allow longer
+		  landpGen.parameter().maximumCutLength = 2000000;
+		  landpAction = 3;
+		}
                 babModel_->addCutGenerator(&landpGen, translate[landpAction], "LiftAndProject");
                 accuracyFlag[numberGenerators] = 5;
                 // slow ? - just do a few times

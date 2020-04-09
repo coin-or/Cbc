@@ -479,6 +479,13 @@ public:
        cleanVariables array will be used if exists
      */
   int cleanBounds(OsiSolverInterface *solver, char *cleanVariables);
+
+  /** Removes integer infeasibilities from the best
+   * integer solution stored. In models with numerical
+   * instability can increase the overall amount of 
+   * infeasibilities */
+  void roundIntVars(); 
+
   /// Sets up cleanVariables array (i.e. ones to be careful about)
   char *setupCleanVariables();
   //@}

@@ -18644,6 +18644,7 @@ void CbcModel::postProcess(CglPreProcess *process)
   process->postProcess(*solver_);
   delete solver_;
   solver_ = process->originalModel();
+
 }
 
 /* Process root node and return a strengthened model
@@ -19541,6 +19542,17 @@ void CbcModel::addSOSEtcToSolver()
     }
   }
 #endif
+}
+
+
+void CbcModel::roundIntVars() {
+  if (bestSolution_) {
+    for ( int i=0 ; i<solver_->getNumCols() ; ++i ) {
+      if (solver_->isInteger(i)) {
+        bestSolution_[i] = floor(bestSolution_[i] + 0.5);
+      }
+    }
+  } // if user wants to round the best solution
 }
 /*
   Clean model i.e. make SOS/integer variables exactly at bound if needed

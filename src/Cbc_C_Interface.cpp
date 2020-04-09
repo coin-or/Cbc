@@ -1879,6 +1879,7 @@ Cbc_solve(Cbc_Model *model)
 #endif
     model->cbcModel_->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
     model->cbcModel_->setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
+    model->cbcModel_->setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
 
     CbcMain1( nargs, args, *model->cbcModel_, cbc_callb, cbcData );
 
@@ -3896,6 +3897,8 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_MULTIPLE_ROOTS]   =        0;
   model->int_param[INT_PARAM_THREADS]          =       -1;
   model->int_param[INT_PARAM_ROUND_INT_VARS]   =        1;
+  model->int_param[INT_PARAM_RANDOM_SEED]      =        1;
+  model->int_param[INT_PARAM_ELAPSED_TIME]     =        1;
 
   model->dbl_param[DBL_PARAM_PRIMAL_TOL]       =          1e-6;
   model->dbl_param[DBL_PARAM_DUAL_TOL]         =          1e-6;

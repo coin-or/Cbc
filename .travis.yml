@@ -28,6 +28,7 @@ matrix:
             - libamd2.2.0
             - libcholmod1.7.1
             - libsuitesparse-dev
+            - chrpath
       install:
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 90
@@ -49,6 +50,7 @@ matrix:
             - libamd2.2.0
             - libcholmod1.7.1
             - libsuitesparse-dev
+            - chrpath
       install:
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
@@ -116,33 +118,15 @@ after_script:
       cp /usr/lib/libcholmod.so.1.7.1 lib/
       cp /usr/lib/libamd.so.2.2.0 lib/
       cp /usr/lib/libcolamd.so.2.7.1 lib/
+    
+      for libfile in lib/*.so*;
+      do
+        chrpath -r ./ $libfile
+      done
 
-      # CBC Launcher script
-      mv bin/cbc bin/cbc.bin
-      echo "#! /bin/sh"
-      echo "# Wrapper to launch CBC and set the library path in Linux" > bin/cbc
-      echo "SCRIPTPATH=\"\$( cd \"\$(dirname \"\$0\")\" >/dev/null 2>&1 ; pwd -P )\"" >> bin/cbc
-      echo "LIB_PATH=\$(echo \$SCRIPTPATH | sed -e 's/\/bin\$/\/lib/g')" >> bin/cbc
-      echo "LIB_PATH=\$(echo \$LIB_PATH | sed -e 's/\/bin\/\$/\/lib/g')" >> bin/cbc
-      echo "OLD_LP=\$LD_LIBRARY_PATH" >> bin/cbc
-      echo "export LD_LIBRARY_PATH=\$LIB_PATH:\$LD_LIBRARY_PATH" >> bin/cbc
-      echo "\${SCRIPTPATH}/cbc.bin \$@" >> bin/cbc
-      echo "export LD_LIBRARY_PATH=\$OLD_LP" >> bin/cbc
-      echo "exit \$?" >> bin/cbc
-      chmod a+rx bin/cbc
-      # CLP Launcher script
-      mv bin/clp bin/clp.bin
-      echo "#! /bin/sh"
-      echo "# Wrapper to launch CLP and set the library path in Linux" > bin/clp
-      echo "SCRIPTPATH=\"\$( cd \"\$(dirname \"\$0\")\" >/dev/null 2>&1 ; pwd -P )\"" >> bin/clp
-      echo "LIB_PATH=\$(echo \$SCRIPTPATH | sed -e 's/\/bin\$/\/lib/g')" >> bin/clp
-      echo "LIB_PATH=\$(echo \$LIB_PATH | sed -e 's/\/bin\/\$/\/lib/g')" >> bin/clp
-      echo "OLD_LP=\$LD_LIBRARY_PATH" >> bin/clp
-      echo "export LD_LIBRARY_PATH=\$LIB_PATH:\$LD_LIBRARY_PATH" >> bin/clp
-      echo "\${SCRIPTPATH}/clp.bin \$@" >> bin/clp
-      echo "export LD_LIBRARY_PATH=\$OLD_LP" >> bin/clp
-      echo "exit \$?" >> bin/clp
-      chmod a+rx bin/clp
+      chrpath -r ../lib/ bin/cbc
+      chrpath -r ../lib/ bin/clp
+      chrpath -r ../lib/ bin/glpsol
     fi
   - tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
   - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE

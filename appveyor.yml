@@ -144,6 +144,7 @@ after_build:
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libreadline8.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libtermcap-0.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\zlib1.dll C:\projects\dist\bin)
+  - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libcholmod.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libblas.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\liblapack.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libgfortran-5.dll C:\projects\dist\bin)

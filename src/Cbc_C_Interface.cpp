@@ -1233,11 +1233,13 @@ Cbc_setInitialSolution(Cbc_Model *model, const double *sol)
 
 void CBC_LINKAGE
 Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val) {
+  assert(which < N_INT_PARAMS);
   model->int_param[which] = val;
 }
 
 void CBC_LINKAGE
 Cbc_setDblParam(Cbc_Model *model, enum DblParam which, const double val) {
+  assert(which < N_DBL_PARAMS);
   model->dbl_param[which] = val;
 }
 

@@ -123,8 +123,8 @@ install:
   - IF %ARCH%==win64-msvc14-mtd (CALL C:\"Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64)
   - IF %ARCH%==win64-msvc15-mtd (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat")
   - IF %ARCH%==win64-msvc16-mtd (CALL C:\"Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat")
-  - IF %ARCH%==x86_64-w64-mingw32 (CALL C:\msys64\usr\bin\bash -lc "pacman -S mingw-w64-x86_64-lapack mingw-w64-x86_64-winpthreads-git mingw-w64-x86_64-readline --noconfirm")
-  - IF %ARCH%==i686-w64-mingw32 (CALL C:\msys64\usr\bin\bash -lc "pacman -S mingw-w64-i686-lapack mingw-w64-i686-winpthreads-git mingw-w64-i686-readline --noconfirm")  
+  - IF %ARCH%==x86_64-w64-mingw32 (CALL C:\msys64\usr\bin\bash -lc "pacman -S mingw-w64-x86_64-lapack mingw-w64-x86_64-winpthreads-git mingw-w64-x86_64-readline mingw-w64-x86_64-suitesparse --noconfirm")
+  - IF %ARCH%==i686-w64-mingw32 (CALL C:\msys64\usr\bin\bash -lc "pacman -S mingw-w64-i686-lapack mingw-w64-i686-winpthreads-git mingw-w64-i686-readline mingw-w64-i686-suitesparse --noconfirm")  
   - C:\msys64\usr\bin\bash -lc ""
 
 build_script:

@@ -124,9 +124,9 @@ after_script:
         chrpath -r ./ $libfile
       done
 
-      chrpath -r ../lib/ bin/cbc
-      chrpath -r ../lib/ bin/clp
-      chrpath -r ../lib/ bin/glpsol
+      chrpath -r \$\ORIGIN/../lib/ bin/cbc
+      chrpath -r \$\ORIGIN/../lib/ bin/clp
+      chrpath -r \$\ORIGIN/../lib/ bin/glpsol
     fi
   - tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
   - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE

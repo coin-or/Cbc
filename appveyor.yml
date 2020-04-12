@@ -134,6 +134,7 @@ build_script:
 
 after_build:
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libblas.dll C:\projects\dist\bin)
+  - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libopenblas.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\liblapack.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libgfortran-5.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libgcc_s_seh-1.dll C:\projects\dist\bin)
@@ -146,13 +147,14 @@ after_build:
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\zlib1.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libcholmod.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libcolamd.dll C:\projects\dist\bin)
+  - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libccolamd.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libamd.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libcamd.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libmetis.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libgomp-1.dll C:\projects\dist\bin)
   - IF %ARCH%==x86_64-w64-mingw32 (cp C:\msys64\mingw64\bin\libsuitesparseconfig.dll C:\projects\dist\bin)
+
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libblas.dll C:\projects\dist\bin)
-  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libopenblas.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\liblapack.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libgfortran-5.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libgcc_s_dw2-1.dll C:\projects\dist\bin)

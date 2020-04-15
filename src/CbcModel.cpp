@@ -5732,7 +5732,7 @@ CbcModel::CbcModel()
 {
   memset(intParam_, 0, sizeof(intParam_));
   intParam_[CbcMaxNumNode] = COIN_INT_MAX;
-  intParam_[CbcMaxNumSol] = COIN_INT_MAX;
+  intParam_[CbcMaxNumSol] = COIN_INT_MAX/2;
 
   memset(dblParam_, 0, sizeof(dblParam_));
   dblParam_[CbcIntegerTolerance] = 1e-6;
@@ -5908,7 +5908,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
 {
   memset(intParam_, 0, sizeof(intParam_));
   intParam_[CbcMaxNumNode] = COIN_INT_MAX;
-  intParam_[CbcMaxNumSol] = COIN_INT_MAX;
+  intParam_[CbcMaxNumSol] = COIN_INT_MAX/2;
 
   memset(dblParam_, 0, sizeof(dblParam_));
   dblParam_[CbcIntegerTolerance] = 1e-6;

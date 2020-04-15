@@ -512,19 +512,14 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
 #if TRY_STUFF > 1
     // Get current number of infeasibilities, cutoff and current objective
     CbcNode *node = model->currentNode();
-    int numberUnsatisfied = node->numberUnsatisfied();
+    int numberUnsatisfied = node ? node->numberUnsatisfied() : 1;
     double cutoff = model->getCutoff();
-    double objectiveValue = node->objectiveValue();
+    double objectiveValue = node ? node->objectiveValue() : 0.0;
 #endif
     // got a solution
     double minValue = CoinMin(changeDown, changeUp);
     double maxValue = CoinMax(changeDown, changeUp);
     // Reduce
-#ifdef TRY_STUFF
-    //maxValue = CoinMin(maxValue,minValue*4.0);
-#else
-    //maxValue = CoinMin(maxValue,minValue*2.0);
-#endif
 #ifndef WEIGHT_PRODUCT
     value = WEIGHT_AFTER * minValue + (1.0 - WEIGHT_AFTER) * maxValue;
 #else
@@ -535,16 +530,18 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
     double useValue = value;
     double useBest = bestCriterion_;
 #if TRY_STUFF > 1
-    int thisNumber = CoinMin(numInfUp, numInfDown);
-    int bestNumber = CoinMin(bestNumberUp_, bestNumberDown_);
-    double distance = cutoff - objectiveValue;
-    assert(distance >= 0.0);
-    if (useValue + 0.1 * distance > useBest && useValue * 1.1 > useBest && useBest + 0.1 * distance > useValue && useBest * 1.1 > useValue) {
-      // not much in it - look at unsatisfied
-      if (thisNumber < numberUnsatisfied || bestNumber < numberUnsatisfied) {
-        double perInteger = distance / (static_cast< double >(numberUnsatisfied));
-        useValue += thisNumber * perInteger;
-        useBest += bestNumber * perInteger;
+    if (node) {
+      int thisNumber = CoinMin(numInfUp, numInfDown);
+      int bestNumber = CoinMin(bestNumberUp_, bestNumberDown_);
+      double distance = cutoff - objectiveValue;
+      assert(distance >= 0.0);
+      if (useValue + 0.1 * distance > useBest && useValue * 1.1 > useBest && useBest + 0.1 * distance > useValue && useBest * 1.1 > useValue) {
+	// not much in it - look at unsatisfied
+	if (thisNumber < numberUnsatisfied || bestNumber < numberUnsatisfied) {
+	  double perInteger = distance / (static_cast< double >(numberUnsatisfied));
+	  useValue += thisNumber * perInteger;
+	  useBest += bestNumber * perInteger;
+	}
       }
     }
 #endif

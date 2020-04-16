@@ -1527,9 +1527,6 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   ClpSimplex *clps = clpSolver->getModelPtr();
   assert(clps);
   clps->setPerturbation(model->int_param[INT_PARAM_PERT_VALUE]);
-  double maxTime = Cbc_getMaximumSeconds(model);
-  if (maxTime != COIN_DBL_MAX)
-    clps->setMaximumWallSeconds(maxTime);
   solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
   if (! cbc_annouced) {
@@ -1561,7 +1558,6 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   if (solver->basisIsAvailable()) {
     solver->resolve();
-    clps->setMaximumWallSeconds(DBL_MAX);
     if (solver->isProvenOptimal())
       return 0;
     if (solver->isIterationLimitReached())
@@ -1711,7 +1707,6 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   model->lastOptimization = ContinuousOptimization;
   solver->initialSolve();
-  clps->setMaximumWallSeconds(DBL_MAX);
 
   if (solver->isProvenOptimal())
     return 0;

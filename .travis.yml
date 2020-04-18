@@ -58,7 +58,7 @@ matrix:
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - os: linux
       dist: precise
-      env: BUILD_STATIC=true DEBUG=true
+      env: BUILD_STATIC=false DEBUG=true
       addons:
         apt:
           sources:

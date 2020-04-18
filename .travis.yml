@@ -5,7 +5,7 @@ env:
 matrix:
   include:
     - os: linux
-      env: BUILD_STATIC=false
+      env: BUILD_STATIC=false DEBUG=false
       addons:
         apt:
           packages:
@@ -14,7 +14,7 @@ matrix:
             - liblapack-dev
     - os: linux
       dist: precise
-      env: BUILD_STATIC=false
+      env: BUILD_STATIC=false DEBUG=false
       addons:
         apt:
           sources:
@@ -36,7 +36,29 @@ matrix:
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 90
     - os: linux
       dist: precise
-      env: BUILD_STATIC=false
+      env: BUILD_STATIC=false DEBUG=false
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+          packages:
+            - gcc-9
+            - g++-9
+            - gfortran-9
+            - libgfortran-9-dev
+            - liblapack-dev
+            - libamd2.2.0
+            - libcholmod1.7.1
+            - libsuitesparse-dev
+            - chrpath
+      install:
+        - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
+        - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
+        - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90
+        - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
+    - os: linux
+      dist: precise
+      env: BUILD_STATIC=true DEBUG=true
       addons:
         apt:
           sources:
@@ -58,7 +80,7 @@ matrix:
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - os: linux
       dist: bionic
-      env: BUILD_STATIC=true
+      env: BUILD_STATIC=true DEBUG=false
       addons:
         apt:
           packages:
@@ -66,15 +88,15 @@ matrix:
             - liblapack-dev
     - os: osx
       osx_image: xcode11
-      env: OSX=10.14 CC=gcc CXX=g++ BUILD_STATIC=false
+      env: OSX=10.14 CC=gcc CXX=g++ BUILD_STATIC=false DEBUG=false
       compiler: clang
     - os: osx
       osx_image: xcode11
-      env: OSX=10.14  BUILD_STATIC=false
+      env: OSX=10.14  BUILD_STATIC=false DEBUG=false
       compiler: clang
     - os: osx
       osx_image: xcode10
-      env: OSX=10.13  BUILD_STATIC=false
+      env: OSX=10.13  BUILD_STATIC=false DEBUG=false
       compiler: clang
 
 before_script:
@@ -92,13 +114,18 @@ before_script:
   - bash ./coinbrew fetch $PROJECT_URL:$TRAVIS_BRANCH --no-prompt --skip-update 
 
 script:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --enable-relocatable --fully-static --with-lapack="-llapack -lblas -lgfortran -lquadmath -lm"; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --tests main --enable-relocatable; fi
+  - export DBGC=""
+  - if [[ $DEBUG == "true" ]]; then export DBGC="--enable-debug"; fi
+  - if [[ $DEBUG == "true" ]]; then export export CXXFLAGS="-Og -g"; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --enable-relocatable --fully-static $DBGC --with-lapack="-llapack -lblas -lgfortran -lquadmath -lm"; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --tests main --enable-relocatable $DBGC; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=3 --tests none --enable-relocatable; fi
 
 after_script:
+  - export DBGN=""
+  - if [[ $DEBUG == "true" ]]; then export DBGN="-dbg"; fi
   - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=master; else export VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
-  - if [ $BUILD_STATIC = "false" ]; then export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM.tgz; else export TGZ_FILE=$PROJECT-$VERSION-static-$PLATFORM.tgz; fi
+  - if [ $BUILD_STATIC = "false" ]; then export TGZ_FILE=$PROJECT-$VERSION-$PLATFORM$DBGN.tgz; else export TGZ_FILE=$PROJECT-$VERSION-static-$PLATFORM$DBGN.tgz; fi
   - echo $TGZ_FILE
   - cp README.md LICENSE AUTHORS dist
   - cd dist

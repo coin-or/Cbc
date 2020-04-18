@@ -84,7 +84,6 @@ userlevelproc(int *lab, int *ptn, int level, int *orbits, statsblk *stats,
   calls++;
   if (level > maxLevel) {
     printf("Level %d after %d calls\n", level, calls);
-    fprintf(stderr, "Level %d after %d calls\n", level, calls);
     maxLevel = level;
   }
   if (level > 1500) {

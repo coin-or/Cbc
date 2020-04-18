@@ -1512,6 +1512,14 @@ int CbcMain1(int argc, const char *argv[],
         coinModel = coinModelStart.model;
         if (returnCode)
           return returnCode;
+	if (info.numberSos) {
+	  numberSOS = info.numberSos;
+	  sosStart = info.sosStart;
+	  sosIndices = info.sosIndices;
+	  sosType = info.sosType;
+	  sosReference = info.sosReference;
+	  sosPriority = info.sosPriority;
+	}
         setCbcOrClpReadMode(2); // so will start with parameters
         // see if log in list (including environment)
         for (int i = 1; i < info.numberArguments; i++) {
@@ -2274,6 +2282,9 @@ int CbcMain1(int argc, const char *argv[],
                 verbose = value;
               int returnCode;
               const char *message = parameters_[iParam].setIntParameterWithMessage(lpSolver, value, returnCode);
+              if (parameters_[iParam].type() == CLP_PARAM_INT_SOLVERLOGLEVEL)
+		clpSolver->messageHandler()->setLogLevel(value); // as well
+		
               if (!noPrinting_ && strlen(message)) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                   << message
@@ -5075,7 +5086,13 @@ int CbcMain1(int argc, const char *argv[],
 
               if (clqStrMethod >= 1) {
                   CglCliqueStrengthening clqStr;
+		  // Printing should be at babModel level not solver
+		  int logLevel = babModel_->messageHandler()->logLevel();
+		  int slogLevel = babModel_->solver()->messageHandler()->logLevel();
+		  logLevel = CoinMin(logLevel,slogLevel);
+		  babModel_->solver()->messageHandler()->setLogLevel(logLevel);
                   clqStr.strengthenCliques(*babModel_->solver(), clqStrMethod);
+		  babModel_->solver()->messageHandler()->setLogLevel(slogLevel);
 
                   if (clqStr.constraintsExtended() + clqStr.constraintsDominated() > 0) {
                     babModel_->solver()->resolve();
@@ -7930,7 +7947,12 @@ int CbcMain1(int argc, const char *argv[],
                   originalSolver->setBasis(*basis);
                   delete basis;
                   originalSolver->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
+#ifdef COIN_HAS_LINK
+		  if (originalSolver->getMatrixByCol())
+		    originalSolver->setHintParam(OsiDoPresolveInResolve, true, OsiHintTry);
+#else
                   originalSolver->setHintParam(OsiDoPresolveInResolve, true, OsiHintTry);
+#endif
                   originalSolver->resolve();
                   if (!originalSolver->isProvenOptimal()) {
                     // try all slack

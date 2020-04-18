@@ -12292,6 +12292,9 @@ CbcModel::checkSolution(double cutoff, double *solution,
 #ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpContinuousSolver
       = dynamic_cast< OsiClpSolverInterface * >(continuousSolver_);
+    // But not if odd solver
+    if(dynamic_cast< CbcOsiSolver * >(continuousSolver_))
+      clpContinuousSolver = NULL; 
     int modifiedTolerances = 0;
 #ifndef CBC_LEAVE_PERTURBATION_ON_CHECK_SOLUTION
     int savePerturbation = -1;

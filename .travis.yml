@@ -12,6 +12,7 @@ matrix:
             - gfortran
             - libgfortran-5-dev
             - liblapack-dev
+            - libmetis-dev
     - os: linux
       dist: precise
       env: BUILD_STATIC=false DEBUG=false ASAN=false
@@ -25,6 +26,7 @@ matrix:
             - gfortran-8
             - libgfortran-8-dev
             - liblapack-dev
+            - libmetis-dev
             - libamd2.2.0
             - libcholmod1.7.1
             - libsuitesparse-dev
@@ -47,6 +49,7 @@ matrix:
             - gfortran-9
             - libgfortran-9-dev
             - liblapack-dev
+            - libmetis-dev
             - libamd2.2.0
             - libcholmod1.7.1
             - libsuitesparse-dev
@@ -69,6 +72,7 @@ matrix:
             - gfortran-9
             - libgfortran-9-dev
             - liblapack-dev
+            - libmetis-dev
             - libamd2.2.0
             - libcholmod1.7.1
             - libsuitesparse-dev
@@ -100,7 +104,6 @@ matrix:
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
         - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
-
     - os: linux
       dist: bionic
       env: BUILD_STATIC=true DEBUG=false ASAN=false
@@ -109,6 +112,7 @@ matrix:
           packages:
             - gfortran
             - liblapack-dev
+            - libmetis-dev
     - os: osx
       osx_image: xcode11
       env: OSX=10.14 CC=gcc CXX=g++ BUILD_STATIC=false DEBUG=false ASAN=false
@@ -122,7 +126,7 @@ matrix:
       env: OSX=10.13  BUILD_STATIC=false DEBUG=false ASAN=false
       compiler: clang
 before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install metis; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then if [ x`brew list | fgrep bash` != x'bash' ]; then brew install bash; fi; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then if [ x`brew list | fgrep gcc` != x'gcc' ]; then brew install gcc; fi; fi
   - if [[ "$TRAVIS_OS_NAME $CC" == "osx gcc" ]]; then export CC=gcc-9 ; export CXX=g++-9 ; $CC --version; $CXX --version; gfortran --version; fi
@@ -171,6 +175,7 @@ after_script:
       cp /usr/lib/libcholmod.so.1.7.1 lib/
       cp /usr/lib/libamd.so.2.2.0 lib/
       cp /usr/lib/libcolamd.so.2.7.1 lib/
+      cp /usr/lib/libmetis.so.* lib/
     
       for libfile in lib/*.so*;
       do

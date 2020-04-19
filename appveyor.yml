@@ -179,14 +179,14 @@ after_build:
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libreadline8.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libtermcap-0.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\zlib1.dll C:\projects\dist\bin)
-  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw64\bin\libcholmod.dll C:\projects\dist\bin)
-  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw64\bin\libcolamd.dll C:\projects\dist\bin)
-  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw64\bin\libccolamd.dll C:\projects\dist\bin)
-  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw64\bin\libamd.dll C:\projects\dist\bin)
-  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw64\bin\libcamd.dll C:\projects\dist\bin)
-  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw64\bin\libmetis.dll C:\projects\dist\bin)
-  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw64\bin\libgomp-1.dll C:\projects\dist\bin)
-  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw64\bin\libsuitesparseconfig.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libcholmod.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libcolamd.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libccolamd.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libamd.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libcamd.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libmetis.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libgomp-1.dll C:\projects\dist\bin)
+  - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libsuitesparseconfig.dll C:\projects\dist\bin)
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\bin
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\include
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\lib

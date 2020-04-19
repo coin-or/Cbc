@@ -26,7 +26,6 @@ matrix:
             - gfortran-8
             - libgfortran-8-dev
             - liblapack-dev
-            - libmetis-dev
             - libamd2.2.0
             - libcholmod1.7.1
             - libsuitesparse-dev
@@ -49,7 +48,6 @@ matrix:
             - gfortran-9
             - libgfortran-9-dev
             - liblapack-dev
-            - libmetis-dev
             - libamd2.2.0
             - libcholmod1.7.1
             - libsuitesparse-dev
@@ -72,7 +70,6 @@ matrix:
             - gfortran-9
             - libgfortran-9-dev
             - liblapack-dev
-            - libmetis-dev
             - libamd2.2.0
             - libcholmod1.7.1
             - libsuitesparse-dev

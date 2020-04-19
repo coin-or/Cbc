@@ -19031,8 +19031,8 @@ $as_echo "#define CBC_HAS_ASL 1" >>confdefs.h
 # Nauty library (for symmetry detection).
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Nauty" >&5
-$as_echo_n "checking for package Nauty... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Nauty with function nauty" >&5
+$as_echo_n "checking for package Nauty with function nauty... " >&6; }
 
 # Make sure the necessary variables exist for each client package.
 
@@ -19098,7 +19098,7 @@ fi
 # --with-prim is always present. If the client specified dataonly, its value
 # is assigned to prim_data.
 
-  withval=$with_nauty
+  withval="$with_nauty"
   if test -n "$withval" ; then
     case "$withval" in
       no )
@@ -19112,7 +19112,7 @@ fi
         ;;
       * )
         coin_has_nauty=yes
-        nauty_lflags=$withval
+        nauty_lflags="$withval"
         ;;
     esac
   fi
@@ -19122,7 +19122,7 @@ fi
 # options for lflags and cflags.
 
   if test "$coin_has_nauty" != skipping ; then
-       withval=$with_nauty_lflags
+       withval="$with_nauty_lflags"
        if test -n "$withval" ; then
          case "$withval" in
            build | no | yes )
@@ -19130,12 +19130,12 @@ fi
              ;;
            * )
              coin_has_nauty=yes
-             nauty_lflags=$withval
+             nauty_lflags="$withval"
              ;;
          esac
        fi
 
-       withval=$with_nauty_cflags
+       withval="$with_nauty_cflags"
        if test -n "$withval" ; then
          case "$withval" in
            build | no | yes )
@@ -19208,14 +19208,18 @@ $as_echo "$as_me: WARNING: Unexpected status \"$coin_has_nauty\" in COIN_FIND_PR
        LIBS="$nauty_lflags "
        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
 #ifdef __cplusplus
-             extern "C"
-           #endif
-           void nauty();
+extern "C"
+#endif
+char nauty ();
 int
 main ()
 {
-nauty()
+return nauty ();
   ;
   return 0;
 }
@@ -21571,8 +21575,8 @@ $as_echo "#define CBC_HAS_OSISPX 1" >>confdefs.h
 #AC_COIN_CHK_PKG(OsiXpr,,[osi-xpress])
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Cplex" >&5
-$as_echo_n "checking for package Cplex... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Cplex with function CPXgetstat" >&5
+$as_echo_n "checking for package Cplex with function CPXgetstat... " >&6; }
 
 # Make sure the necessary variables exist for each client package.
 
@@ -21636,7 +21640,7 @@ fi
 # --with-prim is always present. If the client specified dataonly, its value
 # is assigned to prim_data.
 
-  withval=$with_cplex
+  withval="$with_cplex"
   if test -n "$withval" ; then
     case "$withval" in
       no )
@@ -21650,7 +21654,7 @@ fi
         ;;
       * )
         coin_has_cplex=yes
-        cplex_lflags=$withval
+        cplex_lflags="$withval"
         ;;
     esac
   fi
@@ -21660,7 +21664,7 @@ fi
 # options for lflags and cflags.
 
   if test "$coin_has_cplex" != skipping ; then
-       withval=$with_cplex_lflags
+       withval="$with_cplex_lflags"
        if test -n "$withval" ; then
          case "$withval" in
            build | no | yes )
@@ -21668,12 +21672,12 @@ fi
              ;;
            * )
              coin_has_cplex=yes
-             cplex_lflags=$withval
+             cplex_lflags="$withval"
              ;;
          esac
        fi
 
-       withval=$with_cplex_cflags
+       withval="$with_cplex_cflags"
        if test -n "$withval" ; then
          case "$withval" in
            build | no | yes )
@@ -21746,14 +21750,18 @@ $as_echo "$as_me: WARNING: Unexpected status \"$coin_has_cplex\" in COIN_FIND_PR
        LIBS="$cplex_lflags "
        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
 #ifdef __cplusplus
-             extern "C"
-           #endif
-           void CPXgetstat();
+extern "C"
+#endif
+char CPXgetstat ();
 int
 main ()
 {
-CPXgetstat()
+return CPXgetstat ();
   ;
   return 0;
 }
@@ -22423,8 +22431,8 @@ if test "$enable_cbc_parallel" != no; then
   case "$CXX" in
   *cl) # Windows / cl: look for pthreadsw32 lib
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package pthreadsw32" >&5
-$as_echo_n "checking for package pthreadsw32... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package pthreadsw32 with function pthread_create" >&5
+$as_echo_n "checking for package pthreadsw32 with function pthread_create... " >&6; }
 
 # Make sure the necessary variables exist for each client package.
 
@@ -22488,7 +22496,7 @@ fi
 # --with-prim is always present. If the client specified dataonly, its value
 # is assigned to prim_data.
 
-  withval=$with_pthreadsw32
+  withval="$with_pthreadsw32"
   if test -n "$withval" ; then
     case "$withval" in
       no )
@@ -22502,7 +22510,7 @@ fi
         ;;
       * )
         coin_has_pthreadsw32=yes
-        pthreadsw32_lflags=$withval
+        pthreadsw32_lflags="$withval"
         ;;
     esac
   fi
@@ -22512,7 +22520,7 @@ fi
 # options for lflags and cflags.
 
   if test "$coin_has_pthreadsw32" != skipping ; then
-       withval=$with_pthreadsw32_lflags
+       withval="$with_pthreadsw32_lflags"
        if test -n "$withval" ; then
          case "$withval" in
            build | no | yes )
@@ -22520,12 +22528,12 @@ fi
              ;;
            * )
              coin_has_pthreadsw32=yes
-             pthreadsw32_lflags=$withval
+             pthreadsw32_lflags="$withval"
              ;;
          esac
        fi
 
-       withval=$with_pthreadsw32_cflags
+       withval="$with_pthreadsw32_cflags"
        if test -n "$withval" ; then
          case "$withval" in
            build | no | yes )
@@ -22598,14 +22606,18 @@ $as_echo "$as_me: WARNING: Unexpected status \"$coin_has_pthreadsw32\" in COIN_F
        LIBS="$pthreadsw32_lflags "
        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
 #ifdef __cplusplus
-             extern "C"
-           #endif
-           void pthread_create();
+extern "C"
+#endif
+char pthread_create ();
 int
 main ()
 {
-pthread_create()
+return pthread_create ();
   ;
   return 0;
 }

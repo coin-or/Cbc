@@ -50,6 +50,7 @@ matrix:
             - liblapack-dev
             - libamd2.2.0
             - libcholmod1.7.1
+            - libmetis-edf-dev
             - libsuitesparse-dev
             - chrpath
       install:
@@ -72,6 +73,7 @@ matrix:
             - liblapack-dev
             - libamd2.2.0
             - libcholmod1.7.1
+            - libmetis-edf-dev
             - libsuitesparse-dev
             - chrpath
       install:
@@ -94,6 +96,7 @@ matrix:
             - liblapack-dev
             - libamd2.2.0
             - libcholmod1.7.1
+            - libmetis-edf-dev
             - libsuitesparse-dev
             - chrpath
       install:
@@ -141,7 +144,7 @@ script:
   - if [[ $DEBUG == "true" ]]; then export DBGC="--enable-debug"; fi
   - if [[ $DEBUG == "true" ]]; then export CXXFLAGS="-Og -g"; fi
   - if [[ $ASAN == "true" ]]; then export CXXFLAGS="${CXXFLAGS} -fsanitize=address"; fi
-  - if [[ $ASAN == "true" ]]; then export LDFLAGS="-fsanitize=address"; fi
+  - if [[ $ASAN == "true" ]]; then export LDFLAGS="-lasan"; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --enable-relocatable --fully-static $DBGC --with-lapack="-llapack -lblas -lgfortran -lquadmath -lm"; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --tests main --enable-relocatable $DBGC; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=3 --tests none --enable-relocatable; fi
@@ -172,7 +175,7 @@ after_script:
       cp /usr/lib/libcholmod.so.1.7.1 lib/
       cp /usr/lib/libamd.so.2.2.0 lib/
       cp /usr/lib/libcolamd.so.2.7.1 lib/
-      cp /usr/lib/libmetis.so.* lib/
+      cp /usr/lib/libmetis-edf.so.* lib/
     
       for libfile in lib/*.so*;
       do

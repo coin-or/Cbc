@@ -35,8 +35,6 @@ CbcConsequence::CbcConsequence(const CbcConsequence & /*rhs*/)
 CbcConsequence &
 CbcConsequence::operator=(const CbcConsequence &rhs)
 {
-  if (this != &rhs) {
-  }
   return *this;
 }
 

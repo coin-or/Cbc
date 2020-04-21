@@ -8,8 +8,8 @@ Name: CBC
 Description: COIN-OR Branch and Cut
 URL: https://github.com/coin-or/Cbc
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lCbcSolver -lCbc
-Libs.private: @CBCLIB_LFLAGS_NOPC@
 Cflags: -I${includedir}
-Requires:
-Requires.private: @CBCLIB_PCFILES@
+@COIN_STATIC_BUILD_FALSE@Libs: -L${libdir} -lCbcSolver -lCbc
+@COIN_STATIC_BUILD_FALSE@Requires.private: @CBCLIB_PCFILES@
+@COIN_STATIC_BUILD_TRUE@Libs: -L${libdir} -lOsiCbc @CBCLIB_LFLAGS_NOPC@
+@COIN_STATIC_BUILD_TRUE@Requires: @CBCLIB_PCFILES@

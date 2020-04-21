@@ -744,6 +744,8 @@ COIN_HAS_PKGCONFIG_TRUE
 ac_ct_PKG_CONFIG
 PKG_CONFIG
 RPATH_FLAGS
+COIN_STATIC_BUILD_FALSE
+COIN_STATIC_BUILD_TRUE
 LT_LDFLAGS
 CXXCPP
 CPP
@@ -3377,9 +3379,7 @@ rmdir .tst 2>/dev/null
 # Enforce the required autoconf version
 
 
-
 # Set the project's version numbers
-
 
   # break up package version number in major.minor.release
   # AC_PACKAGE_VERSION is defined by AC_INIT
@@ -3413,7 +3413,6 @@ _ACEOF
 
 
 # A useful makefile conditional that is always false
-
    if false; then
   ALWAYS_FALSE_TRUE=
   ALWAYS_FALSE_FALSE='#'
@@ -3427,14 +3426,11 @@ fi
 # AC_CANONICAL_BUILD.
 
 
-
 # Get the build and host types
 
 
 
-
 # libtool has some magic for host_os and build_os being mingw, but doesn't know about msys
-
   if test $host_os = msys ; then
     host_os=mingw
     host=`echo $host | sed -e 's/msys/mingw/'`
@@ -3448,7 +3444,6 @@ fi
 # Make silent build rules the default (https://www.gnu.org/software/automake/
 # manual/html_node/Automake-Silent-Rules.html). Run before AM_INIT_AUTOMAKE,
 # which will AC_REQUIRE it anyway.
-
   # Check whether --enable-silent-rules was given.
 if test "${enable_silent_rules+set}" = set; then :
   enableval=$enable_silent_rules;
@@ -3496,7 +3491,6 @@ AM_BACKSLASH='\'
 # - disable dist target
 # - place objects from sources in subdirs into corresponding subdirs
 # - enable all automake warnings
-
   if test "`cd $srcdir && pwd`" != "`pwd`"; then
   # Use -I$(srcdir) only when $(srcdir) != ., so that make's output
   # is not polluted with repeated "-I."
@@ -3605,7 +3599,6 @@ fi
 
 
 # Disable automatic rebuild of configure/Makefile. Use run_autotools.
-
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable maintainer-specific portions of Makefiles" >&5
 $as_echo_n "checking whether to enable maintainer-specific portions of Makefiles... " >&6; }
@@ -16957,6 +16950,16 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
   # for Windows DLLs, it is mandatory to add this
   LT_LDFLAGS="$LT_LDFLAGS -no-undefined"
 
+  # add automake conditional on whether we build shared or static, useful for .pc files
+   if test "$enable_shared" = no; then
+  COIN_STATIC_BUILD_TRUE=
+  COIN_STATIC_BUILD_FALSE='#'
+else
+  COIN_STATIC_BUILD_TRUE='#'
+  COIN_STATIC_BUILD_FALSE=
+fi
+
+
 
 # set RPATH_FLAGS to the compiler link flags required to hardcode location
 # of the shared objects (expanded_libdir is set somewhere in configure before)
@@ -22134,8 +22137,7 @@ _ACEOF
       # add -DXYZ_BUILD to XYZ_CFLAGS
       CBCLIB_CFLAGS="${CBCLIB_CFLAGS} -DCBCLIB_BUILD"
 
-# Define BUILDTOOLS_DEBUG to enable debugging output
-
+      # Define BUILDTOOLS_DEBUG to enable debugging output
       if test "$BUILDTOOLS_DEBUG" = 1 ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: CBCLIB_LFLAGS_NOPC: \"${CBCLIB_LFLAGS_NOPC}\"" >&5
 $as_echo "$as_me: CBCLIB_LFLAGS_NOPC: \"${CBCLIB_LFLAGS_NOPC}\"" >&6;}
@@ -22184,8 +22186,7 @@ _ACEOF
       # add -DXYZ_BUILD to XYZ_CFLAGS
       CBCSOLVERLIB_CFLAGS="${CBCSOLVERLIB_CFLAGS} -DCBCSOLVERLIB_BUILD"
 
-# Define BUILDTOOLS_DEBUG to enable debugging output
-
+      # Define BUILDTOOLS_DEBUG to enable debugging output
       if test "$BUILDTOOLS_DEBUG" = 1 ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_LFLAGS_NOPC: \"${CBCSOLVERLIB_LFLAGS_NOPC}\"" >&5
 $as_echo "$as_me: CBCSOLVERLIB_LFLAGS_NOPC: \"${CBCSOLVERLIB_LFLAGS_NOPC}\"" >&6;}
@@ -22234,8 +22235,7 @@ _ACEOF
       # add -DXYZ_BUILD to XYZ_CFLAGS
       CBCGENERIC_CFLAGS="${CBCGENERIC_CFLAGS} -DCBCGENERIC_BUILD"
 
-# Define BUILDTOOLS_DEBUG to enable debugging output
-
+      # Define BUILDTOOLS_DEBUG to enable debugging output
       if test "$BUILDTOOLS_DEBUG" = 1 ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: CBCGENERIC_LFLAGS_NOPC: \"${CBCGENERIC_LFLAGS_NOPC}\"" >&5
 $as_echo "$as_me: CBCGENERIC_LFLAGS_NOPC: \"${CBCGENERIC_LFLAGS_NOPC}\"" >&6;}
@@ -22284,8 +22284,7 @@ _ACEOF
       # add -DXYZ_BUILD to XYZ_CFLAGS
       OSICBCLIB_CFLAGS="${OSICBCLIB_CFLAGS} -DOSICBCLIB_BUILD"
 
-# Define BUILDTOOLS_DEBUG to enable debugging output
-
+      # Define BUILDTOOLS_DEBUG to enable debugging output
       if test "$BUILDTOOLS_DEBUG" = 1 ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&5
 $as_echo "$as_me: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&6;}
@@ -22334,8 +22333,7 @@ _ACEOF
       # add -DXYZ_BUILD to XYZ_CFLAGS
       CBCUNITTEST_CFLAGS="${CBCUNITTEST_CFLAGS} -DCBCUNITTEST_BUILD"
 
-# Define BUILDTOOLS_DEBUG to enable debugging output
-
+      # Define BUILDTOOLS_DEBUG to enable debugging output
       if test "$BUILDTOOLS_DEBUG" = 1 ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_LFLAGS_NOPC: \"${CBCUNITTEST_LFLAGS_NOPC}\"" >&5
 $as_echo "$as_me: CBCUNITTEST_LFLAGS_NOPC: \"${CBCUNITTEST_LFLAGS_NOPC}\"" >&6;}
@@ -23389,6 +23387,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCXX_TRUE}" && test -z "${am__fastdepCXX_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCXX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COIN_STATIC_BUILD_TRUE}" && test -z "${COIN_STATIC_BUILD_FALSE}"; then
+  as_fn_error $? "conditional \"COIN_STATIC_BUILD\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_PKGCONFIG_TRUE}" && test -z "${COIN_HAS_PKGCONFIG_FALSE}"; then

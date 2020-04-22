@@ -152,7 +152,7 @@ script:
 after_script:
   - if [[ $DEBUG == "true" ]]; then export DBGN="-dbg"; else export DBG=""; fi
   - if [[ $ASAN == "true" ]]; then export ASN="-asan"; else EXPORT ASN=""; fi
-  - if [[ $BUILD_STATIC == "true" ]] then export STATIC="-static"; else export STATIC=""; fi
+  - if [[ $BUILD_STATIC == "true" ]]; then export STATIC="-static"; else export STATIC=""; fi
   - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=master; else export VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export TGZ_FILE=$PROJECT-$VERSION$STATIC-$TRAVIS_DIST-$PLATFORM$DBGN$ASN.tgz; else export TGZ_FILE=$PROJECT-$VERSION$STATIC-$PLATFORM$DBGN$ASN.tgz; fi
   - echo $TGZ_FILE

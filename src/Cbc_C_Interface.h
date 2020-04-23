@@ -619,7 +619,7 @@ Cbc_getRowLower(Cbc_Model *model);
 CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getRowUpper(Cbc_Model *model);
 
-/** @brief Objective vector 
+/** @brief Objective function coefficients vector
   *
   * @param model problem object 
   * @return vector with coefficients of variables in the objective function

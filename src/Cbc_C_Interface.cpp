@@ -888,6 +888,19 @@ static void Cbc_addRowBuffer(
     double rUB,
     const char *rName)
 {
+#ifdef DEBUG
+  {
+    std::vector< char > iv = std::vector<char>( Cbc_getNumCols(model), 0 );
+    for ( int i=0 ; i<nz ; ++i ) {
+      VALIDATE_COL_INDEX(rIdx[i], model);
+      if (iv[rIdx[i]] >= 1) {
+        fprintf("Error in Cbc_addRow: adding row with repeated column (%d) indexes \n", rIdx[i] );
+        exit(1);
+      }
+      iv[rIdx[i]]++;
+    }
+  }
+#endif
   int nameLen = (int)strlen(rName);
   Cbc_checkSpaceRowBuffer(model, nz, nameLen);
   const int st = model->rStart[model->nRows];
@@ -2003,9 +2016,9 @@ Cbc_getRowCoeffs(Cbc_Model *model, int row)
 int CBC_LINKAGE
 Cbc_getColNz(Cbc_Model *model, int col)
 {
+  Cbc_flush(model);
   VALIDATE_COL_INDEX( col, model );
 
-  Cbc_flush(model);
   const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
   return cpmCol->getVectorLengths()[col];
 }
@@ -2413,6 +2426,7 @@ void CBC_LINKAGE
 Cbc_setRowLower(Cbc_Model *model, int index, double value)
 {
   Cbc_flush(model, FCRows);
+  VALIDATE_ROW_INDEX(index, model);
   OsiSolverInterface *solver = model->solver_;
   solver->setRowLower(index, value);
 }
@@ -2421,6 +2435,7 @@ void CBC_LINKAGE
 Cbc_setRowUpper(Cbc_Model *model, int index, double value)
 {
   Cbc_flush(model, FCRows);
+  VALIDATE_ROW_INDEX(index, model);
   OsiSolverInterface *solver = model->solver_;
   solver->setRowUpper(index, value);
 }
@@ -2536,6 +2551,8 @@ void CBC_LINKAGE
 Cbc_setObjCoeff(Cbc_Model *model, int index, double value)
 {
   Cbc_flush( model, FCColumns );
+  VALIDATE_COL_INDEX(index, model);
+
   model->solver_->setObjCoeff( index, value );
 }
 
@@ -2543,6 +2560,7 @@ void CBC_LINKAGE
 Cbc_setColLower(Cbc_Model *model, int index, double value)
 {
   Cbc_flush(model, FCColumns);
+  VALIDATE_COL_INDEX(index, model);
   model->solver_->setColLower( index, value );
 }
 
@@ -2550,6 +2568,7 @@ void CBC_LINKAGE
 Cbc_setColUpper(Cbc_Model *model, int index, double value)
 {
   Cbc_flush(model, FCColumns);
+  VALIDATE_COL_INDEX(index, model);
   model->solver_->setColUpper( index, value );
 }
 
@@ -2702,6 +2721,7 @@ void CBC_LINKAGE
 Cbc_setContinuous(Cbc_Model *model, int iColumn)
 {
   Cbc_flush(model, FCColumns);
+  VALIDATE_COL_INDEX( iColumn, model );
 
   model->solver_->setContinuous(iColumn);
 }
@@ -2711,6 +2731,7 @@ void CBC_LINKAGE
 Cbc_setInteger(Cbc_Model *model, int iColumn)
 {
   Cbc_flush(model, FCColumns);
+  VALIDATE_COL_INDEX( iColumn, model );
 
   model->solver_->setInteger(iColumn);
 }

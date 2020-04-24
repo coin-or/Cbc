@@ -5091,6 +5091,7 @@ int CbcMain1(int argc, const char *argv[],
 		  int slogLevel = babModel_->solver()->messageHandler()->logLevel();
 		  logLevel = CoinMin(logLevel,slogLevel);
 		  babModel_->solver()->messageHandler()->setLogLevel(logLevel);
+                  clqStr.passInMessageHandler(babModel_->messageHandler());
                   clqStr.strengthenCliques(*babModel_->solver(), clqStrMethod);
 		  babModel_->solver()->messageHandler()->setLogLevel(slogLevel);
 

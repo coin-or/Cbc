@@ -260,6 +260,10 @@ struct Cbc_Model {
   double dbl_param[N_DBL_PARAMS];
 };
 
+/* Buffers sizes */
+#define INI_COL_SPACE 8192
+#define INI_ROW_SPACE 8192
+
 //  bobe including extras.h to get strdup()
 #if defined(__MWERKS__)
 // #include <extras.h>  // bobe 06-02-14
@@ -660,13 +664,6 @@ const char *CBC_LINKAGE Cbc_getVersion()
   return CBC_VERSION;
 }
  
-enum FlushContents
-{
-  FCColumns,
-  FCRows,
-  FCBoth
-};
-
 static void Cbc_flushCols(Cbc_Model *model) {
   if (model->nCols == 0)
     return;
@@ -676,9 +673,11 @@ static void Cbc_flushCols(Cbc_Model *model) {
   int colsBefore = solver->getNumCols();
   solver->addCols( model->nCols, model->cStart, model->cIdx, model->cCoef, model->cLB, model->cUB, model->cObj );
 
-  for ( int i=0 ; i<model->nCols; ++i )
-    if (model->cInt[i])
-      solver->setInteger( colsBefore+i );
+  if (model->nInt) {
+    for ( int i=0 ; i<model->nCols; ++i )
+      if (model->cInt[i])
+        solver->setInteger( colsBefore+i );
+  }
 
   for ( int i=0 ; i<model->nCols; ++i )
     solver->setColName( colsBefore+i, std::string(model->cNames+model->cNameStart[i]) );
@@ -686,6 +685,7 @@ static void Cbc_flushCols(Cbc_Model *model) {
   model->nCols = 0;
   model->cStart[0] = 0;
   model->nInt = 0;
+  model->cNameStart[0] = 0;
 }
 
 static void Cbc_flushRows(Cbc_Model *model) {
@@ -706,15 +706,17 @@ static void Cbc_flushRows(Cbc_Model *model) {
 
   model->nRows = 0;
   model->rStart[0] = 0;
-
+  model->rNameStart[0] = 0;
 }
 
 // flushes buffers of new variables
 static void Cbc_flush( Cbc_Model *model)
 {
+#ifdef DEBUG
   if (model->rStart && model->cStart) {
     assert( model->rStart[model->nRows] == 0 || model->cStart[model->nCols] == 0 );
   }
+#endif
 
   if ( model->rStart && model->rStart[model->nRows] == 0 ) {
     // rows have no reference to columns, so rows can be added first
@@ -727,8 +729,7 @@ static void Cbc_flush( Cbc_Model *model)
     Cbc_flushCols(model);
     Cbc_flushRows(model);
   }
-
-} // flush cols, rows or both
+}
 
 static void Cbc_checkSpaceColBuffer( Cbc_Model *model, int additionlNameSpace, int additionalNzSpace )
 {
@@ -736,10 +737,10 @@ static void Cbc_checkSpaceColBuffer( Cbc_Model *model, int additionlNameSpace, i
   if ( model->colSpace == 0 )
   {
     // initial buffer allocation
-    model->colSpace = 8192;
+    model->colSpace = INI_COL_SPACE;
     int c = model->colSpace;
     model->nCols = 0;
-    model->cNameSpace = max(32768, additionlNameSpace);
+    model->cNameSpace = max(INI_COL_SPACE*7, additionlNameSpace*10);
 
     model->cNameStart = (int *) xmalloc( sizeof(int)*c );
     model->cNameStart[0] = 0;
@@ -752,7 +753,7 @@ static void Cbc_checkSpaceColBuffer( Cbc_Model *model, int additionlNameSpace, i
     model->cStart = (CoinBigIndex *) xmalloc( sizeof(CoinBigIndex)*c );
     model->cStart[0] = 0;
 
-    model->cElementsSpace = max(32768, additionalNzSpace);
+    model->cElementsSpace = max(INI_COL_SPACE*5, additionalNzSpace*10);
     model->cIdx = (int *) xmalloc( sizeof(int)*model->cElementsSpace );
     model->cCoef = (double *) xmalloc( sizeof(double)*model->cElementsSpace );
   }
@@ -831,18 +832,30 @@ static void Cbc_addColBuffer( Cbc_Model *model,
 
 static void Cbc_deleteColBuffer( Cbc_Model *model )
 {
-  if ( model->colSpace > 0 )
-  {
-    free(model->cNameStart);
-    free(model->cInt);
-    free(model->cNames);
-    free(model->cLB);
-    free(model->cUB);
-    free(model->cObj);
-    free(model->cStart);
-    free(model->cIdx);
-    free(model->cCoef);
-  }
+  if (model->colSpace == 0)
+    return;
+
+  free(model->cNameStart);
+  free(model->cInt);
+  free(model->cNames);
+  free(model->cLB);
+  free(model->cUB);
+  free(model->cObj);
+  free(model->cStart);
+  free(model->cIdx);
+  free(model->cCoef);
+
+  model->cNameStart = NULL;
+  model->cInt = NULL;
+  model->cNames = NULL;
+  model->cLB = NULL;
+  model->cUB = NULL;
+  model->cObj = NULL;
+  model->cStart = NULL;
+  model->cIdx = NULL;
+  model->cCoef = NULL;
+
+  model->colSpace = model->cNameSpace = model->cElementsSpace = model->nCols = model->nInt = 0;
 }
 
 static void Cbc_checkSpaceRowBuffer(Cbc_Model *model, int nzRow, int rowNameLen)
@@ -850,7 +863,7 @@ static void Cbc_checkSpaceRowBuffer(Cbc_Model *model, int nzRow, int rowNameLen)
   if (model->rowSpace == 0)
   {
     // allocating buffer
-    model->rowSpace = 8192;
+    model->rowSpace = INI_ROW_SPACE;
     model->rStart = (CoinBigIndex *)xmalloc(sizeof(CoinBigIndex)*model->rowSpace);
     model->rStart[0] = 0;
     model->rLB = (double *)xmalloc(sizeof(double)*model->rowSpace);
@@ -858,11 +871,11 @@ static void Cbc_checkSpaceRowBuffer(Cbc_Model *model, int nzRow, int rowNameLen)
     model->rNameStart = (int *)xmalloc(sizeof(int)*model->rowSpace);
     model->rNameStart[0] = 0;
 
-    model->rElementsSpace = std::max(131072, nzRow * 2);
+    model->rElementsSpace = std::max(INI_ROW_SPACE*15, nzRow*10);
     model->rIdx = (int *)xmalloc(sizeof(int)*model->rElementsSpace);
     model->rCoef = (double *)xmalloc(sizeof(double)*model->rElementsSpace);
 
-    model->rNameSpace = 131072;
+    model->rNameSpace = max(INI_ROW_SPACE*10, rowNameLen*10);
     model->rNames = (char *)xmalloc(sizeof(char)*model->rNameSpace);
   }
   else
@@ -907,7 +920,7 @@ static void Cbc_addRowBuffer(
     for ( int i=0 ; i<nz ; ++i ) {
       VALIDATE_COL_INDEX(rIdx[i], model);
       if (iv[rIdx[i]] >= 1) {
-        fprintf("Error in Cbc_addRow: adding row with repeated column (%d) indexes \n", rIdx[i] );
+        fprintf(stderr, "Error in Cbc_addRow: adding row with repeated column (%d) indexes \n", rIdx[i] );
         exit(1);
       }
       iv[rIdx[i]]++;
@@ -933,16 +946,29 @@ static void Cbc_addRowBuffer(
 
 static void Cbc_deleteRowBuffer(Cbc_Model *model)
 {
-  if (model->rowSpace)
-  {
-    free(model->rStart);
-    free(model->rLB);
-    free(model->rUB);
-    free(model->rNameStart);
-    free(model->rIdx);
-    free(model->rCoef);
-    free(model->rNames);
-  }
+  if (model->rowSpace == 0)
+    return;
+
+  free(model->rStart);
+  free(model->rLB);
+  free(model->rUB);
+  free(model->rNameStart);
+  free(model->rIdx);
+  free(model->rCoef);
+  free(model->rNames);
+
+  model->rStart = NULL;
+  model->rLB = NULL;
+  model->rUB = NULL;
+  model->rNameStart = NULL;
+  model->rIdx = NULL;
+  model->rCoef = NULL;
+  model->rNames = NULL;
+
+  model->rowSpace = 0;
+  model->nRows = 0;
+  model->rNameSpace = 0;
+  model->rElementsSpace = 0;
 }
 
 static void Cbc_iniBuffer(Cbc_Model *model) 

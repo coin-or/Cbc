@@ -142,7 +142,7 @@ before_script:
 script:
   - export DBGC=""
   - if [[ $DEBUG == "true" ]]; then export DBGC="--enable-debug"; fi
-  - if [[ $DEBUG == "true" ]]; then export CXXFLAGS="-D_GLIBCXX_DEBUG -Og -g"; fi
+  - if [[ $DEBUG == "true" ]]; then export CXXFLAGS="-Og -g"; fi
   - if [[ $ASAN == "true" ]]; then export CXXFLAGS="${CXXFLAGS} -fsanitize=address"; fi
   - if [[ $ASAN == "true" ]]; then export LDFLAGS="-lasan"; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --enable-relocatable --fully-static $DBGC --with-lapack="-llapack -lblas -lgfortran -lquadmath -lm"; fi

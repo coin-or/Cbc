@@ -82,29 +82,6 @@ matrix:
         - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - os: linux
-      dist: precise
-      env: BUILD_STATIC=false DEBUG=true ASAN=true
-      addons:
-        apt:
-          sources:
-            - sourceline: 'ppa:ubuntu-toolchain-r/test'
-          packages:
-            - gcc-9
-            - g++-9
-            - gfortran-9
-            - libgfortran-9-dev
-            - liblapack-dev
-            - libamd2.2.0
-            - libcholmod1.7.1
-            - libmetis-edf-dev
-            - libsuitesparse-dev
-            - chrpath
-      install:
-        - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
-        - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
-        - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90
-        - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
-    - os: linux
       dist: bionic
       env: BUILD_STATIC=true DEBUG=false ASAN=false
       addons:

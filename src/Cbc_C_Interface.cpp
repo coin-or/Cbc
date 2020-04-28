@@ -178,6 +178,12 @@ struct Cbc_Model {
   double *cLB;
   double *cUB;
   double *cObj;
+  int nInt;
+
+  int cElementsSpace;
+  CoinBigIndex *cStart;
+  int *cIdx;
+  double *cCoef;
 
   vector< double > *iniSol;
   double iniObj;
@@ -661,59 +667,70 @@ enum FlushContents
   FCBoth
 };
 
-// flushes buffers of new variables
-static void Cbc_flush( Cbc_Model *model, enum FlushContents fc = FCBoth )
-{
+static void Cbc_flushCols(Cbc_Model *model) {
+  if (model->nCols == 0)
+    return;
+
   OsiSolverInterface *solver = model->solver_;
 
-  if (model->nCols)
+  int colsBefore = solver->getNumCols();
+  solver->addCols( model->nCols, model->cStart, model->cIdx, model->cCoef, model->cLB, model->cUB, model->cObj );
+
+  for ( int i=0 ; i<model->nCols; ++i )
+    if (model->cInt[i])
+      solver->setInteger( colsBefore+i );
+
+  for ( int i=0 ; i<model->nCols; ++i )
+    solver->setColName( colsBefore+i, std::string(model->cNames+model->cNameStart[i]) );
+
+  model->nCols = 0;
+  model->cStart[0] = 0;
+  model->nInt = 0;
+}
+
+static void Cbc_flushRows(Cbc_Model *model) {
+  if (model->nRows == 0)
+    return;
+
+  OsiSolverInterface *solver = model->solver_;
+
+  int rowsBefore = solver->getNumRows();
+  solver->addRows(model->nRows, model->rStart, model->rIdx, model->rCoef, model->rLB, model->rUB);
+
+  for ( int i=0 ; i<model->nRows; ++i )
   {
-    CoinBigIndex *starts = new CoinBigIndex[model->nCols+1];
-    for ( int i=0 ; (i<model->nCols+1) ; ++i )
-      starts[i] = 0;
-
-    int idx = 0; double coef = 0.0;
-
-    int colsBefore = solver->getNumCols();
-
-    solver->addCols( model->nCols, starts, &idx, &coef, model->cLB, model->cUB, model->cObj );
-
-    for ( int i=0 ; i<model->nCols; ++i )
-      if (model->cInt[i])
-        solver->setInteger( colsBefore+i );
-
-    for ( int i=0 ; i<model->nCols; ++i )
-      solver->setColName( colsBefore+i, std::string(model->cNames+model->cNameStart[i]) );
-
-    model->nCols = 0;
-
-    delete[] starts;
+    const int rIdx = rowsBefore+i;
+    const std::string rName = std::string(model->rNames+model->rNameStart[i]);
+    solver->setRowName(rIdx, rName);
   }
-  if (fc == FCRows || fc == FCBoth)
+
+  model->nRows = 0;
+  model->rStart[0] = 0;
+
+}
+
+// flushes buffers of new variables
+static void Cbc_flush( Cbc_Model *model)
+{
+  if (model->rStart && model->cStart) {
+    assert( model->rStart[model->nRows] == 0 || model->cStart[model->nCols] == 0 );
+  }
+
+  if ( model->rStart && model->rStart[model->nRows] == 0 ) {
+    // rows have no reference to columns, so rows can be added first
+    Cbc_flushRows(model);
+    Cbc_flushCols(model);
+  }
+  else
   {
-    if (model->nRows)
-    {
-      int rowsBefore = solver->getNumRows();
-      solver->addRows(model->nRows, model->rStart, model->rIdx, model->rCoef, model->rLB, model->rUB);
-
-      for ( int i=0 ; i<model->nRows; ++i )
-      {
-        const int rIdx = rowsBefore+i;
-        const std::string rName = std::string(model->rNames+model->rNameStart[i]);
-        solver->setRowName(rIdx, rName);
-        if (model->rowNameIndex)
-        {
-          NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
-          rowNameIndex[rName] = rIdx;
-        }
-      }
-
-      model->nRows = 0;
-    }
+    // cols have no reference to columns, so rows can be added first
+    Cbc_flushCols(model);
+    Cbc_flushRows(model);
   }
+
 } // flush cols, rows or both
 
-static void Cbc_checkSpaceColBuffer( Cbc_Model *model, int additionlNameSpace )
+static void Cbc_checkSpaceColBuffer( Cbc_Model *model, int additionlNameSpace, int additionalNzSpace )
 {
   // initialize buffer
   if ( model->colSpace == 0 )
@@ -722,29 +739,27 @@ static void Cbc_checkSpaceColBuffer( Cbc_Model *model, int additionlNameSpace )
     model->colSpace = 8192;
     int c = model->colSpace;
     model->nCols = 0;
-    model->cNameSpace = 16384;
+    model->cNameSpace = max(32768, additionlNameSpace);
 
     model->cNameStart = (int *) xmalloc( sizeof(int)*c );
-    assert( model->cNameStart );
     model->cNameStart[0] = 0;
 
     model->cInt = (char *) xmalloc( sizeof(char)*c );
-    assert( model->cInt );
-
     model->cNames = (char *) xmalloc( sizeof(char)*model->cNameSpace );
-    assert( model->cNames );
-
     model->cLB = (double *) xmalloc( sizeof(double)*c );
-    assert( model->cLB );
-
     model->cUB = (double *)xmalloc( sizeof(double)*c );
-    assert( model->cUB );
-
     model->cObj = (double *)xmalloc( sizeof(double)*c );
-    assert( model->cObj );
+    model->cStart = (CoinBigIndex *) xmalloc( sizeof(CoinBigIndex)*c );
+    model->cStart[0] = 0;
+
+    model->cElementsSpace = max(32768, additionalNzSpace);
+    model->cIdx = (int *) xmalloc( sizeof(int)*model->cElementsSpace );
+    model->cCoef = (double *) xmalloc( sizeof(double)*model->cElementsSpace );
   }
   else
   {
+    // already allocated, checking for resizes
+
     // check buffer space
     if (model->nCols+2 >= model->colSpace)
     {
@@ -752,48 +767,66 @@ static void Cbc_checkSpaceColBuffer( Cbc_Model *model, int additionlNameSpace )
       int c = model->colSpace;
 
       model->cNameStart = (int *) xrealloc( model->cNameStart, sizeof(int)*c );
-      assert( model->cNameStart );
-
       model->cInt = (char *) xrealloc( model->cInt, sizeof(char)*c );
-      assert( model->cInt );
-
       model->cLB = (double *) xrealloc( model->cLB, sizeof(double)*c );
-      assert( model->cLB );
-
       model->cUB = (double *) xrealloc( model->cUB, sizeof(double)*c );
-      assert( model->cUB );
-
       model->cObj = (double *) xrealloc( model->cObj, sizeof(double)*c );
-      assert( model->cObj );
+      model->cStart = (CoinBigIndex *) xrealloc( model->cStart, sizeof(CoinBigIndex)*c );
     }
     // check string buffer space
     int slen = additionlNameSpace + 1;
     int reqsize = slen + model->cNameStart[model->nCols]+1;
     if (reqsize>model->cNameSpace)
     {
-      model->cNameSpace *= 2;
+      model->cNameSpace = max(model->cNameSpace*2, additionlNameSpace);
       model->cNames = (char *) xrealloc( model->cNames, sizeof(char)*model->cNameSpace );
     }
-  }
+
+    if (model->cStart[model->nCols]+additionalNzSpace+1 >= model->cElementsSpace) {
+      model->cElementsSpace = std::max(model->cStart[model->nCols]+additionalNzSpace+1, model->cElementsSpace*2);
+      model->cIdx = (int *) xrealloc( model->cIdx, sizeof(int)*model->cElementsSpace );
+      model->cCoef = (double *) xrealloc( model->cCoef, sizeof(double)*model->cElementsSpace );
+    } // space on column non-zeros
+
+  } // additional allocations
+
 }
 
 static void Cbc_addColBuffer( Cbc_Model *model,
-    const char *name, double lb, double ub, double obj,
+    const char *name, 
+    int rNz, int *rIdx, double *rCoef,
+    double lb, double ub, double obj,
     char isInteger )
 {
-  Cbc_checkSpaceColBuffer( model, 512 );
+#define MAX_COL_NAME_SIZE 1024
+  Cbc_checkSpaceColBuffer( model, MAX_COL_NAME_SIZE, rNz );
   int p = model->nCols;
   model->cInt[p] = isInteger;
   model->cLB[p] = lb;
   model->cUB[p] = ub;
   model->cObj[p] = obj;
+  model->nInt += (int)isInteger;
 
   int ps = model->cNameStart[p];
-  strcpy( model->cNames+ps, name );
-  int len = (int)strlen(name);
+  strncpy( model->cNames+ps, name, MAX_COL_NAME_SIZE );
+  int len = min( (int)strlen(name), MAX_COL_NAME_SIZE );
+
+  int stNz = model->cStart[p];
+
+  if (rNz) {
+#ifdef DEBUG
+    for ( int i=0 ; (i<rNz) ; ++i ) {
+      VALIDATE_ROW_INDEX(rIdx[i], model);
+    }
+#endif
+    memcpy( model->cIdx+stNz, rIdx, sizeof(int)*rNz  );
+    memcpy( model->cCoef+stNz, rCoef, sizeof(double)*rNz  );
+  }
 
   model->nCols++;
   model->cNameStart[model->nCols] = ps + len + 1;
+  model->cStart[model->nCols] = stNz + rNz;
+#undef MAX_COL_NAME_SIZE
 }
 
 static void Cbc_deleteColBuffer( Cbc_Model *model )
@@ -806,6 +839,9 @@ static void Cbc_deleteColBuffer( Cbc_Model *model )
     free(model->cLB);
     free(model->cUB);
     free(model->cObj);
+    free(model->cStart);
+    free(model->cIdx);
+    free(model->cCoef);
   }
 }
 
@@ -834,49 +870,26 @@ static void Cbc_checkSpaceRowBuffer(Cbc_Model *model, int nzRow, int rowNameLen)
     // checking if some resize is needed
     if (model->nRows+2 >= model->rowSpace)
     {
-      // checking row space
-      if (model->rowSpace < 1048576)
-      {
-        model->rowSpace *= 2;
-        model->rStart = (CoinBigIndex *)xrealloc(model->rStart, sizeof(CoinBigIndex)*model->rowSpace);
-        model->rLB = (double *)xrealloc(model->rLB, sizeof(double)*model->rowSpace);
-        model->rUB = (double *)xrealloc(model->rUB, sizeof(double)*model->rowSpace);
-        model->rNameStart = (int *)xrealloc(model->rNameStart, sizeof(int)*model->rowSpace);
-      }
-      else
-      {
-        Cbc_flush(model, FCRows);
-      }
+      model->rowSpace = std::max(2*model->rowSpace, model->nRows+2);
+      model->rStart = (CoinBigIndex *)xrealloc(model->rStart, sizeof(CoinBigIndex)*model->rowSpace);
+      model->rLB = (double *)xrealloc(model->rLB, sizeof(double)*model->rowSpace);
+      model->rUB = (double *)xrealloc(model->rUB, sizeof(double)*model->rowSpace);
+      model->rNameStart = (int *)xrealloc(model->rNameStart, sizeof(int)*model->rowSpace);
     } // rowSpace
 
     if (model->rStart[model->nRows]+nzRow+1 >= model->rElementsSpace)
     {
-      if (model->rElementsSpace<4194304 || nzRow>=4194304)
-      {
-        model->rElementsSpace *= 2;
-        model->rElementsSpace = std::max(model->rElementsSpace, nzRow*2);
-        model->rIdx = (int *)xrealloc(model->rIdx, sizeof(int)*model->rElementsSpace);
-        model->rCoef = (double *)xrealloc(model->rCoef, sizeof(double)*model->rElementsSpace);
-      }
-      else
-      {
-        Cbc_flush(model, FCRows);
-      }
+      model->rElementsSpace = std::max(2*model->rElementsSpace, model->rStart[model->nRows]+nzRow+1);
+      model->rIdx = (int *)xrealloc(model->rIdx, sizeof(int)*model->rElementsSpace);
+      model->rCoef = (double *)xrealloc(model->rCoef, sizeof(double)*model->rElementsSpace);
     } // elements space
 
     if (model->rNameStart[model->nRows]+rowNameLen+2 >= model->rNameSpace)
     {
-      if (model->rNameSpace < 8388608)
-      {
-        model->rNameSpace *= 2;
-        model->rNames = (char *)xrealloc(model->rNames, sizeof(char)*model->rNameSpace);
-      }
-      else
-      {
-        Cbc_flush(model, FCRows);
-      }
+      model->rNameSpace = std::max(model->rNameSpace*2, model->rNameSpace+rowNameLen+2);
+      model->rNames = (char *)xrealloc(model->rNames, sizeof(char)*model->rNameSpace);
     } // row names resize
-  } // resizing
+  } // checks for resize
 } // Cbc_checkSpaceRowBuffer
 
 static void Cbc_addRowBuffer(
@@ -944,6 +957,11 @@ static void Cbc_iniBuffer(Cbc_Model *model)
   model->cLB = NULL;
   model->cUB = NULL;
   model->cObj = NULL;
+  model->cStart = NULL;
+  model->cIdx = NULL;
+  model->cCoef = NULL;
+  model->nInt = 0;
+  model->cElementsSpace = 0;
 
   // initialize rows buffer
   model->rowSpace = 0;
@@ -1322,20 +1340,15 @@ Cbc_secondaryStatus(Cbc_Model *model) {
 int CBC_LINKAGE
 Cbc_getNumElements(Cbc_Model *model)
 {
-  Cbc_flush(model);
-
-  int result = 0;
-  result = model->solver_->getNumElements();
-
-  return result;
+  return model->solver_->getNumElements() +
+    model->cStart[model->nCols] +
+    model->rStart[model->nRows];
 }
 
 int CBC_LINKAGE
 Cbc_getNumIntegers(Cbc_Model *model)
 {
-  Cbc_flush(model, FCColumns);
-
-  return model->solver_->getNumIntegers();
+  return model->solver_->getNumIntegers() + model->nInt;
 }
 
 // Column starts in matrix
@@ -1353,7 +1366,7 @@ Cbc_getVectorStarts(Cbc_Model *model)
 const int *CBC_LINKAGE
 Cbc_getIndices(Cbc_Model *model)
 {
-  Cbc_flush(model, FCRows);
+  Cbc_flush(model);
 
   const int *result = NULL;
   const CoinPackedMatrix *matrix = NULL;
@@ -1367,7 +1380,7 @@ Cbc_getIndices(Cbc_Model *model)
 const double *CBC_LINKAGE
 Cbc_getElements(Cbc_Model *model)
 {
-  Cbc_flush(model, FCRows);
+  Cbc_flush(model);
 
   const double *result = NULL;
   const CoinPackedMatrix *matrix = NULL;
@@ -1473,7 +1486,7 @@ Cbc_setRowName(Cbc_Model *model, int iRow, const char *name)
 {
   VALIDATE_ROW_INDEX( iRow, model );
 
-  Cbc_flush(model, FCRows);
+  Cbc_flush(model);
   OsiSolverInterface *solver = model->solver_;
   std::string previousName = solver->getRowName(iRow);
   solver->setRowName(iRow, name);
@@ -2016,7 +2029,6 @@ Cbc_getRowCoeffs(Cbc_Model *model, int row)
 int CBC_LINKAGE
 Cbc_getColNz(Cbc_Model *model, int col)
 {
-  Cbc_flush(model);
   VALIDATE_COL_INDEX( col, model );
 
   const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
@@ -2029,11 +2041,15 @@ Cbc_getColIndices(Cbc_Model *model, int col)
 {
   VALIDATE_COL_INDEX( col, model );
 
-  Cbc_flush(model);
-  const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
-  const CoinBigIndex *starts = cpmCol->getVectorStarts();
-  const int *cidx = cpmCol->getIndices() + starts[col];
-  return cidx;
+  if (col<model->solver_->getNumCols()) {
+    const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
+    const CoinBigIndex *starts = cpmCol->getVectorStarts();
+    const int *cidx = cpmCol->getIndices() + starts[col];
+    return cidx;
+  } else {
+    int idxColBuffer = col - model->solver_->getNumCols();
+    return model->cIdx + model->cStart[idxColBuffer];
+  }
 }
 
 /** Coefficients that a column appear in rows */
@@ -2042,12 +2058,15 @@ Cbc_getColCoeffs(Cbc_Model *model, int col)
 {
   VALIDATE_COL_INDEX( col, model );
 
-  Cbc_flush(model);
-
-  const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
-  const CoinBigIndex *starts = cpmCol->getVectorStarts();
-  const double *rcoef = cpmCol->getElements() + starts[col];
-  return rcoef;
+  if (col<model->solver_->getNumCols()) {
+    const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
+    const CoinBigIndex *starts = cpmCol->getVectorStarts();
+    const double *ccoef = cpmCol->getElements() + starts[col];
+    return ccoef;
+  } else {
+    int idxColBuffer = col - model->solver_->getNumCols();
+    return model->cCoef + model->cStart[idxColBuffer];
+  }
 }
 
 /** Right hand side of a row */
@@ -2418,15 +2437,16 @@ Cbc_getObjSense(Cbc_Model *model) {
 void CBC_LINKAGE
 Cbc_setObjSense(Cbc_Model *model, double sense)
 {
-  Cbc_flush(model, FCColumns);
+  Cbc_flush(model);
   model->solver_->setObjSense(sense);
 }
 
 void CBC_LINKAGE
 Cbc_setRowLower(Cbc_Model *model, int index, double value)
 {
-  Cbc_flush(model, FCRows);
+  Cbc_flush(model);
   VALIDATE_ROW_INDEX(index, model);
+
   OsiSolverInterface *solver = model->solver_;
   solver->setRowLower(index, value);
 }
@@ -2434,7 +2454,7 @@ Cbc_setRowLower(Cbc_Model *model, int index, double value)
 void CBC_LINKAGE
 Cbc_setRowUpper(Cbc_Model *model, int index, double value)
 {
-  Cbc_flush(model, FCRows);
+  Cbc_flush(model);
   VALIDATE_ROW_INDEX(index, model);
   OsiSolverInterface *solver = model->solver_;
   solver->setRowUpper(index, value);
@@ -2443,6 +2463,9 @@ Cbc_setRowUpper(Cbc_Model *model, int index, double value)
 void CBC_LINKAGE
 Cbc_setRowRHS(Cbc_Model *model, int row, double rhs)
 {
+  VALIDATE_ROW_INDEX(row, model);
+
+  Cbc_flush(model);
   char sense = Cbc_getRowSense(model, row);
   switch (sense)
   {
@@ -2473,7 +2496,7 @@ Cbc_setRowRHS(Cbc_Model *model, int row, double rhs)
 const double *CBC_LINKAGE
 Cbc_getRowLower(Cbc_Model *model)
 {
-  Cbc_flush(model, FCRows);
+  Cbc_flush(model);
   OsiSolverInterface *solver = model->solver_;
   return solver->getRowLower();
 }
@@ -2486,7 +2509,7 @@ Cbc_getRowLower(Cbc_Model *model)
 const double *CBC_LINKAGE
 Cbc_getRowUpper(Cbc_Model *model)
 {
-  Cbc_flush(model, FCRows);
+  Cbc_flush(model);
   OsiSolverInterface *solver = model->solver_;
   return solver->getRowUpper();
 }
@@ -2512,17 +2535,49 @@ Cbc_getRowActivity(Cbc_Model *model) {
 const double *CBC_LINKAGE
 Cbc_getColLower(Cbc_Model *model)
 {
-  Cbc_flush(model, FCColumns);
+  Cbc_flush(model);
   return model->solver_->getColLower();
 }
 
 const double *CBC_LINKAGE
 Cbc_getColUpper(Cbc_Model *model)
 {
-  Cbc_flush(model, FCColumns);
+  Cbc_flush(model);
   return model->solver_->getColUpper();
 }
 
+double Cbc_getColObj(Cbc_Model *model, int colIdx) {
+  VALIDATE_COL_INDEX(colIdx, model);
+
+  if (colIdx < model->solver_->getNumCols()) {
+    return model->solver_->getObjCoefficients()[colIdx];
+  } else {
+    int ncIdx = colIdx - model->solver_->getNumCols();
+    return model->cObj[ncIdx];
+  }
+}
+
+double Cbc_getColLB(Cbc_Model *model, int colIdx) {
+  VALIDATE_COL_INDEX(colIdx, model);
+
+  if (colIdx < model->solver_->getNumCols()) {
+    return model->solver_->getColLower()[colIdx];
+  } else {
+    int ncIdx = colIdx - model->solver_->getNumCols();
+    return model->cLB[ncIdx];
+  }
+}
+
+double Cbc_getColUB(Cbc_Model *model, int colIdx) {
+  VALIDATE_COL_INDEX(colIdx, model);
+
+  if (colIdx < model->solver_->getNumCols()) {
+    return model->solver_->getColUpper()[colIdx];
+  } else {
+    int ncIdx = colIdx - model->solver_->getNumCols();
+    return model->cUB[ncIdx];
+  }
+}
 
 double CBC_LINKAGE
 Cbc_getBestPossibleObjValue(Cbc_Model *model) {
@@ -2543,14 +2598,14 @@ Cbc_getBestPossibleObjValue(Cbc_Model *model) {
 const double *CBC_LINKAGE
 Cbc_getObjCoefficients(Cbc_Model *model)
 {
-  Cbc_flush(model, FCColumns);
+  Cbc_flush(model);
   return model->solver_->getObjCoefficients();
 }
 
 void CBC_LINKAGE
 Cbc_setObjCoeff(Cbc_Model *model, int index, double value)
 {
-  Cbc_flush( model, FCColumns );
+  Cbc_flush( model);
   VALIDATE_COL_INDEX(index, model);
 
   model->solver_->setObjCoeff( index, value );
@@ -2559,7 +2614,7 @@ Cbc_setObjCoeff(Cbc_Model *model, int index, double value)
 void CBC_LINKAGE
 Cbc_setColLower(Cbc_Model *model, int index, double value)
 {
-  Cbc_flush(model, FCColumns);
+  Cbc_flush(model);
   VALIDATE_COL_INDEX(index, model);
   model->solver_->setColLower( index, value );
 }
@@ -2567,7 +2622,7 @@ Cbc_setColLower(Cbc_Model *model, int index, double value)
 void CBC_LINKAGE
 Cbc_setColUpper(Cbc_Model *model, int index, double value)
 {
-  Cbc_flush(model, FCColumns);
+  Cbc_flush(model);
   VALIDATE_COL_INDEX(index, model);
   model->solver_->setColUpper( index, value );
 }
@@ -2720,7 +2775,7 @@ Cbc_clone(Cbc_Model *model)
 void CBC_LINKAGE
 Cbc_setContinuous(Cbc_Model *model, int iColumn)
 {
-  Cbc_flush(model, FCColumns);
+  Cbc_flush(model);
   VALIDATE_COL_INDEX( iColumn, model );
 
   model->solver_->setContinuous(iColumn);
@@ -2730,7 +2785,7 @@ Cbc_setContinuous(Cbc_Model *model, int iColumn)
 void CBC_LINKAGE
 Cbc_setInteger(Cbc_Model *model, int iColumn)
 {
-  Cbc_flush(model, FCColumns);
+  Cbc_flush(model);
   VALIDATE_COL_INDEX( iColumn, model );
 
   model->solver_->setInteger(iColumn);
@@ -2744,17 +2799,12 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
 {
   OsiSolverInterface *solver = model->solver_;
 
-  if ( nz==0 )
-  {
-    Cbc_addColBuffer( model, name, lb, ub, obj, isInteger );
+  if (nz >= 1 && model->rStart && model->rStart[model->nRows] >= 1) {
+    // new columns have reference to rows which have references to columns, flushing
+    Cbc_flush(model);
   }
-  else
-  {
-    Cbc_flush(model, FCRows);
-    solver->addCol(nz, rows, coefs, lb, ub, obj, std::string(name));
-    if (isInteger)
-      solver->setInteger(solver->getNumCols() - 1);
-  }
+
+  Cbc_addColBuffer( model, name, nz, rows, coefs,  lb, ub, obj,  isInteger );
 
   if (model->colNameIndex)
   {
@@ -2768,6 +2818,11 @@ void CBC_LINKAGE
 Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   const int *cols, const double *coefs, char sense, double rhs)
 {
+  if (nz >= 1 && model->cStart && model->cStart[model->nCols] >= 1) {
+    // new rows have reference to columns which have references to rows, flushing
+    Cbc_flush(model);
+  }
+
   double rowLB = -DBL_MAX, rowUB = DBL_MAX;
   switch (toupper(sense)) {
   case '=':
@@ -2917,7 +2972,7 @@ Osi_setObjSense(void *osi, double sense)
 void CBC_LINKAGE
 Cbc_deleteRows(Cbc_Model *model, int numRows, const int rows[])
 {
-  Cbc_flush(model, FCRows);
+  Cbc_flush(model);
   OsiSolverInterface *solver = model->solver_;
 
   if (model->rowNameIndex)
@@ -2933,7 +2988,7 @@ Cbc_deleteRows(Cbc_Model *model, int numRows, const int rows[])
 void CBC_LINKAGE
 Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[])
 {
-  Cbc_flush(model, FCColumns);
+  Cbc_flush(model);
   OsiSolverInterface *solver = model->solver_;
 
   if (model->colNameIndex)

@@ -627,6 +627,15 @@ Cbc_getRowUpper(Cbc_Model *model);
 CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getObjCoefficients(Cbc_Model *model);
 
+/** @brief Queries the objective function coefficient of one variable
+  *
+  * @param model problem object 
+  * @param colIdx column index
+  * @return objective function coefficient of the variable
+  **/
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
+Cbc_getColObj(Cbc_Model *model, int colIdx);
+
 /** @brief Variable lower bounds 
   *
   * @param model problem object 
@@ -635,6 +644,16 @@ Cbc_getObjCoefficients(Cbc_Model *model);
 CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getColLower(Cbc_Model *model);
 
+/** @brief Queries the lower bound of one variable
+  *
+  * @param model problem object 
+  * @param colIdx column index
+  * @return lower bound of the variable
+  **/
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
+Cbc_getColLB(Cbc_Model *model, int colIdx);
+
+
 /** @brief Variable upper bounds 
   *
   * @param model problem object 
@@ -642,6 +661,16 @@ Cbc_getColLower(Cbc_Model *model);
   **/
 CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getColUpper(Cbc_Model *model);
+
+/** @brief Queries the upper bound of one variable
+  *
+  * @param model problem object 
+  * @param colIdx column index
+  * @return upper bound of the variable
+  **/
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
+Cbc_getColUB(Cbc_Model *model, int colIdx);
+
 
 /** @brief Determine whether the i-th variable is restricted to be integral
   * 

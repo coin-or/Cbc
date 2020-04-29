@@ -197,7 +197,7 @@ after_build:
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\%APPVEYOR_PROJECT_NAME%\LICENSE
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\%APPVEYOR_PROJECT_NAME%\AUTHORS
   - curl -T %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip -utkralphs:%BINTRAY_API% -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/%APPVEYOR_PROJECT_NAME%/%VERSION%/%APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip 
-  - curl -utkralphs:%BINTRAY_API% -X PUT -H "Content-Type: application/json" -d'{"list_in_downloads": true}' https://api.bintray.com/file_metadata/coin-or/download/%APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip
+  - "curl -utkralphs:%BINTRAY_API% -X PUT -H \"Content-Type: application/json\" -d'{\"list_in_downloads\":true}' https://api.bintray.com/file_metadata/coin-or/download/%APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip"
 
 #on_finish:
 #  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

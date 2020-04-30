@@ -3,6 +3,7 @@
 .ci/.travis.pre -text
 .ci/appveyor.post -text
 .ci/appveyor.pre -text
+.ci/bintray.sh -text
 /.clang-format -text
 .coin-or/Dependencies -text
 .coin-or/projDesc.xml -text

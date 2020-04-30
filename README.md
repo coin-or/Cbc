@@ -576,3 +576,4 @@ https://github.com/coin-or/Cbc/issues
    * New options for cut generation.
 
    * Improved reporting of results.
+

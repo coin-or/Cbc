@@ -2057,8 +2057,13 @@ Cbc_getColNz(Cbc_Model *model, int col)
 {
   VALIDATE_COL_INDEX( col, model );
 
-  const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
-  return cpmCol->getVectorLengths()[col];
+  if (col < model->solver_->getNumCols()) {
+    const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
+    return cpmCol->getVectorLengths()[col];
+  } else {
+    int ncidx = model->nCols - model->solver_->getNumCols();
+    return model->cStart[ncidx+1] - model->cStart[ncidx];
+  }
 }
 
 /** Indices of rows that a column appears */

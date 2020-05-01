@@ -586,6 +586,27 @@ Cbc_getColCoeffs(Cbc_Model *model, int col);
 CBCSOLVERLIB_EXPORT double CBC_LINKAGE
 Cbc_getRowRHS(Cbc_Model *model, int row);
 
+/** @brief Upper bound of ranged constraint
+  *
+  * @param model problem object 
+  * @param row row index
+  * @return row upper bound
+  **/
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
+Cbc_getRowUB(Cbc_Model *model, int row);
+
+/** @brief Lower bound of ranged constraint
+  *
+  * @param model problem object 
+  * @param row row index
+  * @return row lower bound
+  **/
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
+Cbc_getRowLB(Cbc_Model *model, int row);
+
+
+
+
 /** @brief Sense of a row 
   * 
   * @param model problem object 
@@ -1003,6 +1024,22 @@ Cbc_solveLinearProgram(Cbc_Model *model);
   **/
 CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getColSolution(Cbc_Model *model);
+
+
+/** @brief Checks feasibility of one solution
+  *
+  * @param model problem object
+  * @param x solution vector
+  * @param maxViolRow pointer to double where max violation in rows will be stored
+  * @param rowIdx pointer to integer where index of most violated row will be stored
+  * @param maxViolCol pointer to double where max violation in columns will be stored
+  * @param colIdx pointer to integer where index of most violated column will be stored
+  * @return 1 if feasible, 0 otherwise
+  **/
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
+Cbc_checkFeasibility(Cbc_Model *model, const double x[],
+    double *maxViolRow, int *rowIdx, 
+    double *maxViolCol, int *colIdx);
 
 /** @brief Best known bound on the optimal objective value 
   *

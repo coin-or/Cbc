@@ -217,6 +217,11 @@ struct Cbc_Model {
 
   enum OptimizationTask lastOptimization;
 
+  /* if number of columns didn't changed since previous 
+   * MIP optimization, try to reuse */
+  int lastOptNCols;
+  double *lastOptMIPSol;
+
 
   /**
    * Incumbent callback callback data
@@ -1043,6 +1048,8 @@ Cbc_newModel()
   model->cutCBAtSol = 0;
   
   model->lastOptimization = ModelNotOptimized;
+  model->lastOptNCols = 0;
+  model->lastOptMIPSol = NULL;
 
   model->icAppData = NULL;
   model->pgrAppData = NULL;
@@ -1078,6 +1085,9 @@ Cbc_deleteModel(Cbc_Model *model)
     free(model->sosElWeight);
     free(model->sosType);
   }
+
+  if (model->lastOptMIPSol)
+    delete[] model->lastOptMIPSol;
 
 #ifdef CBC_THREAD
   pthread_mutex_destroy(&(model->cbcMutexCG));
@@ -1366,9 +1376,15 @@ Cbc_secondaryStatus(Cbc_Model *model) {
 int CBC_LINKAGE
 Cbc_getNumElements(Cbc_Model *model)
 {
+  int tmpNZCols = 0, tmpNZRows = 0;
+  if (model->cStart)
+    tmpNZCols = model->cStart[model->nCols];
+
+  if (model->rStart)
+    tmpNZRows = model->rStart[model->nRows];
+
   return model->solver_->getNumElements() +
-    model->cStart[model->nCols] +
-    model->rStart[model->nRows];
+    tmpNZCols + tmpNZRows;
 }
 
 int CBC_LINKAGE
@@ -1798,6 +1814,7 @@ Cbc_solve(Cbc_Model *model)
 
   OsiClpSolverInterface *linearProgram = dynamic_cast<OsiClpSolverInterface *>( model->solver_->clone() );
   model->lastOptimization = IntegerOptimization;
+  model->lastOptNCols = Cbc_getNumCols(model);
   CbcModel *cbcModel = model->cbcModel_ = new CbcModel( *linearProgram );
 
   try {
@@ -1880,6 +1897,19 @@ Cbc_solve(Cbc_Model *model)
     if ( model->dbl_param[DBL_PARAM_CUTOFF] != COIN_DBL_MAX )
       cbcModel->setCutoff( model->dbl_param[DBL_PARAM_CUTOFF] );
 
+    // trying to reuse integer solution found in previous optimization
+    if (model->lastOptNCols == model->solver_->getNumCols() && model->lastOptMIPSol) {
+      const double *x = model->lastOptMIPSol;
+      double maxViolRow, maxViolCol;
+      int idxRow, idxCol;
+      if (Cbc_checkFeasibility(model, x, &maxViolRow, &idxRow, &maxViolCol, &idxCol)) {
+        double obj = 0;
+        for ( int j=0 ; j<Cbc_getNumCols(model) ; ++j )
+          obj += Cbc_getColObj(model, j)*x[j];
+        cbcModel->setBestSolution(x, Cbc_getNumCols(model), obj);
+      }
+    } // try to reuse solution found in last optimization
+
     std::vector< string > argv;
     argv.push_back("Cbc_C_Interface");
 
@@ -1932,8 +1962,20 @@ Cbc_solve(Cbc_Model *model)
 
     CbcMain1( nargs, args, *model->cbcModel_, cbc_callb, cbcData );
 
-    if (model->int_param[INT_PARAM_ROUND_INT_VARS]) {
-      model->cbcModel_->roundIntVars();
+    if (Cbc_numberSavedSolutions(model)) {
+      if (model->int_param[INT_PARAM_ROUND_INT_VARS]) {
+        model->cbcModel_->roundIntVars();
+      }
+
+      if (model->lastOptMIPSol && (model->lastOptNCols < Cbc_getNumCols(model))) {
+        delete[] model->lastOptMIPSol;
+        model->lastOptMIPSol = NULL;
+      }
+      if (!model->lastOptMIPSol)
+        model->lastOptMIPSol = new double[Cbc_getNumCols(model)];
+
+      memcpy(model->lastOptMIPSol, cbcModel->bestSolution(), sizeof(double)*Cbc_getNumCols(model) );
+      model->lastOptNCols = Cbc_getNumCols(model);
     }
 
     free(charCbcOpts);
@@ -2324,6 +2366,112 @@ Cbc_getColSolution(Cbc_Model *model)
   return NULL;
 }
 
+/** @brief Upper bound of ranged constraint
+  *
+  * @param model problem object 
+  * @param row row index
+  * @return row upper bound
+  **/
+double 
+Cbc_getRowUB(Cbc_Model *model, int row) {
+  if (row<model->solver_->getNumRows()) {
+    return model->solver_->getRowUpper()[row];
+  } else {
+    int nridx = row - model->solver_->getNumRows();
+    return model->rUB[nridx];
+  }
+}
+
+/** @brief Lower bound of ranged constraint
+  *
+  * @param model problem object 
+  * @param row row index
+  * @return row lower bound
+  **/
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
+Cbc_getRowLB(Cbc_Model *model, int row) {
+  if (row<model->solver_->getNumRows()) {
+    return model->solver_->getRowLower()[row];
+  } else {
+    int nridx = row - model->solver_->getNumRows();
+    return model->rLB[nridx];
+  }
+}
+
+char Cbc_checkFeasibility(Cbc_Model *model, const double x[],
+    double *maxViolRow, int *rowIdx, 
+    double *maxViolCol, int *colIdx) {
+  *maxViolRow = *maxViolCol = -1.0;
+  *rowIdx = *colIdx = -1;
+  const double primalTol = model->dbl_param[DBL_PARAM_PRIMAL_TOL];
+  const double intTol = model->dbl_param[DBL_PARAM_INT_TOL];
+
+  char feasible = 1;
+  int nRows = Cbc_getNumRows(model);
+  for ( int i=0 ; (i<nRows) ; ++i ) {
+    int nzRow = Cbc_getRowNz(model, i);
+    const int *cidx = Cbc_getRowIndices(model, i);
+    const double *coef = Cbc_getRowCoeffs(model, i);
+
+    double lhs = 0.0;
+    for ( int j=0 ; (j<nzRow) ; ++j ) {
+      int ic = cidx[j];
+      lhs += x[ic] * coef[j];
+    }
+
+    double rowUB = Cbc_getRowUB(model, i);
+    double rowLB = Cbc_getRowLB(model, i);
+
+    double viol = 0.0;
+    
+    if (lhs>rowUB) {
+      viol = lhs-rowUB;
+    } else {
+      if (lhs<rowLB) {
+        viol = rowLB-lhs;
+      }
+    }
+
+    if (viol>(*maxViolRow)) {
+      if (viol>primalTol)
+        feasible = 0;
+      *maxViolRow = viol;
+      *rowIdx = i;
+    }
+  } // all rows
+  
+  int nCols = Cbc_getNumCols(model);
+  for ( int j=0 ; (j<nCols) ; ++j ) {
+    const double clb = Cbc_getColLB(model, j);    
+    const double cub = Cbc_getColUB(model, j);
+  
+    double viol = 0.0;
+    if (x[j]>cub) {
+      viol = x[j] - cub;
+    } else {
+      if (x[j]<clb) {
+        viol = clb-x[j];
+      }
+    }
+    if (viol>primalTol)
+      feasible = 0;
+
+    if (Cbc_isInteger(model, j)) {
+      double vint = floor(x[j] + 0.5);
+      double intviol = fabs(x[j]-vint);
+      if (intviol > intTol)
+        feasible = 0;
+      viol = std::max(viol, intTol);
+    }
+
+    if ( viol > *maxViolCol ) {
+      *maxViolCol = viol;
+      *colIdx = j;
+    }
+  } // all columns
+
+  return feasible;
+}
 
 int CBC_LINKAGE
 Cbc_isContinuousUnbounded(Cbc_Model *model) {
@@ -2733,6 +2881,11 @@ Cbc_clone(Cbc_Model *model)
 
 
   result->lastOptimization = model->lastOptimization;
+  result->lastOptNCols = model->lastOptNCols;
+  if (model->lastOptMIPSol) {
+    result->lastOptMIPSol = new double[model->lastOptNCols];
+    memcpy(result->lastOptMIPSol, model->lastOptMIPSol, sizeof(double)*model->lastOptNCols );
+  }
 
   result->icAppData = model->icAppData;
   result->pgrAppData = model->pgrAppData;

@@ -238,6 +238,7 @@ struct Cbc_Model {
   pthread_mutex_t cbcMutexEvent;
 #endif
 
+  double obj_value;
 
   int nSos;
   int sosCap;
@@ -1035,6 +1036,7 @@ Cbc_newModel()
   
   model->solver_ = new OsiClpSolverInterface();
   model->relax_ = 0;
+  model->obj_value = COIN_DBL_MAX;
 
   model->cbcModel_ = NULL;
 
@@ -1776,10 +1778,14 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   model->lastOptimization = ContinuousOptimization;
   solver->initialSolve();
 
-  if (solver->isProvenOptimal())
+  if (solver->isProvenOptimal()) {
+    model->obj_value = solver->getObjValue();
     return 0;
-  if (solver->isIterationLimitReached())
+  }
+  if (solver->isIterationLimitReached()) {
+    model->obj_value = solver->getObjValue();
     return 1;
+  }
   if (solver->isProvenDualInfeasible())
     return 3;
   if (solver->isProvenPrimalInfeasible())
@@ -1793,6 +1799,8 @@ Cbc_solve(Cbc_Model *model)
 {
   CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
 
+  model->obj_value = COIN_DBL_MAX;
+
   int res = Cbc_solveLinearProgram(model);
   if (res == 1)
     return 1;
@@ -1804,6 +1812,9 @@ Cbc_solve(Cbc_Model *model)
   if (solver->isProvenPrimalInfeasible() || solver->isProvenDualInfeasible() ||
       solver->isAbandoned() || solver->isIterationLimitReached() || model->relax_ == 1
       || solver->getNumIntegers() == 0) {
+    if (solver->isProvenOptimal() || solver->isIterationLimitReached()) {
+      model->obj_value = solver->getObjValue();
+    }
     return 0;
   }
 
@@ -1976,6 +1987,15 @@ Cbc_solve(Cbc_Model *model)
 
       memcpy(model->lastOptMIPSol, cbcModel->bestSolution(), sizeof(double)*Cbc_getNumCols(model) );
       model->lastOptNCols = Cbc_getNumCols(model);
+
+      model->obj_value = cbcModel->getObjValue();
+
+      if (cbcModel->getObjSense()==-1) {
+        model->obj_value = 0.0;
+
+        for (int j=0 ; j<solver->getNumCols() ; ++j )
+          model->obj_value += cbcModel->bestSolution()[j] * solver->getObjCoefficients()[j];
+      } // circunvent CBC bug
     }
 
     free(charCbcOpts);
@@ -2239,18 +2259,7 @@ Cbc_isProvenInfeasible(Cbc_Model *model)
 double CBC_LINKAGE
 Cbc_getObjValue(Cbc_Model *model)
 {
-  switch (model->lastOptimization) {
-    case ModelNotOptimized:
-      fprintf( stderr, "Information not available, model was not optimized yet.\n");
-      abort();
-      break;
-    case ContinuousOptimization:
-      return model->solver_->getObjValue();
-    case IntegerOptimization:
-      return model->cbcModel_->getObjValue();
-  }
-
-  return COIN_DBL_MAX;
+  return model->obj_value;
 }
 
 const double *CBC_LINKAGE
@@ -2878,6 +2887,8 @@ Cbc_clone(Cbc_Model *model)
   result->cutCBData = model->cutCBData;
   result->cutCBhowOften = model->cutCBhowOften;
   result->cutCBAtSol = model->cutCBAtSol;
+
+  result->obj_value = model->obj_value;
 
 
   result->lastOptimization = model->lastOptimization;

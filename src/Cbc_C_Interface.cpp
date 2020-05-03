@@ -2069,14 +2069,10 @@ int CBC_LINKAGE
 Cbc_getRowNz(Cbc_Model *model, int row)
 {
   VALIDATE_ROW_INDEX( row, model);
+  Cbc_flush(model);
 
-  if (row<model->solver_->getNumRows()) {
-    const CoinPackedMatrix *cpmRow = model->solver_->getMatrixByRow();
-    return cpmRow->getVectorLengths()[row];
-  } else {
-    int idxRowBuffer = row - model->solver_->getNumRows();
-    return model->rStart[idxRowBuffer+1]-model->rStart[idxRowBuffer];
-  }
+  const CoinPackedMatrix *cpmRow = model->solver_->getMatrixByRow();
+  return cpmRow->getVectorLengths()[row];
 }
 
 /** Indices of variables that appear on this row */
@@ -2084,16 +2080,12 @@ const int *CBC_LINKAGE
 Cbc_getRowIndices(Cbc_Model *model, int row)
 {
   VALIDATE_ROW_INDEX( row, model);
+  Cbc_flush(model);
 
-  if (row<model->solver_->getNumRows()) {
-    const CoinPackedMatrix *cpmRow = model->solver_->getMatrixByRow();
-    const CoinBigIndex *starts = cpmRow->getVectorStarts();
-    const int *ridx = cpmRow->getIndices() + starts[row];
-    return ridx;
-  } else {
-    int idxRowBuffer = row - model->solver_->getNumRows();
-    return model->rIdx + model->rStart[idxRowBuffer];
-  }
+  const CoinPackedMatrix *cpmRow = model->solver_->getMatrixByRow();
+  const CoinBigIndex *starts = cpmRow->getVectorStarts();
+  const int *ridx = cpmRow->getIndices() + starts[row];
+  return ridx;
 }
 
 /** Coefficients of variables that appear on this row */
@@ -2101,16 +2093,12 @@ const double *CBC_LINKAGE
 Cbc_getRowCoeffs(Cbc_Model *model, int row)
 {
   VALIDATE_ROW_INDEX( row, model);
+  Cbc_flush(model);
 
-  if (row<model->solver_->getNumRows()) {
-    const CoinPackedMatrix *cpmRow = model->solver_->getMatrixByRow();
-    const CoinBigIndex *starts = cpmRow->getVectorStarts();
-    const double *rcoef = cpmRow->getElements() + starts[row];
-    return rcoef;
-  } else {
-    int idxRowBuffer = row - model->solver_->getNumRows();
-    return model->rCoef + model->rStart[idxRowBuffer];
-  }
+  const CoinPackedMatrix *cpmRow = model->solver_->getMatrixByRow();
+  const CoinBigIndex *starts = cpmRow->getVectorStarts();
+  const double *rcoef = cpmRow->getElements() + starts[row];
+  return rcoef;
 }
 
 /** Number of non-zero entries in a column */
@@ -2118,14 +2106,10 @@ int CBC_LINKAGE
 Cbc_getColNz(Cbc_Model *model, int col)
 {
   VALIDATE_COL_INDEX( col, model );
+  Cbc_flush(model);
 
-  if (col < model->solver_->getNumCols()) {
-    const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
-    return cpmCol->getVectorLengths()[col];
-  } else {
-    int ncidx = model->nCols - model->solver_->getNumCols();
-    return model->cStart[ncidx+1] - model->cStart[ncidx];
-  }
+  const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
+  return cpmCol->getVectorLengths()[col];
 }
 
 /** Indices of rows that a column appears */
@@ -2133,16 +2117,12 @@ const int *CBC_LINKAGE
 Cbc_getColIndices(Cbc_Model *model, int col)
 {
   VALIDATE_COL_INDEX( col, model );
+  Cbc_flush(model);
 
-  if (col<model->solver_->getNumCols()) {
-    const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
-    const CoinBigIndex *starts = cpmCol->getVectorStarts();
-    const int *cidx = cpmCol->getIndices() + starts[col];
-    return cidx;
-  } else {
-    int idxColBuffer = col - model->solver_->getNumCols();
-    return model->cIdx + model->cStart[idxColBuffer];
-  }
+  const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
+  const CoinBigIndex *starts = cpmCol->getVectorStarts();
+  const int *cidx = cpmCol->getIndices() + starts[col];
+  return cidx;
 }
 
 /** Coefficients that a column appear in rows */
@@ -2150,16 +2130,12 @@ const double *CBC_LINKAGE
 Cbc_getColCoeffs(Cbc_Model *model, int col)
 {
   VALIDATE_COL_INDEX( col, model );
+  Cbc_flush(model);
 
-  if (col<model->solver_->getNumCols()) {
-    const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
-    const CoinBigIndex *starts = cpmCol->getVectorStarts();
-    const double *ccoef = cpmCol->getElements() + starts[col];
-    return ccoef;
-  } else {
-    int idxColBuffer = col - model->solver_->getNumCols();
-    return model->cCoef + model->cStart[idxColBuffer];
-  }
+  const CoinPackedMatrix *cpmCol = model->solver_->getMatrixByCol();
+  const CoinBigIndex *starts = cpmCol->getVectorStarts();
+  const double *ccoef = cpmCol->getElements() + starts[col];
+  return ccoef;
 }
 
 /** Right hand side of a row */

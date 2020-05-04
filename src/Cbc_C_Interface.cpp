@@ -220,8 +220,10 @@ struct Cbc_Model {
   /* if number of columns didn't changed since previous 
    * MIP optimization, try to reuse */
   int lastOptNCols;
+  int lastOptNRows;
   double *lastOptMIPSol;
 
+  double *slack_;
 
   /**
    * Incumbent callback callback data
@@ -1051,7 +1053,9 @@ Cbc_newModel()
   
   model->lastOptimization = ModelNotOptimized;
   model->lastOptNCols = 0;
+  model->lastOptNRows = 0;
   model->lastOptMIPSol = NULL;
+  model->slack_ = NULL;
 
   model->icAppData = NULL;
   model->pgrAppData = NULL;
@@ -1086,6 +1090,10 @@ Cbc_deleteModel(Cbc_Model *model)
     free(model->sosEl);
     free(model->sosElWeight);
     free(model->sosType);
+  }
+
+  if (model->slack_) {
+    free(model->slack_);
   }
 
   if (model->lastOptMIPSol)
@@ -1794,12 +1802,45 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   return -1;
 }
 
+static void Cbc_updateSlack( Cbc_Model *model) {
+  if (model->slack_) {
+    free(model->slack_);
+  }
+
+  int nRows = model->solver_->getNumRows(); 
+  model->slack_ = (double *) xmalloc( sizeof(double)*nRows );
+  const char *sense = model->solver_->getRowSense();
+  const double *rrhs = model->solver_->getRightHandSide();
+  const double *ractivity = model->lastOptimization == IntegerOptimization ? model->cbcModel_->getRowActivity() : model->solver_->getRowActivity();
+  for ( int i=0 ; (i<nRows) ; ++i ) {
+    const double rhs = rrhs[i];
+    const double activity = ractivity[i];
+    switch (sense[i]) {
+      case 'L':
+        model->slack_[i] = rhs-activity;
+        break;
+      case 'G':
+        model->slack_[i] = activity-rhs;
+        break;
+      case 'E':
+        model->slack_[i] = fabs(activity-rhs);
+        break;
+      case 'R':
+        model->slack_[i] = min( model->solver_->getRowUpper()[i] - activity, 
+                                activity - model->solver_->getRowLower()[i] );
+        break;
+    }
+  }
+}
+
 int CBC_LINKAGE
 Cbc_solve(Cbc_Model *model)
 {
   CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
 
   model->obj_value = COIN_DBL_MAX;
+  model->lastOptNCols = Cbc_getNumCols(model);
+  model->lastOptNRows = Cbc_getNumRows(model);
 
   int res = Cbc_solveLinearProgram(model);
   if (res == 1)
@@ -1814,7 +1855,9 @@ Cbc_solve(Cbc_Model *model)
       || solver->getNumIntegers() == 0) {
     if (solver->isProvenOptimal() || solver->isIterationLimitReached()) {
       model->obj_value = solver->getObjValue();
+      Cbc_updateSlack(model);
     }
+
     return 0;
   }
 
@@ -1825,7 +1868,6 @@ Cbc_solve(Cbc_Model *model)
 
   OsiClpSolverInterface *linearProgram = dynamic_cast<OsiClpSolverInterface *>( model->solver_->clone() );
   model->lastOptimization = IntegerOptimization;
-  model->lastOptNCols = Cbc_getNumCols(model);
   CbcModel *cbcModel = model->cbcModel_ = new CbcModel( *linearProgram );
 
   try {
@@ -1977,6 +2019,8 @@ Cbc_solve(Cbc_Model *model)
       if (model->int_param[INT_PARAM_ROUND_INT_VARS]) {
         model->cbcModel_->roundIntVars();
       }
+
+      Cbc_updateSlack(model);
 
       if (model->lastOptMIPSol && (model->lastOptNCols < Cbc_getNumCols(model))) {
         delete[] model->lastOptMIPSol;
@@ -2696,6 +2740,17 @@ Cbc_getRowActivity(Cbc_Model *model) {
 
 }
 
+
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
+Cbc_getRowSlack(Cbc_Model *model) {
+  if (model->lastOptimization==ModelNotOptimized) {
+      fprintf( stderr, "Information not available, model was not optimized yet.\n");
+      abort();
+  }
+
+  return model->slack_;
+}
+
 const double *CBC_LINKAGE
 Cbc_getColLower(Cbc_Model *model)
 {
@@ -2846,6 +2901,7 @@ Cbc_clone(Cbc_Model *model)
   Cbc_flush(model);
   Cbc_Model *result = new Cbc_Model();
 
+  result->slack_ = NULL;
   result->solver_ = dynamic_cast<OsiClpSolverInterface *>(model->solver_->clone());
 
   if (model->cbcModel_)
@@ -2872,6 +2928,11 @@ Cbc_clone(Cbc_Model *model)
   if (model->lastOptMIPSol) {
     result->lastOptMIPSol = new double[model->lastOptNCols];
     memcpy(result->lastOptMIPSol, model->lastOptMIPSol, sizeof(double)*model->lastOptNCols );
+  }
+
+  if (model->slack_) {
+    result->slack_ = (double *) xmalloc( sizeof(double)*model->lastOptNRows );
+    memcpy(result->slack_, model->slack_, sizeof(double)*model->lastOptNRows);
   }
 
   result->icAppData = model->icAppData;

@@ -1216,6 +1216,18 @@ Cbc_isInitialSolveProvenPrimalInfeasible(Cbc_Model *model);
 CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getRowActivity(Cbc_Model *model);
 
+ /** Row slack
+  *
+  *  Returns the vector of row slacks
+  *  
+  *  @param model problem object
+  *  @return vector with row slacks
+  * */
+CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
+Cbc_getRowSlack(Cbc_Model *model);
+
+
+
 /** Number of nodes explored in B&B tree */
 CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_getNodeCount(Cbc_Model *model);

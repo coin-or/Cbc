@@ -19,7 +19,7 @@
 */
 
 #include "ClpConfig.h"
-#include "CbcConfig.h"
+#include "CbcSolverConfig.h"
 #ifdef CBC_HAS_ASL
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
@@ -792,15 +792,15 @@ int ClpSimplex_loadNonLinear(ClpSimplex& cs, void *amplInfo, int &numberConstrai
     // nonlinear
     if (!nlc) {
       type = 3;
-      delete cs->objective_;
-      cs->objective_ = new ClpAmplObjective(amplInfo);
+      delete cs.objective_;
+      cs.objective_ = new ClpAmplObjective(amplInfo);
     } else {
       type = 4;
       numberConstraints = nlc;
       constraints = new ClpConstraint *[numberConstraints];
       if (nlo) {
-        delete cs->objective_;
-        cs->objective_ = new ClpAmplObjective(amplInfo);
+        delete cs.objective_;
+        cs.objective_ = new ClpAmplObjective(amplInfo);
       }
       for (int i = 0; i < numberConstraints; i++) {
         constraints[i] = new ClpConstraintAmpl(i, amplInfo);

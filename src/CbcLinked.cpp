@@ -3,7 +3,7 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-#include "CbcConfig.h"
+#include "CbcSolverConfig.h"
 
 #include "CoinTime.hpp"
 

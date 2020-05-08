@@ -48,6 +48,7 @@
 #include "ClpPEDualRowDantzig.hpp"
 #include "CbcMipStartIO.hpp"
 #include "ClpMessage.hpp"
+#include "CoinStaticConflictGraph.hpp"
 #include <OsiAuxInfo.hpp>
 #include "CoinFileIO.hpp"
 
@@ -256,6 +257,12 @@ struct Cbc_Model {
   char **colNamesMS;
   double *colValuesMS;
   int charSpaceMS;
+
+  /* space to query conflict graph */
+  size_t cg_space;
+  size_t *cg_neighs;
+  bool *cg_iv;
+
 
   // parameters
   enum LPMethod lp_method;
@@ -1090,6 +1097,11 @@ Cbc_deleteModel(Cbc_Model *model)
     free(model->sosEl);
     free(model->sosElWeight);
     free(model->sosType);
+  }
+
+  if (model->cg_space) {
+    free( model->cg_iv );
+    free( model->cg_neighs );
   }
 
   if (model->slack_) {
@@ -3453,6 +3465,75 @@ Osi_getNumCols( void *osi )
   return osiSolver->getNumCols();
 }
 
+
+/** @brief Creates (it not yet) the conflict graph  */
+void 
+Osi_checkCGraph( void *osi ) {
+  OsiSolverInterface *solver = (OsiSolverInterface *)(osi);
+  solver->checkCGraph();
+}
+
+/** @brief Returns the conflict graph */
+CBCSOLVERLIB_EXPORT const void * CBC_LINKAGE
+Osi_CGraph( void *osi ) {
+  OsiSolverInterface *solver = (OsiSolverInterface *)(osi);
+  return solver->getCGraph();
+}
+
+size_t CG_nodes( void *cgraph ) {
+  const CoinStaticConflictGraph *cg = (CoinStaticConflictGraph *)cgraph;
+  return cg->size();
+}
+
+char CG_conflicting( void *cgraph, size_t n1, size_t n2 ) {
+  const CoinStaticConflictGraph *cg = (CoinStaticConflictGraph *)cgraph;
+  return (char) cg->conflicting(n1, n2);
+}
+
+/** @brief Density of the conflict graph */
+double CG_density( void *cgraph ) {
+  const CoinStaticConflictGraph *cg = (CoinStaticConflictGraph *)cgraph;
+  return cg->density();
+}
+
+
+CGNeighbors CG_conflictingNodes(Cbc_Model *model, void *cgraph, size_t node) {
+  CGNeighbors result;
+
+#ifdef CBC_THREAD
+    pthread_mutex_lock(&model->cbcMutexCG);
+#endif
+
+  if (model->cg_space < Cbc_getNumCols(model)*2) {
+    if (model->cg_space) {
+      free( model->cg_neighs);
+      free(model->cg_iv);
+    }
+
+    model->cg_space = Cbc_getNumCols(model)*2;
+
+    model->cg_neighs  = (size_t *) xmalloc( sizeof(size_t)*model->cg_space );
+    model->cg_iv  = (bool *) xmalloc( sizeof(bool)*model->cg_space );
+    memset(model->cg_iv, 0, sizeof(bool)*model->cg_space);
+  }
+
+  const CoinStaticConflictGraph *cg = (CoinStaticConflictGraph *)cgraph;
+
+  std::pair< size_t, const size_t* > r = cg->conflictingNodes( node, model->cg_neighs, model->cg_iv);
+#ifdef CBC_THREAD
+    pthread_mutex_unlock(&model->cbcMutexCG);
+#endif
+
+  result.n = r.first;
+  result.neigh = r.second;
+
+  return result;
+}
+
+
+
+
+
 /** @brief Returns column name in OsiSolverInterface object */
 void CBC_LINKAGE
 Osi_getColName( void *osi, int i, char *name, int maxLen )
@@ -4184,6 +4265,9 @@ static void Cbc_addMS( Cbc_Model *model ) {
 void Cbc_iniParams( Cbc_Model *model ) {
   model->lp_method = LPM_Auto;
   model->dualp = DP_Auto;
+  model->cg_space = 0;
+  model->cg_iv = NULL;
+  model->cg_neighs = NULL;
   memset(model->int_param, 0, sizeof(model->int_param) );
   for ( int i=0 ; (i<N_DBL_PARAMS) ; ++i )
     model->dbl_param[i] = 0.0;

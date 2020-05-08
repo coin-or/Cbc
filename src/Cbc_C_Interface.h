@@ -1469,7 +1469,52 @@ Osi_getIntegerTolerance(void *osi);
 CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Osi_deleteSolver( void *osi );
 
+/** @brief Creates (it not yet) the conflict graph  */
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
+Osi_checkCGraph( void *osi );
+
+/** @brief Returns the conflict graph */
+CBCSOLVERLIB_EXPORT const void * CBC_LINKAGE
+Osi_CGraph( void *osi );
+
 /*@}*/
+
+/** \name Conflict Graph related routines */
+
+/** @brief Number of nodes in the conflict graph */
+CBCSOLVERLIB_EXPORT size_t CBC_LINKAGE
+CG_nodes( void *cgraph );
+
+/** @brief If two nodes are conflicting */
+CBCSOLVERLIB_EXPORT char CBC_LINKAGE
+CG_conflicting( void *cgraph, int n1, int n2 );
+
+/** @brief Density of the conflict graph */
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
+CG_density( void *cgraph );
+
+
+/** structure to store neighbors of a given node in 
+ * the conflict graph */
+typedef struct {
+  size_t n;
+  const size_t *neigh;
+} CGNeighbors;
+
+/** @brief Returns all nodes conflicting with a node ]
+ *
+ * Caution: if you want to keep the pointer to the
+ * conflicting node list stored, be sure to copy it,
+ * after each call the previous pointer contents 
+ * may be updated.
+ *
+ * */
+CBCSOLVERLIB_EXPORT CGNeighbors CBC_LINKAGE
+CG_conflictingNodes(Cbc_Model *model, void *cgraph, size_t node);
+
+
+/*@}*/
+
 
 /** \name Cgl related routines */
 

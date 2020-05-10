@@ -702,6 +702,22 @@ Cbc_getColUB(Cbc_Model *model, int colIdx);
 CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isInteger(Cbc_Model *model, int i);
 
+/** @brief Returns the conflict graph of the model
+ *
+ * Returns the conflict graph of the model, if it returns NULL or 
+ * if problem modifications were made, you may want to call Cbc_updateConflictGraph
+ *
+ * @param model problem object
+ * @return a CoinConflictGraph object
+ **/
+CBCSOLVERLIB_EXPORT const void *CBC_LINKAGE Cbc_conflictGraph( Cbc_Model *model );
+
+/** @brief Updates (or creates, if first time) the conflict graph
+ *
+ * @param model problem object
+ **/
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE Cbc_updateConflictGraph( Cbc_Model *model );
+
 /** \name Routines to load and save problems from disk
 */
 

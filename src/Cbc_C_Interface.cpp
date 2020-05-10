@@ -1409,6 +1409,18 @@ Cbc_getNumElements(Cbc_Model *model)
     tmpNZCols + tmpNZRows;
 }
 
+const void *Cbc_conflictGraph( Cbc_Model *model ) {
+  return model->solver_->getCGraph();
+}
+
+/** @brief Updates (or creates, if first time) the conflict graph
+ *
+ * @param model problem object
+ **/
+void Cbc_updateConflictGraph( Cbc_Model *model ) {
+  model->solver_->checkCGraph();
+}
+
 int CBC_LINKAGE
 Cbc_getNumIntegers(Cbc_Model *model)
 {

@@ -2612,10 +2612,11 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
   double v = randomNumberGenerator_.randomDouble() * 20.0;
   int nn = 10 + static_cast< int >(v);
   int nnv = 0;
-  int *list = new int[nn];
-  double *val = new double[nn];
-  for (i = 0; i < nn; i++)
+  int *list = new int[nn+1];
+  double *val = new double[nn+1];
+  for (i = 0; i <= nn; i++)
     val[i] = .001;
+  memset(list,0,(nn+1)*sizeof(int));
 
   const double *rowLower = solver->getRowLower();
   const double *rowUpper = solver->getRowUpper();

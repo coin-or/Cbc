@@ -370,6 +370,10 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   bool *fixedAtLowerBound = new bool[numberIntegers];
   PseudoReducedCost *candidate = new PseudoReducedCost[numberIntegers];
   double *random = new double[numberIntegers];
+  for (int i=0;i<numberIntegers;i++) {
+    candidate[i].var = 0x7fffffff;
+    candidate[i].pseudoRedCost = COIN_DBL_MAX;
+  }
 
   int maxNumberAtBoundToFix = static_cast< int >(floor(percentageToFix_ * numberIntegers));
   assert(!maxNumberAtBoundToFix || !nodes);

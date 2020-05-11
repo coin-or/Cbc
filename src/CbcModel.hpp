@@ -2047,12 +2047,12 @@ public:
     return specialOptions_;
   }
   /// Set random seed
-  inline void setRandomSeed(int value)
+  inline void setRandomSeed(unsigned int value)
   {
     randomSeed_ = value;
   }
   /// Get random seed
-  inline int getRandomSeed() const
+  inline unsigned int getRandomSeed() const
   {
     return randomSeed_;
   }
@@ -2131,6 +2131,8 @@ public:
 	13/14 bit 8192 - go to bitter end in strong branching (first time)
 	15 bit 32768 - take care of very very small values for Integer/SOS variables
 	16 bit 65536 - lazy constraints
+        17 bit 131072 - fairly simple orbital 
+        18 bit 262144 - some statistics for fairly simple orbital 
     */
   inline void setMoreSpecialOptions2(int value)
   {
@@ -2628,8 +2630,20 @@ public:
   {
     return symmetryInfo_;
   }
+  /// Set symmetry information
+  inline void setSymmetryInfo(CbcSymmetry * info)
+  {
+    symmetryInfo_ = info;
+  }
   /// get rid of all
   void zapSymmetry();
+  /// Root symmetry information
+  inline CbcSymmetry *rootSymmetryInfo() const
+  {
+    return rootSymmetryInfo_;
+  }
+  /// get rid of all
+  void zapRootSymmetry();
 #endif
   /// Set depth for fast nodes
   inline void setFastNodeDepth(int value)
@@ -3127,8 +3141,12 @@ private:
 #else
   CbcEventHandler *eventHandler_;
 #endif
+#ifdef CBC_HAS_NAUTY
   /// Symmetry information
   CbcSymmetry *symmetryInfo_;
+  /// Root symmetry information
+  CbcSymmetry *rootSymmetryInfo_;
+#endif
   /// Total number of objects
   int numberObjects_;
 
@@ -3181,7 +3199,7 @@ private:
   /// Maximum number of rows
   int maximumRows_;
   /// Random seed
-  int randomSeed_;
+  unsigned int randomSeed_;
   /// Multiple root tries
   int multipleRootTries_;
   /// Current depth

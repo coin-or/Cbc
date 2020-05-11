@@ -1617,6 +1617,7 @@ static double lengthConflictCuts = 0.0;
 void CbcModel::branchAndBound(int doStatistics)
 
 {
+  //randomNumberGenerator_.setSeed(987654321);
   if (!parentModel_) {
     /*
 	Capture a time stamp before we start (unless set).
@@ -1903,6 +1904,7 @@ void CbcModel::branchAndBound(int doStatistics)
   ;
   // See if hot start wanted
   CbcCompareBase *saveCompare = NULL;
+  double hotstartObjectiveValue = COIN_DBL_MAX;
   // User supplied hotstart. Adapt for preprocessing.
   if (hotstartSolution_) {
     if (strategy_ && strategy_->preProcessState() > 0) {
@@ -1931,6 +1933,7 @@ void CbcModel::branchAndBound(int doStatistics)
     saveCompare = nodeCompare_;
     // depth first
     nodeCompare_ = new CbcCompareDepth();
+    hotstartObjectiveValue = getCutoff();
   }
   if (!problemFeasibility_)
     problemFeasibility_ = new CbcFeasibilityBase();
@@ -2390,10 +2393,15 @@ void CbcModel::branchAndBound(int doStatistics)
     if (!symmetryInfo_->numberUsefulOrbits() && (moreSpecialOptions2_ & (128 | 256)) != (128 | 256)) {
       delete symmetryInfo_;
       symmetryInfo_ = NULL;
-      moreSpecialOptions2_ &= ~(128 | 256);
+      moreSpecialOptions2_ &= ~(128 | 256 | 131072);
     }
     if ((moreSpecialOptions2_ & (128 | 256)) == (128 | 256)) {
-      //moreSpecialOptions2_ &= ~256;
+      if ((moreSpecialOptions2_&131072) != 0) {
+	// keep it simple
+	moreSpecialOptions2_ &= ~(128 | 256);
+	rootSymmetryInfo_ = symmetryInfo_;
+	symmetryInfo_ = NULL;
+      }
     }
   }
 #endif
@@ -2511,8 +2519,10 @@ void CbcModel::branchAndBound(int doStatistics)
   lastDepth_ = 0;
   delete[] lastNodeInfo_;
   lastNodeInfo_ = new CbcNodeInfo *[maximumDepth_];
+  memset(lastNodeInfo_,0,maximumDepth_*sizeof(CbcNodeInfo*));
   delete[] lastNumberCuts_;
   lastNumberCuts_ = new int[maximumDepth_];
+  memset(lastNumberCuts_,0,maximumDepth_*sizeof(int));
   maximumCuts_ = 100;
   lastNumberCuts2_ = 0;
   delete[] lastCut_;
@@ -3673,7 +3683,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifndef NDEBUG
       double integerTolerance = getIntegerTolerance();
 #endif
-      bool possible = true;
+      int possible = 3;
       const double *saveLower = continuousSolver_->getColLower();
       const double *saveUpper = continuousSolver_->getColUpper();
       for (int i = 0; i < numberObjects_; i++) {
@@ -3681,17 +3691,17 @@ void CbcModel::branchAndBound(int doStatistics)
         if (thisOne) {
           int iColumn = thisOne->columnNumber();
           if (saveUpper[iColumn] > saveLower[iColumn] + 1.5) {
-            possible = false;
+            possible &= 1;
             break;
           }
         } else {
-          possible = false;
+          possible = 0;
           break;
         }
       }
-      if (possible) {
+      int numberColumns = solver_->getNumCols();
+      if (possible==3) {
         OsiSolverInterface *solver = continuousSolver_->clone();
-        int numberColumns = solver->getNumCols();
         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
           double value = bestSolution_[iColumn];
           value = CoinMax(value, saveLower[iColumn]);
@@ -3774,6 +3784,16 @@ void CbcModel::branchAndBound(int doStatistics)
           }
         }
         delete solver;
+      } else if (possible) {
+	// general integers - not so good
+	int * prioritiesIn = new int [numberColumns];
+	memset(prioritiesIn,0,numberColumns*sizeof(int));
+	for (int i = 0; i < numberObjects_; i++) {
+	  OsiObject *object = object_[i];
+	  prioritiesIn[object->columnNumber()] = object->priority();
+	}
+      } else {
+	moreSpecialOptions_ &= ~1024;
       }
       if (possible) {
         setHotstartSolution(bestSolution_);
@@ -3783,6 +3803,7 @@ void CbcModel::branchAndBound(int doStatistics)
           // depth first
           nodeCompare_ = new CbcCompareDepth();
           tree_->setComparison(*nodeCompare_);
+	  hotstartObjectiveValue = getCutoff();
         }
       } else {
         delete[] hotstartPriorities_;
@@ -3963,6 +3984,7 @@ void CbcModel::branchAndBound(int doStatistics)
         // depth first
         nodeCompare_ = new CbcCompareDepth();
         tree_->setComparison(*nodeCompare_);
+	hotstartObjectiveValue = getCutoff();
       }
     }
 #endif
@@ -4748,7 +4770,20 @@ void CbcModel::branchAndBound(int doStatistics)
       // See if we want dantzig row choice
       goToDantzig(1000, savePivotMethod);
 #endif
-      lastEvery1000 = numberNodes_ + 1000;
+      if ((specialOptions_&2048)==0 || true) {
+	if (numberNodes_ < 100)
+	  lastEvery1000 = numberNodes_ + 10;
+	else if (numberNodes_ < 1000)
+	  lastEvery1000 = numberNodes_ + 100;
+	else if (numberNodes_ < 2000)
+	  lastEvery1000 = numberNodes_ + 200;
+	else if (numberNodes_ < 4000)
+	  lastEvery1000 = numberNodes_ + 500;
+	else
+	  lastEvery1000 = numberNodes_ + 1000;
+      } else {
+	lastEvery1000 = numberNodes_ + 1000;
+      }
       bool redoTree = nodeCompare_->every1000Nodes(this, numberNodes_);
 #ifdef CHECK_CUT_SIZE
       verifyCutSize(tree_, *this);
@@ -4759,7 +4794,11 @@ void CbcModel::branchAndBound(int doStatistics)
       unlockThread();
     }
     // Had hotstart before, now switched off
-    if (saveCompare && !hotstartSolution_) {
+    if (saveCompare && (!hotstartSolution_ || getCutoff()<hotstartObjectiveValue)) {
+      delete [] hotstartSolution_;
+      delete [] hotstartPriorities_;
+      hotstartSolution_ = NULL;
+      hotstartPriorities_ = NULL;
       // hotstart switched off
       delete nodeCompare_; // off depth first
       nodeCompare_ = saveCompare;
@@ -4833,6 +4872,8 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CBC_HAS_NAUTY
       if (symmetryInfo_)
         symmetryInfo_->statsOrbits(this, 1);
+      if (rootSymmetryInfo_)
+        rootSymmetryInfo_->statsOrbits(this, 1);
 #endif
 #if PRINT_CONFLICT == 1
       if (numberConflictCuts > lastNumberConflictCuts) {
@@ -5070,6 +5111,10 @@ void CbcModel::branchAndBound(int doStatistics)
   if (eventHandler) {
     eventHandler->event(CbcEventHandler::endSearch);
   }
+#ifdef CBC_HAS_NAUTY
+      if (rootSymmetryInfo_)
+        rootSymmetryInfo_->statsOrbits(this, 2);
+#endif
   if (!status_) {
     // Set best possible unless stopped on gap
     if (secondaryStatus_ != 2)
@@ -5121,6 +5166,8 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CBC_HAS_NAUTY
   if (symmetryInfo_)
     symmetryInfo_->statsOrbits(this, 1);
+  if (rootSymmetryInfo_)
+    rootSymmetryInfo_->statsOrbits(this, 1);
 #endif
   if (doStatistics == 100) {
     for (int i = 0; i < numberObjects_; i++) {
@@ -5678,6 +5725,7 @@ CbcModel::CbcModel()
   , eventHandler_(NULL)
 #ifdef CBC_HAS_NAUTY
   , symmetryInfo_(NULL)
+  , rootSymmetryInfo_(NULL)
 #endif
   , numberObjects_(0)
   , object_(NULL)
@@ -5854,6 +5902,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , eventHandler_(NULL)
 #ifdef CBC_HAS_NAUTY
   , symmetryInfo_(NULL)
+  , rootSymmetryInfo_(NULL)
 #endif
   , numberObjects_(0)
   , object_(NULL)
@@ -6388,7 +6437,9 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   if (maximumDepth_) {
     walkback_ = new CbcNodeInfo *[maximumDepth_];
     lastNodeInfo_ = new CbcNodeInfo *[maximumDepth_];
+    memset(lastNodeInfo_,0,maximumDepth_*sizeof(CbcNodeInfo*));
     lastNumberCuts_ = new int[maximumDepth_];
+    memset(lastNumberCuts_,0,maximumDepth_*sizeof(int));
   } else {
     walkback_ = NULL;
     lastNodeInfo_ = NULL;
@@ -6405,6 +6456,10 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
     symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
   else
     symmetryInfo_ = NULL;
+  if (rhs.rootSymmetryInfo_)
+    rootSymmetryInfo_ = new CbcSymmetry(*rhs.rootSymmetryInfo_);
+  else
+    rootSymmetryInfo_ = NULL;
 #endif
   synchronizeModel();
   if (cloneHandler && !defaultHandler_) {
@@ -6747,7 +6802,9 @@ CbcModel::operator=(const CbcModel &rhs)
     if (maximumDepth_) {
       walkback_ = new CbcNodeInfo *[maximumDepth_];
       lastNodeInfo_ = new CbcNodeInfo *[maximumDepth_];
+      memset(lastNodeInfo_,0,maximumDepth_*sizeof(CbcNodeInfo*));
       lastNumberCuts_ = new int[maximumDepth_];
+      memset(lastNumberCuts_,0,maximumDepth_*sizeof(int));
     } else {
       walkback_ = NULL;
       lastNodeInfo_ = NULL;
@@ -6764,6 +6821,10 @@ CbcModel::operator=(const CbcModel &rhs)
       symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
     else
       symmetryInfo_ = NULL;
+    if (rhs.rootSymmetryInfo_)
+      rootSymmetryInfo_ = new CbcSymmetry(*rhs.rootSymmetryInfo_);
+    else
+      rootSymmetryInfo_ = NULL;
 #endif
     synchronizeModel();
     cbcColLower_ = NULL;
@@ -6859,6 +6920,8 @@ void CbcModel::gutsOfDestructor2()
 #ifdef CBC_HAS_NAUTY
   delete symmetryInfo_;
   symmetryInfo_ = NULL;
+  delete rootSymmetryInfo_;
+  rootSymmetryInfo_ = NULL;
 #endif
 }
 // Clears out enough to reset CbcModel
@@ -7092,6 +7155,10 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
     symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
   else
     symmetryInfo_ = NULL;
+  if (rhs.rootSymmetryInfo_)
+    rootSymmetryInfo_ = new CbcSymmetry(*rhs.rootSymmetryInfo_);
+  else
+    rootSymmetryInfo_ = NULL;
 #endif
   synchronizeModel();
 }
@@ -15067,14 +15134,11 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
          add 10 if depth >= K
     K is currently hardcoded to 8, a few lines below.
 
-    CBCMODEL_DEBUG: Seems like stateOfSearch_ should be 2 if
-           numberHeuristicSolutions_ == numberSolutions_.
-
     */
   stateOfSearch_ = 1;
   if (numberSolutions_ > 0) {
     if (numberHeuristicSolutions_ == numberSolutions_)
-      stateOfSearch_ = 3;
+      stateOfSearch_ = 2;
     else
       stateOfSearch_ = 3;
   }
@@ -15084,6 +15148,12 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
   //stateOfSearch_=3;
   if (currentNode_ && currentNode_->depth() >= 8)
     stateOfSearch_ += 10;
+  int maxNodes = getMaximumNodes();
+  if (maxNodes>999999&&maxNodes<1000020) {
+    stateOfSearch_ = maxNodes-1000000;
+    if (!numberNodes_)
+      printf("stateOfSearch always %d\n",stateOfSearch_);
+  }
   //printf("STate %d, %d nodes - parent %c - sol %d %d\n",
   // stateOfSearch_,numberNodes_,parentModel_ ? 'Y' :'N',
   // numberSolutions_,numberHeuristicSolutions_);
@@ -15224,6 +15294,19 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
                 printf("infeasible after orbital fixing\n");
             }
           }
+        }
+      } else if (rootSymmetryInfo_) {
+	int n = rootSymmetryInfo_->orbitalFixing2(solver_);
+	if (n) {
+#if PRINT_MORE == 0
+	  if (logLevel() > 1)
+	    printf("%d orbital fixes\n", n);
+#endif
+	  solver_->resolve();
+	  if (!isProvenOptimal()) {
+	    if (logLevel() > 1)
+	      printf("infeasible after orbital fixing\n");
+	  }
         }
       }
 #endif
@@ -16419,6 +16502,8 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node, CbcNode *&newNode)
             if (numberNodes_ > 2 * numberObjects_ + 1000) {
               info->stateOfSearch_ = 4;
             }
+	    // try this
+	    info->stateOfSearch_ = stateOfSearch_;
             // Compute "small" change in branch
             int nBranches = intParam_[CbcNumberBranches];
             if (nBranches) {
@@ -17592,7 +17677,9 @@ void CbcModel::redoWalkBack()
   maximumDepth_ *= 2;
   CbcNodeInfo **temp = new CbcNodeInfo *[maximumDepth_];
   CbcNodeInfo **temp2 = new CbcNodeInfo *[maximumDepth_];
+  memset(temp2,0,maximumDepth_*sizeof(CbcNodeInfo*));
   int *temp3 = new int[maximumDepth_];
+  memset(temp3,0,maximumDepth_*sizeof(int));
   for (int i = 0; i < nNode; i++) {
     temp[i] = walkback_[i];
     temp2[i] = lastNodeInfo_[i];
@@ -18192,8 +18279,10 @@ bool CbcModel::integerPresolveThisModel(OsiSolverInterface *originalSolver,
         lastDepth_ = 0;
         delete[] lastNodeInfo_;
         lastNodeInfo_ = new CbcNodeInfo *[maximumDepth_];
+	memset(lastNodeInfo_,0,maximumDepth_*sizeof(CbcNodeInfo*));
         delete[] lastNumberCuts_;
         lastNumberCuts_ = new int[maximumDepth_];
+	memset(lastNumberCuts_,0,maximumDepth_*sizeof(int));
         maximumCuts_ = 100;
         delete[] lastCut_;
         lastCut_ = new const OsiRowCut *[maximumCuts_];

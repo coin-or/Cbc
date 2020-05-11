@@ -2704,6 +2704,7 @@ int CbcMain1(int argc, const char *argv[],
               mixedAction = action;
               twomirAction = action;
               zerohalfAction = action;
+	      oddWheelAction = action;
               parameters_[whichParam(CBC_PARAM_STR_GOMORYCUTS, parameters_)].setCurrentOption(action);
               parameters_[whichParam(CBC_PARAM_STR_PROBINGCUTS, parameters_)].setCurrentOption(action);
               parameters_[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, parameters_)].setCurrentOption(action);
@@ -2711,20 +2712,8 @@ int CbcMain1(int argc, const char *argv[],
               parameters_[whichParam(CBC_PARAM_STR_FLOWCUTS, parameters_)].setCurrentOption(action);
               parameters_[whichParam(CBC_PARAM_STR_MIXEDCUTS, parameters_)].setCurrentOption(action);
               parameters_[whichParam(CBC_PARAM_STR_TWOMIRCUTS, parameters_)].setCurrentOption(action);
-              if (!action) {
-                zerohalfAction = action;
-                parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, parameters_)].setCurrentOption(action);
-                redsplitAction = action;
-                parameters_[whichParam(CBC_PARAM_STR_REDSPLITCUTS, parameters_)].setCurrentOption(action);
-                redsplit2Action = action;
-                parameters_[whichParam(CBC_PARAM_STR_REDSPLIT2CUTS, parameters_)].setCurrentOption(action);
-                GMIAction = action;
-                parameters_[whichParam(CBC_PARAM_STR_GMICUTS, parameters_)].setCurrentOption(action);
-                landpAction = action;
-                parameters_[whichParam(CBC_PARAM_STR_LANDPCUTS, parameters_)].setCurrentOption(action);
-                residualCapacityAction = action;
-                parameters_[whichParam(CBC_PARAM_STR_RESIDCUTS, parameters_)].setCurrentOption(action);
-              }
+	      parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, parameters_)].setCurrentOption(action);
+              parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].setCurrentOption(action);
               break;
             case CBC_PARAM_STR_HEURISTICSTRATEGY:
               parameters_[whichParam(CBC_PARAM_STR_ROUNDING, parameters_)].setCurrentOption(action);
@@ -5084,7 +5073,25 @@ int CbcMain1(int argc, const char *argv[],
 #endif
               }
 
-              if (clqStrMethod >= 1) {
+	      if (clqStrMethod == -1) {
+		// switch off new clique, odd wheel
+		cliqueAction = 0;
+		oddWheelAction = 0;
+		clqStrMethod = 0;
+	      } else if (clqStrMethod == -2) {
+		// old style
+		CglClique clique;
+		clique.setStarCliqueReport(false);
+		clique.setRowCliqueReport(false);
+		clique.setMinViolation(0.05);
+		int translate[] = { -100, -1, -99, -98, 1, -1098 };
+		babModel_->addCutGenerator(&clique, translate[cliqueAction],
+					   "Clique");
+		cliqueAction = 0;
+		oddWheelAction = 0;
+		clqStrMethod = 0;
+	      }
+              if (clqStrMethod >= 1 && (cliqueAction || oddWheelAction)) {
                   CglCliqueStrengthening clqStr;
 		  // Printing should be at babModel level not solver
 		  int logLevel = babModel_->messageHandler()->logLevel();
@@ -7406,10 +7413,16 @@ int CbcMain1(int argc, const char *argv[],
                     int k = parameters_[jParam].currentOptionAsInteger();
                     if (k < 4) {
                       babModel_->setMoreSpecialOptions2(babModel_->moreSpecialOptions2() | (k * 128));
-                    } else {
+                    } else if (k == 4) {
 #define MAX_NAUTY_PASS 2000
                       nautyAdded = nautiedConstraints(*babModel_,
 						      MAX_NAUTY_PASS);
+		    } else {
+		      assert (k==5 || k ==6);
+		      if (k ==5)
+			babModel_->setMoreSpecialOptions2(babModel_->moreSpecialOptions2() | 128 | 256 | 131072);
+		      else
+			babModel_->setMoreSpecialOptions2(babModel_->moreSpecialOptions2() | 128 | 256 | 131072 | 262144);
                     }
                   }
                 }
@@ -7874,8 +7887,8 @@ int CbcMain1(int argc, const char *argv[],
                       << generalPrint
                       << CoinMessageEol;
                   }
-                  saveSolver->resolve();
-                  if (!saveSolver->isProvenOptimal()) {
+                  //saveSolver->resolve();
+                  if (true /*!saveSolver->isProvenOptimal()*/) {
                     // try all slack
                     CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(babModel_->solver()->getEmptyWarmStart());
                     saveSolver->setWarmStart(basis);

@@ -1028,6 +1028,12 @@ CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_solveLinearProgram(Cbc_Model *model);
 
 
+/** @brief This is a pre-processing that tries to 
+ * strengthen set packing constraints. Dominated constraints are 
+ * removed. */
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
+Cbc_strengthenPacking(Cbc_Model *model);
+
 /*@}*/
 
 /**@name Accessing the solution and optimization status */

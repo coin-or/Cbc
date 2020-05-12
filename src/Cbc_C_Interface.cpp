@@ -32,6 +32,7 @@
 #include "ClpSimplexOther.hpp"
 #include "CglCutGenerator.hpp"
 #include "CglStored.hpp"
+#include "CglCliqueStrengthening.hpp"
 #include "CglGomory.hpp"
 #include "CglZeroHalf.hpp"
 #include "CglClique.hpp"
@@ -1855,6 +1856,13 @@ static void Cbc_updateSlack( Cbc_Model *model) {
         break;
     }
   }
+}
+
+
+void Cbc_strengthenPacking(Cbc_Model *model) {
+  OsiSolverInterface *solver = model->solver_;
+  CglCliqueStrengthening clqStr;
+  clqStr.strengthenCliques(*solver);
 }
 
 int CBC_LINKAGE

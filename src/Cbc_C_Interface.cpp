@@ -1419,6 +1419,7 @@ const void *Cbc_conflictGraph( Cbc_Model *model ) {
  * @param model problem object
  **/
 void Cbc_updateConflictGraph( Cbc_Model *model ) {
+  Cbc_flush(model);
   model->solver_->checkCGraph();
 }
 

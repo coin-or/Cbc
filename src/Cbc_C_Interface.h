@@ -1509,7 +1509,7 @@ CG_nodes( void *cgraph );
 
 /** @brief If two nodes are conflicting */
 CBCSOLVERLIB_EXPORT char CBC_LINKAGE
-CG_conflicting( void *cgraph, int n1, int n2 );
+CG_conflicting( void *cgraph, size_t n1, size_t n2 );
 
 /** @brief Density of the conflict graph */
 CBCSOLVERLIB_EXPORT double CBC_LINKAGE

@@ -3247,6 +3247,14 @@ Cbc_deleteRows(Cbc_Model *model, int numRows, const int rows[])
   }
 
   solver->deleteRows(numRows, rows);
+
+  if (model->rowNameIndex) {
+    int nRows = Cbc_getNumRows(model);
+    NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
+    for ( int i=0 ; i<nRows ; ++i ) {
+      rowNameIndex[solver->getRowName(i)] = i;
+    }
+  } // updating row indexes
 }
 
 void CBC_LINKAGE
@@ -3263,6 +3271,15 @@ Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[])
   }
 
   solver->deleteCols(numCols, cols);
+
+  if (model->colNameIndex) {
+    int nCols = Cbc_getNumCols(model);
+    NameIndex &colNameIndex = *((NameIndex  *)model->colNameIndex);
+    for ( int i=0 ; i<nCols ; ++i ) {
+      colNameIndex[solver->getColName(i)] = i;
+    }
+  } // updating column indexes
+
 }
 
 /** Add SOS constraints to the model using row-order matrix */

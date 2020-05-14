@@ -2,7 +2,6 @@
  * All Rights Reserved.
  * This code is published under the Eclipse Public License.
  *
- * $Id: CbcConfig.h 2583 2019-06-02 23:23:54Z lou $
  *
  * Include file for the configuration of Cbc.
  *

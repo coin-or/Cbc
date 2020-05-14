@@ -4,7 +4,6 @@
 
   This code is licensed under the terms of the Eclipse Public License (EPL).
 
-  $Id$
 */
 
 #ifndef CbcEventHandler_H
@@ -56,7 +55,6 @@
 class CbcModel;
 
 /*
-  cvs/svn: $Id$
 */
 
 /*! \class CbcEventHandler

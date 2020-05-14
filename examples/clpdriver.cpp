@@ -1,4 +1,3 @@
-// $Id: clpdriver.cpp 2101 2014-12-03 17:43:20Z forrest $
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).

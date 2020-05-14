@@ -1,4 +1,3 @@
-// $Id: CbcHeuristicDW.cpp 1899 2013-04-09 18:12:08Z stefan $
 // Copyright (C) 2006, International Business Machines
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).

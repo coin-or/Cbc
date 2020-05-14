@@ -2,7 +2,6 @@
 # All Rights Reserved.
 # This file is distributed under the Eclipse Public License.
 
-## $Id$
 
 # Author:  Andreas Waechter           IBM    2006-04-13
 

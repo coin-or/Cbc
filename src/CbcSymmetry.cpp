@@ -1,5 +1,4 @@
-/* $Id: CbcSymmetry.cpp 925 2012-11-27 19:11:04Z stefan $
- *
+/*
  * hacked from CouenneSymmetry.cpp
  * Name:    CbcSymmetry.cpp
  * Author:  Jim Ostrowski (the good bits - rest JJHF)

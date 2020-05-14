@@ -4,7 +4,6 @@
 
   This code is licensed under the terms of the Eclipse Public License (EPL).
 
-  $Id$
 */
 /*
   This file is part of cbc-generic.
@@ -37,7 +36,6 @@
 
 namespace {
 
-char svnid[] = "$Id$";
 
 /*
   A hack to fix variables based on reduced cost prior to branch-and-cut. Note

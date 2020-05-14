@@ -1,5 +1,4 @@
-/* $Id: CbcSymmetry.hpp 1033 2013-12-14 19:34:28Z pbelotti $
- *
+/*
  * Name:    Hacked from CouenneProblem.hpp
  * Author:  Pietro Belotti, Lehigh University
  *          Andreas Waechter, IBM

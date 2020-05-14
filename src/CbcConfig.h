@@ -2,7 +2,6 @@
  * All Rights Reserved.
  * This code is published under the Eclipse Public License.
  *
- * $Id$
  *
  * Include file for the configuration of Cbc.
  *

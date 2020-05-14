@@ -5,7 +5,6 @@
 
   This code is licensed under the terms of the Eclipse Public License (EPL).
 
-  $Id$
 */
 /*
   This file is part of cbc-generic.
@@ -17,7 +16,6 @@
 
 namespace {
 
-char svnid[] = "$Id$";
 
 }
 

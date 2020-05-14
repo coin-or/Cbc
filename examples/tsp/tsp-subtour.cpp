@@ -1,4 +1,3 @@
-// $Id: tsp-subtour.cpp 2469 2019-01-06 23:17:46Z unxusr $
 
 /*! \file tsp-subtour.cpp
   \brief Solves the TSP using dinamically generated subtour elimination constraints

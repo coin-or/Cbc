@@ -549,6 +549,24 @@ Cbc_getRowIndices(Cbc_Model *model, int row);
 CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getRowCoeffs(Cbc_Model *model, int row);
 
+typedef struct {
+  int nz;
+  const int *idx;
+  const double *coef;
+  double rhs;
+  double lb;
+  double ub;
+  char sense;
+} Cbc_Row;
+
+/** @brief Queries row (constraint) information 
+ *
+ * @param model problem object
+ * @param rowIdx row index
+ * @return a Cbc_Row structure, with all the row information
+ **/
+CBCSOLVERLIB_EXPORT Cbc_Row CBC_LINKAGE Cbc_getRow( Cbc_Model *model, int rowIdx );
+
 /** @brief Number of non-zero entries in a column 
   *
   * @param model problem object 
@@ -575,6 +593,26 @@ Cbc_getColIndices(Cbc_Model *model, int col);
   **/
 CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
 Cbc_getColCoeffs(Cbc_Model *model, int col);
+
+typedef struct {
+  int nz;
+  const int *idx;
+  const double *coef;
+  double lb;
+  double ub;
+  char integer;
+} Cbc_Column;
+
+/** @brief Queries column (variable information
+ *
+ * @param model problem object
+ * @param idx column index
+ * @return column information in a Cbc_Column structure
+ **/
+CBCSOLVERLIB_EXPORT Cbc_Column CBC_LINKAGE
+Cbc_getColumn(Cbc_Model *model, int colIdx );
+
+
 
 /** @brief Right hand side of a row 
   *

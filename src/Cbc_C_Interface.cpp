@@ -3282,6 +3282,36 @@ Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[])
 
 }
 
+Cbc_Column Cbc_getColumn(Cbc_Model *model, int colIdx ) {
+  Cbc_Column result;
+
+  result.nz = Cbc_getColNz(model, colIdx);
+  result.idx = Cbc_getColIndices(model, colIdx);
+  result.coef = Cbc_getColCoeffs(model, colIdx);
+  result.lb = Cbc_getColLB(model, colIdx);
+  result.ub = Cbc_getColUB(model, colIdx);
+  result.integer = Cbc_isInteger(model, colIdx);
+
+  return result;
+}
+
+
+Cbc_Row Cbc_getRow( Cbc_Model *model, int rowIdx ) {
+  Cbc_Row result;
+
+  result.nz = Cbc_getRowNz( model, rowIdx );
+  result.idx = Cbc_getRowIndices( model, rowIdx );
+  result.coef = Cbc_getRowCoeffs( model, rowIdx );
+  result.rhs = Cbc_getRowRHS( model, rowIdx );
+  result.lb = Cbc_getRowLB( model, rowIdx );
+  result.ub = Cbc_getRowUB( model, rowIdx );
+  result.sense = Cbc_getRowSense( model, rowIdx );
+
+  return result;
+}
+
+
+
 /** Add SOS constraints to the model using row-order matrix */
 void CBC_LINKAGE
 Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,

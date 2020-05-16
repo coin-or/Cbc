@@ -391,7 +391,11 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   constraints?
 */
   // For solution closest to feasible if none found
-  int *closestSolution = general ? NULL : new int[numberIntegers];
+  int *closestSolution = NULL;
+  if (!general) {
+    closestSolution = new int[numberIntegers];
+    memset(closestSolution,0,numberIntegers*sizeof(int));
+  }
   double closestObjectiveValue = COIN_DBL_MAX;
 
   int numberIntegersOrig = numberIntegers;

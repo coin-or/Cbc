@@ -213,13 +213,14 @@ https://github.com/coin-or/Cbc/issues
       - `CglBKClique`: clique cut separator based on an improved version of Bron-Kerbosch algorithm.
       - `CglOddWheel`: odd-cycle separator with a lifting routine.
       - New parameters in the command line:
-          - `clqstr`: sets the method to extend cliques in CglCliqueStrengthening (0=off; 1=random; 2=degree; 3=modified degree; 4=reduced cost; 5=reduced cost + modified degree); default = 4.
-          - `clique`: sets the use of CglBKClique (on, root, ifmove, forceOn, onglobal); default = ifmove.
-          - `bkpivot`: pivoting strategy used by Bron-Kerbosch algorithm in CglBKClique (0 = off; 1 = random; 2 = degree; 3 = weight; 4= modified degree; 5 = modified weight; 6 = modified degree + modified weight); default = 3.
-          - `bkmaxcalls`: maximum number of recursive calls that can be made by Bron-Kerbosch algorithm in CglBKClique; default = 1000.
-          - `bkclqext`: strategy used to extend violated cliques found by CglBKClique (0=off; 1=random; 2=degree; 3=modified degree; 4=reduced cost; 5=reduced cost + modified degree); default = 4.
-          - `oddwheel`: sets the use of CglOddWheel (on, root, ifmove, forceOn, onglobal); default = ifmove.
-          - `oddwext`: strategy used to search for wheel centers for the cuts found by CglOddWheel (0 = off; 1 = one variable; 2 = clique); default = 2.
+          - `cgraph`: sets the use of conflict graph-based routines (CglBKClique, CglOddWheel and CliqueStrengthening) - "off"=turns these routines off, "on"=turns these routines on, "clq"=turns these routines off and enables the cut separator of CglClique - default="on"
+          - `clqstr`: sets the use of the preprocessing routine based on clique strengthening (CglCliqueStrengthening) - "off"=turn off this routine, "before"=perform clique strengthening before initial solve, "after"=perform clique strengthening after initial solve - default="after".
+          - `clique`: sets the use of CglBKClique (on, root, ifmove, forceOn, onglobal) - default="ifmove".
+          - `bkpivot`: pivoting strategy used by Bron-Kerbosch algorithm in CglBKClique - 0=off, 1=random, 2=degree, 3=weight, 4=modified degree, 5=modified weight, 6=modified degree + modified weight - default=3.
+          - `bkmaxcalls`: maximum number of recursive calls that can be made by Bron-Kerbosch algorithm in CglBKClique - default=1000.
+          - `bkclqext`: strategy used to extend violated cliques found by CglBKClique - 0=off, 1=random, 2=degree, 3=modified degree, 4=reduced cost(inversely proportional), 5=reduced cost(inversely proportional) + modified degree - default = 4.
+          - `oddwheel`: sets the use of CglOddWheel (on, root, ifmove, forceOn, onglobal) - default = ifmove.
+          - `oddwext`: strategy used to search for wheel centers for the cuts found by CglOddWheel - 0=off, 1=one variable, 2=clique - default=2.
       - CglClique was replaced by CglBKClique as the default clique separator in CbcSolver.cpp.
 
  * Release 2.10.5

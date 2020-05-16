@@ -1861,8 +1861,8 @@ static void Cbc_updateSlack( Cbc_Model *model) {
 
 void Cbc_strengthenPacking(Cbc_Model *model) {
   OsiSolverInterface *solver = model->solver_;
-  CglCliqueStrengthening clqStr;
-  clqStr.strengthenCliques(*solver);
+  CglCliqueStrengthening clqStr(solver);
+  clqStr.strengthenCliques();
 }
 
 int CBC_LINKAGE

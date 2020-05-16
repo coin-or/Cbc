@@ -696,11 +696,12 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(CBC_PARAM_STR_COSTSTRATEGY, parameters_)].setCurrentOption("off");
   parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].setCurrentOption("ifmove");
+  parameters_[whichParam(CBC_PARAM_STR_CLQSTRENGTHENING, parameters_)].setCurrentOption("after");
+  parameters_[whichParam(CBC_PARAM_STR_USECGRAPH, parameters_)].setCurrentOption("on");
   parameters_[whichParam(CBC_PARAM_INT_BKPIVOTINGSTRATEGY, parameters_)].setIntValue(3);
   parameters_[whichParam(CBC_PARAM_INT_BKMAXCALLS, parameters_)].setIntValue(1000);
   parameters_[whichParam(CBC_PARAM_INT_BKCLQEXTMETHOD, parameters_)].setIntValue(4);
   parameters_[whichParam(CBC_PARAM_INT_ODDWEXTMETHOD, parameters_)].setIntValue(2);
-  parameters_[whichParam(CBC_PARAM_INT_CLQSTRENGTHENING, parameters_)].setIntValue(4);
   if (createSolver)
     delete clpSolver;
 }
@@ -1795,10 +1796,12 @@ int CbcMain1(int argc, const char *argv[],
     // Off
     int GMIAction = 0;
 
+    std::string cgraphAction = "on";
+    std::string clqstrAction = "after";
     CglBKClique bkCliqueGen;
     int cliqueAction = 3, bkPivotingStrategy = 3, maxCallsBK = 1000, bkClqExtMethod = 4;
     CglOddWheel oddWheelGen;
-    int oddWheelAction = 3, oddWExtMethod = 2, clqStrMethod = 4;
+    int oddWheelAction = 3, oddWExtMethod = 2;
 
     // maxaggr,multiply,criterion(1-3)
     CglMixedIntegerRounding2 mixedGen(1, true, 1);
@@ -2002,6 +2005,35 @@ int CbcMain1(int argc, const char *argv[],
         int valid;
         numberGoodCommands++;
         if (type == CBC_PARAM_ACTION_BAB && goodModel) {
+          if (clqstrAction == "before") { //performing clique strengthening before initial solve
+        CglCliqueStrengthening clqStr(model_.solver());
+        int logLevel = model_.messageHandler()->logLevel();
+        int slogLevel = model_.solver()->messageHandler()->logLevel();
+        logLevel = CoinMin(logLevel,slogLevel);
+        model_.solver()->messageHandler()->setLogLevel(logLevel);
+        clqStr.passInMessageHandler(model_.messageHandler());
+        clqStr.strengthenCliques(2);
+        model_.solver()->messageHandler()->setLogLevel(0);
+
+        if (clqStr.constraintsExtended() + clqStr.constraintsDominated() > 0) {
+          model_.solver()->initialSolve();
+
+          if (!noPrinting_) {
+            if (model_.solver()->isProvenPrimalInfeasible()) {
+              sprintf(generalPrint, "Clique Strengthening says infeasible!");
+              generalMessageHandler->message(CLP_GENERAL, generalMessages)
+              << generalPrint
+              << CoinMessageEol;
+            } else {
+              sprintf(generalPrint, "After applying Clique Strengthening continuous objective value is %.2lf", model_.solver()->getObjValue());
+              generalMessageHandler->message(CLP_GENERAL, generalMessages)
+              << generalPrint
+              << CoinMessageEol;
+            }
+          }
+        }
+        model_.solver()->messageHandler()->setLogLevel(slogLevel);
+      }
 #if CBC_USE_INITIAL_TIME==1
           if (model_.useElapsedTime())
             model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
@@ -2306,8 +2338,6 @@ int CbcMain1(int argc, const char *argv[],
                 bkClqExtMethod = value;
               else if (parameters_[iParam].type() == CBC_PARAM_INT_ODDWEXTMETHOD)
                 oddWExtMethod = value;
-              else if (parameters_[iParam].type() == CBC_PARAM_INT_CLQSTRENGTHENING)
-                clqStrMethod = value;
               else if (parameters_[iParam].type() == CBC_PARAM_INT_EXPERIMENT
 			 && value<10000) {
                 int addFlags = 0;
@@ -2625,6 +2655,12 @@ int CbcMain1(int argc, const char *argv[],
               break;
             case CBC_PARAM_STR_SOS:
               doSOS = action;
+              break;
+            case CBC_PARAM_STR_CLQSTRENGTHENING:
+              clqstrAction = value;
+              break;
+            case CBC_PARAM_STR_USECGRAPH:
+              cgraphAction = value;
               break;
             case CBC_PARAM_STR_CLIQUECUTS:
               defaultSettings = false; // user knows what she is doing
@@ -5072,12 +5108,12 @@ int CbcMain1(int argc, const char *argv[],
 #endif
               }
 
-	      if (clqStrMethod == -1) {
-		// switch off new clique, odd wheel
+	      if (cgraphAction == "off") {
+		// switch off new clique, odd wheel and clique strengthening
 		cliqueAction = 0;
 		oddWheelAction = 0;
-		clqStrMethod = 0;
-	      } else if (clqStrMethod == -2) {
+    clqstrAction = "off";
+	      } else if (cgraphAction == "clq") {
 		// old style
 		CglClique clique;
 		clique.setStarCliqueReport(false);
@@ -5088,17 +5124,17 @@ int CbcMain1(int argc, const char *argv[],
 					   "Clique");
 		cliqueAction = 0;
 		oddWheelAction = 0;
-		clqStrMethod = 0;
+		clqstrAction = "off";
 	      }
-              if (clqStrMethod >= 1 && (cliqueAction || oddWheelAction)) {
-                  CglCliqueStrengthening clqStr;
+              if (clqstrAction == "after") {
+                  CglCliqueStrengthening clqStr(babModel_->solver());
 		  // Printing should be at babModel level not solver
 		  int logLevel = babModel_->messageHandler()->logLevel();
 		  int slogLevel = babModel_->solver()->messageHandler()->logLevel();
 		  logLevel = CoinMin(logLevel,slogLevel);
 		  babModel_->solver()->messageHandler()->setLogLevel(logLevel);
                   clqStr.passInMessageHandler(babModel_->messageHandler());
-                  clqStr.strengthenCliques(*babModel_->solver(), clqStrMethod);
+                  clqStr.strengthenCliques(4);
 		  babModel_->solver()->messageHandler()->setLogLevel(slogLevel);
 
                   if (clqStr.constraintsExtended() + clqStr.constraintsDominated() > 0) {
@@ -10926,11 +10962,12 @@ void CbcMain0(CbcModel &model,
   // Set up likely cut generators and defaults
   parameters[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters)].setCurrentOption("ifmove");
   parameters[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters)].setCurrentOption("ifmove");
+  parameters[whichParam(CBC_PARAM_STR_CLQSTRENGTHENING, parameters)].setCurrentOption("after");
+  parameters[whichParam(CBC_PARAM_STR_USECGRAPH, parameters)].setCurrentOption("on");
   parameters[whichParam(CBC_PARAM_INT_BKPIVOTINGSTRATEGY, parameters)].setIntValue(3);
   parameters[whichParam(CBC_PARAM_INT_BKMAXCALLS, parameters)].setIntValue(1000);
   parameters[whichParam(CBC_PARAM_INT_BKCLQEXTMETHOD, parameters)].setIntValue(4);
   parameters[whichParam(CBC_PARAM_INT_ODDWEXTMETHOD, parameters)].setIntValue(2);
-  parameters[whichParam(CBC_PARAM_INT_CLQSTRENGTHENING, parameters)].setIntValue(4);
   parameters[whichParam(CBC_PARAM_STR_PREPROCESS, parameters)].setCurrentOption("sos");
   parameters[whichParam(CBC_PARAM_INT_MIPOPTIONS, parameters)].setIntValue(1057);
   parameters[whichParam(CBC_PARAM_INT_CUTPASSINTREE, parameters)].setIntValue(1);

@@ -3552,7 +3552,7 @@ size_t CG_nodes( void *cgraph ) {
   return cg->size();
 }
 
-char CG_conflicting( void *cgraph, size_t n1, size_t n2 ) {
+char CG_conflicting( void *cgraph, int n1, int n2 ) {
   const CoinStaticConflictGraph *cg = (CoinStaticConflictGraph *)cgraph;
   return (char) cg->conflicting(n1, n2);
 }

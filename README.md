@@ -12,6 +12,7 @@ Mathematica,
 [MiniZinc](http://www.minizinc.org/),
 MPL (through the [CoinMP](https://github.com/coin-or/CoinMP) project),
 [PuLP](https://github.com/coin-or/PuLP),
+[python-mip](https://github.com/coin-or/python-mip),
 Python (e.g., [cbcpy](https://pypi.org/project/cbcpy)), and
 [OpenSolver for Excel](http://opensolver.org), among others.
 
@@ -22,13 +23,13 @@ Cbc links to a number of other COIN-OR projects for additional functionality, in
 
 For more information on supported platforms, links to dependent projects, current version, and more, click [here](https://www.coin-or.org/projects/)
 
-Cbc is developed by John Forrest, now retired from IBM Research.
-The project is currently managed by John Forrest, [Ted Ralphs](http://coral.ie.lehigh.edu/~ted/), Haroldo Gambini Santos, and the rest of the Cbc team (Dan Fylstra (Frontline), Lou Hafer (SFU), Bill Hart (Sandia), Bjarni Kristjannson (Maximal), Cindy Phillips (Sandia), Matthew Saltzman (Clemson), Edwin Straver (Frontline), Jean-Paul Watson (Sandia)).
+Cbc is developed by John Forrest, now retired from IBM Research, and others.
+The project is currently managed by John Forrest, [Ted Ralphs](http://coral.ie.lehigh.edu/~ted/), [Stefan Vigerske](https://github.com/svigerske), [Haroldo Gambini Santos](https://github.com/h-g-s), and the rest of the Cbc team.
 
 Cbc is written in C++ and is released as open source code under the [Eclipse Public License (EPL)](http://www.opensource.org/licenses/eclipse-1.0) and is freely redistributable.
 All source code and documentation is Copyright IBM and others. This README may be redistributed freely.
 
-Cbc is available from the [COIN-OR initiative](http://www.coin-or.org/).
+Cbc is distreibuted by the [COIN-OR initiative](http://www.coin-or.org/).
 The Cbc website is https://github.com/coin-or/Cbc.
 
 ## CITE
@@ -39,6 +40,7 @@ The Cbc website is https://github.com/coin-or/Cbc.
 
 [![Build Status](https://travis-ci.org/coin-or/Cbc.svg?branch=master)](https://travis-ci.org/coin-or/Cbc)
 
+[![Build status](https://ci.appveyor.com/api/projects/status/chribnemsgm9th0x?svg=true)](https://ci.appveyor.com/project/tkralphs/cbc-s1r7t)
 
 ## DOWNLOAD
 
@@ -46,7 +48,7 @@ Binaries for most platforms are available for download from [Bintray](https://bi
 
 [ ![Download](https://api.bintray.com/packages/coin-or/download/Cbc/images/download.svg?version=2.10) ](https://bintray.com/coin-or/download/Cbc/2.10/link)
 
- * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
+ * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt (you may also need `coinor-libcbc-dev` if you want to build the examples or link to to the Cbc library). On Fedora, Cbc is available in the package `coin-or-Cbc` (you may also need coin-or-Cbc-devel if you want to build the examples or link to to the Cbc library).
  * *Windows*: The easiest way to get Cbc on Windows is to download from *[Bintray](https://bintray.com/coin-or/download/Cbc)*, although an old interactive installer for the [COIN-OR Optimization Suite](http://www.coin-or.org/download/binary/CoinAll) is also still available.
  * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through [Homebrew](https://brew.sh).
    * `brew tap coin-or-tools/coinor`

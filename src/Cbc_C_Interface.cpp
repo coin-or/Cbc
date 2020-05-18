@@ -1884,7 +1884,7 @@ Cbc_solve(Cbc_Model *model)
 
   if (solver->isProvenPrimalInfeasible() || solver->isProvenDualInfeasible() ||
       solver->isAbandoned() || solver->isIterationLimitReached() || model->relax_ == 1
-      || solver->getNumIntegers() == 0) {
+      || ((solver->getNumIntegers()+model->nSos)==0)) {
     if (solver->isProvenOptimal() || solver->isIterationLimitReached()) {
       model->obj_value = solver->getObjValue();
       Cbc_updateSlack(model);

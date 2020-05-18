@@ -37,7 +37,7 @@
 /* Define to 1 if Miplib3 is available. */
 #undef CBC_HAS_MIPLIB3
 
-/* Define to 1 if the Nauty package is available */
+/* Define to 1 if Nauty is available. */
 #undef CBC_HAS_NAUTY
 
 /* Define to 1 if Netlib is available. */

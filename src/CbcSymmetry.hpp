@@ -32,10 +32,10 @@
 #ifndef CBC_SYMMETRY_HPP
 #define CBC_SYMMETRY_HPP
 extern "C" {
-#include "nauty.h"
-#include "nausparse.h"
+#include "nauty/nauty.h"
+#include "nauty/nausparse.h"
 #ifdef NTY_TRACES
-#include "traces.h"
+#include "nauty/traces.h"
 #endif
 }
 

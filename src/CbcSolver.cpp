@@ -2409,7 +2409,12 @@ int CbcMain1(int argc, const char *argv[],
                   value = value % 10;
                   parameters_[whichParam(CBC_PARAM_INT_EXPERIMENT, parameters_)].setIntValue(value);
                 }
-                if (value >= 1) {
+		if (value == 1) {
+		  // just experimental preprocessing and more restarts
+		  tunePreProcess |= 8192;
+		  model_.setSpecialOptions(model_.specialOptions()|(512|32768));
+		}
+                if (value > 1) {
                   int values[] = { 24003, 280003, 792003, 24003, 24003 };
                   if (value >= 2 && value <= 3) {
                     // swap default diving

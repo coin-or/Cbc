@@ -1,4 +1,4 @@
-/*
+/* 
  * hacked from CouenneSymmetry.cpp
  * Name:    CbcSymmetry.cpp
  * Author:  Jim Ostrowski (the good bits - rest JJHF)
@@ -1007,6 +1007,9 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
   whichOrbit_ = new int[5*numberColumns_];
   for (int i = 0; i < 2*numberColumns_; i++)
     whichOrbit_[i] = -1;
+  // zero out static stuff
+  calls = 0;
+  maxLevel = 0;
   nautyBranchCalls_ = 0;
   nautyBranchSucceeded_ = 0;
   nautyFixCalls_ = 0;
@@ -1015,7 +1018,7 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
   nautyFixes_ = 0.0;
   nautyOtherBranches_ = 0.0;
   lastNautyBranchSucceeded_ = 0;
-  int lastNautyFixSucceeded_ = 0;
+  lastNautyFixSucceeded_ = 0;
   if ((model->moreSpecialOptions2()&131072)!=0) {
     baseSymmetry = this;
     nauty_info_->options()->userautomproc = userautomproc;

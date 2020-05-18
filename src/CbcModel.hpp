@@ -6,6 +6,7 @@
 #define CbcModel_H
 #include <string>
 #include <vector>
+#include "CbcConfig.h"
 #include "CoinMessageHandler.hpp"
 #include "OsiSolverInterface.hpp"
 #include "OsiBranchingObject.hpp"

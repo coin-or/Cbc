@@ -18,4 +18,7 @@
 /* Release Version number of project */
 #undef CBC_VERSION_RELEASE
 
+/* Define to 1 if Nauty is available. */
+#undef CBC_HAS_NAUTY
+
 #endif

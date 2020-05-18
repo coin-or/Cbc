@@ -1152,7 +1152,12 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             << CoinMessageEol;
           // going for full search and copy across more stuff
           model.gutsOfCopy(*model_, 2);
-
+#ifdef CBC_HAS_NAUTY
+	  if ((model.moreSpecialOptions2()&131072) != 0) {
+	    // need new copy of symmetry
+	    model.setMoreSpecialOptions2(model.moreSpecialOptions2()|128 | 256);
+	  }
+#endif
 #ifdef CGL_DEBUG
           if ((model_->specialOptions() & 1) != 0) {
             const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger();
@@ -1182,10 +1187,16 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
               generator->setHowOften(-100);
           }
           model.setCutoff(signedCutoff);
+	  int specialOptions = model.specialOptions();
           // make sure can't do nested search! but allow heuristics
-          model.setSpecialOptions((model.specialOptions() & (~(512 + 2048))) | 1024);
+	  specialOptions |= 1024;
+	  // but allow if 32768
+	  if ((specialOptions&32768)==0)
+	    specialOptions &= ~(512 + 2048);
+	  else
+	    specialOptions &= ~(2048|32768);
           // but say we are doing full search
-          model.setSpecialOptions(model.specialOptions() | 67108864);
+          model.setSpecialOptions(specialOptions | 67108864);
           bool takeHint;
           OsiHintStrength strength;
           // Switch off printing if asked to
@@ -3307,6 +3318,3 @@ void CbcHeuristicJustOne::normalizeProbabilities()
   assert(fabs(probabilities_[numberHeuristics_ - 1] - 1.0) < 1.0e-5);
   probabilities_[numberHeuristics_ - 1] = 1.000001;
 }
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/

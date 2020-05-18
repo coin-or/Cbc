@@ -2560,132 +2560,134 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           const double *upCost = osiclp->downRange();
           bool problemFeasible = true;
           int numberFixed = 0;
-          for (int i = 0; i < neededPenalties; i++) {
-            int j = objectMark[i];
-            int iObject = whichObject[j];
-            OsiObject *object = model->modifiableObject(iObject);
-            CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
-            // Use this object's numberBeforeTrust
-            int numberBeforeTrustThis = dynamicObject->numberBeforeTrust();
-            int iSequence = dynamicObject->columnNumber();
-            double value = saveSolution[iSequence];
-            value -= floor(value);
-            double upPenalty = CoinMin(upCost[i], 1.0e110) * (1.0 - value);
-            double downPenalty = CoinMin(downCost[i], 1.0e110) * value;
-            int numberThisDown = dynamicObject->numberTimesDown();
-            int numberThisUp = dynamicObject->numberTimesUp();
-            if (!numberBeforeTrustThis) {
-              // override
-              downEstimate[iObject] = downPenalty;
-              upEstimate[iObject] = upPenalty;
-              double min1 = CoinMin(downEstimate[iObject],
-                upEstimate[iObject]);
-              double max1 = CoinMax(downEstimate[iObject],
-                upEstimate[iObject]);
-              min1 = 0.8 * min1 + 0.2 * max1;
-              sort[j] = -min1;
-            } else if (numberThisDown < numberBeforeTrustThis || numberThisUp < numberBeforeTrustThis) {
-              double invTrust = 1.0 / static_cast< double >(numberBeforeTrustThis);
-              if (numberThisDown < numberBeforeTrustThis) {
-                double fraction = numberThisDown * invTrust;
-                downEstimate[iObject] = fraction * downEstimate[iObject] + (1.0 - fraction) * downPenalty;
-              }
-              if (numberThisUp < numberBeforeTrustThis) {
-                double fraction = numberThisUp * invTrust;
-                upEstimate[iObject] = fraction * upEstimate[iObject] + (1.0 - fraction) * upPenalty;
-              }
-              double min1 = CoinMin(downEstimate[iObject],
-                upEstimate[iObject]);
-              double max1 = CoinMax(downEstimate[iObject],
-                upEstimate[iObject]);
-              min1 = 0.8 * min1 + 0.2 * max1;
-              min1 *= 10.0;
-              if (!(numberThisDown + numberThisUp))
-                min1 *= 100.0;
-              sort[j] = -min1;
-            }
-            // seems unreliable
-            if (false && CoinMax(downPenalty, upPenalty) > gap) {
-              COIN_DETAIL_PRINT(printf("gap %g object %d has down range %g, up %g\n",
-                gap, i, downPenalty, upPenalty));
-              printf("gap %g object %d has down range %g, up %g\n",
-                gap, i, downPenalty, upPenalty);
-              //sort[j] -= 1.0e50; // make more likely to be chosen
-              int number;
-              if (downPenalty > gap) {
-                number = dynamicObject->numberTimesDown();
-                if (upPenalty > gap)
-                  problemFeasible = false;
-                CbcBranchingObject *branch = dynamicObject->createCbcBranch(solver, &usefulInfo, 1);
-                //branch->fix(solver,saveLower,saveUpper,1);
-                delete branch;
-              } else {
-                number = dynamicObject->numberTimesUp();
-                CbcBranchingObject *branch = dynamicObject->createCbcBranch(solver, &usefulInfo, 1);
-                //branch->fix(solver,saveLower,saveUpper,-1);
-                delete branch;
-              }
-              if (number >= numberBeforeTrustThis)
-                dynamicObject->setNumberBeforeTrust(CoinMin(number + 1, 5 * numberBeforeTrust));
-              numberFixed++;
-            }
-	    // try this instead
-            if (CoinMax(downPenalty, upPenalty) > gap) {
-              COIN_DETAIL_PRINT(printf("gap %g object %d has down range %g, up %g\n",
-                gap, i, downPenalty, upPenalty));
-              sort[j] = -1.0e20 + 1.0e10*sort[j]; // make more likely to be chosen
-              if (downPenalty > gap && upPenalty > gap) {
-		sort[j] *= 1.0e6;
+	  if (osiclp->rangeArray()) {
+	    for (int i = 0; i < neededPenalties; i++) {
+	      int j = objectMark[i];
+	      int iObject = whichObject[j];
+	      OsiObject *object = model->modifiableObject(iObject);
+	      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
+	      // Use this object's numberBeforeTrust
+	      int numberBeforeTrustThis = dynamicObject->numberBeforeTrust();
+	      int iSequence = dynamicObject->columnNumber();
+	      double value = saveSolution[iSequence];
+	      value -= floor(value);
+	      double upPenalty = CoinMin(upCost[i], 1.0e110) * (1.0 - value);
+	      double downPenalty = CoinMin(downCost[i], 1.0e110) * value;
+	      int numberThisDown = dynamicObject->numberTimesDown();
+	      int numberThisUp = dynamicObject->numberTimesUp();
+	      if (!numberBeforeTrustThis) {
+		// override
+		downEstimate[iObject] = downPenalty;
+		upEstimate[iObject] = upPenalty;
+		double min1 = CoinMin(downEstimate[iObject],
+				      upEstimate[iObject]);
+		double max1 = CoinMax(downEstimate[iObject],
+				      upEstimate[iObject]);
+		min1 = 0.8 * min1 + 0.2 * max1;
+		sort[j] = -min1;
+	      } else if (numberThisDown < numberBeforeTrustThis || numberThisUp < numberBeforeTrustThis) {
+		double invTrust = 1.0 / static_cast< double >(numberBeforeTrustThis);
+		if (numberThisDown < numberBeforeTrustThis) {
+		  double fraction = numberThisDown * invTrust;
+		  downEstimate[iObject] = fraction * downEstimate[iObject] + (1.0 - fraction) * downPenalty;
+		}
+		if (numberThisUp < numberBeforeTrustThis) {
+		  double fraction = numberThisUp * invTrust;
+		  upEstimate[iObject] = fraction * upEstimate[iObject] + (1.0 - fraction) * upPenalty;
+		}
+		double min1 = CoinMin(downEstimate[iObject],
+				      upEstimate[iObject]);
+		double max1 = CoinMax(downEstimate[iObject],
+				      upEstimate[iObject]);
+		min1 = 0.8 * min1 + 0.2 * max1;
+		min1 *= 10.0;
+		if (!(numberThisDown + numberThisUp))
+		  min1 *= 100.0;
+		sort[j] = -min1;
 	      }
-            }
-            if (!numberNodes)
-              COIN_DETAIL_PRINT(printf("%d pen down ps %g -> %g up ps %g -> %g\n",
-                iObject, downPenalty, downPenalty, upPenalty, upPenalty));
-          }
-          if (numberFixed && problemFeasible) {
-            assert(doneHotStart);
-            solver->unmarkHotStart();
-            model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
+	      // seems unreliable
+	      if (false && CoinMax(downPenalty, upPenalty) > gap) {
+		COIN_DETAIL_PRINT(printf("gap %g object %d has down range %g, up %g\n",
+					 gap, i, downPenalty, upPenalty));
+		printf("gap %g object %d has down range %g, up %g\n",
+		       gap, i, downPenalty, upPenalty);
+		//sort[j] -= 1.0e50; // make more likely to be chosen
+		int number;
+		if (downPenalty > gap) {
+		  number = dynamicObject->numberTimesDown();
+		  if (upPenalty > gap)
+		    problemFeasible = false;
+		  CbcBranchingObject *branch = dynamicObject->createCbcBranch(solver, &usefulInfo, 1);
+		  //branch->fix(solver,saveLower,saveUpper,1);
+		  delete branch;
+		} else {
+		  number = dynamicObject->numberTimesUp();
+		  CbcBranchingObject *branch = dynamicObject->createCbcBranch(solver, &usefulInfo, 1);
+		  //branch->fix(solver,saveLower,saveUpper,-1);
+		  delete branch;
+		}
+		if (number >= numberBeforeTrustThis)
+		  dynamicObject->setNumberBeforeTrust(CoinMin(number + 1, 5 * numberBeforeTrust));
+		numberFixed++;
+	      }
+	      // try this instead
+	      if (CoinMax(downPenalty, upPenalty) > gap) {
+		COIN_DETAIL_PRINT(printf("gap %g object %d has down range %g, up %g\n",
+					 gap, i, downPenalty, upPenalty));
+		sort[j] = -1.0e20 + 1.0e10*sort[j]; // make more likely to be chosen
+		if (downPenalty > gap && upPenalty > gap) {
+		  sort[j] *= 1.0e6;
+		}
+	      }
+	      if (!numberNodes)
+		COIN_DETAIL_PRINT(printf("%d pen down ps %g -> %g up ps %g -> %g\n",
+					 iObject, downPenalty, downPenalty, upPenalty, upPenalty));
+	    }
+	    if (numberFixed && problemFeasible) {
+	      assert(doneHotStart);
+	      solver->unmarkHotStart();
+	      model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
 #ifdef CHECK_DEBUGGER_PATH
-            if ((model->specialOptions() & 1) != 0 && onOptimalPath) {
-              const OsiRowCutDebugger *debugger = solver->getRowCutDebugger();
-              if (!debugger) {
-                printf("Strong branching down on %d went off optimal path\n", iObject);
-                abort();
-              }
-            }
+	      if ((model->specialOptions() & 1) != 0 && onOptimalPath) {
+		const OsiRowCutDebugger *debugger = solver->getRowCutDebugger();
+		if (!debugger) {
+		  printf("Strong branching down on %d went off optimal path\n", iObject);
+		  abort();
+		}
+	      }
 #endif
-            double newObjValue = solver->getObjSense() * solver->getObjValue();
-            objectiveValue_ = CoinMax(objectiveValue_, newObjValue);
-            solver->markHotStart();
+	      double newObjValue = solver->getObjSense() * solver->getObjValue();
+	      objectiveValue_ = CoinMax(objectiveValue_, newObjValue);
+	      solver->markHotStart();
 #ifdef RESET_BOUNDS
-            memcpy(saveLower, solver->getColLower(), solver->getNumCols() * sizeof(double));
-            memcpy(saveUpper, solver->getColUpper(), solver->getNumCols() * sizeof(double));
+	      memcpy(saveLower, solver->getColLower(), solver->getNumCols() * sizeof(double));
+	      memcpy(saveUpper, solver->getColUpper(), solver->getNumCols() * sizeof(double));
 #endif
-            problemFeasible = solver->isProvenOptimal();
-          }
-          if (!problemFeasible) {
-	    printf("HELP - ranging infeas\n");
-            COIN_DETAIL_PRINT(fprintf(stdout, "both ways infeas on ranging - code needed\n"));
-            anyAction = -2;
-            if (!choiceObject) {
-              delete choice.possibleBranch;
-              choice.possibleBranch = NULL;
-            }
-            //printf("Both infeasible for choice %d sequence %d\n",i,
-            // model->object(choice.objectNumber)->columnNumber());
-            // Delete the snapshot
-            solver->unmarkHotStart();
-            // back to normal
-            solver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL);
-            // restore basis
-            solver->setWarmStart(ws);
-            doneHotStart = false;
-            delete ws;
-            ws = NULL;
-            break;
-          }
-        }
+	      problemFeasible = solver->isProvenOptimal();
+	    }
+	    if (!problemFeasible) {
+	      printf("HELP - ranging infeas\n");
+	      COIN_DETAIL_PRINT(fprintf(stdout, "both ways infeas on ranging - code needed\n"));
+	      anyAction = -2;
+	      if (!choiceObject) {
+		delete choice.possibleBranch;
+		choice.possibleBranch = NULL;
+	      }
+	      //printf("Both infeasible for choice %d sequence %d\n",i,
+	      // model->object(choice.objectNumber)->columnNumber());
+	      // Delete the snapshot
+	      solver->unmarkHotStart();
+	      // back to normal
+	      solver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL);
+	      // restore basis
+	      solver->setWarmStart(ws);
+	      doneHotStart = false;
+	      delete ws;
+	      ws = NULL;
+	      break;
+	    }
+	  }
+	}
       }
 #endif /* CBC_RANGING */
       {
@@ -6175,6 +6177,3 @@ CbcNode::checkIsCutoff(double cutoff)
   branch_->checkIsCutoff(cutoff);
   return objectiveValue_;
 }
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/

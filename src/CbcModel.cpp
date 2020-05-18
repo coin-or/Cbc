@@ -1146,16 +1146,25 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForR
         numberFixed + numberFixed2, numberFixed2);
 #endif
       numberFixed += numberFixed2;
-      if (numberFixed * 20 < numberColumns & (specialOptions_&512) == 0)
+      if (numberFixed * 20 < numberColumns)
         tryNewSearch = false;
+    }
+    // check for odd cuts
+    {
+      int iGenerator;
+      for (iGenerator = 0; iGenerator < numberCutGenerators_; iGenerator++) {
+	CglCutGenerator *generator =
+	  generator_[iGenerator]->generator();
+	
+	if (generator->needsOriginalModel())
+	  break;
+      }
+      if (iGenerator < numberCutGenerators_)
+	tryNewSearch=false;
     }
     if (tryNewSearch) {
       // back to solver without cuts?
-      OsiSolverInterface *solver2;
-      if ((specialOptions_&512)==0)
-	solver2 = continuousSolver_->clone();
-      else
-	solver2 = solver_;//->clone();
+      OsiSolverInterface *solver2 = continuousSolver_->clone();
       const double *lower = saveSolver->getColLower();
       const double *upper = saveSolver->getColUpper();
       for (int i = 0; i < numberIntegers_; i++) {
@@ -1164,13 +1173,10 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForR
         solver2->setColUpper(iColumn, upper[iColumn]);
       }
       // swap
-      if ((specialOptions_&512) == 0)
-	delete saveSolver;
-      saveSolver = solver2;
       double *newSolution = new double[numberColumns];
       double objectiveValue = *checkCutoffForRestart;
       CbcSerendipity heuristic(*this);
-      if (bestSolution_)
+      if (bestSolution_) 
         heuristic.setInputSolution(bestSolution_, bestObjective_);
       if ((specialOptions_&512) != 0)
 	heuristic.setFractionSmall(100.0);
@@ -1178,14 +1184,15 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForR
       // Use numberNodes to say how many are original rows
       heuristic.setNumberNodes(continuousSolver_->getNumRows());
 #ifdef COIN_DEVELOP
-      if (continuousSolver_->getNumRows() < saveSolver->getNumRows())
+      if (continuousSolver_->getNumRows() < solver2->getNumRows())
         printf("%d rows added ZZZZZ\n",
           solver_->getNumRows() - continuousSolver_->getNumRows());
 #endif
-      int returnCode = heuristic.smallBranchAndBound(saveSolver,
+      int returnCode = heuristic.smallBranchAndBound(solver2,
         -1, newSolution,
         objectiveValue,
         *checkCutoffForRestart, "Reduce");
+      delete solver2;
       if (returnCode < 0) {
 #ifdef COIN_DEVELOP
         printf("Restart - not small enough to do search after fixing\n");
@@ -2385,22 +2392,27 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
 #ifdef CBC_HAS_NAUTY
   // maybe allow on fix and restart later
-  if ((moreSpecialOptions2_ & (128 | 256)) != 0 && !parentModel_) {
-    symmetryInfo_ = new CbcSymmetry();
-    symmetryInfo_->setupSymmetry(this);
-    int numberGenerators = symmetryInfo_->statsOrbits(this, 0);
-    if (!symmetryInfo_->numberUsefulOrbits() && (moreSpecialOptions2_ & (128 | 256)) != (128 | 256)) {
-      delete symmetryInfo_;
-      symmetryInfo_ = NULL;
-      moreSpecialOptions2_ &= ~(128 | 256 | 131072);
-    }
-    if ((moreSpecialOptions2_ & (128 | 256)) == (128 | 256)) {
-      if ((moreSpecialOptions2_&131072) != 0) {
-	// keep it simple
-	moreSpecialOptions2_ &= ~(128 | 256);
-	rootSymmetryInfo_ = symmetryInfo_;
+  if ((moreSpecialOptions2_ & (128 | 256)) != 0) {
+    if ((specialOptions_&2048)==0) {
+      symmetryInfo_ = new CbcSymmetry();
+      symmetryInfo_->setupSymmetry(this);
+      int numberGenerators = symmetryInfo_->statsOrbits(this, 0);
+      if (!symmetryInfo_->numberUsefulOrbits() && (moreSpecialOptions2_ & (128 | 256)) != (128 | 256)) {
+	delete symmetryInfo_;
 	symmetryInfo_ = NULL;
+	moreSpecialOptions2_ &= ~(128 | 256 | 131072);
       }
+      if ((moreSpecialOptions2_ & (128 | 256)) == (128 | 256)) {
+	if ((moreSpecialOptions2_&131072) != 0) {
+	  // keep it simple
+	  moreSpecialOptions2_ &= ~(128 | 256);
+	  rootSymmetryInfo_ = symmetryInfo_;
+	  symmetryInfo_ = NULL;
+	}
+      }
+    } else {
+      // small B&B
+      moreSpecialOptions2_ &= ~(128 | 256 | 131072);
     }
   }
 #endif
@@ -3604,6 +3616,10 @@ void CbcModel::branchAndBound(int doStatistics)
   // Save copy of solver
   OsiSolverInterface *saveSolver = NULL;
   if (!parentModel_ && (specialOptions_ & (512 + 32768)) != 0)
+    saveSolver = solver_->clone();
+  else if (parentModel_ &&
+	   !(specialOptions_&2048) &&
+	   (specialOptions_ & (512 + 32768)) == 512)
     saveSolver = solver_->clone();
   double checkCutoffForRestart = 1.0e100;
   saveModel(saveSolver, &checkCutoffForRestart, &feasible);
@@ -7149,15 +7165,9 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
     branchingMethod_ = NULL;
   messageHandler()->setLogLevel(rhs.messageHandler()->logLevel());
   whenCuts_ = rhs.whenCuts_;
-#ifdef CBC_HAS_NAUTY
-  if (rhs.symmetryInfo_)
-    symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
-  else
-    symmetryInfo_ = NULL;
-  if (rhs.rootSymmetryInfo_)
-    rootSymmetryInfo_ = new CbcSymmetry(*rhs.rootSymmetryInfo_);
-  else
-    rootSymmetryInfo_ = NULL;
+#ifdef CBC_HAS_NAUTY // better to do again
+  symmetryInfo_ = NULL;
+  rootSymmetryInfo_ = NULL;
 #endif
   synchronizeModel();
 }
@@ -19874,6 +19884,3 @@ CbcModel::reallyValid(OsiCuts * existingCuts)
 void CbcModel::setRoundIntegerVariables( bool round_ ) {
   this->roundIntVars_ = round_;
 }
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/

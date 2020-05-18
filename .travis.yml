@@ -13,7 +13,6 @@ matrix:
             - libgfortran-5-dev
             - liblapack-dev
             - libmetis-dev
-            - libnauty2-dev
     - os: linux
       dist: precise
       env: BUILD_STATIC=false DEBUG=false ASAN=false
@@ -91,7 +90,6 @@ matrix:
             - gfortran
             - liblapack-dev
             - libmetis-dev
-            - libnauty2-dev
     - os: osx
       osx_image: xcode11
       env: OSX=10.14 CC=gcc CXX=g++ BUILD_STATIC=false DEBUG=false ASAN=false

@@ -3342,7 +3342,7 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
     model->sosType[model->nSos+i] = type;
 
   if ( model->sosElSize + newEl > model->sosElCap ) {
-    model->sosElCap = max( 2*model->sosElCap, newEl );
+    model->sosElCap = max( 2*model->sosElCap, model->sosElSize + newEl );
     model->sosEl = (int *) xrealloc( model->sosEl, sizeof(int)*model->sosElCap );
     model->sosElWeight  = (double *) xrealloc( model->sosElWeight, sizeof(double)*model->sosElCap );
   }

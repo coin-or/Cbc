@@ -135,7 +135,7 @@ script:
   - if [[ $DEBUG == "true" ]]; then export CXXFLAGS="-Og -g"; fi
   - if [[ $ASAN == "true" ]]; then export CXXFLAGS="${CXXFLAGS} -fsanitize=address"; fi
   - if [[ $ASAN == "true" ]]; then export LDFLAGS="-lasan"; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --enable-relocatable --fully-static $DBGC --with-lapack="-llapack -lblas -lgfortran -lquadmath -lm"; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --enable-relocatable --static $DBGC --with-lapack="-llapack -lblas -lgfortran -lquadmath -lm"; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --tests main --enable-relocatable $DBGC; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=3 --tests none --enable-relocatable; fi
 

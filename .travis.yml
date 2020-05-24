@@ -5,16 +5,6 @@ env:
 matrix:
   include:
     - os: linux
-      env: BUILD_STATIC=true DEBUG=false ASAN=false
-      addons:
-        apt:
-          packages:
-            - gfortran
-            - libgfortran-5-dev
-            - liblapack-dev
-            - libmetis-dev
-            - libnauty2-dev
-    - os: linux
       dist: precise
       env: BUILD_STATIC=false DEBUG=false ASAN=false
       addons:
@@ -89,6 +79,27 @@ matrix:
         apt:
           packages:
             - gfortran
+            - liblapack-dev
+            - libmetis-dev
+            - libnauty2-dev
+    - os: linux
+      dist: bionic
+      env: BUILD_STATIC=false DEBUG=false ASAN=false
+      addons:
+        apt:
+          packages:
+            - gfortran
+            - liblapack-dev
+            - libmetis-dev
+            - libnauty2-dev
+    - os: linux
+      dist: xenial
+      env: BUILD_STATIC=true DEBUG=false ASAN=false
+      addons:
+        apt:
+          packages:
+            - gfortran
+            - libgfortran-5-dev
             - liblapack-dev
             - libmetis-dev
             - libnauty2-dev

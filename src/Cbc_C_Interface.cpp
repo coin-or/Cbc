@@ -3359,6 +3359,12 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
   model->sosElSize += newEl;
 }
 
+
+/** @brief Queries the number os SOS objects */
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE Cbc_numberSOS(Cbc_Model *model) {
+  return model->nSos;
+}
+
 void CBC_LINKAGE
 Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double colValues[])
 {

@@ -255,6 +255,9 @@ CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
   const int *colIndices, const double *weights, const int type);
 
+/** @brief Queries the number os SOS objects */
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE Cbc_numberSOS(Cbc_Model *model);
+
 /** Loads a problem (the constraints on the
     rows are given by lower and upper bounds). If a pointer is NULL then the
     following values are the default:

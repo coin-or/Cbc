@@ -57,6 +57,8 @@ Binaries for most platforms are available for download from [Bintray](https://bi
 Due to license incompatibilities, pre-compiled binaries lack some functionality.
 If binaries are not available for your platform for the latest version and you would like to request them to be built and posted, feel free to let us know on the mailing list.
 
+## BUILDING from source
+
 *Source code* can be obtained either by
 
  * Downloading a snapshot of the source code for the latest release version of Cbc from the [Cbc source code download page](http://www.coin-or.org/download/source/Cbc), or
@@ -64,10 +66,7 @@ If binaries are not available for your platform for the latest version and you w
 
 Below is a quick start guide for building on common platforms. More detailed
 build instructions are
-[here](https://coin-or.github.io/user_introduction.html) (this is a work in
-progress).
-
-## BUILDING from source
+[here](https://coin-or.github.io/user_introduction.html).
 
 ### Using CoinBrew
 

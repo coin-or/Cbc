@@ -44,9 +44,9 @@ The Cbc website is https://github.com/coin-or/Cbc.
 
 ## DOWNLOAD
 
-Binaries for most platforms are available for download from [Bintray](https://bintray.com/coin-or/download/Cbc). AMPL also provides stand-alone [Cbc executables](http://ampl.com/products/solvers/open-source/#cbc) that can be used with (or without) AMPL. Julia also provides a wide range of [binaries](https://github.com/JuliaBinaryWrappers/Cbc_jll.jl/releases).
-
 [ ![Download](https://api.bintray.com/packages/coin-or/download/Cbc/images/download.svg?version=2.10) ](https://bintray.com/coin-or/download/Cbc/2.10/link)
+
+Binaries for most platforms are available for download from [Bintray](https://bintray.com/coin-or/download/Cbc). AMPL also provides stand-alone [Cbc executables](http://ampl.com/products/solvers/open-source/#cbc) that can be used with (or without) AMPL. Julia also provides a wide range of [binaries](https://github.com/JuliaBinaryWrappers/Cbc_jll.jl/releases). Alternatives include your favorite package manager, as detailed below.
 
  * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt (you may also need `coinor-libcbc-dev` if you want to build the examples or link to to the Cbc library). On Fedora, Cbc is available in the package `coin-or-Cbc` (you may also need coin-or-Cbc-devel if you want to build the examples or link to to the Cbc library).
  * *Windows*: The easiest way to get Cbc on Windows is to download from *[Bintray](https://bintray.com/coin-or/download/Cbc)*, although an old interactive installer for the [COIN-OR Optimization Suite](http://www.coin-or.org/download/binary/CoinAll) is also still available.

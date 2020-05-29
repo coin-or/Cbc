@@ -189,7 +189,7 @@ after_build:
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libmetis.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libgomp-1.dll C:\projects\dist\bin)
   - IF %ARCH%==i686-w64-mingw32 (cp C:\msys64\mingw32\bin\libsuitesparseconfig.dll C:\projects\dist\bin)
-  - rm C:\projects\dist\lib\*.la
+  - del C:\projects\dist\lib\*.la
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\bin
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\include
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\dist\lib

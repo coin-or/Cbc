@@ -24,7 +24,8 @@ matrix:
       install:
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 90
-        - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-8 90
+        - sudo update-alternatives --install /usr/bin/gfortran gfortran \
+          /usr/bin/gfortran-8 90
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 90
     - os: linux
       dist: precise
@@ -47,7 +48,8 @@ matrix:
       install:
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
-        - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90
+        - sudo update-alternatives --install /usr/bin/gfortran gfortran \
+          /usr/bin/gfortran-9 90
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - os: linux
       dist: precise
@@ -70,7 +72,8 @@ matrix:
       install:
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
-        - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90
+        - sudo update-alternatives --install /usr/bin/gfortran gfortran \
+          /usr/bin/gfortran-9 90
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - os: linux
       dist: bionic
@@ -115,42 +118,104 @@ matrix:
       osx_image: xcode10
       env: OSX=10.13  BUILD_STATIC=false DEBUG=false ASAN=false
       compiler: clang
-before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install metis; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then if [ x`brew list | fgrep bash` != x'bash' ]; then brew install bash; fi; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then if [ x`brew list | fgrep gcc` != x'gcc' ]; then brew install gcc; fi; fi
-  - if [[ "$TRAVIS_OS_NAME $CC" == "osx gcc" ]]; then export CC=gcc-9 ; export CXX=g++-9 ; $CC --version; $CXX --version; gfortran --version; fi
-  - if [[ "$TRAVIS_OS_NAME $CC" == "osx clang" ]]; then  export PLATFORM=osx$OSX-x86_64-clang`clang -dumpversion`; fi
-  - if [[ "$TRAVIS_OS_NAME $CC" == "osx gcc-9" ]]; then  export PLATFORM=osx$OSX-x86_64-gcc`gcc-9 -dumpversion`; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then  export PLATFORM=linux-x86_64-gcc`gcc -dumpversion`; fi
-  - cd ..
-  - wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
-  - export PROJECT_URL=https://github.com/$TRAVIS_REPO_SLUG
-  - export PROJECT=`echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2`
-  - bash ./coinbrew fetch $PROJECT_URL:$TRAVIS_BRANCH --no-prompt --skip-update 
+    - os: windows
+    
+before_install:
+- |-
+    case $TRAVIS_OS_NAME in
+      osx)
+        brew update
+        brew install metis bash gcc
+        if [ $CC = gcc ]; then
+          export CC=gcc-9
+          export CXX=g++-9
+        fi
+        ;;
+      windows)
+        [[ ! -f C:/tools/msys64/msys2_shell.cmd ]] && rm -rf C:/tools/msys64
+        choco uninstall -y mingw
+        choco upgrade --no-progress -y msys2
+        export msys2='cmd //C RefreshEnv.cmd '
+        export msys2+='& set MSYS=winsymlinks:nativestrict '
+        export msys2+='& C:\\tools\\msys64\\msys2_shell.cmd -defterm -no-start'
+        export mingw64="$msys2 -mingw64 -full-path -here -c "\"\$@"\" --"
+        export msys2+=" -msys2 -c "\"\$@"\" --"
+        $msys2 pacman --sync --noconfirm --needed mingw-w64-x86_64-toolchain
+        $msys2 pacman -S mingw-w64-x86_64-lapack --noconfirm
+        $msys2 pacman -S mingw-w64-x86_64-winpthreads-git --noconfirm
+        $msys2 pacman -S mingw-w64-x86_64-readline --noconfirm
+        $msys2 pacman -S mingw-w64-x86_64-suitesparse --noconfirm
+        $msys2 pacman -S mingw-w64-x86_64-metis --noconfirm
+        $msys2 pacman -S make wget tar patch dos2unix diffutils --noconfirm
+        $msys2 pacman -S pkg-config git zip unzip --noconfirm
+        taskkill //IM gpg-agent.exe //F  # https://travis-ci.community/t/4967
+        export PATH=/C/tools/msys64/mingw64/bin:$PATH
+        export MAKE=mingw32-make  # so that Autotools can find it
+        ;;
+    esac
+    case $CC in
+      gcc*)
+        CCVERSION=$($CC -dumpversion)
+        ;;
+      clang)
+        CCVERSION=$(clang --version |& fgrep version |& \
+                  sed "s/.*version \([0-9]*\.[0-9]*\).*/\1/"
+        ;;
+    esac    
+    if [ $DEBUG = "true" ]; then
+      DBG_ARGS="--enable-debug"
+      DBGN="-dbg"
+      export CXXFLAGS="-Og -g"
+    fi
+    if [ $ASAN == "true" ]; then
+      ASN="-asan"
+      export CXXFLAGS="${CXXFLAGS} -fsanitize=address"
+      export LDFLAGS="-lasan"
+    fi
+    if [ $BUILD_STATIC = "true' ]; then
+      STATIC="-static"
+      ADD_ARGS="--static --with-lapack='-llapack -lblas -lgfortran -lquadmath -lm'"
+    fi     
+    COMMON_ARGS="--no-prompt --verbosity 2 --tests main --enable-relocatable"
+    PLATFORM=$TRAVIS_OS_NAME${OSX:-}-x86_64-$CC$CCVERSION
+    cd ..
+    wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
+    PROJECT_URL=https://github.com/$TRAVIS_REPO_SLUG
+    PROJECT=$(echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2)
+    ./coinbrew fetch $PROJECT_URL:$TRAVIS_BRANCH --no-prompt --skip-update 
+
+before_cache:
+- |-
+    case $TRAVIS_OS_NAME in
+      windows)
+        # https://unix.stackexchange.com/a/137322/107554
+        $msys2 pacman --sync --clean --noconfirm
+        ;;
+    esac
 
 script:
-  - export DBGC=""
-  - if [[ $DEBUG == "true" ]]; then export DBGC="--enable-debug"; fi
-  - if [[ $DEBUG == "true" ]]; then export CXXFLAGS="-Og -g"; fi
-  - if [[ $ASAN == "true" ]]; then export CXXFLAGS="${CXXFLAGS} -fsanitize=address"; fi
-  - if [[ $ASAN == "true" ]]; then export LDFLAGS="-lasan"; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "true" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --enable-relocatable --static $DBGC --with-lapack="-llapack -lblas -lgfortran -lquadmath -lm"; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ $BUILD_STATIC == "false" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=4 --tests main --enable-relocatable $DBGC; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash ./coinbrew build $PROJECT --no-prompt --verbosity=3 --tests none --enable-relocatable; fi
+- |-
+    ./coinbrew build $PROJECT $COMMON_ARGS $ADD_ARGS ${DBG_ARGS:-}
 
 after_script:
-  - if [[ $DEBUG == "true" ]]; then export DBGN="-dbg"; else export DBG=""; fi
-  - if [[ $ASAN == "true" ]]; then export ASN="-asan"; else EXPORT ASN=""; fi
-  - if [[ $BUILD_STATIC == "true" ]]; then export STATIC="-static"; else export STATIC=""; fi
-  - if [ $TRAVIS_BRANCH = "master" ]; then export VERSION=master; else export VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`; fi
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export TGZ_FILE=$PROJECT-$VERSION$STATIC-$TRAVIS_DIST-$PLATFORM$DBGN$ASN.tgz; else export TGZ_FILE=$PROJECT-$VERSION$STATIC-$PLATFORM$DBGN$ASN.tgz; fi
-  - echo $TGZ_FILE
-  - cp README.md LICENSE AUTHORS dist
-  - cd dist
-  - |
-    if [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ "$TRAVIS_DIST" == "precise" ]];
-    then
+- |-
+    if [ $TRAVIS_BRANCH = "master" ]; then 
+      VERSION=master 
+    else 
+      VERSION=`echo $TRAVIS_BRANCH | cut -d "/" -f 2`
+    fi
+    
+    case $TRAVIS_OS_NAME in
+      linux)
+        TGZ_FILE=$PROJECT-$VERSION${STATIC:-}-$TRAVIS_DIST-$PLATFORM${DBGN:-}${ASN:-}.tgz
+        ;;
+      *)
+        TGZ_FILE=$PROJECT-$VERSION${STATIC:-}-$PLATFORM${DBGN:-}${ASN:-}.tgz
+    esac
+    echo $TGZ_FILE
+    cp README.md LICENSE AUTHORS dist
+    cd dist
+    if [ $TRAVIS_OS_NAME = "linux" ]] && [ $TRAVIS_DIST = precise ]; then
       # adding required libraries
       cp /usr/lib/lapack/liblapack.so.3gf lib/
       cp /usr/lib/x86_64-linux-gnu/libgfortran.so.5 lib/
@@ -166,7 +231,7 @@ after_script:
       cp /usr/lib/libcolamd.so.2.7.1 lib/
       cp /usr/lib/libmetis-edf.so.* lib/
     
-      for libfile in lib/*.so*;
+      for libfile in lib/*.so*
       do
         chrpath -r ./ $libfile
       done
@@ -175,10 +240,18 @@ after_script:
       chrpath -r \$\ORIGIN/../lib/ bin/clp
       chrpath -r \$\ORIGIN/../lib/ bin/glpsol
     fi
-  - rm lib/*.la
-  - tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
-  - curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE
-  - "while [[ ! `curl -utkralphs:$BINTRAY_API -X PUT -H \"Content-Type: application/json\" -d'{\"list_in_downloads\":true}' https://api.bintray.com/file_metadata/coin-or/download/$TGZ_FILE` =~ success ]]; do echo \"Command failed...trying again 10 seconds\"; sleep 10; done"
+    rm lib/*.la
+    tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
+    curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE
+    while [[ ! $(curl -utkralphs:$BINTRAY_API -X PUT \
+                 -H \"Content-Type: application/json\" \
+                 -d'{\"list_in_downloads\":true}' \
+                 https://api.bintray.com/file_metadata/coin-or/download/$TGZ_FILE` =~ success ]]; do 
+      echo \"Command failed...trying again 10 seconds\"
+      sleep 10
+    done
 
-after_failure:
-  - find .. -name config.log -exec tail -n 1000 {} \;
+cache:
+    directories:
+    - $HOME/AppData/Local/Temp/chocolatey
+    - /C/tools/msys64

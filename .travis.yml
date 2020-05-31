@@ -158,7 +158,7 @@ before_install:
         CCVERSION=$($CC -dumpversion)
         ;;
       clang)
-        CCVERSION=$(clang --version |& fgrep version |& sed "s/.*version \([0-9]*\.[0-9]*\).*/\1/")
+        #CCVERSION=$(clang --version |& fgrep version |& sed "s/.*version \([0-9]*\.[0-9]*\).*/\1/")
         ;;
     esac    
     if [ $DEBUG = "true" ]; then
@@ -166,7 +166,7 @@ before_install:
       DBGN="-dbg"
       export CXXFLAGS="-Og -g"
     fi
-    if [ $ASAN == "true" ]; then
+    if [ $ASAN = "true" ]; then
       ASN="-asan"
       export CXXFLAGS="${CXXFLAGS} -fsanitize=address"
       export LDFLAGS="-lasan"

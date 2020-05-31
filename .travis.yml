@@ -122,7 +122,7 @@ matrix:
     
 before_install:
 - |-
-    .ci/setup_environment.sh
+    bash .ci/setup_environment.sh
     cd ..                      
     wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
     bash ./coinbrew fetch $PROJECT_URL@$TRAVIS_BRANCH --no-prompt --skip-update 
@@ -142,7 +142,7 @@ script:
 
 after_script:
 - |-
-    $PROJECT/.ci/upload_binaries.sh
+    bash $PROJECT/.ci/upload_binaries.sh
     
 cache:
     directories:

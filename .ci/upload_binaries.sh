@@ -14,7 +14,7 @@ case $TRAVIS_OS_NAME in
         TGZ_FILE=$PROJECT-$VERSION${STATIC:-}-$PLATFORM${DBGN:-}${ASN:-}.tgz
 esac
 echo $TGZ_FILE
-cp README.md LICENSE AUTHORS dist
+cp $PROJECT/README.md $PROJECT/LICENSE $PROJECT/AUTHORS dist
 cd dist
 if [ $TRAVIS_OS_NAME = "linux" ] && [ $TRAVIS_DIST = precise ]; then
     # adding required libraries
@@ -42,6 +42,8 @@ if [ $TRAVIS_OS_NAME = "linux" ] && [ $TRAVIS_DIST = precise ]; then
     chrpath -r \$\ORIGIN/../lib/ bin/glpsol
 fi
 rm lib/*.la
+echo $TGZ_FILE
+set -x
 tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
 curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" \
      -H "X-Bintray-Override:1" \

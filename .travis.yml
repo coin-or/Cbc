@@ -117,15 +117,18 @@ matrix:
       compiler: clang
     - os: windows
 
-install:
+  allow_failures:
+    - os: windows
+
+before_install:
 - |-
+    bash .ci/install_packages.sh
     case $TRAVIS_OS_NAME in
       windows)
         BASH='cmd //C RefreshEnv.cmd '
         BASH+='& set MSYS=winsymlinks:nativestrict '
         BASH+='& C:\\tools\\msys64\\msys2_shell.cmd -defterm -no-start'
-        mingw64="$BASH -mingw64 -full-path -here -c "\"\$@"\" --"
-        BASH+=" -msys2 -c "\"\$@"\" --"
+        BASH+="-mingw64 -full-path -here -c "\"\$@"\" --"
         PATH=/C/tools/msys64/mingw64/bin:$PATH
         alias make=mingw32-make  # so that Autotools can find it
         ;;
@@ -138,7 +141,6 @@ install:
         ;;
     esac
     export BASH
-    bash .ci/install_packages.sh
 
 before_script:
 - |-
@@ -175,6 +177,3 @@ cache:
     - $HOME/AppData/Local/Temp/chocolatey
     - /C/tools/msys64
 
-jobs:
-  allow_failures:
-  - os: windows

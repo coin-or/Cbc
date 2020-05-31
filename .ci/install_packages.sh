@@ -13,17 +13,20 @@ case $TRAVIS_OS_NAME in
         [[ ! -f C:/tools/msys64/msys2_shell.cmd ]] && rm -rf C:/tools/msys64
         choco uninstall -y mingw
         choco upgrade --no-progress -y msys2
-        set -x
-        $BASH pacman --sync --noconfirm --needed mingw-w64-x86_64-toolchain
-        $BASH pacman -S mingw-w64-x86_64-lapack --noconfirm
-        $BASH pacman -S mingw-w64-x86_64-winpthreads-git --noconfirm
-        $BASH pacman -S mingw-w64-x86_64-readline --noconfirm
-        $BASH pacman -S mingw-w64-x86_64-suitesparse --noconfirm
-        $BASH pacman -S mingw-w64-x86_64-metis --noconfirm
-        $BASH pacman -S make wget tar patch dos2unix diffutils --noconfirm
-        $BASH pacman -S pkg-config git zip unzip --noconfirm
+        msys2='cmd //C RefreshEnv.cmd '
+        msys2+='& set MSYS=winsymlinks:nativestrict '
+        msys2+='& C:\\tools\\msys64\\msys2_shell.cmd -defterm -no-start'
+        msys2+=" -msys2 -c "\"\$@"\" --"
+        PATH=/C/tools/msys64/mingw64/bin:$PATH
+        $msys2 pacman --sync --noconfirm --needed mingw-w64-x86_64-toolchain
+        $msys2 pacman -S mingw-w64-x86_64-lapack --noconfirm
+        $msys2 pacman -S mingw-w64-x86_64-winpthreads-git --noconfirm
+        $msys2 pacman -S mingw-w64-x86_64-readline --noconfirm
+        $msys2 pacman -S mingw-w64-x86_64-suitesparse --noconfirm
+        $msys2 pacman -S mingw-w64-x86_64-metis --noconfirm
+        $msys2 pacman -S make wget tar patch dos2unix diffutils --noconfirm
+        $msys2 pacman -S pkg-config git zip unzip --noconfirm
         taskkill //IM gpg-agent.exe //F  # https://travis-ci.community/t/4967
-        set +x
         ;;
 esac
 

@@ -116,35 +116,56 @@ matrix:
       env: OSX=10.13  BUILD_STATIC=false DEBUG=false ASAN=false
       compiler: clang
     - os: windows
-    
+
+install:
+- |-
+    case $TRAVIS_OS_NAME in
+      windows)
+        BASH='cmd //C RefreshEnv.cmd '
+        BASH+='& set MSYS=winsymlinks:nativestrict '
+        BASH+='& C:\\tools\\msys64\\msys2_shell.cmd -defterm -no-start'
+        mingw64="$msys2 -mingw64 -full-path -here -c "\"\$@"\" --"
+        BASH+=" -msys2 -c "\"\$@"\" --"
+        BASH
+        PATH=/C/tools/msys64/mingw64/bin:$PATH
+        alias make=mingw32-make  # so that Autotools can find it
+        ;;
+      *)
+        BASH=bash
+        ;;
+    esac
+    bash .ci/install_packages.sh
+
 before_script:
 - |-
+    PROJECT=$(basename $PWD)
     cd ..                      
     wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
-    PROJECT=$(echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2)
-    bash ./coinbrew fetch $PROJECT --no-prompt --skip-update
+    $BASH ./coinbrew fetch $PROJECT --no-prompt --skip-update
 
 before_cache:
 - |-
     case $TRAVIS_OS_NAME in
       windows)
         # https://unix.stackexchange.com/a/137322/107554
-        $msys2 pacman --sync --clean --noconfirm
+        $BASH pacman --sync --clean --noconfirm
         ;;
     esac
 
 script:
 - |-
     source $PROJECT/.ci/setup_environment.sh
-    for i in "${COMMON_ARGS[@]}"; do echo $i; done
-    bash ./coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}"
+    $BASH ./coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}"
 
 after_script:
 - |-
     source $PROJECT/.ci/setup_environment.sh
-    bash $PROJECT/.ci/upload_binaries.sh
+    $BASH $PROJECT/.ci/upload_binaries.sh
     
 cache:
     directories:
     - $HOME/AppData/Local/Temp/chocolatey
     - /C/tools/msys64
+
+allow_failures:
+  - os: windows

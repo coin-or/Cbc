@@ -121,8 +121,8 @@ before_script:
 - |-
     cd ..                      
     wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
-    PROJECT_URL=https://github.com/$TRAVIS_REPO_SLUG
-    bash ./coinbrew fetch $PROJECT_URL@$TRAVIS_BRANCH --no-prompt --skip-update
+    PROJECT=$(echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2)
+    bash ./coinbrew fetch $PROJECT --no-prompt --skip-update
 
 before_cache:
 - |-
@@ -135,12 +135,12 @@ before_cache:
 
 script:
 - |-
-    source .ci/setup_environment.sh
+    source $PROJECT/.ci/setup_environment.sh
     bash ./coinbrew build $PROJECT "$COMMON_ARGS" "$ADD_ARGS" "${DBG_ARGS:-}"
 
 after_script:
 - |-
-    source .ci/setup_environment.sh
+    source $PROJECT/.ci/setup_environment.sh
     bash $PROJECT/.ci/upload_binaries.sh
     
 cache:

@@ -72,8 +72,7 @@ matrix:
       install:
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
-        - sudo update-alternatives --install /usr/bin/gfortran gfortran \
-          /usr/bin/gfortran-9 90
+        - sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - os: linux
       dist: bionic

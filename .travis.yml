@@ -135,11 +135,11 @@ before_cache:
 
 script:
 - |-
-    bash ./coinbrew build $PROJECT "$COMMON_ARGS" "$ADD_ARGS" "${DBG_ARGS:-}"
+    source ./coinbrew build $PROJECT "$COMMON_ARGS" "$ADD_ARGS" "${DBG_ARGS:-}"
 
 after_script:
 - |-
-    bash $PROJECT/.ci/upload_binaries.sh
+    source $PROJECT/.ci/upload_binaries.sh
     
 cache:
     directories:

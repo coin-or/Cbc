@@ -13,6 +13,7 @@ case $TRAVIS_OS_NAME in
         [[ ! -f C:/tools/msys64/msys2_shell.cmd ]] && rm -rf C:/tools/msys64
         choco uninstall -y mingw
         choco upgrade --no-progress -y msys2
+        set -x
         $BASH pacman --sync --noconfirm --needed mingw-w64-x86_64-toolchain
         $BASH pacman -S mingw-w64-x86_64-lapack --noconfirm
         $BASH pacman -S mingw-w64-x86_64-winpthreads-git --noconfirm
@@ -22,6 +23,7 @@ case $TRAVIS_OS_NAME in
         $BASH pacman -S make wget tar patch dos2unix diffutils --noconfirm
         $BASH pacman -S pkg-config git zip unzip --noconfirm
         taskkill //IM gpg-agent.exe //F  # https://travis-ci.community/t/4967
+        set +x
         ;;
 esac
 

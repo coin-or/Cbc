@@ -124,7 +124,7 @@ install:
         BASH='cmd //C RefreshEnv.cmd '
         BASH+='& set MSYS=winsymlinks:nativestrict '
         BASH+='& C:\\tools\\msys64\\msys2_shell.cmd -defterm -no-start'
-        mingw64="$msys2 -mingw64 -full-path -here -c "\"\$@"\" --"
+        mingw64="$BASH -mingw64 -full-path -here -c "\"\$@"\" --"
         BASH+=" -msys2 -c "\"\$@"\" --"
         PATH=/C/tools/msys64/mingw64/bin:$PATH
         alias make=mingw32-make  # so that Autotools can find it

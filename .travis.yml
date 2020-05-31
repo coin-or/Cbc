@@ -117,7 +117,7 @@ matrix:
       compiler: clang
     - os: windows
     
-before_install:
+before_script:
 - |-
     source .ci/setup_environment.sh
     cd ..                      

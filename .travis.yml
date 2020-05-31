@@ -125,7 +125,7 @@ before_install:
     .ci/setup_environment.sh
     cd ..                      
     wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
-    ./coinbrew fetch $PROJECT_URL@$TRAVIS_BRANCH --no-prompt --skip-update 
+    bash ./coinbrew fetch $PROJECT_URL@$TRAVIS_BRANCH --no-prompt --skip-update 
 
 before_cache:
 - |-
@@ -138,7 +138,7 @@ before_cache:
 
 script:
 - |-
-    ./coinbrew build $PROJECT $COMMON_ARGS $ADD_ARGS ${DBG_ARGS:-}
+    bash ./coinbrew build $PROJECT $COMMON_ARGS $ADD_ARGS ${DBG_ARGS:-}
 
 after_script:
 - |-

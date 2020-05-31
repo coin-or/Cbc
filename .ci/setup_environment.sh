@@ -39,22 +39,26 @@ case $CC in
         export CCVERSION=$(clang --version |& fgrep version |& \
                            sed "s/.*version \([0-9]*\.[0-9]*\).*/\1/")
         ;;
-esac    
+esac
+declare -a DBG_ARGS
+export DBG_ARGS=()
 if [ $DEBUG = "true" ]; then
-    export DBG_ARGS="--enable-debug"
+    export DBG_ARGS=( --enable-debug )
     export DBGN="-dbg"
-    export CXXFLAGS="-Og -g"
+    export CXXFLAGS=( -Og -g)
 fi
 if [ $ASAN = "true" ]; then
     export ASN="-asan"
     export CXXFLAGS="${CXXFLAGS} -fsanitize=address"
     export LDFLAGS="-lasan"
 fi
+declare -a DBG_ARGS
+export ADD_ARGS=()
 if [ $BUILD_STATIC = "true" ]; then
-    export STATIC="-static"
-    export ADD_ARGS="--static --with-lapack='-llapack -lblas -lgfortran -lquadmath -lm'"
+    export STATIC=( -static )
+    export ADD_ARGS=( --static --with-lapack='-llapack -lblas -lgfortran -lquadmath -lm' )
 fi        
-export COMMON_ARGS="--no-prompt --verbosity 2 --tests main --enable-relocatable"
+declare -a COMMON_ARGS
+export COMMON_ARGS=( --no-prompt --verbosity 2 --tests main --enable-relocatable )
 export PLATFORM=$TRAVIS_OS_NAME${OSX:-}-x86_64-$CC$CCVERSION
 export PROJECT_URL=https://github.com/$TRAVIS_REPO_SLUG
-export PROJECT=$(echo $TRAVIS_REPO_SLUG | cut -d "/" -f 2)

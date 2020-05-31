@@ -163,13 +163,18 @@ script:
 
 after_script:
 - |-
-    source $PROJECT/.ci/setup_environment.sh
-    $BASH $PROJECT/.ci/upload_binaries.sh
+    case $TRAVIS_OS_NAME in
+      linux|osx)
+        source $PROJECT/.ci/setup_environment.sh
+        $BASH $PROJECT/.ci/upload_binaries.sh
+        ;;
+    esac
     
 cache:
     directories:
     - $HOME/AppData/Local/Temp/chocolatey
     - /C/tools/msys64
 
-allow_failures:
+jobs:
+  allow_failures:
   - os: windows

@@ -48,10 +48,10 @@ tar -czvf $TGZ_FILE lib/* bin/* include/* share/* README.md LICENSE AUTHORS
 curl -T $TGZ_FILE -utkralphs:$BINTRAY_API -H "X-Bintray-Publish:1" \
      -H "X-Bintray-Override:1" \
      https://api.bintray.com/content/coin-or/download/$PROJECT/$VERSION/$TGZ_FILE
-while [ ! $(curl -utkralphs:$BINTRAY_API -X PUT \
+while [[ ! $(curl -utkralphs:$BINTRAY_API -X PUT \
                  -H "Content-Type: application/json" \
                  -d'{"list_in_downloads":true}' \
-                 https://api.bintray.com/file_metadata/coin-or/download/$TGZ_FILE) =~ success ];
+                 https://api.bintray.com/file_metadata/coin-or/download/$TGZ_FILE) =~ success ]];
 do 
     echo "Command failed...trying again 10 seconds"
     sleep 10

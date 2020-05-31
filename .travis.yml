@@ -129,15 +129,20 @@ install:
         PATH=/C/tools/msys64/mingw64/bin:$PATH
         alias make=mingw32-make  # so that Autotools can find it
         ;;
-      *)
+      osx)
+        echo $PATH
+        BASH=/usr/local/bin/bash
+        ;;
+      linux)
         BASH=bash
         ;;
     esac
+    export BASH
     bash .ci/install_packages.sh
 
 before_script:
 - |-
-    PROJECT=$(basename $PWD)
+    export PROJECT=$(basename $PWD)
     cd ..                      
     wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
     $BASH ./coinbrew fetch $PROJECT --no-prompt --skip-update

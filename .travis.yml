@@ -136,9 +136,7 @@ before_cache:
 script:
 - |-
     source $PROJECT/.ci/setup_environment.sh
-    echo $PROJECT
-    echo $COMMON_ARGS
-    bash ./coinbrew build $PROJECT "$COMMON_ARGS" "$ADD_ARGS" "${DBG_ARGS:-}"
+    bash ./coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}"
 
 after_script:
 - |-

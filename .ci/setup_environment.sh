@@ -2,14 +2,16 @@
 
 case $CC in
     gcc*)
-        export CCVERSION=$($CC -dumpversion)
         if [ $TRAVIS_OS_NAME = osx ]; then
             export CC=gcc-9
             export CXX=g++-9
+            CCVERSION=9
+        else
+            export CCVERSION=$($CC -dumpversion)
         fi
         ;;
     clang)
-        export CCVERSION=$(clang --version |& fgrep version |& \
+        export CCVERSION=$(clang --version | fgrep version | \
                            sed "s/.*version \([0-9]*\.[0-9]*\).*/\1/")
         ;;
 esac

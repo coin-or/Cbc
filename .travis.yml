@@ -125,15 +125,10 @@ before_install:
     bash .ci/install_packages.sh
     case $TRAVIS_OS_NAME in
       windows)
-        BASH='cmd //C RefreshEnv.cmd '
-        BASH+='& set MSYS=winsymlinks:nativestrict '
-        BASH+='& C:\\tools\\msys64\\msys2_shell.cmd -defterm -no-start'
-        BASH+="-mingw64 -full-path -here -c "\"\$@"\" --"
-        PATH=/C/tools/msys64/mingw64/bin:$PATH
+        BASH=bash
         alias make=mingw32-make  # so that Autotools can find it
         ;;
       osx)
-        echo $PATH
         BASH=/usr/local/bin/bash
         ;;
       linux)

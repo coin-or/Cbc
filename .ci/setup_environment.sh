@@ -35,3 +35,6 @@ declare -a COMMON_ARGS
 export COMMON_ARGS=( --no-prompt --verbosity 2 --tests main --enable-relocatable )
 export PLATFORM=$TRAVIS_OS_NAME${OSX:-}-x86_64-$CC$CCVERSION
 export PROJECT_URL=https://github.com/$TRAVIS_REPO_SLUG
+if [ $TRAVIS_OS_NAME = windows ]; then
+    export PATH=/C/tools/msys64/mingw64/bin:$PATH
+fi

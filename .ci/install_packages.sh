@@ -17,7 +17,6 @@ case $TRAVIS_OS_NAME in
         msys2+='& set MSYS=winsymlinks:nativestrict '
         msys2+='& C:\\tools\\msys64\\msys2_shell.cmd -defterm -no-start'
         msys2+=" -msys2 -c "\"\$@"\" --"
-        PATH=/C/tools/msys64/mingw64/bin:$PATH
         $msys2 pacman --sync --noconfirm --needed mingw-w64-x86_64-toolchain
         $msys2 pacman -S mingw-w64-x86_64-lapack --noconfirm
         $msys2 pacman -S mingw-w64-x86_64-winpthreads-git --noconfirm

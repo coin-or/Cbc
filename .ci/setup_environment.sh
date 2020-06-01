@@ -25,7 +25,7 @@ if [ x$ASAN = x"true" ]; then
     export CXXFLAGS="${CXXFLAGS} -fsanitize=address"
     export LDFLAGS="-lasan"
 fi
-declare -a DBG_ARGS
+declare -a ADD_ARGS
 export ADD_ARGS=()
 if [ x$BUILD_STATIC = x"true" ]; then
     export STATIC=( -static )

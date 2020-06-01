@@ -155,6 +155,7 @@ before_cache:
 
 script:
 - |-
+    export VERBOSITY=3
     source $PROJECT/.ci/setup_environment.sh
     $BASH ./coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}"
 

@@ -42,7 +42,7 @@ fi
 if [ x$LD_FLAGS != x ]; then
     export ADD_ARGS+=( LDFLAGS=${LDFLAGS} )
 fi
-export COMMON_ARGS=( --no-prompt --verbosity ${VERBOSITY:2} --tests main --enable-relocatable )
+export COMMON_ARGS=( --no-prompt --verbosity ${VERBOSITY:-2} --tests main --enable-relocatable )
 export PLATFORM=$TRAVIS_OS_NAME${OSX:-}-x86_64-$CC$CCVERSION
 export PROJECT_URL=https://github.com/$TRAVIS_REPO_SLUG
 if [ $TRAVIS_OS_NAME = windows ]; then

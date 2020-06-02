@@ -122,6 +122,7 @@ matrix:
 
 before_install:
 - |-
+    echo "%%%%%%%% Installing Additional Packages %%%%%%%%%%%"
     bash .ci/install_packages.sh
     case $TRAVIS_OS_NAME in
       windows)
@@ -139,6 +140,7 @@ before_install:
 
 before_script:
 - |-
+    echo "%%%%%%%% Fetching Dependencies %%%%%%%%%%%"
     export PROJECT=$(basename $PWD)
     cd ..                      
     wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
@@ -155,12 +157,15 @@ before_cache:
 
 script:
 - |-
+    echo "%%%%%%%% Building Project %%%%%%%%%%%"
     export VERBOSITY=3
     source $PROJECT/.ci/setup_environment.sh
+    echo "coinbrew args: ${COMMON_ARGS[@]} ${ADD_ARGS[@]} ${DBG_ARGS[@]}"
     $BASH ./coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}"
 
 after_script:
 - |-
+    echo "%%%%%%%% Uploading BInaries %%%%%%%%%%%"
     case $TRAVIS_OS_NAME in
       linux|osx)
         source $PROJECT/.ci/setup_environment.sh

@@ -1948,6 +1948,30 @@ Cbc_solve(Cbc_Model *model)
       Cbc_setParameter(model, "heur", "off");        
     }
 
+    switch (model->int_param[INT_PARAM_CGRAPH]) {
+      case 0:
+        Cbc_setParameter(model, "cgraph", "off");
+        break;
+      case 2:
+        Cbc_setParameter(model, "cgraph", "on");
+        break;
+      case 3:
+        Cbc_setParameter(model, "cgraph", "clq");
+        break;
+    }
+
+    switch (model->int_param[INT_PARAM_CLIQUE_MERGING]) {
+      case 0:
+        Cbc_setParameter(model, "clqstr", "off");
+        break;
+      case 2:
+        Cbc_setParameter(model, "clqstr", "before");
+        break;
+      case 3:
+        Cbc_setParameter(model, "clqstr", "after");
+        break;
+    }
+
     Cbc_MessageHandler *cbcmh  = NULL;
 
     if (model->userCallBack) {
@@ -2044,6 +2068,7 @@ Cbc_solve(Cbc_Model *model)
     model->cbcModel_->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
     model->cbcModel_->setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
     model->cbcModel_->setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
+    cbcData.noPrinting_ = true;
 
     CbcMain1( nargs, args, *model->cbcModel_, cbc_callb, cbcData );
 
@@ -4361,6 +4386,8 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_ROUND_INT_VARS]   =        1;
   model->int_param[INT_PARAM_RANDOM_SEED]      =        1;
   model->int_param[INT_PARAM_ELAPSED_TIME]     =        1;
+  model->int_param[INT_PARAM_CGRAPH]           =        1;
+  model->int_param[INT_PARAM_CLIQUE_MERGING]   =        1;
 
   model->dbl_param[DBL_PARAM_PRIMAL_TOL]       =          1e-6;
   model->dbl_param[DBL_PARAM_DUAL_TOL]         =          1e-6;

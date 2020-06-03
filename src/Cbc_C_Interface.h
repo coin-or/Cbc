@@ -107,9 +107,11 @@ enum IntParam {
   INT_PARAM_MULTIPLE_ROOTS      = 13, /*! Multiple root passes to get additional cuts and solutions. */
   INT_PARAM_ROUND_INT_VARS      = 14, /*! If integer variables should be round to remove small infeasibilities. This can increase the overall amount of infeasibilities in problems with both continuous and integer variables */
   INT_PARAM_RANDOM_SEED         = 15, /*! When solving LP and MIP, randomization is used to break ties in some decisions. This changes the random seed so that multiple executions can produce different results */
-  INT_PARAM_ELAPSED_TIME        = 16  /*! When =1 use elapsed (wallclock) time, otherwise use CPU time */
+  INT_PARAM_ELAPSED_TIME        = 16, /*! When =1 use elapsed (wallclock) time, otherwise use CPU time */
+  INT_PARAM_CGRAPH              = 17, /*! Conflict graph: controls if the conflict graph is created or not. 0: off, 1: auto, 2: on 3: fast weaker clique sep */
+  INT_PARAM_CLIQUE_MERGING      = 18, /*! Clique merging options: 0: off , 1 auto , 2 before solving LP, 3 after solving LP and pre-processing */
 };
-#define N_INT_PARAMS 17
+#define N_INT_PARAMS 19
   
 /** typedef for cbc callback to monitor the progress of the search
  * in terms of improved upper and lower bounds */

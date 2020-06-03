@@ -15319,6 +15319,10 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
         }
       }
 #endif
+      // double check testSolution_ is correct (especially for parallel)
+      memcpy(currentSolution_,solver_->getColSolution(),
+	     solver_->getNumCols()*sizeof(double));
+      testSolution_ = currentSolution_;
       if (numberBeforeTrust_ == 0) {
         anyAction = newNode->chooseBranch(this, oldNode, numberPassesLeft);
       } else {

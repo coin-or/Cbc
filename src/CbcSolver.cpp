@@ -4448,7 +4448,7 @@ int CbcMain1(int argc, const char *argv[],
                     redoSOS = true;
                     bool keepPPN = parameters_[whichParam(CBC_PARAM_STR_PREPROCNAMES, parameters_)].currentOptionAsInteger();
 #ifdef SAVE_NAUTY
-                    keepPPN = 1;
+                 keepPPN = 1;
 #endif
                     process.setKeepColumnNames(keepPPN);
                     process.setTimeLimit(babModel_->getMaximumSeconds() - babModel_->getCurrentSeconds(), babModel_->useElapsedTime());
@@ -4461,6 +4461,23 @@ int CbcMain1(int argc, const char *argv[],
 
                       osiclp->getModelPtr()->setPerturbation(savePerturbation);
                       osiclp->getModelPtr()->setMoreSpecialOptions(saveOptions);
+		      /* clean solvers - should be done in preProcess but
+			 that doesn't know about Clp */
+		      OsiClpSolverInterface * solver;
+		      solver = dynamic_cast<OsiClpSolverInterface *>(process.originalModel());
+		      solver->getModelPtr()->cleanScalingEtc();
+		      solver = dynamic_cast<OsiClpSolverInterface *>(process.startModel());
+		      if (solver)
+			solver->getModelPtr()->cleanScalingEtc();
+		      // some of these may be same
+		      for (int i=0;i<process.numberSolvers();i++) {
+			solver = dynamic_cast<OsiClpSolverInterface *>(process.modelAtPass(i));
+			if (solver)
+			  solver->getModelPtr()->cleanScalingEtc();
+			solver = dynamic_cast<OsiClpSolverInterface *>(process.modifiedModel(i));
+			if (solver)
+			  solver->getModelPtr()->cleanScalingEtc();
+		      }		
                     }
                   }
 #elif CBC_OTHER_SOLVER == 1
@@ -7482,6 +7499,8 @@ int CbcMain1(int argc, const char *argv[],
 		    if (value<0.0) {
 		      babModel_->setPrintFrequency(static_cast<int>(-value));
 		    }
+		  } else {
+		    babModel_->setSecsPrintFrequency(value);
 		  }
 		}
 #endif
@@ -7686,6 +7705,8 @@ int CbcMain1(int argc, const char *argv[],
 		    if (value<0.0) {
 		      model_.setPrintFrequency(static_cast<int>(-value));
 		    }
+		  } else {
+		    model_.setSecsPrintFrequency(value);
 		  }
 		}
 #endif

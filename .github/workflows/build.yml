@@ -1,0 +1,18 @@
+name: C/C++ CI
+
+on: 
+  push:
+  pull_request:
+
+jobs:
+  ubuntu-build:
+    runs-on: ubuntu-18.04
+    steps:
+        # - name: Checkout
+        # uses: actions/checkout@v2.0.0
+    - name: dependencies
+      run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install gcc libgcc-9-dev g++ gfortran libgfortran-9-dev liblapack-dev libsuitesparse-dev libmetis-dev libnauty2-dev ; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90 ; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 ; sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90 ; sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
+    - name: CoinBrew fetch
+      run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:master --no-prompt
+    - name: Build
+      run: ./coinbrew build Cbc:master --no-prompt --verbosity=4  --tests main

@@ -19,7 +19,7 @@ jobs:
     - name: Separate static libraries
       run: mkdir ~/static ; cp /usr/lib/x86_64-linux-gnu/*.a ~/static/ ;  ls ~/static/ ; sudo rm /usr/lib/x86_64-linux-gnu/libamd.so.2 /usr/lib/x86_64-linux-gnu/libblas.so.3 /usr/lib/x86_64-linux-gnu/libmetis.so.5 ; sudo ldconfig
     - name: Build
-      run: export CXXFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; export LD_LIBRARY_PATH="/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
+      run: export CXXFLAGS="-Wl,-Bstatic -static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; export LD_LIBRARY_PATH="/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
     - uses: actions/upload-artifact@v2
       with:
         name: cbc-x86-64-linux-gcc9.zip

@@ -17,9 +17,7 @@ jobs:
     - name: CoinBrew fetch
       run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew  ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:${GITHUB_REF##*/} --no-prompt
     - name: Build
-      run: export CXXFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
-    - name: List system files
-      run: ls -l /lib/x86_64-linux-gnu/ | grep -i "\.a\>"
+      run: export CXXFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LDFLAGS="-l/usr/lib/x86_64-linux-gnu/libamd.a -l/usr/lib/x86_64-linux-gnu/libnauty.a"  ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
     - uses: actions/upload-artifact@v2
       with:
         name: cbc-x86-64-linux-gcc9.zip

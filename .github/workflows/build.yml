@@ -17,7 +17,7 @@ jobs:
     - name: CoinBrew fetch
       run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew  ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:${GITHUB_REF##*/} --no-prompt
     - name: Separate static libraries
-      run: mkdir ~/static ; cp /usr/lib/x86_64-linux-gnu/*.a ~/static/ ;  ls ~/static/ ; sudo rm /usr/lib/x86_64-linux-gnu/libnauty*.so /usr/lib/x86_64-linux-gnu/libblas.so.3 /usr/lib/x86_64-linux-gnu/libsuitesparseconfig.so.5 /usr/lib/x86_64-linux-gnu/libamd.so.2 /usr/lib/x86_64-linux-gnu/libblas.so.3 /usr/lib/x86_64-linux-gnu/libmetis.so.5  ; sudo ldconfig
+      run: mkdir ~/static ; cp /usr/lib/x86_64-linux-gnu/*.a ~/static/ ;  ls ~/static/ ; sudo rm /usr/lib/x86_64-linux-gnu/libnauty*.so /usr/lib/x86_64-linux-gnu/libblas.so.3 /usr/lib/x86_64-linux-gnu/libsuitesparseconfig.so.5 /usr/lib/x86_64-linux-gnu/libamd.so.2 /usr/lib/x86_64-linux-gnu/libmetis.so.5  ; sudo ldconfig
     - name: Build
       run: export CXXFLAGS="-Wl,-Bstatic -static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; export LD_LIBRARY_PATH="/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --without-asl --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
     - uses: actions/upload-artifact@v2

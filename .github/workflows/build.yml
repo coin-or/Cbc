@@ -22,9 +22,7 @@ jobs:
       #run: pwd ; ls
     - name: Compress
       run: cd /home/runner/prog/ ; tar cvzf /home/runner/cbc-x86-64-linux-gcc9.tar.gz *
-    - name: Upload the artifacts
-      uses: skx/github-action-publish-binaries@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/upload-artifact@v2
       with:
-        args: '/home/runner/cbc-x86-64-linux-gcc9.tar.gz'
+        name: cbc-x86-64-linux-gcc9.tar.gz
+        path: /home/runner/cbc-x86-64-linux-gcc9.tar.gz

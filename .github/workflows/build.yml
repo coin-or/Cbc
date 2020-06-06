@@ -17,7 +17,7 @@ jobs:
     - name: CoinBrew fetch
       run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew  ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:${GITHUB_REF##*/} --no-prompt
     - name: Separate static libraries
-      run: mkdir ~/static ; cp /lib/x86_64-linux-gnu/*.a ~/static/ ;  ls ~/static/
+      run: mkdir ~/static ; cp /usr/lib/x86_64-linux-gnu/*.a ~/static/ ;  ls ~/static/
     - name: Build
       run: export CXXFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LDFLAGS="-L/home/runner/static/"  ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
     - uses: actions/upload-artifact@v2

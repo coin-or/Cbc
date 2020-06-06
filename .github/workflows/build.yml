@@ -8,8 +8,8 @@ jobs:
   ubuntu-build:
     runs-on: ubuntu-18.04
     steps:
-        # - name: Checkout
-        # uses: actions/checkout@v2.0.0
+    - name: Checkout
+      uses: actions/checkout@v2.0.0
     - name: announce
       run: echo "Building CBC branch ${GITHUB_REF##*/}"
     - name: dependencies
@@ -18,3 +18,9 @@ jobs:
       run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:${GITHUB_REF##*/} --no-prompt
     - name: Build
       run: ./coinbrew build Cbc:${GITHUB_REF##*/} --no-prompt --verbosity=4  --tests main
+    - name: Upload the artifacts
+      uses: skx/github-action-publish-binaries@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        args: 'build*/*.so build*/*.a'

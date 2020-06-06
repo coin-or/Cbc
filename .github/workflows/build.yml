@@ -17,12 +17,10 @@ jobs:
     - name: CoinBrew fetch
       run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew  ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:${GITHUB_REF##*/} --no-prompt
     - name: Build
-      run: ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --no-prompt --verbosity=4  --tests none
+      run: ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --no-prompt --verbosity=4  --parallel-jobs=2 --tests none
       #- name: where I am
       #run: pwd ; ls
-    - name: Compress
-      run: cd /home/runner/prog/ ; tar cvzf /home/runner/cbc-x86-64-linux-gcc9.tar.gz *
     - uses: actions/upload-artifact@v2
       with:
-        name: cbc-x86-64-linux-gcc9.tar.gz
-        path: /home/runner/cbc-x86-64-linux-gcc9.tar.gz
+        name: cbc-x86-64-linux-gcc9
+        path: /home/runner/prog/

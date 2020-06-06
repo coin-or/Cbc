@@ -13,11 +13,13 @@ jobs:
     - name: announce
       run: echo "Building CBC branch ${GITHUB_REF##*/}"
     - name: dependencies
-      run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install gcc-9 libgcc-9-dev g++-9 gfortran-9 libgfortran-9-dev liblapack-dev libsuitesparse-dev libmetis-dev libnauty2-dev ; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90 ; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 ; sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90 ; sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
+      run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install gcc-9 libgcc-9-dev g++-9 gfortran-9 libgfortran-9-dev libc6-dev libbz2-dev zlib1g-dev liblapack-dev libsuitesparse-dev libmetis-dev libnauty2-dev ; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90 ; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 ; sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90 ; sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - name: CoinBrew fetch
       run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew  ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:${GITHUB_REF##*/} --no-prompt
     - name: Build
       run: export CXXFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
+    - name: List system files
+      run: ls -l /lib/x86_64-linux-gnu/ | grep -i "\.a\>"
     - uses: actions/upload-artifact@v2
       with:
         name: cbc-x86-64-linux-gcc9.zip

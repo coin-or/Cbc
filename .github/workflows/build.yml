@@ -17,10 +17,14 @@ jobs:
     - name: CoinBrew fetch
       run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:${GITHUB_REF##*/} --no-prompt
     - name: Build
-      run: ./coinbrew build Cbc:${GITHUB_REF##*/} --no-prompt --verbosity=4  --tests main
-    - name: Upload the artifacts
-      uses: skx/github-action-publish-binaries@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: ./coinbrew build Cbc:${GITHUB_REF##*/} --no-prompt --verbosity=4  --tests none
+    - name: where I am
+      run: pwd ; ls
+    - uses: "marvinpinto/action-automatic-releases@latest"
       with:
-        args: 'build*/*.so build*/*.a'
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "master"
+        prerelease: true
+        title: "Development Build"
+        files: |
+          build/Cbc/master/src/.libs/*.{so}

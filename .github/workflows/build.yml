@@ -15,7 +15,7 @@ jobs:
     - name: dependencies
       run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install gcc-9 libgcc-9-dev g++-9 gfortran-9 libgfortran-9-dev libc6-dev libbz2-dev zlib1g-dev liblapack-dev libsuitesparse-dev libnauty2-dev ; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90 ; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 ; sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90 ; sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - name: install statically built GCC
-      run: wget -nH https://mirror.nbtelecom.com.br/gnu/gcc/gcc-9.3.0/gcc-9.3.0.tar.xz ; tar Jxf gcc-9.3.0.tar.xz ; cd gcc-9.3.0 ; ./contrib/download_prerequisites ; cd ~ ; mkdir build ; cd build ;  ../gcc-9.3.0/configure -v --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu --prefix=/opt/gcc-9.3 --enable-checking=release --enable-languages=c,c++,fortran --disable-multilib --program-suffix=-9.3
+      run: cd ~ ; wget -nH https://mirror.nbtelecom.com.br/gnu/gcc/gcc-9.3.0/gcc-9.3.0.tar.xz ; tar Jxf gcc-9.3.0.tar.xz ; cd gcc-9.3.0 ; ./contrib/download_prerequisites ; cd ~ ; mkdir build ; cd build ;  ../gcc-9.3.0/configure -v --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu --prefix=/opt/gcc-9.3 --enable-checking=release --enable-languages=c,c++,fortran --disable-multilib --program-suffix=-9.3
     - name: CoinBrew fetch
       run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew  ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:${GITHUB_REF##*/} --no-prompt
     - name: Separate static libraries

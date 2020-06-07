@@ -5,15 +5,13 @@ on:
   pull_request:
 
 jobs:
-  ubuntu-build:
+  ubuntu-bionic-static-build:
     runs-on: ubuntu-18.04
     steps:
-        #- name: Checkout
-        # uses: actions/checkout@v2.0.0
     - name: announce
       run: echo "Building CBC branch ${GITHUB_REF##*/}"
     - name: dependencies
-      run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install gcc-9 libgcc-9-dev g++-9 gfortran-9 libgfortran-9-dev libc6-dev libbz2-dev zlib1g-dev liblapack-dev libsuitesparse-dev libnauty2-dev ; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90 ; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 ; sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90 ; sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
+      run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install gcc-9 libgcc-9-dev g++-9 gfortran-9 libgfortran-9-dev libc6-dev libbz2-dev zlib1g-dev liblapack-dev libsuitesparse-dev libsuitesparseconfig5 libnauty2-dev ; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90 ; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 ; sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90 ; sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - name: download gcc with only static libraries
       run: cd ~ ; wget -nH http://www.decom.ufop.br/haroldo/files/gcc-9.3-bionic-static.tar.xz ; cd  / ; sudo tar Jxf  /home/runner/gcc-9.3-bionic-static.tar.xz ; export PATH=/opt/gcc-9.3/bin:$PATH
     - name: CoinBrew fetch
@@ -21,7 +19,7 @@ jobs:
     - name: Separate static libraries
       run: mkdir ~/static ; cp /usr/lib/x86_64-linux-gnu/*.a ~/static/ ;  ls ~/static/ ; sudo rm /usr/lib/x86_64-linux-gnu/libnauty*.so /usr/lib/x86_64-linux-gnu/libblas.so.3 /usr/lib/x86_64-linux-gnu/libsuitesparseconfig.so.5 /usr/lib/x86_64-linux-gnu/libamd.so.2 /usr/lib/x86_64-linux-gnu/libmetis.so.5 /usr/lib/x86_64-linux-gnu/libamd.so /usr/lib/x86_64-linux-gnu/libbtf.so /usr/lib/x86_64-linux-gnu/libcamd.so /usr/lib/x86_64-linux-gnu/libccolamd.so /usr/lib/x86_64-linux-gnu/libcholmod.so /usr/lib/x86_64-linux-gnu/libcolamd.so /usr/lib/x86_64-linux-gnu/libcxsparse.so /usr/lib/x86_64-linux-gnu/libgraphblas.so /usr/lib/x86_64-linux-gnu/libklu.so /usr/lib/x86_64-linux-gnu/libldl.so /usr/lib/x86_64-linux-gnu/librbio.so /usr/lib/x86_64-linux-gnu/libspqr.so /usr/lib/x86_64-linux-gnu/libsuitesparseconfig.so /usr/lib/x86_64-linux-gnu/libumfpack.so   ; sudo ldconfig
     - name: Build
-      run: export CXXFLAGS="-Wl,-Bstatic -static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; export LD_LIBRARY_PATH="/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --without-asl --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
+      run: export CXXFLAGS="-Wl,-Bstatic -static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/opt/gcc-9.3/lib64/:/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; export LD_LIBRARY_PATH="/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --without-asl --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
     - uses: actions/upload-artifact@v2
       with:
         name: cbc-x86-64-linux-gcc9.zip

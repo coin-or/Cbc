@@ -23,7 +23,7 @@ jobs:
     - name: add static libraries to gcc directory
       run: sudo cp /usr/lib/x86_64-linux-gnu/*.a /opt/gcc-9.3/lib64/
     - name: Build
-      run: export CXXFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/opt/gcc-9.3/lib64/:/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --without-mumps --without-asl --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
+      run: export CXXFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/opt/gcc-9.3/lib64/:/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --without-mumps --without-asl --no-prompt --verbosity=4 --disable-shared --enable-static --enable-cbc-parallel --parallel-jobs=2 --tests none
     - uses: actions/upload-artifact@v2
       with:
         name: cbc-x86-64-linux-gcc9.zip

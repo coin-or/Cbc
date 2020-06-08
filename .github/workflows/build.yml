@@ -25,7 +25,7 @@ jobs:
     - name: CBC Static build
       run: export CXXFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export FFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export F77LAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/opt/gcc-9.3/lib64/:/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --without-mumps --without-asl --no-prompt --verbosity=4 --disable-shared --enable-static --enable-cbc-parallel --parallel-jobs=2 --tests none
     - name: Build shared library for C Interface
-      run: pwd ; ls ; ls Cbc/src/Cbc_C_Interface.cpp
+      run: pwd ; ls ; ls Cbc/src/Cbc_C_Interface.cpp ; g++ -shared -O3 -fPIC -o /home/runner/prog/lib/cbc-c-linux-x86-64.so -I/home/runner/prog/include/coin-or/ -L/home/runner/prog/lib/  -DCBC_THREAD ./Cbc/src/Cbc_C_Interface.cpp -L/opt/gcc-9.3/lib64/ -lCbcSolver -lCbc -lpthread -lrt -lCgl -lOsiClp -lClpSolver -lClp -lOsi -lCoinUtils -lcoinlapack -lcoinblas -lgfortran -lquadmath -lm -static-libgcc -static-libstdc++ -static-libgfortran -lcoinglpk
     # ; export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/home/runner/prog/lib/pkgconfig/ ; g++ `pkg-config --cflags --libs CbcSolver Cbc Cgl OsiClp ClpSolver Clp Osi CoinUtils` Cbc/src/Cbc_C_Interface.cpp -shared -O3 -fPIC -o /home/runner/prog/lib/cbc-c-linux-x86-64.so
     - uses: actions/upload-artifact@v2
       with:

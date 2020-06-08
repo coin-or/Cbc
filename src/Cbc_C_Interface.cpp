@@ -2474,8 +2474,7 @@ Cbc_getRowUB(Cbc_Model *model, int row) {
   * @param row row index
   * @return row lower bound
   **/
-CBCSOLVERLIB_EXPORT double CBC_LINKAGE
-Cbc_getRowLB(Cbc_Model *model, int row) {
+double CBC_LINKAGE Cbc_getRowLB(Cbc_Model *model, int row) {
   if (row<model->solver_->getNumRows()) {
     return model->solver_->getRowLower()[row];
   } else {
@@ -2798,7 +2797,7 @@ Cbc_getRowActivity(Cbc_Model *model) {
 }
 
 
-CBCSOLVERLIB_EXPORT const double *CBC_LINKAGE
+const double *CBC_LINKAGE
 Cbc_getRowSlack(Cbc_Model *model) {
   if (model->lastOptimization==ModelNotOptimized) {
       fprintf( stderr, "Information not available, model was not optimized yet.\n");
@@ -3386,7 +3385,7 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
 
 
 /** @brief Queries the number os SOS objects */
-CBCSOLVERLIB_EXPORT int CBC_LINKAGE Cbc_numberSOS(Cbc_Model *model) {
+int CBC_LINKAGE Cbc_numberSOS(Cbc_Model *model) {
   return model->nSos;
 }
 
@@ -3572,7 +3571,7 @@ Osi_checkCGraph( void *osi ) {
 }
 
 /** @brief Returns the conflict graph */
-CBCSOLVERLIB_EXPORT const void * CBC_LINKAGE
+const void * CBC_LINKAGE
 Osi_CGraph( void *osi ) {
   OsiSolverInterface *solver = (OsiSolverInterface *)(osi);
   return solver->getCGraph();

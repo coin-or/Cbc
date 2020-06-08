@@ -11,9 +11,9 @@ jobs:
     - name: announce
       run: echo "Building CBC branch ${GITHUB_REF##*/}"
     - name: dependencies
-      run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install gcc-9 libgcc-9-dev g++-9 gfortran-9 libgfortran-9-dev libc6-dev libbz2-dev zlib1g-dev liblapack-dev libnauty2-dev ; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90 ; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 ; sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 90 ; sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
+      run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install libc6-dev libbz2-dev zlib1g-dev liblapack-dev libnauty2-dev 
     - name: download gcc with only static libraries
-      run: cd ~ ; wget -nH http://www.decom.ufop.br/haroldo/files/gcc-9.3-bionic-static.tar.xz ; cd  / ; sudo tar Jxf  /home/runner/gcc-9.3-bionic-static.tar.xz ; export PATH=/opt/gcc-9.3/bin:$PATH
+      run: cd ~ ; wget -nH http://www.decom.ufop.br/haroldo/files/gcc-9.3-bionic-static.tar.xz ; cd  / ; sudo tar Jxf  /home/runner/gcc-9.3-bionic-static.tar.xz ; export PATH=/opt/gcc-9.3/bin:$PATH ; sudo ln -s /opt/gcc-9.3/bin/g++-9.3 /opt/gcc-9.3/bin/g++ ; sudo ln -s /opt/gcc-9.3/bin/gcc-9.3 /opt/gcc-9.3/bin/gcc ; sudo ln -s /opt/gcc-9.3/bin/cpp-9.3 /opt/gcc-9.3/bin/cpp ; sudo ln -s /opt/gcc-9.3/bin/gfortran-9.3 /opt/gcc-9.3/bin/gfortran 
     - name: CoinBrew fetch
       run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew  ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:${GITHUB_REF##*/} --no-prompt
       #- name: Separate static libraries

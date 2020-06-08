@@ -11,7 +11,7 @@ jobs:
     - name: announce
       run: echo "Building CBC branch ${GITHUB_REF##*/}"
     - name: dependencies
-      run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install libc6-dev libbz2-dev zlib1g-dev liblapack-dev libnauty2-dev 
+      run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install libc6-dev libbz2-dev zlib1g-dev liblapack-dev libnauty2-dev libopenblas-base libopenblas-dev
     - name: download gcc with only static libraries
       run: cd ~ ; wget -nH http://www.decom.ufop.br/haroldo/files/gcc-9.3-bionic-static.tar.xz ; cd  / ; sudo tar Jxf  /home/runner/gcc-9.3-bionic-static.tar.xz ; export PATH=/opt/gcc-9.3/bin:$PATH ; sudo ln -s /opt/gcc-9.3/bin/g++-9.3 /opt/gcc-9.3/bin/g++ ; sudo ln -s /opt/gcc-9.3/bin/gcc-9.3 /opt/gcc-9.3/bin/gcc ; sudo ln -s /opt/gcc-9.3/bin/cpp-9.3 /opt/gcc-9.3/bin/cpp ; sudo ln -s /opt/gcc-9.3/bin/gfortran-9.3 /opt/gcc-9.3/bin/gfortran  ; sudo ln -s /opt/gcc-9.3/bin/gcc-ar-9.3 /opt/gcc-9.3/bin/gcc-ar ; sudo ln -s /opt/gcc-9.3/bin/gcc-nm-9.3 /opt/gcc-9.3/bin/gcc-nm ; sudo ln -s /opt/gcc-9.3/bin/gcc-ranlib-9.3 /opt/gcc-9.3/bin/gcc-ranlib
     - name: CoinBrew fetch
@@ -19,7 +19,7 @@ jobs:
       #- name: Separate static libraries
       # run: mkdir ~/static ; cp /usr/lib/x86_64-linux-gnu/*.a ~/static/ ;  ls ~/static/ ; sudo rm /usr/lib/x86_64-linux-gnu/libnauty*.so /usr/lib/x86_64-linux-gnu/libblas.so.3 /usr/lib/x86_64-linux-gnu/libamd.so.2 /usr/lib/x86_64-linux-gnu/libmetis.so.5 /usr/lib/x86_64-linux-gnu/libamd.so /usr/lib/x86_64-linux-gnu/libbtf.so /usr/lib/x86_64-linux-gnu/libcamd.so /usr/lib/x86_64-linux-gnu/libccolamd.so /usr/lib/x86_64-linux-gnu/libcholmod.so /usr/lib/x86_64-linux-gnu/libcolamd.so /usr/lib/x86_64-linux-gnu/libcxsparse.so /usr/lib/x86_64-linux-gnu/libgraphblas.so /usr/lib/x86_64-linux-gnu/libklu.so /usr/lib/x86_64-linux-gnu/libldl.so /usr/lib/x86_64-linux-gnu/librbio.so /usr/lib/x86_64-linux-gnu/libspqr.so  /usr/lib/x86_64-linux-gnu/libumfpack.so -f   ; sudo ldconfig
     - name: Remove some shared libraries
-      run: sudo rm /usr/lib/x86_64-linux-gnu/libnauty*.so ; find /usr | grep -i nauty
+      run: sudo rm /usr/lib/x86_64-linux-gnu/libnauty*.so
     - name: add static libraries to gcc directory
       run: sudo cp /usr/lib/x86_64-linux-gnu/*.a /opt/gcc-9.3/lib64/
     - name: Build

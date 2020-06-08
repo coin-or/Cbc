@@ -11,7 +11,7 @@ jobs:
     - name: announce
       run: echo "Building CBC branch ${GITHUB_REF##*/}"
     - name: dependencies
-      run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install libc6-dev libbz2-dev zlib1g-dev liblapack-dev libnauty2-dev libopenblas-base libopenblas-dev
+      run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; sudo apt-get update ; sudo apt-get install libc6-dev libbz2-dev zlib1g-dev liblapack-dev libnauty2-dev libopenblas-base libopenblas-dev libmumps-dev
     - name: download gcc with only static libraries
       run: cd ~ ; wget -nH http://www.decom.ufop.br/haroldo/files/gcc-9.3-bionic-static.tar.xz ; cd  / ; sudo tar Jxf  /home/runner/gcc-9.3-bionic-static.tar.xz ; export PATH=/opt/gcc-9.3/bin:$PATH ; sudo ln -s /opt/gcc-9.3/bin/g++-9.3 /opt/gcc-9.3/bin/g++ ; sudo ln -s /opt/gcc-9.3/bin/gcc-9.3 /opt/gcc-9.3/bin/gcc ; sudo ln -s /opt/gcc-9.3/bin/cpp-9.3 /opt/gcc-9.3/bin/cpp ; sudo ln -s /opt/gcc-9.3/bin/gfortran-9.3 /opt/gcc-9.3/bin/gfortran  ; sudo ln -s /opt/gcc-9.3/bin/gcc-ar-9.3 /opt/gcc-9.3/bin/gcc-ar ; sudo ln -s /opt/gcc-9.3/bin/gcc-nm-9.3 /opt/gcc-9.3/bin/gcc-nm ; sudo ln -s /opt/gcc-9.3/bin/gcc-ranlib-9.3 /opt/gcc-9.3/bin/gcc-ranlib
     - name: CoinBrew fetch
@@ -23,8 +23,14 @@ jobs:
     - name: add static libraries to gcc directory
       run: sudo cp /usr/lib/x86_64-linux-gnu/*.a /opt/gcc-9.3/lib64/
     - name: Build
-      run: export CXXFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export FFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export F77LAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/opt/gcc-9.3/lib64/:/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --without-asl --no-prompt --verbosity=4 --disable-shared --enable-static --enable-cbc-parallel --parallel-jobs=2 --tests none
+      run: export CXXFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export FFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export F77LAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/opt/gcc-9.3/lib64/:/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --without-mumps --without-asl --no-prompt --verbosity=4 --disable-shared --enable-static --enable-cbc-parallel --parallel-jobs=2 --tests none
+    - name: Build shared library for C Interface
+      run: export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/home/runner/prog/lib/pkgconfig/ ; g++ `pkg-config --cflags --libs CbcSolver Cbc Cgl OsiClp ClpSolver Clp Osi CoinUtils` Cbc/src/Cbc_C_Interface.cpp -shared -O3 -fPIC -o /home/runner/prog/lib/cbc-c-linux-x86-64.so
     - uses: actions/upload-artifact@v2
       with:
-        name: cbc-x86-64-linux-gcc9.zip
+        name: cbc-x86-64-linux-gcc9
         path: /home/runner/prog/
+    - uses: actions/upload-artifact@v2
+      with:
+        name: cbc-c-linux-x86-64
+        path: /home/runner/prog/lib/cbc-c-linux-x86-64.so

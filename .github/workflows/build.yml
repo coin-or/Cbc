@@ -18,8 +18,10 @@ jobs:
       run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew  ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:${GITHUB_REF##*/} --no-prompt
       #- name: Separate static libraries
       # run: mkdir ~/static ; cp /usr/lib/x86_64-linux-gnu/*.a ~/static/ ;  ls ~/static/ ; sudo rm /usr/lib/x86_64-linux-gnu/libnauty*.so /usr/lib/x86_64-linux-gnu/libblas.so.3 /usr/lib/x86_64-linux-gnu/libamd.so.2 /usr/lib/x86_64-linux-gnu/libmetis.so.5 /usr/lib/x86_64-linux-gnu/libamd.so /usr/lib/x86_64-linux-gnu/libbtf.so /usr/lib/x86_64-linux-gnu/libcamd.so /usr/lib/x86_64-linux-gnu/libccolamd.so /usr/lib/x86_64-linux-gnu/libcholmod.so /usr/lib/x86_64-linux-gnu/libcolamd.so /usr/lib/x86_64-linux-gnu/libcxsparse.so /usr/lib/x86_64-linux-gnu/libgraphblas.so /usr/lib/x86_64-linux-gnu/libklu.so /usr/lib/x86_64-linux-gnu/libldl.so /usr/lib/x86_64-linux-gnu/librbio.so /usr/lib/x86_64-linux-gnu/libspqr.so  /usr/lib/x86_64-linux-gnu/libumfpack.so -f   ; sudo ldconfig
+    - name: add static libraries to gcc directory
+      run: sudo cp /usr/lib/x86_64-linux-gnu/*.a /opt/gcc-9.3/lib64/
     - name: Build
-      run: export CXXFLAGS="-static -Wl,-Bstatic -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/opt/gcc-9.3/lib64/:/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --without-asl --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
+      run: export CXXFLAGS="-static -static-libgcc -static-libstdc++ -static-libgfortran" ; export LIBRARY_PATH="/opt/gcc-9.3/lib64/:/home/runner/static/:/usr/lib/x86_64-linux-gnu/" ; ./coinbrew build --prefix=/home/runner/prog Cbc:${GITHUB_REF##*/} --without-asl --no-prompt --verbosity=4 --disable-shared --enable-static --parallel-jobs=2 --tests none
     - uses: actions/upload-artifact@v2
       with:
         name: cbc-x86-64-linux-gcc9.zip

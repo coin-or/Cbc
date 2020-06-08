@@ -18,6 +18,8 @@ jobs:
       run: wget -nH https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew  ; chmod u+x coinbrew ; ./coinbrew fetch Cbc:${GITHUB_REF##*/} --no-prompt
       #- name: Separate static libraries
       # run: mkdir ~/static ; cp /usr/lib/x86_64-linux-gnu/*.a ~/static/ ;  ls ~/static/ ; sudo rm /usr/lib/x86_64-linux-gnu/libnauty*.so /usr/lib/x86_64-linux-gnu/libblas.so.3 /usr/lib/x86_64-linux-gnu/libamd.so.2 /usr/lib/x86_64-linux-gnu/libmetis.so.5 /usr/lib/x86_64-linux-gnu/libamd.so /usr/lib/x86_64-linux-gnu/libbtf.so /usr/lib/x86_64-linux-gnu/libcamd.so /usr/lib/x86_64-linux-gnu/libccolamd.so /usr/lib/x86_64-linux-gnu/libcholmod.so /usr/lib/x86_64-linux-gnu/libcolamd.so /usr/lib/x86_64-linux-gnu/libcxsparse.so /usr/lib/x86_64-linux-gnu/libgraphblas.so /usr/lib/x86_64-linux-gnu/libklu.so /usr/lib/x86_64-linux-gnu/libldl.so /usr/lib/x86_64-linux-gnu/librbio.so /usr/lib/x86_64-linux-gnu/libspqr.so  /usr/lib/x86_64-linux-gnu/libumfpack.so -f   ; sudo ldconfig
+    - name: Remove some shared libraries
+      run: sudo rm /usr/lib/x86_64-linux-gnu/libnauty*.so ; find /usr | grep -i nauty
     - name: add static libraries to gcc directory
       run: sudo cp /usr/lib/x86_64-linux-gnu/*.a /opt/gcc-9.3/lib64/
     - name: Build

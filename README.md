@@ -29,7 +29,7 @@ The project is currently managed by John Forrest, [Ted Ralphs](http://coral.ie.l
 Cbc is written in C++ and is released as open source code under the [Eclipse Public License (EPL)](http://www.opensource.org/licenses/eclipse-1.0) and is freely redistributable.
 All source code and documentation is Copyright IBM and others. This README may be redistributed freely.
 
-Cbc is distreibuted by the [COIN-OR initiative](http://www.coin-or.org/).
+Cbc is distributed by the [COIN-OR initiative](http://www.coin-or.org/).
 The Cbc website is https://github.com/coin-or/Cbc.
 
 ## CITE

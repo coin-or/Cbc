@@ -125,8 +125,8 @@ before_install:
     ############## Installing Additional Packages #################
     export PROJECT=$(basename $PWD)
     cd ..                      
-    wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
-    bash .ci/install_packages.sh
+    git clone https://github.com/coin-or/coinbrew
+    bash coinbrew/.ci/install_packages.sh
     case $TRAVIS_OS_NAME in
       windows)
         BASH=bash
@@ -144,7 +144,7 @@ before_install:
 before_script:
 - |-
     ############# Fetching Dependencies ##############
-    $BASH ./coinbrew fetch $PROJECT --no-prompt --skip-update
+    $BASH coinbrew/coinbrew fetch $PROJECT --no-prompt --skip-update
 
 before_cache:
 - |-
@@ -157,16 +157,16 @@ before_cache:
 script:
 - |-
     ############### Building Project ####################
-    source .ci/setup_environment.sh
-    $BASH ./coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}"
+    source coinbrew/.ci/setup_environment.sh
+    $BASH coinbrew/coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}"
 
 after_script:
 - |-
     ############## Uploading BInaries ##################
     case $TRAVIS_OS_NAME in
       linux|osx)
-        source .ci/setup_environment.sh
-        $BASH .ci/upload_binaries.sh
+        source coinbrew/.ci/setup_environment.sh
+        $BASH coinbrew/.ci/upload_binaries.sh
         ;;
     esac
     

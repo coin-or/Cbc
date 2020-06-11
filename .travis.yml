@@ -123,6 +123,9 @@ matrix:
 before_install:
 - |-
     ############## Installing Additional Packages #################
+    export PROJECT=$(basename $PWD)
+    cd ..                      
+    wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
     bash .ci/install_packages.sh
     case $TRAVIS_OS_NAME in
       windows)
@@ -141,9 +144,6 @@ before_install:
 before_script:
 - |-
     ############# Fetching Dependencies ##############
-    export PROJECT=$(basename $PWD)
-    cd ..                      
-    wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
     $BASH ./coinbrew fetch $PROJECT --no-prompt --skip-update
 
 before_cache:
@@ -157,7 +157,7 @@ before_cache:
 script:
 - |-
     ############### Building Project ####################
-    source $PROJECT/.ci/setup_environment.sh
+    source .ci/setup_environment.sh
     $BASH ./coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}"
 
 after_script:
@@ -165,8 +165,8 @@ after_script:
     ############## Uploading BInaries ##################
     case $TRAVIS_OS_NAME in
       linux|osx)
-        source $PROJECT/.ci/setup_environment.sh
-        $BASH $PROJECT/.ci/upload_binaries.sh
+        source .ci/setup_environment.sh
+        $BASH .ci/upload_binaries.sh
         ;;
     esac
     

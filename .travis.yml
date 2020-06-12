@@ -84,7 +84,7 @@ script:
     ############### Building Project ####################
     source coinbrew/.ci/setup_environment.sh
     if [ "$BUILD_STATIC" = "true" ]; then 
-       ADD_ARGS=( --no-third-party --enable-static --disable-shared --without-lapack --disable-readline --disable-bzlib --disable-zlib --static CXXFLAGS="-static -O2 -DNDEBUG" )
+       ADD_ARGS=( --no-third-party --enable-static --disable-shared --without-lapack --disable-readline --disable-bzlib --disable-zlib --without-cholmod --without-amd --static CXXFLAGS="-static -O2 -DNDEBUG" )
     fi
     $BASH coinbrew/coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}"
 

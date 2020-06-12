@@ -138,6 +138,7 @@ cbc_SOURCES = CoinSolve.cpp
 
 # Additional libraries
 cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LIBS) $(ASL_LIBS)
+cbc_LDFLAGS = $(LT_LDFLAGS)
 cbc_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCLIB_DEPENDENCIES) $(ASL_DEPENDENCIES)
 
 endif

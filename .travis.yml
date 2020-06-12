@@ -40,7 +40,6 @@ matrix:
       osx_image: xcode10
       env: OSX=10.13  BUILD_STATIC=false DEBUG=false ASAN=false
       compiler: clang
-    - os: windows
 
   allow_failures:
     - os: windows
@@ -90,7 +89,7 @@ script:
 
 after_script:
 - |-
-    ############## Uploading BInaries ##################
+    ############## Uploading Binaries ##################
     case $TRAVIS_OS_NAME in
       linux|osx)
         source coinbrew/.ci/setup_environment.sh

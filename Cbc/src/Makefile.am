@@ -169,6 +169,7 @@ cbc_generic_SOURCES = \
 	CbcGenSolvers.cpp
 
 cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LIBS)
+cbc_LDFLAGS = $(LT_LDFLAGS)
 cbc_generic_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCGENERIC_DEPENDENCIES)
 
 # List all additionally required solver and Osi libraries

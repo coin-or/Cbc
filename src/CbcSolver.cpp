@@ -16,6 +16,13 @@
 #include <cfloat>
 #include <cstring>
 #include <iostream>
+#ifdef HAVE_SIGNAL_H
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#include <signal.h>
+void CbcCrashHandler( int sig );
+#endif
+#endif
 
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
@@ -862,18 +869,6 @@ static void signal_handler(int whichSignal)
   return;
 }
 }
-
-//#define CBC_SIG_TRAP
-#ifdef CBC_SIG_TRAP
-#include <setjmp.h>
-static sigjmp_buf cbc_seg_buffer;
-extern "C" {
-static void signal_handler_error(int whichSignal)
-{
-  siglongjmp(cbc_seg_buffer, 1);
-}
-}
-#endif
 
 /*
   Debug checks on special ordered sets.
@@ -10841,20 +10836,9 @@ clp watson.mps -\nscaling off\nprimalsimplex");
       //babModel_->setModelOwnsSolver(false);
 #endif
   }
-#ifdef CBC_SIG_TRAP
-  // On Sun sometimes seems to be error - try and get round it
-  CoinSighandler_t saveSignal = SIG_DFL;
-  // register signal handler
-  saveSignal = signal(SIGSEGV, signal_handler_error);
-  // to force failure!babModel_->setNumberObjects(20000);
-  if (!sigsetjmp(cbc_seg_buffer, 1)) {
-#endif
+
     delete babModel_;
-#ifdef CBC_SIG_TRAP
-  } else {
-    std::cerr << "delete babModel_ failed" << std::endl;
-  }
-#endif
+
   babModel_ = NULL;
   model_.solver()->setWarmStart(NULL);
   //sprintf(generalPrint, "Total time %.2f", CoinCpuTime() - time0);
@@ -10876,7 +10860,17 @@ int CbcMain(int argc, const char *argv[],
 void CbcMain0(CbcModel &model,
   CbcSolverUsefulData &parameterData)
 {
+#ifdef HAVE_SIGNAL_H
+#ifdef HAVE_EXECINFO_H
+    signal(SIGSEGV, CbcCrashHandler);
+    signal(SIGABRT, CbcCrashHandler);
+    signal(SIGFPE, CbcCrashHandler);
+
+#endif
+#endif
+
   std::vector< CbcOrClpParam > &parameters = parameterData.parameters_;
+  
 #ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface *originalSolver = dynamic_cast< OsiClpSolverInterface * >(model.solver());
 #elif CBC_OTHER_SOLVER == 1
@@ -10893,6 +10887,7 @@ void CbcMain0(CbcModel &model,
   OsiSolverInterface *solver = model.solver();
   OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
   ClpSimplex *lpSolver = clpSolver->getModelPtr();
+  lpSolver = NULL;
   lpSolver->setPerturbation(50);
   lpSolver->messageHandler()->setPrefix(false);
 #endif
@@ -12901,6 +12896,47 @@ static int nautiedConstraints(CbcModel &model, int maxPass)
   return numberAdded;
 }
 #endif
+
+#ifdef HAVE_EXECINFO_H
+#ifdef HAVE_SIGNAL_H
+void CbcCrashHandler( int sig ) {
+  char signame[256] = "";
+  switch (sig) {
+    case SIGILL:
+      strcpy(signame, "SIGILL");
+      break;
+    case SIGSEGV:
+      strcpy(signame, "SIGSEGV");
+      break;
+    case SIGABRT:
+      strcpy(signame, "SIGABRT");
+      break;
+  }
+
+  fprintf(stderr, "\n\nERROR while running Cbc. Signal %s caught. Getting stack trace.\n", signame); fflush(stderr);
+
+#define MAX_FRAMES 30
+  void *array[MAX_FRAMES];
+  size_t size;
+  char **strings;
+  size_t i;
+
+  size = backtrace (array, MAX_FRAMES);
+  strings = backtrace_symbols (array, size);
+
+  for (i = 0; i < size; i++) {
+     fprintf (stderr, "%s\n", strings[i]); fflush(stderr);
+  }
+  fprintf(stderr, "\n\n"); fflush(stderr);
+
+  free (strings);
+  exit(1);
+#undef MAX_FRAMES
+}
+#endif
+#endif
+
+
 /*
   Version 1.00.00 November 16 2005.
   This is to stop me (JJF) messing about too much.

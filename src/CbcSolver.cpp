@@ -12913,9 +12913,18 @@ void CbcCrashHandler( int sig ) {
       break;
   }
 
+  fflush(stderr);
+  fflush(stdout);
   fprintf(stderr, "\n\nERROR while running Cbc. Signal %s caught. Getting stack trace.\n", signame); fflush(stderr);
+  {
+    char *st = getenv("RUNNING_TEST");
+    if (st) {
+        fprintf(stderr, "Error happened while running the \"%s\" test\n", st);
+        fflush(stderr);
+    }
+  }
 
-#define MAX_FRAMES 30
+#define MAX_FRAMES 50
   void *array[MAX_FRAMES];
   size_t size;
   char **strings;
@@ -12925,7 +12934,8 @@ void CbcCrashHandler( int sig ) {
   strings = backtrace_symbols (array, size);
 
   for (i = 0; i < size; i++) {
-     fprintf (stderr, "%s\n", strings[i]); fflush(stderr);
+     fprintf (stderr, "%s\n", strings[i]);
+     fflush(stderr);
   }
   fprintf(stderr, "\n\n"); fflush(stderr);
 

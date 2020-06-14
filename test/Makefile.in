@@ -763,23 +763,23 @@ uninstall-am: uninstall-binPROGRAMS
 test: $(CBC_TEST_TGTS)
 
 test_cbc: ../src/cbc$(EXEEXT)
-	../src/cbc$(EXEEXT) $(cbcflags)
+	export RUNNING_TEST="test_cbc" ; ../src/cbc$(EXEEXT) $(cbcflags)
 
 @COIN_HAS_SAMPLE_TRUE@test_cbc_generic: ../src/cbc-generic$(EXEEXT)
-@COIN_HAS_SAMPLE_TRUE@	echo "A minimal test is all that cbc-generic can manage just yet."
+@COIN_HAS_SAMPLE_TRUE@	export RUNNING_TEST="cbc-generic" ; echo "A minimal test is all that cbc-generic can manage just yet."
 @COIN_HAS_SAMPLE_TRUE@	../src/cbc-generic$(EXEEXT) \
 @COIN_HAS_SAMPLE_TRUE@	    -directory `$(CYGPATH_W) $(SAMPLE_DATA)` -import p0033.mps -branch
 
 gamstests: gamsTest$(EXEEXT)
-	./gamsTest$(EXEEXT)
+	export RUNNING_TEST="gamsTest" ; ./gamsTest$(EXEEXT)
 
 .PHONY: test
 
 ositests: osiUnitTest$(EXEEXT)
-	./osiUnitTest$(EXEEXT) $(ositestsflags)
+	export RUNNING_TEST="osiUnitTest" ; ./osiUnitTest$(EXEEXT) $(ositestsflags)
 
 ctests: CInterfaceTest$(EXEEXT)
-	./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
+	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

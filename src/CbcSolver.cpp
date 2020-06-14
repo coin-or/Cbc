@@ -10887,7 +10887,6 @@ void CbcMain0(CbcModel &model,
   OsiSolverInterface *solver = model.solver();
   OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
   ClpSimplex *lpSolver = clpSolver->getModelPtr();
-  lpSolver = NULL;
   lpSolver->setPerturbation(50);
   lpSolver->messageHandler()->setPrefix(false);
 #endif

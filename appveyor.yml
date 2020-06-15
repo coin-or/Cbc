@@ -22,7 +22,7 @@ environment:
       HOST_ARCH_ARG: --host=x86_64-w64-mingw32 --enable-cbc-parallel --enable-debug
       CXXFLAGS: 
       CFLAGS:
-      TESTS: 
+      TESTS: none 
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: i686-w64-mingw32
@@ -36,7 +36,7 @@ environment:
       HOST_ARCH_ARG: --host=i686-w64-mingw32 --enable-cbc-parallel --enable-debug
       CXXFLAGS: 
       CFLAGS: 
-      TESTS: 
+      TESTS: none 
       ADD_PATH: /mingw32/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       ARCH: win64-msvc14-md

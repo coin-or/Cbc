@@ -5679,6 +5679,8 @@ CbcModel::CbcModel()
   , hotstartPriorities_(NULL)
   , numberHeuristicSolutions_(0)
   , numberNodes_(0)
+  , lastNodeImprovingFeasSol_(-1)
+  , lastTimeImprovingFeasSol_(0)
   , numberNodes2_(0)
   , numberIterations_(0)
   , numberSolves_(0)
@@ -5791,6 +5793,7 @@ CbcModel::CbcModel()
 {
   memset(intParam_, 0, sizeof(intParam_));
   intParam_[CbcMaxNumNode] = COIN_INT_MAX;
+  intParam_[CbcMaxNodesNotImprovingFeasSol] = COIN_INT_MAX;
   intParam_[CbcMaxNumSol] = COIN_INT_MAX/2;
 
   memset(dblParam_, 0, sizeof(dblParam_));
@@ -5798,6 +5801,7 @@ CbcModel::CbcModel()
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
+  dblParam_[CbcMaximumSecondsNotImprovingFeasSol] = 1.0e100;
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcOptimizationDirection] = 1.0;
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
@@ -5860,6 +5864,8 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , hotstartPriorities_(NULL)
   , numberHeuristicSolutions_(0)
   , numberNodes_(0)
+  , lastNodeImprovingFeasSol_(-1)
+  , lastTimeImprovingFeasSol_(0)
   , numberNodes2_(0)
   , numberIterations_(0)
   , numberSolves_(0)
@@ -5968,6 +5974,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
 {
   memset(intParam_, 0, sizeof(intParam_));
   intParam_[CbcMaxNumNode] = COIN_INT_MAX;
+  intParam_[CbcMaxNodesNotImprovingFeasSol] = COIN_INT_MAX;
   intParam_[CbcMaxNumSol] = COIN_INT_MAX/2;
 
   memset(dblParam_, 0, sizeof(dblParam_));
@@ -5975,6 +5982,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
+  dblParam_[CbcMaximumSecondsNotImprovingFeasSol] = 1.0e100;
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcOptimizationDirection] = 1.0;
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
@@ -6184,6 +6192,8 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , whenCuts_(rhs.whenCuts_)
   , numberHeuristicSolutions_(rhs.numberHeuristicSolutions_)
   , numberNodes_(rhs.numberNodes_)
+  , lastNodeImprovingFeasSol_(rhs.lastNodeImprovingFeasSol_)
+  , lastTimeImprovingFeasSol_(rhs.lastTimeImprovingFeasSol_)
   , numberNodes2_(rhs.numberNodes2_)
   , numberIterations_(rhs.numberIterations_)
   , numberSolves_(rhs.numberSolves_)
@@ -6585,6 +6595,8 @@ CbcModel::operator=(const CbcModel &rhs)
     whenCuts_ = rhs.whenCuts_;
     numberHeuristicSolutions_ = rhs.numberHeuristicSolutions_;
     numberNodes_ = rhs.numberNodes_;
+    lastNodeImprovingFeasSol_ = rhs.lastNodeImprovingFeasSol_;
+    lastTimeImprovingFeasSol_ = rhs.lastTimeImprovingFeasSol_;
     numberNodes2_ = rhs.numberNodes2_;
     numberIterations_ = rhs.numberIterations_;
     numberSolves_ = rhs.numberSolves_;
@@ -7020,6 +7032,8 @@ void CbcModel::resetModel()
   hotstartPriorities_ = NULL;
   numberHeuristicSolutions_ = 0;
   numberNodes_ = 0;
+  lastNodeImprovingFeasSol_ = -1;
+  lastTimeImprovingFeasSol_ = 0;
   numberNodes2_ = 0;
   numberIterations_ = 0;
   numberSolves_ = 0;
@@ -7175,6 +7189,8 @@ void CbcModel::moveInfo(const CbcModel &rhs)
   numberSolutions_ = rhs.numberSolutions_;
   numberHeuristicSolutions_ = rhs.numberHeuristicSolutions_;
   numberNodes_ = rhs.numberNodes_;
+  lastNodeImprovingFeasSol_ = rhs.lastNodeImprovingFeasSol_;
+  lastTimeImprovingFeasSol_ = rhs.lastTimeImprovingFeasSol_;
   numberNodes2_ = rhs.numberNodes2_;
   numberIterations_ = rhs.numberIterations_;
   numberSolves_ = rhs.numberSolves_;
@@ -17925,6 +17941,8 @@ void CbcModel::saveBestSolution(const double *solution, double objectiveValue)
     delete atSolutionSolver_;
     atSolutionSolver_ = solver_->clone();
   }
+  lastNodeImprovingFeasSol_ = numberNodes_;
+  lastTimeImprovingFeasSol_ = getCurrentSeconds();
 }
 // Delete best and saved solutions
 void CbcModel::deleteSolutions()
@@ -18459,6 +18477,7 @@ bool CbcModel::stoppingCriterionReached() const {
     stoppedOnGap_  ||
     eventHappened_ ||
     maximumSecondsReached() ||
+    (numberSolutions_ && (numberNodes_ - lastNodeImprovingFeasSol_ >= intParam_[CbcMaxNodesNotImprovingFeasSol])) ||
     (!(maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_))
     );
 }
@@ -18469,11 +18488,18 @@ bool CbcModel::maximumSecondsReached() const
   double totalTime = getCurrentSeconds();
   double maxSeconds = getMaximumSeconds();
   bool hitMaxTime = (totalTime >= maxSeconds);
+  if (numberSolutions_ && (!hitMaxTime)) {
+      hitMaxTime = totalTime - lastTimeImprovingFeasSol_ >= dblParam_[CbcMaximumSecondsNotImprovingFeasSol];
+  }
   if (parentModel_ && !hitMaxTime) {
     // In a sub tree
     assert(parentModel_);
     maxSeconds = parentModel_->getMaximumSeconds();
     hitMaxTime = (totalTime >= maxSeconds);
+    if (numberSolutions_ && (!hitMaxTime)) {
+      double maxSecondsNotImprFS = parentModel_->getDblParam(CbcMaximumSecondsNotImprovingFeasSol);
+      hitMaxTime = totalTime - lastTimeImprovingFeasSol_ >= maxSecondsNotImprFS;
+    }
   }
   if (hitMaxTime) {
     // Set eventHappened_ so will by-pass as much stuff as possible

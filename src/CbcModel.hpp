@@ -122,6 +122,10 @@ public:
     /** Number of branches (may be more than number of nodes as may
             include strong branching) */
     CbcNumberBranches,
+
+    /** Maximum number of nodes without improving the best feasible
+     *  solution (just checked if a feasible solution was already found ) */
+    CbcMaxNodesNotImprovingFeasSol,
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastIntParam
   };
@@ -188,6 +192,9 @@ public:
     CbcLargestChange,
     /// Small non-zero change on a branch to be used as guess
     CbcSmallChange,
+    /** \brief Maximum time without improving the best solution found, checked only if a
+     * feasible solution is already available */
+    CbcMaximumSecondsNotImprovingFeasSol,
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastDblParam
   };
@@ -2885,9 +2892,12 @@ private:
   int numberHeuristicSolutions_;
   /// Cumulative number of nodes
   int numberNodes_;
+  /// Last node where a better feasible solution was found
+  int lastNodeImprovingFeasSol_;
   /** Cumulative number of nodes for statistics.
         Must fix to match up
     */
+  double lastTimeImprovingFeasSol_;
   int numberNodes2_;
   /// Cumulative number of iterations
   int numberIterations_;

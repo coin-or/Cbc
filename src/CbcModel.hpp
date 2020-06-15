@@ -122,9 +122,6 @@ public:
     /** Number of branches (may be more than number of nodes as may
             include strong branching) */
     CbcNumberBranches,
-    /** Maximum number nodes processed without improving the best solution 
-     *  (if a feasible solution is already available) */
-    CbcMaxNodesNoImprFeas,
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastIntParam
   };
@@ -191,9 +188,6 @@ public:
     CbcLargestChange,
     /// Small non-zero change on a branch to be used as guess
     CbcSmallChange,
-    /** Maximum time (in seconds) for processing without improving the best solution 
-     *  (if a feasible solution is already available) */
-    CbcMaxSecNoImprFeas,
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastDblParam
   };

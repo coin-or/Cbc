@@ -44,14 +44,14 @@ environment:
       CXXFLAGS: 
       CFLAGS: 
       TESTS: main
-      ADD_PATH: /mingw64/bin
+      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15-md
       HOST_ARCH_ARG: --enable-msvc
       CXXFLAGS: 
       CFLAGS: 
       TESTS: main
-      ADD_PATH: /mingw64/bin
+      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: win64-msvc16-md
       HOST_ARCH_ARG: --enable-msvc
@@ -65,14 +65,14 @@ environment:
       CXXFLAGS: -nologo -DNDEBUG -O2 -MT
       CFLAGS: -nologo -DNDEBUG -O2 -MT
       TESTS: main
-      ADD_PATH: /mingw64/bin
+      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15-mt
       HOST_ARCH_ARG: --enable-msvc --disable-shared
       CXXFLAGS: -nologo -DNDEBUG -O2 -MT
       CFLAGS: -nologo -DNDEBUG -O2 -MT
       TESTS: main
-      ADD_PATH: /mingw64/bin
+      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: win64-msvc16-mt
       HOST_ARCH_ARG: --enable-msvc --disable-shared
@@ -86,42 +86,42 @@ environment:
       CXXFLAGS: 
       CFLAGS: 
       TESTS: none
-      ADD_PATH: /mingw64/bin
+      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15-mdd
       HOST_ARCH_ARG: --enable-msvc --enable-debug
       CXXFLAGS: 
       CFLAGS: 
       TESTS: none
-      ADD_PATH: /mingw64/bin
+      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: win64-msvc16-mdd
       HOST_ARCH_ARG: --enable-msvc --enable-debug
       CXXFLAGS: 
       CFLAGS: 
       TESTS: none
-      ADD_PATH: /mingw64/bin
+      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       ARCH: win64-msvc14-mtd
-      HOST_ARCH_ARG: --enable-msvc --disable-shared
+      HOST_ARCH_ARG: --enable-msvc --disable-shared --enable-debug
       CXXFLAGS: -nologo -EHs -Z7 -MTd
       CFLAGS: -nologo -EHs -Z7 -MTd
       TESTS: none
-      ADD_PATH: /mingw64/bin
+      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15-mtd
-      HOST_ARCH_ARG: --enable-msvc --disable-shared
+      HOST_ARCH_ARG: --enable-msvc --disable-shared --enable-debug
       CXXFLAGS: -nologo -EHs -Z7 -MTd
       CFLAGS: -nologo -EHs -Z7 -MTd
       TESTS: none
-      ADD_PATH: /mingw64/bin
+      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: win64-msvc16-mtd
-      HOST_ARCH_ARG: --enable-msvc --disable-shared
+      HOST_ARCH_ARG: --enable-msvc --disable-shared --enable-debug
       CXXFLAGS: -nologo -EHs -Z7 -MTd
       CFLAGS: -nologo -EHs -Z7 -MTd
       TESTS: none
-      ADD_PATH: /mingw64/bin
+      ADD_PATH: 
 
 install:
   - for /f "delims=" %%i in ('C:\msys64\usr\bin\bash -lc "if [ $APPVEYOR_REPO_BRANCH = 'master' ]; then echo 'master'; else echo $APPVEYOR_REPO_BRANCH | cut -d "/" -f 2; fi"') do set VERSION=%%i

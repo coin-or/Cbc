@@ -40,17 +40,17 @@ endif
 test: $(CBC_TEST_TGTS)
 
 test_cbc: ../src/cbc$(EXEEXT)
-	../src/cbc$(EXEEXT) $(cbcflags)
+	export RUNNING_TEST="test_cbc" ; ../src/cbc$(EXEEXT) $(cbcflags)
 
 if COIN_HAS_SAMPLE
 test_cbc_generic: ../src/cbc-generic$(EXEEXT)
-	echo "A minimal test is all that cbc-generic can manage just yet."
+	export RUNNING_TEST="cbc-generic" ; echo "A minimal test is all that cbc-generic can manage just yet."
 	../src/cbc-generic$(EXEEXT) \
 	    -directory `$(CYGPATH_W) $(SAMPLE_DATA)` -import p0033.mps -branch
 endif
 
 gamstests: gamsTest$(EXEEXT)
-	./gamsTest$(EXEEXT)
+	export RUNNING_TEST="gamsTest" ; ./gamsTest$(EXEEXT)
 
 .PHONY: test
 
@@ -75,7 +75,7 @@ osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
 AM_CPPFLAGS += -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
 
 ositests: osiUnitTest$(EXEEXT)
-	./osiUnitTest$(EXEEXT) $(ositestsflags)
+	export RUNNING_TEST="osiUnitTest" ; ./osiUnitTest$(EXEEXT) $(ositestsflags)
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -87,4 +87,4 @@ nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
 CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la
 
 ctests: CInterfaceTest$(EXEEXT)
-	./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
+	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)

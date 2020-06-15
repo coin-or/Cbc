@@ -4676,13 +4676,9 @@ void CbcModel::branchAndBound(int doStatistics)
         saveSolver = NULL;
       }
     }
-    /*
-          Check for abort on limits: node count, solution count, time, integrality gap.
-        */
-    if (!(numberNodes_ < intParam_[CbcMaxNumNode] && numberSolutions_ < intParam_[CbcMaxNumSol] && !maximumSecondsReached() && !stoppedOnGap_ && !eventHappened_ && (maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_))) {
-      // out of loop
+    /*  Check for abort on limits: node count, solution count, time, integrality gap. */
+    if (stoppingCriterionReached())
       break;
-    }
 #ifdef BONMIN
     assert(!solverCharacteristics_->solutionAddsCuts() || solverCharacteristics_->mipFeasible());
 #endif
@@ -5048,7 +5044,7 @@ void CbcModel::branchAndBound(int doStatistics)
       have been pushed back onto the tree for further processing, in which case
       it'll be deleted in cleanTree. We need to check.
     */
-  if (!(numberNodes_ < intParam_[CbcMaxNumNode] && numberSolutions_ < intParam_[CbcMaxNumSol] && !maximumSecondsReached() && !stoppedOnGap_ && !eventHappened_ && (maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_))) {
+  if (stoppingCriterionReached()) {
     if (tree_->size()) {
       double dummyBest;
       tree_->cleanTree(this, -COIN_DBL_MAX, dummyBest);
@@ -18455,6 +18451,18 @@ void CbcModel::setOptionalInteger(int index)
 #endif
     solver_->setInteger(index);
 }
+
+bool CbcModel::stoppingCriterionReached() const {
+  return (
+    numberNodes_ >= intParam_[CbcMaxNumNode] ||
+    numberSolutions_ >= intParam_[CbcMaxNumSol] ||
+    stoppedOnGap_  ||
+    eventHappened_ ||
+    maximumSecondsReached() ||
+    (!(maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_))
+    );
+}
+
 // Return true if maximum time reached
 bool CbcModel::maximumSecondsReached() const
 {

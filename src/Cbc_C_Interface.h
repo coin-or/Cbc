@@ -76,42 +76,44 @@ enum CutType {
 /*! Double parameters
  * */
 enum DblParam {
-  DBL_PARAM_PRIMAL_TOL    = 0,  /*! Tollerance to consider a solution feasible in the linear programming solver. */
-  DBL_PARAM_DUAL_TOL      = 1,  /*! Tollerance for a solution to be considered optimal in the linear programming solver. */
-  DBL_PARAM_ZERO_TOL      = 2,  /*! Coefficients less that this value will be ignored when reading instances */
-  DBL_PARAM_INT_TOL       = 3,  /*! Maximum allowed distance from integer value for a variable to be considered integral */
-  DBL_PARAM_PRESOLVE_TOL  = 4,  /*! Tollerance used in the presolver, should be increased if the pre-solver is declaring infeasible a feasible problem */
-  DBL_PARAM_TIME_LIMIT    = 5,  /*! Time limit in seconds */
-  DBL_PARAM_PSI           = 6,  /*! Two dimensional princing factor in the Positive Edge pivot strategy. */
-  DBL_PARAM_CUTOFF        = 7,  /*! Only search for solutions with cost less-or-equal to this value. */
-  DBL_PARAM_ALLOWABLE_GAP = 8,  /*! Allowable gap between the lower and upper bound to conclude the search */
-  DBL_PARAM_GAP_RATIO     = 9   /*! Stops the search when the difference between the upper and lower bound is less than this fraction of the larger value */
+  DBL_PARAM_PRIMAL_TOL              = 0,  /*! Tollerance to consider a solution feasible in the linear programming solver. */
+  DBL_PARAM_DUAL_TOL                = 1,  /*! Tollerance for a solution to be considered optimal in the linear programming solver. */
+  DBL_PARAM_ZERO_TOL                = 2,  /*! Coefficients less that this value will be ignored when reading instances */
+  DBL_PARAM_INT_TOL                 = 3,  /*! Maximum allowed distance from integer value for a variable to be considered integral */
+  DBL_PARAM_PRESOLVE_TOL            = 4,  /*! Tollerance used in the presolver, should be increased if the pre-solver is declaring infeasible a feasible problem */
+  DBL_PARAM_TIME_LIMIT              = 5,  /*! Time limit in seconds */
+  DBL_PARAM_PSI                     = 6,  /*! Two dimensional princing factor in the Positive Edge pivot strategy. */
+  DBL_PARAM_CUTOFF                  = 7,  /*! Only search for solutions with cost less-or-equal to this value. */
+  DBL_PARAM_ALLOWABLE_GAP           = 8,  /*! Allowable gap between the lower and upper bound to conclude the search */
+  DBL_PARAM_GAP_RATIO               = 9,   /*! Stops the search when the difference between the upper and lower bound is less than this fraction of the larger value */
+  DBL_PARAM_MAX_SECS_NOT_IMPROV_FS  = 10, /*! Maximum processing time without improving best solution, after a feasible solution is found */
 };
-#define N_DBL_PARAMS 10
+#define N_DBL_PARAMS 11
 
 /*! Integer parameters */
 enum IntParam {
-  INT_PARAM_PERT_VALUE          = 0,  /*! Method of perturbation, -5000 to 102, default 50 */
-  INT_PARAM_IDIOT               = 1,  /*! Parameter of the "idiot" method to try to produce an initial feasible basis. -1 let the solver decide if this should be applied; 0 deactivates it and >0 sets number of passes. */
-  INT_PARAM_STRONG_BRANCHING    = 2,  /*! Number of variables to be evaluated in strong branching. */
-  INT_PARAM_CUT_DEPTH           = 3,  /*! Sets the application of cuts to every depth multiple of this value. -1, the default value, let the solve decide. */
-  INT_PARAM_MAX_NODES           = 4,  /*! Maximum number of nodes to be explored in the search tree */
-  INT_PARAM_NUMBER_BEFORE       = 5,  /*! Number of branches before trusting pseudocodes computed in strong branching. */
-  INT_PARAM_FPUMP_ITS           = 6,  /*! Maximum number of iterations in the feasibility pump method. */
-  INT_PARAM_MAX_SOLS            = 7,  /*! Maximum number of solutions generated during the search. Stops the search when this number of solutions is found. */
-  INT_PARAM_CUT_PASS_IN_TREE    = 8,  /*! Maximum number of cuts passes in the search tree (with the exception of the root node). Default 1. */
-  INT_PARAM_THREADS             = 9,  /*! Number of threads that can be used in the branch-and-bound method.*/
-  INT_PARAM_CUT_PASS            = 10, /*! Number of cut passes in the root node. Default -1, solver decides */
-  INT_PARAM_LOG_LEVEL           = 11, /*! Verbosity level, from 0 to 2 */
-  INT_PARAM_MAX_SAVED_SOLS      = 12, /*! Size of the pool to save the best solutions found during the search. */
-  INT_PARAM_MULTIPLE_ROOTS      = 13, /*! Multiple root passes to get additional cuts and solutions. */
-  INT_PARAM_ROUND_INT_VARS      = 14, /*! If integer variables should be round to remove small infeasibilities. This can increase the overall amount of infeasibilities in problems with both continuous and integer variables */
-  INT_PARAM_RANDOM_SEED         = 15, /*! When solving LP and MIP, randomization is used to break ties in some decisions. This changes the random seed so that multiple executions can produce different results */
-  INT_PARAM_ELAPSED_TIME        = 16, /*! When =1 use elapsed (wallclock) time, otherwise use CPU time */
-  INT_PARAM_CGRAPH              = 17, /*! Conflict graph: controls if the conflict graph is created or not. 0: off, 1: auto, 2: on 3: fast weaker clique sep */
-  INT_PARAM_CLIQUE_MERGING      = 18, /*! Clique merging options: 0: off , 1 auto , 2 before solving LP, 3 after solving LP and pre-processing */
+  INT_PARAM_PERT_VALUE              = 0,  /*! Method of perturbation, -5000 to 102, default 50 */
+  INT_PARAM_IDIOT                   = 1,  /*! Parameter of the "idiot" method to try to produce an initial feasible basis. -1 let the solver decide if this should be applied; 0 deactivates it and >0 sets number of passes. */
+  INT_PARAM_STRONG_BRANCHING        = 2,  /*! Number of variables to be evaluated in strong branching. */
+  INT_PARAM_CUT_DEPTH               = 3,  /*! Sets the application of cuts to every depth multiple of this value. -1, the default value, let the solve decide. */
+  INT_PARAM_MAX_NODES               = 4,  /*! Maximum number of nodes to be explored in the search tree */
+  INT_PARAM_NUMBER_BEFORE           = 5,  /*! Number of branches before trusting pseudocodes computed in strong branching. */
+  INT_PARAM_FPUMP_ITS               = 6,  /*! Maximum number of iterations in the feasibility pump method. */
+  INT_PARAM_MAX_SOLS                = 7,  /*! Maximum number of solutions generated during the search. Stops the search when this number of solutions is found. */
+  INT_PARAM_CUT_PASS_IN_TREE        = 8,  /*! Maximum number of cuts passes in the search tree (with the exception of the root node). Default 1. */
+  INT_PARAM_THREADS                 = 9,  /*! Number of threads that can be used in the branch-and-bound method.*/
+  INT_PARAM_CUT_PASS                = 10, /*! Number of cut passes in the root node. Default -1, solver decides */
+  INT_PARAM_LOG_LEVEL               = 11, /*! Verbosity level, from 0 to 2 */
+  INT_PARAM_MAX_SAVED_SOLS          = 12, /*! Size of the pool to save the best solutions found during the search. */
+  INT_PARAM_MULTIPLE_ROOTS          = 13, /*! Multiple root passes to get additional cuts and solutions. */
+  INT_PARAM_ROUND_INT_VARS          = 14, /*! If integer variables should be round to remove small infeasibilities. This can increase the overall amount of infeasibilities in problems with both continuous and integer variables */
+  INT_PARAM_RANDOM_SEED             = 15, /*! When solving LP and MIP, randomization is used to break ties in some decisions. This changes the random seed so that multiple executions can produce different results */
+  INT_PARAM_ELAPSED_TIME            = 16, /*! When =1 use elapsed (wallclock) time, otherwise use CPU time */
+  INT_PARAM_CGRAPH                  = 17, /*! Conflict graph: controls if the conflict graph is created or not. 0: off, 1: auto, 2: on 3: fast weaker clique sep */
+  INT_PARAM_CLIQUE_MERGING          = 18, /*! Clique merging options: 0: off , 1 auto , 2 before solving LP, 3 after solving LP and pre-processing */
+  INT_PARAM_MAX_NODES_NOT_IMPROV_FS = 19, /*! Maximum number of nodes processed without improving best solution, after a feasible solution is found */
 };
-#define N_INT_PARAMS 19
+#define N_INT_PARAMS 20
   
 /** typedef for cbc callback to monitor the progress of the search
  * in terms of improved upper and lower bounds */

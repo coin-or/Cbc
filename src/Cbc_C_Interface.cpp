@@ -1971,6 +1971,14 @@ Cbc_solve(Cbc_Model *model)
         Cbc_setParameter(model, "clqstr", "after");
         break;
     }
+    if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX) {
+        char str[256]; sprintf(str, "%g", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
+        Cbc_setParameter(model, "secnifs", str);
+    }
+    if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX) {
+        char str[256]; sprintf(str, "%d", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
+        Cbc_setParameter(model, "maxNIFS", str);
+    }
 
     Cbc_MessageHandler *cbcmh  = NULL;
 
@@ -4369,35 +4377,37 @@ void Cbc_iniParams( Cbc_Model *model ) {
   for ( int i=0 ; (i<N_DBL_PARAMS) ; ++i )
     model->dbl_param[i] = 0.0;
 
-  model->int_param[INT_PARAM_PERT_VALUE]       =       50;
-  model->int_param[INT_PARAM_IDIOT]            =       -1;
-  model->int_param[INT_PARAM_STRONG_BRANCHING] =        5;
-  model->int_param[INT_PARAM_CUT_DEPTH]        =       -1;
-  model->int_param[INT_PARAM_MAX_NODES]        =  INT_MAX;
-  model->int_param[INT_PARAM_NUMBER_BEFORE]    =        5;
-  model->int_param[INT_PARAM_FPUMP_ITS]        =       30;
-  model->int_param[INT_PARAM_MAX_SOLS]         =       -1;
-  model->int_param[INT_PARAM_CUT_PASS_IN_TREE] =        1;
-  model->int_param[INT_PARAM_LOG_LEVEL]        =        1;
-  model->int_param[INT_PARAM_MAX_SAVED_SOLS]   =       -1;
-  model->int_param[INT_PARAM_MULTIPLE_ROOTS]   =        0;
-  model->int_param[INT_PARAM_THREADS]          =       -1;
-  model->int_param[INT_PARAM_ROUND_INT_VARS]   =        1;
-  model->int_param[INT_PARAM_RANDOM_SEED]      =        1;
-  model->int_param[INT_PARAM_ELAPSED_TIME]     =        1;
-  model->int_param[INT_PARAM_CGRAPH]           =        1;
-  model->int_param[INT_PARAM_CLIQUE_MERGING]   =        1;
+  model->int_param[INT_PARAM_PERT_VALUE]              =       50;
+  model->int_param[INT_PARAM_IDIOT]                   =       -1;
+  model->int_param[INT_PARAM_STRONG_BRANCHING]        =        5;
+  model->int_param[INT_PARAM_CUT_DEPTH]               =       -1;
+  model->int_param[INT_PARAM_MAX_NODES]               =  INT_MAX;
+  model->int_param[INT_PARAM_NUMBER_BEFORE]           =        5;
+  model->int_param[INT_PARAM_FPUMP_ITS]               =       30;
+  model->int_param[INT_PARAM_MAX_SOLS]                =       -1;
+  model->int_param[INT_PARAM_CUT_PASS_IN_TREE]        =        1;
+  model->int_param[INT_PARAM_LOG_LEVEL]               =        1;
+  model->int_param[INT_PARAM_MAX_SAVED_SOLS]          =       -1;
+  model->int_param[INT_PARAM_MULTIPLE_ROOTS]          =        0;
+  model->int_param[INT_PARAM_THREADS]                 =       -1;
+  model->int_param[INT_PARAM_ROUND_INT_VARS]          =        1;
+  model->int_param[INT_PARAM_RANDOM_SEED]             =        1;
+  model->int_param[INT_PARAM_ELAPSED_TIME]            =        1;
+  model->int_param[INT_PARAM_CGRAPH]                  =        1;
+  model->int_param[INT_PARAM_CLIQUE_MERGING]          =        1;
+  model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] =  INT_MAX;
 
-  model->dbl_param[DBL_PARAM_PRIMAL_TOL]       =          1e-6;
-  model->dbl_param[DBL_PARAM_DUAL_TOL]         =          1e-6;
-  model->dbl_param[DBL_PARAM_ZERO_TOL]         =         1e-20;
-  model->dbl_param[DBL_PARAM_INT_TOL]          =          1e-6;
-  model->dbl_param[DBL_PARAM_PRESOLVE_TOL]     =          1e-8;
-  model->dbl_param[DBL_PARAM_TIME_LIMIT]       =  COIN_DBL_MAX;
-  model->dbl_param[DBL_PARAM_PSI]              =          -1.0;
-  model->dbl_param[DBL_PARAM_CUTOFF]           =  COIN_DBL_MAX;
-  model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]    =         1e-10;
-  model->dbl_param[DBL_PARAM_GAP_RATIO]        =        0.0001;
+  model->dbl_param[DBL_PARAM_PRIMAL_TOL]             =          1e-6;
+  model->dbl_param[DBL_PARAM_DUAL_TOL]               =          1e-6;
+  model->dbl_param[DBL_PARAM_ZERO_TOL]               =         1e-20;
+  model->dbl_param[DBL_PARAM_INT_TOL]                =          1e-6;
+  model->dbl_param[DBL_PARAM_PRESOLVE_TOL]           =          1e-8;
+  model->dbl_param[DBL_PARAM_TIME_LIMIT]             =  COIN_DBL_MAX;
+  model->dbl_param[DBL_PARAM_PSI]                    =          -1.0;
+  model->dbl_param[DBL_PARAM_CUTOFF]                 =  COIN_DBL_MAX;
+  model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]          =         1e-10;
+  model->dbl_param[DBL_PARAM_GAP_RATIO]              =        0.0001;
+  model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] =  COIN_DBL_MAX;
 }
 
 #if defined(__MWERKS__)

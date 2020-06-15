@@ -22,7 +22,7 @@ environment:
       HOST_ARCH_ARG: --host=x86_64-w64-mingw32 --enable-cbc-parallel --enable-debug
       CXXFLAGS: 
       CFLAGS:
-      TESTS: main
+      TESTS: 
       ADD_PATH: /mingw64/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: i686-w64-mingw32
@@ -36,7 +36,7 @@ environment:
       HOST_ARCH_ARG: --host=i686-w64-mingw32 --enable-cbc-parallel --enable-debug
       CXXFLAGS: 
       CFLAGS: 
-      TESTS: main
+      TESTS: 
       ADD_PATH: /mingw32/bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       ARCH: win64-msvc14-md
@@ -143,7 +143,7 @@ install:
 
 build_script:
   - C:\msys64\usr\bin\bash -lc "cd C:\projects; ln -s %APPVEYOR_PROJECT_SLUG% %APPVEYOR_PROJECT_NAME%; git clone https://github.com/coin-or/coinbrew"
-  - C:\msys64\usr\bin\bash -lc "cd C:\projects; ./coinbrew/coinbrew fetch https://github.com/%APPVEYOR_REPO_NAME%:%APPVEYOR_REPO_BRANCH% --no-prompt --skip='ThirdParty/Metis ThirdParty/Mumps' --skip-update"
+  - C:\msys64\usr\bin\bash -lc "cd C:\projects; ./coinbrew/coinbrew fetch https://github.com/%APPVEYOR_REPO_NAME%@%APPVEYOR_REPO_BRANCH% --no-prompt --skip='ThirdParty/Metis ThirdParty/Mumps' --skip-update"
   - C:\msys64\usr\bin\bash -lc "cd C:\projects; export PATH=$ADD_PATH:$PATH; ./coinbrew/coinbrew build %APPVEYOR_PROJECT_NAME% --no-prompt --skip='ThirdParty/Metis ThirdParty/Mumps' --build=x86_64-w64-mingw32 $HOST_ARCH_ARG --verbosity 2 --tests $TESTS --enable-relocatable"
   
 after_build:

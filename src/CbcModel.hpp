@@ -810,6 +810,9 @@ public:
   /// See if can stop on gap
   bool canStopOnGap() const;
 
+  /** Checks if one of the stopping criteria (max time, max nodes, ...) was reached */
+  bool stoppingCriterionReached() const;
+
   /** Pass in target solution and optional priorities.
         If priorities then >0 means only branch if incorrect
         while <0 means branch even if correct. +1 or -1 are

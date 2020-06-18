@@ -795,7 +795,7 @@ static int tspRouteStarting(const double **xsol, int st, int n, int *el) {
     return size;
 }
 
-void subTourSep(void *osiSolver, void *osiCuts, void *appdata) {
+void subTourSep(void *osiSolver, void *osiCuts, void *appdata, int level, int pass) {
     if (!Osi_isProvenOptimal(osiSolver))
         return;
 

@@ -154,8 +154,12 @@ typedef void(CBC_LINKAGE_CB *cbc_callback)(Cbc_Model *model, int msgno, int ndou
  * \param appData optional pointer to an object contained some original problem informatio that
  *        can be filled by the user.
  *
+ * \param level The level of the search tree node.
+ *
+ * \param pass How many times the cut generator was already invoked in this search tree node.
+ *
  **/
-typedef void(CBC_LINKAGE_CB *cbc_cut_callback)(void *osiSolver, void *osiCuts, void *appdata);
+typedef void(CBC_LINKAGE_CB *cbc_cut_callback)(void *osiSolver, void *osiCuts, void *appdata, int level, int pass);
 
 /** Current version of Cbc */
 CBCSOLVERLIB_EXPORT const char *CBC_LINKAGE Cbc_getVersion(void);

@@ -31,7 +31,7 @@ static int dbl_as_int( double value );
 static double try_cut( void *osiSolver, int row, const double mult, int num, int den, 
     int *nzCut, int *idx, double *coef, double *rhs, int *icoef );
 
-void cutcallback( void *osiSolver, void *osiCuts, void *appData )
+void cutcallback( void *osiSolver, void *osiCuts, void *appData, int level, int pass )
 {
   printf("entered callback\n");
   int m = Osi_getNumRows( osiSolver );

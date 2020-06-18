@@ -368,7 +368,7 @@ void CglCallback::generateCuts( const OsiSolverInterface &si, OsiCuts &cs, const
     pthread_mutex_lock((this->cbcMutex));
 #endif
 
-  this->cut_callback_( (OsiSolverInterface *) &si, &cs, this->appdata );
+  this->cut_callback_( (OsiSolverInterface *) &si, &cs, this->appdata, info.level, info.pass );
 
 #ifdef CBC_THREAD
     pthread_mutex_unlock((this->cbcMutex));

@@ -7,6 +7,13 @@ matrix:
     - os: linux
       dist: bionic
       env: BUILD_STATIC=true DEBUG=false ASAN=false
+      addons:
+        apt:
+          packages:
+            - gfortran
+            - liblapack-dev
+            - libmetis-dev
+            - libnauty2-dev
     - os: linux
       dist: bionic
       env: BUILD_STATIC=false DEBUG=false ASAN=false

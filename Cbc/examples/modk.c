@@ -155,7 +155,7 @@ void cutcallback( void *osiSolver, void *osiCuts, void *appData )
             }
           default:
             {
-              fprintf( stderr, "unknow sense!");
+              fprintf( stderr, "unknown sense!");
               abort();
             }
         }

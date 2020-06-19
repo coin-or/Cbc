@@ -1376,7 +1376,7 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
     rowLB = rhs;
     break;
   default:
-    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    fprintf(stderr, "unknown row sense %c.", toupper(sense));
     abort();
   }
   solver->addRow(nz, cols, coefs, rowLB, rowUB);
@@ -1735,7 +1735,7 @@ OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, ch
     orc.setLb(rhs);
     break;
   default:
-    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    fprintf(stderr, "unknown row sense %c.", toupper(sense));
     abort();
   }
 

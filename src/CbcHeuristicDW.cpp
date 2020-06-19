@@ -456,7 +456,7 @@ int CbcHeuristicDW::solution(double &solutionValue,
     }
   }
   if (numberNoMaster) {
-    sprintf(dwPrint, "*** %d blocks have no elements in master - can be solved seperately",
+    sprintf(dwPrint, "*** %d blocks have no elements in master - can be solved separately",
       numberNoMaster);
     model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
       << dwPrint

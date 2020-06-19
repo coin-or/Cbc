@@ -3140,7 +3140,7 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
     rowLB = rhs;
     break;
   default:
-    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    fprintf(stderr, "unknown row sense %c.", toupper(sense));
     abort();
   }
 
@@ -3189,7 +3189,7 @@ Cbc_addLazyConstraint(Cbc_Model *model, int nz,
     orc.setLb(rhs);
     break;
   default:
-    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    fprintf(stderr, "unknown row sense %c.", toupper(sense));
     abort();
   }
 
@@ -3250,7 +3250,7 @@ Osi_addRow(void *osi, const char *name, int nz,
     rowLB = rhs;
     break;
   default:
-    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    fprintf(stderr, "unknown row sense %c.", toupper(sense));
     abort();
   }
 
@@ -3899,7 +3899,7 @@ OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, ch
     orc.setLb(rhs);
     break;
   default:
-    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    fprintf(stderr, "unknown row sense %c.", toupper(sense));
     abort();
   }
 
@@ -3942,7 +3942,7 @@ OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *co
     orc.setLb(rhs);
     break;
   default:
-    fprintf(stderr, "unknow row sense %c.", toupper(sense));
+    fprintf(stderr, "unknown row sense %c.", toupper(sense));
     abort();
   }
 

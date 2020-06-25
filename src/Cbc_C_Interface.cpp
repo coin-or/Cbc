@@ -1865,6 +1865,14 @@ void Cbc_strengthenPacking(Cbc_Model *model) {
   clqStr.strengthenCliques();
 }
 
+void 
+Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[])
+{
+  OsiSolverInterface *solver = model->solver_;
+  CglCliqueStrengthening clqStr(solver);
+  clqStr.strengthenCliques(n, rows);
+}
+
 int CBC_LINKAGE
 Cbc_solve(Cbc_Model *model)
 {

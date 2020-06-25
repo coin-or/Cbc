@@ -1091,7 +1091,7 @@ Cbc_strengthenPacking(Cbc_Model *model);
  * */
  
 CBCSOLVERLIB_EXPORT void CBC_LINKAGE
-Cbc_strengthenPackingRows(Cbc_Model *model, int n, const int rows[]);
+Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[]);
 
 
 

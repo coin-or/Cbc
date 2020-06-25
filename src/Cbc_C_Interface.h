@@ -1082,6 +1082,19 @@ Cbc_solveLinearProgram(Cbc_Model *model);
 CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_strengthenPacking(Cbc_Model *model);
 
+/** @brief This is a pre-processing that tries to 
+ * strengthen a set of set packing constraints. Dominated constraints are 
+ * removed. 
+ * @param model problem object
+ * @param n number of rows
+ * @param rows rows indices
+ * */
+ 
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
+Cbc_strengthenPackingRows(Cbc_Model *model, int n, const int rows[]);
+
+
+
 /*@}*/
 
 /**@name Accessing the solution and optimization status */

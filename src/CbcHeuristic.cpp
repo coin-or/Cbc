@@ -1005,13 +1005,16 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       delete[] prohibited;
     }
 #endif
+    setPreProcessingMode(solver,1);
     solver2 = process.preProcessNonDefault(*solver, false,
       numberPasses);
+    setPreProcessingMode(solver,0);
     if (!solver2) {
       if (logLevel > 1)
         printf("Pre-processing says infeasible\n");
       returnCode = 2; // so will be infeasible
     } else {
+      setPreProcessingMode(solver2,0);
 #ifdef COIN_DEVELOP_z
       if (numberNodes < 0) {
         solver2->writeMpsNative("after2.mps", NULL, NULL, 2, 1);
@@ -1535,7 +1538,9 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           }
 #endif
           //if (fractionSmall_ < 1000000.0)
+	  setPreProcessingMode(model.solver(),2);
           process.postProcess(*model.solver());
+	  setPreProcessingMode(solver,0);
           if (solver->isProvenOptimal() && solver->getObjValue() * solver->getObjSense() < cutoff) {
             // Solution now back in solver
             int numberColumns = solver->getNumCols();

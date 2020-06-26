@@ -17,6 +17,9 @@
 #include "CbcMessage.hpp"
 #include "CbcEventHandler.hpp"
 #include "ClpDualRowPivot.hpp"
+#ifndef CBC_OTHER_SOLVER
+#include "OsiClpSolverInterface.hpp"
+#endif
 
 class CbcCutGenerator;
 class CbcBaseModel;
@@ -3326,7 +3329,17 @@ class OsiClpSolverInterface;
 // For uniform setting of cut and heuristic options
 CBCLIB_EXPORT
 void setCutAndHeuristicOptions(CbcModel &model);
+  /// Deal with preprocessing mode
+#ifndef CBC_OTHER_SOLVER
+  inline void setPreProcessingMode(OsiSolverInterface * solver,int processMode)
+  {
+    OsiClpSolverInterface *osiclp =
+      dynamic_cast< OsiClpSolverInterface * >(solver);
+    assert (osiclp);
+    osiclp->setPreProcessingMode(processMode);
+  }
+#else
+  inline void setPreProcessingMode(OsiSolverInterface * solver,int processMode)
+  {}
 #endif
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+#endif

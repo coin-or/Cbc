@@ -4449,9 +4449,12 @@ int CbcMain1(int argc, const char *argv[],
                     process.setTimeLimit(babModel_->getMaximumSeconds() - babModel_->getCurrentSeconds(), babModel_->useElapsedTime());
                     if (model.getKeepNamesPreproc())
                       process.setKeepColumnNames(true);
+		    setPreProcessingMode(saveSolver,1);
                     solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                       tunePreProcess);
+		    setPreProcessingMode(saveSolver,0);
                     if (solver2) {
+		      setPreProcessingMode(solver2,0);
                       model_.setOriginalColumns(process.originalColumns(), solver2->getNumCols());
 
                       osiclp->getModelPtr()->setPerturbation(savePerturbation);
@@ -4464,8 +4467,11 @@ int CbcMain1(int argc, const char *argv[],
 		      solver = dynamic_cast<OsiClpSolverInterface *>(process.startModel());
 		      if (solver)
 			solver->getModelPtr()->cleanScalingEtc();
+		      int numberSolvers = process.numberSolvers();
+		      if (numberSolvers==99)
+			numberSolvers = 1; // really just 1
 		      // some of these may be same
-		      for (int i=0;i<process.numberSolvers();i++) {
+		      for (int i=0;i<numberSolvers;i++) {
 			solver = dynamic_cast<OsiClpSolverInterface *>(process.modelAtPass(i));
 			if (solver)
 			  solver->getModelPtr()->cleanScalingEtc();
@@ -5155,16 +5161,23 @@ int CbcMain1(int argc, const char *argv[],
 		  babModel_->solver()->messageHandler()->setLogLevel(slogLevel);
 
                   if (clqStr.constraintsExtended() + clqStr.constraintsDominated() > 0) {
-                    babModel_->solver()->resolve();
+		    OsiSolverInterface * solver = babModel_->solver();
+		    bool takeHint;
+		    OsiHintStrength strength;
+		    solver->getHintParam(OsiDoDualInResolve,
+					 takeHint, strength);
+                    solver->setHintParam(OsiDoDualInResolve, false,OsiHintTry);
+                    solver->resolve();
+                    solver->setHintParam(OsiDoDualInResolve, takeHint,strength);
 
                     if (!noPrinting_) {
-                      if (babModel_->solver()->isProvenPrimalInfeasible()) {
+                      if (solver->isProvenPrimalInfeasible()) {
                         sprintf(generalPrint, "Clique Strengthening says infeasible!");
                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
                           << generalPrint
                           << CoinMessageEol;
                       } else {
-                      	sprintf(generalPrint, "After applying Clique Strengthening continuous objective value is %.2lf", babModel_->solver()->getObjValue());
+                      	sprintf(generalPrint, "After applying Clique Strengthening continuous objective value is %.2lf", solver->getObjValue());
                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
                           << generalPrint
                           << CoinMessageEol;
@@ -7845,7 +7858,9 @@ int CbcMain1(int argc, const char *argv[],
 #endif
                   // put back any saved solutions
                   putBackOtherSolutions(babModel_, &model_, &process);
+		  setPreProcessingMode(babModel_->solver(),2);
                   process.postProcess(*babModel_->solver());
+		  setPreProcessingMode(saveSolver,0);
 #ifdef COIN_DEVELOP
                   if (model_.bestSolution() && fabs(model_.getMinimizationObjValue() - babModel_->getMinimizationObjValue()) < 1.0e-8) {
                     const double *b1 = model_.bestSolution();

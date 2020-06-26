@@ -2287,6 +2287,16 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           // infeasible
           anyAction = -2;
           break;
+	} else {
+	  double tolerance = CoinMax(1.0e-6,1.0e-7*fabs(objectiveValue_));
+	  if (objectiveValue_>model->getMinimizationObjValue()-tolerance) {
+	    // treat as if infeasible
+	    //printf("INF Best obj %.15g this %.15g bestposs %.15g\n",
+	    //	   model->getMinimizationObjValue(),
+	    //	   objectiveValue_,model->getBestPossibleObjValue());
+	    anyAction = -2;
+	    break;
+	  }
         }
         // Double check looks OK - just look at rows with all integers
         if (model->allDynamic()) {
@@ -2415,7 +2425,17 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             // infeasible
             anyAction = -2;
             break;
-          }
+          } else {
+	    double tolerance = CoinMax(1.0e-6,1.0e-7*fabs(objectiveValue_));
+	    if (objectiveValue_>model->getMinimizationObjValue()-tolerance) {
+	      // treat as if infeasible
+	      //printf("INF Best obj %.15g this %.15g bestposs %.15g\n",
+	      //     model->getMinimizationObjValue(),
+	      //     objectiveValue_,model->getBestPossibleObjValue());
+	      anyAction = -2;
+	      break;
+	    }
+	  }
         } else {
           delete ws;
           break;

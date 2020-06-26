@@ -5798,7 +5798,7 @@ CbcModel::CbcModel()
 
   memset(dblParam_, 0, sizeof(dblParam_));
   dblParam_[CbcIntegerTolerance] = 1e-6;
-  dblParam_[CbcCutoffIncrement] = 1e-5;
+  dblParam_[CbcCutoffIncrement] = 1e-4;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcMaximumSecondsNotImprovingFeasSol] = 1.0e100;
@@ -5979,7 +5979,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
 
   memset(dblParam_, 0, sizeof(dblParam_));
   dblParam_[CbcIntegerTolerance] = 1e-6;
-  dblParam_[CbcCutoffIncrement] = 1e-5;
+  dblParam_[CbcCutoffIncrement] = 1e-4;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcMaximumSecondsNotImprovingFeasSol] = 1.0e100;
@@ -7071,7 +7071,7 @@ void CbcModel::resetModel()
   numberStrongIterations_ = 0;
   // Parameters which need to be reset
   setCutoff(COIN_DBL_MAX);
-  dblParam_[CbcCutoffIncrement] = 1e-5;
+  dblParam_[CbcCutoffIncrement] = 1e-4;
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
   dblParam_[CbcCurrentMinimizationObjectiveValue] = 1.0e100;
@@ -13459,7 +13459,7 @@ void CbcModel::setBestSolution(CBC_Message how,
 
       cutoff = bestObjective_ - dblParam_[CbcCutoffIncrement];
       // But allow for rounding errors
-      if (dblParam_[CbcCutoffIncrement] == 1e-5) {
+      if (dblParam_[CbcCutoffIncrement] == 1e-4) {
 #if CBC_FEASIBILITY_INVESTIGATE
         if (saveObjectiveValue + 1.0e-7 < bestObjective_)
           printf("First try at solution had objective %.16g, rechecked as %.16g\n",
@@ -18646,13 +18646,16 @@ CbcModel::preProcess(int makeEquality, int numberPasses, int tuning)
     process->passInProhibited(prohibited, numberColumns);
     delete[] prohibited;
   }
-  // Tell solver we are not in Branch and Cut
+  // Tell solver we are in Branch and Cut
   solver_->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo);
+  setPreProcessingMode(solver_,1);
   OsiSolverInterface *newSolver = process->preProcessNonDefault(*solver_, makeEquality,
     numberPasses, tuning);
   // Tell solver we are not in Branch and Cut
   solver_->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo);
+  setPreProcessingMode(solver_,0);
   if (newSolver) {
+    setPreProcessingMode(newSolver,0);
     int numberOriginalObjects = numberObjects_;
     OsiSolverInterface *originalSolver = solver_;
     solver_ = newSolver->clone(); // clone as process owns solver

@@ -1860,6 +1860,7 @@ static void Cbc_updateSlack( Cbc_Model *model) {
 
 
 void Cbc_strengthenPacking(Cbc_Model *model) {
+  Cbc_flush(model);
   OsiSolverInterface *solver = model->solver_;
   CglCliqueStrengthening clqStr(solver);
   clqStr.strengthenCliques();
@@ -1868,6 +1869,7 @@ void Cbc_strengthenPacking(Cbc_Model *model) {
 void 
 Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[])
 {
+  Cbc_flush(model);
   OsiSolverInterface *solver = model->solver_;
   CglCliqueStrengthening clqStr(solver);
   clqStr.strengthenCliques(n, rows);

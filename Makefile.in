@@ -17,27 +17,8 @@
 # Copyright (C) 2006 International Business Machines and others.
 # All Rights Reserved.
 # This file is distributed under the Eclipse Public License.
-
+#
 # Author:  Andreas Waechter           IBM    2006-04-13
-
-########################################################################
-#                          Subdirectories                              #
-########################################################################
-
-# Copyright (C) 2006, 2007 International Business Machines and others.
-# All Rights Reserved.
-# This file is distributed under the Eclipse Public License.
-
-# Author:  Andreas Waechter           IBM    2006-04-13
-
-########################################################################
-#        Variables for documentation and data directories              #
-########################################################################
-
-# Set these up to provide some uniformity in naming while also conforming
-# to Gnu directory standards. For reasons known only to the autoconf
-# developers, autoconf leaves datadir = $(datarootdir) but forces docdir
-# to $(datarootdir)/doc/$(PACKAGE_TARNAME).
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -111,11 +92,6 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-
-# We don't want to compile the test subdirectory, unless the test target is
-# specified.  But we need to list it as subdirectory to make sure that it is
-# included in the tarball
-@ALWAYS_FALSE@am__append_1 = test
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -132,7 +108,7 @@ CONFIG_HEADER = $(top_builddir)/src/config.h \
 	$(top_builddir)/src/OsiCbc/config_osicbc.h
 CONFIG_CLEAN_FILES = examples/Makefile cbc.pc osi-cbc.pc \
 	doxydoc/doxygen.conf
-CONFIG_CLEAN_VPATH_FILES =
+CONFIG_CLEAN_VPATH_FILES = examples/sudoku_sample.csv
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -216,7 +192,7 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
-DIST_SUBDIRS = src src/OsiCbc test
+DIST_SUBDIRS = $(SUBDIRS)
 pkgdatadir = $(datadir)/$(PACKAGE_TARNAME)
 pkgincludedir = $(includedir)/coin-or
 ACLOCAL = @ACLOCAL@
@@ -382,10 +358,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = src src/OsiCbc $(am__append_1)
-pkgconfiglibdir = $(libdir)/pkgconfig
-pkgconfiglib_DATA = cbc.pc osi-cbc.pc
 pkgdocdir = $(docdir)
+pkgconfiglibdir = $(libdir)/pkgconfig
 
 # doxydocdir is the top-level directory for doxygen documentation. It holds
 # the tag file and possibly the PDF or Postscript version. doxyhtmldir is
@@ -393,17 +367,16 @@ pkgdocdir = $(docdir)
 # html documentation.
 doxydocdir = $(pkgdocdir)/doxydoc
 doxyhtmldir = $(doxydocdir)/html
-
-########################################################################
-#                    Documentation installation                        #
-########################################################################
-DocFiles = README AUTHORS LICENSE
+DocFiles = README README.md AUTHORS AUTHORS.md LICENSE LICENSE.md
 COIN_HAS_DOXYGEN = @COIN_HAS_DOXYGEN_TRUE@TRUE
 COIN_HAS_LATEX = @COIN_HAS_LATEX_TRUE@TRUE
-
-# Needless to say, it's important that baredocdir_nosub not be a target for
-# autoconf substitution.
 DOXYTAG_EDIT = sed -e 's|@baredocdir_nosub@|$(datarootdir)/doc|g'
+
+########################################################################
+#                          Subdirectories                              #
+########################################################################
+SUBDIRS = src src/OsiCbc
+pkgconfiglib_DATA = cbc.pc osi-cbc.pc
 all: all-recursive
 
 .SUFFIXES:
@@ -713,24 +686,6 @@ uninstall-am: uninstall-local uninstall-pkgconfiglibDATA
 .PRECIOUS: Makefile
 
 
-########################################################################
-#                           Extra Targets                              #
-########################################################################
-
-test: all
-	cd test; $(MAKE) test
-
-unitTest: test
-
-clean-local: clean-doxygen-docs
-	if test -r test/Makefile; then cd test; $(MAKE) clean; fi
-
-install-exec-local: install-doc
-
-uninstall-local: uninstall-doc uninstall-doxygen-docs
-
-.PHONY: test unitTest doxydoc
-
 doxygen-docs: 
 	if test "$(COIN_HAS_DOXYGEN)" = TRUE; then \
 	  if test -d "doxydoc/"; then \
@@ -807,36 +762,27 @@ uninstall-doc:
 	done
 	rmdir $(DESTDIR)$(pkgdocdir) || true
 
-########################################################################
-#                         Maintainer Stuff                             #
-########################################################################
-
-# Make sure acinclude is using most recent coin.m4
-@MAINTAINER_MODE_TRUE@$(srcdir)/acinclude.m4: $(BUILDTOOLSDIR)/coin.m4
-@MAINTAINER_MODE_TRUE@	cat $(LIBTOOLM4) $< > $@
-
-# Make sure the autotools scripts are up to date
-@MAINTAINER_MODE_TRUE@$(AUX_DIR)/install-sh: $(BUILDTOOLSDIR)/install-sh
-@MAINTAINER_MODE_TRUE@	cp $< $@
-
-@MAINTAINER_MODE_TRUE@$(AUX_DIR)/missing: $(BUILDTOOLSDIR)/missing
-@MAINTAINER_MODE_TRUE@	cp $< $@
-
-@MAINTAINER_MODE_TRUE@$(AUX_DIR)/config.guess: $(BUILDTOOLSDIR)/config.guess
-@MAINTAINER_MODE_TRUE@	cp $< $@
-
-@MAINTAINER_MODE_TRUE@$(AUX_DIR)/config.sub: $(BUILDTOOLSDIR)/config.sub
-@MAINTAINER_MODE_TRUE@	cp $< $@
-
-@MAINTAINER_MODE_TRUE@$(AUX_DIR)/depcomp: $(BUILDTOOLSDIR)/depcomp
-@MAINTAINER_MODE_TRUE@	cp $< $@
-
-@MAINTAINER_MODE_TRUE@$(AUX_DIR)/ltmain.sh: $(BUILDTOOLSDIR)/ltmain.sh
-@MAINTAINER_MODE_TRUE@	cp $< $@
-
 .PHONY: install-doc uninstall-doc \
 	doxygen-docs pdf-doxygen-docs clean-doxygen-docs \
 	install-doxygen-docs uninstall-doxygen-docs
+
+########################################################################
+#                           Extra Targets                              #
+########################################################################
+
+test: all
+	cd test; $(MAKE) test
+
+unitTest: test
+
+clean-local: clean-doxygen-docs
+	if test -r test/Makefile; then cd test; $(MAKE) clean; fi
+
+install-exec-local: install-doc
+
+uninstall-local: uninstall-doc uninstall-doxygen-docs
+
+.PHONY: test unitTest doxydoc
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

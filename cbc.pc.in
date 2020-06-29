@@ -4,9 +4,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@/coin-or
 
-Name: CBC
+Name: @PACKAGE_NAME@
 Description: COIN-OR Branch and Cut
-URL: https://github.com/coin-or/Cbc
+URL: @PACKAGE_URL@
 Version: @PACKAGE_VERSION@
 Cflags: -I${includedir}
 @COIN_STATIC_BUILD_FALSE@Libs: -L${libdir} -lCbcSolver -lCbc

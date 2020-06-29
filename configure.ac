@@ -1,17 +1,14 @@
 # Copyright (C) 2006, 2007 International Business Machines.
 # All Rights Reserved.
 # This file is distributed under the Eclipse Public License.
-
-
+#
 # Author:  Andreas Waechter            IBM    2006-04-13
 
 #############################################################################
 #                       Names and other basic things                        #
 #############################################################################
 
-AC_PREREQ(2.59)
-
-AC_INIT([Cbc],[trunk],[https://github.com/coin-or/Cbc/issues/new],[coin-or-cbc],[https://github.com/coin-or/Cbc])
+AC_INIT([Cbc],[devel],[https://github.com/coin-or/Cbc/issues/new],[coin-or-cbc],[https://github.com/coin-or/Cbc])
 
 AC_COPYRIGHT([
 Copyright 2006 International Business Machines and others.
@@ -21,11 +18,9 @@ under the Eclipse Public License.])
 
 # List one file in the package so that the configure script can test
 # whether the package is actually there.
-
 AC_CONFIG_SRCDIR(src/CbcTree.hpp)
 
 # Do some initialization work (version numbers, change prefix default, ...)
-
 AC_COIN_INITIALIZE
 
 #############################################################################
@@ -33,11 +28,9 @@ AC_COIN_INITIALIZE
 #############################################################################
 
 # Get the name of the C++ compiler and appropriate compiler options
-
 AC_COIN_PROG_CXX
 
 # Initialize libtool
-
 AC_COIN_PROG_LIBTOOL
 
 # set RPATH_FLAGS to the compiler link flags required to hardcode location
@@ -50,12 +43,12 @@ AC_COIN_RPATH_FLAGS([$expanded_libdir])
 #############################################################################
 
 # Check for cmath/math.h, cfloat/float.h, cieeefp/ieeefp.h
-
 AC_COIN_CHECK_MATH_HDRS
 
 #############################################################################
 #                   Debug info                                              #
 #############################################################################
+
 AC_CHECK_HEADERS([execinfo.h])
 AC_CHECK_HEADERS([signal.h])
 
@@ -76,7 +69,6 @@ if test $coin_has_osiclp != yes ; then
 fi
 
 # Optional package for command line edit support
-
 AC_COIN_CHK_GNU_READLINE([CbcLib CbcGeneric])
 
 #############################################################################
@@ -84,18 +76,15 @@ AC_COIN_CHK_GNU_READLINE([CbcLib CbcGeneric])
 #############################################################################
 
 # Ampl Solver library
-
 AC_COIN_CHK_PKG(ASL,[CbcSolverLib],[coinasl])
 
 # Nauty library (for symmetry detection).
-
 AC_COIN_CHK_PKG([Nauty],[CbcLib CbcSolverLib],[nauty])
 
 #############################################################################
 
 # The rest are not required for linking against Cbc but are used for the unit
 # test. For the data packages, we just want XXX_DATA for use in Makefile.am.
-
 AC_COIN_CHK_PKG(OsiTests,[CbcUnitTest],[osi-unittests])
 AC_COIN_CHK_PKG(Sample,,[coindatasample],,dataonly)
 AC_COIN_CHK_PKG(Netlib,,[coindatanetlib],,dataonly)
@@ -107,7 +96,6 @@ AC_COIN_CHK_PKG(Miplib3,,[coindatamiplib3],,dataonly)
 
 # Check which other LP solvers are available, some of them become a dependency
 # of CbcGeneric
-
 AC_COIN_CHK_PKG(OsiDyLP,[CbcGeneric OsiCbcLib],[osi-dylp])
 AC_COIN_CHK_PKG(OsiCpx,[CbcLib CbcGeneric CbcSolverLib OsiCbcLib],[osi-cplex])
 AC_COIN_CHK_PKG(OsiGlpk,[CbcGeneric OsiCbcLib],[osi-glpk])
@@ -126,7 +114,6 @@ AC_COIN_FINALIZE_FLAGS([CbcLib CbcSolverLib CbcGeneric OsiCbcLib CbcUnitTest])
 #############################################################################
 
 # Are we building cbc-generic? Default is no (false).
-
 AC_ARG_ENABLE([cbc-generic],
   AS_HELP_STRING([--enable-cbc-generic],[enables build of cbc-generic]),
   [cbc_generic=$enableval],
@@ -136,7 +123,6 @@ AM_CONDITIONAL(CBC_BUILD_CBC_GENERIC, test "$cbc_generic" = yes)
 if test "$cbc_generic" = yes ; then
   # Set the default solver for cbc-generic. In theory, any OsiXXX should work.
   # In practice, only thoselisted below have had any testing long long ago or never.
-
   AC_MSG_CHECKING(for cbc-generic default solver)
   AC_ARG_WITH([cbc-generic-solver],
               AC_HELP_STRING([--with-cbc-generic-solver],
@@ -167,7 +153,6 @@ fi
 #############################################################################
 
 # First we define a new option, --enable-cbc-parallel
-
 AC_ARG_ENABLE([cbc-parallel],
   [AC_HELP_STRING([--disable-cbc-parallel],
                   [disables compilation of the SMP version of Cbc])],
@@ -353,10 +338,7 @@ AM_CONDITIONAL([OSICBC_DFLT_SOLVER_SYM],[test $osi_mc_solver = Sym])
 
 # In case this is a VPATH configuration we need to make sure that the
 # input files for the examples are available in the VPATH directory.
-
-# AC_COIN_VPATH_LINK(examples/sudoku_sample.csv)
-# AC_COIN_VPATH_LINK(examples/quad.mps)
-# AC_COIN_VPATH_LINK(examples/quad2.mps)
+AC_COIN_VPATH_LINK(examples/sudoku_sample.csv)
 
 #############################################################################
 #                  Check for doxygen                                        #

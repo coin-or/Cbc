@@ -1863,6 +1863,8 @@ void Cbc_strengthenPacking(Cbc_Model *model) {
   Cbc_flush(model);
   OsiSolverInterface *solver = model->solver_;
   CglCliqueStrengthening clqStr(solver);
+  if (clqStr.messageHandler())
+    clqStr.messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
   clqStr.strengthenCliques();
 }
 
@@ -1872,6 +1874,8 @@ Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[])
   Cbc_flush(model);
   OsiSolverInterface *solver = model->solver_;
   CglCliqueStrengthening clqStr(solver);
+  if (clqStr.messageHandler())
+    clqStr.messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
   clqStr.strengthenCliques(n, rows);
 }
 

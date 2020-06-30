@@ -78,6 +78,7 @@ extern int gomory_try;
 #include "CoinMpsIO.hpp"
 
 #include "CbcCompareActual.hpp"
+#include "CbcCompareObjective.hpp"
 #include "CbcTree.hpp"
 // This may be dummy
 #include "CbcThread.hpp"
@@ -2042,6 +2043,8 @@ void CbcModel::branchAndBound(int doStatistics)
       iOpt &= ~1;
       iOpt |= 65536;
       clpSolver->setSpecialOptions(iOpt);
+      int options = clpSolver->getModelPtr()->specialOptions() | 2097152;
+      clpSolver->getModelPtr()->setSpecialOptions(options);
 #endif
     }
   }
@@ -2051,15 +2054,22 @@ void CbcModel::branchAndBound(int doStatistics)
   {
     // check
     int numberOdd = 0;
+    int numberSOS = 0;
     for (int i = 0; i < numberObjects_; i++) {
       CbcSimpleInteger *obj = dynamic_cast< CbcSimpleInteger * >(object_[i]);
-      if (!obj)
+      if (!obj) {
         numberOdd++;
+	if (dynamic_cast< CbcSOS * >(object_[i]))
+	  numberSOS++;
+      }
     }
     if (numberOdd) {
       moreSpecialOptions_ |= 1073741824;
       // also switch off checking for restart (as preprocessing may be odd)
-      specialOptions_ &= ~(512|32768);
+#ifdef CBC_EXPERIMENT7
+      if (numberOdd > numberSOS)
+#endif
+	specialOptions_ &= ~(512|32768);
     }
     moreSpecialOptions2_ &= ~65536; // say no lazy constraints
     if (!numberOdd && !parentModel_) {
@@ -2769,6 +2779,11 @@ void CbcModel::branchAndBound(int doStatistics)
       for (int j = 0; j < numberCutGenerators_; j++)
         rootModels[i]->generator_[j]->generator()->refreshSolver(rootModels[i]->solver_);
     }
+#ifdef CBC_EXPERIMENT7
+    if (numberModels>1 && numberHeuristics_) {
+      rootModels[0]->setMoreSpecialOptions(rootModels[0]->moreSpecialOptions()|512);
+    }
+#endif
     delete basis;
 #ifdef CBC_THREAD
     if (numberRootThreads == 1) {
@@ -4921,7 +4936,21 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CBC_THREAD
     if (!parallelMode() || parallelMode() == -1) {
 #endif
+#ifdef CBC_EXPERIMENT7
+      int multiplier = (moreSpecialOptions_>>3)&31;
+      if (tree_->size()<16*multiplier&&numberNodes_>-100 && (specialOptions_&2048)==0) {
+        // create breadth first comparison
+	//printf("breadth as tree size %d\n",tree_->size());
+        CbcCompareObjective breadth;
+        tree_->setComparison(breadth);
+	node = tree_->bestNode(cutoff);
+        tree_->setComparison(*nodeCompare_);
+      } else {
+	node = tree_->bestNode(cutoff);
+      }
+#else
       node = tree_->bestNode(cutoff);
+#endif
       // Possible one on tree worse than cutoff
       // Weird comparison function can leave ineligible nodes on tree
       if (!node || node->objectiveValue() > cutoff)
@@ -10312,6 +10341,8 @@ int CbcModel::takeOffCuts(OsiCuts &newCuts,
   int numberNewCuts, const OsiRowCut **addedCuts)
 
 { // int resolveIterations = 0 ;
+  if ((moreSpecialOptions2_&524288)!=0)
+    return 0; // leaving all root cuts
   int numberDropped = 0;
   int firstOldCut = numberRowsAtContinuous_;
   int totalNumberCuts = numberNewCuts_ + numberOldActiveCuts_;
@@ -19224,6 +19255,12 @@ static void *doRootCbcThread(void *voidInfo)
       model->messages())
       << general << CoinMessageEol;
   }
+#endif
+   // switch off nauty
+#ifdef CBC_HAS_NAUTY
+   int newOptions = model->moreSpecialOptions2();
+   newOptions &= ~(128|256);
+   model->setMoreSpecialOptions2(newOptions);
 #endif
   model->branchAndBound();
   sprintf(general, "Ending multiple root solver");

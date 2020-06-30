@@ -2146,6 +2146,8 @@ public:
 	16 bit 65536 - lazy constraints
         17 bit 131072 - fairly simple orbital 
         18 bit 262144 - some statistics for fairly simple orbital 
+ 	19 bit 524288 - freeze problem at root cuts
+ 	20 bit 1048576 - use ranging in CbcNode
     */
   inline void setMoreSpecialOptions2(int value)
   {

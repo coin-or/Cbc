@@ -324,7 +324,8 @@ void CbcSymmetry::Print_Orbits(int type) const
 {
 
   //printf ("num gens = %d, num orbits = %d \n", nauty_info_ -> getNumGenerators(), nauty_info_ -> getNumOrbits() );
-
+  if (!nauty_info_->getN())
+    return;
   std::vector< std::vector< int > > *new_orbits = nauty_info_->getOrbits();
 
   printf("Nauty: %d generators, group size: %.0g",
@@ -761,6 +762,20 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
 
   int coef_count = numberRows + numberColumns + 1;
   int nc = num_affine + coef_count;
+  if (nc > 100000) {
+    // too big
+    char general[200];
+    sprintf(general,"Nauty too large %d affine and %d coefficient count",
+	    num_affine,coef_count);
+    model->messageHandler()->message(CBC_GENERAL,
+				     model->messages())
+      << general << CoinMessageEol;
+    int options = model->moreSpecialOptions2();
+    options &= ~(128|256|131072|262144);
+    model->setMoreSpecialOptions2(options);
+    nauty_info_ = new CbcNauty(0,NULL,NULL,NULL);
+    return;
+  }
   // create graph (part 1)
 
   for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -1332,6 +1347,8 @@ CbcNauty::CbcNauty(int vertices, const size_t *v, const int *d, const int *e)
   vstat_ = new int[n_];
   clearPartitions();
   afp_ = NULL;
+  if (!n_)
+    stats_->errstatus=1; // deliberate error
 }
 
 CbcNauty::~CbcNauty()

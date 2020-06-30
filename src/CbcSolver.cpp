@@ -2404,11 +2404,24 @@ int CbcMain1(int argc, const char *argv[],
                   value = value % 10;
                   parameters_[whichParam(CBC_PARAM_INT_EXPERIMENT, parameters_)].setIntValue(value);
                 }
+#ifndef CBC_EXPERIMENT7
 		if (value == 1) {
 		  // just experimental preprocessing and more restarts
 		  tunePreProcess |= 8192;
 		  model_.setSpecialOptions(model_.specialOptions()|(512|32768));
 		}
+#else
+		if (value == 1 || value == 2) {
+		  // just experimental preprocessing and more restarts
+		  tunePreProcess |= 8199;
+		  model_.setSpecialOptions(model_.specialOptions()|(512|32768));
+ 		  if (value == 2) {
+ 		    value = 1;
+ 		    int more2 = parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].intValue();
+                     parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].setIntValue(more2|1048576);
+ 		  }
+		}
+#endif
                 if (value > 1) {
                   int values[] = { 24003, 280003, 792003, 24003, 24003 };
                   if (value >= 2 && value <= 3) {
@@ -2749,6 +2762,10 @@ int CbcMain1(int argc, const char *argv[],
               parameters_[whichParam(CBC_PARAM_STR_TWOMIRCUTS, parameters_)].setCurrentOption(action);
 	      parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, parameters_)].setCurrentOption(action);
               parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].setCurrentOption(action);
+ 	      if (!action) {
+ 		// switch off clique strengthening
+ 		clqstrAction = "off";
+ 	      }
               break;
             case CBC_PARAM_STR_HEURISTICSTRATEGY:
               parameters_[whichParam(CBC_PARAM_STR_ROUNDING, parameters_)].setCurrentOption(action);
@@ -3678,6 +3695,13 @@ int CbcMain1(int argc, const char *argv[],
                         CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);
                         heuristicGreedyEquality.setHeuristicName("greedy equality");
                         cbcModel->addHeuristic(&heuristicGreedyEquality);
+#ifdef CBC_EXPERIMENT7
+#ifndef CBC_OTHER_SOLVER
+			CbcHeuristicRandRound heuristicRandRound(*cbcModel);
+			heuristicRandRound.setHeuristicName("random rounding");
+			cbcModel->addHeuristic(&heuristicRandRound);
+ #endif
+#endif
                       }
                       CbcCompareDefault compare;
                       cbcModel->setNodeComparison(compare);
@@ -4165,10 +4189,19 @@ int CbcMain1(int argc, const char *argv[],
                   // switch off duplicate columns if we have a solution
                   if (model_.bestSolution() /*||debugValues*/)
                     tunePreProcess |= 4096;
-                  if ((tunePreProcess & 1) != 0) {
+ 		  // take off top
+ 		  int tune2 = tunePreProcess % 10000;
+		  if ((tune2 & (1|512)) != 0) {
                     // heavy probing
                     generator1.setMaxPassRoot(2);
+#ifndef CBC_EXPERIMENT7
                     generator1.setMaxElements(1000);
+#else
+ 		    if ((tune2 & 512) != 0) 
+ 		      generator1.setMaxElementsRoot(saveSolver->getNumCols());
+		    else
+		      generator1.setMaxElements(1000);
+#endif
                     generator1.setMaxProbeRoot(saveSolver->getNumCols());
                     generator1.setMaxLookRoot(saveSolver->getNumCols());
                   }
@@ -4462,6 +4495,8 @@ int CbcMain1(int argc, const char *argv[],
 		      /* clean solvers - should be done in preProcess but
 			 that doesn't know about Clp */
 		      OsiClpSolverInterface * solver;
+ 		      solver = dynamic_cast<OsiClpSolverInterface *>(solver2);
+ 		      solver->getModelPtr()->cleanScalingEtc();
 		      solver = dynamic_cast<OsiClpSolverInterface *>(process.originalModel());
 		      solver->getModelPtr()->cleanScalingEtc();
 		      solver = dynamic_cast<OsiClpSolverInterface *>(process.startModel());

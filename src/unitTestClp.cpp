@@ -349,11 +349,27 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
     } else {
       OsiClpSolverInterface solver1;
       const char * newArgv[200];
+      char replace[100];
       int newArgc = 2;
       newArgv[0] = "unitTestCbc";
       newArgv[1] = fn.c_str();
-      for (int i = 3;i < argc-1; i++)
-	newArgv[newArgc++] = argv[i];
+      for (int i = 3;i < argc-1; i++) {
+	if (!strstr(argv[i],"++")) {
+	  newArgv[newArgc++] = argv[i];
+	} else {
+	  int n = strstr(argv[i],"++")-argv[i];
+	  strncpy(replace,argv[i],n);
+	  const char * mipname = mpsName[m].c_str();
+	  int n1 = n;
+	  for (int j=0;j<strlen(mipname);j++)
+	    replace[n++]=mipname[j];
+	  for (int j=n1+2;j<strlen(argv[i]);j++)
+	    replace[n++]=argv[i][j];
+	  replace[n] = '\0';
+	  newArgv[newArgc++] = replace;
+	  printf("Replacing %s by %s\n",argv[i],replace);
+	}
+      }
       /*
 	Activate the row cut debugger, if requested.
       */
@@ -366,9 +382,11 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
       CbcMain0(*model,parameterData);
       CbcMain1(newArgc, newArgv, *model, callBack, parameterData);
     }
-
-    assert(model->getNumRows() == nRows[m]);
-    assert(model->getNumCols() == nCols[m]);
+    if (model->getNumRows() != nRows[m] ||
+	model->getNumCols() != nCols[m])
+      printf("WARNING - model has %d row, %d columns - expected %d, %d\n",
+	     model->getNumRows(),model->getNumCols(),
+	     nRows[m],nCols[m]);
 
     if (oldStyle) {
 

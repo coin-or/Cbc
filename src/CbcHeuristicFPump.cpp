@@ -696,6 +696,20 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     for (i = 0; i < numberColumns; i++) {
       solver->setObjCoeff(i, 0.0);
     }
+    if ((model_->moreSpecialOptions()&512)!=0) {
+      if(!numberPasses && !totalNumberPasses)
+	model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	  << "Ignoring true objective"
+	  << CoinMessageEol;
+      CoinWarmStartBasis dummy;
+      solver->setWarmStart(&dummy);
+      solver->resolve();
+      if (!solver->isProvenOptimal()) {
+        // presumably max time or some such
+        exitAll = true;
+        break;
+      }
+    }
     bool finished = false;
     double direction = solver->getObjSense();
     int returnCode = 0;

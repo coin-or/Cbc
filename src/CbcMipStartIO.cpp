@@ -350,7 +350,8 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
       messHandler->message(CBC_GENERAL, messages)
         << printLine << CoinMessageEol;
       foundIntegerSol = true;
-      obj = 0.0;
+      lp->getDblParam(OsiObjOffset, obj);
+      obj = -obj;
       for ( int i=0 ; (i<lp->getNumCols()) ; ++i )
           obj += realObj[i]*sol[i];
     }
@@ -380,9 +381,10 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
   } else {
     foundIntegerSol = true;
     
-    obj = 0.0;
+    lp->getDblParam(OsiObjOffset, obj);
+    obj = -obj;
     for ( int i=0 ; (i<lp->getNumCols()) ; ++i )
-        obj += realObj[i]*lp->getColSolution()[i];
+      obj += realObj[i]*lp->getColSolution()[i];
     compObj = obj;
     copy(lp->getColSolution(), lp->getColSolution() + lp->getNumCols(), sol);
   }

@@ -129,7 +129,10 @@ int CbcHeuristicRandRound::solution(double &solutionValue,
   double primalTolerance;
   solver->getDblParam(OsiPrimalTolerance, primalTolerance);
   OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
-  assert(clpSolver);
+  if (!clpSolver) {
+    delete solver;
+    return 0;
+  }
   ClpSimplex *simplex = clpSolver->getModelPtr();
 
   // Initialize the structure holding the solutions for the Simplex iterations

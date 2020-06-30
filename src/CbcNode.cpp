@@ -1678,6 +1678,10 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   // For now return if not simple
   if (useOldWay)
     return -3;
+  // #define STRONGER_BRANCHING
+#ifdef STRONGER_BRANCHING
+  model->setSpecialOptions(model->specialOptions() | 8);
+#endif
   // Modify useful info
   usefulInfo.depth_ = depth_;
   if ((model->specialOptions() & 128) != 0) {
@@ -1717,7 +1721,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
        on each unsatisfied variable cheaply.  Then use this
        if you have not got much else to go on.
     */
-  //#define CBC_RANGING
+#define CBC_RANGING
 #ifdef CBC_RANGING
   // must have clp
 #ifndef CBC_HAS_CLP
@@ -1943,7 +1947,11 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   }
   if (useShadow) {
     // pseudo shadow prices
+#ifndef EXP8
     model->pseudoShadow((model->moreSpecialOptions() >> 3) & 63);
+#else
+    model->pseudoShadow(0);
+#endif
   }
 #ifdef DEPRECATED_STRATEGY
   { // in for tabbing
@@ -2523,7 +2531,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       int iDo;
 #define RESET_BOUNDS
 #ifdef CBC_RANGING
-      bool useRanging = model->allDynamic() && !skipAll;
+      bool useRanging = model->allDynamic() && !skipAll
+	&& ((model->specialOptions()&2048) == 0) && (model->moreSpecialOptions2()&1048576) !=0;
       if (useRanging) {
         double currentObjective = solver->getObjValue() * solver->getObjSense();
         double gap = cutoff - currentObjective;
@@ -2544,7 +2553,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             for (int i = 0; i < extra; i++) {
               objectMark[neededPenalties] = objectMark[optionalPenalties + i];
               which[neededPenalties++] = which[optionalPenalties + i];
-              ;
             }
           }
         }
@@ -2575,9 +2583,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           doneHotStart = true;
           xMark++;
           kPass++;
-          osiclp->passInRanges(NULL);
-          const double *downCost = osiclp->upRange();
-          const double *upCost = osiclp->downRange();
+          const double *upCost = osiclp->upRange();
+          const double *downCost = osiclp->downRange();
           bool problemFeasible = true;
           int numberFixed = 0;
 	  if (osiclp->rangeArray()) {
@@ -2591,8 +2598,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 	      int iSequence = dynamicObject->columnNumber();
 	      double value = saveSolution[iSequence];
 	      value -= floor(value);
-	      double upPenalty = CoinMin(upCost[i], 1.0e110) * (1.0 - value);
-	      double downPenalty = CoinMin(downCost[i], 1.0e110) * value;
+	      double upPenalty = upCost[i];//CoinMin(upCost[i], 1.0e110) * (1.0 - value);
+	      double downPenalty = downCost[i];//CoinMin(downCost[i], 1.0e110) * value;
 	      int numberThisDown = dynamicObject->numberTimesDown();
 	      int numberThisUp = dynamicObject->numberTimesUp();
 	      if (!numberBeforeTrustThis) {
@@ -2626,11 +2633,11 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 		sort[j] = -min1;
 	      }
 	      // seems unreliable
-	      if (false && CoinMax(downPenalty, upPenalty) > gap) {
+	      if (CoinMax(downPenalty, upPenalty) > gap) {
 		COIN_DETAIL_PRINT(printf("gap %g object %d has down range %g, up %g\n",
 					 gap, i, downPenalty, upPenalty));
-		printf("gap %g object %d has down range %g, up %g\n",
-		       gap, i, downPenalty, upPenalty);
+		//printf("gap %g object %d has down range %g, up %g\n",
+		//     gap, i, downPenalty, upPenalty);
 		//sort[j] -= 1.0e50; // make more likely to be chosen
 		int number;
 		if (downPenalty > gap) {
@@ -2638,31 +2645,27 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 		  if (upPenalty > gap)
 		    problemFeasible = false;
 		  CbcBranchingObject *branch = dynamicObject->createCbcBranch(solver, &usefulInfo, 1);
-		  //branch->fix(solver,saveLower,saveUpper,1);
+		  branch->fix(solver,saveLower,saveUpper,1);
+		  numberToFix++;
+		  anyAction = -1;
 		  delete branch;
 		} else {
 		  number = dynamicObject->numberTimesUp();
 		  CbcBranchingObject *branch = dynamicObject->createCbcBranch(solver, &usefulInfo, 1);
-		  //branch->fix(solver,saveLower,saveUpper,-1);
+		  branch->fix(solver,saveLower,saveUpper,-1);
+		  numberToFix++;
+		  anyAction = -1;
 		  delete branch;
 		}
 		if (number >= numberBeforeTrustThis)
 		  dynamicObject->setNumberBeforeTrust(CoinMin(number + 1, 5 * numberBeforeTrust));
 		numberFixed++;
 	      }
-	      // try this instead
-	      if (CoinMax(downPenalty, upPenalty) > gap) {
-		COIN_DETAIL_PRINT(printf("gap %g object %d has down range %g, up %g\n",
-					 gap, i, downPenalty, upPenalty));
-		sort[j] = -1.0e20 + 1.0e10*sort[j]; // make more likely to be chosen
-		if (downPenalty > gap && upPenalty > gap) {
-		  sort[j] *= 1.0e6;
-		}
-	      }
 	      if (!numberNodes)
 		COIN_DETAIL_PRINT(printf("%d pen down ps %g -> %g up ps %g -> %g\n",
 					 iObject, downPenalty, downPenalty, upPenalty, upPenalty));
 	    }
+	    osiclp->passInRanges(NULL);
 	    if (numberFixed && problemFeasible) {
 	      assert(doneHotStart);
 	      solver->unmarkHotStart();
@@ -2686,7 +2689,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 	      problemFeasible = solver->isProvenOptimal();
 	    }
 	    if (!problemFeasible) {
-	      printf("HELP - ranging infeas\n");
+	      //printf("HELP - ranging infeas\n");
 	      COIN_DETAIL_PRINT(fprintf(stdout, "both ways infeas on ranging - code needed\n"));
 	      anyAction = -2;
 	      if (!choiceObject) {

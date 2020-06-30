@@ -173,6 +173,8 @@ bool CbcCompareDefault::test(CbcNode *x, CbcNode *y)
       if (depthX <= breadthDepth_ && depthY <= breadthDepth_) {
         if (depthX != depthY) {
           return depthX < depthY;
+	} else {
+	  return equalityTest(x, y); // so ties will be broken in consistent manner
         }
       } else {
         assert(depthX != depthY);

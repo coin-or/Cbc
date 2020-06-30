@@ -1958,41 +1958,47 @@ Cbc_solve(Cbc_Model *model)
       cbcModel->addCutGenerator( &cglCb, model->cutCBhowOften, model->cutCBName.c_str(), true, model->cutCBAtSol );
     }
     if (model->cutCBAtSol) {
+      /* lazy constraints require no pre-processing and no heuristics */
       Cbc_setParameter(model, "preprocess", "off");
-      Cbc_setParameter(model, "heur", "off");        
+      Cbc_setParameter(model, "heur", "off");
+      Cbc_setParameter(model, "cgraph", "off");
+      Cbc_setParameter(model, "clqstr", "off");
+    } else {
+      switch (model->int_param[INT_PARAM_CGRAPH]) {
+        case 0:
+          Cbc_setParameter(model, "cgraph", "off");
+          break;
+        case 2:
+          Cbc_setParameter(model, "cgraph", "on");
+          break;
+        case 3:
+          Cbc_setParameter(model, "cgraph", "clq");
+          break;
+      }
+
+      switch (model->int_param[INT_PARAM_CLIQUE_MERGING]) {
+        case 0:
+          Cbc_setParameter(model, "clqstr", "off");
+          break;
+        case 2:
+          Cbc_setParameter(model, "clqstr", "before");
+          break;
+        case 3:
+          Cbc_setParameter(model, "clqstr", "after");
+          break;
+      }
     }
 
-    switch (model->int_param[INT_PARAM_CGRAPH]) {
-      case 0:
-        Cbc_setParameter(model, "cgraph", "off");
-        break;
-      case 2:
-        Cbc_setParameter(model, "cgraph", "on");
-        break;
-      case 3:
-        Cbc_setParameter(model, "cgraph", "clq");
-        break;
-    }
-
-    switch (model->int_param[INT_PARAM_CLIQUE_MERGING]) {
-      case 0:
-        Cbc_setParameter(model, "clqstr", "off");
-        break;
-      case 2:
-        Cbc_setParameter(model, "clqstr", "before");
-        break;
-      case 3:
-        Cbc_setParameter(model, "clqstr", "after");
-        break;
-    }
     if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX) {
         char str[256]; sprintf(str, "%g", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
         Cbc_setParameter(model, "secnifs", str);
-    }
+    } else
+        Cbc_setParameter(model, "secnifs", "-1");
     if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX) {
         char str[256]; sprintf(str, "%d", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
         Cbc_setParameter(model, "maxNIFS", str);
-    }
+    } else
+        Cbc_setParameter(model, "maxNIFS", "-1");
 
     Cbc_MessageHandler *cbcmh  = NULL;
 
@@ -2016,17 +2022,13 @@ Cbc_solve(Cbc_Model *model)
     Cbc_addMS( model );
 
     // parameters
-    if (model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX)
-      cbcModel->setMaximumSeconds( model->dbl_param[DBL_PARAM_TIME_LIMIT] );
-    if ( model->int_param[INT_PARAM_MAX_SOLS] != INT_MAX && model->int_param[INT_PARAM_MAX_SOLS] != -1 )
-      cbcModel->setMaximumSolutions( model->int_param[INT_PARAM_MAX_SOLS] );
+    cbcModel->setMaximumSeconds( model->dbl_param[DBL_PARAM_TIME_LIMIT] );
+    cbcModel->setMaximumSolutions( model->int_param[INT_PARAM_MAX_SOLS] );
     cbcModel->setAllowableGap( model->dbl_param[DBL_PARAM_ALLOWABLE_GAP] );
     cbcModel->setAllowableFractionGap( model->dbl_param[DBL_PARAM_GAP_RATIO] );
-    if ( model->int_param[INT_PARAM_MAX_NODES] != INT_MAX )
-      cbcModel->setMaximumNodes( model->int_param[INT_PARAM_MAX_NODES] );
+    cbcModel->setMaximumNodes( model->int_param[INT_PARAM_MAX_NODES] );
     cbcModel->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
-    if ( model->dbl_param[DBL_PARAM_CUTOFF] != COIN_DBL_MAX )
-      cbcModel->setCutoff( model->dbl_param[DBL_PARAM_CUTOFF] );
+    cbcModel->setCutoff( model->dbl_param[DBL_PARAM_CUTOFF] );
 
     // trying to reuse integer solution found in previous optimization
     if (model->lastOptNCols == model->solver_->getNumCols() && model->lastOptMIPSol) {
@@ -2081,7 +2083,7 @@ Cbc_solve(Cbc_Model *model)
 #ifdef CBC_THREAD
     {
       int numberThreads = model->int_param[INT_PARAM_THREADS];
-      if (numberThreads > 1) {
+      if (numberThreads >= 1) {
         model->cbcModel_->setNumberThreads(numberThreads);
         model->cbcModel_->setThreadMode(CoinMin(numberThreads / 100, 7));
       }
@@ -4398,7 +4400,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_MAX_NODES]               =  INT_MAX;
   model->int_param[INT_PARAM_NUMBER_BEFORE]           =        5;
   model->int_param[INT_PARAM_FPUMP_ITS]               =       30;
-  model->int_param[INT_PARAM_MAX_SOLS]                =       -1;
+  model->int_param[INT_PARAM_MAX_SOLS]                =       10;
   model->int_param[INT_PARAM_CUT_PASS_IN_TREE]        =        1;
   model->int_param[INT_PARAM_LOG_LEVEL]               =        1;
   model->int_param[INT_PARAM_MAX_SAVED_SOLS]          =       -1;

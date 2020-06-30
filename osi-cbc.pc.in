@@ -6,7 +6,7 @@ includedir=@includedir@/coin
 
 Name: OsiCbc
 Description: COIN-OR Open Solver Interface for CBC
-URL: https://github.com/coin-or/Cbc
+URL: @PACKAGE_URL@
 Version: @PACKAGE_VERSION@
 Cflags: -I${includedir}
 @COIN_STATIC_BUILD_FALSE@Libs: -L${libdir} -lOsiCbc

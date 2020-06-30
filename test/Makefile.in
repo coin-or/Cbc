@@ -17,12 +17,8 @@
 # Copyright (C) 2006 International Business Machines and others.
 # All Rights Reserved.
 # This file is distributed under the Eclipse Public License.
-
+#
 # Author:  Andreas Waechter           IBM    2006-04-13
-
-########################################################################
-#                         unitTest for Cbc                             #
-########################################################################
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -383,22 +379,23 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
+AM_LDFLAGS = $(LT_LDFLAGS)
+
+########################################################################
+#                         unitTest for Cbc                             #
+########################################################################
 CBC_TEST_TGTS = gamstests ositests $(am__append_1) $(am__append_2)
 cbcflags = $(am__append_4)
 ositestsflags = $(am__append_3) $(am__append_5)
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la
-AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/OsiCbc \
-	$(CBCUNITTEST_CFLAGS)
-AM_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################
 #                         unitTest for OsiCbc                          #
 ########################################################################
 osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
-osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-    $(CBCUNITTEST_LFLAGS)
-
+osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la $(CBCUNITTEST_LFLAGS)
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -763,12 +760,11 @@ uninstall-am: uninstall-binPROGRAMS
 test: $(CBC_TEST_TGTS)
 
 test_cbc: ../src/cbc$(EXEEXT)
-	export RUNNING_TEST="test_cbc" ; ../src/cbc$(EXEEXT) $(cbcflags)
+	RUNNING_TEST="test_cbc" ../src/cbc$(EXEEXT) $(cbcflags)
 
 @COIN_HAS_SAMPLE_TRUE@test_cbc_generic: ../src/cbc-generic$(EXEEXT)
-@COIN_HAS_SAMPLE_TRUE@	export RUNNING_TEST="cbc-generic" ; echo "A minimal test is all that cbc-generic can manage just yet."
-@COIN_HAS_SAMPLE_TRUE@	../src/cbc-generic$(EXEEXT) \
-@COIN_HAS_SAMPLE_TRUE@	    -directory `$(CYGPATH_W) $(SAMPLE_DATA)` -import p0033.mps -branch
+@COIN_HAS_SAMPLE_TRUE@	@echo "A minimal test is all that cbc-generic can manage just yet."
+@COIN_HAS_SAMPLE_TRUE@	RUNNING_TEST="cbc-generic" ../src/cbc-generic$(EXEEXT) -directory `$(CYGPATH_W) $(SAMPLE_DATA)` -import p0033.mps -branch
 
 gamstests: gamsTest$(EXEEXT)
 	export RUNNING_TEST="gamsTest" ; ./gamsTest$(EXEEXT)

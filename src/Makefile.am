@@ -1,16 +1,15 @@
 # Copyright (C) 2006, 2007 International Business Machines and others.
 # All Rights Reserved.
 # This file is distributed under the Eclipse Public License.
-
-
+#
 # Author:  Andreas Waechter           IBM    2006-04-13
 
 ########################################################################
 #                               libCbc                                 #
 ########################################################################
 
-# Name of the library compiled in this directory.  We want it to be installed
-# in the 'lib' directory
+# Name of the library compiled in this directory.
+# We want it to be installed in the 'lib' directory
 lib_LTLIBRARIES = libCbc.la libCbcSolver.la
 
 # List all source files for this library, including headers
@@ -100,12 +99,10 @@ libCbcSolver_la_SOURCES = \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp
 
 # List all additionally required libraries
-
 libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
 libCbcSolver_la_LIBADD = $(CBCSOLVERLIB_LFLAGS) libCbc.la
 
 # Some common setup for cbc and cbc-generic.
-
 libCbc_la_CPPFLAGS = $(CBCLIB_CFLAGS)
 libCbcSolver_la_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
 

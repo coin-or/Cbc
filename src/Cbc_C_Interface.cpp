@@ -4426,6 +4426,42 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] =  COIN_DBL_MAX;
 }
 
+void Cbc_getBuildInfo(char *str) {
+  sprintf(str, "Cbc version: %s\n", CBC_VERSION);
+  char s[128];
+  sprintf(s, "Build date: %s\n", __DATE__);
+  strcat(str, s);
+  strcat(str, "Build type: ");
+#ifdef NDEBUG
+  strcat(str, "Release\n");
+#else
+  strcat(str, "Debug\n");
+#endif
+
+#ifdef __GNUC__
+  sprintf(s, "Built with G++ version %s\n", __VERSION__);
+  strcat(str, s);
+#endif
+  strcat(str, "Components:\n");
+#ifdef CBC_HAS_NAUTY
+  strcat(str, "  nauty: yes\n");
+#else
+  strcat(str, "  nauty: no\n");
+#endif
+#ifdef CBC_THREAD
+  strcat(str, "  threads: yes\n");
+#else
+  strcat(str, "  threads: no\n");
+#endif
+  strcat(str, "  compression formats:");
+  if (Cbc_supportsGzip())
+    strcat(str, " gz");
+  if (Cbc_supportsBzip2())
+    strcat(str, " bz2");
+
+  strcat(str, "\n");
+}
+
 #if defined(__MWERKS__)
 #pragma export off
 #endif

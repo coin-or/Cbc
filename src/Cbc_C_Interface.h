@@ -164,6 +164,9 @@ typedef void(CBC_LINKAGE_CB *cbc_cut_callback)(void *osiSolver, void *osiCuts, v
 /** Current version of Cbc */
 CBCSOLVERLIB_EXPORT const char *CBC_LINKAGE Cbc_getVersion(void);
 
+/** Build info */
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE Cbc_getBuildInfo(char *str);
+
 /** \name Problem creation and modification routines */
 
 /** @brief Creates an empty problem */

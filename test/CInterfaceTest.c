@@ -1084,6 +1084,12 @@ void testTSPUlysses22( char lazy ) {
 }
 
 int main() {
+    printf("\nStarting C Interface test.\n\n");
+    char buildInfo[1024];
+    Cbc_getBuildInfo(buildInfo);
+    printf("%s\n", buildInfo);
+
+
     printf("Knapsack test\n");
     testKnapsack();
     printf("SOS test\n");

@@ -2001,34 +2001,27 @@ int CbcMain1(int argc, const char *argv[],
         numberGoodCommands++;
         if (type == CBC_PARAM_ACTION_BAB && goodModel) {
           if (clqstrAction == "before") { //performing clique strengthening before initial solve
-        CglCliqueStrengthening clqStr(model_.solver());
-        int logLevel = model_.messageHandler()->logLevel();
-        int slogLevel = model_.solver()->messageHandler()->logLevel();
-        logLevel = CoinMin(logLevel,slogLevel);
-        model_.solver()->messageHandler()->setLogLevel(logLevel);
-        clqStr.passInMessageHandler(model_.messageHandler());
-        clqStr.strengthenCliques(2);
-        model_.solver()->messageHandler()->setLogLevel(0);
+            CglCliqueStrengthening clqStr(model_.solver(), model_.messageHandler());
+            clqStr.strengthenCliques(2);
 
-        if (clqStr.constraintsExtended() + clqStr.constraintsDominated() > 0) {
-          model_.solver()->initialSolve();
+            if (clqStr.constraintsExtended() + clqStr.constraintsDominated() > 0) {
+              model_.solver()->initialSolve();
 
-          if (!noPrinting_) {
-            if (model_.solver()->isProvenPrimalInfeasible()) {
-              sprintf(generalPrint, "Clique Strengthening says infeasible!");
-              generalMessageHandler->message(CLP_GENERAL, generalMessages)
-              << generalPrint
-              << CoinMessageEol;
-            } else {
-              sprintf(generalPrint, "After applying Clique Strengthening continuous objective value is %.2lf", model_.solver()->getObjValue());
-              generalMessageHandler->message(CLP_GENERAL, generalMessages)
-              << generalPrint
-              << CoinMessageEol;
+              if ((!noPrinting_) && (model_.messageHandler()->logLevel())) {
+                if (model_.solver()->isProvenPrimalInfeasible()) {
+                  sprintf(generalPrint, "Clique Strengthening says infeasible!");
+                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                  << generalPrint
+                  << CoinMessageEol;
+                } else {
+                  sprintf(generalPrint, "After applying Clique Strengthening continuous objective value is %.2lf", model_.solver()->getObjValue());
+                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                  << generalPrint
+                  << CoinMessageEol;
+                }
+              }
             }
           }
-        }
-        model_.solver()->messageHandler()->setLogLevel(slogLevel);
-      }
 #if CBC_USE_INITIAL_TIME==1
           if (model_.useElapsedTime())
             model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
@@ -5185,41 +5178,34 @@ int CbcMain1(int argc, const char *argv[],
 		clqstrAction = "off";
 	      }
               if (clqstrAction == "after") {
-                  CglCliqueStrengthening clqStr(babModel_->solver());
-		  // Printing should be at babModel level not solver
-		  int logLevel = babModel_->messageHandler()->logLevel();
-		  int slogLevel = babModel_->solver()->messageHandler()->logLevel();
-		  logLevel = CoinMin(logLevel,slogLevel);
-		  babModel_->solver()->messageHandler()->setLogLevel(logLevel);
-                  clqStr.passInMessageHandler(babModel_->messageHandler());
-                  clqStr.strengthenCliques(4);
-		  babModel_->solver()->messageHandler()->setLogLevel(slogLevel);
+                CglCliqueStrengthening clqStr(babModel_->solver(), babModel_->messageHandler());
+                clqStr.strengthenCliques(4);
 
-                  if (clqStr.constraintsExtended() + clqStr.constraintsDominated() > 0) {
-		    OsiSolverInterface * solver = babModel_->solver();
-		    bool takeHint;
-		    OsiHintStrength strength;
-		    solver->getHintParam(OsiDoDualInResolve,
-					 takeHint, strength);
-                    solver->setHintParam(OsiDoDualInResolve, false,OsiHintTry);
-                    solver->resolve();
-                    solver->setHintParam(OsiDoDualInResolve, takeHint,strength);
+                if (clqStr.constraintsExtended() + clqStr.constraintsDominated() > 0) {
+		  OsiSolverInterface * solver = babModel_->solver();
+		  bool takeHint;
+		  OsiHintStrength strength;
+		  solver->getHintParam(OsiDoDualInResolve,
+		      		 takeHint, strength);
+                  solver->setHintParam(OsiDoDualInResolve, false,OsiHintTry);
+                  solver->resolve();
+                  solver->setHintParam(OsiDoDualInResolve, takeHint,strength);
 
-                    if (!noPrinting_) {
-                      if (solver->isProvenPrimalInfeasible()) {
-                        sprintf(generalPrint, "Clique Strengthening says infeasible!");
-                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                          << generalPrint
-                          << CoinMessageEol;
-                      } else {
-                      	sprintf(generalPrint, "After applying Clique Strengthening continuous objective value is %.2lf", solver->getObjValue());
-                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                          << generalPrint
-                          << CoinMessageEol;
-                      }
+                  if (!noPrinting_ && (babModel_->messageHandler()->logLevel())) {
+                    if (solver->isProvenPrimalInfeasible()) {
+                      sprintf(generalPrint, "Clique Strengthening says infeasible!");
+                      generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                        << generalPrint
+                        << CoinMessageEol;
+                    } else {
+                    	sprintf(generalPrint, "After applying Clique Strengthening continuous objective value is %.2lf", solver->getObjValue());
+                      generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                        << generalPrint
+                        << CoinMessageEol;
                     }
-                  }
-              }
+                  } // results of clique Strengthening stengthening
+                } // checking impact of clique Strengthening stengthening
+              } // clique Strengthening
 
               // now tighten bounds
               if (!miplib) {

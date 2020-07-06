@@ -1912,7 +1912,7 @@ Cbc_solve(Cbc_Model *model)
     delete model->cbcModel_;
   }
 
-  OsiClpSolverInterface *linearProgram = dynamic_cast<OsiClpSolverInterface *>( model->solver_->clone() );
+  OsiSolverInterface *linearProgram = model->solver_->clone();
   model->lastOptimization = IntegerOptimization;
   CbcModel *cbcModel = model->cbcModel_ = new CbcModel( *linearProgram );
 

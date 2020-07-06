@@ -2013,8 +2013,6 @@ Cbc_solve(Cbc_Model *model)
     CbcMain0(*cbcModel, cbcData);
     cbcData.printWelcome_ = false;
 
-    cbcModel->solver()->setDblParam( OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL] );
-    cbcModel->solver()->setDblParam( OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL] );
     // adds SOSs if any
     Cbc_addAllSOS(model);
 
@@ -2029,6 +2027,7 @@ Cbc_solve(Cbc_Model *model)
     cbcModel->setMaximumNodes( model->int_param[INT_PARAM_MAX_NODES] );
     cbcModel->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
     cbcModel->setCutoff( model->dbl_param[DBL_PARAM_CUTOFF] );
+    cbcModel->setIntegerTolerance( model->dbl_param[DBL_PARAM_INT_TOL] );
 
     // trying to reuse integer solution found in previous optimization
     if (model->lastOptNCols == model->solver_->getNumCols() && model->lastOptMIPSol) {

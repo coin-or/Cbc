@@ -6036,7 +6036,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   solver_ = rhs.clone();
   ownership_ |= 0x80000000; // model now owns solver
   handler_ = new CoinMessageHandler();
-  if (!solver_->defaultHandler() && solver_->messageHandler()->logLevel(0) != -1000)
+  if (!solver_->defaultHandler() && solver_->messageHandler() && solver_->messageHandler()->logLevel(0) != -1000)
     passInMessageHandler(solver_->messageHandler());
   handler_->setLogLevel(2);
   messages_ = CbcMessage();

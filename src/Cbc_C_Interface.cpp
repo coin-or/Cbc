@@ -54,9 +54,10 @@
 
 using namespace std;
 
-static char **to_char_vec( const vector< string > names );
+static char **to_char_vec( const vector< string > &names );
 static void *xmalloc( const size_t size );
 static void *xrealloc( void *ptr, const size_t newSize );
+static void Cbc_updateSlack( Cbc_Model *model, const double *ractivity );
 
 #define VALIDATE_ROW_INDEX(iRow, model)  \
       if (iRow<0 || iRow >= Cbc_getNumRows(model)) { \
@@ -74,6 +75,9 @@ static void *xrealloc( void *ptr, const size_t newSize );
     abort(); \
   }
 
+// returns a pointer to the first position of a std::vector
+#define VEC_PTR(vec) (&((*vec)[0]))
+
 /* to check if solution (and of which type)
  * is available */
 enum OptimizationTask {
@@ -81,12 +85,6 @@ enum OptimizationTask {
   ContinuousOptimization = 1,
   IntegerOptimization    = 2
 };
-
-/**
-  *
-  *  C Interface Routines
-  *
-  */
 
 
 // To allow call backs
@@ -164,11 +162,6 @@ struct Cbc_Model {
 
   char relax_;
 
-  // a new CbcModel needs to be created at every 
-  // integer optimization, can be ignored for 
-  // continuous optimization
-  CbcModel *cbcModel_;
-
   // buffer for columns
   int colSpace;
   int nCols;
@@ -218,14 +211,6 @@ struct Cbc_Model {
 
   enum OptimizationTask lastOptimization;
 
-  /* if number of columns didn't changed since previous 
-   * MIP optimization, try to reuse */
-  int lastOptNCols;
-  int lastOptNRows;
-  double *lastOptMIPSol;
-
-  double *slack_;
-
   /**
    * Incumbent callback callback data
    **/
@@ -242,7 +227,8 @@ struct Cbc_Model {
 #endif
 
   double obj_value;
-
+  
+  /* storage of Special Ordered Sets */
   int nSos;
   int sosCap;
   int sosSize;
@@ -253,6 +239,7 @@ struct Cbc_Model {
   int *sosEl;
   double *sosElWeight;
 
+  /* MIPStart */
   int nColsMS;
   char **colNamesMS;
   double *colValuesMS;
@@ -263,7 +250,6 @@ struct Cbc_Model {
   size_t *cg_neighs;
   bool *cg_iv;
 
-
   // parameters
   enum LPMethod lp_method;
   enum DualPivot dualp;
@@ -273,6 +259,37 @@ struct Cbc_Model {
 
   int int_param[N_INT_PARAMS];
   double dbl_param[N_DBL_PARAMS];
+
+  /* used for MIP and continuous, just pointers */
+  const double *x;
+  const double *rActv;
+  const double *rSlk;
+
+  // integer optimization results
+  int mipStatus;
+  int mipSecStatus;
+  char mipIsAbandoned;
+  char mipIsProvenOptimal;
+  char mipIsProvenInfeasible;
+  char mipIsContinuousUnbounded;
+  char mipIsNodeLimitReached;
+  char mipIsSecondsLimitReached;
+  char mipIsSolutionLimitReached;
+  char mipIsInitialSolveAbandoned;
+  char mipIsInitialSolveProvenOptimal;
+  char mipIsInitialSolveProvenPrimalInfeasible;
+  double mipBestPossibleObjValue;
+  int mipNumSavedSolutions;
+  int mipNodeCount;
+  std::vector< std::vector< double > > *mipSavedSolution;
+  std::vector< double > *mipSavedSolutionObj;
+  std::vector< double > *mipBestSolution;
+  std::vector< double > *mipRowActivity;
+
+  // to store computed slacks for MIPs and LPs
+  std::vector< double > *slack;
+
+  int mipIterationCount;
 };
 
 /* Buffers sizes */
@@ -673,6 +690,12 @@ void Cbc_MessageHandler::setCallBack(cbc_callback callback)
 #pragma export on
 #endif
 
+/**
+ *
+ *  C Interface Routines
+ *
+ */
+
 /* Version */
 const char *CBC_LINKAGE Cbc_getVersion()
 {
@@ -1034,6 +1057,7 @@ static void Cbc_iniBuffer(Cbc_Model *model)
 }
 
 static void Cbc_iniParams( Cbc_Model *model );
+static void Cbc_cleanOptResults(Cbc_Model *model);
 
 /* Default Cbc_Model constructor */
 Cbc_Model *CBC_LINKAGE
@@ -1044,10 +1068,10 @@ Cbc_newModel()
   Cbc_iniParams(model);
   
   model->solver_ = new OsiClpSolverInterface();
+  model->solver_->setIntParam(OsiNameDiscipline, 1);
+
   model->relax_ = 0;
   model->obj_value = COIN_DBL_MAX;
-
-  model->cbcModel_ = NULL;
 
   model->inc_callback = NULL;
   model->progr_callback = NULL;
@@ -1059,21 +1083,26 @@ Cbc_newModel()
   model->cutCBAtSol = 0;
   
   model->lastOptimization = ModelNotOptimized;
-  model->lastOptNCols = 0;
-  model->lastOptNRows = 0;
-  model->lastOptMIPSol = NULL;
-  model->slack_ = NULL;
 
   model->icAppData = NULL;
   model->pgrAppData = NULL;
+
   model->colNameIndex = NULL;
   model->rowNameIndex = NULL;
-  model->iniObj = DBL_MAX;
 
   model->iniSol = NULL;
+  model->iniObj = DBL_MAX;
 
-
+  Cbc_cleanOptResults(model);
   Cbc_iniBuffer(model);
+
+  // MIP Solution storage structures
+  model->mipSavedSolution = NULL;
+  model->mipSavedSolutionObj = NULL;
+  model->mipBestSolution = NULL;
+  model->mipRowActivity = NULL;
+
+  model->slack = NULL;
 
 #ifdef CBC_THREAD
   pthread_mutex_init(&(model->cbcMutexCG), NULL);
@@ -1104,12 +1133,9 @@ Cbc_deleteModel(Cbc_Model *model)
     free( model->cg_neighs );
   }
 
-  if (model->slack_) {
-    free(model->slack_);
+  if (model->slack) {
+    delete model->slack;
   }
-
-  if (model->lastOptMIPSol)
-    delete[] model->lastOptMIPSol;
 
 #ifdef CBC_THREAD
   pthread_mutex_destroy(&(model->cbcMutexCG));
@@ -1125,9 +1151,6 @@ Cbc_deleteModel(Cbc_Model *model)
     delete m;
   }
 
-  if (model->cbcModel_)
-    delete model->cbcModel_;
-
   if (model->solver_)
     delete model->solver_;
 
@@ -1138,12 +1161,21 @@ Cbc_deleteModel(Cbc_Model *model)
     if (model->colNamesMS) {
       free(model->colNamesMS[0]);
       free(model->colNamesMS);
+      model->colNamesMS = NULL;
     }
     free(model->colValuesMS);
+    model->colValuesMS = NULL;
   }
 
   if (model->lazyConstrs)
     delete model->lazyConstrs;
+
+  if (model->mipSavedSolution) {
+    delete model->mipSavedSolution;
+    delete model->mipSavedSolutionObj;
+    delete model->mipBestSolution;
+    delete model->mipRowActivity;
+  }
 
   delete model;
 }
@@ -1290,8 +1322,6 @@ Cbc_supportsBzip2() {
   return (char)CoinFileInput::haveBzip2Support();
 }
 
-
-
 /* Sets an initial feasible solution
  *
  * @param model problem object
@@ -1369,7 +1399,7 @@ int CBC_LINKAGE Cbc_status(Cbc_Model *model) {
       abort();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->status();
+      return model->mipStatus;
   }
 
   return INT_MAX;
@@ -1388,7 +1418,7 @@ Cbc_secondaryStatus(Cbc_Model *model) {
       abort();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->secondaryStatus();
+      return model->mipSecStatus;
   }
 
   return INT_MAX;
@@ -1607,10 +1637,10 @@ static int cbc_callb(CbcModel *cbcModel, int whereFrom) {
 }
 
 // adds all sos objects to the current cbcModel_ object
-static void Cbc_addAllSOS( Cbc_Model *model );
+static void Cbc_addAllSOS( Cbc_Model *model, CbcModel &cbcModel );
 
 // adds mipstart if available
-static void Cbc_addMS( Cbc_Model *model );
+static void Cbc_addMS( Cbc_Model *model, CbcModel &cbcModel  );
 
 int CBC_LINKAGE
 Cbc_solveLinearProgram(Cbc_Model *model) 
@@ -1813,6 +1843,10 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   if (solver->isProvenOptimal()) {
     model->obj_value = solver->getObjValue();
+    model->x = solver->getColSolution();
+    model->rActv = solver->getRowActivity();
+    Cbc_updateSlack(model, solver->getRowActivity());
+    model->rSlk = &((*(model->slack))[0]);
     return 0;
   }
   if (solver->isIterationLimitReached()) {
@@ -1827,32 +1861,33 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   return -1;
 }
 
-static void Cbc_updateSlack( Cbc_Model *model) {
-  if (model->slack_) {
-    free(model->slack_);
+void Cbc_updateSlack( Cbc_Model *model, const double *ractivity ) {
+  if (model->slack == NULL) {
+    model->slack = new vector<double>();
   }
+  model->slack->resize(Cbc_getNumRows(model));
+
+  double *slack_ = VEC_PTR(model->slack);
 
   int nRows = model->solver_->getNumRows(); 
-  model->slack_ = (double *) xmalloc( sizeof(double)*nRows );
   const char *sense = model->solver_->getRowSense();
   const double *rrhs = model->solver_->getRightHandSide();
-  const double *ractivity = model->lastOptimization == IntegerOptimization ? model->cbcModel_->getRowActivity() : model->solver_->getRowActivity();
   for ( int i=0 ; (i<nRows) ; ++i ) {
     const double rhs = rrhs[i];
     const double activity = ractivity[i];
     switch (sense[i]) {
       case 'L':
-        model->slack_[i] = rhs-activity;
+        slack_[i] = rhs-activity;
         break;
       case 'G':
-        model->slack_[i] = activity-rhs;
+        slack_[i] = activity-rhs;
         break;
       case 'E':
-        model->slack_[i] = fabs(activity-rhs);
+        slack_[i] = fabs(activity-rhs);
         break;
       case 'R':
-        model->slack_[i] = min( model->solver_->getRowUpper()[i] - activity, 
-                                activity - model->solver_->getRowLower()[i] );
+        slack_[i] = min( model->solver_->getRowUpper()[i] - activity, 
+                         activity - model->solver_->getRowLower()[i] );
         break;
     }
   }
@@ -1879,16 +1914,144 @@ Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[])
   clqStr.strengthenCliques(n, rows);
 }
 
+static void Cbc_cleanOptResults(Cbc_Model *model) {
+  model->obj_value = COIN_DBL_MAX;
+  model->mipStatus = -1;
+  model->mipSecStatus = -1;
+  model->mipIsAbandoned = -1;
+  model->mipIsProvenOptimal = -1;
+  model->mipIsProvenInfeasible = -1;
+  model->mipIsContinuousUnbounded = -1;
+  model->mipIsNodeLimitReached = -1;
+  model->mipIsSecondsLimitReached = -1;
+  model->mipIsSolutionLimitReached = -1;
+  model->mipIsInitialSolveAbandoned = -1;
+  model->mipIsInitialSolveProvenOptimal = -1;
+  model->mipIsInitialSolveProvenPrimalInfeasible = -1;
+  model->mipBestPossibleObjValue = COIN_DBL_MIN;
+  model->mipNumSavedSolutions = 0;
+  model->mipNodeCount = 0;
+  model->mipIterationCount = 0;
+  model->x = NULL;
+  model->rActv = NULL;
+  model->rSlk = NULL;
+}
+
+static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel ) {
+  model->mipStatus = cbcModel.status();
+  model->mipSecStatus = cbcModel.secondaryStatus();
+  model->mipIsAbandoned = cbcModel.isAbandoned();
+  model->mipIsProvenOptimal = cbcModel.isProvenOptimal();
+  model->mipIsProvenInfeasible = cbcModel.isProvenInfeasible();
+  model->mipIsContinuousUnbounded = cbcModel.isContinuousUnbounded();
+  model->mipIsNodeLimitReached = cbcModel.isNodeLimitReached();
+  model->mipIsSecondsLimitReached = cbcModel.isSecondsLimitReached();
+  model->mipIsSolutionLimitReached = cbcModel.isSolutionLimitReached();
+  model->mipIsInitialSolveAbandoned = cbcModel.isInitialSolveAbandoned();
+  model->mipIsInitialSolveProvenOptimal = cbcModel.isInitialSolveProvenOptimal();
+  model->mipIsInitialSolveProvenPrimalInfeasible = cbcModel.isInitialSolveProvenPrimalInfeasible();
+  model->mipIterationCount = cbcModel.getIterationCount();
+  model->mipNodeCount = cbcModel.getNodeCount();
+  model->mipNumSavedSolutions = cbcModel.numberSavedSolutions();
+  model->mipBestPossibleObjValue = cbcModel.getBestPossibleObjValue();
+
+  int numSols = model->mipNumSavedSolutions;
+
+  if ( numSols == 0 )
+    return;
+
+  /* allocating space for MIP solution(s) related structures */
+  if (model->mipBestSolution == NULL) {
+    model->mipSavedSolution = new std::vector< vector< double > >();
+    model->mipSavedSolutionObj = new std::vector< double >();
+    model->mipBestSolution = new std::vector< double >();
+    model->mipRowActivity = new std::vector< double >();
+  }
+  int numCols = Cbc_getNumCols(model);
+  int numRows = Cbc_getNumRows(model);
+  model->mipSavedSolution->resize( numSols );
+  for ( int i=0 ; i<numSols ; ++i )
+    (*(model->mipSavedSolution))[i].resize( numCols );
+
+  model->mipSavedSolutionObj->resize( numSols );
+  model->mipBestSolution->resize( numCols );
+  model->mipRowActivity->resize( numRows );
+
+  OsiClpSolverInterface *solver = model->solver_;
+  if (model->int_param[INT_PARAM_ROUND_INT_VARS]) {
+    cbcModel.roundIntVars();
+  }
+
+  memcpy( VEC_PTR(model->mipBestSolution), cbcModel.bestSolution(), sizeof(double)*numCols );
+  model->x = VEC_PTR(model->mipBestSolution);
+  model->obj_value = cbcModel.getObjValue();
+
+  /* solution pool */
+  for ( int i=0 ; i<numSols ; ++i ) {
+    (*(model->mipSavedSolutionObj))[i] = cbcModel.savedSolutionObjective(i);
+    const double *xi = cbcModel.savedSolution(i);
+    double *xd = &((*(model->mipSavedSolution))[i][0]);
+    memcpy(xd, xi, sizeof(double)*numCols );
+    if (model->int_param[INT_PARAM_ROUND_INT_VARS]) {
+      for ( int j=0 ; (j<numCols) ; ++j ) {
+        if ( cbcModel.isInteger(j) ) {
+          xd[j] = floor(xd[j]+0.5);
+        }
+      }
+    } /* round integer variables */
+  } /* saving solution pool */
+
+  Cbc_updateSlack(model, cbcModel.getRowActivity() );
+  /* storing row activity in MIP sol */
+  memcpy(&((*(model->mipRowActivity))[0]), cbcModel.getRowActivity(), sizeof(double)*numRows );
+
+  if (cbcModel.getObjSense()==-1) {
+    model->obj_value = 0.0;
+
+    for (int j=0 ; j<solver->getNumCols() ; ++j )
+      model->obj_value += cbcModel.bestSolution()[j] * solver->getObjCoefficients()[j];
+  } // circunvent CBC bug
+
+  /* setting this solution as a MIPStart for possible next optimization */
+  if (model->nColsMS) {
+    if (model->colNamesMS) {
+      free(model->colNamesMS[0]);
+      free(model->colNamesMS);
+      model->colNamesMS = NULL;
+    }
+    free(model->colValuesMS);
+    model->colValuesMS = NULL;
+  }
+
+  vector< string > cnames;
+  vector< double > cvalues;
+  model->charSpaceMS = 0;
+  for ( int j=0 ; (j<cbcModel.getNumCols()) ; ++j ) {
+    if ( cbcModel.bestSolution()[j] >= 1e-8 ) {
+      cnames.push_back( model->solver_->getColName(j) );
+      cvalues.push_back( cbcModel.bestSolution()[j] );
+      model->charSpaceMS += model->solver_->getColName(j).length() + 1;
+    }
+  }
+  model->charSpaceMS *= sizeof(char);
+
+  model->colNamesMS = (char**)xmalloc(sizeof(char*)*cnames.size());
+  model->colNamesMS[0] = (char*)xmalloc(sizeof(char)*model->charSpaceMS);
+  model->nColsMS = cnames.size();
+  for ( int i=1 ; (i<model->nColsMS) ; ++i )
+    model->colNamesMS[i] = model->colNamesMS[i-1] + cnames[i-1].length() + 1;
+
+  for ( int i=0 ; (i<model->nColsMS) ; ++i )
+    strcpy(model->colNamesMS[i], cnames[i].c_str());
+}
+
 int CBC_LINKAGE
 Cbc_solve(Cbc_Model *model)
 {
-  CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
-
-  model->obj_value = COIN_DBL_MAX;
-  model->lastOptNCols = Cbc_getNumCols(model);
-  model->lastOptNRows = Cbc_getNumRows(model);
+  Cbc_cleanOptResults(model);
 
   int res = Cbc_solveLinearProgram(model);
+
   if (res == 1)
     return 1;
   if (res==2 || res==3)
@@ -1901,79 +2064,82 @@ Cbc_solve(Cbc_Model *model)
       || ((solver->getNumIntegers()+model->nSos)==0)) {
     if (solver->isProvenOptimal() || solver->isIterationLimitReached()) {
       model->obj_value = solver->getObjValue();
-      Cbc_updateSlack(model);
+      Cbc_updateSlack(model, solver->getRowActivity() );
+      model->x = solver->getColSolution();
+      model->rSlk = &((*(model->slack))[0]);
+      model->rActv = solver->getRowActivity();
     }
 
     return 0;
   }
 
-  // MIP Optimization
-  if (model->cbcModel_) {
-    delete model->cbcModel_;
-  }
-
-  OsiSolverInterface *linearProgram = model->solver_->clone();
-  model->lastOptimization = IntegerOptimization;
-  CbcModel *cbcModel = model->cbcModel_ = new CbcModel( *linearProgram );
-
-  try {
-    if (model->lazyConstrs) {
-      cbcModel->addCutGenerator(model->lazyConstrs, 1, "Stored LazyConstraints", true, 1);
-      model->cutCBAtSol = 1;
-    }
-
-    Cbc_EventHandler *cbc_eh = NULL;
-    if (model->inc_callback!=NULL || model->progr_callback!=NULL)
-    {
-      cbc_eh = new Cbc_EventHandler(model->cbcModel_);
-#ifdef CBC_THREAD
-      cbc_eh->cbcMutex = &(model->cbcMutexEvent);
-#endif
-
-      if (model->inc_callback) {
-        cbc_eh->inc_callback = model->inc_callback;
-        cbc_eh->appData = model->icAppData;
-      }
-      if (model->progr_callback) {
-        cbc_eh->progr_callback = model->progr_callback;
-        cbc_eh->pgAppData = model->pgrAppData;
+  /*  MIP Optimization */
+  {
+    model->lastOptimization = IntegerOptimization;
+    OsiClpSolverInterface linearProgram(*model->solver_);
+    CbcModel cbcModel(linearProgram);
+    try {
+      /* stored lazy Constraints */
+      if (model->lazyConstrs) {
+        cbcModel.addCutGenerator(model->lazyConstrs, 1, "Stored LazyConstraints", true, 1);
+        model->cutCBAtSol = 1;
       }
 
-      cbcModel->passInEventHandler(cbc_eh);
-    }
-
-    if (model->iniSol)
-      cbcModel->setBestSolution(&((*model->iniSol)[0]), Cbc_getNumCols(model), model->iniObj, true);
-
-    // add cut generator if necessary
-    if (model->cut_callback) {
-      cbcModel->setKeepNamesPreproc(true);
-
-      CglCallback cglCb;
-      cglCb.appdata = model->cutCBData;
-      cglCb.cut_callback_ = model->cut_callback;
+      Cbc_EventHandler *cbc_eh = NULL;
+      if (model->inc_callback!=NULL || model->progr_callback!=NULL)
+      {
+        cbc_eh = new Cbc_EventHandler(&cbcModel);
 #ifdef CBC_THREAD
-      cglCb.cbcMutex = &(model->cbcMutexCG);
+        cbc_eh->cbcMutex = &(model->cbcMutexEvent);
 #endif
-      cbcModel->addCutGenerator( &cglCb, model->cutCBhowOften, model->cutCBName.c_str(), true, model->cutCBAtSol );
-    }
-    if (model->cutCBAtSol) {
-      /* lazy constraints require no pre-processing and no heuristics */
-      Cbc_setParameter(model, "preprocess", "off");
-      Cbc_setParameter(model, "heur", "off");
-      Cbc_setParameter(model, "cgraph", "off");
-      Cbc_setParameter(model, "clqstr", "off");
-    } else {
-      switch (model->int_param[INT_PARAM_CGRAPH]) {
-        case 0:
-          Cbc_setParameter(model, "cgraph", "off");
-          break;
-        case 2:
-          Cbc_setParameter(model, "cgraph", "on");
-          break;
-        case 3:
-          Cbc_setParameter(model, "cgraph", "clq");
-          break;
+
+        if (model->inc_callback) {
+          cbc_eh->inc_callback = model->inc_callback;
+          cbc_eh->appData = model->icAppData;
+        }
+        if (model->progr_callback) {
+          cbc_eh->progr_callback = model->progr_callback;
+          cbc_eh->pgAppData = model->pgrAppData;
+        }
+
+        cbcModel.passInEventHandler(cbc_eh);
+      } // callbacks
+    
+      /* initial solution */
+      if (model->iniSol)
+        cbcModel.setBestSolution(&((*model->iniSol)[0]), Cbc_getNumCols(model), model->iniObj, true);
+
+      // add cut generator if necessary
+      if (model->cut_callback) {
+        cbcModel.setKeepNamesPreproc(true);
+
+        CglCallback cglCb;
+        cglCb.appdata = model->cutCBData;
+        cglCb.cut_callback_ = model->cut_callback;
+#ifdef CBC_THREAD
+        cglCb.cbcMutex = &(model->cbcMutexCG);
+#endif
+        cbcModel.addCutGenerator( &cglCb, model->cutCBhowOften, model->cutCBName.c_str(), true, model->cutCBAtSol );
+      }
+
+      if (model->cutCBAtSol) {
+        /* lazy constraints require no pre-processing and no heuristics */
+        Cbc_setParameter(model, "preprocess", "off");
+        Cbc_setParameter(model, "heur", "off");
+        Cbc_setParameter(model, "cgraph", "off");
+        Cbc_setParameter(model, "clqstr", "off");
+      } else {
+        switch (model->int_param[INT_PARAM_CGRAPH]) {
+          case 0:
+            Cbc_setParameter(model, "cgraph", "off");
+            break;
+          case 2:
+            Cbc_setParameter(model, "cgraph", "on");
+            break;
+          case 3:
+            Cbc_setParameter(model, "cgraph", "clq");
+            break;
+        }
       }
 
       switch (model->int_param[INT_PARAM_CLIQUE_MERGING]) {
@@ -1987,156 +2153,118 @@ Cbc_solve(Cbc_Model *model)
           Cbc_setParameter(model, "clqstr", "after");
           break;
       }
-    }
 
-    if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX) {
-        char str[256]; sprintf(str, "%g", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
-        Cbc_setParameter(model, "secnifs", str);
-    } else
-        Cbc_setParameter(model, "secnifs", "-1");
-    if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX) {
-        char str[256]; sprintf(str, "%d", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
-        Cbc_setParameter(model, "maxNIFS", str);
-    } else
-        Cbc_setParameter(model, "maxNIFS", "-1");
+      if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX) {
+          char str[256]; sprintf(str, "%g", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
+          Cbc_setParameter(model, "secnifs", str);
+      } else
+          Cbc_setParameter(model, "secnifs", "-1");
+      if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX) {
+          char str[256]; sprintf(str, "%d", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
+          Cbc_setParameter(model, "maxNIFS", str);
+      } else
+          Cbc_setParameter(model, "maxNIFS", "-1");
 
-    Cbc_MessageHandler *cbcmh  = NULL;
+      Cbc_MessageHandler *cbcmh  = NULL;
 
-    if (model->userCallBack) {
-      cbcmh = new Cbc_MessageHandler(*cbcModel->messageHandler());
-      cbcmh->setCallBack(model->userCallBack);
-      cbcmh->setModel(model);
-      cbcModel->passInMessageHandler(cbcmh);
-    }
-
-    CbcSolverUsefulData cbcData;
-    CbcMain0(*cbcModel, cbcData);
-    cbcData.printWelcome_ = false;
-
-    // adds SOSs if any
-    Cbc_addAllSOS(model);
-
-    // adds MIPStart if any
-    Cbc_addMS( model );
-
-    // parameters
-    cbcModel->setMaximumSeconds( model->dbl_param[DBL_PARAM_TIME_LIMIT] );
-    cbcModel->setMaximumSolutions( model->int_param[INT_PARAM_MAX_SOLS] );
-    cbcModel->setAllowableGap( model->dbl_param[DBL_PARAM_ALLOWABLE_GAP] );
-    cbcModel->setAllowableFractionGap( model->dbl_param[DBL_PARAM_GAP_RATIO] );
-    cbcModel->setMaximumNodes( model->int_param[INT_PARAM_MAX_NODES] );
-    cbcModel->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
-    cbcModel->setCutoff( model->dbl_param[DBL_PARAM_CUTOFF] );
-    cbcModel->setIntegerTolerance( model->dbl_param[DBL_PARAM_INT_TOL] );
-
-    // trying to reuse integer solution found in previous optimization
-    if (model->lastOptNCols == model->solver_->getNumCols() && model->lastOptMIPSol) {
-      const double *x = model->lastOptMIPSol;
-      double maxViolRow, maxViolCol;
-      int idxRow, idxCol;
-      if (Cbc_checkFeasibility(model, x, &maxViolRow, &idxRow, &maxViolCol, &idxCol)) {
-        double obj = 0;
-        for ( int j=0 ; j<Cbc_getNumCols(model) ; ++j )
-          obj += Cbc_getColObj(model, j)*x[j];
-        cbcModel->setBestSolution(x, Cbc_getNumCols(model), obj);
-      }
-    } // try to reuse solution found in last optimization
-
-    std::vector< string > argv;
-    argv.push_back("Cbc_C_Interface");
-
-    for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
-      string param = model->vcbcOptions[i];
-      string val = model->cbcOptions[param];
-      if (val.size()) {
-        stringstream ss;
-        ss << "-" << param << "=" << val;
-        argv.push_back(ss.str().c_str());
-      } else {
-        stringstream ss;
-        ss << "-" << param;
-        argv.push_back(ss.str());
-      }
-    }
-
-    argv.push_back("-solve");
-    argv.push_back("-quit");
-
-    cbcData.noPrinting_= false;
-
-    char **charCbcOpts = to_char_vec(argv);
-    const int nargs = (int) argv.size();
-    const char **args = (const char **)charCbcOpts;
-
-    OsiBabSolver defaultC;
-    if (model->cutCBAtSol) {
-      defaultC.setSolverType(4);
-      model->cbcModel_->solver()->setAuxiliaryInfo(&defaultC);
-      model->cbcModel_->passInSolverCharacteristics(&defaultC);
-    }
-
-    if (model->int_param[INT_PARAM_LOG_LEVEL] >= 1) {
-      printf("\nStarting MIP optimization\n");
-      fflush(stdout);
-    }
-#ifdef CBC_THREAD
-    {
-      int numberThreads = model->int_param[INT_PARAM_THREADS];
-      if (numberThreads >= 1) {
-        model->cbcModel_->setNumberThreads(numberThreads);
-        model->cbcModel_->setThreadMode(CoinMin(numberThreads / 100, 7));
-      }
-    }
-#endif
-    model->cbcModel_->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
-    model->cbcModel_->setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
-    model->cbcModel_->setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
-    cbcData.noPrinting_ = true;
-
-    CbcMain1( nargs, args, *model->cbcModel_, cbc_callb, cbcData );
-
-    if (Cbc_numberSavedSolutions(model)) {
-      if (model->int_param[INT_PARAM_ROUND_INT_VARS]) {
-        model->cbcModel_->roundIntVars();
+      if (model->userCallBack) {
+        cbcmh = new Cbc_MessageHandler( model );
+        cbcmh->setCallBack(model->userCallBack);
+        cbcmh->setModel(model);
+        cbcModel.passInMessageHandler(cbcmh);
       }
 
-      Cbc_updateSlack(model);
+      CbcSolverUsefulData cbcData;
+      CbcMain0(cbcModel, cbcData);
+      cbcData.printWelcome_ = false;
 
-      if (model->lastOptMIPSol && (model->lastOptNCols < Cbc_getNumCols(model))) {
-        delete[] model->lastOptMIPSol;
-        model->lastOptMIPSol = NULL;
-      }
-      if (!model->lastOptMIPSol)
-        model->lastOptMIPSol = new double[Cbc_getNumCols(model)];
+      // adds SOSs if any
+      Cbc_addAllSOS(model, cbcModel);
 
-      memcpy(model->lastOptMIPSol, cbcModel->bestSolution(), sizeof(double)*Cbc_getNumCols(model) );
-      model->lastOptNCols = Cbc_getNumCols(model);
+      // adds MIPStart if any
+      Cbc_addMS(model, cbcModel);
 
-      model->obj_value = cbcModel->getObjValue();
-
-      if (cbcModel->getObjSense()==-1) {
-        model->obj_value = 0.0;
-
-        for (int j=0 ; j<solver->getNumCols() ; ++j )
-          model->obj_value += cbcModel->bestSolution()[j] * solver->getObjCoefficients()[j];
-      } // circunvent CBC bug
-    }
-
-    free(charCbcOpts);
-    delete linearProgram;
-
-    if (cbc_eh)
-      delete cbc_eh;
-
-    if (cbcmh)
-      delete cbcmh;
-  } catch (CoinError &e) {
-    fprintf( stderr, "%s ERROR: %s::%s, %s\n", "Cbc_solve",
-      e.className().c_str(), e.methodName().c_str(), e.message().c_str());
-    abort();
-  }
+      // parameters
+      cbcModel.setMaximumSeconds( model->dbl_param[DBL_PARAM_TIME_LIMIT] );
+      cbcModel.setMaximumSolutions( model->int_param[INT_PARAM_MAX_SOLS] );
+      cbcModel.setAllowableGap( model->dbl_param[DBL_PARAM_ALLOWABLE_GAP] );
+      cbcModel.setAllowableFractionGap( model->dbl_param[DBL_PARAM_GAP_RATIO] );
+      cbcModel.setMaximumNodes( model->int_param[INT_PARAM_MAX_NODES] );
+      cbcModel.setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
+      cbcModel.setCutoff( model->dbl_param[DBL_PARAM_CUTOFF] );
+      cbcModel.setIntegerTolerance( model->dbl_param[DBL_PARAM_INT_TOL] );
   
-  return cbcModel->status();
+      // aditional parameters specified by user as strings
+      std::vector< string > argv;
+      argv.push_back("Cbc_C_Interface");
+      for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
+        string param = model->vcbcOptions[i];
+        string val = model->cbcOptions[param];
+        if (val.size()) {
+          stringstream ss;
+          ss << "-" << param << "=" << val;
+          argv.push_back(ss.str().c_str());
+        } else {
+          stringstream ss;
+          ss << "-" << param;
+          argv.push_back(ss.str());
+        }
+      }
+
+      argv.push_back("-solve");
+      argv.push_back("-quit");
+
+      cbcData.noPrinting_= false;
+
+      char **charCbcOpts = to_char_vec(argv);
+      const int nargs = (int) argv.size();
+      const char **args = (const char **)charCbcOpts;
+
+      OsiBabSolver defaultC;
+      if (model->cutCBAtSol) {
+        defaultC.setSolverType(4);
+        cbcModel.solver()->setAuxiliaryInfo(&defaultC);
+        cbcModel.passInSolverCharacteristics(&defaultC);
+      }
+
+      if (model->int_param[INT_PARAM_LOG_LEVEL] >= 1) {
+        printf("\nStarting MIP optimization\n");
+        fflush(stdout);
+      }
+#ifdef CBC_THREAD
+      {
+        int numberThreads = model->int_param[INT_PARAM_THREADS];
+        if (numberThreads >= 1) {
+          cbcModel.setNumberThreads(numberThreads);
+          cbcModel.setThreadMode(CoinMin(numberThreads / 100, 7));
+        }
+      }
+#endif
+      cbcModel.setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
+      cbcModel.setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
+      cbcModel.setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
+      cbcData.noPrinting_ = true;
+
+      CbcMain1( nargs, args, cbcModel, cbc_callb, cbcData );
+
+      Cbc_getMIPOptimizationResults( model, cbcModel );
+
+      free(charCbcOpts);
+
+      if (cbc_eh)
+        delete cbc_eh;
+
+      if (cbcmh)
+        delete cbcmh;
+    } catch (CoinError &e) {
+      fprintf( stderr, "%s ERROR: %s::%s, %s\n", "Cbc_solve",
+        e.className().c_str(), e.methodName().c_str(), e.message().c_str());
+      fflush(stderr);
+      abort();
+    }
+  } /* end of MIP optimization */
+
+  return model->mipStatus;
 }
 
 void CBC_LINKAGE Cbc_addIncCallback(
@@ -2185,7 +2313,7 @@ Cbc_getNumRows(Cbc_Model *model)
 
 int CBC_LINKAGE
 Cbc_getIterationCount(Cbc_Model *model) {
-  return model->cbcModel_->getIterationCount();
+  return model->mipIterationCount;
 }
 
 /** Number of non-zero entries in a row */
@@ -2313,7 +2441,7 @@ Cbc_isAbandoned(Cbc_Model *model)
       return model->solver_->isAbandoned();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->isAbandoned();
+      return model->mipIsAbandoned;
   }
 
   return false;
@@ -2331,7 +2459,7 @@ Cbc_isProvenOptimal(Cbc_Model *model)
     case ContinuousOptimization:
       return model->solver_->isProvenOptimal();
     case IntegerOptimization:
-      return model->cbcModel_->isProvenOptimal();
+      return model->mipIsProvenOptimal;
   }
 
   return false;
@@ -2348,9 +2476,9 @@ Cbc_isProvenInfeasible(Cbc_Model *model)
     case ContinuousOptimization:
       return model->solver_->isProvenPrimalInfeasible();
     case IntegerOptimization:
-      if (model->cbcModel_->status() == -1)
+      if (model->mipStatus == -1)
         return model->solver_->isProvenPrimalInfeasible();
-      return model->cbcModel_->isProvenInfeasible();
+      return model->mipIsProvenInfeasible;
   }
 
   return false;
@@ -2414,7 +2542,7 @@ Cbc_numberSavedSolutions(Cbc_Model *model)
       else
         return 0;
     case IntegerOptimization:
-      return model->cbcModel_->numberSavedSolutions();
+      return model->mipNumSavedSolutions;
   }
 
   return 0;
@@ -2433,7 +2561,17 @@ Cbc_savedSolution(Cbc_Model *model, int whichSol)
       abort();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->savedSolution(whichSol);
+      if (model->mipNumSavedSolutions == 0) {
+        fprintf(stderr, "No solution found in last optimization.\n");
+        fflush(stderr);
+        abort();
+      }
+      if (whichSol>=model->mipNumSavedSolutions || whichSol<0) {
+        fprintf(stderr, "Invalid solution number, should be in [0,%d]", model->mipNumSavedSolutions-1);
+        fflush(stderr);
+        abort();
+      }
+      return &((*model->mipSavedSolution)[whichSol][0]);
   }
 
   return NULL;
@@ -2452,7 +2590,17 @@ Cbc_savedSolutionObj(Cbc_Model *model, int whichSol)
       abort();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->savedSolutionObjective(whichSol);
+      if (model->mipNumSavedSolutions == 0) {
+        fprintf(stderr, "No solution found in last optimization.\n");
+        fflush(stderr);
+        abort();
+      }
+      if (whichSol>=model->mipNumSavedSolutions || whichSol<0) {
+        fprintf(stderr, "Invalid solution number, should be in [0,%d]", model->mipNumSavedSolutions-1);
+        fflush(stderr);
+        abort();
+      }
+      return (*model->mipSavedSolutionObj)[whichSol];
   }
 
   return COIN_DBL_MAX;
@@ -2461,18 +2609,12 @@ Cbc_savedSolutionObj(Cbc_Model *model, int whichSol)
 const double *CBC_LINKAGE
 Cbc_getColSolution(Cbc_Model *model)
 {
-  switch (model->lastOptimization) {
-    case ModelNotOptimized:
+  if (model->lastOptimization == ModelNotOptimized) {
       fprintf( stderr, "Information not available, model was not optimized yet.\n");
       abort();
-      break;
-    case ContinuousOptimization:
-      return model->solver_->getColSolution();
-    case IntegerOptimization:
-      return model->cbcModel_->bestSolution();
   }
 
-  return NULL;
+  return model->x;
 }
 
 /** @brief Upper bound of ranged constraint
@@ -2591,10 +2733,7 @@ Cbc_isContinuousUnbounded(Cbc_Model *model) {
     case ContinuousOptimization:
       return model->solver_->isProvenDualInfeasible();
     case IntegerOptimization:
-      if (model->cbcModel_->status() == -1)
-        return model->solver_->isProvenDualInfeasible();
-
-      return model->cbcModel_->isContinuousUnbounded();
+      return model->mipIsContinuousUnbounded;
   }
 
   return false;
@@ -2613,7 +2752,7 @@ Cbc_isNodeLimitReached(Cbc_Model *model) {
       abort();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->isNodeLimitReached();
+      return model->mipIsNodeLimitReached;
   }
 
   return false;
@@ -2632,11 +2771,10 @@ Cbc_isSecondsLimitReached(Cbc_Model *model) {
       abort();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->isSecondsLimitReached();
+      return model->mipIsSecondsLimitReached;
   }
 
   return false;
-
 }
 
 int CBC_LINKAGE
@@ -2651,14 +2789,11 @@ Cbc_isSolutionLimitReached(Cbc_Model *model) {
       abort();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->isSolutionLimitReached();
+      return model->mipIsSolutionLimitReached;
   }
 
   return false;
 }
-
-
-
 
 int CBC_LINKAGE
 Cbc_isInitialSolveAbandoned(Cbc_Model *model) {
@@ -2672,7 +2807,7 @@ Cbc_isInitialSolveAbandoned(Cbc_Model *model) {
       abort();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->isInitialSolveAbandoned();
+      return model->mipIsInitialSolveAbandoned;
   }
 
   return false;
@@ -2690,7 +2825,7 @@ Cbc_isInitialSolveProvenOptimal(Cbc_Model *model) {
       abort();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->isInitialSolveProvenOptimal();
+      return model->mipIsInitialSolveProvenOptimal;
   }
 
   return false;
@@ -2709,7 +2844,7 @@ Cbc_isInitialSolveProvenPrimalInfeasible(Cbc_Model *model) {
       abort();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->isInitialSolveProvenPrimalInfeasible();
+      return model->mipIsInitialSolveProvenPrimalInfeasible;
   }
 
   return false;
@@ -2769,11 +2904,9 @@ Cbc_setRowRHS(Cbc_Model *model, int row, double rhs)
     default:
       fprintf(stderr, "Could not change RHS in row %d to %g in row with sense: %c\n",
           row, rhs, sense);
-      exit(1);
+      abort();
   }
 }
-
-
 
 /** @brief Constraint lower bounds 
   *
@@ -2804,19 +2937,12 @@ Cbc_getRowUpper(Cbc_Model *model)
 
 const double *CBC_LINKAGE
 Cbc_getRowActivity(Cbc_Model *model) {
-  switch (model->lastOptimization) {
-    case ModelNotOptimized:
-      fprintf( stderr, "Information not available, model was not optimized yet.\n");
-      abort();
-      break;
-    case ContinuousOptimization:
-      return model->solver_->getRowActivity();
-    case IntegerOptimization:
-      return model->cbcModel_->getRowActivity();
+  if ( model->lastOptimization == ModelNotOptimized ) {
+    fprintf( stderr, "Information not available, model was not optimized yet.\n");
+    abort();
   }
 
-  return NULL;
-
+  return model->rActv;
 }
 
 
@@ -2827,7 +2953,7 @@ Cbc_getRowSlack(Cbc_Model *model) {
       abort();
   }
 
-  return model->slack_;
+  return model->rSlk;
 }
 
 const double *CBC_LINKAGE
@@ -2887,7 +3013,7 @@ Cbc_getBestPossibleObjValue(Cbc_Model *model) {
     case ContinuousOptimization:
       return model->solver_->getObjValue();
     case IntegerOptimization:
-      return model->cbcModel_->getBestPossibleObjValue();
+      return model->mipBestPossibleObjValue;
   }
 
   return COIN_DBL_MIN;
@@ -2937,12 +3063,11 @@ Cbc_bestSolution(Cbc_Model *model)
     case ContinuousOptimization:
       return model->solver_->getColSolution();
     case IntegerOptimization:
-      return model->cbcModel_->bestSolution();
+      return VEC_PTR(model->mipBestSolution);
   }
 
   return NULL;
 }
-
 
 int CBC_LINKAGE
 Cbc_isInteger(Cbc_Model *model, int i)
@@ -2951,7 +3076,6 @@ Cbc_isInteger(Cbc_Model *model, int i)
   VALIDATE_COL_INDEX( i, model );
   return model->solver_->isInteger(i);
 }
-
 
 int CBC_LINKAGE
 Cbc_getNodeCount(Cbc_Model *model) {
@@ -2965,11 +3089,10 @@ Cbc_getNodeCount(Cbc_Model *model) {
       abort();
       break;
     case IntegerOptimization:
-      return model->cbcModel_->getNodeCount();
+      return model->mipNodeCount;
   }
 
   return false;
-
 }
 
 
@@ -2980,13 +3103,8 @@ Cbc_clone(Cbc_Model *model)
   Cbc_flush(model);
   Cbc_Model *result = new Cbc_Model();
 
-  result->slack_ = NULL;
-  result->solver_ = dynamic_cast<OsiClpSolverInterface *>(model->solver_->clone());
-
-  if (model->cbcModel_)
-    result->cbcModel_ = model->cbcModel_->clone(true);
-  else
-    result->cbcModel_ = NULL;
+  result->solver_ = new OsiClpSolverInterface(*model->solver_);
+  model->solver_->setIntParam(OsiNameDiscipline, 1);
 
   result->relax_ = model->relax_;
 
@@ -3001,25 +3119,25 @@ Cbc_clone(Cbc_Model *model)
 
   result->obj_value = model->obj_value;
 
-
   result->lastOptimization = model->lastOptimization;
-  result->lastOptNCols = model->lastOptNCols;
-  if (model->lastOptMIPSol) {
-    result->lastOptMIPSol = new double[model->lastOptNCols];
-    memcpy(result->lastOptMIPSol, model->lastOptMIPSol, sizeof(double)*model->lastOptNCols );
-  }
 
-  if (model->slack_) {
-    result->slack_ = (double *) xmalloc( sizeof(double)*model->lastOptNRows );
-    memcpy(result->slack_, model->slack_, sizeof(double)*model->lastOptNRows);
+  if (model->slack) {
+    result->slack = new vector<double>(model->slack->begin(), model->slack->end());
+  }
+  else {
+    result->slack = NULL;
   }
 
   result->icAppData = model->icAppData;
   result->pgrAppData = model->pgrAppData;
-  result->colNameIndex = NULL;
-  result->rowNameIndex = NULL;
-  if (model->colNameIndex)
+
+  if (model->colNameIndex) {
     Cbc_storeNameIndexes(result, 1);
+    fillAllNameIndexes(result);
+  } else {
+    result->colNameIndex = NULL;
+    result->rowNameIndex = NULL;
+  }
 
   Cbc_iniBuffer(result);
 
@@ -3033,6 +3151,7 @@ Cbc_clone(Cbc_Model *model)
     result->iniObj = COIN_DBL_MAX;
   }
 
+  /* MIPStart */
   if (model->nColsMS) {
     result->nColsMS = model->nColsMS;
     result->colNamesMS = (char **) xmalloc( sizeof(char *)*model->nColsMS );
@@ -3050,6 +3169,7 @@ Cbc_clone(Cbc_Model *model)
     result->charSpaceMS = 0;
   }
 
+  /* SOSs */
   if ( model->nSos ) {
     result->nSos = model->nSos;
     result->sosSize = model->sosSize;
@@ -3078,6 +3198,37 @@ Cbc_clone(Cbc_Model *model)
 
   memcpy(result->int_param, model->int_param, sizeof(result->int_param));
   memcpy(result->dbl_param, model->dbl_param, sizeof(result->dbl_param));
+
+  result->vcbcOptions = model->vcbcOptions;
+  result->cbcOptions = model->cbcOptions;
+
+  result->mipStatus = model->mipStatus;
+  result->mipSecStatus = model->mipSecStatus;
+  result->mipIsAbandoned = model->mipIsAbandoned;
+  result->mipIsProvenOptimal = model->mipIsProvenOptimal;
+  result->mipIsProvenInfeasible = model->mipIsProvenInfeasible;
+  result->mipIsContinuousUnbounded = model->mipIsContinuousUnbounded;
+  result->mipIsNodeLimitReached = model->mipIsNodeLimitReached;
+  result->mipIsSecondsLimitReached = model->mipIsSecondsLimitReached;
+  result->mipIsSolutionLimitReached = model->mipIsSolutionLimitReached;
+  result->mipIsInitialSolveAbandoned = model->mipIsInitialSolveAbandoned;
+  result->mipIsInitialSolveProvenOptimal = model->mipIsInitialSolveProvenOptimal;
+  result->mipIsInitialSolveProvenPrimalInfeasible = model->mipIsInitialSolveProvenPrimalInfeasible;
+  result-> mipBestPossibleObjValue = model-> mipBestPossibleObjValue;
+  result->mipNumSavedSolutions = model->mipNumSavedSolutions;
+  result->mipNodeCount = model->mipNodeCount;
+
+  if (model->mipSavedSolution) {
+    result->mipSavedSolution = new vector< vector<double> >(model->mipSavedSolution->begin(), model->mipSavedSolution->end());
+    result->mipSavedSolutionObj = new vector<double>(model->mipSavedSolutionObj->begin(), model->mipSavedSolutionObj->end());
+    result->mipBestSolution = new vector<double>(model->mipBestSolution->begin(), model->mipBestSolution->end());
+    result->mipRowActivity = new vector<double>(model->mipRowActivity->begin(), model->mipRowActivity->end());
+  } else {
+    result->mipSavedSolution = NULL;
+    result->mipSavedSolutionObj = NULL;
+    result->mipBestSolution = NULL;
+    result->mipRowActivity = NULL;
+  }
 
   return result;
 }
@@ -3129,6 +3280,9 @@ void CBC_LINKAGE
 Cbc_addRow(Cbc_Model *model, const char *name, int nz,
   const int *cols, const double *coefs, char sense, double rhs)
 {
+  if (nz == 0)
+    return;
+
   if (nz >= 1 && model->cStart && model->cStart[model->nCols] >= 1) {
     // new rows have reference to columns which have references to rows, flushing
     Cbc_flush(model);
@@ -3419,8 +3573,10 @@ Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double
     if (model->colNamesMS) {
       free( model->colNamesMS[0]);
       free( model->colNamesMS);
+      model->colNamesMS = NULL;
     }
     free( model->colValuesMS );
+    model->colValuesMS = NULL;
   }
 
   int nameSpace = 0;
@@ -3453,8 +3609,10 @@ Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double 
     if (model->colNamesMS) {
       free( model->colNamesMS[0]);
       free( model->colNamesMS);
+      model->colNamesMS = NULL;
     }
     free( model->colValuesMS );
+    model->colValuesMS = NULL;
   }
 
   int nameSpace = 0;
@@ -4302,7 +4460,7 @@ Cbc_getRowNameIndex(Cbc_Model *model, const char *name)
   return it->second;
 }
 
-static char **to_char_vec( const vector< string > names )
+static char **to_char_vec( const vector< string > &names )
 {
     size_t spaceVec = (sizeof(char*)*names.size());
     size_t totLen = names.size(); // all \0
@@ -4346,18 +4504,16 @@ static void *xrealloc( void *ptr, const size_t newSize ) {
   return res;
 }
 
-void Cbc_addAllSOS( Cbc_Model *model ) {
+void Cbc_addAllSOS( Cbc_Model *model, CbcModel &cbcModel ) {
   if (model->nSos == 0)
     return;
-
-  CbcModel *cbcModel = model->cbcModel_;
 
   vector< CbcObject *> objects;
   objects.reserve( model->nSos );
   for ( int i=0 ; i<model->nSos ; ++i ) {
     objects.push_back(
         new CbcSOS( 
-            cbcModel, 
+            &cbcModel, 
             model->sosRowStart[i+1]-model->sosRowStart[i],
             model->sosEl + model->sosRowStart[i],
             model->sosElWeight + model->sosRowStart[i],
@@ -4367,19 +4523,17 @@ void Cbc_addAllSOS( Cbc_Model *model ) {
         ); // add in objects
   }
 
-  cbcModel->addObjects( (int) objects.size(), &objects[0] );
+  cbcModel.addObjects( (int) objects.size(), &objects[0] );
 
   for ( int i=0 ; i<model->nSos ; ++i ) 
     delete objects[i];
 }
 
-static void Cbc_addMS( Cbc_Model *model ) {
+static void Cbc_addMS( Cbc_Model *model, CbcModel &cbcModel  ) {
   if ( model->nColsMS == 0 )
     return;
 
-  CbcModel *cbc = model->cbcModel_;
-
-  cbc->setMIPStart( model->nColsMS, (const char **)model->colNamesMS, model->colValuesMS );
+  cbcModel.setMIPStart( model->nColsMS, (const char **)model->colNamesMS, model->colValuesMS );
 }
 
 void Cbc_iniParams( Cbc_Model *model ) {

@@ -482,7 +482,7 @@ void testQueens(int n) {
     } 
 
     Cbc_setMaximumSeconds(model, 100);
-    (void) Cbc_solve(model);
+    Cbc_solve(model);
     xs = Cbc_getColSolution(model);
     if (n<=30)
     {

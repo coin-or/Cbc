@@ -1650,14 +1650,12 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   Cbc_flush( model );
 
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
 
   solver->setDblParam( OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
   solver->setDblParam( OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL]);
 
-  OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
-  assert(clpSolver);
-  ClpSimplex *clps = clpSolver->getModelPtr();
+  ClpSimplex *clps = solver->getModelPtr();
   assert(clps);
   clps->setPerturbation(model->int_param[INT_PARAM_PERT_VALUE]);
   solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
@@ -1790,7 +1788,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
       sprintf(methodName, "Barrier");
       break;
   }
-  clpSolver->setSolveOptions(clpOptions);
+  solver->setSolveOptions(clpOptions);
 
   switch (model->dualp) {
     case DP_Auto:
@@ -1918,16 +1916,16 @@ static void Cbc_cleanOptResults(Cbc_Model *model) {
   model->obj_value = COIN_DBL_MAX;
   model->mipStatus = -1;
   model->mipSecStatus = -1;
-  model->mipIsAbandoned = -1;
-  model->mipIsProvenOptimal = -1;
-  model->mipIsProvenInfeasible = -1;
-  model->mipIsContinuousUnbounded = -1;
-  model->mipIsNodeLimitReached = -1;
-  model->mipIsSecondsLimitReached = -1;
-  model->mipIsSolutionLimitReached = -1;
-  model->mipIsInitialSolveAbandoned = -1;
-  model->mipIsInitialSolveProvenOptimal = -1;
-  model->mipIsInitialSolveProvenPrimalInfeasible = -1;
+  model->mipIsAbandoned = 0;
+  model->mipIsProvenOptimal = 0;
+  model->mipIsProvenInfeasible = 0;
+  model->mipIsContinuousUnbounded = 0;
+  model->mipIsNodeLimitReached = 0;
+  model->mipIsSecondsLimitReached = 0;
+  model->mipIsSolutionLimitReached = 0;
+  model->mipIsInitialSolveAbandoned = 0;
+  model->mipIsInitialSolveProvenOptimal = 0;
+  model->mipIsInitialSolveProvenPrimalInfeasible = 0;
   model->mipBestPossibleObjValue = COIN_DBL_MIN;
   model->mipNumSavedSolutions = 0;
   model->mipNodeCount = 0;
@@ -2057,7 +2055,7 @@ Cbc_solve(Cbc_Model *model)
   if (res==2 || res==3)
     return 0;
 
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
 
   if (solver->isProvenPrimalInfeasible() || solver->isProvenDualInfeasible() ||
       solver->isAbandoned() || solver->isIterationLimitReached() || model->relax_ == 1
@@ -2076,7 +2074,7 @@ Cbc_solve(Cbc_Model *model)
   /*  MIP Optimization */
   {
     model->lastOptimization = IntegerOptimization;
-    OsiClpSolverInterface linearProgram(*model->solver_);
+    OsiClpSolverInterface linearProgram(*solver);
     CbcModel cbcModel(linearProgram);
     try {
       /* stored lazy Constraints */
@@ -2157,13 +2155,15 @@ Cbc_solve(Cbc_Model *model)
       if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX) {
           char str[256]; sprintf(str, "%g", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
           Cbc_setParameter(model, "secnifs", str);
-      } else
+      } else {
           Cbc_setParameter(model, "secnifs", "-1");
+      }
       if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX) {
           char str[256]; sprintf(str, "%d", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
           Cbc_setParameter(model, "maxNIFS", str);
-      } else
+      } else {
           Cbc_setParameter(model, "maxNIFS", "-1");
+      }
 
       Cbc_MessageHandler *cbcmh  = NULL;
 
@@ -2193,7 +2193,7 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
       cbcModel.setCutoff( model->dbl_param[DBL_PARAM_CUTOFF] );
       cbcModel.setIntegerTolerance( model->dbl_param[DBL_PARAM_INT_TOL] );
-  
+
       // aditional parameters specified by user as strings
       std::vector< string > argv;
       argv.push_back("Cbc_C_Interface");
@@ -4553,10 +4553,10 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_MAX_NODES]               =  INT_MAX;
   model->int_param[INT_PARAM_NUMBER_BEFORE]           =        5;
   model->int_param[INT_PARAM_FPUMP_ITS]               =       30;
-  model->int_param[INT_PARAM_MAX_SOLS]                =       10;
+  model->int_param[INT_PARAM_MAX_SOLS]                =  INT_MAX;
   model->int_param[INT_PARAM_CUT_PASS_IN_TREE]        =        1;
   model->int_param[INT_PARAM_LOG_LEVEL]               =        1;
-  model->int_param[INT_PARAM_MAX_SAVED_SOLS]          =       -1;
+  model->int_param[INT_PARAM_MAX_SAVED_SOLS]          =       10;
   model->int_param[INT_PARAM_MULTIPLE_ROOTS]          =        0;
   model->int_param[INT_PARAM_THREADS]                 =       -1;
   model->int_param[INT_PARAM_ROUND_INT_VARS]          =        1;
@@ -4571,7 +4571,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->dbl_param[DBL_PARAM_ZERO_TOL]               =         1e-20;
   model->dbl_param[DBL_PARAM_INT_TOL]                =          1e-6;
   model->dbl_param[DBL_PARAM_PRESOLVE_TOL]           =          1e-8;
-  model->dbl_param[DBL_PARAM_TIME_LIMIT]             =  COIN_DBL_MAX;
+  model->dbl_param[DBL_PARAM_TIME_LIMIT]             =         1e+08;
   model->dbl_param[DBL_PARAM_PSI]                    =          -1.0;
   model->dbl_param[DBL_PARAM_CUTOFF]                 =  COIN_DBL_MAX;
   model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]          =         1e-10;

@@ -1,0 +1,94 @@
+Description:
+  Slug: Cbc
+  ShortName: Cbc
+  LongName:
+  ShortDescription: An LP-based branch-and-cut library.
+  LongDescription: |2
+    "CBC is an open-source MILP solver. It uses many of the COIN-OR components
+    and is designed to be used with CLP. It is available as a library and
+    as a standalone solver."
+  Manager: Ted Ralphs, ted at lehigh dot edu 
+  Homepage: https://github.com/coin-or/Cbc
+  License: Eclipse Public License 2.0
+  LicenseURL: http://www.opensource.org/licenses/eclipse-2.0
+  Zenodo: 173509563
+  Appveyor:
+    Status: chribnemsgm9th0x
+    Slug: cbc-s1r7t
+  Bintray:
+    Package: Cbc
+  Language:
+    - C++
+  Categories: 
+    - Optimization deterministic linear discrete
+
+Dependencies:
+  - Description: ThirdParty wrapper for building ASL
+    URL: https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/trunk
+    Version: master
+    Required: Optional
+  - Description: ThirdParty wrapper for building Glpk
+    URL: https://projects.coin-or.org/svn/BuildTools/ThirdParty/Glpk/trunk
+    Version: master
+    Required: Optional
+  - Description: ThirdParty wrapper for building Mumps
+    URL: https://projects.coin-or.org/svn/BuildTools/ThirdParty/Mumps/trunk
+    Version: master
+    Required: Recommended
+  - Description: Sample data files
+    URL: https://projects.coin-or.org/svn/Data/Sample/trunk
+    Version: master
+    Required: Required
+  - Description: miplib3 data files
+    URL: https://projects.coin-or.org/svn/Data/miplib3/trunk
+    Version: master
+    Required: Required
+  - Description: COIN-OR Utilities
+    URL: https://projects.coin-or.org/svn/CoinUtils/trunk
+    Version: master
+    Required: Required
+  - Description: Open Solver Interface
+    URL: https://projects.coin-or.org/svn/Osi/trunk
+    Version: master
+    Required: Required
+  - Description: COIN-OR LP Solver
+    URL: https://projects.coin-or.org/svn/Clp/trunk
+    Version: master
+    Required: Required
+  - Description: The Cut Generator Library
+    URL: https://projects.coin-or.org/svn/Cgl/trunk
+    Version: master
+    Required: Required
+  - Description: Basic Linear Algebra Subroutines (BLAS)
+    URL: http://www.netlib.org/blas
+    Required: Recommended
+  - Description: Linear Algebra Package (LAPACK)
+    URL: http://www.netlib.org/lapack
+    Required: Recommended
+  - Description: GNU Readline
+    Required: Recommended
+  - Description: GNU History
+    Required: Recommended
+
+DevelopmentStatus: 
+  activityStatus: Active
+  maturityLevel: 5
+  testedPlatforms: 
+  - operatingSystem: Linux
+    compiler: gcc
+  - operatingSystem: Mac OS X
+    compiler:
+    - gcc
+    - clang
+  - operatingSystem: Microsoft Windows
+    compiler: cl
+  - operatingSystem: Microsoft Windows with MSys2
+    compiler:
+    - gcc
+    - cl
+    - icl
+  - operatingSystem: Microsoft Windows Subsystem for Linux
+    compiler:
+    - gcc
+    - cl
+    - icl

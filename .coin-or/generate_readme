@@ -1,14 +1,12 @@
-# Cbc
+#!/usr/bin/env bash
 
-[![A COIN-OR Project](https://coin-or.github.io/coin-or-badge.png)](https://www.coin-or.org)
+source $COINBREW_HOME/scripts/generate_readme
 
-[![Latest Release](https://img.shields.io/github/v/release/coin-or/Cbc?sort=semver)](https://github.com/coin-or/Cbc/releases)
+create_variables $1
 
-_This file is auto-generated from [config.yml](.coin-or/config.yml) using the 
-[generate_readme](.coin-or/generate_readme).
-To make changes, please edit [config.yml](.coin-or/config.yml) or the generation script._
+make_header
 
-Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
+echo "Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
 It can be used as a callable library or using a stand-alone executable.
 It can be called through
 AIMMS (through the [AIMMSlinks](https://github.com/coin-or/AIMMSlinks) project),
@@ -36,81 +34,14 @@ Cbc is developed by John Forrest, now retired from IBM Research, and others.
 The project is currently managed by John Forrest, [Ted
 Ralphs](http://coral.ie.lehigh.edu/~ted/), [Stefan
 Vigerske](https://github.com/svigerske), [Haroldo Gambini
-Santos](https://github.com/h-g-s), and the rest of the Cbc team. 
+Santos](https://github.com/h-g-s), and the rest of the Cbc team. "
 
-Cbc is written in C++ and is released as open source under the [Eclipse Public License 2.0](http://www.opensource.org/licenses/eclipse-2.0).
+make_build_info
 
-It is distributed under the auspices of the [COIN-OR Foundation](https://www.coin-or.org)
-
-The Cbc website is https://github.com/coin-or/Cbc.
-
-## CITE
-
-[![DOI](https://zenodo.org/badge/173509563.svg)](https://zenodo.org/badge/latestdoi/173509563)
-
-## CURRENT BUILD STATUS
-
-[![Build Status](https://travis-ci.org/coin-or/Cbc.svg?branch=master)](https://travis-ci.org/coin-or/Cbc)
-
-[![Build status](https://ci.appveyor.com/api/projects/status/chribnemsgm9th0x/branch/master?svg=true)](https://ci.appveyor.com/project/tkralphs/cbc-s1r7t/branch/master)
-
-## DOWNLOAD
-
-Binaries for most platforms are available as part of [Cbc](https://bintray.com/coin-or/download/Cbc). 
-
- * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
- * *Windows*: The easiest way to get Cbc on Windows is to download from *[Bintray](https://bintray.com/coin-or/download/Cbc)*.
- * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through [Homebrew](https://brew.sh).
-   * `brew tap coin-or-tools/coinor`
-   * `brew install coin-or-tools/coinor/cbc`
-
-Due to license incompatibilities, pre-compiled binaries lack some functionality.
-If binaries are not available for your platform for the latest version and you would like to request them to be built and posted, feel free to let us know on the mailing list.
-
-*Source code* can be obtained either by
-
- * Downloading a snapshot of the source code for the latest release version of Cbc from the
- [releases](https://github.com/coin-or/Cbc/releases) page.
- * Cloning the repository from [Github](https://github.com/coin-or/Cbc) or using the 
-`coinbrew` script (recommended).  
-
-Below is a quick start guide for building on common platforms. More detailed
-build instructions are
-[here](https://coin-or.github.io/user_introduction.html).
-
-## BUILDING from source
-
-The quick start assumes you are in a bash shell. 
-
-### Using `coinbrew`
-
-To build CoinUtils from source, obtain the `coinbrew` script, do
-```
-wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
-chmod u+x coinbrew
-./coinbrew fetch Cbc@master
-./coinbrew build Cbc
-```
-For more detailed instructions on coinbrew, see https://coin-or.github.io/coinbrew.
-The `coinbrew` script will fetch the additional projects specified in the Dependencies section of [config.yml](.coin-or/config.yml).
-
-### Without `coinbrew` (Expert users)
-
- * Download the source code, e.g., by cloning the git repo https://github.com/coin-or/Cbc
- * Download and install the source code for the dependencies listed in [config.yml](.coin-or/config.yml)
- * Build the code as follows (make sure to set PKG_CONFIG_PTH to install directory for dependencies).
-
-```
-./configure -C
-make
-make test
-make install
-```
-
-### With Microsoft Visual Studio
+echo "### With Microsoft Visual Studio
 
 For Microsoft Visual C++ users, there are project files for version 10
-available in the `MSVisualStudio` directory. First, obtain the source code
+available in the \`MSVisualStudio\` directory. First, obtain the source code
 using either a Windows git client or download a snapshot. In MSVC++ Version
 10, open the solution file (this should be converted to whatever version of
 MSVC+ you are using) and build the Cbc project. The code should build out of
@@ -119,8 +50,8 @@ the box with default settings.
 It is also possible to build Cbc with the Visual Studio compiler from the
 command line using the procedure for Unix-like environments, using the Msys2
 shell or CYGWIN. This is the recommended and best-supported way of building
-Cbc in Windows from source. To do so, make sure the `cl` compiler is in your
-path and add `--enable-msvc to build command of `coinbrew`.  
+Cbc in Windows from source. To do so, make sure the \`cl\` compiler is in your
+path and add \`--enable-msvc to build command of \`coinbrew\`.  
 
 If you want to build a *parallel version* of CBC using Visual Studio you can
 following instructions: (thanks to Tobias Stengel and Alexis Guigue).
@@ -129,12 +60,12 @@ Assumptions:
 
 - A VS solution with all necessary projects (libCbc, libClp, libCbcSolver,
   libCgl, libCoinUtils, libOsi, libOsiCbc, libOsiClp). The project files can
-  be found inside the `MSVisualStudio` folders. 
+  be found inside the \`MSVisualStudio\` folders. 
 
 Steps (based on VS 2013):
 
 1. for each of the lib* projects do:
-   add `CBC_THREAD` under Properties -> Configuration Properties -> C/C++ ->
+   add \`CBC_THREAD\` under Properties -> Configuration Properties -> C/C++ ->
    Preprocessor -> Preprocessor Definitions (a subset of the lib* projects may
    be sufficient, but it doesn't hurt to do it for all) 
 
@@ -157,37 +88,22 @@ Steps (based on VS 2013):
    pthreads yourself - when building pthreads. Linking pthreads dynamically
    works without additional preprocessor definitions.
 
-4. pass `-threads yourNumber` to `CbcMain1`
+4. pass \`-threads yourNumber\` to \`CbcMain1\`
+"
 
-## Doxygen Documentation
+make_doxygen_info
 
-If you have `Doxygen` available, you can build a HTML documentation by typing
-
-`make doxygen-docs` 
-
-in the build directory. If Cbc was built via `coinbrew`, then the build
-directory will be `./build/Cbc/master` by default. The doxygen documentation main file
-is found at `<build-dir>/doxydoc/html/index.html`.
-
-If you don't have `doxygen` installed locally, you can use also find the
-documentation [here](http://coin-or.github.io/Cbc/Doxygen).
-
-## DOCUMENTATION
+echo "## DOCUMENTATION
 
  * [User's Guide](https://coin-or.github.io/Cbc) (from 2005)
  * [Doxygen generated documentation](http://www.coin-or.org/Doxygen/Cbc/hierarchy.html)
  * Source code [examples](examples)
  * [Cbc command-line guide](https://projects.coin-or.org/CoinBinary/export/1059/OptimizationSuite/trunk/Installer/files/doc/cbcCommandLine.pdf)
+"
 
+make_links
 
-## Project Links
-
- * [COIN-OR Initiative](http://www.coin-or.org/)
- * [Mailing list](http://list.coin-or.org/mailman/listinfo/cbc)
- * [Report a bug](https://github.com/coin-or/Cbc/issues/new)
- * [Doxygen-generated html documentation](http://coin-or.github.io/Cbc/Doxygen)
-
-## CHANGELOG
+echo "## CHANGELOG
 
  * Release 3.0 (in preparation)
    * Added possibility for incomplete MIP start files.
@@ -202,49 +118,49 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
        now need to be build and installed in advance, either manually or
        by using coinbrew.
      - When using a GCC-compatible compiler, the Cbc interface
-       functions are now declared with `visibility(default)`-attribute,
-       thus building Cbc with `-fvisibility=hidden` still produces a
+       functions are now declared with \`visibility(default)\`-attribute,
+       thus building Cbc with \`-fvisibility=hidden\` still produces a
        usable library.
      - When using a MSVC-compatible compiler, Cbc interface functions
-       are now declared with `dllimport`-attribute, so that a Cbc C++ DLL
+       are now declared with \`dllimport\`-attribute, so that a Cbc C++ DLL
        can be used.
      - Under Windows/Msys2, DLLs are now build by default.
      - Cygwin and MSys1 are no longer supported.
      - pkg-config is now mandatory. On Windows, make sure to use a
        pkg-config version that produces Unix-style paths.
-     - `*_addlibs` files have been removed, pkg-config should be used instead.
-     - Script `compile` is now used to wrap around calls of cl/icl/ifort
+     - \`*_addlibs\` files have been removed, pkg-config should be used instead.
+     - Script \`compile\` is now used to wrap around calls of cl/icl/ifort
        and translate GCC-style compiler flags to MSVC style.
      - Header files are now installed in the better named
-       `/include/coin-or` instead of `/include/coin`.
-     - The default for `--prefix` is no longer the build directory, but
-       the autotools-default, probably `/usr/local`.
-     - `--enable-debug` does not imply `--disable-shared` anymore.
-     - Removed `--enable-debug-cbc`, use `--enable-debug` instead.
+       \`$prefix/include/coin-or\` instead of \`$prefix/include/coin\`.
+     - The default for \`--prefix\` is no longer the build directory, but
+       the autotools-default, probably \`/usr/local\`.
+     - \`--enable-debug\` does not imply \`--disable-shared\` anymore.
+     - Removed \`--enable-debug-cbc\`, use \`--enable-debug\` instead.
      - Removed configure variables OPT/DBG_C/CXXFLAGS. Use C/CXXFLAGS instead.
      - Silent build output is now enabled by default, use configure
-       flag `--disable-silent-rules` or call make with `V=1` to disable.
+       flag \`--disable-silent-rules\` or call make with \`V=1\` to disable.
      - Also for static builds, PIC objects are now generated by default,
-       use `--without-pic` to disable.
-     - The `--with-*-incdir` and `--with-*-lib` configure flags have been
-       replaced by corresponding `--with-*-cflags` and `--with-*-lflags`
+       use \`--without-pic\` to disable.
+     - The \`--with-*-incdir\` and \`--with-*-lib\` configure flags have been
+       replaced by corresponding \`--with-*-cflags\` and \`--with-*-lflags\`
        flags. Note that the include directories need to be specified
-       via `-I<dir>` in `--with-*-cflags`.
-    * `--enable-cbc-parallel` is now enabled by default if a pthread library
-      is found. Use `--disable-cbc-parallel` to disable.
+       via \`-I<dir>\` in \`--with-*-cflags\`.
+    * \`--enable-cbc-parallel\` is now enabled by default if a pthread library
+      is found. Use \`--disable-cbc-parallel\` to disable.
     * Added a conflict graph infrastructure and conflict-based routines:
-      - `CglCliqueStrengthening`: preprocessing routine applied on set packing constraints.
-      - `CglBKClique`: clique cut separator based on an improved version of Bron-Kerbosch algorithm.
-      - `CglOddWheel`: odd-cycle separator with a lifting routine.
+      - \`CglCliqueStrengthening\`: preprocessing routine applied on set packing constraints.
+      - \`CglBKClique\`: clique cut separator based on an improved version of Bron-Kerbosch algorithm.
+      - \`CglOddWheel\`: odd-cycle separator with a lifting routine.
       - New parameters in the command line:
-          - `cgraph`: sets the use of conflict graph-based routines (CglBKClique, CglOddWheel and CliqueStrengthening) - "off"=turns these routines off, "on"=turns these routines on, "clq"=turns these routines off and enables the cut separator of CglClique - default="on"
-          - `clqstr`: sets the use of the preprocessing routine based on clique strengthening (CglCliqueStrengthening) - "off"=turn off this routine, "before"=perform clique strengthening before initial solve, "after"=perform clique strengthening after initial solve - default="after".
-          - `clique`: sets the use of CglBKClique (on, root, ifmove, forceOn, onglobal) - default="ifmove".
-          - `bkpivot`: pivoting strategy used by Bron-Kerbosch algorithm in CglBKClique - 0=off, 1=random, 2=degree, 3=weight, 4=modified degree, 5=modified weight, 6=modified degree + modified weight - default=3.
-          - `bkmaxcalls`: maximum number of recursive calls that can be made by Bron-Kerbosch algorithm in CglBKClique - default=1000.
-          - `bkclqext`: strategy used to extend violated cliques found by CglBKClique - 0=off, 1=random, 2=degree, 3=modified degree, 4=reduced cost(inversely proportional), 5=reduced cost(inversely proportional) + modified degree - default = 4.
-          - `oddwheel`: sets the use of CglOddWheel (on, root, ifmove, forceOn, onglobal) - default = ifmove.
-          - `oddwext`: strategy used to search for wheel centers for the cuts found by CglOddWheel - 0=off, 1=one variable, 2=clique - default=2.
+          - \`cgraph\`: sets the use of conflict graph-based routines (CglBKClique, CglOddWheel and CliqueStrengthening) - \"off\"=turns these routines off, \"on\"=turns these routines on, \"clq\"=turns these routines off and enables the cut separator of CglClique - default=\"on\"
+          - \`clqstr\`: sets the use of the preprocessing routine based on clique strengthening (CglCliqueStrengthening) - \"off\"=turn off this routine, \"before\"=perform clique strengthening before initial solve, \"after\"=perform clique strengthening after initial solve - default=\"after\".
+          - \`clique\`: sets the use of CglBKClique (on, root, ifmove, forceOn, onglobal) - default=\"ifmove\".
+          - \`bkpivot\`: pivoting strategy used by Bron-Kerbosch algorithm in CglBKClique - 0=off, 1=random, 2=degree, 3=weight, 4=modified degree, 5=modified weight, 6=modified degree + modified weight - default=3.
+          - \`bkmaxcalls\`: maximum number of recursive calls that can be made by Bron-Kerbosch algorithm in CglBKClique - default=1000.
+          - \`bkclqext\`: strategy used to extend violated cliques found by CglBKClique - 0=off, 1=random, 2=degree, 3=modified degree, 4=reduced cost(inversely proportional), 5=reduced cost(inversely proportional) + modified degree - default = 4.
+          - \`oddwheel\`: sets the use of CglOddWheel (on, root, ifmove, forceOn, onglobal) - default = ifmove.
+          - \`oddwext\`: strategy used to search for wheel centers for the cuts found by CglOddWheel - 0=off, 1=one variable, 2=clique - default=2.
       - CglClique was replaced by CglBKClique as the default clique separator in CbcSolver.cpp.
 
  * Release 2.10.5
@@ -279,10 +195,10 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
    * Mini-B&B is now disabled when solving with multiple threads
    * Changed default value for zero half cuts parameter from off to ifmove
    * Added CbcModel::postProcessedSolver() to obtained LP after presolve
-   * New option `PrepNames` to indicate whether column names should be
+   * New option \`PrepNames\` to indicate whether column names should be
      kept in the pre-processed model
-   * New option `sosPrioritize` to determine how to prioritize SOS
-   * Added new event `generatedCuts`
+   * New option \`sosPrioritize\` to determine how to prioritize SOS
+   * Added new event \`generatedCuts\`
    * CbcSolver can now read compressed .lp files (GZIP, BZIP2)
    * New functions in the C interface: Cbc_readLp, Cbc_writeLp,
      Cbc_addCol, Cbc_addRow, Cbc_getNumIntegers, Cbc_bestSolution,
@@ -300,7 +216,7 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
      Cbc_getMaximumNodes, Cbc_setMaximumNodes, Cbc_getMaximumSolutions,
      Cbc_setMaximumSolutions, Cbc_getLogLevel, Cbc_setLogLevel,
      Cbc_getMaximumSeconds, Cbc_setMaximumSeconds
-   * New action `guess` checks properties of the model to decide the best
+   * New action \`guess\` checks properties of the model to decide the best
      parameters for solving the LP relaxation.
    * New example inc.cpp to illustrate solution callback
    * New example driver5.cpp to illustrate user-defined branching rule
@@ -354,7 +270,7 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
 
  * Release 2.9.2
 
-   * Fix for proper installation with `DESTDIR`
+   * Fix for proper installation with \`DESTDIR\`
 
  * Release 2.9.1
 
@@ -363,9 +279,9 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
 
  * Release 2.9.0
 
-   * Introduced specialized branching methods for dealing with "big Ms".
+   * Introduced specialized branching methods for dealing with \"big Ms\".
    * Introduced new methods for dealing with symmetry (requires installation of [nauty](http://pallini.di.uniroma1.it/))
-   * Introduction of conflict cuts (off by default, turn on with `-constraint conflict`)
+   * Introduction of conflict cuts (off by default, turn on with \`-constraint conflict\`)
 
  * Release 2.8.13
 
@@ -445,9 +361,9 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
 
    * Added Proximity Search heuristic by Fischetti and Monaci (off by
      default): The simplest way to switch it on using stand-alone version is
-     `-proximity on`.
+     \`-proximity on\`.
 
-     Proximity Search is the new "No-Neighborhood Search" 0-1 MIP refinement
+     Proximity Search is the new \"No-Neighborhood Search\" 0-1 MIP refinement
      heuristic recently proposed by Fischetti and Monaci (2012). The idea is
      to define a sub-MIP without additional constraints but with a modified
      objective function intended to attract the search in the proximity of the
@@ -463,8 +379,8 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
      help only on a small subset of problems and may need some tuning.
 
      The implementation of these cuts is described in G. Andreello, A.
-     Caprara, and M. Fischetti "Embedding Cuts in a Branch and Cut Framework:
-     a Computational Study with {0,1/2}-Cuts" INFORMS Journal on Computing
+     Caprara, and M. Fischetti \"Embedding Cuts in a Branch and Cut Framework:
+     a Computational Study with {0,1/2}-Cuts\" INFORMS Journal on Computing
      19(2), 229-238, 2007 http://dx.doi.org/10.1287/ijoc.1050.0162
 
    * An alternative implementation of a reduce and split cut generator by
@@ -473,8 +389,8 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
      options).
 
      The implementation of these cuts is described in G. Cornuejols and G.
-     Nannicini "Practical strategies for generating rank-1 split cuts in
-     mixed-integer linear programming" Mathematical Programming Computation
+     Nannicini \"Practical strategies for generating rank-1 split cuts in
+     mixed-integer linear programming\" Mathematical Programming Computation
      3(4), 281-318, 2011 http://dx.doi.org/10.1007/s12532-011-0028-6
 
    * An alternative robust implementation of a Gomory cut generator by Giacomo
@@ -482,13 +398,13 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
      your command line -GMI root (or other options).
 
      The implementation of these cuts is described in G. Cornuejols, F.
-     Margot, and G. Nannicini "On the safety of Gomory cut generators"
+     Margot, and G. Nannicini \"On the safety of Gomory cut generators\"
      http://faculty.sutd.edu.sg/~nannicini/index.php?page=publications
 
    * To encourage the use of some of the more exotic/expensive cut generators
      a parameter -slowcutpasses has been added. The idea is that the code does
      these cuts just a few times - less than the more usual cuts. The default
-     is 10. The cut generators identified by "may be slow" at present are just
+     is 10. The cut generators identified by \"may be slow\" at present are just
      Lift and project and ReduceAndSplit (both versions).
 
    * Allow initialization of random seed by user. Pseudo-random numbers are
@@ -523,8 +439,8 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
 
  * Release 2.7.8:
 
-   * Change message when LP simplex iteration limit is hit from "Exiting on
-     maximum nodes" to "Exiting on maximum number of iterations"
+   * Change message when LP simplex iteration limit is hit from \"Exiting on
+     maximum nodes\" to \"Exiting on maximum number of iterations\"
    * Fix for using overlapping SOS.
    * Fixes in buildsystem.
 
@@ -570,7 +486,7 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
      sub-MIP heuristic is currently running.
 
    * Cbc shell should work with readline if configured with
-     `--enable-gnu-packages`.
+     \`--enable-gnu-packages\`.
 
    * Support for compressed input files (.gz, .bz2) is now enabled by default.
 
@@ -601,4 +517,4 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
    * New options for cut generation.
 
    * Improved reporting of results.
-
+"

@@ -1,9 +1,9 @@
-ThirdParty/ASL    https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/trunk
-ThirdParty/Glpk   https://projects.coin-or.org/svn/BuildTools/ThirdParty/Glpk/trunk
-ThirdParty/Mumps  https://projects.coin-or.org/svn/BuildTools/ThirdParty/Mumps/trunk
-Data/Sample       https://projects.coin-or.org/svn/Data/Sample/trunk
-Data/miplib3      https://projects.coin-or.org/svn/Data/miplib3/trunk
-CoinUtils         https://projects.coin-or.org/svn/CoinUtils/trunk
-Osi               https://projects.coin-or.org/svn/Osi/trunk
-Clp               https://projects.coin-or.org/svn/Clp/trunk
-Cgl               https://projects.coin-or.org/svn/Cgl/trunk
+ThirdParty/ASL    https://github.com/coin-or-tools/ThirdParty-ASL master
+ThirdParty/Glpk   https://github.com/coin-or-tools/ThirdParty-Glpk master
+ThirdParty/Mumps  https://github.com/coin-or-tools/ThirdParty-Mumps master
+Data/Sample       https://github.com/coin-or-tools/Data-Sample master
+Data/miplib3      https://github.com/coin-or-tools/Data-miplib3 master
+CoinUtils         https://github.com/coin-or/CoinUtils master
+Osi               https://github.com/coin-or/Osi master
+Clp               https://github.com/coin-or/Clp master
+Cgl               https://github.com/coin-or/Cgl master

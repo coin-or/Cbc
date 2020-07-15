@@ -24,39 +24,39 @@ Description:
 
 Dependencies:
   - Description: ThirdParty wrapper for building ASL
-    URL: https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/trunk
+    URL: https://github.com/coin-or-tools/ThirdParty-ASL
     Version: master
     Required: Optional
   - Description: ThirdParty wrapper for building Glpk
-    URL: https://projects.coin-or.org/svn/BuildTools/ThirdParty/Glpk/trunk
+    URL: https://github.com/coin-or-tools/ThirdParty-Glpk
     Version: master
     Required: Optional
   - Description: ThirdParty wrapper for building Mumps
-    URL: https://projects.coin-or.org/svn/BuildTools/ThirdParty/Mumps/trunk
+    URL: https://github.com/coin-or-tools/ThirdParty-Mumps
     Version: master
-    Required: Recommended
+    Required: Optional
   - Description: Sample data files
-    URL: https://projects.coin-or.org/svn/Data/Sample/trunk
+    URL: https://github.com/coin-or-tools/Data-Sample
     Version: master
     Required: Required
   - Description: miplib3 data files
-    URL: https://projects.coin-or.org/svn/Data/miplib3/trunk
+    URL: https://github.com/coin-or-tools/Data-miplib3
     Version: master
     Required: Required
   - Description: COIN-OR Utilities
-    URL: https://projects.coin-or.org/svn/CoinUtils/trunk
+    URL: https://github.com/coin-or/CoinUtils
     Version: master
     Required: Required
   - Description: Open Solver Interface
-    URL: https://projects.coin-or.org/svn/Osi/trunk
+    URL: https://github.com/coin-or/Osi
     Version: master
     Required: Required
   - Description: COIN-OR LP Solver
-    URL: https://projects.coin-or.org/svn/Clp/trunk
+    URL: https://github.com/coin-or/Clp
     Version: master
     Required: Required
   - Description: The Cut Generator Library
-    URL: https://projects.coin-or.org/svn/Cgl/trunk
+    URL: https://github.com/coin-or/Cgl
     Version: master
     Required: Required
   - Description: Basic Linear Algebra Subroutines (BLAS)

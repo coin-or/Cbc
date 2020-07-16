@@ -2166,15 +2166,11 @@ Cbc_solve(Cbc_Model *model)
       if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX) {
           char str[256]; sprintf(str, "%g", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
           Cbc_setParameter(model, "secnifs", str);
-      } else {
-          Cbc_setParameter(model, "secnifs", "-1");
-      }
+      } 
       if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX) {
           char str[256]; sprintf(str, "%d", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
           Cbc_setParameter(model, "maxNIFS", str);
-      } else {
-          Cbc_setParameter(model, "maxNIFS", "-1");
-      }
+      } 
 
       Cbc_MessageHandler *cbcmh  = NULL;
 

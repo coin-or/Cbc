@@ -1,0 +1,13 @@
+<map id="CbcGenCtlBlk" name="CbcGenCtlBlk">
+<area shape="rect" id="node2" href="$structCbcGenCtlBlk_1_1genParamsInfo__struct.html" title="Start and end of cbc&#45;generic parameters in parameter vector. " alt="" coords="371,5,569,47"/>
+<area shape="rect" id="node3" href="$structCbcGenCtlBlk_1_1djFixCtl__struct.html" title="Control use of reduced cost fixing prior to B&amp;C. " alt="" coords="393,71,547,112"/>
+<area shape="rect" id="node4" href="$structCbcGenCtlBlk_1_1cbcParamsInfo__struct.html" title="Start and end of CbcModel parameters in parameter vector. " alt="" coords="371,136,569,177"/>
+<area shape="rect" id="node5" href="$classCbcModel.html" title="Simple Branch and bound class. " alt="" coords="430,202,510,229"/>
+<area shape="rect" id="node6" title="STL class. " alt="" coords="431,289,509,315"/>
+<area shape="rect" id="node7" title="STL class. " alt="" coords="149,281,273,323"/>
+<area shape="rect" id="node8" href="$structCbcGenCtlBlk_1_1chooseStrongCtl__struct.html" title="Control variables for a strong branching method. " alt="" coords="375,340,565,381"/>
+<area shape="rect" id="node9" href="$structCbcGenCtlBlk_1_1debugSolInfo__struct.html" title="Array of primal variable values for debugging. " alt="" coords="377,405,563,447"/>
+<area shape="rect" id="node11" title="STL class. " alt="" coords="155,471,267,498"/>
+<area shape="rect" id="node13" href="$structCbcGenCtlBlk_1_1babState__struct.html" title="State of branch&#45;and&#45;cut. " alt="" coords="389,523,551,564"/>
+<area shape="rect" id="node14" href="$structCbcGenCtlBlk_1_1osiParamsInfo__struct.html" title="Start and end of OsiSolverInterface parameters in parameter vector. " alt="" coords="373,588,567,629"/>
+</map>

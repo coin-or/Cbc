@@ -1,0 +1,5 @@
+<map id="CbcFullNodeInfo" name="CbcFullNodeInfo">
+<area shape="rect" id="node2" href="$classCbcNodeInfo.html" title="Information required to recreate the subproblem at this node. " alt="" coords="70,171,169,197"/>
+<area shape="rect" id="node3" href="$classCbcNode.html" title="Information required while the node is live. " alt="" coords="20,81,96,108"/>
+<area shape="rect" id="node5" href="$classCbcCountRowCut.html" title="OsiRowCut augmented with bookkeeping. " alt="" coords="121,81,246,108"/>
+</map>

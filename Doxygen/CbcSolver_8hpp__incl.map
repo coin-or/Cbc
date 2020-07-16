@@ -1,0 +1,19 @@
+<map id="src/CbcSolver.hpp" name="src/CbcSolver.hpp">
+<area shape="rect" id="node6" href="$CbcModel_8hpp.html" title="CbcModel.hpp" alt="" coords="616,80,720,107"/>
+<area shape="rect" id="node11" href="$CbcCompareBase_8hpp.html" title="CbcCompareBase.hpp" alt="" coords="913,155,1063,181"/>
+<area shape="rect" id="node25" href="$CbcCountRowCut_8hpp.html" title="CbcCountRowCut.hpp" alt="" coords="739,155,888,181"/>
+<area shape="rect" id="node26" href="$CbcMessage_8hpp.html" title="CbcMessage.hpp" alt="" coords="245,155,368,181"/>
+<area shape="rect" id="node27" href="$CbcEventHandler_8hpp.html" title="Event handling for cbc. " alt="" coords="1259,155,1405,181"/>
+<area shape="rect" id="node12" href="$CbcNode_8hpp.html" title="CbcNode.hpp" alt="" coords="738,229,838,256"/>
+<area shape="rect" id="node23" href="$CbcConfig_8h.html" title="CbcConfig.h" alt="" coords="969,229,1060,256"/>
+<area shape="rect" id="node14" href="$CbcBranchBase_8hpp.html" title="CbcBranchBase.hpp" alt="" coords="621,453,761,480"/>
+<area shape="rect" id="node20" href="$CbcNodeInfo_8hpp.html" title="CbcNodeInfo.hpp" alt="" coords="577,379,700,405"/>
+<area shape="rect" id="node21" href="$CbcFullNodeInfo_8hpp.html" title="CbcFullNodeInfo.hpp" alt="" coords="490,304,633,331"/>
+<area shape="rect" id="node22" href="$CbcPartialNodeInfo_8hpp.html" title="CbcPartialNodeInfo.hpp" alt="" coords="709,304,867,331"/>
+<area shape="rect" id="node15" href="$CbcObject_8hpp.html" title="CbcObject.hpp" alt="" coords="619,603,725,629"/>
+<area shape="rect" id="node16" href="$CbcBranchingObject_8hpp.html" title="CbcBranchingObject.hpp" alt="" coords="379,603,544,629"/>
+<area shape="rect" id="node17" href="$CbcBranchDecision_8hpp.html" title="CbcBranchDecision.hpp" alt="" coords="755,528,915,555"/>
+<area shape="rect" id="node18" href="$CbcConsequence_8hpp.html" title="CbcConsequence.hpp" alt="" coords="939,528,1087,555"/>
+<area shape="rect" id="node19" href="$CbcObjectUpdateData_8hpp.html" title="CbcObjectUpdateData.hpp" alt="" coords="504,528,680,555"/>
+<area shape="rect" id="node24" href="$config__cbc__default_8h.html" title="config_cbc_default.h" alt="" coords="1265,304,1405,331"/>
+</map>

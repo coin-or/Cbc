@@ -1,0 +1,41 @@
+<map id="src/CbcObject.hpp" name="src/CbcObject.hpp">
+<area shape="rect" id="node2" href="$CbcBranchBase_8hpp.html" title="src/CbcBranchBase.hpp" alt="" coords="1357,155,1520,181"/>
+<area shape="rect" id="node40" href="$CbcObjectUpdateData_8hpp.html" title="src/CbcObjectUpdateData.hpp" alt="" coords="1407,80,1606,107"/>
+<area shape="rect" id="node3" href="$CbcBranchActual_8hpp.html" title="src/CbcBranchActual.hpp" alt="" coords="817,468,986,495"/>
+<area shape="rect" id="node5" href="$CbcBranchingObject_8hpp.html" title="src/CbcBranchingObject.hpp" alt="" coords="521,229,708,256"/>
+<area shape="rect" id="node9" href="$CbcBranchDecision_8hpp.html" title="src/CbcBranchDecision.hpp" alt="" coords="1347,229,1530,256"/>
+<area shape="rect" id="node10" href="$CbcBranchDefaultDecision_8hpp.html" title="src/CbcBranchDefaultDecision.hpp" alt="" coords="493,386,715,413"/>
+<area shape="rect" id="node11" href="$CbcFollowOn_8hpp.html" title="src/CbcFollowOn.hpp" alt="" coords="740,386,887,413"/>
+<area shape="rect" id="node12" href="$CbcFixVariable_8hpp.html" title="src/CbcFixVariable.hpp" alt="" coords="911,386,1065,413"/>
+<area shape="rect" id="node13" href="$CbcDummyBranchingObject_8hpp.html" title="src/CbcDummyBranchingObject.hpp" alt="" coords="885,304,1115,331"/>
+<area shape="rect" id="node14" href="$CbcGeneral_8hpp.html" title="src/CbcGeneral.hpp" alt="" coords="1085,229,1221,256"/>
+<area shape="rect" id="node15" href="$CbcGeneralDepth_8hpp.html" title="src/CbcGeneralDepth.hpp" alt="" coords="1191,304,1361,331"/>
+<area shape="rect" id="node16" href="$CbcBranchAllDifferent_8hpp.html" title="src/CbcBranchAllDifferent.hpp" alt="" coords="1473,304,1668,331"/>
+<area shape="rect" id="node17" href="$CbcBranchCut_8hpp.html" title="src/CbcBranchCut.hpp" alt="" coords="1605,229,1757,256"/>
+<area shape="rect" id="node18" href="$CbcBranchToFixLots_8hpp.html" title="src/CbcBranchToFixLots.hpp" alt="" coords="1697,304,1887,331"/>
+<area shape="rect" id="node19" href="$CbcBranchLotsize_8hpp.html" title="src/CbcBranchLotsize.hpp" alt="" coords="1833,229,2007,256"/>
+<area shape="rect" id="node20" href="$CbcNode_8hpp.html" title="src/CbcNode.hpp" alt="" coords="2152,386,2275,413"/>
+<area shape="rect" id="node37" href="$CbcNodeInfo_8hpp.html" title="src/CbcNodeInfo.hpp" alt="" coords="2083,229,2227,256"/>
+<area shape="rect" id="node38" href="$CbcFullNodeInfo_8hpp.html" title="src/CbcFullNodeInfo.hpp" alt="" coords="1947,304,2112,331"/>
+<area shape="rect" id="node39" href="$CbcPartialNodeInfo_8hpp.html" title="src/CbcPartialNodeInfo.hpp" alt="" coords="2187,304,2368,331"/>
+<area shape="rect" id="node4" href="$CbcBranchDynamic_8hpp.html" title="src/CbcBranchDynamic.hpp" alt="" coords="749,543,931,569"/>
+<area shape="rect" id="node6" href="$CbcSimpleInteger_8hpp.html" title="src/CbcSimpleInteger.hpp" alt="" coords="304,304,475,331"/>
+<area shape="rect" id="node7" href="$CbcSimpleIntegerPseudoCost_8hpp.html" title="src/CbcSimpleIntegerPseudo\lCost.hpp" alt="" coords="227,379,418,420"/>
+<area shape="rect" id="node8" href="$CbcSimpleIntegerDynamicPseudoCost_8hpp.html" title="src/CbcSimpleIntegerDynamic\lPseudoCost.hpp" alt="" coords="5,379,203,420"/>
+<area shape="rect" id="node21" href="$CbcCompareActual_8hpp.html" title="src/CbcCompareActual.hpp" alt="" coords="2731,617,2911,644"/>
+<area shape="rect" id="node22" href="$CbcCompareBase_8hpp.html" title="src/CbcCompareBase.hpp" alt="" coords="2220,468,2393,495"/>
+<area shape="rect" id="node23" href="$CbcCompareDepth_8hpp.html" title="src/CbcCompareDepth.hpp" alt="" coords="2446,543,2623,569"/>
+<area shape="rect" id="node24" href="$CbcCompareDefault_8hpp.html" title="src/CbcCompareDefault.hpp" alt="" coords="2648,543,2832,569"/>
+<area shape="rect" id="node25" href="$CbcCompareEstimate_8hpp.html" title="src/CbcCompareEstimate.hpp" alt="" coords="1801,543,1996,569"/>
+<area shape="rect" id="node26" href="$CbcCompareObjective_8hpp.html" title="src/CbcCompareObjective.hpp" alt="" coords="2021,543,2219,569"/>
+<area shape="rect" id="node35" href="$CbcThread_8hpp.html" title="src/CbcThread.hpp" alt="" coords="1712,617,1843,644"/>
+<area shape="rect" id="node36" href="$CbcTreeLocal_8hpp.html" title="src/CbcTreeLocal.hpp" alt="" coords="1551,468,1700,495"/>
+<area shape="rect" id="node27" href="$CbcModel_8hpp.html" title="src/CbcModel.hpp" alt="" coords="2243,543,2370,569"/>
+<area shape="rect" id="node28" href="$CbcGenCtlBlk_8hpp.html" title="src/CbcGenCtlBlk.hpp" alt="" coords="1537,617,1687,644"/>
+<area shape="rect" id="node29" href="$CbcParam_8hpp.html" title="src/CbcParam.hpp" alt="" coords="2425,617,2554,644"/>
+<area shape="rect" id="node30" href="$CbcSolver_8hpp.html" title="Defines CbcSolver, the proposed top&#45;level class for the new&#45;style cbc solver. " alt="" coords="2579,617,2707,644"/>
+<area shape="rect" id="node31" href="$CbcStatistics_8hpp.html" title="src/CbcStatistics.hpp" alt="" coords="1867,617,2013,644"/>
+<area shape="rect" id="node32" href="$CbcStrategy_8hpp.html" title="src/CbcStrategy.hpp" alt="" coords="2037,617,2176,644"/>
+<area shape="rect" id="node33" href="$OsiCbcSolverInterface_8hpp.html" title="src/OsiCbc/OsiCbcSolverInterface.hpp" alt="" coords="2037,692,2283,719"/>
+<area shape="rect" id="node34" href="$CbcSymmetry_8hpp.html" title="src/CbcSymmetry.hpp" alt="" coords="2251,617,2400,644"/>
+</map>

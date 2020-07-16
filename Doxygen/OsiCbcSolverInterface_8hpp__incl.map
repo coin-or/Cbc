@@ -1,0 +1,20 @@
+<map id="src/OsiCbc/OsiCbcSolverInterface.hpp" name="src/OsiCbc/OsiCbcSolverInterface.hpp">
+<area shape="rect" id="node5" href="$CbcModel_8hpp.html" title="CbcModel.hpp" alt="" coords="1527,155,1631,181"/>
+<area shape="rect" id="node32" href="$CbcStrategy_8hpp.html" title="CbcStrategy.hpp" alt="" coords="1661,80,1779,107"/>
+<area shape="rect" id="node12" href="$CbcCompareBase_8hpp.html" title="CbcCompareBase.hpp" alt="" coords="1118,229,1269,256"/>
+<area shape="rect" id="node26" href="$CbcCountRowCut_8hpp.html" title="CbcCountRowCut.hpp" alt="" coords="1659,229,1808,256"/>
+<area shape="rect" id="node27" href="$CbcMessage_8hpp.html" title="CbcMessage.hpp" alt="" coords="1344,229,1467,256"/>
+<area shape="rect" id="node28" href="$CbcEventHandler_8hpp.html" title="Event handling for cbc. " alt="" coords="1832,229,1979,256"/>
+<area shape="rect" id="node13" href="$CbcNode_8hpp.html" title="CbcNode.hpp" alt="" coords="822,304,922,331"/>
+<area shape="rect" id="node24" href="$CbcConfig_8h.html" title="CbcConfig.h" alt="" coords="1407,304,1497,331"/>
+<area shape="rect" id="node15" href="$CbcBranchBase_8hpp.html" title="CbcBranchBase.hpp" alt="" coords="667,528,807,555"/>
+<area shape="rect" id="node21" href="$CbcNodeInfo_8hpp.html" title="CbcNodeInfo.hpp" alt="" coords="792,453,915,480"/>
+<area shape="rect" id="node22" href="$CbcFullNodeInfo_8hpp.html" title="CbcFullNodeInfo.hpp" alt="" coords="691,379,834,405"/>
+<area shape="rect" id="node23" href="$CbcPartialNodeInfo_8hpp.html" title="CbcPartialNodeInfo.hpp" alt="" coords="910,379,1069,405"/>
+<area shape="rect" id="node16" href="$CbcObject_8hpp.html" title="CbcObject.hpp" alt="" coords="592,677,699,704"/>
+<area shape="rect" id="node17" href="$CbcBranchingObject_8hpp.html" title="CbcBranchingObject.hpp" alt="" coords="825,677,991,704"/>
+<area shape="rect" id="node18" href="$CbcBranchDecision_8hpp.html" title="CbcBranchDecision.hpp" alt="" coords="448,603,608,629"/>
+<area shape="rect" id="node19" href="$CbcConsequence_8hpp.html" title="CbcConsequence.hpp" alt="" coords="958,603,1106,629"/>
+<area shape="rect" id="node20" href="$CbcObjectUpdateData_8hpp.html" title="CbcObjectUpdateData.hpp" alt="" coords="683,603,859,629"/>
+<area shape="rect" id="node25" href="$config__cbc__default_8h.html" title="config_cbc_default.h" alt="" coords="1395,379,1535,405"/>
+</map>

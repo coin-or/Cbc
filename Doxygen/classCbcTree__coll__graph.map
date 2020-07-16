@@ -1,0 +1,6 @@
+<map id="CbcTree" name="CbcTree">
+<area shape="rect" id="node3" href="$classCbcNode.html" title="Information required while the node is live. " alt="" coords="20,95,96,121"/>
+<area shape="rect" id="node5" title="STL class. " alt="" coords="121,95,233,121"/>
+<area shape="rect" id="node7" href="$classCbcCompare.html" title="CbcCompare" alt="" coords="275,184,372,211"/>
+<area shape="rect" id="node8" href="$classCbcCompareBase.html" title="CbcCompareBase" alt="" coords="260,95,387,121"/>
+</map>

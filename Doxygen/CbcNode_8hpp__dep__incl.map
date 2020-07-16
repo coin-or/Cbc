@@ -1,0 +1,18 @@
+<map id="src/CbcNode.hpp" name="src/CbcNode.hpp">
+<area shape="rect" id="node2" href="$CbcCompareActual_8hpp.html" title="src/CbcCompareActual.hpp" alt="" coords="5,229,185,256"/>
+<area shape="rect" id="node3" href="$CbcCompareBase_8hpp.html" title="src/CbcCompareBase.hpp" alt="" coords="546,80,719,107"/>
+<area shape="rect" id="node4" href="$CbcCompareDepth_8hpp.html" title="src/CbcCompareDepth.hpp" alt="" coords="108,155,285,181"/>
+<area shape="rect" id="node5" href="$CbcCompareDefault_8hpp.html" title="src/CbcCompareDefault.hpp" alt="" coords="310,155,494,181"/>
+<area shape="rect" id="node6" href="$CbcCompareEstimate_8hpp.html" title="src/CbcCompareEstimate.hpp" alt="" coords="721,155,915,181"/>
+<area shape="rect" id="node7" href="$CbcCompareObjective_8hpp.html" title="src/CbcCompareObjective.hpp" alt="" coords="940,155,1139,181"/>
+<area shape="rect" id="node16" href="$CbcThread_8hpp.html" title="src/CbcThread.hpp" alt="" coords="1250,229,1381,256"/>
+<area shape="rect" id="node17" href="$CbcTreeLocal_8hpp.html" title="src/CbcTreeLocal.hpp" alt="" coords="1042,80,1191,107"/>
+<area shape="rect" id="node8" href="$CbcModel_8hpp.html" title="src/CbcModel.hpp" alt="" coords="569,155,696,181"/>
+<area shape="rect" id="node9" href="$CbcGenCtlBlk_8hpp.html" title="src/CbcGenCtlBlk.hpp" alt="" coords="1075,229,1225,256"/>
+<area shape="rect" id="node10" href="$CbcParam_8hpp.html" title="src/CbcParam.hpp" alt="" coords="597,229,727,256"/>
+<area shape="rect" id="node11" href="$CbcSolver_8hpp.html" title="Defines CbcSolver, the proposed top&#45;level class for the new&#45;style cbc solver. " alt="" coords="751,229,879,256"/>
+<area shape="rect" id="node12" href="$CbcStatistics_8hpp.html" title="src/CbcStatistics.hpp" alt="" coords="903,229,1050,256"/>
+<area shape="rect" id="node13" href="$CbcStrategy_8hpp.html" title="src/CbcStrategy.hpp" alt="" coords="210,229,349,256"/>
+<area shape="rect" id="node14" href="$OsiCbcSolverInterface_8hpp.html" title="src/OsiCbc/OsiCbcSolverInterface.hpp" alt="" coords="209,304,456,331"/>
+<area shape="rect" id="node15" href="$CbcSymmetry_8hpp.html" title="src/CbcSymmetry.hpp" alt="" coords="423,229,573,256"/>
+</map>

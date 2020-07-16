@@ -1,0 +1,18 @@
+<map id="src/CbcCompareActual.hpp" name="src/CbcCompareActual.hpp">
+<area shape="rect" id="node2" href="$CbcNode_8hpp.html" title="CbcNode.hpp" alt="" coords="405,229,505,256"/>
+<area shape="rect" id="node17" href="$CbcCompareBase_8hpp.html" title="CbcCompareBase.hpp" alt="" coords="690,155,841,181"/>
+<area shape="rect" id="node20" href="$CbcCompare_8hpp.html" title="CbcCompare.hpp" alt="" coords="493,155,614,181"/>
+<area shape="rect" id="node21" href="$CbcCompareDepth_8hpp.html" title="CbcCompareDepth.hpp" alt="" coords="659,80,813,107"/>
+<area shape="rect" id="node22" href="$CbcCompareDefault_8hpp.html" title="CbcCompareDefault.hpp" alt="" coords="472,80,635,107"/>
+<area shape="rect" id="node7" href="$CbcBranchBase_8hpp.html" title="CbcBranchBase.hpp" alt="" coords="550,453,690,480"/>
+<area shape="rect" id="node14" href="$CbcNodeInfo_8hpp.html" title="CbcNodeInfo.hpp" alt="" coords="448,379,571,405"/>
+<area shape="rect" id="node15" href="$CbcFullNodeInfo_8hpp.html" title="CbcFullNodeInfo.hpp" alt="" coords="238,304,381,331"/>
+<area shape="rect" id="node16" href="$CbcPartialNodeInfo_8hpp.html" title="CbcPartialNodeInfo.hpp" alt="" coords="493,304,651,331"/>
+<area shape="rect" id="node9" href="$CbcObject_8hpp.html" title="CbcObject.hpp" alt="" coords="393,603,500,629"/>
+<area shape="rect" id="node10" href="$CbcBranchingObject_8hpp.html" title="CbcBranchingObject.hpp" alt="" coords="537,603,703,629"/>
+<area shape="rect" id="node11" href="$CbcBranchDecision_8hpp.html" title="CbcBranchDecision.hpp" alt="" coords="669,528,829,555"/>
+<area shape="rect" id="node12" href="$CbcConsequence_8hpp.html" title="CbcConsequence.hpp" alt="" coords="854,528,1002,555"/>
+<area shape="rect" id="node13" href="$CbcObjectUpdateData_8hpp.html" title="CbcObjectUpdateData.hpp" alt="" coords="344,528,520,555"/>
+<area shape="rect" id="node18" href="$CbcConfig_8h.html" title="CbcConfig.h" alt="" coords="1012,229,1103,256"/>
+<area shape="rect" id="node19" href="$config__cbc__default_8h.html" title="config_cbc_default.h" alt="" coords="1281,304,1421,331"/>
+</map>

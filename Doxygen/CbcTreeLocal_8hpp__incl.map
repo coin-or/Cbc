@@ -1,0 +1,14 @@
+<map id="src/CbcTreeLocal.hpp" name="src/CbcTreeLocal.hpp">
+<area shape="rect" id="node2" href="$CbcTree_8hpp.html" title="CbcTree.hpp" alt="" coords="377,80,472,107"/>
+<area shape="rect" id="node8" href="$CbcNode_8hpp.html" title="CbcNode.hpp" alt="" coords="929,80,1029,107"/>
+<area shape="rect" id="node7" href="$CbcCompare_8hpp.html" title="CbcCompare.hpp" alt="" coords="196,155,317,181"/>
+<area shape="rect" id="node12" href="$CbcBranchBase_8hpp.html" title="CbcBranchBase.hpp" alt="" coords="1068,304,1208,331"/>
+<area shape="rect" id="node19" href="$CbcNodeInfo_8hpp.html" title="CbcNodeInfo.hpp" alt="" coords="899,229,1022,256"/>
+<area shape="rect" id="node20" href="$CbcFullNodeInfo_8hpp.html" title="CbcFullNodeInfo.hpp" alt="" coords="1017,155,1160,181"/>
+<area shape="rect" id="node21" href="$CbcPartialNodeInfo_8hpp.html" title="CbcPartialNodeInfo.hpp" alt="" coords="783,155,941,181"/>
+<area shape="rect" id="node14" href="$CbcObject_8hpp.html" title="CbcObject.hpp" alt="" coords="947,453,1054,480"/>
+<area shape="rect" id="node15" href="$CbcBranchingObject_8hpp.html" title="CbcBranchingObject.hpp" alt="" coords="1129,453,1294,480"/>
+<area shape="rect" id="node16" href="$CbcBranchDecision_8hpp.html" title="CbcBranchDecision.hpp" alt="" coords="1203,379,1363,405"/>
+<area shape="rect" id="node17" href="$CbcConsequence_8hpp.html" title="CbcConsequence.hpp" alt="" coords="1388,379,1536,405"/>
+<area shape="rect" id="node18" href="$CbcObjectUpdateData_8hpp.html" title="CbcObjectUpdateData.hpp" alt="" coords="827,379,1003,405"/>
+</map>

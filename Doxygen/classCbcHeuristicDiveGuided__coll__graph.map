@@ -1,0 +1,10 @@
+<map id="CbcHeuristicDiveGuided" name="CbcHeuristicDiveGuided">
+<area shape="rect" id="node2" href="$classCbcHeuristicDive.html" title="Dive class. " alt="" coords="331,303,454,329"/>
+<area shape="rect" id="node3" href="$classCbcHeuristic.html" title="Heuristic base class. " alt="" coords="172,199,269,225"/>
+<area shape="rect" id="node4" href="$classCbcHeuristicNodeList.html" title="CbcHeuristicNodeList" alt="" coords="5,109,156,136"/>
+<area shape="rect" id="node5" href="$classCbcModel.html" title="Simple Branch and bound class. " alt="" coords="181,109,261,136"/>
+<area shape="rect" id="node6" title="STL class. " alt="" coords="285,109,364,136"/>
+<area shape="rect" id="node7" title="STL class. " alt="" coords="263,5,387,47"/>
+<area shape="rect" id="node8" href="$structCbcHeuristicDive_1_1PriorityType.html" title="Array of priorities. " alt="" coords="294,199,491,225"/>
+<area shape="rect" id="node10" title="STL class. " alt="" coords="519,109,631,136"/>
+</map>

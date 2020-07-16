@@ -1,0 +1,6 @@
+<map id="CbcSOSBranchingObject" name="CbcSOSBranchingObject">
+<area shape="rect" id="node2" href="$classCbcBranchingObject.html" title="Abstract branching object base class Now just difference with OsiBranchingObject. ..." alt="" coords="143,184,284,211"/>
+<area shape="rect" id="node4" href="$classCbcModel.html" title="Simple Branch and bound class. " alt="" coords="156,5,236,32"/>
+<area shape="rect" id="node5" href="$classCbcObject.html" title="CbcObject" alt="" coords="261,95,344,121"/>
+<area shape="rect" id="node7" href="$classCbcSOS.html" title="Branching object for Special Ordered Sets of type 1 and 2. " alt="" coords="321,184,394,211"/>
+</map>

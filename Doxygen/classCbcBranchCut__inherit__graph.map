@@ -1,0 +1,5 @@
+<map id="CbcBranchCut" name="CbcBranchCut">
+<area shape="rect" id="node4" href="$classCbcBranchAllDifferent.html" title="Define a branch class that branches so that it is only satsified if all members have different values..." alt="" coords="5,229,155,256"/>
+<area shape="rect" id="node5" href="$classCbcBranchToFixLots.html" title="Define a branch class that branches so that one way variables are fixed while the other way cuts off ..." alt="" coords="179,229,323,256"/>
+<area shape="rect" id="node2" href="$classCbcObject.html" title="CbcObject" alt="" coords="124,80,207,107"/>
+</map>

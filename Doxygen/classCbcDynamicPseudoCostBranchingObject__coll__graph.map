@@ -1,0 +1,8 @@
+<map id="CbcDynamicPseudoCostBranchingObject" name="CbcDynamicPseudoCostBranchingObject">
+<area shape="rect" id="node2" href="$classCbcIntegerBranchingObject.html" title="Simple branching object for an integer variable. " alt="" coords="48,260,229,287"/>
+<area shape="rect" id="node3" href="$classCbcBranchingObject.html" title="Abstract branching object base class Now just difference with OsiBranchingObject. ..." alt="" coords="113,184,255,211"/>
+<area shape="rect" id="node5" href="$classCbcModel.html" title="Simple Branch and bound class. " alt="" coords="156,5,236,32"/>
+<area shape="rect" id="node6" href="$classCbcObject.html" title="CbcObject" alt="" coords="261,95,344,121"/>
+<area shape="rect" id="node9" href="$classCbcSimpleInteger.html" title="Define a single integer class. " alt="" coords="313,184,439,211"/>
+<area shape="rect" id="node8" href="$classCbcSimpleIntegerDynamicPseudoCost.html" title="Define a single integer class but with dynamic pseudo costs. " alt="" coords="254,260,501,287"/>
+</map>

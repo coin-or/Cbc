@@ -1,0 +1,15 @@
+<map id="CbcObject" name="CbcObject">
+<area shape="rect" id="node3" href="$classCbcBranchCut.html" title="Define a cut branching class. " alt="" coords="273,31,380,57"/>
+<area shape="rect" id="node6" href="$classCbcClique.html" title="Branching object for cliques. " alt="" coords="286,81,367,108"/>
+<area shape="rect" id="node7" href="$classCbcFollowOn.html" title="Define a follow on class. " alt="" coords="277,132,377,159"/>
+<area shape="rect" id="node8" href="$classCbcGeneral.html" title="Define a catch all class. " alt="" coords="281,183,372,209"/>
+<area shape="rect" id="node9" href="$classCbcIdiotBranch.html" title="Define an idiotic idea class. " alt="" coords="271,233,382,260"/>
+<area shape="rect" id="node10" href="$classCbcLotsize.html" title="Lotsize class. " alt="" coords="283,284,370,311"/>
+<area shape="rect" id="node11" href="$classCbcNWay.html" title="Define an n&#45;way class for variables. " alt="" coords="287,335,367,361"/>
+<area shape="rect" id="node12" href="$classCbcSimpleInteger.html" title="Define a single integer class. " alt="" coords="264,385,389,412"/>
+<area shape="rect" id="node15" href="$classCbcSOS.html" title="Branching object for Special Ordered Sets of type 1 and 2. " alt="" coords="290,436,363,463"/>
+<area shape="rect" id="node4" href="$classCbcBranchAllDifferent.html" title="Define a branch class that branches so that it is only satsified if all members have different values..." alt="" coords="486,5,635,32"/>
+<area shape="rect" id="node5" href="$classCbcBranchToFixLots.html" title="Define a branch class that branches so that one way variables are fixed while the other way cuts off ..." alt="" coords="489,56,633,83"/>
+<area shape="rect" id="node13" href="$classCbcSimpleIntegerDynamicPseudoCost.html" title="Define a single integer class but with dynamic pseudo costs. " alt="" coords="437,360,684,387"/>
+<area shape="rect" id="node14" href="$classCbcSimpleIntegerPseudoCost.html" title="Define a single integer class but with pseudo costs. " alt="" coords="463,411,659,437"/>
+</map>

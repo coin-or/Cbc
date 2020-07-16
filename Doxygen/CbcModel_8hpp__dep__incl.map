@@ -1,0 +1,10 @@
+<map id="src/CbcModel.hpp" name="src/CbcModel.hpp">
+<area shape="rect" id="node2" href="$CbcGenCtlBlk_8hpp.html" title="src/CbcGenCtlBlk.hpp" alt="" coords="5,80,156,107"/>
+<area shape="rect" id="node3" href="$CbcParam_8hpp.html" title="src/CbcParam.hpp" alt="" coords="180,80,309,107"/>
+<area shape="rect" id="node4" href="$CbcSolver_8hpp.html" title="Defines CbcSolver, the proposed top&#45;level class for the new&#45;style cbc solver. " alt="" coords="334,80,462,107"/>
+<area shape="rect" id="node5" href="$CbcStatistics_8hpp.html" title="src/CbcStatistics.hpp" alt="" coords="486,80,633,107"/>
+<area shape="rect" id="node6" href="$CbcStrategy_8hpp.html" title="src/CbcStrategy.hpp" alt="" coords="657,80,795,107"/>
+<area shape="rect" id="node7" href="$OsiCbcSolverInterface_8hpp.html" title="src/OsiCbc/OsiCbcSolverInterface.hpp" alt="" coords="656,155,903,181"/>
+<area shape="rect" id="node8" href="$CbcSymmetry_8hpp.html" title="src/CbcSymmetry.hpp" alt="" coords="870,80,1019,107"/>
+<area shape="rect" id="node9" href="$CbcThread_8hpp.html" title="src/CbcThread.hpp" alt="" coords="1043,80,1174,107"/>
+</map>

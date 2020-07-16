@@ -1,0 +1,6 @@
+<map id="OsiSolverLink" name="OsiSolverLink">
+<area shape="rect" id="node2" href="$classCbcOsiSolver.html" title="This is for codes where solver needs to know about CbcModel Seems to provide only one value&#45;added fea..." alt="" coords="167,109,270,136"/>
+<area shape="rect" id="node4" href="$classCbcModel.html" title="Simple Branch and bound class. " alt="" coords="179,13,259,39"/>
+<area shape="rect" id="node5" href="$classOsiLinkedBound.html" title="List of bounds which depend on other bounds. " alt="" coords="310,109,429,136"/>
+<area shape="rect" id="node6" href="$structOsiLinkedBound_1_1boundElementAction.html" title="OsiLinkedBound::boundElement\lAction" alt="" coords="283,5,490,47"/>
+</map>

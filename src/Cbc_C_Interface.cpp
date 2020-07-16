@@ -1362,6 +1362,18 @@ Cbc_setDblParam(Cbc_Model *model, enum DblParam which, const double val) {
   model->dbl_param[which] = val;
 }
 
+double CBC_LINKAGE
+Cbc_getDblParam(Cbc_Model *model, enum DblParam which) {
+  assert(which < N_DBL_PARAMS);
+  return model->dbl_param[which];
+}
+
+int CBC_LINKAGE
+Cbc_getIntParam(Cbc_Model *model, enum IntParam which) {
+  assert(which < N_INT_PARAMS);
+  return model->int_param[which];
+}
+
 void CBC_LINKAGE
 Cbc_setParameter(Cbc_Model *model, const char *name, const char *value)
 {
@@ -1645,18 +1657,17 @@ static void Cbc_addMS( Cbc_Model *model, CbcModel &cbcModel  );
 int CBC_LINKAGE
 Cbc_solveLinearProgram(Cbc_Model *model) 
 {
-  CoinMessages generalMessages = model->solver_->getModelPtr()->messages();
-  model->solver_->getModelPtr()->setRandomSeed( model->int_param[INT_PARAM_RANDOM_SEED] );
-
   Cbc_flush( model );
-
   OsiClpSolverInterface *solver = model->solver_;
+  ClpSimplex *clps = solver->getModelPtr();
+  assert(clps);
+
+  CoinMessages generalMessages = clps->messages();
+  clps->setRandomSeed( model->int_param[INT_PARAM_RANDOM_SEED] );
 
   solver->setDblParam( OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
   solver->setDblParam( OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL]);
 
-  ClpSimplex *clps = solver->getModelPtr();
-  assert(clps);
   clps->setPerturbation(model->int_param[INT_PARAM_PERT_VALUE]);
   solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
@@ -2184,15 +2195,24 @@ Cbc_solve(Cbc_Model *model)
       // adds MIPStart if any
       Cbc_addMS(model, cbcModel);
 
-      // parameters
-      cbcModel.setMaximumSeconds( model->dbl_param[DBL_PARAM_TIME_LIMIT] );
-      cbcModel.setMaximumSolutions( model->int_param[INT_PARAM_MAX_SOLS] );
+      // stopping criteria
+      if  ( model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX )
+        cbcModel.setMaximumSeconds( model->dbl_param[DBL_PARAM_TIME_LIMIT] );
+      if (model->int_param[INT_PARAM_MAX_SOLS] != INT_MAX)
+        cbcModel.setMaximumSolutions( model->int_param[INT_PARAM_MAX_SOLS] );
+      if (model->int_param[INT_PARAM_MAX_NODES] != INT_MAX)
+        cbcModel.setMaximumNodes( model->int_param[INT_PARAM_MAX_NODES] );
+      
+      // cutoff
+      if (model->dbl_param[DBL_PARAM_CUTOFF] != COIN_DBL_MAX)
+        cbcModel.setCutoff( model->dbl_param[DBL_PARAM_CUTOFF] );
+    
+      // tolerances
       cbcModel.setAllowableGap( model->dbl_param[DBL_PARAM_ALLOWABLE_GAP] );
       cbcModel.setAllowableFractionGap( model->dbl_param[DBL_PARAM_GAP_RATIO] );
-      cbcModel.setMaximumNodes( model->int_param[INT_PARAM_MAX_NODES] );
-      cbcModel.setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
-      cbcModel.setCutoff( model->dbl_param[DBL_PARAM_CUTOFF] );
       cbcModel.setIntegerTolerance( model->dbl_param[DBL_PARAM_INT_TOL] );
+
+      cbcModel.setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
       // aditional parameters specified by user as strings
       std::vector< string > argv;
@@ -2213,8 +2233,6 @@ Cbc_solve(Cbc_Model *model)
 
       argv.push_back("-solve");
       argv.push_back("-quit");
-
-      cbcData.noPrinting_= false;
 
       char **charCbcOpts = to_char_vec(argv);
       const int nargs = (int) argv.size();
@@ -2243,7 +2261,6 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
       cbcModel.setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
       cbcModel.setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
-      cbcData.noPrinting_ = true;
 
       CbcMain1( nargs, args, cbcModel, cbc_callb, cbcData );
 
@@ -4563,7 +4580,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_RANDOM_SEED]             =        1;
   model->int_param[INT_PARAM_ELAPSED_TIME]            =        1;
   model->int_param[INT_PARAM_CGRAPH]                  =        1;
-  model->int_param[INT_PARAM_CLIQUE_MERGING]          =        1;
+  model->int_param[INT_PARAM_CLIQUE_MERGING]          =       -1; // not set
   model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] =  INT_MAX;
 
   model->dbl_param[DBL_PARAM_PRIMAL_TOL]             =          1e-6;
@@ -4571,7 +4588,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->dbl_param[DBL_PARAM_ZERO_TOL]               =         1e-20;
   model->dbl_param[DBL_PARAM_INT_TOL]                =          1e-6;
   model->dbl_param[DBL_PARAM_PRESOLVE_TOL]           =          1e-8;
-  model->dbl_param[DBL_PARAM_TIME_LIMIT]             =         1e+08;
+  model->dbl_param[DBL_PARAM_TIME_LIMIT]             =  COIN_DBL_MAX;
   model->dbl_param[DBL_PARAM_PSI]                    =          -1.0;
   model->dbl_param[DBL_PARAM_CUTOFF]                 =  COIN_DBL_MAX;
   model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]          =         1e-10;

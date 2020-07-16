@@ -865,6 +865,16 @@ Cbc_maxNameLength(Cbc_Model *model);
 CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setParameter(Cbc_Model *model, const char *name, const char *value);
 
+/** Gets the current value of an integer parameter
+ *
+ * @param model problem object
+ * @param which which integer parameter
+ * @return parameter value
+ * 
+ **/
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
+Cbc_getIntParam(Cbc_Model *model, enum IntParam which);
+
 /** Sets an integer parameter
  *
  * @param model problem object
@@ -885,9 +895,15 @@ Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val);
 CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_setDblParam(Cbc_Model *model, enum DblParam which, const double val);
 
-
-
-
+/** Gets the current value of a double parameter
+ *
+ * @param model problem object
+ * @param which which double parameter
+ * @return parameter value
+ * 
+ **/
+CBCSOLVERLIB_EXPORT double CBC_LINKAGE
+Cbc_getDblParam(Cbc_Model *model, enum DblParam which);
 
 /** @brief returns the allowable gap
  *

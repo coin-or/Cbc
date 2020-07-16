@@ -1231,14 +1231,18 @@ static void fillAllNameIndexes(Cbc_Model *model)
  *
  * @param model problem object
  * @param fileName file name
+ * @return returns the number of errors  (see OsiMpsReader class)m
  **/
 int CBC_LINKAGE
 Cbc_readMps(Cbc_Model *model, const char *filename)
 {
-  int result = 1;
   OsiClpSolverInterface *solver = model->solver_;
-  result = solver->readMps(filename);
-  assert(result == 0);
+  int status = solver->readMps(filename, true, false);
+  if ((status)&&(model->int_param[INT_PARAM_LOG_LEVEL] > 0)) {
+    fflush(stdout); fflush(stderr);
+    fprintf(stderr, "%d errors occurred while reading MPS.\n", status);
+    fflush(stderr);
+  }
 
   Cbc_deleteColBuffer(model);
   Cbc_deleteRowBuffer(model);
@@ -1246,7 +1250,7 @@ Cbc_readMps(Cbc_Model *model, const char *filename)
 
   fillAllNameIndexes(model);
 
-  return result;
+  return status;
 }
 
 /** Writes an MPS file

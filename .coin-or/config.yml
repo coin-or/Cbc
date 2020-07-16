@@ -1,0 +1,106 @@
+Description:
+  Slug: Cbc
+  ShortName: Cbc
+  LongName:
+  ShortDescription: An LP-based branch-and-cut library.
+  LongDescription: |2
+    "CBC is an open-source MILP solver. It uses many of the COIN-OR components
+    and is designed to be used with CLP. It is available as a library and
+    as a standalone solver."
+  Manager: Ted Ralphs, ted at lehigh dot edu 
+  Homepage: https://github.com/coin-or/Cbc
+  License: Eclipse Public License 2.0
+  LicenseURL: http://www.opensource.org/licenses/eclipse-2.0
+  Zenodo: 173509563
+  Appveyor:
+    Status: chribnemsgm9th0x
+    Slug: cbc-s1r7t
+  Bintray:
+    Package: Cbc
+  Language:
+    - C++
+  Categories: 
+    - Optimization deterministic linear discrete
+
+Dependencies:
+  - Description: ThirdParty wrapper for building ASL
+    URL: https://github.com/coin-or-tools/ThirdParty-ASL
+    Version: 1.4
+    Required: Optional
+  - Description: ThirdParty wrapper for building Blas
+    URL: https://github.com/coin-or-tools/ThirdParty-Blas
+    Version: 1.4
+    Required: Optional
+  - Description: ThirdParty wrapper for building Lapack
+    URL: https://github.com/coin-or-tools/ThirdParty-Lapack
+    Version: 1.6
+    Required: Optional
+  - Description: ThirdParty wrapper for building Glpk
+    URL: https://github.com/coin-or-tools/ThirdParty-Glpk
+    Version: 1.10
+    Required: Optional
+  - Description: ThirdParty wrapper for building Metis
+    URL: https://github.com/coin-or-tools/ThirdParty-Metis
+    Version: 1.3
+    Required: Optional
+  - Description: ThirdParty wrapper for building Mumps
+    URL: https://github.com/coin-or-tools/ThirdParty-Mumps
+    Version: 1.6
+    Required: Optional
+  - Description: Sample data files
+    URL: https://github.com/coin-or-tools/Data-Sample
+    Version: 1.2
+    Required: Required
+  - Description: miplib3 data files
+    URL: https://github.com/coin-or-tools/Data-miplib3
+    Version: 1.2
+    Required: Required
+  - Description: COIN-OR Utilities
+    URL: https://github.com/coin-or/CoinUtils
+    Version: 2.11
+    Required: Required
+  - Description: Open Solver Interface
+    URL: https://github.com/coin-or/Osi
+    Version: 0.108
+    Required: Required
+  - Description: Open Solver Interface
+    URL: https://github.com/coin-or/Clp
+    Version: 1.17
+    Required: Required
+  - Description: Open Solver Interface
+    URL: https://github.com/coin-or/Cgl
+    Version: 0.60
+    Required: Required
+  - Description: Basic Linear Algebra Subroutines (BLAS)
+    URL: http://www.netlib.org/blas
+    Required: Recommended
+  - Description: Linear Algebra Package (LAPACK)
+    URL: http://www.netlib.org/lapack
+    Required: Recommended
+  - Description: GNU Readline
+    Required: Recommended
+  - Description: GNU History
+    Required: Recommended
+
+DevelopmentStatus: 
+  activityStatus: Active
+  maturityLevel: 5
+  testedPlatforms: 
+  - operatingSystem: Linux
+    compiler: gcc
+  - operatingSystem: Mac OS X
+    compiler:
+    - gcc
+    - clang
+  - operatingSystem: Microsoft Windows
+    compiler: cl
+  - operatingSystem: Microsoft Windows with MSys2
+    compiler:
+    - gcc
+    - cl
+    - icl
+  - operatingSystem: Microsoft Windows Subsystem for Linux
+    compiler:
+    - gcc
+    - cl
+    - icl

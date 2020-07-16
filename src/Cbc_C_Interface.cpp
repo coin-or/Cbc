@@ -706,7 +706,7 @@ static void Cbc_flushCols(Cbc_Model *model) {
   if (model->nCols == 0)
     return;
 
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
 
   int colsBefore = solver->getNumCols();
   solver->addCols( model->nCols, model->cStart, model->cIdx, model->cCoef, model->cLB, model->cUB, model->cObj );
@@ -730,7 +730,7 @@ static void Cbc_flushRows(Cbc_Model *model) {
   if (model->nRows == 0)
     return;
 
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
 
   int rowsBefore = solver->getNumRows();
   solver->addRows(model->nRows, model->rStart, model->rIdx, model->rCoef, model->rLB, model->rUB);
@@ -1202,7 +1202,7 @@ Cbc_loadProblem(Cbc_Model *model, const int numcols, const int numrows,
   const double *obj,
   const double *rowlb, const double *rowub)
 {
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
 
   solver->loadProblem(numcols, numrows, start, index, value,
     collb, colub, obj, rowlb, rowub);
@@ -1214,7 +1214,7 @@ static void fillAllNameIndexes(Cbc_Model *model)
   if (!model->colNameIndex)
     return;
 
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
   NameIndex &colNameIndex = *((NameIndex  *)model->colNameIndex);
   colNameIndex.clear();
   NameIndex &rowNameIndex = *((NameIndex  *)model->rowNameIndex);
@@ -1236,7 +1236,7 @@ int CBC_LINKAGE
 Cbc_readMps(Cbc_Model *model, const char *filename)
 {
   int result = 1;
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
   result = solver->readMps(filename);
   assert(result == 0);
 
@@ -1291,7 +1291,7 @@ int CBC_LINKAGE
 Cbc_readLp(Cbc_Model *model, const char *filename)
 {
   int result = 1;
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
   result = solver->readLp(filename);
   assert(result == 0);
 
@@ -1587,7 +1587,7 @@ Cbc_setColName(Cbc_Model *model, int iColumn, const char *name)
   VALIDATE_COL_INDEX( iColumn, model );
 
   Cbc_flush(model);
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
   std::string previousName = solver->getColName(iColumn);
   solver->setColName(iColumn, name);
 
@@ -1606,7 +1606,7 @@ Cbc_setRowName(Cbc_Model *model, int iRow, const char *name)
   VALIDATE_ROW_INDEX( iRow, model );
 
   Cbc_flush(model);
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
   std::string previousName = solver->getRowName(iRow);
   solver->setRowName(iRow, name);
 
@@ -1905,7 +1905,7 @@ void Cbc_updateSlack( Cbc_Model *model, const double *ractivity ) {
 
 void Cbc_strengthenPacking(Cbc_Model *model) {
   Cbc_flush(model);
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
   CglCliqueStrengthening clqStr(solver);
   if (clqStr.messageHandler())
     clqStr.messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
@@ -1916,7 +1916,7 @@ void
 Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[])
 {
   Cbc_flush(model);
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
   CglCliqueStrengthening clqStr(solver);
   if (clqStr.messageHandler())
     clqStr.messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
@@ -2882,7 +2882,7 @@ Cbc_setRowLower(Cbc_Model *model, int index, double value)
   Cbc_flush(model);
   VALIDATE_ROW_INDEX(index, model);
 
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
   solver->setRowLower(index, value);
 }
 
@@ -2891,7 +2891,7 @@ Cbc_setRowUpper(Cbc_Model *model, int index, double value)
 {
   Cbc_flush(model);
   VALIDATE_ROW_INDEX(index, model);
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
   solver->setRowUpper(index, value);
 }
 
@@ -2930,7 +2930,7 @@ const double *CBC_LINKAGE
 Cbc_getRowLower(Cbc_Model *model)
 {
   Cbc_flush(model);
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
   return solver->getRowLower();
 }
 
@@ -2943,7 +2943,7 @@ const double *CBC_LINKAGE
 Cbc_getRowUpper(Cbc_Model *model)
 {
   Cbc_flush(model);
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
   return solver->getRowUpper();
 }
 
@@ -3272,7 +3272,7 @@ Cbc_addCol(Cbc_Model *model, const char *name, double lb,
   double ub, double obj, char isInteger,
   int nz, int *rows, double *coefs)
 {
-  OsiSolverInterface *solver = model->solver_;
+  OsiClpSolverInterface *solver = model->solver_;
 
   if (nz >= 1 && model->rStart && model->rStart[model->nRows] >= 1) {
     // new columns have reference to rows which have references to columns, flushing

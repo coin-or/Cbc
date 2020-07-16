@@ -22736,18 +22736,7 @@ else
 fi
 
 
-  # Process the list of project names and massage each one into the name of
-  # a tag file. The value of coin_doxy_tagfiles is substituted for TAGFILES
-  # in doxygen.conf.in. Further substitution for @baredocdir_nosub@ will happen
-  # as an edit during make install. See comments in Makemain.inc.
-  coin_doxy_tagfiles=
-  tmp="CoinUtils Osi Clp DyLP Cgl"
-  for proj in $tmp ; do
-    lc_proj=`echo $proj | tr [A-Z] [a-z]`
-    doxytag=${lc_proj}_doxy.tag
-    doxydir="@baredocdir_nosub@/coin-or-${lc_proj}/doxydoc"
-    coin_doxy_tagfiles="$coin_doxy_tagfiles $doxydir/$doxytag=$doxydir/html"
-  done
+  coin_doxy_tagfiles="@baredocdir_nosub@/coin-or-coinutils/doxydoc/coinutils_doxy.tag=@baredocdir_nosub@/coin-or-coinutils/doxydoc/html @baredocdir_nosub@/coin-or-osi/doxydoc/osi_doxy.tag=@baredocdir_nosub@/coin-or-osi/doxydoc/html @baredocdir_nosub@/coin-or-clp/doxydoc/clp_doxy.tag=@baredocdir_nosub@/coin-or-clp/doxydoc/html @baredocdir_nosub@/coin-or-dylp/doxydoc/dylp_doxy.tag=@baredocdir_nosub@/coin-or-dylp/doxydoc/html @baredocdir_nosub@/coin-or-cgl/doxydoc/cgl_doxy.tag=@baredocdir_nosub@/coin-or-cgl/doxydoc/html "
 
 
 

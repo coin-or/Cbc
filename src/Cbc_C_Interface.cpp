@@ -1238,7 +1238,7 @@ Cbc_readMps(Cbc_Model *model, const char *filename)
 {
   OsiClpSolverInterface *solver = model->solver_;
   int status = solver->readMps(filename, true, false);
-  if ((status)&&(model->int_param[INT_PARAM_LOG_LEVEL] > 0)) {
+  if ((status>0)&&(model->int_param[INT_PARAM_LOG_LEVEL] > 0)) {
     fflush(stdout); fflush(stderr);
     fprintf(stderr, "%d errors occurred while reading MPS.\n", status);
     fflush(stderr);
@@ -3080,7 +3080,10 @@ Cbc_bestSolution(Cbc_Model *model)
     case ContinuousOptimization:
       return model->solver_->getColSolution();
     case IntegerOptimization:
-      return VEC_PTR(model->mipBestSolution);
+      if (model->mipBestSolution)
+        return VEC_PTR(model->mipBestSolution);
+      else
+        return NULL;
   }
 
   return NULL;

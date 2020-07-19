@@ -12975,7 +12975,7 @@ void CbcCrashHandler( int sig ) {
   fprintf(stderr, "\n\n"); fflush(stderr);
 
   free (strings);
-  exit(1);
+  abort();
 #undef MAX_FRAMES
 }
 #endif

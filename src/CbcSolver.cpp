@@ -12932,6 +12932,8 @@ static int nautiedConstraints(CbcModel &model, int maxPass)
 }
 #endif
 
+static char cbcCrashAnnounced = 0;
+
 #ifdef HAVE_EXECINFO_H
 #ifdef HAVE_SIGNAL_H
 void CbcCrashHandler( int sig ) {
@@ -12975,7 +12977,11 @@ void CbcCrashHandler( int sig ) {
   fprintf(stderr, "\n\n"); fflush(stderr);
 
   free (strings);
-  abort();
+
+  if (!cbcCrashAnnounced) {
+      cbcCrashAnnounced = 1;
+      abort();
+  }
 #undef MAX_FRAMES
 }
 #endif

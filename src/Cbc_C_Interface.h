@@ -1088,7 +1088,7 @@ Cbc_solve(Cbc_Model *model);
   * @return execution status
   *   0  optimal 
   *   1  incomplete search (stopped on time, iterations)
-  *   2  unfeasible
+  *   2  infeasible
   *   3  unbounded
   **/
 CBCSOLVERLIB_EXPORT int CBC_LINKAGE

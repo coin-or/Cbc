@@ -1706,12 +1706,17 @@ Cbc_solveLinearProgram(Cbc_Model *model)
     solver->resolve();
     if (solver->isProvenOptimal())
       return 0;
-    if (solver->isIterationLimitReached())
-      return 1;
     if (solver->isProvenDualInfeasible())
       return 3;
     if (solver->isProvenPrimalInfeasible())
       return 2;
+    if (solver->isIterationLimitReached() || solver->isPrimalObjectiveLimitReached() || solver->isDualObjectiveLimitReached())
+      return 1;
+    if (solver->isAbandoned()) {
+      fprintf(stderr, "Error while resolving the linear program.\n");
+      fflush(stdout); fflush(stderr);
+      abort();
+    }
   } // resolve
 
   /* checking if options should be automatically tuned */
@@ -1719,65 +1724,68 @@ Cbc_solveLinearProgram(Cbc_Model *model)
     ClpSimplexOther *clpo = static_cast<ClpSimplexOther *>(clps);
     assert(clpo);
     char *opts = clpo->guess(0);
-    if (strstr(opts, "-primals") != NULL) {
-      model->lp_method = LPM_Primal;
-      //printf("Using primal;\n");
-    }
-    else if (strstr(opts, "-duals") != NULL) {
-      model->lp_method = LPM_Dual;
-      //printf("Using dual;\n");
-    }
-    else if (strstr(opts, "-barrier") != NULL) {
-      //printf("Using barrier;\n");
-      model->lp_method = LPM_Barrier;
-    }
-    
-    char *s = NULL;
-    char str[256] = "";
-    if ((s=strstr(opts, "-idiot"))) {
-      s = strstr(s+1, " ");
-      if (s) {
-        strcpy(str, s+1);
-        if ((s = strstr(str+1, " ")))
-          *s = '\0';
-        int idiot = atoi(str);
-        //printf("Setting idiot to %d\n", idiot);
-        model->int_param[INT_PARAM_IDIOT] = idiot;
+
+    if (opts) {
+      if (strstr(opts, "-primals") != NULL) {
+        model->lp_method = LPM_Primal;
+        //printf("Using primal;\n");
       }
-    } // idiot
-    if ((s=strstr(opts, "-pertv"))) {
-      s = strstr(s+1, " ");
-      if (s) {
-        strcpy(str, s+1);
-        if ((s = strstr(str+1, " ")))
-          *s = '\0';
-        int pertv = atoi(str);
-        //printf("Setting pertv to %d\n", pertv);
-        model->int_param[INT_PARAM_PERT_VALUE] = pertv;
+      else if (strstr(opts, "-duals") != NULL) {
+        model->lp_method = LPM_Dual;
+        //printf("Using dual;\n");
       }
-    } // perturbation value
-    if ((s=strstr(opts, "-psi"))) {
-      s = strstr(s+1, " ");
-      if (s) {
-        strcpy(str, s+1);
-        if ((s = strstr(str+1, " ")))
-          *s = '\0';
-        double psi = atof(str);
-        //printf("Setting psi to %g\n", psi);
-        model->int_param[DBL_PARAM_PSI] = psi;
+      else if (strstr(opts, "-barrier") != NULL) {
+        //printf("Using barrier;\n");
+        model->lp_method = LPM_Barrier;
       }
-    } // perturbation value
-    if ((s=strstr(opts, "-dualpivot"))) {
-        strcpy(str, s+1);
-        if ((s = strstr(str+1, " ")))
-          *s = '\0';
-        if (strstr(str, "pesteep")) {
-          model->dualp = DP_PESteepest;
-          //printf("Setting dual pivot to pesteep.\n");
+      
+      char *s = NULL;
+      char str[256] = "";
+      if ((s=strstr(opts, "-idiot"))) {
+        s = strstr(s+1, " ");
+        if (s) {
+          strcpy(str, s+1);
+          if ((s = strstr(str+1, " ")))
+            *s = '\0';
+          int idiot = atoi(str);
+          //printf("Setting idiot to %d\n", idiot);
+          model->int_param[INT_PARAM_IDIOT] = idiot;
         }
-    } // dual pivot
-    delete[] opts;
-  }
+      } // idiot
+      if ((s=strstr(opts, "-pertv"))) {
+        s = strstr(s+1, " ");
+        if (s) {
+          strcpy(str, s+1);
+          if ((s = strstr(str+1, " ")))
+            *s = '\0';
+          int pertv = atoi(str);
+          //printf("Setting pertv to %d\n", pertv);
+          model->int_param[INT_PARAM_PERT_VALUE] = pertv;
+        }
+      } // perturbation value
+      if ((s=strstr(opts, "-psi"))) {
+        s = strstr(s+1, " ");
+        if (s) {
+          strcpy(str, s+1);
+          if ((s = strstr(str+1, " ")))
+            *s = '\0';
+          double psi = atof(str);
+          //printf("Setting psi to %g\n", psi);
+          model->int_param[DBL_PARAM_PSI] = psi;
+        }
+      } // perturbation value
+      if ((s=strstr(opts, "-dualpivot"))) {
+          strcpy(str, s+1);
+          if ((s = strstr(str+1, " ")))
+            *s = '\0';
+          if (strstr(str, "pesteep")) {
+            model->dualp = DP_PESteepest;
+            //printf("Setting dual pivot to pesteep.\n");
+          }
+      } // dual pivot
+      delete[] opts;
+    }
+  } // auto
 
   /* for integer or linear optimization starting with LP relaxation */
   ClpSolve clpOptions;

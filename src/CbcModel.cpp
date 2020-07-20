@@ -6705,7 +6705,8 @@ CbcModel::operator=(const CbcModel &rhs)
     continuousPriority_ = rhs.continuousPriority_;
     numberUpdateItems_ = rhs.numberUpdateItems_;
     maximumNumberUpdateItems_ = rhs.maximumNumberUpdateItems_;
-    delete[] updateItems_;
+    if (updateItems_ != NULL)
+      delete[] updateItems_;
     if (maximumNumberUpdateItems_) {
       updateItems_ = new CbcObjectUpdateData[maximumNumberUpdateItems_];
       for (i = 0; i < maximumNumberUpdateItems_; i++)

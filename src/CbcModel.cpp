@@ -6938,7 +6938,8 @@ void CbcModel::gutsOfDestructor()
   delete[] originalColumns_;
   originalColumns_ = NULL;
   delete strategy_;
-  delete[] updateItems_;
+  if (updateItems_ != NULL)
+      delete[] updateItems_;
   updateItems_ = NULL;
   numberUpdateItems_ = 0;
   maximumNumberUpdateItems_ = 0;

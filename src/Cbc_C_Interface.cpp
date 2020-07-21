@@ -2062,8 +2062,11 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
   for ( int i=1 ; (i<model->nColsMS) ; ++i )
     model->colNamesMS[i] = model->colNamesMS[i-1] + cnames[i-1].length() + 1;
 
-  for ( int i=0 ; (i<model->nColsMS) ; ++i )
+  for ( int i=0 ; (i<model->nColsMS) ; ++i ) {
     strcpy(model->colNamesMS[i], cnames[i].c_str());
+  }
+  model->colValuesMS = (double*)xmalloc(sizeof(double)*model->nColsMS);
+  memcpy(model->colValuesMS, &cvalues[0], sizeof(double)*model->nColsMS);
 }
 
 int CBC_LINKAGE
@@ -3187,7 +3190,9 @@ Cbc_clone(Cbc_Model *model)
     result->colNamesMS[0] = (char *) xmalloc( result->charSpaceMS );
     memcpy( result->colNamesMS[0], model->colNamesMS[0], model->charSpaceMS );
     for ( int i=1 ; (i<model->nColsMS) ; ++i )
-      result->colNamesMS[i] = result->colNamesMS[i-1] + strlen(result->colNamesMS[i-1]);
+      result->colNamesMS[i] = result->colNamesMS[i-1] + strlen(result->colNamesMS[i-1]) + 1;
+    result->colValuesMS = (double*)xmalloc(sizeof(double)*result->nColsMS);
+    memcpy(result->colValuesMS, model->colValuesMS, sizeof(double)*result->nColsMS);
   }
   else
   {

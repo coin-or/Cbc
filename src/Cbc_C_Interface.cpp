@@ -28,6 +28,7 @@
 
 #include "CoinMessageHandler.hpp"
 #include "OsiClpSolverInterface.hpp"
+#include "OsiFeatures.hpp"
 #include "ClpSimplexOther.hpp"
 #include "CglCutGenerator.hpp"
 #include "CglStored.hpp"
@@ -3775,6 +3776,19 @@ Osi_getNumCols( void *osi )
   OsiSolverInterface *osiSolver = (OsiSolverInterface *) osi;
   return osiSolver->getNumCols();
 }
+
+/** @brief Computes instance features (can be used in machine learning methods) */
+void Osi_compute_features(void *solver, double *features) {
+  OsiFeatures::compute(features, (OsiSolverInterface *) solver);
+}
+
+/** @brief Number of instance features available */
+int Osi_n_features() {
+  return OsiFeatures::n;
+}
+
+/** @brief Name of feature i */
+const char *Osi_feature_name(int i);
 
 
 /** @brief Creates (it not yet) the conflict graph  */

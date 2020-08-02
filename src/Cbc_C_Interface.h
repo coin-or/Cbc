@@ -1579,6 +1579,18 @@ Osi_checkCGraph( void *osi );
 CBCSOLVERLIB_EXPORT const void * CBC_LINKAGE
 Osi_CGraph( void *osi );
 
+/** @brief Computes instance features (can be used for machine learning) */
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
+Osi_compute_features(void *solver, double *features);
+
+/** @brief Number of instance features available */
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
+Osi_n_features();
+
+/** @brief Name of feature i */
+CBCSOLVERLIB_EXPORT const char * CBC_LINKAGE
+Osi_feature_name(int i);
+
 /*@}*/
 
 /** \name Conflict Graph related routines */

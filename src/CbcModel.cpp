@@ -15388,7 +15388,9 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
     } else {
       OsiBranchingInformation usefulInfo = usefulInformation();
       anyAction = newNode->chooseOsiBranch(this, oldNode, &usefulInfo, branchingState);
+#ifndef SAVE_NODE_INFO
       currentNode_ = NULL;
+#endif
       //branchingState=0;
     }
     if (!oldNode) {

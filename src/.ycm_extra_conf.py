@@ -37,6 +37,7 @@ flags = [
     "-I../../Cgl/src/CglResidualCapacity/",
     "-I../../Cgl/src/CglZeroHalf/",
     "-I../../Cgl/src/CglCliqueStrengthening/",
+    "-I../../Cgl/src/CglOddWheel/",
     "-I../../Cgl/src/CglCommon/",
     "-I../../Cgl/src/CglBKClique/",
     "-std=c++11",

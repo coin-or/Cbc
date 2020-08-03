@@ -60,17 +60,27 @@ enum DualPivot {
   DP_Dantzig    = 1,  /*! Simple strategy, implemented as example. */
   DP_Steepest   = 2,  /*! Default strategy */
   DP_Partial    = 3,  /*! Same as steepest, but examines a subset of choices. */
-  DP_PESteepest = 4  /*! Positive edge criterion, tries to avoid degenerate moves. Influenced by the psi parameter */
+  DP_PESteepest = 4   /*! Positive edge criterion, tries to avoid degenerate moves. Influenced by the psi parameter */
 };
 
 /*! Type of cutting plane */
 enum CutType {
-  CT_Gomory         = 0,  /*! Gomory cuts obtained from the tableau */
-  CT_MIR            = 1,  /*! Mixed integer rounding cuts */
-  CT_ZeroHalf       = 2,  /*! Zero-half cuts */
-  CT_Clique         = 3,  /*! Clique cuts */
-  CT_KnapsackCover  = 4,  /*! Knapsack cover cuts */
-  CT_LiftAndProject = 5   /*! Lift and project cuts */
+  CT_Probing          =  0,  /*! Cuts generated evaluating the impact of fixing bounds for integer variables */
+  CT_Gomory           =  1,  /*! Gomory cuts obtained from the tableau, implemented by John Forrest  */
+  CT_GMI              =  2,  /*! Gomory cuts obtained from the tableau, implementation from Giacomo Nannicini focusing on safer cuts */
+  CT_LaGomory         =  3,  /*! Additional gomory cuts, simplification of 'A Relax-and-Cut Framework for Gomory's Mixed-Integer Cuts' by Matteo Fischetti & Domenico Salvagnin */
+  CT_RedSplit         =  4,  /*! Reduce and split cuts, implemented by Francois Margot */
+  CT_RedSplitG        =  5,  /*! Reduce and split cuts, implemented by Giacomo Nannicini */
+  CT_FlowCover        =  6,  /*! Flow cover cuts */
+  CT_MIR              =  7,  /*! Mixed-integer rounding cuts */
+  CT_TwoMIR           =  8,  /*! Two-phase Mixed-integer rounding cuts */
+  CT_LaTwoMIR         =  9,  /*! Lagrangean relaxation for two-phase Mixed-integer rounding cuts, as in CT_LaGomory */
+  CT_LiftAndProject   = 10,  /*! Lift and project cuts */
+  CT_ResidualCapacity = 11,  /*! Residual capacity cuts */
+  CT_ZeroHalf         = 12,  /*! Zero-half cuts */
+  CT_Clique           = 13,  /*! Clique cuts */
+  CT_OddWheel         = 14,  /*! Lifted odd-hole inequalities */
+  CT_KnapsackCover    = 15,  /*! Knapsack cover cuts */
 };
 
 /*! Double parameters
@@ -752,6 +762,35 @@ Cbc_getColUB(Cbc_Model *model, int colIdx);
   **/
 CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_isInteger(Cbc_Model *model, int i);
+
+/** @brief Computes vector of instance features
+  *
+  * This procedure computes a vector of instance features. This vector can be used in machine
+  * learning methods to predict the best parameter settings, for example.
+  * 
+  * @param model problem object 
+  * @param features vector of size Cbc_nFeatures() that will be filled with problem features
+  **/
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
+Cbc_computeFeatures(Cbc_Model *model, double *features);
+
+/** @brief Returns the number of instance features
+  *
+  * Returns the number of instance features that can be computed in function
+  * Cbc_computeFeatures.
+  **/
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
+Cbc_nFeatures();
+
+/** @brief Name of the i-th instance features
+  *
+  * This procedure returns the name of the i-th instance feature that can 
+  * be computed in Cbc_computeFeatures.
+  *
+  * @param model problem object 
+  **/
+ CBCSOLVERLIB_EXPORT const char * CBC_LINKAGE
+ Cbc_featureName(int i);
 
 /** @brief Returns the conflict graph of the model
  *
@@ -1632,7 +1671,17 @@ CG_conflictingNodes(Cbc_Model *model, void *cgraph, size_t node);
 
 /** \name Cgl related routines */
 
-CBCSOLVERLIB_EXPORT void CBC_LINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, int strength );
+
+/** @brief Generates cutting planes of a given type
+     *
+     *  Generates cutting planes of a given type
+     *
+     *  @param osiClpSolver an OsiClpSolverInterface object with the linear program
+     *  @param ct cut type
+     *  @param oc an OsiCuts object where cuts will be stored
+     *  @param cbcModel an Cbc_Model (may be NULL), cut generation options can be stored here
+     * */
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, Cbc_Model *cbcModel, int depth, int pass );
 
 /*@}*/
 

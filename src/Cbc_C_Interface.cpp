@@ -31,13 +31,20 @@
 #include "OsiFeatures.hpp"
 #include "ClpSimplexOther.hpp"
 #include "CglCutGenerator.hpp"
+#include "CglProbing.hpp"
 #include "CglStored.hpp"
 #include "CglCliqueStrengthening.hpp"
 #include "CglGomory.hpp"
+#include "CglGMI.hpp"
+#include "CglFlowCover.hpp"
 #include "CglZeroHalf.hpp"
 #include "CglClique.hpp"
 #include "CglBKClique.hpp"
+#include "CglOddWheel.hpp"
 #include "CglKnapsackCover.hpp"
+#include "CglRedSplit.hpp"
+#include "CglRedSplit2.hpp"
+#include "CglResidualCapacity.hpp"
 #include "CglMixedIntegerRounding2.hpp"
 #include "CglTwomir.hpp"
 #include "CglZeroHalf.hpp"
@@ -1423,8 +1430,7 @@ int CBC_LINKAGE Cbc_status(Cbc_Model *model) {
 }
 
 
-int CBC_LINKAGE
-Cbc_secondaryStatus(Cbc_Model *model) {
+int Cbc_secondaryStatus(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
       fprintf( stderr, "Status not available, model was not optimized yet.\n");
@@ -1439,6 +1445,19 @@ Cbc_secondaryStatus(Cbc_Model *model) {
   }
 
   return INT_MAX;
+}
+
+void Cbc_computeFeatures(Cbc_Model *model, double *features) {
+  OsiFeatures::compute(features, model->solver_);
+}
+
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
+Cbc_nFeatures() {
+  return OsiFeatures::n;
+}
+
+const char *Cbc_featureName(int i) {
+  return OsiFeatures::name(i);
 }
 
 /* Number of elements in matrix */
@@ -3970,49 +3989,152 @@ Osi_getRowSense(void *osi, int row)
 }
 
 /** Generates cutting planes */
-void CBC_LINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, int strength ) {
+void CBC_LINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, Cbc_Model *cbcModel, int depth, int pass) {
   OsiClpSolverInterface *solver = (OsiClpSolverInterface *) osiClpSolver;
   CglCutGenerator *cg[2] = {NULL, NULL};
   OsiCuts *osiCuts = (OsiCuts *) oc;
+  int *int_param = NULL;
+  if (cbcModel)
+    int_param  = cbcModel->int_param;
 
   switch (ct) {
-    case CT_Gomory:
-      cg[0] = new CglGomory();
-      break;
-    case CT_Clique:
-      if (solver->getCGraph())
-        cg[0] = new CglBKClique();
-      else {
-        CglClique *clqgen = new CglClique();
-        clqgen->setStarCliqueReport(false);
-        clqgen->setRowCliqueReport(false);
-        clqgen->setMinViolation(1e-4);
-        cg[0] = clqgen;
+    case CT_Probing:
+      {
+        CglProbing *probingGen = new CglProbing();;
+        cg[0] = probingGen;
+        
+        // current defaults based on CbcSolver
+        probingGen->setUsingObjective(1);
+        probingGen->setMaxPass(1);
+        probingGen->setMaxPassRoot(1);
+        // Number of unsatisfied variables to look at
+        probingGen->setMaxProbe(10);
+        probingGen->setMaxProbeRoot(50);
+        // How far to follow the consequences
+        probingGen->setMaxLook(10);
+        probingGen->setMaxLookRoot(50);
+        probingGen->setMaxLookRoot(10);
+        // Only look at rows with fewer than this number of elements
+        probingGen->setMaxElements(200);
+        probingGen->setMaxElementsRoot(300);
+        probingGen->setRowCuts(3);
       }
       break;
-    case CT_KnapsackCover:
-      cg[0] = new CglKnapsackCover();
-      break;
+    case CT_Gomory: 
+      {
+        CglGomory *cglGom = new CglGomory();
+        cg[0] = cglGom;
+        cglGom->setLimitAtRoot(1000);
+        cglGom->setLimit(50);
+        break;
+      }
+    case CT_GMI:
+      {
+        cg[0] = new CglGMI();
+        break;
+      }
+    case CT_LaGomory:
+      {
+        CglGomory *cglGom = new CglGomory();
+        cg[0] = cglGom;
+        cglGom->setLimitAtRoot(1000);
+        cglGom->setLimit(50);
+        cglGom->setGomoryType(12);
+        break;
+      }
+    case CT_RedSplit:
+      {
+        cg[0] = new CglRedSplit();
+        break;
+      }
+    case CT_RedSplitG:
+      {
+        cg[0] = new CglRedSplit2();
+        break;
+      }
+    case CT_FlowCover:
+      {
+        cg[0] = new CglFlowCover();
+        break;
+      }
     case CT_MIR:
       {
         CglMixedIntegerRounding2 *cgMIR = new CglMixedIntegerRounding2(1, true, 1);
         cg[0] = cgMIR;
         cgMIR->setDoPreproc(1); // safer (and better)
-        cg[1] = new CglTwomir();
+        break;
       }
-      break;
-    case CT_ZeroHalf:
-      cg[0] = new CglZeroHalf();
-      break;
+    case CT_TwoMIR:
+      {
+        CglTwomir *cgTwomir = new CglTwomir();
+        cg[0] = cgTwomir;
+        cgTwomir->setMaxElements(250);
+        break;
+      }
+    case CT_LaTwoMIR:
+      {
+        CglTwomir *cgTwomir = new CglTwomir();
+        cg[0] = cgTwomir;
+        cgTwomir->setTwomirType(12);
+        cgTwomir->setMaxElements(250);
+        break;
+      }
+
     case CT_LiftAndProject:
       cg[0] = new CglLandP();
       break;
+    case CT_ResidualCapacity:
+      {
+        CglResidualCapacity *cglRC = new CglResidualCapacity();
+        cg[0] = cglRC;
+        cglRC->setDoPreproc(1);
+        
+        break;
+      }
+    case CT_ZeroHalf:
+      cg[0] = new CglZeroHalf();
+      break;
+    case CT_Clique:
+      {
+        char bkClique = 0;
+        if (solver->getCGraph())
+          bkClique = 1;
+        if (int_param) {
+          if (int_param[INT_PARAM_CGRAPH] == 2)
+            bkClique = 1;
+        }
+
+        if (bkClique) {
+          if (!solver->getCGraph()) {
+            solver->checkCGraph();
+          }
+          cg[0] = new CglBKClique();
+        } else {
+          CglClique *clqgen = new CglClique();
+          clqgen->setStarCliqueReport(false);
+          clqgen->setRowCliqueReport(false);
+          clqgen->setMinViolation(1e-4);
+          cg[0] = clqgen;
+        }
+        break;
+      }
+    case CT_OddWheel:
+      Osi_checkCGraph(solver);
+      cg[0] = new CglOddWheel();
+      break;
+    case CT_KnapsackCover:
+      cg[0] = new CglKnapsackCover();
+      break;
   }
+
+  CglTreeInfo treeInfo;
+  treeInfo.level = depth;
+  treeInfo.pass = pass;
 
   for ( int i=0 ; i<2 ; ++i ) {
     if (cg[i] == NULL) 
       continue;
-    cg[i]->generateCuts(*solver, *osiCuts);
+    cg[i]->generateCuts(*solver, *osiCuts, treeInfo);
 
     delete cg[i];
   }

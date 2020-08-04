@@ -68,19 +68,18 @@ enum CutType {
   CT_Probing          =  0,  /*! Cuts generated evaluating the impact of fixing bounds for integer variables */
   CT_Gomory           =  1,  /*! Gomory cuts obtained from the tableau, implemented by John Forrest  */
   CT_GMI              =  2,  /*! Gomory cuts obtained from the tableau, implementation from Giacomo Nannicini focusing on safer cuts */
-  CT_LaGomory         =  3,  /*! Additional gomory cuts, simplification of 'A Relax-and-Cut Framework for Gomory's Mixed-Integer Cuts' by Matteo Fischetti & Domenico Salvagnin */
-  CT_RedSplit         =  4,  /*! Reduce and split cuts, implemented by Francois Margot */
-  CT_RedSplitG        =  5,  /*! Reduce and split cuts, implemented by Giacomo Nannicini */
-  CT_FlowCover        =  6,  /*! Flow cover cuts */
-  CT_MIR              =  7,  /*! Mixed-integer rounding cuts */
-  CT_TwoMIR           =  8,  /*! Two-phase Mixed-integer rounding cuts */
-  CT_LaTwoMIR         =  9,  /*! Lagrangean relaxation for two-phase Mixed-integer rounding cuts, as in CT_LaGomory */
-  CT_LiftAndProject   = 10,  /*! Lift and project cuts */
-  CT_ResidualCapacity = 11,  /*! Residual capacity cuts */
-  CT_ZeroHalf         = 12,  /*! Zero-half cuts */
-  CT_Clique           = 13,  /*! Clique cuts */
-  CT_OddWheel         = 14,  /*! Lifted odd-hole inequalities */
-  CT_KnapsackCover    = 15,  /*! Knapsack cover cuts */
+  CT_RedSplit         =  3,  /*! Reduce and split cuts, implemented by Francois Margot */
+  CT_RedSplitG        =  4,  /*! Reduce and split cuts, implemented by Giacomo Nannicini */
+  CT_FlowCover        =  5,  /*! Flow cover cuts */
+  CT_MIR              =  6,  /*! Mixed-integer rounding cuts */
+  CT_TwoMIR           =  7,  /*! Two-phase Mixed-integer rounding cuts */
+  CT_LaTwoMIR         =  8,  /*! Lagrangean relaxation for two-phase Mixed-integer rounding cuts, as in CT_LaGomory */
+  CT_LiftAndProject   =  9,  /*! Lift and project cuts */
+  CT_ResidualCapacity = 10,  /*! Residual capacity cuts */
+  CT_ZeroHalf         = 11,  /*! Zero-half cuts */
+  CT_Clique           = 12,  /*! Clique cuts */
+  CT_OddWheel         = 13,  /*! Lifted odd-hole inequalities */
+  CT_KnapsackCover    = 14,  /*! Knapsack cover cuts */
 };
 
 /*! Double parameters
@@ -1676,12 +1675,13 @@ CG_conflictingNodes(Cbc_Model *model, void *cgraph, size_t node);
      *
      *  Generates cutting planes of a given type
      *
-     *  @param osiClpSolver an OsiClpSolverInterface object with the linear program
+     *  @param cbcModel problem object
      *  @param ct cut type
      *  @param oc an OsiCuts object where cuts will be stored
-     *  @param cbcModel an Cbc_Model (may be NULL), cut generation options can be stored here
+     *  @param depth current three depth, cuts may use this info to decide which strategy to use
+     *  @param pass cut pass number
      * */
-CBCSOLVERLIB_EXPORT void CBC_LINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, Cbc_Model *cbcModel, int depth, int pass );
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *oc, int depth, int pass );
 
 /*@}*/
 

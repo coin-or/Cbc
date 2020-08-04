@@ -3989,19 +3989,19 @@ Osi_getRowSense(void *osi, int row)
 }
 
 /** Generates cutting planes */
-void CBC_LINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc, Cbc_Model *cbcModel, int depth, int pass) {
-  OsiClpSolverInterface *solver = (OsiClpSolverInterface *) osiClpSolver;
-  CglCutGenerator *cg[2] = {NULL, NULL};
+void Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *oc, int depth, int pass ) {
+  assert(cbcModel && oc);
+
+  OsiClpSolverInterface *solver = cbcModel->solver_;
+  CglCutGenerator *cg = NULL;
   OsiCuts *osiCuts = (OsiCuts *) oc;
-  int *int_param = NULL;
-  if (cbcModel)
-    int_param  = cbcModel->int_param;
+  int *int_param = cbcModel->int_param;
 
   switch (ct) {
     case CT_Probing:
       {
         CglProbing *probingGen = new CglProbing();;
-        cg[0] = probingGen;
+        cg = probingGen;
         
         // current defaults based on CbcSolver
         probingGen->setUsingObjective(1);
@@ -4023,76 +4023,67 @@ void CBC_LINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc
     case CT_Gomory: 
       {
         CglGomory *cglGom = new CglGomory();
-        cg[0] = cglGom;
+        cg = cglGom;
         cglGom->setLimitAtRoot(1000);
         cglGom->setLimit(50);
         break;
       }
     case CT_GMI:
       {
-        cg[0] = new CglGMI();
-        break;
-      }
-    case CT_LaGomory:
-      {
-        CglGomory *cglGom = new CglGomory();
-        cg[0] = cglGom;
-        cglGom->setLimitAtRoot(1000);
-        cglGom->setLimit(50);
-        cglGom->setGomoryType(12);
+        cg = new CglGMI();
         break;
       }
     case CT_RedSplit:
       {
-        cg[0] = new CglRedSplit();
+        cg = new CglRedSplit();
         break;
       }
     case CT_RedSplitG:
       {
-        cg[0] = new CglRedSplit2();
+        cg = new CglRedSplit2();
         break;
       }
     case CT_FlowCover:
       {
-        cg[0] = new CglFlowCover();
+        cg = new CglFlowCover();
         break;
       }
     case CT_MIR:
       {
         CglMixedIntegerRounding2 *cgMIR = new CglMixedIntegerRounding2(1, true, 1);
-        cg[0] = cgMIR;
+        cg = cgMIR;
         cgMIR->setDoPreproc(1); // safer (and better)
         break;
       }
     case CT_TwoMIR:
       {
         CglTwomir *cgTwomir = new CglTwomir();
-        cg[0] = cgTwomir;
+        cg = cgTwomir;
         cgTwomir->setMaxElements(250);
         break;
       }
     case CT_LaTwoMIR:
       {
         CglTwomir *cgTwomir = new CglTwomir();
-        cg[0] = cgTwomir;
+        cg = cgTwomir;
         cgTwomir->setTwomirType(12);
         cgTwomir->setMaxElements(250);
         break;
       }
 
     case CT_LiftAndProject:
-      cg[0] = new CglLandP();
+      cg = new CglLandP();
       break;
     case CT_ResidualCapacity:
       {
         CglResidualCapacity *cglRC = new CglResidualCapacity();
-        cg[0] = cglRC;
+        cg = cglRC;
         cglRC->setDoPreproc(1);
         
         break;
       }
     case CT_ZeroHalf:
-      cg[0] = new CglZeroHalf();
+      cg = new CglZeroHalf();
       break;
     case CT_Clique:
       {
@@ -4108,22 +4099,22 @@ void CBC_LINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc
           if (!solver->getCGraph()) {
             solver->checkCGraph();
           }
-          cg[0] = new CglBKClique();
+          cg = new CglBKClique();
         } else {
           CglClique *clqgen = new CglClique();
           clqgen->setStarCliqueReport(false);
           clqgen->setRowCliqueReport(false);
           clqgen->setMinViolation(1e-4);
-          cg[0] = clqgen;
+          cg = clqgen;
         }
         break;
       }
     case CT_OddWheel:
-      Osi_checkCGraph(solver);
-      cg[0] = new CglOddWheel();
+      solver->checkCGraph();
+      cg = new CglOddWheel();
       break;
     case CT_KnapsackCover:
-      cg[0] = new CglKnapsackCover();
+      cg = new CglKnapsackCover();
       break;
   }
 
@@ -4131,12 +4122,9 @@ void CBC_LINKAGE Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *oc
   treeInfo.level = depth;
   treeInfo.pass = pass;
 
-  for ( int i=0 ; i<2 ; ++i ) {
-    if (cg[i] == NULL) 
-      continue;
-    cg[i]->generateCuts(*solver, *osiCuts, treeInfo);
-
-    delete cg[i];
+  if (cg != NULL) {
+    cg->generateCuts(*solver, *osiCuts, treeInfo);
+    delete cg;
   }
 }
 

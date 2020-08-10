@@ -18,12 +18,15 @@
 
 #include <string>
 #include <vector>
-#include "CoinMessageHandler.hpp"
-#include "OsiClpSolverInterface.hpp"
 
+#include "CoinMessageHandler.hpp"
+
+#include "OsiClpSolverInterface.hpp"
 #if CBC_OTHER_SOLVER == 1
 #include "OsiCpxSolverInterface.hpp"
 #endif
+
+#include "CglCutGenerator.hpp"
 
 #include "CbcModel.hpp"
 #include "CbcOrClpParam.hpp"
@@ -31,8 +34,8 @@
 
 class CbcUser;
 class CbcStopNow;
-class CglCutGenerator;
 
+//#############################################################################
 //#############################################################################
 
 /*! \brief This allows the use of the standalone solver in a flexible manner.
@@ -242,24 +245,8 @@ private:
   int readMode_;
   //@}
 };
+
 //#############################################################################
-
-/// Structure to hold useful arrays
-typedef struct {
-  // Priorities
-  int *priorities_;
-  // SOS priorities
-  int *sosPriority_;
-  // Direction to branch first
-  int *branchDirection_;
-  // Input solution
-  double *primalSolution_;
-  // Down pseudo costs
-  double *pseudoDown_;
-  // Up pseudo costs
-  double *pseudoUp_;
-} CbcSolverUsefulData2;
-
 //#############################################################################
 
 /**
@@ -304,36 +291,8 @@ public:
 
   //@}
 };
-/// And this uses it
-// When we want to load up CbcModel with options first
-CBCSOLVERLIB_EXPORT
-void CbcMain0(CbcModel &babSolver, CbcSolverUsefulData &solverData);
-CBCSOLVERLIB_EXPORT
-int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcSolverUsefulData &solverData);
-CBCSOLVERLIB_EXPORT
-int CbcMain1(int argc, const char *argv[], CbcModel &babSolver,
-	     CbcSolverUsefulData &solverData);
 
-CBCSOLVERLIB_EXPORT
-int CbcMain(int argc, const char *argv[], CbcModel &babSolver);
-// four ways of calling
-CBCSOLVERLIB_EXPORT
-int callCbc(const char *input2, OsiClpSolverInterface &solver1);
-CBCSOLVERLIB_EXPORT
-int callCbc(const char *input2);
-CBCSOLVERLIB_EXPORT
-int callCbc(const std::string input2, OsiClpSolverInterface &solver1);
-CBCSOLVERLIB_EXPORT
-int callCbc(const std::string input2);
-// two ways of calling
-CBCSOLVERLIB_EXPORT
-int callCbc(const char *input2, CbcModel &babSolver);
-CBCSOLVERLIB_EXPORT
-int callCbc(const std::string input2, CbcModel &babSolver);
-// And when CbcMain0 already called to initialize (with call back) (see CbcMain1 for whereFrom)
-CBCSOLVERLIB_EXPORT
-int callCbc1(const char *input2, CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
-
+//#############################################################################
 //#############################################################################
 
 /*! \brief A class to allow the use of unknown user functionality
@@ -428,6 +387,8 @@ protected:
 
   //@}
 };
+
+//#############################################################################
 //#############################################################################
 
 /*! \brief Support the use of a call back class to decide whether to stop
@@ -484,6 +445,38 @@ private:
   //@}
 };
 #endif
+
+//#############################################################################
+//#############################################################################
+
+// When we want to load up CbcModel with options first
+CBCSOLVERLIB_EXPORT
+void CbcMain0(CbcModel &babSolver, CbcSolverUsefulData &solverData);
+CBCSOLVERLIB_EXPORT
+int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcSolverUsefulData &solverData);
+CBCSOLVERLIB_EXPORT
+int CbcMain1(int argc, const char *argv[], CbcModel &babSolver,
+	     CbcSolverUsefulData &solverData);
+
+CBCSOLVERLIB_EXPORT
+int CbcMain(int argc, const char *argv[], CbcModel &babSolver);
+// four ways of calling
+CBCSOLVERLIB_EXPORT
+int callCbc(const char *input2, OsiClpSolverInterface &solver1);
+CBCSOLVERLIB_EXPORT
+int callCbc(const char *input2);
+CBCSOLVERLIB_EXPORT
+int callCbc(const std::string input2, OsiClpSolverInterface &solver1);
+CBCSOLVERLIB_EXPORT
+int callCbc(const std::string input2);
+// two ways of calling
+CBCSOLVERLIB_EXPORT
+int callCbc(const char *input2, CbcModel &babSolver);
+CBCSOLVERLIB_EXPORT
+int callCbc(const std::string input2, CbcModel &babSolver);
+// And when CbcMain0 already called to initialize (with call back) (see CbcMain1 for whereFrom)
+CBCSOLVERLIB_EXPORT
+int callCbc1(const char *input2, CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

@@ -18,7 +18,6 @@
 */
 
 #include "ClpConfig.h"
-#include "CbcSolverConfig.h"
 #ifdef CBC_HAS_ASL
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"

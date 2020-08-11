@@ -7,9 +7,6 @@
 #undef CBCLIB_EXPORT
 
 /* Library Visibility Attribute */
-#undef CBCSOLVERLIB_EXPORT
-
-/* Library Visibility Attribute */
 #undef CBCUNITTEST_EXPORT
 
 /* Define to the name of the default solver to be used in cbc-generic in small

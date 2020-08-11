@@ -120,8 +120,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 DIST_COMMON = $(srcdir)/Makefile.am $(includecoin_HEADERS)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h \
-	$(top_builddir)/src/config_cbc.h \
-	$(top_builddir)/src/config_cbcsolver.h config_osicbc.h
+	$(top_builddir)/src/config_cbc.h config_osicbc.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -268,11 +267,6 @@ CBCLIB_CFLAGS_NOPC = @CBCLIB_CFLAGS_NOPC@
 CBCLIB_LFLAGS = @CBCLIB_LFLAGS@
 CBCLIB_LFLAGS_NOPC = @CBCLIB_LFLAGS_NOPC@
 CBCLIB_PCFILES = @CBCLIB_PCFILES@
-CBCSOLVERLIB_CFLAGS = @CBCSOLVERLIB_CFLAGS@
-CBCSOLVERLIB_CFLAGS_NOPC = @CBCSOLVERLIB_CFLAGS_NOPC@
-CBCSOLVERLIB_LFLAGS = @CBCSOLVERLIB_LFLAGS@
-CBCSOLVERLIB_LFLAGS_NOPC = @CBCSOLVERLIB_LFLAGS_NOPC@
-CBCSOLVERLIB_PCFILES = @CBCSOLVERLIB_PCFILES@
 CBCUNITTEST_CFLAGS = @CBCUNITTEST_CFLAGS@
 CBCUNITTEST_CFLAGS_NOPC = @CBCUNITTEST_CFLAGS_NOPC@
 CBCUNITTEST_LFLAGS = @CBCUNITTEST_LFLAGS@
@@ -474,16 +468,16 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 
-config_osicbc.h: stamp-h4
-	@test -f $@ || rm -f stamp-h4
-	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) stamp-h4
+config_osicbc.h: stamp-h3
+	@test -f $@ || rm -f stamp-h3
+	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) stamp-h3
 
-stamp-h4: $(srcdir)/config_osicbc.h.in $(top_builddir)/config.status
-	@rm -f stamp-h4
+stamp-h3: $(srcdir)/config_osicbc.h.in $(top_builddir)/config.status
+	@rm -f stamp-h3
 	cd $(top_builddir) && $(SHELL) ./config.status src/OsiCbc/config_osicbc.h
 
 distclean-hdr:
-	-rm -f config_osicbc.h stamp-h4
+	-rm -f config_osicbc.h stamp-h3
 
 install-libLTLIBRARIES: $(lib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)

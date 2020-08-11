@@ -678,8 +678,6 @@ OSICBCLIB_CFLAGS_NOPC
 OSICBCLIB_LFLAGS_NOPC
 CBCGENERIC_CFLAGS_NOPC
 CBCGENERIC_LFLAGS_NOPC
-CBCSOLVERLIB_CFLAGS_NOPC
-CBCSOLVERLIB_LFLAGS_NOPC
 CBCLIB_CFLAGS_NOPC
 CBCLIB_LFLAGS_NOPC
 COIN_HAS_CPLEX_FALSE
@@ -730,9 +728,6 @@ OSICBCLIB_LFLAGS
 CBCGENERIC_PCFILES
 CBCGENERIC_CFLAGS
 CBCGENERIC_LFLAGS
-CBCSOLVERLIB_PCFILES
-CBCSOLVERLIB_CFLAGS
-CBCSOLVERLIB_LFLAGS
 CBCLIB_PCFILES
 CBCLIB_CFLAGS
 CBCLIB_LFLAGS
@@ -17089,6 +17084,12 @@ $as_echo "no" >&6; }
     pkg_short_errors=""
   fi
 
+  # Check whether -static option of pkg-config should be used when requesting libs
+  pkg_static=
+  if test -n "$PKG_CONFIG" ; then
+    case "$LDFLAGS" in "-static" | "* -static*" ) pkg_static=--static ;; esac
+  fi
+
    if test -n "$PKG_CONFIG"; then
   COIN_HAS_PKGCONFIG_TRUE=
   COIN_HAS_PKGCONFIG_FALSE='#'
@@ -17113,9 +17114,6 @@ $as_echo "$as_me: $PKG_CONFIG path is \"$COIN_PKG_CONFIG_PATH\"" >&6;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package CoinUtils" >&5
 $as_echo_n "checking for package CoinUtils... " >&6; }
-
-
-
 
 
 
@@ -17352,9 +17350,6 @@ $as_echo "#define CBC_HAS_COINUTILS 1" >>confdefs.h
     if test -n "$coinutils_pcfiles" ; then CBCLIB_PCFILES="$coinutils_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$coinutils_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$coinutils_cflags $CBCLIB_CFLAGS"
-      if test -n "$coinutils_pcfiles" ; then CBCSOLVERLIB_PCFILES="$coinutils_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
-       CBCSOLVERLIB_LFLAGS="$coinutils_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$coinutils_cflags $CBCSOLVERLIB_CFLAGS"
       if test -n "$coinutils_pcfiles" ; then CBCGENERIC_PCFILES="$coinutils_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$coinutils_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$coinutils_cflags $CBCGENERIC_CFLAGS"
@@ -17374,9 +17369,6 @@ $as_echo "#define CBC_HAS_COINUTILS 1" >>confdefs.h
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Osi" >&5
 $as_echo_n "checking for package Osi... " >&6; }
-
-
-
 
 
 
@@ -17613,9 +17605,6 @@ $as_echo "#define CBC_HAS_OSI 1" >>confdefs.h
     if test -n "$osi_pcfiles" ; then CBCLIB_PCFILES="$osi_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$osi_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$osi_cflags $CBCLIB_CFLAGS"
-      if test -n "$osi_pcfiles" ; then CBCSOLVERLIB_PCFILES="$osi_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
-       CBCSOLVERLIB_LFLAGS="$osi_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$osi_cflags $CBCSOLVERLIB_CFLAGS"
       if test -n "$osi_pcfiles" ; then CBCGENERIC_PCFILES="$osi_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osi_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osi_cflags $CBCGENERIC_CFLAGS"
@@ -17635,9 +17624,6 @@ $as_echo "#define CBC_HAS_OSI 1" >>confdefs.h
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Cgl" >&5
 $as_echo_n "checking for package Cgl... " >&6; }
-
-
-
 
 
 
@@ -17874,9 +17860,6 @@ $as_echo "#define CBC_HAS_CGL 1" >>confdefs.h
     if test -n "$cgl_pcfiles" ; then CBCLIB_PCFILES="$cgl_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$cgl_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$cgl_cflags $CBCLIB_CFLAGS"
-      if test -n "$cgl_pcfiles" ; then CBCSOLVERLIB_PCFILES="$cgl_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
-       CBCSOLVERLIB_LFLAGS="$cgl_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$cgl_cflags $CBCSOLVERLIB_CFLAGS"
       if test -n "$cgl_pcfiles" ; then CBCGENERIC_PCFILES="$cgl_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$cgl_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$cgl_cflags $CBCGENERIC_CFLAGS"
@@ -17896,9 +17879,6 @@ $as_echo "#define CBC_HAS_CGL 1" >>confdefs.h
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Clp" >&5
 $as_echo_n "checking for package Clp... " >&6; }
-
-
-
 
 
 
@@ -18135,9 +18115,6 @@ $as_echo "#define CBC_HAS_CLP 1" >>confdefs.h
     if test -n "$clp_pcfiles" ; then CBCLIB_PCFILES="$clp_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$clp_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$clp_cflags $CBCLIB_CFLAGS"
-      if test -n "$clp_pcfiles" ; then CBCSOLVERLIB_PCFILES="$clp_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
-       CBCSOLVERLIB_LFLAGS="$clp_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$clp_cflags $CBCSOLVERLIB_CFLAGS"
       if test -n "$clp_pcfiles" ; then CBCGENERIC_PCFILES="$clp_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$clp_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$clp_cflags $CBCGENERIC_CFLAGS"
@@ -18159,9 +18136,6 @@ $as_echo "#define CBC_HAS_CLP 1" >>confdefs.h
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package OsiClp" >&5
 $as_echo_n "checking for package OsiClp... " >&6; }
-
-
-
 
 
 
@@ -18394,9 +18368,6 @@ $as_echo "#define CBC_HAS_OSICLP 1" >>confdefs.h
     if test -n "$osiclp_pcfiles" ; then CBCLIB_PCFILES="$osiclp_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$osiclp_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$osiclp_cflags $CBCLIB_CFLAGS"
-      if test -n "$osiclp_pcfiles" ; then CBCSOLVERLIB_PCFILES="$osiclp_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
-       CBCSOLVERLIB_LFLAGS="$osiclp_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$osiclp_cflags $CBCSOLVERLIB_CFLAGS"
       if test -n "$osiclp_pcfiles" ; then CBCGENERIC_PCFILES="$osiclp_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osiclp_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osiclp_cflags $CBCGENERIC_CFLAGS"
@@ -18801,9 +18772,9 @@ fi
 
 $as_echo "#define CBC_HAS_ASL 1" >>confdefs.h
 
-    if test -n "$asl_pcfiles" ; then CBCSOLVERLIB_PCFILES="$asl_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
-       CBCSOLVERLIB_LFLAGS="$asl_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$asl_cflags $CBCSOLVERLIB_CFLAGS"
+    if test -n "$asl_pcfiles" ; then CBCLIB_PCFILES="$asl_pcfiles $CBCLIB_PCFILES" ; fi
+       CBCLIB_LFLAGS="$asl_lflags $CBCLIB_LFLAGS"
+       CBCLIB_CFLAGS="$asl_cflags $CBCLIB_CFLAGS"
 
 
 
@@ -18816,9 +18787,6 @@ $as_echo "#define CBC_HAS_ASL 1" >>confdefs.h
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Nauty" >&5
 $as_echo_n "checking for package Nauty... " >&6; }
-
-
-
 
 
 
@@ -19045,9 +19013,6 @@ $as_echo "#define CBC_HAS_NAUTY 1" >>confdefs.h
     if test -n "$nauty_pcfiles" ; then CBCLIB_PCFILES="$nauty_pcfiles $CBCLIB_PCFILES" ; fi
        CBCLIB_LFLAGS="$nauty_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$nauty_cflags $CBCLIB_CFLAGS"
-      if test -n "$nauty_pcfiles" ; then CBCSOLVERLIB_PCFILES="$nauty_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
-       CBCSOLVERLIB_LFLAGS="$nauty_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$nauty_cflags $CBCSOLVERLIB_CFLAGS"
 
 
 
@@ -20199,9 +20164,6 @@ $as_echo_n "checking for package OsiCpx... " >&6; }
 
 
 
-
-
-
   # Check to see if the user has set an override to skip this primary.
   coin_has_osicpx=noInfo
   if test x"$COIN_SKIP_PROJECTS" != x ; then
@@ -20425,9 +20387,6 @@ $as_echo "#define CBC_HAS_OSICPX 1" >>confdefs.h
       if test -n "$osicpx_pcfiles" ; then CBCGENERIC_PCFILES="$osicpx_pcfiles $CBCGENERIC_PCFILES" ; fi
        CBCGENERIC_LFLAGS="$osicpx_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osicpx_cflags $CBCGENERIC_CFLAGS"
-      if test -n "$osicpx_pcfiles" ; then CBCSOLVERLIB_PCFILES="$osicpx_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
-       CBCSOLVERLIB_LFLAGS="$osicpx_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$osicpx_cflags $CBCSOLVERLIB_CFLAGS"
       if test -n "$osicpx_pcfiles" ; then OSICBCLIB_PCFILES="$osicpx_pcfiles $OSICBCLIB_PCFILES" ; fi
        OSICBCLIB_LFLAGS="$osicpx_lflags $OSICBCLIB_LFLAGS"
        OSICBCLIB_CFLAGS="$osicpx_cflags $OSICBCLIB_CFLAGS"
@@ -21417,7 +21376,7 @@ $as_echo "$as_me: FINALIZE_FLAGS for CbcLib:" >&6;}
 
       if test -n "${CBCLIB_PCFILES}" ; then
         temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCLIB_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs ${CBCLIB_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${CBCLIB_PCFILES}`
         CBCLIB_CFLAGS="$temp_CFLAGS ${CBCLIB_CFLAGS}"
         CBCLIB_LFLAGS="$temp_LFLAGS ${CBCLIB_LFLAGS}"
       fi
@@ -21457,55 +21416,6 @@ $as_echo "$as_me: CBCLIB_LFLAGS: \"${CBCLIB_LFLAGS}\"" >&6;}
 $as_echo "$as_me: CBCLIB_CFLAGS: \"${CBCLIB_CFLAGS}\"" >&6;}
       fi
      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcSolverLib:" >&5
-$as_echo "$as_me: FINALIZE_FLAGS for CbcSolverLib:" >&6;}
-      fi
-      CBCSOLVERLIB_LFLAGS_NOPC=$CBCSOLVERLIB_LFLAGS
-
-      CBCSOLVERLIB_CFLAGS_NOPC=$CBCSOLVERLIB_CFLAGS
-
-      if test -n "${CBCSOLVERLIB_PCFILES}" ; then
-        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCSOLVERLIB_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs ${CBCSOLVERLIB_PCFILES}`
-        CBCSOLVERLIB_CFLAGS="$temp_CFLAGS ${CBCSOLVERLIB_CFLAGS}"
-        CBCSOLVERLIB_LFLAGS="$temp_LFLAGS ${CBCSOLVERLIB_LFLAGS}"
-      fi
-
-      # setup XYZ_EXPORT symbol for library users
-      libexport_attribute=
-      if test "$enable_shared" = yes ; then
-        case $build_os in
-          cygwin* | mingw* | msys* | cegcc* )
-            libexport_attribute="__declspec(dllimport)"
-            if test "$enable_static" = yes ; then
-              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
-            fi
-          ;;
-        esac
-      fi
-
-cat >>confdefs.h <<_ACEOF
-#define CBCSOLVERLIB_EXPORT $libexport_attribute
-_ACEOF
-
-
-      # add -DXYZ_BUILD to XYZ_CFLAGS
-      CBCSOLVERLIB_CFLAGS="${CBCSOLVERLIB_CFLAGS} -DCBCSOLVERLIB_BUILD"
-
-      # Define BUILDTOOLS_DEBUG to enable debugging output
-      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_LFLAGS_NOPC: \"${CBCSOLVERLIB_LFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: CBCSOLVERLIB_LFLAGS_NOPC: \"${CBCSOLVERLIB_LFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_CFLAGS_NOPC: \"${CBCSOLVERLIB_CFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: CBCSOLVERLIB_CFLAGS_NOPC: \"${CBCSOLVERLIB_CFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: adding \"${CBCSOLVERLIB_PCFILES}\"" >&5
-$as_echo "$as_me: adding \"${CBCSOLVERLIB_PCFILES}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_LFLAGS: \"${CBCSOLVERLIB_LFLAGS}\"" >&5
-$as_echo "$as_me: CBCSOLVERLIB_LFLAGS: \"${CBCSOLVERLIB_LFLAGS}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_CFLAGS: \"${CBCSOLVERLIB_CFLAGS}\"" >&5
-$as_echo "$as_me: CBCSOLVERLIB_CFLAGS: \"${CBCSOLVERLIB_CFLAGS}\"" >&6;}
-      fi
-     if test "$BUILDTOOLS_DEBUG" = 1 ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcGeneric:" >&5
 $as_echo "$as_me: FINALIZE_FLAGS for CbcGeneric:" >&6;}
       fi
@@ -21515,7 +21425,7 @@ $as_echo "$as_me: FINALIZE_FLAGS for CbcGeneric:" >&6;}
 
       if test -n "${CBCGENERIC_PCFILES}" ; then
         temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCGENERIC_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs ${CBCGENERIC_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${CBCGENERIC_PCFILES}`
         CBCGENERIC_CFLAGS="$temp_CFLAGS ${CBCGENERIC_CFLAGS}"
         CBCGENERIC_LFLAGS="$temp_LFLAGS ${CBCGENERIC_LFLAGS}"
       fi
@@ -21564,7 +21474,7 @@ $as_echo "$as_me: FINALIZE_FLAGS for OsiCbcLib:" >&6;}
 
       if test -n "${OSICBCLIB_PCFILES}" ; then
         temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${OSICBCLIB_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs ${OSICBCLIB_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${OSICBCLIB_PCFILES}`
         OSICBCLIB_CFLAGS="$temp_CFLAGS ${OSICBCLIB_CFLAGS}"
         OSICBCLIB_LFLAGS="$temp_LFLAGS ${OSICBCLIB_LFLAGS}"
       fi
@@ -21613,7 +21523,7 @@ $as_echo "$as_me: FINALIZE_FLAGS for CbcUnitTest:" >&6;}
 
       if test -n "${CBCUNITTEST_PCFILES}" ; then
         temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCUNITTEST_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs ${CBCUNITTEST_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${CBCUNITTEST_PCFILES}`
         CBCUNITTEST_CFLAGS="$temp_CFLAGS ${CBCUNITTEST_CFLAGS}"
         CBCUNITTEST_LFLAGS="$temp_LFLAGS ${CBCUNITTEST_LFLAGS}"
       fi
@@ -22497,7 +22407,7 @@ ac_config_files="$ac_config_files doxydoc/doxygen.conf"
 
 
 # Here put the location and name of the configuration header file
-ac_config_headers="$ac_config_headers src/config.h src/config_cbc.h src/config_cbcsolver.h src/OsiCbc/config_osicbc.h"
+ac_config_headers="$ac_config_headers src/config.h src/config_cbc.h src/OsiCbc/config_osicbc.h"
 
 
 # Finally, we let configure write all the output...
@@ -23778,7 +23688,6 @@ do
     "doxydoc/doxygen.conf") CONFIG_FILES="$CONFIG_FILES doxydoc/doxygen.conf" ;;
     "src/config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config.h" ;;
     "src/config_cbc.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config_cbc.h" ;;
-    "src/config_cbcsolver.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config_cbcsolver.h" ;;
     "src/OsiCbc/config_osicbc.h") CONFIG_HEADERS="$CONFIG_HEADERS src/OsiCbc/config_osicbc.h" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

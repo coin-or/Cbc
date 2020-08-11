@@ -112,7 +112,6 @@ DIST_COMMON = $(srcdir)/Makefile.am
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h \
 	$(top_builddir)/src/config_cbc.h \
-	$(top_builddir)/src/config_cbcsolver.h \
 	$(top_builddir)/src/OsiCbc/config_osicbc.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
@@ -120,14 +119,14 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_CInterfaceTest_OBJECTS = CInterfaceTest.$(OBJEXT)
 CInterfaceTest_OBJECTS = $(am_CInterfaceTest_OBJECTS)
-CInterfaceTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la
+CInterfaceTest_DEPENDENCIES = ../src/libCbc.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 am_gamsTest_OBJECTS = gamsTest.$(OBJEXT)
 gamsTest_OBJECTS = $(am_gamsTest_OBJECTS)
-gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la
+gamsTest_DEPENDENCIES = ../src/libCbc.la
 am_osiUnitTest_OBJECTS = osiUnitTest.$(OBJEXT) \
 	OsiCbcSolverInterfaceTest.$(OBJEXT)
 osiUnitTest_OBJECTS = $(am_osiUnitTest_OBJECTS)
@@ -237,11 +236,6 @@ CBCLIB_CFLAGS_NOPC = @CBCLIB_CFLAGS_NOPC@
 CBCLIB_LFLAGS = @CBCLIB_LFLAGS@
 CBCLIB_LFLAGS_NOPC = @CBCLIB_LFLAGS_NOPC@
 CBCLIB_PCFILES = @CBCLIB_PCFILES@
-CBCSOLVERLIB_CFLAGS = @CBCSOLVERLIB_CFLAGS@
-CBCSOLVERLIB_CFLAGS_NOPC = @CBCSOLVERLIB_CFLAGS_NOPC@
-CBCSOLVERLIB_LFLAGS = @CBCSOLVERLIB_LFLAGS@
-CBCSOLVERLIB_LFLAGS_NOPC = @CBCSOLVERLIB_LFLAGS_NOPC@
-CBCSOLVERLIB_PCFILES = @CBCSOLVERLIB_PCFILES@
 CBCUNITTEST_CFLAGS = @CBCUNITTEST_CFLAGS@
 CBCUNITTEST_CFLAGS_NOPC = @CBCUNITTEST_CFLAGS_NOPC@
 CBCUNITTEST_LFLAGS = @CBCUNITTEST_LFLAGS@
@@ -389,7 +383,7 @@ CBC_TEST_TGTS = gamstests ositests $(am__append_1) $(am__append_2)
 cbcflags = $(am__append_4)
 ositestsflags = $(am__append_3) $(am__append_5)
 gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la
+gamsTest_LDADD = ../src/libCbc.la
 
 ########################################################################
 #                         unitTest for OsiCbc                          #
@@ -402,7 +396,7 @@ osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la $(CBCUNITTEST_LF
 ########################################################################
 CInterfaceTest_SOURCES = CInterfaceTest.c
 nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
-CInterfaceTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la
+CInterfaceTest_LDADD = ../src/libCbc.la
 all: all-am
 
 .SUFFIXES:

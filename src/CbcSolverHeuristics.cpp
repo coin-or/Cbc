@@ -15,7 +15,6 @@
 
 #include "ClpPresolve.hpp"
 
-#include "CbcSolverConfig.h"
 #include "CbcOrClpParam.hpp"
 
 #include "CbcModel.hpp"

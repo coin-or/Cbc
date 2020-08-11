@@ -8,7 +8,7 @@
 
 // Need these up front to define symbols for other imports
 #include "CoinUtilsConfig.h"
-#include "CbcSolverConfig.h"
+#include "CbcConfig.h"
 // Let's get rid of these
 #define COIN_HAS_CBC
 #define COIN_HAS_CLP

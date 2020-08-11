@@ -10,7 +10,7 @@
 
 # Name of the library compiled in this directory.
 # We want it to be installed in the 'lib' directory
-lib_LTLIBRARIES = libCbc.la libCbcSolver.la
+lib_LTLIBRARIES = libCbc.la
 
 # List all source files for this library, including headers
 libCbc_la_SOURCES = \
@@ -86,9 +86,7 @@ libCbc_la_SOURCES = \
 	CbcSymmetry.cpp CbcSymmetry.hpp \
 	CbcThread.cpp CbcThread.hpp \
 	CbcTree.cpp CbcTree.hpp \
-	CbcTreeLocal.cpp CbcTreeLocal.hpp
-
-libCbcSolver_la_SOURCES = \
+	CbcTreeLocal.cpp CbcTreeLocal.hpp \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcCbcParam.cpp \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
@@ -100,11 +98,9 @@ libCbcSolver_la_SOURCES = \
 
 # List all additionally required libraries
 libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
-libCbcSolver_la_LIBADD = $(CBCSOLVERLIB_LFLAGS) libCbc.la
 
 # Some common setup for cbc and cbc-generic.
 libCbc_la_CPPFLAGS = $(CBCLIB_CFLAGS)
-libCbcSolver_la_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
 
 ########################################################################
 #                            cbc program                               #
@@ -122,10 +118,10 @@ bin_PROGRAMS += cbc
 cbc_SOURCES = CoinSolve.cpp
 
 # Additional libraries
-cbc_LDADD = libCbcSolver.la libCbc.la
+cbc_LDADD = libCbc.la
 
 # not really accurate to use these CFLAGS, but they should have everything
-cbc_CPPFLAGS = $(CBCSOLVERLIB_CFLAGS)
+cbc_CPPFLAGS = $(CBCLIB_CFLAGS)
 
 endif
 
@@ -158,7 +154,7 @@ cbc_generic_SOURCES = \
 # the flags for all available LP solvers should have been collected
 # by configure in CBCGENERIC_LFLAGS and CBCGENERIC_CFLAGS
 
-cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LFLAGS)
+cbc_generic_LDADD = libCbc.la $(CBCGENERIC_LFLAGS)
 cbc_generic_CPPFLAGS = $(CBCGENERIC_CFLAGS)
 
 endif
@@ -259,7 +255,6 @@ includecoin_HEADERS = \
 
 install-exec-local:
 	$(install_sh_DATA) config_cbc.h $(DESTDIR)$(includecoindir)/CbcConfig.h
-	$(install_sh_DATA) config_cbcsolver.h $(DESTDIR)$(includecoindir)/CbcSolverConfig.h
 
 uninstall-local:
 	rm -f $(DESTDIR)$(includecoindir)/CbcConfig.h $(DESTDIR)$(includecoindir)/CbcSolverConfig.h

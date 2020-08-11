@@ -1469,7 +1469,7 @@ void CBC_LINKAGE Cbc_computeFeatures(Cbc_Model *model, double *features) {
   OsiFeatures::compute(features, model->solver_);
 }
 
-CBCSOLVERLIB_EXPORT int CBC_LINKAGE
+CBCLIB_EXPORT int CBC_LINKAGE
 Cbc_nFeatures() {
   return OsiFeatures::n;
 }

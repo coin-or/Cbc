@@ -5,14 +5,14 @@
 #include <string>
 #include <utility>
 
-#include "CbcSolverConfig.h"
+#include "CbcConfig.h"
 
 class CbcModel;
 class OsiSolverInterface;
 class CoinMessageHandler;
 class CoinMessages;
 
-class CBCSOLVERLIB_EXPORT CbcMipStartIO{
+class CBCLIB_EXPORT CbcMipStartIO{
 public:  
 /* tries to read mipstart (solution file) from
    fileName, filling colValues and obj

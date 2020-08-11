@@ -682,8 +682,6 @@ CBCSOLVERLIB_CFLAGS_NOPC
 CBCSOLVERLIB_LFLAGS_NOPC
 CBCLIB_CFLAGS_NOPC
 CBCLIB_LFLAGS_NOPC
-COIN_HAS_GLPK_FALSE
-COIN_HAS_GLPK_TRUE
 COIN_HAS_CPLEX_FALSE
 COIN_HAS_CPLEX_TRUE
 COIN_HAS_OSISPX_FALSE
@@ -941,9 +939,6 @@ with_osispx_cflags
 with_cplex
 with_cplex_lflags
 with_cplex_cflags
-with_glpk
-with_glpk_lflags
-with_glpk_cflags
 enable_cbc_generic
 with_cbc_generic_solver
 enable_cbc_parallel
@@ -1766,16 +1761,6 @@ Optional Packages:
   --with-cplex-lflags     Linker flags for Cplex appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-cplex-cflags     Compiler flags for Cplex appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
-  --with-glpk             Use Glpk. If an argument is given, 'yes' is
-                          equivalent to --with-glpk, 'no' is
-                          equivalent to --without-glpk, 'build' will look for
-                          a COIN-OR ThirdParty package. Any other argument is
-                          applied as for --with-glpk-lflags
-  --with-glpk-lflags      Linker flags for Glpk appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-glpk-cflags      Compiler flags for Glpk appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
   --with-cbc-generic-solver
@@ -21422,246 +21407,6 @@ $as_echo "#define CBC_HAS_CPLEX 1" >>confdefs.h
 
 
 
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for package Glpk" >&5
-$as_echo_n "checking for package Glpk... " >&6; }
-
-
-
-
-
-
-  # Check to see if the user has set an override to skip this primary.
-  coin_has_glpk=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in $COIN_SKIP_PROJECTS ; do
-      if test "$pkg" = "$glpk" ; then
-        coin_has_glpk=skipping
-      fi
-    done
-  fi
-
-  if test "$coin_has_glpk" != skipping ; then
-
-
-
-
-# Check whether --with-glpk was given.
-if test "${with_glpk+set}" = set; then :
-  withval=$with_glpk;
-fi
-
-
-
-# Check whether --with-glpk-lflags was given.
-if test "${with_glpk_lflags+set}" = set; then :
-  withval=$with_glpk_lflags;
-fi
-
-
-
-# Check whether --with-glpk-cflags was given.
-if test "${with_glpk_cflags+set}" = set; then :
-  withval=$with_glpk_cflags;
-fi
-
-
-
-
-
-
-
-  dflt_action=build
-
-  # Initialize variables for the primary package.
-  coin_has_glpk=noInfo
-  glpk_lflags=
-  glpk_cflags=
-  glpk_data=
-  glpk_pcfiles=
-
-  # --with-prim is always present.
-  withval="$with_glpk"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_glpk=skipping
-        ;;
-      yes )
-        coin_has_glpk=requested
-        ;;
-      build )
-        coin_has_glpk=build
-        ;;
-      * )
-        coin_has_glpk=yes
-                glpk_lflags="$withval"
-        ;;
-    esac
-  fi
-
-  # Specifying --with-prim=no overrides the individual options for lflags and cflags.
-     if test "$coin_has_glpk" != skipping ; then
-       withval="$with_glpk_lflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not valid here; please specify linker flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_glpk=yes
-             glpk_lflags="$withval"
-             ;;
-         esac
-       fi
-
-       withval="$with_glpk_cflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not valid here; please specify compiler flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_glpk=yes
-             glpk_cflags="$withval"
-             ;;
-         esac
-       fi
-     fi
-
-
-
-  # At this point, coin_has_prim can be one of
-  # - noInfo (no user options specified),
-  # - skipping (user said no),
-  # - requested,
-  # - build (user said yes or build and gave no further guidance),
-  # - or yes (user specified one or more --with-prim options).
-  # If we're already at yes or skipping, we're done looking.
-
-  # If there are no user options (noInfo) and the default is no, we're skipping.
-  # Otherwise, the default must be yes or build; consider the package requested.
-  # A default action we don't recognise defaults to yes.
-  if test "$coin_has_glpk" = noInfo ; then
-    case $dflt_action in
-      no )
-        coin_has_glpk=skipping
-        ;;
-      build )
-        coin_has_glpk=build
-        ;;
-      * )
-        coin_has_glpk=requested
-        ;;
-    esac
-  fi
-
-  # Now coin_has_prim can be one of skipping, yes, requested, or build.
-  # For requested or build, try pkgconf, if it's available.
-  # If it's not available, well, hope that the user knows their system
-  # and prim can be used with no additional flags.
-  case $coin_has_glpk in
-    requested | build )
-      if test -n "$PKG_CONFIG" -a "" != skip ; then
-        if test $coin_has_glpk = build ; then
-             pcfile=coinglpk
-           else
-             pcfile=glpk
-           fi
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      GLPK_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_glpk=yes
-           glpk_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-           glpk_pcfiles="$pcfile"
-    else
-      GLPK_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_glpk=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module glpk without pkgconf\"" "$LINENO" 5
-  fi
-
-      else
-        coin_has_glpk=no
-      fi
-      ;;
-    skipping | yes )
-      ;;
-    * )
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unexpected status \"$coin_has_glpk\" in COIN_FIND_PRIM_PKG" >&5
-$as_echo "$as_me: WARNING: Unexpected status \"$coin_has_glpk\" in COIN_FIND_PRIM_PKG" >&2;}
-      ;;
-  esac
-
-  # The final value of coin_has_prim will be yes, no, or skipping.
-  # No means we looked (with pkgconfig) and didn't find anything.
-  # Skipping means the user said `don't use.'
-  # Yes means we have something, from the user or from pkgconfig.
-  # Note that we haven't run a useability test!
-
-  # Define BUILDTOOLS_DEBUG to enable debugging output
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for glpk: \"$coin_has_glpk\"" >&5
-$as_echo "$as_me: FIND_PRIM_PKG result for glpk: \"$coin_has_glpk\"" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: Collected values for package 'glpk'" >&5
-$as_echo "$as_me: Collected values for package 'glpk'" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: glpk_lflags is \"$glpk_lflags\"" >&5
-$as_echo "$as_me: glpk_lflags is \"$glpk_lflags\"" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: glpk_cflags is \"$glpk_cflags\"" >&5
-$as_echo "$as_me: glpk_cflags is \"$glpk_cflags\"" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: glpk_data is \"$glpk_data\"" >&5
-$as_echo "$as_me: glpk_data is \"$glpk_data\"" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: glpk_pcfiles is \"$glpk_pcfiles\"" >&5
-$as_echo "$as_me: glpk_pcfiles is \"$glpk_pcfiles\"" >&6;}
-  fi
-
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $coin_has_glpk" >&5
-$as_echo "$coin_has_glpk" >&6; }
-
-      if test "$PKG_CONFIG$coin_has_glpk" = no ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Check for Glpk via pkg-config was skipped as no pkg-config available. If Glpk was meant to be found, then consider installing pkg-config or provide appropriate --with-glpk-lflags, --with-glpk-cflags, etc." >&5
-$as_echo "$as_me: WARNING: Check for Glpk via pkg-config was skipped as no pkg-config available. If Glpk was meant to be found, then consider installing pkg-config or provide appropriate --with-glpk-lflags, --with-glpk-cflags, etc." >&2;}
-      fi
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $coin_has_glpk due to COIN_SKIP_PROJECTS" >&5
-$as_echo "$coin_has_glpk due to COIN_SKIP_PROJECTS" >&6; }
-  fi
-
-  # Possibilities are `yes', 'no', or `skipping'. Normalise to `yes' or `no'.
-  if test "$coin_has_glpk" != yes ; then
-    coin_has_glpk=no
-  fi
-
-   if test $coin_has_glpk = yes; then
-  COIN_HAS_GLPK_TRUE=
-  COIN_HAS_GLPK_FALSE='#'
-else
-  COIN_HAS_GLPK_TRUE='#'
-  COIN_HAS_GLPK_FALSE=
-fi
-
-
-  # If we have located the package, define preprocessor symbol PKG_HAS_PRIM and
-  # augment the necessary variables for the client packages.
-  if test $coin_has_glpk = yes ; then
-
-$as_echo "#define CBC_HAS_GLPK 1" >>confdefs.h
-
-    if test -n "$glpk_pcfiles" ; then CBCSOLVERLIB_PCFILES="$glpk_pcfiles $CBCSOLVERLIB_PCFILES" ; fi
-       CBCSOLVERLIB_LFLAGS="$glpk_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$glpk_cflags $CBCSOLVERLIB_CFLAGS"
-
-
-
-  fi
-
-
-
    if test "$BUILDTOOLS_DEBUG" = 1 ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcLib:" >&5
 $as_echo "$as_me: FINALIZE_FLAGS for CbcLib:" >&6;}
@@ -22980,10 +22725,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_CPLEX_TRUE}" && test -z "${COIN_HAS_CPLEX_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_CPLEX\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COIN_HAS_GLPK_TRUE}" && test -z "${COIN_HAS_GLPK_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_GLPK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CBC_BUILD_CBC_GENERIC_TRUE}" && test -z "${CBC_BUILD_CBC_GENERIC_FALSE}"; then

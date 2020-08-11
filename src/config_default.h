@@ -43,9 +43,6 @@
 /* Define to 1 if the Dylp package is used */
 /* #undef COIN_HAS_DYLP */
 
-/* Define to 1 if the Glpk package is used */
-/* #undef CBC_HAS_GLPK */
-
 /* Define to 1 if the Mosek package is used */
 /* #undef COIN_HAS_MSK */
 

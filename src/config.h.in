@@ -31,9 +31,6 @@
 /* Define to 1 if the Cplex package is available */
 #undef CBC_HAS_CPLEX
 
-/* Define to 1 if Glpk is available. */
-#undef CBC_HAS_GLPK
-
 /* Define to 1 if Miplib3 is available. */
 #undef CBC_HAS_MIPLIB3
 

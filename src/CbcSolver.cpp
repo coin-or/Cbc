@@ -6,6 +6,8 @@
     \brief Second level routines for the cbc stand-alone solver.
 */
 
+// Need these up front to define symbols for other imports
+#include "CoinUtilsConfig.h"
 #include "CbcSolverConfig.h"
 // Let's get rid of these
 #define COIN_HAS_CBC
@@ -31,10 +33,9 @@
 #include <signal.h>
 void CbcCrashHandler( int sig );
 #endif
-#ifdef CBC_HAS_GLPK
+
+#ifdef COINUTILS_HAS_GLPK
 #include "glpk.h"
-extern COINUTILSLIB_EXPORT glp_tran *cbc_glp_tran;
-extern COINUTILSLIB_EXPORT glp_prob *cbc_glp_prob;
 #endif
 
 //###########################################################################
@@ -157,7 +158,7 @@ extern COINUTILSLIB_EXPORT glp_prob *cbc_glp_prob;
 #define CLP_QUOTE(s) CLP_STRING(s)
 #define CLP_STRING(s) #s
 
-#ifndef CBC_HAS_GLPK
+#ifndef COINUTILS_HAS_GLPK
 #define GLP_UNDEF 1
 #define GLP_FEAS 2
 #define GLP_INFEAS 3
@@ -1754,6 +1755,10 @@ int CbcMain1(int argc, const char *argv[],
     model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
   CbcModel *babModel_ = NULL;
+#ifdef COINUTILS_HAS_GLPK
+  glp_tran *coin_glp_tran = NULL;
+  glp_prob *coin_glp_prob = NULL;
+#endif
   int returnMode = 1;
   setCbcOrClpReadMode(1);
   int statusUserFunction_[1];
@@ -8937,13 +8942,20 @@ int CbcMain1(int argc, const char *argv[],
                 size_t length = field.size();
                 size_t percent = field.find('%');
                 if (percent < length && percent > 0) {
-                  gmpl = 1;
+#ifdef COINUTILS_HAS_GLPK
+                 gmpl = 1;
                   fileName = field.substr(0, percent);
                   gmplData = field.substr(percent + 1);
                   if (percent < length - 1)
                     gmpl = 2; // two files
                   printf("GMPL model file %s and data file %s\n",
                     fileName.c_str(), gmplData.c_str());
+#else
+                  printf("Cbc was not built with GMPL support. Exiting.\n");
+                  // This is surely not the right thing to do here. Should we
+                  // throw an exceptioon? Exit?
+                  abort();
+#endif
                 }
               } else if (field[0] == '~') {
                 char *environVar = getenv("HOME");
@@ -8960,6 +8972,7 @@ int CbcMain1(int argc, const char *argv[],
                 size_t length = field.size();
                 size_t percent = field.find('%');
                 if (percent < length && percent > 0) {
+#ifdef COINUTILS_HAS_GLPK
                   gmpl = 1;
                   fileName = directory + field.substr(0, percent);
                   gmplData = directory + field.substr(percent + 1);
@@ -8967,6 +8980,12 @@ int CbcMain1(int argc, const char *argv[],
                     gmpl = 2; // two files
                   printf("GMPL model file %s and data file %s\n",
                     fileName.c_str(), gmplData.c_str());
+#else
+                  printf("Cbc was not built with GMPL support. Exiting.\n");
+                  // This is surely not the right thing to do here. Should we
+                  // throw an exceptioon? Exit?
+                  abort();
+#endif
                 }
               }
               std::string name = fileName;
@@ -9000,9 +9019,12 @@ int CbcMain1(int argc, const char *argv[],
                   keepImportNames != 0,
                   allowImportErrors != 0);
               } else if (gmpl > 0) {
-                status = lpSolver->readGMPL(fileName.c_str(),
-                  (gmpl == 2) ? gmplData.c_str() : NULL,
-                  keepImportNames != 0);
+#ifdef COINUTILS_HAS_GLPK
+                 status = lpSolver->readGMPL(fileName.c_str(),
+                                             (gmpl == 2) ? gmplData.c_str() : NULL,
+                                             keepImportNames != 0,
+                                             &coin_glp_tran, &coin_glp_prob);
+#endif
               } else {
 #ifdef KILL_ZERO_READLP
                 status = clpSolver->readLp(fileName.c_str(), lpSolver->getSmallElementValue());
@@ -10573,10 +10595,10 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   int numberRows = lpSolver->getNumRows();
                   int numberColumns = lpSolver->getNumCols();
                   int numberGlpkRows = numberRows + 1;
-#ifdef CBC_HAS_GLPK
-                  if (cbc_glp_prob) {
+#ifdef COINUTILS_HAS_GLPK
+                  if (coin_glp_prob) {
                     // from gmpl
-                    numberGlpkRows = glp_get_num_rows(cbc_glp_prob);
+                    numberGlpkRows = glp_get_num_rows(coin_glp_prob);
                     if (numberGlpkRows != numberRows)
                       printf("Mismatch - cbc %d rows, glpk %d\n",
                         numberRows, numberGlpkRows);
@@ -10648,24 +10670,24 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     }
                   }
                   fclose(fp);
-#ifdef CBC_HAS_GLPK
-                  if (cbc_glp_prob) {
+#ifdef COINUTILS_HAS_GLPK
+                  if (coin_glp_prob) {
                     if (integerProblem) {
-                      glp_read_mip(cbc_glp_prob, fileName.c_str());
-                      glp_mpl_postsolve(cbc_glp_tran,
-                        cbc_glp_prob,
+                      glp_read_mip(coin_glp_prob, fileName.c_str());
+                      glp_mpl_postsolve(coin_glp_tran,
+                        coin_glp_prob,
                         GLP_MIP);
                     } else {
-                      glp_read_sol(cbc_glp_prob, fileName.c_str());
-                      glp_mpl_postsolve(cbc_glp_tran,
-                        cbc_glp_prob,
+                      glp_read_sol(coin_glp_prob, fileName.c_str());
+                      glp_mpl_postsolve(coin_glp_tran,
+                        coin_glp_prob,
                         GLP_SOL);
                     }
                     // free up as much as possible
-                    glp_free(cbc_glp_prob);
-                    glp_mpl_free_wksp(cbc_glp_tran);
-                    cbc_glp_prob = NULL;
-                    cbc_glp_tran = NULL;
+                    glp_free(coin_glp_prob);
+                    glp_mpl_free_wksp(coin_glp_tran);
+                    coin_glp_prob = NULL;
+                    coin_glp_tran = NULL;
                     //gmp_free_mem();
                     /* check that no memory blocks are still allocated */
                     glp_free_env();
@@ -11376,14 +11398,14 @@ clp watson.mps -\nscaling off\nprimalsimplex");
     << generalPrint
     << CoinMessageEol;
 #endif
-#ifdef CBC_HAS_GLPK
-  if (cbc_glp_prob) {
+#ifdef COINUTILS_HAS_GLPK
+  if (coin_glp_prob) {
     // free up as much as possible
-    glp_free(cbc_glp_prob);
-    glp_mpl_free_wksp(cbc_glp_tran);
+    glp_free(coin_glp_prob);
+    glp_mpl_free_wksp(coin_glp_tran);
     glp_free_env();
-    cbc_glp_prob = NULL;
-    cbc_glp_tran = NULL;
+    coin_glp_prob = NULL;
+    coin_glp_tran = NULL;
   }
 #endif
   delete[] lotsize;

@@ -1076,7 +1076,8 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForR
   if (saveSolver && (specialOptions_ & 32768) != 0) {
     // See if worth trying reduction
     *checkCutoffForRestart = getCutoff();
-    bool tryNewSearch = solverCharacteristics_->reducedCostsAccurate() && (*checkCutoffForRestart < 1.0e20);
+    bool tryNewSearch = solverCharacteristics_->reducedCostsAccurate()
+      /*&& (*checkCutoffForRestart < 1.0e20)*/;
     int numberColumns = getNumCols();
     if (tryNewSearch) {
 #if CBC_USEFUL_PRINTING > 1
@@ -1098,6 +1099,20 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForR
       const double *solution = saveSolver->getColSolution();
       const double *reducedCost = saveSolver->getReducedCost();
 
+      //#define CBC_HAS_NAUTY2
+#ifdef CBC_HAS_NAUTY2
+      double * saveLower = NULL;
+      double * saveUpper = NULL;
+      if (rootSymmetryInfo_&&(moreSpecialOptions2_&131072)!=0) {
+	if (true) {  // try both ways
+	  saveLower = CoinCopyOfArray(solver_->getColLower(),numberColumns);
+	  saveUpper = CoinCopyOfArray(solver_->getColUpper(),numberColumns);
+	} else {
+	  saveLower = CoinCopyOfArray(continuousSolver_->getColLower(),numberColumns);
+	  saveUpper = CoinCopyOfArray(continuousSolver_->getColUpper(),numberColumns);
+	}
+      }
+#endif
       int numberFixed = 0;
       int numberFixed2 = 0;
       for (int i = 0; i < numberIntegers_; i++) {
@@ -1146,9 +1161,41 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForR
       printf("Restart could fix %d integers (%d already fixed)\n",
         numberFixed + numberFixed2, numberFixed2);
 #endif
+#ifdef CBC_HAS_NAUTY2
+      if (rootSymmetryInfo_&&(moreSpecialOptions2_&131072)!=0) {
+	// better to sort changed for least interaction?
+	if (numberFixed+numberFixed2) {
+	  int nExtra = 0;
+	  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	    if (!upper[iColumn]&&saveUpper[iColumn])
+	       nExtra += rootSymmetryInfo_->changeBounds(iColumn,
+							 saveLower,saveUpper,
+							 saveSolver,0);
+	  }
+	  if (nExtra) {
+	    //printf("TIGHTEN2 orbital %d bounds\n",nExtra);
+	    rootSymmetryInfo_->fixSuccess(nExtra);
+	  }
+	}
+	delete [] saveLower;
+	delete [] saveUpper;
+      }
+#endif
+      //#define CBC_RESTART_MULTIPLIER 999
+#if CBC_RESTART_MULTIPLIER
+      char general[100];
+      sprintf(general, "Restart could fix %d integers out of %d (%d already fixed)",
+	      numberFixed + numberFixed2, numberIntegers_,numberFixed2);
+      messageHandler()->message(CBC_GENERAL,messages())
+	<< general << CoinMessageEol;
+      numberFixed += numberFixed2;
+      if (numberFixed * CBC_RESTART_MULTIPLIER < numberColumns)
+        tryNewSearch = false;
+#else
       numberFixed += numberFixed2;
       if (numberFixed * 20 < numberColumns)
         tryNewSearch = false;
+#endif
     }
     // check for odd cuts
     {
@@ -2066,7 +2113,7 @@ void CbcModel::branchAndBound(int doStatistics)
     if (numberOdd) {
       moreSpecialOptions_ |= 1073741824;
       // also switch off checking for restart (as preprocessing may be odd)
-#ifdef CBC_EXPERIMENT7
+#ifdef CBC_EXPERIMENT_JJF
       if (numberOdd > numberSOS)
 #endif
 	specialOptions_ &= ~(512|32768);
@@ -2717,7 +2764,8 @@ void CbcModel::branchAndBound(int doStatistics)
       rootModels[i]->moreSpecialOptions2_ &= ~(128 | 256); // off nauty
 #endif
       // use seed
-      rootModels[i]->setSpecialOptions(specialOptions_ | (4194304 | 8388608));
+      rootModels[i]->setSpecialOptions((specialOptions_|(4194304 | 8388608))
+				       & ~(512|32768));
       rootModels[i]->setMoreSpecialOptions(moreSpecialOptions_ & (~(134217728 | 4194304)));
       // dual tightening may be bad because of degeneracy and random bases
       rootModels[i]->setMoreSpecialOptions(moreSpecialOptions_ | 1073741824);
@@ -2779,7 +2827,7 @@ void CbcModel::branchAndBound(int doStatistics)
       for (int j = 0; j < numberCutGenerators_; j++)
         rootModels[i]->generator_[j]->generator()->refreshSolver(rootModels[i]->solver_);
     }
-#ifdef CBC_EXPERIMENT7
+#ifdef CBC_EXPERIMENT_JJF
     if (numberModels>1 && numberHeuristics_) {
       rootModels[0]->setMoreSpecialOptions(rootModels[0]->moreSpecialOptions()|512);
     }
@@ -4586,12 +4634,12 @@ void CbcModel::branchAndBound(int doStatistics)
               abort();
             }
           }
-          printf("Restart could fix %d integers (%d already fixed)\n",
-            numberFixed + numberFixed2, numberFixed2);
+	  printf("Restart could fix %d integers (%d already fixed)\n",
+		 numberFixed + numberFixed2, numberFixed2);
 #endif
-          numberFixed += numberFixed2;
+	  numberFixed += numberFixed2;
           if (numberFixed * 10 < numberColumns && numberFixed * 4 < numberIntegers_)
-            tryNewSearch = false;
+	    tryNewSearch = false;
         }
 	// check for odd cuts
 	{
@@ -4936,7 +4984,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CBC_THREAD
     if (!parallelMode() || parallelMode() == -1) {
 #endif
-#ifdef CBC_EXPERIMENT7
+#ifdef CBC_EXPERIMENT_JJF
       int multiplier = (moreSpecialOptions_>>3)&31;
       if (tree_->size()<16*multiplier&&numberNodes_>-100 && (specialOptions_&2048)==0) {
         // create breadth first comparison
@@ -5576,7 +5624,7 @@ void CbcModel::branchAndBound(int doStatistics)
     OsiClpSolverInterface *clpSolver
       = dynamic_cast< OsiClpSolverInterface * >(solver_);
     if (clpSolver)
-      clpSolver->setFakeObjective(static_cast< double * >(NULL));
+      clpSolver->setFakeObjective(reinterpret_cast< double * >(NULL));
   }
 #endif
   moreSpecialOptions_ = saveMoreSpecialOptions;
@@ -6705,8 +6753,7 @@ CbcModel::operator=(const CbcModel &rhs)
     continuousPriority_ = rhs.continuousPriority_;
     numberUpdateItems_ = rhs.numberUpdateItems_;
     maximumNumberUpdateItems_ = rhs.maximumNumberUpdateItems_;
-    if (updateItems_ != NULL)
-      delete[] updateItems_;
+    delete[] updateItems_;
     if (maximumNumberUpdateItems_) {
       updateItems_ = new CbcObjectUpdateData[maximumNumberUpdateItems_];
       for (i = 0; i < maximumNumberUpdateItems_; i++)
@@ -6939,8 +6986,7 @@ void CbcModel::gutsOfDestructor()
   delete[] originalColumns_;
   originalColumns_ = NULL;
   delete strategy_;
-  if (updateItems_ != NULL)
-      delete[] updateItems_;
+  delete[] updateItems_;
   updateItems_ = NULL;
   numberUpdateItems_ = 0;
   maximumNumberUpdateItems_ = 0;
@@ -7124,6 +7170,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   numberBeforeTrust_ = rhs.numberBeforeTrust_;
   numberPenalties_ = rhs.numberPenalties_;
   printFrequency_ = rhs.printFrequency_;
+  secsPrintFrequency_ = rhs.secsPrintFrequency_;
   fastNodeDepth_ = rhs.fastNodeDepth_;
   howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
   maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
@@ -10587,8 +10634,64 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom,
     if ((specialOptions_ & 1) != 0 && onOptimalPath) {
       solver_->writeMpsNative("before-tighten.mps", NULL, NULL, 2);
     }
-    if (clpSolver && (!currentNode_ || (currentNode_->depth() & 2) != 0) && !solverCharacteristics_->solutionAddsCuts() && (moreSpecialOptions_ & 1073741824) == 0 && (moreSpecialOptions2_&65536) == 0)
+    if (clpSolver && (!currentNode_ || (currentNode_->depth() & 2) != 0) && !solverCharacteristics_->solutionAddsCuts() && (moreSpecialOptions_ & 1073741824) == 0 && (moreSpecialOptions2_&65536) == 0) {
+#ifdef CBC_HAS_NAUTY
+      double * saveLower = NULL;
+      double * saveUpper = NULL;
+      if (getMaximumNodes()>1000000 && (moreSpecialOptions2_&131072)!=0) {
+	if (getMaximumNodes()-1000000<numberNodes_) {
+	  printf("switching off after %d nodes\n",numberNodes_);
+	  moreSpecialOptions2_ &= ~131072;
+	}
+      }
+#define ORBIT_OLD_WAY 1
+      if (rootSymmetryInfo_&&(moreSpecialOptions2_&131072)!=0) {
+	int numberColumns = solver_->getNumCols();
+	if (numberNodes_ && ORBIT_OLD_WAY) {
+	  saveLower = CoinCopyOfArray(solver_->getColLower(),numberColumns);
+	  saveUpper = CoinCopyOfArray(solver_->getColUpper(),numberColumns);
+	} else {
+	  saveLower = CoinCopyOfArray(continuousSolver_->getColLower(),numberColumns);
+	  saveUpper = CoinCopyOfArray(continuousSolver_->getColUpper(),numberColumns);
+	}
+      }
+#endif
       nTightened = clpSolver->tightenBounds();
+#ifdef CBC_HAS_NAUTY
+      if (rootSymmetryInfo_&&(moreSpecialOptions2_&131072)!=0) {
+	// better to sort changed for least interaction?
+	if (nTightened||true) {
+	  int numberColumns = solver_->getNumCols();
+	  const double * upper = solver_->getColUpper();
+	  const double * lower = solver_->getColLower();
+	  int nExtra = 0;
+	  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	    if (!upper[iColumn]&&saveUpper[iColumn]&&!lower[iColumn])
+	       nExtra += rootSymmetryInfo_->changeBounds(iColumn,
+							 saveLower,saveUpper,
+							 solver_,
+							 ORBIT_OLD_WAY-1);
+	  }
+	  if (nExtra) {
+	    rootSymmetryInfo_->fixSuccess(nExtra);
+	    if ((specialOptions_ & 1) != 0 && onOptimalPath) {
+	      const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
+	      if (!debugger) {
+		// tighten did something???
+		solver_->getRowCutDebuggerAlways()->printOptimalSolution(*solver_);
+		solver_->writeMpsNative("infeas4.mps", NULL, NULL, 2);
+		printf("Not on optimalpath orbital tighten\n");
+		//abort();
+		onOptimalPath = false;
+	      }
+	    }
+	  }
+	}
+	delete [] saveLower;
+	delete [] saveUpper;
+      }
+#endif
+    }
     if (nTightened) {
       //printf("%d bounds tightened\n",nTightened);
       if ((specialOptions_ & 1) != 0 && onOptimalPath) {

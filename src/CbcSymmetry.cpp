@@ -209,6 +209,37 @@ void CbcSymmetry::Compute_Symmetry() const
 
   //Print_Orbits ();
   nauty_info_->computeAuto();
+#ifdef PRINT_MORE
+  if (permutations_) {
+    int * marked = new int [4*numberColumns_];
+    //int * whichMarked = marked + numberColumns_;
+    //int * save = whichOrbit_+4*numberColumns_;
+    memset(marked,0,numberColumns_*sizeof(int));
+    int maxMarked = 0;
+    for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+      const int * orbit = permutations_[iPerm].orbits;
+      int nIn = 0;
+      for (int i=0;i<numberColumns_;i++) {
+	if (orbit[i]>=0) {
+	  nIn++;
+	  marked[i]++;
+	  maxMarked = CoinMax(maxMarked,marked[i]);
+	}
+      }
+      printf("Generator %d has %d\n",iPerm,nIn);
+    }
+    for (int iMark=1;iMark<=maxMarked;iMark++) {
+      int n=0;
+      for (int i=0;i<numberColumns_;i++) {
+	if (marked[i]==iMark)
+	  n++;
+      }
+      if (n)
+	printf("%d are in %d generators\n",n,iMark);
+    }
+    delete [] marked;
+  }
+#endif
   //Print_Orbits ();
 }
 
@@ -320,6 +351,13 @@ int CbcSymmetry::statsOrbits(CbcModel *model, int type) const
   return returnCode;
 }
 
+void
+CbcSymmetry::fixSuccess(int nFixed)
+{
+  nautyFixSucceeded_++;
+  nautyFixes_+=nFixed;
+}
+
 void CbcSymmetry::Print_Orbits(int type) const
 {
 
@@ -327,11 +365,6 @@ void CbcSymmetry::Print_Orbits(int type) const
   if (!nauty_info_->getN())
     return;
   std::vector< std::vector< int > > *new_orbits = nauty_info_->getOrbits();
-
-  printf("Nauty: %d generators, group size: %.0g",
-    //  nauty_info_->getNumOrbits(),
-    nauty_info_->getNumGenerators(),
-    nauty_info_->getGroupSize());
 
   int nNonTrivialOrbits = 0;
 
@@ -348,7 +381,7 @@ void CbcSymmetry::Print_Orbits(int type) const
     // printf("] \n");
   }
 
-  printf(" (%d non-trivial orbits).\n", nNonTrivialOrbits);
+  //printf(" (%d non-trivial orbits).\n", nNonTrivialOrbits);
 
 #if 1
   if (nNonTrivialOrbits) {
@@ -519,14 +552,15 @@ CbcSymmetry::changeBounds(int iColumn, double * saveLower,
 			  OsiSolverInterface * solver,
 			  int mode) const
 {
-  if (saveUpper[iColumn]>1.0e12 || whichOrbit_[iColumn]<0)
+  if (saveUpper[iColumn]>1.0e12 || whichOrbit_[iColumn]<0 || saveLower[iColumn])
     return 0; // only 0-1 at present
-  if (mode)
+  if (mode>0)
     nautyBranchCalls_++;
   int nFixed = 0;
   int * originalUpper = whichOrbit_ + numberColumns_;
   double * columnLower = saveLower;
   double * columnUpper = saveUpper;
+  const double * currentLower = solver->getColLower();
   double saveUp = columnUpper[iColumn];
   columnUpper[iColumn] = 0.0;//solver->getColUpper()[iColumn];
   int * marked = originalUpper + numberColumns_;
@@ -592,16 +626,22 @@ CbcSymmetry::changeBounds(int iColumn, double * saveLower,
       marked[whichMarked[i]]=0;
     if (nTotalOdd==1) {
       int j = orbit[goodOddOne];
-      if (columnUpper[goodOddOne]) {
+      if (columnUpper[goodOddOne]&&!currentLower[goodOddOne]) {
 	save[nFixed++]=goodOddOne;
-	if (!mode)
+	if (mode<=0) {
+	  //printf("setting goodOddOne %d to zero\n",goodOddOne);
 	  solver->setColUpper(goodOddOne,0.0);
+	  if (mode<0)
+	    columnUpper[goodOddOne] = 0.0;
+	}
       }
       while (j!=goodOddOne) {
-	if (columnUpper[j]) {
+	if (columnUpper[j]&&!currentLower[j]) {
 	  //printf("setting %d to zero\n",j);
-	  if (!mode)
+	  if (mode<=0) 
 	    solver->setColUpper(j,0.0);
+	  if (mode<0)
+	    columnUpper[j] = 0.0;
 	  save[nFixed++]=j;
 	}
 	j = orbit[j];
@@ -609,12 +649,110 @@ CbcSymmetry::changeBounds(int iColumn, double * saveLower,
     }
   }
   columnUpper[iColumn] = saveUp;
-  if (mode && nFixed>0) {
+  if (mode>0 && nFixed>0) {
     // done in CbcOrbital nautyBranchSucceeded_++;
     nautyOtherBranches_+=nFixed;
   }
   return nFixed;
 }
+int
+CbcSymmetry::changeBounds(double *saveLower,
+			  double *saveUpper,
+			  OsiSolverInterface * solver) const
+{
+  int nFixed = 0;
+  int * originalUpper = whichOrbit_ + numberColumns_;
+  int * marked = originalUpper + numberColumns_;
+  int * whichMarked = marked + numberColumns_;
+  int * save = whichOrbit_+4*numberColumns_;
+  double * columnLower = saveLower;
+  double * columnUpper = saveUpper;
+  int numberColumns = solver->getNumCols();
+  // Do faster later (i.e. use orbits more)
+  for (int iColumn = 0;iColumn<numberColumns;iColumn++) {
+    if (whichOrbit_[iColumn] < 0 || saveUpper[iColumn])
+      continue;
+    double saveUp = columnUpper[iColumn];
+    columnUpper[iColumn] = 0.0;//solver->getColUpper()[iColumn];
+    memset(marked,0,numberColumns_*sizeof(int));
+    for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+      const int * orbit = permutations_[iPerm].orbits;
+      if (orbit[iColumn]<0)
+	continue;
+      int nMarked = 0;
+      int nTotalOdd = 0;
+      int goodOddOne = -1;
+      for (int i=0;i<numberColumns_;i++) {
+	if (orbit[i]>=0 && !marked[i]) {
+	  // OK is all same or one fixed to 0 and rest same
+	  int oddOne = -1;
+	  int nOdd = 0;
+	  int first = i;
+	  marked[i] = 1;
+	  whichMarked[nMarked++] = i;
+	  int j = orbit[i];
+	  int lower = static_cast<int>(columnLower[i]);
+	  if (lower) nOdd=999; //temp
+	  int upper = static_cast<int>(columnUpper[i]);
+	  if (upper==0) {
+	    int upperj = static_cast<int>(columnUpper[j]);
+	    if (upperj) {
+	      oddOne = i;
+	      nOdd = 1;
+	      upper = upperj;
+	    }
+	  }
+	  while (j!=i) {
+	    marked[j] = 1;
+	    whichMarked[nMarked++] = j;
+	    int lowerj = static_cast<int>(columnLower[j]);
+	    if (lowerj) nOdd=999; //temp
+	    int upperj = static_cast<int>(columnUpper[j]);
+	    if (lower!=lowerj || upper != upperj) {
+	      if (nOdd) {
+		// bad
+		nOdd = numberColumns_;
+	      } else {
+		oddOne = j;
+		nOdd = 1;
+	      }
+	    }
+	    j = orbit[j];
+	  }
+	  if (!nOdd) {
+	  } else if (nOdd==1) {
+	    if (!nTotalOdd)
+	      goodOddOne = oddOne;
+	    nTotalOdd ++;
+	  } else {
+	    nTotalOdd = -2*numberColumns_;
+	  }
+	}
+      }
+      //printf("permutation %d had %d odd\n",iPerm,nTotalOdd);
+      for (int i=0;i<nMarked;i++) 
+	marked[whichMarked[i]]=0;
+      if (nTotalOdd==1) {
+	int j = orbit[goodOddOne];
+	if (columnUpper[goodOddOne]) {
+	  save[nFixed++]=goodOddOne;
+	  solver->setColUpper(goodOddOne,0.0);
+	}
+	while (j!=goodOddOne) {
+	  if (columnUpper[j]) {
+	    //printf("setting %d to zero\n",j);
+	    solver->setColUpper(j,0.0);
+	    save[nFixed++]=j;
+	  }
+	  j = orbit[j];
+	}
+      }
+    }
+    columnUpper[iColumn] = saveUp;
+  }
+  return nFixed;
+}
+
 int
 CbcSymmetry::orbitalFixing2(OsiSolverInterface * solver) 
 {

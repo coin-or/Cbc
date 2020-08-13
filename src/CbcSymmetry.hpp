@@ -172,6 +172,9 @@ public:
   int changeBounds(int kColumn, double * saveLower,
 		    double * saveUpper,
 		    OsiSolverInterface * solver,int mode) const;
+  int changeBounds(double *saveLower, double *saveUpper,
+		   OsiSolverInterface * solver) const;
+  void fixSuccess(int nFixed);
   inline int numberColumns() const
   { return numberColumns_;}
   inline bool compare(Node &a, Node &b) const;

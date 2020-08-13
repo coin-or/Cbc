@@ -2264,7 +2264,7 @@ void CbcModel::branchAndBound(int doStatistics)
     if (numberOdd) {
       moreSpecialOptions_ |= 1073741824;
       // also switch off checking for restart (as preprocessing may be odd)
-#ifdef CBC_EXPERIMENT7
+#ifdef CBC_EXPERIMENT_JJF
       if (numberOdd > numberSOS)
 #endif
 	specialOptions_ &= ~(512|32768);
@@ -2922,7 +2922,8 @@ void CbcModel::branchAndBound(int doStatistics)
       rootModels[i]->moreSpecialOptions2_ &= ~(128 | 256); // off nauty
 #endif
       // use seed
-      rootModels[i]->setSpecialOptions(specialOptions_ | (4194304 | 8388608));
+      rootModels[i]->setSpecialOptions((specialOptions_|(4194304 | 8388608))
+				       & ~(512|32768));
       rootModels[i]->setMoreSpecialOptions(moreSpecialOptions_ & (~(134217728 | 4194304)));
       // dual tightening may be bad because of degeneracy and random bases
       rootModels[i]->setMoreSpecialOptions(moreSpecialOptions_ | 1073741824);
@@ -2984,7 +2985,7 @@ void CbcModel::branchAndBound(int doStatistics)
       for (int j = 0; j < numberCutGenerators_; j++)
         rootModels[i]->generator_[j]->generator()->refreshSolver(rootModels[i]->solver_);
     }
-#ifdef CBC_EXPERIMENT7
+#ifdef CBC_EXPERIMENT_JJF
     if (numberModels>1 && numberHeuristics_) {
       rootModels[0]->setMoreSpecialOptions(rootModels[0]->moreSpecialOptions()|512);
     }
@@ -4817,12 +4818,12 @@ void CbcModel::branchAndBound(int doStatistics)
               abort();
             }
           }
-          printf("Restart could fix %d integers (%d already fixed)\n",
-            numberFixed + numberFixed2, numberFixed2);
+	  printf("Restart could fix %d integers (%d already fixed)\n",
+		 numberFixed + numberFixed2, numberFixed2);
 #endif
-          numberFixed += numberFixed2;
+	  numberFixed += numberFixed2;
           if (numberFixed * 10 < numberColumns && numberFixed * 4 < numberIntegers_)
-            tryNewSearch = false;
+	    tryNewSearch = false;
         }
 	// check for odd cuts
 	{
@@ -5165,7 +5166,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CBC_THREAD
     if (!parallelMode() || parallelMode() == -1) {
 #endif
-#ifdef CBC_EXPERIMENT7
+#ifdef CBC_EXPERIMENT_JJF
       int multiplier = (moreSpecialOptions_>>3)&31;
       if (tree_->size()<16*multiplier&&numberNodes_>-100 && (specialOptions_&2048)==0) {
         // create breadth first comparison
@@ -5813,7 +5814,7 @@ void CbcModel::branchAndBound(int doStatistics)
     OsiClpSolverInterface *clpSolver
       = dynamic_cast< OsiClpSolverInterface * >(solver_);
     if (clpSolver)
-      clpSolver->setFakeObjective(static_cast< double * >(NULL));
+      clpSolver->setFakeObjective(reinterpret_cast< double * >(NULL));
   }
 #endif
   moreSpecialOptions_ = saveMoreSpecialOptions;
@@ -6942,8 +6943,7 @@ CbcModel::operator=(const CbcModel &rhs)
     continuousPriority_ = rhs.continuousPriority_;
     numberUpdateItems_ = rhs.numberUpdateItems_;
     maximumNumberUpdateItems_ = rhs.maximumNumberUpdateItems_;
-    if (updateItems_ != NULL)
-      delete[] updateItems_;
+    delete[] updateItems_;
     if (maximumNumberUpdateItems_) {
       updateItems_ = new CbcObjectUpdateData[maximumNumberUpdateItems_];
       for (i = 0; i < maximumNumberUpdateItems_; i++)
@@ -7176,8 +7176,7 @@ void CbcModel::gutsOfDestructor()
   delete[] originalColumns_;
   originalColumns_ = NULL;
   delete strategy_;
-  if (updateItems_ != NULL)
-      delete[] updateItems_;
+  delete[] updateItems_;
   updateItems_ = NULL;
   numberUpdateItems_ = 0;
   maximumNumberUpdateItems_ = 0;
@@ -7361,6 +7360,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   numberBeforeTrust_ = rhs.numberBeforeTrust_;
   numberPenalties_ = rhs.numberPenalties_;
   printFrequency_ = rhs.printFrequency_;
+  secsPrintFrequency_ = rhs.secsPrintFrequency_;
   fastNodeDepth_ = rhs.fastNodeDepth_;
   howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
   maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;

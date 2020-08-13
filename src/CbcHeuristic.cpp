@@ -946,6 +946,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       process.messageHandler()->setLogLevel(0);
     if (!solver->defaultHandler() && solver->messageHandler()->logLevel(0) != -1000)
       process.passInMessageHandler(solver->messageHandler());
+    //#define CGL_DEBUG
 #ifdef CGL_DEBUG
     /*
 	  We're debugging. (specialOptions 1)
@@ -1345,9 +1346,22 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         //printf("sol %x\n",inputSolution_);
 #ifdef CGL_DEBUG
         if ((model_->specialOptions() & 1) != 0) {
-          const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger();
-          if (debugger) {
+          const OsiRowCutDebugger *debugger = model_->solver()->getRowCutDebugger();
+          if (debugger && numberNodes < 0) {
             printf("On optimal path CC\n");
+	    // try and redo debugger
+	    int numberColumns = solver2->getNumCols();
+	    const int *originalColumns = process.originalColumns();
+	    OsiRowCutDebugger *debugger = const_cast< OsiRowCutDebugger * >(model.solver()->getRowCutDebuggerAlways());
+	    if (debugger) {
+	      debugger->redoSolution(numberColumns, originalColumns);
+	      const OsiRowCutDebugger *debugger2
+		= model.solver()->getRowCutDebugger();
+	      if (!debugger2) {
+		printf("Does not include optimal solution\n");
+		model.solver()->activateRowCutDebugger(NULL,false);
+	      }
+	    }
           }
         }
 #endif

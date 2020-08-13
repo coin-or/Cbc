@@ -2822,22 +2822,34 @@ int CbcMain1(int argc, const char *argv[],
                   value = value % 10;
                   parameters_[whichParam(CBC_PARAM_INT_EXPERIMENT, parameters_)].setIntValue(value);
                 }
-#ifndef CBC_EXPERIMENT7
+#ifndef CBC_EXPERIMENT_JJF
 		if (value == 1) {
 		  // just experimental preprocessing and more restarts
 		  tunePreProcess |= 8192;
 		  model_.setSpecialOptions(model_.specialOptions()|(512|32768));
 		}
 #else
-		if (value == 1 || value == 2) {
-		  // just experimental preprocessing and more restarts
-		  tunePreProcess |= 8199;
+		experimentValue = value; // save
+		if (value > 0 && value < 5) {
+		  // more restarts
+		  // >1 go to end in strong branching
+		  // >2 experimental preprocessing
+		  // 4 try ranging before strong branching
 		  model_.setSpecialOptions(model_.specialOptions()|(512|32768));
- 		  if (value == 2) {
- 		    value = 1;
+#ifndef CBC_OTHER_SOLVER
+		  if (value > 1) {
+		    OsiClpSolverInterface *osiclp =
+		      dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+		    osiclp->setSpecialOptions(osiclp->specialOptions()&~32);
+		  }
+#endif
+		  if (value > 2)
+		    tunePreProcess |= 8198; // was 8199;
+ 		  if (value == 4) {
  		    int more2 = parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].intValue();
                      parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].setIntValue(more2|1048576);
  		  }
+		  value = 1;
 		}
 #endif
                 if (value > 1) {
@@ -4113,7 +4125,7 @@ int CbcMain1(int argc, const char *argv[],
                         CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);
                         heuristicGreedyEquality.setHeuristicName("greedy equality");
                         cbcModel->addHeuristic(&heuristicGreedyEquality);
-#ifdef CBC_EXPERIMENT7
+#ifdef CBC_EXPERIMENT_JJF
 #ifndef CBC_OTHER_SOLVER
 			CbcHeuristicRandRound heuristicRandRound(*cbcModel);
 			heuristicRandRound.setHeuristicName("random rounding");
@@ -4612,7 +4624,7 @@ int CbcMain1(int argc, const char *argv[],
 		  if ((tune2 & (1|512)) != 0) {
                     // heavy probing
                     generator1.setMaxPassRoot(2);
-#ifndef CBC_EXPERIMENT7
+#ifndef CBC_EXPERIMENT_JJF
                     generator1.setMaxElements(1000);
 #else
  		    if ((tune2 & 512) != 0) 
@@ -8078,6 +8090,15 @@ int CbcMain1(int argc, const char *argv[],
 		  } else {
 		    babModel_->setSecsPrintFrequency(value);
 		  }
+#ifdef CBC_EXPERIMENT_JJF
+		  // deal with experiment
+		  if (experimentValue>0&&experimentValue<5) {
+		    if (experimentValue > 1) {
+		      // go to end in strong branching
+		      solver->setSpecialOptions(solver->specialOptions()&~32);
+		    }
+		  }
+#endif
 		}
 #endif
                 babModel_->branchAndBound(statistics);

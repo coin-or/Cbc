@@ -629,6 +629,35 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       delete[] mark;
 #endif
     }
+    //#define CBC_CLEAN_CUTS
+#ifdef CBC_CLEAN_CUTS
+    // take out ones with small elements
+    {
+      int numberRowCutsAfter = cs.sizeRowCuts();
+      for (int k = numberRowCutsAfter - 1; k >= numberRowCutsBefore; k--) {
+        OsiRowCut &thisCut = cs.rowCut(k);
+	CoinPackedVector rpv = thisCut.row();
+	const int n = rpv.getNumElements();
+	const int *indices = rpv.getIndices();
+	const double *elements = rpv.getElements();
+	double tolerance = 2.0*model_->getIntegerTolerance();
+	bool bad = false;
+	double badValue=0.0;
+	for (int i=0;i<n;i++) {
+	  if (fabs(elements[i])<tolerance&&solver->isInteger(indices[i])) {
+	    bad = true;
+	    badValue = elements[i];
+	    break;
+	  }
+	}
+        if (bad) {
+	  cs.eraseRowCut(k);
+	  printf("bad cut %s with %d elements - %g\n",
+		 generatorName_,n,badValue);
+	}
+      }
+    }
+#endif
     CbcCutModifier *modifier = model_->cutModifier();
     if (modifier) {
       int numberRowCutsAfter = cs.sizeRowCuts();

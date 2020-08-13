@@ -3362,4 +3362,8 @@ void setCutAndHeuristicOptions(CbcModel &model);
   inline void setPreProcessingMode(OsiSolverInterface * solver,int processMode)
   {}
 #endif
+// Experimental options - named so you know who to blame
+#ifdef CBC_EXPERIMENT_JJF
+#define CBC_RESTART_MULTIPLIER 999 // make it more likely to do a second preprocess and restart
+#endif
 #endif

@@ -1274,6 +1274,18 @@ Cbc_writeMps(Cbc_Model *model, const char *filename)
   model->solver_->writeMps(filename, "mps", Cbc_getObjSense(model));
 }
 
+int Cbc_readBasis(Cbc_Model *model, const char *filename) {
+  OsiClpSolverInterface *solver = model->solver_;
+  ClpSimplex *clps = solver->getModelPtr();
+  return clps->readBasis(filename);
+}
+
+int Cbc_writeBasis(Cbc_Model *model, const char *filename, char writeValues, int formatType) {
+  OsiClpSolverInterface *solver = model->solver_;
+  ClpSimplex *clps = solver->getModelPtr();
+  return clps->writeBasis(filename, writeValues, formatType);
+}
+
 /** Writes an LP file
  *
  * @param model problem object

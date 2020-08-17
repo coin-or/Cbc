@@ -826,6 +826,16 @@ Cbc_readMps(Cbc_Model *model, const char *filename);
 CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_readLp(Cbc_Model *model, const char *filename);
 
+/** @brief Read the optimal basis for the linear program
+  *
+  * @param model problem object
+  * @param fileName file name 
+  * @return returns -1 on file error, 0 if no values, 1 if values.
+  **/
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
+Cbc_readBasis(Cbc_Model *model, const char *filename);
+
+
 /** @brief Write an MPS file from the given filename 
   *
   * @param model problem object
@@ -841,6 +851,18 @@ Cbc_writeMps(Cbc_Model *model, const char *filename);
   **/
 CBCSOLVERLIB_EXPORT void CBC_LINKAGE
 Cbc_writeLp(Cbc_Model *model, const char *filename);
+
+/** @brief Saves the optimal basis for the linear program
+  *
+  * @param model problem object
+  * @param fileName file name 
+  * @param writeValues If writeValues = 1 writes values of structurals (and adds VALUES to end of NAME card), 0 otherwise
+  * @param formatType 0 - normal,   1 - extra accuracy,   2 - IEEE hex(later)
+  * @return non-zero on IO error
+  **/
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
+Cbc_writeBasis(Cbc_Model *model, const char *filename, char writeValues, int formatType);
+
 
 /** @brief If Cbc was built with gzip compressed files support
   *

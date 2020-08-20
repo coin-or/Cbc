@@ -259,7 +259,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
   if (howOften == 100)
     doThis = false;
   // Switch off if special setting
-  if (whenCutGeneratorInSub_ == -200 && model_->parentModel()) {
+  if (whenCutGeneratorInSub_ == -200 && !model_->inSmallBranchAndBound()) {
     fullScan = 0;
     doThis = false;
   }
@@ -300,6 +300,14 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
     //#define CBC_DEBUG
     int numberRowCutsBefore = cs.sizeRowCuts();
     int numberColumnCutsBefore = cs.sizeColCuts();
+#ifdef CGL_DEBUG
+    const OsiRowCutDebugger *debugger2 = solver->getRowCutDebugger();
+    if (debugger2 && debugger2->onOptimalPath(*solver)) {
+      printf("On optimal path cbcgen\n");
+    } else {
+      debugger2 = NULL;
+    }
+#endif
 #ifdef JJF_ZERO
     int cutsBefore = cs.sizeCuts();
 #endif
@@ -373,7 +381,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 #define TRY_NOW_AND_THEN
 #ifdef TRY_NOW_AND_THEN
         if ((numberTimes_ == 200 || (numberTimes_ > 200 && (numberTimes_ % 2000) == 0))
-          && !model_->parentModel() && info.formulation_rows > 200) {
+          && !model_->inSmallBranchAndBound() && info.formulation_rows > 200) {
           /* In tree, every now and then try various combinations
                        maxStack, maxProbe (last 5 digits)
                        123 is special and means CglProbing will try and
@@ -629,6 +637,16 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       delete[] mark;
 #endif
     }
+#ifdef CGL_DEBUG
+    if (debugger2) {
+      int numberRowCutsAfter = cs.sizeRowCuts();
+      for (int k = numberRowCutsAfter - 1; k >= numberRowCutsBefore; k--) {
+        OsiRowCut &thisCut = cs.rowCut(k);
+	if (debugger2->invalidCut(thisCut))
+	  abort();
+      }
+    }
+#endif
     //#define CBC_CLEAN_CUTS
 #ifdef CBC_CLEAN_CUTS
     // take out ones with small elements
@@ -882,7 +900,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       CoinBigIndex nAdd;
       CoinBigIndex nAdd2;
       CoinBigIndex nReasonable;
-      if (!model_->parentModel() && depth < 2) {
+      if (!model_->inSmallBranchAndBound() && depth < 2) {
         if (inaccuracy_ < 3) {
           nAdd = 10000;
           if (pass > 0 && numberColumns > -500)

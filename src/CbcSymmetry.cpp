@@ -2045,13 +2045,13 @@ CbcOrbitalBranchingObject::CbcOrbitalBranchingObject(CbcModel *model, int column
   numberOther_=-1;
   for (int i = 0; i < numberColumns; i++) {
     if (orbit[i] == iOrbit)
-      numberOther_++;
+      numberOther++;
   }
   assert(numberOther_ > 0);
   symmetryInfo->incrementBranchSucceeded();
   symmetryInfo->incrementNautyBranches(numberOther_);
   numberExtra_ = numberExtra;
-  fixToZero_ = new int[numberOther_ + numberExtra_];
+  fixToZero_ = new int[numberOther + numberExtra_];
   int n = 0;
   for (int i = 0; i < numberColumns; i++) {
     if (orbit[i] == iOrbit && i != column)

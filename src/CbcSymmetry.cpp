@@ -36,21 +36,6 @@ extern "C" {
 #if NAUTY_MAX_LEVEL
 extern int nauty_maxalllevel;
 #endif
-/* Deliberately not threadsafe to save effort
-   Just for statistics
-   and not worth gathering across threads
-   can redo later
- */
-static int nautyBranchCalls_ = 0;
-static int lastNautyBranchSucceeded_ = 0;
-static int nautyBranchSucceeded_ = 0;
-static int nautyFixCalls_ = 0;
-static int lastNautyFixSucceeded_ = 0;
-static int nautyFixSucceeded_ = 0;
-static double nautyTime_ = 0.0;
-static double nautyFixes_ = 0.0;
-static double nautyOtherBranches_ = 0.0;
-static char message_[100];
 
 void CbcSymmetry::Node::node(int i, double c, double l, double u, int cod, int s)
 {
@@ -77,6 +62,7 @@ inline bool CbcSymmetry::compare(register Node &a, register Node &b) const
 // simple nauty definitely not thread safe
 static int calls = 0;
 static int maxLevel = 0;
+static char message_[200];
 static CbcSymmetry * baseSymmetry=NULL;
 static void
 userlevelproc(int *lab, int *ptn, int level, int *orbits, statsblk *stats,
@@ -1302,6 +1288,15 @@ CbcSymmetry::CbcSymmetry()
   , numberPermutations_(0)
   , permutations_(NULL)
   , whichOrbit_(NULL)
+  , nautyTime_(0.0)
+  , nautyFixes_(0.0)
+  , nautyOtherBranches_(0.0)
+  , nautyBranchCalls_(0)
+  , lastNautyBranchSucceeded_(0)
+  , nautyBranchSucceeded_(0)
+  , nautyFixCalls_(0)
+  , lastNautyFixSucceeded_(0)
+  , nautyFixSucceeded_(0)
 {
 }
 // Copy constructor
@@ -1326,8 +1321,16 @@ CbcSymmetry::CbcSymmetry(const CbcSymmetry &rhs)
   } else {
     permutations_ = NULL;
   }
+  nautyTime_ = rhs.nautyTime_;
+  nautyFixes_ = rhs.nautyFixes_;
+  nautyOtherBranches_ = rhs.nautyOtherBranches_;
+  nautyBranchCalls_ = rhs.nautyBranchCalls_;
+  lastNautyBranchSucceeded_ = rhs.lastNautyBranchSucceeded_;
+  nautyBranchSucceeded_ = rhs.nautyBranchSucceeded_;
+  nautyFixCalls_ = rhs.nautyFixCalls_;
+  lastNautyFixSucceeded_ = rhs.lastNautyFixSucceeded_;
+  nautyFixSucceeded_ = rhs.nautyFixSucceeded_;
 }
-
 // Assignment operator
 CbcSymmetry &
 CbcSymmetry::operator=(const CbcSymmetry &rhs)
@@ -1360,6 +1363,15 @@ CbcSymmetry::operator=(const CbcSymmetry &rhs)
     } else {
       permutations_ = NULL;
     }
+    nautyTime_ = rhs.nautyTime_;
+    nautyFixes_ = rhs.nautyFixes_;
+    nautyOtherBranches_ = rhs.nautyOtherBranches_;
+    nautyBranchCalls_ = rhs.nautyBranchCalls_;
+    lastNautyBranchSucceeded_ = rhs.lastNautyBranchSucceeded_;
+    nautyBranchSucceeded_ = rhs.nautyBranchSucceeded_;
+    nautyFixCalls_ = rhs.nautyFixCalls_;
+    lastNautyFixSucceeded_ = rhs.lastNautyFixSucceeded_;
+    nautyFixSucceeded_ = rhs.nautyFixSucceeded_;
   }
   return *this;
 }
@@ -1921,16 +1933,16 @@ CbcOrbitalBranchingObject::CbcOrbitalBranchingObject(CbcModel *model, int column
   int iOrbit = orbit[column];
   assert(iOrbit >= 0);
   int numberColumns = model->getNumCols();
-  numberOther_ = -1;
+  int numberOther = -1;
   for (int i = 0; i < numberColumns; i++) {
     if (orbit[i] == iOrbit)
-      numberOther_++;
+      numberOther++;
   }
   assert(numberOther_ > 0);
-  nautyBranchSucceeded_++;
-  nautyOtherBranches_ += numberOther_;
+  symmetryInfo->incrementBranchSucceeded();
+  symmetryInfo->incrementNautyBranches(numberOther);
   numberExtra_ = numberExtra;
-  fixToZero_ = new int[numberOther_ + numberExtra_];
+  fixToZero_ = new int[numberOther + numberExtra_];
   int n = 0;
   for (int i = 0; i < numberColumns; i++) {
     if (orbit[i] == iOrbit && i != column)
@@ -1953,7 +1965,7 @@ CbcOrbitalBranchingObject::CbcOrbitalBranchingObject(CbcModel *model,
 {
   CbcSymmetry *symmetryInfo = model->rootSymmetryInfo();
   assert(symmetryInfo);
-  nautyBranchSucceeded_++;
+  symmetryInfo->incrementBranchSucceeded();
   
   fixToZero_ = CoinCopyOfArray(model->rootSymmetryInfo()->fixedToZero(),
 			       nFixed);

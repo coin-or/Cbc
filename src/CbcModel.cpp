@@ -442,6 +442,71 @@ void CbcModel::analyzeObjective()
         }
       }
     }
+    {
+      // check all equal before we started playing around
+      int iPriority = -1;
+      for (int i = 0; i < numberObjects_; i++) {
+        int k = object_[i]->priority();
+        if (iPriority == -1)
+          iPriority = k;
+        else if (iPriority != k)
+          iPriority = -2;
+      }
+      if (iPriority >= 0)
+	moreSpecialOptions2_ |= 2097152;
+    }
+#ifdef CBC_HAS_NAUTY
+    if (symmetryInfo_ || rootSymmetryInfo_) {
+      if ((moreSpecialOptions2_&2097152) != 0) {
+	CbcSymmetry * info = symmetryInfo_ ? symmetryInfo_ : rootSymmetryInfo_;
+	int numberColumns = solver_->getNumCols();
+	int numberPermutations = info->numberPermutations();
+	int * marked = new int [numberColumns];
+	memset(marked,0,numberColumns*sizeof(int));
+	if (symmetryInfo_) {
+	  const int * orbit = info->whichOrbit();
+	  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	    if (orbit[iColumn]>=0)
+	      marked[iColumn]++;
+	  }
+	} else {
+	  for (int iPerm = 0;iPerm < numberPermutations;iPerm++) {
+	    const int * orbit = info->permutation(iPerm);
+	    for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	      if (orbit[iColumn]>=0)
+		marked[iColumn]++;
+	    }
+	  }
+	}
+	int nChanged = 0;
+        for (int i = 0; i < numberObjects_; i++) {
+          CbcSimpleInteger *thisOne = dynamic_cast< CbcSimpleInteger * >(object_[i]);
+          object_[i]->setPriority(1000);
+          if (thisOne) {
+            int iColumn = thisOne->columnNumber();
+            if (marked[iColumn]) {
+#if 1
+              thisOne->setPriority(100);
+#else
+              thisOne->setPriority(1000-marked[iColumn]);
+#endif
+	      nChanged++;
+	    }
+          }
+	}
+	if (nChanged) {
+	  char general[100];
+	  sprintf(general,
+		  "%d variables given higher priority fot symmetry reasons",
+		  nChanged);
+	  messageHandler()->message(CBC_GENERAL,
+				    messages())
+	    << general << CoinMessageEol;
+	}
+	delete [] marked;
+      }
+    }
+#endif
     int iType = 0;
     if (!numberContinuousObj && numberIntegerObj <= 5 && numberIntegerWeight <= 100 && numberIntegerObj * 3 < numberObjects_ && !parentModel_ && solver_->getNumRows() > 100)
       iType = 1 + 4 + (((moreSpecialOptions_ & 536870912) == 0) ? 2 : 0);
@@ -1099,7 +1164,9 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForR
       const double *solution = saveSolver->getColSolution();
       const double *reducedCost = saveSolver->getReducedCost();
 
-      //#define CBC_HAS_NAUTY2
+#ifdef CBC_HAS_NAUTY
+#define CBC_HAS_NAUTY2
+#endif
 #ifdef CBC_HAS_NAUTY2
       double * saveLower = NULL;
       double * saveUpper = NULL;
@@ -13587,6 +13654,44 @@ void CbcModel::setBestSolution(CBC_Message how,
             */
       specialOptions_ |= 256; // mark as full cut scan should be done
       saveBestSolution(solution, objectiveValue);
+      //#define SEE_HOW_MANY
+#ifdef SEE_HOW_MANY
+      {
+	const double * dj = solver_->getReducedCost();
+	const double * lower = solver_->getColLower();
+	const double * upper = solver_->getColUpper();
+	const double * lowerC = continuousSolver_->getColLower();
+	const double * upperC = continuousSolver_->getColUpper();
+	int nTotallyFixed = 0;
+	int nTotallyFixedBut = 0;
+	int nPartiallyFixed = 0;
+	int nPartiallyFixedBut = 0;
+	int nUntouched = 0;
+	for (int i=0;i<numberIntegers_;i++) {
+	  int iColumn = integerVariable_[i];
+	  if (lower[iColumn]==lowerC[iColumn] &&
+	      upper[iColumn]==upperC[iColumn]) {
+	    nUntouched++;
+	  } else if (lower[iColumn]==upper[iColumn]) {
+	    if ((lower[iColumn]==lowerC[iColumn]&&dj[iColumn]>1.0e-5)
+		||(upper[iColumn]==upperC[iColumn]&&dj[iColumn]<-1.0e-5))
+	      nTotallyFixedBut++;
+	    else
+	      nTotallyFixed++;
+	  } else {
+	    if ((lower[iColumn]==lowerC[iColumn]&&dj[iColumn]>1.0e-5)
+		||(upper[iColumn]==upperC[iColumn]&&dj[iColumn]<-1.0e-5))
+	      nPartiallyFixedBut++;
+	    else
+	      nPartiallyFixed++;
+	  }
+	}
+	printf("At solution nTotallyFixed %d , nTotallyFixedBut %d ,\
+nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
+	       nTotallyFixed,nTotallyFixedBut,nPartiallyFixed,
+	       nPartiallyFixedBut,nUntouched);
+      }
+#endif
       //bestObjective_ = objectiveValue;
       //int numberColumns = solver_->getNumCols();
       //if (!bestSolution_)

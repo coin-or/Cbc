@@ -1859,6 +1859,9 @@ public:
   {
     parentModel_ = &parentModel;
   }
+  /// See if in sub tree
+  inline bool inSmallBranchAndBound() const
+  { return (specialOptions_&2048) != 0 && parentModel_;}
   //@}
 
   /** \name Heuristics and priorities */
@@ -2043,7 +2046,7 @@ public:
         17 bit (131072) - Perturbation switched off
         18 bit (262144) - donor CbcModel
         19 bit (524288) - recipient CbcModel
-        20 bit (1048576) - waiting for sub model to return
+          20 bit (1048576) - waiting for sub model to return
 	22 bit (4194304) - do not initialize random seed in solver (user has)
 	23 bit (8388608) - leave solver_ with cuts
 	24 bit (16777216) - just get feasible if no cutoff
@@ -2148,6 +2151,7 @@ public:
         18 bit 262144 - some statistics for fairly simple orbital 
  	19 bit 524288 - freeze problem at root cuts
  	20 bit 1048576 - use ranging in CbcNode
+        21 bit 2097152 - analyze changed priorities but were equal before
     */
   inline void setMoreSpecialOptions2(int value)
   {

@@ -196,6 +196,10 @@ public:
   { return permutations_[which].orbits;}
   inline int numberInPermutation(int which) const
   { return permutations_[which].numberInPerm;}
+  inline void incrementNautyBranches(int n)
+  { nautyOtherBranches_ += n;}
+  inline void incrementBranchSucceeded()
+  { nautyBranchSucceeded_ ++;}
 private:
   mutable std::vector< Node > node_info_;
   mutable CbcNauty *nauty_info_;
@@ -206,6 +210,15 @@ private:
   cbc_permute * permutations_;
   int *whichOrbit_;
   int stats_[5];
+  double nautyTime_;
+  double nautyFixes_;
+  mutable double nautyOtherBranches_;
+  mutable int nautyBranchCalls_;
+  mutable int lastNautyBranchSucceeded_;
+  int nautyBranchSucceeded_;
+  mutable int nautyFixCalls_;
+  mutable int lastNautyFixSucceeded_;
+  int nautyFixSucceeded_;
 };
 
 class CbcNauty {

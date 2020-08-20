@@ -13782,6 +13782,44 @@ void CbcModel::setBestSolution(CBC_Message how,
             */
       specialOptions_ |= 256; // mark as full cut scan should be done
       saveBestSolution(solution, objectiveValue);
+      //#define SEE_HOW_MANY
+#ifdef SEE_HOW_MANY
+      {
+	const double * dj = solver_->getReducedCost();
+	const double * lower = solver_->getColLower();
+	const double * upper = solver_->getColUpper();
+	const double * lowerC = continuousSolver_->getColLower();
+	const double * upperC = continuousSolver_->getColUpper();
+	int nTotallyFixed = 0;
+	int nTotallyFixedBut = 0;
+	int nPartiallyFixed = 0;
+	int nPartiallyFixedBut = 0;
+	int nUntouched = 0;
+	for (int i=0;i<numberIntegers_;i++) {
+	  int iColumn = integerVariable_[i];
+	  if (lower[iColumn]==lowerC[iColumn] &&
+	      upper[iColumn]==upperC[iColumn]) {
+	    nUntouched++;
+	  } else if (lower[iColumn]==upper[iColumn]) {
+	    if ((lower[iColumn]==lowerC[iColumn]&&dj[iColumn]>1.0e-5)
+		||(upper[iColumn]==upperC[iColumn]&&dj[iColumn]<-1.0e-5))
+	      nTotallyFixedBut++;
+	    else
+	      nTotallyFixed++;
+	  } else {
+	    if ((lower[iColumn]==lowerC[iColumn]&&dj[iColumn]>1.0e-5)
+		||(upper[iColumn]==upperC[iColumn]&&dj[iColumn]<-1.0e-5))
+	      nPartiallyFixedBut++;
+	    else
+	      nPartiallyFixed++;
+	  }
+	}
+	printf("At solution nTotallyFixed %d , nTotallyFixedBut %d ,\
+nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
+	       nTotallyFixed,nTotallyFixedBut,nPartiallyFixed,
+	       nPartiallyFixedBut,nUntouched);
+      }
+#endif
       //bestObjective_ = objectiveValue;
       //int numberColumns = solver_->getNumCols();
       //if (!bestSolution_)

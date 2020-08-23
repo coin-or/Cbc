@@ -139,14 +139,14 @@ static void userautomproc(int numGenerators,
 #endif
       }
       assert (nCol==0||nRow==0);
-      int nThis=nCol+nRow;
-      if (numberInPerm<0) {
-	numberInPerm=nThis;
-      } else {
-	assert (numberInPerm==nThis);
-      }
-      if (nCol>0)
+      if (nCol>0) {
+	if (numberInPerm<0) {
+	  numberInPerm=nCol;
+	} else {
+	  assert (numberInPerm==nCol);
+	}
 	numberPerms++;
+      }
     }
   }
   //printf("%d permutations, %d in each\n",numberPerms,numberInPerm);

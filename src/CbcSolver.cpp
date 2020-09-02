@@ -110,7 +110,7 @@ void CbcCrashHandler( int sig );
 #include "CglResidualCapacity.hpp"
 #include "CglZeroHalf.hpp"
 
-#include "CbcOrClpParam.hpp"
+#include "CbcParam.hpp"
 #include "CbcMipStartIO.hpp"
 #include "CbcMessage.hpp"
 #include "CbcSolverHeuristics.hpp"
@@ -191,7 +191,7 @@ extern int debugNumberColumns;
 
 // Alternative to environment
 extern char *alternativeEnvironment;
-extern int CbcOrClpEnvironmentIndex;
+extern int CbcEnvironmentIndex;
 
 static CbcModel *currentBranchModel = NULL;
 
@@ -773,7 +773,8 @@ CbcSolver::CbcSolver(const CbcSolver &rhs)
   int i;
   for (i = 0; i < numberUserFunctions_; i++)
     userFunction_[i] = rhs.userFunction_[i]->clone();
-  this->parameters_ = rhs.parameters_;
+  this->cbcParameters_ = rhs.cbcParameters_;
+  this->clpParameters_ = rhs.clpParameters_;
   for (i = 0; i < numberCutGenerators_; i++)
     cutGenerator_[i] = rhs.cutGenerator_[i]->clone();
   callBack_ = rhs.callBack_->clone();
@@ -810,7 +811,8 @@ CbcSolver::operator=(const CbcSolver &rhs)
     delete callBack_;
     numberUserFunctions_ = rhs.numberUserFunctions_;
     startTime_ = rhs.startTime_;
-    this->parameters_ = rhs.parameters_;
+    this->cbcParameters_ = rhs.cbcParameters_;
+    this->clpParameters_ = rhs.clpParameters_;
     for (i = 0; i < numberCutGenerators_; i++)
       cutGenerator_[i] = rhs.cutGenerator_[i]->clone();
     noPrinting_ = rhs.noPrinting_;
@@ -842,36 +844,36 @@ CbcSolver::operator=(const CbcSolver &rhs)
 //###########################################################################
 
 // Get int value
-int CbcSolver::intValue(CbcOrClpParameterType type) const
+int CbcSolver::intValue(CbcParameterType type) const
 {
-  return parameters_[whichParam(type, parameters_)].intValue();
+  return cbcParameters_[whichCbcParam(type, cbcParameters_)].intValue();
 }
 
 //###########################################################################
 //###########################################################################
 
 // Set int value
-void CbcSolver::setIntValue(CbcOrClpParameterType type, int value)
+void CbcSolver::setIntValue(CbcParameterType type, int value)
 {
-  parameters_[whichParam(type, parameters_)].setIntValue(value);
+  cbcParameters_[whichCbcParam(type, cbcParameters_)].setIntValue(value);
 }
 
 //###########################################################################
 //###########################################################################
 
 // Get double value
-double CbcSolver::doubleValue(CbcOrClpParameterType type) const
+double CbcSolver::doubleValue(CbcParameterType type) const
 {
-  return parameters_[whichParam(type, parameters_)].doubleValue();
+  return cbcParameters_[whichCbcParam(type, cbcParameters_)].doubleValue();
 }
 
 //###########################################################################
 //###########################################################################
 
 // Set double value
-void CbcSolver::setDoubleValue(CbcOrClpParameterType type, double value)
+void CbcSolver::setDoubleValue(CbcParameterType type, double value)
 {
-  parameters_[whichParam(type, parameters_)].setDoubleValue(value);
+  cbcParameters_[whichCbcParam(type, cbcParameters_)].setDoubleValue(value);
 }
 
 //###########################################################################
@@ -896,7 +898,9 @@ CbcUser *CbcSolver::userFunction(const char *name) const
 
 void CbcSolver::fillParameters()
 {
-  establishParams(parameters_);
+#if 0
+  establishClpParams(clpParameters_);
+  establishCbcParams(cbcParameters_);
   const char dirsep = CoinFindDirSeparator();
   std::string directory;
   std::string dirSample;
@@ -946,47 +950,47 @@ void CbcSolver::fillParameters()
     clpSolver = new OsiClpSolverInterface(lpSolver, true);
     createSolver = 1;
   }
-  parameters_[whichParam(CLP_PARAM_ACTION_BASISIN, parameters_)].setStringValue(importBasisFile);
+  clpParameters_[whichClpParam(CLP_PARAM_ACTION_BASISIN, parameters_)].setStringValue(importBasisFile);
+  clpParameters_[whichClpParam(CLP_PARAM_ACTION_BASISOUT, parameters_)].setStringValue(exportBasisFile);
   parameters_[whichParam(CBC_PARAM_ACTION_PRIORITYIN, parameters_)].setStringValue(importPriorityFile);
   parameters_[whichParam(CBC_PARAM_ACTION_MIPSTART, parameters_)].setStringValue(mipStartFile);
-  parameters_[whichParam(CLP_PARAM_ACTION_BASISOUT, parameters_)].setStringValue(exportBasisFile);
-  parameters_[whichParam(CLP_PARAM_ACTION_DEBUG, parameters_)].setStringValue(debugFile);
-  parameters_[whichParam(CLP_PARAM_ACTION_PRINTMASK, parameters_)].setStringValue(printMask);
-  parameters_[whichParam(CLP_PARAM_ACTION_DIRECTORY, parameters_)].setStringValue(directory);
-  parameters_[whichParam(CLP_PARAM_ACTION_DIRSAMPLE, parameters_)].setStringValue(dirSample);
-  parameters_[whichParam(CLP_PARAM_ACTION_DIRNETLIB, parameters_)].setStringValue(dirNetlib);
+  parameters_[whichParam(CBC_PARAM_ACTION_DEBUG, parameters_)].setStringValue(debugFile);
+  parameters_[whichParam(CBC_PARAM_ACTION_PRINTMASK, parameters_)].setStringValue(printMask);
+  parameters_[whichParam(CBC_PARAM_ACTION_DIRECTORY, parameters_)].setStringValue(directory);
+  parameters_[whichParam(CBC_PARAM_ACTION_DIRSAMPLE, parameters_)].setStringValue(dirSample);
+  parameters_[whichParam(CBC_PARAM_ACTION_DIRNETLIB, parameters_)].setStringValue(dirNetlib);
   parameters_[whichParam(CBC_PARAM_ACTION_DIRMIPLIB, parameters_)].setStringValue(dirMiplib);
-  parameters_[whichParam(CLP_PARAM_DBL_DUALBOUND, parameters_)].setDoubleValue(lpSolver->dualBound());
-  parameters_[whichParam(CLP_PARAM_DBL_DUALTOLERANCE, parameters_)].setDoubleValue(lpSolver->dualTolerance());
-  parameters_[whichParam(CLP_PARAM_ACTION_EXPORT, parameters_)].setStringValue(exportFile);
-  parameters_[whichParam(CLP_PARAM_INT_IDIOT, parameters_)].setIntValue(doIdiot);
-  parameters_[whichParam(CLP_PARAM_ACTION_IMPORT, parameters_)].setStringValue(importFile);
-  parameters_[whichParam(CLP_PARAM_DBL_PRESOLVETOLERANCE, parameters_)].setDoubleValue(1.0e-8);
-  int iParam = whichParam(CLP_PARAM_INT_SOLVERLOGLEVEL, parameters_);
+  clpParameters_[whichClpParam(CLP_PARAM_DBL_DUALBOUND, parameters_)].setDoubleValue(lpSolver->dualBound());
+  clpParameters_[whichClpParam(CLP_PARAM_DBL_DUALTOLERANCE, parameters_)].setDoubleValue(lpSolver->dualTolerance());
+  parameters_[whichParam(CBC_PARAM_ACTION_EXPORT, parameters_)].setStringValue(exportFile);
+  clpParameters_[whichClpParam(CLP_PARAM_INT_IDIOT, parameters_)].setIntValue(doIdiot);
+  parameters_[whichParam(CBC_PARAM_ACTION_IMPORT, parameters_)].setStringValue(importFile);
+  clpParameters_[whichClpParam(CLP_PARAM_DBL_PRESOLVETOLERANCE, parameters_)].setDoubleValue(1.0e-8);
+  int iParam = whichParam(CBC_PARAM_INT_SOLVERLOGLEVEL, parameters_);
   int value = 1;
   clpSolver->messageHandler()->setLogLevel(1);
   lpSolver->setLogLevel(1);
-  parameters_[iParam].setIntValue(value);
-  iParam = whichParam(CLP_PARAM_INT_LOGLEVEL, parameters_);
+  cbcParameters_[iParam].setIntValue(value);
+  iParam = whichParam(CBC_PARAM_INT_LPLOGLEVEL, parameters_);
   model_.messageHandler()->setLogLevel(value);
-  parameters_[iParam].setIntValue(value);
-  parameters_[whichParam(CLP_PARAM_INT_MAXFACTOR, parameters_)].setIntValue(lpSolver->factorizationFrequency());
-  parameters_[whichParam(CLP_PARAM_INT_MAXITERATION, parameters_)].setIntValue(lpSolver->maximumIterations());
-  parameters_[whichParam(CLP_PARAM_INT_OUTPUTFORMAT, parameters_)].setIntValue(outputFormat);
-  parameters_[whichParam(CLP_PARAM_INT_PRESOLVEPASS, parameters_)].setIntValue(preSolve);
-  parameters_[whichParam(CLP_PARAM_INT_PERTVALUE, parameters_)].setIntValue(lpSolver->perturbation());
-  parameters_[whichParam(CLP_PARAM_DBL_PRIMALTOLERANCE, parameters_)].setDoubleValue(lpSolver->primalTolerance());
-  parameters_[whichParam(CLP_PARAM_DBL_PRIMALWEIGHT, parameters_)].setDoubleValue(lpSolver->infeasibilityCost());
-  parameters_[whichParam(CLP_PARAM_ACTION_RESTORE, parameters_)].setStringValue(restoreFile);
-  parameters_[whichParam(CLP_PARAM_ACTION_SAVE, parameters_)].setStringValue(saveFile);
-  //parameters_[whichParam(CLP_PARAM_DBL_TIMELIMIT,numberParameters_,parameters_)].setDoubleValue(1.0e8);
+  cbcParameters_[iParam].setIntValue(value);
+  clpParameters_[whichClpParam(CLP_PARAM_INT_MAXFACTOR, parameters_)].setIntValue(lpSolver->factorizationFrequency());
+  clpParameters_[whichClpParam(CLP_PARAM_INT_MAXITERATION, parameters_)].setIntValue(lpSolver->maximumIterations());
+  clpParameters_[whichClpParam(CLP_PARAM_INT_OUTPUTFORMAT, parameters_)].setIntValue(outputFormat);
+  clpParameters_[whichClpParam(CLP_PARAM_INT_PRESOLVEPASS, parameters_)].setIntValue(preSolve);
+  clpParameters_[whichClpParam(CLP_PARAM_INT_PERTVALUE, parameters_)].setIntValue(lpSolver->perturbation());
+  clpParameters_[whichClpParam(CLP_PARAM_DBL_PRIMALTOLERANCE, parameters_)].setDoubleValue(lpSolver->primalTolerance());
+  clpParameters_[whichClpParam(CLP_PARAM_DBL_PRIMALWEIGHT, parameters_)].setDoubleValue(lpSolver->infeasibilityCost());
+  parameters_[whichParam(CBC_PARAM_ACTION_RESTORE, parameters_)].setStringValue(restoreFile);
+  parameters_[whichParam(CBC_PARAM_ACTION_SAVE, parameters_)].setStringValue(saveFile);
+  //clpParameters_[whichClpParam(CLP_PARAM_DBL_TIMELIMIT,numberParameters_,parameters_)].setDoubleValue(1.0e8);
   parameters_[whichParam(CBC_PARAM_DBL_TIMELIMIT_BAB, parameters_)].setDoubleValue(1.0e8);
-  parameters_[whichParam(CLP_PARAM_ACTION_SOLUTION, parameters_)].setStringValue(solutionFile);
-  parameters_[whichParam(CLP_PARAM_ACTION_NEXTBESTSOLUTION, parameters_)].setStringValue(solutionFile);
-  parameters_[whichParam(CLP_PARAM_ACTION_SAVESOL, parameters_)].setStringValue(solutionSaveFile);
-  parameters_[whichParam(CLP_PARAM_INT_SPRINT, parameters_)].setIntValue(doSprint);
-  parameters_[whichParam(CLP_PARAM_INT_SUBSTITUTION, parameters_)].setIntValue(substitution);
-  parameters_[whichParam(CLP_PARAM_INT_DUALIZE, parameters_)].setIntValue(dualize);
+  parameters_[whichParam(CBC_PARAM_ACTION_SOLUTION, parameters_)].setStringValue(solutionFile);
+  parameters_[whichParam(CBC_PARAM_ACTION_NEXTBESTSOLUTION, parameters_)].setStringValue(solutionFile);
+  parameters_[whichParam(CBC_PARAM_ACTION_SAVESOL, parameters_)].setStringValue(solutionSaveFile);
+  clpParameters_[whichClpParam(CLP_PARAM_INT_SPRINT, parameters_)].setIntValue(doSprint);
+  clpParameters_[whichClpParam(CLP_PARAM_INT_SUBSTITUTION, parameters_)].setIntValue(substitution);
+  clpParameters_[whichClpParam(CLP_PARAM_INT_DUALIZE, parameters_)].setIntValue(dualize);
   parameters_[whichParam(CBC_PARAM_INT_NUMBERBEFORE, parameters_)].setIntValue(model_.numberBeforeTrust());
   parameters_[whichParam(CBC_PARAM_INT_MAXNODES, parameters_)].setIntValue(model_.getMaximumNodes());
   parameters_[whichParam(CBC_PARAM_INT_STRONGBRANCHING, parameters_)].setIntValue(model_.numberStrong());
@@ -1044,6 +1048,7 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(CBC_PARAM_INT_ODDWEXTMETHOD, parameters_)].setIntValue(2);
   if (createSolver)
     delete clpSolver;
+#endif
 }
 
 //###########################################################################
@@ -1061,6 +1066,7 @@ void CbcSolver::fillParameters()
 
 void CbcSolver::fillValuesInSolver()
 {
+#if 0
   OsiSolverInterface *solver = model_.solver();
   OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
   assert(clpSolver);
@@ -1084,34 +1090,36 @@ void CbcSolver::fillValuesInSolver()
   lpSolver->setPerturbation(50);
   lpSolver->messageHandler()->setPrefix(false);
 
-  parameters_[whichParam(CLP_PARAM_DBL_DUALBOUND, parameters_)].setDoubleValue(lpSolver->dualBound());
-  parameters_[whichParam(CLP_PARAM_DBL_DUALTOLERANCE, parameters_)].setDoubleValue(lpSolver->dualTolerance());
+  clpParameters_[whichClpParam(CLP_PARAM_DBL_DUALBOUND, parameters_)].setDoubleValue(lpSolver->dualBound());
+  clpParameters_[whichClpParam(CLP_PARAM_DBL_DUALTOLERANCE, parameters_)].setDoubleValue(lpSolver->dualTolerance());
   /*
      Why are we doing this? We read the log level from parameters_, set it into
      the message handlers for cbc and the underlying solver. Then we read the
      log level back from the handlers and use it to set the values in
      parameters_!
      */
-  int iParam = whichParam(CLP_PARAM_INT_SOLVERLOGLEVEL, parameters_);
-  int value = parameters_[iParam].intValue();
+  int iParam = whichParam(CBC_PARAM_INT_SOLVERLOGLEVEL, parameters_);
+  int value = cbcParameters_[iParam].intValue();
   clpSolver->messageHandler()->setLogLevel(value);
   lpSolver->setLogLevel(value);
-  iParam = whichParam(CLP_PARAM_INT_LOGLEVEL, parameters_);
-  value = parameters_[iParam].intValue();
+  iParam = whichParam(CBC_PARAM_INT_LPLOGLEVEL, parameters_);
+  value = cbcParameters_[iParam].intValue();
   model_.messageHandler()->setLogLevel(value);
-  parameters_[whichParam(CLP_PARAM_INT_LOGLEVEL, parameters_)].setIntValue(model_.logLevel());
-  parameters_[whichParam(CLP_PARAM_INT_SOLVERLOGLEVEL, parameters_)].setIntValue(lpSolver->logLevel());
-  parameters_[whichParam(CLP_PARAM_INT_MAXFACTOR, parameters_)].setIntValue(lpSolver->factorizationFrequency());
-  parameters_[whichParam(CLP_PARAM_INT_MAXITERATION, parameters_)].setIntValue(lpSolver->maximumIterations());
-  parameters_[whichParam(CLP_PARAM_INT_PERTVALUE, parameters_)].setIntValue(lpSolver->perturbation());
-  parameters_[whichParam(CLP_PARAM_DBL_PRIMALTOLERANCE, parameters_)].setDoubleValue(lpSolver->primalTolerance());
-  parameters_[whichParam(CLP_PARAM_DBL_PRIMALWEIGHT, parameters_)].setDoubleValue(lpSolver->infeasibilityCost());
+  parameters_[whichParam(CBC_PARAM_INT_LPLOGLEVEL, parameters_)].setIntValue(model_.logLevel());
+  parameters_[whichParam(CBC_PARAM_INT_SOLVERLOGLEVEL, parameters_)].setIntValue(lpSolver->logLevel());
+  clpParameters_[whichClpParam(CLP_PARAM_INT_MAXFACTOR, parameters_)].setIntValue(lpSolver->factorizationFrequency());
+  clpParameters_[whichClpParam(CLP_PARAM_INT_MAXITERATION, parameters_)].setIntValue(lpSolver->maximumIterations());
+  clpParameters_[whichClpParam(CLP_PARAM_INT_PERTVALUE, parameters_)].setIntValue(lpSolver->perturbation());
+  clpParameters_[whichClpParam(CLP_PARAM_DBL_PRIMALTOLERANCE, parameters_)].setDoubleValue(lpSolver->primalTolerance());
+  clpParameters_[whichClpParam(CLP_PARAM_DBL_PRIMALWEIGHT, parameters_)].setDoubleValue(lpSolver->infeasibilityCost());
   parameters_[whichParam(CBC_PARAM_INT_NUMBERBEFORE, parameters_)].setIntValue(model_.numberBeforeTrust());
   parameters_[whichParam(CBC_PARAM_INT_MAXNODES, parameters_)].setIntValue(model_.getMaximumNodes());
   parameters_[whichParam(CBC_PARAM_INT_STRONGBRANCHING, parameters_)].setIntValue(model_.numberStrong());
   parameters_[whichParam(CBC_PARAM_DBL_INFEASIBILITYWEIGHT, parameters_)].setDoubleValue(model_.getDblParam(CbcModel::CbcInfeasibilityWeight));
   parameters_[whichParam(CBC_PARAM_DBL_INTEGERTOLERANCE, parameters_)].setDoubleValue(model_.getDblParam(CbcModel::CbcIntegerTolerance));
   parameters_[whichParam(CBC_PARAM_DBL_INCREMENT, parameters_)].setDoubleValue(model_.getDblParam(CbcModel::CbcCutoffIncrement));
+#endif
+  
 }
 
 //###########################################################################
@@ -1179,100 +1187,6 @@ void CbcSolver::addCutGenerator(CglCutGenerator *generator)
 }
 
 //###########################################################################
-// Some thread-safe versions of functions (can we just change the original?)
-//###########################################################################
-
-//###########################################################################
-//###########################################################################
-
-#ifdef CBC_THREAD_SAFE
-// Copies of some input decoding
-
-static std::string
-CoinReadGetCommand(int &whichArgument, int argc, const char *argv[])
-{
-  std::string field;
-  if (whichArgument < argc)
-    field = argv[whichArgument++];
-  else
-    field = "quit";
-  if (field[0] == '-')
-    field = field.substr(1);
-  return field;
-}
-
-//###########################################################################
-//###########################################################################
-
-static std::string
-CoinReadGetString(int &whichArgument, int argc, const char *argv[])
-{
-  std::string field;
-  if (whichArgument < argc)
-    field = argv[whichArgument++];
-  else
-    field = "";
-  return field;
-}
-
-//###########################################################################
-//###########################################################################
-
-// valid 0 - okay, 1 bad, 2 not there
-static int
-CoinReadGetIntField(int &whichArgument, int argc, const char *argv[], int *valid)
-{
-  std::string field;
-  if (whichArgument < argc)
-    field = argv[whichArgument++];
-  else
-    field = "0";
-  long int value = 0;
-  const char *start = field.c_str();
-  char *endPointer = NULL;
-  // check valid
-  value = strtol(start, &endPointer, 10);
-  if (*endPointer == '\0') {
-    *valid = 0;
-  } else {
-    *valid = 1;
-    std::cout << "String of " << field;
-  }
-  return static_cast< int >(value);
-}
-
-//###########################################################################
-//###########################################################################
-
-static double
-CoinReadGetDoubleField(int &whichArgument, int argc, const char *argv[], int *valid)
-{
-  std::string field;
-  if (whichArgument < argc)
-    field = argv[whichArgument++];
-  else
-    field = "0.0";
-  double value = 0.0;
-  const char *start = field.c_str();
-  char *endPointer = NULL;
-  // check valid
-  value = strtod(start, &endPointer);
-  if (*endPointer == '\0') {
-    *valid = 0;
-  } else {
-    *valid = 1;
-    std::cout << "String of " << field;
-  }
-  return value;
-}
-// Redefine all
-#define CoinReadGetCommand(x, y) CoinReadGetCommand(whichArgument, x, y)
-#define CoinReadGetString(x, y) CoinReadGetString(whichArgument, x, y)
-#define CoinReadGetIntField(x, y, z) CoinReadGetIntField(whichArgument, x, y, z)
-#define CoinReadGetDoubleField(x, y, z) CoinReadGetDoubleField(whichArgument, x, y, z)
-#endif
-
-//###########################################################################
 //###########################################################################
 
 //###########################################################################
@@ -1289,7 +1203,8 @@ CbcSolverUsefulData::CbcSolverUsefulData()
   noPrinting_ = true;
   printWelcome_ = true;
   useSignalHandler_ = false;
-  establishParams(parameters_);
+  establishClpParams(clpParameters_);
+  establishCbcParams(cbcParameters_);
 }
 
 //###########################################################################
@@ -1302,7 +1217,8 @@ CbcSolverUsefulData::CbcSolverUsefulData(const CbcSolverUsefulData &rhs)
   totalTime_ = rhs.totalTime_;
   noPrinting_ = rhs.noPrinting_;
   useSignalHandler_ = rhs.useSignalHandler_;
-  this->parameters_ = rhs.parameters_;
+  this->cbcParameters_ = rhs.cbcParameters_;
+  this->clpParameters_ = rhs.clpParameters_;
 }
 
 //###########################################################################
@@ -1315,7 +1231,8 @@ CbcSolverUsefulData &CbcSolverUsefulData::operator=(const CbcSolverUsefulData &r
     totalTime_ = rhs.totalTime_;
     noPrinting_ = rhs.noPrinting_;
     useSignalHandler_ = rhs.useSignalHandler_;
-    this->parameters_ = rhs.parameters_;
+    this->cbcParameters_ = rhs.cbcParameters_;
+    this->clpParameters_ = rhs.clpParameters_;
   }
   return *this;
 }
@@ -1497,8 +1414,7 @@ int callCbc1(const char *input2, CbcModel &model,
   argv[n + 1] = CoinStrdup("-quit");
   free(input);
   currentBranchModel = NULL;
-  setCbcOrClpReadMode(1);
-  setCbcOrClpReadCommand(stdin);
+  setCbcReadCommand(stdin);
   int returnCode = CbcMain1(n + 2, const_cast< const char ** >(argv),
     model, callBack, parameterData);
   for (int k = 0; k < n + 2; k++)
@@ -1550,7 +1466,8 @@ void CbcMain0(CbcModel &model,
 
 #endif
 
-  std::vector< CbcOrClpParam > &parameters = parameterData.parameters_;
+  std::vector< ClpParam > &clpParameters = parameterData.clpParameters_;
+  std::vector< CbcParam > &cbcParameters = parameterData.cbcParameters_;
   
 #ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface *originalSolver = dynamic_cast< OsiClpSolverInterface * >(model.solver());
@@ -1607,102 +1524,102 @@ void CbcMain0(CbcModel &model,
   int preSolve = 5;
   int doSprint = -1;
   int testOsiParameters = -1;
-  parameters[whichParam(CLP_PARAM_ACTION_BASISIN, parameters)].setStringValue(importBasisFile);
-  parameters[whichParam(CBC_PARAM_ACTION_PRIORITYIN, parameters)].setStringValue(importPriorityFile);
-  parameters[whichParam(CLP_PARAM_ACTION_BASISOUT, parameters)].setStringValue(exportBasisFile);
-  parameters[whichParam(CLP_PARAM_ACTION_DEBUG, parameters)].setStringValue(debugFile);
-  parameters[whichParam(CLP_PARAM_ACTION_PRINTMASK, parameters)].setStringValue(printMask);
-  parameters[whichParam(CLP_PARAM_ACTION_DIRECTORY, parameters)].setStringValue(directory);
-  parameters[whichParam(CLP_PARAM_ACTION_DIRSAMPLE, parameters)].setStringValue(dirSample);
-  parameters[whichParam(CLP_PARAM_ACTION_DIRNETLIB, parameters)].setStringValue(dirNetlib);
-  parameters[whichParam(CBC_PARAM_ACTION_DIRMIPLIB, parameters)].setStringValue(dirMiplib);
-  parameters[whichParam(CLP_PARAM_DBL_DUALBOUND, parameters)].setDoubleValue(lpSolver->dualBound());
-  parameters[whichParam(CLP_PARAM_DBL_DUALTOLERANCE, parameters)].setDoubleValue(lpSolver->dualTolerance());
-  parameters[whichParam(CLP_PARAM_ACTION_EXPORT, parameters)].setStringValue(exportFile);
-  parameters[whichParam(CLP_PARAM_INT_IDIOT, parameters)].setIntValue(doIdiot);
-  parameters[whichParam(CLP_PARAM_ACTION_IMPORT, parameters)].setStringValue(importFile);
-  parameters[whichParam(CLP_PARAM_DBL_PRESOLVETOLERANCE, parameters)].setDoubleValue(1.0e-8);
-  int slog = whichParam(CLP_PARAM_INT_SOLVERLOGLEVEL, parameters);
-  int log = whichParam(CLP_PARAM_INT_LOGLEVEL, parameters);
-  parameters[slog].setIntValue(1);
+  clpParameters[whichClpParam(CLP_PARAM_ACTION_BASISIN, clpParameters)].setStringValue(importBasisFile);
+  clpParameters[whichClpParam(CLP_PARAM_ACTION_BASISOUT, clpParameters)].setStringValue(exportBasisFile);
+  clpParameters[whichClpParam(CLP_PARAM_DBL_DUALBOUND, clpParameters)].setDoubleValue(lpSolver->dualBound());
+  clpParameters[whichClpParam(CLP_PARAM_DBL_DUALTOLERANCE, clpParameters)].setDoubleValue(lpSolver->dualTolerance());
+  clpParameters[whichClpParam(CLP_PARAM_INT_IDIOT, clpParameters)].setIntValue(doIdiot);
+  clpParameters[whichClpParam(CLP_PARAM_DBL_PRESOLVETOLERANCE, clpParameters)].setDoubleValue(1.0e-8);
+  clpParameters[whichClpParam(CLP_PARAM_INT_MAXFACTOR, clpParameters)].setIntValue(lpSolver->factorizationFrequency());
+  clpParameters[whichClpParam(CLP_PARAM_INT_MAXITERATION, clpParameters)].setIntValue(lpSolver->maximumIterations());
+  clpParameters[whichClpParam(CLP_PARAM_INT_OUTPUTFORMAT, clpParameters)].setIntValue(outputFormat);
+  clpParameters[whichClpParam(CLP_PARAM_INT_PRESOLVEPASS, clpParameters)].setIntValue(preSolve);
+  clpParameters[whichClpParam(CLP_PARAM_INT_PERTVALUE, clpParameters)].setIntValue(lpSolver->perturbation());
+  clpParameters[whichClpParam(CLP_PARAM_DBL_PRIMALTOLERANCE, clpParameters)].setDoubleValue(lpSolver->primalTolerance());
+  clpParameters[whichClpParam(CLP_PARAM_DBL_PRIMALWEIGHT, clpParameters)].setDoubleValue(lpSolver->infeasibilityCost());
+  clpParameters[whichClpParam(CLP_PARAM_INT_SPRINT, clpParameters)].setIntValue(doSprint);
+  clpParameters[whichClpParam(CLP_PARAM_INT_SUBSTITUTION, clpParameters)].setIntValue(substitution);
+  clpParameters[whichClpParam(CLP_PARAM_INT_DUALIZE, clpParameters)].setIntValue(dualize);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_PRIORITYIN, cbcParameters)].setStringValue(importPriorityFile);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_DEBUG, cbcParameters)].setStringValue(debugFile);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_PRINTMASK, cbcParameters)].setStringValue(printMask);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_DIRECTORY, cbcParameters)].setStringValue(directory);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_DIRSAMPLE, cbcParameters)].setStringValue(dirSample);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_DIRNETLIB, cbcParameters)].setStringValue(dirNetlib);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_DIRMIPLIB, cbcParameters)].setStringValue(dirMiplib);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_EXPORT, cbcParameters)].setStringValue(exportFile);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_IMPORT, cbcParameters)].setStringValue(importFile);
+  int slog = whichCbcParam(CBC_PARAM_INT_SOLVERLOGLEVEL, cbcParameters);
+  int log = whichCbcParam(CBC_PARAM_INT_LPLOGLEVEL, cbcParameters);
+  cbcParameters[slog].setIntValue(1);
   clpSolver->messageHandler()->setLogLevel(1);
   model.messageHandler()->setLogLevel(1);
   lpSolver->setLogLevel(1);
-  parameters[log].setIntValue(1);
-  parameters[whichParam(CLP_PARAM_INT_MAXFACTOR, parameters)].setIntValue(lpSolver->factorizationFrequency());
-  parameters[whichParam(CLP_PARAM_INT_MAXITERATION, parameters)].setIntValue(lpSolver->maximumIterations());
-  parameters[whichParam(CLP_PARAM_INT_OUTPUTFORMAT, parameters)].setIntValue(outputFormat);
-  parameters[whichParam(CLP_PARAM_INT_PRESOLVEPASS, parameters)].setIntValue(preSolve);
-  parameters[whichParam(CLP_PARAM_INT_PERTVALUE, parameters)].setIntValue(lpSolver->perturbation());
-  parameters[whichParam(CLP_PARAM_DBL_PRIMALTOLERANCE, parameters)].setDoubleValue(lpSolver->primalTolerance());
-  parameters[whichParam(CLP_PARAM_DBL_PRIMALWEIGHT, parameters)].setDoubleValue(lpSolver->infeasibilityCost());
-  parameters[whichParam(CLP_PARAM_ACTION_RESTORE, parameters)].setStringValue(restoreFile);
-  parameters[whichParam(CLP_PARAM_ACTION_SAVE, parameters)].setStringValue(saveFile);
-  //parameters[whichParam(CLP_PARAM_DBL_TIMELIMIT,numberParameters,parameters)].setDoubleValue(1.0e8);
-  parameters[whichParam(CBC_PARAM_DBL_TIMELIMIT_BAB, parameters)].setDoubleValue(1.0e8);
-  parameters[whichParam(CLP_PARAM_ACTION_SOLUTION, parameters)].setStringValue(solutionFile);
-  parameters[whichParam(CLP_PARAM_ACTION_NEXTBESTSOLUTION, parameters)].setStringValue(solutionFile);
-  parameters[whichParam(CLP_PARAM_ACTION_SAVESOL, parameters)].setStringValue(solutionSaveFile);
-  parameters[whichParam(CLP_PARAM_INT_SPRINT, parameters)].setIntValue(doSprint);
-  parameters[whichParam(CLP_PARAM_INT_SUBSTITUTION, parameters)].setIntValue(substitution);
-  parameters[whichParam(CLP_PARAM_INT_DUALIZE, parameters)].setIntValue(dualize);
+  cbcParameters[log].setIntValue(1);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_RESTORE, cbcParameters)].setStringValue(restoreFile);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_SAVE, cbcParameters)].setStringValue(saveFile);
+  //cbcParameters[whichCbcParam(CLP_PARAM_DBL_TIMELIMIT,numberCbcParameters,cbcParameters)].setDoubleValue(1.0e8);
+  cbcParameters[whichCbcParam(CBC_PARAM_DBL_TIMELIMIT_BAB, cbcParameters)].setDoubleValue(1.0e8);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_SOLUTION, cbcParameters)].setStringValue(solutionFile);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_NEXTBESTSOLUTION, cbcParameters)].setStringValue(solutionFile);
+  cbcParameters[whichCbcParam(CBC_PARAM_ACTION_SAVESOL, cbcParameters)].setStringValue(solutionSaveFile);
   model.setNumberBeforeTrust(10);
-  parameters[whichParam(CBC_PARAM_INT_NUMBERBEFORE, parameters)].setIntValue(5);
-  parameters[whichParam(CBC_PARAM_INT_MAXNODES, parameters)].setIntValue(model.getMaximumNodes());
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_NUMBERBEFORE, cbcParameters)].setIntValue(5);
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_MAXNODES, cbcParameters)].setIntValue(model.getMaximumNodes());
   model.setNumberStrong(5);
-  parameters[whichParam(CBC_PARAM_INT_STRONGBRANCHING, parameters)].setIntValue(model.numberStrong());
-  parameters[whichParam(CBC_PARAM_DBL_INFEASIBILITYWEIGHT, parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcInfeasibilityWeight));
-  parameters[whichParam(CBC_PARAM_DBL_INTEGERTOLERANCE, parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcIntegerTolerance));
-  parameters[whichParam(CBC_PARAM_DBL_INCREMENT, parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcCutoffIncrement));
-  parameters[whichParam(CBC_PARAM_INT_TESTOSI, parameters)].setIntValue(testOsiParameters);
-  parameters[whichParam(CBC_PARAM_INT_FPUMPTUNE, parameters)].setIntValue(1003);
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_STRONGBRANCHING, cbcParameters)].setIntValue(model.numberStrong());
+  cbcParameters[whichCbcParam(CBC_PARAM_DBL_INFEASIBILITYWEIGHT, cbcParameters)].setDoubleValue(model.getDblParam(CbcModel::CbcInfeasibilityWeight));
+  cbcParameters[whichCbcParam(CBC_PARAM_DBL_INTEGERTOLERANCE, cbcParameters)].setDoubleValue(model.getDblParam(CbcModel::CbcIntegerTolerance));
+  cbcParameters[whichCbcParam(CBC_PARAM_DBL_INCREMENT, cbcParameters)].setDoubleValue(model.getDblParam(CbcModel::CbcCutoffIncrement));
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_TESTOSI, cbcParameters)].setIntValue(testOsiParameters);
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_FPUMPTUNE, cbcParameters)].setIntValue(1003);
   initialPumpTune = 1003;
 #ifdef CBC_THREAD
-  parameters[whichParam(CBC_PARAM_INT_THREADS, parameters)].setIntValue(0);
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_THREADS, cbcParameters)].setIntValue(0);
 #endif
   // Set up likely cut generators and defaults
-  parameters[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters)].setCurrentOption("ifmove");
-  parameters[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters)].setCurrentOption("ifmove");
-  parameters[whichParam(CBC_PARAM_STR_CLQSTRENGTHENING, parameters)].setCurrentOption("after");
-  parameters[whichParam(CBC_PARAM_STR_USECGRAPH, parameters)].setCurrentOption("on");
-  parameters[whichParam(CBC_PARAM_INT_BKPIVOTINGSTRATEGY, parameters)].setIntValue(3);
-  parameters[whichParam(CBC_PARAM_INT_BKMAXCALLS, parameters)].setIntValue(1000);
-  parameters[whichParam(CBC_PARAM_INT_BKCLQEXTMETHOD, parameters)].setIntValue(4);
-  parameters[whichParam(CBC_PARAM_INT_ODDWEXTMETHOD, parameters)].setIntValue(2);
-  parameters[whichParam(CBC_PARAM_STR_PREPROCESS, parameters)].setCurrentOption("sos");
-  parameters[whichParam(CBC_PARAM_INT_MIPOPTIONS, parameters)].setIntValue(1057);
-  parameters[whichParam(CBC_PARAM_INT_CUTPASSINTREE, parameters)].setIntValue(1);
-  parameters[whichParam(CBC_PARAM_INT_MOREMIPOPTIONS, parameters)].setIntValue(-1);
-  parameters[whichParam(CBC_PARAM_INT_MAXHOTITS, parameters)].setIntValue(100);
-  parameters[whichParam(CBC_PARAM_STR_CUTSSTRATEGY, parameters)].setCurrentOption("on");
-  parameters[whichParam(CBC_PARAM_STR_HEURISTICSTRATEGY, parameters)].setCurrentOption("on");
-  parameters[whichParam(CBC_PARAM_STR_NODESTRATEGY, parameters)].setCurrentOption("fewest");
-  parameters[whichParam(CBC_PARAM_STR_GOMORYCUTS, parameters)].setCurrentOption("ifmove");
-  parameters[whichParam(CBC_PARAM_STR_PROBINGCUTS, parameters)].setCurrentOption("ifmove");
-  parameters[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, parameters)].setCurrentOption("ifmove");
-  parameters[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, parameters)].setCurrentOption("ifmove");
-  parameters[whichParam(CBC_PARAM_STR_REDSPLITCUTS, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_REDSPLIT2CUTS, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_GMICUTS, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_MIXEDCUTS, parameters)].setCurrentOption("ifmove");
-  parameters[whichParam(CBC_PARAM_STR_FLOWCUTS, parameters)].setCurrentOption("ifmove");
-  parameters[whichParam(CBC_PARAM_STR_TWOMIRCUTS, parameters)].setCurrentOption("root");
-  parameters[whichParam(CBC_PARAM_STR_LANDPCUTS, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_RESIDCUTS, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_ROUNDING, parameters)].setCurrentOption("on");
-  parameters[whichParam(CBC_PARAM_STR_FPUMP, parameters)].setCurrentOption("on");
-  parameters[whichParam(CBC_PARAM_STR_GREEDY, parameters)].setCurrentOption("on");
-  parameters[whichParam(CBC_PARAM_STR_COMBINE, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_CROSSOVER2, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_PIVOTANDCOMPLEMENT, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_PIVOTANDFIX, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_RANDROUND, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_NAIVE, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_RINS, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_DINS, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_RENS, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_LOCALTREE, parameters)].setCurrentOption("off");
-  parameters[whichParam(CBC_PARAM_STR_COSTSTRATEGY, parameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_CLIQUECUTS, cbcParameters)].setCurrentOption("ifmove");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_ODDWHEELCUTS, cbcParameters)].setCurrentOption("ifmove");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_CLQSTRENGTHENING, cbcParameters)].setCurrentOption("after");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_USECGRAPH, cbcParameters)].setCurrentOption("on");
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_BKPIVOTINGSTRATEGY, cbcParameters)].setIntValue(3);
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_BKMAXCALLS, cbcParameters)].setIntValue(1000);
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_BKCLQEXTMETHOD, cbcParameters)].setIntValue(4);
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_ODDWEXTMETHOD, cbcParameters)].setIntValue(2);
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_PREPROCESS, cbcParameters)].setCurrentOption("sos");
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_MIPOPTIONS, cbcParameters)].setIntValue(1057);
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_CUTPASSINTREE, cbcParameters)].setIntValue(1);
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_MOREMIPOPTIONS, cbcParameters)].setIntValue(-1);
+  cbcParameters[whichCbcParam(CBC_PARAM_INT_MAXHOTITS, cbcParameters)].setIntValue(100);
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_CUTSSTRATEGY, cbcParameters)].setCurrentOption("on");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_HEURISTICSTRATEGY, cbcParameters)].setCurrentOption("on");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_NODESTRATEGY, cbcParameters)].setCurrentOption("fewest");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_GOMORYCUTS, cbcParameters)].setCurrentOption("ifmove");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_PROBINGCUTS, cbcParameters)].setCurrentOption("ifmove");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_KNAPSACKCUTS, cbcParameters)].setCurrentOption("ifmove");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_ZEROHALFCUTS, cbcParameters)].setCurrentOption("ifmove");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_REDSPLITCUTS, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_REDSPLIT2CUTS, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_GMICUTS, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_MIXEDCUTS, cbcParameters)].setCurrentOption("ifmove");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_FLOWCUTS, cbcParameters)].setCurrentOption("ifmove");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_TWOMIRCUTS, cbcParameters)].setCurrentOption("root");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_LANDPCUTS, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_RESIDCUTS, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_ROUNDING, cbcParameters)].setCurrentOption("on");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_FPUMP, cbcParameters)].setCurrentOption("on");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_GREEDY, cbcParameters)].setCurrentOption("on");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_COMBINE, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_CROSSOVER2, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_PIVOTANDCOMPLEMENT, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_PIVOTANDFIX, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_RANDROUND, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_NAIVE, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_RINS, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_DINS, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_RENS, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_LOCALTREE, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_COSTSTRATEGY, cbcParameters)].setCurrentOption("off");
 }
 
 //###########################################################################
@@ -1732,16 +1649,15 @@ int CbcMain1(int argc, const char *argv[],
   int callBack(CbcModel *currentSolver, int whereFrom),
   CbcSolverUsefulData &parameterData)
 {
-  std::vector< CbcOrClpParam > parameters_(parameterData.parameters_);
+  std::vector< ClpParam > clpParameters_(parameterData.clpParameters_);
+  std::vector< CbcParam > cbcParameters_(parameterData.cbcParameters_);
   double totalTime = parameterData.totalTime_;
   bool noPrinting = parameterData.noPrinting_;
   bool useSignalHandler = parameterData.useSignalHandler_;
   CbcModel &model_ = model;
   CglPreProcess *preProcessPointer = NULL;
-#ifdef CBC_THREAD_SAFE
   // Initialize argument
   int whichArgument = 1;
-#endif
   // Meaning 0 - start at very beginning
   // 1 start at beginning of preprocessing
   // 2 start at beginning of branch and bound
@@ -1760,7 +1676,7 @@ int CbcMain1(int argc, const char *argv[],
   glp_prob *coin_glp_prob = NULL;
 #endif
   int returnMode = 1;
-  setCbcOrClpReadMode(1);
+  whichArgument = 1;
   int statusUserFunction_[1];
   int numberUserFunctions_ = 1; // to allow for ampl
   // Statistics
@@ -1866,7 +1782,7 @@ int CbcMain1(int argc, const char *argv[],
     int complicatedInteger = 0;
     OsiSolverInterface *solver = model_.solver();
     if (noPrinting_)
-      setCbcOrClpPrinting(false);
+      setCbcPrinting(false);
 #ifndef CBC_OTHER_SOLVER
     OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
     ClpSimplex *lpSolver = clpSolver->getModelPtr();
@@ -1914,8 +1830,8 @@ int CbcMain1(int argc, const char *argv[],
             if (equals && atoi(equals + 1) > 0) {
               noPrinting_ = false;
               info.logLevel = atoi(equals + 1);
-              int log = whichParam(CLP_PARAM_INT_LOGLEVEL, parameters_);
-              parameters_[log].setIntValue(info.logLevel);
+              int log = whichCbcParam(CBC_PARAM_INT_LPLOGLEVEL, cbcParameters_);
+              cbcParameters_[log].setIntValue(info.logLevel);
               // mark so won't be overWritten
               info.numberRows = -1234567;
               break;
@@ -1940,7 +1856,7 @@ int CbcMain1(int argc, const char *argv[],
 	  sosReference = info.sosReference;
 	  sosPriority = info.sosPriority;
 	}
-        setCbcOrClpReadMode(2); // so will start with parameters
+        whichArgument = 2; // so will start with parameters
         // see if log in list (including environment)
         for (int i = 1; i < info.numberArguments; i++) {
           if (!strcmp(info.arguments[i], "log")) {
@@ -1951,7 +1867,7 @@ int CbcMain1(int argc, const char *argv[],
         }
         if (noPrinting_) {
           model_.messageHandler()->setLogLevel(0);
-          setCbcOrClpPrinting(false);
+          setCbcPrinting(false);
         }
         if (!noPrinting_)
           printf("%d rows, %d columns and %d elements\n",
@@ -2007,14 +1923,14 @@ int CbcMain1(int argc, const char *argv[],
           si->setDefaultMeshSize(0.001);
           // need some relative granularity
           si->setDefaultBound(100.0);
-          double dextra3 = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA3, parameters_)].doubleValue();
+          double dextra3 = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_DEXTRA3, cbcParameters_)].doubleValue();
           if (dextra3)
             si->setDefaultMeshSize(dextra3);
           si->setDefaultBound(100000.0);
           si->setIntegerPriority(1000);
           si->setBiLinearPriority(10000);
           CoinModel *model2 = reinterpret_cast< CoinModel * >(coinModel);
-          int logLevel = parameters_[whichParam(CLP_PARAM_INT_LOGLEVEL, parameters_)].intValue();
+          int logLevel = cbcParameters_[whichCbcParam(CBC_PARAM_INT_LPLOGLEVEL, cbcParameters_)].intValue();
           si->load(*model2, true, logLevel);
           // redo
           solver = model_.solver();
@@ -2022,7 +1938,7 @@ int CbcMain1(int argc, const char *argv[],
           lpSolver = clpSolver->getModelPtr();
           clpSolver->messageHandler()->setLogLevel(0);
           testOsiParameters = 0;
-          parameters_[whichParam(CBC_PARAM_INT_TESTOSI, parameters_)].setIntValue(0);
+          cbcParameters_[whichCbcParam(CBC_PARAM_INT_TESTOSI, cbcParameters_)].setIntValue(0);
           complicatedInteger = 1;
           if (info.cut) {
             printf("Sorry - can't do cuts with LOS as ruins delicate row order\n");
@@ -2152,8 +2068,8 @@ int CbcMain1(int argc, const char *argv[],
     std::string restoreFile = "default.prob";
     std::string solutionFile = "stdout";
     std::string solutionSaveFile = "solution.file";
-    int slog = whichParam(CLP_PARAM_INT_SOLVERLOGLEVEL, parameters_);
-    int log = whichParam(CLP_PARAM_INT_LOGLEVEL, parameters_);
+    int slog = whichCbcParam(CBC_PARAM_INT_SOLVERLOGLEVEL, cbcParameters_);
+    int log = whichCbcParam(CBC_PARAM_INT_LPLOGLEVEL, cbcParameters_);
 #ifndef CBC_OTHER_SOLVER
     double normalIncrement = model_.getCutoffIncrement();
     ;
@@ -2294,24 +2210,24 @@ int CbcMain1(int argc, const char *argv[],
       twomirGen.setAway(0.01);
 #endif
       int iParam;
-      iParam = whichParam(CBC_PARAM_INT_DIVEOPT, parameters_);
-      parameters_[iParam].setIntValue(2);
-      iParam = whichParam(CBC_PARAM_INT_FPUMPITS, parameters_);
-      parameters_[iParam].setIntValue(30);
-      iParam = whichParam(CBC_PARAM_INT_FPUMPTUNE, parameters_);
-      parameters_[iParam].setIntValue(1005043);
+      iParam = whichCbcParam(CBC_PARAM_INT_DIVEOPT, cbcParameters_);
+      cbcParameters_[iParam].setIntValue(2);
+      iParam = whichCbcParam(CBC_PARAM_INT_FPUMPITS, cbcParameters_);
+      cbcParameters_[iParam].setIntValue(30);
+      iParam = whichCbcParam(CBC_PARAM_INT_FPUMPTUNE, cbcParameters_);
+      cbcParameters_[iParam].setIntValue(1005043);
       initialPumpTune = 1005043;
-      iParam = whichParam(CLP_PARAM_INT_PROCESSTUNE, parameters_);
-      parameters_[iParam].setIntValue(6);
+      iParam = whichCbcParam(CBC_PARAM_INT_PROCESSTUNE, cbcParameters_);
+      cbcParameters_[iParam].setIntValue(6);
       tunePreProcess = 6;
-      iParam = whichParam(CBC_PARAM_STR_DIVINGC, parameters_);
-      parameters_[iParam].setCurrentOption("on");
-      iParam = whichParam(CBC_PARAM_STR_RINS, parameters_);
-      parameters_[iParam].setCurrentOption("on");
-      iParam = whichParam(CBC_PARAM_STR_PROBINGCUTS, parameters_);
-      parameters_[iParam].setCurrentOption("on");
+      iParam = whichCbcParam(CBC_PARAM_STR_DIVINGC, cbcParameters_);
+      cbcParameters_[iParam].setCurrentOption("on");
+      iParam = whichCbcParam(CBC_PARAM_STR_RINS, cbcParameters_);
+      cbcParameters_[iParam].setCurrentOption("on");
+      iParam = whichCbcParam(CBC_PARAM_STR_PROBINGCUTS, cbcParameters_);
+      cbcParameters_[iParam].setCurrentOption("on");
       probingAction = 3;
-      //parameters_[iParam].setCurrentOption("forceOnStrong");
+      //cbcParameters_[iParam].setCurrentOption("forceOnStrong");
       //probingAction = 8;
     }
     std::string field;
@@ -2356,7 +2272,7 @@ int CbcMain1(int argc, const char *argv[],
 #endif
     while (1) {
       // next command
-      field = CoinReadGetCommand(argc, argv);
+      field = CbcReadGetCommand(whichArgument, argc, argv);
       // Reset time
       time1 = CoinCpuTime();
       time1Elapsed = CoinGetTimeOfDay();
@@ -2403,28 +2319,98 @@ int CbcMain1(int argc, const char *argv[],
         field = field.substr(0, length - numberQuery);
       }
       // find out if valid command
-      int iParam;
+      int iClpParam, iCbcParam;
       int numberMatches = 0;
       int firstMatch = -1;
-      for (iParam = 0; iParam < (int)parameters_.size(); iParam++) {
-        int match = parameters_[iParam].matches(field);
+      for (iClpParam = 0; iClpParam < (int)clpParameters_.size(); iClpParam++) {
+        int match = clpParameters_[iClpParam].matches(field);
         if (match == 1) {
           numberMatches = 1;
-          firstMatch = iParam;
+          firstMatch = iClpParam;
           break;
         } else {
           if (match && firstMatch < 0)
-            firstMatch = iParam;
+            firstMatch = iClpParam;
           numberMatches += match >> 1;
         }
       }
-      if (iParam < (int)parameters_.size() && !numberQuery) {
+      for (iCbcParam = 0; iCbcParam < (int)cbcParameters_.size(); iCbcParam++) {
+        int match = cbcParameters_[iCbcParam].matches(field);
+        if (match == 1) {
+          numberMatches = 1;
+          firstMatch = iCbcParam;
+          break;
+        } else {
+          if (match && firstMatch < 0)
+            firstMatch = iCbcParam;
+          numberMatches += match >> 1;
+        }
+      }
+
+      CbcParameterType cbcType = iCbcParam < (int)cbcParameters_.size() ?
+                           cbcParameters_[iCbcParam].type() : CBC_PARAM_NOTUSED_INVALID;
+      ClpParameterType clpType = iClpParam < (int)clpParameters_.size() ?
+                           clpParameters_[iClpParam].type() : CLP_PARAM_NOTUSED_INVALID;
+      int typeIndex = cbcType != CBC_PARAM_NOTUSED_INVALID ?
+                                             (int) cbcType : (int) clpType;
+      
+      if ((iCbcParam > (int)cbcParameters_.size() &&
+           iClpParam > (int)clpParameters_.size()) || numberQuery){ 
+         if (!numberMatches) {
+            std::cout << "No match for " << field << " - ? for list of commands"
+                         << std::endl;
+         } else if (numberMatches == 1) {
+            if (!numberQuery) {
+               std::cout << "Short match for " << field << " - completion: ";
+               if (cbcType < CBC_PARAM_NOTUSED_INVALID){
+                  std::cout << cbcParameters_[firstMatch].matchName() << std::endl;
+               } else {
+                  std::cout << clpParameters_[firstMatch].matchName() << std::endl;
+               }
+            } else if (numberQuery) {
+               if (cbcType < CBC_PARAM_NOTUSED_INVALID){
+                  std::cout << cbcParameters_[firstMatch].matchName() << " : ";
+                  std::cout << cbcParameters_[firstMatch].shortHelp() << std::endl;
+                  if (numberQuery >= 2)
+                     cbcParameters_[firstMatch].printLongHelp();
+               } else {
+                  std::cout << clpParameters_[firstMatch].matchName() << " : ";
+                  std::cout << clpParameters_[firstMatch].shortHelp() << std::endl;
+                  if (numberQuery >= 2)
+                     clpParameters_[firstMatch].printLongHelp();
+               }
+            }
+         } else {
+            if (!numberQuery)
+               std::cout << "Multiple matches for " << field
+                         << " - possible completions:"
+                         << std::endl;
+            else
+               std::cout << "Completions of " << field << ":" << std::endl;
+            for (int iParam = 0; iParam < (int)cbcParameters_.size(); iParam++) {
+               int match = cbcParameters_[iParam].matches(field);
+               if (match && cbcParameters_[iParam].displayThis()) {
+                  std::cout << cbcParameters_[iParam].matchName();
+                  if (numberQuery >= 2)
+                     std::cout << " : " << cbcParameters_[iParam].shortHelp();
+                  std::cout << std::endl;
+               }
+            }
+            for (int iParam = 0; iParam < (int)clpParameters_.size(); iParam++) {
+               int match = clpParameters_[iParam].matches(field);
+               if (match && clpParameters_[iParam].displayThis()) {
+                  std::cout << clpParameters_[iParam].matchName();
+                  if (numberQuery >= 2)
+                     std::cout << " : " << clpParameters_[iParam].shortHelp();
+                  std::cout << std::endl;
+               }
+            }
+         }
+      } else {
         // found
-        CbcOrClpParam found = parameters_[iParam];
-        CbcOrClpParameterType type = found.type();
         int valid;
         numberGoodCommands++;
-        if (type == CBC_PARAM_ACTION_BAB && goodModel) {
+        if (cbcType == CBC_PARAM_ACTION_BAB && goodModel) {
           if (clqstrAction == "before") { //performing clique strengthening before initial solve
             CglCliqueStrengthening clqStr(model_.solver(), model_.messageHandler());
             clqStr.strengthenCliques(2);
@@ -2462,7 +2448,7 @@ int CbcMain1(int argc, const char *argv[],
           }
           lpSolver = clpSolver->getModelPtr();
           if (!lpSolver->integerInformation() && !numberSOS && !clpSolver->numberSOS() && !model_.numberObjects() && !clpSolver->numberObjects()) {
-            type = CLP_PARAM_ACTION_DUALSIMPLEX;
+            clpType = CLP_PARAM_ACTION_DUALSIMPLEX;
 #ifdef CBC_MAXIMUM_BOUND
           } else {
             double *lower = lpSolver->columnLower();
@@ -2476,10 +2462,10 @@ int CbcMain1(int argc, const char *argv[],
           }
 #endif
         }
-        if (type == CBC_PARAM_GENERALQUERY) {
+        if (cbcType == CBC_PARAM_GENERALQUERY) {
           bool evenHidden = false;
-          int printLevel = parameters_[whichParam(CLP_PARAM_STR_ALLCOMMANDS,
-                                         parameters_)]
+          int printLevel = cbcParameters_[whichCbcParam(CBC_PARAM_STR_ALLCOMMANDS,
+                                         cbcParameters_)]
                              .currentOptionAsInteger();
           int convertP[] = { 2, 1, 0 };
           printLevel = convertP[printLevel];
@@ -2529,26 +2515,26 @@ int CbcMain1(int argc, const char *argv[],
             std::cout << types[iType] << std::endl;
             if ((verbose & 2) != 0)
               std::cout << std::endl;
-            for (iParam = 0; iParam < (int)parameters_.size(); iParam++) {
-              int type = parameters_[iParam].type();
+            for (int iParam = 0; iParam < (int)cbcParameters_.size(); iParam++) {
+              int type = cbcParameters_[iParam].type();
               //printf("%d type %d limits %d %d display %d\n",iParam,
-              //     type,limits[iType],limits[iType+1],parameters_[iParam].displayThis());
-              if ((parameters_[iParam].displayThis() >= printLevel || evenHidden) && type >= limits[iType]
+              //     type,limits[iType],limits[iType+1],cbcParameters_[iParam].displayThis());
+              if ((cbcParameters_[iParam].displayThis() >= printLevel || evenHidden) && type >= limits[iType]
                 && type < limits[iType + 1]) {
                 // but skip if not useful for ampl (and in ampl mode)
-                if (verbose >= 4 && (parameters_[iParam].whereUsed() & 4) == 0)
+                if (verbose >= 4 && (cbcParameters_[iParam].whereUsed() & 4) == 0)
                   continue;
                 if (!across) {
                   if ((verbose & 2) != 0)
                     std::cout << "Command ";
                 }
-                int length = parameters_[iParam].lengthMatchName() + 1;
+                int length = cbcParameters_[iParam].lengthMatchName() + 1;
                 if (lengthLine + length > 80) {
                   std::cout << std::endl;
                   across = 0;
                   lengthLine = 0;
                 }
-                std::cout << " " << parameters_[iParam].matchName();
+                std::cout << " " << cbcParameters_[iParam].matchName();
                 lengthLine += length;
                 across++;
                 if (across == maxAcross) {
@@ -2556,11 +2542,11 @@ int CbcMain1(int argc, const char *argv[],
                   if ((verbose % 4) != 0) {
                     // put out description as well
                     if ((verbose & 1) != 0)
-                      std::cout << " " << parameters_[iParam].shortHelp();
+                      std::cout << " " << cbcParameters_[iParam].shortHelp();
                     std::cout << std::endl;
                     if ((verbose & 2) != 0) {
                       std::cout << "---- description" << std::endl;
-                      parameters_[iParam].printLongHelp();
+                      cbcParameters_[iParam].printLongHelp();
                       std::cout << "----" << std::endl
                                 << std::endl;
                     }
@@ -2570,10 +2556,52 @@ int CbcMain1(int argc, const char *argv[],
                 }
               }
             }
-            if (across)
+            for (int iParam = 0; iParam < (int)clpParameters_.size(); iParam++) {
+              int type = clpParameters_[iParam].type();
+              //printf("%d type %d limits %d %d display %d\n",iParam,
+              //     type,limits[iType],limits[iType+1],clpParameters_[iParam].displayThis());
+              if ((clpParameters_[iParam].displayThis() >= printLevel || evenHidden) && type >= limits[iType]
+                && type < limits[iType + 1]) {
+                // but skip if not useful for ampl (and in ampl mode)
+                if (verbose >= 4 && (clpParameters_[iParam].whereUsed() & 4) == 0)
+                  continue;
+                if (!across) {
+                  if ((verbose & 2) != 0)
+                    std::cout << "Command ";
+                }
+                int length = clpParameters_[iParam].lengthMatchName() + 1;
+                if (lengthLine + length > 80) {
+                  std::cout << std::endl;
+                  across = 0;
+                  lengthLine = 0;
+                }
+                std::cout << " " << clpParameters_[iParam].matchName();
+                lengthLine += length;
+                across++;
+                if (across == maxAcross) {
+                  across = 0;
+                  if ((verbose % 4) != 0) {
+                    // put out description as well
+                    if ((verbose & 1) != 0)
+                      std::cout << " " << clpParameters_[iParam].shortHelp();
+                    std::cout << std::endl;
+                    if ((verbose & 2) != 0) {
+                      std::cout << "---- description" << std::endl;
+                      clpParameters_[iParam].printLongHelp();
+                      std::cout << "----" << std::endl
+                                << std::endl;
+                    }
+                  } else {
+                    std::cout << std::endl;
+                  }
+                }
+              }
+            }
+            if (across){
               std::cout << std::endl;
+            }
           }
-        } else if (type == CBC_PARAM_FULLGENERALQUERY) {
+        } else if (cbcType == CBC_PARAM_FULLGENERALQUERY) {
           std::cout << "Full list of commands is:" << std::endl;
           int maxAcross = 5;
           int limits[] = { 1, 51, 101, 151, 201, 301, 401, 501, 601 };
@@ -2590,13 +2618,27 @@ int CbcMain1(int argc, const char *argv[],
           for (iType = 0; iType < 8; iType++) {
             int across = 0;
             std::cout << types[iType] << "  ";
-            for (iParam = 0; iParam < (int)parameters_.size(); iParam++) {
-              int type = parameters_[iParam].type();
+            for (int iParam = 0; iParam < (int)cbcParameters_.size(); iParam++) {
+              int type = cbcParameters_[iParam].type();
               if (type >= limits[iType]
                 && type < limits[iType + 1]) {
                 if (!across)
                   std::cout << "  ";
-                std::cout << parameters_[iParam].matchName() << "  ";
+                std::cout << cbcParameters_[iParam].matchName() << "  ";
+                across++;
+                if (across == maxAcross) {
+                  std::cout << std::endl;
+                  across = 0;
+                }
+              }
+            }
+            for (int iParam = 0; iParam < (int)clpParameters_.size(); iParam++) {
+              int type = clpParameters_[iParam].type();
+              if (type >= limits[iType]
+                && type < limits[iType + 1]) {
+                if (!across)
+                  std::cout << "  ";
+                std::cout << clpParameters_[iParam].matchName() << "  ";
                 across++;
                 if (across == maxAcross) {
                   std::cout << std::endl;
@@ -2607,21 +2649,21 @@ int CbcMain1(int argc, const char *argv[],
             if (across)
               std::cout << std::endl;
           }
-        } else if (type < 101) {
+        } else if (typeIndex < 101) {
           // get next field as double
-          double value = CoinReadGetDoubleField(argc, argv, &valid);
+          double value = CbcReadGetDoubleField(whichArgument, argc, argv, &valid);
           if (!valid) {
-            if (type < 51) {
+            if (typeIndex < 51) {
               int returnCode;
-              const char *message = parameters_[iParam].setDoubleParameterWithMessage(lpSolver, value, returnCode);
+              const char *message = clpParameters_[iClpParam].setDoubleParameterWithMessage(lpSolver, value, returnCode);
               if (!noPrinting_ && strlen(message)) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                   << message
                   << CoinMessageEol;
               }
-            } else if (type < 81) {
+            } else if (typeIndex < 81) {
               int returnCode;
-              const char *message = parameters_[iParam].setDoubleParameterWithMessage(model_, value, returnCode);
+              const char *message = cbcParameters_[iCbcParam].setDoubleParameterWithMessage(model_, value, returnCode);
               if (!noPrinting_ && strlen(message)) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                   << message
@@ -2629,13 +2671,15 @@ int CbcMain1(int argc, const char *argv[],
               }
             } else {
               int returnCode;
-              const char *message = parameters_[iParam].setDoubleParameterWithMessage(lpSolver, value, returnCode);
+              //TODO! This doesn't seem to do anything. None of the paramters in this range
+              //are actually set by this function 
+              const char *message = cbcParameters_[iCbcParam].setDoubleParameterWithMessage(model_, value, returnCode);
               if (!noPrinting_ && strlen(message)) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                   << message
                   << CoinMessageEol;
               }
-              switch (type) {
+              switch (cbcType) {
               case CBC_PARAM_DBL_DJFIX:
                 djFix = value;
 #ifndef CBC_OTHER_SOLVER
@@ -2652,7 +2696,7 @@ int CbcMain1(int argc, const char *argv[],
                   double *solution = lpSolver->primalColumnSolution();
                   double *dj = lpSolver->dualColumnSolution();
                   int numberFixed = 0;
-                  double dextra4 = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA4, parameters_)].doubleValue();
+                  double dextra4 = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_DEXTRA4, cbcParameters_)].doubleValue();
                   if (dextra4)
                     printf("Multiple for continuous dj fixing is %g\n", dextra4);
                   for (i = 0; i < numberColumns; i++) {
@@ -2689,44 +2733,57 @@ int CbcMain1(int argc, const char *argv[],
               }
             }
           } else if (valid == 1) {
-            std::cout << " is illegal for double parameter " << parameters_[iParam].name() << " value remains " << parameters_[iParam].doubleValue() << std::endl;
+             if (cbcType < CBC_PARAM_NOTUSED_INVALID){
+                std::cout << " is illegal for double parameter " << cbcParameters_[iCbcParam].name() << " value remains " << cbcParameters_[iCbcParam].doubleValue() << std::endl;
+             } else {
+                std::cout << " is illegal for double parameter " << cbcParameters_[iCbcParam].name() << " value remains " << clpParameters_[iClpParam].doubleValue() << std::endl;
+             }
           } else {
-            std::cout << parameters_[iParam].name() << " has value " << parameters_[iParam].doubleValue() << std::endl;
+             if (cbcType < CBC_PARAM_NOTUSED_INVALID){
+                std::cout << cbcParameters_[iCbcParam].name() << " has value " << cbcParameters_[iCbcParam].doubleValue() << std::endl;
+             } else {
+                std::cout << clpParameters_[iClpParam].name() << " has value " << clpParameters_[iClpParam].doubleValue() << std::endl;
+             }
           }
-        } else if (type < 201) {
+         } else if (typeIndex < 201) {
           // get next field as int
-          int value = CoinReadGetIntField(argc, argv, &valid);
+          int value = CbcReadGetIntField(whichArgument, argc, argv, &valid);
           if (!valid) {
-            if (type < 151) {
-              if (parameters_[iParam].type() == CLP_PARAM_INT_PRESOLVEPASS)
+            if (typeIndex < 151) {
+              if (clpParameters_[iClpParam].type() == CLP_PARAM_INT_PRESOLVEPASS)
                 preSolve = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_IDIOT)
+              else if (clpParameters_[iClpParam].type() == CLP_PARAM_INT_IDIOT)
                 doIdiot = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_SPRINT)
+              else if (clpParameters_[iClpParam].type() == CLP_PARAM_INT_SPRINT)
                 doSprint = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_OUTPUTFORMAT)
+              else if (clpParameters_[iClpParam].type() == CLP_PARAM_INT_OUTPUTFORMAT)
                 outputFormat = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_SLPVALUE)
+              else if (clpParameters_[iClpParam].type() == CLP_PARAM_INT_SLPVALUE)
                 slpValue = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_CPP)
+              else if (clpParameters_[iClpParam].type() == CLP_PARAM_INT_CPP)
                 cppValue = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_PRESOLVEOPTIONS)
+              else if (clpParameters_[iClpParam].type() == CLP_PARAM_INT_PRESOLVEOPTIONS)
                 presolveOptions = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_PRINTOPTIONS)
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_PRINTOPTIONS)
                 printOptions = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_SUBSTITUTION)
+              else if (clpParameters_[iClpParam].type() == CLP_PARAM_INT_SUBSTITUTION)
                 substitution = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_DUALIZE)
+              else if (clpParameters_[iClpParam].type() == CLP_PARAM_INT_DUALIZE)
                 dualize = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_PROCESSTUNE)
-                tunePreProcess = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_USESOLUTION)
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_USESOLUTION)
                 useSolution = value;
-              else if (parameters_[iParam].type() == CLP_PARAM_INT_VERBOSE)
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_PROCESSTUNE)
+                tunePreProcess = value;
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_VERBOSE)
                 verbose = value;
               int returnCode;
-              const char *message = parameters_[iParam].setIntParameterWithMessage(lpSolver, value, returnCode);
-              if (parameters_[iParam].type() == CLP_PARAM_INT_SOLVERLOGLEVEL)
+              const char *message;
+              if (cbcType < CBC_PARAM_NOTUSED_INVALID){
+                 message = cbcParameters_[iCbcParam].setIntParameterWithMessage(model_, value, returnCode);
+              } else {
+                 message = clpParameters_[iClpParam].setIntParameterWithMessage(lpSolver, value, returnCode);
+              }
+              if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_SOLVERLOGLEVEL)
 		clpSolver->messageHandler()->setLogLevel(value); // as well
 		
               if (!noPrinting_ && strlen(message)) {
@@ -2735,23 +2792,23 @@ int CbcMain1(int argc, const char *argv[],
                   << CoinMessageEol;
               }
             } else {
-              if (parameters_[iParam].type() == CBC_PARAM_INT_CUTPASS)
+              if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_CUTPASS)
                 cutPass = value;
-              else if (parameters_[iParam].type() == CBC_PARAM_INT_CUTPASSINTREE)
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_CUTPASSINTREE)
                 cutPassInTree = value;
-              else if (parameters_[iParam].type() == CBC_PARAM_INT_STRONGBRANCHING || parameters_[iParam].type() == CBC_PARAM_INT_NUMBERBEFORE)
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_STRONGBRANCHING || cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_NUMBERBEFORE)
                 strongChanged = true;
-              else if (parameters_[iParam].type() == CBC_PARAM_INT_FPUMPTUNE || parameters_[iParam].type() == CBC_PARAM_INT_FPUMPTUNE2 || parameters_[iParam].type() == CBC_PARAM_INT_FPUMPITS)
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_FPUMPTUNE || cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_FPUMPTUNE2 || cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_FPUMPITS)
                 pumpChanged = true;
-              else if (parameters_[iParam].type() == CBC_PARAM_INT_BKPIVOTINGSTRATEGY)
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_BKPIVOTINGSTRATEGY)
                 bkPivotingStrategy = value;
-              else if (parameters_[iParam].type() == CBC_PARAM_INT_BKMAXCALLS)
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_BKMAXCALLS)
                 maxCallsBK = value;
-              else if (parameters_[iParam].type() == CBC_PARAM_INT_BKCLQEXTMETHOD)
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_BKCLQEXTMETHOD)
                 bkClqExtMethod = value;
-              else if (parameters_[iParam].type() == CBC_PARAM_INT_ODDWEXTMETHOD)
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_ODDWEXTMETHOD)
                 oddWExtMethod = value;
-              else if (parameters_[iParam].type() == CBC_PARAM_INT_EXPERIMENT
+              else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_EXPERIMENT
 			 && value<10000) {
                 int addFlags = 0;
                 // switch on some later features if >999
@@ -2759,28 +2816,28 @@ int CbcMain1(int argc, const char *argv[],
                   int switchValue = value / 1000;
                   const char *message = NULL;
                   value -= 1000 * switchValue;
-                  parameters_[whichParam(CBC_PARAM_INT_EXPERIMENT, parameters_)].setIntValue(0 /*value*/);
+                  cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXPERIMENT, cbcParameters_)].setIntValue(0 /*value*/);
                   switch (switchValue) {
                   default:
                   case 4:
                     // hotstart 500, -200 cut passes
-                    message = parameters_[whichParam(CBC_PARAM_INT_MAXHOTITS, parameters_)].setIntValueWithMessage(500);
+                    message = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MAXHOTITS, cbcParameters_)].setIntValueWithMessage(500);
                     if (!noPrinting_ && message)
                       generalMessageHandler->message(CLP_GENERAL, generalMessages)
                         << message << CoinMessageEol;
-                    message = parameters_[whichParam(CBC_PARAM_INT_CUTPASS, parameters_)].setIntValueWithMessage(-200);
+                    message = cbcParameters_[whichCbcParam(CBC_PARAM_INT_CUTPASS, cbcParameters_)].setIntValueWithMessage(-200);
                     if (!noPrinting_ && message)
                       generalMessageHandler->message(CLP_GENERAL, generalMessages)
                         << message << CoinMessageEol;
                   case 3:
                     // multiple 4
-                    message = parameters_[whichParam(CBC_PARAM_INT_MULTIPLEROOTS, parameters_)].setIntValueWithMessage(4);
+                    message = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MULTIPLEROOTS, cbcParameters_)].setIntValueWithMessage(4);
                     if (!noPrinting_ && message)
                       generalMessageHandler->message(CLP_GENERAL, generalMessages)
                         << message << CoinMessageEol;
                   case 2:
                     // rens plus all diving at root
-                    message = parameters_[whichParam(CBC_PARAM_INT_DIVEOPT, parameters_)].setIntValueWithMessage(16);
+                    message = cbcParameters_[whichCbcParam(CBC_PARAM_INT_DIVEOPT, cbcParameters_)].setIntValueWithMessage(16);
                     if (!noPrinting_ && message)
                       generalMessageHandler->message(CLP_GENERAL, generalMessages)
                         << message << CoinMessageEol;
@@ -2788,29 +2845,29 @@ int CbcMain1(int argc, const char *argv[],
                     // -tune 7 zero,lagomory,gmi at root - probing on
                   case 1:
                     tunePreProcess = 7;
-                    message = parameters_[whichParam(CLP_PARAM_INT_PROCESSTUNE, parameters_)].setIntValueWithMessage(7);
+                    message = cbcParameters_[whichCbcParam(CBC_PARAM_INT_PROCESSTUNE, cbcParameters_)].setIntValueWithMessage(7);
                     if (!noPrinting_ && message)
                       generalMessageHandler->message(CLP_GENERAL, generalMessages)
                         << message << CoinMessageEol;
-                    //message = parameters_[whichParam(CBC_PARAM_INT_MIPOPTIONS, parameters_)].setIntValueWithMessage(1025);
+                    //message = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MIPOPTIONS, cbcParameters_)].setIntValueWithMessage(1025);
                     //if (!noPrinting_&&message)
                     //    generalMessageHandler->message(CLP_GENERAL, generalMessages)
                     //  << message << CoinMessageEol;
-                    message = parameters_[whichParam(CBC_PARAM_STR_PROBINGCUTS, parameters_)].setCurrentOptionWithMessage("on");
+                    message = cbcParameters_[whichCbcParam(CBC_PARAM_STR_PROBINGCUTS, cbcParameters_)].setCurrentOptionWithMessage("on");
                     probingAction = 1;
                     if (!noPrinting_ && message)
                       generalMessageHandler->message(CLP_GENERAL, generalMessages)
                         << message << CoinMessageEol;
-                    message = parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, parameters_)].setCurrentOptionWithMessage("root");
+                    message = cbcParameters_[whichCbcParam(CBC_PARAM_STR_ZEROHALFCUTS, cbcParameters_)].setCurrentOptionWithMessage("root");
                     if (!noPrinting_ && message)
                       generalMessageHandler->message(CLP_GENERAL, generalMessages)
                         << message << CoinMessageEol;
-                    message = parameters_[whichParam(CBC_PARAM_STR_LAGOMORYCUTS, parameters_)].setCurrentOptionWithMessage("root");
+                    message = cbcParameters_[whichCbcParam(CBC_PARAM_STR_LAGOMORYCUTS, cbcParameters_)].setCurrentOptionWithMessage("root");
                     if (!noPrinting_ && message)
                       generalMessageHandler->message(CLP_GENERAL, generalMessages)
                         << message << CoinMessageEol;
                     GMIAction = 2;
-                    message = parameters_[whichParam(CBC_PARAM_STR_GMICUTS, parameters_)].setCurrentOptionWithMessage("root");
+                    message = cbcParameters_[whichCbcParam(CBC_PARAM_STR_GMICUTS, cbcParameters_)].setCurrentOptionWithMessage("root");
                     if (!noPrinting_ && message)
                       generalMessageHandler->message(CLP_GENERAL, generalMessages)
                         << message << CoinMessageEol;
@@ -2820,7 +2877,7 @@ int CbcMain1(int argc, const char *argv[],
                 if (value >= 10) {
                   addFlags = 1048576 * (value / 10);
                   value = value % 10;
-                  parameters_[whichParam(CBC_PARAM_INT_EXPERIMENT, parameters_)].setIntValue(value);
+                  cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXPERIMENT, cbcParameters_)].setIntValue(value);
                 }
 #ifndef CBC_EXPERIMENT_JJF
 		if (value == 1) {
@@ -2846,8 +2903,8 @@ int CbcMain1(int argc, const char *argv[],
 		  if (value > 2)
 		    tunePreProcess |= 8198; // was 8199;
  		  if (value == 4) {
- 		    int more2 = parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].intValue();
-                     parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].setIntValue(more2|1048576);
+ 		    int more2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, cbcParameters_)].intValue();
+                     cbcParameters_[whichCbcParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, cbcParameters_)].setIntValue(more2|1048576);
  		  }
 		  value = 1;
 		}
@@ -2856,13 +2913,13 @@ int CbcMain1(int argc, const char *argv[],
                   int values[] = { 24003, 280003, 792003, 24003, 24003 };
                   if (value >= 2 && value <= 3) {
                     // swap default diving
-                    int iParam = whichParam(CBC_PARAM_STR_DIVINGC, parameters_);
-                    parameters_[iParam].setCurrentOption("off");
-                    iParam = whichParam(CBC_PARAM_STR_DIVINGP, parameters_);
-                    parameters_[iParam].setCurrentOption("on");
+                    int iParam = whichCbcParam(CBC_PARAM_STR_DIVINGC, cbcParameters_);
+                    cbcParameters_[iParam].setCurrentOption("off");
+                    iParam = whichCbcParam(CBC_PARAM_STR_DIVINGP, cbcParameters_);
+                    cbcParameters_[iParam].setCurrentOption("on");
                   }
                   int extra4 = values[value - 1] + addFlags;
-                  parameters_[whichParam(CBC_PARAM_INT_EXTRA4, parameters_)].setIntValue(extra4);
+                  cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA4, cbcParameters_)].setIntValue(extra4);
                   if (!noPrinting_) {
                     generalMessageHandler->message(CLP_GENERAL, generalMessages)
                       << "switching on global root cuts for gomory and knapsack"
@@ -2875,53 +2932,53 @@ int CbcMain1(int argc, const char *argv[],
                       << extra4 << " -passc 1000!"
                       << CoinMessageEol;
                   }
-                  parameters_[whichParam(CBC_PARAM_STR_PROBINGCUTS, parameters_)].setCurrentOption("forceOnStrong");
+                  cbcParameters_[whichCbcParam(CBC_PARAM_STR_PROBINGCUTS, cbcParameters_)].setCurrentOption("forceOnStrong");
                   probingAction = 8;
-                  parameters_[whichParam(CBC_PARAM_STR_GOMORYCUTS, parameters_)].setCurrentOption("onGlobal");
+                  cbcParameters_[whichCbcParam(CBC_PARAM_STR_GOMORYCUTS, cbcParameters_)].setCurrentOption("onGlobal");
                   gomoryAction = 5;
-                  parameters_[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, parameters_)].setCurrentOption("onGlobal");
+                  cbcParameters_[whichCbcParam(CBC_PARAM_STR_KNAPSACKCUTS, cbcParameters_)].setCurrentOption("onGlobal");
                   knapsackAction = 5;
-                  parameters_[whichParam(CLP_PARAM_STR_FACTORIZATION, parameters_)].setCurrentOption("osl");
+                  clpParameters_[whichClpParam(CLP_PARAM_STR_FACTORIZATION, clpParameters_)].setCurrentOption("osl");
                   lpSolver->factorization()->forceOtherFactorization(3);
-                  parameters_[whichParam(CBC_PARAM_INT_MAXHOTITS, parameters_)].setIntValue(100);
-                  parameters_[whichParam(CBC_PARAM_INT_CUTPASS, parameters_)].setIntValue(1000);
+                  cbcParameters_[whichCbcParam(CBC_PARAM_INT_MAXHOTITS, cbcParameters_)].setIntValue(100);
+                  cbcParameters_[whichCbcParam(CBC_PARAM_INT_CUTPASS, cbcParameters_)].setIntValue(1000);
                   cutPass = 1000;
-                  parameters_[whichParam(CBC_PARAM_STR_RENS, parameters_)].setCurrentOption("on");
+                  cbcParameters_[whichCbcParam(CBC_PARAM_STR_RENS, cbcParameters_)].setCurrentOption("on");
                 }
-              } else if (parameters_[iParam].type() == CBC_PARAM_INT_STRATEGY) {
+              } else if (cbcParameters_[iCbcParam].type() == CBC_PARAM_INT_STRATEGY) {
                 if (value == 0) {
                   gomoryGen.setAwayAtRoot(0.05);
                   int iParam;
-                  iParam = whichParam(CBC_PARAM_INT_DIVEOPT, parameters_);
-                  parameters_[iParam].setIntValue(-1);
-                  iParam = whichParam(CBC_PARAM_INT_FPUMPITS, parameters_);
-                  parameters_[iParam].setIntValue(20);
-                  iParam = whichParam(CBC_PARAM_INT_FPUMPTUNE, parameters_);
-                  parameters_[iParam].setIntValue(1003);
+                  iParam = whichCbcParam(CBC_PARAM_INT_DIVEOPT, cbcParameters_);
+                  cbcParameters_[iParam].setIntValue(-1);
+                  iParam = whichCbcParam(CBC_PARAM_INT_FPUMPITS, cbcParameters_);
+                  cbcParameters_[iParam].setIntValue(20);
+                  iParam = whichCbcParam(CBC_PARAM_INT_FPUMPTUNE, cbcParameters_);
+                  cbcParameters_[iParam].setIntValue(1003);
                   initialPumpTune = 1003;
-                  iParam = whichParam(CLP_PARAM_INT_PROCESSTUNE, parameters_);
-                  parameters_[iParam].setIntValue(0);
+                  iParam = whichCbcParam(CBC_PARAM_INT_PROCESSTUNE, cbcParameters_);
+                  cbcParameters_[iParam].setIntValue(0);
                   tunePreProcess = 0;
-                  iParam = whichParam(CBC_PARAM_STR_DIVINGC, parameters_);
-                  parameters_[iParam].setCurrentOption("off");
-                  iParam = whichParam(CBC_PARAM_STR_RINS, parameters_);
-                  parameters_[iParam].setCurrentOption("off");
-                  iParam = whichParam(CBC_PARAM_STR_PROBINGCUTS, parameters_);
+                  iParam = whichCbcParam(CBC_PARAM_STR_DIVINGC, cbcParameters_);
+                  cbcParameters_[iParam].setCurrentOption("off");
+                  iParam = whichCbcParam(CBC_PARAM_STR_RINS, cbcParameters_);
+                  cbcParameters_[iParam].setCurrentOption("off");
+                  iParam = whichCbcParam(CBC_PARAM_STR_PROBINGCUTS, cbcParameters_);
                   // but not if cuts off
-                  int jParam = whichParam(CBC_PARAM_STR_CUTSSTRATEGY, parameters_);
+                  int jParam = whichCbcParam(CBC_PARAM_STR_CUTSSTRATEGY, cbcParameters_);
 
-                  jParam = parameters_[jParam].currentOptionAsInteger();
+                  jParam = cbcParameters_[jParam].currentOptionAsInteger();
                   if (jParam) {
-                    parameters_[iParam].setCurrentOption("on");
+                    cbcParameters_[iParam].setCurrentOption("on");
                     probingAction = 1;
                   } else {
-                    parameters_[iParam].setCurrentOption("off");
+                    cbcParameters_[iParam].setCurrentOption("off");
                     probingAction = 0;
                   }
                 }
               }
               int returnCode;
-              const char *message = parameters_[iParam].setIntParameterWithMessage(model_, value, returnCode);
+              const char *message = cbcParameters_[iCbcParam].setIntParameterWithMessage(model_, value, returnCode);
               if (!noPrinting_ && strlen(message)) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                   << message
@@ -2929,317 +2986,351 @@ int CbcMain1(int argc, const char *argv[],
               }
             }
           } else if (valid == 1) {
-            std::cout << " is illegal for integer parameter " << parameters_[iParam].name() << " value remains " << parameters_[iParam].intValue() << std::endl;
+             if (cbcType < CBC_PARAM_NOTUSED_INVALID){
+                std::cout << " is illegal for integer parameter " << cbcParameters_[iCbcParam].name() << " value remains " << cbcParameters_[iCbcParam].intValue() << std::endl;
+             } else {
+                std::cout << " is illegal for integer parameter " << cbcParameters_[iCbcParam].name() << " value remains " << clpParameters_[iClpParam].intValue() << std::endl;
+             }
           } else {
-            std::cout << parameters_[iParam].name() << " has value " << parameters_[iParam].intValue() << std::endl;
+             if (cbcType < CBC_PARAM_NOTUSED_INVALID){
+                std::cout << cbcParameters_[iCbcParam].name() << " has value " << cbcParameters_[iCbcParam].intValue() << std::endl;
+             } else {
+                std::cout << clpParameters_[iClpParam].name() << " has value " << clpParameters_[iClpParam].intValue() << std::endl;
+             }
           }
-        } else if (type < 401) {
+        } else if (typeIndex < 401) {
           // one of several strings
-          std::string value = CoinReadGetString(argc, argv);
-          int action = parameters_[iParam].parameterOption(value);
-          if (action < 0) {
-            if (value != "EOL") {
-              // no match
-              parameters_[iParam].printOptions();
-            } else {
-              // print current value
-              std::cout << parameters_[iParam].name() << " has value " << parameters_[iParam].currentOption() << std::endl;
-            }
-          } else {
-            const char *message = parameters_[iParam].setCurrentOptionWithMessage(action);
-            if (!noPrinting_ && strlen(message)) {
-              generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                << message
-                << CoinMessageEol;
-            }
-            // for now hard wired
-            switch (type) {
-            case CLP_PARAM_STR_DIRECTION:
-              if (action == 0)
-                lpSolver->setOptimizationDirection(1);
-              else if (action == 1)
-                lpSolver->setOptimizationDirection(-1);
-              else
-                lpSolver->setOptimizationDirection(0);
-              break;
-            case CLP_PARAM_STR_DUALPIVOT:
-              if (action == 0) {
-                ClpDualRowSteepest steep(3);
-                lpSolver->setDualRowPivotAlgorithm(steep);
-              } else if (action == 1) {
-                ClpDualRowDantzig dantzig;
-                //ClpDualRowSteepest dantzig(5);
-                lpSolver->setDualRowPivotAlgorithm(dantzig);
-              } else if (action == 2) {
-                // partial steep
-                ClpDualRowSteepest steep(2);
-                lpSolver->setDualRowPivotAlgorithm(steep);
-              } else if (action == 3) {
-                ClpDualRowSteepest steep;
-                lpSolver->setDualRowPivotAlgorithm(steep);
-              } else if (action == 4) {
-                // Positive edge steepest
-                ClpPEDualRowSteepest p(fabs(parameters_[whichParam(CLP_PARAM_DBL_PSI, parameters_)].doubleValue()));
-                lpSolver->setDualRowPivotAlgorithm(p);
-              } else if (action == 5) {
-                // Positive edge Dantzig
-                ClpPEDualRowDantzig p(fabs(parameters_[whichParam(CLP_PARAM_DBL_PSI, parameters_)].doubleValue()));
-                lpSolver->setDualRowPivotAlgorithm(p);
-              }
-              break;
-            case CLP_PARAM_STR_PRIMALPIVOT:
-              if (action == 0) {
-                ClpPrimalColumnSteepest steep(3);
-                lpSolver->setPrimalColumnPivotAlgorithm(steep);
-              } else if (action == 1) {
-                ClpPrimalColumnSteepest steep(0);
-                lpSolver->setPrimalColumnPivotAlgorithm(steep);
-              } else if (action == 2) {
-                ClpPrimalColumnDantzig dantzig;
-                lpSolver->setPrimalColumnPivotAlgorithm(dantzig);
-              } else if (action == 3) {
-                ClpPrimalColumnSteepest steep(4);
-                lpSolver->setPrimalColumnPivotAlgorithm(steep);
-              } else if (action == 4) {
-                ClpPrimalColumnSteepest steep(1);
-                lpSolver->setPrimalColumnPivotAlgorithm(steep);
-              } else if (action == 5) {
-                ClpPrimalColumnSteepest steep(2);
-                lpSolver->setPrimalColumnPivotAlgorithm(steep);
-              } else if (action == 6) {
-                ClpPrimalColumnSteepest steep(10);
-                lpSolver->setPrimalColumnPivotAlgorithm(steep);
-              } else if (action == 7) {
-                // Positive edge steepest
-                ClpPEPrimalColumnSteepest p(fabs(parameters_[whichParam(CLP_PARAM_DBL_PSI, parameters_)].doubleValue()));
-                lpSolver->setPrimalColumnPivotAlgorithm(p);
-              } else if (action == 8) {
-                // Positive edge Dantzig
-                ClpPEPrimalColumnDantzig p(fabs(parameters_[whichParam(CLP_PARAM_DBL_PSI, parameters_)].doubleValue()));
-                lpSolver->setPrimalColumnPivotAlgorithm(p);
-              }
-              break;
-            case CLP_PARAM_STR_SCALING:
-              lpSolver->scaling(action);
-              solver->setHintParam(OsiDoScale, action != 0, OsiHintTry);
-              doScaling = action;
-              break;
-            case CLP_PARAM_STR_AUTOSCALE:
-              lpSolver->setAutomaticScaling(action != 0);
-              break;
-            case CLP_PARAM_STR_SPARSEFACTOR:
-              lpSolver->setSparseFactorization((1 - action) != 0);
-              break;
-            case CLP_PARAM_STR_BIASLU:
-              lpSolver->factorization()->setBiasLU(action);
-              break;
-            case CLP_PARAM_STR_PERTURBATION:
-              if (action == 0)
-                lpSolver->setPerturbation(50);
-              else
-                lpSolver->setPerturbation(100);
-              break;
-            case CLP_PARAM_STR_ERRORSALLOWED:
-              allowImportErrors = action;
-              break;
-            case CLP_PARAM_STR_INTPRINT:
-              printMode = action;
-              break;
-              //case CLP_PARAM_NOTUSED_ALGORITHM:
-              //algorithm  = action;
-              //defaultSettings=false; // user knows what she is doing
-              //abort();
-              //break;
-            case CLP_PARAM_STR_KEEPNAMES:
-              keepImportNames = 1 - action;
-              break;
-            case CLP_PARAM_STR_PRESOLVE:
-              if (action == 0)
-                preSolve = 5;
-              else if (action == 1)
-                preSolve = 0;
-              else if (action == 2)
-                preSolve = 10;
-              else
-                preSolveFile = true;
-              break;
-            case CLP_PARAM_STR_PFI:
-              lpSolver->factorization()->setForrestTomlin(action == 0);
-              break;
-            case CLP_PARAM_STR_FACTORIZATION:
-              lpSolver->factorization()->forceOtherFactorization(action);
-              break;
-            case CLP_PARAM_STR_CRASH:
-              doCrash = action;
-              break;
-            case CLP_PARAM_STR_VECTOR:
-              doVector = action;
-              break;
-            case CLP_PARAM_STR_MESSAGES:
-              lpSolver->messageHandler()->setPrefix(action != 0);
-              break;
-            case CLP_PARAM_STR_CHOLESKY:
-              choleskyType = action;
-              break;
-            case CLP_PARAM_STR_GAMMA:
-              gamma = action;
-              break;
-            case CLP_PARAM_STR_BARRIERSCALE:
-              scaleBarrier = action;
-              break;
-            case CLP_PARAM_STR_KKT:
-              doKKT = action;
-              break;
-            case CLP_PARAM_STR_CROSSOVER:
-              crossover = action;
-              break;
-            case CLP_PARAM_STR_TIME_MODE:
-              model_.setUseElapsedTime(action != 0);
-              break;
-            case CBC_PARAM_STR_SOS:
-              doSOS = action;
-              break;
-            case CBC_PARAM_STR_CLQSTRENGTHENING:
-              clqstrAction = value;
-              break;
-            case CBC_PARAM_STR_USECGRAPH:
-              cgraphAction = value;
-              break;
-            case CBC_PARAM_STR_CLIQUECUTS:
-              defaultSettings = false; // user knows what she is doing
-              cliqueAction = action;
-              break;
-            case CBC_PARAM_STR_ODDWHEELCUTS:
-              defaultSettings = false; // user knows what she is doing
-              oddWheelAction = action;
-              break;
-            case CBC_PARAM_STR_GOMORYCUTS:
-              defaultSettings = false; // user knows what she is doing
-              gomoryAction = action;
-              break;
-            case CBC_PARAM_STR_PROBINGCUTS:
-              defaultSettings = false; // user knows what she is doing
-              probingAction = action;
-              break;
-            case CBC_PARAM_STR_KNAPSACKCUTS:
-              defaultSettings = false; // user knows what she is doing
-              knapsackAction = action;
-              break;
-            case CBC_PARAM_STR_REDSPLITCUTS:
-              defaultSettings = false; // user knows what she is doing
-              redsplitAction = action;
-              break;
-            case CBC_PARAM_STR_REDSPLIT2CUTS:
-              defaultSettings = false; // user knows what she is doing
-              redsplit2Action = action;
-              break;
-            case CBC_PARAM_STR_GMICUTS:
-              defaultSettings = false; // user knows what she is doing
-              GMIAction = action;
-              break;
-            case CBC_PARAM_STR_FLOWCUTS:
-              defaultSettings = false; // user knows what she is doing
-              flowAction = action;
-              break;
-            case CBC_PARAM_STR_MIXEDCUTS:
-              defaultSettings = false; // user knows what she is doing
-              mixedAction = action;
-              break;
-            case CBC_PARAM_STR_TWOMIRCUTS:
-              defaultSettings = false; // user knows what she is doing
-              twomirAction = action;
-              break;
-            case CBC_PARAM_STR_LANDPCUTS:
-              defaultSettings = false; // user knows what she is doing
-              landpAction = action;
-              break;
-            case CBC_PARAM_STR_RESIDCUTS:
-              defaultSettings = false; // user knows what she is doing
-              residualCapacityAction = action;
-              break;
-            case CBC_PARAM_STR_ZEROHALFCUTS:
-              defaultSettings = false; // user knows what she is doing
-              zerohalfAction = action;
-              break;
-            case CBC_PARAM_STR_ROUNDING:
-              defaultSettings = false; // user knows what she is doing
-              break;
-            case CBC_PARAM_STR_FPUMP:
-              defaultSettings = false; // user knows what she is doing
-              break;
-            case CBC_PARAM_STR_RINS:
-              break;
-            case CBC_PARAM_STR_DINS:
-              break;
-            case CBC_PARAM_STR_RENS:
-              break;
-            case CBC_PARAM_STR_CUTSSTRATEGY:
-	      gomoryAction = action;
-	      probingAction = action;
-	      knapsackAction = action;
-	      cliqueAction = action;
-	      flowAction = action;
-	      mixedAction = action;
-	      twomirAction = action;
-	      zerohalfAction = action;
-	      oddWheelAction = action;
-	      parameters_[whichParam(CBC_PARAM_STR_GOMORYCUTS, parameters_)].setCurrentOption(action);
-	      parameters_[whichParam(CBC_PARAM_STR_PROBINGCUTS, parameters_)].setCurrentOption(action);
-	      parameters_[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, parameters_)].setCurrentOption(action);
-	      parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters_)].setCurrentOption(action);
-	      parameters_[whichParam(CBC_PARAM_STR_FLOWCUTS, parameters_)].setCurrentOption(action);
-	      parameters_[whichParam(CBC_PARAM_STR_MIXEDCUTS, parameters_)].setCurrentOption(action);
-	      parameters_[whichParam(CBC_PARAM_STR_TWOMIRCUTS, parameters_)].setCurrentOption(action);
-	      parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, parameters_)].setCurrentOption(action);
-	      parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].setCurrentOption(action);
-	      if (!action) {
-		// switch off clique strengthening
-		clqstrAction = "off";
-	      }
-              break;
-            case CBC_PARAM_STR_HEURISTICSTRATEGY:
-              parameters_[whichParam(CBC_PARAM_STR_ROUNDING, parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_GREEDY, parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_COMBINE, parameters_)].setCurrentOption(action);
-              //parameters_[whichParam(CBC_PARAM_STR_LOCALTREE,numberParameters_,parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_FPUMP, parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_DIVINGC, parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_RINS, parameters_)].setCurrentOption(action);
-              break;
-            case CBC_PARAM_STR_GREEDY:
-            case CBC_PARAM_STR_DIVINGS:
-            case CBC_PARAM_STR_DIVINGC:
-            case CBC_PARAM_STR_DIVINGF:
-            case CBC_PARAM_STR_DIVINGG:
-            case CBC_PARAM_STR_DIVINGL:
-            case CBC_PARAM_STR_DIVINGP:
-            case CBC_PARAM_STR_DIVINGV:
-            case CBC_PARAM_STR_COMBINE:
-            case CBC_PARAM_STR_PIVOTANDCOMPLEMENT:
-            case CBC_PARAM_STR_PIVOTANDFIX:
-            case CBC_PARAM_STR_RANDROUND:
-            case CBC_PARAM_STR_LOCALTREE:
-            case CBC_PARAM_STR_NAIVE:
-            case CBC_PARAM_STR_CPX:
-              defaultSettings = false; // user knows what she is doing
-              break;
-            case CBC_PARAM_STR_COSTSTRATEGY:
-              useCosts = action;
-              break;
-            case CBC_PARAM_STR_NODESTRATEGY:
-              nodeStrategy = action;
-              break;
-            case CBC_PARAM_STR_PREPROCESS:
-              preProcess = action;
-              break;
-            default:
-              //abort();
-              break;
-            }
+          std::string value = CbcReadGetString(whichArgument, argc, argv);
+          if (cbcType < CBC_PARAM_NOTUSED_INVALID){
+             int action = cbcParameters_[iCbcParam].parameterOption(value);
+             if (action < 0) {
+                if (value != "EOL") {
+                   // no match
+                   cbcParameters_[iCbcParam].printOptions();
+                } else {
+                   // print current value
+                   std::cout << cbcParameters_[iCbcParam].name() << " has value " << cbcParameters_[iCbcParam].currentOption() << std::endl;
+                }
+             } else {
+                const char *message = cbcParameters_[iCbcParam].setCurrentOptionWithMessage(action);
+                if (!noPrinting_ && strlen(message)) {
+                   generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                      << message
+                      << CoinMessageEol;
+                }
+                // for now hard wired
+                switch (cbcType) {
+                 case CBC_PARAM_STR_DIRECTION:
+                   if (action == 0)
+                      lpSolver->setOptimizationDirection(1);
+                   else if (action == 1)
+                      lpSolver->setOptimizationDirection(-1);
+                   else
+                      lpSolver->setOptimizationDirection(0);
+                   break;
+                 case CBC_PARAM_STR_ERRORSALLOWED:
+                   allowImportErrors = action;
+                   break;
+                 case CBC_PARAM_STR_INTPRINT:
+                   printMode = action;
+                   break;
+                   //case CLP_PARAM_NOTUSED_ALGORITHM:
+                   //algorithm  = action;
+                   //defaultSettings=false; // user knows what she is doing
+                   //abort();
+                   //break;
+                 case CBC_PARAM_STR_SOS:
+                   doSOS = action;
+                   break;
+                 case CBC_PARAM_STR_CLQSTRENGTHENING:
+                   clqstrAction = value;
+                   break;
+                 case CBC_PARAM_STR_USECGRAPH:
+                   cgraphAction = value;
+                   break;
+                 case CBC_PARAM_STR_CLIQUECUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   cliqueAction = action;
+                   break;
+                 case CBC_PARAM_STR_ODDWHEELCUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   oddWheelAction = action;
+                   break;
+                 case CBC_PARAM_STR_GOMORYCUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   gomoryAction = action;
+                   break;
+                 case CBC_PARAM_STR_PROBINGCUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   probingAction = action;
+                   break;
+                 case CBC_PARAM_STR_KNAPSACKCUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   knapsackAction = action;
+                   break;
+                 case CBC_PARAM_STR_REDSPLITCUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   redsplitAction = action;
+                   break;
+                 case CBC_PARAM_STR_REDSPLIT2CUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   redsplit2Action = action;
+                   break;
+                 case CBC_PARAM_STR_GMICUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   GMIAction = action;
+                   break;
+                 case CBC_PARAM_STR_FLOWCUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   flowAction = action;
+                   break;
+                 case CBC_PARAM_STR_MIXEDCUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   mixedAction = action;
+                   break;
+                 case CBC_PARAM_STR_TWOMIRCUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   twomirAction = action;
+                   break;
+                 case CBC_PARAM_STR_LANDPCUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   landpAction = action;
+                   break;
+                 case CBC_PARAM_STR_RESIDCUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   residualCapacityAction = action;
+                   break;
+                 case CBC_PARAM_STR_ZEROHALFCUTS:
+                   defaultSettings = false; // user knows what she is doing
+                   zerohalfAction = action;
+                   break;
+                 case CBC_PARAM_STR_ROUNDING:
+                   defaultSettings = false; // user knows what she is doing
+                   break;
+                 case CBC_PARAM_STR_FPUMP:
+                   defaultSettings = false; // user knows what she is doing
+                   break;
+                 case CBC_PARAM_STR_RINS:
+                   break;
+                 case CBC_PARAM_STR_DINS:
+                   break;
+                 case CBC_PARAM_STR_RENS:
+                   break;
+                 case CBC_PARAM_STR_CUTSSTRATEGY:
+                   gomoryAction = action;
+                   probingAction = action;
+                   knapsackAction = action;
+                   cliqueAction = action;
+                   flowAction = action;
+                   mixedAction = action;
+                   twomirAction = action;
+                   zerohalfAction = action;
+                   oddWheelAction = action;
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_GOMORYCUTS, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_PROBINGCUTS, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_KNAPSACKCUTS, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_CLIQUECUTS, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_FLOWCUTS, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_MIXEDCUTS, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_TWOMIRCUTS, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_ZEROHALFCUTS, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_ODDWHEELCUTS, cbcParameters_)].setCurrentOption(action);
+                   if (!action) {
+                      // switch off clique strengthening
+                      clqstrAction = "off";
+                   }
+                   break;
+                 case CBC_PARAM_STR_HEURISTICSTRATEGY:
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_ROUNDING, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_GREEDY, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_COMBINE, cbcParameters_)].setCurrentOption(action);
+                   //cbcParameters_[whichCbcParam(CBC_PARAM_STR_LOCALTREE,numberParameters_,cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_FPUMP, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_DIVINGC, cbcParameters_)].setCurrentOption(action);
+                   cbcParameters_[whichCbcParam(CBC_PARAM_STR_RINS, cbcParameters_)].setCurrentOption(action);
+                   break;
+                 case CBC_PARAM_STR_GREEDY:
+                 case CBC_PARAM_STR_DIVINGS:
+                 case CBC_PARAM_STR_DIVINGC:
+                 case CBC_PARAM_STR_DIVINGF:
+                 case CBC_PARAM_STR_DIVINGG:
+                 case CBC_PARAM_STR_DIVINGL:
+                 case CBC_PARAM_STR_DIVINGP:
+                 case CBC_PARAM_STR_DIVINGV:
+                 case CBC_PARAM_STR_COMBINE:
+                 case CBC_PARAM_STR_PIVOTANDCOMPLEMENT:
+                 case CBC_PARAM_STR_PIVOTANDFIX:
+                 case CBC_PARAM_STR_RANDROUND:
+                 case CBC_PARAM_STR_LOCALTREE:
+                 case CBC_PARAM_STR_NAIVE:
+                 case CBC_PARAM_STR_CPX:
+                   defaultSettings = false; // user knows what she is doing
+                   break;
+                 case CBC_PARAM_STR_COSTSTRATEGY:
+                   useCosts = action;
+                   break;
+                 case CBC_PARAM_STR_NODESTRATEGY:
+                   nodeStrategy = action;
+                   break;
+                 case CBC_PARAM_STR_PREPROCESS:
+                   preProcess = action;
+                   break;
+                 case CBC_PARAM_STR_TIME_MODE:
+                   model_.setUseElapsedTime(action != 0);
+                   break;
+                 default:
+                   //abort();
+                   break;
+                }
+             }
+          } else { // We have a Clp parameter
+             int action = clpParameters_[iClpParam].parameterOption(value);
+             if (action < 0) {
+                if (value != "EOL") {
+                   // no match
+                   clpParameters_[iClpParam].printOptions();
+                } else {
+                   // print current value
+                   std::cout << clpParameters_[iClpParam].name() << " has value " << clpParameters_[iClpParam].currentOption() << std::endl;
+                }
+             } else {
+                const char *message = clpParameters_[iClpParam].setCurrentOptionWithMessage(action);
+                if (!noPrinting_ && strlen(message)) {
+                   generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                      << message
+                      << CoinMessageEol;
+                }
+                // for now hard wired
+                switch (clpType) {
+                 case CLP_PARAM_STR_DUALPIVOT:
+                   if (action == 0) {
+                      ClpDualRowSteepest steep(3);
+                      lpSolver->setDualRowPivotAlgorithm(steep);
+                   } else if (action == 1) {
+                      ClpDualRowDantzig dantzig;
+                      //ClpDualRowSteepest dantzig(5);
+                      lpSolver->setDualRowPivotAlgorithm(dantzig);
+                   } else if (action == 2) {
+                      // partial steep
+                      ClpDualRowSteepest steep(2);
+                      lpSolver->setDualRowPivotAlgorithm(steep);
+                   } else if (action == 3) {
+                      ClpDualRowSteepest steep;
+                      lpSolver->setDualRowPivotAlgorithm(steep);
+                   } else if (action == 4) {
+                      // Positive edge steepest
+                      ClpPEDualRowSteepest p(fabs(clpParameters_[whichClpParam(CLP_PARAM_DBL_PSI, clpParameters_)].doubleValue()));
+                      lpSolver->setDualRowPivotAlgorithm(p);
+                   } else if (action == 5) {
+                      // Positive edge Dantzig
+                      ClpPEDualRowDantzig p(fabs(clpParameters_[whichClpParam(CLP_PARAM_DBL_PSI, clpParameters_)].doubleValue()));
+                      lpSolver->setDualRowPivotAlgorithm(p);
+                   }
+                   break;
+                 case CLP_PARAM_STR_PRIMALPIVOT:
+                   if (action == 0) {
+                      ClpPrimalColumnSteepest steep(3);
+                      lpSolver->setPrimalColumnPivotAlgorithm(steep);
+                   } else if (action == 1) {
+                      ClpPrimalColumnSteepest steep(0);
+                      lpSolver->setPrimalColumnPivotAlgorithm(steep);
+                   } else if (action == 2) {
+                      ClpPrimalColumnDantzig dantzig;
+                      lpSolver->setPrimalColumnPivotAlgorithm(dantzig);
+                   } else if (action == 3) {
+                      ClpPrimalColumnSteepest steep(4);
+                      lpSolver->setPrimalColumnPivotAlgorithm(steep);
+                   } else if (action == 4) {
+                      ClpPrimalColumnSteepest steep(1);
+                      lpSolver->setPrimalColumnPivotAlgorithm(steep);
+                   } else if (action == 5) {
+                      ClpPrimalColumnSteepest steep(2);
+                      lpSolver->setPrimalColumnPivotAlgorithm(steep);
+                   } else if (action == 6) {
+                      ClpPrimalColumnSteepest steep(10);
+                      lpSolver->setPrimalColumnPivotAlgorithm(steep);
+                   } else if (action == 7) {
+                      // Positive edge steepest
+                      ClpPEPrimalColumnSteepest p(fabs(clpParameters_[whichClpParam(CLP_PARAM_DBL_PSI, clpParameters_)].doubleValue()));
+                      lpSolver->setPrimalColumnPivotAlgorithm(p);
+                   } else if (action == 8) {
+                      // Positive edge Dantzig
+                      ClpPEPrimalColumnDantzig p(fabs(clpParameters_[whichClpParam(CLP_PARAM_DBL_PSI, clpParameters_)].doubleValue()));
+                      lpSolver->setPrimalColumnPivotAlgorithm(p);
+                   }
+                   break;
+                 case CLP_PARAM_STR_SCALING:
+                   lpSolver->scaling(action);
+                   solver->setHintParam(OsiDoScale, action != 0, OsiHintTry);
+                   doScaling = action;
+                   break;
+                 case CLP_PARAM_STR_AUTOSCALE:
+                   lpSolver->setAutomaticScaling(action != 0);
+                   break;
+                 case CLP_PARAM_STR_SPARSEFACTOR:
+                   lpSolver->setSparseFactorization((1 - action) != 0);
+                   break;
+                 case CLP_PARAM_STR_BIASLU:
+                   lpSolver->factorization()->setBiasLU(action);
+                   break;
+                 case CLP_PARAM_STR_PERTURBATION:
+                   if (action == 0)
+                      lpSolver->setPerturbation(50);
+                   else
+                      lpSolver->setPerturbation(100);
+                   break;
+                 case CLP_PARAM_STR_KEEPNAMES:
+                   keepImportNames = 1 - action;
+                   break;
+                 case CLP_PARAM_STR_PRESOLVE:
+                   if (action == 0)
+                      preSolve = 5;
+                   else if (action == 1)
+                      preSolve = 0;
+                   else if (action == 2)
+                      preSolve = 10;
+                   else
+                      preSolveFile = true;
+                   break;
+                 case CLP_PARAM_STR_PFI:
+                   lpSolver->factorization()->setForrestTomlin(action == 0);
+                   break;
+                 case CLP_PARAM_STR_FACTORIZATION:
+                   lpSolver->factorization()->forceOtherFactorization(action);
+                   break;
+                 case CLP_PARAM_STR_CRASH:
+                   doCrash = action;
+                   break;
+                 case CLP_PARAM_STR_VECTOR:
+                   doVector = action;
+                   break;
+                 case CLP_PARAM_STR_MESSAGES:
+                   lpSolver->messageHandler()->setPrefix(action != 0);
+                   break;
+                 case CLP_PARAM_STR_CHOLESKY:
+                   choleskyType = action;
+                   break;
+                 case CLP_PARAM_STR_GAMMA:
+                   gamma = action;
+                   break;
+                 case CLP_PARAM_STR_BARRIERSCALE:
+                   scaleBarrier = action;
+                   break;
+                 case CLP_PARAM_STR_KKT:
+                   doKKT = action;
+                   break;
+                 case CLP_PARAM_STR_CROSSOVER:
+                   crossover = action;
+                   break;
+                 default:
+                   //abort();
+                   break;
+                }
+             }
           }
         } else {
           // action
-          if (type == CLP_PARAM_ACTION_EXIT) {
+          if (cbcType == CBC_PARAM_ACTION_EXIT) {
             if (statusUserFunction_[0]) {
               if (info.numberIntegers || info.numberBinary) {
                 // integer
@@ -3252,7 +3343,8 @@ int CbcMain1(int argc, const char *argv[],
             }
             break; // stop all
           }
-          switch (type) {
+
+          switch (clpType) {
           case CLP_PARAM_ACTION_DUALSIMPLEX:
           case CLP_PARAM_ACTION_PRIMALSIMPLEX:
           case CLP_PARAM_ACTION_SOLVECONTINUOUS:
@@ -3260,9 +3352,9 @@ int CbcMain1(int argc, const char *argv[],
             if (goodModel) {
               // Say not in integer
               integerStatus = -1;
-              double objScale = parameters_[whichParam(CLP_PARAM_DBL_OBJSCALE2, parameters_)].doubleValue();
+              double objScale = clpParameters_[whichClpParam(CLP_PARAM_DBL_OBJSCALE2, clpParameters_)].doubleValue();
               // deal with positive edge
-              double psi = parameters_[whichParam(CLP_PARAM_DBL_PSI, parameters_)].doubleValue();
+              double psi = clpParameters_[whichClpParam(CLP_PARAM_DBL_PSI, clpParameters_)].doubleValue();
               if (psi > 0.0) {
                 ClpDualRowPivot *dualp = lpSolver->dualRowPivot();
                 ClpDualRowSteepest *d1 = dynamic_cast< ClpDualRowSteepest * >(dualp);
@@ -3373,9 +3465,9 @@ int CbcMain1(int argc, const char *argv[],
                 presolveType = ClpSolve::presolveOff;
               }
               solveOptions.setPresolveType(presolveType, preSolve);
-              if (type == CLP_PARAM_ACTION_DUALSIMPLEX || type == CLP_PARAM_ACTION_SOLVECONTINUOUS) {
+              if (clpType == CLP_PARAM_ACTION_DUALSIMPLEX || clpType == CLP_PARAM_ACTION_SOLVECONTINUOUS) {
                 method = ClpSolve::useDual;
-              } else if (type == CLP_PARAM_ACTION_PRIMALSIMPLEX) {
+              } else if (clpType == CLP_PARAM_ACTION_PRIMALSIMPLEX) {
                 method = ClpSolve::usePrimalorSprint;
               } else {
                 method = ClpSolve::useBarrier;
@@ -3460,7 +3552,7 @@ int CbcMain1(int argc, const char *argv[],
                 model2->initialSolve(solveOptions);
               } else {
                 // special solver
-                int testOsiOptions = parameters_[whichParam(CBC_PARAM_INT_TESTOSI, parameters_)].intValue();
+                int testOsiOptions = cbcParameters_[whichCbcParam(CBC_PARAM_INT_TESTOSI, cbcParameters_)].intValue();
                 double *solution = NULL;
                 if (testOsiOptions < 10) {
                   solution = linkSolver->nonlinearSLP(slpValue > 0 ? slpValue : 20, 1.0e-5);
@@ -3532,7 +3624,7 @@ int CbcMain1(int argc, const char *argv[],
                 int iStatus2 = model2->secondaryStatus();
                 if (iStatus == 0) {
                   iStatus2 = 0;
-                  if (found.type() == CBC_PARAM_ACTION_BAB) {
+                  if (cbcType == CBC_PARAM_ACTION_BAB) {
                     // set best solution in model as no integers
                     model_.setBestSolution(model2->primalColumnSolution(),
                       model2->numberColumns(),
@@ -3672,41 +3764,6 @@ int CbcMain1(int argc, const char *argv[],
               printGeneralMessage(model_, generalPrint);
             }
             break;
-          case CLP_PARAM_ACTION_STATISTICS:
-            if (goodModel) {
-              // If presolve on look at presolved
-              bool deleteModel2 = false;
-              ClpSimplex *model2 = lpSolver;
-              if (preSolve) {
-                ClpPresolve pinfo;
-                int presolveOptions2 = presolveOptions & ~0x40000000;
-                if ((presolveOptions2 & 0xffff) != 0)
-                  pinfo.setPresolveActions(presolveOptions2);
-                pinfo.setSubstitution(substitution);
-                if ((printOptions & 1) != 0)
-                  pinfo.statistics();
-                double presolveTolerance = parameters_[whichParam(CLP_PARAM_DBL_PRESOLVETOLERANCE, parameters_)].doubleValue();
-                model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
-                  true, preSolve);
-                if (model2) {
-                  printf("Statistics for presolved model\n");
-                  deleteModel2 = true;
-                } else {
-                  printf("Presolved model looks infeasible - will use unpresolved\n");
-                  model2 = lpSolver;
-                }
-              } else {
-                printf("Statistics for unpresolved model\n");
-                model2 = lpSolver;
-              }
-              statistics(lpSolver, model2);
-              if (deleteModel2)
-                delete model2;
-            } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
-            }
-            break;
           case CLP_PARAM_ACTION_TIGHTEN:
             if (goodModel) {
               int numberInfeasibilities = lpSolver->tightenPrimalBounds();
@@ -3787,6 +3844,421 @@ int CbcMain1(int argc, const char *argv[],
               printGeneralMessage(model_, generalPrint);
             }
             break;
+          case CLP_PARAM_ACTION_MODELIN:
+#ifndef CBC_OTHER_SOLVER
+#ifdef COIN_HAS_LINK
+          {
+            // get next field
+            field = CbcReadGetString(whichArgument, argc, argv);
+            if (field == "$") {
+               field = clpParameters_[iClpParam].stringValue();
+            } else if (field == "EOL") {
+               clpParameters_[iClpParam].printString();
+               break;
+            } else {
+               clpParameters_[iClpParam].setStringValue(field);
+            }
+            std::string fileName;
+            bool canOpen = false;
+            if (field == "-") {
+              // stdin
+              canOpen = true;
+              fileName = "-";
+            } else {
+              bool absolutePath;
+              if (dirsep == '/') {
+                // non Windows (or cygwin)
+                absolutePath = (field[0] == '/');
+              } else {
+                //Windows (non cycgwin)
+                absolutePath = (field[0] == '\\');
+                // but allow for :
+                if (strchr(field.c_str(), ':'))
+                  absolutePath = true;
+              }
+              if (absolutePath) {
+                fileName = field;
+              } else if (field[0] == '~') {
+                char *environVar = getenv("HOME");
+                if (environVar) {
+                  std::string home(environVar);
+                  field = field.erase(0, 1);
+                  fileName = home + field;
+                } else {
+                  fileName = field;
+                }
+              } else {
+                fileName = directory + field;
+              }
+              FILE *fp = fopen(fileName.c_str(), "r");
+              if (fp) {
+                // can open - lets go for it
+                fclose(fp);
+                canOpen = true;
+              } else {
+                sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
+                printGeneralMessage(model_, generalPrint);
+              }
+            }
+            if (canOpen) {
+              CoinModel coinModel(fileName.c_str(), 2);
+              // load from coin model
+              OsiSolverLink solver1;
+              OsiSolverInterface *solver2 = solver1.clone();
+              model_.assignSolver(solver2, false);
+              OsiSolverLink *si = dynamic_cast< OsiSolverLink * >(model_.solver());
+              assert(si != NULL);
+              si->setDefaultMeshSize(0.001);
+              // need some relative granularity
+              si->setDefaultBound(100.0);
+              double dextra3 = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_DEXTRA3, cbcParameters_)].doubleValue();
+              if (dextra3)
+                si->setDefaultMeshSize(dextra3);
+              si->setDefaultBound(100.0);
+              si->setIntegerPriority(1000);
+              si->setBiLinearPriority(10000);
+              CoinModel *model2 = &coinModel;
+              si->load(*model2);
+              // redo
+              solver = model_.solver();
+              clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
+              lpSolver = clpSolver->getModelPtr();
+              clpSolver->messageHandler()->setLogLevel(0);
+              testOsiParameters = 0;
+              complicatedInteger = 2;
+            }
+          }
+#endif
+#endif
+          break;
+          case CLP_PARAM_ACTION_BASISIN:
+            if (goodModel) {
+              // get next field
+              field = CbcReadGetString(whichArgument, argc, argv);
+              if (field == "$") {
+                field = clpParameters_[iClpParam].stringValue();
+              } else if (field == "EOL") {
+                clpParameters_[iClpParam].printString();
+                break;
+              } else {
+                clpParameters_[iClpParam].setStringValue(field);
+              }
+              std::string fileName;
+              bool canOpen = false;
+              if (field == "-") {
+                // stdin
+                canOpen = true;
+                fileName = "-";
+              } else {
+                if (field[0] == '/' || field[0] == '\\') {
+                  fileName = field;
+                } else if (field[0] == '~') {
+                  char *environVar = getenv("HOME");
+                  if (environVar) {
+                    std::string home(environVar);
+                    field = field.erase(0, 1);
+                    fileName = home + field;
+                  } else {
+                    fileName = field;
+                  }
+                } else {
+                  fileName = directory + field;
+                }
+                FILE *fp = fopen(fileName.c_str(), "r");
+                if (fp) {
+                  // can open - lets go for it
+                  fclose(fp);
+                  canOpen = true;
+                } else {
+                  sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
+                  printGeneralMessage(model_, generalPrint);
+                }
+              }
+              if (canOpen) {
+#ifndef CBC_OTHER_SOLVER
+                int values = lpSolver->readBasis(fileName.c_str());
+                if (values == 0)
+                  basisHasValues = -1;
+                else
+                  basisHasValues = 1;
+                assert(lpSolver == clpSolver->getModelPtr());
+                clpSolver->setWarmStart(NULL);
+#endif
+              }
+            } else {
+              sprintf(generalPrint, "** Current model not valid");
+              printGeneralMessage(model_, generalPrint);
+            }
+            break;
+          case CLP_PARAM_ACTION_BASISOUT:
+            if (goodModel) {
+              // get next field
+              field = CbcReadGetString(whichArgument, argc, argv);
+              if (field == "$") {
+                field = clpParameters_[iClpParam].stringValue();
+              } else if (field == "EOL") {
+                clpParameters_[iClpParam].printString();
+                break;
+              } else {
+                clpParameters_[iClpParam].setStringValue(field);
+              }
+              std::string fileName;
+              bool canOpen = false;
+              if (field[0] == '/' || field[0] == '\\') {
+                fileName = field;
+              } else if (field[0] == '~') {
+                char *environVar = getenv("HOME");
+                if (environVar) {
+                  std::string home(environVar);
+                  field = field.erase(0, 1);
+                  fileName = home + field;
+                } else {
+                  fileName = field;
+                }
+              } else {
+                fileName = directory + field;
+              }
+              FILE *fp = fopen(fileName.c_str(), "w");
+              if (fp) {
+                // can open - lets go for it
+                fclose(fp);
+                canOpen = true;
+              } else {
+                sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
+                printGeneralMessage(model_, generalPrint);
+              }
+              if (canOpen) {
+                ClpSimplex *model2 = lpSolver;
+                model2->writeBasis(fileName.c_str(), outputFormat > 1, outputFormat - 2);
+                time2 = CoinCpuTime();
+                totalTime += time2 - time1;
+                time1 = time2;
+              }
+            } else {
+              sprintf(generalPrint, "** Current model not valid");
+              printGeneralMessage(model_, generalPrint);
+            }
+            break;
+          case CBC_PARAM_ACTION_RESTORE: {
+            // get next field
+            field = CbcReadGetString(whichArgument, argc, argv);
+            if (field == "$") {
+               field = cbcParameters_[iCbcParam].stringValue();
+            } else if (field == "EOL") {
+              cbcParameters_[iCbcParam].printString();
+              break;
+            } else {
+              cbcParameters_[iCbcParam].setStringValue(field);
+            }
+            std::string fileName;
+            bool canOpen = false;
+            if (field[0] == '/' || field[0] == '\\') {
+              fileName = field;
+            } else if (field[0] == '~') {
+              char *environVar = getenv("HOME");
+              if (environVar) {
+                std::string home(environVar);
+                field = field.erase(0, 1);
+                fileName = home + field;
+              } else {
+                fileName = field;
+              }
+            } else {
+              fileName = directory + field;
+            }
+            FILE *fp = fopen(fileName.c_str(), "rb");
+            if (fp) {
+              // can open - lets go for it
+              fclose(fp);
+              canOpen = true;
+            } else {
+              sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
+              printGeneralMessage(model_, generalPrint);
+            }
+            if (canOpen) {
+              int status = lpSolver->restoreModel(fileName.c_str());
+              if (!status) {
+                goodModel = true;
+                time2 = CoinCpuTime();
+                totalTime += time2 - time1;
+                time1 = time2;
+              } else {
+                // errors
+                sprintf(generalPrint, "There were errors on input");
+                printGeneralMessage(model_, generalPrint);
+              }
+            }
+          } break;
+          case CLP_PARAM_ACTION_ALLSLACK:
+            lpSolver->allSlackBasis(true);
+            break;
+          case CLP_PARAM_ACTION_NETLIB_DUAL:
+          case CLP_PARAM_ACTION_NETLIB_EITHER:
+          case CLP_PARAM_ACTION_NETLIB_BARRIER:
+          case CLP_PARAM_ACTION_NETLIB_PRIMAL:
+          case CLP_PARAM_ACTION_NETLIB_TUNE: {
+            printf("unit test is now only from clp - does same thing\n");
+            //return(22);
+          } break;
+          case CLP_PARAM_ACTION_FAKEBOUND:
+            if (goodModel) {
+              // get bound
+              double value = CbcReadGetDoubleField(whichArgument, argc, argv, &valid);
+              if (!valid) {
+                sprintf(generalPrint, "Setting %s to DEBUG %g", clpParameters_[iClpParam].name().c_str(), value);
+                printGeneralMessage(model_, generalPrint);
+                int iRow;
+                int numberRows = lpSolver->numberRows();
+                double *rowLower = lpSolver->rowLower();
+                double *rowUpper = lpSolver->rowUpper();
+                for (iRow = 0; iRow < numberRows; iRow++) {
+                  // leave free ones for now
+                  if (rowLower[iRow] > -1.0e20 || rowUpper[iRow] < 1.0e20) {
+                    rowLower[iRow] = CoinMax(rowLower[iRow], -value);
+                    rowUpper[iRow] = CoinMin(rowUpper[iRow], value);
+                  }
+                }
+                int iColumn;
+                int numberColumns = lpSolver->numberColumns();
+                double *columnLower = lpSolver->columnLower();
+                double *columnUpper = lpSolver->columnUpper();
+                for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                  // leave free ones for now
+                  if (columnLower[iColumn] > -1.0e20 || columnUpper[iColumn] < 1.0e20) {
+                    columnLower[iColumn] = CoinMax(columnLower[iColumn], -value);
+                    columnUpper[iColumn] = CoinMin(columnUpper[iColumn], value);
+                  }
+                }
+              } else if (valid == 1) {
+                abort();
+              } else {
+                std::cout << "enter value for " << clpParameters_[iClpParam].name() << std::endl;
+              }
+            }
+            break;
+          case CLP_PARAM_ACTION_REALLY_SCALE:
+            if (goodModel) {
+              ClpSimplex newModel(*lpSolver,
+                lpSolver->scalingFlag());
+              printf("model really really scaled\n");
+              *lpSolver = newModel;
+            }
+            break;
+          case CLP_PARAM_ACTION_USERCLP:
+#ifdef USER_HAS_FAKE_CLP
+            // Replace the sample code by whatever you want
+            if (goodModel) {
+              // Way of using an existing piece of code
+              OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+              ClpSimplex *lpSolver = clpSolver->getModelPtr();
+              // set time from integer model
+              double timeToGo = model_.getMaximumSeconds();
+              lpSolver->setMaximumSeconds(timeToGo);
+              int extra1 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA1, parameters_)].intValue();
+              fakeMain2(*lpSolver, *clpSolver, extra1);
+              lpSolver = clpSolver->getModelPtr();
+              // My actual usage has objective only in clpSolver
+              //double objectiveValue=clpSolver->getObjValue();
+              //int iStat = lpSolver->status();
+              //int iStat2 = lpSolver->secondaryStatus();
+            }
+#endif
+            break;
+          case CLP_PARAM_ACTION_PARAMETRICS:
+            if (goodModel) {
+              // get next field
+              field = CbcReadGetString(whichArgument, argc, argv);
+              if (field == "$") {
+                field = clpParameters_[iClpParam].stringValue();
+              } else if (field == "EOL") {
+                clpParameters_[iClpParam].printString();
+                break;
+              } else {
+                clpParameters_[iClpParam].setStringValue(field);
+              }
+              std::string fileName;
+              //bool canOpen = false;
+              if (field[0] == '/' || field[0] == '\\') {
+                fileName = field;
+              } else if (field[0] == '~') {
+                char *environVar = getenv("HOME");
+                if (environVar) {
+                  std::string home(environVar);
+                  field = field.erase(0, 1);
+                  fileName = home + field;
+                } else {
+                  fileName = field;
+                }
+              } else {
+                fileName = directory + field;
+              }
+              static_cast< ClpSimplexOther * >(lpSolver)->parametrics(fileName.c_str());
+              time2 = CoinCpuTime();
+              totalTime += time2 - time1;
+              time1 = time2;
+            } else {
+              sprintf(generalPrint, "** Current model not valid");
+              printGeneralMessage(model_, generalPrint);
+            }
+            break;
+          case CLP_PARAM_ACTION_GUESS:
+            if (goodModel && model_.solver()) {
+              delete[] alternativeEnvironment;
+              OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+              assert(clpSolver);
+              lpSolver = clpSolver->getModelPtr();
+              assert(lpSolver);
+              ClpSimplexOther *model2 = static_cast< ClpSimplexOther * >(lpSolver);
+              alternativeEnvironment = model2->guess(1);
+              if (alternativeEnvironment)
+                CbcEnvironmentIndex = 0;
+              else
+                std::cout << "** Guess unable to generate commands" << std::endl;
+            } else {
+              std::cout << "** Guess needs a valid model" << std::endl;
+            }
+            break;
+          default:
+            //abort();
+            break;
+          }
+
+          switch (cbcType) {
+          case CBC_PARAM_ACTION_STATISTICS:
+            if (goodModel) {
+              // If presolve on look at presolved
+              bool deleteModel2 = false;
+              ClpSimplex *model2 = lpSolver;
+              if (preSolve) {
+                ClpPresolve pinfo;
+                int presolveOptions2 = presolveOptions & ~0x40000000;
+                if ((presolveOptions2 & 0xffff) != 0)
+                  pinfo.setPresolveActions(presolveOptions2);
+                pinfo.setSubstitution(substitution);
+                if ((printOptions & 1) != 0)
+                  pinfo.statistics();
+                double presolveTolerance = clpParameters_[whichClpParam(CLP_PARAM_DBL_PRESOLVETOLERANCE, clpParameters_)].doubleValue();
+                model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
+                  true, preSolve);
+                if (model2) {
+                  printf("Statistics for presolved model\n");
+                  deleteModel2 = true;
+                } else {
+                  printf("Presolved model looks infeasible - will use unpresolved\n");
+                  model2 = lpSolver;
+                }
+              } else {
+                printf("Statistics for unpresolved model\n");
+                model2 = lpSolver;
+              }
+              statistics(lpSolver, model2);
+              if (deleteModel2)
+                delete model2;
+            } else {
+              sprintf(generalPrint, "** Current model not valid");
+              printGeneralMessage(model_, generalPrint);
+            }
+            break;
           case CBC_PARAM_ACTION_DOHEURISTIC:
             if (goodModel) {
 #if CBC_USE_INITIAL_TIME==1
@@ -3795,27 +4267,27 @@ int CbcMain1(int argc, const char *argv[],
               else
                 model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
-              int vubAction = parameters_[whichParam(CBC_PARAM_INT_VUBTRY, parameters_)].intValue();
+              int vubAction = cbcParameters_[whichCbcParam(CBC_PARAM_INT_VUBTRY, cbcParameters_)].intValue();
               if (vubAction != -1) {
                 // look at vubs
                 // extra1 is number of ints to leave free
                 // Just ones which affect >= extra3
-                int extra3 = parameters_[whichParam(CBC_PARAM_INT_EXTRA3, parameters_)].intValue();
+                int extra3 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA3, cbcParameters_)].intValue();
                 /* 2 is cost above which to fix if feasible
                                    3 is fraction of integer variables fixed if relaxing (0.97)
                                    4 is fraction of all variables fixed if relaxing (0.0)
                                 */
                 double dextra[6];
                 int extra[5];
-                extra[1] = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, parameters_)].intValue();
-                int exp1 = parameters_[whichParam(CBC_PARAM_INT_EXPERIMENT, parameters_)].intValue();
+                extra[1] = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA1, cbcParameters_)].intValue();
+                int exp1 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXPERIMENT, cbcParameters_)].intValue();
                 if (exp1 == 4 && extra[1] == -1)
                   extra[1] = 999998;
-                dextra[1] = parameters_[whichParam(CBC_PARAM_DBL_FAKEINCREMENT, parameters_)].doubleValue();
-                dextra[2] = parameters_[whichParam(CBC_PARAM_DBL_FAKECUTOFF, parameters_)].doubleValue();
-                dextra[3] = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA3, parameters_)].doubleValue();
-                dextra[4] = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA4, parameters_)].doubleValue();
-                dextra[5] = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA5, parameters_)].doubleValue();
+                dextra[1] = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_FAKEINCREMENT, cbcParameters_)].doubleValue();
+                dextra[2] = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_FAKECUTOFF, cbcParameters_)].doubleValue();
+                dextra[3] = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_DEXTRA3, cbcParameters_)].doubleValue();
+                dextra[4] = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_DEXTRA4, cbcParameters_)].doubleValue();
+                dextra[5] = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_DEXTRA5, cbcParameters_)].doubleValue();
                 if (!dextra[3])
                   dextra[3] = 0.97;
                 //OsiClpSolverInterface * newSolver =
@@ -3861,7 +4333,7 @@ int CbcMain1(int argc, const char *argv[],
                   }
                 }
               }
-              doHeuristics(&model_, 2, parameters_,
+              doHeuristics(&model_, 2, cbcParameters_,
                 noPrinting_, initialPumpTune);
               if (!objectsExist) {
                 model_.deleteObjects(false);
@@ -3922,7 +4394,7 @@ int CbcMain1(int argc, const char *argv[],
           case CBC_PARAM_ACTION_MIPLIB:
             // User can set options - main difference is lack of model and CglPreProcess
             goodModel = true;
-            parameters_[whichParam(CBC_PARAM_INT_MULTIPLEROOTS, parameters_)].setIntValue(0);
+            cbcParameters_[whichCbcParam(CBC_PARAM_INT_MULTIPLEROOTS, cbcParameters_)].setIntValue(0);
             /*
                           Run branch-and-cut. First set a few options -- node comparison, scaling.
                           Print elapsed time at the end.
@@ -3930,8 +4402,8 @@ int CbcMain1(int argc, const char *argv[],
           case CBC_PARAM_ACTION_BAB: // branchAndBound
             // obsolete case STRENGTHEN:
             if (goodModel) {
-              bool miplib = type == CBC_PARAM_ACTION_MIPLIB;
-              int logLevel = parameters_[slog].intValue();
+              bool miplib = cbcType == CBC_PARAM_ACTION_MIPLIB;
+              int logLevel = cbcParameters_[slog].intValue();
               int truncateColumns = COIN_INT_MAX;
               int truncateRows = -1;
               bool redoSOS = false;
@@ -3952,7 +4424,7 @@ int CbcMain1(int argc, const char *argv[],
                 si->getModelPtr()->scaling(doScaling);
                 ClpSimplex *lpSolver = si->getModelPtr();
                 // deal with positive edge
-                double psi = parameters_[whichParam(CLP_PARAM_DBL_PSI, parameters_)].doubleValue();
+                double psi = clpParameters_[whichClpParam(CLP_PARAM_DBL_PSI, clpParameters_)].doubleValue();
                 if (psi > 0.0) {
                   ClpDualRowPivot *dualp = lpSolver->dualRowPivot();
                   ClpDualRowSteepest *d1 = dynamic_cast< ClpDualRowSteepest * >(dualp);
@@ -3997,8 +4469,8 @@ int CbcMain1(int argc, const char *argv[],
                   ClpQuadraticObjective *obj = (dynamic_cast< ClpQuadraticObjective * >(lpSolver->objectiveAsObject()));
                   if (obj) {
                     preProcess = 0;
-                    int testOsiOptions = parameters_[whichParam(CBC_PARAM_INT_TESTOSI, parameters_)].intValue();
-                    parameters_[whichParam(CBC_PARAM_INT_TESTOSI, parameters_)].setIntValue(CoinMax(0, testOsiOptions));
+                    int testOsiOptions = cbcParameters_[whichCbcParam(CBC_PARAM_INT_TESTOSI, cbcParameters_)].intValue();
+                    cbcParameters_[whichCbcParam(CBC_PARAM_INT_TESTOSI, cbcParameters_)].setIntValue(CoinMax(0, testOsiOptions));
                     // create coin model
                     coinModel = lpSolver->createCoinModel();
                     assert(coinModel);
@@ -4011,7 +4483,7 @@ int CbcMain1(int argc, const char *argv[],
                     si->setDefaultMeshSize(0.001);
                     // need some relative granularity
                     si->setDefaultBound(100.0);
-                    double dextra3 = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA3, parameters_)].doubleValue();
+                    double dextra3 = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_DEXTRA3, cbcParameters_)].doubleValue();
                     if (dextra3)
                       si->setDefaultMeshSize(dextra3);
                     si->setDefaultBound(1000.0);
@@ -4020,7 +4492,7 @@ int CbcMain1(int argc, const char *argv[],
                     biLinearProblem = true;
                     si->setSpecialOptions2(2 + 4 + 8);
                     CoinModel *model2 = coinModel;
-                    si->load(*model2, true, parameters_[log].intValue());
+                    si->load(*model2, true, cbcParameters_[log].intValue());
                     // redo
                     solver = model_.solver();
                     clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
@@ -4097,7 +4569,7 @@ int CbcMain1(int argc, const char *argv[],
                       twomir.setMaxElements(250);
                       cbcModel->addCutGenerator(&twomir, -99, "Twomir", true, false, false, -100, -1, -1);
                       cbcModel->cutGenerator(numCutGens++)->setTiming(true);
-                      int heuristicOption = parameters_[whichParam(CBC_PARAM_STR_HEURISTICSTRATEGY, parameters_)].currentOptionAsInteger();
+                      int heuristicOption = cbcParameters_[whichCbcParam(CBC_PARAM_STR_HEURISTICSTRATEGY, cbcParameters_)].currentOptionAsInteger();
                       if (heuristicOption) {
                         CbcHeuristicFPump heuristicFPump(*cbcModel);
                         heuristicFPump.setWhen(13);
@@ -4163,7 +4635,7 @@ int CbcMain1(int argc, const char *argv[],
                       clpModel->dual(); // clean up
                       cbcModel->initialSolve();
 #ifdef CBC_THREAD
-                      int numberThreads = parameters_[whichParam(CBC_PARAM_INT_THREADS, parameters_)].intValue();
+                      int numberThreads = cbcParameters_[whichCbcParam(CBC_PARAM_INT_THREADS, cbcParameters_)].intValue();
                       cbcModel->setNumberThreads(numberThreads % 100);
                       cbcModel->setThreadMode(CoinMin(numberThreads / 100, 7));
 #endif
@@ -4511,7 +4983,7 @@ int CbcMain1(int argc, const char *argv[],
                 }
 #endif
               }
-              if (preProcess && type == CBC_PARAM_ACTION_BAB) {
+              if (preProcess && cbcType == CBC_PARAM_ACTION_BAB) {
                 // see whether to switch off preprocessing
                 // only allow SOS and integer
                 OsiObject **objects = babModel_->objects();
@@ -4527,7 +4999,7 @@ int CbcMain1(int argc, const char *argv[],
                   }
                 }
               }
-              if (type == CBC_PARAM_ACTION_BAB) {
+              if (cbcType == CBC_PARAM_ACTION_BAB) {
                 if (preProcess == 0 && numberLotSizing) {
                   if (!babModel_->numberObjects()) {
                     /* model may not have created objects
@@ -4596,7 +5068,7 @@ int CbcMain1(int argc, const char *argv[],
 				      "PreProcessing switched off due to lazy constraints");
 		}
 	      }
-              if (preProcess && type == CBC_PARAM_ACTION_BAB) {
+              if (preProcess && cbcType == CBC_PARAM_ACTION_BAB) {
                 saveSolver = babModel_->solver()->clone();
                 /* Do not try and produce equality cliques and
                                    do up to 10 passes */
@@ -4977,7 +5449,7 @@ int CbcMain1(int argc, const char *argv[],
 					numberDebugValues);
 		    }
                     redoSOS = true;
-                    bool keepPPN = parameters_[whichParam(CBC_PARAM_STR_PREPROCNAMES, parameters_)].currentOptionAsInteger();
+                    bool keepPPN = cbcParameters_[whichCbcParam(CBC_PARAM_STR_PREPROCNAMES, cbcParameters_)].currentOptionAsInteger();
 #ifdef SAVE_NAUTY
                  keepPPN = 1;
 #endif
@@ -5112,12 +5584,12 @@ int CbcMain1(int argc, const char *argv[],
                   } else {
                     //strcpy(name,lpSolver->problemName().c_str());
                     int iParam;
-                    for (iParam = 0; iParam < (int)parameters_.size(); iParam++) {
-                      int match = parameters_[iParam].matches("import");
+                    for (iParam = 0; iParam < (int)cbcParameters_.size(); iParam++) {
+                      int match = cbcParameters_[iParam].matches("import");
                       if (match == 1)
                         break;
                     }
-                    strcpy(name, parameters_[iParam].stringValue().c_str());
+                    strcpy(name, cbcParameters_[iParam].stringValue().c_str());
                     char *dot = strstr(name, ".mps");
                     if (!dot)
                       dot = strstr(name, ".lp");
@@ -5248,8 +5720,8 @@ int CbcMain1(int argc, const char *argv[],
                 // we have to keep solver2 so pass clone
                 solver2 = solver2->clone();
                 // see if extra variables wanted
-                int threshold = parameters_[whichParam(CBC_PARAM_INT_EXTRA_VARIABLES, parameters_)].intValue();
-                int more2 = parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].intValue();
+                int threshold = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA_VARIABLES, cbcParameters_)].intValue();
+                int more2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, cbcParameters_)].intValue();
                 if (threshold || (more2 & (512 | 1024)) != 0) {
                   int numberColumns = solver2->getNumCols();
                   truncateRows = solver2->getNumRows();
@@ -5676,7 +6148,7 @@ int CbcMain1(int argc, const char *argv[],
                     } else {
                       more2 &= ~(512 | 1024);
                     }
-                    parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].setIntValue(more2);
+                    cbcParameters_[whichCbcParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, cbcParameters_)].setIntValue(more2);
                   }
                   if (modifiedModel) {
                     generalMessageHandler->message(CLP_GENERAL, generalMessages)
@@ -5781,12 +6253,12 @@ int CbcMain1(int argc, const char *argv[],
                 //redsplitGen.set_given_optsol(babModel_->solver()->getRowCutDebuggerAlways()->optimalSolution(),
                 //                         babModel_->getNumCols());
               }
-              int testOsiOptions = parameters_[whichParam(CBC_PARAM_INT_TESTOSI, parameters_)].intValue();
+              int testOsiOptions = cbcParameters_[whichCbcParam(CBC_PARAM_INT_TESTOSI, cbcParameters_)].intValue();
 #ifndef JJF_ONE
               // If linked then see if expansion wanted
               {
                 OsiSolverLink *solver3 = dynamic_cast< OsiSolverLink * >(babModel_->solver());
-                int options = parameters_[whichParam(CBC_PARAM_INT_MIPOPTIONS, parameters_)].intValue() / 10000;
+                int options = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MIPOPTIONS, cbcParameters_)].intValue() / 10000;
                 if (solver3 || (options & 16) != 0) {
                   if (options) {
                     /*
@@ -5803,9 +6275,9 @@ int CbcMain1(int argc, const char *argv[],
                       knapsackStart = new int[numberRows + 1];
                       knapsackRow = new int[numberRows];
                       numberKnapsack = 10000;
-                      int extra1 = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, parameters_)].intValue();
-                      int extra2 = parameters_[whichParam(CBC_PARAM_INT_EXTRA2, parameters_)].intValue();
-                      int logLevel = parameters_[log].intValue();
+                      int extra1 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA1, cbcParameters_)].intValue();
+                      int extra2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA2, cbcParameters_)].intValue();
+                      int logLevel = cbcParameters_[log].intValue();
                       OsiSolverInterface *solver = expandKnapsack(saveCoinModel, whichColumn, knapsackStart,
                         knapsackRow, numberKnapsack,
                         storedAmpl, logLevel, extra1, extra2,
@@ -5892,20 +6364,20 @@ int CbcMain1(int argc, const char *argv[],
                 delete[] dsort;
               }
               // Set up heuristics
-              doHeuristics(babModel_, ((!miplib) ? 1 : 10), parameters_,
+              doHeuristics(babModel_, ((!miplib) ? 1 : 10), cbcParameters_,
                 noPrinting_, initialPumpTune);
               if (!miplib) {
-                if (parameters_[whichParam(CBC_PARAM_STR_LOCALTREE, parameters_)].currentOptionAsInteger()) {
+                if (cbcParameters_[whichCbcParam(CBC_PARAM_STR_LOCALTREE, cbcParameters_)].currentOptionAsInteger()) {
                   CbcTreeLocal localTree(babModel_, NULL, 10, 0, 0, 10000, 2000);
                   babModel_->passInTreeHandler(localTree);
                 }
               }
-              if (type == CBC_PARAM_ACTION_MIPLIB) {
+              if (cbcType == CBC_PARAM_ACTION_MIPLIB) {
                 if (babModel_->numberStrong() == 5 && babModel_->numberBeforeTrust() == 5)
                   babModel_->setNumberBeforeTrust(10);
               }
-              int experimentFlag = parameters_[whichParam(CBC_PARAM_INT_EXPERIMENT, parameters_)].intValue();
-              int strategyFlag = parameters_[whichParam(CBC_PARAM_INT_STRATEGY, parameters_)].intValue();
+              int experimentFlag = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXPERIMENT, cbcParameters_)].intValue();
+              int strategyFlag = cbcParameters_[whichCbcParam(CBC_PARAM_INT_STRATEGY, cbcParameters_)].intValue();
               int bothFlags = CoinMax(CoinMin(experimentFlag, 1), strategyFlag);
               // add cut generators if wanted
               int switches[30] = {};
@@ -5913,8 +6385,8 @@ int CbcMain1(int argc, const char *argv[],
               char doAtEnd[30] = {};
               int numberGenerators = 0;
               int translate[] = { -100, -1, -99, -98, 1, -1098, -999, 1, 1, 1, -1 };
-              int maximumSlowPasses = parameters_[whichParam(CBC_PARAM_INT_MAX_SLOW_CUTS,
-                                                    parameters_)]
+              int maximumSlowPasses = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MAX_SLOW_CUTS,
+                                                    cbcParameters_)]
                                         .intValue();
               if (probingAction) {
                 int numberColumns = babModel_->solver()->getNumCols();
@@ -5981,7 +6453,7 @@ int CbcMain1(int argc, const char *argv[],
                   gomoryGen.setLimit(200);
 #endif
                 }
-                int cutLength = parameters_[whichParam(CBC_PARAM_INT_CUTLENGTH, parameters_)].intValue();
+                int cutLength = cbcParameters_[whichCbcParam(CBC_PARAM_INT_CUTLENGTH, cbcParameters_)].intValue();
                 if (cutLength != -1) {
                   gomoryGen.setLimitAtRoot(cutLength);
                   if (cutLength < 10000000) {
@@ -5990,7 +6462,7 @@ int CbcMain1(int argc, const char *argv[],
                     gomoryGen.setLimit(cutLength % 10000000);
                   }
                 }
-                int laGomory = parameters_[whichParam(CBC_PARAM_STR_LAGOMORYCUTS, parameters_)].currentOptionAsInteger();
+                int laGomory = cbcParameters_[whichCbcParam(CBC_PARAM_STR_LAGOMORYCUTS, cbcParameters_)].currentOptionAsInteger();
                 int gType = translate[gomoryAction];
                 if (!laGomory) {
                   // Normal
@@ -6151,7 +6623,7 @@ int CbcMain1(int argc, const char *argv[],
                 } else if (numberColumns > 5000 && twomirAction == 4) {
                   twomirGen.setMaxElements(2000);
                 }
-                int laTwomir = parameters_[whichParam(CBC_PARAM_STR_LATWOMIRCUTS, parameters_)].currentOptionAsInteger();
+                int laTwomir = cbcParameters_[whichCbcParam(CBC_PARAM_STR_LATWOMIRCUTS, cbcParameters_)].currentOptionAsInteger();
                 int twomirType = translate[twomirAction];
                 if (!laTwomir) {
                   // Normal
@@ -6233,7 +6705,7 @@ int CbcMain1(int argc, const char *argv[],
               // Say we want timings
               numberGenerators = babModel_->numberCutGenerators();
               int iGenerator;
-              int cutDepth = parameters_[whichParam(CBC_PARAM_INT_CUTDEPTH, parameters_)].intValue();
+              int cutDepth = cbcParameters_[whichCbcParam(CBC_PARAM_INT_CUTDEPTH, cbcParameters_)].intValue();
               for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
                 CbcCutGenerator *generator = babModel_->cutGenerator(iGenerator);
                 int howOften = generator->howOften();
@@ -6279,14 +6751,14 @@ int CbcMain1(int argc, const char *argv[],
               //if (babModel_->getNumCols()>10*babModel_->getNumRows())
               //babModel_->setNumberStrong(0);
               if (!noPrinting_) {
-                int iLevel = parameters_[log].intValue();
+                int iLevel = cbcParameters_[log].intValue();
                 if (iLevel < 0) {
                   if (iLevel > -10) {
                     babModel_->setPrintingMode(1);
                   } else {
                     babModel_->setPrintingMode(2);
                     iLevel += 10;
-                    parameters_[log].setIntValue(iLevel);
+                    cbcParameters_[log].setIntValue(iLevel);
                   }
                   iLevel = -iLevel;
                 }
@@ -6297,19 +6769,19 @@ int CbcMain1(int argc, const char *argv[],
               }
 
               babModel_->solver()->setIntParam(OsiMaxNumIterationHotStart,
-                parameters_[whichParam(CBC_PARAM_INT_MAXHOTITS, parameters_)].intValue());
+                cbcParameters_[whichCbcParam(CBC_PARAM_INT_MAXHOTITS, cbcParameters_)].intValue());
 #ifndef CBC_OTHER_SOLVER
               OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
               // go faster stripes
               if ((osiclp->getNumRows() < 300 && osiclp->getNumCols() < 500)) {
-                osiclp->setupForRepeatedUse(2, parameters_[slog].intValue());
+                osiclp->setupForRepeatedUse(2, cbcParameters_[slog].intValue());
                 if (bothFlags >= 1) {
                   ClpSimplex *lp = osiclp->getModelPtr();
                   int specialOptions = lp->specialOptions();
                   lp->setSpecialOptions(specialOptions | (2048 + 4096));
                 }
               } else {
-                osiclp->setupForRepeatedUse(0, parameters_[slog].intValue());
+                osiclp->setupForRepeatedUse(0, cbcParameters_[slog].intValue());
               }
               if (bothFlags >= 2) {
                 ClpSimplex *lp = osiclp->getModelPtr();
@@ -6377,7 +6849,7 @@ int CbcMain1(int argc, const char *argv[],
               babModel_->setCutoffIncrement(CoinMax(babModel_->getCutoffIncrement(), increment));
               // Turn this off if you get problems
               // Used to be automatically set
-              int mipOptions = parameters_[whichParam(CBC_PARAM_INT_MIPOPTIONS, parameters_)].intValue() % 10000;
+              int mipOptions = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MIPOPTIONS, cbcParameters_)].intValue() % 10000;
               if (mipOptions != (1057) && mipOptions != 1025) {
                 sprintf(generalPrint, "mip options %d", mipOptions);
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
@@ -6392,7 +6864,7 @@ int CbcMain1(int argc, const char *argv[],
               babModel_->setSpecialOptions(babModel_->specialOptions() | 2);
               currentBranchModel = babModel_;
               //OsiSolverInterface * strengthenedModel=NULL;
-              if (type == CBC_PARAM_ACTION_BAB || type == CBC_PARAM_ACTION_MIPLIB) {
+              if (cbcType == CBC_PARAM_ACTION_BAB || cbcType == CBC_PARAM_ACTION_MIPLIB) {
                 if (strategyFlag == 1) {
                   // try reduced model
                   babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
@@ -6406,11 +6878,11 @@ int CbcMain1(int argc, const char *argv[],
 		  }
 		}
                 {
-                  int depthMiniBab = parameters_[whichParam(CBC_PARAM_INT_DEPTHMINIBAB, parameters_)].intValue();
+                  int depthMiniBab = cbcParameters_[whichCbcParam(CBC_PARAM_INT_DEPTHMINIBAB, cbcParameters_)].intValue();
                   if (depthMiniBab != -1)
                     babModel_->setFastNodeDepth(depthMiniBab);
                 }
-                int extra4 = parameters_[whichParam(CBC_PARAM_INT_EXTRA4, parameters_)].intValue();
+                int extra4 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA4, cbcParameters_)].intValue();
                 if (extra4 >= 0) {
                   int strategy = extra4 % 10;
                   extra4 /= 10;
@@ -6419,7 +6891,7 @@ int CbcMain1(int argc, const char *argv[],
                   extra4 = strategy + method * 8 + extra4 * 1024;
                   babModel_->setMoreSpecialOptions(extra4);
                 }
-                int moreMipOptions = parameters_[whichParam(CBC_PARAM_INT_MOREMIPOPTIONS, parameters_)].intValue();
+                int moreMipOptions = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MOREMIPOPTIONS, cbcParameters_)].intValue();
                 if (moreMipOptions >= 0) {
                   sprintf(generalPrint, "more mip options %d", moreMipOptions);
                   generalMessageHandler->message(CLP_GENERAL, generalMessages)
@@ -6459,7 +6931,7 @@ int CbcMain1(int argc, const char *argv[],
                 }
               }
               {
-                int extra1 = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, parameters_)].intValue();
+                int extra1 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA1, cbcParameters_)].intValue();
                 if (extra1 != -1) {
                   if (extra1 < 0) {
                     if (extra1 == -7777)
@@ -6481,7 +6953,7 @@ int CbcMain1(int argc, const char *argv[],
                   babModel_->setWhenCuts(999998);
                 }
               }
-              if (type == CBC_PARAM_ACTION_BAB) {
+              if (cbcType == CBC_PARAM_ACTION_BAB) {
                 if (statusUserFunction_[0]) {
                   priorities = info.priorities;
                   branchDirection = info.branchDirection;
@@ -6846,7 +7318,7 @@ int CbcMain1(int argc, const char *argv[],
                             << CoinMessageEol;
                         }
                       }
-                      int sosPriorityOption = parameters_[whichParam(CBC_PARAM_STR_SOSPRIORITIZE, parameters_)].currentOptionAsInteger();
+                      int sosPriorityOption = cbcParameters_[whichCbcParam(CBC_PARAM_STR_SOSPRIORITIZE, cbcParameters_)].currentOptionAsInteger();
                       if (sosPriorityOption) {
                         const char *msg[4] = {
                           "high with equal priority",
@@ -7076,7 +7548,7 @@ int CbcMain1(int argc, const char *argv[],
                   }
                   OsiObject **objects = testOsiSolver->objects();
                   int numberObjects = testOsiSolver->numberObjects();
-                  int logLevel = parameters_[log].intValue();
+                  int logLevel = cbcParameters_[log].intValue();
                   for (int iObj = 0; iObj < numberObjects; iObj++) {
                     // skip sos
                     OsiSOS *objSOS = dynamic_cast< OsiSOS * >(objects[iObj]);
@@ -7211,13 +7683,13 @@ int CbcMain1(int argc, const char *argv[],
                     if (solver3) {
                       CbcHeuristicDynamic3 serendipity(*babModel_);
                       serendipity.setHeuristicName("linked");
-                      int heuristicOption = parameters_[whichParam(CBC_PARAM_STR_HEURISTICSTRATEGY, parameters_)].currentOptionAsInteger();
+                      int heuristicOption = cbcParameters_[whichCbcParam(CBC_PARAM_STR_HEURISTICSTRATEGY, cbcParameters_)].currentOptionAsInteger();
                       if (heuristicOption)
                         babModel_->addHeuristic(&serendipity);
-                      double dextra3 = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA3, parameters_)].doubleValue();
+                      double dextra3 = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_DEXTRA3, cbcParameters_)].doubleValue();
                       if (dextra3)
                         solver3->setMeshSizes(dextra3);
-                      int options = parameters_[whichParam(CBC_PARAM_INT_MIPOPTIONS, parameters_)].intValue() / 10000;
+                      int options = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MIPOPTIONS, cbcParameters_)].intValue() / 10000;
                       CglStored stored;
                       if (options) {
                         printf("nlp options %d\n", options);
@@ -7241,7 +7713,7 @@ int CbcMain1(int argc, const char *argv[],
                           // say convex
                           solver3->sayConvex((options & 32) == 0);
                         }
-                        int extra1 = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, parameters_)].intValue();
+                        int extra1 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA1, cbcParameters_)].intValue();
                         if ((options & 1) != 0 && extra1 > 0)
                           solver3->setFixedPriority(extra1);
                         double cutoff = COIN_DBL_MAX;
@@ -7266,17 +7738,17 @@ int CbcMain1(int argc, const char *argv[],
                       //choose.setNumberStrong(20);
                     }
                     // For temporary testing of heuristics
-                    //int testOsiOptions = parameters_[whichParam(CBC_PARAM_INT_TESTOSI,numberParameters_,parameters_)].intValue();
+                    //int testOsiOptions = cbcParameters_[whichCbcParam(CBC_PARAM_INT_TESTOSI,numberParameters_,cbcParameters_)].intValue();
                     if (testOsiOptions >= 10) {
                       if (testOsiOptions >= 20)
                         testOsiOptions -= 10;
                       printf("*** Temp heuristic with mode %d\n", testOsiOptions - 10);
                       OsiSolverLink *solver3 = dynamic_cast< OsiSolverLink * >(babModel_->solver());
                       assert(solver3);
-                      int extra1 = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, parameters_)].intValue();
+                      int extra1 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA1, cbcParameters_)].intValue();
                       solver3->setBiLinearPriority(extra1);
                       printf("bilinear priority now %d\n", extra1);
-                      int extra2 = parameters_[whichParam(CBC_PARAM_INT_EXTRA2, parameters_)].intValue();
+                      int extra2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA2, cbcParameters_)].intValue();
                       double saveDefault = solver3->defaultBound();
                       solver3->setDefaultBound(static_cast< double >(extra2));
                       double *solution = solver3->heuristicSolution(slpValue > 0 ? slpValue : 40, 1.0e-5, testOsiOptions - 10);
@@ -7536,7 +8008,7 @@ int CbcMain1(int argc, const char *argv[],
                     babModel_->setNumberBeforeTrust(50);
                 }
 #ifdef CBC_THREAD
-                int numberThreads = parameters_[whichParam(CBC_PARAM_INT_THREADS, parameters_)].intValue();
+                int numberThreads = cbcParameters_[whichCbcParam(CBC_PARAM_INT_THREADS, cbcParameters_)].intValue();
                 babModel_->setNumberThreads(numberThreads % 100);
                 babModel_->setThreadMode(numberThreads / 100);
 #endif
@@ -7552,7 +8024,7 @@ int CbcMain1(int argc, const char *argv[],
 #ifndef CBC_OTHER_SOLVER
                 osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                 lpSolver = osiclp->getModelPtr();
-                int hotits = parameters_[whichParam(CBC_PARAM_INT_MAXHOTITS, parameters_)].intValue();
+                int hotits = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MAXHOTITS, cbcParameters_)].intValue();
                 if (hotits > 100) {
                   osiclp->setSpecialOptions(osiclp->specialOptions() & ~32);
                   osiclp->setIntParam(OsiMaxNumIterationHotStart, hotits);
@@ -7567,14 +8039,14 @@ int CbcMain1(int argc, const char *argv[],
                 } else if (babModel_->fastNodeDepth() == -999) {
                   babModel_->setFastNodeDepth(-1);
                 }
-                int heurOptions = parameters_[whichParam(CBC_PARAM_INT_HOPTIONS, parameters_)].intValue();
+                int heurOptions = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HOPTIONS, cbcParameters_)].intValue();
                 if (heurOptions > 100)
                   babModel_->setSpecialOptions(babModel_->specialOptions() | 8192);
 
 #ifndef CBC_OTHER_SOLVER
 #ifdef CLP_MULTIPLE_FACTORIZATIONS
-                int denseCode = parameters_[whichParam(CBC_PARAM_INT_DENSE, parameters_)].intValue();
-                int smallCode = parameters_[whichParam(CBC_PARAM_INT_SMALLFACT, parameters_)].intValue();
+                int denseCode = clpParameters_[whichClpParam(CLP_PARAM_INT_DENSE, clpParameters_)].intValue();
+                int smallCode = clpParameters_[whichClpParam(CLP_PARAM_INT_SMALLFACT, clpParameters_)].intValue();
                 if (bothFlags >= 1) {
                   if (denseCode < 0)
                     denseCode = 40;
@@ -7780,7 +8252,7 @@ int CbcMain1(int argc, const char *argv[],
                 orbit.morph();
                 exit(1);
 #endif
-                int hOp1 = parameters_[whichParam(CBC_PARAM_INT_HOPTIONS, parameters_)].intValue() / 100000;
+                int hOp1 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HOPTIONS, cbcParameters_)].intValue() / 100000;
                 if (hOp1 % 10) {
                   CbcCompareDefault compare;
                   compare.setBreadthDepth(hOp1 % 10);
@@ -7793,12 +8265,12 @@ int CbcMain1(int argc, const char *argv[],
                 if (dynamic_cast< OsiCpxSolverInterface * >(babModel_->solver()))
                   babModel_->solver()->messageHandler()->setLogLevel(0);
 #endif
-                if (parameters_[whichParam(CBC_PARAM_STR_CPX, parameters_)].currentOptionAsInteger()) {
+                if (cbcParameters_[whichCbcParam(CBC_PARAM_STR_CPX, cbcParameters_)].currentOptionAsInteger()) {
                   babModel_->setSpecialOptions(babModel_->specialOptions() | 16384);
                   //if (babModel_->fastNodeDepth()==-1)
                   babModel_->setFastNodeDepth(-2); // Use Cplex at root
                 }
-                int hOp2 = parameters_[whichParam(CBC_PARAM_INT_HOPTIONS, parameters_)].intValue() / 10000;
+                int hOp2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HOPTIONS, cbcParameters_)].intValue() / 10000;
                 if (hOp2 % 10) {
                   babModel_->setSpecialOptions(babModel_->specialOptions() | 16384);
                   if (babModel_->fastNodeDepth() == -1)
@@ -7841,7 +8313,7 @@ int CbcMain1(int argc, const char *argv[],
                   donor.setStoredRowCuts(NULL);
                 }
                 // We may have priorities from extra variables
-                int more2 = parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].intValue();
+                int more2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, cbcParameters_)].intValue();
                 if (newPriorities) {
                   if (truncateColumns < babModel_->getNumCols()) {
                     // set new ones as high prority
@@ -7856,7 +8328,7 @@ int CbcMain1(int argc, const char *argv[],
                   for (int i = 0; i < n; i++)
                     newPriorities[i] = babModel_->priority(i);
 #if 1
-                  int ixxxxxx = parameters_[whichParam(CBC_PARAM_INT_MAXNODES, parameters_)].intValue();
+                  int ixxxxxx = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MAXNODES, cbcParameters_)].intValue();
                   int obj_priority = 1000;
                   int slack_priority = 1000;
                   if (ixxxxxx >= 1000000 && ixxxxxx < 1010000) {
@@ -7944,18 +8416,18 @@ int CbcMain1(int argc, const char *argv[],
                   }
                 }
 #endif
-                int specialOptions = parameters_[whichParam(CBC_PARAM_INT_STRONG_STRATEGY, parameters_)].intValue();
+                int specialOptions = cbcParameters_[whichCbcParam(CBC_PARAM_INT_STRONG_STRATEGY, cbcParameters_)].intValue();
                 if (specialOptions >= 0)
                   babModel_->setStrongStrategy(specialOptions);
-                int jParam = whichParam(CBC_PARAM_STR_CUTOFF_CONSTRAINT,
-                  parameters_);
-                if (parameters_[jParam].currentOptionAsInteger()) {
+                int jParam = whichCbcParam(CBC_PARAM_STR_CUTOFF_CONSTRAINT,
+                  cbcParameters_);
+                if (cbcParameters_[jParam].currentOptionAsInteger()) {
                   babModel_->setCutoffAsConstraint(true);
                   int moreOptions = babModel_->moreSpecialOptions();
-                  if (parameters_[jParam].currentOptionAsInteger() == 4)
+                  if (cbcParameters_[jParam].currentOptionAsInteger() == 4)
                     babModel_->setMoreSpecialOptions(moreOptions | 4194304);
                 }
-                int multipleRoot = parameters_[whichParam(CBC_PARAM_INT_MULTIPLEROOTS, parameters_)].intValue();
+                int multipleRoot = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MULTIPLEROOTS, cbcParameters_)].intValue();
                 if (multipleRoot < 10000) {
                   babModel_->setMultipleRootTries(multipleRoot);
                 } else {
@@ -8043,14 +8515,14 @@ int CbcMain1(int argc, const char *argv[],
                 }
                 if (biLinearProblem)
                   babModel_->setSpecialOptions(babModel_->specialOptions() & (~(512 | 32768)));
-                babModel_->setMoreSpecialOptions2(parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, parameters_)].intValue());
+                babModel_->setMoreSpecialOptions2(cbcParameters_[whichCbcParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, cbcParameters_)].intValue());
 #ifdef CBC_HAS_NAUTY
                 int nautyAdded = 0;
                 {
-                  int jParam = whichParam(CBC_PARAM_STR_ORBITAL,
-                    parameters_);
-                  if (parameters_[jParam].currentOptionAsInteger()) {
-                    int k = parameters_[jParam].currentOptionAsInteger();
+                  int jParam = whichCbcParam(CBC_PARAM_STR_ORBITAL,
+                    cbcParameters_);
+                  if (cbcParameters_[jParam].currentOptionAsInteger()) {
+                    int k = cbcParameters_[jParam].currentOptionAsInteger();
                     if (k < 4) {
                       babModel_->setMoreSpecialOptions2(babModel_->moreSpecialOptions2() | (k * 128));
                     } else if (k == 4) {
@@ -8176,7 +8648,7 @@ int CbcMain1(int argc, const char *argv[],
                 malloc_stats2();
 #endif
                 checkSOS(babModel_, babModel_->solver());
-              } else if (type == CBC_PARAM_ACTION_MIPLIB) {
+              } else if (cbcType == CBC_PARAM_ACTION_MIPLIB) {
                 int typeOfCuts = babModel_->numberCutGenerators() ? 1 : -1;
                 CbcStrategyDefault strategy(typeOfCuts,
                   babModel_->numberStrong(),
@@ -8187,7 +8659,7 @@ int CbcMain1(int argc, const char *argv[],
                   strategy.setupPreProcessing(translate2[preProcess]);
                 babModel_->setStrategy(strategy);
 #ifdef CBC_THREAD
-                int numberThreads = parameters_[whichParam(CBC_PARAM_INT_THREADS, parameters_)].intValue();
+                int numberThreads = cbcParameters_[whichCbcParam(CBC_PARAM_INT_THREADS, cbcParameters_)].intValue();
                 babModel_->setNumberThreads(numberThreads % 100);
                 babModel_->setThreadMode(numberThreads / 100);
 #endif
@@ -8234,35 +8706,35 @@ int CbcMain1(int argc, const char *argv[],
                 /* JJF: No need to have 777 flag at all - user
                      says -miplib
                      */
-                int extra2 = parameters_[whichParam(CBC_PARAM_INT_EXTRA2, parameters_)].intValue();
+                int extra2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA2, cbcParameters_)].intValue();
                 double stuff[11];
-                stuff[0] = parameters_[whichParam(CBC_PARAM_DBL_FAKEINCREMENT, parameters_)].doubleValue();
-                stuff[1] = parameters_[whichParam(CBC_PARAM_DBL_FAKECUTOFF, parameters_)].doubleValue();
-                stuff[2] = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA3, parameters_)].doubleValue();
-                stuff[3] = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA4, parameters_)].doubleValue();
-                stuff[4] = parameters_[whichParam(CBC_PARAM_INT_DENSE, parameters_)].intValue();
-                stuff[5] = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, parameters_)].intValue();
-                stuff[6] = parameters_[whichParam(CBC_PARAM_INT_EXTRA3, parameters_)].intValue();
-                stuff[7] = parameters_[whichParam(CBC_PARAM_INT_DEPTHMINIBAB, parameters_)].intValue();
+                stuff[0] = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_FAKEINCREMENT, cbcParameters_)].doubleValue();
+                stuff[1] = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_FAKECUTOFF, cbcParameters_)].doubleValue();
+                stuff[2] = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_DEXTRA3, cbcParameters_)].doubleValue();
+                stuff[3] = cbcParameters_[whichCbcParam(CBC_PARAM_DBL_DEXTRA4, cbcParameters_)].doubleValue();
+                stuff[4] = clpParameters_[whichClpParam(CLP_PARAM_INT_DENSE, clpParameters_)].intValue();
+                stuff[5] = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA1, cbcParameters_)].intValue();
+                stuff[6] = cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXTRA3, cbcParameters_)].intValue();
+                stuff[7] = cbcParameters_[whichCbcParam(CBC_PARAM_INT_DEPTHMINIBAB, cbcParameters_)].intValue();
                 stuff[8] = bothFlags;
                 stuff[9] = doVector;
-                stuff[10] = parameters_[whichParam(CBC_PARAM_INT_SMALLFACT, parameters_)].intValue();
+                stuff[10] = clpParameters_[whichClpParam(CLP_PARAM_INT_SMALLFACT, clpParameters_)].intValue();
                 if (dominatedCuts)
                   model_.setSpecialOptions(model_.specialOptions() | 64);
-                if (parameters_[whichParam(CBC_PARAM_STR_CPX, parameters_)].currentOptionAsInteger()) {
+                if (cbcParameters_[whichCbcParam(CBC_PARAM_STR_CPX, cbcParameters_)].currentOptionAsInteger()) {
                   model_.setSpecialOptions(model_.specialOptions() | 16384);
                   //if (model_.fastNodeDepth()==-1)
                   model_.setFastNodeDepth(-2); // Use Cplex at root
                 }
-                int hOp2 = parameters_[whichParam(CBC_PARAM_INT_HOPTIONS, parameters_)].intValue() / 10000;
+                int hOp2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HOPTIONS, cbcParameters_)].intValue() / 10000;
                 if (hOp2 % 10) {
                   model_.setSpecialOptions(model_.specialOptions() | 16384);
                   if (model_.fastNodeDepth() == -1)
                     model_.setFastNodeDepth(-2); // Use Cplex at root
                 }
-                int multipleRoot = parameters_[whichParam(CBC_PARAM_INT_MULTIPLEROOTS, parameters_)].intValue();
+                int multipleRoot = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MULTIPLEROOTS, cbcParameters_)].intValue();
                 model_.setMultipleRootTries(multipleRoot);
-                int specialOptions = parameters_[whichParam(CBC_PARAM_INT_STRONG_STRATEGY, parameters_)].intValue();
+                int specialOptions = cbcParameters_[whichCbcParam(CBC_PARAM_INT_STRONG_STRATEGY, cbcParameters_)].intValue();
                 if (specialOptions >= 0)
                   model_.setStrongStrategy(specialOptions);
                 if (!pumpChanged) {
@@ -8403,7 +8875,7 @@ int CbcMain1(int argc, const char *argv[],
                   saveSolver = NULL;
                 }
               }
-              if (babModel_->getMinimizationObjValue() < 1.0e50 && type == CBC_PARAM_ACTION_BAB) {
+              if (babModel_->getMinimizationObjValue() < 1.0e50 && cbcType == CBC_PARAM_ACTION_BAB) {
                 // post process
                 int n;
                 if (preProcess) {
@@ -8648,7 +9120,7 @@ int CbcMain1(int argc, const char *argv[],
                 }
 #endif
                 checkSOS(babModel_, babModel_->solver());
-              } else if (model_.bestSolution() && type == CBC_PARAM_ACTION_BAB && model_.getMinimizationObjValue() < 1.0e50 && preProcess) {
+              } else if (model_.bestSolution() && cbcType == CBC_PARAM_ACTION_BAB && model_.getMinimizationObjValue() < 1.0e50 && preProcess) {
                 sprintf(generalPrint, "Restoring heuristic best solution of %g", model_.getMinimizationObjValue());
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                   << generalPrint
@@ -8698,7 +9170,7 @@ int CbcMain1(int argc, const char *argv[],
                 delete[] changed;
               }
 #endif
-              if (type == CBC_PARAM_ACTION_BAB) {
+              if (cbcType == CBC_PARAM_ACTION_BAB) {
 #ifndef CBC_OTHER_SOLVER
                 //move best solution (should be there -- but ..)
                 int n = lpSolver->getNumCols();
@@ -8886,7 +9358,7 @@ int CbcMain1(int argc, const char *argv[],
               printGeneralMessage(model_, generalPrint);
             }
             break;
-          case CLP_PARAM_ACTION_IMPORT: {
+          case CBC_PARAM_ACTION_IMPORT: {
             if (!statusUserFunction_[0]) {
               free(priorities);
               priorities = NULL;
@@ -8916,14 +9388,14 @@ int CbcMain1(int argc, const char *argv[],
             //delete babModel_;
             //babModel_=NULL;
             // get next field
-            field = CoinReadGetString(argc, argv);
+            field = CbcReadGetString(whichArgument, argc, argv);
             if (field == "$") {
-              field = parameters_[iParam].stringValue();
+               field = cbcParameters_[iCbcParam].stringValue();
             } else if (field == "EOL") {
-              parameters_[iParam].printString();
-              break;
+               cbcParameters_[iCbcParam].printString();
+               break;
             } else {
-              parameters_[iParam].setStringValue(field);
+               cbcParameters_[iCbcParam].setStringValue(field);
             }
             std::string fileName;
             bool canOpen = false;
@@ -9066,7 +9538,7 @@ int CbcMain1(int argc, const char *argv[],
                   lengthName = 0;
                 }
                 // really just for testing
-                double objScale = parameters_[whichParam(CLP_PARAM_DBL_OBJSCALE2, parameters_)].doubleValue();
+                double objScale = clpParameters_[whichClpParam(CLP_PARAM_DBL_OBJSCALE2, clpParameters_)].doubleValue();
                 if (objScale != 1.0) {
                   int iColumn;
                   int numberColumns = lpSolver->numberColumns();
@@ -9175,7 +9647,7 @@ int CbcMain1(int argc, const char *argv[],
                 totalTime += time2 - time1;
                 time1 = time2;
                 // Go to canned file if just input file
-                if (getCbcOrClpReadMode() == 2 && argc == 2) {
+                if (whichArgument == 2 && argc == 2) {
                   // only if ends .mps
                   char *find = const_cast< char * >(strstr(fileName.c_str(), ".mps"));
                   if (find && find[4] == '\0') {
@@ -9184,8 +9656,8 @@ int CbcMain1(int argc, const char *argv[],
                     find[3] = 'r';
                     FILE *fp = fopen(fileName.c_str(), "r");
                     if (fp) {
-                      setCbcOrClpReadCommand(fp); // Read from that file
-                      setCbcOrClpReadMode(-1);
+                      setCbcReadCommand(fp); // Read from that file
+                      whichArgument = -1;
                     }
                   }
                 }
@@ -9196,104 +9668,17 @@ int CbcMain1(int argc, const char *argv[],
               }
             }
           } break;
-          case CLP_PARAM_ACTION_MODELIN:
-#ifndef CBC_OTHER_SOLVER
-#ifdef COIN_HAS_LINK
-          {
-            // get next field
-            field = CoinReadGetString(argc, argv);
-            if (field == "$") {
-              field = parameters_[iParam].stringValue();
-            } else if (field == "EOL") {
-              parameters_[iParam].printString();
-              break;
-            } else {
-              parameters_[iParam].setStringValue(field);
-            }
-            std::string fileName;
-            bool canOpen = false;
-            if (field == "-") {
-              // stdin
-              canOpen = true;
-              fileName = "-";
-            } else {
-              bool absolutePath;
-              if (dirsep == '/') {
-                // non Windows (or cygwin)
-                absolutePath = (field[0] == '/');
-              } else {
-                //Windows (non cycgwin)
-                absolutePath = (field[0] == '\\');
-                // but allow for :
-                if (strchr(field.c_str(), ':'))
-                  absolutePath = true;
-              }
-              if (absolutePath) {
-                fileName = field;
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
-              } else {
-                fileName = directory + field;
-              }
-              FILE *fp = fopen(fileName.c_str(), "r");
-              if (fp) {
-                // can open - lets go for it
-                fclose(fp);
-                canOpen = true;
-              } else {
-                sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
-                printGeneralMessage(model_, generalPrint);
-              }
-            }
-            if (canOpen) {
-              CoinModel coinModel(fileName.c_str(), 2);
-              // load from coin model
-              OsiSolverLink solver1;
-              OsiSolverInterface *solver2 = solver1.clone();
-              model_.assignSolver(solver2, false);
-              OsiSolverLink *si = dynamic_cast< OsiSolverLink * >(model_.solver());
-              assert(si != NULL);
-              si->setDefaultMeshSize(0.001);
-              // need some relative granularity
-              si->setDefaultBound(100.0);
-              double dextra3 = parameters_[whichParam(CBC_PARAM_DBL_DEXTRA3, parameters_)].doubleValue();
-              if (dextra3)
-                si->setDefaultMeshSize(dextra3);
-              si->setDefaultBound(100.0);
-              si->setIntegerPriority(1000);
-              si->setBiLinearPriority(10000);
-              CoinModel *model2 = &coinModel;
-              si->load(*model2);
-              // redo
-              solver = model_.solver();
-              clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
-              lpSolver = clpSolver->getModelPtr();
-              clpSolver->messageHandler()->setLogLevel(0);
-              testOsiParameters = 0;
-              complicatedInteger = 2;
-            }
-          }
-#endif
-#endif
-          break;
-          case CLP_PARAM_ACTION_EXPORT:
+          case CBC_PARAM_ACTION_EXPORT:
             if (goodModel) {
               // get next field
-              field = CoinReadGetString(argc, argv);
+              field = CbcReadGetString(whichArgument, argc, argv);
               if (field == "$") {
-                field = parameters_[iParam].stringValue();
+                 field = cbcParameters_[iCbcParam].stringValue();
               } else if (field == "EOL") {
-                parameters_[iParam].printString();
-                break;
+                 cbcParameters_[iCbcParam].printString();
+                 break;
               } else {
-                parameters_[iParam].setStringValue(field);
+                 cbcParameters_[iCbcParam].setStringValue(field);
               }
               std::string fileName;
               bool canOpen = false;
@@ -9353,7 +9738,7 @@ int CbcMain1(int argc, const char *argv[],
                     pinfo.setPresolveActions(presolveOptions2);
                   if ((printOptions & 1) != 0)
                     pinfo.statistics();
-                  double presolveTolerance = parameters_[whichParam(CLP_PARAM_DBL_PRESOLVETOLERANCE, parameters_)].doubleValue();
+                  double presolveTolerance = clpParameters_[whichClpParam(CLP_PARAM_DBL_PRESOLVETOLERANCE, clpParameters_)].doubleValue();
                   model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
                     true, preSolve);
                   if (model2) {
@@ -9476,76 +9861,17 @@ int CbcMain1(int argc, const char *argv[],
               printGeneralMessage(model_, generalPrint);
             }
             break;
-          case CLP_PARAM_ACTION_BASISIN:
-            if (goodModel) {
-              // get next field
-              field = CoinReadGetString(argc, argv);
-              if (field == "$") {
-                field = parameters_[iParam].stringValue();
-              } else if (field == "EOL") {
-                parameters_[iParam].printString();
-                break;
-              } else {
-                parameters_[iParam].setStringValue(field);
-              }
-              std::string fileName;
-              bool canOpen = false;
-              if (field == "-") {
-                // stdin
-                canOpen = true;
-                fileName = "-";
-              } else {
-                if (field[0] == '/' || field[0] == '\\') {
-                  fileName = field;
-                } else if (field[0] == '~') {
-                  char *environVar = getenv("HOME");
-                  if (environVar) {
-                    std::string home(environVar);
-                    field = field.erase(0, 1);
-                    fileName = home + field;
-                  } else {
-                    fileName = field;
-                  }
-                } else {
-                  fileName = directory + field;
-                }
-                FILE *fp = fopen(fileName.c_str(), "r");
-                if (fp) {
-                  // can open - lets go for it
-                  fclose(fp);
-                  canOpen = true;
-                } else {
-                  sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
-                  printGeneralMessage(model_, generalPrint);
-                }
-              }
-              if (canOpen) {
-#ifndef CBC_OTHER_SOLVER
-                int values = lpSolver->readBasis(fileName.c_str());
-                if (values == 0)
-                  basisHasValues = -1;
-                else
-                  basisHasValues = 1;
-                assert(lpSolver == clpSolver->getModelPtr());
-                clpSolver->setWarmStart(NULL);
-#endif
-              }
-            } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
-            }
-            break;
           case CBC_PARAM_ACTION_PRIORITYIN:
             if (goodModel) {
               // get next field
-              field = CoinReadGetString(argc, argv);
+              field = CbcReadGetString(whichArgument, argc, argv);
               if (field == "$") {
-                field = parameters_[iParam].stringValue();
+                 field = cbcParameters_[iCbcParam].stringValue();
               } else if (field == "EOL") {
-                parameters_[iParam].printString();
-                break;
+                 cbcParameters_[iCbcParam].printString();
+                 break;
               } else {
-                parameters_[iParam].setStringValue(field);
+                    cbcParameters_[iCbcParam].setStringValue(field);
               }
               std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
@@ -9893,15 +10219,15 @@ int CbcMain1(int argc, const char *argv[],
           case CBC_PARAM_ACTION_MIPSTART:
             if (goodModel) {
               // get next field
-              field = CoinReadGetString(argc, argv);
+              field = CbcReadGetString(whichArgument, argc, argv);
               mipStartFile = field;
               if (field == "$") {
-                field = parameters_[iParam].stringValue();
+                 field = cbcParameters_[iCbcParam].stringValue();
               } else if (field == "EOL") {
-                parameters_[iParam].printString();
-                break;
+                 cbcParameters_[iCbcParam].printString();
+                 break;
               } else {
-                parameters_[iParam].setStringValue(field);
+                 cbcParameters_[iCbcParam].setStringValue(field);
               }
               std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
@@ -9936,27 +10262,27 @@ int CbcMain1(int argc, const char *argv[],
               printGeneralMessage(model_, generalPrint);
             }
             break;
-          case CLP_PARAM_ACTION_DEBUG:
+          case CBC_PARAM_ACTION_DEBUG:
             if (goodModel) {
               delete[] debugValues;
               debugValues = NULL;
               // get next field
-              field = CoinReadGetString(argc, argv);
+              field = CbcReadGetString(whichArgument, argc, argv);
               if (field == "$") {
-                field = parameters_[iParam].stringValue();
+                 field = cbcParameters_[iCbcParam].stringValue();
               } else if (field == "EOL") {
-                parameters_[iParam].printString();
-                break;
+                 cbcParameters_[iCbcParam].printString();
+                 break;
               } else {
-                parameters_[iParam].setStringValue(field);
-                debugFile = field;
-                if (debugFile == "create" || debugFile == "createAfterPre") {
-                  printf("Will create a debug file so this run should be a good one\n");
-                  break;
-		} else if (debugFile == "unitTest") {
-                  printf("debug will be done using file name of model\n");
-                  break;
-                }
+                 cbcParameters_[iCbcParam].setStringValue(field);
+                 debugFile = field;
+                 if (debugFile == "create" || debugFile == "createAfterPre") {
+                    printf("Will create a debug file so this run should be a good one\n");
+                    break;
+                 } else if (debugFile == "unitTest") {
+                    printf("debug will be done using file name of model\n");
+                    break;
+                 }
               }
               std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
@@ -10019,152 +10345,28 @@ int CbcMain1(int argc, const char *argv[],
               printGeneralMessage(model_, generalPrint);
             }
             break;
-          case CLP_PARAM_ACTION_PRINTMASK:
+          case CBC_PARAM_ACTION_PRINTMASK:
             // get next field
             {
-              std::string name = CoinReadGetString(argc, argv);
+              std::string name = CbcReadGetString(whichArgument, argc, argv);
               if (name != "EOL") {
-                parameters_[iParam].setStringValue(name);
+                cbcParameters_[iCbcParam].setStringValue(name);
                 printMask = name;
               } else {
-                parameters_[iParam].printString();
+                cbcParameters_[iCbcParam].printString();
               }
             }
             break;
-          case CLP_PARAM_ACTION_BASISOUT:
-            if (goodModel) {
-              // get next field
-              field = CoinReadGetString(argc, argv);
-              if (field == "$") {
-                field = parameters_[iParam].stringValue();
-              } else if (field == "EOL") {
-                parameters_[iParam].printString();
-                break;
-              } else {
-                parameters_[iParam].setStringValue(field);
-              }
-              std::string fileName;
-              bool canOpen = false;
-              if (field[0] == '/' || field[0] == '\\') {
-                fileName = field;
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
-              } else {
-                fileName = directory + field;
-              }
-              FILE *fp = fopen(fileName.c_str(), "w");
-              if (fp) {
-                // can open - lets go for it
-                fclose(fp);
-                canOpen = true;
-              } else {
-                sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
-                printGeneralMessage(model_, generalPrint);
-              }
-              if (canOpen) {
-                ClpSimplex *model2 = lpSolver;
-                model2->writeBasis(fileName.c_str(), outputFormat > 1, outputFormat - 2);
-                time2 = CoinCpuTime();
-                totalTime += time2 - time1;
-                time1 = time2;
-              }
-            } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
-            }
-            break;
-          case CLP_PARAM_ACTION_SAVE: {
+          case CBC_PARAM_ACTION_RESTORE: {
             // get next field
-            field = CoinReadGetString(argc, argv);
+            field = CbcReadGetString(whichArgument, argc, argv);
             if (field == "$") {
-              field = parameters_[iParam].stringValue();
+               field = cbcParameters_[iCbcParam].stringValue();
             } else if (field == "EOL") {
-              parameters_[iParam].printString();
-              break;
+               cbcParameters_[iCbcParam].printString();
+               break;
             } else {
-              parameters_[iParam].setStringValue(field);
-            }
-            std::string fileName;
-            bool canOpen = false;
-            if (field[0] == '/' || field[0] == '\\') {
-              fileName = field;
-            } else if (field[0] == '~') {
-              char *environVar = getenv("HOME");
-              if (environVar) {
-                std::string home(environVar);
-                field = field.erase(0, 1);
-                fileName = home + field;
-              } else {
-                fileName = field;
-              }
-            } else {
-              fileName = directory + field;
-            }
-            FILE *fp = fopen(fileName.c_str(), "wb");
-            if (fp) {
-              // can open - lets go for it
-              fclose(fp);
-              canOpen = true;
-            } else {
-              sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
-              printGeneralMessage(model_, generalPrint);
-            }
-            if (canOpen) {
-              int status;
-              // If presolve on then save presolved
-              bool deleteModel2 = false;
-              ClpSimplex *model2 = lpSolver;
-              if (preSolve) {
-                ClpPresolve pinfo;
-                double presolveTolerance = parameters_[whichParam(CLP_PARAM_DBL_PRESOLVETOLERANCE, parameters_)].doubleValue();
-                model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
-                  false, preSolve);
-                if (model2) {
-                  printf("Saving presolved model on %s\n",
-                    fileName.c_str());
-                  deleteModel2 = true;
-                } else {
-                  printf("Presolved model looks infeasible - saving original on %s\n",
-                    fileName.c_str());
-                  deleteModel2 = false;
-                  model2 = lpSolver;
-                }
-              } else {
-                printf("Saving model on %s\n",
-                  fileName.c_str());
-              }
-              status = model2->saveModel(fileName.c_str());
-              if (deleteModel2)
-                delete model2;
-              if (!status) {
-                goodModel = true;
-                time2 = CoinCpuTime();
-                totalTime += time2 - time1;
-                time1 = time2;
-              } else {
-                // errors
-                sprintf(generalPrint, "There were errors on output");
-                printGeneralMessage(model_, generalPrint);
-              }
-            }
-          } break;
-          case CLP_PARAM_ACTION_RESTORE: {
-            // get next field
-            field = CoinReadGetString(argc, argv);
-            if (field == "$") {
-              field = parameters_[iParam].stringValue();
-            } else if (field == "EOL") {
-              parameters_[iParam].printString();
-              break;
-            } else {
-              parameters_[iParam].setStringValue(field);
+               cbcParameters_[iCbcParam].setStringValue(field);
             }
             std::string fileName;
             bool canOpen = false;
@@ -10205,16 +10407,13 @@ int CbcMain1(int argc, const char *argv[],
               }
             }
           } break;
-          case CLP_PARAM_ACTION_MAXIMIZE:
+          case CBC_PARAM_ACTION_MAXIMIZE:
             lpSolver->setOptimizationDirection(-1);
             break;
-          case CLP_PARAM_ACTION_MINIMIZE:
+          case CBC_PARAM_ACTION_MINIMIZE:
             lpSolver->setOptimizationDirection(1);
             break;
-          case CLP_PARAM_ACTION_ALLSLACK:
-            lpSolver->allSlackBasis(true);
-            break;
-          case CLP_PARAM_ACTION_REVERSE:
+          case CBC_PARAM_ACTION_REVERSE:
             if (goodModel) {
               int iColumn;
               int numberColumns = lpSolver->numberColumns();
@@ -10234,8 +10433,8 @@ int CbcMain1(int argc, const char *argv[],
                 dualRowSolution[iRow] = dualRowSolution[iRow];
             }
             break;
-          case CLP_PARAM_ACTION_DIRECTORY: {
-            std::string name = CoinReadGetString(argc, argv);
+          case CBC_PARAM_ACTION_DIRECTORY: {
+            std::string name = CbcReadGetString(whichArgument, argc, argv);
             if (name != "EOL") {
               size_t length = name.length();
               if (length > 0 && name[length - 1] == dirsep) {
@@ -10243,13 +10442,13 @@ int CbcMain1(int argc, const char *argv[],
               } else {
                 directory = name + dirsep;
               }
-              parameters_[iParam].setStringValue(directory);
+              cbcParameters_[iCbcParam].setStringValue(directory);
             } else {
-              parameters_[iParam].printString();
+              cbcParameters_[iCbcParam].printString();
             }
           } break;
-          case CLP_PARAM_ACTION_DIRSAMPLE: {
-            std::string name = CoinReadGetString(argc, argv);
+          case CBC_PARAM_ACTION_DIRSAMPLE: {
+            std::string name = CbcReadGetString(whichArgument, argc, argv);
             if (name != "EOL") {
               size_t length = name.length();
               if (length > 0 && name[length - 1] == dirsep) {
@@ -10257,13 +10456,13 @@ int CbcMain1(int argc, const char *argv[],
               } else {
                 dirSample = name + dirsep;
               }
-              parameters_[iParam].setStringValue(dirSample);
+              cbcParameters_[iCbcParam].setStringValue(dirSample);
             } else {
-              parameters_[iParam].printString();
+              cbcParameters_[iCbcParam].printString();
             }
           } break;
-          case CLP_PARAM_ACTION_DIRNETLIB: {
-            std::string name = CoinReadGetString(argc, argv);
+          case CBC_PARAM_ACTION_DIRNETLIB: {
+            std::string name = CbcReadGetString(whichArgument, argc, argv);
             if (name != "EOL") {
               size_t length = name.length();
               if (length > 0 && name[length - 1] == dirsep) {
@@ -10271,13 +10470,13 @@ int CbcMain1(int argc, const char *argv[],
               } else {
                 dirNetlib = name + dirsep;
               }
-              parameters_[iParam].setStringValue(dirNetlib);
+              cbcParameters_[iCbcParam].setStringValue(dirNetlib);
             } else {
-              parameters_[iParam].printString();
+              cbcParameters_[iCbcParam].printString();
             }
           } break;
           case CBC_PARAM_ACTION_DIRMIPLIB: {
-            std::string name = CoinReadGetString(argc, argv);
+            std::string name = CbcReadGetString(whichArgument, argc, argv);
             if (name != "EOL") {
               size_t length = name.length();
               if (length > 0 && name[length - 1] == dirsep) {
@@ -10285,23 +10484,15 @@ int CbcMain1(int argc, const char *argv[],
               } else {
                 dirMiplib = name + dirsep;
               }
-              parameters_[iParam].setStringValue(dirMiplib);
+              cbcParameters_[iCbcParam].setStringValue(dirMiplib);
             } else {
-              parameters_[iParam].printString();
+              cbcParameters_[iCbcParam].printString();
             }
           } break;
-          case CLP_PARAM_ACTION_STDIN:
-            setCbcOrClpReadMode(-1);
+          case CBC_PARAM_ACTION_STDIN:
+            whichArgument = -1;
             break;
-          case CLP_PARAM_ACTION_NETLIB_DUAL:
-          case CLP_PARAM_ACTION_NETLIB_EITHER:
-          case CLP_PARAM_ACTION_NETLIB_BARRIER:
-          case CLP_PARAM_ACTION_NETLIB_PRIMAL:
-          case CLP_PARAM_ACTION_NETLIB_TUNE: {
-            printf("unit test is now only from clp - does same thing\n");
-            //return(22);
-          } break;
-          case CLP_PARAM_ACTION_UNITTEST: {
+          case CBC_PARAM_ACTION_UNITTEST: {
 	    int returnCode;
 	    if (!strcmp(argv[1],"-dirMiplib") || !strcmp(argv[1],"-dirmiplib")) 
 	      returnCode = CbcClpUnitTest(model_, dirMiplib, -3, NULL,
@@ -10312,70 +10503,6 @@ int CbcMain1(int argc, const char *argv[],
 	    babModel_ = NULL;
 	    return returnCode;
           } 
-          case CLP_PARAM_ACTION_FAKEBOUND:
-            if (goodModel) {
-              // get bound
-              double value = CoinReadGetDoubleField(argc, argv, &valid);
-              if (!valid) {
-                sprintf(generalPrint, "Setting %s to DEBUG %g", parameters_[iParam].name().c_str(), value);
-                printGeneralMessage(model_, generalPrint);
-                int iRow;
-                int numberRows = lpSolver->numberRows();
-                double *rowLower = lpSolver->rowLower();
-                double *rowUpper = lpSolver->rowUpper();
-                for (iRow = 0; iRow < numberRows; iRow++) {
-                  // leave free ones for now
-                  if (rowLower[iRow] > -1.0e20 || rowUpper[iRow] < 1.0e20) {
-                    rowLower[iRow] = CoinMax(rowLower[iRow], -value);
-                    rowUpper[iRow] = CoinMin(rowUpper[iRow], value);
-                  }
-                }
-                int iColumn;
-                int numberColumns = lpSolver->numberColumns();
-                double *columnLower = lpSolver->columnLower();
-                double *columnUpper = lpSolver->columnUpper();
-                for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                  // leave free ones for now
-                  if (columnLower[iColumn] > -1.0e20 || columnUpper[iColumn] < 1.0e20) {
-                    columnLower[iColumn] = CoinMax(columnLower[iColumn], -value);
-                    columnUpper[iColumn] = CoinMin(columnUpper[iColumn], value);
-                  }
-                }
-              } else if (valid == 1) {
-                abort();
-              } else {
-                std::cout << "enter value for " << parameters_[iParam].name() << std::endl;
-              }
-            }
-            break;
-          case CLP_PARAM_ACTION_REALLY_SCALE:
-            if (goodModel) {
-              ClpSimplex newModel(*lpSolver,
-                lpSolver->scalingFlag());
-              printf("model really really scaled\n");
-              *lpSolver = newModel;
-            }
-            break;
-          case CLP_PARAM_ACTION_USERCLP:
-#ifdef USER_HAS_FAKE_CLP
-            // Replace the sample code by whatever you want
-            if (goodModel) {
-              // Way of using an existing piece of code
-              OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
-              ClpSimplex *lpSolver = clpSolver->getModelPtr();
-              // set time from integer model
-              double timeToGo = model_.getMaximumSeconds();
-              lpSolver->setMaximumSeconds(timeToGo);
-              int extra1 = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, parameters_)].intValue();
-              fakeMain2(*lpSolver, *clpSolver, extra1);
-              lpSolver = clpSolver->getModelPtr();
-              // My actual usage has objective only in clpSolver
-              //double objectiveValue=clpSolver->getObjValue();
-              //int iStat = lpSolver->status();
-              //int iStat2 = lpSolver->secondaryStatus();
-            }
-#endif
-            break;
           case CBC_PARAM_ACTION_USERCBC:
 #ifdef USER_HAS_FAKE_CBC
             // Replace the sample code by whatever you want
@@ -10454,13 +10581,13 @@ int CbcMain1(int argc, const char *argv[],
             }
 #endif
             break;
-          case CLP_PARAM_ACTION_HELP:
+          case CBC_PARAM_ACTION_HELP:
             std::cout << "Cbc version " << CBC_VERSION
                       << ", build " << __DATE__ << std::endl;
             std::cout << "Non default values:-" << std::endl;
             std::cout << "Perturbation " << lpSolver->perturbation() << " (default 100)"
                       << std::endl;
-            CoinReadPrintit(
+            CbcReadPrintit(
               "Presolve being done with 5 passes\n\
 Dual steepest edge steep/partial on matrix shape and factorization density\n\
 Clpnnnn taken out of messages\n\
@@ -10470,16 +10597,16 @@ You can switch to interactive mode at any time so\n\
 clp watson.mps -scaling off -primalsimplex\nis the same as\n\
 clp watson.mps -\nscaling off\nprimalsimplex");
             break;
-          case CLP_PARAM_ACTION_CSVSTATISTICS: {
+          case CBC_PARAM_ACTION_CSVSTATISTICS: {
             // get next field
-            field = CoinReadGetString(argc, argv);
+            field = CbcReadGetString(whichArgument, argc, argv);
             if (field == "$") {
-              field = parameters_[iParam].stringValue();
+               field = cbcParameters_[iCbcParam].stringValue();
             } else if (field == "EOL") {
-              parameters_[iParam].printString();
-              break;
+               cbcParameters_[iCbcParam].printString();
+               break;
             } else {
-              parameters_[iParam].setStringValue(field);
+               cbcParameters_[iCbcParam].setStringValue(field);
             }
             std::string fileName;
             if (field[0] == '/' || field[0] == '\\') {
@@ -10550,25 +10677,25 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               printGeneralMessage(model_, generalPrint);
             }
           } break;
-          case CLP_PARAM_ACTION_SOLUTION:
-          case CLP_PARAM_ACTION_NEXTBESTSOLUTION:
-          case CLP_PARAM_ACTION_GMPL_SOLUTION:
+          case CBC_PARAM_ACTION_SOLUTION:
+          case CBC_PARAM_ACTION_NEXTBESTSOLUTION:
+          case CBC_PARAM_ACTION_GMPL_SOLUTION:
             if (goodModel) {
               ClpSimplex *saveLpSolver = NULL;
               // get next field
-              field = CoinReadGetString(argc, argv);
+              field = CbcReadGetString(whichArgument, argc, argv);
               bool append = false;
               if (field == "append$") {
                 field = "$";
                 append = true;
               }
               if (field == "$") {
-                field = parameters_[iParam].stringValue();
+                field = cbcParameters_[iCbcParam].stringValue();
               } else if (field == "EOL") {
-                parameters_[iParam].printString();
+                cbcParameters_[iCbcParam].printString();
                 break;
               } else {
-                parameters_[iParam].setStringValue(field);
+                cbcParameters_[iCbcParam].setStringValue(field);
               }
               std::string fileName;
               FILE *fp = NULL;
@@ -10612,7 +10739,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               if (fp) {
 #ifndef CBC_OTHER_SOLVER
                 // See if Glpk
-                if (type == CLP_PARAM_ACTION_GMPL_SOLUTION) {
+                if (cbcType == CBC_PARAM_ACTION_GMPL_SOLUTION) {
                   int numberRows = lpSolver->getNumRows();
                   int numberColumns = lpSolver->getNumCols();
                   int numberGlpkRows = numberRows + 1;
@@ -10717,7 +10844,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   break;
                 }
                 if (printMode < 5) {
-                  if (type == CLP_PARAM_ACTION_NEXTBESTSOLUTION) {
+                  if (cbcType == CBC_PARAM_ACTION_NEXTBESTSOLUTION) {
                     // save
                     const double *nextBestSolution = model_.savedSolution(currentBestSolution++);
                     if (!nextBestSolution) {
@@ -11158,7 +11285,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                       }
                     }
                   }
-                  if (type == CLP_PARAM_ACTION_NEXTBESTSOLUTION) {
+                  if (cbcType == CBC_PARAM_ACTION_NEXTBESTSOLUTION) {
                     if (saveLpSolver) {
                       clpSolver->swapModelPtr(saveLpSolver);
                       delete lpSolver;
@@ -11282,17 +11409,17 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               printGeneralMessage(model_, generalPrint);
             }
             break;
-          case CLP_PARAM_ACTION_SAVESOL:
+          case CBC_PARAM_ACTION_SAVESOL:
             if (goodModel) {
               // get next field
-              field = CoinReadGetString(argc, argv);
+              field = CbcReadGetString(whichArgument, argc, argv);
               if (field == "$") {
-                field = parameters_[iParam].stringValue();
+                field = cbcParameters_[iCbcParam].stringValue();
               } else if (field == "EOL") {
-                parameters_[iParam].printString();
+                cbcParameters_[iCbcParam].printString();
                 break;
               } else {
-                parameters_[iParam].setStringValue(field);
+                cbcParameters_[iCbcParam].setStringValue(field);
               }
               std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
@@ -11315,95 +11442,11 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               printGeneralMessage(model_, generalPrint);
             }
             break;
-          case CLP_PARAM_ACTION_DUMMY:
-            break;
-          case CLP_PARAM_ACTION_ENVIRONMENT:
-            CbcOrClpEnvironmentIndex = 0;
-            break;
-          case CLP_PARAM_ACTION_PARAMETRICS:
-            if (goodModel) {
-              // get next field
-              field = CoinReadGetString(argc, argv);
-              if (field == "$") {
-                field = parameters_[iParam].stringValue();
-              } else if (field == "EOL") {
-                parameters_[iParam].printString();
-                break;
-              } else {
-                parameters_[iParam].setStringValue(field);
-              }
-              std::string fileName;
-              //bool canOpen = false;
-              if (field[0] == '/' || field[0] == '\\') {
-                fileName = field;
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
-              } else {
-                fileName = directory + field;
-              }
-              static_cast< ClpSimplexOther * >(lpSolver)->parametrics(fileName.c_str());
-              time2 = CoinCpuTime();
-              totalTime += time2 - time1;
-              time1 = time2;
-            } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
-            }
-            break;
-          case CLP_PARAM_ACTION_GUESS:
-            if (goodModel && model_.solver()) {
-              delete[] alternativeEnvironment;
-              OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
-              assert(clpSolver);
-              lpSolver = clpSolver->getModelPtr();
-              assert(lpSolver);
-              ClpSimplexOther *model2 = static_cast< ClpSimplexOther * >(lpSolver);
-              alternativeEnvironment = model2->guess(1);
-              if (alternativeEnvironment)
-                CbcOrClpEnvironmentIndex = 0;
-              else
-                std::cout << "** Guess unable to generate commands" << std::endl;
-            } else {
-              std::cout << "** Guess needs a valid model" << std::endl;
-            }
+          case CBC_PARAM_ACTION_DUMMY:
             break;
           default:
-            abort();
-          }
-        }
-      } else if (!numberMatches) {
-        std::cout << "No match for " << field << " - ? for list of commands"
-                  << std::endl;
-      } else if (numberMatches == 1) {
-        if (!numberQuery) {
-          std::cout << "Short match for " << field << " - completion: ";
-          std::cout << parameters_[firstMatch].matchName() << std::endl;
-        } else if (numberQuery) {
-          std::cout << parameters_[firstMatch].matchName() << " : ";
-          std::cout << parameters_[firstMatch].shortHelp() << std::endl;
-          if (numberQuery >= 2)
-            parameters_[firstMatch].printLongHelp();
-        }
-      } else {
-        if (!numberQuery)
-          std::cout << "Multiple matches for " << field << " - possible completions:"
-                    << std::endl;
-        else
-          std::cout << "Completions of " << field << ":" << std::endl;
-        for (iParam = 0; iParam < (int)parameters_.size(); iParam++) {
-          int match = parameters_[iParam].matches(field);
-          if (match && parameters_[iParam].displayThis()) {
-            std::cout << parameters_[iParam].matchName();
-            if (numberQuery >= 2)
-              std::cout << " : " << parameters_[iParam].shortHelp();
-            std::cout << std::endl;
+            //abort();
+            break;
           }
         }
       }

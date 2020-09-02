@@ -26,10 +26,12 @@
 #include "OsiCpxSolverInterface.hpp"
 #endif
 
+#include "ClpParam.hpp"
+
 #include "CglCutGenerator.hpp"
 
 #include "CbcModel.hpp"
-#include "CbcOrClpParam.hpp"
+#include "CbcParam.hpp"
 #include "CbcConfig.h"
 
 class CbcUser;
@@ -133,13 +135,13 @@ public:
   ///@name useful stuff
   //@{
   /// Get int value
-  int intValue(CbcOrClpParameterType type) const;
+  int intValue(CbcParameterType type) const;
   /// Set int value
-  void setIntValue(CbcOrClpParameterType type, int value);
+  void setIntValue(CbcParameterType type, int value);
   /// Get double value
-  double doubleValue(CbcOrClpParameterType type) const;
+  double doubleValue(CbcParameterType type) const;
   /// Set double value
-  void setDoubleValue(CbcOrClpParameterType type, double value);
+  void setDoubleValue(CbcParameterType type, double value);
   /// User function (NULL if no match)
   CbcUser *userFunction(const char *name) const;
   /// Return original Cbc model
@@ -236,7 +238,8 @@ private:
   /// Cpu time at instantiation
   double startTime_;
   /// Parameters and values
-  std::vector< CbcOrClpParam > parameters_;
+  std::vector< ClpParam > clpParameters_;
+  std::vector< CbcParam > cbcParameters_;
   /// Whether to do miplib test
   bool doMiplib_;
   /// Whether to print to std::cout
@@ -277,8 +280,10 @@ public:
   //@{
   // For time
   double totalTime_;
+  // Clp Parameters
+  std::vector<ClpParam> clpParameters_;
   // Parameters
-  std::vector<CbcOrClpParam> parameters_;
+  std::vector<CbcParam> cbcParameters_;
   // Printing
   bool noPrinting_;
   // Whether to use signal handler

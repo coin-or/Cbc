@@ -9,19 +9,20 @@ make_header
 echo "Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
 It can be used as a callable library or using a stand-alone executable.
 It can be called through
-AIMMS (through the [AIMMSlinks](https://github.com/coin-or/AIMMSlinks) project),
-AMPL (natively),
-[CMPL](https://github.com/coin-or/Cmpl),
-GAMS (through the [GAMSlinks](https://github.com/coin-or/GAMSlinks) project),
-[JuMP](https://github.com/JuliaOpt/JuMP.jl),
-Mathematica,
-[MiniZinc](http://www.minizinc.org/),
-MPL (through the [CoinMP](https://github.com/coin-or/CoinMP) project),
-[PuLP](https://github.com/coin-or/PuLP),
-[python-mip](https://github.com/coin-or/python-mip),
-Python (e.g., [cbcpy](https://pypi.org/project/cbcpy)), and
-[OpenSolver for Excel](http://opensolver.org), and
-[Google's or-tools](https://developers.google.com/optimization, among others.
+ * AIMMS (via the [AIMMSlinks](https://github.com/coin-or/AIMMSlinks) project),
+ * AMPL (natively),
+ * [CMPL](https://github.com/coin-or/Cmpl),
+ * [CyLP](https://github.com/coin-or/CyLP),
+ * GAMS (through the [GAMSlinks](https://github.com/coin-or/GAMSlinks) project),
+ * [JuMP](https://github.com/JuliaOpt/JuMP.jl),
+ * Mathematica,
+ * [MiniZinc](http://www.minizinc.org/),
+ * MPL (through the [CoinMP](https://github.com/coin-or/CoinMP) project),
+ * [OpenSolver for Excel](http://opensolver.org),
+ * [Google's or-tools](https://developers.google.com/optimization),
+ * [PuLP](https://github.com/coin-or/PuLP),
+ * [python-mip](https://github.com/coin-or/python-mip), and
+ * Python (e.g., [cbcpy](https://pypi.org/project/cbcpy)), among others.
 
 Binaries for most platforms are available for download from
 [Bintray](https://bintray.com/coin-or/download/Cbc). AMPL also provides

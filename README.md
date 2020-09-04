@@ -1,11 +1,11 @@
-# Cbc 
+# Cbc
 
 [![A COIN-OR Project](https://coin-or.github.io/coin-or-badge.png)](https://www.coin-or.org)
 
 [![Latest Release](https://img.shields.io/github/v/release/coin-or/Cbc?sort=semver)](https://github.com/coin-or/Cbc/releases)
 
 _This file is auto-generated from [config.yml](.coin-or/config.yml) using the 
-[generate_readme](.coin-or/generate_readme).
+[generate_readme](.coin-or/generate_readme) script.
 To make changes, please edit [config.yml](.coin-or/config.yml) or the generation script._
 
 Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
@@ -22,7 +22,8 @@ MPL (through the [CoinMP](https://github.com/coin-or/CoinMP) project),
 [PuLP](https://github.com/coin-or/PuLP),
 [python-mip](https://github.com/coin-or/python-mip),
 Python (e.g., [cbcpy](https://pypi.org/project/cbcpy)), and
-[OpenSolver for Excel](http://opensolver.org), among others.
+[OpenSolver for Excel](http://opensolver.org), and
+[Google's or-tools](https://developers.google.com/optimization, among others.
 
 Binaries for most platforms are available for download from
 [Bintray](https://bintray.com/coin-or/download/Cbc). AMPL also provides
@@ -34,7 +35,7 @@ Alternatives include your favorite package manager, as detailed below.
 
 Cbc is developed by John Forrest, now retired from IBM Research, and others.
 The project is currently managed by John Forrest, [Ted
-Ralphs](http://coral.ie.lehigh.edu/~ted/), [Stefan
+Ralphs](http://github.com/tkralphs), [Stefan
 Vigerske](https://github.com/svigerske), [Haroldo Gambini
 Santos](https://github.com/h-g-s), and the rest of the Cbc team. 
 
@@ -42,7 +43,7 @@ Cbc is written in C++ and is released as open source under the [Eclipse Public L
 
 It is distributed under the auspices of the [COIN-OR Foundation](https://www.coin-or.org)
 
-The Cbc website is https://github.com/coin-or/Cbc.
+The Cbc development site is https://github.com/coin-or/Cbc.
 
 ## CITE
 
@@ -56,6 +57,14 @@ The Cbc website is https://github.com/coin-or/Cbc.
 
 ## DOWNLOAD
 
+### Docker image
+
+There is a Docker image that provides Cbc, as well as other projects
+in the [COIN-OR Optimization
+Suite](https://github.com/coin-or/COIN-OR-OptimizationSuite) [here](https://hub.docker.com/repository/docker/coinor/coin-or-optimization-suite)
+
+### Binaries
+
 Binaries for most platforms are available as part of [Cbc](https://bintray.com/coin-or/download/Cbc). 
 
  * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
@@ -67,7 +76,9 @@ Binaries for most platforms are available as part of [Cbc](https://bintray.com/c
 Due to license incompatibilities, pre-compiled binaries lack some functionality.
 If binaries are not available for your platform for the latest version and you would like to request them to be built and posted, feel free to let us know on the mailing list.
 
-*Source code* can be obtained either by
+### Source
+
+Source code can be obtained either by
 
  * Downloading a snapshot of the source code for the latest release version of Cbc from the
  [releases](https://github.com/coin-or/Cbc/releases) page.

@@ -10,7 +10,7 @@ To make changes, please edit [config.yml](.coin-or/config.yml) or the generation
 
 Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
 It can be used as a callable library or using a stand-alone executable.
-It can be called through
+It can be called through 
  * AIMMS (via the [AIMMSlinks](https://github.com/coin-or/AIMMSlinks) project),
  * AMPL (natively),
  * [CMPL](https://github.com/coin-or/Cmpl),

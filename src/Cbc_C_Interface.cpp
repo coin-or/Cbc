@@ -1277,7 +1277,13 @@ Cbc_writeMps(Cbc_Model *model, const char *filename)
 int Cbc_readBasis(Cbc_Model *model, const char *filename) {
   OsiClpSolverInterface *solver = model->solver_;
   ClpSimplex *clps = solver->getModelPtr();
-  return clps->readBasis(filename);
+  int status = clps->readBasis(filename);
+  if (status == 1) {
+    CoinWarmStartBasis *basis = clps->getBasis();
+    solver->setWarmStart(basis);
+    delete basis;
+  }
+  return status;
 }
 
 int Cbc_writeBasis(Cbc_Model *model, const char *filename, char writeValues, int formatType) {

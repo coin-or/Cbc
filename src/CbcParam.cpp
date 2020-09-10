@@ -1570,7 +1570,7 @@ You can also use the parameters 'maximize' or 'minimize'.");
 
     p.setLonghelp(
       "This sets the directory where the COIN-OR sample problems reside. It is\
- used only when -unitTest is passed to clp. clp will pick up the test problems\
+ used only when -unitTest is passed to cbc. cbc will pick up the test problems\
  from this directory.\
  It is initialized to '../../Data/Sample'");
     parameters.push_back(p);
@@ -1582,7 +1582,7 @@ You can also use the parameters 'maximize' or 'minimize'.");
     p.setLonghelp(
       "This sets the directory where the netlib problems reside. One can get\
  the netlib problems from COIN-OR or from the main netlib site. This\
- parameter is used only when -netlib is passed to clp. clp will pick up the\
+ parameter is used only when -netlib is passed to cbc. cbc will pick up the\
  netlib problems from this directory. If clp is built without zlib support\
  then the problems must be uncompressed.\
  It is initialized to '../../Data/Netlib'");
@@ -2047,7 +2047,7 @@ you should be past that stage:-)");
   }
   {
     CbcParam p("hOp!tions", "Heuristic options",
-      -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_HOPTIONS, 1);
+      -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_HEUROPTIONS, 1);
     p.setIntValue(0);
     p.setLonghelp(
       "Value 1 stops heuristics immediately if the allowable gap has been reached. \
@@ -2277,7 +2277,7 @@ You can also use the parameters 'direction minimize'.");
   }
   {
     CbcParam p("mips!tart", "reads an initial feasible solution from file",
-      CBC_PARAM_ACTION_MIPSTART);
+      CBC_PARAM_ACTION_MIPS);
     p.setLonghelp("\
 The MIPStart allows one to enter an initial integer feasible solution \
 to CBC. Values of the main decision variables which are active (have \
@@ -2826,7 +2826,7 @@ https://yetanothermathprogrammingconsultant.blogspot.com/2019/11/mip-solver-stop
   }
   {
     CbcParam p("slow!cutpasses", "Maximum number of rounds for slower cut generators",
-      -1, COIN_INT_MAX, CBC_PARAM_INT_MAX_SLOW_CUTS);
+      -1, COIN_INT_MAX, CBC_PARAM_INT_MAXSLOWCUTS);
     p.setLonghelp(
       "Some cut generators are fairly slow - this limits the number of times they are tried.\
       The cut generators identified as 'may be slow' at present are Lift and project cuts and both versions of Reduce and Split cuts.");

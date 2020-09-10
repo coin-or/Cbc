@@ -21,8 +21,8 @@
 
 #include "CbcModel.hpp"
 
-#include "CbcGenCtlBlk.hpp"
-#include "CbcGenParam.hpp"
+#include "CbcSolverSettings.hpp"
+#include "CbcSolverParam.hpp"
 
 namespace {
 
@@ -39,9 +39,9 @@ namespace {
 /*
   Default constructor.
 */
-CbcGenParam::CbcGenParam()
+CbcSolverParam::CbcSolverParam()
   : CoinParam()
-  , paramCode_(CbcGenParamCode(0))
+  , paramCode_(CbcSolverParamCode(0))
   , obj_(0)
 {
   /* Nothing to be done here */
@@ -50,10 +50,10 @@ CbcGenParam::CbcGenParam()
 /*
   Constructor for double parameter
 */
-CbcGenParam::CbcGenParam(CbcGenParamCode code,
+CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
   std::string name, std::string help,
   double lower, double upper, double dflt,
-  bool display)
+  int displayLevel)
   : CoinParam(name, help, lower, upper, dflt, display)
   , paramCode_(code)
   , obj_(0)
@@ -64,10 +64,10 @@ CbcGenParam::CbcGenParam(CbcGenParamCode code,
 /*
   Constructor for integer parameter
 */
-CbcGenParam::CbcGenParam(CbcGenParamCode code,
+CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
   std::string name, std::string help,
   int lower, int upper, int dflt,
-  bool display)
+  int displayLevel)
   : CoinParam(name, help, lower, upper, dflt, display)
   , paramCode_(code)
   , obj_(0)
@@ -78,10 +78,10 @@ CbcGenParam::CbcGenParam(CbcGenParamCode code,
 /*
   Constructor for keyword parameter.
 */
-CbcGenParam::CbcGenParam(CbcGenParamCode code,
+CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
   std::string name, std::string help,
   std::string firstValue, int dflt,
-  bool display)
+  int displayLevel)
   : CoinParam(name, help, firstValue, dflt, display)
   , paramCode_(code)
   , obj_(0)
@@ -92,10 +92,10 @@ CbcGenParam::CbcGenParam(CbcGenParamCode code,
 /*
   Constructor for string parameter.
 */
-CbcGenParam::CbcGenParam(CbcGenParamCode code,
+CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
   std::string name, std::string help,
   std::string dflt,
-  bool display)
+  int displayLevel)
   : CoinParam(name, help, dflt, display)
   , paramCode_(code)
   , obj_(0)
@@ -106,9 +106,9 @@ CbcGenParam::CbcGenParam(CbcGenParamCode code,
 /*
   Constructor for action parameter.
 */
-CbcGenParam::CbcGenParam(CbcGenParamCode code,
+CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
   std::string name, std::string help,
-  bool display)
+  int displayLevel)
   : CoinParam(name, help, display)
   , paramCode_(code)
   , obj_(0)
@@ -119,7 +119,7 @@ CbcGenParam::CbcGenParam(CbcGenParamCode code,
 /*
   Copy constructor.
 */
-CbcGenParam::CbcGenParam(const CbcGenParam &orig)
+CbcSolverParam::CbcSolverParam(const CbcSolverParam &orig)
   : CoinParam(orig)
   , paramCode_(orig.paramCode_)
   , obj_(orig.obj_)
@@ -131,12 +131,12 @@ CbcGenParam::CbcGenParam(const CbcGenParam &orig)
   Clone
 */
 
-CbcGenParam *CbcGenParam::clone()
+CbcSolverParam *CbcSolverParam::clone()
 {
-  return (new CbcGenParam(*this));
+  return (new CbcSolverParam(*this));
 }
 
-CbcGenParam &CbcGenParam::operator=(const CbcGenParam &rhs)
+CbcSolverParam &CbcSolverParam::operator=(const CbcSolverParam &rhs)
 {
   if (this != &rhs) {
     CoinParam::operator=(rhs);
@@ -151,7 +151,7 @@ CbcGenParam &CbcGenParam::operator=(const CbcGenParam &rhs)
 /*
   Destructor
 */
-CbcGenParam::~CbcGenParam()
+CbcSolverParam::~CbcSolverParam()
 { /* Nothing more to do */
 }
 

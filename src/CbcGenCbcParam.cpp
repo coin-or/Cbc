@@ -21,9 +21,9 @@
 
 #include "CbcModel.hpp"
 
-#include "CbcGenCtlBlk.hpp"
-#include "CbcGenParam.hpp"
-#include "CbcGenCbcParam.hpp"
+#include "CbcSolverSettings.hpp"
+#include "CbcSolverParam.hpp"
+#include "CbcModelParam.hpp"
 
 namespace {
 
@@ -40,9 +40,9 @@ namespace {
 /*
   Default constructor.
 */
-CbcCbcParam::CbcCbcParam()
+CbcModelParam::CbcModelParam()
   : CoinParam()
-  , paramCode_(CbcCbcParamCode(0))
+  , paramCode_(CbcModelParamCode(0))
   , obj_(0)
 {
   /* Nothing to be done here */
@@ -51,7 +51,7 @@ CbcCbcParam::CbcCbcParam()
 /*
   Constructor for double parameter
 */
-CbcCbcParam::CbcCbcParam(CbcCbcParamCode code,
+CbcModelParam::CbcModelParam(CbcModelParamCode code,
   std::string name, std::string help,
   double lower, double upper, double dflt,
   bool display)
@@ -65,7 +65,7 @@ CbcCbcParam::CbcCbcParam(CbcCbcParamCode code,
 /*
   Constructor for integer parameter
 */
-CbcCbcParam::CbcCbcParam(CbcCbcParamCode code,
+CbcModelParam::CbcModelParam(CbcModelParamCode code,
   std::string name, std::string help,
   int lower, int upper, int dflt,
   bool display)
@@ -79,7 +79,7 @@ CbcCbcParam::CbcCbcParam(CbcCbcParamCode code,
 /*
   Constructor for keyword parameter.
 */
-CbcCbcParam::CbcCbcParam(CbcCbcParamCode code,
+CbcModelParam::CbcModelParam(CbcModelParamCode code,
   std::string name, std::string help,
   std::string firstValue, int dflt,
   bool display)
@@ -93,7 +93,7 @@ CbcCbcParam::CbcCbcParam(CbcCbcParamCode code,
 /*
   Constructor for string parameter.
 */
-CbcCbcParam::CbcCbcParam(CbcCbcParamCode code,
+CbcModelParam::CbcModelParam(CbcModelParamCode code,
   std::string name, std::string help,
   std::string dflt,
   bool display)
@@ -107,7 +107,7 @@ CbcCbcParam::CbcCbcParam(CbcCbcParamCode code,
 /*
   Constructor for action parameter.
 */
-CbcCbcParam::CbcCbcParam(CbcCbcParamCode code,
+CbcModelParam::CbcModelParam(CbcModelParamCode code,
   std::string name, std::string help,
   bool display)
   : CoinParam(name, help, display)
@@ -120,7 +120,7 @@ CbcCbcParam::CbcCbcParam(CbcCbcParamCode code,
 /*
   Copy constructor.
 */
-CbcCbcParam::CbcCbcParam(const CbcCbcParam &orig)
+CbcModelParam::CbcModelParam(const CbcModelParam &orig)
   : CoinParam(orig)
   , paramCode_(orig.paramCode_)
   , obj_(orig.obj_)
@@ -132,12 +132,12 @@ CbcCbcParam::CbcCbcParam(const CbcCbcParam &orig)
   Clone
 */
 
-CbcCbcParam *CbcCbcParam::clone()
+CbcModelParam *CbcModelParam::clone()
 {
-  return (new CbcCbcParam(*this));
+  return (new CbcModelParam(*this));
 }
 
-CbcCbcParam &CbcCbcParam::operator=(const CbcCbcParam &rhs)
+CbcModelParam &CbcModelParam::operator=(const CbcModelParam &rhs)
 {
   if (this != &rhs) {
     CoinParam::operator=(rhs);
@@ -152,7 +152,7 @@ CbcCbcParam &CbcCbcParam::operator=(const CbcCbcParam &rhs)
 /*
   Destructor
 */
-CbcCbcParam::~CbcCbcParam()
+CbcModelParam::~CbcModelParam()
 { /* Nothing more to do */
 }
 

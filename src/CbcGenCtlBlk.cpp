@@ -14,7 +14,7 @@
 
 #include <cassert>
 
-#include "CbcGenCtlBlk.hpp"
+#include "CbcSolverSettings.hpp"
 
 namespace {
 
@@ -33,10 +33,10 @@ namespace {
   ordering.
 */
 
-CbcGenCtlBlk::CbcGenCtlBlk()
+CbcSolverSettings::CbcSolverSettings()
 
 {
-  version_ = CBC_GENERIC_VERSION;
+  version_ = CBC_VERSION;
   /*
       It's unclear to me that this is a good choice for dfltDirectory. Makes
       sense for commands, but seems unnecessary for data files. Perhaps a null
@@ -90,10 +90,10 @@ CbcGenCtlBlk::CbcGenCtlBlk()
   bab_.haveAnswer_ = false;
   bab_.answerSolver_ = 0;
 
-  preProcess_ = CbcGenCtlBlk::IPPSOS;
+  preProcess_ = CbcSolverSettings::IPPSOS;
   cutDepth_ = -1;
 
-  probing_.action_ = CbcGenCtlBlk::CGIfMove;
+  probing_.action_ = CbcSolverSettings::CGIfMove;
   probing_.proto_ = 0;
   probing_.usingObjective_ = true;
   probing_.maxPass_ = 3;
@@ -105,52 +105,52 @@ CbcGenCtlBlk::CbcGenCtlBlk()
   probing_.maxElements_ = 200;
   probing_.rowCuts_ = 3;
 
-  clique_.action_ = CbcGenCtlBlk::CGIfMove;
+  clique_.action_ = CbcSolverSettings::CGIfMove;
   clique_.proto_ = 0;
   clique_.starCliqueReport_ = false;
   clique_.rowCliqueReport_ = false;
   clique_.minViolation_ = 0.1;
 
-  flow_.action_ = CbcGenCtlBlk::CGIfMove;
+  flow_.action_ = CbcSolverSettings::CGIfMove;
   flow_.proto_ = 0;
 
-  gomory_.action_ = CbcGenCtlBlk::CGIfMove;
+  gomory_.action_ = CbcSolverSettings::CGIfMove;
   gomory_.proto_ = 0;
   gomory_.limit_ = 50;
   gomory_.limitAtRoot_ = 512;
 
-  knapsack_.action_ = CbcGenCtlBlk::CGIfMove;
+  knapsack_.action_ = CbcSolverSettings::CGIfMove;
   knapsack_.proto_ = 0;
 
-  // landp_action_ = CbcGenCtlBlk::CGOff ;
+  // landp_action_ = CbcSolverSettings::CGOff ;
   // landp_.proto_ = 0 ;
 
-  mir_.action_ = CbcGenCtlBlk::CGIfMove;
+  mir_.action_ = CbcSolverSettings::CGIfMove;
   mir_.proto_ = 0;
 
-  oddHole_.action_ = CbcGenCtlBlk::CGOff;
+  oddHole_.action_ = CbcSolverSettings::CGOff;
   oddHole_.proto_ = 0;
 
-  redSplit_.action_ = CbcGenCtlBlk::CGRoot;
+  redSplit_.action_ = CbcSolverSettings::CGRoot;
   redSplit_.proto_ = 0;
 
-  twomir_.action_ = CbcGenCtlBlk::CGRoot;
+  twomir_.action_ = CbcSolverSettings::CGRoot;
   twomir_.proto_ = 0;
   twomir_.maxElements_ = 250;
 
-  fpump_.action_ = CbcGenCtlBlk::CGOn;
+  fpump_.action_ = CbcSolverSettings::CGOn;
   fpump_.proto_ = 0;
 
-  combine_.action_ = CbcGenCtlBlk::CGOn;
+  combine_.action_ = CbcSolverSettings::CGOn;
   combine_.proto_ = 0;
   combine_.trySwap_ = 1;
 
-  greedyCover_.action_ = CbcGenCtlBlk::CGOn;
+  greedyCover_.action_ = CbcSolverSettings::CGOn;
   greedyCover_.proto_ = 0;
-  greedyEquality_.action_ = CbcGenCtlBlk::CGOn;
+  greedyEquality_.action_ = CbcSolverSettings::CGOn;
   greedyEquality_.proto_ = 0;
 
-  localTree_.action_ = CbcGenCtlBlk::CGOff;
+  localTree_.action_ = CbcSolverSettings::CGOff;
   localTree_.proto_ = 0;
   localTree_.soln_ = 0;
   localTree_.range_ = 10;
@@ -160,13 +160,16 @@ CbcGenCtlBlk::CbcGenCtlBlk()
   localTree_.nodeLimit_ = 2000;
   localTree_.refine_ = true;
 
-  rounding_.action_ = CbcGenCtlBlk::CGOn;
+  rounding_.action_ = CbcSolverSettings::CGOn;
   rounding_.proto_ = 0;
 
-  djFix_.action_ = false;
+  djFix_.on_ = false;
   djFix_.threshold_ = 1.0e100;
 
-  priorityAction_ = CbcGenCtlBlk::BPOff;
+  artVar_.on_ = false;
+  artVar_.threshold_ = 0.0;
+
+  priorityAction_ = CbcSolverSettings::BPOff;
   /*
       The value for numBeforeTrust is as recommended by Achterberg. Cbc's
       implementation doesn't really have a parameter equivalent to Achterberg's
@@ -185,7 +188,7 @@ CbcGenCtlBlk::CbcGenCtlBlk()
   Note that we don't want to delete dfltSolver_ here because it's just a
   copy of the pointer held in the solvers map over in CbcGenSolvers.cpp.
 */
-CbcGenCtlBlk::~CbcGenCtlBlk()
+CbcSolverSettings::~CbcSolverSettings()
 
 {
   if (model_)
@@ -242,10 +245,10 @@ CbcGenCtlBlk::~CbcGenCtlBlk()
   any existing object and create a new one. This can be suppressed if desired.
 */
 
-CbcGenCtlBlk::CGControl CbcGenCtlBlk::getProbing(CglCutGenerator *&gen)
+CbcSolverSettings::CGControl CbcSolverSettings::getProbing(CglCutGenerator *&gen)
 
 {
-  if (probing_.action_ != CbcGenCtlBlk::CGOff && probing_.proto_ == 0) {
+  if (probing_.action_ != CbcSolverSettings::CGOff && probing_.proto_ == 0) {
     probing_.proto_ = new CglProbing();
     probing_.proto_->setUsingObjective(probing_.usingObjective_);
     probing_.proto_->setMaxPass(probing_.maxPass_);
@@ -262,10 +265,10 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getProbing(CglCutGenerator *&gen)
   return (probing_.action_);
 }
 
-CbcGenCtlBlk::CGControl CbcGenCtlBlk::getClique(CglCutGenerator *&gen)
+CbcSolverSettings::CGControl CbcSolverSettings::getClique(CglCutGenerator *&gen)
 
 {
-  if (clique_.action_ != CbcGenCtlBlk::CGOff && clique_.proto_ == 0) {
+  if (clique_.action_ != CbcSolverSettings::CGOff && clique_.proto_ == 0) {
     clique_.proto_ = new CglClique();
     clique_.proto_->setStarCliqueReport(clique_.starCliqueReport_);
     clique_.proto_->setRowCliqueReport(clique_.rowCliqueReport_);
@@ -276,10 +279,10 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getClique(CglCutGenerator *&gen)
   return (clique_.action_);
 }
 
-CbcGenCtlBlk::CGControl CbcGenCtlBlk::getFlow(CglCutGenerator *&gen)
+CbcSolverSettings::CGControl CbcSolverSettings::getFlow(CglCutGenerator *&gen)
 
 {
-  if (flow_.action_ != CbcGenCtlBlk::CGOff && flow_.proto_ == 0) {
+  if (flow_.action_ != CbcSolverSettings::CGOff && flow_.proto_ == 0) {
     flow_.proto_ = new CglFlowCover();
   }
   gen = dynamic_cast< CglCutGenerator * >(flow_.proto_);
@@ -287,10 +290,10 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getFlow(CglCutGenerator *&gen)
   return (flow_.action_);
 }
 
-CbcGenCtlBlk::CGControl CbcGenCtlBlk::getGomory(CglCutGenerator *&gen)
+CbcSolverSettings::CGControl CbcSolverSettings::getGomory(CglCutGenerator *&gen)
 
 {
-  if (gomory_.action_ != CbcGenCtlBlk::CGOff && gomory_.proto_ == 0) {
+  if (gomory_.action_ != CbcSolverSettings::CGOff && gomory_.proto_ == 0) {
     gomory_.proto_ = new CglGomory();
     gomory_.proto_->setLimitAtRoot(gomory_.limitAtRoot_);
     gomory_.proto_->setLimit(gomory_.limit_);
@@ -300,10 +303,10 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getGomory(CglCutGenerator *&gen)
   return (gomory_.action_);
 }
 
-CbcGenCtlBlk::CGControl CbcGenCtlBlk::getKnapsack(CglCutGenerator *&gen)
+CbcSolverSettings::CGControl CbcSolverSettings::getKnapsack(CglCutGenerator *&gen)
 
 {
-  if (knapsack_.action_ != CbcGenCtlBlk::CGOff && knapsack_.proto_ == 0) {
+  if (knapsack_.action_ != CbcSolverSettings::CGOff && knapsack_.proto_ == 0) {
     knapsack_.proto_ = new CglKnapsackCover();
   }
   gen = dynamic_cast< CglCutGenerator * >(knapsack_.proto_);
@@ -311,10 +314,10 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getKnapsack(CglCutGenerator *&gen)
   return (knapsack_.action_);
 }
 
-CbcGenCtlBlk::CGControl CbcGenCtlBlk::getMir(CglCutGenerator *&gen)
+CbcSolverSettings::CGControl CbcSolverSettings::getMir(CglCutGenerator *&gen)
 
 {
-  if (mir_.action_ != CbcGenCtlBlk::CGOff && mir_.proto_ == 0) {
+  if (mir_.action_ != CbcSolverSettings::CGOff && mir_.proto_ == 0) {
     mir_.proto_ = new CglMixedIntegerRounding2();
   }
   gen = dynamic_cast< CglCutGenerator * >(mir_.proto_);
@@ -322,10 +325,10 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getMir(CglCutGenerator *&gen)
   return (mir_.action_);
 }
 
-CbcGenCtlBlk::CGControl CbcGenCtlBlk::getRedSplit(CglCutGenerator *&gen)
+CbcSolverSettings::CGControl CbcSolverSettings::getRedSplit(CglCutGenerator *&gen)
 
 {
-  if (redSplit_.action_ != CbcGenCtlBlk::CGOff && redSplit_.proto_ == 0) {
+  if (redSplit_.action_ != CbcSolverSettings::CGOff && redSplit_.proto_ == 0) {
     redSplit_.proto_ = new CglRedSplit();
   }
   gen = dynamic_cast< CglCutGenerator * >(redSplit_.proto_);
@@ -333,10 +336,10 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getRedSplit(CglCutGenerator *&gen)
   return (redSplit_.action_);
 }
 
-CbcGenCtlBlk::CGControl CbcGenCtlBlk::getTwomir(CglCutGenerator *&gen)
+CbcSolverSettings::CGControl CbcSolverSettings::getTwomir(CglCutGenerator *&gen)
 
 {
-  if (twomir_.action_ != CbcGenCtlBlk::CGOff && twomir_.proto_ == 0) {
+  if (twomir_.action_ != CbcSolverSettings::CGOff && twomir_.proto_ == 0) {
     twomir_.proto_ = new CglTwomir();
     twomir_.proto_->setMaxElements(twomir_.maxElements_);
   }
@@ -345,12 +348,12 @@ CbcGenCtlBlk::CGControl CbcGenCtlBlk::getTwomir(CglCutGenerator *&gen)
   return (twomir_.action_);
 }
 
-CbcGenCtlBlk::CGControl
-CbcGenCtlBlk::getFPump(CbcHeuristic *&gen, CbcModel *model,
+CbcSolverSettings::CGControl
+CbcSolverSettings::getFPump(CbcHeuristic *&gen, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (fpump_.action_ != CbcGenCtlBlk::CGOff && (fpump_.proto_ == 0 || alwaysCreate)) {
+  if (fpump_.action_ != CbcSolverSettings::CGOff && (fpump_.proto_ == 0 || alwaysCreate)) {
     if (fpump_.proto_) {
       delete fpump_.proto_;
     }
@@ -362,12 +365,12 @@ CbcGenCtlBlk::getFPump(CbcHeuristic *&gen, CbcModel *model,
   return (fpump_.action_);
 }
 
-CbcGenCtlBlk::CGControl
-CbcGenCtlBlk::getCombine(CbcHeuristic *&gen, CbcModel *model,
+CbcSolverSettings::CGControl
+CbcSolverSettings::getCombine(CbcHeuristic *&gen, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (combine_.action_ != CbcGenCtlBlk::CGOff && (combine_.proto_ == 0 || alwaysCreate)) {
+  if (combine_.action_ != CbcSolverSettings::CGOff && (combine_.proto_ == 0 || alwaysCreate)) {
     if (combine_.proto_) {
       delete combine_.proto_;
     }
@@ -379,12 +382,12 @@ CbcGenCtlBlk::getCombine(CbcHeuristic *&gen, CbcModel *model,
   return (combine_.action_);
 }
 
-CbcGenCtlBlk::CGControl
-CbcGenCtlBlk::getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
+CbcSolverSettings::CGControl
+CbcSolverSettings::getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (greedyCover_.action_ != CbcGenCtlBlk::CGOff && (greedyCover_.proto_ == 0 || alwaysCreate)) {
+  if (greedyCover_.action_ != CbcSolverSettings::CGOff && (greedyCover_.proto_ == 0 || alwaysCreate)) {
     if (greedyCover_.proto_) {
       delete greedyCover_.proto_;
     }
@@ -395,12 +398,12 @@ CbcGenCtlBlk::getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
   return (greedyCover_.action_);
 }
 
-CbcGenCtlBlk::CGControl
-CbcGenCtlBlk::getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
+CbcSolverSettings::CGControl
+CbcSolverSettings::getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (greedyEquality_.action_ != CbcGenCtlBlk::CGOff && (greedyEquality_.proto_ == 0 || alwaysCreate)) {
+  if (greedyEquality_.action_ != CbcSolverSettings::CGOff && (greedyEquality_.proto_ == 0 || alwaysCreate)) {
     if (greedyEquality_.proto_) {
       delete greedyEquality_.proto_;
     }
@@ -411,12 +414,12 @@ CbcGenCtlBlk::getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
   return (greedyEquality_.action_);
 }
 
-CbcGenCtlBlk::CGControl
-CbcGenCtlBlk::getRounding(CbcHeuristic *&gen, CbcModel *model,
+CbcSolverSettings::CGControl
+CbcSolverSettings::getRounding(CbcHeuristic *&gen, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (rounding_.action_ != CbcGenCtlBlk::CGOff && (rounding_.proto_ == 0 || alwaysCreate)) {
+  if (rounding_.action_ != CbcSolverSettings::CGOff && (rounding_.proto_ == 0 || alwaysCreate)) {
     if (rounding_.proto_) {
       delete rounding_.proto_;
     }
@@ -427,12 +430,12 @@ CbcGenCtlBlk::getRounding(CbcHeuristic *&gen, CbcModel *model,
   return (rounding_.action_);
 }
 
-CbcGenCtlBlk::CGControl
-CbcGenCtlBlk::getTreeLocal(CbcTreeLocal *&localTree, CbcModel *model,
+CbcSolverSettings::CGControl
+CbcSolverSettings::getTreeLocal(CbcTreeLocal *&localTree, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (localTree_.action_ != CbcGenCtlBlk::CGOff && (localTree_.proto_ == 0 || alwaysCreate)) {
+  if (localTree_.action_ != CbcSolverSettings::CGOff && (localTree_.proto_ == 0 || alwaysCreate)) {
     if (localTree_.proto_) {
       delete localTree_.proto_;
     }
@@ -456,7 +459,7 @@ CbcGenCtlBlk::getTreeLocal(CbcTreeLocal *&localTree, CbcModel *model,
   where the search stopped.
 */
 
-CbcGenCtlBlk::BACMajor CbcGenCtlBlk::translateMajor(int status)
+CbcSolverSettings::BACMajor CbcSolverSettings::translateMajor(int status)
 
 {
   switch (status) {
@@ -481,7 +484,7 @@ CbcGenCtlBlk::BACMajor CbcGenCtlBlk::translateMajor(int status)
   }
 }
 
-CbcGenCtlBlk::BACMinor CbcGenCtlBlk::translateMinor(int status)
+CbcSolverSettings::BACMinor CbcSolverSettings::translateMinor(int status)
 
 {
   switch (status) {
@@ -522,8 +525,8 @@ CbcGenCtlBlk::BACMinor CbcGenCtlBlk::translateMinor(int status)
   A bit different --- given an OSI, use its interrogation functions to choose
   an appropriate BACMinor code. Not everything matches up, eh?
 */
-CbcGenCtlBlk::BACMinor
-CbcGenCtlBlk::translateMinor(const OsiSolverInterface *osi)
+CbcSolverSettings::BACMinor
+CbcSolverSettings::translateMinor(const OsiSolverInterface *osi)
 
 {
   if (osi->isProvenOptimal()) {
@@ -543,17 +546,17 @@ CbcGenCtlBlk::translateMinor(const OsiSolverInterface *osi)
   CbcModel codes to CbcGeneric codes.
 */
 
-void CbcGenCtlBlk::setBaBStatus(const CbcModel *model, BACWhere where,
+void CbcSolverSettings::setBaBStatus(const CbcModel *model, BACWhere where,
   bool haveAnswer,
   OsiSolverInterface *answerSolver)
 
 {
-  CbcGenCtlBlk::BACMajor major;
-  CbcGenCtlBlk::BACMinor minor;
+  CbcSolverSettings::BACMajor major;
+  CbcSolverSettings::BACMinor minor;
 
   major = translateMajor(model->status());
 
-  if (where == CbcGenCtlBlk::BACwBareRoot || where == CbcGenCtlBlk::BACwIPPRelax) {
+  if (where == CbcSolverSettings::BACwBareRoot || where == CbcSolverSettings::BACwIPPRelax) {
     minor = translateMinor(model->solver());
   } else {
     minor = translateMinor(model->secondaryStatus());
@@ -568,7 +571,7 @@ void CbcGenCtlBlk::setBaBStatus(const CbcModel *model, BACWhere where,
   Last, but not least, a routine to print the result.
 */
 
-void CbcGenCtlBlk::printBaBStatus()
+void CbcSolverSettings::printBaBStatus()
 
 {
   std::cout << "BAC result: stopped ";

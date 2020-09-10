@@ -9,10 +9,10 @@
   This file is part of cbc-generic.
 */
 
-#ifndef CbcGenCtlBlk_H
-#define CbcGenCtlBlk_H
+#ifndef CbcSettings_H
+#define CbcSettings_H
 
-/* \file CbcGenCtlBlk.hpp
+/* \file CbcSettings.hpp
    \brief Declarations for parameters of the cbc-generic main program.
 */
 
@@ -42,7 +42,7 @@
 
 /*
   It turns out that doxygen is not good with anonymous structures. Hence the
-  `struct nameCtl_struct' style used for structured fields in CbcGenCtlBlk.
+  `struct name_struct' style used for structured fields in CbcSettings.
 */
 
 /*
@@ -50,59 +50,200 @@
 
 #define CBC_GENERIC_VERSION "00.01.00"
 
-class CbcGenCtlBlk;
+class CbcSettings;
 namespace CbcGenParamUtils {
 void addCbcGenParams(int &numParams, CoinParamVec &paramVec,
-  CbcGenCtlBlk *ctlBlk);
+  CbcSettings *settings);
 }
 
-/* \brief cbc-generic algorithm control class
+/* \brief CBC algorithm control class
 
   This class defines values and methods used to control the operation of the
-  cbc-generic main program.
+  CBC main program.
 */
 
-class CbcGenCtlBlk {
+class CbcSettings {
 
   friend void CbcGenParamUtils::addCbcGenParams(int &numParams,
-    CoinParamVec &paramVec, CbcGenCtlBlk *ctlBlk);
+    CoinParamVec &paramVec, CbcSettings *settings);
 
 public:
-  /*! \name Enumeration types used for cbc-generic control variables */
+  /*! \name Enumeration types used for CBC control variables */
   //@{
 
   /*
       In order for initialisation to work properly, the order of declaration of
       the enum constants here must match the order of keyword declaration for
       the PREPROCESS parameter in CbcGenParamUtils::addCbcGenParams
-    */
+  */
   /*! \brief Codes to control integer preprocessing
 
-      - IPPOff: Integer preprocessing is off.
-      - IPPOn:  Integer preprocessing is on.
-      - IPPSave: IPPOn, plus preprocessed system will be saved to presolved.mps.
-      - IPPEqual: IPPOn, plus `<=' cliques are converted to `=' cliques.
-      - IPPSOS: IPPOn, plus will create SOS sets (see below).
-      - IPPTrySOS: IPPOn, plus will create SOS sets (see below).
-      - IPPEqualAll: IPPOn, plus turns all valid inequalities into equalities
-    		with integer slacks.
-      - IPPStrategy: look to CbcStrategy object for instructions.
+    - IPPOff: Integer preprocessing is off.
+    - IPPOn:  Integer preprocessing is on.
+    - IPPSave: IPPOn, plus preprocessed system will be saved to presolved.mps.
+    - IPPEqual: IPPOn, plus `<=' cliques are converted to `=' cliques.
+    - IPPSOS: IPPOn, plus will create SOS sets (see below).
+    - IPPTrySOS: IPPOn, plus will create SOS sets (see below).
+    - IPPEqualAll: IPPOn, plus turns all valid inequalities into equalities
+    with integer slacks.
+    - IPPStrategy: look to CbcStrategy object for instructions.
+    
+    IPPSOS will create SOS sets if all binary variables (except perhaps one)
+    can be covered by SOS sets with no overlap between sets. IPPTrySOS will
+    allow any number of binary variables to be uncovered.
+  */
 
-      IPPSOS will create SOS sets if all binary variables (except perhaps one)
-      can be covered by SOS sets with no overlap between sets. IPPTrySOS will
-      allow any number of binary variables to be uncovered.
-    */
+  typedef enum {
+     IPPOff = 0,
+     IPPon,
+     IPPsave,
+     IPPequal,
+     IPPsos,
+     IPPtrySOS,
+     IPPequalAll,
+     IPPstrategy,
+     IPPEdnMarker
+  } IPPMode;
 
-  typedef enum { IPPOff = 0,
-    IPPOn,
-    IPPSave,
-    IPPEqual,
-    IPPSOS,
-    IPPTrySOS,
-    IPPEqualAll,
-    IPPStrategy
-  } IPPControl;
+  /*! \brief What parameters to print
 
+    - CMOff:
+    - CMMore:
+    - CMAll:
+    - CMEndMarker
+
+   */
+
+   tyepdef enum{
+      CMOff = 0,
+      CMMore,
+      CMAll,
+      CMEndMarker
+   } CommandMode;
+
+  /*! \brief When to do clique strengthening
+
+    - ClqOff:
+    - ClqAfter:
+    - ClqBefore:
+    - ClqEndMarker:
+
+  */
+   
+  typedef enum{
+     ClqStrOff = 0,
+     ClqStrAfter,
+     ClqStrBefore,
+     ClqStrEndMarker
+  } ClqStrMode;
+     
+  /*! \brief What node strategy to use
+
+    - NSHybrid:
+    - NSFewest:
+    - NSDepth:
+    - NSUpFewest:
+    - NSUpDepth:
+    - NSDownDepth
+
+   */
+
+  typedef enum{
+     NSHybrid = 0,
+     NSFewest,
+     NSDepth,
+     NSUpFewest,
+     NSUpDepth,
+     NSDownDepth
+  } NodeStrategy;
+
+  /*! \brief What orbital branching strategy to use
+
+    - OBOff:
+    - OBOn:
+    - OBSlowish:
+    - OBStrong:
+    - OBForce:
+    - OBSimple:
+    - OBMorePrinting:
+    - OBEndMarker
+   */
+   
+  typedef enum{
+     OBOff = 0,
+     OBOn,
+     OBSlowish,
+     OBStrong,
+     OBForce,
+     OBSimple,
+     OBMorePrinting,
+     OBEndMarker
+  } OrbitalStrategy;
+
+  /*! \brief What SOS prioritization strategy to use
+
+    - SOSOff:
+    - SOSHigh:
+    - SOSLow:
+    - SOSOrderHigh:
+    - SOSOrderLow:
+    - SOSEndMarker
+   */
+
+   typedef enum{
+      SOSOff = 0,
+      SOSHigh,
+      SOSLow,
+      SOSOrderHigh,
+      SOSOrderLow,
+      SOSEndMarker
+   } SOSStrategy;
+
+  /*! \brief What overall strategy to use
+
+    - StrategyDefaulty = 0,
+    - StrategyEasy,
+    - StrategyAggressive,
+    - StrategyEndMarker
+
+  */
+
+  typedef enum{
+     StrategyDefault = 0,
+     StrategyEasy,
+     StrategyAggressive,
+     StrategyEndMarker
+  } StrategyMode;
+
+  /*! \brief What clock type to use
+
+    - Clock Cpu: Use CPU time
+    - ClockElapsed: Use elapsed time
+
+  */
+
+   typedef enum{
+      ClockCpu = 0,
+      ClockElapsed,
+      ClockEndMarker
+   } ClockType;
+
+  /*! \brief What clock type to use
+
+    - CGraphOff:
+    - CGraphOn:
+    - CGraphClique:
+    - CGraphEndMarker
+
+  */
+
+  typedef enum{
+     CGraphOff = 0,
+     CGraphOn,
+     CGraphClique,
+     CGraphEndMarker
+  } CGraphMode;
+   
   /*
       In order for initialisation to work properly, the order of declaration of
       the enum constants here must match the order of keyword declaration for
@@ -124,20 +265,122 @@ public:
       - CGForceBut: the cut generator will be installed with settings that force
     	   it to be called at every node, but more active at root (probing
     	   only)
-      - CGMarker: a convenience to mark the end of the codes.
+      - CGEndOnly:
+      - CGEndClean:
+      - CGEndBoth:
+      - CGLlong:
+      - CGLongRoot:
+      - CGLongIfMove:
+      - CGForceLongOn:
+      - CGLongEndOnly:
+      - CGOnlyAsWell:
+      - CGOnlyAsWellRoot:
+      - CGCleanAsWell:
+      - CGCleanAsWellRoot:
+      - CGBothAsWell:
+      - CGBothAsWellRoot:
+      - CGOnlyInstead:
+      - CGCleanInstead:
+      - CGBothInstead:
+      - CGOnGlobal:
+      - CGForceAndGlobal:
+      - CGShorter:
+      - CGEndMarker: a convenience to mark the end of the codes.
 
-      The same codes are used for heuristics.
     */
 
-  typedef enum { CGOff,
-    CGOn,
-    CGRoot,
-    CGIfMove,
-    CGForceOn,
-    CGForceBut,
-    CGMarker
-  } CGControl;
+  typedef enum {
+     CGOff = 0,
+     CGOn,
+     CGRoot,
+     CGIfMove,
+     CGForceOn,
+     CGForceBut,
+     CGEndOnly,
+     CGEndClean,
+     CGEndBoth,
+     CGLlong,
+     CGLongRoot,
+     CGLongIfMove,
+     CGForceLongOn,
+     CGLongEndOnly,
+     CGOnlyAsWell,
+     CGOnlyAsWellRoot,
+     CGCleanAsWell,
+     CGCleanAsWellRoot,
+     CGBothAsWell,
+     CGBothAsWellRoot,
+     CGOnlyInstead,
+     CGCleanInstead,
+     CGBothInstead,
+     CGOnGlobal,
+     CGForceAndGlobal,
+     CGShorter,
+     CGEndMarker
+  } CGMode;
 
+  /*! \brief Codes to specify whether to use a cutoff constraint
+   */
+
+   typedef enum{
+      COOff = 0,
+      COOn,
+      COVariable,
+      COForceVariable,
+      COConflict,
+      COEndMarker
+   } CutoffMode;
+
+  /*! \brief Codes to specify the assignment of branching priorities
+
+      - HeurOff: 
+      - HeurOn: 
+      - HeurBoth,
+      - HeurBefore,
+      - HuerOften,
+      - HeurTen,
+      - HeurOneHundred,
+      - HeurTwoHundred,
+      - HeurThreeHundred,
+      - HeurOneThousand,
+      - HeurTenThousand,
+      - HeurDj,
+      - HeurDjBefore,
+      - HeurUseSolution,
+      - HeurInTree,
+    */
+
+   typedef enum {
+      HeurOff = 0,
+      HeurOn,
+      HeurBoth,
+      HeurBefore,
+      HeurOften,
+      HeurTen,
+      HeurOneHundred,
+      HeurTwoHundred,
+      HeurThreeHundred,
+      HeurOneThousand,
+      HeurTenThousand,
+      HeurDj,
+      HeurDjBefore,
+      HeurUseSolution,
+      HeurInTree,
+      HeurEndMarker
+   } HeurMode;
+
+   /*! \brief Codes to specify one or off for binary parameters
+
+      - ParamOff: Capability is switched off 
+      - ParamOn: Capability is switched on 
+    */
+
+   typedef enum {
+      ParamOff = 0,
+      ParamOn,
+      ParamEndMarker
+   } OnOffMode;
+   
   /*! \brief Codes to specify the assignment of branching priorities
 
       - BPOff: no priorities are passed to cbc
@@ -146,11 +389,34 @@ public:
       - BPExt: the user has provided a priority vector
     */
 
-  typedef enum { BPOff,
-    BPCost,
-    BPOrder,
-    BPExt } BPControl;
+  typedef enum {
+     BPOff = 0,
+     BPCost,
+     BPOrder,
+     BPExt,
+     BPEndMarker
+  } BPMode;
 
+  /*! \brief Codes tos pecify mode for printing integers
+
+    - PMNormal = 0,
+    - PMInteger,
+    - PMSpecial,
+    - PMRows,
+    - PMAll,
+    - PMEndMarker
+
+  */
+
+  typedef enum{
+     PMNormal = 0,
+     PMInteger,
+     PMSpecial,
+     PMRows,
+     PMAll,
+     PMEndMarker
+  } IntPrintMode;
+   
   /*! \brief Major status codes for branch-and-cut
 
       - BACInvalid: status not yet set
@@ -166,13 +432,15 @@ public:
       to CbcModel codes should be reflected here and in translateMajor.
     */
 
-  typedef enum { BACInvalid = -1,
-    BACFinish = 0,
-    BACStop = 1,
-    BACAbandon = 2,
-    BACNotRun,
-    BACUser = 5
-  } BACMajor;
+  typedef enum {
+     BACInvalid = -1,
+     BACFinish = 0,
+     BACStop = 1,
+     BACAbandon = 2,
+     BACNotRun,
+     BACUser = 5,
+     BacEndMarker
+  } BACMajorStatus;
 
   /*! \brief Minor status codes
 
@@ -193,17 +461,19 @@ public:
       integer problem.
     */
 
-  typedef enum { BACmInvalid = -1,
-    BACmFinish = 0,
-    BACmInfeas,
-    BACmUbnd,
-    BACmGap,
-    BACmNodeLimit,
-    BACmTimeLimit,
-    BACmSolnLimit,
-    BACmUser,
-    BACmOther
-  } BACMinor;
+  typedef enum {
+     BACmInvalid = -1,
+     BACmFinish = 0,
+     BACmInfeas,
+     BACmUbnd,
+     BACmGap,
+     BACmNodeLimit,
+     BACmTimeLimit,
+     BACmSolnLimit,
+     BACmUser,
+     BACmOther,
+     BACmEndMarker
+  } BACMinorStatus;
 
   /*! \brief Codes to specify where branch-and-cut stopped
 
@@ -214,12 +484,14 @@ public:
       - BACwBAC		stopped at some point in branch-and-cut
     */
 
-  typedef enum { BACwInvalid = -1,
-    BACwNotStarted = 0,
-    BACwBareRoot,
-    BACwIPP,
-    BACwIPPRelax,
-    BACwBAC
+  typedef enum {
+     BACwInvalid = -1,
+     BACwNotStarted = 0,
+     BACwBareRoot,
+     BACwIPP,
+     BACwIPPRelax,
+     BACwBAC,
+     BACwEndMarker
   } BACWhere;
 
   //@}
@@ -229,26 +501,25 @@ public:
 
   /*! \brief Default constructor */
 
-  CbcGenCtlBlk();
+  CbcSettings();
 
   /*! \brief Destructor */
 
-  ~CbcGenCtlBlk();
+  ~CbcSettings();
   //@}
 
-  /*! \name Access and Control Functions for Cut Generators and Heuristics
+  /*! \name Access and Control Functions for Cut Generators
         \brief Control functions, plus lazy creation functions for cut generators
-    	   and heuristics
 
-        cbc-generic avoids creating objects for cut generators and heuristics
+        CBC avoids creating objects for cut generators and heuristics
         unless they're actually used. For cut generators, a prototype is created
         and reused. For heuristics, the default is to create a new object with each
         call, because the model may have changed. The object is returned through
         the reference parameter. The return value of the function is the current
-        action state.
+        mode.
 
         Cut generator and heuristic objects created by these calls will be deleted
-        with the destruction of the CbcGenCtlBlk object.
+        with the destruction of the CbcSettings object.
     */
   //@{
 
@@ -264,94 +535,117 @@ public:
     return cutDepth_;
   }
 
+  /*! \brief Get cut length setting
+
+  */
+
+  inline int getCutLength()
+  {
+    return cutLength_;
+  }
+
+  /*! \brief Get cut length setting
+
+  */
+
+  inline int getCutPassInTree()
+  {
+    return cutPassInTree_;
+  }
+
   /*! \brief Set cut depth setting.
 
       See comments for getCutDepth().
-    */
+  */
 
   inline void setCutDepth(int cutDepth)
   {
     cutDepth_ = cutDepth;
   }
 
-  /*1 \brief Get action state for use of integer preprocessing */
+  /*! \brief Set cut length setting.
 
-  inline IPPControl getIPPAction()
+    */
+
+  inline void setCutLength(int cutLength)
   {
-    return (preProcess_);
+    cutLength_ = cutLength;
   }
 
-  /*! \brief Set action state for use of integer preprocessing */
+  /*! \brief Set cut pass in tree setting.
 
-  inline void setIPPAction(IPPControl action)
+    */
+
+  inline void setCutPassInTree(int cutPassInTree)
   {
-    preProcess_ = action;
+    cutPassInTree_ = cutPassInTree;
   }
 
   /*! \brief Obtain a prototype for a probing cut generator. */
 
   CGControl getProbing(CglCutGenerator *&gen);
 
-  /*! \brief Set action state for use of probing cut generator. */
+  /*! \brief Set mode for use of probing cut generator. */
 
-  inline void setProbingAction(CGControl action)
+  inline void setProbingMode(CGControl mode)
   {
-    probing_.action_ = action;
+    probing_.mode_ = mode;
   }
 
   /*! \brief Obtain a prototype for a clique cut generator. */
 
   CGControl getClique(CglCutGenerator *&gen);
 
-  /*! \brief Set action state for use of clique cut generator. */
+  /*! \brief Set mode for use of clique cut generator. */
 
-  inline void setCliqueAction(CGControl action)
+  inline void setCliqueMode(CGControl mode)
   {
-    clique_.action_ = action;
+    clique_.mode_ = mode;
   }
 
   /*! \brief Obtain a prototype for a flow cover cut generator. */
 
   CGControl getFlow(CglCutGenerator *&gen);
 
-  /*! \brief Set action state for use of flow cover cut generator. */
+  /*! \brief Set mode for use of flow cover cut generator. */
 
-  inline void setFlowAction(CGControl action)
+  inline void setFlowMode(CGControl mode)
   {
-    flow_.action_ = action;
+    flow_.mode_ = mode;
   }
 
   /*! \brief Obtain a prototype for a Gomory cut generator. */
 
   CGControl getGomory(CglCutGenerator *&gen);
 
-  /*! \brief Set action state for use of Gomory cut generator. */
+  /*! \brief Set mode for use of Gomory cut generator. */
 
-  inline void setGomoryAction(CGControl action)
+  inline void setGomoryMode(CGControl mode)
   {
-    gomory_.action_ = action;
+    gomory_.mode_ = mode;
   }
 
   /*! \brief Obtain a prototype for a knapsack cover cut generator. */
 
   CGControl getKnapsack(CglCutGenerator *&gen);
 
-  /*! \brief Set action state for use of knapsack cut generator. */
+  /*! \brief Set mode for use of knapsack cut generator. */
 
-  inline void setKnapsackAction(CGControl action)
+  inline void setKnapsackMode(CGControl mode)
   {
-    knapsack_.action_ = action;
+    knapsack_.mode_ = mode;
   }
 
-  /*  \brief Obtain a prototype for a lift-and-project cut generator.
+   /*  \brief Obtain a prototype for a lift-and-project cut generator. */
 
-      CGControl getLandP(CglCutGenerator *&gen) ;
+  CGControl getLandP(CglCutGenerator *&gen) ;
 
-       \brief Set action state for use of lift-and-project cut generator.
+   /* \brief Set mode for use of lift-and-project cut generator. */
 
-      inline void setLandPAction(CGControl action)
-      { landp_.action_ = action ; }
-    */
+   inline void setLandPMode(CGControl mode)
+   {
+      landp_.mode_ = mode ;
+   }
 
   /*! \brief Obtain a prototype for a mixed integer rounding (MIR)
            cut generator.
@@ -359,52 +653,52 @@ public:
 
   CGControl getMir(CglCutGenerator *&gen);
 
-  /*! \brief Set action state for use of MIR cut generator. */
+  /*! \brief Set mode for use of MIR cut generator. */
 
-  inline void setMirAction(CGControl action)
+  inline void setMirMode(CGControl mode)
   {
-    mir_.action_ = action;
+    mir_.mode_ = mode;
   }
 
   /*! \brief Obtain a prototype for a reduce and split cut generator. */
 
   CGControl getRedSplit(CglCutGenerator *&gen);
 
-  /*! \brief Set action state for use of reduce and split cut generator. */
+  /*! \brief Set mode for use of reduce and split cut generator. */
 
-  inline void setRedSplitAction(CGControl action)
+  inline void setRedSplitMode(CGControl mode)
   {
-    redSplit_.action_ = action;
+    redSplit_.mode_ = mode;
   }
 
   /*! \brief Obtain a prototype for a 2-MIR cut generator. */
 
   CGControl getTwomir(CglCutGenerator *&gen);
 
-  /*! \brief Set action state for use of 2-MIR cut generator. */
+  /*! \brief Set mode for use of 2-MIR cut generator. */
 
-  inline void setTwomirAction(CGControl action)
+  inline void setTwomirMode(CGControl mode)
   {
-    twomir_.action_ = action;
+    twomir_.mode_ = mode;
   }
+   
+  //@}
 
-  /*! \brief Obtain a feasibility pump heuristic.
+  /*! \name Access and Control Functions for Cut Generators
+        \brief Control functions, plus lazy creation functions for cut generators
 
-      By default, any existing object is deleted and a new object is created and
-      loaded with \c model. Set alwaysCreate = false to return an existing object
-      if one exists.
-    */
+        CBC avoids creating objects for cut generators and heuristics
+        unless they're actually used. For cut generators, a prototype is created
+        and reused. For heuristics, the default is to create a new object with each
+        call, because the model may have changed. The object is returned through
+        the reference parameter. The return value of the function is the current
+        mode.
 
-  CGControl getFPump(CbcHeuristic *&gen, CbcModel *model,
-    bool alwaysCreate = true);
-
-  /*! \brief Set action state for use of feasibility pump heuristic. */
-
-  inline void setFPumpAction(CGControl action)
-  {
-    fpump_.action_ = action;
-  }
-
+        Cut generator and heuristic objects created by these calls will be deleted
+        with the destruction of the CbcSettings object.
+  */
+  //@{
+  
   /*! \brief Obtain a local search/combine heuristic.
 
       By default, any existing object is deleted and a new object is created and
@@ -415,11 +709,215 @@ public:
   CGControl getCombine(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
-  /*! \brief Set action state for use of local search/combine heuristic. */
+  /*! \brief Set mode for use of local search/combine heuristic. */
 
-  inline void setCombineAction(CGControl action)
+  inline void setCombineMode(CGControl mode)
   {
-    combine_.action_ = action;
+    combine_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a crossover heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getCrossover(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of crossover heuristic. */
+
+  inline void setCrossoverMode(CGControl mode)
+  {
+    crossover_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a DINS heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getDins(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of DINS heuristic. */
+
+  inline void setDinsMode(CGControl mode)
+  {
+    dins_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Diving Coefficient heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getDiveCofficient(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Diving Coefficient heuristic. */
+
+  inline void setDiveCoefficientMode(CGControl mode)
+  {
+    divingc_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Diving Fractional heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getDiveFractional(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Diving Coefficient heuristic. */
+
+  inline void setDiveFractionalMode(CGControl mode)
+  {
+    divingf_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Diving Guided heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getDiveGuided(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Diving Guided heuristic. */
+
+  inline void setDiveGuidedMode(CGControl mode)
+  {
+    divingg_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Diving Line Search heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getDiveLineSearch(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Diving Line Search heuristic. */
+
+  inline void setDiveLineSearchMode(CGControl mode)
+  {
+    divingl_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Diving Pseudocost heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getDivePseudocost(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Diving Pseudocost heuristic. */
+
+  inline void setDivePseudocostMode(CGControl mode)
+  {
+    divingp_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Diving Vector Length heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getDiveVectorLength(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Diving Vector Length heuristic. */
+
+  inline void setDiveVectorLengthMode(CGControl mode)
+  {
+    divingv_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a DW heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getDW(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of DW heuristic. */
+
+  inline void setDWMode(CGControl mode)
+  {
+    dw_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a feasibility pump heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+  */
+
+  CGControl getFPump(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of feasibility pump heuristic. */
+
+  inline void setFPumpMode(CGControl mode)
+  {
+    fpump_.mode_ = mode;
+  }
+
+  /*! \brief Set iterations for use of feasibility pump heuristic. */
+
+  inline void setFPumpIters(int iters)
+  {
+    fpump_.iters_ = iters;
+  }
+
+  /*! \brief Set tune mode for use of feasibility pump heuristic. */
+
+  inline void setFPumpTune(int tune)
+  {
+    fpump_.tune_ = tune;
+  }
+
+  /*! \brief Set second tune mode for use of feasibility pump heuristic. */
+
+  inline void setFPumpTune2(int tune2)
+  {
+    fpump_.tune2_ = tune2;
+  }
+
+  /*! \brief Set fake cutoff for use of feasibility pump heuristic. */
+
+  inline void setFPumpFakeCutoff(double cutoff)
+  {
+    fpump_.cutoff_ = cutoff;
+  }
+  /*! \brief Set fake increment for use of feasibility pump heuristic. */
+
+  inline void setFPumpFakeIncrement(double increment)
+  {
+    fpump_.increment_ = increment;
   }
 
   /*! \brief Obtain a greedy cover heuristic.
@@ -432,11 +930,11 @@ public:
   CGControl getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
-  /*! \brief Set action state for use of greedy cover heuristic. */
+  /*! \brief Set mode for use of greedy cover heuristic. */
 
-  inline void setGreedyCoverAction(CGControl action)
+  inline void setGreedyCoverMode(CGControl mode)
   {
-    greedyCover_.action_ = action;
+    greedyCover_.mode_ = mode;
   }
 
   /*! \brief Obtain a greedy equality heuristic.
@@ -449,11 +947,130 @@ public:
   CGControl getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
-  /*! \brief Set action state for use of greedy equality heuristic. */
+  /*! \brief Set mode for use of greedy equality heuristic. */
 
-  inline void setGreedyEqualityAction(CGControl action)
+  inline void setGreedyEqualityMode(CGControl mode)
   {
-    greedyEquality_.action_ = action;
+    greedyEquality_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Naive heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+  */
+
+  CGControl getNaive(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Naive heuristic. */
+
+  inline void setNaiveMode(CGControl mode)
+  {
+    naive_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Pivot And Fix heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getPivotAndFix(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Pivot and Fix heuristic. */
+
+  inline void setPivotAndFixMode(CGControl mode)
+  {
+    pivotandfix_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Pivot and Complement heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getPivotAndComplement(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Pivot and Complement heuristic. */
+
+  inline void setPivotAndComplementMode(CGControl mode)
+  {
+    pivotandcomplement_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Proximity heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getProximity(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Proximity heuristic. */
+
+  inline void setProximityMode(CGControl mode)
+  {
+    proximity_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Randomized Rounding heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getRandRound(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Randomized Rounding heuristic. */
+
+  inline void setRandRoundMode(CGControl mode)
+  {
+    randround_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a RENS heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getRens(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of RENS heuristic. */
+
+  inline void setRensMode(CGControl mode)
+  {
+    rens_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a RINS heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getRins(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of RENS heuristic. */
+
+  inline void setRensMode(CGControl mode)
+  {
+    rens_.mode_ = mode;
   }
 
   /*! \brief Obtain a simple rounding heuristic.
@@ -466,11 +1083,28 @@ public:
   CGControl getRounding(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
-  /*! \brief Set action state for use of simple rounding heuristic. */
+  /*! \brief Set mode for use of simple rounding heuristic. */
 
-  inline void setRoundingAction(CGControl action)
+  inline void setRoundingMode(CGControl mode)
   {
-    rounding_.action_ = action;
+    rounding_.mode_ = mode;
+  }
+
+  /*! \brief Obtain a Variable Neighborhood heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing object
+      if one exists.
+    */
+
+  CGControl getVnd(CbcHeuristic *&gen, CbcModel *model,
+    bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Variable Neighborhood heuristic. */
+
+  inline void setVndMode(CGControl mode)
+  {
+    vnd_.mode_ = mode;
   }
 
   /*! \brief Obtain a local search tree object
@@ -483,14 +1117,800 @@ public:
   CGControl getTreeLocal(CbcTreeLocal *&localTree, CbcModel *model,
     bool alwaysCreate = true);
 
-  /*! \brief Set action state for use of local tree. */
+  /*! \brief Set mode for use of local tree. */
 
-  inline void setTreeLocalAction(CGControl action)
+  inline void setTreeLocalMode(CGControl mode)
   {
-    localTree_.action_ = action;
+    localTree_.mode_ = mode;
   }
 
   //@}
+
+  /*! \name Miscellaneous Integer Parameters
+
+  */
+
+  //@{
+
+  /*! \brief Get BkPivotStrategy setting
+
+    */
+
+  inline int getBkPivotStrategy()
+  {
+    return bkPivotStrategy_;
+  }
+
+  /*! \brief Set BkPivotStrategy setting
+
+    */
+
+  inline void setBkPivotStrategy(int bkPivotStrategy)
+  {
+    bkPivotStrategy_ = bkPivotStrategy;
+  }
+
+  /*! \brief Get BkMaxCalls setting
+
+    */
+
+  inline int getBkMaxCalls()
+  {
+    return bkMaxCalls_;
+  }
+
+  /*! \brief Set BkMaxCalls setting
+
+    */
+
+  inline void setBkMaxCalls(int bkMaxCalls)
+  {
+    bkMaxCalls_ = bkMaxCalls;
+  }
+
+  /*! \brief Get BkClqExtMethod setting
+
+    */
+
+  inline int getBkClqExtMethod()
+  {
+    return bkClqExtMethod_;
+  }
+
+  /*! \brief Set BkClqExtMethod setting
+
+    */
+
+  inline void setBkClqExtMethod(int bkClqExtMethod)
+  {
+    bkClqExtMethod_ = bkClqExtMethod;
+  }
+
+  /*! \brief Get CppMode setting
+
+    */
+
+  inline int getCppMode()
+  {
+    return cppMode_;
+  }
+
+  /*! \brief Set CppMode setting
+
+    */
+
+  inline void setCppMode(int cppMode)
+  {
+    cppMode_ = cppMode;
+  }
+
+  /*! \brief Get DepthMiniBaB setting
+
+    */
+
+  inline int getDepthMiniBaB()
+  {
+    return depthMiniBaB_;
+  }
+
+  /*! \brief Set DepthMiniBaB setting
+
+    */
+
+  inline void setDepthMiniBaB(int depthMiniBaB)
+  {
+    depthMiniBaB_ = depthMiniBaB;
+  }
+
+  /*! \brief Get DiveOpt setting
+
+    */
+
+  inline int getDiveOpt()
+  {
+    return diveOpt_;
+  }
+
+  /*! \brief Set DiveOpt setting
+
+    */
+
+  inline void setdiveOpt(int diveOpt)
+  {
+    diveOpt_ = diveOpt;
+  }
+
+  /*! \brief Get DiveOptSolves setting
+
+    */
+
+  inline int getDiveOptSolves()
+  {
+    return diveOptSolves_;
+  }
+
+  /*! \brief Set DiveOptSolves setting
+
+    */
+
+  inline void setDiveOptSolves(int diveOptSolves)
+  {
+    diveOptSolves_ = diveOptSolves;
+  }
+
+  /*! \brief Get ExperimentMode setting
+
+    */
+
+  inline int getExperimentMode()
+  {
+    return experimentMode_;
+  }
+
+  /*! \brief Set ExperimentMode setting
+
+    */
+
+  inline void setExperimentMode(int experimentMode)
+  {
+    experimentMode_ = experimentMode;
+  }
+
+  /*! \brief Get ExtraIntParam1 setting
+
+    */
+
+  inline int getExtraIntParam1()
+  {
+    return extraInt1_;
+  }
+
+  /*! \brief Set ExtraIntParam1 setting
+
+    */
+
+  inline void setExtraIntParam1(int extraInt1)
+  {
+    extraInt1_ = extraInt1;
+  }
+
+  /*! \brief Get ExtraIntParam2 setting
+
+    */
+
+  inline int getExtraIntParam2()
+  {
+    return extraInt2_;
+  }
+
+  /*! \brief Set ExtraIntParam2 setting
+
+    */
+
+  inline void setExtraIntParam2(int extraInt2)
+  {
+    extraInt2_ = extraInt2;
+  }
+
+  /*! \brief Get ExtraIntParam3 setting
+
+    */
+
+  inline int getExtraIntParam3()
+  {
+    return extraInt3_;
+  }
+
+  /*! \brief Set ExtraIntParam3 setting
+
+    */
+
+  inline void setExtraIntParam3(int extraInt3)
+  {
+    extraInt3_ = extraInt3;
+  }
+
+  /*! \brief Get ExtraIntParam4 setting
+
+    */
+
+  inline int getExtraIntParam4()
+  {
+    return extraInt4_;
+  }
+
+  /*! \brief Set ExtraIntParam4 setting
+
+    */
+
+  inline void setExtraIntParam4(int extraInt4)
+  {
+    extraInt4_ = extraInt4;
+  }
+
+  /*! \brief Get HeurOptions setting
+
+    */
+
+  inline int getHeurOptions()
+  {
+    return heurOptions_;
+  }
+
+  /*! \brief Set HeurOptions setting
+
+    */
+
+  inline void setHeurOptions(int heurOptions)
+  {
+    heurOptions_ = heurOptions;
+  }
+
+  /*! \brief Get MaxSavedSols setting
+
+    */
+
+  inline int getMaxSavedSols()
+  {
+    return maxSavedSols_;
+  }
+
+  /*! \brief Set MaxSavedSols setting
+
+    */
+
+  inline void setMaxSavedSols(int maxSavedSols)
+  {
+    maxSavedSols_ = maxSavedSols;
+  }
+
+  /*! \brief Get MaxSlowCuts setting
+
+    */
+
+  inline int getMaxSlowCuts()
+  {
+    return maxSlowCuts_;
+  }
+
+  /*! \brief Set MaxSlowCuts setting
+
+    */
+
+  inline void setMaxSlowCuts(int maxSlowCuts)
+  {
+    maxSlowCuts_ = maxSlowCuts;
+  }
+
+  /*! \brief Get MoreMoreOptions setting
+
+    */
+
+  inline int getMoreMoreOptions()
+  {
+    return moreMoreOptions_;
+  }
+
+  /*! \brief Set MoreMoreOptions setting
+
+    */
+
+  inline void setMoreMoreOptions(int moreMoreOptions)
+  {
+    moreMoreOptions_ = moreMoreOptions;
+  }
+
+  /*! \brief Get MultipleRoots setting
+
+    */
+
+  inline int getMultipleRoots()
+  {
+    return multipleRoots_;
+  }
+
+  /*! \brief Set MultipleRoots setting
+
+    */
+
+  inline void setMultipleRoots(int multipleRoots)
+  {
+    multipleRoots_ = multipleRoots;
+  }
+
+  /*! \brief Get OddWextMethod setting
+
+    */
+
+  inline int getOddWextMethod()
+  {
+    return oddWextMethod_;
+  }
+
+  /*! \brief Set OddWextMethod setting
+
+    */
+
+  inline void setOddWextMethod(int oddWextMethod)
+  {
+    oddWextMethod_ = oddWextMethod;
+  }
+
+  /*! \brief Get OutputFormat setting
+
+    */
+
+  inline int getOutputFormat()
+  {
+    return outputFormat_;
+  }
+
+  /*! \brief Set OutputFormat setting
+
+    */
+
+  inline void setOutputFormat(int outputFormat)
+  {
+    outputFormat_ = outputFormat;
+  }
+
+  /*! \brief Get PrintOptions setting
+
+    */
+
+  inline int getPrintOptions()
+  {
+    return printOpt_;
+  }
+
+  /*! \brief Set PrintOptions setting
+
+    */
+
+  inline void setPrintOptions(int printOpt)
+  {
+    printOpt_ = printOpt;
+  }
+
+  /*! \brief Get ProcessTune setting
+
+    */
+
+  inline int getProcessTune()
+  {
+    return processTune_;
+  }
+
+  /*! \brief Set ProcessTune setting
+
+    */
+
+  inline void setProcessTune(int processTune)
+  {
+    processTune_ = processTune;
+  }
+
+  /*! \brief Get RandomSeed setting
+
+    */
+
+  inline int getRandomSeed()
+  {
+    return randomSeed_;
+  }
+
+  /*! \brief Set RandomSeed setting
+
+    */
+
+  inline void setRandomSeed(int randomSeed)
+  {
+    randomSeed_ = randomSeed;
+  }
+
+  /*! \brief Get StrongStrategy setting
+
+    */
+
+  inline int getStrongStrategy()
+  {
+    return strongStrategy_;
+  }
+
+  /*! \brief Set StrongStrategy setting
+
+    */
+
+  inline void setStrongStrategy(int strongStrategy)
+  {
+    strongStrategy_ = strongStrategy;
+  }
+   
+  /*! \brief Get TestOsi setting
+
+    */
+
+  inline int getTestOsi()
+  {
+    return testOsi_;
+  }
+
+  /*! \brief Set TestOsi setting
+
+    */
+
+  inline void setTestOsi(int testOsi)
+  {
+    testOsi_ = testOsi;
+  }
+   
+  /*! \brief Get Threads setting
+
+    */
+
+  inline int getThreads()
+  {
+    return threads_;
+  }
+
+  /*! \brief Set Threads setting
+
+    */
+
+  inline void setThreads(int threads)
+  {
+    threads_ = threads;
+  }
+   
+  /*! \brief Get UserCbc setting
+
+    */
+
+  inline int getUserCbc()
+  {
+    return userCbc_;
+  }
+
+  /*! \brief Set UserCbc setting
+
+  */
+
+  inline void setUserCbc(int userCbc)
+  {
+    userCbc_ = userCbc;
+  }
+
+  /*! \brief Get Verbose setting
+
+    */
+
+  inline int getVerbose()
+  {
+    return verbose_;
+  }
+
+  /*! \brief Set Verbose setting
+
+    */
+
+  inline void setVerbose(int verbose)
+  {
+    verbose_ = verbose;
+  }
+   
+  /*! \brief Get VubTry setting
+
+    */
+
+  inline int getVubTry()
+  {
+    return vubTry_;
+  }
+
+  /*! \brief Set VubTry setting
+
+    */
+
+  inline void setVubTry(int vubTry)
+  {
+    vubTry_ = vubTry;
+  }
+
+  //@}
+   
+  /*! \name Miscellaneous Double Parameters
+
+  */
+
+  //@{
+
+  /*! \brief Get extra double 3 setting
+
+    */
+
+  inline double getExtraDbl3()
+  {
+    return extraDbl3_;
+  }
+
+  /*! \brief Set extra double 3 setting
+
+    */
+
+  inline void setExtraDbl3(double extraDbl3)
+  {
+    extraDbl3_ = extraDbl3;
+  }
+   
+  /*! \brief Get extra double 3 setting
+
+    */
+
+  inline double getExtraDbl3()
+  {
+    return extraDbl3_;
+  }
+
+  /*! \brief Set extra double 4 setting
+
+    */
+
+  inline void setExtraDbl4(double extraDbl4)
+  {
+    extraDbl4_ = extraDbl4;
+  }
+   
+  /*! \brief Get extra double 3 setting
+
+    */
+
+  inline double getExtraDbl5()
+  {
+    return extraDbl5_;
+  }
+
+  /*! \brief Set extra double 5 setting
+
+    */
+
+  inline void setExtraDbl5(double extraDbl5)
+  {
+    extraDbl5_ = extraDbl5;
+  }
+   
+  /*! \brief Get small branch and bound setting
+
+    */
+
+  inline double getSmallBaB()
+  {
+    return smallBaB_;
+  }
+
+  /*! \brief Set small branch and bound setting
+
+    */
+
+  inline void setSmallBab(double smallBab)
+  {
+    smallBab_ = smallBab;
+  }
+   
+  /*! \brief Get tighten factor
+
+    */
+
+  inline double getTightenFactor()
+  {
+    return tightenFactor_;
+  }
+
+  /*! \brief Set tighten factor
+
+  */
+
+  inline void set(double tightenFactor)
+  {
+    tightenFactor_ = tightenFactor;
+  }
+   
+  //@}
+   
+  /*! \name Miscellaneous Keyword Parameters
+
+  */
+
+  //@{
+
+  /*! \brief Get command mode */
+
+  inline CommandMode getCommandMode()
+  {
+    return (commandMode_);
+  }
+
+  /*! \brief Set command mode */
+
+  inline void setCommandMode(CommandMode mode)
+  {
+    commandMode_ = mode;
+  }
+
+  /*! \brief Get mode for clique strengthening */
+
+  inline ClqStrMode getClqStrMode()
+  {
+    return (clqStrMode_);
+  }
+
+  /*! \brief Set mode for use of integer preprocessing */
+
+  inline void setClqStrMode(ClqStrMode mode)
+  {
+    clqStrMode_ = mode;
+  }
+
+  /*! \brief Get mode for branching priorities */
+
+  inline BPMode getBranchPriority()
+  {
+    return (branchPriority_);
+  }
+
+  /*! \brief Set mode for branching priorities */
+
+  inline void setBranchPriority(BPMode mode)
+  {
+    branchPriority_ = mode;
+  }
+
+  /*! \brief Get mode for use of cutoff constraint */
+
+  inline CutoffMode getCutoffMode()
+  {
+    return (cutoffMode_);
+  }
+
+  /*! \brief Set mode for use of cutoff constraint */
+
+  inline void setCutoff(CutoffMode mode)
+  {
+    cutoffMode_ = mode;
+  }
+
+  /*! \brief Get mode for printing integers */
+
+  inline IntPrintMode getIntPrintMode()
+  {
+    return (intPrintMode_);
+  }
+
+  /*! \brief Set  mode for printing integers */
+
+  inline void setIntPrintMode(IntPrintMode mode)
+  {
+    intPrintMode_ = mode;
+  }
+
+  /*! \brief Get node search strategy */
+
+  inline NodeStrategy getNodeStrategy()
+  {
+    return (nodeStrategy_);
+  }
+
+  /*! \brief Set node search strategy */
+
+  inline void setNodeStrategy(NodeStrategy mode)
+  {
+    nodeStrategy_ = mode;
+  }
+
+  /*! \brief Get strategy for orbital branching */
+
+   inline OrbitalStrategy getOrbitalStrategy()
+  {
+    return (orbitalStrategy_);
+  }
+
+  /*! \brief Set  strategy for orbital branching */
+
+  inline void setOrbitalStrategy(OrbitalStrategy mode)
+  {
+    orbitalStrategy_ = mode;
+  }
+   
+  /*! \brief Get mode for use of integer preprocessing */
+
+  inline IPPMode getIPPMode()
+  {
+    return (preProcess_);
+  }
+
+  /*! \brief Set mode for use of integer preprocessing */
+
+  inline void setIPPMode(IPPMode mode)
+  {
+    preProcess_ = mode;
+  }
+   
+  /*! \brief Get priority mode for SOS */
+
+  inline SOSMode getSOSMode()
+  {
+    return (sosMode_);
+  }
+
+  /*! \brief Set mode state for use of integer preprocessing */
+
+  inline void setSOSMode(SOSMode mode)
+  {
+    SOSMode_ = mode;
+  }
+   
+  /*! \brief Get overall strategy mode */
+
+  inline StrategyMode getStrategyMode()
+  {
+    return (strategyMode_);
+  }
+
+  /*! \brief Set overall strategy mode */
+
+  inline void setStrategyMode(StrategyMode mode)
+  {
+    strategyMode_ = mode;
+  }
+   
+  /*! \brief Get clock type */
+
+  inline ClockType getClockType()
+  {
+    return (clockType_);
+  }
+
+  /*! \brief Set clock type */
+
+  inline void setClockType(ClockType type)
+  {
+    clockType_ = type;
+  }
+   
+  /*! \brief Get mode for CGraph */
+
+  inline CGraphMode getCGraphMode()
+  {
+    return (cgraphMode_);
+  }
+
+  /*! \brief Set mode for CGraph */
+
+  inline void setCGraphMode(CGraphMode mode)
+  {
+    CGraphMode_ = mode;
+  }
+  //@}
+
 
   /*! \name Status Functions
         \brief Convenience routines for status codes.
@@ -784,15 +2204,24 @@ public:
       at the wrong bound!
     */
 
-  struct djFixCtl_struct {
-    bool action_;
+  struct djFix_struct {
+    bool on_;
     double threshold_;
   } djFix_;
+
+  /*! \brief Treat some variables as artificial in feasibility pump
+
+    */
+
+  struct artVar_struct {
+    bool on_;
+    double threshold_;
+  } artVar_;
 
   /*! \brief Control the assignment of branching priorities to integer
            variables.
     */
-  BPControl priorityAction_;
+  BPControl priorityMode_;
 
   //@}
 
@@ -810,7 +2239,7 @@ public:
       pseudo costs are trusted (numBeforeTrust_) and the number of variables
       evaluated with strong branching (numStrong_) are parameters of CbcModel.
     */
-  struct chooseStrongCtl_struct {
+  struct chooseStrong_struct {
     int numBeforeTrust_;
     int numStrong_;
     int shadowPriceMode_;
@@ -818,14 +2247,14 @@ public:
   //@}
 
 private:
-  /*! \name Cut Generator and Heuristic Control
-        \brief Usage control and prototypes for cut generators and heuristics.
+  /*! \name Cut Generator Control
+        \brief Usage control and prototypes for cut generators.
     */
   //@{
 
   /*! \brief Control integer preprocessing. */
 
-  IPPControl preProcess_;
+  IPPMode preProcess_;
 
   /*! \brief Control cut generator activity
 
@@ -834,10 +2263,85 @@ private:
     */
 
   int cutDepth_;
+  int cutLength_;
+  int cutPassInTree_;
 
-  /*! \brief Control variable and prototype for probing cut generator */
-  struct probingCtl_struct {
-    CGControl action_;
+  /*! \brief Control variable and prototype for clique cut generator */
+  struct clique_struct {
+    CGControl mode_;
+    CglClique *proto_;
+    bool starCliqueReport_;
+    bool rowCliqueReport_;
+    double minViolation_;
+  } clique_;
+
+  /*! \brief Control variable and prototype for flow cover cut generator */
+  struct flow_struct {
+    CGControl mode_;
+    CglFlowCover *proto_;
+  } flow_;
+
+  /*! \brief Control variable and prototype for Gomory cut generator */
+  struct gmi_struct {
+    CGControl mode_;
+    CglGomory *proto_;
+    int limit_;
+    int limitAtRoot_;
+  } gmi_;
+
+  /*! \brief Control variable and prototype for Gomory cut generator */
+  struct gomory_struct {
+    CGControl mode_;
+    CglGomory *proto_;
+    int limit_;
+    int limitAtRoot_;
+  } gomory_;
+
+  /*! \brief Control variable and prototype for knapsack cover cut generator */
+  struct knapsack_struct {
+    CGControl mode_;
+    CglKnapsackCover *proto_;
+  } knapsack_;
+
+  /*   \brief Control variable and prototype for LaGomory cut
+    	     generator
+    */
+  struct lagomory_struct{
+     CGControl mode_ ;
+     CglGomory *proto_ ;
+  } lagomory_ ;
+   
+  /*   \brief Control variable and prototype for lift-and-project cut
+    	     generator
+    */
+  struct landp_struct{
+     CGControl mode_ ;
+     CglLandP *proto_ ;
+  } landp_ ;
+   
+  /*   \brief Control variable and prototype for lift-and-project cut
+    	     generator
+    */
+  struct laTwoMir_struct{
+     CGControl mode_ ;
+     CglTwoMir *proto_ ;
+  } latwomir_ ;
+   
+  /*! \brief Control variable and prototype for MIR cut generator */
+  struct mir_struct {
+    CGControl mode_;
+    CglMixedIntegerRounding2 *proto_;
+  } mir_;
+
+  /*! \brief Control variable and prototype for odd hole cut generator */
+  struct oddWheel_struct {
+    CGControl mode_;
+    CglOddWheel *proto_;
+  } oddWheel_;
+
+   /*! \brief Control variable and prototype for probing cut generator */
+  struct probing_struct {
+    CGControl mode_;
     CglProbing *proto_;
     bool usingObjective_;
     int maxPass_;
@@ -850,100 +2354,189 @@ private:
     int rowCuts_;
   } probing_;
 
-  /*! \brief Control variable and prototype for clique cut generator */
-  struct cliqueCtl_struct {
-    CGControl action_;
-    CglClique *proto_;
-    bool starCliqueReport_;
-    bool rowCliqueReport_;
-    double minViolation_;
-  } clique_;
-
-  /*! \brief Control variable and prototype for flow cover cut generator */
-  struct flowCtl_struct {
-    CGControl action_;
-    CglFlowCover *proto_;
-  } flow_;
-
-  /*! \brief Control variable and prototype for Gomory cut generator */
-  struct gomoryCtl_struct {
-    CGControl action_;
-    CglGomory *proto_;
-    int limit_;
-    int limitAtRoot_;
-  } gomory_;
-
-  /*   \brief Control variable and prototype for lift-and-project cut
-    	     generator
-       struct landpCtl_struct
-       { CGControl action_ ;
-         CglLandP *proto_ ; } landp_ ;
-    */
-
-  /*! \brief Control variable and prototype for knapsack cover cut generator */
-  struct knapsackCtl_struct {
-    CGControl action_;
-    CglKnapsackCover *proto_;
-  } knapsack_;
-
-  /*! \brief Control variable and prototype for MIR cut generator */
-  struct mirCtl_struct {
-    CGControl action_;
-    CglMixedIntegerRounding2 *proto_;
-  } mir_;
-
-  /*! \brief Control variable and prototype for odd hole cut generator */
-  struct oddHoleCtl_struct {
-    CGControl action_;
-    CglOddHole *proto_;
-  } oddHole_;
-
   /*! \brief Control variable and prototype for reduce-and-split
            cut generator
     */
-  struct redSplitCtl_struct {
-    CGControl action_;
+  struct redSplit_struct {
+    CGControl mode_;
     CglRedSplit *proto_;
   } redSplit_;
 
+  /*! \brief Control variable and prototype for reduce-and-split 2
+           cut generator
+    */
+  struct redSplit2_struct {
+    CGControl mode_;
+    CglRedSplit2 *proto_;
+  } redSplit2_;
+
+  /*! \brief Control variable and prototype for residual capacity
+           cut generator
+    */
+  struct residCap_struct {
+    CGControl mode_;
+    CglResidualCapacity *proto_;
+  } residcap_;
+
   /*! \brief Control variable and prototype for Two-MIR cut generator */
-  struct twomirCtl_struct {
-    CGControl action_;
+  struct twomir_struct {
+    CGControl mode_;
     CglTwomir *proto_;
     int maxElements_;
   } twomir_;
 
-  /*! \brief Control variable and prototype for feasibility pump heuristic */
-  struct fpumpCtl_struct {
-    CGControl action_;
-    CbcHeuristicFPump *proto_;
-    int iters_;
-  } fpump_;
+  /*! \brief Control variable and prototype for residual capacity
+           cut generator
+    */
+  struct zeroHalf_struct {
+    CGControl mode_;
+    CglZeroHalf *proto_;
+  } zerohalf_;
+
+  //@}
+   
+  /*! \name Heuristic Control
+        \brief Usage control and prototypes for heuristics.
+  */
+  //@{
 
   /*! \brief Control variable and prototype for combine heuristic */
-  struct combineCtl_struct {
-    CGControl action_;
+  struct combine_struct {
+    HeurControl mode_;
     CbcHeuristicLocal *proto_;
     int trySwap_;
   } combine_;
 
+  /*! \brief Control variable and prototype for crossover heuristic */
+  struct crossover_struct {
+    HeurControl mode_;
+    CbcHeuristicCrossover *proto_;
+  } crossover_;
+
+  /*! \brief Control variable and prototype for heuristic */
+  struct dins_struct {
+    HeurControl mode_;
+    CbcHeuristicDINS *proto_;
+  } dins_;
+
+  /*! \brief Control variable and prototype for Dive Coefficient heuristic */
+  struct diveCoefficient_struct {
+    HeurControl mode_;
+    CbcHeuristicDiveCoefficient *proto_;
+  } divec_;
+
+  /*! \brief Control variable and prototype for Dive Fractional heuristic */
+  struct diveFractional_struct {
+    HeurControl mode_;
+    CbcHeuristicDiveFractional *proto_;
+  } divef_;
+
+  /*! \brief Control variable and prototype for Dive Guided heuristic */
+  struct diveGuided_struct {
+    HeurControl mode_;
+    CbcHeuristicDiveGuided *proto_;
+  } diveg_;
+
+  /*! \brief Control variable and prototype for Dive Line Sarch heuristic */
+  struct diveLineSearch_struct {
+    HeurControl mode_;
+    CbcHeuristicDiveLineSearch *proto_;
+  } divel_;
+
+  /*! \brief Control variable and prototype for Dive Pseudocost heuristic */
+  struct _struct {
+    HeurControl mode_;
+    CbcHeuristicDivePseudocost *proto_;
+  } divep_;
+
+  /*! \brief Control variable and prototype for Dive Vector Lengthheuristic */
+  struct diveVectorLength_struct {
+    HeurControl mode_;
+    CbcHeuristicDiveVectorLength *proto_;
+  } divev_;
+
+  /*! \brief Control variable and prototype for DW heuristic */
+  struct DW_struct {
+    HeurControl mode_;
+    CbcHeuristicDW *proto_;
+  } dw_;
+
+  /*! \brief Control variable and prototype for feasibility pump heuristic */
+  struct fpump_struct {
+    HeurControl mode_;
+    CbcHeuristicFPump *proto_;
+    int iters_;
+    int tune_;
+    int tune2_;
+    double fakeCutoff_;
+    doublefakeIncrement_
+  } fpump_;
+
   /*! \brief Control variable and prototype for greedy cover heuristic */
-  struct greedyCoverCtl_struct {
-    CGControl action_;
+  struct greedyCover_struct {
+    HeurControl mode_;
     CbcHeuristicGreedyCover *proto_;
   } greedyCover_;
 
   /*! \brief Control variable and prototype for greedy equality heuristic */
-  struct greedyEqualityCtl_struct {
-    CGControl action_;
+  struct greedyEquality_struct {
+    HeurControl mode_;
     CbcHeuristicGreedyEquality *proto_;
   } greedyEquality_;
 
+  /*! \brief Control variable and prototype for Naive heuristic */
+  struct naive_struct {
+    HeurControl mode_;
+    CbcHeuristicNaive *proto_;
+  } naive_;
+
+  /*! \brief Control variable and prototype for Pivot and Fix heuristic */
+  struct pivotAndFix_struct {
+    HeurControl mode_;
+    CbcHeuristicPivotAndFix *proto_;
+  } pivotf_;
+
+  /*! \brief Control variable and prototype for Pivot and Complement heuristic */
+  struct pivotAndComp_struct {
+    HeurControl mode_;
+    CbcHeuristicPivtoAndComplement *proto_;
+  } pivotc_;
+
+  /*! \brief Control variable and prototype for Proximity heuristic */
+  struct proximity_struct {
+    HeurControl mode_;
+    CbcHeuristicProximity *proto_;
+  } proximity_;
+
+  /*! \brief Control variable and prototype for Randomized Rounding heuristic */
+  struct randRound_struct {
+    HeurControl mode_;
+    CbcHeuristic *proto_;
+  } randround_;
+
+  /*! \brief Control variable and prototype for RENS heuristic */
+  struct Rens_struct {
+    HeurControl mode_;
+    CbcHeuristicRENS *proto_;
+  } rens_;
+
+  /*! \brief Control variable and prototype for RINS heuristic */
+  struct Rins_struct {
+    HeurControl mode_;
+    CbcHeuristicRINS *proto_;
+  } rins_;
+
   /*! \brief Control variable and prototype for simple rounding heuristic */
-  struct roundingCtl_struct {
-    CGControl action_;
+  struct rounding_struct {
+    HeurControl mode_;
     CbcRounding *proto_;
   } rounding_;
+
+  /*! \brief Control variable and prototype for Variable Neighborhood heuristic */
+  struct Vnd_struct {
+    HeurControl mode_;
+    CbcHeuristicVND *proto_;
+  } vnd_;
 
   /*! \brief Control variables for local tree
 
@@ -951,8 +2544,8 @@ private:
       and installs a local tree object. But we can keep the parameters here and
       hide the details. Consult CbcTreeLocal.hpp for details.
     */
-  struct localTreeCtl_struct {
-    CGControl action_;
+  struct localTree_struct {
+    HeurControl mode_;
     CbcTreeLocal *proto_;
     double *soln_;
     int range_;
@@ -965,6 +2558,73 @@ private:
 
   //@}
 
+  /*! \name Miscellaneous double paramters
+
+  */
+  //@{
+
+  double extraDbl3_;
+  double extraDbl4_;
+  double extraDbl5_;
+  double smallBab_;
+  double tightenFactor_;
+
+  //@}
+
+  /*! \name Miscellaneous integer paramters
+
+  */
+  //@{
+
+  int bkPivotStrategy_;
+  int bkMaxCalls_;
+  int bkClqExtMethod_;
+  int cppMode_;
+  int depthMinBab_;
+  int diveOpt_;
+  int diveOptSolves_;
+  int experiment_;
+  int extraInt1_;
+  int extraInt2_;
+  int extraInt3_;
+  int extraInt4_;
+  int heurOptions_;
+  int maxSavedSols_;
+  int maxSlowCuts_;
+  int moreMoreOptions_;
+  int multipleRoots_;
+  int oddWextMethod_;
+  int outputFormat_;
+  int processTune_;
+  int randomSeed_;
+  int StrongStrategy_;
+  int testOsi_;
+  int threads_;
+  int userCbc_;
+  int verbose_;
+  int vubTry_;
+
+  //@}
+   
+  /*! \name Miscellaneous keyword paramters
+
+  */
+  //@{
+
+  CommandMode commandmode_;
+  ClqStrMode clqStrMode_;
+  BPMode branchPriority_;
+  CutoffMode cutoffMode_;
+  IntPrintMode intPrintMode_;
+  NodeStrategy nodeStrategy_;
+  OrbitalStrategy orbitalStrategy_;
+  SOSMode sosMode_;
+  StrategyMode strategyMode_;
+  ClockType clockType_;
+  CGraphMode cgraphMode_;
+   
+  //@}
+   
   /*! \name Messages and statistics (private)
         \brief Data and objects related to messages and statistics that should be
     	   protected from direct manipulation.

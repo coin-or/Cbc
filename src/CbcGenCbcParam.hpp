@@ -9,63 +9,66 @@
   This file is part of cbc-generic.
 */
 
-#ifndef CbcCbcParam_H
-#define CbcCbcParam_H
+#ifndef CbcModelParam_H
+#define CbcModelParam_H
 
-/* \file CbcGenCbcParam.hpp
+/* \file CbcModelParam.hpp
    \brief Declarations for parameters that act on a CbcModel object.
 */
 
 /*
 */
 
-/*! \class CbcCbcParam
+/*! \class CbcModelParam
     \brief Class for control parameters that act on a CbcModel object.
 
     Adds parameter type codes and push/pull functions to the generic parameter
     object.
 */
 
-class CbcCbcParam : public CoinParam {
+class CbcModelParam : public CoinParam {
 
 public:
   /*! \name Subtypes */
   //@{
 
-  /*! \enum CbcCbcParamCode
+  /*! \enum CbcModelParamCode
         \brief Enumeration for parameters that control a CbcModel object
 
       These are parameters that control the operation of a CbcModel object.
       CBCCBC_FIRSTPARAM and CBCCBC_LASTPARAM are markers to allow convenient
       separation of parameter groups.
     */
-  typedef enum { CBCCBC_FIRSTPARAM = CbcGenParam::CBCGEN_LASTPARAM + 1,
+  typedef enum {
+     CBCCBC_FIRSTPARAM = CbcGenParam::CBCGEN_LASTPARAM + 1,
 
-    ALLOWABLEGAP,
-    COSTSTRATEGY,
-    CUTDEPTH,
-    CUTOFF,
-    CUTPASS,
-    DIRECTION,
-    GAPRATIO,
-    INCREMENT,
-    INFEASIBILITYWEIGHT,
-    INTEGERTOLERANCE,
-    LOGLEVEL,
-    MAXIMIZE,
-    MAXNODES,
-    MINIMIZE,
-    MIPOPTIONS,
-    MOREMIPOPTIONS,
-    NUMBERANALYZE,
-    NUMBERBEFORE,
-    NUMBERMINI,
-    STRONGBRANCHING,
-    TIMELIMIT_BAB,
-
-    CBCCBC_LASTPARAM
-
-  } CbcCbcParamCode;
+     -ALLOWABLEGAP,
+     COSTSTRATEGY,
+     CUTDEPTH,
+     -CUTOFF,
+     CUTPASS,
+     DIRECTION,
+     -GAPRATIO,
+     -INCREMENT,
+     -INFEASIBILITYWEIGHT,
+     -INTEGERTOLERANCE,
+     LOGLEVEL,
+     MAXIMIZE,
+     -MAXNODES,
+     -MAXNODESNOTIMPROVINGFS, //Added
+     -MAXSECONDSNIFS, //Added
+     -MAXSOLS, //Added
+     MINIMIZE,
+     MIPOPTIONS,
+     MOREMIPOPTIONS,
+     NUMBERANALYZE,
+     NUMBERBEFORE,
+     STRONGBRANCHING,
+     -TIMELIMIT,
+     
+     CBCCBC_LASTPARAM
+                 
+  } CbcModelParamCode;
 
   //@}
 
@@ -77,7 +80,7 @@ public:
   //@{
   /*! \brief Default constructor */
 
-  CbcCbcParam();
+  CbcModelParam();
 
   /*! \brief Constructor for a parameter with a double value
 
@@ -85,7 +88,7 @@ public:
       \p upper are real (double) values to distinguish this constructor from the
       constructor for an integer parameter.
     */
-  CbcCbcParam(CbcCbcParamCode code, std::string name, std::string help,
+  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
     double lower, double upper, double dflt = 0.0,
     bool display = true);
 
@@ -93,7 +96,7 @@ public:
 
       The default value is 0.
     */
-  CbcCbcParam(CbcCbcParamCode code, std::string name, std::string help,
+  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
     int lower, int upper, int dflt = 0,
     bool display = true);
 
@@ -106,7 +109,7 @@ public:
       distinguish this constructor from the string and action parameter
       constructors.
     */
-  CbcCbcParam(CbcCbcParamCode code, std::string name, std::string help,
+  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
     std::string firstValue, int dflt, bool display = true);
 
   /*! \brief Constructor for a string parameter
@@ -115,29 +118,29 @@ public:
       a string constructor from an action parameter constructor.
     */
 
-  CbcCbcParam(CbcCbcParamCode code, std::string name, std::string help,
+  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
     std::string dflt, bool display = true);
 
   /*! \brief Constructor for an action parameter */
 
-  CbcCbcParam(CbcCbcParamCode code, std::string name, std::string help,
+  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
     bool display = true);
 
   /*! \brief Copy constructor */
 
-  CbcCbcParam(const CbcCbcParam &orig);
+  CbcModelParam(const CbcModelParam &orig);
 
   /*! \brief Clone */
 
-  CbcCbcParam *clone();
+  CbcModelParam *clone();
 
   /*! \brief Assignment */
 
-  CbcCbcParam &operator=(const CbcCbcParam &rhs);
+  CbcModelParam &operator=(const CbcModelParam &rhs);
 
   /*! \brief  Destructor */
 
-  ~CbcCbcParam();
+  ~CbcModelParam();
 
   //@}
 
@@ -146,14 +149,14 @@ public:
 
   /*! \brief Get the parameter code  */
 
-  inline CbcCbcParamCode paramCode() const
+  inline CbcModelParamCode paramCode() const
   {
     return (paramCode_);
   }
 
   /*! \brief Set the parameter code */
 
-  inline void setParamCode(CbcCbcParamCode code)
+  inline void setParamCode(CbcModelParamCode code)
   {
     paramCode_ = code;
   }
@@ -179,7 +182,7 @@ private:
   //@{
 
   /// Parameter code
-  CbcCbcParamCode paramCode_;
+  CbcModelParamCode paramCode_;
 
   /// CbcModel object
   CbcModel *obj_;
@@ -191,8 +194,8 @@ private:
   Declare the utility functions.
 */
 
-namespace CbcCbcParamUtils {
-void addCbcCbcParams(int &numParams, CoinParamVec &paramVec,
+namespace CbcModelParamUtils {
+void addCbcModelParams(int &numParams, CoinParamVec &paramVec,
   CbcModel *model);
 void loadCbcParamObj(const CoinParamVec paramVec, int first, int last,
   CbcModel *model);

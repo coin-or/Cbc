@@ -9,10 +9,10 @@
   This file is part of cbc-generic.
 */
 
-#ifndef CbcGenParam_H
-#define CbcGenParam_H
+#ifndef CbcSolverParam_H
+#define CbcSolverParam_H
 
-/* \file CbcGenParam.hpp
+/* \file CbcSolverParam.hpp
    \brief Declarations for parameters that control the cbc-generic main
 	  program.
 */
@@ -20,91 +20,177 @@
 /*
 */
 
-class CbcGenCtlBlk;
+class CbcSolverSettings;
 
-/*! \class CbcGenParam
+/*! \class CbcSolverParam
     \brief Class for cbc-generic control parameters
 
     Adds parameter type codes and push/pull functions to the generic parameter
     object.
 */
 
-class CbcGenParam : public CoinParam {
+class CbcSolverParam : public CoinParam {
 
 public:
   /*! \name Subtypes */
   //@{
 
-  /*! \enum CbcGenParamCode
+  /*! \enum CbcSolverParamCode
         \brief Enumeration for cbc-generic parameters
 
       These are parameters that control the operation of the cbc-generic main
-      program by operating on a CbcGenCtlBlk object. CBCGEN_FIRSTPARAM and
+      program by operating on a CbcSolverSettings object. CBCGEN_FIRSTPARAM and
       CBCGEN_LASTPARM are markers to allow convenient separation of parameter
       groups.
     */
-  typedef enum { CBCGEN_FIRSTPARAM = 0,
-
-    GENERALQUERY,
-    FULLGENERALQUERY,
-    HELP,
-    BAB,
-    CLEARCUTS,
-    CLIQUECUTS,
-    COMBINE,
-    COSTSTRATEGY,
-    CPP,
-    CUTDEPTH,
-    CUTSTRATEGY,
-    DEBUG,
-    DIRECTORY,
-    DJFIX,
-    DUMMY,
-    ERRORSALLOWED,
-    EXIT,
-    EXPORT,
-    FLOWCUTS,
-    FPUMP,
-    FPUMPITS,
-    GOMORYCUTS,
-    GREEDY,
-    HEURISTICSTRATEGY,
-    IMPORT,
-    INTPRINT,
-    KNAPSACKCUTS,
-    LOCALTREE,
-    LOGLEVEL,
-    MESSAGES,
-    MIPLIB,
-    MIXEDCUTS,
-    ODDHOLECUTS,
-    OUTDUPROWS,
-    OUTPUTFORMAT,
-    PREPROCESS,
-    PRINTMASK,
-    PRINTOPTIONS,
-    PRINTVERSION,
-    PRIORITYIN,
-    PROBINGCUTS,
-    REDSPLITCUTS,
-    ROUNDING,
-    SOLUTION,
-    SOLVECONTINUOUS,
-    SOLVER,
-    SOS,
-    STDIN,
-    STRENGTHEN,
-    TIGHTENFACTOR,
-    TWOMIRCUTS,
-    UNITTEST,
-    USERCBC,
-    USESOLUTION,
-    VERBOSE,
-    SHOWUNIMP,
-
-    CBCGEN_LASTPARAM
-
-  } CbcGenParamCode;
+  typedef enum {
+     CBCGEN_FIRSTPARAM = 0,
+     
+     GENERALQUERY,
+     FULLGENERALQUERY,
+     ALLCOMMANDS, //Added
+     HELP,
+     ARTIFICIALCOST, //Added        
+     BAB,
+     BKPIVOTINGSTRATEGY, //Added        
+     BKMAXCALLS, //Added        
+     BKCLQEXTMETHOD, //Added
+     BRANCHSTRATEGY, //Not used
+     CLEARCUTS,
+     CLIQUECUTS,
+     CLQSTRENGTHENING, //Added
+     COMBINE,
+     COSTSTRATEGY,
+     CPP,
+     CPX, //Added
+     CROSSOVER, //Added
+     CSVSTATISTICS, //Added
+     CUTDEPTH,
+     CUTLENGTH, //Added
+     CUTOFFCONSTRAINT, //Added
+     CUTPASSINTREE, //Added
+     CUTSTRATEGY,
+     DEBUG,
+     DEPTHMINIBAB, //Added
+     DEXTRA3, //Added
+     DEXTRA4, //Added
+     DEXTRA5, //Added
+     DINS, //Added
+     DIRECTORY,
+     DIRSAMPLE, //Added
+     DIRNETLIB, //Added
+     DIRMIPLIB, //Added
+     DIVEOPT, //Added
+     DIVEOPTSOLVES, //Added
+     DIVINGC, //Added
+     DIVINGF, //Added
+     DIVINGG, //Added
+     DIVINGL, //Added
+     DIVINGP, //Added
+     DIVINGS, //Added
+     DIVINGV, //Added
+     DJFIX,
+     DOHEURISTIC, //Added
+     DUMMY,
+     DW, //Added
+     ENVIRONMENT, //Added
+     ERRORSALLOWED,
+     EXIT,
+     EXPERIMENT, //Added
+     EXPORT,
+     EXTRA1, //Added 
+     EXTRA2, //Added
+     EXTRA3, //Added
+     EXTRA4, //Added
+     EXTRA_VARIABLES, //Added
+     FAKECUTOFF, //Added
+     FAKEINCREMENT, //Added
+     FLOWCUTS,
+     FPUMP,
+     FPUMPITS,
+     FPUMPTUNE, //Added
+     FPUMPTUNE2, //Added
+     GMICUTS, //Added
+     GMPL_SOLUTION, //Added
+     GOMORYCUTS,
+     GREEDY,
+     HEURISTICSTRATEGY,
+     HOPTIONS, //Added
+     IMPORT,
+     INTPRINT,
+     KNAPSACKCUTS,
+     LANDPCUTS, //Added
+     LAGOMORYCUTS, //Added
+     LATWOMIRCUTS, //Added
+     LOCALTREE,
+     LOGLEVEL,
+     LPLOGLEVEL, //Added
+     MAXSAVEDSOLS, //Added
+     MAX_SLOW_CUTS, //Added
+     MESSAGES,
+     MIPLIB,
+     MIPSTART, //Added
+     MIRDCUTS,
+     MOREMOREMIPOPTIONS, //Added
+     MULTIPLEROOTS, //Added
+     NAIVE, //Added
+     NEXTBESTSOLUTION, //Added
+     NODESTRATEGY, //Added
+     ODDHOLECUTS, //Not used
+     ODDWHEELCUTS, //Added
+     ODDWEXTMETHOD, //Added
+     ORBITAL,
+     OUTDUPROWS,
+     OUTPUTFORMAT,
+     PIVOTANDFIX, //Added
+     PIVOTANDCOMPLEMENT, //Added
+     PREPROCESS,
+     PREPROCNAMES, //Added
+     PRINTMASK,
+     PRINTOPTIONS,
+     PRINTVERSION,
+     PRIORITYIN,
+     PROBINGCUTS,
+     PROCESSTUNE, //Added
+     PROXIMITY, //Added
+     RANDOMSEED, //Added
+     RANDROUND, //Added
+     REDSPLITCUTS,
+     REDSPLIT2CUTS, //Added
+     RENS, //Added
+     RESIDCAPCUTS, //Added
+     RINS, //Added
+     ROUNDING,
+     SAVESOL, //Added
+     SHOWUNIMP,
+     SMALLBAB, //Added
+     SOLUTION,
+     SOLVECONTINUOUS,
+     SOLVER, //Not used
+     SOS,
+     SOSPRIORITIZE, //Added
+     STATISTICS, //Added
+     STDIN,
+     STRATEGY, //Added
+     STRENGTHEN,
+     STRONGSTRATEGY, //Added
+     TESTOSI, //Added
+     THREADS, //Added
+     TIGHTENFACTOR,
+     TIMEMODE, //Added
+     TWOMIRCUTS,
+     UNITTEST,
+     USECGRAPH, //Added
+     USERCBC,
+     USESOLUTION,
+     VERBOSE,
+     VND, //Added
+     VUBTRY, //Added
+     ZEROHALFCUTS, //Added
+     
+     CBCGEN_LASTPARAM
+     
+  } CbcSolverParamCode;
 
   //@}
 
@@ -116,7 +202,7 @@ public:
   //@{
   /*! \brief Default constructor */
 
-  CbcGenParam();
+  CbcSolverParam();
 
   /*! \brief Constructor for a parameter with a double value
 
@@ -124,17 +210,17 @@ public:
       \p upper are real (double) values to distinguish this constructor from the
       constructor for an integer parameter.
     */
-  CbcGenParam(CbcGenParamCode code, std::string name, std::string help,
-    double lower, double upper, double dflt = 0.0,
-    bool display = true);
+  CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
+              double lower, double upper, double dflt = 0.0,
+              CoinDisplayPriority displayPriority = CoinDisplayPriority::high);
 
   /*! \brief Constructor for a parameter with an integer value
 
       The default value is 0.
     */
-  CbcGenParam(CbcGenParamCode code, std::string name, std::string help,
-    int lower, int upper, int dflt = 0,
-    bool display = true);
+  CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
+              int lower, int upper, int dflt = 0,
+              CoinDisplayPriority displayPriority = CoinDisplayPriority::high);
 
   /*! \brief Constructor for a parameter with keyword values
 
@@ -145,8 +231,9 @@ public:
       distinguish this constructor from the string and action parameter
       constructors.
     */
-  CbcGenParam(CbcGenParamCode code, std::string name, std::string help,
-    std::string firstValue, int dflt, bool display = true);
+  CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
+              std::string firstValue, int dflt,
+              CoinDisplayPriority displayPriority = CoinDisplayPriority::high);
 
   /*! \brief Constructor for a string parameter
 
@@ -154,29 +241,30 @@ public:
       a string constructor from an action parameter constructor.
     */
 
-  CbcGenParam(CbcGenParamCode code, std::string name, std::string help,
-    std::string dflt, bool display = true);
+  CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
+              std::string dflt,
+              CoinDisplayPriority displayPriority = CoinDisplayPriority::high);
 
   /*! \brief Constructor for an action parameter */
 
-  CbcGenParam(CbcGenParamCode code, std::string name, std::string help,
-    bool display = true);
+  CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
+              CoinDisplayPriority displayPriority = CoinDisplayPriority::high);
 
   /*! \brief Copy constructor */
 
-  CbcGenParam(const CbcGenParam &orig);
+  CbcSolverParam(const CbcSolverParam &orig);
 
   /*! \brief Clone */
 
-  CbcGenParam *clone();
+  CbcSolverParam *clone();
 
   /*! \brief Assignment */
 
-  CbcGenParam &operator=(const CbcGenParam &rhs);
+  CbcSolverParam &operator=(const CbcSolverParam &rhs);
 
   /*! \brief  Destructor */
 
-  ~CbcGenParam();
+  ~CbcSolverParam();
 
   //@}
 
@@ -185,28 +273,28 @@ public:
 
   /*! \brief Get the parameter code  */
 
-  inline CbcGenParamCode paramCode() const
+  inline CbcSolverParamCode paramCode() const
   {
     return (paramCode_);
   }
 
   /*! \brief Set the parameter code */
 
-  inline void setParamCode(CbcGenParamCode code)
+  inline void setParamCode(CbcSolverParamCode code)
   {
     paramCode_ = code;
   }
 
   /*! \brief Get the underlying cbc-generic control object */
 
-  inline CbcGenCtlBlk *obj() const
+  inline CbcSolverSettings *obj() const
   {
     return (obj_);
   }
 
   /*! \brief Set the underlying cbc-generic control object */
 
-  inline void setObj(CbcGenCtlBlk *obj)
+  inline void setObj(CbcSolverSettings *obj)
   {
     obj_ = obj;
   }
@@ -218,10 +306,10 @@ private:
   //@{
 
   /// Parameter code
-  CbcGenParamCode paramCode_;
+  CbcSolverParamCode paramCode_;
 
   /// cbc-generic control object
-  CbcGenCtlBlk *obj_;
+  CbcSolverSettings *obj_;
 
   //@}
 };
@@ -230,11 +318,11 @@ private:
   Declare the utility functions.
 */
 
-namespace CbcGenParamUtils {
-void addCbcGenParams(int &numParams, CoinParamVec &paramVec,
-  CbcGenCtlBlk *ctlBlk);
+namespace CbcSolverParamUtils {
+void addCbcSolverParams(int &numParams, CoinParamVec &paramVec,
+  CbcSettings *cbcSettings);
 void loadGenParamObj(const CoinParamVec paramVec, int first, int last,
-  CbcGenCtlBlk *ctlBlk);
+  CbcSettings *cbcSetting);
 
 void saveSolution(const OsiSolverInterface *osi, std::string fileName);
 bool readSolution(std::string fileName,
@@ -253,12 +341,12 @@ int doSolutionParam(CoinParam *param);
 int doUnimplementedParam(CoinParam *param);
 int doVersionParam(CoinParam *param);
 
-int pushCbcGenDblParam(CoinParam *param);
-int pushCbcGenIntParam(CoinParam *param);
-int pushCbcGenKwdParam(CoinParam *param);
-int pushCbcGenStrParam(CoinParam *param);
+int pushCbcSolverDblParam(CoinParam *param);
+int pushCbcSolverIntParam(CoinParam *param);
+int pushCbcSolverKwdParam(CoinParam *param);
+int pushCbcSolverStrParam(CoinParam *param);
 
-int pushCbcGenCutParam(CoinParam *param);
+int pushCbcSolverCutParam(CoinParam *param);
 }
 
 #endif

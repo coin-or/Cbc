@@ -44,151 +44,151 @@ public:
       groups.
     */
   typedef enum {
-     CBCGEN_FIRSTPARAM = 0,
+     CBCSOLVER_FIRSTPARAM = 0,
      
      GENERALQUERY,
      FULLGENERALQUERY,
-     ALLCOMMANDS, //Added
+     ALLCOMMANDS,
      HELP,
-     ARTIFICIALCOST, //Added        
+     ARTIFICIALCOST,        
      BAB,
-     BKPIVOTINGSTRATEGY, //Added        
-     BKMAXCALLS, //Added        
-     BKCLQEXTMETHOD, //Added
+     BKPIVOTINGSTRATEGY,        
+     BKMAXCALLS,        
+     BKCLQEXTMETHOD,
+     BRANCHPRIORITY,
      BRANCHSTRATEGY, //Not used
      CLEARCUTS,
      CLIQUECUTS,
-     CLQSTRENGTHENING, //Added
+     CLQSTRENGTHENING,
      COMBINE,
-     COSTSTRATEGY,
      CPP,
-     CPX, //Added
-     CROSSOVER, //Added
-     CSVSTATISTICS, //Added
+     CPX,
+     CROSSOVER,
+     CSVSTATISTICS,
      CUTDEPTH,
-     CUTLENGTH, //Added
-     CUTOFFCONSTRAINT, //Added
-     CUTPASSINTREE, //Added
+     CUTLENGTH,
+     CUTOFFCONSTRAINT,
+     CUTPASSINTREE,
      CUTSTRATEGY,
      DEBUG,
-     DEPTHMINIBAB, //Added
-     DEXTRA3, //Added
-     DEXTRA4, //Added
-     DEXTRA5, //Added
-     DINS, //Added
+     DEPTHMINIBAB,
+     DEXTRA3,
+     DEXTRA4,
+     DEXTRA5,
+     DINS,
      DIRECTORY,
-     DIRSAMPLE, //Added
-     DIRNETLIB, //Added
-     DIRMIPLIB, //Added
-     DIVEOPT, //Added
-     DIVEOPTSOLVES, //Added
-     DIVINGC, //Added
-     DIVINGF, //Added
-     DIVINGG, //Added
-     DIVINGL, //Added
-     DIVINGP, //Added
-     DIVINGS, //Added
-     DIVINGV, //Added
+     DIRSAMPLE,
+     DIRNETLIB,
+     DIRMIPLIB,
+     DIVEOPT,
+     DIVEOPTSOLVES,
+     DIVINGC,
+     DIVINGF,
+     DIVINGG,
+     DIVINGL,
+     DIVINGP,
+     DIVINGS,
+     DIVINGV,
      DJFIX,
-     DOHEURISTIC, //Added
+     DOHEURISTIC,
      DUMMY,
-     DW, //Added
-     ENVIRONMENT, //Added
+     DW,
+     ENVIRONMENT,
      ERRORSALLOWED,
      EXIT,
-     EXPERIMENT, //Added
+     EXPERIMENT,
      EXPORT,
-     EXTRA1, //Added 
-     EXTRA2, //Added
-     EXTRA3, //Added
-     EXTRA4, //Added
-     EXTRA_VARIABLES, //Added
-     FAKECUTOFF, //Added
-     FAKEINCREMENT, //Added
+     EXTRA1, 
+     EXTRA2,
+     EXTRA3,
+     EXTRA4,
+     EXTRA_VARIABLES,
+     FAKECUTOFF,
+     FAKEINCREMENT,
      FLOWCUTS,
      FPUMP,
      FPUMPITS,
-     FPUMPTUNE, //Added
-     FPUMPTUNE2, //Added
-     GMICUTS, //Added
-     GMPL_SOLUTION, //Added
+     FPUMPTUNE,
+     FPUMPTUNE2,
+     GMICUTS,
+     GMPL_SOLUTION,
      GOMORYCUTS,
      GREEDY,
      HEURISTICSTRATEGY,
-     HOPTIONS, //Added
+     HEUROPTIONS,
      IMPORT,
      INTPRINT,
      KNAPSACKCUTS,
-     LANDPCUTS, //Added
-     LAGOMORYCUTS, //Added
-     LATWOMIRCUTS, //Added
+     LANDPCUTS,
+     LAGOMORYCUTS,
+     LATWOMIRCUTS,
      LOCALTREE,
      LOGLEVEL,
-     LPLOGLEVEL, //Added
-     MAXSAVEDSOLS, //Added
-     MAX_SLOW_CUTS, //Added
+     LPLOGLEVEL,
+     MAXSAVEDSOLS,
+     MAXSLOWCUTS,
      MESSAGES,
      MIPLIB,
-     MIPSTART, //Added
-     MIRDCUTS,
-     MOREMOREMIPOPTIONS, //Added
-     MULTIPLEROOTS, //Added
-     NAIVE, //Added
-     NEXTBESTSOLUTION, //Added
-     NODESTRATEGY, //Added
+     MIPSTART,
+     MIRCUTS,
+     MOREMOREMIPOPTIONS,
+     MULTIPLEROOTS,
+     NAIVE,
+     NEXTBESTSOLUTION,
+     NODESTRATEGY,
      ODDHOLECUTS, //Not used
-     ODDWHEELCUTS, //Added
-     ODDWEXTMETHOD, //Added
+     ODDWHEELCUTS,
+     ODDWEXTMETHOD,
      ORBITAL,
      OUTDUPROWS,
      OUTPUTFORMAT,
-     PIVOTANDFIX, //Added
-     PIVOTANDCOMPLEMENT, //Added
+     PIVOTANDFIX,
+     PIVOTANDCOMPLEMENT,
      PREPROCESS,
-     PREPROCNAMES, //Added
+     PREPROCNAMES,
      PRINTMASK,
      PRINTOPTIONS,
      PRINTVERSION,
      PRIORITYIN,
      PROBINGCUTS,
-     PROCESSTUNE, //Added
-     PROXIMITY, //Added
-     RANDOMSEED, //Added
-     RANDROUND, //Added
+     PROCESSTUNE,
+     PROXIMITY,
+     RANDOMSEED,
+     RANDROUND,
      REDSPLITCUTS,
-     REDSPLIT2CUTS, //Added
-     RENS, //Added
-     RESIDCAPCUTS, //Added
-     RINS, //Added
+     REDSPLIT2CUTS,
+     RENS,
+     RESIDCAPCUTS,
+     RINS,
      ROUNDING,
-     SAVESOL, //Added
+     SAVESOL,
      SHOWUNIMP,
-     SMALLBAB, //Added
+     SMALLBAB,
      SOLUTION,
      SOLVECONTINUOUS,
      SOLVER, //Not used
      SOS,
-     SOSPRIORITIZE, //Added
-     STATISTICS, //Added
+     SOSPRIORITIZE,
+     STATISTICS,
      STDIN,
-     STRATEGY, //Added
+     STRATEGY,
      STRENGTHEN,
-     STRONGSTRATEGY, //Added
-     TESTOSI, //Added
-     THREADS, //Added
+     STRONGSTRATEGY,
+     TESTOSI,
+     THREADS,
      TIGHTENFACTOR,
-     TIMEMODE, //Added
+     TIMEMODE,
      TWOMIRCUTS,
      UNITTEST,
-     USECGRAPH, //Added
+     USECGRAPH,
      USERCBC,
      USESOLUTION,
      VERBOSE,
-     VND, //Added
-     VUBTRY, //Added
-     ZEROHALFCUTS, //Added
+     VND,
+     VUBTRY,
+     ZEROHALFCUTS,
      
-     CBCGEN_LASTPARAM
+     CBCSOLVER_LASTPARAM
      
   } CbcSolverParamCode;
 
@@ -211,16 +211,16 @@ public:
       constructor for an integer parameter.
     */
   CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
-              double lower, double upper, double dflt = 0.0,
-              CoinDisplayPriority displayPriority = CoinDisplayPriority::high);
+                 double lower, double upper, double dflt = 0.0,
+                 CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for a parameter with an integer value
 
       The default value is 0.
     */
   CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
-              int lower, int upper, int dflt = 0,
-              CoinDisplayPriority displayPriority = CoinDisplayPriority::high);
+                 int lower, int upper, int dflt = 0,
+                 CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for a parameter with keyword values
 
@@ -232,8 +232,8 @@ public:
       constructors.
     */
   CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
-              std::string firstValue, int dflt,
-              CoinDisplayPriority displayPriority = CoinDisplayPriority::high);
+                 std::string firstValue, int dflt,
+                 CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for a string parameter
 
@@ -242,13 +242,13 @@ public:
     */
 
   CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
-              std::string dflt,
-              CoinDisplayPriority displayPriority = CoinDisplayPriority::high);
+                 std::string dflt,
+                 CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for an action parameter */
 
   CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
-              CoinDisplayPriority displayPriority = CoinDisplayPriority::high);
+                 CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Copy constructor */
 
@@ -320,9 +320,9 @@ private:
 
 namespace CbcSolverParamUtils {
 void addCbcSolverParams(int &numParams, CoinParamVec &paramVec,
-  CbcSettings *cbcSettings);
+                        CbcSolverSettings *cbcSettings);
 void loadGenParamObj(const CoinParamVec paramVec, int first, int last,
-  CbcSettings *cbcSetting);
+                     CbcSolverSettings *cbcSetting);
 
 void saveSolution(const OsiSolverInterface *osi, std::string fileName);
 bool readSolution(std::string fileName,
@@ -345,7 +345,9 @@ int pushCbcSolverDblParam(CoinParam *param);
 int pushCbcSolverIntParam(CoinParam *param);
 int pushCbcSolverKwdParam(CoinParam *param);
 int pushCbcSolverStrParam(CoinParam *param);
+int pushCbcSolverBoolParam(CoinParam *param);
 
+int pushCbcSolverHeurParam(CoinParam *param);
 int pushCbcSolverCutParam(CoinParam *param);
 }
 

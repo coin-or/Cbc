@@ -40,33 +40,33 @@ public:
       separation of parameter groups.
     */
   typedef enum {
-     CBCCBC_FIRSTPARAM = CbcGenParam::CBCGEN_LASTPARAM + 1,
+     CBCMODEL_FIRSTPARAM = CbcSolverParam::CBCSOLVER_LASTPARAM + 1,
 
-     -ALLOWABLEGAP,
+     ALLOWABLEGAP,
      COSTSTRATEGY,
      CUTDEPTH,
-     -CUTOFF,
+     CUTOFF,
      CUTPASS,
      DIRECTION,
-     -GAPRATIO,
-     -INCREMENT,
-     -INFEASIBILITYWEIGHT,
-     -INTEGERTOLERANCE,
+     GAPRATIO,
+     INCREMENT,
+     INFEASIBILITYWEIGHT,
+     INTEGERTOLERANCE,
      LOGLEVEL,
      MAXIMIZE,
-     -MAXNODES,
-     -MAXNODESNOTIMPROVINGFS, //Added
-     -MAXSECONDSNIFS, //Added
-     -MAXSOLS, //Added
+     MAXNODES,
+     MAXNODESNOTIMPROVING, //Added
+     MAXSECONDSNOTIMPROVING, //Added
+     MAXSOLS, //Added
      MINIMIZE,
      MIPOPTIONS,
      MOREMIPOPTIONS,
      NUMBERANALYZE,
      NUMBERBEFORE,
      STRONGBRANCHING,
-     -TIMELIMIT,
+     TIMELIMIT,
      
-     CBCCBC_LASTPARAM
+     CBCMODEL_LASTPARAM
                  
   } CbcModelParamCode;
 
@@ -89,16 +89,16 @@ public:
       constructor for an integer parameter.
     */
   CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
-    double lower, double upper, double dflt = 0.0,
-    bool display = true);
+                double lower, double upper, double dflt = 0.0,
+                CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for a parameter with an integer value
 
       The default value is 0.
-    */
+  */
   CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
-    int lower, int upper, int dflt = 0,
-    bool display = true);
+                int lower, int upper, int dflt = 0,
+                CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for a parameter with keyword values
 
@@ -110,7 +110,8 @@ public:
       constructors.
     */
   CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
-    std::string firstValue, int dflt, bool display = true);
+                std::string firstValue, int dflt,
+                CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for a string parameter
 
@@ -119,12 +120,13 @@ public:
     */
 
   CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
-    std::string dflt, bool display = true);
+                std::string dflt,
+                CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for an action parameter */
 
   CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
-    bool display = true);
+                CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Copy constructor */
 
@@ -195,14 +197,14 @@ private:
 */
 
 namespace CbcModelParamUtils {
-void addCbcModelParams(int &numParams, CoinParamVec &paramVec,
-  CbcModel *model);
-void loadCbcParamObj(const CoinParamVec paramVec, int first, int last,
-  CbcModel *model);
-void setCbcModelDefaults(CbcModel *model);
-
-int pushCbcCbcDbl(CoinParam *param);
-int pushCbcCbcInt(CoinParam *param);
+   void addCbcModelParams(int &numParams, CoinParamVec &paramVec,
+                          CbcModel *model);
+   void loadCbcParamObj(const CoinParamVec paramVec, int first, int last,
+                        CbcModel *model);
+   void setCbcModelDefaults(CbcModel *model);
+   
+   int pushCbcModelDblParam(CoinParam *param);
+   int pushCbcModelIntParam(CoinParam *param);
 }
 
 #endif

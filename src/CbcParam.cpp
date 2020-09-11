@@ -350,7 +350,7 @@ CbcParam::doubleParameter(CbcModel &model) const
     value = model.getDblParam(CbcModel::CbcMaximumSeconds);
     break;
   case CBC_PARAM_DBL_MAXSECONDSNIFS:
-    value = model.getDblParam(CbcModel::CbcMaximumSecondsNotImprovingFeasSol);
+    value = model.getDblParam(CbcModel::CbcMaxSecondsNotImproving);
     break;
 
   case CLP_PARAM_DBL_DUALTOLERANCE:
@@ -450,8 +450,8 @@ CbcParam::setDoubleParameterWithMessage(CbcModel &model, double value, int &retu
       model.setDblParam(CbcModel::CbcMaximumSeconds, value);
       break;
     case CBC_PARAM_DBL_MAXSECONDSNIFS:
-      oldValue = model.getDblParam(CbcModel::CbcMaximumSecondsNotImprovingFeasSol);
-      model.setDblParam(CbcModel::CbcMaximumSecondsNotImprovingFeasSol, value);
+      oldValue = model.getDblParam(CbcModel::CbcMaxSecondsNotImproving);
+      model.setDblParam(CbcModel::CbcMaxSecondsNotImproving, value);
       break;
     case CLP_PARAM_DBL_DUALTOLERANCE:
     case CLP_PARAM_DBL_PRIMALTOLERANCE:
@@ -525,7 +525,7 @@ int CbcParam::intParameter(CbcModel &model) const
     value = model.getIntParam(CbcModel::CbcMaxNumNode);
     break;
   case CBC_PARAM_INT_MAXNODESNOTIMPROVINGFS:
-    value = model.getIntParam(CbcModel::CbcMaxNodesNotImprovingFeasSol);
+    value = model.getIntParam(CbcModel::CbcMaxNodesNotImproving);
     break;
   case CBC_PARAM_INT_MAXSOLS:
     value = model.getIntParam(CbcModel::CbcMaxNumSol);
@@ -632,8 +632,8 @@ CbcParam::setIntParameterWithMessage(CbcModel &model, int value, int &returnCode
       model.setIntParam(CbcModel::CbcMaxNumNode, value);
       break;
     case CBC_PARAM_INT_MAXNODESNOTIMPROVINGFS:
-      oldValue = model.getIntParam(CbcModel::CbcMaxNodesNotImprovingFeasSol);
-      model.setIntParam(CbcModel::CbcMaxNodesNotImprovingFeasSol, value);
+      oldValue = model.getIntParam(CbcModel::CbcMaxNodesNotImproving);
+      model.setIntParam(CbcModel::CbcMaxNodesNotImproving, value);
       break;
 
     case CBC_PARAM_INT_MAXSOLS:
@@ -1405,7 +1405,7 @@ It obviously only tries after two or more solutions. "
   }
   {
     CbcParam p("cost!Strategy", "How to use costs for branching priorities",
-      "off", CBC_PARAM_STR_COSTSTRATEGY);
+      "off", CBC_PARAM_STR_BRANCHPRIORITY);
 
     p.append("pri!orities");
     p.append("column!Order?");
@@ -2277,7 +2277,7 @@ You can also use the parameters 'direction minimize'.");
   }
   {
     CbcParam p("mips!tart", "reads an initial feasible solution from file",
-      CBC_PARAM_ACTION_MIPS);
+      CBC_PARAM_ACTION_MIPSTART);
     p.setLonghelp("\
 The MIPStart allows one to enter an initial integer feasible solution \
 to CBC. Values of the main decision variables which are active (have \

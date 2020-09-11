@@ -17,8 +17,8 @@
 #include "CoinSort.hpp"
 #include "CoinFileIO.hpp"
 
-#include "CbcGenCtlBlk.hpp"
-#include "CbcGenParam.hpp"
+#include "CbcSolverSettings.hpp"
+#include "CbcSolverParam.hpp"
 
 namespace {
 
@@ -201,15 +201,15 @@ bool maskMatches(const int *starts, char **masks, const char *checkC)
     all (4)	  all primal variables and row activities
 */
 
-int CbcGenParamUtils::doSolutionParam(CoinParam *param)
+int CbcSolverParamUtils::doSolutionParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
+  CbcSolverParam *genParam = dynamic_cast< CbcSolverParam * >(param);
   assert(genParam != 0);
-  CbcGenCtlBlk *ctlBlk = genParam->obj();
-  assert(ctlBlk != 0);
-  CbcModel *model = ctlBlk->model_;
+  CbcSolverSettings *cbcSettings = genParam->obj();
+  assert(cbcSettings != 0);
+  CbcModel *model = cbcSettings->model_;
   assert(model != 0);
   /*
       Setup to return nonfatal/fatal error (1/-1) by default.
@@ -223,11 +223,11 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
   /*
       It's hard to print a solution we don't have.
     */
-  if (ctlBlk->bab_.haveAnswer_ == false) {
+  if (cbcSettings->bab_.haveAnswer_ == false) {
     std::cout << "There is no solution available to print." << std::endl;
     return (retval);
   }
-  OsiSolverInterface *osi = ctlBlk->bab_.answerSolver_;
+  OsiSolverInterface *osi = cbcSettings->bab_.answerSolver_;
   assert(osi != 0);
   /*
       Figure out where we're going to write the solution. As special cases,
@@ -239,7 +239,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
   std::string field = genParam->strVal();
   std::string fileName;
   if (field == "$") {
-    fileName = ctlBlk->lastSolnOut_;
+    fileName = cbcSettings->lastSolnOut_;
     field = fileName;
   }
   if (field == "-") {
@@ -260,7 +260,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
       }
     }
     if (!(fileAbsPath(fileName) || fileName.substr(0, 2) == "./")) {
-      fileName = ctlBlk->dfltDirectory_ + fileName;
+      fileName = cbcSettings->dfltDirectory_ + fileName;
     }
   }
   /*
@@ -294,7 +294,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
       row cut debugger. For the row cut debugger, we want to produce C++ code
       that can be pasted into the debugger's set of known problems.
     */
-  if (ctlBlk->printMode_ == 2) {
+  if (cbcSettings->printMode_ == 2) {
     int k = 0;
     bool newLine = true;
     bool comma = false;
@@ -353,7 +353,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
     int len = osi->getColName(j).length();
     longestName = CoinMax(longestName, len);
   }
-  if (ctlBlk->printMode_ >= 3) {
+  if (cbcSettings->printMode_ >= 3) {
     for (int i = 0; i < m; i++) {
       int len = osi->getRowName(i).length();
       longestName = CoinMax(longestName, len);
@@ -362,12 +362,12 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
   /*
       Generate masks if we need to do so.
     */
-  bool doMask = ctlBlk->printMask_ != "";
+  bool doMask = cbcSettings->printMask_ != "";
   int *maskStarts = NULL;
   int maxMasks = 0;
   char **masks = NULL;
   if (doMask) {
-    maxMasks = generateMasks(ctlBlk->printMask_, longestName, maskStarts, masks);
+    maxMasks = generateMasks(cbcSettings->printMask_, longestName, maskStarts, masks);
     if (maxMasks < 0) {
       return (retval);
     }
@@ -395,7 +395,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
   osi->getDblParam(OsiPrimalTolerance, primalTolerance);
 
   int iRow;
-  if (ctlBlk->printMode_ >= 3) {
+  if (cbcSettings->printMode_ >= 3) {
     const double *dualRowSolution = osi->getRowPrice();
     const double *primalRowSolution = osi->getRowActivity();
     const double *rowLower = osi->getRowLower();
@@ -411,7 +411,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
         violated = true;
         print = true;
       } else {
-        if (m < 50 || ctlBlk->printMode_ >= 4) {
+        if (m < 50 || cbcSettings->printMode_ >= 4) {
           print = true;
         } else if (fabs(dualRowSolution[iRow]) > 1.0e-8) {
           print = true;
@@ -439,7 +439,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
       variables, all are printed. All of this is filtered through `integer only'
       and can be further filtered using printMask.
     */
-  if (ctlBlk->printMode_ != 2) {
+  if (cbcSettings->printMode_ != 2) {
     const double *columnLower = osi->getColLower();
     const double *columnUpper = osi->getColUpper();
     const double *dualColSolution = osi->getReducedCost();
@@ -454,10 +454,10 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
         violated = true;
         print = true;
       } else {
-        if (n < 50 || ctlBlk->printMode_ == 4) {
+        if (n < 50 || cbcSettings->printMode_ == 4) {
           print = true;
         } else if (fabs(primalColSolution[iColumn]) > 1.0e-8) {
-          if (ctlBlk->printMode_ == 1) {
+          if (cbcSettings->printMode_ == 1) {
             print = osi->isInteger(iColumn);
           } else {
             print = true;
@@ -502,14 +502,14 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
   it's valid.
 */
 
-int CbcGenParamUtils::doPrintMaskParam(CoinParam *param)
+int CbcSolverParamUtils::doPrintMaskParam(CoinParam *param)
 
 {
   assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
+  CbcSolverParam *genParam = dynamic_cast< CbcSolverParam * >(param);
   assert(genParam != 0);
-  CbcGenCtlBlk *ctlBlk = genParam->obj();
-  assert(ctlBlk != 0);
+  CbcSolverSettings *cbcSettings = genParam->obj();
+  assert(cbcSettings != 0);
   /*
       Setup to return nonfatal/fatal error (1/-1) by default.
     */
@@ -552,8 +552,8 @@ int CbcGenParamUtils::doPrintMaskParam(CoinParam *param)
       Mask should not be longer than longest name. Of course, if we don't have a
       model, we can't do this check.
     */
-  if (ctlBlk->goodModel_) {
-    CbcModel *model = ctlBlk->model_;
+  if (cbcSettings->goodModel_) {
+    CbcModel *model = cbcSettings->model_;
     assert(model != 0);
     OsiSolverInterface *osi = model->solver();
     assert(osi != 0);
@@ -577,7 +577,7 @@ int CbcGenParamUtils::doPrintMaskParam(CoinParam *param)
     }
   }
 
-  ctlBlk->printMask_ = maskProto;
+  cbcSettings->printMask_ = maskProto;
 
   return (0);
 }

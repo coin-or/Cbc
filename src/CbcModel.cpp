@@ -5937,7 +5937,7 @@ CbcModel::CbcModel()
 {
   memset(intParam_, 0, sizeof(intParam_));
   intParam_[CbcMaxNumNode] = COIN_INT_MAX;
-  intParam_[CbcMaxNodesNotImprovingFeasSol] = COIN_INT_MAX;
+  intParam_[CbcMaxNodesNotImproving] = COIN_INT_MAX;
   intParam_[CbcMaxNumSol] = COIN_INT_MAX/2;
 
   memset(dblParam_, 0, sizeof(dblParam_));
@@ -5945,7 +5945,7 @@ CbcModel::CbcModel()
   dblParam_[CbcCutoffIncrement] = 1e-4;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
-  dblParam_[CbcMaximumSecondsNotImprovingFeasSol] = 1.0e100;
+  dblParam_[CbcMaxSecondsNotImproving] = 1.0e100;
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcOptimizationDirection] = 1.0;
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
@@ -6118,7 +6118,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
 {
   memset(intParam_, 0, sizeof(intParam_));
   intParam_[CbcMaxNumNode] = COIN_INT_MAX;
-  intParam_[CbcMaxNodesNotImprovingFeasSol] = COIN_INT_MAX;
+  intParam_[CbcMaxNodesNotImproving] = COIN_INT_MAX;
   intParam_[CbcMaxNumSol] = COIN_INT_MAX/2;
 
   memset(dblParam_, 0, sizeof(dblParam_));
@@ -6126,7 +6126,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   dblParam_[CbcCutoffIncrement] = 1e-4;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
-  dblParam_[CbcMaximumSecondsNotImprovingFeasSol] = 1.0e100;
+  dblParam_[CbcMaxSecondsNotImproving] = 1.0e100;
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcOptimizationDirection] = 1.0;
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
@@ -18720,7 +18720,7 @@ bool CbcModel::stoppingCriterionReached() const {
     stoppedOnGap_  ||
     eventHappened_ ||
     maximumSecondsReached() ||
-    (numberSolutions_ && (numberNodes_ - lastNodeImprovingFeasSol_ >= intParam_[CbcMaxNodesNotImprovingFeasSol])) ||
+    (numberSolutions_ && (numberNodes_ - lastNodeImprovingFeasSol_ >= intParam_[CbcMaxNodesNotImproving])) ||
     (!(maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_))
     );
 }
@@ -18732,7 +18732,7 @@ bool CbcModel::maximumSecondsReached() const
   double maxSeconds = getMaximumSeconds();
   bool hitMaxTime = (totalTime >= maxSeconds);
   if (numberSolutions_ && (!hitMaxTime)) {
-      hitMaxTime = totalTime - lastTimeImprovingFeasSol_ >= dblParam_[CbcMaximumSecondsNotImprovingFeasSol];
+      hitMaxTime = totalTime - lastTimeImprovingFeasSol_ >= dblParam_[CbcMaxSecondsNotImproving];
   }
   if (parentModel_ && !hitMaxTime) {
     // In a sub tree
@@ -18740,7 +18740,7 @@ bool CbcModel::maximumSecondsReached() const
     maxSeconds = parentModel_->getMaximumSeconds();
     hitMaxTime = (totalTime >= maxSeconds);
     if (numberSolutions_ && (!hitMaxTime)) {
-      double maxSecondsNotImprFS = parentModel_->getDblParam(CbcMaximumSecondsNotImprovingFeasSol);
+      double maxSecondsNotImprFS = parentModel_->getDblParam(CbcMaxSecondsNotImproving);
       hitMaxTime = totalTime - lastTimeImprovingFeasSol_ >= maxSecondsNotImprFS;
     }
   }

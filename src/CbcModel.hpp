@@ -128,7 +128,9 @@ public:
 
     /** Maximum number of nodes without improving the best feasible
      *  solution (just checked if a feasible solution was already found ) */
-    CbcMaxNodesNotImprovingFeasSol,
+    CbcMaxNodesNotImproving,
+    /** Maximum number of solutions to be retained */
+    CbcMaxSolutions,
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastIntParam
   };
@@ -197,7 +199,7 @@ public:
     CbcSmallChange,
     /** \brief Maximum time without improving the best solution found, checked only if a
      * feasible solution is already available */
-    CbcMaximumSecondsNotImprovingFeasSol,
+    CbcMaxSecondsNotImproving,
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastDblParam
   };
@@ -639,6 +641,42 @@ public:
   inline int getMaximumNodes() const
   {
     return getIntParam(CbcMaxNumNode);
+  }
+
+  /// Set the \link CbcModel::CbcMaxNodesNotImproving limit \endlink
+  inline bool setMaxNodesNotImproving(int value)
+  {
+    return setIntParam(CbcMaxNodesNotImproving, value);
+  }
+
+  /// Get the \link CbcModel::CbcMaxNodesNotImproving limit \endlink
+  inline int getMaxNodesNotImproving() const
+  {
+    return getIntParam(CbcMaxNodesNotImproving);
+  }
+
+  /// Set the \link CbcModel::CbcMaxNumNode maximum node limit \endlink
+  inline bool setMaxSecondsNotImproving(double value)
+  {
+    return setDblParam(CbcMaxSecondsNotImproving, value);
+  }
+
+  /// Get the \link CbcModel::CbcMaxSecondsNotImproving limit \endlink
+  inline double getMaxSecondsNotImproving() const
+  {
+     return getDblParam(CbcMaxSecondsNotImproving);
+  }
+
+  /// Set the \link CbcModel::CbcMaxSolutions limit \endlink
+  inline bool setMaxSolutions(int value)
+  {
+    return setIntParam(CbcMaxSolutions, value);
+  }
+
+  /// Get the \link CbcModel::CbcMaxNumNode maximum node limit \endlink
+  inline int getMaxSolution() const
+  {
+    return getIntParam(CbcMaxSolutions);
   }
 
   /// If integer variables should be rounded before saving a solution.

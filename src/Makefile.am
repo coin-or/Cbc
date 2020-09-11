@@ -15,6 +15,7 @@ lib_LTLIBRARIES = libCbc.la
 # List all source files for this library, including headers
 libCbc_la_SOURCES = \
 	CbcConfig.h \
+	CbcBab.cpp \
 	CbcBranchActual.hpp \
 	CbcBranchAllDifferent.cpp CbcBranchAllDifferent.hpp \
 	CbcBranchBase.hpp \
@@ -67,7 +68,9 @@ libCbc_la_SOURCES = \
 	CbcHeuristicVND.cpp CbcHeuristicVND.hpp \
 	CbcHeuristicDW.cpp CbcHeuristicDW.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
+	CbcMipStartIO.cpp CbcMipStartIO.hpp \
 	CbcModel.cpp CbcModel.hpp \
+	CbcModelParam.cpp CbcModelParam.hpp CbcModelParamUtils.cpp \
 	CbcNode.cpp CbcNode.hpp \
 	CbcNodeInfo.cpp CbcNodeInfo.hpp \
 	CbcNWay.cpp CbcNWay.hpp \
@@ -80,7 +83,12 @@ libCbc_la_SOURCES = \
 	CbcSimpleIntegerDynamicPseudoCost.hpp \
 	CbcSimpleIntegerPseudoCost.cpp \
 	CbcSimpleIntegerPseudoCost.hpp \
-	CbcSOS.cpp CbcSOS.hpp \
+	CbcSOS.cpp CbcSOS.hpp CbcSolution.cpp \
+	CbcSolver.cpp CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
+	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp \
+	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
+	CbcSolverParam.cpp CbcSolverParam.hpp CbcSolverParamUtils.cpp \
+	CbcSolverSettings.cpp CbcSolverSettings.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
@@ -90,11 +98,7 @@ libCbc_la_SOURCES = \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
-	unitTestClp.cpp CbcSolver.cpp \
-	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
-	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
-	CbcMipStartIO.cpp CbcMipStartIO.hpp \
-	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp
+	unitTestClp.cpp 
 
 # List all additionally required libraries
 libCbc_la_LIBADD = $(CBCLIB_LFLAGS)

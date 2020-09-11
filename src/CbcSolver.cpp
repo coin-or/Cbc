@@ -1037,7 +1037,7 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(CBC_PARAM_STR_DINS, parameters_)].setCurrentOption("off");
   parameters_[whichParam(CBC_PARAM_STR_RENS, parameters_)].setCurrentOption("off");
   parameters_[whichParam(CBC_PARAM_STR_LOCALTREE, parameters_)].setCurrentOption("off");
-  parameters_[whichParam(CBC_PARAM_STR_COSTSTRATEGY, parameters_)].setCurrentOption("off");
+  parameters_[whichParam(CBC_PARAM_STR_BRANCHPRIORITY, parameters_)].setCurrentOption("off");
   parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(CBC_PARAM_STR_CLQSTRENGTHENING, parameters_)].setCurrentOption("after");
@@ -1619,7 +1619,7 @@ void CbcMain0(CbcModel &model,
   cbcParameters[whichCbcParam(CBC_PARAM_STR_DINS, cbcParameters)].setCurrentOption("off");
   cbcParameters[whichCbcParam(CBC_PARAM_STR_RENS, cbcParameters)].setCurrentOption("off");
   cbcParameters[whichCbcParam(CBC_PARAM_STR_LOCALTREE, cbcParameters)].setCurrentOption("off");
-  cbcParameters[whichCbcParam(CBC_PARAM_STR_COSTSTRATEGY, cbcParameters)].setCurrentOption("off");
+  cbcParameters[whichCbcParam(CBC_PARAM_STR_BRANCHPRIORITY, cbcParameters)].setCurrentOption("off");
 }
 
 //###########################################################################
@@ -3166,7 +3166,7 @@ int CbcMain1(int argc, const char *argv[],
                  case CBC_PARAM_STR_CPX:
                    defaultSettings = false; // user knows what she is doing
                    break;
-                 case CBC_PARAM_STR_COSTSTRATEGY:
+                 case CBC_PARAM_STR_BRANCHPRIORITY:
                    useCosts = action;
                    break;
                  case CBC_PARAM_STR_NODESTRATEGY:
@@ -6385,7 +6385,7 @@ int CbcMain1(int argc, const char *argv[],
               char doAtEnd[30] = {};
               int numberGenerators = 0;
               int translate[] = { -100, -1, -99, -98, 1, -1098, -999, 1, 1, 1, -1 };
-              int maximumSlowPasses = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MAX_SLOW_CUTS,
+              int maximumSlowPasses = cbcParameters_[whichCbcParam(CBC_PARAM_INT_MAXSLOWCUTS,
                                                     cbcParameters_)]
                                         .intValue();
               if (probingAction) {
@@ -8039,7 +8039,7 @@ int CbcMain1(int argc, const char *argv[],
                 } else if (babModel_->fastNodeDepth() == -999) {
                   babModel_->setFastNodeDepth(-1);
                 }
-                int heurOptions = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HOPTIONS, cbcParameters_)].intValue();
+                int heurOptions = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, cbcParameters_)].intValue();
                 if (heurOptions > 100)
                   babModel_->setSpecialOptions(babModel_->specialOptions() | 8192);
 
@@ -8252,7 +8252,7 @@ int CbcMain1(int argc, const char *argv[],
                 orbit.morph();
                 exit(1);
 #endif
-                int hOp1 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HOPTIONS, cbcParameters_)].intValue() / 100000;
+                int hOp1 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, cbcParameters_)].intValue() / 100000;
                 if (hOp1 % 10) {
                   CbcCompareDefault compare;
                   compare.setBreadthDepth(hOp1 % 10);
@@ -8270,7 +8270,7 @@ int CbcMain1(int argc, const char *argv[],
                   //if (babModel_->fastNodeDepth()==-1)
                   babModel_->setFastNodeDepth(-2); // Use Cplex at root
                 }
-                int hOp2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HOPTIONS, cbcParameters_)].intValue() / 10000;
+                int hOp2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, cbcParameters_)].intValue() / 10000;
                 if (hOp2 % 10) {
                   babModel_->setSpecialOptions(babModel_->specialOptions() | 16384);
                   if (babModel_->fastNodeDepth() == -1)
@@ -8726,7 +8726,7 @@ int CbcMain1(int argc, const char *argv[],
                   //if (model_.fastNodeDepth()==-1)
                   model_.setFastNodeDepth(-2); // Use Cplex at root
                 }
-                int hOp2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HOPTIONS, cbcParameters_)].intValue() / 10000;
+                int hOp2 = cbcParameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, cbcParameters_)].intValue() / 10000;
                 if (hOp2 % 10) {
                   model_.setSpecialOptions(model_.specialOptions() | 16384);
                   if (model_.fastNodeDepth() == -1)

@@ -54,7 +54,7 @@ CbcModelParam::CbcModelParam()
 CbcModelParam::CbcModelParam(CbcModelParamCode code,
   std::string name, std::string help,
   double lower, double upper, double dflt,
-  bool display)
+  CoinDisplayPriority display)
   : CoinParam(name, help, lower, upper, dflt, display)
   , paramCode_(code)
   , obj_(0)
@@ -68,7 +68,7 @@ CbcModelParam::CbcModelParam(CbcModelParamCode code,
 CbcModelParam::CbcModelParam(CbcModelParamCode code,
   std::string name, std::string help,
   int lower, int upper, int dflt,
-  bool display)
+  CoinDisplayPriority display)
   : CoinParam(name, help, lower, upper, dflt, display)
   , paramCode_(code)
   , obj_(0)
@@ -82,7 +82,7 @@ CbcModelParam::CbcModelParam(CbcModelParamCode code,
 CbcModelParam::CbcModelParam(CbcModelParamCode code,
   std::string name, std::string help,
   std::string firstValue, int dflt,
-  bool display)
+  CoinDisplayPriority display)
   : CoinParam(name, help, firstValue, dflt, display)
   , paramCode_(code)
   , obj_(0)
@@ -96,7 +96,7 @@ CbcModelParam::CbcModelParam(CbcModelParamCode code,
 CbcModelParam::CbcModelParam(CbcModelParamCode code,
   std::string name, std::string help,
   std::string dflt,
-  bool display)
+  CoinDisplayPriority display)
   : CoinParam(name, help, dflt, display)
   , paramCode_(code)
   , obj_(0)
@@ -109,7 +109,7 @@ CbcModelParam::CbcModelParam(CbcModelParamCode code,
 */
 CbcModelParam::CbcModelParam(CbcModelParamCode code,
   std::string name, std::string help,
-  bool display)
+  CoinDisplayPriority display)
   : CoinParam(name, help, display)
   , paramCode_(code)
   , obj_(0)

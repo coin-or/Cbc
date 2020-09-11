@@ -9,10 +9,10 @@
   This file is part of cbc-generic.
 */
 
-#ifndef CbcSettings_H
-#define CbcSettings_H
+#ifndef CbcSolverSettings_H
+#define CbcSolverSettings_H
 
-/* \file CbcSettings.hpp
+/* \file CbcSolverSettings.hpp
    \brief Declarations for parameters of the cbc-generic main program.
 */
 
@@ -23,38 +23,49 @@
 #include "CglProbing.hpp"
 #include "CglClique.hpp"
 #include "CglFlowCover.hpp"
+#include "CglGMI.hpp"
 #include "CglGomory.hpp"
 #include "CglKnapsackCover.hpp"
+#include "CglLandP.hpp"
 #include "CglMixedIntegerRounding2.hpp"
-#include "CglOddHole.hpp"
+#include "CglOddWheel.hpp"
 #include "CglRedSplit.hpp"
+#include "CglRedSplit2.hpp"
+#include "CglResidualCapacity.hpp"
 #include "CglTwomir.hpp"
+#include "CglZeroHalf.hpp"
 
 #include "CbcModel.hpp"
 
 #include "CbcHeuristic.hpp"
+#include "CbcHeuristicDINS.hpp"
+#include "CbcHeuristicDW.hpp"
+#include "CbcHeuristicDive.hpp"
+#include "CbcHeuristicDiveCoefficient.hpp"
+#include "CbcHeuristicDiveFractional.hpp"
+#include "CbcHeuristicDiveGuided.hpp"
+#include "CbcHeuristicDiveLineSearch.hpp"
+#include "CbcHeuristicDivePseudoCost.hpp"
+#include "CbcHeuristicDiveVectorLength.hpp"
 #include "CbcHeuristicFPump.hpp"
 #include "CbcHeuristicGreedy.hpp"
 #include "CbcHeuristicLocal.hpp"
+#include "CbcHeuristicPivotAndFix.hpp"
+#include "CbcHeuristicRENS.hpp"
+#include "CbcHeuristicRINS.hpp"
+#include "CbcHeuristicRandRound.hpp"
+#include "CbcHeuristicVND.hpp"
 #include "CbcTreeLocal.hpp"
 
 #include "CbcGenMessages.hpp"
 
 /*
   It turns out that doxygen is not good with anonymous structures. Hence the
-  `struct name_struct' style used for structured fields in CbcSettings.
+  `struct name_struct' style used for structured fields in CbcSolverSettings.
 */
 
 /*
 */
-
-#define CBC_GENERIC_VERSION "00.01.00"
-
-class CbcSettings;
-namespace CbcGenParamUtils {
-void addCbcGenParams(int &numParams, CoinParamVec &paramVec,
-  CbcSettings *settings);
-}
 
 /* \brief CBC algorithm control class
 
@@ -62,10 +73,7 @@ void addCbcGenParams(int &numParams, CoinParamVec &paramVec,
   CBC main program.
 */
 
-class CbcSettings {
-
-  friend void CbcGenParamUtils::addCbcGenParams(int &numParams,
-    CoinParamVec &paramVec, CbcSettings *settings);
+class CbcSolverSettings {
 
 public:
   /*! \name Enumeration types used for CBC control variables */
@@ -95,14 +103,14 @@ public:
 
   typedef enum {
      IPPOff = 0,
-     IPPon,
-     IPPsave,
-     IPPequal,
-     IPPsos,
-     IPPtrySOS,
-     IPPequalAll,
-     IPPstrategy,
-     IPPEdnMarker
+     IPPOn,
+     IPPSave,
+     IPPEqual,
+     IPPSOS,
+     IPPTrySOS,
+     IPPEqualAll,
+     IPPStrategy,
+     IPPEndMarker
   } IPPMode;
 
   /*! \brief What parameters to print
@@ -114,7 +122,7 @@ public:
 
    */
 
-   tyepdef enum{
+   typedef enum{
       CMOff = 0,
       CMMore,
       CMAll,
@@ -262,7 +270,7 @@ public:
     	   tighten the relaxation.
       - CGForceOn: the cut generator will be installed with settings that force
     	   it to be called at every node
-      - CGForceBut: the cut generator will be installed with settings that force
+      - CGForceOnBut: the cut generator will be installed with settings that force
     	   it to be called at every node, but more active at root (probing
     	   only)
       - CGEndOnly:
@@ -295,11 +303,14 @@ public:
      CGRoot,
      CGIfMove,
      CGForceOn,
-     CGForceBut,
+     CGForceOnBut,
      CGEndOnly,
+     CGEndOnlyRoot,
      CGEndClean,
+     CGEndCleanRoot,
      CGEndBoth,
-     CGLlong,
+     CGLong,
+     CGLongOn,
      CGLongRoot,
      CGLongIfMove,
      CGForceLongOn,
@@ -310,11 +321,13 @@ public:
      CGCleanAsWellRoot,
      CGBothAsWell,
      CGBothAsWellRoot,
+     CGCleanBothAsWellRoot,
      CGOnlyInstead,
      CGCleanInstead,
      CGBothInstead,
      CGOnGlobal,
      CGForceAndGlobal,
+     CGLonger,
      CGShorter,
      CGEndMarker
   } CGMode;
@@ -353,6 +366,7 @@ public:
    typedef enum {
       HeurOff = 0,
       HeurOn,
+      HeurRoot,
       HeurBoth,
       HeurBefore,
       HeurOften,
@@ -501,11 +515,11 @@ public:
 
   /*! \brief Default constructor */
 
-  CbcSettings();
+  CbcSolverSettings();
 
   /*! \brief Destructor */
 
-  ~CbcSettings();
+  ~CbcSolverSettings();
   //@}
 
   /*! \name Access and Control Functions for Cut Generators
@@ -519,7 +533,7 @@ public:
         mode.
 
         Cut generator and heuristic objects created by these calls will be deleted
-        with the destruction of the CbcSettings object.
+        with the destruction of the CbcSolverSettings object.
     */
   //@{
 
@@ -581,124 +595,324 @@ public:
     cutPassInTree_ = cutPassInTree;
   }
 
-  /*! \brief Obtain a prototype for a probing cut generator. */
-
-  CGControl getProbing(CglCutGenerator *&gen);
-
-  /*! \brief Set mode for use of probing cut generator. */
-
-  inline void setProbingMode(CGControl mode)
-  {
-    probing_.mode_ = mode;
-  }
-
   /*! \brief Obtain a prototype for a clique cut generator. */
 
-  CGControl getClique(CglCutGenerator *&gen);
+  CGMode getClique(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of clique cut generator. */
 
-  inline void setCliqueMode(CGControl mode)
+  inline void setCliqueMode(CGMode mode)
   {
     clique_.mode_ = mode;
   }
 
+  /*! \brief Get mode for use of clique cut generator. */
+
+  inline CGMode getCliqueMode()
+  {
+     return(clique_.mode_);
+  }
   /*! \brief Obtain a prototype for a flow cover cut generator. */
 
-  CGControl getFlow(CglCutGenerator *&gen);
+  CGMode getFlow(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of flow cover cut generator. */
 
-  inline void setFlowMode(CGControl mode)
+  inline void setFlowMode(CGMode mode)
   {
     flow_.mode_ = mode;
   }
 
+  /*! \brief Get mode for use of flow cover cut generator. */
+
+  inline CGMode getFlowMode()
+  {
+     return(flow_.mode_);
+  }
+  /*! \brief Obtain a prototype for a GMI cut generator. */
+
+  CGMode getGMI(CglCutGenerator *&gen);
+
+  /*! \brief Set mode for use of GMI cut generator. */
+
+  inline void setGMIMode(CGMode mode)
+  {
+    gmi_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of GMI cut generator. */
+
+  inline CGMode getGMIMode()
+  {
+     return(gmi_.mode_);
+  }
+
   /*! \brief Obtain a prototype for a Gomory cut generator. */
 
-  CGControl getGomory(CglCutGenerator *&gen);
+  CGMode getGomory(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of Gomory cut generator. */
 
-  inline void setGomoryMode(CGControl mode)
+  inline void setGomoryMode(CGMode mode)
   {
     gomory_.mode_ = mode;
   }
 
+  /*! \brief Get mode for use of Gomory cut generator. */
+
+  inline CGMode getGomoryMode()
+  {
+     return(gomory_.mode_);
+  }
   /*! \brief Obtain a prototype for a knapsack cover cut generator. */
 
-  CGControl getKnapsack(CglCutGenerator *&gen);
+  CGMode getKnapsack(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of knapsack cut generator. */
 
-  inline void setKnapsackMode(CGControl mode)
+  inline void setKnapsackMode(CGMode mode)
   {
     knapsack_.mode_ = mode;
   }
 
+  /*! \brief Get mode for use of knapsack cut generator. */
+
+  inline CGMode getKnapsackMode()
+  {
+     return(knapsack_.mode_);
+  }
+
+  /*! \brief Obtain a prototype for a LaGomory cut generator. */
+
+  CGMode getLaGomory(CglCutGenerator *&gen);
+
+  /*! \brief Set mode for use of LaGomory cut generator. */
+
+  inline void setLaGomoryMode(CGMode mode)
+  {
+    laGomory_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of LaGomory cut generator. */
+
+  inline CGMode getLaGomoryMode()
+  {
+     return(laGomory_.mode_);
+  }
+
    /*  \brief Obtain a prototype for a lift-and-project cut generator. */
 
-  CGControl getLandP(CglCutGenerator *&gen) ;
+  CGMode getLandP(CglCutGenerator *&gen) ;
 
    /* \brief Set mode for use of lift-and-project cut generator. */
 
-   inline void setLandPMode(CGControl mode)
+   inline void setLandPMode(CGMode mode)
    {
-      landp_.mode_ = mode ;
+      landP_.mode_ = mode ;
    }
 
-  /*! \brief Obtain a prototype for a mixed integer rounding (MIR)
+  /*! \brief Get mode for use of lift-and-project cut generator. */
+
+  inline CGMode getLandPMode()
+  {
+     return(landP_.mode_);
+  }
+
+   /*! \brief Obtain a prototype for a LaTwomir cut generator. */
+
+  CGMode getLaTwomir(CglCutGenerator *&gen);
+
+  /*! \brief Set mode for use of LaTwomir cut generator. */
+
+  inline void setLaTwomirMode(CGMode mode)
+  {
+    laTwomir_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of LaTwomir cut generator. */
+
+  inline CGMode getLaTwomirMode()
+  {
+     return(laTwomir_.mode_);
+  }
+
+   /*! \brief Obtain a prototype for a mixed integer rounding (MIR)
            cut generator.
     */
 
-  CGControl getMir(CglCutGenerator *&gen);
+  CGMode getMir(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of MIR cut generator. */
 
-  inline void setMirMode(CGControl mode)
+  inline void setMirMode(CGMode mode)
   {
     mir_.mode_ = mode;
   }
 
-  /*! \brief Obtain a prototype for a reduce and split cut generator. */
+  /*! \brief Get mode for use of MIR cut generator. */
 
-  CGControl getRedSplit(CglCutGenerator *&gen);
+  inline CGMode getMirMode()
+  {
+     return(mir_.mode_);
+  }
+
+   /*! \brief Obtain a prototype for an odd wheel cut generator. */
+
+  CGMode getOddWheel(CglCutGenerator *&gen);
+
+  /*! \brief Set mode for use of odd wheel cut generator. */
+
+  inline void setOddWheelMode(CGMode mode)
+  {
+    oddWheel_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of odd wheel cut generator. */
+
+  inline CGMode getOddWheelMode()
+  {
+     return(oddWheel_.mode_);
+  }
+
+   /*! \brief Obtain a prototype for a probing cut generator. */
+
+  CGMode getProbing(CglCutGenerator *&gen);
+
+  /*! \brief Set mode for use of probing cut generator. */
+
+  inline void setProbingMode(CGMode mode)
+  {
+    probing_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of probing cut generator. */
+
+  inline CGMode getProbingMode()
+  {
+     return(probing_.mode_);
+  }
+
+   /*! \brief Obtain a prototype for a reduce and split cut generator. */
+
+  CGMode getRedSplit(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of reduce and split cut generator. */
 
-  inline void setRedSplitMode(CGControl mode)
+  inline void setRedSplitMode(CGMode mode)
   {
     redSplit_.mode_ = mode;
   }
 
+  /*! \brief Get mode for use of reduce and split cut generator. */
+
+  inline CGMode getRedSplitMode()
+  {
+     return(redSplit_.mode_);
+  }
+
+   /*! \brief Obtain a prototype for a reduce and split 2 cut generator. */
+
+  CGMode getRedSplit2(CglCutGenerator *&gen);
+
+  /*! \brief Set mode for use of reduce and split 2 cut generator. */
+
+  inline void setRedSplit2Mode(CGMode mode)
+  {
+    redSplit2_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of reduce and split 2 cut generator. */
+
+  inline CGMode getRedSplit2Mode()
+  {
+     return(redSplit2_.mode_);
+  }
+
+  /*! \brief Obtain a prototype for a residual capacity cut generator. */
+
+  CGMode getResidCap(CglCutGenerator *&gen);
+
+  /*! \brief Set mode for use of residual capacity cut generator. */
+
+  inline void setResidCapMode(CGMode mode)
+  {
+    residCap_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of residual capacity cut generator. */
+
+  inline CGMode getResidCapMode()
+  {
+     return(residCap_.mode_);
+  }
+
   /*! \brief Obtain a prototype for a 2-MIR cut generator. */
 
-  CGControl getTwomir(CglCutGenerator *&gen);
+  CGMode getTwomir(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of 2-MIR cut generator. */
 
-  inline void setTwomirMode(CGControl mode)
+  inline void setTwomirMode(CGMode mode)
   {
     twomir_.mode_ = mode;
   }
    
+  /*! \brief Get mode for use of Twomir cut generator. */
+
+  inline CGMode getTwomirMode()
+  {
+     return(twomir_.mode_);
+  }
+
+  /*! \brief Obtain a prototype for a zero-half cut generator. */
+
+  CGMode getZeroHalf(CglCutGenerator *&gen);
+
+  /*! \brief Set mode for use of zero-half cut generator. */
+
+  inline void setZeroHalfMode(CGMode mode)
+  {
+    zeroHalf_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of reduce and split cut generator. */
+
+  inline CGMode getZeroHalfMode()
+  {
+     return(zeroHalf_.mode_);
+  }
+
   //@}
 
-  /*! \name Access and Control Functions for Cut Generators
+  /*! \name Access and Control Functions for Heuristics
         \brief Control functions, plus lazy creation functions for cut generators
 
-        CBC avoids creating objects for cut generators and heuristics
+        CBC avoids creating objects for heuristics
         unless they're actually used. For cut generators, a prototype is created
         and reused. For heuristics, the default is to create a new object with each
         call, because the model may have changed. The object is returned through
         the reference parameter. The return value of the function is the current
         mode.
 
-        Cut generator and heuristic objects created by these calls will be deleted
-        with the destruction of the CbcSettings object.
+        Heuristic objects created by these calls will be deleted
+        with the destruction of the CbcSolverSettings object.
   */
   //@{
-  
+
+  /*! \brief Set mode for overall control of heuristics. */
+
+  inline OnOffMode getDoHeuristicMode()
+  {
+     return(doHeuristicMode_);
+  }
+   
+  /*! \brief Get mode for overall control of heuristics. */
+
+  inline OnOffMode setDoHeuristicMode(OnOffMode mode)
+   {
+     doHeuristicMode_ = mode;
+  }
+   
   /*! \brief Obtain a local search/combine heuristic.
 
       By default, any existing object is deleted and a new object is created and
@@ -706,14 +920,21 @@ public:
       if one exists.
     */
 
-  CGControl getCombine(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getCombine(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of local search/combine heuristic. */
 
-  inline void setCombineMode(CGControl mode)
+  inline void setCombineMode(HeurMode mode)
   {
     combine_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of local search/combine heuristic. */
+
+  HeurMode getCombineMode()
+  {
+     return(combine_.mode_);
   }
 
   /*! \brief Obtain a crossover heuristic.
@@ -723,14 +944,21 @@ public:
       if one exists.
     */
 
-  CGControl getCrossover(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getCrossover(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of crossover heuristic. */
 
-  inline void setCrossoverMode(CGControl mode)
+  inline void setCrossoverMode(HeurMode mode)
   {
     crossover_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of crossover heuristic. */
+
+  HeurMode getCrossoverMode()
+  {
+     return(crossover_.mode_);
   }
 
   /*! \brief Obtain a DINS heuristic.
@@ -740,14 +968,21 @@ public:
       if one exists.
     */
 
-  CGControl getDins(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getDins(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of DINS heuristic. */
 
-  inline void setDinsMode(CGControl mode)
+  inline void setDinsMode(HeurMode mode)
   {
     dins_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of DINS heuristic. */
+
+  HeurMode getDinsMode()
+  {
+     return(dins_.mode_);
   }
 
   /*! \brief Obtain a Diving Coefficient heuristic.
@@ -757,14 +992,21 @@ public:
       if one exists.
     */
 
-  CGControl getDiveCofficient(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getDiveCofficient(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Coefficient heuristic. */
 
-  inline void setDiveCoefficientMode(CGControl mode)
+  inline void setDiveCoefficientMode(HeurMode mode)
   {
     divingc_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of Diving Coefficient heuristic. */
+
+  HeurMode getDiveCoefficientMode()
+  {
+     return(divingc_.mode_);
   }
 
   /*! \brief Obtain a Diving Fractional heuristic.
@@ -774,14 +1016,21 @@ public:
       if one exists.
     */
 
-  CGControl getDiveFractional(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getDiveFractional(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Coefficient heuristic. */
 
-  inline void setDiveFractionalMode(CGControl mode)
+  inline void setDiveFractionalMode(HeurMode mode)
   {
     divingf_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of Diving Fractional heuristic. */
+
+  HeurMode getDiveFractionalMode()
+  {
+     return(divingf_.mode_);
   }
 
   /*! \brief Obtain a Diving Guided heuristic.
@@ -791,14 +1040,21 @@ public:
       if one exists.
     */
 
-  CGControl getDiveGuided(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getDiveGuided(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Guided heuristic. */
 
-  inline void setDiveGuidedMode(CGControl mode)
+  inline void setDiveGuidedMode(HeurMode mode)
   {
     divingg_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of Diving Guided heuristic. */
+
+  HeurMode getDiveGuidedMode()
+  {
+     return(divingg_.mode_);
   }
 
   /*! \brief Obtain a Diving Line Search heuristic.
@@ -808,14 +1064,21 @@ public:
       if one exists.
     */
 
-  CGControl getDiveLineSearch(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getDiveLineSearch(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Line Search heuristic. */
 
-  inline void setDiveLineSearchMode(CGControl mode)
+  inline void setDiveLineSearchMode(HeurMode mode)
   {
     divingl_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of Diving LineSearch heuristic. */
+
+  HeurMode getDiveLineSearchMode()
+  {
+     return(divingl_.mode_);
   }
 
   /*! \brief Obtain a Diving Pseudocost heuristic.
@@ -825,14 +1088,35 @@ public:
       if one exists.
     */
 
-  CGControl getDivePseudocost(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getDivePseudocost(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Pseudocost heuristic. */
 
-  inline void setDivePseudocostMode(CGControl mode)
+  inline void setDivePseudocostMode(HeurMode mode)
   {
     divingp_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of Diving Pseudocost heuristic. */
+
+  HeurMode getDivePseudocostMode()
+  {
+     return(divingp_.mode_);
+  }
+
+  /*! \brief Set mode for use of rand. */
+
+  inline void setDiveRandomMode(HeurMode mode)
+  {
+    randomDivingMode_ = mode;
+  }
+
+  /*! \brief Get mode for use of Diving Pseudocost heuristic. */
+
+  HeurMode getDiveRandomMode()
+  {
+     return(randomDivingMode_);
   }
 
   /*! \brief Obtain a Diving Vector Length heuristic.
@@ -842,14 +1126,21 @@ public:
       if one exists.
     */
 
-  CGControl getDiveVectorLength(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getDiveVectorLength(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Vector Length heuristic. */
 
-  inline void setDiveVectorLengthMode(CGControl mode)
+  inline void setDiveVectorLengthMode(HeurMode mode)
   {
     divingv_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of Diving Vector Length heuristic. */
+
+  HeurMode getDiveVectorLengthMode()
+  {
+     return(divingv_.mode_);
   }
 
   /*! \brief Obtain a DW heuristic.
@@ -859,14 +1150,21 @@ public:
       if one exists.
     */
 
-  CGControl getDW(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getDW(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of DW heuristic. */
 
-  inline void setDWMode(CGControl mode)
+  inline void setDWMode(HeurMode mode)
   {
     dw_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of DW heuristic. */
+
+  HeurMode getDWMode()
+  {
+     return(dw_.mode_);
   }
 
   /*! \brief Obtain a feasibility pump heuristic.
@@ -876,48 +1174,91 @@ public:
       if one exists.
   */
 
-  CGControl getFPump(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getFeasPump(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of feasibility pump heuristic. */
 
-  inline void setFPumpMode(CGControl mode)
+  inline void setFeasPumpMode(HeurMode mode)
   {
     fpump_.mode_ = mode;
   }
 
+  /*! \brief Get mode for use of feasibility pump heuristic. */
+
+  HeurMode getFeasPumpMode()
+  {
+     return(fpump_.mode_);
+  }
+
   /*! \brief Set iterations for use of feasibility pump heuristic. */
 
-  inline void setFPumpIters(int iters)
+  inline void setFeasPumpIters(int iters)
   {
     fpump_.iters_ = iters;
   }
 
+  /*! \brief Get iterations for use of feasibility pump heuristic. */
+
+  inline int getFeasPumpIters()
+  {
+     return(fpump_.iters_);
+  }
+
   /*! \brief Set tune mode for use of feasibility pump heuristic. */
 
-  inline void setFPumpTune(int tune)
+  inline void setFeasPumpTune(int tune)
   {
     fpump_.tune_ = tune;
   }
 
+  /*! \brief Get tune mode for use of feasibility pump heuristic. */
+
+  inline int getFeasPumpTune()
+  {
+     return(fpump_.tune_);
+  }
+
   /*! \brief Set second tune mode for use of feasibility pump heuristic. */
 
-  inline void setFPumpTune2(int tune2)
+  inline void setFeasPumpTune2(int tune2)
   {
     fpump_.tune2_ = tune2;
   }
 
+  /*! \brief Get second tune mode for use of feasibility pump heuristic. */
+
+  inline int getFeasPumpTune2(int tune2)
+  {
+     return(fpump_.tune2_);
+  }
+
   /*! \brief Set fake cutoff for use of feasibility pump heuristic. */
 
-  inline void setFPumpFakeCutoff(double cutoff)
+  inline void setFeasPumpFakeCutoff(double cutoff)
   {
     fpump_.cutoff_ = cutoff;
   }
+
+  /*! \brief Get fake cutoff for use of feasibility pump heuristic. */
+
+  inline double getFeasPumpFakeCutoff()
+  {
+     return(fpump_.cutoff_);
+  }
+
   /*! \brief Set fake increment for use of feasibility pump heuristic. */
 
-  inline void setFPumpFakeIncrement(double increment)
+  inline void setFeasPumpFakeIncrement(double increment)
   {
     fpump_.increment_ = increment;
+  }
+
+  /*! \brief Get fake increment for use of feasibility pump heuristic. */
+
+  inline double getFeasPumpFakeIncrement()
+  {
+     return(fpump_.increment_);
   }
 
   /*! \brief Obtain a greedy cover heuristic.
@@ -927,14 +1268,21 @@ public:
       if one exists.
     */
 
-  CGControl getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of greedy cover heuristic. */
 
-  inline void setGreedyCoverMode(CGControl mode)
+  inline void setGreedyCoverMode(HeurMode mode)
   {
     greedyCover_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of greedy cover heuristic. */
+
+  HeurMode getGreedyCoverMode()
+  {
+     return(greedyCover_.mode_);
   }
 
   /*! \brief Obtain a greedy equality heuristic.
@@ -944,14 +1292,21 @@ public:
       if one exists.
     */
 
-  CGControl getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of greedy equality heuristic. */
 
-  inline void setGreedyEqualityMode(CGControl mode)
+  inline void setGreedyEqualityMode(HeurMode mode)
   {
     greedyEquality_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of greedy equality heuristic. */
+
+  HeurMode getGreedyEqualityMode()
+  {
+     return(greedyEquality_.mode_);
   }
 
   /*! \brief Obtain a Naive heuristic.
@@ -961,14 +1316,21 @@ public:
       if one exists.
   */
 
-  CGControl getNaive(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getNaiveHeur(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Naive heuristic. */
 
-  inline void setNaiveMode(CGControl mode)
+  inline void setNaiveHeurMode(HeurMode mode)
   {
     naive_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of Naive heuristic. */
+
+  HeurMode getNaiveHeurMode()
+  {
+     return(divingc_.mode_);
   }
 
   /*! \brief Obtain a Pivot And Fix heuristic.
@@ -978,16 +1340,24 @@ public:
       if one exists.
     */
 
-  CGControl getPivotAndFix(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getPivotAndFix(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Pivot and Fix heuristic. */
 
-  inline void setPivotAndFixMode(CGControl mode)
+  inline void setPivotAndFixMode(HeurMode mode)
   {
-    pivotandfix_.mode_ = mode;
+    pivotAndFix_.mode_ = mode;
   }
 
+  /*! \brief Get mode for use of pivot and fix heuristic. */
+
+  HeurMode getPivotAndFixMode()
+  {
+     return(pivotAndFix_.mode_);
+  }
+
+#if 0
   /*! \brief Obtain a Pivot and Complement heuristic.
 
       By default, any existing object is deleted and a new object is created and
@@ -995,16 +1365,24 @@ public:
       if one exists.
     */
 
-  CGControl getPivotAndComplement(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getPivotAndComplement(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Pivot and Complement heuristic. */
 
-  inline void setPivotAndComplementMode(CGControl mode)
+  inline void setPivotAndComplementMode(HeurMode mode)
   {
     pivotandcomplement_.mode_ = mode;
   }
 
+  /*! \brief Get mode for use of pivot and complement heuristic. */
+
+  HeurMode getPivotAndComplementMode()
+  {
+     return(pivotAndComplement_.mode_);
+  }
+#endif
+   
   /*! \brief Obtain a Proximity heuristic.
 
       By default, any existing object is deleted and a new object is created and
@@ -1012,14 +1390,21 @@ public:
       if one exists.
     */
 
-  CGControl getProximity(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getProximity(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Proximity heuristic. */
 
-  inline void setProximityMode(CGControl mode)
+  inline void setProximityMode(HeurMode mode)
   {
     proximity_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of proximity heuristic. */
+
+  HeurMode getProximityMode()
+  {
+     return(proximity_.mode_);
   }
 
   /*! \brief Obtain a Randomized Rounding heuristic.
@@ -1029,14 +1414,21 @@ public:
       if one exists.
     */
 
-  CGControl getRandRound(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getRandRound(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Randomized Rounding heuristic. */
 
-  inline void setRandRoundMode(CGControl mode)
+  inline void setRandRoundMode(HeurMode mode)
   {
-    randround_.mode_ = mode;
+    randRound_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of randomized rounding heuristic. */
+
+  HeurMode getRandRoundMode()
+  {
+     return(randRound_.mode_);
   }
 
   /*! \brief Obtain a RENS heuristic.
@@ -1046,14 +1438,21 @@ public:
       if one exists.
     */
 
-  CGControl getRens(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getRens(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of RENS heuristic. */
 
-  inline void setRensMode(CGControl mode)
+  inline void setRensMode(HeurMode mode)
   {
     rens_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of RENS heuristic. */
+
+  HeurMode getRensMode()
+  {
+     return(rens_.mode_);
   }
 
   /*! \brief Obtain a RINS heuristic.
@@ -1063,14 +1462,21 @@ public:
       if one exists.
     */
 
-  CGControl getRins(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getRins(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
-  /*! \brief Set mode for use of RENS heuristic. */
+  /*! \brief Set mode for use of RINS heuristic. */
 
-  inline void setRensMode(CGControl mode)
+  inline void setRinsMode(HeurMode mode)
   {
-    rens_.mode_ = mode;
+    rins_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of RINS heuristic. */
+
+  HeurMode getRinsMode()
+  {
+     return(rins_.mode_);
   }
 
   /*! \brief Obtain a simple rounding heuristic.
@@ -1080,31 +1486,45 @@ public:
       if one exists.
     */
 
-  CGControl getRounding(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getRounding(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of simple rounding heuristic. */
 
-  inline void setRoundingMode(CGControl mode)
+  inline void setRoundingMode(HeurMode mode)
   {
     rounding_.mode_ = mode;
   }
 
-  /*! \brief Obtain a Variable Neighborhood heuristic.
+  /*! \brief Get mode for use of rounding heuristic. */
+
+  HeurMode getRoundingMode()
+  {
+     return(rounding_.mode_);
+  }
+
+  /*! \brief Obtain a variable neighborhood heuristic.
 
       By default, any existing object is deleted and a new object is created and
       loaded with \c model. Set alwaysCreate = false to return an existing object
       if one exists.
     */
 
-  CGControl getVnd(CbcHeuristic *&gen, CbcModel *model,
+  HeurMode getVnd(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
-  /*! \brief Set mode for use of Variable Neighborhood heuristic. */
+  /*! \brief Set mode for use of variable neighborhood heuristic. */
 
-  inline void setVndMode(CGControl mode)
+  inline void setVndMode(HeurMode mode)
   {
     vnd_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of variable neighborhood heuristic. */
+
+  HeurMode getVndMode()
+  {
+     return(vnd_.mode_);
   }
 
   /*! \brief Obtain a local search tree object
@@ -1114,14 +1534,21 @@ public:
       if one exists.
     */
 
-  CGControl getTreeLocal(CbcTreeLocal *&localTree, CbcModel *model,
+  HeurMode getLocalTree(CbcTreeLocal *&localTree, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of local tree. */
 
-  inline void setTreeLocalMode(CGControl mode)
+  inline void setLocalTreeMode(HeurMode mode)
   {
     localTree_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of Diving Coefficient heuristic. */
+
+  HeurMode getLocalTreeMode()
+  {
+     return(localTree_.mode_);
   }
 
   //@}
@@ -1235,7 +1662,7 @@ public:
 
     */
 
-  inline void setdiveOpt(int diveOpt)
+  inline void setDiveOpt(int diveOpt)
   {
     diveOpt_ = diveOpt;
   }
@@ -1264,7 +1691,7 @@ public:
 
   inline int getExperimentMode()
   {
-    return experimentMode_;
+    return experiment_;
   }
 
   /*! \brief Set ExperimentMode setting
@@ -1273,7 +1700,7 @@ public:
 
   inline void setExperimentMode(int experimentMode)
   {
-    experimentMode_ = experimentMode;
+    experiment_ = experimentMode;
   }
 
   /*! \brief Get ExtraIntParam1 setting
@@ -1662,13 +2089,13 @@ public:
     extraDbl3_ = extraDbl3;
   }
    
-  /*! \brief Get extra double 3 setting
+  /*! \brief Get extra double 4 setting
 
     */
 
-  inline double getExtraDbl3()
+  inline double getExtraDbl4()
   {
-    return extraDbl3_;
+    return extraDbl4_;
   }
 
   /*! \brief Set extra double 4 setting
@@ -1711,9 +2138,9 @@ public:
 
     */
 
-  inline void setSmallBab(double smallBab)
+  inline void setSmallBab(double smallBaB)
   {
-    smallBab_ = smallBab;
+    smallBaB_ = smallBaB;
   }
    
   /*! \brief Get tighten factor
@@ -1729,7 +2156,7 @@ public:
 
   */
 
-  inline void set(double tightenFactor)
+  inline void setTightenFactor(double tightenFactor)
   {
     tightenFactor_ = tightenFactor;
   }
@@ -1793,7 +2220,7 @@ public:
 
   /*! \brief Set mode for use of cutoff constraint */
 
-  inline void setCutoff(CutoffMode mode)
+  inline void setCutoffMode(CutoffMode mode)
   {
     cutoffMode_ = mode;
   }
@@ -1856,16 +2283,16 @@ public:
    
   /*! \brief Get priority mode for SOS */
 
-  inline SOSMode getSOSMode()
+  inline SOSStrategy getSOSStrategy()
   {
-    return (sosMode_);
+    return (sosStrategy_);
   }
 
   /*! \brief Set mode state for use of integer preprocessing */
 
-  inline void setSOSMode(SOSMode mode)
+  inline void setSOSStrategy(SOSStrategy mode)
   {
-    SOSMode_ = mode;
+    sosStrategy_ = mode;
   }
    
   /*! \brief Get overall strategy mode */
@@ -1907,11 +2334,133 @@ public:
 
   inline void setCGraphMode(CGraphMode mode)
   {
-    CGraphMode_ = mode;
+    cgraphMode_ = mode;
   }
+
+  /*! \brief Get threshold for artificial costs */
+
+  inline double getArtVarThreshold()
+  {
+    return (artVar_.threshold_);
+  }
+
+  /*! \brief Get mode for artificial costs */
+
+  inline double getArtVarMode()
+  {
+    return (artVar_.mode_);
+  }
+
+  /*! \brief Set mode for artificial costs */
+
+   inline void setArtVarMode(OnOffMode mode, double threshold)
+  {
+    artVar_.threshold_ = threshold;
+    artVar_.mode_ = mode;
+  }
+
+  /*! \brief Get threshold for reduced costs fixing */
+
+  inline double getDjFixThreshold()
+  {
+    return (djFix_.threshold_);
+  }
+
+  /*! \brief Get mode for reduced cost fixing */
+
+  inline double getDjFixMode()
+  {
+    return (djFix_.mode_);
+  }
+
+  /*! \brief Set mode for reduced cost fixing */
+
+   inline void setDjFixMode(OnOffMode mode, double threshold)
+  {
+    djFix_.threshold_ = threshold;
+    djFix_.mode_ = mode;
+  }
+
   //@}
 
+  /*! \name Miscellaneous Bool Parameters
 
+  */
+
+  //@{
+
+  /*! \brief Get CPX mode */
+
+  inline OnOffMode getCpxMode()
+  {
+    return (CPXMode_);
+  }
+
+  /*! \brief Set CPX mode */
+
+   inline void setCPXMode(OnOffMode mode)
+  {
+    CPXMode_ = mode;
+  }
+
+  /*! \brief Get message prefix mode */
+
+  inline OnOffMode getMessagePrefixMode()
+  {
+    return (messagePrefixMode_);
+  }
+
+  /*! \brief Set message prefix mode */
+
+   inline void setMessagePrefixMode(OnOffMode mode)
+  {
+    messagePrefixMode_ = mode;
+  }
+
+  /*! \brief Get preprocess names mode */
+
+  inline OnOffMode getPreProcNamesMode()
+  {
+    return (preProcNamesMode_);
+  }
+
+  /*! \brief Set preprocess names mode */
+
+   inline void setPreProcNamesMode(OnOffMode mode)
+  {
+    preProcNamesMode_ = mode;
+  }
+
+  /*! \brief Get SOS mode */
+
+  inline OnOffMode getSOSMode()
+  {
+    return (SOSMode_);
+  }
+
+  /*! \brief Set SOS mode */
+
+   inline void setSOSMode(OnOffMode mode)
+  {
+    SOSMode_ = mode;
+  }
+
+  /*! \brief Get use solution mode */
+
+  inline OnOffMode getUseSolutionMode()
+  {
+    return (useSolutionMode_);
+  }
+
+  /*! \brief Set use solution mode */
+
+   inline void setUseSolutionMode(OnOffMode mode)
+  {
+    useSolutionMode_ = mode;
+  }
+   
+  //@}
+   
   /*! \name Status Functions
         \brief Convenience routines for status codes.
     */
@@ -1919,9 +2468,10 @@ public:
 
   /*! \brief Set the result of branch-and-cut search */
 
-  inline void setBaBStatus(BACMajor majorStatus, BACMinor minorStatus,
-    BACWhere where, bool haveAnswer,
-    OsiSolverInterface *answerSolver)
+  inline void setBaBStatus(BACMajorStatus majorStatus,
+                           BACMinorStatus minorStatus,
+                           BACWhere where, bool haveAnswer,
+                           OsiSolverInterface *answerSolver)
   {
     bab_.majorStatus_ = majorStatus;
     bab_.minorStatus_ = minorStatus;
@@ -1939,24 +2489,24 @@ public:
     bool haveAnswer = false,
     OsiSolverInterface *answerSolver = 0);
 
-  /*! \brief Translate CbcModel major status to #BACMajor
+  /*! \brief Translate CbcModel major status to #BACMajorStatus
 
-      See the #BACMajor enum for details.
+      See the #BACMajorStatus enum for details.
     */
-  BACMajor translateMajor(int status);
+  BACMajorStatus translateMajor(int status);
 
-  /*!\brief Translate CbcModel minor status to #BACMinor
+  /*!\brief Translate CbcModel minor status to #BACMinorStatus
 
-      See the #BACMinor enum for details.
+      See the #BACMinorStatus enum for details.
     */
-  BACMinor translateMinor(int status);
+  BACMinorStatus translateMinor(int status);
 
-  /*!\brief Translate OsiSolverInterface status to #BACMinor
+  /*!\brief Translate OsiSolverInterface status to #BACMinorStatus
 
-      See the #BACMinor enum for details. Optimal, infeasible, and unbounded
-      get their own codes; everything else maps to BACmOther.
+      See the #BACMinorStatus enum for details. Optimal, infeasible, and 
+      unbounded get their own codes; everything else maps to BACmOther.
     */
-  BACMinor translateMinor(const OsiSolverInterface *osi);
+  BACMinorStatus translateMinor(const OsiSolverInterface *osi);
 
   /*! \brief Print the status block */
 
@@ -2009,15 +2559,34 @@ public:
   }
 
   /*! \brief Get log level */
-  inline int logLevel() const
+  inline int getLogLevel() const
   {
     return (logLvl_);
   }
 
-  /*! \brief When greater than 0, integer presolve gives more information and
-           branch-and-cut provides statistics.
-    */
-  int printOpt_;
+  /*! \brief Set LP log level */
+  inline void setLpLogLevel(int lvl)
+  {
+    lpLogLvl_ = lvl;
+  }
+
+  /*! \brief Get LP log level */
+  inline int getLpLogLevel() const
+  {
+    return (lpLogLvl_);
+  }
+
+  /*! \brief Set LP log level */
+  inline void setModel(CbcModel *model)
+  {
+    model_ = model;
+  }
+
+  /*! \brief Get LP log level */
+  inline CbcModel *getModel() const
+  {
+    return (model_);
+  }
 
   //@}
 
@@ -2049,6 +2618,11 @@ public:
       command.
     */
   int printMode_;
+
+  /*! \brief When greater than 0, integer presolve gives more information and
+           branch-and-cut provides statistics.
+    */
+  int printOpt_;
 
   /*! \brief Print mask
 
@@ -2179,13 +2753,13 @@ public:
   /*! \brief State of branch-and-cut
 
       Major and minor status codes, and a solver holding the answer, assuming
-      we have a valid answer. See the documentation with the BACMajor,
-      BACMinor, and BACWhere enums for the meaning of the codes.
+      we have a valid answer. See the documentation with the BACMajorStatus,
+      BACMinorStatus, and BACWhere enums for the meaning of the codes.
     */
 
   struct babState_struct {
-    BACMajor majorStatus_;
-    BACMinor minorStatus_;
+    BACMajorStatus majorStatus_;
+    BACMinorStatus minorStatus_;
     BACWhere where_;
     bool haveAnswer_;
     OsiSolverInterface *answerSolver_;
@@ -2205,7 +2779,7 @@ public:
     */
 
   struct djFix_struct {
-    bool on_;
+    OnOffMode mode_;
     double threshold_;
   } djFix_;
 
@@ -2214,14 +2788,14 @@ public:
     */
 
   struct artVar_struct {
-    bool on_;
+    OnOffMode mode_;
     double threshold_;
   } artVar_;
 
   /*! \brief Control the assignment of branching priorities to integer
            variables.
     */
-  BPControl priorityMode_;
+  BPMode priorityMode_;
 
   //@}
 
@@ -2268,7 +2842,7 @@ private:
 
   /*! \brief Control variable and prototype for clique cut generator */
   struct clique_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglClique *proto_;
     bool starCliqueReport_;
     bool rowCliqueReport_;
@@ -2277,13 +2851,13 @@ private:
 
   /*! \brief Control variable and prototype for flow cover cut generator */
   struct flow_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglFlowCover *proto_;
   } flow_;
 
   /*! \brief Control variable and prototype for Gomory cut generator */
   struct gmi_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglGomory *proto_;
     int limit_;
     int limitAtRoot_;
@@ -2291,7 +2865,7 @@ private:
 
   /*! \brief Control variable and prototype for Gomory cut generator */
   struct gomory_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglGomory *proto_;
     int limit_;
     int limitAtRoot_;
@@ -2299,7 +2873,7 @@ private:
 
   /*! \brief Control variable and prototype for knapsack cover cut generator */
   struct knapsack_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglKnapsackCover *proto_;
   } knapsack_;
 
@@ -2307,41 +2881,41 @@ private:
     	     generator
     */
   struct lagomory_struct{
-     CGControl mode_ ;
+     CGMode mode_ ;
      CglGomory *proto_ ;
-  } lagomory_ ;
+  } laGomory_ ;
    
   /*   \brief Control variable and prototype for lift-and-project cut
     	     generator
     */
   struct landp_struct{
-     CGControl mode_ ;
+     CGMode mode_ ;
      CglLandP *proto_ ;
-  } landp_ ;
+  } landP_ ;
    
   /*   \brief Control variable and prototype for lift-and-project cut
     	     generator
     */
-  struct laTwoMir_struct{
-     CGControl mode_ ;
-     CglTwoMir *proto_ ;
-  } latwomir_ ;
+  struct laTwomir_struct{
+     CGMode mode_ ;
+     CglTwomir *proto_ ;
+  } laTwomir_ ;
    
   /*! \brief Control variable and prototype for MIR cut generator */
   struct mir_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglMixedIntegerRounding2 *proto_;
   } mir_;
 
   /*! \brief Control variable and prototype for odd hole cut generator */
   struct oddWheel_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglOddWheel *proto_;
   } oddWheel_;
 
    /*! \brief Control variable and prototype for probing cut generator */
   struct probing_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglProbing *proto_;
     bool usingObjective_;
     int maxPass_;
@@ -2358,7 +2932,7 @@ private:
            cut generator
     */
   struct redSplit_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglRedSplit *proto_;
   } redSplit_;
 
@@ -2366,7 +2940,7 @@ private:
            cut generator
     */
   struct redSplit2_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglRedSplit2 *proto_;
   } redSplit2_;
 
@@ -2374,13 +2948,13 @@ private:
            cut generator
     */
   struct residCap_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglResidualCapacity *proto_;
-  } residcap_;
+  } residCap_;
 
   /*! \brief Control variable and prototype for Two-MIR cut generator */
   struct twomir_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglTwomir *proto_;
     int maxElements_;
   } twomir_;
@@ -2389,9 +2963,9 @@ private:
            cut generator
     */
   struct zeroHalf_struct {
-    CGControl mode_;
+    CGMode mode_;
     CglZeroHalf *proto_;
-  } zerohalf_;
+  } zeroHalf_;
 
   //@}
    
@@ -2400,144 +2974,153 @@ private:
   */
   //@{
 
+  /*! \brief Overall control variable for heuristics */
+  OnOffMode doHeuristicMode_;
+   
   /*! \brief Control variable and prototype for combine heuristic */
   struct combine_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicLocal *proto_;
     int trySwap_;
   } combine_;
 
   /*! \brief Control variable and prototype for crossover heuristic */
   struct crossover_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicCrossover *proto_;
   } crossover_;
 
   /*! \brief Control variable and prototype for heuristic */
   struct dins_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicDINS *proto_;
   } dins_;
 
   /*! \brief Control variable and prototype for Dive Coefficient heuristic */
   struct diveCoefficient_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicDiveCoefficient *proto_;
-  } divec_;
+  } divingc_;
 
   /*! \brief Control variable and prototype for Dive Fractional heuristic */
   struct diveFractional_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicDiveFractional *proto_;
-  } divef_;
+  } divingf_;
 
   /*! \brief Control variable and prototype for Dive Guided heuristic */
   struct diveGuided_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicDiveGuided *proto_;
-  } diveg_;
+  } divingg_;
 
   /*! \brief Control variable and prototype for Dive Line Sarch heuristic */
   struct diveLineSearch_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicDiveLineSearch *proto_;
-  } divel_;
+  } divingl_;
 
   /*! \brief Control variable and prototype for Dive Pseudocost heuristic */
   struct _struct {
-    HeurControl mode_;
-    CbcHeuristicDivePseudocost *proto_;
-  } divep_;
+    HeurMode mode_;
+    CbcHeuristicDivePseudoCost *proto_;
+  } divingp_;
 
   /*! \brief Control variable and prototype for Dive Vector Lengthheuristic */
   struct diveVectorLength_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicDiveVectorLength *proto_;
-  } divev_;
+  } divingv_;
 
   /*! \brief Control variable and prototype for DW heuristic */
   struct DW_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicDW *proto_;
   } dw_;
 
   /*! \brief Control variable and prototype for feasibility pump heuristic */
   struct fpump_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicFPump *proto_;
     int iters_;
     int tune_;
     int tune2_;
-    double fakeCutoff_;
-    doublefakeIncrement_
+    double cutoff_;
+     double increment_;
   } fpump_;
 
   /*! \brief Control variable and prototype for greedy cover heuristic */
   struct greedyCover_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicGreedyCover *proto_;
   } greedyCover_;
 
   /*! \brief Control variable and prototype for greedy equality heuristic */
   struct greedyEquality_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicGreedyEquality *proto_;
   } greedyEquality_;
 
   /*! \brief Control variable and prototype for Naive heuristic */
   struct naive_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicNaive *proto_;
   } naive_;
 
   /*! \brief Control variable and prototype for Pivot and Fix heuristic */
   struct pivotAndFix_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicPivotAndFix *proto_;
-  } pivotf_;
+  } pivotAndFix_;
 
+#if 0
   /*! \brief Control variable and prototype for Pivot and Complement heuristic */
   struct pivotAndComp_struct {
-    HeurControl mode_;
-    CbcHeuristicPivtoAndComplement *proto_;
-  } pivotc_;
-
+    HeurMode mode_;
+    CbcHeuristicPivotAndComplement *proto_;
+  } pivotAndComplement_;
+#endif
+   
   /*! \brief Control variable and prototype for Proximity heuristic */
   struct proximity_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicProximity *proto_;
   } proximity_;
 
   /*! \brief Control variable and prototype for Randomized Rounding heuristic */
   struct randRound_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristic *proto_;
-  } randround_;
+  } randRound_;
 
   /*! \brief Control variable and prototype for RENS heuristic */
   struct Rens_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicRENS *proto_;
   } rens_;
 
   /*! \brief Control variable and prototype for RINS heuristic */
   struct Rins_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicRINS *proto_;
   } rins_;
 
   /*! \brief Control variable and prototype for simple rounding heuristic */
   struct rounding_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcRounding *proto_;
   } rounding_;
 
-  /*! \brief Control variable and prototype for Variable Neighborhood heuristic */
+  /*! \brief Control variable and prototype for Variable Neighborhood 
+    heuristic 
+  */
   struct Vnd_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcHeuristicVND *proto_;
   } vnd_;
 
+  HeurMode randomDivingMode_;
+   
   /*! \brief Control variables for local tree
 
       This is a bit different --- getTreeLocal() takes a CbcModel as a parameter
@@ -2545,7 +3128,7 @@ private:
       hide the details. Consult CbcTreeLocal.hpp for details.
     */
   struct localTree_struct {
-    HeurControl mode_;
+    HeurMode mode_;
     CbcTreeLocal *proto_;
     double *soln_;
     int range_;
@@ -2566,7 +3149,7 @@ private:
   double extraDbl3_;
   double extraDbl4_;
   double extraDbl5_;
-  double smallBab_;
+  double smallBaB_;
   double tightenFactor_;
 
   //@}
@@ -2580,7 +3163,7 @@ private:
   int bkMaxCalls_;
   int bkClqExtMethod_;
   int cppMode_;
-  int depthMinBab_;
+  int depthMiniBaB_;
   int diveOpt_;
   int diveOptSolves_;
   int experiment_;
@@ -2597,11 +3180,10 @@ private:
   int outputFormat_;
   int processTune_;
   int randomSeed_;
-  int StrongStrategy_;
+  int strongStrategy_;
   int testOsi_;
   int threads_;
   int userCbc_;
-  int verbose_;
   int vubTry_;
 
   //@}
@@ -2611,17 +3193,30 @@ private:
   */
   //@{
 
-  CommandMode commandmode_;
+  CommandMode commandMode_;
   ClqStrMode clqStrMode_;
   BPMode branchPriority_;
   CutoffMode cutoffMode_;
   IntPrintMode intPrintMode_;
   NodeStrategy nodeStrategy_;
   OrbitalStrategy orbitalStrategy_;
-  SOSMode sosMode_;
+  SOSStrategy sosStrategy_;
   StrategyMode strategyMode_;
   ClockType clockType_;
   CGraphMode cgraphMode_;
+   
+  //@}
+   
+  /*! \name Miscellaneous bool paramters
+
+  */
+  //@{
+
+  OnOffMode CPXMode_;
+  OnOffMode messagePrefixMode_;
+  OnOffMode preProcNamesMode_;
+  OnOffMode SOSMode_;
+  OnOffMode useSolutionMode_;
    
   //@}
    
@@ -2651,8 +3246,16 @@ private:
   /*! \brief The current log level */
   int logLvl_;
 
+  /*! \brief The current LP log level */
+  int lpLogLvl_;
+
   //@}
 };
+
+namespace CbcSolverParamUtils {
+void addCbcSolverParams(int &numParams, CoinParamVec &paramVec,
+  CbcSolverSettings *settings);
+}
 
 #endif
 

@@ -1656,7 +1656,7 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
     model->setMaximumSavedSolutions(5);
     anyToDo = true;
   }
-  int heurSwitches = parameters_[whichCbcParam(CBC_PARAM_INT_HOPTIONS, parameters_)].intValue() % 100;
+  int heurSwitches = parameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, parameters_)].intValue() % 100;
   if (heurSwitches) {
     for (int iHeur = 0; iHeur < model->numberHeuristics(); iHeur++) {
       CbcHeuristic *heuristic = model->heuristic(iHeur);
@@ -1680,7 +1680,7 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
     model2.createContinuousSolver();
     bool cleanModel = !model2.numberIntegers() && !model2.numberObjects();
     model2.findIntegers(false);
-    int heurOptions = (parameters_[whichCbcParam(CBC_PARAM_INT_HOPTIONS, parameters_)].intValue() / 100) % 100;
+    int heurOptions = (parameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, parameters_)].intValue() / 100) % 100;
     if (heurOptions == 0 || heurOptions == 2) {
       model2.doHeuristicsAtRoot(1);
     } else if (heurOptions == 1 || heurOptions == 3) {

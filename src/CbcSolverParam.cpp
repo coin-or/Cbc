@@ -51,10 +51,10 @@ CbcSolverParam::CbcSolverParam()
   Constructor for double parameter
 */
 CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
-  std::string name, std::string help,
-  double lower, double upper, double dflt,
-  int displayLevel)
-  : CoinParam(name, help, lower, upper, dflt, display)
+                               std::string name, std::string help,
+                               double lower, double upper, double dflt,
+                               CoinDisplayPriority display)
+   : CoinParam(name, help, lower, upper, dflt, display)
   , paramCode_(code)
   , obj_(0)
 {
@@ -65,9 +65,9 @@ CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
   Constructor for integer parameter
 */
 CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
-  std::string name, std::string help,
-  int lower, int upper, int dflt,
-  int displayLevel)
+                               std::string name, std::string help,
+                               int lower, int upper, int dflt,
+                               CoinDisplayPriority display)
   : CoinParam(name, help, lower, upper, dflt, display)
   , paramCode_(code)
   , obj_(0)
@@ -79,9 +79,9 @@ CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
   Constructor for keyword parameter.
 */
 CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
-  std::string name, std::string help,
-  std::string firstValue, int dflt,
-  int displayLevel)
+                               std::string name, std::string help,
+                               std::string firstValue, int dflt,
+                               CoinDisplayPriority display)
   : CoinParam(name, help, firstValue, dflt, display)
   , paramCode_(code)
   , obj_(0)
@@ -93,9 +93,9 @@ CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
   Constructor for string parameter.
 */
 CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
-  std::string name, std::string help,
-  std::string dflt,
-  int displayLevel)
+                               std::string name, std::string help,
+                               std::string dflt,
+                               CoinDisplayPriority display)
   : CoinParam(name, help, dflt, display)
   , paramCode_(code)
   , obj_(0)
@@ -107,9 +107,9 @@ CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
   Constructor for action parameter.
 */
 CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
-  std::string name, std::string help,
-  int displayLevel)
-  : CoinParam(name, help, display)
+                               std::string name, std::string help,
+                               CoinDisplayPriority display)
+   : CoinParam(name, help, display)
   , paramCode_(code)
   , obj_(0)
 {

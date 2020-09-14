@@ -5,9 +5,6 @@
   This code is licensed under the terms of the Eclipse Public License (EPL).
 
 */
-/*
-  This file is part of cbc-generic.
-*/
 
 #ifndef CbcModelParam_H
 #define CbcModelParam_H
@@ -39,7 +36,7 @@ public:
       CBCCBC_FIRSTPARAM and CBCCBC_LASTPARAM are markers to allow convenient
       separation of parameter groups.
     */
-  typedef enum {
+  enum CbcModelParamCode {
      CBCMODEL_FIRSTPARAM = CbcSolverParam::CBCSOLVER_LASTPARAM + 1,
 
      ALLOWABLEGAP,
@@ -68,8 +65,15 @@ public:
      
      CBCMODEL_LASTPARAM
                  
-  } CbcModelParamCode;
+  };
 
+  enum OptimizationDirection {
+      OptDirMaximize = 0,
+      OptDirMinimize,
+      OptDirZero,
+      OptDireEndMarker
+  };
+   
   //@}
 
   /*! \name Constructors and Destructors
@@ -89,16 +93,18 @@ public:
       constructor for an integer parameter.
     */
   CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
-                double lower, double upper, double dflt = 0.0,
-                CoinDisplayPriority display = displayPriorityHigh);
+                double lower = -COIN_DBL_MAX, double upper = COIN_DBL_MAX,
+                double defaultValue = 0.0, std::string longHelp = "",
+                CoinDisplayPriority displayPriority = displayPriorityHigh);
 
   /*! \brief Constructor for a parameter with an integer value
 
       The default value is 0.
   */
   CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
-                int lower, int upper, int dflt = 0,
-                CoinDisplayPriority display = displayPriorityHigh);
+                int lower = -COIN_INT_MAX, int upper = COIN_INT_MAX,
+                int defaultValue = 0, std::string longHelp = "",
+                CoinDisplayPriority displayPriority = displayPriorityHigh);
 
   /*! \brief Constructor for a parameter with keyword values
 
@@ -110,8 +116,8 @@ public:
       constructors.
     */
   CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
-                std::string firstValue, int dflt,
-                CoinDisplayPriority display = displayPriorityHigh);
+                std::string defaultKwd, int defaultMode, std::string longHelp = "",
+                CoinDisplayPriority displayPriority = displayPriorityHigh);
 
   /*! \brief Constructor for a string parameter
 
@@ -119,14 +125,15 @@ public:
       a string constructor from an action parameter constructor.
     */
 
-  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
-                std::string dflt,
-                CoinDisplayPriority display = displayPriorityHigh);
+   CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
+                std::string defaultValue, std::string longHelp = "",
+                 CoinDisplayPriority displayPriority = displayPriorityHigh);
 
   /*! \brief Constructor for an action parameter */
 
-  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
-                CoinDisplayPriority display = displayPriorityHigh);
+  // No defaults to resolve ambiguity
+  CbcModelParam(CbcModelParamCode code, std::string name, std::string help, std::string longHelp,
+                CoinDisplayPriority displayPriority);
 
   /*! \brief Copy constructor */
 

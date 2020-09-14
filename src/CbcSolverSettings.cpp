@@ -84,16 +84,16 @@ CbcSolverSettings::CbcSolverSettings()
   model_ = 0;
   dfltSolver_ = 0;
   goodModel_ = false;
-  bab_.majorStatus_ = BACInvalid;
-  bab_.minorStatus_ = BACmInvalid;
-  bab_.where_ = BACwInvalid;
+  bab_.majorStatus_ = CbcSolverParam::BACInvalid;
+  bab_.minorStatus_ = CbcSolverParam::BACmInvalid;
+  bab_.where_ = CbcSolverParam::BACwInvalid;
   bab_.haveAnswer_ = false;
   bab_.answerSolver_ = 0;
 
-  preProcess_ = CbcSolverSettings::IPPSOS;
+  preProcess_ = CbcSolverParam::IPPSOS;
   cutDepth_ = -1;
 
-  probing_.mode_ = CbcSolverSettings::CGIfMove;
+  probing_.mode_ = CbcSolverParam::CGIfMove;
   probing_.proto_ = 0;
   probing_.usingObjective_ = true;
   probing_.maxPass_ = 3;
@@ -105,54 +105,54 @@ CbcSolverSettings::CbcSolverSettings()
   probing_.maxElements_ = 200;
   probing_.rowCuts_ = 3;
 
-  clique_.mode_ = CbcSolverSettings::CGIfMove;
+  clique_.mode_ = CbcSolverParam::CGIfMove;
   clique_.proto_ = 0;
   clique_.starCliqueReport_ = false;
   clique_.rowCliqueReport_ = false;
   clique_.minViolation_ = 0.1;
 
-  flow_.mode_ = CbcSolverSettings::CGIfMove;
+  flow_.mode_ = CbcSolverParam::CGIfMove;
   flow_.proto_ = 0;
 
-  gomory_.mode_ = CbcSolverSettings::CGIfMove;
+  gomory_.mode_ = CbcSolverParam::CGIfMove;
   gomory_.proto_ = 0;
   gomory_.limit_ = 50;
   gomory_.limitAtRoot_ = 512;
 
-  knapsack_.mode_ = CbcSolverSettings::CGIfMove;
+  knapsack_.mode_ = CbcSolverParam::CGIfMove;
   knapsack_.proto_ = 0;
 
-  // landp_mode_ = CbcSolverSettings::CGOff ;
+  // landp_mode_ = CbcSolverParam::CGOff ;
   // landp_.proto_ = 0 ;
 
-  mir_.mode_ = CbcSolverSettings::CGIfMove;
+  mir_.mode_ = CbcSolverParam::CGIfMove;
   mir_.proto_ = 0;
 
 #if 0
-  oddHole_.mode_ = CbcSolverSettings::CGOff;
+  oddHole_.mode_ = CbcSolverParam::CGOff;
   oddHole_.proto_ = 0;
 #endif
   
-  redSplit_.mode_ = CbcSolverSettings::CGRoot;
+  redSplit_.mode_ = CbcSolverParam::CGRoot;
   redSplit_.proto_ = 0;
 
-  twomir_.mode_ = CbcSolverSettings::CGRoot;
+  twomir_.mode_ = CbcSolverParam::CGRoot;
   twomir_.proto_ = 0;
   twomir_.maxElements_ = 250;
 
-  fpump_.mode_ = CbcSolverSettings::HeurOn;
+  fpump_.mode_ = CbcSolverParam::HeurOn;
   fpump_.proto_ = 0;
 
-  combine_.mode_ = CbcSolverSettings::HeurOn;
+  combine_.mode_ = CbcSolverParam::HeurOn;
   combine_.proto_ = 0;
   combine_.trySwap_ = 1;
 
-  greedyCover_.mode_ = CbcSolverSettings::HeurOn;
+  greedyCover_.mode_ = CbcSolverParam::HeurOn;
   greedyCover_.proto_ = 0;
-  greedyEquality_.mode_ = CbcSolverSettings::HeurOn;
+  greedyEquality_.mode_ = CbcSolverParam::HeurOn;
   greedyEquality_.proto_ = 0;
 
-  localTree_.mode_ = CbcSolverSettings::HeurOff;
+  localTree_.mode_ = CbcSolverParam::HeurOff;
   localTree_.proto_ = 0;
   localTree_.soln_ = 0;
   localTree_.range_ = 10;
@@ -162,16 +162,16 @@ CbcSolverSettings::CbcSolverSettings()
   localTree_.nodeLimit_ = 2000;
   localTree_.refine_ = true;
 
-  rounding_.mode_ = CbcSolverSettings::HeurOn;
+  rounding_.mode_ = CbcSolverParam::HeurOn;
   rounding_.proto_ = 0;
 
-  djFix_.mode_ = ParamOff;
+  djFix_.mode_ = CbcSolverParam::ParamOff;
   djFix_.threshold_ = 1.0e100;
 
-  artVar_.mode_ = ParamOff;
+  artVar_.mode_ = CbcSolverParam::ParamOff;
   artVar_.threshold_ = 0.0;
 
-  priorityMode_ = CbcSolverSettings::BPOff;
+  priorityMode_ = CbcSolverParam::BPOff;
   /*
       The value for numBeforeTrust is as recommended by Achterberg. Cbc's
       implementation doesn't really have a parameter equivalent to Achterberg's
@@ -248,10 +248,10 @@ CbcSolverSettings::~CbcSolverSettings()
   any existing object and create a new one. This can be suppressed if desired.
 */
 
-CbcSolverSettings::CGMode
+CbcSolverParam::CGMode
 CbcSolverSettings::getClique(CglCutGenerator *&gen)
 {
-  if (clique_.mode_ != CbcSolverSettings::CGOff && clique_.proto_ == 0) {
+  if (clique_.mode_ != CbcSolverParam::CGOff && clique_.proto_ == 0) {
     clique_.proto_ = new CglClique();
     clique_.proto_->setStarCliqueReport(clique_.starCliqueReport_);
     clique_.proto_->setRowCliqueReport(clique_.rowCliqueReport_);
@@ -262,11 +262,11 @@ CbcSolverSettings::getClique(CglCutGenerator *&gen)
   return (clique_.mode_);
 }
 
-CbcSolverSettings::CGMode
+CbcSolverParam::CGMode
 CbcSolverSettings::getFlow(CglCutGenerator *&gen)
 
 {
-  if (flow_.mode_ != CbcSolverSettings::CGOff && flow_.proto_ == 0) {
+  if (flow_.mode_ != CbcSolverParam::CGOff && flow_.proto_ == 0) {
     flow_.proto_ = new CglFlowCover();
   }
   gen = dynamic_cast< CglCutGenerator * >(flow_.proto_);
@@ -274,10 +274,10 @@ CbcSolverSettings::getFlow(CglCutGenerator *&gen)
   return (flow_.mode_);
 }
 
-CbcSolverSettings::CGMode
+CbcSolverParam::CGMode
 CbcSolverSettings::getGomory(CglCutGenerator *&gen)
 {
-  if (gomory_.mode_ != CbcSolverSettings::CGOff && gomory_.proto_ == 0) {
+  if (gomory_.mode_ != CbcSolverParam::CGOff && gomory_.proto_ == 0) {
     gomory_.proto_ = new CglGomory();
     gomory_.proto_->setLimitAtRoot(gomory_.limitAtRoot_);
     gomory_.proto_->setLimit(gomory_.limit_);
@@ -287,10 +287,10 @@ CbcSolverSettings::getGomory(CglCutGenerator *&gen)
   return (gomory_.mode_);
 }
 
-CbcSolverSettings::CGMode
+CbcSolverParam::CGMode
 CbcSolverSettings::getKnapsack(CglCutGenerator *&gen)
 {
-  if (knapsack_.mode_ != CbcSolverSettings::CGOff && knapsack_.proto_ == 0) {
+  if (knapsack_.mode_ != CbcSolverParam::CGOff && knapsack_.proto_ == 0) {
     knapsack_.proto_ = new CglKnapsackCover();
   }
   gen = dynamic_cast< CglCutGenerator * >(knapsack_.proto_);
@@ -298,10 +298,10 @@ CbcSolverSettings::getKnapsack(CglCutGenerator *&gen)
   return (knapsack_.mode_);
 }
 
-CbcSolverSettings::CGMode
+CbcSolverParam::CGMode
 CbcSolverSettings::getMir(CglCutGenerator *&gen)
 {
-  if (mir_.mode_ != CbcSolverSettings::CGOff && mir_.proto_ == 0) {
+  if (mir_.mode_ != CbcSolverParam::CGOff && mir_.proto_ == 0) {
     mir_.proto_ = new CglMixedIntegerRounding2();
   }
   gen = dynamic_cast< CglCutGenerator * >(mir_.proto_);
@@ -309,10 +309,10 @@ CbcSolverSettings::getMir(CglCutGenerator *&gen)
   return (mir_.mode_);
 }
 
-CbcSolverSettings::CGMode
+CbcSolverParam::CGMode
 CbcSolverSettings::getProbing(CglCutGenerator *&gen)
 {
-  if (probing_.mode_ != CbcSolverSettings::CGOff && probing_.proto_ == 0) {
+  if (probing_.mode_ != CbcSolverParam::CGOff && probing_.proto_ == 0) {
     probing_.proto_ = new CglProbing();
     probing_.proto_->setUsingObjective(probing_.usingObjective_);
     probing_.proto_->setMaxPass(probing_.maxPass_);
@@ -329,11 +329,11 @@ CbcSolverSettings::getProbing(CglCutGenerator *&gen)
   return (probing_.mode_);
 }
 
-CbcSolverSettings::CGMode
+CbcSolverParam::CGMode
 CbcSolverSettings::getRedSplit(CglCutGenerator *&gen)
 
 {
-  if (redSplit_.mode_ != CbcSolverSettings::CGOff && redSplit_.proto_ == 0) {
+  if (redSplit_.mode_ != CbcSolverParam::CGOff && redSplit_.proto_ == 0) {
     redSplit_.proto_ = new CglRedSplit();
   }
   gen = dynamic_cast< CglCutGenerator * >(redSplit_.proto_);
@@ -341,10 +341,10 @@ CbcSolverSettings::getRedSplit(CglCutGenerator *&gen)
   return (redSplit_.mode_);
 }
 
-CbcSolverSettings::CGMode
+CbcSolverParam::CGMode
 CbcSolverSettings::getTwomir(CglCutGenerator *&gen)
 {
-  if (twomir_.mode_ != CbcSolverSettings::CGOff && twomir_.proto_ == 0) {
+  if (twomir_.mode_ != CbcSolverParam::CGOff && twomir_.proto_ == 0) {
     twomir_.proto_ = new CglTwomir();
     twomir_.proto_->setMaxElements(twomir_.maxElements_);
   }
@@ -353,12 +353,12 @@ CbcSolverSettings::getTwomir(CglCutGenerator *&gen)
   return (twomir_.mode_);
 }
 
-CbcSolverSettings::HeurMode
+CbcSolverParam::HeurMode
 CbcSolverSettings::getFeasPump(CbcHeuristic *&gen, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (fpump_.mode_ != CbcSolverSettings::HeurOff &&
+  if (fpump_.mode_ != CbcSolverParam::HeurOff &&
       (fpump_.proto_ == 0 || alwaysCreate)) {
     if (fpump_.proto_) {
       delete fpump_.proto_;
@@ -382,12 +382,12 @@ CbcSolverSettings::getFeasPump(CbcHeuristic *&gen, CbcModel *model,
   any existing object and create a new one. This can be suppressed if desired.
 */
 
-CbcSolverSettings::HeurMode
+CbcSolverParam::HeurMode
 CbcSolverSettings::getCombine(CbcHeuristic *&gen, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (combine_.mode_ != CbcSolverSettings::HeurOff &&
+  if (combine_.mode_ != CbcSolverParam::HeurOff &&
       (combine_.proto_ == 0 || alwaysCreate)) {
     if (combine_.proto_) {
       delete combine_.proto_;
@@ -400,12 +400,12 @@ CbcSolverSettings::getCombine(CbcHeuristic *&gen, CbcModel *model,
   return (combine_.mode_);
 }
 
-CbcSolverSettings::HeurMode
+CbcSolverParam::HeurMode
 CbcSolverSettings::getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (greedyCover_.mode_ != CbcSolverSettings::HeurOff &&
+  if (greedyCover_.mode_ != CbcSolverParam::HeurOff &&
       (greedyCover_.proto_ == 0 || alwaysCreate)) {
     if (greedyCover_.proto_) {
       delete greedyCover_.proto_;
@@ -417,12 +417,12 @@ CbcSolverSettings::getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
   return (greedyCover_.mode_);
 }
 
-CbcSolverSettings::HeurMode
+CbcSolverParam::HeurMode
 CbcSolverSettings::getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (greedyEquality_.mode_ != CbcSolverSettings::HeurOff &&
+  if (greedyEquality_.mode_ != CbcSolverParam::HeurOff &&
       (greedyEquality_.proto_ == 0 || alwaysCreate)) {
     if (greedyEquality_.proto_) {
       delete greedyEquality_.proto_;
@@ -434,12 +434,12 @@ CbcSolverSettings::getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
   return (greedyEquality_.mode_);
 }
 
-CbcSolverSettings::HeurMode
+CbcSolverParam::HeurMode
 CbcSolverSettings::getRounding(CbcHeuristic *&gen, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (rounding_.mode_ != CbcSolverSettings::HeurOff &&
+  if (rounding_.mode_ != CbcSolverParam::HeurOff &&
       (rounding_.proto_ == 0 || alwaysCreate)) {
     if (rounding_.proto_) {
       delete rounding_.proto_;
@@ -451,12 +451,12 @@ CbcSolverSettings::getRounding(CbcHeuristic *&gen, CbcModel *model,
   return (rounding_.mode_);
 }
 
-CbcSolverSettings::HeurMode
+CbcSolverParam::HeurMode
 CbcSolverSettings::getLocalTree(CbcTreeLocal *&localTree, CbcModel *model,
   bool alwaysCreate)
 
 {
-  if (localTree_.mode_ != CbcSolverSettings::HeurOff &&
+  if (localTree_.mode_ != CbcSolverParam::HeurOff &&
       (localTree_.proto_ == 0 || alwaysCreate)) {
     if (localTree_.proto_) {
       delete localTree_.proto_;
@@ -481,64 +481,64 @@ CbcSolverSettings::getLocalTree(CbcTreeLocal *&localTree, CbcModel *model,
   where the search stopped.
 */
 
-CbcSolverSettings::BACMajorStatus CbcSolverSettings::translateMajor(int status)
+CbcSolverParam::BACMajorStatus CbcSolverSettings::translateMajor(int status)
 
 {
   switch (status) {
   case -1: {
-    return (BACNotRun);
+    return (CbcSolverParam::BACNotRun);
   }
   case 0: {
-    return (BACFinish);
+    return (CbcSolverParam::BACFinish);
   }
   case 1: {
-    return (BACStop);
+    return (CbcSolverParam::BACStop);
   }
   case 2: {
-    return (BACAbandon);
+    return (CbcSolverParam::BACAbandon);
   }
   case 5: {
-    return (BACUser);
+    return (CbcSolverParam::BACUser);
   }
   default: {
-    return (BACInvalid);
+    return (CbcSolverParam::BACInvalid);
   }
   }
 }
 
-CbcSolverSettings::BACMinorStatus CbcSolverSettings::translateMinor(int status)
+CbcSolverParam::BACMinorStatus CbcSolverSettings::translateMinor(int status)
 
 {
   switch (status) {
   case -1: {
-    return (BACmInvalid);
+    return (CbcSolverParam::BACmInvalid);
   }
   case 0: {
-    return (BACmFinish);
+    return (CbcSolverParam::BACmFinish);
   }
   case 1: {
-    return (BACmInfeas);
+    return (CbcSolverParam::BACmInfeas);
   }
   case 2: {
-    return (BACmGap);
+    return (CbcSolverParam::BACmGap);
   }
   case 3: {
-    return (BACmNodeLimit);
+    return (CbcSolverParam::BACmNodeLimit);
   }
   case 4: {
-    return (BACmTimeLimit);
+    return (CbcSolverParam::BACmTimeLimit);
   }
   case 5: {
-    return (BACmUser);
+    return (CbcSolverParam::BACmUser);
   }
   case 6: {
-    return (BACmSolnLimit);
+    return (CbcSolverParam::BACmSolnLimit);
   }
   case 7: {
-    return (BACmUbnd);
+    return (CbcSolverParam::BACmUbnd);
   }
   default: {
-    return (BACmOther);
+    return (CbcSolverParam::BACmOther);
   }
   }
 }
@@ -547,18 +547,18 @@ CbcSolverSettings::BACMinorStatus CbcSolverSettings::translateMinor(int status)
   A bit different --- given an OSI, use its interrogation functions to choose
   an appropriate BACMinorStatus code. Not everything matches up, eh?
 */
-CbcSolverSettings::BACMinorStatus
+CbcSolverParam::BACMinorStatus
 CbcSolverSettings::translateMinor(const OsiSolverInterface *osi)
 
 {
   if (osi->isProvenOptimal()) {
-    return (BACmFinish);
+    return (CbcSolverParam::BACmFinish);
   } else if (osi->isProvenPrimalInfeasible()) {
-    return (BACmInfeas);
+    return (CbcSolverParam::BACmInfeas);
   } else if (osi->isProvenDualInfeasible()) {
-    return (BACmUbnd);
+    return (CbcSolverParam::BACmUbnd);
   } else {
-    return (BACmOther);
+    return (CbcSolverParam::BACmOther);
   }
 }
 
@@ -568,17 +568,17 @@ CbcSolverSettings::translateMinor(const OsiSolverInterface *osi)
   CbcModel codes to CbcGeneric codes.
 */
 
-void CbcSolverSettings::setBaBStatus(const CbcModel *model, BACWhere where,
-  bool haveAnswer,
-  OsiSolverInterface *answerSolver)
+void CbcSolverSettings::setBaBStatus(const CbcModel *model, CbcSolverParam::BACWhere where,
+                                     bool haveAnswer,
+                                     OsiSolverInterface *answerSolver)
 
 {
-  CbcSolverSettings::BACMajorStatus major;
-  CbcSolverSettings::BACMinorStatus minor;
+  CbcSolverParam::BACMajorStatus major;
+  CbcSolverParam::BACMinorStatus minor;
 
   major = translateMajor(model->status());
 
-  if (where == CbcSolverSettings::BACwBareRoot || where == CbcSolverSettings::BACwIPPRelax) {
+  if (where == CbcSolverParam::BACwBareRoot || where == CbcSolverParam::BACwIPPRelax) {
     minor = translateMinor(model->solver());
   } else {
     minor = translateMinor(model->secondaryStatus());
@@ -599,23 +599,23 @@ void CbcSolverSettings::printBaBStatus()
   std::cout << "BAC result: stopped ";
 
   switch (bab_.where_) {
-  case BACwNotStarted: {
+  case CbcSolverParam::BACwNotStarted: {
     std::cout << "before root relaxation";
     break;
   }
-  case BACwBareRoot: {
+  case CbcSolverParam::BACwBareRoot: {
     std::cout << "after root relaxation";
     break;
   }
-  case BACwIPP: {
+  case CbcSolverParam::BACwIPP: {
     std::cout << "after integer preprocessing";
     break;
   }
-  case BACwIPPRelax: {
+  case CbcSolverParam::BACwIPPRelax: {
     std::cout << "after solving preprocessed relaxation";
     break;
   }
-  case BACwBAC: {
+  case CbcSolverParam::BACwBAC: {
     std::cout << "after branch-and-cut";
     break;
   }
@@ -629,23 +629,23 @@ void CbcSolverSettings::printBaBStatus()
             << "    Branch-and-cut ";
 
   switch (bab_.majorStatus_) {
-  case BACNotRun: {
+  case CbcSolverParam::BACNotRun: {
     std::cout << "never got started";
     break;
   }
-  case BACFinish: {
+  case CbcSolverParam::BACFinish: {
     std::cout << "finished";
     break;
   }
-  case BACStop: {
+  case CbcSolverParam::BACStop: {
     std::cout << "stopped on a limit";
     break;
   }
-  case BACAbandon: {
+  case CbcSolverParam::BACAbandon: {
     std::cout << "was abandoned";
     break;
   }
-  case BACUser: {
+  case CbcSolverParam::BACUser: {
     std::cout << "stopped due to a user event";
     break;
   }
@@ -658,39 +658,39 @@ void CbcSolverSettings::printBaBStatus()
   std::cout << "; minor status is ";
 
   switch (bab_.minorStatus_) {
-  case BACmFinish: {
+  case CbcSolverParam::BACmFinish: {
     std::cout << "optimal";
     break;
   }
-  case BACmInfeas: {
+  case CbcSolverParam::BACmInfeas: {
     std::cout << "infeasible";
     break;
   }
-  case BACmUbnd: {
+  case CbcSolverParam::BACmUbnd: {
     std::cout << "unbounded";
     break;
   }
-  case BACmGap: {
+  case CbcSolverParam::BACmGap: {
     std::cout << "reached specified integrality gap.";
     break;
   }
-  case BACmNodeLimit: {
+  case CbcSolverParam::BACmNodeLimit: {
     std::cout << "reached node limit";
     break;
   }
-  case BACmTimeLimit: {
+  case CbcSolverParam::BACmTimeLimit: {
     std::cout << "reached time limit";
     break;
   }
-  case BACmSolnLimit: {
+  case CbcSolverParam::BACmSolnLimit: {
     std::cout << "reached limit on number of solutions";
     break;
   }
-  case BACmUser: {
+  case CbcSolverParam::BACmUser: {
     std::cout << "stopped due to a user event";
     break;
   }
-  case BACmOther: {
+  case CbcSolverParam::BACmOther: {
     std::cout << "other";
     break;
   }

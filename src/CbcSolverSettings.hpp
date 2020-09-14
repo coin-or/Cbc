@@ -55,6 +55,7 @@
 #include "CbcHeuristicRINS.hpp"
 #include "CbcHeuristicRandRound.hpp"
 #include "CbcHeuristicVND.hpp"
+#include "CbcSolverParam.hpp"
 #include "CbcTreeLocal.hpp"
 
 #include "CbcGenMessages.hpp"
@@ -76,439 +77,6 @@
 class CbcSolverSettings {
 
 public:
-  /*! \name Enumeration types used for CBC control variables */
-  //@{
-
-  /*
-      In order for initialisation to work properly, the order of declaration of
-      the enum constants here must match the order of keyword declaration for
-      the PREPROCESS parameter in CbcGenParamUtils::addCbcGenParams
-  */
-  /*! \brief Codes to control integer preprocessing
-
-    - IPPOff: Integer preprocessing is off.
-    - IPPOn:  Integer preprocessing is on.
-    - IPPSave: IPPOn, plus preprocessed system will be saved to presolved.mps.
-    - IPPEqual: IPPOn, plus `<=' cliques are converted to `=' cliques.
-    - IPPSOS: IPPOn, plus will create SOS sets (see below).
-    - IPPTrySOS: IPPOn, plus will create SOS sets (see below).
-    - IPPEqualAll: IPPOn, plus turns all valid inequalities into equalities
-    with integer slacks.
-    - IPPStrategy: look to CbcStrategy object for instructions.
-    
-    IPPSOS will create SOS sets if all binary variables (except perhaps one)
-    can be covered by SOS sets with no overlap between sets. IPPTrySOS will
-    allow any number of binary variables to be uncovered.
-  */
-
-  typedef enum {
-     IPPOff = 0,
-     IPPOn,
-     IPPSave,
-     IPPEqual,
-     IPPSOS,
-     IPPTrySOS,
-     IPPEqualAll,
-     IPPStrategy,
-     IPPEndMarker
-  } IPPMode;
-
-  /*! \brief What parameters to print
-
-    - CMOff:
-    - CMMore:
-    - CMAll:
-    - CMEndMarker
-
-   */
-
-   typedef enum{
-      CMOff = 0,
-      CMMore,
-      CMAll,
-      CMEndMarker
-   } CommandMode;
-
-  /*! \brief When to do clique strengthening
-
-    - ClqOff:
-    - ClqAfter:
-    - ClqBefore:
-    - ClqEndMarker:
-
-  */
-   
-  typedef enum{
-     ClqStrOff = 0,
-     ClqStrAfter,
-     ClqStrBefore,
-     ClqStrEndMarker
-  } ClqStrMode;
-     
-  /*! \brief What node strategy to use
-
-    - NSHybrid:
-    - NSFewest:
-    - NSDepth:
-    - NSUpFewest:
-    - NSUpDepth:
-    - NSDownDepth
-
-   */
-
-  typedef enum{
-     NSHybrid = 0,
-     NSFewest,
-     NSDepth,
-     NSUpFewest,
-     NSUpDepth,
-     NSDownDepth
-  } NodeStrategy;
-
-  /*! \brief What orbital branching strategy to use
-
-    - OBOff:
-    - OBOn:
-    - OBSlowish:
-    - OBStrong:
-    - OBForce:
-    - OBSimple:
-    - OBMorePrinting:
-    - OBEndMarker
-   */
-   
-  typedef enum{
-     OBOff = 0,
-     OBOn,
-     OBSlowish,
-     OBStrong,
-     OBForce,
-     OBSimple,
-     OBMorePrinting,
-     OBEndMarker
-  } OrbitalStrategy;
-
-  /*! \brief What SOS prioritization strategy to use
-
-    - SOSOff:
-    - SOSHigh:
-    - SOSLow:
-    - SOSOrderHigh:
-    - SOSOrderLow:
-    - SOSEndMarker
-   */
-
-   typedef enum{
-      SOSOff = 0,
-      SOSHigh,
-      SOSLow,
-      SOSOrderHigh,
-      SOSOrderLow,
-      SOSEndMarker
-   } SOSStrategy;
-
-  /*! \brief What overall strategy to use
-
-    - StrategyDefaulty = 0,
-    - StrategyEasy,
-    - StrategyAggressive,
-    - StrategyEndMarker
-
-  */
-
-  typedef enum{
-     StrategyDefault = 0,
-     StrategyEasy,
-     StrategyAggressive,
-     StrategyEndMarker
-  } StrategyMode;
-
-  /*! \brief What clock type to use
-
-    - Clock Cpu: Use CPU time
-    - ClockElapsed: Use elapsed time
-
-  */
-
-   typedef enum{
-      ClockCpu = 0,
-      ClockElapsed,
-      ClockEndMarker
-   } ClockType;
-
-  /*! \brief What clock type to use
-
-    - CGraphOff:
-    - CGraphOn:
-    - CGraphClique:
-    - CGraphEndMarker
-
-  */
-
-  typedef enum{
-     CGraphOff = 0,
-     CGraphOn,
-     CGraphClique,
-     CGraphEndMarker
-  } CGraphMode;
-   
-  /*
-      In order for initialisation to work properly, the order of declaration of
-      the enum constants here must match the order of keyword declaration for
-      the various cut and heuristic control parameters in
-      CbcGenParamUtils::addCbcGenParams
-    */
-  /*! \brief Codes to control the use of cut generators and heuristics
-
-      - CGOff: the cut generator will not be installed
-      - CGOn:  the cut generator will be installed; exactly how often it's
-    	   activated depends on the settings at installation
-      - CGRoot: the cut generator will be installed with settings that restrict
-    	   it to activation at the root node only.
-      - CGIfMove: the cut generator will be installed with settings that allow
-    	   it to remain active only so long as it's generating cuts that
-    	   tighten the relaxation.
-      - CGForceOn: the cut generator will be installed with settings that force
-    	   it to be called at every node
-      - CGForceOnBut: the cut generator will be installed with settings that force
-    	   it to be called at every node, but more active at root (probing
-    	   only)
-      - CGEndOnly:
-      - CGEndClean:
-      - CGEndBoth:
-      - CGLlong:
-      - CGLongRoot:
-      - CGLongIfMove:
-      - CGForceLongOn:
-      - CGLongEndOnly:
-      - CGOnlyAsWell:
-      - CGOnlyAsWellRoot:
-      - CGCleanAsWell:
-      - CGCleanAsWellRoot:
-      - CGBothAsWell:
-      - CGBothAsWellRoot:
-      - CGOnlyInstead:
-      - CGCleanInstead:
-      - CGBothInstead:
-      - CGOnGlobal:
-      - CGForceAndGlobal:
-      - CGShorter:
-      - CGEndMarker: a convenience to mark the end of the codes.
-
-    */
-
-  typedef enum {
-     CGOff = 0,
-     CGOn,
-     CGRoot,
-     CGIfMove,
-     CGForceOn,
-     CGForceOnBut,
-     CGEndOnly,
-     CGEndOnlyRoot,
-     CGEndClean,
-     CGEndCleanRoot,
-     CGEndBoth,
-     CGLong,
-     CGLongOn,
-     CGLongRoot,
-     CGLongIfMove,
-     CGForceLongOn,
-     CGLongEndOnly,
-     CGOnlyAsWell,
-     CGOnlyAsWellRoot,
-     CGCleanAsWell,
-     CGCleanAsWellRoot,
-     CGBothAsWell,
-     CGBothAsWellRoot,
-     CGCleanBothAsWellRoot,
-     CGOnlyInstead,
-     CGCleanInstead,
-     CGBothInstead,
-     CGOnGlobal,
-     CGForceAndGlobal,
-     CGLonger,
-     CGShorter,
-     CGEndMarker
-  } CGMode;
-
-  /*! \brief Codes to specify whether to use a cutoff constraint
-   */
-
-   typedef enum{
-      COOff = 0,
-      COOn,
-      COVariable,
-      COForceVariable,
-      COConflict,
-      COEndMarker
-   } CutoffMode;
-
-  /*! \brief Codes to specify the assignment of branching priorities
-
-      - HeurOff: 
-      - HeurOn: 
-      - HeurBoth,
-      - HeurBefore,
-      - HuerOften,
-      - HeurTen,
-      - HeurOneHundred,
-      - HeurTwoHundred,
-      - HeurThreeHundred,
-      - HeurOneThousand,
-      - HeurTenThousand,
-      - HeurDj,
-      - HeurDjBefore,
-      - HeurUseSolution,
-      - HeurInTree,
-    */
-
-   typedef enum {
-      HeurOff = 0,
-      HeurOn,
-      HeurRoot,
-      HeurBoth,
-      HeurBefore,
-      HeurOften,
-      HeurTen,
-      HeurOneHundred,
-      HeurTwoHundred,
-      HeurThreeHundred,
-      HeurOneThousand,
-      HeurTenThousand,
-      HeurDj,
-      HeurDjBefore,
-      HeurUseSolution,
-      HeurInTree,
-      HeurEndMarker
-   } HeurMode;
-
-   /*! \brief Codes to specify one or off for binary parameters
-
-      - ParamOff: Capability is switched off 
-      - ParamOn: Capability is switched on 
-    */
-
-   typedef enum {
-      ParamOff = 0,
-      ParamOn,
-      ParamEndMarker
-   } OnOffMode;
-   
-  /*! \brief Codes to specify the assignment of branching priorities
-
-      - BPOff: no priorities are passed to cbc
-      - BPCost: a priority vector is constructed based on objective coefficients
-      - BPOrder: a priority vector is constructed based on column order
-      - BPExt: the user has provided a priority vector
-    */
-
-  typedef enum {
-     BPOff = 0,
-     BPCost,
-     BPOrder,
-     BPExt,
-     BPEndMarker
-  } BPMode;
-
-  /*! \brief Codes tos pecify mode for printing integers
-
-    - PMNormal = 0,
-    - PMInteger,
-    - PMSpecial,
-    - PMRows,
-    - PMAll,
-    - PMEndMarker
-
-  */
-
-  typedef enum{
-     PMNormal = 0,
-     PMInteger,
-     PMSpecial,
-     PMRows,
-     PMAll,
-     PMEndMarker
-  } IntPrintMode;
-   
-  /*! \brief Major status codes for branch-and-cut
-
-      - BACInvalid: status not yet set
-      - BACNotRun: branch-and-cut has not yet run for the current problem
-      - BACFinish: branch-and-cut has finished normally
-      - BACStop: branch-and-cut has stopped on a limit
-      - BACAbandon: branch-and-cut abandoned the problem
-      - BACUser: branch-and-cut stopped on user signal
-
-      Consult minorStatus_ for details.
-
-      These codes are (mostly) set to match the codes used by CbcModel. Additions
-      to CbcModel codes should be reflected here and in translateMajor.
-    */
-
-  typedef enum {
-     BACInvalid = -1,
-     BACFinish = 0,
-     BACStop = 1,
-     BACAbandon = 2,
-     BACNotRun,
-     BACUser = 5,
-     BacEndMarker
-  } BACMajorStatus;
-
-  /*! \brief Minor status codes
-
-      - BACmInvalid		status not yet set
-      - BACmFinish		search exhausted the tree; optimal solution found
-      - BACmInfeas		problem is infeasible
-      - BACmUbnd		problem is unbounded
-      - BACmGap		stopped on integrality gap
-      - BACmNodeLimit	stopped on node limit
-      - BACmTimeLimit	stopped on time limit
-      - BACmSolnLimit	stopped on number of solutions limit
-      - BACmUser		stopped due to user event
-      - BACmOther		nothing else is appropriate
-
-      It's not possible to make these codes agree with CbcModel. The meaning varies
-      according to context: if the BACWhere code specifies a relaxation, then the
-      minor status reflects the underlying OSI solver. Otherwise, it reflects the
-      integer problem.
-    */
-
-  typedef enum {
-     BACmInvalid = -1,
-     BACmFinish = 0,
-     BACmInfeas,
-     BACmUbnd,
-     BACmGap,
-     BACmNodeLimit,
-     BACmTimeLimit,
-     BACmSolnLimit,
-     BACmUser,
-     BACmOther,
-     BACmEndMarker
-  } BACMinorStatus;
-
-  /*! \brief Codes to specify where branch-and-cut stopped
-
-      - BACwNotStarted	stopped before we ever got going
-      - BACwBareRoot	stopped after initial solve of root relaxation
-      - BACwIPP		stopped after integer preprocessing
-      - BACwIPPRelax	stopped after initial solve of preprocessed problem
-      - BACwBAC		stopped at some point in branch-and-cut
-    */
-
-  typedef enum {
-     BACwInvalid = -1,
-     BACwNotStarted = 0,
-     BACwBareRoot,
-     BACwIPP,
-     BACwIPPRelax,
-     BACwBAC,
-     BACwEndMarker
-  } BACWhere;
-
-  //@}
 
   /*! \name Constructors and destructors */
   //@{
@@ -597,141 +165,141 @@ public:
 
   /*! \brief Obtain a prototype for a clique cut generator. */
 
-  CGMode getClique(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getClique(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of clique cut generator. */
 
-  inline void setCliqueMode(CGMode mode)
+  inline void setCliqueMode(CbcSolverParam::CGMode mode)
   {
     clique_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of clique cut generator. */
 
-  inline CGMode getCliqueMode()
+  inline CbcSolverParam::CGMode getCliqueMode()
   {
      return(clique_.mode_);
   }
   /*! \brief Obtain a prototype for a flow cover cut generator. */
 
-  CGMode getFlow(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getFlow(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of flow cover cut generator. */
 
-  inline void setFlowMode(CGMode mode)
+  inline void setFlowMode(CbcSolverParam::CGMode mode)
   {
     flow_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of flow cover cut generator. */
 
-  inline CGMode getFlowMode()
+  inline CbcSolverParam::CGMode getFlowMode()
   {
      return(flow_.mode_);
   }
   /*! \brief Obtain a prototype for a GMI cut generator. */
 
-  CGMode getGMI(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getGMI(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of GMI cut generator. */
 
-  inline void setGMIMode(CGMode mode)
+  inline void setGMIMode(CbcSolverParam::CGMode mode)
   {
     gmi_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of GMI cut generator. */
 
-  inline CGMode getGMIMode()
+  inline CbcSolverParam::CGMode getGMIMode()
   {
      return(gmi_.mode_);
   }
 
   /*! \brief Obtain a prototype for a Gomory cut generator. */
 
-  CGMode getGomory(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getGomory(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of Gomory cut generator. */
 
-  inline void setGomoryMode(CGMode mode)
+  inline void setGomoryMode(CbcSolverParam::CGMode mode)
   {
     gomory_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of Gomory cut generator. */
 
-  inline CGMode getGomoryMode()
+  inline CbcSolverParam::CGMode getGomoryMode()
   {
      return(gomory_.mode_);
   }
   /*! \brief Obtain a prototype for a knapsack cover cut generator. */
 
-  CGMode getKnapsack(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getKnapsack(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of knapsack cut generator. */
 
-  inline void setKnapsackMode(CGMode mode)
+  inline void setKnapsackMode(CbcSolverParam::CGMode mode)
   {
     knapsack_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of knapsack cut generator. */
 
-  inline CGMode getKnapsackMode()
+  inline CbcSolverParam::CGMode getKnapsackMode()
   {
      return(knapsack_.mode_);
   }
 
   /*! \brief Obtain a prototype for a LaGomory cut generator. */
 
-  CGMode getLaGomory(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getLaGomory(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of LaGomory cut generator. */
 
-  inline void setLaGomoryMode(CGMode mode)
+  inline void setLaGomoryMode(CbcSolverParam::CGMode mode)
   {
     laGomory_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of LaGomory cut generator. */
 
-  inline CGMode getLaGomoryMode()
+  inline CbcSolverParam::CGMode getLaGomoryMode()
   {
      return(laGomory_.mode_);
   }
 
    /*  \brief Obtain a prototype for a lift-and-project cut generator. */
 
-  CGMode getLandP(CglCutGenerator *&gen) ;
+  CbcSolverParam::CGMode getLandP(CglCutGenerator *&gen) ;
 
    /* \brief Set mode for use of lift-and-project cut generator. */
 
-   inline void setLandPMode(CGMode mode)
+   inline void setLandPMode(CbcSolverParam::CGMode mode)
    {
       landP_.mode_ = mode ;
    }
 
   /*! \brief Get mode for use of lift-and-project cut generator. */
 
-  inline CGMode getLandPMode()
+  inline CbcSolverParam::CGMode getLandPMode()
   {
      return(landP_.mode_);
   }
 
    /*! \brief Obtain a prototype for a LaTwomir cut generator. */
 
-  CGMode getLaTwomir(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getLaTwomir(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of LaTwomir cut generator. */
 
-  inline void setLaTwomirMode(CGMode mode)
+  inline void setLaTwomirMode(CbcSolverParam::CGMode mode)
   {
     laTwomir_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of LaTwomir cut generator. */
 
-  inline CGMode getLaTwomirMode()
+  inline CbcSolverParam::CGMode getLaTwomirMode()
   {
      return(laTwomir_.mode_);
   }
@@ -740,144 +308,144 @@ public:
            cut generator.
     */
 
-  CGMode getMir(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getMir(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of MIR cut generator. */
 
-  inline void setMirMode(CGMode mode)
+  inline void setMirMode(CbcSolverParam::CGMode mode)
   {
     mir_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of MIR cut generator. */
 
-  inline CGMode getMirMode()
+  inline CbcSolverParam::CGMode getMirMode()
   {
      return(mir_.mode_);
   }
 
    /*! \brief Obtain a prototype for an odd wheel cut generator. */
 
-  CGMode getOddWheel(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getOddWheel(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of odd wheel cut generator. */
 
-  inline void setOddWheelMode(CGMode mode)
+  inline void setOddWheelMode(CbcSolverParam::CGMode mode)
   {
     oddWheel_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of odd wheel cut generator. */
 
-  inline CGMode getOddWheelMode()
+  inline CbcSolverParam::CGMode getOddWheelMode()
   {
      return(oddWheel_.mode_);
   }
 
    /*! \brief Obtain a prototype for a probing cut generator. */
 
-  CGMode getProbing(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getProbing(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of probing cut generator. */
 
-  inline void setProbingMode(CGMode mode)
+  inline void setProbingMode(CbcSolverParam::CGMode mode)
   {
     probing_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of probing cut generator. */
 
-  inline CGMode getProbingMode()
+  inline CbcSolverParam::CGMode getProbingMode()
   {
      return(probing_.mode_);
   }
 
    /*! \brief Obtain a prototype for a reduce and split cut generator. */
 
-  CGMode getRedSplit(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getRedSplit(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of reduce and split cut generator. */
 
-  inline void setRedSplitMode(CGMode mode)
+  inline void setRedSplitMode(CbcSolverParam::CGMode mode)
   {
     redSplit_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of reduce and split cut generator. */
 
-  inline CGMode getRedSplitMode()
+  inline CbcSolverParam::CGMode getRedSplitMode()
   {
      return(redSplit_.mode_);
   }
 
    /*! \brief Obtain a prototype for a reduce and split 2 cut generator. */
 
-  CGMode getRedSplit2(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getRedSplit2(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of reduce and split 2 cut generator. */
 
-  inline void setRedSplit2Mode(CGMode mode)
+  inline void setRedSplit2Mode(CbcSolverParam::CGMode mode)
   {
     redSplit2_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of reduce and split 2 cut generator. */
 
-  inline CGMode getRedSplit2Mode()
+  inline CbcSolverParam::CGMode getRedSplit2Mode()
   {
      return(redSplit2_.mode_);
   }
 
   /*! \brief Obtain a prototype for a residual capacity cut generator. */
 
-  CGMode getResidCap(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getResidCap(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of residual capacity cut generator. */
 
-  inline void setResidCapMode(CGMode mode)
+  inline void setResidCapMode(CbcSolverParam::CGMode mode)
   {
     residCap_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of residual capacity cut generator. */
 
-  inline CGMode getResidCapMode()
+  inline CbcSolverParam::CGMode getResidCapMode()
   {
      return(residCap_.mode_);
   }
 
   /*! \brief Obtain a prototype for a 2-MIR cut generator. */
 
-  CGMode getTwomir(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getTwomir(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of 2-MIR cut generator. */
 
-  inline void setTwomirMode(CGMode mode)
+  inline void setTwomirMode(CbcSolverParam::CGMode mode)
   {
     twomir_.mode_ = mode;
   }
    
   /*! \brief Get mode for use of Twomir cut generator. */
 
-  inline CGMode getTwomirMode()
+  inline CbcSolverParam::CGMode getTwomirMode()
   {
      return(twomir_.mode_);
   }
 
   /*! \brief Obtain a prototype for a zero-half cut generator. */
 
-  CGMode getZeroHalf(CglCutGenerator *&gen);
+  CbcSolverParam::CGMode getZeroHalf(CglCutGenerator *&gen);
 
   /*! \brief Set mode for use of zero-half cut generator. */
 
-  inline void setZeroHalfMode(CGMode mode)
+  inline void setZeroHalfMode(CbcSolverParam::CGMode mode)
   {
     zeroHalf_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of reduce and split cut generator. */
 
-  inline CGMode getZeroHalfMode()
+  inline CbcSolverParam::CGMode getZeroHalfMode()
   {
      return(zeroHalf_.mode_);
   }
@@ -901,14 +469,14 @@ public:
 
   /*! \brief Set mode for overall control of heuristics. */
 
-  inline OnOffMode getDoHeuristicMode()
+  inline CbcSolverParam::OnOffMode getDoHeuristicMode()
   {
      return(doHeuristicMode_);
   }
    
   /*! \brief Get mode for overall control of heuristics. */
 
-  inline OnOffMode setDoHeuristicMode(OnOffMode mode)
+  inline CbcSolverParam::OnOffMode setDoHeuristicMode(CbcSolverParam::OnOffMode mode)
    {
      doHeuristicMode_ = mode;
   }
@@ -920,19 +488,19 @@ public:
       if one exists.
     */
 
-  HeurMode getCombine(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getCombine(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of local search/combine heuristic. */
 
-  inline void setCombineMode(HeurMode mode)
+  inline void setCombineMode(CbcSolverParam::HeurMode mode)
   {
     combine_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of local search/combine heuristic. */
 
-  HeurMode getCombineMode()
+  CbcSolverParam::HeurMode getCombineMode()
   {
      return(combine_.mode_);
   }
@@ -944,19 +512,19 @@ public:
       if one exists.
     */
 
-  HeurMode getCrossover(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getCrossover(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of crossover heuristic. */
 
-  inline void setCrossoverMode(HeurMode mode)
+  inline void setCrossoverMode(CbcSolverParam::HeurMode mode)
   {
     crossover_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of crossover heuristic. */
 
-  HeurMode getCrossoverMode()
+  CbcSolverParam::HeurMode getCrossoverMode()
   {
      return(crossover_.mode_);
   }
@@ -968,19 +536,19 @@ public:
       if one exists.
     */
 
-  HeurMode getDins(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getDins(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of DINS heuristic. */
 
-  inline void setDinsMode(HeurMode mode)
+  inline void setDinsMode(CbcSolverParam::HeurMode mode)
   {
     dins_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of DINS heuristic. */
 
-  HeurMode getDinsMode()
+  CbcSolverParam::HeurMode getDinsMode()
   {
      return(dins_.mode_);
   }
@@ -992,19 +560,19 @@ public:
       if one exists.
     */
 
-  HeurMode getDiveCofficient(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getDiveCofficient(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Coefficient heuristic. */
 
-  inline void setDiveCoefficientMode(HeurMode mode)
+  inline void setDiveCoefficientMode(CbcSolverParam::HeurMode mode)
   {
     divingc_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of Diving Coefficient heuristic. */
 
-  HeurMode getDiveCoefficientMode()
+  CbcSolverParam::HeurMode getDiveCoefficientMode()
   {
      return(divingc_.mode_);
   }
@@ -1016,19 +584,19 @@ public:
       if one exists.
     */
 
-  HeurMode getDiveFractional(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getDiveFractional(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Coefficient heuristic. */
 
-  inline void setDiveFractionalMode(HeurMode mode)
+  inline void setDiveFractionalMode(CbcSolverParam::HeurMode mode)
   {
     divingf_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of Diving Fractional heuristic. */
 
-  HeurMode getDiveFractionalMode()
+  CbcSolverParam::HeurMode getDiveFractionalMode()
   {
      return(divingf_.mode_);
   }
@@ -1040,19 +608,19 @@ public:
       if one exists.
     */
 
-  HeurMode getDiveGuided(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getDiveGuided(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Guided heuristic. */
 
-  inline void setDiveGuidedMode(HeurMode mode)
+  inline void setDiveGuidedMode(CbcSolverParam::HeurMode mode)
   {
     divingg_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of Diving Guided heuristic. */
 
-  HeurMode getDiveGuidedMode()
+  CbcSolverParam::HeurMode getDiveGuidedMode()
   {
      return(divingg_.mode_);
   }
@@ -1064,19 +632,19 @@ public:
       if one exists.
     */
 
-  HeurMode getDiveLineSearch(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getDiveLineSearch(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Line Search heuristic. */
 
-  inline void setDiveLineSearchMode(HeurMode mode)
+  inline void setDiveLineSearchMode(CbcSolverParam::HeurMode mode)
   {
     divingl_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of Diving LineSearch heuristic. */
 
-  HeurMode getDiveLineSearchMode()
+  CbcSolverParam::HeurMode getDiveLineSearchMode()
   {
      return(divingl_.mode_);
   }
@@ -1088,33 +656,33 @@ public:
       if one exists.
     */
 
-  HeurMode getDivePseudocost(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getDivePseudocost(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Pseudocost heuristic. */
 
-  inline void setDivePseudocostMode(HeurMode mode)
+  inline void setDivePseudocostMode(CbcSolverParam::HeurMode mode)
   {
     divingp_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of Diving Pseudocost heuristic. */
 
-  HeurMode getDivePseudocostMode()
+  CbcSolverParam::HeurMode getDivePseudocostMode()
   {
      return(divingp_.mode_);
   }
 
   /*! \brief Set mode for use of rand. */
 
-  inline void setDiveRandomMode(HeurMode mode)
+  inline void setDiveRandomMode(CbcSolverParam::HeurMode mode)
   {
     randomDivingMode_ = mode;
   }
 
   /*! \brief Get mode for use of Diving Pseudocost heuristic. */
 
-  HeurMode getDiveRandomMode()
+  CbcSolverParam::HeurMode getDiveRandomMode()
   {
      return(randomDivingMode_);
   }
@@ -1126,19 +694,19 @@ public:
       if one exists.
     */
 
-  HeurMode getDiveVectorLength(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getDiveVectorLength(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Diving Vector Length heuristic. */
 
-  inline void setDiveVectorLengthMode(HeurMode mode)
+  inline void setDiveVectorLengthMode(CbcSolverParam::HeurMode mode)
   {
     divingv_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of Diving Vector Length heuristic. */
 
-  HeurMode getDiveVectorLengthMode()
+  CbcSolverParam::HeurMode getDiveVectorLengthMode()
   {
      return(divingv_.mode_);
   }
@@ -1150,19 +718,19 @@ public:
       if one exists.
     */
 
-  HeurMode getDW(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getDW(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of DW heuristic. */
 
-  inline void setDWMode(HeurMode mode)
+  inline void setDWMode(CbcSolverParam::HeurMode mode)
   {
     dw_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of DW heuristic. */
 
-  HeurMode getDWMode()
+  CbcSolverParam::HeurMode getDWMode()
   {
      return(dw_.mode_);
   }
@@ -1174,19 +742,19 @@ public:
       if one exists.
   */
 
-  HeurMode getFeasPump(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getFeasPump(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of feasibility pump heuristic. */
 
-  inline void setFeasPumpMode(HeurMode mode)
+  inline void setFeasPumpMode(CbcSolverParam::HeurMode mode)
   {
     fpump_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of feasibility pump heuristic. */
 
-  HeurMode getFeasPumpMode()
+  CbcSolverParam::HeurMode getFeasPumpMode()
   {
      return(fpump_.mode_);
   }
@@ -1268,19 +836,19 @@ public:
       if one exists.
     */
 
-  HeurMode getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of greedy cover heuristic. */
 
-  inline void setGreedyCoverMode(HeurMode mode)
+  inline void setGreedyCoverMode(CbcSolverParam::HeurMode mode)
   {
     greedyCover_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of greedy cover heuristic. */
 
-  HeurMode getGreedyCoverMode()
+  CbcSolverParam::HeurMode getGreedyCoverMode()
   {
      return(greedyCover_.mode_);
   }
@@ -1292,19 +860,19 @@ public:
       if one exists.
     */
 
-  HeurMode getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of greedy equality heuristic. */
 
-  inline void setGreedyEqualityMode(HeurMode mode)
+  inline void setGreedyEqualityMode(CbcSolverParam::HeurMode mode)
   {
     greedyEquality_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of greedy equality heuristic. */
 
-  HeurMode getGreedyEqualityMode()
+  CbcSolverParam::HeurMode getGreedyEqualityMode()
   {
      return(greedyEquality_.mode_);
   }
@@ -1316,19 +884,19 @@ public:
       if one exists.
   */
 
-  HeurMode getNaiveHeur(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getNaiveHeur(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Naive heuristic. */
 
-  inline void setNaiveHeurMode(HeurMode mode)
+  inline void setNaiveHeurMode(CbcSolverParam::HeurMode mode)
   {
     naive_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of Naive heuristic. */
 
-  HeurMode getNaiveHeurMode()
+  CbcSolverParam::HeurMode getNaiveHeurMode()
   {
      return(divingc_.mode_);
   }
@@ -1340,19 +908,19 @@ public:
       if one exists.
     */
 
-  HeurMode getPivotAndFix(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getPivotAndFix(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Pivot and Fix heuristic. */
 
-  inline void setPivotAndFixMode(HeurMode mode)
+  inline void setPivotAndFixMode(CbcSolverParam::HeurMode mode)
   {
     pivotAndFix_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of pivot and fix heuristic. */
 
-  HeurMode getPivotAndFixMode()
+  CbcSolverParam::HeurMode getPivotAndFixMode()
   {
      return(pivotAndFix_.mode_);
   }
@@ -1365,19 +933,19 @@ public:
       if one exists.
     */
 
-  HeurMode getPivotAndComplement(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getPivotAndComplement(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Pivot and Complement heuristic. */
 
-  inline void setPivotAndComplementMode(HeurMode mode)
+  inline void setPivotAndComplementMode(CbcSolverParam::HeurMode mode)
   {
     pivotandcomplement_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of pivot and complement heuristic. */
 
-  HeurMode getPivotAndComplementMode()
+  CbcSolverParam::HeurMode getPivotAndComplementMode()
   {
      return(pivotAndComplement_.mode_);
   }
@@ -1390,19 +958,19 @@ public:
       if one exists.
     */
 
-  HeurMode getProximity(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getProximity(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Proximity heuristic. */
 
-  inline void setProximityMode(HeurMode mode)
+  inline void setProximityMode(CbcSolverParam::HeurMode mode)
   {
     proximity_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of proximity heuristic. */
 
-  HeurMode getProximityMode()
+  CbcSolverParam::HeurMode getProximityMode()
   {
      return(proximity_.mode_);
   }
@@ -1414,19 +982,19 @@ public:
       if one exists.
     */
 
-  HeurMode getRandRound(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getRandRound(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of Randomized Rounding heuristic. */
 
-  inline void setRandRoundMode(HeurMode mode)
+  inline void setRandRoundMode(CbcSolverParam::HeurMode mode)
   {
     randRound_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of randomized rounding heuristic. */
 
-  HeurMode getRandRoundMode()
+  CbcSolverParam::HeurMode getRandRoundMode()
   {
      return(randRound_.mode_);
   }
@@ -1438,19 +1006,19 @@ public:
       if one exists.
     */
 
-  HeurMode getRens(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getRens(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of RENS heuristic. */
 
-  inline void setRensMode(HeurMode mode)
+  inline void setRensMode(CbcSolverParam::HeurMode mode)
   {
     rens_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of RENS heuristic. */
 
-  HeurMode getRensMode()
+  CbcSolverParam::HeurMode getRensMode()
   {
      return(rens_.mode_);
   }
@@ -1462,19 +1030,19 @@ public:
       if one exists.
     */
 
-  HeurMode getRins(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getRins(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of RINS heuristic. */
 
-  inline void setRinsMode(HeurMode mode)
+  inline void setRinsMode(CbcSolverParam::HeurMode mode)
   {
     rins_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of RINS heuristic. */
 
-  HeurMode getRinsMode()
+  CbcSolverParam::HeurMode getRinsMode()
   {
      return(rins_.mode_);
   }
@@ -1486,19 +1054,19 @@ public:
       if one exists.
     */
 
-  HeurMode getRounding(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getRounding(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of simple rounding heuristic. */
 
-  inline void setRoundingMode(HeurMode mode)
+  inline void setRoundingMode(CbcSolverParam::HeurMode mode)
   {
     rounding_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of rounding heuristic. */
 
-  HeurMode getRoundingMode()
+  CbcSolverParam::HeurMode getRoundingMode()
   {
      return(rounding_.mode_);
   }
@@ -1510,19 +1078,19 @@ public:
       if one exists.
     */
 
-  HeurMode getVnd(CbcHeuristic *&gen, CbcModel *model,
+  CbcSolverParam::HeurMode getVnd(CbcHeuristic *&gen, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of variable neighborhood heuristic. */
 
-  inline void setVndMode(HeurMode mode)
+  inline void setVndMode(CbcSolverParam::HeurMode mode)
   {
     vnd_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of variable neighborhood heuristic. */
 
-  HeurMode getVndMode()
+  CbcSolverParam::HeurMode getVndMode()
   {
      return(vnd_.mode_);
   }
@@ -1534,19 +1102,19 @@ public:
       if one exists.
     */
 
-  HeurMode getLocalTree(CbcTreeLocal *&localTree, CbcModel *model,
+  CbcSolverParam::HeurMode getLocalTree(CbcTreeLocal *&localTree, CbcModel *model,
     bool alwaysCreate = true);
 
   /*! \brief Set mode for use of local tree. */
 
-  inline void setLocalTreeMode(HeurMode mode)
+  inline void setLocalTreeMode(CbcSolverParam::HeurMode mode)
   {
     localTree_.mode_ = mode;
   }
 
   /*! \brief Get mode for use of Diving Coefficient heuristic. */
 
-  HeurMode getLocalTreeMode()
+  CbcSolverParam::HeurMode getLocalTreeMode()
   {
      return(localTree_.mode_);
   }
@@ -2171,168 +1739,168 @@ public:
 
   /*! \brief Get command mode */
 
-  inline CommandMode getCommandMode()
+  inline CbcSolverParam::CommandMode getCommandMode()
   {
     return (commandMode_);
   }
 
   /*! \brief Set command mode */
 
-  inline void setCommandMode(CommandMode mode)
+  inline void setCommandMode(CbcSolverParam::CommandMode mode)
   {
     commandMode_ = mode;
   }
 
   /*! \brief Get mode for clique strengthening */
 
-  inline ClqStrMode getClqStrMode()
+  inline CbcSolverParam::ClqStrMode getClqStrMode()
   {
     return (clqStrMode_);
   }
 
   /*! \brief Set mode for use of integer preprocessing */
 
-  inline void setClqStrMode(ClqStrMode mode)
+  inline void setClqStrMode(CbcSolverParam::ClqStrMode mode)
   {
     clqStrMode_ = mode;
   }
 
   /*! \brief Get mode for branching priorities */
 
-  inline BPMode getBranchPriority()
+  inline CbcSolverParam::BPMode getBranchPriority()
   {
     return (branchPriority_);
   }
 
   /*! \brief Set mode for branching priorities */
 
-  inline void setBranchPriority(BPMode mode)
+  inline void setBranchPriority(CbcSolverParam::BPMode mode)
   {
     branchPriority_ = mode;
   }
 
   /*! \brief Get mode for use of cutoff constraint */
 
-  inline CutoffMode getCutoffMode()
+  inline CbcSolverParam::CutoffMode getCutoffMode()
   {
     return (cutoffMode_);
   }
 
   /*! \brief Set mode for use of cutoff constraint */
 
-  inline void setCutoffMode(CutoffMode mode)
+  inline void setCutoffMode(CbcSolverParam::CutoffMode mode)
   {
     cutoffMode_ = mode;
   }
 
   /*! \brief Get mode for printing integers */
 
-  inline IntPrintMode getIntPrintMode()
+  inline CbcSolverParam::IntPrintMode getIntPrintMode()
   {
     return (intPrintMode_);
   }
 
   /*! \brief Set  mode for printing integers */
 
-  inline void setIntPrintMode(IntPrintMode mode)
+  inline void setIntPrintMode(CbcSolverParam::IntPrintMode mode)
   {
     intPrintMode_ = mode;
   }
 
   /*! \brief Get node search strategy */
 
-  inline NodeStrategy getNodeStrategy()
+  inline CbcSolverParam::NodeStrategy getNodeStrategy()
   {
     return (nodeStrategy_);
   }
 
   /*! \brief Set node search strategy */
 
-  inline void setNodeStrategy(NodeStrategy mode)
+  inline void setNodeStrategy(CbcSolverParam::NodeStrategy mode)
   {
     nodeStrategy_ = mode;
   }
 
   /*! \brief Get strategy for orbital branching */
 
-   inline OrbitalStrategy getOrbitalStrategy()
+   inline CbcSolverParam::OrbitalStrategy getOrbitalStrategy()
   {
     return (orbitalStrategy_);
   }
 
   /*! \brief Set  strategy for orbital branching */
 
-  inline void setOrbitalStrategy(OrbitalStrategy mode)
+  inline void setOrbitalStrategy(CbcSolverParam::OrbitalStrategy mode)
   {
     orbitalStrategy_ = mode;
   }
    
   /*! \brief Get mode for use of integer preprocessing */
 
-  inline IPPMode getIPPMode()
+  inline CbcSolverParam::IPPMode getIPPMode()
   {
     return (preProcess_);
   }
 
   /*! \brief Set mode for use of integer preprocessing */
 
-  inline void setIPPMode(IPPMode mode)
+  inline void setIPPMode(CbcSolverParam::IPPMode mode)
   {
     preProcess_ = mode;
   }
    
   /*! \brief Get priority mode for SOS */
 
-  inline SOSStrategy getSOSStrategy()
+  inline CbcSolverParam::SOSStrategy getSOSStrategy()
   {
     return (sosStrategy_);
   }
 
   /*! \brief Set mode state for use of integer preprocessing */
 
-  inline void setSOSStrategy(SOSStrategy mode)
+  inline void setSOSStrategy(CbcSolverParam::SOSStrategy mode)
   {
     sosStrategy_ = mode;
   }
    
   /*! \brief Get overall strategy mode */
 
-  inline StrategyMode getStrategyMode()
+  inline CbcSolverParam::StrategyMode getStrategyMode()
   {
     return (strategyMode_);
   }
 
   /*! \brief Set overall strategy mode */
 
-  inline void setStrategyMode(StrategyMode mode)
+  inline void setStrategyMode(CbcSolverParam::StrategyMode mode)
   {
     strategyMode_ = mode;
   }
    
   /*! \brief Get clock type */
 
-  inline ClockType getClockType()
+  inline CbcSolverParam::ClockType getClockType()
   {
     return (clockType_);
   }
 
   /*! \brief Set clock type */
 
-  inline void setClockType(ClockType type)
+  inline void setClockType(CbcSolverParam::ClockType type)
   {
     clockType_ = type;
   }
    
   /*! \brief Get mode for CGraph */
 
-  inline CGraphMode getCGraphMode()
+  inline CbcSolverParam::CGraphMode getCGraphMode()
   {
     return (cgraphMode_);
   }
 
   /*! \brief Set mode for CGraph */
 
-  inline void setCGraphMode(CGraphMode mode)
+  inline void setCGraphMode(CbcSolverParam::CGraphMode mode)
   {
     cgraphMode_ = mode;
   }
@@ -2353,7 +1921,7 @@ public:
 
   /*! \brief Set mode for artificial costs */
 
-   inline void setArtVarMode(OnOffMode mode, double threshold)
+   inline void setArtVarMode(CbcSolverParam::OnOffMode mode, double threshold)
   {
     artVar_.threshold_ = threshold;
     artVar_.mode_ = mode;
@@ -2375,10 +1943,24 @@ public:
 
   /*! \brief Set mode for reduced cost fixing */
 
-   inline void setDjFixMode(OnOffMode mode, double threshold)
+   inline void setDjFixMode(CbcSolverParam::OnOffMode mode, double threshold)
   {
     djFix_.threshold_ = threshold;
     djFix_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for branching priorities */
+
+  inline CbcSolverParam::BPMode getBranchingPriorityMode()
+  {
+    return (priorityMode_);
+  }
+
+  /*! \brief Set mode for reduced cost fixing */
+
+   inline void setBranchPriorityMode(CbcSolverParam::BPMode mode)
+  {
+    priorityMode_ = mode;
   }
 
   //@}
@@ -2391,70 +1973,84 @@ public:
 
   /*! \brief Get CPX mode */
 
-  inline OnOffMode getCpxMode()
+  inline CbcSolverParam::OnOffMode getCpxMode()
   {
     return (CPXMode_);
   }
 
   /*! \brief Set CPX mode */
 
-   inline void setCPXMode(OnOffMode mode)
+   inline void setCPXMode(CbcSolverParam::OnOffMode mode)
   {
     CPXMode_ = mode;
   }
 
+  /*! \brief Get import errors mode */
+
+  inline CbcSolverParam::OnOffMode getImportErrorsMode()
+  {
+    return (importErrorsMode_);
+  }
+
+  /*! \brief Set import errors mode */
+
+   inline void setImportErrorsMode(CbcSolverParam::OnOffMode mode)
+  {
+    importErrorsMode_ = mode;
+  }
+
   /*! \brief Get message prefix mode */
 
-  inline OnOffMode getMessagePrefixMode()
+  inline CbcSolverParam::OnOffMode getMessagePrefixMode()
   {
     return (messagePrefixMode_);
   }
 
   /*! \brief Set message prefix mode */
 
-   inline void setMessagePrefixMode(OnOffMode mode)
+   inline void setMessagePrefixMode(CbcSolverParam::OnOffMode mode)
   {
     messagePrefixMode_ = mode;
   }
 
   /*! \brief Get preprocess names mode */
 
-  inline OnOffMode getPreProcNamesMode()
+  inline CbcSolverParam::OnOffMode getPreProcNamesMode()
   {
     return (preProcNamesMode_);
   }
 
   /*! \brief Set preprocess names mode */
 
-   inline void setPreProcNamesMode(OnOffMode mode)
+   inline void setPreProcNamesMode(CbcSolverParam::OnOffMode mode)
   {
     preProcNamesMode_ = mode;
   }
 
   /*! \brief Get SOS mode */
 
-  inline OnOffMode getSOSMode()
+  inline CbcSolverParam::OnOffMode getSOSMode()
   {
     return (SOSMode_);
   }
 
   /*! \brief Set SOS mode */
 
-   inline void setSOSMode(OnOffMode mode)
+   inline void setSOSMode(CbcSolverParam::OnOffMode mode)
   {
     SOSMode_ = mode;
   }
 
   /*! \brief Get use solution mode */
 
-  inline OnOffMode getUseSolutionMode()
+  inline CbcSolverParam::OnOffMode getUseSolutionMode()
   {
     return (useSolutionMode_);
   }
 
   /*! \brief Set use solution mode */
 
-   inline void setUseSolutionMode(OnOffMode mode)
+   inline void setUseSolutionMode(CbcSolverParam::OnOffMode mode)
   {
     useSolutionMode_ = mode;
   }
@@ -2468,9 +2064,9 @@ public:
 
   /*! \brief Set the result of branch-and-cut search */
 
-  inline void setBaBStatus(BACMajorStatus majorStatus,
-                           BACMinorStatus minorStatus,
-                           BACWhere where, bool haveAnswer,
+  inline void setBaBStatus(CbcSolverParam::BACMajorStatus majorStatus,
+                           CbcSolverParam::BACMinorStatus minorStatus,
+                           CbcSolverParam::BACWhere where, bool haveAnswer,
                            OsiSolverInterface *answerSolver)
   {
     bab_.majorStatus_ = majorStatus;
@@ -2485,28 +2081,28 @@ public:
       This version will extract the necessary information from the CbcModel
       object and set appropriate status based on the value passed for where.
     */
-  void setBaBStatus(const CbcModel *model, BACWhere where,
-    bool haveAnswer = false,
+  void setBaBStatus(const CbcModel *model, CbcSolverParam::BACWhere where,
+                    bool haveAnswer = false,
     OsiSolverInterface *answerSolver = 0);
 
   /*! \brief Translate CbcModel major status to #BACMajorStatus
 
       See the #BACMajorStatus enum for details.
     */
-  BACMajorStatus translateMajor(int status);
+  CbcSolverParam::BACMajorStatus translateMajor(int status);
 
   /*!\brief Translate CbcModel minor status to #BACMinorStatus
 
       See the #BACMinorStatus enum for details.
     */
-  BACMinorStatus translateMinor(int status);
+  CbcSolverParam::BACMinorStatus translateMinor(int status);
 
   /*!\brief Translate OsiSolverInterface status to #BACMinorStatus
 
       See the #BACMinorStatus enum for details. Optimal, infeasible, and 
       unbounded get their own codes; everything else maps to BACmOther.
     */
-  BACMinorStatus translateMinor(const OsiSolverInterface *osi);
+  CbcSolverParam::BACMinorStatus translateMinor(const OsiSolverInterface *osi);
 
   /*! \brief Print the status block */
 
@@ -2758,9 +2354,9 @@ public:
     */
 
   struct babState_struct {
-    BACMajorStatus majorStatus_;
-    BACMinorStatus minorStatus_;
-    BACWhere where_;
+    CbcSolverParam::BACMajorStatus majorStatus_;
+    CbcSolverParam::BACMinorStatus minorStatus_;
+    CbcSolverParam::BACWhere where_;
     bool haveAnswer_;
     OsiSolverInterface *answerSolver_;
   } bab_;
@@ -2779,7 +2375,7 @@ public:
     */
 
   struct djFix_struct {
-    OnOffMode mode_;
+    CbcSolverParam::OnOffMode mode_;
     double threshold_;
   } djFix_;
 
@@ -2788,14 +2384,14 @@ public:
     */
 
   struct artVar_struct {
-    OnOffMode mode_;
+    CbcSolverParam::OnOffMode mode_;
     double threshold_;
   } artVar_;
 
   /*! \brief Control the assignment of branching priorities to integer
            variables.
     */
-  BPMode priorityMode_;
+  CbcSolverParam::BPMode priorityMode_;
 
   //@}
 
@@ -2828,7 +2424,7 @@ private:
 
   /*! \brief Control integer preprocessing. */
 
-  IPPMode preProcess_;
+  CbcSolverParam::IPPMode preProcess_;
 
   /*! \brief Control cut generator activity
 
@@ -2842,7 +2438,7 @@ private:
 
   /*! \brief Control variable and prototype for clique cut generator */
   struct clique_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglClique *proto_;
     bool starCliqueReport_;
     bool rowCliqueReport_;
@@ -2851,13 +2447,13 @@ private:
 
   /*! \brief Control variable and prototype for flow cover cut generator */
   struct flow_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglFlowCover *proto_;
   } flow_;
 
   /*! \brief Control variable and prototype for Gomory cut generator */
   struct gmi_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglGomory *proto_;
     int limit_;
     int limitAtRoot_;
@@ -2865,7 +2461,7 @@ private:
 
   /*! \brief Control variable and prototype for Gomory cut generator */
   struct gomory_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglGomory *proto_;
     int limit_;
     int limitAtRoot_;
@@ -2873,7 +2469,7 @@ private:
 
   /*! \brief Control variable and prototype for knapsack cover cut generator */
   struct knapsack_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglKnapsackCover *proto_;
   } knapsack_;
 
@@ -2881,7 +2477,7 @@ private:
     	     generator
     */
   struct lagomory_struct{
-     CGMode mode_ ;
+     CbcSolverParam::CGMode mode_ ;
      CglGomory *proto_ ;
   } laGomory_ ;
    
@@ -2889,7 +2485,7 @@ private:
     	     generator
     */
   struct landp_struct{
-     CGMode mode_ ;
+     CbcSolverParam::CGMode mode_ ;
      CglLandP *proto_ ;
   } landP_ ;
    
@@ -2897,25 +2493,25 @@ private:
     	     generator
     */
   struct laTwomir_struct{
-     CGMode mode_ ;
+     CbcSolverParam::CGMode mode_ ;
      CglTwomir *proto_ ;
   } laTwomir_ ;
    
   /*! \brief Control variable and prototype for MIR cut generator */
   struct mir_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglMixedIntegerRounding2 *proto_;
   } mir_;
 
   /*! \brief Control variable and prototype for odd hole cut generator */
   struct oddWheel_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglOddWheel *proto_;
   } oddWheel_;
 
    /*! \brief Control variable and prototype for probing cut generator */
   struct probing_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglProbing *proto_;
     bool usingObjective_;
     int maxPass_;
@@ -2932,7 +2528,7 @@ private:
            cut generator
     */
   struct redSplit_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglRedSplit *proto_;
   } redSplit_;
 
@@ -2940,7 +2536,7 @@ private:
            cut generator
     */
   struct redSplit2_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglRedSplit2 *proto_;
   } redSplit2_;
 
@@ -2948,13 +2544,13 @@ private:
            cut generator
     */
   struct residCap_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglResidualCapacity *proto_;
   } residCap_;
 
   /*! \brief Control variable and prototype for Two-MIR cut generator */
   struct twomir_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglTwomir *proto_;
     int maxElements_;
   } twomir_;
@@ -2963,7 +2559,7 @@ private:
            cut generator
     */
   struct zeroHalf_struct {
-    CGMode mode_;
+    CbcSolverParam::CGMode mode_;
     CglZeroHalf *proto_;
   } zeroHalf_;
 
@@ -2975,72 +2571,72 @@ private:
   //@{
 
   /*! \brief Overall control variable for heuristics */
-  OnOffMode doHeuristicMode_;
+  CbcSolverParam::OnOffMode doHeuristicMode_;
    
   /*! \brief Control variable and prototype for combine heuristic */
   struct combine_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicLocal *proto_;
     int trySwap_;
   } combine_;
 
   /*! \brief Control variable and prototype for crossover heuristic */
   struct crossover_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicCrossover *proto_;
   } crossover_;
 
   /*! \brief Control variable and prototype for heuristic */
   struct dins_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicDINS *proto_;
   } dins_;
 
   /*! \brief Control variable and prototype for Dive Coefficient heuristic */
   struct diveCoefficient_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicDiveCoefficient *proto_;
   } divingc_;
 
   /*! \brief Control variable and prototype for Dive Fractional heuristic */
   struct diveFractional_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicDiveFractional *proto_;
   } divingf_;
 
   /*! \brief Control variable and prototype for Dive Guided heuristic */
   struct diveGuided_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicDiveGuided *proto_;
   } divingg_;
 
   /*! \brief Control variable and prototype for Dive Line Sarch heuristic */
   struct diveLineSearch_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicDiveLineSearch *proto_;
   } divingl_;
 
   /*! \brief Control variable and prototype for Dive Pseudocost heuristic */
   struct _struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicDivePseudoCost *proto_;
   } divingp_;
 
   /*! \brief Control variable and prototype for Dive Vector Lengthheuristic */
   struct diveVectorLength_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicDiveVectorLength *proto_;
   } divingv_;
 
   /*! \brief Control variable and prototype for DW heuristic */
   struct DW_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicDW *proto_;
   } dw_;
 
   /*! \brief Control variable and prototype for feasibility pump heuristic */
   struct fpump_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicFPump *proto_;
     int iters_;
     int tune_;
@@ -3051,63 +2647,63 @@ private:
 
   /*! \brief Control variable and prototype for greedy cover heuristic */
   struct greedyCover_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicGreedyCover *proto_;
   } greedyCover_;
 
   /*! \brief Control variable and prototype for greedy equality heuristic */
   struct greedyEquality_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicGreedyEquality *proto_;
   } greedyEquality_;
 
   /*! \brief Control variable and prototype for Naive heuristic */
   struct naive_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicNaive *proto_;
   } naive_;
 
   /*! \brief Control variable and prototype for Pivot and Fix heuristic */
   struct pivotAndFix_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicPivotAndFix *proto_;
   } pivotAndFix_;
 
 #if 0
   /*! \brief Control variable and prototype for Pivot and Complement heuristic */
   struct pivotAndComp_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicPivotAndComplement *proto_;
   } pivotAndComplement_;
 #endif
    
   /*! \brief Control variable and prototype for Proximity heuristic */
   struct proximity_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicProximity *proto_;
   } proximity_;
 
   /*! \brief Control variable and prototype for Randomized Rounding heuristic */
   struct randRound_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristic *proto_;
   } randRound_;
 
   /*! \brief Control variable and prototype for RENS heuristic */
   struct Rens_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicRENS *proto_;
   } rens_;
 
   /*! \brief Control variable and prototype for RINS heuristic */
   struct Rins_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicRINS *proto_;
   } rins_;
 
   /*! \brief Control variable and prototype for simple rounding heuristic */
   struct rounding_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcRounding *proto_;
   } rounding_;
 
@@ -3115,11 +2711,11 @@ private:
     heuristic 
   */
   struct Vnd_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcHeuristicVND *proto_;
   } vnd_;
 
-  HeurMode randomDivingMode_;
+  CbcSolverParam::HeurMode randomDivingMode_;
    
   /*! \brief Control variables for local tree
 
@@ -3128,7 +2724,7 @@ private:
       hide the details. Consult CbcTreeLocal.hpp for details.
     */
   struct localTree_struct {
-    HeurMode mode_;
+    CbcSolverParam::HeurMode mode_;
     CbcTreeLocal *proto_;
     double *soln_;
     int range_;
@@ -3193,17 +2789,17 @@ private:
   */
   //@{
 
-  CommandMode commandMode_;
-  ClqStrMode clqStrMode_;
-  BPMode branchPriority_;
-  CutoffMode cutoffMode_;
-  IntPrintMode intPrintMode_;
-  NodeStrategy nodeStrategy_;
-  OrbitalStrategy orbitalStrategy_;
-  SOSStrategy sosStrategy_;
-  StrategyMode strategyMode_;
-  ClockType clockType_;
-  CGraphMode cgraphMode_;
+  CbcSolverParam::CommandMode commandMode_;
+  CbcSolverParam::ClqStrMode clqStrMode_;
+  CbcSolverParam::BPMode branchPriority_;
+  CbcSolverParam::CutoffMode cutoffMode_;
+  CbcSolverParam::IntPrintMode intPrintMode_;
+  CbcSolverParam::NodeStrategy nodeStrategy_;
+  CbcSolverParam::OrbitalStrategy orbitalStrategy_;
+  CbcSolverParam::SOSStrategy sosStrategy_;
+  CbcSolverParam::StrategyMode strategyMode_;
+  CbcSolverParam::ClockType clockType_;
+  CbcSolverParam::CGraphMode cgraphMode_;
    
   //@}
    
@@ -3212,11 +2808,12 @@ private:
   */
   //@{
 
-  OnOffMode CPXMode_;
-  OnOffMode messagePrefixMode_;
-  OnOffMode preProcNamesMode_;
-  OnOffMode SOSMode_;
-  OnOffMode useSolutionMode_;
+  CbcSolverParam::OnOffMode CPXMode_;
+  CbcSolverParam::OnOffMode importErrorsMode_;
+  CbcSolverParam::OnOffMode messagePrefixMode_;
+  CbcSolverParam::OnOffMode preProcNamesMode_;
+  CbcSolverParam::OnOffMode SOSMode_;
+  CbcSolverParam::OnOffMode useSolutionMode_;
    
   //@}
    

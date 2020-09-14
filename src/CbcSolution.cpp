@@ -201,13 +201,11 @@ bool maskMatches(const int *starts, char **masks, const char *checkC)
     all (4)	  all primal variables and row activities
 */
 
-int CbcSolverParamUtils::doSolutionParam(CoinParam *param)
+int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
 
 {
-  assert(param != 0);
-  CbcSolverParam *genParam = dynamic_cast< CbcSolverParam * >(param);
-  assert(genParam != 0);
-  CbcSolverSettings *cbcSettings = genParam->obj();
+  CbcSolverParam &cbcParam = dynamic_cast< CbcSolverParam & >(param);
+  CbcSolverSettings *cbcSettings = cbcParam.obj();
   assert(cbcSettings != 0);
   CbcModel *model = cbcSettings->model_;
   assert(model != 0);
@@ -236,7 +234,7 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam *param)
       cbc will also accept `no string value' as stdout, but that'd be a real pain
       in this architecture.
     */
-  std::string field = genParam->strVal();
+  std::string field = cbcParam.strVal();
   std::string fileName;
   if (field == "$") {
     fileName = cbcSettings->lastSolnOut_;
@@ -278,7 +276,7 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam *param)
   if (!fp) {
     std::cout
       << "Unable to open file `" << fileName
-      << "', original name '" << genParam->strVal() << "'." << std::endl;
+      << "', original name '" << cbcParam.strVal() << "'." << std::endl;
     return (retval);
   } else {
     std::cout
@@ -502,13 +500,11 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam *param)
   it's valid.
 */
 
-int CbcSolverParamUtils::doPrintMaskParam(CoinParam *param)
+int CbcSolverParamUtils::doPrintMaskParam(CoinParam &param)
 
 {
-  assert(param != 0);
-  CbcSolverParam *genParam = dynamic_cast< CbcSolverParam * >(param);
-  assert(genParam != 0);
-  CbcSolverSettings *cbcSettings = genParam->obj();
+  CbcSolverParam &cbcParam = dynamic_cast< CbcSolverParam & >(param);
+  CbcSolverSettings *cbcSettings = cbcParam.obj();
   assert(cbcSettings != 0);
   /*
       Setup to return nonfatal/fatal error (1/-1) by default.
@@ -525,7 +521,7 @@ int CbcSolverParamUtils::doPrintMaskParam(CoinParam *param)
       length at 50 characters. If we have a model loaded, that'll be tightened to
       the length of the longest name.
     */
-  std::string maskProto = param->strVal();
+  std::string maskProto = cbcParam.strVal();
   int maskLen = maskProto.length();
   if (maskLen <= 0 || maskLen > 50) {
     std::cerr

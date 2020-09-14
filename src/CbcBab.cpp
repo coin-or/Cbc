@@ -478,13 +478,11 @@ namespace CbcSolverParamUtils {
   Run branch-and-cut.
 */
 
-int doBaCParam(CoinParam *param)
+int doBaCParam(CoinParam &param)
 
 {
-  assert(param != 0);
-  CbcSolverParam *genParam = dynamic_cast< CbcSolverParam * >(param);
-  assert(genParam != 0);
-  CbcSolverSettings *cbcSettings = genParam->obj();
+  CbcSolverParam &cbcParam = dynamic_cast< CbcSolverParam & >(param);
+  CbcSolverSettings *cbcSettings = cbcParam.obj();
   assert(cbcSettings != 0);
   CbcModel *model = cbcSettings->model_;
   assert(model != 0);

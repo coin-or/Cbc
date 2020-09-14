@@ -808,25 +808,25 @@ bool readSolution(std::string fileName,
   double **rowActivity, double **dualVars,
   double **primalVars, double **reducedCosts);
 
-int doBaCParam(CoinParam *param);
-int doDebugParam(CoinParam *param);
-int doExitParam(CoinParam *param);
-int doHelpParam(CoinParam *param);
-int doImportParam(CoinParam *param);
-int doPrintMaskParam(CoinParam *param);
-int doNothingParam(CoinParam *param);
-int doSolutionParam(CoinParam *param);
-int doUnimplementedParam(CoinParam *param);
-int doVersionParam(CoinParam *param);
+int doBaCParam(CoinParam &param);
+int doDebugParam(CoinParam &param);
+int doExitParam(CoinParam &param);
+int doHelpParam(CoinParam &param);
+int doImportParam(CoinParam &param);
+int doPrintMaskParam(CoinParam &param);
+int doNothingParam(CoinParam &param);
+int doSolutionParam(CoinParam &param);
+int doUnimplementedParam(CoinParam &param);
+int doVersionParam(CoinParam &param);
 
-int pushCbcSolverDblParam(CoinParam *param);
-int pushCbcSolverIntParam(CoinParam *param);
-int pushCbcSolverKwdParam(CoinParam *param);
-int pushCbcSolverStrParam(CoinParam *param);
-int pushCbcSolverBoolParam(CoinParam *param);
+int pushCbcSolverDblParam(CoinParam &param);
+int pushCbcSolverIntParam(CoinParam &param);
+int pushCbcSolverKwdParam(CoinParam &param);
+int pushCbcSolverStrParam(CoinParam &param);
+int pushCbcSolverBoolParam(CoinParam &param);
 
-int pushCbcSolverHeurParam(CoinParam *param);
-int pushCbcSolverCutParam(CoinParam *param);
+int pushCbcSolverHeurParam(CoinParam &param);
+int pushCbcSolverCutParam(CoinParam &param);
 }
 
 #endif

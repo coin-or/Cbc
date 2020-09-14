@@ -52,9 +52,10 @@ CbcSolverParam::CbcSolverParam()
 */
 CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
                                std::string name, std::string help,
-                               double lower, double upper, double dflt,
-                               CoinDisplayPriority display)
-   : CoinParam(name, help, lower, upper, dflt, display)
+                               double lower, double upper,
+                               double defaultValue, std::string longHelp,
+                               CoinDisplayPriority displayPriority)
+   : CoinParam(name, help, lower, upper, defaultValue, longHelp, displayPriority)
   , paramCode_(code)
   , obj_(0)
 {
@@ -66,9 +67,10 @@ CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
 */
 CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
                                std::string name, std::string help,
-                               int lower, int upper, int dflt,
-                               CoinDisplayPriority display)
-  : CoinParam(name, help, lower, upper, dflt, display)
+                               int lower, int upper, 
+                               int defaultValue, std::string longHelp,
+                               CoinDisplayPriority displayPriority)
+   : CoinParam(name, help, lower, upper, defaultValue, longHelp, displayPriority)
   , paramCode_(code)
   , obj_(0)
 {
@@ -80,9 +82,9 @@ CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
 */
 CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
                                std::string name, std::string help,
-                               std::string firstValue, int dflt,
-                               CoinDisplayPriority display)
-  : CoinParam(name, help, firstValue, dflt, display)
+                               std::string defaultKwd, int defaultMode,
+                               std::string longHelp, CoinDisplayPriority displayPriority)
+  : CoinParam(name, help, defaultKwd, defaultMode, longHelp, displayPriority)
   , paramCode_(code)
   , obj_(0)
 {
@@ -94,9 +96,9 @@ CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
 */
 CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
                                std::string name, std::string help,
-                               std::string dflt,
-                               CoinDisplayPriority display)
-  : CoinParam(name, help, dflt, display)
+                               std::string defaultValue, std::string longHelp,
+                               CoinDisplayPriority displayPriority)
+  : CoinParam(name, help, defaultValue, longHelp, displayPriority)
   , paramCode_(code)
   , obj_(0)
 {
@@ -108,8 +110,8 @@ CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
 */
 CbcSolverParam::CbcSolverParam(CbcSolverParamCode code,
                                std::string name, std::string help,
-                               CoinDisplayPriority display)
-   : CoinParam(name, help, display)
+                               std::string longHelp, CoinDisplayPriority displayPriority)
+   : CoinParam(name, help, longHelp, displayPriority)
   , paramCode_(code)
   , obj_(0)
 {

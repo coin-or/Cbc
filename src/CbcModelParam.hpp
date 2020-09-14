@@ -210,8 +210,8 @@ namespace CbcModelParamUtils {
                         CbcModel *model);
    void setCbcModelDefaults(CbcModel *model);
    
-   int pushCbcModelDblParam(CoinParam *param);
-   int pushCbcModelIntParam(CoinParam *param);
+   int pushCbcModelDblParam(CoinParam &param);
+   int pushCbcModelIntParam(CoinParam &param);
 }
 
 #endif

@@ -166,7 +166,7 @@ bool solveRelaxation(CbcModel *model)
   Helper routine to establish a priority vector.
 */
 
-void setupPriorities(CbcModel *model, CbcSolverSettings::BPMode how)
+void setupPriorities(CbcModel *model, CbcSolverParam::BPMode how)
 
 {
   int numCols = model->getNumCols();
@@ -181,9 +181,9 @@ void setupPriorities(CbcModel *model, CbcSolverSettings::BPMode how)
   for (iColumn = 0; iColumn < numCols; iColumn++) {
     if (model->isInteger(iColumn)) {
       sort[n] = n;
-      if (how == CbcSolverSettings::BPCost) {
+      if (how == CbcSolverParam::BPCost) {
         dsort[n++] = -objective[iColumn];
-      } else if (how == CbcSolverSettings::BPOrder) {
+      } else if (how == CbcSolverParam::BPOrder) {
         dsort[n++] = iColumn;
       } else {
         std::cerr
@@ -227,30 +227,30 @@ void setupPriorities(CbcModel *model, CbcSolverSettings::BPMode how)
 void installHeuristics(CbcSolverSettings *cbcSettings, CbcModel *model)
 
 {
-  CbcSolverSettings::HeurMode mode;
+  CbcSolverParam::HeurMode mode;
   CbcHeuristic *gen;
   CbcTreeLocal *localTree;
   /*
       FeasPump goes first because it only works before there's a solution.
     */
   mode = cbcSettings->getFeasPump(gen, model);
-  if (mode != CbcSolverSettings::HeurOff) {
+  if (mode != CbcSolverParam::HeurOff) {
     model->addHeuristic(gen, "FeasPump");
   }
   mode = cbcSettings->getRounding(gen, model);
-  if (mode != CbcSolverSettings::HeurOff) {
+  if (mode != CbcSolverParam::HeurOff) {
     model->addHeuristic(gen, "Rounding");
   }
   mode = cbcSettings->getCombine(gen, model);
-  if (mode != CbcSolverSettings::HeurOff) {
+  if (mode != CbcSolverParam::HeurOff) {
     model->addHeuristic(gen, "Combine");
   }
   mode = cbcSettings->getGreedyCover(gen, model);
-  if (mode != CbcSolverSettings::HeurOff) {
+  if (mode != CbcSolverParam::HeurOff) {
     model->addHeuristic(gen, "GCov");
   }
   mode = cbcSettings->getGreedyEquality(gen, model);
-  if (mode != CbcSolverSettings::HeurOff) {
+  if (mode != CbcSolverParam::HeurOff) {
     model->addHeuristic(gen, "GEq");
   }
   /*
@@ -258,7 +258,7 @@ void installHeuristics(CbcSolverSettings *cbcSettings, CbcModel *model)
       model.
     */
   mode = cbcSettings->getLocalTree(localTree, model);
-  if (mode != CbcSolverSettings::HeurOff) {
+  if (mode != CbcSolverParam::HeurOff) {
     model->passInTreeHandler(*localTree);
   }
 
@@ -277,7 +277,7 @@ void installCutGenerators(CbcSolverSettings *cbcSettings, CbcModel *model)
 {
   int switches[20];
   int genCnt = 0;
-  CbcSolverSettings::CGMode mode;
+  CbcSolverParam::CGMode mode;
   CglCutGenerator *gen;
 
   /*
@@ -289,21 +289,21 @@ void installCutGenerators(CbcSolverSettings *cbcSettings, CbcModel *model)
       it'll carry on regardless.
     */
   
-  int howOften[CbcSolverSettings::CGEndMarker];
-  howOften[CbcSolverSettings::CGOff] = -100;
-  howOften[CbcSolverSettings::CGOn] = -1;
-  howOften[CbcSolverSettings::CGRoot] = -99;
-  howOften[CbcSolverSettings::CGIfMove] = -98;
-  howOften[CbcSolverSettings::CGForceOn] = 1;
-  howOften[CbcSolverSettings::CGForceOnBut] = 1;
+  int howOften[CbcSolverParam::CGEndMarker];
+  howOften[CbcSolverParam::CGOff] = -100;
+  howOften[CbcSolverParam::CGOn] = -1;
+  howOften[CbcSolverParam::CGRoot] = -99;
+  howOften[CbcSolverParam::CGIfMove] = -98;
+  howOften[CbcSolverParam::CGForceOn] = 1;
+  howOften[CbcSolverParam::CGForceOnBut] = 1;
 
   /*
       A negative value for rowCuts means that the specified modes happen only at
       the root.
     */
   mode = cbcSettings->getProbing(gen);
-  if (mode != CbcSolverSettings::CGOff) {
-    if (mode == CbcSolverSettings::CGForceOnBut) {
+  if (mode != CbcSolverParam::CGOff) {
+    if (mode == CbcSolverParam::CGForceOnBut) {
       CglProbing *probingGen = dynamic_cast< CglProbing * >(gen);
       probingGen->setRowCuts(-3);
     }
@@ -311,37 +311,37 @@ void installCutGenerators(CbcSolverSettings *cbcSettings, CbcModel *model)
     switches[genCnt++] = 0;
   }
   mode = cbcSettings->getGomory(gen);
-  if (mode != CbcSolverSettings::CGOff) {
+  if (mode != CbcSolverParam::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "Gomory");
     switches[genCnt++] = -1;
   }
   mode = cbcSettings->getKnapsack(gen);
-  if (mode != CbcSolverSettings::CGOff) {
+  if (mode != CbcSolverParam::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "Knapsack");
     switches[genCnt++] = 0;
   }
   mode = cbcSettings->getRedSplit(gen);
-  if (mode != CbcSolverSettings::CGOff) {
+  if (mode != CbcSolverParam::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "RedSplit");
     switches[genCnt++] = 1;
   }
   mode = cbcSettings->getClique(gen);
-  if (mode != CbcSolverSettings::CGOff) {
+  if (mode != CbcSolverParam::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "Clique");
     switches[genCnt++] = 0;
   }
   mode = cbcSettings->getMir(gen);
-  if (mode != CbcSolverSettings::CGOff) {
+  if (mode != CbcSolverParam::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "MIR2");
     switches[genCnt++] = -1;
   }
   mode = cbcSettings->getFlow(gen);
-  if (mode != CbcSolverSettings::CGOff) {
+  if (mode != CbcSolverParam::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "Flow");
     switches[genCnt++] = 1;
   }
   mode = cbcSettings->getTwomir(gen);
-  if (mode != CbcSolverSettings::CGOff) {
+  if (mode != CbcSolverParam::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "2-MIR");
     switches[genCnt++] = 1;
   }
@@ -497,8 +497,8 @@ int doBaCParam(CoinParam *param)
   } else {
     retval = -1;
   }
-  cbcSettings->setBaBStatus(CbcSolverSettings::BACAbandon, CbcSolverSettings::BACmInvalid,
-    CbcSolverSettings::BACwNotStarted, false, 0);
+  cbcSettings->setBaBStatus(CbcSolverParam::BACAbandon, CbcSolverParam::BACmInvalid,
+    CbcSolverParam::BACwNotStarted, false, 0);
   /*
       We ain't gonna do squat without a good model.
     */
@@ -529,7 +529,7 @@ int doBaCParam(CoinParam *param)
       Solve the root relaxation. Bail unless it solves to optimality.
     */
   if (!solveRelaxation(&babModel)) {
-    cbcSettings->setBaBStatus(&babModel, CbcSolverSettings::BACwBareRoot);
+    cbcSettings->setBaBStatus(&babModel, CbcSolverParam::BACwBareRoot);
     return (0);
   }
 #if COIN_CBC_VERBOSITY > 0
@@ -540,7 +540,7 @@ int doBaCParam(CoinParam *param)
   /*
       Are we up for fixing variables based on reduced cost alone?
     */
-  if (cbcSettings->getDjFixMode() == CbcSolverSettings::ParamOff) {
+  if (cbcSettings->getDjFixMode() == CbcSolverParam::ParamOff) {
      reducedCostHack(babSolver, cbcSettings->getDjFixThreshold());
   }
   /*
@@ -560,9 +560,9 @@ int doBaCParam(CoinParam *param)
 
   int numberChanged = 0;
   int numberOriginalColumns = babSolver->getNumCols();
-  CbcSolverSettings::IPPMode ippMode = cbcSettings->getIPPMode();
+  CbcSolverParam::IPPMode ippMode = cbcSettings->getIPPMode();
 
-  if (!(ippMode == CbcSolverSettings::IPPOff || ippMode == CbcSolverSettings::IPPStrategy)) {
+  if (!(ippMode == CbcSolverParam::IPPOff || ippMode == CbcSolverParam::IPPStrategy)) {
     double timeLeft = babModel.getMaximumSeconds();
     preIppSolver = babSolver->clone();
     OsiSolverInterface *ippSolver;
@@ -592,13 +592,13 @@ int doBaCParam(CoinParam *param)
           respectively.
         */
     int convert = 0;
-    if (ippMode == CbcSolverSettings::IPPEqual) {
+    if (ippMode == CbcSolverParam::IPPEqual) {
       convert = -1;
-    } else if (ippMode == CbcSolverSettings::IPPEqualAll) {
+    } else if (ippMode == CbcSolverParam::IPPEqualAll) {
       convert = -2;
-    } else if (ippMode == CbcSolverSettings::IPPSOS) {
+    } else if (ippMode == CbcSolverParam::IPPSOS) {
       convert = 2;
-    } else if (ippMode == CbcSolverSettings::IPPTrySOS) {
+    } else if (ippMode == CbcSolverParam::IPPTrySOS) {
       convert = 3;
     }
 
@@ -622,7 +622,7 @@ int doBaCParam(CoinParam *param)
       std::cout
         << "Integer preprocess says infeasible or unbounded" << std::endl;
       delete preIppSolver;
-      cbcSettings->setBaBStatus(&babModel, CbcSolverSettings::BACwIPP);
+      cbcSettings->setBaBStatus(&babModel, CbcSolverParam::BACwIPP);
       return (0);
     }
 #if COIN_CBC_VERBOSITY > 0
@@ -638,7 +638,7 @@ int doBaCParam(CoinParam *param)
     preIppSolver->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo);
     ippSolver->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo);
 
-    if (ippMode == CbcSolverSettings::IPPSave) {
+    if (ippMode == CbcSolverParam::IPPSave) {
       ippSolver->writeMps("presolved", "mps", 1.0);
       std::cout
         << "Integer preprocessed model written to `presolved.mps' "
@@ -657,7 +657,7 @@ int doBaCParam(CoinParam *param)
 #endif
     if (!solveRelaxation(&babModel)) {
       delete preIppSolver;
-      cbcSettings->setBaBStatus(&babModel, CbcSolverSettings::BACwIPPRelax);
+      cbcSettings->setBaBStatus(&babModel, CbcSolverParam::BACwIPPRelax);
       return (0);
     }
 #if COIN_CBC_VERBOSITY > 0
@@ -676,7 +676,7 @@ int doBaCParam(CoinParam *param)
       If we're using the COSTSTRATEGY option, set up priorities here and pass
       them to the babModel.
     */
-  if (cbcSettings->priorityMode_ != CbcSolverSettings::BPOff) {
+  if (cbcSettings->priorityMode_ != CbcSolverParam::BPOff) {
     setupPriorities(&babModel, cbcSettings->priorityMode_);
   }
   /*
@@ -765,7 +765,7 @@ int doBaCParam(CoinParam *param)
       accidentally equivalent to IPPOn.
     */
 
-  if (ippMode == CbcSolverSettings::IPPStrategy) {
+  if (ippMode == CbcSolverParam::IPPStrategy) {
     CbcStrategyDefault strategy(true, 5, 5);
     strategy.setupPreProcessing(1);
     babModel.setStrategy(strategy);
@@ -827,7 +827,7 @@ int doBaCParam(CoinParam *param)
   /*
       If we performed integer preprocessing, time to back it out.
     */
-  if (ippMode != CbcSolverSettings::IPPOff) {
+  if (ippMode != CbcSolverParam::IPPOff) {
 #if CBC_TRACK_SOLVERS > 0
     std::cout
       << "doBaCParam: solver passed to IPP postprocess is "
@@ -859,7 +859,7 @@ int doBaCParam(CoinParam *param)
     keepAnswerSolver = true;
     answerSolver = babSolver;
   }
-  cbcSettings->setBaBStatus(&babModel, CbcSolverSettings::BACwBAC,
+  cbcSettings->setBaBStatus(&babModel, CbcSolverParam::BACwBAC,
     keepAnswerSolver, answerSolver);
   /*
       And one last bit of information & statistics.

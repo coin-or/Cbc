@@ -52,10 +52,11 @@ CbcModelParam::CbcModelParam()
   Constructor for double parameter
 */
 CbcModelParam::CbcModelParam(CbcModelParamCode code,
-  std::string name, std::string help,
-  double lower, double upper, double dflt,
-  CoinDisplayPriority display)
-  : CoinParam(name, help, lower, upper, dflt, display)
+                             std::string name, std::string help,
+                             double lower, double upper, 
+                             double defaultValue, std::string longHelp,
+                             CoinDisplayPriority displayPriority)
+   : CoinParam(name, help, lower, upper, defaultValue, longHelp, displayPriority)
   , paramCode_(code)
   , obj_(0)
 {
@@ -66,10 +67,11 @@ CbcModelParam::CbcModelParam(CbcModelParamCode code,
   Constructor for integer parameter
 */
 CbcModelParam::CbcModelParam(CbcModelParamCode code,
-  std::string name, std::string help,
-  int lower, int upper, int dflt,
-  CoinDisplayPriority display)
-  : CoinParam(name, help, lower, upper, dflt, display)
+                             std::string name, std::string help,
+                             int lower, int upper, 
+                             int defaultValue, std::string longHelp,
+                             CoinDisplayPriority displayPriority)
+  : CoinParam(name, help, lower, upper, defaultValue,  longHelp, displayPriority)
   , paramCode_(code)
   , obj_(0)
 {
@@ -80,10 +82,10 @@ CbcModelParam::CbcModelParam(CbcModelParamCode code,
   Constructor for keyword parameter.
 */
 CbcModelParam::CbcModelParam(CbcModelParamCode code,
-  std::string name, std::string help,
-  std::string firstValue, int dflt,
-  CoinDisplayPriority display)
-  : CoinParam(name, help, firstValue, dflt, display)
+                             std::string name, std::string help,
+                             std::string defaultKwd, int defaultMode,
+                             std::string longHelp, CoinDisplayPriority displayPriority)
+  : CoinParam(name, help, defaultKwd, defaultMode,  longHelp, displayPriority)
   , paramCode_(code)
   , obj_(0)
 {
@@ -94,10 +96,10 @@ CbcModelParam::CbcModelParam(CbcModelParamCode code,
   Constructor for string parameter.
 */
 CbcModelParam::CbcModelParam(CbcModelParamCode code,
-  std::string name, std::string help,
-  std::string dflt,
-  CoinDisplayPriority display)
-  : CoinParam(name, help, dflt, display)
+                             std::string name, std::string help,
+                             std::string defaultValue, std::string longHelp,
+                             CoinDisplayPriority displayPriority)
+  : CoinParam(name, help, defaultValue,  longHelp, displayPriority)
   , paramCode_(code)
   , obj_(0)
 {
@@ -108,9 +110,9 @@ CbcModelParam::CbcModelParam(CbcModelParamCode code,
   Constructor for action parameter.
 */
 CbcModelParam::CbcModelParam(CbcModelParamCode code,
-  std::string name, std::string help,
-  CoinDisplayPriority display)
-  : CoinParam(name, help, display)
+                             std::string name, std::string help,
+                             std::string longHelp, CoinDisplayPriority displayPriority)
+  : CoinParam(name, help,  longHelp, displayPriority)
   , paramCode_(code)
   , obj_(0)
 {

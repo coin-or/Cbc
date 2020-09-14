@@ -37,20 +37,10 @@ namespace CbcGenSolvers {
 }
 
 // some help strings that repeat for many options
-#define CUTS_LONGHELP \
-  "Value 'on' enables the cut generator and CBC will try it in the branch and "\
-  "cut tree (see cutDepth on how to fine tune the behavior). Value 'root' "\
-  "lets CBC run the cut generator generate only at the root node. "\
-  "Value 'ifmove' lets CBC use the cut generator in the tree if it looks as "\
-  "if it is doing some good and moves the objective value. Value 'forceon' "\
-  "turns on the cut generator and forces CBC to use it at every node."
+#define CUTS_LONGHELP "Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node."
 
   
-#define HEURISTICS_LONGHELP \
-  "Value 'on' means to use the heuristic in each node of the tree, i.e. "\
-  "after preprocessing. Value 'before' means use the heuristic only if "\
-  "option doHeuristics is used. Value 'both' means to use the heuristic if "\
-  "option doHeuristics is used and during solve."
+#define HEURISTICS_LONGHELP "Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve."
 
 namespace CbcSolverParamUtils {
 
@@ -96,15 +86,15 @@ void addCbcSolverStrParams(CoinParamVec &parameters, CbcSolverSettings *cbcSetti
   }
 
   parameters[CbcSolverParam::CSVSTATISTICS].setup("csv!Statistics",
-                                                   "Create one line of statistics",
-                                                   cbcSettings->dfltDirectory_,
-                                                   "This appends statistics to given file name.  It will use the default directory given by 'directory'.  A name of '$' will use the previous value for the name.  This is initialized to '', i.e. it must be set.  Adds header if file empty or does not exist.",
-                                                   CoinParam::displayPriorityLow);
+                                                  "Create one line of statistics",
+                                                  cbcSettings->dfltDirectory_,
+                                                  "This appends statistics to given file name.  It will use the default directory given by 'directory'.  A name of '$' will use the previous value for the name.  This is initialized to '', i.e. it must be set.  Adds header if file empty or does not exist.",
+                                                  CoinParam::displayPriorityLow);
   parameters[CbcSolverParam::CSVSTATISTICS].setPushFunc(pushCbcSolverStrParam);
-
+  
   parameters[CbcSolverParam::DEBUG].setup("debug!In",
-                                           "Read/write valid solution from/to file", "", 
-                                           "This will read a solution file from the given file name.  It will use the default directory given by 'directory'.  A name of '$' will use the previous value for the name.  This is initialized to '', i.e. it must be set.\n\nIf set to create it will create a file called debug.file after B&C search; if set to createAfterPre it will create the file before undoing preprocessing.\n\nThe idea is that if you suspect a bad cut generator and you did not use preprocessing you can do a good run with debug set to 'create' and then switch on the cuts you suspect and re-run with debug set to 'debug.file'  Similarly if you do use preprocessing, but use createAfterPre.  The create case has the same effect as saveSolution.",
+                                          "Read/write valid solution from/to file", "", 
+                                          "This will read a solution file from the given file name.  It will use the default directory given by 'directory'.  A name of '$' will use the previous value for the name.  This is initialized to '', i.e. it must be set.\n\nIf set to create it will create a file called debug.file after B&C search; if set to createAfterPre it will create the file before undoing preprocessing.\n\nThe idea is that if you suspect a bad cut generator and you did not use preprocessing you can do a good run with debug set to 'create' and then switch on the cuts you suspect and re-run with debug set to 'debug.file'  Similarly if you do use preprocessing, but use createAfterPre.  The create case has the same effect as saveSolution.",
                                            CoinParam::displayPriorityNone);
   parameters[CbcSolverParam::DEBUG].setPushFunc(doDebugParam);
 
@@ -135,47 +125,9 @@ void addCbcSolverStrParams(CoinParamVec &parameters, CbcSolverSettings *cbcSetti
   parameters[CbcSolverParam::DIRMIPLIB].setPushFunc(pushCbcSolverStrParam);
 
   parameters[CbcSolverParam::MIPSTART].setup("mips!tart",
-                                              "reads an initial feasible solution from file",
-                                              std::string("mipstart.sln"),
-                                              "The MIPStart allows one to enter an initial integer feasible solution \
-to CBC. Values of the main decision variables which are active (have \
-non-zero values) in this solution are specified in a text  file. The \
-text file format used is the same of the solutions saved by CBC, but \
-not all fields are required to be filled. First line may contain the \
-solution status and will be ignored, remaining lines contain column \
-indexes, names and values as in this example:\n\
-\n\
-Stopped on iterations - objective value 57597.00000000\n\
-      0  x(1,1,2,2)               1 \n\
-      1  x(3,1,3,2)               1 \n\
-      5  v(5,1)                   2 \n\
-      33 x(8,1,5,2)               1 \n\
-      ...\n\
-\n\
-Column indexes are also ignored since pre-processing can change them. \
-There is no need to include values for continuous or integer auxiliary \
-variables, since they can be computed based on main decision variables. \
-Starting CBC with an integer feasible solution can dramatically improve \
-its performance: several MIP heuristics (e.g. RINS) rely on having at \
-least one feasible solution available and can start immediately if the \
-user provides one. Feasibility Pump (FP) is a heuristic which tries to \
-overcome the problem of taking too long to find feasible solution (or \
-not finding at all), but it not always succeeds. If you provide one \
-starting solution you will probably save some time by disabling FP. \
-\n\n\
-Knowledge specific to your problem can be considered to write an \
-external module to quickly produce an initial feasible solution - some \
-alternatives are the implementation of simple greedy heuristics or the \
-solution (by CBC for example) of a simpler model created just to find \
-a feasible solution. \
-\n\n\
-Silly options added.  If filename ends .low then integers not mentioned \
-are set low - also .high, .lowcheap, .highcheap, .lowexpensive, .highexpensive \
-where .lowexpensive sets costed ones to make expensive others low. Also if \
-filename starts empty. then no file is read at all - just actions done. \
-\n\n\
-Question and suggestions regarding MIPStart can be directed to\n\
-haroldo.santos@gmail.com. ");
+                                             "reads an initial feasible solution from file",
+                                             std::string("mipstart.sln"),
+                                             "The MIPStart allows one to enter an initial integer feasible solution to CBC. Values of the main decision variables which are active (have non-zero values) in this solution are specified in a text  file. The text file format used is the same of the solutions saved by CBC, but not all fields are required to be filled. First line may contain the solution status and will be ignored, remaining lines contain column indexes, names and values as in this example:\n\n Stopped on iterations - objective value 57597.00000000\n      0  x(1,1,2,2)               1 \n      1  x(3,1,3,2)               1 \n      5  v(5,1)                   2 \n      33 x(8,1,5,2)               1 \n      ...\n\n Column indexes are also ignored since pre-processing can change them. There is no need to include values for continuous or integer auxiliary variables, since they can be computed based on main decision variables. Starting CBC with an integer feasible solution can dramatically improve its performance: several MIP heuristics (e.g. RINS) rely on having at least one feasible solution available and can start immediately if the user provides one. Feasibility Pump (FP) is a heuristic which tries to overcome the problem of taking too long to find feasible solution (or not finding at all), but it not always succeeds. If you provide one starting solution you will probably save some time by disabling FP. \n\n Knowledge specific to your problem can be considered to write an external module to quickly produce an initial feasible solution - some alternatives are the implementation of simple greedy heuristics or the solution (by CBC for example) of a simpler model created just to find a feasible solution. \n\n Silly options added.  If filename ends .low then integers not mentioned are set low - also .high, .lowcheap, .highcheap, .lowexpensive, .highexpensive where .lowexpensive sets costed ones to make expensive others low. Also if filename starts empty. then no file is read at all - just actions done. \n\n Question and suggestions regarding MIPStart can be directed to\n haroldo.santos@gmail.com. ");
   parameters[CbcSolverParam::MIPSTART].setPushFunc(pushCbcSolverStrParam);
 
   parameters[CbcSolverParam::NEXTBESTSOLUTION].setup("nextB!estSolution",
@@ -378,7 +330,7 @@ void addCbcSolverActionParams(CoinParamVec &parameters, CbcSolverSettings *cbcSe
   parameters[CbcSolverParam::INTPRINT].setup("printi!ngOptions",
                                               "Print options",
                                               "normal", CbcSolverParam::PMNormal,
-                                              "This changes the amount and format of printing a solution:\nnormal - nonzero column variables \ninteger - nonzero integer column variables\nspecial - in format suitable for OsiRowCutDebugger\nrows - nonzero column variables and row activities\nall - all column variables and row activities.\n\nFor non-integer problems 'integer' and 'special' act like 'normal'.  Also see printMask for controlling output.");
+                                              "This changes the amount and format of printing a solution:\n normal - nonzero column variables \ninteger - nonzero integer column variables\n special - in format suitable for OsiRowCutDebugger\n rows - nonzero column variables and row activities\n all - all column variables and row activities.\n\n For non-integer problems 'integer' and 'special' act like 'normal'.  Also see printMask for controlling output.");
   parameters[CbcSolverParam::INTPRINT].appendKwd("integer", CbcSolverParam::PMInteger);
   parameters[CbcSolverParam::INTPRINT].appendKwd("special", CbcSolverParam::PMSpecial);
   parameters[CbcSolverParam::INTPRINT].appendKwd("rows", CbcSolverParam::PMRows);
@@ -443,10 +395,7 @@ void addCbcSolverActionParams(CoinParamVec &parameters, CbcSolverSettings *cbcSe
   parameters[CbcSolverParam::USECGRAPH].setup("cgraph",
                                                "Whether to use the conflict graph-based preprocessing and cut separation routines.",
                                                "on", CbcSolverParam::CGraphOn,
-                                               "This switches the conflict graph-based preprocessing and cut separation routines (CglBKClique, CglOddWheel and CliqueStrengthening) on or off. Values:\
-\n\toff: turns these routines off;\
-\n\ton: turns these routines on;\
-\n\tclq: turns these routines off and enables the cut separator of CglClique.");
+                                               "This switches the conflict graph-based preprocessing and cut separation routines (CglBKClique, CglOddWheel and CliqueStrengthening) on or off. Values: \n\t off: turns these routines off;\n\t on: turns these routines on; \n\t clq: turns these routines off and enables the cut separator of CglClique.");
   parameters[CbcSolverParam::USECGRAPH].appendKwd("off", CbcSolverParam::CGraphOff);
   parameters[CbcSolverParam::USECGRAPH].appendKwd("clq", CbcSolverParam::CGraphClique);
 
@@ -564,14 +513,7 @@ void addCbcSolverIntParams(CoinParamVec &parameters, CbcSolverSettings *cbcSetti
 
    parameters[CbcSolverParam::DIVEOPT].setup("diveO!pt",
                                               "Diving options",
-                                              -1, 20, -1,"If >2 && <20 then modify diving options - \
-	 \n\t3 only at root and if no solution,  \
-	 \n\t4 only at root and if this heuristic has not got solution, \
-	 \n\t5 decay only if no solution, \
-	 \n\t6 if depth <3 or decay, \
-	 \n\t7 run up to 2 times if solution found 4 otherwise, \
-	 \n\t>10 All only at root (DivingC normal as value-10), \
-	 \n\t>20 All with value-20).",
+                                              -1, 20, -1,"If >2 && <20 then modify diving options -	 \n\t3 only at root and if no solution,	 \n\t4 only at root and if this heuristic has not got solution,	 \n\t5 decay only if no solution,	 \n\t6 if depth <3 or decay,	 \n\t7 run up to 2 times if solution found 4 otherwise,	 \n\t>10 All only at root (DivingC normal as value-10),	 \n\t>20 All with value-20).",
                                               CoinParam::displayPriorityLow);
 
   parameters[CbcSolverParam::DIVEOPTSOLVES].setup("diveS!olves",
@@ -611,27 +553,14 @@ void addCbcSolverIntParams(CoinParamVec &parameters, CbcSolverSettings *cbcSetti
                                               "This fine tunes the Feasibility Pump heuristic by doing more or fewer passes.");
 
   parameters[CbcSolverParam::FPUMPTUNE].setup("pumpT!une",
-                                               "Dubious ideas for feasibility pump",
-                                               0, 100000000, 0,
-                                               "This fine tunes Feasibility Pump \
-     \n\t>=10000000 use as objective weight switch \
-     \n\t>=1000000 use as accumulate switch \
-     \n\t>=1000 use index+1 as number of large loops \
-     \n\t==100 use objvalue +0.05*fabs(objvalue) as cutoff OR fakeCutoff if set \
-     \n\t%100 == 10,20 affects how each solve is done \
-     \n\t1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds. If accumulate is on then after a major pass, variables which have not moved are fixed and a small branch and bound is tried.");
+                                              "Dubious ideas for feasibility pump",
+                                              0, 100000000, 0,
+                                              "This fine tunes Feasibility Pump     \n\t>=10000000 use as objective weight switch     \n\t>=1000000 use as accumulate switch     \n\t>=1000 use index+1 as number of large loops     \n\t==100 use objvalue +0.05*fabs(objvalue) as cutoff OR fakeCutoff if set     \n\t%100 == 10,20 affects how each solve is done     \n\t1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds. If accumulate is on then after a major pass, variables which have not moved are fixed and a small branch and bound is tried.");
 
   parameters[CbcSolverParam::FPUMPTUNE2].setup("moreT!une",
                                                 "Yet more dubious ideas for feasibility pump",
                                                 0, 100000000, 0, 
-                                                "Yet more ideas for Feasibility Pump \
-     \n\t/100000 == 1 use box constraints and original obj in cleanup \
-     \n\t/1000 == 1 Pump will run twice if no solution found \
-     \n\t/1000 == 2 Pump will only run after root cuts if no solution found \
-     \n\t/1000 >10 as above but even if solution found \
-     \n\t/100 == 1,3.. exact 1.0 for objective values \
-     \n\t/100 == 2,3.. allow more iterations per pass \
-     \n\t n fix if value of variable same for last n iterations.",
+                                                "Yet more ideas for Feasibility Pump     \n\t/100000 == 1 use box constraints and original obj in cleanup     \n\t/1000 == 1 Pump will run twice if no solution found     \n\t/1000 == 2 Pump will only run after root cuts if no solution found     \n\t/1000 >10 as above but even if solution found     \n\t/100 == 1,3.. exact 1.0 for objective values     \n\t/100 == 2,3.. allow more iterations per pass     \n\t n fix if value of variable same for last n iterations.",
                                                 CoinParam::displayPriorityNone);
 
   parameters[CbcSolverParam::HEUROPTIONS].setup("hOp!tions",
@@ -689,17 +618,7 @@ void addCbcSolverIntParams(CoinParamVec &parameters, CbcSolverSettings *cbcSetti
     parameters[CbcSolverParam::PROCESSTUNE].setup("tune!PreProcess",
                                                    "Dubious tuning parameters for preprocessing",
                                                    0, COIN_INT_MAX, 0,
-                                                   "Format aabbcccc - \n If aa then this is number of major passes (i.e. with presolve) \n \
-If bb and bb>0 then this is number of minor passes (if unset or 0 then 10) \n \
-cccc is bit set \n 0 - 1 Heavy probing \n 1 - 2 Make variables integer if possible (if obj value)\n \
-2 - 4 As above but even if zero objective value\n \
-7 - 128 Try and create cliques\n 8 - 256 If all +1 try hard for dominated rows\n \
-9 - 512 Even heavier probing \n \
-10 - 1024 Use a larger feasibility tolerance in presolve\n \
-11 - 2048 Try probing before creating cliques\n \
-12 - 4096 Switch off duplicate column checking for integers \n \
-13 - 8192 Allow scaled duplicate column checking \n \n \
-     Now aa 99 has special meaning i.e. just one simple presolve.",
+                                                   "Format aabbcccc - \n If aa then this is number of major passes (i.e. with presolve) \n If bb and bb>0 then this is number of minor passes (if unset or 0 then 10) \n cccc is bit set \n 0 - 1 Heavy probing \n 1 - 2 Make variables integer if possible (if obj value)\n 2 - 4 As above but even if zero objective value\n 7 - 128 Try and create cliques\n 8 - 256 If all +1 try hard for dominated rows\n 9 - 512 Even heavier probing \n 10 - 1024 Use a larger feasibility tolerance in presolve\n 11 - 2048 Try probing before creating cliques\n 12 - 4096 Switch off duplicate column checking for integers \n 13 - 8192 Allow scaled duplicate column checking \n \n     Now aa 99 has special meaning i.e. just one simple presolve.",
                                                    CoinParam::displayPriorityLow);
 
   parameters[CbcSolverParam::RANDOMSEED].setup("randomC!bcSeed",

@@ -2188,7 +2188,7 @@ public:
   //@}
 
   void
-  setMIPStart(const std::vector<std::pair<std::string, double>> &mipstart) {
+  setMIPStart(const std::vector<std::pair<std::string, double> > &mipstart) {
     this->mipStart_ = mipstart;
   }
 
@@ -2202,7 +2202,7 @@ public:
    * implementation may not be binary compatible */
   void setMIPStart(int count, const char **colNames, const double colValues[]);
 
-  const std::vector<std::pair<std::string, double>> &getMIPStart() {
+  const std::vector<std::pair<std::string, double> > &getMIPStart() {
     return this->mipStart_;
   }
 
@@ -2287,7 +2287,7 @@ private:
       values for integer variables which will be converted to a complete integer
      initial feasible solution
     */
-  std::vector<std::pair<std::string, double>> mipStart_;
+  std::vector<std::pair<std::string, double> > mipStart_;
 
   /** keepNamesPreproc
    *  if variables names will be preserved in the pre-processed problem

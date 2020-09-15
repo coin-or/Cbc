@@ -1801,8 +1801,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
     double *pseudoUp = NULL;
     double *solutionIn = NULL;
     int *prioritiesIn = NULL;
-    std::vector<std::pair<std::string, double>> mipStart;
-    std::vector<std::pair<std::string, double>> mipStartBefore;
+    std::vector<std::pair<std::string, double> > mipStart;
+    std::vector<std::pair<std::string, double> > mipStartBefore;
     std::string mipStartFile = "";
     int numberSOS = 0;
     int *sosStart = NULL;

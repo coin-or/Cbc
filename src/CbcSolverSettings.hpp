@@ -390,7 +390,7 @@ public:
 
   /*! \brief Get mode for overall control of heuristics. */
 
-  inline CbcSolverParam::OnOffMode
+  inline void
   setDoHeuristicMode(CbcSolverParam::OnOffMode mode) {
     doHeuristicMode_ = mode;
   }

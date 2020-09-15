@@ -9,12 +9,12 @@
 
 #include "CbcConfig.h"
 
-#include <string>
-#include <iostream>
 #include <cassert>
+#include <iostream>
+#include <string>
 #ifdef CBC_HAS_READLINE
-#include <readline/readline.h>
 #include <readline/history.h>
+#include <readline/readline.h>
 #endif
 
 #include "ClpFactorization.hpp"
@@ -31,15 +31,11 @@ int CbcEnvironmentIndex = -1;
 char *alternativeEnvironment = NULL;
 static FILE *CbcReadCommand = stdin;
 
-void setCbcReadCommand(FILE* f) { CbcReadCommand = f; }
+void setCbcReadCommand(FILE *f) { CbcReadCommand = f; }
 
-void setCbcPrinting(bool yesNo)
-{
-  doPrinting = yesNo;
-}
+void setCbcPrinting(bool yesNo) { doPrinting = yesNo; }
 
-static size_t fillEnv()
-{
+static size_t fillEnv() {
 #if defined(_MSC_VER) || defined(__MSVCRT__)
   return 0;
 #else
@@ -52,7 +48,7 @@ static size_t fillEnv()
   size_t length = 0;
   if (environ) {
     length = strlen(environ);
-    if (CbcEnvironmentIndex < static_cast< int >(length)) {
+    if (CbcEnvironmentIndex < static_cast<int>(length)) {
       // find next non blank
       char *whereEnv = environ + CbcEnvironmentIndex;
       // munch white space
@@ -69,7 +65,7 @@ static size_t fillEnv()
         assert(put - line < 1000);
         whereEnv++;
       }
-      CbcEnvironmentIndex = static_cast< int >(whereEnv - environ);
+      CbcEnvironmentIndex = static_cast<int>(whereEnv - environ);
       *put = '\0';
       length = strlen(line);
     } else {
@@ -95,126 +91,53 @@ static size_t fillEnv()
 // Default Constructor
 //-------------------------------------------------------------------
 CbcParam::CbcParam()
-  : type_(CBC_PARAM_NOTUSED_INVALID)
-  , lowerDoubleValue_(0.0)
-  , upperDoubleValue_(0.0)
-  , lowerIntValue_(0)
-  , upperIntValue_(0)
-  , lengthName_(0)
-  , lengthMatch_(0)
-  , definedKeyWords_()
-  , name_()
-  , shortHelp_()
-  , longHelp_()
-  , action_(CBC_PARAM_NOTUSED_INVALID)
-  , currentKeyWord_(-1)
-  , display_(0)
-  , intValue_(-1)
-  , doubleValue_(-1.0)
-  , stringValue_("")
-  , whereUsed_(7)
-  , fakeKeyWord_(-1)
-  , fakeValue_(0)
-{
-}
+    : type_(CBC_PARAM_NOTUSED_INVALID), lowerDoubleValue_(0.0),
+      upperDoubleValue_(0.0), lowerIntValue_(0), upperIntValue_(0),
+      lengthName_(0), lengthMatch_(0), definedKeyWords_(), name_(),
+      shortHelp_(), longHelp_(), action_(CBC_PARAM_NOTUSED_INVALID),
+      currentKeyWord_(-1), display_(0), intValue_(-1), doubleValue_(-1.0),
+      stringValue_(""), whereUsed_(7), fakeKeyWord_(-1), fakeValue_(0) {}
 // Other constructors
-CbcParam::CbcParam(std::string name, std::string help,
-  double lower, double upper, CbcParameterType type,
-  int display)
-  : type_(type)
-  , lowerIntValue_(0)
-  , upperIntValue_(0)
-  , definedKeyWords_()
-  , name_(name)
-  , shortHelp_(help)
-  , longHelp_()
-  , action_(type)
-  , currentKeyWord_(-1)
-  , display_(display)
-  , intValue_(-1)
-  , doubleValue_(-1.0)
-  , stringValue_("")
-  , whereUsed_(7)
-  , fakeKeyWord_(-1)
-  , fakeValue_(0)
-{
+CbcParam::CbcParam(std::string name, std::string help, double lower,
+                   double upper, CbcParameterType type, int display)
+    : type_(type), lowerIntValue_(0), upperIntValue_(0), definedKeyWords_(),
+      name_(name), shortHelp_(help), longHelp_(), action_(type),
+      currentKeyWord_(-1), display_(display), intValue_(-1), doubleValue_(-1.0),
+      stringValue_(""), whereUsed_(7), fakeKeyWord_(-1), fakeValue_(0) {
   lowerDoubleValue_ = lower;
   upperDoubleValue_ = upper;
   gutsOfConstructor();
 }
-CbcParam::CbcParam(std::string name, std::string help,
-  int lower, int upper, CbcParameterType type,
-  int display)
-  : type_(type)
-  , lowerDoubleValue_(0.0)
-  , upperDoubleValue_(0.0)
-  , definedKeyWords_()
-  , name_(name)
-  , shortHelp_(help)
-  , longHelp_()
-  , action_(type)
-  , currentKeyWord_(-1)
-  , display_(display)
-  , intValue_(-1)
-  , doubleValue_(-1.0)
-  , stringValue_("")
-  , whereUsed_(7)
-  , fakeKeyWord_(-1)
-  , fakeValue_(0)
-{
+CbcParam::CbcParam(std::string name, std::string help, int lower, int upper,
+                   CbcParameterType type, int display)
+    : type_(type), lowerDoubleValue_(0.0), upperDoubleValue_(0.0),
+      definedKeyWords_(), name_(name), shortHelp_(help), longHelp_(),
+      action_(type), currentKeyWord_(-1), display_(display), intValue_(-1),
+      doubleValue_(-1.0), stringValue_(""), whereUsed_(7), fakeKeyWord_(-1),
+      fakeValue_(0) {
   gutsOfConstructor();
   lowerIntValue_ = lower;
   upperIntValue_ = upper;
 }
 // Other strings will be added by append
-CbcParam::CbcParam(std::string name, std::string help,
-  std::string firstValue,
-  CbcParameterType type, int whereUsed,
-  int display)
-  : type_(type)
-  , lowerDoubleValue_(0.0)
-  , upperDoubleValue_(0.0)
-  , lowerIntValue_(0)
-  , upperIntValue_(0)
-  , definedKeyWords_()
-  , name_(name)
-  , shortHelp_(help)
-  , longHelp_()
-  , action_(type)
-  , currentKeyWord_(0)
-  , display_(display)
-  , intValue_(-1)
-  , doubleValue_(-1.0)
-  , stringValue_("")
-  , whereUsed_(whereUsed)
-  , fakeKeyWord_(-1)
-  , fakeValue_(0)
-{
+CbcParam::CbcParam(std::string name, std::string help, std::string firstValue,
+                   CbcParameterType type, int whereUsed, int display)
+    : type_(type), lowerDoubleValue_(0.0), upperDoubleValue_(0.0),
+      lowerIntValue_(0), upperIntValue_(0), definedKeyWords_(), name_(name),
+      shortHelp_(help), longHelp_(), action_(type), currentKeyWord_(0),
+      display_(display), intValue_(-1), doubleValue_(-1.0), stringValue_(""),
+      whereUsed_(whereUsed), fakeKeyWord_(-1), fakeValue_(0) {
   gutsOfConstructor();
   definedKeyWords_.push_back(firstValue);
 }
 // Action
-CbcParam::CbcParam(std::string name, std::string help,
-  CbcParameterType type, int whereUsed,
-  int display)
-  : type_(type)
-  , lowerDoubleValue_(0.0)
-  , upperDoubleValue_(0.0)
-  , lowerIntValue_(0)
-  , upperIntValue_(0)
-  , definedKeyWords_()
-  , name_(name)
-  , shortHelp_(help)
-  , longHelp_()
-  , action_(type)
-  , currentKeyWord_(-1)
-  , display_(display)
-  , intValue_(-1)
-  , doubleValue_(-1.0)
-  , stringValue_("")
-  , fakeKeyWord_(-1)
-  , fakeValue_(0)
-{
+CbcParam::CbcParam(std::string name, std::string help, CbcParameterType type,
+                   int whereUsed, int display)
+    : type_(type), lowerDoubleValue_(0.0), upperDoubleValue_(0.0),
+      lowerIntValue_(0), upperIntValue_(0), definedKeyWords_(), name_(name),
+      shortHelp_(help), longHelp_(), action_(type), currentKeyWord_(-1),
+      display_(display), intValue_(-1), doubleValue_(-1.0), stringValue_(""),
+      fakeKeyWord_(-1), fakeValue_(0) {
   whereUsed_ = whereUsed;
   gutsOfConstructor();
 }
@@ -222,8 +145,7 @@ CbcParam::CbcParam(std::string name, std::string help,
 //-------------------------------------------------------------------
 // Copy constructor
 //-------------------------------------------------------------------
-CbcParam::CbcParam(const CbcParam &rhs)
-{
+CbcParam::CbcParam(const CbcParam &rhs) {
   type_ = rhs.type_;
   lowerDoubleValue_ = rhs.lowerDoubleValue_;
   upperDoubleValue_ = rhs.upperDoubleValue_;
@@ -249,16 +171,12 @@ CbcParam::CbcParam(const CbcParam &rhs)
 //-------------------------------------------------------------------
 // Destructor
 //-------------------------------------------------------------------
-CbcParam::~CbcParam()
-{
-}
+CbcParam::~CbcParam() {}
 
 //----------------------------------------------------------------
 // Assignment operator
 //-------------------------------------------------------------------
-CbcParam &
-CbcParam::operator=(const CbcParam &rhs)
-{
+CbcParam &CbcParam::operator=(const CbcParam &rhs) {
   if (this != &rhs) {
     type_ = rhs.type_;
     lowerDoubleValue_ = rhs.lowerDoubleValue_;
@@ -283,29 +201,25 @@ CbcParam::operator=(const CbcParam &rhs)
   }
   return *this;
 }
-void CbcParam::gutsOfConstructor()
-{
+void CbcParam::gutsOfConstructor() {
   std::string::size_type shriekPos = name_.find('!');
-  lengthName_ = static_cast< unsigned int >(name_.length());
+  lengthName_ = static_cast<unsigned int>(name_.length());
   if (shriekPos == std::string::npos) {
-    //does not contain '!'
+    // does not contain '!'
     lengthMatch_ = lengthName_;
   } else {
-    lengthMatch_ = static_cast< unsigned int >(shriekPos);
+    lengthMatch_ = static_cast<unsigned int>(shriekPos);
     name_ = name_.substr(0, shriekPos) + name_.substr(shriekPos + 1);
     lengthName_--;
   }
 }
 
 // Insert string (only valid for keywords)
-void CbcParam::append(std::string keyWord)
-{
+void CbcParam::append(std::string keyWord) {
   definedKeyWords_.push_back(keyWord);
 }
 
-double
-CbcParam::doubleParameter(OsiSolverInterface *model) const
-{
+double CbcParam::doubleParameter(OsiSolverInterface *model) const {
   double value = 0.0;
   bool getDblParamRetValue;
   switch (type_) {
@@ -323,9 +237,7 @@ CbcParam::doubleParameter(OsiSolverInterface *model) const
   }
   return value;
 }
-double
-CbcParam::doubleParameter(CbcModel &model) const
-{
+double CbcParam::doubleParameter(CbcModel &model) const {
   double value;
   switch (type_) {
   case CBC_PARAM_DBL_INFEASIBILITYWEIGHT:
@@ -363,16 +275,14 @@ CbcParam::doubleParameter(CbcModel &model) const
   }
   return value;
 }
-int CbcParam::setDoubleParameter(OsiSolverInterface *model, double value) 
-{
+int CbcParam::setDoubleParameter(OsiSolverInterface *model, double value) {
   int returnCode;
   setDoubleParameterWithMessage(model, value, returnCode);
   if (doPrinting && strlen(printArray))
     std::cout << printArray << std::endl;
   return returnCode;
 }
-int CbcParam::setDoubleParameter(CbcModel &model, double value) 
-{
+int CbcParam::setDoubleParameter(CbcModel &model, double value) {
   int returnCode = 0;
   setDoubleParameterWithMessage(model, value, returnCode);
   if (doPrinting && strlen(printArray))
@@ -380,13 +290,14 @@ int CbcParam::setDoubleParameter(CbcModel &model, double value)
   return returnCode;
 }
 // Sets double parameter and returns printable string and error code
-const char *
-CbcParam::setDoubleParameterWithMessage(OsiSolverInterface *model, double value, int &returnCode)
-{
+const char *CbcParam::setDoubleParameterWithMessage(OsiSolverInterface *model,
+                                                    double value,
+                                                    int &returnCode) {
   if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
     sprintf(printArray, "%g was provided for %s - valid range is %g to %g",
-      value, name_.c_str(), lowerDoubleValue_, upperDoubleValue_);
-    std::cout << value << " was provided for " << name_ << " - valid range is " << lowerDoubleValue_ << " to " << upperDoubleValue_ << std::endl;
+            value, name_.c_str(), lowerDoubleValue_, upperDoubleValue_);
+    std::cout << value << " was provided for " << name_ << " - valid range is "
+              << lowerDoubleValue_ << " to " << upperDoubleValue_ << std::endl;
     returnCode = 1;
   } else {
     double oldValue = doubleValue_;
@@ -403,20 +314,21 @@ CbcParam::setDoubleParameterWithMessage(OsiSolverInterface *model, double value,
     default:
       break;
     }
-    sprintf(printArray, "%s was changed from %g to %g",
-      name_.c_str(), oldValue, value);
+    sprintf(printArray, "%s was changed from %g to %g", name_.c_str(), oldValue,
+            value);
     returnCode = 0;
   }
   return printArray;
 }
-//TODO: This function doesn't set all the possible parameters. Does this matter?
+// TODO: This function doesn't set all the possible parameters. Does this
+// matter?
 // Sets double parameter and returns printable string and error code
-const char *
-CbcParam::setDoubleParameterWithMessage(CbcModel &model, double value, int &returnCode)
-{
+const char *CbcParam::setDoubleParameterWithMessage(CbcModel &model,
+                                                    double value,
+                                                    int &returnCode) {
   if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
     sprintf(printArray, "%g was provided for %s - valid range is %g to %g",
-      value, name_.c_str(), lowerDoubleValue_, upperDoubleValue_);
+            value, name_.c_str(), lowerDoubleValue_, upperDoubleValue_);
     returnCode = 1;
   } else {
     double oldValue = doubleValue_;
@@ -460,59 +372,55 @@ CbcParam::setDoubleParameterWithMessage(CbcModel &model, double value, int &retu
     default:
       break;
     }
-    sprintf(printArray, "%s was changed from %g to %g",
-      name_.c_str(), oldValue, value);
+    sprintf(printArray, "%s was changed from %g to %g", name_.c_str(), oldValue,
+            value);
     returnCode = 0;
   }
   return printArray;
 }
-void CbcParam::setDoubleValue(double value)
-{
+void CbcParam::setDoubleValue(double value) {
   if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
-    std::cout << value << " was provided for " << name_ << " - valid range is " << lowerDoubleValue_ << " to " << upperDoubleValue_ << std::endl;
+    std::cout << value << " was provided for " << name_ << " - valid range is "
+              << lowerDoubleValue_ << " to " << upperDoubleValue_ << std::endl;
   } else {
     doubleValue_ = value;
   }
 }
-const char *
-CbcParam::setDoubleValueWithMessage(double value)
-{
+const char *CbcParam::setDoubleValueWithMessage(double value) {
   printArray[0] = '\0';
   if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
     sprintf(printArray, "%g was provided for %s - valid range is %g to %g",
-      value, name_.c_str(), lowerDoubleValue_, upperDoubleValue_);
+            value, name_.c_str(), lowerDoubleValue_, upperDoubleValue_);
   } else {
     if (value == doubleValue_)
       return NULL;
-    sprintf(printArray, "%s was changed from %g to %g",
-      name_.c_str(), doubleValue_, value);
+    sprintf(printArray, "%s was changed from %g to %g", name_.c_str(),
+            doubleValue_, value);
     doubleValue_ = value;
   }
   return printArray;
 }
-int CbcParam::checkDoubleParameter(double value) const
-{
+int CbcParam::checkDoubleParameter(double value) const {
   if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
-    std::cout << value << " was provided for " << name_ << " - valid range is " << lowerDoubleValue_ << " to " << upperDoubleValue_ << std::endl;
+    std::cout << value << " was provided for " << name_ << " - valid range is "
+              << lowerDoubleValue_ << " to " << upperDoubleValue_ << std::endl;
     return 1;
   } else {
     return 0;
   }
 }
-int CbcParam::intParameter(OsiSolverInterface *model) const
-{
+int CbcParam::intParameter(OsiSolverInterface *model) const {
   int value = 0;
   switch (type_) {
   case CBC_PARAM_INT_LPLOGLEVEL:
-    //value=model->logLevel();
+    // value=model->logLevel();
     break;
   default:
     abort();
   }
   return value;
 }
-int CbcParam::intParameter(CbcModel &model) const
-{
+int CbcParam::intParameter(CbcModel &model) const {
   int value;
   switch (type_) {
   case CBC_PARAM_INT_SOLVERLOGLEVEL:
@@ -552,7 +460,7 @@ int CbcParam::intParameter(CbcModel &model) const
 #ifdef CBC_THREAD
   case CBC_PARAM_INT_THREADS:
     value = model.getNumberThreads();
-	break;
+    break;
 #endif
   case CBC_PARAM_INT_RANDOMSEED:
     value = model.getRandomSeed();
@@ -564,16 +472,14 @@ int CbcParam::intParameter(CbcModel &model) const
   }
   return value;
 }
-int CbcParam::setIntParameter(OsiSolverInterface *model, int value) 
-{
+int CbcParam::setIntParameter(OsiSolverInterface *model, int value) {
   int returnCode;
   setIntParameterWithMessage(model, value, returnCode);
   if (doPrinting && strlen(printArray))
     std::cout << printArray << std::endl;
   return returnCode;
 }
-int CbcParam::setIntParameter(CbcModel &model, int value) 
-{
+int CbcParam::setIntParameter(CbcModel &model, int value) {
   int returnCode;
   setIntParameterWithMessage(model, value, returnCode);
   if (doPrinting && strlen(printArray))
@@ -581,12 +487,11 @@ int CbcParam::setIntParameter(CbcModel &model, int value)
   return returnCode;
 }
 // Sets int parameter and returns printable string and error code
-const char *
-CbcParam::setIntParameterWithMessage(OsiSolverInterface *model, int value, int &returnCode)
-{
+const char *CbcParam::setIntParameterWithMessage(OsiSolverInterface *model,
+                                                 int value, int &returnCode) {
   if (value < lowerIntValue_ || value > upperIntValue_) {
     sprintf(printArray, "%d was provided for %s - valid range is %d to %d",
-      value, name_.c_str(), lowerIntValue_, upperIntValue_);
+            value, name_.c_str(), lowerIntValue_, upperIntValue_);
     returnCode = 1;
   } else {
     int oldValue = intValue_;
@@ -598,19 +503,18 @@ CbcParam::setIntParameterWithMessage(OsiSolverInterface *model, int value, int &
     default:
       break;
     }
-    sprintf(printArray, "%s was changed from %d to %d",
-      name_.c_str(), oldValue, value);
+    sprintf(printArray, "%s was changed from %d to %d", name_.c_str(), oldValue,
+            value);
     returnCode = 0;
   }
   return printArray;
 }
 // Sets int parameter and returns printable string and error code
-const char *
-CbcParam::setIntParameterWithMessage(CbcModel &model, int value, int &returnCode)
-{
+const char *CbcParam::setIntParameterWithMessage(CbcModel &model, int value,
+                                                 int &returnCode) {
   if (value < lowerIntValue_ || value > upperIntValue_) {
     sprintf(printArray, "%d was provided for %s - valid range is %d to %d",
-      value, name_.c_str(), lowerIntValue_, upperIntValue_);
+            value, name_.c_str(), lowerIntValue_, upperIntValue_);
     returnCode = 1;
   } else {
     printArray[0] = '\0';
@@ -679,62 +583,54 @@ CbcParam::setIntParameterWithMessage(CbcModel &model, int value, int &returnCode
     default:
       break;
     }
-    sprintf(printArray, "%s was changed from %d to %d",
-      name_.c_str(), oldValue, value);
+    sprintf(printArray, "%s was changed from %d to %d", name_.c_str(), oldValue,
+            value);
     returnCode = 0;
   }
   return printArray;
 }
-void CbcParam::setIntValue(int value)
-{
+void CbcParam::setIntValue(int value) {
   if (value < lowerIntValue_ || value > upperIntValue_) {
-    std::cout << value << " was provided for " << name_ << " - valid range is " << lowerIntValue_ << " to " << upperIntValue_ << std::endl;
+    std::cout << value << " was provided for " << name_ << " - valid range is "
+              << lowerIntValue_ << " to " << upperIntValue_ << std::endl;
   } else {
     intValue_ = value;
   }
 }
-const char *
-CbcParam::setIntValueWithMessage(int value)
-{
+const char *CbcParam::setIntValueWithMessage(int value) {
   printArray[0] = '\0';
   if (value < lowerIntValue_ || value > upperIntValue_) {
     sprintf(printArray, "%d was provided for %s - valid range is %d to %d",
-      value, name_.c_str(), lowerIntValue_, upperIntValue_);
+            value, name_.c_str(), lowerIntValue_, upperIntValue_);
   } else {
     if (value == intValue_)
       return NULL;
-    sprintf(printArray, "%s was changed from %d to %d",
-      name_.c_str(), intValue_, value);
+    sprintf(printArray, "%s was changed from %d to %d", name_.c_str(),
+            intValue_, value);
     intValue_ = value;
   }
   return printArray;
 }
-void CbcParam::setStringValue(std::string value)
-{
-  stringValue_ = value;
-}
+void CbcParam::setStringValue(std::string value) { stringValue_ = value; }
 
 // Returns name which could match
-std::string
-CbcParam::matchName() const
-{
+std::string CbcParam::matchName() const {
   if (lengthMatch_ == lengthName_)
     return name_;
   else
-    return name_.substr(0, lengthMatch_) + "(" + name_.substr(lengthMatch_) + ")";
+    return name_.substr(0, lengthMatch_) + "(" + name_.substr(lengthMatch_) +
+           ")";
 }
 
 // Returns length of name for printing
-int CbcParam::lengthMatchName() const
-{
+int CbcParam::lengthMatchName() const {
   if (lengthName_ == lengthMatch_)
     return lengthName_;
   else
     return lengthName_ + 2;
 }
 
-int CbcParam::matches(std::string input) const
-{
+int CbcParam::matches(std::string input) const {
   // look up strings to do more elegantly
   if (input.length() > lengthName_) {
     return 0;
@@ -756,9 +652,8 @@ int CbcParam::matches(std::string input) const
 }
 
 // Returns parameter option which matches (-1 if none)
-int CbcParam::parameterOption(std::string check) const
-{
-  int numberItems = static_cast< int >(definedKeyWords_.size());
+int CbcParam::parameterOption(std::string check) const {
+  int numberItems = static_cast<int>(definedKeyWords_.size());
   if (!numberItems) {
     return -1;
   } else {
@@ -770,7 +665,7 @@ int CbcParam::parameterOption(std::string check) const
       size_t length1 = thisOne.length();
       size_t length2 = length1;
       if (shriekPos != std::string::npos) {
-        //contains '!'
+        // contains '!'
         length2 = shriekPos;
         thisOne = thisOne.substr(0, shriekPos) + thisOne.substr(shriekPos + 1);
         length1 = thisOne.length();
@@ -799,7 +694,8 @@ int CbcParam::parameterOption(std::string check) const
       int n;
       if (check.substr(0, 4) == "plus" || check.substr(0, 4) == "PLUS") {
         n = 4;
-      } else if (check.substr(0, 5) == "minus" || check.substr(0, 5) == "MINUS") {
+      } else if (check.substr(0, 5) == "minus" ||
+                 check.substr(0, 5) == "MINUS") {
         n = 5;
       } else {
         return -1;
@@ -810,7 +706,7 @@ int CbcParam::parameterOption(std::string check) const
         const char *start = field.c_str();
         char *endPointer = NULL;
         // check valid
-        value = static_cast< int >(strtol(start, &endPointer, 10));
+        value = static_cast<int>(strtol(start, &endPointer, 10));
         if (*endPointer != '\0') {
           return -1;
         }
@@ -825,32 +721,33 @@ int CbcParam::parameterOption(std::string check) const
   }
 }
 // Prints parameter options
-void CbcParam::printOptions() const
-{
+void CbcParam::printOptions() const {
   std::cout << "<Possible options for " << name_ << " are:";
   unsigned int it;
   for (it = 0; it < definedKeyWords_.size(); it++) {
     std::string thisOne = definedKeyWords_[it];
     std::string::size_type shriekPos = thisOne.find('!');
     if (shriekPos != std::string::npos) {
-      //contains '!'
-      thisOne = thisOne.substr(0, shriekPos) + "(" + thisOne.substr(shriekPos + 1) + ")";
+      // contains '!'
+      thisOne = thisOne.substr(0, shriekPos) + "(" +
+                thisOne.substr(shriekPos + 1) + ")";
     }
     std::cout << " " << thisOne;
   }
-  assert(currentKeyWord_ >= 0 && currentKeyWord_ < static_cast< int >(definedKeyWords_.size()));
+  assert(currentKeyWord_ >= 0 &&
+         currentKeyWord_ < static_cast<int>(definedKeyWords_.size()));
   std::string current = definedKeyWords_[currentKeyWord_];
   std::string::size_type shriekPos = current.find('!');
   if (shriekPos != std::string::npos) {
-    //contains '!'
-    current = current.substr(0, shriekPos) + "(" + current.substr(shriekPos + 1) + ")";
+    // contains '!'
+    current = current.substr(0, shriekPos) + "(" +
+              current.substr(shriekPos + 1) + ")";
   }
   std::cout << ";\n\tcurrent  " << current << ">" << std::endl;
 }
 
 // Sets current parameter option using string
-void CbcParam::setCurrentOption(const std::string value)
-{
+void CbcParam::setCurrentOption(const std::string value) {
   int action = parameterOption(value);
   if (action >= 0)
     currentKeyWord_ = action;
@@ -860,8 +757,7 @@ void CbcParam::setCurrentOption(const std::string value)
 #endif
 }
 // Sets current parameter option
-void CbcParam::setCurrentOption(int value, bool printIt)
-{
+void CbcParam::setCurrentOption(int value, bool printIt) {
   if (printIt && value != currentKeyWord_)
     std::cout << "Option for " << name_ << " changed from "
               << definedKeyWords_[currentKeyWord_] << " to "
@@ -874,13 +770,12 @@ void CbcParam::setCurrentOption(int value, bool printIt)
   currentKeyWord_ = value;
 }
 // Sets current parameter option and returns printable string
-const char *
-CbcParam::setCurrentOptionWithMessage(int value)
-{
+const char *CbcParam::setCurrentOptionWithMessage(int value) {
   if (value != currentKeyWord_) {
     char current[100];
     char newString[100];
-    if (currentKeyWord_ >= 0 && (fakeKeyWord_ <= 0 || currentKeyWord_ < fakeKeyWord_))
+    if (currentKeyWord_ >= 0 &&
+        (fakeKeyWord_ <= 0 || currentKeyWord_ < fakeKeyWord_))
       strcpy(current, definedKeyWords_[currentKeyWord_].c_str());
     else if (currentKeyWord_ < 0)
       sprintf(current, "minus%d", -currentKeyWord_ - 1000);
@@ -892,8 +787,8 @@ CbcParam::setCurrentOptionWithMessage(int value)
       sprintf(newString, "minus%d", -value - 1000);
     else
       sprintf(newString, "plus%d", value - 1000);
-    sprintf(printArray, "Option for %s changed from %s to %s",
-      name_.c_str(), current, newString);
+    sprintf(printArray, "Option for %s changed from %s to %s", name_.c_str(),
+            current, newString);
 #if FLUSH_PRINT_BUFFER > 2
     if (name_ == "bufferedMode")
       coinFlushBufferFlag = value;
@@ -905,9 +800,7 @@ CbcParam::setCurrentOptionWithMessage(int value)
   return printArray;
 }
 // Sets current parameter option using string with message
-const char *
-CbcParam::setCurrentOptionWithMessage(const std::string value)
-{
+const char *CbcParam::setCurrentOptionWithMessage(const std::string value) {
   int action = parameterOption(value);
   char current[100];
   printArray[0] = '\0';
@@ -918,26 +811,26 @@ CbcParam::setCurrentOptionWithMessage(const std::string value)
 #endif
     if (action == currentKeyWord_)
       return NULL;
-    if (currentKeyWord_ >= 0 && (fakeKeyWord_ <= 0 || currentKeyWord_ < fakeKeyWord_))
+    if (currentKeyWord_ >= 0 &&
+        (fakeKeyWord_ <= 0 || currentKeyWord_ < fakeKeyWord_))
       strcpy(current, definedKeyWords_[currentKeyWord_].c_str());
     else if (currentKeyWord_ < 0)
       sprintf(current, "minus%d", -currentKeyWord_ - 1000);
     else
       sprintf(current, "plus%d", currentKeyWord_ - 1000);
-    sprintf(printArray, "Option for %s changed from %s to %s",
-      name_.c_str(), current, value.c_str());
+    sprintf(printArray, "Option for %s changed from %s to %s", name_.c_str(),
+            current, value.c_str());
     currentKeyWord_ = action;
   } else {
-    sprintf(printArray, "Option for %s given illegal value %s",
-      name_.c_str(), value.c_str());
+    sprintf(printArray, "Option for %s given illegal value %s", name_.c_str(),
+            value.c_str());
   }
   return printArray;
 }
 /* Returns current parameter option position
    but if fake keyword returns fakeValue_
 */
-int CbcParam::currentOptionAsInteger() const
-{
+int CbcParam::currentOptionAsInteger() const {
   int fakeInteger;
   return currentOptionAsInteger(fakeInteger);
 }
@@ -945,8 +838,7 @@ int CbcParam::currentOptionAsInteger() const
    but if fake keyword returns fakeValue_ and sets
    fakeInteger to value
 */
-int CbcParam::currentOptionAsInteger(int &fakeInteger) const
-{
+int CbcParam::currentOptionAsInteger(int &fakeInteger) const {
   fakeInteger = -COIN_INT_MAX;
   if (fakeKeyWord_ < 0) {
     return currentKeyWord_;
@@ -963,15 +855,16 @@ int CbcParam::currentOptionAsInteger(int &fakeInteger) const
 }
 
 // Print Long help
-void CbcParam::printLongHelp() const
-{
+void CbcParam::printLongHelp() const {
   if (type_ >= 1 && type_ < 600) {
     CbcReadPrintit(longHelp_.c_str());
     if (type_ < CLP_PARAM_INT_LOGLEVEL) {
-      printf("<Range of values is %g to %g;\n\tcurrent %g>\n", lowerDoubleValue_, upperDoubleValue_, doubleValue_);
+      printf("<Range of values is %g to %g;\n\tcurrent %g>\n",
+             lowerDoubleValue_, upperDoubleValue_, doubleValue_);
       assert(upperDoubleValue_ > lowerDoubleValue_);
     } else if (type_ < CLP_PARAM_STR_DIRECTION) {
-      printf("<Range of values is %d to %d;\n\tcurrent %d>\n", lowerIntValue_, upperIntValue_, intValue_);
+      printf("<Range of values is %d to %d;\n\tcurrent %d>\n", lowerIntValue_,
+             upperIntValue_, intValue_);
       assert(upperIntValue_ > lowerIntValue_);
     } else if (type_ < CLP_PARAM_ACTION_DIRECTORY) {
       printOptions();
@@ -979,21 +872,19 @@ void CbcParam::printLongHelp() const
   }
 }
 
-void CbcParam::printString() const
-{
+void CbcParam::printString() const {
   if (name_ == "directory")
     std::cout << "Current working directory is " << stringValue_ << std::endl;
   else if (name_.substr(0, 6) == "printM")
     std::cout << "Current value of printMask is " << stringValue_ << std::endl;
   else
-    std::cout << "Current default (if $ as parameter) for " << name_
-              << " is " << stringValue_ << std::endl;
+    std::cout << "Current default (if $ as parameter) for " << name_ << " is "
+              << stringValue_ << std::endl;
 }
 
 // Sets value of fake keyword to current size of keywords
-void CbcParam::setFakeKeyWord(int fakeValue)
-{
-  fakeKeyWord_ = static_cast< int >(definedKeyWords_.size());
+void CbcParam::setFakeKeyWord(int fakeValue) {
+  fakeKeyWord_ = static_cast<int>(definedKeyWords_.size());
   assert(fakeKeyWord_ > 0);
   fakeValue_ = fakeValue;
   assert(fakeValue_ >= 0);
@@ -1002,9 +893,8 @@ void CbcParam::setFakeKeyWord(int fakeValue)
 //###########################################################################
 //###########################################################################
 
-void CbcReadPrintit(const char *input)
-{
-  int length = static_cast< int >(strlen(input));
+void CbcReadPrintit(const char *input) {
+  int length = static_cast<int>(strlen(input));
   assert(length <= 1000);
   char temp[1001];
   int i;
@@ -1032,9 +922,7 @@ void CbcReadPrintit(const char *input)
 //###########################################################################
 
 // Simple read stuff
-std::string
-CbcReadNextField()
-{
+std::string CbcReadNextField() {
   std::string field;
   static char coin_prompt[] = "Cbc:";
 
@@ -1087,7 +975,7 @@ CbcReadNextField()
   if (where != saveWhere) {
     char save = *where;
     *where = '\0';
-    //convert to string
+    // convert to string
     field = saveWhere;
     *where = save;
   } else {
@@ -1100,15 +988,15 @@ CbcReadNextField()
 //###########################################################################
 //###########################################################################
 
-std::string
-CbcReadGetCommand(int &whichArgument, int argc, const char *argv[])
-{
+std::string CbcReadGetCommand(int &whichArgument, int argc,
+                              const char *argv[]) {
   std::string field = "EOL";
   // say no =
   afterEquals = "";
   while (field == "EOL") {
     if (whichArgument > 0) {
-      if ((whichArgument < argc && argv[whichArgument]) || CbcEnvironmentIndex >= 0) {
+      if ((whichArgument < argc && argv[whichArgument]) ||
+          CbcEnvironmentIndex >= 0) {
         if (CbcEnvironmentIndex < 0) {
           field = argv[whichArgument++];
         } else {
@@ -1155,37 +1043,35 @@ CbcReadGetCommand(int &whichArgument, int argc, const char *argv[])
     afterEquals = field.substr(found + 1);
     field = field.substr(0, found);
   }
-  //std::cout<<field<<std::endl;
+  // std::cout<<field<<std::endl;
   return field;
 }
 
 //###########################################################################
 //###########################################################################
 
-std::string
-CbcReadGetString(int &whichArgument, int argc, const char *argv[])
-{
+std::string CbcReadGetString(int &whichArgument, int argc, const char *argv[]) {
   std::string field = "EOL";
   if (afterEquals == "") {
     if (whichArgument > 0) {
       if (whichArgument < argc || CbcEnvironmentIndex >= 0) {
         if (CbcEnvironmentIndex < 0) {
-	  const char * input = argv[whichArgument];
-	  if (strcmp(input,"--")&&strcmp(input,"stdin")&&
-	      strcmp(input,"stdin_lp")) {
+          const char *input = argv[whichArgument];
+          if (strcmp(input, "--") && strcmp(input, "stdin") &&
+              strcmp(input, "stdin_lp")) {
             field = argv[whichArgument++];
           } else {
             whichArgument++;
             // -- means import from stdin
-	    // but allow for other than mps files
-	    // Cbc does things in different way !!
-	    if (!strcmp(input,"--"))
-	      field = "-";
-	    else if (!strcmp(input,"stdin"))
-	      field = "-";
-	    else if (!strcmp(input,"stdin_lp"))
-	      field = "-lp";
-	  }
+            // but allow for other than mps files
+            // Cbc does things in different way !!
+            if (!strcmp(input, "--"))
+              field = "-";
+            else if (!strcmp(input, "stdin"))
+              field = "-";
+            else if (!strcmp(input, "stdin_lp"))
+              field = "-lp";
+          }
         } else {
           fillEnv();
           field = line;
@@ -1198,7 +1084,7 @@ CbcReadGetString(int &whichArgument, int argc, const char *argv[])
     field = afterEquals;
     afterEquals = "";
   }
-  //std::cout<<field<<std::endl;
+  // std::cout<<field<<std::endl;
   return field;
 }
 
@@ -1206,8 +1092,8 @@ CbcReadGetString(int &whichArgument, int argc, const char *argv[])
 //###########################################################################
 
 // valid 0 - okay, 1 bad, 2 not there
-int CbcReadGetIntField(int &whichArgument, int argc, const char *argv[], int *valid)
-{
+int CbcReadGetIntField(int &whichArgument, int argc, const char *argv[],
+                       int *valid) {
   std::string field = "EOL";
   if (afterEquals == "") {
     if (whichArgument > 0) {
@@ -1228,7 +1114,7 @@ int CbcReadGetIntField(int &whichArgument, int argc, const char *argv[], int *va
     afterEquals = "";
   }
   long int value = 0;
-  //std::cout<<field<<std::endl;
+  // std::cout<<field<<std::endl;
   if (field != "EOL") {
     const char *start = field.c_str();
     char *endPointer = NULL;
@@ -1243,15 +1129,14 @@ int CbcReadGetIntField(int &whichArgument, int argc, const char *argv[], int *va
   } else {
     *valid = 2;
   }
-  return static_cast< int >(value);
+  return static_cast<int>(value);
 }
 
 //###########################################################################
 //###########################################################################
 
-double
-CbcReadGetDoubleField(int &whichArgument, int argc, const char *argv[], int *valid)
-{
+double CbcReadGetDoubleField(int &whichArgument, int argc, const char *argv[],
+                             int *valid) {
   std::string field = "EOL";
   if (afterEquals == "") {
     if (whichArgument > 0) {
@@ -1272,7 +1157,7 @@ CbcReadGetDoubleField(int &whichArgument, int argc, const char *argv[], int *val
     afterEquals = "";
   }
   double value = 0.0;
-  //std::cout<<field<<std::endl;
+  // std::cout<<field<<std::endl;
   if (field != "EOL") {
     const char *start = field.c_str();
     char *endPointer = NULL;
@@ -1292,64 +1177,74 @@ CbcReadGetDoubleField(int &whichArgument, int argc, const char *argv[], int *val
 
 /*
   Subroutine to establish the cbc parameter array. See the description of
-  class CbcParam for details. 
+  class CbcParam for details.
 */
-void establishCbcParams(std::vector< CbcParam > &parameters)
-{
+void establishCbcParams(std::vector<CbcParam> &parameters) {
   parameters.clear();
   parameters.push_back(CbcParam("?", "For help", CBC_PARAM_GENERALQUERY, 7, 0));
-  parameters.push_back(CbcParam("???", "For help", CBC_PARAM_FULLGENERALQUERY, 7, 0));
-  parameters.push_back(CbcParam("-", "From stdin", CBC_PARAM_ACTION_STDIN, 3, 0));
+  parameters.push_back(
+      CbcParam("???", "For help", CBC_PARAM_FULLGENERALQUERY, 7, 0));
+  parameters.push_back(
+      CbcParam("-", "From stdin", CBC_PARAM_ACTION_STDIN, 3, 0));
 
 // some help strings that repeat for many options
-#define CUTS_LONGHELP \
-  "Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). " \
-  "Value 'root' lets CBC run the cut generator generate only at the root node. " \
-  "Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. " \
-  "Value 'forceon' turns on the cut generator and forces CBC to use it at every node."
-#define HEURISTICS_LONGHELP \
-  "Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. " \
-  "Value 'before' means use the heuristic only if option doHeuristics is used. " \
-  "Value 'both' means to use the heuristic if option doHeuristics is used and during solve."
+#define CUTS_LONGHELP                                                          \
+  "Value 'on' enables the cut generator and CBC will try it in the branch "    \
+  "and cut tree (see cutDepth on how to fine tune the behavior). "             \
+  "Value 'root' lets CBC run the cut generator generate only at the root "     \
+  "node. "                                                                     \
+  "Value 'ifmove' lets CBC use the cut generator in the tree if it looks as "  \
+  "if it is doing some good and moves the objective value. "                   \
+  "Value 'forceon' turns on the cut generator and forces CBC to use it at "    \
+  "every node."
+#define HEURISTICS_LONGHELP                                                    \
+  "Value 'on' means to use the heuristic in each node of the tree, i.e. "      \
+  "after preprocessing. "                                                      \
+  "Value 'before' means use the heuristic only if option doHeuristics is "     \
+  "used. "                                                                     \
+  "Value 'both' means to use the heuristic if option doHeuristics is used "    \
+  "and during solve."
 
   {
-    CbcParam p("allC!ommands", "Whether to print less used commands",
-      "no", CBC_PARAM_STR_ALLCOMMANDS);
+    CbcParam p("allC!ommands", "Whether to print less used commands", "no",
+               CBC_PARAM_STR_ALLCOMMANDS);
 
     p.append("more");
     p.append("all");
     p.setLonghelp(
-      "For the sake of your sanity, only the more useful and simple commands \
+        "For the sake of your sanity, only the more useful and simple commands \
 are printed out on ?.");
     parameters.push_back(p);
   }
   {
     CbcParam p("allow!ableGap", "Stop when gap between best possible and \
 best less than this",
-      0.0, COIN_DBL_MAX, CBC_PARAM_DBL_ALLOWABLEGAP);
+               0.0, COIN_DBL_MAX, CBC_PARAM_DBL_ALLOWABLEGAP);
     p.setDoubleValue(1e-10);
     p.setLonghelp(
-      "If the gap between best known solution and the best possible solution is less than this \
+        "If the gap between best known solution and the best possible solution is less than this \
 value, then the search will be terminated.  Also see ratioGap.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("artif!icialCost", "Costs >= this treated as artificials in feasibility pump",
-      0.0, COIN_DBL_MAX, CBC_PARAM_DBL_ARTIFICIALCOST, 1);
+    CbcParam p("artif!icialCost",
+               "Costs >= this treated as artificials in feasibility pump", 0.0,
+               COIN_DBL_MAX, CBC_PARAM_DBL_ARTIFICIALCOST, 1);
     p.setDoubleValue(0.0);
-    p.setLonghelp(
-      "A value of 0.0 means off. Otherwise, variables with costs >= this are treated as artificial variables and fixed to lower bound in feasibility pump.");
+    p.setLonghelp("A value of 0.0 means off. Otherwise, variables with costs "
+                  ">= this are treated as artificial variables and fixed to "
+                  "lower bound in feasibility pump.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("branch!AndCut", "Do Branch and Cut",
-      CBC_PARAM_ACTION_BAB);
+    CbcParam p("branch!AndCut", "Do Branch and Cut", CBC_PARAM_ACTION_BAB);
     p.setLonghelp(
-      "This does branch and cut.  There are many parameters which can affect the performance.  \
+        "This does branch and cut.  There are many parameters which can affect the performance.  \
 First just try with default settings and look carefully at the log file.  Did cuts help?  Did they take too long?  \
 Look at output to see which cuts were effective and then do some tuning.  You will see that the \
 options for cuts are off, on, root and ifmove, forceon.  Off is \
-obvious. " CUTS_LONGHELP " For probing, forceonbut just does fixing probing in tree - not strengthening etc.  \
+obvious. " CUTS_LONGHELP
+        " For probing, forceonbut just does fixing probing in tree - not strengthening etc.  \
 If pre-processing reduced the size of the \
 problem or strengthened many coefficients then it is probably wise to leave it on.  Switch off heuristics \
 which did not provide solutions.  The other major area to look at is the search.  Hopefully good solutions \
@@ -1361,7 +1256,7 @@ have more rounds of cuts - see passC!uts and passT!ree.");
   }
   {
     CbcParam p("combine!Solutions", "Whether to use combine solution heuristic",
-      "off", CBC_PARAM_STR_COMBINE);
+               "off", CBC_PARAM_STR_COMBINE);
 
     p.append("on");
     p.append("both");
@@ -1369,43 +1264,43 @@ have more rounds of cuts - see passC!uts and passT!ree.");
     p.append("onquick");
     p.append("bothquick");
     p.append("beforequick");
-    p.setLonghelp(
-      "This heuristic does branch and cut on given problem by just \
+    p.setLonghelp("This heuristic does branch and cut on given problem by just \
 using variables which have appeared in one or more solutions. \
-It is obviously only tried after two or more solutions have been found. "
-      HEURISTICS_LONGHELP);
+It is obviously only tried after two or more solutions have been found. " HEURISTICS_LONGHELP);
 
     parameters.push_back(p);
   }
   {
-    CbcParam p("combine2!Solutions", "Whether to use crossover solution heuristic",
-      "off", CBC_PARAM_STR_CROSSOVER2);
+    CbcParam p("combine2!Solutions",
+               "Whether to use crossover solution heuristic", "off",
+               CBC_PARAM_STR_CROSSOVER2);
     p.append("on");
     p.append("both");
     p.append("before");
-    p.setLonghelp(
-      "This heuristic does branch and cut on the problem given by \
+    p.setLonghelp("This heuristic does branch and cut on the problem given by \
 fixing variables which have the same value in two or more solutions. \
-It obviously only tries after two or more solutions. "
-      HEURISTICS_LONGHELP);
+It obviously only tries after two or more solutions. " HEURISTICS_LONGHELP);
     parameters.push_back(p);
   }
   {
     CbcParam p("constraint!fromCutoff", "Whether to use cutoff as constraint",
-      "off", CBC_PARAM_STR_CUTOFF_CONSTRAINT);
+               "off", CBC_PARAM_STR_CUTOFF_CONSTRAINT);
 
     p.append("on");
     p.append("variable");
     p.append("forcevariable");
     p.append("conflict");
     p.setLonghelp(
-      "For some problems, cut generators and general branching work better if the problem would be infeasible if the cost is too high. "
-      "If this option is enabled, the objective function is added as a constraint which right hand side is set to the current cutoff value (objective value of best known solution)");
+        "For some problems, cut generators and general branching work better "
+        "if the problem would be infeasible if the cost is too high. "
+        "If this option is enabled, the objective function is added as a "
+        "constraint which right hand side is set to the current cutoff value "
+        "(objective value of best known solution)");
     parameters.push_back(p);
   }
   {
     CbcParam p("cost!Strategy", "How to use costs for branching priorities",
-      "off", CBC_PARAM_STR_BRANCHPRIORITY);
+               "off", CBC_PARAM_STR_BRANCHPRIORITY);
 
     p.append("pri!orities");
     p.append("column!Order?");
@@ -1416,19 +1311,22 @@ It obviously only tries after two or more solutions. "
     p.append("nonzero");
     p.append("general!Force?");
     p.setLonghelp(
-      "Value 'priorities' assigns highest priority to variables with largest absolute cost. This primitive strategy can be surprisingly effective. "
-      "Value 'columnorder' assigns the priorities 1, 2, 3, ... with respect to the column ordering. "
-      "Value '01first' ('01last') assignes two sets of priorities such that binary variables get high (low) priority. "
-      "Value 'length' assigns high priority to variables that occur in many equations. ");
+        "Value 'priorities' assigns highest priority to variables with largest "
+        "absolute cost. This primitive strategy can be surprisingly effective. "
+        "Value 'columnorder' assigns the priorities 1, 2, 3, ... with respect "
+        "to the column ordering. "
+        "Value '01first' ('01last') assignes two sets of priorities such that "
+        "binary variables get high (low) priority. "
+        "Value 'length' assigns high priority to variables that occur in many "
+        "equations. ");
 
     parameters.push_back(p);
   }
   {
-    CbcParam p("cplex!Use", "Whether to use Cplex!",
-      "off", CBC_PARAM_STR_CPX);
+    CbcParam p("cplex!Use", "Whether to use Cplex!", "off", CBC_PARAM_STR_CPX);
     p.append("on");
     p.setLonghelp(
-      " If the user has Cplex, but wants to use some of Cbc's heuristics \
+        " If the user has Cplex, but wants to use some of Cbc's heuristics \
 then you can!  If this is on, then Cbc will get to the root node and then \
 hand over to Cplex.  If heuristics find a solution this can be significantly \
 quicker.  You will probably want to switch off Cbc's cuts as Cplex thinks \
@@ -1439,27 +1337,28 @@ both.");
   }
   {
     CbcParam p("csv!Statistics", "Create one line of statistics",
-      CBC_PARAM_ACTION_CSVSTATISTICS, 2, 1);
+               CBC_PARAM_ACTION_CSVSTATISTICS, 2, 1);
     p.setLonghelp(
-      "This appends statistics to given file name.  It will use the default\
+        "This appends statistics to given file name.  It will use the default\
  directory given by 'directory'.  A name of '$' will use the previous value for the name.  This\
  is initialized to '', i.e. it must be set.  Adds header if file empty or does not exist.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("cutD!epth", "Depth in tree at which to do cuts",
-      -1, COIN_INT_MAX, CBC_PARAM_INT_CUTDEPTH);
+    CbcParam p("cutD!epth", "Depth in tree at which to do cuts", -1,
+               COIN_INT_MAX, CBC_PARAM_INT_CUTDEPTH);
     p.setLonghelp(
-      "Cut generators may be off, on, on only at the root node, or on if they look useful. \
+        "Cut generators may be off, on, on only at the root node, or on if they look useful. \
       Setting this option to a positive value K let CBC call a cutgenerator on a node whenever the depth in the tree is a multiple of K. \
       The default of -1 lets CBC decide.");
     p.setIntValue(-1);
     parameters.push_back(p);
   }
   {
-    CbcParam p("cutL!ength", "Length of a cut",
-      -1, COIN_INT_MAX, CBC_PARAM_INT_CUTLENGTH);
-    p.setLonghelp("At present this only applies to Gomory cuts. -1 (default) leaves as is. \
+    CbcParam p("cutL!ength", "Length of a cut", -1, COIN_INT_MAX,
+               CBC_PARAM_INT_CUTLENGTH);
+    p.setLonghelp(
+        "At present this only applies to Gomory cuts. -1 (default) leaves as is. \
 Any value >0 says that all cuts <= this length can be generated both at \
 root node and in tree. 0 says to use some dynamic lengths.  If value >=10,000,000 \
 then the length in tree is value%10000000 - so 10000100 means unlimited length \
@@ -1469,33 +1368,33 @@ at root and 100 in tree.");
   }
   {
     CbcParam p("cuto!ff", "Bound on the objective value for all solutions",
-      -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_CUTOFF);
+               -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_CUTOFF);
     p.setDoubleValue(1.0e50);
     p.setLonghelp(
-      "All solutions must have a better objective value (in a minimization sense) than the value of this option.  \
+        "All solutions must have a better objective value (in a minimization sense) than the value of this option.  \
 CBC also updates this value whenever it obtains a solution to the value of \
 the objective function of the solution minus the cutoff increment.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("cuts!OnOff", "Switches all cut generators on or off",
-      "off", CBC_PARAM_STR_CUTSSTRATEGY);
+    CbcParam p("cuts!OnOff", "Switches all cut generators on or off", "off",
+               CBC_PARAM_STR_CUTSSTRATEGY);
     p.append("on");
     p.append("root");
     p.append("ifmove");
     p.append("forceOn");
     p.setLonghelp(
-      "This can be used to switch on or off all cut generators (apart from Reduce and Split). "
-      "Then one can turn individual ones off or on. "
-      CUTS_LONGHELP);
+        "This can be used to switch on or off all cut generators (apart from "
+        "Reduce and Split). "
+        "Then one can turn individual ones off or on. " CUTS_LONGHELP);
     parameters.push_back(p);
   }
   {
     CbcParam p("debug!In", "read valid solution from file",
-      CBC_PARAM_ACTION_DEBUG, 7, 1);
+               CBC_PARAM_ACTION_DEBUG, 7, 1);
 
     p.setLonghelp(
-      "This will read a solution file from the given file name.  It will use the default\
+        "This will read a solution file from the given file name.  It will use the default\
  directory given by 'directory'.  A name of '$' will use the previous value for the name.  This\
  is initialized to '', i.e. it must be set.\n\n\
 If set to create it will create a file called debug.file  after search.\n\n\
@@ -1506,11 +1405,11 @@ re-run with debug set to 'debug.file'  The create case has same effect as saveSo
   }
   {
     CbcParam p("depth!MiniBab", "Depth at which to try mini branch-and-bound",
-      -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_DEPTHMINIBAB);
+               -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_DEPTHMINIBAB);
 
     p.setIntValue(-1);
     p.setLonghelp(
-      "Rather a complicated parameter but can be useful. -1 means off for large problems but on as if -12 for problems where rows+columns<500, -2 \
+        "Rather a complicated parameter but can be useful. -1 means off for large problems but on as if -12 for problems where rows+columns<500, -2 \
 means use Cplex if it is linked in.  Otherwise if negative then go into depth first complete search fast branch and bound when depth>= -value-2 \
 (so -3 will use this at depth>=1).  This mode is only switched on after 500 nodes.  If you really want to switch it off for small problems then set \
 this to -999.  If >=0 the value doesn't matter very much.  The code will do approximately 100 nodes of fast branch and bound every now and then at depth>=5.  \
@@ -1518,26 +1417,26 @@ The actual logic is too twisted to describe here.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("dextra3", "Extra double parameter 3",
-      -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_DEXTRA3, 0);
+    CbcParam p("dextra3", "Extra double parameter 3", -COIN_DBL_MAX,
+               COIN_DBL_MAX, CBC_PARAM_DBL_DEXTRA3, 0);
     p.setDoubleValue(0.0);
     parameters.push_back(p);
   }
   {
-    CbcParam p("dextra4", "Extra double parameter 4",
-      -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_DEXTRA4, 0);
+    CbcParam p("dextra4", "Extra double parameter 4", -COIN_DBL_MAX,
+               COIN_DBL_MAX, CBC_PARAM_DBL_DEXTRA4, 0);
     p.setDoubleValue(0.0);
     parameters.push_back(p);
   }
   {
-    CbcParam p("dextra4", "Extra double parameter 5",
-      -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_DEXTRA5, 0);
+    CbcParam p("dextra4", "Extra double parameter 5", -COIN_DBL_MAX,
+               COIN_DBL_MAX, CBC_PARAM_DBL_DEXTRA5, 0);
     p.setDoubleValue(0.0);
     parameters.push_back(p);
   }
   {
     CbcParam p("Dins", "Whether to try Distance Induced Neighborhood Search",
-      "off", CBC_PARAM_STR_DINS);
+               "off", CBC_PARAM_STR_DINS);
 
     p.append("on");
     p.append("both");
@@ -1547,29 +1446,30 @@ The actual logic is too twisted to describe here.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("direction", "Minimize or Maximize",
-      "min!imize", CBC_PARAM_STR_DIRECTION);
+    CbcParam p("direction", "Minimize or Maximize", "min!imize",
+               CBC_PARAM_STR_DIRECTION);
     p.append("max!imize");
     p.append("zero");
     p.setLonghelp(
-      "The default is minimize - use 'direction maximize' for maximization.\n\
+        "The default is minimize - use 'direction maximize' for maximization.\n\
 You can also use the parameters 'maximize' or 'minimize'.");
     parameters.push_back(p);
   }
   {
     CbcParam p("directory", "Set Default directory for import etc.",
-      CBC_PARAM_ACTION_DIRECTORY);
+               CBC_PARAM_ACTION_DIRECTORY);
     p.setLonghelp(
-      "This sets the directory which import, export, saveModel, restoreModel etc will use.\
+        "This sets the directory which import, export, saveModel, restoreModel etc will use.\
   It is initialized to './'");
     parameters.push_back(p);
   }
   {
-    CbcParam p("dirSample", "Set directory where the COIN-OR sample problems are.",
-      CBC_PARAM_ACTION_DIRSAMPLE, 7, 1);
+    CbcParam p("dirSample",
+               "Set directory where the COIN-OR sample problems are.",
+               CBC_PARAM_ACTION_DIRSAMPLE, 7, 1);
 
     p.setLonghelp(
-      "This sets the directory where the COIN-OR sample problems reside. It is\
+        "This sets the directory where the COIN-OR sample problems reside. It is\
  used only when -unitTest is passed to cbc. cbc will pick up the test problems\
  from this directory.\
  It is initialized to '../../Data/Sample'");
@@ -1577,10 +1477,10 @@ You can also use the parameters 'maximize' or 'minimize'.");
   }
   {
     CbcParam p("dirNetlib", "Set directory where the netlib problems are.",
-      CBC_PARAM_ACTION_DIRNETLIB, 7, 1);
+               CBC_PARAM_ACTION_DIRNETLIB, 7, 1);
 
     p.setLonghelp(
-      "This sets the directory where the netlib problems reside. One can get\
+        "This sets the directory where the netlib problems reside. One can get\
  the netlib problems from COIN-OR or from the main netlib site. This\
  parameter is used only when -netlib is passed to cbc. cbc will pick up the\
  netlib problems from this directory. If clp is built without zlib support\
@@ -1590,10 +1490,10 @@ You can also use the parameters 'maximize' or 'minimize'.");
   }
   {
     CbcParam p("dirMiplib", "Set directory where the miplib 2003 problems are.",
-      CBC_PARAM_ACTION_DIRMIPLIB, 7, 1);
+               CBC_PARAM_ACTION_DIRMIPLIB, 7, 1);
 
     p.setLonghelp(
-      "This sets the directory where the miplib 2003 problems reside. One can\
+        "This sets the directory where the miplib 2003 problems reside. One can\
  get the miplib problems from COIN-OR or from the main miplib site. This\
  parameter is used only when -miplib is passed to cbc. cbc will pick up the\
  miplib problems from this directory. If cbc is built without zlib support\
@@ -1602,10 +1502,9 @@ You can also use the parameters 'maximize' or 'minimize'.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("diveO!pt", "Diving options",
-      -1, 200000, CBC_PARAM_INT_DIVEOPT, 1);
-    p.setLonghelp(
-      "If >2 && <20 then modify diving options - \
+    CbcParam p("diveO!pt", "Diving options", -1, 200000, CBC_PARAM_INT_DIVEOPT,
+               1);
+    p.setLonghelp("If >2 && <20 then modify diving options - \
 	 \n\t3 only at root and if no solution,  \
 	 \n\t4 only at root and if this heuristic has not got solution, \
 	 \n\t5 decay only if no solution, \
@@ -1617,11 +1516,11 @@ You can also use the parameters 'maximize' or 'minimize'.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("diveS!olves", "Diving solve option",
-      -1, 200000, CBC_PARAM_INT_DIVEOPTSOLVES, 1);
+    CbcParam p("diveS!olves", "Diving solve option", -1, 200000,
+               CBC_PARAM_INT_DIVEOPTSOLVES, 1);
 
     p.setLonghelp(
-      "If >0 then do up to this many solves. However, the last digit is ignored \
+        "If >0 then do up to this many solves. However, the last digit is ignored \
 and used for extra options: \
       1-3 enables fixing of satisfied integer variables (but not at bound), \
       where 1 switches this off for that dive if the dive goes infeasible, \
@@ -1630,22 +1529,23 @@ and used for extra options: \
     parameters.push_back(p);
   }
   {
-    CbcParam p("DivingS!ome", "Whether to try Diving heuristics",
-      "off", CBC_PARAM_STR_DIVINGS);
+    CbcParam p("DivingS!ome", "Whether to try Diving heuristics", "off",
+               CBC_PARAM_STR_DIVINGS);
 
     p.append("on");
     p.append("both");
     p.append("before");
     p.setLonghelp(
-      "This switches on a random diving heuristic at various times. \
-One may prefer to individually turn diving heuristics on or off. "
-      HEURISTICS_LONGHELP);
-// C - Coefficient, F - Fractional, G - Guided, L - LineSearch, P - PseudoCost, V - VectorLength.
+        "This switches on a random diving heuristic at various times. \
+One may prefer to individually turn diving heuristics on or off. " HEURISTICS_LONGHELP);
+    // C - Coefficient, F - Fractional, G - Guided, L - LineSearch, P -
+    // PseudoCost, V - VectorLength.
     parameters.push_back(p);
   }
   {
-    CbcParam p("DivingC!oefficient", "Whether to try Coefficient diving heuristic",
-      "off", CBC_PARAM_STR_DIVINGC);
+    CbcParam p("DivingC!oefficient",
+               "Whether to try Coefficient diving heuristic", "off",
+               CBC_PARAM_STR_DIVINGC);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -1653,8 +1553,9 @@ One may prefer to individually turn diving heuristics on or off. "
     parameters.push_back(p);
   }
   {
-    CbcParam p("DivingF!ractional", "Whether to try Fractional diving heuristic",
-      "off", CBC_PARAM_STR_DIVINGF);
+    CbcParam p("DivingF!ractional",
+               "Whether to try Fractional diving heuristic", "off",
+               CBC_PARAM_STR_DIVINGF);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -1662,8 +1563,8 @@ One may prefer to individually turn diving heuristics on or off. "
     parameters.push_back(p);
   }
   {
-    CbcParam p("DivingG!uided", "Whether to try Guided diving heuristic",
-      "off", CBC_PARAM_STR_DIVINGG);
+    CbcParam p("DivingG!uided", "Whether to try Guided diving heuristic", "off",
+               CBC_PARAM_STR_DIVINGG);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -1671,8 +1572,9 @@ One may prefer to individually turn diving heuristics on or off. "
     parameters.push_back(p);
   }
   {
-    CbcParam p("DivingL!ineSearch", "Whether to try Linesearch diving heuristic",
-      "off", CBC_PARAM_STR_DIVINGL);
+    CbcParam p("DivingL!ineSearch",
+               "Whether to try Linesearch diving heuristic", "off",
+               CBC_PARAM_STR_DIVINGL);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -1680,8 +1582,9 @@ One may prefer to individually turn diving heuristics on or off. "
     parameters.push_back(p);
   }
   {
-    CbcParam p("DivingP!seudoCost", "Whether to try Pseudocost diving heuristic",
-      "off", CBC_PARAM_STR_DIVINGP);
+    CbcParam p("DivingP!seudoCost",
+               "Whether to try Pseudocost diving heuristic", "off",
+               CBC_PARAM_STR_DIVINGP);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -1689,8 +1592,9 @@ One may prefer to individually turn diving heuristics on or off. "
     parameters.push_back(p);
   }
   {
-    CbcParam p("DivingV!ectorLength", "Whether to try Vectorlength diving heuristic",
-      "off", CBC_PARAM_STR_DIVINGV);
+    CbcParam p("DivingV!ectorLength",
+               "Whether to try Vectorlength diving heuristic", "off",
+               CBC_PARAM_STR_DIVINGV);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -1699,55 +1603,53 @@ One may prefer to individually turn diving heuristics on or off. "
   }
   {
     CbcParam p("doH!euristic", "Do heuristics before any preprocessing",
-      CBC_PARAM_ACTION_DOHEURISTIC, 3);
+               CBC_PARAM_ACTION_DOHEURISTIC, 3);
     p.setLonghelp(
-      "Normally heuristics are done in branch and bound.  It may be useful to do them outside. \
+        "Normally heuristics are done in branch and bound.  It may be useful to do them outside. \
 Only those heuristics with 'both' or 'before' set will run.  \
 Doing this may also set cutoff, which can help with preprocessing.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("dw!Heuristic", "Whether to try Dantzig Wolfe heuristic",
-      "off", CBC_PARAM_STR_DW);
+    CbcParam p("dw!Heuristic", "Whether to try Dantzig Wolfe heuristic", "off",
+               CBC_PARAM_STR_DW);
     p.append("on");
     p.append("both");
     p.append("before");
     p.setLonghelp(
-      "This heuristic is very very compute intensive. It tries to find a Dantzig Wolfe structure and use that. "
-      HEURISTICS_LONGHELP);
+        "This heuristic is very very compute intensive. It tries to find a "
+        "Dantzig Wolfe structure and use that. " HEURISTICS_LONGHELP);
     parameters.push_back(p);
   }
   {
-    CbcParam p("end", "Stops clp execution",
-      CBC_PARAM_ACTION_EXIT);
+    CbcParam p("end", "Stops clp execution", CBC_PARAM_ACTION_EXIT);
     p.setLonghelp(
-      "This stops execution ; end, exit, quit and stop are synonyms");
+        "This stops execution ; end, exit, quit and stop are synonyms");
     parameters.push_back(p);
   }
   {
     CbcParam p("environ!ment", "Read commands from environment",
-      CBC_PARAM_ACTION_ENVIRONMENT, 7, 0);
+               CBC_PARAM_ACTION_ENVIRONMENT, 7, 0);
     p.setLonghelp(
-      "This starts reading from environment variable CBC_CLP_ENVIRONMENT.");
+        "This starts reading from environment variable CBC_CLP_ENVIRONMENT.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("error!sAllowed", "Whether to allow import errors",
-      "off", CBC_PARAM_STR_ERRORSALLOWED, 3);
+    CbcParam p("error!sAllowed", "Whether to allow import errors", "off",
+               CBC_PARAM_STR_ERRORSALLOWED, 3);
 
     p.append("on");
     p.setLonghelp(
-      "The default is not to use any model which had errors when reading the mps file.\
+        "The default is not to use any model which had errors when reading the mps file.\
   Setting this to 'on' will allow all errors from which the code can recover\
  simply by ignoring the error.  There are some errors from which the code can not recover \
 e.g. no ENDATA.  This has to be set before import i.e. -errorsAllowed on -import xxxxxx.mps.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("exper!iment", "Whether to use testing features",
-      -1, 200000, CBC_PARAM_INT_EXPERIMENT, 0);
-    p.setLonghelp(
-      "Defines how adventurous you want to be in using new ideas. \
+    CbcParam p("exper!iment", "Whether to use testing features", -1, 200000,
+               CBC_PARAM_INT_EXPERIMENT, 0);
+    p.setLonghelp("Defines how adventurous you want to be in using new ideas. \
 0 then no new ideas, 1 fairly sensible, 2 a bit dubious, 3 you are on your own!");
 
     p.setIntValue(0);
@@ -1755,10 +1657,9 @@ e.g. no ENDATA.  This has to be set before import i.e. -errorsAllowed on -import
   }
   {
     CbcParam p("expensive!Strong", "Whether to do even more strong branching",
-      0, COIN_INT_MAX, CBC_PARAM_INT_STRONG_STRATEGY, 0);
+               0, COIN_INT_MAX, CBC_PARAM_INT_STRONG_STRATEGY, 0);
 
-    p.setLonghelp(
-      "Strategy for extra strong branching. \
+    p.setLonghelp("Strategy for extra strong branching. \
 0 is normal strong branching. \
 1, 2, 4, and 6 does strong branching on all fractional variables if \
 at the root node (1), \
@@ -1772,41 +1673,39 @@ If the values >= 100, then above rules are applied to value%100.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("export", "Export model as mps file",
-      CBC_PARAM_ACTION_EXPORT);
+    CbcParam p("export", "Export model as mps file", CBC_PARAM_ACTION_EXPORT);
 
     p.setLonghelp(
-      "This will write an MPS format file to the given file name.  It will use the default\
+        "This will write an MPS format file to the given file name.  It will use the default\
  directory given by 'directory'.  A name of '$' will use the previous value for the name.  This\
  is initialized to 'default.mps'.  \
 It can be useful to get rid of the original names and go over to using Rnnnnnnn and Cnnnnnnn.  This can be done by setting 'keepnames' off before importing mps file.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("extra1", "Extra integer parameter 1",
-      -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_EXTRA1, 0);
+    CbcParam p("extra1", "Extra integer parameter 1", -COIN_INT_MAX,
+               COIN_INT_MAX, CBC_PARAM_INT_EXTRA1, 0);
     p.setIntValue(-1);
     parameters.push_back(p);
   }
   {
-    CbcParam p("extra2", "Extra integer parameter 2",
-      -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_EXTRA2, 0);
+    CbcParam p("extra2", "Extra integer parameter 2", -COIN_INT_MAX,
+               COIN_INT_MAX, CBC_PARAM_INT_EXTRA2, 0);
     p.setIntValue(-1);
     parameters.push_back(p);
   }
   {
-    CbcParam p("extra3", "Extra integer parameter 3",
-      -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_EXTRA3, 0);
+    CbcParam p("extra3", "Extra integer parameter 3", -COIN_INT_MAX,
+               COIN_INT_MAX, CBC_PARAM_INT_EXTRA3, 0);
     p.setIntValue(-1);
     parameters.push_back(p);
   }
   {
-    CbcParam p("extra4", "Extra integer parameter 4",
-      -1, COIN_INT_MAX, CBC_PARAM_INT_EXTRA4, 0);
+    CbcParam p("extra4", "Extra integer parameter 4", -1, COIN_INT_MAX,
+               CBC_PARAM_INT_EXTRA4, 0);
 
     p.setIntValue(-1);
-    p.setLonghelp(
-      "This switches on yet more special options!! \
+    p.setLonghelp("This switches on yet more special options!! \
 The bottom digit is a strategy when to used shadow price stuff e.g. 3 \
 means use until a solution is found.  The next two digits say what sort \
 of dual information to use.  After that it goes back to powers of 2 so -\n\
@@ -1818,71 +1717,74 @@ of dual information to use.  After that it goes back to powers of 2 so -\n\
   }
   {
     CbcParam p("extraV!ariables", "Allow creation of extra integer variables",
-      -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_EXTRA_VARIABLES, 0);
+               -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_EXTRA_VARIABLES, 0);
     p.setIntValue(0);
     p.setLonghelp(
-      "Switches on a trivial re-formulation that introduces extra integer variables to group together variables with same cost.");
+        "Switches on a trivial re-formulation that introduces extra integer "
+        "variables to group together variables with same cost.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("feas!ibilityPump", "Whether to try the Feasibility Pump heuristic",
-      "off", CBC_PARAM_STR_FPUMP);
+    CbcParam p("feas!ibilityPump",
+               "Whether to try the Feasibility Pump heuristic", "off",
+               CBC_PARAM_STR_FPUMP);
 
     p.append("on");
     p.append("both");
     p.append("before");
-    p.setLonghelp(
-      "This heuristic is due to Fischetti, Glover, and Lodi \
+    p.setLonghelp("This heuristic is due to Fischetti, Glover, and Lodi \
 and uses a sequence of LPs to try and get an integer feasible solution. \
-Some fine tuning is available by options passFeasibilityPump and pumpTune. "
-      HEURISTICS_LONGHELP);
+Some fine tuning is available by options passFeasibilityPump and pumpTune. " HEURISTICS_LONGHELP);
     parameters.push_back(p);
   }
   {
     CbcParam p("fix!OnDj", "Try heuristic based on fixing variables with \
 reduced costs greater than this",
-      -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_DJFIX, 1);
+               -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_DJFIX, 1);
     p.setLonghelp(
-      "If this is set integer variables with reduced costs greater than this will be fixed \
+        "If this is set integer variables with reduced costs greater than this will be fixed \
 before branch and bound - use with extreme caution!");
     parameters.push_back(p);
   }
   {
-    CbcParam p("flow!CoverCuts", "Whether to use Flow Cover cuts",
-      "off", CBC_PARAM_STR_FLOWCUTS);
+    CbcParam p("flow!CoverCuts", "Whether to use Flow Cover cuts", "off",
+               CBC_PARAM_STR_FLOWCUTS);
     p.append("on");
     p.append("root");
     p.append("ifmove");
     p.append("forceOn");
     p.append("onglobal");
     p.setFakeKeyWord(3);
-    p.setLonghelp(CUTS_LONGHELP
-      " Reference: https://github.com/coin-or/Cgl/wiki/CglFlowCover"); // Can also enter testing values by plusnn (==ifmove)
+    p.setLonghelp(CUTS_LONGHELP " Reference: "
+                                "https://github.com/coin-or/Cgl/wiki/"
+                                "CglFlowCover"); // Can also enter testing
+                                                 // values by plusnn (==ifmove)
     parameters.push_back(p);
   }
   {
-    CbcParam p("force!Solution", "Whether to use given solution as crash for BAB",
-      -1, 20000000, CBC_PARAM_INT_USESOLUTION);
+    CbcParam p("force!Solution",
+               "Whether to use given solution as crash for BAB", -1, 20000000,
+               CBC_PARAM_INT_USESOLUTION);
     p.setIntValue(-1);
     p.setLonghelp(
-      "-1 off.  If 1 then tries to branch to solution given by AMPL or priorities file. \
+        "-1 off.  If 1 then tries to branch to solution given by AMPL or priorities file. \
 If 0 then just tries to set as best solution \
 If >1 then also does that many nodes on fixed problem.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("fraction!forBAB", "Fraction in feasibility pump",
-      1.0e-5, 1.1, CBC_PARAM_DBL_SMALLBAB, 1);
+    CbcParam p("fraction!forBAB", "Fraction in feasibility pump", 1.0e-5, 1.1,
+               CBC_PARAM_DBL_SMALLBAB, 1);
     p.setDoubleValue(0.5);
     p.setLonghelp(
-      "After a pass in the feasibility pump, variables which have not moved \
+        "After a pass in the feasibility pump, variables which have not moved \
 about are fixed and if the preprocessed model is smaller than this fraction of the original problem, \
 a few nodes of branch and bound are done on the reduced problem.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("GMI!Cuts", "Whether to use alternative Gomory cuts",
-      "off", CBC_PARAM_STR_GMICUTS);
+    CbcParam p("GMI!Cuts", "Whether to use alternative Gomory cuts", "off",
+               CBC_PARAM_STR_GMICUTS);
 
     p.append("on");
     p.append("root");
@@ -1894,13 +1796,13 @@ a few nodes of branch and bound are done on the reduced problem.");
     p.append("longifmove");
     p.append("forceLongOn");
     p.append("longendonly");
-    p.setLonghelp(CUTS_LONGHELP
-      " This version is by Giacomo Nannicini and may be more robust than gomoryCuts.");
+    p.setLonghelp(CUTS_LONGHELP " This version is by Giacomo Nannicini and may "
+                                "be more robust than gomoryCuts.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("gomory!Cuts", "Whether to use Gomory cuts",
-      "off", CBC_PARAM_STR_GOMORYCUTS);
+    CbcParam p("gomory!Cuts", "Whether to use Gomory cuts", "off",
+               CBC_PARAM_STR_GOMORYCUTS);
 
     p.append("on");
     p.append("root");
@@ -1912,34 +1814,33 @@ a few nodes of branch and bound are done on the reduced problem.");
     p.append("long");
     p.append("shorter");
     p.setLonghelp(
-      "The original cuts - beware of imitations!  Having gone out of favor, \
+        "The original cuts - beware of imitations!  Having gone out of favor, \
 they are now more fashionable as LP solvers are more robust and they interact well \
 with other cuts.  They will almost always give cuts (although in this executable \
 they are limited as to number of variables in cut).  However the cuts may be dense \
-so it is worth experimenting (Long allows any length). "
-    CUTS_LONGHELP
-    " Reference: https://github.com/coin-or/Cgl/wiki/CglGomory");
+so it is worth experimenting (Long allows any length). " CUTS_LONGHELP
+        " Reference: https://github.com/coin-or/Cgl/wiki/CglGomory");
     parameters.push_back(p);
   }
   {
-    CbcParam p("greedy!Heuristic", "Whether to use a greedy heuristic",
-      "off", CBC_PARAM_STR_GREEDY);
+    CbcParam p("greedy!Heuristic", "Whether to use a greedy heuristic", "off",
+               CBC_PARAM_STR_GREEDY);
 
     p.append("on");
     p.append("both");
     p.append("before");
-    //p.append("root");
-    p.setLonghelp(
-      "This heuristic tries to obtain a feasible solution by just fixing a percentage of variables and then try a small branch and cut run. "
-      HEURISTICS_LONGHELP);
+    // p.append("root");
+    p.setLonghelp("This heuristic tries to obtain a feasible solution by just "
+                  "fixing a percentage of variables and then try a small "
+                  "branch and cut run. " HEURISTICS_LONGHELP);
     parameters.push_back(p);
   }
   {
     CbcParam p("gsolu!tion", "Puts glpk solution to file",
-      CBC_PARAM_ACTION_GMPL_SOLUTION);
+               CBC_PARAM_ACTION_GMPL_SOLUTION);
 
     p.setLonghelp(
-      "Will write a glpk solution file to the given file name.  It will use the default \
+        "Will write a glpk solution file to the given file name.  It will use the default \
 directory given by 'directory'.  A name of '$' will use the previous value for the \
 name.  This is initialized to 'stdout' (this defaults to ordinary solution if stdout). \
 If problem created from gmpl model - will do any reports.");
@@ -1947,17 +1848,17 @@ If problem created from gmpl model - will do any reports.");
   }
   {
     CbcParam p("heur!isticsOnOff", "Switches most primal heuristics on or off",
-      "off", CBC_PARAM_STR_HEURISTICSTRATEGY);
+               "off", CBC_PARAM_STR_HEURISTICSTRATEGY);
     p.append("on");
     p.setLonghelp(
-      "This option can be used to switch on or off all heuristics that search for feasible solutions,\
+        "This option can be used to switch on or off all heuristics that search for feasible solutions,\
       except for the local tree search, as it dramatically alters the search.\
       Then individual heuristics can be turned off or on.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("clique!Cuts", "Whether to use Clique cuts",
-      "off", CBC_PARAM_STR_CLIQUECUTS);
+    CbcParam p("clique!Cuts", "Whether to use Clique cuts", "off",
+               CBC_PARAM_STR_CLIQUECUTS);
     p.append("on");
     p.append("root");
     p.append("ifmove");
@@ -1970,8 +1871,9 @@ An improved version of the Bron-Kerbosch algorithm is used to separate cliques."
   }
   {
     CbcParam p("cgraph",
-        "Whether to use the conflict graph-based preprocessing and cut separation routines.",
-        "on", CBC_PARAM_STR_USECGRAPH);
+               "Whether to use the conflict graph-based preprocessing and cut "
+               "separation routines.",
+               "on", CBC_PARAM_STR_USECGRAPH);
     p.append("off");
     p.append("clq");
     p.setLonghelp(
@@ -1983,21 +1885,25 @@ An improved version of the Bron-Kerbosch algorithm is used to separate cliques."
     parameters.push_back(p);
   }
   {
-    CbcParam p("bkpivot!ing", "Pivoting strategy used in Bron-Kerbosch algorithm",
-                        0, 6, CBC_PARAM_INT_BKPIVOTINGSTRATEGY);
+    CbcParam p("bkpivot!ing",
+               "Pivoting strategy used in Bron-Kerbosch algorithm", 0, 6,
+               CBC_PARAM_INT_BKPIVOTINGSTRATEGY);
     p.setIntValue(3);
     parameters.push_back(p);
   }
   {
-    CbcParam p("bkmaxcalls", "Maximum number of recursive calls made by Bron-Kerbosch algorithm",
-                        1, 2147483647, CBC_PARAM_INT_BKMAXCALLS);
+    CbcParam p(
+        "bkmaxcalls",
+        "Maximum number of recursive calls made by Bron-Kerbosch algorithm", 1,
+        2147483647, CBC_PARAM_INT_BKMAXCALLS);
     p.setIntValue(1000);
     parameters.push_back(p);
   }
   {
     CbcParam p("bkclqext!method",
-        "Strategy used to extend violated cliques found by BK Clique Cut Separation routine",
-        0, 5, CBC_PARAM_INT_BKCLQEXTMETHOD);
+               "Strategy used to extend violated cliques found by BK Clique "
+               "Cut Separation routine",
+               0, 5, CBC_PARAM_INT_BKCLQEXTMETHOD);
     p.setLonghelp(
         "Sets the method used in the extension module of BK Clique Cut Separation routine: \
 0=no extension; 1=random; 2=degree; 3=modified degree; 4=reduced cost(inversely proportional); 5=reduced cost(inversely proportional) + modified degree");
@@ -2005,20 +1911,23 @@ An improved version of the Bron-Kerbosch algorithm is used to separate cliques."
     parameters.push_back(p);
   }
   {
-    CbcParam p("oddwheel!Cuts", "Whether to use odd wheel cuts",
-                      "off", CBC_PARAM_STR_ODDWHEELCUTS);
+    CbcParam p("oddwheel!Cuts", "Whether to use odd wheel cuts", "off",
+               CBC_PARAM_STR_ODDWHEELCUTS);
     p.append("on");
     p.append("root");
     p.append("ifmove");
     p.append("forceOn");
     p.append("onglobal");
-    p.setLonghelp("This switches on odd-wheel inequalities (either at root or in entire tree).");
+    p.setLonghelp("This switches on odd-wheel inequalities (either at root or "
+                  "in entire tree).");
     parameters.push_back(p);
   }
   {
     CbcParam p(
-        "oddwext!method", "Strategy used to search for wheel centers for the cuts found by \
-Odd Wheel Cut Separation routine", 0, 2, CBC_PARAM_INT_ODDWEXTMETHOD);
+        "oddwext!method",
+        "Strategy used to search for wheel centers for the cuts found by \
+Odd Wheel Cut Separation routine",
+        0, 2, CBC_PARAM_INT_ODDWEXTMETHOD);
     p.setLonghelp(
         "Sets the method used in the extension module of Odd Wheel Cut Separation routine: \
 0=no extension; 1=one variable; 2=clique");
@@ -2026,8 +1935,9 @@ Odd Wheel Cut Separation routine", 0, 2, CBC_PARAM_INT_ODDWEXTMETHOD);
     parameters.push_back(p);
   }
   {
-    CbcParam p("clqstr!engthen", "Whether to perform Clique Strengthening preprocessing routine",
-                    "after", CBC_PARAM_STR_CLQSTRENGTHENING);
+    CbcParam p("clqstr!engthen",
+               "Whether to perform Clique Strengthening preprocessing routine",
+               "after", CBC_PARAM_STR_CLQSTRENGTHENING);
     p.setLonghelp(
         "Sets the method used in the Clique Strengthening Preprocessing routine:\
 \n\toff: do not perform clique strengthening;\
@@ -2039,18 +1949,18 @@ Odd Wheel Cut Separation routine", 0, 2, CBC_PARAM_INT_ODDWEXTMETHOD);
   }
   {
     CbcParam p("help", "Print out version, non-standard options and some help",
-      CBC_PARAM_ACTION_HELP, 3);
+               CBC_PARAM_ACTION_HELP, 3);
     p.setLonghelp(
-      "This prints out some help to get user started.  If you have printed this then \
+        "This prints out some help to get user started.  If you have printed this then \
 you should be past that stage:-)");
     parameters.push_back(p);
   }
   {
-    CbcParam p("hOp!tions", "Heuristic options",
-      -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_HEUROPTIONS, 1);
+    CbcParam p("hOp!tions", "Heuristic options", -COIN_INT_MAX, COIN_INT_MAX,
+               CBC_PARAM_INT_HEUROPTIONS, 1);
     p.setIntValue(0);
     p.setLonghelp(
-      "Value 1 stops heuristics immediately if the allowable gap has been reached. \
+        "Value 1 stops heuristics immediately if the allowable gap has been reached. \
 Other values are for the feasibility pump - \
 2 says do exact number of passes given, \
 4 only applies if an initial cutoff has been given and says relax after 50 passes, \
@@ -2058,15 +1968,15 @@ while 8 will adapt the cutoff rhs after the first solution if it looks as if the
     parameters.push_back(p);
   }
   {
-    CbcParam p("hot!StartMaxIts", "Maximum iterations on hot start",
-      0, COIN_INT_MAX, CBC_PARAM_INT_MAXHOTITS);
+    CbcParam p("hot!StartMaxIts", "Maximum iterations on hot start", 0,
+               COIN_INT_MAX, CBC_PARAM_INT_MAXHOTITS);
     parameters.push_back(p);
   }
   {
-    CbcParam p("import", "Import model from mps file",
-      CBC_PARAM_ACTION_IMPORT, 3);
+    CbcParam p("import", "Import model from mps file", CBC_PARAM_ACTION_IMPORT,
+               3);
     p.setLonghelp(
-      "This will read an MPS format file from the given file name.  It will use the default\
+        "This will read an MPS format file from the given file name.  It will use the default\
  directory given by 'directory'.  A name of '$' will use the previous value for the name.  This\
  is initialized to '', i.e. it must be set.  If you have libgz then it can read compressed\
  files 'xxxxxxxx.gz' or 'xxxxxxxx.bz2'.  \
@@ -2076,10 +1986,10 @@ If 'keepnames' is off, then names are dropped -> Rnnnnnnn and Cnnnnnnn.");
   {
     CbcParam p("inc!rement", "A valid solution must be at least this \
 much better than last integer solution",
-      -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_INCREMENT);
+               -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_INCREMENT);
 
     p.setLonghelp(
-      "Whenever a solution is found the bound on the objective value for new solutions is set to the\
+        "Whenever a solution is found the bound on the objective value for new solutions is set to the\
       objective function of the found solution (in a minimization sense) plus this.  If it is not set then CBC will try and work one out, e.g. if \
 all objective coefficients are multiples of 0.01 and only integer variables have entries in \
 the objective function, then the increment can be set to 0.01.  Be careful if setting this to a negative value!");
@@ -2089,23 +1999,23 @@ the objective function, then the increment can be set to 0.01.  Be careful if se
   {
     CbcParam p("inf!easibilityWeight", "Each integer infeasibility is expected \
 to cost this much",
-      0.0, COIN_DBL_MAX, CBC_PARAM_DBL_INFEASIBILITYWEIGHT, 1);
+               0.0, COIN_DBL_MAX, CBC_PARAM_DBL_INFEASIBILITYWEIGHT, 1);
     p.setLonghelp(
-      "A primitive way of deciding which node to explore next.  Satisfying each integer infeasibility is \
+        "A primitive way of deciding which node to explore next.  Satisfying each integer infeasibility is \
 expected to cost this much.");
     parameters.push_back(p);
   }
   {
     CbcParam p("integerT!olerance", "For a feasible solution \
 no integer variable may be more than this away from an integer value",
-      1.0e-20, 0.5, CBC_PARAM_DBL_INTEGERTOLERANCE);
-    p.setLonghelp(
-      "Beware of setting this smaller than the primal feasibility tolerance.");
+               1.0e-20, 0.5, CBC_PARAM_DBL_INTEGERTOLERANCE);
+    p.setLonghelp("Beware of setting this smaller than the primal feasibility "
+                  "tolerance.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("knapsack!Cuts", "Whether to use Knapsack cuts",
-      "off", CBC_PARAM_STR_KNAPSACKCUTS);
+    CbcParam p("knapsack!Cuts", "Whether to use Knapsack cuts", "off",
+               CBC_PARAM_STR_KNAPSACKCUTS);
 
     p.append("on");
     p.append("root");
@@ -2113,13 +2023,14 @@ no integer variable may be more than this away from an integer value",
     p.append("forceOn");
     p.append("onglobal");
     p.append("forceandglobal");
-    p.setLonghelp(CUTS_LONGHELP
-      " Reference: https://github.com/coin-or/Cgl/wiki/CglKnapsackCover");
+    p.setLonghelp(
+        CUTS_LONGHELP
+        " Reference: https://github.com/coin-or/Cgl/wiki/CglKnapsackCover");
     parameters.push_back(p);
   }
   {
-    CbcParam p("lagomory!Cuts", "Whether to use Lagrangean Gomory cuts",
-      "off", CBC_PARAM_STR_LAGOMORYCUTS);
+    CbcParam p("lagomory!Cuts", "Whether to use Lagrangean Gomory cuts", "off",
+               CBC_PARAM_STR_LAGOMORYCUTS);
     p.append("endonlyroot");
     p.append("endcleanroot");
     p.append("root");
@@ -2136,7 +2047,7 @@ no integer variable may be more than this away from an integer value",
     p.append("cleanaswellroot");
     p.append("bothaswellroot");
     p.setLonghelp(
-      "This is a gross simplification of 'A Relax-and-Cut Framework for Gomory's Mixed-Integer Cuts' \
+        "This is a gross simplification of 'A Relax-and-Cut Framework for Gomory's Mixed-Integer Cuts' \
 by Matteo Fischetti & Domenico Salvagnin.  This simplification \
 just uses original constraints while modifying objective using other cuts. \
 So you don't use messy constraints generated by Gomory etc. \
@@ -2148,8 +2059,8 @@ The length options for gomory cuts are used.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("latwomir!Cuts", "Whether to use Lagrangean TwoMir cuts",
-      "off", CBC_PARAM_STR_LATWOMIRCUTS);
+    CbcParam p("latwomir!Cuts", "Whether to use Lagrangean TwoMir cuts", "off",
+               CBC_PARAM_STR_LATWOMIRCUTS);
 
     p.append("endonlyroot");
     p.append("endcleanroot");
@@ -2163,121 +2074,120 @@ The length options for gomory cuts are used.");
     p.append("onlyinstead");
     p.append("cleaninstead");
     p.append("bothinstead");
-    p.setLonghelp(
-      "This is a Lagrangean relaxation for TwoMir cuts.  See \
+    p.setLonghelp("This is a Lagrangean relaxation for TwoMir cuts.  See \
   lagomoryCuts for description of options.");
     parameters.push_back(p);
   }
   {
     CbcParam p("lift!AndProjectCuts", "Whether to use Lift and Project cuts",
-      "off", CBC_PARAM_STR_LANDPCUTS);
+               "off", CBC_PARAM_STR_LANDPCUTS);
 
     p.append("on");
     p.append("root");
     p.append("ifmove");
     p.append("forceOn");
     p.append("iflongon");
-    p.setLonghelp(
-      "These cuts may be expensive to compute. "
-      CUTS_LONGHELP
-      " Reference: https://github.com/coin-or/Cgl/wiki/CglLandP");
+    p.setLonghelp("These cuts may be expensive to compute. " CUTS_LONGHELP
+                  " Reference: https://github.com/coin-or/Cgl/wiki/CglLandP");
     parameters.push_back(p);
   }
   {
-    CbcParam p("local!TreeSearch", "Whether to use local tree search when a solution is found",
-      "off", CBC_PARAM_STR_LOCALTREE);
+    CbcParam p("local!TreeSearch",
+               "Whether to use local tree search when a solution is found",
+               "off", CBC_PARAM_STR_LOCALTREE);
     p.append("on");
     p.setLonghelp(
-      "The heuristic is from Fischetti and Lodi and is not really a heuristic although it can be used as one \
+        "The heuristic is from Fischetti and Lodi and is not really a heuristic although it can be used as one \
 (with limited functionality).  It is not switched on when heuristics are switched on.");
     parameters.push_back(p);
   }
   {
     CbcParam p("max!imize", "Set optimization direction to maximize",
-      CBC_PARAM_ACTION_MAXIMIZE, 7);
-    p.setLonghelp(
-      "The default is minimize - use 'maximize' for maximization.\n\
+               CBC_PARAM_ACTION_MAXIMIZE, 7);
+    p.setLonghelp("The default is minimize - use 'maximize' for maximization.\n\
 You can also use the parameters 'direction maximize'.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("maxN!odes", "Maximum number of nodes to do",
-      -1, COIN_INT_MAX, CBC_PARAM_INT_MAXNODES);
+    CbcParam p("maxN!odes", "Maximum number of nodes to do", -1, COIN_INT_MAX,
+               CBC_PARAM_INT_MAXNODES);
     p.setLonghelp(
-      "This is a repeatable way to limit search.  Normally using time is easier \
+        "This is a repeatable way to limit search.  Normally using time is easier \
 but then the results may not be repeatable.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("maxNI!FS", "Maximum number of nodes to be processed without improving the incumbent solution.",
-      -1, COIN_INT_MAX, CBC_PARAM_INT_MAXNODESNOTIMPROVINGFS);
+    CbcParam p("maxNI!FS",
+               "Maximum number of nodes to be processed without improving the "
+               "incumbent solution.",
+               -1, COIN_INT_MAX, CBC_PARAM_INT_MAXNODESNOTIMPROVINGFS);
     p.setLonghelp(
-      "This criterion specifies that when a feasible solution is available, the search should continue\
+        "This criterion specifies that when a feasible solution is available, the search should continue\
 only if better feasible solutions were produced in the last nodes.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("maxSaved!Solutions", "Maximum number of solutions to save",
-      0, COIN_INT_MAX, CBC_PARAM_INT_MAXSAVEDSOLS);
-    p.setLonghelp(
-      "Number of solutions to save.");
+    CbcParam p("maxSaved!Solutions", "Maximum number of solutions to save", 0,
+               COIN_INT_MAX, CBC_PARAM_INT_MAXSAVEDSOLS);
+    p.setLonghelp("Number of solutions to save.");
     parameters.push_back(p);
   }
   {
     CbcParam p("maxSo!lutions", "Maximum number of feasible solutions to get",
-      1, COIN_INT_MAX, CBC_PARAM_INT_MAXSOLS);
-    p.setLonghelp(
-      "You may want to stop after (say) two solutions or an hour.  \
+               1, COIN_INT_MAX, CBC_PARAM_INT_MAXSOLS);
+    p.setLonghelp("You may want to stop after (say) two solutions or an hour.  \
 This is checked every node in tree, so it is possible to get more solutions from heuristics.");
     parameters.push_back(p);
   }
   {
     CbcParam p("min!imize", "Set optimization direction to minimize",
-      CBC_PARAM_ACTION_MINIMIZE, 7);
-    p.setLonghelp(
-      "The default is minimize - use 'maximize' for maximization.\n\
+               CBC_PARAM_ACTION_MINIMIZE, 7);
+    p.setLonghelp("The default is minimize - use 'maximize' for maximization.\n\
 This should only be necessary if you have previously set maximization \
 You can also use the parameters 'direction minimize'.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("mipO!ptions", "Dubious options for mip",
-      0, COIN_INT_MAX, CBC_PARAM_INT_MIPOPTIONS, 0);
+    CbcParam p("mipO!ptions", "Dubious options for mip", 0, COIN_INT_MAX,
+               CBC_PARAM_INT_MIPOPTIONS, 0);
     p.setIntValue(1057);
     parameters.push_back(p);
   }
   {
-    CbcParam p("more!MipOptions", "More dubious options for mip",
-      -1, COIN_INT_MAX, CBC_PARAM_INT_MOREMIPOPTIONS, 0);
+    CbcParam p("more!MipOptions", "More dubious options for mip", -1,
+               COIN_INT_MAX, CBC_PARAM_INT_MOREMIPOPTIONS, 0);
     parameters.push_back(p);
   }
   {
-    CbcParam p("more2!MipOptions", "More more dubious options for mip",
-      -1, COIN_INT_MAX, CBC_PARAM_INT_MOREMOREMIPOPTIONS, 0);
+    CbcParam p("more2!MipOptions", "More more dubious options for mip", -1,
+               COIN_INT_MAX, CBC_PARAM_INT_MOREMOREMIPOPTIONS, 0);
     p.setIntValue(0);
     parameters.push_back(p);
   }
   {
-    CbcParam p("mixed!IntegerRoundingCuts", "Whether to use Mixed Integer Rounding cuts",
-      "off", CBC_PARAM_STR_MIXEDCUTS);
+    CbcParam p("mixed!IntegerRoundingCuts",
+               "Whether to use Mixed Integer Rounding cuts", "off",
+               CBC_PARAM_STR_MIXEDCUTS);
 
     p.append("on");
     p.append("root");
     p.append("ifmove");
     p.append("forceOn");
     p.append("onglobal");
-    p.setLonghelp(CUTS_LONGHELP
-      " Reference: https://github.com/coin-or/Cgl/wiki/CglMixedIntegerRounding2");
+    p.setLonghelp(
+        CUTS_LONGHELP
+        " Reference: "
+        "https://github.com/coin-or/Cgl/wiki/CglMixedIntegerRounding2");
     parameters.push_back(p);
   }
   {
-    CbcParam p("miplib", "Do some of miplib test set",
-      CBC_PARAM_ACTION_MIPLIB, 3, 1);
+    CbcParam p("miplib", "Do some of miplib test set", CBC_PARAM_ACTION_MIPLIB,
+               3, 1);
     parameters.push_back(p);
   }
   {
     CbcParam p("mips!tart", "reads an initial feasible solution from file",
-      CBC_PARAM_ACTION_MIPSTART);
+               CBC_PARAM_ACTION_MIPSTART);
     p.setLonghelp("\
 The MIPStart allows one to enter an initial integer feasible solution \
 to CBC. Values of the main decision variables which are active (have \
@@ -2321,11 +2231,10 @@ haroldo.santos@gmail.com. ");
     parameters.push_back(p);
   }
   {
-    CbcParam p("moreT!une", "Yet more dubious ideas for feasibility pump",
-      0, 100000000, CBC_PARAM_INT_FPUMPTUNE2, 0);
+    CbcParam p("moreT!une", "Yet more dubious ideas for feasibility pump", 0,
+               100000000, CBC_PARAM_INT_FPUMPTUNE2, 0);
 
-    p.setLonghelp(
-      "Yet more ideas for Feasibility Pump \n\
+    p.setLonghelp("Yet more ideas for Feasibility Pump \n\
 \t/100000 == 1 use box constraints and original obj in cleanup\n\
 \t/1000 == 1 Pump will run twice if no solution found\n\
 \t/1000 == 2 Pump will only run after root cuts if no solution found\n\
@@ -2337,11 +2246,12 @@ haroldo.santos@gmail.com. ");
     parameters.push_back(p);
   }
   {
-    CbcParam p("multiple!RootPasses", "Do multiple root passes to collect cuts and solutions",
-      0, COIN_INT_MAX, CBC_PARAM_INT_MULTIPLEROOTS, 0);
+    CbcParam p("multiple!RootPasses",
+               "Do multiple root passes to collect cuts and solutions", 0,
+               COIN_INT_MAX, CBC_PARAM_INT_MULTIPLEROOTS, 0);
     p.setIntValue(0);
     p.setLonghelp(
-      "Solve (in parallel, if enabled) the root phase this number of times, \
+        "Solve (in parallel, if enabled) the root phase this number of times, \
       each with its own different seed, and collect all solutions and cuts generated. \
       The actual format is aabbcc where aa is the number of extra passes; \
       if bb is non zero, then it is number of threads to use (otherwise uses threads setting); \
@@ -2354,22 +2264,21 @@ Andrea Lodi, Matteo Fischetti, Michele Monaci, Domenico Salvagnin, and Andrea Tr
   }
   {
     CbcParam p("naive!Heuristics", "Whether to try some stupid heuristic",
-      "off", CBC_PARAM_STR_NAIVE, 7, 1);
+               "off", CBC_PARAM_STR_NAIVE, 7, 1);
 
     p.append("on");
     p.append("both");
     p.append("before");
-    p.setLonghelp(
-      "This is naive heuristics which, e.g., fix all integers with costs to zero!. "
-      HEURISTICS_LONGHELP);
+    p.setLonghelp("This is naive heuristics which, e.g., fix all integers with "
+                  "costs to zero!. " HEURISTICS_LONGHELP);
     parameters.push_back(p);
   }
   {
     CbcParam p("nextB!estSolution", "Prints next best saved solution to file",
-      CBC_PARAM_ACTION_NEXTBESTSOLUTION);
+               CBC_PARAM_ACTION_NEXTBESTSOLUTION);
 
     p.setLonghelp(
-      "To write best solution, just use solution.  This prints next best (if exists) \
+        "To write best solution, just use solution.  This prints next best (if exists) \
  and then deletes it. \
  This will write a primitive solution file to the given file name.  It will use the default\
  directory given by 'directory'.  A name of '$' will use the previous value for the name.  This\
@@ -2377,8 +2286,10 @@ Andrea Lodi, Matteo Fischetti, Michele Monaci, Domenico Salvagnin, and Andrea Tr
     parameters.push_back(p);
   }
   {
-    CbcParam p("node!Strategy", "What strategy to use to select the next node from the branch and cut tree",
-      "hybrid", CBC_PARAM_STR_NODESTRATEGY);
+    CbcParam p("node!Strategy",
+               "What strategy to use to select the next node from the branch "
+               "and cut tree",
+               "hybrid", CBC_PARAM_STR_NODESTRATEGY);
     p.append("fewest");
     p.append("depth");
     p.append("upfewest");
@@ -2386,7 +2297,7 @@ Andrea Lodi, Matteo Fischetti, Michele Monaci, Domenico Salvagnin, and Andrea Tr
     p.append("updepth");
     p.append("downdepth");
     p.setLonghelp(
-      "Normally before a feasible solution is found, CBC will choose a node with fewest infeasibilities. \
+        "Normally before a feasible solution is found, CBC will choose a node with fewest infeasibilities. \
   Alternatively, one may choose tree-depth as the criterion. This requires the minimal amount of memory, but may take a long time to find the best solution.\
   Additionally, one may specify whether up or down branches must \
 be selected first (the up-down choice will carry on after a first solution has been bound). \
@@ -2394,44 +2305,44 @@ The choice 'hybrid' does breadth first on small depth nodes and then switches to
     parameters.push_back(p);
   }
   {
-    CbcParam p("numberA!nalyze", "Number of analysis iterations",
-      -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_NUMBERANALYZE, 0);
+    CbcParam p("numberA!nalyze", "Number of analysis iterations", -COIN_INT_MAX,
+               COIN_INT_MAX, CBC_PARAM_INT_NUMBERANALYZE, 0);
     p.setLonghelp(
-      "This says how many iterations to spend at root node analyzing problem. \
+        "This says how many iterations to spend at root node analyzing problem. \
 This is a first try and will hopefully become more sophisticated.");
     parameters.push_back(p);
   }
 #ifdef CBC_HAS_NAUTY
   {
-    CbcParam p("Orbit!alBranching", "Whether to try orbital branching",
-      "off", CBC_PARAM_STR_ORBITAL);
+    CbcParam p("Orbit!alBranching", "Whether to try orbital branching", "off",
+               CBC_PARAM_STR_ORBITAL);
     p.append("slow!ish");
     p.append("strong");
     p.append("force");
     p.append("simple");
     p.append("on");
     p.append("more!printing");
-    p.setLonghelp(
-      "This switches on Orbital branching. \
+    p.setLonghelp("This switches on Orbital branching. \
 Value 'on' just adds orbital, 'strong' tries extra fixing in strong branching.");
     parameters.push_back(p);
   }
 #endif
   {
-    CbcParam p("PrepN!ames", "If column names will be kept in pre-processed model",
-      "off", CBC_PARAM_STR_PREPROCNAMES);
+    CbcParam p("PrepN!ames",
+               "If column names will be kept in pre-processed model", "off",
+               CBC_PARAM_STR_PREPROCNAMES);
     p.append("on");
     p.setLonghelp(
-      "Normally the preprocessed model has column names replaced by new names C0000...\
+        "Normally the preprocessed model has column names replaced by new names C0000...\
 Setting this option to on keeps original names in variables which still exist in the preprocessed problem");
     parameters.push_back(p);
   }
 
   {
-    CbcParam p("output!Format", "Which output format to use",
-      1, 6, CBC_PARAM_INT_OUTPUTFORMAT);
+    CbcParam p("output!Format", "Which output format to use", 1, 6,
+               CBC_PARAM_INT_OUTPUTFORMAT);
     p.setLonghelp(
-      "Normally export will be done using normal representation for numbers and two values\
+        "Normally export will be done using normal representation for numbers and two values\
  per line.  You may want to do just one per line (for grep or suchlike) and you may wish\
  to save with absolute accuracy using a coded version of the IEEE value. A value of 2 is normal.\
  otherwise odd values gives one value per line, even two.  Values 1,2 give normal format, 3,4\
@@ -2440,32 +2351,39 @@ values, 2 saves values, 3 with greater accuracy and 4 in IEEE.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("passC!uts", "Number of rounds that cut generators are applied in the root node",
-      -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_CUTPASS);
+    CbcParam p(
+        "passC!uts",
+        "Number of rounds that cut generators are applied in the root node",
+        -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_CUTPASS);
 
     p.setIntValue(20);
     p.setLonghelp(
-      "The default is to do 100 passes if the problem has less than 500 columns, 100 passes (but \
+        "The default is to do 100 passes if the problem has less than 500 columns, 100 passes (but \
 stop if the drop in the objective function value is small) if the problem has less than 5000 columns, and 20 passes otherwise. \
 A negative value -n means that n passes are also applied if the objective does not drop.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("passF!easibilityPump", "How many passes to do in the Feasibility Pump heuristic",
-      0, 10000, CBC_PARAM_INT_FPUMPITS);
+    CbcParam p("passF!easibilityPump",
+               "How many passes to do in the Feasibility Pump heuristic", 0,
+               10000, CBC_PARAM_INT_FPUMPITS);
     p.setIntValue(20);
     parameters.push_back(p);
   }
   {
-    CbcParam p("passT!reeCuts", "Number of rounds that cut generators are applied in the tree",
-      -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_CUTPASSINTREE);
+    CbcParam p("passT!reeCuts",
+               "Number of rounds that cut generators are applied in the tree",
+               -COIN_INT_MAX, COIN_INT_MAX, CBC_PARAM_INT_CUTPASSINTREE);
     p.setIntValue(1);
-    p.setLonghelp("The default is to do one pass. A negative value -n means that n passes are also applied if the objective does not drop.");
+    p.setLonghelp(
+        "The default is to do one pass. A negative value -n means that n "
+        "passes are also applied if the objective does not drop.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("pivotAndC!omplement", "Whether to try Pivot and Complement heuristic",
-      "off", CBC_PARAM_STR_PIVOTANDCOMPLEMENT);
+    CbcParam p("pivotAndC!omplement",
+               "Whether to try Pivot and Complement heuristic", "off",
+               CBC_PARAM_STR_PIVOTANDCOMPLEMENT);
 
     p.append("on");
     p.append("both");
@@ -2474,8 +2392,8 @@ A negative value -n means that n passes are also applied if the objective does n
     parameters.push_back(p);
   }
   {
-    CbcParam p("pivotAndF!ix", "Whether to try Pivot and Fix heuristic",
-      "off", CBC_PARAM_STR_PIVOTANDFIX);
+    CbcParam p("pivotAndF!ix", "Whether to try Pivot and Fix heuristic", "off",
+               CBC_PARAM_STR_PIVOTANDFIX);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -2483,16 +2401,16 @@ A negative value -n means that n passes are also applied if the objective does n
     parameters.push_back(p);
   }
   {
-    CbcParam p("pO!ptions", "Dubious print options",
-      0, COIN_INT_MAX, CBC_PARAM_INT_PRINTOPTIONS, 1);
+    CbcParam p("pO!ptions", "Dubious print options", 0, COIN_INT_MAX,
+               CBC_PARAM_INT_PRINTOPTIONS, 1);
     p.setIntValue(0);
-    p.setLonghelp(
-      "If this is > 0 then presolve will give more information and branch and cut will give statistics");
+    p.setLonghelp("If this is > 0 then presolve will give more information and "
+                  "branch and cut will give statistics");
     parameters.push_back(p);
   }
   {
-    CbcParam p("preprocess", "Whether to use integer preprocessing",
-      "off", CBC_PARAM_STR_PREPROCESS);
+    CbcParam p("preprocess", "Whether to use integer preprocessing", "off",
+               CBC_PARAM_STR_PREPROCESS);
 
     p.append("on");
     p.append("save");
@@ -2505,7 +2423,7 @@ A negative value -n means that n passes are also applied if the objective does n
     p.append("forcesos");
     p.append("stop!aftersaving");
     p.setLonghelp(
-      "This tries to reduce size of model in a similar way to presolve and \
+        "This tries to reduce size of model in a similar way to presolve and \
 it also tries to strengthen the model - this can be very useful and is worth trying. \
  Value 'save' saves the presolved problem to a file presolved.mps.\
  Value 'equal' will turn inequality-cliques into equalities.\
@@ -2515,8 +2433,8 @@ it also tries to strengthen the model - this can be very useful and is worth try
     parameters.push_back(p);
   }
   {
-    CbcParam p("printi!ngOptions", "Print options",
-      "normal", CBC_PARAM_STR_INTPRINT, 3);
+    CbcParam p("printi!ngOptions", "Print options", "normal",
+               CBC_PARAM_STR_INTPRINT, 3);
     p.append("integer");
     p.append("special");
     p.append("rows");
@@ -2531,7 +2449,7 @@ it also tries to strengthen the model - this can be very useful and is worth try
     p.append("fixint");
     p.append("fixall");
     p.setLonghelp(
-      "This changes the amount and format of printing a solution:\nnormal - nonzero column variables \n\
+        "This changes the amount and format of printing a solution:\nnormal - nonzero column variables \n\
 integer - nonzero integer column variables\n\
 special - in format suitable for OsiRowCutDebugger\n\
 rows - nonzero column variables and row activities\n\
@@ -2542,10 +2460,10 @@ Also see printMask for controlling output.");
   }
   {
     CbcParam p("printM!ask", "Control printing of solution on a  mask",
-      CBC_PARAM_ACTION_PRINTMASK, 3);
+               CBC_PARAM_ACTION_PRINTMASK, 3);
 
     p.setLonghelp(
-      "If set then only those names which match mask are printed in a solution. \
+        "If set then only those names which match mask are printed in a solution. \
 '?' matches any character and '*' matches any set of characters. \
  The default is '' i.e. unset so all variables are printed. \
 This is only active if model has names.");
@@ -2554,9 +2472,9 @@ This is only active if model has names.");
 
   {
     CbcParam p("prio!rityIn", "Import priorities etc from file",
-      CBC_PARAM_ACTION_PRIORITYIN, 3);
+               CBC_PARAM_ACTION_PRIORITYIN, 3);
     p.setLonghelp(
-      "This will read a file with priorities from the given file name.  It will use the default\
+        "This will read a file with priorities from the given file name.  It will use the default\
  directory given by 'directory'.  A name of '$' will use the previous value for the name.  This\
  is initialized to '', i.e. it must be set.  This can not read from compressed files. \
 File is in csv format with allowed headings - name, number, priority, direction, up, down, solution.  Exactly one of\
@@ -2565,8 +2483,8 @@ File is in csv format with allowed headings - name, number, priority, direction,
   }
 
   {
-    CbcParam p("probing!Cuts", "Whether to use Probing cuts",
-      "off", CBC_PARAM_STR_PROBINGCUTS);
+    CbcParam p("probing!Cuts", "Whether to use Probing cuts", "off",
+               CBC_PARAM_STR_PROBINGCUTS);
     p.append("on");
     p.append("root");
     p.append("ifmove");
@@ -2577,8 +2495,9 @@ File is in csv format with allowed headings - name, number, priority, direction,
     p.append("forceOnStrong");
     p.append("forceOnButStrong");
     p.append("strongRoot");
-    p.setLonghelp(CUTS_LONGHELP
-      " Value 'forceOnBut' turns on probing and forces CBC to do probing at every node, but does only probing, not strengthening etc. \
+    p.setLonghelp(
+        CUTS_LONGHELP
+        " Value 'forceOnBut' turns on probing and forces CBC to do probing at every node, but does only probing, not strengthening etc. \
     Value 'strong' forces CBC to strongly do probing at every node, that is, also when CBC would usually turn it off because it hasn't found something. \
     Value 'forceonbutstrong' is like 'forceonstrong', but does only probing (column fixing) and turns off row strengthening, so the matrix will not change inside the branch and bound. \
     Reference: https://github.com/coin-or/Cgl/wiki/CglProbing");
@@ -2586,7 +2505,7 @@ File is in csv format with allowed headings - name, number, priority, direction,
   }
   {
     CbcParam p("proximity!Search", "Whether to do proximity search heuristic",
-      "off", CBC_PARAM_STR_PROXIMITY);
+               "off", CBC_PARAM_STR_PROXIMITY);
 
     p.append("on");
     p.append("both");
@@ -2597,39 +2516,39 @@ File is in csv format with allowed headings - name, number, priority, direction,
     // but allow numbers after this (returning 1)
     p.setFakeKeyWord(1);
     p.setLonghelp(
-      "This heuristic looks for a solution close to the incumbent solution (Fischetti and Monaci, 2012). \
+        "This heuristic looks for a solution close to the incumbent solution (Fischetti and Monaci, 2012). \
 The idea is to define a sub-MIP without additional constraints but with a modified objective function intended to attract the search \
 in the proximity of the incumbent. \
 The approach works well for 0-1 MIPs whose solution landscape is not too irregular (meaning the there is reasonable probability of \
 finding an improved solution by flipping a small number of binary variables), in particular when it is applied to the first heuristic solutions \
-found at the root node. "
-      HEURISTICS_LONGHELP); // Can also set different maxNode settings by plusnnnn (and are 'on'(on==30)).
+found at the root node. " HEURISTICS_LONGHELP); // Can also set different
+                                                // maxNode settings by plusnnnn
+                                                // (and are 'on'(on==30)).
     parameters.push_back(p);
   }
   {
     CbcParam p("pumpC!utoff", "Fake cutoff for use in feasibility pump",
-      -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_FAKECUTOFF);
+               -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_FAKECUTOFF);
     p.setDoubleValue(0.0);
     p.setLonghelp(
-      "A value of 0.0 means off. Otherwise, add a constraint forcing objective below this value\
+        "A value of 0.0 means off. Otherwise, add a constraint forcing objective below this value\
  in feasibility pump");
     parameters.push_back(p);
   }
   {
     CbcParam p("pumpI!ncrement", "Fake increment for use in feasibility pump",
-      -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_FAKEINCREMENT, 1);
+               -COIN_DBL_MAX, COIN_DBL_MAX, CBC_PARAM_DBL_FAKEINCREMENT, 1);
     p.setDoubleValue(0.0);
     p.setLonghelp(
-      "A value of 0.0 means off. Otherwise use as absolute increment to cutoff \
+        "A value of 0.0 means off. Otherwise use as absolute increment to cutoff \
 when solution found in feasibility pump");
     parameters.push_back(p);
   }
   {
-    CbcParam p("pumpT!une", "Dubious ideas for feasibility pump",
-      0, 100000000, CBC_PARAM_INT_FPUMPTUNE);
+    CbcParam p("pumpT!une", "Dubious ideas for feasibility pump", 0, 100000000,
+               CBC_PARAM_INT_FPUMPTUNE);
     p.setIntValue(1003);
-    p.setLonghelp(
-      "This fine tunes Feasibility Pump \n\
+    p.setLonghelp("This fine tunes Feasibility Pump \n\
 \t>=10000000 use as objective weight switch\n\
 \t>=1000000 use as accumulate switch\n\
 \t>=1000 use index+1 as number of large loops\n\
@@ -2642,18 +2561,21 @@ are fixed and a small branch and bound is tried.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("randomC!bcSeed", "Random seed for Cbc",
-      -1, COIN_INT_MAX, CBC_PARAM_INT_RANDOMSEED);
+    CbcParam p("randomC!bcSeed", "Random seed for Cbc", -1, COIN_INT_MAX,
+               CBC_PARAM_INT_RANDOMSEED);
 
-    p.setLonghelp(
-      "Allows initialization of the random seed for pseudo-random numbers used in heuristics such as the Feasibility Pump to decide whether to round up or down. "
-      "The special value of 0 lets Cbc use the time of the day for the initial seed.");
+    p.setLonghelp("Allows initialization of the random seed for pseudo-random "
+                  "numbers used in heuristics such as the Feasibility Pump to "
+                  "decide whether to round up or down. "
+                  "The special value of 0 lets Cbc use the time of the day for "
+                  "the initial seed.");
     p.setIntValue(-1);
     parameters.push_back(p);
   }
   {
-    CbcParam p("randomi!zedRounding", "Whether to try randomized rounding heuristic",
-      "off", CBC_PARAM_STR_RANDROUND);
+    CbcParam p("randomi!zedRounding",
+               "Whether to try randomized rounding heuristic", "off",
+               CBC_PARAM_STR_RANDROUND);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -2663,36 +2585,37 @@ are fixed and a small branch and bound is tried.");
   {
     CbcParam p("ratio!Gap", "Stop when gap between best possible and \
 best known is less than this fraction of larger of two",
-      0.0, COIN_DBL_MAX, CBC_PARAM_DBL_GAPRATIO);
+               0.0, COIN_DBL_MAX, CBC_PARAM_DBL_GAPRATIO);
     p.setDoubleValue(1e-4);
     p.setLonghelp(
-      "If the gap between the best known solution and the best possible solution is less than this fraction \
+        "If the gap between the best known solution and the best possible solution is less than this fraction \
 of the objective value at the root node then the search will terminate.  See 'allowableGap' for a \
 way of using absolute value rather than fraction.");
     parameters.push_back(p);
   }
   {
     CbcParam p("reduce!AndSplitCuts", "Whether to use Reduce-and-Split cuts",
-      "off", CBC_PARAM_STR_REDSPLITCUTS);
+               "off", CBC_PARAM_STR_REDSPLITCUTS);
 
     p.append("on");
     p.append("root");
     p.append("ifmove");
     p.append("forceOn");
     p.setLonghelp(
-      "These cuts may be expensive to generate. "
-      CUTS_LONGHELP
-      " Reference: https://github.com/coin-or/Cgl/wiki/CglRedSplit");
+        "These cuts may be expensive to generate. " CUTS_LONGHELP
+        " Reference: https://github.com/coin-or/Cgl/wiki/CglRedSplit");
     parameters.push_back(p);
   }
   {
-    CbcParam p("reduce2!AndSplitCuts", "Whether to use Reduce-and-Split cuts - style 2",
-      "off", CBC_PARAM_STR_REDSPLIT2CUTS);
+    CbcParam p("reduce2!AndSplitCuts",
+               "Whether to use Reduce-and-Split cuts - style 2", "off",
+               CBC_PARAM_STR_REDSPLIT2CUTS);
     p.append("on");
     p.append("root");
     p.append("longOn");
     p.append("longRoot");
-    p.setLonghelp("This switches on reduce and split  cuts (either at root or in entire tree). \
+    p.setLonghelp(
+        "This switches on reduce and split  cuts (either at root or in entire tree). \
 This version is by Giacomo Nannicini based on Francois Margot's version. \
 Standard setting only uses rows in tableau <= 256, long uses all. \
 These cuts may be expensive to generate. \
@@ -2701,21 +2624,22 @@ See option cuts for more information on the possible values.");
   }
   {
     CbcParam p("residual!CapacityCuts", "Whether to use Residual Capacity cuts",
-      "off", CBC_PARAM_STR_RESIDCUTS);
+               "off", CBC_PARAM_STR_RESIDCUTS);
     p.append("on");
     p.append("root");
     p.append("ifmove");
     p.append("forceOn");
-    p.setLonghelp(CUTS_LONGHELP
-      " Reference: https://github.com/coin-or/Cgl/wiki/CglResidualCapacity");
+    p.setLonghelp(
+        CUTS_LONGHELP
+        " Reference: https://github.com/coin-or/Cgl/wiki/CglResidualCapacity");
 
     parameters.push_back(p);
   }
   {
     CbcParam p("restore!Model", "Restore model from binary file",
-      CBC_PARAM_ACTION_RESTORE, 7, 1);
+               CBC_PARAM_ACTION_RESTORE, 7, 1);
     p.setLonghelp(
-      "This reads data save by saveModel from the given file.  It will use the default\
+        "This reads data save by saveModel from the given file.  It will use the default\
  directory given by 'directory'.  A name of '$' will use the previous value for the name.  This\
  is initialized to 'default.prob'.");
 
@@ -2723,14 +2647,13 @@ See option cuts for more information on the possible values.");
   }
   {
     CbcParam p("reverse", "Reverses sign of objective",
-      CBC_PARAM_ACTION_REVERSE, 7, 0);
-    p.setLonghelp(
-      "Useful for testing if maximization works correctly");
+               CBC_PARAM_ACTION_REVERSE, 7, 0);
+    p.setLonghelp("Useful for testing if maximization works correctly");
     parameters.push_back(p);
   }
   {
     CbcParam p("Rens", "Whether to try Relaxation Enforced Neighborhood Search",
-      "off", CBC_PARAM_STR_RENS);
+               "off", CBC_PARAM_STR_RENS);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -2740,13 +2663,13 @@ See option cuts for more information on the possible values.");
     p.append("dj");
     p.append("djbefore");
     p.append("usesolution");
-    p.setLonghelp(HEURISTICS_LONGHELP
-      " Value 'on' just does 50 nodes. 200, 1000, and 10000 does that many nodes.");
+    p.setLonghelp(HEURISTICS_LONGHELP " Value 'on' just does 50 nodes. 200, "
+                                      "1000, and 10000 does that many nodes.");
     parameters.push_back(p);
   }
   {
     CbcParam p("Rins", "Whether to try Relaxed Induced Neighborhood Search",
-      "off", CBC_PARAM_STR_RINS);
+               "off", CBC_PARAM_STR_RINS);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -2755,8 +2678,9 @@ See option cuts for more information on the possible values.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("round!ingHeuristic", "Whether to use simple (but effective) Rounding heuristic",
-      "off", CBC_PARAM_STR_ROUNDING);
+    CbcParam p("round!ingHeuristic",
+               "Whether to use simple (but effective) Rounding heuristic",
+               "off", CBC_PARAM_STR_ROUNDING);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -2764,10 +2688,10 @@ See option cuts for more information on the possible values.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("saveM!odel", "Save model to binary file",
-      CBC_PARAM_ACTION_SAVE, 7, 1);
+    CbcParam p("saveM!odel", "Save model to binary file", CBC_PARAM_ACTION_SAVE,
+               7, 1);
     p.setLonghelp(
-      "This will save the problem to the given file name for future use\
+        "This will save the problem to the given file name for future use\
  by restoreModel.  It will use the default\
  directory given by 'directory'.  A name of '$' will use the previous value for the name.  This\
  is initialized to 'default.prob'.");
@@ -2775,10 +2699,10 @@ See option cuts for more information on the possible values.");
   }
   {
     CbcParam p("saveS!olution", "saves solution to file",
-      CBC_PARAM_ACTION_SAVESOL);
+               CBC_PARAM_ACTION_SAVESOL);
 
     p.setLonghelp(
-      "This will write a binary solution file to the given file name.  It will use the default\
+        "This will write a binary solution file to the given file name.  It will use the default\
  directory given by 'directory'.  A name of '$' will use the previous value for the name.  This\
  is initialized to 'solution.file'.  To read the file use fread(int) twice to pick up number of rows \
 and columns, then fread(double) to pick up objective value, then pick up row activities, row duals, column \
@@ -2787,170 +2711,176 @@ If name contains '_fix_read_' then does not write but reads and will fix all var
     parameters.push_back(p);
   }
   {
-    CbcParam p("sec!onds", "maximum seconds",
-      -1.0, COIN_DBL_MAX, CBC_PARAM_DBL_TIMELIMIT_BAB);
-  // Meaning 0 - start at very beginning
-  // 1 start at beginning of preprocessing
-  // 2 start at beginning of branch and bound
+    CbcParam p("sec!onds", "maximum seconds", -1.0, COIN_DBL_MAX,
+               CBC_PARAM_DBL_TIMELIMIT_BAB);
+    // Meaning 0 - start at very beginning
+    // 1 start at beginning of preprocessing
+    // 2 start at beginning of branch and bound
 #ifndef CBC_USE_INITIAL_TIME
 #define CBC_USE_INITIAL_TIME 1
 #endif
-#if CBC_USE_INITIAL_TIME==0
-    p.setLonghelp(
-      "After this many seconds in Branch and Bound coin solver will act as if maximum nodes had been reached (time in initial solve and preprocessing is included).");
-#elif CBC_USE_INITIAL_TIME==1
-    p.setLonghelp(
-      "After this many seconds in Branch and Bound coin solver will act as if maximum nodes had been reached (time in initial solve not included).");
+#if CBC_USE_INITIAL_TIME == 0
+    p.setLonghelp("After this many seconds in Branch and Bound coin solver "
+                  "will act as if maximum nodes had been reached (time in "
+                  "initial solve and preprocessing is included).");
+#elif CBC_USE_INITIAL_TIME == 1
+    p.setLonghelp("After this many seconds in Branch and Bound coin solver "
+                  "will act as if maximum nodes had been reached (time in "
+                  "initial solve not included).");
 #else
-    p.setLonghelp(
-      "After this many seconds in Branch and Bound coin solver will act as if maximum nodes had been reached (time in initial solve and preprocessing not included).");
+    p.setLonghelp("After this many seconds in Branch and Bound coin solver "
+                  "will act as if maximum nodes had been reached (time in "
+                  "initial solve and preprocessing not included).");
 #endif
     parameters.push_back(p);
   }
   {
-    CbcParam p("secni!fs", "maximum seconds without improving the incumbent solution",
-    -1.0, COIN_DBL_MAX, CBC_PARAM_DBL_MAXSECONDSNIFS);
+    CbcParam p("secni!fs",
+               "maximum seconds without improving the incumbent solution", -1.0,
+               COIN_DBL_MAX, CBC_PARAM_DBL_MAXSECONDSNIFS);
     p.setLonghelp(
-      "With this stopping criterion, after a feasible solution is found, the search should continue only if the incumbent solution was updated recently, \
+        "With this stopping criterion, after a feasible solution is found, the search should continue only if the incumbent solution was updated recently, \
 the tolerance is specified here. A discussion on why this criterion can be useful is included here: \
 https://yetanothermathprogrammingconsultant.blogspot.com/2019/11/mip-solver-stopping-criteria.html .");
     parameters.push_back(p);
   }
   {
-    CbcParam p("sleep", "for debug",
-      CBC_PARAM_ACTION_DUMMY, 7, 0);
+    CbcParam p("sleep", "for debug", CBC_PARAM_ACTION_DUMMY, 7, 0);
 
-    p.setLonghelp(
-      "If passed to solver fom ampl, then ampl will wait so that you can copy .nl file for debug.");
+    p.setLonghelp("If passed to solver fom ampl, then ampl will wait so that "
+                  "you can copy .nl file for debug.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("slow!cutpasses", "Maximum number of rounds for slower cut generators",
-      -1, COIN_INT_MAX, CBC_PARAM_INT_MAXSLOWCUTS);
+    CbcParam p("slow!cutpasses",
+               "Maximum number of rounds for slower cut generators", -1,
+               COIN_INT_MAX, CBC_PARAM_INT_MAXSLOWCUTS);
     p.setLonghelp(
-      "Some cut generators are fairly slow - this limits the number of times they are tried.\
+        "Some cut generators are fairly slow - this limits the number of times they are tried.\
       The cut generators identified as 'may be slow' at present are Lift and project cuts and both versions of Reduce and Split cuts.");
     p.setIntValue(10);
     parameters.push_back(p);
   }
   {
     CbcParam p("solu!tion", "Prints solution to file",
-      CBC_PARAM_ACTION_SOLUTION);
+               CBC_PARAM_ACTION_SOLUTION);
     p.setLonghelp(
-      "This will write a primitive solution file to the given file name.  It will use the default\
+        "This will write a primitive solution file to the given file name.  It will use the default\
  directory given by 'directory'.  A name of '$' will use the previous value for the name.  This\
  is initialized to 'stdout'.  The amount of output can be varied using printi!ngOptions or printMask.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("solv!e", "Solve problem",
-      CBC_PARAM_ACTION_BAB);
-         p.setLonghelp(
-          "If there are no integer variables then this just solves LP.  If there are integer variables \
-this does branch and cut." );
-         parameters.push_back( p );
+    CbcParam p("solv!e", "Solve problem", CBC_PARAM_ACTION_BAB);
+    p.setLonghelp(
+        "If there are no integer variables then this just solves LP.  If there are integer variables \
+this does branch and cut.");
+    parameters.push_back(p);
   }
   {
-    CbcParam p("sosO!ptions", "Whether to use SOS from AMPL",  "off", CBC_PARAM_STR_SOS);
+    CbcParam p("sosO!ptions", "Whether to use SOS from AMPL", "off",
+               CBC_PARAM_STR_SOS);
     p.append("on");
     p.setCurrentOption("on");
-         p.setLonghelp(
-          "Normally if AMPL says there are SOS variables they should be used, but sometime sthey should\
- be turned off - this does so." );
-         parameters.push_back( p );
+    p.setLonghelp(
+        "Normally if AMPL says there are SOS variables they should be used, but sometime sthey should\
+ be turned off - this does so.");
+    parameters.push_back(p);
   }
   {
-    CbcParam p("slog!Level", "Level of detail in main solver output", -1, 63, CBC_PARAM_INT_SOLVERLOGLEVEL);
+    CbcParam p("slog!Level", "Level of detail in main solver output", -1, 63,
+               CBC_PARAM_INT_SOLVERLOGLEVEL);
     p.setLonghelp(
-      "If 0 then there should be no output in normal circumstances.  1 is probably the best\
+        "If 0 then there should be no output in normal circumstances.  1 is probably the best\
  value for most uses, while 2 and 3 give more information.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("lplog!Level", "Level of detail in LP solver output", -1, 63, CBC_PARAM_INT_LPLOGLEVEL);
+    CbcParam p("lplog!Level", "Level of detail in LP solver output", -1, 63,
+               CBC_PARAM_INT_LPLOGLEVEL);
     p.setLonghelp(
-      "If 0 then there should be no output in normal circumstances.  1 is probably the best\
+        "If 0 then there should be no output in normal circumstances.  1 is probably the best\
  value for most uses, while 2 and 3 give more information.  This parameter is only for controlling the output of the LP solver");
     parameters.push_back(p);
   }
   {
-     // Due to James Howey
-     CbcParam p("sosP!rioritize", "How to deal with SOS priorities",
-       "off", CBC_PARAM_STR_SOSPRIORITIZE);
-     p.append("high");
-     p.append("low");
-     p.append("orderhigh");
-     p.append("orderlow");
-     p.setLonghelp(
-       "This sets priorities for SOS.  Values 'high' and 'low' just set a priority \
+    // Due to James Howey
+    CbcParam p("sosP!rioritize", "How to deal with SOS priorities", "off",
+               CBC_PARAM_STR_SOSPRIORITIZE);
+    p.append("high");
+    p.append("low");
+    p.append("orderhigh");
+    p.append("orderlow");
+    p.setLonghelp(
+        "This sets priorities for SOS.  Values 'high' and 'low' just set a priority \
     relative to the for integer variables.  Value 'orderhigh' gives first highest priority to the first SOS and integer variables \
     a low priority.  Value 'orderlow' gives integer variables a high priority then SOS in order.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("timeM!ode", "Whether to use CPU or elapsed time",
-      "cpu", CBC_PARAM_STR_TIME_MODE);
+    CbcParam p("timeM!ode", "Whether to use CPU or elapsed time", "cpu",
+               CBC_PARAM_STR_TIME_MODE);
     p.append("elapsed");
     p.setLonghelp(
-      "cpu uses CPU time for stopping, while elapsed uses elapsed time. \
+        "cpu uses CPU time for stopping, while elapsed uses elapsed time. \
 (On Windows, elapsed time is always used).");
     parameters.push_back(p);
   }
   {
     CbcParam p("stat!istics", "Print some statistics",
-      CBC_PARAM_ACTION_STATISTICS);
-    p.setLonghelp(
-      "This command prints some statistics for the current model.\
+               CBC_PARAM_ACTION_STATISTICS);
+    p.setLonghelp("This command prints some statistics for the current model.\
  If log level >1 then more is printed.\
  These are for presolved model if presolve on (and unscaled).");
     parameters.push_back(p);
   }
   {
-    CbcParam p("strat!egy", "Switches on groups of features",
-      0, 2, CBC_PARAM_INT_STRATEGY);
-    p.setLonghelp(
-      "This turns on newer features. \
+    CbcParam p("strat!egy", "Switches on groups of features", 0, 2,
+               CBC_PARAM_INT_STRATEGY);
+    p.setLonghelp("This turns on newer features. \
 Use 0 for easy problems, 1 is default, 2 is aggressive. \
 1 uses Gomory cuts with a tolerance of 0.01 at the root node, \
 does a possible restart after 100 nodes if many variables could be fixed, \
 activates a diving and RINS heuristic, and makes the feasibility pump \
-more aggressive."); // This does not apply to unit tests (where 'experiment' may have similar effects
+more aggressive."); // This does not apply to unit tests (where 'experiment' may
+                    // have similar effects
     p.setIntValue(1);
     parameters.push_back(p);
   }
 #ifdef CBC_KEEP_DEPRECATED
   {
     CbcParam p("strengthen", "Create strengthened problem",
-      CBC_PARAM_ACTION_STRENGTHEN, 3);
+               CBC_PARAM_ACTION_STRENGTHEN, 3);
     p.setLonghelp(
-      "This creates a new problem by applying the root node cuts.  All tight constraints \
+        "This creates a new problem by applying the root node cuts.  All tight constraints \
 will be in resulting problem");
     parameters.push_back(p);
   }
 #endif
   {
-    CbcParam p("strong!Branching", "Number of variables to look at in strong branching",
-      0, COIN_INT_MAX, CBC_PARAM_INT_STRONGBRANCHING);
+    CbcParam p("strong!Branching",
+               "Number of variables to look at in strong branching", 0,
+               COIN_INT_MAX, CBC_PARAM_INT_STRONGBRANCHING);
     p.setIntValue(20);
     p.setLonghelp(
-      "In order to decide which variable to branch on, the code will choose up to this number \
+        "In order to decide which variable to branch on, the code will choose up to this number \
 of unsatisfied variables to try minimal up and down branches on.  Then the most effective one is chosen. \
 If a variable is branched on many times then the previous average up and down costs may be used - \
 see also option trustPseudoCosts.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("testO!si", "Test OsiObject stuff",
-      -1, COIN_INT_MAX, CBC_PARAM_INT_TESTOSI, 0);
+    CbcParam p("testO!si", "Test OsiObject stuff", -1, COIN_INT_MAX,
+               CBC_PARAM_INT_TESTOSI, 0);
     parameters.push_back(p);
   }
 #ifdef CBC_THREAD
   {
-    CbcParam p("thread!s", "Number of threads to try and use",
-      -100, 100000, CBC_PARAM_INT_THREADS, 1);
+    CbcParam p("thread!s", "Number of threads to try and use", -100, 100000,
+               CBC_PARAM_INT_THREADS, 1);
     p.setIntValue(0);
     p.setLonghelp(
-      "To use multiple threads, set threads to number wanted.  It may be better \
+        "To use multiple threads, set threads to number wanted.  It may be better \
 to use one or two more than number of cpus available.  If 100+n then n threads and \
 search is repeatable (maybe be somewhat slower), \
 if 200+n use threads for root cuts, 400+n threads used in sub-trees.");
@@ -2960,25 +2890,25 @@ if 200+n use threads for root cuts, 400+n threads used in sub-trees.");
   {
     CbcParam p("tighten!Factor", "Tighten bounds using this times largest \
 activity at continuous solution",
-      1.0e-3, COIN_DBL_MAX, CBC_PARAM_DBL_TIGHTENFACTOR, 0);
-    p.setLonghelp(
-      "This sleazy trick can help on some problems.");
+               1.0e-3, COIN_DBL_MAX, CBC_PARAM_DBL_TIGHTENFACTOR, 0);
+    p.setLonghelp("This sleazy trick can help on some problems.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("trust!PseudoCosts", "Number of branches before we trust pseudocosts",
-      -3, COIN_INT_MAX, CBC_PARAM_INT_NUMBERBEFORE);
+    CbcParam p("trust!PseudoCosts",
+               "Number of branches before we trust pseudocosts", -3,
+               COIN_INT_MAX, CBC_PARAM_INT_NUMBERBEFORE);
     p.setLonghelp(
-      "Using strong branching computes pseudo-costs.  This parameter determines after how many branches for a variable we just \
+        "Using strong branching computes pseudo-costs.  This parameter determines after how many branches for a variable we just \
 trust the pseudo costs and do not do any more strong branching.");
     p.setIntValue(10);
     parameters.push_back(p);
   }
   {
     CbcParam p("tune!PreProcess", "Dubious tuning parameters for preprocessing",
-      0, COIN_INT_MAX, CBC_PARAM_INT_PROCESSTUNE, 1);
+               0, COIN_INT_MAX, CBC_PARAM_INT_PROCESSTUNE, 1);
     p.setLonghelp(
-      "Format aabbcccc - \n If aa then this is number of major passes (i.e. with presolve) \n \
+        "Format aabbcccc - \n If aa then this is number of major passes (i.e. with presolve) \n \
 If bb and bb>0 then this is number of minor passes (if unset or 0 then 10) \n \
 cccc is bit set \n 0 - 1 Heavy probing \n 1 - 2 Make variables integer if possible (if obj value)\n \
 2 - 4 As above but even if zero objective value\n \
@@ -2992,8 +2922,9 @@ cccc is bit set \n 0 - 1 Heavy probing \n 1 - 2 Make variables integer if possib
     parameters.push_back(p);
   }
   {
-    CbcParam p("two!MirCuts", "Whether to use Two phase Mixed Integer Rounding cuts",
-      "off", CBC_PARAM_STR_TWOMIRCUTS);
+    CbcParam p("two!MirCuts",
+               "Whether to use Two phase Mixed Integer Rounding cuts", "off",
+               CBC_PARAM_STR_TWOMIRCUTS);
     p.append("on");
     p.append("root");
     p.append("ifmove");
@@ -3002,28 +2933,27 @@ cccc is bit set \n 0 - 1 Heavy probing \n 1 - 2 Make variables integer if possib
     p.append("forceandglobal");
     p.append("forceLongOn");
     p.setLonghelp(CUTS_LONGHELP
-      " Reference: https://github.com/coin-or/Cgl/wiki/CglTwomir");
+                  " Reference: https://github.com/coin-or/Cgl/wiki/CglTwomir");
     parameters.push_back(p);
   }
   {
-    CbcParam p("unitTest", "Do unit test",
-      CBC_PARAM_ACTION_UNITTEST, 3, 1);
-    p.setLonghelp(
-      "This exercises the unit test for clp");
+    CbcParam p("unitTest", "Do unit test", CBC_PARAM_ACTION_UNITTEST, 3, 1);
+    p.setLonghelp("This exercises the unit test for clp");
     parameters.push_back(p);
   }
   {
-    CbcParam p("userCbc", "Hand coded Cbc stuff",
-      CBC_PARAM_ACTION_USERCBC, 0, 0);
+    CbcParam p("userCbc", "Hand coded Cbc stuff", CBC_PARAM_ACTION_USERCBC, 0,
+               0);
     p.setLonghelp(
-      "There are times e.g. when using AMPL interface when you may wish to do something unusual.  \
+        "There are times e.g. when using AMPL interface when you may wish to do something unusual.  \
 Look for USERCBC in main driver and modify sample code. \
 It is possible you can get same effect by using example driver4.cpp.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("Vnd!VariableNeighborhoodSearch", "Whether to try Variable Neighborhood Search",
-      "off", CBC_PARAM_STR_VND);
+    CbcParam p("Vnd!VariableNeighborhoodSearch",
+               "Whether to try Variable Neighborhood Search", "off",
+               CBC_PARAM_STR_VND);
     p.append("on");
     p.append("both");
     p.append("before");
@@ -3032,45 +2962,43 @@ It is possible you can get same effect by using example driver4.cpp.");
     parameters.push_back(p);
   }
   {
-    CbcParam p("verbose", "Switches on longer help on single ?",
-      0, 31, CBC_PARAM_INT_VERBOSE, 0);
-    p.setLonghelp(
-      "Set to 1 to get short help with ? list, 2 to get long help, 3 for both.  (add 4 to just get ampl ones).");
+    CbcParam p("verbose", "Switches on longer help on single ?", 0, 31,
+               CBC_PARAM_INT_VERBOSE, 0);
+    p.setLonghelp("Set to 1 to get short help with ? list, 2 to get long help, "
+                  "3 for both.  (add 4 to just get ampl ones).");
     p.setIntValue(0);
     parameters.push_back(p);
   }
   {
-    CbcParam p("vub!heuristic", "Type of VUB heuristic",
-      -2, 20, CBC_PARAM_INT_VUBTRY, 0);
-    p.setLonghelp(
-      "This heuristic tries and fix some integer variables.");
+    CbcParam p("vub!heuristic", "Type of VUB heuristic", -2, 20,
+               CBC_PARAM_INT_VUBTRY, 0);
+    p.setLonghelp("This heuristic tries and fix some integer variables.");
     p.setIntValue(-1);
     parameters.push_back(p);
   }
   {
-    CbcParam p("zero!HalfCuts", "Whether to use zero half cuts",
-      "off", CBC_PARAM_STR_ZEROHALFCUTS);
+    CbcParam p("zero!HalfCuts", "Whether to use zero half cuts", "off",
+               CBC_PARAM_STR_ZEROHALFCUTS);
     p.append("on");
     p.append("root");
     p.append("ifmove");
     p.append("forceOn");
     p.append("onglobal");
     p.setLonghelp(CUTS_LONGHELP
-      " This implementation was written by Alberto Caprara.");
+                  " This implementation was written by Alberto Caprara.");
     parameters.push_back(p);
   }
 }
 
 // Given a parameter type - returns its number in list
 int whichCbcParam(const CbcParameterType &name,
-  const std::vector< CbcParam > &parameters)
-{
+                  const std::vector<CbcParam> &parameters) {
   for (int i = 0; i < (int)parameters.size(); i++) {
     if (parameters[i].type() == name)
       return i;
   }
-  return std::numeric_limits< int >::max(); // should not arrive here
+  return std::numeric_limits<int>::max(); // should not arrive here
 }
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

@@ -5,9 +5,9 @@
 #ifndef CbcParam_H
 #define CbcParam_H
 
+#include "CbcModel.hpp"
 #include "ClpParam.hpp"
 #include "OsiSolverInterface.hpp"
-#include "CbcModel.hpp"
 class ClpSimplex;
 /*! \brief Parameter codes
 
@@ -24,25 +24,25 @@ class ClpSimplex;
   don't fit neatly into the parameters array.
 
   This coding scheme is in flux.
-  CBC_PARAM_STR_NODESTRATEGY, 
-  CBC_PARAM_STR_BRANCHSTRATEGY, 
+  CBC_PARAM_STR_NODESTRATEGY,
+  CBC_PARAM_STR_BRANCHSTRATEGY,
   CBC_PARAM_NOTUSED_ADDCUTSSTRATEGY,
-  CLP_PARAM_ACTION_CLEARCUTS, 
-  CBC_PARAM_NOTUSED_OSLSTUFF, 
+  CLP_PARAM_ACTION_CLEARCUTS,
+  CBC_PARAM_NOTUSED_OSLSTUFF,
   CBC_PARAM_NOTUSED_CBCSTUFF are not used at present (03.10.24).
 */
 
 enum CbcParameterType
 
-{ //Begin used in Clp
-  //Begin CbcGen
+{ // Begin used in Clp
+  // Begin CbcGen
   CBC_PARAM_GENERALQUERY = -100,
   CBC_PARAM_FULLGENERALQUERY,
   CBC_PARAM_STR_ALLCOMMANDS,
-  //End CbcGen
-  //End used in Clp
-  
-  //Begin CbcGenCbc
+  // End CbcGen
+  // End used in Clp
+
+  // Begin CbcGenCbc
   CBC_PARAM_DBL_INFEASIBILITYWEIGHT = 51,
   CBC_PARAM_DBL_CUTOFF,
   CBC_PARAM_DBL_INTEGERTOLERANCE,
@@ -51,9 +51,9 @@ enum CbcParameterType
   CBC_PARAM_DBL_TIMELIMIT_BAB,
   CBC_PARAM_DBL_MAXSECONDSNIFS,
   CBC_PARAM_DBL_GAPRATIO,
-  //End CbcGenCbc
+  // End CbcGenCbc
 
-  //Begin CbcGen
+  // Begin CbcGen
   CBC_PARAM_DBL_DJFIX = 81,
   CBC_PARAM_DBL_TIGHTENFACTOR,
   CBC_PARAM_DBL_FAKEINCREMENT,
@@ -64,14 +64,14 @@ enum CbcParameterType
   CBC_PARAM_DBL_DEXTRA4,
   CBC_PARAM_DBL_DEXTRA5,
 
-  //Begin Used in Clp
+  // Begin Used in Clp
   CBC_PARAM_INT_SOLVERLOGLEVEL = 101,
   CBC_PARAM_INT_OUTPUTFORMAT,
   CBC_PARAM_INT_PRINTOPTIONS,
   CBC_PARAM_INT_VERBOSE,
 
   CBC_PARAM_INT_THREADS = 151,
-  //End used in Clp
+  // End used in Clp
   CBC_PARAM_INT_LPLOGLEVEL,
   CBC_PARAM_INT_CUTDEPTH,
   CBC_PARAM_INT_BKPIVOTINGSTRATEGY,
@@ -104,31 +104,31 @@ enum CbcParameterType
   CBC_PARAM_INT_MOREMOREMIPOPTIONS,
   CBC_PARAM_INT_PROCESSTUNE,
   CBC_PARAM_INT_USESOLUTION,
-  //End CbcGen
+  // End CbcGen
 
-  //Begin CbcGenCbc
+  // Begin CbcGenCbc
   CBC_PARAM_INT_STRONGBRANCHING,
-  CBC_PARAM_INT_MAXNODES, 
-  CBC_PARAM_INT_MAXNODESNOTIMPROVINGFS, 
-  CBC_PARAM_INT_NUMBERBEFORE, 
-  CBC_PARAM_INT_NUMBERANALYZE, 
+  CBC_PARAM_INT_MAXNODES,
+  CBC_PARAM_INT_MAXNODESNOTIMPROVINGFS,
+  CBC_PARAM_INT_NUMBERBEFORE,
+  CBC_PARAM_INT_NUMBERANALYZE,
   CBC_PARAM_INT_MAXSOLS,
   CBC_PARAM_INT_MIPOPTIONS,
   CBC_PARAM_INT_MOREMIPOPTIONS,
   CBC_PARAM_INT_CUTPASS,
-  //End CbcGenCbc
+  // End CbcGenCbc
 
-  //Begin CbcGenOsi
+  // Begin CbcGenOsi
   CBC_PARAM_INT_MAXHOTITS,
-  //End CbcGenOsi
-  
-  //Begin used in Cbc
+  // End CbcGenOsi
+
+  // Begin used in Cbc
   CBC_PARAM_STR_DIRECTION = 201,
   CBC_PARAM_STR_ERRORSALLOWED,
   CBC_PARAM_STR_INTPRINT,
-  //End used in Cbc
+  // End used in Cbc
 
-  //Begin CbcGen
+  // Begin CbcGen
   CBC_PARAM_STR_NODESTRATEGY = 301,
   CBC_PARAM_STR_BRANCHSTRATEGY,
   CBC_PARAM_STR_CUTSSTRATEGY,
@@ -184,9 +184,9 @@ enum CbcParameterType
   CBC_PARAM_STR_PREPROCNAMES,
   CBC_PARAM_STR_SOSPRIORITIZE,
   CBC_PARAM_STR_TIME_MODE,
-  //End CbcGen
-  
-  //Begin used in Clp
+  // End CbcGen
+
+  // Begin used in Clp
   CBC_PARAM_ACTION_DIRECTORY = 401,
   CBC_PARAM_ACTION_DIRSAMPLE,
   CBC_PARAM_ACTION_DIRNETLIB,
@@ -224,7 +224,7 @@ enum CbcParameterType
 
   CBC_PARAM_NOTUSED_OSLSTUFF = 601,
   CBC_PARAM_NOTUSED_CBCSTUFF,
-  
+
   CBC_PARAM_NOTUSED_INVALID = 1000
 };
 
@@ -237,16 +237,16 @@ public:
   //@{
   /// Constructors
   CbcParam();
-  CbcParam(std::string name, std::string help,
-    double lower, double upper, CbcParameterType type, int display = 2);
-  CbcParam(std::string name, std::string help,
-    int lower, int upper, CbcParameterType type, int display = 2);
+  CbcParam(std::string name, std::string help, double lower, double upper,
+           CbcParameterType type, int display = 2);
+  CbcParam(std::string name, std::string help, int lower, int upper,
+           CbcParameterType type, int display = 2);
   // Other strings will be added by insert
   CbcParam(std::string name, std::string help, std::string firstValue,
-    CbcParameterType type, int whereUsed = 7, int display = 2);
+           CbcParameterType type, int whereUsed = 7, int display = 2);
   // Action
-  CbcParam(std::string name, std::string help,
-    CbcParameterType type, int whereUsed = 7, int display = 2);
+  CbcParam(std::string name, std::string help, CbcParameterType type,
+           int whereUsed = 7, int display = 2);
   /// Copy constructor.
   CbcParam(const CbcParam &);
   /// Assignment operator. This copies the data
@@ -260,45 +260,23 @@ public:
   /// Insert string (only valid for keywords)
   void append(std::string keyWord);
   /// Returns name
-  inline std::string name() const
-  {
-    return name_;
-  };
+  inline std::string name() const { return name_; };
   /// Returns short help
-  inline std::string shortHelp() const
-  {
-    return shortHelp_;
-  };
+  inline std::string shortHelp() const { return shortHelp_; };
   /// Returns long help
-  inline std::string longHelp() const
-  {
-    return longHelp_;
-  }
+  inline std::string longHelp() const { return longHelp_; }
   /// Returns set of valid strings
-  inline const std::vector<std::string>& definedKeywords() const
-  {
+  inline const std::vector<std::string> &definedKeywords() const {
     return definedKeyWords_;
   }
   /// Returns the lower bound for a double-valued parameter
-  inline double lowerDoubleValue() const
-  {
-     return lowerDoubleValue_;
-  }
+  inline double lowerDoubleValue() const { return lowerDoubleValue_; }
   /// Returns the upper bound for a double-valued parameter
-  inline double upperDoubleValue() const
-  {
-     return upperDoubleValue_;
-  }
+  inline double upperDoubleValue() const { return upperDoubleValue_; }
   /// Returns the lower bound for an int-valued parameter
-  inline int lowerIntValue() const
-  {
-     return lowerIntValue_;
-  }
+  inline int lowerIntValue() const { return lowerIntValue_; }
   /// Returns the upper bound for an int-valued parameter
-  inline int upperIntValue() const
-  {
-     return upperIntValue_;
-  }
+  inline int upperIntValue() const { return upperIntValue_; }
   /// Gets a double parameter
   double doubleParameter(OsiSolverInterface *model) const;
   /// Gets a double parameter
@@ -308,13 +286,12 @@ public:
   /// Sets a double parameter (nonzero code if error)
   int setDoubleParameter(CbcModel &model, double value);
   /// Sets double parameter and returns printable string and error code
-  const char *setDoubleParameterWithMessage(OsiSolverInterface *model, double value, int &returnCode);
+  const char *setDoubleParameterWithMessage(OsiSolverInterface *model,
+                                            double value, int &returnCode);
   /// Sets double parameter and returns printable string and error code
-  const char *setDoubleParameterWithMessage(CbcModel &model, double value, int &returnCode);
-  inline double doubleValue() const
-  {
-    return doubleValue_;
-  }
+  const char *setDoubleParameterWithMessage(CbcModel &model, double value,
+                                            int &returnCode);
+  inline double doubleValue() const { return doubleValue_; }
   /// Sets double value
   void setDoubleValue(double value);
   /// Sets double value with message
@@ -323,30 +300,26 @@ public:
   int checkDoubleParameter(double value) const;
   /// Gets a int parameter
   int intParameter(OsiSolverInterface *model) const;
- /// Gets a int parameter
+  /// Gets a int parameter
   int intParameter(CbcModel &model) const;
   /// Sets a int parameter (nonzero code if error)
   int setIntParameter(CbcModel &model, int value);
   /// Sets a int parameter (nonzero code if error)
   int setIntParameter(OsiSolverInterface *model, int value);
   /// Sets int parameter and returns printable string and error code
-  const char *setIntParameterWithMessage(OsiSolverInterface *model, int value, int &returnCode);
+  const char *setIntParameterWithMessage(OsiSolverInterface *model, int value,
+                                         int &returnCode);
   /// Sets int parameter and returns printable string and error code
-  const char *setIntParameterWithMessage(CbcModel &model, int value, int &returnCode);
+  const char *setIntParameterWithMessage(CbcModel &model, int value,
+                                         int &returnCode);
   /// Gets int value
-  inline int intValue() const
-  {
-    return intValue_;
-  }
+  inline int intValue() const { return intValue_; }
   /// Sets int value
   void setIntValue(int value);
   /// Sets int value with message
   const char *setIntValueWithMessage(int value);
   /// Gets string value
-  inline std::string stringValue() const
-  {
-    return stringValue_;
-  }
+  inline std::string stringValue() const { return stringValue_; }
   /// Sets string value
   void setStringValue(std::string value);
   /// Returns name which could match
@@ -360,8 +333,7 @@ public:
   /// Prints parameter options
   void printOptions() const;
   /// Returns current parameter option
-  inline std::string currentOption() const
-  {
+  inline std::string currentOption() const {
     return definedKeyWords_[currentKeyWord_];
   }
   /// Sets current parameter option
@@ -375,51 +347,33 @@ public:
   /// Returns current parameter option position
   int currentOptionAsInteger() const;
   /** Returns current parameter option position
-	 but if fake keyword returns a fake value and sets
-	 fakeInteger to true value.  If not fake then fakeInteger is -COIN_INT_MAX
+         but if fake keyword returns a fake value and sets
+         fakeInteger to true value.  If not fake then fakeInteger is
+     -COIN_INT_MAX
       */
   int currentOptionAsInteger(int &fakeInteger) const;
   /// type
-  inline CbcParameterType type() const
-  {
-    return type_;
-  }
+  inline CbcParameterType type() const { return type_; }
   /// whether to display
-  inline bool displayThis() const
-  {
-    return display_;
-  }
+  inline bool displayThis() const { return display_; }
   /// Set Long help
-  inline void setLonghelp(const std::string help)
-  {
-    longHelp_ = help;
-  }
+  inline void setLonghelp(const std::string help) { longHelp_ = help; }
   /// Print Long help
   void printLongHelp() const;
   /// Print action and string
   void printString() const;
   /// type for classification
-  inline int indexNumber() const
-  {
-    return indexNumber_;
-  }
+  inline int indexNumber() const { return indexNumber_; }
   /** 7 if used everywhere,
          1 - used by clp
          2 - used by cbc
          4 - used by ampl
      */
-  inline int whereUsed() const
-  {
-    return whereUsed_;
-  }
+  inline int whereUsed() const { return whereUsed_; }
   /// Gets value of fake keyword
-  inline int fakeKeyWord() const
-  {
-    return fakeKeyWord_;
-  }
+  inline int fakeKeyWord() const { return fakeKeyWord_; }
   /// Sets value of fake keyword
-  inline void setFakeKeyWord(int value, int fakeValue)
-  {
+  inline void setFakeKeyWord(int value, int fakeValue) {
     fakeKeyWord_ = value;
     fakeValue_ = fakeValue;
   }
@@ -449,7 +403,7 @@ private:
   // Minimum match
   unsigned int lengthMatch_;
   /// set of valid strings
-  std::vector< std::string > definedKeyWords_;
+  std::vector<std::string> definedKeyWords_;
   /// Name
   std::string name_;
   /// Short help
@@ -477,8 +431,8 @@ private:
      */
   int whereUsed_;
   /** If >=0 then integers allowed as a fake keyword
-	 So minusnnnn would got to -nnnn in currentKeyword_
-	 and plusnnnn would go to fakeKeyword_+nnnn
+         So minusnnnn would got to -nnnn in currentKeyword_
+         and plusnnnn would go to fakeKeyword_+nnnn
      */
   int fakeKeyWord_;
   /// Return this as main value if an integer
@@ -498,27 +452,29 @@ CBCLIB_EXPORT
 std::string CbcReadGetString(int &whichArgument, int argc, const char *argv[]);
 // valid 0 - okay, 1 bad, 2 not there
 CBCLIB_EXPORT
-int CbcReadGetIntField(int &whichArgument, int argc, const char *argv[], int *valid);
+int CbcReadGetIntField(int &whichArgument, int argc, const char *argv[],
+                       int *valid);
 CBCLIB_EXPORT
-double CbcReadGetDoubleField(int &whichArgument, int argc, const char *argv[], int *valid);
+double CbcReadGetDoubleField(int &whichArgument, int argc, const char *argv[],
+                             int *valid);
 CLPLIB_EXPORT
 void setCbcPrinting(bool yesNo);
 CBCLIB_EXPORT
-void setCbcReadCommand(FILE* f);
+void setCbcReadCommand(FILE *f);
 
 #define CBCMAXPARAMETERS 250
 /*
   Subroutine to establish the cbc parameter array. See the description of
-  class CbcParam for details. 
+  class CbcParam for details.
 */
 CLPLIB_EXPORT
-void establishCbcParams(std::vector< CbcParam > &params);
+void establishCbcParams(std::vector<CbcParam> &params);
 // Given a parameter type - returns its number in list
 CLPLIB_EXPORT
 int whichCbcParam(const CbcParameterType &name,
-  const std::vector< CbcParam > &parameters);
+                  const std::vector<CbcParam> &parameters);
 
 #endif /* CbcParam_H */
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

@@ -6,6 +6,7 @@
 #define CbcCountRowCut_H
 
 #include "CbcConfig.h"
+#include "OsiRowCut.hpp"
 
 class OsiCuts;
 class OsiRowCut;

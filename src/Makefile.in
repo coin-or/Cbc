@@ -192,18 +192,16 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcHeuristicVND.lo libCbc_la-CbcHeuristicDW.lo \
 	libCbc_la-CbcMessage.lo libCbc_la-CbcMipStartIO.lo \
 	libCbc_la-CbcModel.lo libCbc_la-CbcModelParam.lo \
-	libCbc_la-CbcModelParamUtils.lo libCbc_la-CbcNode.lo \
-	libCbc_la-CbcNodeInfo.lo libCbc_la-CbcNWay.lo \
-	libCbc_la-CbcObject.lo libCbc_la-CbcObjectUpdateData.lo \
-	libCbc_la-CbcParam.lo libCbc_la-CbcPartialNodeInfo.lo \
-	libCbc_la-CbcSimpleInteger.lo \
+	libCbc_la-CbcNode.lo libCbc_la-CbcNodeInfo.lo \
+	libCbc_la-CbcNWay.lo libCbc_la-CbcObject.lo \
+	libCbc_la-CbcObjectUpdateData.lo libCbc_la-CbcParam.lo \
+	libCbc_la-CbcPartialNodeInfo.lo libCbc_la-CbcSimpleInteger.lo \
 	libCbc_la-CbcSimpleIntegerDynamicPseudoCost.lo \
 	libCbc_la-CbcSimpleIntegerPseudoCost.lo libCbc_la-CbcSOS.lo \
 	libCbc_la-CbcSolution.lo libCbc_la-CbcSolver.lo \
 	libCbc_la-CbcSolverAnalyze.lo \
 	libCbc_la-CbcSolverExpandKnapsack.lo \
 	libCbc_la-CbcSolverHeuristics.lo libCbc_la-CbcSolverParam.lo \
-	libCbc_la-CbcSolverParamUtils.lo \
 	libCbc_la-CbcSolverSettings.lo libCbc_la-CbcStatistics.lo \
 	libCbc_la-CbcStrategy.lo libCbc_la-CbcSubProblem.lo \
 	libCbc_la-CbcSymmetry.lo libCbc_la-CbcThread.lo \
@@ -314,7 +312,6 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcMipStartIO.Plo \
 	./$(DEPDIR)/libCbc_la-CbcModel.Plo \
 	./$(DEPDIR)/libCbc_la-CbcModelParam.Plo \
-	./$(DEPDIR)/libCbc_la-CbcModelParamUtils.Plo \
 	./$(DEPDIR)/libCbc_la-CbcNWay.Plo \
 	./$(DEPDIR)/libCbc_la-CbcNode.Plo \
 	./$(DEPDIR)/libCbc_la-CbcNodeInfo.Plo \
@@ -332,7 +329,6 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcSolverExpandKnapsack.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSolverHeuristics.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSolverParam.Plo \
-	./$(DEPDIR)/libCbc_la-CbcSolverParamUtils.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSolverSettings.Plo \
 	./$(DEPDIR)/libCbc_la-CbcStatistics.Plo \
 	./$(DEPDIR)/libCbc_la-CbcStrategy.Plo \
@@ -628,7 +624,7 @@ libCbc_la_SOURCES = \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcMipStartIO.cpp CbcMipStartIO.hpp \
 	CbcModel.cpp CbcModel.hpp \
-	CbcModelParam.cpp CbcModelParam.hpp CbcModelParamUtils.cpp \
+	CbcModelParam.cpp CbcModelParam.hpp \
 	CbcNode.cpp CbcNode.hpp \
 	CbcNodeInfo.cpp CbcNodeInfo.hpp \
 	CbcNWay.cpp CbcNWay.hpp \
@@ -645,7 +641,7 @@ libCbc_la_SOURCES = \
 	CbcSolver.cpp CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
-	CbcSolverParam.cpp CbcSolverParam.hpp CbcSolverParamUtils.cpp \
+	CbcSolverParam.cpp CbcSolverParam.hpp \
 	CbcSolverSettings.cpp CbcSolverSettings.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
@@ -1007,7 +1003,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcMipStartIO.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcModel.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcModelParam.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcModelParamUtils.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcNWay.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcNode.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcNodeInfo.Plo@am__quote@ # am--include-marker
@@ -1025,7 +1020,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSolverExpandKnapsack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSolverHeuristics.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSolverParam.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSolverParamUtils.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSolverSettings.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcStatistics.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcStrategy.Plo@am__quote@ # am--include-marker
@@ -1417,13 +1411,6 @@ libCbc_la-CbcModelParam.lo: CbcModelParam.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcModelParam.lo `test -f 'CbcModelParam.cpp' || echo '$(srcdir)/'`CbcModelParam.cpp
 
-libCbc_la-CbcModelParamUtils.lo: CbcModelParamUtils.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcModelParamUtils.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcModelParamUtils.Tpo -c -o libCbc_la-CbcModelParamUtils.lo `test -f 'CbcModelParamUtils.cpp' || echo '$(srcdir)/'`CbcModelParamUtils.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcModelParamUtils.Tpo $(DEPDIR)/libCbc_la-CbcModelParamUtils.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcModelParamUtils.cpp' object='libCbc_la-CbcModelParamUtils.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcModelParamUtils.lo `test -f 'CbcModelParamUtils.cpp' || echo '$(srcdir)/'`CbcModelParamUtils.cpp
-
 libCbc_la-CbcNode.lo: CbcNode.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcNode.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcNode.Tpo -c -o libCbc_la-CbcNode.lo `test -f 'CbcNode.cpp' || echo '$(srcdir)/'`CbcNode.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcNode.Tpo $(DEPDIR)/libCbc_la-CbcNode.Plo
@@ -1542,13 +1529,6 @@ libCbc_la-CbcSolverParam.lo: CbcSolverParam.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcSolverParam.cpp' object='libCbc_la-CbcSolverParam.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcSolverParam.lo `test -f 'CbcSolverParam.cpp' || echo '$(srcdir)/'`CbcSolverParam.cpp
-
-libCbc_la-CbcSolverParamUtils.lo: CbcSolverParamUtils.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcSolverParamUtils.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcSolverParamUtils.Tpo -c -o libCbc_la-CbcSolverParamUtils.lo `test -f 'CbcSolverParamUtils.cpp' || echo '$(srcdir)/'`CbcSolverParamUtils.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcSolverParamUtils.Tpo $(DEPDIR)/libCbc_la-CbcSolverParamUtils.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcSolverParamUtils.cpp' object='libCbc_la-CbcSolverParamUtils.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcSolverParamUtils.lo `test -f 'CbcSolverParamUtils.cpp' || echo '$(srcdir)/'`CbcSolverParamUtils.cpp
 
 libCbc_la-CbcSolverSettings.lo: CbcSolverSettings.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcSolverSettings.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcSolverSettings.Tpo -c -o libCbc_la-CbcSolverSettings.lo `test -f 'CbcSolverSettings.cpp' || echo '$(srcdir)/'`CbcSolverSettings.cpp
@@ -2005,7 +1985,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcMipStartIO.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcModel.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcModelParam.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-CbcModelParamUtils.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcNWay.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcNode.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcNodeInfo.Plo
@@ -2023,7 +2002,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverExpandKnapsack.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverHeuristics.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverParam.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverParamUtils.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverSettings.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStatistics.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStrategy.Plo
@@ -2145,7 +2123,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcMipStartIO.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcModel.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcModelParam.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-CbcModelParamUtils.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcNWay.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcNode.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcNodeInfo.Plo
@@ -2163,7 +2140,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverExpandKnapsack.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverHeuristics.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverParam.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverParamUtils.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverSettings.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStatistics.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStrategy.Plo

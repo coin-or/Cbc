@@ -70,7 +70,7 @@ libCbc_la_SOURCES = \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcMipStartIO.cpp CbcMipStartIO.hpp \
 	CbcModel.cpp CbcModel.hpp \
-	CbcModelParam.cpp CbcModelParam.hpp CbcModelParamUtils.cpp \
+	CbcModelParam.cpp CbcModelParam.hpp \
 	CbcNode.cpp CbcNode.hpp \
 	CbcNodeInfo.cpp CbcNodeInfo.hpp \
 	CbcNWay.cpp CbcNWay.hpp \
@@ -87,7 +87,7 @@ libCbc_la_SOURCES = \
 	CbcSolver.cpp CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
-	CbcSolverParam.cpp CbcSolverParam.hpp CbcSolverParamUtils.cpp \
+	CbcSolverParam.cpp CbcSolverParam.hpp \
 	CbcSolverSettings.cpp CbcSolverSettings.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \

@@ -22,19 +22,19 @@
 #include "CbcHeuristicLocal.hpp"
 #include "CbcHeuristicPivotAndFix.hpp"
 //#include "CbcHeuristicPivotAndComplement.hpp"
-#include "CbcHeuristicRandRound.hpp"
-#include "CbcHeuristicGreedy.hpp"
-#include "CbcHeuristicFPump.hpp"
-#include "CbcHeuristicRINS.hpp"
 #include "CbcHeuristicDW.hpp"
+#include "CbcHeuristicFPump.hpp"
+#include "CbcHeuristicGreedy.hpp"
+#include "CbcHeuristicRINS.hpp"
+#include "CbcHeuristicRandRound.hpp"
 #include "CbcHeuristicVND.hpp"
 
 #include "CbcHeuristicDiveCoefficient.hpp"
 #include "CbcHeuristicDiveFractional.hpp"
 #include "CbcHeuristicDiveGuided.hpp"
-#include "CbcHeuristicDiveVectorLength.hpp"
-#include "CbcHeuristicDivePseudoCost.hpp"
 #include "CbcHeuristicDiveLineSearch.hpp"
+#include "CbcHeuristicDivePseudoCost.hpp"
+#include "CbcHeuristicDiveVectorLength.hpp"
 
 #include "CbcStrategy.hpp"
 #include "OsiAuxInfo.hpp"
@@ -42,8 +42,7 @@
 #include "ClpSimplexOther.hpp"
 
 // Crunch down model
-void crunchIt(ClpSimplex *model)
-{
+void crunchIt(ClpSimplex *model) {
 #ifdef JJF_ZERO
   model->dual();
 #else
@@ -54,13 +53,14 @@ void crunchIt(ClpSimplex *model)
   int *whichRow = new int[3 * numberRows];
   int *whichColumn = new int[2 * numberColumns];
   int nBound;
-  ClpSimplex *small = static_cast< ClpSimplexOther * >(model)->crunch(rhs, whichRow, whichColumn,
-    nBound, false, false);
+  ClpSimplex *small = static_cast<ClpSimplexOther *>(model)->crunch(
+      rhs, whichRow, whichColumn, nBound, false, false);
   if (small) {
     small->dual();
     if (small->problemStatus() == 0) {
       model->setProblemStatus(0);
-      static_cast< ClpSimplexOther * >(model)->afterCrunch(*small, whichRow, whichColumn, nBound);
+      static_cast<ClpSimplexOther *>(model)->afterCrunch(*small, whichRow,
+                                                         whichColumn, nBound);
     } else if (small->problemStatus() != 3) {
       model->setProblemStatus(1);
     } else {
@@ -86,23 +86,21 @@ void crunchIt(ClpSimplex *model)
   doAction - 0 just fix in original and return NULL
              1 return fixed non-presolved solver
              2 as one but use presolve Inside this
-	     3 use presolve and fix ones with large cost
+             3 use presolve and fix ones with large cost
              ? do heuristics and set best solution
-	     ? do BAB and just set best solution
-	     10+ then use lastSolution and relax a few
+             ? do BAB and just set best solution
+             10+ then use lastSolution and relax a few
              -2 cleanup afterwards if using 2
   On output - number fixed
 */
-OsiClpSolverInterface *
-fixVubs(CbcModel &model, int skipZero2,
-  int &doAction,
-  CoinMessageHandler * /*generalMessageHandler*/,
-  const double *lastSolution, double dextra[6],
-  int extra[5])
-{
+OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
+                               CoinMessageHandler * /*generalMessageHandler*/,
+                               const double *lastSolution, double dextra[6],
+                               int extra[5]) {
   if (doAction == 11 && !lastSolution)
     lastSolution = model.bestSolution();
-  assert(((doAction >= 0 && doAction <= 3) && !lastSolution) || (doAction == 11 && lastSolution));
+  assert(((doAction >= 0 && doAction <= 3) && !lastSolution) ||
+         (doAction == 11 && lastSolution));
   double fractionIntFixed = dextra[3];
   double fractionFixed = dextra[4];
   double fixAbove = dextra[2];
@@ -112,7 +110,8 @@ fixVubs(CbcModel &model, int skipZero2,
 #endif
   int leaveIntFree = extra[1];
   OsiSolverInterface *originalSolver = model.solver();
-  OsiClpSolverInterface *originalClpSolver = dynamic_cast< OsiClpSolverInterface * >(originalSolver);
+  OsiClpSolverInterface *originalClpSolver =
+      dynamic_cast<OsiClpSolverInterface *>(originalSolver);
   ClpSimplex *originalLpSolver = originalClpSolver->getModelPtr();
   int *originalColumns = NULL;
   OsiClpSolverInterface *clpSolver;
@@ -128,7 +127,8 @@ fixVubs(CbcModel &model, int skipZero2,
       double time1 = CoinCpuTime();
 #endif
       originalClpSolver->initialSolve();
-      COIN_DETAIL_PRINT(printf("first solve took %g seconds\n", CoinCpuTime() - time1));
+      COIN_DETAIL_PRINT(
+          printf("first solve took %g seconds\n", CoinCpuTime() - time1));
       double *columnLower = originalLpSolver->columnLower();
       double *columnUpper = originalLpSolver->columnUpper();
       const double *solution = originalLpSolver->primalColumnSolution();
@@ -155,7 +155,8 @@ fixVubs(CbcModel &model, int skipZero2,
           }
         }
       }
-      COIN_DETAIL_PRINT(printf("%d artificials fixed, %d left as in solution\n", nFix, nArt));
+      COIN_DETAIL_PRINT(
+          printf("%d artificials fixed, %d left as in solution\n", nFix, nArt));
       lpSolver = pinfo.presolvedModel(*originalLpSolver, 1.0e-8, true, 10);
       if (!lpSolver || doAction == 2) {
         // take off fixing in original
@@ -181,15 +182,17 @@ fixVubs(CbcModel &model, int skipZero2,
     doAction = 1;
   } else {
     OsiSolverInterface *solver = originalSolver->clone();
-    clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
+    clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
     lpSolver = clpSolver->getModelPtr();
   }
   // Tighten bounds
   lpSolver->tightenPrimalBounds(0.0, 11, true);
   int numberColumns = clpSolver->getNumCols();
-  double *saveColumnLower = CoinCopyOfArray(lpSolver->columnLower(), numberColumns);
-  double *saveColumnUpper = CoinCopyOfArray(lpSolver->columnUpper(), numberColumns);
-  //char generalPrint[200];
+  double *saveColumnLower =
+      CoinCopyOfArray(lpSolver->columnLower(), numberColumns);
+  double *saveColumnUpper =
+      CoinCopyOfArray(lpSolver->columnUpper(), numberColumns);
+  // char generalPrint[200];
   const double *objective = lpSolver->getObjCoefficients();
   double *columnLower = lpSolver->columnLower();
   double *columnUpper = lpSolver->columnUpper();
@@ -205,7 +208,7 @@ fixVubs(CbcModel &model, int skipZero2,
 
   // Column copy
   CoinPackedMatrix matrixByCol(*clpSolver->getMatrixByCol());
-  //const double * element = matrixByCol.getElements();
+  // const double * element = matrixByCol.getElements();
   const int *row = matrixByCol.getIndices();
   const CoinBigIndex *columnStart = matrixByCol.getVectorStarts();
   const int *columnLength = matrixByCol.getVectorLengths();
@@ -322,10 +325,12 @@ fixVubs(CbcModel &model, int skipZero2,
           maximumDown -= 1.0e-8 * fabs(maximumDown);
           double maxUp = maximumUp + infiniteUpper * 1.0e31;
           double maxDown = maximumDown - infiniteLower * 1.0e31;
-          if (maxUp <= rowUpper[iRow] + tolerance && maxDown >= rowLower[iRow] - tolerance) {
-            //printf("Redundant row in vubs %d\n",iRow);
+          if (maxUp <= rowUpper[iRow] + tolerance &&
+              maxDown >= rowLower[iRow] - tolerance) {
+            // printf("Redundant row in vubs %d\n",iRow);
           } else {
-            if (maxUp < rowLower[iRow] - 100.0 * tolerance || maxDown > rowUpper[iRow] + 100.0 * tolerance) {
+            if (maxUp < rowLower[iRow] - 100.0 * tolerance ||
+                maxDown > rowUpper[iRow] + 100.0 * tolerance) {
               infeasible = true;
               break;
             }
@@ -390,7 +395,8 @@ fixVubs(CbcModel &model, int skipZero2,
                         newBound = nowLower;
                       }
                     }
-                    if (!newBound || (clpSolver->isInteger(kColumn) && newBound < 0.999)) {
+                    if (!newBound ||
+                        (clpSolver->isInteger(kColumn) && newBound < 0.999)) {
                       // fix to zero
                       if (!mark[kColumn]) {
                         otherColumn[numberOther++] = kColumn;
@@ -431,7 +437,8 @@ fixVubs(CbcModel &model, int skipZero2,
                         newBound = nowLower;
                       }
                     }
-                    if (!newBound || (clpSolver->isInteger(kColumn) && newBound < 0.999)) {
+                    if (!newBound ||
+                        (clpSolver->isInteger(kColumn) && newBound < 0.999)) {
                       // fix to zero
                       if (!mark[kColumn]) {
                         otherColumn[numberOther++] = kColumn;
@@ -518,7 +525,8 @@ fixVubs(CbcModel &model, int skipZero2,
     int numberLayered = 0;
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
       if (fix[iColumn] == kLayer) {
-        for (CoinBigIndex i = fixColumn2[iColumn]; i < fixColumn2[iColumn + 1]; i++) {
+        for (CoinBigIndex i = fixColumn2[iColumn]; i < fixColumn2[iColumn + 1];
+             i++) {
           int jColumn = otherColumn2[i];
           if (fix[jColumn] == kLayer) {
             fix[iColumn] = kLayer + 100;
@@ -537,8 +545,9 @@ fixVubs(CbcModel &model, int skipZero2,
   }
   for (int iPass = 0; iPass < 2; iPass++) {
     for (int jLayer = 0; jLayer < kLayer; jLayer++) {
-      int check[] = { -1, 0, 1, 2, 3, 4, 5, 10, 50, 100, 500, 1000, 5000, 10000, COIN_INT_MAX };
-      int nCheck = static_cast< int >(sizeof(check) / sizeof(int));
+      int check[] = {-1, 0,   1,   2,    3,    4,     5,           10,
+                     50, 100, 500, 1000, 5000, 10000, COIN_INT_MAX};
+      int nCheck = static_cast<int>(sizeof(check) / sizeof(int));
       int countsI[20];
       int countsC[20];
       assert(nCheck <= 20);
@@ -550,11 +559,13 @@ fixVubs(CbcModel &model, int skipZero2,
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
         if (fix[iColumn] == jLayer) {
           numberLayered++;
-          int nFix = static_cast< int >(fixColumn[iColumn + 1] - fixColumn[iColumn]);
+          int nFix =
+              static_cast<int>(fixColumn[iColumn + 1] - fixColumn[iColumn]);
           if (iPass) {
             // just integers
             nFix = 0;
-            for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn + 1]; i++) {
+            for (CoinBigIndex i = fixColumn[iColumn];
+                 i < fixColumn[iColumn + 1]; i++) {
               int jColumn = otherColumn[i];
               if (clpSolver->isInteger(jColumn))
                 nFix++;
@@ -576,7 +587,8 @@ fixVubs(CbcModel &model, int skipZero2,
       }
 #ifdef COIN_DETAIL
       if (numberLayered) {
-        printf("%d (%d integer) at priority %d\n", numberLayered, numberInteger, 1 + (jLayer / 100));
+        printf("%d (%d integer) at priority %d\n", numberLayered, numberInteger,
+               1 + (jLayer / 100));
         char buffer[50];
         for (int i = 1; i < nCheck; i++) {
           if (countsI[i] || countsC[i]) {
@@ -586,7 +598,8 @@ fixVubs(CbcModel &model, int skipZero2,
               sprintf(buffer, "> %6d and <= %6d ", check[i - 1], check[i]);
             else
               sprintf(buffer, "> %6d                ", check[i - 1]);
-            printf("%s %8d integers and %8d continuous\n", buffer, countsI[i], countsC[i]);
+            printf("%s %8d integers and %8d continuous\n", buffer, countsI[i],
+                   countsC[i]);
           }
         }
       }
@@ -598,9 +611,9 @@ fixVubs(CbcModel &model, int skipZero2,
   {
     // switch off presolve and up weight
     ClpSolve solveOptions;
-    //solveOptions.setPresolveType(ClpSolve::presolveOff,0);
+    // solveOptions.setPresolveType(ClpSolve::presolveOff,0);
     solveOptions.setSolveType(ClpSolve::usePrimalorSprint);
-    //solveOptions.setSpecialOption(1,3,30); // sprint
+    // solveOptions.setSpecialOption(1,3,30); // sprint
     int numberColumns = lpSolver->numberColumns();
     int iColumn;
     bool allSlack = true;
@@ -664,9 +677,10 @@ fixVubs(CbcModel &model, int skipZero2,
             if (columnUpper[iColumn] > columnLower[iColumn] + 1.0e-8) {
               if (clpSolver->isInteger(iColumn)) {
                 double value = lastSolution[iColumn];
-                int iValue = static_cast< int >(value + 0.5);
-                assert(fabs(value - static_cast< double >(iValue)) < 1.0e-3);
-                assert(iValue >= columnLower[iColumn] && iValue <= columnUpper[iColumn]);
+                int iValue = static_cast<int>(value + 0.5);
+                assert(fabs(value - static_cast<double>(iValue)) < 1.0e-3);
+                assert(iValue >= columnLower[iColumn] &&
+                       iValue <= columnUpper[iColumn]);
                 columnLower[iColumn] = iValue;
                 columnUpper[iColumn] = iValue;
               }
@@ -680,9 +694,10 @@ fixVubs(CbcModel &model, int skipZero2,
           if (columnUpper[iColumn] > columnLower[iColumn] + 1.0e-8) {
             if (clpSolver->isInteger(iColumn)) {
               double value = lastSolution[iColumn];
-              int iValue = static_cast< int >(value + 0.5);
-              assert(fabs(value - static_cast< double >(iValue)) < 1.0e-3);
-              assert(iValue >= columnLower[iColumn] && iValue <= columnUpper[iColumn]);
+              int iValue = static_cast<int>(value + 0.5);
+              assert(fabs(value - static_cast<double>(iValue)) < 1.0e-3);
+              assert(iValue >= columnLower[iColumn] &&
+                     iValue <= columnUpper[iColumn]);
               if (!fix[iColumn]) {
                 if (iValue == 0) {
                   state[iColumn] = 0;
@@ -714,11 +729,13 @@ fixVubs(CbcModel &model, int skipZero2,
           nFixed = 0;
           for (iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (columnUpper[iColumn] == 0.0 && fix[iColumn] == jLayer) {
-              for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn + 1]; i++) {
+              for (CoinBigIndex i = fixColumn[iColumn];
+                   i < fixColumn[iColumn + 1]; i++) {
                 int jColumn = otherColumn[i];
                 if (columnUpper[jColumn]) {
                   bool canFix = true;
-                  for (CoinBigIndex k = fixColumn2[jColumn]; k < fixColumn2[jColumn + 1]; k++) {
+                  for (CoinBigIndex k = fixColumn2[jColumn];
+                       k < fixColumn2[jColumn + 1]; k++) {
                     int kColumn = otherColumn2[k];
                     if (state[kColumn] == 1) {
                       canFix = false;
@@ -736,7 +753,8 @@ fixVubs(CbcModel &model, int skipZero2,
           nTotalFixed += nFixed;
           jLayer += 100;
         }
-        COIN_DETAIL_PRINT(printf("This fixes %d variables in lower priorities\n", nTotalFixed));
+        COIN_DETAIL_PRINT(printf(
+            "This fixes %d variables in lower priorities\n", nTotalFixed));
         break;
       }
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -785,12 +803,15 @@ fixVubs(CbcModel &model, int skipZero2,
         }
       }
       if (toZero || toOne)
-        COIN_DETAIL_PRINT(printf("%d at 0 fixed and %d at one fixed\n", toZero, toOne));
-      COIN_DETAIL_PRINT(printf("%d variables free, %d fixed to 0, %d to 1 - smallest %g, largest %g\n",
-        numberFree, atZero, atOne, smallest, largest));
+        COIN_DETAIL_PRINT(
+            printf("%d at 0 fixed and %d at one fixed\n", toZero, toOne));
+      COIN_DETAIL_PRINT(printf("%d variables free, %d fixed to 0, %d to 1 - "
+                               "smallest %g, largest %g\n",
+                               numberFree, atZero, atOne, smallest, largest));
       if (numberGreater && !iPass)
-        COIN_DETAIL_PRINT(printf("%d variables have value > 1.0\n", numberGreater));
-      //skipZero2=0; // leave 0 fixing
+        COIN_DETAIL_PRINT(
+            printf("%d variables have value > 1.0\n", numberGreater));
+      // skipZero2=0; // leave 0 fixing
       int jLayer = 0;
       int nFixed = -1;
       int nTotalFixed = 0;
@@ -798,11 +819,13 @@ fixVubs(CbcModel &model, int skipZero2,
         nFixed = 0;
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
           if (columnUpper[iColumn] == 0.0 && fix[iColumn] == jLayer) {
-            for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn + 1]; i++) {
+            for (CoinBigIndex i = fixColumn[iColumn];
+                 i < fixColumn[iColumn + 1]; i++) {
               int jColumn = otherColumn[i];
               if (columnUpper[jColumn]) {
                 bool canFix = true;
-                for (CoinBigIndex k = fixColumn2[jColumn]; k < fixColumn2[jColumn + 1]; k++) {
+                for (CoinBigIndex k = fixColumn2[jColumn];
+                     k < fixColumn2[jColumn + 1]; k++) {
                   int kColumn = otherColumn2[k];
                   if (state[kColumn] == 1) {
                     canFix = false;
@@ -820,12 +843,14 @@ fixVubs(CbcModel &model, int skipZero2,
         nTotalFixed += nFixed;
         jLayer += 100;
       }
-      COIN_DETAIL_PRINT(printf("This fixes %d variables in lower priorities\n", nTotalFixed));
+      COIN_DETAIL_PRINT(
+          printf("This fixes %d variables in lower priorities\n", nTotalFixed));
       if (iLargest < 0 || numberFree <= leaveIntFree)
         break;
       double movement;
       int way;
-      if (smallest <= 1.0 - largest && smallest < 0.2 && largest < fixAboveValue) {
+      if (smallest <= 1.0 - largest && smallest < 0.2 &&
+          largest < fixAboveValue) {
         columnUpper[iSmallest] = 0.0;
         state[iSmallest] = 0;
         movement = smallest;
@@ -842,7 +867,8 @@ fixVubs(CbcModel &model, int skipZero2,
       models[kPass] = *lpSolver;
       if (way == -1) {
         // fix others
-        for (CoinBigIndex i = fixColumn[iSmallest]; i < fixColumn[iSmallest + 1]; i++) {
+        for (CoinBigIndex i = fixColumn[iSmallest];
+             i < fixColumn[iSmallest + 1]; i++) {
           int jColumn = otherColumn[i];
           if (state[jColumn] == -1) {
             columnUpper[jColumn] = 0.0;
@@ -858,7 +884,7 @@ fixVubs(CbcModel &model, int skipZero2,
       crunchIt(lpSolver);
       double moveObj = lpSolver->objectiveValue() - saveObj;
       COIN_DETAIL_PRINT(printf("movement %s was %g costing %g\n",
-        (way == -1) ? "down" : "up", movement, moveObj));
+                               (way == -1) ? "down" : "up", movement, moveObj));
       if (way == -1 && (moveObj >= maxCostUp || lpSolver->status())) {
         // go up
         columnLower = models[kPass].columnLower();
@@ -874,7 +900,8 @@ fixVubs(CbcModel &model, int skipZero2,
         columnUpper[iSmallest] = saveColumnUpper[iSmallest];
         state[iSmallest] = 1;
         // unfix others
-        for (CoinBigIndex i = fixColumn[iSmallest]; i < fixColumn[iSmallest + 1]; i++) {
+        for (CoinBigIndex i = fixColumn[iSmallest];
+             i < fixColumn[iSmallest + 1]; i++) {
           int jColumn = otherColumn[i];
           if (state[jColumn] == 3) {
             columnUpper[jColumn] = saveColumnUpper[jColumn];
@@ -886,7 +913,8 @@ fixVubs(CbcModel &model, int skipZero2,
       models[kPass] = *lpSolver;
     }
     lpSolver->dual();
-    COIN_DETAIL_PRINT(printf("Fixing took %g seconds\n", CoinCpuTime() - time1));
+    COIN_DETAIL_PRINT(
+        printf("Fixing took %g seconds\n", CoinCpuTime() - time1));
     columnLower = lpSolver->columnLower();
     columnUpper = lpSolver->columnUpper();
     fullSolution = lpSolver->primalColumnSolution();
@@ -895,7 +923,7 @@ fixVubs(CbcModel &model, int skipZero2,
     double *dsort = new double[numberColumns];
     int chunk = 20;
     int iRelax = 0;
-    //double fractionFixed=6.0/8.0;
+    // double fractionFixed=6.0/8.0;
     // relax while lots fixed
     while (true) {
       if (skipZero2 > 10 && doAction < 10)
@@ -916,19 +944,20 @@ fixVubs(CbcModel &model, int skipZero2,
           assert(columnLower[iColumn]);
           assert(fullSolution[iColumn] > 0.1);
           if (djValue > 0.0) {
-            //printf("YY dj of %d at %g is %g\n",iColumn,value,djValue);
+            // printf("YY dj of %d at %g is %g\n",iColumn,value,djValue);
             sum1 += djValue;
             sort[n] = iColumn;
             dsort[n++] = -djValue;
           } else {
-            //printf("dj of %d at %g is %g\n",iColumn,value,djValue);
+            // printf("dj of %d at %g is %g\n",iColumn,value,djValue);
           }
         } else if (state[iColumn] == 0 || state[iColumn] == 10) {
           assert(fullSolution[iColumn] < 0.1);
           assert(!columnUpper[iColumn]);
           double otherValue = 0.0;
           int nn = 0;
-          for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn + 1]; i++) {
+          for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn + 1];
+               i++) {
             int jColumn = otherColumn[i];
             if (columnUpper[jColumn] == 0.0) {
               if (dj[jColumn] < -1.0e-5) {
@@ -938,7 +967,8 @@ fixVubs(CbcModel &model, int skipZero2,
             }
           }
           if (djValue < -1.0e-2 || otherValue < -1.0e-2) {
-            //printf("XX dj of %d at %g is %g - %d out of %d contribute %g\n",iColumn,value,djValue,
+            // printf("XX dj of %d at %g is %g - %d out of %d contribute
+            // %g\n",iColumn,value,djValue,
             // nn,fixColumn[iColumn+1]-fixColumn[iColumn],otherValue);
             if (djValue < 1.0e-8) {
               sum0 -= djValue;
@@ -950,7 +980,8 @@ fixVubs(CbcModel &model, int skipZero2,
                 dsort[n++] = djValue + 0.001 * otherValue;
             }
           } else {
-            //printf("dj of %d at %g is %g - no contribution from %d\n",iColumn,value,djValue,
+            // printf("dj of %d at %g is %g - no contribution from
+            // %d\n",iColumn,value,djValue,
             //   fixColumn[iColumn+1]-fixColumn[iColumn]);
           }
         }
@@ -975,11 +1006,13 @@ fixVubs(CbcModel &model, int skipZero2,
           assert(lo[iColumn] == 0.0);
           nFixed++;
           nFixed0++;
-          for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn + 1]; i++) {
+          for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn + 1];
+               i++) {
             int jColumn = otherColumn[i];
             if (columnUpper[jColumn]) {
               bool canFix = true;
-              for (CoinBigIndex k = fixColumn2[jColumn]; k < fixColumn2[jColumn + 1]; k++) {
+              for (CoinBigIndex k = fixColumn2[jColumn];
+                   k < fixColumn2[jColumn + 1]; k++) {
                 int kColumn = otherColumn2[k];
                 if (state[kColumn] == 1 || state[kColumn] == -2) {
                   canFix = false;
@@ -998,7 +1031,8 @@ fixVubs(CbcModel &model, int skipZero2,
           nFixed1++;
         }
       }
-      COIN_DETAIL_PRINT(printf("%d fixed %d orig 0 %d 1\n", nFixed, nFixed0, nFixed1));
+      COIN_DETAIL_PRINT(
+          printf("%d fixed %d orig 0 %d 1\n", nFixed, nFixed0, nFixed1));
       int jLayer = 0;
       nFixed = -1;
       int nTotalFixed = 0;
@@ -1006,11 +1040,13 @@ fixVubs(CbcModel &model, int skipZero2,
         nFixed = 0;
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
           if (columnUpper[iColumn] == 0.0 && fix[iColumn] == jLayer) {
-            for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn + 1]; i++) {
+            for (CoinBigIndex i = fixColumn[iColumn];
+                 i < fixColumn[iColumn + 1]; i++) {
               int jColumn = otherColumn[i];
               if (columnUpper[jColumn]) {
                 bool canFix = true;
-                for (CoinBigIndex k = fixColumn2[jColumn]; k < fixColumn2[jColumn + 1]; k++) {
+                for (CoinBigIndex k = fixColumn2[jColumn];
+                     k < fixColumn2[jColumn + 1]; k++) {
                   int kColumn = otherColumn2[k];
                   if (state[kColumn] == 1 || state[kColumn] == -2) {
                     canFix = false;
@@ -1038,17 +1074,24 @@ fixVubs(CbcModel &model, int skipZero2,
           nFixed++;
         }
       }
-      COIN_DETAIL_PRINT(printf("This fixes %d variables in lower priorities - total %d (%d integer) - all target %d, int target %d\n",
-        nTotalFixed, nFixed, nFixedI, static_cast< int >(fractionFixed * numberColumns), static_cast< int >(fractionIntFixed * numberInteger)));
+      COIN_DETAIL_PRINT(
+          printf("This fixes %d variables in lower priorities - total %d (%d "
+                 "integer) - all target %d, int target %d\n",
+                 nTotalFixed, nFixed, nFixedI,
+                 static_cast<int>(fractionFixed * numberColumns),
+                 static_cast<int>(fractionIntFixed * numberInteger)));
       int nBad = 0;
       int nRelax = 0;
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-        if (lo[iColumn] < columnLower[iColumn] || up[iColumn] > columnUpper[iColumn]) {
-          COIN_DETAIL_PRINT(printf("bad %d old %g %g, new %g %g\n", iColumn, lo[iColumn], up[iColumn],
-            columnLower[iColumn], columnUpper[iColumn]));
+        if (lo[iColumn] < columnLower[iColumn] ||
+            up[iColumn] > columnUpper[iColumn]) {
+          COIN_DETAIL_PRINT(printf("bad %d old %g %g, new %g %g\n", iColumn,
+                                   lo[iColumn], up[iColumn],
+                                   columnLower[iColumn], columnUpper[iColumn]));
           nBad++;
         }
-        if (lo[iColumn] > columnLower[iColumn] || up[iColumn] < columnUpper[iColumn]) {
+        if (lo[iColumn] > columnLower[iColumn] ||
+            up[iColumn] < columnUpper[iColumn]) {
           nRelax++;
         }
       }
@@ -1061,7 +1104,8 @@ fixVubs(CbcModel &model, int skipZero2,
       delete[] lo;
       delete[] up;
       lpSolver->primal(1);
-      if (nFixed < fractionFixed * numberColumns || nFixedI < fractionIntFixed * numberInteger || !nRelax)
+      if (nFixed < fractionFixed * numberColumns ||
+          nFixedI < fractionIntFixed * numberInteger || !nRelax)
         break;
     }
     delete[] state;
@@ -1088,8 +1132,10 @@ fixVubs(CbcModel &model, int skipZero2,
     double *newColumnUpper = lpSolver->columnUpper();
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
       int jColumn = originalColumns[iColumn];
-      columnLower[jColumn] = CoinMax(columnLower[jColumn], newColumnLower[iColumn]);
-      columnUpper[jColumn] = CoinMin(columnUpper[jColumn], newColumnUpper[iColumn]);
+      columnLower[jColumn] =
+          CoinMax(columnLower[jColumn], newColumnLower[iColumn]);
+      columnUpper[jColumn] =
+          CoinMin(columnUpper[jColumn], newColumnUpper[iColumn]);
     }
     numberColumns = originalLpSolver->numberColumns();
     delete[] originalColumns;
@@ -1098,9 +1144,12 @@ fixVubs(CbcModel &model, int skipZero2,
   delete[] saveColumnUpper;
   if (!originalColumns) {
     // Basis
-    memcpy(originalLpSolver->statusArray(), lpSolver->statusArray(), numberRows + numberColumns);
-    memcpy(originalLpSolver->primalColumnSolution(), lpSolver->primalColumnSolution(), numberColumns * sizeof(double));
-    memcpy(originalLpSolver->primalRowSolution(), lpSolver->primalRowSolution(), numberRows * sizeof(double));
+    memcpy(originalLpSolver->statusArray(), lpSolver->statusArray(),
+           numberRows + numberColumns);
+    memcpy(originalLpSolver->primalColumnSolution(),
+           lpSolver->primalColumnSolution(), numberColumns * sizeof(double));
+    memcpy(originalLpSolver->primalRowSolution(), lpSolver->primalRowSolution(),
+           numberRows * sizeof(double));
     // Fix in solver
     columnLower = lpSolver->columnLower();
     columnUpper = lpSolver->columnUpper();
@@ -1123,10 +1172,9 @@ fixVubs(CbcModel &model, int skipZero2,
   return NULL;
 }
 
-int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
-  int noPrinting_, int initialPumpTune)
-{
-#ifdef JJF_ZERO //NEW_STYLE_SOLVER==0
+int doHeuristics(CbcModel *model, int type, std::vector<CbcParam> parameters_,
+                 int noPrinting_, int initialPumpTune) {
+#ifdef JJF_ZERO // NEW_STYLE_SOLVER==0
   CbcParam *parameters_ = parameters;
   int numberParameters_ = numberParameters;
   bool noPrinting_ = noPrinting_;
@@ -1134,48 +1182,83 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
   char generalPrint[10000];
   CoinMessages generalMessages = model->messages();
   CoinMessageHandler *generalMessageHandler = model->messageHandler();
-  //generalMessageHandler->setPrefix(false);
+  // generalMessageHandler->setPrefix(false);
   bool anyToDo = false;
-  int logLevel = parameters_[whichCbcParam(CBC_PARAM_INT_SOLVERLOGLEVEL, parameters_)].intValue();
-  int useFpump = parameters_[whichCbcParam(CBC_PARAM_STR_FPUMP, parameters_)].currentOptionAsInteger();
-  int useRounding = parameters_[whichCbcParam(CBC_PARAM_STR_ROUNDING, parameters_)].currentOptionAsInteger();
-  int useGreedy = parameters_[whichCbcParam(CBC_PARAM_STR_GREEDY, parameters_)].currentOptionAsInteger();
-  int useCombine = parameters_[whichCbcParam(CBC_PARAM_STR_COMBINE, parameters_)].currentOptionAsInteger();
-  int useProximity = parameters_[whichCbcParam(CBC_PARAM_STR_PROXIMITY, parameters_)].currentOptionAsInteger();
-  int useCrossover = parameters_[whichCbcParam(CBC_PARAM_STR_CROSSOVER2, parameters_)].currentOptionAsInteger();
-  //int usePivotC = parameters_[whichCbcParam(CBC_PARAM_STR_PIVOTANDCOMPLEMENT, parameters_)].currentOptionAsInteger();
-  int usePivotF = parameters_[whichCbcParam(CBC_PARAM_STR_PIVOTANDFIX, parameters_)].currentOptionAsInteger();
-  int useRand = parameters_[whichCbcParam(CBC_PARAM_STR_RANDROUND, parameters_)].currentOptionAsInteger();
-  int useRINS = parameters_[whichCbcParam(CBC_PARAM_STR_RINS, parameters_)].currentOptionAsInteger();
-  int useRENS = parameters_[whichCbcParam(CBC_PARAM_STR_RENS, parameters_)].currentOptionAsInteger();
-  int useVND = parameters_[whichCbcParam(CBC_PARAM_STR_VND, parameters_)].currentOptionAsInteger();
-  int useDINS = parameters_[whichCbcParam(CBC_PARAM_STR_DINS, parameters_)].currentOptionAsInteger();
-  int useDIVING2 = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGS, parameters_)].currentOptionAsInteger();
-  int useNaive = parameters_[whichCbcParam(CBC_PARAM_STR_NAIVE, parameters_)].currentOptionAsInteger();
-  int useDW = parameters_[whichCbcParam(CBC_PARAM_STR_DW, parameters_)].currentOptionAsInteger();
+  int logLevel =
+      parameters_[whichCbcParam(CBC_PARAM_INT_SOLVERLOGLEVEL, parameters_)]
+          .intValue();
+  int useFpump = parameters_[whichCbcParam(CBC_PARAM_STR_FPUMP, parameters_)]
+                     .currentOptionAsInteger();
+  int useRounding =
+      parameters_[whichCbcParam(CBC_PARAM_STR_ROUNDING, parameters_)]
+          .currentOptionAsInteger();
+  int useGreedy = parameters_[whichCbcParam(CBC_PARAM_STR_GREEDY, parameters_)]
+                      .currentOptionAsInteger();
+  int useCombine =
+      parameters_[whichCbcParam(CBC_PARAM_STR_COMBINE, parameters_)]
+          .currentOptionAsInteger();
+  int useProximity =
+      parameters_[whichCbcParam(CBC_PARAM_STR_PROXIMITY, parameters_)]
+          .currentOptionAsInteger();
+  int useCrossover =
+      parameters_[whichCbcParam(CBC_PARAM_STR_CROSSOVER2, parameters_)]
+          .currentOptionAsInteger();
+  // int usePivotC = parameters_[whichCbcParam(CBC_PARAM_STR_PIVOTANDCOMPLEMENT,
+  // parameters_)].currentOptionAsInteger();
+  int usePivotF =
+      parameters_[whichCbcParam(CBC_PARAM_STR_PIVOTANDFIX, parameters_)]
+          .currentOptionAsInteger();
+  int useRand = parameters_[whichCbcParam(CBC_PARAM_STR_RANDROUND, parameters_)]
+                    .currentOptionAsInteger();
+  int useRINS = parameters_[whichCbcParam(CBC_PARAM_STR_RINS, parameters_)]
+                    .currentOptionAsInteger();
+  int useRENS = parameters_[whichCbcParam(CBC_PARAM_STR_RENS, parameters_)]
+                    .currentOptionAsInteger();
+  int useVND = parameters_[whichCbcParam(CBC_PARAM_STR_VND, parameters_)]
+                   .currentOptionAsInteger();
+  int useDINS = parameters_[whichCbcParam(CBC_PARAM_STR_DINS, parameters_)]
+                    .currentOptionAsInteger();
+  int useDIVING2 =
+      parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGS, parameters_)]
+          .currentOptionAsInteger();
+  int useNaive = parameters_[whichCbcParam(CBC_PARAM_STR_NAIVE, parameters_)]
+                     .currentOptionAsInteger();
+  int useDW = parameters_[whichCbcParam(CBC_PARAM_STR_DW, parameters_)]
+                  .currentOptionAsInteger();
   int kType = (type < 10) ? type : 1;
   assert(kType == 1 || kType == 2);
   // FPump done first as it only works if no solution
   if (useFpump >= kType && useFpump <= kType + 1) {
     anyToDo = true;
     CbcHeuristicFPump heuristic4(*model);
-    double dextra3 = parameters_[whichCbcParam(CBC_PARAM_DBL_SMALLBAB, parameters_)].doubleValue();
+    double dextra3 =
+        parameters_[whichCbcParam(CBC_PARAM_DBL_SMALLBAB, parameters_)]
+            .doubleValue();
     heuristic4.setFractionSmall(dextra3);
-    double dextra1 = parameters_[whichCbcParam(CBC_PARAM_DBL_ARTIFICIALCOST, parameters_)].doubleValue();
+    double dextra1 =
+        parameters_[whichCbcParam(CBC_PARAM_DBL_ARTIFICIALCOST, parameters_)]
+            .doubleValue();
     if (dextra1)
       heuristic4.setArtificialCost(dextra1);
-    heuristic4.setMaximumPasses(parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPITS, parameters_)].intValue());
-    if (parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPITS, parameters_)].intValue() == 21)
+    heuristic4.setMaximumPasses(
+        parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPITS, parameters_)]
+            .intValue());
+    if (parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPITS, parameters_)]
+            .intValue() == 21)
       heuristic4.setIterationRatio(1.0);
-    int pumpTune = parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPTUNE, parameters_)].intValue();
-    int pumpTune2 = parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPTUNE2, parameters_)].intValue();
+    int pumpTune =
+        parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPTUNE, parameters_)]
+            .intValue();
+    int pumpTune2 =
+        parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPTUNE2, parameters_)]
+            .intValue();
     if (pumpTune > 0) {
-      bool printStuff = (pumpTune != initialPumpTune || logLevel > 1 || pumpTune2 > 0)
-        && !noPrinting_;
+      bool printStuff =
+          (pumpTune != initialPumpTune || logLevel > 1 || pumpTune2 > 0) &&
+          !noPrinting_;
       if (printStuff) {
         generalMessageHandler->message(CBC_GENERAL, generalMessages)
-          << "Options for feasibility pump - "
-          << CoinMessageEol;
+            << "Options for feasibility pump - " << CoinMessageEol;
       }
       /*
             >=10000000 for using obj
@@ -1183,11 +1266,12 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
             >=1000 use index+1 as number of large loops
             >=100 use dextra1 as cutoff
             %100 == 10,20 etc for experimentation
-            1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds
-            4 and static continuous, 5 as 3 but no internal integers
-            6 as 3 but all slack basis!
+            1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous
+         at bounds 4 and static continuous, 5 as 3 but no internal integers 6 as
+         3 but all slack basis!
             */
-      double value = model->solver()->getObjSense() * model->solver()->getObjValue();
+      double value =
+          model->solver()->getObjSense() * model->solver()->getObjValue();
       int w = pumpTune / 10;
       int i = w % 10;
       w /= 10;
@@ -1201,16 +1285,16 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
         accumulate -= 100 * which;
         which--;
         // weights and factors
-        double weight[] = { 0.01, 0.01, 0.1, 0.1, 0.5, 0.5, 1.0, 1.0, 5.0, 5.0 };
-        double factor[] = { 0.1, 0.5, 0.1, 0.5, 0.1, 0.5, 0.1, 0.5, 0.1, 0.5 };
+        double weight[] = {0.01, 0.01, 0.1, 0.1, 0.5, 0.5, 1.0, 1.0, 5.0, 5.0};
+        double factor[] = {0.1, 0.5, 0.1, 0.5, 0.1, 0.5, 0.1, 0.5, 0.1, 0.5};
         heuristic4.setInitialWeight(weight[which]);
         heuristic4.setWeightFactor(factor[which]);
         if (printStuff) {
-          sprintf(generalPrint, "Initial weight for objective %g, decay factor %g",
-            weight[which], factor[which]);
+          sprintf(generalPrint,
+                  "Initial weight for objective %g, decay factor %g",
+                  weight[which], factor[which]);
           generalMessageHandler->message(CBC_GENERAL, generalMessages)
-            << generalPrint
-            << CoinMessageEol;
+              << generalPrint << CoinMessageEol;
         }
       }
       // fake cutoff
@@ -1218,15 +1302,16 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
         double cutoff;
         model->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
         cutoff = CoinMin(cutoff, value + 0.05 * fabs(value) * c);
-        double fakeCutoff = parameters_[whichCbcParam(CBC_PARAM_DBL_FAKECUTOFF, parameters_)].doubleValue();
+        double fakeCutoff =
+            parameters_[whichCbcParam(CBC_PARAM_DBL_FAKECUTOFF, parameters_)]
+                .doubleValue();
         if (fakeCutoff)
           cutoff = fakeCutoff;
         heuristic4.setFakeCutoff(cutoff);
         if (printStuff) {
           sprintf(generalPrint, "Fake cutoff of %g", cutoff);
           generalMessageHandler->message(CBC_GENERAL, generalMessages)
-            << generalPrint
-            << CoinMessageEol;
+              << generalPrint << CoinMessageEol;
         }
       }
       int offRandomEtc = 0;
@@ -1235,8 +1320,7 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
           offRandomEtc = 1000000 * (pumpTune2 / 1000);
           if (printStuff) {
             generalMessageHandler->message(CBC_GENERAL, generalMessages)
-              << "Feasibility pump may run twice"
-              << CoinMessageEol;
+                << "Feasibility pump may run twice" << CoinMessageEol;
           }
           pumpTune2 = pumpTune2 % 1000;
         }
@@ -1244,19 +1328,16 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
           offRandomEtc += 100 * (pumpTune2 / 100);
           if (printStuff) {
             generalMessageHandler->message(CBC_GENERAL, generalMessages)
-              << "Not using randomized objective"
-              << CoinMessageEol;
+                << "Not using randomized objective" << CoinMessageEol;
           }
         }
         int maxAllowed = pumpTune2 % 100;
         if (maxAllowed) {
           offRandomEtc += 1000 * maxAllowed;
           if (printStuff) {
-            sprintf(generalPrint, "Fixing if same for %d passes",
-              maxAllowed);
+            sprintf(generalPrint, "Fixing if same for %d passes", maxAllowed);
             generalMessageHandler->message(CBC_GENERAL, generalMessages)
-              << generalPrint
-              << CoinMessageEol;
+                << generalPrint << CoinMessageEol;
           }
         }
       }
@@ -1266,16 +1347,17 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
           if (accumulate) {
             sprintf(generalPrint, "Accumulate of %d", accumulate);
             generalMessageHandler->message(CBC_GENERAL, generalMessages)
-              << generalPrint
-              << CoinMessageEol;
+                << generalPrint << CoinMessageEol;
           }
         }
       }
       if (r) {
         // also set increment
-        //double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
+        // double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
         double increment = 0.0;
-        double fakeIncrement = parameters_[whichCbcParam(CBC_PARAM_DBL_FAKEINCREMENT, parameters_)].doubleValue();
+        double fakeIncrement =
+            parameters_[whichCbcParam(CBC_PARAM_DBL_FAKEINCREMENT, parameters_)]
+                .doubleValue();
         if (fakeIncrement)
           increment = fakeIncrement;
         if (increment >= 0.0)
@@ -1290,23 +1372,20 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
             else
               sprintf(generalPrint, "Relative increment of %g", -increment);
             generalMessageHandler->message(CBC_GENERAL, generalMessages)
-              << generalPrint
-              << CoinMessageEol;
+                << generalPrint << CoinMessageEol;
           }
           sprintf(generalPrint, "%d retries", r + 1);
           generalMessageHandler->message(CBC_GENERAL, generalMessages)
-            << generalPrint
-            << CoinMessageEol;
+              << generalPrint << CoinMessageEol;
         }
       }
       if (i + offRandomEtc) {
         heuristic4.setFeasibilityPumpOptions(i * 10 + offRandomEtc);
         if (printStuff) {
           sprintf(generalPrint, "Feasibility pump options of %d",
-            i * 10 + offRandomEtc);
+                  i * 10 + offRandomEtc);
           generalMessageHandler->message(CBC_GENERAL, generalMessages)
-            << generalPrint
-            << CoinMessageEol;
+              << generalPrint << CoinMessageEol;
         }
       }
       pumpTune = pumpTune % 100;
@@ -1316,8 +1395,7 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
       if (printStuff) {
         sprintf(generalPrint, "Tuning (fixing) %d", pumpTune % 10);
         generalMessageHandler->message(CBC_GENERAL, generalMessages)
-          << generalPrint
-          << CoinMessageEol;
+            << generalPrint << CoinMessageEol;
       }
     }
     heuristic4.setHeuristicName("feasibility pump");
@@ -1376,7 +1454,7 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
     heuristic6.setHeuristicName("RENS");
     heuristic6.setFractionSmall(0.4);
     heuristic6.setFeasibilityPumpOptions(1008003);
-    int nodes[] = { -2, 50, 50, 50, 200, 1000, 10000, -1, -1, 200 };
+    int nodes[] = {-2, 50, 50, 50, 200, 1000, 10000, -1, -1, 200};
     heuristic6.setNumberNodes(nodes[useRENS]);
     heuristic6.setRensType(useRENS != 9 ? 0 : 32);
     model->addHeuristic(&heuristic6);
@@ -1387,7 +1465,7 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
     heuristic6b.setHeuristicName("VND");
     heuristic6b.setFractionSmall(0.4);
     heuristic6b.setFeasibilityPumpOptions(1008003);
-    int nodes[] = { -2, 50, 50, 50, 200, 1000, 10000 };
+    int nodes[] = {-2, 50, 50, 50, 200, 1000, 10000};
     heuristic6b.setNumberNodes(nodes[useVND]);
     model->addHeuristic(&heuristic6b);
     anyToDo = true;
@@ -1403,21 +1481,29 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
   int useDIVING = 0;
   {
     int useD;
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGV, parameters_)].currentOptionAsInteger();
+    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGV, parameters_)]
+               .currentOptionAsInteger();
     useDIVING |= 1 * ((useD >= kType) ? 1 : 0);
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGG, parameters_)].currentOptionAsInteger();
+    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGG, parameters_)]
+               .currentOptionAsInteger();
     useDIVING |= 2 * ((useD >= kType) ? 1 : 0);
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGF, parameters_)].currentOptionAsInteger();
+    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGF, parameters_)]
+               .currentOptionAsInteger();
     useDIVING |= 4 * ((useD >= kType) ? 1 : 0);
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGC, parameters_)].currentOptionAsInteger();
+    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGC, parameters_)]
+               .currentOptionAsInteger();
     useDIVING |= 8 * ((useD >= kType) ? 1 : 0);
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGL, parameters_)].currentOptionAsInteger();
+    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGL, parameters_)]
+               .currentOptionAsInteger();
     useDIVING |= 16 * ((useD >= kType) ? 1 : 0);
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGP, parameters_)].currentOptionAsInteger();
+    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGP, parameters_)]
+               .currentOptionAsInteger();
     useDIVING |= 32 * ((useD >= kType) ? 1 : 0);
   }
   if (useDIVING2 >= kType && useDIVING2 <= kType + 1) {
-    int diveOptions = parameters_[whichCbcParam(CBC_PARAM_INT_DIVEOPT, parameters_)].intValue();
+    int diveOptions =
+        parameters_[whichCbcParam(CBC_PARAM_INT_DIVEOPT, parameters_)]
+            .intValue();
     if (diveOptions < 0 || diveOptions > 10)
       diveOptions = 2;
     CbcHeuristicJustOne heuristicJustOne(*model);
@@ -1448,8 +1534,12 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
   }
 
   if (useDIVING > 0) {
-    int majorIterations = parameters_[whichCbcParam(CBC_PARAM_INT_DIVEOPTSOLVES, parameters_)].intValue();
-    int diveOptions2 = parameters_[whichCbcParam(CBC_PARAM_INT_DIVEOPT, parameters_)].intValue();
+    int majorIterations =
+        parameters_[whichCbcParam(CBC_PARAM_INT_DIVEOPTSOLVES, parameters_)]
+            .intValue();
+    int diveOptions2 =
+        parameters_[whichCbcParam(CBC_PARAM_INT_DIVEOPT, parameters_)]
+            .intValue();
     int diveOptions;
     if (diveOptions2 > 99) {
       // switch on various active set stuff
@@ -1480,7 +1570,8 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
       if (diveOptions2) {
         heuristicDV.setPercentageToFix(0.0);
         heuristicDV.setMaxSimplexIterations(COIN_INT_MAX);
-        heuristicDV.setMaxSimplexIterationsAtRoot(COIN_INT_MAX - (diveOptions2 - 1));
+        heuristicDV.setMaxSimplexIterationsAtRoot(COIN_INT_MAX -
+                                                  (diveOptions2 - 1));
       }
       model->addHeuristic(&heuristicDV);
     }
@@ -1492,7 +1583,8 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
       if (diveOptions2) {
         heuristicDG.setPercentageToFix(0.0);
         heuristicDG.setMaxSimplexIterations(COIN_INT_MAX);
-        heuristicDG.setMaxSimplexIterationsAtRoot(COIN_INT_MAX - (diveOptions2 - 1));
+        heuristicDG.setMaxSimplexIterationsAtRoot(COIN_INT_MAX -
+                                                  (diveOptions2 - 1));
       }
       model->addHeuristic(&heuristicDG);
     }
@@ -1504,7 +1596,8 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
       if (diveOptions2) {
         heuristicDF.setPercentageToFix(0.0);
         heuristicDF.setMaxSimplexIterations(COIN_INT_MAX);
-        heuristicDF.setMaxSimplexIterationsAtRoot(COIN_INT_MAX - (diveOptions2 - 1));
+        heuristicDF.setMaxSimplexIterationsAtRoot(COIN_INT_MAX -
+                                                  (diveOptions2 - 1));
       }
       model->addHeuristic(&heuristicDF);
     }
@@ -1516,7 +1609,8 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
       if (diveOptions2) {
         heuristicDC.setPercentageToFix(0.0);
         heuristicDC.setMaxSimplexIterations(COIN_INT_MAX);
-        heuristicDC.setMaxSimplexIterationsAtRoot(COIN_INT_MAX - (diveOptions2 - 1));
+        heuristicDC.setMaxSimplexIterationsAtRoot(COIN_INT_MAX -
+                                                  (diveOptions2 - 1));
       }
       model->addHeuristic(&heuristicDC);
     }
@@ -1528,7 +1622,8 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
       if (diveOptions2) {
         heuristicDL.setPercentageToFix(0.0);
         heuristicDL.setMaxSimplexIterations(COIN_INT_MAX);
-        heuristicDL.setMaxSimplexIterationsAtRoot(COIN_INT_MAX - (diveOptions2 - 1));
+        heuristicDL.setMaxSimplexIterationsAtRoot(COIN_INT_MAX -
+                                                  (diveOptions2 - 1));
       }
       model->addHeuristic(&heuristicDL);
     }
@@ -1540,7 +1635,8 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
       if (diveOptions2) {
         heuristicDP.setPercentageToFix(0.0);
         heuristicDP.setMaxSimplexIterations(COIN_INT_MAX);
-        heuristicDP.setMaxSimplexIterationsAtRoot(COIN_INT_MAX - (diveOptions2 - 1));
+        heuristicDP.setMaxSimplexIterationsAtRoot(COIN_INT_MAX -
+                                                  (diveOptions2 - 1));
       }
       model->addHeuristic(&heuristicDP);
     }
@@ -1621,21 +1717,23 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
     model->addHeuristic(&heuristic2);
     anyToDo = true;
   }
-  if ((useProximity >= kType && useProximity <= kType + 1) || (kType == 1 && useProximity > 3)) {
+  if ((useProximity >= kType && useProximity <= kType + 1) ||
+      (kType == 1 && useProximity > 3)) {
     CbcHeuristicProximity heuristic2a(*model);
     heuristic2a.setHeuristicName("Proximity Search");
     heuristic2a.setFractionSmall(9999999.0);
     heuristic2a.setNumberNodes(30);
     heuristic2a.setFeasibilityPumpOptions(-2);
     if (useProximity >= 4) {
-      const int nodes[] = { 10, 100, 300 };
+      const int nodes[] = {10, 100, 300};
       heuristic2a.setNumberNodes(nodes[useProximity - 4]);
       // more print out and stronger feasibility pump
       if (useProximity == 6)
         heuristic2a.setFeasibilityPumpOptions(-3);
     } else {
       int proximityNumber;
-      parameters_[whichCbcParam(CBC_PARAM_STR_PROXIMITY, parameters_)].currentOptionAsInteger(proximityNumber);
+      parameters_[whichCbcParam(CBC_PARAM_STR_PROXIMITY, parameters_)]
+          .currentOptionAsInteger(proximityNumber);
       if (proximityNumber > 0) {
         heuristic2a.setNumberNodes(proximityNumber);
         // more print out and stronger feasibility pump
@@ -1656,7 +1754,10 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
     model->setMaximumSavedSolutions(5);
     anyToDo = true;
   }
-  int heurSwitches = parameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, parameters_)].intValue() % 100;
+  int heurSwitches =
+      parameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, parameters_)]
+          .intValue() %
+      100;
   if (heurSwitches) {
     for (int iHeur = 0; iHeur < model->numberHeuristics(); iHeur++) {
       CbcHeuristic *heuristic = model->heuristic(iHeur);
@@ -1673,14 +1774,18 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
     if (logLevel <= 1)
       model2.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
     OsiBabSolver defaultC;
-    //solver_->setAuxiliaryInfo(&defaultC);
+    // solver_->setAuxiliaryInfo(&defaultC);
     model2.passInSolverCharacteristics(&defaultC);
     // Save bounds
     int numberColumns = model2.solver()->getNumCols();
     model2.createContinuousSolver();
     bool cleanModel = !model2.numberIntegers() && !model2.numberObjects();
     model2.findIntegers(false);
-    int heurOptions = (parameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, parameters_)].intValue() / 100) % 100;
+    int heurOptions =
+        (parameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, parameters_)]
+             .intValue() /
+         100) %
+        100;
     if (heurOptions == 0 || heurOptions == 2) {
       model2.doHeuristicsAtRoot(1);
     } else if (heurOptions == 1 || heurOptions == 3) {
@@ -1703,7 +1808,7 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
     if (logLevel <= 1)
       model->solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
     OsiBabSolver defaultC;
-    //solver_->setAuxiliaryInfo(&defaultC);
+    // solver_->setAuxiliaryInfo(&defaultC);
     model->passInSolverCharacteristics(&defaultC);
     // Save bounds
     int numberColumns = model->solver()->getNumCols();
@@ -1721,4 +1826,4 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcParam > parameters_,
 }
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

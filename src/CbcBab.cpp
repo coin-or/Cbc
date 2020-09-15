@@ -13,19 +13,19 @@
 
 #include "CoinTime.hpp"
 
-#include "OsiSolverInterface.hpp"
 #include "OsiChooseVariable.hpp"
+#include "OsiSolverInterface.hpp"
 
 #include "CglPreProcess.hpp"
 
-#include "CbcModel.hpp"
-#include "CbcCutGenerator.hpp"
 #include "CbcBranchActual.hpp"
+#include "CbcCutGenerator.hpp"
+#include "CbcModel.hpp"
 #include "CbcStrategy.hpp"
 
-#include "CbcSolverSettings.hpp"
-#include "CbcSolverParam.hpp"
 #include "CbcModelParam.hpp"
+#include "CbcSolverParam.hpp"
+#include "CbcSolverSettings.hpp"
 
 #define CBC_TRACK_SOLVERS 1
 // #define COIN_CBC_VERBOSITY 5
@@ -35,7 +35,6 @@
 */
 
 namespace {
-
 
 /*
   A hack to fix variables based on reduced cost prior to branch-and-cut. Note
@@ -60,8 +59,8 @@ void reducedCostHack(OsiSolverInterface *osi, double threshold)
   const double *dj = osi->getReducedCost();
   /*
       First task: scan the columns looking for variables that are at their
-      favourable bound and have reduced cost that exceeds the threshold. Remember
-      the column index and the value.
+      favourable bound and have reduced cost that exceeds the threshold.
+     Remember the column index and the value.
     */
   double *chgBnds = new double[numCols];
   int *chgCols = new int[numCols];
@@ -83,11 +82,11 @@ void reducedCostHack(OsiSolverInterface *osi, double threshold)
   }
   /*
       Second task: For variables that we want to fix, we need to:
-        * Prepare an array with the new lower and upper bounds for variables that
-          will be fixed. setColSetBounds requires an array with column indices and
-          an array with new values for both bounds.
-        * Set the correct value in a copy of the current solution. setColSolution
-          requires a complete solution.
+        * Prepare an array with the new lower and upper bounds for variables
+     that will be fixed. setColSetBounds requires an array with column indices
+     and an array with new values for both bounds.
+        * Set the correct value in a copy of the current solution.
+     setColSolution requires a complete solution.
     */
   if (numFixed > 0) {
     double *newSoln = CoinCopyOfArray(solution, numCols);
@@ -103,9 +102,8 @@ void reducedCostHack(OsiSolverInterface *osi, double threshold)
     osi->setColSetBounds(&chgCols[0], &chgCols[numFixed], &newBnds[0]);
     osi->setColSolution(&newSoln[0]);
 
-    std::cout
-      << "Reduced cost fixing prior to B&C: " << numFixed
-      << " columns fixed." << std::endl;
+    std::cout << "Reduced cost fixing prior to B&C: " << numFixed
+              << " columns fixed." << std::endl;
 
     delete[] newSoln;
     delete[] newBnds;
@@ -133,28 +131,23 @@ bool solveRelaxation(CbcModel *model)
   if (!(osi->isProvenOptimal())) {
     bool reason = false;
     if (osi->isProvenPrimalInfeasible()) {
-      std::cout
-        << "Continuous relaxation is primal infeasible." << std::endl;
+      std::cout << "Continuous relaxation is primal infeasible." << std::endl;
       reason = true;
     }
     if (osi->isProvenDualInfeasible()) {
-      std::cout
-        << "Continuous relaxation is dual infeasible." << std::endl;
+      std::cout << "Continuous relaxation is dual infeasible." << std::endl;
       reason = true;
     }
     if (osi->isIterationLimitReached()) {
-      std::cout
-        << "Continuous solver reached iteration limit." << std::endl;
+      std::cout << "Continuous solver reached iteration limit." << std::endl;
       reason = true;
     }
     if (osi->isAbandoned()) {
-      std::cout
-        << "Continuous solver abandoned the problem." << std::endl;
+      std::cout << "Continuous solver abandoned the problem." << std::endl;
       reason = true;
     }
     if (reason == false) {
-      std::cout
-        << "Continuous solver failed for unknown reason." << std::endl;
+      std::cout << "Continuous solver failed for unknown reason." << std::endl;
     }
     return (false);
   }
@@ -186,9 +179,8 @@ void setupPriorities(CbcModel *model, CbcSolverParam::BPMode how)
       } else if (how == CbcSolverParam::BPOrder) {
         dsort[n++] = iColumn;
       } else {
-        std::cerr
-          << "setupPriorities: Unrecognised priority specification."
-          << std::endl;
+        std::cerr << "setupPriorities: Unrecognised priority specification."
+                  << std::endl;
         priorityOK = false;
       }
     }
@@ -254,8 +246,8 @@ void installHeuristics(CbcSolverSettings *cbcSettings, CbcModel *model)
     model->addHeuristic(gen, "GEq");
   }
   /*
-      This one's a bit different. We acquire the local tree and install it in the
-      model.
+      This one's a bit different. We acquire the local tree and install it in
+     the model.
     */
   mode = cbcSettings->getLocalTree(localTree, model);
   if (mode != CbcSolverParam::HeurOff) {
@@ -283,12 +275,12 @@ void installCutGenerators(CbcSolverSettings *cbcSettings, CbcModel *model)
   /*
       The magic numbers for the howOften parameter that determines how often the
       generator is invoked. -100 is disabled, -99 is root only, -98 will stay
-      active only so long as it generates cuts that improve the objective. A value
-      1 <= k <= 90 means the generator will be called every k nodes. If k is
-      negative, then it can be switched off if unproductive. If k is positive,
+      active only so long as it generates cuts that improve the objective. A
+     value 1 <= k <= 90 means the generator will be called every k nodes. If k
+     is negative, then it can be switched off if unproductive. If k is positive,
       it'll carry on regardless.
     */
-  
+
   int howOften[CbcSolverParam::CGEndMarker];
   howOften[CbcSolverParam::CGOff] = -100;
   howOften[CbcSolverParam::CGOn] = -1;
@@ -304,7 +296,7 @@ void installCutGenerators(CbcSolverSettings *cbcSettings, CbcModel *model)
   mode = cbcSettings->getProbing(gen);
   if (mode != CbcSolverParam::CGOff) {
     if (mode == CbcSolverParam::CGForceOnBut) {
-      CglProbing *probingGen = dynamic_cast< CglProbing * >(gen);
+      CglProbing *probingGen = dynamic_cast<CglProbing *>(gen);
       probingGen->setRowCuts(-3);
     }
     model->addCutGenerator(gen, howOften[mode], "Probing");
@@ -346,10 +338,11 @@ void installCutGenerators(CbcSolverSettings *cbcSettings, CbcModel *model)
     switches[genCnt++] = 1;
   }
   /*
-      Set control parameters on cut generators. cutDepth says `use this generator
-      when (depth in tree) mod cutDepth == 0'. setSwitchOffIfLessThan says `switch
-      this generator off if the number of cuts at the root is less than the given
-      value'. Sort of. I need to document the magic numbers for howOften , etc.
+      Set control parameters on cut generators. cutDepth says `use this
+     generator when (depth in tree) mod cutDepth == 0'. setSwitchOffIfLessThan
+     says `switch this generator off if the number of cuts at the root is less
+     than the given value'. Sort of. I need to document the magic numbers for
+     howOften , etc.
     */
   genCnt = model->numberCutGenerators();
   int iGen;
@@ -366,11 +359,12 @@ void installCutGenerators(CbcSolverSettings *cbcSettings, CbcModel *model)
     }
   }
   /*
-      Now some additional control parameters that affect cut generation activity.
+      Now some additional control parameters that affect cut generation
+     activity.
 
-      Minimum drop is the minimum objective degradation required to continue with
-      cut passes.  We want at least .05 unless the objective is tiny, in which
-      case we'll drop down to a floor of .0001.
+      Minimum drop is the minimum objective degradation required to continue
+     with cut passes.  We want at least .05 unless the objective is tiny, in
+     which case we'll drop down to a floor of .0001.
     */
   {
     double objFrac = fabs(model->getMinimizationObjValue()) * .001 + .0001;
@@ -378,10 +372,10 @@ void installCutGenerators(CbcSolverSettings *cbcSettings, CbcModel *model)
     model->setMinimumDrop(minDrop);
   }
   /*
-      Set the maximum number of rounds of cut generation at the root and at nodes
-      in the tree. If the value is positive, cut generation will terminate early
-      if the objective degradation doesn't meet the minimum drop requirement. If
-      the value is negatie, minimum drop is not considered.
+      Set the maximum number of rounds of cut generation at the root and at
+     nodes in the tree. If the value is positive, cut generation will terminate
+     early if the objective degradation doesn't meet the minimum drop
+     requirement. If the value is negatie, minimum drop is not considered.
 
       At the root, for small problems, push for 100 passes (really we're betting
       that we'll stop because no cuts were generated). For medium size problems,
@@ -413,8 +407,7 @@ void installCutGenerators(CbcSolverSettings *cbcSettings, CbcModel *model)
   OsiObjects in cbc-generic.
 */
 
-void setupObjects(OsiSolverInterface *osi,
-  bool didIPP, CglPreProcess *ippObj)
+void setupObjects(OsiSolverInterface *osi, bool didIPP, CglPreProcess *ippObj)
 
 {
   int numInts = osi->getNumIntegers();
@@ -457,7 +450,8 @@ void setupObjects(OsiSolverInterface *osi,
     for (iSOS = 0; iSOS < numSOS; iSOS++) {
       int iStart = starts[iSOS];
       int sosLen = starts[iSOS + 1] - iStart;
-      sosObjs[iSOS] = new OsiSOS(osi, sosLen, which + iStart, weight + iStart, type[iSOS]);
+      sosObjs[iSOS] =
+          new OsiSOS(osi, sosLen, which + iStart, weight + iStart, type[iSOS]);
       sosObjs[iSOS]->setPriority(numCols - sosLen);
     }
     osi->addObjects(numSOS, sosObjs);
@@ -470,7 +464,7 @@ void setupObjects(OsiSolverInterface *osi,
   return;
 }
 
-} // end local namespace
+} // namespace
 
 namespace CbcSolverParamUtils {
 
@@ -481,7 +475,7 @@ namespace CbcSolverParamUtils {
 int doBaCParam(CoinParam &param)
 
 {
-  CbcSolverParam &cbcParam = dynamic_cast< CbcSolverParam & >(param);
+  CbcSolverParam &cbcParam = dynamic_cast<CbcSolverParam &>(param);
   CbcSolverSettings *cbcSettings = cbcParam.obj();
   assert(cbcSettings != 0);
   CbcModel *model = cbcSettings->model_;
@@ -495,8 +489,9 @@ int doBaCParam(CoinParam &param)
   } else {
     retval = -1;
   }
-  cbcSettings->setBaBStatus(CbcSolverParam::BACAbandon, CbcSolverParam::BACmInvalid,
-    CbcSolverParam::BACwNotStarted, false, 0);
+  cbcSettings->setBaBStatus(CbcSolverParam::BACAbandon,
+                            CbcSolverParam::BACmInvalid,
+                            CbcSolverParam::BACwNotStarted, false, 0);
   /*
       We ain't gonna do squat without a good model.
     */
@@ -517,11 +512,9 @@ int doBaCParam(CoinParam &param)
   OsiSolverInterface *babSolver = babModel.solver();
   assert(babSolver != 0);
 #if CBC_TRACK_SOLVERS > 0
-  std::cout
-    << "doBaCParam: initial babSolver is "
-    << std::hex << babSolver << std::dec
-    << ", log level " << babSolver->messageHandler()->logLevel()
-    << "." << std::endl;
+  std::cout << "doBaCParam: initial babSolver is " << std::hex << babSolver
+            << std::dec << ", log level "
+            << babSolver->messageHandler()->logLevel() << "." << std::endl;
 #endif
   /*
       Solve the root relaxation. Bail unless it solves to optimality.
@@ -531,15 +524,14 @@ int doBaCParam(CoinParam &param)
     return (0);
   }
 #if COIN_CBC_VERBOSITY > 0
-  std::cout
-    << "doBaCParam: initial relaxation z = "
-    << babSolver->getObjValue() << "." << std::endl;
+  std::cout << "doBaCParam: initial relaxation z = " << babSolver->getObjValue()
+            << "." << std::endl;
 #endif
   /*
       Are we up for fixing variables based on reduced cost alone?
     */
   if (cbcSettings->getDjFixMode() == CbcSolverParam::ParamOff) {
-     reducedCostHack(babSolver, cbcSettings->getDjFixThreshold());
+    reducedCostHack(babSolver, cbcSettings->getDjFixThreshold());
   }
   /*
       Time to consider preprocessing. We'll do a bit of setup before getting to
@@ -560,16 +552,15 @@ int doBaCParam(CoinParam &param)
   int numberOriginalColumns = babSolver->getNumCols();
   CbcSolverParam::IPPMode ippMode = cbcSettings->getIPPMode();
 
-  if (!(ippMode == CbcSolverParam::IPPOff || ippMode == CbcSolverParam::IPPStrategy)) {
+  if (!(ippMode == CbcSolverParam::IPPOff ||
+        ippMode == CbcSolverParam::IPPStrategy)) {
     double timeLeft = babModel.getMaximumSeconds();
     preIppSolver = babSolver->clone();
     OsiSolverInterface *ippSolver;
 #if CBC_TRACK_SOLVERS > 0
-    std::cout
-      << "doBaCParam: clone made prior to IPP is "
-      << std::hex << preIppSolver << std::dec
-      << ", log level " << preIppSolver->messageHandler()->logLevel()
-      << "." << std::endl;
+    std::cout << "doBaCParam: clone made prior to IPP is " << std::hex
+              << preIppSolver << std::dec << ", log level "
+              << preIppSolver->messageHandler()->logLevel() << "." << std::endl;
 #endif
 
     preIppSolver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo);
@@ -602,34 +593,31 @@ int doBaCParam(CoinParam &param)
 
     ippSolver = ippObj.preProcessNonDefault(*preIppSolver, convert, 10);
 #if CBC_TRACK_SOLVERS > 0
-    std::cout
-      << "doBaCParam: solver returned from IPP is "
-      << std::hex << ippSolver << std::dec;
+    std::cout << "doBaCParam: solver returned from IPP is " << std::hex
+              << ippSolver << std::dec;
     if (ippSolver) {
-      std::cout
-        << ", log level " << ippSolver->messageHandler()->logLevel();
+      std::cout << ", log level " << ippSolver->messageHandler()->logLevel();
     }
     std::cout << "." << std::endl;
 #endif
     /*
-          ippSolver == 0 is success of a sort --- integer preprocess has found the
-          problem to be infeasible or unbounded. Need to think about how to indicate
-          status.
+          ippSolver == 0 is success of a sort --- integer preprocess has found
+       the problem to be infeasible or unbounded. Need to think about how to
+       indicate status.
         */
     if (!ippSolver) {
-      std::cout
-        << "Integer preprocess says infeasible or unbounded" << std::endl;
+      std::cout << "Integer preprocess says infeasible or unbounded"
+                << std::endl;
       delete preIppSolver;
       cbcSettings->setBaBStatus(&babModel, CbcSolverParam::BACwIPP);
       return (0);
     }
 #if COIN_CBC_VERBOSITY > 0
     else {
-      std::cout
-        << "After integer preprocessing, model has "
-        << ippSolver->getNumRows()
-        << " rows, " << ippSolver->getNumCols() << " columns, and "
-        << ippSolver->getNumElements() << " elements." << std::endl;
+      std::cout << "After integer preprocessing, model has "
+                << ippSolver->getNumRows() << " rows, "
+                << ippSolver->getNumCols() << " columns, and "
+                << ippSolver->getNumElements() << " elements." << std::endl;
     }
 #endif
 
@@ -638,20 +626,17 @@ int doBaCParam(CoinParam &param)
 
     if (ippMode == CbcSolverParam::IPPSave) {
       ippSolver->writeMps("presolved", "mps", 1.0);
-      std::cout
-        << "Integer preprocessed model written to `presolved.mps' "
-        << "as minimisation problem." << std::endl;
+      std::cout << "Integer preprocessed model written to `presolved.mps' "
+                << "as minimisation problem." << std::endl;
     }
 
     OsiSolverInterface *osiTmp = ippSolver->clone();
     babModel.assignSolver(osiTmp);
     babSolver = babModel.solver();
 #if CBC_TRACK_SOLVERS > 0
-    std::cout
-      << "doBaCParam: clone of IPP solver passed to babModel is "
-      << std::hex << babSolver << std::dec
-      << ", log level " << babSolver->messageHandler()->logLevel()
-      << "." << std::endl;
+    std::cout << "doBaCParam: clone of IPP solver passed to babModel is "
+              << std::hex << babSolver << std::dec << ", log level "
+              << babSolver->messageHandler()->logLevel() << "." << std::endl;
 #endif
     if (!solveRelaxation(&babModel)) {
       delete preIppSolver;
@@ -659,17 +644,16 @@ int doBaCParam(CoinParam &param)
       return (0);
     }
 #if COIN_CBC_VERBOSITY > 0
-    std::cout
-      << "doBaCParam: presolved relaxation z = "
-      << babSolver->getObjValue() << "." << std::endl;
+    std::cout << "doBaCParam: presolved relaxation z = "
+              << babSolver->getObjValue() << "." << std::endl;
 #endif
     babModel.setMaximumSeconds(timeLeft - (CoinCpuTime() - time1));
     didIPP = true;
   }
   /*
       At this point, babModel and babSolver hold the constraint system we'll use
-      for B&C (either the original system or the preprocessed system) and we have
-      a solution to the lp relaxation.
+      for B&C (either the original system or the preprocessed system) and we
+     have a solution to the lp relaxation.
 
       If we're using the COSTSTRATEGY option, set up priorities here and pass
       them to the babModel.
@@ -685,7 +669,8 @@ int doBaCParam(CoinParam &param)
   /*
       Set up status print frequency for babModel.
     */
-  if (babModel.getNumCols() > 2000 || babModel.getNumRows() > 1500 || babModel.messageHandler()->logLevel() > 1)
+  if (babModel.getNumCols() > 2000 || babModel.getNumRows() > 1500 ||
+      babModel.messageHandler()->logLevel() > 1)
     babModel.setPrintFrequency(100);
   /*
       If we've read in a known good solution for debugging, activate the row cut
@@ -695,9 +680,8 @@ int doBaCParam(CoinParam &param)
     if (cbcSettings->debugSol_.numCols_ == babModel.getNumCols()) {
       babSolver->activateRowCutDebugger(cbcSettings->debugSol_.values_);
     } else {
-      std::cout
-        << "doBaCParam: debug file has incorrect number of columns."
-        << std::endl;
+      std::cout << "doBaCParam: debug file has incorrect number of columns."
+                << std::endl;
     }
   }
   /*
@@ -708,16 +692,15 @@ int doBaCParam(CoinParam &param)
     double gapRatio = babModel.getDblParam(CbcModel::CbcAllowableFractionGap);
     double gap = gapRatio * (1.0e-5 + fabs(obj));
     babModel.setAllowableGap(gap);
-    std::cout
-      << "doBaCParam: Continuous objective = " << obj
-      << ", so allowable gap set to " << gap << std::endl;
+    std::cout << "doBaCParam: Continuous objective = " << obj
+              << ", so allowable gap set to " << gap << std::endl;
   }
   /*
-      A bit of mystery code. As best I can figure, setSpecialOptions(2) suppresses
-      the removal of warm start information when checkSolution runs an lp to check
-      a solution. John's comment, ``probably faster to use a basis to get integer
-      solutions'' makes some sense in this context. Didn't try to track down
-      moreMipOptions just yet.
+      A bit of mystery code. As best I can figure, setSpecialOptions(2)
+     suppresses the removal of warm start information when checkSolution runs an
+     lp to check a solution. John's comment, ``probably faster to use a basis to
+     get integer solutions'' makes some sense in this context. Didn't try to
+     track down moreMipOptions just yet.
     */
   babModel.setSpecialOptions(babModel.specialOptions() | 2);
   /*
@@ -730,18 +713,18 @@ int doBaCParam(CoinParam &param)
   /*
       Begin the final run-up to branch-and-cut.
 
-      Make sure that objects are set up in the solver. It's possible that whoever
-      loaded the model into the solver also set up objects. But it's also
-      entirely likely that none exist to this point (and interesting to note that
-      IPP doesn't need to know anything about objects).
+      Make sure that objects are set up in the solver. It's possible that
+     whoever loaded the model into the solver also set up objects. But it's also
+      entirely likely that none exist to this point (and interesting to note
+     that IPP doesn't need to know anything about objects).
     */
   setupObjects(babSolver, didIPP, &ippObj);
   /*
       Set the branching method. We can't do this until we establish objects,
       because the constructor will set up arrays based on the number of objects,
-      and there's no provision to set this information after creation. Arguably not
-      good --- it'd be nice to set this in the prototype model that's cloned for
-      this routine. In CoinSolve, shadowPriceMode is handled with the TESTOSI
+      and there's no provision to set this information after creation. Arguably
+     not good --- it'd be nice to set this in the prototype model that's cloned
+     for this routine. In CoinSolve, shadowPriceMode is handled with the TESTOSI
       option.
     */
   OsiChooseStrong strong(babSolver);
@@ -752,9 +735,9 @@ int doBaCParam(CoinParam &param)
   decision.setChooseMethod(strong);
   babModel.setBranchingMethod(decision);
   /*
-      Here I've deleted a huge block of code that deals with external priorities,
-      branch direction, pseudocosts, and solution. (PRIORITYIN) Also a block of
-      code that generates C++ code.
+      Here I've deleted a huge block of code that deals with external
+     priorities, branch direction, pseudocosts, and solution. (PRIORITYIN) Also
+     a block of code that generates C++ code.
     */
   /*
       Set up strategy for branch-and-cut. Note that the integer code supplied to
@@ -775,44 +758,41 @@ int doBaCParam(CoinParam &param)
     */
   int statistics = (cbcSettings->printOpt_ > 0) ? cbcSettings->printOpt_ : 0;
 #if CBC_TRACK_SOLVERS > 0
-  std::cout
-    << "doBaCParam: solver at call to branchAndBound is "
-    << std::hex << babModel.solver() << std::dec
-    << ", log level " << babModel.solver()->messageHandler()->logLevel()
-    << "." << std::endl;
+  std::cout << "doBaCParam: solver at call to branchAndBound is " << std::hex
+            << babModel.solver() << std::dec << ", log level "
+            << babModel.solver()->messageHandler()->logLevel() << "."
+            << std::endl;
 #endif
   babModel.branchAndBound(statistics);
   babSolver = babModel.solver();
 #if CBC_TRACK_SOLVERS > 0
-  std::cout
-    << "doBaCParam: solver at return from branchAndBound is "
-    << std::hex << babModel.solver() << std::dec
-    << ", log level " << babModel.solver()->messageHandler()->logLevel()
-    << "." << std::endl;
+  std::cout << "doBaCParam: solver at return from branchAndBound is "
+            << std::hex << babModel.solver() << std::dec << ", log level "
+            << babModel.solver()->messageHandler()->logLevel() << "."
+            << std::endl;
 #endif
   /*
       Write out solution to preprocessed model.
     */
-  if (cbcSettings->debugCreate_ == "createAfterPre" && babModel.bestSolution()) {
+  if (cbcSettings->debugCreate_ == "createAfterPre" &&
+      babModel.bestSolution()) {
     CbcSolverParamUtils::saveSolution(babSolver, "debug.file");
   }
   /*
       Print some information about branch-and-cut.
     */
 #if COIN_CBC_VERBOSITY > 0
-  std::cout
-    << "Cuts at root node changed objective from "
-    << babModel.getContinuousObjective()
-    << " to " << babModel.rootObjectiveAfterCuts() << std::endl;
+  std::cout << "Cuts at root node changed objective from "
+            << babModel.getContinuousObjective() << " to "
+            << babModel.rootObjectiveAfterCuts() << std::endl;
 
   for (int iGen = 0; iGen < babModel.numberCutGenerators(); iGen++) {
     CbcCutGenerator *generator = babModel.cutGenerator(iGen);
-    std::cout
-      << generator->cutGeneratorName() << " was tried "
-      << generator->numberTimesEntered() << " times and created "
-      << generator->numberCutsInTotal() << " cuts of which "
-      << generator->numberCutsActive()
-      << " were active after adding rounds of cuts";
+    std::cout << generator->cutGeneratorName() << " was tried "
+              << generator->numberTimesEntered() << " times and created "
+              << generator->numberCutsInTotal() << " cuts of which "
+              << generator->numberCutsActive()
+              << " were active after adding rounds of cuts";
     if (generator->timing()) {
       std::cout << " ( " << generator->timeInCutGenerator() << " seconds)";
     }
@@ -827,17 +807,15 @@ int doBaCParam(CoinParam &param)
     */
   if (ippMode != CbcSolverParam::IPPOff) {
 #if CBC_TRACK_SOLVERS > 0
-    std::cout
-      << "doBaCParam: solver passed to IPP postprocess is "
-      << std::hex << babSolver << std::dec << "." << std::endl;
+    std::cout << "doBaCParam: solver passed to IPP postprocess is " << std::hex
+              << babSolver << std::dec << "." << std::endl;
 #endif
     ippObj.postProcess(*babSolver);
     babModel.assignSolver(preIppSolver);
     babSolver = babModel.solver();
 #if CBC_TRACK_SOLVERS > 0
-    std::cout
-      << "doBaCParam: solver in babModel after IPP postprocess is "
-      << std::hex << babSolver << std::dec << "." << std::endl;
+    std::cout << "doBaCParam: solver in babModel after IPP postprocess is "
+              << std::hex << babSolver << std::dec << "." << std::endl;
 #endif
   }
   /*
@@ -858,25 +836,23 @@ int doBaCParam(CoinParam &param)
     answerSolver = babSolver;
   }
   cbcSettings->setBaBStatus(&babModel, CbcSolverParam::BACwBAC,
-    keepAnswerSolver, answerSolver);
+                            keepAnswerSolver, answerSolver);
   /*
       And one last bit of information & statistics.
     */
   cbcSettings->printBaBStatus();
   std::cout << "    ";
   if (keepAnswerSolver) {
-    std::cout
-      << "objective " << babModel.getObjValue() << "; ";
+    std::cout << "objective " << babModel.getObjValue() << "; ";
   }
-  std::cout
-    << babModel.getNodeCount() << " nodes and "
-    << babModel.getIterationCount() << " iterations - took "
-    << time2 - time1 << " seconds" << std::endl;
+  std::cout << babModel.getNodeCount() << " nodes and "
+            << babModel.getIterationCount() << " iterations - took "
+            << time2 - time1 << " seconds" << std::endl;
 
   return (0);
 }
 
-} // end namespace CbcSolverParamutils
+} // namespace CbcSolverParamUtils
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

@@ -4,19 +4,19 @@
 
 #ifndef CbcModel_H
 #define CbcModel_H
-#include <string>
-#include <vector>
+#include "CbcCompareBase.hpp"
 #include "CbcConfig.h"
+#include "CbcCountRowCut.hpp"
+#include "CbcEventHandler.hpp"
+#include "CbcMessage.hpp"
+#include "ClpDualRowPivot.hpp"
 #include "CoinMessageHandler.hpp"
-#include "OsiSolverInterface.hpp"
+#include "CoinWarmStartBasis.hpp"
 #include "OsiBranchingObject.hpp"
 #include "OsiCuts.hpp"
-#include "CoinWarmStartBasis.hpp"
-#include "CbcCompareBase.hpp"
-#include "CbcCountRowCut.hpp"
-#include "CbcMessage.hpp"
-#include "CbcEventHandler.hpp"
-#include "ClpDualRowPivot.hpp"
+#include "OsiSolverInterface.hpp"
+#include <string>
+#include <vector>
 #ifndef CBC_OTHER_SOLVER
 #include "OsiClpSolverInterface.hpp"
 #endif
@@ -62,20 +62,20 @@ class ClpNodeStuff;
   proceeds as follows:
   <ul>
     <li> The node representing the most promising parent subproblem is popped
-	 from the heap which holds the set of subproblems requiring further
-	 evaluation.
+         from the heap which holds the set of subproblems requiring further
+         evaluation.
     <li> Using branching instructions stored in the node, and information in
-	 its ancestors, the model and solver are adjusted to create the
-	 active subproblem.
+         its ancestors, the model and solver are adjusted to create the
+         active subproblem.
     <li> If the parent subproblem will require further evaluation
-	 (<i>i.e.</i>, there are branches remaining) its node is pushed back
-	 on the heap. Otherwise, the node is deleted.  This may trigger
-	 recursive deletion of ancestors.
+         (<i>i.e.</i>, there are branches remaining) its node is pushed back
+         on the heap. Otherwise, the node is deleted.  This may trigger
+         recursive deletion of ancestors.
     <li> The newly created subproblem is evaluated.
     <li> If the subproblem requires further evaluation, a node is created.
-	 All information needed to recreate the subproblem (branching
-	 information, row and column cuts) is placed in the node and the node
-	 is added to the set of subproblems awaiting further evaluation.
+         All information needed to recreate the subproblem (branching
+         information, row and column cuts) is placed in the node and the node
+         is added to the set of subproblems awaiting further evaluation.
   </ul>
   Note that there is never a node representing the active subproblem; the model
   and solver represent the active subproblem.
@@ -85,16 +85,16 @@ class ClpNodeStuff;
   For a typical subproblem, the sequence of events is as follows:
   <ul>
     <li> The subproblem is rebuilt for further evaluation: One result of a
-	 call to addCuts() is a traversal of ancestors, leaving a list of all
-	 cuts used in the ancestors in #addedCuts_. This list is then scanned
-	 to construct a basis that includes only tight cuts. Entries for
-	 loose cuts are set to NULL.
+         call to addCuts() is a traversal of ancestors, leaving a list of all
+         cuts used in the ancestors in #addedCuts_. This list is then scanned
+         to construct a basis that includes only tight cuts. Entries for
+         loose cuts are set to NULL.
     <li> The subproblem is evaluated: One result of a call to solveWithCuts()
          is the return of a set of newly generated cuts for the subproblem.
-	 #addedCuts_ is also kept up-to-date as old cuts become loose.
+         #addedCuts_ is also kept up-to-date as old cuts become loose.
     <li> The subproblem is stored for further processing: A call to
-	 CbcNodeInfo::addCuts() adds the newly generated cuts to the
-	 CbcNodeInfo object associated with this node.
+         CbcNodeInfo::addCuts() adds the newly generated cuts to the
+         CbcNodeInfo object associated with this node.
   </ul>
   See CbcCountRowCut for details of the bookkeeping associated with cut
   management.
@@ -110,12 +110,12 @@ public:
     CbcMaxNumSol,
     /** Fathoming discipline
 
-          Controls objective function comparisons for purposes of fathoming by bound
-          or determining monotonic variables.
+          Controls objective function comparisons for purposes of fathoming by
+       bound or determining monotonic variables.
 
-          If 1, action is taken only when the current objective is strictly worse
-          than the target. Implementation is handled by adding a small tolerance to
-          the target.
+          If 1, action is taken only when the current objective is strictly
+       worse than the target. Implementation is handled by adding a small
+       tolerance to the target.
         */
     CbcFathomDiscipline,
     /** Adjusts printout
@@ -174,17 +174,17 @@ public:
                So that other pieces of code can access */
     CbcStartSeconds,
     /** Stop doing heuristics when the gap between the objective value of the
-            best known solution and the best bound on the objective of any solution
-            is less than this.
+            best known solution and the best bound on the objective of any
+       solution is less than this.
 
           This is an absolute value. Conversion from a percentage is left to the
           client.
         */
     CbcHeuristicGap,
     /** Stop doing heuristics when the gap between the objective value of the
-            best known solution and the best bound on the objective of any solution
-            is less than this fraction of of the absolute value of best known
-            solution.
+            best known solution and the best bound on the objective of any
+       solution is less than this fraction of of the absolute value of best
+       known solution.
 
           Code stops if either this test or CbcAllowableGap test succeeds
         */
@@ -197,8 +197,8 @@ public:
     CbcLargestChange,
     /// Small non-zero change on a branch to be used as guess
     CbcSmallChange,
-    /** \brief Maximum time without improving the best solution found, checked only if a
-     * feasible solution is already available */
+    /** \brief Maximum time without improving the best solution found, checked
+     * only if a feasible solution is already available */
     CbcMaxSecondsNotImproving,
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastDblParam
@@ -243,7 +243,8 @@ private:
       2 - set numberTries to zero
       -1 - infeasible
     */
-  int serialCuts(OsiCuts &cuts, CbcNode *node, OsiCuts &slackCuts, int lastNumberCuts);
+  int serialCuts(OsiCuts &cuts, CbcNode *node, OsiCuts &slackCuts,
+                 int lastNumberCuts);
   /** Generate one round of cuts - parallel mode
         returns -
         0 - normal
@@ -251,15 +252,16 @@ private:
         2 - set numberTries to zero
         -1 - infeasible
     */
-  int parallelCuts(CbcBaseModel *master, OsiCuts &cuts, CbcNode *node, OsiCuts &slackCuts, int lastNumberCuts);
+  int parallelCuts(CbcBaseModel *master, OsiCuts &cuts, CbcNode *node,
+                   OsiCuts &slackCuts, int lastNumberCuts);
   /** Input one node output N nodes to put on tree and optional solution update
-        This should be able to operate in parallel so is given a solver and is const(ish)
-        However we will need to keep an array of solver_ and bases and more
-        status is 0 for normal, 1 if solution
-        Calling code should always push nodes back on tree
+        This should be able to operate in parallel so is given a solver and is
+     const(ish) However we will need to keep an array of solver_ and bases and
+     more status is 0 for normal, 1 if solution Calling code should always push
+     nodes back on tree
     */
-  CbcNode **solveOneNode(int whichSolver, CbcNode *node,
-    int &numberNodesOutput, int &status);
+  CbcNode **solveOneNode(int whichSolver, CbcNode *node, int &numberNodesOutput,
+                         int &status);
   /// Update size of whichGenerator
   void resizeWhichGenerator(int numberNow, int numberAfter);
 
@@ -278,8 +280,9 @@ public:
 
       If better solution found then it is saved.
 
-      Returns 0 if search completed and solution, 1 if not completed and solution,
-      2 if completed and no solution, 3 if not completed and no solution.
+      Returns 0 if search completed and solution, 1 if not completed and
+     solution, 2 if completed and no solution, 3 if not completed and no
+     solution.
 
       Normally okay to do cleanModel immediately followed by subBranchandBound
       (== other form of subBranchAndBound)
@@ -287,9 +290,8 @@ public:
 
       Deletes model2
     */
-  int subBranchAndBound(CbcModel *model2,
-    CbcModel *presolvedModel,
-    int maximumNodes);
+  int subBranchAndBound(CbcModel *model2, CbcModel *presolvedModel,
+                        int maximumNodes);
   /** \brief Invoke the branch \& cut algorithm on partially fixed problem
 
       The method creates a new model with given bounds, presolves it
@@ -298,15 +300,16 @@ public:
 
       If better solution found then it is saved.
 
-      Returns 0 if search completed and solution, 1 if not completed and solution,
-      2 if completed and no solution, 3 if not completed and no solution.
+      Returns 0 if search completed and solution, 1 if not completed and
+     solution, 2 if completed and no solution, 3 if not completed and no
+     solution.
 
       This is just subModel immediately followed by other version of
       subBranchandBound.
 
     */
   int subBranchAndBound(const double *lower, const double *upper,
-    int maximumNodes);
+                        int maximumNodes);
 
   /** \brief Process root node and return a strengthened model
 
@@ -322,22 +325,19 @@ public:
         Returns NULL if infeasible
 
         If makeEquality is 1 add slacks to get cliques,
-        if 2 add slacks to get sos (but only if looks plausible) and keep sos info
+        if 2 add slacks to get sos (but only if looks plausible) and keep sos
+     info
     */
   CglPreProcess *preProcess(int makeEquality = 0, int numberPasses = 5,
-    int tuning = 5);
+                            int tuning = 5);
   /** Does postprocessing - original solver back.
         User has to delete process */
   void postProcess(CglPreProcess *process);
 #endif
   /// Returns CglPreProcess used before branch and bound
-  inline CglPreProcess *preProcess() const
-  {
-    return preProcess_;
-  }
+  inline CglPreProcess *preProcess() const { return preProcess_; }
   /// Set CglPreProcess used before branch and bound
-  inline void setPreProcess(CglPreProcess *preProcess)
-  {
+  inline void setPreProcess(CglPreProcess *preProcess) {
     preProcess_ = preProcess;
   }
   /// Adds an update information object
@@ -364,10 +364,8 @@ public:
 
       returns 1 feasible, 0 infeasible, -1 feasible but skip cuts
     */
-  int resolve(CbcNodeInfo *parent, int whereFrom,
-    double *saveSolution = NULL,
-    double *saveLower = NULL,
-    double *saveUpper = NULL);
+  int resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution = NULL,
+              double *saveLower = NULL, double *saveUpper = NULL);
   /// Make given rows (L or G) into global cuts and remove from lp
   void makeGlobalCuts(int numberRows, const int *which);
   /// Make given cut into a global cut
@@ -379,14 +377,12 @@ public:
   /// Make given column cut into a global cut
   void makeGlobalCut(const OsiColCut &cut);
   /// Make partial cut into a global cut and save
-  void makePartialCut(const OsiRowCut *cut, const OsiSolverInterface *solver = NULL);
+  void makePartialCut(const OsiRowCut *cut,
+                      const OsiSolverInterface *solver = NULL);
   /// Make partial cuts into global cuts
   void makeGlobalCuts();
   /// Which cut generator generated this cut
-  inline const int *whichGenerator() const
-  {
-    return whichGenerator_;
-  }
+  inline const int *whichGenerator() const { return whichGenerator_; }
   //@}
 
   /** \name Presolve methods */
@@ -404,7 +400,7 @@ public:
         If priorities exist, clique priority is set to the default.
     */
   CbcModel *findCliques(bool makeEquality, int atLeastThisMany,
-    int lessThanThis, int defaultValue = 1000);
+                        int lessThanThis, int defaultValue = 1000);
 
   /** Do integer presolve, creating a new (presolved) model.
 
@@ -420,7 +416,8 @@ public:
 
         Returns true if the model remains feasible after presolve.
     */
-  bool integerPresolveThisModel(OsiSolverInterface *originalSolver, bool weak = false);
+  bool integerPresolveThisModel(OsiSolverInterface *originalSolver,
+                                bool weak = false);
 
   /// Put back information into the original model after integer presolve.
   void originalModel(CbcModel *presolvedModel, bool weak);
@@ -446,22 +443,21 @@ public:
         constraint with \p useCutoff as a bound.
     */
   bool tightenVubs(int type, bool allowMultipleBinary = false,
-    double useCutoff = 1.0e50);
+                   double useCutoff = 1.0e50);
 
   /** \brief For variables involved in VUB constraints, see if we can tighten
            bounds by solving lp's
 
       This version is just handed a list of variables to be processed.
     */
-  bool tightenVubs(int numberVubs, const int *which,
-    double useCutoff = 1.0e50);
+  bool tightenVubs(int numberVubs, const int *which, double useCutoff = 1.0e50);
   /**
       Analyze problem to find a minimum change in the objective function.
     */
   void analyzeObjective();
   /** Returns postProcessed solution in solver(called from event handler)
      Normally used for integer solution (not really tested otherwise)
-    solutionType 1 is best integer so far, 0 is current solution 
+    solutionType 1 is best integer so far, 0 is current solution
     (may not be integer) */
   const OsiSolverInterface *postProcessedSolver(int solutionType = 1);
 
@@ -472,21 +468,22 @@ public:
   /**
       Save copy of the model.
     */
-  void saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForRestart, bool *feasible);
+  void saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForRestart,
+                 bool *feasible);
   /**
       Flip direction of optimization on all models
     */
   void flipModel();
   /**
        Clean model i.e. make SOS/integer variables exactly at bound if needed.
-       Only if moreSpecialOptions2_ 15 bit set (32768) as there is a small 
+       Only if moreSpecialOptions2_ 15 bit set (32768) as there is a small
        overhead (more2 in standalone cbc).
        Fine tuning can be done in configure with -DCLEAN_INTEGER_VARIABLES
        and -DZERO_ODD_TOLERANCE=1.0e-nn
-       If CLEAN_INTEGER_VARIABLES not defined then cleaning is only done for 
+       If CLEAN_INTEGER_VARIABLES not defined then cleaning is only done for
        SOS variables.
-       If ZERO_ODD_TOLERANCE not defined then 1.0e-14 used.  You can define as 
-       0.0 if you are paranoid. 
+       If ZERO_ODD_TOLERANCE not defined then 1.0e-14 used.  You can define as
+       0.0 if you are paranoid.
        Returns number of variables forced out
        cleanVariables array will be used if exists
      */
@@ -494,9 +491,9 @@ public:
 
   /** Removes integer infeasibilities from the best
    * integer solution stored. In models with numerical
-   * instability can increase the overall amount of 
+   * instability can increase the overall amount of
    * infeasibilities */
-  void roundIntVars(); 
+  void roundIntVars();
 
   /// Sets up cleanVariables array (i.e. ones to be careful about)
   char *setupCleanVariables();
@@ -509,32 +506,17 @@ public:
   //@{
 
   /// Get the number of objects
-  inline int numberObjects() const
-  {
-    return numberObjects_;
-  }
+  inline int numberObjects() const { return numberObjects_; }
   /// Set the number of objects
-  inline void setNumberObjects(int number)
-  {
-    numberObjects_ = number;
-  }
+  inline void setNumberObjects(int number) { numberObjects_ = number; }
 
   /// Get the array of objects
-  inline OsiObject **objects() const
-  {
-    return object_;
-  }
+  inline OsiObject **objects() const { return object_; }
 
   /// Get the specified object
-  const inline OsiObject *object(int which) const
-  {
-    return object_[which];
-  }
+  const inline OsiObject *object(int which) const { return object_[which]; }
   /// Get the specified object
-  inline OsiObject *modifiableObject(int which) const
-  {
-    return object_[which];
-  }
+  inline OsiObject *modifiableObject(int which) const { return object_[which]; }
 
   void setOptionalInteger(int index);
 
@@ -567,9 +549,9 @@ public:
 
   void findIntegers(bool startAgain, int type = 0);
   /** Add SOS info to solver -
-	Overwrites SOS information in solver with information
-	in CbcModel.  Has no effect with some solvers. 
-	Also updates integer info. */
+        Overwrites SOS information in solver with information
+        in CbcModel.  Has no effect with some solvers.
+        Also updates integer info. */
   void addSOSEtcToSolver();
 
 #ifdef SWITCH_VARIABLES
@@ -578,8 +560,8 @@ public:
   /// Fix associated variables
   int fixAssociated(OsiSolverInterface *solver, int cleanBasis);
   /// Debug associated variables
-  int checkAssociated(const OsiSolverInterface *solver,
-    const double *solution, int printLevel);
+  int checkAssociated(const OsiSolverInterface *solver, const double *solution,
+                      int printLevel);
 #endif
   //@}
 
@@ -595,27 +577,19 @@ public:
     */
   //@{
   /// Set an integer parameter
-  inline bool setIntParam(CbcIntParam key, int value)
-  {
+  inline bool setIntParam(CbcIntParam key, int value) {
     intParam_[key] = value;
     return true;
   }
   /// Set a double parameter
-  inline bool setDblParam(CbcDblParam key, double value)
-  {
+  inline bool setDblParam(CbcDblParam key, double value) {
     dblParam_[key] = value;
     return true;
   }
   /// Get an integer parameter
-  inline int getIntParam(CbcIntParam key) const
-  {
-    return intParam_[key];
-  }
+  inline int getIntParam(CbcIntParam key) const { return intParam_[key]; }
   /// Get a double parameter
-  inline double getDblParam(CbcDblParam key) const
-  {
-    return dblParam_[key];
-  }
+  inline double getDblParam(CbcDblParam key) const { return dblParam_[key]; }
   /*! \brief Set cutoff bound on the objective function.
 
       When using strict comparison, the bound is adjusted by a tolerance to
@@ -624,109 +598,86 @@ public:
   void setCutoff(double value);
 
   /// Get the cutoff bound on the objective function - always as minimize
-  inline double getCutoff() const
-  { //double value ;
-    //solver_->getDblParam(OsiDualObjectiveLimit,value) ;
-    //assert( dblParam_[CbcCurrentCutoff]== value * solver_->getObjSense());
+  inline double getCutoff() const { // double value ;
+    // solver_->getDblParam(OsiDualObjectiveLimit,value) ;
+    // assert( dblParam_[CbcCurrentCutoff]== value * solver_->getObjSense());
     return dblParam_[CbcCurrentCutoff];
   }
 
   /// Set the \link CbcModel::CbcMaxNumNode maximum node limit \endlink
-  inline bool setMaximumNodes(int value)
-  {
+  inline bool setMaximumNodes(int value) {
     return setIntParam(CbcMaxNumNode, value);
   }
 
   /// Get the \link CbcModel::CbcMaxNumNode maximum node limit \endlink
-  inline int getMaximumNodes() const
-  {
-    return getIntParam(CbcMaxNumNode);
-  }
+  inline int getMaximumNodes() const { return getIntParam(CbcMaxNumNode); }
 
   /// Set the \link CbcModel::CbcMaxNodesNotImproving limit \endlink
-  inline bool setMaxNodesNotImproving(int value)
-  {
+  inline bool setMaxNodesNotImproving(int value) {
     return setIntParam(CbcMaxNodesNotImproving, value);
   }
 
   /// Get the \link CbcModel::CbcMaxNodesNotImproving limit \endlink
-  inline int getMaxNodesNotImproving() const
-  {
+  inline int getMaxNodesNotImproving() const {
     return getIntParam(CbcMaxNodesNotImproving);
   }
 
   /// Set the \link CbcModel::CbcMaxNumNode maximum node limit \endlink
-  inline bool setMaxSecondsNotImproving(double value)
-  {
+  inline bool setMaxSecondsNotImproving(double value) {
     return setDblParam(CbcMaxSecondsNotImproving, value);
   }
 
   /// Get the \link CbcModel::CbcMaxSecondsNotImproving limit \endlink
-  inline double getMaxSecondsNotImproving() const
-  {
-     return getDblParam(CbcMaxSecondsNotImproving);
+  inline double getMaxSecondsNotImproving() const {
+    return getDblParam(CbcMaxSecondsNotImproving);
   }
 
   /// Set the \link CbcModel::CbcMaxSolutions limit \endlink
-  inline bool setMaxSolutions(int value)
-  {
+  inline bool setMaxSolutions(int value) {
     return setIntParam(CbcMaxSolutions, value);
   }
 
   /// Get the \link CbcModel::CbcMaxNumNode maximum node limit \endlink
-  inline int getMaxSolution() const
-  {
-    return getIntParam(CbcMaxSolutions);
-  }
+  inline int getMaxSolution() const { return getIntParam(CbcMaxSolutions); }
 
   /// If integer variables should be rounded before saving a solution.
   //  For some problems with integer and continuous variables, rounding can
   //  increase the infeasibilities, but it can make sense if all variables
   //  are integral. Default is false.
-  void setRoundIntegerVariables( bool round_ );
+  void setRoundIntegerVariables(bool round_);
 
   /** Set the
         \link CbcModel::CbcMaxNumSol maximum number of solutions \endlink
         desired.
     */
-  inline bool setMaximumSolutions(int value)
-  {
+  inline bool setMaximumSolutions(int value) {
     return setIntParam(CbcMaxNumSol, value);
   }
   /** Get the
         \link CbcModel::CbcMaxNumSol maximum number of solutions \endlink
         desired.
     */
-  inline int getMaximumSolutions() const
-  {
-    return getIntParam(CbcMaxNumSol);
-  }
+  inline int getMaximumSolutions() const { return getIntParam(CbcMaxNumSol); }
   /// Set the printing mode
-  inline bool setPrintingMode(int value)
-  {
+  inline bool setPrintingMode(int value) {
     return setIntParam(CbcPrinting, value);
   }
 
   /// Get the printing mode
-  inline int getPrintingMode() const
-  {
-    return getIntParam(CbcPrinting);
-  }
+  inline int getPrintingMode() const { return getIntParam(CbcPrinting); }
 
   /** Set the
         \link CbcModel::CbcMaximumSeconds maximum number of seconds \endlink
         desired.
     */
-  inline bool setMaximumSeconds(double value)
-  {
+  inline bool setMaximumSeconds(double value) {
     return setDblParam(CbcMaximumSeconds, value);
   }
   /** Get the
         \link CbcModel::CbcMaximumSeconds maximum number of seconds \endlink
         desired.
     */
-  inline double getMaximumSeconds() const
-  {
+  inline double getMaximumSeconds() const {
     return getDblParam(CbcMaximumSeconds);
   }
   /// Current time since start of branchAndbound
@@ -742,15 +693,13 @@ public:
   /** Set the
       \link CbcModel::CbcIntegerTolerance integrality tolerance \endlink
     */
-  inline bool setIntegerTolerance(double value)
-  {
+  inline bool setIntegerTolerance(double value) {
     return setDblParam(CbcIntegerTolerance, value);
   }
   /** Get the
       \link CbcModel::CbcIntegerTolerance integrality tolerance \endlink
     */
-  inline double getIntegerTolerance() const
-  {
+  inline double getIntegerTolerance() const {
     return getDblParam(CbcIntegerTolerance);
   }
 
@@ -758,165 +707,129 @@ public:
         \link CbcModel::CbcInfeasibilityWeight
           weight per integer infeasibility \endlink
     */
-  inline bool setInfeasibilityWeight(double value)
-  {
+  inline bool setInfeasibilityWeight(double value) {
     return setDblParam(CbcInfeasibilityWeight, value);
   }
   /** Get the
         \link CbcModel::CbcInfeasibilityWeight
           weight per integer infeasibility \endlink
     */
-  inline double getInfeasibilityWeight() const
-  {
+  inline double getInfeasibilityWeight() const {
     return getDblParam(CbcInfeasibilityWeight);
   }
 
   /** Set the \link CbcModel::CbcAllowableGap allowable gap \endlink
         between the best known solution and the best possible solution.
     */
-  inline bool setAllowableGap(double value)
-  {
+  inline bool setAllowableGap(double value) {
     return setDblParam(CbcAllowableGap, value);
   }
   /** Get the \link CbcModel::CbcAllowableGap allowable gap \endlink
         between the best known solution and the best possible solution.
     */
-  inline double getAllowableGap() const
-  {
-    return getDblParam(CbcAllowableGap);
-  }
+  inline double getAllowableGap() const { return getDblParam(CbcAllowableGap); }
 
-  /** Set the \link CbcModel::CbcAllowableFractionGap fraction allowable gap \endlink
-        between the best known solution and the best possible solution.
+  /** Set the \link CbcModel::CbcAllowableFractionGap fraction allowable gap
+     \endlink between the best known solution and the best possible solution.
     */
-  inline bool setAllowableFractionGap(double value)
-  {
+  inline bool setAllowableFractionGap(double value) {
     return setDblParam(CbcAllowableFractionGap, value);
   }
-  /** Get the \link CbcModel::CbcAllowableFractionGap fraction allowable gap \endlink
-        between the best known solution and the best possible solution.
+  /** Get the \link CbcModel::CbcAllowableFractionGap fraction allowable gap
+     \endlink between the best known solution and the best possible solution.
     */
-  inline double getAllowableFractionGap() const
-  {
+  inline double getAllowableFractionGap() const {
     return getDblParam(CbcAllowableFractionGap);
   }
-  /** Set the \link CbcModel::CbcAllowableFractionGap percentage allowable gap \endlink
-        between the best known solution and the best possible solution.
+  /** Set the \link CbcModel::CbcAllowableFractionGap percentage allowable gap
+     \endlink between the best known solution and the best possible solution.
     */
-  inline bool setAllowablePercentageGap(double value)
-  {
+  inline bool setAllowablePercentageGap(double value) {
     return setDblParam(CbcAllowableFractionGap, value * 0.01);
   }
-  /** Get the \link CbcModel::CbcAllowableFractionGap percentage allowable gap \endlink
-        between the best known solution and the best possible solution.
+  /** Get the \link CbcModel::CbcAllowableFractionGap percentage allowable gap
+     \endlink between the best known solution and the best possible solution.
     */
-  inline double getAllowablePercentageGap() const
-  {
+  inline double getAllowablePercentageGap() const {
     return 100.0 * getDblParam(CbcAllowableFractionGap);
   }
   /** Set the \link CbcModel::CbcHeuristicGap heuristic gap \endlink
         between the best known solution and the best possible solution.
     */
-  inline bool setHeuristicGap(double value)
-  {
+  inline bool setHeuristicGap(double value) {
     return setDblParam(CbcHeuristicGap, value);
   }
   /** Get the \link CbcModel::CbcHeuristicGap heuristic gap \endlink
         between the best known solution and the best possible solution.
     */
-  inline double getHeuristicGap() const
-  {
-    return getDblParam(CbcHeuristicGap);
-  }
+  inline double getHeuristicGap() const { return getDblParam(CbcHeuristicGap); }
 
-  /** Set the \link CbcModel::CbcHeuristicFractionGap fraction heuristic gap \endlink
-        between the best known solution and the best possible solution.
+  /** Set the \link CbcModel::CbcHeuristicFractionGap fraction heuristic gap
+     \endlink between the best known solution and the best possible solution.
     */
-  inline bool setHeuristicFractionGap(double value)
-  {
+  inline bool setHeuristicFractionGap(double value) {
     return setDblParam(CbcHeuristicFractionGap, value);
   }
-  /** Get the \link CbcModel::CbcHeuristicFractionGap fraction heuristic gap \endlink
-        between the best known solution and the best possible solution.
+  /** Get the \link CbcModel::CbcHeuristicFractionGap fraction heuristic gap
+     \endlink between the best known solution and the best possible solution.
     */
-  inline double getHeuristicFractionGap() const
-  {
+  inline double getHeuristicFractionGap() const {
     return getDblParam(CbcHeuristicFractionGap);
   }
   /** Set the
         \link CbcModel::CbcCutoffIncrement  \endlink
         desired.
     */
-  inline bool setCutoffIncrement(double value)
-  {
+  inline bool setCutoffIncrement(double value) {
     return setDblParam(CbcCutoffIncrement, value);
   }
   /** Get the
         \link CbcModel::CbcCutoffIncrement  \endlink
         desired.
     */
-  inline double getCutoffIncrement() const
-  {
+  inline double getCutoffIncrement() const {
     return getDblParam(CbcCutoffIncrement);
   }
   /// See if can stop on gap
   bool canStopOnGap() const;
 
-  /** Checks if one of the stopping criteria (max time, max nodes, ...) was reached */
+  /** Checks if one of the stopping criteria (max time, max nodes, ...) was
+   * reached */
   bool stoppingCriterionReached() const;
 
   /** Pass in target solution and optional priorities.
         If priorities then >0 means only branch if incorrect
         while <0 means branch even if correct. +1 or -1 are
         highest priority */
-  void setHotstartSolution(const double *solution, const int *priorities = NULL);
+  void setHotstartSolution(const double *solution,
+                           const int *priorities = NULL);
 
   /// Set the minimum drop to continue cuts
-  inline void setMinimumDrop(double value)
-  {
-    minimumDrop_ = value;
-  }
+  inline void setMinimumDrop(double value) { minimumDrop_ = value; }
   /// Get the minimum drop to continue cuts
-  inline double getMinimumDrop() const
-  {
-    return minimumDrop_;
-  }
+  inline double getMinimumDrop() const { return minimumDrop_; }
 
   /** Set the maximum number of cut passes at root node (default 20)
         Minimum drop can also be used for fine tuning */
-  inline void setMaximumCutPassesAtRoot(int value)
-  {
+  inline void setMaximumCutPassesAtRoot(int value) {
     maximumCutPassesAtRoot_ = value;
   }
   /** Get the maximum number of cut passes at root node */
-  inline int getMaximumCutPassesAtRoot() const
-  {
+  inline int getMaximumCutPassesAtRoot() const {
     return maximumCutPassesAtRoot_;
   }
 
   /** Set the maximum number of cut passes at other nodes (default 10)
         Minimum drop can also be used for fine tuning */
-  inline void setMaximumCutPasses(int value)
-  {
-    maximumCutPasses_ = value;
-  }
+  inline void setMaximumCutPasses(int value) { maximumCutPasses_ = value; }
   /** Get the maximum number of cut passes at other nodes (default 10) */
-  inline int getMaximumCutPasses() const
-  {
-    return maximumCutPasses_;
-  }
+  inline int getMaximumCutPasses() const { return maximumCutPasses_; }
   /** Get current cut pass number in this round of cuts.
         (1 is first pass) */
-  inline int getCurrentPassNumber() const
-  {
-    return currentPassNumber_;
-  }
+  inline int getCurrentPassNumber() const { return currentPassNumber_; }
   /** Set current cut pass number in this round of cuts.
         (1 is first pass) */
-  inline void setCurrentPassNumber(int value)
-  {
-    currentPassNumber_ = value;
-  }
+  inline void setCurrentPassNumber(int value) { currentPassNumber_ = value; }
 
   /** Set the maximum number of candidates to be evaluated for strong
       branching.
@@ -927,31 +840,16 @@ public:
   /** Get the maximum number of candidates to be evaluated for strong
       branching.
     */
-  inline int numberStrong() const
-  {
-    return numberStrong_;
-  }
+  inline int numberStrong() const { return numberStrong_; }
   /** Set global preferred way to branch
         -1 down, +1 up, 0 no preference */
-  inline void setPreferredWay(int value)
-  {
-    preferredWay_ = value;
-  }
+  inline void setPreferredWay(int value) { preferredWay_ = value; }
   /** Get the preferred way to branch (default 0) */
-  inline int getPreferredWay() const
-  {
-    return preferredWay_;
-  }
+  inline int getPreferredWay() const { return preferredWay_; }
   /// Get at which depths to do cuts
-  inline int whenCuts() const
-  {
-    return whenCuts_;
-  }
+  inline int whenCuts() const { return whenCuts_; }
   /// Set at which depths to do cuts
-  inline void setWhenCuts(int value)
-  {
-    whenCuts_ = value;
-  }
+  inline void setWhenCuts(int value) { whenCuts_ = value; }
   /** Return true if we want to do cuts
         If allowForTopOfTree zero then just does on multiples of depth
         if 1 then allows for doing at top of tree
@@ -967,10 +865,7 @@ public:
   void setNumberBeforeTrust(int number);
   /** get the number of branches before pseudo costs believed
         in dynamic strong branching. */
-  inline int numberBeforeTrust() const
-  {
-    return numberBeforeTrust_;
-  }
+  inline int numberBeforeTrust() const { return numberBeforeTrust_; }
   /** Set the number of variables for which to compute penalties
         in dynamic strong branching.
 
@@ -979,30 +874,19 @@ public:
   void setNumberPenalties(int number);
   /** get the number of variables for which to compute penalties
         in dynamic strong branching. */
-  inline int numberPenalties() const
-  {
-    return numberPenalties_;
-  }
+  inline int numberPenalties() const { return numberPenalties_; }
   /// Pointer to top of tree
-  inline const CbcFullNodeInfo *topOfTree() const
-  {
-    return topOfTree_;
-  }
+  inline const CbcFullNodeInfo *topOfTree() const { return topOfTree_; }
   /// Number of analyze iterations to do
-  inline void setNumberAnalyzeIterations(int number)
-  {
+  inline void setNumberAnalyzeIterations(int number) {
     numberAnalyzeIterations_ = number;
   }
-  inline int numberAnalyzeIterations() const
-  {
+  inline int numberAnalyzeIterations() const {
     return numberAnalyzeIterations_;
   }
   /** Get scale factor to make penalties match strong.
         Should/will be computed */
-  inline double penaltyScaleFactor() const
-  {
-    return penaltyScaleFactor_;
-  }
+  inline double penaltyScaleFactor() const { return penaltyScaleFactor_; }
   /** Set scale factor to make penalties match strong.
         Should/will be computed */
   void setPenaltyScaleFactor(double value);
@@ -1013,35 +897,20 @@ public:
         3 - Set covering
         4 - all +- 1 or all +1 and odd
     */
-  void inline setProblemType(int number)
-  {
-    problemType_ = number;
-  }
-  inline int problemType() const
-  {
-    return problemType_;
-  }
+  void inline setProblemType(int number) { problemType_ = number; }
+  inline int problemType() const { return problemType_; }
   /// Current depth
-  inline int currentDepth() const
-  {
-    return currentDepth_;
-  }
+  inline int currentDepth() const { return currentDepth_; }
 
   /// Set how often to scan global cuts
   void setHowOftenGlobalScan(int number);
   /// Get how often to scan global cuts
-  inline int howOftenGlobalScan() const
-  {
-    return howOftenGlobalScan_;
-  }
+  inline int howOftenGlobalScan() const { return howOftenGlobalScan_; }
   /// Original columns as created by integerPresolve or preprocessing
-  inline int *originalColumns() const
-  {
-    return originalColumns_;
-  }
+  inline int *originalColumns() const { return originalColumns_; }
   /// Set original columns as created by preprocessing
   void setOriginalColumns(const int *originalColumns,
-    int numberGood = COIN_INT_MAX);
+                          int numberGood = COIN_INT_MAX);
   /// Create conflict cut (well - most of)
   OsiRowCut *conflictCut(const OsiSolverInterface *solver, bool &localCuts);
 
@@ -1052,25 +921,15 @@ public:
       problems, 1000 for small problems.
       Print frequency has very slight overhead if small.
     */
-  inline void setPrintFrequency(int number)
-  {
-    printFrequency_ = number;
-  }
+  inline void setPrintFrequency(int number) { printFrequency_ = number; }
   /// Get the print frequency
-  inline int printFrequency() const
-  {
-    return printFrequency_;
-  }
+  inline int printFrequency() const { return printFrequency_; }
   /// Set print frequency in time
-  inline void setSecsPrintFrequency(double value)
-  {
+  inline void setSecsPrintFrequency(double value) {
     secsPrintFrequency_ = value;
   }
   /// Get the print frequency in time
-  inline double secsPrintFrequency() const
-  {
-    return secsPrintFrequency_;
-  }
+  inline double secsPrintFrequency() const { return secsPrintFrequency_; }
   //@}
 
   //---------------------------------------------------------------------------
@@ -1093,52 +952,28 @@ public:
   /// Solution limit reached?
   bool isSolutionLimitReached() const;
   /// Get how many iterations it took to solve the problem.
-  inline int getIterationCount() const
-  {
-    return numberIterations_;
-  }
+  inline int getIterationCount() const { return numberIterations_; }
   /// Increment how many iterations it took to solve the problem.
-  inline void incrementIterationCount(int value)
-  {
-    numberIterations_ += value;
-  }
-  /// Get how many Nodes it took to solve the problem (including those in complete fathoming B&B inside CLP).
-  inline int getNodeCount() const
-  {
-    return numberNodes_;
-  }
+  inline void incrementIterationCount(int value) { numberIterations_ += value; }
+  /// Get how many Nodes it took to solve the problem (including those in
+  /// complete fathoming B&B inside CLP).
+  inline int getNodeCount() const { return numberNodes_; }
   /// Increment how many nodes it took to solve the problem.
-  inline void incrementNodeCount(int value)
-  {
-    numberNodes_ += value;
-  }
+  inline void incrementNodeCount(int value) { numberNodes_ += value; }
   /// Get how many Nodes were enumerated in complete fathoming B&B inside CLP
-  inline int getExtraNodeCount() const
-  {
-    return numberExtraNodes_;
-  }
+  inline int getExtraNodeCount() const { return numberExtraNodes_; }
   /// Get how many times complete fathoming B&B was done
-  inline int getFathomCount() const
-  {
-    return numberFathoms_;
-  }
+  inline int getFathomCount() const { return numberFathoms_; }
   /** Final status of problem
         Some of these can be found out by is...... functions
         -1 before branchAndBound
-        0 finished - check isProvenOptimal or isProvenInfeasible to see if solution found
-        (or check value of best solution)
-        1 stopped - on maxnodes, maxsols, maxtime
-        2 difficulties so run was abandoned
-        (5 event user programmed event occurred)
+        0 finished - check isProvenOptimal or isProvenInfeasible to see if
+     solution found (or check value of best solution) 1 stopped - on maxnodes,
+     maxsols, maxtime 2 difficulties so run was abandoned (5 event user
+     programmed event occurred)
     */
-  inline int status() const
-  {
-    return status_;
-  }
-  inline void setProblemStatus(int value)
-  {
-    status_ = value;
-  }
+  inline int status() const { return status_; }
+  inline void setProblemStatus(int value) { status_ = value; }
   /** Secondary status of problem
         -1 unset (status_ will also be -1)
         0 search completed with solution
@@ -1151,14 +986,8 @@ public:
         7 linear relaxation unbounded
         8 stopped on iteration limit
     */
-  inline int secondaryStatus() const
-  {
-    return secondaryStatus_;
-  }
-  inline void setSecondaryStatus(int value)
-  {
-    secondaryStatus_ = value;
-  }
+  inline int secondaryStatus() const { return secondaryStatus_; }
+  inline void setSecondaryStatus(int value) { secondaryStatus_ = value; }
   /// Are there numerical difficulties (for initialSolve) ?
   bool isInitialSolveAbandoned() const;
   /// Is optimality proven (for initialSolve) ?
@@ -1184,63 +1013,37 @@ public:
     */
   //@{
   /// Number of rows in continuous (root) problem.
-  inline int numberRowsAtContinuous() const
-  {
-    return numberRowsAtContinuous_;
-  }
+  inline int numberRowsAtContinuous() const { return numberRowsAtContinuous_; }
 
   /// Get number of columns
-  inline int getNumCols() const
-  {
-    return solver_->getNumCols();
-  }
+  inline int getNumCols() const { return solver_->getNumCols(); }
 
   /// Get number of rows
-  inline int getNumRows() const
-  {
-    return solver_->getNumRows();
-  }
+  inline int getNumRows() const { return solver_->getNumRows(); }
 
   /// Get number of nonzero elements
-  inline CoinBigIndex getNumElements() const
-  {
+  inline CoinBigIndex getNumElements() const {
     return solver_->getNumElements();
   }
 
   /// Number of integers in problem
-  inline int numberIntegers() const
-  {
-    return numberIntegers_;
-  }
+  inline int numberIntegers() const { return numberIntegers_; }
   // Integer variables
-  inline const int *integerVariable() const
-  {
-    return integerVariable_;
-  }
+  inline const int *integerVariable() const { return integerVariable_; }
   /// Whether or not integer
-  inline char integerType(int i) const
-  {
+  inline char integerType(int i) const {
     assert(integerInfo_);
     assert(integerInfo_[i] == 0 || integerInfo_[i] == 1);
     return integerInfo_[i];
   }
   /// Whether or not integer
-  inline const char *integerType() const
-  {
-    return integerInfo_;
-  }
+  inline const char *integerType() const { return integerInfo_; }
 
   /// Get pointer to array[getNumCols()] of column lower bounds
-  inline const double *getColLower() const
-  {
-    return solver_->getColLower();
-  }
+  inline const double *getColLower() const { return solver_->getColLower(); }
 
   /// Get pointer to array[getNumCols()] of column upper bounds
-  inline const double *getColUpper() const
-  {
-    return solver_->getColUpper();
-  }
+  inline const double *getColUpper() const { return solver_->getColUpper(); }
 
   /** Get pointer to array[getNumRows()] of row constraint senses.
         <ul>
@@ -1251,10 +1054,7 @@ public:
         <li>'N': free constraint
         </ul>
     */
-  inline const char *getRowSense() const
-  {
-    return solver_->getRowSense();
-  }
+  inline const char *getRowSense() const { return solver_->getRowSense(); }
 
   /** Get pointer to array[getNumRows()] of rows right-hand sides
         <ul>
@@ -1264,8 +1064,7 @@ public:
         <li> if rowsense()[i] == 'N' then rhs()[i] == 0.0
         </ul>
     */
-  inline const double *getRightHandSide() const
-  {
+  inline const double *getRightHandSide() const {
     return solver_->getRightHandSide();
   }
 
@@ -1277,45 +1076,32 @@ public:
         rowrange()[i] is 0.0
         </ul>
     */
-  inline const double *getRowRange() const
-  {
-    return solver_->getRowRange();
-  }
+  inline const double *getRowRange() const { return solver_->getRowRange(); }
 
   /// Get pointer to array[getNumRows()] of row lower bounds
-  inline const double *getRowLower() const
-  {
-    return solver_->getRowLower();
-  }
+  inline const double *getRowLower() const { return solver_->getRowLower(); }
 
   /// Get pointer to array[getNumRows()] of row upper bounds
-  inline const double *getRowUpper() const
-  {
-    return solver_->getRowUpper();
-  }
+  inline const double *getRowUpper() const { return solver_->getRowUpper(); }
 
   /// Get pointer to array[getNumCols()] of objective function coefficients
-  inline const double *getObjCoefficients() const
-  {
+  inline const double *getObjCoefficients() const {
     return solver_->getObjCoefficients();
   }
 
   /// Get objective function sense (1 for min (default), -1 for max)
-  inline double getObjSense() const
-  {
-    //assert (dblParam_[CbcOptimizationDirection]== solver_->getObjSense());
+  inline double getObjSense() const {
+    // assert (dblParam_[CbcOptimizationDirection]== solver_->getObjSense());
     return dblParam_[CbcOptimizationDirection];
   }
 
   /// Return true if variable is continuous
-  inline bool isContinuous(int colIndex) const
-  {
+  inline bool isContinuous(int colIndex) const {
     return solver_->isContinuous(colIndex);
   }
 
   /// Return true if variable is binary
-  inline bool isBinary(int colIndex) const
-  {
+  inline bool isBinary(int colIndex) const {
     return solver_->isBinary(colIndex);
   }
 
@@ -1323,122 +1109,83 @@ public:
         Note: This function returns true if the the column
         is binary or a general integer.
     */
-  inline bool isInteger(int colIndex) const
-  {
+  inline bool isInteger(int colIndex) const {
     return solver_->isInteger(colIndex);
   }
 
   /// Return true if variable is general integer
-  inline bool isIntegerNonBinary(int colIndex) const
-  {
+  inline bool isIntegerNonBinary(int colIndex) const {
     return solver_->isIntegerNonBinary(colIndex);
   }
 
   /// Return true if variable is binary and not fixed at either bound
-  inline bool isFreeBinary(int colIndex) const
-  {
+  inline bool isFreeBinary(int colIndex) const {
     return solver_->isFreeBinary(colIndex);
   }
 
   /// Get pointer to row-wise copy of matrix
-  inline const CoinPackedMatrix *getMatrixByRow() const
-  {
+  inline const CoinPackedMatrix *getMatrixByRow() const {
     return solver_->getMatrixByRow();
   }
 
   /// Get pointer to column-wise copy of matrix
-  inline const CoinPackedMatrix *getMatrixByCol() const
-  {
+  inline const CoinPackedMatrix *getMatrixByCol() const {
     return solver_->getMatrixByCol();
   }
 
   /// Get solver's value for infinity
-  inline double getInfinity() const
-  {
-    return solver_->getInfinity();
-  }
+  inline double getInfinity() const { return solver_->getInfinity(); }
   /// Get pointer to array[getNumCols()] (for speed) of column lower bounds
-  inline const double *getCbcColLower() const
-  {
-    return cbcColLower_;
-  }
+  inline const double *getCbcColLower() const { return cbcColLower_; }
   /// Get pointer to array[getNumCols()] (for speed) of column upper bounds
-  inline const double *getCbcColUpper() const
-  {
-    return cbcColUpper_;
-  }
+  inline const double *getCbcColUpper() const { return cbcColUpper_; }
   /// Get pointer to array[getNumRows()] (for speed) of row lower bounds
-  inline const double *getCbcRowLower() const
-  {
-    return cbcRowLower_;
-  }
+  inline const double *getCbcRowLower() const { return cbcRowLower_; }
   /// Get pointer to array[getNumRows()] (for speed) of row upper bounds
-  inline const double *getCbcRowUpper() const
-  {
-    return cbcRowUpper_;
-  }
+  inline const double *getCbcRowUpper() const { return cbcRowUpper_; }
   /// Get pointer to array[getNumCols()] (for speed) of primal solution vector
-  inline const double *getCbcColSolution() const
-  {
-    return cbcColSolution_;
-  }
+  inline const double *getCbcColSolution() const { return cbcColSolution_; }
   /// Get pointer to array[getNumRows()] (for speed) of dual prices
-  inline const double *getCbcRowPrice() const
-  {
-    return cbcRowPrice_;
-  }
+  inline const double *getCbcRowPrice() const { return cbcRowPrice_; }
   /// Get a pointer to array[getNumCols()] (for speed) of reduced costs
-  inline const double *getCbcReducedCost() const
-  {
-    return cbcReducedCost_;
-  }
+  inline const double *getCbcReducedCost() const { return cbcReducedCost_; }
   /// Get pointer to array[getNumRows()] (for speed) of row activity levels.
-  inline const double *getCbcRowActivity() const
-  {
-    return cbcRowActivity_;
-  }
+  inline const double *getCbcRowActivity() const { return cbcRowActivity_; }
   //@}
 
   /**@name Methods related to querying the solution */
   //@{
   /// Holds solution at continuous (after cuts if branchAndBound called)
-  inline double *continuousSolution() const
-  {
-    return continuousSolution_;
-  }
+  inline double *continuousSolution() const { return continuousSolution_; }
   /** Array marked whenever a solution is found if non-zero.
         Code marks if heuristic returns better so heuristic
         need only mark if it wants to on solutions which
         are worse than current */
-  inline int *usedInSolution() const
-  {
-    return usedInSolution_;
-  }
+  inline int *usedInSolution() const { return usedInSolution_; }
   /// Increases usedInSolution for nonzeros
   void incrementUsed(const double *solution);
   /// Record a new incumbent solution and update objectiveValue
-  void setBestSolution(CBC_Message how,
-    double &objectiveValue, const double *solution,
-    int fixVariables = 0);
+  void setBestSolution(CBC_Message how, double &objectiveValue,
+                       const double *solution, int fixVariables = 0);
   /// Just update objectiveValue
   void setBestObjectiveValue(double objectiveValue);
   /// Deals with event handler and solution
-  CbcEventHandler::CbcAction dealWithEventHandler(CbcEventHandler::CbcEvent event,
-    double objValue,
-    const double *solution);
+  CbcEventHandler::CbcAction
+  dealWithEventHandler(CbcEventHandler::CbcEvent event, double objValue,
+                       const double *solution);
   /// Check if a solution is really valid e.g. lazy constraints
   /// Returns true if ok or normal cuts (i.e. no atSolution ones)
-  bool reallyValid(OsiCuts * existingCuts=NULL);
+  bool reallyValid(OsiCuts *existingCuts = NULL);
 
   /** Call this to really test if a valid solution can be feasible
         Solution is number columns in size.
         If fixVariables true then bounds of continuous solver updated.
         Returns objective value (worse than cutoff if not feasible)
-        Previously computed objective value is now passed in (in case user does not do solve)
-	virtual so user can override
+        Previously computed objective value is now passed in (in case user does
+     not do solve) virtual so user can override
     */
   virtual double checkSolution(double cutoff, double *solution,
-    int fixVariables, double originalObjValue);
+                               int fixVariables, double originalObjValue);
   /** Test the current solution for feasiblility.
 
       Scan all objects for indications of infeasibility. This is broken down
@@ -1446,80 +1193,58 @@ public:
       and all other reports of infeasibility (\p numberObjectInfeasibilities).
     */
   bool feasibleSolution(int &numberIntegerInfeasibilities,
-    int &numberObjectInfeasibilities) const;
+                        int &numberObjectInfeasibilities) const;
 
   /** Solution to the most recent lp relaxation.
 
       The solver's solution to the most recent lp relaxation.
     */
 
-  inline double *currentSolution() const
-  {
-    return currentSolution_;
-  }
+  inline double *currentSolution() const { return currentSolution_; }
   /** For testing infeasibilities - will point to
         currentSolution_ or solver-->getColSolution()
     */
-  inline const double *testSolution() const
-  {
-    return testSolution_;
-  }
-  inline void setTestSolution(const double *solution)
-  {
+  inline const double *testSolution() const { return testSolution_; }
+  inline void setTestSolution(const double *solution) {
     testSolution_ = solution;
   }
   /// Make sure region there and optionally copy solution
   void reserveCurrentSolution(const double *solution = NULL);
 
   /// Get pointer to array[getNumCols()] of primal solution vector
-  inline const double *getColSolution() const
-  {
+  inline const double *getColSolution() const {
     return solver_->getColSolution();
   }
 
   /// Get pointer to array[getNumRows()] of dual prices
-  inline const double *getRowPrice() const
-  {
-    return solver_->getRowPrice();
-  }
+  inline const double *getRowPrice() const { return solver_->getRowPrice(); }
 
   /// Get a pointer to array[getNumCols()] of reduced costs
-  inline const double *getReducedCost() const
-  {
+  inline const double *getReducedCost() const {
     return solver_->getReducedCost();
   }
 
   /// Get pointer to array[getNumRows()] of row activity levels.
-  inline const double *getRowActivity() const
-  {
+  inline const double *getRowActivity() const {
     return solver_->getRowActivity();
   }
 
   /// Get current objective function value
-  inline double getCurrentObjValue() const
-  {
+  inline double getCurrentObjValue() const {
     return dblParam_[CbcCurrentObjectiveValue];
   }
   /// Get current minimization objective function value
-  inline double getCurrentMinimizationObjValue() const
-  {
+  inline double getCurrentMinimizationObjValue() const {
     return dblParam_[CbcCurrentMinimizationObjectiveValue];
   }
 
   /// Get best objective function value as minimization
-  inline double getMinimizationObjValue() const
-  {
-    return bestObjective_;
-  }
+  inline double getMinimizationObjValue() const { return bestObjective_; }
   /// Set best objective function value as minimization
-  inline void setMinimizationObjValue(double value)
-  {
-    bestObjective_ = value;
-  }
+  inline void setMinimizationObjValue(double value) { bestObjective_ = value; }
 
   /// Get best objective function value
-  inline double getObjValue() const
-  {
+  inline double getObjValue() const {
     return bestObjective_ * solver_->getObjSense();
   }
   /** Get best possible objective function value.
@@ -1529,13 +1254,11 @@ public:
     */
   double getBestPossibleObjValue() const;
   /// Set best objective function value
-  inline void setObjValue(double value)
-  {
+  inline void setObjValue(double value) {
     bestObjective_ = value * solver_->getObjSense();
   }
   /// Get solver objective function value (as minimization)
-  inline double getSolverObjValue() const
-  {
+  inline double getSolverObjValue() const {
     return solver_->getObjValue() * solver_->getObjSense();
   }
 
@@ -1545,10 +1268,7 @@ public:
       the search. If no solution is found, the method returns null.
     */
 
-  inline double *bestSolution() const
-  {
-    return bestSolution_;
-  }
+  inline double *bestSolution() const { return bestSolution_; }
   /** User callable setBestSolution.
         If check false does not check valid
         If true then sees if feasible and warns if objective value
@@ -1556,26 +1276,17 @@ public:
         If check true then does not save solution if not feasible
     */
   void setBestSolution(const double *solution, int numberColumns,
-    double objectiveValue, bool check = false);
+                       double objectiveValue, bool check = false);
 
   /// Get number of solutions
-  inline int getSolutionCount() const
-  {
-    return numberSolutions_;
-  }
+  inline int getSolutionCount() const { return numberSolutions_; }
 
   /// Set number of solutions (so heuristics will be different)
-  inline void setSolutionCount(int value)
-  {
-    numberSolutions_ = value;
-  }
+  inline void setSolutionCount(int value) { numberSolutions_ = value; }
   /// Number of saved solutions (including best)
   int numberSavedSolutions() const;
   /// Maximum number of extra saved solutions
-  inline int maximumSavedSolutions() const
-  {
-    return maximumSavedSolutions_;
-  }
+  inline int maximumSavedSolutions() const { return maximumSavedSolutions_; }
   /// Set maximum number of extra saved solutions
   void setMaximumSavedSolutions(int value);
   /// Return a saved solution (0==best) - NULL if off end
@@ -1593,115 +1304,72 @@ public:
         4 - trying to validate a solution
         5 - at end of search
     */
-  inline int phase() const
-  {
-    return phase_;
-  }
+  inline int phase() const { return phase_; }
 
   /// Get number of heuristic solutions
-  inline int getNumberHeuristicSolutions() const
-  {
+  inline int getNumberHeuristicSolutions() const {
     return numberHeuristicSolutions_;
   }
   /// Set number of heuristic solutions
-  inline void setNumberHeuristicSolutions(int value)
-  {
+  inline void setNumberHeuristicSolutions(int value) {
     numberHeuristicSolutions_ = value;
   }
 
   /// Set objective function sense (1 for min (default), -1 for max,)
-  inline void setObjSense(double s)
-  {
+  inline void setObjSense(double s) {
     dblParam_[CbcOptimizationDirection] = s;
     solver_->setObjSense(s);
   }
 
   /// Value of objective at continuous
-  inline double getContinuousObjective() const
-  {
+  inline double getContinuousObjective() const {
     return originalContinuousObjective_;
   }
-  inline void setContinuousObjective(double value)
-  {
+  inline void setContinuousObjective(double value) {
     originalContinuousObjective_ = value;
   }
   /// Number of infeasibilities at continuous
-  inline int getContinuousInfeasibilities() const
-  {
+  inline int getContinuousInfeasibilities() const {
     return continuousInfeasibilities_;
   }
-  inline void setContinuousInfeasibilities(int value)
-  {
+  inline void setContinuousInfeasibilities(int value) {
     continuousInfeasibilities_ = value;
   }
   /// Value of objective after root node cuts added
-  inline double rootObjectiveAfterCuts() const
-  {
-    return continuousObjective_;
-  }
+  inline double rootObjectiveAfterCuts() const { return continuousObjective_; }
   /// Sum of Changes to objective by first solve
-  inline double sumChangeObjective() const
-  {
-    return sumChangeObjective1_;
-  }
+  inline double sumChangeObjective() const { return sumChangeObjective1_; }
   /** Number of times global cuts violated.  When global cut pool then this
         should be kept for each cut and type of cut */
-  inline int numberGlobalViolations() const
-  {
-    return numberGlobalViolations_;
-  }
-  inline void clearNumberGlobalViolations()
-  {
-    numberGlobalViolations_ = 0;
-  }
+  inline int numberGlobalViolations() const { return numberGlobalViolations_; }
+  inline void clearNumberGlobalViolations() { numberGlobalViolations_ = 0; }
   /// Whether to force a resolve after takeOffCuts
-  inline bool resolveAfterTakeOffCuts() const
-  {
+  inline bool resolveAfterTakeOffCuts() const {
     return resolveAfterTakeOffCuts_;
   }
-  inline void setResolveAfterTakeOffCuts(bool yesNo)
-  {
+  inline void setResolveAfterTakeOffCuts(bool yesNo) {
     resolveAfterTakeOffCuts_ = yesNo;
   }
   /// Maximum number of rows
-  inline int maximumRows() const
-  {
-    return maximumRows_;
-  }
+  inline int maximumRows() const { return maximumRows_; }
   /// Work basis for temporary use
-  inline CoinWarmStartBasis &workingBasis()
-  {
-    return workingBasis_;
-  }
+  inline CoinWarmStartBasis &workingBasis() { return workingBasis_; }
   /// Get number of "iterations" to stop after
-  inline int getStopNumberIterations() const
-  {
-    return stopNumberIterations_;
-  }
+  inline int getStopNumberIterations() const { return stopNumberIterations_; }
   /// Set number of "iterations" to stop after
-  inline void setStopNumberIterations(int value)
-  {
+  inline void setStopNumberIterations(int value) {
     stopNumberIterations_ = value;
   }
   /// A pointer to model from CbcHeuristic
-  inline CbcModel *heuristicModel() const
-  {
-    return heuristicModel_;
-  }
+  inline CbcModel *heuristicModel() const { return heuristicModel_; }
   /// Set a pointer to model from CbcHeuristic
-  inline void setHeuristicModel(CbcModel *model)
-  {
-    heuristicModel_ = model;
-  }
+  inline void setHeuristicModel(CbcModel *model) { heuristicModel_ = model; }
   //@}
 
   /** \name Node selection */
   //@{
   // Comparison functions (which may be overridden by inheritance)
-  inline CbcCompareBase *nodeComparison() const
-  {
-    return nodeCompare_;
-  }
+  inline CbcCompareBase *nodeComparison() const { return nodeCompare_; }
   void setNodeComparison(CbcCompareBase *compare);
   void setNodeComparison(CbcCompareBase &compare);
   //@}
@@ -1709,8 +1377,7 @@ public:
   /** \name Problem feasibility checking */
   //@{
   // Feasibility functions (which may be overridden by inheritance)
-  inline CbcFeasibilityBase *problemFeasibility() const
-  {
+  inline CbcFeasibilityBase *problemFeasibility() const {
     return problemFeasibility_;
   }
   void setProblemFeasibility(CbcFeasibilityBase *feasibility);
@@ -1720,10 +1387,7 @@ public:
   /** \name Tree methods and subtree methods */
   //@{
   /// Tree method e.g. heap (which may be overridden by inheritance)
-  inline CbcTree *tree() const
-  {
-    return tree_;
-  }
+  inline CbcTree *tree() const { return tree_; }
   /// For modifying tree handling (original is cloned)
   void passInTreeHandler(CbcTree &tree);
   /** For passing in an CbcModel to do a sub Tree (with derived tree handlers).
@@ -1736,28 +1400,16 @@ public:
     */
   CbcModel *subTreeModel(OsiSolverInterface *solver = NULL) const;
   /// Returns number of times any subtree stopped on nodes, time etc
-  inline int numberStoppedSubTrees() const
-  {
-    return numberStoppedSubTrees_;
-  }
+  inline int numberStoppedSubTrees() const { return numberStoppedSubTrees_; }
   /// Says a sub tree was stopped
-  inline void incrementSubTreeStopped()
-  {
-    numberStoppedSubTrees_++;
-  }
+  inline void incrementSubTreeStopped() { numberStoppedSubTrees_++; }
   /** Whether to automatically do presolve before branch and bound (subTrees).
         0 - no
         1 - ordinary presolve
         2 - integer presolve (dodgy)
     */
-  inline int typePresolve() const
-  {
-    return presolve_;
-  }
-  inline void setTypePresolve(int value)
-  {
-    presolve_ = value;
-  }
+  inline int typePresolve() const { return presolve_; }
+  inline void setTypePresolve(int value) { presolve_ = value; }
 
   //@}
 
@@ -1768,13 +1420,9 @@ public:
   //@{
 
   /// Get the current branching decision method.
-  inline CbcBranchDecision *branchingMethod() const
-  {
-    return branchingMethod_;
-  }
+  inline CbcBranchDecision *branchingMethod() const { return branchingMethod_; }
   /// Set the branching decision method.
-  inline void setBranchingMethod(CbcBranchDecision *method)
-  {
+  inline void setBranchingMethod(CbcBranchDecision *method) {
     delete branchingMethod_;
     branchingMethod_ = method->clone();
   }
@@ -1782,16 +1430,12 @@ public:
 
       \overload
     */
-  inline void setBranchingMethod(CbcBranchDecision &method)
-  {
+  inline void setBranchingMethod(CbcBranchDecision &method) {
     delete branchingMethod_;
     branchingMethod_ = method.clone();
   }
   /// Get the current cut modifier method
-  inline CbcCutModifier *cutModifier() const
-  {
-    return cutModifier_;
-  }
+  inline CbcCutModifier *cutModifier() const { return cutModifier_; }
   /// Set the cut modifier method
   void setCutModifier(CbcCutModifier *modifier);
   /** Set the cut modifier method
@@ -1810,53 +1454,25 @@ public:
         2 - branched to a solution
         3 - no solution but many nodes
     */
-  inline int stateOfSearch() const
-  {
-    return stateOfSearch_;
-  }
-  inline void setStateOfSearch(int state)
-  {
-    stateOfSearch_ = state;
-  }
+  inline int stateOfSearch() const { return stateOfSearch_; }
+  inline void setStateOfSearch(int state) { stateOfSearch_ = state; }
   /// Strategy worked out - mainly at root node for use by CbcNode
-  inline int searchStrategy() const
-  {
-    return searchStrategy_;
-  }
+  inline int searchStrategy() const { return searchStrategy_; }
   /// Set strategy worked out - mainly at root node for use by CbcNode
-  inline void setSearchStrategy(int value)
-  {
-    searchStrategy_ = value;
-  }
+  inline void setSearchStrategy(int value) { searchStrategy_ = value; }
   /// Stong branching strategy
-  inline int strongStrategy() const
-  {
-    return strongStrategy_;
-  }
+  inline int strongStrategy() const { return strongStrategy_; }
   /// Set strong branching strategy
-  inline void setStrongStrategy(int value)
-  {
-    strongStrategy_ = value;
-  }
+  inline void setStrongStrategy(int value) { strongStrategy_ = value; }
 
   /// Get the number of cut generators
-  inline int numberCutGenerators() const
-  {
-    return numberCutGenerators_;
-  }
+  inline int numberCutGenerators() const { return numberCutGenerators_; }
   /// Get the list of cut generators
-  inline CbcCutGenerator **cutGenerators() const
-  {
-    return generator_;
-  }
-  ///Get the specified cut generator
-  inline CbcCutGenerator *cutGenerator(int i) const
-  {
-    return generator_[i];
-  }
-  ///Get the specified cut generator before any changes
-  inline CbcCutGenerator *virginCutGenerator(int i) const
-  {
+  inline CbcCutGenerator **cutGenerators() const { return generator_; }
+  /// Get the specified cut generator
+  inline CbcCutGenerator *cutGenerator(int i) const { return generator_[i]; }
+  /// Get the specified cut generator before any changes
+  inline CbcCutGenerator *virginCutGenerator(int i) const {
     return virginGenerator_[i];
   }
   /** Add one generator - up to user to delete generators.
@@ -1865,13 +1481,14 @@ public:
         meaning as positive but they may be switched off (-> -100) by code if
         not many cuts generated at continuous.  -99 is just done at root.
         Name is just for printout.
-        If depth >0 overrides how often generator is called (if howOften==-1 or >0).
+        If depth >0 overrides how often generator is called (if howOften==-1 or
+     >0).
     */
-  void addCutGenerator(CglCutGenerator *generator,
-    int howOften = 1, const char *name = NULL,
-    bool normal = true, bool atSolution = false,
-    bool infeasible = false, int howOftenInSub = -100,
-    int whatDepth = -1, int whatDepthInSub = -1);
+  void addCutGenerator(CglCutGenerator *generator, int howOften = 1,
+                       const char *name = NULL, bool normal = true,
+                       bool atSolution = false, bool infeasible = false,
+                       int howOftenInSub = -100, int whatDepth = -1,
+                       int whatDepthInSub = -1);
   //@}
   /** \name Strategy and sub models
 
@@ -1880,30 +1497,21 @@ public:
   //@{
 
   /// Get the current strategy
-  inline CbcStrategy *strategy() const
-  {
-    return strategy_;
-  }
+  inline CbcStrategy *strategy() const { return strategy_; }
   /// Set the strategy. Clones
   void setStrategy(CbcStrategy &strategy);
   /// Set the strategy. assigns
-  inline void setStrategy(CbcStrategy *strategy)
-  {
-    strategy_ = strategy;
-  }
+  inline void setStrategy(CbcStrategy *strategy) { strategy_ = strategy; }
   /// Get the current parent model
-  inline CbcModel *parentModel() const
-  {
-    return parentModel_;
-  }
+  inline CbcModel *parentModel() const { return parentModel_; }
   /// Set the parent model
-  inline void setParentModel(CbcModel &parentModel)
-  {
+  inline void setParentModel(CbcModel &parentModel) {
     parentModel_ = &parentModel;
   }
   /// See if in sub tree
-  inline bool inSmallBranchAndBound() const
-  { return (specialOptions_&2048) != 0 && parentModel_;}
+  inline bool inSmallBranchAndBound() const {
+    return (specialOptions_ & 2048) != 0 && parentModel_;
+  }
   //@}
 
   /** \name Heuristics and priorities */
@@ -1913,32 +1521,17 @@ public:
       The name is just used for print messages.
     */
   void addHeuristic(CbcHeuristic *generator, const char *name = NULL,
-    int before = -1);
-  ///Get the specified heuristic
-  inline CbcHeuristic *heuristic(int i) const
-  {
-    return heuristic_[i];
-  }
+                    int before = -1);
+  /// Get the specified heuristic
+  inline CbcHeuristic *heuristic(int i) const { return heuristic_[i]; }
   /// Get the number of heuristics
-  inline int numberHeuristics() const
-  {
-    return numberHeuristics_;
-  }
+  inline int numberHeuristics() const { return numberHeuristics_; }
   /// Set the number of heuristics
-  inline void setNumberHeuristics(int value)
-  {
-    numberHeuristics_ = value;
-  }
+  inline void setNumberHeuristics(int value) { numberHeuristics_ = value; }
   /// Pointer to heuristic solver which found last solution (or NULL)
-  inline CbcHeuristic *lastHeuristic() const
-  {
-    return lastHeuristic_;
-  }
+  inline CbcHeuristic *lastHeuristic() const { return lastHeuristic_; }
   /// set last heuristic which found a solution
-  inline void setLastHeuristic(CbcHeuristic *last)
-  {
-    lastHeuristic_ = last;
-  }
+  inline void setLastHeuristic(CbcHeuristic *last) { lastHeuristic_ = last; }
 
   /** Pass in branching priorities.
 
@@ -1961,8 +1554,7 @@ public:
   void passInPriorities(const int *priorities, bool ifNotSimpleIntegers);
 
   /// Returns priority level for an object (or 1000 if no priorities exist)
-  inline int priority(int sequence) const
-  {
+  inline int priority(int sequence) const {
     return object_[sequence]->priority();
   }
 
@@ -1973,10 +1565,7 @@ public:
   void passInEventHandler(const CbcEventHandler *eventHandler);
 
   /*! \brief Retrieve a pointer to the event handler */
-  inline CbcEventHandler *getEventHandler() const
-  {
-    return (eventHandler_);
-  }
+  inline CbcEventHandler *getEventHandler() const { return (eventHandler_); }
 
   //@}
 
@@ -2007,8 +1596,7 @@ public:
     */
   void passInSolverCharacteristics(OsiBabSolver *solverCharacteristics);
   /// Get solver characteristics
-  inline const OsiBabSolver *solverCharacteristics() const
-  {
+  inline const OsiBabSolver *solverCharacteristics() const {
     return solverCharacteristics_;
   }
   //@}
@@ -2021,46 +1609,27 @@ public:
   void passInMessageHandler(CoinMessageHandler *handler);
   /// Set language
   void newLanguage(CoinMessages::Language language);
-  inline void setLanguage(CoinMessages::Language language)
-  {
+  inline void setLanguage(CoinMessages::Language language) {
     newLanguage(language);
   }
   /// Return handler
-  inline CoinMessageHandler *messageHandler() const
-  {
-    return handler_;
-  }
+  inline CoinMessageHandler *messageHandler() const { return handler_; }
   /// Return messages
-  inline CoinMessages &messages()
-  {
-    return messages_;
-  }
+  inline CoinMessages &messages() { return messages_; }
   /// Return pointer to messages
-  inline CoinMessages *messagesPointer()
-  {
-    return &messages_;
-  }
+  inline CoinMessages *messagesPointer() { return &messages_; }
   /// Set log level
   void setLogLevel(int value);
   /// Get log level
-  inline int logLevel() const
-  {
-    return handler_->logLevel();
-  }
+  inline int logLevel() const { return handler_->logLevel(); }
   /** Set flag to say if handler_ is the default handler.
 
       The default handler is deleted when the model is deleted. Other
       handlers (supplied by the client) will not be deleted.
     */
-  inline void setDefaultHandler(bool yesNo)
-  {
-    defaultHandler_ = yesNo;
-  }
+  inline void setDefaultHandler(bool yesNo) { defaultHandler_ = yesNo; }
   /// Check default handler
-  inline bool defaultHandler() const
-  {
-    return defaultHandler_;
-  }
+  inline bool defaultHandler() const { return defaultHandler_; }
   //@}
   //---------------------------------------------------------------------------
   ///@name Specialized
@@ -2069,77 +1638,46 @@ public:
   /**
         Set special options
         0 bit (1) - check if cuts valid (if on debugger list)
-        1 bit (2) - use current basis to check integer solution (rather than all slack)
-        2 bit (4) - don't check integer solution (by solving LP)
-        3 bit (8) - fast analyze
-        4 bit (16) - non-linear model - so no well defined CoinPackedMatrix
-        5 bit (32) - keep names
-        6 bit (64) - try for dominated columns
-        7 bit (128) - SOS type 1 but all declared integer
-        8 bit (256) - Set to say solution just found, unset by doing cuts
-        9 bit (512) - Try reduced model after 100 nodes
-        10 bit (1024) - Switch on some heuristics even if seems unlikely
-        11 bit (2048) - Mark as in small branch and bound
-        12 bit (4096) - Funny cuts so do slow way (in some places)
-        13 bit (8192) - Funny cuts so do slow way (in other places)
-        14 bit (16384) - Use Cplex! for fathoming
-        15 bit (32768) - Try reduced model after 0 nodes
-        16 bit (65536) - Original model had integer bounds
-        17 bit (131072) - Perturbation switched off
-        18 bit (262144) - donor CbcModel
-        19 bit (524288) - recipient CbcModel
+        1 bit (2) - use current basis to check integer solution (rather than all
+     slack) 2 bit (4) - don't check integer solution (by solving LP) 3 bit (8) -
+     fast analyze 4 bit (16) - non-linear model - so no well defined
+     CoinPackedMatrix 5 bit (32) - keep names 6 bit (64) - try for dominated
+     columns 7 bit (128) - SOS type 1 but all declared integer 8 bit (256) - Set
+     to say solution just found, unset by doing cuts 9 bit (512) - Try reduced
+     model after 100 nodes 10 bit (1024) - Switch on some heuristics even if
+     seems unlikely 11 bit (2048) - Mark as in small branch and bound 12 bit
+     (4096) - Funny cuts so do slow way (in some places) 13 bit (8192) - Funny
+     cuts so do slow way (in other places) 14 bit (16384) - Use Cplex! for
+     fathoming 15 bit (32768) - Try reduced model after 0 nodes 16 bit (65536) -
+     Original model had integer bounds 17 bit (131072) - Perturbation switched
+     off 18 bit (262144) - donor CbcModel 19 bit (524288) - recipient CbcModel
           20 bit (1048576) - waiting for sub model to return
-	22 bit (4194304) - do not initialize random seed in solver (user has)
-	23 bit (8388608) - leave solver_ with cuts
-	24 bit (16777216) - just get feasible if no cutoff
-	25 bit (33554432) - feasibility pump after root cuts
-	26 bit (67108864) - child model but going for complete search
+        22 bit (4194304) - do not initialize random seed in solver (user has)
+        23 bit (8388608) - leave solver_ with cuts
+        24 bit (16777216) - just get feasible if no cutoff
+        25 bit (33554432) - feasibility pump after root cuts
+        26 bit (67108864) - child model but going for complete search
     */
-  inline void setSpecialOptions(int value)
-  {
-    specialOptions_ = value;
-  }
+  inline void setSpecialOptions(int value) { specialOptions_ = value; }
   /// Get special options
-  inline int specialOptions() const
-  {
-    return specialOptions_;
-  }
+  inline int specialOptions() const { return specialOptions_; }
   /// Set random seed
-  inline void setRandomSeed(unsigned int value)
-  {
-    randomSeed_ = value;
-  }
+  inline void setRandomSeed(unsigned int value) { randomSeed_ = value; }
   /// Get random seed
-  inline unsigned int getRandomSeed() const
-  {
-    return randomSeed_;
-  }
+  inline unsigned int getRandomSeed() const { return randomSeed_; }
   /// Set multiple root tries
-  inline void setMultipleRootTries(int value)
-  {
-    multipleRootTries_ = value;
-  }
+  inline void setMultipleRootTries(int value) { multipleRootTries_ = value; }
   /// Get multiple root tries
-  inline int getMultipleRootTries() const
-  {
-    return multipleRootTries_;
-  }
+  inline int getMultipleRootTries() const { return multipleRootTries_; }
   /// Tell model to stop on event
-  inline void sayEventHappened()
-  {
-    eventHappened_ = true;
-  }
+  inline void sayEventHappened() { eventHappened_ = true; }
   /// Says if normal solver i.e. has well defined CoinPackedMatrix
-  inline bool normalSolver() const
-  {
-    return (specialOptions_ & 16) == 0;
-  }
+  inline bool normalSolver() const { return (specialOptions_ & 16) == 0; }
   /** Says if model is sitting there waiting for mini branch and bound to finish
-	This is because an event handler may only have access to parent model in
-	mini branch and bound
+        This is because an event handler may only have access to parent model in
+        mini branch and bound
     */
-  inline bool waitingForMiniBranchAndBound() const
-  {
+  inline bool waitingForMiniBranchAndBound() const {
     return (specialOptions_ & 1048576) != 0;
   }
   /** Set more special options
@@ -2148,32 +1686,26 @@ public:
         2048,4096 breaking out of cuts
         8192 slowly increase minimum drop
         16384 gomory
-	32768 more heuristics in sub trees
-	65536 no cuts in preprocessing
+        32768 more heuristics in sub trees
+        65536 no cuts in preprocessing
         131072 Time limits elapsed
         18 bit (262144) - Perturb fathom nodes
         19 bit (524288) - No limit on fathom nodes
         20 bit (1048576) - Reduce sum of infeasibilities before cuts
         21 bit (2097152) - Reduce sum of infeasibilities after cuts
-	22 bit (4194304) - Conflict analysis
-	23 bit (8388608) - Conflict analysis - temporary bit
-	24 bit (16777216) - Add cutoff as LP constraint (out)
-	25 bit (33554432) - diving/reordering
-	26 bit (67108864) - load global cuts from file
-	27 bit (134217728) - append binding global cuts to file
-	28 bit (268435456) - idiot branching
+        22 bit (4194304) - Conflict analysis
+        23 bit (8388608) - Conflict analysis - temporary bit
+        24 bit (16777216) - Add cutoff as LP constraint (out)
+        25 bit (33554432) - diving/reordering
+        26 bit (67108864) - load global cuts from file
+        27 bit (134217728) - append binding global cuts to file
+        28 bit (268435456) - idiot branching
         29 bit (536870912) - don't make fake objective
-	30 bit (1073741824) - Funny SOS or similar - be careful
+        30 bit (1073741824) - Funny SOS or similar - be careful
     */
-  inline void setMoreSpecialOptions(int value)
-  {
-    moreSpecialOptions_ = value;
-  }
+  inline void setMoreSpecialOptions(int value) { moreSpecialOptions_ = value; }
   /// Get more special options
-  inline int moreSpecialOptions() const
-  {
-    return moreSpecialOptions_;
-  }
+  inline int moreSpecialOptions() const { return moreSpecialOptions_; }
   /** Set more more special options
 	0 bit (1) - find switching variables
 	1 bit (2) - using fake objective until solution
@@ -2202,45 +1734,32 @@ public:
     moreSpecialOptions2_ = value;
   }
   /// Get more special options2
-  inline int moreSpecialOptions2() const
-  {
-    return moreSpecialOptions2_;
-  }
+  inline int moreSpecialOptions2() const { return moreSpecialOptions2_; }
   /// Set cutoff as constraint
-  inline void setCutoffAsConstraint(bool yesNo)
-  {
+  inline void setCutoffAsConstraint(bool yesNo) {
     cutoffRowNumber_ = (yesNo) ? -2 : -1;
   }
   /// Set time method
-  inline void setUseElapsedTime(bool yesNo)
-  {
+  inline void setUseElapsedTime(bool yesNo) {
     if (yesNo)
       moreSpecialOptions_ |= 131072;
     else
       moreSpecialOptions_ &= ~131072;
   }
   /// Get time method
-  inline bool useElapsedTime() const
-  {
+  inline bool useElapsedTime() const {
     return (moreSpecialOptions_ & 131072) != 0;
   }
   /// Get useful temporary pointer
-  inline void *temporaryPointer() const
-  {
-    return temporaryPointer_;
-  }
+  inline void *temporaryPointer() const { return temporaryPointer_; }
   /// Set useful temporary pointer
-  inline void setTemporaryPointer(void *pointer)
-  {
+  inline void setTemporaryPointer(void *pointer) {
     temporaryPointer_ = pointer;
   }
   /// Go to dantzig pivot selection if easy problem (clp only)
   void goToDantzig(int numberNodes, ClpDualRowPivot *&savePivotMethod);
   /// Now we may not own objects - just point to solver's objects
-  inline bool ownObjects() const
-  {
-    return ownObjects_;
-  }
+  inline bool ownObjects() const { return ownObjects_; }
   /// Check original model before it gets messed up
   void checkModel();
   //@}
@@ -2275,9 +1794,9 @@ public:
       continue to exist (as, for example, when branchAndBound has finished
       and you want to hang on to the answer).
     */
-  inline void setModelOwnsSolver(bool ourSolver)
-  {
-    ownership_ = ourSolver ? (ownership_ | 0x80000000) : (ownership_ & (~0x80000000));
+  inline void setModelOwnsSolver(bool ourSolver) {
+    ownership_ =
+        ourSolver ? (ownership_ | 0x80000000) : (ownership_ & (~0x80000000));
   }
 
   /*! \brief Get ownership of solver
@@ -2285,10 +1804,7 @@ public:
       A return value of true means that CbcModel owns the solver and will
       take responsibility for deleting it when that becomes necessary.
     */
-  inline bool modelOwnsSolver()
-  {
-    return ((ownership_ & 0x80000000) != 0);
-  }
+  inline bool modelOwnsSolver() { return ((ownership_ & 0x80000000) != 0); }
 
   /** Copy constructor .
       If cloneHandler is true then message handler is cloned
@@ -2305,40 +1821,30 @@ public:
   virtual ~CbcModel();
 
   /// Returns solver - has current state
-  inline OsiSolverInterface *solver() const
-  {
-    return solver_;
-  }
+  inline OsiSolverInterface *solver() const { return solver_; }
 
   /// Returns current solver - sets new one
-  inline OsiSolverInterface *swapSolver(OsiSolverInterface *solver)
-  {
+  inline OsiSolverInterface *swapSolver(OsiSolverInterface *solver) {
     OsiSolverInterface *returnSolver = solver_;
     solver_ = solver;
     return returnSolver;
   }
 
   /// Returns solver with continuous state
-  inline OsiSolverInterface *continuousSolver() const
-  {
+  inline OsiSolverInterface *continuousSolver() const {
     return continuousSolver_;
   }
 
   /// Create solver with continuous state
-  inline void createContinuousSolver()
-  {
-    continuousSolver_ = solver_->clone();
-  }
+  inline void createContinuousSolver() { continuousSolver_ = solver_->clone(); }
   /// Clear solver with continuous state
-  inline void clearContinuousSolver()
-  {
+  inline void clearContinuousSolver() {
     delete continuousSolver_;
     continuousSolver_ = NULL;
   }
 
   /// A copy of the solver, taken at constructor or by saveReferenceSolver
-  inline OsiSolverInterface *referenceSolver() const
-  {
+  inline OsiSolverInterface *referenceSolver() const {
     return referenceSolver_;
   }
 
@@ -2355,10 +1861,10 @@ public:
   /// Clears out as much as possible (except solver)
   void gutsOfDestructor();
   /** Clears out enough to reset CbcModel as if no branch and bound done
-     */
+   */
   void gutsOfDestructor2();
   /** Clears out enough to reset CbcModel cutoff etc
-     */
+   */
   void resetModel();
   /** Most of copy constructor
         mode - 0 copy but don't delete before
@@ -2372,33 +1878,19 @@ public:
 
   ///@name Multithreading
   //@{
-  /// Indicates whether Cbc library has been compiled with multithreading support
+  /// Indicates whether Cbc library has been compiled with multithreading
+  /// support
   static bool haveMultiThreadSupport();
   /// Get pointer to masterthread
-  CbcThread *masterThread() const
-  {
-    return masterThread_;
-  }
+  CbcThread *masterThread() const { return masterThread_; }
   /// Get pointer to walkback
-  CbcNodeInfo **walkback() const
-  {
-    return walkback_;
-  }
+  CbcNodeInfo **walkback() const { return walkback_; }
   /// Get number of threads
-  inline int getNumberThreads() const
-  {
-    return numberThreads_;
-  }
+  inline int getNumberThreads() const { return numberThreads_; }
   /// Set number of threads
-  inline void setNumberThreads(int value)
-  {
-    numberThreads_ = value;
-  }
+  inline void setNumberThreads(int value) { numberThreads_ = value; }
   /// Get thread mode
-  inline int getThreadMode() const
-  {
-    return threadMode_;
-  }
+  inline int getThreadMode() const { return threadMode_; }
   /** Set thread mode
         always use numberThreads for branching
         1 set then deterministic
@@ -2408,18 +1900,14 @@ public:
         8 set and numberThreads==0 do all heuristics at once
         default is 0
     */
-  inline void setThreadMode(int value)
-  {
-    threadMode_ = value;
-  }
+  inline void setThreadMode(int value) { threadMode_ = value; }
   /** Return
         -2 if deterministic threaded and main thread
         -1 if deterministic threaded and serial thread
         0 if serial
         1 if opportunistic threaded
     */
-  inline int parallelMode() const
-  {
+  inline int parallelMode() const {
     if (!numberThreads_) {
       if ((threadMode_ & 1) == 0)
         return 0;
@@ -2434,10 +1922,7 @@ public:
     }
   }
   /// Thread stuff for master
-  inline CbcBaseModel *master() const
-  {
-    return master_;
-  }
+  inline CbcBaseModel *master() const { return master_; }
   /// From here to end of section - code in CbcThread.cpp until class changed
   /// Returns true if locked
   bool isLocked() const;
@@ -2466,22 +1951,17 @@ public:
     */
   void moveToModel(CbcModel *baseModel, int mode);
   /// Split up nodes
-  int splitModel(int numberModels, CbcModel **model,
-    int numberNodes);
+  int splitModel(int numberModels, CbcModel **model, int numberNodes);
   /// Start threads
   void startSplitModel(int numberIterations);
   /// Merge models
-  void mergeModels(int numberModel, CbcModel **model,
-    int numberNodes);
+  void mergeModels(int numberModel, CbcModel **model, int numberNodes);
   //@}
 
   ///@name semi-private i.e. users should not use
   //@{
   /// Get how many Nodes it took to solve the problem.
-  int getNodeCount2() const
-  {
-    return numberNodes2_;
-  }
+  int getNodeCount2() const { return numberNodes2_; }
   /// Set pointers for speed
   void setPointers(const OsiSolverInterface *solver);
   /** Perform reduced cost fixing
@@ -2510,11 +1990,10 @@ public:
   /** Encapsulates choosing a variable -
         anyAction -2, infeasible (-1 round again), 0 done
     */
-  int chooseBranch(CbcNode *&newNode, int numberPassesLeft,
-    CbcNode *oldNode, OsiCuts &cuts,
-    bool &resolved, CoinWarmStartBasis *lastws,
-    const double *lowerBefore, const double *upperBefore,
-    OsiSolverBranch *&branches);
+  int chooseBranch(CbcNode *&newNode, int numberPassesLeft, CbcNode *oldNode,
+                   OsiCuts &cuts, bool &resolved, CoinWarmStartBasis *lastws,
+                   const double *lowerBefore, const double *upperBefore,
+                   OsiSolverBranch *&branches);
 
   /** Return an empty basis object of the specified size
 
@@ -2535,9 +2014,8 @@ public:
       On input current cuts are cuts and newCuts
       on exit current cuts will be correct.  Returns number dropped
     */
-  int takeOffCuts(OsiCuts &cuts,
-    bool allowResolve, OsiCuts *saveCuts,
-    int numberNewCuts = 0, const OsiRowCut **newCuts = NULL);
+  int takeOffCuts(OsiCuts &cuts, bool allowResolve, OsiCuts *saveCuts,
+                  int numberNewCuts = 0, const OsiRowCut **newCuts = NULL);
 
   /** Determine and install the active cuts that need to be added for
       the current subproblem
@@ -2574,7 +2052,7 @@ public:
         Also sets downstream nodes (lower if force 1, upper if 2)
     */
   void previousBounds(CbcNode *node, CbcNodeInfo *where, int iColumn,
-    double &lower, double &upper, int force);
+                      double &lower, double &upper, int force);
   /** Set objective value in a node.  This is separated out so that
        odd solvers can use.  It may look at extra information in
        solverCharacteriscs_ and will also use bound from parent node
@@ -2597,11 +2075,10 @@ public:
         correspond to integerVariable()[i]
         User must allocate arrays before call
     */
-  void fillPseudoCosts(double *downCosts, double *upCosts,
-    int *priority = NULL,
-    int *numberDown = NULL, int *numberUp = NULL,
-    int *numberDownInfeasible = NULL,
-    int *numberUpInfeasible = NULL) const;
+  void fillPseudoCosts(double *downCosts, double *upCosts, int *priority = NULL,
+                       int *numberDown = NULL, int *numberUp = NULL,
+                       int *numberDownInfeasible = NULL,
+                       int *numberUpInfeasible = NULL) const;
   /** Do heuristics at root.
         0 - don't delete
         1 - delete
@@ -2611,212 +2088,130 @@ public:
   /// Adjust heuristics based on model
   void adjustHeuristics();
   /// Get the hotstart solution
-  inline const double *hotstartSolution() const
-  {
-    return hotstartSolution_;
-  }
+  inline const double *hotstartSolution() const { return hotstartSolution_; }
   /// Get the hotstart priorities
-  inline const int *hotstartPriorities() const
-  {
-    return hotstartPriorities_;
-  }
+  inline const int *hotstartPriorities() const { return hotstartPriorities_; }
 
   /// Return the list of cuts initially collected for this subproblem
-  inline CbcCountRowCut **addedCuts() const
-  {
-    return addedCuts_;
-  }
+  inline CbcCountRowCut **addedCuts() const { return addedCuts_; }
   /// Number of entries in the list returned by #addedCuts()
-  inline int currentNumberCuts() const
-  {
-    return currentNumberCuts_;
-  }
+  inline int currentNumberCuts() const { return currentNumberCuts_; }
   /// Global cuts
-  inline CbcRowCuts *globalCuts()
-  {
-    return &globalCuts_;
-  }
+  inline CbcRowCuts *globalCuts() { return &globalCuts_; }
   /// Get rid of global cuts
-  inline void zapGlobalCuts()
-  {
-    globalCuts_ = CbcRowCuts();
-  }
-  /// Copy and set a pointer to a row cut which will be added instead of normal branching.
+  inline void zapGlobalCuts() { globalCuts_ = CbcRowCuts(); }
+  /// Copy and set a pointer to a row cut which will be added instead of normal
+  /// branching.
   void setNextRowCut(const OsiRowCut &cut);
   /// Get a pointer to current node (be careful)
-  inline CbcNode *currentNode() const
-  {
-    return currentNode_;
-  }
+  inline CbcNode *currentNode() const { return currentNode_; }
 #ifdef SAVE_NODE_INFO
   /// Get a pointer to parent node (be very very careful)
-  inline CbcNode *parentNode() const
-  {
-    return parentNode_;
-  }
+  inline CbcNode *parentNode() const { return parentNode_; }
 #endif
   /// Delete a node and possibly null out currentNode_
-  void deleteNode(CbcNode * node);
+  void deleteNode(CbcNode *node);
   /// Get a pointer to probing info
-  inline CglTreeProbingInfo *probingInfo() const
-  {
-    return probingInfo_;
-  }
+  inline CglTreeProbingInfo *probingInfo() const { return probingInfo_; }
   /// Thread specific random number generator
-  inline CoinThreadRandom *randomNumberGenerator()
-  {
+  inline CoinThreadRandom *randomNumberGenerator() {
     return &randomNumberGenerator_;
   }
   /// Set the number of iterations done in strong branching.
-  inline void setNumberStrongIterations(int number)
-  {
+  inline void setNumberStrongIterations(int number) {
     numberStrongIterations_ = number;
   }
   /// Get the number of iterations done in strong branching.
-  inline int numberStrongIterations() const
-  {
-    return numberStrongIterations_;
-  }
+  inline int numberStrongIterations() const { return numberStrongIterations_; }
   /// Get maximum number of iterations (designed to be used in heuristics)
-  inline int maximumNumberIterations() const
-  {
+  inline int maximumNumberIterations() const {
     return maximumNumberIterations_;
   }
   /// Set maximum number of iterations (designed to be used in heuristics)
-  inline void setMaximumNumberIterations(int value)
-  {
+  inline void setMaximumNumberIterations(int value) {
     maximumNumberIterations_ = value;
   }
 #ifdef CBC_HAS_NAUTY
   /// Symmetry information
-  inline CbcSymmetry *symmetryInfo() const
-  {
-    return symmetryInfo_;
-  }
+  inline CbcSymmetry *symmetryInfo() const { return symmetryInfo_; }
   /// Set symmetry information
-  inline void setSymmetryInfo(CbcSymmetry * info)
-  {
-    symmetryInfo_ = info;
-  }
+  inline void setSymmetryInfo(CbcSymmetry *info) { symmetryInfo_ = info; }
   /// get rid of all
   void zapSymmetry();
   /// Root symmetry information
-  inline CbcSymmetry *rootSymmetryInfo() const
-  {
-    return rootSymmetryInfo_;
-  }
+  inline CbcSymmetry *rootSymmetryInfo() const { return rootSymmetryInfo_; }
   /// get rid of all
   void zapRootSymmetry();
 #endif
   /// Set depth for fast nodes
-  inline void setFastNodeDepth(int value)
-  {
-    fastNodeDepth_ = value;
-  }
+  inline void setFastNodeDepth(int value) { fastNodeDepth_ = value; }
   /// Get depth for fast nodes
-  inline int fastNodeDepth() const
-  {
-    return fastNodeDepth_;
-  }
+  inline int fastNodeDepth() const { return fastNodeDepth_; }
   /// Get anything with priority >= this can be treated as continuous
-  inline int continuousPriority() const
-  {
-    return continuousPriority_;
-  }
+  inline int continuousPriority() const { return continuousPriority_; }
   /// Set anything with priority >= this can be treated as continuous
-  inline void setContinuousPriority(int value)
-  {
-    continuousPriority_ = value;
-  }
-  inline void incrementExtra(int nodes, int iterations, int fathoms = 1)
-  {
+  inline void setContinuousPriority(int value) { continuousPriority_ = value; }
+  inline void incrementExtra(int nodes, int iterations, int fathoms = 1) {
     numberExtraNodes_ += nodes;
     numberExtraIterations_ += iterations;
     numberFathoms_ += fathoms;
   }
   /// Zero extra
-  inline void zeroExtra()
-  {
+  inline void zeroExtra() {
     numberExtraNodes_ = 0;
     numberExtraIterations_ = 0;
     numberFathoms_ = 0;
   }
   /// Number of extra iterations
-  inline int numberExtraIterations() const
-  {
-    return numberExtraIterations_;
-  }
+  inline int numberExtraIterations() const { return numberExtraIterations_; }
   /// Increment strong info
   void incrementStrongInfo(int numberTimes, int numberIterations,
-    int numberFixed, bool ifInfeasible);
+                           int numberFixed, bool ifInfeasible);
   /// Return strong info
-  inline const int *strongInfo() const
-  {
-    return strongInfo_;
-  }
+  inline const int *strongInfo() const { return strongInfo_; }
 
   /// Return mutable strong info
-  inline int *mutableStrongInfo()
-  {
-    return strongInfo_;
-  }
+  inline int *mutableStrongInfo() { return strongInfo_; }
   /// Get stored row cuts for donor/recipient CbcModel
-  CglStored *storedRowCuts() const
-  {
-    return storedRowCuts_;
-  }
+  CglStored *storedRowCuts() const { return storedRowCuts_; }
   /// Set stored row cuts for donor/recipient CbcModel
-  void setStoredRowCuts(CglStored *cuts)
-  {
-    storedRowCuts_ = cuts;
-  }
+  void setStoredRowCuts(CglStored *cuts) { storedRowCuts_ = cuts; }
   /// Says whether all dynamic integers
-  inline bool allDynamic() const
-  {
-    return ((ownership_ & 0x40000000) != 0);
-  }
+  inline bool allDynamic() const { return ((ownership_ & 0x40000000) != 0); }
   /// Create C++ lines to get to current state
   void generateCpp(FILE *fp, int options);
   /// Generate an OsiBranchingInformation object
   OsiBranchingInformation usefulInformation() const;
   /** Warm start object produced by heuristic or strong branching
 
-        If get a valid integer solution outside branch and bound then it can take
-        a reasonable time to solve LP which produces clean solution.  If this object has
-        any size then it will be used in solve.
+        If get a valid integer solution outside branch and bound then it can
+     take a reasonable time to solve LP which produces clean solution.  If this
+     object has any size then it will be used in solve.
     */
-  inline void setBestSolutionBasis(const CoinWarmStartBasis &bestSolutionBasis)
-  {
+  inline void
+  setBestSolutionBasis(const CoinWarmStartBasis &bestSolutionBasis) {
     bestSolutionBasis_ = bestSolutionBasis;
   }
   /// Redo walkback arrays
   void redoWalkBack();
   //@}
 
-  void setMIPStart(const std::vector< std::pair< std::string, double > > &mipstart)
-  {
+  void
+  setMIPStart(const std::vector<std::pair<std::string, double>> &mipstart) {
     this->mipStart_ = mipstart;
   }
 
   /** if original column names will be preserved in preprocessed problem
    */
-  void setKeepNamesPreproc( bool _keep ) 
-  {
-    this->keepNamesPreproc = _keep;
-  }
+  void setKeepNamesPreproc(bool _keep) { this->keepNamesPreproc = _keep; }
 
-  bool getKeepNamesPreproc() const 
-  {
-    return keepNamesPreproc;
-  }
+  bool getKeepNamesPreproc() const { return keepNamesPreproc; }
 
-  /** may be safer to use this overload method: c++ string libraries 
-     * implementation may not be binary compatible */
+  /** may be safer to use this overload method: c++ string libraries
+   * implementation may not be binary compatible */
   void setMIPStart(int count, const char **colNames, const double colValues[]);
 
-
-  const std::vector< std::pair< std::string, double > > &getMIPStart()
-  {
+  const std::vector<std::pair<std::string, double>> &getMIPStart() {
     return this->mipStart_;
   }
 
@@ -2898,9 +2293,10 @@ private:
     */
   mutable const double *testSolution_;
   /** MIPstart values
-      values for integer variables which will be converted to a complete integer initial feasible solution
+      values for integer variables which will be converted to a complete integer
+     initial feasible solution
     */
-  std::vector< std::pair< std::string, double > > mipStart_;
+  std::vector<std::pair<std::string, double>> mipStart_;
 
   /** keepNamesPreproc
    *  if variables names will be preserved in the pre-processed problem
@@ -2910,9 +2306,9 @@ private:
 
   /** Warm start object produced by heuristic or strong branching
 
-        If get a valid integer solution outside branch and bound then it can take
-        a reasonable time to solve LP which produces clean solution.  If this object has
-        any size then it will be used in solve.
+        If get a valid integer solution outside branch and bound then it can
+     take a reasonable time to solve LP which produces clean solution.  If this
+     object has any size then it will be used in solve.
     */
   CoinWarmStartBasis bestSolutionBasis_;
   /// Global cuts
@@ -3047,29 +2443,23 @@ private:
   /**
         Special options
         0 bit (1) - check if cuts valid (if on debugger list)
-        1 bit (2) - use current basis to check integer solution (rather than all slack)
-        2 bit (4) - don't check integer solution (by solving LP)
-        3 bit (8) - fast analyze
-        4 bit (16) - non-linear model - so no well defined CoinPackedMatrix
-        5 bit (32) - keep names
-        6 bit (64) - try for dominated columns
-        7 bit (128) - SOS type 1 but all declared integer
-        8 bit (256) - Set to say solution just found, unset by doing cuts
-        9 bit (512) - Try reduced model after 100 nodes
-        10 bit (1024) - Switch on some heuristics even if seems unlikely
-        11 bit (2048) - Mark as in small branch and bound
-        12 bit (4096) - Funny cuts so do slow way (in some places)
-        13 bit (8192) - Funny cuts so do slow way (in other places)
-        14 bit (16384) - Use Cplex! for fathoming
-        15 bit (32768) - Try reduced model after 0 nodes
-        16 bit (65536) - Original model had integer bounds
-        17 bit (131072) - Perturbation switched off
-        18 bit (262144) - donor CbcModel
-        19 bit (524288) - recipient CbcModel
+        1 bit (2) - use current basis to check integer solution (rather than all
+     slack) 2 bit (4) - don't check integer solution (by solving LP) 3 bit (8) -
+     fast analyze 4 bit (16) - non-linear model - so no well defined
+     CoinPackedMatrix 5 bit (32) - keep names 6 bit (64) - try for dominated
+     columns 7 bit (128) - SOS type 1 but all declared integer 8 bit (256) - Set
+     to say solution just found, unset by doing cuts 9 bit (512) - Try reduced
+     model after 100 nodes 10 bit (1024) - Switch on some heuristics even if
+     seems unlikely 11 bit (2048) - Mark as in small branch and bound 12 bit
+     (4096) - Funny cuts so do slow way (in some places) 13 bit (8192) - Funny
+     cuts so do slow way (in other places) 14 bit (16384) - Use Cplex! for
+     fathoming 15 bit (32768) - Try reduced model after 0 nodes 16 bit (65536) -
+     Original model had integer bounds 17 bit (131072) - Perturbation switched
+     off 18 bit (262144) - donor CbcModel 19 bit (524288) - recipient CbcModel
         20 bit (1048576) - waiting for sub model to return
-	22 bit (4194304) - do not initialize random seed in solver (user has)
-	23 bit (8388608) - leave solver_ with cuts
-	24 bit (16777216) - just get feasible if no cutoff
+        22 bit (4194304) - do not initialize random seed in solver (user has)
+        23 bit (8388608) - leave solver_ with cuts
+        24 bit (16777216) - just get feasible if no cutoff
     */
   int specialOptions_;
   /** More special options
@@ -3078,8 +2468,8 @@ private:
         2048,4096 breaking out of cuts
         8192 slowly increase minimum drop
         16384 gomory
-	32768 more heuristics in sub trees
-	65536 no cuts in preprocessing
+        32768 more heuristics in sub trees
+        65536 no cuts in preprocessing
         131072 Time limits elapsed
         18 bit (262144) - Perturb fathom nodes
         19 bit (524288) - No limit on fathom nodes
@@ -3259,7 +2649,7 @@ private:
     */
   double continuousObjective_;
   /** Value of objective before root node cuts added
-    */
+   */
   double originalContinuousObjective_;
   /// Number of infeasibilities at continuous
   int continuousInfeasibilities_;
@@ -3314,27 +2704,28 @@ private:
   /// Strategy worked out - mainly at root node
   int searchStrategy_;
   /** Strategy for strong branching
-	0 - normal
-	when to do all fractional
-	1 - root node
-	2 - depth less than modifier
-	4 - if objective == best possible
-	6 - as 2+4 
-	when to do all including satisfied
-	10 - root node etc.
-	If >=100 then do when depth <= strategy/100 (otherwise 5)
+        0 - normal
+        when to do all fractional
+        1 - root node
+        2 - depth less than modifier
+        4 - if objective == best possible
+        6 - as 2+4
+        when to do all including satisfied
+        10 - root node etc.
+        If >=100 then do when depth <= strategy/100 (otherwise 5)
      */
   int strongStrategy_;
   /// Number of iterations in strong branching
   int numberStrongIterations_;
-  /** 0 - number times strong branching done, 1 - number fixed, 2 - number infeasible
-        Second group of three is a snapshot at node [6] */
+  /** 0 - number times strong branching done, 1 - number fixed, 2 - number
+     infeasible Second group of three is a snapshot at node [6] */
   int strongInfo_[7];
   /**
         For advanced applications you may wish to modify the behavior of Cbc
         e.g. if the solver is a NLP solver then you may not have an exact
-        optimum solution at each step.  This gives characteristics - just for one BAB.
-        For actually saving/restoring a solution you need the actual solver one.
+        optimum solution at each step.  This gives characteristics - just for
+     one BAB. For actually saving/restoring a solution you need the actual
+     solver one.
     */
   OsiBabSolver *solverCharacteristics_;
   /// Whether to force a resolve after takeOffCuts
@@ -3370,7 +2761,7 @@ private:
   /// Number of global cuts on entry to a node
   int numberGlobalCutsIn_;
 
-  // if values of integer variables should be rounded before saving, 
+  // if values of integer variables should be rounded before saving,
   // default false
   bool roundIntVars_;
 
@@ -3383,28 +2774,26 @@ private:
 /// So we can use osiObject or CbcObject during transition
 CBCLIB_EXPORT
 void getIntegerInformation(const OsiObject *object, double &originalLower,
-  double &originalUpper);
+                           double &originalUpper);
 // So we can call from other programs
 // Real main program
 class OsiClpSolverInterface;
 // For uniform setting of cut and heuristic options
 CBCLIB_EXPORT
 void setCutAndHeuristicOptions(CbcModel &model);
-  /// Deal with preprocessing mode
+/// Deal with preprocessing mode
 #ifndef CBC_OTHER_SOLVER
-  inline void setPreProcessingMode(OsiSolverInterface * solver,int processMode)
-  {
-    OsiClpSolverInterface *osiclp =
-      dynamic_cast< OsiClpSolverInterface * >(solver);
-    assert (osiclp);
-    osiclp->setPreProcessingMode(processMode);
-  }
+inline void setPreProcessingMode(OsiSolverInterface *solver, int processMode) {
+  OsiClpSolverInterface *osiclp = dynamic_cast<OsiClpSolverInterface *>(solver);
+  assert(osiclp);
+  osiclp->setPreProcessingMode(processMode);
+}
 #else
-  inline void setPreProcessingMode(OsiSolverInterface * solver,int processMode)
-  {}
+inline void setPreProcessingMode(OsiSolverInterface *solver, int processMode) {}
 #endif
 // Experimental options - named so you know who to blame
 #ifdef CBC_EXPERIMENT_JJF
-#define CBC_RESTART_MULTIPLIER 999 // make it more likely to do a second preprocess and restart
+#define CBC_RESTART_MULTIPLIER                                                 \
+  999 // make it more likely to do a second preprocess and restart
 #endif
 #endif

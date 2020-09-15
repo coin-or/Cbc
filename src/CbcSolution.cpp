@@ -9,21 +9,18 @@
   This file is part of cbc-generic.
 */
 
-#include <string>
-#include <cstdio>
 #include <cassert>
+#include <cstdio>
+#include <string>
 
+#include "CoinFileIO.hpp"
 #include "CoinHelperFunctions.hpp"
 #include "CoinSort.hpp"
-#include "CoinFileIO.hpp"
 
-#include "CbcSolverSettings.hpp"
 #include "CbcSolverParam.hpp"
+#include "CbcSolverSettings.hpp"
 
-namespace {
-
-
-}
+namespace {}
 
 namespace {
 
@@ -37,8 +34,8 @@ namespace {
   Returns the number of generated masks, -1 on error.
 */
 
-int generateMasks(std::string proto, int longestName,
-  int *&maskStarts, char **&finalMasks)
+int generateMasks(std::string proto, int longestName, int *&maskStarts,
+                  char **&finalMasks)
 
 {
   int nAst = 0;
@@ -204,7 +201,7 @@ bool maskMatches(const int *starts, char **masks, const char *checkC)
 int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
 
 {
-  CbcSolverParam &cbcParam = dynamic_cast< CbcSolverParam & >(param);
+  CbcSolverParam &cbcParam = dynamic_cast<CbcSolverParam &>(param);
   CbcSolverSettings *cbcSettings = cbcParam.obj();
   assert(cbcSettings != 0);
   CbcModel *model = cbcSettings->model_;
@@ -231,8 +228,8 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
       Figure out where we're going to write the solution. As special cases,
       `$' says `use the previous output file' and `-' says `use stdout'.
 
-      cbc will also accept `no string value' as stdout, but that'd be a real pain
-      in this architecture.
+      cbc will also accept `no string value' as stdout, but that'd be a real
+     pain in this architecture.
     */
   std::string field = cbcParam.strVal();
   std::string fileName;
@@ -274,13 +271,11 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
     fp = fopen(fileName.c_str(), "w");
   }
   if (!fp) {
-    std::cout
-      << "Unable to open file `" << fileName
-      << "', original name '" << cbcParam.strVal() << "'." << std::endl;
+    std::cout << "Unable to open file `" << fileName << "', original name '"
+              << cbcParam.strVal() << "'." << std::endl;
     return (retval);
   } else {
-    std::cout
-      << "Writing solution to `" << fileName << "'." << std::endl;
+    std::cout << "Writing solution to `" << fileName << "'." << std::endl;
   }
 
   int m = osi->getNumRows();
@@ -330,7 +325,7 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
         } else {
           value = ceil(value - .5);
         }
-        int ivalue = static_cast< int >(value);
+        int ivalue = static_cast<int>(value);
         fprintf(fp, "%d.0", ivalue);
         if (++k == 10) {
           k = 0;
@@ -343,8 +338,8 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
   }
   /*
       Begin the code to generate output meant for a human.  What's our longest
-      name? Scan the names we're going to print. printMode_ of 3 or 4 requires we
-      scan the row names too. Force between 8 and 20 characters in any event.
+      name? Scan the names we're going to print. printMode_ of 3 or 4 requires
+     we scan the row names too. Force between 8 and 20 characters in any event.
     */
   int longestName = 0;
   for (int j = 0; j < n; j++) {
@@ -365,7 +360,8 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
   int maxMasks = 0;
   char **masks = NULL;
   if (doMask) {
-    maxMasks = generateMasks(cbcSettings->printMask_, longestName, maskStarts, masks);
+    maxMasks =
+        generateMasks(cbcSettings->printMask_, longestName, maskStarts, masks);
     if (maxMasks < 0) {
       return (retval);
     }
@@ -384,7 +380,7 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
       the row activity and the value of the associated dual.
 
       Which to print? Violated constraints will always be flagged to print.
-      Otherwise, if m < 50 or all rows are requested, print all rows.  Otherwise,
+      Otherwise, if m < 50 or all rows are requested, print all rows. Otherwise,
       print tight constraints (non-zero dual).
 
       All of this is filtered through printMask, if specified.
@@ -399,13 +395,14 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
     const double *rowLower = osi->getRowLower();
     const double *rowUpper = osi->getRowUpper();
 
-    fprintf(fp, "\n   %7s %-*s%15s%15s\n\n",
-      "Index", longestName, "Row", "Activity", "Dual");
+    fprintf(fp, "\n   %7s %-*s%15s%15s\n\n", "Index", longestName, "Row",
+            "Activity", "Dual");
 
     for (iRow = 0; iRow < m; iRow++) {
       bool violated = false;
       bool print = false;
-      if (primalRowSolution[iRow] > rowUpper[iRow] + primalTolerance || primalRowSolution[iRow] < rowLower[iRow] - primalTolerance) {
+      if (primalRowSolution[iRow] > rowUpper[iRow] + primalTolerance ||
+          primalRowSolution[iRow] < rowLower[iRow] - primalTolerance) {
         violated = true;
         print = true;
       } else {
@@ -426,7 +423,7 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
           fprintf(fp, "%3s", " ");
         }
         fprintf(fp, "%7d %-*s%15.8g%15.8g\n", iRow, longestName, name,
-          primalRowSolution[iRow], dualRowSolution[iRow]);
+                primalRowSolution[iRow], dualRowSolution[iRow]);
       }
     }
     fprintf(fp, "\n");
@@ -442,13 +439,14 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
     const double *columnUpper = osi->getColUpper();
     const double *dualColSolution = osi->getReducedCost();
 
-    fprintf(fp, "\n   %7s %-*s%15s%15s\n\n",
-      "Index", longestName, "Column", "Value", "Reduced Cost");
+    fprintf(fp, "\n   %7s %-*s%15s%15s\n\n", "Index", longestName, "Column",
+            "Value", "Reduced Cost");
 
     for (iColumn = 0; iColumn < n; iColumn++) {
       bool violated = false;
       bool print = false;
-      if (primalColSolution[iColumn] > columnUpper[iColumn] + primalTolerance || primalColSolution[iColumn] < columnLower[iColumn] - primalTolerance) {
+      if (primalColSolution[iColumn] > columnUpper[iColumn] + primalTolerance ||
+          primalColSolution[iColumn] < columnLower[iColumn] - primalTolerance) {
         violated = true;
         print = true;
       } else {
@@ -473,7 +471,7 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
           fprintf(fp, "%3s", " ");
         }
         fprintf(fp, "%7d %-*s%15.8g%15.8g\n", iColumn, longestName, name,
-          primalColSolution[iColumn], dualColSolution[iColumn]);
+                primalColSolution[iColumn], dualColSolution[iColumn]);
       }
     }
   }
@@ -503,7 +501,7 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
 int CbcSolverParamUtils::doPrintMaskParam(CoinParam &param)
 
 {
-  CbcSolverParam &cbcParam = dynamic_cast< CbcSolverParam & >(param);
+  CbcSolverParam &cbcParam = dynamic_cast<CbcSolverParam &>(param);
   CbcSolverSettings *cbcSettings = cbcParam.obj();
   assert(cbcSettings != 0);
   /*
@@ -518,16 +516,15 @@ int CbcSolverParamUtils::doPrintMaskParam(CoinParam &param)
   /*
       Now do a bit of verification of the mask. It should be non-null and, if
       quoted, the quotes should be matched. Aribtrarily put the absolute maximum
-      length at 50 characters. If we have a model loaded, that'll be tightened to
-      the length of the longest name.
+      length at 50 characters. If we have a model loaded, that'll be tightened
+     to the length of the longest name.
     */
   std::string maskProto = cbcParam.strVal();
   int maskLen = maskProto.length();
   if (maskLen <= 0 || maskLen > 50) {
-    std::cerr
-      << "Mask |" << maskProto
-      << "| is " << maskLen << " characters; should be between "
-      << 0 << " and " << 50 << "." << std::endl;
+    std::cerr << "Mask |" << maskProto << "| is " << maskLen
+              << " characters; should be between " << 0 << " and " << 50 << "."
+              << std::endl;
     return (retval);
   }
   /*
@@ -536,9 +533,8 @@ int CbcSolverParamUtils::doPrintMaskParam(CoinParam &param)
   if (maskProto[0] == '"' || maskProto[0] == '\'') {
     char quoteChar = maskProto[0];
     if (maskProto[maskLen - 1] != quoteChar) {
-      std::cerr
-        << "Mismatched quotes around mask |" << maskProto
-        << "|." << std::endl;
+      std::cerr << "Mismatched quotes around mask |" << maskProto << "|."
+                << std::endl;
       return (retval);
     } else {
       maskProto = maskProto.substr(1, maskLen - 2);
@@ -565,10 +561,10 @@ int CbcSolverParamUtils::doPrintMaskParam(CoinParam &param)
       longestName = CoinMax(longestName, len);
     }
     if (maskLen > longestName) {
-      std::cerr
-        << "Mask |" << maskProto << "| has " << maskLen << " chars; this"
-        << " is longer than the longest name (" << longestName
-        << " chars)." << std::endl;
+      std::cerr << "Mask |" << maskProto << "| has " << maskLen
+                << " chars; this"
+                << " is longer than the longest name (" << longestName
+                << " chars)." << std::endl;
       return (retval);
     }
   }
@@ -579,4 +575,4 @@ int CbcSolverParamUtils::doPrintMaskParam(CoinParam &param)
 }
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

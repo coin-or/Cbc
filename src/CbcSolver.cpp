@@ -7611,7 +7611,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     for (size_t i = 0; (i < mipStart.size()); ++i)
                       mipStartV[mipStart[i].first] = mipStart[i].second;
 
-                    std::vector<std::pair<std::string, double>> mipStart2;
+                    std::vector<std::pair<std::string, double> > mipStart2;
                     for (int i = 0; (i < babModel_->solver()->getNumCols());
                          ++i) {
                       int iColumn = babModel_->originalColumns()[i];

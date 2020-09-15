@@ -16,10 +16,7 @@
 
 #include "CbcSolverSettings.hpp"
 
-namespace {
-
-
-}
+namespace {}
 
 /*
   Constructor for cbc-generic control block.
@@ -132,7 +129,7 @@ CbcSolverSettings::CbcSolverSettings()
   oddHole_.mode_ = CbcSolverParam::CGOff;
   oddHole_.proto_ = 0;
 #endif
-  
+
   redSplit_.mode_ = CbcSolverParam::CGRoot;
   redSplit_.proto_ = 0;
 
@@ -175,9 +172,10 @@ CbcSolverSettings::CbcSolverSettings()
   /*
       The value for numBeforeTrust is as recommended by Achterberg. Cbc's
       implementation doesn't really have a parameter equivalent to Achterberg's
-      dynamic limit on number of strong branching evaluations, so go with a fairly
-      large default. As of 06.12.16, the magic number for shadow price mode meant
-      `use shadow prices (penalties, I think) if there's no strong branching info'.
+      dynamic limit on number of strong branching evaluations, so go with a
+     fairly large default. As of 06.12.16, the magic number for shadow price
+     mode meant `use shadow prices (penalties, I think) if there's no strong
+     branching info'.
     */
   chooseStrong_.numBeforeTrust_ = 8;
   chooseStrong_.numStrong_ = 100;
@@ -190,8 +188,7 @@ CbcSolverSettings::CbcSolverSettings()
   Note that we don't want to delete dfltSolver_ here because it's just a
   copy of the pointer held in the solvers map over in CbcGenSolvers.cpp.
 */
-CbcSolverSettings::~CbcSolverSettings()
-{
+CbcSolverSettings::~CbcSolverSettings() {
   if (model_)
     delete model_;
   if (bab_.answerSolver_)
@@ -248,70 +245,59 @@ CbcSolverSettings::~CbcSolverSettings()
   any existing object and create a new one. This can be suppressed if desired.
 */
 
-CbcSolverParam::CGMode
-CbcSolverSettings::getClique(CglCutGenerator *&gen)
-{
+CbcSolverParam::CGMode CbcSolverSettings::getClique(CglCutGenerator *&gen) {
   if (clique_.mode_ != CbcSolverParam::CGOff && clique_.proto_ == 0) {
     clique_.proto_ = new CglClique();
     clique_.proto_->setStarCliqueReport(clique_.starCliqueReport_);
     clique_.proto_->setRowCliqueReport(clique_.rowCliqueReport_);
     clique_.proto_->setMinViolation(clique_.minViolation_);
   }
-  gen = dynamic_cast< CglCutGenerator * >(clique_.proto_);
+  gen = dynamic_cast<CglCutGenerator *>(clique_.proto_);
 
   return (clique_.mode_);
 }
 
-CbcSolverParam::CGMode
-CbcSolverSettings::getFlow(CglCutGenerator *&gen)
+CbcSolverParam::CGMode CbcSolverSettings::getFlow(CglCutGenerator *&gen)
 
 {
   if (flow_.mode_ != CbcSolverParam::CGOff && flow_.proto_ == 0) {
     flow_.proto_ = new CglFlowCover();
   }
-  gen = dynamic_cast< CglCutGenerator * >(flow_.proto_);
+  gen = dynamic_cast<CglCutGenerator *>(flow_.proto_);
 
   return (flow_.mode_);
 }
 
-CbcSolverParam::CGMode
-CbcSolverSettings::getGomory(CglCutGenerator *&gen)
-{
+CbcSolverParam::CGMode CbcSolverSettings::getGomory(CglCutGenerator *&gen) {
   if (gomory_.mode_ != CbcSolverParam::CGOff && gomory_.proto_ == 0) {
     gomory_.proto_ = new CglGomory();
     gomory_.proto_->setLimitAtRoot(gomory_.limitAtRoot_);
     gomory_.proto_->setLimit(gomory_.limit_);
   }
-  gen = dynamic_cast< CglCutGenerator * >(gomory_.proto_);
+  gen = dynamic_cast<CglCutGenerator *>(gomory_.proto_);
 
   return (gomory_.mode_);
 }
 
-CbcSolverParam::CGMode
-CbcSolverSettings::getKnapsack(CglCutGenerator *&gen)
-{
+CbcSolverParam::CGMode CbcSolverSettings::getKnapsack(CglCutGenerator *&gen) {
   if (knapsack_.mode_ != CbcSolverParam::CGOff && knapsack_.proto_ == 0) {
     knapsack_.proto_ = new CglKnapsackCover();
   }
-  gen = dynamic_cast< CglCutGenerator * >(knapsack_.proto_);
+  gen = dynamic_cast<CglCutGenerator *>(knapsack_.proto_);
 
   return (knapsack_.mode_);
 }
 
-CbcSolverParam::CGMode
-CbcSolverSettings::getMir(CglCutGenerator *&gen)
-{
+CbcSolverParam::CGMode CbcSolverSettings::getMir(CglCutGenerator *&gen) {
   if (mir_.mode_ != CbcSolverParam::CGOff && mir_.proto_ == 0) {
     mir_.proto_ = new CglMixedIntegerRounding2();
   }
-  gen = dynamic_cast< CglCutGenerator * >(mir_.proto_);
+  gen = dynamic_cast<CglCutGenerator *>(mir_.proto_);
 
   return (mir_.mode_);
 }
 
-CbcSolverParam::CGMode
-CbcSolverSettings::getProbing(CglCutGenerator *&gen)
-{
+CbcSolverParam::CGMode CbcSolverSettings::getProbing(CglCutGenerator *&gen) {
   if (probing_.mode_ != CbcSolverParam::CGOff && probing_.proto_ == 0) {
     probing_.proto_ = new CglProbing();
     probing_.proto_->setUsingObjective(probing_.usingObjective_);
@@ -324,38 +310,35 @@ CbcSolverSettings::getProbing(CglCutGenerator *&gen)
     probing_.proto_->setMaxElements(probing_.maxElements_);
     probing_.proto_->setRowCuts(probing_.rowCuts_);
   }
-  gen = dynamic_cast< CglCutGenerator * >(probing_.proto_);
+  gen = dynamic_cast<CglCutGenerator *>(probing_.proto_);
 
   return (probing_.mode_);
 }
 
-CbcSolverParam::CGMode
-CbcSolverSettings::getRedSplit(CglCutGenerator *&gen)
+CbcSolverParam::CGMode CbcSolverSettings::getRedSplit(CglCutGenerator *&gen)
 
 {
   if (redSplit_.mode_ != CbcSolverParam::CGOff && redSplit_.proto_ == 0) {
     redSplit_.proto_ = new CglRedSplit();
   }
-  gen = dynamic_cast< CglCutGenerator * >(redSplit_.proto_);
+  gen = dynamic_cast<CglCutGenerator *>(redSplit_.proto_);
 
   return (redSplit_.mode_);
 }
 
-CbcSolverParam::CGMode
-CbcSolverSettings::getTwomir(CglCutGenerator *&gen)
-{
+CbcSolverParam::CGMode CbcSolverSettings::getTwomir(CglCutGenerator *&gen) {
   if (twomir_.mode_ != CbcSolverParam::CGOff && twomir_.proto_ == 0) {
     twomir_.proto_ = new CglTwomir();
     twomir_.proto_->setMaxElements(twomir_.maxElements_);
   }
-  gen = dynamic_cast< CglCutGenerator * >(twomir_.proto_);
+  gen = dynamic_cast<CglCutGenerator *>(twomir_.proto_);
 
   return (twomir_.mode_);
 }
 
-CbcSolverParam::HeurMode
-CbcSolverSettings::getFeasPump(CbcHeuristic *&gen, CbcModel *model,
-  bool alwaysCreate)
+CbcSolverParam::HeurMode CbcSolverSettings::getFeasPump(CbcHeuristic *&gen,
+                                                        CbcModel *model,
+                                                        bool alwaysCreate)
 
 {
   if (fpump_.mode_ != CbcSolverParam::HeurOff &&
@@ -366,7 +349,7 @@ CbcSolverSettings::getFeasPump(CbcHeuristic *&gen, CbcModel *model,
     fpump_.proto_ = new CbcHeuristicFPump(*model);
     fpump_.proto_->setMaximumPasses(fpump_.iters_);
   }
-  gen = dynamic_cast< CbcHeuristic * >(fpump_.proto_);
+  gen = dynamic_cast<CbcHeuristic *>(fpump_.proto_);
 
   return (fpump_.mode_);
 }
@@ -382,9 +365,9 @@ CbcSolverSettings::getFeasPump(CbcHeuristic *&gen, CbcModel *model,
   any existing object and create a new one. This can be suppressed if desired.
 */
 
-CbcSolverParam::HeurMode
-CbcSolverSettings::getCombine(CbcHeuristic *&gen, CbcModel *model,
-  bool alwaysCreate)
+CbcSolverParam::HeurMode CbcSolverSettings::getCombine(CbcHeuristic *&gen,
+                                                       CbcModel *model,
+                                                       bool alwaysCreate)
 
 {
   if (combine_.mode_ != CbcSolverParam::HeurOff &&
@@ -395,14 +378,14 @@ CbcSolverSettings::getCombine(CbcHeuristic *&gen, CbcModel *model,
     combine_.proto_ = new CbcHeuristicLocal(*model);
     combine_.proto_->setSearchType(combine_.trySwap_);
   }
-  gen = dynamic_cast< CbcHeuristic * >(combine_.proto_);
+  gen = dynamic_cast<CbcHeuristic *>(combine_.proto_);
 
   return (combine_.mode_);
 }
 
-CbcSolverParam::HeurMode
-CbcSolverSettings::getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
-  bool alwaysCreate)
+CbcSolverParam::HeurMode CbcSolverSettings::getGreedyCover(CbcHeuristic *&gen,
+                                                           CbcModel *model,
+                                                           bool alwaysCreate)
 
 {
   if (greedyCover_.mode_ != CbcSolverParam::HeurOff &&
@@ -412,14 +395,14 @@ CbcSolverSettings::getGreedyCover(CbcHeuristic *&gen, CbcModel *model,
     }
     greedyCover_.proto_ = new CbcHeuristicGreedyCover(*model);
   }
-  gen = dynamic_cast< CbcHeuristic * >(greedyCover_.proto_);
+  gen = dynamic_cast<CbcHeuristic *>(greedyCover_.proto_);
 
   return (greedyCover_.mode_);
 }
 
 CbcSolverParam::HeurMode
 CbcSolverSettings::getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
-  bool alwaysCreate)
+                                     bool alwaysCreate)
 
 {
   if (greedyEquality_.mode_ != CbcSolverParam::HeurOff &&
@@ -429,14 +412,14 @@ CbcSolverSettings::getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
     }
     greedyEquality_.proto_ = new CbcHeuristicGreedyEquality(*model);
   }
-  gen = dynamic_cast< CbcHeuristic * >(greedyEquality_.proto_);
+  gen = dynamic_cast<CbcHeuristic *>(greedyEquality_.proto_);
 
   return (greedyEquality_.mode_);
 }
 
-CbcSolverParam::HeurMode
-CbcSolverSettings::getRounding(CbcHeuristic *&gen, CbcModel *model,
-  bool alwaysCreate)
+CbcSolverParam::HeurMode CbcSolverSettings::getRounding(CbcHeuristic *&gen,
+                                                        CbcModel *model,
+                                                        bool alwaysCreate)
 
 {
   if (rounding_.mode_ != CbcSolverParam::HeurOff &&
@@ -446,14 +429,14 @@ CbcSolverSettings::getRounding(CbcHeuristic *&gen, CbcModel *model,
     }
     rounding_.proto_ = new CbcRounding(*model);
   }
-  gen = dynamic_cast< CbcHeuristic * >(rounding_.proto_);
+  gen = dynamic_cast<CbcHeuristic *>(rounding_.proto_);
 
   return (rounding_.mode_);
 }
 
 CbcSolverParam::HeurMode
 CbcSolverSettings::getLocalTree(CbcTreeLocal *&localTree, CbcModel *model,
-  bool alwaysCreate)
+                                bool alwaysCreate)
 
 {
   if (localTree_.mode_ != CbcSolverParam::HeurOff &&
@@ -461,10 +444,10 @@ CbcSolverSettings::getLocalTree(CbcTreeLocal *&localTree, CbcModel *model,
     if (localTree_.proto_) {
       delete localTree_.proto_;
     }
-    localTree_.proto_ = new CbcTreeLocal(model, localTree_.soln_, localTree_.range_,
-      localTree_.typeCuts_, localTree_.maxDiverge_,
-      localTree_.timeLimit_, localTree_.nodeLimit_,
-      localTree_.refine_);
+    localTree_.proto_ = new CbcTreeLocal(
+        model, localTree_.soln_, localTree_.range_, localTree_.typeCuts_,
+        localTree_.maxDiverge_, localTree_.timeLimit_, localTree_.nodeLimit_,
+        localTree_.refine_);
   }
   localTree = localTree_.proto_;
 
@@ -500,9 +483,7 @@ CbcSolverParam::BACMajorStatus CbcSolverSettings::translateMajor(int status)
   case 5: {
     return (CbcSolverParam::BACUser);
   }
-  default: {
-    return (CbcSolverParam::BACInvalid);
-  }
+  default: { return (CbcSolverParam::BACInvalid); }
   }
 }
 
@@ -537,9 +518,7 @@ CbcSolverParam::BACMinorStatus CbcSolverSettings::translateMinor(int status)
   case 7: {
     return (CbcSolverParam::BACmUbnd);
   }
-  default: {
-    return (CbcSolverParam::BACmOther);
-  }
+  default: { return (CbcSolverParam::BACmOther); }
   }
 }
 
@@ -568,7 +547,8 @@ CbcSolverSettings::translateMinor(const OsiSolverInterface *osi)
   CbcModel codes to CbcGeneric codes.
 */
 
-void CbcSolverSettings::setBaBStatus(const CbcModel *model, CbcSolverParam::BACWhere where,
+void CbcSolverSettings::setBaBStatus(const CbcModel *model,
+                                     CbcSolverParam::BACWhere where,
                                      bool haveAnswer,
                                      OsiSolverInterface *answerSolver)
 
@@ -578,7 +558,8 @@ void CbcSolverSettings::setBaBStatus(const CbcModel *model, CbcSolverParam::BACW
 
   major = translateMajor(model->status());
 
-  if (where == CbcSolverParam::BACwBareRoot || where == CbcSolverParam::BACwIPPRelax) {
+  if (where == CbcSolverParam::BACwBareRoot ||
+      where == CbcSolverParam::BACwIPPRelax) {
     minor = translateMinor(model->solver());
   } else {
     minor = translateMinor(model->secondaryStatus());
@@ -625,8 +606,7 @@ void CbcSolverSettings::printBaBStatus()
   }
   }
 
-  std::cout << std::endl
-            << "    Branch-and-cut ";
+  std::cout << std::endl << "    Branch-and-cut ";
 
   switch (bab_.majorStatus_) {
   case CbcSolverParam::BACNotRun: {
@@ -704,4 +684,4 @@ void CbcSolverSettings::printBaBStatus()
 }
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

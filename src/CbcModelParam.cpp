@@ -400,11 +400,7 @@ void setCbcModelDefaults(CbcModel *model)
 int pushCbcModelDblParam(CoinParam &param)
 
 {
-  assert(param != 0);
-
   CbcModelParam &cbcParam = dynamic_cast<CbcModelParam &>(param);
-  assert(cbcParam != 0);
-
   CbcModel *model = cbcParam.obj();
   double val = cbcParam.dblVal();
   CbcModelParam::CbcModelParamCode code = cbcParam.paramCode();
@@ -476,11 +472,7 @@ int pushCbcModelDblParam(CoinParam &param)
 int pushCbcModelIntParam(CoinParam &param)
 
 {
-  assert(param != 0);
-
   CbcModelParam &cbcParam = dynamic_cast<CbcModelParam &>(param);
-  assert(cbcParam != 0);
-
   CbcModel *model = cbcParam.obj();
   int val = cbcParam.intVal();
   CbcModelParam::CbcModelParamCode code = cbcParam.paramCode();

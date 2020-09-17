@@ -1181,7 +1181,7 @@ int CbcClpUnitTest(const CbcModel &saveModel,
 		   int callBack(CbcModel *currentSolver, int whereFrom),
 		   CbcSolverUsefulData &parameterData);
 
-#define CBC_THREAD_SAFE
+//#define CBC_THREAD_SAFE
 #ifdef CBC_THREAD_SAFE
 // Copies of some input decoding
 

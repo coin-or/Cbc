@@ -1181,6 +1181,7 @@ int CbcClpUnitTest(const CbcModel &saveModel,
 		   int callBack(CbcModel *currentSolver, int whereFrom),
 		   CbcSolverUsefulData &parameterData);
 
+#define CBC_THREAD_SAFE
 #ifdef CBC_THREAD_SAFE
 // Copies of some input decoding
 
@@ -4475,6 +4476,8 @@ int CbcMain1(int argc, const char *argv[],
                     process.setTimeLimit(babModel_->getMaximumSeconds() - babModel_->getCurrentSeconds(), babModel_->useElapsedTime());
                     if (model.getKeepNamesPreproc())
                       process.setKeepColumnNames(true);
+		    if (keepPPN)
+		      babModel_->setKeepNamesPreproc(1);
 		    setPreProcessingMode(saveSolver,1);
                     solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                       tunePreProcess);

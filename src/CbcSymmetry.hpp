@@ -27,6 +27,8 @@
 #ifndef CBC_SYMMETRY_HPP
 #define CBC_SYMMETRY_HPP
 
+#include "CbcConfig.h"
+
 #ifdef CBC_HAS_NAUTY
 extern "C" {
 #include "nauty.h"

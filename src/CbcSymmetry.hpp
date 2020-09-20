@@ -31,10 +31,10 @@
 
 #ifdef CBC_HAS_NAUTY
 extern "C" {
-#include "nauty/nauty.h"
-#include "nauty/nausparse.h"
+#include "nauty.h"
+#include "nausparse.h"
 #ifdef NTY_TRACES
-#include "nauty/traces.h"
+#include "traces.h"
 #endif
 }
 #endif

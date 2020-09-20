@@ -23,19 +23,14 @@
 
   To use it is -orbit on
 
-  Nauty has this -
-*   Permission 
-*   is hereby given for use and/or distribution with the exception of        *
-*   sale for profit or application with nontrivial military significance.    *
-  so you can use it internally even if you are a company.
  */
 #ifndef CBC_SYMMETRY_HPP
 #define CBC_SYMMETRY_HPP
 extern "C" {
-#include "nauty/nauty.h"
-#include "nauty/nausparse.h"
+#include "nauty.h"
+#include "nausparse.h"
 #ifdef NTY_TRACES
-#include "nauty/traces.h"
+#include "traces.h"
 #endif
 }
 

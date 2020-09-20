@@ -13,14 +13,6 @@
 
 #ifdef CBC_HAS_NAUTY
 
-extern "C" {
-#include "nauty/nauty.h"
-#include "nauty/nausparse.h"
-#ifdef NTY_TRACES
-#include "nauty/traces.h"
-#endif
-}
-
 #include <stdio.h>
 #include <cassert>
 #include <vector>
@@ -269,11 +261,11 @@ int CbcSymmetry::statsOrbits(CbcModel *model, int type) const
 	  model->messageHandler()->message(CBC_GENERAL,
 					   model->messages())
 	    << message_ << CoinMessageEol;
-        sprintf(general, "Nauty: %d orbits (%d useful covering %d variables), %d generators, group size: %g - dense size %d, sparse %d - took %g seconds",
+        sprintf(general, "Nauty: %d orbits (%d useful covering %d variables), %d generators, group size: %g - sparse size %d - took %g seconds",
           nauty_info_->getNumOrbits(), numberUsefulOrbits_, numberUsefulObjects_,
           nauty_info_->getNumGenerators(),
           nauty_info_->getGroupSize(),
-          stats_[0],stats_[1], nautyTime_);
+          stats_[1], nautyTime_);
       } else {
 	int options2 = model->moreSpecialOptions2();
         if ((options2 & (128 | 256)) != (128 | 256)) {
@@ -886,20 +878,6 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
 
   int coef_count = numberRows + numberColumns + 1;
   int nc = num_affine + coef_count;
-  if (nc > 100000) {
-    // too big
-    char general[200];
-    sprintf(general,"Nauty too large %d affine and %d coefficient count",
-	    num_affine,coef_count);
-    model->messageHandler()->message(CBC_GENERAL,
-				     model->messages())
-      << general << CoinMessageEol;
-    int options = model->moreSpecialOptions2();
-    options &= ~(128|256|131072|262144);
-    model->setMoreSpecialOptions2(options);
-    nauty_info_ = new CbcNauty(0,NULL,NULL,NULL);
-    return;
-  }
   // create graph (part 1)
 
   for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -952,8 +930,25 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
       }
     }
     spaceSparse = 2 * nc + numberElements;
-    //printf("Space for sparse is %d for dense %g\n",
-    //	   spaceSparse,spaceDense);
+#define MAX_NAUTY1 1.0e8
+#define MAX_NAUTY2 1.0e11
+    double n_squared = static_cast<double>(coef_count)*coef_count;
+    if (spaceSparse > MAX_NAUTY1/100 || n_squared > MAX_NAUTY2/100) {
+      char general[200];
+      sprintf(general,"Nauty sparseSpace %d affine %d coefficient count %d",
+	      spaceSparse,num_affine,coef_count);
+      model->messageHandler()->message(CBC_GENERAL,
+				       model->messages())
+	<< general << CoinMessageEol;
+    }
+    if (spaceSparse > MAX_NAUTY1 || n_squared > MAX_NAUTY2) {
+      // too big
+      int options = model->moreSpecialOptions2();
+      options &= ~(128|256|131072|262144);
+      model->setMoreSpecialOptions2(options);
+      nauty_info_ = new CbcNauty(0,NULL,NULL,NULL);
+      return;
+    }
 #ifdef NTY_TRACES
     bool goSparse = true;
 #else

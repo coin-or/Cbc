@@ -5806,6 +5806,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                                          babModel_->useElapsedTime());
                     if (model.getKeepNamesPreproc())
                       process.setKeepColumnNames(true);
+		    if (keepPPN)
+		      babModel_->setKeepNamesPreproc(1);
                     setPreProcessingMode(saveSolver, 1);
                     solver2 = process.preProcessNonDefault(
                         *saveSolver, translate[preProcess], numberPasses,

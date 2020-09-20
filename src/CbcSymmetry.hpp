@@ -26,6 +26,8 @@
  */
 #ifndef CBC_SYMMETRY_HPP
 #define CBC_SYMMETRY_HPP
+
+#ifdef CBC_HAS_NAUTY
 extern "C" {
 #include "nauty.h"
 #include "nausparse.h"
@@ -33,6 +35,7 @@ extern "C" {
 #include "traces.h"
 #endif
 }
+#endif
 
 #include <vector>
 #include <map>

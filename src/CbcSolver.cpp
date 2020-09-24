@@ -2363,8 +2363,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
       int typeIndex =
           cbcType != CBC_PARAM_NOTUSED_INVALID ? (int)cbcType : (int)clpType;
 
-      if ((iCbcParam > (int)cbcParameters_.size() &&
-           iClpParam > (int)clpParameters_.size()) ||
+      if ((iCbcParam >= (int)cbcParameters_.size() &&
+           iClpParam >= (int)clpParameters_.size()) ||
           numberQuery) {
         if (!numberMatches) {
           std::cout << "No match for " << field << " - ? for list of commands"
@@ -3530,7 +3530,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           }
         } else {
           // action
-          if (cbcType == CBC_PARAM_ACTION_EXIT) {
+          if (cbcType == CBC_PARAM_ACTION_EXIT ||
+	      clpType == CLP_PARAM_ACTION_EXIT) {
             if (statusUserFunction_[0]) {
               if (info.numberIntegers || info.numberBinary) {
                 // integer

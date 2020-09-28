@@ -4474,7 +4474,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               assert(lpSolver);
               ClpSimplexOther *model2 =
                   static_cast<ClpSimplexOther *>(lpSolver);
-              alternativeEnvironment = model2->guess(1);
+              //This is an ugly hack to make this compile, but we'll be getting rid of
+              //this soon anyway.
+              alternativeEnvironment = const_cast<char *>(model2->guess(1).c_str());
               if (alternativeEnvironment)
                 CbcEnvironmentIndex = 0;
               else

@@ -1743,7 +1743,11 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   if (model->lp_method == LPM_Auto) {
     ClpSimplexOther *clpo = static_cast<ClpSimplexOther *>(clps);
     assert(clpo);
-    char *opts = const_cast<char *>(clpo->guess(0).c_str());
+    // Hacky for now
+    std::string opts_str(clpo->guess(0));
+    char opts[256];
+    assert (opts_str.length() <= 256);
+    strcpy(opts, opts_str.c_str());
 
     if (opts) {
       if (strstr(opts, "-primals") != NULL) {
@@ -1803,7 +1807,6 @@ Cbc_solveLinearProgram(Cbc_Model *model)
             //printf("Setting dual pivot to pesteep.\n");
           }
       } // dual pivot
-      delete[] opts;
     }
   } // auto
 

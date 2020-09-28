@@ -1774,7 +1774,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   if (model->lp_method == LPM_Auto) {
     ClpSimplexOther *clpo = static_cast<ClpSimplexOther *>(clps);
     assert(clpo);
-    char *opts = clpo->guess(0);
+    char *opts = const_cast<char *>(clpo->guess(0).c_str());
 
     if (opts) {
       if (strstr(opts, "-primals") != NULL) {

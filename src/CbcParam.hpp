@@ -444,7 +444,7 @@ private:
 CBCLIB_EXPORT
 void CbcReadPrintit(const char *input);
 /// Simple read stuff
-CLPLIB_EXPORT
+CBCLIB_EXPORT
 std::string CbcReadNextField();
 CBCLIB_EXPORT
 std::string CbcReadGetCommand(int &whichArgument, int argc, const char *argv[]);
@@ -457,7 +457,7 @@ int CbcReadGetIntField(int &whichArgument, int argc, const char *argv[],
 CBCLIB_EXPORT
 double CbcReadGetDoubleField(int &whichArgument, int argc, const char *argv[],
                              int *valid);
-CLPLIB_EXPORT
+CBCLIB_EXPORT
 void setCbcPrinting(bool yesNo);
 CBCLIB_EXPORT
 void setCbcReadCommand(FILE *f);
@@ -467,10 +467,10 @@ void setCbcReadCommand(FILE *f);
   Subroutine to establish the cbc parameter array. See the description of
   class CbcParam for details.
 */
-CLPLIB_EXPORT
+CBCLIB_EXPORT
 void establishCbcParams(std::vector<CbcParam> &params);
 // Given a parameter type - returns its number in list
-CLPLIB_EXPORT
+CBCLIB_EXPORT
 int whichCbcParam(const CbcParameterType &name,
                   const std::vector<CbcParam> &parameters);
 

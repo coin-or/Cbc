@@ -767,12 +767,12 @@ OsiCbcSolverInterface::dfltRowColName(char rc, int ndx, unsigned digits) const
   return (modelPtr_->solver()->dfltRowColName(rc, ndx, digits));
 }
 
-std::string OsiCbcSolverInterface::getObjName(std::string::size_type maxLen) const
+std::string OsiCbcSolverInterface::getObjName(unsigned maxLen) const
 {
   return (modelPtr_->solver()->getObjName(maxLen));
 }
 
-std::string OsiCbcSolverInterface::getRowName(int ndx, std::string::size_type maxLen) const
+std::string OsiCbcSolverInterface::getRowName(int ndx, unsigned maxLen) const
 {
   return (modelPtr_->solver()->getRowName(ndx, maxLen));
 }
@@ -782,7 +782,7 @@ const OsiSolverInterface::OsiNameVec &OsiCbcSolverInterface::getRowNames()
   return (modelPtr_->solver()->getRowNames());
 }
 
-std::string OsiCbcSolverInterface::getColName(int ndx, std::string::size_type maxLen) const
+std::string OsiCbcSolverInterface::getColName(int ndx, unsigned maxLen) const
 {
   return (modelPtr_->solver()->getColName(ndx, maxLen));
 }

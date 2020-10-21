@@ -1456,7 +1456,7 @@ int CbcHeuristicDive::reducedCostFix(OsiSolverInterface *solver)
               djValue, gap, lower[iColumn], upper[iColumn]);
 #endif
           } else {
-            assert(clpSimplex->getColumnStatus(iColumn) == ClpSimplex::atLowerBound || clpSimplex->getColumnStatus(iColumn) == ClpSimplex::isFixed);
+            //assert(clpSimplex->getColumnStatus(iColumn) == ClpSimplex::atLowerBound || clpSimplex->getColumnStatus(iColumn) == ClpSimplex::isFixed);
           }
         }
 #endif
@@ -1473,7 +1473,7 @@ int CbcHeuristicDive::reducedCostFix(OsiSolverInterface *solver)
               djValue, gap, lower[iColumn], upper[iColumn]);
 #endif
           } else {
-            assert(clpSimplex->getColumnStatus(iColumn) == ClpSimplex::atUpperBound || clpSimplex->getColumnStatus(iColumn) == ClpSimplex::isFixed);
+            //assert(clpSimplex->getColumnStatus(iColumn) == ClpSimplex::atUpperBound || clpSimplex->getColumnStatus(iColumn) == ClpSimplex::isFixed);
           }
         }
 #endif

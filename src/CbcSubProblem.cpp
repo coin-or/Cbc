@@ -223,10 +223,13 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
 {
   int i;
   if ((what & 1) != 0) {
+#define CBC_PRINT2 0
+#if CBC_PRINT2
     printf("CbcSubapply depth %d column %d way %d bvalue %g obj %g\n",
       this->depth_, this->branchVariable_, this->problemStatus_,
       this->branchValue_, this->objectiveValue_);
     printf("current bounds %g <= %g <= %g\n", solver->getColLower()[branchVariable_], branchValue_, solver->getColUpper()[branchVariable_]);
+#endif
 #ifndef NDEBUG
     int nSame = 0;
 #endif
@@ -235,8 +238,7 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
       int k = variable & 0x3fffffff;
       if ((variable & 0x80000000) == 0) {
         // lower bound changing
-        //#define CBC_PRINT2
-#ifdef CBC_PRINT2
+#if CBC_PRINT2 > 1
         if (solver->getColLower()[k] != newBounds_[i])
           printf("lower change for column %d - from %g to %g\n", k, solver->getColLower()[k], newBounds_[i]);
 #endif
@@ -245,7 +247,7 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
           double oldValue = solver->getColLower()[k];
           assert(newBounds_[i] > oldValue - 1.0e-8);
           if (newBounds_[i] < oldValue + 1.0e-8) {
-#ifdef CBC_PRINT2
+#if CBC_PRINT2 > 1
             printf("bad null lower change for column %d - bound %g\n", k, oldValue);
 #endif
             if (newBounds_[i] == oldValue)
@@ -256,7 +258,7 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
         solver->setColLower(k, newBounds_[i]);
       } else {
         // upper bound changing
-#ifdef CBC_PRINT2
+#if CBC_PRINT2 > 1
         if (solver->getColUpper()[k] != newBounds_[i])
           printf("upper change for column %d - from %g to %g\n", k, solver->getColUpper()[k], newBounds_[i]);
 #endif
@@ -265,7 +267,7 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
           double oldValue = solver->getColUpper()[k];
           assert(newBounds_[i] < oldValue + 1.0e-8);
           if (newBounds_[i] > oldValue - 1.0e-8) {
-#ifdef CBC_PRINT2
+#if CBC_PRINT2 > 1
             printf("bad null upper change for column %d - bound %g\n", k, oldValue);
 #endif
             if (newBounds_[i] == oldValue)
@@ -277,7 +279,7 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
       }
     }
 #ifndef NDEBUG
-#ifdef CBC_PRINT2
+#if CBC_PRINT2 > 1
     if (nSame && (nSame < numberChangedBounds_ || (what & 3) != 3))
       printf("%d changes out of %d redundant %d\n",
         nSame, numberChangedBounds_, what);
@@ -286,7 +288,9 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
         numberChangedBounds_, what);
 #endif
 #endif
+#if CBC_PRINT2
     printf("new bounds %g <= %g <= %g\n", solver->getColLower()[branchVariable_], branchValue_, solver->getColUpper()[branchVariable_]);
+#endif
   }
 #ifdef JJF_ZERO
   if ((what & 2) != 0) {

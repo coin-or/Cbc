@@ -51,14 +51,15 @@ CbcGeneralDepth::CbcGeneralDepth(CbcModel *model, int maximumDepth)
   , nodeInfo_(NULL)
 {
   assert(maximumDepth_ < 1000000);
+  if (maximumDepth_ == 0)
+    maximumDepth_ = 1;
   if (maximumDepth_ > 0)
     maximumNodes_ = (1 << maximumDepth_) + 1 + maximumDepth_;
-  else if (maximumDepth_ < 0)
+  else 
     maximumNodes_ = 1 + 1 - maximumDepth_;
-  else
-    maximumNodes_ = 0;
 #define MAX_NODES 100
-  maximumNodes_ = CoinMin(maximumNodes_, 1 + maximumDepth_ + MAX_NODES);
+  maximumNodes_ = CoinMin(maximumNodes_, 1 + abs(maximumDepth_) + MAX_NODES);
+  maximumNodes_ = CoinMax(maximumNodes_, 4);
   if (maximumNodes_) {
     nodeInfo_ = new ClpNodeStuff();
     nodeInfo_->maximumNodes_ = maximumNodes_;
@@ -319,8 +320,11 @@ CbcBranchingObject *
 CbcGeneralDepth::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInformation *info, int /*way*/)
 {
   int numberDo = numberNodes_;
-  if (whichSolution_ >= 0 && (model_->moreSpecialOptions() & 33554432) == 0)
+  if (whichSolution_ >= 0 && (model_->moreSpecialOptions() & 33554432) == 0) {
     numberDo--;
+    if (numberDo <= 0)
+      return NULL; // solution but complete search
+  }
   assert(numberDo > 0);
   // create object
   CbcGeneralBranchingObject *branch = new CbcGeneralBranchingObject(model_);

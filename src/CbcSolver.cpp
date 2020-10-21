@@ -5169,13 +5169,6 @@ int CbcMain1(int argc, const char *argv[],
     clqstrAction = "off";
 	      } else if (cgraphAction == "clq") {
 		// old style
-		CglClique clique;
-		clique.setStarCliqueReport(false);
-		clique.setRowCliqueReport(false);
-		clique.setMinViolation(0.05);
-		int translate[] = { -100, -1, -99, -98, 1, -1098 };
-		babModel_->addCutGenerator(&clique, translate[cliqueAction],
-					   "Clique");
 		cliqueAction = 0;
 		oddWheelAction = 0;
 		clqstrAction = "off";
@@ -5320,20 +5313,21 @@ int CbcMain1(int argc, const char *argv[],
                 for (iColumn = 0; iColumn < numberColumns; iColumn++) {
                   if (babModel_->isInteger(iColumn)) {
                     sort[n] = n;
-                    if (useCosts == 1)
+                    if (useCosts == 1) {
                       dsort[n++] = -fabs(objective[iColumn]);
-                    else if (useCosts == 2)
+                    } else if (useCosts == 2) {
                       dsort[n++] = iColumn;
-                    else if (useCosts == 3)
-                      dsort[n++] = upper[iColumn] - lower[iColumn];
-                    else if (useCosts == 4)
-                      dsort[n++] = -(upper[iColumn] - lower[iColumn]);
-                    else if (useCosts == 5)
+                    } else if (useCosts == 3) {
+                      dsort[n++] = (upper[iColumn]-lower[iColumn])==1.0 ?1:2;
+                    } else if (useCosts == 4) {
+                      dsort[n++] = (upper[iColumn]-lower[iColumn])!=1.0 ?1:2;
+                    } else if (useCosts == 5) {
                       dsort[n++] = -columnLength[iColumn];
-                    else if (useCosts == 6)
+                    } else if (useCosts == 6) {
                       dsort[n++] = (columnLength[iColumn] == 1) ? -1.0 : 0.0;
-                    else if (useCosts == 7)
+                    } else if (useCosts == 7) {
                       dsort[n++] = (objective[iColumn]) ? -1.0 : 0.0;
+		    }
                   }
                 }
                 CoinSort_2(dsort, dsort + n, sort);
@@ -5518,6 +5512,8 @@ int CbcMain1(int argc, const char *argv[],
               if (miplib && !storedAmpl.sizeRowCuts()) {
                 printf("looking at probing\n");
                 babModel_->addCutGenerator(&storedAmpl, 1, "Stored");
+                accuracyFlag[numberGenerators] = 0;
+                switches[numberGenerators++] = 0;
               }
 #endif
               if (knapsackAction) {
@@ -5577,6 +5573,17 @@ int CbcMain1(int argc, const char *argv[],
                 bkCliqueGen.setExtendingMethod(bkClqExtMethod);
                 bkCliqueGen.setPivotingStrategy(bkPivotingStrategy);
                 babModel_->addCutGenerator(&bkCliqueGen, translate[cliqueAction], "Clique");
+                accuracyFlag[numberGenerators] = 0;
+                switches[numberGenerators++] = 0;
+	      } else if (cgraphAction == "clq") {
+		// old style
+		CglClique clique;
+		clique.setStarCliqueReport(false);
+		clique.setRowCliqueReport(false);
+		clique.setMinViolation(0.05);
+		// ifmove
+		babModel_->addCutGenerator(&clique, -99,
+					   "Clique");
                 accuracyFlag[numberGenerators] = 0;
                 switches[numberGenerators++] = 0;
               }

@@ -442,25 +442,7 @@ private:
 };
 
 CBCLIB_EXPORT
-void CbcReadPrintit(const char *input);
-/// Simple read stuff
-CBCLIB_EXPORT
-std::string CbcReadNextField();
-CBCLIB_EXPORT
-std::string CbcReadGetCommand(int &whichArgument, int argc, const char *argv[]);
-CBCLIB_EXPORT
-std::string CbcReadGetString(int &whichArgument, int argc, const char *argv[]);
-// valid 0 - okay, 1 bad, 2 not there
-CBCLIB_EXPORT
-int CbcReadGetIntField(int &whichArgument, int argc, const char *argv[],
-                       int *valid);
-CBCLIB_EXPORT
-double CbcReadGetDoubleField(int &whichArgument, int argc, const char *argv[],
-                             int *valid);
-CBCLIB_EXPORT
 void setCbcPrinting(bool yesNo);
-CBCLIB_EXPORT
-void setCbcReadCommand(FILE *f);
 
 #define CBCMAXPARAMETERS 250
 /*

@@ -9,78 +9,23 @@
 
 #include "CbcConfig.h"
 
-#include <cassert>
-#include <iostream>
 #include <string>
-#ifdef CBC_HAS_READLINE
-#include <readline/history.h>
-#include <readline/readline.h>
-#endif
+#include <sstream>
+#include <iostream>
+#include <cassert>
+
+#include "CoinParam.hpp"
 
 #include "ClpFactorization.hpp"
 
 #include "CbcParam.hpp"
 
 static bool doPrinting = true;
-static std::string afterEquals = "";
 static char printArray[250];
-static char line[1000];
-static char *where = NULL;
-int CbcEnvironmentIndex = -1;
-// Alternative to environment
-char *alternativeEnvironment = NULL;
-static FILE *CbcReadCommand = stdin;
 
-void setCbcReadCommand(FILE *f) { CbcReadCommand = f; }
-
-void setCbcPrinting(bool yesNo) { doPrinting = yesNo; }
-
-static size_t fillEnv() {
-#if defined(_MSC_VER) || defined(__MSVCRT__)
-  return 0;
-#else
-  // Don't think it will work on Windows
-  char *environ;
-  if (!alternativeEnvironment)
-    environ = getenv("CBC_CLP_ENVIRONMENT");
-  else
-    environ = alternativeEnvironment;
-  size_t length = 0;
-  if (environ) {
-    length = strlen(environ);
-    if (CbcEnvironmentIndex < static_cast<int>(length)) {
-      // find next non blank
-      char *whereEnv = environ + CbcEnvironmentIndex;
-      // munch white space
-      while (*whereEnv == ' ' || *whereEnv == '\t' || *whereEnv < ' ')
-        whereEnv++;
-      // copy
-      char *put = line;
-      while (*whereEnv != '\0') {
-        if (*whereEnv == ' ' || *whereEnv == '\t' || *whereEnv < ' ') {
-          break;
-        }
-        *put = *whereEnv;
-        put++;
-        assert(put - line < 1000);
-        whereEnv++;
-      }
-      CbcEnvironmentIndex = static_cast<int>(whereEnv - environ);
-      *put = '\0';
-      length = strlen(line);
-    } else {
-      length = 0;
-    }
-  }
-  if (!length) {
-    CbcEnvironmentIndex = -1;
-    if (alternativeEnvironment) {
-      delete[] alternativeEnvironment;
-      alternativeEnvironment = NULL;
-    }
-  }
-  return length;
-#endif
+void setCbcPrinting(bool yesNo)
+{
+   doPrinting = yesNo;
 }
 
 //#############################################################################
@@ -854,10 +799,11 @@ int CbcParam::currentOptionAsInteger(int &fakeInteger) const {
   }
 }
 
+// TODO: Fix this
 // Print Long help
 void CbcParam::printLongHelp() const {
   if (type_ >= 1 && type_ < 600) {
-    CbcReadPrintit(longHelp_.c_str());
+    CoinPrintString(longHelp_);
     if (type_ < CLP_PARAM_INT_LOGLEVEL) {
       printf("<Range of values is %g to %g;\n\tcurrent %g>\n",
              lowerDoubleValue_, upperDoubleValue_, doubleValue_);
@@ -892,288 +838,6 @@ void CbcParam::setFakeKeyWord(int fakeValue) {
 
 //###########################################################################
 //###########################################################################
-
-void CbcReadPrintit(const char *input) {
-  int length = static_cast<int>(strlen(input));
-  assert(length <= 1000);
-  char temp[1001];
-  int i;
-  int n = 0;
-  for (i = 0; i < length; i++) {
-    if (input[i] == '\n') {
-      temp[n] = '\0';
-      std::cout << temp << std::endl;
-      n = 0;
-    } else if (n >= 65 && input[i] == ' ') {
-      temp[n] = '\0';
-      std::cout << temp << std::endl;
-      n = 0;
-    } else if (n || input[i] != ' ') {
-      temp[n++] = input[i];
-    }
-  }
-  if (n) {
-    temp[n] = '\0';
-    std::cout << temp << std::endl;
-  }
-}
-
-//###########################################################################
-//###########################################################################
-
-// Simple read stuff
-std::string CbcReadNextField() {
-  std::string field;
-  static char coin_prompt[] = "Cbc:";
-
-  if (!where) {
-    // need new line
-#ifdef CBC_HAS_READLINE
-    if (CbcReadCommand == stdin) {
-      // Get a line from the user.
-      where = readline(coin_prompt);
-
-      // If the line has any text in it, save it on the history.
-      if (where) {
-        if (*where)
-          add_history(where);
-        strcpy(line, where);
-        free(where);
-      }
-    } else {
-      where = fgets(line, 1000, CbcReadCommand);
-    }
-#else
-    if (CbcReadCommand == stdin) {
-      fputs(coin_prompt, stdout);
-      fflush(stdout);
-    }
-    where = fgets(line, 1000, CbcReadCommand);
-#endif
-    if (!where)
-      return field; // EOF
-    where = line;
-    // clean image
-    char *lastNonBlank = line - 1;
-    while (*where != '\0') {
-      if (*where != '\t' && *where < ' ') {
-        break;
-      } else if (*where != '\t' && *where != ' ') {
-        lastNonBlank = where;
-      }
-      where++;
-    }
-    where = line;
-    *(lastNonBlank + 1) = '\0';
-  }
-  // munch white space
-  while (*where == ' ' || *where == '\t')
-    where++;
-  char *saveWhere = where;
-  while (*where != ' ' && *where != '\t' && *where != '\0')
-    where++;
-  if (where != saveWhere) {
-    char save = *where;
-    *where = '\0';
-    // convert to string
-    field = saveWhere;
-    *where = save;
-  } else {
-    where = NULL;
-    field = "EOL";
-  }
-  return field;
-}
-
-//###########################################################################
-//###########################################################################
-
-std::string CbcReadGetCommand(int &whichArgument, int argc,
-                              const char *argv[]) {
-  std::string field = "EOL";
-  // say no =
-  afterEquals = "";
-  while (field == "EOL") {
-    if (whichArgument > 0) {
-      if ((whichArgument < argc && argv[whichArgument]) ||
-          CbcEnvironmentIndex >= 0) {
-        if (CbcEnvironmentIndex < 0) {
-          field = argv[whichArgument++];
-        } else {
-          if (fillEnv()) {
-            field = line;
-          } else {
-            // not there
-            continue;
-          }
-        }
-        if (field == "-") {
-          std::cout << "Switching to line mode" << std::endl;
-          whichArgument = -1;
-          field = CbcReadNextField();
-        } else if (field[0] != '-') {
-          if (whichArgument != 2) {
-            // now allow std::cout<<"skipping non-command "<<field<<std::endl;
-            // field="EOL"; // skip
-          } else if (CbcEnvironmentIndex < 0) {
-            // special dispensation - taken as -import name
-            whichArgument--;
-            field = "import";
-          }
-        } else {
-          if (field != "--") {
-            // take off -
-            field = field.substr(1);
-          } else {
-            // special dispensation - taken as -import --
-            whichArgument--;
-            field = "import";
-          }
-        }
-      } else {
-        field = "";
-      }
-    } else {
-      field = CbcReadNextField();
-    }
-  }
-  // if = then modify and save
-  std::string::size_type found = field.find('=');
-  if (found != std::string::npos) {
-    afterEquals = field.substr(found + 1);
-    field = field.substr(0, found);
-  }
-  // std::cout<<field<<std::endl;
-  return field;
-}
-
-//###########################################################################
-//###########################################################################
-
-std::string CbcReadGetString(int &whichArgument, int argc, const char *argv[]) {
-  std::string field = "EOL";
-  if (afterEquals == "") {
-    if (whichArgument > 0) {
-      if (whichArgument < argc || CbcEnvironmentIndex >= 0) {
-        if (CbcEnvironmentIndex < 0) {
-          const char *input = argv[whichArgument];
-          if (strcmp(input, "--") && strcmp(input, "stdin") &&
-              strcmp(input, "stdin_lp")) {
-            field = argv[whichArgument++];
-          } else {
-            whichArgument++;
-            // -- means import from stdin
-            // but allow for other than mps files
-            // Cbc does things in different way !!
-            if (!strcmp(input, "--"))
-              field = "-";
-            else if (!strcmp(input, "stdin"))
-              field = "-";
-            else if (!strcmp(input, "stdin_lp"))
-              field = "-lp";
-          }
-        } else {
-          fillEnv();
-          field = line;
-        }
-      }
-    } else {
-      field = CbcReadNextField();
-    }
-  } else {
-    field = afterEquals;
-    afterEquals = "";
-  }
-  // std::cout<<field<<std::endl;
-  return field;
-}
-
-//###########################################################################
-//###########################################################################
-
-// valid 0 - okay, 1 bad, 2 not there
-int CbcReadGetIntField(int &whichArgument, int argc, const char *argv[],
-                       int *valid) {
-  std::string field = "EOL";
-  if (afterEquals == "") {
-    if (whichArgument > 0) {
-      if (whichArgument < argc || CbcEnvironmentIndex >= 0) {
-        if (CbcEnvironmentIndex < 0) {
-          // may be negative value so do not check for -
-          field = argv[whichArgument++];
-        } else {
-          fillEnv();
-          field = line;
-        }
-      }
-    } else {
-      field = CbcReadNextField();
-    }
-  } else {
-    field = afterEquals;
-    afterEquals = "";
-  }
-  long int value = 0;
-  // std::cout<<field<<std::endl;
-  if (field != "EOL") {
-    const char *start = field.c_str();
-    char *endPointer = NULL;
-    // check valid
-    value = strtol(start, &endPointer, 10);
-    if (*endPointer == '\0') {
-      *valid = 0;
-    } else {
-      *valid = 1;
-      std::cout << "String of " << field;
-    }
-  } else {
-    *valid = 2;
-  }
-  return static_cast<int>(value);
-}
-
-//###########################################################################
-//###########################################################################
-
-double CbcReadGetDoubleField(int &whichArgument, int argc, const char *argv[],
-                             int *valid) {
-  std::string field = "EOL";
-  if (afterEquals == "") {
-    if (whichArgument > 0) {
-      if (whichArgument < argc || CbcEnvironmentIndex >= 0) {
-        if (CbcEnvironmentIndex < 0) {
-          // may be negative value so do not check for -
-          field = argv[whichArgument++];
-        } else {
-          fillEnv();
-          field = line;
-        }
-      }
-    } else {
-      field = CbcReadNextField();
-    }
-  } else {
-    field = afterEquals;
-    afterEquals = "";
-  }
-  double value = 0.0;
-  // std::cout<<field<<std::endl;
-  if (field != "EOL") {
-    const char *start = field.c_str();
-    char *endPointer = NULL;
-    // check valid
-    value = strtod(start, &endPointer);
-    if (*endPointer == '\0') {
-      *valid = 0;
-    } else {
-      *valid = 1;
-      std::cout << "String of " << field;
-    }
-  } else {
-    *valid = 2;
-  }
-  return value;
-}
 
 /*
   Subroutine to establish the cbc parameter array. See the description of

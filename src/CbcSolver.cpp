@@ -7,11 +7,8 @@
 */
 
 // Need these up front to define symbols for other imports
-#include "CbcConfig.h"
 #include "CoinUtilsConfig.h"
-// Let's get rid of these
-#define COIN_HAS_CBC
-#define COIN_HAS_CLP
+#include "CbcConfig.h"
 
 #include <cassert>
 #include <cfloat>
@@ -19,14 +16,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
+#include <sstream>
 #include <iostream>
+
 #if defined(NEW_DEBUG_AND_FILL) || defined(CLP_MALLOC_STATISTICS)
 #include <exception>
 #include <malloc.h>
 #include <new>
-#endif
-#ifdef DMALLOC
-#include "dmalloc.h"
 #endif
 #if defined(HAVE_SIGNAL_H) && defined(HAVE_EXECINFO_H)
 #include <execinfo.h>
@@ -37,6 +34,9 @@ void CbcCrashHandler(int sig);
 #ifdef COINUTILS_HAS_GLPK
 #include "glpk.h"
 #endif
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
 
 //###########################################################################
 // COIN-OR headers (do we really need all these?)
@@ -46,6 +46,7 @@ void CbcCrashHandler(int sig);
 #include "CoinHelperFunctions.hpp"
 #include "CoinModel.hpp"
 #include "CoinMpsIO.hpp"
+#include "CoinParam.hpp"
 #include "CoinPragma.hpp"
 #include "CoinSignal.hpp"
 #include "CoinWarmStartBasis.hpp"
@@ -188,10 +189,6 @@ static int initialPumpTune = -1;
 extern double *debugSolution;
 extern int debugNumberColumns;
 #endif
-
-// Alternative to environment
-extern char *alternativeEnvironment;
-extern int CbcEnvironmentIndex;
 
 static CbcModel *currentBranchModel = NULL;
 
@@ -1335,7 +1332,6 @@ int callCbc1(const char *input2, CbcModel &model,
   argv[n + 1] = CoinStrdup("-quit");
   free(input);
   currentBranchModel = NULL;
-  setCbcReadCommand(stdin);
   int returnCode = CbcMain1(n + 2, const_cast<const char **>(argv), model,
                             callBack, parameterData);
   for (int k = 0; k < n + 2; k++)
@@ -1653,8 +1649,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
   bool useSignalHandler = parameterData.useSignalHandler_;
   CbcModel &model_ = model;
   CglPreProcess *preProcessPointer = NULL;
-  // Initialize argument
-  int whichArgument = 1;
+  // Initialize the counter for input field number
+  int whichField = 0;
   // Meaning 0 - start at very beginning
   // 1 start at beginning of preprocessing
   // 2 start at beginning of branch and bound
@@ -1673,7 +1669,6 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
   glp_prob *coin_glp_prob = NULL;
 #endif
   int returnMode = 1;
-  whichArgument = 1;
   int statusUserFunction_[1];
   int numberUserFunctions_ = 1; // to allow for ampl
   // Statistics
@@ -1859,7 +1854,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           sosReference = info.sosReference;
           sosPriority = info.sosPriority;
         }
-        whichArgument = 2; // so will start with parameters
+        whichField = 2; // so will start with parameters
         // see if log in list (including environment)
         for (int i = 1; i < info.numberArguments; i++) {
           if (!strcmp(info.arguments[i], "log")) {
@@ -2240,7 +2235,6 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
       // cbcParameters_[iParam].setCurrentOption("forceOnStrong");
       // probingAction = 8;
     }
-    std::string field;
 #if CBC_QUIET == 0
     if ((!noPrinting_) && (parameterData.printWelcome_)) {
       sprintf(generalPrint, "Welcome to the CBC MILP Solver \n");
@@ -2277,39 +2271,72 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
       }
     }
 #endif
+
+    bool interactiveMode = false;
+    std::string field;
+    std::vector<std::string> inputVector;
+    for (int i = 1; i < argc; i++){
+       std::string tmp(argv[i]);
+       std::string::size_type found = tmp.find('=');
+       if (found != std::string::npos) {
+          inputVector.push_back(tmp.substr(0, found));
+          inputVector.push_back(tmp.substr(found + 1));
+       } else {
+          inputVector.push_back(tmp);
+       }
+    }
+
+    std::string prompt = "Cbc: ";
+  
     while (1) {
-      // next command
-      field = CbcReadGetCommand(whichArgument, argc, argv);
       // Reset time
       time1 = CoinCpuTime();
       time1Elapsed = CoinGetTimeOfDay();
-      // adjust field if has odd trailing characters
-      char temp[200];
-      strcpy(temp, field.c_str());
-      int length = static_cast<int>(strlen(temp));
-      for (int k = length - 1; k >= 0; k--) {
-        if (temp[k] < ' ')
-          length--;
-        else
-          break;
+
+      // If no arguments, just go into interactive mode
+      if (!inputVector.size()){
+         interactiveMode = true;
+         // let's give the sucker a hint
+         std::cout
+            << "Cbc takes input from arguments ( - switches to stdin)"
+            << std::endl
+            << "Enter ? for list of commands or help" << std::endl;
       }
-      temp[length] = '\0';
-      field = temp;
+      
+      field = CoinGetCommand(inputVector, whichField, interactiveMode, prompt);
+
       // exit if null or similar
       if (!field.length()) {
-        if (numberGoodCommands == 1 && goodModel) {
-          // we just had file name - do branch and bound
-          field = "branch";
-        } else if (!numberGoodCommands) {
-          // let's give the sucker a hint
-          std::cout
-              << "CoinSolver takes input from arguments ( - switches to stdin)"
-              << std::endl
-              << "Enter ? for list of commands or help" << std::endl;
-          field = "-";
-        } else {
-          break;
-        }
+         if (numberGoodCommands == 1 && goodModel) {
+            // we just had file name - do branch and bound
+            field = "branch";
+         } else {
+            break;
+         }
+      }
+
+      // These are some special case we deal with separately (only in non-interactive mode)
+      if (!interactiveMode){
+         if (field == "-") {
+            std::cout << "Switching to line mode" << std::endl;
+            interactiveMode = true;
+            // This effectively ignores anything that may come after
+            whichField = inputVector.size();
+         } else if (field[0] != '-') {
+            //if (inputVector.size() == 1) {
+            // special dispensation - taken as -import name
+            field = "import";
+            whichField--;
+            //}
+         } else {
+            if (field != "--") {
+               // take off -
+               field = field.substr(1);
+            } else {
+               // special dispensation - taken as -import --
+               field = "-import";
+            }
+         }
       }
 
       // see if ? at end
@@ -2417,7 +2444,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
         }
       } else {
         // found
-        int valid;
+        int status;
         numberGoodCommands++;
         if (cbcType == CBC_PARAM_ACTION_BAB && goodModel) {
           if (clqstrAction == "before") { // performing clique strengthening
@@ -2682,9 +2709,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           }
         } else if (typeIndex < 101) {
           // get next field as double
-          double value =
-              CbcReadGetDoubleField(whichArgument, argc, argv, &valid);
-          if (!valid) {
+          double value = CoinGetDouble(inputVector, whichField,
+                                       status, interactiveMode, prompt);
+          if (!status) {
             if (typeIndex < 51) {
               int returnCode;
               const char *message =
@@ -2772,7 +2799,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 break;
               }
             }
-          } else if (valid == 1) {
+          } else if (status == 1) {
             if (cbcType < CBC_PARAM_NOTUSED_INVALID) {
               std::cout << " is illegal for double parameter "
                         << cbcParameters_[iCbcParam].name() << " value remains "
@@ -2793,8 +2820,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           }
         } else if (typeIndex < 201) {
           // get next field as int
-          int value = CbcReadGetIntField(whichArgument, argc, argv, &valid);
-          if (!valid) {
+          int value = CoinGetInt(inputVector, whichField,
+                                 status, interactiveMode, prompt);
+          if (!status) {
             if (typeIndex < 151) {
               if (clpParameters_[iClpParam].type() ==
                   CLP_PARAM_INT_PRESOLVEPASS)
@@ -3133,7 +3161,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     << message << CoinMessageEol;
               }
             }
-          } else if (valid == 1) {
+          } else if (status == 1) {
             if (cbcType < CBC_PARAM_NOTUSED_INVALID) {
               std::cout << " is illegal for integer parameter "
                         << cbcParameters_[iCbcParam].name() << " value remains "
@@ -3154,7 +3182,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           }
         } else if (typeIndex < 401) {
           // one of several strings
-          std::string value = CbcReadGetString(whichArgument, argc, argv);
+          std::string value = CoinGetString(inputVector, whichField,
+                                            interactiveMode, prompt);
           if (cbcType < CBC_PARAM_NOTUSED_INVALID) {
             int action = cbcParameters_[iCbcParam].parameterOption(value);
             if (action < 0) {
@@ -4095,8 +4124,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
 #ifndef CBC_OTHER_SOLVER
 #ifdef COIN_HAS_LINK
           {
-            // get next field
-            field = CbcReadGetString(whichArgument, argc, argv);
+             // get next field
+             field = CoinGetString(inputVector, whichField,
+                                  interactiveMode, prompt);
             if (field == "$") {
               field = clpParameters_[iClpParam].stringValue();
             } else if (field == "EOL") {
@@ -4186,7 +4216,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           case CLP_PARAM_ACTION_BASISIN:
             if (goodModel) {
               // get next field
-              field = CbcReadGetString(whichArgument, argc, argv);
+               field = CoinGetString(inputVector, whichField,
+                                    interactiveMode, prompt);
               if (field == "$") {
                 field = clpParameters_[iClpParam].stringValue();
               } else if (field == "EOL") {
@@ -4246,7 +4277,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           case CLP_PARAM_ACTION_BASISOUT:
             if (goodModel) {
               // get next field
-              field = CbcReadGetString(whichArgument, argc, argv);
+              field = CoinGetString(inputVector, whichField,
+                                    interactiveMode, prompt);
               if (field == "$") {
                 field = clpParameters_[iClpParam].stringValue();
               } else if (field == "EOL") {
@@ -4296,7 +4328,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             break;
           case CBC_PARAM_ACTION_RESTORE: {
             // get next field
-            field = CbcReadGetString(whichArgument, argc, argv);
+            field = CoinGetString(inputVector, whichField,
+                                  interactiveMode, prompt);
             if (field == "$") {
               field = cbcParameters_[iCbcParam].stringValue();
             } else if (field == "EOL") {
@@ -4358,9 +4391,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           case CLP_PARAM_ACTION_FAKEBOUND:
             if (goodModel) {
               // get bound
-              double value =
-                  CbcReadGetDoubleField(whichArgument, argc, argv, &valid);
-              if (!valid) {
+               double value = CoinGetDouble(inputVector, whichField,
+                                            status, interactiveMode, prompt);
+              if (!status) {
                 sprintf(generalPrint, "Setting %s to DEBUG %g",
                         clpParameters_[iClpParam].name().c_str(), value);
                 printGeneralMessage(model_, generalPrint);
@@ -4388,7 +4421,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     columnUpper[iColumn] = CoinMin(columnUpper[iColumn], value);
                   }
                 }
-              } else if (valid == 1) {
+              } else if (status == 1) {
                 abort();
               } else {
                 std::cout << "enter value for "
@@ -4429,7 +4462,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           case CLP_PARAM_ACTION_PARAMETRICS:
             if (goodModel) {
               // get next field
-              field = CbcReadGetString(whichArgument, argc, argv);
+               field = CoinGetString(inputVector, whichField,
+                                     interactiveMode, prompt);
               if (field == "$") {
                 field = clpParameters_[iClpParam].stringValue();
               } else if (field == "EOL") {
@@ -4466,7 +4500,6 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             break;
           case CLP_PARAM_ACTION_GUESS:
             if (goodModel && model_.solver()) {
-              delete[] alternativeEnvironment;
               OsiClpSolverInterface *clpSolver =
                   dynamic_cast<OsiClpSolverInterface *>(model_.solver());
               assert(clpSolver);
@@ -4476,12 +4509,15 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   static_cast<ClpSimplexOther *>(lpSolver);
               //This is an ugly hack to make this compile, but we'll be getting rid of
               //this soon anyway.
-              alternativeEnvironment = const_cast<char *>(model2->guess(1).c_str());
-              if (alternativeEnvironment)
-                CbcEnvironmentIndex = 0;
-              else
-                std::cout << "** Guess unable to generate commands"
-                          << std::endl;
+              std::string input = model2->guess(0);
+              if (input != ""){
+                 std::istringstream inputStream(input);
+                 CoinReadFromStream(inputVector, inputStream);
+                 whichField = 0;
+              }else{
+                 std::cout << "** Guess unable to generate commands"
+                           << std::endl;
+              }
             } else {
               std::cout << "** Guess needs a valid model" << std::endl;
             }
@@ -10331,7 +10367,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             // delete babModel_;
             // babModel_=NULL;
             // get next field
-            field = CbcReadGetString(whichArgument, argc, argv);
+            field = CoinGetString(inputVector, whichField,
+                                  interactiveMode, prompt);
             if (field == "$") {
               field = cbcParameters_[iCbcParam].stringValue();
             } else if (field == "EOL") {
@@ -10605,7 +10642,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 totalTime += time2 - time1;
                 time1 = time2;
                 // Go to canned file if just input file
-                if (whichArgument == 2 && argc == 2) {
+                if (whichField == 2 && inputVector.size() == 2) {
                   // only if ends .mps
                   char *find =
                       const_cast<char *>(strstr(fileName.c_str(), ".mps"));
@@ -10613,10 +10650,12 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     find[1] = 'p';
                     find[2] = 'a';
                     find[3] = 'r';
-                    FILE *fp = fopen(fileName.c_str(), "r");
-                    if (fp) {
-                      setCbcReadCommand(fp); // Read from that file
-                      whichArgument = -1;
+                    std::ifstream ifs(fileName.c_str());
+                    if (ifs.is_open()) {
+                       CoinReadFromStream(inputVector, ifs);
+                       whichField = 0;
+                    }else{
+                       std::cout << "Unable to open file" << fileName << std::endl;
                     }
                   }
                 }
@@ -10630,7 +10669,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           case CBC_PARAM_ACTION_EXPORT:
             if (goodModel) {
               // get next field
-              field = CbcReadGetString(whichArgument, argc, argv);
+              field = CoinGetString(inputVector, whichField,
+                                    interactiveMode, prompt);
               if (field == "$") {
                 field = cbcParameters_[iCbcParam].stringValue();
               } else if (field == "EOL") {
@@ -10839,7 +10879,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           case CBC_PARAM_ACTION_PRIORITYIN:
             if (goodModel) {
               // get next field
-              field = CbcReadGetString(whichArgument, argc, argv);
+              field = CoinGetString(inputVector, whichField,
+                                    interactiveMode, prompt);
               if (field == "$") {
                 field = cbcParameters_[iCbcParam].stringValue();
               } else if (field == "EOL") {
@@ -11212,7 +11253,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           case CBC_PARAM_ACTION_MIPSTART:
             if (goodModel) {
               // get next field
-              field = CbcReadGetString(whichArgument, argc, argv);
+              field = CoinGetString(inputVector, whichField,
+                                    interactiveMode, prompt);
               mipStartFile = field;
               if (field == "$") {
                 field = cbcParameters_[iCbcParam].stringValue();
@@ -11265,7 +11307,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               delete[] debugValues;
               debugValues = NULL;
               // get next field
-              field = CbcReadGetString(whichArgument, argc, argv);
+              field = CoinGetString(inputVector, whichField,
+                                    interactiveMode, prompt);
               if (field == "$") {
                 field = cbcParameters_[iCbcParam].stringValue();
               } else if (field == "EOL") {
@@ -11349,7 +11392,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           case CBC_PARAM_ACTION_PRINTMASK:
             // get next field
             {
-              std::string name = CbcReadGetString(whichArgument, argc, argv);
+              std::string name = CoinGetString(inputVector, whichField,
+                                               interactiveMode, prompt);
               if (name != "EOL") {
                 cbcParameters_[iCbcParam].setStringValue(name);
                 printMask = name;
@@ -11360,7 +11404,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             break;
           case CBC_PARAM_ACTION_RESTORE: {
             // get next field
-            field = CbcReadGetString(whichArgument, argc, argv);
+            field = CoinGetString(inputVector, whichField,
+                                  interactiveMode, prompt);
             if (field == "$") {
               field = cbcParameters_[iCbcParam].stringValue();
             } else if (field == "EOL") {
@@ -11435,7 +11480,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             }
             break;
           case CBC_PARAM_ACTION_DIRECTORY: {
-            std::string name = CbcReadGetString(whichArgument, argc, argv);
+            std::string name = CoinGetString(inputVector, whichField,
+                                             interactiveMode, prompt);
             if (name != "EOL") {
               size_t length = name.length();
               if (length > 0 && name[length - 1] == dirsep) {
@@ -11449,7 +11495,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             }
           } break;
           case CBC_PARAM_ACTION_DIRSAMPLE: {
-            std::string name = CbcReadGetString(whichArgument, argc, argv);
+            std::string name = CoinGetString(inputVector, whichField,
+                                             interactiveMode, prompt);
             if (name != "EOL") {
               size_t length = name.length();
               if (length > 0 && name[length - 1] == dirsep) {
@@ -11463,7 +11510,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             }
           } break;
           case CBC_PARAM_ACTION_DIRNETLIB: {
-            std::string name = CbcReadGetString(whichArgument, argc, argv);
+            std::string name = CoinGetString(inputVector, whichField,
+                                             interactiveMode, prompt);
             if (name != "EOL") {
               size_t length = name.length();
               if (length > 0 && name[length - 1] == dirsep) {
@@ -11477,7 +11525,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             }
           } break;
           case CBC_PARAM_ACTION_DIRMIPLIB: {
-            std::string name = CbcReadGetString(whichArgument, argc, argv);
+            std::string name = CoinGetString(inputVector, whichField,
+                                             interactiveMode, prompt);
             if (name != "EOL") {
               size_t length = name.length();
               if (length > 0 && name[length - 1] == dirsep) {
@@ -11491,7 +11540,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             }
           } break;
           case CBC_PARAM_ACTION_STDIN:
-            whichArgument = -1;
+            whichField = -1;
             break;
           case CBC_PARAM_ACTION_UNITTEST: {
             int returnCode;
@@ -11595,7 +11644,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             std::cout << "Non default values:-" << std::endl;
             std::cout << "Perturbation " << lpSolver->perturbation()
                       << " (default 100)" << std::endl;
-            CbcReadPrintit("Presolve being done with 5 passes\n\
+            CoinPrintString("Presolve being done with 5 passes\n\
 Dual steepest edge steep/partial on matrix shape and factorization density\n\
 Clpnnnn taken out of messages\n\
 If Factorization frequency default then done on size of matrix\n\n\
@@ -11606,7 +11655,8 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             break;
           case CBC_PARAM_ACTION_CSVSTATISTICS: {
             // get next field
-            field = CbcReadGetString(whichArgument, argc, argv);
+            field = CoinGetString(inputVector, whichField,
+                                  interactiveMode, prompt);
             if (field == "$") {
               field = cbcParameters_[iCbcParam].stringValue();
             } else if (field == "EOL") {
@@ -11689,14 +11739,16 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
               printGeneralMessage(model_, generalPrint);
             }
-          } break;
+            }
+            break;
           case CBC_PARAM_ACTION_SOLUTION:
           case CBC_PARAM_ACTION_NEXTBESTSOLUTION:
           case CBC_PARAM_ACTION_GMPL_SOLUTION:
             if (goodModel) {
               ClpSimplex *saveLpSolver = NULL;
               // get next field
-              field = CbcReadGetString(whichArgument, argc, argv);
+              field = CoinGetString(inputVector, whichField,
+                                    interactiveMode, prompt);
               bool append = false;
               if (field == "append$") {
                 field = "$";
@@ -12456,7 +12508,8 @@ clp watson.mps -\nscaling off\nprimalsimplex");
           case CBC_PARAM_ACTION_SAVESOL:
             if (goodModel) {
               // get next field
-              field = CbcReadGetString(whichArgument, argc, argv);
+              field = CoinGetString(inputVector, whichField,
+                                    interactiveMode, prompt);
               if (field == "$") {
                 field = cbcParameters_[iCbcParam].stringValue();
               } else if (field == "EOL") {
@@ -12484,6 +12537,21 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             } else {
               sprintf(generalPrint, "** Current model not valid");
               printGeneralMessage(model_, generalPrint);
+            }
+            break;
+          case CBC_PARAM_ACTION_ENVIRONMENT: {
+#if !defined(_MSC_VER) && !defined(__MSVCRT__)
+            // Don't think it will work with Visual Studio
+            char *input = getenv("CBC_ENVIRONMENT");
+            if (input){
+               std::istringstream inputStream(input);
+               CoinReadFromStream(inputVector, inputStream);
+               whichField = 0;
+            }
+#else
+            std::cout << "** Parameter not valid on Windows with Visual Studio"
+                      << std::endl;
+#endif
             }
             break;
           case CBC_PARAM_ACTION_DUMMY:

@@ -598,7 +598,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 	newArgv[newArgc++]= "-debug";
 	newArgv[newArgc++]= "unitTest";
       }
-      newArgv[newArgc++] = "solve";
+      newArgv[newArgc++] = "-solve";
       model = new CbcModel(solver1);
       CbcMain0(*model,parameterData);
       CbcMain1(newArgc, newArgv, *model, callBack, parameterData);

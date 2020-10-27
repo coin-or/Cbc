@@ -2714,10 +2714,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           if (!status) {
             if (typeIndex < 51) {
               int returnCode;
-              const char *message =
+              std::string message =
                   clpParameters_[iClpParam].setDoubleParameterWithMessage(
                       lpSolver, value, returnCode);
-              if (!noPrinting_ && strlen(message)) {
+              if (!noPrinting_ && message.length()) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                     << message << CoinMessageEol;
               }
@@ -2861,7 +2861,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                        CBC_PARAM_INT_VERBOSE)
                 verbose = value;
               int returnCode;
-              const char *message;
+              std::string message;
               if (cbcType < CBC_PARAM_NOTUSED_INVALID) {
                 message = cbcParameters_[iCbcParam].setIntParameterWithMessage(
                     model_, value, returnCode);
@@ -2873,7 +2873,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   CBC_PARAM_INT_SOLVERLOGLEVEL)
                 clpSolver->messageHandler()->setLogLevel(value); // as well
 
-              if (!noPrinting_ && strlen(message)) {
+              if (!noPrinting_ && message.length()) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                     << message << CoinMessageEol;
               }
@@ -3411,9 +3411,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                           << std::endl;
               }
             } else {
-              const char *message =
+               std::string message =
                   clpParameters_[iClpParam].setCurrentOptionWithMessage(action);
-              if (!noPrinting_ && strlen(message)) {
+              if (!noPrinting_ && message.length()) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                     << message << CoinMessageEol;
               }

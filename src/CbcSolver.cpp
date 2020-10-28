@@ -1777,8 +1777,6 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
     // 0 normal, 1 from ampl or MIQP etc (2 allows cuts)
     int complicatedInteger = 0;
     OsiSolverInterface *solver = model_.solver();
-    if (noPrinting_)
-      setCbcPrinting(false);
 #ifndef CBC_OTHER_SOLVER
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver);
@@ -1865,7 +1863,6 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
         }
         if (noPrinting_) {
           model_.messageHandler()->setLogLevel(0);
-          setCbcPrinting(false);
         }
         if (!noPrinting_)
           printf("%d rows, %d columns and %d elements\n", info.numberRows,
@@ -2723,10 +2720,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               }
             } else if (typeIndex < 81) {
               int returnCode;
-              const char *message =
+              std::string message =
                   cbcParameters_[iCbcParam].setDoubleParameterWithMessage(
                       model_, value, returnCode);
-              if (!noPrinting_ && strlen(message)) {
+              if (!noPrinting_ && message.length()) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                     << message << CoinMessageEol;
               }
@@ -2734,10 +2731,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               int returnCode;
               // TODO! This doesn't seem to do anything. None of the paramters
               // in this range are actually set by this function
-              const char *message =
+              std::string message =
                   cbcParameters_[iCbcParam].setDoubleParameterWithMessage(
                       model_, value, returnCode);
-              if (!noPrinting_ && strlen(message)) {
+              if (!noPrinting_ && message.length()) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                     << message << CoinMessageEol;
               }
@@ -2914,7 +2911,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 // switch on some later features if >999
                 if (value > 999) {
                   int switchValue = value / 1000;
-                  const char *message = NULL;
+                  std::string message;
                   value -= 1000 * switchValue;
                   cbcParameters_[whichCbcParam(CBC_PARAM_INT_EXPERIMENT,
                                                cbcParameters_)]
@@ -2927,7 +2924,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         cbcParameters_[whichCbcParam(CBC_PARAM_INT_MAXHOTITS,
                                                      cbcParameters_)]
                             .setIntValueWithMessage(500);
-                    if (!noPrinting_ && message)
+                    if (!noPrinting_ && message.length())
                       generalMessageHandler->message(CLP_GENERAL,
                                                      generalMessages)
                           << message << CoinMessageEol;
@@ -2935,7 +2932,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         cbcParameters_[whichCbcParam(CBC_PARAM_INT_CUTPASS,
                                                      cbcParameters_)]
                             .setIntValueWithMessage(-200);
-                    if (!noPrinting_ && message)
+                    if (!noPrinting_ && message.length())
                       generalMessageHandler->message(CLP_GENERAL,
                                                      generalMessages)
                           << message << CoinMessageEol;
@@ -2945,7 +2942,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                                                  CBC_PARAM_INT_MULTIPLEROOTS,
                                                  cbcParameters_)]
                                   .setIntValueWithMessage(4);
-                    if (!noPrinting_ && message)
+                    if (!noPrinting_ && message.length())
                       generalMessageHandler->message(CLP_GENERAL,
                                                      generalMessages)
                           << message << CoinMessageEol;
@@ -2955,7 +2952,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         cbcParameters_[whichCbcParam(CBC_PARAM_INT_DIVEOPT,
                                                      cbcParameters_)]
                             .setIntValueWithMessage(16);
-                    if (!noPrinting_ && message)
+                    if (!noPrinting_ && message.length())
                       generalMessageHandler->message(CLP_GENERAL,
                                                      generalMessages)
                           << message << CoinMessageEol;
@@ -2967,7 +2964,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         cbcParameters_[whichCbcParam(CBC_PARAM_INT_PROCESSTUNE,
                                                      cbcParameters_)]
                             .setIntValueWithMessage(7);
-                    if (!noPrinting_ && message)
+                    if (!noPrinting_ && message.length())
                       generalMessageHandler->message(CLP_GENERAL,
                                                      generalMessages)
                           << message << CoinMessageEol;
@@ -2983,7 +2980,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                                                      cbcParameters_)]
                             .setCurrentOptionWithMessage("on");
                     probingAction = 1;
-                    if (!noPrinting_ && message)
+                    if (!noPrinting_ && message.length())
                       generalMessageHandler->message(CLP_GENERAL,
                                                      generalMessages)
                           << message << CoinMessageEol;
@@ -2991,7 +2988,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         cbcParameters_[whichCbcParam(CBC_PARAM_STR_ZEROHALFCUTS,
                                                      cbcParameters_)]
                             .setCurrentOptionWithMessage("root");
-                    if (!noPrinting_ && message)
+                    if (!noPrinting_ && message.length())
                       generalMessageHandler->message(CLP_GENERAL,
                                                      generalMessages)
                           << message << CoinMessageEol;
@@ -2999,7 +2996,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         cbcParameters_[whichCbcParam(CBC_PARAM_STR_LAGOMORYCUTS,
                                                      cbcParameters_)]
                             .setCurrentOptionWithMessage("root");
-                    if (!noPrinting_ && message)
+                    if (!noPrinting_ && message.length())
                       generalMessageHandler->message(CLP_GENERAL,
                                                      generalMessages)
                           << message << CoinMessageEol;
@@ -3008,7 +3005,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         cbcParameters_[whichCbcParam(CBC_PARAM_STR_GMICUTS,
                                                      cbcParameters_)]
                             .setCurrentOptionWithMessage("root");
-                    if (!noPrinting_ && message)
+                    if (!noPrinting_ && message.length())
                       generalMessageHandler->message(CLP_GENERAL,
                                                      generalMessages)
                           << message << CoinMessageEol;
@@ -3153,10 +3150,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 }
               }
               int returnCode;
-              const char *message =
+              std::string message =
                   cbcParameters_[iCbcParam].setIntParameterWithMessage(
                       model_, value, returnCode);
-              if (!noPrinting_ && strlen(message)) {
+              if (!noPrinting_ && message.length()) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                     << message << CoinMessageEol;
               }
@@ -3197,9 +3194,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                           << std::endl;
               }
             } else {
-              const char *message =
+              std::string message =
                   cbcParameters_[iCbcParam].setCurrentOptionWithMessage(action);
-              if (!noPrinting_ && strlen(message)) {
+              if (!noPrinting_ && message.length()) {
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                     << message << CoinMessageEol;
               }

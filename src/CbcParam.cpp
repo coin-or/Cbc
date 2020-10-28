@@ -20,14 +20,6 @@
 
 #include "CbcParam.hpp"
 
-static bool doPrinting = true;
-static char printArray[250];
-
-void setCbcPrinting(bool yesNo)
-{
-   doPrinting = yesNo;
-}
-
 //#############################################################################
 // Constructors / Destructor / Assignment
 //#############################################################################
@@ -220,32 +212,41 @@ double CbcParam::doubleParameter(CbcModel &model) const {
   }
   return value;
 }
-int CbcParam::setDoubleParameter(OsiSolverInterface *model, double value) {
+int CbcParam::setDoubleParameter(OsiSolverInterface *model, double value,
+                                 bool doPrinting) {
   int returnCode;
-  setDoubleParameterWithMessage(model, value, returnCode);
-  if (doPrinting && strlen(printArray))
-    std::cout << printArray << std::endl;
+  std::string message =
+     setDoubleParameterWithMessage(model, value, returnCode);
+  if (doPrinting){
+    std::cout << message << std::endl;
+  }
   return returnCode;
 }
-int CbcParam::setDoubleParameter(CbcModel &model, double value) {
+int CbcParam::setDoubleParameter(CbcModel &model, double value,
+                                 bool doPrinting) {
   int returnCode = 0;
-  setDoubleParameterWithMessage(model, value, returnCode);
-  if (doPrinting && strlen(printArray))
-    std::cout << printArray << std::endl;
+  std::string message =
+     setDoubleParameterWithMessage(model, value, returnCode);
+  if (doPrinting){
+    std::cout << message << std::endl;
+  }
   return returnCode;
 }
 // Sets double parameter and returns printable string and error code
-const char *CbcParam::setDoubleParameterWithMessage(OsiSolverInterface *model,
+std::string CbcParam::setDoubleParameterWithMessage(OsiSolverInterface *model,
                                                     double value,
                                                     int &returnCode) {
+  std::ostringstream buffer;
   if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
-    sprintf(printArray, "%g was provided for %s - valid range is %g to %g",
-            value, name_.c_str(), lowerDoubleValue_, upperDoubleValue_);
-    std::cout << value << " was provided for " << name_ << " - valid range is "
-              << lowerDoubleValue_ << " to " << upperDoubleValue_ << std::endl;
-    returnCode = 1;
+     buffer << value << " was provided for " << name_;
+     buffer << " - valid range is " << lowerDoubleValue_;
+     buffer << " to " << upperDoubleValue_ << std::endl;
+     returnCode = 1;
   } else {
     double oldValue = doubleValue_;
+    buffer << name_ << " was changed from ";
+    buffer << oldValue << " to " << value << std::endl;
+    returnCode = 0;
     doubleValue_ = value;
     switch (type_) {
     case CLP_PARAM_DBL_DUALTOLERANCE:
@@ -259,24 +260,26 @@ const char *CbcParam::setDoubleParameterWithMessage(OsiSolverInterface *model,
     default:
       break;
     }
-    sprintf(printArray, "%s was changed from %g to %g", name_.c_str(), oldValue,
-            value);
-    returnCode = 0;
   }
-  return printArray;
+  return buffer.str();
 }
 // TODO: This function doesn't set all the possible parameters. Does this
 // matter?
 // Sets double parameter and returns printable string and error code
-const char *CbcParam::setDoubleParameterWithMessage(CbcModel &model,
+std::string CbcParam::setDoubleParameterWithMessage(CbcModel &model,
                                                     double value,
                                                     int &returnCode) {
+  std::ostringstream buffer;
   if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
-    sprintf(printArray, "%g was provided for %s - valid range is %g to %g",
-            value, name_.c_str(), lowerDoubleValue_, upperDoubleValue_);
-    returnCode = 1;
+     buffer << value << " was provided for " << name_;
+     buffer << " - valid range is " << lowerDoubleValue_;
+     buffer << " to " << upperDoubleValue_ << std::endl;
+     returnCode = 1;
   } else {
     double oldValue = doubleValue_;
+    buffer << name_ << " was changed from ";
+    buffer << oldValue << " to " << value << std::endl;
+    returnCode = 0;
     doubleValue_ = value;
     switch (type_) {
     case CBC_PARAM_DBL_INFEASIBILITYWEIGHT:
@@ -317,11 +320,8 @@ const char *CbcParam::setDoubleParameterWithMessage(CbcModel &model,
     default:
       break;
     }
-    sprintf(printArray, "%s was changed from %g to %g", name_.c_str(), oldValue,
-            value);
-    returnCode = 0;
   }
-  return printArray;
+  return buffer.str();
 }
 void CbcParam::setDoubleValue(double value) {
   if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
@@ -331,19 +331,19 @@ void CbcParam::setDoubleValue(double value) {
     doubleValue_ = value;
   }
 }
-const char *CbcParam::setDoubleValueWithMessage(double value) {
-  printArray[0] = '\0';
+std::string CbcParam::setDoubleValueWithMessage(double value) {
+  std::ostringstream buffer;
   if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
-    sprintf(printArray, "%g was provided for %s - valid range is %g to %g",
-            value, name_.c_str(), lowerDoubleValue_, upperDoubleValue_);
+     buffer << value << " was provided for " << name_;
+     buffer << " - valid range is " << lowerDoubleValue_;
+     buffer << " to " << upperDoubleValue_ << std::endl;
   } else {
-    if (value == doubleValue_)
-      return NULL;
-    sprintf(printArray, "%s was changed from %g to %g", name_.c_str(),
-            doubleValue_, value);
+    double oldValue = doubleValue_;
+    buffer << name_ << " was changed from ";
+    buffer << oldValue << " to " << value << std::endl;
     doubleValue_ = value;
   }
-  return printArray;
+  return buffer.str();
 }
 int CbcParam::checkDoubleParameter(double value) const {
   if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
@@ -417,29 +417,40 @@ int CbcParam::intParameter(CbcModel &model) const {
   }
   return value;
 }
-int CbcParam::setIntParameter(OsiSolverInterface *model, int value) {
+int CbcParam::setIntParameter(OsiSolverInterface *model, int value,
+                              bool doPrinting) {
   int returnCode;
-  setIntParameterWithMessage(model, value, returnCode);
-  if (doPrinting && strlen(printArray))
-    std::cout << printArray << std::endl;
+  std::string message =
+     setIntParameterWithMessage(model, value, returnCode);
+  if (doPrinting){
+    std::cout << message << std::endl;
+  }
   return returnCode;
 }
-int CbcParam::setIntParameter(CbcModel &model, int value) {
+int CbcParam::setIntParameter(CbcModel &model, int value,
+                              bool doPrinting) {
   int returnCode;
-  setIntParameterWithMessage(model, value, returnCode);
-  if (doPrinting && strlen(printArray))
-    std::cout << printArray << std::endl;
+  std::string message =
+     setIntParameterWithMessage(model, value, returnCode);
+  if (doPrinting){
+    std::cout << message << std::endl;
+  }
   return returnCode;
 }
 // Sets int parameter and returns printable string and error code
-const char *CbcParam::setIntParameterWithMessage(OsiSolverInterface *model,
+std::string CbcParam::setIntParameterWithMessage(OsiSolverInterface *model,
                                                  int value, int &returnCode) {
+  std::ostringstream buffer;
   if (value < lowerIntValue_ || value > upperIntValue_) {
-    sprintf(printArray, "%d was provided for %s - valid range is %d to %d",
-            value, name_.c_str(), lowerIntValue_, upperIntValue_);
-    returnCode = 1;
+     buffer << value << " was provided for " << name_;
+     buffer << " - valid range is " << lowerIntValue_ << " to ";
+     buffer << upperIntValue_ << std::endl;
+     returnCode = 1;
   } else {
     int oldValue = intValue_;
+    buffer << name_ << " was changed from " << oldValue;
+    buffer << " to " << value << std::endl;
+    returnCode = 0;
     intValue_ = oldValue;
     switch (type_) {
     case CBC_PARAM_INT_LPLOGLEVEL:
@@ -448,24 +459,23 @@ const char *CbcParam::setIntParameterWithMessage(OsiSolverInterface *model,
     default:
       break;
     }
-    sprintf(printArray, "%s was changed from %d to %d", name_.c_str(), oldValue,
-            value);
-    returnCode = 0;
   }
-  return printArray;
+  return buffer.str();
 }
 // Sets int parameter and returns printable string and error code
-const char *CbcParam::setIntParameterWithMessage(CbcModel &model, int value,
+std::string CbcParam::setIntParameterWithMessage(CbcModel &model, int value,
                                                  int &returnCode) {
+  std::ostringstream buffer;
   if (value < lowerIntValue_ || value > upperIntValue_) {
-    sprintf(printArray, "%d was provided for %s - valid range is %d to %d",
-            value, name_.c_str(), lowerIntValue_, upperIntValue_);
-    returnCode = 1;
+     buffer << value << " was provided for " << name_;
+     buffer << " - valid range is " << lowerIntValue_ << " to ";
+     buffer << upperIntValue_ << std::endl;
+     returnCode = 1;
   } else {
-    printArray[0] = '\0';
-    if (value == intValue_)
-      return printArray;
     int oldValue = intValue_;
+    buffer << name_ << " was changed from " << oldValue;
+    buffer << " to " << value << std::endl;
+    returnCode = 0;
     intValue_ = value;
     switch (type_) {
     case CBC_PARAM_INT_SOLVERLOGLEVEL:
@@ -528,11 +538,8 @@ const char *CbcParam::setIntParameterWithMessage(CbcModel &model, int value,
     default:
       break;
     }
-    sprintf(printArray, "%s was changed from %d to %d", name_.c_str(), oldValue,
-            value);
-    returnCode = 0;
   }
-  return printArray;
+  return buffer.str();
 }
 void CbcParam::setIntValue(int value) {
   if (value < lowerIntValue_ || value > upperIntValue_) {
@@ -542,19 +549,19 @@ void CbcParam::setIntValue(int value) {
     intValue_ = value;
   }
 }
-const char *CbcParam::setIntValueWithMessage(int value) {
-  printArray[0] = '\0';
-  if (value < lowerIntValue_ || value > upperIntValue_) {
-    sprintf(printArray, "%d was provided for %s - valid range is %d to %d",
-            value, name_.c_str(), lowerIntValue_, upperIntValue_);
-  } else {
-    if (value == intValue_)
-      return NULL;
-    sprintf(printArray, "%s was changed from %d to %d", name_.c_str(),
-            intValue_, value);
-    intValue_ = value;
-  }
-  return printArray;
+std::string CbcParam::setIntValueWithMessage(int value) {
+   std::ostringstream buffer;
+   if (value < lowerIntValue_ || value > upperIntValue_) {
+      buffer << value << " was provided for " << name_;
+      buffer << " - valid range is " << lowerIntValue_ << " to ";
+      buffer << upperIntValue_ << std::endl;
+   } else {
+      int oldValue = intValue_;
+      buffer << name_ << " was changed from " << oldValue;
+      buffer << " to " << value << std::endl;
+      intValue_ = value;
+   }
+   return buffer.str();
 }
 void CbcParam::setStringValue(std::string value) { stringValue_ = value; }
 
@@ -715,62 +722,62 @@ void CbcParam::setCurrentOption(int value, bool printIt) {
   currentKeyWord_ = value;
 }
 // Sets current parameter option and returns printable string
-const char *CbcParam::setCurrentOptionWithMessage(int value) {
+std::string CbcParam::setCurrentOptionWithMessage(int value) {
+  std::ostringstream buffer;
   if (value != currentKeyWord_) {
+    buffer << "Option for " << name_ << " changed from ";
     char current[100];
     char newString[100];
-    if (currentKeyWord_ >= 0 &&
-        (fakeKeyWord_ <= 0 || currentKeyWord_ < fakeKeyWord_))
-      strcpy(current, definedKeyWords_[currentKeyWord_].c_str());
-    else if (currentKeyWord_ < 0)
-      sprintf(current, "minus%d", -currentKeyWord_ - 1000);
-    else
-      sprintf(current, "plus%d", currentKeyWord_ - 1000);
-    if (value >= 0 && (fakeKeyWord_ <= 0 || value < fakeKeyWord_))
-      strcpy(newString, definedKeyWords_[value].c_str());
-    else if (value < 0)
-      sprintf(newString, "minus%d", -value - 1000);
-    else
-      sprintf(newString, "plus%d", value - 1000);
-    sprintf(printArray, "Option for %s changed from %s to %s", name_.c_str(),
-            current, newString);
+    if (currentKeyWord_ >= 0 && (fakeKeyWord_ <= 0 ||
+                                 currentKeyWord_ < fakeKeyWord_)){
+       buffer << definedKeyWords_[currentKeyWord_];
+    }else if (currentKeyWord_ < 0){
+       buffer << "minus" << -currentKeyWord_ - 1000;
+    }else{
+       buffer << "plus" << currentKeyWord_ - 1000;
+    }
+    buffer << " to ";
+    if (value >= 0 && (fakeKeyWord_ <= 0 || value < fakeKeyWord_)){
+       buffer << definedKeyWords_[value];
+    }else if (value < 0){
+       buffer << "minus" << -value - 1000;
+    }else{
+       buffer << "plus" << value - 1000;
+    }
+
 #if FLUSH_PRINT_BUFFER > 2
     if (name_ == "bufferedMode")
       coinFlushBufferFlag = value;
 #endif
     currentKeyWord_ = value;
-  } else {
-    printArray[0] = '\0';
   }
-  return printArray;
+  return buffer.str();
 }
 // Sets current parameter option using string with message
-const char *CbcParam::setCurrentOptionWithMessage(const std::string value) {
+std::string CbcParam::setCurrentOptionWithMessage(const std::string value) {
+  std::ostringstream buffer;
   int action = parameterOption(value);
   char current[100];
-  printArray[0] = '\0';
   if (action >= 0) {
 #if FLUSH_PRINT_BUFFER > 2
     if (name_ == "bufferedMode")
       coinFlushBufferFlag = action;
 #endif
-    if (action == currentKeyWord_)
-      return NULL;
-    if (currentKeyWord_ >= 0 &&
-        (fakeKeyWord_ <= 0 || currentKeyWord_ < fakeKeyWord_))
-      strcpy(current, definedKeyWords_[currentKeyWord_].c_str());
-    else if (currentKeyWord_ < 0)
-      sprintf(current, "minus%d", -currentKeyWord_ - 1000);
-    else
-      sprintf(current, "plus%d", currentKeyWord_ - 1000);
-    sprintf(printArray, "Option for %s changed from %s to %s", name_.c_str(),
-            current, value.c_str());
+    buffer << "Option for " << name_ << " changed from ";
+    if (currentKeyWord_ >= 0 && (fakeKeyWord_ <= 0 ||
+                                 currentKeyWord_ < fakeKeyWord_)){
+       buffer << definedKeyWords_[currentKeyWord_];
+    }else if (currentKeyWord_ < 0){
+       buffer << "minus" << -currentKeyWord_ - 1000;
+    }else{
+       buffer << "plus" << currentKeyWord_ - 1000;
+    }
+    buffer << " to " << value;
     currentKeyWord_ = action;
   } else {
-    sprintf(printArray, "Option for %s given illegal value %s", name_.c_str(),
-            value.c_str());
+     buffer << "Option for " << name_ << " given illegal value " << value;
   }
-  return printArray;
+  return buffer.str();
 }
 /* Returns current parameter option position
    but if fake keyword returns fakeValue_

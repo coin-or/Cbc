@@ -282,20 +282,22 @@ public:
   /// Gets a double parameter
   double doubleParameter(CbcModel &model) const;
   /// Sets a double parameter (nonzero code if error)
-  int setDoubleParameter(OsiSolverInterface *model, double value);
+  int setDoubleParameter(OsiSolverInterface *model, double value,
+                         bool doPrinting = false);
   /// Sets a double parameter (nonzero code if error)
-  int setDoubleParameter(CbcModel &model, double value);
+  int setDoubleParameter(CbcModel &model, double value,
+                         bool doPrinting = false);
   /// Sets double parameter and returns printable string and error code
-  const char *setDoubleParameterWithMessage(OsiSolverInterface *model,
+  std::string setDoubleParameterWithMessage(OsiSolverInterface *model,
                                             double value, int &returnCode);
   /// Sets double parameter and returns printable string and error code
-  const char *setDoubleParameterWithMessage(CbcModel &model, double value,
+  std::string setDoubleParameterWithMessage(CbcModel &model, double value,
                                             int &returnCode);
   inline double doubleValue() const { return doubleValue_; }
   /// Sets double value
   void setDoubleValue(double value);
   /// Sets double value with message
-  const char *setDoubleValueWithMessage(double value);
+  std::string setDoubleValueWithMessage(double value);
   /// Checks a double parameter (nonzero code if error)
   int checkDoubleParameter(double value) const;
   /// Gets a int parameter
@@ -303,21 +305,23 @@ public:
   /// Gets a int parameter
   int intParameter(CbcModel &model) const;
   /// Sets a int parameter (nonzero code if error)
-  int setIntParameter(CbcModel &model, int value);
+  int setIntParameter(CbcModel &model, int value,
+                      bool doPrinting = false);
   /// Sets a int parameter (nonzero code if error)
-  int setIntParameter(OsiSolverInterface *model, int value);
+  int setIntParameter(OsiSolverInterface *model, int value,
+                      bool doPrinting = false);
   /// Sets int parameter and returns printable string and error code
-  const char *setIntParameterWithMessage(OsiSolverInterface *model, int value,
+  std::string setIntParameterWithMessage(OsiSolverInterface *model, int value,
                                          int &returnCode);
   /// Sets int parameter and returns printable string and error code
-  const char *setIntParameterWithMessage(CbcModel &model, int value,
-                                         int &returnCode);
+  std::string setIntParameterWithMessage(CbcModel &model, int value,
+                                          int &returnCode);
   /// Gets int value
   inline int intValue() const { return intValue_; }
   /// Sets int value
   void setIntValue(int value);
   /// Sets int value with message
-  const char *setIntValueWithMessage(int value);
+  std::string setIntValueWithMessage(int value);
   /// Gets string value
   inline std::string stringValue() const { return stringValue_; }
   /// Sets string value
@@ -341,9 +345,9 @@ public:
   /// Sets current parameter option using string
   void setCurrentOption(const std::string value);
   /// Sets current parameter option and returns printable string
-  const char *setCurrentOptionWithMessage(int value);
+  std::string setCurrentOptionWithMessage(int value);
   /// Sets current parameter option using string with message
-  const char *setCurrentOptionWithMessage(const std::string value);
+  std::string setCurrentOptionWithMessage(const std::string value);
   /// Returns current parameter option position
   int currentOptionAsInteger() const;
   /** Returns current parameter option position

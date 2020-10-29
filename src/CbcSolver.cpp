@@ -7535,8 +7535,13 @@ int CbcMain1(int argc, const char *argv[],
 		  double value = simplex->getMinIntervalProgressUpdate();
 		  if (value<=0.0) {
 		    babModel_->setSecsPrintFrequency(-1.0);
-		    if (value<0.0) {
+		    if (value<-1.0) {
 		      babModel_->setPrintFrequency(static_cast<int>(-value));
+		    } else {
+		      if (babModel_->getNumCols() > 2000)
+			babModel_->setPrintFrequency(100);
+		      else
+			babModel_->setPrintFrequency(1000);
 		    }
 		  } else {
 		    babModel_->setSecsPrintFrequency(value);

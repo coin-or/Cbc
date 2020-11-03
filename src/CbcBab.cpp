@@ -385,7 +385,7 @@ void installCutGenerators(CbcSolverSettings *cbcSettings, CbcModel *model)
 
       Once we're in the tree, aim for one pass per activation.
     */
-  if (cbcSettings->setByUser_[CbcModelParam::CUTPASS] == false) {
+  if (!cbcSettings->setByUser(CUTPASS)) {
     int numCols = model->getNumCols();
     if (numCols < 500)
       model->setMaximumCutPassesAtRoot(-100);
@@ -478,7 +478,7 @@ int doBaCParam(CoinParam &param)
   CbcSolverParam &cbcParam = dynamic_cast<CbcSolverParam &>(param);
   CbcSolverSettings *cbcSettings = cbcParam.obj();
   assert(cbcSettings != 0);
-  CbcModel *model = cbcSettings->model_;
+  CbcModel *model = cbcSettings->getModel();
   assert(model != 0);
   /*
       Setup to return nonfatal/fatal error (1/-1) by default.
@@ -495,7 +495,7 @@ int doBaCParam(CoinParam &param)
   /*
       We ain't gonna do squat without a good model.
     */
-  if (!cbcSettings->goodModel_) {
+  if (!cbcSettings->goodModel()) {
     std::cout << "** Current model not valid!" << std::endl;
     return (retval);
   }
@@ -520,7 +520,7 @@ int doBaCParam(CoinParam &param)
       Solve the root relaxation. Bail unless it solves to optimality.
     */
   if (!solveRelaxation(&babModel)) {
-    cbcSettings->setBaBStatus(&babModel, CbcSolverParam::BACwBareRoot);
+    cbcSettings->setBaBStatus(CbcSolverParam::BACwBareRoot);
     return (0);
   }
 #if COIN_CBC_VERBOSITY > 0
@@ -609,7 +609,7 @@ int doBaCParam(CoinParam &param)
       std::cout << "Integer preprocess says infeasible or unbounded"
                 << std::endl;
       delete preIppSolver;
-      cbcSettings->setBaBStatus(&babModel, CbcSolverParam::BACwIPP);
+      cbcSettings->setBaBStatus(CbcSolverParam::BACwIPP);
       return (0);
     }
 #if COIN_CBC_VERBOSITY > 0
@@ -640,7 +640,7 @@ int doBaCParam(CoinParam &param)
 #endif
     if (!solveRelaxation(&babModel)) {
       delete preIppSolver;
-      cbcSettings->setBaBStatus(&babModel, CbcSolverParam::BACwIPPRelax);
+      cbcSettings->setBaBStatus(CbcSolverParam::BACwIPPRelax);
       return (0);
     }
 #if COIN_CBC_VERBOSITY > 0
@@ -658,8 +658,8 @@ int doBaCParam(CoinParam &param)
       If we're using the COSTSTRATEGY option, set up priorities here and pass
       them to the babModel.
     */
-  if (cbcSettings->priorityMode_ != CbcSolverParam::BPOff) {
-    setupPriorities(&babModel, cbcSettings->priorityMode_);
+  if (cbcSettings->getBranchingPriorityMode() != CbcSolverParam::BPOff) {
+     setupPriorities(&babModel, cbcSettings->getBranchingPriorityMode());
   }
   /*
       Install heuristics and cutting planes.
@@ -676,9 +676,9 @@ int doBaCParam(CoinParam &param)
       If we've read in a known good solution for debugging, activate the row cut
       debugger.
     */
-  if (cbcSettings->debugSol_.values_) {
-    if (cbcSettings->debugSol_.numCols_ == babModel.getNumCols()) {
-      babSolver->activateRowCutDebugger(cbcSettings->debugSol_.values_);
+  if (cbcSettings->getDebugSolValues()) {
+     if (cbcSettings->getDebugSolNumCols() == babModel.getNumCols()) {
+        babSolver->activateRowCutDebugger(cbcSettings->getDebugSolValues());
     } else {
       std::cout << "doBaCParam: debug file has incorrect number of columns."
                 << std::endl;
@@ -687,7 +687,7 @@ int doBaCParam(CoinParam &param)
   /*
       Set ratio-based integrality gap, if specified by user.
     */
-  if (cbcSettings->setByUser_[CbcModelParam::GAPRATIO] == true) {
+  if (cbcSettings->setByUser(GAPRATIO)) {
     double obj = babSolver->getObjValue();
     double gapRatio = babModel.getDblParam(CbcModel::CbcAllowableFractionGap);
     double gap = gapRatio * (1.0e-5 + fabs(obj));
@@ -730,7 +730,7 @@ int doBaCParam(CoinParam &param)
   OsiChooseStrong strong(babSolver);
   strong.setNumberBeforeTrusted(babModel.numberBeforeTrust());
   strong.setNumberStrong(babModel.numberStrong());
-  strong.setShadowPriceMode(cbcSettings->chooseStrong_.shadowPriceMode_);
+  strong.setShadowPriceMode(cbcSettings->getShadowPriceMode());
   CbcBranchDefaultDecision decision;
   decision.setChooseMethod(strong);
   babModel.setBranchingMethod(decision);
@@ -756,7 +756,8 @@ int doBaCParam(CoinParam &param)
       general, the solver used to return the solution will not be the solver we
       passed in, so reset babSolver here.
     */
-  int statistics = (cbcSettings->printOpt_ > 0) ? cbcSettings->printOpt_ : 0;
+  int statistics = (cbcSettings->getPrintOptions() > 0) ?
+     cbcSettings->getPrintOptions() : 0;
 #if CBC_TRACK_SOLVERS > 0
   std::cout << "doBaCParam: solver at call to branchAndBound is " << std::hex
             << babModel.solver() << std::dec << ", log level "
@@ -774,7 +775,7 @@ int doBaCParam(CoinParam &param)
   /*
       Write out solution to preprocessed model.
     */
-  if (cbcSettings->debugCreate_ == "createAfterPre" &&
+  if (cbcSettings->getDebugCreate() == "createAfterPre" &&
       babModel.bestSolution()) {
     CbcSolverParamUtils::saveSolution(babSolver, "debug.file");
   }
@@ -801,7 +802,7 @@ int doBaCParam(CoinParam &param)
 #endif
 
   time2 = CoinCpuTime();
-  cbcSettings->totalTime_ += time2 - time1;
+  cbcSettings->setTotalTime(cbcSettings->getTotalTime() + time2 - time1);
   /*
       If we performed integer preprocessing, time to back it out.
     */
@@ -821,7 +822,7 @@ int doBaCParam(CoinParam &param)
   /*
       Write out postprocessed solution to debug file, if requested.
     */
-  if (cbcSettings->debugCreate_ == "create" && babModel.bestSolution()) {
+  if (cbcSettings->getDebugCreate() == "create" && babModel.bestSolution()) {
     CbcSolverParamUtils::saveSolution(babSolver, "debug.file");
   }
   /*
@@ -835,7 +836,7 @@ int doBaCParam(CoinParam &param)
     keepAnswerSolver = true;
     answerSolver = babSolver;
   }
-  cbcSettings->setBaBStatus(&babModel, CbcSolverParam::BACwBAC,
+  cbcSettings->setBaBStatus(CbcSolverParam::BACwBAC,
                             keepAnswerSolver, answerSolver);
   /*
       And one last bit of information & statistics.

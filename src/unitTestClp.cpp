@@ -129,7 +129,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 		   int testSwitch, const double *stuff, int argc,
 		   const char ** argv,
 		   int callBack(CbcModel *currentSolver, int whereFrom),
-		   CbcSolverUsefulData &parameterData)
+		   CbcSolverSettings &cbcSettings)
 {
   // Stop Windows popup
   WindowsErrorPopupBlocker();
@@ -600,8 +600,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
       }
       newArgv[newArgc++] = "-solve";
       model = new CbcModel(solver1);
-      CbcMain0(*model,parameterData);
-      CbcMain1(newArgc, newArgv, *model, callBack, parameterData);
+      CbcMain0(*model, cbcSettings);
+      CbcMain1(newArgc, newArgv, *model, callBack, cbcSettings);
     }
     if ((model->getNumRows() != nRows[m] ||
 	 model->getNumCols() != nCols[m]) && model->getNumRows())

@@ -16,6 +16,8 @@
 #ifndef CbcSolver_H
 #define CbcSolver_H
 
+#include "CbcConfig.h"
+
 #include <string>
 #include <vector>
 
@@ -32,7 +34,7 @@
 
 #include "CbcModel.hpp"
 #include "CbcParam.hpp"
-#include "CbcConfig.h"
+#include "CbcSolverSettings.hpp"
 
 class CbcUser;
 class CbcStopNow;
@@ -336,7 +338,7 @@ public:
 
   /// Get useful stuff
   virtual void fillInformation(CbcSolver * /*model*/,
-    CbcSolverUsefulData & /*info*/) {}
+    CbcSolverSettings & /*info*/) {}
   //@}
 
   ///@name usage methods
@@ -456,12 +458,12 @@ private:
 
 // When we want to load up CbcModel with options first
 CBCLIB_EXPORT
-void CbcMain0(CbcModel &babSolver, CbcSolverUsefulData &solverData);
+void CbcMain0(CbcModel &babSolver, CbcSolverSettings &solverSettings);
 CBCLIB_EXPORT
-int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcSolverUsefulData &solverData);
+int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcSolverSettings &solverSettings);
 CBCLIB_EXPORT
 int CbcMain1(int argc, const char *argv[], CbcModel &babSolver,
-	     CbcSolverUsefulData &solverData);
+	     CbcSolverSettings &solverSettings);
 
 CBCLIB_EXPORT
 int CbcMain(int argc, const char *argv[], CbcModel &babSolver);

@@ -16,6 +16,38 @@
    \brief Declarations for parameters that act on a CbcModel object.
 */
 
+enum CbcModelParamCode {
+   CBCMODEL_FIRSTPARAM = CBCSOLVER_LASTPARAM + 1,
+   
+   ALLOWABLEGAP,
+   COSTSTRATEGY,
+   //CUTDEPTH,
+   CUTOFF,
+   CUTPASS,
+   DIRECTION,
+   GAPRATIO,
+   INCREMENT,
+   INFEASIBILITYWEIGHT,
+   INTEGERTOLERANCE,
+   //LOGLEVEL,
+   MAXIMIZE,
+   MAXNODES,
+   MAXNODESNOTIMPROVING,   // Added
+   MAXSECONDSNOTIMPROVING, // Added
+   MAXSOLS,                // Added
+   MINIMIZE,
+   MIPOPTIONS,
+   MOREMIPOPTIONS,
+   NUMBERANALYZE,
+   NUMBERBEFORE,
+   REVERSE,
+   STRONGBRANCHING,
+   TIMELIMIT,
+   
+   CBCMODEL_LASTPARAM
+   
+};
+
 /*
  */
 
@@ -39,36 +71,6 @@ public:
       CBCCBC_FIRSTPARAM and CBCCBC_LASTPARAM are markers to allow convenient
       separation of parameter groups.
     */
-  enum CbcModelParamCode {
-    CBCMODEL_FIRSTPARAM = CbcSolverParam::CBCSOLVER_LASTPARAM + 1,
-
-    ALLOWABLEGAP,
-    COSTSTRATEGY,
-    CUTDEPTH,
-    CUTOFF,
-    CUTPASS,
-    DIRECTION,
-    GAPRATIO,
-    INCREMENT,
-    INFEASIBILITYWEIGHT,
-    INTEGERTOLERANCE,
-    LOGLEVEL,
-    MAXIMIZE,
-    MAXNODES,
-    MAXNODESNOTIMPROVING,   // Added
-    MAXSECONDSNOTIMPROVING, // Added
-    MAXSOLS,                // Added
-    MINIMIZE,
-    MIPOPTIONS,
-    MOREMIPOPTIONS,
-    NUMBERANALYZE,
-    NUMBERBEFORE,
-    STRONGBRANCHING,
-    TIMELIMIT,
-
-    CBCMODEL_LASTPARAM
-
-  };
 
   enum OptimizationDirection {
     OptDirMaximize = 0,
@@ -196,9 +198,6 @@ private:
 */
 
 namespace CbcModelParamUtils {
-void addCbcModelParams(int &numParams, CoinParamVec &paramVec, CbcModel *model);
-void loadCbcParamObj(const CoinParamVec paramVec, int first, int last,
-                     CbcModel *model);
 void setCbcModelDefaults(CbcModel *model);
 
 int pushCbcModelDblParam(CoinParam &param);

@@ -26,6 +26,196 @@
 
 class CbcSolverSettings;
 
+enum CbcSolverParamCode {
+   CBCSOLVER_FIRSTPARAM = 0,
+   
+   // Unused paramters that we may delete
+   CBCSOLVER_FIRSTUNUSEDPARAM,
+   BRANCHSTRATEGY,
+   CLEARCUTS,
+   SOLVER,
+   CBCSOLVER_LASTUNUSEDPARAM,
+   
+   // Help and Information Parameters
+   CBCSOLVER_FIRSTHELPPARAM,
+   GENERALQUERY,
+   FULLGENERALQUERY,
+   HELP,
+   PRINTVERSION,
+   CBCSOLVER_LASTHELPPARAM,
+   
+   // Action Parameters
+   CBCSOLVER_FIRSTACTIONPARAM,
+   BAB,
+   DUMMY,
+   ENVIRONMENT,
+   EXIT,
+   EXPORT,
+   GMPL_SOLUTION,
+   IMPORT,
+   MIPLIB,
+   OUTDUPROWS,
+   RESTORE,
+   SAVE,
+   SHOWUNIMP,
+   SOLVECONTINUOUS,
+   STATISTICS,
+   STDIN,
+   STRENGTHEN,
+   UNITTEST,
+   CBCSOLVER_LASTACTIONPARAM,
+   
+   // String (Directory) Parameters
+   CBCSOLVER_FIRSTSTRPARAM,
+   CSVSTATISTICS,
+   DEBUG,
+   DIRECTORY,
+   DIRSAMPLE,
+   DIRNETLIB,
+   DIRMIPLIB,
+   MIPSTART,
+   NEXTBESTSOLUTION,
+   PRINTMASK,
+   PRIORITYIN,
+   SOLUTION,
+   SAVESOL,
+   CBCSOLVER_LASTSTRPARAM,
+   
+   // Cut Parameters
+   CBCSOLVER_FIRSTCUTPARAM,
+   CUTSTRATEGY,
+   CLIQUECUTS,
+   FLOWCUTS,
+   GMICUTS,
+   GOMORYCUTS,
+   KNAPSACKCUTS,
+   LAGOMORYCUTS,
+   LANDPCUTS,
+   LATWOMIRCUTS,
+   MIRCUTS,
+   ODDHOLECUTS, // Not used
+   ODDWHEELCUTS,
+   PROBINGCUTS,
+   REDSPLITCUTS,
+   REDSPLIT2CUTS,
+   RESIDCAPCUTS,
+   TWOMIRCUTS,
+   ZEROHALFCUTS,
+   CBCSOLVER_LASTCUTPARAM,
+   
+   // Heuristic Parameters
+   CBCSOLVER_FIRSTHEURPARAM,
+   COMBINE,
+   CROSSOVER,
+   DINS,
+   DIVINGC,
+   DIVINGF,
+   DIVINGG,
+   DIVINGL,
+   DIVINGP,
+   DIVINGS,
+   DIVINGV,
+   DW,
+   FPUMP,
+   GREEDY,
+   HEURISTICSTRATEGY,
+   LOCALTREE,
+   NAIVE,
+   PIVOTANDFIX,
+   PIVOTANDCOMPLEMENT,
+   PROXIMITY,
+   RANDROUND,
+   RENS,
+   RINS,
+   ROUNDING,
+   VND,
+   CBCSOLVER_LASTHEURPARAM,
+   
+   // On/Off Parameters
+   CBCSOLVER_FIRSTBOOLPARAM,
+   CPX,
+   DOHEURISTIC,
+   ERRORSALLOWED,
+   EXTRAVARIABLES,
+   MESSAGES,
+   PREPROCNAMES,
+   SOS,
+   USESOLUTION,
+   CBCSOLVER_LASTBOOLPARAM,
+   
+   // Keyword Parameters
+   CBCSOLVER_FIRSTKWDPARAM,
+   COMMANDPRINTLEVEL,
+   CLQSTRENGTHENING,
+   BRANCHPRIORITY,
+   CUTOFFCONSTRAINT,
+   INTPRINT,
+   NODESTRATEGY,
+   ORBITAL,
+   PREPROCESS,
+   SOSPRIORITIZE,
+   STRATEGY,
+   TIMEMODE,
+   USECGRAPH,
+   CBCSOLVER_LASTKWDPARAM,
+   
+   // Integer Parameters
+   CBCSOLVER_FIRSTINTPARAM,
+   BKPIVOTINGSTRATEGY,
+   BKMAXCALLS,
+   BKCLQEXTMETHOD,
+   CPP,
+   CUTDEPTH,
+   CUTLENGTH,
+   CUTPASSINTREE,
+   DEPTHMINIBAB,
+   DIVEOPT,
+   DIVEOPTSOLVES,
+   EXPERIMENT,
+   EXTRA1,
+   EXTRA2,
+   EXTRA3,
+   EXTRA4,
+   FPUMPITS,
+   FPUMPTUNE,
+   FPUMPTUNE2,
+   HEUROPTIONS,
+   LOGLEVEL,
+   LPLOGLEVEL,
+   MAXHOTITS,
+   MAXSAVEDSOLS,
+   MAXSLOWCUTS,
+   MOREMOREMIPOPTIONS,
+   MULTIPLEROOTS,
+   ODDWEXTMETHOD,
+   OUTPUTFORMAT,
+   PRINTOPTIONS,
+   PROCESSTUNE,
+   RANDOMSEED,
+   STRONGSTRATEGY,
+   TESTOSI,
+   THREADS,
+   USERCBC,
+   VERBOSE,
+   VUBTRY,
+   CBCSOLVER_LASTINTPARAM,
+   
+   // Double Parameters
+   CBCSOLVER_FIRSTDBLPARAM,
+   ARTIFICIALCOST,
+   DEXTRA3,
+   DEXTRA4,
+   DEXTRA5,
+   DJFIX,
+   FAKECUTOFF,
+   FAKEINCREMENT,
+   SMALLBAB,
+   TIGHTENFACTOR,
+   CBCSOLVER_LASTDBLPARAM,
+   
+   CBCSOLVER_LASTPARAM
+};
+
 /*! \class CbcSolverParam
     \brief Class for cbc-generic control parameters
 
@@ -36,198 +226,6 @@ class CbcSolverSettings;
 class CbcSolverParam : public CoinParam {
 
 public:
-  /*! \name Subtypes */
-  //@{
-
-  enum CbcSolverParamCode {
-    CBCSOLVER_FIRSTPARAM = 0,
-
-    // Unused paramters that we may delete
-    CBCSOLVER_FIRSTUNUSEDPARAM,
-    BRANCHSTRATEGY,
-    CLEARCUTS,
-    SOLVER,
-    CBCSOLVER_LASTUNUSEDPARAM,
-
-    // Help and Information Parameters
-    CBCSOLVER_FIRSTHELPPARAM,
-    GENERALQUERY,
-    FULLGENERALQUERY,
-    HELP,
-    PRINTVERSION,
-    CBCSOLVER_LASTHELPPARAM,
-
-    // Action Parameters
-    CBCSOLVER_FIRSTACTIONPARAM,
-    BAB,
-    DUMMY,
-    ENVIRONMENT,
-    EXIT,
-    EXPORT,
-    GMPL_SOLUTION,
-    IMPORT,
-    MIPLIB,
-    OUTDUPROWS,
-    SHOWUNIMP,
-    SOLVECONTINUOUS,
-    STATISTICS,
-    STDIN,
-    STRENGTHEN,
-    UNITTEST,
-    CBCSOLVER_LASTACTIONPARAM,
-
-    // String (Directory) Parameters
-    CBCSOLVER_FIRSTSTRPARAM,
-    CSVSTATISTICS,
-    DEBUG,
-    DIRECTORY,
-    DIRSAMPLE,
-    DIRNETLIB,
-    DIRMIPLIB,
-    MIPSTART,
-    NEXTBESTSOLUTION,
-    PRINTMASK,
-    PRIORITYIN,
-    SOLUTION,
-    SAVESOL,
-    CBCSOLVER_LASTSTRPARAM,
-
-    // Cut Parameters
-    CBCSOLVER_FIRSTCUTPARAM,
-    CUTSTRATEGY,
-    CLIQUECUTS,
-    FLOWCUTS,
-    GMICUTS,
-    GOMORYCUTS,
-    KNAPSACKCUTS,
-    LAGOMORYCUTS,
-    LANDPCUTS,
-    LATWOMIRCUTS,
-    MIRCUTS,
-    ODDHOLECUTS, // Not used
-    ODDWHEELCUTS,
-    PROBINGCUTS,
-    REDSPLITCUTS,
-    REDSPLIT2CUTS,
-    RESIDCAPCUTS,
-    TWOMIRCUTS,
-    ZEROHALFCUTS,
-    CBCSOLVER_LASTCUTPARAM,
-
-    // Heuristic Parameters
-    CBCSOLVER_FIRSTHEURPARAM,
-    COMBINE,
-    CROSSOVER,
-    DINS,
-    DIVINGC,
-    DIVINGF,
-    DIVINGG,
-    DIVINGL,
-    DIVINGP,
-    DIVINGS,
-    DIVINGV,
-    DW,
-    FPUMP,
-    GREEDY,
-    HEURISTICSTRATEGY,
-    LOCALTREE,
-    NAIVE,
-    PIVOTANDFIX,
-    PIVOTANDCOMPLEMENT,
-    PROXIMITY,
-    RANDROUND,
-    RENS,
-    RINS,
-    ROUNDING,
-    VND,
-    CBCSOLVER_LASTHEURPARAM,
-
-    // On/Off Parameters
-    CBCSOLVER_FIRSTBOOLPARAM,
-    CPX,
-    DOHEURISTIC,
-    ERRORSALLOWED,
-    EXTRAVARIABLES,
-    MESSAGES,
-    PREPROCNAMES,
-    SOS,
-    USESOLUTION,
-    CBCSOLVER_LASTBOOLPARAM,
-
-    // Keyword Parameters
-    CBCSOLVER_FIRSTKWDPARAM,
-    ALLCOMMANDS,
-    CLQSTRENGTHENING,
-    BRANCHPRIORITY,
-    CUTOFFCONSTRAINT,
-    INTPRINT,
-    NODESTRATEGY,
-    ORBITAL,
-    PREPROCESS,
-    SOSPRIORITIZE,
-    STRATEGY,
-    TIMEMODE,
-    USECGRAPH,
-    CBCSOLVER_LASTKWDPARAM,
-
-    // Integer Parameters
-    CBCSOLVER_FIRSTINTPARAM,
-    BKPIVOTINGSTRATEGY,
-    BKMAXCALLS,
-    BKCLQEXTMETHOD,
-    CPP,
-    CUTDEPTH,
-    CUTLENGTH,
-    CUTPASSINTREE,
-    DEPTHMINIBAB,
-    DIVEOPT,
-    DIVEOPTSOLVES,
-    EXPERIMENT,
-    EXTRA1,
-    EXTRA2,
-    EXTRA3,
-    EXTRA4,
-    FPUMPITS,
-    FPUMPTUNE,
-    FPUMPTUNE2,
-    HEUROPTIONS,
-    LOGLEVEL,
-    LPLOGLEVEL,
-    MAXSAVEDSOLS,
-    MAXSLOWCUTS,
-    MOREMOREMIPOPTIONS,
-    MULTIPLEROOTS,
-    ODDWEXTMETHOD,
-    OUTPUTFORMAT,
-    PRINTOPTIONS,
-    PROCESSTUNE,
-    RANDOMSEED,
-    STRONGSTRATEGY,
-    TESTOSI,
-    THREADS,
-    USERCBC,
-    VERBOSE,
-    VUBTRY,
-    CBCSOLVER_LASTINTPARAM,
-
-    // Double Parameters
-    CBCSOLVER_FIRSTDBLPARAM,
-    ARTIFICIALCOST,
-    DEXTRA3,
-    DEXTRA4,
-    DEXTRA5,
-    DJFIX,
-    FAKECUTOFF,
-    FAKEINCREMENT,
-    SMALLBAB,
-    TIGHTENFACTOR,
-    CBCSOLVER_LASTDBLPARAM,
-
-    CBCSOLVER_LASTPARAM
-  };
-
-  //@}
-
   /*! \name Enumeration types used for CBC keyword parameters */
   //@{
 
@@ -267,14 +265,18 @@ public:
 
   /*! \brief What parameters to print
 
-    - CMOff:
-    - CMMore:
-    - CMAll:
-    - CMEndMarker
+    - displayAll:
+    - displayLowHigh:
+    - displayHigh:
+    - displayEndMarker
 
    */
 
-  enum CommandMode { CMOff = 0, CMMore, CMAll, CMEndMarker };
+  enum CommandDisplayMode {
+     displayAll = 0,
+     displayLowHigh,
+     displayHigh,
+     displayEndMarker };
 
   /*! \brief When to do clique strengthening
 
@@ -683,31 +685,25 @@ public:
       The default string value must be specified explicitly to distinguish
       a string constructor from an action parameter constructor.
     */
-
   CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
                  std::string defaultValue, std::string longHelp = "",
                  CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for an action parameter */
-
   // No defaults to resolve ambiguity
   CbcSolverParam(CbcSolverParamCode code, std::string name, std::string help,
                  std::string longHelp, CoinDisplayPriority display);
 
   /*! \brief Copy constructor */
-
   CbcSolverParam(const CbcSolverParam &orig);
 
   /*! \brief Clone */
-
   CbcSolverParam *clone();
 
   /*! \brief Assignment */
-
   CbcSolverParam &operator=(const CbcSolverParam &rhs);
 
   /*! \brief  Destructor */
-
   ~CbcSolverParam();
 
   //@}
@@ -716,22 +712,21 @@ public:
   //@{
 
   /*! \brief Get the parameter code  */
-
   inline CbcSolverParamCode paramCode() const { return (paramCode_); }
 
   /*! \brief Set the parameter code */
-
   inline void setParamCode(CbcSolverParamCode code) { paramCode_ = code; }
 
   /*! \brief Get the underlying cbc-generic control object */
-
   inline CbcSolverSettings *obj() const { return (obj_); }
 
   /*! \brief Set the underlying cbc-generic control object */
-
   inline void setObj(CbcSolverSettings *obj) { obj_ = obj; }
 
-  //@}
+  /*! \brief A hacky function to print some information about string parameters */
+   std::string printString() const;
+
+//@}
 
 private:
   /*! \name Data */
@@ -751,29 +746,6 @@ private:
 */
 
 namespace CbcSolverParamUtils {
-
-void addCbcSolverParams(CoinParamVec &paramVec, CbcSolverSettings *cbcSettings);
-void addCbcSolverStrParams(CoinParamVec &paramVec,
-                           CbcSolverSettings *cbcSettings);
-void addCbcSolverHelpParams(CoinParamVec &paramVec,
-                            CbcSolverSettings *cbcSettings);
-void addCbcSolverActionParams(CoinParamVec &paramVec,
-                              CbcSolverSettings *cbcSettings);
-void addCbcSolverKwdParams(CoinParamVec &paramVec,
-                           CbcSolverSettings *cbcSettings);
-void addCbcSolverDblParams(CoinParamVec &paramVec,
-                           CbcSolverSettings *cbcSettings);
-void addCbcSolverIntParams(CoinParamVec &paramVec,
-                           CbcSolverSettings *cbcSettings);
-void addCbcSolverBoolParams(CoinParamVec &paramVec,
-                            CbcSolverSettings *cbcSettings);
-void addCbcSolverCutParams(CoinParamVec &paramVec,
-                           CbcSolverSettings *cbcSettings);
-void addCbcSolverHeurParams(CoinParamVec &paramVec,
-                            CbcSolverSettings *cbcSettings);
-
-void loadGenParamObj(const CoinParamVec paramVec, int first, int last,
-                     CbcSolverSettings *cbcSetting);
 
 void saveSolution(const OsiSolverInterface *osi, std::string fileName);
 bool readSolution(std::string fileName, int &numRows, int &numCols,

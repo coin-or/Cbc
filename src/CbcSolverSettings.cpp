@@ -30,8 +30,7 @@ namespace {}
   ordering.
 */
 
-CbcSolverSettings::CbcSolverSettings()
-
+CbcSolverSettings::CbcSolverSettings() : parameters_(CBCSOLVER_LASTPARAM)
 {
   version_ = CBC_VERSION;
   /*
@@ -46,14 +45,9 @@ CbcSolverSettings::CbcSolverSettings()
   lastSolnOut_ = "stdout";
   printMode_ = 0;
   printMask_ = "";
-
-  paramVec_ = 0;
-  genParams_.first_ = 0;
-  genParams_.last_ = 0;
-  cbcParams_.first_ = 0;
-  cbcParams_.last_ = 0;
-  osiParams_.first_ = 0;
-  osiParams_.last_ = 0;
+  noPrinting_ = false;
+  printWelcome_ = true;
+  useSignalHandler_ = false;
 
   verbose_ = 0;
   paramsProcessed_ = 0;
@@ -139,6 +133,7 @@ CbcSolverSettings::CbcSolverSettings()
 
   fpump_.mode_ = CbcSolverParam::HeurOn;
   fpump_.proto_ = 0;
+  fpump_.initialTune_ = -1;
 
   combine_.mode_ = CbcSolverParam::HeurOn;
   combine_.proto_ = 0;
@@ -181,6 +176,11 @@ CbcSolverSettings::CbcSolverSettings()
   chooseStrong_.numStrong_ = 100;
   chooseStrong_.shadowPriceMode_ = 1;
 
+  addCbcSolverParams();
+  addCbcModelParams();
+
+  establishClpParams(clpParameters_);
+  
   return;
 }
 
@@ -189,7 +189,8 @@ CbcSolverSettings::CbcSolverSettings()
   copy of the pointer held in the solvers map over in CbcGenSolvers.cpp.
 */
 CbcSolverSettings::~CbcSolverSettings() {
-  if (model_)
+   // TODO Do we own pointer here?
+   if (model_)
     delete model_;
   if (bab_.answerSolver_)
     delete bab_.answerSolver_;
@@ -233,6 +234,1596 @@ CbcSolverSettings::~CbcSolverSettings() {
 
   return;
 }
+
+//###########################################################################
+//###########################################################################
+
+// some help strings that repeat for many options
+#define CUTS_LONGHELP                                                          \
+  "Value 'on' enables the cut generator and CBC will try it in the branch "    \
+  "and cut tree (see cutDepth on how to fine tune the behavior). Value "       \
+  "'root' lets CBC run the cut generator generate only at the root node. "     \
+  "Value 'ifmove' lets CBC use the cut generator in the tree if it looks as "  \
+  "if it is doing some good and moves the objective value. Value 'forceon' "   \
+  "turns on the cut generator and forces CBC to use it at every node."
+
+#define HEURISTICS_LONGHELP                                                    \
+  "Value 'on' means to use the heuristic in each node of the tree, i.e. "      \
+  "after preprocessing. Value 'before' means use the heuristic only if "       \
+  "option doHeuristics is used. Value 'both' means to use the heuristic if "   \
+  "option doHeuristics is used and during solve."
+
+/*
+  Function to add Cbc parameters to the Cbc parameter
+  vector. Where needed, defaults are drawn from CbcSolverSettings.
+  This function is a friend of CbcSolverSettings.
+*/
+
+void CbcSolverSettings::addCbcSolverParams() {
+
+  addCbcSolverStrParams();
+  addCbcSolverHelpParams();
+  addCbcSolverActionParams();
+  addCbcSolverKwdParams();
+  addCbcSolverDblParams();
+  addCbcSolverIntParams();
+  addCbcSolverBoolParams();
+  addCbcSolverCutParams();
+  addCbcSolverHeurParams();
+
+  for (int code = CBCSOLVER_FIRSTPARAM + 1;
+       code < CBCSOLVER_LASTPARAM; code++) {
+    CoinParam &param = parameters_[code];
+    static_cast<CbcSolverParam &>(param).setObj(this);
+  }
+
+  return;
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcSolverSettings::addCbcSolverStrParams() {
+  for (int code = CBCSOLVER_FIRSTSTRPARAM + 1;
+       code < CBCSOLVER_LASTSTRPARAM; code++) {
+    CoinParam &param = parameters_[code];
+    parameters_[code].setType(CoinParam::coinParamStr);
+  }
+
+  parameters_[CSVSTATISTICS].setup(
+      "csv!Statistics", "Create one line of statistics",
+      dfltDirectory_,
+      "This appends statistics to given file name.  It will use the default "
+      "directory given by 'directory'.  A name of '$' will use the previous "
+      "value for the name.  This is initialized to '', i.e. it must be set.  "
+      "Adds header if file empty or does not exist.",
+      CoinParam::displayPriorityLow);
+  parameters_[CSVSTATISTICS].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+
+  parameters_[DEBUG].setup(
+      "debug!In", "Read/write valid solution from/to file", "",
+      "This will read a solution file from the given file name.  It will use "
+      "the default directory given by 'directory'.  A name of '$' will use the "
+      "previous value for the name.  This is initialized to '', i.e. it must "
+      "be set.\n\nIf set to create it will create a file called debug.file "
+      "after B&C search; if set to createAfterPre it will create the file "
+      "before undoing preprocessing.\n\nThe idea is that if you suspect a bad "
+      "cut generator and you did not use preprocessing you can do a good run "
+      "with debug set to 'create' and then switch on the cuts you suspect and "
+      "re-run with debug set to 'debug.file'  Similarly if you do use "
+      "preprocessing, but use createAfterPre.  The create case has the same "
+      "effect as saveSolution.",
+      CoinParam::displayPriorityNone);
+  parameters_[DEBUG].setPushFunc(CbcSolverParamUtils::doDebugParam);
+
+  parameters_[DIRECTORY].setup(
+      "directory", "Set Default directory for import etc.",
+      dfltDirectory_,
+      "This sets the directory which import, export, saveModel, restoreModel "
+      "etc. will use. It is initialized to the current directory.");
+  parameters_[DIRECTORY].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+
+  parameters_[DIRSAMPLE].setup(
+      "dirSample", "Set directory where the COIN-OR sample problems are.",
+      dfltDirectory_,
+      "This sets the directory where the COIN-OR sample problems reside. It is "
+      "used only when -unitTest is passed to clp. clp will pick up the test "
+      "problems from this directory. It is initialized to '../../Data/Sample'",
+      CoinParam::displayPriorityLow);
+  parameters_[DIRSAMPLE].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+
+  parameters_[DIRNETLIB].setup(
+      "dirNetlib", "Set directory where the netlib problems are.",
+      dfltDirectory_,
+      "This sets the directory where the netlib problems reside. One can get "
+      "the netlib problems from COIN-OR or from the main netlib site. This "
+      "parameter is used only when -netlib is passed to cbc. cbc will pick up "
+      "the netlib problems from this directory. If clp is built without zlib "
+      "support then the problems must be uncompressed. It is initialized to "
+      "'../../Data/Netlib'",
+      CoinParam::displayPriorityLow);
+  parameters_[DIRNETLIB].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+
+  parameters_[DIRMIPLIB].setup(
+      "dirMiplib", "Set directory where the miplib 2003 problems are.",
+      dfltDirectory_,
+      "This sets the directory where the miplib 2003 problems reside. One can "
+      "get the miplib problems from COIN-OR or from the main miplib site. This "
+      "parameter is used only when -miplib is passed to cbc. cbc will pick up "
+      "the miplib problems from this directory. If cbc is built without zlib "
+      "support then the problems must be uncompressed. It is initialized to "
+      "'../../Data/miplib3'",
+      CoinParam::displayPriorityLow);
+  parameters_[DIRMIPLIB].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+
+  parameters_[MIPSTART].setup(
+      "mips!tart", "reads an initial feasible solution from file",
+      std::string("mipstart.sln"),
+      "The MIPStart allows one to enter an initial integer feasible solution "
+      "to CBC. Values of the main decision variables which are active (have "
+      "non-zero values) in this solution are specified in a text  file. The "
+      "text file format used is the same of the solutions saved by CBC, but "
+      "not all fields are required to be filled. First line may contain the "
+      "solution status and will be ignored, remaining lines contain column "
+      "indexes, names and values as in this example:\n\n Stopped on iterations "
+      "- objective value 57597.00000000\n      0  x(1,1,2,2)               1 "
+      "\n      1  x(3,1,3,2)               1 \n      5  v(5,1)                 "
+      "  2 \n      33 x(8,1,5,2)               1 \n      ...\n\n Column "
+      "indexes are also ignored since pre-processing can change them. There is "
+      "no need to include values for continuous or integer auxiliary "
+      "variables, since they can be computed based on main decision variables. "
+      "Starting CBC with an integer feasible solution can dramatically improve "
+      "its performance: several MIP heuristics (e.g. RINS) rely on having at "
+      "least one feasible solution available and can start immediately if the "
+      "user provides one. Feasibility Pump (FP) is a heuristic which tries to "
+      "overcome the problem of taking too long to find feasible solution (or "
+      "not finding at all), but it not always succeeds. If you provide one "
+      "starting solution you will probably save some time by disabling FP. "
+      "\n\n Knowledge specific to your problem can be considered to write an "
+      "external module to quickly produce an initial feasible solution - some "
+      "alternatives are the implementation of simple greedy heuristics or the "
+      "solution (by CBC for example) of a simpler model created just to find a "
+      "feasible solution. \n\n Silly options added.  If filename ends .low "
+      "then integers not mentioned are set low - also .high, .lowcheap, "
+      ".highcheap, .lowexpensive, .highexpensive where .lowexpensive sets "
+      "costed ones to make expensive others low. Also if filename starts "
+      "empty. then no file is read at all - just actions done. \n\n Question "
+      "and suggestions regarding MIPStart can be directed to\n "
+      "haroldo.santos@gmail.com. ");
+  parameters_[MIPSTART].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+
+  parameters_[NEXTBESTSOLUTION].setup(
+      "nextB!estSolution", "Prints next best saved solution to file", "",
+      "To write best solution, just use solution.  This prints next best (if "
+      "exists) and then deletes it. This will write a primitive solution file "
+      "to the given file name.  It will use the default directory given by "
+      "'directory'.  A name of '$' will use the previous value for the name.  "
+      "This is initialized to 'stdout'.  The amount of output can be varied "
+      "using printi!ngOptions or printMask.");
+  parameters_[NEXTBESTSOLUTION].setPushFunc(CbcSolverParamUtils::doNothingParam);
+
+  parameters_[PRINTMASK].setup(
+      "printM!ask", "Control printing of solution with a regular expression",
+      "",
+      "If set then only those names which match mask are printed in a "
+      "solution. '?' matches any character and '*' matches any set of "
+      "characters.  The default is '' (unset) so all variables are printed. "
+      "This is only active if model has names.");
+  parameters_[PRINTMASK].setPushFunc(CbcSolverParamUtils::doPrintMaskParam);
+
+  parameters_[SAVESOL].setup(
+      "saveS!olution", "saves solution to file", std::string("solution.sln"),
+      "This will write a binary solution file to the given file name.  It will "
+      "use the default directory given by 'directory'.  A name of '$' will use "
+      "the previous value for the name.  This is initialized to "
+      "'solution.file'.  To read the file use fread(int) twice to pick up "
+      "number of rows and columns, then fread(double) to pick up objective "
+      "value, then pick up row activities, row duals, column activities and "
+      "reduced costs - see bottom of CbcParam.cpp for code that reads or "
+      "writes file. If name contains '_fix_read_' then does not write but "
+      "reads and will fix all variables");
+  parameters_[SAVESOL].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+
+  parameters_[SOLUTION].setup(
+      "solu!tion", "Prints solution to file", std::string("stdout"),
+      "This will write a primitive solution file to the given file name.  It "
+      "will use the default directory given by 'directory'.  A name of '$' "
+      "will use the previous value for the name.  This is initialized to "
+      "'stdout'.  The amount of output can be varied using printi!ngOptions or "
+      "printMask.");
+  parameters_[SOLUTION].setPushFunc(CbcSolverParamUtils::doSolutionParam);
+
+  parameters_[PRIORITYIN].setup(
+      "prio!rityIn", "Import priorities etc from file",
+      std::string("priorities.txt"),
+      "This will read a file with priorities from the given file name.  It "
+      "will use the default directory given by 'directory'.  A name of '$' "
+      "will use the previous value for the name.  This is initialized to '', "
+      "i.e. it must be set.  This can not read from compressed files. File is "
+      "in csv format with allowed headings - name, number, priority, "
+      "direction, up, down, solution.  Exactly one of name and number must be "
+      "given.");
+  parameters_[PRIORITYIN].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcSolverSettings::addCbcSolverHelpParams() {
+  for (int code = CBCSOLVER_FIRSTHELPPARAM + 1;
+       code < CBCSOLVER_LASTHELPPARAM; code++) {
+    parameters_[code].setType(CoinParam::coinParamAct);
+    parameters_[code].setPushFunc(CbcSolverParamUtils::doHelpParam);
+  }
+  parameters_[GENERALQUERY].setup(
+      "?", "Print a list of commands", CoinParam::displayPriorityNone);
+
+  parameters_[FULLGENERALQUERY].setup(
+      "???", "Print a list with *all* commands, even those hidden with `?'",
+      CoinParam::displayPriorityNone);
+
+  // Need display parameter to resolve ambiguity
+  parameters_[HELP].setup(
+      "help", "Print out version, non-standard options and some help",
+      "This prints out some help to get a user started. If you're seeing this "
+      "message, you should be past that stage.",
+      CoinParam::displayPriorityHigh);
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcSolverSettings::addCbcSolverActionParams() {
+  for (int code = CBCSOLVER_FIRSTACTIONPARAM + 1;
+       code < CBCSOLVER_LASTACTIONPARAM; code++) {
+    parameters_[code].setType(CoinParam::coinParamAct);
+  }
+
+  parameters_[DUMMY].setup(
+      "sleep", "for debug", 0, 9999, 0,
+      "If passed to solver from ampl, then ampl will wait so that you can copy "
+      ".nl file for debug.",
+      CoinParam::displayPriorityNone);
+
+  parameters_[OUTDUPROWS].setup(
+      "outDup!licates", "Takes duplicate rows, etc., out of the integer model",
+      "", CoinParam::displayPriorityNone);
+
+  parameters_[SHOWUNIMP].setup(
+      "unimp!lemented", "Report unimplemented commands.", "",
+      CoinParam::displayPriorityNone);
+  parameters_[SHOWUNIMP].setPushFunc(CbcSolverParamUtils::doUnimplementedParam);
+
+  parameters_[STRENGTHEN].setup(
+      "strengthen", "Create strengthened problem",
+      "This creates a new problem by applying the root node cuts. All tight "
+      "constraints will be in resulting problem.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[BAB].setup(
+      "branch!AndCut", "Do Branch and Cut",
+      "This does branch and cut. There are many parameters which can affect "
+      "the performance.  First just try with default cbcSettings and look "
+      "carefully at the log file.  Did cuts help?  Did they take too long?  "
+      "Look at output to see which cuts were effective and then do some "
+      "tuning.  You will see that the options for cuts are off, on, root and "
+      "ifmove.  Off is obvious, on means that this cut generator will be tried "
+      "in the branch and cut tree (you can fine tune using 'depth').  Root "
+      "means just at the root node while 'ifmove' means that cuts will be used "
+      "in the tree if they look as if they are doing some good and moving the "
+      "objective value.  If pre-processing reduced the size of the problem or "
+      "strengthened many coefficients then it is probably wise to leave it on. "
+      " Switch off heuristics which did not provide solutions.  The other "
+      "major area to look at is the search.  Hopefully good solutions were "
+      "obtained fairly early in the search so the important point is to select "
+      "the best variable to branch on.  See whether strong branching did a "
+      "good job - or did it just take a lot of iterations.  Adjust the "
+      "strongBranching and trustPseudoCosts parameters.",
+      CoinParam::displayPriorityHigh);
+  parameters_[BAB].setPushFunc(CbcSolverParamUtils::doBaCParam);
+
+  parameters_[ENVIRONMENT].setup(
+      "environ!ment", "Read commands from environment",
+      "This starts reading from environment variable COIN_ENVIRONMENT.",
+      CoinParam::displayPriorityNone);
+  parameters_[ENVIRONMENT].setPushFunc(CbcSolverParamUtils::doNothingParam);
+
+  parameters_[EXIT].setup(
+      "end", "Stops execution",
+      "This stops execution; end, exit, quit and stop are synonyms.",
+      CoinParam::displayPriorityHigh);
+  parameters_[EXIT].setPushFunc(CbcSolverParamUtils::doExitParam);
+
+  parameters_[EXPORT].setup(
+      "export", "Export model as mps file", std::string("default.mps"),
+      "This will write an MPS format file to the given file name.  It will use "
+      "the default directory given by 'directory'.  A name of '$' will use the "
+      "previous value for the name.  This is initialized to 'default.mps'. It "
+      "can be useful to get rid of the original names and go over to using "
+      "Rnnnnnnn and Cnnnnnnn.  This can be done by setting 'keepnames' off "
+      "before importing mps file.",
+      CoinParam::displayPriorityHigh);
+  parameters_[EXPORT].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+
+  parameters_[IMPORT].setup(
+      "import", "Import model from file", lastMpsIn_,
+      "This will read an MPS format file from the given file name.  It will "
+      "use the default directory given by 'directory'.  A name of '$' will use "
+      "the previous value for the name.  This is initialized to '', i.e., it "
+      "must be set.  If you have libgz then it can read compressed files "
+      "'xxxxxxxx.gz'.",
+      CoinParam::displayPriorityHigh);
+  parameters_[IMPORT].setPushFunc(CbcSolverParamUtils::doImportParam);
+
+  parameters_[MIPLIB].setup("miplib", "Do some of miplib test set", "",
+                            CoinParam::displayPriorityHigh);
+
+  parameters_[PRINTVERSION].setup(
+      "version", "Print version", "", CoinParam::displayPriorityHigh);
+  parameters_[PRINTVERSION].setPushFunc(CbcSolverParamUtils::doVersionParam);
+
+  parameters_[SOLVECONTINUOUS].setup(
+      "initialS!olve", "Solve to continuous optimum",
+      "This just solves the problem to the continuous optimum, without adding "
+      "any cuts.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[STATISTICS].setup(
+      "stat!istics", "Print some statistics",
+      "This command prints some statistics for the current model. If log level "
+      ">1 then more is printed. These are for presolved model if presolve on "
+      "(and unscaled).",
+      CoinParam::displayPriorityHigh);
+
+#if 0
+  // Need to figure out what to do here. Same parameter can't have two names...
+  parameters_[STDIN].setup( "-", "Switch to interactive command line mode", ""
+                            CoinParam::displayPriorityNone);
+  parameters_[STDIN].setPushFunc(CbcSolverParamUtils::doNothingParam);
+#endif
+
+  parameters_[STDIN].setup(
+      "stdin", "Switch to interactive command line mode", "",
+      CoinParam::displayPriorityNone);
+  parameters_[STDIN].setPushFunc(CbcSolverParamUtils::doNothingParam);
+
+  parameters_[UNITTEST].setup(
+      "unitTest", "Do unit test", "This exercises the unit test.", "",
+      CoinParam::displayPriorityHigh);
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcSolverSettings::addCbcSolverKwdParams() {
+  for (int code = CBCSOLVER_FIRSTKWDPARAM + 1;
+       code < CBCSOLVER_LASTKWDPARAM; code++) {
+    parameters_[code].setType(CoinParam::coinParamKwd);
+    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverKwdParam);
+  }
+
+  parameters_[COMMANDPRINTLEVEL].setup(
+      "allC!ommands", "What priority level of commands to print", "high",
+      CbcSolverParam::displayHigh,
+      "For the sake of your sanity, only the more useful and simple commands "
+      "are printed out on ?.",
+      CoinParam::displayPriorityNone);
+  parameters_[COMMANDPRINTLEVEL].appendKwd("all", CbcSolverParam::displayAll);
+  parameters_[COMMANDPRINTLEVEL].appendKwd("highlow", CbcSolverParam::displayLowHigh);
+
+  parameters_[CLQSTRENGTHENING].setup(
+      "clqstr!engthen",
+      "Whether and when to perform Clique Strengthening preprocessing routine",
+      "after", CbcSolverParam::ClqStrAfter);
+  parameters_[CLQSTRENGTHENING].appendKwd("off", CbcSolverParam::ClqStrOff);
+  parameters_[CLQSTRENGTHENING].appendKwd("before", CbcSolverParam::ClqStrBefore);
+
+  parameters_[BRANCHPRIORITY].setup(
+      "cost!Strategy", "Whether to use costs or column order as priorities",
+      "off", CbcSolverParam::BPOff,
+      "This orders the variables in order of their absolute costs - with "
+      "largest cost ones being branched on first.  This primitive strategy can "
+      "be surprisingly effective.  The column order option is obviously not on "
+      "costs but it's easy to implement.");
+  parameters_[BRANCHPRIORITY].appendKwd("pri!orities", CbcSolverParam::BPCost);
+  parameters_[BRANCHPRIORITY].appendKwd("column!Order", CbcSolverParam::BPOrder);
+
+  parameters_[CUTOFFCONSTRAINT].setup(
+      "constraint!fromCutoff", "Whether to use cutoff as constraint", "off",
+      CbcSolverParam::COOff,
+      "For some problems, cut generators and general branching work better if "
+      "the problem would be infeasible if the cost is too high. "
+      "If this option is enabled, the objective function is added as a "
+      "constraint which right hand side is set to the current cutoff value "
+      "(objective value of best known solution)");
+  parameters_[CUTOFFCONSTRAINT].appendKwd("on", CbcSolverParam::COOn);
+  parameters_[CUTOFFCONSTRAINT].appendKwd("variable", CbcSolverParam::COVariable);
+  parameters_[CUTOFFCONSTRAINT].appendKwd("forcevariable", CbcSolverParam::COForceVariable);
+  parameters_[CUTOFFCONSTRAINT].appendKwd("conflict", CbcSolverParam::COConflict);
+
+  parameters_[INTPRINT].setup(
+      "printi!ngOptions", "Print options", "normal", CbcSolverParam::PMNormal,
+      "This changes the amount and format of printing a solution:\n normal - "
+      "nonzero column variables \ninteger - nonzero integer column variables\n "
+      "special - in format suitable for OsiRowCutDebugger\n rows - nonzero "
+      "column variables and row activities\n all - all column variables and "
+      "row activities.\n\n For non-integer problems 'integer' and 'special' "
+      "act like 'normal'.  Also see printMask for controlling output.");
+  parameters_[INTPRINT].appendKwd("integer", CbcSolverParam::PMInteger);
+  parameters_[INTPRINT].appendKwd("special", CbcSolverParam::PMSpecial);
+  parameters_[INTPRINT].appendKwd("rows", CbcSolverParam::PMRows);
+  parameters_[INTPRINT].appendKwd("all", CbcSolverParam::PMAll);
+
+  parameters_[NODESTRATEGY].setup(
+      "node!Strategy",
+      "What strategy to use to select the next node from the branch and cut "
+      "tree",
+      "hybrid", CbcSolverParam::NSHybrid,
+      "Normally before a feasible solution is found, CBC will choose a node "
+      "with fewest infeasibilities. Alternatively, one may choose tree-depth "
+      "as the criterion. This requires the minimal amount of memory, but may "
+      "take a long time to find the best solution. Additionally, one may "
+      "specify whether up or down branches must be selected first (the up-down "
+      "choice will carry on after a first solution has been bound). The choice "
+      "'hybrid' does breadth first on small depth nodes and then switches to "
+      "'fewest'.");
+  parameters_[NODESTRATEGY].appendKwd("fewest", CbcSolverParam::NSFewest);
+  parameters_[NODESTRATEGY].appendKwd("depth", CbcSolverParam::NSDepth);
+  parameters_[NODESTRATEGY].appendKwd("upfewest", CbcSolverParam::NSUpFewest);
+  parameters_[NODESTRATEGY].appendKwd("downfewest", CbcSolverParam::NSDownFewest);
+  parameters_[NODESTRATEGY].appendKwd("updepth", CbcSolverParam::NSUpDepth);
+  parameters_[NODESTRATEGY].appendKwd("downdepth", CbcSolverParam::NSDownDepth);
+
+  parameters_[ORBITAL].setup(
+      "Orbit!alBranching", "Whether to try orbital branching", "off",
+      CbcSolverParam::OBOff,
+      "This switches on Orbital branching. Value 'on' just adds orbital, "
+      "'strong' tries extra fixing in strong branching.");
+  parameters_[ORBITAL].appendKwd("on", CbcSolverParam::OBOn);
+  parameters_[ORBITAL].appendKwd("slowish", CbcSolverParam::OBSlowish);
+  parameters_[ORBITAL].appendKwd("strong", CbcSolverParam::OBStrong);
+  parameters_[ORBITAL].appendKwd("force", CbcSolverParam::OBForce);
+  parameters_[ORBITAL].appendKwd("simple", CbcSolverParam::OBSimple);
+  parameters_[ORBITAL].appendKwd("moreprinting", CbcSolverParam::OBMorePrinting);
+
+  parameters_[PREPROCESS].setup(
+      "preprocess", "Whether to use integer preprocessing", "off",
+      CbcSolverParam::IPPOff,
+      "This tries to reduce size of the model in a similar way to presolve and "
+      "it also tries to strengthen the model. This can be very useful and is "
+      "worth trying.  save option saves on file presolved.mps.  equal will "
+      "turn <= cliques into ==.  sos will create sos sets if all 0-1 in sets "
+      "(well one extra is allowed) and no overlaps.  trysos is same but allows "
+      "any number extra. equalall will turn all valid inequalities into "
+      "equalities with integer slacks. strategy is as on but uses "
+      "CbcStrategy.");
+  parameters_[PREPROCESS].appendKwd("on", CbcSolverParam::IPPOn);
+  parameters_[PREPROCESS].appendKwd("save", CbcSolverParam::IPPSave);
+  parameters_[PREPROCESS].appendKwd("equal", CbcSolverParam::IPPEqual);
+  parameters_[PREPROCESS].appendKwd("sos", CbcSolverParam::IPPSOS);
+  parameters_[PREPROCESS].appendKwd("trysos", CbcSolverParam::IPPTrySOS);
+  parameters_[PREPROCESS].appendKwd("equalall", CbcSolverParam::IPPEqualAll);
+  parameters_[PREPROCESS].appendKwd("strategy", CbcSolverParam::IPPStrategy);
+
+  parameters_[SOSPRIORITIZE].setup(
+      "sosP!rioritize", "How to deal with SOS priorities", "off",
+      CbcSolverParam::SOSOff,
+      "This sets priorities for SOS.  Values 'high' and 'low' just set a "
+      "priority relative to the for integer variables.  Value 'orderhigh' "
+      "gives first highest priority to the first SOS and integer variables a "
+      "low priority.  Value 'orderlow' gives integer variables a high priority "
+      "then SOS in order.");
+  parameters_[SOSPRIORITIZE].appendKwd("high", CbcSolverParam::SOSHigh);
+  parameters_[SOSPRIORITIZE].appendKwd("low", CbcSolverParam::SOSLow);
+  parameters_[SOSPRIORITIZE].appendKwd("orderhigh", CbcSolverParam::SOSOrderHigh);
+  parameters_[SOSPRIORITIZE].appendKwd("orderlow", CbcSolverParam::SOSOrderLow);
+
+  parameters_[STRATEGY].setup(
+      "strat!egy", "Switches on groups of features", "default",
+      CbcSolverParam::StrategyDefault,
+      "This turns on newer features. Use 0 for easy problems, 1 is default, 2 "
+      "is aggressive. 1 uses Gomory cuts with a tolerance of 0.01 at the root "
+      "node, does a possible restart after 100 nodes if many variables could "
+      "be fixed, activates a diving and RINS heuristic, and makes the "
+      "feasibility pump more aggressive."); // This does not apply to unit tests
+                                            // (where 'experiment' may have
+                                            // similar effects)
+  parameters_[STRATEGY].appendKwd("easy", CbcSolverParam::StrategyEasy);
+  parameters_[STRATEGY].appendKwd("aggressive", CbcSolverParam::StrategyAggressive);
+
+  parameters_[TIMEMODE].setup(
+      "timeM!ode", "Whether to use CPU or elapsed time", "cpu",
+      CbcSolverParam::ClockCpu,
+      "cpu uses CPU time for stopping, while elapsed uses elapsed time. (On "
+      "Windows, elapsed time is always used).");
+  parameters_[TIMEMODE].appendKwd("elapsed", CbcSolverParam::ClockElapsed);
+
+  parameters_[USECGRAPH].setup(
+      "cgraph",
+      "Whether to use the conflict graph-based preprocessing and cut "
+      "separation routines.",
+      "on", CbcSolverParam::CGraphOn,
+      "This switches the conflict graph-based preprocessing and cut separation "
+      "routines (CglBKClique, CglOddWheel and CliqueStrengthening) on or off. "
+      "Values: \n\t off: turns these routines off;\n\t on: turns these "
+      "routines on; \n\t clq: turns these routines off and enables the cut "
+      "separator of CglClique.");
+  parameters_[USECGRAPH].appendKwd("off", CbcSolverParam::CGraphOff);
+  parameters_[USECGRAPH].appendKwd("clq", CbcSolverParam::CGraphClique);
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcSolverSettings::addCbcSolverDblParams() {
+  for (int code = CBCSOLVER_FIRSTDBLPARAM + 1;
+       code < CBCSOLVER_LASTDBLPARAM; code++) {
+    parameters_[code].setType(CoinParam::coinParamDbl);
+    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverDblParam);
+  }
+
+  parameters_[ARTIFICIALCOST].setup(
+      "artif!icialCost",
+      "Costs >= this treated as artificials in feasibility pump", 0.0,
+      COIN_DBL_MAX, getArtVarThreshold(), "",
+      CoinParam::displayPriorityLow);
+
+  parameters_[DEXTRA3].setup(
+      "dextra3", "Extra double parameter 3", -COIN_DBL_MAX, COIN_DBL_MAX, 0.0,
+      "", CoinParam::displayPriorityNone);
+
+  parameters_[DEXTRA4].setup(
+      "dextra4", "Extra double parameter 4", -COIN_DBL_MAX, COIN_DBL_MAX, 0.0,
+      "", CoinParam::displayPriorityNone);
+
+  parameters_[DEXTRA5].setup(
+      "dextra5", "Extra double parameter 5", -COIN_DBL_MAX, COIN_DBL_MAX, 0.0,
+      "", CoinParam::displayPriorityNone);
+
+  parameters_[DJFIX].setup(
+      "fix!OnDj", "Try heuristic that fixes variables based on reduced costs",
+      -1.0e20, 1.0e20, getDjFixThreshold(),
+      "If set, integer variables with reduced costs greater than the specified "
+      "value will be fixed before branch and bound - use with extreme "
+      "caution!");
+
+  parameters_[FAKECUTOFF].setup(
+      "pumpC!utoff", "Fake cutoff for use in feasibility pump", -COIN_DBL_MAX,
+      COIN_DBL_MAX, 0.0,
+      "A value of 0.0 means off. Otherwise, add a constraint forcing objective "
+      "below this value in feasibility pump",
+      CoinParam::displayPriorityLow);
+
+  parameters_[FAKEINCREMENT].setup(
+      "pumpI!ncrement", "Fake increment for use in feasibility pump",
+      -COIN_DBL_MAX, COIN_DBL_MAX, 0.0,
+      "A value of 0.0 means off. Otherwise, add a constraint forcing objective "
+      "below this value in feasibility pump",
+      CoinParam::displayPriorityLow);
+
+  parameters_[SMALLBAB].setup(
+      "fraction!forBAB", "Fraction in feasibility pump", 1.0e-5, 1.1, 0.5,
+      "After a pass in the feasibility pump, variables which have not moved "
+      "about are fixed and if the preprocessed model is smaller than this "
+      "fraction of the original problem, a few nodes of branch and bound are "
+      "done on the reduced problem.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[TIGHTENFACTOR].setup(
+      "tighten!Factor",
+      "Tighten bounds using value times largest activity at continuous "
+      "solution",
+      0.0, COIN_DBL_MAX, 0.0, "This sleazy trick can help on some problems.");
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcSolverSettings::addCbcSolverIntParams() {
+  for (int code = CBCSOLVER_FIRSTINTPARAM + 1;
+       code < CBCSOLVER_LASTINTPARAM; code++) {
+    parameters_[code].setType(CoinParam::coinParamInt);
+    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverIntParam);
+  }
+
+  parameters_[BKPIVOTINGSTRATEGY].setup(
+      "bkpivot!ing", "Pivoting strategy used in Bron-Kerbosch algorithm", 0, 6,
+      3);
+
+  parameters_[BKMAXCALLS].setup(
+      "bkmaxcalls",
+      "Maximum number of recursive calls made by Bron-Kerbosch algorithm", 1,
+      COIN_INT_MAX, 1000);
+
+  parameters_[BKCLQEXTMETHOD].setup(
+      "bkclqext!method",
+      "Strategy used to extend violated cliques found by BK Clique Cut "
+      "Separation routine",
+      0, 5, 4,
+      "Sets the method used in the extension module of BK Clique Cut "
+      "Separation routine: 0=no extension; 1=random; 2=degree; 3=modified "
+      "degree; 4=reduced cost(inversely proportional); 5=reduced "
+      "cost(inversely proportional) + modified degree");
+
+  parameters_[CPP].setup(
+      "cpp!Generate", "Generates C++ code", 0, 4, 0,
+      "Once you like what the stand-alone solver does then this allows you to "
+      "generate user_driver.cpp which approximates the code.  0 gives simplest "
+      "driver, 1 generates saves and restores, 2 generates saves and restores "
+      "even for variables at default value. 4 bit in cbc generates size "
+      "dependent code rather than computed values.");
+
+  parameters_[CUTDEPTH].setup(
+      "cutD!epth", "Depth in tree at which to do cuts", -1, 999999,
+      getCutDepth(),
+      "Cut generators may be off, on only at the root, on if they look useful, "
+      "and on at some interval.  If they are done every node then that is "
+      "that, but it may be worth doing them every so often.  The original "
+      "method was every so many nodes but it is more logical to do it whenever "
+      "depth in tree is a multiple of K.  This option does that and defaults "
+      "to -1 (off).");
+
+  parameters_[CUTLENGTH].setup(
+      "cutL!ength", "Length of a cut", -1, COIN_INT_MAX, -1,
+      "At present this only applies to Gomory cuts. -1 (default) leaves as is. "
+      "Any value >0 says that all cuts <= this length can be generated both at "
+      "root node and in tree. 0 says to use some dynamic lengths.  If value "
+      ">=10,000,000 then the length in tree is value%10000000 - so 10000100 "
+      "means unlimited length at root and 100 in tree.");
+
+  parameters_[CUTPASSINTREE].setup(
+      "passT!reeCuts",
+      "Number of rounds that cut generators are applied in the tree",
+      -COIN_INT_MAX, COIN_INT_MAX);
+
+  parameters_[DEPTHMINIBAB].setup(
+      "depth!MiniBab", "Depth at which to try mini branch-and-bound",
+      -COIN_INT_MAX, COIN_INT_MAX, -1,
+      "Rather a complicated parameter but can be useful. -1 means off for "
+      "large problems but on as if -12 for problems where rows+columns<500, -2 "
+      "means use Cplex if it is linked in.  Otherwise if negative then go into "
+      "depth first complete search fast branch and bound when depth>= -value-2 "
+      "(so -3 will use this at depth>=1).  This mode is only switched on after "
+      "500 nodes.  If you really want to switch it off for small problems then "
+      "set this to -999.  If >=0 the value doesn't matter very much.  The code "
+      "will do approximately 100 nodes of fast branch and bound every now and "
+      "then at depth>=5. The actual logic is too twisted to describe here.");
+
+  parameters_[DIVEOPT].setup(
+      "diveO!pt", "Diving options", -1, 20, -1,
+      "If >2 && <20 then modify diving options -	 \n\t3 only at root "
+      "and if no solution,	 \n\t4 only at root and if this heuristic has "
+      "not got solution,	 \n\t5 decay only if no solution,	 \n\t6 "
+      "if depth <3 or decay,	 \n\t7 run up to 2 times if solution found 4 "
+      "otherwise,	 \n\t>10 All only at root (DivingC normal as "
+      "value-10),	 \n\t>20 All with value-20).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[DIVEOPTSOLVES].setup(
+      "diveS!olves", "Diving solve option", -1, 200000, 100,
+      "If >0 then do up to this many solves. However, the last digit is "
+      "ignored and used for extra options: 1-3 enables fixing of satisfied "
+      "integer variables (but not at bound), where 1 switches this off for "
+      "that dive if the dive goes infeasible, and 2 switches it off "
+      "permanently if the dive goes infeasible.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[EXPERIMENT].setup(
+      "exper!iment", "Whether to use testing features", -1, 200000, 0,
+      "Defines how adventurous you want to be in using new ideas. 0 then no "
+      "new ideas, 1 fairly sensible, 2 a bit dubious, 3 you are on your own!",
+      CoinParam::displayPriorityLow);
+
+  parameters_[EXTRA1].setup(
+      "extra1", "Extra integer parameter 1", -COIN_INT_MAX, COIN_INT_MAX, -1,
+      "", CoinParam::displayPriorityLow);
+
+  parameters_[EXTRA2].setup(
+      "extra2", "Extra integer parameter 2", -COIN_INT_MAX, COIN_INT_MAX, -1,
+      "", CoinParam::displayPriorityLow);
+
+  parameters_[EXTRA3].setup(
+      "extra3", "Extra integer parameter 3", -COIN_INT_MAX, COIN_INT_MAX, -1,
+      "", CoinParam::displayPriorityLow);
+
+  parameters_[EXTRA4].setup(
+      "extra4", "Extra integer parameter 4", -COIN_INT_MAX, COIN_INT_MAX, -1,
+      "", CoinParam::displayPriorityLow);
+
+  parameters_[FPUMPITS].setup(
+      "passF!easibilityPump", "How many passes in feasibility pump", 0, 10000,
+      getFeasPumpIters(),
+      "This fine tunes the Feasibility Pump heuristic by doing more or fewer "
+      "passes.");
+
+  parameters_[FPUMPTUNE].setup(
+      "pumpT!une", "Dubious ideas for feasibility pump", 0, 100000000, 0,
+      "This fine tunes Feasibility Pump     \n\t>=10000000 use as objective "
+      "weight switch     \n\t>=1000000 use as accumulate switch     \n\t>=1000 "
+      "use index+1 as number of large loops     \n\t==100 use objvalue "
+      "+0.05*fabs(objvalue) as cutoff OR fakeCutoff if set     \n\t%100 == "
+      "10,20 affects how each solve is done     \n\t1 == fix ints at bounds, 2 "
+      "fix all integral ints, 3 and continuous at bounds. If accumulate is on "
+      "then after a major pass, variables which have not moved are fixed and a "
+      "small branch and bound is tried.");
+
+  parameters_[FPUMPTUNE2].setup(
+      "moreT!une", "Yet more dubious ideas for feasibility pump", 0, 100000000,
+      0,
+      "Yet more ideas for Feasibility Pump     \n\t/100000 == 1 use box "
+      "constraints and original obj in cleanup     \n\t/1000 == 1 Pump will "
+      "run twice if no solution found     \n\t/1000 == 2 Pump will only run "
+      "after root cuts if no solution found     \n\t/1000 >10 as above but "
+      "even if solution found     \n\t/100 == 1,3.. exact 1.0 for objective "
+      "values     \n\t/100 == 2,3.. allow more iterations per pass     \n\t n "
+      "fix if value of variable same for last n iterations.",
+      CoinParam::displayPriorityNone);
+
+  parameters_[HEUROPTIONS].setup(
+      "hOp!tions", "Heuristic options", -COIN_INT_MAX, COIN_INT_MAX, 0,
+      "Value 1 stops heuristics immediately if the allowable gap has been "
+      "reached. Other values are for the feasibility pump - 2 says do exact "
+      "number of passes given, 4 only applies if an initial cutoff has been "
+      "given and says relax after 50 passes, while 8 will adapt the cutoff rhs "
+      "after the first solution if it looks as if the code is stalling.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[MAXHOTITS].setup(
+      "hot!StartMaxIts", "Maximum iterations on hot start",
+      0, COIN_INT_MAX);
+
+  parameters_[LOGLEVEL].setup(
+      "log!Level", "Level of detail in CBC output.", -1, 999999,
+      getLogLevel(),
+      "If set to 0 then there should be no output in normal circumstances. A "
+      "value of 1 is probably the best value for most uses, while 2 and 3 give "
+      "more information.");
+
+  parameters_[LPLOGLEVEL].setup(
+      "log!Level", "Level of detail in LP solver output.", -1, 999999,
+      getLpLogLevel(),
+      "If set to 0 then there should be no output in normal circumstances. A "
+      "value of 1 is probably the best value for most uses, while 2 and 3 give "
+      "more information.");
+
+  parameters_[MAXSAVEDSOLS].setup(
+      "maxSaved!Solutions", "Maximum number of solutions to save", 0,
+      COIN_INT_MAX, 1, "Number of solutions to save.");
+
+  parameters_[MAXSLOWCUTS].setup(
+      "slow!cutpasses", "Maximum number of rounds for slower cut generators",
+      -1, COIN_INT_MAX, 10,
+      "Some cut generators are fairly slow - this limits the number of times "
+      "they are tried. The cut generators identified as 'may be slow' at "
+      "present are Lift and project cuts and both versions of Reduce and Split "
+      "cuts.");
+
+  parameters_[MOREMOREMIPOPTIONS].setup(
+      "more2!MipOptions", "More more dubious options for mip", -1, COIN_INT_MAX,
+      0, "", CoinParam::displayPriorityNone);
+
+  parameters_[MULTIPLEROOTS].setup(
+      "multiple!RootPasses",
+      "Do multiple root passes to collect cuts and solutions", 0, COIN_INT_MAX,
+      0,
+      "Solve (in parallel, if enabled) the root phase this number of times, "
+      "each with its own different seed, and collect all solutions and cuts "
+      "generated. The actual format is aabbcc where aa is the number of extra "
+      "passes; if bb is non zero, then it is number of threads to use "
+      "(otherwise uses threads setting); and cc is the number of times to do "
+      "root phase. The solvers do not interact with each other.  However if "
+      "extra passes are specified then cuts are collected and used in later "
+      "passes - so there is interaction there. Some parts of this "
+      "implementation have their origin in idea of Andrea Lodi, Matteo "
+      "Fischetti, Michele Monaci, Domenico Salvagnin, and Andrea Tramontani.",
+      CoinParam::displayPriorityNone);
+
+  parameters_[ODDWEXTMETHOD].setup(
+      "oddwext!method",
+      "Strategy used to search for wheel centers for the cuts found by Odd "
+      "Wheel Cut Separation routine",
+      0, 2, 2,
+      "Sets the method used in the extension module of Odd Wheel Cut "
+      "Separation routine: 0=no extension; 1=one variable; 2=clique");
+
+  parameters_[OUTPUTFORMAT].setup(
+      "output!Format", "Which output format to use", 1, 6, 2,
+      "Normally export will be done using normal representation for numbers "
+      "and two values per line.  You may want to do just one per line (for "
+      "grep or suchlike) and you may wish to save with absolute accuracy using "
+      "a coded version of the IEEE value. A value of 2 is normal. Otherwise, "
+      "odd values give one value per line, even values two.  Values of 1 and 2 "
+      "give normal format, 3 and 4 give greater precision, 5 and 6 give IEEE "
+      "values.  When exporting a basis, 1 does not save values, 2 saves "
+      "values, 3 saves with greater accuracy and 4 saves in IEEE format.");
+
+  parameters_[PRINTOPTIONS].setup(
+      "pO!ptions", "Dubious print options", 0, COIN_INT_MAX, 0,
+      "If this is greater than 0 then presolve will give more information and "
+      "branch and cut will give statistics");
+
+  parameters_[PROCESSTUNE].setup(
+      "tune!PreProcess", "Dubious tuning parameters for preprocessing", 0,
+      COIN_INT_MAX, 0,
+      "Format aabbcccc - \n If aa then this is number of major passes (i.e. "
+      "with presolve) \n If bb and bb>0 then this is number of minor passes "
+      "(if unset or 0 then 10) \n cccc is bit set \n 0 - 1 Heavy probing \n 1 "
+      "- 2 Make variables integer if possible (if obj value)\n 2 - 4 As above "
+      "but even if zero objective value\n 7 - 128 Try and create cliques\n 8 - "
+      "256 If all +1 try hard for dominated rows\n 9 - 512 Even heavier "
+      "probing \n 10 - 1024 Use a larger feasibility tolerance in presolve\n "
+      "11 - 2048 Try probing before creating cliques\n 12 - 4096 Switch off "
+      "duplicate column checking for integers \n 13 - 8192 Allow scaled "
+      "duplicate column checking \n \n     Now aa 99 has special meaning i.e. "
+      "just one simple presolve.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[RANDOMSEED].setup(
+      "randomC!bcSeed", "Random seed for Cbc", -1, COIN_INT_MAX, -1,
+      "Allows initialization of the random seed for pseudo-random numbers used "
+      "in heuristics such as the Feasibility Pump to decide whether to round "
+      "up or down. The special value of 0 lets Cbc use the time of the day for "
+      "the initial seed.");
+
+  parameters_[STRONGSTRATEGY].setup(
+      "expensive!Strong", "Whether to do even more strong branching", 0,
+      COIN_INT_MAX, 0,
+      "Strategy for extra strong branching. 0 is normal strong branching. 1, "
+      "2, 4, and 6 does strong branching on all fractional variables if at the "
+      "root node (1), at depth less than modifier (2), objective equals best "
+      "possible (4), or at depth less than modifier and objective equals best "
+      "possible (6). 11, 12, 14, and 16 are like 1, 2, 4, and 6, "
+      "respecitively, but do strong branching on all integer (incl. "
+      "non-fractional) variables. Values >= 100 are used to specify a depth "
+      "limit (value/100), otherwise 5 is used. If the values >= 100, then "
+      "above rules are applied to value%100.",
+      CoinParam::displayPriorityNone);
+
+  parameters_[TESTOSI].setup("testO!si", "Test OsiObject stuff",
+                                            -1, COIN_INT_MAX, -1, "",
+                                            CoinParam::displayPriorityNone);
+
+#ifdef CBC_THREAD
+  parameters_[THREADS].setup(
+      "thread!s", "Number of threads to try and use", -100, 100000, 0,
+      "To use multiple threads, set threads to number wanted.  It may be "
+      "better to use one or two more than number of cpus available.  If 100+n "
+      "then n threads and search is repeatable (maybe be somewhat slower), if "
+      "200+n use threads for root cuts, 400+n threads used in sub-trees.",
+      CoinParam::displayPriorityLow);
+#endif
+
+  parameters_[USERCBC].setup(
+      "userCbc", "Hand coded Cbc stuff", 0, COIN_INT_MAX, 0,
+      "There are times (e.g., when using AMPL interface) when you may wish to "
+      "do something unusual.  Look for USERCBC in main driver and modify "
+      "sample code.",
+      CoinParam::displayPriorityNone);
+
+  parameters_[VERBOSE].setup(
+      "verbose", "Switches on longer help on single ?", 0, 15,
+      verbose_,
+      "Set to 1 to get short help with ? list, 2 to get long help.",
+      CoinParam::displayPriorityNone);
+
+  parameters_[VUBTRY].setup(
+      "vub!heuristic", "Type of VUB heuristic", -2, 20, -1,
+      "This heuristic tries to fix some integer variables.",
+      CoinParam::displayPriorityNone);
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcSolverSettings::addCbcSolverBoolParams() {
+  for (int code = CBCSOLVER_FIRSTBOOLPARAM + 1;
+       code < CBCSOLVER_LASTBOOLPARAM; code++) {
+    parameters_[code].setType(CoinParam::coinParamKwd);
+    parameters_[code].appendKwd("off", CbcSolverParam::ParamOff);
+    parameters_[code].appendKwd("on", CbcSolverParam::ParamOn);
+    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverKwdParam);
+  }
+
+  parameters_[CPX].setup(
+      "cplex!Use", "Whether to use Cplex!", "off", 0,
+      "If the user has Cplex, but wants to use some of Cbc's heuristics then "
+      "you can!  If this is on, then Cbc will get to the root node and then "
+      "hand over to Cplex.  If heuristics find a solution this can be "
+      "significantly quicker.  You will probably want to switch off Cbc's cuts "
+      "as Cplex thinks they are genuine constraints.  It is also probable that "
+      "you want to switch off preprocessing, although for difficult problems "
+      "it is worth trying both.");
+
+  parameters_[DOHEURISTIC].setup(
+      "doH!euristic", "Do heuristics before any preprocessing", "off",
+      getDiveCoefficientMode(),
+      "Normally heuristics are done in branch and bound.  It may be useful to "
+      "do them outside. Only those heuristics with 'both' or 'before' set will "
+      "run. Doing this may also set cutoff, which can help with "
+      "preprocessing.");
+
+  parameters_[ERRORSALLOWED].setup(
+      "error!sAllowed", "Whether to allow import errors", "off", 0,
+      "The default is not to use any model which had errors when reading the "
+      "mps file.  Setting this to 'on' will allow all errors from which the "
+      "code can recover simply by ignoring the error.  There are some errors "
+      "from which the code can not recover, e.g., no ENDATA.  This has to be "
+      "set before import, i.e., -errorsAllowed on -import xxxxxx.mps.");
+
+  parameters_[EXTRAVARIABLES].setup(
+      "extraV!ariables", "Allow creation of extra integer variables", "off", 0,
+      "Switches on a trivial re-formulation that introduces extra integer "
+      "variables to group together variables with same cost.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[MESSAGES].setup(
+      "mess!ages", "Controls whether standardised message prefix is printed",
+      "off", 0,
+      "By default, messages have a standard prefix, such as:\n   Clp0005 2261  "
+      "Objective 109.024 Primal infeas 944413 (758)\nbut this program turns "
+      "this off to make it look more friendly.  It can be useful to turn them "
+      "back on if you want to be able to 'grep' for particular messages or if "
+      "you intend to override the behavior of a particular message.");
+
+  parameters_[PREPROCNAMES].setup(
+      "PrepN!ames", "If column names will be kept in pre-processed model",
+      "off", 0,
+      "Normally the preprocessed model has column names replaced by new names "
+      "C0000... Setting this option to on keeps original names in variables "
+      "which still exist in the preprocessed problem");
+
+  parameters_[SOS].setup(
+      "sos!Options", "Whether to use SOS from AMPL", "off", 0,
+      "Normally if AMPL says there are SOS variables they should be used, but "
+      "sometimes they should be turned off - this does so.");
+
+  parameters_[USESOLUTION].setup(
+      "force!Solution", "Whether to use given solution as crash for BAB", "off",
+      0,
+      "If on then tries to branch to solution given by AMPL or priorities "
+      "file.");
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcSolverSettings::addCbcSolverCutParams() {
+  for (int code = CBCSOLVER_FIRSTCUTPARAM + 1;
+       code < CBCSOLVER_LASTCUTPARAM; code++) {
+    parameters_[code].setType(CoinParam::coinParamKwd);
+    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverKwdParam);
+  }
+
+  parameters_[CLIQUECUTS].setup(
+      "clique!Cuts", "Whether to use clique cuts", "off", CbcSolverParam::CGOff,
+      "This switches on clique cuts (either at root or in entire tree). See "
+      "branchAndCut for information on options.");
+
+  parameters_[CUTSTRATEGY].setup(
+      "cuts!OnOff", "Switches all cuts on or off", "off", CbcSolverParam::CGOff,
+      "This can be used to switch on or off all cuts (apart from Reduce and "
+      "Split).  Then you can set individual ones off or on.  See branchAndCut "
+      "for information on options.");
+
+  parameters_[FLOWCUTS].setup(
+      "flow!CoverCuts", "Whether to use Flow Cover cuts", "off",
+      getFlowMode(),
+      "This switches on flow cover cuts (either at root or in entire "
+      "tree)." CUTS_LONGHELP);
+
+  parameters_[GMICUTS].setup(
+      "GMI!Cuts", "Whether to use alternative Gomory cuts", "off",
+      getGMIMode(),
+      CUTS_LONGHELP " This version is by Giacomo Nannicini and may be more "
+                    "robust than gomoryCuts.");
+
+  parameters_[GOMORYCUTS].setup(
+      "gomory!Cuts", "Whether to use Gomory cuts", "off",
+      getGomoryMode(),
+      "The original cuts - beware of imitations!  Having gone out of favor, "
+      "they are now more fashionable as LP solvers are more robust and they "
+      "interact well with other cuts.  They will almost always give cuts "
+      "(although in this executable they are limited as to number of variables "
+      "in cut).  However the cuts may be dense so it is worth experimenting "
+      "(Long allows any length). " CUTS_LONGHELP
+      " Reference: https://github.com/coin-or/Cgl/wiki/CglGomory");
+
+  parameters_[KNAPSACKCUTS].setup(
+      "knapsack!Cuts", "Whether to use Knapsack cuts", "off",
+      getKnapsackMode(),
+      "This switches on knapsack cuts (either at root or in entire tree). See "
+      "branchAndCut for information on options.");
+
+  parameters_[LANDPCUTS].setup(
+      "lift!AndProjectCuts", "Whether to use lift-and-project cuts", "off",
+      getLandPMode(),
+      "This switches on lift-and-project cuts (either at root or in entire "
+      "tree). See branchAndCut for information on options.");
+
+  parameters_[LAGOMORYCUTS].setup(
+      "lagomory!Cuts", "Whether to use Lagrangean Gomory cuts", "off",
+      getLaGomoryMode(),
+      "This is a gross simplification of 'A Relax-and-Cut Framework for "
+      "Gomory's Mixed-Integer Cuts' by Matteo Fischetti & Domenico Salvagnin.  "
+      "This simplification just uses original constraints while modifying "
+      "objective using other cuts. So you don't use messy constraints "
+      "generated by Gomory etc. A variant is to allow non messy cuts e.g. "
+      "clique cuts. So 'only' does this while 'clean' also allows integral "
+      "valued cuts.  'End' is recommended and waits until other cuts have "
+      "finished before it does a few passes. The length options for gomory "
+      "cuts are used.");
+
+  parameters_[LATWOMIRCUTS].setup(
+      "latwomir!Cuts", "Whether to use Lagrangean Twomir cuts", "off",
+      getLaTwomirMode(),
+      "This is a Lagrangean relaxation for Twomir cuts.  See lagomoryCuts for "
+      "description of options.");
+
+  parameters_[MIRCUTS].setup(
+      "mixed!IntegerRoundingCuts", "Whether to use Mixed Integer Rounding cuts",
+      "off", getMirMode(),
+      "This switches on mixed integer rounding cuts (either at root or in "
+      "entire tree).  See branchAndCut for information on options.");
+
+  parameters_[ODDWHEELCUTS].setup(
+      "oddwheel!Cuts", "Whether to use odd wheel cuts", "off",
+      getOddWheelMode(),
+      "This switches on odd-wheel inequalities (either at root or in entire "
+      "tree).");
+
+  parameters_[PROBINGCUTS].setup(
+      "probing!Cuts", "Whether to use Probing cuts", "off",
+      getProbingMode(),
+      "This switches on probing cuts (either at root or in entire tree). See "
+      "branchAndCut for information on options.");
+
+  parameters_[REDSPLITCUTS].setup(
+      "reduce!AndSplitCuts", "Whether to use Reduce-and-Split cuts", "off",
+      getRedSplitMode(),
+      "This switches on reduce and split cuts (either at root or in entire "
+      "tree). See branchAndCut for information on options.");
+
+  parameters_[REDSPLIT2CUTS].setup(
+      "reduce2!AndSplitCuts", "Whether to use Reduce-and-Split cuts - style 2",
+      "off", getRedSplit2Mode(),
+      "This switches on reduce and split cuts (either at root or in entire "
+      "tree). See branchAndCut for information on options.");
+
+  parameters_[RESIDCAPCUTS].setup(
+      "residual!CapacityCuts", "Whether to use Residual Capacity cuts", "off",
+      getResidCapMode(),
+      CUTS_LONGHELP
+      " Reference: https://github.com/coin-or/Cgl/wiki/CglResidualCapacity");
+
+  parameters_[TWOMIRCUTS].setup(
+      "two!MirCuts", "Whether to use Two phase Mixed Integer Rounding cuts",
+      "off", getTwomirMode(),
+      "This switches on two phase mixed integer rounding cuts (either at root "
+      "or in entire tree). See branchAndCut for information on options.");
+
+  parameters_[ZEROHALFCUTS].setup(
+      "zero!HalfCuts", "Whether to use zero half cuts", "off",
+      getZeroHalfMode(),
+      CUTS_LONGHELP " This implementation was written by Alberto Caprara.");
+
+  // Populate the keyword lists
+  for (int code = CBCSOLVER_FIRSTCUTPARAM + 1;
+       code < CBCSOLVER_LASTCUTPARAM; code++) {
+    // First the common keywords
+    switch (code) {
+    case CUTSTRATEGY:
+    case CLIQUECUTS:
+    case FLOWCUTS:
+    case GMICUTS:
+    case GOMORYCUTS:
+    case KNAPSACKCUTS:
+    case LANDPCUTS:
+    case MIRCUTS:
+    case ODDWHEELCUTS:
+    case PROBINGCUTS:
+    case RESIDCAPCUTS:
+    case TWOMIRCUTS:
+    case ZEROHALFCUTS: {
+      parameters_[code].appendKwd("on", CbcSolverParam::CGOn);
+      parameters_[code].appendKwd("root", CbcSolverParam::CGRoot);
+      parameters_[code].appendKwd("ifmove", CbcSolverParam::CGIfMove);
+      parameters_[code].appendKwd("forceon", CbcSolverParam::CGForceOn);
+      break;
+    }
+    default: { break; }
+
+      // Now, add some additional keywords for different classes
+      switch (code) {
+      case GOMORYCUTS: {
+        parameters_[code].appendKwd("onglobal", CbcSolverParam::CGOnGlobal);
+        parameters_[code].appendKwd("forceandglobal", CbcSolverParam::CGForceAndGlobal);
+        parameters_[code].appendKwd("forcelongon", CbcSolverParam::CGForceLongOn);
+        parameters_[code].appendKwd("longer", CbcSolverParam::CGLonger);
+        parameters_[code].appendKwd("shorter", CbcSolverParam::CGShorter);
+        break;
+      }
+      case GMICUTS: {
+        parameters_[code].appendKwd("long", CbcSolverParam::CGLong);
+        parameters_[code].appendKwd("longroot", CbcSolverParam::CGLongRoot);
+        parameters_[code].appendKwd("longifmove", CbcSolverParam::CGLongIfMove);
+        parameters_[code].appendKwd("forcelongon", CbcSolverParam::CGForceLongOn);
+        parameters_[code].appendKwd("longendonly", CbcSolverParam::CGLongEndOnly);
+        break;
+      }
+      case LAGOMORYCUTS: {
+        parameters_[code].appendKwd("root", CbcSolverParam::CGRoot);
+        parameters_[code].appendKwd("onlyaswellroot", CbcSolverParam::CGOnlyAsWellRoot);
+        parameters_[code].appendKwd("cleanaswellroot", CbcSolverParam::CGCleanAsWellRoot);
+        parameters_[code].appendKwd("bothaswellroot", CbcSolverParam::CGCleanBothAsWellRoot);
+        // Here, we intentionally drop through to the next set
+      }
+      case LATWOMIRCUTS: {
+        parameters_[code].appendKwd("endonlyroot", CbcSolverParam::CGEndOnlyRoot);
+        parameters_[code].appendKwd("endcleanroot", CbcSolverParam::CGEndCleanRoot);
+        parameters_[code].appendKwd("endonly", CbcSolverParam::CGEndOnly);
+        parameters_[code].appendKwd("endclean", CbcSolverParam::CGEndClean);
+        parameters_[code].appendKwd("endboth", CbcSolverParam::CGEndBoth);
+        parameters_[code].appendKwd("onlyaswell", CbcSolverParam::CGOnlyAsWell);
+        parameters_[code].appendKwd("cleanaswell", CbcSolverParam::CGCleanAsWell);
+        parameters_[code].appendKwd("bothaswell", CbcSolverParam::CGBothAsWell);
+        parameters_[code].appendKwd("onlyinstead", CbcSolverParam::CGOnlyInstead);
+        parameters_[code].appendKwd("cleaninstead", CbcSolverParam::CGCleanInstead);
+        parameters_[code].appendKwd("bothinstead", CbcSolverParam::CGBothInstead);
+        break;
+      }
+      case ODDWHEELCUTS: {
+        parameters_[code].appendKwd("onglobal", CbcSolverParam::CGOnGlobal);
+        break;
+      }
+      case PROBINGCUTS: {
+        parameters_[code].appendKwd("forceonbut", CbcSolverParam::CGForceOnBut);
+        break;
+      }
+      case REDSPLITCUTS:
+      case REDSPLIT2CUTS: {
+        parameters_[code].appendKwd("on", CbcSolverParam::CGOn);
+        parameters_[code].appendKwd("root", CbcSolverParam::CGRoot);
+        parameters_[code].appendKwd("longon", CbcSolverParam::CGLongOn);
+        parameters_[code].appendKwd("longroot", CbcSolverParam::CGLongRoot);
+        break;
+      }
+      default:
+        break;
+      }
+    }
+  }
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcSolverSettings::addCbcSolverHeurParams() {
+  for (int code = CBCSOLVER_FIRSTHEURPARAM + 1;
+       code < CBCSOLVER_LASTHEURPARAM; code++) {
+    parameters_[code].setType(CoinParam::coinParamKwd);
+    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverKwdParam);
+  }
+
+  parameters_[COMBINE].setup(
+      "combine!Solutions", "Whether to use combine solution heuristic", "off",
+      getCombineMode(),
+      "This switches on a heuristic which does branch and cut on the problem "
+      "given by just using variables which have appeared in one or more "
+      "solutions. It is obviously only tried after two or more solutions.");
+
+  parameters_[CROSSOVER].setup(
+      "combine2!Solutions", "Whether to use crossover solution heuristic",
+      "off", getCrossoverMode());
+
+  parameters_[DINS].setup(
+      "Dins", "Whether to try Distance Induced Neighborhood Search", "off",
+      getDinsMode(), HEURISTICS_LONGHELP);
+
+  parameters_[DIVINGC].setup(
+      "DivingC!oefficient", "Whether to try Coefficient diving heuristic",
+      "off", getDiveCoefficientMode(), HEURISTICS_LONGHELP);
+
+  parameters_[DIVINGF].setup(
+      "DivingF!ractional", "Whether to try Fractional diving heuristic", "off",
+      getDiveFractionalMode(), HEURISTICS_LONGHELP);
+
+  parameters_[DIVINGG].setup(
+      "DivingG!uided", "Whether to try Guided diving heuristic", "off",
+      getDiveGuidedMode(), HEURISTICS_LONGHELP);
+
+  parameters_[DIVINGL].setup(
+      "DivingL!ineSearch", "Whether to try Linesearch diving heuristic", "off",
+      getDiveLineSearchMode(), HEURISTICS_LONGHELP);
+
+  parameters_[DIVINGP].setup(
+      "DivingP!seudocost", "Whether to try Pseudocost diving heuristic", "off",
+      getDivePseudocostMode(), HEURISTICS_LONGHELP);
+
+  parameters_[DIVINGS].setup(
+      "DivingS!ome", "Whether to try Diving heuristics", "off",
+      getDiveRandomMode(),
+      "This switches on a random diving heuristic at various times. One may "
+      "prefer to individually turn diving heuristics on or off. ");
+
+  parameters_[DIVINGV].setup(
+      "DivingV!ectorLength", "Whether to try Vectorlength diving heuristic",
+      "off", getDiveVectorLengthMode(), HEURISTICS_LONGHELP);
+
+  parameters_[DW].setup(
+      "dw!Heuristic", "Whether to try Dantzig Wolfe heuristic", "off",
+      getDWMode(),
+      "This heuristic is very very compute intensive. It tries to find a "
+      "Dantzig Wolfe structure and use that. " HEURISTICS_LONGHELP);
+
+  parameters_[FPUMP].setup(
+      "feas!ibilityPump", "Whether to try Feasibility Pump", "off",
+      getFeasPumpMode(),
+      "This switches on feasibility pump heuristic at root. This is due to "
+      "Fischetti and Lodi and uses a sequence of LPs to try and get an integer "
+      "feasible solution.  Some fine tuning is available by "
+      "passFeasibilityPump.");
+
+  parameters_[GREEDY].setup(
+      "greedy!Heuristic", "Whether to use a greedy heuristic", "off",
+      getGreedyCoverMode(),
+      "Switches on a pair of greedy heuristic which will try and obtain a "
+      "solution.  It may just fix a percentage of variables and then try a "
+      "small branch and cut run.");
+
+  parameters_[HEURISTICSTRATEGY].setup(
+      "heur!isticsOnOff", "Switches most heuristics on or off", "off", 0,
+      "This can be used to switch on or off all heuristics.  Then you can set "
+      "individual ones off or on.  CbcTreeLocal is not included as it "
+      "dramatically alters search.");
+
+  parameters_[NAIVE].setup(
+      "naive!Heuristics", "Whether to try some stupid heuristic", "off",
+      getNaiveHeurMode(),
+      "This is naive heuristics which, e.g., fix all integers with costs to "
+      "zero!. " HEURISTICS_LONGHELP,
+      CoinParam::displayPriorityLow);
+
+  parameters_[PIVOTANDFIX].setup(
+      "pivotAndF!ix", "Whether to try Pivot and Fix heuristic", "off",
+      getPivotAndFixMode(), HEURISTICS_LONGHELP);
+
+#if 0
+  parameters_[PIVOTANDCOMPLEMENT].setup("pivotAndC!omplement",
+                                                        "Whether to try Pivot and Complement heuristic",
+                                                        "off", getPivotAndComplementMode(),
+                                                        HEURISTICS_LONGHELP);
+#endif
+
+  parameters_[PROXIMITY].setup(
+      "proximity!Search", "Whether to do proximity search heuristic", "off",
+      getProximityMode(),
+      "This heuristic looks for a solution close to the incumbent solution "
+      "(Fischetti and Monaci, 2012). The idea is to define a sub-MIP without "
+      "additional constraints but with a modified objective function intended "
+      "to attract the search in the proximity of the incumbent. The approach "
+      "works well for 0-1 MIPs whose solution landscape is not too irregular "
+      "(meaning the there is reasonable probability of finding an improved "
+      "solution by flipping a small number of binary variables), in particular "
+      "when it is applied to the first heuristic solutions found at the root "
+      "node. " HEURISTICS_LONGHELP); // Can also set different maxNode
+                                     // cbcSettings by plusnnnn (and are
+                                     // 'on'(on==30)).
+
+  parameters_[RANDROUND].setup(
+      "randomi!zedRounding", "Whether to try randomized rounding heuristic",
+      "off", getRandRoundMode(), HEURISTICS_LONGHELP);
+
+  parameters_[RENS].setup(
+      "Rens", "Whether to try Relaxation Enforced Neighborhood Search", "off",
+      getRensMode(),
+      HEURISTICS_LONGHELP " Value 'on' just does 50 nodes. 200, 1000, and "
+                          "10000 does that many nodes.");
+
+  parameters_[RINS].setup(
+      "Rins", "Whether to try Relaxed Induced Neighborhood Search", "off",
+      getRinsMode(), HEURISTICS_LONGHELP);
+
+  parameters_[ROUNDING].setup(
+      "round!ingHeuristic", "Whether to use Rounding heuristic", "off",
+      getRoundingMode(),
+      "This switches on a simple (but effective) rounding heuristic at each "
+      "node of tree.");
+
+  parameters_[LOCALTREE].setup(
+      "local!TreeSearch", "Whether to use local tree search", "off",
+      getLocalTreeMode(),
+      "This switches on a local search algorithm when a solution is found.  "
+      "This is from Fischetti and Lodi and is not really a heuristic although "
+      "it can be used as one. When used from this program it has limited "
+      "functionality.  It is not controlled by heuristicsOnOff.");
+
+  parameters_[VND].setup(
+      "Vnd!VariableNeighborhoodSearch",
+      "Whether to try Variable Neighborhood Search", "off",
+       getVndMode(), HEURISTICS_LONGHELP);
+
+  // Populate the keyword lists
+  for (int code = CBCSOLVER_FIRSTHEURPARAM + 1;
+       code < CBCSOLVER_LASTHEURPARAM; code++) {
+    // First the common keywords
+    switch (code) {
+    case HEURISTICSTRATEGY:
+    case CROSSOVER:
+    case DINS:
+    case DIVINGC:
+    case DIVINGF:
+    case DIVINGG:
+    case DIVINGL:
+    case DIVINGP:
+    case DIVINGS:
+    case DIVINGV:
+    case DW:
+    case NAIVE:
+    case PIVOTANDFIX:
+    case PIVOTANDCOMPLEMENT:
+    case PROXIMITY:
+    case RANDROUND:
+    case RENS:
+    case RINS:
+    case ROUNDING:
+    case VND: {
+      parameters_[code].appendKwd("off", CbcSolverParam::CGOff);
+      parameters_[code].appendKwd("on", CbcSolverParam::CGOn);
+      parameters_[code].appendKwd("both", CbcSolverParam::CGRoot);
+      parameters_[code].appendKwd("before", CbcSolverParam::CGIfMove);
+      break;
+    }
+    default:
+      break;
+    }
+    // Check the unique keywords
+    switch (code) {
+    case COMBINE: {
+      parameters_[code].appendKwd("off", CbcSolverParam::HeurOff);
+      parameters_[code].appendKwd("on", CbcSolverParam::HeurOn);
+      break;
+    }
+    case DINS: {
+      parameters_[code].appendKwd("often", CbcSolverParam::HeurOften);
+      break;
+    }
+    case FPUMP: {
+      parameters_[code].appendKwd("off", CbcSolverParam::HeurOff);
+      parameters_[code].appendKwd("on", CbcSolverParam::HeurOn);
+      break;
+    }
+    case GREEDY: {
+      parameters_[code].appendKwd("off", CbcSolverParam::HeurOff);
+      parameters_[code].appendKwd("on", CbcSolverParam::HeurOn);
+      parameters_[code].appendKwd("root", CbcSolverParam::HeurRoot);
+      break;
+    }
+    case LOCALTREE: {
+      parameters_[code].appendKwd("off", CbcSolverParam::HeurOff);
+      parameters_[code].appendKwd("on", CbcSolverParam::HeurOn);
+    }
+    case PROXIMITY: {
+      parameters_[code].appendKwd("10", CbcSolverParam::HeurTen);
+      parameters_[code].appendKwd("100", CbcSolverParam::HeurOneHundred);
+      parameters_[code].appendKwd("300", CbcSolverParam::HeurThreeHundred);
+      break;
+    }
+    case RENS: {
+      parameters_[code].appendKwd("200", CbcSolverParam::HeurTwoHundred);
+      parameters_[code].appendKwd("1000", CbcSolverParam::HeurOneThousand);
+      parameters_[code].appendKwd("10000", CbcSolverParam::HeurTenThousand);
+      parameters_[code].appendKwd("dj", CbcSolverParam::HeurDj);
+      parameters_[code].appendKwd("djbefore", CbcSolverParam::HeurDjBefore);
+      parameters_[code].appendKwd("usesolution", CbcSolverParam::HeurUseSolution);
+      break;
+    }
+    case RINS: {
+      parameters_[code].appendKwd("often", CbcSolverParam::HeurOften);
+      break;
+    }
+    case VND: {
+      parameters_[code].appendKwd("intree", CbcSolverParam::HeurInTree);
+      break;
+    }
+    default:
+      break;
+    }
+  }
+}
+
+//###########################################################################
+//###########################################################################
+
+/* Function to set up cbc (CbcModel) parameters.  */
+
+void CbcSolverSettings::addCbcModelParams()
+{
+  for (int code = CBCMODEL_FIRSTPARAM + 1;
+       code < CBCMODEL_LASTPARAM; code++) {
+    CoinParam &param = parameters_[code];
+    static_cast<CbcModelParam &>(param).setObj(model_);
+  }
+
+  parameters_[ALLOWABLEGAP].setup(
+      "allow!ableGap",
+      "Stop when gap between best possible and incumbent is less than this",
+      0.0, 1.0e20, 0.0,
+      "If the gap between best solution and best possible solution is less "
+      "than this then the search will be terminated. Also see ratioGap.");
+
+  parameters_[CUTOFF].setup(
+      "cuto!ff", "All solutions must be better than this", -1.0e60, 1.0e60,
+      1.0e50,
+      "All solutions must be better than this value (in a minimization sense). "
+      " This is also set by cbc whenever it obtains a solution and is set to "
+      "the value of the objective for the solution minus the cutoff "
+      "increment.");
+
+  parameters_[DIRECTION].setup(
+      "direction", "Minimize or maximize", "min!imize",
+      CbcModelParam::OptDirMinimize,
+      "The default is minimize - use 'direction maximize' for "
+      "maximization.\nYou can also use the parameters_ 'maximize' or "
+      "'minimize'.");
+  parameters_[DIRECTION].appendKwd("max!imize", CbcModelParam::OptDirMaximize);
+  parameters_[DIRECTION].appendKwd("zero", CbcModelParam::OptDirZero);
+
+  parameters_[INCREMENT].setup(
+      "inc!rement",
+      "A new solution must be at least this much better than the incumbent",
+      -1.0e20, 1.0e20, model_->getDblParam(CbcModel::CbcCutoffIncrement),
+      "Whenever a solution is found the bound on future solutions is set to "
+      "the objective of the solution (in a minimization sense) plus the "
+      "specified increment.  If this option is not specified, the code will "
+      "try and work out an increment.  E.g., if all objective coefficients are "
+      "multiples of 0.01 and only integer variables have entries in objective "
+      "then the increment can be set to 0.01.  Be careful if you set this "
+      "negative!");
+
+  parameters_[INFEASIBILITYWEIGHT].setup(
+      "inf!easibilityWeight",
+      "Each integer infeasibility is expected to cost this much", 0.0, 1.0e20,
+      model_->getDblParam(CbcModel::CbcInfeasibilityWeight),
+      "A primitive way of deciding which node to explore next.  Satisfying "
+      "each integer infeasibility is expected to cost this much.");
+
+  parameters_[INTEGERTOLERANCE].setup(
+      "integerT!olerance",
+      "For an optimal solution, no integer variable may be farther than this "
+      "from an integer value",
+      1.0e-20, 0.5, model_->getDblParam(CbcModel::CbcIntegerTolerance),
+      "When checking a solution for feasibility, if the difference between the "
+      "value of a variable and the nearest integer is less than the integer "
+      "tolerance, the value is considered to be integral. Beware of setting "
+      "this smaller than the primal tolerance.");
+
+  parameters_[LOGLEVEL].setup(
+      "bclog!Level", "Level of detail in Coin branch and Cut output", -1, 63,
+      model_->messageHandler()->logLevel(),
+      "If set to 0 then there should be no output in normal circumstances. A "
+      "value of 1 is probably the best value for most uses, while 2 and 3 give "
+      "more information.");
+
+  parameters_[MAXIMIZE].setup(
+      "max!imize", "Set optimization direction to maximize",
+      "The default is minimize - use 'maximize' for maximization.\n A synonym "
+      "for 'direction maximize'.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[MAXNODES].setup(
+      "maxN!odes", "Maximum number of nodes to evaluate", 1, 2147483647, 1,
+      "This is a repeatable way to limit search.  Normally using time is "
+      "easier but then the results may not be repeatable.");
+
+  parameters_[MAXNODESNOTIMPROVING].setup(
+      "maxNNI!FS",
+      "Maximum number of nodes to be processed without improving the incumbent "
+      "solution.",
+      -1, COIN_INT_MAX, -1,
+      "This criterion specifies that when a feasible solution is available, "
+      "the search should continue only if better feasible solutions were "
+      "produced in the last nodes.");
+
+  parameters_[MAXSECONDSNOTIMPROVING].setup(
+      "secni!fs", "maximum seconds without improving the incumbent solution",
+      -1.0, COIN_DBL_MAX, -1.0,
+      "With this stopping criterion, after a feasible solution is found, the "
+      "search should continue only if the incumbent solution was updated "
+      "recently, the tolerance is specified here. A discussion on why this "
+      "criterion can be useful is included here: "
+      "https://yetanothermathprogrammingconsultant.blogspot.com/2019/11/"
+      "mip-solver-stopping-criteria.html .");
+
+  parameters_[MAXSOLS].setup(
+      "maxSo!lutions", "Maximum number of feasible solutions to get", 1,
+      COIN_INT_MAX, COIN_INT_MAX,
+      "You may want to stop after (say) two solutions or an hour. This is "
+      "checked every node in tree, so it is possible to get more solutions "
+      "from heuristics.");
+
+  parameters_[MINIMIZE].setup(
+      "min!imize", "Set optimization direction to minimize",
+      "The default is minimize - use 'maximize' for maximization.\nThis should "
+      "only be necessary if you have previously set maximization. A synonym "
+      "for 'direction minimize'.");
+
+  parameters_[MIPOPTIONS].setup(
+      "mipO!ptions", "Dubious options for mip", 0, COIN_INT_MAX, 0, "",
+      CoinParam::displayPriorityNone);
+
+  parameters_[MOREMIPOPTIONS].setup(
+      "more!MipOptions", "More dubious options for mip", -1, COIN_INT_MAX, 0,
+      "", CoinParam::displayPriorityNone);
+
+#if 0
+  parameters_[NUMBERMINI].setup("miniT!ree",
+      "Size of fast mini tree", 0, COIN_INT_MAX, 0,
+      "The idea is that I can do a small tree fast. This is a first try and will" 
+      "hopefully become more sophisticated.", CoinParam::displayPriorityNone);
+#endif
+
+  parameters_[NUMBERANALYZE].setup(
+      "numberA!nalyze", "Number of analysis iterations", -COIN_INT_MAX,
+      COIN_INT_MAX, 0,
+      "This says how many iterations to spend at the root node analyzing the "
+      "problem.  This is a first try and will hopefully become more "
+      "sophisticated.",
+      CoinParam::displayPriorityNone);
+
+  parameters_[REVERSE].setup(
+      "reverse", "Reverses sign of objective",
+      "Useful for testing if maximization works correctly",
+      CoinParam::displayPriorityNone);
+
+  parameters_[CUTPASS].setup(
+      "passC!uts", "Number of cut passes at root node", -999999, 999999,
+      model_->getMaximumCutPassesAtRoot(),
+      "The default is 100 passes if less than 500 columns, 100 passes (but "
+      "stop if the drop is small) if less than 5000 columns, 20 otherwise.");
+
+  parameters_[GAPRATIO].setup(
+      "ratio!Gap",
+      "Stop when the gap between the best possible solution and the incumbent "
+      "is less than this fraction of the larger of the two",
+      0.0, 1.0e20, model_->getDblParam(CbcModel::CbcAllowableFractionGap),
+      "If the gap between the best solution and the best possible solution is "
+      "less than this fraction of the objective value at the root node then "
+      "the search will terminate.  See 'allowableGap' for a way of using "
+      "absolute value rather than fraction.");
+
+  parameters_[TIMELIMIT].setup(
+      "sec!onds", "Maximum seconds for branch and cut", -1.0, 1.0e12, -1.0,
+      "After this many seconds the program will act as if maximum nodes had "
+      "been reached.");
+
+  parameters_[STRONGBRANCHING].setup(
+      "strong!Branching", "Number of variables to look at in strong branching",
+      0, 999999, model_->numberStrong(),
+      "In order to decide which variable to branch on, the code will choose up "
+      "to this number of unsatisfied variables and try mini up and down "
+      "branches.  The most effective one is chosen. If a variable is branched "
+      "on many times then the previous average up and down costs may be used - "
+      "see number before trust.");
+
+  parameters_[NUMBERBEFORE].setup(
+      "trust!PseudoCosts", "Number of branches before we trust pseudocosts", -1,
+      2000000, model_->numberBeforeTrust(),
+      "Using strong branching computes pseudo-costs.  After this many times "
+      "for a variable we just trust the pseudo costs and do not do any more "
+      "strong branching.");
+
+  for (int code = CBCMODEL_FIRSTPARAM + 1;
+       code < CBCMODEL_LASTPARAM; code++) {
+     if (parameters_[code].type() == CoinParam::coinParamInt){
+        parameters_[code].setPushFunc(CbcModelParamUtils::pushCbcModelIntParam);
+     }else{
+        parameters_[code].setPushFunc(CbcModelParamUtils::pushCbcModelDblParam);
+     }
+  }
+}
+
+//###########################################################################
+//###########################################################################
 
 /*
   Access functions for cut generators. These support lazy
@@ -337,7 +1928,6 @@ CbcSolverParam::CGMode CbcSolverSettings::getTwomir(CglCutGenerator *&gen) {
 }
 
 CbcSolverParam::HeurMode CbcSolverSettings::getFeasPump(CbcHeuristic *&gen,
-                                                        CbcModel *model,
                                                         bool alwaysCreate)
 
 {
@@ -346,7 +1936,7 @@ CbcSolverParam::HeurMode CbcSolverSettings::getFeasPump(CbcHeuristic *&gen,
     if (fpump_.proto_) {
       delete fpump_.proto_;
     }
-    fpump_.proto_ = new CbcHeuristicFPump(*model);
+    fpump_.proto_ = new CbcHeuristicFPump(*model_);
     fpump_.proto_->setMaximumPasses(fpump_.iters_);
   }
   gen = dynamic_cast<CbcHeuristic *>(fpump_.proto_);
@@ -366,7 +1956,6 @@ CbcSolverParam::HeurMode CbcSolverSettings::getFeasPump(CbcHeuristic *&gen,
 */
 
 CbcSolverParam::HeurMode CbcSolverSettings::getCombine(CbcHeuristic *&gen,
-                                                       CbcModel *model,
                                                        bool alwaysCreate)
 
 {
@@ -375,7 +1964,8 @@ CbcSolverParam::HeurMode CbcSolverSettings::getCombine(CbcHeuristic *&gen,
     if (combine_.proto_) {
       delete combine_.proto_;
     }
-    combine_.proto_ = new CbcHeuristicLocal(*model);
+    //TODO Should we be passing a pointer here? Otherwise, making a copy
+    combine_.proto_ = new CbcHeuristicLocal(*model_);
     combine_.proto_->setSearchType(combine_.trySwap_);
   }
   gen = dynamic_cast<CbcHeuristic *>(combine_.proto_);
@@ -384,7 +1974,6 @@ CbcSolverParam::HeurMode CbcSolverSettings::getCombine(CbcHeuristic *&gen,
 }
 
 CbcSolverParam::HeurMode CbcSolverSettings::getGreedyCover(CbcHeuristic *&gen,
-                                                           CbcModel *model,
                                                            bool alwaysCreate)
 
 {
@@ -393,7 +1982,7 @@ CbcSolverParam::HeurMode CbcSolverSettings::getGreedyCover(CbcHeuristic *&gen,
     if (greedyCover_.proto_) {
       delete greedyCover_.proto_;
     }
-    greedyCover_.proto_ = new CbcHeuristicGreedyCover(*model);
+    greedyCover_.proto_ = new CbcHeuristicGreedyCover(*model_);
   }
   gen = dynamic_cast<CbcHeuristic *>(greedyCover_.proto_);
 
@@ -401,7 +1990,7 @@ CbcSolverParam::HeurMode CbcSolverSettings::getGreedyCover(CbcHeuristic *&gen,
 }
 
 CbcSolverParam::HeurMode
-CbcSolverSettings::getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
+CbcSolverSettings::getGreedyEquality(CbcHeuristic *&gen,
                                      bool alwaysCreate)
 
 {
@@ -410,7 +1999,7 @@ CbcSolverSettings::getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
     if (greedyEquality_.proto_) {
       delete greedyEquality_.proto_;
     }
-    greedyEquality_.proto_ = new CbcHeuristicGreedyEquality(*model);
+    greedyEquality_.proto_ = new CbcHeuristicGreedyEquality(*model_);
   }
   gen = dynamic_cast<CbcHeuristic *>(greedyEquality_.proto_);
 
@@ -418,7 +2007,6 @@ CbcSolverSettings::getGreedyEquality(CbcHeuristic *&gen, CbcModel *model,
 }
 
 CbcSolverParam::HeurMode CbcSolverSettings::getRounding(CbcHeuristic *&gen,
-                                                        CbcModel *model,
                                                         bool alwaysCreate)
 
 {
@@ -427,7 +2015,7 @@ CbcSolverParam::HeurMode CbcSolverSettings::getRounding(CbcHeuristic *&gen,
     if (rounding_.proto_) {
       delete rounding_.proto_;
     }
-    rounding_.proto_ = new CbcRounding(*model);
+    rounding_.proto_ = new CbcRounding(*model_);
   }
   gen = dynamic_cast<CbcHeuristic *>(rounding_.proto_);
 
@@ -435,7 +2023,7 @@ CbcSolverParam::HeurMode CbcSolverSettings::getRounding(CbcHeuristic *&gen,
 }
 
 CbcSolverParam::HeurMode
-CbcSolverSettings::getLocalTree(CbcTreeLocal *&localTree, CbcModel *model,
+CbcSolverSettings::getLocalTree(CbcTreeLocal *&localTree, 
                                 bool alwaysCreate)
 
 {
@@ -445,7 +2033,7 @@ CbcSolverSettings::getLocalTree(CbcTreeLocal *&localTree, CbcModel *model,
       delete localTree_.proto_;
     }
     localTree_.proto_ = new CbcTreeLocal(
-        model, localTree_.soln_, localTree_.range_, localTree_.typeCuts_,
+        model_, localTree_.soln_, localTree_.range_, localTree_.typeCuts_,
         localTree_.maxDiverge_, localTree_.timeLimit_, localTree_.nodeLimit_,
         localTree_.refine_);
   }
@@ -547,8 +2135,7 @@ CbcSolverSettings::translateMinor(const OsiSolverInterface *osi)
   CbcModel codes to CbcGeneric codes.
 */
 
-void CbcSolverSettings::setBaBStatus(const CbcModel *model,
-                                     CbcSolverParam::BACWhere where,
+void CbcSolverSettings::setBaBStatus(CbcSolverParam::BACWhere where,
                                      bool haveAnswer,
                                      OsiSolverInterface *answerSolver)
 
@@ -556,13 +2143,13 @@ void CbcSolverSettings::setBaBStatus(const CbcModel *model,
   CbcSolverParam::BACMajorStatus major;
   CbcSolverParam::BACMinorStatus minor;
 
-  major = translateMajor(model->status());
+  major = translateMajor(model_->status());
 
   if (where == CbcSolverParam::BACwBareRoot ||
       where == CbcSolverParam::BACwIPPRelax) {
-    minor = translateMinor(model->solver());
+    minor = translateMinor(model_->solver());
   } else {
-    minor = translateMinor(model->secondaryStatus());
+    minor = translateMinor(model_->secondaryStatus());
   }
 
   setBaBStatus(major, minor, where, haveAnswer, answerSolver);

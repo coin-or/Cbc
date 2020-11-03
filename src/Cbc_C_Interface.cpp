@@ -323,7 +323,8 @@ struct Cbc_Model {
     m->model_->solver()->prop(index, val);     \
   }
 
-const int VERBOSE = 0;
+//TODO Why is this here?
+//const int VERBOSE = 0;
 
 typedef std::map< std::string, int > NameIndex;
 
@@ -2261,9 +2262,9 @@ Cbc_solve(Cbc_Model *model)
         cbcModel.passInMessageHandler(cbcmh);
       }
 
-      CbcSolverUsefulData cbcData;
-      CbcMain0(cbcModel, cbcData);
-      cbcData.printWelcome_ = false;
+      CbcSolverSettings cbcSettings;
+      CbcMain0(cbcModel, cbcSettings);
+      cbcSettings.disableWelcomePrinting();
 
       // adds SOSs if any
       Cbc_addAllSOS(model, cbcModel);
@@ -2338,7 +2339,7 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
       cbcModel.setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
 
-      CbcMain1( nargs, args, cbcModel, cbc_callb, cbcData );
+      CbcMain1( nargs, args, cbcModel, cbc_callb, cbcSettings );
 
       Cbc_getMIPOptimizationResults( model, cbcModel );
 

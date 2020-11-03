@@ -451,7 +451,7 @@ std::string CbcParam::setIntParameterWithMessage(OsiSolverInterface *model,
     buffer << name_ << " was changed from " << oldValue;
     buffer << " to " << value << std::endl;
     returnCode = 0;
-    intValue_ = oldValue;
+    intValue_ = value;
     switch (type_) {
     case CBC_PARAM_INT_LPLOGLEVEL:
       model->messageHandler()->setLogLevel(value);

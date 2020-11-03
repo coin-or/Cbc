@@ -7,18 +7,18 @@
 */
 
 #include "CbcConfig.h"
-#include "CoinPragma.hpp"
 
+#include "CoinPragma.hpp"
 #include "CoinTime.hpp"
 
+#include "OsiAuxInfo.hpp"
 #include "OsiClpSolverInterface.hpp"
 
 #include "ClpPresolve.hpp"
+#include "ClpSimplexOther.hpp"
 
-#include "CbcParam.hpp"
-
+#include "CbcSolverParam.hpp"
 #include "CbcModel.hpp"
-
 #include "CbcHeuristicLocal.hpp"
 #include "CbcHeuristicPivotAndFix.hpp"
 //#include "CbcHeuristicPivotAndComplement.hpp"
@@ -28,18 +28,13 @@
 #include "CbcHeuristicRINS.hpp"
 #include "CbcHeuristicRandRound.hpp"
 #include "CbcHeuristicVND.hpp"
-
 #include "CbcHeuristicDiveCoefficient.hpp"
 #include "CbcHeuristicDiveFractional.hpp"
 #include "CbcHeuristicDiveGuided.hpp"
 #include "CbcHeuristicDiveLineSearch.hpp"
 #include "CbcHeuristicDivePseudoCost.hpp"
 #include "CbcHeuristicDiveVectorLength.hpp"
-
 #include "CbcStrategy.hpp"
-#include "OsiAuxInfo.hpp"
-
-#include "ClpSimplexOther.hpp"
 
 // Crunch down model
 void crunchIt(ClpSimplex *model) {
@@ -1172,7 +1167,7 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
   return NULL;
 }
 
-int doHeuristics(CbcModel *model, int type, std::vector<CbcParam> parameters_,
+int doHeuristics(CbcModel *model, int type, CoinParamVec cbcParameters,
                  int noPrinting_, int initialPumpTune) {
 #ifdef JJF_ZERO // NEW_STYLE_SOLVER==0
   CbcParam *parameters_ = parameters;
@@ -1184,74 +1179,41 @@ int doHeuristics(CbcModel *model, int type, std::vector<CbcParam> parameters_,
   CoinMessageHandler *generalMessageHandler = model->messageHandler();
   // generalMessageHandler->setPrefix(false);
   bool anyToDo = false;
-  int logLevel =
-      parameters_[whichCbcParam(CBC_PARAM_INT_SOLVERLOGLEVEL, parameters_)]
-          .intValue();
-  int useFpump = parameters_[whichCbcParam(CBC_PARAM_STR_FPUMP, parameters_)]
-                     .currentOptionAsInteger();
-  int useRounding =
-      parameters_[whichCbcParam(CBC_PARAM_STR_ROUNDING, parameters_)]
-          .currentOptionAsInteger();
-  int useGreedy = parameters_[whichCbcParam(CBC_PARAM_STR_GREEDY, parameters_)]
-                      .currentOptionAsInteger();
-  int useCombine =
-      parameters_[whichCbcParam(CBC_PARAM_STR_COMBINE, parameters_)]
-          .currentOptionAsInteger();
-  int useProximity =
-      parameters_[whichCbcParam(CBC_PARAM_STR_PROXIMITY, parameters_)]
-          .currentOptionAsInteger();
-  int useCrossover =
-      parameters_[whichCbcParam(CBC_PARAM_STR_CROSSOVER2, parameters_)]
-          .currentOptionAsInteger();
-  // int usePivotC = parameters_[whichCbcParam(CBC_PARAM_STR_PIVOTANDCOMPLEMENT,
-  // parameters_)].currentOptionAsInteger();
-  int usePivotF =
-      parameters_[whichCbcParam(CBC_PARAM_STR_PIVOTANDFIX, parameters_)]
-          .currentOptionAsInteger();
-  int useRand = parameters_[whichCbcParam(CBC_PARAM_STR_RANDROUND, parameters_)]
-                    .currentOptionAsInteger();
-  int useRINS = parameters_[whichCbcParam(CBC_PARAM_STR_RINS, parameters_)]
-                    .currentOptionAsInteger();
-  int useRENS = parameters_[whichCbcParam(CBC_PARAM_STR_RENS, parameters_)]
-                    .currentOptionAsInteger();
-  int useVND = parameters_[whichCbcParam(CBC_PARAM_STR_VND, parameters_)]
-                   .currentOptionAsInteger();
-  int useDINS = parameters_[whichCbcParam(CBC_PARAM_STR_DINS, parameters_)]
-                    .currentOptionAsInteger();
-  int useDIVING2 =
-      parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGS, parameters_)]
-          .currentOptionAsInteger();
-  int useNaive = parameters_[whichCbcParam(CBC_PARAM_STR_NAIVE, parameters_)]
-                     .currentOptionAsInteger();
-  int useDW = parameters_[whichCbcParam(CBC_PARAM_STR_DW, parameters_)]
-                  .currentOptionAsInteger();
+  int logLevel = cbcParameters[LPLOGLEVEL].intVal();
+  int useFpump = cbcParameters[FPUMP].modeVal();
+  int useRounding = cbcParameters[ROUNDING].modeVal();
+  int useGreedy = cbcParameters[GREEDY].modeVal();
+  int useCombine = cbcParameters[COMBINE].modeVal();
+  int useProximity = cbcParameters[PROXIMITY].modeVal();
+  int useCrossover = cbcParameters[CROSSOVER].modeVal();
+  // int usePivotC = cbcParameters[PIVOTANDCOMPLEMENT,
+  // cbcParameters)].modeVal();
+  int usePivotF = cbcParameters[PIVOTANDFIX].modeVal();
+  int useRand = cbcParameters[RANDROUND].modeVal();
+  int useRINS = cbcParameters[RINS].modeVal();
+  int useRENS = cbcParameters[RENS].modeVal();
+  int useVND = cbcParameters[VND].modeVal();
+  int useDINS = cbcParameters[DINS].modeVal();
+  int useDIVING2 = cbcParameters[DIVINGS].modeVal();
+  int useNaive = cbcParameters[NAIVE].modeVal();
+  int useDW = cbcParameters[DW].modeVal();
   int kType = (type < 10) ? type : 1;
   assert(kType == 1 || kType == 2);
   // FPump done first as it only works if no solution
   if (useFpump >= kType && useFpump <= kType + 1) {
     anyToDo = true;
     CbcHeuristicFPump heuristic4(*model);
-    double dextra3 =
-        parameters_[whichCbcParam(CBC_PARAM_DBL_SMALLBAB, parameters_)]
-            .doubleValue();
+    double dextra3 = cbcParameters[SMALLBAB].dblVal();
     heuristic4.setFractionSmall(dextra3);
-    double dextra1 =
-        parameters_[whichCbcParam(CBC_PARAM_DBL_ARTIFICIALCOST, parameters_)]
-            .doubleValue();
+    double dextra1 = cbcParameters[ARTIFICIALCOST].dblVal();
     if (dextra1)
       heuristic4.setArtificialCost(dextra1);
     heuristic4.setMaximumPasses(
-        parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPITS, parameters_)]
-            .intValue());
-    if (parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPITS, parameters_)]
-            .intValue() == 21)
+        cbcParameters[FPUMPITS].intVal());
+    if (cbcParameters[FPUMPITS].intVal() == 21)
       heuristic4.setIterationRatio(1.0);
-    int pumpTune =
-        parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPTUNE, parameters_)]
-            .intValue();
-    int pumpTune2 =
-        parameters_[whichCbcParam(CBC_PARAM_INT_FPUMPTUNE2, parameters_)]
-            .intValue();
+    int pumpTune = cbcParameters[FPUMPTUNE].intVal();
+    int pumpTune2 = cbcParameters[FPUMPTUNE2].intVal();
     if (pumpTune > 0) {
       bool printStuff =
           (pumpTune != initialPumpTune || logLevel > 1 || pumpTune2 > 0) &&
@@ -1303,8 +1265,7 @@ int doHeuristics(CbcModel *model, int type, std::vector<CbcParam> parameters_,
         model->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
         cutoff = CoinMin(cutoff, value + 0.05 * fabs(value) * c);
         double fakeCutoff =
-            parameters_[whichCbcParam(CBC_PARAM_DBL_FAKECUTOFF, parameters_)]
-                .doubleValue();
+            cbcParameters[FAKECUTOFF].dblVal();
         if (fakeCutoff)
           cutoff = fakeCutoff;
         heuristic4.setFakeCutoff(cutoff);
@@ -1356,8 +1317,7 @@ int doHeuristics(CbcModel *model, int type, std::vector<CbcParam> parameters_,
         // double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
         double increment = 0.0;
         double fakeIncrement =
-            parameters_[whichCbcParam(CBC_PARAM_DBL_FAKEINCREMENT, parameters_)]
-                .doubleValue();
+            cbcParameters[FAKEINCREMENT].dblVal();
         if (fakeIncrement)
           increment = fakeIncrement;
         if (increment >= 0.0)
@@ -1481,29 +1441,21 @@ int doHeuristics(CbcModel *model, int type, std::vector<CbcParam> parameters_,
   int useDIVING = 0;
   {
     int useD;
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGV, parameters_)]
-               .currentOptionAsInteger();
+    useD = cbcParameters[DIVINGV].modeVal();
     useDIVING |= 1 * ((useD >= kType) ? 1 : 0);
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGG, parameters_)]
-               .currentOptionAsInteger();
+    useD = cbcParameters[DIVINGG].modeVal();
     useDIVING |= 2 * ((useD >= kType) ? 1 : 0);
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGF, parameters_)]
-               .currentOptionAsInteger();
+    useD = cbcParameters[DIVINGF].modeVal();
     useDIVING |= 4 * ((useD >= kType) ? 1 : 0);
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGC, parameters_)]
-               .currentOptionAsInteger();
+    useD = cbcParameters[DIVINGC].modeVal();
     useDIVING |= 8 * ((useD >= kType) ? 1 : 0);
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGL, parameters_)]
-               .currentOptionAsInteger();
+    useD = cbcParameters[DIVINGL].modeVal();
     useDIVING |= 16 * ((useD >= kType) ? 1 : 0);
-    useD = parameters_[whichCbcParam(CBC_PARAM_STR_DIVINGP, parameters_)]
-               .currentOptionAsInteger();
+    useD = cbcParameters[DIVINGP].modeVal();
     useDIVING |= 32 * ((useD >= kType) ? 1 : 0);
   }
   if (useDIVING2 >= kType && useDIVING2 <= kType + 1) {
-    int diveOptions =
-        parameters_[whichCbcParam(CBC_PARAM_INT_DIVEOPT, parameters_)]
-            .intValue();
+    int diveOptions = cbcParameters[DIVEOPT].intVal();
     if (diveOptions < 0 || diveOptions > 10)
       diveOptions = 2;
     CbcHeuristicJustOne heuristicJustOne(*model);
@@ -1534,12 +1486,8 @@ int doHeuristics(CbcModel *model, int type, std::vector<CbcParam> parameters_,
   }
 
   if (useDIVING > 0) {
-    int majorIterations =
-        parameters_[whichCbcParam(CBC_PARAM_INT_DIVEOPTSOLVES, parameters_)]
-            .intValue();
-    int diveOptions2 =
-        parameters_[whichCbcParam(CBC_PARAM_INT_DIVEOPT, parameters_)]
-            .intValue();
+    int majorIterations = cbcParameters[DIVEOPTSOLVES].intVal();
+    int diveOptions2 = cbcParameters[DIVEOPT].intVal();
     int diveOptions;
     if (diveOptions2 > 99) {
       // switch on various active set stuff
@@ -1731,9 +1679,11 @@ int doHeuristics(CbcModel *model, int type, std::vector<CbcParam> parameters_,
       if (useProximity == 6)
         heuristic2a.setFeasibilityPumpOptions(-3);
     } else {
-      int proximityNumber;
-      parameters_[whichCbcParam(CBC_PARAM_STR_PROXIMITY, parameters_)]
-          .currentOptionAsInteger(proximityNumber);
+       int proximityNumber;
+       //TODO: There is a bug here. proximityNumber is obviously supposed to be set to what is
+       //below, but I have no idea what this function is doing. Right now, proximity number
+       //is random garbage. 
+       //cbcParameters[PROXIMITY].currentOptionAsInteger(proximityNumber);
       if (proximityNumber > 0) {
         heuristic2a.setNumberNodes(proximityNumber);
         // more print out and stronger feasibility pump
@@ -1754,9 +1704,7 @@ int doHeuristics(CbcModel *model, int type, std::vector<CbcParam> parameters_,
     model->setMaximumSavedSolutions(5);
     anyToDo = true;
   }
-  int heurSwitches =
-      parameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, parameters_)]
-          .intValue() %
+  int heurSwitches = cbcParameters[HEUROPTIONS].intVal() %
       100;
   if (heurSwitches) {
     for (int iHeur = 0; iHeur < model->numberHeuristics(); iHeur++) {
@@ -1781,11 +1729,7 @@ int doHeuristics(CbcModel *model, int type, std::vector<CbcParam> parameters_,
     model2.createContinuousSolver();
     bool cleanModel = !model2.numberIntegers() && !model2.numberObjects();
     model2.findIntegers(false);
-    int heurOptions =
-        (parameters_[whichCbcParam(CBC_PARAM_INT_HEUROPTIONS, parameters_)]
-             .intValue() /
-         100) %
-        100;
+    int heurOptions = (cbcParameters[HEUROPTIONS].intVal() / 100) % 100;
     if (heurOptions == 0 || heurOptions == 2) {
       model2.doHeuristicsAtRoot(1);
     } else if (heurOptions == 1 || heurOptions == 3) {

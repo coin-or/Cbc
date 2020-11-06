@@ -129,7 +129,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 		   int testSwitch, const double *stuff, int argc,
 		   const char ** argv,
 		   int callBack(CbcModel *currentSolver, int whereFrom),
-		   CbcSolverSettings &cbcSettings)
+		   CbcSettings &cbcSettings)
 {
   // Stop Windows popup
   WindowsErrorPopupBlocker();

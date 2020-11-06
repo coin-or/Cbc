@@ -34,7 +34,7 @@
 
 #include "CbcModel.hpp"
 #include "CbcParam.hpp"
-#include "CbcSolverSettings.hpp"
+#include "CbcSettings.hpp"
 
 class CbcUser;
 class CbcStopNow;
@@ -137,13 +137,13 @@ public:
   ///@name useful stuff
   //@{
   /// Get int value
-  int intValue(CbcParameterType type) const;
+  int intValue(CbcParamCode code) const;
   /// Set int value
-  void setIntValue(CbcParameterType type, int value);
+  void setIntValue(CbcParamCode code, int value);
   /// Get double value
-  double doubleValue(CbcParameterType type) const;
+  double doubleValue(CbcParamCode code) const;
   /// Set double value
-  void setDoubleValue(CbcParameterType type, double value);
+  void setDoubleValue(CbcParamCode code, double value);
   /// User function (NULL if no match)
   CbcUser *userFunction(const char *name) const;
   /// Return original Cbc model
@@ -254,54 +254,6 @@ private:
 //#############################################################################
 //#############################################################################
 
-/**
-   The CbcSolver class was taken out at a 9/12/09 meeting
-   This is a feeble replacement.
-   At present everything is public
-*/
-class CBCLIB_EXPORT  CbcSolverUsefulData {
-
-public:
-  ///@name Constructors and destructors etc
-  //@{
-  /// Default Constructor
-  CbcSolverUsefulData();
-
-  /** Copy constructor .
-     */
-  CbcSolverUsefulData(const CbcSolverUsefulData &rhs);
-
-  /// Assignment operator
-  CbcSolverUsefulData &operator=(const CbcSolverUsefulData &rhs);
-
-  /// Destructor
-  ~CbcSolverUsefulData();
-  //@}
-
-  ///@name Member data
-  //@{
-  // For time
-  double totalTime_;
-  // Clp Parameters
-  std::vector<ClpParam> clpParameters_;
-  // Parameters
-  std::vector<CbcParam> cbcParameters_;
-  // Printing
-  bool noPrinting_;
-  // Whether to use signal handler
-  bool useSignalHandler_;
-  // Default pump tuning
-  int initialPumpTune_;
-  // even with verbose >=1  this may not be the first call to
-  // the solver
-  bool printWelcome_;
-
-  //@}
-};
-
-//#############################################################################
-//#############################################################################
-
 /*! \brief A class to allow the use of unknown user functionality
 
     For example, access to a modelling language (CbcAmpl).
@@ -338,7 +290,7 @@ public:
 
   /// Get useful stuff
   virtual void fillInformation(CbcSolver * /*model*/,
-    CbcSolverSettings & /*info*/) {}
+    CbcSettings & /*info*/) {}
   //@}
 
   ///@name usage methods
@@ -458,12 +410,12 @@ private:
 
 // When we want to load up CbcModel with options first
 CBCLIB_EXPORT
-void CbcMain0(CbcModel &babSolver, CbcSolverSettings &solverSettings);
+void CbcMain0(CbcModel &babSolver, CbcSettings &solverSettings);
 CBCLIB_EXPORT
-int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcSolverSettings &solverSettings);
+int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcSettings &solverSettings);
 CBCLIB_EXPORT
 int CbcMain1(int argc, const char *argv[], CbcModel &babSolver,
-	     CbcSolverSettings &solverSettings);
+	     CbcSettings &solverSettings);
 
 CBCLIB_EXPORT
 int CbcMain(int argc, const char *argv[], CbcModel &babSolver);

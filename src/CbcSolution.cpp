@@ -17,8 +17,9 @@
 #include "CoinHelperFunctions.hpp"
 #include "CoinSort.hpp"
 
-#include "CbcSolverParam.hpp"
-#include "CbcSolverSettings.hpp"
+#include "CbcParam.hpp"
+#include "CbcParamUtils.hpp"
+#include "CbcSettings.hpp"
 
 namespace {}
 
@@ -198,11 +199,11 @@ bool maskMatches(const int *starts, char **masks, const char *checkC)
     all (4)	  all primal variables and row activities
 */
 
-int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
+int CbcParamUtils::doSolutionParam(CoinParam &param)
 
 {
-  CbcSolverParam &cbcParam = dynamic_cast<CbcSolverParam &>(param);
-  CbcSolverSettings *cbcSettings = cbcParam.obj();
+  CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
+  CbcSettings *cbcSettings = cbcParam.settings();
   assert(cbcSettings != 0);
   CbcModel *model = cbcSettings->getModel();
   assert(model != 0);
@@ -499,11 +500,11 @@ int CbcSolverParamUtils::doSolutionParam(CoinParam &param)
   it's valid.
 */
 
-int CbcSolverParamUtils::doPrintMaskParam(CoinParam &param)
+int CbcParamUtils::doPrintMaskParam(CoinParam &param)
 
 {
-  CbcSolverParam &cbcParam = dynamic_cast<CbcSolverParam &>(param);
-  CbcSolverSettings *cbcSettings = cbcParam.obj();
+  CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
+  CbcSettings *cbcSettings = cbcParam.settings();
   assert(cbcSettings != 0);
   /*
       Setup to return nonfatal/fatal error (1/-1) by default.

@@ -5,23 +5,18 @@
   This code is licensed under the terms of the Eclipse Public License (EPL).
 
 */
-/*
-  This file is part of cbc-generic.
-*/
 
-#include "CbcGenConfig.h"
 #include "CoinPragma.hpp"
 
 #include <cassert>
 
-#include "CbcSolverSettings.hpp"
-
-namespace {}
+#include "CbcSettings.hpp"
+#include "CbcParamUtils.hpp"
 
 /*
-  Constructor for cbc-generic control block.
+  Constructor for settings class.
 
-  Set up defaults for the cbc-generic control block. Note that prototypes for
+  Set up defaults. Note that prototypes for
   cut generators and heuristics will be created on demand; see the access
   functions.
 
@@ -30,7 +25,7 @@ namespace {}
   ordering.
 */
 
-CbcSolverSettings::CbcSolverSettings() : parameters_(CBCSOLVER_LASTPARAM)
+CbcSettings::CbcSettings() : parameters_(CBC_LASTPARAM)
 {
   version_ = CBC_VERSION;
   /*
@@ -75,16 +70,16 @@ CbcSolverSettings::CbcSolverSettings() : parameters_(CBCSOLVER_LASTPARAM)
   model_ = 0;
   dfltSolver_ = 0;
   goodModel_ = false;
-  bab_.majorStatus_ = CbcSolverParam::BACInvalid;
-  bab_.minorStatus_ = CbcSolverParam::BACmInvalid;
-  bab_.where_ = CbcSolverParam::BACwInvalid;
+  bab_.majorStatus_ = CbcSettings::BACInvalid;
+  bab_.minorStatus_ = CbcSettings::BACmInvalid;
+  bab_.where_ = CbcSettings::BACwInvalid;
   bab_.haveAnswer_ = false;
   bab_.answerSolver_ = 0;
 
-  preProcess_ = CbcSolverParam::IPPSOS;
+  preProcess_ = CbcSettings::IPPSOS;
   cutDepth_ = -1;
 
-  probing_.mode_ = CbcSolverParam::CGIfMove;
+  probing_.mode_ = CbcSettings::CGIfMove;
   probing_.proto_ = 0;
   probing_.usingObjective_ = true;
   probing_.maxPass_ = 3;
@@ -96,55 +91,55 @@ CbcSolverSettings::CbcSolverSettings() : parameters_(CBCSOLVER_LASTPARAM)
   probing_.maxElements_ = 200;
   probing_.rowCuts_ = 3;
 
-  clique_.mode_ = CbcSolverParam::CGIfMove;
+  clique_.mode_ = CbcSettings::CGIfMove;
   clique_.proto_ = 0;
   clique_.starCliqueReport_ = false;
   clique_.rowCliqueReport_ = false;
   clique_.minViolation_ = 0.1;
 
-  flow_.mode_ = CbcSolverParam::CGIfMove;
+  flow_.mode_ = CbcSettings::CGIfMove;
   flow_.proto_ = 0;
 
-  gomory_.mode_ = CbcSolverParam::CGIfMove;
+  gomory_.mode_ = CbcSettings::CGIfMove;
   gomory_.proto_ = 0;
   gomory_.limit_ = 50;
   gomory_.limitAtRoot_ = 512;
 
-  knapsack_.mode_ = CbcSolverParam::CGIfMove;
+  knapsack_.mode_ = CbcSettings::CGIfMove;
   knapsack_.proto_ = 0;
 
-  // landp_mode_ = CbcSolverParam::CGOff ;
+  // landp_mode_ = CbcSettings::CGOff ;
   // landp_.proto_ = 0 ;
 
-  mir_.mode_ = CbcSolverParam::CGIfMove;
+  mir_.mode_ = CbcSettings::CGIfMove;
   mir_.proto_ = 0;
 
 #if 0
-  oddHole_.mode_ = CbcSolverParam::CGOff;
+  oddHole_.mode_ = CbcSettings::CGOff;
   oddHole_.proto_ = 0;
 #endif
 
-  redSplit_.mode_ = CbcSolverParam::CGRoot;
+  redSplit_.mode_ = CbcSettings::CGRoot;
   redSplit_.proto_ = 0;
 
-  twomir_.mode_ = CbcSolverParam::CGRoot;
+  twomir_.mode_ = CbcSettings::CGRoot;
   twomir_.proto_ = 0;
   twomir_.maxElements_ = 250;
 
-  fpump_.mode_ = CbcSolverParam::HeurOn;
+  fpump_.mode_ = CbcSettings::HeurOn;
   fpump_.proto_ = 0;
   fpump_.initialTune_ = -1;
 
-  combine_.mode_ = CbcSolverParam::HeurOn;
+  combine_.mode_ = CbcSettings::HeurOn;
   combine_.proto_ = 0;
   combine_.trySwap_ = 1;
 
-  greedyCover_.mode_ = CbcSolverParam::HeurOn;
+  greedyCover_.mode_ = CbcSettings::HeurOn;
   greedyCover_.proto_ = 0;
-  greedyEquality_.mode_ = CbcSolverParam::HeurOn;
+  greedyEquality_.mode_ = CbcSettings::HeurOn;
   greedyEquality_.proto_ = 0;
 
-  localTree_.mode_ = CbcSolverParam::HeurOff;
+  localTree_.mode_ = CbcSettings::HeurOff;
   localTree_.proto_ = 0;
   localTree_.soln_ = 0;
   localTree_.range_ = 10;
@@ -154,16 +149,16 @@ CbcSolverSettings::CbcSolverSettings() : parameters_(CBCSOLVER_LASTPARAM)
   localTree_.nodeLimit_ = 2000;
   localTree_.refine_ = true;
 
-  rounding_.mode_ = CbcSolverParam::HeurOn;
+  rounding_.mode_ = CbcSettings::HeurOn;
   rounding_.proto_ = 0;
 
-  djFix_.mode_ = CbcSolverParam::ParamOff;
+  djFix_.mode_ = CbcSettings::ParamOff;
   djFix_.threshold_ = 1.0e100;
 
-  artVar_.mode_ = CbcSolverParam::ParamOff;
+  artVar_.mode_ = CbcSettings::ParamOff;
   artVar_.threshold_ = 0.0;
 
-  priorityMode_ = CbcSolverParam::BPOff;
+  priorityMode_ = CbcSettings::BPOff;
   /*
       The value for numBeforeTrust is as recommended by Achterberg. Cbc's
       implementation doesn't really have a parameter equivalent to Achterberg's
@@ -176,7 +171,7 @@ CbcSolverSettings::CbcSolverSettings() : parameters_(CBCSOLVER_LASTPARAM)
   chooseStrong_.numStrong_ = 100;
   chooseStrong_.shadowPriceMode_ = 1;
 
-  addCbcSolverParams();
+  addCbcParams();
   addCbcModelParams();
 
   establishClpParams(clpParameters_);
@@ -188,7 +183,7 @@ CbcSolverSettings::CbcSolverSettings() : parameters_(CBCSOLVER_LASTPARAM)
   Note that we don't want to delete dfltSolver_ here because it's just a
   copy of the pointer held in the solvers map over in CbcGenSolvers.cpp.
 */
-CbcSolverSettings::~CbcSolverSettings() {
+CbcSettings::~CbcSettings() {
    // TODO Do we own pointer here?
    if (model_)
     delete model_;
@@ -255,11 +250,11 @@ CbcSolverSettings::~CbcSolverSettings() {
 
 /*
   Function to add Cbc parameters to the Cbc parameter
-  vector. Where needed, defaults are drawn from CbcSolverSettings.
-  This function is a friend of CbcSolverSettings.
+  vector. Where needed, defaults are drawn from CbcSettings.
+  This function is a friend of CbcSettings.
 */
 
-void CbcSolverSettings::addCbcSolverParams() {
+void CbcSettings::addCbcParams() {
 
   addCbcSolverStrParams();
   addCbcSolverHelpParams();
@@ -271,10 +266,12 @@ void CbcSolverSettings::addCbcSolverParams() {
   addCbcSolverCutParams();
   addCbcSolverHeurParams();
 
-  for (int code = CBCSOLVER_FIRSTPARAM + 1;
-       code < CBCSOLVER_LASTPARAM; code++) {
+  for (int code = CBC_FIRSTPARAM + 1;
+       code < CBC_LASTPARAM; code++) {
     CoinParam &param = parameters_[code];
-    static_cast<CbcSolverParam &>(param).setObj(this);
+    static_cast<CbcParam &>(param).setSettings(this);
+    static_cast<CbcParam &>(param).setModel(model_);
+    static_cast<CbcParam &>(param).setParamCode(code);
   }
 
   return;
@@ -283,12 +280,7 @@ void CbcSolverSettings::addCbcSolverParams() {
 //###########################################################################
 //###########################################################################
 
-void CbcSolverSettings::addCbcSolverStrParams() {
-  for (int code = CBCSOLVER_FIRSTSTRPARAM + 1;
-       code < CBCSOLVER_LASTSTRPARAM; code++) {
-    CoinParam &param = parameters_[code];
-    parameters_[code].setType(CoinParam::coinParamStr);
-  }
+void CbcSettings::addCbcSolverStrParams() {
 
   parameters_[CSVSTATISTICS].setup(
       "csv!Statistics", "Create one line of statistics",
@@ -298,7 +290,7 @@ void CbcSolverSettings::addCbcSolverStrParams() {
       "value for the name.  This is initialized to '', i.e. it must be set.  "
       "Adds header if file empty or does not exist.",
       CoinParam::displayPriorityLow);
-  parameters_[CSVSTATISTICS].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+  parameters_[CSVSTATISTICS].setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[DEBUG].setup(
       "debug!In", "Read/write valid solution from/to file", "",
@@ -314,14 +306,14 @@ void CbcSolverSettings::addCbcSolverStrParams() {
       "preprocessing, but use createAfterPre.  The create case has the same "
       "effect as saveSolution.",
       CoinParam::displayPriorityNone);
-  parameters_[DEBUG].setPushFunc(CbcSolverParamUtils::doDebugParam);
+  parameters_[DEBUG].setPushFunc(CbcParamUtils::doDebugParam);
 
   parameters_[DIRECTORY].setup(
       "directory", "Set Default directory for import etc.",
       dfltDirectory_,
       "This sets the directory which import, export, saveModel, restoreModel "
       "etc. will use. It is initialized to the current directory.");
-  parameters_[DIRECTORY].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+  parameters_[DIRECTORY].setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[DIRSAMPLE].setup(
       "dirSample", "Set directory where the COIN-OR sample problems are.",
@@ -330,7 +322,7 @@ void CbcSolverSettings::addCbcSolverStrParams() {
       "used only when -unitTest is passed to clp. clp will pick up the test "
       "problems from this directory. It is initialized to '../../Data/Sample'",
       CoinParam::displayPriorityLow);
-  parameters_[DIRSAMPLE].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+  parameters_[DIRSAMPLE].setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[DIRNETLIB].setup(
       "dirNetlib", "Set directory where the netlib problems are.",
@@ -342,7 +334,7 @@ void CbcSolverSettings::addCbcSolverStrParams() {
       "support then the problems must be uncompressed. It is initialized to "
       "'../../Data/Netlib'",
       CoinParam::displayPriorityLow);
-  parameters_[DIRNETLIB].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+  parameters_[DIRNETLIB].setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[DIRMIPLIB].setup(
       "dirMiplib", "Set directory where the miplib 2003 problems are.",
@@ -354,7 +346,7 @@ void CbcSolverSettings::addCbcSolverStrParams() {
       "support then the problems must be uncompressed. It is initialized to "
       "'../../Data/miplib3'",
       CoinParam::displayPriorityLow);
-  parameters_[DIRMIPLIB].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+  parameters_[DIRMIPLIB].setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[MIPSTART].setup(
       "mips!tart", "reads an initial feasible solution from file",
@@ -390,7 +382,7 @@ void CbcSolverSettings::addCbcSolverStrParams() {
       "empty. then no file is read at all - just actions done. \n\n Question "
       "and suggestions regarding MIPStart can be directed to\n "
       "haroldo.santos@gmail.com. ");
-  parameters_[MIPSTART].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+  parameters_[MIPSTART].setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[NEXTBESTSOLUTION].setup(
       "nextB!estSolution", "Prints next best saved solution to file", "",
@@ -400,7 +392,7 @@ void CbcSolverSettings::addCbcSolverStrParams() {
       "'directory'.  A name of '$' will use the previous value for the name.  "
       "This is initialized to 'stdout'.  The amount of output can be varied "
       "using printi!ngOptions or printMask.");
-  parameters_[NEXTBESTSOLUTION].setPushFunc(CbcSolverParamUtils::doNothingParam);
+  parameters_[NEXTBESTSOLUTION].setPushFunc(CbcParamUtils::doNothingParam);
 
   parameters_[PRINTMASK].setup(
       "printM!ask", "Control printing of solution with a regular expression",
@@ -409,7 +401,7 @@ void CbcSolverSettings::addCbcSolverStrParams() {
       "solution. '?' matches any character and '*' matches any set of "
       "characters.  The default is '' (unset) so all variables are printed. "
       "This is only active if model has names.");
-  parameters_[PRINTMASK].setPushFunc(CbcSolverParamUtils::doPrintMaskParam);
+  parameters_[PRINTMASK].setPushFunc(CbcParamUtils::doPrintMaskParam);
 
   parameters_[SAVESOL].setup(
       "saveS!olution", "saves solution to file", std::string("solution.sln"),
@@ -422,7 +414,7 @@ void CbcSolverSettings::addCbcSolverStrParams() {
       "reduced costs - see bottom of CbcParam.cpp for code that reads or "
       "writes file. If name contains '_fix_read_' then does not write but "
       "reads and will fix all variables");
-  parameters_[SAVESOL].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+  parameters_[SAVESOL].setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[SOLUTION].setup(
       "solu!tion", "Prints solution to file", std::string("stdout"),
@@ -431,7 +423,7 @@ void CbcSolverSettings::addCbcSolverStrParams() {
       "will use the previous value for the name.  This is initialized to "
       "'stdout'.  The amount of output can be varied using printi!ngOptions or "
       "printMask.");
-  parameters_[SOLUTION].setPushFunc(CbcSolverParamUtils::doSolutionParam);
+  parameters_[SOLUTION].setPushFunc(CbcParamUtils::doSolutionParam);
 
   parameters_[PRIORITYIN].setup(
       "prio!rityIn", "Import priorities etc from file",
@@ -443,17 +435,16 @@ void CbcSolverSettings::addCbcSolverStrParams() {
       "in csv format with allowed headings - name, number, priority, "
       "direction, up, down, solution.  Exactly one of name and number must be "
       "given.");
-  parameters_[PRIORITYIN].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+  parameters_[PRIORITYIN].setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 }
 
 //###########################################################################
 //###########################################################################
 
-void CbcSolverSettings::addCbcSolverHelpParams() {
-  for (int code = CBCSOLVER_FIRSTHELPPARAM + 1;
-       code < CBCSOLVER_LASTHELPPARAM; code++) {
-    parameters_[code].setType(CoinParam::coinParamAct);
-    parameters_[code].setPushFunc(CbcSolverParamUtils::doHelpParam);
+void CbcSettings::addCbcSolverHelpParams() {
+  for (int code = CBC_FIRSTHELPPARAM + 1;
+       code < CBC_LASTHELPPARAM; code++) {
+    parameters_[code].setPushFunc(CbcParamUtils::doHelpParam);
   }
   parameters_[GENERALQUERY].setup(
       "?", "Print a list of commands", CoinParam::displayPriorityNone);
@@ -473,11 +464,7 @@ void CbcSolverSettings::addCbcSolverHelpParams() {
 //###########################################################################
 //###########################################################################
 
-void CbcSolverSettings::addCbcSolverActionParams() {
-  for (int code = CBCSOLVER_FIRSTACTIONPARAM + 1;
-       code < CBCSOLVER_LASTACTIONPARAM; code++) {
-    parameters_[code].setType(CoinParam::coinParamAct);
-  }
+void CbcSettings::addCbcSolverActionParams() {
 
   parameters_[DUMMY].setup(
       "sleep", "for debug", 0, 9999, 0,
@@ -492,7 +479,7 @@ void CbcSolverSettings::addCbcSolverActionParams() {
   parameters_[SHOWUNIMP].setup(
       "unimp!lemented", "Report unimplemented commands.", "",
       CoinParam::displayPriorityNone);
-  parameters_[SHOWUNIMP].setPushFunc(CbcSolverParamUtils::doUnimplementedParam);
+  parameters_[SHOWUNIMP].setPushFunc(CbcParamUtils::doUnimplementedParam);
 
   parameters_[STRENGTHEN].setup(
       "strengthen", "Create strengthened problem",
@@ -520,19 +507,19 @@ void CbcSolverSettings::addCbcSolverActionParams() {
       "good job - or did it just take a lot of iterations.  Adjust the "
       "strongBranching and trustPseudoCosts parameters.",
       CoinParam::displayPriorityHigh);
-  parameters_[BAB].setPushFunc(CbcSolverParamUtils::doBaCParam);
+  parameters_[BAB].setPushFunc(CbcParamUtils::doBaCParam);
 
   parameters_[ENVIRONMENT].setup(
       "environ!ment", "Read commands from environment",
       "This starts reading from environment variable COIN_ENVIRONMENT.",
       CoinParam::displayPriorityNone);
-  parameters_[ENVIRONMENT].setPushFunc(CbcSolverParamUtils::doNothingParam);
+  parameters_[ENVIRONMENT].setPushFunc(CbcParamUtils::doNothingParam);
 
   parameters_[EXIT].setup(
       "end", "Stops execution",
       "This stops execution; end, exit, quit and stop are synonyms.",
       CoinParam::displayPriorityHigh);
-  parameters_[EXIT].setPushFunc(CbcSolverParamUtils::doExitParam);
+  parameters_[EXIT].setPushFunc(CbcParamUtils::doExitParam);
 
   parameters_[EXPORT].setup(
       "export", "Export model as mps file", std::string("default.mps"),
@@ -543,7 +530,7 @@ void CbcSolverSettings::addCbcSolverActionParams() {
       "Rnnnnnnn and Cnnnnnnn.  This can be done by setting 'keepnames' off "
       "before importing mps file.",
       CoinParam::displayPriorityHigh);
-  parameters_[EXPORT].setPushFunc(CbcSolverParamUtils::pushCbcSolverStrParam);
+  parameters_[EXPORT].setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[IMPORT].setup(
       "import", "Import model from file", lastMpsIn_,
@@ -553,14 +540,14 @@ void CbcSolverSettings::addCbcSolverActionParams() {
       "must be set.  If you have libgz then it can read compressed files "
       "'xxxxxxxx.gz'.",
       CoinParam::displayPriorityHigh);
-  parameters_[IMPORT].setPushFunc(CbcSolverParamUtils::doImportParam);
+  parameters_[IMPORT].setPushFunc(CbcParamUtils::doImportParam);
 
   parameters_[MIPLIB].setup("miplib", "Do some of miplib test set", "",
                             CoinParam::displayPriorityHigh);
 
   parameters_[PRINTVERSION].setup(
       "version", "Print version", "", CoinParam::displayPriorityHigh);
-  parameters_[PRINTVERSION].setPushFunc(CbcSolverParamUtils::doVersionParam);
+  parameters_[PRINTVERSION].setPushFunc(CbcParamUtils::doVersionParam);
 
   parameters_[SOLVECONTINUOUS].setup(
       "initialS!olve", "Solve to continuous optimum",
@@ -579,13 +566,13 @@ void CbcSolverSettings::addCbcSolverActionParams() {
   // Need to figure out what to do here. Same parameter can't have two names...
   parameters_[STDIN].setup( "-", "Switch to interactive command line mode", ""
                             CoinParam::displayPriorityNone);
-  parameters_[STDIN].setPushFunc(CbcSolverParamUtils::doNothingParam);
+  parameters_[STDIN].setPushFunc(CbcParamUtils::doNothingParam);
 #endif
 
   parameters_[STDIN].setup(
       "stdin", "Switch to interactive command line mode", "",
       CoinParam::displayPriorityNone);
-  parameters_[STDIN].setPushFunc(CbcSolverParamUtils::doNothingParam);
+  parameters_[STDIN].setPushFunc(CbcParamUtils::doNothingParam);
 
   parameters_[UNITTEST].setup(
       "unitTest", "Do unit test", "This exercises the unit test.", "",
@@ -595,70 +582,69 @@ void CbcSolverSettings::addCbcSolverActionParams() {
 //###########################################################################
 //###########################################################################
 
-void CbcSolverSettings::addCbcSolverKwdParams() {
-  for (int code = CBCSOLVER_FIRSTKWDPARAM + 1;
-       code < CBCSOLVER_LASTKWDPARAM; code++) {
-    parameters_[code].setType(CoinParam::coinParamKwd);
-    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverKwdParam);
+void CbcSettings::addCbcSolverKwdParams() {
+  for (int code = CBC_FIRSTKWDPARAM + 1;
+       code < CBC_LASTKWDPARAM; code++) {
+    parameters_[code].setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
   }
 
   parameters_[COMMANDPRINTLEVEL].setup(
       "allC!ommands", "What priority level of commands to print", "high",
-      CbcSolverParam::displayHigh,
+      CbcSettings::displayHigh,
       "For the sake of your sanity, only the more useful and simple commands "
       "are printed out on ?.",
       CoinParam::displayPriorityNone);
-  parameters_[COMMANDPRINTLEVEL].appendKwd("all", CbcSolverParam::displayAll);
-  parameters_[COMMANDPRINTLEVEL].appendKwd("highlow", CbcSolverParam::displayLowHigh);
+  parameters_[COMMANDPRINTLEVEL].appendKwd("all", CbcSettings::displayAll);
+  parameters_[COMMANDPRINTLEVEL].appendKwd("highlow", CbcSettings::displayLowHigh);
 
   parameters_[CLQSTRENGTHENING].setup(
       "clqstr!engthen",
       "Whether and when to perform Clique Strengthening preprocessing routine",
-      "after", CbcSolverParam::ClqStrAfter);
-  parameters_[CLQSTRENGTHENING].appendKwd("off", CbcSolverParam::ClqStrOff);
-  parameters_[CLQSTRENGTHENING].appendKwd("before", CbcSolverParam::ClqStrBefore);
+      "after", CbcSettings::ClqStrAfter);
+  parameters_[CLQSTRENGTHENING].appendKwd("off", CbcSettings::ClqStrOff);
+  parameters_[CLQSTRENGTHENING].appendKwd("before", CbcSettings::ClqStrBefore);
 
   parameters_[BRANCHPRIORITY].setup(
       "cost!Strategy", "Whether to use costs or column order as priorities",
-      "off", CbcSolverParam::BPOff,
+      "off", CbcSettings::BPOff,
       "This orders the variables in order of their absolute costs - with "
       "largest cost ones being branched on first.  This primitive strategy can "
       "be surprisingly effective.  The column order option is obviously not on "
       "costs but it's easy to implement.");
-  parameters_[BRANCHPRIORITY].appendKwd("pri!orities", CbcSolverParam::BPCost);
-  parameters_[BRANCHPRIORITY].appendKwd("column!Order", CbcSolverParam::BPOrder);
+  parameters_[BRANCHPRIORITY].appendKwd("pri!orities", CbcSettings::BPCost);
+  parameters_[BRANCHPRIORITY].appendKwd("column!Order", CbcSettings::BPOrder);
 
   parameters_[CUTOFFCONSTRAINT].setup(
       "constraint!fromCutoff", "Whether to use cutoff as constraint", "off",
-      CbcSolverParam::COOff,
+      CbcSettings::COOff,
       "For some problems, cut generators and general branching work better if "
       "the problem would be infeasible if the cost is too high. "
       "If this option is enabled, the objective function is added as a "
       "constraint which right hand side is set to the current cutoff value "
       "(objective value of best known solution)");
-  parameters_[CUTOFFCONSTRAINT].appendKwd("on", CbcSolverParam::COOn);
-  parameters_[CUTOFFCONSTRAINT].appendKwd("variable", CbcSolverParam::COVariable);
-  parameters_[CUTOFFCONSTRAINT].appendKwd("forcevariable", CbcSolverParam::COForceVariable);
-  parameters_[CUTOFFCONSTRAINT].appendKwd("conflict", CbcSolverParam::COConflict);
+  parameters_[CUTOFFCONSTRAINT].appendKwd("on", CbcSettings::COOn);
+  parameters_[CUTOFFCONSTRAINT].appendKwd("variable", CbcSettings::COVariable);
+  parameters_[CUTOFFCONSTRAINT].appendKwd("forcevariable", CbcSettings::COForceVariable);
+  parameters_[CUTOFFCONSTRAINT].appendKwd("conflict", CbcSettings::COConflict);
 
   parameters_[INTPRINT].setup(
-      "printi!ngOptions", "Print options", "normal", CbcSolverParam::PMNormal,
+      "printi!ngOptions", "Print options", "normal", CbcSettings::PMNormal,
       "This changes the amount and format of printing a solution:\n normal - "
       "nonzero column variables \ninteger - nonzero integer column variables\n "
       "special - in format suitable for OsiRowCutDebugger\n rows - nonzero "
       "column variables and row activities\n all - all column variables and "
       "row activities.\n\n For non-integer problems 'integer' and 'special' "
       "act like 'normal'.  Also see printMask for controlling output.");
-  parameters_[INTPRINT].appendKwd("integer", CbcSolverParam::PMInteger);
-  parameters_[INTPRINT].appendKwd("special", CbcSolverParam::PMSpecial);
-  parameters_[INTPRINT].appendKwd("rows", CbcSolverParam::PMRows);
-  parameters_[INTPRINT].appendKwd("all", CbcSolverParam::PMAll);
+  parameters_[INTPRINT].appendKwd("integer", CbcSettings::PMInteger);
+  parameters_[INTPRINT].appendKwd("special", CbcSettings::PMSpecial);
+  parameters_[INTPRINT].appendKwd("rows", CbcSettings::PMRows);
+  parameters_[INTPRINT].appendKwd("all", CbcSettings::PMAll);
 
   parameters_[NODESTRATEGY].setup(
       "node!Strategy",
       "What strategy to use to select the next node from the branch and cut "
       "tree",
-      "hybrid", CbcSolverParam::NSHybrid,
+      "hybrid", CbcSettings::NSHybrid,
       "Normally before a feasible solution is found, CBC will choose a node "
       "with fewest infeasibilities. Alternatively, one may choose tree-depth "
       "as the criterion. This requires the minimal amount of memory, but may "
@@ -667,28 +653,28 @@ void CbcSolverSettings::addCbcSolverKwdParams() {
       "choice will carry on after a first solution has been bound). The choice "
       "'hybrid' does breadth first on small depth nodes and then switches to "
       "'fewest'.");
-  parameters_[NODESTRATEGY].appendKwd("fewest", CbcSolverParam::NSFewest);
-  parameters_[NODESTRATEGY].appendKwd("depth", CbcSolverParam::NSDepth);
-  parameters_[NODESTRATEGY].appendKwd("upfewest", CbcSolverParam::NSUpFewest);
-  parameters_[NODESTRATEGY].appendKwd("downfewest", CbcSolverParam::NSDownFewest);
-  parameters_[NODESTRATEGY].appendKwd("updepth", CbcSolverParam::NSUpDepth);
-  parameters_[NODESTRATEGY].appendKwd("downdepth", CbcSolverParam::NSDownDepth);
+  parameters_[NODESTRATEGY].appendKwd("fewest", CbcSettings::NSFewest);
+  parameters_[NODESTRATEGY].appendKwd("depth", CbcSettings::NSDepth);
+  parameters_[NODESTRATEGY].appendKwd("upfewest", CbcSettings::NSUpFewest);
+  parameters_[NODESTRATEGY].appendKwd("downfewest", CbcSettings::NSDownFewest);
+  parameters_[NODESTRATEGY].appendKwd("updepth", CbcSettings::NSUpDepth);
+  parameters_[NODESTRATEGY].appendKwd("downdepth", CbcSettings::NSDownDepth);
 
   parameters_[ORBITAL].setup(
       "Orbit!alBranching", "Whether to try orbital branching", "off",
-      CbcSolverParam::OBOff,
+      CbcSettings::OBOff,
       "This switches on Orbital branching. Value 'on' just adds orbital, "
       "'strong' tries extra fixing in strong branching.");
-  parameters_[ORBITAL].appendKwd("on", CbcSolverParam::OBOn);
-  parameters_[ORBITAL].appendKwd("slowish", CbcSolverParam::OBSlowish);
-  parameters_[ORBITAL].appendKwd("strong", CbcSolverParam::OBStrong);
-  parameters_[ORBITAL].appendKwd("force", CbcSolverParam::OBForce);
-  parameters_[ORBITAL].appendKwd("simple", CbcSolverParam::OBSimple);
-  parameters_[ORBITAL].appendKwd("moreprinting", CbcSolverParam::OBMorePrinting);
+  parameters_[ORBITAL].appendKwd("on", CbcSettings::OBOn);
+  parameters_[ORBITAL].appendKwd("slowish", CbcSettings::OBSlowish);
+  parameters_[ORBITAL].appendKwd("strong", CbcSettings::OBStrong);
+  parameters_[ORBITAL].appendKwd("force", CbcSettings::OBForce);
+  parameters_[ORBITAL].appendKwd("simple", CbcSettings::OBSimple);
+  parameters_[ORBITAL].appendKwd("moreprinting", CbcSettings::OBMorePrinting);
 
   parameters_[PREPROCESS].setup(
       "preprocess", "Whether to use integer preprocessing", "off",
-      CbcSolverParam::IPPOff,
+      CbcSettings::IPPOff,
       "This tries to reduce size of the model in a similar way to presolve and "
       "it also tries to strengthen the model. This can be very useful and is "
       "worth trying.  save option saves on file presolved.mps.  equal will "
@@ -697,30 +683,30 @@ void CbcSolverSettings::addCbcSolverKwdParams() {
       "any number extra. equalall will turn all valid inequalities into "
       "equalities with integer slacks. strategy is as on but uses "
       "CbcStrategy.");
-  parameters_[PREPROCESS].appendKwd("on", CbcSolverParam::IPPOn);
-  parameters_[PREPROCESS].appendKwd("save", CbcSolverParam::IPPSave);
-  parameters_[PREPROCESS].appendKwd("equal", CbcSolverParam::IPPEqual);
-  parameters_[PREPROCESS].appendKwd("sos", CbcSolverParam::IPPSOS);
-  parameters_[PREPROCESS].appendKwd("trysos", CbcSolverParam::IPPTrySOS);
-  parameters_[PREPROCESS].appendKwd("equalall", CbcSolverParam::IPPEqualAll);
-  parameters_[PREPROCESS].appendKwd("strategy", CbcSolverParam::IPPStrategy);
+  parameters_[PREPROCESS].appendKwd("on", CbcSettings::IPPOn);
+  parameters_[PREPROCESS].appendKwd("save", CbcSettings::IPPSave);
+  parameters_[PREPROCESS].appendKwd("equal", CbcSettings::IPPEqual);
+  parameters_[PREPROCESS].appendKwd("sos", CbcSettings::IPPSOS);
+  parameters_[PREPROCESS].appendKwd("trysos", CbcSettings::IPPTrySOS);
+  parameters_[PREPROCESS].appendKwd("equalall", CbcSettings::IPPEqualAll);
+  parameters_[PREPROCESS].appendKwd("strategy", CbcSettings::IPPStrategy);
 
   parameters_[SOSPRIORITIZE].setup(
       "sosP!rioritize", "How to deal with SOS priorities", "off",
-      CbcSolverParam::SOSOff,
+      CbcSettings::SOSOff,
       "This sets priorities for SOS.  Values 'high' and 'low' just set a "
       "priority relative to the for integer variables.  Value 'orderhigh' "
       "gives first highest priority to the first SOS and integer variables a "
       "low priority.  Value 'orderlow' gives integer variables a high priority "
       "then SOS in order.");
-  parameters_[SOSPRIORITIZE].appendKwd("high", CbcSolverParam::SOSHigh);
-  parameters_[SOSPRIORITIZE].appendKwd("low", CbcSolverParam::SOSLow);
-  parameters_[SOSPRIORITIZE].appendKwd("orderhigh", CbcSolverParam::SOSOrderHigh);
-  parameters_[SOSPRIORITIZE].appendKwd("orderlow", CbcSolverParam::SOSOrderLow);
+  parameters_[SOSPRIORITIZE].appendKwd("high", CbcSettings::SOSHigh);
+  parameters_[SOSPRIORITIZE].appendKwd("low", CbcSettings::SOSLow);
+  parameters_[SOSPRIORITIZE].appendKwd("orderhigh", CbcSettings::SOSOrderHigh);
+  parameters_[SOSPRIORITIZE].appendKwd("orderlow", CbcSettings::SOSOrderLow);
 
   parameters_[STRATEGY].setup(
       "strat!egy", "Switches on groups of features", "default",
-      CbcSolverParam::StrategyDefault,
+      CbcSettings::StrategyDefault,
       "This turns on newer features. Use 0 for easy problems, 1 is default, 2 "
       "is aggressive. 1 uses Gomory cuts with a tolerance of 0.01 at the root "
       "node, does a possible restart after 100 nodes if many variables could "
@@ -728,38 +714,37 @@ void CbcSolverSettings::addCbcSolverKwdParams() {
       "feasibility pump more aggressive."); // This does not apply to unit tests
                                             // (where 'experiment' may have
                                             // similar effects)
-  parameters_[STRATEGY].appendKwd("easy", CbcSolverParam::StrategyEasy);
-  parameters_[STRATEGY].appendKwd("aggressive", CbcSolverParam::StrategyAggressive);
+  parameters_[STRATEGY].appendKwd("easy", CbcSettings::StrategyEasy);
+  parameters_[STRATEGY].appendKwd("aggressive", CbcSettings::StrategyAggressive);
 
   parameters_[TIMEMODE].setup(
       "timeM!ode", "Whether to use CPU or elapsed time", "cpu",
-      CbcSolverParam::ClockCpu,
+      CbcSettings::ClockCpu,
       "cpu uses CPU time for stopping, while elapsed uses elapsed time. (On "
       "Windows, elapsed time is always used).");
-  parameters_[TIMEMODE].appendKwd("elapsed", CbcSolverParam::ClockElapsed);
+  parameters_[TIMEMODE].appendKwd("elapsed", CbcSettings::ClockElapsed);
 
   parameters_[USECGRAPH].setup(
       "cgraph",
       "Whether to use the conflict graph-based preprocessing and cut "
       "separation routines.",
-      "on", CbcSolverParam::CGraphOn,
+      "on", CbcSettings::CGraphOn,
       "This switches the conflict graph-based preprocessing and cut separation "
       "routines (CglBKClique, CglOddWheel and CliqueStrengthening) on or off. "
       "Values: \n\t off: turns these routines off;\n\t on: turns these "
       "routines on; \n\t clq: turns these routines off and enables the cut "
       "separator of CglClique.");
-  parameters_[USECGRAPH].appendKwd("off", CbcSolverParam::CGraphOff);
-  parameters_[USECGRAPH].appendKwd("clq", CbcSolverParam::CGraphClique);
+  parameters_[USECGRAPH].appendKwd("off", CbcSettings::CGraphOff);
+  parameters_[USECGRAPH].appendKwd("clq", CbcSettings::CGraphClique);
 }
 
 //###########################################################################
 //###########################################################################
 
-void CbcSolverSettings::addCbcSolverDblParams() {
-  for (int code = CBCSOLVER_FIRSTDBLPARAM + 1;
-       code < CBCSOLVER_LASTDBLPARAM; code++) {
-    parameters_[code].setType(CoinParam::coinParamDbl);
-    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverDblParam);
+void CbcSettings::addCbcSolverDblParams() {
+  for (int code = CBC_FIRSTDBLPARAM + 1;
+       code < CBC_LASTDBLPARAM; code++) {
+    parameters_[code].setPushFunc(CbcParamUtils::pushCbcSolverDblParam);
   }
 
   parameters_[ARTIFICIALCOST].setup(
@@ -819,11 +804,10 @@ void CbcSolverSettings::addCbcSolverDblParams() {
 //###########################################################################
 //###########################################################################
 
-void CbcSolverSettings::addCbcSolverIntParams() {
-  for (int code = CBCSOLVER_FIRSTINTPARAM + 1;
-       code < CBCSOLVER_LASTINTPARAM; code++) {
-    parameters_[code].setType(CoinParam::coinParamInt);
-    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverIntParam);
+void CbcSettings::addCbcSolverIntParams() {
+  for (int code = CBC_FIRSTINTPARAM + 1;
+       code < CBC_LASTINTPARAM; code++) {
+    parameters_[code].setPushFunc(CbcParamUtils::pushCbcSolverIntParam);
   }
 
   parameters_[BKPIVOTINGSTRATEGY].setup(
@@ -1115,13 +1099,12 @@ void CbcSolverSettings::addCbcSolverIntParams() {
 //###########################################################################
 //###########################################################################
 
-void CbcSolverSettings::addCbcSolverBoolParams() {
-  for (int code = CBCSOLVER_FIRSTBOOLPARAM + 1;
-       code < CBCSOLVER_LASTBOOLPARAM; code++) {
-    parameters_[code].setType(CoinParam::coinParamKwd);
-    parameters_[code].appendKwd("off", CbcSolverParam::ParamOff);
-    parameters_[code].appendKwd("on", CbcSolverParam::ParamOn);
-    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverKwdParam);
+void CbcSettings::addCbcSolverBoolParams() {
+  for (int code = CBC_FIRSTBOOLPARAM + 1;
+       code < CBC_LASTBOOLPARAM; code++) {
+    parameters_[code].appendKwd("off", CbcSettings::ParamOff);
+    parameters_[code].appendKwd("on", CbcSettings::ParamOn);
+    parameters_[code].setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
   }
 
   parameters_[CPX].setup(
@@ -1187,20 +1170,19 @@ void CbcSolverSettings::addCbcSolverBoolParams() {
 //###########################################################################
 //###########################################################################
 
-void CbcSolverSettings::addCbcSolverCutParams() {
-  for (int code = CBCSOLVER_FIRSTCUTPARAM + 1;
-       code < CBCSOLVER_LASTCUTPARAM; code++) {
-    parameters_[code].setType(CoinParam::coinParamKwd);
-    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverKwdParam);
+void CbcSettings::addCbcSolverCutParams() {
+  for (int code = CBC_FIRSTCUTPARAM + 1;
+       code < CBC_LASTCUTPARAM; code++) {
+    parameters_[code].setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
   }
 
   parameters_[CLIQUECUTS].setup(
-      "clique!Cuts", "Whether to use clique cuts", "off", CbcSolverParam::CGOff,
+      "clique!Cuts", "Whether to use clique cuts", "off", CbcSettings::CGOff,
       "This switches on clique cuts (either at root or in entire tree). See "
       "branchAndCut for information on options.");
 
   parameters_[CUTSTRATEGY].setup(
-      "cuts!OnOff", "Switches all cuts on or off", "off", CbcSolverParam::CGOff,
+      "cuts!OnOff", "Switches all cuts on or off", "off", CbcSettings::CGOff,
       "This can be used to switch on or off all cuts (apart from Reduce and "
       "Split).  Then you can set individual ones off or on.  See branchAndCut "
       "for information on options.");
@@ -1307,8 +1289,8 @@ void CbcSolverSettings::addCbcSolverCutParams() {
       CUTS_LONGHELP " This implementation was written by Alberto Caprara.");
 
   // Populate the keyword lists
-  for (int code = CBCSOLVER_FIRSTCUTPARAM + 1;
-       code < CBCSOLVER_LASTCUTPARAM; code++) {
+  for (int code = CBC_FIRSTCUTPARAM + 1;
+       code < CBC_LASTCUTPARAM; code++) {
     // First the common keywords
     switch (code) {
     case CUTSTRATEGY:
@@ -1324,10 +1306,10 @@ void CbcSolverSettings::addCbcSolverCutParams() {
     case RESIDCAPCUTS:
     case TWOMIRCUTS:
     case ZEROHALFCUTS: {
-      parameters_[code].appendKwd("on", CbcSolverParam::CGOn);
-      parameters_[code].appendKwd("root", CbcSolverParam::CGRoot);
-      parameters_[code].appendKwd("ifmove", CbcSolverParam::CGIfMove);
-      parameters_[code].appendKwd("forceon", CbcSolverParam::CGForceOn);
+      parameters_[code].appendKwd("on", CbcSettings::CGOn);
+      parameters_[code].appendKwd("root", CbcSettings::CGRoot);
+      parameters_[code].appendKwd("ifmove", CbcSettings::CGIfMove);
+      parameters_[code].appendKwd("forceon", CbcSettings::CGForceOn);
       break;
     }
     default: { break; }
@@ -1335,56 +1317,56 @@ void CbcSolverSettings::addCbcSolverCutParams() {
       // Now, add some additional keywords for different classes
       switch (code) {
       case GOMORYCUTS: {
-        parameters_[code].appendKwd("onglobal", CbcSolverParam::CGOnGlobal);
-        parameters_[code].appendKwd("forceandglobal", CbcSolverParam::CGForceAndGlobal);
-        parameters_[code].appendKwd("forcelongon", CbcSolverParam::CGForceLongOn);
-        parameters_[code].appendKwd("longer", CbcSolverParam::CGLonger);
-        parameters_[code].appendKwd("shorter", CbcSolverParam::CGShorter);
+        parameters_[code].appendKwd("onglobal", CbcSettings::CGOnGlobal);
+        parameters_[code].appendKwd("forceandglobal", CbcSettings::CGForceAndGlobal);
+        parameters_[code].appendKwd("forcelongon", CbcSettings::CGForceLongOn);
+        parameters_[code].appendKwd("longer", CbcSettings::CGLonger);
+        parameters_[code].appendKwd("shorter", CbcSettings::CGShorter);
         break;
       }
       case GMICUTS: {
-        parameters_[code].appendKwd("long", CbcSolverParam::CGLong);
-        parameters_[code].appendKwd("longroot", CbcSolverParam::CGLongRoot);
-        parameters_[code].appendKwd("longifmove", CbcSolverParam::CGLongIfMove);
-        parameters_[code].appendKwd("forcelongon", CbcSolverParam::CGForceLongOn);
-        parameters_[code].appendKwd("longendonly", CbcSolverParam::CGLongEndOnly);
+        parameters_[code].appendKwd("long", CbcSettings::CGLong);
+        parameters_[code].appendKwd("longroot", CbcSettings::CGLongRoot);
+        parameters_[code].appendKwd("longifmove", CbcSettings::CGLongIfMove);
+        parameters_[code].appendKwd("forcelongon", CbcSettings::CGForceLongOn);
+        parameters_[code].appendKwd("longendonly", CbcSettings::CGLongEndOnly);
         break;
       }
       case LAGOMORYCUTS: {
-        parameters_[code].appendKwd("root", CbcSolverParam::CGRoot);
-        parameters_[code].appendKwd("onlyaswellroot", CbcSolverParam::CGOnlyAsWellRoot);
-        parameters_[code].appendKwd("cleanaswellroot", CbcSolverParam::CGCleanAsWellRoot);
-        parameters_[code].appendKwd("bothaswellroot", CbcSolverParam::CGCleanBothAsWellRoot);
+        parameters_[code].appendKwd("root", CbcSettings::CGRoot);
+        parameters_[code].appendKwd("onlyaswellroot", CbcSettings::CGOnlyAsWellRoot);
+        parameters_[code].appendKwd("cleanaswellroot", CbcSettings::CGCleanAsWellRoot);
+        parameters_[code].appendKwd("bothaswellroot", CbcSettings::CGCleanBothAsWellRoot);
         // Here, we intentionally drop through to the next set
       }
       case LATWOMIRCUTS: {
-        parameters_[code].appendKwd("endonlyroot", CbcSolverParam::CGEndOnlyRoot);
-        parameters_[code].appendKwd("endcleanroot", CbcSolverParam::CGEndCleanRoot);
-        parameters_[code].appendKwd("endonly", CbcSolverParam::CGEndOnly);
-        parameters_[code].appendKwd("endclean", CbcSolverParam::CGEndClean);
-        parameters_[code].appendKwd("endboth", CbcSolverParam::CGEndBoth);
-        parameters_[code].appendKwd("onlyaswell", CbcSolverParam::CGOnlyAsWell);
-        parameters_[code].appendKwd("cleanaswell", CbcSolverParam::CGCleanAsWell);
-        parameters_[code].appendKwd("bothaswell", CbcSolverParam::CGBothAsWell);
-        parameters_[code].appendKwd("onlyinstead", CbcSolverParam::CGOnlyInstead);
-        parameters_[code].appendKwd("cleaninstead", CbcSolverParam::CGCleanInstead);
-        parameters_[code].appendKwd("bothinstead", CbcSolverParam::CGBothInstead);
+        parameters_[code].appendKwd("endonlyroot", CbcSettings::CGEndOnlyRoot);
+        parameters_[code].appendKwd("endcleanroot", CbcSettings::CGEndCleanRoot);
+        parameters_[code].appendKwd("endonly", CbcSettings::CGEndOnly);
+        parameters_[code].appendKwd("endclean", CbcSettings::CGEndClean);
+        parameters_[code].appendKwd("endboth", CbcSettings::CGEndBoth);
+        parameters_[code].appendKwd("onlyaswell", CbcSettings::CGOnlyAsWell);
+        parameters_[code].appendKwd("cleanaswell", CbcSettings::CGCleanAsWell);
+        parameters_[code].appendKwd("bothaswell", CbcSettings::CGBothAsWell);
+        parameters_[code].appendKwd("onlyinstead", CbcSettings::CGOnlyInstead);
+        parameters_[code].appendKwd("cleaninstead", CbcSettings::CGCleanInstead);
+        parameters_[code].appendKwd("bothinstead", CbcSettings::CGBothInstead);
         break;
       }
       case ODDWHEELCUTS: {
-        parameters_[code].appendKwd("onglobal", CbcSolverParam::CGOnGlobal);
+        parameters_[code].appendKwd("onglobal", CbcSettings::CGOnGlobal);
         break;
       }
       case PROBINGCUTS: {
-        parameters_[code].appendKwd("forceonbut", CbcSolverParam::CGForceOnBut);
+        parameters_[code].appendKwd("forceonbut", CbcSettings::CGForceOnBut);
         break;
       }
       case REDSPLITCUTS:
       case REDSPLIT2CUTS: {
-        parameters_[code].appendKwd("on", CbcSolverParam::CGOn);
-        parameters_[code].appendKwd("root", CbcSolverParam::CGRoot);
-        parameters_[code].appendKwd("longon", CbcSolverParam::CGLongOn);
-        parameters_[code].appendKwd("longroot", CbcSolverParam::CGLongRoot);
+        parameters_[code].appendKwd("on", CbcSettings::CGOn);
+        parameters_[code].appendKwd("root", CbcSettings::CGRoot);
+        parameters_[code].appendKwd("longon", CbcSettings::CGLongOn);
+        parameters_[code].appendKwd("longroot", CbcSettings::CGLongRoot);
         break;
       }
       default:
@@ -1397,11 +1379,10 @@ void CbcSolverSettings::addCbcSolverCutParams() {
 //###########################################################################
 //###########################################################################
 
-void CbcSolverSettings::addCbcSolverHeurParams() {
-  for (int code = CBCSOLVER_FIRSTHEURPARAM + 1;
-       code < CBCSOLVER_LASTHEURPARAM; code++) {
-    parameters_[code].setType(CoinParam::coinParamKwd);
-    parameters_[code].setPushFunc(CbcSolverParamUtils::pushCbcSolverKwdParam);
+void CbcSettings::addCbcSolverHeurParams() {
+  for (int code = CBC_FIRSTHEURPARAM + 1;
+       code < CBC_LASTHEURPARAM; code++) {
+    parameters_[code].setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
   }
 
   parameters_[COMBINE].setup(
@@ -1543,8 +1524,8 @@ void CbcSolverSettings::addCbcSolverHeurParams() {
        getVndMode(), HEURISTICS_LONGHELP);
 
   // Populate the keyword lists
-  for (int code = CBCSOLVER_FIRSTHEURPARAM + 1;
-       code < CBCSOLVER_LASTHEURPARAM; code++) {
+  for (int code = CBC_FIRSTHEURPARAM + 1;
+       code < CBC_LASTHEURPARAM; code++) {
     // First the common keywords
     switch (code) {
     case HEURISTICSTRATEGY:
@@ -1567,10 +1548,10 @@ void CbcSolverSettings::addCbcSolverHeurParams() {
     case RINS:
     case ROUNDING:
     case VND: {
-      parameters_[code].appendKwd("off", CbcSolverParam::CGOff);
-      parameters_[code].appendKwd("on", CbcSolverParam::CGOn);
-      parameters_[code].appendKwd("both", CbcSolverParam::CGRoot);
-      parameters_[code].appendKwd("before", CbcSolverParam::CGIfMove);
+      parameters_[code].appendKwd("off", CbcSettings::CGOff);
+      parameters_[code].appendKwd("on", CbcSettings::CGOn);
+      parameters_[code].appendKwd("both", CbcSettings::CGRoot);
+      parameters_[code].appendKwd("before", CbcSettings::CGIfMove);
       break;
     }
     default:
@@ -1579,50 +1560,50 @@ void CbcSolverSettings::addCbcSolverHeurParams() {
     // Check the unique keywords
     switch (code) {
     case COMBINE: {
-      parameters_[code].appendKwd("off", CbcSolverParam::HeurOff);
-      parameters_[code].appendKwd("on", CbcSolverParam::HeurOn);
+      parameters_[code].appendKwd("off", CbcSettings::HeurOff);
+      parameters_[code].appendKwd("on", CbcSettings::HeurOn);
       break;
     }
     case DINS: {
-      parameters_[code].appendKwd("often", CbcSolverParam::HeurOften);
+      parameters_[code].appendKwd("often", CbcSettings::HeurOften);
       break;
     }
     case FPUMP: {
-      parameters_[code].appendKwd("off", CbcSolverParam::HeurOff);
-      parameters_[code].appendKwd("on", CbcSolverParam::HeurOn);
+      parameters_[code].appendKwd("off", CbcSettings::HeurOff);
+      parameters_[code].appendKwd("on", CbcSettings::HeurOn);
       break;
     }
     case GREEDY: {
-      parameters_[code].appendKwd("off", CbcSolverParam::HeurOff);
-      parameters_[code].appendKwd("on", CbcSolverParam::HeurOn);
-      parameters_[code].appendKwd("root", CbcSolverParam::HeurRoot);
+      parameters_[code].appendKwd("off", CbcSettings::HeurOff);
+      parameters_[code].appendKwd("on", CbcSettings::HeurOn);
+      parameters_[code].appendKwd("root", CbcSettings::HeurRoot);
       break;
     }
     case LOCALTREE: {
-      parameters_[code].appendKwd("off", CbcSolverParam::HeurOff);
-      parameters_[code].appendKwd("on", CbcSolverParam::HeurOn);
+      parameters_[code].appendKwd("off", CbcSettings::HeurOff);
+      parameters_[code].appendKwd("on", CbcSettings::HeurOn);
     }
     case PROXIMITY: {
-      parameters_[code].appendKwd("10", CbcSolverParam::HeurTen);
-      parameters_[code].appendKwd("100", CbcSolverParam::HeurOneHundred);
-      parameters_[code].appendKwd("300", CbcSolverParam::HeurThreeHundred);
+      parameters_[code].appendKwd("10", CbcSettings::HeurTen);
+      parameters_[code].appendKwd("100", CbcSettings::HeurOneHundred);
+      parameters_[code].appendKwd("300", CbcSettings::HeurThreeHundred);
       break;
     }
     case RENS: {
-      parameters_[code].appendKwd("200", CbcSolverParam::HeurTwoHundred);
-      parameters_[code].appendKwd("1000", CbcSolverParam::HeurOneThousand);
-      parameters_[code].appendKwd("10000", CbcSolverParam::HeurTenThousand);
-      parameters_[code].appendKwd("dj", CbcSolverParam::HeurDj);
-      parameters_[code].appendKwd("djbefore", CbcSolverParam::HeurDjBefore);
-      parameters_[code].appendKwd("usesolution", CbcSolverParam::HeurUseSolution);
+      parameters_[code].appendKwd("200", CbcSettings::HeurTwoHundred);
+      parameters_[code].appendKwd("1000", CbcSettings::HeurOneThousand);
+      parameters_[code].appendKwd("10000", CbcSettings::HeurTenThousand);
+      parameters_[code].appendKwd("dj", CbcSettings::HeurDj);
+      parameters_[code].appendKwd("djbefore", CbcSettings::HeurDjBefore);
+      parameters_[code].appendKwd("usesolution", CbcSettings::HeurUseSolution);
       break;
     }
     case RINS: {
-      parameters_[code].appendKwd("often", CbcSolverParam::HeurOften);
+      parameters_[code].appendKwd("often", CbcSettings::HeurOften);
       break;
     }
     case VND: {
-      parameters_[code].appendKwd("intree", CbcSolverParam::HeurInTree);
+      parameters_[code].appendKwd("intree", CbcSettings::HeurInTree);
       break;
     }
     default:
@@ -1636,13 +1617,8 @@ void CbcSolverSettings::addCbcSolverHeurParams() {
 
 /* Function to set up cbc (CbcModel) parameters.  */
 
-void CbcSolverSettings::addCbcModelParams()
+void CbcSettings::addCbcModelParams()
 {
-  for (int code = CBCMODEL_FIRSTPARAM + 1;
-       code < CBCMODEL_LASTPARAM; code++) {
-    CoinParam &param = parameters_[code];
-    static_cast<CbcModelParam &>(param).setObj(model_);
-  }
 
   parameters_[ALLOWABLEGAP].setup(
       "allow!ableGap",
@@ -1661,12 +1637,12 @@ void CbcSolverSettings::addCbcModelParams()
 
   parameters_[DIRECTION].setup(
       "direction", "Minimize or maximize", "min!imize",
-      CbcModelParam::OptDirMinimize,
+      CbcSettings::OptDirMinimize,
       "The default is minimize - use 'direction maximize' for "
       "maximization.\nYou can also use the parameters_ 'maximize' or "
       "'minimize'.");
-  parameters_[DIRECTION].appendKwd("max!imize", CbcModelParam::OptDirMaximize);
-  parameters_[DIRECTION].appendKwd("zero", CbcModelParam::OptDirZero);
+  parameters_[DIRECTION].appendKwd("max!imize", CbcSettings::OptDirMaximize);
+  parameters_[DIRECTION].appendKwd("zero", CbcSettings::OptDirZero);
 
   parameters_[INCREMENT].setup(
       "inc!rement",
@@ -1812,12 +1788,12 @@ void CbcSolverSettings::addCbcModelParams()
       "for a variable we just trust the pseudo costs and do not do any more "
       "strong branching.");
 
-  for (int code = CBCMODEL_FIRSTPARAM + 1;
-       code < CBCMODEL_LASTPARAM; code++) {
+  for (int code = CBC_FIRSTMODELPARAM + 1;
+       code < CBC_LASTMODELPARAM; code++) {
      if (parameters_[code].type() == CoinParam::coinParamInt){
-        parameters_[code].setPushFunc(CbcModelParamUtils::pushCbcModelIntParam);
+        parameters_[code].setPushFunc(CbcParamUtils::pushCbcModelIntParam);
      }else{
-        parameters_[code].setPushFunc(CbcModelParamUtils::pushCbcModelDblParam);
+        parameters_[code].setPushFunc(CbcParamUtils::pushCbcModelDblParam);
      }
   }
 }
@@ -1836,8 +1812,8 @@ void CbcSolverSettings::addCbcModelParams()
   any existing object and create a new one. This can be suppressed if desired.
 */
 
-CbcSolverParam::CGMode CbcSolverSettings::getClique(CglCutGenerator *&gen) {
-  if (clique_.mode_ != CbcSolverParam::CGOff && clique_.proto_ == 0) {
+CbcSettings::CGMode CbcSettings::getClique(CglCutGenerator *&gen) {
+  if (clique_.mode_ != CbcSettings::CGOff && clique_.proto_ == 0) {
     clique_.proto_ = new CglClique();
     clique_.proto_->setStarCliqueReport(clique_.starCliqueReport_);
     clique_.proto_->setRowCliqueReport(clique_.rowCliqueReport_);
@@ -1848,10 +1824,10 @@ CbcSolverParam::CGMode CbcSolverSettings::getClique(CglCutGenerator *&gen) {
   return (clique_.mode_);
 }
 
-CbcSolverParam::CGMode CbcSolverSettings::getFlow(CglCutGenerator *&gen)
+CbcSettings::CGMode CbcSettings::getFlow(CglCutGenerator *&gen)
 
 {
-  if (flow_.mode_ != CbcSolverParam::CGOff && flow_.proto_ == 0) {
+  if (flow_.mode_ != CbcSettings::CGOff && flow_.proto_ == 0) {
     flow_.proto_ = new CglFlowCover();
   }
   gen = dynamic_cast<CglCutGenerator *>(flow_.proto_);
@@ -1859,8 +1835,8 @@ CbcSolverParam::CGMode CbcSolverSettings::getFlow(CglCutGenerator *&gen)
   return (flow_.mode_);
 }
 
-CbcSolverParam::CGMode CbcSolverSettings::getGomory(CglCutGenerator *&gen) {
-  if (gomory_.mode_ != CbcSolverParam::CGOff && gomory_.proto_ == 0) {
+CbcSettings::CGMode CbcSettings::getGomory(CglCutGenerator *&gen) {
+  if (gomory_.mode_ != CbcSettings::CGOff && gomory_.proto_ == 0) {
     gomory_.proto_ = new CglGomory();
     gomory_.proto_->setLimitAtRoot(gomory_.limitAtRoot_);
     gomory_.proto_->setLimit(gomory_.limit_);
@@ -1870,8 +1846,8 @@ CbcSolverParam::CGMode CbcSolverSettings::getGomory(CglCutGenerator *&gen) {
   return (gomory_.mode_);
 }
 
-CbcSolverParam::CGMode CbcSolverSettings::getKnapsack(CglCutGenerator *&gen) {
-  if (knapsack_.mode_ != CbcSolverParam::CGOff && knapsack_.proto_ == 0) {
+CbcSettings::CGMode CbcSettings::getKnapsack(CglCutGenerator *&gen) {
+  if (knapsack_.mode_ != CbcSettings::CGOff && knapsack_.proto_ == 0) {
     knapsack_.proto_ = new CglKnapsackCover();
   }
   gen = dynamic_cast<CglCutGenerator *>(knapsack_.proto_);
@@ -1879,8 +1855,8 @@ CbcSolverParam::CGMode CbcSolverSettings::getKnapsack(CglCutGenerator *&gen) {
   return (knapsack_.mode_);
 }
 
-CbcSolverParam::CGMode CbcSolverSettings::getMir(CglCutGenerator *&gen) {
-  if (mir_.mode_ != CbcSolverParam::CGOff && mir_.proto_ == 0) {
+CbcSettings::CGMode CbcSettings::getMir(CglCutGenerator *&gen) {
+  if (mir_.mode_ != CbcSettings::CGOff && mir_.proto_ == 0) {
     mir_.proto_ = new CglMixedIntegerRounding2();
   }
   gen = dynamic_cast<CglCutGenerator *>(mir_.proto_);
@@ -1888,8 +1864,8 @@ CbcSolverParam::CGMode CbcSolverSettings::getMir(CglCutGenerator *&gen) {
   return (mir_.mode_);
 }
 
-CbcSolverParam::CGMode CbcSolverSettings::getProbing(CglCutGenerator *&gen) {
-  if (probing_.mode_ != CbcSolverParam::CGOff && probing_.proto_ == 0) {
+CbcSettings::CGMode CbcSettings::getProbing(CglCutGenerator *&gen) {
+  if (probing_.mode_ != CbcSettings::CGOff && probing_.proto_ == 0) {
     probing_.proto_ = new CglProbing();
     probing_.proto_->setUsingObjective(probing_.usingObjective_);
     probing_.proto_->setMaxPass(probing_.maxPass_);
@@ -1906,10 +1882,10 @@ CbcSolverParam::CGMode CbcSolverSettings::getProbing(CglCutGenerator *&gen) {
   return (probing_.mode_);
 }
 
-CbcSolverParam::CGMode CbcSolverSettings::getRedSplit(CglCutGenerator *&gen)
+CbcSettings::CGMode CbcSettings::getRedSplit(CglCutGenerator *&gen)
 
 {
-  if (redSplit_.mode_ != CbcSolverParam::CGOff && redSplit_.proto_ == 0) {
+  if (redSplit_.mode_ != CbcSettings::CGOff && redSplit_.proto_ == 0) {
     redSplit_.proto_ = new CglRedSplit();
   }
   gen = dynamic_cast<CglCutGenerator *>(redSplit_.proto_);
@@ -1917,8 +1893,8 @@ CbcSolverParam::CGMode CbcSolverSettings::getRedSplit(CglCutGenerator *&gen)
   return (redSplit_.mode_);
 }
 
-CbcSolverParam::CGMode CbcSolverSettings::getTwomir(CglCutGenerator *&gen) {
-  if (twomir_.mode_ != CbcSolverParam::CGOff && twomir_.proto_ == 0) {
+CbcSettings::CGMode CbcSettings::getTwomir(CglCutGenerator *&gen) {
+  if (twomir_.mode_ != CbcSettings::CGOff && twomir_.proto_ == 0) {
     twomir_.proto_ = new CglTwomir();
     twomir_.proto_->setMaxElements(twomir_.maxElements_);
   }
@@ -1927,11 +1903,11 @@ CbcSolverParam::CGMode CbcSolverSettings::getTwomir(CglCutGenerator *&gen) {
   return (twomir_.mode_);
 }
 
-CbcSolverParam::HeurMode CbcSolverSettings::getFeasPump(CbcHeuristic *&gen,
+CbcSettings::HeurMode CbcSettings::getFeasPump(CbcHeuristic *&gen,
                                                         bool alwaysCreate)
 
 {
-  if (fpump_.mode_ != CbcSolverParam::HeurOff &&
+  if (fpump_.mode_ != CbcSettings::HeurOff &&
       (fpump_.proto_ == 0 || alwaysCreate)) {
     if (fpump_.proto_) {
       delete fpump_.proto_;
@@ -1955,11 +1931,11 @@ CbcSolverParam::HeurMode CbcSolverSettings::getFeasPump(CbcHeuristic *&gen,
   any existing object and create a new one. This can be suppressed if desired.
 */
 
-CbcSolverParam::HeurMode CbcSolverSettings::getCombine(CbcHeuristic *&gen,
+CbcSettings::HeurMode CbcSettings::getCombine(CbcHeuristic *&gen,
                                                        bool alwaysCreate)
 
 {
-  if (combine_.mode_ != CbcSolverParam::HeurOff &&
+  if (combine_.mode_ != CbcSettings::HeurOff &&
       (combine_.proto_ == 0 || alwaysCreate)) {
     if (combine_.proto_) {
       delete combine_.proto_;
@@ -1973,11 +1949,11 @@ CbcSolverParam::HeurMode CbcSolverSettings::getCombine(CbcHeuristic *&gen,
   return (combine_.mode_);
 }
 
-CbcSolverParam::HeurMode CbcSolverSettings::getGreedyCover(CbcHeuristic *&gen,
+CbcSettings::HeurMode CbcSettings::getGreedyCover(CbcHeuristic *&gen,
                                                            bool alwaysCreate)
 
 {
-  if (greedyCover_.mode_ != CbcSolverParam::HeurOff &&
+  if (greedyCover_.mode_ != CbcSettings::HeurOff &&
       (greedyCover_.proto_ == 0 || alwaysCreate)) {
     if (greedyCover_.proto_) {
       delete greedyCover_.proto_;
@@ -1989,12 +1965,12 @@ CbcSolverParam::HeurMode CbcSolverSettings::getGreedyCover(CbcHeuristic *&gen,
   return (greedyCover_.mode_);
 }
 
-CbcSolverParam::HeurMode
-CbcSolverSettings::getGreedyEquality(CbcHeuristic *&gen,
+CbcSettings::HeurMode
+CbcSettings::getGreedyEquality(CbcHeuristic *&gen,
                                      bool alwaysCreate)
 
 {
-  if (greedyEquality_.mode_ != CbcSolverParam::HeurOff &&
+  if (greedyEquality_.mode_ != CbcSettings::HeurOff &&
       (greedyEquality_.proto_ == 0 || alwaysCreate)) {
     if (greedyEquality_.proto_) {
       delete greedyEquality_.proto_;
@@ -2006,11 +1982,11 @@ CbcSolverSettings::getGreedyEquality(CbcHeuristic *&gen,
   return (greedyEquality_.mode_);
 }
 
-CbcSolverParam::HeurMode CbcSolverSettings::getRounding(CbcHeuristic *&gen,
+CbcSettings::HeurMode CbcSettings::getRounding(CbcHeuristic *&gen,
                                                         bool alwaysCreate)
 
 {
-  if (rounding_.mode_ != CbcSolverParam::HeurOff &&
+  if (rounding_.mode_ != CbcSettings::HeurOff &&
       (rounding_.proto_ == 0 || alwaysCreate)) {
     if (rounding_.proto_) {
       delete rounding_.proto_;
@@ -2022,12 +1998,12 @@ CbcSolverParam::HeurMode CbcSolverSettings::getRounding(CbcHeuristic *&gen,
   return (rounding_.mode_);
 }
 
-CbcSolverParam::HeurMode
-CbcSolverSettings::getLocalTree(CbcTreeLocal *&localTree, 
+CbcSettings::HeurMode
+CbcSettings::getLocalTree(CbcTreeLocal *&localTree, 
                                 bool alwaysCreate)
 
 {
-  if (localTree_.mode_ != CbcSolverParam::HeurOff &&
+  if (localTree_.mode_ != CbcSettings::HeurOff &&
       (localTree_.proto_ == 0 || alwaysCreate)) {
     if (localTree_.proto_) {
       delete localTree_.proto_;
@@ -2052,61 +2028,61 @@ CbcSolverSettings::getLocalTree(CbcTreeLocal *&localTree,
   where the search stopped.
 */
 
-CbcSolverParam::BACMajorStatus CbcSolverSettings::translateMajor(int status)
+CbcSettings::BACMajorStatus CbcSettings::translateMajor(int status)
 
 {
   switch (status) {
   case -1: {
-    return (CbcSolverParam::BACNotRun);
+    return (CbcSettings::BACNotRun);
   }
   case 0: {
-    return (CbcSolverParam::BACFinish);
+    return (CbcSettings::BACFinish);
   }
   case 1: {
-    return (CbcSolverParam::BACStop);
+    return (CbcSettings::BACStop);
   }
   case 2: {
-    return (CbcSolverParam::BACAbandon);
+    return (CbcSettings::BACAbandon);
   }
   case 5: {
-    return (CbcSolverParam::BACUser);
+    return (CbcSettings::BACUser);
   }
-  default: { return (CbcSolverParam::BACInvalid); }
+  default: { return (CbcSettings::BACInvalid); }
   }
 }
 
-CbcSolverParam::BACMinorStatus CbcSolverSettings::translateMinor(int status)
+CbcSettings::BACMinorStatus CbcSettings::translateMinor(int status)
 
 {
   switch (status) {
   case -1: {
-    return (CbcSolverParam::BACmInvalid);
+    return (CbcSettings::BACmInvalid);
   }
   case 0: {
-    return (CbcSolverParam::BACmFinish);
+    return (CbcSettings::BACmFinish);
   }
   case 1: {
-    return (CbcSolverParam::BACmInfeas);
+    return (CbcSettings::BACmInfeas);
   }
   case 2: {
-    return (CbcSolverParam::BACmGap);
+    return (CbcSettings::BACmGap);
   }
   case 3: {
-    return (CbcSolverParam::BACmNodeLimit);
+    return (CbcSettings::BACmNodeLimit);
   }
   case 4: {
-    return (CbcSolverParam::BACmTimeLimit);
+    return (CbcSettings::BACmTimeLimit);
   }
   case 5: {
-    return (CbcSolverParam::BACmUser);
+    return (CbcSettings::BACmUser);
   }
   case 6: {
-    return (CbcSolverParam::BACmSolnLimit);
+    return (CbcSettings::BACmSolnLimit);
   }
   case 7: {
-    return (CbcSolverParam::BACmUbnd);
+    return (CbcSettings::BACmUbnd);
   }
-  default: { return (CbcSolverParam::BACmOther); }
+  default: { return (CbcSettings::BACmOther); }
   }
 }
 
@@ -2114,18 +2090,18 @@ CbcSolverParam::BACMinorStatus CbcSolverSettings::translateMinor(int status)
   A bit different --- given an OSI, use its interrogation functions to choose
   an appropriate BACMinorStatus code. Not everything matches up, eh?
 */
-CbcSolverParam::BACMinorStatus
-CbcSolverSettings::translateMinor(const OsiSolverInterface *osi)
+CbcSettings::BACMinorStatus
+CbcSettings::translateMinor(const OsiSolverInterface *osi)
 
 {
   if (osi->isProvenOptimal()) {
-    return (CbcSolverParam::BACmFinish);
+    return (CbcSettings::BACmFinish);
   } else if (osi->isProvenPrimalInfeasible()) {
-    return (CbcSolverParam::BACmInfeas);
+    return (CbcSettings::BACmInfeas);
   } else if (osi->isProvenDualInfeasible()) {
-    return (CbcSolverParam::BACmUbnd);
+    return (CbcSettings::BACmUbnd);
   } else {
-    return (CbcSolverParam::BACmOther);
+    return (CbcSettings::BACmOther);
   }
 }
 
@@ -2135,18 +2111,18 @@ CbcSolverSettings::translateMinor(const OsiSolverInterface *osi)
   CbcModel codes to CbcGeneric codes.
 */
 
-void CbcSolverSettings::setBaBStatus(CbcSolverParam::BACWhere where,
+void CbcSettings::setBaBStatus(CbcSettings::BACWhere where,
                                      bool haveAnswer,
                                      OsiSolverInterface *answerSolver)
 
 {
-  CbcSolverParam::BACMajorStatus major;
-  CbcSolverParam::BACMinorStatus minor;
+  CbcSettings::BACMajorStatus major;
+  CbcSettings::BACMinorStatus minor;
 
   major = translateMajor(model_->status());
 
-  if (where == CbcSolverParam::BACwBareRoot ||
-      where == CbcSolverParam::BACwIPPRelax) {
+  if (where == CbcSettings::BACwBareRoot ||
+      where == CbcSettings::BACwIPPRelax) {
     minor = translateMinor(model_->solver());
   } else {
     minor = translateMinor(model_->secondaryStatus());
@@ -2161,29 +2137,29 @@ void CbcSolverSettings::setBaBStatus(CbcSolverParam::BACWhere where,
   Last, but not least, a routine to print the result.
 */
 
-void CbcSolverSettings::printBaBStatus()
+void CbcSettings::printBaBStatus()
 
 {
   std::cout << "BAC result: stopped ";
 
   switch (bab_.where_) {
-  case CbcSolverParam::BACwNotStarted: {
+  case CbcSettings::BACwNotStarted: {
     std::cout << "before root relaxation";
     break;
   }
-  case CbcSolverParam::BACwBareRoot: {
+  case CbcSettings::BACwBareRoot: {
     std::cout << "after root relaxation";
     break;
   }
-  case CbcSolverParam::BACwIPP: {
+  case CbcSettings::BACwIPP: {
     std::cout << "after integer preprocessing";
     break;
   }
-  case CbcSolverParam::BACwIPPRelax: {
+  case CbcSettings::BACwIPPRelax: {
     std::cout << "after solving preprocessed relaxation";
     break;
   }
-  case CbcSolverParam::BACwBAC: {
+  case CbcSettings::BACwBAC: {
     std::cout << "after branch-and-cut";
     break;
   }
@@ -2196,23 +2172,23 @@ void CbcSolverSettings::printBaBStatus()
   std::cout << std::endl << "    Branch-and-cut ";
 
   switch (bab_.majorStatus_) {
-  case CbcSolverParam::BACNotRun: {
+  case CbcSettings::BACNotRun: {
     std::cout << "never got started";
     break;
   }
-  case CbcSolverParam::BACFinish: {
+  case CbcSettings::BACFinish: {
     std::cout << "finished";
     break;
   }
-  case CbcSolverParam::BACStop: {
+  case CbcSettings::BACStop: {
     std::cout << "stopped on a limit";
     break;
   }
-  case CbcSolverParam::BACAbandon: {
+  case CbcSettings::BACAbandon: {
     std::cout << "was abandoned";
     break;
   }
-  case CbcSolverParam::BACUser: {
+  case CbcSettings::BACUser: {
     std::cout << "stopped due to a user event";
     break;
   }
@@ -2225,39 +2201,39 @@ void CbcSolverSettings::printBaBStatus()
   std::cout << "; minor status is ";
 
   switch (bab_.minorStatus_) {
-  case CbcSolverParam::BACmFinish: {
+  case CbcSettings::BACmFinish: {
     std::cout << "optimal";
     break;
   }
-  case CbcSolverParam::BACmInfeas: {
+  case CbcSettings::BACmInfeas: {
     std::cout << "infeasible";
     break;
   }
-  case CbcSolverParam::BACmUbnd: {
+  case CbcSettings::BACmUbnd: {
     std::cout << "unbounded";
     break;
   }
-  case CbcSolverParam::BACmGap: {
+  case CbcSettings::BACmGap: {
     std::cout << "reached specified integrality gap.";
     break;
   }
-  case CbcSolverParam::BACmNodeLimit: {
+  case CbcSettings::BACmNodeLimit: {
     std::cout << "reached node limit";
     break;
   }
-  case CbcSolverParam::BACmTimeLimit: {
+  case CbcSettings::BACmTimeLimit: {
     std::cout << "reached time limit";
     break;
   }
-  case CbcSolverParam::BACmSolnLimit: {
+  case CbcSettings::BACmSolnLimit: {
     std::cout << "reached limit on number of solutions";
     break;
   }
-  case CbcSolverParam::BACmUser: {
+  case CbcSettings::BACmUser: {
     std::cout << "stopped due to a user event";
     break;
   }
-  case CbcSolverParam::BACmOther: {
+  case CbcSettings::BACmOther: {
     std::cout << "other";
     break;
   }

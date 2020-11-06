@@ -2220,7 +2220,7 @@ Cbc_solve(Cbc_Model *model)
         cbcModel.passInMessageHandler(cbcmh);
       }
 
-      CbcSolverSettings cbcSettings;
+      CbcSettings cbcSettings;
       CbcMain0(cbcModel, cbcSettings);
       cbcSettings.disableWelcomePrinting();
 

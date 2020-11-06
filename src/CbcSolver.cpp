@@ -132,9 +132,8 @@ void CbcCrashHandler(int sig);
 #include "CbcHeuristicRandRound.hpp"
 #include "CbcMessage.hpp"
 #include "CbcMipStartIO.hpp"
-#include "CbcModelParam.hpp"
 #include "CbcModel.hpp"
-#include "CbcSolverParam.hpp"
+#include "CbcParam.hpp"
 #include "CbcSolver.hpp"
 #include "CbcSolverAnalyze.hpp"
 #include "CbcSolverExpandKnapsack.hpp"
@@ -230,7 +229,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
                    int testSwitch, const double *stuff, int argc,
                    const char **argv,
                    int callBack(CbcModel *currentSolver, int whereFrom),
-                   CbcSolverSettings &solverSettings);
+                   CbcSettings &solverSettings);
 
 static void printGeneralMessage(CbcModel &model, const char *message);
 
@@ -790,32 +789,32 @@ CbcSolver &CbcSolver::operator=(const CbcSolver &rhs) {
 //###########################################################################
 
 // Get int value
-int CbcSolver::intValue(CbcParameterType type) const {
-  return cbcParameters_[whichCbcParam(type, cbcParameters_)].intValue();
+int CbcSolver::intValue(CbcParamCode code) const {
+  return cbcParameters_[code].intVal();
 }
 
 //###########################################################################
 //###########################################################################
 
 // Set int value
-void CbcSolver::setIntValue(CbcParameterType type, int value) {
-  cbcParameters_[whichCbcParam(type, cbcParameters_)].setIntValue(value);
+void CbcSolver::setIntValue(CbcParamCode code, int value) {
+  cbcParameters_[code].setIntVal(value);
 }
 
 //###########################################################################
 //###########################################################################
 
 // Get double value
-double CbcSolver::doubleValue(CbcParameterType type) const {
-  return cbcParameters_[whichCbcParam(type, cbcParameters_)].doubleValue();
+double CbcSolver::doubleValue(CbcParamCode code) const {
+  return cbcParameters_[code].dblVal();
 }
 
 //###########################################################################
 //###########################################################################
 
 // Set double value
-void CbcSolver::setDoubleValue(CbcParameterType type, double value) {
-  cbcParameters_[whichCbcParam(type, cbcParameters_)].setDoubleValue(value);
+void CbcSolver::setDoubleValue(CbcParamCode code, double value) {
+  cbcParameters_[code].setDblVal(value);
 }
 
 //###########################################################################
@@ -896,66 +895,12 @@ void CbcSolver::addCutGenerator(CglCutGenerator *generator) {
 //###########################################################################
 //###########################################################################
 
-//###########################################################################
-//  CbcSolverUsefulData definitions
-//###########################################################################
-
-//###########################################################################
-//###########################################################################
-
-// Default Constructor
-CbcSolverUsefulData::CbcSolverUsefulData() {
-  totalTime_ = 0.0;
-  noPrinting_ = true;
-  printWelcome_ = true;
-  useSignalHandler_ = false;
-  establishClpParams(clpParameters_);
-  establishCbcParams(cbcParameters_);
-}
-
-//###########################################################################
-//###########################################################################
-
-/* Copy constructor .
- */
-CbcSolverUsefulData::CbcSolverUsefulData(const CbcSolverUsefulData &rhs) {
-  totalTime_ = rhs.totalTime_;
-  noPrinting_ = rhs.noPrinting_;
-  useSignalHandler_ = rhs.useSignalHandler_;
-  this->cbcParameters_ = rhs.cbcParameters_;
-  this->clpParameters_ = rhs.clpParameters_;
-}
-
-//###########################################################################
-//###########################################################################
-
-// Assignment operator
-CbcSolverUsefulData &CbcSolverUsefulData::
-operator=(const CbcSolverUsefulData &rhs) {
-  if (this != &rhs) {
-    totalTime_ = rhs.totalTime_;
-    noPrinting_ = rhs.noPrinting_;
-    useSignalHandler_ = rhs.useSignalHandler_;
-    this->cbcParameters_ = rhs.cbcParameters_;
-    this->clpParameters_ = rhs.clpParameters_;
-  }
-  return *this;
-}
-
-//###########################################################################
-//###########################################################################
-
-// Destructor
-CbcSolverUsefulData::~CbcSolverUsefulData() {}
-
+//TODO Should we replace with the STL version
 static bool ends_with(std::string const &value, std::string const &ending) {
   if (ending.size() > value.size())
     return false;
   return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
-
-//###########################################################################
-//###########################################################################
 
 //###########################################################################
 // Wrappers for CbcMain0, CbcMain1. The various forms of callCbc will
@@ -973,7 +918,7 @@ static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/) { return 0; }
 
 int callCbc1(const char *input2, CbcModel &model,
              int callBack(CbcModel *currentSolver, int whereFrom),
-             CbcSolverSettings &cbcSettings);
+             CbcSettings &cbcSettings);
 
 //###########################################################################
 // Simplest calling form: supply just a string with the command options. The
@@ -1026,7 +971,7 @@ int callCbc(const char *input2, OsiClpSolverInterface &solver1) {
 //###########################################################################
 
 int callCbc(const char *input2, CbcModel &babSolver) {
-  CbcSolverSettings cbcSettings;
+  CbcSettings cbcSettings;
 #ifndef CBC_NO_INTERRUPT
   cbcSettings.enableSignalHandler();
 #endif
@@ -1041,7 +986,7 @@ int callCbc(const char *input2, CbcModel &babSolver) {
 //###########################################################################
 
 int callCbc(const std::string input2, CbcModel &babSolver) {
-  CbcSolverSettings cbcSettings;
+  CbcSettings cbcSettings;
   char *input3 = CoinStrdup(input2.c_str());
   CbcMain0(babSolver, cbcSettings);
   int returnCode = callCbc1(input3, babSolver, dummyCallBack, cbcSettings);
@@ -1060,7 +1005,7 @@ int callCbc(const std::string input2, CbcModel &babSolver) {
 
 int callCbc1(const char *input2, CbcModel &model,
              int callBack(CbcModel *currentSolver, int whereFrom),
-             CbcSolverSettings &cbcSettings) {
+             CbcSettings &cbcSettings) {
   char *input = CoinStrdup(input2 ? input2 : "");
   size_t length = strlen(input);
   bool blank = input[0] == ' ';
@@ -1119,7 +1064,7 @@ int callCbc1(const char *input2, CbcModel &model,
 
 int callCbc1(const char *input2, CbcModel &model,
              int callBack(CbcModel *currentSolver, int whereFrom)) {
-  CbcSolverSettings cbcSettings;
+  CbcSettings cbcSettings;
   // allow interrupts and printing
 #ifndef CBC_NO_INTERRUPT
   cbcSettings.enableSignalHandler();
@@ -1134,7 +1079,7 @@ int callCbc1(const char *input2, CbcModel &model,
 //###########################################################################
 
 int CbcMain(int argc, const char *argv[], CbcModel &model) {
-  CbcSolverSettings cbcSettings;
+  CbcSettings cbcSettings;
   CbcMain0(model, cbcSettings);
   return CbcMain1(argc, argv, model, dummyCallBack, cbcSettings);
 }
@@ -1143,7 +1088,7 @@ int CbcMain(int argc, const char *argv[], CbcModel &model) {
 // This is the function for setting things up, default parameters, etc.
 //###########################################################################
 
-void CbcMain0(CbcModel &model, CbcSolverSettings &cbcSettings) {
+void CbcMain0(CbcModel &model, CbcSettings &cbcSettings) {
 #if defined(HAVE_SIGNAL_H) && defined(HAVE_EXECINFO_H)
   signal(SIGSEGV, CbcCrashHandler);
   signal(SIGABRT, CbcCrashHandler);
@@ -1330,7 +1275,7 @@ void CbcMain0(CbcModel &model, CbcSolverSettings &cbcSettings) {
 
 // Version of CbcMain1 without callBack
 int CbcMain1(int argc, const char *argv[], CbcModel &model,
-             CbcSolverSettings &cbcSettings) {
+             CbcSettings &cbcSettings) {
   return CbcMain1(argc, argv, model, dummyCallBack, cbcSettings);
 }
 
@@ -1347,7 +1292,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
 
 int CbcMain1(int argc, const char *argv[], CbcModel &model,
              int callBack(CbcModel *currentSolver, int whereFrom),
-             CbcSolverSettings &cbcSettings) {
+             CbcSettings &cbcSettings) {
 
   std::vector<ClpParam> &clpParameters = cbcSettings.getClpParameters();
   CoinParamVec &cbcParameters = cbcSettings.getParameters();
@@ -2058,8 +2003,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           numberMatches += match >> 1;
         }
       }
-      for (iCbcParam = CBCSOLVER_FIRSTPARAM+1;
-           iCbcParam < CBCSOLVER_LASTPARAM; iCbcParam++) {
+      for (iCbcParam = CBC_FIRSTPARAM+1;
+           iCbcParam < CBC_LASTPARAM; iCbcParam++) {
         int match = cbcParameters[iCbcParam].matches(field);
         if (match == 1) {
           numberMatches = 1;
@@ -2072,8 +2017,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
         }
       }
 
-      CbcSolverParam pCbcParam =
-         static_cast<CbcSolverParam &>(cbcParameters[iCbcParam]);
+      CbcParam pCbcParam = static_cast<CbcParam &>(cbcParameters[iCbcParam]);
 
       ClpParameterType clpType = iClpParam < (int)clpParameters.size()
                                      ? clpParameters[iClpParam].type()
@@ -2088,13 +2032,13 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
         } else if (numberMatches == 1) {
           if (!numberQuery) {
             std::cout << "Short match for " << field << " - completion: ";
-            if (iCbcParam < CBCSOLVER_LASTPARAM) {
+            if (iCbcParam < CBC_LASTPARAM) {
               std::cout << cbcParameters[firstMatch].matchName() << std::endl;
             } else {
               std::cout << clpParameters[firstMatch].matchName() << std::endl;
             }
           } else if (numberQuery) {
-            if (iCbcParam < CBCSOLVER_LASTPARAM) {
+            if (iCbcParam < CBC_LASTPARAM) {
               std::cout << cbcParameters[firstMatch].matchName() << " : ";
               std::cout << cbcParameters[firstMatch].shortHelp() << std::endl;
               if (numberQuery >= 2)
@@ -2194,7 +2138,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           }
 #endif
         }
-        if (iCbcParam == CBC_PARAM_GENERALQUERY) {
+        if (iCbcParam == GENERALQUERY) {
           //TODO This should be made more transparent
           //bool evenHidden = false;
           int commandPrintLevel = cbcParameters[COMMANDPRINTLEVEL].modeVal();
@@ -2249,7 +2193,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           int lengthLine = 0;
           int type = -1;
           std::cout << "#### Cbc Parameters ###" << std::endl;
-          for (int iParam = 0; iParam < CBCSOLVER_LASTPARAM; iParam++) {
+          for (int iParam = 0; iParam < CBC_LASTPARAM; iParam++) {
              //TODO Print model parameters
              if (cbcParameters[iParam].type() != type) {
                 type = cbcParameters[iParam].type();
@@ -2351,7 +2295,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
              std::cout << std::endl;
           }
         }
-      } else if (iCbcParam == CBC_PARAM_FULLGENERALQUERY) {
+      } else if (iCbcParam == FULLGENERALQUERY) {
           std::cout << "Full list of commands is:" << std::endl;
           int maxAcross = 5;
           int limits[] = {1, 51, 101, 151, 201, 301, 401, 501, 601};
@@ -2399,13 +2343,13 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               std::cout << std::endl;
           }
 #endif
-        } else if ((iCbcParam == CBCSOLVER_LASTPARAM && clpType < 101) ||
+        } else if ((iCbcParam == CBC_LASTPARAM && clpType < 101) ||
                    pCbcParam.type() == CoinParam::coinParamDbl) {
           // get next field as double
           double value = CoinGetDouble(inputVector, whichField,
                                        status, interactiveMode, prompt);
           if (!status) {
-            if (iCbcParam == CBCSOLVER_LASTPARAM && clpType < 51) {
+            if (iCbcParam == CBC_LASTPARAM && clpType < 51) {
               int returnCode;
               std::string message =
                   clpParameters[iClpParam].setDoubleParameterWithMessage(
@@ -2479,7 +2423,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             }
           } else if (status == 1) {
              //TODO integrate this in with the error messaging of the class itself
-            if (iCbcParam < CBCSOLVER_LASTPARAM) {
+            if (iCbcParam < CBC_LASTPARAM) {
               std::cout << " is illegal for double parameter "
                         << pCbcParam.name() << " value remains "
                         << pCbcParam.dblVal() << std::endl;
@@ -2489,7 +2433,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         << clpParameters[iClpParam].doubleValue() << std::endl;
             }
           } else {
-            if (iCbcParam < CBCSOLVER_LASTPARAM) {
+            if (iCbcParam < CBC_LASTPARAM) {
               std::cout << pCbcParam.name() << " has value "
                         << pCbcParam.dblVal() << std::endl;
             } else {
@@ -2497,14 +2441,14 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         << clpParameters[iClpParam].doubleValue() << std::endl;
             }
           }
-        } else if ((iCbcParam == CBCSOLVER_LASTPARAM && clpType < 201) ||
+        } else if ((iCbcParam == CBC_LASTPARAM && clpType < 201) ||
                    (pCbcParam.type() == CoinParam::coinParamInt)) {
           // get next field as int
           int value = CoinGetInt(inputVector, whichField,
                                  status, interactiveMode, prompt);
           if (!status) {
-            if ((iCbcParam == CBCSOLVER_LASTPARAM && clpType < 151) ||
-                (iCbcParam <= CBC_PARAM_INT_VERBOSE)) {
+            if ((iCbcParam == CBC_LASTPARAM && clpType < 151) ||
+                (iCbcParam <= VERBOSE)) {
               if (clpParameters[iClpParam].type() == CLP_PARAM_INT_PRESOLVEPASS)
                 preSolve = value;
               else if (clpParameters[iClpParam].type() == CLP_PARAM_INT_IDIOT)
@@ -2533,7 +2477,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 verbose = value;
               int returnCode;
               std::string message;
-              if (iCbcParam < CBCSOLVER_LASTPARAM) {
+              if (iCbcParam < CBC_LASTPARAM) {
                  pCbcParam.setIntVal(value, &message);
               } else {
                  message = clpParameters[iClpParam].setIntParameterWithMessage(
@@ -2745,7 +2689,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             }
           } else if (status == 1) {
              //TODO integrate this in with the error messaging of the class itself
-             if (iCbcParam < CBCSOLVER_LASTPARAM) {
+             if (iCbcParam < CBC_LASTPARAM) {
                 std::cout << " is illegal for integer parameter "
                           << pCbcParam.name() << " value remains "
                           << pCbcParam.intVal() << std::endl;
@@ -2755,7 +2699,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                           << clpParameters[iClpParam].intValue() << std::endl;
              }
           } else {
-            if (iCbcParam < CBCSOLVER_LASTPARAM) {
+            if (iCbcParam < CBC_LASTPARAM) {
               std::cout << pCbcParam.name() << " has value "
                         << pCbcParam.intVal() << std::endl;
             } else {
@@ -2763,12 +2707,12 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         << clpParameters[iClpParam].intValue() << std::endl;
             }
           }
-        } else if ((iCbcParam == CBCSOLVER_LASTPARAM && clpType < 401) ||
+        } else if ((iCbcParam == CBC_LASTPARAM && clpType < 401) ||
                    pCbcParam.type() == CoinParam::coinParamStr) {
           // one of several strings
           std::string value = CoinGetString(inputVector, whichField,
                                             interactiveMode, prompt);
-          if (iCbcParam < CBCSOLVER_LASTPARAM) {
+          if (iCbcParam < CBC_LASTPARAM) {
             std::string message;
             if (pCbcParam.setKwdVal(value, &message)){
                if (!noPrinting_ && message.length()) {

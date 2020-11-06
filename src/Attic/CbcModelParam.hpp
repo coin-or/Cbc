@@ -10,7 +10,7 @@
 #define CbcModelParam_H
 
 #include "CoinParam.hpp"
-#include "CbcSolverParam.hpp"
+#include "CbcParam.hpp"
 
 /* \file CbcModelParam.hpp
    \brief Declarations for parameters that act on a CbcModel object.
@@ -192,17 +192,6 @@ private:
 
   //@}
 };
-
-/*
-  Declare the utility functions.
-*/
-
-namespace CbcModelParamUtils {
-void setCbcModelDefaults(CbcModel *model);
-
-int pushCbcModelDblParam(CoinParam &param);
-int pushCbcModelIntParam(CoinParam &param);
-} // namespace CbcModelParamUtils
 
 #endif
 

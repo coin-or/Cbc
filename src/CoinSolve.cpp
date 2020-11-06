@@ -346,7 +346,7 @@ int main(int argc, const char *argv[])
     //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
 #endif
 
-    CbcSolverSettings cbcSettings;
+    CbcSettings cbcSettings;
 #ifndef CBC_NO_INTERRUPT
     cbcSettings.enableSignalHandler();
 #endif

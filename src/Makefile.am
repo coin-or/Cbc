@@ -70,13 +70,13 @@ libCbc_la_SOURCES = \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcMipStartIO.cpp CbcMipStartIO.hpp \
 	CbcModel.cpp CbcModel.hpp \
-	CbcModelParam.cpp CbcModelParam.hpp \
 	CbcNode.cpp CbcNode.hpp \
 	CbcNodeInfo.cpp CbcNodeInfo.hpp \
 	CbcNWay.cpp CbcNWay.hpp \
 	CbcObject.cpp CbcObject.hpp \
 	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
 	CbcParam.cpp CbcParam.hpp \
+	CbcParamUtils.cpp CbcParamUtils.hpp \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.cpp \
@@ -87,8 +87,7 @@ libCbc_la_SOURCES = \
 	CbcSolver.cpp CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
-	CbcSolverParam.cpp CbcSolverParam.hpp \
-	CbcSolverSettings.cpp CbcSolverSettings.hpp \
+	CbcSettings.cpp CbcSettings.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
@@ -239,6 +238,7 @@ includecoin_HEADERS = \
 	CbcObjectUpdateData.hpp \
 	CbcParam.hpp \
 	CbcPartialNodeInfo.hpp \
+	CbcSettings.hpp \
 	CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.hpp \
 	CbcSimpleIntegerPseudoCost.hpp \

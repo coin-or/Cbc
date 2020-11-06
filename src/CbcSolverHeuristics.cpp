@@ -17,7 +17,7 @@
 #include "ClpPresolve.hpp"
 #include "ClpSimplexOther.hpp"
 
-#include "CbcSolverParam.hpp"
+#include "CbcParam.hpp"
 #include "CbcModel.hpp"
 #include "CbcHeuristicLocal.hpp"
 #include "CbcHeuristicPivotAndFix.hpp"
@@ -34,6 +34,7 @@
 #include "CbcHeuristicDiveLineSearch.hpp"
 #include "CbcHeuristicDivePseudoCost.hpp"
 #include "CbcHeuristicDiveVectorLength.hpp"
+#include "CbcSettings.hpp"
 #include "CbcStrategy.hpp"
 
 // Crunch down model

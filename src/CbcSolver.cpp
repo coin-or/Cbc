@@ -4652,13 +4652,22 @@ int CbcMain1(int argc, const char *argv[],
                   if (numberLotSizing) {
                     CbcObject **objects = new CbcObject *[numberLotSizing];
                     double points[] = { 0.0, 0.0, 0.0, 0.0 };
+                    int *back = new int[numberOriginalColumns];
+                    for (int i = 0; i < numberOriginalColumns; i++)
+                      back[i] = -1;
+                    for (int i = 0; i < numberColumns; i++) {
+                      int iColumn = originalColumns[i];
+                      back[iColumn] = i;
+                    }
                     for (int i = 0; i < numberLotSizing; i++) {
                       int iColumn = lotsize[i].column;
+		      iColumn = back[iColumn];
                       points[2] = lotsize[i].low;
                       points[3] = lotsize[i].high;
                       objects[i] = new CbcLotsize(babModel_, iColumn, 2,
                         points, true);
                     }
+		    delete [] back;
                     babModel_->addObjects(numberLotSizing, objects);
                     for (int i = 0; i < numberLotSizing; i++)
                       delete objects[i];

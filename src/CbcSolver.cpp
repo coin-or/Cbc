@@ -7626,16 +7626,7 @@ int CbcMain1(int argc, const char *argv[],
                   delete babModel_;
                   babModel_ = NULL;
                   return returnCode;
-                } else {
-                  int numberSolutions = babModel_->numberSavedSolutions();
-                  if (numberSolutions > 1) {
-                    for (int iSolution = numberSolutions - 1; iSolution >= 0; iSolution--) {
-                      model_.setBestSolution(babModel_->savedSolution(iSolution),
-                        model_.solver()->getNumCols(),
-                        babModel_->savedSolutionObjective(iSolution));
-                    }
-                  }
-                }
+                } 
 #ifdef CLP_MALLOC_STATISTICS
                 malloc_stats();
                 malloc_stats2();

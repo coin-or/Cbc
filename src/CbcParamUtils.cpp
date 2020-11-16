@@ -20,20 +20,19 @@
 #include "CoinParam.hpp"
 #include "CoinFileIO.hpp"
 #include "CoinFinite.hpp"
-#include "CoinParam.hpp"
 
 #include "CbcModel.hpp"
 
 #include "CbcParam.hpp"
 #include "CbcParamUtils.hpp"
-#include "CbcSettings.hpp"
+#include "CbcParameters.hpp"
 
 namespace CbcParamUtils {
 
 //###########################################################################
 //###########################################################################
 
-/* Functions to implement  cbc-generic (CbcParam) parameters */
+/* Functions to perform actions related to setting parameters */
 
 /*
   Maintainer's utility, scan the parameters and report the ones that are
@@ -44,21 +43,19 @@ int doUnimplementedParam(CoinParam &param)
 
 {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
-
-  CoinParamVec &cbcParameters = cbcSettings->getParameters();
+  CbcParameters parameters = *cbcParam.parameters();
 
   int unimpCnt = 0;
   int maxAcross = 5;
-  for (unsigned i = 0; i < cbcParameters.size(); i++) {
-    if (cbcParameters[i].pushFunc() == 0) {
+  for (int code = CbcParam::FIRSTPARAM + 1;
+       code < CbcParam::LASTPARAM; code++) {
+    if (parameters[code].pushFunc() == 0) {
       if (unimpCnt % maxAcross == 0) {
         std::cout << std::endl;
       } else {
         std::cout << " ";
       }
-      std::cout << cbcParameters[i].name();
+      std::cout << parameters[code].name();
       unimpCnt++;
     }
   }
@@ -101,10 +98,10 @@ int doVersionParam(CoinParam &param)
 
 {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
 
-  std::cout << "Cbc version " << cbcSettings->getVersion() << std::endl;
+  std::cout << "Cbc version " << parameters->getVersion() << std::endl;
 
   return (0);
 }
@@ -121,23 +118,23 @@ int doHelpParam(CoinParam &param)
 
 {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
 
-  CbcParamCode code = static_cast<CbcParamCode>(cbcParam.paramCode());
+  int cbcParamCode = cbcParam.paramCode();
 
-  int verbose = cbcSettings->getVerbose();
+  int verbose = parameters->getVerbose();
   bool shortHelp = ((verbose & 0x01) ? true : false);
   bool longHelp = ((verbose & 0x02) ? true : false);
   bool hidden = ((verbose & 0x08) ? true : false);
 
-  CoinParamVec &cbcParameters = cbcSettings->getParameters();
+  CoinParamVec &paramVec = parameters->paramVec();
   /*
-      Tune up the initial cbcSettings. FULLGENERALQUERY will print normally
+      Tune up the initial parameters. FULLGENERALQUERY will print normally
      hidden params, and a request for long help overrules a request for short
      help.
     */
-  if (code == FULLGENERALQUERY) {
+  if (cbcParamCode == CbcParam::FULLGENERALQUERY) {
     hidden = true;
   }
   if (longHelp) {
@@ -148,7 +145,7 @@ int doHelpParam(CoinParam &param)
 
   std::cout << "\nAvailable commands are:";
   std::string pfx("  ");
-  CoinParamUtils::printHelp(cbcParameters, 0, cbcParameters.size() - 1,
+  CoinParamUtils::printHelp(paramVec, 0, paramVec.size() - 1,
                             pfx, shortHelp, longHelp, hidden);
 
   return (0);
@@ -165,57 +162,57 @@ int pushCbcSolverDblParam(CoinParam &param)
 
 {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
 
   double val = cbcParam.dblVal();
-  CbcParamCode code = static_cast<CbcParamCode>(cbcParam.paramCode());
+  int cbcParamCode = cbcParam.paramCode();
 
   int retval = 0;
   /*
       Figure out what we're doing and set the relevant field.
     */
-  switch (code) {
-   case ARTIFICIALCOST: {
-      cbcSettings->setArtVarMode(CbcSettings::ParamOn, val);
+  switch (cbcParamCode) {
+   case CbcParam::ARTIFICIALCOST: {
+      parameters->setArtVarMode(CbcParameters::ParamOn, val);
       break;
    }
-   case DEXTRA3: {
-      cbcSettings->setExtraDbl3(val);
+   case CbcParam::DEXTRA3: {
+      parameters->setExtraDbl3(val);
       break;
    }
-   case DEXTRA4: {
-      cbcSettings->setExtraDbl4(val);
+   case CbcParam::DEXTRA4: {
+      parameters->setExtraDbl4(val);
       break;
    }
-   case DEXTRA5: {
-      cbcSettings->setExtraDbl5(val);
+   case CbcParam::DEXTRA5: {
+      parameters->setExtraDbl5(val);
       break;
    }
-   case DJFIX: {
-      cbcSettings->setDjFixMode(CbcSettings::ParamOn, val);
+   case CbcParam::DJFIX: {
+      parameters->setDjFixMode(CbcParameters::ParamOn, val);
       break;
    }
-   case FAKECUTOFF: {
-      cbcSettings->setFeasPumpFakeCutoff(val);
+   case CbcParam::FAKECUTOFF: {
+      parameters->setFeasPumpFakeCutoff(val);
       break;
    }
-   case FAKEINCREMENT: {
-      cbcSettings->setFeasPumpFakeIncrement(val);
+   case CbcParam::FAKEINCREMENT: {
+      parameters->setFeasPumpFakeIncrement(val);
       break;
    }
-   case SMALLBAB: {
-      cbcSettings->setSmallBab(val);
+   case CbcParam::SMALLBAB: {
+      parameters->setSmallBab(val);
       break;
    }
-   case TIGHTENFACTOR: {
-      cbcSettings->setTightenFactor(val);
+   case CbcParam::TIGHTENFACTOR: {
+      parameters->setTightenFactor(val);
       break;
    }
      
    default: {
-      std::cerr << "pushCbcSolverDbl: no equivalent CbcSettings field for "
-                << "parameter code `" << code << "'." << std::endl;
+      std::cerr << "pushCbcSolverDbl: no equivalent CbcParameters field for "
+                << "parameter code `" << cbcParamCode << "'." << std::endl;
       retval = -1;
       break;
    }
@@ -234,166 +231,166 @@ int pushCbcSolverDblParam(CoinParam &param)
 int pushCbcSolverIntParam(CoinParam &param)
 {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
 
   int val = cbcParam.intVal();
-  CbcParamCode code = static_cast<CbcParamCode>(cbcParam.paramCode());
+  int cbcParamCode = cbcParam.paramCode();
 
   int retval = 0;
   /*
       Figure out what we're doing and set the relevant field.
     */
-  switch (code) {
-  case BKPIVOTINGSTRATEGY: {
-    cbcSettings->setBkPivotStrategy(val);
+  switch (cbcParamCode) {
+  case CbcParam::BKPIVOTINGSTRATEGY: {
+    parameters->setBkPivotStrategy(val);
     break;
   }
-  case BKMAXCALLS: {
-    cbcSettings->setBkMaxCalls(val);
+  case CbcParam::BKMAXCALLS: {
+    parameters->setBkMaxCalls(val);
     break;
   }
-  case BKCLQEXTMETHOD: {
-    cbcSettings->setBkClqExtMethod(val);
+  case CbcParam::BKCLQEXTMETHOD: {
+    parameters->setBkClqExtMethod(val);
     break;
   }
-  case CPP: {
-    cbcSettings->setCppMode(val);
+  case CbcParam::CPP: {
+    parameters->setCppMode(val);
     break;
   }
-  case CUTDEPTH: {
-    cbcSettings->setCutDepth(val);
+  case CbcParam::CUTDEPTH: {
+    parameters->setCutDepth(val);
     break;
   }
-  case CUTLENGTH: {
-    cbcSettings->setCutLength(val);
+  case CbcParam::CUTLENGTH: {
+    parameters->setCutLength(val);
     break;
   }
-  case CUTPASSINTREE: {
-    cbcSettings->setCutPassInTree(val);
+  case CbcParam::CUTPASSINTREE: {
+    parameters->setCutPassInTree(val);
     break;
   }
-  case DEPTHMINIBAB: {
-    cbcSettings->setDepthMiniBaB(val);
+  case CbcParam::DEPTHMINIBAB: {
+    parameters->setDepthMiniBaB(val);
     break;
   }
-  case DIVEOPT: {
-    cbcSettings->setDiveOpt(val);
+  case CbcParam::DIVEOPT: {
+    parameters->setDiveOpt(val);
     break;
   }
-  case DIVEOPTSOLVES: {
-    cbcSettings->setDiveOptSolves(val);
+  case CbcParam::DIVEOPTSOLVES: {
+    parameters->setDiveOptSolves(val);
     break;
   }
-  case EXPERIMENT: {
-    cbcSettings->setExperimentMode(val);
+  case CbcParam::EXPERIMENT: {
+    parameters->setExperimentMode(val);
     break;
   }
-  case EXTRA1: {
-    cbcSettings->setExtraIntParam1(val);
+  case CbcParam::EXTRA1: {
+    parameters->setExtraIntParam1(val);
     break;
   }
-  case EXTRA2: {
-    cbcSettings->setExtraIntParam2(val);
+  case CbcParam::EXTRA2: {
+    parameters->setExtraIntParam2(val);
     break;
   }
-  case EXTRA3: {
-    cbcSettings->setExtraIntParam3(val);
+  case CbcParam::EXTRA3: {
+    parameters->setExtraIntParam3(val);
     break;
   }
-  case EXTRA4: {
-    cbcSettings->setExtraIntParam4(val);
+  case CbcParam::EXTRA4: {
+    parameters->setExtraIntParam4(val);
     break;
   }
-  case FPUMPITS: {
-    cbcSettings->setFeasPumpIters(val);
+  case CbcParam::FPUMPITS: {
+    parameters->setFeasPumpIters(val);
     break;
   }
-  case FPUMPTUNE: {
-    cbcSettings->setFeasPumpTune(val);
+  case CbcParam::FPUMPTUNE: {
+    parameters->setFeasPumpTune(val);
     break;
   }
-  case FPUMPTUNE2: {
-    cbcSettings->setFeasPumpTune2(val);
+  case CbcParam::FPUMPTUNE2: {
+    parameters->setFeasPumpTune2(val);
     break;
   }
-  case HEUROPTIONS: {
-    cbcSettings->setHeurOptions(val);
+  case CbcParam::HEUROPTIONS: {
+    parameters->setHeurOptions(val);
     break;
   }
-  case LOGLEVEL: {
-    cbcSettings->setLogLevel(val);
+  case CbcParam::LOGLEVEL: {
+    parameters->setLogLevel(val);
     break;
   }
-  case LPLOGLEVEL: {
-    cbcSettings->setLpLogLevel(val);
+  case CbcParam::LPLOGLEVEL: {
+    parameters->setLpLogLevel(val);
     break;
   }
-  case MAXSAVEDSOLS: {
-    cbcSettings->setMaxSavedSols(val);
+  case CbcParam::MAXSAVEDSOLS: {
+    parameters->setMaxSavedSols(val);
     break;
   }
-  case MAXSLOWCUTS: {
-    cbcSettings->setMaxSlowCuts(val);
+  case CbcParam::MAXSLOWCUTS: {
+    parameters->setMaxSlowCuts(val);
     break;
   }
-  case MOREMOREMIPOPTIONS: {
-    cbcSettings->setMoreMoreOptions(val);
+  case CbcParam::MOREMOREMIPOPTIONS: {
+    parameters->setMoreMoreOptions(val);
     break;
   }
-  case MULTIPLEROOTS: {
-    cbcSettings->setMultipleRoots(val);
+  case CbcParam::MULTIPLEROOTS: {
+    parameters->setMultipleRoots(val);
     break;
   }
-  case ODDWEXTMETHOD: {
-    cbcSettings->setOddWextMethod(val);
+  case CbcParam::ODDWEXTMETHOD: {
+    parameters->setOddWextMethod(val);
     break;
   }
-  case OUTPUTFORMAT: {
-    cbcSettings->setOutputFormat(val);
+  case CbcParam::OUTPUTFORMAT: {
+    parameters->setOutputFormat(val);
     break;
   }
-  case PRINTOPTIONS: {
-    cbcSettings->setPrintOptions(val);
+  case CbcParam::PRINTOPTIONS: {
+    parameters->setPrintOptions(val);
     break;
   }
-  case PROCESSTUNE: {
-    cbcSettings->setProcessTune(val);
+  case CbcParam::PROCESSTUNE: {
+    parameters->setProcessTune(val);
     break;
   }
-  case RANDOMSEED: {
-    cbcSettings->setRandomSeed(val);
+  case CbcParam::RANDOMSEED: {
+    parameters->setRandomSeed(val);
     break;
   }
-  case STRONGSTRATEGY: {
-    cbcSettings->setStrongStrategy(val);
+  case CbcParam::STRONGSTRATEGY: {
+    parameters->setStrongStrategy(val);
     break;
   }
-  case TESTOSI: {
-    cbcSettings->setTestOsi(val);
+  case CbcParam::TESTOSI: {
+    parameters->setTestOsi(val);
     break;
   }
 #ifdef CBC_THREADS
-  case THREADS: {
-    cbcSettings->setThreads(val);
+  case CbcParam::THREADS: {
+    parameters->setThreads(val);
     break;
   }
 #endif
-  case USERCBC: {
-    cbcSettings->setUserCbc(val);
+  case CbcParam::USERCBC: {
+    parameters->setUserCbc(val);
     break;
   }
-  case VERBOSE: {
-    cbcSettings->setVerbose(val);
+  case CbcParam::VERBOSE: {
+    parameters->setVerbose(val);
     break;
   }
-  case VUBTRY: {
-    cbcSettings->setVubTry(val);
+  case CbcParam::VUBTRY: {
+    parameters->setVubTry(val);
     break;
   }
   default: {
     std::cerr << "pushCbcSolverInt: no method for storing "
-              << "parameter code `" << code << "'." << std::endl;
+              << "parameter code `" << cbcParamCode << "'." << std::endl;
     retval = -1;
     break;
   }
@@ -412,69 +409,69 @@ int pushCbcSolverIntParam(CoinParam &param)
 
 int pushCbcSolverKwdParam(CoinParam &param) {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
 
   int mode = cbcParam.modeVal();
-  CbcParamCode code = static_cast<CbcParamCode>(cbcParam.paramCode());
+  int cbcParamCode = cbcParam.paramCode();
 
   int retval = 0;
   /*
       Figure out what we're doing and set the relevant field.
   */
 
-  switch (code) {
-  case COMMANDPRINTLEVEL: {
-    cbcSettings->setCommandDisplayMode(
-                 static_cast<CbcSettings::CommandDisplayMode>(mode));
+  switch (cbcParamCode) {
+  case CbcParam::COMMANDPRINTLEVEL: {
+    parameters->setCommandDisplayMode(
+                 static_cast<CbcParameters::CommandDisplayMode>(mode));
     break;
   }
-  case CLQSTRENGTHENING: {
-    cbcSettings->setClqStrMode(static_cast<CbcSettings::ClqStrMode>(mode));
+  case CbcParam::CLQSTRENGTHENING: {
+    parameters->setClqStrMode(static_cast<CbcParameters::ClqStrMode>(mode));
     break;
   }
-  case BRANCHPRIORITY: {
-    cbcSettings->setBranchingPriorityMode(CbcSettings::BPOff);
+  case CbcParam::BRANCHPRIORITY: {
+    parameters->setBranchingPriorityMode(CbcParameters::BPOff);
     break;
   }
-  case CUTOFFCONSTRAINT: {
-    cbcSettings->setCutoffMode(static_cast<CbcSettings::CutoffMode>(mode));
+  case CbcParam::CUTOFFCONSTRAINT: {
+    parameters->setCutoffMode(static_cast<CbcParameters::CutoffMode>(mode));
     break;
   }
-  case INTPRINT: {
-    cbcSettings->setIntPrintMode(
-        static_cast<CbcSettings::IntPrintMode>(mode));
+  case CbcParam::INTPRINT: {
+    parameters->setIntPrintMode(
+        static_cast<CbcParameters::IntPrintMode>(mode));
     break;
   }
-  case NODESTRATEGY: {
-    cbcSettings->setNodeStrategy(
-        static_cast<CbcSettings::NodeStrategy>(mode));
+  case CbcParam::NODESTRATEGY: {
+    parameters->setNodeStrategy(
+        static_cast<CbcParameters::NodeStrategy>(mode));
     break;
   }
-  case ORBITAL: {
-    cbcSettings->setOrbitalStrategy(
-        static_cast<CbcSettings::OrbitalStrategy>(mode));
+  case CbcParam::ORBITAL: {
+    parameters->setOrbitalStrategy(
+        static_cast<CbcParameters::OrbitalStrategy>(mode));
     break;
   }
-  case PREPROCESS: {
-    cbcSettings->setIPPMode(static_cast<CbcSettings::IPPMode>(mode));
+  case CbcParam::PREPROCESS: {
+    parameters->setIPPMode(static_cast<CbcParameters::IPPMode>(mode));
     break;
   }
-  case SOSPRIORITIZE: {
-    cbcSettings->setSOSStrategy(static_cast<CbcSettings::SOSStrategy>(mode));
+  case CbcParam::SOSPRIORITIZE: {
+    parameters->setSOSStrategy(static_cast<CbcParameters::SOSStrategy>(mode));
     break;
   }
-  case STRATEGY: {
-    cbcSettings->setStrategyMode(
-        static_cast<CbcSettings::StrategyMode>(mode));
+  case CbcParam::STRATEGY: {
+    parameters->setStrategyMode(
+        static_cast<CbcParameters::StrategyMode>(mode));
     break;
   }
-  case TIMEMODE: {
-    cbcSettings->setClockType(static_cast<CbcSettings::ClockType>(mode));
+  case CbcParam::TIMEMODE: {
+    parameters->setClockType(static_cast<CbcParameters::ClockType>(mode));
     break;
   }
-  case USECGRAPH: {
-    cbcSettings->setCGraphMode(static_cast<CbcSettings::CGraphMode>(mode));
+  case CbcParam::USECGRAPH: {
+    parameters->setCGraphMode(static_cast<CbcParameters::CGraphMode>(mode));
     break;
   }
   default:
@@ -495,43 +492,43 @@ int pushCbcSolverKwdParam(CoinParam &param) {
 
 int pushCbcSolverBoolParam(CoinParam &param) {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
 
   // This is ugly, get keyword and set parameter with it instead.
-  CbcSettings::OnOffMode mode =
-      static_cast<CbcSettings::OnOffMode>(cbcParam.modeVal());
-  CbcParamCode code = static_cast<CbcParamCode>(cbcParam.paramCode());
+  CbcParameters::OnOffMode mode =
+      static_cast<CbcParameters::OnOffMode>(cbcParam.modeVal());
+  int cbcParamCode = cbcParam.paramCode();
 
   int retval = 0;
 
-  switch (code) {
-  case CPX: {
-    cbcSettings->setCPXMode(mode);
+  switch (cbcParamCode) {
+  case CbcParam::CPX: {
+    parameters->setCPXMode(mode);
     break;
   }
-  case DOHEURISTIC: {
-    cbcSettings->setDoHeuristicMode(mode);
+  case CbcParam::DOHEURISTIC: {
+    parameters->setDoHeuristicMode(mode);
     break;
   }
-  case ERRORSALLOWED: {
-    cbcSettings->setImportErrorsMode(mode);
+  case CbcParam::ERRORSALLOWED: {
+    parameters->setImportErrorsMode(mode);
     break;
   }
-  case MESSAGES: {
-    cbcSettings->setMessagePrefixMode(mode);
+  case CbcParam::MESSAGES: {
+    parameters->setMessagePrefixMode(mode);
     break;
   }
-  case PREPROCNAMES: {
-    cbcSettings->setPreProcNamesMode(mode);
+  case CbcParam::PREPROCNAMES: {
+    parameters->setPreProcNamesMode(mode);
     break;
   }
-  case SOS: {
-    cbcSettings->setSOSMode(mode);
+  case CbcParam::SOS: {
+    parameters->setSOSMode(mode);
     break;
   }
-  case USESOLUTION: {
-    cbcSettings->setUseSolutionMode(mode);
+  case CbcParam::USESOLUTION: {
+    parameters->setUseSolutionMode(mode);
     break;
   }
   default:
@@ -550,13 +547,13 @@ int pushCbcSolverBoolParam(CoinParam &param) {
 
 int pushCbcSolverHeurParam(CoinParam &param) {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
 
   // This is ugly, get keyword and set parameter with it instead.
-  CbcSettings::HeurMode mode =
-      static_cast<CbcSettings::HeurMode>(cbcParam.modeVal());
-  CbcParamCode code = static_cast<CbcParamCode>(cbcParam.paramCode());
+  CbcParameters::HeurMode mode =
+      static_cast<CbcParameters::HeurMode>(cbcParam.modeVal());
+  int cbcParamCode = cbcParam.paramCode();
 
   int retval = 0;
 
@@ -565,121 +562,121 @@ int pushCbcSolverHeurParam(CoinParam &param) {
       control block. We shouldn't need the default case, but some compilers will
       complain if it's missing.
   */
-  switch (code) {
-  case HEURISTICSTRATEGY: {
-    cbcSettings->setGreedyCoverMode(mode);
-    cbcSettings->setGreedyEqualityMode(mode);
-    cbcSettings->setCrossoverMode(mode);
-    cbcSettings->setDinsMode(mode);
-    cbcSettings->setDiveCoefficientMode(mode);
-    cbcSettings->setDiveFractionalMode(mode);
-    cbcSettings->setDiveGuidedMode(mode);
-    cbcSettings->setDiveLineSearchMode(mode);
-    cbcSettings->setDivePseudocostMode(mode);
-    cbcSettings->setDiveVectorLengthMode(mode);
-    cbcSettings->setDWMode(mode);
-    cbcSettings->setNaiveHeurMode(mode);
-    cbcSettings->setPivotAndFixMode(mode);
+  switch (cbcParamCode) {
+  case CbcParam::HEURISTICSTRATEGY: {
+    parameters->setGreedyCoverMode(mode);
+    parameters->setGreedyEqualityMode(mode);
+    parameters->setCrossoverMode(mode);
+    parameters->setDinsMode(mode);
+    parameters->setDiveCoefficientMode(mode);
+    parameters->setDiveFractionalMode(mode);
+    parameters->setDiveGuidedMode(mode);
+    parameters->setDiveLineSearchMode(mode);
+    parameters->setDivePseudocostMode(mode);
+    parameters->setDiveVectorLengthMode(mode);
+    parameters->setDWMode(mode);
+    parameters->setNaiveHeurMode(mode);
+    parameters->setPivotAndFixMode(mode);
 #if 0
-      cbcSettings->setPivotAndComplementMode(mode);
+      parameters->setPivotAndComplementMode(mode);
 #endif
-    cbcSettings->setProximityMode(mode);
-    cbcSettings->setRandRoundMode(mode);
-    cbcSettings->setRensMode(mode);
-    cbcSettings->setRinsMode(mode);
-    cbcSettings->setRoundingMode(mode);
-    cbcSettings->setVndMode(mode);
+    parameters->setProximityMode(mode);
+    parameters->setRandRoundMode(mode);
+    parameters->setRensMode(mode);
+    parameters->setRinsMode(mode);
+    parameters->setRoundingMode(mode);
+    parameters->setVndMode(mode);
     break;
   }
-  case COMBINE: {
-    cbcSettings->setCombineMode(mode);
+  case CbcParam::COMBINE: {
+    parameters->setCombineMode(mode);
     break;
   }
-  case CROSSOVER: {
-    cbcSettings->setCrossoverMode(mode);
+  case CbcParam::CROSSOVER: {
+    parameters->setCrossoverMode(mode);
     break;
   }
-  case DINS: {
-    cbcSettings->setDinsMode(mode);
+  case CbcParam::DINS: {
+    parameters->setDinsMode(mode);
     break;
   }
-  case DIVINGC: {
-    cbcSettings->setDiveCoefficientMode(mode);
+  case CbcParam::DIVINGC: {
+    parameters->setDiveCoefficientMode(mode);
     break;
   }
-  case DIVINGF: {
-    cbcSettings->setDiveFractionalMode(mode);
+  case CbcParam::DIVINGF: {
+    parameters->setDiveFractionalMode(mode);
     break;
   }
-  case DIVINGG: {
-    cbcSettings->setDiveGuidedMode(mode);
+  case CbcParam::DIVINGG: {
+    parameters->setDiveGuidedMode(mode);
     break;
   }
-  case DIVINGL: {
-    cbcSettings->setDiveLineSearchMode(mode);
+  case CbcParam::DIVINGL: {
+    parameters->setDiveLineSearchMode(mode);
     break;
   }
-  case DIVINGP: {
-    cbcSettings->setDivePseudocostMode(mode);
+  case CbcParam::DIVINGP: {
+    parameters->setDivePseudocostMode(mode);
     break;
   }
-  case DIVINGS: {
-    cbcSettings->setDiveRandomMode(mode);
+  case CbcParam::DIVINGS: {
+    parameters->setDiveRandomMode(mode);
     break;
   }
-  case DIVINGV: {
-    cbcSettings->setDiveVectorLengthMode(mode);
+  case CbcParam::DIVINGV: {
+    parameters->setDiveVectorLengthMode(mode);
     break;
   }
-  case DW: {
-    cbcSettings->setDWMode(mode);
+  case CbcParam::DW: {
+    parameters->setDWMode(mode);
     break;
   }
-  case FPUMP: {
-    cbcSettings->setFeasPumpMode(mode);
+  case CbcParam::FPUMP: {
+    parameters->setFeasPumpMode(mode);
     break;
   }
-  case GREEDY: {
-    cbcSettings->setGreedyCoverMode(mode);
-    cbcSettings->setGreedyEqualityMode(mode);
+  case CbcParam::GREEDY: {
+    parameters->setGreedyCoverMode(mode);
+    parameters->setGreedyEqualityMode(mode);
     break;
   }
-  case NAIVE: {
-    cbcSettings->setNaiveHeurMode(mode);
+  case CbcParam::NAIVE: {
+    parameters->setNaiveHeurMode(mode);
     break;
   }
-  case PIVOTANDFIX: {
-    cbcSettings->setPivotAndFixMode(mode);
+  case CbcParam::PIVOTANDFIX: {
+    parameters->setPivotAndFixMode(mode);
     break;
   }
 #if 0
-   case PIVOTANDCOMPLEMENT: {
-      cbcSettings->setPivotAndComplementMode(mode);
+   case CbcParam::PIVOTANDCOMPLEMENT: {
+      parameters->setPivotAndComplementMode(mode);
       break;
    }
 #endif
-  case PROXIMITY: {
-    cbcSettings->setProximityMode(mode);
+  case CbcParam::PROXIMITY: {
+    parameters->setProximityMode(mode);
     break;
   }
-  case RANDROUND: {
-    cbcSettings->setRandRoundMode(mode);
+  case CbcParam::RANDROUND: {
+    parameters->setRandRoundMode(mode);
     break;
   }
-  case RENS: {
-    cbcSettings->setRensMode(mode);
+  case CbcParam::RENS: {
+    parameters->setRensMode(mode);
     break;
   }
-  case RINS: {
-    cbcSettings->setRinsMode(mode);
+  case CbcParam::RINS: {
+    parameters->setRinsMode(mode);
     break;
   }
-  case ROUNDING: {
-    cbcSettings->setRoundingMode(mode);
+  case CbcParam::ROUNDING: {
+    parameters->setRoundingMode(mode);
     break;
   }
-  case VND: {
-    cbcSettings->setVndMode(mode);
+  case CbcParam::VND: {
+    parameters->setVndMode(mode);
     break;
   }
   default:
@@ -700,28 +697,28 @@ int pushCbcSolverStrParam(CoinParam &param)
 
 {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
 
   std::string str = cbcParam.strVal();
-  CbcParamCode code = static_cast<CbcParamCode>(cbcParam.paramCode());
+  int cbcParamCode = cbcParam.paramCode();
 
   int retval = 0;
   /*
       Figure out what we're doing and set the relevant field.
     */
-  switch (code) {
-  case DIRECTORY: {
+  switch (cbcParamCode) {
+  case CbcParam::DIRECTORY: {
     char dirSep = CoinFindDirSeparator();
     if (str[str.length() - 1] != dirSep) {
       str += dirSep;
     }
-    cbcSettings->setDefaultDirectory(str);
+    parameters->setDefaultDirectory(str);
     break;
   }
   default: {
-    std::cerr << "pushCbcSolverStr: no equivalent CbcSettings field for "
-              << "parameter code `" << code << "'." << std::endl;
+    std::cerr << "pushCbcSolverStr: no equivalent CbcParameters field for "
+              << "parameter code `" << cbcParamCode << "'." << std::endl;
     retval = -1;
     break;
   }
@@ -741,12 +738,12 @@ int pushCbcSolverCutParam(CoinParam &param)
 
 {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
 
-  CbcSettings::CGMode mode =
-      static_cast<CbcSettings::CGMode>(cbcParam.modeVal());
-  CbcParamCode code = static_cast<CbcParamCode>(cbcParam.paramCode());
+  CbcParameters::CGMode mode =
+      static_cast<CbcParameters::CGMode>(cbcParam.modeVal());
+  int cbcParamCode = cbcParam.paramCode();
   /*
       Setup to return nonfatal/fatal error (1/-1) by default, so that all we
      need to do is correct to 0 (no error) if we're successful.
@@ -764,88 +761,88 @@ int pushCbcSolverCutParam(CoinParam &param)
       control block. We shouldn't need the default case, but some compilers will
       complain if it's missing.
   */
-  switch (code) {
-  case CLIQUECUTS: {
-    cbcSettings->setCliqueMode(mode);
+  switch (cbcParamCode) {
+  case CbcParam::CLIQUECUTS: {
+    parameters->setCliqueMode(mode);
     break;
   }
-  case FLOWCUTS: {
-    cbcSettings->setFlowMode(mode);
+  case CbcParam::FLOWCUTS: {
+    parameters->setFlowMode(mode);
     break;
   }
-  case GMICUTS: {
-    cbcSettings->setGMIMode(mode);
+  case CbcParam::GMICUTS: {
+    parameters->setGMIMode(mode);
     break;
   }
-  case GOMORYCUTS: {
-    cbcSettings->setGomoryMode(mode);
+  case CbcParam::GOMORYCUTS: {
+    parameters->setGomoryMode(mode);
     break;
   }
-  case KNAPSACKCUTS: {
-    cbcSettings->setKnapsackMode(mode);
+  case CbcParam::KNAPSACKCUTS: {
+    parameters->setKnapsackMode(mode);
     break;
   }
-  case LAGOMORYCUTS: {
-    cbcSettings->setLaGomoryMode(mode);
+  case CbcParam::LAGOMORYCUTS: {
+    parameters->setLaGomoryMode(mode);
     break;
   }
-  case LANDPCUTS: {
-    cbcSettings->setLandPMode(mode);
+  case CbcParam::LANDPCUTS: {
+    parameters->setLandPMode(mode);
     break;
   }
-  case LATWOMIRCUTS: {
-    cbcSettings->setLaTwomirMode(mode);
+  case CbcParam::LATWOMIRCUTS: {
+    parameters->setLaTwomirMode(mode);
     break;
   }
-  case MIRCUTS: {
-    cbcSettings->setMirMode(mode);
+  case CbcParam::MIRCUTS: {
+    parameters->setMirMode(mode);
     break;
   }
-  case ODDWHEELCUTS: {
-    cbcSettings->setOddWheelMode(mode);
+  case CbcParam::ODDWHEELCUTS: {
+    parameters->setOddWheelMode(mode);
     break;
   }
-  case PROBINGCUTS: {
-    cbcSettings->setProbingMode(mode);
+  case CbcParam::PROBINGCUTS: {
+    parameters->setProbingMode(mode);
     break;
   }
-  case REDSPLITCUTS: {
-    cbcSettings->setRedSplitMode(mode);
+  case CbcParam::REDSPLITCUTS: {
+    parameters->setRedSplitMode(mode);
     break;
   }
-  case REDSPLIT2CUTS: {
-    cbcSettings->setRedSplit2Mode(mode);
+  case CbcParam::REDSPLIT2CUTS: {
+    parameters->setRedSplit2Mode(mode);
     break;
   }
-  case RESIDCAPCUTS: {
-    cbcSettings->setResidCapMode(mode);
+  case CbcParam::RESIDCAPCUTS: {
+    parameters->setResidCapMode(mode);
     break;
   }
-  case TWOMIRCUTS: {
-    cbcSettings->setTwomirMode(mode);
+  case CbcParam::TWOMIRCUTS: {
+    parameters->setTwomirMode(mode);
     break;
   }
-  case ZEROHALFCUTS: {
-    cbcSettings->setZeroHalfMode(mode);
+  case CbcParam::ZEROHALFCUTS: {
+    parameters->setZeroHalfMode(mode);
     break;
   }
-  case CUTSTRATEGY: {
-    cbcSettings->setCliqueMode(mode);
-    cbcSettings->setFlowMode(mode);
-    cbcSettings->setGMIMode(mode);
-    cbcSettings->setGomoryMode(mode);
-    cbcSettings->setKnapsackMode(mode);
-    cbcSettings->setLaGomoryMode(mode);
-    cbcSettings->setLandPMode(mode);
-    cbcSettings->setLaTwomirMode(mode);
-    cbcSettings->setMirMode(mode);
-    cbcSettings->setOddWheelMode(mode);
-    cbcSettings->setProbingMode(mode);
-    cbcSettings->setRedSplitMode(mode);
-    cbcSettings->setRedSplit2Mode(mode);
-    cbcSettings->setRedSplit2Mode(mode);
-    cbcSettings->setTwomirMode(mode);
-    cbcSettings->setZeroHalfMode(mode);
+  case CbcParam::CUTSTRATEGY: {
+    parameters->setCliqueMode(mode);
+    parameters->setFlowMode(mode);
+    parameters->setGMIMode(mode);
+    parameters->setGomoryMode(mode);
+    parameters->setKnapsackMode(mode);
+    parameters->setLaGomoryMode(mode);
+    parameters->setLandPMode(mode);
+    parameters->setLaTwomirMode(mode);
+    parameters->setMirMode(mode);
+    parameters->setOddWheelMode(mode);
+    parameters->setProbingMode(mode);
+    parameters->setRedSplitMode(mode);
+    parameters->setRedSplit2Mode(mode);
+    parameters->setRedSplit2Mode(mode);
+    parameters->setTwomirMode(mode);
+    parameters->setZeroHalfMode(mode);
     break;
   }
   default:
@@ -866,8 +863,8 @@ int doImportParam(CoinParam &param)
 
 {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
   /*
       Setup to return nonfatal/fatal error (1/-1) by default, so that all we
      need to do is correct to 0 (no error) if we're successful.
@@ -885,7 +882,7 @@ int doImportParam(CoinParam &param)
   std::string field = cbcParam.strVal();
   std::string fileName;
   if (field == "$") {
-     fileName = cbcSettings->getLastMpsIn();
+     fileName = parameters->getLastMpsIn();
     field = fileName;
   } else if (field == "-") {
     fileName = "stdin";
@@ -899,7 +896,7 @@ int doImportParam(CoinParam &param)
       (see the doxygen doc'n for details). The file name returned in field wil
       be the one that actually worked.
     */
-  bool canOpen = fileCoinReadable(fileName, cbcSettings->getDefaultDirectory());
+  bool canOpen = fileCoinReadable(fileName, parameters->getDefaultDirectory());
   if (canOpen == false) {
     std::cout << "Unable to open file `" << fileName << "', original name '"
               << cbcParam.strVal() << "'." << std::endl;
@@ -912,16 +909,16 @@ int doImportParam(CoinParam &param)
     */
   if (!fileAbsPath(fileName)) {
     std::string::size_type pos = fileName.rfind(field);
-    cbcSettings->setLastMpsIn(fileName.substr(pos));
+    parameters->setLastMpsIn(fileName.substr(pos));
   } else {
-     cbcSettings->setLastMpsIn(fileName);
+     parameters->setLastMpsIn(fileName);
   }
   /*
       Try to read the file. Standard OSI doesn't support the Clp extensions for
       keepImportNames and allowImportErrors. It should at least support
       keepImportNames. Status will be zero for a successful read.
     */
-  OsiSolverInterface *lpSolver = cbcSettings->getModel()->solver();
+  OsiSolverInterface *lpSolver = parameters->getModel()->solver();
   int status = lpSolver->readMps(fileName.c_str(), "");
   if (status) {
     std::cout << "There were " << status << " errors on input." << std::endl;
@@ -930,7 +927,7 @@ int doImportParam(CoinParam &param)
   /*
       We have a model! Return success.
     */
-  cbcSettings->setGoodModel(true);
+  parameters->setGoodModel(true);
 
   return (0);
 }
@@ -954,8 +951,8 @@ int doDebugParam(CoinParam &param)
 
 {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
   /*
       Setup to return nonfatal/fatal error (1/-1) by default, so that all we
      need to do is correct to 0 (no error) if we're successful.
@@ -972,7 +969,7 @@ int doDebugParam(CoinParam &param)
     */
   std::string field = cbcParam.strVal();
   if (field == "create" || field == "createAfterPre") {
-     cbcSettings->setDebugCreate(field);
+     parameters->setDebugCreate(field);
      return (0);
   }
   /*
@@ -981,7 +978,7 @@ int doDebugParam(CoinParam &param)
     */
   std::string fileName;
   if (field == "$") {
-     fileName = cbcSettings->getDebugFile();
+     fileName = parameters->getDebugFile();
     field = fileName;
   } else if (field == "-") {
     fileName = "stdin";
@@ -996,7 +993,7 @@ int doDebugParam(CoinParam &param)
      be the one that actually worked. No default prefix --- a debug file is
      assumed to always be in the current directory.
     */
-  bool canOpen = fileCoinReadable(fileName, cbcSettings->getDefaultDirectory());
+  bool canOpen = fileCoinReadable(fileName, parameters->getDefaultDirectory());
   if (canOpen == false) {
     std::cout << "Unable to open file `" << fileName << "', original name '"
               << cbcParam.strVal() << "'." << std::endl;
@@ -1009,9 +1006,9 @@ int doDebugParam(CoinParam &param)
     */
   if (!fileAbsPath(fileName)) {
     std::string::size_type pos = fileName.rfind(field);
-    cbcSettings->setLastMpsIn(fileName.substr(pos));
+    parameters->setLastMpsIn(fileName.substr(pos));
   } else {
-     cbcSettings->setLastMpsIn(fileName);
+     parameters->setLastMpsIn(fileName);
   }
   /*
       Load the primal variable values into the debug solution vector.
@@ -1024,7 +1021,7 @@ int doDebugParam(CoinParam &param)
                              dblUnused, 0, 0, &primals, 0);
 
   if (readOK) {
-     cbcSettings->setDebugSol(numCols, primals);
+     parameters->setDebugSol(numCols, primals);
   } else {
     if (primals) {
       delete[] primals;
@@ -1153,7 +1150,7 @@ int pushCbcModelDblParam(CoinParam &param)
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
   CbcModel *model = cbcParam.model();
   double val = cbcParam.dblVal();
-  CbcParamCode code = static_cast<CbcParamCode>(cbcParam.paramCode());
+  int cbcParamCode = cbcParam.paramCode();
 
   assert(model != 0);
 
@@ -1163,42 +1160,42 @@ int pushCbcModelDblParam(CoinParam &param)
      for CbcDblParam.
     */
   CbcModel::CbcDblParam key;
-  switch (code) {
-  case INTEGERTOLERANCE: {
+  switch (cbcParamCode) {
+  case CbcParam::INTEGERTOLERANCE: {
     key = CbcModel::CbcIntegerTolerance;
     break;
   }
-  case INFEASIBILITYWEIGHT: {
+  case CbcParam::INFEASIBILITYWEIGHT: {
     key = CbcModel::CbcInfeasibilityWeight;
     break;
   }
-  case INCREMENT: {
+  case CbcParam::INCREMENT: {
     key = CbcModel::CbcCutoffIncrement;
     break;
   }
-  case ALLOWABLEGAP: {
+  case CbcParam::ALLOWABLEGAP: {
     key = CbcModel::CbcAllowableGap;
     break;
   }
-  case GAPRATIO: {
+  case CbcParam::GAPRATIO: {
     key = CbcModel::CbcAllowableFractionGap;
     break;
   }
-  case MAXSECONDSNOTIMPROVING: {
+  case CbcParam::MAXSECONDSNOTIMPROVING: {
     model->setMaxSecondsNotImproving(val);
     break;
   }
-  case TIMELIMIT: {
+  case CbcParam::TIMELIMIT: {
     key = CbcModel::CbcMaximumSeconds;
     break;
   }
-  case CUTOFF: {
+  case CbcParam::CUTOFF: {
     key = CbcModel::CbcCurrentCutoff;
     break;
   }
   default: {
     std::cerr << "pushCbcModelDblParam: no equivalent CbcDblParam for "
-              << "parameter code `" << code << "'." << std::endl;
+              << "parameter code `" << cbcParamCode << "'." << std::endl;
     retval = -1;
     break;
   }
@@ -1225,7 +1222,7 @@ int pushCbcModelIntParam(CoinParam &param)
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
   CbcModel *model = cbcParam.model();
   int val = cbcParam.intVal();
-  CbcParamCode code = static_cast<CbcParamCode>(cbcParam.paramCode());
+  int cbcParamCode = cbcParam.paramCode();
 
   assert(model != 0);
 
@@ -1235,32 +1232,32 @@ int pushCbcModelIntParam(CoinParam &param)
      for CbcIntParam, or call the appropriate method directly.
     */
   CbcModel::CbcIntParam key = CbcModel::CbcLastIntParam;
-  switch (code) {
-  case CUTPASS: {
+  switch (cbcParamCode) {
+  case CbcParam::CUTPASS: {
     model->setMaximumCutPassesAtRoot(val);
     break;
   }
-  case LOGLEVEL: {
+  case CbcParam::LOGLEVEL: {
     CoinMessageHandler *hndl = model->messageHandler();
     assert(hndl != 0);
     hndl->setLogLevel(val);
     break;
   }
-  case MAXNODESNOTIMPROVING: {
+  case CbcParam::MAXNODESNOTIMPROVING: {
     model->setMaxNodesNotImproving(val);
     break;
   }
-  case MAXSOLS: {
+  case CbcParam::MAXSOLS: {
     model->setMaxSolutions(val);
     break;
   }
-  case NUMBERBEFORE: {
+  case CbcParam::NUMBERBEFORE: {
     model->setNumberBeforeTrust(val);
     break;
   }
   default: {
     std::cerr << "pushCbcModelIntParam: no equivalent CbcIntParam for "
-              << "parameter code `" << code << "'." << std::endl;
+              << "parameter code `" << cbcParamCode << "'." << std::endl;
     retval = -1;
     break;
   }

@@ -346,12 +346,12 @@ int main(int argc, const char *argv[])
     //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
 #endif
 
-    CbcSettings cbcSettings;
+    CbcParameters parameters;
 #ifndef CBC_NO_INTERRUPT
-    cbcSettings.enableSignalHandler();
+    parameters.enableSignalHandler();
 #endif
     // initialize
-    CbcMain0(model, cbcSettings);
+    CbcMain0(model, parameters);
 
 #ifdef TEST_MESSAGE_HANDLER
     // Set log levels same so can use one message handler
@@ -362,7 +362,7 @@ int main(int argc, const char *argv[])
     setCbcOrClpPrinting(false);
 #endif
 
-    returnCode = CbcMain1(argc, argv, model, dummyCallBack, cbcSettings);
+    returnCode = CbcMain1(argc, argv, model, dummyCallBack, parameters);
   }
 
 #ifdef CLP_DEBUG_MALLOC

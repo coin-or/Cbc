@@ -25,7 +25,7 @@
 #include "CbcModel.hpp"
 
 #include "CbcParam.hpp"
-#include "CbcSettings.hpp"
+#include "CbcParameters.hpp"
 
 /*
   Constructors and destructors
@@ -41,7 +41,7 @@
   Default constructor.
 */
 CbcParam::CbcParam()
-   : CoinParam(), paramCode_(CbcParamCode(0)), settings_(0), model_(0) {
+   : CoinParam(), paramCode_(CbcParamCode(0)), parameters_(0), model_(0) {
   /* Nothing to be done here */
 }
 
@@ -57,7 +57,7 @@ CbcParam::CbcParam(int code, std::string name,
                    CoinDisplayPriority displayPriority)
    : CoinParam(name, help, lower, upper, defaultValue, longHelp,
                displayPriority),
-     paramCode_(code), settings_(0), model_(0) {
+     paramCode_(code), parameters_(0), model_(0) {
   /* Nothing to be done here */
 }
 
@@ -73,7 +73,7 @@ CbcParam::CbcParam(int code, std::string name,
                    CoinDisplayPriority displayPriority)
    : CoinParam(name, help, lower, upper, defaultValue, longHelp,
                 displayPriority),
-     paramCode_(code), settings_(0), model_(0) {
+     paramCode_(code), parameters_(0), model_(0) {
   /* Nothing to be done here */
 }
 
@@ -88,7 +88,7 @@ CbcParam::CbcParam(int code, std::string name,
                    int defaultMode, std::string longHelp,
                    CoinDisplayPriority displayPriority)
     : CoinParam(name, help, defaultKwd, defaultMode, longHelp, displayPriority),
-      paramCode_(code), settings_(0), model_(0) {
+      paramCode_(code), parameters_(0), model_(0) {
   /* Nothing to be done here */
 }
 
@@ -103,7 +103,7 @@ CbcParam::CbcParam(int code, std::string name,
                    std::string longHelp,
                    CoinDisplayPriority displayPriority)
     : CoinParam(name, help, defaultValue, longHelp, displayPriority),
-      paramCode_(code), settings_(0), model_(0) {
+      paramCode_(code), parameters_(0), model_(0) {
   /* Nothing to be done here */
 }
 
@@ -117,7 +117,7 @@ CbcParam::CbcParam(int code, std::string name,
                    std::string help, std::string longHelp,
                    CoinDisplayPriority displayPriority)
     : CoinParam(name, help, longHelp, displayPriority), paramCode_(code),
-      settings_(0), model_(0) {
+      parameters_(0), model_(0) {
   /* Nothing to be done here */
 }
 
@@ -128,7 +128,7 @@ CbcParam::CbcParam(int code, std::string name,
   Copy constructor.
 */
 CbcParam::CbcParam(const CbcParam &orig)
-   : CoinParam(orig), paramCode_(orig.paramCode_), settings_(orig.settings_),
+   : CoinParam(orig), paramCode_(orig.paramCode_), parameters_(orig.parameters_),
      model_(orig.model_) {
   /* Nothing to be done here */
 }
@@ -163,7 +163,7 @@ CbcParam &CbcParam::operator=(const CbcParam &rhs) {
 
     paramCode_ = rhs.paramCode_;
     model_ = rhs.model_;
-    settings_ = rhs.settings_;
+    parameters_ = rhs.parameters_;
   }
 
   return *this;

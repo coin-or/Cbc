@@ -28,13 +28,12 @@
 #include "OsiCpxSolverInterface.hpp"
 #endif
 
-#include "ClpParam.hpp"
+#include "ClpParameters.hpp"
 
 #include "CglCutGenerator.hpp"
 
 #include "CbcModel.hpp"
-#include "CbcParam.hpp"
-#include "CbcSettings.hpp"
+#include "CbcParameters.hpp"
 
 class CbcUser;
 class CbcStopNow;
@@ -137,13 +136,13 @@ public:
   ///@name useful stuff
   //@{
   /// Get int value
-  int intValue(CbcParamCode code) const;
+  int intValue(int code);
   /// Set int value
-  void setIntValue(CbcParamCode code, int value);
+  void setIntValue(int code, int value);
   /// Get double value
-  double doubleValue(CbcParamCode code) const;
+  double doubleValue(int code);
   /// Set double value
-  void setDoubleValue(CbcParamCode code, double value);
+  void setDoubleValue(int code, double value);
   /// User function (NULL if no match)
   CbcUser *userFunction(const char *name) const;
   /// Return original Cbc model
@@ -240,8 +239,8 @@ private:
   /// Cpu time at instantiation
   double startTime_;
   /// Parameters and values
-  std::vector< ClpParam > clpParameters_;
-  std::vector< CbcParam > cbcParameters_;
+  ClpParameters clpParameters_;
+  CbcParameters parameters_;
   /// Whether to do miplib test
   bool doMiplib_;
   /// Whether to print to std::cout
@@ -290,7 +289,7 @@ public:
 
   /// Get useful stuff
   virtual void fillInformation(CbcSolver * /*model*/,
-    CbcSettings & /*info*/) {}
+    CbcParameters & /*info*/) {}
   //@}
 
   ///@name usage methods
@@ -410,12 +409,12 @@ private:
 
 // When we want to load up CbcModel with options first
 CBCLIB_EXPORT
-void CbcMain0(CbcModel &babSolver, CbcSettings &solverSettings);
+void CbcMain0(CbcModel &babSolver, CbcParameters &parameters);
 CBCLIB_EXPORT
-int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcSettings &solverSettings);
+int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcParameters &parameters);
 CBCLIB_EXPORT
 int CbcMain1(int argc, const char *argv[], CbcModel &babSolver,
-	     CbcSettings &solverSettings);
+	     CbcParameters &parameters);
 
 CBCLIB_EXPORT
 int CbcMain(int argc, const char *argv[], CbcModel &babSolver);

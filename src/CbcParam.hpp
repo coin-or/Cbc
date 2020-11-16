@@ -20,7 +20,7 @@
  */
 
 class CbcModel;
-class CbcSettings;
+class CbcParameters;
 
 /*! \class CbcParam
     \brief Class for cbc-generic control parameters
@@ -33,7 +33,233 @@ class CbcParam : public CoinParam {
 
 public:
 
-  /*! \name Constructors and Destructors
+   /*! \name Enumeration types used to index parameters */
+   //@{
+   
+   /*! \brief Codes to specify psramters */
+
+   enum CbcParamCode {
+      FIRSTPARAM = 0,
+      
+      // Unused paramters that we may delete
+      FIRSTUNUSEDPARAM,
+      BRANCHSTRATEGY,
+      CLEARCUTS,
+      SOLVER,
+      LASTUNUSEDPARAM,
+      
+      // Help and Information Parameters
+      FIRSTHELPPARAM,
+      GENERALQUERY,
+      FULLGENERALQUERY,
+      HELP,
+      PRINTVERSION,
+      LASTHELPPARAM,
+      
+      // Action Parameters
+      FIRSTACTIONPARAM,
+      BAB,
+      DUMMY,
+      ENVIRONMENT,
+      EXIT,
+      EXPORT,
+      GMPL_SOLUTION,
+      IMPORT,
+      MIPLIB,
+      OUTDUPROWS,
+      RESTORE,
+      SAVE,
+      SHOWUNIMP,
+      SOLVECONTINUOUS,
+      STATISTICS,
+      STDIN,
+      STRENGTHEN,
+      UNITTEST,
+      LASTACTIONPARAM,
+      
+      // String (Directory) Parameters
+      FIRSTSTRPARAM,
+      CSVSTATISTICS,
+      DEBUG,
+      DIRECTORY,
+      DIRSAMPLE,
+      DIRNETLIB,
+      DIRMIPLIB,
+      MIPSTART,
+      NEXTBESTSOLUTION,
+      PRINTMASK,
+      PRIORITYIN,
+      SOLUTION,
+      SAVESOL,
+      LASTSTRPARAM,
+      
+      // Cut Parameters
+      FIRSTCUTPARAM,
+      CUTSTRATEGY,
+      CLIQUECUTS,
+      FLOWCUTS,
+      GMICUTS,
+      GOMORYCUTS,
+      KNAPSACKCUTS,
+      LAGOMORYCUTS,
+      LANDPCUTS,
+      LATWOMIRCUTS,
+      MIRCUTS,
+      ODDHOLECUTS, // Not used
+      ODDWHEELCUTS,
+      PROBINGCUTS,
+      REDSPLITCUTS,
+      REDSPLIT2CUTS,
+      RESIDCAPCUTS,
+      TWOMIRCUTS,
+      ZEROHALFCUTS,
+      LASTCUTPARAM,
+      
+      // Heuristic Parameters
+      FIRSTHEURPARAM,
+      COMBINE,
+      CROSSOVER,
+      DINS,
+      DIVINGC,
+      DIVINGF,
+      DIVINGG,
+      DIVINGL,
+      DIVINGP,
+      DIVINGS,
+      DIVINGV,
+      DW,
+      FPUMP,
+      GREEDY,
+      HEURISTICSTRATEGY,
+      LOCALTREE,
+      NAIVE,
+      PIVOTANDFIX,
+      PIVOTANDCOMPLEMENT,
+      PROXIMITY,
+      RANDROUND,
+      RENS,
+      RINS,
+      ROUNDING,
+      VND,
+      LASTHEURPARAM,
+      
+      // On/Off Parameters
+      FIRSTBOOLPARAM,
+      CPX,
+      DOHEURISTIC,
+      ERRORSALLOWED,
+      EXTRAVARIABLES,
+      MESSAGES,
+      PREPROCNAMES,
+      SOS,
+      USESOLUTION,
+      LASTBOOLPARAM,
+      
+      // Keyword Parameters
+      FIRSTKWDPARAM,
+      COMMANDPRINTLEVEL,
+      CLQSTRENGTHENING,
+      BRANCHPRIORITY,
+      CUTOFFCONSTRAINT,
+      INTPRINT,
+      NODESTRATEGY,
+      ORBITAL,
+      PREPROCESS,
+      SOSPRIORITIZE,
+      STRATEGY,
+      TIMEMODE,
+      USECGRAPH,
+      LASTKWDPARAM,
+      
+      // Integer Parameters
+      FIRSTINTPARAM,
+      BKPIVOTINGSTRATEGY,
+      BKMAXCALLS,
+      BKCLQEXTMETHOD,
+      CPP,
+      CUTDEPTH,
+      CUTLENGTH,
+      CUTPASSINTREE,
+      DEPTHMINIBAB,
+      DIVEOPT,
+      DIVEOPTSOLVES,
+      EXPERIMENT,
+      EXTRA1,
+      EXTRA2,
+      EXTRA3,
+      EXTRA4,
+      FPUMPITS,
+      FPUMPTUNE,
+      FPUMPTUNE2,
+      HEUROPTIONS,
+      LOGLEVEL,
+      LPLOGLEVEL,
+      MAXHOTITS,
+      MAXSAVEDSOLS,
+      MAXSLOWCUTS,
+      MOREMOREMIPOPTIONS,
+      MULTIPLEROOTS,
+      ODDWEXTMETHOD,
+      OUTPUTFORMAT,
+      PRINTOPTIONS,
+      PROCESSTUNE,
+      RANDOMSEED,
+      STRONGSTRATEGY,
+      TESTOSI,
+      THREADS,
+      USERCBC,
+      VERBOSE,
+      VUBTRY,
+      LASTINTPARAM,
+      
+      // Double Parameters
+      FIRSTDBLPARAM,
+      ARTIFICIALCOST,
+      DEXTRA3,
+      DEXTRA4,
+      DEXTRA5,
+      DJFIX,
+      FAKECUTOFF,
+      FAKEINCREMENT,
+      SMALLBAB,
+      TIGHTENFACTOR,
+      LASTDBLPARAM,
+      
+      FIRSTMODELPARAM,
+      ALLOWABLEGAP,
+      COSTSTRATEGY,
+      //CUTDEPTH,
+      CUTOFF,
+      CUTPASS,
+      DIRECTION,
+      GAPRATIO,
+      INCREMENT,
+      INFEASIBILITYWEIGHT,
+      INTEGERTOLERANCE,
+      //LOGLEVEL,
+      MAXIMIZE,
+      MAXNODES,
+      MAXNODESNOTIMPROVING,   // Added
+      MAXSECONDSNOTIMPROVING, // Added
+      MAXSOLS,                // Added
+      MINIMIZE,
+      MIPOPTIONS,
+      MOREMIPOPTIONS,
+      NUMBERANALYZE,
+      NUMBERBEFORE,
+      REVERSE,
+      STRONGBRANCHING,
+      TIMELIMIT,
+      LASTMODELPARAM,
+      
+      INVALID,
+   
+      LASTPARAM
+   };
+
+   //@}
+
+   /*! \name Constructors and Destructors
 
       Be careful how you specify parameters for the constructors! There's great
       potential for confusion.
@@ -114,16 +340,16 @@ public:
   /*! \brief Set the parameter code */
   inline void setParamCode(int code) { paramCode_ = code; }
 
-  /*! \brief Get the associated Cbc settings object */
-  inline CbcSettings *settings() const { return (settings_); }
+  /*! \brief Get the associated Cbc parameters object */
+  inline CbcParameters *parameters() const { return (parameters_); }
 
-  /*! \brief Set the associated Cbc settings object */
-  inline void setSettings(CbcSettings *s) { settings_ = s; }
+  /*! \brief Set the associated Cbc parameters object */
+  inline void setParameters(CbcParameters *s) { parameters_ = s; }
 
   /*! \brief Get the associated model */
   inline CbcModel *model() const { return (model_); }
 
-  /*! \brief Set the associated Cbc settings object */
+  /*! \brief Set the associated Cbc model object */
   inline void setModel(CbcModel *m) { model_ = m; }
 
   /*! \brief A hacky function to print some information about string parameters */
@@ -138,8 +364,8 @@ private:
   /// Parameter code
   int paramCode_;
 
-  /// Pointer to settings object
-  CbcSettings *settings_;
+  /// Pointer to enclosing parameters object
+  CbcParameters *parameters_;
 
   /// Pointer to model object
   CbcModel * model_;

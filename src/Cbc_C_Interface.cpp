@@ -2262,9 +2262,9 @@ Cbc_solve(Cbc_Model *model)
         cbcModel.passInMessageHandler(cbcmh);
       }
 
-      CbcSettings cbcSettings;
-      CbcMain0(cbcModel, cbcSettings);
-      cbcSettings.disableWelcomePrinting();
+      CbcParameters parameters;
+      CbcMain0(cbcModel, parameters);
+      parameters.disableWelcomePrinting();
 
       // adds SOSs if any
       Cbc_addAllSOS(model, cbcModel);
@@ -2339,7 +2339,7 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
       cbcModel.setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
 
-      CbcMain1( nargs, args, cbcModel, cbc_callb, cbcSettings );
+      CbcMain1( nargs, args, cbcModel, cbc_callb, parameters);
 
       Cbc_getMIPOptimizationResults( model, cbcModel );
 

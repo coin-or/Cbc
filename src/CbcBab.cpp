@@ -25,7 +25,7 @@
 
 #include "CbcParam.hpp"
 #include "CbcParamUtils.hpp"
-#include "CbcSettings.hpp"
+#include "CbcParameters.hpp"
 
 #define CBC_TRACK_SOLVERS 1
 // #define COIN_CBC_VERBOSITY 5
@@ -159,7 +159,7 @@ bool solveRelaxation(CbcModel *model)
   Helper routine to establish a priority vector.
 */
 
-void setupPriorities(CbcModel *model, CbcSettings::BPMode how)
+void setupPriorities(CbcModel *model, CbcParameters::BPMode how)
 
 {
   int numCols = model->getNumCols();
@@ -174,9 +174,9 @@ void setupPriorities(CbcModel *model, CbcSettings::BPMode how)
   for (iColumn = 0; iColumn < numCols; iColumn++) {
     if (model->isInteger(iColumn)) {
       sort[n] = n;
-      if (how == CbcSettings::BPCost) {
+      if (how == CbcParameters::BPCost) {
         dsort[n++] = -objective[iColumn];
-      } else if (how == CbcSettings::BPOrder) {
+      } else if (how == CbcParameters::BPOrder) {
         dsort[n++] = iColumn;
       } else {
         std::cerr << "setupPriorities: Unrecognised priority specification."
@@ -216,41 +216,41 @@ void setupPriorities(CbcModel *model, CbcSettings::BPMode how)
   enabled.
 */
 
-void installHeuristics(CbcSettings *cbcSettings, CbcModel *model)
+void installHeuristics(CbcParameters *parameters, CbcModel *model)
 
 {
-  CbcSettings::HeurMode mode;
+  CbcParameters::HeurMode mode;
   CbcHeuristic *gen;
   CbcTreeLocal *localTree;
   /*
       FeasPump goes first because it only works before there's a solution.
     */
-  mode = cbcSettings->getFeasPump(gen, model);
-  if (mode != CbcSettings::HeurOff) {
+  mode = parameters->getFeasPump(gen, model);
+  if (mode != CbcParameters::HeurOff) {
     model->addHeuristic(gen, "FeasPump");
   }
-  mode = cbcSettings->getRounding(gen, model);
-  if (mode != CbcSettings::HeurOff) {
+  mode = parameters->getRounding(gen, model);
+  if (mode != CbcParameters::HeurOff) {
     model->addHeuristic(gen, "Rounding");
   }
-  mode = cbcSettings->getCombine(gen, model);
-  if (mode != CbcSettings::HeurOff) {
+  mode = parameters->getCombine(gen, model);
+  if (mode != CbcParameters::HeurOff) {
     model->addHeuristic(gen, "Combine");
   }
-  mode = cbcSettings->getGreedyCover(gen, model);
-  if (mode != CbcSettings::HeurOff) {
+  mode = parameters->getGreedyCover(gen, model);
+  if (mode != CbcParameters::HeurOff) {
     model->addHeuristic(gen, "GCov");
   }
-  mode = cbcSettings->getGreedyEquality(gen, model);
-  if (mode != CbcSettings::HeurOff) {
+  mode = parameters->getGreedyEquality(gen, model);
+  if (mode != CbcParameters::HeurOff) {
     model->addHeuristic(gen, "GEq");
   }
   /*
       This one's a bit different. We acquire the local tree and install it in
      the model.
     */
-  mode = cbcSettings->getLocalTree(localTree, model);
-  if (mode != CbcSettings::HeurOff) {
+  mode = parameters->getLocalTree(localTree, model);
+  if (mode != CbcParameters::HeurOff) {
     model->passInTreeHandler(*localTree);
   }
 
@@ -264,12 +264,12 @@ void installHeuristics(CbcSettings *cbcSettings, CbcModel *model)
   figure out stored cuts.
 */
 
-void installCutGenerators(CbcSettings *cbcSettings, CbcModel *model)
+void installCutGenerators(CbcParameters *parameters, CbcModel *model)
 
 {
   int switches[20];
   int genCnt = 0;
-  CbcSettings::CGMode mode;
+  CbcParameters::CGMode mode;
   CglCutGenerator *gen;
 
   /*
@@ -281,59 +281,59 @@ void installCutGenerators(CbcSettings *cbcSettings, CbcModel *model)
       it'll carry on regardless.
     */
 
-  int howOften[CbcSettings::CGEndMarker];
-  howOften[CbcSettings::CGOff] = -100;
-  howOften[CbcSettings::CGOn] = -1;
-  howOften[CbcSettings::CGRoot] = -99;
-  howOften[CbcSettings::CGIfMove] = -98;
-  howOften[CbcSettings::CGForceOn] = 1;
-  howOften[CbcSettings::CGForceOnBut] = 1;
+  int howOften[CbcParameters::CGEndMarker];
+  howOften[CbcParameters::CGOff] = -100;
+  howOften[CbcParameters::CGOn] = -1;
+  howOften[CbcParameters::CGRoot] = -99;
+  howOften[CbcParameters::CGIfMove] = -98;
+  howOften[CbcParameters::CGForceOn] = 1;
+  howOften[CbcParameters::CGForceOnBut] = 1;
 
   /*
       A negative value for rowCuts means that the specified modes happen only at
       the root.
     */
-  mode = cbcSettings->getProbing(gen);
-  if (mode != CbcSettings::CGOff) {
-    if (mode == CbcSettings::CGForceOnBut) {
+  mode = parameters->getProbing(gen);
+  if (mode != CbcParameters::CGOff) {
+    if (mode == CbcParameters::CGForceOnBut) {
       CglProbing *probingGen = dynamic_cast<CglProbing *>(gen);
       probingGen->setRowCuts(-3);
     }
     model->addCutGenerator(gen, howOften[mode], "Probing");
     switches[genCnt++] = 0;
   }
-  mode = cbcSettings->getGomory(gen);
-  if (mode != CbcSettings::CGOff) {
+  mode = parameters->getGomory(gen);
+  if (mode != CbcParameters::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "Gomory");
     switches[genCnt++] = -1;
   }
-  mode = cbcSettings->getKnapsack(gen);
-  if (mode != CbcSettings::CGOff) {
+  mode = parameters->getKnapsack(gen);
+  if (mode != CbcParameters::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "Knapsack");
     switches[genCnt++] = 0;
   }
-  mode = cbcSettings->getRedSplit(gen);
-  if (mode != CbcSettings::CGOff) {
+  mode = parameters->getRedSplit(gen);
+  if (mode != CbcParameters::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "RedSplit");
     switches[genCnt++] = 1;
   }
-  mode = cbcSettings->getClique(gen);
-  if (mode != CbcSettings::CGOff) {
+  mode = parameters->getClique(gen);
+  if (mode != CbcParameters::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "Clique");
     switches[genCnt++] = 0;
   }
-  mode = cbcSettings->getMir(gen);
-  if (mode != CbcSettings::CGOff) {
+  mode = parameters->getMir(gen);
+  if (mode != CbcParameters::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "MIR2");
     switches[genCnt++] = -1;
   }
-  mode = cbcSettings->getFlow(gen);
-  if (mode != CbcSettings::CGOff) {
+  mode = parameters->getFlow(gen);
+  if (mode != CbcParameters::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "Flow");
     switches[genCnt++] = 1;
   }
-  mode = cbcSettings->getTwomir(gen);
-  if (mode != CbcSettings::CGOff) {
+  mode = parameters->getTwomir(gen);
+  if (mode != CbcParameters::CGOff) {
     model->addCutGenerator(gen, howOften[mode], "2-MIR");
     switches[genCnt++] = 1;
   }
@@ -353,7 +353,7 @@ void installCutGenerators(CbcSettings *cbcSettings, CbcModel *model)
       generator->setSwitchOffIfLessThan(switches[iGen]);
     }
     generator->setTiming(true);
-    int cutDepth = cbcSettings->getCutDepth();
+    int cutDepth = parameters->getCutDepth();
     if (cutDepth >= 0) {
       generator->setWhatDepth(cutDepth);
     }
@@ -385,7 +385,7 @@ void installCutGenerators(CbcSettings *cbcSettings, CbcModel *model)
 
       Once we're in the tree, aim for one pass per activation.
     */
-  if (!cbcSettings->setByUser(CUTPASS)) {
+  if (!parameters->setByUser(CbcParam::CUTPASS)) {
     int numCols = model->getNumCols();
     if (numCols < 500)
       model->setMaximumCutPassesAtRoot(-100);
@@ -476,9 +476,9 @@ int doBaCParam(CoinParam &param)
 
 {
   CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
-  CbcSettings *cbcSettings = cbcParam.settings();
-  assert(cbcSettings != 0);
-  CbcModel *model = cbcSettings->getModel();
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
+  CbcModel *model = parameters->getModel();
   assert(model != 0);
   /*
       Setup to return nonfatal/fatal error (1/-1) by default.
@@ -489,13 +489,13 @@ int doBaCParam(CoinParam &param)
   } else {
     retval = -1;
   }
-  cbcSettings->setBaBStatus(CbcSettings::BACAbandon,
-                            CbcSettings::BACmInvalid,
-                            CbcSettings::BACwNotStarted, false, 0);
+  parameters->setBaBStatus(CbcParameters::BACAbandon,
+                            CbcParameters::BACmInvalid,
+                            CbcParameters::BACwNotStarted, false, 0);
   /*
       We ain't gonna do squat without a good model.
     */
-  if (!cbcSettings->goodModel()) {
+  if (!parameters->goodModel()) {
     std::cout << "** Current model not valid!" << std::endl;
     return (retval);
   }
@@ -520,7 +520,7 @@ int doBaCParam(CoinParam &param)
       Solve the root relaxation. Bail unless it solves to optimality.
     */
   if (!solveRelaxation(&babModel)) {
-    cbcSettings->setBaBStatus(CbcSettings::BACwBareRoot);
+    parameters->setBaBStatus(CbcParameters::BACwBareRoot);
     return (0);
   }
 #if COIN_CBC_VERBOSITY > 0
@@ -530,8 +530,8 @@ int doBaCParam(CoinParam &param)
   /*
       Are we up for fixing variables based on reduced cost alone?
     */
-  if (cbcSettings->getDjFixMode() == CbcSettings::ParamOff) {
-    reducedCostHack(babSolver, cbcSettings->getDjFixThreshold());
+  if (parameters->getDjFixMode() == CbcParameters::ParamOff) {
+    reducedCostHack(babSolver, parameters->getDjFixThreshold());
   }
   /*
       Time to consider preprocessing. We'll do a bit of setup before getting to
@@ -550,10 +550,10 @@ int doBaCParam(CoinParam &param)
 
   int numberChanged = 0;
   int numberOriginalColumns = babSolver->getNumCols();
-  CbcSettings::IPPMode ippMode = cbcSettings->getIPPMode();
+  CbcParameters::IPPMode ippMode = parameters->getIPPMode();
 
-  if (!(ippMode == CbcSettings::IPPOff ||
-        ippMode == CbcSettings::IPPStrategy)) {
+  if (!(ippMode == CbcParameters::IPPOff ||
+        ippMode == CbcParameters::IPPStrategy)) {
     double timeLeft = babModel.getMaximumSeconds();
     preIppSolver = babSolver->clone();
     OsiSolverInterface *ippSolver;
@@ -581,13 +581,13 @@ int doBaCParam(CoinParam &param)
           respectively.
         */
     int convert = 0;
-    if (ippMode == CbcSettings::IPPEqual) {
+    if (ippMode == CbcParameters::IPPEqual) {
       convert = -1;
-    } else if (ippMode == CbcSettings::IPPEqualAll) {
+    } else if (ippMode == CbcParameters::IPPEqualAll) {
       convert = -2;
-    } else if (ippMode == CbcSettings::IPPSOS) {
+    } else if (ippMode == CbcParameters::IPPSOS) {
       convert = 2;
-    } else if (ippMode == CbcSettings::IPPTrySOS) {
+    } else if (ippMode == CbcParameters::IPPTrySOS) {
       convert = 3;
     }
 
@@ -609,7 +609,7 @@ int doBaCParam(CoinParam &param)
       std::cout << "Integer preprocess says infeasible or unbounded"
                 << std::endl;
       delete preIppSolver;
-      cbcSettings->setBaBStatus(CbcSettings::BACwIPP);
+      parameters->setBaBStatus(CbcParameters::BACwIPP);
       return (0);
     }
 #if COIN_CBC_VERBOSITY > 0
@@ -624,7 +624,7 @@ int doBaCParam(CoinParam &param)
     preIppSolver->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo);
     ippSolver->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo);
 
-    if (ippMode == CbcSettings::IPPSave) {
+    if (ippMode == CbcParameters::IPPSave) {
       ippSolver->writeMps("presolved", "mps", 1.0);
       std::cout << "Integer preprocessed model written to `presolved.mps' "
                 << "as minimisation problem." << std::endl;
@@ -640,7 +640,7 @@ int doBaCParam(CoinParam &param)
 #endif
     if (!solveRelaxation(&babModel)) {
       delete preIppSolver;
-      cbcSettings->setBaBStatus(CbcSettings::BACwIPPRelax);
+      parameters->setBaBStatus(CbcParameters::BACwIPPRelax);
       return (0);
     }
 #if COIN_CBC_VERBOSITY > 0
@@ -658,14 +658,14 @@ int doBaCParam(CoinParam &param)
       If we're using the COSTSTRATEGY option, set up priorities here and pass
       them to the babModel.
     */
-  if (cbcSettings->getBranchingPriorityMode() != CbcSettings::BPOff) {
-     setupPriorities(&babModel, cbcSettings->getBranchingPriorityMode());
+  if (parameters->getBranchingPriorityMode() != CbcParameters::BPOff) {
+     setupPriorities(&babModel, parameters->getBranchingPriorityMode());
   }
   /*
       Install heuristics and cutting planes.
     */
-  installHeuristics(cbcSettings, &babModel);
-  installCutGenerators(cbcSettings, &babModel);
+  installHeuristics(parameters, &babModel);
+  installCutGenerators(parameters, &babModel);
   /*
       Set up status print frequency for babModel.
     */
@@ -676,9 +676,9 @@ int doBaCParam(CoinParam &param)
       If we've read in a known good solution for debugging, activate the row cut
       debugger.
     */
-  if (cbcSettings->getDebugSolValues()) {
-     if (cbcSettings->getDebugSolNumCols() == babModel.getNumCols()) {
-        babSolver->activateRowCutDebugger(cbcSettings->getDebugSolValues());
+  if (parameters->getDebugSolValues()) {
+     if (parameters->getDebugSolNumCols() == babModel.getNumCols()) {
+        babSolver->activateRowCutDebugger(parameters->getDebugSolValues());
     } else {
       std::cout << "doBaCParam: debug file has incorrect number of columns."
                 << std::endl;
@@ -687,7 +687,7 @@ int doBaCParam(CoinParam &param)
   /*
       Set ratio-based integrality gap, if specified by user.
     */
-  if (cbcSettings->setByUser(GAPRATIO)) {
+  if (parameters->setByUser(CbcParam::GAPRATIO)) {
     double obj = babSolver->getObjValue();
     double gapRatio = babModel.getDblParam(CbcModel::CbcAllowableFractionGap);
     double gap = gapRatio * (1.0e-5 + fabs(obj));
@@ -730,7 +730,7 @@ int doBaCParam(CoinParam &param)
   OsiChooseStrong strong(babSolver);
   strong.setNumberBeforeTrusted(babModel.numberBeforeTrust());
   strong.setNumberStrong(babModel.numberStrong());
-  strong.setShadowPriceMode(cbcSettings->getShadowPriceMode());
+  strong.setShadowPriceMode(parameters->getShadowPriceMode());
   CbcBranchDefaultDecision decision;
   decision.setChooseMethod(strong);
   babModel.setBranchingMethod(decision);
@@ -746,7 +746,7 @@ int doBaCParam(CoinParam &param)
       accidentally equivalent to IPPOn.
     */
 
-  if (ippMode == CbcSettings::IPPStrategy) {
+  if (ippMode == CbcParameters::IPPStrategy) {
     CbcStrategyDefault strategy(true, 5, 5);
     strategy.setupPreProcessing(1);
     babModel.setStrategy(strategy);
@@ -756,8 +756,8 @@ int doBaCParam(CoinParam &param)
       general, the solver used to return the solution will not be the solver we
       passed in, so reset babSolver here.
     */
-  int statistics = (cbcSettings->getPrintOptions() > 0) ?
-     cbcSettings->getPrintOptions() : 0;
+  int statistics = (parameters->getPrintOptions() > 0) ?
+     parameters->getPrintOptions() : 0;
 #if CBC_TRACK_SOLVERS > 0
   std::cout << "doBaCParam: solver at call to branchAndBound is " << std::hex
             << babModel.solver() << std::dec << ", log level "
@@ -775,7 +775,7 @@ int doBaCParam(CoinParam &param)
   /*
       Write out solution to preprocessed model.
     */
-  if (cbcSettings->getDebugCreate() == "createAfterPre" &&
+  if (parameters->getDebugCreate() == "createAfterPre" &&
       babModel.bestSolution()) {
     CbcParamUtils::saveSolution(babSolver, "debug.file");
   }
@@ -802,11 +802,11 @@ int doBaCParam(CoinParam &param)
 #endif
 
   time2 = CoinCpuTime();
-  cbcSettings->setTotalTime(cbcSettings->getTotalTime() + time2 - time1);
+  parameters->setTotalTime(parameters->getTotalTime() + time2 - time1);
   /*
       If we performed integer preprocessing, time to back it out.
     */
-  if (ippMode != CbcSettings::IPPOff) {
+  if (ippMode != CbcParameters::IPPOff) {
 #if CBC_TRACK_SOLVERS > 0
     std::cout << "doBaCParam: solver passed to IPP postprocess is " << std::hex
               << babSolver << std::dec << "." << std::endl;
@@ -822,7 +822,7 @@ int doBaCParam(CoinParam &param)
   /*
       Write out postprocessed solution to debug file, if requested.
     */
-  if (cbcSettings->getDebugCreate() == "create" && babModel.bestSolution()) {
+  if (parameters->getDebugCreate() == "create" && babModel.bestSolution()) {
     CbcParamUtils::saveSolution(babSolver, "debug.file");
   }
   /*
@@ -836,12 +836,12 @@ int doBaCParam(CoinParam &param)
     keepAnswerSolver = true;
     answerSolver = babSolver;
   }
-  cbcSettings->setBaBStatus(CbcSettings::BACwBAC,
+  parameters->setBaBStatus(CbcParameters::BACwBAC,
                             keepAnswerSolver, answerSolver);
   /*
       And one last bit of information & statistics.
     */
-  cbcSettings->printBaBStatus();
+  parameters->printBaBStatus();
   std::cout << "    ";
   if (keepAnswerSolver) {
     std::cout << "objective " << babModel.getObjValue() << "; ";

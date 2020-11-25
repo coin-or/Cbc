@@ -1376,6 +1376,8 @@ int CbcMain1(int argc, const char *argv[],
     int column;
   } lotStruct;
   lotStruct *lotsize = NULL;
+  typedef struct {lotStruct * lotsize;int numberLotSizing;} lotStruct2;
+  lotStruct2 passSCtopreprocess;
 #ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface *originalSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
   assert(originalSolver);
@@ -4366,13 +4368,83 @@ int CbcMain1(int argc, const char *argv[],
                   // Lotsizing
                   if (numberLotSizing) {
                     int numberColumns = saveSolver->getNumCols();
-                    char *prohibited = new char[numberColumns];
-                    memset(prohibited, 0, numberColumns);
+                    int numberRows = saveSolver->getNumRows();
+#if 0
+		    // Create model which uses 0-1 variables
+		    {
+		      double * els = new double[8*numberLotSizing];
+		      int * cols = new int[4*numberLotSizing];
+		      CoinBigIndex * starts = new CoinBigIndex [2*numberLotSizing+1];
+		      // add 0-1 variables
+		      double * tup = els+4*numberLotSizing;
+		      double * tlo = tup+2*numberLotSizing;
+		      for (int i=0;i<numberLotSizing;i++) {
+			tlo[i]=0.0;
+			tup[i]=1.0;
+			els[i]=0.0; // objective
+		      }
+		      OsiClpSolverInterface *si = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
+		      assert(si != NULL);
+		      // get clp itself
+		      ClpSimplex *model = si->getModelPtr();
+		      model->tightenPrimalBounds(0.0,0);
+		      model->addColumns(numberLotSizing,tlo,tup,els,NULL,NULL,NULL);
+		      for (int i=0;i<numberLotSizing;i++) 
+			model->setInteger(i+numberColumns);
+		      starts[0]=0;
+		      CoinBigIndex n=0;
+		      const double * columnUpper = model->columnUpper();
+		      for (int i=0;i<numberLotSizing;i++) {
+			int iColumn = lotsize[i].column;
+			tlo[n] = -COIN_DBL_MAX;
+			tup[n]=0.0;
+			els[2*n] = 1.0;
+			// should be able to get correct value
+			els[2*n+1] = -CoinMin(10000.0,columnUpper[iColumn]);
+			cols[2*n] = iColumn;
+			cols[2*n+1] = i+numberColumns;
+			n++;
+			starts[n]=2*n;
+			tlo[n] = 0.0;
+			tup[n]=COIN_DBL_MAX;
+			els[2*n] = 1.0;
+			els[2*n+1] = -lotsize[i].low;
+			cols[2*n] = iColumn;
+			cols[2*n+1] = i+numberColumns;
+			n++;
+			starts[n]=2*n;
+		      }
+		      model->addRows(n,tlo,tup,starts,cols,els);
+		      model->writeMps("equivalentInteger.mps");
+		      exit(1);
+		    }
+#endif
+                    char *prohibited = new char[numberColumns+numberRows];
+		    char *prohibitedRow = prohibited+numberColumns;
+                    memset(prohibited, 0, numberColumns+numberRows);
+                    const CoinPackedMatrix *matrix = saveSolver->getMatrixByCol();
+                    //const double *element = matrix->getElements();
+                    const int *row = matrix->getIndices();
+                    const CoinBigIndex *columnStart = matrix->getVectorStarts();
+                    const int *columnLength = matrix->getVectorLengths();
                     for (int i = 0; i < numberLotSizing; i++) {
                       int iColumn = lotsize[i].column;
-                      prohibited[iColumn] = 1;
+                      prohibited[iColumn] = 2;
+#if 0
+		      // also leave all rows
+		      for (CoinBigIndex j = columnStart[iColumn];
+			   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+			int iRow = row[j];
+			prohibitedRow[iRow] = -2;
+		      }
+#endif
                     }
                     process.passInProhibited(prohibited, numberColumns);
+                    process.passInRowTypes(prohibitedRow, numberRows);
+		    passSCtopreprocess.lotsize=lotsize;
+		    passSCtopreprocess.numberLotSizing=numberLotSizing;
+		    process.setApplicationData(&passSCtopreprocess);
+		    process.setOptions(128|256|process.options());
                     delete[] prohibited;
                   }
                   if (model_.numberObjects()) {
@@ -4650,6 +4722,8 @@ int CbcMain1(int argc, const char *argv[],
                   }
                   // do lotsizing
                   if (numberLotSizing) {
+                    const double *columnLower = solver2->getColLower();
+                    const double *columnUpper = solver2->getColUpper();
                     CbcObject **objects = new CbcObject *[numberLotSizing];
                     double points[] = { 0.0, 0.0, 0.0, 0.0 };
                     int *back = new int[numberOriginalColumns];
@@ -4659,19 +4733,33 @@ int CbcMain1(int argc, const char *argv[],
                       int iColumn = originalColumns[i];
                       back[iColumn] = i;
                     }
-                    for (int i = 0; i < numberLotSizing; i++) {
+		    int n = numberLotSizing;
+		    numberLotSizing = 0;
+                    for (int i = 0; i < n; i++) {
                       int iColumn = lotsize[i].column;
 		      iColumn = back[iColumn];
-                      points[2] = lotsize[i].low;
-                      points[3] = lotsize[i].high;
-                      objects[i] = new CbcLotsize(babModel_, iColumn, 2,
-                        points, true);
+		      if (iColumn>=0) {
+			if (columnLower[iColumn]<lotsize[i].low&&
+			    columnUpper[iColumn]>lotsize[i].low) {
+			  points[2] = lotsize[i].low;
+			  points[3] = columnUpper[iColumn];
+			  objects[numberLotSizing++] =
+			    new CbcLotsize(babModel_, iColumn, 2,
+					   points, true);
+			}
+		      }
                     }
 		    delete [] back;
                     babModel_->addObjects(numberLotSizing, objects);
                     for (int i = 0; i < numberLotSizing; i++)
                       delete objects[i];
                     delete[] objects;
+		    if (numberLotSizing < n) {
+		      sprintf(generalPrint, "Pre-processing reduced number of SC variables from %d to %d",n,numberLotSizing);
+		      generalMessageHandler->message(CLP_GENERAL, generalMessages)
+			<< generalPrint
+			<< CoinMessageEol;
+		    }
                   }
                   // redo existing SOS
                   if (osiclp->numberSOS()) {
@@ -7935,65 +8023,69 @@ int CbcMain1(int argc, const char *argv[],
                   // Double check bounds
                   columnLower = saveSolver->getColLower();
                   columnUpper = saveSolver->getColUpper();
+		  if ((process.options()&128)!=0)
+		    tightenB = false;
                   int numberChanged = 0;
-                  for (int i = 0; i < n; i++) {
-                    if (!saveSolver->isInteger(i) && !tightenB)
-                      continue;
-                    if (lower2[i] != COIN_DBL_MAX) {
-                      if (lower2[i] != columnLower[i] || upper2[i] != columnUpper[i]) {
-                        if (lower2[i] < columnLower[i] || upper2[i] > columnUpper[i]) {
+		  if ((process.options()&256)==0) {
+		    for (int i = 0; i < n; i++) {
+		      if (!saveSolver->isInteger(i) && !tightenB)
+			continue;
+		      if (lower2[i] != COIN_DBL_MAX) {
+			if (lower2[i] != columnLower[i] || upper2[i] != columnUpper[i]) {
+			  if (lower2[i] < columnLower[i] || upper2[i] > columnUpper[i]) {
 #ifdef COIN_DEVELOP
-                          printf("odd bounds tighter");
-                          printf("%d bab bounds %g %g now %g %g\n",
-                            i, lower2[i], upper2[i], columnLower[i],
-                            columnUpper[i]);
+			    printf("odd bounds tighter");
+			    printf("%d bab bounds %g %g now %g %g\n",
+				   i, lower2[i], upper2[i], columnLower[i],
+				   columnUpper[i]);
 #endif
-                        } else {
+			  } else {
 #ifdef COIN_DEVELOP
-                          printf("%d bab bounds %g %g now %g %g\n",
-                            i, lower2[i], upper2[i], columnLower[i],
-                            columnUpper[i]);
+			    printf("%d bab bounds %g %g now %g %g\n",
+				   i, lower2[i], upper2[i], columnLower[i],
+				   columnUpper[i]);
 #endif
-                          numberChanged++;
-                          saveSolver->setColLower(i, lower2[i]);
-                          saveSolver->setColUpper(i, upper2[i]);
-                        }
-                      }
-                    }
-                  }
+			    numberChanged++;
+			    saveSolver->setColLower(i, lower2[i]);
+			    saveSolver->setColUpper(i, upper2[i]);
+			  }
+			}
+		      }
+		    }
 #ifdef JJF_ZERO
-                  // See if sos so we can fix
-                  OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
-                  if (osiclp && osiclp->numberSOS()) {
-                    // SOS
-                    numberSOS = osiclp->numberSOS();
-                    const CoinSet *setInfo = osiclp->setInfo();
-                    int i;
-                    for (i = 0; i < numberSOS; i++) {
-                      int type = setInfo[i].setType();
-                      int n = setInfo[i].numberEntries();
-                      const int *which = setInfo[i].which();
-                      int first = -1;
-                      int last = -1;
-                      for (int j = 0; j < n; j++) {
-                        int iColumn = which[j];
-                        if (fabs(solution[iColumn]) > 1.0e-7) {
-                          last = j;
-                          if (first < 0)
-                            first = j;
-                        }
-                      }
-                      assert(last - first < type);
-                      for (int j = 0; j < n; j++) {
-                        if (j < first || j > last) {
-                          int iColumn = which[j];
-                          saveSolver->setColLower(iColumn, 0.0);
-                          saveSolver->setColUpper(iColumn, 0.0);
-                        }
-                      }
-                    }
-                  }
+		    // See if sos so we can fix
+		    OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
+		    if (osiclp && osiclp->numberSOS()) {
+		      // SOS
+		      numberSOS = osiclp->numberSOS();
+		      const CoinSet *setInfo = osiclp->setInfo();
+		      int i;
+		      for (i = 0; i < numberSOS; i++) {
+			int type = setInfo[i].setType();
+			int n = setInfo[i].numberEntries();
+			const int *which = setInfo[i].which();
+			int first = -1;
+			int last = -1;
+			for (int j = 0; j < n; j++) {
+			  int iColumn = which[j];
+			  if (fabs(solution[iColumn]) > 1.0e-7) {
+			    last = j;
+			    if (first < 0)
+			      first = j;
+			  }
+			}
+			assert(last - first < type);
+			for (int j = 0; j < n; j++) {
+			  if (j < first || j > last) {
+			    int iColumn = which[j];
+			    saveSolver->setColLower(iColumn, 0.0);
+			    saveSolver->setColUpper(iColumn, 0.0);
+			  }
+			}
+		      }
+		    }
 #endif
+		  }
                   delete[] lower2;
                   delete[] upper2;
                   if (numberChanged) {

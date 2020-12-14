@@ -13,14 +13,6 @@
 
 #ifdef CBC_HAS_NAUTY
 
-extern "C" {
-#include "nauty/nauty.h"
-#include "nauty/nausparse.h"
-#ifdef NTY_TRACES
-#include "nauty/traces.h"
-#endif
-}
-
 #include <stdio.h>
 #include <cassert>
 #include <vector>
@@ -36,21 +28,6 @@ extern "C" {
 #if NAUTY_MAX_LEVEL
 extern int nauty_maxalllevel;
 #endif
-/* Deliberately not threadsafe to save effort
-   Just for statistics
-   and not worth gathering across threads
-   can redo later
- */
-static int nautyBranchCalls_ = 0;
-static int lastNautyBranchSucceeded_ = 0;
-static int nautyBranchSucceeded_ = 0;
-static int nautyFixCalls_ = 0;
-static int lastNautyFixSucceeded_ = 0;
-static int nautyFixSucceeded_ = 0;
-static double nautyTime_ = 0.0;
-static double nautyFixes_ = 0.0;
-static double nautyOtherBranches_ = 0.0;
-static char message_[100];
 
 void CbcSymmetry::Node::node(int i, double c, double l, double u, int cod, int s)
 {
@@ -77,6 +54,7 @@ inline bool CbcSymmetry::compare(register Node &a, register Node &b) const
 // simple nauty definitely not thread safe
 static int calls = 0;
 static int maxLevel = 0;
+static char message_[200];
 static CbcSymmetry * baseSymmetry=NULL;
 static void
 userlevelproc(int *lab, int *ptn, int level, int *orbits, statsblk *stats,
@@ -153,14 +131,14 @@ static void userautomproc(int numGenerators,
 #endif
       }
       assert (nCol==0||nRow==0);
-      int nThis=nCol+nRow;
-      if (numberInPerm<0) {
-	numberInPerm=nThis;
-      } else {
-	assert (numberInPerm==nThis);
-      }
-      if (nCol>0)
+      if (nCol>0) {
+	if (numberInPerm<0) {
+	  numberInPerm=nCol;
+	} else {
+	  assert (numberInPerm==nCol);
+	}
 	numberPerms++;
+      }
     }
   }
   //printf("%d permutations, %d in each\n",numberPerms,numberInPerm);
@@ -209,6 +187,37 @@ void CbcSymmetry::Compute_Symmetry() const
 
   //Print_Orbits ();
   nauty_info_->computeAuto();
+#ifdef PRINT_MORE
+  if (permutations_) {
+    int * marked = new int [4*numberColumns_];
+    //int * whichMarked = marked + numberColumns_;
+    //int * save = whichOrbit_+4*numberColumns_;
+    memset(marked,0,numberColumns_*sizeof(int));
+    int maxMarked = 0;
+    for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+      const int * orbit = permutations_[iPerm].orbits;
+      int nIn = 0;
+      for (int i=0;i<numberColumns_;i++) {
+	if (orbit[i]>=0) {
+	  nIn++;
+	  marked[i]++;
+	  maxMarked = CoinMax(maxMarked,marked[i]);
+	}
+      }
+      printf("Generator %d has %d\n",iPerm,nIn);
+    }
+    for (int iMark=1;iMark<=maxMarked;iMark++) {
+      int n=0;
+      for (int i=0;i<numberColumns_;i++) {
+	if (marked[i]==iMark)
+	  n++;
+      }
+      if (n)
+	printf("%d are in %d generators\n",n,iMark);
+    }
+    delete [] marked;
+  }
+#endif
   //Print_Orbits ();
 }
 
@@ -252,11 +261,11 @@ int CbcSymmetry::statsOrbits(CbcModel *model, int type) const
 	  model->messageHandler()->message(CBC_GENERAL,
 					   model->messages())
 	    << message_ << CoinMessageEol;
-        sprintf(general, "Nauty: %d orbits (%d useful covering %d variables), %d generators, group size: %g - dense size %d, sparse %d - took %g seconds",
+        sprintf(general, "Nauty: %d orbits (%d useful covering %d variables), %d generators, group size: %g - sparse size %d - took %g seconds",
           nauty_info_->getNumOrbits(), numberUsefulOrbits_, numberUsefulObjects_,
           nauty_info_->getNumGenerators(),
           nauty_info_->getGroupSize(),
-          stats_[0],stats_[1], nautyTime_);
+          stats_[1], nautyTime_);
       } else {
 	int options2 = model->moreSpecialOptions2();
         if ((options2 & (128 | 256)) != (128 | 256)) {
@@ -320,6 +329,13 @@ int CbcSymmetry::statsOrbits(CbcModel *model, int type) const
   return returnCode;
 }
 
+void
+CbcSymmetry::fixSuccess(int nFixed)
+{
+  nautyFixSucceeded_++;
+  nautyFixes_+=nFixed;
+}
+
 void CbcSymmetry::Print_Orbits(int type) const
 {
 
@@ -327,11 +343,6 @@ void CbcSymmetry::Print_Orbits(int type) const
   if (!nauty_info_->getN())
     return;
   std::vector< std::vector< int > > *new_orbits = nauty_info_->getOrbits();
-
-  printf("Nauty: %d generators, group size: %.0g",
-    //  nauty_info_->getNumOrbits(),
-    nauty_info_->getNumGenerators(),
-    nauty_info_->getGroupSize());
 
   int nNonTrivialOrbits = 0;
 
@@ -348,7 +359,7 @@ void CbcSymmetry::Print_Orbits(int type) const
     // printf("] \n");
   }
 
-  printf(" (%d non-trivial orbits).\n", nNonTrivialOrbits);
+  //printf(" (%d non-trivial orbits).\n", nNonTrivialOrbits);
 
 #if 1
   if (nNonTrivialOrbits) {
@@ -519,14 +530,15 @@ CbcSymmetry::changeBounds(int iColumn, double * saveLower,
 			  OsiSolverInterface * solver,
 			  int mode) const
 {
-  if (saveUpper[iColumn]>1.0e12 || whichOrbit_[iColumn]<0)
+  if (saveUpper[iColumn]>1.0e12 || whichOrbit_[iColumn]<0 || saveLower[iColumn])
     return 0; // only 0-1 at present
-  if (mode)
+  if (mode>0)
     nautyBranchCalls_++;
   int nFixed = 0;
   int * originalUpper = whichOrbit_ + numberColumns_;
   double * columnLower = saveLower;
   double * columnUpper = saveUpper;
+  const double * currentLower = solver->getColLower();
   double saveUp = columnUpper[iColumn];
   columnUpper[iColumn] = 0.0;//solver->getColUpper()[iColumn];
   int * marked = originalUpper + numberColumns_;
@@ -592,16 +604,22 @@ CbcSymmetry::changeBounds(int iColumn, double * saveLower,
       marked[whichMarked[i]]=0;
     if (nTotalOdd==1) {
       int j = orbit[goodOddOne];
-      if (columnUpper[goodOddOne]) {
+      if (columnUpper[goodOddOne]&&!currentLower[goodOddOne]) {
 	save[nFixed++]=goodOddOne;
-	if (!mode)
+	if (mode<=0) {
+	  //printf("setting goodOddOne %d to zero\n",goodOddOne);
 	  solver->setColUpper(goodOddOne,0.0);
+	  if (mode<0)
+	    columnUpper[goodOddOne] = 0.0;
+	}
       }
       while (j!=goodOddOne) {
-	if (columnUpper[j]) {
+	if (columnUpper[j]&&!currentLower[j]) {
 	  //printf("setting %d to zero\n",j);
-	  if (!mode)
+	  if (mode<=0) 
 	    solver->setColUpper(j,0.0);
+	  if (mode<0)
+	    columnUpper[j] = 0.0;
 	  save[nFixed++]=j;
 	}
 	j = orbit[j];
@@ -609,12 +627,110 @@ CbcSymmetry::changeBounds(int iColumn, double * saveLower,
     }
   }
   columnUpper[iColumn] = saveUp;
-  if (mode && nFixed>0) {
+  if (mode>0 && nFixed>0) {
     // done in CbcOrbital nautyBranchSucceeded_++;
     nautyOtherBranches_+=nFixed;
   }
   return nFixed;
 }
+int
+CbcSymmetry::changeBounds(double *saveLower,
+			  double *saveUpper,
+			  OsiSolverInterface * solver) const
+{
+  int nFixed = 0;
+  int * originalUpper = whichOrbit_ + numberColumns_;
+  int * marked = originalUpper + numberColumns_;
+  int * whichMarked = marked + numberColumns_;
+  int * save = whichOrbit_+4*numberColumns_;
+  double * columnLower = saveLower;
+  double * columnUpper = saveUpper;
+  int numberColumns = solver->getNumCols();
+  // Do faster later (i.e. use orbits more)
+  for (int iColumn = 0;iColumn<numberColumns;iColumn++) {
+    if (whichOrbit_[iColumn] < 0 || saveUpper[iColumn])
+      continue;
+    double saveUp = columnUpper[iColumn];
+    columnUpper[iColumn] = 0.0;//solver->getColUpper()[iColumn];
+    memset(marked,0,numberColumns_*sizeof(int));
+    for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+      const int * orbit = permutations_[iPerm].orbits;
+      if (orbit[iColumn]<0)
+	continue;
+      int nMarked = 0;
+      int nTotalOdd = 0;
+      int goodOddOne = -1;
+      for (int i=0;i<numberColumns_;i++) {
+	if (orbit[i]>=0 && !marked[i]) {
+	  // OK is all same or one fixed to 0 and rest same
+	  int oddOne = -1;
+	  int nOdd = 0;
+	  int first = i;
+	  marked[i] = 1;
+	  whichMarked[nMarked++] = i;
+	  int j = orbit[i];
+	  int lower = static_cast<int>(columnLower[i]);
+	  if (lower) nOdd=999; //temp
+	  int upper = static_cast<int>(columnUpper[i]);
+	  if (upper==0) {
+	    int upperj = static_cast<int>(columnUpper[j]);
+	    if (upperj) {
+	      oddOne = i;
+	      nOdd = 1;
+	      upper = upperj;
+	    }
+	  }
+	  while (j!=i) {
+	    marked[j] = 1;
+	    whichMarked[nMarked++] = j;
+	    int lowerj = static_cast<int>(columnLower[j]);
+	    if (lowerj) nOdd=999; //temp
+	    int upperj = static_cast<int>(columnUpper[j]);
+	    if (lower!=lowerj || upper != upperj) {
+	      if (nOdd) {
+		// bad
+		nOdd = numberColumns_;
+	      } else {
+		oddOne = j;
+		nOdd = 1;
+	      }
+	    }
+	    j = orbit[j];
+	  }
+	  if (!nOdd) {
+	  } else if (nOdd==1) {
+	    if (!nTotalOdd)
+	      goodOddOne = oddOne;
+	    nTotalOdd ++;
+	  } else {
+	    nTotalOdd = -2*numberColumns_;
+	  }
+	}
+      }
+      //printf("permutation %d had %d odd\n",iPerm,nTotalOdd);
+      for (int i=0;i<nMarked;i++) 
+	marked[whichMarked[i]]=0;
+      if (nTotalOdd==1) {
+	int j = orbit[goodOddOne];
+	if (columnUpper[goodOddOne]) {
+	  save[nFixed++]=goodOddOne;
+	  solver->setColUpper(goodOddOne,0.0);
+	}
+	while (j!=goodOddOne) {
+	  if (columnUpper[j]) {
+	    //printf("setting %d to zero\n",j);
+	    solver->setColUpper(j,0.0);
+	    save[nFixed++]=j;
+	  }
+	  j = orbit[j];
+	}
+      }
+    }
+    columnUpper[iColumn] = saveUp;
+  }
+  return nFixed;
+}
+
 int
 CbcSymmetry::orbitalFixing2(OsiSolverInterface * solver) 
 {
@@ -762,20 +878,6 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
 
   int coef_count = numberRows + numberColumns + 1;
   int nc = num_affine + coef_count;
-  if (nc > 100000) {
-    // too big
-    char general[200];
-    sprintf(general,"Nauty too large %d affine and %d coefficient count",
-	    num_affine,coef_count);
-    model->messageHandler()->message(CBC_GENERAL,
-				     model->messages())
-      << general << CoinMessageEol;
-    int options = model->moreSpecialOptions2();
-    options &= ~(128|256|131072|262144);
-    model->setMoreSpecialOptions2(options);
-    nauty_info_ = new CbcNauty(0,NULL,NULL,NULL);
-    return;
-  }
   // create graph (part 1)
 
   for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -828,8 +930,25 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
       }
     }
     spaceSparse = 2 * nc + numberElements;
-    //printf("Space for sparse is %d for dense %g\n",
-    //	   spaceSparse,spaceDense);
+#define MAX_NAUTY1 1.0e8
+#define MAX_NAUTY2 1.0e11
+    double n_squared = static_cast<double>(coef_count)*coef_count;
+    if (spaceSparse > MAX_NAUTY1/100 || n_squared > MAX_NAUTY2/100) {
+      char general[200];
+      sprintf(general,"Nauty sparseSpace %d affine %d coefficient count %d",
+	      spaceSparse,num_affine,coef_count);
+      model->messageHandler()->message(CBC_GENERAL,
+				       model->messages())
+	<< general << CoinMessageEol;
+    }
+    if (spaceSparse > MAX_NAUTY1 || n_squared > MAX_NAUTY2) {
+      // too big
+      int options = model->moreSpecialOptions2();
+      options &= ~(128|256|131072|262144);
+      model->setMoreSpecialOptions2(options);
+      nauty_info_ = new CbcNauty(0,NULL,NULL,NULL);
+      return;
+    }
 #ifdef NTY_TRACES
     bool goSparse = true;
 #else
@@ -1164,6 +1283,15 @@ CbcSymmetry::CbcSymmetry()
   , numberPermutations_(0)
   , permutations_(NULL)
   , whichOrbit_(NULL)
+  , nautyTime_(0.0)
+  , nautyFixes_(0.0)
+  , nautyOtherBranches_(0.0)
+  , nautyBranchCalls_(0)
+  , lastNautyBranchSucceeded_(0)
+  , nautyBranchSucceeded_(0)
+  , nautyFixCalls_(0)
+  , lastNautyFixSucceeded_(0)
+  , nautyFixSucceeded_(0)
 {
 }
 // Copy constructor
@@ -1188,8 +1316,16 @@ CbcSymmetry::CbcSymmetry(const CbcSymmetry &rhs)
   } else {
     permutations_ = NULL;
   }
+  nautyTime_ = rhs.nautyTime_;
+  nautyFixes_ = rhs.nautyFixes_;
+  nautyOtherBranches_ = rhs.nautyOtherBranches_;
+  nautyBranchCalls_ = rhs.nautyBranchCalls_;
+  lastNautyBranchSucceeded_ = rhs.lastNautyBranchSucceeded_;
+  nautyBranchSucceeded_ = rhs.nautyBranchSucceeded_;
+  nautyFixCalls_ = rhs.nautyFixCalls_;
+  lastNautyFixSucceeded_ = rhs.lastNautyFixSucceeded_;
+  nautyFixSucceeded_ = rhs.nautyFixSucceeded_;
 }
-
 // Assignment operator
 CbcSymmetry &
 CbcSymmetry::operator=(const CbcSymmetry &rhs)
@@ -1222,6 +1358,15 @@ CbcSymmetry::operator=(const CbcSymmetry &rhs)
     } else {
       permutations_ = NULL;
     }
+    nautyTime_ = rhs.nautyTime_;
+    nautyFixes_ = rhs.nautyFixes_;
+    nautyOtherBranches_ = rhs.nautyOtherBranches_;
+    nautyBranchCalls_ = rhs.nautyBranchCalls_;
+    lastNautyBranchSucceeded_ = rhs.lastNautyBranchSucceeded_;
+    nautyBranchSucceeded_ = rhs.nautyBranchSucceeded_;
+    nautyFixCalls_ = rhs.nautyFixCalls_;
+    lastNautyFixSucceeded_ = rhs.lastNautyFixSucceeded_;
+    nautyFixSucceeded_ = rhs.nautyFixSucceeded_;
   }
   return *this;
 }
@@ -1783,16 +1928,16 @@ CbcOrbitalBranchingObject::CbcOrbitalBranchingObject(CbcModel *model, int column
   int iOrbit = orbit[column];
   assert(iOrbit >= 0);
   int numberColumns = model->getNumCols();
-  numberOther_ = -1;
+  int numberOther = -1;
   for (int i = 0; i < numberColumns; i++) {
     if (orbit[i] == iOrbit)
-      numberOther_++;
+      numberOther++;
   }
   assert(numberOther_ > 0);
-  nautyBranchSucceeded_++;
-  nautyOtherBranches_ += numberOther_;
+  symmetryInfo->incrementBranchSucceeded();
+  symmetryInfo->incrementNautyBranches(numberOther);
   numberExtra_ = numberExtra;
-  fixToZero_ = new int[numberOther_ + numberExtra_];
+  fixToZero_ = new int[numberOther + numberExtra_];
   int n = 0;
   for (int i = 0; i < numberColumns; i++) {
     if (orbit[i] == iOrbit && i != column)
@@ -1815,7 +1960,7 @@ CbcOrbitalBranchingObject::CbcOrbitalBranchingObject(CbcModel *model,
 {
   CbcSymmetry *symmetryInfo = model->rootSymmetryInfo();
   assert(symmetryInfo);
-  nautyBranchSucceeded_++;
+  symmetryInfo->incrementBranchSucceeded();
   
   fixToZero_ = CoinCopyOfArray(model->rootSymmetryInfo()->fixedToZero(),
 			       nFixed);

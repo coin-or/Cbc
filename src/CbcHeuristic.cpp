@@ -1006,7 +1006,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     }
 #endif
     setPreProcessingMode(solver,1);
-    solver2 = process.preProcessNonDefault(*solver, false,
+    solver2 = process.preProcessNonDefault(*solver, 0,
       numberPasses);
     setPreProcessingMode(solver,0);
     if (!solver2) {

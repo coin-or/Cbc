@@ -4199,7 +4199,10 @@ int CbcMain1(int argc, const char *argv[],
 		      generator1.setMaxElements(1000);
 #endif
                     generator1.setMaxProbeRoot(saveSolver->getNumCols());
-                    generator1.setMaxLookRoot(saveSolver->getNumCols());
+ 		    if ((tune2 & 512) != 0) 
+		      generator1.setMaxLookRoot(CoinMin(saveSolver->getNumCols(),1000));
+		    else
+		      generator1.setMaxLookRoot(CoinMin(saveSolver->getNumCols(),400));
                   }
                   if ((babModel_->specialOptions() & 65536) != 0)
                     process.setOptions(1);

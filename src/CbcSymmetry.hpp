@@ -23,14 +23,13 @@
 
   To use it is -orbit on
 
-  Nauty has this -
-*   Permission 
-*   is hereby given for use and/or distribution with the exception of        *
-*   sale for profit or application with nontrivial military significance.    *
-  so you can use it internally even if you are a company.
  */
 #ifndef CBC_SYMMETRY_HPP
 #define CBC_SYMMETRY_HPP
+
+#include "CbcConfig.h"
+
+#ifdef CBC_HAS_NAUTY
 extern "C" {
 #include "nauty/nauty.h"
 #include "nauty/nausparse.h"
@@ -38,6 +37,7 @@ extern "C" {
 #include "nauty/traces.h"
 #endif
 }
+#endif
 
 #include <vector>
 #include <map>
@@ -172,6 +172,9 @@ public:
   int changeBounds(int kColumn, double * saveLower,
 		    double * saveUpper,
 		    OsiSolverInterface * solver,int mode) const;
+  int changeBounds(double *saveLower, double *saveUpper,
+		   OsiSolverInterface * solver) const;
+  void fixSuccess(int nFixed);
   inline int numberColumns() const
   { return numberColumns_;}
   inline bool compare(Node &a, Node &b) const;
@@ -193,6 +196,10 @@ public:
   { return permutations_[which].orbits;}
   inline int numberInPermutation(int which) const
   { return permutations_[which].numberInPerm;}
+  inline void incrementNautyBranches(int n)
+  { nautyOtherBranches_ += n;}
+  inline void incrementBranchSucceeded()
+  { nautyBranchSucceeded_ ++;}
 private:
   mutable std::vector< Node > node_info_;
   mutable CbcNauty *nauty_info_;
@@ -203,6 +210,15 @@ private:
   cbc_permute * permutations_;
   int *whichOrbit_;
   int stats_[5];
+  double nautyTime_;
+  double nautyFixes_;
+  mutable double nautyOtherBranches_;
+  mutable int nautyBranchCalls_;
+  mutable int lastNautyBranchSucceeded_;
+  int nautyBranchSucceeded_;
+  mutable int nautyFixCalls_;
+  mutable int lastNautyFixSucceeded_;
+  int nautyFixSucceeded_;
 };
 
 class CbcNauty {

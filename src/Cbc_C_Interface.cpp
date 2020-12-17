@@ -1704,6 +1704,10 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   ClpSimplex *clps = solver->getModelPtr();
   assert(clps);
 
+  // stopping criteria
+  double prevMaxSecs = clps->maximumSeconds();
+  clps->setMaximumSeconds(model->dbl_param[DBL_PARAM_TIME_LIMIT]);
+
   CoinMessages generalMessages = clps->messages();
   clps->setRandomSeed( model->int_param[INT_PARAM_RANDOM_SEED] );
 
@@ -1742,15 +1746,24 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   if (solver->basisIsAvailable()) {
     solver->resolve();
-    if (solver->isProvenOptimal())
+    if (solver->isProvenOptimal()) {
+      clps->setMaximumSeconds(prevMaxSecs);
       return 0;
-    if (solver->isProvenDualInfeasible())
+    }
+    if (solver->isProvenDualInfeasible()) {
+      clps->setMaximumSeconds(prevMaxSecs);
       return 3;
-    if (solver->isProvenPrimalInfeasible())
+    }
+    if (solver->isProvenPrimalInfeasible()) {
+      clps->setMaximumSeconds(prevMaxSecs);
       return 2;
-    if (solver->isIterationLimitReached() || solver->isPrimalObjectiveLimitReached() || solver->isDualObjectiveLimitReached())
+    }
+    if (solver->isIterationLimitReached() || solver->isPrimalObjectiveLimitReached() || solver->isDualObjectiveLimitReached()) {
+      clps->setMaximumSeconds(prevMaxSecs);
       return 1;
+    }
     if (solver->isAbandoned()) {
+      clps->setMaximumSeconds(prevMaxSecs);
       fprintf(stderr, "Error while resolving the linear program.\n");
       fflush(stdout); fflush(stderr);
       abort();
@@ -1906,17 +1919,24 @@ Cbc_solveLinearProgram(Cbc_Model *model)
     model->rActv = solver->getRowActivity();
     Cbc_updateSlack(model, solver->getRowActivity());
     model->rSlk = &((*(model->slack))[0]);
+    clps->setMaximumSeconds(prevMaxSecs);
     return 0;
   }
   if (solver->isIterationLimitReached()) {
     model->obj_value = solver->getObjValue();
+    clps->setMaximumSeconds(prevMaxSecs);
     return 1;
   }
-  if (solver->isProvenDualInfeasible())
+  if (solver->isProvenDualInfeasible()) {
+    clps->setMaximumSeconds(prevMaxSecs);
     return 3;
-  if (solver->isProvenPrimalInfeasible())
+  }
+  if (solver->isProvenPrimalInfeasible()) {
+    clps->setMaximumSeconds(prevMaxSecs);
     return 2;
+  }
 
+  clps->setMaximumSeconds(prevMaxSecs);
   return -1;
 }
 

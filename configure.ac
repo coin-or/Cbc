@@ -107,8 +107,6 @@ AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric OsiCbcLib],[osi-soplex])
 AC_COIN_CHK_LIB(Cplex,[CbcLib],[-lcplex -lpthread -lm -ldl],[],[],[CPXgetstat])
 AC_COIN_CHK_PKG(Glpk,[CbcSolverLib],,[build])
 
-AC_COIN_FINALIZE_FLAGS([CbcLib CbcSolverLib CbcGeneric OsiCbcLib CbcUnitTest])
-
 #############################################################################
 #                       CbcGeneric configuration                            #
 #############################################################################
@@ -363,6 +361,8 @@ AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Here put the location and name of the configuration header file
 AC_CONFIG_HEADER([src/config.h src/config_cbc.h src/config_cbcsolver.h src/OsiCbc/config_osicbc.h])
+
+AC_COIN_FINALIZE_FLAGS([CbcLib CbcSolverLib CbcGeneric OsiCbcLib CbcUnitTest])
 
 # Finally, we let configure write all the output...
 AC_COIN_FINALIZE

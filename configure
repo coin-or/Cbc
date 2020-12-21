@@ -642,6 +642,16 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+CBCUNITTEST_CFLAGS_NOPC
+CBCUNITTEST_LFLAGS_NOPC
+OSICBCLIB_CFLAGS_NOPC
+OSICBCLIB_LFLAGS_NOPC
+CBCGENERIC_CFLAGS_NOPC
+CBCGENERIC_LFLAGS_NOPC
+CBCSOLVERLIB_CFLAGS_NOPC
+CBCSOLVERLIB_LFLAGS_NOPC
+CBCLIB_CFLAGS_NOPC
+CBCLIB_LFLAGS_NOPC
 coin_doxy_tagfiles
 COIN_HAS_LATEX_FALSE
 COIN_HAS_LATEX_TRUE
@@ -672,16 +682,6 @@ COIN_HAS_PTHREADSW32_FALSE
 COIN_HAS_PTHREADSW32_TRUE
 CBC_BUILD_CBC_GENERIC_FALSE
 CBC_BUILD_CBC_GENERIC_TRUE
-CBCUNITTEST_CFLAGS_NOPC
-CBCUNITTEST_LFLAGS_NOPC
-OSICBCLIB_CFLAGS_NOPC
-OSICBCLIB_LFLAGS_NOPC
-CBCGENERIC_CFLAGS_NOPC
-CBCGENERIC_LFLAGS_NOPC
-CBCSOLVERLIB_CFLAGS_NOPC
-CBCSOLVERLIB_LFLAGS_NOPC
-CBCLIB_CFLAGS_NOPC
-CBCLIB_LFLAGS_NOPC
 COIN_HAS_GLPK_FALSE
 COIN_HAS_GLPK_TRUE
 COIN_HAS_CPLEX_FALSE
@@ -17104,6 +17104,12 @@ $as_echo "no" >&6; }
     pkg_short_errors=""
   fi
 
+  # Check whether -static option of pkg-config should be used when requesting libs
+  pkg_static=
+  if test -n "$PKG_CONFIG" ; then
+    case "$LDFLAGS" in "-static" | "* -static*" ) pkg_static=--static ;; esac
+  fi
+
    if test -n "$PKG_CONFIG"; then
   COIN_HAS_PKGCONFIG_TRUE=
   COIN_HAS_PKGCONFIG_FALSE='#'
@@ -21661,255 +21667,6 @@ $as_echo "#define CBC_HAS_GLPK 1" >>confdefs.h
   fi
 
 
-
-   if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcLib:" >&5
-$as_echo "$as_me: FINALIZE_FLAGS for CbcLib:" >&6;}
-      fi
-      CBCLIB_LFLAGS_NOPC=$CBCLIB_LFLAGS
-
-      CBCLIB_CFLAGS_NOPC=$CBCLIB_CFLAGS
-
-      if test -n "${CBCLIB_PCFILES}" ; then
-        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCLIB_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs ${CBCLIB_PCFILES}`
-        CBCLIB_CFLAGS="$temp_CFLAGS ${CBCLIB_CFLAGS}"
-        CBCLIB_LFLAGS="$temp_LFLAGS ${CBCLIB_LFLAGS}"
-      fi
-
-      # setup XYZ_EXPORT symbol for library users
-      libexport_attribute=
-      if test "$enable_shared" = yes ; then
-        case $build_os in
-          cygwin* | mingw* | msys* | cegcc* )
-            libexport_attribute="__declspec(dllimport)"
-            if test "$enable_static" = yes ; then
-              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
-            fi
-          ;;
-        esac
-      fi
-
-cat >>confdefs.h <<_ACEOF
-#define CBCLIB_EXPORT $libexport_attribute
-_ACEOF
-
-
-      # add -DXYZ_BUILD to XYZ_CFLAGS
-      CBCLIB_CFLAGS="${CBCLIB_CFLAGS} -DCBCLIB_BUILD"
-
-      # Define BUILDTOOLS_DEBUG to enable debugging output
-      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCLIB_LFLAGS_NOPC: \"${CBCLIB_LFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: CBCLIB_LFLAGS_NOPC: \"${CBCLIB_LFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCLIB_CFLAGS_NOPC: \"${CBCLIB_CFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: CBCLIB_CFLAGS_NOPC: \"${CBCLIB_CFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: adding \"${CBCLIB_PCFILES}\"" >&5
-$as_echo "$as_me: adding \"${CBCLIB_PCFILES}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCLIB_LFLAGS: \"${CBCLIB_LFLAGS}\"" >&5
-$as_echo "$as_me: CBCLIB_LFLAGS: \"${CBCLIB_LFLAGS}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCLIB_CFLAGS: \"${CBCLIB_CFLAGS}\"" >&5
-$as_echo "$as_me: CBCLIB_CFLAGS: \"${CBCLIB_CFLAGS}\"" >&6;}
-      fi
-     if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcSolverLib:" >&5
-$as_echo "$as_me: FINALIZE_FLAGS for CbcSolverLib:" >&6;}
-      fi
-      CBCSOLVERLIB_LFLAGS_NOPC=$CBCSOLVERLIB_LFLAGS
-
-      CBCSOLVERLIB_CFLAGS_NOPC=$CBCSOLVERLIB_CFLAGS
-
-      if test -n "${CBCSOLVERLIB_PCFILES}" ; then
-        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCSOLVERLIB_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs ${CBCSOLVERLIB_PCFILES}`
-        CBCSOLVERLIB_CFLAGS="$temp_CFLAGS ${CBCSOLVERLIB_CFLAGS}"
-        CBCSOLVERLIB_LFLAGS="$temp_LFLAGS ${CBCSOLVERLIB_LFLAGS}"
-      fi
-
-      # setup XYZ_EXPORT symbol for library users
-      libexport_attribute=
-      if test "$enable_shared" = yes ; then
-        case $build_os in
-          cygwin* | mingw* | msys* | cegcc* )
-            libexport_attribute="__declspec(dllimport)"
-            if test "$enable_static" = yes ; then
-              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
-            fi
-          ;;
-        esac
-      fi
-
-cat >>confdefs.h <<_ACEOF
-#define CBCSOLVERLIB_EXPORT $libexport_attribute
-_ACEOF
-
-
-      # add -DXYZ_BUILD to XYZ_CFLAGS
-      CBCSOLVERLIB_CFLAGS="${CBCSOLVERLIB_CFLAGS} -DCBCSOLVERLIB_BUILD"
-
-      # Define BUILDTOOLS_DEBUG to enable debugging output
-      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_LFLAGS_NOPC: \"${CBCSOLVERLIB_LFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: CBCSOLVERLIB_LFLAGS_NOPC: \"${CBCSOLVERLIB_LFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_CFLAGS_NOPC: \"${CBCSOLVERLIB_CFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: CBCSOLVERLIB_CFLAGS_NOPC: \"${CBCSOLVERLIB_CFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: adding \"${CBCSOLVERLIB_PCFILES}\"" >&5
-$as_echo "$as_me: adding \"${CBCSOLVERLIB_PCFILES}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_LFLAGS: \"${CBCSOLVERLIB_LFLAGS}\"" >&5
-$as_echo "$as_me: CBCSOLVERLIB_LFLAGS: \"${CBCSOLVERLIB_LFLAGS}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_CFLAGS: \"${CBCSOLVERLIB_CFLAGS}\"" >&5
-$as_echo "$as_me: CBCSOLVERLIB_CFLAGS: \"${CBCSOLVERLIB_CFLAGS}\"" >&6;}
-      fi
-     if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcGeneric:" >&5
-$as_echo "$as_me: FINALIZE_FLAGS for CbcGeneric:" >&6;}
-      fi
-      CBCGENERIC_LFLAGS_NOPC=$CBCGENERIC_LFLAGS
-
-      CBCGENERIC_CFLAGS_NOPC=$CBCGENERIC_CFLAGS
-
-      if test -n "${CBCGENERIC_PCFILES}" ; then
-        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCGENERIC_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs ${CBCGENERIC_PCFILES}`
-        CBCGENERIC_CFLAGS="$temp_CFLAGS ${CBCGENERIC_CFLAGS}"
-        CBCGENERIC_LFLAGS="$temp_LFLAGS ${CBCGENERIC_LFLAGS}"
-      fi
-
-      # setup XYZ_EXPORT symbol for library users
-      libexport_attribute=
-      if test "$enable_shared" = yes ; then
-        case $build_os in
-          cygwin* | mingw* | msys* | cegcc* )
-            libexport_attribute="__declspec(dllimport)"
-            if test "$enable_static" = yes ; then
-              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
-            fi
-          ;;
-        esac
-      fi
-
-cat >>confdefs.h <<_ACEOF
-#define CBCGENERIC_EXPORT $libexport_attribute
-_ACEOF
-
-
-      # add -DXYZ_BUILD to XYZ_CFLAGS
-      CBCGENERIC_CFLAGS="${CBCGENERIC_CFLAGS} -DCBCGENERIC_BUILD"
-
-      # Define BUILDTOOLS_DEBUG to enable debugging output
-      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCGENERIC_LFLAGS_NOPC: \"${CBCGENERIC_LFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: CBCGENERIC_LFLAGS_NOPC: \"${CBCGENERIC_LFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCGENERIC_CFLAGS_NOPC: \"${CBCGENERIC_CFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: CBCGENERIC_CFLAGS_NOPC: \"${CBCGENERIC_CFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: adding \"${CBCGENERIC_PCFILES}\"" >&5
-$as_echo "$as_me: adding \"${CBCGENERIC_PCFILES}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCGENERIC_LFLAGS: \"${CBCGENERIC_LFLAGS}\"" >&5
-$as_echo "$as_me: CBCGENERIC_LFLAGS: \"${CBCGENERIC_LFLAGS}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCGENERIC_CFLAGS: \"${CBCGENERIC_CFLAGS}\"" >&5
-$as_echo "$as_me: CBCGENERIC_CFLAGS: \"${CBCGENERIC_CFLAGS}\"" >&6;}
-      fi
-     if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for OsiCbcLib:" >&5
-$as_echo "$as_me: FINALIZE_FLAGS for OsiCbcLib:" >&6;}
-      fi
-      OSICBCLIB_LFLAGS_NOPC=$OSICBCLIB_LFLAGS
-
-      OSICBCLIB_CFLAGS_NOPC=$OSICBCLIB_CFLAGS
-
-      if test -n "${OSICBCLIB_PCFILES}" ; then
-        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${OSICBCLIB_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs ${OSICBCLIB_PCFILES}`
-        OSICBCLIB_CFLAGS="$temp_CFLAGS ${OSICBCLIB_CFLAGS}"
-        OSICBCLIB_LFLAGS="$temp_LFLAGS ${OSICBCLIB_LFLAGS}"
-      fi
-
-      # setup XYZ_EXPORT symbol for library users
-      libexport_attribute=
-      if test "$enable_shared" = yes ; then
-        case $build_os in
-          cygwin* | mingw* | msys* | cegcc* )
-            libexport_attribute="__declspec(dllimport)"
-            if test "$enable_static" = yes ; then
-              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
-            fi
-          ;;
-        esac
-      fi
-
-cat >>confdefs.h <<_ACEOF
-#define OSICBCLIB_EXPORT $libexport_attribute
-_ACEOF
-
-
-      # add -DXYZ_BUILD to XYZ_CFLAGS
-      OSICBCLIB_CFLAGS="${OSICBCLIB_CFLAGS} -DOSICBCLIB_BUILD"
-
-      # Define BUILDTOOLS_DEBUG to enable debugging output
-      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: OSICBCLIB_CFLAGS_NOPC: \"${OSICBCLIB_CFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: OSICBCLIB_CFLAGS_NOPC: \"${OSICBCLIB_CFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: adding \"${OSICBCLIB_PCFILES}\"" >&5
-$as_echo "$as_me: adding \"${OSICBCLIB_PCFILES}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: OSICBCLIB_LFLAGS: \"${OSICBCLIB_LFLAGS}\"" >&5
-$as_echo "$as_me: OSICBCLIB_LFLAGS: \"${OSICBCLIB_LFLAGS}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: OSICBCLIB_CFLAGS: \"${OSICBCLIB_CFLAGS}\"" >&5
-$as_echo "$as_me: OSICBCLIB_CFLAGS: \"${OSICBCLIB_CFLAGS}\"" >&6;}
-      fi
-     if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcUnitTest:" >&5
-$as_echo "$as_me: FINALIZE_FLAGS for CbcUnitTest:" >&6;}
-      fi
-      CBCUNITTEST_LFLAGS_NOPC=$CBCUNITTEST_LFLAGS
-
-      CBCUNITTEST_CFLAGS_NOPC=$CBCUNITTEST_CFLAGS
-
-      if test -n "${CBCUNITTEST_PCFILES}" ; then
-        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCUNITTEST_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs ${CBCUNITTEST_PCFILES}`
-        CBCUNITTEST_CFLAGS="$temp_CFLAGS ${CBCUNITTEST_CFLAGS}"
-        CBCUNITTEST_LFLAGS="$temp_LFLAGS ${CBCUNITTEST_LFLAGS}"
-      fi
-
-      # setup XYZ_EXPORT symbol for library users
-      libexport_attribute=
-      if test "$enable_shared" = yes ; then
-        case $build_os in
-          cygwin* | mingw* | msys* | cegcc* )
-            libexport_attribute="__declspec(dllimport)"
-            if test "$enable_static" = yes ; then
-              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
-            fi
-          ;;
-        esac
-      fi
-
-cat >>confdefs.h <<_ACEOF
-#define CBCUNITTEST_EXPORT $libexport_attribute
-_ACEOF
-
-
-      # add -DXYZ_BUILD to XYZ_CFLAGS
-      CBCUNITTEST_CFLAGS="${CBCUNITTEST_CFLAGS} -DCBCUNITTEST_BUILD"
-
-      # Define BUILDTOOLS_DEBUG to enable debugging output
-      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_LFLAGS_NOPC: \"${CBCUNITTEST_LFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: CBCUNITTEST_LFLAGS_NOPC: \"${CBCUNITTEST_LFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_CFLAGS_NOPC: \"${CBCUNITTEST_CFLAGS_NOPC}\"" >&5
-$as_echo "$as_me: CBCUNITTEST_CFLAGS_NOPC: \"${CBCUNITTEST_CFLAGS_NOPC}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: adding \"${CBCUNITTEST_PCFILES}\"" >&5
-$as_echo "$as_me: adding \"${CBCUNITTEST_PCFILES}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_LFLAGS: \"${CBCUNITTEST_LFLAGS}\"" >&5
-$as_echo "$as_me: CBCUNITTEST_LFLAGS: \"${CBCUNITTEST_LFLAGS}\"" >&6;}
-        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_CFLAGS: \"${CBCUNITTEST_CFLAGS}\"" >&5
-$as_echo "$as_me: CBCUNITTEST_CFLAGS: \"${CBCUNITTEST_CFLAGS}\"" >&6;}
-      fi
-
-
-
 #############################################################################
 #                       CbcGeneric configuration                            #
 #############################################################################
@@ -22753,6 +22510,255 @@ ac_config_files="$ac_config_files doxydoc/doxygen.conf"
 
 # Here put the location and name of the configuration header file
 ac_config_headers="$ac_config_headers src/config.h src/config_cbc.h src/config_cbcsolver.h src/OsiCbc/config_osicbc.h"
+
+
+
+   if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcLib:" >&5
+$as_echo "$as_me: FINALIZE_FLAGS for CbcLib:" >&6;}
+      fi
+      CBCLIB_LFLAGS_NOPC=$CBCLIB_LFLAGS
+
+      CBCLIB_CFLAGS_NOPC=$CBCLIB_CFLAGS
+
+      if test -n "${CBCLIB_PCFILES}" ; then
+        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCLIB_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${CBCLIB_PCFILES}`
+        CBCLIB_CFLAGS="$temp_CFLAGS ${CBCLIB_CFLAGS}"
+        CBCLIB_LFLAGS="$temp_LFLAGS ${CBCLIB_LFLAGS}"
+      fi
+
+      # setup XYZ_EXPORT symbol for library users
+      libexport_attribute=
+      if test "$enable_shared" = yes ; then
+        case $build_os in
+          cygwin* | mingw* | msys* | cegcc* )
+            libexport_attribute="__declspec(dllimport)"
+            if test "$enable_static" = yes ; then
+              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+            fi
+          ;;
+        esac
+      fi
+
+cat >>confdefs.h <<_ACEOF
+#define CBCLIB_EXPORT $libexport_attribute
+_ACEOF
+
+
+      # add -DXYZ_BUILD to XYZ_CFLAGS
+      CBCLIB_CFLAGS="${CBCLIB_CFLAGS} -DCBCLIB_BUILD"
+
+      # Define BUILDTOOLS_DEBUG to enable debugging output
+      if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCLIB_LFLAGS_NOPC: \"${CBCLIB_LFLAGS_NOPC}\"" >&5
+$as_echo "$as_me: CBCLIB_LFLAGS_NOPC: \"${CBCLIB_LFLAGS_NOPC}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCLIB_CFLAGS_NOPC: \"${CBCLIB_CFLAGS_NOPC}\"" >&5
+$as_echo "$as_me: CBCLIB_CFLAGS_NOPC: \"${CBCLIB_CFLAGS_NOPC}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: adding \"${CBCLIB_PCFILES}\"" >&5
+$as_echo "$as_me: adding \"${CBCLIB_PCFILES}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCLIB_LFLAGS: \"${CBCLIB_LFLAGS}\"" >&5
+$as_echo "$as_me: CBCLIB_LFLAGS: \"${CBCLIB_LFLAGS}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCLIB_CFLAGS: \"${CBCLIB_CFLAGS}\"" >&5
+$as_echo "$as_me: CBCLIB_CFLAGS: \"${CBCLIB_CFLAGS}\"" >&6;}
+      fi
+     if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcSolverLib:" >&5
+$as_echo "$as_me: FINALIZE_FLAGS for CbcSolverLib:" >&6;}
+      fi
+      CBCSOLVERLIB_LFLAGS_NOPC=$CBCSOLVERLIB_LFLAGS
+
+      CBCSOLVERLIB_CFLAGS_NOPC=$CBCSOLVERLIB_CFLAGS
+
+      if test -n "${CBCSOLVERLIB_PCFILES}" ; then
+        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCSOLVERLIB_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${CBCSOLVERLIB_PCFILES}`
+        CBCSOLVERLIB_CFLAGS="$temp_CFLAGS ${CBCSOLVERLIB_CFLAGS}"
+        CBCSOLVERLIB_LFLAGS="$temp_LFLAGS ${CBCSOLVERLIB_LFLAGS}"
+      fi
+
+      # setup XYZ_EXPORT symbol for library users
+      libexport_attribute=
+      if test "$enable_shared" = yes ; then
+        case $build_os in
+          cygwin* | mingw* | msys* | cegcc* )
+            libexport_attribute="__declspec(dllimport)"
+            if test "$enable_static" = yes ; then
+              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+            fi
+          ;;
+        esac
+      fi
+
+cat >>confdefs.h <<_ACEOF
+#define CBCSOLVERLIB_EXPORT $libexport_attribute
+_ACEOF
+
+
+      # add -DXYZ_BUILD to XYZ_CFLAGS
+      CBCSOLVERLIB_CFLAGS="${CBCSOLVERLIB_CFLAGS} -DCBCSOLVERLIB_BUILD"
+
+      # Define BUILDTOOLS_DEBUG to enable debugging output
+      if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_LFLAGS_NOPC: \"${CBCSOLVERLIB_LFLAGS_NOPC}\"" >&5
+$as_echo "$as_me: CBCSOLVERLIB_LFLAGS_NOPC: \"${CBCSOLVERLIB_LFLAGS_NOPC}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_CFLAGS_NOPC: \"${CBCSOLVERLIB_CFLAGS_NOPC}\"" >&5
+$as_echo "$as_me: CBCSOLVERLIB_CFLAGS_NOPC: \"${CBCSOLVERLIB_CFLAGS_NOPC}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: adding \"${CBCSOLVERLIB_PCFILES}\"" >&5
+$as_echo "$as_me: adding \"${CBCSOLVERLIB_PCFILES}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_LFLAGS: \"${CBCSOLVERLIB_LFLAGS}\"" >&5
+$as_echo "$as_me: CBCSOLVERLIB_LFLAGS: \"${CBCSOLVERLIB_LFLAGS}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCSOLVERLIB_CFLAGS: \"${CBCSOLVERLIB_CFLAGS}\"" >&5
+$as_echo "$as_me: CBCSOLVERLIB_CFLAGS: \"${CBCSOLVERLIB_CFLAGS}\"" >&6;}
+      fi
+     if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcGeneric:" >&5
+$as_echo "$as_me: FINALIZE_FLAGS for CbcGeneric:" >&6;}
+      fi
+      CBCGENERIC_LFLAGS_NOPC=$CBCGENERIC_LFLAGS
+
+      CBCGENERIC_CFLAGS_NOPC=$CBCGENERIC_CFLAGS
+
+      if test -n "${CBCGENERIC_PCFILES}" ; then
+        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCGENERIC_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${CBCGENERIC_PCFILES}`
+        CBCGENERIC_CFLAGS="$temp_CFLAGS ${CBCGENERIC_CFLAGS}"
+        CBCGENERIC_LFLAGS="$temp_LFLAGS ${CBCGENERIC_LFLAGS}"
+      fi
+
+      # setup XYZ_EXPORT symbol for library users
+      libexport_attribute=
+      if test "$enable_shared" = yes ; then
+        case $build_os in
+          cygwin* | mingw* | msys* | cegcc* )
+            libexport_attribute="__declspec(dllimport)"
+            if test "$enable_static" = yes ; then
+              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+            fi
+          ;;
+        esac
+      fi
+
+cat >>confdefs.h <<_ACEOF
+#define CBCGENERIC_EXPORT $libexport_attribute
+_ACEOF
+
+
+      # add -DXYZ_BUILD to XYZ_CFLAGS
+      CBCGENERIC_CFLAGS="${CBCGENERIC_CFLAGS} -DCBCGENERIC_BUILD"
+
+      # Define BUILDTOOLS_DEBUG to enable debugging output
+      if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCGENERIC_LFLAGS_NOPC: \"${CBCGENERIC_LFLAGS_NOPC}\"" >&5
+$as_echo "$as_me: CBCGENERIC_LFLAGS_NOPC: \"${CBCGENERIC_LFLAGS_NOPC}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCGENERIC_CFLAGS_NOPC: \"${CBCGENERIC_CFLAGS_NOPC}\"" >&5
+$as_echo "$as_me: CBCGENERIC_CFLAGS_NOPC: \"${CBCGENERIC_CFLAGS_NOPC}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: adding \"${CBCGENERIC_PCFILES}\"" >&5
+$as_echo "$as_me: adding \"${CBCGENERIC_PCFILES}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCGENERIC_LFLAGS: \"${CBCGENERIC_LFLAGS}\"" >&5
+$as_echo "$as_me: CBCGENERIC_LFLAGS: \"${CBCGENERIC_LFLAGS}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCGENERIC_CFLAGS: \"${CBCGENERIC_CFLAGS}\"" >&5
+$as_echo "$as_me: CBCGENERIC_CFLAGS: \"${CBCGENERIC_CFLAGS}\"" >&6;}
+      fi
+     if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for OsiCbcLib:" >&5
+$as_echo "$as_me: FINALIZE_FLAGS for OsiCbcLib:" >&6;}
+      fi
+      OSICBCLIB_LFLAGS_NOPC=$OSICBCLIB_LFLAGS
+
+      OSICBCLIB_CFLAGS_NOPC=$OSICBCLIB_CFLAGS
+
+      if test -n "${OSICBCLIB_PCFILES}" ; then
+        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${OSICBCLIB_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${OSICBCLIB_PCFILES}`
+        OSICBCLIB_CFLAGS="$temp_CFLAGS ${OSICBCLIB_CFLAGS}"
+        OSICBCLIB_LFLAGS="$temp_LFLAGS ${OSICBCLIB_LFLAGS}"
+      fi
+
+      # setup XYZ_EXPORT symbol for library users
+      libexport_attribute=
+      if test "$enable_shared" = yes ; then
+        case $build_os in
+          cygwin* | mingw* | msys* | cegcc* )
+            libexport_attribute="__declspec(dllimport)"
+            if test "$enable_static" = yes ; then
+              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+            fi
+          ;;
+        esac
+      fi
+
+cat >>confdefs.h <<_ACEOF
+#define OSICBCLIB_EXPORT $libexport_attribute
+_ACEOF
+
+
+      # add -DXYZ_BUILD to XYZ_CFLAGS
+      OSICBCLIB_CFLAGS="${OSICBCLIB_CFLAGS} -DOSICBCLIB_BUILD"
+
+      # Define BUILDTOOLS_DEBUG to enable debugging output
+      if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&5
+$as_echo "$as_me: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: OSICBCLIB_CFLAGS_NOPC: \"${OSICBCLIB_CFLAGS_NOPC}\"" >&5
+$as_echo "$as_me: OSICBCLIB_CFLAGS_NOPC: \"${OSICBCLIB_CFLAGS_NOPC}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: adding \"${OSICBCLIB_PCFILES}\"" >&5
+$as_echo "$as_me: adding \"${OSICBCLIB_PCFILES}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: OSICBCLIB_LFLAGS: \"${OSICBCLIB_LFLAGS}\"" >&5
+$as_echo "$as_me: OSICBCLIB_LFLAGS: \"${OSICBCLIB_LFLAGS}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: OSICBCLIB_CFLAGS: \"${OSICBCLIB_CFLAGS}\"" >&5
+$as_echo "$as_me: OSICBCLIB_CFLAGS: \"${OSICBCLIB_CFLAGS}\"" >&6;}
+      fi
+     if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcUnitTest:" >&5
+$as_echo "$as_me: FINALIZE_FLAGS for CbcUnitTest:" >&6;}
+      fi
+      CBCUNITTEST_LFLAGS_NOPC=$CBCUNITTEST_LFLAGS
+
+      CBCUNITTEST_CFLAGS_NOPC=$CBCUNITTEST_CFLAGS
+
+      if test -n "${CBCUNITTEST_PCFILES}" ; then
+        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCUNITTEST_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${CBCUNITTEST_PCFILES}`
+        CBCUNITTEST_CFLAGS="$temp_CFLAGS ${CBCUNITTEST_CFLAGS}"
+        CBCUNITTEST_LFLAGS="$temp_LFLAGS ${CBCUNITTEST_LFLAGS}"
+      fi
+
+      # setup XYZ_EXPORT symbol for library users
+      libexport_attribute=
+      if test "$enable_shared" = yes ; then
+        case $build_os in
+          cygwin* | mingw* | msys* | cegcc* )
+            libexport_attribute="__declspec(dllimport)"
+            if test "$enable_static" = yes ; then
+              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+            fi
+          ;;
+        esac
+      fi
+
+cat >>confdefs.h <<_ACEOF
+#define CBCUNITTEST_EXPORT $libexport_attribute
+_ACEOF
+
+
+      # add -DXYZ_BUILD to XYZ_CFLAGS
+      CBCUNITTEST_CFLAGS="${CBCUNITTEST_CFLAGS} -DCBCUNITTEST_BUILD"
+
+      # Define BUILDTOOLS_DEBUG to enable debugging output
+      if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_LFLAGS_NOPC: \"${CBCUNITTEST_LFLAGS_NOPC}\"" >&5
+$as_echo "$as_me: CBCUNITTEST_LFLAGS_NOPC: \"${CBCUNITTEST_LFLAGS_NOPC}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_CFLAGS_NOPC: \"${CBCUNITTEST_CFLAGS_NOPC}\"" >&5
+$as_echo "$as_me: CBCUNITTEST_CFLAGS_NOPC: \"${CBCUNITTEST_CFLAGS_NOPC}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: adding \"${CBCUNITTEST_PCFILES}\"" >&5
+$as_echo "$as_me: adding \"${CBCUNITTEST_PCFILES}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_LFLAGS: \"${CBCUNITTEST_LFLAGS}\"" >&5
+$as_echo "$as_me: CBCUNITTEST_LFLAGS: \"${CBCUNITTEST_LFLAGS}\"" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_CFLAGS: \"${CBCUNITTEST_CFLAGS}\"" >&5
+$as_echo "$as_me: CBCUNITTEST_CFLAGS: \"${CBCUNITTEST_CFLAGS}\"" >&6;}
+      fi
+
 
 
 # Finally, we let configure write all the output...

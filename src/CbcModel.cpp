@@ -88,6 +88,7 @@ typedef struct {
   double useCutoff;
   CbcModel *model;
   int switches;
+  int iModel;
 } rootBundle;
 static void *doRootCbcThread(void *voidInfo);
 
@@ -2800,6 +2801,7 @@ void CbcModel::branchAndBound(int doStatistics)
     */
   // See if multiple runs wanted
   CbcModel **rootModels = NULL;
+  rootBundle * bundle = NULL;
   if (!parentModel_ && multipleRootTries_ % 100) {
     double rootTimeCpu = CoinCpuTime();
     double startTimeRoot = CoinGetTimeOfDay();
@@ -2821,6 +2823,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
     int otherOptions = (multipleRootTries_ / 10000) % 100;
     rootModels = new CbcModel *[numberModels];
+    bundle = new rootBundle [numberModels];
     int newSeed = randomSeed_;
     if (newSeed == 0) {
       double time = fabs(CoinGetTimeOfDay());
@@ -2840,6 +2843,11 @@ void CbcModel::branchAndBound(int doStatistics)
     CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(solver_->getEmptyWarmStart());
     for (int i = 0; i < numberModels; i++) {
       rootModels[i] = new CbcModel(*this);
+      if ((moreSpecialOptions2_&4194304) != 0) {
+	rootModels[i]->setCutoffIncrement(1.0e-5);
+	rootModels[i]->setAllowableGap(0.0);
+	rootModels[i]->setAllowableFractionGap(0.0);
+      }
       rootModels[i]->setNumberThreads(0);
       rootModels[i]->setMaximumNodes(otherOptions ? -1 : 0);
       rootModels[i]->setRandomSeed(newSeed + 10000000 * i);
@@ -2918,11 +2926,21 @@ void CbcModel::branchAndBound(int doStatistics)
     }
 #endif
     delete basis;
+    double bestSoFar = COIN_DBL_MAX;
 #ifdef CBC_THREAD
     if (numberRootThreads == 1) {
 #endif
       for (int iModel = 0; iModel < numberModels; iModel++) {
-        doRootCbcThread(rootModels[iModel]);
+	bundle[iModel].model = rootModels[iModel];
+	bundle[iModel].iModel = iModel;
+        doRootCbcThread(bundle+iModel);
+	double best = rootModels[iModel]->getMinimizationObjValue();
+	if (best < bestSoFar) {
+	  bestSoFar = best;
+	  double useCutoff = rootModels[iModel]->getCutoff();
+	  for (int jModel = iModel+1 ;jModel < numberModels;jModel++) 
+	    rootModels[jModel]->setCutoff(useCutoff);
+	}
         // see if solved at root node
         if (rootModels[iModel]->getMaximumNodes()) {
           feasible = false;
@@ -2935,18 +2953,32 @@ void CbcModel::branchAndBound(int doStatistics)
       for (int kModel = 0; kModel < numberModels; kModel += numberRootThreads) {
         bool finished = false;
         for (int iModel = kModel; iModel < CoinMin(numberModels, kModel + numberRootThreads); iModel++) {
+	  bundle[iModel].model = rootModels[iModel];
+	  bundle[iModel].iModel = iModel;
           pthread_create(&(threadId[iModel - kModel].thr), NULL,
             doRootCbcThread,
-            rootModels[iModel]);
+            bundle+iModel);
         }
         // wait
         for (int iModel = kModel; iModel < CoinMin(numberModels, kModel + numberRootThreads); iModel++) {
           pthread_join(threadId[iModel - kModel].thr, NULL);
         }
+	// Find best objective
+        for (int iModel = kModel; iModel < CoinMin(numberModels, kModel + numberRootThreads); iModel++) {
+	  double best = rootModels[iModel]->getMinimizationObjValue();
+	  if (best < bestSoFar) {
+	    bestSoFar = best;
+	    double useCutoff = rootModels[iModel]->getCutoff();
+	    int kkModel = CoinMin(numberModels,kModel+numberRootThreads);
+	    for (int jModel = kkModel ;jModel < numberModels;jModel++) 
+	      rootModels[jModel]->setCutoff(useCutoff);
+	  }
+	}
         // see if solved at root node
         for (int iModel = kModel; iModel < CoinMin(numberModels, kModel + numberRootThreads); iModel++) {
-          if (rootModels[iModel]->getMaximumNodes())
+          if (rootModels[iModel]->getMaximumNodes()) {
             finished = true;
+	  }
         }
         if (finished) {
           feasible = false;
@@ -2961,6 +2993,7 @@ void CbcModel::branchAndBound(int doStatistics)
     double *value = new double[numberModels];
     int numberSolutions = 0;
     for (int iModel = 0; iModel < numberModels; iModel++) {
+      rootModels[iModel]->setCutoff(1.0e50);
       if (rootModels[iModel]->bestSolution()) {
         which[numberSolutions] = iModel;
         value[numberSolutions++] = -rootModels[iModel]->getMinimizationObjValue();
@@ -2984,11 +3017,10 @@ void CbcModel::branchAndBound(int doStatistics)
     lastHeuristic_ = &dummyHeuristic;
     for (int i = 0; i < numberSolutions; i++) {
       double objValue = -value[i];
-      if (objValue < getCutoff()) {
-        int iModel = which[i];
-        setBestSolution(CBC_ROUNDING, objValue,
-          rootModels[iModel]->bestSolution());
-      }
+      setCutoff(1.0e50);
+      int iModel = which[i];
+      setBestSolution(CBC_ROUNDING, objValue,
+		      rootModels[iModel]->bestSolution());
     }
     lastHeuristic_ = NULL;
     delete[] which;
@@ -3543,6 +3575,7 @@ void CbcModel::branchAndBound(int doStatistics)
     for (int i = 0; i < numberModels; i++)
       delete rootModels[i];
     delete[] rootModels;
+    delete [] bundle;
   }
   // check extra info on feasibility
   if (!solverCharacteristics_->mipFeasible())
@@ -19425,16 +19458,16 @@ int CbcModel::subBranchAndBound(const double *lower, const double *upper,
   return status;
 }
 #endif
-
 static void *doRootCbcThread(void *voidInfo)
 {
-  CbcModel *model = reinterpret_cast< CbcModel * >(voidInfo);
+  rootBundle * bundle = reinterpret_cast< rootBundle *>(voidInfo);
+  CbcModel *model = bundle->model;
 #ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver
     = dynamic_cast< OsiClpSolverInterface * >(model->solver());
   char general[200];
   if (clpSolver) {
-    sprintf(general, "Starting multiple root solver");
+    sprintf(general, "Starting multiple root solver %d",bundle->iModel+1);
     model->messageHandler()->message(CBC_GENERAL,
       model->messages())
       << general << CoinMessageEol;
@@ -19462,7 +19495,7 @@ static void *doRootCbcThread(void *voidInfo)
    model->setMoreSpecialOptions2(newOptions);
 #endif
   model->branchAndBound();
-  sprintf(general, "Ending multiple root solver");
+  sprintf(general, "Ending multiple root solver %d",bundle->iModel+1);
   model->messageHandler()->message(CBC_GENERAL,
     model->messages())
     << general << CoinMessageEol;

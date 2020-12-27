@@ -2149,6 +2149,7 @@ public:
  	19 bit 524288 - freeze problem at root cuts
  	20 bit 1048576 - use ranging in CbcNode
 	21 bit 2097152 - analyze changed priorities but were equal before
+	22 bit 4194304 - ignore cutoff increment in multiple root solvers
     */
   inline void setMoreSpecialOptions2(int value)
   {

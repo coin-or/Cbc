@@ -104,16 +104,16 @@ matrix:
             - libmetis-dev
             - libnauty2-dev
     - os: osx
-      osx_image: xcode11
-      env: OSX=10.14 CC=gcc CXX=g++ BUILD_STATIC=false DEBUG=false ASAN=false
+      osx_image: xcode12
+      env: OSX=10.15 CC=gcc CXX=g++ BUILD_STATIC=false DEBUG=false ASAN=false
+      compiler: clang
+    - os: osx
+      osx_image: xcode12
+      env: OSX=10.15  BUILD_STATIC=false DEBUG=false ASAN=false
       compiler: clang
     - os: osx
       osx_image: xcode11
       env: OSX=10.14  BUILD_STATIC=false DEBUG=false ASAN=false
-      compiler: clang
-    - os: osx
-      osx_image: xcode10
-      env: OSX=10.13  BUILD_STATIC=false DEBUG=false ASAN=false
       compiler: clang
     - os: windows
 

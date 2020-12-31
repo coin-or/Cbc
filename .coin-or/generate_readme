@@ -2,7 +2,12 @@
 
 source $COINBREW_HOME/scripts/generate_readme
 
-create_variables $1
+pushd . > /dev/null
+cd $(dirname $0)
+SCRIPT_DIR=$PWD
+popd > /dev/null
+
+create_variables $SCRIPT_DIR/config.yml
 
 make_header
 

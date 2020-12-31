@@ -106,7 +106,6 @@ matrix:
     - os: osx
       osx_image: xcode12
       env: OSX=10.15 CC=gcc CXX=g++ BUILD_STATIC=false DEBUG=false ASAN=false
-      compiler: clang
     - os: osx
       osx_image: xcode12
       env: OSX=10.15  BUILD_STATIC=false DEBUG=false ASAN=false

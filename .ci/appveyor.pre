@@ -7,5 +7,5 @@ platform:
 environment:
   global:
     BINTRAY_API:
-      secure: a9n4jf90wlFCdaYa6fOmYxsF97ur2dnK8Ys3gn5R90JBzTDq6cD2GlEwmmts75mq
+      secure: 0EYF0DvzIOWIH+sDA3zvLo2iFIeSSAn/ZhdsE7ccEXi4swwVqw1MEcyRnPeTmcJ7
     BINTRAY_USERNAME: tkralphs

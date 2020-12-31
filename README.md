@@ -10,7 +10,7 @@ To make changes, please edit [config.yml](.coin-or/config.yml) or the generation
 
 Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
 It can be used as a callable library or using a stand-alone executable.
-It can be called through 
+It can be called through
  * AIMMS (via the [AIMMSlinks](https://github.com/coin-or/AIMMSlinks) project),
  * AMPL (natively),
  * [CMPL](https://github.com/coin-or/Cmpl),
@@ -44,7 +44,7 @@ Cbc is written in C++ and is released as open source under the [Eclipse Public L
 
 It is distributed under the auspices of the [COIN-OR Foundation](https://www.coin-or.org)
 
-The Cbc development site is https://github.com/coin-or/Cbc.
+The Cbc website is https://github.com/coin-or/Cbc.
 
 ## CITE
 
@@ -52,9 +52,9 @@ The Cbc development site is https://github.com/coin-or/Cbc.
 
 ## CURRENT BUILD STATUS
 
-[![Build Status](https://travis-ci.org/coin-or/Cbc.svg?branch=master)](https://travis-ci.org/coin-or/Cbc)
+[![Build Status](https://travis-ci.com/coin-or/Cbc.svg?branch=master)](https://travis-ci.com/coin-or/Cbc)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/chribnemsgm9th0x/branch/master?svg=true)](https://ci.appveyor.com/project/tkralphs/cbc-s1r7t/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/chribnemsgm9th0x/branch/master?svg=true)](https://ci.appveyor.com/project/coin-or/Cbc/branch/master)
 
 ## DOWNLOAD
 
@@ -62,7 +62,7 @@ The Cbc development site is https://github.com/coin-or/Cbc.
 
 There is a Docker image that provides Cbc, as well as other projects
 in the [COIN-OR Optimization
-Suite](https://github.com/coin-or/COIN-OR-OptimizationSuite) [here](https://hub.docker.com/repository/docker/coinor/coin-or-optimization-suite)
+Suite](https://github.com/coin-or/COIN-OR-OptimizationSuite)[here](https://hub.docker.com/repository/docker/coinor/coin-or-optimization-suite)
 
 ### Binaries
 
@@ -77,9 +77,7 @@ Binaries for most platforms are available as part of [Cbc](https://bintray.com/c
 Due to license incompatibilities, pre-compiled binaries lack some functionality.
 If binaries are not available for your platform for the latest version and you would like to request them to be built and posted, feel free to let us know on the mailing list.
 
-### Source
-
-Source code can be obtained either by
+*Source code* can be obtained either by
 
  * Downloading a snapshot of the source code for the latest release version of Cbc from the
  [releases](https://github.com/coin-or/Cbc/releases) page.

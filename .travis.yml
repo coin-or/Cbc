@@ -106,25 +106,29 @@ matrix:
     - os: osx
       osx_image: xcode12
       env: OSX=10.15 CC=gcc-10 CXX=g++-10 BUILD_STATIC=false DEBUG=false ASAN=false
-      homebrew:
-        packages:
-        - bash
-        - gcc@10
-        - metis
+      addons:
+        homebrew:
+          packages:
+          - bash
+          - gcc@10
+          - metis
     - os: osx
       osx_image: xcode12
       env: OSX=10.15  BUILD_STATIC=false DEBUG=false ASAN=false
-      homebrew:
-        packages:
-        - bash
-        - metis
+      addons:
+        homebrew:
+          packages:
+          - bash
+          - metis
       compiler: clang
     - os: osx
       osx_image: xcode11
       env: OSX=10.14  BUILD_STATIC=false DEBUG=false ASAN=false
-        packages:
-        - bash
-        - metis
+      addons:
+        homebrew:
+          packages:
+          - bash
+          - metis
       compiler: clang
     - os: windows
 

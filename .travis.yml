@@ -175,7 +175,7 @@ script:
     ############### Building Project ####################
     source coinbrew/.ci/setup_environment.sh
     ADD_CXXFLAGS="${ADD_CXXFLAGS} -fvisibility=hidden"
-    $BASH coinbrew/coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}" ADD_CXXFLAGS=${ADD_CXXFLAGS} CC=${CC} CXX=${CXX}
+    $BASH coinbrew/coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}" ADD_CXXFLAGS="${ADD_CXXFLAGS}" CC=${CC} CXX=${CXX}
 
 after_script:
 - |-

@@ -143,7 +143,7 @@ matrix:
   allow_failures:
     - os: windows
 
-install:
+before_install:
 - |-
     ############## Installing Additional Packages #################
     export PROJECT=$(basename $PWD)
@@ -164,7 +164,6 @@ install:
         ;;
     esac
     export BASH
-    if [ "$CXX" = "g++" ]; then export CXX="g++-10" CC="gcc-10"; fi
 
 before_script:
 - |-

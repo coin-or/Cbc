@@ -1,11 +1,11 @@
-# Cbc 
+# Cbc refactor
 
 [![A COIN-OR Project](https://coin-or.github.io/coin-or-badge.png)](https://www.coin-or.org)
 
 [![Latest Release](https://img.shields.io/github/v/release/coin-or/Cbc?sort=semver)](https://github.com/coin-or/Cbc/releases)
 
 _This file is auto-generated from [config.yml](.coin-or/config.yml) using the 
-[generate_readme](.coin-or/generate_readme).
+[generate_readme](.coin-or/generate_readme) script.
 To make changes, please edit [config.yml](.coin-or/config.yml) or the generation script._
 
 Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
@@ -50,11 +50,19 @@ The Cbc website is https://github.com/coin-or/Cbc.
 
 ## CURRENT BUILD STATUS
 
-[![Build Status](https://travis-ci.org/coin-or/Cbc.svg?branch=master)](https://travis-ci.org/coin-or/Cbc)
+[![Build Status](https://travis-ci.com/coin-or/Cbc.svg?branch=refactor)](https://travis-ci.com/coin-or/Cbc)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/chribnemsgm9th0x/branch/master?svg=true)](https://ci.appveyor.com/project/tkralphs/cbc-s1r7t/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/chribnemsgm9th0x/branch/refactor?svg=true)](https://ci.appveyor.com/project/coin-or/Cbc/branch/refactor)
 
 ## DOWNLOAD
+
+### Docker image
+
+There is a Docker image that provides Cbc, as well as other projects
+in the [COIN-OR Optimization
+Suite](https://github.com/coin-or/COIN-OR-OptimizationSuite)[here](https://hub.docker.com/repository/docker/coinor/coin-or-optimization-suite)
+
+### Binaries
 
 Binaries for most platforms are available as part of [Cbc](https://bintray.com/coin-or/download/Cbc). 
 
@@ -88,7 +96,7 @@ To build CoinUtils from source, obtain the `coinbrew` script, do
 ```
 wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
 chmod u+x coinbrew
-./coinbrew fetch Cbc@master
+./coinbrew fetch Cbc@refactor
 ./coinbrew build Cbc
 ```
 For more detailed instructions on coinbrew, see https://coin-or.github.io/coinbrew.
@@ -166,7 +174,7 @@ If you have `Doxygen` available, you can build a HTML documentation by typing
 `make doxygen-docs` 
 
 in the build directory. If Cbc was built via `coinbrew`, then the build
-directory will be `./build/Cbc/master` by default. The doxygen documentation main file
+directory will be `./build/Cbc/refactor` by default. The doxygen documentation main file
 is found at `<build-dir>/doxydoc/html/index.html`.
 
 If you don't have `doxygen` installed locally, you can use also find the
@@ -183,7 +191,7 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
 ## Project Links
 
  * [COIN-OR Initiative](http://www.coin-or.org/)
- * [Mailing list](http://list.coin-or.org/mailman/listinfo/cbc)
+ * [Mailing list](https://github.com/coin-or/Cbc/discussions)
  * [Report a bug](https://github.com/coin-or/Cbc/issues/new)
  * [Doxygen-generated html documentation](http://coin-or.github.io/Cbc/Doxygen)
 

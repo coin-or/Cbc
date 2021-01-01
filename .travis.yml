@@ -105,7 +105,7 @@ matrix:
             - libnauty2-dev
     - os: osx
       osx_image: xcode12
-      env: OSX=10.15 CC=gcc-10 CXX=g++-10 BUILD_STATIC=false DEBUG=false ASAN=false
+      env: OSX=10.15 BUILD_STATIC=false DEBUG=false ASAN=false
       addons:
         homebrew:
           packages:
@@ -113,6 +113,9 @@ matrix:
           - gcc@10
           - metis
       compiler: gcc-10
+      install: 
+      - export CC=gcc-10 
+      - export CXX=g++-10
     - os: osx
       osx_image: xcode12
       env: OSX=10.15  BUILD_STATIC=false DEBUG=false ASAN=false
@@ -132,11 +135,15 @@ matrix:
           - metis
       compiler: clang
     - os: windows
+      cache:
+        directories:
+        - $HOME/AppData/Local/Temp/chocolatey
+        - /C/tools/msys64
 
   allow_failures:
     - os: windows
 
-before_install:
+install:
 - |-
     ############## Installing Additional Packages #################
     export PROJECT=$(basename $PWD)
@@ -150,12 +157,14 @@ before_install:
         ;;
       osx)
         BASH=/usr/local/bin/bash
+        export 
         ;;
       linux)
         BASH=bash
         ;;
     esac
     export BASH
+    if [ "$CXX" = "g++" ]; then export CXX="g++-10" CC="gcc-10"; fi
 
 before_script:
 - |-
@@ -187,8 +196,4 @@ after_script:
         ;;
     esac
     
-cache:
-    directories:
-    - $HOME/AppData/Local/Temp/chocolatey
-    - /C/tools/msys64
 

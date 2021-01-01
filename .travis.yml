@@ -6,8 +6,7 @@ matrix:
   include:
     - os: linux
       dist: precise
-      env: 
-        - MATRIX_EVAL="BUILD_STATIC=false DEBUG=false ASAN=false"
+      env: BUILD_STATIC=false DEBUG=false ASAN=false
       addons:
         apt:
           sources:
@@ -29,8 +28,7 @@ matrix:
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 90
     - os: linux
       dist: precise
-      env: 
-        - MATRIX_EVAL="BUILD_STATIC=false DEBUG=false ASAN=false"
+      env: BUILD_STATIC=false DEBUG=false ASAN=false
       addons:
         apt:
           sources:
@@ -53,8 +51,7 @@ matrix:
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - os: linux
       dist: precise
-      env: 
-        - MATRIX_EVAL="BUILD_STATIC=false DEBUG=true ASAN=false"
+      env: BUILD_STATIC=false DEBUG=true ASAN=false
       addons:
         apt:
           sources:
@@ -77,8 +74,7 @@ matrix:
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - os: linux
       dist: bionic
-      env: 
-        - MATRIX_EVAL="BUILD_STATIC=true DEBUG=false ASAN=false"
+      env: BUILD_STATIC=true DEBUG=false ASAN=false
       addons:
         apt:
           packages:
@@ -88,8 +84,7 @@ matrix:
             - libnauty2-dev
     - os: linux
       dist: bionic
-      env: 
-        - MATRIX_EVAL="BUILD_STATIC=false DEBUG=false ASAN=false"
+      env: BUILD_STATIC=false DEBUG=false ASAN=false
       addons:
         apt:
           packages:
@@ -99,8 +94,7 @@ matrix:
             - libnauty2-dev
     - os: linux
       dist: xenial
-      env: 
-        - MATRIX_EVAL="BUILD_STATIC=true DEBUG=false ASAN=false"
+      env: BUILD_STATIC=true DEBUG=false ASAN=false
       addons:
         apt:
           packages:
@@ -111,8 +105,7 @@ matrix:
             - libnauty2-dev
     - os: osx
       osx_image: xcode12
-      env: 
-        - MATRIX_EVAL="OSX=10.15 BUILD_STATIC=false DEBUG=false ASAN=false CC=gcc-10 CXX=g++-10"
+      env: OSX=10.15 BUILD_STATIC=false DEBUG=false ASAN=false CC=gcc-10 CXX=g++-10
       addons:
         homebrew:
           packages:
@@ -122,8 +115,7 @@ matrix:
       compiler: gcc-10
     - os: osx
       osx_image: xcode12
-      env: 
-        - MATRIX_EVAL="OSX=10.15  BUILD_STATIC=false DEBUG=false ASAN=false"
+      env: OSX=10.15 BUILD_STATIC=false DEBUG=false ASAN=false
       addons:
         homebrew:
           packages:
@@ -132,8 +124,7 @@ matrix:
       compiler: clang
     - os: osx
       osx_image: xcode11
-      env: 
-        - MATRIX_EVAL="OSX=10.14 BUILD_STATIC=false DEBUG=false ASAN=false"
+      env: OSX=10.14 BUILD_STATIC=false DEBUG=false ASAN=false
       addons:
         homebrew:
           packages:
@@ -170,7 +161,6 @@ before_install:
         ;;
     esac
     export BASH
-    eval "${MATRIX_EVAL}"
     
 before_script:
 - |-

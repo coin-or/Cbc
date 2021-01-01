@@ -105,14 +105,14 @@ matrix:
             - libnauty2-dev
     - os: osx
       osx_image: xcode12
-      env: OSX=10.15 BUILD_STATIC=false DEBUG=false ASAN=false CC=gcc-10 CXX=g++-10
+      env: OSX=10.15 BUILD_STATIC=false DEBUG=false ASAN=false CC=gcc-9 CXX=g++-9
       addons:
         homebrew:
           packages:
           - bash
-          - gcc@10
+          - gcc@9
           - metis
-      compiler: gcc-10
+      compiler: gcc-9
     - os: osx
       osx_image: xcode12
       env: OSX=10.15 BUILD_STATIC=false DEBUG=false ASAN=false

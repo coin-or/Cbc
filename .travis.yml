@@ -6,7 +6,7 @@ matrix:
   include:
     - os: linux
       dist: precise
-      env: BUILD_STATIC=false DEBUG=false ASAN=false
+      env: BUILD_STATIC=false DEBUG=false ASAN=false ADD_CXXFLAGS=-fvisibility=hidden
       addons:
         apt:
           sources:
@@ -28,7 +28,7 @@ matrix:
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 90
     - os: linux
       dist: precise
-      env: BUILD_STATIC=false DEBUG=false ASAN=false
+      env: BUILD_STATIC=false DEBUG=false ASAN=false ADD_CXXFLAGS=-fvisibility=hidden
       addons:
         apt:
           sources:
@@ -74,7 +74,7 @@ matrix:
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - os: linux
       dist: bionic
-      env: BUILD_STATIC=true DEBUG=false ASAN=false
+      env: BUILD_STATIC=true DEBUG=false ASAN=false ADD_CXXFLAGS=-fvisibility=hidden
       addons:
         apt:
           packages:
@@ -84,7 +84,7 @@ matrix:
             - libnauty2-dev
     - os: linux
       dist: bionic
-      env: BUILD_STATIC=false DEBUG=false ASAN=false
+      env: BUILD_STATIC=false DEBUG=false ASAN=false ADD_CXXFLAGS=-fvisibility=hidden
       addons:
         apt:
           packages:
@@ -94,7 +94,7 @@ matrix:
             - libnauty2-dev
     - os: linux
       dist: xenial
-      env: BUILD_STATIC=true DEBUG=false ASAN=false
+      env: BUILD_STATIC=true DEBUG=false ASAN=false ADD_CXXFLAGS=-fvisibility=hidden
       addons:
         apt:
           packages:
@@ -179,7 +179,6 @@ script:
 - |-
     ############### Building Project ####################
     source coinbrew/.ci/setup_environment.sh
-    ADD_CXXFLAGS="${ADD_CXXFLAGS} -fvisibility=hidden"
     $BASH coinbrew/coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}" ADD_CXXFLAGS="${ADD_CXXFLAGS}" CC=${CC} CXX=${CXX}
 
 after_script:

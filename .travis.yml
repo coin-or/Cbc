@@ -96,7 +96,7 @@ before_install:
 before_script:
 - |-
     ############# Fetching Dependencies ##############
-    $BASH coinbrew/coinbrew fetch $PROJECT --no-prompt --skip-update
+    $BASH coinbrew/coinbrew fetch $PROJECT --no-prompt --skip-update --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack'
 
 before_cache:
 - |-
@@ -113,7 +113,7 @@ script:
     if [ "$BUILD_STATIC" = "true" ]; then 
        ADD_ARGS=( --no-third-party --enable-static --disable-shared --without-lapack --disable-readline --disable-bzlib --disable-zlib --without-cholmod --without-amd --static CXXFLAGS="-static -O2 -DNDEBUG" )
     fi
-    $BASH coinbrew/coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}" ADD_CXXFLAGS="${ADD_CXXFLAGS}" CC=${CC} CXX=${CXX}
+    $BASH coinbrew/coinbrew build $PROJECT --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack' "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}" ADD_CXXFLAGS="${ADD_CXXFLAGS}" CC=${CC} CXX=${CXX}
 
 after_script:
 - |-

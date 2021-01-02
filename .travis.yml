@@ -6,7 +6,7 @@ matrix:
   include:
     - os: linux
       dist: precise
-      env: BUILD_STATIC=false DEBUG=false ASAN=false
+      env: BUILD_STATIC=false DEBUG=false ASAN=false ADD_CXXFLAGS=-fvisibility=hidden
       addons:
         apt:
           sources:
@@ -28,7 +28,7 @@ matrix:
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 90
     - os: linux
       dist: precise
-      env: BUILD_STATIC=false DEBUG=false ASAN=false
+      env: BUILD_STATIC=false DEBUG=false ASAN=false ADD_CXXFLAGS=-fvisibility=hidden
       addons:
         apt:
           sources:
@@ -74,7 +74,7 @@ matrix:
         - sudo update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 90
     - os: linux
       dist: bionic
-      env: BUILD_STATIC=true DEBUG=false ASAN=false
+      env: BUILD_STATIC=true DEBUG=false ASAN=false ADD_CXXFLAGS=-fvisibility=hidden
       addons:
         apt:
           packages:
@@ -84,7 +84,7 @@ matrix:
             - libnauty2-dev
     - os: linux
       dist: bionic
-      env: BUILD_STATIC=false DEBUG=false ASAN=false
+      env: BUILD_STATIC=false DEBUG=false ASAN=false ADD_CXXFLAGS=-fvisibility=hidden
       addons:
         apt:
           packages:
@@ -94,7 +94,7 @@ matrix:
             - libnauty2-dev
     - os: linux
       dist: xenial
-      env: BUILD_STATIC=true DEBUG=false ASAN=false
+      env: BUILD_STATIC=true DEBUG=false ASAN=false ADD_CXXFLAGS=-fvisibility=hidden
       addons:
         apt:
           packages:
@@ -104,18 +104,38 @@ matrix:
             - libmetis-dev
             - libnauty2-dev
     - os: osx
-      osx_image: xcode11
-      env: OSX=10.14 CC=gcc CXX=g++ BUILD_STATIC=false DEBUG=false ASAN=false
+      osx_image: xcode12
+      env: OSX=10.15 BUILD_STATIC=false DEBUG=false ASAN=false
+      addons:
+        homebrew:
+          packages:
+          - bash
+          - metis
       compiler: clang
     - os: osx
       osx_image: xcode11
-      env: OSX=10.14  BUILD_STATIC=false DEBUG=false ASAN=false
-      compiler: clang
+      env: OSX=10.15 BUILD_STATIC=false DEBUG=false ASAN=false CC=gcc-9 CXX=g++-9
+      addons:
+        homebrew:
+          packages:
+          - bash
+          - gcc@9
+          - metis
+      compiler: gcc-9
     - os: osx
-      osx_image: xcode10
-      env: OSX=10.13  BUILD_STATIC=false DEBUG=false ASAN=false
+      osx_image: xcode11
+      env: OSX=10.14 BUILD_STATIC=false DEBUG=false ASAN=false
+      addons:
+        homebrew:
+          packages:
+          - bash
+          - metis
       compiler: clang
     - os: windows
+      cache:
+        directories:
+        - $HOME/AppData/Local/Temp/chocolatey
+        - /C/tools/msys64
 
   allow_failures:
     - os: windows
@@ -140,7 +160,7 @@ before_install:
         ;;
     esac
     export BASH
-
+    
 before_script:
 - |-
     ############# Fetching Dependencies ##############
@@ -158,7 +178,5 @@ script:
 - |-
     ############### Building Project ####################
     source coinbrew/.ci/setup_environment.sh
-    ADD_CXXFLAGS="${ADD_CXXFLAGS} -fvisibility=hidden"
-    echo "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}"
-    $BASH coinbrew/coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}"
+    $BASH coinbrew/coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}" ADD_CXXFLAGS="${ADD_CXXFLAGS}" CC=${CC} CXX=${CXX}
 

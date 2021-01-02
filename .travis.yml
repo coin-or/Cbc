@@ -164,7 +164,7 @@ before_install:
 before_script:
 - |-
     ############# Fetching Dependencies ##############
-    $BASH coinbrew/coinbrew fetch $PROJECT --no-prompt --skip-update
+    $BASH coinbrew/coinbrew fetch $PROJECT --no-prompt --skip-update --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack'
 
 before_cache:
 - |-
@@ -178,7 +178,7 @@ script:
 - |-
     ############### Building Project ####################
     source coinbrew/.ci/setup_environment.sh
-    $BASH coinbrew/coinbrew build $PROJECT "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}" ADD_CXXFLAGS="${ADD_CXXFLAGS}" CC=${CC} CXX=${CXX}
+    $BASH coinbrew/coinbrew build $PROJECT --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack' "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}" ADD_CXXFLAGS="${ADD_CXXFLAGS}" CC=${CC} CXX=${CXX}
 
 after_script:
 - |-

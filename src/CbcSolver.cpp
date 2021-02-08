@@ -5430,7 +5430,7 @@ int CbcMain1(int argc, const char *argv[],
                   }
                 }
                 CoinSort_2(dsort, dsort + n, sort);
-                int level = 0;
+                int level = 999;
                 double last = -1.0e100;
                 for (int i = 0; i < n; i++) {
                   int iPut = sort[i];
@@ -11172,6 +11172,9 @@ void CbcMain0(CbcModel &model,
   parameters[whichParam(CBC_PARAM_STR_RENS, parameters)].setCurrentOption("off");
   parameters[whichParam(CBC_PARAM_STR_LOCALTREE, parameters)].setCurrentOption("off");
   parameters[whichParam(CBC_PARAM_STR_COSTSTRATEGY, parameters)].setCurrentOption("off");
+#ifdef CBC_HAS_NAUTY
+  parameters[whichParam(CBC_PARAM_STR_ORBITAL, parameters)].setCurrentOption("on");
+#endif
 }
 
 /*

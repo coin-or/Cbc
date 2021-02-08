@@ -495,7 +495,7 @@ void CbcModel::analyzeObjective()
           char general[100];
 	  if (nChanged*3>numberObjects_) {
 	    sprintf(general,
-		    "%d variables given higher priority fot symmetry reasons",
+		    "%d variables given higher priority for symmetry reasons",
 		    nChanged);
 	    for (int i = 0; i < numberObjects_; i++) {
 	      CbcSimpleInteger *thisOne =
@@ -514,7 +514,7 @@ void CbcModel::analyzeObjective()
 	    }
 	  } else {
 	    sprintf(general,
-		    "%d variables out of %d could be given higher priority fot symmetry reasons",
+		    "%d variables out of %d could be given higher priority for symmetry reasons",
 		    nChanged,numberObjects_);
 	  }
 	  messageHandler()->message(CBC_GENERAL, messages())

@@ -4208,7 +4208,7 @@ int CbcMain1(int argc, const char *argv[],
                   // Add in generators
                   if ((model_.moreSpecialOptions() & 65536) == 0)
                     process.addCutGenerator(&generator1);
-                  int translate[] = { 9999, 0, 0, -3, 2, 3, -2, 9999, 4, 5, 0 };
+                  int translate[] = { 9999, 0, 0, -3, 2, 3, -2, 9999, 4, 5, 0 , -2};
                   process.passInMessageHandler(babModel_->messageHandler());
                   //process.messageHandler()->setLogLevel(babModel_->logLevel());
                   if (info.numberSos && doSOS && statusUserFunction_[0]) {
@@ -4660,7 +4660,7 @@ int CbcMain1(int argc, const char *argv[],
                   }
                 }
                 //solver2->resolve();
-                if (preProcess == 2 || preProcess == 10) {
+                if (preProcess == 2 || preProcess >= 10) {
                   // names are wrong - redo
                   const int *originalColumns = process.originalColumns();
                   int numberColumns = solver2->getNumCols();
@@ -4686,6 +4686,10 @@ int CbcMain1(int argc, const char *argv[],
                     char *dot = strstr(name, ".mps");
                     if (!dot)
                       dot = strstr(name, ".lp");
+		    if (preProcess>=10&&!dot) {
+		      // get some sort of name
+		      dot = name+strlen(name);
+		    }
                     if (dot) {
                       *dot = '\0';
                       int n = static_cast< int >(dot - name);
@@ -4703,9 +4707,9 @@ int CbcMain1(int argc, const char *argv[],
                   }
                   lpSolver->writeMps(name, 0, 1, lpSolver->optimizationDirection());
                   printf("Preprocessed model (minimization) on %s\n", name);
-                  if (preProcess == 10) {
+                  if (preProcess >= 10) {
                     printf("user wanted to stop\n");
-                    exit(0);
+                    return 0; //exit(0);
                   }
                 }
                 {

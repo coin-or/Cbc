@@ -74,12 +74,18 @@ CbcSOS::CbcSOS(CbcModel *model, int numberMembers,
     }
   }
   if (numberMembers_) {
-    const OsiSolverInterface *solver = model_->solver();
+    OsiSolverInterface *solver = model_->solver();
     const double *lower = solver->getColLower();
+    const double *upper = solver->getColUpper();
     for (int i = 0; i < numberMembers_; i++) {
-      if (lower[which[i]] < 0.0) {
+      int iColumn = which[i];
+      if (lower[iColumn] < 0.0) {
         oddValues_ = true; // mark as odd
       }
+      if (lower[iColumn]<-1.0e20)
+	solver->setColLower(iColumn,-1.0e20);
+      if (upper[iColumn]>1.0e20)
+	solver->setColUpper(iColumn,1.0e20);
     }
 
     // check >= 0.0
@@ -228,6 +234,9 @@ CbcSOS::infeasibility(const OsiBranchingInformation *info,
     value = CoinMin(upper[iColumn], value);
     sum += value;
     if (fabs(value) > integerTolerance && (upper[iColumn] > 0.0 || oddValues_)) {
+      //if (lower[iColumn] > integerTolerance ||
+      //  upper[iColumn] < -integerTolerance)
+      //return COIN_DBL_MAX; // infeasible
       weight += weights_[j] * value;
       if (firstNonZero < 0)
         firstNonZero = j;
@@ -481,17 +490,17 @@ void CbcSOS::feasibleRegion()
     }
     for (j = 0; j < firstNonZero; j++) {
       int iColumn = members_[j];
-      assert (lower[iColumn]<=0.0);
-      assert (upper[iColumn]>=0.0);
-      solver->setColLower(iColumn, 0.0);
-      solver->setColUpper(iColumn, 0.0);
+      if (lower[iColumn]<0.0)
+	solver->setColLower(iColumn, 0.0);
+      if (upper[iColumn]>0.0)
+	solver->setColUpper(iColumn, 0.0);
     }
     for (j = lastNonZero + 1; j < numberMembers_; j++) {
       int iColumn = members_[j];
-      assert (lower[iColumn]<=0.0);
-      assert (upper[iColumn]>=0.0);
-      solver->setColLower(iColumn, 0.0);
-      solver->setColUpper(iColumn, 0.0);
+      if (lower[iColumn]<0.0)
+	solver->setColLower(iColumn, 0.0);
+      if (upper[iColumn]>0.0)
+	solver->setColUpper(iColumn, 0.0);
     }
   } else {
     for (j = 0; j < numberMembers_; j++) {
@@ -913,8 +922,12 @@ CbcSOSBranchingObject::branch()
 #ifdef CBC_INVESTIGATE_SOS
       printf("%d (%g,%g) ", which[i], weights[i], solution[which[i]]);
 #endif
-      solver->setColLower(which[i], CoinMin(0.0,upper[which[i]]));
-      solver->setColUpper(which[i], CoinMax(0.0,lower[which[i]]));
+      double lowerBound = lower[which[i]];
+      double upperBound = lower[which[i]];
+      if (lowerBound<=0.0)
+	solver->setColLower(which[i], 0.0);
+      if (upperBound>=0.0)
+	solver->setColUpper(which[i], 0.0);
     }
     way_ = 1; // Swap direction
   } else {
@@ -926,8 +939,12 @@ CbcSOSBranchingObject::branch()
 #ifdef CBC_INVESTIGATE_SOS
         printf("%d (%g,%g) ", which[i], weights[i], solution[which[i]]);
 #endif
-	solver->setColLower(which[i], CoinMin(0.0,upper[which[i]]));
-	solver->setColUpper(which[i], CoinMax(0.0,lower[which[i]]));
+	double lowerBound = lower[which[i]];
+	double upperBound = upper[which[i]];
+	if (lowerBound<=0.0)
+	  solver->setColLower(which[i], 0.0);
+	if (upperBound>=0.0)
+	  solver->setColUpper(which[i], 0.0);
       }
     }
     assert(i < numberMembers);
@@ -965,10 +982,12 @@ void CbcSOSBranchingObject::fix(OsiSolverInterface *solver,
     }
     assert(i < numberMembers);
     for (; i < numberMembers; i++) {
-      solver->setColLower(which[i], 0.0);
-      lower[which[i]] = 0.0;
-      solver->setColUpper(which[i], 0.0);
-      upper[which[i]] = 0.0;
+      double lowerBound = lower[which[i]];
+      double upperBound = lower[which[i]];
+      if (lowerBound<=0.0)
+	solver->setColLower(which[i], 0.0);
+      if (upperBound>=0.0)
+	solver->setColUpper(which[i], 0.0);
     }
   } else {
     int i;
@@ -976,10 +995,12 @@ void CbcSOSBranchingObject::fix(OsiSolverInterface *solver,
       if (weights[i] >= separator_) {
         break;
       } else {
-        solver->setColLower(which[i], 0.0);
-        lower[which[i]] = 0.0;
-        solver->setColUpper(which[i], 0.0);
-        upper[which[i]] = 0.0;
+	double lowerBound = lower[which[i]];
+	double upperBound = lower[which[i]];
+	if (lowerBound<=0.0)
+	  solver->setColLower(which[i], 0.0);
+	if (upperBound>=0.0)
+	  solver->setColUpper(which[i], 0.0);
       }
     }
     assert(i < numberMembers);

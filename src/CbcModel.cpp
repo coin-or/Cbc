@@ -18204,8 +18204,11 @@ void CbcModel::saveBestSolution(const double *solution, double objectiveValue)
     delete atSolutionSolver_;
     atSolutionSolver_ = solver_->clone();
   }
-  lastNodeImprovingFeasSol_ = numberNodes_;
-  lastTimeImprovingFeasSol_ = getCurrentSeconds();
+  // Set unless we are already stopping
+  if (status_ != 1) {
+    lastNodeImprovingFeasSol_ = numberNodes_;
+    lastTimeImprovingFeasSol_ = getCurrentSeconds();
+  }
 }
 // Delete best and saved solutions
 void CbcModel::deleteSolutions()
@@ -18761,12 +18764,20 @@ bool CbcModel::maximumSecondsReached() const
     hitMaxTime = (totalTime >= maxSeconds);
     if (numberSolutions_ && (!hitMaxTime)) {
       double maxSecondsNotImprFS = parentModel_->getDblParam(CbcMaximumSecondsNotImprovingFeasSol);
-      hitMaxTime = totalTime - lastTimeImprovingFeasSol_ >= maxSecondsNotImprFS;
+      double lastSolutionTime =
+	CoinMax(lastTimeImprovingFeasSol_,parentModel_->lastTimeImprovingFeasSol());
+      hitMaxTime = totalTime - lastSolutionTime >= maxSecondsNotImprFS;
     }
   }
   if (hitMaxTime) {
     // Set eventHappened_ so will by-pass as much stuff as possible
     eventHappened_ = true;
+    if (parentModel_) {
+      // need to set stuff
+      parentModel_->sayEventHappened();
+      parentModel_->setProblemStatus(1);
+      parentModel_->setSecondaryStatus(4);
+    }
   }
   return hitMaxTime;
 }

@@ -697,6 +697,10 @@ public:
   /// Return true if maximum time reached
   bool maximumSecondsReached() const;
 
+  /// Get last time when a better feasible solution was found
+  inline double lastTimeImprovingFeasSol() const
+  { return lastTimeImprovingFeasSol_;};
+
   /** Set the
       \link CbcModel::CbcIntegerTolerance integrality tolerance \endlink
     */
@@ -2901,10 +2905,11 @@ private:
   int numberNodes_;
   /// Last node where a better feasible solution was found
   int lastNodeImprovingFeasSol_;
+  /// Last time when a better feasible solution was found
+  double lastTimeImprovingFeasSol_;
   /** Cumulative number of nodes for statistics.
         Must fix to match up
     */
-  double lastTimeImprovingFeasSol_;
   int numberNodes2_;
   /// Cumulative number of iterations
   int numberIterations_;

@@ -1049,6 +1049,13 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         }
       }
 #endif
+#ifdef CBC_HAS_CLP
+      if (clpSolver) {
+        OsiClpSolverInterface *clpSolver2
+          = dynamic_cast< OsiClpSolverInterface * >(solver2);
+	clpSolver2->setSpecialOptions(clpSolver->specialOptions());
+      }
+#endif
       if (returnCode == 1) {
         solver2->resolve();
         CbcModel model(*solver2);

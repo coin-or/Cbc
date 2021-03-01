@@ -2154,6 +2154,7 @@ public:
  	20 bit 1048576 - use ranging in CbcNode
 	21 bit 2097152 - analyze changed priorities but were equal before
 	22 bit 4194304 - ignore cutoff increment in multiple root solvers
+	23 bit (8388608) - no crunch
     */
   inline void setMoreSpecialOptions2(int value)
   {
@@ -3057,6 +3058,16 @@ private:
 	9 bit (512) - branching on objective (later)
 	10 bit (1024) - branching on constraints (later)
 	11/12 bit 2048 - intermittent cuts
+	13/14 bit 8192 - go to bitter end in strong branching (first time)
+	15 bit 32768 - take care of very very small values for Integer/SOS variables
+	16 bit 65536 - lazy constraints
+        17 bit 131072 - fairly simple orbital 
+        18 bit 262144 - some statistics for fairly simple orbital 
+ 	19 bit 524288 - freeze problem at root cuts
+ 	20 bit 1048576 - use ranging in CbcNode
+	21 bit 2097152 - analyze changed priorities but were equal before
+	22 bit 4194304 - ignore cutoff increment in multiple root solvers
+	23 bit (8388608) - no crunch
     */
   int moreSpecialOptions2_;
   /// User node comparison function

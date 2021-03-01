@@ -4706,7 +4706,8 @@ int CbcMain1(int argc, const char *argv[],
                     }
                   }
                   lpSolver->writeMps(name, 0, 1, lpSolver->optimizationDirection());
-                  printf("Preprocessed model (minimization) on %s\n", name);
+                  printf("Preprocessed model (minimization) on %s - size %d %d \n",
+			 name,lpSolver->getNumRows(),lpSolver->getNumCols());
                   if (preProcess >= 10) {
                     printf("user wanted to stop\n");
                     return 0; //exit(0);

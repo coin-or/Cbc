@@ -35,13 +35,16 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
 {
   CoinMessages &messages = *pcoinmsgs;
 #define STR_SIZE 256
+  char printLine[STR_SIZE] = "";
   FILE *f = fopen(fileName, "r");
-  if (!f)
+  if (!f) {
+    sprintf(printLine, "Unable to open file %s.", fileName);
+    messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
     return 1;
+  }
   char line[STR_SIZE] = "";
 
   int nLine = 0;
-  char printLine[STR_SIZE] = "";
   while (fgets(line, STR_SIZE, f)) {
     ++nLine;
     char col[4][STR_SIZE] = {"", "", "", ""};

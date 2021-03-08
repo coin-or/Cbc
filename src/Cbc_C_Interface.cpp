@@ -10,6 +10,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <deque>
  
 #include "Cbc_C_Interface.h"
 
@@ -62,7 +63,6 @@
 
 using namespace std;
 
-static char **to_char_vec( const vector< string > &names );
 static void *xmalloc( const size_t size );
 static void *xrealloc( void *ptr, const size_t newSize );
 static void Cbc_updateSlack( Cbc_Model *model, const double *ractivity );
@@ -2292,7 +2292,7 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
       // aditional parameters specified by user as strings
-      std::vector< string > argv;
+      std::deque< string > argv;
       argv.push_back("Cbc_C_Interface");
       for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
         string param = model->vcbcOptions[i];
@@ -2310,10 +2310,6 @@ Cbc_solve(Cbc_Model *model)
 
       argv.push_back("-solve");
       argv.push_back("-quit");
-
-      char **charCbcOpts = to_char_vec(argv);
-      const int nargs = (int) argv.size();
-      const char **args = (const char **)charCbcOpts;
 
       OsiBabSolver defaultC;
       if (model->cutCBAtSol) {
@@ -2339,11 +2335,9 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
       cbcModel.setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
 
-      CbcMain1( nargs, args, cbcModel, cbc_callb, parameters);
+      CbcMain1(argv, cbcModel, parameters, cbc_callb);
 
       Cbc_getMIPOptimizationResults( model, cbcModel );
-
-      free(charCbcOpts);
 
       if (cbc_eh)
         delete cbc_eh;
@@ -4716,26 +4710,6 @@ Cbc_getRowNameIndex(Cbc_Model *model, const char *name)
     return -1;
 
   return it->second;
-}
-
-static char **to_char_vec( const vector< string > &names )
-{
-    size_t spaceVec = (sizeof(char*)*names.size());
-    size_t totLen = names.size(); // all \0
-    for ( int i=0 ; (i<(int)names.size()) ; ++i )
-        totLen += names[i].size();
-    totLen *= sizeof(char);
-
-    char **r = (char **)xmalloc(spaceVec+totLen);
-    assert( r );
-    r[0] = (char *)(r + names.size());
-    for ( size_t i=1 ; (i<names.size()) ; ++i )
-        r[i] = r[i-1] + names[i-1].size() + 1;
-
-    for ( size_t i=0 ; (i<names.size()) ; ++i )
-        strcpy(r[i], names[i].c_str());
-
-    return r;
 }
 
 static void *xmalloc( const size_t size )

@@ -1180,41 +1180,41 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   CoinMessageHandler *generalMessageHandler = model->messageHandler();
   // generalMessageHandler->setPrefix(false);
   bool anyToDo = false;
-  int logLevel = parameters[CbcParam::LPLOGLEVEL].intVal();
-  int useFpump = parameters[CbcParam::FPUMP].modeVal();
-  int useRounding = parameters[CbcParam::ROUNDING].modeVal();
-  int useGreedy = parameters[CbcParam::GREEDY].modeVal();
-  int useCombine = parameters[CbcParam::COMBINE].modeVal();
-  int useProximity = parameters[CbcParam::PROXIMITY].modeVal();
-  int useCrossover = parameters[CbcParam::CROSSOVER].modeVal();
+  int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
+  int useFpump = parameters[CbcParam::FPUMP]->modeVal();
+  int useRounding = parameters[CbcParam::ROUNDING]->modeVal();
+  int useGreedy = parameters[CbcParam::GREEDY]->modeVal();
+  int useCombine = parameters[CbcParam::COMBINE]->modeVal();
+  int useProximity = parameters[CbcParam::PROXIMITY]->modeVal();
+  int useCrossover = parameters[CbcParam::CROSSOVER]->modeVal();
   // int usePivotC = parameters[CbcParam::PIVOTANDCOMPLEMENT,
-  // parameters)].modeVal();
-  int usePivotF = parameters[CbcParam::PIVOTANDFIX].modeVal();
-  int useRand = parameters[CbcParam::RANDROUND].modeVal();
-  int useRINS = parameters[CbcParam::RINS].modeVal();
-  int useRENS = parameters[CbcParam::RENS].modeVal();
-  int useVND = parameters[CbcParam::VND].modeVal();
-  int useDINS = parameters[CbcParam::DINS].modeVal();
-  int useDIVING2 = parameters[CbcParam::DIVINGS].modeVal();
-  int useNaive = parameters[CbcParam::NAIVE].modeVal();
-  int useDW = parameters[CbcParam::DW].modeVal();
+  // parameters)]->modeVal();
+  int usePivotF = parameters[CbcParam::PIVOTANDFIX]->modeVal();
+  int useRand = parameters[CbcParam::RANDROUND]->modeVal();
+  int useRINS = parameters[CbcParam::RINS]->modeVal();
+  int useRENS = parameters[CbcParam::RENS]->modeVal();
+  int useVND = parameters[CbcParam::VND]->modeVal();
+  int useDINS = parameters[CbcParam::DINS]->modeVal();
+  int useDIVING2 = parameters[CbcParam::DIVINGS]->modeVal();
+  int useNaive = parameters[CbcParam::NAIVE]->modeVal();
+  int useDW = parameters[CbcParam::DW]->modeVal();
   int kType = (type < 10) ? type : 1;
   assert(kType == 1 || kType == 2);
   // FPump done first as it only works if no solution
   if (useFpump >= kType && useFpump <= kType + 1) {
     anyToDo = true;
     CbcHeuristicFPump heuristic4(*model);
-    double dextra3 = parameters[CbcParam::SMALLBAB].dblVal();
+    double dextra3 = parameters[CbcParam::SMALLBAB]->dblVal();
     heuristic4.setFractionSmall(dextra3);
-    double dextra1 = parameters[CbcParam::ARTIFICIALCOST].dblVal();
+    double dextra1 = parameters[CbcParam::ARTIFICIALCOST]->dblVal();
     if (dextra1)
       heuristic4.setArtificialCost(dextra1);
     heuristic4.setMaximumPasses(
-        parameters[CbcParam::FPUMPITS].intVal());
-    if (parameters[CbcParam::FPUMPITS].intVal() == 21)
+        parameters[CbcParam::FPUMPITS]->intVal());
+    if (parameters[CbcParam::FPUMPITS]->intVal() == 21)
       heuristic4.setIterationRatio(1.0);
-    int pumpTune = parameters[CbcParam::FPUMPTUNE].intVal();
-    int pumpTune2 = parameters[CbcParam::FPUMPTUNE2].intVal();
+    int pumpTune = parameters[CbcParam::FPUMPTUNE]->intVal();
+    int pumpTune2 = parameters[CbcParam::FPUMPTUNE2]->intVal();
     if (pumpTune > 0) {
       bool printStuff =
           (pumpTune != initialPumpTune || logLevel > 1 || pumpTune2 > 0) &&
@@ -1266,7 +1266,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
         model->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
         cutoff = CoinMin(cutoff, value + 0.05 * fabs(value) * c);
         double fakeCutoff =
-            parameters[CbcParam::FAKECUTOFF].dblVal();
+            parameters[CbcParam::FAKECUTOFF]->dblVal();
         if (fakeCutoff)
           cutoff = fakeCutoff;
         heuristic4.setFakeCutoff(cutoff);
@@ -1318,7 +1318,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
         // double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
         double increment = 0.0;
         double fakeIncrement =
-            parameters[CbcParam::FAKEINCREMENT].dblVal();
+            parameters[CbcParam::FAKEINCREMENT]->dblVal();
         if (fakeIncrement)
           increment = fakeIncrement;
         if (increment >= 0.0)
@@ -1442,21 +1442,21 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   int useDIVING = 0;
   {
     int useD;
-    useD = parameters[CbcParam::DIVINGV].modeVal();
+    useD = parameters[CbcParam::DIVINGV]->modeVal();
     useDIVING |= 1 * ((useD >= kType) ? 1 : 0);
-    useD = parameters[CbcParam::DIVINGG].modeVal();
+    useD = parameters[CbcParam::DIVINGG]->modeVal();
     useDIVING |= 2 * ((useD >= kType) ? 1 : 0);
-    useD = parameters[CbcParam::DIVINGF].modeVal();
+    useD = parameters[CbcParam::DIVINGF]->modeVal();
     useDIVING |= 4 * ((useD >= kType) ? 1 : 0);
-    useD = parameters[CbcParam::DIVINGC].modeVal();
+    useD = parameters[CbcParam::DIVINGC]->modeVal();
     useDIVING |= 8 * ((useD >= kType) ? 1 : 0);
-    useD = parameters[CbcParam::DIVINGL].modeVal();
+    useD = parameters[CbcParam::DIVINGL]->modeVal();
     useDIVING |= 16 * ((useD >= kType) ? 1 : 0);
-    useD = parameters[CbcParam::DIVINGP].modeVal();
+    useD = parameters[CbcParam::DIVINGP]->modeVal();
     useDIVING |= 32 * ((useD >= kType) ? 1 : 0);
   }
   if (useDIVING2 >= kType && useDIVING2 <= kType + 1) {
-    int diveOptions = parameters[CbcParam::DIVEOPT].intVal();
+    int diveOptions = parameters[CbcParam::DIVEOPT]->intVal();
     if (diveOptions < 0 || diveOptions > 10)
       diveOptions = 2;
     CbcHeuristicJustOne heuristicJustOne(*model);
@@ -1487,8 +1487,8 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   }
 
   if (useDIVING > 0) {
-    int majorIterations = parameters[CbcParam::DIVEOPTSOLVES].intVal();
-    int diveOptions2 = parameters[CbcParam::DIVEOPT].intVal();
+    int majorIterations = parameters[CbcParam::DIVEOPTSOLVES]->intVal();
+    int diveOptions2 = parameters[CbcParam::DIVEOPT]->intVal();
     int diveOptions;
     if (diveOptions2 > 99) {
       // switch on various active set stuff
@@ -1705,7 +1705,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     model->setMaximumSavedSolutions(5);
     anyToDo = true;
   }
-  int heurSwitches = parameters[CbcParam::HEUROPTIONS].intVal() %
+  int heurSwitches = parameters[CbcParam::HEUROPTIONS]->intVal() %
       100;
   if (heurSwitches) {
     for (int iHeur = 0; iHeur < model->numberHeuristics(); iHeur++) {
@@ -1730,7 +1730,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     model2.createContinuousSolver();
     bool cleanModel = !model2.numberIntegers() && !model2.numberObjects();
     model2.findIntegers(false);
-    int heurOptions = (parameters[CbcParam::HEUROPTIONS].intVal() / 100) % 100;
+    int heurOptions = (parameters[CbcParam::HEUROPTIONS]->intVal() / 100) % 100;
     if (heurOptions == 0 || heurOptions == 2) {
       model2.doHeuristicsAtRoot(1);
     } else if (heurOptions == 1 || heurOptions == 3) {

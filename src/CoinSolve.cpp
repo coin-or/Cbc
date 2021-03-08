@@ -6,23 +6,20 @@
     \brief Main routine for the cbc stand-alone solver.
 */
 
-#if 0
-#undef CBCSOLVERLIB_BUILD
-
-/* would normally be a separate config header file, but the cbc exe has only one source file */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#else /* HAVE_CONFIG_H */
-#include "config_default.h"
-#endif /* HAVE_CONFIG_H */
-#define __CBCCONFIG_H__
-#endif
-
 #include "CbcConfig.h"
 
+#include <cassert>
+#include <cstdio>
+#include <cmath>
+#include <cfloat>
+#include <cstring>
+#include <iostream>
+
 #include "CoinPragma.hpp"
+#include "CoinModel.hpp"
 #include "CbcModel.hpp"
 #include "CbcSolver.hpp"
+#include "CbcDebug.hpp"
 #include "OsiClpSolverInterface.hpp"
 
 /*
@@ -67,16 +64,9 @@
   Hooks for a debugging wrapper for malloc/free. This bit of definition hooks
   C++ new / delete and diverts them into the debugging wrapper.
 */
+
 //#define CLP_DEBUG_MALLOC
 #ifdef CLP_DEBUG_MALLOC
-/*extern "C" */ void clp_memory(int type);
-/*extern "C" */
-void *clp_malloc(int length);
-/*extern "C" */
-void clp_free(void *array);
-#include <malloc.h>
-#include <exception>
-#include <new>
 void *operator new(size_t size) throw(std::bad_alloc)
 {
   void *p = clp_malloc(size);
@@ -88,163 +78,11 @@ void operator delete(void *p) throw()
 }
 #endif // CLP_DEBUG_MALLOC
 
-#include <cassert>
-#include <cstdio>
-#include <cmath>
-#include <cfloat>
-#include <cstring>
-#include <iostream>
-
-// define TEST_MESSAGE_HANDLER to check works on all messages
-// #define TEST_MESSAGE_HANDLER
-#ifdef TEST_MESSAGE_HANDLER
-// This driver shows how to trap messages - this is just as in unitTest.cpp
-// ****** THis code is similar to MyMessageHandler.hpp and MyMessagehandler.cpp
-#include "CoinMessageHandler.hpp"
-
-/** This just adds a model to CoinMessage and a void pointer so
-    user can trap messages and do useful stuff.
-    This is used in Clp/Test/unitTest.cpp
-
-    The file pointer is just there as an example of user stuff.
-
-  -- lh 071026 -- An accurate summary. Nothing is actually happening here
-  except that messages will be prefixed with "==", which serves the purpose
-  of demonstrating that this message handler is active. The extra parameters
-  (CbcModel, FILE) are unused.
-
-*/
-class CbcModel;
-
-class MyMessageHandler2 : public CoinMessageHandler {
-
-public:
-  /**@name Overrides */
-  //@{
-  virtual int print();
-  //@}
-  /**@name set and get */
-  //@{
-  /// Model
-  const CbcModel *model() const;
-  void setModel(CbcModel *model);
-  //@}
-
-  /**@name Constructors, destructor */
-  //@{
-  /** Default constructor. */
-  MyMessageHandler2();
-  /// Constructor with pointer to model
-  MyMessageHandler2(CbcModel *model,
-    FILE *userPointer = NULL);
-  /** Destructor */
-  virtual ~MyMessageHandler2();
-  //@}
-
-  /**@name Copy method */
-  //@{
-  /** The copy constructor. */
-  MyMessageHandler2(const MyMessageHandler2 &);
-  /** The copy constructor from an CoinSimplexMessageHandler. */
-  MyMessageHandler2(const CoinMessageHandler &);
-
-  MyMessageHandler2 &operator=(const MyMessageHandler2 &);
-  /// Clone
-  virtual CoinMessageHandler *clone() const;
-  //@}
-
-protected:
-  /**@name Data members
-       The data members are protected to allow access for derived classes. */
-  //@{
-  /// Pointer back to model
-  CbcModel *model_;
-  //@}
-};
-
 //#############################################################################
-// Constructors / Destructor / Assignment
 //#############################################################################
 
-//-------------------------------------------------------------------
-// Default Constructor
-//-------------------------------------------------------------------
-MyMessageHandler2::MyMessageHandler2()
-  : CoinMessageHandler()
-  , model_(NULL)
-{
-}
-
-//-------------------------------------------------------------------
-// Copy constructor
-//-------------------------------------------------------------------
-MyMessageHandler2::MyMessageHandler2(const MyMessageHandler2 &rhs)
-  : CoinMessageHandler(rhs)
-  , model_(rhs.model_)
-{
-}
-
-MyMessageHandler2::MyMessageHandler2(const CoinMessageHandler &rhs)
-  : CoinMessageHandler()
-  , model_(NULL)
-{
-}
-
-// Constructor with pointer to model
-MyMessageHandler2::MyMessageHandler2(CbcModel *model,
-  FILE *userPointer)
-  : CoinMessageHandler()
-  , model_(model)
-{
-}
-
-//-------------------------------------------------------------------
-// Destructor
-//-------------------------------------------------------------------
-MyMessageHandler2::~MyMessageHandler2()
-{
-}
-
-//----------------------------------------------------------------
-// Assignment operator
-//-------------------------------------------------------------------
-MyMessageHandler2 &
-MyMessageHandler2::operator=(const MyMessageHandler2 &rhs)
-{
-  if (this != &rhs) {
-    CoinMessageHandler::operator=(rhs);
-    model_ = rhs.model_;
-  }
-  return *this;
-}
-//-------------------------------------------------------------------
-// Clone
-//-------------------------------------------------------------------
-CoinMessageHandler *MyMessageHandler2::clone() const
-{
-  return new MyMessageHandler2(*this);
-}
-int MyMessageHandler2::print()
-{
-  // Just add ==
-  fprintf(fp_, " == ");
-  fprintf(fp_, "%s\n", messageBuffer_);
-  return 0;
-}
-const CbcModel *
-MyMessageHandler2::model() const
-{
-  return model_;
-}
-void MyMessageHandler2::setModel(CbcModel *model)
-{
-  model_ = model;
-}
-#endif /* TEST_MESSAGE_HANDLER */
-
-//#############################################################################
-
-// To use USERCBC or USERCLP change 0 to 1 in defines and add in your fake main program(s) and any other code
+// To use USERCBC or USERCLP change 0 to 1 in defines and add in your fake
+// main program(s) and any other code
 //#define USER_HAS_FAKE_CBC
 //#define USER_HAS_FAKE_CLP
 
@@ -281,6 +119,7 @@ void fakeMain2(ClpSimplex & /*model*/,
 //  End any fake main program
 
 //#############################################################################
+//#############################################################################
 
 // void CbcClpUnitTest (const CbcModel & saveModel);
 
@@ -302,6 +141,9 @@ void cbc_resolve_check(const OsiSolverInterface *solver)
 }
 #endif
 
+//#############################################################################
+//#############################################################################
+
 /*
   Somehow with some BLAS we get multithreaded by default
   For 99.99% of problems this is not a good idea.
@@ -313,10 +155,46 @@ void openblas_set_num_threads(int num_threads);
 }
 #endif
 
-static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/)
-{
-  return 0;
+//#############################################################################
+//#############################################################################
+
+#ifdef TEST_MESSAGE_HANDLER
+void test_message_handler(CbcModel &model){
+    MyMessageHandler2 messageHandler(&model);
+    std::cout << "Testing derived message handler" << std::endl;
+    model.passInMessageHandler(&messageHandler);
+    OsiClpSolverInterface *clpSolver =
+       dynamic_cast< OsiClpSolverInterface * >(model.solver());
+    // Could use different handlers (if different log levels)
+    clpSolver->passInMessageHandler(&messageHandler);
+    //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
+
+    // Set log levels same so can use one message handler
+    clpSolver->messageHandler()->setLogLevel(1);
+    model.messageHandler()->setLogLevel(1);
 }
+#endif
+
+//#############################################################################
+//#############################################################################
+
+void formInputQueue(std::deque<std::string> &inputQueue,
+                    int argc, char **argv)
+{
+   for (int i = 1; i < argc; i++){
+      std::string tmp(argv[i]);
+      std::string::size_type found = tmp.find('=');
+      if (found != std::string::npos) {
+         inputQueue.push_back(tmp.substr(0, found));
+         inputQueue.push_back(tmp.substr(found + 1));
+      } else {
+         inputQueue.push_back(tmp);
+      }
+   }
+}
+
+//#############################################################################
+//#############################################################################
 
 int main(int argc, const char *argv[])
 {
@@ -324,46 +202,48 @@ int main(int argc, const char *argv[])
 #ifdef CLP_DEBUG_MALLOC
   clp_memory(0);
 #endif
-  {
 #ifndef CBC_OTHER_SOLVER
-    OsiClpSolverInterface solver1;
+  OsiClpSolverInterface solver1;
 #if CLP_USE_OPENBLAS
-    openblas_set_num_threads(CLP_USE_OPENBLAS);
+  openblas_set_num_threads(CLP_USE_OPENBLAS);
 #endif
 #elif CBC_OTHER_SOLVER == 1
-    OsiCpxSolverInterface solver1;
+  OsiCpxSolverInterface solver1;
 #endif
-    CbcModel model(solver1);
-
-    // define TEST_MESSAGE_HANDLER at top of file to check works on all messages
-#ifdef TEST_MESSAGE_HANDLER
-    MyMessageHandler2 messageHandler(&model);
-    std::cout << "Testing derived message handler" << std::endl;
-    model.passInMessageHandler(&messageHandler);
-    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model.solver());
-    // Could use different handlers (if different log levels)
-    clpSolver->passInMessageHandler(&messageHandler);
-    //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
-#endif
-
-    CbcParameters parameters;
+  CbcModel model(solver1);
+  
+  CbcParameters parameters;
 #ifndef CBC_NO_INTERRUPT
-    parameters.enableSignalHandler();
+  parameters.enableSignalHandler();
 #endif
-    // initialize
-    CbcMain0(model, parameters);
-
+  // initialize
+  CbcMain0(model, parameters);
+  
+  // define TEST_MESSAGE_HANDLER at top of file to check works on all messages
 #ifdef TEST_MESSAGE_HANDLER
-    // Set log levels same so can use one message handler
-    clpSolver->messageHandler()->setLogLevel(1);
-    model.messageHandler()->setLogLevel(1);
-    // switch off some printing
-    void setCbcOrClpPrinting(bool yesNo);
-    setCbcOrClpPrinting(false);
+  test_messaage_handler(&model);
 #endif
-
-    returnCode = CbcMain1(argc, argv, model, dummyCallBack, parameters);
-  }
+     
+  std::deque<std::string> inputQueue;
+  
+  if (argc > 2 && !strcmp(argv[2], "-AMPL")) {
+     ampl_info info;
+     returnCode = cbcReadAmpl(&info, argc, const_cast< char ** >(argv), model);
+     if (!returnCode) {
+        // Put arguments into a queue.
+        // This should be moved to constructor of ClpSolver
+        formInputQueue(inputQueue, info.numberArguments, info.arguments);
+        // We don't need to first two arguments from here on
+        inputQueue.pop_back();
+        inputQueue.pop_back();
+        returnCode = CbcMain1(inputQueue, model, parameters, dummyCallback,
+                              &info);
+     }
+  } else {
+     // Put arguments into a queue.
+     formInputQueue(inputQueue, argc, const_cast< char ** >(argv));
+     returnCode = CbcMain1(inputQueue, model, parameters);
+  }     
 
 #ifdef CLP_DEBUG_MALLOC
   clp_memory(1);
@@ -376,6 +256,9 @@ int main(int argc, const char *argv[])
   }
 }
 
+//#############################################################################
+// Some old comments for historical interest
+//#############################################################################
 /*
   Version 1.00.00 November 16 2005.
   This is to stop me (JJF) messing about too much.

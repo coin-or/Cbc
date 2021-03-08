@@ -17,10 +17,8 @@
 
 #include "CoinUtilsConfig.h"
 
-#include "CoinParam.hpp"
 #include "CoinFileIO.hpp"
 #include "CoinFinite.hpp"
-#include "CoinParam.hpp"
 
 #include "CbcModel.hpp"
 

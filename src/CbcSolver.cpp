@@ -55,7 +55,6 @@ void CbcCrashHandler(int sig);
 #include "ClpDualRowSteepest.hpp"
 #include "ClpFactorization.hpp"
 #include "ClpLinearObjective.hpp"
-#include "ClpMessage.hpp"
 #include "ClpNetworkMatrix.hpp"
 #include "ClpPEDualRowDantzig.hpp"
 #include "ClpPEDualRowSteepest.hpp"
@@ -143,6 +142,28 @@ void CbcCrashHandler(int sig);
 #include "CbcStrategy.hpp"
 #include "CbcTreeLocal.hpp"
 
+//#############################################################################
+//#############################################################################
+
+void printGeneralMessage(CbcModel &model, std::string message, int type)
+{
+   if (message.length()) {
+      model.messageHandler()->message(type, model.messages())
+         << message << CoinMessageEol;
+   }
+}
+
+//#############################################################################
+//#############################################################################
+
+void printGeneralWarning(CbcModel &model, std::string message, int type)
+{
+   if (message.length()) {
+      model.messageHandler()->message(type, model.messages())
+         << message << CoinMessageEol;
+   }
+}
+
 //###########################################################################
 // Define symbols
 //###########################################################################
@@ -228,12 +249,9 @@ void fakeMain2(ClpSimplex &model, OsiClpSolverInterface &osiSolver,
                int options);
 
 int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
-                   int testSwitch, const double *stuff, int argc,
-                   const char **argv,
+                   int testSwitch, const double *stuff, std::deque<std::string>,
                    int callBack(CbcModel *currentSolver, int whereFrom),
                    CbcParameters &parameters);
-
-static void printGeneralMessage(CbcModel &model, const char *message);
 
 //###########################################################################
 // Some debugging routines
@@ -792,7 +810,7 @@ CbcSolver &CbcSolver::operator=(const CbcSolver &rhs) {
 
 // Get int value
 int CbcSolver::intValue(int code) {
-  return parameters_[code].intVal();
+  return parameters_[code]->intVal();
 }
 
 //###########################################################################
@@ -800,7 +818,7 @@ int CbcSolver::intValue(int code) {
 
 // Set int value
 void CbcSolver::setIntValue(int code, int value) {
-  parameters_[code].setIntVal(value);
+  parameters_[code]->setVal(value);
 }
 
 //###########################################################################
@@ -808,7 +826,7 @@ void CbcSolver::setIntValue(int code, int value) {
 
 // Get double value
 double CbcSolver::doubleValue(int code) {
-  return parameters_[code].dblVal();
+  return parameters_[code]->dblVal();
 }
 
 //###########################################################################
@@ -816,7 +834,7 @@ double CbcSolver::doubleValue(int code) {
 
 // Set double value
 void CbcSolver::setDoubleValue(int code, double value) {
-  parameters_[code].setDblVal(value);
+  parameters_[code]->setVal(value);
 }
 
 //###########################################################################
@@ -910,183 +928,6 @@ static bool ends_with(std::string const &value, std::string const &ending) {
 //###########################################################################
 
 //###########################################################################
-// Empty callback to pass as default (why needed?)
-//###########################################################################
-
-static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/) { return 0; }
-
-//###########################################################################
-//###########################################################################
-
-int callCbc1(const char *input2, CbcModel &model,
-             int callBack(CbcModel *currentSolver, int whereFrom),
-             CbcParameters &parameters);
-
-//###########################################################################
-// Simplest calling form: supply just a string with the command options. The
-// wrapper creates an OsiClpSolverInterface and calls the next wrapper.
-//###########################################################################
-
-int callCbc(const std::string input2) {
-  char *input3 = CoinStrdup(input2.c_str());
-  OsiClpSolverInterface solver1;
-  int returnCode = callCbc(input3, solver1);
-  free(input3);
-  return returnCode;
-}
-
-//###########################################################################
-//###########################################################################
-
-int callCbc(const char *input2) {
-  {
-    OsiClpSolverInterface solver1;
-    return callCbc(input2, solver1);
-  }
-}
-
-//###########################################################################
-// Second calling form: supply the command line and an OsiClpSolverInterface.
-// the wrapper will create a CbcModel and call the next wrapper.
-//###########################################################################
-
-int callCbc(const std::string input2, OsiClpSolverInterface &solver1) {
-  char *input3 = CoinStrdup(input2.c_str());
-  int returnCode = callCbc(input3, solver1);
-  free(input3);
-  return returnCode;
-}
-
-//###########################################################################
-//###########################################################################
-
-int callCbc(const char *input2, OsiClpSolverInterface &solver1) {
-  CbcModel model(solver1);
-  return callCbc(input2, model);
-}
-
-//###########################################################################
-//  Third calling form: supply the command line and a CbcModel. This wrapper
-//  will
-// actually call CbcMain0 and then call the next set of wrappers (callCbc1) to
-//  handle the call to CbcMain1.
-//###########################################################################
-
-int callCbc(const char *input2, CbcModel &babSolver) {
-  CbcParameters parameters;
-#ifndef CBC_NO_INTERRUPT
-  parameters.enableSignalHandler();
-#endif
-#ifdef CBC_NO_PRINTING
-  parameters.disablePrinting();
-#endif
-  CbcMain0(babSolver, parameters);
-  return callCbc1(input2, babSolver, dummyCallBack, parameters);
-}
-
-//###########################################################################
-//###########################################################################
-
-int callCbc(const std::string input2, CbcModel &babSolver) {
-  CbcParameters parameters;
-  char *input3 = CoinStrdup(input2.c_str());
-  CbcMain0(babSolver, parameters);
-  int returnCode = callCbc1(input3, babSolver, dummyCallBack, parameters);
-  free(input3);
-  return returnCode;
-}
-
-//###########################################################################
-// Various overloads of callCbc1. The first pair accepts just a CbcModel and
-// supplements it with a dummy callback routine. The second pair allows the
-// user to supply a callback. See CbcMain1 for further explanation of the
-// callback. The various overloads of callCbc1 resolve to the final version,
-// which breaks the string into individual parameter strings (i.e., creates
-// something that looks like a standard argv vector).
-//###########################################################################
-
-int callCbc1(const char *input2, CbcModel &model,
-             int callBack(CbcModel *currentSolver, int whereFrom),
-             CbcParameters &parameters) {
-  char *input = CoinStrdup(input2 ? input2 : "");
-  size_t length = strlen(input);
-  bool blank = input[0] == ' ';
-  int n = blank ? 0 : 1;
-  for (size_t i = 0; i < length; i++) {
-    if (blank) {
-      // look for next non blank
-      if (input[i] == ' ') {
-        continue;
-      } else {
-        n++;
-        blank = false;
-      }
-    } else {
-      // look for next blank
-      if (input[i] != ' ') {
-        continue;
-      } else {
-        blank = true;
-      }
-    }
-  }
-  char **argv = new char *[n + 2];
-  argv[0] = CoinStrdup("cbc");
-  size_t i = 0;
-  while (input[i] == ' ')
-    i++;
-  for (int j = 0; j < n; j++) {
-    size_t saveI = i;
-    for (; i < length; i++) {
-      // look for next blank
-      if (input[i] != ' ') {
-        continue;
-      } else {
-        break;
-      }
-    }
-    input[i++] = '\0';
-    argv[j + 1] = CoinStrdup(input + saveI);
-    while (input[i] == ' ')
-      i++;
-  }
-  argv[n + 1] = CoinStrdup("-quit");
-  free(input);
-  currentBranchModel = NULL;
-  int returnCode = CbcMain1(n + 2, const_cast<const char **>(argv), model,
-                            callBack, parameters);
-  for (int k = 0; k < n + 2; k++)
-    free(argv[k]);
-  delete[] argv;
-  return returnCode;
-}
-
-//###########################################################################
-//###########################################################################
-
-int callCbc1(const char *input2, CbcModel &model,
-             int callBack(CbcModel *currentSolver, int whereFrom)) {
-  CbcParameters parameters;
-  // allow interrupts and printing
-#ifndef CBC_NO_INTERRUPT
-  parameters.enableSignalHandler();
-#endif
-#ifdef CBC_NO_PRINTING
-  parameters.disablePrinting();
-#endif
-  return callCbc1(input2, model, callBack, parameters);
-}
-
-//###########################################################################
-//###########################################################################
-
-int CbcMain(int argc, const char *argv[], CbcModel &model) {
-  CbcParameters parameters;
-  CbcMain0(model, parameters);
-  return CbcMain1(argc, argv, model, dummyCallBack, parameters);
-}
-
-//###########################################################################
 // This is the function for setting things up, default parameters, etc.
 //###########################################################################
 
@@ -1158,113 +999,107 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   int preSolve = 5;
   int doSprint = -1;
   int testOsiParameters = -1;
-  clpParameters[ClpParam::BASISIN].setStrVal(importBasisFile);
-  clpParameters[ClpParam::BASISOUT].setStrVal(exportBasisFile);
-  clpParameters[ClpParam::DUALBOUND].setDblVal(lpSolver->dualBound());
-  clpParameters[ClpParam::DUALTOLERANCE].setDblVal(lpSolver->dualTolerance());
-  clpParameters[ClpParam::IDIOT].setIntVal(doIdiot);
-  clpParameters[ClpParam::PRESOLVETOLERANCE].setDblVal(1.0e-8);
-  clpParameters[ClpParam::MAXFACTOR].setIntVal(lpSolver->factorizationFrequency());
-  clpParameters[ClpParam::MAXITERATION].setIntVal(lpSolver->maximumIterations());
-  clpParameters[ClpParam::OUTPUTFORMAT].setIntVal(outputFormat);
-  clpParameters[ClpParam::PRESOLVEPASS].setIntVal(preSolve);
-  clpParameters[ClpParam::PERTVALUE].setIntVal(lpSolver->perturbation());
-  clpParameters[ClpParam::PRIMALTOLERANCE].setDblVal(lpSolver->primalTolerance());
-  clpParameters[ClpParam::PRIMALWEIGHT].setDblVal(lpSolver->infeasibilityCost());
-  clpParameters[ClpParam::SPRINT].setIntVal(doSprint);
-  clpParameters[ClpParam::SUBSTITUTION].setIntVal(substitution);
-  clpParameters[ClpParam::DUALIZE].setIntVal(dualize);
-  parameters[CbcParam::PRIORITYIN].setStrVal(importPriorityFile);
-  parameters[CbcParam::DEBUG].setStrVal(debugFile);
-  parameters[CbcParam::PRINTMASK].setStrVal(printMask);
-  parameters[CbcParam::DIRECTORY].setStrVal(directory);
-  parameters[CbcParam::DIRSAMPLE].setStrVal(dirSample);
-  parameters[CbcParam::DIRNETLIB].setStrVal(dirNetlib);
-  parameters[CbcParam::DIRMIPLIB].setStrVal(dirMiplib);
-  parameters[CbcParam::EXPORT].setStrVal(exportFile);
-  parameters[CbcParam::IMPORT].setStrVal(importFile);
-  parameters[CbcParam::LOGLEVEL].setIntVal(1);
-  parameters[CbcParam::LPLOGLEVEL].setIntVal(1);
+  clpParameters[ClpParam::BASISIN]->setVal(importBasisFile);
+  clpParameters[ClpParam::BASISOUT]->setVal(exportBasisFile);
+  clpParameters[ClpParam::DUALBOUND]->setVal(lpSolver->dualBound());
+  clpParameters[ClpParam::DUALTOLERANCE]->setVal(lpSolver->dualTolerance());
+  clpParameters[ClpParam::IDIOT]->setVal(doIdiot);
+  clpParameters[ClpParam::PRESOLVETOLERANCE]->setVal(1.0e-8);
+  clpParameters[ClpParam::MAXFACTOR]->setVal(lpSolver->factorizationFrequency());
+  clpParameters[ClpParam::MAXITERATION]->setVal(lpSolver->maximumIterations());
+  clpParameters[ClpParam::OUTPUTFORMAT]->setVal(outputFormat);
+  clpParameters[ClpParam::PRESOLVEPASS]->setVal(preSolve);
+  clpParameters[ClpParam::PERTVALUE]->setVal(lpSolver->perturbation());
+  clpParameters[ClpParam::PRIMALTOLERANCE]->setVal(lpSolver->primalTolerance());
+  clpParameters[ClpParam::PRIMALWEIGHT]->setVal(lpSolver->infeasibilityCost());
+  clpParameters[ClpParam::SPRINT]->setVal(doSprint);
+  clpParameters[ClpParam::SUBSTITUTION]->setVal(substitution);
+  clpParameters[ClpParam::DUALIZE]->setVal(dualize);
+  parameters[CbcParam::PRIORITYIN]->setVal(importPriorityFile);
+  parameters[CbcParam::DEBUG]->setVal(debugFile);
+  parameters[CbcParam::PRINTMASK]->setVal(printMask);
+  parameters[CbcParam::DIRECTORY]->setVal(directory);
+  parameters[CbcParam::DIRSAMPLE]->setVal(dirSample);
+  parameters[CbcParam::DIRNETLIB]->setVal(dirNetlib);
+  parameters[CbcParam::DIRMIPLIB]->setVal(dirMiplib);
+  parameters[CbcParam::EXPORT]->setVal(exportFile);
+  parameters[CbcParam::IMPORT]->setVal(importFile);
+  parameters[CbcParam::LOGLEVEL]->setVal(1);
+  parameters[CbcParam::LPLOGLEVEL]->setVal(1);
   clpSolver->messageHandler()->setLogLevel(1);
   lpSolver->setLogLevel(1);
-  parameters[CbcParam::RESTORE].setStrVal(restoreFile);
-  parameters[CbcParam::SAVE].setStrVal(saveFile);
-  parameters[CbcParam::TIMELIMIT].setDblVal(1.0e8);
-  parameters[CbcParam::SOLUTION].setStrVal(solutionFile);
-  parameters[CbcParam::NEXTBESTSOLUTION].setStrVal(solutionFile);
-  parameters[CbcParam::SAVESOL].setStrVal(solutionSaveFile);
-  parameters[CbcParam::TESTOSI].setIntVal(testOsiParameters);
-  parameters[CbcParam::FPUMPTUNE].setIntVal(1003);
+  parameters[CbcParam::RESTORE]->setVal(restoreFile);
+  parameters[CbcParam::SAVE]->setVal(saveFile);
+  parameters[CbcParam::TIMELIMIT]->setVal(1.0e8);
+  parameters[CbcParam::SOLUTION]->setVal(solutionFile);
+  parameters[CbcParam::NEXTBESTSOLUTION]->setVal(solutionFile);
+  parameters[CbcParam::SAVESOL]->setVal(solutionSaveFile);
+  parameters[CbcParam::TESTOSI]->setVal(testOsiParameters);
+  parameters[CbcParam::FPUMPTUNE]->setVal(1003);
   initialPumpTune = 1003;
 #ifdef CBC_THREAD
-  parameters[CbcParam::THREADS].setIntVal(0);
+  parameters[CbcParam::THREADS]->setVal(0);
 #endif
   // Set up likely cut generators and defaults
-  parameters[CbcParam::CLIQUECUTS].setKwdVal("ifmove");
-  parameters[CbcParam::ODDWHEELCUTS].setKwdVal("ifmove");
-  parameters[CbcParam::CLQSTRENGTHENING].setKwdVal("after");
-  parameters[CbcParam::USECGRAPH].setKwdVal("on");
-  parameters[CbcParam::BKPIVOTINGSTRATEGY].setIntVal(3);
-  parameters[CbcParam::BKMAXCALLS].setIntVal(1000);
-  parameters[CbcParam::BKCLQEXTMETHOD].setIntVal(4);
-  parameters[CbcParam::ODDWEXTMETHOD].setIntVal(2);
-  parameters[CbcParam::PREPROCESS].setKwdVal("sos");
-  parameters[CbcParam::MIPOPTIONS].setIntVal(1057);
-  parameters[CbcParam::CUTPASSINTREE].setIntVal(1);
-  parameters[CbcParam::MOREMIPOPTIONS].setIntVal(-1);
-  parameters[CbcParam::MAXHOTITS].setIntVal(100);
-  parameters[CbcParam::CUTSTRATEGY].setKwdVal("on");
-  parameters[CbcParam::HEURISTICSTRATEGY].setKwdVal("on");
-  parameters[CbcParam::NODESTRATEGY].setKwdVal("fewest");
-  parameters[CbcParam::GOMORYCUTS].setKwdVal("ifmove");
-  parameters[CbcParam::PROBINGCUTS].setKwdVal("ifmove");
-  parameters[CbcParam::KNAPSACKCUTS].setKwdVal("ifmove");
-  parameters[CbcParam::ZEROHALFCUTS].setKwdVal("ifmove");
-  parameters[CbcParam::REDSPLITCUTS].setKwdVal("off");
-  parameters[CbcParam::REDSPLIT2CUTS].setKwdVal("off");
-  parameters[CbcParam::GMICUTS].setKwdVal("off");
-  parameters[CbcParam::MIRCUTS].setKwdVal("ifmove");
-  parameters[CbcParam::FLOWCUTS].setKwdVal("ifmove");
-  parameters[CbcParam::TWOMIRCUTS].setKwdVal("root");
-  parameters[CbcParam::LANDPCUTS].setKwdVal("off");
-  parameters[CbcParam::RESIDCAPCUTS].setKwdVal("off");
-  parameters[CbcParam::ROUNDING].setKwdVal("on");
-  parameters[CbcParam::FPUMP].setKwdVal("on");
-  parameters[CbcParam::GREEDY].setKwdVal("on");
-  parameters[CbcParam::COMBINE].setKwdVal("off");
-  parameters[CbcParam::CROSSOVER].setKwdVal("off");
-  parameters[CbcParam::PIVOTANDCOMPLEMENT].setKwdVal("off");
-  parameters[CbcParam::PIVOTANDFIX].setKwdVal("off");
-  parameters[CbcParam::RANDROUND].setKwdVal("off");
-  parameters[CbcParam::NAIVE].setKwdVal("off");
-  parameters[CbcParam::RINS].setKwdVal("off");
-  parameters[CbcParam::DINS].setKwdVal("off");
-  parameters[CbcParam::RENS].setKwdVal("off");
-  parameters[CbcParam::LOCALTREE].setKwdVal("off");
-  parameters[CbcParam::BRANCHPRIORITY].setKwdVal("off");
+  parameters[CbcParam::CLIQUECUTS]->setVal("ifmove");
+  parameters[CbcParam::ODDWHEELCUTS]->setVal("ifmove");
+  parameters[CbcParam::CLQSTRENGTHENING]->setVal("after");
+  parameters[CbcParam::USECGRAPH]->setVal("on");
+  parameters[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
+  parameters[CbcParam::BKMAXCALLS]->setVal(1000);
+  parameters[CbcParam::BKCLQEXTMETHOD]->setVal(4);
+  parameters[CbcParam::ODDWEXTMETHOD]->setVal(2);
+  parameters[CbcParam::PREPROCESS]->setVal("sos");
+  parameters[CbcParam::MIPOPTIONS]->setVal(1057);
+  parameters[CbcParam::CUTPASSINTREE]->setVal(1);
+  parameters[CbcParam::MOREMIPOPTIONS]->setVal(-1);
+  parameters[CbcParam::MAXHOTITS]->setVal(100);
+  parameters[CbcParam::CUTSTRATEGY]->setVal("on");
+  parameters[CbcParam::HEURISTICSTRATEGY]->setVal("on");
+  parameters[CbcParam::NODESTRATEGY]->setVal("fewest");
+  parameters[CbcParam::GOMORYCUTS]->setVal("ifmove");
+  parameters[CbcParam::PROBINGCUTS]->setVal("ifmove");
+  parameters[CbcParam::KNAPSACKCUTS]->setVal("ifmove");
+  parameters[CbcParam::ZEROHALFCUTS]->setVal("ifmove");
+  parameters[CbcParam::REDSPLITCUTS]->setVal("off");
+  parameters[CbcParam::REDSPLIT2CUTS]->setVal("off");
+  parameters[CbcParam::GMICUTS]->setVal("off");
+  parameters[CbcParam::MIRCUTS]->setVal("ifmove");
+  parameters[CbcParam::FLOWCUTS]->setVal("ifmove");
+  parameters[CbcParam::TWOMIRCUTS]->setVal("root");
+  parameters[CbcParam::LANDPCUTS]->setVal("off");
+  parameters[CbcParam::RESIDCAPCUTS]->setVal("off");
+  parameters[CbcParam::ROUNDING]->setVal("on");
+  parameters[CbcParam::FPUMP]->setVal("on");
+  parameters[CbcParam::GREEDY]->setVal("on");
+  parameters[CbcParam::COMBINE]->setVal("off");
+  parameters[CbcParam::CROSSOVER]->setVal("off");
+  parameters[CbcParam::PIVOTANDCOMPLEMENT]->setVal("off");
+  parameters[CbcParam::PIVOTANDFIX]->setVal("off");
+  parameters[CbcParam::RANDROUND]->setVal("off");
+  parameters[CbcParam::NAIVE]->setVal("off");
+  parameters[CbcParam::RINS]->setVal("off");
+  parameters[CbcParam::DINS]->setVal("off");
+  parameters[CbcParam::RENS]->setVal("off");
+  parameters[CbcParam::LOCALTREE]->setVal("off");
+  parameters[CbcParam::BRANCHPRIORITY]->setVal("off");
 
   model.messageHandler()->setLogLevel(1);
   model.setNumberBeforeTrust(10);
-  parameters[CbcParam::NUMBERBEFORE].setIntVal(5);
-  parameters[CbcParam::MAXNODES].setIntVal(model.getMaximumNodes());
+  parameters[CbcParam::NUMBERBEFORE]->setVal(5);
+  parameters[CbcParam::MAXNODES]->setVal(model.getMaximumNodes());
   model.setNumberStrong(5);
-  parameters[CbcParam::STRONGBRANCHING].setIntVal(model.numberStrong());
-  parameters[CbcParam::INFEASIBILITYWEIGHT].setDblVal(model.getDblParam(CbcModel::CbcInfeasibilityWeight));
-  parameters[CbcParam::INTEGERTOLERANCE].setDblVal(model.getDblParam(CbcModel::CbcIntegerTolerance));
-  parameters[CbcParam::INCREMENT].setDblVal(model.getDblParam(CbcModel::CbcCutoffIncrement));
+  parameters[CbcParam::STRONGBRANCHING]->setVal(model.numberStrong());
+  parameters[CbcParam::INFEASIBILITYWEIGHT]->setVal(model.getDblParam(CbcModel::CbcInfeasibilityWeight));
+  parameters[CbcParam::INTEGERTOLERANCE]->setVal(model.getDblParam(CbcModel::CbcIntegerTolerance));
+  parameters[CbcParam::INCREMENT]->setVal(model.getDblParam(CbcModel::CbcCutoffIncrement));
 }
 
 //###########################################################################
 //###########################################################################
 
-// Version of CbcMain1 without callBack
-int CbcMain1(int argc, const char *argv[], CbcModel &model,
-             CbcParameters &parameters) {
-  return CbcMain1(argc, argv, model, dummyCallBack, parameters);
-}
-
 //###########################################################################
-// The full version of CbcMain 1
+// CbcMain 1
 // Meaning of whereFrom:
 //   1 after initial solve by dualsimplex etc
 //   2 after preprocessing
@@ -1274,19 +1109,20 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
 //   6 after a user called heuristic phase
 //###########################################################################
 
-int CbcMain1(int argc, const char *argv[], CbcModel &model,
+int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
+             CbcParameters &parameters,
              int callBack(CbcModel *currentSolver, int whereFrom),
-             CbcParameters &parameters) {
+             ampl_info *info) {
 
   ClpParameters &clpParameters = parameters.clpParameters();
 
+  std::ostringstream buffer;
   double totalTime = parameters.getTotalTime();
-  bool noPrinting = parameters.noPrinting();
   bool useSignalHandler = parameters.useSignalHandler();
   CbcModel &model_ = model;
   CglPreProcess *preProcessPointer = NULL;
-  // Initialize the counter for input field number
-  int whichField = 0;
+  OsiSolverInterface *saveSolver = NULL;
+  CglPreProcess process;
   // Meaning 0 - start at very beginning
   // 1 start at beginning of preprocessing
   // 2 start at beginning of branch and bound
@@ -1347,9 +1183,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
     originalSolver->getModelPtr()->passInMessageHandler(
         originalSolver->messageHandler());
   CoinMessages generalMessages = originalSolver->getModelPtr()->messages();
-  char generalPrint[10000];
   if (originalSolver->getModelPtr()->logLevel() == 0) {
-    noPrinting = true;
+    generalMessageHandler->setLogLevel(0);
     parameters.disableWelcomePrinting();
   }
 #elif CBC_OTHER_SOLVER == 1
@@ -1366,31 +1201,12 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
   OsiClpSolverInterface dummySolver;
   OsiCpxSolverInterface *clpSolver = originalSolver;
   CoinMessages generalMessages = dummySolver.getModelPtr()->messages();
-  char generalPrint[10000];
-  noPrinting = true;
+  parameters.enablePrinting();
 #endif
-  bool noPrinting_ = noPrinting;
   // Say not in integer
   int integerStatus = -1;
   // Say no resolve after cuts
   model_.setResolveAfterTakeOffCuts(false);
-  // see if log in list
-  for (int i = 1; i < argc; i++) {
-    if (!strncmp(argv[i], "log", 3)) {
-      const char *equals = strchr(argv[i], '=');
-      if (equals && atoi(equals + 1) != 0)
-        noPrinting_ = false;
-      else
-        noPrinting_ = true;
-      break;
-    } else if (!strncmp(argv[i], "-log", 4) && i < argc - 1) {
-      if (atoi(argv[i + 1]) != 0)
-        noPrinting_ = false;
-      else
-        noPrinting_ = true;
-      break;
-    }
-  }
   double time0;
   double time0Elapsed = CoinGetTimeOfDay();
   {
@@ -1417,7 +1233,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver);
     ClpSimplex *lpSolver = clpSolver->getModelPtr();
-    if (noPrinting_) {
+    if (parameters.noPrinting()) {
       lpSolver->setLogLevel(0);
     }
 #else
@@ -1448,200 +1264,6 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
     int *knapsackStart = NULL;
     int *knapsackRow = NULL;
     int numberKnapsack = 0;
-    ampl_info info;
-    {
-      memset(&info, 0, sizeof(info));
-      if (argc > 2 && !strcmp(argv[2], "-AMPL")) {
-        statusUserFunction_[0] = 1;
-        // see if log in list
-        noPrinting_ = true;
-        for (int i = 1; i < argc; i++) {
-          if (!strncmp(argv[i], "log", 3)) {
-            const char *equals = strchr(argv[i], '=');
-            if (equals && atoi(equals + 1) > 0) {
-              noPrinting_ = false;
-              info.logLevel = atoi(equals + 1);
-              parameters[CbcParam::LPLOGLEVEL].setIntVal(info.logLevel);
-              // mark so won't be overWritten
-              info.numberRows = -1234567;
-              break;
-            }
-          }
-        }
-
-        union {
-          void *voidModel;
-          CoinModel *model;
-        } coinModelStart;
-        coinModelStart.model = NULL;
-        int returnCode = readAmpl(&info, argc, const_cast<char **>(argv),
-                                  &coinModelStart.voidModel, "cbc");
-        coinModel = coinModelStart.model;
-        if (returnCode)
-          return returnCode;
-        if (info.numberSos) {
-          numberSOS = info.numberSos;
-          sosStart = info.sosStart;
-          sosIndices = info.sosIndices;
-          sosType = info.sosType;
-          sosReference = info.sosReference;
-          sosPriority = info.sosPriority;
-        }
-        whichField = 2; // so will start with parameters
-        // see if log in list (including environment)
-        for (int i = 1; i < info.numberArguments; i++) {
-          if (!strcmp(info.arguments[i], "log")) {
-            if (i < info.numberArguments - 1 && atoi(info.arguments[i + 1]) > 0)
-              noPrinting_ = false;
-            break;
-          }
-        }
-        if (noPrinting_) {
-          model_.messageHandler()->setLogLevel(0);
-        }
-        if (!noPrinting_)
-          printf("%d rows, %d columns and %d elements\n", info.numberRows,
-                 info.numberColumns, info.numberElements);
-#ifdef COIN_HAS_LINK
-        if (!coinModel) {
-#endif
-          solver->loadProblem(
-              info.numberColumns, info.numberRows,
-              reinterpret_cast<const CoinBigIndex *>(info.starts), info.rows,
-              info.elements, info.columnLower, info.columnUpper, info.objective,
-              info.rowLower, info.rowUpper);
-          // take off cuts if ampl wants that
-          if (info.cut && 0) {
-            printf("AMPL CUTS OFF until global cuts fixed\n");
-            info.cut = NULL;
-          }
-          if (info.cut) {
-            int numberRows = info.numberRows;
-            int *whichRow = new int[numberRows];
-            // Row copy
-            const CoinPackedMatrix *matrixByRow = solver->getMatrixByRow();
-            const double *elementByRow = matrixByRow->getElements();
-            const int *column = matrixByRow->getIndices();
-            const CoinBigIndex *rowStart = matrixByRow->getVectorStarts();
-            const int *rowLength = matrixByRow->getVectorLengths();
-
-            const double *rowLower = solver->getRowLower();
-            const double *rowUpper = solver->getRowUpper();
-            int nDelete = 0;
-            for (int iRow = 0; iRow < numberRows; iRow++) {
-              if (info.cut[iRow]) {
-                whichRow[nDelete++] = iRow;
-                int start = rowStart[iRow];
-                storedAmpl.addCut(rowLower[iRow], rowUpper[iRow],
-                                  rowLength[iRow], column + start,
-                                  elementByRow + start);
-              }
-            }
-            solver->deleteRows(nDelete, whichRow);
-            delete[] whichRow;
-          }
-#ifdef COIN_HAS_LINK
-        } else {
-#ifndef CBC_OTHER_SOLVER
-          // save
-          saveCoinModel = *coinModel;
-          // load from coin model
-          OsiSolverLink solver1;
-          OsiSolverInterface *solver2 = solver1.clone();
-          model_.assignSolver(solver2, false);
-          OsiSolverLink *si = dynamic_cast<OsiSolverLink *>(model_.solver());
-          assert(si != NULL);
-          si->setDefaultMeshSize(0.001);
-          // need some relative granularity
-          si->setDefaultBound(100.0);
-          double dextra3 = parameters[CbcParam::DEXTRA3].dblVal();
-          if (dextra3)
-            si->setDefaultMeshSize(dextra3);
-          si->setDefaultBound(100000.0);
-          si->setIntegerPriority(1000);
-          si->setBiLinearPriority(10000);
-          CoinModel *model2 = reinterpret_cast<CoinModel *>(coinModel);
-          int logLevel = parameters[CbcParam::LPLOGLEVEL].intVal();
-          si->load(*model2, true, logLevel);
-          // redo
-          solver = model_.solver();
-          clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
-          lpSolver = clpSolver->getModelPtr();
-          clpSolver->messageHandler()->setLogLevel(0);
-          testOsiParameters = 0;
-          parameters[CbcParam::TESTOSI].setIntVal(0);
-          complicatedInteger = 1;
-          if (info.cut) {
-            printf(
-                "Sorry - can't do cuts with LOS as ruins delicate row order\n");
-            abort();
-            int numberRows = info.numberRows;
-            int *whichRow = new int[numberRows];
-            // Row copy
-            const CoinPackedMatrix *matrixByRow = solver->getMatrixByRow();
-            const double *elementByRow = matrixByRow->getElements();
-            const int *column = matrixByRow->getIndices();
-            const CoinBigIndex *rowStart = matrixByRow->getVectorStarts();
-            const int *rowLength = matrixByRow->getVectorLengths();
-
-            const double *rowLower = solver->getRowLower();
-            const double *rowUpper = solver->getRowUpper();
-            int nDelete = 0;
-            for (int iRow = 0; iRow < numberRows; iRow++) {
-              if (info.cut[iRow]) {
-                whichRow[nDelete++] = iRow;
-                int start = rowStart[iRow];
-                storedAmpl.addCut(rowLower[iRow], rowUpper[iRow],
-                                  rowLength[iRow], column + start,
-                                  elementByRow + start);
-              }
-            }
-            solver->deleteRows(nDelete, whichRow);
-            // and special matrix
-            si->cleanMatrix()->deleteRows(nDelete, whichRow);
-            delete[] whichRow;
-          }
-#endif
-        }
-#endif
-        // If we had a solution use it
-        if (info.primalSolution) {
-          solver->setColSolution(info.primalSolution);
-        }
-        // status
-        if (info.rowStatus) {
-          unsigned char *statusArray = lpSolver->statusArray();
-          int i;
-          for (i = 0; i < info.numberColumns; i++)
-            statusArray[i] = static_cast<unsigned char>(info.columnStatus[i]);
-          statusArray += info.numberColumns;
-          for (i = 0; i < info.numberRows; i++)
-            statusArray[i] = static_cast<unsigned char>(info.rowStatus[i]);
-          CoinWarmStartBasis *basis = lpSolver->getBasis();
-          solver->setWarmStart(basis);
-          delete basis;
-        }
-        freeArrays1(&info);
-        // modify objective if necessary
-        solver->setObjSense(info.direction);
-        solver->setDblParam(OsiObjOffset, -info.offset);
-        if (info.offset) {
-          sprintf(generalPrint, "Ampl objective offset is %g", info.offset);
-          generalMessageHandler->message(CLP_GENERAL, generalMessages)
-              << generalPrint << CoinMessageEol;
-        }
-        // Set integer variables (unless nonlinear when set)
-        if (!info.nonLinear) {
-          for (int i = info.numberColumns - info.numberIntegers;
-               i < info.numberColumns; i++)
-            solver->setInteger(i);
-        }
-        goodModel = true;
-        // change argc etc
-        argc = info.numberArguments;
-        argv = const_cast<const char **>(info.arguments);
-      }
-    }
     // default action on import
     int allowImportErrors = 0;
     int keepImportNames = 1;
@@ -1658,6 +1280,93 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
     int doVector = 0;
     int doSprint = -1;
     int doScaling = 4;
+
+    if (info) {
+       parameters[ClpParam::LOGLEVEL]->setVal(info->logLevel);
+       goodModel = true;
+       // FIXME Do we really need this? Seems to just mean that AMPL is being used
+       statusUserFunction_[0] = 1;
+       if (info->numberSos) {
+          numberSOS = info->numberSos;
+          sosStart = info->sosStart;
+          sosIndices = info->sosIndices;
+          sosType = info->sosType;
+          sosReference = info->sosReference;
+          sosPriority = info->sosPriority;
+       }
+       if (info->cut) {
+          int numberRows = info->numberRows;
+          int *whichRow = new int[numberRows];
+          // Row copy
+          const CoinPackedMatrix *matrixByRow = solver->getMatrixByRow();
+          const double *elementByRow = matrixByRow->getElements();
+          const int *column = matrixByRow->getIndices();
+          const CoinBigIndex *rowStart = matrixByRow->getVectorStarts();
+          const int *rowLength = matrixByRow->getVectorLengths();
+          
+          const double *rowLower = solver->getRowLower();
+          const double *rowUpper = solver->getRowUpper();
+          int nDelete = 0;
+          for (int iRow = 0; iRow < numberRows; iRow++) {
+             if (info->cut[iRow]) {
+                whichRow[nDelete++] = iRow;
+                int start = rowStart[iRow];
+                storedAmpl.addCut(rowLower[iRow], rowUpper[iRow],
+                                  rowLength[iRow], column + start,
+                                  elementByRow + start);
+             }
+          }
+          solver->deleteRows(nDelete, whichRow);
+          delete[] whichRow;
+       }
+             solver->loadProblem(
+                          info->numberColumns, info->numberRows,
+                          reinterpret_cast<const CoinBigIndex *>(info->starts), info->rows,
+                          info->elements, info->columnLower, info->columnUpper, info->objective,
+                          info->rowLower, info->rowUpper);
+      // take off cuts if ampl wants that
+      if (info->cut && 0) {
+         printf("AMPL CUTS OFF until global cuts fixed\n");
+         info->cut = NULL;
+      }
+
+      //FIXME A big block was deleted which seemed as though it should never be entered.
+      //      Check that.
+      
+      // If we had a solution use it
+      if (info->primalSolution) {
+         solver->setColSolution(info->primalSolution);
+      }
+      // status
+      if (info->rowStatus) {
+         unsigned char *statusArray = lpSolver->statusArray();
+         int i;
+         for (i = 0; i < info->numberColumns; i++)
+            statusArray[i] = static_cast<unsigned char>(info->columnStatus[i]);
+         statusArray += info->numberColumns;
+         for (i = 0; i < info->numberRows; i++)
+            statusArray[i] = static_cast<unsigned char>(info->rowStatus[i]);
+         CoinWarmStartBasis *basis = lpSolver->getBasis();
+         solver->setWarmStart(basis);
+         delete basis;
+      }
+      freeArrays1(info);
+      // modify objective if necessary
+      solver->setObjSense(info->direction);
+      solver->setDblParam(OsiObjOffset, -info->offset);
+      if (info->offset) {
+         buffer.str("");
+         buffer << "Ampl objective offset is " << info->offset;
+         printGeneralMessage(model, buffer.str());
+      }
+      // Set integer variables (unless nonlinear when set)
+      if (!info->nonLinear) {
+         for (int i = info->numberColumns - info->numberIntegers;
+              i < info->numberColumns; i++)
+            solver->setInteger(i);
+      }
+    }
+    
     // set reasonable defaults
     int preSolve = 5;
     int preProcess = 4;
@@ -1843,85 +1552,70 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
       initialPumpTune = 1005043;
       tunePreProcess = 6;
       probingAction = 3;
-      parameters[CbcParam::DIVEOPT].setIntVal(2);
-      parameters[CbcParam::FPUMPITS].setIntVal(30);
-      parameters[CbcParam::FPUMPTUNE].setIntVal(1005043);
-      parameters[CbcParam::PROCESSTUNE].setIntVal(6);
-      parameters[CbcParam::DIVINGC].setKwdVal("on");
-      parameters[CbcParam::RINS].setKwdVal("on");
-      parameters[CbcParam::PROBINGCUTS].setKwdVal("on");
-      // parameters[iParam].setKwdVal("forceOnStrong");
+      parameters[CbcParam::DIVEOPT]->setVal(2);
+      parameters[CbcParam::FPUMPITS]->setVal(30);
+      parameters[CbcParam::FPUMPTUNE]->setVal(1005043);
+      parameters[CbcParam::PROCESSTUNE]->setVal(6);
+      parameters[CbcParam::DIVINGC]->setVal("on");
+      parameters[CbcParam::RINS]->setVal("on");
+      parameters[CbcParam::PROBINGCUTS]->setVal("on");
+      // parameters[iParam]->setVal("forceOnStrong");
       // probingAction = 8;
     }
-#if CBC_QUIET == 0
-    if ((!noPrinting_) && (parameters.printWelcome())) {
-      sprintf(generalPrint, "Welcome to the CBC MILP Solver \n");
-      if (strcmp(CBC_VERSION, "trunk")) {
-        sprintf(generalPrint + strlen(generalPrint), "Version: %s \n",
-                CBC_VERSION);
-      } else {
-        sprintf(generalPrint + strlen(generalPrint),
-                "Version: Trunk (unstable) \n");
-      }
-      sprintf(generalPrint + strlen(generalPrint), "Build Date: %s \n",
-              __DATE__);
-#ifdef CBC_SVN_REV
-      sprintf(generalPrint + strlen(generalPrint), "Revision Number: %d \n",
-              CBC_SVN_REV);
-#endif
-      generalMessageHandler->message(CLP_GENERAL, generalMessages)
-          << generalPrint << CoinMessageEol;
-      // Print command line
-      if (argc > 1) {
-        bool foundStrategy = false;
-        sprintf(generalPrint, "command line - ");
-        for (int i = 0; i < argc; i++) {
-          if (!argv[i])
-            break;
-          if (strstr(argv[i], "strat"))
-            foundStrategy = true;
-          sprintf(generalPrint + strlen(generalPrint), "%s ", argv[i]);
-        }
-        if (!foundStrategy)
-          sprintf(generalPrint + strlen(generalPrint), "(default strategy 1)");
-        generalMessageHandler->message(CLP_GENERAL, generalMessages)
-            << generalPrint << CoinMessageEol;
-      }
-    }
-#endif
 
     bool interactiveMode = false;
-    std::string field;
-    std::vector<std::string> inputVector;
-    for (int i = 1; i < argc; i++){
-       std::string tmp(argv[i]);
-       std::string::size_type found = tmp.find('=');
-       if (found != std::string::npos) {
-          inputVector.push_back(tmp.substr(0, found));
-          inputVector.push_back(tmp.substr(found + 1));
-       } else {
-          inputVector.push_back(tmp);
-       }
-    }
-
+    std::string field, message;
+    int status, iValue;
+    double dValue;
     std::string prompt = "Cbc: ";
-  
+
+#if CBC_QUIET == 0
+    if (parameters.printWelcome()) {
+      buffer.str("");
+      buffer << "Welcome to the CBC MILP Solver" << std::endl;
+      if (strcmp(CBC_VERSION, "devel")) {
+         buffer << "Version: " << CBC_VERSION  << std::endl;
+      } else {
+         buffer << "Version: Devel (unstable)" << std::endl;
+      }
+      buffer << "Build Date: " << __DATE__  << std::endl;
+      printGeneralMessage(model_, buffer.str());
+      // Print command line
+      if (!inputQueue.empty()) {
+        bool foundStrategy = false;
+        buffer.str("");
+        buffer << "command line - ";
+        for (int i = 0; i < inputQueue.size(); i++) {
+           size_t found = inputQueue[i].find("strat"); 
+           if (found != std::string::npos){
+              foundStrategy = true;
+           }
+           buffer << inputQueue[i];
+        }
+        if (!foundStrategy){
+           buffer << " (default strategy 1)";
+        }
+        printGeneralMessage(model_, buffer.str());
+      }
+    }
+#endif
+
+    // If no arguments, just go into interactive mode
+    if (!inputQueue.size()){
+       interactiveMode = true;
+       // let's give the sucker a hint
+       std::cout
+          << "Cbc takes input from arguments ( - switches to stdin)"
+          << std::endl
+          << "Enter ? for list of commands or help" << std::endl;
+    }
+      
     while (1) {
       // Reset time
       time1 = CoinCpuTime();
       time1Elapsed = CoinGetTimeOfDay();
 
-      // If no arguments, just go into interactive mode
-      if (!inputVector.size()){
-         interactiveMode = true;
-         // let's give the sucker a hint
-         std::cout
-            << "Cbc takes input from arguments ( - switches to stdin)"
-            << std::endl
-            << "Enter ? for list of commands or help" << std::endl;
-      }
-      
-      field = CoinGetCommand(inputVector, whichField, interactiveMode, prompt);
+      field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
 
       // exit if null or similar
       if (!field.length()) {
@@ -1938,14 +1632,12 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
          if (field == "-") {
             std::cout << "Switching to line mode" << std::endl;
             interactiveMode = true;
-            // This effectively ignores anything that may come after
-            whichField = inputVector.size();
+            while (!inputQueue.empty())
+               inputQueue.pop_back();
          } else if (field[0] != '-') {
-            //if (inputVector.size() == 1) {
-            // special dispensation - taken as -import name
+            // special dispensation - taken as -import name, put name back on queue
+            inputQueue.push_back(field);
             field = "import";
-            whichField--;
-            //}
          } else {
             if (field != "--") {
                // take off -
@@ -1957,30 +1649,35 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
          }
       }
 
-      // see if ? at end
-      size_t numberQuery = 0;
-      if (field != "?" && field != "???") {
-        size_t length = field.length();
-        size_t i;
-        for (i = length - 1; i > 0; i--) {
-          if (field[i] == '?')
-            numberQuery++;
-          else
-            break;
-        }
-        field = field.substr(0, length - numberQuery);
-      }
       // find out if valid command
-      int numberClpMatches = 0;
-      int numberCbcMatches = 0;
-      int clpParamCode = clpParameters.matches(field, numberClpMatches);
-      ClpParam clpParam = clpParameters[clpParamCode];
-      int cbcParamCode = parameters.matches(field, numberCbcMatches);
-      CbcParam cbcParam = parameters[cbcParamCode];
-      int numberMatches = numberClpMatches + numberCbcMatches;
-      
-      if ((cbcParam.type() == CoinParam::paramInvalid &&
-           clpParam.type() == CoinParam::paramInvalid) ||
+      int numberClpMatches(0), numberClpShortMatches(0), numberClpQuery(0);
+      int clpParamCode = CoinParamUtils::lookupParam(field,
+                                                     parameters.paramVec(),
+                                                     &numberClpMatches,
+                                                     &numberClpShortMatches,
+                                                     &numberClpQuery);
+      ClpParam *clpParam = clpParameters[clpParamCode];
+
+      int numberCbcMatches(0), numberCbcShortMatches(0), numberCbcQuery(0);
+      int cbcParamCode = CoinParamUtils::lookupParam(field,
+                                                     parameters.paramVec(),
+                                                     &numberCbcMatches,
+                                                     &numberCbcShortMatches,
+                                                     &numberCbcQuery);
+
+      int numberMatches(numberClpMatches + numberCbcMatches);
+      int numberShortMatches(numberClpShortMatches + numberCbcShortMatches);
+      int numberQuery(numberClpQuery + numberCbcQuery);
+
+      if (numberMatches > 1 || numberShortMatches == 1 || numberQuery > 0) {
+         continue;
+      }
+      CbcParam *cbcParam = parameters[cbcParamCode];
+
+#if 0
+      // This logic is all captured in lookupParam
+      if ((cbcParam->type() == CoinParam::paramInvalid &&
+           clpParam->type() == CoinParam::paramInvalid) ||
           numberQuery) {
         if (!numberMatches) {
           std::cout << "No match for " << field << " - ? for list of commands"
@@ -1988,23 +1685,23 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
         } else if (numberMatches == 1) {
           if (!numberQuery) {
             std::cout << "Short match for " << field << " - completion: ";
-            if (cbcParam.type() != CoinParam::paramInvalid) {
-              std::cout << cbcParam.matchName() << std::endl;
+            if (cbcParam->type() != CoinParam::paramInvalid) {
+              std::cout << cbcParam->matchName() << std::endl;
             } else {
-              std::cout << clpParam.matchName() << std::endl;
+              std::cout << clpParam->matchName() << std::endl;
             }
           } else if (numberQuery) {
-            if (cbcParam.type() != CoinParam::paramInvalid) {
-              std::cout << cbcParam.matchName() << " : ";
-              std::cout << cbcParam.shortHelp() << std::endl;
+            if (cbcParam->type() != CoinParam::paramInvalid) {
+              std::cout << cbcParam->matchName() << " : ";
+              std::cout << cbcParam->shortHelp() << std::endl;
               if (numberQuery >= 2){
-                cbcParam.printLongHelp();
+                cbcParam->printLongHelp();
               }
             } else {
-              std::cout << clpParam.matchName() << " : ";
-              std::cout << clpParam.shortHelp() << std::endl;
+              std::cout << clpParam->matchName() << " : ";
+              std::cout << clpParam->shortHelp() << std::endl;
               if (numberQuery >= 2){
-                clpParam.printLongHelp();
+                clpParam->printLongHelp();
               }
             }
           }
@@ -2016,26 +1713,27 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             std::cout << "Completions of " << field << ":" << std::endl;
           for (int iParam = CbcParam::FIRSTPARAM + 1;
                iParam < CbcParam::LASTPARAM; iParam++) {
-            int match = parameters[iParam].matches(field);
-            if (match && parameters[iParam].getDisplayPriority()) {
-              std::cout << parameters[iParam].matchName();
+            int match = parameters[iParam]->matches(field);
+            if (match && parameters[iParam]->getDisplayPriority()) {
+              std::cout << parameters[iParam]->matchName();
               if (numberQuery >= 2)
-                std::cout << " : " << parameters[iParam].shortHelp();
+                std::cout << " : " << parameters[iParam]->shortHelp();
               std::cout << std::endl;
             }
           }
           for (int iParam = ClpParam::FIRSTPARAM + 1;
                iParam < ClpParam::LASTPARAM; iParam++) {
-            int match = clpParameters[iParam].matches(field);
-            if (match && clpParameters[iParam].getDisplayPriority()) {
-              std::cout << clpParameters[iParam].matchName();
+            int match = clpParameters[iParam]->matches(field);
+            if (match && clpParameters[iParam]->getDisplayPriority()) {
+              std::cout << clpParameters[iParam]->matchName();
               if (numberQuery >= 2)
-                std::cout << " : " << clpParameters[iParam].shortHelp();
+                std::cout << " : " << clpParameters[iParam]->shortHelp();
               std::cout << std::endl;
             }
           }
         }
       } else {
+#endif
         // found
         int status;
         numberGoodCommands++;
@@ -2050,20 +1748,15 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 0) {
               model_.solver()->initialSolve();
 
-              if ((!noPrinting_) && (model_.messageHandler()->logLevel())) {
-                if (model_.solver()->isProvenPrimalInfeasible()) {
-                  sprintf(generalPrint,
-                          "Clique Strengthening says infeasible!");
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
-                } else {
-                  sprintf(generalPrint,
-                          "After applying Clique Strengthening continuous "
-                          "objective value is %.2lf",
-                          model_.solver()->getObjValue());
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
-                }
+              if (model_.solver()->isProvenPrimalInfeasible()) {
+                 buffer.str("");
+                 buffer << "Clique Strengthening says infeasible!";
+                 printGeneralMessage(model_, buffer.str());
+              } else {
+                 buffer.str("");
+                 buffer << "After applying Clique Strengthening continuous "
+                        << "objective value is " << model_.solver()->getObjValue();
+                 printGeneralMessage(model_, buffer.str());
               }
             }
           }
@@ -2076,9 +1769,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           biLinearProblem = false;
           // check if any integers
 #ifndef CBC_OTHER_SOLVER
-          if (info.numberSos && doSOS && statusUserFunction_[0]) {
+          if (info && info->numberSos && doSOS && statusUserFunction_[0]) {
             // SOS
-            numberSOS = info.numberSos;
+            numberSOS = info->numberSos;
           }
           lpSolver = clpSolver->getModelPtr();
           if (!lpSolver->integerInformation() && !numberSOS &&
@@ -2102,7 +1795,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
         if (cbcParamCode == CbcParam::GENERALQUERY) {
           //TODO This should be made more transparent
           //bool evenHidden = false;
-          int commandPrintLevel = parameters[CbcParam::COMMANDPRINTLEVEL].modeVal();
+          int commandPrintLevel = parameters[CbcParam::COMMANDPRINTLEVEL]->modeVal();
           if ((verbose & 8) != 0) {
             // even hidden
             // evenHidden = true;
@@ -2156,8 +1849,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           for (int iParam = CbcParam::FIRSTPARAM+1;
                iParam < CbcParam::LASTPARAM; iParam++) {
              //TODO Print model parameters
-             if (parameters[iParam].type() != type) {
-                type = parameters[iParam].type();
+             if (parameters[iParam]->type() != type) {
+                type = parameters[iParam]->type();
                 if ((verbose % 4) != 0) {
                    std::cout << std::endl;
                 }
@@ -2166,11 +1859,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                    std::cout << std::endl;
                 }
              }
-             if (parameters[iParam].getDisplayPriority() >= commandPrintLevel){
+             if (parameters[iParam]->getDisplayPriority() >= commandPrintLevel){
                 // TODO Fix AMPL mode stuff
                 // but skip if not useful for ampl (and in ampl mode)
 #if 0
-                if (verbose >= 4 && (parameters[iParam].whereUsed() & 4) == 0)
+                if (verbose >= 4 && (parameters[iParam]->whereUsed() & 4) == 0)
                    continue;
 #endif
                 if (!across) {
@@ -2178,13 +1871,13 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                      std::cout << "Command ";
                    }
                 }
-                int length = parameters[iParam].lengthMatchName() + 1;
+                int length = parameters[iParam]->lengthMatchName() + 1;
                 if (lengthLine + length > 80) {
                    std::cout << std::endl;
                    across = 0;
                    lengthLine = 0;
                 }
-                std::cout << " " << parameters[iParam].matchName();
+                std::cout << " " << parameters[iParam]->matchName();
                 lengthLine += length;
                 across++;
                 if (across == maxAcross) {
@@ -2192,11 +1885,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   if ((verbose % 4) != 0) {
                      // put out description as well
                      if ((verbose & 1) != 0)
-                       std::cout << " " << parameters[iParam].shortHelp();
+                       std::cout << " " << parameters[iParam]->shortHelp();
                     std::cout << std::endl;
                     if ((verbose & 2) != 0) {
                        std::cout << "---- description" << std::endl;
-                      parameters[iParam].printLongHelp();
+                      parameters[iParam]->printLongHelp();
                       std::cout << "----" << std::endl << std::endl;
                     }
                   } else {
@@ -2209,29 +1902,29 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           //TODO Make Clp Commands work later
           for (int iParam = ClpParam::FIRSTPARAM + 1;
                iParam < ClpParam::LASTPARAM; iParam++) {
-             int type = clpParameters[iParam].type();
+             int type = clpParameters[iParam]->type();
              // printf("%d type %d limits %d %d display %d\n",iParam,
-             //     type,limits[iType],limits[iType+1],clpParameters[iParam].getDisplayPriority());
-             if ((clpParameters[iParam].getDisplayPriority() >= commandPrintLevel ||
+             //     type,limits[iType],limits[iType+1],clpParameters[iParam]->getDisplayPriority());
+             if ((clpParameters[iParam]->getDisplayPriority() >= commandPrintLevel ||
                   evenHidden) &&
                  type >= limits[iType] && type < limits[iType + 1]) {
                 //TODO Fix this AMPL stuff
                 // but skip if not useful for ampl (and in ampl mode)
 #if 0
-                if (verbose >= 4 && (clpParameters[iParam].whereUsed() & 4) == 0)
+                if (verbose >= 4 && (clpParameters[iParam]->whereUsed() & 4) == 0)
                    continue;
 #endif
                 if (!across) {
                    if ((verbose & 2) != 0)
                       std::cout << "Command ";
                 }
-                int length = clpParameters[iParam].lengthMatchName() + 1;
+                int length = clpParameters[iParam]->lengthMatchName() + 1;
                 if (lengthLine + length > 80) {
                    std::cout << std::endl;
                    across = 0;
                    lengthLine = 0;
                 }
-                std::cout << " " << clpParameters[iParam].matchName();
+                std::cout << " " << clpParameters[iParam]->matchName();
                 lengthLine += length;
                 across++;
                 if (across == maxAcross) {
@@ -2239,11 +1932,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                    if ((verbose % 4) != 0) {
                       // put out description as well
                       if ((verbose & 1) != 0)
-                         std::cout << " " << clpParameters[iParam].shortHelp();
+                         std::cout << " " << clpParameters[iParam]->shortHelp();
                       std::cout << std::endl;
                       if ((verbose & 2) != 0) {
                          std::cout << "---- description" << std::endl;
-                         clpParameters[iParam].printLongHelp();
+                         clpParameters[iParam]->printLongHelp();
                          std::cout << "----" << std::endl << std::endl;
                       }
                    } else {
@@ -2270,13 +1963,13 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           int type = -1;
           for (int iParam = CbcParam::FIRSTPARAM + 1;
                iParam < CbcParam::LASTPARAM; iParam++) {
-             if (parameters[iParam].type() != type) {
-                type = parameters[iParam].type();
+             if (parameters[iParam]->type() != type) {
+                type = parameters[iParam]->type();
                 std::cout << types[type] << std::endl;
              }
              if (!across)
                 std::cout << "  ";
-             std::cout << parameters[iParam].matchName() << "  ";
+             std::cout << parameters[iParam]->matchName() << "  ";
              across++;
              if (across == maxAcross) {
                 std::cout << std::endl;
@@ -2287,11 +1980,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           //TODO Do Clp Parameters
           for (int iParam = ClpParam::FIRSTPARAM;
                iParam < ClpParam::LASTPARAM; iParam++) {
-             int type = clpParameters[iParam].type();
+             int type = clpParameters[iParam]->type();
              if (type >= limits[iType] && type < limits[iType + 1]) {
                 if (!across)
                    std::cout << "  ";
-                std::cout << clpParameters[iParam].matchName() << "  ";
+                std::cout << clpParameters[iParam]->matchName() << "  ";
                 across++;
                 if (across == maxAcross) {
                    std::cout << std::endl;
@@ -2300,28 +1993,23 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
              }
           }
 #endif
-        } else if (cbcParam.type() == CoinParam::paramDbl) {
-           std::string message;
-           double value = CoinGetDouble(inputVector, whichField,
-                                        status, interactiveMode, prompt);
+        } else if (cbcParam->type() == CoinParam::paramDbl) {
+           status = CoinParamUtils::getValue(inputQueue, dValue);
            if (status == 1) {
               //TODO integrate this in with the error messaging of the class itself
               std::cout << " is illegal for double parameter "
-                        << cbcParam.name() << " value remains "
-                        << cbcParam.dblVal() << std::endl;
+                        << cbcParam->name() << " value remains "
+                        << cbcParam->dblVal() << std::endl;
            } else if (status == 2) {
-              std::cout << cbcParam.name() << " has value "
-                        << cbcParam.dblVal() << std::endl;
+              std::cout << cbcParam->name() << " has value "
+                        << cbcParam->dblVal() << std::endl;
            } else {
-              cbcParam.setDblVal(value, &message);
-              if (!noPrinting_ && message.length()) {
-                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                    << message << CoinMessageEol;
-              }
+              cbcParam->setVal(dValue, &message);
+              printGeneralMessage(model_, message);
               // TODO: These should be moved to the push function
               switch (cbcParamCode) {
                case CbcParam::DJFIX:
-                 djFix = value;
+                 djFix = dValue;
 #ifndef CBC_OTHER_SOLVER
                  if (goodModel && djFix < 1.0e20) {
                     // do some fixing
@@ -2337,7 +2025,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     double *solution = lpSolver->primalColumnSolution();
                     double *dj = lpSolver->dualColumnSolution();
                     int numberFixed = 0;
-                    double dextra4 = parameters[CbcParam::DEXTRA4].dblVal();
+                    double dextra4 = parameters[CbcParam::DEXTRA4]->dblVal();
                     if (dextra4)
                        printf("Multiple for continuous dj fixing is %g\n",
                               dextra4);
@@ -2359,14 +2047,14 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                           }
                        }
                     }
-                    sprintf(generalPrint, "%d columns fixed\n", numberFixed);
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                       << generalPrint << CoinMessageEol;
+                    buffer.str("");
+                    buffer << numberFixed << " columns fixed" << std::endl;
+                    printGeneralMessage(model_, buffer.str());
                  }
 #endif
                  break;
                case CbcParam::TIGHTENFACTOR:
-                 tightenFactor = value;
+                 tightenFactor = dValue;
                  if (!complicatedInteger)
                     defaultSettings = false; // user knows what she is doing
                  break;
@@ -2374,102 +2062,84 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                  break;
               }
            }
-        } else if (clpParam.type() == CoinParam::paramDbl) {
-           std::string message;
-           double value = CoinGetDouble(inputVector, whichField,
-                                        status, interactiveMode, prompt);
+        } else if (clpParam->type() == CoinParam::paramDbl) {
+           status = CoinParamUtils::getValue(inputQueue, dValue);
            if (status == 1) {
               //TODO integrate this in with the error messaging of the class itself
               std::cout << " is illegal for double parameter "
-                        << clpParam.name() << " value remains "
-                        << clpParam.dblVal() << std::endl;
+                        << clpParam->name() << " value remains "
+                        << clpParam->dblVal() << std::endl;
            } else if (status == 2) {
-              std::cout << clpParam.name() << " has value "
-                        << clpParam.dblVal() << std::endl;
+              std::cout << clpParam->name() << " has value "
+                        << clpParam->dblVal() << std::endl;
            } else {
               // We have a Clp parameter
-              clpParam.setDblVal(value, &message);
-              if (!noPrinting_ && message.length()) {
-                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                    << message << CoinMessageEol;
-              }
+              clpParam->setVal(dValue, &message);
+              printGeneralMessage(model_, message);
            }      
-        } else if (clpParam.type() == CoinParam::paramInt) {
-           std::string message;
-           int value = CoinGetInt(inputVector, whichField,
-                                  status, interactiveMode, prompt);
+        } else if (clpParam->type() == CoinParam::paramInt) {
+           status = CoinParamUtils::getValue(inputQueue, iValue);
            if (status == 1) {
               //TODO integrate this in with the error messaging of the class itself
               std::cout << " is illegal for integer parameter "
-                        << clpParam.name() << " value remains "
-                        << clpParam.intVal() << std::endl;
+                        << clpParam->name() << " value remains "
+                        << clpParam->intVal() << std::endl;
            } else if (status == 2) {
-              std::cout << clpParam.name() << " has value "
-                        << clpParam.intVal() << std::endl;
+              std::cout << clpParam->name() << " has value "
+                        << clpParam->intVal() << std::endl;
            } else {
-              clpParam.setIntVal(value, &message);
-              if (!noPrinting_ && message.length()) {
-                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                    << message << CoinMessageEol;
-              }
+              clpParam->setVal(iValue, &message);
+              printGeneralMessage(model_, message);
               if (clpParamCode == ClpParam::PRESOLVEPASS) {
-                 preSolve = value;
+                 preSolve = iValue;
               } else if (clpParamCode == ClpParam::IDIOT) {
-                 doIdiot = value;
+                 doIdiot = iValue;
               } else if (clpParamCode == ClpParam::SPRINT) {
-                 doSprint = value;
+                 doSprint = iValue;
               } else if (clpParamCode == ClpParam::OUTPUTFORMAT) {
-                 outputFormat = value;
+                 outputFormat = iValue;
               } else if (clpParamCode == ClpParam::SLPVALUE) {
-                 slpValue = value;
+                 slpValue = iValue;
               } else if (clpParamCode == ClpParam::CPP) {
-                 cppValue = value;
+                 cppValue = iValue;
               } else if (clpParamCode == ClpParam::PRESOLVEOPTIONS) {
-                 presolveOptions = value;
+                 presolveOptions = iValue;
               } else if (clpParamCode == ClpParam::PRINTOPTIONS) {
-                 printOptions = value;
+                 printOptions = iValue;
               } else if (clpParamCode == ClpParam::SUBSTITUTION) {
-                 substitution = value;
+                 substitution = iValue;
               } else if (clpParamCode == ClpParam::DUALIZE) {
-                 dualize = value;
+                 dualize = iValue;
               } else if (cbcParamCode == CbcParam::PROCESSTUNE) {
-                 tunePreProcess = value;
+                 tunePreProcess = iValue;
               } else if (cbcParamCode == CbcParam::VERBOSE) {
-                 verbose = value;
+                 verbose = iValue;
               }
            }
-        } else if (cbcParam.type() == CoinParam::paramInt){
-           std::string message;
-           int value = CoinGetInt(inputVector, whichField,
-                                  status, interactiveMode, prompt);
+        } else if (cbcParam->type() == CoinParam::paramInt){
+           status = CoinParamUtils::getValue(inputQueue, iValue);
            if (status == 1) {
               //TODO integrate this in with the error messaging of the class itself
               std::cout << " is illegal for integer parameter "
-                        << cbcParam.name() << " value remains "
-                        << cbcParam.intVal() << std::endl;
+                        << cbcParam->name() << " value remains "
+                        << cbcParam->intVal() << std::endl;
            } else if (status == 2) {
-              std::cout << cbcParam.name() << " has value "
-                        << cbcParam.intVal() << std::endl;
+              std::cout << cbcParam->name() << " has value "
+                        << cbcParam->intVal() << std::endl;
            } else {
               if (cbcParamCode == CbcParam::LPLOGLEVEL){
-                 clpSolver->messageHandler()->setLogLevel(value); // as well
-                 clpParameters[ClpParam::LOGLEVEL].setIntVal(value, &message);
-                 if (!noPrinting_ && message.length()) {
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                       << message << CoinMessageEol;
-                 }
+                 clpSolver->messageHandler()->setLogLevel(iValue); // as well
+                 clpParameters[ClpParam::LOGLEVEL]->setVal(iValue, &message);
+                 printGeneralMessage(model_, message);
               }else{
-                 cbcParam.setIntVal(value, &message);
-                 if (!noPrinting_ && message.length()) {
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                       << message << CoinMessageEol;
-                 }
+                 cbcParam->setVal(iValue, &message);
+                 printGeneralMessage(model_, message);
                  if (cbcParamCode == CbcParam::CUTPASS){
-                    cutPass = value;
+                    cutPass = iValue;
                  } else if (cbcParamCode== CbcParam::USESOLUTION) {
-                    useSolution = value;
+                    useSolution = iValue;
                  } else if (cbcParamCode == CbcParam::CUTPASSINTREE) {
-                    cutPassInTree = value;
+                    cutPassInTree = iValue;
                  } else if (cbcParamCode == CbcParam::STRONGBRANCHING ||
                             cbcParamCode == CbcParam::NUMBERBEFORE) {
                     strongChanged = true;
@@ -2477,105 +2147,77 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                             cbcParamCode == CbcParam::FPUMPITS) {
                     pumpChanged = true;
                  } else if (cbcParamCode == CbcParam::BKPIVOTINGSTRATEGY) {
-                    bkPivotingStrategy = value;
+                    bkPivotingStrategy = iValue;
                  } else if (cbcParamCode == CbcParam::BKMAXCALLS) {
-                    maxCallsBK = value;
+                    maxCallsBK = iValue;
                  } else if (cbcParamCode == CbcParam::BKCLQEXTMETHOD) {
-                    bkClqExtMethod = value;
+                    bkClqExtMethod = iValue;
                  } else if (cbcParamCode == CbcParam::ODDWEXTMETHOD) {
-                    oddWExtMethod = value;
-                 } else if (cbcParamCode == CbcParam::EXPERIMENT && value < 10000) {
+                    oddWExtMethod = iValue;
+                 } else if (cbcParamCode == CbcParam::EXPERIMENT && iValue < 10000) {
                     int addFlags = 0;
                     // switch on some later features if >999
-                    if (value > 999) {
-                       int switchValue = value / 1000;
-                       std::string message;
-                       value -= 1000 * switchValue;
-                       parameters[CbcParam::EXPERIMENT].setIntVal(0 /*value*/);
+                    if (iValue > 999) {
+                       int switchValue = iValue / 1000;
+                       iValue -= 1000 * switchValue;
+                       parameters[CbcParam::EXPERIMENT]->setVal(0 /*value*/);
                        switch (switchValue) {
                         default:
                         case 4:
                           // hotstart 500, -200 cut passes
-                          parameters[CbcParam::MAXHOTITS].setIntVal(500, &message);
-                          if (!noPrinting_ && message.length())
-                             generalMessageHandler->message(CLP_GENERAL,
-                                                            generalMessages)
-                                << message << CoinMessageEol;
-                          parameters[CbcParam::CUTPASS].setIntVal(-200, &message);
-                          if (!noPrinting_ && message.length())
-                             generalMessageHandler->message(CLP_GENERAL,
-                                                            generalMessages)
-                                << message << CoinMessageEol;
+                          parameters[CbcParam::MAXHOTITS]->setVal(500, &message);
+                          printGeneralMessage(model_, message);
+                          parameters[CbcParam::CUTPASS]->setVal(-200, &message);
+                          printGeneralMessage(model_, message);
                         case 3:
                           // multiple 4
-                          parameters[CbcParam::MULTIPLEROOTS].setIntVal(4, &message);
-                          if (!noPrinting_ && message.length())
-                             generalMessageHandler->message(CLP_GENERAL,
-                                                            generalMessages)
-                                << message << CoinMessageEol;
+                          parameters[CbcParam::MULTIPLEROOTS]->setVal(4, &message);
+                          printGeneralMessage(model_, message);
                         case 2:
                           // rens plus all diving at root
-                          parameters[CbcParam::DIVEOPT].setIntVal(16, &message);
-                          if (!noPrinting_ && message.length())
-                             generalMessageHandler->message(CLP_GENERAL,
-                                                            generalMessages)
-                                << message << CoinMessageEol;
-                          model_.setNumberAnalyzeIterations(-value);
+                          parameters[CbcParam::DIVEOPT]->setVal(16, &message);
+                          printGeneralMessage(model_, message);
+                          model_.setNumberAnalyzeIterations(-iValue);
                           // -tune 7 zero,lagomory,gmi at root - probing on
                         case 1:
                           tunePreProcess = 7;
-                          parameters[CbcParam::PROCESSTUNE].setIntVal(7, &message);
-                          if (!noPrinting_ && message.length())
-                             generalMessageHandler->message(CLP_GENERAL,
-                                                            generalMessages)
-                                << message << CoinMessageEol;
+                          parameters[CbcParam::PROCESSTUNE]->setVal(7, &message);
+                          printGeneralMessage(model_, message);
                           // message =
                           // parameters[CbcParam::MIPOPTIONS,
-                          // parameters)].setIntValWithMessage(1025); if
+                          // parameters)]->setValWithMessage(1025); if
                           // (!noPrinting_&&message)
                           //    generalMessageHandler->message(CLP_GENERAL,
                           //    generalMessages)
                           //  << message << CoinMessageEol;
-                          parameters[CbcParam::PROBINGCUTS].setKwdVal("on", &message);
+                          parameters[CbcParam::PROBINGCUTS]->setVal("on", &message);
                           probingAction = 1;
-                          if (!noPrinting_ && message.length())
-                             generalMessageHandler->message(CLP_GENERAL,
-                                                            generalMessages)
-                                << message << CoinMessageEol;
-                          parameters[CbcParam::ZEROHALFCUTS].setKwdVal("root", &message);
-                          if (!noPrinting_ && message.length())
-                             generalMessageHandler->message(CLP_GENERAL,
-                                                            generalMessages)
-                                << message << CoinMessageEol;
-                          parameters[CbcParam::LAGOMORYCUTS].setKwdVal("root", &message);
-                          if (!noPrinting_ && message.length())
-                             generalMessageHandler->message(CLP_GENERAL,
-                                                            generalMessages)
-                                << message << CoinMessageEol;
+                          printGeneralMessage(model_, message);
+                          parameters[CbcParam::ZEROHALFCUTS]->setVal("root", &message);
+                          printGeneralMessage(model_, message);
+                          parameters[CbcParam::LAGOMORYCUTS]->setVal("root", &message);
+                          printGeneralMessage(model_, message);
                           GMIAction = 2;
-                          parameters[CbcParam::GMICUTS].setKwdVal("root", &message);
-                          if (!noPrinting_ && message.length())
-                             generalMessageHandler->message(CLP_GENERAL,
-                                                            generalMessages)
-                                << message << CoinMessageEol;
+                          parameters[CbcParam::GMICUTS]->setVal("root", &message);
+                          printGeneralMessage(model_, message);
                        }
-                       value = 0;
+                       iValue = 0;
                     }
-                    if (value >= 10) {
-                       addFlags = 1048576 * (value / 10);
-                       value = value % 10;
-                       parameters[CbcParam::EXPERIMENT].setIntVal(value);
+                    if (iValue >= 10) {
+                       addFlags = 1048576 * (iValue / 10);
+                       iValue = iValue % 10;
+                       parameters[CbcParam::EXPERIMENT]->setVal(iValue);
                     }
 #ifndef CBC_EXPERIMENT_JJF
-                    if (value == 1) {
+                    if (iValue == 1) {
                        // just experimental preprocessing and more restarts
                        tunePreProcess |= 8192;
                        model_.setSpecialOptions(model_.specialOptions() |
                                                 (512 | 32768));
                     }
 #else
-                    experimentValue = value; // save
-                    if (value > 0 && value < 5) {
+                    experimentValue = iValue; // save
+                    if (iValue > 0 && iValue < 5) {
                        // more restarts
                        // >1 go to end in strong branching
                        // >2 experimental preprocessing
@@ -2583,97 +2225,83 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                        model_.setSpecialOptions(model_.specialOptions() |
                                                 (512 | 32768));
 #ifndef CBC_OTHER_SOLVER
-                       if (value > 1) {
+                       if (iValue > 1) {
                           OsiClpSolverInterface *osiclp =
                              dynamic_cast<OsiClpSolverInterface *>(model_.solver());
                           osiclp->setSpecialOptions(osiclp->specialOptions() & ~32);
                        }
 #endif
-                       if (value > 2)
+                       if (iValue > 2)
                           tunePreProcess |= 8198; // was 8199;
-                       if (value == 4) {
+                       if (iValue == 4) {
                           int more2 =
-                             parameters[CbcParam::MOREMOREMIPOPTIONS].intVal();
-                          parameters[CbcParam::MOREMOREMIPOPTIONS].setIntVal(more2 | 1048576);
+                             parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal();
+                          parameters[CbcParam::MOREMOREMIPOPTIONS]->setVal(more2 | 1048576);
                        }
-                       value = 1;
+                       iValue = 1;
                     }
 #endif
-                    if (value > 1) {
+                    if (iValue > 1) {
                        int values[] = {24003, 280003, 792003, 24003, 24003};
-                       if (value >= 2 && value <= 3) {
+                       if (iValue >= 2 && iValue <= 3) {
                           // swap default diving
-                          parameters[CbcParam::DIVINGC].setKwdVal("off");
-                          parameters[CbcParam::DIVINGP].setKwdVal("on");
+                          parameters[CbcParam::DIVINGC]->setVal("off");
+                          parameters[CbcParam::DIVINGP]->setVal("on");
                        }
-                       int extra4 = values[value - 1] + addFlags;
-                       parameters[CbcParam::EXTRA4].setIntVal(extra4);
-                       if (!noPrinting_) {
-                          generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                             << "switching on global root cuts for gomory and "
-                             "knapsack"
-                             << CoinMessageEol;
-                          generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                             << "using OSL factorization" << CoinMessageEol;
-                          generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                             << "extra options - -rens on -extra4 " << extra4
-                             << " -passc 1000!" << CoinMessageEol;
-                       }
-                       parameters[CbcParam::PROBINGCUTS].setKwdVal("forceOnStrong");
+                       int extra4 = values[iValue - 1] + addFlags;
+                       parameters[CbcParam::EXTRA4]->setVal(extra4);
+                       buffer.str("");
+                       buffer << "switching on global root cuts for gomory and "
+                              << "knapsack" << std::endl;
+                       buffer << "using OSL factorization" << std::endl;
+                       buffer << "extra options - -rens on -extra4 " << extra4
+                              << " -passc 1000!" << std::endl;
+                       printGeneralMessage(model_, buffer.str());
+                       parameters[CbcParam::PROBINGCUTS]->setVal("forceOnStrong");
                        probingAction = 8;
-                       parameters[CbcParam::GOMORYCUTS].setKwdVal("onGlobal");
+                       parameters[CbcParam::GOMORYCUTS]->setVal("onGlobal");
                        gomoryAction = 5;
-                       parameters[CbcParam::KNAPSACKCUTS].setKwdVal("onGlobal");
+                       parameters[CbcParam::KNAPSACKCUTS]->setVal("onGlobal");
                        knapsackAction = 5;
-                       clpParameters[ClpParam::FACTORIZATION].setKwdVal("osl");
+                       clpParameters[ClpParam::FACTORIZATION]->setVal("osl");
                        lpSolver->factorization()->forceOtherFactorization(3);
-                       parameters[CbcParam::MAXHOTITS].setIntVal(100);
-                       parameters[CbcParam::CUTPASS].setIntVal(1000);
+                       parameters[CbcParam::MAXHOTITS]->setVal(100);
+                       parameters[CbcParam::CUTPASS]->setVal(1000);
                        cutPass = 1000;
-                       parameters[CbcParam::RENS].setKwdVal("on");
+                       parameters[CbcParam::RENS]->setVal("on");
                     }
                  } else if (cbcParamCode == CbcParam::STRATEGY) {
-                    if (value == 0) {
+                    if (iValue == 0) {
                        gomoryGen.setAwayAtRoot(0.05);
-                       parameters[CbcParam::DIVEOPT].setIntVal(-1);
-                       parameters[CbcParam::FPUMPITS].setIntVal(20);
-                       parameters[CbcParam::FPUMPTUNE].setIntVal(1003);
+                       parameters[CbcParam::DIVEOPT]->setVal(-1);
+                       parameters[CbcParam::FPUMPITS]->setVal(20);
+                       parameters[CbcParam::FPUMPTUNE]->setVal(1003);
                        initialPumpTune = 1003;
-                       parameters[CbcParam::PROCESSTUNE].setIntVal(0);
+                       parameters[CbcParam::PROCESSTUNE]->setVal(0);
                        tunePreProcess = 0;
-                       parameters[CbcParam::RINS].setKwdVal("off");
+                       parameters[CbcParam::RINS]->setVal("off");
                        // but not if cuts off
-                       if (parameters[CbcParam::CUTSTRATEGY].modeVal()){
-                          parameters[CbcParam::PROBINGCUTS].setKwdVal("on");
+                       if (parameters[CbcParam::CUTSTRATEGY]->modeVal()){
+                          parameters[CbcParam::PROBINGCUTS]->setVal("on");
                           probingAction = 1;
                        } else {
-                          parameters[CbcParam::PROBINGCUTS].setKwdVal("off");
+                          parameters[CbcParam::PROBINGCUTS]->setVal("off");
                           probingAction = 0;
                        }
                     }
                  }
                  int returnCode;
-                 std::string message;
-                 cbcParam.setIntVal(value, &message);
-                 if (!noPrinting_ && message.length()) {
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                       << message << CoinMessageEol;
-                 }
+                 cbcParam->setVal(iValue, &message);
+                 printGeneralMessage(model_, message);
               }
            } 
-        } else if (cbcParam.type() == CoinParam::paramStr) {
-           std::string value = CoinGetString(inputVector, whichField,
-                                             interactiveMode, prompt);
-           std::string message;
-           int status = cbcParam.setKwdVal(value, &message);
-           if (!noPrinting_ && message.length()) {
-              generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                 << message << CoinMessageEol;
-           }
-           if (!status) {
-              cbcParam.printOptions();
-           } else {
-              int mode = cbcParam.modeVal();
+        } else if (cbcParam->type() == CoinParam::paramKwd) {
+           status = CoinParamUtils::getValue(inputQueue, field);
+           if (!cbcParam->setVal(field, &message)){
+              cbcParam->printOptions();
+           }else{
+              printGeneralMessage(model_, message);
+              int mode = cbcParam->modeVal();
               // TODO: this should be part of the push method
               switch (cbcParamCode) {
                case CbcParam::DIRECTION:
@@ -2699,10 +2327,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                  doSOS = mode;
                  break;
                case CbcParam::CLQSTRENGTHENING:
-                 clqstrAction = value;
+                 clqstrAction = field;
                  break;
                case CbcParam::USECGRAPH:
-                 cgraphAction = value;
+                 cgraphAction = field;
                  break;
                case CbcParam::CLIQUECUTS:
                  defaultSettings = false; // user knows what she is doing
@@ -2782,28 +2410,28 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                  twomirAction = mode;
                  zerohalfAction = mode;
                  oddWheelAction = mode;
-                 parameters[CbcParam::GOMORYCUTS].setModeVal(mode);
-                 parameters[CbcParam::PROBINGCUTS].setModeVal(mode);
-                 parameters[CbcParam::KNAPSACKCUTS].setModeVal(mode);
-                 parameters[CbcParam::CLIQUECUTS].setModeVal(mode);
-                 parameters[CbcParam::FLOWCUTS].setModeVal(mode);
-                 parameters[CbcParam::MIRCUTS].setModeVal(mode);
-                 parameters[CbcParam::TWOMIRCUTS].setModeVal(mode);
-                 parameters[CbcParam::ZEROHALFCUTS].setModeVal(mode);
-                 parameters[CbcParam::ODDWHEELCUTS].setModeVal(mode);
+                 parameters[CbcParam::GOMORYCUTS]->setVal(mode);
+                 parameters[CbcParam::PROBINGCUTS]->setVal(mode);
+                 parameters[CbcParam::KNAPSACKCUTS]->setVal(mode);
+                 parameters[CbcParam::CLIQUECUTS]->setVal(mode);
+                 parameters[CbcParam::FLOWCUTS]->setVal(mode);
+                 parameters[CbcParam::MIRCUTS]->setVal(mode);
+                 parameters[CbcParam::TWOMIRCUTS]->setVal(mode);
+                 parameters[CbcParam::ZEROHALFCUTS]->setVal(mode);
+                 parameters[CbcParam::ODDWHEELCUTS]->setVal(mode);
                  if (!mode) {
                     // switch off clique strengthening
                     clqstrAction = "off";
                  }
                  break;
                case CbcParam::HEURISTICSTRATEGY:
-                 parameters[CbcParam::ROUNDING].setModeVal(mode);
-                 parameters[CbcParam::GREEDY].setModeVal(mode);
-                 parameters[CbcParam::COMBINE].setModeVal(mode);
-                 // parameters[CbcParam::LOCALTREE,numberParameters_,parameters)].setModeVal(mode);
-                 parameters[CbcParam::FPUMP].setModeVal(mode);
-                 parameters[CbcParam::DIVINGC].setModeVal(mode);
-                 parameters[CbcParam::RINS].setModeVal(mode);
+                 parameters[CbcParam::ROUNDING]->setVal(mode);
+                 parameters[CbcParam::GREEDY]->setVal(mode);
+                 parameters[CbcParam::COMBINE]->setVal(mode);
+                 // parameters[CbcParam::LOCALTREE,numberParameters_,parameters)]->setVal(mode);
+                 parameters[CbcParam::FPUMP]->setVal(mode);
+                 parameters[CbcParam::DIVINGC]->setVal(mode);
+                 parameters[CbcParam::RINS]->setVal(mode);
                  break;
                case CbcParam::GREEDY:
                case CbcParam::DIVINGS:
@@ -2839,19 +2467,13 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                  break;
               }
            }
-        } else if (clpParam.type() == CoinParam::paramStr) { 
-           std::string value = CoinGetString(inputVector, whichField,
-                                             interactiveMode, prompt);
-           std::string message;
-           int status = clpParam.setKwdVal(value, &message);
-           if (!noPrinting_ && message.length()) {
-              generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                 << message << CoinMessageEol;
-           }
-           if (!status) {
-              clpParam.printOptions();
-           } else {
-              int mode = clpParam.kwdToMode(value);
+        } else if (clpParam->type() == CoinParam::paramKwd) { 
+           status = CoinParamUtils::getValue(inputQueue, field);
+           if (!clpParam->setVal(field, &message)){
+              clpParam->printOptions();
+           }else{
+              printGeneralMessage(model_, message);
+              int mode = clpParam->kwdToMode(field);
               // for now hard wired
               switch (clpParamCode) {
                case ClpParam::DUALPIVOT:
@@ -2871,11 +2493,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     lpSolver->setDualRowPivotAlgorithm(steep);
                  } else if (mode == 4) {
                     // Positive edge steepest
-                    ClpPEDualRowSteepest p(fabs(clpParameters[ClpParam::PSI].dblVal()));
+                    ClpPEDualRowSteepest p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
                     lpSolver->setDualRowPivotAlgorithm(p);
                  } else if (mode == 5) {
                     // Positive edge Dantzig
-                    ClpPEDualRowDantzig p(fabs(clpParameters[ClpParam::PSI].dblVal()));
+                    ClpPEDualRowDantzig p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
                     lpSolver->setDualRowPivotAlgorithm(p);
                  }
                  break;
@@ -2903,11 +2525,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     lpSolver->setPrimalColumnPivotAlgorithm(steep);
                  } else if (mode == 7) {
                     // Positive edge steepest
-                    ClpPEPrimalColumnSteepest p(fabs(clpParameters[ClpParam::PSI].dblVal()));
+                    ClpPEPrimalColumnSteepest p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
                     lpSolver->setPrimalColumnPivotAlgorithm(p);
                  } else if (mode == 8) {
                     // Positive edge Dantzig
-                    ClpPEPrimalColumnDantzig p(fabs(clpParameters[ClpParam::PSI].dblVal()));
+                    ClpPEPrimalColumnDantzig p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
                     lpSolver->setPrimalColumnPivotAlgorithm(p);
                  }
                  break;
@@ -2981,16 +2603,17 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
            }
         } else {
            // action
-           if (cbcParamCode == CbcParam::EXIT || clpParamCode == ClpParam::EXIT) {
+           if (cbcParamCode == CbcParam::EXIT ||
+               clpParamCode == ClpParam::EXIT) {
               if (statusUserFunction_[0]) {
-                 if (info.numberIntegers || info.numberBinary) {
+                 if (info && (info->numberIntegers || info->numberBinary)) {
                     // integer
                  } else {
                     // linear
                  }
-                 writeAmpl(&info);
-                 freeArrays2(&info);
-                 freeArgs(&info);
+                 writeAmpl(info);
+                 freeArrays2(info);
+                 freeArgs(info);
               }
               break; // stop all
            }
@@ -3003,9 +2626,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               if (goodModel) {
                 // Say not in integer
                 integerStatus = -1;
-                double objScale = clpParameters[ClpParam::OBJSCALE2].dblVal();
+                double objScale = clpParameters[ClpParam::OBJSCALE2]->dblVal();
                 // deal with positive edge
-                double psi = clpParameters[ClpParam::PSI].dblVal();
+                double psi = clpParameters[ClpParam::PSI]->dblVal();
                 if (psi > 0.0) {
                    ClpDualRowPivot *dualp = lpSolver->dualRowPivot();
                    ClpDualRowSteepest *d1 =
@@ -3075,11 +2698,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                       model2 = static_cast<ClpSimplexOther *>(model2)->dualOfModel(
                                                           fractionRow, fractionColumn);
                       if (model2) {
-                         sprintf(generalPrint,
-                                 "Dual of model has %d rows and %d columns",
-                                 model2->numberRows(), model2->numberColumns());
-                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                            << generalPrint << CoinMessageEol;
+                         buffer.str("");
+                         buffer << "Dual of model has " << model2->numberRows()
+                                << " rows and " << model2->numberColumns()
+                                << " columns";
+                         printGeneralMessage(model_, buffer.str());
                          model2->setOptimizationDirection(1.0);
                       } else {
                          model2 = lpSolver;
@@ -3089,8 +2712,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                       dualize = 0;
                    }
                 }
-                if (noPrinting_)
+                if (parameters.noPrinting()){
                    lpSolver->setLogLevel(0);
+                }
                 ClpSolve solveOptions;
                 solveOptions.setPresolveActions(presolveOptions);
                 solveOptions.setSubstitution(substitution);
@@ -3100,23 +2724,19 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                       preSolve = -preSolve;
                       if (preSolve <= 100) {
                          presolveType = ClpSolve::presolveNumber;
-                         sprintf(generalPrint,
-                                 "Doing %d presolve passes - picking up non-costed "
-                                 "slacks",
-                                 preSolve);
-                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                            << generalPrint << CoinMessageEol;
+                         buffer.str("");
+                         buffer << "Doing " << preSolve
+                                << " presolve passes - picking up non-costed slacks";
+                         printGeneralMessage(model_, buffer.str());
                          solveOptions.setDoSingletonColumn(true);
                       } else {
                          preSolve -= 100;
                          presolveType = ClpSolve::presolveNumberCost;
-                         sprintf(
-                                 generalPrint,
-                                 "Doing %d presolve passes - picking up costed slacks",
-                                 preSolve);
-                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                            << generalPrint << CoinMessageEol;
-                      }
+                         buffer.str("");
+                         buffer << "Doing " << preSolve
+                                << " presolve passes - picking up non-costed slacks";
+                         printGeneralMessage(model_, buffer.str());
+                       }
                    }
                 } else if (preSolve) {
                    presolveType = ClpSolve::presolveOn;
@@ -3217,7 +2837,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 model2->initialSolve(solveOptions);
               } else {
                 // special solver
-                int testOsiOptions = parameters[CbcParam::TESTOSI].intVal();
+                int testOsiOptions = parameters[CbcParam::TESTOSI]->intVal();
                 double *solution = NULL;
                 if (testOsiOptions < 10) {
                   solution = linkSolver->nonlinearSLP(
@@ -3314,7 +2934,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 }
                 model_.setProblemStatus(iStatus);
                 model_.setSecondaryStatus(iStatus2);
-                if ((iStatus == 2 || iStatus2 > 0) && !noPrinting_) {
+                if ((iStatus == 2 || iStatus2 > 0) && parameters.noPrinting()) {
                   std::string statusName[] = {
                       "", "Stopped on ", "Run abandoned", "",
                       "", "User ctrl-c"};
@@ -3329,22 +2949,17 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                       "Linear relaxation unbounded",
                       "iterations limit",
                       "Problem proven infeasible"};
-                  sprintf(generalPrint, "\nResult - %s%s\n\n",
-                          statusName[iStatus].c_str(), minor[iStatus2].c_str());
-                  sprintf(generalPrint + strlen(generalPrint),
-                          "Enumerated nodes:           0\n");
-                  sprintf(generalPrint + strlen(generalPrint),
-                          "Total iterations:           0\n");
+                  buffer.str("");
+                  buffer << std::endl << "Result - " << statusName[iStatus].c_str()
+                         << minor[iStatus2].c_str() << std::endl << std::endl;
+                  buffer << "Enumerated nodes:           0" << std::endl;
+                  buffer << "Total iterations:           0" << std::endl;
 #if CBC_QUIET == 0
-                  sprintf(generalPrint + strlen(generalPrint),
-                          "Time (CPU seconds):         %.2f\n",
-                          CoinCpuTime() - time0);
-                  sprintf(generalPrint + strlen(generalPrint),
-                          "Time (Wallclock Seconds):   %.2f\n",
-                          CoinGetTimeOfDay() - time0Elapsed);
+                  buffer << "Time (CPU seconds):         " << CoinCpuTime() - time0 << std::endl;
+                  buffer << "Time (Wallclock Seconds):   " << CoinGetTimeOfDay() - time0Elapsed
+                         << std::endl;
 #endif
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
+                  printGeneralMessage(model_, buffer.str());
                 }
                 // assert (lpSolver==clpSolver->getModelPtr());
                 assert(clpSolver == model_.solver());
@@ -3403,61 +3018,66 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   pos += sprintf(buf + pos, "status unknown,");
                   iStat = 6;
                 }
-                info.problemStatus = iStat;
-                info.objValue = value;
-                pos += sprintf(buf + pos, " objective %.*g", ampl_obj_prec(),
-                               value);
-                sprintf(buf + pos, "\n%d iterations",
-                        model2->getIterationCount());
-                free(info.primalSolution);
-                int numberColumns = model2->numberColumns();
-                info.primalSolution = reinterpret_cast<double *>(
-                    malloc(numberColumns * sizeof(double)));
-                CoinCopyN(model2->primalColumnSolution(), numberColumns,
-                          info.primalSolution);
-                int numberRows = model2->numberRows();
-                free(info.dualSolution);
-                info.dualSolution = reinterpret_cast<double *>(
-                    malloc(numberRows * sizeof(double)));
-                CoinCopyN(model2->dualRowSolution(), numberRows,
-                          info.dualSolution);
-                CoinWarmStartBasis *basis = model2->getBasis();
-                free(info.rowStatus);
-                info.rowStatus =
-                    reinterpret_cast<int *>(malloc(numberRows * sizeof(int)));
-                free(info.columnStatus);
-                info.columnStatus = reinterpret_cast<int *>(
-                    malloc(numberColumns * sizeof(int)));
-                // Put basis in
-                int i;
-                // free,basic,ub,lb are 0,1,2,3
-                for (i = 0; i < numberRows; i++) {
-                  CoinWarmStartBasis::Status status = basis->getArtifStatus(i);
-                  info.rowStatus[i] = status;
+                if (info){
+                   info->problemStatus = iStat;
+                   info->objValue = value;
+                   pos += sprintf(buf + pos, " objective %.*g", ampl_obj_prec(),
+                                  value);
+                   sprintf(buf + pos, "\n%d iterations",
+                           model2->getIterationCount());
+                   free(info->primalSolution);
+                   int numberColumns = model2->numberColumns();
+                   info->primalSolution = reinterpret_cast<double *>(
+                       malloc(numberColumns * sizeof(double)));
+                   CoinCopyN(model2->primalColumnSolution(), numberColumns,
+                             info->primalSolution);
+                   int numberRows = model2->numberRows();
+                   free(info->dualSolution);
+                   info->dualSolution = reinterpret_cast<double *>(
+                      malloc(numberRows * sizeof(double)));
+                   CoinCopyN(model2->dualRowSolution(), numberRows,
+                             info->dualSolution);
+                   CoinWarmStartBasis *basis = model2->getBasis();
+                   free(info->rowStatus);
+                   info->rowStatus =
+                      reinterpret_cast<int *>(malloc(numberRows * sizeof(int)));
+                   free(info->columnStatus);
+                   info->columnStatus = reinterpret_cast<int *>(
+                      malloc(numberColumns * sizeof(int)));
+                   // Put basis in
+                   int i;
+                   // free,basic,ub,lb are 0,1,2,3
+                   for (i = 0; i < numberRows; i++) {
+                      CoinWarmStartBasis::Status status = basis->getArtifStatus(i);
+                      info->rowStatus[i] = status;
+                   }
+                   for (i = 0; i < numberColumns; i++) {
+                      CoinWarmStartBasis::Status status = basis->getStructStatus(i);
+                      info->columnStatus[i] = status;
+                   }
+                   // put buffer into info
+                   strcpy(info->buffer, buf);
+                   delete basis;
                 }
-                for (i = 0; i < numberColumns; i++) {
-                  CoinWarmStartBasis::Status status = basis->getStructStatus(i);
-                  info.columnStatus[i] = status;
-                }
-                // put buffer into info
-                strcpy(info.buffer, buf);
-                delete basis;
               }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+               buffer.str("");
+               buffer << "** Current model not valid";
+               printGeneralMessage(model_, buffer.str());
             }
             break;
           case ClpParam::TIGHTEN:
             if (goodModel) {
               int numberInfeasibilities = lpSolver->tightenPrimalBounds();
               if (numberInfeasibilities) {
-                sprintf(generalPrint, "** Analysis indicates model infeasible");
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "** Analysis indicates model infeasible";
+                printGeneralMessage(model_, buffer.str());
               }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case ClpParam::PLUSMINUS:
@@ -3471,20 +3091,23 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 if (newMatrix->getIndices()) {
                   lpSolver->replaceMatrix(newMatrix);
                   delete saveMatrix;
-                  sprintf(generalPrint, "Matrix converted to +- one matrix");
-                  printGeneralMessage(model_, generalPrint);
+                  buffer.str("");
+                  buffer << "Matrix converted to +- one matrix";
+                  printGeneralMessage(model_, buffer.str());
                 } else {
-                  sprintf(generalPrint,
-                          "Matrix can not be converted to +- 1 matrix");
-                  printGeneralMessage(model_, generalPrint);
+                  buffer.str("");
+                  buffer << "Matrix can not be converted to +- 1 matrix";
+                  printGeneralMessage(model_, buffer.str());
                 }
               } else {
-                sprintf(generalPrint, "Matrix not a ClpPackedMatrix");
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "Matrix not a ClpPackedMatrix";
+                printGeneralMessage(model_, buffer.str());
               }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case ClpParam::OUTDUPROWS:
@@ -3496,13 +3119,15 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               CglDuplicateRow dupcuts(clpSolver);
               storedCuts = dupcuts.outDuplicates(clpSolver) != 0;
               int nOut = numberRows - clpSolver->getNumRows();
-              if (nOut && !noPrinting_)
-                sprintf(generalPrint, "%d rows eliminated", nOut);
-              generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                  << generalPrint << CoinMessageEol;
+              if (nOut){
+                 buffer.str("");
+                 buffer << nOut << " rows eliminated";
+                 printGeneralMessage(model_, buffer.str());
+              }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
 #endif
             break;
@@ -3517,20 +3142,23 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 if (newMatrix->getIndices()) {
                   lpSolver->replaceMatrix(newMatrix);
                   delete saveMatrix;
-                  sprintf(generalPrint, "Matrix converted to network matrix");
-                  printGeneralMessage(model_, generalPrint);
+                  buffer.str("");
+                  buffer << "Matrix converted to network matrix";
+                  printGeneralMessage(model_, buffer.str());
                 } else {
-                  sprintf(generalPrint,
-                          "Matrix can not be converted to network matrix");
-                  printGeneralMessage(model_, generalPrint);
+                  buffer.str("");
+                  buffer << "Matrix can not be converted to network matrix";
+                  printGeneralMessage(model_, buffer.str());
                 }
               } else {
-                sprintf(generalPrint, "Matrix not a ClpPackedMatrix");
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "Matrix not a ClpPackedMatrix";
+                printGeneralMessage(model_, buffer.str());
               }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case ClpParam::MODELIN:
@@ -3538,15 +3166,14 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
 #ifdef COIN_HAS_LINK
           {
              // get next field
-             field = CoinGetString(inputVector, whichField,
-                                  interactiveMode, prompt);
+            field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
             if (field == "$") {
-              field = clpParam.strVal();
+              field = clpParam->strVal();
             } else if (field == "EOL") {
-              clpParam.printString();
+              clpParam->printString();
               break;
             } else {
-              clpParam.setStrVal(field);
+              clpParam->setVal(field);
             }
             std::string fileName;
             bool canOpen = false;
@@ -3586,9 +3213,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 fclose(fp);
                 canOpen = true;
               } else {
-                sprintf(generalPrint, "Unable to open file %s",
-                        fileName.c_str());
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "Unable to open file " << fileName.c_str();
+                printGeneralMessage(model_, buffer.str());
               }
             }
             if (canOpen) {
@@ -3603,7 +3230,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               si->setDefaultMeshSize(0.001);
               // need some relative granularity
               si->setDefaultBound(100.0);
-              double dextra3 = parameters[CbcParam::DEXTRA3].dblVal();
+              double dextra3 = parameters[CbcParam::DEXTRA3]->dblVal();
               if (dextra3)
                 si->setDefaultMeshSize(dextra3);
               si->setDefaultBound(100.0);
@@ -3626,15 +3253,14 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           case ClpParam::BASISIN:
             if (goodModel) {
               // get next field
-               field = CoinGetString(inputVector, whichField,
-                                    interactiveMode, prompt);
+              field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
               if (field == "$") {
-                field = clpParam.strVal();
+                field = clpParam->strVal();
               } else if (field == "EOL") {
-                clpParam.printString();
+                clpParam->printString();
                 break;
               } else {
-                clpParam.setStrVal(field);
+                clpParam->setVal(field);
               }
               std::string fileName;
               bool canOpen = false;
@@ -3663,9 +3289,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   fclose(fp);
                   canOpen = true;
                 } else {
-                  sprintf(generalPrint, "Unable to open file %s",
-                          fileName.c_str());
-                  printGeneralMessage(model_, generalPrint);
+                  buffer.str("");
+                  buffer << "Unable to open file " << fileName.c_str();
+                  printGeneralMessage(model_, buffer.str());
                 }
               }
               if (canOpen) {
@@ -3680,22 +3306,22 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
 #endif
               }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case ClpParam::BASISOUT:
             if (goodModel) {
               // get next field
-              field = CoinGetString(inputVector, whichField,
-                                    interactiveMode, prompt);
+              field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
               if (field == "$") {
-                field = clpParam.strVal();
+                field = clpParam->strVal();
               } else if (field == "EOL") {
-                clpParam.printString();
+                clpParam->printString();
                 break;
               } else {
-                clpParam.setStrVal(field);
+                clpParam->setVal(field);
               }
               std::string fileName;
               bool canOpen = false;
@@ -3719,9 +3345,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 fclose(fp);
                 canOpen = true;
               } else {
-                sprintf(generalPrint, "Unable to open file %s",
-                        fileName.c_str());
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "Unable to open file " << fileName.c_str();
+                printGeneralMessage(model_, buffer.str());
               }
               if (canOpen) {
                 ClpSimplex *model2 = lpSolver;
@@ -3732,21 +3358,21 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 time1 = time2;
               }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case ClpParam::RESTORE: {
             // get next field
-            field = CoinGetString(inputVector, whichField,
-                                  interactiveMode, prompt);
+            field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
             if (field == "$") {
-              field = cbcParam.strVal();
+              field = cbcParam->strVal();
             } else if (field == "EOL") {
-              std::cout << cbcParam.printString() << std::endl;
+              std::cout << cbcParam->printString() << std::endl;
               break;
             } else {
-              cbcParam.setStrVal(field);
+              cbcParam->setVal(field);
             }
             std::string fileName;
             bool canOpen = false;
@@ -3770,8 +3396,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               fclose(fp);
               canOpen = true;
             } else {
-              sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "Unable to open file " << fileName.c_str();
+              printGeneralMessage(model_, buffer.str());
             }
             if (canOpen) {
               int status = lpSolver->restoreModel(fileName.c_str());
@@ -3782,8 +3409,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 time1 = time2;
               } else {
                 // errors
-                sprintf(generalPrint, "There were errors on input");
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "There were errors on input";
+                printGeneralMessage(model_, buffer.str());
               }
             }
           } break;
@@ -3801,12 +3429,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           case ClpParam::FAKEBOUND:
             if (goodModel) {
               // get bound
-               double value = CoinGetDouble(inputVector, whichField,
-                                            status, interactiveMode, prompt);
+              status = CoinParamUtils::getValue(inputQueue, dValue);
               if (!status) {
-                sprintf(generalPrint, "Setting %s to DEBUG %g",
-                        clpParam.name().c_str(), value);
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "Setting " << clpParam->name().c_str() << " to DEBUG " << dValue;
+                printGeneralMessage(model_, buffer.str());
                 int iRow;
                 int numberRows = lpSolver->numberRows();
                 double *rowLower = lpSolver->rowLower();
@@ -3814,8 +3441,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 for (iRow = 0; iRow < numberRows; iRow++) {
                   // leave free ones for now
                   if (rowLower[iRow] > -1.0e20 || rowUpper[iRow] < 1.0e20) {
-                    rowLower[iRow] = CoinMax(rowLower[iRow], -value);
-                    rowUpper[iRow] = CoinMin(rowUpper[iRow], value);
+                    rowLower[iRow] = CoinMax(rowLower[iRow], -dValue);
+                    rowUpper[iRow] = CoinMin(rowUpper[iRow], dValue);
                   }
                 }
                 int iColumn;
@@ -3827,15 +3454,15 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   if (columnLower[iColumn] > -1.0e20 ||
                       columnUpper[iColumn] < 1.0e20) {
                     columnLower[iColumn] =
-                        CoinMax(columnLower[iColumn], -value);
-                    columnUpper[iColumn] = CoinMin(columnUpper[iColumn], value);
+                        CoinMax(columnLower[iColumn], -dValue);
+                    columnUpper[iColumn] = CoinMin(columnUpper[iColumn], dValue);
                   }
                 }
               } else if (status == 1) {
                 abort();
               } else {
                 std::cout << "enter value for "
-                          << clpParam.name() << std::endl;
+                          << clpParam->name() << std::endl;
               }
             }
             break;
@@ -3857,7 +3484,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               // set time from integer model
               double timeToGo = model_.getMaximumSeconds();
               lpSolver->setMaximumSeconds(timeToGo);
-              int extra1 = parameters[CbcParam::EXTRA1].intVal();
+              int extra1 = parameters[CbcParam::EXTRA1]->intVal();
               fakeMain2(*lpSolver, *clpSolver, extra1);
               lpSolver = clpSolver->getModelPtr();
               // My actual usage has objective only in clpSolver
@@ -3870,15 +3497,14 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
           case ClpParam::PARAMETRICS:
             if (goodModel) {
               // get next field
-               field = CoinGetString(inputVector, whichField,
-                                     interactiveMode, prompt);
+              status = CoinParamUtils::getValue(inputQueue, field);
               if (field == "$") {
-                field = clpParam.strVal();
+                field = clpParam->strVal();
               } else if (field == "EOL") {
-                clpParam.printString();
+                clpParam->printString();
                 break;
               } else {
-                clpParam.setStrVal(field);
+                clpParam->setVal(field);
               }
               std::string fileName;
               // bool canOpen = false;
@@ -3902,8 +3528,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               totalTime += time2 - time1;
               time1 = time2;
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case ClpParam::GUESS:
@@ -3919,15 +3546,17 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               //this soon anyway.
               std::string input = model2->guess(0);
               if (input != ""){
+                 while (!inputQueue.empty()){
+                    inputQueue.pop_back();
+                 }
                  std::istringstream inputStream(input);
-                 CoinReadFromStream(inputVector, inputStream);
-                 whichField = 0;
+                 CoinParamUtils::readFromStream(inputQueue, inputStream);
               }else{
-                 std::cout << "** Guess unable to generate commands"
-                           << std::endl;
+                 printGeneralWarning(model,
+                                     "** Guess unable to generate commands\n");
               }
             } else {
-              std::cout << "** Guess needs a valid model" << std::endl;
+               printGeneralWarning(model, "** Guess needs a valid model\n");
             }
             break;
           default:
@@ -3950,7 +3579,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 if ((printOptions & 1) != 0)
                   pinfo.statistics();
                 double presolveTolerance =
-                   clpParameters[ClpParam::PRESOLVETOLERANCE].dblVal();
+                   clpParameters[ClpParam::PRESOLVETOLERANCE]->dblVal();
                 model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
                                               true, preSolve);
                 if (model2) {
@@ -3969,8 +3598,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               if (deleteModel2)
                 delete model2;
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case CbcParam::DOHEURISTIC:
@@ -3982,12 +3612,12 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               else
                 model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
-              int vubAction = parameters[CbcParam::VUBTRY].intVal();
+              int vubAction = parameters[CbcParam::VUBTRY]->intVal();
               if (vubAction != -1) {
                 // look at vubs
                 // extra1 is number of ints to leave free
                 // Just ones which affect >= extra3
-                int extra3 = parameters[CbcParam::EXTRA3].intVal();
+                int extra3 = parameters[CbcParam::EXTRA3]->intVal();
                 /* 2 is cost above which to fix if feasible
                                    3 is fraction of integer variables fixed if
                    relaxing (0.97) 4 is fraction of all variables fixed if
@@ -3995,15 +3625,15 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                                 */
                 double dextra[6];
                 int extra[5];
-                extra[1] = parameters[CbcParam::EXTRA1].intVal();
-                int exp1 = parameters[CbcParam::EXPERIMENT].intVal();
+                extra[1] = parameters[CbcParam::EXTRA1]->intVal();
+                int exp1 = parameters[CbcParam::EXPERIMENT]->intVal();
                 if (exp1 == 4 && extra[1] == -1)
                   extra[1] = 999998;
-                dextra[1] = parameters[CbcParam::FAKEINCREMENT].dblVal();
-                dextra[2] = parameters[CbcParam::FAKECUTOFF].dblVal();
-                dextra[3] = parameters[CbcParam::DEXTRA3].dblVal();
-                dextra[4] = parameters[CbcParam::DEXTRA4].dblVal();
-                dextra[5] = parameters[CbcParam::DEXTRA5].dblVal();
+                dextra[1] = parameters[CbcParam::FAKEINCREMENT]->dblVal();
+                dextra[2] = parameters[CbcParam::FAKECUTOFF]->dblVal();
+                dextra[3] = parameters[CbcParam::DEXTRA3]->dblVal();
+                dextra[4] = parameters[CbcParam::DEXTRA4]->dblVal();
+                dextra[5] = parameters[CbcParam::DEXTRA5]->dblVal();
                 if (!dextra[3])
                   dextra[3] = 0.97;
                 // OsiClpSolverInterface * newSolver =
@@ -4053,7 +3683,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   }
                 }
               }
-              doHeuristics(&model_, 2, parameters, noPrinting_,
+              doHeuristics(&model_, 2, parameters, parameters.noPrinting(),
                            initialPumpTune);
               if (!objectsExist) {
                 model_.deleteObjects(false);
@@ -4063,33 +3693,33 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               if (model_.bestSolution()) {
                 model_.setProblemStatus(1);
                 model_.setSecondaryStatus(6);
-                if (statusUserFunction_[0]) {
+                if (statusUserFunction_[0] && info) {
                   double value = model_.getObjValue();
                   char buf[300];
                   int pos = 0;
                   pos += sprintf(buf + pos, "feasible,");
-                  info.problemStatus = 0;
-                  info.objValue = value;
+                  info->problemStatus = 0;
+                  info->objValue = value;
                   pos += sprintf(buf + pos, " objective %.*g", ampl_obj_prec(),
                                  value);
                   sprintf(buf + pos, "\n0 iterations");
-                  free(info.primalSolution);
+                  free(info->primalSolution);
                   int numberColumns = lpSolver->numberColumns();
-                  info.primalSolution = reinterpret_cast<double *>(
+                  info->primalSolution = reinterpret_cast<double *>(
                       malloc(numberColumns * sizeof(double)));
                   CoinCopyN(model_.bestSolution(), numberColumns,
-                            info.primalSolution);
+                            info->primalSolution);
                   int numberRows = lpSolver->numberRows();
-                  free(info.dualSolution);
-                  info.dualSolution = reinterpret_cast<double *>(
+                  free(info->dualSolution);
+                  info->dualSolution = reinterpret_cast<double *>(
                       malloc(numberRows * sizeof(double)));
-                  CoinZeroN(info.dualSolution, numberRows);
+                  CoinZeroN(info->dualSolution, numberRows);
                   CoinWarmStartBasis *basis = lpSolver->getBasis();
-                  free(info.rowStatus);
-                  info.rowStatus =
+                  free(info->rowStatus);
+                  info->rowStatus =
                       reinterpret_cast<int *>(malloc(numberRows * sizeof(int)));
-                  free(info.columnStatus);
-                  info.columnStatus = reinterpret_cast<int *>(
+                  free(info->columnStatus);
+                  info->columnStatus = reinterpret_cast<int *>(
                       malloc(numberColumns * sizeof(int)));
                   // Put basis in
                   int i;
@@ -4097,15 +3727,15 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   for (i = 0; i < numberRows; i++) {
                     CoinWarmStartBasis::Status status =
                         basis->getArtifStatus(i);
-                    info.rowStatus[i] = status;
+                    info->rowStatus[i] = status;
                   }
                   for (i = 0; i < numberColumns; i++) {
                     CoinWarmStartBasis::Status status =
                         basis->getStructStatus(i);
-                    info.columnStatus[i] = status;
+                    info->columnStatus[i] = status;
                   }
                   // put buffer into info
-                  strcpy(info.buffer, buf);
+                  strcpy(info->buffer, buf);
                   delete basis;
                 }
               }
@@ -4122,7 +3752,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             // User can set options - main difference is lack of model and
             // CglPreProcess
             goodModel = true;
-            parameters[CbcParam::MULTIPLEROOTS].setIntVal(0);
+            parameters[CbcParam::MULTIPLEROOTS]->setVal(0);
             /*
                           Run branch-and-cut. First set a few options -- node
                comparison, scaling. Print elapsed time at the end.
@@ -4131,7 +3761,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             // obsolete case CbcParam::STRENGTHEN:
             if (goodModel) {
               bool miplib = cbcParamCode == CbcParam::MIPLIB;
-              int logLevel = parameters[CbcParam::LPLOGLEVEL].intVal();
+              int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
               int truncateColumns = COIN_INT_MAX;
               int truncateRows = -1;
               bool redoSOS = false;
@@ -4155,7 +3785,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 si->getModelPtr()->scaling(doScaling);
                 ClpSimplex *lpSolver = si->getModelPtr();
                 // deal with positive edge
-                double psi = clpParameters[ClpParam::PSI].dblVal();
+                double psi = clpParameters[ClpParam::PSI]->dblVal();
                 if (psi > 0.0) {
                   ClpDualRowPivot *dualp = lpSolver->dualRowPivot();
                   ClpDualRowSteepest *d1 =
@@ -4208,8 +3838,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                           lpSolver->objectiveAsObject()));
                   if (obj) {
                     preProcess = 0;
-                    int testOsiOptions = parameters[CbcParam::TESTOSI].intVal();
-                    parameters[CbcParam::TESTOSI].setIntVal(CoinMax(0, testOsiOptions));
+                    int testOsiOptions = parameters[CbcParam::TESTOSI]->intVal();
+                    parameters[CbcParam::TESTOSI]->setVal(CoinMax(0, testOsiOptions));
                     // create coin model
                     coinModel = lpSolver->createCoinModel();
                     assert(coinModel);
@@ -4223,7 +3853,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     si->setDefaultMeshSize(0.001);
                     // need some relative granularity
                     si->setDefaultBound(100.0);
-                    double dextra3 = parameters[CbcParam::DEXTRA3].dblVal();
+                    double dextra3 = parameters[CbcParam::DEXTRA3]->dblVal();
                     if (dextra3)
                       si->setDefaultMeshSize(dextra3);
                     si->setDefaultBound(1000.0);
@@ -4232,7 +3862,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     biLinearProblem = true;
                     si->setSpecialOptions2(2 + 4 + 8);
                     CoinModel *model2 = coinModel;
-                    si->load(*model2, true, parameters[CbcParam::LPLOGLEVEL].intVal());
+                    si->load(*model2, true, parameters[CbcParam::LPLOGLEVEL]->intVal());
                     // redo
                     solver = model_.solver();
                     clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
@@ -4326,7 +3956,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                                                 false, false, -100, -1, -1);
                       cbcModel->cutGenerator(numCutGens++)->setTiming(true);
                       int heuristicOption =
-                         parameters[CbcParam::HEURISTICSTRATEGY].modeVal();
+                         parameters[CbcParam::HEURISTICSTRATEGY]->modeVal();
                       if (heuristicOption) {
                         CbcHeuristicFPump heuristicFPump(*cbcModel);
                         heuristicFPump.setWhen(13);
@@ -4390,15 +4020,15 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
 
                       cbcModel->initialSolve();
                       if (clpModel->tightenPrimalBounds() != 0) {
-                        sprintf(generalPrint,
-                                "Problem is infeasible - tightenPrimalBounds!");
-                        printGeneralMessage(model_, generalPrint);
+                        buffer.str("");
+                        buffer << "Problem is infeasible - tightenPrimalBounds!";
+                        printGeneralMessage(model_, buffer.str());
                         break;
                       }
                       clpModel->dual(); // clean up
                       cbcModel->initialSolve();
 #ifdef CBC_THREAD
-                      int numberThreads = parameters[CbcParam::THREADS].intVal();
+                      int numberThreads = parameters[CbcParam::THREADS]->intVal();
                       cbcModel->setNumberThreads(numberThreads % 100);
                       cbcModel->setThreadMode(CoinMin(numberThreads / 100, 7));
 #endif
@@ -4526,15 +4156,13 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     babModel_->setProblemStatus(iStatus);
                     babModel_->setSecondaryStatus(iStatus2);
                   }
-                  if (!noPrinting_) {
-                    iStatus = clpSolver->status();
-                    const char *msg[] = {"infeasible", "unbounded", "stopped",
-                                         "difficulties", "other"};
-                    sprintf(generalPrint, "Problem is %s - %.2f seconds",
-                            msg[iStatus - 1], CoinCpuTime() - time1a);
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                        << generalPrint << CoinMessageEol;
-                  }
+                  iStatus = clpSolver->status();
+                  const char *msg[] = {"infeasible", "unbounded", "stopped",
+                                       "difficulties", "other"};
+                  buffer.str("");
+                  buffer << "Problem is " << msg[iStatus - 1] << " - " <<  CoinCpuTime() - time1a
+                         << " seconds";
+                  printGeneralMessage(model_, buffer.str());
                   break;
                 }
                 clpSolver->setSpecialOptions(
@@ -4543,13 +4171,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                                           // bound)
 #elif CBC_OTHER_SOLVER == 1
 #endif
-                if (!noPrinting_) {
-                  sprintf(generalPrint,
-                          "Continuous objective value is %g - %.2f seconds",
-                          solver->getObjValue(), CoinCpuTime() - time1a);
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
-                }
+                buffer.str("");
+                buffer << "Continuous objective value is " << solver->getObjValue() << " - "
+                       << CoinCpuTime() - time1a << " seconds";
+                printGeneralMessage(model_, buffer.str());
                 if (model_.getMaximumNodes() == -987654321) {
                   // See if No objective!
                   int numberColumns = clpSolver->getNumCols();
@@ -4585,9 +4210,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
 #ifndef CBC_OTHER_SOLVER
                 if (!complicatedInteger && preProcess == 0 &&
                     clpSolver->tightenPrimalBounds(0.0, 0, true) != 0) {
-                  sprintf(generalPrint,
-                          "Problem is infeasible - tightenPrimalBounds!");
-                  printGeneralMessage(model_, generalPrint);
+                  buffer.str("");
+                  buffer << "Problem is infeasible - tightenPrimalBounds!";
+                  printGeneralMessage(model_, buffer.str());
                   model_.setProblemStatus(0);
                   model_.setSecondaryStatus(1);
                   // say infeasible for solution
@@ -4665,10 +4290,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     }
                   }
 #ifdef COIN_DEVELOP
-                  if (!noPrinting_)
-                    std::cout << "Largest (scaled) away from bound "
-                              << largestScaled << " unscaled " << largest
-                              << std::endl;
+                  buffer.str("");
+                  buffer << "Largest (scaled) away from bound "
+                         << largestScaled << " unscaled " << largest
+                         << std::endl;
+                  printGeneralMessage(model_, buffer.str());
 #endif
                   clpSolver->setDualBound(
                       CoinMax(1.0001e8, CoinMin(100.0 * largest, 1.00001e10)));
@@ -4694,8 +4320,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 // bounds based on continuous
                 if (tightenFactor && !complicatedInteger) {
                   if (modelC->tightenPrimalBounds(tightenFactor) != 0) {
-                    sprintf(generalPrint, "Problem is infeasible!");
-                    printGeneralMessage(model_, generalPrint);
+                    buffer.str("");
+                    buffer << "Problem is infeasible!";
+                    printGeneralMessage(model_, buffer.str());
                     model_.setProblemStatus(0);
                     model_.setSecondaryStatus(1);
                     // and in babModel if exists
@@ -4710,8 +4337,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               }
 
               // See if we want preprocessing
-              OsiSolverInterface *saveSolver = NULL;
-              CglPreProcess process;
+              // FIXME: Why does code break if this is defined here instead of up top?
+              //OsiSolverInterface *saveSolver = NULL;
+              //CglPreProcess process;
               // Say integers in sync
               bool integersOK = true;
               delete babModel_;
@@ -4863,9 +4491,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 }
                 if (iGenerator < numberGenerators) {
                   preProcess = 0;
-                  printGeneralMessage(
-                      model_,
-                      "PreProcessing switched off due to lazy constraints");
+                  printGeneralMessage(model_,
+                                      "PreProcessing switched off due to lazy constraints");
                 }
               }
               if (preProcess && cbcParamCode == CbcParam::BAB) {
@@ -4920,11 +4547,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   int translate[] = { 9999, 0, 0, -3, 2, 3, -2, 9999, 4, 5, 0 , -2};
                   process.passInMessageHandler(babModel_->messageHandler());
                   // process.messageHandler()->setLogLevel(babModel_->logLevel());
-                  if (info.numberSos && doSOS && statusUserFunction_[0]) {
+                  if (info && info->numberSos && doSOS && statusUserFunction_[0]) {
                     // SOS
-                    numberSOS = info.numberSos;
-                    sosStart = info.sosStart;
-                    sosIndices = info.sosIndices;
+                    numberSOS = info->numberSos;
+                    sosStart = info->sosStart;
+                    sosIndices = info->sosIndices;
                   }
                   if (numberSOS && doSOS) {
                     // SOS
@@ -5042,16 +4669,12 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         }
                       }
                     }
-                    if (numberChanged || numberInteresting1 ||
-                        numberInteresting2) {
-                      sprintf(generalPrint,
-                              "%d variables in SOS1 sets made integer, %d non "
-                              "integer in SOS1, %d in SOS2\n",
-                              numberChanged, numberInteresting1,
-                              numberInteresting2);
-                      generalMessageHandler->message(CLP_GENERAL,
-                                                     generalMessages)
-                          << generalPrint << CoinMessageEol;
+                    if (numberChanged || numberInteresting1 || numberInteresting2) {
+                      buffer.str("");
+                      buffer << numberChanged << " variables in SOS1 sets made integer, "
+                             << numberInteresting1 << " non integer in SOS1, "
+                             << numberInteresting2 << " in SOS2" << std::endl;
+                      printGeneralMessage(model_, buffer.str());
                     }
                     delete[] sameElement;
                     delete[] rowCount;
@@ -5265,7 +4888,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     }
 #endif
                     if (debugFile == "unitTest") {
-                      babModel_->solver()->activateRowCutDebugger(argv[1]);
+                      //This is probably wrong, will need to debug
+                      babModel_->solver()->activateRowCutDebugger(inputQueue[0].c_str());
                       OsiRowCutDebugger *debugger =
                           babModel_->solver()->getRowCutDebuggerAlways();
                       numberDebugValues = babModel_->getNumCols();
@@ -5273,7 +4897,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                                                     numberDebugValues);
                     }
                     redoSOS = true;
-                    bool keepPPN = parameters[CbcParam::PREPROCNAMES].modeVal();
+                    bool keepPPN = parameters[CbcParam::PREPROCNAMES]->modeVal();
 #ifdef SAVE_NAUTY
                     keepPPN = 1;
 #endif
@@ -5342,29 +4966,20 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     solver2->setHintParam(OsiDoInBranchAndCut, false,
                                           OsiHintDo);
                 }
-                if (!solver2 && statusUserFunction_[0]) {
+                if (info && !solver2 && statusUserFunction_[0]) {
                   // infeasible
-                  info.problemStatus = 1;
-                  info.objValue = 1.0e100;
-                  sprintf(info.buffer,
+                  info->problemStatus = 1;
+                  info->objValue = 1.0e100;
+                  sprintf(info->buffer,
                           "infeasible/unbounded by pre-processing");
-                  info.primalSolution = NULL;
-                  info.dualSolution = NULL;
+                  info->primalSolution = NULL;
+                  info->dualSolution = NULL;
                   break;
                 }
-                if (!noPrinting_) {
-                  if (!solver2) {
-                    sprintf(generalPrint,
-                            "Pre-processing says infeasible or unbounded");
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                        << generalPrint << CoinMessageEol;
-                  } else {
-                    // printf("processed model has %d rows, %d columns and %d
-                    // elements\n",
-                    //     solver2->getNumRows(),solver2->getNumCols(),solver2->getNumElements());
-                  }
-                }
                 if (!solver2) {
+                   buffer.str("");
+                   buffer << "Pre-processing says infeasible or unbounded";
+                   printGeneralMessage(model_, buffer.str());
                   // say infeasible for solution
                   integerStatus = 6;
                   delete saveSolver;
@@ -5374,6 +4989,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   babModel_->setProblemStatus(0);
                   babModel_->setSecondaryStatus(1);
                 } else {
+                    // printf("processed model has %d rows, %d columns and %d
+                    // elements\n",
+                    //     solver2->getNumRows(),solver2->getNumCols(),solver2->getNumElements());
                   statistics_nprocessedrows = solver2->getNumRows();
                   statistics_nprocessedcols = solver2->getNumCols();
                   model_.setProblemStatus(-1);
@@ -5420,7 +5038,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   if (preProcess == 2) {
                     strcpy(name, "presolved.mps");
                   } else {
-                    strcpy(name, parameters[CbcParam::IMPORT].strVal().c_str());
+                    strcpy(name, parameters[CbcParam::IMPORT]->strVal().c_str());
                     char *dot = strstr(name, ".mps");
                     if (!dot)
                       dot = strstr(name, ".lp");
@@ -5555,8 +5173,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 // we have to keep solver2 so pass clone
                 solver2 = solver2->clone();
                 // see if extra variables wanted
-                int threshold = parameters[CbcParam::EXTRAVARIABLES].intVal();
-                int more2 = parameters[CbcParam::MOREMOREMIPOPTIONS].intVal();
+                int threshold = parameters[CbcParam::EXTRAVARIABLES]->intVal();
+                int more2 = parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal();
                 if (threshold || (more2 & (512 | 1024)) != 0) {
                   int numberColumns = solver2->getNumCols();
                   truncateRows = solver2->getNumRows();
@@ -5626,27 +5244,22 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     }
                   }
                   numberDifferentObj++;
-                  sprintf(generalPrint,
-                          "Problem has %d integers (%d of which binary) and %d "
-                          "continuous",
-                          numberIntegers, numberBinary,
-                          numberColumns - numberIntegers);
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
+                  buffer.str("");
+                  buffer << "Problem has " << numberIntegers << " integers (" << numberBinary
+                         << " of which are binary) and " << numberColumns - numberIntegers
+                         << " continuous";
+                  printGeneralMessage(model_, buffer.str());
                   if (numberColumns > numberIntegers) {
-                    sprintf(generalPrint,
-                            "%d continuous have nonzero objective, %d have "
-                            "zero objective",
-                            numberContinuous, numberZeroContinuous);
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                        << generalPrint << CoinMessageEol;
+                    buffer.str("");
+                    buffer << numberContinuous << " continuous have nonzero objective, "
+                           << numberZeroContinuous << " have zero objective";
+                    printGeneralMessage(model_, buffer.str());
                   }
-                  sprintf(generalPrint,
-                          "%d integer have nonzero objective, %d have zero "
-                          "objective, %d different nonzero (taking abs)",
-                          numberSort, numberZero, numberDifferentObj);
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
+                  buffer.str("");
+                  buffer << numberSort << " integer have nonzero objective, "
+                         << numberZero << " have zero objective, " 
+                         << numberDifferentObj << " different nonzero (taking abs)";
+                  printGeneralMessage(model_, buffer.str());
                   if (numberDifferentObj <= threshold + (numberZero)
                           ? 1
                           : 0 && numberDifferentObj) {
@@ -5670,20 +5283,18 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     double last = obj[0];
                     for (int jColumn = 1; jColumn < numberSort; jColumn++) {
                       if (fabs(obj[jColumn] - last) > 1.0e-12) {
-                        sprintf(generalPrint,
-                                "%d variables have objective of %g",
-                                jColumn - iLast, last);
-                        generalMessageHandler->message(CLP_GENERAL,
-                                                       generalMessages)
-                            << generalPrint << CoinMessageEol;
+                        buffer.str("");
+                        buffer << jColumn - iLast << " variables have objective of "
+                               << last;
+                        printGeneralMessage(model_, buffer.str());
                         iLast = jColumn;
                         last = obj[jColumn];
                       }
                     }
-                    sprintf(generalPrint, "%d variables have objective of %g",
-                            numberSort - iLast, last);
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                        << generalPrint << CoinMessageEol;
+                    buffer.str("");
+                    buffer << numberSort - iLast << " variables have objective of "
+                           << last;
+                    printGeneralMessage(model_, buffer.str());
                     int spaceNeeded = numberSort + numberDifferentObj;
                     CoinBigIndex *columnAddDummy =
                         new CoinBigIndex[numberDifferentObj + 1];
@@ -5798,9 +5409,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                       }
                       solver2->addRows(numberDifferentObj, rowAdd, columnAdd,
                                        elementAdd, lowerNew, upperNew);
-                      sprintf(generalPrint,
-                              "Replacing model - %d new variables",
-                              numberDifferentObj);
+                      buffer.str("");
+                      buffer << "Replacing model - "
+                             << numberDifferentObj << " new variables";
                       modifiedModel = true;
                     }
                     delete[] columnAdd;
@@ -6018,30 +5629,29 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     if (fudgeObjective || addSlacks) {
                       modifiedModel = true;
                       if (fudgeObjective && addSlacks) {
-                        sprintf(generalPrint,
-                                "Objective integer added with %d elements and "
-                                "%d Integer slacks added",
-                                fudgeObjective, addSlacks);
+                        buffer.str("");
+                        buffer << "Objective integer added with "
+                               << fudgeObjective << " elements and "
+                               <<  addSlacks << " Integer slacks added";
                       } else if (fudgeObjective) {
                         // just objective
-                        sprintf(generalPrint,
-                                "Objective integer added with %d elements",
-                                fudgeObjective);
+                        buffer.str("");
+                        buffer << "Objective integer added with "
+                               << fudgeObjective << " elements",
                         more2 &= ~1024;
                       } else {
                         // just slacks
-                        sprintf(generalPrint, "%d Integer slacks added",
-                                addSlacks);
+                        buffer.str("");
+                        buffer << addSlacks << " Integer slacks added",
                         more2 &= ~512;
                       }
                     } else {
                       more2 &= ~(512 | 1024);
                     }
-                    parameters[CbcParam::MOREMOREMIPOPTIONS].setIntVal(more2);
+                    parameters[CbcParam::MOREMOREMIPOPTIONS]->setVal(more2);
                   }
                   if (modifiedModel) {
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                        << generalPrint << CoinMessageEol;
+                    printGeneralMessage(model_, buffer.str());
                     truncateColumns = numberColumns;
                   }
                 }
@@ -6098,23 +5708,16 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   solver->resolve();
                   solver->setHintParam(OsiDoDualInResolve, takeHint, strength);
 
-                  if (!noPrinting_ &&
-                      (babModel_->messageHandler()->logLevel())) {
-                    if (solver->isProvenPrimalInfeasible()) {
-                      sprintf(generalPrint,
-                              "Clique Strengthening says infeasible!");
-                      generalMessageHandler->message(CLP_GENERAL,
-                                                     generalMessages)
-                          << generalPrint << CoinMessageEol;
-                    } else {
-                      sprintf(generalPrint,
-                              "After applying Clique Strengthening continuous "
-                              "objective value is %.2lf",
-                              solver->getObjValue());
-                      generalMessageHandler->message(CLP_GENERAL,
-                                                     generalMessages)
-                          << generalPrint << CoinMessageEol;
-                    }
+                  if (solver->isProvenPrimalInfeasible()) {
+                     buffer.str("");
+                     buffer << "Clique Strengthening says infeasible!";
+                     printGeneralMessage(model_, buffer.str());
+                  } else {
+                     buffer.str("");
+                     buffer << "After applying Clique Strengthening continuous "
+                            << "objective value is "
+                            << solver->getObjValue();
+                     printGeneralMessage(model_, buffer.str());
                   } // results of clique Strengthening stengthening
                 }   // checking impact of clique Strengthening stengthening
               }     // clique Strengthening
@@ -6130,8 +5733,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 // if (noPrinting_)
                 // modelC->setLogLevel(0);
                 if (!complicatedInteger && modelC->tightenPrimalBounds() != 0) {
-                  sprintf(generalPrint, "Problem is infeasible!");
-                  printGeneralMessage(model_, generalPrint);
+                  buffer.str("");
+                  buffer << "Problem is infeasible!";
+                  printGeneralMessage(model_, buffer.str());
                   model_.setProblemStatus(0);
                   model_.setSecondaryStatus(1);
                   // say infeasible for solution
@@ -6160,13 +5764,13 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 // redsplitGen.set_given_optsol(babModel_->solver()->getRowCutDebuggerAlways()->optimalSolution(),
                 //                         babModel_->getNumCols());
               }
-              int testOsiOptions = parameters[CbcParam::TESTOSI].intVal();
+              int testOsiOptions = parameters[CbcParam::TESTOSI]->intVal();
 #ifndef JJF_ONE
               // If linked then see if expansion wanted
               {
                 OsiSolverLink *solver3 =
                     dynamic_cast<OsiSolverLink *>(babModel_->solver());
-                int options = parameters[CbcParam::MIPOPTIONS].intVal() / 10000;
+                int options = parameters[CbcParam::MIPOPTIONS]->intVal() / 10000;
                 if (solver3 || (options & 16) != 0) {
                   if (options) {
                     /*
@@ -6177,15 +5781,19 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                                           16 - try expanding knapsacks
                                         */
                     if ((options & 16)) {
+                       // FIXME As far as I can see, saveCoinModel is never set anywhere. The only
+                       // place it should have been set is in the AMPL parsing, but that block
+                       // was never entered as far as I can see. Check whether this block is
+                       // needed.
                       int numberColumns = saveCoinModel.numberColumns();
                       int numberRows = saveCoinModel.numberRows();
                       whichColumn = new int[numberColumns];
                       knapsackStart = new int[numberRows + 1];
                       knapsackRow = new int[numberRows];
                       numberKnapsack = 10000;
-                      int extra1 = parameters[CbcParam::EXTRA1].intVal();
-                      int extra2 = parameters[CbcParam::EXTRA2].intVal();
-                      int logLevel = parameters[CbcParam::LPLOGLEVEL].intVal();
+                      int extra1 = parameters[CbcParam::EXTRA1]->intVal();
+                      int extra2 = parameters[CbcParam::EXTRA2]->intVal();
+                      int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
                       OsiSolverInterface *solver = expandKnapsack(
                           saveCoinModel, whichColumn, knapsackStart,
                           knapsackRow, numberKnapsack, storedAmpl, logLevel,
@@ -6202,8 +5810,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         // allow gomory
                         complicatedInteger = 0;
                         // Priorities already done
-                        free(info.priorities);
-                        info.priorities = NULL;
+                        if (info){
+                           free(info->priorities);
+                           info->priorities = NULL;
+                        }
                       } else {
                         numberKnapsack = 0;
                         delete[] whichColumn;
@@ -6275,9 +5885,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               }
               // Set up heuristics
               doHeuristics(babModel_, ((!miplib) ? 1 : 10), parameters,
-                           noPrinting_, initialPumpTune);
+                           parameters.noPrinting(), initialPumpTune);
               if (!miplib) {
-                if (parameters[CbcParam::LOCALTREE].modeVal()) {
+                if (parameters[CbcParam::LOCALTREE]->modeVal()) {
                   CbcTreeLocal localTree(babModel_, NULL, 10, 0, 0, 10000,
                                          2000);
                   babModel_->passInTreeHandler(localTree);
@@ -6288,8 +5898,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     babModel_->numberBeforeTrust() == 5)
                   babModel_->setNumberBeforeTrust(10);
               }
-              int experimentFlag = parameters[CbcParam::EXPERIMENT].intVal();
-              int strategyFlag = parameters[CbcParam::STRATEGY].intVal();
+              int experimentFlag = parameters[CbcParam::EXPERIMENT]->intVal();
+              int strategyFlag = parameters[CbcParam::STRATEGY]->intVal();
               int bothFlags = CoinMax(CoinMin(experimentFlag, 1), strategyFlag);
               // add cut generators if wanted
               int switches[30] = {};
@@ -6298,7 +5908,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               int numberGenerators = 0;
               int translate[] = {-100, -1, -99, -98, 1, -1098,
                                  -999, 1,  1,   1,   -1};
-              int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS].intVal();
+              int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS]->intVal();
               if (probingAction) {
                 int numberColumns = babModel_->solver()->getNumCols();
                 if (probingAction > 7) {
@@ -6365,7 +5975,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   gomoryGen.setLimit(200);
 #endif
                 }
-                int cutLength = parameters[CbcParam::CUTLENGTH].intVal();
+                int cutLength = parameters[CbcParam::CUTLENGTH]->intVal();
                 if (cutLength != -1) {
                   gomoryGen.setLimitAtRoot(cutLength);
                   if (cutLength < 10000000) {
@@ -6374,7 +5984,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     gomoryGen.setLimit(cutLength % 10000000);
                   }
                 }
-                int laGomory = parameters[CbcParam::LAGOMORYCUTS].modeVal();
+                int laGomory = parameters[CbcParam::LAGOMORYCUTS]->modeVal();
                 int gType = translate[gomoryAction];
                 if (!laGomory) {
                   // Normal
@@ -6553,7 +6163,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 } else if (numberColumns > 5000 && twomirAction == 4) {
                   twomirGen.setMaxElements(2000);
                 }
-                int laTwomir = parameters[CbcParam::LATWOMIRCUTS].modeVal();
+                int laTwomir = parameters[CbcParam::LATWOMIRCUTS]->modeVal();
                 int twomirType = translate[twomirAction];
                 if (!laTwomir) {
                   // Normal
@@ -6645,7 +6255,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               // Say we want timings
               numberGenerators = babModel_->numberCutGenerators();
               int iGenerator;
-              int cutDepth = parameters[CbcParam::CUTDEPTH].intVal();
+              int cutDepth = parameters[CbcParam::CUTDEPTH]->intVal();
               for (iGenerator = 0; iGenerator < numberGenerators;
                    iGenerator++) {
                 CbcCutGenerator *generator =
@@ -6696,15 +6306,15 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               // Switch off strong branching if wanted
               // if (babModel_->getNumCols()>10*babModel_->getNumRows())
               // babModel_->setNumberStrong(0);
-              if (!noPrinting_) {
-                int iLevel = parameters[CbcParam::LPLOGLEVEL].intVal();
+              if (!parameters.noPrinting()) {
+                int iLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
                 if (iLevel < 0) {
                   if (iLevel > -10) {
                     babModel_->setPrintingMode(1);
                   } else {
                     babModel_->setPrintingMode(2);
                     iLevel += 10;
-                    parameters[CbcParam::LPLOGLEVEL].setIntVal(iLevel);
+                    parameters[CbcParam::LPLOGLEVEL]->setVal(iLevel);
                   }
                   iLevel = -iLevel;
                 }
@@ -6717,20 +6327,20 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
 
               babModel_->solver()->setIntParam(
                   OsiMaxNumIterationHotStart,
-                  parameters[CbcParam::MAXHOTITS].intVal());
+                  parameters[CbcParam::MAXHOTITS]->intVal());
 #ifndef CBC_OTHER_SOLVER
               OsiClpSolverInterface *osiclp =
                   dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
               // go faster stripes
               if ((osiclp->getNumRows() < 300 && osiclp->getNumCols() < 500)) {
-                osiclp->setupForRepeatedUse(2, parameters[CbcParam::LPLOGLEVEL].intVal());
+                osiclp->setupForRepeatedUse(2, parameters[CbcParam::LPLOGLEVEL]->intVal());
                 if (bothFlags >= 1) {
                   ClpSimplex *lp = osiclp->getModelPtr();
                   int specialOptions = lp->specialOptions();
                   lp->setSpecialOptions(specialOptions | (2048 + 4096));
                 }
               } else {
-                osiclp->setupForRepeatedUse(0, parameters[CbcParam::LPLOGLEVEL].intVal());
+                osiclp->setupForRepeatedUse(0, parameters[CbcParam::LPLOGLEVEL]->intVal());
               }
               if (bothFlags >= 2) {
                 ClpSimplex *lp = osiclp->getModelPtr();
@@ -6742,7 +6352,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               int *changed = NULL;
               if (!miplib && increment == normalIncrement)
                 changed = analyze(osiclp, numberChanged, increment, false,
-                                  generalMessageHandler, noPrinting);
+                                  generalMessageHandler, parameters.noPrinting());
 #elif CBC_OTHER_SOLVER == 1
               double increment = babModel_->getCutoffIncrement();
               ;
@@ -6800,11 +6410,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   CoinMax(babModel_->getCutoffIncrement(), increment));
               // Turn this off if you get problems
               // Used to be automatically set
-              int mipOptions = parameters[CbcParam::MIPOPTIONS].intVal() % 10000;
+              int mipOptions = parameters[CbcParam::MIPOPTIONS]->intVal() % 10000;
               if (mipOptions != (1057) && mipOptions != 1025) {
-                sprintf(generalPrint, "mip options %d", mipOptions);
-                generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                    << generalPrint << CoinMessageEol;
+                buffer.str("");
+                buffer << "mip options " << mipOptions;
+                printGeneralMessage(model_, buffer.str());
               }
 #ifndef CBC_OTHER_SOLVER
               osiclp->setSpecialOptions(mipOptions);
@@ -6832,11 +6442,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   }
                 }
                 {
-                  int depthMiniBab = parameters[CbcParam::DEPTHMINIBAB].intVal();
+                  int depthMiniBab = parameters[CbcParam::DEPTHMINIBAB]->intVal();
                   if (depthMiniBab != -1)
                     babModel_->setFastNodeDepth(depthMiniBab);
                 }
-                int extra4 = parameters[CbcParam::EXTRA4].intVal();
+                int extra4 = parameters[CbcParam::EXTRA4]->intVal();
                 if (extra4 >= 0) {
                   int strategy = extra4 % 10;
                   extra4 /= 10;
@@ -6845,11 +6455,11 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   extra4 = strategy + method * 8 + extra4 * 1024;
                   babModel_->setMoreSpecialOptions(extra4);
                 }
-                int moreMipOptions = parameters[CbcParam::MOREMIPOPTIONS].intVal();
+                int moreMipOptions = parameters[CbcParam::MOREMIPOPTIONS]->intVal();
                 if (moreMipOptions >= 0) {
-                  sprintf(generalPrint, "more mip options %d", moreMipOptions);
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
+                  buffer.str("");
+                  buffer << "more mip options" << moreMipOptions;
+                  printGeneralMessage(model_, buffer.str());
 #if 1
                   // some options may have been set already
                   // e.g. use elapsed time
@@ -6890,7 +6500,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 }
               }
               {
-                int extra1 = parameters[CbcParam::EXTRA1].intVal();
+                int extra1 = parameters[CbcParam::EXTRA1]->intVal();
                 if (extra1 != -1) {
                   if (extra1 < 0) {
                     if (extra1 == -7777)
@@ -6913,21 +6523,21 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 }
               }
               if (cbcParamCode == CbcParam::BAB) {
-                if (statusUserFunction_[0]) {
-                  priorities = info.priorities;
-                  branchDirection = info.branchDirection;
-                  pseudoDown = info.pseudoDown;
-                  pseudoUp = info.pseudoUp;
-                  solutionIn = info.primalSolution;
-                  prioritiesIn = info.priorities;
-                  if (info.numberSos && doSOS) {
+                if (info && statusUserFunction_[0]) {
+                  priorities = info->priorities;
+                  branchDirection = info->branchDirection;
+                  pseudoDown = info->pseudoDown;
+                  pseudoUp = info->pseudoUp;
+                  solutionIn = info->primalSolution;
+                  prioritiesIn = info->priorities;
+                  if (info->numberSos && doSOS) {
                     // SOS
-                    numberSOS = info.numberSos;
-                    sosStart = info.sosStart;
-                    sosIndices = info.sosIndices;
-                    sosType = info.sosType;
-                    sosReference = info.sosReference;
-                    sosPriority = info.sosPriority;
+                    numberSOS = info->numberSos;
+                    sosStart = info->sosStart;
+                    sosIndices = info->sosIndices;
+                    sosType = info->sosType;
+                    sosReference = info->sosReference;
+                    sosPriority = info->sosPriority;
                   }
                 }
                 const int *originalColumns =
@@ -7207,18 +6817,14 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     }
                     if (nMissing) {
 #ifndef DO_LESS_PROHIBITED
-                      sprintf(generalPrint,
-                              "%d SOS variables vanished due to pre "
-                              "processing? - check validity?",
-                              nMissing);
+                      buffer.str("");
+                      buffer << nMissing << " SOS variables vanished due to preprocessing?"
+                             << " - check validity?";
 #else
-                      sprintf(generalPrint,
-                              "%d SOS variables eliminated by pre processing",
-                              nMissing);
+                      buffer.str("");
+                      buffer << nMissing << " SOS variables eliminated by preprocessing";
 #endif
-                      generalMessageHandler->message(CLP_GENERAL,
-                                                     generalMessages)
-                          << generalPrint << CoinMessageEol;
+                      printGeneralMessage(model_, buffer.str());
                     }
                     delete[] newColumn;
                     const int *starts = process.startSOS();
@@ -7304,34 +6910,28 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         delete[] back;
                         if (nMissing) {
 #ifndef DO_LESS_PROHIBITED
-                          sprintf(generalPrint,
-                                  "%d SOS variables vanished due to pre "
-                                  "processing? - check validity?",
-                                  nMissing);
+                          buffer.str("");
+                          buffer << nMissing << " SOS variables vanished due to preprocessing?"
+                                 << " - check validity?";
 #else
-                          sprintf(
-                              generalPrint,
-                              "%d SOS variables eliminated by pre processing",
-                              nMissing);
+                          buffer.str("");
+                          buffer << nMissing << " SOS variables eliminated by preprocessing";
 #endif
-                          generalMessageHandler->message(CLP_GENERAL,
-                                                         generalMessages)
-                              << generalPrint << CoinMessageEol;
+                          printGeneralMessage(model_, buffer.str());
                         }
                       }
                       int sosPriorityOption =
-                         parameters[CbcParam::SOSPRIORITIZE].modeVal();
+                         parameters[CbcParam::SOSPRIORITIZE]->modeVal();
                       if (sosPriorityOption) {
                         const char *msg[4] = {
                             "high with equal priority",
                             "low with equal priority",
                             "high but with decreasing priority",
                             "low and decreasing priority"};
-                        sprintf(generalPrint, "Setting %d SOS priorities %s",
-                                numberSOS, msg[sosPriorityOption - 1]);
-                        generalMessageHandler->message(CLP_GENERAL,
-                                                       generalMessages)
-                            << generalPrint << CoinMessageEol;
+                        buffer.str("");
+                        buffer << "Setting " << numberSOS << " SOS priorities "
+                               << msg[sosPriorityOption - 1];
+                        printGeneralMessage(model_, buffer.str());
                       }
                       for (iSOS = 0; iSOS < numberSOS; iSOS++) {
                         int iStart = sosStart[iSOS];
@@ -7521,13 +7121,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                         }
                         delete[] back;
                         if (nMissing) {
-                          sprintf(generalPrint,
-                                  "%d SOS variables vanished due to pre "
-                                  "processing? - check validity?",
-                                  nMissing);
-                          generalMessageHandler->message(CLP_GENERAL,
-                                                         generalMessages)
-                              << generalPrint << CoinMessageEol;
+                          buffer.str("");
+                          buffer << nMissing << " SOS variables vanished due to preprocessing?"
+                                 << " - check validity?";
+                          printGeneralMessage(model_, buffer.str());
                         }
                       }
                       for (iSOS = 0; iSOS < numberSOS; iSOS++) {
@@ -7564,7 +7161,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   }
                   OsiObject **objects = testOsiSolver->objects();
                   int numberObjects = testOsiSolver->numberObjects();
-                  int logLevel = parameters[CbcParam::LPLOGLEVEL].intVal();
+                  int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
                   for (int iObj = 0; iObj < numberObjects; iObj++) {
                     // skip sos
                     OsiSOS *objSOS = dynamic_cast<OsiSOS *>(objects[iObj]);
@@ -7699,10 +7296,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   babModel_->setStrategy(strategy);
                 }
                 if (testOsiOptions >= 0) {
-                  sprintf(generalPrint, "Testing OsiObject options %d",
-                          testOsiOptions);
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
+                  buffer.str("");
+                  buffer << "Testing OsiObject options " << testOsiOptions;
+                  printGeneralMessage(model_, buffer.str());
                   if (!numberSOS) {
                     babModel_->solver()->findIntegersAndSOS(false);
 #ifdef COIN_HAS_LINK
@@ -7713,13 +7309,13 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                       CbcHeuristicDynamic3 serendipity(*babModel_);
                       serendipity.setHeuristicName("linked");
                       int heuristicOption =
-                         parameters[CbcParam::HEURISTICSTRATEGY].modeVal();
+                         parameters[CbcParam::HEURISTICSTRATEGY]->modeVal();
                       if (heuristicOption)
                         babModel_->addHeuristic(&serendipity);
-                      double dextra3 = parameters[CbcParam::DEXTRA3].dblVal();
+                      double dextra3 = parameters[CbcParam::DEXTRA3]->dblVal();
                       if (dextra3)
                         solver3->setMeshSizes(dextra3);
-                      int options = parameters[CbcParam::MIPOPTIONS].intVal() / 10000;
+                      int options = parameters[CbcParam::MIPOPTIONS]->intVal() / 10000;
                       CglStored stored;
                       if (options) {
                         printf("nlp options %d\n", options);
@@ -7745,7 +7341,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                           // say convex
                           solver3->sayConvex((options & 32) == 0);
                         }
-                        int extra1 = parameters[CbcParam::EXTRA1].intVal();
+                        int extra1 = parameters[CbcParam::EXTRA1]->intVal();
                         if ((options & 1) != 0 && extra1 > 0)
                           solver3->setFixedPriority(extra1);
                         double cutoff = COIN_DBL_MAX;
@@ -7772,7 +7368,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     }
                     // For temporary testing of heuristics
                     // int testOsiOptions =
-                    // parameters[CbcParam::TESTOSI,numberParameters_,parameters)].intVal();
+                    // parameters[CbcParam::TESTOSI,numberParameters_,parameters)]->intVal();
                     if (testOsiOptions >= 10) {
                       if (testOsiOptions >= 20)
                         testOsiOptions -= 10;
@@ -7781,10 +7377,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                       OsiSolverLink *solver3 =
                           dynamic_cast<OsiSolverLink *>(babModel_->solver());
                       assert(solver3);
-                      int extra1 = parameters[CbcParam::EXTRA1].intVal();
+                      int extra1 = parameters[CbcParam::EXTRA1]->intVal();
                       solver3->setBiLinearPriority(extra1);
                       printf("bilinear priority now %d\n", extra1);
-                      int extra2 = parameters[CbcParam::EXTRA2].intVal();
+                      int extra2 = parameters[CbcParam::EXTRA2]->intVal();
                       double saveDefault = solver3->defaultBound();
                       solver3->setDefaultBound(static_cast<double>(extra2));
                       double *solution = solver3->heuristicSolution(
@@ -7954,7 +7550,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 }
 #endif
                 // add in lotsizing
-                if (statusUserFunction_[0] && info.special) {
+                if (info && statusUserFunction_[0] && info->special) {
                   int numberColumns = babModel_->getNumCols();
                   int i;
                   int n = 0;
@@ -7963,12 +7559,12 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     for (i = 0; i < numberColumns; i++) {
                       int iColumn = originalColumns[i];
                       assert(iColumn >= i);
-                      int iType = info.special[iColumn];
+                      int iType = info->special[iColumn];
                       if (iType) {
                         assert(iType == 1);
                         n++;
                       }
-                      info.special[i] = iType;
+                      info->special[i] = iType;
                     }
                   }
                   if (n) {
@@ -8009,7 +7605,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     double ranges[] = {-COIN_DBL_MAX, -1.0, 1.0, COIN_DBL_MAX};
                     for (int iObj = 0; iObj < numberOldObjects; iObj++) {
                       int iColumn = oldObjects[iObj]->columnNumber();
-                      if (iColumn >= 0 && info.special[iColumn]) {
+                      if (iColumn >= 0 && info && info->special[iColumn]) {
                         if (lower[iColumn] <= -1.0 && upper[iColumn] >= 0.0) {
                           ranges[0] = lower[iColumn];
                           ranges[3] = upper[iColumn];
@@ -8055,7 +7651,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     babModel_->setNumberBeforeTrust(50);
                 }
 #ifdef CBC_THREAD
-                int numberThreads = parameters[CbcParam::THREADS].intVal();
+                int numberThreads = parameters[CbcParam::THREADS]->intVal();
                 babModel_->setNumberThreads(numberThreads % 100);
                 babModel_->setThreadMode(numberThreads / 100);
 #endif
@@ -8072,7 +7668,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 osiclp =
                     dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
                 lpSolver = osiclp->getModelPtr();
-                int hotits = parameters[CbcParam::MAXHOTITS].intVal();
+                int hotits = parameters[CbcParam::MAXHOTITS]->intVal();
                 if (hotits > 100) {
                   osiclp->setSpecialOptions(osiclp->specialOptions() & ~32);
                   osiclp->setIntParam(OsiMaxNumIterationHotStart, hotits);
@@ -8090,15 +7686,15 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 } else if (babModel_->fastNodeDepth() == -999) {
                   babModel_->setFastNodeDepth(-1);
                 }
-                int heurOptions = parameters[CbcParam::HEUROPTIONS].intVal();
+                int heurOptions = parameters[CbcParam::HEUROPTIONS]->intVal();
                 if (heurOptions > 100)
                   babModel_->setSpecialOptions(babModel_->specialOptions() |
                                                8192);
 
 #ifndef CBC_OTHER_SOLVER
 #ifdef CLP_MULTIPLE_FACTORIZATIONS
-                int denseCode = clpParameters[ClpParam::DENSE].intVal();
-                int smallCode = clpParameters[ClpParam::SMALLFACT].intVal();
+                int denseCode = clpParameters[ClpParam::DENSE]->intVal();
+                int smallCode = clpParameters[ClpParam::SMALLFACT]->intVal();
                 if (bothFlags >= 1) {
                   if (denseCode < 0)
                     denseCode = 40;
@@ -8312,7 +7908,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 orbit.morph();
                 exit(1);
 #endif
-                int hOp1 = parameters[CbcParam::HEUROPTIONS].intVal() / 100000;
+                int hOp1 = parameters[CbcParam::HEUROPTIONS]->intVal() / 100000;
                 if (hOp1 % 10) {
                   CbcCompareDefault compare;
                   compare.setBreadthDepth(hOp1 % 10);
@@ -8325,13 +7921,13 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 if (dynamic_cast<OsiCpxSolverInterface *>(babModel_->solver()))
                   babModel_->solver()->messageHandler()->setLogLevel(0);
 #endif
-                if (parameters[CbcParam::CPX].modeVal()) {
+                if (parameters[CbcParam::CPX]->modeVal()) {
                   babModel_->setSpecialOptions(babModel_->specialOptions() |
                                                16384);
                   // if (babModel_->fastNodeDepth()==-1)
                   babModel_->setFastNodeDepth(-2); // Use Cplex at root
                 }
-                int hOp2 = parameters[CbcParam::HEUROPTIONS].intVal() / 10000;
+                int hOp2 = parameters[CbcParam::HEUROPTIONS]->intVal() / 10000;
                 if (hOp2 % 10) {
                   babModel_->setSpecialOptions(babModel_->specialOptions() |
                                                16384);
@@ -8378,7 +7974,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   donor.setStoredRowCuts(NULL);
                 }
                 // We may have priorities from extra variables
-                int more2 = parameters[CbcParam::MOREMOREMIPOPTIONS].intVal();
+                int more2 = parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal();
                 if (newPriorities) {
                   if (truncateColumns < babModel_->getNumCols()) {
                     // set new ones as high prority
@@ -8394,7 +7990,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   for (int i = 0; i < n; i++)
                     newPriorities[i] = babModel_->priority(i);
 #if 1
-                  int ixxxxxx = parameters[CbcParam::MAXNODES].intVal();
+                  int ixxxxxx = parameters[CbcParam::MAXNODES]->intVal();
                   int obj_priority = 1000;
                   int slack_priority = 1000;
                   if (ixxxxxx >= 1000000 && ixxxxxx < 1010000) {
@@ -8468,7 +8064,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 }
 #ifdef JJF_ZERO
                 //TODO this doesn't look like it will build at the moment
-                int extra5 = parameters[CbcParam::EXTRA5].intVal();
+                int extra5 = parameters[CbcParam::EXTRA5]->intVal();
                 if (extra5 > 0) {
                   int numberGenerators = babModel_->numberCutGenerators();
                   for (int iGenerator = 0; iGenerator < numberGenerators;
@@ -8486,16 +8082,16 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   }
                 }
 #endif
-                int specialOptions = parameters[CbcParam::STRONGSTRATEGY].intVal();
+                int specialOptions = parameters[CbcParam::STRONGSTRATEGY]->intVal();
                 if (specialOptions >= 0)
                   babModel_->setStrongStrategy(specialOptions);
-                if (parameters[CbcParam::CUTOFFCONSTRAINT].modeVal()) {
+                if (parameters[CbcParam::CUTOFFCONSTRAINT]->modeVal()) {
                   babModel_->setCutoffAsConstraint(true);
                   int moreOptions = babModel_->moreSpecialOptions();
-                  if (parameters[CbcParam::CUTOFFCONSTRAINT].modeVal() == 4)
+                  if (parameters[CbcParam::CUTOFFCONSTRAINT]->modeVal() == 4)
                     babModel_->setMoreSpecialOptions(moreOptions | 4194304);
                 }
-                int multipleRoot = parameters[CbcParam::MULTIPLEROOTS].intVal();
+                int multipleRoot = parameters[CbcParam::MULTIPLEROOTS]->intVal();
                 if (multipleRoot < 10000) {
                   babModel_->setMultipleRootTries(multipleRoot);
                 } else {
@@ -8518,15 +8114,14 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   double **bestSolutions = new double *[numberGoes];
                   int *which = new int[numberGoes];
                   int numberSolutions = 0;
-                  sprintf(generalPrint,
-                          "Starting %d passes each with %d solvers", numberGoes,
-                          multipleRoot % 10);
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
+                  buffer.str("");
+                  buffer << "Starting " << numberGoes << " passes each with "
+                         << multipleRoot % 10 << " solvers";
+                  printGeneralMessage(model_, buffer.str());
                   for (int iGo = 0; iGo < numberGoes; iGo++) {
-                    sprintf(generalPrint, "Starting pass %d", iGo + 1);
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                        << generalPrint << CoinMessageEol;
+                    buffer.str("");
+                    buffer << "Starting pass " << iGo + 1;
+                    printGeneralMessage(model_, buffer.str());
                     CbcModel tempModel = *babModel_;
                     tempModel.setMaximumNodes(0);
                     // switch off cuts if none generated
@@ -8579,29 +8174,29 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     delete[] bestSolutions[k];
                   }
                   babModel_->setMoreSpecialOptions(moreOptions);
-                  if (numberSolutions)
-                    sprintf(generalPrint,
-                            "Ending major passes - best solution %g",
-                            -bestValues[numberSolutions - 1]);
-                  else
-                    sprintf(generalPrint,
-                            "Ending major passes - no solution found");
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
+                  if (numberSolutions){
+                     buffer.str("");
+                     buffer << "Ending major passes - best solution "
+                            << -bestValues[numberSolutions - 1];
+                  } else {
+                    buffer.str("");
+                    buffer << "Ending major passes - no solution found";
+                    printGeneralMessage(model_, buffer.str());
+                  }
                   delete[] which;
                   delete[] bestValues;
                   delete[] bestSolutions;
                 }
                 if (biLinearProblem)
-                  babModel_->setSpecialOptions(babModel_->specialOptions() &
-                                               (~(512 | 32768)));
+                   babModel_->setSpecialOptions(babModel_->specialOptions() &
+                                                (~(512 | 32768)));
                 babModel_->setMoreSpecialOptions2(
-                    parameters[CbcParam::MOREMOREMIPOPTIONS].intVal());
+                    parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal());
 #ifdef CBC_HAS_NAUTY
                 int nautyAdded = 0;
                 {
-                  if (parameters[CbcParam::ORBITAL].modeVal()) {
-                    int k = parameters[CbcParam::ORBITAL].modeVal();
+                  if (parameters[CbcParam::ORBITAL]->modeVal()) {
+                    int k = parameters[CbcParam::ORBITAL]->modeVal();
                     if (k < 4) {
                       babModel_->setMoreSpecialOptions2(
                           babModel_->moreSpecialOptions2() | (k * 128));
@@ -8743,7 +8338,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   strategy.setupPreProcessing(translate2[preProcess]);
                 babModel_->setStrategy(strategy);
 #ifdef CBC_THREAD
-                int numberThreads = parameters[CbcParam::THREADS].intVal();
+                int numberThreads = parameters[CbcParam::THREADS]->intVal();
                 babModel_->setNumberThreads(numberThreads % 100);
                 babModel_->setThreadMode(numberThreads / 100);
 #endif
@@ -8797,37 +8392,37 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 /* JJF: No need to have 777 flag at all - user
                      says -miplib
                      */
-                int extra2 = parameters[CbcParam::EXTRA2].intVal();
+                int extra2 = parameters[CbcParam::EXTRA2]->intVal();
                 double stuff[11];
-                stuff[0] = parameters[CbcParam::FAKEINCREMENT].dblVal();
-                stuff[1] = parameters[CbcParam::FAKECUTOFF].dblVal();
-                stuff[2] = parameters[CbcParam::DEXTRA3].dblVal();
-                stuff[3] = parameters[CbcParam::DEXTRA4].dblVal();
-                stuff[4] = clpParameters[ClpParam::DENSE].intVal();
-                stuff[5] = parameters[CbcParam::EXTRA1].intVal();
-                stuff[6] = parameters[CbcParam::EXTRA3].intVal();
-                stuff[7] = parameters[CbcParam::DEPTHMINIBAB].intVal();
+                stuff[0] = parameters[CbcParam::FAKEINCREMENT]->dblVal();
+                stuff[1] = parameters[CbcParam::FAKECUTOFF]->dblVal();
+                stuff[2] = parameters[CbcParam::DEXTRA3]->dblVal();
+                stuff[3] = parameters[CbcParam::DEXTRA4]->dblVal();
+                stuff[4] = clpParameters[ClpParam::DENSE]->intVal();
+                stuff[5] = parameters[CbcParam::EXTRA1]->intVal();
+                stuff[6] = parameters[CbcParam::EXTRA3]->intVal();
+                stuff[7] = parameters[CbcParam::DEPTHMINIBAB]->intVal();
                 stuff[8] = bothFlags;
                 stuff[9] = doVector;
-                stuff[10] = clpParameters[ClpParam::SMALLFACT].intVal();
+                stuff[10] = clpParameters[ClpParam::SMALLFACT]->intVal();
                 if (dominatedCuts){
                   model_.setSpecialOptions(model_.specialOptions() | 64);
                 }
-                if (parameters[CbcParam::CPX].modeVal()) {
+                if (parameters[CbcParam::CPX]->modeVal()) {
                   model_.setSpecialOptions(model_.specialOptions() | 16384);
                   // if (model_.fastNodeDepth()==-1)
                   model_.setFastNodeDepth(-2); // Use Cplex at root
                 }
                 int hOp2 =
-                    parameters[CbcParam::HEUROPTIONS].intVal() / 10000;
+                    parameters[CbcParam::HEUROPTIONS]->intVal() / 10000;
                 if (hOp2 % 10) {
                   model_.setSpecialOptions(model_.specialOptions() | 16384);
                   if (model_.fastNodeDepth() == -1)
                     model_.setFastNodeDepth(-2); // Use Cplex at root
                 }
-                int multipleRoot = parameters[CbcParam::MULTIPLEROOTS].intVal();
+                int multipleRoot = parameters[CbcParam::MULTIPLEROOTS]->intVal();
                 model_.setMultipleRootTries(multipleRoot);
-                int specialOptions = parameters[CbcParam::STRONGSTRATEGY].intVal();
+                int specialOptions = parameters[CbcParam::STRONGSTRATEGY]->intVal();
                 if (specialOptions >= 0)
                   model_.setStrongStrategy(specialOptions);
                 if (!pumpChanged) {
@@ -8867,8 +8462,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 }
 #endif
                 int returnCode =
-                    CbcClpUnitTest(model_, dirMiplib, extra2, stuff, argc, argv,
-                                   callBack, parameters);
+                   CbcClpUnitTest(model_, dirMiplib, extra2, stuff, inputQueue,
+                                  callBack, parameters);
                 babModel_ = NULL;
                 return returnCode;
               } else {
@@ -8889,15 +8484,12 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               }
 #endif
               statistics_cut_time = 0.0;
-              if (!noPrinting_) {
                 // Print more statistics
-                sprintf(generalPrint,
-                        "Cuts at root node changed objective from %g to %g",
-                        babModel_->getContinuousObjective(),
-                        babModel_->rootObjectiveAfterCuts());
-                generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                    << generalPrint << CoinMessageEol;
-
+                buffer.str("");
+                buffer << "Cuts at root node changed objective from "
+                       << babModel_->getContinuousObjective() << " to " 
+                       << babModel_->rootObjectiveAfterCuts();
+                printGeneralMessage(model_, buffer.str());
                 numberGenerators = babModel_->numberCutGenerators();
                 // can get here twice!
                 if (statistics_number_cuts != NULL)
@@ -8918,33 +8510,29 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   statistics_name_generators[iGenerator] =
                       generator->cutGeneratorName();
                   statistics_number_cuts[iGenerator] =
-                      generator->numberCutsInTotal();
-                  sprintf(generalPrint,
-                          "%s was tried %d times and created %d cuts of which "
-                          "%d were active after adding rounds of cuts",
-                          generator->cutGeneratorName(),
-                          generator->numberTimesEntered(),
-                          generator->numberCutsInTotal() +
-                              generator->numberColumnCuts(),
-                          generator->numberCutsActive());
+                     generator->numberCutsInTotal();
+                  buffer.str("");
+                  buffer << generator->cutGeneratorName() << " was tried "
+                         << generator->numberTimesEntered() << " times and created "
+                         << generator->numberCutsInTotal() + generator->numberColumnCuts()
+                         << " cuts of which "
+                         << generator->numberCutsActive()
+                         << " were active after adding rounds of cuts";
                   if (generator->timing()) {
-                    sprintf(timing, " (%.3f seconds)",
-                            generator->timeInCutGenerator());
-                    strcat(generalPrint, timing);
-                    statistics_cut_time += generator->timeInCutGenerator();
+                     buffer << " (" << generator->timeInCutGenerator() <<  " seconds)";
+                     statistics_cut_time += generator->timeInCutGenerator();
                   }
-                  CglStored *stored =
-                      dynamic_cast<CglStored *>(generator->generator());
-                  if (stored && !generator->numberCutsInTotal())
+                  CglStored *stored = dynamic_cast<CglStored *>(generator->generator());
+                  if (stored && !generator->numberCutsInTotal()){
                     continue;
+                  }
 #ifndef CLP_INVESTIGATE
                   CglImplication *implication =
                       dynamic_cast<CglImplication *>(generator->generator());
                   if (implication && !generator->numberCutsInTotal())
                     continue;
 #endif
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
+                    printGeneralMessage(model_, buffer.str());
                 }
 #ifdef COIN_DEVELOP
                 printf("%d solutions found by heuristics\n",
@@ -8955,18 +8543,16 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   CbcHeuristic *heuristic = babModel_->heuristic(iGenerator);
                   if (heuristic->numRuns()) {
                     // Need to bring others inline
-                    sprintf(generalPrint,
-                            "%s was tried %d times out of %d and created %d "
-                            "solutions\n",
-                            heuristic->heuristicName(), heuristic->numRuns(),
-                            heuristic->numCouldRun(),
-                            heuristic->numberSolutionsFound());
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                        << generalPrint << CoinMessageEol;
+                    buffer.str("");
+                    buffer << heuristic->heuristicName() << " was tried "
+                           << heuristic->numRuns() << " times out of "
+                           << heuristic->numCouldRun() << " and created "
+                           << heuristic->numberSolutionsFound()
+                           << " solutions" << std::endl;
+                    printGeneralMessage(model_, buffer.str());
                   }
                 }
 #endif
-              }
               // adjust time to allow for children on some systems
               time2 = CoinCpuTime() + CoinCpuTimeJustChildren();
               totalTime += time2 - time1;
@@ -9129,11 +8715,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   delete[] lower2;
                   delete[] upper2;
                   if (numberChanged) {
-                    sprintf(generalPrint,
-                            "%d bounds tightened after postprocessing\n",
-                            numberChanged);
-                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                        << generalPrint << CoinMessageEol;
+                    buffer.str("");
+                    buffer << numberChanged << " bounds tightened after postprocessing"
+                           << std::endl;
+                    printGeneralMessage(model_, buffer.str());
                   }
                   // saveSolver->resolve();
                   if (true /*!saveSolver->isProvenOptimal()*/) {
@@ -9267,10 +8852,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                          cbcParamCode == CbcParam::BAB &&
                          model_.getMinimizationObjValue() < 1.0e50 &&
                          preProcess) {
-                sprintf(generalPrint, "Restoring heuristic best solution of %g",
-                        model_.getMinimizationObjValue());
-                generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                    << generalPrint << CoinMessageEol;
+                buffer.str("");
+                buffer << "Restoring heuristic best solution of "
+                       << model_.getMinimizationObjValue();
+                printGeneralMessage(model_, buffer.str());
                 int n = saveSolver->getNumCols();
                 bestSolution = new double[n];
                 // Put solution now back in saveSolver
@@ -9372,52 +8957,43 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 statistics_tighter = babModel_->rootObjectiveAfterCuts();
                 statistics_nodes = babModel_->getNodeCount();
                 statistics_iterations = babModel_->getIterationCount();
-                ;
                 statistics_result = statusName[iStat];
-                ;
-                if (!noPrinting_) {
-                  sprintf(generalPrint, "\nResult - %s%s\n",
-                          statusName[iStat].c_str(), minor[iStat2].c_str());
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
-                  if (babModel_->bestSolution()) {
-                    sprintf(generalPrint,
-                            "Objective value:                %.8f\n",
-                            babModel_->getObjValue());
-                  } else {
-                    sprintf(generalPrint, "No feasible solution found\n");
-                  }
-                  if (iStat2 >= 2 && iStat2 <= 6) {
-                    bool minimizing = babModel_->solver()->getObjSense() > 0.0;
-                    sprintf(generalPrint + strlen(generalPrint),
-                            "%s bound:                    %.3f\n",
-                            minimizing ? "Lower" : "Upper",
-                            babModel_->getBestPossibleObjValue());
-                    if (babModel_->bestSolution()) {
-                      sprintf(generalPrint + strlen(generalPrint),
-                              "Gap:                            %.2f\n",
-                              (babModel_->getObjValue() -
-                               babModel_->getBestPossibleObjValue()) /
-                                  fabs(babModel_->getBestPossibleObjValue()));
-                    }
-                  }
-                  sprintf(generalPrint + strlen(generalPrint),
-                          "Enumerated nodes:               %d\n",
-                          babModel_->getNodeCount());
-                  sprintf(generalPrint + strlen(generalPrint),
-                          "Total iterations:               %d\n",
-                          babModel_->getIterationCount());
-#if CBC_QUIET == 0
-                  sprintf(generalPrint + strlen(generalPrint),
-                          "Time (CPU seconds):             %.2f\n",
-                          CoinCpuTime() - time1);
-                  sprintf(generalPrint + strlen(generalPrint),
-                          "Time (Wallclock seconds):       %.2f\n",
-                          CoinGetTimeOfDay() - time1Elapsed);
-#endif
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
+                buffer.str("");
+                buffer << std::endl << "Result - "
+                       << statusName[iStat].c_str() << minor[iStat2].c_str()
+                       << std::endl;
+                printGeneralMessage(model_, buffer.str());
+                if (babModel_->bestSolution()) {
+                    buffer.str("");
+                    buffer << "Objective value:                "
+                           << babModel_->getObjValue() << std::endl;
+                } else {
+                    buffer.str("");
+                    buffer << "No feasible solution found\n";
                 }
+                if (iStat2 >= 2 && iStat2 <= 6) {
+                   bool minimizing = babModel_->solver()->getObjSense() > 0.0;
+                   std::string tmp = minimizing ? "Lower" : "Upper";
+                   buffer << tmp << " bound: "
+                          << babModel_->getBestPossibleObjValue() << std::endl;
+                   if (babModel_->bestSolution()) {
+                      buffer << "Gap:                            "
+                             << (babModel_->getObjValue() -
+                                 babModel_->getBestPossibleObjValue()) /
+                         fabs(babModel_->getBestPossibleObjValue());
+                   }
+                }
+                buffer << "Enumerated nodes:               "
+                       << babModel_->getNodeCount() << std::endl;
+                buffer << "Total iterations:               ";
+                buffer << babModel_->getIterationCount() << std::endl;
+#if CBC_QUIET == 0
+                buffer << "Time (CPU seconds):             "
+                       << CoinCpuTime() - time1 << std::endl;
+                buffer << "Time (Wallclock seconds):       "
+                       << CoinGetTimeOfDay() - time1Elapsed << std::endl;
+#endif
+                printGeneralMessage(model_, buffer.str());
                 int returnCode = 0;
                 if (callBack != NULL)
                   returnCode = callBack(babModel_, 5);
@@ -9428,7 +9004,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   babModel_ = NULL;
                   return returnCode;
                 }
-                if (statusUserFunction_[0]) {
+                if (info && statusUserFunction_[0]) {
                   clpSolver = dynamic_cast<OsiClpSolverInterface *>(
                       babModel_->solver());
                   lpSolver = clpSolver->getModelPtr();
@@ -9461,8 +9037,8 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     pos += sprintf(buf + pos, "status unknown,");
                     iStat = 6;
                   }
-                  info.problemStatus = iStat;
-                  info.objValue = value;
+                  info->problemStatus = iStat;
+                  info->objValue = value;
                   if (babModel_->getObjValue() < 1.0e40) {
                     int precision = ampl_obj_prec();
                     if (precision > 0)
@@ -9475,41 +9051,42 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                           babModel_->getNodeCount(),
                           babModel_->getIterationCount(), totalTime);
                   if (bestSolution) {
-                    free(info.primalSolution);
+                    free(info->primalSolution);
                     if (!numberKnapsack) {
-                      info.primalSolution =
+                      info->primalSolution =
                           (double *)malloc(n * sizeof(double));
                       CoinCopyN(lpSolver->primalColumnSolution(), n,
-                                info.primalSolution);
+                                info->primalSolution);
                       int numberRows = lpSolver->numberRows();
-                      free(info.dualSolution);
-                      info.dualSolution =
+                      free(info->dualSolution);
+                      info->dualSolution =
                           (double *)malloc(numberRows * sizeof(double));
                       CoinCopyN(lpSolver->dualRowSolution(), numberRows,
-                                info.dualSolution);
+                                info->dualSolution);
                     } else {
                       // expanded knapsack
-                      info.dualSolution = NULL;
+                      info->dualSolution = NULL;
                       int numberColumns = saveCoinModel.numberColumns();
-                      info.primalSolution =
+                      info->primalSolution =
                           (double *)malloc(numberColumns * sizeof(double));
                       // Fills in original solution (coinModel length)
                       afterKnapsack(saveTightenedModel, whichColumn,
                                     knapsackStart, knapsackRow, numberKnapsack,
                                     lpSolver->primalColumnSolution(),
-                                    info.primalSolution, 1);
+                                    info->primalSolution, 1);
                     }
                   } else {
-                    info.primalSolution = NULL;
-                    info.dualSolution = NULL;
+                    info->primalSolution = NULL;
+                    info->dualSolution = NULL;
                   }
                   // put buffer into info
-                  strcpy(info.buffer, buf);
+                  strcpy(info->buffer, buf);
                 }
               } else {
-                sprintf(generalPrint, "Model strengthened - now has %d rows",
-                        clpSolver->getNumRows());
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "Model strengthened - now has "
+                       << clpSolver->getNumRows() << " rows";
+                printGeneralMessage(model_, buffer.str());
               }
               time1 = time2;
               if (statusUserFunction_[0]) {
@@ -9523,9 +9100,10 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               }
               // delete babModel_;
               // babModel_=NULL;
-            } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+            }  else {
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case CbcParam::IMPORT: {
@@ -9558,15 +9136,14 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             // delete babModel_;
             // babModel_=NULL;
             // get next field
-            field = CoinGetString(inputVector, whichField,
-                                  interactiveMode, prompt);
+            status = CoinParamUtils::getValue(inputQueue, field);
             if (field == "$") {
-              field = cbcParam.strVal();
+              field = cbcParam->strVal();
             } else if (field == "EOL") {
-              std::cout << cbcParam.printString() << std::endl;
+              std::cout << cbcParam->printString() << std::endl;
               break;
             } else {
-              cbcParam.setStrVal(field);
+              cbcParam->setVal(field);
             }
             std::string fileName;
             bool canOpen = false;
@@ -9666,15 +9243,15 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     fclose(fp);
                   } else {
                     canOpen = false;
-                    sprintf(generalPrint, "Unable to open file %s",
-                            gmplData.c_str());
-                    printGeneralMessage(model_, generalPrint);
+                    buffer.str("");
+                    buffer << "Unable to open file " << gmplData.c_str();
+                    printGeneralMessage(model_, buffer.str());
                   }
                 }
               } else {
-                sprintf(generalPrint, "Unable to open file %s",
-                        fileName.c_str());
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "Unable to open file " << fileName.c_str();
+                printGeneralMessage(model_, buffer.str());
               }
             }
             if (canOpen) {
@@ -9714,7 +9291,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   lengthName = 0;
                 }
                 // really just for testing
-                double objScale = clpParameters[ClpParam::OBJSCALE2].dblVal();
+                double objScale = clpParameters[ClpParam::OBJSCALE2]->dblVal();
                 if (objScale != 1.0) {
                   int iColumn;
                   int numberColumns = lpSolver->numberColumns();
@@ -9830,7 +9407,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 totalTime += time2 - time1;
                 time1 = time2;
                 // Go to canned file if just input file
-                if (whichField == 2 && inputVector.size() == 2) {
+                if (inputQueue.empty()) {
                   // only if ends .mps
                   char *find =
                       const_cast<char *>(strstr(fileName.c_str(), ".mps"));
@@ -9840,32 +9417,37 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                     find[3] = 'r';
                     std::ifstream ifs(fileName.c_str());
                     if (ifs.is_open()) {
-                       CoinReadFromStream(inputVector, ifs);
-                       whichField = 0;
+                       while (!inputQueue.empty()){
+                          inputQueue.pop_back();
+                       }
+                       CoinParamUtils::readFromStream(inputQueue, ifs);
                     }else{
-                       std::cout << "Unable to open file" << fileName << std::endl;
+                       buffer.str("");
+                       buffer << "No parameter file " << fileName << " found"
+                              << std::endl;
+                       printGeneralMessage(model_, buffer.str());
                     }
                   }
                 }
               } else {
                 // errors
-                sprintf(generalPrint, "There were %d errors on input", status);
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "There were " << status << " errors on input";
+                printGeneralMessage(model_, buffer.str());
               }
             }
           } break;
           case CbcParam::EXPORT:
             if (goodModel) {
               // get next field
-              field = CoinGetString(inputVector, whichField,
-                                    interactiveMode, prompt);
+              status = CoinParamUtils::getValue(inputQueue, field);
               if (field == "$") {
-                field = cbcParam.strVal();
+                field = cbcParam->strVal();
               } else if (field == "EOL") {
-                std::cout << cbcParam.printString() << std::endl;
+                std::cout << cbcParam->printString() << std::endl;
                 break;
               } else {
-                cbcParam.setStrVal(field);
+                cbcParam->setVal(field);
               }
               std::string fileName;
               bool canOpen = false;
@@ -9889,9 +9471,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 fclose(fp);
                 canOpen = true;
               } else {
-                sprintf(generalPrint, "Unable to open file %s",
-                        fileName.c_str());
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "Unable to open file " << fileName.c_str();
+                printGeneralMessage(model_, buffer.str());
               }
               if (canOpen) {
                 // If presolve on then save presolved
@@ -9900,21 +9482,20 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 if (dualize && dualize < 3) {
                   model2 =
                       static_cast<ClpSimplexOther *>(model2)->dualOfModel();
-                  sprintf(generalPrint,
-                          "Dual of model has %d rows and %d columns",
-                          model2->numberRows(), model2->numberColumns());
-                  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                      << generalPrint << CoinMessageEol;
+                  buffer.str("");
+                  buffer << "Dual of model has " << model2->numberRows() << " rows and "
+                         <<  model2->numberColumns() << " columns";
+                  printGeneralMessage(model_, buffer.str());
                   model2->setOptimizationDirection(1.0);
                 }
 #ifndef CBC_OTHER_SOLVER
-                if (info.numberSos && doSOS && statusUserFunction_[0]) {
+                if (info && info->numberSos && doSOS && statusUserFunction_[0]) {
                   // SOS
-                  numberSOS = info.numberSos;
-                  sosStart = info.sosStart;
-                  sosIndices = info.sosIndices;
-                  sosReference = info.sosReference;
-                  clpSolver->setSOSData(numberSOS, info.sosType, sosStart,
+                  numberSOS = info->numberSos;
+                  sosStart = info->sosStart;
+                  sosIndices = info->sosIndices;
+                  sosReference = info->sosReference;
+                  clpSolver->setSOSData(numberSOS, info->sosType, sosStart,
                                         sosIndices, sosReference);
                 }
                 numberSOS = clpSolver->numberSOS();
@@ -9929,7 +9510,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   if ((printOptions & 1) != 0)
                     pinfo.statistics();
                   double presolveTolerance =
-                      clpParameters[ClpParam::PRESOLVETOLERANCE].dblVal();
+                      clpParameters[ClpParam::PRESOLVETOLERANCE]->dblVal();
                   model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
                                                 true, preSolve);
                   if (model2) {
@@ -10057,22 +9638,22 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 time1 = time2;
               }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case CbcParam::PRIORITYIN:
             if (goodModel) {
               // get next field
-              field = CoinGetString(inputVector, whichField,
-                                    interactiveMode, prompt);
+              status = CoinParamUtils::getValue(inputQueue, field);
               if (field == "$") {
-                field = cbcParam.strVal();
+                field = cbcParam->strVal();
               } else if (field == "EOL") {
-                std::cout << cbcParam.printString() << std::endl;
+                std::cout << cbcParam->printString() << std::endl;
                 break;
               } else {
-                cbcParam.setStrVal(field);
+                cbcParam->setVal(field);
               }
               std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
@@ -10401,7 +9982,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                       if (priorities[iColumn] == -123456789)
                         priorities[iColumn] = lowestPriority + 1;
                     }
-                    if (!noPrinting_) {
+                    if (!parameters.noPrinting()) {
                       printf("%d fields and %d records", nAcross, nLine);
                       if (nBadPseudo)
                         printf(" %d bad pseudo costs", nBadPseudo);
@@ -10426,28 +10007,28 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 }
                 fclose(fp);
               } else {
-                sprintf(generalPrint, "Unable to open file %s",
-                        fileName.c_str());
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "Unable to open file " << fileName.c_str();
+                printGeneralMessage(model_, buffer.str());
               }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case CbcParam::MIPSTART:
             if (goodModel) {
               // get next field
-              field = CoinGetString(inputVector, whichField,
-                                    interactiveMode, prompt);
+              status = CoinParamUtils::getValue(inputQueue, field);
               mipStartFile = field;
               if (field == "$") {
-                field = cbcParam.strVal();
+                field = cbcParam->strVal();
               } else if (field == "EOL") {
-                std::cout << cbcParam.printString() << std::endl;
+                std::cout << cbcParam->printString() << std::endl;
                 break;
               } else {
-                cbcParam.setStrVal(field);
+                cbcParam->setVal(field);
               }
               std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
@@ -10464,10 +10045,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               } else {
                 fileName = directory + field;
               }
-              sprintf(generalPrint, "opening mipstart file %s.",
-                      fileName.c_str());
-              generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                  << generalPrint << CoinMessageEol;
+              buffer.str("");
+              buffer << "opening mipstart file " << fileName.c_str();
+              printGeneralMessage(model_, buffer.str());
               double msObj;
 
               CbcMipStartIO::read(model_.solver(), fileName.c_str(), mipStart,
@@ -10476,15 +10056,14 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               // copy to before preprocess if has .before.
               if (strstr(fileName.c_str(), ".before.")) {
                 mipStartBefore = mipStart;
-                sprintf(generalPrint,
-                        "file %s will be used before preprocessing.",
-                        fileName.c_str());
-                generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                    << generalPrint << CoinMessageEol;
+                buffer.str("");
+                buffer << "file " <<  fileName.c_str() << " will be used before preprocessing.";
+                printGeneralMessage(model_, buffer.str());
               }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case CbcParam::DEBUG:
@@ -10492,15 +10071,14 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               delete[] debugValues;
               debugValues = NULL;
               // get next field
-              field = CoinGetString(inputVector, whichField,
-                                    interactiveMode, prompt);
+              status = CoinParamUtils::getValue(inputQueue, field);
               if (field == "$") {
-                field = cbcParam.strVal();
+                field = cbcParam->strVal();
               } else if (field == "EOL") {
-                std::cout << cbcParam.printString() << std::endl;
+                std::cout << cbcParam->printString() << std::endl;
                 break;
               } else {
-                cbcParam.setStrVal(field);
+                cbcParam->setVal(field);
                 debugFile = field;
                 if (debugFile == "create" || debugFile == "createAfterPre") {
                   printf("Will create a debug file so this run should be a "
@@ -10565,39 +10143,38 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 }
                 fclose(fp);
               } else {
-                sprintf(generalPrint, "Unable to open file %s",
-                        fileName.c_str());
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "Unable to open file " << fileName.c_str();
+                printGeneralMessage(model_, buffer.str());
               }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case CbcParam::PRINTMASK:
             // get next field
             {
-              std::string name = CoinGetString(inputVector, whichField,
-                                               interactiveMode, prompt);
-              if (name != "EOL") {
-                cbcParam.setStrVal(name);
-                printMask = name;
+              status = CoinParamUtils::getValue(inputQueue, field);
+              if (field != "EOL") {
+                cbcParam->setVal(field);
+                printMask = field;
               } else {
-                std::cout << cbcParam.printString() << std::endl;
+                std::cout << cbcParam->printString() << std::endl;
               }
             }
             break;
           case CbcParam::RESTORE: {
             // get next field
-            field = CoinGetString(inputVector, whichField,
-                                  interactiveMode, prompt);
+            status = CoinParamUtils::getValue(inputQueue, field);
             if (field == "$") {
-              field = cbcParam.strVal();
+              field = cbcParam->strVal();
             } else if (field == "EOL") {
-              std::cout << cbcParam.printString() << std::endl;
+              std::cout << cbcParam->printString() << std::endl;
               break;
             } else {
-              cbcParam.setStrVal(field);
+              cbcParam->setVal(field);
             }
             std::string fileName;
             bool canOpen = false;
@@ -10621,8 +10198,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               fclose(fp);
               canOpen = true;
             } else {
-              sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "Unable to open file " << fileName.c_str();
+              printGeneralMessage(model_, buffer.str());
             }
             if (canOpen) {
               int status = lpSolver->restoreModel(fileName.c_str());
@@ -10633,8 +10211,9 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                 time1 = time2;
               } else {
                 // errors
-                sprintf(generalPrint, "There were errors on input");
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "There were errors on input";
+                printGeneralMessage(model_, buffer.str());
               }
             }
           } break;
@@ -10665,77 +10244,76 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             }
             break;
           case CbcParam::DIRECTORY: {
-            std::string name = CoinGetString(inputVector, whichField,
-                                             interactiveMode, prompt);
-            if (name != "EOL") {
-              size_t length = name.length();
-              if (length > 0 && name[length - 1] == dirsep) {
-                directory = name;
+            status = CoinParamUtils::getValue(inputQueue, field);
+            if (field != "EOL") {
+              size_t length = field.length();
+              if (length > 0 && field[length - 1] == dirsep) {
+                directory = field;
               } else {
-                directory = name + dirsep;
+                directory = field + dirsep;
               }
-              cbcParam.setStrVal(directory);
+              cbcParam->setVal(directory);
             } else {
-              std::cout << cbcParam.printString() << std::endl;
+              std::cout << cbcParam->printString() << std::endl;
             }
           } break;
           case CbcParam::DIRSAMPLE: {
-            std::string name = CoinGetString(inputVector, whichField,
-                                             interactiveMode, prompt);
-            if (name != "EOL") {
-              size_t length = name.length();
-              if (length > 0 && name[length - 1] == dirsep) {
-                dirSample = name;
+            status = CoinParamUtils::getValue(inputQueue, field);
+            if (field != "EOL") {
+              size_t length = field.length();
+              if (length > 0 && field[length - 1] == dirsep) {
+                dirSample = field;
               } else {
-                dirSample = name + dirsep;
+                dirSample = field + dirsep;
               }
-              cbcParam.setStrVal(dirSample);
+              cbcParam->setVal(dirSample);
             } else {
-              std::cout << cbcParam.printString() << std::endl;
+              std::cout << cbcParam->printString() << std::endl;
             }
           } break;
           case CbcParam::DIRNETLIB: {
-            std::string name = CoinGetString(inputVector, whichField,
-                                             interactiveMode, prompt);
-            if (name != "EOL") {
-              size_t length = name.length();
-              if (length > 0 && name[length - 1] == dirsep) {
-                dirNetlib = name;
+            status = CoinParamUtils::getValue(inputQueue, field);
+            if (field != "EOL") {
+              size_t length = field.length();
+              if (length > 0 && field[length - 1] == dirsep) {
+                dirNetlib = field;
               } else {
-                dirNetlib = name + dirsep;
+                dirNetlib = field + dirsep;
               }
-              cbcParam.setStrVal(dirNetlib);
+              cbcParam->setVal(dirNetlib);
             } else {
-              std::cout << cbcParam.printString() << std::endl;
+              std::cout << cbcParam->printString() << std::endl;
             }
           } break;
           case CbcParam::DIRMIPLIB: {
-            std::string name = CoinGetString(inputVector, whichField,
-                                             interactiveMode, prompt);
-            if (name != "EOL") {
-              size_t length = name.length();
-              if (length > 0 && name[length - 1] == dirsep) {
-                dirMiplib = name;
+            status = CoinParamUtils::getValue(inputQueue, field);
+            if (field != "EOL") {
+              size_t length = field.length();
+              if (length > 0 && field[length - 1] == dirsep) {
+                dirMiplib = field;
               } else {
-                dirMiplib = name + dirsep;
+                dirMiplib = field + dirsep;
               }
-              cbcParam.setStrVal(dirMiplib);
+              cbcParam->setVal(dirMiplib);
             } else {
-              std::cout << cbcParam.printString() << std::endl;
+              std::cout << cbcParam->printString() << std::endl;
             }
           } break;
           case CbcParam::STDIN:
-            whichField = -1;
+            interactiveMode = true;
+            while (!inputQueue.empty())
+               inputQueue.pop_back();
             break;
           case CbcParam::UNITTEST: {
             int returnCode;
-            if (!strcmp(argv[1], "-dirMiplib") ||
-                !strcmp(argv[1], "-dirmiplib"))
-              returnCode = CbcClpUnitTest(model_, dirMiplib, -3, NULL, argc,
-                                          argv, callBack, parameters);
-            else
-              returnCode = CbcClpUnitTest(model_, dirSample, -2, NULL, argc,
-                                          argv, callBack, parameters);
+            // This is probably broken
+            if (inputQueue[0] != "-dirMiplib" || inputQueue[0] != "-dirmiplib"){
+              returnCode = CbcClpUnitTest(model_, dirMiplib, -3, NULL, inputQueue,
+                                          callBack, parameters);
+            } else {
+              returnCode = CbcClpUnitTest(model_, dirSample, -2, NULL, inputQueue,
+                                          callBack, parameters);
+            }
             babModel_ = NULL;
             return returnCode;
           }
@@ -10759,7 +10337,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
               clpSolver =
                   dynamic_cast<OsiClpSolverInterface *>(model_.solver());
               lpSolver = clpSolver->getModelPtr();
-              if (statusUserFunction_[0]) {
+              if (info && statusUserFunction_[0]) {
                 int n = clpSolver->getNumCols();
                 double value = objectiveValue * lpSolver->getObjSense();
                 char buf[300];
@@ -10795,30 +10373,30 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
                   pos += sprintf(buf + pos, "status unknown,");
                   iStat = 6;
                 }
-                info.problemStatus = iStat;
-                info.objValue = value;
+                info->problemStatus = iStat;
+                info->objValue = value;
                 if (objectiveValue < 1.0e40)
                   pos += sprintf(buf + pos, " objective %.*g", ampl_obj_prec(),
                                  value);
                 sprintf(buf + pos, "\n%d nodes, %d iterations",
                         model_.getNodeCount(), model_.getIterationCount());
                 if (objectiveValue < 1.0e50) {
-                  free(info.primalSolution);
-                  info.primalSolution = (double *)malloc(n * sizeof(double));
+                  free(info->primalSolution);
+                  info->primalSolution = (double *)malloc(n * sizeof(double));
                   CoinCopyN(lpSolver->primalColumnSolution(), n,
-                            info.primalSolution);
+                            info->primalSolution);
                   int numberRows = lpSolver->numberRows();
-                  free(info.dualSolution);
-                  info.dualSolution =
+                  free(info->dualSolution);
+                  info->dualSolution =
                       (double *)malloc(numberRows * sizeof(double));
                   CoinCopyN(lpSolver->dualRowSolution(), numberRows,
-                            info.dualSolution);
+                            info->dualSolution);
                 } else {
-                  info.primalSolution = NULL;
-                  info.dualSolution = NULL;
+                  info->primalSolution = NULL;
+                  info->dualSolution = NULL;
                 }
                 // put buffer into info
-                strcpy(info.buffer, buf);
+                strcpy(info->buffer, buf);
               }
             }
 #endif
@@ -10829,7 +10407,7 @@ int CbcMain1(int argc, const char *argv[], CbcModel &model,
             std::cout << "Non default values:-" << std::endl;
             std::cout << "Perturbation " << lpSolver->perturbation()
                       << " (default 100)" << std::endl;
-            CoinPrintString("Presolve being done with 5 passes\n\
+            CoinParamUtils::printString("Presolve being done with 5 passes\n\
 Dual steepest edge steep/partial on matrix shape and factorization density\n\
 Clpnnnn taken out of messages\n\
 If Factorization frequency default then done on size of matrix\n\n\
@@ -10840,15 +10418,14 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             break;
           case CbcParam::CSVSTATISTICS: {
             // get next field
-            field = CoinGetString(inputVector, whichField,
-                                  interactiveMode, prompt);
+            status = CoinParamUtils::getValue(inputQueue, field);
             if (field == "$") {
-              field = cbcParam.strVal();
+              field = cbcParam->strVal();
             } else if (field == "EOL") {
-              std::cout << cbcParam.printString() << std::endl;
+              std::cout << cbcParam->printString() << std::endl;
               break;
             } else {
-              cbcParam.setStrVal(field);
+              cbcParam->setVal(field);
             }
             std::string fileName;
             if (field[0] == '/' || field[0] == '\\') {
@@ -10866,12 +10443,13 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               fileName = directory + field;
             }
             int state = 0;
-            char buffer[1000];
+            // FIXME: This needs to fixed up to use modern C++ and to use the inputQueue properly
+            char cbuffer[1000];
             FILE *fp = fopen(fileName.c_str(), "r");
             if (fp) {
               // file already there
               state = 1;
-              char *getBuffer = fgets(buffer, 1000, fp);
+              char *getBuffer = fgets(cbuffer, 1000, fp);
               if (getBuffer) {
                 // assume header there
                 state = 2;
@@ -10891,11 +10469,11 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 fprintf(fp, ",runtime_options");
                 fprintf(fp, "\n");
               }
-              strcpy(buffer, argv[1]);
-              char *slash = buffer;
-              for (int i = 0; i < static_cast<int>(strlen(buffer)); i++) {
-                if (buffer[i] == '/' || buffer[i] == '\\')
-                  slash = buffer + i + 1;
+              strcpy(cbuffer, inputQueue[0].c_str());
+              char *slash = cbuffer;
+              for (int i = 0; i < static_cast<int>(strlen(cbuffer)); i++) {
+                if (cbuffer[i] == '/' || cbuffer[i] == '\\')
+                  slash = cbuffer + i + 1;
               }
               fprintf(fp,
                       "%s,%s,%.2f,%.2f,%.2f,%.16g,%g,%g,%.2f,%d,%d,%d,%d,%d,%d",
@@ -10911,18 +10489,22 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                             ? statistics_number_cuts[i]
                             : 0);
               fprintf(fp, ",");
-              for (int i = 1; i < argc; i++) {
-                if (strstr(argv[i], ".gz") || strstr(argv[i], ".mps"))
+              for (int i = 0; i < inputQueue.size(); i++) {
+                if (strstr(inputQueue[i].c_str(), ".gz") ||
+                    strstr(inputQueue[i].c_str(), ".mps")){
                   continue;
-                if (!argv[i] || !strncmp(argv[i], "-csv", 4))
+                }
+                if (!inputQueue[i].c_str() || !strncmp(inputQueue[i].c_str(), "-csv", 4)){
                   break;
-                fprintf(fp, "%s ", argv[i]);
+                }
+                fprintf(fp, "%s ", inputQueue[i].c_str());
               }
               fprintf(fp, "\n");
               fclose(fp);
             } else {
-              sprintf(generalPrint, "Unable to open file %s", fileName.c_str());
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "Unable to open file " << fileName.c_str();
+              printGeneralMessage(model_, buffer.str());
             }
             }
             break;
@@ -10932,20 +10514,19 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             if (goodModel) {
               ClpSimplex *saveLpSolver = NULL;
               // get next field
-              field = CoinGetString(inputVector, whichField,
-                                    interactiveMode, prompt);
+              status = CoinParamUtils::getValue(inputQueue, field);
               bool append = false;
               if (field == "append$") {
                 field = "$";
                 append = true;
               }
               if (field == "$") {
-                field = cbcParam.strVal();
+                field = cbcParam->strVal();
               } else if (field == "EOL") {
-                std::cout << cbcParam.printString() << std::endl;
+                std::cout << cbcParam->printString() << std::endl;
                 break;
               } else {
-                cbcParam.setStrVal(field);
+                cbcParam->setVal(field);
               }
               std::string fileName;
               FILE *fp = NULL;
@@ -11099,19 +10680,15 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     const double *nextBestSolution =
                         model_.savedSolution(currentBestSolution++);
                     if (!nextBestSolution) {
-                      sprintf(generalPrint,
-                              "All alternative solutions printed");
-                      generalMessageHandler->message(CLP_GENERAL,
-                                                     generalMessages)
-                          << generalPrint << CoinMessageEol;
+                      buffer.str("");
+                      buffer << "All alternative solutions printed";
+                      printGeneralMessage(model_, buffer.str());
                       break;
                     } else {
-                      sprintf(generalPrint,
-                              "Alternative solution - %d remaining",
-                              model_.numberSavedSolutions() - 2);
-                      generalMessageHandler->message(CLP_GENERAL,
-                                                     generalMessages)
-                          << generalPrint << CoinMessageEol;
+                      buffer.str("");
+                      buffer << "Alternative solution - "  
+                             << model_.numberSavedSolutions() - 2 << " remaining";
+                      printGeneralMessage(model_, buffer.str());
                     }
                     saveLpSolver = lpSolver;
                     assert(clpSolver->getModelPtr() == saveLpSolver);
@@ -11681,27 +11258,27 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   delete[] masks;
                 }
               } else {
-                sprintf(generalPrint, "Unable to open file %s",
-                        fileName.c_str());
-                printGeneralMessage(model_, generalPrint);
+                buffer.str("");
+                buffer << "Unable to open file " << fileName.c_str();
+                printGeneralMessage(model_, buffer.str());
               }
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
             }
             break;
           case CbcParam::SAVESOL:
             if (goodModel) {
               // get next field
-              field = CoinGetString(inputVector, whichField,
-                                    interactiveMode, prompt);
+              status = CoinParamUtils::getValue(inputQueue, field);
               if (field == "$") {
-                field = cbcParam.strVal();
+                field = cbcParam->strVal();
               } else if (field == "EOL") {
-                std::cout << cbcParam.printString() << std::endl;
+                std::cout << cbcParam->printString() << std::endl;
                 break;
               } else {
-                cbcParam.setStrVal(field);
+                cbcParam->setVal(field);
               }
               std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
@@ -11720,8 +11297,9 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               }
               ClpParamUtils::saveSolution(lpSolver, fileName);
             } else {
-              sprintf(generalPrint, "** Current model not valid");
-              printGeneralMessage(model_, generalPrint);
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str()); 
             }
             break;
           case CbcParam::ENVIRONMENT: {
@@ -11729,9 +11307,11 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             // Don't think it will work with Visual Studio
             char *input = getenv("CBC_ENVIRONMENT");
             if (input){
+               while (!inputQueue.empty()){
+                  inputQueue.pop_back();
+               }
                std::istringstream inputStream(input);
-               CoinReadFromStream(inputVector, inputStream);
-               whichField = 0;
+               CoinParamUtils::readFromStream(inputQueue, inputStream);
             }
 #else
             std::cout << "** Parameter not valid on Windows with Visual Studio"
@@ -11746,17 +11326,18 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             break;
           }
         }
+#if 0
       }
+#endif
     }
     delete coinModel;
   }
 #if CBC_QUIET == 0
-  sprintf(generalPrint,
-          "Total time (CPU seconds):       %.2f   (Wallclock seconds):       "
-          "%.2f\n",
-          CoinCpuTime() - time0, CoinGetTimeOfDay() - time0Elapsed);
-  generalMessageHandler->message(CLP_GENERAL, generalMessages)
-      << generalPrint << CoinMessageEol;
+  buffer.str("");
+  buffer << "Total time (CPU seconds):       " << CoinCpuTime() - time0
+         << "   (Wallclock seconds):       "
+         << CoinGetTimeOfDay() - time0Elapsed << std::endl;
+  printGeneralMessage(model_, buffer.str());
 #endif
 #ifdef COINUTILS_HAS_GLPK
   if (coin_glp_prob) {
@@ -11798,11 +11379,59 @@ clp watson.mps -\nscaling off\nprimalsimplex");
 
   babModel_ = NULL;
   model_.solver()->setWarmStart(NULL);
-  // sprintf(generalPrint, "Total time %.2f", CoinCpuTime() - time0);
+  buffer.str("");
+  buffer << "Total time " << CoinCpuTime() - time0;
   // generalMessageHandler->message(CLP_GENERAL, generalMessages)
   //<< generalPrint
   //<< CoinMessageEol;
   return 0;
+}
+
+//###########################################################################
+//###########################################################################
+
+int cbcReadAmpl(ampl_info *info, int argc, char **argv, CbcModel &model)
+{
+   OsiSolverInterface *solver = model.solver();
+   memset(&info, 0, sizeof(info));
+   if (argc > 2 && !strcmp(argv[2], "-AMPL")) {
+      // see if log in list
+      bool noPrinting = true;
+      for (int i = 1; i < argc; i++) {
+         if (!strncmp(argv[i], "log", 3)) {
+            const char *equals = strchr(argv[i], '=');
+            if (equals && atoi(equals + 1) > 0) {
+               noPrinting = false;
+               info->logLevel = atoi(equals + 1);
+               // mark so won't be overWritten
+               info->numberRows = -1234567;
+               break;
+            }
+         }
+      }
+      
+      void *voidModel;
+      int returnCode = readAmpl(info, argc, const_cast<char **>(argv),
+                                &voidModel, "cbc");
+      if (returnCode){
+         return returnCode;
+      }
+      // see if log in list (including environment)
+      for (int i = 1; i < info->numberArguments; i++) {
+         if (!strcmp(info->arguments[i], "log")) {
+            if (i < info->numberArguments - 1 && atoi(info->arguments[i + 1]) > 0)
+               noPrinting = false;
+            break;
+         }
+      }
+      if (noPrinting) {
+         model.messageHandler()->setLogLevel(0);
+      }
+      if (!noPrinting){
+         printf("%d rows, %d columns and %d elements\n", info->numberRows,
+                info->numberColumns, info->numberElements);
+      }
+   }
 }
 
 //###########################################################################

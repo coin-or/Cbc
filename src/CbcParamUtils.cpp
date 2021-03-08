@@ -49,13 +49,13 @@ int doUnimplementedParam(CoinParam &param)
   int maxAcross = 5;
   for (int code = CbcParam::FIRSTPARAM + 1;
        code < CbcParam::LASTPARAM; code++) {
-    if (parameters[code].pushFunc() == 0) {
+    if (parameters[code]->pushFunc() == 0) {
       if (unimpCnt % maxAcross == 0) {
         std::cout << std::endl;
       } else {
         std::cout << " ";
       }
-      std::cout << parameters[code].name();
+      std::cout << parameters[code]->name();
       unimpCnt++;
     }
   }

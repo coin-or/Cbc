@@ -16,12 +16,13 @@
 #ifndef CbcSolver_H
 #define CbcSolver_H
 
-#include "CbcConfig.h"
+#include "CoinUtilsConfig.h"
 
 #include <string>
 #include <vector>
 
 #include "CoinMessageHandler.hpp"
+#include "CoinModel.hpp"
 
 #include "OsiClpSolverInterface.hpp"
 #if CBC_OTHER_SOLVER == 1
@@ -34,6 +35,7 @@
 
 #include "CbcModel.hpp"
 #include "CbcParameters.hpp"
+#include "CbcMessage.hpp"
 
 class CbcUser;
 class CbcStopNow;
@@ -404,37 +406,27 @@ private:
 };
 #endif
 
+//###########################################################################
+// Empty callback to pass as default (why needed?)
+//###########################################################################
+
+static int dummyCallback(CbcModel * /*model*/, int /*whereFrom*/) { return 0; }
+
 //#############################################################################
 //#############################################################################
 
 // When we want to load up CbcModel with options first
 CBCLIB_EXPORT
-void CbcMain0(CbcModel &babSolver, CbcParameters &parameters);
+void CbcMain0(CbcModel &model, CbcParameters &parameters);
 CBCLIB_EXPORT
-int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcParameters &parameters);
-CBCLIB_EXPORT
-int CbcMain1(int argc, const char *argv[], CbcModel &babSolver,
-	     CbcParameters &parameters);
+int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
+             CbcParameters &parameters,
+             int callBack(CbcModel *currentSolver, int whereFrom) =
+             dummyCallback, ampl_info *info = NULL);
 
-CBCLIB_EXPORT
-int CbcMain(int argc, const char *argv[], CbcModel &babSolver);
-// four ways of calling
-CBCLIB_EXPORT
-int callCbc(const char *input2, OsiClpSolverInterface &solver1);
-CBCLIB_EXPORT
-int callCbc(const char *input2);
-CBCLIB_EXPORT
-int callCbc(const std::string input2, OsiClpSolverInterface &solver1);
-CBCLIB_EXPORT
-int callCbc(const std::string input2);
-// two ways of calling
-CBCLIB_EXPORT
-int callCbc(const char *input2, CbcModel &babSolver);
-CBCLIB_EXPORT
-int callCbc(const std::string input2, CbcModel &babSolver);
-// And when CbcMain0 already called to initialize (with call back) (see CbcMain1 for whereFrom)
-CBCLIB_EXPORT
-int callCbc1(const char *input2, CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
+void printGeneralMessage(CbcModel &model, std::string message, int type = CBC_GENERAL);
+void printGeneralWarning(CbcModel &model, std::string message, int type = CBC_GENERAL_WARNING);
+int cbcReadAmpl(ampl_info *info, int argc, char **argv, CbcModel &model);
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

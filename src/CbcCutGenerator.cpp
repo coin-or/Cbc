@@ -239,9 +239,13 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 	  count specification.
 	*/
   if (depthCutGenerator_ > 0) {
-    doThis = (depth % depthCutGenerator_) == 0;
-    if (depth < depthCutGenerator_)
-      doThis = true; // and also at top of tree
+    if (depthCutGenerator_<101) {
+      doThis = (depth % depthCutGenerator_) == 0;
+      if (depth < depthCutGenerator_)
+	doThis = true; // and also at top of tree
+    } else {
+      doThis = (depth < (depthCutGenerator_%100));
+    }
   }
   /*
 	  A few magic numbers ...

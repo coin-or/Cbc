@@ -1762,6 +1762,10 @@ void CbcNauty::computeAuto()
   // Need to make sure all generators are written
   if (afp_)
     fflush(afp_);
+  // make sure memory freed (was not on some failures)
+  nautil_freedyn();
+  nauty_freedyn();
+  nausparse_freedyn();
 }
 
 void CbcNauty::deleteElement(int ix, int jx)

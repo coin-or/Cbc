@@ -264,6 +264,7 @@
     <ClCompile Include="..\..\..\src\CbcStatistics.cpp" />
     <ClCompile Include="..\..\..\src\CbcStrategy.cpp" />
     <ClCompile Include="..\..\..\src\CbcSubProblem.cpp" />
+    <ClCompile Include="..\..\..\src\CbcSymmetry.cpp" />
     <ClCompile Include="..\..\..\src\CbcThread.cpp" />
     <ClCompile Include="..\..\..\src\CbcTree.cpp" />
     <ClCompile Include="..\..\..\src\CbcTreeLocal.cpp" />

@@ -1274,7 +1274,7 @@ Cbc_writeMps(Cbc_Model *model, const char *filename)
   model->solver_->writeMps(filename, "mps", Cbc_getObjSense(model));
 }
 
-int Cbc_readBasis(Cbc_Model *model, const char *filename) {
+int CBC_LINKAGE Cbc_readBasis(Cbc_Model *model, const char *filename) {
   OsiClpSolverInterface *solver = model->solver_;
   ClpSimplex *clps = solver->getModelPtr();
   int status = clps->readBasis(filename);
@@ -1286,7 +1286,7 @@ int Cbc_readBasis(Cbc_Model *model, const char *filename) {
   return status;
 }
 
-int Cbc_writeBasis(Cbc_Model *model, const char *filename, char writeValues, int formatType) {
+int CBC_LINKAGE Cbc_writeBasis(Cbc_Model *model, const char *filename, char writeValues, int formatType) {
   OsiClpSolverInterface *solver = model->solver_;
   ClpSimplex *clps = solver->getModelPtr();
   return clps->writeBasis(filename, writeValues, formatType);
@@ -1448,7 +1448,7 @@ int CBC_LINKAGE Cbc_status(Cbc_Model *model) {
 }
 
 
-int Cbc_secondaryStatus(Cbc_Model *model) {
+int CBC_LINKAGE Cbc_secondaryStatus(Cbc_Model *model) {
   switch (model->lastOptimization) {
     case ModelNotOptimized:
       fprintf( stderr, "Status not available, model was not optimized yet.\n");
@@ -1465,7 +1465,7 @@ int Cbc_secondaryStatus(Cbc_Model *model) {
   return INT_MAX;
 }
 
-void Cbc_computeFeatures(Cbc_Model *model, double *features) {
+void CBC_LINKAGE Cbc_computeFeatures(Cbc_Model *model, double *features) {
   OsiFeatures::compute(features, model->solver_);
 }
 
@@ -1474,7 +1474,7 @@ Cbc_nFeatures() {
   return OsiFeatures::n;
 }
 
-const char *Cbc_featureName(int i) {
+const char * CBC_LINKAGE Cbc_featureName(int i) {
   return OsiFeatures::name(i);
 }
 
@@ -1493,7 +1493,7 @@ Cbc_getNumElements(Cbc_Model *model)
     tmpNZCols + tmpNZRows;
 }
 
-const void *Cbc_conflictGraph( Cbc_Model *model ) {
+const void * CBC_LINKAGE Cbc_conflictGraph( Cbc_Model *model ) {
   return model->solver_->getCGraph();
 }
 
@@ -1501,7 +1501,7 @@ const void *Cbc_conflictGraph( Cbc_Model *model ) {
  *
  * @param model problem object
  **/
-void Cbc_updateConflictGraph( Cbc_Model *model ) {
+void CBC_LINKAGE Cbc_updateConflictGraph( Cbc_Model *model ) {
   Cbc_flush(model);
   model->solver_->checkCGraph();
 }
@@ -1973,7 +1973,7 @@ void Cbc_updateSlack( Cbc_Model *model, const double *ractivity ) {
 }
 
 
-void Cbc_strengthenPacking(Cbc_Model *model) {
+void CBC_LINKAGE Cbc_strengthenPacking(Cbc_Model *model) {
   Cbc_flush(model);
   OsiClpSolverInterface *solver = model->solver_;
   CglCliqueStrengthening clqStr(solver);
@@ -1982,7 +1982,7 @@ void Cbc_strengthenPacking(Cbc_Model *model) {
   clqStr.strengthenCliques();
 }
 
-void 
+void CBC_LINKAGE 
 Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[])
 {
   Cbc_flush(model);
@@ -2709,7 +2709,7 @@ Cbc_getColSolution(Cbc_Model *model)
   * @param row row index
   * @return row upper bound
   **/
-double 
+double CBC_LINKAGE
 Cbc_getRowUB(Cbc_Model *model, int row) {
   if (row<model->solver_->getNumRows()) {
     return model->solver_->getRowUpper()[row];
@@ -2734,7 +2734,7 @@ double CBC_LINKAGE Cbc_getRowLB(Cbc_Model *model, int row) {
   }
 }
 
-char Cbc_checkFeasibility(Cbc_Model *model, const double x[],
+char CBC_LINKAGE Cbc_checkFeasibility(Cbc_Model *model, const double x[],
     double *maxViolRow, int *rowIdx, 
     double *maxViolCol, int *colIdx) {
   *maxViolRow = *maxViolCol = -1.0;
@@ -3056,7 +3056,7 @@ Cbc_getColUpper(Cbc_Model *model)
   return model->solver_->getColUpper();
 }
 
-double Cbc_getColObj(Cbc_Model *model, int colIdx) {
+double CBC_LINKAGE Cbc_getColObj(Cbc_Model *model, int colIdx) {
   VALIDATE_COL_INDEX(colIdx, model);
 
   if (colIdx < model->solver_->getNumCols()) {
@@ -3067,7 +3067,7 @@ double Cbc_getColObj(Cbc_Model *model, int colIdx) {
   }
 }
 
-double Cbc_getColLB(Cbc_Model *model, int colIdx) {
+double CBC_LINKAGE Cbc_getColLB(Cbc_Model *model, int colIdx) {
   VALIDATE_COL_INDEX(colIdx, model);
 
   if (colIdx < model->solver_->getNumCols()) {
@@ -3078,7 +3078,7 @@ double Cbc_getColLB(Cbc_Model *model, int colIdx) {
   }
 }
 
-double Cbc_getColUB(Cbc_Model *model, int colIdx) {
+double CBC_LINKAGE Cbc_getColUB(Cbc_Model *model, int colIdx) {
   VALIDATE_COL_INDEX(colIdx, model);
 
   if (colIdx < model->solver_->getNumCols()) {
@@ -3574,7 +3574,7 @@ Cbc_deleteCols(Cbc_Model *model, int numCols, const int cols[])
 
 }
 
-Cbc_Column Cbc_getColumn(Cbc_Model *model, int colIdx ) {
+Cbc_Column CBC_LINKAGE Cbc_getColumn(Cbc_Model *model, int colIdx ) {
   Cbc_Column result;
 
   result.nz = Cbc_getColNz(model, colIdx);
@@ -3588,7 +3588,7 @@ Cbc_Column Cbc_getColumn(Cbc_Model *model, int colIdx ) {
 }
 
 
-Cbc_Row Cbc_getRow( Cbc_Model *model, int rowIdx ) {
+Cbc_Row CBC_LINKAGE Cbc_getRow( Cbc_Model *model, int rowIdx ) {
   Cbc_Row result;
 
   result.nz = Cbc_getRowNz( model, rowIdx );
@@ -3835,21 +3835,21 @@ Osi_getNumCols( void *osi )
 }
 
 /** @brief Computes instance features (can be used in machine learning methods) */
-void Osi_compute_features(void *solver, double *features) {
+void CBC_LINKAGE Osi_compute_features(void *solver, double *features) {
   OsiFeatures::compute(features, (OsiSolverInterface *) solver);
 }
 
 /** @brief Number of instance features available */
-int Osi_n_features() {
+int CBC_LINKAGE Osi_n_features() {
   return OsiFeatures::n;
 }
 
 /** @brief Name of feature i */
-const char *Osi_feature_name(int i);
+const char * CBC_LINKAGE Osi_feature_name(int i);
 
 
 /** @brief Creates (it not yet) the conflict graph  */
-void 
+void CBC_LINKAGE 
 Osi_checkCGraph( void *osi ) {
   OsiSolverInterface *solver = (OsiSolverInterface *)(osi);
   solver->checkCGraph();
@@ -3862,24 +3862,24 @@ Osi_CGraph( void *osi ) {
   return solver->getCGraph();
 }
 
-size_t CG_nodes( void *cgraph ) {
+size_t CBC_LINKAGE CG_nodes( void *cgraph ) {
   const CoinStaticConflictGraph *cg = (CoinStaticConflictGraph *)cgraph;
   return cg->size();
 }
 
-char CG_conflicting( void *cgraph, int n1, int n2 ) {
+char CBC_LINKAGE CG_conflicting( void *cgraph, int n1, int n2 ) {
   const CoinStaticConflictGraph *cg = (CoinStaticConflictGraph *)cgraph;
   return (char) cg->conflicting(n1, n2);
 }
 
 /** @brief Density of the conflict graph */
-double CG_density( void *cgraph ) {
+double CBC_LINKAGE CG_density( void *cgraph ) {
   const CoinStaticConflictGraph *cg = (CoinStaticConflictGraph *)cgraph;
   return cg->density();
 }
 
 
-CGNeighbors CG_conflictingNodes(Cbc_Model *model, void *cgraph, size_t node) {
+CGNeighbors CBC_LINKAGE CG_conflictingNodes(Cbc_Model *model, void *cgraph, size_t node) {
   CGNeighbors result;
 
 #ifdef CBC_THREAD
@@ -4027,7 +4027,7 @@ Osi_getRowSense(void *osi, int row)
 }
 
 /** Generates cutting planes */
-void Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *oc, int depth, int pass ) {
+void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *oc, int depth, int pass ) {
   assert(cbcModel && oc);
 
   OsiClpSolverInterface *solver = cbcModel->solver_;
@@ -4774,7 +4774,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] =  COIN_DBL_MAX;
 }
 
-void Cbc_getBuildInfo(char *str) {
+void CBC_LINKAGE Cbc_getBuildInfo(char *str) {
   sprintf(str, "Cbc version: %s\n", CBC_VERSION);
   char s[128];
   sprintf(s, "Build date: %s\n", __DATE__);

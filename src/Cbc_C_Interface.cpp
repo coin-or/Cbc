@@ -1861,6 +1861,10 @@ Cbc_solveLinearProgram(Cbc_Model *model)
       clpOptions.setSpecialOption(4, 4);
       sprintf(methodName, "Barrier");
       break;
+    case LPM_BarrierNoCross:
+      clpOptions.setSolveType( ClpSolve::useBarrierNoCross );
+      sprintf(methodName, "Barrier No Crossover");
+      break;
   }
   solver->setSolveOptions(clpOptions);
 

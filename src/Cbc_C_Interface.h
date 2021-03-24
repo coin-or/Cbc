@@ -46,10 +46,11 @@ typedef struct Cbc_Model Cbc_Model;
  *  If a problem with integer variables, this affects only the root node.
  * */
 enum LPMethod {
-  LPM_Auto    = 0,  /*! Solver will decide automatically which method to use */
-  LPM_Dual    = 1,  /*! Dual simplex */
-  LPM_Primal  = 2,  /*! Primal simplex */
-  LPM_Barrier = 3   /*! The barrier algorithm. */
+  LPM_Auto           = 0,  /*! Solver will decide automatically which method to use */
+  LPM_Dual           = 1,  /*! Dual simplex */
+  LPM_Primal         = 2,  /*! Primal simplex */
+  LPM_Barrier        = 3,  /*! The barrier algorithm */
+  LPM_BarrierNoCross = 4   /*! Barrier algorithm, not to be followed by crossover */
 };
 
 /*! Selects the pivot selection strategy to be used

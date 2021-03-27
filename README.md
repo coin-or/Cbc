@@ -1,4 +1,4 @@
-# Cbc
+# Cbc 
 
 [![A COIN-OR Project](https://coin-or.github.io/coin-or-badge.png)](https://www.coin-or.org)
 

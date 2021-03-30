@@ -461,6 +461,15 @@ Cbc_readMIPStart(Cbc_Model *model, const char fileName[]);
 CBCSOLVERLIB_EXPORT Cbc_Model *CBC_LINKAGE
 Cbc_clone(Cbc_Model *model);
 
+/** @brief Clears the current solution
+  *
+  * Discards the current solution, putting the model to an unsolved state.
+  *
+  * @param model problem object 
+  **/
+CBCSOLVERLIB_EXPORT void CBC_LINKAGE
+Cbc_reset(Cbc_Model *model);
+
 /** \name Routines to query problem contents
 */
 

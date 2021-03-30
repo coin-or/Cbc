@@ -3197,7 +3197,7 @@ Cbc_clone(Cbc_Model *model)
   Cbc_Model *result = new Cbc_Model();
 
   result->solver_ = new OsiClpSolverInterface(*model->solver_);
-  model->solver_->setIntParam(OsiNameDiscipline, 1);
+  result->solver_->setIntParam(OsiNameDiscipline, 1);
 
   result->relax_ = model->relax_;
 
@@ -3326,6 +3326,61 @@ Cbc_clone(Cbc_Model *model)
   }
 
   return result;
+}
+
+/* returns a copy of solver, without copying the current solution */
+OsiClpSolverInterface* Cbc_cloneSolver(OsiClpSolverInterface *solver) {
+  OsiClpSolverInterface *newSolver = new OsiClpSolverInterface();
+  
+  newSolver->setIntParam(OsiNameDiscipline, 1);
+  newSolver->loadProblem(*solver->getMatrixByCol(), solver->getColLower(), solver->getColUpper(),
+                         solver->getObjCoefficients(), solver->getRowLower(), solver->getRowUpper());
+
+  for (int i = 0; i < solver->getNumCols(); i++) {
+      newSolver->setColName(i, solver->getColName(i));
+
+      if (solver->isInteger(i)) {
+          newSolver->setInteger(i);
+      } else {
+          newSolver->setContinuous(i);
+      }
+  }
+
+  for (int i = 0; i < solver->getNumRows(); i++) {
+      newSolver->setRowName(i, solver->getRowName(i));
+  }
+
+  std::string probName;
+  solver->getStrParam(OsiProbName, probName);
+  newSolver->setStrParam(OsiProbName, probName);
+  
+  return newSolver;
+}
+
+
+/** Discards the current solution, putting the model to an unsolved state */
+void CBC_LINKAGE
+Cbc_reset(Cbc_Model *model)
+{
+  Cbc_flush(model);
+
+  OsiClpSolverInterface *newSolver = Cbc_cloneSolver(model->solver_);
+  delete model->solver_;
+  model->solver_ = newSolver;
+
+  model->lastOptimization = ModelNotOptimized;
+  Cbc_cleanOptResults(model);
+  
+  if (model->mipSavedSolution) {
+    delete model->mipSavedSolution;
+    delete model->mipSavedSolutionObj;
+    delete model->mipBestSolution;
+    delete model->mipRowActivity;
+    model->mipSavedSolution = NULL;
+    model->mipSavedSolutionObj = NULL;
+    model->mipBestSolution = NULL;
+    model->mipRowActivity = NULL;
+  }
 }
 
 /** Set this the variable to be continuous */

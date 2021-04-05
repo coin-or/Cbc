@@ -124,7 +124,7 @@ bool CbcTestMpsFile(std::string &fname)
   Returns 0 if all goes well, -1 if the Miplib directory is missing, otherwise
      100*(number with bad objective)+(number that exceeded node limit)
 */
-int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
+int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 		   int testSwitch, const double *stuff, int argc,
 		   const char ** argv,
 		   int callBack(CbcModel *currentSolver, int whereFrom),
@@ -134,33 +134,123 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
   WindowsErrorPopupBlocker();
   unsigned int m;
 
+  // which levels to do
+  char doThisSet[40]={0};
+  // default
+  if (testSwitch < 0) {
+    doThisSet[0]=1;
+    doThisSet[1]=1;
+  }
+  // See if we want to use CbcMain0/1
+  bool oldStyle=true;
+  std::string dirMiplib = dirMiplibIn;
+  // see if level indicated
+  size_t found = dirMiplib.find("++level");
+  size_t length = dirMiplib.size();
+  int hiSet = 0;
+  if (found<length) {
+    // yes
+    doThisSet[0]=0; doThisSet[1]=0;
+    oldStyle = false;
+    std::string sub = dirMiplib.substr(found+7,length-(found+8));
+    dirMiplib = dirMiplib.substr(0,found+1);
+    dirMiplib[found] = dirMiplibIn[length-1];
+    found  = 0;
+    length = sub.size();
+    int level;
+    while (found<length) {
+      size_t foundm = sub.find("-",found);
+      size_t foundc = sub.find(",",found);
+      if (foundm < foundc) {
+	int lo;
+	std::istringstream(sub.substr(found,foundm)) >> lo;
+	if (lo>30 || lo <0) {
+	  std::cout << "Unable to convert to integer " << sub.substr(found)
+		    << std::endl;
+	  break;
+	}
+	found = foundm+1;
+	foundc = sub.find(",",found);
+	int hi;
+	std::istringstream(sub.substr(found,foundm)) >> hi;
+	if (hi>30 || hi <0) {
+	  std::cout << "Unable to convert to integer " << sub.substr(found)
+		    << std::endl;
+	  break;
+	}
+	if (lo > hi) {
+	  int i = lo;
+	  lo = hi;
+	  hi = i;
+	}
+	for (int i=lo;i<=hi;i++)
+	  doThisSet[i] = 1;
+      } else if (foundm > foundc) {
+	std::istringstream(sub.substr(found,foundc)) >> level;
+	if (level>30 || level <0) {
+	  std::cout << "Unable to convert to integer " << sub.substr(found)
+		    << std::endl;
+	  break;
+	} else {
+	  doThisSet[level]=1;
+	}
+      } else {
+	// end
+	std::istringstream(sub.substr(found)) >> level;
+	if (level>30 || level <0) {
+	  std::cout << "Unable to convert to integer " << sub.substr(found)
+		    << std::endl;
+	  break;
+	} else {
+	  doThisSet[level]=1;
+	}
+      }
+      if (foundc > length)
+	break;
+      found = foundc+1;
+    }
+    testSwitch = 100000;
+    std::cout << " testing sets ";
+    for (int i=0;i<30;i++) {
+      if (doThisSet[i]) {
+	std::cout << i << " ";
+	if (i > 20)
+	  testSwitch = 1000001; // user stuff
+	hiSet = i;
+      }
+    }
+    std::cout << std::endl;
+  }
   // Do an existence check.
   std::string test1 = dirMiplib + "p0033";
   bool doTest = CbcTestMpsFile(test1);
   if (!doTest) {
-    std::cout
-      << "Not doing miplib run as can't find mps files." << std::endl
-      << "Perhaps you're trying to read gzipped (.gz) files without libz?"
-      << std::endl;
-    return (0);
+    if (testSwitch >=1000000) {
+      // miplib2010 or user
+      test1 = dirMiplib + ((testSwitch==1000000) ? "mzzv11" : "usertest1");
+      doTest = CbcTestMpsFile(test1);
+      if (!doTest) {
+	std::cout
+	  << "Not doing miplib run as can't find mps files." << std::endl
+	  << "Perhaps you're trying to read gzipped (.gz) files without libz?"
+	  << std::endl;
+	return (0);
+      }
+    }
+  }
+  // See if we want to use CbcMain0/1
+  if (testSwitch==-3) {
+    oldStyle = false;
+    testSwitch=-1;
+  }
+  if (testSwitch >=1000000) {
+    oldStyle = false;
   }
   int dfltPrecision = static_cast< int >(std::cout.precision());
   /*
   Set the range of problems to be tested. testSwitch = -2 is special and is
   picked up below.
-*/
-  int loSet = 0;
-  int hiSet = 0;
-  if (testSwitch == -1 || testSwitch == -3) {
-    loSet = 0;
-    hiSet = 1;
-  } else if (testSwitch >= 0) {
-    loSet = static_cast< int >(stuff[6]);
-    hiSet = testSwitch;
-    std::cout
-      << "Solving miplib problems in sets " << loSet
-      << ":" << hiSet << "." << std::endl;
-  }
+  */
   /*
   Vectors to hold test problem names and characteristics.
 */
@@ -202,7 +292,6 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
   Load up the problem vector. Note that the row counts here include the
   objective function.
 */
-#if 1
     PUSH_MPS("10teams", 230, 2025, 924, 917, 1, false);
     PUSH_MPS("air03", 124, 10757, 340160, 338864.25, 0, false);
     PUSH_MPS("air04", 823, 8904, 56137, 55535.436, 2, false);
@@ -238,12 +327,12 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
     PUSH_MPS("misc06", 820, 1808, 12850.8607, 12841.6, 0, false);
     PUSH_MPS("misc07", 212, 260, 2810, 1415.0, 1, false);
     PUSH_MPS("mitre", 2054, 10724, 115155, 114740.5184, 1, false);
-    PUSH_MPS("mkc", 3411, 5325, -553.75, -611.85, 7, false); // suboptimal
+    PUSH_MPS("mkc", 3411, 5325, -563.84601, -611.85, 7, false); 
     PUSH_MPS("mod008", 6, 319, 307, 290.9, 0, false);
     PUSH_MPS("mod010", 146, 2655, 6548, 6532.08, 0, false);
     PUSH_MPS("mod011", 4480, 10958, -54558535, -62121982.55, 2, false);
     PUSH_MPS("modglob", 291, 422, 20740508, 20430947., 2, false);
-    PUSH_MPS("noswot", 182, 128, -43, -43.0, 6, false);
+    PUSH_MPS("noswot", 182, 128, -41, -43.0, 6, false);
     PUSH_MPS("nw04", 36, 87482, 16862, 16310.66667, 1, false);
     PUSH_MPS("p0033", 16, 33, 3089, 2520.57, 0, false);
     PUSH_MPS("p0201", 133, 201, 7615, 6875.0, 0, false);
@@ -267,7 +356,139 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
     PUSH_MPS("swath", 884, 6805, 497.603, 334.4968581, 7, false);
     PUSH_MPS("vpm1", 234, 378, 20, 15.4167, 0, false);
     PUSH_MPS("vpm2", 234, 378, 13.75, 9.8892645972, 0, false);
+    /*
+      The user can add some miplib2010 models to a unit test.
+      You do this by using something like 
+      -dirmiplib ../miplib2010++level10-12 .... -unittest
+      This will do ones with difficulty 10, 11 and 12
+      other example swould be ..++level11, ++level12,14 etc 
+      Difficulty 10-13 not too bad
+      14-17 harder
+      18 large may run out of memory when threaded
+      20 infeasible problems
+      21 - 28 user problems
+      If the user wants to check that usertest1 has value 12345.0 then
+      -DCBC_USER_UNIT_TEST1=12345.0 in build
+     */
+    PUSH_MPS("30n20b8", 576, 18380, 302, 1.56641,12,false);
+    PUSH_MPS("acc-tight5", 3052, 1339, 0, 0,10,false);
+    PUSH_MPS("aflow40b", 1442, 2728, 1168, 1005.66,12,false);
+    PUSH_MPS("air04", 823, 8904, 56137, 55535.3,10,false);
+    PUSH_MPS("app1-2", 53467, 26871, -41, -264.602,12,false);
+    PUSH_MPS("ash608gpia-3col", 24748, 3651,1.0e50, 2,20,false); // infeasible
+    PUSH_MPS("bab5", 4964, 21600, -106411.8401, -124658,12,false);
+    PUSH_MPS("beasleyC3", 1750, 2500, 754, 40.4268,12,false);
+    PUSH_MPS("biella1", 1203, 7328, 3.06500578e+6, 3.06004e+06,12,false);
+    PUSH_MPS("bienst2", 576, 505, 54.6, 11.7241,10,false);
+    PUSH_MPS("binkar10_1", 1026, 2298, 6742.2, 6637.19,10,false);
+    PUSH_MPS("bley_xl1", 175620, 5831, 190, 140,12,false);
+    PUSH_MPS("bnatt350", 4923, 3150, 0, 0,12,false);
+    PUSH_MPS("core2536-691", 2539, 15293, 689, 688.476,11,false);
+    PUSH_MPS("cov1075", 637, 120, 20, 17.1429,11,false);
+    PUSH_MPS("csched010", 351, 1758, 408, 332.423,12,false);
+    PUSH_MPS("danoint", 664, 521, 65.666666, 62.6373,12,false);
+    PUSH_MPS("dfn-gwin-UUM", 158, 938, 38752, 27467.3,11,false);
+    PUSH_MPS("eil33-2", 32, 4516, 934.007916, 811.279,12,false);
+    PUSH_MPS("eilB101", 100, 2818, 1216.92017, 1075.25,10,false);
+    PUSH_MPS("enlight13", 169, 338, 71, 0,12,false);
+    PUSH_MPS("enlight14", 196, 392, 1.0e50, 0,20,false); // infeasible
+    PUSH_MPS("ex9", 40962, 10404, 81, 81,10,false); // likes heavy probing
+    PUSH_MPS("glass4", 396, 322, 1.2000126e+09, 8.00002e+08,12,false);
+    PUSH_MPS("gmu-35-40", 424, 1205, -2.49673337e+06, -2.40694e+06,12,false);
+    PUSH_MPS("iis-100-0-cov", 3831, 100, 29, 16.6667,12,false);
+    PUSH_MPS("iis-bupa-cov", 4803, 345, 36, 26.4972,12,false);
+    PUSH_MPS("iis-pima-cov", 7201, 768, 33, 26.6204,12,false);
+    PUSH_MPS("lectsched-4-obj", 14163, 7901, 4, 0,10,false);
+    PUSH_MPS("m100n500k4r1", 100, 500, -25, -25,12,false);
+    PUSH_MPS("macrophage", 3164, 2260, 374, 0,11,false);
+    PUSH_MPS("map18", 328818, 164547, -847, -932.783,12,false);
+    PUSH_MPS("map20", 328818, 164547, -922, -998.836,12,false);
+    PUSH_MPS("mcsched", 2107, 1747, 211913, 193775,11,false);
+    PUSH_MPS("mik-250-1-100-1", 151, 251, -66729, -79842.4,10,false);
+    PUSH_MPS("mine-166-5", 8429, 830, -5.66396e+08, -8.21764e+08,10,false);
+    PUSH_MPS("mine-90-10", 6270, 900, -7.843023e+08, -8.87165e+08,12,false);
+    PUSH_MPS("msc98-ip", 15850, 21143, 1.9839497e+07, 1.9521e+07,12,false);
+    PUSH_MPS("mspp16", 561657, 29280, 363, 341,18,false);
+    PUSH_MPS("mzzv11", 9499, 10240, -21718, -22945.2,12,false);
+    PUSH_MPS("n3div36", 4484, 22120, 130800, 114333,11,false);
+    PUSH_MPS("n3seq24", 6044, 119856, 52200, 52000,12,false);
+    PUSH_MPS("n4-3", 1236, 3596, 8993, 4080.88,12,false);
+    PUSH_MPS("neos-1109824", 28979, 1520, 378, 278,11,false);
+    PUSH_MPS("neos-1337307", 5687, 2840, -202319, -203124,12,false);
+    PUSH_MPS("neos-1396125", 1494, 1161, 3000.04534, 388.552,11,false);
+    PUSH_MPS("neos13", 20852, 1827, -95.47481, -126.178,11,false);
+    PUSH_MPS("neos-1601936", 3131, 4446, 3, 1,12,false);
+    PUSH_MPS("neos18", 11402, 3312, 16, 7,11,false);
+    PUSH_MPS("neos-476283", 10015, 11915, 406.363, 406.245,12,false);
+    PUSH_MPS("neos-686190", 3664, 3660, 6730, 5134.81,10,false);
+    PUSH_MPS("neos-849702", 1041, 1737, 0, 0,11,false);
+    PUSH_MPS("neos-916792", 1909, 1474, 31.870398, 26.2036,12,false);
+    PUSH_MPS("neos-934278", 11495, 23123, 260, 259.5,12,false);
+    PUSH_MPS("net12", 14021, 14115, 214, 17.2495,11,false);
+    PUSH_MPS("netdiversion", 119589, 129180, 242, 230.8,12,false);
+    PUSH_MPS("newdano", 576, 505, 65.666667, 11.7241,12,false);
+    PUSH_MPS("noswot", 182, 128, -41, -43,12,false);
+    PUSH_MPS("ns1208400", 4289, 2883, 2, 0,12,false);
+    PUSH_MPS("ns1688347", 4191, 2685, 27, 2,12,false);
+    PUSH_MPS("ns1758913", 624166, 17956, -1454.67, -1501.18,12,false);
+    PUSH_MPS("ns1766074", 182, 100, 1.0e50, 5833.8,20,false); // infeasible
+    PUSH_MPS("ns1830653", 2932, 1629, 20622, 6153,12,false);
+    PUSH_MPS("opm2-z7-s2", 31798, 2023, -10280, -12879.7,11,false);
+    PUSH_MPS("pg5_34", 225, 2600, -14339.35, -16646.6,11,false);
+    PUSH_MPS("pigeon-10", 931, 490, -9000, -10000,11,false);
+    PUSH_MPS("pw-myciel4", 8164, 1059, 10, 0,11,false);
+    PUSH_MPS("qiu", 1192, 840, -132.873, -931.639,10,false);
+    PUSH_MPS("rail507", 509, 63019, 174, 172.146,11,false);
+    PUSH_MPS("ran16x16", 288, 512, 3823, 3116.43,11,false);
+    PUSH_MPS("reblock67", 2523, 670, -3.4630648e+07, -3.93399e+07,12,false);
+    PUSH_MPS("rmatr100-p10", 7260, 7359, 423, 360.593,10,false);
+    PUSH_MPS("rmatr100-p5", 8685, 8784, 976, 762.04,10,false);
+    PUSH_MPS("rmine6", 7078, 1096, -457.186, -462.306,11,false);
+    PUSH_MPS("rocII-4-11", 21738, 9234, -6.65276, -11.9372,12,false);
+    PUSH_MPS("rococoC10-001000", 1293, 3117, 11460, 7515.27,11,false);
+    PUSH_MPS("roll3000", 2295, 1166, 12890, 11097.1,10,false);
+    PUSH_MPS("satellites1-25", 5996, 9013, -5, -20,11,false);
+    PUSH_MPS("sp98ic", 825, 10894, 4.49145e+08, 4.44278e+08,12,false);
+    PUSH_MPS("sp98ir", 1531, 1680, 2.19677e+08, 2.16663e+08,10,false);
+    PUSH_MPS("tanglegram1", 68342, 34759, 5182, 0,12,false);
+    PUSH_MPS("tanglegram2", 8980, 4714, 443, 0,10,false);
+    PUSH_MPS("timtab1", 171, 397, 764772, 28694,12,false);
+    PUSH_MPS("triptim1", 15706, 30055, 22.8681, 22.8681,11,false);
+    PUSH_MPS("unitcal_7", 48939, 25755, 1.96356e+07, 1.93876e+07,12,false);
+    PUSH_MPS("vpphard", 47280, 51471, 5, -2.94558e-09,12,false);
+    PUSH_MPS("zib54-UUE", 1809, 5150, 1.0334e+07, 3.87586e+06,12,false);
+#ifndef CBC_USER_UNIT_TEST1
+#define CBC_USER_UNIT_TEST1 -1.0e50
 #endif
+    PUSH_MPS("usertest1", 0, 0, CBC_USER_UNIT_TEST1, 0, 21,false);
+#ifndef CBC_USER_UNIT_TEST2
+#define CBC_USER_UNIT_TEST2 -1.0e50
+#endif
+    PUSH_MPS("usertest2", 0, 0, CBC_USER_UNIT_TEST2, 0, 22,false);
+#ifndef CBC_USER_UNIT_TEST3
+#define CBC_USER_UNIT_TEST3 -1.0e50
+#endif
+    PUSH_MPS("usertest3", 0, 0, CBC_USER_UNIT_TEST3, 0, 23,false);
+#ifndef CBC_USER_UNIT_TEST4
+#define CBC_USER_UNIT_TEST4 -1.0e50
+#endif
+    PUSH_MPS("usertest4", 0, 0, CBC_USER_UNIT_TEST4, 0, 24,false);
+#ifndef CBC_USER_UNIT_TEST5
+#define CBC_USER_UNIT_TEST5 -1.0e50
+#endif
+    PUSH_MPS("usertest5", 0, 0, CBC_USER_UNIT_TEST5, 0, 25,false);
+#ifndef CBC_USER_UNIT_TEST6
+#define CBC_USER_UNIT_TEST6 -1.0e50
+#endif
+    PUSH_MPS("usertest6", 0, 0, CBC_USER_UNIT_TEST6, 0, 26,false);
+#ifndef CBC_USER_UNIT_TEST7
+#define CBC_USER_UNIT_TEST7 -1.0e50
+#endif
+    PUSH_MPS("usertest7", 0, 0, CBC_USER_UNIT_TEST7, 0, 27,false);
+#ifndef CBC_USER_UNIT_TEST8
+#define CBC_USER_UNIT_TEST8 -1.0e50
+#endif
+    PUSH_MPS("usertest8", 0, 0, CBC_USER_UNIT_TEST8, 0, 28,false);
   }
 #undef PUSH_MPS
 
@@ -277,9 +498,9 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
 
   #define RANDOM_ORDER
 */
-  int which[100];
+  int which[200];
   int nLoop = static_cast< int >(mpsName.size());
-  assert(nLoop <= 100);
+  assert(nLoop <= 200);
   for (int i = 0; i < nLoop; i++)
     which[i] = i;
 
@@ -296,7 +517,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
   int problemCnt = 0;
   for (m = 0; m < mpsName.size(); m++) {
     int setID = testSet[m];
-    if (loSet <= setID && setID <= hiSet)
+    if (doThisSet[setID])
       problemCnt++;
   }
 
@@ -309,13 +530,6 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
 #ifdef CLP_FACTORIZATION_INSTRUMENT
   double timeTakenFac = 0.0;
 #endif
-  // See if we want to use CbcMain0/1
-  bool oldStyle=true;
-  if (testSwitch==-3) {
-    oldStyle = false;
-    testSwitch=-1;
-  }
-    
   /*
   Open the main loop to step through the MPS problems.
   */
@@ -323,7 +537,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
     m = which[mw];
     int setID = testSet[m];
     // Skip if problem is not in specified problem set(s)
-    if (!(loSet <= setID && setID <= hiSet))
+    if (!doThisSet[setID])
       continue;
 
     numberAttempts++;
@@ -355,6 +569,13 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
       newArgv[1] = fn.c_str();
       for (int i = 3;i < argc-1; i++) {
 	if (!strstr(argv[i],"++")) {
+	  if (testSwitch >=1000000) {
+	    // take out dextra3
+	    if (strstr(argv[i],"dextra3")) {
+	      i++;
+	      continue;
+	    }
+	  }
 	  newArgv[newArgc++] = argv[i];
 	} else {
 	  int n = strstr(argv[i],"++")-argv[i];
@@ -382,8 +603,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
       CbcMain0(*model,parameterData);
       CbcMain1(newArgc, newArgv, *model, callBack, parameterData);
     }
-    if (model->getNumRows() != nRows[m] ||
-	model->getNumCols() != nCols[m])
+    if ((model->getNumRows() != nRows[m] ||
+	 model->getNumCols() != nCols[m]) && model->getNumRows())
       printf("WARNING - model has %d row, %d columns - expected %d, %d\n",
 	     model->getNumRows(),model->getNumCols(),
 	     nRows[m],nCols[m]);
@@ -710,12 +931,12 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
     /*
   Check for the correct answer.
 */
+    double objActual = model->getObjValue();
+    double objExpect = objValue[m];
+    double tolerance = CoinMin(fabs(objActual), fabs(objExpect));
+    tolerance = CoinMax(1.0e-4, 1.0e-5 * tolerance);
     if (!model->status()) {
 
-      double objActual = model->getObjValue();
-      double objExpect = objValue[m];
-      double tolerance = CoinMin(fabs(objActual), fabs(objExpect));
-      tolerance = CoinMax(1.0e-4, 1.0e-5 * tolerance);
       //CoinRelFltEq eq(1.0e-3) ;
 
       std::cout
@@ -724,7 +945,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
       if (fabs(objActual - objExpect) < tolerance) {
         std::cout << std::setprecision(dfltPrecision) << "; okay";
         numProbSolved++;
-      } else {
+      } else if (objExpect!=-1.0e50) {
         std::cout
           << " != " << objExpect << std::setprecision(dfltPrecision)
           << "; error = " << fabs(objExpect - objActual);
@@ -732,18 +953,25 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
         //#ifdef COIN_DEVELOP
         //abort();
         //#endif
+      } else {
+        std::cout
+          << " - user model ";
       }
     } else {
       std::cout
         << "cbc_clp (" << mpsName[m] << ") status not optimal; "
         << "assuming too many nodes";
+      if (fabs(objActual - objExpect) < tolerance) {
+	std::cout
+	  << " (on the bright side solution is correct) ";
+      }
     }
     timeTaken += timeOfSolution;
     std::cout
       << " -- (" << model->getNodeCount() << " n / "
       << model->getIterationCount() << " i / "
       << timeOfSolution << " s) (subtotal " << timeTaken << " seconds)"
-      << std::endl;
+      << std::endl << std::flush;
     delete model;
   }
   /*

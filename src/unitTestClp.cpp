@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 
 #include "CoinTime.hpp"

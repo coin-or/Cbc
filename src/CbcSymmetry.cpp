@@ -141,7 +141,9 @@ static void userautomproc(int numGenerators,
       }
     }
   }
-  //printf("%d permutations, %d in each\n",numberPerms,numberInPerm);
+#ifdef PRINT_CBCAUTO
+  printf("%d permutations, %d in each\n",numberPerms,numberInPerm);
+#endif
   delete [] workperm;
   if (numberPerms) {
     cbc_permute permute;
@@ -195,6 +197,8 @@ void CbcSymmetry::Compute_Symmetry() const
     memset(marked,0,numberColumns_*sizeof(int));
     int maxMarked = 0;
     for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+      if (!permutations_[iPerm].numberPerms)
+	continue; // summary permutation
       const int * orbit = permutations_[iPerm].orbits;
       int nIn = 0;
       for (int i=0;i<numberColumns_;i++) {
@@ -334,6 +338,15 @@ CbcSymmetry::fixSuccess(int nFixed)
 {
   nautyFixSucceeded_++;
   nautyFixes_+=nFixed;
+}
+// Adjust statistics from threads
+void
+CbcSymmetry::adjustStats(const CbcSymmetry * other)
+{
+  nautyFixes_ += other->nautyFixes_;
+  nautyFixSucceeded_ += other->nautyFixSucceeded_;
+  nautyBranchCalls_ += other->nautyBranchCalls_;
+  nautyBranchSucceeded_ += other->nautyBranchSucceeded_;
 }
 
 void CbcSymmetry::Print_Orbits(int type) const
@@ -546,6 +559,8 @@ CbcSymmetry::changeBounds(int iColumn, double * saveLower,
   int * save = whichOrbit_+4*numberColumns_;
   memset(marked,0,numberColumns_*sizeof(int));
   for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+    if (!permutations_[iPerm].numberPerms)
+      continue; // summary permutation
     const int * orbit = permutations_[iPerm].orbits;
     if (orbit[iColumn]<0)
       continue;
@@ -654,6 +669,8 @@ CbcSymmetry::changeBounds(double *saveLower,
     columnUpper[iColumn] = 0.0;//solver->getColUpper()[iColumn];
     memset(marked,0,numberColumns_*sizeof(int));
     for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+      if (!permutations_[iPerm].numberPerms)
+	continue; // summary permutation
       const int * orbit = permutations_[iPerm].orbits;
       if (orbit[iColumn]<0)
 	continue;
@@ -730,6 +747,97 @@ CbcSymmetry::changeBounds(double *saveLower,
   }
   return nFixed;
 }
+// return number of orbits if worth branching
+int
+CbcSymmetry::worthBranching(const double *columnLower, const double *columnUpper,
+		     int iColumn, int & nFixed) const
+{
+  cbc_permute *permute  = permutations_+numberPermutations_-1;
+  assert (!permute->numberPerms);
+  int * allMarked = permute->orbits;
+  if (!allMarked[iColumn] || columnLower[iColumn])
+    return 0;
+  nFixed = 0;
+  int * originalUpper = whichOrbit_ + numberColumns_;
+  int * marked = originalUpper + numberColumns_;
+  int * whichMarked = marked + numberColumns_;
+  int * save = whichOrbit_+4*numberColumns_;
+  memset(marked,0,numberColumns_*sizeof(int));
+  for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+    if (!permutations_[iPerm].numberPerms)
+      continue; // summary permutation
+    const int * orbit = permutations_[iPerm].orbits;
+    if (orbit[iColumn]<0)
+      continue;
+    int nMarked = 0;
+    int nTotalOdd = 0;
+    int goodOddOne = -1;
+    for (int i=0;i<numberColumns_;i++) {
+      if (orbit[i]>=0 && !marked[i]) {
+	// OK is all same or one fixed to 0 and rest same
+	int oddOne = -1;
+	int nOdd = 0;
+	int first = i;
+	marked[i] = 1;
+	whichMarked[nMarked++] = i;
+	int j = orbit[i];
+	int lower = static_cast<int>(columnLower[i]);
+	if (lower) nOdd=999; //temp
+	int upper = (i != iColumn) ? static_cast<int>(columnUpper[i]) : 0.0;
+	if (upper==0) {
+	  int upperj = (j != iColumn) ? static_cast<int>(columnUpper[j]) : 0.0;
+	  if (upperj) {
+	    oddOne = i;
+	    nOdd = 1;
+	    upper = upperj;
+	  }
+	}
+	while (j!=i) {
+	  marked[j] = 1;
+	  whichMarked[nMarked++] = j;
+	  int lowerj = static_cast<int>(columnLower[j]);
+	  if (lowerj) nOdd=999; //temp
+	  int upperj = (j != iColumn) ? static_cast<int>(columnUpper[j]) : 0.0;
+	  if (lower!=lowerj || upper != upperj) {
+	    if (nOdd) {
+	      // bad
+	      nOdd = numberColumns_;
+	    } else {
+	      oddOne = j;
+	      nOdd = 1;
+	    }
+	  }
+	  j = orbit[j];
+	}
+	if (!nOdd) {
+	} else if (nOdd==1) {
+	  if (!nTotalOdd)
+	    goodOddOne = oddOne;
+	  nTotalOdd ++;
+	} else {
+	  nTotalOdd = -2*numberColumns_;
+	}
+      }
+    }
+    //printf("permutation %d had %d odd\n",iPerm,nTotalOdd);
+    for (int i=0;i<nMarked;i++) 
+      marked[whichMarked[i]]=0;
+    if (nTotalOdd==1) {
+      int j = orbit[goodOddOne];
+      if (columnUpper[goodOddOne]&&!columnLower[goodOddOne]) {
+	nFixed++;
+      }
+      while (j!=goodOddOne) {
+	if (columnUpper[j]&&!columnLower[j]) {
+	  nFixed++;
+	}
+	j = orbit[j];
+      }
+    }
+  }
+  return allMarked[iColumn];
+  //return nFixed;
+}
 
 int
 CbcSymmetry::orbitalFixing2(OsiSolverInterface * solver) 
@@ -752,6 +860,8 @@ CbcSymmetry::orbitalFixing2(OsiSolverInterface * solver)
   memset(marked,0,numberColumns_*sizeof(int));
   int possibleNauty = 0;
   for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+    if (!permutations_[iPerm].numberPerms)
+      continue; // summary permutation
     const int * orbit = permutations_[iPerm].orbits;
     int nMarked = 0;
     int nTotalOdd = 0;
@@ -1932,16 +2042,16 @@ CbcOrbitalBranchingObject::CbcOrbitalBranchingObject(CbcModel *model, int column
   int iOrbit = orbit[column];
   assert(iOrbit >= 0);
   int numberColumns = model->getNumCols();
-  int numberOther = -1;
+  numberOther_=-1;
   for (int i = 0; i < numberColumns; i++) {
     if (orbit[i] == iOrbit)
-      numberOther++;
+      numberOther_++;
   }
   assert(numberOther_ > 0);
   symmetryInfo->incrementBranchSucceeded();
-  symmetryInfo->incrementNautyBranches(numberOther);
+  symmetryInfo->incrementNautyBranches(numberOther_);
   numberExtra_ = numberExtra;
-  fixToZero_ = new int[numberOther + numberExtra_];
+  fixToZero_ = new int[numberOther_ + numberExtra_];
   int n = 0;
   for (int i = 0; i < numberColumns; i++) {
     if (orbit[i] == iOrbit && i != column)

@@ -48,7 +48,7 @@ extern "C" {
 class OsiObject;
 // when to give up (depth since last success)
 #ifndef NTY_BAD_DEPTH
-#define NTY_BAD_DEPTH 10
+#define NTY_BAD_DEPTH 4
 #endif
 class CbcNauty;
 typedef struct {
@@ -174,7 +174,12 @@ public:
 		    OsiSolverInterface * solver,int mode) const;
   int changeBounds(double *saveLower, double *saveUpper,
 		   OsiSolverInterface * solver) const;
+  /// return number of orbits if worth branching
+  int worthBranching(const double *saveLower, const double *saveUpper,
+		     int iColumn, int & numberCouldFix) const;
   void fixSuccess(int nFixed);
+  /// Adjust statistics from threads
+  void adjustStats(const CbcSymmetry * other);
   inline int numberColumns() const
   { return numberColumns_;}
   inline bool compare(Node &a, Node &b) const;
@@ -427,8 +432,5 @@ private:
   /// Fix to zero
   int *fixToZero_;
 };
-
+//#define PRINT_CBCAUTO
 #endif
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/

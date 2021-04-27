@@ -1797,7 +1797,13 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   int xMark = 0;
   // Get arrays to sort
   double *sort = new double[numberObjects];
+#ifndef CBC_HAS_NAUTY
   int *whichObject = new int[numberObjects];
+#else
+  int *whichObject = new int[2*numberObjects];
+  int *symmetryType = whichObject+numberObjects;
+  //memset(symmetryType,0,numberObjects*sizeof(int));
+#endif
 #ifdef CBC_RANGING
   int xPen = 0;
   int *objectMark = new int[2 * numberObjects + 1];
@@ -2045,6 +2051,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     int neededPenalties;
     int optionalPenalties;
 #endif
+#ifdef CBC_HAS_NAUTY
+    int numberOfInterest; 
+#endif
     // We may go round this loop three times (only if we think we have solution)
     for (int iPass = 0; iPass < 3; iPass++) {
 
@@ -2085,6 +2094,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 
             */
       numberToDo = 0;
+#ifdef CBC_HAS_NAUTY
+      numberOfInterest = 0; 
+#endif
 #ifdef CBC_RANGING
       neededPenalties = 0;
       optionalPenalties = numberObjects;
@@ -2212,6 +2224,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           // Better priority? Flush choices.
           if (priorityLevel < bestPriority) {
             numberToDo = 0;
+#ifdef CBC_HAS_NAUTY
+	    numberOfInterest = 0;
+#endif
             bestPriority = priorityLevel;
             iBestGot = -1;
             best = 0.0;
@@ -2267,6 +2282,25 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               i, iColumn, numberThisDown, object->downEstimate(), numberThisUp, object->upEstimate(),
               infeasibility, sort[numberToDo], saveSolution[iColumn]);
           }
+#ifdef CBC_HAS_NAUTY
+	  symmetryType[numberToDo]=0;
+	  if (infeasibility && model->rootSymmetryInfo() && iColumn<numberColumns) {
+	    int numberCouldFix;
+	    CbcSymmetry * info = model->rootSymmetryInfo();
+	    int nOrbits =
+	      info->worthBranching(saveLower,saveUpper,
+				   iColumn,numberCouldFix);
+	    if (nOrbits && numberCouldFix) {
+#ifdef PRINT_CBCAUTO
+	      printf("Column %d - %d orbits - could fix %d\n",
+		     iColumn,nOrbits,numberCouldFix);
+#endif
+	      // could tune
+	      symmetryType[numberToDo] = (nOrbits<<16) | numberCouldFix;
+	      numberOfInterest++;
+	    }
+	  }
+#endif
           whichObject[numberToDo++] = i;
         } else {
           // for debug
@@ -2456,6 +2490,63 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     // skip if solution
     if (!numberUnsatisfied_)
       break;
+#ifdef CBC_HAS_NAUTY
+    // clean
+    if (numberOfInterest) {
+      int n = numberToDo;
+      numberToDo = 0;
+      double best=0.0;
+      iBestGot = -1;
+      int loN = 999999;
+      int hiN = 0;
+      for (int i=0;i<n;i++) {
+	int iObject = whichObject[i];
+	if (symmetryType[i]) {
+	  double infeas = sort[i];
+	  int nOrbits = symmetryType[i]>>16;
+	  int nFix = symmetryType[i]|0xffff;
+	  loN = CoinMin(nOrbits,loN); 
+	  hiN = CoinMax(nOrbits,hiN); 
+	  if (nOrbits==1)
+	    infeas *= 100.0;
+	  infeas *= nFix;
+#ifdef PRINT_CBCAUTO
+	  printf("changing infeas for %d from %g to %g\n",
+		 dynamic_cast< const CbcSimpleInteger * >(model->object(whichObject[i]))->columnNumber(),
+		 sort[i],infeas);
+#endif
+	  if (infeas>best) {
+	    best = infeas;
+	    iBestGot = i;
+	  }
+	  sort[numberToDo] = infeas;
+	  symmetryType[numberToDo] = symmetryType[i];
+	  whichObject[numberToDo++] = iObject;
+	}
+      }
+      if (loN!=hiN) {
+	// take out some
+	n = numberToDo;
+	numberToDo = 0;
+	double best=0.0;
+	iBestGot = -1;
+	for (int i=0;i<n;i++) {
+	  int iObject = whichObject[i];
+	  int nOrbits = symmetryType[i]>>16;
+	  double infeas = sort[i];
+	  if (nOrbits==loN) {
+	    if (infeas>best) {
+	      best = infeas;
+	      iBestGot = i;
+	    }
+	    sort[numberToDo] = infeas;
+	    symmetryType[numberToDo] = symmetryType[i];
+	    whichObject[numberToDo++] = iObject;
+	  }
+	}
+      }
+    }
+#endif
     int skipAll = (numberNotTrusted == 0 || numberToDo == 1) ? 1 : 0;
     bool doneHotStart = false;
     //DEPRECATED_STRATEGYint searchStrategy = saveSearchStrategy>=0 ? (saveSearchStrategy%10) : -1;
@@ -3122,17 +3213,29 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             int fixOrbit = orbits[iObject];
             if (fixOrbit >= 0) {
               //printf("fixing all in orbit %d for column %d\n",fixOrbit,iObject);
+	      int n=-1;
               for (int i = 0; i < numberColumns; i++) {
-                if (orbits[i] == fixOrbit)
+                if (orbits[i] == fixOrbit) {
                   solver->setColUpper(i, 0.0);
+		  n++;
+		}
               }
+#ifdef PRINT_CBCAUTO
+	      if (n)
+		printf("%d fixed on down strong for %d (depth %d)\n",
+		       n,iColumn,depth_);
+#endif
             }
 	  } else if (model->rootSymmetryInfo()) {
 	    if (iColumn<numberColumns) {
 		int n = model->rootSymmetryInfo()->changeBounds(iColumn,
 							saveLower,saveUpper,
 							solver,0);
-		//if (n) printf("%d fixed on down strong for %d\n",n,iColumn);
+#ifdef PRINT_CBCAUTO
+		if (n)
+		  printf("%d fixed on down strong for %d (depth %d)\n",
+			 n,iColumn,depth_);
+#endif
 	    }
           }
 #endif
@@ -4079,7 +4182,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       const int *orbits = symmetryInfo->whichOrbit();
       if (orbits && orbits[kColumn] >= 0) {
         int numberUsefulOrbits = symmetryInfo->numberUsefulOrbits();
+#ifndef PRINT_CBCAUTO
         if (solver->messageHandler()->logLevel() > 1)
+#endif
           printf("Orbital Branching on %d - way %d n %d\n", kColumn, way(), numberUsefulOrbits);
         if (numberUsefulOrbits < 1000 || orbitOption == 3) {
           delete branch_;
@@ -4096,6 +4201,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 					      saveLower,saveUpper,
 					      solver,1);
     if (returnCode>0) {
+#ifdef PRINT_CBCAUTO
+      printf("Orbital branching on %d - %d fixed depth %d\n",kColumn,returnCode,depth_);
+#endif
       // saved orbit OK
       delete branch_;
       // use saved list

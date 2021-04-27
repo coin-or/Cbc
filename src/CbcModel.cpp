@@ -457,6 +457,8 @@ void CbcModel::analyzeObjective()
         moreSpecialOptions2_ |= 2097152;
     }
 #ifdef CBC_HAS_NAUTY
+    //#define ORBITAL_PRIORITY 0
+#ifdef ORBITAL_PRIORITY
     if (symmetryInfo_ || rootSymmetryInfo_) {
       if ((moreSpecialOptions2_ & 2097152) != 0) {
         CbcSymmetry *info = symmetryInfo_ ? symmetryInfo_ : rootSymmetryInfo_;
@@ -478,6 +480,15 @@ void CbcModel::analyzeObjective()
                 marked[iColumn]++;
             }
           }
+	  // add in summary permutation
+	  cbc_permute permutation;
+	  permutation.orbits = CoinCopyOfArray(marked,numberColumns);;
+	  permutation.numberPerms = 0;
+	  // 1 all priorities equal, 2 not
+	  permutation.numberInPerm = ((moreSpecialOptions2_ & 2097152) != 0) ? 1 : 2;
+	  info->addPermutation(permutation);
+	  // switch off changes
+	  memset(marked,0,numberColumns*sizeof(int));
         }
         int nChanged = 0;
         for (int i = 0; i < numberObjects_; i++) {
@@ -497,6 +508,7 @@ void CbcModel::analyzeObjective()
 	    sprintf(general,
 		    "%d variables given higher priority for symmetry reasons",
 		    nChanged);
+	    const double * columnUpper = solver_->getColUpper();
 	    for (int i = 0; i < numberObjects_; i++) {
 	      CbcSimpleInteger *thisOne =
 		dynamic_cast<CbcSimpleInteger *>(object_[i]);
@@ -504,11 +516,19 @@ void CbcModel::analyzeObjective()
 	      if (thisOne) {
 		int iColumn = thisOne->columnNumber();
 		if (marked[iColumn]) {
-#if 1
-		  thisOne->setPriority(100);
-#else
-		  thisOne->setPriority(1000 - marked[iColumn]);
+		  /*
+		    1 or 3 0-1 higher
+		    2 or 3 more marked higher
+		   */
+		  int newPriority = 999;
+#if ORBITAL_PRIORITY == 1 || ORBITAL_PRIORITY == 3
+		  if (columnUpper[iColumn]==1.0)
+		    newPriority -= 100;
 #endif
+#if ORBITAL_PRIORITY >1
+		  newPriority -= marked[iColumn];
+#endif
+		  thisOne->setPriority(newPriority);
 		}
 	      }
 	    }
@@ -521,8 +541,50 @@ void CbcModel::analyzeObjective()
 	    << general << CoinMessageEol;
         }
         delete[] marked;
+      } else if (rootSymmetryInfo_) {
+        CbcSymmetry *info = rootSymmetryInfo_;
+        int numberColumns = solver_->getNumCols();
+        int numberPermutations = info->numberPermutations();
+        int *marked = new int[numberColumns];
+        memset(marked, 0, numberColumns * sizeof(int));
+	for (int iPerm = 0; iPerm < numberPermutations; iPerm++) {
+	  const int *orbit = info->permutation(iPerm);
+	  for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	    if (orbit[iColumn] >= 0)
+	      marked[iColumn]++;
+	  }
+	}
+	// add in summary permutation
+	cbc_permute permutation;
+	permutation.orbits = marked;
+	permutation.numberPerms = 0;
+	// 1 all priorities equal, 2 not
+	permutation.numberInPerm = ((moreSpecialOptions2_ & 2097152) != 0) ? 1 : 2;
+	info->addPermutation(permutation);
       }
     }
+#else
+    if (rootSymmetryInfo_) {
+      CbcSymmetry *info = rootSymmetryInfo_;
+      int numberColumns = solver_->getNumCols();
+      int numberPermutations = info->numberPermutations();
+      int *marked = new int[numberColumns];
+      memset(marked, 0, numberColumns * sizeof(int));
+      for (int iPerm = 0; iPerm < numberPermutations; iPerm++) {
+	const int *orbit = info->permutation(iPerm);
+	for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	  if (orbit[iColumn] >= 0)
+	    marked[iColumn]++;
+	}
+      }
+      // add in summary permutation
+      cbc_permute permutation;
+      permutation.orbits = marked;
+      permutation.numberPerms = 0;
+      permutation.numberInPerm = 1;
+      info->addPermutation(permutation);
+    }
+#endif
 #endif
     int iType = 0;
     if (!numberContinuousObj && numberIntegerObj <= 5 && numberIntegerWeight <= 100 && numberIntegerObj * 3 < numberObjects_ && !parentModel_ && solver_->getNumRows() > 100)
@@ -5067,8 +5129,6 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CBC_HAS_NAUTY
       if (symmetryInfo_)
         symmetryInfo_->statsOrbits(this, 1);
-      if (rootSymmetryInfo_)
-        rootSymmetryInfo_->statsOrbits(this, 1);
 #endif
 #if PRINT_CONFLICT == 1
       if (numberConflictCuts > lastNumberConflictCuts) {
@@ -5298,6 +5358,14 @@ void CbcModel::branchAndBound(int doStatistics)
   }
 #ifdef CBC_THREAD
   if (master_) {
+#ifdef CBC_HAS_NAUTY
+    if (rootSymmetryInfo_) {
+      // adjust statistics
+      for (int iModel=0;iModel<numberThreads_;iModel++) {
+	rootSymmetryInfo_->adjustStats(master_->model(iModel)->rootSymmetryInfo());
+      }
+    }
+#endif
     delete master_;
     master_ = NULL;
     masterThread_ = NULL;
@@ -9335,7 +9403,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     if (numberTries == 0 && feasible && !keepGoing && !parentModel_ && !numberNodes_) {
       for (int i = 0; i < numberCutGenerators_; i++) {
         if (generator_[i]->whetherCallAtEnd()
-          && !generator_[i]->whetherInMustCallAgainMode()) {
+	    && !generator_[i]->whetherInMustCallAgainMode()) {
           // give it some goes and switch off
           numberTries = (saveNumberTries + 4) / 5;
           generator_[i]->setWhetherCallAtEnd(false);

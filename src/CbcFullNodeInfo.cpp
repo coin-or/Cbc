@@ -128,8 +128,8 @@ void CbcFullNodeInfo::applyToModel(CbcModel *model,
 
 {
   OsiSolverInterface *solver = model->solver();
-  // may be end game
-  if (!active_)
+  // may be end game (or max nodes)
+  if (!(active_ & ~16))
     return;
   // branch - do bounds
   assert((active_ & ~16) == 7 || (active_ & ~16) == 15);

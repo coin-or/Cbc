@@ -303,7 +303,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
     PUSH_MPS("blend2", 274, 353, 7.598985, 6.9156751140, 0, false);
     PUSH_MPS("cap6000", 2176, 6000, -2451377, -2451537.325, 1, false);
     PUSH_MPS("dano3mip", 3202, 13873, 728.1111, 576.23162474, 7, false);
-    PUSH_MPS("danoint", 664, 521, 65.67, 62.637280418, 6, false);
+    PUSH_MPS("danoint", 664, 521, 65.666667, 62.637280418, 6, false);
     PUSH_MPS("dcmulti", 290, 548, 188182, 183975.5397, 0, false);
     PUSH_MPS("dsbmip", 1182, 1886, -305.19817501, -305.19817501, 0, false);
     PUSH_MPS("egout", 98, 141, 568.101, 149.589, 0, false);
@@ -351,7 +351,6 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
     PUSH_MPS("rout", 291, 556, 1077.56, 981.86428571, 3, false);
     PUSH_MPS("set1ch", 492, 712, 54537.75, 32007.73, 5, false);
     PUSH_MPS("seymour", 4944, 1372, 423, 403.84647413, 7, false);
-    PUSH_MPS("seymour_1", 4944, 1372, 410.76370, 403.84647413, 5, false);
     PUSH_MPS("stein27", 118, 27, 18, 13.0, 0, false);
     PUSH_MPS("stein45", 331, 45, 30, 22.0, 1, false);
     PUSH_MPS("swath", 884, 6805, 497.603, 334.4968581, 7, false);
@@ -387,7 +386,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
     PUSH_MPS("core2536-691", 2539, 15293, 689, 688.476,11,false);
     PUSH_MPS("cov1075", 637, 120, 20, 17.1429,11,false);
     PUSH_MPS("csched010", 351, 1758, 408, 332.423,12,false);
-    PUSH_MPS("danoint", 664, 521, 65.666666, 62.6373,12,false);
+    PUSH_MPS("danoint", 664, 521, 65.6666667, 62.6373,12,false);
     PUSH_MPS("dfn-gwin-UUM", 158, 938, 38752, 27467.3,11,false);
     PUSH_MPS("eil33-2", 32, 4516, 934.007916, 811.279,12,false);
     PUSH_MPS("eilB101", 100, 2818, 1216.92017, 1075.25,10,false);
@@ -1010,6 +1009,3 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 #endif
   return (returnCode);
 }
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/

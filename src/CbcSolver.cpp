@@ -2739,28 +2739,28 @@ int CbcMain1(int argc, const char *argv[],
             case CBC_PARAM_STR_RENS:
               break;
             case CBC_PARAM_STR_CUTSSTRATEGY:
-              gomoryAction = action;
-              probingAction = action;
-              knapsackAction = action;
-              cliqueAction = action;
-              flowAction = action;
-              mixedAction = action;
-              twomirAction = action;
-              zerohalfAction = action;
+	      gomoryAction = action;
+	      probingAction = action;
+	      knapsackAction = action;
+	      cliqueAction = action;
+	      flowAction = action;
+	      mixedAction = action;
+	      twomirAction = action;
+	      zerohalfAction = action;
 	      oddWheelAction = action;
-              parameters_[whichParam(CBC_PARAM_STR_GOMORYCUTS, parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_PROBINGCUTS, parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_FLOWCUTS, parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_MIXEDCUTS, parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_TWOMIRCUTS, parameters_)].setCurrentOption(action);
+	      parameters_[whichParam(CBC_PARAM_STR_GOMORYCUTS, parameters_)].setCurrentOption(action);
+	      parameters_[whichParam(CBC_PARAM_STR_PROBINGCUTS, parameters_)].setCurrentOption(action);
+	      parameters_[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, parameters_)].setCurrentOption(action);
+	      parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, parameters_)].setCurrentOption(action);
+	      parameters_[whichParam(CBC_PARAM_STR_FLOWCUTS, parameters_)].setCurrentOption(action);
+	      parameters_[whichParam(CBC_PARAM_STR_MIXEDCUTS, parameters_)].setCurrentOption(action);
+	      parameters_[whichParam(CBC_PARAM_STR_TWOMIRCUTS, parameters_)].setCurrentOption(action);
 	      parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, parameters_)].setCurrentOption(action);
-              parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].setCurrentOption(action);
- 	      if (!action) {
- 		// switch off clique strengthening
- 		clqstrAction = "off";
- 	      }
+	      parameters_[whichParam(CBC_PARAM_STR_ODDWHEELCUTS, parameters_)].setCurrentOption(action);
+	      if (!action) {
+		// switch off clique strengthening
+		clqstrAction = "off";
+	      }
               break;
             case CBC_PARAM_STR_HEURISTICSTRATEGY:
               parameters_[whichParam(CBC_PARAM_STR_ROUNDING, parameters_)].setCurrentOption(action);
@@ -5252,7 +5252,7 @@ int CbcMain1(int argc, const char *argv[],
                 }
                 babModel_->assignSolver(solver2);
                 babModel_->setOriginalColumns(process.originalColumns(),
-                  truncateColumns);
+					      truncateColumns);
                 babModel_->initialSolve();
 #if CBC_USE_INITIAL_TIME == 2
 		// time starts from here?
@@ -5686,7 +5686,7 @@ int CbcMain1(int argc, const char *argv[],
 		clique.setRowCliqueReport(false);
 		clique.setMinViolation(0.05);
 		// ifmove
-		babModel_->addCutGenerator(&clique, -99,
+		babModel_->addCutGenerator(&clique, translate[cliqueAction],
 					   "Clique");
                 accuracyFlag[numberGenerators] = 0;
                 switches[numberGenerators++] = 0;

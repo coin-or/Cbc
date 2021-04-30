@@ -27,7 +27,7 @@ It can be called through
  * Python (e.g., [cbcpy](https://pypi.org/project/cbcpy)), among others.
 
 Binaries for most platforms are available for download from
-[Bintray](https://bintray.com/coin-or/download/Cbc). AMPL also provides
+[here](https://www.coin-or.org/download/binary/Cbc). AMPL also provides
 stand-alone [Cbc
 executables](http://ampl.com/products/solvers/open-source/#cbc) that can be
 used with (or without) AMPL. Julia also provides a wide range of
@@ -66,10 +66,10 @@ Suite](https://github.com/coin-or/COIN-OR-OptimizationSuite) [here](https://hub.
 
 ### Binaries
 
-Binaries for most platforms are available as part of [Cbc](https://bintray.com/coin-or/download/Cbc). 
+Binaries for most platforms are available as part of [Cbc](https://www.coin-or.org/download/binary/Cbc).
 
  * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
- * *Windows*: The easiest way to get Cbc on Windows is to download from *[Bintray](https://bintray.com/coin-or/download/Cbc)*.
+ * *Windows*: The easiest way to get Cbc on Windows is to download from *[here](https://www.coin-or.org/download/binary/Cbc)*.
  * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through [Homebrew](https://brew.sh).
    * `brew tap coin-or-tools/coinor`
    * `brew install coin-or-tools/coinor/cbc`

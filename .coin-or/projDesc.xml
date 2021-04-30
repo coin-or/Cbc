@@ -92,7 +92,7 @@
   <leftMenuLinks>
     <documentation>https://coin-or.github.io/Cbc/</documentation>
     <sourceCodeDownload>https://github.com/coin-or/Cbc</sourceCodeDownload>
-    <binaryDownload>https://bintray.com/coin-or/download/Cbc</binaryDownload>
+    <binaryDownload>https://www.coin-or.org/download/binary/Cbc</binaryDownload>
     <mailingList>https://list.coin-or.org/mailman/listinfo/cbc</mailingList>
   </leftMenuLinks>
 </projectData>

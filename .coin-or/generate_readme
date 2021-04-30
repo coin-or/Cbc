@@ -30,7 +30,7 @@ It can be called through
  * Python (e.g., [cbcpy](https://pypi.org/project/cbcpy)), among others.
 
 Binaries for most platforms are available for download from
-[Bintray](https://bintray.com/coin-or/download/Cbc). AMPL also provides
+[here](https://www.coin-or.org/download/binary/Cbc). AMPL also provides
 stand-alone [Cbc
 executables](http://ampl.com/products/solvers/open-source/#cbc) that can be
 used with (or without) AMPL. Julia also provides a wide range of

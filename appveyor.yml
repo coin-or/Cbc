@@ -1,14 +1,12 @@
-#init:
-#  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-
 platform:
   - x64
 
+matrix:
+  fast_finish: true
+
+skip_branch_with_pr: true
+
 environment:
-  global:
-    BINTRAY_API:
-      secure: 0EYF0DvzIOWIH+sDA3zvLo2iFIeSSAn/ZhdsE7ccEXi4swwVqw1MEcyRnPeTmcJ7
-    BINTRAY_USERNAME: tkralphs
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCH: x86_64-w64-mingw32
@@ -38,13 +36,6 @@ environment:
       CFLAGS: 
       TESTS: none 
       ADD_PATH: /mingw32/bin
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      ARCH: win64-msvc14-md
-      HOST_ARCH_ARG: --enable-msvc
-      CXXFLAGS: 
-      CFLAGS: 
-      TESTS: main
-      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15-md
       HOST_ARCH_ARG: --enable-msvc
@@ -59,13 +50,6 @@ environment:
       CFLAGS: 
       TESTS: main
       ADD_PATH: /mingw64/bin
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      ARCH: win64-msvc14-mt
-      HOST_ARCH_ARG: --enable-msvc --disable-shared
-      CXXFLAGS: -nologo -DNDEBUG -O2 -MT
-      CFLAGS: -nologo -DNDEBUG -O2 -MT
-      TESTS: main
-      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15-mt
       HOST_ARCH_ARG: --enable-msvc --disable-shared
@@ -80,13 +64,6 @@ environment:
       CFLAGS: -nologo -DNDEBUG -O2 -MT
       TESTS: main
       ADD_PATH: /mingw64/bin
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      ARCH: win64-msvc14-mdd
-      HOST_ARCH_ARG: --enable-msvc --enable-debug 
-      CXXFLAGS: 
-      CFLAGS: 
-      TESTS: none
-      ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       ARCH: win64-msvc15-mdd
       HOST_ARCH_ARG: --enable-msvc --enable-debug
@@ -99,13 +76,6 @@ environment:
       HOST_ARCH_ARG: --enable-msvc --enable-debug
       CXXFLAGS: 
       CFLAGS: 
-      TESTS: none
-      ADD_PATH: 
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      ARCH: win64-msvc14-mtd
-      HOST_ARCH_ARG: --enable-msvc --disable-shared --enable-debug
-      CXXFLAGS: -nologo -EHs -Z7 -MTd
-      CFLAGS: -nologo -EHs -Z7 -MTd
       TESTS: none
       ADD_PATH: 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
@@ -197,9 +167,3 @@ after_build:
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\%APPVEYOR_PROJECT_NAME%\README.md
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\%APPVEYOR_PROJECT_NAME%\LICENSE
   - 7z a %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip C:\projects\%APPVEYOR_PROJECT_NAME%\AUTHORS
-  - curl -T %APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip -utkralphs:%BINTRAY_API% -H "X-Bintray-Publish:1" -H "X-Bintray-Override:1" https://api.bintray.com/content/coin-or/download/%APPVEYOR_PROJECT_NAME%/%VERSION%/%APPVEYOR_PROJECT_NAME%-%VERSION%-%ARCH%.zip 
-  - C:\msys64\usr\bin\bash C:\projects\coinbrew\.ci\appveyor_bintray.sh
-
-#on_finish:
-#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-

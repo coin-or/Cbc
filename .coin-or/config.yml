@@ -14,8 +14,6 @@ Description:
   Zenodo: 173509563
   Appveyor:
     Status: chribnemsgm9th0x
-  Bintray:
-    Package: Cbc
   Language:
     - C++
   Categories: 

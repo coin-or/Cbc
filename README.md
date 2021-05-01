@@ -1,4 +1,4 @@
-# Cbc 
+# Cbc
 
 [![A COIN-OR Project](https://coin-or.github.io/coin-or-badge.png)](https://www.coin-or.org)
 
@@ -44,7 +44,7 @@ Cbc is written in C++ and is released as open source under the [Eclipse Public L
 
 It is distributed under the auspices of the [COIN-OR Foundation](https://www.coin-or.org)
 
-The Cbc website is https://github.com/coin-or/Cbc.
+The Cbc development site is https://github.com/coin-or/Cbc.
 
 ## CITE
 
@@ -66,10 +66,14 @@ Suite](https://github.com/coin-or/COIN-OR-OptimizationSuite) [here](https://hub.
 
 ### Binaries
 
-Binaries for most platforms are available as part of [Cbc](https://www.coin-or.org/download/binary/Cbc).
+For newer releases, binaries will be made available as assets attached to
+releases in Github
+[here](https://github.com/coin-or/Cbc/releases). Older binaries
+are archived as part of Cbc
+[here](https://www.coin-or.org/download/binary/Cbc).
 
  * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
- * *Windows*: The easiest way to get Cbc on Windows is to download from *[here](https://www.coin-or.org/download/binary/Cbc)*.
+ * *Windows*: The easiest way to get Cbc on Windows is to download an archive as described above.
  * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through [Homebrew](https://brew.sh).
    * `brew tap coin-or-tools/coinor`
    * `brew install coin-or-tools/coinor/cbc`
@@ -77,7 +81,9 @@ Binaries for most platforms are available as part of [Cbc](https://www.coin-or.o
 Due to license incompatibilities, pre-compiled binaries lack some functionality.
 If binaries are not available for your platform for the latest version and you would like to request them to be built and posted, feel free to let us know on the mailing list.
 
-*Source code* can be obtained either by
+### Source
+
+Source code can be obtained either by
 
  * Downloading a snapshot of the source code for the latest release version of Cbc from the
  [releases](https://github.com/coin-or/Cbc/releases) page.
@@ -193,7 +199,7 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
 ## Project Links
 
  * [COIN-OR Initiative](http://www.coin-or.org/)
- * [Mailing list](https://github.com/coin-or/Cbc/discussions)
+ * [Discussion formum](https://github.com/coin-or/Cbc/discussions)
  * [Report a bug](https://github.com/coin-or/Cbc/issues/new)
  * [Doxygen-generated html documentation](http://coin-or.github.io/Cbc/Doxygen)
 
@@ -226,7 +232,7 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
      - Script `compile` is now used to wrap around calls of cl/icl/ifort
        and translate GCC-style compiler flags to MSVC style.
      - Header files are now installed in the better named
-       `/include/coin-or` instead of `/include/coin`.
+       `$prefix/include/coin-or` instead of `$prefix/include/coin`.
      - The default for `--prefix` is no longer the build directory, but
        the autotools-default, probably `/usr/local`.
      - `--enable-debug` does not imply `--disable-shared` anymore.

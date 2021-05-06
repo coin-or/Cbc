@@ -467,7 +467,7 @@ Cbc_clone(Cbc_Model *model);
   *
   * @param model problem object 
   **/
-CBCSOLVERLIB_EXPORT void CBC_LINKAGE
+CBCLIB_EXPORT void CBC_LINKAGE
 Cbc_reset(Cbc_Model *model);
 
 /** \name Routines to query problem contents
@@ -842,7 +842,7 @@ Cbc_readLp(Cbc_Model *model, const char *filename);
   * @param fileName file name 
   * @return returns -1 on file error, 0 if no values, 1 if values.
   **/
-CBCSOLVERLIB_EXPORT int CBC_LINKAGE
+CBCLIB_EXPORT int CBC_LINKAGE
 Cbc_readBasis(Cbc_Model *model, const char *filename);
 
 
@@ -870,7 +870,7 @@ Cbc_writeLp(Cbc_Model *model, const char *filename);
   * @param formatType 0 - normal,   1 - extra accuracy,   2 - IEEE hex(later)
   * @return non-zero on IO error
   **/
-CBCSOLVERLIB_EXPORT int CBC_LINKAGE
+CBCLIB_EXPORT int CBC_LINKAGE
 Cbc_writeBasis(Cbc_Model *model, const char *filename, char writeValues, int formatType);
 
 

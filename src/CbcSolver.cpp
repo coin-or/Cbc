@@ -5121,10 +5121,11 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       delete objects[i];
                     delete[] objects;
 		    if (numberLotSizing < n) {
-		      sprintf(generalPrint, "Pre-processing reduced number of SC variables from %d to %d",n,numberLotSizing);
-		      generalMessageHandler->message(CLP_GENERAL, generalMessages)
-			<< generalPrint
-			<< CoinMessageEol;
+                       buffer.str("");
+                       buffer << "Pre-processing reduced number of SC"
+                              << " variables from " << n << " to "
+                              << numberLotSizing;
+                       printGeneralMessage(model_, buffer.str());
 		    }
                   }
                   // redo existing SOS

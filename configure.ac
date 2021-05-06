@@ -105,7 +105,7 @@ AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric OsiCbcLib],[osi-soplex])
 #AC_COIN_CHK_PKG(OsiXpr,,[osi-xpress])
 
 AC_COIN_CHK_LIB(Cplex,[CbcLib],[-lcplex -lpthread -lm -ldl],[],[],[CPXgetstat])
-AC_COIN_CHK_PKG(Glpk,[CbcSolverLib],,[build])
+AC_COIN_CHK_PKG(Glpk,[CbcSolverLib],[coinglpk])
 
 #############################################################################
 #                       CbcGeneric configuration                            #
@@ -123,8 +123,7 @@ if test "$cbc_generic" = yes ; then
   # In practice, only thoselisted below have had any testing long long ago or never.
   AC_MSG_CHECKING(for cbc-generic default solver)
   AC_ARG_WITH([cbc-generic-solver],
-              AC_HELP_STRING([--with-cbc-generic-solver],
-                             [specify default solver for cbc-generic in lower case letters (if not given, clp is assumed)]),
+              AS_HELP_STRING([--with-cbc-generic-solver],[specify default solver for cbc-generic in lower case letters (if not given, clp is assumed)]),
               [cbc_default_solver=$withval],
               [cbc_default_solver=clp])
   AC_MSG_RESULT($cbc_default_solver)
@@ -152,8 +151,7 @@ fi
 
 # First we define a new option, --enable-cbc-parallel
 AC_ARG_ENABLE([cbc-parallel],
-  [AC_HELP_STRING([--disable-cbc-parallel],
-                  [disables compilation of the SMP version of Cbc])],
+  [AS_HELP_STRING([--disable-cbc-parallel],[disables compilation of the SMP version of Cbc])],
   [enable_cbc_parallel=$enableval],
   [enable_cbc_parallel=auto])
 
@@ -360,7 +358,7 @@ AC_CONFIG_FILES([Makefile
 AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Here put the location and name of the configuration header file
-AC_CONFIG_HEADER([src/config.h src/config_cbc.h src/config_cbcsolver.h src/OsiCbc/config_osicbc.h])
+AC_CONFIG_HEADERS([src/config.h src/config_cbc.h src/config_cbcsolver.h src/OsiCbc/config_osicbc.h])
 
 AC_COIN_FINALIZE_FLAGS([CbcLib CbcSolverLib CbcGeneric OsiCbcLib CbcUnitTest])
 

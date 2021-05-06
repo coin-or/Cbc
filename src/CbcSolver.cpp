@@ -215,8 +215,6 @@ extern int debugNumberColumns;
 
 static CbcModel *currentBranchModel = NULL;
 
-CglPreProcess *cbcPreProcessPointer = NULL;
-
 static char cbcCrashAnnounced = 0;
 
 #ifdef CLP_MALLOC_STATISTICS
@@ -4872,7 +4870,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #endif
                     if ((model_.moreSpecialOptions() & 65536) != 0)
                       process.setOptions(2 + 4 + 8); // no cuts
-                    cbcPreProcessPointer = &process;
                     preProcessPointer = &process; // threadsafe
                     int saveOptions =
                         osiclp->getModelPtr()->moreSpecialOptions();
@@ -4949,7 +4946,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     }
                   }
 #elif CBC_OTHER_SOLVER == 1
-                  cbcPreProcessPointer = &process;
                   preProcessPointer = &process; // threadsafe
                   redoSOS = true;
                   if (model.getKeepNamesPreproc())

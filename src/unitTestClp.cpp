@@ -570,7 +570,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 	if (inputQueue[i] != "++") {
            if (testSwitch >=1000000) {
               // take out dextra3
-              if (inputQueue[i] == "dextra3")) {
+              if (inputQueue[i] == "dextra3") {
                  continue;
               }
            }

@@ -57,13 +57,13 @@ AC_CHECK_HEADERS([signal.h])
 #############################################################################
 
 m4_foreach_w([myvar],[CoinUtils Osi Cgl Clp],
-  [ AC_COIN_CHK_PKG(myvar,[CbcLib CbcSolverLib CbcGeneric OsiCbcLib])
+  [ AC_COIN_CHK_PKG(myvar,[CbcLib CbcGeneric OsiCbcLib])
     if test $coin_has_[]m4_tolower(myvar) != yes ; then
       AC_MSG_ERROR([Required package myvar is not available.])
     fi
   ])
 
-AC_COIN_CHK_PKG(OsiClp,[CbcLib CbcSolverLib CbcGeneric OsiCbcLib],[osi-clp])
+AC_COIN_CHK_PKG(OsiClp,[CbcLib CbcGeneric OsiCbcLib],[osi-clp])
 if test $coin_has_osiclp != yes ; then
   AC_MSG_ERROR("Required package OsiClp unavailable.")
 fi
@@ -76,10 +76,10 @@ AC_COIN_CHK_GNU_READLINE([CbcLib CbcGeneric])
 #############################################################################
 
 # Ampl Solver library
-AC_COIN_CHK_PKG(ASL,[CbcSolverLib],[coinasl])
+AC_COIN_CHK_PKG(ASL,[CbcLib],[coinasl])
 
 # Nauty library (for symmetry detection).
-AC_COIN_CHK_PKG([Nauty],[CbcLib CbcSolverLib],[nauty])
+AC_COIN_CHK_PKG([Nauty],[CbcLib],[nauty])
 
 #############################################################################
 
@@ -97,7 +97,7 @@ AC_COIN_CHK_PKG(Miplib3,,[coindatamiplib3],,dataonly)
 # Check which other LP solvers are available, some of them become a dependency
 # of CbcGeneric
 AC_COIN_CHK_PKG(OsiDyLP,[CbcGeneric OsiCbcLib],[osi-dylp])
-AC_COIN_CHK_PKG(OsiCpx,[CbcLib CbcGeneric CbcSolverLib OsiCbcLib],[osi-cplex])
+AC_COIN_CHK_PKG(OsiCpx,[CbcLib CbcGeneric OsiCbcLib],[osi-cplex])
 AC_COIN_CHK_PKG(OsiGlpk,[CbcGeneric OsiCbcLib],[osi-glpk])
 #AC_COIN_CHK_PKG(OsiGrb,,[osi-gurobi])
 AC_COIN_CHK_PKG(OsiMsk,[CbcGeneric OsiCbcLib],[osi-mosek])
@@ -105,6 +105,8 @@ AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric OsiCbcLib],[osi-soplex])
 #AC_COIN_CHK_PKG(OsiXpr,,[osi-xpress])
 
 AC_COIN_CHK_LIB(Cplex,[CbcLib],[-lcplex -lpthread -lm -ldl],[],[],[CPXgetstat])
+
+AC_COIN_FINALIZE_FLAGS([CbcLib CbcGeneric OsiCbcLib CbcUnitTest])
 
 #############################################################################
 #                       CbcGeneric configuration                            #
@@ -357,7 +359,7 @@ AC_CONFIG_FILES([Makefile
 AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Here put the location and name of the configuration header file
-AC_CONFIG_HEADERS([src/config.h src/config_cbc.h src/config_cbcsolver.h src/OsiCbc/config_osicbc.h])
+AC_CONFIG_HEADERS([src/config.h src/config_cbc.h src/OsiCbc/config_osicbc.h])
 
 AC_COIN_FINALIZE_FLAGS([CbcLib CbcSolverLib CbcGeneric OsiCbcLib CbcUnitTest])
 

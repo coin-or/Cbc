@@ -180,14 +180,3 @@ script:
     source coinbrew/.ci/setup_environment.sh
     $BASH coinbrew/coinbrew build $PROJECT --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack' "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}" ADD_CXXFLAGS="${ADD_CXXFLAGS}" CC=${CC} CXX=${CXX}
 
-after_script:
-- |-
-    ############## Uploading Binaries ##################
-    case $TRAVIS_OS_NAME in
-      linux|osx)
-        source coinbrew/.ci/setup_environment.sh
-        $BASH coinbrew/.ci/upload_binaries.sh
-        ;;
-    esac
-    
-

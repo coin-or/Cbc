@@ -25,13 +25,17 @@
   ordering.
 */
 
-CbcParameters::CbcParameters() : parameters_(CbcParam::LASTPARAM)
+CbcParameters::CbcParameters() : parameters_(CbcParam::LASTPARAM), model_(0)
 {
   /*
       It's unclear to me that this is a good choice for dfltDirectory. Makes
       sense for commands, but seems unnecessary for data files. Perhaps a null
       string instead?
     */
+  for (int i = 0; i < parameters_.size(); i++){
+     parameters_[i] = new ClpParam();
+  }
+
   char dirsep = CoinFindDirSeparator();
   dfltDirectory_ = (dirsep == '/' ? "./" : ".\\");
   lastMpsIn_ = "";
@@ -182,6 +186,10 @@ CbcParameters::CbcParameters() : parameters_(CbcParam::LASTPARAM)
 */
 CbcParameters::~CbcParameters() {
    // TODO Do we own pointer here?
+   for (int i = 0; i < parameters_.size(); i++){
+      delete parameters_[i];
+   }
+   
    if (model_)
     delete model_;
   if (bab_.answerSolver_)
@@ -1663,7 +1671,7 @@ void CbcParameters::addCbcModelParams()
   parameters_[CbcParam::INCREMENT]->setup(
       "inc!rement",
       "A new solution must be at least this much better than the incumbent",
-      -1.0e20, 1.0e20, model_->getDblParam(CbcModel::CbcCutoffIncrement),
+      -1.0e20, 1.0e20, 1.0e-4,
       "Whenever a solution is found the bound on future solutions is set to "
       "the objective of the solution (in a minimization sense) plus the "
       "specified increment.  If this option is not specified, the code will "
@@ -1675,7 +1683,7 @@ void CbcParameters::addCbcModelParams()
   parameters_[CbcParam::INFEASIBILITYWEIGHT]->setup(
       "inf!easibilityWeight",
       "Each integer infeasibility is expected to cost this much", 0.0, 1.0e20,
-      model_->getDblParam(CbcModel::CbcInfeasibilityWeight),
+      0.0,
       "A primitive way of deciding which node to explore next.  Satisfying "
       "each integer infeasibility is expected to cost this much.");
 
@@ -1683,7 +1691,7 @@ void CbcParameters::addCbcModelParams()
       "integerT!olerance",
       "For an optimal solution, no integer variable may be farther than this "
       "from an integer value",
-      1.0e-20, 0.5, model_->getDblParam(CbcModel::CbcIntegerTolerance),
+      1.0e-20, 0.5, 1.0e-6,
       "When checking a solution for feasibility, if the difference between the "
       "value of a variable and the nearest integer is less than the integer "
       "tolerance, the value is considered to be integral. Beware of setting "
@@ -1691,7 +1699,7 @@ void CbcParameters::addCbcModelParams()
 
   parameters_[CbcParam::LOGLEVEL]->setup(
       "bclog!Level", "Level of detail in Coin branch and Cut output", -1, 63,
-      model_->messageHandler()->logLevel(),
+      1,
       "If set to 0 then there should be no output in normal circumstances. A "
       "value of 1 is probably the best value for most uses, while 2 and 3 give "
       "more information.");
@@ -1768,8 +1776,7 @@ void CbcParameters::addCbcModelParams()
       CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::CUTPASS]->setup(
-      "passC!uts", "Number of cut passes at root node", -999999, 999999,
-      model_->getMaximumCutPassesAtRoot(),
+      "passC!uts", "Number of cut passes at root node", -999999, 999999, 100,
       "The default is 100 passes if less than 500 columns, 100 passes (but "
       "stop if the drop is small) if less than 5000 columns, 20 otherwise.");
 
@@ -1777,7 +1784,7 @@ void CbcParameters::addCbcModelParams()
       "ratio!Gap",
       "Stop when the gap between the best possible solution and the incumbent "
       "is less than this fraction of the larger of the two",
-      0.0, 1.0e20, model_->getDblParam(CbcModel::CbcAllowableFractionGap),
+      0.0, 1.0e20, 0.0,
       "If the gap between the best solution and the best possible solution is "
       "less than this fraction of the objective value at the root node then "
       "the search will terminate.  See 'allowableGap' for a way of using "
@@ -1790,7 +1797,7 @@ void CbcParameters::addCbcModelParams()
 
   parameters_[CbcParam::STRONGBRANCHING]->setup(
       "strong!Branching", "Number of variables to look at in strong branching",
-      0, 999999, model_->numberStrong(),
+      0, 999999, 0,
       "In order to decide which variable to branch on, the code will choose up "
       "to this number of unsatisfied variables and try mini up and down "
       "branches.  The most effective one is chosen. If a variable is branched "
@@ -1799,7 +1806,7 @@ void CbcParameters::addCbcModelParams()
 
   parameters_[CbcParam::NUMBERBEFORE]->setup(
       "trust!PseudoCosts", "Number of branches before we trust pseudocosts", -1,
-      2000000, model_->numberBeforeTrust(),
+      2000000, 0,
       "Using strong branching computes pseudo-costs.  After this many times "
       "for a variable we just trust the pseudo costs and do not do any more "
       "strong branching.");

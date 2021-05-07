@@ -602,7 +602,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
       newInputQueue.push_back("-solve");
       model = new CbcModel(solver1);
       CbcMain0(*model, parameters);
-      CbcMain1(inputQueue, *model, parameters, callBack);
+      CbcMain1(newInputQueue, *model, parameters, callBack);
     }
     if ((model->getNumRows() != nRows[m] ||
 	 model->getNumCols() != nCols[m]) && model->getNumRows())

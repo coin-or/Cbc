@@ -33,7 +33,7 @@ CbcParameters::CbcParameters() : parameters_(CbcParam::LASTPARAM), model_(0)
       string instead?
     */
   for (int i = 0; i < parameters_.size(); i++){
-     parameters_[i] = new ClpParam();
+     parameters_[i] = new CbcParam();
   }
 
   char dirsep = CoinFindDirSeparator();

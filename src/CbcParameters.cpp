@@ -372,51 +372,26 @@ void CbcParameters::addCbcSolverStrParams() {
       CoinParam::displayPriorityLow);
   parameters_[CbcParam::DIRMIPLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
-  parameters_[CbcParam::MIPSTART]->setup(
-      "mips!tart", "reads an initial feasible solution from file",
-      std::string("mipstart.sln"),
-      "The MIPStart allows one to enter an initial integer feasible solution "
-      "to CBC. Values of the main decision variables which are active (have "
-      "non-zero values) in this solution are specified in a text  file. The "
-      "text file format used is the same of the solutions saved by CBC, but "
-      "not all fields are required to be filled. First line may contain the "
-      "solution status and will be ignored, remaining lines contain column "
-      "indexes, names and values as in this example:\n\n Stopped on iterations "
-      "- objective value 57597.00000000\n      0  x(1,1,2,2)               1 "
-      "\n      1  x(3,1,3,2)               1 \n      5  v(5,1)                 "
-      "  2 \n      33 x(8,1,5,2)               1 \n      ...\n\n Column "
-      "indexes are also ignored since pre-processing can change them. There is "
-      "no need to include values for continuous or integer auxiliary "
-      "variables, since they can be computed based on main decision variables. "
-      "Starting CBC with an integer feasible solution can dramatically improve "
-      "its performance: several MIP heuristics (e.g. RINS) rely on having at "
-      "least one feasible solution available and can start immediately if the "
-      "user provides one. Feasibility Pump (FP) is a heuristic which tries to "
-      "overcome the problem of taking too long to find feasible solution (or "
-      "not finding at all), but it not always succeeds. If you provide one "
-      "starting solution you will probably save some time by disabling FP. "
-      "\n\n Knowledge specific to your problem can be considered to write an "
-      "external module to quickly produce an initial feasible solution - some "
-      "alternatives are the implementation of simple greedy heuristics or the "
-      "solution (by CBC for example) of a simpler model created just to find a "
-      "feasible solution. \n\n Silly options added.  If filename ends .low "
-      "then integers not mentioned are set low - also .high, .lowcheap, "
-      ".highcheap, .lowexpensive, .highexpensive where .lowexpensive sets "
-      "costed ones to make expensive others low. Also if filename starts "
-      "empty. then no file is read at all - just actions done. \n\n Question "
-      "and suggestions regarding MIPStart can be directed to\n "
-      "haroldo.santos@gmail.com. ");
-  parameters_[CbcParam::MIPSTART]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+  parameters_[CbcParam::GMPLSOLFILE]->setup(
+      "gmplSolutionF!ile", "sets name for file to store GMPL solution in",
+      std::string("gmpl.sol"),
+      "This will set the name the GMPL solution will be written to and read from. "
+      "This is initialized to 'gmpl.sol'. ",
+      CoinParam::displayPriorityHigh);
 
-  parameters_[CbcParam::NEXTBESTSOLUTION]->setup(
-      "nextB!estSolution", "Prints next best saved solution to file", "",
-      "To write best solution, just use solution.  This prints next best (if "
-      "exists) and then deletes it. This will write a primitive solution file "
-      "to the given file name.  It will use the default directory given by "
-      "'directory'.  A name of '$' will use the previous value for the name.  "
-      "This is initialized to 'stdout'.  The amount of output can be varied "
-      "using printi!ngOptions or printMask.");
-  parameters_[CbcParam::NEXTBESTSOLUTION]->setPushFunc(CbcParamUtils::doNothingParam);
+  parameters_[CbcParam::MODELFILE]->setup(
+      "modelF!ile", "sets name for file to store model in",
+      std::string("prob.mod"),
+      "This will set the name the model will be written to and read from. "
+      "This is initialized to 'prob.mod'. ",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::NEXTSOLFILE]->setup(
+      "nextSolutionF!ile", "sets name for file to store suboptimal solutions in",
+      std::string("next.sol"),
+      "This will set the name solutions will be written to and read from "
+      "This is initialized to 'next.sol'. ",
+      CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::PRINTMASK]->setup(
       "printM!ask", "Control printing of solution with a regular expression",
@@ -427,27 +402,12 @@ void CbcParameters::addCbcSolverStrParams() {
       "This is only active if model has names.");
   parameters_[CbcParam::PRINTMASK]->setPushFunc(CbcParamUtils::doPrintMaskParam);
 
-  parameters_[CbcParam::SAVESOL]->setup(
-      "saveS!olution", "saves solution to file", std::string("solution.sln"),
-      "This will write a binary solution file to the given file name.  It will "
-      "use the default directory given by 'directory'.  A name of '$' will use "
-      "the previous value for the name.  This is initialized to "
-      "'solution.file'.  To read the file use fread(int) twice to pick up "
-      "number of rows and columns, then fread(double) to pick up objective "
-      "value, then pick up row activities, row duals, column activities and "
-      "reduced costs - see bottom of CbcParam.cpp for code that reads or "
-      "writes file. If name contains '_fix_read_' then does not write but "
-      "reads and will fix all variables");
-  parameters_[CbcParam::SAVESOL]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
-
-  parameters_[CbcParam::SOLUTION]->setup(
-      "solu!tion", "Prints solution to file", std::string("stdout"),
-      "This will write a primitive solution file to the given file name.  It "
-      "will use the default directory given by 'directory'.  A name of '$' "
-      "will use the previous value for the name.  This is initialized to "
-      "'stdout'.  The amount of output can be varied using printi!ngOptions or "
-      "printMask.");
-  parameters_[CbcParam::SOLUTION]->setPushFunc(CbcParamUtils::doSolutionParam);
+  parameters_[CbcParam::SOLUTIONFILE]->setup(
+      "solutionF!ile", "sets name for file to store solution in",
+      std::string("opt.sol"),
+      "This will set the name the solution will be saved to and read from. "
+      "By default, solutions are written to 'opt.sol'. To print to stdout, "
+      "use printSolution.", CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::PRIORITYIN]->setup(
       "prio!rityIn", "Import priorities etc from file",
@@ -490,29 +450,8 @@ void CbcParameters::addCbcSolverHelpParams() {
 
 void CbcParameters::addCbcSolverActionParams() {
 
-  parameters_[CbcParam::DUMMY]->setup(
-      "sleep", "for debug", 0, 9999, 0,
-      "If passed to solver from ampl, then ampl will wait so that you can copy "
-      ".nl file for debug.",
-      CoinParam::displayPriorityNone);
-
-  parameters_[CbcParam::OUTDUPROWS]->setup(
-      "outDup!licates", "Takes duplicate rows, etc., out of the integer model",
-      "", CoinParam::displayPriorityNone);
-
-  parameters_[CbcParam::SHOWUNIMP]->setup(
-      "unimp!lemented", "Report unimplemented commands.", "",
-      CoinParam::displayPriorityNone);
-  parameters_[CbcParam::SHOWUNIMP]->setPushFunc(CbcParamUtils::doUnimplementedParam);
-
-  parameters_[CbcParam::STRENGTHEN]->setup(
-      "strengthen", "Create strengthened problem",
-      "This creates a new problem by applying the root node cuts. All tight "
-      "constraints will be in resulting problem.",
-      CoinParam::displayPriorityHigh);
-
   parameters_[CbcParam::BAB]->setup(
-      "branch!AndCut", "Do Branch and Cut",
+      "solv!e", "invoke branch and cut to solve the current problem",
       "This does branch and cut. There are many parameters which can affect "
       "the performance.  First just try with default cbcSettings and look "
       "carefully at the log file.  Did cuts help?  Did they take too long?  "
@@ -532,6 +471,12 @@ void CbcParameters::addCbcSolverActionParams() {
       "strongBranching and trustPseudoCosts parameters.",
       CoinParam::displayPriorityHigh);
   parameters_[CbcParam::BAB]->setPushFunc(CbcParamUtils::doBaCParam);
+
+  parameters_[CbcParam::DUMMY]->setup(
+      "sleep", "for debug", 0, 9999, 0,
+      "If passed to solver from ampl, then ampl will wait so that you can copy "
+      ".nl file for debug.",
+      CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::ENVIRONMENT]->setup(
       "environ!ment", "Read commands from environment",
@@ -554,7 +499,6 @@ void CbcParameters::addCbcSolverActionParams() {
       "Rnnnnnnn and Cnnnnnnn.  This can be done by setting 'keepnames' off "
       "before importing mps file.",
       CoinParam::displayPriorityHigh);
-  parameters_[CbcParam::EXPORT]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[CbcParam::IMPORT]->setup(
       "import", "Import model from file", lastMpsIn_,
@@ -569,9 +513,69 @@ void CbcParameters::addCbcSolverActionParams() {
   parameters_[CbcParam::MIPLIB]->setup("miplib", "Do some of miplib test set", "",
                             CoinParam::displayPriorityHigh);
 
+  parameters_[CbcParam::OUTDUPROWS]->setup(
+      "outDup!licates", "Takes duplicate rows, etc., out of the integer model",
+      "", CoinParam::displayPriorityNone);
+
   parameters_[CbcParam::PRINTVERSION]->setup(
       "version", "Print version", "", CoinParam::displayPriorityHigh);
   parameters_[CbcParam::PRINTVERSION]->setPushFunc(CbcParamUtils::doVersionParam);
+
+  parameters_[CbcParam::PRINTSOL]->setup(
+      "writeS!olution", "writes solution to file (or stdout)",
+      "This will write a binary solution file to the file set by solutionFile.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::READMIPSTART]->setup(
+      "mipS!tart", "reads an initial feasible solution from file",
+      std::string("mipstart.sln"),
+      "The MIPStart allows one to enter an initial integer feasible solution "
+      "to CBC. Values of the main decision variables which are active (have "
+      "non-zero values) in this solution are specified in a text  file. The "
+      "text file format used is the same of the solutions saved by CBC, but "
+      "not all fields are required to be filled. First line may contain the "
+      "solution status and will be ignored, remaining lines contain column "
+      "indexes, names and values as in this example:\n\n Stopped on iterations "
+      "- objective value 57597.00000000\n      0  x(1,1,2,2)               1 "
+      "\n      1  x(3,1,3,2)               1 \n      5  v(5,1)                 "
+      "  2 \n      33 x(8,1,5,2)               1 \n      ...\n\n Column "
+      "indexes are also ignored since pre-processing can change them. There is "
+      "no need to include values for continuous or integer auxiliary "
+      "variables, since they can be computed based on main decision variables. "
+      "Starting CBC with an integer feasible solution can dramatically improve "
+      "its performance: several MIP heuristics (e.g. RINS) rely on having at "
+      "least one feasible solution available and can start immediately if the "
+      "user provides one. Feasibility Pump (FP) is a heuristic which tries to "
+      "overcome the problem of taking too long to find feasible solution (or "
+      "not finding at all), but it not always succeeds. If you provide one "
+      "starting solution you will probably save some time by disabling FP. "
+      "\n\n Knowledge specific to your problem can be considered to write an "
+      "external module to quickly produce an initial feasible solution - some "
+      "alternatives are the implementation of simple greedy heuristics or the "
+      "solution (by CBC for example) of a simpler model created just to find a "
+      "feasible solution. \n\n Silly options added.  If filename ends .low "
+      "then integers not mentioned are set low - also .high, .lowcheap, "
+      ".highcheap, .lowexpensive, .highexpensive where .lowexpensive sets "
+      "costed ones to make expensive others low. Also if filename starts "
+      "empty. then no file is read at all - just actions done. \n\n Question "
+      "and suggestions regarding MIPStart can be directed to\n "
+      "haroldo.santos@gmail.com. ");
+
+  parameters_[CbcParam::READSOL]->setup(
+      "readS!olution", "reads solution from file (synonym for mipStart)",
+      "This will read a binary solution file from the file set by solutionFile."
+      "This is a synonym for mipStart. See its help for more information",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::READMODEL]->setup(
+      "readM!odel", "writes problem to file", 
+      "This will save the problem to the file name set by modelFile "
+      "for future use by readModel.", CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::SHOWUNIMP]->setup(
+      "unimp!lemented", "Report unimplemented commands.", "",
+      CoinParam::displayPriorityNone);
+  parameters_[CbcParam::SHOWUNIMP]->setPushFunc(CbcParamUtils::doUnimplementedParam);
 
   parameters_[CbcParam::SOLVECONTINUOUS]->setup(
       "initialS!olve", "Solve to continuous optimum",
@@ -596,11 +600,44 @@ void CbcParameters::addCbcSolverActionParams() {
   parameters_[CbcParam::STDIN]->setup(
       "stdin", "Switch to interactive command line mode", "",
       CoinParam::displayPriorityNone);
-  parameters_[CbcParam::STDIN]->setPushFunc(CbcParamUtils::doNothingParam);
+
+  parameters_[CbcParam::STRENGTHEN]->setup(
+      "strengthen", "Create strengthened problem",
+      "This creates a new problem by applying the root node cuts. All tight "
+      "constraints will be in resulting problem.",
+      CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::UNITTEST]->setup(
       "unitTest", "Do unit test", "This exercises the unit test.", "",
       CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::WRITEGMPLSOL]->setup(
+      "writeGSolu!tion", "Puts glpk solution to file",
+      "Will write a glpk solution file to the given file name.  It will use "
+      "the default directory given by 'directory'.  A name of '$' will use the "
+      "previous value for the name.  This is initialized to 'stdout' (this "
+      "defaults to ordinary solution if stdout). If problem created from gmpl "
+      "model - will do any reports.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::WRITEMODEL]->setup(
+      "writeM!odel", "writes solution to file (or stdout)", 
+      "This will write the problem to the file name set by modelFile"
+      "for future use by readModel.", CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::WRITENEXTSOL]->setup(
+      "nextB!estSolution", "Prints next best saved solution to file", "",
+      "To write best solution, just use writeSolution.  This prints next best (if "
+      "exists) and then deletes it. This will write a primitive solution file "
+      "to the given file name.  It will use the directory set by "
+      "nextBestSolutionFile. The amount of output can be varied "
+      "using printi!ngOptions or printMask.");
+
+  parameters_[CbcParam::WRITESOL]->setup(
+      "writeS!olution", "writes solution to file (or stdout)",
+      "This will write a binary solution file to the file set by solutionFile.",
+      CoinParam::displayPriorityHigh);
+
 }
 
 //###########################################################################
@@ -829,6 +866,7 @@ void CbcParameters::addCbcSolverDblParams() {
 //###########################################################################
 
 void CbcParameters::addCbcSolverIntParams() {
+
   for (int code = CbcParam::FIRSTINTPARAM + 1;
        code < CbcParam::LASTINTPARAM; code++) {
     parameters_[code]->setPushFunc(CbcParamUtils::pushCbcSolverIntParam);
@@ -938,6 +976,13 @@ void CbcParameters::addCbcSolverIntParams() {
       "extra4", "Extra integer parameter 4", -COIN_INT_MAX, COIN_INT_MAX, -1,
       "", CoinParam::displayPriorityLow);
 
+  parameters_[CbcParam::EXTRAVARIABLES]->setup(
+      "extraV!ariables", "Allow creation of extra integer variables",
+      -COIN_INT_MAX, COIN_INT_MAX, 0,
+      "Switches on a trivial re-formulation that introduces extra integer "
+      "variables to group together variables with same cost.",
+      CoinParam::displayPriorityLow);
+
   parameters_[CbcParam::FPUMPITS]->setup(
       "passF!easibilityPump", "How many passes in feasibility pump", 0, 10000,
       getFeasPumpIters(),
@@ -976,10 +1021,6 @@ void CbcParameters::addCbcSolverIntParams() {
       "after the first solution if it looks as if the code is stalling.",
       CoinParam::displayPriorityLow);
 
-  parameters_[CbcParam::MAXHOTITS]->setup(
-      "hot!StartMaxIts", "Maximum iterations on hot start",
-      0, COIN_INT_MAX);
-
   parameters_[CbcParam::LOGLEVEL]->setup(
       "log!Level", "Level of detail in CBC output.", -1, 999999,
       getLogLevel(),
@@ -993,6 +1034,10 @@ void CbcParameters::addCbcSolverIntParams() {
       "If set to 0 then there should be no output in normal circumstances. A "
       "value of 1 is probably the best value for most uses, while 2 and 3 give "
       "more information.");
+
+  parameters_[CbcParam::MAXHOTITS]->setup(
+      "hot!StartMaxIts", "Maximum iterations on hot start",
+      0, COIN_INT_MAX);
 
   parameters_[CbcParam::MAXSAVEDSOLS]->setup(
       "maxSaved!Solutions", "Maximum number of solutions to save", 0,
@@ -1157,12 +1202,6 @@ void CbcParameters::addCbcSolverBoolParams() {
       "from which the code can not recover, e.g., no ENDATA.  This has to be "
       "set before import, i.e., -errorsAllowed on -import xxxxxx.mps.");
 
-  parameters_[CbcParam::EXTRAVARIABLES]->setup(
-      "extraV!ariables", "Allow creation of extra integer variables", "off", 0,
-      "Switches on a trivial re-formulation that introduces extra integer "
-      "variables to group together variables with same cost.",
-      CoinParam::displayPriorityLow);
-
   parameters_[CbcParam::MESSAGES]->setup(
       "mess!ages", "Controls whether standardised message prefix is printed",
       "off", 0,
@@ -1240,12 +1279,6 @@ void CbcParameters::addCbcSolverCutParams() {
       "This switches on knapsack cuts (either at root or in entire tree). See "
       "branchAndCut for information on options.");
 
-  parameters_[CbcParam::LANDPCUTS]->setup(
-      "lift!AndProjectCuts", "Whether to use lift-and-project cuts", "off",
-      getLandPMode(),
-      "This switches on lift-and-project cuts (either at root or in entire "
-      "tree). See branchAndCut for information on options.");
-
   parameters_[CbcParam::LAGOMORYCUTS]->setup(
       "lagomory!Cuts", "Whether to use Lagrangean Gomory cuts", "off",
       getLaGomoryMode(),
@@ -1258,6 +1291,12 @@ void CbcParameters::addCbcSolverCutParams() {
       "valued cuts.  'End' is recommended and waits until other cuts have "
       "finished before it does a few passes. The length options for gomory "
       "cuts are used.");
+
+  parameters_[CbcParam::LANDPCUTS]->setup(
+      "lift!AndProjectCuts", "Whether to use lift-and-project cuts", "off",
+      getLandPMode(),
+      "This switches on lift-and-project cuts (either at root or in entire "
+      "tree). See branchAndCut for information on options.");
 
   parameters_[CbcParam::LATWOMIRCUTS]->setup(
       "latwomir!Cuts", "Whether to use Lagrangean Twomir cuts", "off",
@@ -1481,6 +1520,14 @@ void CbcParameters::addCbcSolverHeurParams() {
       "individual ones off or on.  CbcTreeLocal is not included as it "
       "dramatically alters search.");
 
+  parameters_[CbcParam::LOCALTREE]->setup(
+      "local!TreeSearch", "Whether to use local tree search", "off",
+      getLocalTreeMode(),
+      "This switches on a local search algorithm when a solution is found.  "
+      "This is from Fischetti and Lodi and is not really a heuristic although "
+      "it can be used as one. When used from this program it has limited "
+      "functionality.  It is not controlled by heuristicsOnOff.");
+
   parameters_[CbcParam::NAIVE]->setup(
       "naive!Heuristics", "Whether to try some stupid heuristic", "off",
       getNaiveHeurMode(),
@@ -1533,14 +1580,6 @@ void CbcParameters::addCbcSolverHeurParams() {
       getRoundingMode(),
       "This switches on a simple (but effective) rounding heuristic at each "
       "node of tree.");
-
-  parameters_[CbcParam::LOCALTREE]->setup(
-      "local!TreeSearch", "Whether to use local tree search", "off",
-      getLocalTreeMode(),
-      "This switches on a local search algorithm when a solution is found.  "
-      "This is from Fischetti and Lodi and is not really a heuristic although "
-      "it can be used as one. When used from this program it has limited "
-      "functionality.  It is not controlled by heuristicsOnOff.");
 
   parameters_[CbcParam::VND]->setup(
       "Vnd!VariableNeighborhoodSearch",

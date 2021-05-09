@@ -106,7 +106,6 @@ void sos1a(int &error_count, int &warning_count)
   delete sosobject;
 
   std::deque<std::string> inputQueue;
-  inputQueue.push_back("gamstest_sos1a");
   inputQueue.push_back("-solve");
   inputQueue.push_back("-quit");
   
@@ -306,7 +305,6 @@ void sos2a(int &error_count, int &warning_count)
     const char *argv2[] = { "gamstest_sos2a", "-solve", "-quit" };
     cout << "\nSolving sos2a model with last row having lhs " << solver1.getRowLower()[5] << endl;
     std::deque<std::string> inputQueue;
-    inputQueue.push_back("gamstest_sos2a");
     inputQueue.push_back("-solve");
     inputQueue.push_back("-quit");
     
@@ -492,7 +490,6 @@ void semicon1(int &error_count, int &warning_count)
     cout << "\nSolving semicon1 model for lotsize variable being either 0 or between " << points[2] << " and 10.\n"
          << endl;
     std::deque<std::string> inputQueue;
-    inputQueue.push_back("gamstest_semicon1");
     inputQueue.push_back("-solve");
     inputQueue.push_back("-quit");
     
@@ -730,7 +727,6 @@ void semiint1(int &error_count, int &warning_count)
     cout << "\nSolving semiint1 model for integer lotsize variable being either 0 or between " << points[2] << " and 10.\n"
          << endl;
     std::deque<std::string> inputQueue;
-    inputQueue.push_back("gamstest_semiint1");
     inputQueue.push_back("-solve");
     inputQueue.push_back("-quit");
     

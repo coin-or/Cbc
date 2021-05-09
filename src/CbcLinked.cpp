@@ -5215,7 +5215,7 @@ void OsiBiLinear::addExtraRow(int row, double multiplier)
   delete[] multiplier_;
   multiplier_ = tempD;
 }
-static bool testCoarse = true;
+static const bool testCoarse = true;
 // Infeasibility - large is 0.5
 double
 OsiBiLinear::infeasibility(const OsiBranchingInformation *info, int &whichWay) const

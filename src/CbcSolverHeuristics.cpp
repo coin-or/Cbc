@@ -1680,11 +1680,16 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       if (useProximity == 6)
         heuristic2a.setFeasibilityPumpOptions(-3);
     } else {
-       int proximityNumber;
-       //TODO: There is a bug here. proximityNumber is obviously supposed to be set to what is
-       //below, but I have no idea what this function is doing. Right now, proximity number
-       //is random garbage. 
-       //parameters[CbcParam::PROXIMITY].currentOptionAsInteger(proximityNumber);
+       //TODO: there should be a separate parameter for setting proximity number
+      std::string proximityKwd = parameters[CbcParam::PROXIMITY]->kwdVal();
+      int proximityNumber = 0;
+      if (proximityKwd == "10"){
+         proximityNumber = 10;
+      }else if (proximityKwd == "100"){
+         proximityNumber = 300;
+      }else if (proximityKwd == "300"){
+         proximityNumber = 300;
+      }         
       if (proximityNumber > 0) {
         heuristic2a.setNumberNodes(proximityNumber);
         // more print out and stronger feasibility pump

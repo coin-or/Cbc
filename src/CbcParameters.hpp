@@ -75,7 +75,7 @@
   of Cbc.
 */
 
-class CbcParameters {
+class CLPLIB_EXPORT CbcParameters {
 
 public:
   /*! \name Constructors and destructors */

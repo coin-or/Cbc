@@ -1920,6 +1920,25 @@ private:
 
   friend class CbcParam; 
    
+  template<typename T>
+  struct HeuristicSettings {
+    CbcParameters::HeurMode mode_ = CbcParameters::HeurOff;
+    T *proto_ = NULL;
+  };
+
+  template<typename T>
+  struct CGSettings
+  {
+    CbcParameters::CGMode mode_ = CbcParameters::CGOff;
+    T *proto_ = NULL;
+  };
+
+  template<typename T>
+  struct CGLimitSettings : CGSettings<T> {
+    int limit_ = 0;
+    int limitAtRoot_ = 0;
+  };
+
   /*! \name Parameter parsing and input/output. */
   //@{
 
@@ -2137,76 +2156,41 @@ private:
   int cutPassInTree_;
 
   /*! \brief Control variable and prototype for clique cut generator */
-  struct clique_struct {
-    CbcParameters::CGMode mode_;
-    CglClique *proto_;
+  struct clique_struct : CGSettings<CglClique>  {
     bool starCliqueReport_;
     bool rowCliqueReport_;
     double minViolation_;
   } clique_;
 
   /*! \brief Control variable and prototype for flow cover cut generator */
-  struct flow_struct {
-    CbcParameters::CGMode mode_;
-    CglFlowCover *proto_;
-  } flow_;
+  CGSettings<CglFlowCover> flow_;
 
   /*! \brief Control variable and prototype for Gomory cut generator */
-  struct gmi_struct {
-    CbcParameters::CGMode mode_;
-    CglGomory *proto_;
-    int limit_;
-    int limitAtRoot_;
-  } gmi_;
+  CGLimitSettings<CglGomory> gmi_;
 
   /*! \brief Control variable and prototype for Gomory cut generator */
-  struct gomory_struct {
-    CbcParameters::CGMode mode_;
-    CglGomory *proto_;
-    int limit_;
-    int limitAtRoot_;
-  } gomory_;
+  CGLimitSettings<CglGomory> gomory_;
 
   /*! \brief Control variable and prototype for knapsack cover cut generator */
-  struct knapsack_struct {
-    CbcParameters::CGMode mode_;
-    CglKnapsackCover *proto_;
-  } knapsack_;
+  CGSettings<CglKnapsackCover> knapsack_;
 
   /*   \brief Control variable and prototype for LaGomory cut generator */
-  struct lagomory_struct {
-    CbcParameters::CGMode mode_;
-    CglGomory *proto_;
-  } laGomory_;
+  CGSettings<CglGomory> laGomory_;
 
   /*   \brief Control variable and prototype for lift-and-project cut generator */
-  struct landp_struct {
-    CbcParameters::CGMode mode_;
-    CglLandP *proto_;
-  } landP_;
+  CGSettings<CglLandP> landP_;
 
   /*   \brief Control variable and prototype for lift-and-project cut generator */
-  struct laTwomir_struct {
-    CbcParameters::CGMode mode_;
-    CglTwomir *proto_;
-  } laTwomir_;
+  CGSettings<CglTwomir> laTwomir_;
 
   /*! \brief Control variable and prototype for MIR cut generator */
-  struct mir_struct {
-    CbcParameters::CGMode mode_;
-    CglMixedIntegerRounding2 *proto_;
-  } mir_;
+  CGSettings<CglMixedIntegerRounding2> mir_;
 
   /*! \brief Control variable and prototype for odd hole cut generator */
-  struct oddWheel_struct {
-    CbcParameters::CGMode mode_;
-    CglOddWheel *proto_;
-  } oddWheel_;
+  CGSettings<CglOddWheel> oddWheel_;
 
   /*! \brief Control variable and prototype for probing cut generator */
-  struct probing_struct {
-    CbcParameters::CGMode mode_;
-    CglProbing *proto_;
+  struct probing_struct : CGSettings<CglProbing> {
     bool usingObjective_;
     int maxPass_;
     int maxPassRoot_;
@@ -2219,35 +2203,21 @@ private:
   } probing_;
 
   /*! \brief Control variable and prototype for reduce-and-split cut generator */
-  struct redSplit_struct {
-    CbcParameters::CGMode mode_;
-    CglRedSplit *proto_;
-  } redSplit_;
+  CGSettings<CglRedSplit> redSplit_;
 
   /*! \brief Control variable and prototype for reduce-and-split 2 cut generator */
-  struct redSplit2_struct {
-    CbcParameters::CGMode mode_;
-    CglRedSplit2 *proto_;
-  } redSplit2_;
+  CGSettings<CglRedSplit2> redSplit2_;
 
   /*! \brief Control variable and prototype for residual capacity cut generator */
-  struct residCap_struct {
-    CbcParameters::CGMode mode_;
-    CglResidualCapacity *proto_;
-  } residCap_;
+  CGSettings<CglResidualCapacity> residCap_;
 
   /*! \brief Control variable and prototype for Two-MIR cut generator */
-  struct twomir_struct {
-    CbcParameters::CGMode mode_;
-    CglTwomir *proto_;
+  struct twomir_struct : CGSettings<CglTwomir> {
     int maxElements_;
   } twomir_;
 
   /*! \brief Control variable and prototype for residual capacity cut generator */
-  struct zeroHalf_struct {
-    CbcParameters::CGMode mode_;
-    CglZeroHalf *proto_;
-  } zeroHalf_;
+  CGSettings<CglZeroHalf> zeroHalf_;
 
   //@}
 
@@ -2260,70 +2230,39 @@ private:
   CbcParameters::OnOffMode doHeuristicMode_;
 
   /*! \brief Control variable and prototype for combine heuristic */
-  struct combine_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicLocal *proto_;
+  struct combine_struct : HeuristicSettings<CbcHeuristicLocal> {
     int trySwap_;
   } combine_;
 
   /*! \brief Control variable and prototype for crossover heuristic */
-  struct crossover_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicCrossover *proto_;
-  } crossover_;
+  HeuristicSettings<CbcHeuristicCrossover> crossover_;
 
   /*! \brief Control variable and prototype for heuristic */
-  struct dins_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicDINS *proto_;
-  } dins_;
+  HeuristicSettings<CbcHeuristicDINS> dins_;
 
   /*! \brief Control variable and prototype for Dive Coefficient heuristic */
-  struct diveCoefficient_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicDiveCoefficient *proto_;
-  } divingc_;
+  HeuristicSettings<CbcHeuristicDiveCoefficient> divingc_;
 
   /*! \brief Control variable and prototype for Dive Fractional heuristic */
-  struct diveFractional_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicDiveFractional *proto_;
-  } divingf_;
+  HeuristicSettings<CbcHeuristicDiveFractional> divingf_;
 
   /*! \brief Control variable and prototype for Dive Guided heuristic */
-  struct diveGuided_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicDiveGuided *proto_;
-  } divingg_;
+  HeuristicSettings<CbcHeuristicDiveGuided> divingg_;
 
-  /*! \brief Control variable and prototype for Dive Line Sarch heuristic */
-  struct diveLineSearch_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicDiveLineSearch *proto_;
-  } divingl_;
+  /*! \brief Control variable and prototype for Dive Line Search heuristic */
+  HeuristicSettings<CbcHeuristicDiveLineSearch> divingl_;
 
   /*! \brief Control variable and prototype for Dive Pseudocost heuristic */
-  struct _struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicDivePseudoCost *proto_;
-  } divingp_;
+  HeuristicSettings<CbcHeuristicDivePseudoCost> divingp_;
 
   /*! \brief Control variable and prototype for Dive Vector Lengthheuristic */
-  struct diveVectorLength_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicDiveVectorLength *proto_;
-  } divingv_;
+  HeuristicSettings<CbcHeuristicDiveVectorLength> divingv_;
 
   /*! \brief Control variable and prototype for DW heuristic */
-  struct DW_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicDW *proto_;
-  } dw_;
+  HeuristicSettings<CbcHeuristicDW> dw_;
 
   /*! \brief Control variable and prototype for feasibility pump heuristic */
-  struct fpump_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicFPump *proto_;
+  struct fpump_struct : HeuristicSettings<CbcHeuristicFPump> {
     int iters_;
     int initialTune_; 
     int tune_;
@@ -2333,28 +2272,16 @@ private:
   } fpump_;
 
   /*! \brief Control variable and prototype for greedy cover heuristic */
-  struct greedyCover_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicGreedyCover *proto_;
-  } greedyCover_;
+  HeuristicSettings<CbcHeuristicGreedyCover> greedyCover_;
 
   /*! \brief Control variable and prototype for greedy equality heuristic */
-  struct greedyEquality_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicGreedyEquality *proto_;
-  } greedyEquality_;
+ HeuristicSettings<CbcHeuristicGreedyEquality> greedyEquality_;
 
   /*! \brief Control variable and prototype for Naive heuristic */
-  struct naive_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicNaive *proto_;
-  } naive_;
+  HeuristicSettings<CbcHeuristicNaive> naive_;
 
   /*! \brief Control variable and prototype for Pivot and Fix heuristic */
-  struct pivotAndFix_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicPivotAndFix *proto_;
-  } pivotAndFix_;
+  HeuristicSettings<CbcHeuristicPivotAndFix> pivotAndFix_;
 
 #if 0
   /*! \brief Control variable and prototype for Pivot and Complement heuristic */
@@ -2365,44 +2292,26 @@ private:
 #endif
 
   /*! \brief Control variable and prototype for Proximity heuristic */
-  struct proximity_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicProximity *proto_;
-  } proximity_;
+  HeuristicSettings<CbcHeuristicProximity> proximity_;
 
   /*! \brief Control variable and prototype for Randomized Rounding heuristic */
-  struct randRound_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristic *proto_;
-  } randRound_;
+  HeuristicSettings<CbcHeuristic> randRound_;
 
   /*! \brief Control variable and prototype for RENS heuristic */
-  struct Rens_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicRENS *proto_;
-  } rens_;
+  HeuristicSettings<CbcHeuristicRENS> rens_;
 
   /*! \brief Control variable and prototype for RINS heuristic */
-  struct Rins_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicRINS *proto_;
-  } rins_;
+  HeuristicSettings<CbcHeuristicRINS> rins_;
 
   /*! \brief Control variable and prototype for simple rounding heuristic */
-  struct rounding_struct {
-    CbcParameters::HeurMode mode_;
-    CbcRounding *proto_;
-  } rounding_;
+  HeuristicSettings<CbcRounding> rounding_;
 
   /*! \brief Control variable and prototype for Variable Neighborhood
     heuristic
   */
-  struct Vnd_struct {
-    CbcParameters::HeurMode mode_;
-    CbcHeuristicVND *proto_;
-  } vnd_;
+  HeuristicSettings<CbcHeuristicVND> vnd_;
 
-  CbcParameters::HeurMode randomDivingMode_;
+  CbcParameters::HeurMode randomDivingMode_ = CbcParameters::HeurOff;
 
   /*! \brief Control variables for local tree
 
@@ -2410,9 +2319,7 @@ private:
       and installs a local tree object. But we can keep the parameters here and
       hide the details. Consult CbcTreeLocal.hpp for details.
     */
-  struct localTree_struct {
-    CbcParameters::HeurMode mode_;
-    CbcTreeLocal *proto_;
+  struct localTree_struct : HeuristicSettings<CbcTreeLocal> {
     double *soln_;
     int range_;
     int typeCuts_;

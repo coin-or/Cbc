@@ -1065,7 +1065,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   parameters[CbcParam::GREEDY]->setVal("on");
   parameters[CbcParam::COMBINE]->setVal("off");
   parameters[CbcParam::CROSSOVER]->setVal("off");
-  parameters[CbcParam::PIVOTANDCOMPLEMENT]->setVal("off");
+  //parameters[CbcParam::PIVOTANDCOMPLEMENT]->setVal("off");
   parameters[CbcParam::PIVOTANDFIX]->setVal("off");
   parameters[CbcParam::RANDROUND]->setVal("off");
   parameters[CbcParam::NAIVE]->setVal("off");
@@ -1612,7 +1612,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
       if (!field.length()) {
          if (numberGoodCommands == 1 && goodModel) {
             // we just had file name - do branch and bound
-            field = "branch";
+            field = "-solve";
          } else {
             break;
          }
@@ -1635,7 +1635,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                field = field.substr(1);
             } else {
                // special dispensation - taken as -import --
-               field = "-import";
+               field = "import";
             }
          }
       }
@@ -1647,8 +1647,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                                                      &numberClpMatches,
                                                      &numberClpShortMatches,
                                                      &numberClpQuery);
-      ClpParam *clpParam = clpParameters[clpParamCode];
-
+      
       int numberCbcMatches(0), numberCbcShortMatches(0), numberCbcQuery(0);
       int cbcParamCode = CoinParamUtils::lookupParam(field,
                                                      parameters.paramVec(),
@@ -1670,7 +1669,15 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                    << std::endl;
          cbcParamCode = CbcParam::EXIT;
       }
-      CbcParam *cbcParam = parameters[cbcParamCode];
+
+      CbcParam *cbcParam = parameters[CbcParam::INVALID];
+      ClpParam *clpParam = clpParameters[ClpParam::INVALID];
+
+      if (cbcParamCode >= 0){
+         cbcParam = parameters[cbcParamCode];
+      }else{
+         clpParam = clpParameters[clpParamCode];
+      }
 
 #if 0
       // This logic is all captured in lookupParam
@@ -9368,11 +9375,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                           inputQueue.pop_back();
                        }
                        CoinParamUtils::readFromStream(inputQueue, ifs);
-                    }else{
-                       buffer.str("");
-                       buffer << "No parameter file " << fileName << " found"
-                              << std::endl;
-                       printGeneralMessage(model_, buffer.str());
                     }
                   }
                 }

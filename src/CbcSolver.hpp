@@ -426,6 +426,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 
 void printGeneralMessage(CbcModel &model, std::string message, int type = CBC_GENERAL);
 void printGeneralWarning(CbcModel &model, std::string message, int type = CBC_GENERAL_WARNING);
+CBCLIB_EXPORT
 int cbcReadAmpl(ampl_info *info, int argc, char **argv, CbcModel &model);
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2

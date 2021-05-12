@@ -724,7 +724,7 @@ void semiint1(int &error_count, int &warning_count)
       delete semiintobject;
     }
 
-    cout << "\nSolving semiint1 model for integer lotsize variable being either 0 or between " << points[2] << " and 10.\n"
+    cout << "\nSolving semiint1 model for testcase " << testcase << ".\n"
          << endl;
     std::deque<std::string> inputQueue;
     inputQueue.push_back("-solve");

@@ -2292,24 +2292,23 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
       // aditional parameters specified by user as strings
-      std::deque< string > argv;
-      argv.push_back("Cbc_C_Interface");
+      std::deque< string > inputQueue;
       for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
         string param = model->vcbcOptions[i];
         string val = model->cbcOptions[param];
         if (val.size()) {
           stringstream ss;
           ss << "-" << param << "=" << val;
-          argv.push_back(ss.str().c_str());
+          inputQueue.push_back(ss.str().c_str());
         } else {
           stringstream ss;
           ss << "-" << param;
-          argv.push_back(ss.str());
+          inputQueue.push_back(ss.str());
         }
       }
 
-      argv.push_back("-solve");
-      argv.push_back("-quit");
+      inputQueue.push_back("-solve");
+      inputQueue.push_back("-quit");
 
       OsiBabSolver defaultC;
       if (model->cutCBAtSol) {
@@ -2335,7 +2334,7 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
       cbcModel.setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
 
-      CbcMain1(argv, cbcModel, parameters, cbc_callb);
+      CbcMain1(inputQueue, cbcModel, parameters, cbc_callb);
 
       Cbc_getMIPOptimizationResults( model, cbcModel );
 

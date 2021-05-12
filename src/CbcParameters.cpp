@@ -1177,7 +1177,7 @@ void CbcParameters::addCbcSolverBoolParams() {
   }
 
   parameters_[CbcParam::CPX]->setup(
-      "cplex!Use", "Whether to use Cplex!", "off", 0,
+      "cplex!Use", "Whether to use Cplex!", "off", CbcParameters::ParamOff,
       "If the user has Cplex, but wants to use some of Cbc's heuristics then "
       "you can!  If this is on, then Cbc will get to the root node and then "
       "hand over to Cplex.  If heuristics find a solution this can be "
@@ -1188,14 +1188,14 @@ void CbcParameters::addCbcSolverBoolParams() {
 
   parameters_[CbcParam::DOHEURISTIC]->setup(
       "doH!euristic", "Do heuristics before any preprocessing", "off",
-      getDiveCoefficientMode(),
+      CbcParameters::ParamOff,
       "Normally heuristics are done in branch and bound.  It may be useful to "
       "do them outside. Only those heuristics with 'both' or 'before' set will "
       "run. Doing this may also set cutoff, which can help with "
       "preprocessing.");
 
   parameters_[CbcParam::ERRORSALLOWED]->setup(
-      "error!sAllowed", "Whether to allow import errors", "off", 0,
+      "error!sAllowed", "Whether to allow import errors", "off", CbcParameters::ParamOff,
       "The default is not to use any model which had errors when reading the "
       "mps file.  Setting this to 'on' will allow all errors from which the "
       "code can recover simply by ignoring the error.  There are some errors "
@@ -1204,7 +1204,7 @@ void CbcParameters::addCbcSolverBoolParams() {
 
   parameters_[CbcParam::MESSAGES]->setup(
       "mess!ages", "Controls whether standardised message prefix is printed",
-      "off", 0,
+      "off", CbcParameters::ParamOff,
       "By default, messages have a standard prefix, such as:\n   Clp0005 2261  "
       "Objective 109.024 Primal infeas 944413 (758)\nbut this program turns "
       "this off to make it look more friendly.  It can be useful to turn them "
@@ -1213,19 +1213,19 @@ void CbcParameters::addCbcSolverBoolParams() {
 
   parameters_[CbcParam::PREPROCNAMES]->setup(
       "PrepN!ames", "If column names will be kept in pre-processed model",
-      "off", 0,
+      "off", CbcParameters::ParamOff,
       "Normally the preprocessed model has column names replaced by new names "
       "C0000... Setting this option to on keeps original names in variables "
       "which still exist in the preprocessed problem");
 
   parameters_[CbcParam::SOS]->setup(
-      "sos!Options", "Whether to use SOS from AMPL", "off", 0,
+      "sos!Options", "Whether to use SOS from AMPL", "off", CbcParameters::ParamOff,
       "Normally if AMPL says there are SOS variables they should be used, but "
       "sometimes they should be turned off - this does so.");
 
   parameters_[CbcParam::USESOLUTION]->setup(
       "force!Solution", "Whether to use given solution as crash for BAB", "off",
-      0,
+      CbcParameters::ParamOff,
       "If on then tries to branch to solution given by AMPL or priorities "
       "file.");
 }
@@ -1252,19 +1252,19 @@ void CbcParameters::addCbcSolverCutParams() {
 
   parameters_[CbcParam::FLOWCUTS]->setup(
       "flow!CoverCuts", "Whether to use Flow Cover cuts", "off",
-      getFlowMode(),
+      CbcParameters::CGOff,
       "This switches on flow cover cuts (either at root or in entire "
       "tree)." CUTS_LONGHELP);
 
   parameters_[CbcParam::GMICUTS]->setup(
       "GMI!Cuts", "Whether to use alternative Gomory cuts", "off",
-      getGMIMode(),
+      CbcParameters::CGOff,
       CUTS_LONGHELP " This version is by Giacomo Nannicini and may be more "
                     "robust than gomoryCuts.");
 
   parameters_[CbcParam::GOMORYCUTS]->setup(
       "gomory!Cuts", "Whether to use Gomory cuts", "off",
-      getGomoryMode(),
+      CbcParameters::CGOff,
       "The original cuts - beware of imitations!  Having gone out of favor, "
       "they are now more fashionable as LP solvers are more robust and they "
       "interact well with other cuts.  They will almost always give cuts "
@@ -1275,13 +1275,13 @@ void CbcParameters::addCbcSolverCutParams() {
 
   parameters_[CbcParam::KNAPSACKCUTS]->setup(
       "knapsack!Cuts", "Whether to use Knapsack cuts", "off",
-      getKnapsackMode(),
+      CbcParameters::CGOff,
       "This switches on knapsack cuts (either at root or in entire tree). See "
       "branchAndCut for information on options.");
 
   parameters_[CbcParam::LAGOMORYCUTS]->setup(
       "lagomory!Cuts", "Whether to use Lagrangean Gomory cuts", "off",
-      getLaGomoryMode(),
+      CbcParameters::CGOff,
       "This is a gross simplification of 'A Relax-and-Cut Framework for "
       "Gomory's Mixed-Integer Cuts' by Matteo Fischetti & Domenico Salvagnin.  "
       "This simplification just uses original constraints while modifying "
@@ -1294,61 +1294,61 @@ void CbcParameters::addCbcSolverCutParams() {
 
   parameters_[CbcParam::LANDPCUTS]->setup(
       "lift!AndProjectCuts", "Whether to use lift-and-project cuts", "off",
-      getLandPMode(),
+      CbcParameters::CGOff,
       "This switches on lift-and-project cuts (either at root or in entire "
       "tree). See branchAndCut for information on options.");
 
   parameters_[CbcParam::LATWOMIRCUTS]->setup(
       "latwomir!Cuts", "Whether to use Lagrangean Twomir cuts", "off",
-      getLaTwomirMode(),
+      CbcParameters::CGOff,
       "This is a Lagrangean relaxation for Twomir cuts.  See lagomoryCuts for "
       "description of options.");
 
   parameters_[CbcParam::MIRCUTS]->setup(
       "mixed!IntegerRoundingCuts", "Whether to use Mixed Integer Rounding cuts",
-      "off", getMirMode(),
+      "off", CbcParameters::CGOff,
       "This switches on mixed integer rounding cuts (either at root or in "
       "entire tree).  See branchAndCut for information on options.");
 
   parameters_[CbcParam::ODDWHEELCUTS]->setup(
       "oddwheel!Cuts", "Whether to use odd wheel cuts", "off",
-      getOddWheelMode(),
+      CbcParameters::CGOff,
       "This switches on odd-wheel inequalities (either at root or in entire "
       "tree).");
 
   parameters_[CbcParam::PROBINGCUTS]->setup(
       "probing!Cuts", "Whether to use Probing cuts", "off",
-      getProbingMode(),
+      CbcParameters::CGOff,
       "This switches on probing cuts (either at root or in entire tree). See "
       "branchAndCut for information on options.");
 
   parameters_[CbcParam::REDSPLITCUTS]->setup(
       "reduce!AndSplitCuts", "Whether to use Reduce-and-Split cuts", "off",
-      getRedSplitMode(),
+      CbcParameters::CGOff,
       "This switches on reduce and split cuts (either at root or in entire "
       "tree). See branchAndCut for information on options.");
 
   parameters_[CbcParam::REDSPLIT2CUTS]->setup(
       "reduce2!AndSplitCuts", "Whether to use Reduce-and-Split cuts - style 2",
-      "off", getRedSplit2Mode(),
+      "off", CbcParameters::CGOff,
       "This switches on reduce and split cuts (either at root or in entire "
       "tree). See branchAndCut for information on options.");
 
   parameters_[CbcParam::RESIDCAPCUTS]->setup(
       "residual!CapacityCuts", "Whether to use Residual Capacity cuts", "off",
-      getResidCapMode(),
+      CbcParameters::CGOff,
       CUTS_LONGHELP
       " Reference: https://github.com/coin-or/Cgl/wiki/CglResidualCapacity");
 
   parameters_[CbcParam::TWOMIRCUTS]->setup(
       "two!MirCuts", "Whether to use Two phase Mixed Integer Rounding cuts",
-      "off", getTwomirMode(),
+      "off", CbcParameters::CGOff,
       "This switches on two phase mixed integer rounding cuts (either at root "
       "or in entire tree). See branchAndCut for information on options.");
 
   parameters_[CbcParam::ZEROHALFCUTS]->setup(
       "zero!HalfCuts", "Whether to use zero half cuts", "off",
-      getZeroHalfMode(),
+      CbcParameters::CGOff,
       CUTS_LONGHELP " This implementation was written by Alberto Caprara.");
 
   // Populate the keyword lists
@@ -1450,58 +1450,58 @@ void CbcParameters::addCbcSolverHeurParams() {
 
   parameters_[CbcParam::COMBINE]->setup(
       "combine!Solutions", "Whether to use combine solution heuristic", "off",
-      getCombineMode(),
+      CbcParameters::HeurOff,
       "This switches on a heuristic which does branch and cut on the problem "
       "given by just using variables which have appeared in one or more "
       "solutions. It is obviously only tried after two or more solutions.");
 
   parameters_[CbcParam::CROSSOVER]->setup(
       "combine2!Solutions", "Whether to use crossover solution heuristic",
-      "off", getCrossoverMode());
+      "off", CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DINS]->setup(
       "Dins", "Whether to try Distance Induced Neighborhood Search", "off",
-      getDinsMode(), HEURISTICS_LONGHELP);
+      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGC]->setup(
       "DivingC!oefficient", "Whether to try Coefficient diving heuristic",
-      "off", getDiveCoefficientMode(), HEURISTICS_LONGHELP);
+      "off", CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGF]->setup(
       "DivingF!ractional", "Whether to try Fractional diving heuristic", "off",
-      getDiveFractionalMode(), HEURISTICS_LONGHELP);
+      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGG]->setup(
       "DivingG!uided", "Whether to try Guided diving heuristic", "off",
-      getDiveGuidedMode(), HEURISTICS_LONGHELP);
+      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGL]->setup(
       "DivingL!ineSearch", "Whether to try Linesearch diving heuristic", "off",
-      getDiveLineSearchMode(), HEURISTICS_LONGHELP);
+      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGP]->setup(
       "DivingP!seudocost", "Whether to try Pseudocost diving heuristic", "off",
-      getDivePseudocostMode(), HEURISTICS_LONGHELP);
+      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGS]->setup(
       "DivingS!ome", "Whether to try Diving heuristics", "off",
-      getDiveRandomMode(),
+      CbcParameters::HeurOff,
       "This switches on a random diving heuristic at various times. One may "
       "prefer to individually turn diving heuristics on or off. ");
 
   parameters_[CbcParam::DIVINGV]->setup(
       "DivingV!ectorLength", "Whether to try Vectorlength diving heuristic",
-      "off", getDiveVectorLengthMode(), HEURISTICS_LONGHELP);
+      "off", CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DW]->setup(
       "dw!Heuristic", "Whether to try Dantzig Wolfe heuristic", "off",
-      getDWMode(),
+      CbcParameters::HeurOff,
       "This heuristic is very very compute intensive. It tries to find a "
       "Dantzig Wolfe structure and use that. " HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::FPUMP]->setup(
       "feas!ibilityPump", "Whether to try Feasibility Pump", "off",
-      getFeasPumpMode(),
+      CbcParameters::HeurOff,
       "This switches on feasibility pump heuristic at root. This is due to "
       "Fischetti and Lodi and uses a sequence of LPs to try and get an integer "
       "feasible solution.  Some fine tuning is available by "
@@ -1509,20 +1509,20 @@ void CbcParameters::addCbcSolverHeurParams() {
 
   parameters_[CbcParam::GREEDY]->setup(
       "greedy!Heuristic", "Whether to use a greedy heuristic", "off",
-      getGreedyCoverMode(),
+      CbcParameters::HeurOff,
       "Switches on a pair of greedy heuristic which will try and obtain a "
       "solution.  It may just fix a percentage of variables and then try a "
       "small branch and cut run.");
 
   parameters_[CbcParam::HEURISTICSTRATEGY]->setup(
-      "heur!isticsOnOff", "Switches most heuristics on or off", "off", 0,
+      "heur!isticsOnOff", "Switches most heuristics on or off", "off", CbcParameters::HeurOff,
       "This can be used to switch on or off all heuristics.  Then you can set "
       "individual ones off or on.  CbcTreeLocal is not included as it "
       "dramatically alters search.");
 
   parameters_[CbcParam::LOCALTREE]->setup(
       "local!TreeSearch", "Whether to use local tree search", "off",
-      getLocalTreeMode(),
+      CbcParameters::HeurOff,
       "This switches on a local search algorithm when a solution is found.  "
       "This is from Fischetti and Lodi and is not really a heuristic although "
       "it can be used as one. When used from this program it has limited "
@@ -1530,14 +1530,14 @@ void CbcParameters::addCbcSolverHeurParams() {
 
   parameters_[CbcParam::NAIVE]->setup(
       "naive!Heuristics", "Whether to try some stupid heuristic", "off",
-      getNaiveHeurMode(),
+      CbcParameters::HeurOff,
       "This is naive heuristics which, e.g., fix all integers with costs to "
       "zero!. " HEURISTICS_LONGHELP,
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::PIVOTANDFIX]->setup(
       "pivotAndF!ix", "Whether to try Pivot and Fix heuristic", "off",
-      getPivotAndFixMode(), HEURISTICS_LONGHELP);
+      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
 #if 0
   parameters_[CbcParam::PIVOTANDCOMPLEMENT]->setup("pivotAndC!omplement",
@@ -1548,7 +1548,7 @@ void CbcParameters::addCbcSolverHeurParams() {
 
   parameters_[CbcParam::PROXIMITY]->setup(
       "proximity!Search", "Whether to do proximity search heuristic", "off",
-      getProximityMode(),
+      CbcParameters::HeurOff,
       "This heuristic looks for a solution close to the incumbent solution "
       "(Fischetti and Monaci, 2012). The idea is to define a sub-MIP without "
       "additional constraints but with a modified objective function intended "
@@ -1563,28 +1563,28 @@ void CbcParameters::addCbcSolverHeurParams() {
 
   parameters_[CbcParam::RANDROUND]->setup(
       "randomi!zedRounding", "Whether to try randomized rounding heuristic",
-      "off", getRandRoundMode(), HEURISTICS_LONGHELP);
+      "off", CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::RENS]->setup(
       "Rens", "Whether to try Relaxation Enforced Neighborhood Search", "off",
-      getRensMode(),
+      CbcParameters::HeurOff,
       HEURISTICS_LONGHELP " Value 'on' just does 50 nodes. 200, 1000, and "
                           "10000 does that many nodes.");
 
   parameters_[CbcParam::RINS]->setup(
       "Rins", "Whether to try Relaxed Induced Neighborhood Search", "off",
-      getRinsMode(), HEURISTICS_LONGHELP);
+      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::ROUNDING]->setup(
       "round!ingHeuristic", "Whether to use Rounding heuristic", "off",
-      getRoundingMode(),
+      CbcParameters::HeurOff,
       "This switches on a simple (but effective) rounding heuristic at each "
       "node of tree.");
 
   parameters_[CbcParam::VND]->setup(
       "Vnd!VariableNeighborhoodSearch",
       "Whether to try Variable Neighborhood Search", "off",
-       getVndMode(), HEURISTICS_LONGHELP);
+       CbcParameters::HeurOff, HEURISTICS_LONGHELP);
 
   // Populate the keyword lists
   for (int code = CbcParam::FIRSTHEURPARAM + 1;

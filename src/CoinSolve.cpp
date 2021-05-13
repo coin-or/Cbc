@@ -234,8 +234,8 @@ int main(int argc, const char *argv[])
         // This should be moved to constructor of ClpSolver
         formInputQueue(inputQueue, info.numberArguments, info.arguments);
         // We don't need to first two arguments from here on
-        inputQueue.pop_back();
-        inputQueue.pop_back();
+        inputQueue.pop_front();
+        inputQueue.pop_front();
         returnCode = CbcMain1(inputQueue, model, parameters, dummyCallback,
                               &info);
      }

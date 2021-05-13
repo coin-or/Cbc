@@ -36,8 +36,7 @@ CbcParameters::CbcParameters() : parameters_(CbcParam::LASTPARAM), model_(0)
      parameters_[i] = new CbcParam();
   }
 
-  char dirsep = CoinFindDirSeparator();
-  dfltDirectory_ = (dirsep == '/' ? "./" : ".\\");
+  dfltDirectory_ = "";
   lastMpsIn_ = "";
   allowImportErrors_ = false;
   lastSolnOut_ = "stdout";

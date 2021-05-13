@@ -2576,11 +2576,22 @@ void CbcModel::branchAndBound(int doStatistics)
       moreSpecialOptions_ &= ~33554432; // no diving
     }
     if (numberThreads_ > 0) {
-      /* switch off fast nodes for now
-               Trouble is that by time mini bab finishes code is
-               looking at a different node
-             */
-      fastNodeDepth_ = -1;
+      /* switch off fast nodes for now (unless user really wants)
+	 Trouble is that by time mini bab finishes code is
+	 looking at a different node
+      */
+      bool switchOff = true;
+#ifdef CBC_HAS_CLP
+      OsiClpSolverInterface *clpSolver
+	= dynamic_cast< OsiClpSolverInterface * >(solver_);
+      if (clpSolver) {
+	ClpSimplex *clpSimplex = clpSolver->getModelPtr();
+	if ((clpSimplex->moreSpecialOptions()&2048) != 0)
+	  switchOff = false;
+      }
+#endif
+      if (switchOff)
+	fastNodeDepth_ = -1;
     }
   }
   // Save objective (just so user can access it)
@@ -13697,7 +13708,7 @@ void CbcModel::setBestSolution(CBC_Message how, double &objectiveValue,
     double newTrueSolutionValue = -saveOffset;
     double newSumInfeas = 0.0;
     int numberColumns = solver_->getNumCols();
-    for (int i = 0; i < numberColumns; i++) {
+    for (int i = 0; i < numberColumns; i++) { 
       if (solver_->isInteger(i)) {
         double value = solution[i];
         double nearest = floor(value + 0.5);
@@ -16159,6 +16170,18 @@ void CbcModel::setBestSolution(const double *solution, int numberColumns,
       messageHandler()->message(CBC_GENERAL, messages())
           << printBuffer << CoinMessageEol;
     }
+  } else {
+    // at least recompute objective value
+    double saveX = objectiveValue;
+    double offset;
+    solver_->getDblParam(OsiObjOffset, offset);
+    objectiveValue = -offset;
+    const double *objective = solver_->getObjCoefficients();
+    int numberColumns = solver_->getNumCols();
+    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+      double value = solution[iColumn];
+      objectiveValue += value * objective[iColumn];
+    }
   }
   if (bestSolution_)
     saveExtraSolution(bestSolution_, bestObjective_);
@@ -17170,7 +17193,9 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
                     fathomStatus);
             messageHandler()->message(CBC_FPUMP2, messages())
                 << general << CoinMessageEol;
-            if (info->numberNodesExplored_ > 10000 /* && !feasible */
+            if ((info->numberNodesExplored_ > 50000 ||
+		 info->numberNodesExplored_ > 10000 &&
+		 (moreSpecialOptions_&2048) == 0)
                 && (moreSpecialOptions_ & 524288) == 0 && info->nNodes_ >= 0) {
               fastNodeDepth_--;
 #ifndef NO_FATHOM_PRINT
@@ -17186,7 +17211,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
             if (info->nNodes_ < 0) {
               // we gave up
               // abort();
-              fastNodeDepth_ -= (info->nNodes_ == -10) ? 5 : 2;
+              fastNodeDepth_ -= 2;
               if (info->nNodes_ == -99)
                 fastNodeDepth_ = -1; // switch off
 #ifndef NO_FATHOM_PRINT
@@ -18572,6 +18597,8 @@ void CbcModel::goToDantzig(int numberNodes, ClpDualRowPivot *&savePivotMethod) {
         ClpDualRowDantzig *pivot =
             dynamic_cast<ClpDualRowDantzig *>(pivotMethod);
         if (!pivot) {
+	  if ((simplex->moreSpecialOptions()&2048)!=0)
+	    return;
           savePivotMethod = pivotMethod->clone(true);
           ClpDualRowDantzig dantzig;
           simplex->setDualRowPivotAlgorithm(dantzig);

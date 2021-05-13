@@ -566,7 +566,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
       char replace[100];
       //newArgv[0] = "unitTestCbc";
       newInputQueue.push_back(fn);
-      for (int i = 2; i < inputQueue.size()-1; i++) {
+      for (int i = 0; i < inputQueue.size(); i++) {
 	if (inputQueue[i] != "++") {
            if (testSwitch >=1000000) {
               // take out dextra3

@@ -139,6 +139,7 @@ matrix:
 
   allow_failures:
     - os: windows
+    - os: osx
 
 before_install:
 - |-

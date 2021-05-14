@@ -16170,6 +16170,7 @@ void CbcModel::setBestSolution(const double *solution, int numberColumns,
       messageHandler()->message(CBC_GENERAL, messages())
           << printBuffer << CoinMessageEol;
     }
+#if 0 // breaks unit tests (as objective can be flipped)
   } else {
     // at least recompute objective value
     double saveX = objectiveValue;
@@ -16182,6 +16183,9 @@ void CbcModel::setBestSolution(const double *solution, int numberColumns,
       double value = solution[iColumn];
       objectiveValue += value * objective[iColumn];
     }
+    if (fabs(saveX-objectiveValue)>1.0e-5)
+      printf("in %g out %g\n",saveX,objectiveValue);
+#endif
   }
   if (bestSolution_)
     saveExtraSolution(bestSolution_, bestObjective_);

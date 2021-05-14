@@ -1589,6 +1589,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             interactiveMode = true;
             while (!inputQueue.empty())
                inputQueue.pop_front();
+	    field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
          } else if (field[0] != '-') {
             // special dispensation - taken as -import name, put name back on queue
             inputQueue.push_front(field);
@@ -1629,9 +1630,17 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
          continue;
       }
       if (numberMatches == 0){
-         std::cout << "Unrecognized parameter, exiting..."
-                   << std::endl;
-         cbcParamCode = CbcParam::EXIT;
+	if (!interactiveMode){
+	  std::cout << "Unrecognized parameter - " << field
+		    << ", exiting..."
+		    << std::endl;
+	  cbcParamCode = CbcParam::EXIT;
+	} else {
+	  std::cout << "Unrecognized parameter - " << field
+		    << " - enter valid command or end to exit"
+		    << std::endl;
+	  continue;
+	}
       }
 
       CbcParam *cbcParam = parameters[CbcParam::INVALID];
@@ -2267,7 +2276,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
            } 
         } else if (cbcParam->type() == CoinParam::paramKwd) {
            status = CoinParamUtils::getValue(inputQueue, field);
-           if (!cbcParam->setVal(field, &message)){
+           if (cbcParam->setVal(field, &message)){
               cbcParam->printOptions();
            }else{
               printGeneralMessage(model_, message);

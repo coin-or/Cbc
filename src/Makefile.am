@@ -211,6 +211,7 @@ includecoin_HEADERS = \
 	CbcFullNodeInfo.hpp \
 	CbcGeneral.hpp \
 	CbcGeneralDepth.hpp \
+	CbcGenMessages.hpp \
 	CbcHeuristic.hpp \
 	CbcHeuristicDINS.hpp \
 	CbcHeuristicDive.hpp \

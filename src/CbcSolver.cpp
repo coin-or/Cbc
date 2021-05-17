@@ -1045,6 +1045,9 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   parameters[CbcParam::GREEDY]->setVal("on");
   parameters[CbcParam::COMBINE]->setVal("off");
   parameters[CbcParam::CROSSOVER]->setVal("off");
+#ifdef CBC_HAS_NAUTY
+  parameters[CbcParam::ORBITAL]->setVal("on");
+#endif
   //parameters[CbcParam::PIVOTANDCOMPLEMENT]->setVal("off");
   parameters[CbcParam::PIVOTANDFIX]->setVal("off");
   parameters[CbcParam::RANDROUND]->setVal("off");
@@ -2133,6 +2136,14 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     bkClqExtMethod = iValue;
                  } else if (cbcParamCode == CbcParam::ODDWEXTMETHOD) {
                     oddWExtMethod = iValue;
+                 } else if (cbcParamCode == CbcParam::LOGLEVEL) {
+		   model_.messageHandler()->setLogLevel(CoinAbs(iValue));
+                 } else if (cbcParamCode == CbcParam::MAXNODES) {
+		   model_.setIntParam(CbcModel::CbcMaxNumNode, iValue);
+                 } else if (cbcParamCode == CbcParam::MAXSOLS) {
+		   model_.setIntParam(CbcModel::CbcMaxNumSol, iValue);
+                 } else if (cbcParamCode == CbcParam::STRONGBRANCHING) {
+		   model_.setNumberStrong(iValue);
                  } else if (cbcParamCode == CbcParam::EXPERIMENT && iValue < 10000) {
                     int addFlags = 0;
                     // switch on some later features if >999
@@ -2268,10 +2279,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                           probingAction = 0;
                        }
                     }
+		    cbcParam->setVal(iValue, &message);
+		    printGeneralMessage(model_, message);
                  }
-                 int returnCode;
-                 cbcParam->setVal(iValue, &message);
-                 printGeneralMessage(model_, message);
               }
            } 
         } else if (cbcParam->type() == CoinParam::paramKwd) {
@@ -5828,6 +5838,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               }
               int experimentFlag = parameters[CbcParam::EXPERIMENT]->intVal();
               int strategyFlag = parameters[CbcParam::STRATEGY]->modeVal();
+	      // but order has changed 0 <-> 1
+	      if (strategyFlag < 2)
+		strategyFlag = 1 - strategyFlag;
               int bothFlags = CoinMax(CoinMin(experimentFlag, 1), strategyFlag);
               // add cut generators if wanted
               int switches[30] = {};
@@ -8906,13 +8919,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 if (iStat2 >= 2 && iStat2 <= 6) {
                    bool minimizing = babModel_->solver()->getObjSense() > 0.0;
                    std::string tmp = minimizing ? "Lower" : "Upper";
-                   buffer << tmp << " bound: "
+                   buffer << tmp << " bound:                    "
                           << babModel_->getBestPossibleObjValue() << std::endl;
                    if (babModel_->bestSolution()) {
                       buffer << "Gap:                            "
                              << (babModel_->getObjValue() -
                                  babModel_->getBestPossibleObjValue()) /
-                         fabs(babModel_->getBestPossibleObjValue());
+			fabs(babModel_->getBestPossibleObjValue()) << std::endl;
                    }
                 }
                 buffer << "Enumerated nodes:               "

@@ -103,6 +103,10 @@ public:
     - IPPEqualAll: IPPOn, plus turns all valid inequalities into equalities
     with integer slacks.
     - IPPStrategy: look to CbcStrategy object for instructions.
+    - IPPAggregate: ?.
+    - IPPForceSOS try even harder/
+    - IPPStopAfterSaving :.
+    - IPPEqualAllStop:.
 
     IPPSOS will create SOS sets if all binary variables (except perhaps one)
     can be covered by SOS sets with no overlap between sets. IPPTrySOS will
@@ -118,6 +122,10 @@ public:
     IPPTrySOS,
     IPPEqualAll,
     IPPStrategy,
+    IPPAggregate,
+    IPPForceSOS,
+    IPPStopAfterSaving,
+    IPPEqualAllStop,
     IPPEndMarker
   };
 
@@ -171,22 +179,22 @@ public:
   /*! \brief What orbital branching strategy to use
 
     - OBOff:
-    - OBOn:
     - OBSlowish:
     - OBStrong:
     - OBForce:
     - OBSimple:
+    - OBOn:
     - OBMorePrinting:
     - OBEndMarker
    */
 
   enum OrbitalStrategy {
     OBOff = 0,
-    OBOn,
     OBSlowish,
     OBStrong,
     OBForce,
     OBSimple,
+    OBOn,
     OBMorePrinting,
     OBEndMarker
   };

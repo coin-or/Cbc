@@ -99,6 +99,8 @@ bool CbcTestMpsFile(std::string &fname)
   }
   return false;
 }
+// Original input
+extern std::deque<std::string> saveInputQueue;
 //#############################################################################
 /*
   jjf: testSwitch -2 unitTest, -1 normal (==2)
@@ -566,30 +568,37 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
       char replace[100];
       //newArgv[0] = "unitTestCbc";
       newInputQueue.push_back(fn);
-      for (int i = 0; i < inputQueue.size(); i++) {
-	if (inputQueue[i] != "++") {
+      // was
+      //for (int i = 0; i < inputQueue.size(); i++) {
+      // now
+      assert (saveInputQueue[0]=="-dirmiplib");
+      for (int i = 2; i < saveInputQueue.size(); i++) {
+	if (saveInputQueue[i] != "++") {
            if (testSwitch >=1000000) {
               // take out dextra3
-              if (inputQueue[i] == "dextra3") {
+              if (saveInputQueue[i] == "dextra3") {
                  continue;
               }
            }
-           newInputQueue.push_back(inputQueue[i]);
+	   if (saveInputQueue[i] != "-unittest") 
+	     newInputQueue.push_back(saveInputQueue[i]);
+	   else 
+	     newInputQueue.push_back("-solve");
 	} else {
           //FIXME: This should be changed to use modern C++
-          int n = strstr(inputQueue[i].c_str(), "++") - inputQueue[i].c_str();
-	  strncpy(replace, inputQueue[i].c_str(), n);
+          int n = strstr(saveInputQueue[i].c_str(), "++") - saveInputQueue[i].c_str();
+	  strncpy(replace, saveInputQueue[i].c_str(), n);
 	  const char * mipname = mpsName[m].c_str();
 	  int n1 = n;
 	  for (int j=0;j<strlen(mipname);j++){
 	    replace[n++]=mipname[j];
           }
-	  for (int j=n1+2;j<inputQueue[i].length();j++){
-             replace[n++]=inputQueue[i].c_str()[j];
+	  for (int j=n1+2;j<saveInputQueue[i].length();j++){
+             replace[n++]=saveInputQueue[i].c_str()[j];
           }
 	  replace[n] = '\0';
 	  newInputQueue.push_back(replace);
-	  printf("Replacing %s by %s\n",inputQueue[i].c_str(),replace);
+	  printf("Replacing %s by %s\n",saveInputQueue[i].c_str(),replace);
 	}
       }
       /*

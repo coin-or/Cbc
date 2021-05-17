@@ -99,8 +99,6 @@ bool CbcTestMpsFile(std::string &fname)
   }
   return false;
 }
-// Original input
-extern std::deque<std::string> saveInputQueue;
 //#############################################################################
 /*
   jjf: testSwitch -2 unitTest, -1 normal (==2)
@@ -559,6 +557,17 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
     // Careful! We're initialising for the benefit of other code.
     CoinDrand48(true, 123456);
     double startTime = CoinCpuTime() + CoinCpuTimeJustChildren();
+#ifdef CBC_ALLOW_UNIT_TESTING
+    // Original input
+    extern std::deque<std::string> saveInputQueue;
+#else
+    // inputQueue is always empty
+    std::deque<std::string> saveInputQueue;
+    saveInputQueue.push_back("-dirmiplib");
+    saveInputQueue.push_back("dummy.mps");
+    saveInputQueue.push_back("-unittest");
+    saveInputQueue.push_back("-end");
+#endif
     if (oldStyle) {
       model = new CbcModel(saveModel);
       model->solver()->readMps(fn.c_str(), "");

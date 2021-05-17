@@ -725,12 +725,12 @@ void CbcParameters::addCbcSolverKwdParams() {
       CbcParameters::OBOff,
       "This switches on Orbital branching. Value 'on' just adds orbital, "
       "'strong' tries extra fixing in strong branching.");
-  parameters_[CbcParam::ORBITAL]->appendKwd("on", CbcParameters::OBOn);
   parameters_[CbcParam::ORBITAL]->appendKwd("slowish", CbcParameters::OBSlowish);
   parameters_[CbcParam::ORBITAL]->appendKwd("strong", CbcParameters::OBStrong);
   parameters_[CbcParam::ORBITAL]->appendKwd("force", CbcParameters::OBForce);
   parameters_[CbcParam::ORBITAL]->appendKwd("simple", CbcParameters::OBSimple);
-  parameters_[CbcParam::ORBITAL]->appendKwd("moreprinting", CbcParameters::OBMorePrinting);
+  parameters_[CbcParam::ORBITAL]->appendKwd("on", CbcParameters::OBOn);
+  parameters_[CbcParam::ORBITAL]->appendKwd("moreprinting", CbcParameters::OBMorePrinting);  
 
   parameters_[CbcParam::PREPROCESS]->setup(
       "preprocess", "Whether to use integer preprocessing", "off",
@@ -750,6 +750,10 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::PREPROCESS]->appendKwd("trysos", CbcParameters::IPPTrySOS);
   parameters_[CbcParam::PREPROCESS]->appendKwd("equalall", CbcParameters::IPPEqualAll);
   parameters_[CbcParam::PREPROCESS]->appendKwd("strategy", CbcParameters::IPPStrategy);
+  parameters_[CbcParam::PREPROCESS]->appendKwd("aggregate", CbcParameters::IPPAggregate);
+  parameters_[CbcParam::PREPROCESS]->appendKwd("forcesos", CbcParameters::IPPForceSOS);
+  parameters_[CbcParam::PREPROCESS]->appendKwd("stop!aftersaving", CbcParameters::IPPStopAfterSaving);
+  parameters_[CbcParam::PREPROCESS]->appendKwd("equalallstop", CbcParameters::IPPEqualAllStop);
 
   parameters_[CbcParam::SOSPRIORITIZE]->setup(
       "sosP!rioritize", "How to deal with SOS priorities", "off",
@@ -767,8 +771,8 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::STRATEGY]->setup(
       "strat!egy", "Switches on groups of features", "default",
       CbcParameters::StrategyDefault,
-      "This turns on newer features. Use 0 for easy problems, 1 is default, 2 "
-      "is aggressive. 1 uses Gomory cuts with a tolerance of 0.01 at the root "
+      "This turns on newer features. "
+      "Default uses Gomory cuts with a tolerance of 0.01 at the root "
       "node, does a possible restart after 100 nodes if many variables could "
       "be fixed, activates a diving and RINS heuristic, and makes the "
       "feasibility pump more aggressive."); // This does not apply to unit tests

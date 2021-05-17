@@ -1868,7 +1868,7 @@ void CbcModel::branchAndBound(int doStatistics)
 {
   // randomNumberGenerator_.setSeed(987654321);
   if (!parentModel_) {
-    /*
+    /* 
         Capture a time stamp before we start (unless set).
       */
     if (!dblParam_[CbcStartSeconds]) {

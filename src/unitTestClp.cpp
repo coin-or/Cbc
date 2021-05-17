@@ -591,8 +591,6 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
            }
 	   if (saveInputQueue[i] != "-unittest") 
 	     newInputQueue.push_back(saveInputQueue[i]);
-	   else 
-	     newInputQueue.push_back("-solve");
 	} else {
           //FIXME: This should be changed to use modern C++
           int n = strstr(saveInputQueue[i].c_str(), "++") - saveInputQueue[i].c_str();

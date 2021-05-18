@@ -1097,6 +1097,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   CglPreProcess *preProcessPointer = NULL;
   OsiSolverInterface *saveSolver = NULL;
   CglPreProcess process;
+  // Save a copy of input for unit testing
+  // Could also be used for friendly error messages?
+  std::deque<std::string> saveInputQueue = inputQueue;
   // Meaning 0 - start at very beginning
   // 1 start at beginning of preprocessing
   // 2 start at beginning of branch and bound
@@ -8406,8 +8409,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                    parameters[CbcParam::DIRMIPLIB]->strVal();
                 if (dirMiplib != ""){
                    int returnCode =
-                      CbcClpUnitTest(model_, dirMiplib, extra2, stuff, inputQueue,
-                                  callBack, parameters);
+                      CbcClpUnitTest(model_, dirMiplib, extra2, stuff,
+				     saveInputQueue, callBack, parameters);
                    babModel_ = NULL;
                    return returnCode;
                 }
@@ -10308,11 +10311,11 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             std::string dirMiplib = parameters[CbcParam::DIRMIPLIB]->strVal();
             std::string dirSample = parameters[CbcParam::DIRSAMPLE]->strVal();
             if (dirMiplib != ""){
-              returnCode = CbcClpUnitTest(model_, dirMiplib, -3, NULL, inputQueue,
-                                          callBack, parameters);
+              returnCode = CbcClpUnitTest(model_, dirMiplib, -3, NULL,
+					  saveInputQueue,callBack, parameters);
             } else if (dirSample != ""){
-              returnCode = CbcClpUnitTest(model_, dirSample, -2, NULL, inputQueue,
-                                          callBack, parameters);
+              returnCode = CbcClpUnitTest(model_, dirSample, -2, NULL,
+					  saveInputQueue,callBack, parameters);
             } else {
                buffer.str("");
                buffer << "No directory specified for input files"

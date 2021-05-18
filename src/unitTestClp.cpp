@@ -127,7 +127,8 @@ bool CbcTestMpsFile(std::string &fname)
      100*(number with bad objective)+(number that exceeded node limit)
 */
 int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
-		   int testSwitch, const double *stuff, std::deque<std::string> inputQueue,
+		   int testSwitch, const double *stuff,
+		   std::deque<std::string> originalInputQueue,
 		   int callBack(CbcModel *currentSolver, int whereFrom),
 		   CbcParameters &parameters)
 {
@@ -525,6 +526,23 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
   int numberAttempts = 0;
   int numProbSolved = 0;
   double timeTaken = 0.0;
+  // tidy original input queue
+  std::deque<std::string> inputQueue = originalInputQueue;
+  {
+    // take off first two parameters of initial queue
+    inputQueue.pop_front();
+    inputQueue.pop_front();
+    // take off unitTest
+    std::string unitTest = inputQueue.back();
+    std::string check="-unitTest";
+    size_t i;
+    for (i = 0; i < unitTest.size(); i++) {
+      if (tolower(unitTest[i]) != tolower(check[i]))
+        break;
+    }
+    assert (i == unitTest.size());
+    inputQueue.pop_back();
+  }
 
 //#define CLP_FACTORIZATION_INSTRUMENT
 #ifdef CLP_FACTORIZATION_INSTRUMENT
@@ -557,17 +575,6 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
     // Careful! We're initialising for the benefit of other code.
     CoinDrand48(true, 123456);
     double startTime = CoinCpuTime() + CoinCpuTimeJustChildren();
-#ifdef CBC_ALLOW_UNIT_TESTING
-    // Original input
-    extern std::deque<std::string> saveInputQueue;
-#else
-    // inputQueue is always empty
-    std::deque<std::string> saveInputQueue;
-    saveInputQueue.push_back("-dirmiplib");
-    saveInputQueue.push_back("dummy.mps");
-    saveInputQueue.push_back("-unittest");
-    saveInputQueue.push_back("-end");
-#endif
     if (oldStyle) {
       model = new CbcModel(saveModel);
       model->solver()->readMps(fn.c_str(), "");
@@ -577,35 +584,30 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
       char replace[100];
       //newArgv[0] = "unitTestCbc";
       newInputQueue.push_back(fn);
-      // was
-      //for (int i = 0; i < inputQueue.size(); i++) {
-      // now
-      assert (saveInputQueue[0]=="-dirmiplib");
-      for (int i = 2; i < saveInputQueue.size(); i++) {
-	if (saveInputQueue[i] != "++") {
+      for (int i = 0; i < inputQueue.size(); i++) {
+	if (inputQueue[i] != "++") {
            if (testSwitch >=1000000) {
               // take out dextra3
-              if (saveInputQueue[i] == "dextra3") {
+              if (inputQueue[i] == "dextra3") {
                  continue;
               }
            }
-	   if (saveInputQueue[i] != "-unittest") 
-	     newInputQueue.push_back(saveInputQueue[i]);
+	   newInputQueue.push_back(inputQueue[i]);
 	} else {
           //FIXME: This should be changed to use modern C++
-          int n = strstr(saveInputQueue[i].c_str(), "++") - saveInputQueue[i].c_str();
-	  strncpy(replace, saveInputQueue[i].c_str(), n);
+          int n = strstr(inputQueue[i].c_str(), "++") - inputQueue[i].c_str();
+	  strncpy(replace, inputQueue[i].c_str(), n);
 	  const char * mipname = mpsName[m].c_str();
 	  int n1 = n;
 	  for (int j=0;j<strlen(mipname);j++){
 	    replace[n++]=mipname[j];
           }
-	  for (int j=n1+2;j<saveInputQueue[i].length();j++){
-             replace[n++]=saveInputQueue[i].c_str()[j];
+	  for (int j=n1+2;j<inputQueue[i].length();j++){
+             replace[n++]=inputQueue[i].c_str()[j];
           }
 	  replace[n] = '\0';
 	  newInputQueue.push_back(replace);
-	  printf("Replacing %s by %s\n",saveInputQueue[i].c_str(),replace);
+	  printf("Replacing %s by %s\n",inputQueue[i].c_str(),replace);
 	}
       }
       /*
@@ -615,7 +617,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
          newInputQueue.push_back("-debug");
          newInputQueue.push_back("unitTest");
       }
-      newInputQueue.push_back("-solve");
+      if (newInputQueue.back()!="-solve")
+	newInputQueue.push_back("-solve"); 
       model = new CbcModel(solver1);
       CbcMain0(*model, parameters);
       CbcMain1(newInputQueue, *model, parameters, callBack);

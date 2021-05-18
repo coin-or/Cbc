@@ -192,9 +192,6 @@ void formInputQueue(std::deque<std::string> &inputQueue,
       }
    }
 }
-// Save a copy of input for unit testing
-// Could also be used for friendly error messages?
-std::deque<std::string> saveInputQueue;
 //#############################################################################
 //#############################################################################
 
@@ -244,8 +241,6 @@ int main(int argc, const char *argv[])
   } else {
      // Put arguments into a queue.
      formInputQueue(inputQueue, argc, const_cast< char ** >(argv));
-     // save in case unit test
-     saveInputQueue = inputQueue;
      returnCode = CbcMain1(inputQueue, model, parameters);
   }     
 

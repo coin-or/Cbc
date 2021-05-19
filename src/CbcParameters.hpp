@@ -1805,6 +1805,11 @@ public:
   /*! \brief Get LP log level */
   inline CbcModel *getModel() const { return (model_); }
 
+#ifdef CBC_CLUMSY_CODING
+  /*! \brief Synchronize Cbc (and Clp) model - Int and Dbl */
+  void synchronizeModel();
+#endif
+
   /*! \brief Get total time */
   inline double getTotalTime() const { return totalTime_; }
 

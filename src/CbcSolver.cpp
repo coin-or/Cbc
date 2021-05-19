@@ -962,6 +962,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   ClpSimplex *lpSolver = clpSolver->getModelPtr();
   lpSolver->setPerturbation(50);
   lpSolver->messageHandler()->setPrefix(false);
+  clpParameters.setModel(lpSolver);
 #endif
   // establishParams(numberParameters, parameters) ;
   const char dirsep = CoinFindDirSeparator();
@@ -1022,7 +1023,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   parameters[CbcParam::ODDWEXTMETHOD]->setVal(2);
   parameters[CbcParam::PREPROCESS]->setVal("sos");
   parameters[CbcParam::MIPOPTIONS]->setVal(1057);
-  parameters[CbcParam::CUTPASSINTREE]->setVal(1);
+  parameters[CbcParam::CUTPASSINTREE]->setVal(10);
   parameters[CbcParam::MOREMIPOPTIONS]->setVal(-1);
   parameters[CbcParam::MAXHOTITS]->setVal(100);
   parameters[CbcParam::CUTSTRATEGY]->setVal("on");
@@ -1060,7 +1061,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
 
   model.messageHandler()->setLogLevel(1);
   model.setNumberBeforeTrust(10);
-  parameters[CbcParam::NUMBERBEFORE]->setVal(5);
+  parameters[CbcParam::NUMBERBEFORE]->setVal(10);
   parameters[CbcParam::MAXNODES]->setVal(model.getMaximumNodes());
   model.setNumberStrong(5);
   parameters[CbcParam::STRONGBRANCHING]->setVal(model.numberStrong());
@@ -3700,6 +3701,11 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           case CbcParam::BAB: // branchAndBound
             // obsolete case CbcParam::STRENGTHEN:
             if (goodModel) {
+#ifdef CBC_CLUMSY_CODING
+	      parameters.setModel(&model_);
+	      parameters.setGoodModel(true);
+	      parameters.synchronizeModel();
+#endif
               bool miplib = cbcParamCode == CbcParam::MIPLIB;
               int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
               int truncateColumns = COIN_INT_MAX;

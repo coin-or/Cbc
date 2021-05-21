@@ -2096,10 +2096,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                  substitution = iValue;
               } else if (clpParamCode == ClpParam::DUALIZE) {
                  dualize = iValue;
-              } else if (cbcParamCode == CbcParam::PROCESSTUNE) {
-                 tunePreProcess = iValue;
-              } else if (cbcParamCode == CbcParam::VERBOSE) {
-                 verbose = iValue;
               }
            }
         } else if (cbcParam->type() == CoinParam::paramInt){
@@ -2148,6 +2144,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		   model_.setIntParam(CbcModel::CbcMaxNumSol, iValue);
                  } else if (cbcParamCode == CbcParam::STRONGBRANCHING) {
 		   model_.setNumberStrong(iValue);
+		 } else if (cbcParamCode == CbcParam::PROCESSTUNE) {
+		   tunePreProcess = iValue;
+		 } else if (cbcParamCode == CbcParam::VERBOSE) {
+		   verbose = iValue;
                  } else if (cbcParamCode == CbcParam::EXPERIMENT && iValue < 10000) {
                     int addFlags = 0;
                     // switch on some later features if >999

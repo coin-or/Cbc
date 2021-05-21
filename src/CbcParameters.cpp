@@ -337,7 +337,7 @@ void CbcParameters::synchronizeModel() {
 #ifdef PRINT_CBC_CHANGES
     modelIntValue = model_->numberStrong();
     if (intValue!=modelIntValue)
-      printf("changing MAXSAVEDSOLS from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
+      printf("changing STRONGBRANCHING from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
 #endif
     model_->setNumberStrong(intValue);
     parameters_[CbcParam::NUMBERBEFORE]->getVal(intValue);
@@ -1982,7 +1982,7 @@ void CbcParameters::addCbcModelParams()
       "absolute value rather than fraction.");
 
   parameters_[CbcParam::TIMELIMIT]->setup(
-      "sec!onds", "Maximum seconds for branch and cut", -1.0, 1.0e12, -1.0,
+      "sec!onds", "Maximum seconds for branch and cut", -1.0, 1.0e12, 1.0e11,
       "After this many seconds the program will act as if maximum nodes had "
       "been reached.");
 

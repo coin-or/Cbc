@@ -13715,7 +13715,8 @@ void CbcModel::setBestSolution(CBC_Message how, double &objectiveValue,
         newSumInfeas += fabs(value - nearest);
       }
       if (solution[i])
-        printf("%d obj %g val %g - total %g true\n", i, obj[i], solution[i],
+        printf("%d (%c) obj %g val %g - total %g true\n",
+	       i, solver_->isInteger(i) ? 'I':' ',obj[i], solution[i],
                newTrueSolutionValue);
       newTrueSolutionValue += obj[i] * solution[i];
     }

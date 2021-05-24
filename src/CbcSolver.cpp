@@ -4775,7 +4775,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                         numberProhibited++;
                       }
                     }
-                    if (numberProhibited)
+                    if (numberProhibited) 
                       process.passInProhibited(prohibited, numberColumns);
                     delete[] prohibited;
                   }
@@ -8603,7 +8603,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   // Double check bounds
                   columnLower = saveSolver->getColLower();
                   columnUpper = saveSolver->getColUpper();
-		  if ((process.options()&128)!=0)
+		  // skip tighten if not integer if ((process.options()&128)!=0)
 		    tightenB = false;
                   int numberChanged = 0;
 		  if ((process.options()&256)==0) {

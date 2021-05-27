@@ -25,7 +25,12 @@
   ordering.
 */
 
-CbcParameters::CbcParameters() : parameters_(CbcParam::LASTPARAM), model_(0)
+CbcParameters::CbcParameters() : CbcParameters(DefaultStrategy)
+{
+}
+
+CbcParameters::CbcParameters(int strategy) :
+   parameters_(CbcParam::LASTPARAM), model_(0)
 {
   /*
       It's unclear to me that this is a good choice for dfltDirectory. Makes
@@ -175,9 +180,13 @@ CbcParameters::CbcParameters() : parameters_(CbcParam::LASTPARAM), model_(0)
 
   addCbcParams();
   addCbcModelParams();
+  setDefaults(strategy);
 
   return;
 }
+
+//###########################################################################
+//###########################################################################
 
 /*
   Note that we don't want to delete dfltSolver_ here because it's just a
@@ -236,6 +245,9 @@ CbcParameters::~CbcParameters() {
   return;
 }
 
+//###########################################################################
+//###########################################################################
+
 int CbcParameters::matches(std::string field, int &numberMatches){
    int firstMatch = -1;
    for (int iParam = 0; iParam < (int)parameters_.size(); iParam++) {
@@ -273,6 +285,9 @@ int CbcParameters::matches(std::string field, int &numberMatches){
   "option doHeuristics is used. Value 'both' means to use the heuristic if "   \
   "option doHeuristics is used and during solve."
 
+//###########################################################################
+//###########################################################################
+
 /*
   Function to add Cbc parameters to the Cbc parameter
   vector. Where needed, defaults are drawn from CbcParameters.
@@ -301,6 +316,183 @@ void CbcParameters::addCbcParams() {
 
   return;
 }
+
+//###########################################################################
+//###########################################################################
+
+void CbcParameters::setDefaults(int strategy) {
+
+   for (int code = CbcParam::FIRSTSTRINGPARAM + 1;
+       code < CbcParam::LASTSTRINGPARAM; code++) {
+      getParam(code)->setDefault(dfltDirectory_);
+  }
+
+  // Now set up  parameters according to overall strategies
+  switch (strategy) {
+   case CbcParameters::DefaultStrategy:
+     parameters_[CbcParam::DEBUG]->setDefault("");
+     parameters_[CbcParam::GMPLSOLFILE]->setDefault(std::string("gmpl.sol"));
+     parameters_[CbcParam::MODELFILE]->setDefault(std::string("prob.mod"));
+     parameters_[CbcParam::NEXTSOLFILE]->setDefault(std::string("next.sol"));
+     parameters_[CbcParam::PRINTMASK]->setDefault("");
+     parameters_[CbcParam::SOLUTIONFILE]->setDefault(std::string("opt.sol"));
+     parameters_[CbcParam::PRIORITYIN]->setDefault(std::string("priorities.txt"));
+     parameters_[CbcParam::COMMANDPRINTLEVEL]->setDefault("high");
+     parameters_[CbcParam::CLQSTRENGTHENING]->setDefault("after");
+     parameters_[CbcParam::BRANCHPRIORITY]->setDefault("off");
+     parameters_[CbcParam::CUTOFFCONSTRAINT]->setDefault("off");
+     parameters_[CbcParam::INTPRINT]->setDefault("normal");
+     parameters_[CbcParam::NODESTRATEGY]->setDefault("hybrid");
+     parameters_[CbcParam::ORBITAL]->setDefault("off");
+     parameters_[CbcParam::PREPROCESS]->setDefault("off");
+     parameters_[CbcParam::SOSPRIORITIZE]->setDefault("off");
+     parameters_[CbcParam::STRATEGY]->setDefault("default");
+     parameters_[CbcParam::TIMEMODE]->setDefault("cpu");
+     parameters_[CbcParam::USECGRAPH]->setDefault("on");
+     parameters_[CbcParam::ARTIFICIALCOST]->setDefault(getArtVarThreshold());
+     parameters_[CbcParam::DEXTRA3]->setDefault(0.0);
+     parameters_[CbcParam::DEXTRA4]->setDefault(0.0);
+     parameters_[CbcParam::DEXTRA5]->setDefault(0.0);
+     parameters_[CbcParam::DJFIX]->setDefault(getDjFixThreshold());
+     parameters_[CbcParam::FAKECUTOFF]->setDefault(0.0);
+     parameters_[CbcParam::FAKEINCREMENT]->setDefault(0.0);
+     parameters_[CbcParam::SMALLBAB]->setDefault(0.5);
+     parameters_[CbcParam::TIGHTENFACTOR]->setDefault(0.0);
+     parameters_[CbcParam::BKPIVOTINGSTRATEGY]->setDefault(3);
+     parameters_[CbcParam::BKMAXCALLS]->setDefault(1000);
+     parameters_[CbcParam::BKCLQEXTMETHOD]->setDefault(4);
+     parameters_[CbcParam::CPP]->setDefault(0);
+     parameters_[CbcParam::CUTDEPTH]->setDefault(getCutDepth());
+     parameters_[CbcParam::CUTLENGTH]->setDefault(-1);
+     parameters_[CbcParam::CUTPASSINTREE]->setDefault(10);
+     parameters_[CbcParam::DEPTHMINIBAB]->setDefault(-1);
+     parameters_[CbcParam::DIVEOPT]->setDefault(-1);
+     parameters_[CbcParam::DIVEOPTSOLVES]->setDefault(100);
+     parameters_[CbcParam::DUMMY]->setDefault(0);
+     parameters_[CbcParam::EXPERIMENT]->setDefault(0);
+     parameters_[CbcParam::EXTRA1]->setDefault(-1);
+     parameters_[CbcParam::EXTRA2]->setDefault(-1);
+     parameters_[CbcParam::EXTRA3]->setDefault(-1);
+     parameters_[CbcParam::EXTRA4]->setDefault(-1);
+     parameters_[CbcParam::EXTRAVARIABLES]->setDefault(0);
+     parameters_[CbcParam::FPUMPITS]->setDefault(getFeasPumpIters());
+     parameters_[CbcParam::FPUMPTUNE]->setDefault(0);
+     parameters_[CbcParam::FPUMPTUNE2]->setDefault(0);
+     parameters_[CbcParam::HEUROPTIONS]->setDefault(0);
+     parameters_[CbcParam::LOGLEVEL]->setDefault(getLogLevel());
+     parameters_[CbcParam::LPLOGLEVEL]->setDefault(getLpLogLevel());
+     parameters_[CbcParam::MAXHOTITS]->setDefault(0);
+     parameters_[CbcParam::MAXSAVEDSOLS]->setDefault(1);
+     parameters_[CbcParam::MAXSLOWCUTS]->setDefault(10);
+     parameters_[CbcParam::MOREMOREMIPOPTIONS]->setDefault(0);
+     parameters_[CbcParam::MULTIPLEROOTS]->setDefault(0);
+     parameters_[CbcParam::ODDWEXTMETHOD]->setDefault(2);
+     parameters_[CbcParam::OUTPUTFORMAT]->setDefault(2);
+     parameters_[CbcParam::PRINTOPTIONS]->setDefault(0);
+     parameters_[CbcParam::PROCESSTUNE]->setDefault(0);
+     parameters_[CbcParam::RANDOMSEED]->setDefault(-1);
+     parameters_[CbcParam::STRONGSTRATEGY]->setDefault(0);
+     parameters_[CbcParam::TESTOSI]->setDefault(-1);
+#ifdef CBC_THREAD
+     parameters_[CbcParam::THREADS]->setDefault(0);
+#endif
+     parameters_[CbcParam::USERCBC]->setDefault(0);
+     parameters_[CbcParam::VERBOSE]->setDefault(verbose_);
+     parameters_[CbcParam::VUBTRY]->setDefault(-1);
+     parameters_[CbcParam::CPX]->setDefault("off");
+     parameters_[CbcParam::DOHEURISTIC]->setDefault("off");
+     parameters_[CbcParam::ERRORSALLOWED]->setDefault("off");
+     parameters_[CbcParam::MESSAGES]->setDefault("off");
+     parameters_[CbcParam::PREPROCNAMES]->setDefault("off");
+     parameters_[CbcParam::SOS]->setDefault("off");
+     parameters_[CbcParam::USESOLUTION]->setDefault("off");
+     parameters_[CbcParam::CUTSTRATEGY]->setDefault("off");
+     parameters_[CbcParam::FLOWCUTS]->setDefault("off");
+     parameters_[CbcParam::GMICUTS]->setDefault("off");
+     parameters_[CbcParam::GOMORYCUTS]->setDefault("off");
+     parameters_[CbcParam::KNAPSACKCUTS]->setDefault("off");
+     parameters_[CbcParam::LAGOMORYCUTS]->setDefault("off");
+     parameters_[CbcParam::LANDPCUTS]->setDefault("off");
+     parameters_[CbcParam::LATWOMIRCUTS]->setDefault("off");
+     parameters_[CbcParam::MIRCUTS]->setDefault("off");
+     parameters_[CbcParam::ODDWHEELCUTS]->setDefault("off");
+     parameters_[CbcParam::PROBINGCUTS]->setDefault("off");
+     parameters_[CbcParam::REDSPLITCUTS]->setDefault("off");
+     parameters_[CbcParam::REDSPLIT2CUTS]->setDefault("off");
+     parameters_[CbcParam::RESIDCAPCUTS]->setDefault("off");
+     parameters_[CbcParam::TWOMIRCUTS]->setDefault("off");
+     parameters_[CbcParam::ZEROHALFCUTS]->setDefault("off");
+     parameters_[CbcParam::COMBINE]->setDefault("off");
+     parameters_[CbcParam::CROSSOVER]->setDefault("off");
+     parameters_[CbcParam::DINS]->setDefault("off");
+     parameters_[CbcParam::DIVINGC]->setDefault("off");
+     parameters_[CbcParam::DIVINGF]->setDefault("off");
+     parameters_[CbcParam::DIVINGG]->setDefault("off");
+     parameters_[CbcParam::DIVINGL]->setDefault("off");
+     parameters_[CbcParam::DIVINGP]->setDefault("off");
+     parameters_[CbcParam::DIVINGS]->setDefault("off");
+     parameters_[CbcParam::DIVINGV]->setDefault("off");
+     parameters_[CbcParam::DW]->setDefault("off");
+     parameters_[CbcParam::FPUMP]->setDefault("off");
+     parameters_[CbcParam::GREEDY]->setDefault("off");
+     parameters_[CbcParam::HEURISTICSTRATEGY]->setDefault("off");
+     parameters_[CbcParam::LOCALTREE]->setDefault("off");
+     parameters_[CbcParam::NAIVE]->setDefault("off");
+     parameters_[CbcParam::PIVOTANDFIX]->setDefault("off");
+#if 0
+     parameters_[CbcParam::PIVOTANDCOMPLEMENT]->setDefault("off");
+#endif
+     parameters_[CbcParam::PROXIMITY]->setDefault("off");
+     parameters_[CbcParam::RANDROUND]->setDefault("off");
+     parameters_[CbcParam::RENS]->setDefault("off");
+     parameters_[CbcParam::RINS]->setDefault("off");
+     parameters_[CbcParam::ROUNDING]->setDefault("off");
+     parameters_[CbcParam::VND]->setDefault("off");
+     parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-12);
+     parameters_[CbcParam::CUTOFF]->setDefault(1.0e50);
+     parameters_[CbcParam::DIRECTION]->setDefault("minimize");
+     parameters_[CbcParam::INCREMENT]->setDefault(1.0e-4);
+     parameters_[CbcParam::INFEASIBILITYWEIGHT]->setDefault(0.0);
+     parameters_[CbcParam::INTEGERTOLERANCE]->setDefault(1.0e-6);
+     parameters_[CbcParam::LOGLEVEL]->setDefault(1);
+     parameters_[CbcParam::MAXIMIZE]->setType(CoinParam::paramAct);
+     parameters_[CbcParam::MAXNODES]->setDefault(COIN_INT_MAX);
+     parameters_[CbcParam::MAXNODESNOTIMPROVING]->setDefault(COIN_INT_MAX);
+     parameters_[CbcParam::MAXSECONDSNOTIMPROVING]->setDefault(COIN_DBL_MAX);
+     parameters_[CbcParam::MAXSOLS]->setDefault(COIN_INT_MAX);
+     parameters_[CbcParam::MINIMIZE]->setType(CoinParam::paramAct);
+     parameters_[CbcParam::MIPOPTIONS]->setDefault(0);
+     parameters_[CbcParam::MOREMIPOPTIONS]->setDefault(0);
+#if 0
+     parameters_[CbcParam::NUMBERMINI]->setDefault(0);
+#endif
+     parameters_[CbcParam::NUMBERANALYZE]->setDefault(0);
+     parameters_[CbcParam::REVERSE]->setType(CoinParam::paramAct);
+     parameters_[CbcParam::CUTPASS]->setDefault(100);
+     parameters_[CbcParam::GAPRATIO]->setDefault(0.0);
+     parameters_[CbcParam::TIMELIMIT]->setDefault( 1.0e11);
+     parameters_[CbcParam::STRONGBRANCHING]->setDefault(0);
+     parameters_[CbcParam::NUMBERBEFORE]->setDefault(0);
+     break;
+   default:
+     std::cout << "Unknown strategy!" << std::endl;
+     break;
+  }
+
+  // Set all parameter values to their defaults to begin with
+   
+  for (int code = CbcParam::FIRSTPARAM + 1;
+       code < CbcParam::LASTPARAM; code++) {
+     if (getParam(code)->type() != CoinParam::paramInvalid &&
+         getParam(code)->type() != CoinParam::paramAct){ 
+        getParam(code)->restoreDefault();
+     }
+  }
+  
+}
+   
+//###########################################################################
+//###########################################################################
 
 #ifdef CBC_CLUMSY_CODING
 // Synchronize Cbc (and Clp) model - Int and Dbl 
@@ -452,131 +644,11 @@ void CbcParameters::synchronizeModel() {
 //###########################################################################
 //###########################################################################
 
-void CbcParameters::addCbcSolverStrParams() {
-
-  parameters_[CbcParam::CSVSTATISTICS]->setup(
-      "csv!Statistics", "Create one line of statistics",
-      dfltDirectory_,
-      "This appends statistics to given file name.  It will use the default "
-      "directory given by 'directory'.  A name of '$' will use the previous "
-      "value for the name.  This is initialized to '', i.e. it must be set.  "
-      "Adds header if file empty or does not exist.",
-      CoinParam::displayPriorityLow);
-  parameters_[CbcParam::CSVSTATISTICS]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
-
-  parameters_[CbcParam::DEBUG]->setup(
-      "debug!In", "Read/write valid solution from/to file", "",
-      "This will read a solution file from the given file name.  It will use "
-      "the default directory given by 'directory'.  A name of '$' will use the "
-      "previous value for the name.  This is initialized to '', i.e. it must "
-      "be set.\n\nIf set to create it will create a file called debug.file "
-      "after B&C search; if set to createAfterPre it will create the file "
-      "before undoing preprocessing.\n\nThe idea is that if you suspect a bad "
-      "cut generator and you did not use preprocessing you can do a good run "
-      "with debug set to 'create' and then switch on the cuts you suspect and "
-      "re-run with debug set to 'debug.file'  Similarly if you do use "
-      "preprocessing, but use createAfterPre.  The create case has the same "
-      "effect as saveSolution.",
-      CoinParam::displayPriorityNone);
-  parameters_[CbcParam::DEBUG]->setPushFunc(CbcParamUtils::doDebugParam);
-
-  parameters_[CbcParam::DIRECTORY]->setup(
-      "directory", "Set Default directory for import etc.",
-      dfltDirectory_,
-      "This sets the directory which import, export, saveModel, restoreModel "
-      "etc. will use. It is initialized to the current directory.");
-  parameters_[CbcParam::DIRECTORY]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
-
-  parameters_[CbcParam::DIRSAMPLE]->setup(
-      "dirSample", "Set directory where the COIN-OR sample problems are.",
-      dfltDirectory_,
-      "This sets the directory where the COIN-OR sample problems reside. It is "
-      "used only when -unitTest is passed to clp. clp will pick up the test "
-      "problems from this directory. It is initialized to '../../Data/Sample'",
-      CoinParam::displayPriorityLow);
-  parameters_[CbcParam::DIRSAMPLE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
-
-  parameters_[CbcParam::DIRNETLIB]->setup(
-      "dirNetlib", "Set directory where the netlib problems are.",
-      dfltDirectory_,
-      "This sets the directory where the netlib problems reside. One can get "
-      "the netlib problems from COIN-OR or from the main netlib site. This "
-      "parameter is used only when -netlib is passed to cbc. cbc will pick up "
-      "the netlib problems from this directory. If clp is built without zlib "
-      "support then the problems must be uncompressed. It is initialized to "
-      "'../../Data/Netlib'",
-      CoinParam::displayPriorityLow);
-  parameters_[CbcParam::DIRNETLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
-
-  parameters_[CbcParam::DIRMIPLIB]->setup(
-      "dirMiplib", "Set directory where the miplib 2003 problems are.",
-      dfltDirectory_,
-      "This sets the directory where the miplib 2003 problems reside. One can "
-      "get the miplib problems from COIN-OR or from the main miplib site. This "
-      "parameter is used only when -miplib is passed to cbc. cbc will pick up "
-      "the miplib problems from this directory. If cbc is built without zlib "
-      "support then the problems must be uncompressed. It is initialized to "
-      "'../../Data/miplib3'",
-      CoinParam::displayPriorityLow);
-  parameters_[CbcParam::DIRMIPLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
-
-  parameters_[CbcParam::GMPLSOLFILE]->setup(
-      "gmplSolutionF!ile", "sets name for file to store GMPL solution in",
-      std::string("gmpl.sol"),
-      "This will set the name the GMPL solution will be written to and read from. "
-      "This is initialized to 'gmpl.sol'. ",
-      CoinParam::displayPriorityHigh);
-
-  parameters_[CbcParam::MODELFILE]->setup(
-      "modelF!ile", "sets name for file to store model in",
-      std::string("prob.mod"),
-      "This will set the name the model will be written to and read from. "
-      "This is initialized to 'prob.mod'. ",
-      CoinParam::displayPriorityHigh);
-
-  parameters_[CbcParam::NEXTSOLFILE]->setup(
-      "nextSolutionF!ile", "sets name for file to store suboptimal solutions in",
-      std::string("next.sol"),
-      "This will set the name solutions will be written to and read from "
-      "This is initialized to 'next.sol'. ",
-      CoinParam::displayPriorityHigh);
-
-  parameters_[CbcParam::PRINTMASK]->setup(
-      "printM!ask", "Control printing of solution with a regular expression",
-      "",
-      "If set then only those names which match mask are printed in a "
-      "solution. '?' matches any character and '*' matches any set of "
-      "characters.  The default is '' (unset) so all variables are printed. "
-      "This is only active if model has names.");
-  parameters_[CbcParam::PRINTMASK]->setPushFunc(CbcParamUtils::doPrintMaskParam);
-
-  parameters_[CbcParam::SOLUTIONFILE]->setup(
-      "solutionF!ile", "sets name for file to store solution in",
-      std::string("opt.sol"),
-      "This will set the name the solution will be saved to and read from. "
-      "By default, solutions are written to 'opt.sol'. To print to stdout, "
-      "use printSolution.", CoinParam::displayPriorityHigh);
-
-  parameters_[CbcParam::PRIORITYIN]->setup(
-      "prio!rityIn", "Import priorities etc from file",
-      std::string("priorities.txt"),
-      "This will read a file with priorities from the given file name.  It "
-      "will use the default directory given by 'directory'.  A name of '$' "
-      "will use the previous value for the name.  This is initialized to '', "
-      "i.e. it must be set.  This can not read from compressed files. File is "
-      "in csv format with allowed headings - name, number, priority, "
-      "direction, up, down, solution.  Exactly one of name and number must be "
-      "given.");
-  parameters_[CbcParam::PRIORITYIN]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
-}
-
-//###########################################################################
-//###########################################################################
-
 void CbcParameters::addCbcSolverHelpParams() {
   for (int code = CbcParam::FIRSTHELPPARAM + 1;
        code < CbcParam::LASTHELPPARAM; code++) {
-    parameters_[code]->setPushFunc(CbcParamUtils::doHelpParam);
+    getParam(code)->setPushFunc(CbcParamUtils::doHelpParam);
+    getParam(code)->setType(CoinParam::paramAct);
   }
   parameters_[CbcParam::GENERALQUERY]->setup(
       "?", "Print a list of commands", CoinParam::displayPriorityNone);
@@ -597,6 +669,11 @@ void CbcParameters::addCbcSolverHelpParams() {
 //###########################################################################
 
 void CbcParameters::addCbcSolverActionParams() {
+
+  for (int code = CbcParam::FIRSTACTIONPARAM + 1;
+       code < CbcParam::LASTACTIONPARAM; code++) {
+    getParam(code)->setType(CoinParam::paramAct);
+  }
 
   parameters_[CbcParam::BAB]->setup(
       "solv!e", "invoke branch and cut to solve the current problem",
@@ -620,12 +697,6 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
   parameters_[CbcParam::BAB]->setPushFunc(CbcParamUtils::doBaCParam);
 
-  parameters_[CbcParam::DUMMY]->setup(
-      "sleep", "for debug", 0, 9999, 0,
-      "If passed to solver from ampl, then ampl will wait so that you can copy "
-      ".nl file for debug.",
-      CoinParam::displayPriorityNone);
-
   parameters_[CbcParam::ENVIRONMENT]->setup(
       "environ!ment", "Read commands from environment",
       "This starts reading from environment variable COIN_ENVIRONMENT.",
@@ -639,7 +710,7 @@ void CbcParameters::addCbcSolverActionParams() {
   parameters_[CbcParam::EXIT]->setPushFunc(CbcParamUtils::doExitParam);
 
   parameters_[CbcParam::EXPORT]->setup(
-      "export", "Export model as mps file", std::string("default.mps"),
+      "export", "Export model as mps file",
       "This will write an MPS format file to the given file name.  It will use "
       "the default directory given by 'directory'.  A name of '$' will use the "
       "previous value for the name.  This is initialized to 'default.mps'. It "
@@ -649,7 +720,7 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::IMPORT]->setup(
-      "import", "Import model from file", lastMpsIn_,
+      "import", "Import model from file", 
       "This will read an MPS format file from the given file name.  It will "
       "use the default directory given by 'directory'.  A name of '$' will use "
       "the previous value for the name.  This is initialized to '', i.e., it "
@@ -676,7 +747,6 @@ void CbcParameters::addCbcSolverActionParams() {
 
   parameters_[CbcParam::READMIPSTART]->setup(
       "mipS!tart", "reads an initial feasible solution from file",
-      std::string("mipstart.sln"),
       "The MIPStart allows one to enter an initial integer feasible solution "
       "to CBC. Values of the main decision variables which are active (have "
       "non-zero values) in this solution are specified in a text  file. The "
@@ -756,7 +826,7 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::UNITTEST]->setup(
-      "unitTest", "Do unit test", "This exercises the unit test.", "",
+      "unitTest", "Do unit test", "This exercises the unit test.",
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::WRITEGMPLSOL]->setup(
@@ -774,7 +844,7 @@ void CbcParameters::addCbcSolverActionParams() {
       "for future use by readModel.", CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::WRITENEXTSOL]->setup(
-      "nextB!estSolution", "Prints next best saved solution to file", "",
+      "nextB!estSolution", "Prints next best saved solution to file",
       "To write best solution, just use writeSolution.  This prints next best (if "
       "exists) and then deletes it. This will write a primitive solution file "
       "to the given file name.  It will use the directory set by "
@@ -791,59 +861,176 @@ void CbcParameters::addCbcSolverActionParams() {
 //###########################################################################
 //###########################################################################
 
+void CbcParameters::addCbcSolverStrParams() {
+
+  for (int code = CbcParam::FIRSTSTRINGPARAM + 1;
+       code < CbcParam::LASTSTRINGPARAM; code++) {
+    getParam(code)->setType(CoinParam::paramStr);
+  }
+
+  parameters_[CbcParam::CSVSTATISTICS]->setup(
+      "csv!Statistics", "Create one line of statistics",
+      "This appends statistics to given file name.  It will use the default "
+      "directory given by 'directory'.  A name of '$' will use the previous "
+      "value for the name.  This is initialized to '', i.e. it must be set.  "
+      "Adds header if file empty or does not exist.",
+      CoinParam::displayPriorityLow);
+  parameters_[CbcParam::CSVSTATISTICS]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::DEBUG]->setup(
+      "debug!In", "Read/write valid solution from/to file", 
+      "This will read a solution file from the given file name.  It will use "
+      "the default directory given by 'directory'.  A name of '$' will use the "
+      "previous value for the name.  This is initialized to '', i.e. it must "
+      "be set.\n\nIf set to create it will create a file called debug.file "
+      "after B&C search; if set to createAfterPre it will create the file "
+      "before undoing preprocessing.\n\nThe idea is that if you suspect a bad "
+      "cut generator and you did not use preprocessing you can do a good run "
+      "with debug set to 'create' and then switch on the cuts you suspect and "
+      "re-run with debug set to 'debug.file'  Similarly if you do use "
+      "preprocessing, but use createAfterPre.  The create case has the same "
+      "effect as saveSolution.",
+      CoinParam::displayPriorityNone);
+  parameters_[CbcParam::DEBUG]->setPushFunc(CbcParamUtils::doDebugParam);
+
+  parameters_[CbcParam::DIRECTORY]->setup(
+      "directory", "Set Default directory for import etc.",
+      "This sets the directory which import, export, saveModel, restoreModel "
+      "etc. will use. It is initialized to the current directory.");
+  parameters_[CbcParam::DIRECTORY]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::DIRSAMPLE]->setup(
+      "dirSample", "Set directory where the COIN-OR sample problems are.",
+      "This sets the directory where the COIN-OR sample problems reside. It is "
+      "used only when -unitTest is passed to clp. clp will pick up the test "
+      "problems from this directory. It is initialized to '../../Data/Sample'",
+      CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIRSAMPLE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::DIRNETLIB]->setup(
+      "dirNetlib", "Set directory where the netlib problems are.",
+      "This sets the directory where the netlib problems reside. One can get "
+      "the netlib problems from COIN-OR or from the main netlib site. This "
+      "parameter is used only when -netlib is passed to cbc. cbc will pick up "
+      "the netlib problems from this directory. If clp is built without zlib "
+      "support then the problems must be uncompressed. It is initialized to "
+      "'../../Data/Netlib'",
+      CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIRNETLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::DIRMIPLIB]->setup(
+      "dirMiplib", "Set directory where the miplib 2003 problems are.",
+      "This sets the directory where the miplib 2003 problems reside. One can "
+      "get the miplib problems from COIN-OR or from the main miplib site. This "
+      "parameter is used only when -miplib is passed to cbc. cbc will pick up "
+      "the miplib problems from this directory. If cbc is built without zlib "
+      "support then the problems must be uncompressed. It is initialized to "
+      "'../../Data/miplib3'",
+      CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIRMIPLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::GMPLSOLFILE]->setup(
+      "gmplSolutionF!ile", "sets name for file to store GMPL solution in",
+      "This will set the name the GMPL solution will be written to and read from. "
+      "This is initialized to 'gmpl.sol'. ",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::MODELFILE]->setup(
+      "modelF!ile", "sets name for file to store model in",
+      "This will set the name the model will be written to and read from. "
+      "This is initialized to 'prob.mod'. ",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::NEXTSOLFILE]->setup(
+      "nextSolutionF!ile", "sets name for file to store suboptimal solutions in",
+      "This will set the name solutions will be written to and read from "
+      "This is initialized to 'next.sol'. ",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::PRINTMASK]->setup(
+      "printM!ask", "Control printing of solution with a regular expression",
+      "If set then only those names which match mask are printed in a "
+      "solution. '?' matches any character and '*' matches any set of "
+      "characters.  The default is '' (unset) so all variables are printed. "
+      "This is only active if model has names.");
+  parameters_[CbcParam::PRINTMASK]->setPushFunc(CbcParamUtils::doPrintMaskParam);
+
+  parameters_[CbcParam::SOLUTIONFILE]->setup(
+      "solutionF!ile", "sets name for file to store solution in",
+      "This will set the name the solution will be saved to and read from. "
+      "By default, solutions are written to 'opt.sol'. To print to stdout, "
+      "use printSolution.", CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::PRIORITYIN]->setup(
+      "prio!rityIn", "Import priorities etc from file",
+      "This will read a file with priorities from the given file name.  It "
+      "will use the default directory given by 'directory'.  A name of '$' "
+      "will use the previous value for the name.  This is initialized to '', "
+      "i.e. it must be set.  This can not read from compressed files. File is "
+      "in csv format with allowed headings - name, number, priority, "
+      "direction, up, down, solution.  Exactly one of name and number must be "
+      "given.");
+  parameters_[CbcParam::PRIORITYIN]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+}
+
+//###########################################################################
+//###########################################################################
+
 void CbcParameters::addCbcSolverKwdParams() {
   for (int code = CbcParam::FIRSTKWDPARAM + 1;
        code < CbcParam::LASTKWDPARAM; code++) {
-    parameters_[code]->setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
+    getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
+    getParam(code)->setType(CoinParam::paramKwd);
   }
 
   parameters_[CbcParam::COMMANDPRINTLEVEL]->setup(
-      "allC!ommands", "What priority level of commands to print", "high",
-      CbcParameters::displayHigh,
+      "allC!ommands", "What priority level of commands to print", 
       "For the sake of your sanity, only the more useful and simple commands "
       "are printed out on ?.",
       CoinParam::displayPriorityNone);
+  parameters_[CbcParam::COMMANDPRINTLEVEL]->appendKwd("high", CbcParameters::displayHigh);
   parameters_[CbcParam::COMMANDPRINTLEVEL]->appendKwd("all", CbcParameters::displayAll);
   parameters_[CbcParam::COMMANDPRINTLEVEL]->appendKwd("highlow", CbcParameters::displayLowHigh);
 
   parameters_[CbcParam::CLQSTRENGTHENING]->setup(
       "clqstr!engthen",
-      "Whether and when to perform Clique Strengthening preprocessing routine",
-      "after", CbcParameters::ClqStrAfter);
+      "Whether and when to perform Clique Strengthening preprocessing routine", "");
+  parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("after", CbcParameters::ClqStrAfter);
   parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("off", CbcParameters::ClqStrOff);
   parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("before", CbcParameters::ClqStrBefore);
 
   parameters_[CbcParam::BRANCHPRIORITY]->setup(
       "cost!Strategy", "Whether to use costs or column order as priorities",
-      "off", CbcParameters::BPOff,
       "This orders the variables in order of their absolute costs - with "
       "largest cost ones being branched on first.  This primitive strategy can "
       "be surprisingly effective.  The column order option is obviously not on "
       "costs but it's easy to implement.");
+  parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("off", CbcParameters::BPOff);
   parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("pri!orities", CbcParameters::BPCost);
   parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("column!Order", CbcParameters::BPOrder);
 
   parameters_[CbcParam::CUTOFFCONSTRAINT]->setup(
-      "constraint!fromCutoff", "Whether to use cutoff as constraint", "off",
-      CbcParameters::COOff,
+      "constraint!fromCutoff", "Whether to use cutoff as constraint", 
       "For some problems, cut generators and general branching work better if "
       "the problem would be infeasible if the cost is too high. "
       "If this option is enabled, the objective function is added as a "
       "constraint which right hand side is set to the current cutoff value "
       "(objective value of best known solution)");
+  parameters_[CbcParam::CUTOFFCONSTRAINT]->appendKwd("off", CbcParameters::COOff);
   parameters_[CbcParam::CUTOFFCONSTRAINT]->appendKwd("on", CbcParameters::COOn);
   parameters_[CbcParam::CUTOFFCONSTRAINT]->appendKwd("variable", CbcParameters::COVariable);
   parameters_[CbcParam::CUTOFFCONSTRAINT]->appendKwd("forcevariable", CbcParameters::COForceVariable);
   parameters_[CbcParam::CUTOFFCONSTRAINT]->appendKwd("conflict", CbcParameters::COConflict);
 
   parameters_[CbcParam::INTPRINT]->setup(
-      "printi!ngOptions", "Print options", "normal", CbcParameters::PMNormal,
+      "printi!ngOptions", "Print options", 
       "This changes the amount and format of printing a solution:\n normal - "
       "nonzero column variables \ninteger - nonzero integer column variables\n "
       "special - in format suitable for OsiRowCutDebugger\n rows - nonzero "
       "column variables and row activities\n all - all column variables and "
       "row activities.\n\n For non-integer problems 'integer' and 'special' "
       "act like 'normal'.  Also see printMask for controlling output.");
+  parameters_[CbcParam::INTPRINT]->appendKwd("normal", CbcParameters::PMNormal);
   parameters_[CbcParam::INTPRINT]->appendKwd("integer", CbcParameters::PMInteger);
   parameters_[CbcParam::INTPRINT]->appendKwd("special", CbcParameters::PMSpecial);
   parameters_[CbcParam::INTPRINT]->appendKwd("rows", CbcParameters::PMRows);
@@ -853,7 +1040,6 @@ void CbcParameters::addCbcSolverKwdParams() {
       "node!Strategy",
       "What strategy to use to select the next node from the branch and cut "
       "tree",
-      "hybrid", CbcParameters::NSHybrid,
       "Normally before a feasible solution is found, CBC will choose a node "
       "with fewest infeasibilities. Alternatively, one may choose tree-depth "
       "as the criterion. This requires the minimal amount of memory, but may "
@@ -862,6 +1048,7 @@ void CbcParameters::addCbcSolverKwdParams() {
       "choice will carry on after a first solution has been bound). The choice "
       "'hybrid' does breadth first on small depth nodes and then switches to "
       "'fewest'.");
+  parameters_[CbcParam::NODESTRATEGY]->appendKwd("hybrid", CbcParameters::NSHybrid);
   parameters_[CbcParam::NODESTRATEGY]->appendKwd("fewest", CbcParameters::NSFewest);
   parameters_[CbcParam::NODESTRATEGY]->appendKwd("depth", CbcParameters::NSDepth);
   parameters_[CbcParam::NODESTRATEGY]->appendKwd("upfewest", CbcParameters::NSUpFewest);
@@ -870,10 +1057,10 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::NODESTRATEGY]->appendKwd("downdepth", CbcParameters::NSDownDepth);
 
   parameters_[CbcParam::ORBITAL]->setup(
-      "Orbit!alBranching", "Whether to try orbital branching", "off",
-      CbcParameters::OBOff,
+      "Orbit!alBranching", "Whether to try orbital branching", 
       "This switches on Orbital branching. Value 'on' just adds orbital, "
       "'strong' tries extra fixing in strong branching.");
+  parameters_[CbcParam::ORBITAL]->appendKwd("off", CbcParameters::OBOff);
   parameters_[CbcParam::ORBITAL]->appendKwd("slowish", CbcParameters::OBSlowish);
   parameters_[CbcParam::ORBITAL]->appendKwd("strong", CbcParameters::OBStrong);
   parameters_[CbcParam::ORBITAL]->appendKwd("force", CbcParameters::OBForce);
@@ -882,8 +1069,7 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::ORBITAL]->appendKwd("moreprinting", CbcParameters::OBMorePrinting);  
 
   parameters_[CbcParam::PREPROCESS]->setup(
-      "preprocess", "Whether to use integer preprocessing", "off",
-      CbcParameters::IPPOff,
+      "preprocess", "Whether to use integer preprocessing", 
       "This tries to reduce size of the model in a similar way to presolve and "
       "it also tries to strengthen the model. This can be very useful and is "
       "worth trying.  save option saves on file presolved.mps.  equal will "
@@ -892,6 +1078,7 @@ void CbcParameters::addCbcSolverKwdParams() {
       "any number extra. equalall will turn all valid inequalities into "
       "equalities with integer slacks. strategy is as on but uses "
       "CbcStrategy.");
+  parameters_[CbcParam::PREPROCESS]->appendKwd("off", CbcParameters::IPPOff);
   parameters_[CbcParam::PREPROCESS]->appendKwd("on", CbcParameters::IPPOn);
   parameters_[CbcParam::PREPROCESS]->appendKwd("save", CbcParameters::IPPSave);
   parameters_[CbcParam::PREPROCESS]->appendKwd("equal", CbcParameters::IPPEqual);
@@ -905,21 +1092,20 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::PREPROCESS]->appendKwd("equalallstop", CbcParameters::IPPEqualAllStop);
 
   parameters_[CbcParam::SOSPRIORITIZE]->setup(
-      "sosP!rioritize", "How to deal with SOS priorities", "off",
-      CbcParameters::SOSOff,
+      "sosP!rioritize", "How to deal with SOS priorities", 
       "This sets priorities for SOS.  Values 'high' and 'low' just set a "
       "priority relative to the for integer variables.  Value 'orderhigh' "
       "gives first highest priority to the first SOS and integer variables a "
       "low priority.  Value 'orderlow' gives integer variables a high priority "
       "then SOS in order.");
+  parameters_[CbcParam::SOSPRIORITIZE]->appendKwd("off", CbcParameters::SOSOff);
   parameters_[CbcParam::SOSPRIORITIZE]->appendKwd("high", CbcParameters::SOSHigh);
   parameters_[CbcParam::SOSPRIORITIZE]->appendKwd("low", CbcParameters::SOSLow);
   parameters_[CbcParam::SOSPRIORITIZE]->appendKwd("orderhigh", CbcParameters::SOSOrderHigh);
   parameters_[CbcParam::SOSPRIORITIZE]->appendKwd("orderlow", CbcParameters::SOSOrderLow);
 
   parameters_[CbcParam::STRATEGY]->setup(
-      "strat!egy", "Switches on groups of features", "default",
-      CbcParameters::StrategyDefault,
+      "strat!egy", "Switches on groups of features", 
       "This turns on newer features. "
       "Default uses Gomory cuts with a tolerance of 0.01 at the root "
       "node, does a possible restart after 100 nodes if many variables could "
@@ -927,26 +1113,27 @@ void CbcParameters::addCbcSolverKwdParams() {
       "feasibility pump more aggressive."); // This does not apply to unit tests
                                             // (where 'experiment' may have
                                             // similar effects)
+  parameters_[CbcParam::STRATEGY]->appendKwd("default", CbcParameters::StrategyDefault);
   parameters_[CbcParam::STRATEGY]->appendKwd("easy", CbcParameters::StrategyEasy);
   parameters_[CbcParam::STRATEGY]->appendKwd("aggressive", CbcParameters::StrategyAggressive);
 
   parameters_[CbcParam::TIMEMODE]->setup(
-      "timeM!ode", "Whether to use CPU or elapsed time", "cpu",
-      CbcParameters::ClockCpu,
+      "timeM!ode", "Whether to use CPU or elapsed time",
       "cpu uses CPU time for stopping, while elapsed uses elapsed time. (On "
       "Windows, elapsed time is always used).");
+  parameters_[CbcParam::TIMEMODE]->appendKwd( "cpu", CbcParameters::ClockCpu);
   parameters_[CbcParam::TIMEMODE]->appendKwd("elapsed", CbcParameters::ClockElapsed);
 
   parameters_[CbcParam::USECGRAPH]->setup(
       "cgraph",
       "Whether to use the conflict graph-based preprocessing and cut "
       "separation routines.",
-      "on", CbcParameters::CGraphOn,
       "This switches the conflict graph-based preprocessing and cut separation "
       "routines (CglBKClique, CglOddWheel and CliqueStrengthening) on or off. "
       "Values: \n\t off: turns these routines off;\n\t on: turns these "
       "routines on; \n\t clq: turns these routines off and enables the cut "
       "separator of CglClique.");
+  parameters_[CbcParam::USECGRAPH]->appendKwd("on", CbcParameters::CGraphOn);
   parameters_[CbcParam::USECGRAPH]->appendKwd("off", CbcParameters::CGraphOff);
   parameters_[CbcParam::USECGRAPH]->appendKwd("clq", CbcParameters::CGraphClique);
 }
@@ -957,50 +1144,49 @@ void CbcParameters::addCbcSolverKwdParams() {
 void CbcParameters::addCbcSolverDblParams() {
   for (int code = CbcParam::FIRSTDBLPARAM + 1;
        code < CbcParam::LASTDBLPARAM; code++) {
-    parameters_[code]->setPushFunc(CbcParamUtils::pushCbcSolverDblParam);
+    getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverDblParam);
   }
 
   parameters_[CbcParam::ARTIFICIALCOST]->setup(
       "artif!icialCost",
       "Costs >= this treated as artificials in feasibility pump", 0.0,
-      COIN_DBL_MAX, getArtVarThreshold(), "",
-      CoinParam::displayPriorityLow);
+      COIN_DBL_MAX, "", CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::DEXTRA3]->setup(
-      "dextra3", "Extra double parameter 3", -COIN_DBL_MAX, COIN_DBL_MAX, 0.0,
+      "dextra3", "Extra double parameter 3", -COIN_DBL_MAX, COIN_DBL_MAX,
       "", CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::DEXTRA4]->setup(
-      "dextra4", "Extra double parameter 4", -COIN_DBL_MAX, COIN_DBL_MAX, 0.0,
+      "dextra4", "Extra double parameter 4", -COIN_DBL_MAX, COIN_DBL_MAX,
       "", CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::DEXTRA5]->setup(
-      "dextra5", "Extra double parameter 5", -COIN_DBL_MAX, COIN_DBL_MAX, 0.0,
+      "dextra5", "Extra double parameter 5", -COIN_DBL_MAX, COIN_DBL_MAX,
       "", CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::DJFIX]->setup(
       "fix!OnDj", "Try heuristic that fixes variables based on reduced costs",
-      -1.0e20, 1.0e20, getDjFixThreshold(),
+      -1.0e20, 1.0e20,
       "If set, integer variables with reduced costs greater than the specified "
       "value will be fixed before branch and bound - use with extreme "
       "caution!");
 
   parameters_[CbcParam::FAKECUTOFF]->setup(
       "pumpC!utoff", "Fake cutoff for use in feasibility pump", -COIN_DBL_MAX,
-      COIN_DBL_MAX, 0.0,
+      COIN_DBL_MAX,
       "A value of 0.0 means off. Otherwise, add a constraint forcing objective "
       "below this value in feasibility pump",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::FAKEINCREMENT]->setup(
       "pumpI!ncrement", "Fake increment for use in feasibility pump",
-      -COIN_DBL_MAX, COIN_DBL_MAX, 0.0,
+      -COIN_DBL_MAX, COIN_DBL_MAX, 
       "A value of 0.0 means off. Otherwise, add a constraint forcing objective "
       "below this value in feasibility pump",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::SMALLBAB]->setup(
-      "fraction!forBAB", "Fraction in feasibility pump", 1.0e-5, 1.1, 0.5,
+      "fraction!forBAB", "Fraction in feasibility pump", 1.0e-5, 1.1,
       "After a pass in the feasibility pump, variables which have not moved "
       "about are fixed and if the preprocessed model is smaller than this "
       "fraction of the original problem, a few nodes of branch and bound are "
@@ -1011,7 +1197,7 @@ void CbcParameters::addCbcSolverDblParams() {
       "tighten!Factor",
       "Tighten bounds using value times largest activity at continuous "
       "solution",
-      0.0, COIN_DBL_MAX, 0.0, "This sleazy trick can help on some problems.");
+      0.0, COIN_DBL_MAX, "This sleazy trick can help on some problems.");
 }
 
 //###########################################################################
@@ -1021,30 +1207,29 @@ void CbcParameters::addCbcSolverIntParams() {
 
   for (int code = CbcParam::FIRSTINTPARAM + 1;
        code < CbcParam::LASTINTPARAM; code++) {
-    parameters_[code]->setPushFunc(CbcParamUtils::pushCbcSolverIntParam);
+    getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverIntParam);
   }
 
   parameters_[CbcParam::BKPIVOTINGSTRATEGY]->setup(
-      "bkpivot!ing", "Pivoting strategy used in Bron-Kerbosch algorithm", 0, 6,
-      3);
+      "bkpivot!ing", "Pivoting strategy used in Bron-Kerbosch algorithm", 0, 6);
 
   parameters_[CbcParam::BKMAXCALLS]->setup(
       "bkmaxcalls",
       "Maximum number of recursive calls made by Bron-Kerbosch algorithm", 1,
-      COIN_INT_MAX, 1000);
+      COIN_INT_MAX);
 
   parameters_[CbcParam::BKCLQEXTMETHOD]->setup(
       "bkclqext!method",
       "Strategy used to extend violated cliques found by BK Clique Cut "
       "Separation routine",
-      0, 5, 4,
+      0, 5,
       "Sets the method used in the extension module of BK Clique Cut "
       "Separation routine: 0=no extension; 1=random; 2=degree; 3=modified "
       "degree; 4=reduced cost(inversely proportional); 5=reduced "
       "cost(inversely proportional) + modified degree");
 
   parameters_[CbcParam::CPP]->setup(
-      "cpp!Generate", "Generates C++ code", 0, 4, 0,
+      "cpp!Generate", "Generates C++ code", 0, 4,
       "Once you like what the stand-alone solver does then this allows you to "
       "generate user_driver.cpp which approximates the code.  0 gives simplest "
       "driver, 1 generates saves and restores, 2 generates saves and restores "
@@ -1053,7 +1238,6 @@ void CbcParameters::addCbcSolverIntParams() {
 
   parameters_[CbcParam::CUTDEPTH]->setup(
       "cutD!epth", "Depth in tree at which to do cuts", -1, 999999,
-      getCutDepth(),
       "Cut generators may be off, on only at the root, on if they look useful, "
       "and on at some interval.  If they are done every node then that is "
       "that, but it may be worth doing them every so often.  The original "
@@ -1062,7 +1246,7 @@ void CbcParameters::addCbcSolverIntParams() {
       "to -1 (off).");
 
   parameters_[CbcParam::CUTLENGTH]->setup(
-      "cutL!ength", "Length of a cut", -1, COIN_INT_MAX, -1,
+      "cutL!ength", "Length of a cut", -1, COIN_INT_MAX,
       "At present this only applies to Gomory cuts. -1 (default) leaves as is. "
       "Any value >0 says that all cuts <= this length can be generated both at "
       "root node and in tree. 0 says to use some dynamic lengths.  If value "
@@ -1072,11 +1256,11 @@ void CbcParameters::addCbcSolverIntParams() {
   parameters_[CbcParam::CUTPASSINTREE]->setup(
       "passT!reeCuts",
       "Number of rounds that cut generators are applied in the tree",
-      -COIN_INT_MAX, COIN_INT_MAX, 10);
+      -COIN_INT_MAX, COIN_INT_MAX);
 
   parameters_[CbcParam::DEPTHMINIBAB]->setup(
       "depth!MiniBab", "Depth at which to try mini branch-and-bound",
-      -COIN_INT_MAX, COIN_INT_MAX, -1,
+      -COIN_INT_MAX, COIN_INT_MAX,
       "Rather a complicated parameter but can be useful. -1 means off for "
       "large problems but on as if -12 for problems where rows+columns<500, -2 "
       "means use Cplex if it is linked in.  Otherwise if negative then go into "
@@ -1088,7 +1272,7 @@ void CbcParameters::addCbcSolverIntParams() {
       "then at depth>=5. The actual logic is too twisted to describe here.");
 
   parameters_[CbcParam::DIVEOPT]->setup(
-      "diveO!pt", "Diving options", -1, 20, -1,
+      "diveO!pt", "Diving options", -1, 20,
       "If >2 && <20 then modify diving options -	 \n\t3 only at root "
       "and if no solution,	 \n\t4 only at root and if this heuristic has "
       "not got solution,	 \n\t5 decay only if no solution,	 \n\t6 "
@@ -1098,7 +1282,7 @@ void CbcParameters::addCbcSolverIntParams() {
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::DIVEOPTSOLVES]->setup(
-      "diveS!olves", "Diving solve option", -1, 200000, 100,
+                                              "diveS!olves", "Diving solve option", -1, 200000,
       "If >0 then do up to this many solves. However, the last digit is "
       "ignored and used for extra options: 1-3 enables fixing of satisfied "
       "integer variables (but not at bound), where 1 switches this off for "
@@ -1106,43 +1290,48 @@ void CbcParameters::addCbcSolverIntParams() {
       "permanently if the dive goes infeasible.",
       CoinParam::displayPriorityLow);
 
+  parameters_[CbcParam::DUMMY]->setup(
+      "sleep", "for debug", 0, 9999,
+      "If passed to solver from ampl, then ampl will wait so that you can copy "
+      ".nl file for debug.",
+      CoinParam::displayPriorityNone);
+
   parameters_[CbcParam::EXPERIMENT]->setup(
-      "exper!iment", "Whether to use testing features", -1, 200000, 0,
+      "exper!iment", "Whether to use testing features", -1, 200000,
       "Defines how adventurous you want to be in using new ideas. 0 then no "
       "new ideas, 1 fairly sensible, 2 a bit dubious, 3 you are on your own!",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::EXTRA1]->setup(
-      "extra1", "Extra integer parameter 1", -COIN_INT_MAX, COIN_INT_MAX, -1,
+      "extra1", "Extra integer parameter 1", -COIN_INT_MAX, COIN_INT_MAX,
       "", CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::EXTRA2]->setup(
-      "extra2", "Extra integer parameter 2", -COIN_INT_MAX, COIN_INT_MAX, -1,
+      "extra2", "Extra integer parameter 2", -COIN_INT_MAX, COIN_INT_MAX,
       "", CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::EXTRA3]->setup(
-      "extra3", "Extra integer parameter 3", -COIN_INT_MAX, COIN_INT_MAX, -1,
+      "extra3", "Extra integer parameter 3", -COIN_INT_MAX, COIN_INT_MAX, 
       "", CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::EXTRA4]->setup(
-      "extra4", "Extra integer parameter 4", -COIN_INT_MAX, COIN_INT_MAX, -1,
+      "extra4", "Extra integer parameter 4", -COIN_INT_MAX, COIN_INT_MAX, 
       "", CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::EXTRAVARIABLES]->setup(
       "extraV!ariables", "Allow creation of extra integer variables",
-      -COIN_INT_MAX, COIN_INT_MAX, 0,
+      -COIN_INT_MAX, COIN_INT_MAX,
       "Switches on a trivial re-formulation that introduces extra integer "
       "variables to group together variables with same cost.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::FPUMPITS]->setup(
       "passF!easibilityPump", "How many passes in feasibility pump", 0, 10000,
-      getFeasPumpIters(),
       "This fine tunes the Feasibility Pump heuristic by doing more or fewer "
       "passes.");
 
   parameters_[CbcParam::FPUMPTUNE]->setup(
-      "pumpT!une", "Dubious ideas for feasibility pump", 0, 100000000, 0,
+      "pumpT!une", "Dubious ideas for feasibility pump", 0, 100000000,
       "This fine tunes Feasibility Pump     \n\t>=10000000 use as objective "
       "weight switch     \n\t>=1000000 use as accumulate switch     \n\t>=1000 "
       "use index+1 as number of large loops     \n\t==100 use objvalue "
@@ -1154,7 +1343,6 @@ void CbcParameters::addCbcSolverIntParams() {
 
   parameters_[CbcParam::FPUMPTUNE2]->setup(
       "moreT!une", "Yet more dubious ideas for feasibility pump", 0, 100000000,
-      0,
       "Yet more ideas for Feasibility Pump     \n\t/100000 == 1 use box "
       "constraints and original obj in cleanup     \n\t/1000 == 1 Pump will "
       "run twice if no solution found     \n\t/1000 == 2 Pump will only run "
@@ -1165,7 +1353,7 @@ void CbcParameters::addCbcSolverIntParams() {
       CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::HEUROPTIONS]->setup(
-      "hOp!tions", "Heuristic options", -COIN_INT_MAX, COIN_INT_MAX, 0,
+      "hOp!tions", "Heuristic options", -COIN_INT_MAX, COIN_INT_MAX,
       "Value 1 stops heuristics immediately if the allowable gap has been "
       "reached. Other values are for the feasibility pump - 2 says do exact "
       "number of passes given, 4 only applies if an initial cutoff has been "
@@ -1175,14 +1363,12 @@ void CbcParameters::addCbcSolverIntParams() {
 
   parameters_[CbcParam::LOGLEVEL]->setup(
       "log!Level", "Level of detail in CBC output.", -1, 999999,
-      getLogLevel(),
       "If set to 0 then there should be no output in normal circumstances. A "
       "value of 1 is probably the best value for most uses, while 2 and 3 give "
       "more information.");
 
   parameters_[CbcParam::LPLOGLEVEL]->setup(
       "log!Level", "Level of detail in LP solver output.", -1, 999999,
-      getLpLogLevel(),
       "If set to 0 then there should be no output in normal circumstances. A "
       "value of 1 is probably the best value for most uses, while 2 and 3 give "
       "more information.");
@@ -1193,11 +1379,11 @@ void CbcParameters::addCbcSolverIntParams() {
 
   parameters_[CbcParam::MAXSAVEDSOLS]->setup(
       "maxSaved!Solutions", "Maximum number of solutions to save", 0,
-      COIN_INT_MAX, 1, "Number of solutions to save.");
+      COIN_INT_MAX, "Number of solutions to save.");
 
   parameters_[CbcParam::MAXSLOWCUTS]->setup(
       "slow!cutpasses", "Maximum number of rounds for slower cut generators",
-      -1, COIN_INT_MAX, 10,
+      -1, COIN_INT_MAX, 
       "Some cut generators are fairly slow - this limits the number of times "
       "they are tried. The cut generators identified as 'may be slow' at "
       "present are Lift and project cuts and both versions of Reduce and Split "
@@ -1205,12 +1391,11 @@ void CbcParameters::addCbcSolverIntParams() {
 
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->setup(
       "more2!MipOptions", "More more dubious options for mip", -1, COIN_INT_MAX,
-      0, "", CoinParam::displayPriorityNone);
+      "", CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::MULTIPLEROOTS]->setup(
       "multiple!RootPasses",
       "Do multiple root passes to collect cuts and solutions", 0, COIN_INT_MAX,
-      0,
       "Solve (in parallel, if enabled) the root phase this number of times, "
       "each with its own different seed, and collect all solutions and cuts "
       "generated. The actual format is aabbcc where aa is the number of extra "
@@ -1227,12 +1412,12 @@ void CbcParameters::addCbcSolverIntParams() {
       "oddwext!method",
       "Strategy used to search for wheel centers for the cuts found by Odd "
       "Wheel Cut Separation routine",
-      0, 2, 2,
+      0, 2,
       "Sets the method used in the extension module of Odd Wheel Cut "
       "Separation routine: 0=no extension; 1=one variable; 2=clique");
 
   parameters_[CbcParam::OUTPUTFORMAT]->setup(
-      "output!Format", "Which output format to use", 1, 6, 2,
+      "output!Format", "Which output format to use", 1, 6,
       "Normally export will be done using normal representation for numbers "
       "and two values per line.  You may want to do just one per line (for "
       "grep or suchlike) and you may wish to save with absolute accuracy using "
@@ -1243,13 +1428,13 @@ void CbcParameters::addCbcSolverIntParams() {
       "values, 3 saves with greater accuracy and 4 saves in IEEE format.");
 
   parameters_[CbcParam::PRINTOPTIONS]->setup(
-      "pO!ptions", "Dubious print options", 0, COIN_INT_MAX, 0,
+      "pO!ptions", "Dubious print options", 0, COIN_INT_MAX,
       "If this is greater than 0 then presolve will give more information and "
       "branch and cut will give statistics");
 
   parameters_[CbcParam::PROCESSTUNE]->setup(
       "tune!PreProcess", "Dubious tuning parameters for preprocessing", 0,
-      COIN_INT_MAX, 0,
+      COIN_INT_MAX,
       "Format aabbcccc - \n If aa then this is number of major passes (i.e. "
       "with presolve) \n If bb and bb>0 then this is number of minor passes "
       "(if unset or 0 then 10) \n cccc is bit set \n 0 - 1 Heavy probing \n 1 "
@@ -1264,7 +1449,7 @@ void CbcParameters::addCbcSolverIntParams() {
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::RANDOMSEED]->setup(
-      "randomC!bcSeed", "Random seed for Cbc", -1, COIN_INT_MAX, -1,
+      "randomC!bcSeed", "Random seed for Cbc", -1, COIN_INT_MAX,
       "Allows initialization of the random seed for pseudo-random numbers used "
       "in heuristics such as the Feasibility Pump to decide whether to round "
       "up or down. The special value of 0 lets Cbc use the time of the day for "
@@ -1272,7 +1457,7 @@ void CbcParameters::addCbcSolverIntParams() {
 
   parameters_[CbcParam::STRONGSTRATEGY]->setup(
       "expensive!Strong", "Whether to do even more strong branching", 0,
-      COIN_INT_MAX, 0,
+      COIN_INT_MAX,
       "Strategy for extra strong branching. 0 is normal strong branching. 1, "
       "2, 4, and 6 does strong branching on all fractional variables if at the "
       "root node (1), at depth less than modifier (2), objective equals best "
@@ -1285,12 +1470,12 @@ void CbcParameters::addCbcSolverIntParams() {
       CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::TESTOSI]->setup("testO!si", "Test OsiObject stuff",
-                                            -1, COIN_INT_MAX, -1, "",
+                                            -1, COIN_INT_MAX, "",
                                             CoinParam::displayPriorityNone);
 
 #ifdef CBC_THREAD
   parameters_[CbcParam::THREADS]->setup(
-      "thread!s", "Number of threads to try and use", -100, 100000, 0,
+      "thread!s", "Number of threads to try and use", -100, 100000,
       "To use multiple threads, set threads to number wanted.  It may be "
       "better to use one or two more than number of cpus available.  If 100+n "
       "then n threads and search is repeatable (maybe be somewhat slower), if "
@@ -1299,7 +1484,7 @@ void CbcParameters::addCbcSolverIntParams() {
 #endif
 
   parameters_[CbcParam::USERCBC]->setup(
-      "userCbc", "Hand coded Cbc stuff", 0, COIN_INT_MAX, 0,
+      "userCbc", "Hand coded Cbc stuff", 0, COIN_INT_MAX,
       "There are times (e.g., when using AMPL interface) when you may wish to "
       "do something unusual.  Look for USERCBC in main driver and modify "
       "sample code.",
@@ -1307,12 +1492,11 @@ void CbcParameters::addCbcSolverIntParams() {
 
   parameters_[CbcParam::VERBOSE]->setup(
       "verbose", "Switches on longer help on single ?", 0, 15,
-      verbose_,
       "Set to 1 to get short help with ? list, 2 to get long help.",
       CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::VUBTRY]->setup(
-      "vub!heuristic", "Type of VUB heuristic", -2, 20, -1,
+      "vub!heuristic", "Type of VUB heuristic", -2, 20,
       "This heuristic tries to fix some integer variables.",
       CoinParam::displayPriorityNone);
 }
@@ -1323,13 +1507,14 @@ void CbcParameters::addCbcSolverIntParams() {
 void CbcParameters::addCbcSolverBoolParams() {
   for (int code = CbcParam::FIRSTBOOLPARAM + 1;
        code < CbcParam::LASTBOOLPARAM; code++) {
-    parameters_[code]->appendKwd("off", CbcParameters::ParamOff);
-    parameters_[code]->appendKwd("on", CbcParameters::ParamOn);
-    parameters_[code]->setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
+    getParam(code)->setType(CoinParam::paramKwd);
+    getParam(code)->appendKwd("off", CbcParameters::ParamOff);
+    getParam(code)->appendKwd("on", CbcParameters::ParamOn);
+    getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
   }
 
   parameters_[CbcParam::CPX]->setup(
-      "cplex!Use", "Whether to use Cplex!", "off", CbcParameters::ParamOff,
+      "cplex!Use", "Whether to use Cplex!",
       "If the user has Cplex, but wants to use some of Cbc's heuristics then "
       "you can!  If this is on, then Cbc will get to the root node and then "
       "hand over to Cplex.  If heuristics find a solution this can be "
@@ -1339,15 +1524,14 @@ void CbcParameters::addCbcSolverBoolParams() {
       "it is worth trying both.");
 
   parameters_[CbcParam::DOHEURISTIC]->setup(
-      "doH!euristic", "Do heuristics before any preprocessing", "off",
-      CbcParameters::ParamOff,
+      "doH!euristic", "Do heuristics before any preprocessing",
       "Normally heuristics are done in branch and bound.  It may be useful to "
       "do them outside. Only those heuristics with 'both' or 'before' set will "
       "run. Doing this may also set cutoff, which can help with "
       "preprocessing.");
 
   parameters_[CbcParam::ERRORSALLOWED]->setup(
-      "error!sAllowed", "Whether to allow import errors", "off", CbcParameters::ParamOff,
+      "error!sAllowed", "Whether to allow import errors",
       "The default is not to use any model which had errors when reading the "
       "mps file.  Setting this to 'on' will allow all errors from which the "
       "code can recover simply by ignoring the error.  There are some errors "
@@ -1356,7 +1540,6 @@ void CbcParameters::addCbcSolverBoolParams() {
 
   parameters_[CbcParam::MESSAGES]->setup(
       "mess!ages", "Controls whether standardised message prefix is printed",
-      "off", CbcParameters::ParamOff,
       "By default, messages have a standard prefix, such as:\n   Clp0005 2261  "
       "Objective 109.024 Primal infeas 944413 (758)\nbut this program turns "
       "this off to make it look more friendly.  It can be useful to turn them "
@@ -1365,19 +1548,17 @@ void CbcParameters::addCbcSolverBoolParams() {
 
   parameters_[CbcParam::PREPROCNAMES]->setup(
       "PrepN!ames", "If column names will be kept in pre-processed model",
-      "off", CbcParameters::ParamOff,
       "Normally the preprocessed model has column names replaced by new names "
       "C0000... Setting this option to on keeps original names in variables "
       "which still exist in the preprocessed problem");
 
   parameters_[CbcParam::SOS]->setup(
-      "sos!Options", "Whether to use SOS from AMPL", "off", CbcParameters::ParamOff,
+      "sos!Options", "Whether to use SOS from AMPL",
       "Normally if AMPL says there are SOS variables they should be used, but "
       "sometimes they should be turned off - this does so.");
 
   parameters_[CbcParam::USESOLUTION]->setup(
-      "force!Solution", "Whether to use given solution as crash for BAB", "off",
-      CbcParameters::ParamOff,
+      "force!Solution", "Whether to use given solution as crash for BAB",
       "If on then tries to branch to solution given by AMPL or priorities "
       "file.");
 }
@@ -1388,35 +1569,33 @@ void CbcParameters::addCbcSolverBoolParams() {
 void CbcParameters::addCbcSolverCutParams() {
   for (int code = CbcParam::FIRSTCUTPARAM + 1;
        code < CbcParam::LASTCUTPARAM; code++) {
-    parameters_[code]->setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
+    getParam(code)->setType(CoinParam::paramKwd);
+    getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
   }
 
   parameters_[CbcParam::CLIQUECUTS]->setup(
-      "clique!Cuts", "Whether to use clique cuts", "off", CbcParameters::CGOff,
+      "clique!Cuts", "Whether to use clique cuts",
       "This switches on clique cuts (either at root or in entire tree). See "
       "branchAndCut for information on options.");
 
   parameters_[CbcParam::CUTSTRATEGY]->setup(
-      "cuts!OnOff", "Switches all cuts on or off", "off", CbcParameters::CGOff,
+      "cuts!OnOff", "Switches all cuts on or off", 
       "This can be used to switch on or off all cuts (apart from Reduce and "
       "Split).  Then you can set individual ones off or on.  See branchAndCut "
       "for information on options.");
 
   parameters_[CbcParam::FLOWCUTS]->setup(
-      "flow!CoverCuts", "Whether to use Flow Cover cuts", "off",
-      CbcParameters::CGOff,
+      "flow!CoverCuts", "Whether to use Flow Cover cuts",
       "This switches on flow cover cuts (either at root or in entire "
       "tree)." CUTS_LONGHELP);
 
   parameters_[CbcParam::GMICUTS]->setup(
-      "GMI!Cuts", "Whether to use alternative Gomory cuts", "off",
-      CbcParameters::CGOff,
+      "GMI!Cuts", "Whether to use alternative Gomory cuts", 
       CUTS_LONGHELP " This version is by Giacomo Nannicini and may be more "
                     "robust than gomoryCuts.");
 
   parameters_[CbcParam::GOMORYCUTS]->setup(
-      "gomory!Cuts", "Whether to use Gomory cuts", "off",
-      CbcParameters::CGOff,
+      "gomory!Cuts", "Whether to use Gomory cuts",
       "The original cuts - beware of imitations!  Having gone out of favor, "
       "they are now more fashionable as LP solvers are more robust and they "
       "interact well with other cuts.  They will almost always give cuts "
@@ -1426,14 +1605,12 @@ void CbcParameters::addCbcSolverCutParams() {
       " Reference: https://github.com/coin-or/Cgl/wiki/CglGomory");
 
   parameters_[CbcParam::KNAPSACKCUTS]->setup(
-      "knapsack!Cuts", "Whether to use Knapsack cuts", "off",
-      CbcParameters::CGOff,
+      "knapsack!Cuts", "Whether to use Knapsack cuts",
       "This switches on knapsack cuts (either at root or in entire tree). See "
       "branchAndCut for information on options.");
 
   parameters_[CbcParam::LAGOMORYCUTS]->setup(
-      "lagomory!Cuts", "Whether to use Lagrangean Gomory cuts", "off",
-      CbcParameters::CGOff,
+      "lagomory!Cuts", "Whether to use Lagrangean Gomory cuts", 
       "This is a gross simplification of 'A Relax-and-Cut Framework for "
       "Gomory's Mixed-Integer Cuts' by Matteo Fischetti & Domenico Salvagnin.  "
       "This simplification just uses original constraints while modifying "
@@ -1445,62 +1622,52 @@ void CbcParameters::addCbcSolverCutParams() {
       "cuts are used.");
 
   parameters_[CbcParam::LANDPCUTS]->setup(
-      "lift!AndProjectCuts", "Whether to use lift-and-project cuts", "off",
-      CbcParameters::CGOff,
+      "lift!AndProjectCuts", "Whether to use lift-and-project cuts",
       "This switches on lift-and-project cuts (either at root or in entire "
       "tree). See branchAndCut for information on options.");
 
   parameters_[CbcParam::LATWOMIRCUTS]->setup(
-      "latwomir!Cuts", "Whether to use Lagrangean Twomir cuts", "off",
-      CbcParameters::CGOff,
+      "latwomir!Cuts", "Whether to use Lagrangean Twomir cuts",
       "This is a Lagrangean relaxation for Twomir cuts.  See lagomoryCuts for "
       "description of options.");
 
   parameters_[CbcParam::MIRCUTS]->setup(
       "mixed!IntegerRoundingCuts", "Whether to use Mixed Integer Rounding cuts",
-      "off", CbcParameters::CGOff,
       "This switches on mixed integer rounding cuts (either at root or in "
       "entire tree).  See branchAndCut for information on options.");
 
   parameters_[CbcParam::ODDWHEELCUTS]->setup(
-      "oddwheel!Cuts", "Whether to use odd wheel cuts", "off",
-      CbcParameters::CGOff,
+      "oddwheel!Cuts", "Whether to use odd wheel cuts", 
       "This switches on odd-wheel inequalities (either at root or in entire "
       "tree).");
 
   parameters_[CbcParam::PROBINGCUTS]->setup(
-      "probing!Cuts", "Whether to use Probing cuts", "off",
-      CbcParameters::CGOff,
+      "probing!Cuts", "Whether to use Probing cuts", 
       "This switches on probing cuts (either at root or in entire tree). See "
       "branchAndCut for information on options.");
 
   parameters_[CbcParam::REDSPLITCUTS]->setup(
-      "reduce!AndSplitCuts", "Whether to use Reduce-and-Split cuts", "off",
-      CbcParameters::CGOff,
+      "reduce!AndSplitCuts", "Whether to use Reduce-and-Split cuts",
       "This switches on reduce and split cuts (either at root or in entire "
       "tree). See branchAndCut for information on options.");
 
   parameters_[CbcParam::REDSPLIT2CUTS]->setup(
       "reduce2!AndSplitCuts", "Whether to use Reduce-and-Split cuts - style 2",
-      "off", CbcParameters::CGOff,
       "This switches on reduce and split cuts (either at root or in entire "
       "tree). See branchAndCut for information on options.");
 
   parameters_[CbcParam::RESIDCAPCUTS]->setup(
-      "residual!CapacityCuts", "Whether to use Residual Capacity cuts", "off",
-      CbcParameters::CGOff,
+      "residual!CapacityCuts", "Whether to use Residual Capacity cuts",
       CUTS_LONGHELP
       " Reference: https://github.com/coin-or/Cgl/wiki/CglResidualCapacity");
 
   parameters_[CbcParam::TWOMIRCUTS]->setup(
       "two!MirCuts", "Whether to use Two phase Mixed Integer Rounding cuts",
-      "off", CbcParameters::CGOff,
       "This switches on two phase mixed integer rounding cuts (either at root "
       "or in entire tree). See branchAndCut for information on options.");
 
   parameters_[CbcParam::ZEROHALFCUTS]->setup(
-      "zero!HalfCuts", "Whether to use zero half cuts", "off",
-      CbcParameters::CGOff,
+      "zero!HalfCuts", "Whether to use zero half cuts", 
       CUTS_LONGHELP " This implementation was written by Alberto Caprara.");
 
   // Populate the keyword lists
@@ -1508,53 +1675,52 @@ void CbcParameters::addCbcSolverCutParams() {
        code < CbcParam::LASTCUTPARAM; code++) {
     // First the common keywords
     switch (code) {
-    case CbcParam::CUTSTRATEGY:
-    case CbcParam::CLIQUECUTS:
-    case CbcParam::FLOWCUTS:
-    case CbcParam::GMICUTS:
-    case CbcParam::GOMORYCUTS:
-    case CbcParam::KNAPSACKCUTS:
-    case CbcParam::LANDPCUTS:
-    case CbcParam::MIRCUTS:
-    case CbcParam::ODDWHEELCUTS:
-    case CbcParam::PROBINGCUTS:
-    case CbcParam::RESIDCAPCUTS:
-    case CbcParam::TWOMIRCUTS:
-    case CbcParam::ZEROHALFCUTS: {
-      parameters_[code]->appendKwd("on", CbcParameters::CGOn);
-      parameters_[code]->appendKwd("root", CbcParameters::CGRoot);
-      parameters_[code]->appendKwd("ifmove", CbcParameters::CGIfMove);
-      parameters_[code]->appendKwd("forceon", CbcParameters::CGForceOn);
-      break;
+     case CbcParam::CUTSTRATEGY:
+     case CbcParam::CLIQUECUTS:
+     case CbcParam::FLOWCUTS:
+     case CbcParam::GMICUTS:
+     case CbcParam::GOMORYCUTS:
+     case CbcParam::KNAPSACKCUTS:
+     case CbcParam::LANDPCUTS:
+     case CbcParam::MIRCUTS:
+     case CbcParam::ODDWHEELCUTS:
+     case CbcParam::PROBINGCUTS:
+     case CbcParam::RESIDCAPCUTS:
+     case CbcParam::TWOMIRCUTS:
+     case CbcParam::ZEROHALFCUTS:
+        parameters_[code]->appendKwd("off", CbcParameters::CGOff);
+        parameters_[code]->appendKwd("on", CbcParameters::CGOn);
+        parameters_[code]->appendKwd("root", CbcParameters::CGRoot);
+        parameters_[code]->appendKwd("ifmove", CbcParameters::CGIfMove);
+        parameters_[code]->appendKwd("forceon", CbcParameters::CGForceOn);
+        break;
+     default: 
+        break;
     }
-    default: { break; }
-
-      // Now, add some additional keywords for different classes
-      switch (code) {
-      case CbcParam::GOMORYCUTS: {
+    
+    // Now, add some additional keywords for different classes
+    switch (code) {
+     case CbcParam::GOMORYCUTS: 
         parameters_[code]->appendKwd("onglobal", CbcParameters::CGOnGlobal);
         parameters_[code]->appendKwd("forceandglobal", CbcParameters::CGForceAndGlobal);
         parameters_[code]->appendKwd("forcelongon", CbcParameters::CGForceLongOn);
         parameters_[code]->appendKwd("longer", CbcParameters::CGLonger);
         parameters_[code]->appendKwd("shorter", CbcParameters::CGShorter);
         break;
-      }
-      case CbcParam::GMICUTS: {
+     case CbcParam::GMICUTS: 
         parameters_[code]->appendKwd("long", CbcParameters::CGLong);
         parameters_[code]->appendKwd("longroot", CbcParameters::CGLongRoot);
         parameters_[code]->appendKwd("longifmove", CbcParameters::CGLongIfMove);
         parameters_[code]->appendKwd("forcelongon", CbcParameters::CGForceLongOn);
         parameters_[code]->appendKwd("longendonly", CbcParameters::CGLongEndOnly);
         break;
-      }
-      case CbcParam::LAGOMORYCUTS: {
+     case CbcParam::LAGOMORYCUTS: 
         parameters_[code]->appendKwd("root", CbcParameters::CGRoot);
         parameters_[code]->appendKwd("onlyaswellroot", CbcParameters::CGOnlyAsWellRoot);
         parameters_[code]->appendKwd("cleanaswellroot", CbcParameters::CGCleanAsWellRoot);
         parameters_[code]->appendKwd("bothaswellroot", CbcParameters::CGCleanBothAsWellRoot);
         // Here, we intentionally drop through to the next set
-      }
-      case CbcParam::LATWOMIRCUTS: {
+     case CbcParam::LATWOMIRCUTS: 
         parameters_[code]->appendKwd("endonlyroot", CbcParameters::CGEndOnlyRoot);
         parameters_[code]->appendKwd("endcleanroot", CbcParameters::CGEndCleanRoot);
         parameters_[code]->appendKwd("endonly", CbcParameters::CGEndOnly);
@@ -1567,26 +1733,21 @@ void CbcParameters::addCbcSolverCutParams() {
         parameters_[code]->appendKwd("cleaninstead", CbcParameters::CGCleanInstead);
         parameters_[code]->appendKwd("bothinstead", CbcParameters::CGBothInstead);
         break;
-      }
-      case CbcParam::ODDWHEELCUTS: {
+     case CbcParam::ODDWHEELCUTS: 
         parameters_[code]->appendKwd("onglobal", CbcParameters::CGOnGlobal);
         break;
-      }
-      case CbcParam::PROBINGCUTS: {
+     case CbcParam::PROBINGCUTS: 
         parameters_[code]->appendKwd("forceonbut", CbcParameters::CGForceOnBut);
         break;
-      }
-      case CbcParam::REDSPLITCUTS:
-      case CbcParam::REDSPLIT2CUTS: {
+     case CbcParam::REDSPLITCUTS:
+     case CbcParam::REDSPLIT2CUTS: 
         parameters_[code]->appendKwd("on", CbcParameters::CGOn);
         parameters_[code]->appendKwd("root", CbcParameters::CGRoot);
         parameters_[code]->appendKwd("longon", CbcParameters::CGLongOn);
         parameters_[code]->appendKwd("longroot", CbcParameters::CGLongRoot);
         break;
-      }
-      default:
-        break;
-      }
+     default:
+       break;
     }
   }
 }
@@ -1597,110 +1758,96 @@ void CbcParameters::addCbcSolverCutParams() {
 void CbcParameters::addCbcSolverHeurParams() {
   for (int code = CbcParam::FIRSTHEURPARAM + 1;
        code < CbcParam::LASTHEURPARAM; code++) {
-    parameters_[code]->setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
+    getParam(code)->setType(CoinParam::paramKwd);
+    getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
   }
 
   parameters_[CbcParam::COMBINE]->setup(
-      "combine!Solutions", "Whether to use combine solution heuristic", "off",
-      CbcParameters::HeurOff,
+      "combine!Solutions", "Whether to use combine solution heuristic", 
       "This switches on a heuristic which does branch and cut on the problem "
       "given by just using variables which have appeared in one or more "
       "solutions. It is obviously only tried after two or more solutions.");
 
   parameters_[CbcParam::CROSSOVER]->setup(
       "combine2!Solutions", "Whether to use crossover solution heuristic",
-      "off", CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DINS]->setup(
-      "Dins", "Whether to try Distance Induced Neighborhood Search", "off",
-      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      "Dins", "Whether to try Distance Induced Neighborhood Search", HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGC]->setup(
       "DivingC!oefficient", "Whether to try Coefficient diving heuristic",
-      "off", CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGF]->setup(
-      "DivingF!ractional", "Whether to try Fractional diving heuristic", "off",
-      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      "DivingF!ractional", "Whether to try Fractional diving heuristic", HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGG]->setup(
-      "DivingG!uided", "Whether to try Guided diving heuristic", "off",
-      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      "DivingG!uided", "Whether to try Guided diving heuristic", HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGL]->setup(
-      "DivingL!ineSearch", "Whether to try Linesearch diving heuristic", "off",
-      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      "DivingL!ineSearch", "Whether to try Linesearch diving heuristic", HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGP]->setup(
-      "DivingP!seudocost", "Whether to try Pseudocost diving heuristic", "off",
-      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      "DivingP!seudocost", "Whether to try Pseudocost diving heuristic", HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGS]->setup(
-      "DivingS!ome", "Whether to try Diving heuristics", "off",
-      CbcParameters::HeurOff,
+      "DivingS!ome", "Whether to try Diving heuristics", 
       "This switches on a random diving heuristic at various times. One may "
       "prefer to individually turn diving heuristics on or off. ");
 
   parameters_[CbcParam::DIVINGV]->setup(
       "DivingV!ectorLength", "Whether to try Vectorlength diving heuristic",
-      "off", CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DW]->setup(
-      "dw!Heuristic", "Whether to try Dantzig Wolfe heuristic", "off",
-      CbcParameters::HeurOff,
+      "dw!Heuristic", "Whether to try Dantzig Wolfe heuristic", 
       "This heuristic is very very compute intensive. It tries to find a "
       "Dantzig Wolfe structure and use that. " HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::FPUMP]->setup(
-      "feas!ibilityPump", "Whether to try Feasibility Pump", "off",
-      CbcParameters::HeurOff,
+      "feas!ibilityPump", "Whether to try Feasibility Pump", 
       "This switches on feasibility pump heuristic at root. This is due to "
       "Fischetti and Lodi and uses a sequence of LPs to try and get an integer "
       "feasible solution.  Some fine tuning is available by "
       "passFeasibilityPump.");
 
   parameters_[CbcParam::GREEDY]->setup(
-      "greedy!Heuristic", "Whether to use a greedy heuristic", "off",
-      CbcParameters::HeurOff,
+      "greedy!Heuristic", "Whether to use a greedy heuristic",
       "Switches on a pair of greedy heuristic which will try and obtain a "
       "solution.  It may just fix a percentage of variables and then try a "
       "small branch and cut run.");
 
   parameters_[CbcParam::HEURISTICSTRATEGY]->setup(
-      "heur!isticsOnOff", "Switches most heuristics on or off", "off", CbcParameters::HeurOff,
+      "heur!isticsOnOff", "Switches most heuristics on or off", 
       "This can be used to switch on or off all heuristics.  Then you can set "
       "individual ones off or on.  CbcTreeLocal is not included as it "
       "dramatically alters search.");
 
   parameters_[CbcParam::LOCALTREE]->setup(
-      "local!TreeSearch", "Whether to use local tree search", "off",
-      CbcParameters::HeurOff,
+      "local!TreeSearch", "Whether to use local tree search", 
       "This switches on a local search algorithm when a solution is found.  "
       "This is from Fischetti and Lodi and is not really a heuristic although "
       "it can be used as one. When used from this program it has limited "
       "functionality.  It is not controlled by heuristicsOnOff.");
 
   parameters_[CbcParam::NAIVE]->setup(
-      "naive!Heuristics", "Whether to try some stupid heuristic", "off",
-      CbcParameters::HeurOff,
+      "naive!Heuristics", "Whether to try some stupid heuristic", 
       "This is naive heuristics which, e.g., fix all integers with costs to "
       "zero!. " HEURISTICS_LONGHELP,
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::PIVOTANDFIX]->setup(
-      "pivotAndF!ix", "Whether to try Pivot and Fix heuristic", "off",
-      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      "pivotAndF!ix", "Whether to try Pivot and Fix heuristic", HEURISTICS_LONGHELP);
 
 #if 0
-  parameters_[CbcParam::PIVOTANDCOMPLEMENT]->setup("pivotAndC!omplement",
-                                                        "Whether to try Pivot and Complement heuristic",
-                                                        "off", getPivotAndComplementMode(),
-                                                        HEURISTICS_LONGHELP);
+  parameters_[CbcParam::PIVOTANDCOMPLEMENT]->setup(
+      "pivotAndC!omplement", "Whether to try Pivot and Complement heuristic",
+      HEURISTICS_LONGHELP);
 #endif
 
   parameters_[CbcParam::PROXIMITY]->setup(
-      "proximity!Search", "Whether to do proximity search heuristic", "off",
-      CbcParameters::HeurOff,
+      "proximity!Search", "Whether to do proximity search heuristic", 
       "This heuristic looks for a solution close to the incumbent solution "
       "(Fischetti and Monaci, 2012). The idea is to define a sub-MIP without "
       "additional constraints but with a modified objective function intended "
@@ -1715,114 +1862,101 @@ void CbcParameters::addCbcSolverHeurParams() {
 
   parameters_[CbcParam::RANDROUND]->setup(
       "randomi!zedRounding", "Whether to try randomized rounding heuristic",
-      "off", CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::RENS]->setup(
-      "Rens", "Whether to try Relaxation Enforced Neighborhood Search", "off",
-      CbcParameters::HeurOff,
+      "Rens", "Whether to try Relaxation Enforced Neighborhood Search", 
       HEURISTICS_LONGHELP " Value 'on' just does 50 nodes. 200, 1000, and "
                           "10000 does that many nodes.");
 
   parameters_[CbcParam::RINS]->setup(
-      "Rins", "Whether to try Relaxed Induced Neighborhood Search", "off",
-      CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      "Rins", "Whether to try Relaxed Induced Neighborhood Search",
+      HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::ROUNDING]->setup(
-      "round!ingHeuristic", "Whether to use Rounding heuristic", "off",
-      CbcParameters::HeurOff,
+      "round!ingHeuristic", "Whether to use Rounding heuristic", 
       "This switches on a simple (but effective) rounding heuristic at each "
       "node of tree.");
 
   parameters_[CbcParam::VND]->setup(
       "Vnd!VariableNeighborhoodSearch",
-      "Whether to try Variable Neighborhood Search", "off",
-       CbcParameters::HeurOff, HEURISTICS_LONGHELP);
+      "Whether to try Variable Neighborhood Search", HEURISTICS_LONGHELP);
 
   // Populate the keyword lists
   for (int code = CbcParam::FIRSTHEURPARAM + 1;
        code < CbcParam::LASTHEURPARAM; code++) {
     // First the common keywords
     switch (code) {
-    case CbcParam::HEURISTICSTRATEGY:
-    case CbcParam::CROSSOVER:
-    case CbcParam::DINS:
-    case CbcParam::DIVINGC:
-    case CbcParam::DIVINGF:
-    case CbcParam::DIVINGG:
-    case CbcParam::DIVINGL:
-    case CbcParam::DIVINGP:
-    case CbcParam::DIVINGS:
-    case CbcParam::DIVINGV:
-    case CbcParam::DW:
-    case CbcParam::NAIVE:
-    case CbcParam::PIVOTANDFIX:
-    case CbcParam::PIVOTANDCOMPLEMENT:
-    case CbcParam::PROXIMITY:
-    case CbcParam::RANDROUND:
-    case CbcParam::RENS:
-    case CbcParam::RINS:
-    case CbcParam::ROUNDING:
-    case CbcParam::VND: {
-      parameters_[code]->appendKwd("off", CbcParameters::CGOff);
-      parameters_[code]->appendKwd("on", CbcParameters::CGOn);
-      parameters_[code]->appendKwd("both", CbcParameters::CGRoot);
-      parameters_[code]->appendKwd("before", CbcParameters::CGIfMove);
-      break;
-    }
-    default:
-      break;
+     case CbcParam::HEURISTICSTRATEGY:
+     case CbcParam::CROSSOVER:
+     case CbcParam::DINS:
+     case CbcParam::DIVINGC:
+     case CbcParam::DIVINGF:
+     case CbcParam::DIVINGG:
+     case CbcParam::DIVINGL:
+     case CbcParam::DIVINGP:
+     case CbcParam::DIVINGS:
+     case CbcParam::DIVINGV:
+     case CbcParam::DW:
+     case CbcParam::NAIVE:
+     case CbcParam::PIVOTANDFIX:
+     case CbcParam::PIVOTANDCOMPLEMENT:
+     case CbcParam::PROXIMITY:
+     case CbcParam::RANDROUND:
+     case CbcParam::RENS:
+     case CbcParam::RINS:
+     case CbcParam::ROUNDING:
+     case CbcParam::VND: 
+       parameters_[code]->appendKwd("off", CbcParameters::CGOff);
+       parameters_[code]->appendKwd("on", CbcParameters::CGOn);
+       parameters_[code]->appendKwd("both", CbcParameters::CGRoot);
+       parameters_[code]->appendKwd("before", CbcParameters::CGIfMove);
+       break;
+     default:
+       break;
     }
     // Check the unique keywords
     switch (code) {
-    case CbcParam::COMBINE: {
-      parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
-      parameters_[code]->appendKwd("on", CbcParameters::HeurOn);
-      break;
-    }
-    case CbcParam::DINS: {
-      parameters_[code]->appendKwd("often", CbcParameters::HeurOften);
-      break;
-    }
-    case CbcParam::FPUMP: {
-      parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
-      parameters_[code]->appendKwd("on", CbcParameters::HeurOn);
-      break;
-    }
-    case CbcParam::GREEDY: {
-      parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
-      parameters_[code]->appendKwd("on", CbcParameters::HeurOn);
-      parameters_[code]->appendKwd("root", CbcParameters::HeurRoot);
-      break;
-    }
-    case CbcParam::LOCALTREE: {
-      parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
-      parameters_[code]->appendKwd("on", CbcParameters::HeurOn);
-    }
-    case CbcParam::PROXIMITY: {
-      parameters_[code]->appendKwd("10", CbcParameters::HeurTen);
-      parameters_[code]->appendKwd("100", CbcParameters::HeurOneHundred);
-      parameters_[code]->appendKwd("300", CbcParameters::HeurThreeHundred);
-      break;
-    }
-    case CbcParam::RENS: {
-      parameters_[code]->appendKwd("200", CbcParameters::HeurTwoHundred);
-      parameters_[code]->appendKwd("1000", CbcParameters::HeurOneThousand);
-      parameters_[code]->appendKwd("10000", CbcParameters::HeurTenThousand);
-      parameters_[code]->appendKwd("dj", CbcParameters::HeurDj);
-      parameters_[code]->appendKwd("djbefore", CbcParameters::HeurDjBefore);
-      parameters_[code]->appendKwd("usesolution", CbcParameters::HeurUseSolution);
-      break;
-    }
-    case CbcParam::RINS: {
-      parameters_[code]->appendKwd("often", CbcParameters::HeurOften);
-      break;
-    }
-    case CbcParam::VND: {
-      parameters_[code]->appendKwd("intree", CbcParameters::HeurInTree);
-      break;
-    }
-    default:
-      break;
+     case CbcParam::COMBINE:
+        parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
+        parameters_[code]->appendKwd("on", CbcParameters::HeurOn);
+        break;
+     case CbcParam::DINS:
+        parameters_[code]->appendKwd("often", CbcParameters::HeurOften);
+        break;
+     case CbcParam::FPUMP:
+        parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
+        parameters_[code]->appendKwd("on", CbcParameters::HeurOn);
+        break;
+     case CbcParam::GREEDY: 
+        parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
+        parameters_[code]->appendKwd("on", CbcParameters::HeurOn);
+        parameters_[code]->appendKwd("root", CbcParameters::HeurRoot);
+        break;
+     case CbcParam::LOCALTREE: 
+        parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
+        parameters_[code]->appendKwd("on", CbcParameters::HeurOn);
+     case CbcParam::PROXIMITY: 
+        parameters_[code]->appendKwd("10", CbcParameters::HeurTen);
+        parameters_[code]->appendKwd("100", CbcParameters::HeurOneHundred);
+        parameters_[code]->appendKwd("300", CbcParameters::HeurThreeHundred);
+        break;
+     case CbcParam::RENS: 
+        parameters_[code]->appendKwd("200", CbcParameters::HeurTwoHundred);
+        parameters_[code]->appendKwd("1000", CbcParameters::HeurOneThousand);
+        parameters_[code]->appendKwd("10000", CbcParameters::HeurTenThousand);
+        parameters_[code]->appendKwd("dj", CbcParameters::HeurDj);
+        parameters_[code]->appendKwd("djbefore", CbcParameters::HeurDjBefore);
+        parameters_[code]->appendKwd("usesolution", CbcParameters::HeurUseSolution);
+        break;
+     case CbcParam::RINS: 
+        parameters_[code]->appendKwd("often", CbcParameters::HeurOften);
+        break;
+     case CbcParam::VND: 
+        parameters_[code]->appendKwd("intree", CbcParameters::HeurInTree);
+        break;
+     default:
+       break;
     }
   }
 }
@@ -1838,31 +1972,31 @@ void CbcParameters::addCbcModelParams()
   parameters_[CbcParam::ALLOWABLEGAP]->setup(
       "allow!ableGap",
       "Stop when gap between best possible and incumbent is less than this",
-      0.0, 1.0e20, 1.0e-12,
+      0.0, 1.0e20, 
       "If the gap between best solution and best possible solution is less "
       "than this then the search will be terminated. Also see ratioGap.");
 
   parameters_[CbcParam::CUTOFF]->setup(
       "cuto!ff", "All solutions must be better than this", -1.0e60, 1.0e60,
-      1.0e50,
       "All solutions must be better than this value (in a minimization sense). "
       " This is also set by cbc whenever it obtains a solution and is set to "
       "the value of the objective for the solution minus the cutoff "
       "increment.");
 
   parameters_[CbcParam::DIRECTION]->setup(
-      "direction", "Minimize or maximize", "min!imize",
-      CbcParameters::OptDirMinimize,
+      "direction", "Minimize or maximize", 
       "The default is minimize - use 'direction maximize' for "
       "maximization.\nYou can also use the parameters_ 'maximize' or "
       "'minimize'.");
+  parameters_[CbcParam::DIRECTION]->setType(CoinParam::paramKwd);
+  parameters_[CbcParam::DIRECTION]->appendKwd("min!imize", CbcParameters::OptDirMinimize);
   parameters_[CbcParam::DIRECTION]->appendKwd("max!imize", CbcParameters::OptDirMaximize);
   parameters_[CbcParam::DIRECTION]->appendKwd("zero", CbcParameters::OptDirZero);
-
+  
   parameters_[CbcParam::INCREMENT]->setup(
       "inc!rement",
       "A new solution must be at least this much better than the incumbent",
-      -1.0e20, 1.0e20, 1.0e-4,
+      -1.0e20, 1.0e20, 
       "Whenever a solution is found the bound on future solutions is set to "
       "the objective of the solution (in a minimization sense) plus the "
       "specified increment.  If this option is not specified, the code will "
@@ -1874,7 +2008,6 @@ void CbcParameters::addCbcModelParams()
   parameters_[CbcParam::INFEASIBILITYWEIGHT]->setup(
       "inf!easibilityWeight",
       "Each integer infeasibility is expected to cost this much", 0.0, 1.0e20,
-      0.0,
       "A primitive way of deciding which node to explore next.  Satisfying "
       "each integer infeasibility is expected to cost this much.");
 
@@ -1882,7 +2015,7 @@ void CbcParameters::addCbcModelParams()
       "integerT!olerance",
       "For an optimal solution, no integer variable may be farther than this "
       "from an integer value",
-      1.0e-20, 0.5, 1.0e-6,
+      1.0e-20, 0.5, 
       "When checking a solution for feasibility, if the difference between the "
       "value of a variable and the nearest integer is less than the integer "
       "tolerance, the value is considered to be integral. Beware of setting "
@@ -1890,7 +2023,6 @@ void CbcParameters::addCbcModelParams()
 
   parameters_[CbcParam::LOGLEVEL]->setup(
       "bclog!Level", "Level of detail in Coin branch and Cut output", -1, 63,
-      1,
       "If set to 0 then there should be no output in normal circumstances. A "
       "value of 1 is probably the best value for most uses, while 2 and 3 give "
       "more information.");
@@ -1900,9 +2032,10 @@ void CbcParameters::addCbcModelParams()
       "The default is minimize - use 'maximize' for maximization.\n A synonym "
       "for 'direction maximize'.",
       CoinParam::displayPriorityHigh);
+  parameters_[CbcParam::MAXIMIZE]->setType(CoinParam::paramAct);
 
   parameters_[CbcParam::MAXNODES]->setup(
-      "maxN!odes", "Maximum number of nodes to evaluate", 1, 2147483647, 1,
+      "maxN!odes", "Maximum number of nodes to evaluate", 1, COIN_INT_MAX, 
       "This is a repeatable way to limit search.  Normally using time is "
       "easier but then the results may not be repeatable.");
 
@@ -1910,14 +2043,14 @@ void CbcParameters::addCbcModelParams()
       "maxNNI!FS",
       "Maximum number of nodes to be processed without improving the incumbent "
       "solution.",
-      -1, COIN_INT_MAX, COIN_INT_MAX,
+      -1, COIN_INT_MAX, 
       "This criterion specifies that when a feasible solution is available, "
       "the search should continue only if better feasible solutions were "
       "produced in the last nodes.");
 
   parameters_[CbcParam::MAXSECONDSNOTIMPROVING]->setup(
       "secni!fs", "maximum seconds without improving the incumbent solution",
-      -1.0, COIN_DBL_MAX, COIN_DBL_MAX,
+      -1.0, COIN_DBL_MAX, 
       "With this stopping criterion, after a feasible solution is found, the "
       "search should continue only if the incumbent solution was updated "
       "recently, the tolerance is specified here. A discussion on why this "
@@ -1927,7 +2060,7 @@ void CbcParameters::addCbcModelParams()
 
   parameters_[CbcParam::MAXSOLS]->setup(
       "maxSo!lutions", "Maximum number of feasible solutions to get", 1,
-      COIN_INT_MAX, COIN_INT_MAX,
+      COIN_INT_MAX, 
       "You may want to stop after (say) two solutions or an hour. This is "
       "checked every node in tree, so it is possible to get more solutions "
       "from heuristics.");
@@ -1937,25 +2070,26 @@ void CbcParameters::addCbcModelParams()
       "The default is minimize - use 'maximize' for maximization.\nThis should "
       "only be necessary if you have previously set maximization. A synonym "
       "for 'direction minimize'.");
+  parameters_[CbcParam::MINIMIZE]->setType(CoinParam::paramAct);
 
   parameters_[CbcParam::MIPOPTIONS]->setup(
-      "mipO!ptions", "Dubious options for mip", 0, COIN_INT_MAX, 0, "",
+      "mipO!ptions", "Dubious options for mip", 0, COIN_INT_MAX, "",
       CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::MOREMIPOPTIONS]->setup(
-      "more!MipOptions", "More dubious options for mip", -1, COIN_INT_MAX, 0,
+      "more!MipOptions", "More dubious options for mip", -1, COIN_INT_MAX, 
       "", CoinParam::displayPriorityNone);
 
 #if 0
   parameters_[CbcParam::NUMBERMINI]->setup("miniT!ree",
-      "Size of fast mini tree", 0, COIN_INT_MAX, 0,
+      "Size of fast mini tree", 0, COIN_INT_MAX,
       "The idea is that I can do a small tree fast. This is a first try and will" 
       "hopefully become more sophisticated.", CoinParam::displayPriorityNone);
 #endif
 
   parameters_[CbcParam::NUMBERANALYZE]->setup(
       "numberA!nalyze", "Number of analysis iterations", -COIN_INT_MAX,
-      COIN_INT_MAX, 0,
+      COIN_INT_MAX, 
       "This says how many iterations to spend at the root node analyzing the "
       "problem.  This is a first try and will hopefully become more "
       "sophisticated.",
@@ -1965,9 +2099,10 @@ void CbcParameters::addCbcModelParams()
       "reverse", "Reverses sign of objective",
       "Useful for testing if maximization works correctly",
       CoinParam::displayPriorityNone);
+  parameters_[CbcParam::REVERSE]->setType(CoinParam::paramAct);
 
   parameters_[CbcParam::CUTPASS]->setup(
-      "passC!uts", "Number of cut passes at root node", -999999, 999999, 100,
+      "passC!uts", "Number of cut passes at root node", -999999, 999999,
       "The default is 100 passes if less than 500 columns, 100 passes (but "
       "stop if the drop is small) if less than 5000 columns, 20 otherwise.");
 
@@ -1975,20 +2110,20 @@ void CbcParameters::addCbcModelParams()
       "ratio!Gap",
       "Stop when the gap between the best possible solution and the incumbent "
       "is less than this fraction of the larger of the two",
-      0.0, 1.0e20, 0.0,
+      0.0, 1.0e20,
       "If the gap between the best solution and the best possible solution is "
       "less than this fraction of the objective value at the root node then "
       "the search will terminate.  See 'allowableGap' for a way of using "
       "absolute value rather than fraction.");
 
   parameters_[CbcParam::TIMELIMIT]->setup(
-      "sec!onds", "Maximum seconds for branch and cut", -1.0, 1.0e12, 1.0e11,
+      "sec!onds", "Maximum seconds for branch and cut", -1.0, 1.0e12,
       "After this many seconds the program will act as if maximum nodes had "
       "been reached.");
 
   parameters_[CbcParam::STRONGBRANCHING]->setup(
       "strong!Branching", "Number of variables to look at in strong branching",
-      0, 999999, 0,
+      0, 999999,
       "In order to decide which variable to branch on, the code will choose up "
       "to this number of unsatisfied variables and try mini up and down "
       "branches.  The most effective one is chosen. If a variable is branched "
@@ -1997,17 +2132,17 @@ void CbcParameters::addCbcModelParams()
 
   parameters_[CbcParam::NUMBERBEFORE]->setup(
       "trust!PseudoCosts", "Number of branches before we trust pseudocosts", -1,
-      2000000, 0,
+      2000000,
       "Using strong branching computes pseudo-costs.  After this many times "
       "for a variable we just trust the pseudo costs and do not do any more "
       "strong branching.");
 
   for (int code = CbcParam::FIRSTMODELPARAM + 1;
        code < CbcParam::LASTMODELPARAM; code++) {
-     if (parameters_[code]->type() == CoinParam::paramInt){
-        parameters_[code]->setPushFunc(CbcParamUtils::pushCbcModelIntParam);
+     if (getParam(code)->type() == CoinParam::paramInt){
+        getParam(code)->setPushFunc(CbcParamUtils::pushCbcModelIntParam);
      }else{
-        parameters_[code]->setPushFunc(CbcParamUtils::pushCbcModelDblParam);
+        getParam(code)->setPushFunc(CbcParamUtils::pushCbcModelDblParam);
      }
   }
 }

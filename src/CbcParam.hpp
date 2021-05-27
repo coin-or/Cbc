@@ -58,7 +58,6 @@ public:
       // Action Parameters
       FIRSTACTIONPARAM,
       BAB,
-      DUMMY,
       ENVIRONMENT,
       EXIT,
       EXPORT,
@@ -83,7 +82,7 @@ public:
       LASTACTIONPARAM,
       
       // String (Directory) Parameters
-      FIRSTSTRPARAM,
+      FIRSTSTRINGPARAM,
       CSVSTATISTICS,
       DEBUG,
       DIRECTORY,
@@ -97,7 +96,7 @@ public:
       PRINTMASK,
       PRIORITYIN,
       SOLUTIONFILE,
-      LASTSTRPARAM,
+      LASTSTRINGPARAM,
       
       // Cut Parameters
       FIRSTCUTPARAM,
@@ -154,7 +153,6 @@ public:
       CPX,
       DOHEURISTIC,
       ERRORSALLOWED,
-      EXTRAVARIABLES,
       MESSAGES,
       PREPROCNAMES,
       SOS,
@@ -189,11 +187,13 @@ public:
       DEPTHMINIBAB,
       DIVEOPT,
       DIVEOPTSOLVES,
+      DUMMY,
       EXPERIMENT,
       EXTRA1,
       EXTRA2,
       EXTRA3,
       EXTRA4,
+      EXTRAVARIABLES,
       FPUMPITS,
       FPUMPTUNE,
       FPUMPTUNE2,

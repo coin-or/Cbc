@@ -84,6 +84,8 @@ public:
   /*! \brief Default constructor */
   CbcParameters();
 
+  CbcParameters(int strategy);
+
   /*! \brief Destructor */
   ~CbcParameters();
 
@@ -92,7 +94,11 @@ public:
   /*! \name Enumeration types used for Cbc keyword parameters */
   //@{
 
-  /*! \brief Codes to control integer preprocessing
+   /*! \brief Codes to specify overall strategies */
+   
+   enum CbcStrategy { DefaultStrategy = 0 };
+
+   /*! \brief Codes to control integer preprocessing
 
     - IPPOff: Integer preprocessing is off.
     - IPPOn:  Integer preprocessing is on.
@@ -539,6 +545,9 @@ public:
   void addCbcSolverCutParams();
   void addCbcSolverHeurParams();
   void addCbcModelParams();
+
+  /*! set up the default */
+  void setDefaults(int strategy);
 
   //@}
 

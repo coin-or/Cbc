@@ -63,15 +63,6 @@ matrix:
           - bash
           - metis
       compiler: clang
-    - os: windows
-      cache:
-        directories:
-        - $HOME/AppData/Local/Temp/chocolatey
-        - /C/tools/msys64
-
-  allow_failures:
-    - os: windows
-    - os: osx
 
 before_install:
 - |-

@@ -965,14 +965,6 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   clpParameters.setModel(lpSolver);
 #endif
   // establishParams(numberParameters, parameters) ;
-  const char dirsep = CoinFindDirSeparator();
-  std::string importFile = "";
-  std::string exportFile = "default.mps";
-  std::string importBasisFile = "";
-  std::string importPriorityFile = "";
-  std::string debugFile = "";
-  std::string printMask = "";
-  std::string exportBasisFile = "default.bas";
   int doIdiot = -1;
   int outputFormat = 2;
   int substitution = 3;
@@ -980,8 +972,8 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   int preSolve = 5;
   int doSprint = -1;
   int testOsiParameters = -1;
-  clpParameters[ClpParam::BASISIN]->setVal(importBasisFile);
-  clpParameters[ClpParam::BASISOUT]->setVal(exportBasisFile);
+  clpParameters[ClpParam::BASISIN]->setVal("");
+  clpParameters[ClpParam::BASISOUT]->setVal("default.bas");
   clpParameters[ClpParam::DUALBOUND]->setVal(lpSolver->dualBound());
   clpParameters[ClpParam::DUALTOLERANCE]->setVal(lpSolver->dualTolerance());
   clpParameters[ClpParam::IDIOT]->setVal(doIdiot);
@@ -996,11 +988,6 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   clpParameters[ClpParam::SPRINT]->setVal(doSprint);
   clpParameters[ClpParam::SUBSTITUTION]->setVal(substitution);
   clpParameters[ClpParam::DUALIZE]->setVal(dualize);
-  parameters[CbcParam::PRIORITYIN]->setVal(importPriorityFile);
-  parameters[CbcParam::DEBUG]->setVal(debugFile);
-  parameters[CbcParam::PRINTMASK]->setVal(printMask);
-  parameters[CbcParam::EXPORT]->setVal(exportFile);
-  parameters[CbcParam::IMPORT]->setVal(importFile);
   parameters[CbcParam::LOGLEVEL]->setVal(1);
   parameters[CbcParam::LPLOGLEVEL]->setVal(1);
   clpSolver->messageHandler()->setLogLevel(1);
@@ -1356,16 +1343,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     double djFix = 1.0e100;
     double tightenFactor = 0.0;
     const char dirsep = CoinFindDirSeparator();
-    std::string importFile = "";
-    std::string exportFile = "default.mps";
-    std::string importBasisFile = "";
-    std::string importPriorityFile = "";
-    std::string debugFile = "";
-    std::string printMask = "";
     double *debugValues = NULL;
     int numberDebugValues = -1;
     int basisHasValues = 0;
-    std::string exportBasisFile = "default.bas";
     std::string saveFile = "default.prob";
     std::string restoreFile = "default.prob";
     std::string solutionFile = "stdout";
@@ -4833,7 +4813,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                           const_cast<double *>(debugValues));
                     }
 #endif
-                    if (debugFile == "unitTest") {
+                    if (parameters[CbcParam::DEBUGFILE]->strVal() ==
+                        "unitTest") {
                       //This is probably wrong, will need to debug
                       babModel_->solver()->activateRowCutDebugger(inputQueue[0].c_str());
                       OsiRowCutDebugger *debugger =
@@ -8428,7 +8409,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #ifndef CBC_OTHER_SOLVER
               osiclp =
                   dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
-              if (debugFile == "createAfterPre" && babModel_->bestSolution()) {
+              if (parameters[CbcParam::DEBUGFILE]->strVal() ==
+                  "createAfterPre" && babModel_->bestSolution()) {
                 lpSolver = osiclp->getModelPtr();
                 // move best solution (should be there -- but ..)
                 int n = lpSolver->getNumCols();
@@ -8875,7 +8857,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   lpSolver->clpMatrix()->times(1.0, bestSolution, rowSolution);
                   lpSolver->setObjectiveValue(babModel_->getObjValue());
                 }
-                if (debugFile == "create" && bestSolution) {
+                if (parameters[CbcParam::DEBUGFILE]->strVal() ==
+                    "create" && bestSolution) {
                    ClpParamUtils::saveSolution(lpSolver, "debug.file");
                 }
 #else
@@ -9388,16 +9371,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           } break;
           case CbcParam::EXPORT:
             if (goodModel) {
-              // get next field
-              status = CoinParamUtils::getValue(inputQueue, field);
-              if (field == "$") {
-                field = cbcParam->strVal();
-              } else if (field == "EOL") {
-                std::cout << cbcParam->printString() << std::endl;
-                break;
-              } else {
-                cbcParam->setVal(field);
-              }
+              parameters[CbcParam::EXPORTFILE]->getVal(field);
               std::string fileName;
               bool canOpen = false;
               if (field[0] == '/' || field[0] == '\\') {
@@ -9592,18 +9566,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               printGeneralMessage(model_, buffer.str());
             }
             break;
-          case CbcParam::PRIORITYIN:
+          case CbcParam::READPRIORITIES:
             if (goodModel) {
               // get next field
-              status = CoinParamUtils::getValue(inputQueue, field);
-              if (field == "$") {
-                field = cbcParam->strVal();
-              } else if (field == "EOL") {
-                std::cout << cbcParam->printString() << std::endl;
-                break;
-              } else {
-                cbcParam->setVal(field);
-              }
+              parameters[CbcParam::PRIORITYFILE]->getVal(field);
               std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
                 fileName = field;
@@ -10011,24 +9977,14 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             if (goodModel) {
               delete[] debugValues;
               debugValues = NULL;
-              // get next field
-              status = CoinParamUtils::getValue(inputQueue, field);
-              if (field == "$") {
-                field = cbcParam->strVal();
-              } else if (field == "EOL") {
-                std::cout << cbcParam->printString() << std::endl;
-                break;
-              } else {
-                cbcParam->setVal(field);
-                debugFile = field;
-                if (debugFile == "create" || debugFile == "createAfterPre") {
-                  printf("Will create a debug file so this run should be a "
-                         "good one\n");
-                  break;
-                } else if (debugFile == "unitTest") {
-                  printf("debug will be done using file name of model\n");
-                  break;
-                }
+              parameters[CbcParam::DEBUGFILE]->getVal(field);
+              if (field == "create" || field == "createAfterPre") {
+                 printf("Will create a debug file so this run should be a "
+                        "good one\n");
+                 break;
+              } else if (field == "unitTest") {
+                 printf("debug will be done using file name of model\n");
+                 break;
               }
               std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
@@ -10100,7 +10056,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               status = CoinParamUtils::getValue(inputQueue, field);
               if (field != "EOL") {
                 cbcParam->setVal(field);
-                printMask = field;
               } else {
                 std::cout << cbcParam->printString() << std::endl;
               }
@@ -10430,17 +10385,8 @@ You can switch to interactive mode at any time so\n\
 clp watson.mps -scaling off -primalsimplex\nis the same as\n\
 clp watson.mps -\nscaling off\nprimalsimplex");
             break;
-          case CbcParam::CSVSTATISTICS: {
-            // get next field
-            status = CoinParamUtils::getValue(inputQueue, field);
-            if (field == "$") {
-              field = cbcParam->strVal();
-            } else if (field == "EOL") {
-              std::cout << cbcParam->printString() << std::endl;
-              break;
-            } else {
-              cbcParam->setVal(field);
-            }
+          case CbcParam::WRITESTATS: {
+            parameters[CbcParam::CSVSTATSFILE]->getVal(field);
             std::string fileName;
             if (field[0] == '/' || field[0] == '\\') {
               fileName = field;
@@ -10783,13 +10729,15 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 clpSolver->getDblParam(OsiPrimalTolerance, primalTolerance);
                 size_t lengthPrint =
                     static_cast<size_t>(CoinMax(lengthName, 8));
-                bool doMask = (printMask != "" && lengthName);
+                bool doMask = (parameters[CbcParam::PRINTMASK]->strVal()
+                               != "" && lengthName);
                 int *maskStarts = NULL;
                 int maxMasks = 0;
                 char **masks = NULL;
                 if (doMask) {
                   int nAst = 0;
-                  const char *pMask2 = printMask.c_str();
+                  const char *pMask2 =
+                     parameters[CbcParam::PRINTMASK]->strVal().c_str();
                   char pMask[100];
                   size_t iChar;
                   size_t lengthMask = strlen(pMask2);

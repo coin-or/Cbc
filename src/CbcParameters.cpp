@@ -340,13 +340,16 @@ void CbcParameters::setDefaults(int strategy) {
   // Now set up  parameters according to overall strategies
   switch (strategy) {
    case CbcParameters::DefaultStrategy:
-     parameters_[CbcParam::DEBUG]->setDefault("");
+     parameters_[CbcParam::DEBUGFILE]->setDefault("");
+     parameters_[CbcParam::CSVSTATSFILE]->setDefault(std::string("stats.csv"));
+     parameters_[CbcParam::EXPORTFILE]->setDefault(std::string("export.mps"));
      parameters_[CbcParam::GMPLSOLFILE]->setDefault(std::string("gmpl.sol"));
+     parameters_[CbcParam::MIPSTARTFILE]->setDefault(std::string("mipstart.sol"));
      parameters_[CbcParam::MODELFILE]->setDefault(std::string("prob.mod"));
      parameters_[CbcParam::NEXTSOLFILE]->setDefault(std::string("next.sol"));
      parameters_[CbcParam::PRINTMASK]->setDefault("");
+     parameters_[CbcParam::PRIORITYFILE]->setDefault(std::string("priorities.txt"));
      parameters_[CbcParam::SOLUTIONFILE]->setDefault(std::string("opt.sol"));
-     parameters_[CbcParam::PRIORITYIN]->setDefault(std::string("priorities.txt"));
      parameters_[CbcParam::COMMANDPRINTLEVEL]->setDefault("high");
      parameters_[CbcParam::CLQSTRENGTHENING]->setDefault("after");
      parameters_[CbcParam::BRANCHPRIORITY]->setDefault("off");
@@ -789,16 +792,23 @@ void CbcParameters::addCbcSolverActionParams() {
       "and suggestions regarding MIPStart can be directed to\n "
       "haroldo.santos@gmail.com. ");
 
+  parameters_[CbcParam::READMODEL]->setup(
+      "readM!odel", "writes problem to file", 
+      "This will save the problem to the file name set by modelFile "
+      "for future use by readModel.", CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::READPRIORITIES]->setup(
+      "readP!riorities", "reads priorities from file",
+      "Read priorities from the file name designated by PRIORITYFILE. "
+      "File is in csv format with allowed headings - name, number, priority, "
+      "direction, up, down, solution.  Exactly one of name and number must be "
+      "given.", CoinParam::displayPriorityHigh);
+
   parameters_[CbcParam::READSOL]->setup(
       "readS!olution", "reads solution from file (synonym for mipStart)",
       "This will read a binary solution file from the file set by solutionFile."
       "This is a synonym for mipStart. See its help for more information",
       CoinParam::displayPriorityHigh);
-
-  parameters_[CbcParam::READMODEL]->setup(
-      "readM!odel", "writes problem to file", 
-      "This will save the problem to the file name set by modelFile "
-      "for future use by readModel.", CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::SHOWUNIMP]->setup(
       "unimp!lemented", "Report unimplemented commands.", "",
@@ -878,14 +888,14 @@ void CbcParameters::addCbcSolverStrParams() {
     getParam(code)->setType(CoinParam::paramStr);
   }
 
-  parameters_[CbcParam::CSVSTATISTICS]->setup(
+  parameters_[CbcParam::CSVSTATSFILE]->setup(
       "csv!Statistics", "Create one line of statistics",
       "This appends statistics to given file name.  It will use the default "
       "directory given by 'directory'.  A name of '$' will use the previous "
       "value for the name.  This is initialized to '', i.e. it must be set.  "
       "Adds header if file empty or does not exist.",
       CoinParam::displayPriorityLow);
-  parameters_[CbcParam::CSVSTATISTICS]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+  parameters_[CbcParam::CSVSTATSFILE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[CbcParam::DEBUG]->setup(
       "debug!In", "Read/write valid solution from/to file", 
@@ -939,10 +949,22 @@ void CbcParameters::addCbcSolverStrParams() {
       CoinParam::displayPriorityLow);
   parameters_[CbcParam::DIRMIPLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
+  parameters_[CbcParam::EXPORTFILE]->setup(
+      "exportF!ile", "sets name for file to export model to",
+      "This will set the name the model will be written to and read from. "
+      "This is initialized to 'prob.mod'. ",
+      CoinParam::displayPriorityHigh);
+
   parameters_[CbcParam::GMPLSOLFILE]->setup(
       "gmplSolutionF!ile", "sets name for file to store GMPL solution in",
       "This will set the name the GMPL solution will be written to and read from. "
       "This is initialized to 'gmpl.sol'. ",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::MIPSTARTFILE]->setup(
+      "mipStartF!ile", "sets name for file to read mip start from",
+      "This will set the name the model will be written to and read from. "
+      "This is initialized to 'prob.mod'. ",
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::MODELFILE]->setup(
@@ -971,16 +993,15 @@ void CbcParameters::addCbcSolverStrParams() {
       "By default, solutions are written to 'opt.sol'. To print to stdout, "
       "use printSolution.", CoinParam::displayPriorityHigh);
 
-  parameters_[CbcParam::PRIORITYIN]->setup(
-      "prio!rityIn", "Import priorities etc from file",
-      "This will read a file with priorities from the given file name.  It "
-      "will use the default directory given by 'directory'.  A name of '$' "
-      "will use the previous value for the name.  This is initialized to '', "
-      "i.e. it must be set.  This can not read from compressed files. File is "
-      "in csv format with allowed headings - name, number, priority, "
+  parameters_[CbcParam::PRIORITYFILE]->setup(
+      "priorityF!ile", "Name of file to import priorities from",
+      "Priorities will be read from the given file name.  It "
+      "will use the default directory given by 'directory'. "
+      "The default name is priorities.txt and it cannot be a compressed file."
+      "File is in csv format with allowed headings - name, number, priority, "
       "direction, up, down, solution.  Exactly one of name and number must be "
       "given.");
-  parameters_[CbcParam::PRIORITYIN]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+  parameters_[CbcParam::PRIORITYFILE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 }
 
 //###########################################################################

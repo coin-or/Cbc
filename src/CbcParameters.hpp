@@ -81,10 +81,12 @@ public:
   /*! \name Constructors and destructors */
   //@{
 
-  /*! \brief Default constructor */
+  /*! \brief Constructors */
   CbcParameters();
 
   CbcParameters(int strategy);
+
+  void init(int strategy);
 
   /*! \brief Destructor */
   ~CbcParameters();

@@ -25,18 +25,28 @@
   ordering.
 */
 
-CbcParameters::CbcParameters() : CbcParameters(DefaultStrategy)
+CbcParameters::CbcParameters() : parameters_(CbcParam::LASTPARAM), model_(0)
 {
+
+   init(DefaultStrategy);
+      
 }
+
+//###########################################################################
+//###########################################################################
 
 CbcParameters::CbcParameters(int strategy) :
    parameters_(CbcParam::LASTPARAM), model_(0)
 {
-  /*
-      It's unclear to me that this is a good choice for dfltDirectory. Makes
-      sense for commands, but seems unnecessary for data files. Perhaps a null
-      string instead?
-    */
+
+   init(strategy);
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcParameters::init(int strategy){
+   
   for (int i = 0; i < parameters_.size(); i++){
      parameters_[i] = new CbcParam();
   }

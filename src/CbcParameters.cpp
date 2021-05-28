@@ -463,7 +463,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::VND]->setDefault("off");
      parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-12);
      parameters_[CbcParam::CUTOFF]->setDefault(1.0e50);
-     parameters_[CbcParam::DIRECTION]->setDefault("minimize");
+     parameters_[CbcParam::DIRECTION]->setDefault("min!imize");
      parameters_[CbcParam::INCREMENT]->setDefault(1.0e-4);
      parameters_[CbcParam::INFEASIBILITYWEIGHT]->setDefault(0.0);
      parameters_[CbcParam::INTEGERTOLERANCE]->setDefault(1.0e-6);
@@ -1746,12 +1746,14 @@ void CbcParameters::addCbcSolverCutParams() {
         parameters_[code]->appendKwd("longendonly", CbcParameters::CGLongEndOnly);
         break;
      case CbcParam::LAGOMORYCUTS: 
+        parameters_[code]->appendKwd("off", CbcParameters::CGOff);
         parameters_[code]->appendKwd("root", CbcParameters::CGRoot);
         parameters_[code]->appendKwd("onlyaswellroot", CbcParameters::CGOnlyAsWellRoot);
         parameters_[code]->appendKwd("cleanaswellroot", CbcParameters::CGCleanAsWellRoot);
         parameters_[code]->appendKwd("bothaswellroot", CbcParameters::CGCleanBothAsWellRoot);
         // Here, we intentionally drop through to the next set
      case CbcParam::LATWOMIRCUTS: 
+        parameters_[code]->appendKwd("off", CbcParameters::CGOff);
         parameters_[code]->appendKwd("endonlyroot", CbcParameters::CGEndOnlyRoot);
         parameters_[code]->appendKwd("endcleanroot", CbcParameters::CGEndCleanRoot);
         parameters_[code]->appendKwd("endonly", CbcParameters::CGEndOnly);
@@ -1772,6 +1774,7 @@ void CbcParameters::addCbcSolverCutParams() {
         break;
      case CbcParam::REDSPLITCUTS:
      case CbcParam::REDSPLIT2CUTS: 
+        parameters_[code]->appendKwd("off", CbcParameters::CGOff);
         parameters_[code]->appendKwd("on", CbcParameters::CGOn);
         parameters_[code]->appendKwd("root", CbcParameters::CGRoot);
         parameters_[code]->appendKwd("longon", CbcParameters::CGLongOn);

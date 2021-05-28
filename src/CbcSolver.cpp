@@ -8713,6 +8713,17 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   bestSolution = new double[n];
                   memcpy(bestSolution, babModel_->solver()->getColSolution(),
                          n * sizeof(double));
+#ifndef CBC_OTHER_SOLVER
+		  // and put back bounds in very original solver
+                  ClpSimplex *original = originalSolver->getModelPtr();
+                  double *lower = original->columnLower();
+                  double *upper = original->columnUpper();
+		  memcpy(lower,babModel_->solver()->getColLower(),
+			 n*sizeof(double));
+		  memcpy(upper,babModel_->solver()->getColUpper(),
+			 n*sizeof(double));
+		  originalSolver->resolve();
+#endif
                 }
                 if (returnMode == 1 && model_.numberSavedSolutions() < 2) {
                   model_.deleteSolutions();

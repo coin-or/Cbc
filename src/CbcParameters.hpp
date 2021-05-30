@@ -161,7 +161,7 @@ public:
 
   */
 
-  enum ClqStrMode { ClqStrOff = 0, ClqStrAfter, ClqStrBefore, ClqStrEndMarker };
+  enum ClqStrMode { ClqStrOff = 0, ClqStrBefore, ClqStrAfter, ClqStrEndMarker };
 
   /*! \brief What node strategy to use
 
@@ -179,8 +179,8 @@ public:
     NSFewest,
     NSDepth,
     NSUpFewest,
-    NSUpDepth,
     NSDownFewest,
+    NSUpDepth,
     NSDownDepth
   };
 
@@ -236,8 +236,8 @@ public:
   */
 
   enum StrategyMode {
-    StrategyDefault = 0,
-    StrategyEasy,
+    StrategyEasy = 0,
+    StrategyDefault,
     StrategyAggressive,
     StrategyEndMarker
   };
@@ -313,6 +313,7 @@ public:
     CGIfMove,
     CGForceOn,
     CGForceOnBut,
+    CGForceOnButStrong,
     CGEndOnly,
     CGEndOnlyRoot,
     CGEndClean,
@@ -322,7 +323,10 @@ public:
     CGLongOn,
     CGLongRoot,
     CGLongIfMove,
+    CGForceAndGlobal,
     CGForceLongOn,
+    CGForceOnGlobal,
+    CGForceOnStrong,
     CGLongEndOnly,
     CGOnlyAsWell,
     CGOnlyAsWellRoot,
@@ -335,9 +339,10 @@ public:
     CGCleanInstead,
     CGBothInstead,
     CGOnGlobal,
-    CGForceAndGlobal,
     CGLonger,
     CGShorter,
+    CGStrongRoot,
+    CGIfLongOn,
     CGEndMarker
   };
 
@@ -379,6 +384,9 @@ public:
     HeurBoth,
     HeurBefore,
     HeurOften,
+    HeurOneQuick,
+    HeurBothQuick,
+    HeurBeforeQuick,
     HeurTen,
     HeurOneHundred,
     HeurTwoHundred,
@@ -408,7 +416,17 @@ public:
       - BPExt: the user has provided a priority vector
     */
 
-  enum BPMode { BPOff = 0, BPCost, BPOrder, BPExt, BPEndMarker };
+  enum BPMode {
+     BPOff = 0,
+     BPCost,
+     BPOrder,
+     BPBinaryFirst,
+     BPBinaryLast,
+     BPLength,
+     BPSingleton,
+     BPNonzero,
+     BPGeneral,
+     BPEndMarker };
 
   /*! \brief Codes tos pecify mode for printing integers
 
@@ -427,6 +445,15 @@ public:
     PMSpecial,
     PMRows,
     PMAll,
+    PMCsv,
+    PMBoundRanging,
+    PMRhsRanging,
+    PMObjectiveRanging,
+    PMStats,
+    PMBoundsInt,
+    PMBoundsAll,
+    PMFixInt,
+    PMFixAll,
     PMEndMarker
   };
 

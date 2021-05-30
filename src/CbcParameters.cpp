@@ -377,7 +377,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::CPP]->setDefault(0);
      parameters_[CbcParam::CUTDEPTH]->setDefault(getCutDepth());
      parameters_[CbcParam::CUTLENGTH]->setDefault(-1);
-     parameters_[CbcParam::CUTPASSINTREE]->setDefault(10);
+     parameters_[CbcParam::CUTPASSINTREE]->setDefault(1);
      parameters_[CbcParam::DEPTHMINIBAB]->setDefault(-1);
      parameters_[CbcParam::DIVEOPT]->setDefault(-1);
      parameters_[CbcParam::DIVEOPTSOLVES]->setDefault(100);
@@ -485,7 +485,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::GAPRATIO]->setDefault(0.0);
      parameters_[CbcParam::TIMELIMIT]->setDefault( 1.0e11);
      parameters_[CbcParam::STRONGBRANCHING]->setDefault(0);
-     parameters_[CbcParam::NUMBERBEFORE]->setDefault(0);
+     parameters_[CbcParam::NUMBERBEFORE]->setDefault(10);
      break;
    default:
      std::cout << "Unknown strategy!" << std::endl;
@@ -1031,14 +1031,22 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("before", CbcParameters::ClqStrBefore);
 
   parameters_[CbcParam::BRANCHPRIORITY]->setup(
-      "cost!Strategy", "Whether to use costs or column order as priorities",
-      "This orders the variables in order of their absolute costs - with "
-      "largest cost ones being branched on first.  This primitive strategy can "
-      "be surprisingly effective.  The column order option is obviously not on "
-      "costs but it's easy to implement.");
+      "branch!Priorities", "What rule (if any) to use in prioritizing variables for branching",
+      "What rule (if any) to use in prioritizing variables for branching\n"
+      " - 'priorities' assigns highest priority to variables with largest absolute cost.\n"
+      "                This primitive strategy can be surprisingly effective. \n"
+      " - 'columnorder' assigns the priorities with respect to the column ordering.\n"
+      " - '01first' ('01last') gives highest priority to binary variables.\n"
+      " - 'length' assigns high priority to variables that occur in many constraints.\n");
   parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("off", CbcParameters::BPOff);
   parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("pri!orities", CbcParameters::BPCost);
   parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("column!Order", CbcParameters::BPOrder);
+  parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("01f!irst?", CbcParameters::BPBinaryFirst);
+  parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("01l!ast?", CbcParameters::BPBinaryLast);
+  parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("length!?", CbcParameters::BPLength);
+  parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("singletons", CbcParameters::BPSingleton);
+  parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("nonzero", CbcParameters::BPNonzero);
+  parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("general!Force?", CbcParameters::BPGeneral);
 
   parameters_[CbcParam::CUTOFFCONSTRAINT]->setup(
       "constraint!fromCutoff", "Whether to use cutoff as constraint", 
@@ -1066,6 +1074,16 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::INTPRINT]->appendKwd("special", CbcParameters::PMSpecial);
   parameters_[CbcParam::INTPRINT]->appendKwd("rows", CbcParameters::PMRows);
   parameters_[CbcParam::INTPRINT]->appendKwd("all", CbcParameters::PMAll);
+  parameters_[CbcParam::INTPRINT]->appendKwd("csv", CbcParameters::PMCsv);
+  parameters_[CbcParam::INTPRINT]->appendKwd("bound!ranging", CbcParameters::PMBoundRanging);
+  parameters_[CbcParam::INTPRINT]->appendKwd("rhs!ranging", CbcParameters::PMRhsRanging);
+  parameters_[CbcParam::INTPRINT]->appendKwd("objective!ranging",
+                                             CbcParameters::PMObjectiveRanging);
+  parameters_[CbcParam::INTPRINT]->appendKwd("stats", CbcParameters::PMStats);
+  parameters_[CbcParam::INTPRINT]->appendKwd("boundsint", CbcParameters::PMBoundsInt);
+  parameters_[CbcParam::INTPRINT]->appendKwd("boundsall", CbcParameters::PMBoundsAll);
+  parameters_[CbcParam::INTPRINT]->appendKwd("fixint", CbcParameters::PMFixInt);
+  parameters_[CbcParam::INTPRINT]->appendKwd("fixall", CbcParameters::PMFixAll);
 
   parameters_[CbcParam::NODESTRATEGY]->setup(
       "node!Strategy",
@@ -1083,8 +1101,8 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::NODESTRATEGY]->appendKwd("fewest", CbcParameters::NSFewest);
   parameters_[CbcParam::NODESTRATEGY]->appendKwd("depth", CbcParameters::NSDepth);
   parameters_[CbcParam::NODESTRATEGY]->appendKwd("upfewest", CbcParameters::NSUpFewest);
-  parameters_[CbcParam::NODESTRATEGY]->appendKwd("downfewest", CbcParameters::NSDownFewest);
   parameters_[CbcParam::NODESTRATEGY]->appendKwd("updepth", CbcParameters::NSUpDepth);
+  parameters_[CbcParam::NODESTRATEGY]->appendKwd("downfewest", CbcParameters::NSDownFewest);
   parameters_[CbcParam::NODESTRATEGY]->appendKwd("downdepth", CbcParameters::NSDownDepth);
 
   parameters_[CbcParam::ORBITAL]->setup(
@@ -1144,8 +1162,8 @@ void CbcParameters::addCbcSolverKwdParams() {
       "feasibility pump more aggressive."); // This does not apply to unit tests
                                             // (where 'experiment' may have
                                             // similar effects)
-  parameters_[CbcParam::STRATEGY]->appendKwd("default", CbcParameters::StrategyDefault);
   parameters_[CbcParam::STRATEGY]->appendKwd("easy", CbcParameters::StrategyEasy);
+  parameters_[CbcParam::STRATEGY]->appendKwd("default", CbcParameters::StrategyDefault);
   parameters_[CbcParam::STRATEGY]->appendKwd("aggressive", CbcParameters::StrategyAggressive);
 
   parameters_[CbcParam::TIMEMODE]->setup(
@@ -1268,7 +1286,7 @@ void CbcParameters::addCbcSolverIntParams() {
       "dependent code rather than computed values.");
 
   parameters_[CbcParam::CUTDEPTH]->setup(
-      "cutD!epth", "Depth in tree at which to do cuts", -1, 999999,
+      "cutD!epth", "Depth in tree at which to do cuts", -1, COIN_INT_MAX,
       "Cut generators may be off, on only at the root, on if they look useful, "
       "and on at some interval.  If they are done every node then that is "
       "that, but it may be worth doing them every so often.  The original "
@@ -1287,7 +1305,9 @@ void CbcParameters::addCbcSolverIntParams() {
   parameters_[CbcParam::CUTPASSINTREE]->setup(
       "passT!reeCuts",
       "Number of rounds that cut generators are applied in the tree",
-      -COIN_INT_MAX, COIN_INT_MAX);
+      -COIN_INT_MAX, COIN_INT_MAX, "The default is to do one pass. "
+      "A negative value -n means that n passes are also applied if "
+      "the objective does not drop.");
 
   parameters_[CbcParam::DEPTHMINIBAB]->setup(
       "depth!MiniBab", "Depth at which to try mini branch-and-bound",
@@ -1606,8 +1626,8 @@ void CbcParameters::addCbcSolverCutParams() {
 
   parameters_[CbcParam::CLIQUECUTS]->setup(
       "clique!Cuts", "Whether to use clique cuts",
-      "This switches on clique cuts (either at root or in entire tree). See "
-      "branchAndCut for information on options.");
+      "This switches on clique cuts (either at root or in entire tree). "
+      "An improved version of the Bron-Kerbosch algorithm is used to separate cliques.");
 
   parameters_[CbcParam::CUTSTRATEGY]->setup(
       "cuts!OnOff", "Switches all cuts on or off", 
@@ -1617,8 +1637,8 @@ void CbcParameters::addCbcSolverCutParams() {
 
   parameters_[CbcParam::FLOWCUTS]->setup(
       "flow!CoverCuts", "Whether to use Flow Cover cuts",
-      "This switches on flow cover cuts (either at root or in entire "
-      "tree)." CUTS_LONGHELP);
+      CUTS_LONGHELP
+      " Reference: https://github.com/coin-or/Cgl/wiki/CglFlowCover");
 
   parameters_[CbcParam::GMICUTS]->setup(
       "GMI!Cuts", "Whether to use alternative Gomory cuts", 
@@ -1637,8 +1657,8 @@ void CbcParameters::addCbcSolverCutParams() {
 
   parameters_[CbcParam::KNAPSACKCUTS]->setup(
       "knapsack!Cuts", "Whether to use Knapsack cuts",
-      "This switches on knapsack cuts (either at root or in entire tree). See "
-      "branchAndCut for information on options.");
+      CUTS_LONGHELP
+      " Reference: https://github.com/coin-or/Cgl/wiki/CglKnapsackCover");
 
   parameters_[CbcParam::LAGOMORYCUTS]->setup(
       "lagomory!Cuts", "Whether to use Lagrangean Gomory cuts", 
@@ -1654,8 +1674,9 @@ void CbcParameters::addCbcSolverCutParams() {
 
   parameters_[CbcParam::LANDPCUTS]->setup(
       "lift!AndProjectCuts", "Whether to use lift-and-project cuts",
-      "This switches on lift-and-project cuts (either at root or in entire "
-      "tree). See branchAndCut for information on options.");
+      "These cuts may be expensive to compute. "
+      CUTS_LONGHELP
+      " Reference: https://github.com/coin-or/Cgl/wiki/CglLandP");
 
   parameters_[CbcParam::LATWOMIRCUTS]->setup(
       "latwomir!Cuts", "Whether to use Lagrangean Twomir cuts",
@@ -1664,8 +1685,8 @@ void CbcParameters::addCbcSolverCutParams() {
 
   parameters_[CbcParam::MIRCUTS]->setup(
       "mixed!IntegerRoundingCuts", "Whether to use Mixed Integer Rounding cuts",
-      "This switches on mixed integer rounding cuts (either at root or in "
-      "entire tree).  See branchAndCut for information on options.");
+      CUTS_LONGHELP
+      " Reference: https://github.com/coin-or/Cgl/wiki/CglMixedIntegerRounding2");
 
   parameters_[CbcParam::ODDWHEELCUTS]->setup(
       "oddwheel!Cuts", "Whether to use odd wheel cuts", 
@@ -1674,18 +1695,26 @@ void CbcParameters::addCbcSolverCutParams() {
 
   parameters_[CbcParam::PROBINGCUTS]->setup(
       "probing!Cuts", "Whether to use Probing cuts", 
-      "This switches on probing cuts (either at root or in entire tree). See "
-      "branchAndCut for information on options.");
+      "Value 'forceOnBut' turns on probing and forces CBC to do probing at every node, but "
+      "does only probing, not strengthening etc. Value 'strong' forces CBC to strongly do "
+      "probing at every node, that is, also when CBC would usually turn it off because it "
+      "hasn't found something. Value 'forceonbutstrong' is like 'forceonstrong', but does "
+      "only probing (column fixing) and turns off row strengthening, so the matrix will "
+      "not change inside the branch and bound."
+      "Reference: https://github.com/coin-or/Cgl/wiki/CglProbing");
 
   parameters_[CbcParam::REDSPLITCUTS]->setup(
       "reduce!AndSplitCuts", "Whether to use Reduce-and-Split cuts",
-      "This switches on reduce and split cuts (either at root or in entire "
-      "tree). See branchAndCut for information on options.");
+      "These cuts may be expensive to generate. " CUTS_LONGHELP
+      " Reference: https://github.com/coin-or/Cgl/wiki/CglRedSplit");
 
   parameters_[CbcParam::REDSPLIT2CUTS]->setup(
       "reduce2!AndSplitCuts", "Whether to use Reduce-and-Split cuts - style 2",
       "This switches on reduce and split cuts (either at root or in entire "
-      "tree). See branchAndCut for information on options.");
+      "tree). This version is by Giacomo Nannicini based on Francois Margot's version. "
+      "Standard setting only uses rows in tableau <= 256, long uses all. "
+      "These cuts may be expensive to generate. "
+      "See option cuts for more information on the possible values.");
 
   parameters_[CbcParam::RESIDCAPCUTS]->setup(
       "residual!CapacityCuts", "Whether to use Residual Capacity cuts",
@@ -1694,8 +1723,8 @@ void CbcParameters::addCbcSolverCutParams() {
 
   parameters_[CbcParam::TWOMIRCUTS]->setup(
       "two!MirCuts", "Whether to use Two phase Mixed Integer Rounding cuts",
-      "This switches on two phase mixed integer rounding cuts (either at root "
-      "or in entire tree). See branchAndCut for information on options.");
+      CUTS_LONGHELP
+      " Reference: https://github.com/coin-or/Cgl/wiki/CglTwomir");
 
   parameters_[CbcParam::ZEROHALFCUTS]->setup(
       "zero!HalfCuts", "Whether to use zero half cuts", 
@@ -1716,6 +1745,7 @@ void CbcParameters::addCbcSolverCutParams() {
      case CbcParam::MIRCUTS:
      case CbcParam::ODDWHEELCUTS:
      case CbcParam::PROBINGCUTS:
+     case CbcParam::REDSPLITCUTS:
      case CbcParam::RESIDCAPCUTS:
      case CbcParam::TWOMIRCUTS:
      case CbcParam::ZEROHALFCUTS:
@@ -1739,14 +1769,18 @@ void CbcParameters::addCbcSolverCutParams() {
         parameters_[code]->appendKwd("shorter", CbcParameters::CGShorter);
         break;
      case CbcParam::GMICUTS: 
+        parameters_[code]->appendKwd("endonly", CbcParameters::CGEndOnly);
         parameters_[code]->appendKwd("long", CbcParameters::CGLong);
         parameters_[code]->appendKwd("longroot", CbcParameters::CGLongRoot);
         parameters_[code]->appendKwd("longifmove", CbcParameters::CGLongIfMove);
         parameters_[code]->appendKwd("forcelongon", CbcParameters::CGForceLongOn);
         parameters_[code]->appendKwd("longendonly", CbcParameters::CGLongEndOnly);
         break;
+     case CbcParam::KNAPSACKCUTS:
+        parameters_[code]->appendKwd("onglobal", CbcParameters::CGOnGlobal);
+        parameters_[code]->appendKwd("forceandglobal", CbcParameters::CGForceAndGlobal);
+        break;
      case CbcParam::LAGOMORYCUTS: 
-        parameters_[code]->appendKwd("off", CbcParameters::CGOff);
         parameters_[code]->appendKwd("root", CbcParameters::CGRoot);
         parameters_[code]->appendKwd("onlyaswellroot", CbcParameters::CGOnlyAsWellRoot);
         parameters_[code]->appendKwd("cleanaswellroot", CbcParameters::CGCleanAsWellRoot);
@@ -1766,19 +1800,35 @@ void CbcParameters::addCbcSolverCutParams() {
         parameters_[code]->appendKwd("cleaninstead", CbcParameters::CGCleanInstead);
         parameters_[code]->appendKwd("bothinstead", CbcParameters::CGBothInstead);
         break;
+     case CbcParam::CLIQUECUTS: 
+     case CbcParam::FLOWCUTS:
+     case CbcParam::MIRCUTS:
      case CbcParam::ODDWHEELCUTS: 
+     case CbcParam::ZEROHALFCUTS:
         parameters_[code]->appendKwd("onglobal", CbcParameters::CGOnGlobal);
         break;
-     case CbcParam::PROBINGCUTS: 
-        parameters_[code]->appendKwd("forceonbut", CbcParameters::CGForceOnBut);
+     case CbcParam::LANDPCUTS:
+        parameters_[code]->appendKwd("iflongon", CbcParameters::CGIfLongOn);
         break;
-     case CbcParam::REDSPLITCUTS:
+     case CbcParam::PROBINGCUTS: 
+        parameters_[code]->appendKwd("onglobal", CbcParameters::CGOnGlobal);
+        parameters_[code]->appendKwd("forceonglobal", CbcParameters::CGForceOnGlobal);
+        parameters_[code]->appendKwd("forceonbut", CbcParameters::CGForceOnBut);
+        parameters_[code]->appendKwd("forceonstrong", CbcParameters::CGForceOnStrong);
+        parameters_[code]->appendKwd("forceonbutstrong", CbcParameters::CGForceOnButStrong);
+        parameters_[code]->appendKwd("strongroot", CbcParameters::CGStrongRoot);
+        break;
      case CbcParam::REDSPLIT2CUTS: 
         parameters_[code]->appendKwd("off", CbcParameters::CGOff);
         parameters_[code]->appendKwd("on", CbcParameters::CGOn);
         parameters_[code]->appendKwd("root", CbcParameters::CGRoot);
         parameters_[code]->appendKwd("longon", CbcParameters::CGLongOn);
         parameters_[code]->appendKwd("longroot", CbcParameters::CGLongRoot);
+        break;
+     case CbcParam::TWOMIRCUTS:
+        parameters_[code]->appendKwd("onglobal", CbcParameters::CGOnGlobal);
+        parameters_[code]->appendKwd("forceandglobal", CbcParameters::CGForceAndGlobal);
+        parameters_[code]->appendKwd("forcelongon", CbcParameters::CGForceLongOn);
         break;
      default:
        break;
@@ -1800,10 +1850,14 @@ void CbcParameters::addCbcSolverHeurParams() {
       "combine!Solutions", "Whether to use combine solution heuristic", 
       "This switches on a heuristic which does branch and cut on the problem "
       "given by just using variables which have appeared in one or more "
-      "solutions. It is obviously only tried after two or more solutions.");
+      "solutions. It is obviously only tried after two or more solutions."
+      HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::CROSSOVER]->setup(
       "combine2!Solutions", "Whether to use crossover solution heuristic",
+      "This heuristic does branch and cut on the problem given by "
+      "fixing variables which have the same value in two or more solutions. "
+      "It obviously only tries after two or more solutions. "
       HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DINS]->setup(
@@ -1828,7 +1882,8 @@ void CbcParameters::addCbcSolverHeurParams() {
   parameters_[CbcParam::DIVINGS]->setup(
       "DivingS!ome", "Whether to try Diving heuristics", 
       "This switches on a random diving heuristic at various times. One may "
-      "prefer to individually turn diving heuristics on or off. ");
+      "prefer to individually turn diving heuristics on or off. "
+      HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGV]->setup(
       "DivingV!ectorLength", "Whether to try Vectorlength diving heuristic",
@@ -1844,13 +1899,13 @@ void CbcParameters::addCbcSolverHeurParams() {
       "This switches on feasibility pump heuristic at root. This is due to "
       "Fischetti and Lodi and uses a sequence of LPs to try and get an integer "
       "feasible solution.  Some fine tuning is available by "
-      "passFeasibilityPump.");
+      "passFeasibilityPump." HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::GREEDY]->setup(
       "greedy!Heuristic", "Whether to use a greedy heuristic",
       "Switches on a pair of greedy heuristic which will try and obtain a "
       "solution.  It may just fix a percentage of variables and then try a "
-      "small branch and cut run.");
+      "small branch and cut run." HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::HEURISTICSTRATEGY]->setup(
       "heur!isticsOnOff", "Switches most heuristics on or off", 
@@ -1863,7 +1918,7 @@ void CbcParameters::addCbcSolverHeurParams() {
       "This switches on a local search algorithm when a solution is found.  "
       "This is from Fischetti and Lodi and is not really a heuristic although "
       "it can be used as one. When used from this program it has limited "
-      "functionality.  It is not controlled by heuristicsOnOff.");
+      "functionality.");
 
   parameters_[CbcParam::NAIVE]->setup(
       "naive!Heuristics", "Whether to try some stupid heuristic", 
@@ -1922,6 +1977,7 @@ void CbcParameters::addCbcSolverHeurParams() {
     // First the common keywords
     switch (code) {
      case CbcParam::HEURISTICSTRATEGY:
+     case CbcParam::COMBINE:
      case CbcParam::CROSSOVER:
      case CbcParam::DINS:
      case CbcParam::DIVINGC:
@@ -1932,6 +1988,8 @@ void CbcParameters::addCbcSolverHeurParams() {
      case CbcParam::DIVINGS:
      case CbcParam::DIVINGV:
      case CbcParam::DW:
+     case CbcParam::FPUMP:
+     case CbcParam::GREEDY:
      case CbcParam::NAIVE:
      case CbcParam::PIVOTANDFIX:
      case CbcParam::PIVOTANDCOMPLEMENT:
@@ -1952,20 +2010,12 @@ void CbcParameters::addCbcSolverHeurParams() {
     // Check the unique keywords
     switch (code) {
      case CbcParam::COMBINE:
-        parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
-        parameters_[code]->appendKwd("on", CbcParameters::HeurOn);
+        parameters_[code]->appendKwd("onequick", CbcParameters::HeurOneQuick);
+        parameters_[code]->appendKwd("bothquick", CbcParameters::HeurBothQuick);
+        parameters_[code]->appendKwd("beforequick", CbcParameters::HeurBeforeQuick);
         break;
      case CbcParam::DINS:
         parameters_[code]->appendKwd("often", CbcParameters::HeurOften);
-        break;
-     case CbcParam::FPUMP:
-        parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
-        parameters_[code]->appendKwd("on", CbcParameters::HeurOn);
-        break;
-     case CbcParam::GREEDY: 
-        parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
-        parameters_[code]->appendKwd("on", CbcParameters::HeurOn);
-        parameters_[code]->appendKwd("root", CbcParameters::HeurRoot);
         break;
      case CbcParam::LOCALTREE: 
         parameters_[code]->appendKwd("off", CbcParameters::HeurOff);
@@ -2136,7 +2186,7 @@ void CbcParameters::addCbcModelParams()
   parameters_[CbcParam::REVERSE]->setType(CoinParam::paramAct);
 
   parameters_[CbcParam::CUTPASS]->setup(
-      "passC!uts", "Number of cut passes at root node", -999999, 999999,
+      "passC!uts", "Number of cut passes at root node", -COIN_INT_MAX, COIN_INT_MAX,
       "The default is 100 passes if less than 500 columns, 100 passes (but "
       "stop if the drop is small) if less than 5000 columns, 20 otherwise.");
 
@@ -2165,8 +2215,8 @@ void CbcParameters::addCbcModelParams()
       "see number before trust.");
 
   parameters_[CbcParam::NUMBERBEFORE]->setup(
-      "trust!PseudoCosts", "Number of branches before we trust pseudocosts", -1,
-      2000000,
+      "trust!Pseudocosts", "Number of branches before we trust pseudocosts", -3,
+      COIN_INT_MAX,
       "Using strong branching computes pseudo-costs.  After this many times "
       "for a variable we just trust the pseudo costs and do not do any more "
       "strong branching.");

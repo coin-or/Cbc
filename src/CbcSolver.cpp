@@ -1368,7 +1368,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     gomoryGen.setLimitAtRoot(1000);
     gomoryGen.setLimit(50);
     // set default action (0=off,1=on,2=root)
-    int gomoryAction = 3;
+    int gomoryMode = 3;
 
     CglProbing probingGen;
     probingGen.setUsingObjective(1);
@@ -1386,70 +1386,70 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     probingGen.setMaxElementsRoot(300);
     probingGen.setRowCuts(3);
     // set default action (0=off,1=on,2=root)
-    int probingAction = 1;
+    int probingMode = 1;
 
     CglKnapsackCover knapsackGen;
     // knapsackGen.switchOnExpensive();
     // knapsackGen.setMaxInKnapsack(100);
     // set default action (0=off,1=on,2=root)
-    int knapsackAction = 3;
+    int knapsackMode = 3;
 
     CglRedSplit redsplitGen;
     // redsplitGen.setLimit(100);
     // set default action (0=off,1=on,2=root)
     // Off as seems to give some bad cuts
-    int redsplitAction = 0;
+    int redsplitMode = 0;
 
     CglRedSplit2 redsplit2Gen;
     // redsplit2Gen.setLimit(100);
     // set default action (0=off,1=on,2=root)
     // Off
-    int redsplit2Action = 0;
+    int redsplit2Mode = 0;
 
     CglGMI GMIGen;
     // GMIGen.setLimit(100);
     // set default action (0=off,1=on,2=root)
     // Off
-    int GMIAction = 0;
+    int GMIMode = 0;
 
-    std::string cgraphAction = "on";
-    std::string clqstrAction = "after";
+    std::string cgraphMode = "on";
+    std::string clqstrMode = "after";
     CglBKClique bkCliqueGen;
-    int cliqueAction = 3, bkPivotingStrategy = 3, maxCallsBK = 1000,
+    int cliqueMode = 3, bkPivotingStrategy = 3, maxCallsBK = 1000,
         bkClqExtMethod = 4;
     CglOddWheel oddWheelGen;
-    int oddWheelAction = 3, oddWExtMethod = 2;
+    int oddWheelMode = 3, oddWExtMethod = 2;
 
     // maxaggr,multiply,criterion(1-3)
     CglMixedIntegerRounding2 mixedGen(1, true, 1);
     // set default action (0=off,1=on,2=root)
-    int mixedAction = 3;
+    int mixedMode = 3;
     mixedGen.setDoPreproc(1); // safer (and better)
 
     CglFlowCover flowGen;
     // set default action (0=off,1=on,2=root)
-    int flowAction = 3;
+    int flowMode = 3;
 
     CglTwomir twomirGen;
     twomirGen.setMaxElements(250);
     // set default action (0=off,1=on,2=root)
-    int twomirAction = 3;
+    int twomirMode = 3;
 #ifndef DEBUG_MALLOC
     CglLandP landpGen;
     landpGen.parameter().maximumCutLength = 2000;
     landpGen.validator().setMinViolation(1.0e-4);
 #endif
     // set default action (0=off,1=on,2=root)
-    int landpAction = 0;
+    int landpMode = 0;
     CglResidualCapacity residualCapacityGen;
     residualCapacityGen.setDoPreproc(1); // always preprocess
     // set default action (0=off,1=on,2=root)
-    int residualCapacityAction = 0;
+    int residualCapacityMode = 0;
 
     CglZeroHalf zerohalfGen;
     // zerohalfGen.switchOnExpensive();
     // set default action (0=off,1=on,2=root)
-    int zerohalfAction = 3;
+    int zerohalfMode = 3;
 
     // Stored cuts
     // bool storedCuts = false;
@@ -1493,7 +1493,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
       // TODO: See what's going on with these free-standing parameters
       initialPumpTune = 1005043;
       tunePreProcess = 6;
-      probingAction = 3;
+      probingMode = 3;
       parameters[CbcParam::DIVEOPT]->setVal(2);
       parameters[CbcParam::FPUMPITS]->setVal(30);
       parameters[CbcParam::FPUMPTUNE]->setVal(1005043);
@@ -1502,7 +1502,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
       parameters[CbcParam::RINS]->setVal("on");
       parameters[CbcParam::PROBINGCUTS]->setVal("on");
       // parameters[iParam]->setVal("forceOnStrong");
-      // probingAction = 8;
+      // probingMode = 8;
     }
 
     bool interactiveMode = false;
@@ -1704,7 +1704,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
         int status;
         numberGoodCommands++;
         if (cbcParamCode == CbcParam::BAB && goodModel) {
-          if (clqstrAction == "before") { // performing clique strengthening
+          if (clqstrMode == "before") { // performing clique strengthening
                                           // before initial solve
             CglCliqueStrengthening clqStr(model_.solver(),
                                           model_.messageHandler());
@@ -2165,13 +2165,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                           //    generalMessages)
                           //  << message << CoinMessageEol;
                           parameters[CbcParam::PROBINGCUTS]->setVal("on", &message);
-                          probingAction = 1;
+                          probingMode = 1;
                           printGeneralMessage(model_, message);
                           parameters[CbcParam::ZEROHALFCUTS]->setVal("root", &message);
                           printGeneralMessage(model_, message);
                           parameters[CbcParam::LAGOMORYCUTS]->setVal("root", &message);
                           printGeneralMessage(model_, message);
-                          GMIAction = 2;
+                          GMIMode = 2;
                           parameters[CbcParam::GMICUTS]->setVal("root", &message);
                           printGeneralMessage(model_, message);
                        }
@@ -2232,11 +2232,11 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                               << " -passc 1000!" << std::endl;
                        printGeneralMessage(model_, buffer.str());
                        parameters[CbcParam::PROBINGCUTS]->setVal("forceOnStrong");
-                       probingAction = 8;
+                       probingMode = 8;
                        parameters[CbcParam::GOMORYCUTS]->setVal("onGlobal");
-                       gomoryAction = 5;
+                       gomoryMode = 5;
                        parameters[CbcParam::KNAPSACKCUTS]->setVal("onGlobal");
-                       knapsackAction = 5;
+                       knapsackMode = 5;
                        clpParameters[ClpParam::FACTORIZATION]->setVal("osl");
                        lpSolver->factorization()->forceOtherFactorization(3);
                        parameters[CbcParam::MAXHOTITS]->setVal(100);
@@ -2257,10 +2257,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                        // but not if cuts off
                        if (parameters[CbcParam::CUTSTRATEGY]->modeVal()){
                           parameters[CbcParam::PROBINGCUTS]->setVal("on");
-                          probingAction = 1;
+                          probingMode = 1;
                        } else {
                           parameters[CbcParam::PROBINGCUTS]->setVal("off");
-                          probingAction = 0;
+                          probingMode = 0;
                        }
                     }
 		    cbcParam->setVal(iValue, &message);
@@ -2300,66 +2300,66 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                  doSOS = mode;
                  break;
                case CbcParam::CLQSTRENGTHENING:
-                 clqstrAction = field;
+                 clqstrMode = field;
                  break;
                case CbcParam::USECGRAPH:
-                 cgraphAction = field;
+                 cgraphMode = field;
                  break;
                case CbcParam::CLIQUECUTS:
                  defaultSettings = false; // user knows what she is doing
-                 cliqueAction = mode;
+                 cliqueMode = mode;
                  break;
                case CbcParam::ODDWHEELCUTS:
                  defaultSettings = false; // user knows what she is doing
-                 oddWheelAction = mode;
+                 oddWheelMode = mode;
                  break;
                case CbcParam::GOMORYCUTS:
                  defaultSettings = false; // user knows what she is doing
-                 gomoryAction = mode;
+                 gomoryMode = mode;
                  break;
                case CbcParam::PROBINGCUTS:
                  defaultSettings = false; // user knows what she is doing
-                 probingAction = mode;
+                 probingMode = mode;
                  break;
                case CbcParam::KNAPSACKCUTS:
                  defaultSettings = false; // user knows what she is doing
-                 knapsackAction = mode;
+                 knapsackMode = mode;
                  break;
                case CbcParam::REDSPLITCUTS:
                  defaultSettings = false; // user knows what she is doing
-                 redsplitAction = mode;
+                 redsplitMode = mode;
                  break;
                case CbcParam::REDSPLIT2CUTS:
                  defaultSettings = false; // user knows what she is doing
-                 redsplit2Action = mode;
+                 redsplit2Mode = mode;
                  break;
                case CbcParam::GMICUTS:
                  defaultSettings = false; // user knows what she is doing
-                 GMIAction = mode;
+                 GMIMode = mode;
                  break;
                case CbcParam::FLOWCUTS:
                  defaultSettings = false; // user knows what she is doing
-                 flowAction = mode;
+                 flowMode = mode;
                  break;
                case CbcParam::MIRCUTS:
                  defaultSettings = false; // user knows what she is doing
-                 mixedAction = mode;
+                 mixedMode = mode;
                  break;
                case CbcParam::TWOMIRCUTS:
                  defaultSettings = false; // user knows what she is doing
-                 twomirAction = mode;
+                 twomirMode = mode;
                  break;
                case CbcParam::LANDPCUTS:
                  defaultSettings = false; // user knows what she is doing
-                 landpAction = mode;
+                 landpMode = mode;
                  break;
                case CbcParam::RESIDCAPCUTS:
                  defaultSettings = false; // user knows what she is doing
-                 residualCapacityAction = mode;
+                 residualCapacityMode = mode;
                  break;
                case CbcParam::ZEROHALFCUTS:
                  defaultSettings = false; // user knows what she is doing
-                 zerohalfAction = mode;
+                 zerohalfMode = mode;
                  break;
                case CbcParam::ROUNDING:
                  defaultSettings = false; // user knows what she is doing
@@ -2374,15 +2374,15 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                case CbcParam::RENS:
                  break;
                case CbcParam::CUTSTRATEGY:
-                 gomoryAction = mode;
-                 probingAction = mode;
-                 knapsackAction = mode;
-                 cliqueAction = mode;
-                 flowAction = mode;
-                 mixedAction = mode;
-                 twomirAction = mode;
-                 zerohalfAction = mode;
-                 oddWheelAction = mode;
+                 gomoryMode = mode;
+                 probingMode = mode;
+                 knapsackMode = mode;
+                 cliqueMode = mode;
+                 flowMode = mode;
+                 mixedMode = mode;
+                 twomirMode = mode;
+                 zerohalfMode = mode;
+                 oddWheelMode = mode;
                  parameters[CbcParam::GOMORYCUTS]->setVal(mode);
                  parameters[CbcParam::PROBINGCUTS]->setVal(mode);
                  parameters[CbcParam::KNAPSACKCUTS]->setVal(mode);
@@ -2394,7 +2394,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                  parameters[CbcParam::ODDWHEELCUTS]->setVal(mode);
                  if (!mode) {
                     // switch off clique strengthening
-                    clqstrAction = "off";
+                    clqstrMode = "off";
                  }
                  break;
                case CbcParam::HEURISTICSTRATEGY:
@@ -3535,8 +3535,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               else
                 model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
-              int vubAction = parameters[CbcParam::VUBTRY]->intVal();
-              if (vubAction != -1) {
+              int vubMode = parameters[CbcParam::VUBTRY]->intVal();
+              if (vubMode != -1) {
                 // look at vubs
                 // extra1 is number of ints to leave free
                 // Just ones which affect >= extra3
@@ -3560,7 +3560,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 if (!dextra[3])
                   dextra[3] = 0.97;
                 // OsiClpSolverInterface * newSolver =
-                fixVubs(model_, extra3, vubAction, generalMessageHandler,
+                fixVubs(model_, extra3, vubMode, generalMessageHandler,
                         debugValues, dextra, extra);
                 // assert (!newSolver);
               }
@@ -5604,25 +5604,25 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #endif
               }
 
-              if (cgraphAction == "off") {
+              if (cgraphMode == "off") {
                 // switch off new clique, odd wheel and clique strengthening
-                cliqueAction = 0;
-                oddWheelAction = 0;
-                clqstrAction = "off";
-              } else if (cgraphAction == "clq") {
+                cliqueMode = 0;
+                oddWheelMode = 0;
+                clqstrMode = "off";
+              } else if (cgraphMode == "clq") {
                 // old style
                 CglClique clique;
                 clique.setStarCliqueReport(false);
                 clique.setRowCliqueReport(false);
                 clique.setMinViolation(0.05);
                 int translate[] = {-100, -1, -99, -98, 1, -1098};
-                babModel_->addCutGenerator(&clique, translate[cliqueAction],
+                babModel_->addCutGenerator(&clique, translate[cliqueMode],
                                            "Clique");
-                cliqueAction = 0;
-                oddWheelAction = 0;
-                clqstrAction = "off";
+                cliqueMode = 0;
+                oddWheelMode = 0;
+                clqstrMode = "off";
               }
-              if (clqstrAction == "after") {
+              if (clqstrMode == "after") {
                 CglCliqueStrengthening clqStr(babModel_->solver(),
                                               babModel_->messageHandler());
                 clqStr.strengthenCliques(4);
@@ -5849,9 +5849,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               translate[CbcParameters::CGForceOnButStrong] = 1;
               translate[CbcParameters::CGStrongRoot] = -1;
               int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS]->intVal();
-              if (probingAction) {
+              if (probingMode) {
                 int numberColumns = babModel_->solver()->getNumCols();
-                if (probingAction > 7) {
+                if (probingMode > 7) {
                   probingGen.setMaxElements(numberColumns);
                   probingGen.setMaxElementsRoot(numberColumns);
                 }
@@ -5859,9 +5859,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 probingGen.setMaxProbeRoot(123);
                 probingGen.setMaxProbe(123);
                 probingGen.setMaxLookRoot(20);
-                if (probingAction == 7 || probingAction == 9)
+                if (probingMode == 7 || probingMode == 9)
                   probingGen.setRowCuts(-3); // strengthening etc just at root
-                if (probingAction == 8 || probingAction == 9) {
+                if (probingMode == 8 || probingMode == 9) {
                   // Number of unsatisfied variables to look at
                   probingGen.setMaxProbeRoot(numberColumns);
                   probingGen.setMaxProbe(numberColumns);
@@ -5869,33 +5869,33 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   probingGen.setMaxLook(50);
                   probingGen.setMaxLookRoot(50);
                 }
-                if (probingAction == 10) {
+                if (probingMode == 10) {
                   probingGen.setMaxPassRoot(2);
                   probingGen.setMaxProbeRoot(numberColumns);
                   probingGen.setMaxLookRoot(numberColumns);
                 }
                 // If 5 then force on
-                int iAction = translate[probingAction];
-                if (probingAction == 5)
-                  iAction = 1;
-                babModel_->addCutGenerator(&probingGen, iAction, "Probing");
+                int iMode = translate[probingMode];
+                if (probingMode == 5)
+                  iMode = 1;
+                babModel_->addCutGenerator(&probingGen, iMode, "Probing");
                 accuracyFlag[numberGenerators] = 5;
                 switches[numberGenerators++] = 0;
               }
-              if (gomoryAction && (complicatedInteger != 1 ||
-                                   (gomoryAction == 1 || gomoryAction >= 4))) {
+              if (gomoryMode && (complicatedInteger != 1 ||
+                                   (gomoryMode == 1 || gomoryMode >= 4))) {
                 // try larger limit
                 int numberColumns = babModel_->getNumCols();
-                if (gomoryAction == 7) {
-                  gomoryAction = 4;
+                if (gomoryMode == 7) {
+                  gomoryMode = 4;
                   gomoryGen.setLimitAtRoot(numberColumns);
                   gomoryGen.setLimit(numberColumns);
-                } else if (gomoryAction == 8) {
-                  gomoryAction = 3;
+                } else if (gomoryMode == 8) {
+                  gomoryMode = 3;
                   gomoryGen.setLimitAtRoot(numberColumns);
                   gomoryGen.setLimit(200);
-                } else if (gomoryAction == 9) {
-                  gomoryAction = 3;
+                } else if (gomoryMode == 9) {
+                  gomoryMode = 3;
                   gomoryGen.setLimitAtRoot(500);
                   gomoryGen.setLimit(200);
                 } else if (numberColumns > 5000) {
@@ -5925,11 +5925,11 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   }
                 }
                 int laGomory = parameters[CbcParam::LAGOMORYCUTS]->modeVal();
-                int gType = translate[gomoryAction];
+                int gType = translate[gomoryMode];
                 if (!laGomory) {
                   // Normal
                   babModel_->addCutGenerator(&gomoryGen,
-                                             translate[gomoryAction], "Gomory");
+                                             translate[gomoryMode], "Gomory");
                   accuracyFlag[numberGenerators] = 3;
                   switches[numberGenerators++] = 0;
                 } else {
@@ -5992,39 +5992,39 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 switches[numberGenerators++] = 0;
               }
 #endif
-              if (knapsackAction) {
+              if (knapsackMode) {
                 babModel_->addCutGenerator(
-                    &knapsackGen, translate[knapsackAction], "Knapsack");
+                    &knapsackGen, translate[knapsackMode], "Knapsack");
                 accuracyFlag[numberGenerators] = 1;
                 switches[numberGenerators++] = -2;
               }
-              if (redsplitAction && !complicatedInteger) {
+              if (redsplitMode && !complicatedInteger) {
                 babModel_->addCutGenerator(&redsplitGen,
-                                           translate[redsplitAction],
+                                           translate[redsplitMode],
                                            "Reduce-and-split");
                 accuracyFlag[numberGenerators] = 5;
                 // slow ? - just do a few times
-                if (redsplitAction != 1) {
+                if (redsplitMode != 1) {
                   babModel_->cutGenerator(numberGenerators)
                       ->setMaximumTries(maximumSlowPasses);
                   babModel_->cutGenerator(numberGenerators)->setHowOften(10);
                 }
                 switches[numberGenerators++] = 1;
               }
-              if (redsplit2Action && !complicatedInteger) {
+              if (redsplit2Mode && !complicatedInteger) {
                 int maxLength = 256;
-                if (redsplit2Action > 2) {
-                  redsplit2Action -= 2;
+                if (redsplit2Mode > 2) {
+                  redsplit2Mode -= 2;
                   maxLength = COIN_INT_MAX;
                 }
                 CglRedSplit2Param &parameters = redsplit2Gen.getParam();
                 parameters.setMaxNonzeroesTab(maxLength);
                 babModel_->addCutGenerator(&redsplit2Gen,
-                                           translate[redsplit2Action],
+                                           translate[redsplit2Mode],
                                            "Reduce-and-split(2)");
                 accuracyFlag[numberGenerators] = 5;
                 // slow ? - just do a few times
-                if (redsplit2Action != 1) {
+                if (redsplit2Mode != 1) {
                   babModel_->cutGenerator(numberGenerators)
                       ->setHowOften(maximumSlowPasses);
                   babModel_->cutGenerator(numberGenerators)
@@ -6034,18 +6034,18 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 
                 switches[numberGenerators++] = 1;
               }
-              if (GMIAction && !complicatedInteger) {
-                if (GMIAction > 5) {
+              if (GMIMode && !complicatedInteger) {
+                if (GMIMode > 5) {
                   // long
-                  GMIAction -= 5;
+                  GMIMode -= 5;
                   CglGMIParam &parameters = GMIGen.getParam();
                   parameters.setMaxSupportRel(1.0);
                 }
-                babModel_->addCutGenerator(&GMIGen, translate[GMIAction],
+                babModel_->addCutGenerator(&GMIGen, translate[GMIMode],
                                            "Gomory(2)");
-                if (GMIAction == 5) {
+                if (GMIMode == 5) {
                   // just at end and root
-                  GMIAction = 2;
+                  GMIMode = 2;
                   doAtEnd[numberGenerators] = 1;
                   babModel_->cutGenerator(numberGenerators)
                       ->setMaximumTries(99999999);
@@ -6054,61 +6054,61 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 accuracyFlag[numberGenerators] = 5;
                 switches[numberGenerators++] = 0;
               }
-              if (cliqueAction) {
+              if (cliqueMode) {
                 bkCliqueGen.setMaxCallsBK(maxCallsBK);
                 bkCliqueGen.setExtendingMethod(bkClqExtMethod);
                 bkCliqueGen.setPivotingStrategy(bkPivotingStrategy);
                 babModel_->addCutGenerator(&bkCliqueGen,
-                                           translate[cliqueAction], "Clique");
+                                           translate[cliqueMode], "Clique");
                 accuracyFlag[numberGenerators] = 0;
                 switches[numberGenerators++] = 0;
-	      } else if (cgraphAction == "clq") {
+	      } else if (cgraphMode == "clq") {
 		// old style
 		CglClique clique;
 		clique.setStarCliqueReport(false);
 		clique.setRowCliqueReport(false);
 		clique.setMinViolation(0.05);
 		// ifmove
-		babModel_->addCutGenerator(&clique, translate[cliqueAction],
+		babModel_->addCutGenerator(&clique, translate[cliqueMode],
 					   "Clique");
                 accuracyFlag[numberGenerators] = 0;
                 switches[numberGenerators++] = 0;
               }
-              if (oddWheelAction) {
+              if (oddWheelMode) {
                 oddWheelGen.setExtendingMethod(oddWExtMethod);
                 babModel_->addCutGenerator(
-                    &oddWheelGen, translate[oddWheelAction], "OddWheel");
+                    &oddWheelGen, translate[oddWheelMode], "OddWheel");
                 accuracyFlag[numberGenerators] = 0;
                 switches[numberGenerators++] = 0;
               }
-              if (mixedAction) {
-                babModel_->addCutGenerator(&mixedGen, translate[mixedAction],
+              if (mixedMode) {
+                babModel_->addCutGenerator(&mixedGen, translate[mixedMode],
                                            "MixedIntegerRounding2");
                 accuracyFlag[numberGenerators] = 2;
                 switches[numberGenerators++] = 0;
               }
-              if (flowAction) {
-                babModel_->addCutGenerator(&flowGen, translate[flowAction],
+              if (flowMode) {
+                babModel_->addCutGenerator(&flowGen, translate[flowMode],
                                            "FlowCover");
                 accuracyFlag[numberGenerators] = 2;
                 switches[numberGenerators++] = 0;
               }
-              if (twomirAction && (complicatedInteger != 1 ||
-                                   (twomirAction == 1 || twomirAction >= 4))) {
+              if (twomirMode && (complicatedInteger != 1 ||
+                                   (twomirMode == 1 || twomirMode >= 4))) {
                 // try larger limit
                 int numberColumns = babModel_->getNumCols();
-                if (twomirAction == 7) {
-                  twomirAction = 4;
+                if (twomirMode == 7) {
+                  twomirMode = 4;
                   twomirGen.setMaxElements(numberColumns);
-                } else if (numberColumns > 5000 && twomirAction == 4) {
+                } else if (numberColumns > 5000 && twomirMode == 4) {
                   twomirGen.setMaxElements(2000);
                 }
                 int laTwomir = parameters[CbcParam::LATWOMIRCUTS]->modeVal();
-                int twomirType = translate[twomirAction];
+                int twomirType = translate[twomirMode];
                 if (!laTwomir) {
                   // Normal
                   babModel_->addCutGenerator(
-                      &twomirGen, translate[twomirAction], "TwoMirCuts");
+                      &twomirGen, translate[twomirMode], "TwoMirCuts");
                   accuracyFlag[numberGenerators] = 4;
                   switches[numberGenerators++] = 1;
                 } else {
@@ -6120,7 +6120,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   if (when < 3) {
                     // normal as well
                     babModel_->addCutGenerator(
-                        &twomirGen, translate[twomirAction], "TwoMirCuts");
+                        &twomirGen, translate[twomirMode], "TwoMirCuts");
                     accuracyFlag[numberGenerators] = 4;
                     switches[numberGenerators++] = 1;
                     if (when == 2)
@@ -6153,17 +6153,17 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 }
               }
 #ifndef DEBUG_MALLOC
-              if (landpAction) {
-                if (landpAction == 5) {
+              if (landpMode) {
+                if (landpMode == 5) {
                   // allow longer
                   landpGen.parameter().maximumCutLength = 2000000;
-                  landpAction = 3;
+                  landpMode = 3;
                 }
-                babModel_->addCutGenerator(&landpGen, translate[landpAction],
+                babModel_->addCutGenerator(&landpGen, translate[landpMode],
                                            "LiftAndProject");
                 accuracyFlag[numberGenerators] = 5;
                 // slow ? - just do a few times
-                if (landpAction != 1) {
+                if (landpMode != 1) {
                   babModel_->cutGenerator(numberGenerators)
                       ->setMaximumTries(maximumSlowPasses);
                   babModel_->cutGenerator(numberGenerators)->setHowOften(10);
@@ -6171,20 +6171,20 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 switches[numberGenerators++] = 1;
               }
 #endif
-              if (residualCapacityAction) {
+              if (residualCapacityMode) {
                 babModel_->addCutGenerator(&residualCapacityGen,
-                                           translate[residualCapacityAction],
+                                           translate[residualCapacityMode],
                                            "ResidualCapacity");
                 accuracyFlag[numberGenerators] = 5;
                 switches[numberGenerators++] = 1;
               }
-              if (zerohalfAction) {
-                if (zerohalfAction > 4) {
-                  // zerohalfAction -=4;
+              if (zerohalfMode) {
+                if (zerohalfMode > 4) {
+                  // zerohalfMode -=4;
                   zerohalfGen.setFlags(1);
                 }
                 babModel_->addCutGenerator(
-                    &zerohalfGen, translate[zerohalfAction], "ZeroHalf");
+                    &zerohalfGen, translate[zerohalfMode], "ZeroHalf");
                 accuracyFlag[numberGenerators] = 5;
                 babModel_->cutGenerator(numberGenerators)
                     ->setNeedsRefresh(true);

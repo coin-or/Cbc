@@ -5836,17 +5836,18 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               int accuracyFlag[30] = {};
               char doAtEnd[30] = {};
               int numberGenerators = 0;
-              std::map<int, int> translate = {{CbcParameters::CGOff, -100},
-                                              {CbcParameters::CGOn, -1},
-                                              {CbcParameters::CGRoot, -99},
-                                              {CbcParameters::CGIfMove, -98},
-                                              {CbcParameters::CGForceOn, 1},
-                                              {CbcParameters::CGOnGlobal, -1098},
-                                              {CbcParameters::CGForceOnGlobal, -999},
-                                              {CbcParameters::CGForceOnBut, 1},
-                                              {CbcParameters::CGForceOnStrong, 1},
-                                              {CbcParameters::CGForceOnButStrong, 1},
-                                              {CbcParameters::CGStrongRoot, -1}};
+              std::map<int, int> translate;
+              translate[CbcParameters::CGOff] = -100;
+              translate[CbcParameters::CGOn] = -1;
+              translate[CbcParameters::CGRoot] = -99;
+              translate[CbcParameters::CGIfMove] = -98;
+              translate[CbcParameters::CGForceOn] = 1;
+              translate[CbcParameters::CGOnGlobal] = -1098;
+              translate[CbcParameters::CGForceOnGlobal] = -999;
+              translate[CbcParameters::CGForceOnBut] = 1;
+              translate[CbcParameters::CGForceOnStrong] = 1;
+              translate[CbcParameters::CGForceOnButStrong] = 1;
+              translate[CbcParameters::CGStrongRoot] = -1;
               int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS]->intVal();
               if (probingAction) {
                 int numberColumns = babModel_->solver()->getNumCols();

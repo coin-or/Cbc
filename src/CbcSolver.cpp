@@ -5830,9 +5830,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               }
               int experimentFlag = parameters[CbcParam::EXPERIMENT]->intVal();
               int strategyFlag = parameters[CbcParam::STRATEGY]->modeVal();
-	      // but order has changed 0 <-> 1
-	      if (strategyFlag < 2)
-		strategyFlag = 1 - strategyFlag;
               int bothFlags = CoinMax(CoinMin(experimentFlag, 1), strategyFlag);
               // add cut generators if wanted
               int switches[30] = {};

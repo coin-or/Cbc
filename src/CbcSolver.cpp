@@ -2888,6 +2888,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     model_.setBestSolution(
                         model2->primalColumnSolution(), model2->numberColumns(),
                         model2->getObjValue() * model2->getObjSense());
+		    // Cutoff
+		    model_.solver()->setDblParam(OsiDualObjectiveLimit, 1.0e100);
                   }
                 } else if (iStatus == 1) {
                   iStatus = 0;

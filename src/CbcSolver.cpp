@@ -1960,619 +1960,602 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           }
 #endif
         } else if (cbcParam->type() == CoinParam::paramDbl) {
-           status = CoinParamUtils::getValue(inputQueue, dValue);
-           if (status == 1) {
-              //TODO integrate this in with the error messaging of the class itself
-              std::cout << " is illegal for double parameter "
-                        << cbcParam->name() << " value remains "
-                        << cbcParam->dblVal() << std::endl;
-           } else if (status == 2) {
-              std::cout << cbcParam->name() << " has value "
-                        << cbcParam->dblVal() << std::endl;
-           } else {
-              cbcParam->setVal(dValue, &message);
+           if (status = cbcParam->readValue(inputQueue, dValue, &message)){
               printGeneralMessage(model_, message);
+              continue;
+           }
+           if (cbcParam->setVal(dValue, &message)){
+              printGeneralMessage(model_, message);
+              continue;
+           }
               // TODO: These should be moved to the push function
-              switch (cbcParamCode) {
-               case CbcParam::DJFIX:
-                 djFix = dValue;
+           switch (cbcParamCode) {
+            case CbcParam::DJFIX:
+              djFix = dValue;
 #ifndef CBC_OTHER_SOLVER
-                 if (goodModel && djFix < 1.0e20) {
-                    // do some fixing
-                    clpSolver =
-                       dynamic_cast<OsiClpSolverInterface *>(model_.solver());
-                    clpSolver->initialSolve();
-                    lpSolver = clpSolver->getModelPtr();
-                    int numberColumns = lpSolver->numberColumns();
-                    int i;
-                    const char *type = lpSolver->integerInformation();
-                    double *lower = lpSolver->columnLower();
-                    double *upper = lpSolver->columnUpper();
-                    double *solution = lpSolver->primalColumnSolution();
-                    double *dj = lpSolver->dualColumnSolution();
-                    int numberFixed = 0;
-                    double dextra4 = parameters[CbcParam::DEXTRA4]->dblVal();
-                    if (dextra4)
-                       printf("Multiple for continuous dj fixing is %g\n",
-                              dextra4);
-                    for (i = 0; i < numberColumns; i++) {
-                       double djValue = dj[i];
-                       if (!type[i])
-                          djValue *= dextra4;
-                       if (type[i] || dextra4) {
-                          double value = solution[i];
-                          if (value < lower[i] + 1.0e-5 && djValue > djFix) {
-                             solution[i] = lower[i];
-                             upper[i] = lower[i];
-                             numberFixed++;
-                          } else if (value > upper[i] - 1.0e-5 &&
-                                     djValue < -djFix) {
-                             solution[i] = upper[i];
-                             lower[i] = upper[i];
-                             numberFixed++;
-                          }
+              if (goodModel && djFix < 1.0e20) {
+                 // do some fixing
+                 clpSolver =
+                    dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+                 clpSolver->initialSolve();
+                 lpSolver = clpSolver->getModelPtr();
+                 int numberColumns = lpSolver->numberColumns();
+                 int i;
+                 const char *type = lpSolver->integerInformation();
+                 double *lower = lpSolver->columnLower();
+                 double *upper = lpSolver->columnUpper();
+                 double *solution = lpSolver->primalColumnSolution();
+                 double *dj = lpSolver->dualColumnSolution();
+                 int numberFixed = 0;
+                 double dextra4 = parameters[CbcParam::DEXTRA4]->dblVal();
+                 if (dextra4)
+                    printf("Multiple for continuous dj fixing is %g\n",
+                           dextra4);
+                 for (i = 0; i < numberColumns; i++) {
+                    double djValue = dj[i];
+                    if (!type[i])
+                       djValue *= dextra4;
+                    if (type[i] || dextra4) {
+                       double value = solution[i];
+                       if (value < lower[i] + 1.0e-5 && djValue > djFix) {
+                          solution[i] = lower[i];
+                          upper[i] = lower[i];
+                          numberFixed++;
+                       } else if (value > upper[i] - 1.0e-5 &&
+                                  djValue < -djFix) {
+                          solution[i] = upper[i];
+                          lower[i] = upper[i];
+                          numberFixed++;
                        }
                     }
-                    buffer.str("");
-                    buffer << numberFixed << " columns fixed" << std::endl;
-                    printGeneralMessage(model_, buffer.str());
                  }
-#endif
-                 break;
-               case CbcParam::TIGHTENFACTOR:
-                 tightenFactor = dValue;
-                 if (!complicatedInteger)
-                    defaultSettings = false; // user knows what she is doing
-                 break;
-               default:
-                 break;
+                 buffer.str("");
+                 buffer << numberFixed << " columns fixed" << std::endl;
+                 printGeneralMessage(model_, buffer.str());
               }
+#endif
+              break;
+            case CbcParam::TIGHTENFACTOR:
+              tightenFactor = dValue;
+              if (!complicatedInteger)
+                 defaultSettings = false; // user knows what she is doing
+              break;
+            default:
+              break;
            }
         } else if (clpParam->type() == CoinParam::paramDbl) {
-           status = CoinParamUtils::getValue(inputQueue, dValue);
-           if (status == 1) {
-              //TODO integrate this in with the error messaging of the class itself
-              std::cout << " is illegal for double parameter "
-                        << clpParam->name() << " value remains "
-                        << clpParam->dblVal() << std::endl;
-           } else if (status == 2) {
-              std::cout << clpParam->name() << " has value "
-                        << clpParam->dblVal() << std::endl;
-           } else {
-              // We have a Clp parameter
-              clpParam->setVal(dValue, &message);
+           if (status = clpParam->readValue(inputQueue, dValue, &message)){
               printGeneralMessage(model_, message);
+              continue;
+           } 
+           // We have a Clp parameter
+           if (clpParam->setVal(dValue, &message)){
+              printGeneralMessage(model_, message);
+              continue;
            }      
         } else if (clpParam->type() == CoinParam::paramInt) {
-           status = CoinParamUtils::getValue(inputQueue, iValue);
-           if (status == 1) {
-              //TODO integrate this in with the error messaging of the class itself
-              std::cout << " is illegal for integer parameter "
-                        << clpParam->name() << " value remains "
-                        << clpParam->intVal() << std::endl;
-           } else if (status == 2) {
-              std::cout << clpParam->name() << " has value "
-                        << clpParam->intVal() << std::endl;
-           } else {
-              clpParam->setVal(iValue, &message);
+           if (status = clpParam->readValue(inputQueue, iValue, &message)){
               printGeneralMessage(model_, message);
-              if (clpParamCode == ClpParam::PRESOLVEPASS) {
-                 preSolve = iValue;
-              } else if (clpParamCode == ClpParam::IDIOT) {
-                 doIdiot = iValue;
-              } else if (clpParamCode == ClpParam::SPRINT) {
-                 doSprint = iValue;
-              } else if (clpParamCode == ClpParam::OUTPUTFORMAT) {
-                 outputFormat = iValue;
-              } else if (clpParamCode == ClpParam::SLPVALUE) {
-                 slpValue = iValue;
-              } else if (clpParamCode == ClpParam::CPP) {
-                 cppValue = iValue;
-              } else if (clpParamCode == ClpParam::PRESOLVEOPTIONS) {
-                 presolveOptions = iValue;
-              } else if (clpParamCode == ClpParam::PRINTOPTIONS) {
-                 printOptions = iValue;
-              } else if (clpParamCode == ClpParam::SUBSTITUTION) {
-                 substitution = iValue;
-              } else if (clpParamCode == ClpParam::DUALIZE) {
-                 dualize = iValue;
-              }
+              continue;
+           } 
+           if (clpParam->setVal(iValue, &message)){
+              printGeneralMessage(model_, message);
+              continue;
+           }
+           if (clpParamCode == ClpParam::PRESOLVEPASS) {
+              preSolve = iValue;
+           } else if (clpParamCode == ClpParam::IDIOT) {
+              doIdiot = iValue;
+           } else if (clpParamCode == ClpParam::SPRINT) {
+              doSprint = iValue;
+           } else if (clpParamCode == ClpParam::OUTPUTFORMAT) {
+              outputFormat = iValue;
+           } else if (clpParamCode == ClpParam::SLPVALUE) {
+              slpValue = iValue;
+           } else if (clpParamCode == ClpParam::CPP) {
+              cppValue = iValue;
+           } else if (clpParamCode == ClpParam::PRESOLVEOPTIONS) {
+              presolveOptions = iValue;
+           } else if (clpParamCode == ClpParam::PRINTOPTIONS) {
+              printOptions = iValue;
+           } else if (clpParamCode == ClpParam::SUBSTITUTION) {
+              substitution = iValue;
+           } else if (clpParamCode == ClpParam::DUALIZE) {
+              dualize = iValue;
            }
         } else if (cbcParam->type() == CoinParam::paramInt){
-           status = CoinParamUtils::getValue(inputQueue, iValue);
-           if (status == 1) {
-              //TODO integrate this in with the error messaging of the class itself
-              std::cout << " is illegal for integer parameter "
-                        << cbcParam->name() << " value remains "
-                        << cbcParam->intVal() << std::endl;
-           } else if (status == 2) {
-              std::cout << cbcParam->name() << " has value "
-                        << cbcParam->intVal() << std::endl;
-           } else {
-              if (cbcParamCode == CbcParam::LPLOGLEVEL){
-                 clpSolver->messageHandler()->setLogLevel(iValue); // as well
-                 clpParameters[ClpParam::LOGLEVEL]->setVal(iValue, &message);
-                 printGeneralMessage(model_, message);
-              }else{
-                 cbcParam->setVal(iValue, &message);
-                 printGeneralMessage(model_, message);
-                 if (cbcParamCode == CbcParam::CUTPASS){
-                    cutPass = iValue;
-                 } else if (cbcParamCode== CbcParam::USESOLUTION) {
-                    useSolution = iValue;
-                 } else if (cbcParamCode == CbcParam::CUTPASSINTREE) {
-                    cutPassInTree = iValue;
-                 } else if (cbcParamCode == CbcParam::STRONGBRANCHING ||
-                            cbcParamCode == CbcParam::NUMBERBEFORE) {
-                    strongChanged = true;
-                 } else if (cbcParamCode == CbcParam::FPUMPTUNE || cbcParamCode == CbcParam::FPUMPTUNE2 ||
-                            cbcParamCode == CbcParam::FPUMPITS) {
-                    pumpChanged = true;
-                 } else if (cbcParamCode == CbcParam::BKPIVOTINGSTRATEGY) {
-                    bkPivotingStrategy = iValue;
-                 } else if (cbcParamCode == CbcParam::BKMAXCALLS) {
-                    maxCallsBK = iValue;
-                 } else if (cbcParamCode == CbcParam::BKCLQEXTMETHOD) {
-                    bkClqExtMethod = iValue;
-                 } else if (cbcParamCode == CbcParam::ODDWEXTMETHOD) {
-                    oddWExtMethod = iValue;
-                 } else if (cbcParamCode == CbcParam::LOGLEVEL) {
-		   model_.messageHandler()->setLogLevel(CoinAbs(iValue));
-                 } else if (cbcParamCode == CbcParam::MAXNODES) {
-		   model_.setIntParam(CbcModel::CbcMaxNumNode, iValue);
-                 } else if (cbcParamCode == CbcParam::MAXSOLS) {
-		   model_.setIntParam(CbcModel::CbcMaxNumSol, iValue);
-                 } else if (cbcParamCode == CbcParam::STRONGBRANCHING) {
-		   model_.setNumberStrong(iValue);
-		 } else if (cbcParamCode == CbcParam::PROCESSTUNE) {
-		   tunePreProcess = iValue;
-		 } else if (cbcParamCode == CbcParam::VERBOSE) {
-		   verbose = iValue;
-                 } else if (cbcParamCode == CbcParam::EXPERIMENT && iValue < 10000) {
-                    int addFlags = 0;
-                    // switch on some later features if >999
-                    if (iValue > 999) {
-                       int switchValue = iValue / 1000;
-                       iValue -= 1000 * switchValue;
-                       parameters[CbcParam::EXPERIMENT]->setVal(0 /*value*/);
-                       switch (switchValue) {
-                        default:
-                        case 4:
-                          // hotstart 500, -200 cut passes
-                          parameters[CbcParam::MAXHOTITS]->setVal(500, &message);
-                          printGeneralMessage(model_, message);
-                          parameters[CbcParam::CUTPASS]->setVal(-200, &message);
-                          printGeneralMessage(model_, message);
-                        case 3:
-                          // multiple 4
-                          parameters[CbcParam::MULTIPLEROOTS]->setVal(4, &message);
-                          printGeneralMessage(model_, message);
-                        case 2:
-                          // rens plus all diving at root
-                          parameters[CbcParam::DIVEOPT]->setVal(16, &message);
-                          printGeneralMessage(model_, message);
-                          model_.setNumberAnalyzeIterations(-iValue);
-                          // -tune 7 zero,lagomory,gmi at root - probing on
-                        case 1:
-                          tunePreProcess = 7;
-                          parameters[CbcParam::PROCESSTUNE]->setVal(7, &message);
-                          printGeneralMessage(model_, message);
-                          // message =
-                          // parameters[CbcParam::MIPOPTIONS,
-                          // parameters)]->setValWithMessage(1025); if
-                          // (!noPrinting_&&message)
-                          //    generalMessageHandler->message(CLP_GENERAL,
-                          //    generalMessages)
-                          //  << message << CoinMessageEol;
-                          parameters[CbcParam::PROBINGCUTS]->setVal("on", &message);
-                          probingMode = 1;
-                          printGeneralMessage(model_, message);
-                          parameters[CbcParam::ZEROHALFCUTS]->setVal("root", &message);
-                          printGeneralMessage(model_, message);
-                          parameters[CbcParam::LAGOMORYCUTS]->setVal("root", &message);
-                          printGeneralMessage(model_, message);
-                          GMIMode = 2;
-                          parameters[CbcParam::GMICUTS]->setVal("root", &message);
-                          printGeneralMessage(model_, message);
-                       }
-                       iValue = 0;
-                    }
-                    if (iValue >= 10) {
-                       addFlags = 1048576 * (iValue / 10);
-                       iValue = iValue % 10;
-                       parameters[CbcParam::EXPERIMENT]->setVal(iValue);
-                    }
-#ifndef CBC_EXPERIMENT_JJF
-                    if (iValue == 1) {
-                       // just experimental preprocessing and more restarts
-                       tunePreProcess |= 8192;
-                       model_.setSpecialOptions(model_.specialOptions() |
-                                                (512 | 32768));
-                    }
-#else
-                    experimentValue = iValue; // save
-                    if (iValue > 0 && iValue < 5) {
-                       // more restarts
-                       // >1 go to end in strong branching
-                       // >2 experimental preprocessing
-                       // 4 try ranging before strong branching
-                       model_.setSpecialOptions(model_.specialOptions() |
-                                                (512 | 32768));
-#ifndef CBC_OTHER_SOLVER
-                       if (iValue > 1) {
-                          OsiClpSolverInterface *osiclp =
-                             dynamic_cast<OsiClpSolverInterface *>(model_.solver());
-                          osiclp->setSpecialOptions(osiclp->specialOptions() & ~32);
-                       }
-#endif
-                       if (iValue > 2)
-                          tunePreProcess |= 8198; // was 8199;
-                       if (iValue == 4) {
-                          int more2 =
-                             parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal();
-                          parameters[CbcParam::MOREMOREMIPOPTIONS]->setVal(more2 | 1048576);
-                       }
-                       iValue = 1;
-                    }
-#endif
-                    if (iValue > 1) {
-                       int values[] = {24003, 280003, 792003, 24003, 24003};
-                       if (iValue >= 2 && iValue <= 3) {
-                          // swap default diving
-                          parameters[CbcParam::DIVINGC]->setVal("off");
-                          parameters[CbcParam::DIVINGP]->setVal("on");
-                       }
-                       int extra4 = values[iValue - 1] + addFlags;
-                       parameters[CbcParam::EXTRA4]->setVal(extra4);
-                       buffer.str("");
-                       buffer << "switching on global root cuts for gomory and "
-                              << "knapsack" << std::endl;
-                       buffer << "using OSL factorization" << std::endl;
-                       buffer << "extra options - -rens on -extra4 " << extra4
-                              << " -passc 1000!" << std::endl;
-                       printGeneralMessage(model_, buffer.str());
-                       parameters[CbcParam::PROBINGCUTS]->setVal("forceOnStrong");
-                       probingMode = 8;
-                       parameters[CbcParam::GOMORYCUTS]->setVal("onGlobal");
-                       gomoryMode = 5;
-                       parameters[CbcParam::KNAPSACKCUTS]->setVal("onGlobal");
-                       knapsackMode = 5;
-                       clpParameters[ClpParam::FACTORIZATION]->setVal("osl");
-                       lpSolver->factorization()->forceOtherFactorization(3);
-                       parameters[CbcParam::MAXHOTITS]->setVal(100);
-                       parameters[CbcParam::CUTPASS]->setVal(1000);
-                       cutPass = 1000;
-                       parameters[CbcParam::RENS]->setVal("on");
-                    }
-                 } else if (cbcParamCode == CbcParam::STRATEGY) {
-                    if (iValue == 0) {
-                       gomoryGen.setAwayAtRoot(0.05);
-                       parameters[CbcParam::DIVEOPT]->setVal(-1);
-                       parameters[CbcParam::FPUMPITS]->setVal(20);
-                       parameters[CbcParam::FPUMPTUNE]->setVal(1003);
-                       initialPumpTune = 1003;
-                       parameters[CbcParam::PROCESSTUNE]->setVal(0);
-                       tunePreProcess = 0;
-                       parameters[CbcParam::RINS]->setVal("off");
-                       // but not if cuts off
-                       if (parameters[CbcParam::CUTSTRATEGY]->modeVal()){
-                          parameters[CbcParam::PROBINGCUTS]->setVal("on");
-                          probingMode = 1;
-                       } else {
-                          parameters[CbcParam::PROBINGCUTS]->setVal("off");
-                          probingMode = 0;
-                       }
-                    }
-		    cbcParam->setVal(iValue, &message);
-		    printGeneralMessage(model_, message);
-                 }
-              }
-           } 
-        } else if (cbcParam->type() == CoinParam::paramKwd) {
-           status = CoinParamUtils::getValue(inputQueue, field);
-           if (cbcParam->setVal(field, &message)){
-              cbcParam->printOptions();
-           }else{
+           if (status = cbcParam->readValue(inputQueue, iValue, &message)){
               printGeneralMessage(model_, message);
-              int mode = cbcParam->modeVal();
-              // TODO: this should be part of the push method
-              switch (cbcParamCode) {
-               case CbcParam::DIRECTION:
-                 if (mode == 0)
-                    lpSolver->setOptimizationDirection(1);
-                 else if (mode == 1)
-                    lpSolver->setOptimizationDirection(-1);
-                 else
-                    lpSolver->setOptimizationDirection(0);
-                 break;
-               case CbcParam::ERRORSALLOWED:
-                 allowImportErrors = mode;
-                 break;
-               case CbcParam::INTPRINT:
-                 printMode = mode;
-                 break;
-                 // case CbcParam::CLP_PARAM_NOTUSED_ALGORITHM:
-                 // algorithm  = mode;
-                 // defaultSettings=false; // user knows what she is doing
-                 // abort();
-                 // break;
-               case CbcParam::SOS:
-                 doSOS = mode;
-                 break;
-               case CbcParam::CLQSTRENGTHENING:
-                 clqstrMode = field;
-                 break;
-               case CbcParam::USECGRAPH:
-                 cgraphMode = field;
-                 break;
-               case CbcParam::CLIQUECUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 cliqueMode = mode;
-                 break;
-               case CbcParam::ODDWHEELCUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 oddWheelMode = mode;
-                 break;
-               case CbcParam::GOMORYCUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 gomoryMode = mode;
-                 break;
-               case CbcParam::PROBINGCUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 probingMode = mode;
-                 break;
-               case CbcParam::KNAPSACKCUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 knapsackMode = mode;
-                 break;
-               case CbcParam::REDSPLITCUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 redsplitMode = mode;
-                 break;
-               case CbcParam::REDSPLIT2CUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 redsplit2Mode = mode;
-                 break;
-               case CbcParam::GMICUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 GMIMode = mode;
-                 break;
-               case CbcParam::FLOWCUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 flowMode = mode;
-                 break;
-               case CbcParam::MIRCUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 mixedMode = mode;
-                 break;
-               case CbcParam::TWOMIRCUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 twomirMode = mode;
-                 break;
-               case CbcParam::LANDPCUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 landpMode = mode;
-                 break;
-               case CbcParam::RESIDCAPCUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 residualCapacityMode = mode;
-                 break;
-               case CbcParam::ZEROHALFCUTS:
-                 defaultSettings = false; // user knows what she is doing
-                 zerohalfMode = mode;
-                 break;
-               case CbcParam::ROUNDING:
-                 defaultSettings = false; // user knows what she is doing
-                 break;
-               case CbcParam::FPUMP:
-                 defaultSettings = false; // user knows what she is doing
-                 break;
-               case CbcParam::RINS:
-                 break;
-               case CbcParam::DINS:
-                 break;
-               case CbcParam::RENS:
-                 break;
-               case CbcParam::CUTSTRATEGY:
-                 gomoryMode = mode;
-                 probingMode = mode;
-                 knapsackMode = mode;
-                 cliqueMode = mode;
-                 flowMode = mode;
-                 mixedMode = mode;
-                 twomirMode = mode;
-                 zerohalfMode = mode;
-                 oddWheelMode = mode;
-                 parameters[CbcParam::GOMORYCUTS]->setVal(mode);
-                 parameters[CbcParam::PROBINGCUTS]->setVal(mode);
-                 parameters[CbcParam::KNAPSACKCUTS]->setVal(mode);
-                 parameters[CbcParam::CLIQUECUTS]->setVal(mode);
-                 parameters[CbcParam::FLOWCUTS]->setVal(mode);
-                 parameters[CbcParam::MIRCUTS]->setVal(mode);
-                 parameters[CbcParam::TWOMIRCUTS]->setVal(mode);
-                 parameters[CbcParam::ZEROHALFCUTS]->setVal(mode);
-                 parameters[CbcParam::ODDWHEELCUTS]->setVal(mode);
-                 if (!mode) {
-                    // switch off clique strengthening
-                    clqstrMode = "off";
+              continue;
+           }
+           if (cbcParam->setVal(field, &message)){
+              printGeneralMessage(model_, message);
+              continue;
+           }
+           if (cbcParamCode == CbcParam::LPLOGLEVEL){
+              clpSolver->messageHandler()->setLogLevel(iValue); // as well
+              clpParameters[ClpParam::LOGLEVEL]->setVal(iValue, &message);
+              printGeneralMessage(model_, message);
+           }else{
+              cbcParam->setVal(iValue, &message);
+              printGeneralMessage(model_, message);
+              if (cbcParamCode == CbcParam::CUTPASS){
+                 cutPass = iValue;
+              } else if (cbcParamCode== CbcParam::USESOLUTION) {
+                 useSolution = iValue;
+              } else if (cbcParamCode == CbcParam::CUTPASSINTREE) {
+                 cutPassInTree = iValue;
+              } else if (cbcParamCode == CbcParam::STRONGBRANCHING ||
+                         cbcParamCode == CbcParam::NUMBERBEFORE) {
+                 strongChanged = true;
+              } else if (cbcParamCode == CbcParam::FPUMPTUNE || cbcParamCode == CbcParam::FPUMPTUNE2 ||
+                         cbcParamCode == CbcParam::FPUMPITS) {
+                 pumpChanged = true;
+              } else if (cbcParamCode == CbcParam::BKPIVOTINGSTRATEGY) {
+                 bkPivotingStrategy = iValue;
+              } else if (cbcParamCode == CbcParam::BKMAXCALLS) {
+                 maxCallsBK = iValue;
+              } else if (cbcParamCode == CbcParam::BKCLQEXTMETHOD) {
+                 bkClqExtMethod = iValue;
+              } else if (cbcParamCode == CbcParam::ODDWEXTMETHOD) {
+                 oddWExtMethod = iValue;
+              } else if (cbcParamCode == CbcParam::LOGLEVEL) {
+                 model_.messageHandler()->setLogLevel(CoinAbs(iValue));
+              } else if (cbcParamCode == CbcParam::MAXNODES) {
+                 model_.setIntParam(CbcModel::CbcMaxNumNode, iValue);
+              } else if (cbcParamCode == CbcParam::MAXSOLS) {
+                 model_.setIntParam(CbcModel::CbcMaxNumSol, iValue);
+              } else if (cbcParamCode == CbcParam::STRONGBRANCHING) {
+                 model_.setNumberStrong(iValue);
+              } else if (cbcParamCode == CbcParam::PROCESSTUNE) {
+                 tunePreProcess = iValue;
+              } else if (cbcParamCode == CbcParam::VERBOSE) {
+                 verbose = iValue;
+              } else if (cbcParamCode == CbcParam::EXPERIMENT && iValue < 10000) {
+                 int addFlags = 0;
+                 // switch on some later features if >999
+                 if (iValue > 999) {
+                    int switchValue = iValue / 1000;
+                    iValue -= 1000 * switchValue;
+                    parameters[CbcParam::EXPERIMENT]->setVal(0 /*value*/);
+                    switch (switchValue) {
+                     default:
+                     case 4:
+                       // hotstart 500, -200 cut passes
+                       parameters[CbcParam::MAXHOTITS]->setVal(500, &message);
+                       printGeneralMessage(model_, message);
+                       parameters[CbcParam::CUTPASS]->setVal(-200, &message);
+                       printGeneralMessage(model_, message);
+                     case 3:
+                       // multiple 4
+                       parameters[CbcParam::MULTIPLEROOTS]->setVal(4, &message);
+                       printGeneralMessage(model_, message);
+                     case 2:
+                       // rens plus all diving at root
+                       parameters[CbcParam::DIVEOPT]->setVal(16, &message);
+                       printGeneralMessage(model_, message);
+                       model_.setNumberAnalyzeIterations(-iValue);
+                       // -tune 7 zero,lagomory,gmi at root - probing on
+                     case 1:
+                       tunePreProcess = 7;
+                       parameters[CbcParam::PROCESSTUNE]->setVal(7, &message);
+                       printGeneralMessage(model_, message);
+                       // message =
+                       // parameters[CbcParam::MIPOPTIONS,
+                       // parameters)]->setValWithMessage(1025); if
+                       // (!noPrinting_&&message)
+                       //    generalMessageHandler->message(CLP_GENERAL,
+                       //    generalMessages)
+                       //  << message << CoinMessageEol;
+                       parameters[CbcParam::PROBINGCUTS]->setVal("on", &message);
+                       probingMode = 1;
+                       printGeneralMessage(model_, message);
+                       parameters[CbcParam::ZEROHALFCUTS]->setVal("root", &message);
+                       printGeneralMessage(model_, message);
+                       parameters[CbcParam::LAGOMORYCUTS]->setVal("root", &message);
+                       printGeneralMessage(model_, message);
+                       GMIMode = 2;
+                       parameters[CbcParam::GMICUTS]->setVal("root", &message);
+                       printGeneralMessage(model_, message);
+                    }
+                    iValue = 0;
                  }
-                 break;
-               case CbcParam::HEURISTICSTRATEGY:
-                 parameters[CbcParam::ROUNDING]->setVal(mode);
-                 parameters[CbcParam::GREEDY]->setVal(mode);
-                 parameters[CbcParam::COMBINE]->setVal(mode);
-                 // parameters[CbcParam::LOCALTREE,numberParameters_,parameters)]->setVal(mode);
-                 parameters[CbcParam::FPUMP]->setVal(mode);
-                 parameters[CbcParam::DIVINGC]->setVal(mode);
-                 parameters[CbcParam::RINS]->setVal(mode);
-                 break;
-               case CbcParam::GREEDY:
-               case CbcParam::DIVINGS:
-               case CbcParam::DIVINGC:
-               case CbcParam::DIVINGF:
-               case CbcParam::DIVINGG:
-               case CbcParam::DIVINGL:
-               case CbcParam::DIVINGP:
-               case CbcParam::DIVINGV:
-               case CbcParam::COMBINE:
-               case CbcParam::PIVOTANDCOMPLEMENT:
-               case CbcParam::PIVOTANDFIX:
-               case CbcParam::RANDROUND:
-               case CbcParam::LOCALTREE:
-               case CbcParam::NAIVE:
-               case CbcParam::CPX:
-                 defaultSettings = false; // user knows what she is doing
-                 break;
-               case CbcParam::BRANCHPRIORITY:
-                 useCosts = mode;
-                 break;
-               case CbcParam::NODESTRATEGY:
-                 nodeStrategy = mode;
-                 break;
-               case CbcParam::PREPROCESS:
-                 preProcess = mode;
-                 break;
-               case CbcParam::TIMEMODE:
-                 model_.setUseElapsedTime(mode != 0);
-                 break;
-               default:
-                 // abort();
-                 break;
+                 if (iValue >= 10) {
+                    addFlags = 1048576 * (iValue / 10);
+                    iValue = iValue % 10;
+                    parameters[CbcParam::EXPERIMENT]->setVal(iValue);
+                 }
+#ifndef CBC_EXPERIMENT_JJF
+                 if (iValue == 1) {
+                    // just experimental preprocessing and more restarts
+                    tunePreProcess |= 8192;
+                    model_.setSpecialOptions(model_.specialOptions() |
+                                             (512 | 32768));
+                 }
+#else
+                 experimentValue = iValue; // save
+                 if (iValue > 0 && iValue < 5) {
+                    // more restarts
+                    // >1 go to end in strong branching
+                    // >2 experimental preprocessing
+                    // 4 try ranging before strong branching
+                    model_.setSpecialOptions(model_.specialOptions() |
+                                             (512 | 32768));
+#ifndef CBC_OTHER_SOLVER
+                    if (iValue > 1) {
+                       OsiClpSolverInterface *osiclp =
+                          dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+                       osiclp->setSpecialOptions(osiclp->specialOptions() & ~32);
+                    }
+#endif
+                    if (iValue > 2)
+                       tunePreProcess |= 8198; // was 8199;
+                    if (iValue == 4) {
+                       int more2 =
+                          parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal();
+                       parameters[CbcParam::MOREMOREMIPOPTIONS]->setVal(more2 | 1048576);
+                    }
+                    iValue = 1;
+                 }
+#endif
+                 if (iValue > 1) {
+                    int values[] = {24003, 280003, 792003, 24003, 24003};
+                    if (iValue >= 2 && iValue <= 3) {
+                       // swap default diving
+                       parameters[CbcParam::DIVINGC]->setVal("off");
+                       parameters[CbcParam::DIVINGP]->setVal("on");
+                    }
+                    int extra4 = values[iValue - 1] + addFlags;
+                    parameters[CbcParam::EXTRA4]->setVal(extra4);
+                    buffer.str("");
+                    buffer << "switching on global root cuts for gomory and "
+                           << "knapsack" << std::endl;
+                    buffer << "using OSL factorization" << std::endl;
+                    buffer << "extra options - -rens on -extra4 " << extra4
+                           << " -passc 1000!" << std::endl;
+                    printGeneralMessage(model_, buffer.str());
+                    parameters[CbcParam::PROBINGCUTS]->setVal("forceOnStrong");
+                    probingMode = 8;
+                    parameters[CbcParam::GOMORYCUTS]->setVal("onGlobal");
+                    gomoryMode = 5;
+                    parameters[CbcParam::KNAPSACKCUTS]->setVal("onGlobal");
+                    knapsackMode = 5;
+                    clpParameters[ClpParam::FACTORIZATION]->setVal("osl");
+                    lpSolver->factorization()->forceOtherFactorization(3);
+                    parameters[CbcParam::MAXHOTITS]->setVal(100);
+                    parameters[CbcParam::CUTPASS]->setVal(1000);
+                    cutPass = 1000;
+                    parameters[CbcParam::RENS]->setVal("on");
+                 }
+              } else if (cbcParamCode == CbcParam::STRATEGY) {
+                 if (iValue == 0) {
+                    gomoryGen.setAwayAtRoot(0.05);
+                    parameters[CbcParam::DIVEOPT]->setVal(-1);
+                    parameters[CbcParam::FPUMPITS]->setVal(20);
+                    parameters[CbcParam::FPUMPTUNE]->setVal(1003);
+                    initialPumpTune = 1003;
+                    parameters[CbcParam::PROCESSTUNE]->setVal(0);
+                    tunePreProcess = 0;
+                    parameters[CbcParam::RINS]->setVal("off");
+                    // but not if cuts off
+                    if (parameters[CbcParam::CUTSTRATEGY]->modeVal()){
+                       parameters[CbcParam::PROBINGCUTS]->setVal("on");
+                       probingMode = 1;
+                    } else {
+                       parameters[CbcParam::PROBINGCUTS]->setVal("off");
+                       probingMode = 0;
+                    }
+                 }
               }
            }
-        } else if (clpParam->type() == CoinParam::paramKwd) { 
-           status = CoinParamUtils::getValue(inputQueue, field);
-           if (!clpParam->setVal(field, &message)){
-              clpParam->printOptions();
-           }else{
+        } else if (cbcParam->type() == CoinParam::paramKwd) {
+           if (status = cbcParam->readValue(inputQueue, field, &message)){
               printGeneralMessage(model_, message);
-              int mode = clpParam->kwdToMode(field);
-              // for now hard wired
-              switch (clpParamCode) {
-               case ClpParam::DUALPIVOT:
-                 if (mode == 0) {
-                    ClpDualRowSteepest steep(3);
-                    lpSolver->setDualRowPivotAlgorithm(steep);
-                 } else if (mode == 1) {
-                    ClpDualRowDantzig dantzig;
-                    // ClpDualRowSteepest dantzig(5);
-                    lpSolver->setDualRowPivotAlgorithm(dantzig);
-                 } else if (mode == 2) {
-                    // partial steep
-                    ClpDualRowSteepest steep(2);
-                    lpSolver->setDualRowPivotAlgorithm(steep);
-                 } else if (mode == 3) {
-                    ClpDualRowSteepest steep;
-                    lpSolver->setDualRowPivotAlgorithm(steep);
-                 } else if (mode == 4) {
-                    // Positive edge steepest
-                    ClpPEDualRowSteepest p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
-                    lpSolver->setDualRowPivotAlgorithm(p);
-                 } else if (mode == 5) {
-                    // Positive edge Dantzig
-                    ClpPEDualRowDantzig p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
-                    lpSolver->setDualRowPivotAlgorithm(p);
-                 }
-                 break;
-               case ClpParam::PRIMALPIVOT:
-                 if (mode == 0) {
-                    ClpPrimalColumnSteepest steep(3);
-                    lpSolver->setPrimalColumnPivotAlgorithm(steep);
-                 } else if (mode == 1) {
-                    ClpPrimalColumnSteepest steep(0);
-                    lpSolver->setPrimalColumnPivotAlgorithm(steep);
-                 } else if (mode == 2) {
-                    ClpPrimalColumnDantzig dantzig;
-                    lpSolver->setPrimalColumnPivotAlgorithm(dantzig);
-                 } else if (mode == 3) {
-                    ClpPrimalColumnSteepest steep(4);
-                    lpSolver->setPrimalColumnPivotAlgorithm(steep);
-                 } else if (mode == 4) {
-                    ClpPrimalColumnSteepest steep(1);
-                    lpSolver->setPrimalColumnPivotAlgorithm(steep);
-                 } else if (mode == 5) {
-                    ClpPrimalColumnSteepest steep(2);
-                    lpSolver->setPrimalColumnPivotAlgorithm(steep);
-                 } else if (mode == 6) {
-                    ClpPrimalColumnSteepest steep(10);
-                    lpSolver->setPrimalColumnPivotAlgorithm(steep);
-                 } else if (mode == 7) {
-                    // Positive edge steepest
-                    ClpPEPrimalColumnSteepest p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
-                    lpSolver->setPrimalColumnPivotAlgorithm(p);
-                 } else if (mode == 8) {
-                    // Positive edge Dantzig
-                    ClpPEPrimalColumnDantzig p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
-                    lpSolver->setPrimalColumnPivotAlgorithm(p);
-                 }
-                 break;
-               case ClpParam::SCALING:
-                 lpSolver->scaling(mode);
-                 solver->setHintParam(OsiDoScale, mode != 0, OsiHintTry);
-                 doScaling = mode;
-                 break;
-               case ClpParam::AUTOSCALE:
-                 lpSolver->setAutomaticScaling(mode != 0);
-                 break;
-               case ClpParam::SPARSEFACTOR:
-                 lpSolver->setSparseFactorization((1 - mode) != 0);
-                 break;
-               case ClpParam::BIASLU:
-                 lpSolver->factorization()->setBiasLU(mode);
-                 break;
-               case ClpParam::PERTURBATION:
-                 if (mode == 0)
-                    lpSolver->setPerturbation(50);
-                 else
-                    lpSolver->setPerturbation(100);
-                 break;
-               case ClpParam::KEEPNAMES:
-                 keepImportNames = 1 - mode;
-                 break;
-               case ClpParam::PRESOLVE:
-                 if (mode == 0)
-                    preSolve = 5;
-                 else if (mode == 1)
-                    preSolve = 0;
-                 else if (mode == 2)
-                    preSolve = 10;
-                 else
-                    preSolveFile = true;
-                 break;
-               case ClpParam::PFI:
-                 lpSolver->factorization()->setForrestTomlin(mode == 0);
-                 break;
-               case ClpParam::FACTORIZATION:
-                 lpSolver->factorization()->forceOtherFactorization(mode);
-                 break;
-               case ClpParam::CRASH:
-                 doCrash = mode;
-                 break;
-               case ClpParam::VECTOR:
-                 doVector = mode;
-                 break;
-               case ClpParam::MESSAGES:
-                 lpSolver->messageHandler()->setPrefix(mode != 0);
-                 break;
-               case ClpParam::CHOLESKY:
-                 choleskyType = mode;
-                 break;
-               case ClpParam::GAMMA:
-                 gamma = mode;
-                 break;
-               case ClpParam::BARRIERSCALE:
-                 scaleBarrier = mode;
-                 break;
-               case ClpParam::KKT:
-                 doKKT = mode;
-                 break;
-               case ClpParam::CROSSOVER:
-                 crossover = mode;
-                 break;
-               default:
-                 // abort();
-                 break;
+           }
+           if (cbcParam->setVal(field, &message)){
+              printGeneralMessage(model_, message);
+              continue;
+           }
+           int mode = cbcParam->modeVal();
+           // TODO: this should be part of the push method
+           switch (cbcParamCode) {
+            case CbcParam::DIRECTION:
+              if (mode == 0)
+                 lpSolver->setOptimizationDirection(1);
+              else if (mode == 1)
+                 lpSolver->setOptimizationDirection(-1);
+              else
+                 lpSolver->setOptimizationDirection(0);
+              break;
+            case CbcParam::ERRORSALLOWED:
+              allowImportErrors = mode;
+              break;
+            case CbcParam::INTPRINT:
+              printMode = mode;
+              break;
+              // case CbcParam::CLP_PARAM_NOTUSED_ALGORITHM:
+              // algorithm  = mode;
+              // defaultSettings=false; // user knows what she is doing
+              // abort();
+              // break;
+            case CbcParam::SOS:
+              doSOS = mode;
+              break;
+            case CbcParam::CLQSTRENGTHENING:
+              clqstrMode = field;
+              break;
+            case CbcParam::USECGRAPH:
+              cgraphMode = field;
+              break;
+            case CbcParam::CLIQUECUTS:
+              defaultSettings = false; // user knows what she is doing
+              cliqueMode = mode;
+              break;
+            case CbcParam::ODDWHEELCUTS:
+              defaultSettings = false; // user knows what she is doing
+              oddWheelMode = mode;
+              break;
+            case CbcParam::GOMORYCUTS:
+              defaultSettings = false; // user knows what she is doing
+              gomoryMode = mode;
+              break;
+            case CbcParam::PROBINGCUTS:
+              defaultSettings = false; // user knows what she is doing
+              probingMode = mode;
+              break;
+            case CbcParam::KNAPSACKCUTS:
+              defaultSettings = false; // user knows what she is doing
+              knapsackMode = mode;
+              break;
+            case CbcParam::REDSPLITCUTS:
+              defaultSettings = false; // user knows what she is doing
+              redsplitMode = mode;
+              break;
+            case CbcParam::REDSPLIT2CUTS:
+              defaultSettings = false; // user knows what she is doing
+              redsplit2Mode = mode;
+              break;
+            case CbcParam::GMICUTS:
+              defaultSettings = false; // user knows what she is doing
+              GMIMode = mode;
+              break;
+            case CbcParam::FLOWCUTS:
+              defaultSettings = false; // user knows what she is doing
+              flowMode = mode;
+              break;
+            case CbcParam::MIRCUTS:
+              defaultSettings = false; // user knows what she is doing
+              mixedMode = mode;
+              break;
+            case CbcParam::TWOMIRCUTS:
+              defaultSettings = false; // user knows what she is doing
+              twomirMode = mode;
+              break;
+            case CbcParam::LANDPCUTS:
+              defaultSettings = false; // user knows what she is doing
+              landpMode = mode;
+              break;
+            case CbcParam::RESIDCAPCUTS:
+              defaultSettings = false; // user knows what she is doing
+              residualCapacityMode = mode;
+              break;
+            case CbcParam::ZEROHALFCUTS:
+              defaultSettings = false; // user knows what she is doing
+              zerohalfMode = mode;
+              break;
+            case CbcParam::ROUNDING:
+              defaultSettings = false; // user knows what she is doing
+              break;
+            case CbcParam::FPUMP:
+              defaultSettings = false; // user knows what she is doing
+              break;
+            case CbcParam::RINS:
+              break;
+            case CbcParam::DINS:
+              break;
+            case CbcParam::RENS:
+              break;
+            case CbcParam::CUTSTRATEGY:
+              gomoryMode = mode;
+              probingMode = mode;
+              knapsackMode = mode;
+              cliqueMode = mode;
+              flowMode = mode;
+              mixedMode = mode;
+              twomirMode = mode;
+              zerohalfMode = mode;
+              oddWheelMode = mode;
+              parameters[CbcParam::GOMORYCUTS]->setVal(mode);
+              parameters[CbcParam::PROBINGCUTS]->setVal(mode);
+              parameters[CbcParam::KNAPSACKCUTS]->setVal(mode);
+              parameters[CbcParam::CLIQUECUTS]->setVal(mode);
+              parameters[CbcParam::FLOWCUTS]->setVal(mode);
+              parameters[CbcParam::MIRCUTS]->setVal(mode);
+              parameters[CbcParam::TWOMIRCUTS]->setVal(mode);
+              parameters[CbcParam::ZEROHALFCUTS]->setVal(mode);
+              parameters[CbcParam::ODDWHEELCUTS]->setVal(mode);
+              if (!mode) {
+                 // switch off clique strengthening
+                 clqstrMode = "off";
               }
+              break;
+            case CbcParam::HEURISTICSTRATEGY:
+              parameters[CbcParam::ROUNDING]->setVal(mode);
+              parameters[CbcParam::GREEDY]->setVal(mode);
+              parameters[CbcParam::COMBINE]->setVal(mode);
+              // parameters[CbcParam::LOCALTREE,numberParameters_,parameters)]->setVal(mode);
+              parameters[CbcParam::FPUMP]->setVal(mode);
+              parameters[CbcParam::DIVINGC]->setVal(mode);
+              parameters[CbcParam::RINS]->setVal(mode);
+              break;
+            case CbcParam::GREEDY:
+            case CbcParam::DIVINGS:
+            case CbcParam::DIVINGC:
+            case CbcParam::DIVINGF:
+            case CbcParam::DIVINGG:
+            case CbcParam::DIVINGL:
+            case CbcParam::DIVINGP:
+            case CbcParam::DIVINGV:
+            case CbcParam::COMBINE:
+            case CbcParam::PIVOTANDCOMPLEMENT:
+            case CbcParam::PIVOTANDFIX:
+            case CbcParam::RANDROUND:
+            case CbcParam::LOCALTREE:
+            case CbcParam::NAIVE:
+            case CbcParam::CPX:
+              defaultSettings = false; // user knows what she is doing
+              break;
+            case CbcParam::BRANCHPRIORITY:
+              useCosts = mode;
+              break;
+            case CbcParam::NODESTRATEGY:
+              nodeStrategy = mode;
+              break;
+            case CbcParam::PREPROCESS:
+              preProcess = mode;
+              break;
+            case CbcParam::TIMEMODE:
+              model_.setUseElapsedTime(mode != 0);
+              break;
+            default:
+              // abort();
+              break;
+           }
+        } else if (clpParam->type() == CoinParam::paramKwd) { 
+           if (status = clpParam->readValue(inputQueue, field, &message)){
+              printGeneralMessage(model_, message);
+              continue;
+           }
+           if (clpParam->setVal(field, &message)){
+              printGeneralMessage(model_, message);
+              continue;
+           }
+           int mode = clpParam->kwdToMode(field);
+           // for now hard wired
+           switch (clpParamCode) {
+            case ClpParam::DUALPIVOT:
+              if (mode == 0) {
+                 ClpDualRowSteepest steep(3);
+                 lpSolver->setDualRowPivotAlgorithm(steep);
+              } else if (mode == 1) {
+                 ClpDualRowDantzig dantzig;
+                 // ClpDualRowSteepest dantzig(5);
+                 lpSolver->setDualRowPivotAlgorithm(dantzig);
+              } else if (mode == 2) {
+                 // partial steep
+                 ClpDualRowSteepest steep(2);
+                 lpSolver->setDualRowPivotAlgorithm(steep);
+              } else if (mode == 3) {
+                 ClpDualRowSteepest steep;
+                 lpSolver->setDualRowPivotAlgorithm(steep);
+              } else if (mode == 4) {
+                 // Positive edge steepest
+                 ClpPEDualRowSteepest p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
+                 lpSolver->setDualRowPivotAlgorithm(p);
+              } else if (mode == 5) {
+                 // Positive edge Dantzig
+                 ClpPEDualRowDantzig p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
+                 lpSolver->setDualRowPivotAlgorithm(p);
+              }
+              break;
+            case ClpParam::PRIMALPIVOT:
+              if (mode == 0) {
+                 ClpPrimalColumnSteepest steep(3);
+                 lpSolver->setPrimalColumnPivotAlgorithm(steep);
+              } else if (mode == 1) {
+                 ClpPrimalColumnSteepest steep(0);
+                 lpSolver->setPrimalColumnPivotAlgorithm(steep);
+              } else if (mode == 2) {
+                 ClpPrimalColumnDantzig dantzig;
+                 lpSolver->setPrimalColumnPivotAlgorithm(dantzig);
+              } else if (mode == 3) {
+                 ClpPrimalColumnSteepest steep(4);
+                 lpSolver->setPrimalColumnPivotAlgorithm(steep);
+              } else if (mode == 4) {
+                 ClpPrimalColumnSteepest steep(1);
+                 lpSolver->setPrimalColumnPivotAlgorithm(steep);
+              } else if (mode == 5) {
+                 ClpPrimalColumnSteepest steep(2);
+                 lpSolver->setPrimalColumnPivotAlgorithm(steep);
+              } else if (mode == 6) {
+                 ClpPrimalColumnSteepest steep(10);
+                 lpSolver->setPrimalColumnPivotAlgorithm(steep);
+              } else if (mode == 7) {
+                 // Positive edge steepest
+                 ClpPEPrimalColumnSteepest p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
+                 lpSolver->setPrimalColumnPivotAlgorithm(p);
+              } else if (mode == 8) {
+                 // Positive edge Dantzig
+                 ClpPEPrimalColumnDantzig p(fabs(clpParameters[ClpParam::PSI]->dblVal()));
+                 lpSolver->setPrimalColumnPivotAlgorithm(p);
+              }
+              break;
+            case ClpParam::SCALING:
+              lpSolver->scaling(mode);
+              solver->setHintParam(OsiDoScale, mode != 0, OsiHintTry);
+              doScaling = mode;
+              break;
+            case ClpParam::AUTOSCALE:
+              lpSolver->setAutomaticScaling(mode != 0);
+              break;
+            case ClpParam::SPARSEFACTOR:
+              lpSolver->setSparseFactorization((1 - mode) != 0);
+              break;
+            case ClpParam::BIASLU:
+              lpSolver->factorization()->setBiasLU(mode);
+              break;
+            case ClpParam::PERTURBATION:
+              if (mode == 0)
+                 lpSolver->setPerturbation(50);
+              else
+                 lpSolver->setPerturbation(100);
+              break;
+            case ClpParam::KEEPNAMES:
+              keepImportNames = 1 - mode;
+              break;
+            case ClpParam::PRESOLVE:
+              if (mode == 0)
+                 preSolve = 5;
+              else if (mode == 1)
+                 preSolve = 0;
+              else if (mode == 2)
+                 preSolve = 10;
+              else
+                 preSolveFile = true;
+              break;
+            case ClpParam::PFI:
+              lpSolver->factorization()->setForrestTomlin(mode == 0);
+              break;
+            case ClpParam::FACTORIZATION:
+              lpSolver->factorization()->forceOtherFactorization(mode);
+              break;
+            case ClpParam::CRASH:
+              doCrash = mode;
+              break;
+            case ClpParam::VECTOR:
+              doVector = mode;
+              break;
+            case ClpParam::MESSAGES:
+              lpSolver->messageHandler()->setPrefix(mode != 0);
+              break;
+            case ClpParam::CHOLESKY:
+              choleskyType = mode;
+              break;
+            case ClpParam::GAMMA:
+              gamma = mode;
+              break;
+            case ClpParam::BARRIERSCALE:
+              scaleBarrier = mode;
+              break;
+            case ClpParam::KKT:
+              doKKT = mode;
+              break;
+            case ClpParam::CROSSOVER:
+              crossover = mode;
+              break;
+            default:
+              // abort();
+              break;
            }
         } else {
            // action
@@ -3352,40 +3335,38 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           case ClpParam::FAKEBOUND:
             if (goodModel) {
               // get bound
-              status = CoinParamUtils::getValue(inputQueue, dValue);
-              if (!status) {
-                buffer.str("");
-                buffer << "Setting " << clpParam->name().c_str() << " to DEBUG " << dValue;
-                printGeneralMessage(model_, buffer.str());
-                int iRow;
-                int numberRows = lpSolver->numberRows();
-                double *rowLower = lpSolver->rowLower();
-                double *rowUpper = lpSolver->rowUpper();
-                for (iRow = 0; iRow < numberRows; iRow++) {
-                  // leave free ones for now
-                  if (rowLower[iRow] > -1.0e20 || rowUpper[iRow] < 1.0e20) {
+              if (status = clpParam->readValue(inputQueue, dValue, &message)){
+                 std::cout << "Must enter value for " << clpParam->name()
+                           << std::endl;
+                 continue;
+              }
+              buffer.str("");
+              buffer << "Setting " << clpParam->name() << " to DEBUG " << dValue
+                     << std::endl;
+              printGeneralMessage(model_, buffer.str());
+              int iRow;
+              int numberRows = lpSolver->numberRows();
+              double *rowLower = lpSolver->rowLower();
+              double *rowUpper = lpSolver->rowUpper();
+              for (iRow = 0; iRow < numberRows; iRow++) {
+                 // leave free ones for now
+                 if (rowLower[iRow] > -1.0e20 || rowUpper[iRow] < 1.0e20) {
                     rowLower[iRow] = CoinMax(rowLower[iRow], -dValue);
                     rowUpper[iRow] = CoinMin(rowUpper[iRow], dValue);
-                  }
-                }
-                int iColumn;
-                int numberColumns = lpSolver->numberColumns();
-                double *columnLower = lpSolver->columnLower();
-                double *columnUpper = lpSolver->columnUpper();
-                for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                  // leave free ones for now
-                  if (columnLower[iColumn] > -1.0e20 ||
-                      columnUpper[iColumn] < 1.0e20) {
+                 }
+              }
+              int iColumn;
+              int numberColumns = lpSolver->numberColumns();
+              double *columnLower = lpSolver->columnLower();
+              double *columnUpper = lpSolver->columnUpper();
+              for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                 // leave free ones for now
+                 if (columnLower[iColumn] > -1.0e20 ||
+                     columnUpper[iColumn] < 1.0e20) {
                     columnLower[iColumn] =
-                        CoinMax(columnLower[iColumn], -dValue);
+                       CoinMax(columnLower[iColumn], -dValue);
                     columnUpper[iColumn] = CoinMin(columnUpper[iColumn], dValue);
-                  }
-                }
-              } else if (status == 1) {
-                abort();
-              } else {
-                std::cout << "enter value for "
-                          << clpParam->name() << std::endl;
+                 }
               }
             }
             break;
@@ -3420,7 +3401,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           case ClpParam::PARAMETRICS:
             if (goodModel) {
               // get next field
-              status = CoinParamUtils::getValue(inputQueue, field);
+              status = clpParam->readValue(inputQueue, field);
               if (field == "$") {
                 field = clpParam->strVal();
               } else if (field == "EOL") {
@@ -9093,7 +9074,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             // delete babModel_;
             // babModel_=NULL;
             // get next field
-            status = CoinParamUtils::getValue(inputQueue, field);
+            status = cbcParam->readValue(inputQueue, field);
             if (field == "$") {
               field = cbcParam->strVal();
             } else if (field == "EOL") {
@@ -10073,7 +10054,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           case CbcParam::PRINTMASK:
             // get next field
             {
-              status = CoinParamUtils::getValue(inputQueue, field);
+              status = cbcParam->readValue(inputQueue, field);
               if (field != "EOL") {
                 cbcParam->setVal(field);
               } else {
@@ -10223,7 +10204,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
             break;
           case CbcParam::DIRECTORY: {
-            status = CoinParamUtils::getValue(inputQueue, field);
+            status = cbcParam->readValue(inputQueue, field);
             if (field != "EOL") {
               std::string directory;
               size_t length = field.length();
@@ -10238,7 +10219,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
           } break;
           case CbcParam::DIRSAMPLE: {
-            status = CoinParamUtils::getValue(inputQueue, field);
+            status = cbcParam->readValue(inputQueue, field);
             if (field != "EOL") {
               std::string dirSample;
               size_t length = field.length();
@@ -10253,7 +10234,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
           } break;
           case CbcParam::DIRNETLIB: {
-            status = CoinParamUtils::getValue(inputQueue, field);
+            status = cbcParam->readValue(inputQueue, field);
             if (field != "EOL") {
               std::string dirNetlib;
               size_t length = field.length();
@@ -10268,7 +10249,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
           } break;
           case CbcParam::DIRMIPLIB: {
-            status = CoinParamUtils::getValue(inputQueue, field);
+            status = cbcParam->readValue(inputQueue, field);
             if (field != "EOL") {
               std::string dirMiplib;
               size_t length = field.length();

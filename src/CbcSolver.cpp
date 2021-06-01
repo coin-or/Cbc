@@ -2251,6 +2251,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
         } else if (cbcParam->type() == CoinParam::paramKwd) {
            if (status = cbcParam->readValue(inputQueue, field, &message)){
               printGeneralMessage(model_, message);
+              continue;
            }
            if (cbcParam->setVal(field, &message)){
               printGeneralMessage(model_, message);
@@ -2560,7 +2561,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
         } else {
            // action
            if (cbcParamCode == CbcParam::EXIT ||
-               clpParamCode == ClpParam::EXIT) {
+               cbcParamCode == CbcParam::STOP ||
+               cbcParamCode == CbcParam::QUIT ||
+               cbcParamCode == CbcParam::END) {
               if (statusUserFunction_[0]) {
                  if (info && (info->numberIntegers || info->numberBinary)) {
                     // integer

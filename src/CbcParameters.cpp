@@ -716,11 +716,28 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityNone);
   parameters_[CbcParam::ENVIRONMENT]->setPushFunc(CbcParamUtils::doNothingParam);
 
-  parameters_[CbcParam::EXIT]->setup(
+  parameters_[CbcParam::END]->setup(
       "end", "Stops execution",
       "This stops execution; end, exit, quit and stop are synonyms.",
       CoinParam::displayPriorityHigh);
-  parameters_[CbcParam::EXIT]->setPushFunc(CbcParamUtils::doExitParam);
+  parameters_[CbcParam::END]->setPushFunc(CbcParamUtils::doExitParam);
+
+#if 1
+  parameters_[CbcParam::QUIT]->setup("quit", "Stops cbc execution",
+      "This stops the execution of Cbc, end, exit, quit and stop are synonyms",
+      CoinParam::displayPriorityHigh);
+  parameters_[CbcParam::END]->setPushFunc(CbcParamUtils::doExitParam);
+
+  parameters_[CbcParam::EXIT]->setup("exit", "Stops cbc execution",
+      "This stops the execution of Cbc, end, exit, quit and stop are synonyms",
+      CoinParam::displayPriorityHigh);
+  parameters_[CbcParam::END]->setPushFunc(CbcParamUtils::doExitParam);
+
+  parameters_[CbcParam::STOP]->setup("stop", "Stops cbc execution",
+      "This stops the execution of Cbc, end, exit, quit and stop are synonyms",
+      CoinParam::displayPriorityHigh);
+  parameters_[CbcParam::END]->setPushFunc(CbcParamUtils::doExitParam);
+#endif
 
   parameters_[CbcParam::EXPORT]->setup(
       "export", "Export model as mps file",
@@ -922,7 +939,7 @@ void CbcParameters::addCbcSolverStrParams() {
   parameters_[CbcParam::DIRSAMPLE]->setup(
       "dirSample", "Set directory where the COIN-OR sample problems are.",
       "This sets the directory where the COIN-OR sample problems reside. It is "
-      "used only when -unitTest is passed to clp. clp will pick up the test "
+      "used only when -unitTest is passed to cbc. cbc will pick up the test "
       "problems from this directory. It is initialized to '../../Data/Sample'",
       CoinParam::displayPriorityLow);
   parameters_[CbcParam::DIRSAMPLE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
@@ -932,7 +949,7 @@ void CbcParameters::addCbcSolverStrParams() {
       "This sets the directory where the netlib problems reside. One can get "
       "the netlib problems from COIN-OR or from the main netlib site. This "
       "parameter is used only when -netlib is passed to cbc. cbc will pick up "
-      "the netlib problems from this directory. If clp is built without zlib "
+      "the netlib problems from this directory. If cbc is built without zlib "
       "support then the problems must be uncompressed. It is initialized to "
       "'../../Data/Netlib'",
       CoinParam::displayPriorityLow);
@@ -1591,7 +1608,7 @@ void CbcParameters::addCbcSolverBoolParams() {
 
   parameters_[CbcParam::MESSAGES]->setup(
       "mess!ages", "Controls whether standardised message prefix is printed",
-      "By default, messages have a standard prefix, such as:\n   Clp0005 2261  "
+      "By default, messages have a standard prefix, such as:\n   Cbc0005 2261  "
       "Objective 109.024 Primal infeas 944413 (758)\nbut this program turns "
       "this off to make it look more friendly.  It can be useful to turn them "
       "back on if you want to be able to 'grep' for particular messages or if "

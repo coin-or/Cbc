@@ -1514,7 +1514,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     }
 
     bool interactiveMode = false;
-    std::string field, message;
+    std::string field, message, fileName;
     int status, iValue;
     double dValue;
     std::string prompt = "Cbc: ";
@@ -2566,7 +2566,25 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               // abort();
               break;
            }
-        } else {
+        } else if (cbcParam->type() == CoinParam::paramDir){
+           if (status = cbcParam->readValue(inputQueue, field, &message)){
+              printGeneralMessage(model_, message);
+              continue;
+           }
+           if (cbcParam->setVal(field, &message)){
+              printGeneralMessage(model_, message);
+               continue;
+           }
+        } else if (cbcParam->type() == CoinParam::paramFile){
+           if (status = cbcParam->readValue(inputQueue, field, &message)){
+              printGeneralMessage(model_, message);
+              continue;
+           }
+           if (cbcParam->setVal(field, &message)){
+              printGeneralMessage(model_, message);
+               continue;
+           }
+        } else  {
            // action
            if (cbcParamCode == CbcParam::EXIT ||
                cbcParamCode == CbcParam::STOP ||
@@ -3174,7 +3192,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   fileName = field;
                 }
               } else {
-                fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
               }
               FILE *fp = fopen(fileName.c_str(), "r");
               if (fp) {
@@ -3231,7 +3249,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               } else {
                 clpParam->setVal(field);
               }
-              std::string fileName;
               bool canOpen = false;
               if (field == "-") {
                 // stdin
@@ -3250,7 +3267,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     fileName = field;
                   }
                 } else {
-                  fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+                  fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
                 }
                 FILE *fp = fopen(fileName.c_str(), "r");
                 if (fp) {
@@ -3292,7 +3309,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               } else {
                 clpParam->setVal(field);
               }
-              std::string fileName;
               bool canOpen = false;
               if (field[0] == '/' || field[0] == '\\') {
                 fileName = field;
@@ -3306,7 +3322,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   fileName = field;
                 }
               } else {
-                fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
               }
               FILE *fp = fopen(fileName.c_str(), "w");
               if (fp) {
@@ -3412,7 +3428,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           case ClpParam::PARAMETRICS:
             if (goodModel) {
               // get next field
-              status = clpParam->readValue(inputQueue, field);
+              status = clpParam->readValue(inputQueue, field, &message);
               if (field == "$") {
                 field = clpParam->strVal();
               } else if (field == "EOL") {
@@ -3421,7 +3437,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               } else {
                 clpParam->setVal(field);
               }
-              std::string fileName;
               // bool canOpen = false;
               if (field[0] == '/' || field[0] == '\\') {
                 fileName = field;
@@ -3435,7 +3450,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   fileName = field;
                 }
               } else {
-                fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
               }
               static_cast<ClpSimplexOther *>(lpSolver)->parametrics(
                   fileName.c_str());
@@ -4807,7 +4822,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                           const_cast<double *>(debugValues));
                     }
 #endif
-                    if (parameters[CbcParam::DEBUGFILE]->strVal() ==
+                    if (parameters[CbcParam::DEBUGFILE]->fileName() ==
                         "unitTest") {
                       //This is probably wrong, will need to debug
                       babModel_->solver()->activateRowCutDebugger(inputQueue[0].c_str());
@@ -8407,7 +8422,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 }
 #endif
                 std::string dirMiplib =
-                   parameters[CbcParam::DIRMIPLIB]->strVal();
+                   parameters[CbcParam::DIRMIPLIB]->dirName();
                 if (dirMiplib != ""){
                    int returnCode =
                       CbcClpUnitTest(model_, dirMiplib, extra2, stuff,
@@ -8423,7 +8438,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #ifndef CBC_OTHER_SOLVER
               osiclp =
                   dynamic_cast<OsiClpSolverInterface *>(babModel_->solver());
-              if (parameters[CbcParam::DEBUGFILE]->strVal() ==
+              if (parameters[CbcParam::DEBUGFILE]->fileName() ==
                   "createAfterPre" && babModel_->bestSolution()) {
                 lpSolver = osiclp->getModelPtr();
                 // move best solution (should be there -- but ..)
@@ -8882,7 +8897,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   lpSolver->clpMatrix()->times(1.0, bestSolution, rowSolution);
                   lpSolver->setObjectiveValue(babModel_->getObjValue());
                 }
-                if (parameters[CbcParam::DEBUGFILE]->strVal() ==
+                if (parameters[CbcParam::DEBUGFILE]->fileName() ==
                     "create" && bestSolution) {
                    ClpParamUtils::saveSolution(lpSolver, "debug.file");
                 }
@@ -9098,25 +9113,34 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             // delete babModel_;
             // babModel_=NULL;
             // get next field
-            status = cbcParam->readValue(inputQueue, field);
-            if (field == "$") {
-              field = cbcParam->strVal();
-            } else if (field == "EOL") {
-              std::cout << cbcParam->printString() << std::endl;
-              break;
-            } else {
-              cbcParam->setVal(field);
+            if (status = cbcParam->readValue(inputQueue, fileName, &message)){
+               printGeneralMessage(model_, message);
+               continue;
             }
-            std::string fileName;
+            // TODO Think about how to do this right
             bool canOpen = false;
+            if (fileName[0] != '/' && fileName[0] != '\\' &&
+                !strchr(fileName.c_str(), ':')) {
+               if (fileName[0] == '~') {
+                  char *environVar = getenv("HOME");
+                  if (environVar) {
+                     std::string home(environVar);
+                     fileName = fileName.erase(0, 1);
+                     fileName = home + fileName;
+                  } 
+               } else {
+                  fileName = parameters[CbcParam::DIRECTORY]->dirName() +
+                     fileName;
+               }
+            }
             // See if gmpl file
             int gmpl = 0;
             std::string gmplData;
-            if (field == "-" || field == "stdin") {
+            if (fileName == "-" || fileName == "stdin") {
               // stdin
               canOpen = true;
               fileName = "-";
-            } else if (field == "-lp" || field == "stdin_lp") {
+            } else if (fileName == "-lp" || fileName == "stdin_lp") {
               // stdin
               canOpen = true;
               fileName = "-";
@@ -9124,7 +9148,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             } else {
               // See if .lp
               {
-                const char *c_name = field.c_str();
+                const char *c_name = fileName.c_str();
                 size_t length = strlen(c_name);
                 if ((length > 3 && !strncmp(c_name + length - 3, ".lp", 3)) ||
                     (length > 6 &&
@@ -9135,23 +9159,22 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               bool absolutePath;
               if (dirsep == '/') {
                 // non Windows (or cygwin)
-                absolutePath = (field[0] == '/');
+                absolutePath = (fileName[0] == '/');
               } else {
                 // Windows (non cycgwin)
-                absolutePath = (field[0] == '\\');
+                absolutePath = (fileName[0] == '\\');
                 // but allow for :
-                if (strchr(field.c_str(), ':'))
+                if (strchr(fileName.c_str(), ':'))
                   absolutePath = true;
               }
               if (absolutePath) {
-                fileName = field;
-                size_t length = field.size();
-                size_t percent = field.find('%');
+                size_t length = fileName.size();
+                size_t percent = fileName.find('%');
                 if (percent < length && percent > 0) {
 #ifdef COINUTILS_HAS_GLPK
                   gmpl = 1;
-                  fileName = field.substr(0, percent);
-                  gmplData = field.substr(percent + 1);
+                  fileName = fileName.substr(0, percent);
+                  gmplData = fileName.substr(percent + 1);
                   if (percent < length - 1)
                     gmpl = 2; // two files
                   printf("GMPL model file %s and data file %s\n",
@@ -9163,25 +9186,17 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   abort();
 #endif
                 }
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
               } else {
-                fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
                 // See if gmpl (model & data) - or even lp file
-                size_t length = field.size();
-                size_t percent = field.find('%');
+                size_t length = fileName.size();
+                size_t percent = fileName.find('%');
                 if (percent < length && percent > 0) {
 #ifdef COINUTILS_HAS_GLPK
                   gmpl = 1;
-                  fileName = parameters[CbcParam::DIRECTORY]->strVal() + field.substr(0, percent);
-                  gmplData = parameters[CbcParam::DIRECTORY]->strVal() + field.substr(percent + 1);
+                  fileName = parameters[CbcParam::DIRECTORY]->dirName() +
+                     fileName.substr(0, percent);
+                  gmplData = parameters[CbcParam::DIRECTORY]->dirName() +
+                     fileName.substr(percent + 1);
                   if (percent < length - 1)
                     gmpl = 2; // two files
                   printf("GMPL model file %s and data file %s\n",
@@ -9194,8 +9209,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #endif
                 }
               }
-              std::string name = fileName;
-              if (fileCoinReadable(name)) {
+              if (fileCoinReadable(fileName)) {
                 // can open - lets go for it
                 canOpen = true;
                 if (gmpl == 2) {
@@ -9396,23 +9410,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           } break;
           case CbcParam::EXPORT:
             if (goodModel) {
-              parameters[CbcParam::EXPORTFILE]->getVal(field);
-              std::string fileName;
-              bool canOpen = false;
-              if (field[0] == '/' || field[0] == '\\') {
-                fileName = field;
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
-              } else {
-                fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+              parameters[CbcParam::EXPORTFILE]->getVal(fileName);
+              if (fileName[0] != '/' && fileName[0] != '\\' &&
+                  !strchr(fileName.c_str(), ':')) {
+                 fileName = parameters[CbcParam::DIRECTORY]->dirName() +
+                    fileName;
               }
+              bool canOpen = false;
               FILE *fp = fopen(fileName.c_str(), "w");
               if (fp) {
                 // can open - lets go for it
@@ -9595,7 +9599,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             if (goodModel) {
               // get next field
               parameters[CbcParam::PRIORITYFILE]->getVal(field);
-              std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
                 fileName = field;
               } else if (field[0] == '~') {
@@ -9608,7 +9611,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   fileName = field;
                 }
               } else {
-                fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
               }
               FILE *fp = fopen(fileName.c_str(), "r");
               if (fp) {
@@ -9962,7 +9965,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             if (goodModel) {
               parameters[CbcParam::MIPSTARTFILE]->getVal(field);
               mipStartFile = field;
-              std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
                 fileName = field;
               } else if (field[0] == '~') {
@@ -9975,7 +9977,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   fileName = field;
                 }
               } else {
-                fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
               }
               buffer.str("");
               buffer << "opening mipstart file " << fileName.c_str();
@@ -10011,7 +10013,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                  printf("debug will be done using file name of model\n");
                  break;
               }
-              std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
                 fileName = field;
               } else if (field[0] == '~') {
@@ -10024,7 +10025,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   fileName = field;
                 }
               } else {
-                fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
               }
               FILE *fp = fopen(fileName.c_str(), "rb");
               if (fp) {
@@ -10076,36 +10077,25 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
             break;
           case CbcParam::PRINTMASK:
-            // get next field
-            {
-              status = cbcParam->readValue(inputQueue, field);
-              if (field != "EOL") {
-                cbcParam->setVal(field);
-              } else {
-                std::cout << cbcParam->printString() << std::endl;
-              }
+            if (status = cbcParam->readValue(inputQueue, field, &message)){
+               printGeneralMessage(model_, message);
+               continue;
+            }
+            if (cbcParam->setVal(field, &message)){
+               printGeneralMessage(model_, message);
+               continue;
             }
             break;
             
           case CbcParam::WRITEMODEL:
             {
-              parameters[CbcParam::MODELFILE]->getVal(field);
-              std::string fileName;
-              bool canOpen = false;
-              if (field[0] == '/' || field[0] == '\\') {
-                 fileName = field;
-              } else if (field[0] == '~') {
-                 char *environVar = getenv("HOME");
-                 if (environVar) {
-                    std::string home(environVar);
-                    field = field.erase(0, 1);
-                    fileName = home + field;
-                 } else {
-                    fileName = field;
-                 }
-              } else {
-                 fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+              parameters[CbcParam::MODELFILE]->getVal(fileName);
+              if (fileName[0] != '/' && fileName[0] != '\\' &&
+                  !strchr(fileName.c_str(), ':')) {
+                 fileName = parameters[CbcParam::DIRECTORY]->dirName() +
+                    fileName;
               }
+              bool canOpen = false;
               FILE *fp = fopen(fileName.c_str(), "wb");
               if (fp) {
                  // can open - lets go for it
@@ -10158,24 +10148,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 
            case CbcParam::READMODEL: {
 
-            parameters[CbcParam::MODELFILE]->getVal(field);
-
-            std::string fileName;
-            bool canOpen = false;
-            if (field[0] == '/' || field[0] == '\\') {
-              fileName = field;
-            } else if (field[0] == '~') {
-              char *environVar = getenv("HOME");
-              if (environVar) {
-                std::string home(environVar);
-                field = field.erase(0, 1);
-                fileName = home + field;
-              } else {
-                fileName = field;
-              }
-            } else {
-              fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+            parameters[CbcParam::MODELFILE]->getVal(fileName);
+            if (fileName[0] != '/' && fileName[0] != '\\' &&
+                !strchr(fileName.c_str(), ':')) {
+               fileName = parameters[CbcParam::DIRECTORY]->dirName() + fileName;
             }
+            
+            bool canOpen = false;
             FILE *fp = fopen(fileName.c_str(), "rb");
             if (fp) {
               // can open - lets go for it
@@ -10227,66 +10206,18 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 dualRowSolution[iRow] = dualRowSolution[iRow];
             }
             break;
-          case CbcParam::DIRECTORY: {
-            status = cbcParam->readValue(inputQueue, field);
-            if (field != "EOL") {
-              std::string directory;
-              size_t length = field.length();
-              if (length > 0 && field[length - 1] == dirsep) {
-                directory = field;
-              } else {
-                directory = field + dirsep;
-              }
-              cbcParam->setVal(directory);
-            } else {
-              std::cout << cbcParam->printString() << std::endl;
+          case CbcParam::DIRSAMPLE: 
+          case CbcParam::DIRECTORY: 
+          case CbcParam::DIRNETLIB: 
+          case CbcParam::DIRMIPLIB: 
+            if (status = cbcParam->readValue(inputQueue, field, &message)){
+               printGeneralMessage(model_, message);
+               continue;
             }
-          } break;
-          case CbcParam::DIRSAMPLE: {
-            status = cbcParam->readValue(inputQueue, field);
-            if (field != "EOL") {
-              std::string dirSample;
-              size_t length = field.length();
-              if (length > 0 && field[length - 1] == dirsep) {
-                dirSample = field;
-              } else {
-                dirSample = field + dirsep;
-              }
-              cbcParam->setVal(dirSample);
-            } else {
-              std::cout << cbcParam->printString() << std::endl;
+            if (cbcParam->setVal(field, &message)){
+               printGeneralMessage(model_, message);
+               continue;
             }
-          } break;
-          case CbcParam::DIRNETLIB: {
-            status = cbcParam->readValue(inputQueue, field);
-            if (field != "EOL") {
-              std::string dirNetlib;
-              size_t length = field.length();
-              if (length > 0 && field[length - 1] == dirsep) {
-                dirNetlib = field;
-              } else {
-                dirNetlib = field + dirsep;
-              }
-              cbcParam->setVal(dirNetlib);
-            } else {
-              std::cout << cbcParam->printString() << std::endl;
-            }
-          } break;
-          case CbcParam::DIRMIPLIB: {
-            status = cbcParam->readValue(inputQueue, field);
-            if (field != "EOL") {
-              std::string dirMiplib;
-              size_t length = field.length();
-              if (length > 0 && field[length - 1] == dirsep) {
-                dirMiplib = field;
-              } else {
-                dirMiplib = field + dirsep;
-              }
-              cbcParam->setVal(dirMiplib);
-            } else {
-              std::cout << cbcParam->printString() << std::endl;
-            }
-          } break;
           case CbcParam::STDIN:
             interactiveMode = true;
             while (!inputQueue.empty())
@@ -10294,8 +10225,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             break;
           case CbcParam::UNITTEST: {
             int returnCode = -1;
-            std::string dirMiplib = parameters[CbcParam::DIRMIPLIB]->strVal();
-            std::string dirSample = parameters[CbcParam::DIRSAMPLE]->strVal();
+            std::string dirMiplib = parameters[CbcParam::DIRMIPLIB]->dirName();
+            std::string dirSample = parameters[CbcParam::DIRSAMPLE]->dirName();
             if (dirMiplib != ""){
               returnCode = CbcClpUnitTest(model_, dirMiplib, -3, NULL,
 					  saveInputQueue,callBack, parameters);
@@ -10412,7 +10343,6 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             break;
           case CbcParam::WRITESTATS: {
             parameters[CbcParam::CSVSTATSFILE]->getVal(field);
-            std::string fileName;
             if (field[0] == '/' || field[0] == '\\') {
               fileName = field;
             } else if (field[0] == '~') {
@@ -10425,7 +10355,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 fileName = field;
               }
             } else {
-              fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+              fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
             }
             int state = 0;
             // FIXME: This needs to fixed up to use modern C++ and to use the inputQueue properly
@@ -10510,7 +10440,6 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                  parameters[CbcParam::GMPLSOLFILE]->getVal(field);
               }
 
-              std::string fileName;
               FILE *fp = NULL;
               if (field == "-" || field == "EOL" || field == "stdout") {
                 // stdout
@@ -10542,7 +10471,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     fileName = field;
                   }
                 } else {
-                  fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+                  fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
                 }
                 if (!append)
                   fp = fopen(fileName.c_str(), "w");
@@ -11255,7 +11184,6 @@ clp watson.mps -\nscaling off\nprimalsimplex");
           case CbcParam::WRITESOL:
             if (goodModel) {
               parameters[CbcParam::SOLUTIONFILE]->getVal(field);
-              std::string fileName;
               if (field[0] == '/' || field[0] == '\\') {
                 fileName = field;
               } else if (field[0] == '~') {
@@ -11268,7 +11196,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   fileName = field;
                 }
               } else {
-                fileName = parameters[CbcParam::DIRECTORY]->strVal() + field;
+                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
               }
               ClpParamUtils::saveSolution(lpSolver, fileName);
             } else {

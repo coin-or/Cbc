@@ -87,22 +87,30 @@ public:
       WRITESTATS,
       LASTACTIONPARAM,
       
-      // String (Directory/File) Parameters
-      FIRSTSTRINGPARAM,
+      // File Parameters
+      FIRSTFILEPARAM,
       CSVSTATSFILE,
       DEBUGFILE,
-      DIRECTORY,
-      DIRSAMPLE,
-      DIRNETLIB,
-      DIRMIPLIB,
       EXPORTFILE,
       GMPLSOLFILE,
       MIPSTARTFILE,
       MODELFILE,
       NEXTSOLFILE,
-      PRINTMASK,
       PRIORITYFILE,
       SOLUTIONFILE,
+      LASTFILEPARAM,
+
+      // Directory Paramaters
+      FIRSTDIRECTORYPARAM,
+      DIRECTORY,
+      DIRSAMPLE,
+      DIRNETLIB,
+      DIRMIPLIB,
+      LASTDIRECTORYPARAM,
+
+      // String Parameters
+      FIRSTSTRINGPARAM,
+      PRINTMASK,
       LASTSTRINGPARAM,
       
       // Cut Parameters
@@ -364,9 +372,6 @@ public:
 
   /*! \brief Set the associated Cbc model object */
   inline void setModel(CbcModel *m) { model_ = m; }
-
-  /*! \brief A hacky function to print some information about string parameters */
-  std::string printString() const;
 
 //@}
 

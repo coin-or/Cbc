@@ -565,6 +565,8 @@ public:
   /*! set up the solver parameter vector */
   void addCbcParams();
   void addCbcSolverStrParams();
+  void addCbcSolverDirParams();
+  void addCbcSolverFileParams();
   void addCbcSolverHelpParams();
   void addCbcSolverActionParams();
   void addCbcSolverKwdParams();

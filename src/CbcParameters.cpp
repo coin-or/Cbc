@@ -307,6 +307,8 @@ int CbcParameters::matches(std::string field, int &numberMatches){
 void CbcParameters::addCbcParams() {
 
   addCbcSolverStrParams();
+  addCbcSolverDirParams();
+  addCbcSolverFileParams();
   addCbcSolverHelpParams();
   addCbcSolverActionParams();
   addCbcSolverKwdParams();
@@ -898,11 +900,56 @@ void CbcParameters::addCbcSolverActionParams() {
 //###########################################################################
 //###########################################################################
 
-void CbcParameters::addCbcSolverStrParams() {
+void CbcParameters::addCbcSolverDirParams() {
 
-  for (int code = CbcParam::FIRSTSTRINGPARAM + 1;
-       code < CbcParam::LASTSTRINGPARAM; code++) {
-    getParam(code)->setType(CoinParam::paramStr);
+  for (int code = CbcParam::FIRSTDIRECTORYPARAM + 1;
+       code < CbcParam::LASTDIRECTORYPARAM; code++) {
+    getParam(code)->setType(CoinParam::paramDir);
+  }
+
+  parameters_[CbcParam::DIRECTORY]->setup(
+      "directory", "Set Default directory for import etc.",
+      "This sets the directory which import, export, saveModel, restoreModel "
+      "etc. will use. It is initialized to the current directory.");
+  parameters_[CbcParam::DIRECTORY]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::DIRSAMPLE]->setup(
+      "dirSample", "Set directory where the COIN-OR sample problems are.",
+      "This sets the directory where the COIN-OR sample problems reside. It is "
+      "used only when -unitTest is passed to cbc. cbc will pick up the test "
+      "problems from this directory.", CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIRSAMPLE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::DIRNETLIB]->setup(
+      "dirNetlib", "Set directory where the netlib problems are.",
+      "This sets the directory where the netlib problems reside. One can get "
+      "the netlib problems from COIN-OR or from the main netlib site. This "
+      "parameter is used only when -netlib is passed to cbc. cbc will pick up "
+      "the netlib problems from this directory. If cbc is built without zlib "
+      "support then the problems must be uncompressed.",
+      CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIRNETLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::DIRMIPLIB]->setup(
+      "dirMiplib", "Set directory where the miplib 2003 problems are.",
+      "This sets the directory where the miplib 2003 problems reside. One can "
+      "get the miplib problems from COIN-OR or from the main miplib site. This "
+      "parameter is used only when -miplib is passed to cbc. cbc will pick up "
+      "the miplib problems from this directory. If cbc is built without zlib "
+      "support then the problems must be uncompressed.",
+      CoinParam::displayPriorityLow);
+  parameters_[CbcParam::DIRMIPLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcParameters::addCbcSolverFileParams() {
+
+  for (int code = CbcParam::FIRSTFILEPARAM + 1;
+       code < CbcParam::LASTFILEPARAM; code++) {
+    getParam(code)->setType(CoinParam::paramFile);
   }
 
   parameters_[CbcParam::CSVSTATSFILE]->setup(
@@ -929,42 +976,6 @@ void CbcParameters::addCbcSolverStrParams() {
       "effect as saveSolution.",
       CoinParam::displayPriorityNone);
   parameters_[CbcParam::DEBUG]->setPushFunc(CbcParamUtils::doDebugParam);
-
-  parameters_[CbcParam::DIRECTORY]->setup(
-      "directory", "Set Default directory for import etc.",
-      "This sets the directory which import, export, saveModel, restoreModel "
-      "etc. will use. It is initialized to the current directory.");
-  parameters_[CbcParam::DIRECTORY]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
-
-  parameters_[CbcParam::DIRSAMPLE]->setup(
-      "dirSample", "Set directory where the COIN-OR sample problems are.",
-      "This sets the directory where the COIN-OR sample problems reside. It is "
-      "used only when -unitTest is passed to cbc. cbc will pick up the test "
-      "problems from this directory. It is initialized to '../../Data/Sample'",
-      CoinParam::displayPriorityLow);
-  parameters_[CbcParam::DIRSAMPLE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
-
-  parameters_[CbcParam::DIRNETLIB]->setup(
-      "dirNetlib", "Set directory where the netlib problems are.",
-      "This sets the directory where the netlib problems reside. One can get "
-      "the netlib problems from COIN-OR or from the main netlib site. This "
-      "parameter is used only when -netlib is passed to cbc. cbc will pick up "
-      "the netlib problems from this directory. If cbc is built without zlib "
-      "support then the problems must be uncompressed. It is initialized to "
-      "'../../Data/Netlib'",
-      CoinParam::displayPriorityLow);
-  parameters_[CbcParam::DIRNETLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
-
-  parameters_[CbcParam::DIRMIPLIB]->setup(
-      "dirMiplib", "Set directory where the miplib 2003 problems are.",
-      "This sets the directory where the miplib 2003 problems reside. One can "
-      "get the miplib problems from COIN-OR or from the main miplib site. This "
-      "parameter is used only when -miplib is passed to cbc. cbc will pick up "
-      "the miplib problems from this directory. If cbc is built without zlib "
-      "support then the problems must be uncompressed. It is initialized to "
-      "'../../Data/miplib3'",
-      CoinParam::displayPriorityLow);
-  parameters_[CbcParam::DIRMIPLIB]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
   parameters_[CbcParam::EXPORTFILE]->setup(
       "exportF!ile", "sets name for file to export model to",
@@ -996,14 +1007,6 @@ void CbcParameters::addCbcSolverStrParams() {
       "This is initialized to 'next.sol'. ",
       CoinParam::displayPriorityHigh);
 
-  parameters_[CbcParam::PRINTMASK]->setup(
-      "printM!ask", "Control printing of solution with a regular expression",
-      "If set then only those names which match mask are printed in a "
-      "solution. '?' matches any character and '*' matches any set of "
-      "characters.  The default is '' (unset) so all variables are printed. "
-      "This is only active if model has names.");
-  parameters_[CbcParam::PRINTMASK]->setPushFunc(CbcParamUtils::doPrintMaskParam);
-
   parameters_[CbcParam::SOLUTIONFILE]->setup(
       "solutionF!ile", "sets name for file to store solution in",
       "This will set the name the solution will be saved to and read from. "
@@ -1019,6 +1022,26 @@ void CbcParameters::addCbcSolverStrParams() {
       "direction, up, down, solution.  Exactly one of name and number must be "
       "given.");
   parameters_[CbcParam::PRIORITYFILE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcParameters::addCbcSolverStrParams() {
+
+  for (int code = CbcParam::FIRSTSTRINGPARAM + 1;
+       code < CbcParam::LASTSTRINGPARAM; code++) {
+    getParam(code)->setType(CoinParam::paramStr);
+  }
+
+  parameters_[CbcParam::PRINTMASK]->setup(
+      "printM!ask", "Control printing of solution with a regular expression",
+      "If set then only those names which match mask are printed in a "
+      "solution. '?' matches any character and '*' matches any set of "
+      "characters.  The default is '' (unset) so all variables are printed. "
+      "This is only active if model has names.");
+  parameters_[CbcParam::PRINTMASK]->setPushFunc(CbcParamUtils::doPrintMaskParam);
+
 }
 
 //###########################################################################

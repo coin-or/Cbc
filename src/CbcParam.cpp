@@ -134,21 +134,6 @@ CbcParam::CbcParam(const CbcParam &orig)
 //###########################################################################
 //###########################################################################
 
-std::string CbcParam::printString() const {
-   std::ostringstream buffer;
-   if (name_ == "directory") {
-      buffer << "Current working directory is " << strValue_ << std::endl;
-   } else if (name_.substr(0, 6) == "printM") {
-      buffer << "Current value of printMask is " << strValue_ << std::endl;
-   } else {
-      buffer << "Current default (if $ as parameter) for " << name_ << " is "
-             << strValue_ << std::endl;
-   }
-   return buffer.str();
-}
-//###########################################################################
-//###########################################################################
-
 /*
   Clone
 */

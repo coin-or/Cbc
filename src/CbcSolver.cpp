@@ -1513,7 +1513,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
       // probingMode = 8;
     }
 
-    bool interactiveMode = false;
+    bool interactiveMode = false, canOpen;
     std::string field, message, fileName;
     int status, iValue;
     double dValue;
@@ -2607,158 +2607,163 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             case ClpParam::DUALSIMPLEX:
             case ClpParam::PRIMALSIMPLEX:
             case ClpParam::SOLVECONTINUOUS:
-            case ClpParam::BARRIER:
-              if (goodModel) {
-                // Say not in integer
-                integerStatus = -1;
-                double objScale = clpParameters[ClpParam::OBJSCALE2]->dblVal();
-                // deal with positive edge
-                double psi = clpParameters[ClpParam::PSI]->dblVal();
-                if (psi > 0.0) {
-                   ClpDualRowPivot *dualp = lpSolver->dualRowPivot();
-                   ClpDualRowSteepest *d1 =
-                      dynamic_cast<ClpDualRowSteepest *>(dualp);
-                   ClpDualRowDantzig *d2 =
-                      dynamic_cast<ClpDualRowDantzig *>(dualp);
-                   if (d1) {
-                      ClpPEDualRowSteepest p(psi, d1->mode());
-                      lpSolver->setDualRowPivotAlgorithm(p);
-                   } else if (d2) {
-                      ClpPEDualRowDantzig p(psi);
-                      lpSolver->setDualRowPivotAlgorithm(p);
-                   }
-                   ClpPrimalColumnPivot *primalp = lpSolver->primalColumnPivot();
-                   ClpPrimalColumnSteepest *p1 =
-                      dynamic_cast<ClpPrimalColumnSteepest *>(primalp);
-                   ClpPrimalColumnDantzig *p2 =
-                      dynamic_cast<ClpPrimalColumnDantzig *>(primalp);
-                   if (p1) {
-                      ClpPEPrimalColumnSteepest p(psi, p1->mode());
-                      lpSolver->setPrimalColumnPivotAlgorithm(p);
-                   } else if (p2) {
-                      ClpPEPrimalColumnDantzig p(psi);
-                      lpSolver->setPrimalColumnPivotAlgorithm(p);
-                   }
-                }
-                if (objScale != 1.0) {
-                   int iColumn;
-                   int numberColumns = lpSolver->numberColumns();
-                   double *dualColumnSolution = lpSolver->dualColumnSolution();
-                   ClpObjective *obj = lpSolver->objectiveAsObject();
-                   assert(dynamic_cast<ClpLinearObjective *>(obj));
-                   double offset;
-                   double *objective = obj->gradient(NULL, NULL, offset, true);
-                   for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                      dualColumnSolution[iColumn] *= objScale;
-                      objective[iColumn] *= objScale;
-                      ;
-                   }
-                   int iRow;
-                   int numberRows = lpSolver->numberRows();
-                   double *dualRowSolution = lpSolver->dualRowSolution();
-                   for (iRow = 0; iRow < numberRows; iRow++)
-                      dualRowSolution[iRow] *= objScale;
-                   lpSolver->setObjectiveOffset(objScale *
-                                                lpSolver->objectiveOffset());
-                }
-                ClpSolve::SolveType method;
-                ClpSolve::PresolveType presolveType;
-                ClpSimplex *model2 = lpSolver;
-                if (dualize) {
-                   bool tryIt = true;
-                   double fractionColumn = 1.0;
-                   double fractionRow = 1.0;
-                   if (dualize == 3) {
-                      dualize = 1;
-                      int numberColumns = lpSolver->numberColumns();
-                      int numberRows = lpSolver->numberRows();
-                      if (numberRows < 50000 || 5 * numberColumns > numberRows) {
-                         tryIt = false;
-                      } else {
-                         fractionColumn = 0.1;
-                         fractionRow = 0.1;
-                      }
-                   }
-                   if (tryIt) {
-                      model2 = static_cast<ClpSimplexOther *>(model2)->dualOfModel(
-                                                          fractionRow, fractionColumn);
-                      if (model2) {
-                         buffer.str("");
-                         buffer << "Dual of model has " << model2->numberRows()
-                                << " rows and " << model2->numberColumns()
-                                << " columns";
-                         printGeneralMessage(model_, buffer.str());
-                         model2->setOptimizationDirection(1.0);
-                      } else {
-                         model2 = lpSolver;
-                         dualize = 0;
-                      }
-                   } else {
-                      dualize = 0;
-                   }
-                }
-                if (parameters.noPrinting()){
-                   lpSolver->setLogLevel(0);
-                }
-                ClpSolve solveOptions;
-                solveOptions.setPresolveActions(presolveOptions);
-                solveOptions.setSubstitution(substitution);
-                if (preSolve != 5 && preSolve) {
-                   presolveType = ClpSolve::presolveNumber;
-                   if (preSolve < 0) {
-                      preSolve = -preSolve;
-                      if (preSolve <= 100) {
-                         presolveType = ClpSolve::presolveNumber;
-                         buffer.str("");
-                         buffer << "Doing " << preSolve
-                                << " presolve passes - picking up non-costed slacks";
-                         printGeneralMessage(model_, buffer.str());
-                         solveOptions.setDoSingletonColumn(true);
-                      } else {
-                         preSolve -= 100;
-                         presolveType = ClpSolve::presolveNumberCost;
-                         buffer.str("");
-                         buffer << "Doing " << preSolve
-                                << " presolve passes - picking up non-costed slacks";
-                         printGeneralMessage(model_, buffer.str());
-                       }
-                   }
-                } else if (preSolve) {
-                   presolveType = ClpSolve::presolveOn;
-                } else {
-                   presolveType = ClpSolve::presolveOff;
-                }
-                solveOptions.setPresolveType(presolveType, preSolve);
-                if (clpParamCode == ClpParam::DUALSIMPLEX ||
-                    clpParamCode == ClpParam::SOLVECONTINUOUS) {
-                   method = ClpSolve::useDual;
-                } else if (clpParamCode == ClpParam::PRIMALSIMPLEX) {
-                   method = ClpSolve::usePrimalorSprint;
-                } else {
-                   method = ClpSolve::useBarrier;
-                   if (crossover == 1) {
-                      method = ClpSolve::useBarrierNoCross;
-                   } else if (crossover == 2) {
-                      ClpObjective *obj = lpSolver->objectiveAsObject();
-                      if (obj->type() > 1) {
-                         method = ClpSolve::useBarrierNoCross;
-                         presolveType = ClpSolve::presolveOff;
-                         solveOptions.setPresolveType(presolveType, preSolve);
-                      }
-                   }
-                }
-                solveOptions.setSolveType(method);
-                if (preSolveFile)
-                   presolveOptions |= 0x40000000;
-                solveOptions.setSpecialOption(4, presolveOptions);
-                solveOptions.setSpecialOption(5, printOptions);
-                if (doVector) {
-                   ClpMatrixBase *matrix = lpSolver->clpMatrix();
-                   if (dynamic_cast<ClpPackedMatrix *>(matrix)) {
-                      ClpPackedMatrix *clpMatrix =
-                         dynamic_cast<ClpPackedMatrix *>(matrix);
-                      clpMatrix->makeSpecialColumnCopy();
-                   }
+            case ClpParam::BARRIER:{
+              if (!goodModel) {
+               buffer.str("");
+               buffer << "** Current model not valid";
+               printGeneralMessage(model_, buffer.str());
+               continue;
+              }
+              // Say not in integer
+              integerStatus = -1;
+              double objScale = clpParameters[ClpParam::OBJSCALE2]->dblVal();
+              // deal with positive edge
+              double psi = clpParameters[ClpParam::PSI]->dblVal();
+              if (psi > 0.0) {
+                 ClpDualRowPivot *dualp = lpSolver->dualRowPivot();
+                 ClpDualRowSteepest *d1 =
+                    dynamic_cast<ClpDualRowSteepest *>(dualp);
+                 ClpDualRowDantzig *d2 =
+                    dynamic_cast<ClpDualRowDantzig *>(dualp);
+                 if (d1) {
+                    ClpPEDualRowSteepest p(psi, d1->mode());
+                    lpSolver->setDualRowPivotAlgorithm(p);
+                 } else if (d2) {
+                    ClpPEDualRowDantzig p(psi);
+                    lpSolver->setDualRowPivotAlgorithm(p);
+                 }
+                 ClpPrimalColumnPivot *primalp = lpSolver->primalColumnPivot();
+                 ClpPrimalColumnSteepest *p1 =
+                    dynamic_cast<ClpPrimalColumnSteepest *>(primalp);
+                 ClpPrimalColumnDantzig *p2 =
+                    dynamic_cast<ClpPrimalColumnDantzig *>(primalp);
+                 if (p1) {
+                    ClpPEPrimalColumnSteepest p(psi, p1->mode());
+                    lpSolver->setPrimalColumnPivotAlgorithm(p);
+                 } else if (p2) {
+                    ClpPEPrimalColumnDantzig p(psi);
+                    lpSolver->setPrimalColumnPivotAlgorithm(p);
+                 }
+              }
+              if (objScale != 1.0) {
+                 int iColumn;
+                 int numberColumns = lpSolver->numberColumns();
+                 double *dualColumnSolution = lpSolver->dualColumnSolution();
+                 ClpObjective *obj = lpSolver->objectiveAsObject();
+                 assert(dynamic_cast<ClpLinearObjective *>(obj));
+                 double offset;
+                 double *objective = obj->gradient(NULL, NULL, offset, true);
+                 for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                    dualColumnSolution[iColumn] *= objScale;
+                    objective[iColumn] *= objScale;
+                    ;
+                 }
+                 int iRow;
+                 int numberRows = lpSolver->numberRows();
+                 double *dualRowSolution = lpSolver->dualRowSolution();
+                 for (iRow = 0; iRow < numberRows; iRow++)
+                    dualRowSolution[iRow] *= objScale;
+                 lpSolver->setObjectiveOffset(objScale *
+                                              lpSolver->objectiveOffset());
+              }
+              ClpSolve::SolveType method;
+              ClpSolve::PresolveType presolveType;
+              ClpSimplex *model2 = lpSolver;
+              if (dualize) {
+                 bool tryIt = true;
+                 double fractionColumn = 1.0;
+                 double fractionRow = 1.0;
+                 if (dualize == 3) {
+                    dualize = 1;
+                    int numberColumns = lpSolver->numberColumns();
+                    int numberRows = lpSolver->numberRows();
+                    if (numberRows < 50000 || 5 * numberColumns > numberRows) {
+                       tryIt = false;
+                    } else {
+                       fractionColumn = 0.1;
+                       fractionRow = 0.1;
+                    }
+                 }
+                 if (tryIt) {
+                    model2 = static_cast<ClpSimplexOther *>(model2)->dualOfModel(
+                                                                                 fractionRow, fractionColumn);
+                    if (model2) {
+                       buffer.str("");
+                       buffer << "Dual of model has " << model2->numberRows()
+                              << " rows and " << model2->numberColumns()
+                              << " columns";
+                       printGeneralMessage(model_, buffer.str());
+                       model2->setOptimizationDirection(1.0);
+                    } else {
+                       model2 = lpSolver;
+                       dualize = 0;
+                    }
+                 } else {
+                    dualize = 0;
+                 }
+              }
+              if (parameters.noPrinting()){
+                 lpSolver->setLogLevel(0);
+              }
+              ClpSolve solveOptions;
+              solveOptions.setPresolveActions(presolveOptions);
+              solveOptions.setSubstitution(substitution);
+              if (preSolve != 5 && preSolve) {
+                 presolveType = ClpSolve::presolveNumber;
+                 if (preSolve < 0) {
+                    preSolve = -preSolve;
+                    if (preSolve <= 100) {
+                       presolveType = ClpSolve::presolveNumber;
+                       buffer.str("");
+                       buffer << "Doing " << preSolve
+                              << " presolve passes - picking up non-costed slacks";
+                       printGeneralMessage(model_, buffer.str());
+                       solveOptions.setDoSingletonColumn(true);
+                    } else {
+                       preSolve -= 100;
+                       presolveType = ClpSolve::presolveNumberCost;
+                       buffer.str("");
+                       buffer << "Doing " << preSolve
+                              << " presolve passes - picking up non-costed slacks";
+                       printGeneralMessage(model_, buffer.str());
+                    }
+                 }
+              } else if (preSolve) {
+                 presolveType = ClpSolve::presolveOn;
+              } else {
+                 presolveType = ClpSolve::presolveOff;
+              }
+              solveOptions.setPresolveType(presolveType, preSolve);
+              if (clpParamCode == ClpParam::DUALSIMPLEX ||
+                  clpParamCode == ClpParam::SOLVECONTINUOUS) {
+                 method = ClpSolve::useDual;
+              } else if (clpParamCode == ClpParam::PRIMALSIMPLEX) {
+                 method = ClpSolve::usePrimalorSprint;
+              } else {
+                 method = ClpSolve::useBarrier;
+                 if (crossover == 1) {
+                    method = ClpSolve::useBarrierNoCross;
+                 } else if (crossover == 2) {
+                    ClpObjective *obj = lpSolver->objectiveAsObject();
+                    if (obj->type() > 1) {
+                       method = ClpSolve::useBarrierNoCross;
+                       presolveType = ClpSolve::presolveOff;
+                       solveOptions.setPresolveType(presolveType, preSolve);
+                    }
+                 }
+              }
+              solveOptions.setSolveType(method);
+              if (preSolveFile)
+                 presolveOptions |= 0x40000000;
+              solveOptions.setSpecialOption(4, presolveOptions);
+              solveOptions.setSpecialOption(5, printOptions);
+              if (doVector) {
+                 ClpMatrixBase *matrix = lpSolver->clpMatrix();
+                 if (dynamic_cast<ClpPackedMatrix *>(matrix)) {
+                    ClpPackedMatrix *clpMatrix =
+                       dynamic_cast<ClpPackedMatrix *>(matrix);
+                    clpMatrix->makeSpecialColumnCopy();
+                 }
               }
               if (method == ClpSolve::useDual) {
                 // dual
@@ -3047,56 +3052,51 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                    delete basis;
                 }
               }
-            } else {
-               buffer.str("");
-               buffer << "** Current model not valid";
-               printGeneralMessage(model_, buffer.str());
-            }
-            break;
-          case ClpParam::TIGHTEN:
-            if (goodModel) {
-              int numberInfeasibilities = lpSolver->tightenPrimalBounds();
-              if (numberInfeasibilities) {
-                buffer.str("");
-                buffer << "** Analysis indicates model infeasible";
-                printGeneralMessage(model_, buffer.str());
-              }
-            } else {
+            } break;
+          case ClpParam::TIGHTEN:{
+            if (!goodModel) {
               buffer.str("");
               buffer << "** Current model not valid";
               printGeneralMessage(model_, buffer.str());
+              continue;
             }
-            break;
-          case ClpParam::PLUSMINUS:
+            int numberInfeasibilities = lpSolver->tightenPrimalBounds();
+            if (numberInfeasibilities) {
+               buffer.str("");
+               buffer << "** Analysis indicates model infeasible";
+               printGeneralMessage(model_, buffer.str());
+            }
+          } break;
+          case ClpParam::PLUSMINUS:{
             if (goodModel) {
-              ClpMatrixBase *saveMatrix = lpSolver->clpMatrix();
-              ClpPackedMatrix *clpMatrix =
-                  dynamic_cast<ClpPackedMatrix *>(saveMatrix);
-              if (clpMatrix) {
-                ClpPlusMinusOneMatrix *newMatrix =
-                    new ClpPlusMinusOneMatrix(*(clpMatrix->matrix()));
-                if (newMatrix->getIndices()) {
+               buffer.str("");
+               buffer << "** Current model not valid";
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
+            ClpMatrixBase *saveMatrix = lpSolver->clpMatrix();
+            ClpPackedMatrix *clpMatrix =
+               dynamic_cast<ClpPackedMatrix *>(saveMatrix);
+            if (clpMatrix) {
+               ClpPlusMinusOneMatrix *newMatrix =
+                  new ClpPlusMinusOneMatrix(*(clpMatrix->matrix()));
+               if (newMatrix->getIndices()) {
                   lpSolver->replaceMatrix(newMatrix);
                   delete saveMatrix;
                   buffer.str("");
                   buffer << "Matrix converted to +- one matrix";
                   printGeneralMessage(model_, buffer.str());
-                } else {
+               } else {
                   buffer.str("");
                   buffer << "Matrix can not be converted to +- 1 matrix";
                   printGeneralMessage(model_, buffer.str());
-                }
-              } else {
-                buffer.str("");
-                buffer << "Matrix not a ClpPackedMatrix";
-                printGeneralMessage(model_, buffer.str());
-              }
+               }
             } else {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+               buffer.str("");
+               buffer << "Matrix not a ClpPackedMatrix";
+               printGeneralMessage(model_, buffer.str());
             }
-            break;
+          }break;
           case ClpParam::OUTDUPROWS:
             dominatedCuts = true;
 #ifdef JJF_ZERO
@@ -3118,236 +3118,175 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
 #endif
             break;
-          case ClpParam::NETWORK:
-            if (goodModel) {
-              ClpMatrixBase *saveMatrix = lpSolver->clpMatrix();
-              ClpPackedMatrix *clpMatrix =
-                  dynamic_cast<ClpPackedMatrix *>(saveMatrix);
-              if (clpMatrix) {
-                ClpNetworkMatrix *newMatrix =
-                    new ClpNetworkMatrix(*(clpMatrix->matrix()));
-                if (newMatrix->getIndices()) {
+            case ClpParam::NETWORK:{
+            if (!goodModel) {
+               buffer.str("");
+               buffer << "** Current model not valid";
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
+            ClpMatrixBase *saveMatrix = lpSolver->clpMatrix();
+            ClpPackedMatrix *clpMatrix =
+               dynamic_cast<ClpPackedMatrix *>(saveMatrix);
+            if (clpMatrix) {
+               ClpNetworkMatrix *newMatrix =
+                  new ClpNetworkMatrix(*(clpMatrix->matrix()));
+               if (newMatrix->getIndices()) {
                   lpSolver->replaceMatrix(newMatrix);
                   delete saveMatrix;
                   buffer.str("");
                   buffer << "Matrix converted to network matrix";
                   printGeneralMessage(model_, buffer.str());
-                } else {
+               } else {
                   buffer.str("");
                   buffer << "Matrix can not be converted to network matrix";
                   printGeneralMessage(model_, buffer.str());
-                }
-              } else {
-                buffer.str("");
-                buffer << "Matrix not a ClpPackedMatrix";
-                printGeneralMessage(model_, buffer.str());
-              }
+               }
             } else {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+               buffer.str("");
+               buffer << "Matrix not a ClpPackedMatrix";
+               printGeneralMessage(model_, buffer.str());
             }
-            break;
+            }break;
           case ClpParam::MODELIN:
 #ifndef CBC_OTHER_SOLVER
 #ifdef COIN_HAS_LINK
           {
-             // get next field
-            field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
-            if (field == "$") {
-              field = clpParam->strVal();
-            } else if (field == "EOL") {
+            if (status = clpParam->readValue(inputQueue, fileName, &message)){
+               printGeneralMessage(model_, message);
+               continue;
+            }
+            if (fileName == "$") {
+              fileName = clpParam->strVal();
+            } else if (fileName == "EOL") {
               clpParam->printString();
               break;
             } else {
-              clpParam->setVal(field);
+              clpParam->setVal(fileName);
             }
-            std::string fileName;
-            bool canOpen = false;
-            if (field == "-") {
+            if (fileName == "-") {
               // stdin
               canOpen = true;
-              fileName = "-";
             } else {
-              bool absolutePath;
-              if (dirsep == '/') {
-                // non Windows (or cygwin)
-                absolutePath = (field[0] == '/');
-              } else {
-                // Windows (non cycgwin)
-                absolutePath = (field[0] == '\\');
-                // but allow for :
-                if (strchr(field.c_str(), ':'))
-                  absolutePath = true;
-              }
-              if (absolutePath) {
-                fileName = field;
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
-              } else {
-                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
-              }
-              FILE *fp = fopen(fileName.c_str(), "r");
-              if (fp) {
-                // can open - lets go for it
-                fclose(fp);
-                canOpen = true;
-              } else {
-                buffer.str("");
-                buffer << "Unable to open file " << fileName.c_str();
-                printGeneralMessage(model_, buffer.str());
-              }
+              CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                          &canOpen);
             }
-            if (canOpen) {
-              CoinModel coinModel(fileName.c_str(), 2);
-              // load from coin model
-              OsiSolverLink solver1;
-              OsiSolverInterface *solver2 = solver1.clone();
-              model_.assignSolver(solver2, false);
-              OsiSolverLink *si =
-                  dynamic_cast<OsiSolverLink *>(model_.solver());
-              assert(si != NULL);
-              si->setDefaultMeshSize(0.001);
-              // need some relative granularity
-              si->setDefaultBound(100.0);
-              double dextra3 = parameters[CbcParam::DEXTRA3]->dblVal();
-              if (dextra3)
-                si->setDefaultMeshSize(dextra3);
-              si->setDefaultBound(100.0);
-              si->setIntegerPriority(1000);
-              si->setBiLinearPriority(10000);
-              CoinModel *model2 = &coinModel;
-              si->load(*model2);
-              // redo
-              solver = model_.solver();
-              clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
-              lpSolver = clpSolver->getModelPtr();
-              clpSolver->messageHandler()->setLogLevel(0);
-              testOsiParameters = 0;
-              complicatedInteger = 2;
+            if (!canOpen) {
+               buffer.str("");
+               buffer << "Unable to open file " << fileName.c_str();
+               printGeneralMessage(model_, buffer.str());
+               continue;
             }
+            CoinModel coinModel(fileName.c_str(), 2);
+            // load from coin model
+            OsiSolverLink solver1;
+            OsiSolverInterface *solver2 = solver1.clone();
+            model_.assignSolver(solver2, false);
+            OsiSolverLink *si =
+               dynamic_cast<OsiSolverLink *>(model_.solver());
+            assert(si != NULL);
+            si->setDefaultMeshSize(0.001);
+            // need some relative granularity
+            si->setDefaultBound(100.0);
+            double dextra3 = parameters[CbcParam::DEXTRA3]->dblVal();
+            if (dextra3)
+               si->setDefaultMeshSize(dextra3);
+            si->setDefaultBound(100.0);
+            si->setIntegerPriority(1000);
+            si->setBiLinearPriority(10000);
+            CoinModel *model2 = &coinModel;
+            si->load(*model2);
+            // redo
+            solver = model_.solver();
+            clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+            lpSolver = clpSolver->getModelPtr();
+            clpSolver->messageHandler()->setLogLevel(0);
+            testOsiParameters = 0;
+            complicatedInteger = 2;
           }
 #endif
 #endif
           break;
-          case ClpParam::BASISIN:
-            if (goodModel) {
-              // get next field
-              field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
-              if (field == "$") {
-                field = clpParam->strVal();
-              } else if (field == "EOL") {
-                clpParam->printString();
-                break;
-              } else {
-                clpParam->setVal(field);
-              }
-              bool canOpen = false;
-              if (field == "-") {
-                // stdin
-                canOpen = true;
-                fileName = "-";
-              } else {
-                if (field[0] == '/' || field[0] == '\\') {
-                  fileName = field;
-                } else if (field[0] == '~') {
-                  char *environVar = getenv("HOME");
-                  if (environVar) {
-                    std::string home(environVar);
-                    field = field.erase(0, 1);
-                    fileName = home + field;
-                  } else {
-                    fileName = field;
-                  }
-                } else {
-                  fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
-                }
-                FILE *fp = fopen(fileName.c_str(), "r");
-                if (fp) {
-                  // can open - lets go for it
-                  fclose(fp);
-                  canOpen = true;
-                } else {
-                  buffer.str("");
-                  buffer << "Unable to open file " << fileName.c_str();
-                  printGeneralMessage(model_, buffer.str());
-                }
-              }
-              if (canOpen) {
+          case ClpParam::BASISIN:{
+            if (!goodModel){
+               buffer.str("");
+               buffer << "** Current model not valid";
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
+            if (status = clpParam->readValue(inputQueue, fileName,
+                                             &message)){
+               printGeneralMessage(model_, message);
+               continue;
+            }
+            if (fileName == "$") {
+               fileName = clpParam->strVal();
+            } else if (fileName == "EOL") {
+               clpParam->printString();
+               break;
+            } else {
+               clpParam->setVal(fileName);
+            }
+            if (fileName == "-") {
+               // stdin
+               canOpen = true;
+            } else {
+               CoinParamUtils::processFile(fileName,
+                                           parameters[CbcParam::DIRECTORY]->dirName(),
+                                           &canOpen);
+            }
+            if (!canOpen) {
+               buffer.str("");
+               buffer << "Unable to open file " << fileName.c_str();
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
 #ifndef CBC_OTHER_SOLVER
-                int values = lpSolver->readBasis(fileName.c_str());
-                if (values == 0)
-                  basisHasValues = -1;
-                else
-                  basisHasValues = 1;
-                assert(lpSolver == clpSolver->getModelPtr());
-                clpSolver->setWarmStart(NULL);
+            int values = lpSolver->readBasis(fileName.c_str());
+            if (values == 0)
+               basisHasValues = -1;
+            else
+               basisHasValues = 1;
+            assert(lpSolver == clpSolver->getModelPtr());
+            clpSolver->setWarmStart(NULL);
 #endif
-              }
-            } else {
+          } break;
+          case ClpParam::BASISOUT:{
+            if (!goodModel){
               buffer.str("");
               buffer << "** Current model not valid";
               printGeneralMessage(model_, buffer.str());
+              continue;
             }
-            break;
-          case ClpParam::BASISOUT:
-            if (goodModel) {
-              // get next field
-              field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
-              if (field == "$") {
-                field = clpParam->strVal();
-              } else if (field == "EOL") {
-                clpParam->printString();
-                break;
-              } else {
-                clpParam->setVal(field);
-              }
-              bool canOpen = false;
-              if (field[0] == '/' || field[0] == '\\') {
-                fileName = field;
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
-              } else {
-                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
-              }
-              FILE *fp = fopen(fileName.c_str(), "w");
-              if (fp) {
-                // can open - lets go for it
-                fclose(fp);
-                canOpen = true;
-              } else {
-                buffer.str("");
-                buffer << "Unable to open file " << fileName.c_str();
-                printGeneralMessage(model_, buffer.str());
-              }
-              if (canOpen) {
-                ClpSimplex *model2 = lpSolver;
-                model2->writeBasis(fileName.c_str(), outputFormat > 1,
-                                   outputFormat - 2);
-                time2 = CoinCpuTime();
-                totalTime += time2 - time1;
-                time1 = time2;
-              }
+            if (status = clpParam->readValue(inputQueue, fileName, &message)){
+               printGeneralMessage(model_, message);
+               continue;
+            }
+            if (fileName == "$") {
+               fileName = clpParam->strVal();
+            } else if (fileName == "EOL") {
+               clpParam->printString();
+               break;
             } else {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+               clpParam->setVal(fileName);
             }
-            break;
+            CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                        &canOpen);
+            if (!canOpen) {
+               buffer.str("");
+               buffer << "Unable to open file " << fileName.c_str();
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
+            ClpSimplex *model2 = lpSolver;
+            model2->writeBasis(fileName.c_str(), outputFormat > 1,
+                               outputFormat - 2);
+            time2 = CoinCpuTime();
+            totalTime += time2 - time1;
+            time1 = time2;
+          } break;
           case ClpParam::ALLSLACK:
             lpSolver->allSlackBasis(true);
             break;
@@ -3359,44 +3298,45 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             printf("unit test is now only from clp - does same thing\n");
             // return(22);
           } break;
-          case ClpParam::FAKEBOUND:
-            if (goodModel) {
-              // get bound
-              if (status = clpParam->readValue(inputQueue, dValue, &message)){
-                 std::cout << "Must enter value for " << clpParam->name()
-                           << std::endl;
-                 continue;
-              }
-              buffer.str("");
-              buffer << "Setting " << clpParam->name() << " to DEBUG " << dValue
-                     << std::endl;
-              printGeneralMessage(model_, buffer.str());
-              int iRow;
-              int numberRows = lpSolver->numberRows();
-              double *rowLower = lpSolver->rowLower();
-              double *rowUpper = lpSolver->rowUpper();
-              for (iRow = 0; iRow < numberRows; iRow++) {
-                 // leave free ones for now
-                 if (rowLower[iRow] > -1.0e20 || rowUpper[iRow] < 1.0e20) {
-                    rowLower[iRow] = CoinMax(rowLower[iRow], -dValue);
-                    rowUpper[iRow] = CoinMin(rowUpper[iRow], dValue);
-                 }
-              }
-              int iColumn;
-              int numberColumns = lpSolver->numberColumns();
-              double *columnLower = lpSolver->columnLower();
-              double *columnUpper = lpSolver->columnUpper();
-              for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                 // leave free ones for now
-                 if (columnLower[iColumn] > -1.0e20 ||
-                     columnUpper[iColumn] < 1.0e20) {
-                    columnLower[iColumn] =
-                       CoinMax(columnLower[iColumn], -dValue);
-                    columnUpper[iColumn] = CoinMin(columnUpper[iColumn], dValue);
-                 }
-              }
+          case ClpParam::FAKEBOUND:{
+            if (!goodModel) {
+               continue;
             }
-            break;
+            // get bound
+            if (status = clpParam->readValue(inputQueue, dValue, &message)){
+               std::cout << "Must enter value for " << clpParam->name()
+                         << std::endl;
+               continue;
+            }
+            buffer.str("");
+            buffer << "Setting " << clpParam->name() << " to DEBUG " << dValue
+                   << std::endl;
+            printGeneralMessage(model_, buffer.str());
+            int iRow;
+            int numberRows = lpSolver->numberRows();
+            double *rowLower = lpSolver->rowLower();
+            double *rowUpper = lpSolver->rowUpper();
+            for (iRow = 0; iRow < numberRows; iRow++) {
+               // leave free ones for now
+               if (rowLower[iRow] > -1.0e20 || rowUpper[iRow] < 1.0e20) {
+                  rowLower[iRow] = CoinMax(rowLower[iRow], -dValue);
+                  rowUpper[iRow] = CoinMin(rowUpper[iRow], dValue);
+               }
+            }
+            int iColumn;
+            int numberColumns = lpSolver->numberColumns();
+            double *columnLower = lpSolver->columnLower();
+            double *columnUpper = lpSolver->columnUpper();
+            for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+               // leave free ones for now
+               if (columnLower[iColumn] > -1.0e20 ||
+                   columnUpper[iColumn] < 1.0e20) {
+                  columnLower[iColumn] =
+                     CoinMax(columnLower[iColumn], -dValue);
+                  columnUpper[iColumn] = CoinMin(columnUpper[iColumn], dValue);
+               }
+            }
+          }break;
           case ClpParam::REALLY_SCALE:
             if (goodModel) {
               ClpSimplex newModel(*lpSolver, lpSolver->scalingFlag());
@@ -3425,44 +3365,32 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
 #endif
             break;
-          case ClpParam::PARAMETRICS:
-            if (goodModel) {
-              // get next field
-              status = clpParam->readValue(inputQueue, field, &message);
-              if (field == "$") {
-                field = clpParam->strVal();
-              } else if (field == "EOL") {
-                clpParam->printString();
-                break;
-              } else {
-                clpParam->setVal(field);
-              }
-              // bool canOpen = false;
-              if (field[0] == '/' || field[0] == '\\') {
-                fileName = field;
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
-              } else {
-                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
-              }
-              static_cast<ClpSimplexOther *>(lpSolver)->parametrics(
-                  fileName.c_str());
-              time2 = CoinCpuTime();
-              totalTime += time2 - time1;
-              time1 = time2;
-            } else {
+            case ClpParam::PARAMETRICS:{
+            if (!goodModel){
               buffer.str("");
               buffer << "** Current model not valid";
               printGeneralMessage(model_, buffer.str());
             }
-            break;
+            if (status = clpParam->readValue(inputQueue, fileName, &message)){
+               printGeneralMessage(model_, message);
+               continue;
+            }
+            if (fileName == "$") {
+               fileName = clpParam->strVal();
+            } else if (fileName == "EOL") {
+               clpParam->printString();
+               break;
+            } else {
+               clpParam->setVal(fileName);
+            }
+            CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName());
+            static_cast<ClpSimplexOther *>(lpSolver)->parametrics(
+                  fileName.c_str());
+            time2 = CoinCpuTime();
+            totalTime += time2 - time1;
+            time1 = time2;
+            } break;
           case ClpParam::GUESS:
             if (goodModel && model_.solver()) {
               OsiClpSolverInterface *clpSolver =
@@ -3495,135 +3423,137 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           }
 
           switch (cbcParamCode) {
-          case CbcParam::STATISTICS:
-            if (goodModel) {
-              // If presolve on look at presolved
-              bool deleteModel2 = false;
-              ClpSimplex *model2 = lpSolver;
-              if (preSolve) {
-                ClpPresolve pinfo;
-                int presolveOptions2 = presolveOptions & ~0x40000000;
-                if ((presolveOptions2 & 0xffff) != 0)
-                  pinfo.setPresolveActions(presolveOptions2);
-                pinfo.setSubstitution(substitution);
-                if ((printOptions & 1) != 0)
-                  pinfo.statistics();
-                double presolveTolerance =
-                   clpParameters[ClpParam::PRESOLVETOLERANCE]->dblVal();
-                model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
-                                              true, preSolve);
-                if (model2) {
-                  printf("Statistics for presolved model\n");
-                  deleteModel2 = true;
-                } else {
-                  printf("Presolved model looks infeasible - will use "
-                         "unpresolved\n");
-                  model2 = lpSolver;
-                }
-              } else {
-                printf("Statistics for unpresolved model\n");
-                model2 = lpSolver;
-              }
-              statistics(lpSolver, model2);
-              if (deleteModel2)
-                delete model2;
-            } else {
+           case CbcParam::STATISTICS:{
+            if (!goodModel){
               buffer.str("");
               buffer << "** Current model not valid";
               printGeneralMessage(model_, buffer.str());
+              continue;
             }
-            break;
-          case CbcParam::DOHEURISTIC:
-            if (goodModel) {
+            // If presolve on look at presolved
+            bool deleteModel2 = false;
+            ClpSimplex *model2 = lpSolver;
+            if (preSolve) {
+               ClpPresolve pinfo;
+               int presolveOptions2 = presolveOptions & ~0x40000000;
+               if ((presolveOptions2 & 0xffff) != 0)
+                  pinfo.setPresolveActions(presolveOptions2);
+               pinfo.setSubstitution(substitution);
+               if ((printOptions & 1) != 0)
+                  pinfo.statistics();
+               double presolveTolerance =
+                  clpParameters[ClpParam::PRESOLVETOLERANCE]->dblVal();
+               model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
+                                             true, preSolve);
+               if (model2) {
+                  printf("Statistics for presolved model\n");
+                  deleteModel2 = true;
+               } else {
+                  printf("Presolved model looks infeasible - will use "
+                         "unpresolved\n");
+                  model2 = lpSolver;
+               }
+            } else {
+               printf("Statistics for unpresolved model\n");
+               model2 = lpSolver;
+            }
+            statistics(lpSolver, model2);
+            if (deleteModel2)
+               delete model2;
+           } break;
+          case CbcParam::DOHEURISTIC:{
+            if (!goodModel){
+               continue;
+            }
 #if CBC_USE_INITIAL_TIME == 1
-              if (model_.useElapsedTime())
-                model_.setDblParam(CbcModel::CbcStartSeconds,
-                                   CoinGetTimeOfDay());
-              else
-                model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
+            if (model_.useElapsedTime())
+               model_.setDblParam(CbcModel::CbcStartSeconds,
+                                  CoinGetTimeOfDay());
+            else
+               model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
-              int vubMode = parameters[CbcParam::VUBTRY]->intVal();
-              if (vubMode != -1) {
-                // look at vubs
-                // extra1 is number of ints to leave free
-                // Just ones which affect >= extra3
-                int extra3 = parameters[CbcParam::EXTRA3]->intVal();
-                /* 2 is cost above which to fix if feasible
-                                   3 is fraction of integer variables fixed if
-                   relaxing (0.97) 4 is fraction of all variables fixed if
-                   relaxing (0.0)
-                                */
-                double dextra[6];
-                int extra[5];
-                extra[1] = parameters[CbcParam::EXTRA1]->intVal();
-                int exp1 = parameters[CbcParam::EXPERIMENT]->intVal();
-                if (exp1 == 4 && extra[1] == -1)
+            int vubMode = parameters[CbcParam::VUBTRY]->intVal();
+            if (vubMode != -1) {
+               // look at vubs
+               // extra1 is number of ints to leave free
+               // Just ones which affect >= extra3
+               int extra3 = parameters[CbcParam::EXTRA3]->intVal();
+               /* 2 is cost above which to fix if feasible
+                  3 is fraction of integer variables fixed if
+                  relaxing (0.97) 4 is fraction of all variables fixed if
+                  relaxing (0.0)
+               */
+               double dextra[6];
+               int extra[5];
+               extra[1] = parameters[CbcParam::EXTRA1]->intVal();
+               int exp1 = parameters[CbcParam::EXPERIMENT]->intVal();
+               if (exp1 == 4 && extra[1] == -1)
                   extra[1] = 999998;
-                dextra[1] = parameters[CbcParam::FAKEINCREMENT]->dblVal();
-                dextra[2] = parameters[CbcParam::FAKECUTOFF]->dblVal();
-                dextra[3] = parameters[CbcParam::DEXTRA3]->dblVal();
-                dextra[4] = parameters[CbcParam::DEXTRA4]->dblVal();
-                dextra[5] = parameters[CbcParam::DEXTRA5]->dblVal();
-                if (!dextra[3])
+               dextra[1] = parameters[CbcParam::FAKEINCREMENT]->dblVal();
+               dextra[2] = parameters[CbcParam::FAKECUTOFF]->dblVal();
+               dextra[3] = parameters[CbcParam::DEXTRA3]->dblVal();
+               dextra[4] = parameters[CbcParam::DEXTRA4]->dblVal();
+               dextra[5] = parameters[CbcParam::DEXTRA5]->dblVal();
+               if (!dextra[3])
                   dextra[3] = 0.97;
-                // OsiClpSolverInterface * newSolver =
-                fixVubs(model_, extra3, vubMode, generalMessageHandler,
-                        debugValues, dextra, extra);
-                // assert (!newSolver);
-              }
-              // Actually do heuristics
-              // may need to flip objective
-              bool needFlip = model_.solver()->getObjSense() < 0.0;
-              if (needFlip)
-                model_.flipModel();
-              // if we do then - fix priorities in
-              // clonebutmodel_.convertToDynamic();
-              bool objectsExist = model_.objects() != NULL;
-              if (!objectsExist) {
-                model_.findIntegers(false);
-                model_.convertToDynamic();
-              }
-              // set priorities etc
-              if (priorities) {
-                OsiObject **objects = model_.objects();
-                int numberObjects = model_.numberObjects();
-                for (int iObj = 0; iObj < numberObjects; iObj++) {
+               // OsiClpSolverInterface * newSolver =
+               fixVubs(model_, extra3, vubMode, generalMessageHandler,
+                       debugValues, dextra, extra);
+               // assert (!newSolver);
+            }
+            // Actually do heuristics
+            // may need to flip objective
+            bool needFlip = model_.solver()->getObjSense() < 0.0;
+            if (needFlip)
+               model_.flipModel();
+            // if we do then - fix priorities in
+            // clonebutmodel_.convertToDynamic();
+            bool objectsExist = model_.objects() != NULL;
+            if (!objectsExist) {
+               model_.findIntegers(false);
+               model_.convertToDynamic();
+            }
+            // set priorities etc
+            if (priorities) {
+               OsiObject **objects = model_.objects();
+               int numberObjects = model_.numberObjects();
+               for (int iObj = 0; iObj < numberObjects; iObj++) {
                   CbcSimpleInteger *obj =
-                      dynamic_cast<CbcSimpleInteger *>(objects[iObj]);
+                     dynamic_cast<CbcSimpleInteger *>(objects[iObj]);
                   if (!obj)
-                    continue;
+                     continue;
                   int iColumn = obj->columnNumber();
                   if (branchDirection) {
-                    obj->setPreferredWay(branchDirection[iColumn]);
+                     obj->setPreferredWay(branchDirection[iColumn]);
                   }
                   if (priorities) {
-                    int iPriority = priorities[iColumn];
-                    if (iPriority > 0)
-                      obj->setPriority(iPriority);
+                     int iPriority = priorities[iColumn];
+                     if (iPriority > 0)
+                        obj->setPriority(iPriority);
                   }
                   if (pseudoUp && pseudoUp[iColumn]) {
-                    CbcSimpleIntegerPseudoCost *obj1a =
+                     CbcSimpleIntegerPseudoCost *obj1a =
                         dynamic_cast<CbcSimpleIntegerPseudoCost *>(
                             objects[iObj]);
                     assert(obj1a);
                     if (pseudoDown[iColumn] > 0.0)
-                      obj1a->setDownPseudoCost(pseudoDown[iColumn]);
+                       obj1a->setDownPseudoCost(pseudoDown[iColumn]);
                     if (pseudoUp[iColumn] > 0.0)
-                      obj1a->setUpPseudoCost(pseudoUp[iColumn]);
+                       obj1a->setUpPseudoCost(pseudoUp[iColumn]);
                   }
-                }
-              }
-              doHeuristics(&model_, 2, parameters, parameters.noPrinting(),
-                           initialPumpTune);
-              if (!objectsExist) {
-                model_.deleteObjects(false);
-              }
-              if (needFlip)
-                model_.flipModel();
-              if (model_.bestSolution()) {
-                model_.setProblemStatus(1);
-                model_.setSecondaryStatus(6);
-                if (statusUserFunction_[0] && info) {
+               }
+            }
+            doHeuristics(&model_, 2, parameters, parameters.noPrinting(),
+                         initialPumpTune);
+            if (!objectsExist) {
+               model_.deleteObjects(false);
+            }
+            if (needFlip)
+               model_.flipModel();
+            if (model_.bestSolution()) {
+               model_.setProblemStatus(1);
+               model_.setSecondaryStatus(6);
+               if (statusUserFunction_[0] && info) {
                   double value = model_.getObjValue();
                   char buf[300];
                   int pos = 0;
@@ -3667,17 +3597,16 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   // put buffer into info
                   strcpy(info->buffer, buf);
                   delete basis;
-                }
-              }
-              int returnCode = callBack(&model, 6);
-              if (returnCode) {
-                // exit if user wants
-                delete babModel_;
-                babModel_ = NULL;
-                return returnCode;
-              }
+               }
             }
-            break;
+            int returnCode = callBack(&model, 6);
+            if (returnCode) {
+               // exit if user wants
+               delete babModel_;
+               babModel_ = NULL;
+               return returnCode;
+            }
+          }break;
           case CbcParam::MIPLIB:
             // User can set options - main difference is lack of model and
             // CglPreProcess
@@ -3687,9 +3616,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                           Run branch-and-cut. First set a few options -- node
                comparison, scaling. Print elapsed time at the end.
                         */
-          case CbcParam::BAB: // branchAndBound
-            // obsolete case CbcParam::STRENGTHEN:
-            if (goodModel) {
+          case CbcParam::BAB: {
 #ifdef CBC_CLUMSY_CODING
 	      parameters.setModel(&model_);
 	      parameters.setGoodModel(true);
@@ -9077,12 +9004,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               }
               // delete babModel_;
               // babModel_=NULL;
-            }  else {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
-            }
-            break;
+          } break;
           case CbcParam::IMPORT: {
             if (!statusUserFunction_[0]) {
               free(priorities);
@@ -9118,20 +9040,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                continue;
             }
             // TODO Think about how to do this right
-            bool canOpen = false;
+            canOpen = false;
+            bool absolutePath = true;
+            CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName());
             if (fileName[0] != '/' && fileName[0] != '\\' &&
                 !strchr(fileName.c_str(), ':')) {
-               if (fileName[0] == '~') {
-                  char *environVar = getenv("HOME");
-                  if (environVar) {
-                     std::string home(environVar);
-                     fileName = fileName.erase(0, 1);
-                     fileName = home + fileName;
-                  } 
-               } else {
-                  fileName = parameters[CbcParam::DIRECTORY]->dirName() +
-                     fileName;
-               }
+               absolutePath = false;
             }
             // See if gmpl file
             int gmpl = 0;
@@ -9156,58 +9071,28 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     (length > 7 && !strncmp(c_name + length - 7, ".lp.bz2", 7)))
                   gmpl = -1; // .lp
               }
-              bool absolutePath;
-              if (dirsep == '/') {
-                // non Windows (or cygwin)
-                absolutePath = (fileName[0] == '/');
-              } else {
-                // Windows (non cycgwin)
-                absolutePath = (fileName[0] == '\\');
-                // but allow for :
-                if (strchr(fileName.c_str(), ':'))
-                  absolutePath = true;
-              }
-              if (absolutePath) {
-                size_t length = fileName.size();
-                size_t percent = fileName.find('%');
-                if (percent < length && percent > 0) {
+              size_t length = fileName.size();
+              size_t percent = fileName.find('%');
+              if (percent < length && percent > 0) {
 #ifdef COINUTILS_HAS_GLPK
-                  gmpl = 1;
-                  fileName = fileName.substr(0, percent);
-                  gmplData = fileName.substr(percent + 1);
-                  if (percent < length - 1)
-                    gmpl = 2; // two files
-                  printf("GMPL model file %s and data file %s\n",
-                         fileName.c_str(), gmplData.c_str());
+                 gmpl = 1;
+                 fileName = fileName.substr(0, percent);
+                 gmplData = fileName.substr(percent + 1);
+                 if (absolutePath){
+                    fileName = parameters[CbcParam::DIRECTORY]->dirName() +
+                       fileName;
+                    gmplData = parameters[CbcParam::DIRECTORY]->dirName() +
+                       fileName;
+                 }
+                 gmpl = (percent < length - 1) ? 2 : 1;
+                 printf("GMPL model file %s and data file %s\n",
+                        fileName.c_str(), gmplData.c_str());
 #else
-                  printf("Cbc was not built with GMPL support. Exiting.\n");
-                  // This is surely not the right thing to do here. Should we
-                  // throw an exceptioon? Exit?
-                  abort();
+                 printf("Cbc was not built with GMPL support. Exiting.\n");
+                 // This is surely not the right thing to do here. Should we
+                 // throw an exceptioon? Exit?
+                 abort();
 #endif
-                }
-              } else {
-                // See if gmpl (model & data) - or even lp file
-                size_t length = fileName.size();
-                size_t percent = fileName.find('%');
-                if (percent < length && percent > 0) {
-#ifdef COINUTILS_HAS_GLPK
-                  gmpl = 1;
-                  fileName = parameters[CbcParam::DIRECTORY]->dirName() +
-                     fileName.substr(0, percent);
-                  gmplData = parameters[CbcParam::DIRECTORY]->dirName() +
-                     fileName.substr(percent + 1);
-                  if (percent < length - 1)
-                    gmpl = 2; // two files
-                  printf("GMPL model file %s and data file %s\n",
-                         fileName.c_str(), gmplData.c_str());
-#else
-                  printf("Cbc was not built with GMPL support. Exiting.\n");
-                  // This is surely not the right thing to do here. Should we
-                  // throw an exceptioon? Exit?
-                  abort();
-#endif
-                }
               }
               if (fileCoinReadable(fileName)) {
                 // can open - lets go for it
@@ -9222,53 +9107,54 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     buffer.str("");
                     buffer << "Unable to open file " << gmplData.c_str();
                     printGeneralMessage(model_, buffer.str());
+                    continue;
                   }
                 }
               } else {
                 buffer.str("");
                 buffer << "Unable to open file " << fileName.c_str();
                 printGeneralMessage(model_, buffer.str());
+                continue;
               }
             }
-            if (canOpen) {
-              int status;
-              numberLotSizing = 0;
-              delete[] lotsize;
+            int status;
+            numberLotSizing = 0;
+            delete[] lotsize;
 #ifndef CBC_OTHER_SOLVER
-              ClpSimplex *lpSolver = clpSolver->getModelPtr();
-              if (!gmpl) {
-                status =
-                    clpSolver->readMps(fileName.c_str(), keepImportNames != 0,
-                                       allowImportErrors != 0);
-              } else if (gmpl > 0) {
+            ClpSimplex *lpSolver = clpSolver->getModelPtr();
+            if (!gmpl) {
+               status =
+                  clpSolver->readMps(fileName.c_str(), keepImportNames != 0,
+                                     allowImportErrors != 0);
+            } else if (gmpl > 0) {
 #ifdef COINUTILS_HAS_GLPK
-                status = lpSolver->readGMPL(
+               status = lpSolver->readGMPL(
                     fileName.c_str(), (gmpl == 2) ? gmplData.c_str() : NULL,
                     keepImportNames != 0, &coin_glp_tran, &coin_glp_prob);
 #endif
               } else {
 #ifdef KILL_ZERO_READLP
-                status = clpSolver->readLp(fileName.c_str(),
-                                           lpSolver->getSmallElementValue());
+               status = clpSolver->readLp(fileName.c_str(),
+                                          lpSolver->getSmallElementValue());
 #else
-                status = clpSolver->readLp(fileName.c_str(), 1.0e-12);
+               status = clpSolver->readLp(fileName.c_str(), 1.0e-12);
 #endif
-              }
+            }
 #else
-              status = clpSolver->readMps(fileName.c_str(), "");
+            status = clpSolver->readMps(fileName.c_str(), "");
 #endif
-              if (!status || (status > 0 && allowImportErrors)) {
+            if (!status || (status > 0 && allowImportErrors)) {
 #ifndef CBC_OTHER_SOLVER
-                if (keepImportNames) {
+               if (keepImportNames) {
                   lengthName = lpSolver->lengthNames();
                   rowNames = *(lpSolver->rowNames());
                   columnNames = *(lpSolver->columnNames());
-                } else {
+               } else {
                   lengthName = 0;
-                }
-                // really just for testing
-                double objScale = clpParameters[ClpParam::OBJSCALE2]->dblVal();
-                if (objScale != 1.0) {
+               }
+               // really just for testing
+               double objScale = clpParameters[ClpParam::OBJSCALE2]->dblVal();
+               if (objScale != 1.0) {
                   int iColumn;
                   int numberColumns = lpSolver->numberColumns();
                   double *dualColumnSolution = lpSolver->dualColumnSolution();
@@ -9277,22 +9163,22 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   double offset;
                   double *objective = obj->gradient(NULL, NULL, offset, true);
                   for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                    dualColumnSolution[iColumn] *= objScale;
-                    objective[iColumn] *= objScale;
+                     dualColumnSolution[iColumn] *= objScale;
+                     objective[iColumn] *= objScale;
                   }
                   int iRow;
                   int numberRows = lpSolver->numberRows();
                   double *dualRowSolution = lpSolver->dualRowSolution();
                   for (iRow = 0; iRow < numberRows; iRow++)
-                    dualRowSolution[iRow] *= objScale;
+                     dualRowSolution[iRow] *= objScale;
                   lpSolver->setObjectiveOffset(objScale *
                                                lpSolver->objectiveOffset());
-                }
-                goodModel = true;
-                // sets to all slack (not necessary?)
-                lpSolver->createStatus();
-                // See if sos
-                if (clpSolver->numberSOS()) {
+               }
+               goodModel = true;
+               // sets to all slack (not necessary?)
+               lpSolver->createStatus();
+               // See if sos
+               if (clpSolver->numberSOS()) {
                   // SOS
                   numberSOS = clpSolver->numberSOS();
                   const CoinSet *setInfo = clpSolver->setInfo();
@@ -9306,14 +9192,14 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   int nTotal = 0;
                   sosStart[0] = 0;
                   for (i = 0; i < numberSOS; i++) {
-                    int type = setInfo[i].setType();
-                    int n = setInfo[i].numberEntries();
-                    sosType[i] = static_cast<char>(type);
-                    nTotal += n;
-                    sosStart[i + 1] = nTotal;
+                     int type = setInfo[i].setType();
+                     int n = setInfo[i].numberEntries();
+                     sosType[i] = static_cast<char>(type);
+                     nTotal += n;
+                     sosStart[i + 1] = nTotal;
                   }
                   sosIndices =
-                      reinterpret_cast<int *>(malloc(nTotal * sizeof(int)));
+                     reinterpret_cast<int *>(malloc(nTotal * sizeof(int)));
                   sosReference = reinterpret_cast<double *>(
                       malloc(nTotal * sizeof(double)));
                   for (i = 0; i < numberSOS; i++) {
@@ -9333,574 +9219,562 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                           weights ? weights[j] : static_cast<double>(j);
                     }
                   }
-                }
-                // make sure integer
-                // also deal with semi-continuous
-                int numberColumns = lpSolver->numberColumns();
-                int i;
-                for (i = 0; i < numberColumns; i++) {
+               }
+               // make sure integer
+               // also deal with semi-continuous
+               int numberColumns = lpSolver->numberColumns();
+               int i;
+               for (i = 0; i < numberColumns; i++) {
                   if (clpSolver->integerType(i) > 2)
-                    break;
+                     break;
                   if (lpSolver->isInteger(i))
-                    clpSolver->setInteger(i);
-                }
-                if (i < numberColumns) {
+                     clpSolver->setInteger(i);
+               }
+               if (i < numberColumns) {
                   // semi-continuous
                   clpSolver->setSpecialOptions(clpSolver->specialOptions() |
                                                8388608);
                   int iStart = i;
                   for (i = iStart; i < numberColumns; i++) {
-                    if (clpSolver->integerType(i) > 2)
-                      numberLotSizing++;
+                     if (clpSolver->integerType(i) > 2)
+                        numberLotSizing++;
                   }
                   lotsize = new lotStruct[numberLotSizing];
                   numberLotSizing = 0;
                   const double *lower = clpSolver->getColLower();
                   const double *upper = clpSolver->getColUpper();
                   for (i = iStart; i < numberColumns; i++) {
-                    if (clpSolver->integerType(i) > 2) {
-                      int iType = clpSolver->integerType(i) - 3;
-                      if (!iType)
-                        clpSolver->setContinuous(i);
-                      else
-                        clpSolver->setInteger(i);
-                      lotsize[numberLotSizing].column = i;
-                      lotsize[numberLotSizing].high = upper[i];
-                      if (lower[i]) {
-                        lotsize[numberLotSizing++].low = lower[i];
-                        clpSolver->setColLower(i, 0.0);
-                      } else {
-                        lotsize[numberLotSizing++].low = 1.0;
-                      }
-                    }
+                     if (clpSolver->integerType(i) > 2) {
+                        int iType = clpSolver->integerType(i) - 3;
+                        if (!iType)
+                           clpSolver->setContinuous(i);
+                        else
+                           clpSolver->setInteger(i);
+                        lotsize[numberLotSizing].column = i;
+                        lotsize[numberLotSizing].high = upper[i];
+                        if (lower[i]) {
+                           lotsize[numberLotSizing++].low = lower[i];
+                           clpSolver->setColLower(i, 0.0);
+                        } else {
+                           lotsize[numberLotSizing++].low = 1.0;
+                        }
+                     }
                   }
-                }
+               }
 #else
-                lengthName = 0;
-                goodModel = true;
+               lengthName = 0;
+               goodModel = true;
 #endif
-                time2 = CoinCpuTime();
-                totalTime += time2 - time1;
-                time1 = time2;
-                // Go to canned file if just input file
-                if (inputQueue.empty()) {
+               time2 = CoinCpuTime();
+               totalTime += time2 - time1;
+               time1 = time2;
+               // Go to canned file if just input file
+               if (inputQueue.empty()) {
                   // only if ends .mps
                   char *find =
-                      const_cast<char *>(strstr(fileName.c_str(), ".mps"));
+                     const_cast<char *>(strstr(fileName.c_str(), ".mps"));
                   if (find && find[4] == '\0') {
-                    find[1] = 'p';
-                    find[2] = 'a';
-                    find[3] = 'r';
-                    std::ifstream ifs(fileName.c_str());
-                    if (ifs.is_open()) {
-                       while (!inputQueue.empty()){
-                          inputQueue.pop_front();
-                       }
-                       CoinParamUtils::readFromStream(inputQueue, ifs);
-                    }
+                     find[1] = 'p';
+                     find[2] = 'a';
+                     find[3] = 'r';
+                     std::ifstream ifs(fileName.c_str());
+                     if (ifs.is_open()) {
+                        while (!inputQueue.empty()){
+                           inputQueue.pop_front();
+                        }
+                        CoinParamUtils::readFromStream(inputQueue, ifs);
+                     }
                   }
-                }
-              } else {
-                // errors
-                buffer.str("");
-                buffer << "There were " << status << " errors on input";
-                printGeneralMessage(model_, buffer.str());
-              }
+               }
+            } else {
+               // errors
+               buffer.str("");
+               buffer << "There were " << status << " errors on input";
+               printGeneralMessage(model_, buffer.str());
             }
           } break;
-          case CbcParam::EXPORT:
-            if (goodModel) {
-              parameters[CbcParam::EXPORTFILE]->getVal(fileName);
-              if (fileName[0] != '/' && fileName[0] != '\\' &&
-                  !strchr(fileName.c_str(), ':')) {
-                 fileName = parameters[CbcParam::DIRECTORY]->dirName() +
-                    fileName;
-              }
-              bool canOpen = false;
-              FILE *fp = fopen(fileName.c_str(), "w");
-              if (fp) {
-                // can open - lets go for it
-                fclose(fp);
-                canOpen = true;
-              } else {
-                buffer.str("");
-                buffer << "Unable to open file " << fileName.c_str();
-                printGeneralMessage(model_, buffer.str());
-              }
-              if (canOpen) {
-                // If presolve on then save presolved
-                bool deleteModel2 = false;
-                ClpSimplex *model2 = lpSolver;
-                if (dualize && dualize < 3) {
-                  model2 =
-                      static_cast<ClpSimplexOther *>(model2)->dualOfModel();
-                  buffer.str("");
-                  buffer << "Dual of model has " << model2->numberRows() << " rows and "
-                         <<  model2->numberColumns() << " columns";
-                  printGeneralMessage(model_, buffer.str());
-                  model2->setOptimizationDirection(1.0);
-                }
+          case CbcParam::EXPORT: {
+            if (!goodModel) {
+              buffer.str("");
+              buffer << "** Current model not valid";
+              printGeneralMessage(model_, buffer.str());
+              continue;
+            }
+            parameters[CbcParam::EXPORTFILE]->getVal(fileName);
+            CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                        &canOpen);
+            if (!canOpen) {
+               buffer.str("");
+               buffer << "Unable to open file " << fileName.c_str();
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
+
+            // If presolve on then save presolved
+            bool deleteModel2 = false;
+            ClpSimplex *model2 = lpSolver;
+            if (dualize && dualize < 3) {
+               model2 =
+                  static_cast<ClpSimplexOther *>(model2)->dualOfModel();
+               buffer.str("");
+               buffer << "Dual of model has " << model2->numberRows() << " rows and "
+                      <<  model2->numberColumns() << " columns";
+               printGeneralMessage(model_, buffer.str());
+               model2->setOptimizationDirection(1.0);
+            }
 #ifndef CBC_OTHER_SOLVER
-                if (info && info->numberSos && doSOS && statusUserFunction_[0]) {
-                  // SOS
-                  numberSOS = info->numberSos;
-                  sosStart = info->sosStart;
-                  sosIndices = info->sosIndices;
-                  sosReference = info->sosReference;
-                  clpSolver->setSOSData(numberSOS, info->sosType, sosStart,
-                                        sosIndices, sosReference);
-                }
-                numberSOS = clpSolver->numberSOS();
-                if (numberSOS || lotsize)
-                  preSolve = false;
+            if (info && info->numberSos && doSOS && statusUserFunction_[0]) {
+               // SOS
+               numberSOS = info->numberSos;
+               sosStart = info->sosStart;
+               sosIndices = info->sosIndices;
+               sosReference = info->sosReference;
+               clpSolver->setSOSData(numberSOS, info->sosType, sosStart,
+                                     sosIndices, sosReference);
+            }
+            numberSOS = clpSolver->numberSOS();
+            if (numberSOS || lotsize)
+               preSolve = false;
 #endif
-                if (preSolve) {
-                  ClpPresolve pinfo;
-                  int presolveOptions2 = presolveOptions & ~0x40000000;
-                  if ((presolveOptions2 & 0xffff) != 0)
-                    pinfo.setPresolveActions(presolveOptions2);
-                  if ((printOptions & 1) != 0)
-                    pinfo.statistics();
-                  double presolveTolerance =
-                      clpParameters[ClpParam::PRESOLVETOLERANCE]->dblVal();
-                  model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
-                                                true, preSolve);
-                  if (model2) {
-                    printf("Saving presolved model on %s\n", fileName.c_str());
-                    deleteModel2 = true;
-                  } else {
-                    printf("Presolved model looks infeasible - saving original "
-                           "on %s\n",
-                           fileName.c_str());
-                    deleteModel2 = false;
-                    model2 = lpSolver;
+            if (preSolve) {
+               ClpPresolve pinfo;
+               int presolveOptions2 = presolveOptions & ~0x40000000;
+               if ((presolveOptions2 & 0xffff) != 0)
+                  pinfo.setPresolveActions(presolveOptions2);
+               if ((printOptions & 1) != 0)
+                  pinfo.statistics();
+               double presolveTolerance =
+                  clpParameters[ClpParam::PRESOLVETOLERANCE]->dblVal();
+               model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
+                                             true, preSolve);
+               if (model2) {
+                  printf("Saving presolved model on %s\n", fileName.c_str());
+                  deleteModel2 = true;
+               } else {
+                  printf("Presolved model looks infeasible - saving original "
+                         "on %s\n",
+                         fileName.c_str());
+                  deleteModel2 = false;
+                  model2 = lpSolver;
+               }
+               // see if extension lp
+               bool writeLp = false;
+               {
+                  int lengthName = strlen(fileName.c_str());
+                  if (lengthName > 3 &&
+                      !strcmp(fileName.c_str() + lengthName - 3, ".lp"))
+                     writeLp = true;
+               }
+               if (!writeLp) {
+                  model2->writeMps(fileName.c_str(), (outputFormat - 1) / 2,
+                                   1 + ((outputFormat - 1) & 1));
+               } else {
+                  FILE *fp = fopen(fileName.c_str(), "w");
+                  assert(fp);
+                  OsiClpSolverInterface solver(model2);
+                  solver.writeLp(fp, 1.0e-12);
+               }
+               if (deleteModel2)
+                  delete model2;
+            } else {
+               printf("Saving model on %s\n", fileName.c_str());
+#ifdef COIN_HAS_LINK
+               OsiSolverLink *linkSolver =
+                  dynamic_cast<OsiSolverLink *>(clpSolver);
+               if (!linkSolver || !linkSolver->quadraticModel()) {
+#endif
+                  // Convert names
+                  int iRow;
+                  int numberRows = model2->numberRows();
+                  int iColumn;
+                  int numberColumns = model2->numberColumns();
+                  
+                  char **rowNames = NULL;
+                  char **columnNames = NULL;
+                  if (model2->lengthNames()) {
+                     rowNames = new char *[numberRows];
+                     for (iRow = 0; iRow < numberRows; iRow++) {
+                        rowNames[iRow] =
+                           CoinStrdup(model2->rowName(iRow).c_str());
+                     }
+                     
+                     columnNames = new char *[numberColumns];
+                     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                        columnNames[iColumn] =
+                           CoinStrdup(model2->columnName(iColumn).c_str());
+                     }
                   }
                   // see if extension lp
                   bool writeLp = false;
                   {
-                    int lengthName = strlen(fileName.c_str());
-                    if (lengthName > 3 &&
-                        !strcmp(fileName.c_str() + lengthName - 3, ".lp"))
-                      writeLp = true;
-                  }
-                  if (!writeLp) {
-                    model2->writeMps(fileName.c_str(), (outputFormat - 1) / 2,
-                                     1 + ((outputFormat - 1) & 1));
-                  } else {
-                    FILE *fp = fopen(fileName.c_str(), "w");
-                    assert(fp);
-                    OsiClpSolverInterface solver(model2);
-                    solver.writeLp(fp, 1.0e-12);
-                  }
-                  if (deleteModel2)
-                    delete model2;
-                } else {
-                  printf("Saving model on %s\n", fileName.c_str());
-#ifdef COIN_HAS_LINK
-                  OsiSolverLink *linkSolver =
-                      dynamic_cast<OsiSolverLink *>(clpSolver);
-                  if (!linkSolver || !linkSolver->quadraticModel()) {
-#endif
-                    // Convert names
-                    int iRow;
-                    int numberRows = model2->numberRows();
-                    int iColumn;
-                    int numberColumns = model2->numberColumns();
-
-                    char **rowNames = NULL;
-                    char **columnNames = NULL;
-                    if (model2->lengthNames()) {
-                      rowNames = new char *[numberRows];
-                      for (iRow = 0; iRow < numberRows; iRow++) {
-                        rowNames[iRow] =
-                            CoinStrdup(model2->rowName(iRow).c_str());
-                      }
-
-                      columnNames = new char *[numberColumns];
-                      for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                        columnNames[iColumn] =
-                            CoinStrdup(model2->columnName(iColumn).c_str());
-                      }
-                    }
-                    // see if extension lp
-                    bool writeLp = false;
-                    {
-                      int lengthName = strlen(fileName.c_str());
-                      if (lengthName > 3 &&
-                          !strcmp(fileName.c_str() + lengthName - 3, ".lp"))
+                     int lengthName = strlen(fileName.c_str());
+                     if (lengthName > 3 &&
+                         !strcmp(fileName.c_str() + lengthName - 3, ".lp"))
                         writeLp = true;
-                    }
-                    if (lotsize) {
-                      for (int i = 0; i < numberLotSizing; i++) {
+                  }
+                  if (lotsize) {
+                     for (int i = 0; i < numberLotSizing; i++) {
                         int iColumn = lotsize[i].column;
                         double low = lotsize[i].low;
                         if (low != 1.0)
-                          clpSolver->setColLower(iColumn, low);
+                           clpSolver->setColLower(iColumn, low);
                         int type;
                         if (clpSolver->isInteger(iColumn))
-                          type = 4;
+                           type = 4;
                         else
-                          type = 3;
+                           type = 3;
                         clpSolver->setColumnType(iColumn, type);
-                      }
-                    }
-                    if (!writeLp) {
-                      remove(fileName.c_str());
-                      // model_.addSOSEtcToSolver();
-                      clpSolver->writeMpsNative(
+                     }
+                  }
+                  if (!writeLp) {
+                     remove(fileName.c_str());
+                     // model_.addSOSEtcToSolver();
+                     clpSolver->writeMpsNative(
                           fileName.c_str(), const_cast<const char **>(rowNames),
                           const_cast<const char **>(columnNames),
                           (outputFormat - 1) / 2, 1 + ((outputFormat - 1) & 1));
-                    } else {
-                      FILE *fp = fopen(fileName.c_str(), "w");
-                      assert(fp);
-                      clpSolver->writeLp(fp, 1.0e-12);
-                    }
-                    if (rowNames) {
-                      for (iRow = 0; iRow < numberRows; iRow++) {
+                  } else {
+                     FILE *fp = fopen(fileName.c_str(), "w");
+                     assert(fp);
+                     clpSolver->writeLp(fp, 1.0e-12);
+                  }
+                  if (rowNames) {
+                     for (iRow = 0; iRow < numberRows; iRow++) {
                         free(rowNames[iRow]);
-                      }
-                      delete[] rowNames;
-                      for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                     }
+                     delete[] rowNames;
+                     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
                         free(columnNames[iColumn]);
-                      }
-                      delete[] columnNames;
-                    }
-                    if (lotsize) {
-                      for (int i = 0; i < numberLotSizing; i++) {
+                     }
+                     delete[] columnNames;
+                  }
+                  if (lotsize) {
+                     for (int i = 0; i < numberLotSizing; i++) {
                         int iColumn = lotsize[i].column;
                         int itype = clpSolver->integerType(iColumn);
                         clpSolver->setColLower(iColumn, 0.0);
                         if (itype == 3)
-                          clpSolver->setContinuous(iColumn);
+                           clpSolver->setContinuous(iColumn);
                         else
-                          clpSolver->setInteger(iColumn);
-                      }
-                    }
+                           clpSolver->setInteger(iColumn);
+                     }
+                  }
 #ifdef COIN_HAS_LINK
-                  } else {
-                    linkSolver->quadraticModel()->writeMps(
+               } else {
+                  linkSolver->quadraticModel()->writeMps(
                         fileName.c_str(), (outputFormat - 1) / 2,
                         1 + ((outputFormat - 1) & 1));
-                  }
+               }
 #endif
-                }
-                time2 = CoinCpuTime();
-                totalTime += time2 - time1;
-                time1 = time2;
-              }
-            } else {
+            }
+            time2 = CoinCpuTime();
+            totalTime += time2 - time1;
+            time1 = time2;
+          } break;
+           case CbcParam::READPRIORITIES:{
+            if (!goodModel){
               buffer.str("");
               buffer << "** Current model not valid";
               printGeneralMessage(model_, buffer.str());
+              continue;
             }
-            break;
-          case CbcParam::READPRIORITIES:
-            if (goodModel) {
-              // get next field
-              parameters[CbcParam::PRIORITYFILE]->getVal(field);
-              if (field[0] == '/' || field[0] == '\\') {
-                fileName = field;
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
-              } else {
-                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
-              }
-              FILE *fp = fopen(fileName.c_str(), "r");
-              if (fp) {
-                // can open - lets go for it
-                std::string headings[] = {"name",     "number", "direction",
-                                          "priority", "up",     "down",
-                                          "solution", "priin"};
-                int got[] = {-1, -1, -1, -1, -1, -1, -1, -1};
-                int order[8];
-                bool useMasks = false;
-                if (strstr(fileName.c_str(), "mask_")) {
-                  // look more closely
-                  const char *name = fileName.c_str();
-                  int length = strlen(name);
-                  for (int i = length - 1; i >= 0; i--) {
-                    if (name[i] == dirsep) {
-                      name += i + 1;
-                      break;
-                    }
+            parameters[CbcParam::PRIORITYFILE]->getVal(fileName);
+            CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                        &canOpen);
+            if (!canOpen) {
+               buffer.str("");
+               buffer << "Unable to open file " << fileName.c_str();
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
+            FILE *fp = fopen(fileName.c_str(), "r");
+            std::string headings[] = {"name",     "number", "direction",
+                                      "priority", "up",     "down",
+                                      "solution", "priin"};
+            int got[] = {-1, -1, -1, -1, -1, -1, -1, -1};
+            int order[8];
+            bool useMasks = false;
+            if (strstr(fileName.c_str(), "mask_")) {
+               // look more closely
+               const char *name = fileName.c_str();
+               int length = strlen(name);
+               for (int i = length - 1; i >= 0; i--) {
+                  if (name[i] == dirsep) {
+                     name += i + 1;
+                     break;
                   }
-                  useMasks = !strncmp(name, "mask_", 5);
-                }
-                assert(sizeof(got) == sizeof(order));
-                int nAcross = 0;
-                char line[1000];
-                int numberColumns = lpSolver->numberColumns();
-                if (!fgets(line, 1000, fp)) {
-                  std::cout << "Odd file " << fileName << std::endl;
-                } else {
-                  char *pos = line;
-                  char *put = line;
-                  while (*pos >= ' ' && *pos != '\n') {
-                    if (*pos != ' ' && *pos != '\t') {
-                      *put = static_cast<char>(tolower(*pos));
-                      put++;
-                    }
-                    pos++;
+               }
+               useMasks = !strncmp(name, "mask_", 5);
+            }
+            assert(sizeof(got) == sizeof(order));
+            int nAcross = 0;
+            char line[1000];
+            int numberColumns = lpSolver->numberColumns();
+            if (!fgets(line, 1000, fp)) {
+               std::cout << "Odd file " << fileName << std::endl;
+            } else {
+               char *pos = line;
+               char *put = line;
+               while (*pos >= ' ' && *pos != '\n') {
+                  if (*pos != ' ' && *pos != '\t') {
+                     *put = static_cast<char>(tolower(*pos));
+                     put++;
                   }
-                  *put = '\0';
-                  pos = line;
-                  int i;
-                  bool good = true;
-                  while (pos) {
-                    char *comma = strchr(pos, ',');
-                    if (comma)
-                      *comma = '\0';
-                    for (i = 0; i < static_cast<int>(sizeof(got) / sizeof(int));
-                         i++) {
-                      if (headings[i] == pos) {
+                  pos++;
+               }
+               *put = '\0';
+               pos = line;
+               int i;
+               bool good = true;
+               while (pos) {
+                  char *comma = strchr(pos, ',');
+                  if (comma)
+                     *comma = '\0';
+                  for (i = 0; i < static_cast<int>(sizeof(got) / sizeof(int));
+                       i++) {
+                     if (headings[i] == pos) {
                         if (got[i] < 0) {
-                          order[nAcross] = i;
-                          got[i] = nAcross++;
+                           order[nAcross] = i;
+                           got[i] = nAcross++;
                         } else {
-                          // duplicate
-                          good = false;
+                           // duplicate
+                           good = false;
                         }
                         break;
-                      }
-                    }
-                    if (i == static_cast<int>(sizeof(got) / sizeof(int)))
-                      good = false;
-                    if (comma) {
-                      *comma = ',';
-                      pos = comma + 1;
-                    } else {
-                      break;
-                    }
+                     }
                   }
-                  if (got[0] < 0 && got[1] < 0)
-                    good = false;
-                  if (got[0] >= 0 && got[1] >= 0)
-                    good = false;
-                  if (got[0] >= 0 && !lpSolver->lengthNames())
-                    good = false;
-                  int numberFields = 99;
-                  if (good && (strstr(fileName.c_str(), ".mst") ||
-                               strstr(fileName.c_str(), ".MST") ||
-                               strstr(fileName.c_str(), ".csv"))) {
-                    numberFields = 0;
-                    for (i = 2; i < static_cast<int>(sizeof(got) / sizeof(int));
-                         i++) {
-                      if (got[i] >= 0)
+                  if (i == static_cast<int>(sizeof(got) / sizeof(int)))
+                     good = false;
+                  if (comma) {
+                     *comma = ',';
+                     pos = comma + 1;
+                  } else {
+                     break;
+                  }
+               }
+               if (got[0] < 0 && got[1] < 0)
+                  good = false;
+               if (got[0] >= 0 && got[1] >= 0)
+                  good = false;
+               if (got[0] >= 0 && !lpSolver->lengthNames())
+                  good = false;
+               int numberFields = 99;
+               if (good && (strstr(fileName.c_str(), ".mst") ||
+                            strstr(fileName.c_str(), ".MST") ||
+                            strstr(fileName.c_str(), ".csv"))) {
+                  numberFields = 0;
+                  for (i = 2; i < static_cast<int>(sizeof(got) / sizeof(int));
+                       i++) {
+                     if (got[i] >= 0)
                         numberFields++;
-                    }
-                    if (!numberFields) {
-                      // Like Cplex format
-                      order[nAcross] = 6;
-                      got[6] = nAcross++;
-                    }
                   }
-                  if (good) {
-                    char **columnNames = new char *[numberColumns];
-                    // pseudoDown = NULL;
-                    // pseudoUp = NULL;
-                    // branchDirection = NULL;
-                    // if (got[5]!=-1)
-                    pseudoDown = reinterpret_cast<double *>(
+                  if (!numberFields) {
+                     // Like Cplex format
+                     order[nAcross] = 6;
+                     got[6] = nAcross++;
+                  }
+               }
+               if (good) {
+                  char **columnNames = new char *[numberColumns];
+                  // pseudoDown = NULL;
+                  // pseudoUp = NULL;
+                  // branchDirection = NULL;
+                  // if (got[5]!=-1)
+                  pseudoDown = reinterpret_cast<double *>(
                         malloc(numberColumns * sizeof(double)));
-                    // if (got[4]!=-1)
-                    pseudoUp = reinterpret_cast<double *>(
+                  // if (got[4]!=-1)
+                  pseudoUp = reinterpret_cast<double *>(
                         malloc(numberColumns * sizeof(double)));
-                    // if (got[2]!=-1)
-                    branchDirection = reinterpret_cast<int *>(
+                  // if (got[2]!=-1)
+                  branchDirection = reinterpret_cast<int *>(
                         malloc(numberColumns * sizeof(int)));
-                    priorities = reinterpret_cast<int *>(
+                  priorities = reinterpret_cast<int *>(
                         malloc(numberColumns * sizeof(int)));
-                    free(solutionIn);
-                    solutionIn = NULL;
-                    free(prioritiesIn);
-                    prioritiesIn = NULL;
-                    int iColumn;
-                    if (got[6] >= 0) {
-                      solutionIn = reinterpret_cast<double *>(
+                  free(solutionIn);
+                  solutionIn = NULL;
+                  free(prioritiesIn);
+                  prioritiesIn = NULL;
+                  int iColumn;
+                  if (got[6] >= 0) {
+                     solutionIn = reinterpret_cast<double *>(
                           malloc(numberColumns * sizeof(double)));
-                      for (iColumn = 0; iColumn < numberColumns; iColumn++)
+                     for (iColumn = 0; iColumn < numberColumns; iColumn++)
                         solutionIn[iColumn] = -COIN_DBL_MAX;
-                    }
-                    if (got[7] >= 0 || !numberFields) {
-                      prioritiesIn = reinterpret_cast<int *>(
+                  }
+                  if (got[7] >= 0 || !numberFields) {
+                     prioritiesIn = reinterpret_cast<int *>(
                           malloc(numberColumns * sizeof(int)));
-                      for (iColumn = 0; iColumn < numberColumns; iColumn++)
+                     for (iColumn = 0; iColumn < numberColumns; iColumn++)
                         prioritiesIn[iColumn] = 10000;
-                    }
-                    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                      columnNames[iColumn] =
-                          CoinStrdup(lpSolver->columnName(iColumn).c_str());
-                      // if (got[5]!=-1)
-                      pseudoDown[iColumn] = 0.0;
-                      // if (got[4]!=-1)
-                      pseudoUp[iColumn] = 0.0;
-                      // if (got[2]!=-1)
-                      branchDirection[iColumn] = 0;
-                      priorities[iColumn] = useMasks ? -123456789 : 0;
-                    }
-                    int nBadPseudo = 0;
-                    int nBadDir = 0;
-                    int nBadPri = 0;
-                    int nBadName = 0;
-                    int nBadLine = 0;
-                    int nLine = 0;
-                    iColumn = -1;
-                    int lowestPriority = -COIN_INT_MAX;
-                    bool needCard = true;
-                    while (!needCard || fgets(line, 1000, fp)) {
-                      if (!strncmp(line, "ENDATA", 6) ||
-                          !strncmp(line, "endata", 6))
+                  }
+                  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                     columnNames[iColumn] =
+                        CoinStrdup(lpSolver->columnName(iColumn).c_str());
+                     // if (got[5]!=-1)
+                     pseudoDown[iColumn] = 0.0;
+                     // if (got[4]!=-1)
+                     pseudoUp[iColumn] = 0.0;
+                     // if (got[2]!=-1)
+                     branchDirection[iColumn] = 0;
+                     priorities[iColumn] = useMasks ? -123456789 : 0;
+                  }
+                  int nBadPseudo = 0;
+                  int nBadDir = 0;
+                  int nBadPri = 0;
+                  int nBadName = 0;
+                  int nBadLine = 0;
+                  int nLine = 0;
+                  iColumn = -1;
+                  int lowestPriority = -COIN_INT_MAX;
+                  bool needCard = true;
+                  while (!needCard || fgets(line, 1000, fp)) {
+                     if (!strncmp(line, "ENDATA", 6) ||
+                         !strncmp(line, "endata", 6))
                         break;
-                      nLine++;
-                      if (!useMasks)
+                     nLine++;
+                     if (!useMasks)
                         iColumn = -1;
-                      else
+                     else
                         needCard = false;
-                      double up = 0.0;
-                      double down = 0.0;
-                      int pri = 0;
-                      int dir = 0;
-                      double solValue = COIN_DBL_MAX;
-                      int priValue = 1000000;
-                      char *pos = line;
-                      char *put = line;
-                      if (!numberFields) {
+                     double up = 0.0;
+                     double down = 0.0;
+                     int pri = 0;
+                     int dir = 0;
+                     double solValue = COIN_DBL_MAX;
+                     int priValue = 1000000;
+                     char *pos = line;
+                     char *put = line;
+                     if (!numberFields) {
                         // put in ,
                         for (i = 4; i < 100; i++) {
-                          if (line[i] == ' ' || line[i] == '\t') {
-                            line[i] = ',';
-                            break;
-                          }
+                           if (line[i] == ' ' || line[i] == '\t') {
+                              line[i] = ',';
+                              break;
+                           }
                         }
-                      }
-                      while (*pos >= ' ' && *pos != '\n') {
+                     }
+                     while (*pos >= ' ' && *pos != '\n') {
                         if (*pos != ' ' && *pos != '\t') {
-                          *put = *pos;
-                          put++;
+                           *put = *pos;
+                           put++;
                         }
                         pos++;
-                      }
-                      *put = '\0';
-                      pos = line;
-                      for (int i = 0; i < nAcross; i++) {
+                     }
+                     *put = '\0';
+                     pos = line;
+                     for (int i = 0; i < nAcross; i++) {
                         char *comma = strchr(pos, ',');
                         if (comma) {
-                          *comma = '\0';
+                           *comma = '\0';
                         } else if (i < nAcross - 1) {
-                          nBadLine++;
-                          break;
+                           nBadLine++;
+                           break;
                         }
                         switch (order[i]) {
-                          // name
-                        case 0:
-                          iColumn++;
-                          for (; iColumn < numberColumns; iColumn++) {
-                            if (priorities[iColumn] != -123456789) {
-                              if (!strcmp(columnNames[iColumn], pos))
-                                break;
-                            } else {
-                              // mask (at present ? and trailing *)
-                              const char *name = columnNames[iColumn];
-                              int length = strlen(name);
-                              int lengthMask = strlen(pos);
-                              bool asterisk = pos[lengthMask - 1] == '*';
-                              if (asterisk)
-                                length = lengthMask - 1;
-                              int i;
-                              for (i = 0; i < length; i++) {
-                                if (name[i] != pos[i]) {
-                                  if (pos[i] != '?')
+                           // name
+                         case 0:
+                           iColumn++;
+                           for (; iColumn < numberColumns; iColumn++) {
+                              if (priorities[iColumn] != -123456789) {
+                                 if (!strcmp(columnNames[iColumn], pos))
                                     break;
-                                }
+                              } else {
+                                 // mask (at present ? and trailing *)
+                                 const char *name = columnNames[iColumn];
+                                 int length = strlen(name);
+                                 int lengthMask = strlen(pos);
+                                 bool asterisk = pos[lengthMask - 1] == '*';
+                                 if (asterisk)
+                                    length = lengthMask - 1;
+                                 int i;
+                                 for (i = 0; i < length; i++) {
+                                    if (name[i] != pos[i]) {
+                                       if (pos[i] != '?')
+                                          break;
+                                    }
+                                 }
+                                 if (i == length)
+                                    break;
                               }
-                              if (i == length)
-                                break;
-                            }
-                          }
-                          if (iColumn == numberColumns) {
-                            iColumn = -1;
-                            needCard = true;
-                          }
-                          break;
-                          // number
-                        case 1:
-                          iColumn = atoi(pos);
-                          if (iColumn < 0 || iColumn >= numberColumns)
-                            iColumn = -1;
-                          break;
-                          // direction
-                        case 2:
-                          if (*pos == 'D')
-                            dir = -1;
-                          else if (*pos == 'U')
-                            dir = 1;
-                          else if (*pos == 'N')
-                            dir = 0;
-                          else if (*pos == '1' && *(pos + 1) == '\0')
-                            dir = 1;
-                          else if (*pos == '0' && *(pos + 1) == '\0')
-                            dir = 0;
-                          else if (*pos == '1' && *(pos + 1) == '1' &&
-                                   *(pos + 2) == '\0')
-                            dir = -1;
-                          else
-                            dir = -2; // bad
-                          break;
-                          // priority
-                        case 3:
-                          pri = atoi(pos);
-                          lowestPriority = CoinMax(lowestPriority, pri);
-                          break;
-                          // up
-                        case 4:
-                          up = atof(pos);
-                          break;
-                          // down
-                        case 5:
-                          down = atof(pos);
-                          break;
-                          // sol value
-                        case 6:
-                          solValue = atof(pos);
-                          break;
-                          // priority in value
-                        case 7:
-                          priValue = atoi(pos);
-                          break;
+                           }
+                           if (iColumn == numberColumns) {
+                              iColumn = -1;
+                              needCard = true;
+                           }
+                           break;
+                           // number
+                         case 1:
+                           iColumn = atoi(pos);
+                           if (iColumn < 0 || iColumn >= numberColumns)
+                              iColumn = -1;
+                           break;
+                           // direction
+                         case 2:
+                           if (*pos == 'D')
+                              dir = -1;
+                           else if (*pos == 'U')
+                              dir = 1;
+                           else if (*pos == 'N')
+                              dir = 0;
+                           else if (*pos == '1' && *(pos + 1) == '\0')
+                              dir = 1;
+                           else if (*pos == '0' && *(pos + 1) == '\0')
+                              dir = 0;
+                           else if (*pos == '1' && *(pos + 1) == '1' &&
+                                    *(pos + 2) == '\0')
+                              dir = -1;
+                           else
+                              dir = -2; // bad
+                           break;
+                           // priority
+                         case 3:
+                           pri = atoi(pos);
+                           lowestPriority = CoinMax(lowestPriority, pri);
+                           break;
+                           // up
+                         case 4:
+                           up = atof(pos);
+                           break;
+                           // down
+                         case 5:
+                           down = atof(pos);
+                           break;
+                           // sol value
+                         case 6:
+                           solValue = atof(pos);
+                           break;
+                           // priority in value
+                         case 7:
+                           priValue = atoi(pos);
+                           break;
                         }
                         if (comma) {
-                          *comma = ',';
-                          pos = comma + 1;
+                           *comma = ',';
+                           pos = comma + 1;
                         }
-                      }
-                      if (iColumn >= 0) {
+                     }
+                     if (iColumn >= 0) {
                         if (down < 0.0) {
-                          nBadPseudo++;
-                          down = 0.0;
+                           nBadPseudo++;
+                           down = 0.0;
                         }
                         if (up < 0.0) {
-                          nBadPseudo++;
-                          up = 0.0;
+                           nBadPseudo++;
+                           up = 0.0;
                         }
                         if (!up)
-                          up = down;
+                           up = down;
                         if (!down)
-                          down = up;
+                           down = up;
                         if (dir < -1 || dir > 1) {
-                          nBadDir++;
-                          dir = 0;
+                           nBadDir++;
+                           dir = 0;
                         }
                         if (pri < 0) {
-                          nBadPri++;
-                          pri = 0;
+                           nBadPri++;
+                           pri = 0;
                         }
                         // if (got[5]!=-1)
                         pseudoDown[iColumn] = down;
@@ -9921,161 +9795,128 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                         nBadName++;
                       }
                     }
-                    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                      if (priorities[iColumn] == -123456789)
+                  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                     if (priorities[iColumn] == -123456789)
                         priorities[iColumn] = lowestPriority + 1;
-                    }
-                    if (!parameters.noPrinting()) {
-                      printf("%d fields and %d records", nAcross, nLine);
-                      if (nBadPseudo)
+                  }
+                  if (!parameters.noPrinting()) {
+                     printf("%d fields and %d records", nAcross, nLine);
+                     if (nBadPseudo)
                         printf(" %d bad pseudo costs", nBadPseudo);
-                      if (nBadDir)
+                     if (nBadDir)
                         printf(" %d bad directions", nBadDir);
-                      if (nBadPri)
+                     if (nBadPri)
                         printf(" %d bad priorities", nBadPri);
-                      if (nBadName)
+                     if (nBadName)
                         printf(" ** %d records did not match on name/sequence",
                                nBadName);
-                      printf("\n");
-                    }
-                    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                      free(columnNames[iColumn]);
-                    }
-                    delete[] columnNames;
-                  } else {
-                    std::cout << "Duplicate or unknown keyword - or "
-                                 "name/number fields wrong"
-                              << line << std::endl;
+                     printf("\n");
                   }
-                }
-                fclose(fp);
-              } else {
-                buffer.str("");
-                buffer << "Unable to open file " << fileName.c_str();
-                printGeneralMessage(model_, buffer.str());
-              }
-            } else {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+                  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                     free(columnNames[iColumn]);
+                  }
+                  delete[] columnNames;
+               } else {
+                  std::cout << "Duplicate or unknown keyword - or "
+                     "name/number fields wrong"
+                            << line << std::endl;
+               }
             }
-            break;
+            fclose(fp);
+           } break;
           case CbcParam::READMIPSTART:
-          case CbcParam::READSOL:
-            if (goodModel) {
-              parameters[CbcParam::MIPSTARTFILE]->getVal(field);
-              mipStartFile = field;
-              if (field[0] == '/' || field[0] == '\\') {
-                fileName = field;
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
-              } else {
-                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
-              }
-              buffer.str("");
-              buffer << "opening mipstart file " << fileName.c_str();
-              printGeneralMessage(model_, buffer.str());
-              double msObj;
-
-              CbcMipStartIO::read(model_.solver(), fileName.c_str(), mipStart,
-                                  msObj, model_.messageHandler(),
-                                  model_.messagesPointer());
-              // copy to before preprocess if has .before.
-              if (strstr(fileName.c_str(), ".before.")) {
-                mipStartBefore = mipStart;
-                buffer.str("");
-                buffer << "file " <<  fileName.c_str() << " will be used before preprocessing.";
-                printGeneralMessage(model_, buffer.str());
-              }
-            } else {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+          case CbcParam::READSOL: {
+            if (!goodModel){
+               buffer.str("");
+               buffer << "** Current model not valid";
+               printGeneralMessage(model_, buffer.str());
+               continue;
             }
-            break;
-          case CbcParam::DEBUG:
-            if (goodModel) {
-              delete[] debugValues;
-              debugValues = NULL;
-              parameters[CbcParam::DEBUGFILE]->getVal(field);
-              if (field == "create" || field == "createAfterPre") {
-                 printf("Will create a debug file so this run should be a "
-                        "good one\n");
-                 break;
-              } else if (field == "unitTest") {
-                 printf("debug will be done using file name of model\n");
-                 break;
-              }
-              if (field[0] == '/' || field[0] == '\\') {
-                fileName = field;
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
-              } else {
-                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
-              }
-              FILE *fp = fopen(fileName.c_str(), "rb");
-              if (fp) {
-                // can open - lets go for it
-                int numRows;
-                double obj;
-                size_t nRead;
-                nRead = fread(&numRows, sizeof(int), 1, fp);
-                if (nRead != 1)
-                  throw("Error in fread");
-                nRead = fread(&numberDebugValues, sizeof(int), 1, fp);
-                if (nRead != 1)
-                  throw("Error in fread");
-                nRead = fread(&obj, sizeof(double), 1, fp);
-                if (nRead != 1)
-                  throw("Error in fread");
-                debugValues = new double[numberDebugValues + numRows];
-                nRead = fread(debugValues, sizeof(double), numRows, fp);
-                if (nRead != static_cast<size_t>(numRows))
-                  throw("Error in fread");
-                nRead = fread(debugValues, sizeof(double), numRows, fp);
-                if (nRead != static_cast<size_t>(numRows))
-                  throw("Error in fread");
-                nRead =
-                    fread(debugValues, sizeof(double), numberDebugValues, fp);
-                if (nRead != static_cast<size_t>(numberDebugValues))
-                  throw("Error in fread");
-                printf("%d doubles read into debugValues\n", numberDebugValues);
+            parameters[CbcParam::MIPSTARTFILE]->getVal(fileName);
+            CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                        &canOpen);
+            mipStartFile = fileName;
+            buffer.str("");
+            buffer << "opening mipstart file " << fileName.c_str();
+            printGeneralMessage(model_, buffer.str());
+            double msObj;
+            
+            CbcMipStartIO::read(model_.solver(), fileName.c_str(), mipStart,
+                                msObj, model_.messageHandler(),
+                                model_.messagesPointer());
+            // copy to before preprocess if has .before.
+            if (strstr(fileName.c_str(), ".before.")) {
+               mipStartBefore = mipStart;
+               buffer.str("");
+               buffer << "file " <<  fileName.c_str() << " will be used before preprocessing.";
+               printGeneralMessage(model_, buffer.str());
+            }
+          } break;
+           case CbcParam::DEBUG:{
+            if (!goodModel){
+               buffer.str("");
+               buffer << "** Current model not valid";
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
+            delete[] debugValues;
+            debugValues = NULL;
+            parameters[CbcParam::DEBUGFILE]->getVal(fileName);
+            if (fileName == "create" || fileName == "createAfterPre") {
+               printf("Will create a debug file so this run should be a "
+                      "good one\n");
+               break;
+            } else if (fileName == "unitTest") {
+               printf("debug will be done using file name of model\n");
+               break;
+            }
+            CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                        &canOpen);
+            if (!canOpen){
+               buffer.str("");
+               buffer << "Unable to open file " << fileName.c_str();
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
+            FILE *fp = fopen(fileName.c_str(), "rb");
+            // can open - lets go for it
+            int numRows;
+            double obj;
+            size_t nRead;
+            nRead = fread(&numRows, sizeof(int), 1, fp);
+            if (nRead != 1)
+               throw("Error in fread");
+            nRead = fread(&numberDebugValues, sizeof(int), 1, fp);
+            if (nRead != 1)
+               throw("Error in fread");
+            nRead = fread(&obj, sizeof(double), 1, fp);
+            if (nRead != 1)
+               throw("Error in fread");
+            debugValues = new double[numberDebugValues + numRows];
+            nRead = fread(debugValues, sizeof(double), numRows, fp);
+            if (nRead != static_cast<size_t>(numRows))
+               throw("Error in fread");
+            nRead = fread(debugValues, sizeof(double), numRows, fp);
+            if (nRead != static_cast<size_t>(numRows))
+               throw("Error in fread");
+            nRead =
+               fread(debugValues, sizeof(double), numberDebugValues, fp);
+            if (nRead != static_cast<size_t>(numberDebugValues))
+               throw("Error in fread");
+            printf("%d doubles read into debugValues\n", numberDebugValues);
 #if DEBUG_PREPROCESS > 1
-                debugSolution = debugValues;
-                debugNumberColumns = numberDebugValues;
+            debugSolution = debugValues;
+            debugNumberColumns = numberDebugValues;
 #endif
-                if (numberDebugValues < 200) {
-                  for (int i = 0; i < numberDebugValues; i++) {
-                    if (clpSolver->isInteger(i) && debugValues[i])
-                      printf("%d %g\n", i, debugValues[i]);
-                  }
-                }
-                fclose(fp);
-              } else {
-                buffer.str("");
-                buffer << "Unable to open file " << fileName.c_str();
-                printGeneralMessage(model_, buffer.str());
-              }
-            } else {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+            if (numberDebugValues < 200) {
+               for (int i = 0; i < numberDebugValues; i++) {
+                  if (clpSolver->isInteger(i) && debugValues[i])
+                     printf("%d %g\n", i, debugValues[i]);
+               }
             }
-            break;
+           } break;
           case CbcParam::PRINTMASK:
             if (status = cbcParam->readValue(inputQueue, field, &message)){
                printGeneralMessage(model_, message);
@@ -10087,97 +9928,78 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
             break;
             
-          case CbcParam::WRITEMODEL:
-            {
-              parameters[CbcParam::MODELFILE]->getVal(fileName);
-              if (fileName[0] != '/' && fileName[0] != '\\' &&
-                  !strchr(fileName.c_str(), ':')) {
-                 fileName = parameters[CbcParam::DIRECTORY]->dirName() +
-                    fileName;
-              }
-              bool canOpen = false;
-              FILE *fp = fopen(fileName.c_str(), "wb");
-              if (fp) {
-                 // can open - lets go for it
-                 fclose(fp);
-                 canOpen = true;
-              } else {
-                 buffer.str("");
-                 buffer <<  "Unable to open file " << fileName.c_str();
-                 printGeneralMessage(model_, buffer.str());
-              }
-              if (canOpen) {
-                 int status;
-                 // If presolve on then save presolved
-                 bool deleteModel2 = false;
-                 ClpSimplex *model2 = lpSolver;
-                 if (preSolve) {
-                    ClpPresolve pinfo;
-                    double presolveTolerance =
-                       parameters[ClpParam::PRESOLVETOLERANCE]->dblVal();
-                    model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
-                                                  false, preSolve);
-                    if (model2) {
-                       printf("Saving presolved model on %s\n",
-                              fileName.c_str());
-                       deleteModel2 = true;
-                    } else {
-                       printf("Presolved model looks infeasible - saving original on %s\n",
-                              fileName.c_str());
-                       deleteModel2 = false;
-                       model2 = lpSolver;
-                    }
-                 } else {
-                    printf("Saving model on %s\n",
-                           fileName.c_str());
-                 }
-                 status = model2->saveModel(fileName.c_str());
-                 if (deleteModel2)
-                    delete model2;
-                 if (!status) {
-                    goodModel = true;
-                    time2 = CoinCpuTime();
-                    totalTime += time2 - time1;
-                    time1 = time2;
-                 } else {
-                    // errors
-                    printGeneralMessage(model_, "There were errors on output");
-                 }
-              }
-            } break;
-
-           case CbcParam::READMODEL: {
+          case CbcParam::WRITEMODEL:{
+            parameters[CbcParam::MODELFILE]->getVal(fileName);
+            CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                        &canOpen);
+            if (!canOpen) {
+               buffer.str("");
+               buffer << "Unable to open file " << fileName.c_str();
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
+            int status;
+            // If presolve on then save presolved
+            bool deleteModel2 = false;
+            ClpSimplex *model2 = lpSolver;
+            if (preSolve) {
+               ClpPresolve pinfo;
+               double presolveTolerance =
+                  parameters[ClpParam::PRESOLVETOLERANCE]->dblVal();
+               model2 = pinfo.presolvedModel(*lpSolver, presolveTolerance,
+                                             false, preSolve);
+               if (model2) {
+                  printf("Saving presolved model on %s\n",
+                         fileName.c_str());
+                  deleteModel2 = true;
+               } else {
+                  printf("Presolved model looks infeasible - saving original on %s\n",
+                         fileName.c_str());
+                  deleteModel2 = false;
+                  model2 = lpSolver;
+               }
+            } else {
+               printf("Saving model on %s\n",
+                      fileName.c_str());
+            }
+            status = model2->saveModel(fileName.c_str());
+            if (deleteModel2)
+               delete model2;
+            if (!status) {
+               goodModel = true;
+               time2 = CoinCpuTime();
+               totalTime += time2 - time1;
+               time1 = time2;
+            } else {
+               // errors
+               printGeneralMessage(model_, "There were errors on output");
+            }
+          } break;
+            
+          case CbcParam::READMODEL: {
 
             parameters[CbcParam::MODELFILE]->getVal(fileName);
-            if (fileName[0] != '/' && fileName[0] != '\\' &&
-                !strchr(fileName.c_str(), ':')) {
-               fileName = parameters[CbcParam::DIRECTORY]->dirName() + fileName;
+            CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                        &canOpen);
+            if (!canOpen) {
+               buffer.str("");
+               buffer << "Unable to open file " << fileName.c_str();
+               printGeneralMessage(model_, buffer.str());
+               continue;
             }
-            
-            bool canOpen = false;
-            FILE *fp = fopen(fileName.c_str(), "rb");
-            if (fp) {
-              // can open - lets go for it
-              fclose(fp);
-              canOpen = true;
+            int status = lpSolver->restoreModel(fileName.c_str());
+            if (!status) {
+               goodModel = true;
+               time2 = CoinCpuTime();
+               totalTime += time2 - time1;
+               time1 = time2;
             } else {
-              buffer.str("");
-              buffer << "Unable to open file " << fileName.c_str();
-              printGeneralMessage(model_, buffer.str());
-            }
-            if (canOpen) {
-              int status = lpSolver->restoreModel(fileName.c_str());
-              if (!status) {
-                goodModel = true;
-                time2 = CoinCpuTime();
-                totalTime += time2 - time1;
-                time1 = time2;
-              } else {
-                // errors
-                buffer.str("");
-                buffer << "There were errors on input";
-                printGeneralMessage(model_, buffer.str());
-              }
+               // errors
+               buffer.str("");
+               buffer << "There were errors on input";
+               printGeneralMessage(model_, buffer.str());
             }
           } break;
           case CbcParam::MAXIMIZE:
@@ -10186,26 +10008,27 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           case CbcParam::MINIMIZE:
             lpSolver->setOptimizationDirection(1);
             break;
-          case CbcParam::REVERSE:
-            if (goodModel) {
-              int iColumn;
-              int numberColumns = lpSolver->numberColumns();
-              double *dualColumnSolution = lpSolver->dualColumnSolution();
-              ClpObjective *obj = lpSolver->objectiveAsObject();
-              assert(dynamic_cast<ClpLinearObjective *>(obj));
-              double offset;
-              double *objective = obj->gradient(NULL, NULL, offset, true);
-              for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                dualColumnSolution[iColumn] = dualColumnSolution[iColumn];
-                objective[iColumn] = -objective[iColumn];
-              }
-              int iRow;
-              int numberRows = lpSolver->numberRows();
-              double *dualRowSolution = lpSolver->dualRowSolution();
-              for (iRow = 0; iRow < numberRows; iRow++)
-                dualRowSolution[iRow] = dualRowSolution[iRow];
+           case CbcParam::REVERSE:{
+            if (!goodModel){
+               continue;
             }
-            break;
+            int iColumn;
+            int numberColumns = lpSolver->numberColumns();
+            double *dualColumnSolution = lpSolver->dualColumnSolution();
+            ClpObjective *obj = lpSolver->objectiveAsObject();
+            assert(dynamic_cast<ClpLinearObjective *>(obj));
+            double offset;
+            double *objective = obj->gradient(NULL, NULL, offset, true);
+            for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+               dualColumnSolution[iColumn] = dualColumnSolution[iColumn];
+               objective[iColumn] = -objective[iColumn];
+            }
+            int iRow;
+            int numberRows = lpSolver->numberRows();
+            double *dualRowSolution = lpSolver->dualRowSolution();
+            for (iRow = 0; iRow < numberRows; iRow++)
+               dualRowSolution[iRow] = dualRowSolution[iRow];
+           } break;
           case CbcParam::DIRSAMPLE: 
           case CbcParam::DIRECTORY: 
           case CbcParam::DIRNETLIB: 
@@ -10242,49 +10065,54 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             babModel_ = NULL;
             return returnCode;
           }
-          case CbcParam::USERCBC:
+          case CbcParam::USERCBC: {
 #ifdef USER_HAS_FAKE_CBC
             // Replace the sample code by whatever you want
-            if (goodModel) {
-              // Way of using an existing piece of code
-              OsiClpSolverInterface *clpSolver =
-                  dynamic_cast<OsiClpSolverInterface *>(model_.solver());
-              ClpSimplex *lpSolver = clpSolver->getModelPtr();
-              // set time from integer model
-              double timeToGo = model_.getMaximumSeconds();
-              lpSolver->setMaximumSeconds(timeToGo);
-              fakeMain(*lpSolver, *clpSolver, model);
-              // My actual usage has objective only in clpSolver
-              double objectiveValue = clpSolver->getObjValue();
-              int iStat = lpSolver->status();
-              int iStat2 = lpSolver->secondaryStatus();
-              // make sure solution back in correct place
-              clpSolver =
-                  dynamic_cast<OsiClpSolverInterface *>(model_.solver());
-              lpSolver = clpSolver->getModelPtr();
-              if (info && statusUserFunction_[0]) {
-                int n = clpSolver->getNumCols();
-                double value = objectiveValue * lpSolver->getObjSense();
-                char buf[300];
-                int pos = 0;
-                std::string minor[] = {"",     "", "gap",       "nodes",
-                                       "time", "", "solutions", "user ctrl-c"};
-                if (iStat == 0) {
+            if (!goodModel){
+               buffer.str("");
+               buffer << "** Current model not valid";
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
+            // Way of using an existing piece of code
+            OsiClpSolverInterface *clpSolver =
+               dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+            ClpSimplex *lpSolver = clpSolver->getModelPtr();
+            // set time from integer model
+            double timeToGo = model_.getMaximumSeconds();
+            lpSolver->setMaximumSeconds(timeToGo);
+            fakeMain(*lpSolver, *clpSolver, model);
+            // My actual usage has objective only in clpSolver
+            double objectiveValue = clpSolver->getObjValue();
+            int iStat = lpSolver->status();
+            int iStat2 = lpSolver->secondaryStatus();
+            // make sure solution back in correct place
+            clpSolver =
+               dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+            lpSolver = clpSolver->getModelPtr();
+            if (info && statusUserFunction_[0]) {
+               int n = clpSolver->getNumCols();
+               double value = objectiveValue * lpSolver->getObjSense();
+               char buf[300];
+               int pos = 0;
+               std::string minor[] = {"",     "", "gap",       "nodes",
+                                      "time", "", "solutions", "user ctrl-c"};
+               if (iStat == 0) {
                   if (objectiveValue < 1.0e40) {
-                    pos += sprintf(buf + pos, "optimal,");
+                     pos += sprintf(buf + pos, "optimal,");
                   } else {
-                    // infeasible
-                    iStat = 1;
-                    pos += sprintf(buf + pos, "infeasible,");
+                     // infeasible
+                     iStat = 1;
+                     pos += sprintf(buf + pos, "infeasible,");
                   }
-                } else if (iStat == 1) {
+               } else if (iStat == 1) {
                   if (iStat2 != 6)
-                    iStat = 3;
+                     iStat = 3;
                   else
-                    iStat = 4;
+                     iStat = 4;
                   pos += sprintf(buf + pos, "stopped on %s,",
                                  minor[iStat2].c_str());
-                } else if (iStat == 2) {
+               } else if (iStat == 2) {
                   iStat = 7;
                   pos += sprintf(buf + pos, "stopped on difficulties,");
                 } else if (iStat == 5) {
@@ -10323,9 +10151,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 // put buffer into info
                 strcpy(info->buffer, buf);
               }
-            }
 #endif
-            break;
+          } break;
           case CbcParam::HELP:
             std::cout << "Cbc version " << CBC_VERSION << ", build " << __DATE__
                       << std::endl;
@@ -10343,20 +10170,9 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             break;
           case CbcParam::WRITESTATS: {
             parameters[CbcParam::CSVSTATSFILE]->getVal(field);
-            if (field[0] == '/' || field[0] == '\\') {
-              fileName = field;
-            } else if (field[0] == '~') {
-              char *environVar = getenv("HOME");
-              if (environVar) {
-                std::string home(environVar);
-                field = field.erase(0, 1);
-                fileName = home + field;
-              } else {
-                fileName = field;
-              }
-            } else {
-              fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
-            }
+            CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                        &canOpen);
             int state = 0;
             // FIXME: This needs to fixed up to use modern C++ and to use the inputQueue properly
             char cbuffer[1000];
@@ -10425,8 +10241,13 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             break;
           case CbcParam::PRINTSOL:
           case CbcParam::WRITENEXTSOL:
-          case CbcParam::WRITEGMPLSOL:
-            if (goodModel) {
+          case CbcParam::WRITEGMPLSOL:{
+            if (!goodModel){
+               buffer.str("");
+               buffer << "** Current model not valid";
+               printGeneralMessage(model_, buffer.str());
+               continue;
+            }
               // FIXME: Need to figure out when to open in 'w' versus 'a' mode
               bool append = true;
 
@@ -10448,39 +10269,22 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 // stderr
                 fp = stderr;
               } else {
-                bool absolutePath;
-                if (dirsep == '/') {
-                  // non Windows (or cygwin)
-                  absolutePath = (field[0] == '/');
-                } else {
-                  // Windows (non cycgwin)
-                  absolutePath = (field[0] == '\\');
-                  // but allow for :
-                  if (strchr(field.c_str(), ':'))
-                    absolutePath = true;
-                }
-                if (absolutePath) {
-                  fileName = field;
-                } else if (field[0] == '~') {
-                  char *environVar = getenv("HOME");
-                  if (environVar) {
-                    std::string home(environVar);
-                    field = field.erase(0, 1);
-                    fileName = home + field;
-                  } else {
-                    fileName = field;
-                  }
-                } else {
-                  fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
-                }
-                if (!append)
-                  fp = fopen(fileName.c_str(), "w");
-                else
-                  fp = fopen(fileName.c_str(), "a");
+                 CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                             &canOpen);
+                 if (!canOpen) {
+                    buffer.str("");
+                    buffer << "Unable to open file " << fileName.c_str();
+                    printGeneralMessage(model_, buffer.str());
+                    continue;
+                 }
+                 if (!append)
+                    fp = fopen(fileName.c_str(), "w");
+                 else
+                    fp = fopen(fileName.c_str(), "a");
               }
-              if (fp) {
 #ifndef CBC_OTHER_SOLVER
-                // See if Glpk
+              // See if Glpk
                 if (cbcParamCode == CbcParam::WRITEGMPLSOL) {
                   int numberRows = lpSolver->getNumRows();
                   int numberColumns = lpSolver->getNumCols();
@@ -11170,40 +10974,19 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     delete[] masks[i];
                   delete[] masks;
                 }
-              } else {
-                buffer.str("");
-                buffer << "Unable to open file " << fileName.c_str();
-                printGeneralMessage(model_, buffer.str());
-              }
-            } else {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
-            }
-            break;
+          } break;
           case CbcParam::WRITESOL:
-            if (goodModel) {
-              parameters[CbcParam::SOLUTIONFILE]->getVal(field);
-              if (field[0] == '/' || field[0] == '\\') {
-                fileName = field;
-              } else if (field[0] == '~') {
-                char *environVar = getenv("HOME");
-                if (environVar) {
-                  std::string home(environVar);
-                  field = field.erase(0, 1);
-                  fileName = home + field;
-                } else {
-                  fileName = field;
-                }
-              } else {
-                fileName = parameters[CbcParam::DIRECTORY]->dirName() + field;
-              }
-              ClpParamUtils::saveSolution(lpSolver, fileName);
-            } else {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str()); 
+            if (!goodModel){
+               buffer.str("");
+               buffer << "** Current model not valid";
+               printGeneralMessage(model_, buffer.str());
+               continue;
             }
+            parameters[CbcParam::SOLUTIONFILE]->getVal(field);
+            CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                        &canOpen);
+            ClpParamUtils::saveSolution(lpSolver, fileName);
             break;
           case CbcParam::ENVIRONMENT: {
 #if !defined(_MSC_VER) && !defined(__MSVCRT__)

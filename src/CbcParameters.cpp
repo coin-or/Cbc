@@ -665,11 +665,14 @@ void CbcParameters::addCbcSolverHelpParams() {
     getParam(code)->setPushFunc(CbcParamUtils::doHelpParam);
     getParam(code)->setType(CoinParam::paramAct);
   }
+  // Duplicate help to get correct call
   parameters_[CbcParam::GENERALQUERY]->setup(
-      "?", "Print a list of commands", CoinParam::displayPriorityNone);
+      "?", "Print a list of commands","Print a list of commands",
+      CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::FULLGENERALQUERY]->setup(
       "???", "Print a list with *all* commands, even those hidden with `?'",
+      "Print a list with *all* commands, even those hidden with `?'",
       CoinParam::displayPriorityNone);
 
   // Need display parameter to resolve ambiguity

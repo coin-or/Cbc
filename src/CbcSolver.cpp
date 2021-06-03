@@ -1861,6 +1861,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		across++;
 		if (across == maxAcross) {
 		  across = 0;
+		  lengthLine = 0;
 		  if ((verbose % 4) != 0) {
 		    // put out description as well
 		    if ((verbose & 1) != 0)

@@ -5,67 +5,79 @@
   This code is licensed under the terms of the Eclipse Public License (EPL).
 
 */
-/*
-  This file is part of cbc-generic.
-*/
 
-#ifndef CbcCbcParam_H
-#define CbcCbcParam_H
+#ifndef CbcModelParam_H
+#define CbcModelParam_H
 
-/* \file CbcGenCbcParam.hpp
+#include "CoinParam.hpp"
+#include "CbcParam.hpp"
+
+/* \file CbcModelParam.hpp
    \brief Declarations for parameters that act on a CbcModel object.
 */
 
-/*
-*/
+enum CbcModelParamCode {
+   CBCMODEL_FIRSTPARAM = CBCSOLVER_LASTPARAM + 1,
+   
+   ALLOWABLEGAP,
+   COSTSTRATEGY,
+   //CUTDEPTH,
+   CUTOFF,
+   CUTPASS,
+   DIRECTION,
+   GAPRATIO,
+   INCREMENT,
+   INFEASIBILITYWEIGHT,
+   INTEGERTOLERANCE,
+   //LOGLEVEL,
+   MAXIMIZE,
+   MAXNODES,
+   MAXNODESNOTIMPROVING,   // Added
+   MAXSECONDSNOTIMPROVING, // Added
+   MAXSOLS,                // Added
+   MINIMIZE,
+   MIPOPTIONS,
+   MOREMIPOPTIONS,
+   NUMBERANALYZE,
+   NUMBERBEFORE,
+   REVERSE,
+   STRONGBRANCHING,
+   TIMELIMIT,
+   
+   CBCMODEL_LASTPARAM
+   
+};
 
-/*! \class CbcCbcParam
+/*
+ */
+
+/*! \class CbcModelParam
     \brief Class for control parameters that act on a CbcModel object.
 
     Adds parameter type codes and push/pull functions to the generic parameter
     object.
 */
 
-class CbcCbcParam : public CoinParam {
+class CbcModelParam : public CoinParam {
 
 public:
   /*! \name Subtypes */
   //@{
 
-  /*! \enum CbcCbcParamCode
+  /*! \enum CbcModelParamCode
         \brief Enumeration for parameters that control a CbcModel object
 
       These are parameters that control the operation of a CbcModel object.
       CBCCBC_FIRSTPARAM and CBCCBC_LASTPARAM are markers to allow convenient
       separation of parameter groups.
     */
-  typedef enum { CBCCBC_FIRSTPARAM = CbcGenParam::CBCGEN_LASTPARAM + 1,
 
-    ALLOWABLEGAP,
-    COSTSTRATEGY,
-    CUTDEPTH,
-    CUTOFF,
-    CUTPASS,
-    DIRECTION,
-    GAPRATIO,
-    INCREMENT,
-    INFEASIBILITYWEIGHT,
-    INTEGERTOLERANCE,
-    LOGLEVEL,
-    MAXIMIZE,
-    MAXNODES,
-    MINIMIZE,
-    MIPOPTIONS,
-    MOREMIPOPTIONS,
-    NUMBERANALYZE,
-    NUMBERBEFORE,
-    NUMBERMINI,
-    STRONGBRANCHING,
-    TIMELIMIT_BAB,
-
-    CBCCBC_LASTPARAM
-
-  } CbcCbcParamCode;
+  enum OptimizationDirection {
+    OptDirMaximize = 0,
+    OptDirMinimize,
+    OptDirZero,
+    OptDireEndMarker
+  };
 
   //@}
 
@@ -77,7 +89,7 @@ public:
   //@{
   /*! \brief Default constructor */
 
-  CbcCbcParam();
+  CbcModelParam();
 
   /*! \brief Constructor for a parameter with a double value
 
@@ -85,17 +97,19 @@ public:
       \p upper are real (double) values to distinguish this constructor from the
       constructor for an integer parameter.
     */
-  CbcCbcParam(CbcCbcParamCode code, std::string name, std::string help,
-    double lower, double upper, double dflt = 0.0,
-    bool display = true);
+  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
+                double lower = -COIN_DBL_MAX, double upper = COIN_DBL_MAX,
+                double defaultValue = 0.0, std::string longHelp = "",
+                CoinDisplayPriority displayPriority = displayPriorityHigh);
 
   /*! \brief Constructor for a parameter with an integer value
 
       The default value is 0.
-    */
-  CbcCbcParam(CbcCbcParamCode code, std::string name, std::string help,
-    int lower, int upper, int dflt = 0,
-    bool display = true);
+  */
+  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
+                int lower = -COIN_INT_MAX, int upper = COIN_INT_MAX,
+                int defaultValue = 0, std::string longHelp = "",
+                CoinDisplayPriority displayPriority = displayPriorityHigh);
 
   /*! \brief Constructor for a parameter with keyword values
 
@@ -106,8 +120,10 @@ public:
       distinguish this constructor from the string and action parameter
       constructors.
     */
-  CbcCbcParam(CbcCbcParamCode code, std::string name, std::string help,
-    std::string firstValue, int dflt, bool display = true);
+  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
+                std::string defaultKwd, int defaultMode,
+                std::string longHelp = "",
+                CoinDisplayPriority displayPriority = displayPriorityHigh);
 
   /*! \brief Constructor for a string parameter
 
@@ -115,29 +131,31 @@ public:
       a string constructor from an action parameter constructor.
     */
 
-  CbcCbcParam(CbcCbcParamCode code, std::string name, std::string help,
-    std::string dflt, bool display = true);
+  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
+                std::string defaultValue, std::string longHelp = "",
+                CoinDisplayPriority displayPriority = displayPriorityHigh);
 
   /*! \brief Constructor for an action parameter */
 
-  CbcCbcParam(CbcCbcParamCode code, std::string name, std::string help,
-    bool display = true);
+  // No defaults to resolve ambiguity
+  CbcModelParam(CbcModelParamCode code, std::string name, std::string help,
+                std::string longHelp, CoinDisplayPriority displayPriority);
 
   /*! \brief Copy constructor */
 
-  CbcCbcParam(const CbcCbcParam &orig);
+  CbcModelParam(const CbcModelParam &orig);
 
   /*! \brief Clone */
 
-  CbcCbcParam *clone();
+  CbcModelParam *clone();
 
   /*! \brief Assignment */
 
-  CbcCbcParam &operator=(const CbcCbcParam &rhs);
+  CbcModelParam &operator=(const CbcModelParam &rhs);
 
   /*! \brief  Destructor */
 
-  ~CbcCbcParam();
+  ~CbcModelParam();
 
   //@}
 
@@ -146,31 +164,19 @@ public:
 
   /*! \brief Get the parameter code  */
 
-  inline CbcCbcParamCode paramCode() const
-  {
-    return (paramCode_);
-  }
+  inline CbcModelParamCode paramCode() const { return (paramCode_); }
 
   /*! \brief Set the parameter code */
 
-  inline void setParamCode(CbcCbcParamCode code)
-  {
-    paramCode_ = code;
-  }
+  inline void setParamCode(CbcModelParamCode code) { paramCode_ = code; }
 
   /*! \brief Get the underlying CbcModel object */
 
-  inline CbcModel *obj() const
-  {
-    return (obj_);
-  }
+  inline CbcModel *obj() const { return (obj_); }
 
   /*! \brief Set the underlying CbcModel object */
 
-  inline void setObj(CbcModel *obj)
-  {
-    obj_ = obj;
-  }
+  inline void setObj(CbcModel *obj) { obj_ = obj; }
 
   //@}
 
@@ -179,7 +185,7 @@ private:
   //@{
 
   /// Parameter code
-  CbcCbcParamCode paramCode_;
+  CbcModelParamCode paramCode_;
 
   /// CbcModel object
   CbcModel *obj_;
@@ -187,22 +193,7 @@ private:
   //@}
 };
 
-/*
-  Declare the utility functions.
-*/
-
-namespace CbcCbcParamUtils {
-void addCbcCbcParams(int &numParams, CoinParamVec &paramVec,
-  CbcModel *model);
-void loadCbcParamObj(const CoinParamVec paramVec, int first, int last,
-  CbcModel *model);
-void setCbcModelDefaults(CbcModel *model);
-
-int pushCbcCbcDbl(CoinParam *param);
-int pushCbcCbcInt(CoinParam *param);
-}
-
 #endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

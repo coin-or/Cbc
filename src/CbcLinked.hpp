@@ -13,7 +13,7 @@
 #include "OsiClpSolverInterface.hpp"
 #include "OsiChooseVariable.hpp"
 #include "CbcFathom.hpp"
-#include "CbcSolverConfig.h"
+#include "CbcConfig.h"
 class CbcModel;
 class CoinPackedMatrix;
 class OsiLinkedBound;
@@ -26,7 +26,7 @@ This is to allow the user to replace initialSolve and resolve
 This version changes coefficients
 */
 
-class CBCSOLVERLIB_EXPORT OsiSolverLink : public CbcOsiSolver {
+class CBCLIB_EXPORT OsiSolverLink : public CbcOsiSolver {
 
 public:
   //---------------------------------------------------------------------------
@@ -311,7 +311,7 @@ protected:
    List of bounds which depend on other bounds
 */
 
-class CBCSOLVERLIB_EXPORT OsiLinkedBound {
+class CBCLIB_EXPORT OsiLinkedBound {
 
 public:
   //---------------------------------------------------------------------------
@@ -390,7 +390,7 @@ protected:
 /** heuristic - just picks up any good solution
  */
 
-class CBCSOLVERLIB_EXPORT CbcHeuristicDynamic3 : public CbcHeuristic {
+class CBCLIB_EXPORT CbcHeuristicDynamic3 : public CbcHeuristic {
 public:
   // Default Constructor
   CbcHeuristicDynamic3();
@@ -444,7 +444,7 @@ private:
 */
 class CoinWarmStartBasis;
 
-class CBCSOLVERLIB_EXPORT OsiOldLink : public OsiSOS {
+class CBCLIB_EXPORT OsiOldLink : public OsiSOS {
 
 public:
   // Default Constructor
@@ -530,7 +530,7 @@ protected:
 /** Branching object for Linked ordered sets
 
  */
-class CBCSOLVERLIB_EXPORT OsiOldLinkBranchingObject : public OsiSOSBranchingObject {
+class CBCLIB_EXPORT OsiOldLinkBranchingObject : public OsiSOSBranchingObject {
 
 public:
   // Default Constructor
@@ -569,7 +569,7 @@ private:
 
 */
 
-class CBCSOLVERLIB_EXPORT OsiOneLink {
+class CBCLIB_EXPORT OsiOneLink {
 
 public:
   // Default Constructor
@@ -609,7 +609,7 @@ public:
 
 */
 
-class CBCSOLVERLIB_EXPORT OsiLink : public OsiSOS {
+class CBCLIB_EXPORT OsiLink : public OsiSOS {
 
 public:
   // Default Constructor
@@ -689,7 +689,7 @@ protected:
 /** Branching object for Linked ordered sets
 
  */
-class CBCSOLVERLIB_EXPORT OsiLinkBranchingObject : public OsiTwoWayBranchingObject {
+class CBCLIB_EXPORT OsiLinkBranchingObject : public OsiTwoWayBranchingObject {
 
 public:
   // Default Constructor
@@ -730,7 +730,7 @@ private:
 
 */
 
-class CBCSOLVERLIB_EXPORT OsiBiLinear : public OsiObject2 {
+class CBCLIB_EXPORT OsiBiLinear : public OsiObject2 {
 
 public:
   // Default Constructor
@@ -1028,7 +1028,7 @@ protected:
 /** Branching object for BiLinear objects
 
  */
-class CBCSOLVERLIB_EXPORT OsiBiLinearBranchingObject : public OsiTwoWayBranchingObject {
+class CBCLIB_EXPORT OsiBiLinearBranchingObject : public OsiTwoWayBranchingObject {
 
 public:
   // Default Constructor
@@ -1074,7 +1074,7 @@ protected:
 
 */
 
-class CBCSOLVERLIB_EXPORT OsiBiLinearEquality : public OsiBiLinear {
+class CBCLIB_EXPORT OsiBiLinearEquality : public OsiBiLinear {
 
 public:
   // Default Constructor
@@ -1125,7 +1125,7 @@ protected:
 };
 /// Define a single integer class - but one where you keep branching until fixed even if satisfied
 
-class CBCSOLVERLIB_EXPORT OsiSimpleFixedInteger : public OsiSimpleInteger {
+class CBCLIB_EXPORT OsiSimpleFixedInteger : public OsiSimpleInteger {
 
 public:
   /// Default Constructor
@@ -1173,7 +1173,7 @@ protected:
     even if not an integer variable.  If not then need to duplicate code.
 */
 
-class CBCSOLVERLIB_EXPORT OsiUsesBiLinear : public OsiSimpleInteger {
+class CBCLIB_EXPORT OsiUsesBiLinear : public OsiSimpleInteger {
 
 public:
   /// Default Constructor
@@ -1237,7 +1237,7 @@ protected:
 
 */
 
-class CBCSOLVERLIB_EXPORT OsiChooseStrongSubset : public OsiChooseStrong {
+class CBCLIB_EXPORT OsiChooseStrongSubset : public OsiChooseStrong {
 
 public:
   /// Default Constructor
@@ -1301,7 +1301,7 @@ protected:
 
 class CoinWarmStartBasis;
 /** Stored Temporary Cut Generator Class - destroyed after first use */
-class CBCSOLVERLIB_EXPORT CglTemporary : public CglStored {
+class CBCLIB_EXPORT CglTemporary : public CglStored {
 
 public:
   /**@name Generate Cuts */
@@ -1349,7 +1349,7 @@ private:
 This is to allow the user to replace initialSolve and resolve
 */
 
-class CBCSOLVERLIB_EXPORT OsiSolverLinearizedQuadratic : public OsiClpSolverInterface {
+class CBCLIB_EXPORT OsiSolverLinearizedQuadratic : public OsiClpSolverInterface {
 
 public:
   //---------------------------------------------------------------------------

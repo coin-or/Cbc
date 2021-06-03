@@ -313,10 +313,12 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
     if (increment2 > increment && increment2 > 0.0) {
       if (!noPrinting_) {
         sprintf(generalPrint, "Cutoff increment increased from %g to %g", increment, increment2);
-        CoinMessages generalMessages = solverMod->getModelPtr()->messages();
-        generalMessageHandler->message(CLP_GENERAL, generalMessages)
+	bool usePrefix = generalMessageHandler->prefix();
+	generalMessageHandler->setPrefix(true);
+        generalMessageHandler->message(CBC_GENERAL, model.messages())
           << generalPrint
           << CoinMessageEol;
+	generalMessageHandler->setPrefix(usePrefix);
       }
       increment = increment2;
     }
@@ -328,5 +330,3 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
 }
 #endif // ifndef CBC_OTHER_SOLVER
 
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/

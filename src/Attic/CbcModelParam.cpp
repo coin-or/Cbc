@@ -5,6 +5,9 @@
   This code is licensed under the terms of the Eclipse Public License (EPL).
 
 */
+/*
+  This file is part of cbc-generic.
+*/
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
@@ -13,17 +16,14 @@
 
 #include <cassert>
 #include <string>
-#include <sstream>
 
-#include "CoinUtilsConfig.h"
-
-#include "CoinFileIO.hpp"
 #include "CoinFinite.hpp"
+#include "CoinParam.hpp"
 
 #include "CbcModel.hpp"
 
+#include "CbcModelParam.hpp"
 #include "CbcParam.hpp"
-#include "CbcParameters.hpp"
 
 /*
   Constructors and destructors
@@ -32,14 +32,11 @@
   and action parameters.
 */
 
-//###########################################################################
-//###########################################################################
-
 /*
   Default constructor.
 */
-CbcParam::CbcParam()
-   : CoinParam(), paramCode_(CbcParamCode(0)), parameters_(0), model_(0) {
+CbcModelParam::CbcModelParam()
+    : CoinParam(), paramCode_(CbcModelParamCode(0)), obj_(0) {
   /* Nothing to be done here */
 }
 
@@ -49,13 +46,13 @@ CbcParam::CbcParam()
 /*
   Constructor for double parameter
 */
-CbcParam::CbcParam(int code, std::string name,
-                   std::string help, double lower, double upper,
-                   double defaultValue, std::string longHelp,
-                   CoinDisplayPriority displayPriority)
-   : CoinParam(name, help, lower, upper, defaultValue, longHelp,
-               displayPriority),
-     paramCode_(code), parameters_(0), model_(0) {
+CbcModelParam::CbcModelParam(CbcModelParamCode code, std::string name,
+                             std::string help, double lower, double upper,
+                             double defaultValue, std::string longHelp,
+                             CoinDisplayPriority displayPriority)
+    : CoinParam(name, help, lower, upper, defaultValue, longHelp,
+                displayPriority),
+      paramCode_(code), obj_(0) {
   /* Nothing to be done here */
 }
 
@@ -65,13 +62,13 @@ CbcParam::CbcParam(int code, std::string name,
 /*
   Constructor for integer parameter
 */
-CbcParam::CbcParam(int code, std::string name,
-                   std::string help, int lower, int upper,
-                   int defaultValue, std::string longHelp,
-                   CoinDisplayPriority displayPriority)
-   : CoinParam(name, help, lower, upper, defaultValue, longHelp,
+CbcModelParam::CbcModelParam(CbcModelParamCode code, std::string name,
+                             std::string help, int lower, int upper,
+                             int defaultValue, std::string longHelp,
+                             CoinDisplayPriority displayPriority)
+    : CoinParam(name, help, lower, upper, defaultValue, longHelp,
                 displayPriority),
-     paramCode_(code), parameters_(0), model_(0) {
+      paramCode_(code), obj_(0) {
   /* Nothing to be done here */
 }
 
@@ -81,12 +78,12 @@ CbcParam::CbcParam(int code, std::string name,
 /*
   Constructor for keyword parameter.
 */
-CbcParam::CbcParam(int code, std::string name,
-                   std::string help, std::string defaultKwd,
-                   int defaultMode, std::string longHelp,
-                   CoinDisplayPriority displayPriority)
+CbcModelParam::CbcModelParam(CbcModelParamCode code, std::string name,
+                             std::string help, std::string defaultKwd,
+                             int defaultMode, std::string longHelp,
+                             CoinDisplayPriority displayPriority)
     : CoinParam(name, help, defaultKwd, defaultMode, longHelp, displayPriority),
-      paramCode_(code), parameters_(0), model_(0) {
+      paramCode_(code), obj_(0) {
   /* Nothing to be done here */
 }
 
@@ -96,12 +93,12 @@ CbcParam::CbcParam(int code, std::string name,
 /*
   Constructor for string parameter.
 */
-CbcParam::CbcParam(int code, std::string name,
-                   std::string help, std::string defaultValue,
-                   std::string longHelp,
-                   CoinDisplayPriority displayPriority)
+CbcModelParam::CbcModelParam(CbcModelParamCode code, std::string name,
+                             std::string help, std::string defaultValue,
+                             std::string longHelp,
+                             CoinDisplayPriority displayPriority)
     : CoinParam(name, help, defaultValue, longHelp, displayPriority),
-      paramCode_(code), parameters_(0), model_(0) {
+      paramCode_(code), obj_(0) {
   /* Nothing to be done here */
 }
 
@@ -111,11 +108,11 @@ CbcParam::CbcParam(int code, std::string name,
 /*
   Constructor for action parameter.
 */
-CbcParam::CbcParam(int code, std::string name,
-                   std::string help, std::string longHelp,
-                   CoinDisplayPriority displayPriority)
+CbcModelParam::CbcModelParam(CbcModelParamCode code, std::string name,
+                             std::string help, std::string longHelp,
+                             CoinDisplayPriority displayPriority)
     : CoinParam(name, help, longHelp, displayPriority), paramCode_(code),
-      parameters_(0), model_(0) {
+      obj_(0) {
   /* Nothing to be done here */
 }
 
@@ -125,9 +122,8 @@ CbcParam::CbcParam(int code, std::string name,
 /*
   Copy constructor.
 */
-CbcParam::CbcParam(const CbcParam &orig)
-   : CoinParam(orig), paramCode_(orig.paramCode_), parameters_(orig.parameters_),
-     model_(orig.model_) {
+CbcModelParam::CbcModelParam(const CbcModelParam &orig)
+    : CoinParam(orig), paramCode_(orig.paramCode_), obj_(orig.obj_) {
   /* Nothing to be done here */
 }
 
@@ -138,15 +134,14 @@ CbcParam::CbcParam(const CbcParam &orig)
   Clone
 */
 
-CbcParam *CbcParam::clone() { return (new CbcParam(*this)); }
+CbcModelParam *CbcModelParam::clone() { return (new CbcModelParam(*this)); }
 
-CbcParam &CbcParam::operator=(const CbcParam &rhs) {
+CbcModelParam &CbcModelParam::operator=(const CbcModelParam &rhs) {
   if (this != &rhs) {
     CoinParam::operator=(rhs);
 
     paramCode_ = rhs.paramCode_;
-    model_ = rhs.model_;
-    parameters_ = rhs.parameters_;
+    obj_ = rhs.obj_;
   }
 
   return *this;
@@ -158,14 +153,8 @@ CbcParam &CbcParam::operator=(const CbcParam &rhs) {
 /*
   Destructor
 */
-CbcParam::~CbcParam() { /* Nothing more to do */
+CbcModelParam::~CbcModelParam() { /* Nothing more to do */
 }
-
-/*
-  Utility routine to save the current solution to a file. No formatting, and
-  not intended to be portable in any way, shape, or form.
-*/
-
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
  */

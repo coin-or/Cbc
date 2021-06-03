@@ -16,23 +16,31 @@
 #ifndef CbcSolver_H
 #define CbcSolver_H
 
+#include "CoinUtilsConfig.h"
+
 #include <string>
 #include <vector>
-#include "CoinMessageHandler.hpp"
-#include "OsiClpSolverInterface.hpp"
 
+#include "CoinMessageHandler.hpp"
+#include "CoinModel.hpp"
+
+#include "OsiClpSolverInterface.hpp"
 #if CBC_OTHER_SOLVER == 1
 #include "OsiCpxSolverInterface.hpp"
 #endif
 
+#include "ClpParameters.hpp"
+
+#include "CglCutGenerator.hpp"
+
 #include "CbcModel.hpp"
-#include "CbcOrClpParam.hpp"
-#include "CbcSolverConfig.h"
+#include "CbcParameters.hpp"
+#include "CbcMessage.hpp"
 
 class CbcUser;
 class CbcStopNow;
-class CglCutGenerator;
 
+//#############################################################################
 //#############################################################################
 
 /*! \brief This allows the use of the standalone solver in a flexible manner.
@@ -52,7 +60,7 @@ class CglCutGenerator;
     Parameter initialisation is at last centralised in fillParameters().
 */
 
-class CBCSOLVERLIB_EXPORT CbcSolver {
+class CBCLIB_EXPORT CbcSolver {
 
 public:
   ///@name Solve method
@@ -130,13 +138,13 @@ public:
   ///@name useful stuff
   //@{
   /// Get int value
-  int intValue(CbcOrClpParameterType type) const;
+  int intValue(int code);
   /// Set int value
-  void setIntValue(CbcOrClpParameterType type, int value);
+  void setIntValue(int code, int value);
   /// Get double value
-  double doubleValue(CbcOrClpParameterType type) const;
+  double doubleValue(int code);
   /// Set double value
-  void setDoubleValue(CbcOrClpParameterType type, double value);
+  void setDoubleValue(int code, double value);
   /// User function (NULL if no match)
   CbcUser *userFunction(const char *name) const;
   /// Return original Cbc model
@@ -233,7 +241,8 @@ private:
   /// Cpu time at instantiation
   double startTime_;
   /// Parameters and values
-  std::vector< CbcOrClpParam > parameters_;
+  ClpParameters clpParameters_;
+  CbcParameters parameters_;
   /// Whether to do miplib test
   bool doMiplib_;
   /// Whether to print to std::cout
@@ -242,105 +251,15 @@ private:
   int readMode_;
   //@}
 };
-//#############################################################################
-
-/// Structure to hold useful arrays
-typedef struct {
-  // Priorities
-  int *priorities_;
-  // SOS priorities
-  int *sosPriority_;
-  // Direction to branch first
-  int *branchDirection_;
-  // Input solution
-  double *primalSolution_;
-  // Down pseudo costs
-  double *pseudoDown_;
-  // Up pseudo costs
-  double *pseudoUp_;
-} CbcSolverUsefulData2;
 
 //#############################################################################
-
-/**
-   The CbcSolver class was taken out at a 9/12/09 meeting
-   This is a feeble replacement.
-   At present everything is public
-*/
-class CBCSOLVERLIB_EXPORT  CbcSolverUsefulData {
-
-public:
-  ///@name Constructors and destructors etc
-  //@{
-  /// Default Constructor
-  CbcSolverUsefulData();
-
-  /** Copy constructor .
-     */
-  CbcSolverUsefulData(const CbcSolverUsefulData &rhs);
-
-  /// Assignment operator
-  CbcSolverUsefulData &operator=(const CbcSolverUsefulData &rhs);
-
-  /// Destructor
-  ~CbcSolverUsefulData();
-  //@}
-
-  ///@name Member data
-  //@{
-  // For time
-  double totalTime_;
-  // Parameters
-  std::vector<CbcOrClpParam> parameters_;
-  // Printing
-  bool noPrinting_;
-  // Whether to use signal handler
-  bool useSignalHandler_;
-  // Default pump tuning
-  int initialPumpTune_;
-  // even with verbose >=1  this may not be the first call to
-  // the solver
-  bool printWelcome_;
-
-  //@}
-};
-/// And this uses it
-// When we want to load up CbcModel with options first
-CBCSOLVERLIB_EXPORT
-void CbcMain0(CbcModel &babSolver, CbcSolverUsefulData &solverData);
-CBCSOLVERLIB_EXPORT
-int CbcMain1(int argc, const char *argv[], CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom), CbcSolverUsefulData &solverData);
-CBCSOLVERLIB_EXPORT
-int CbcMain1(int argc, const char *argv[], CbcModel &babSolver,
-	     CbcSolverUsefulData &solverData);
-
-CBCSOLVERLIB_EXPORT
-int CbcMain(int argc, const char *argv[], CbcModel &babSolver);
-// four ways of calling
-CBCSOLVERLIB_EXPORT
-int callCbc(const char *input2, OsiClpSolverInterface &solver1);
-CBCSOLVERLIB_EXPORT
-int callCbc(const char *input2);
-CBCSOLVERLIB_EXPORT
-int callCbc(const std::string input2, OsiClpSolverInterface &solver1);
-CBCSOLVERLIB_EXPORT
-int callCbc(const std::string input2);
-// two ways of calling
-CBCSOLVERLIB_EXPORT
-int callCbc(const char *input2, CbcModel &babSolver);
-CBCSOLVERLIB_EXPORT
-int callCbc(const std::string input2, CbcModel &babSolver);
-// And when CbcMain0 already called to initialize (with call back) (see CbcMain1 for whereFrom)
-CBCSOLVERLIB_EXPORT
-int callCbc1(const char *input2, CbcModel &babSolver, int(CbcModel *currentSolver, int whereFrom));
-
 //#############################################################################
 
 /*! \brief A class to allow the use of unknown user functionality
 
     For example, access to a modelling language (CbcAmpl).
 */
-class CBCSOLVERLIB_EXPORT  CbcUser {
+class CBCLIB_EXPORT  CbcUser {
 
 public:
   ///@name import/export methods
@@ -372,7 +291,7 @@ public:
 
   /// Get useful stuff
   virtual void fillInformation(CbcSolver * /*model*/,
-    CbcSolverUsefulData & /*info*/) {}
+    CbcParameters & /*info*/) {}
   //@}
 
   ///@name usage methods
@@ -428,6 +347,8 @@ protected:
 
   //@}
 };
+
+//#############################################################################
 //#############################################################################
 
 /*! \brief Support the use of a call back class to decide whether to stop
@@ -435,7 +356,7 @@ protected:
   Definitely under construction.
 */
 
-class CBCSOLVERLIB_EXPORT CbcStopNow {
+class CBCLIB_EXPORT CbcStopNow {
 
 public:
   ///@name Decision methods
@@ -484,6 +405,29 @@ private:
   //@}
 };
 #endif
+
+//###########################################################################
+// Empty callback to pass as default (why needed?)
+//###########################################################################
+
+static int dummyCallback(CbcModel * /*model*/, int /*whereFrom*/) { return 0; }
+
+//#############################################################################
+//#############################################################################
+
+// When we want to load up CbcModel with options first
+CBCLIB_EXPORT
+void CbcMain0(CbcModel &model, CbcParameters &parameters);
+CBCLIB_EXPORT
+int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
+             CbcParameters &parameters,
+             int callBack(CbcModel *currentSolver, int whereFrom) =
+             dummyCallback, ampl_info *info = NULL);
+
+void printGeneralMessage(CbcModel &model, std::string message, int type = CBC_GENERAL);
+void printGeneralWarning(CbcModel &model, std::string message, int type = CBC_GENERAL_WARNING);
+CBCLIB_EXPORT
+int cbcReadAmpl(ampl_info *info, int argc, char **argv, CbcModel &model);
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

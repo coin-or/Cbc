@@ -1,4 +1,4 @@
-# Cbc
+# Cbc refactor
 
 [![A COIN-OR Project](https://coin-or.github.io/coin-or-badge.png)](https://www.coin-or.org)
 
@@ -11,23 +11,21 @@ To make changes, please edit [config.yml](.coin-or/config.yml) or the generation
 Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
 It can be used as a callable library or using a stand-alone executable.
 It can be called through
- * AIMMS (via the [AIMMSlinks](https://github.com/coin-or/AIMMSlinks) project),
- * AMPL (natively),
- * [CMPL](https://github.com/coin-or/Cmpl),
- * [CyLP](https://github.com/coin-or/CyLP),
- * GAMS (through the [GAMSlinks](https://github.com/coin-or/GAMSlinks) project),
- * [JuMP](https://github.com/JuliaOpt/JuMP.jl),
- * Mathematica,
- * [MiniZinc](http://www.minizinc.org/),
- * MPL (through the [CoinMP](https://github.com/coin-or/CoinMP) project),
- * [OpenSolver for Excel](http://opensolver.org),
- * [Google's or-tools](https://developers.google.com/optimization),
- * [PuLP](https://github.com/coin-or/PuLP),
- * [python-mip](https://github.com/coin-or/python-mip), and
- * Python (e.g., [cbcpy](https://pypi.org/project/cbcpy)), among others.
+AIMMS (through the [AIMMSlinks](https://github.com/coin-or/AIMMSlinks) project),
+AMPL (natively),
+[CMPL](https://github.com/coin-or/Cmpl),
+GAMS (through the [GAMSlinks](https://github.com/coin-or/GAMSlinks) project),
+[JuMP](https://github.com/JuliaOpt/JuMP.jl),
+Mathematica,
+[MiniZinc](http://www.minizinc.org/),
+MPL (through the [CoinMP](https://github.com/coin-or/CoinMP) project),
+[PuLP](https://github.com/coin-or/PuLP),
+[python-mip](https://github.com/coin-or/python-mip),
+Python (e.g., [cbcpy](https://pypi.org/project/cbcpy)), and
+[OpenSolver for Excel](http://opensolver.org), among others.
 
 Binaries for most platforms are available for download from
-[here](https://www.coin-or.org/download/binary/Cbc). AMPL also provides
+[Bintray](https://bintray.com/coin-or/download/Cbc). AMPL also provides
 stand-alone [Cbc
 executables](http://ampl.com/products/solvers/open-source/#cbc) that can be
 used with (or without) AMPL. Julia also provides a wide range of
@@ -36,7 +34,7 @@ Alternatives include your favorite package manager, as detailed below.
 
 Cbc is developed by John Forrest, now retired from IBM Research, and others.
 The project is currently managed by John Forrest, [Ted
-Ralphs](http://github.com/tkralphs), [Stefan
+Ralphs](http://coral.ie.lehigh.edu/~ted/), [Stefan
 Vigerske](https://github.com/svigerske), [Haroldo Gambini
 Santos](https://github.com/h-g-s), and the rest of the Cbc team. 
 
@@ -44,7 +42,7 @@ Cbc is written in C++ and is released as open source under the [Eclipse Public L
 
 It is distributed under the auspices of the [COIN-OR Foundation](https://www.coin-or.org)
 
-The Cbc development site is https://github.com/coin-or/Cbc.
+The Cbc website is https://github.com/coin-or/Cbc.
 
 ## CITE
 
@@ -52,9 +50,9 @@ The Cbc development site is https://github.com/coin-or/Cbc.
 
 ## CURRENT BUILD STATUS
 
-[![Build Status](https://travis-ci.com/coin-or/Cbc.svg?branch=master)](https://travis-ci.com/coin-or/Cbc)
+[![Build Status](https://travis-ci.com/coin-or/Cbc.svg?branch=refactor)](https://travis-ci.com/coin-or/Cbc)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/chribnemsgm9th0x/branch/master?svg=true)](https://ci.appveyor.com/project/coin-or/Cbc/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/chribnemsgm9th0x/branch/refactor?svg=true)](https://ci.appveyor.com/project/coin-or/Cbc/branch/refactor)
 
 ## DOWNLOAD
 
@@ -62,18 +60,14 @@ The Cbc development site is https://github.com/coin-or/Cbc.
 
 There is a Docker image that provides Cbc, as well as other projects
 in the [COIN-OR Optimization
-Suite](https://github.com/coin-or/COIN-OR-OptimizationSuite) [here](https://hub.docker.com/repository/docker/coinor/coin-or-optimization-suite)
+Suite](https://github.com/coin-or/COIN-OR-OptimizationSuite)[here](https://hub.docker.com/repository/docker/coinor/coin-or-optimization-suite)
 
 ### Binaries
 
-For newer releases, binaries will be made available as assets attached to
-releases in Github
-[here](https://github.com/coin-or/Cbc/releases). Older binaries
-are archived as part of Cbc
-[here](https://www.coin-or.org/download/binary/Cbc).
+Binaries for most platforms are available as part of [Cbc](https://bintray.com/coin-or/download/Cbc). 
 
  * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
- * *Windows*: The easiest way to get Cbc on Windows is to download an archive as described above.
+ * *Windows*: The easiest way to get Cbc on Windows is to download from *[Bintray](https://bintray.com/coin-or/download/Cbc)*.
  * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through [Homebrew](https://brew.sh).
    * `brew tap coin-or-tools/coinor`
    * `brew install coin-or-tools/coinor/cbc`
@@ -81,9 +75,7 @@ are archived as part of Cbc
 Due to license incompatibilities, pre-compiled binaries lack some functionality.
 If binaries are not available for your platform for the latest version and you would like to request them to be built and posted, feel free to let us know on the mailing list.
 
-### Source
-
-Source code can be obtained either by
+*Source code* can be obtained either by
 
  * Downloading a snapshot of the source code for the latest release version of Cbc from the
  [releases](https://github.com/coin-or/Cbc/releases) page.
@@ -104,7 +96,7 @@ To build CoinUtils from source, obtain the `coinbrew` script, do
 ```
 wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
 chmod u+x coinbrew
-./coinbrew fetch Cbc@master
+./coinbrew fetch Cbc@refactor
 ./coinbrew build Cbc
 ```
 For more detailed instructions on coinbrew, see https://coin-or.github.io/coinbrew.
@@ -182,7 +174,7 @@ If you have `Doxygen` available, you can build a HTML documentation by typing
 `make doxygen-docs` 
 
 in the build directory. If Cbc was built via `coinbrew`, then the build
-directory will be `./build/Cbc/master` by default. The doxygen documentation main file
+directory will be `./build/Cbc/refactor` by default. The doxygen documentation main file
 is found at `<build-dir>/doxydoc/html/index.html`.
 
 If you don't have `doxygen` installed locally, you can use also find the
@@ -199,7 +191,7 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
 ## Project Links
 
  * [COIN-OR Initiative](http://www.coin-or.org/)
- * [Discussion formum](https://github.com/coin-or/Cbc/discussions)
+ * [Mailing list](https://github.com/coin-or/Cbc/discussions)
  * [Report a bug](https://github.com/coin-or/Cbc/issues/new)
  * [Doxygen-generated html documentation](http://coin-or.github.io/Cbc/Doxygen)
 
@@ -232,7 +224,7 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
      - Script `compile` is now used to wrap around calls of cl/icl/ifort
        and translate GCC-style compiler flags to MSVC style.
      - Header files are now installed in the better named
-       `$prefix/include/coin-or` instead of `$prefix/include/coin`.
+       `/include/coin-or` instead of `/include/coin`.
      - The default for `--prefix` is no longer the build directory, but
        the autotools-default, probably `/usr/local`.
      - `--enable-debug` does not imply `--disable-shared` anymore.

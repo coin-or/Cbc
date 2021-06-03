@@ -13,7 +13,7 @@
 
 */
 
-class CBCSOLVERLIB_EXPORT ClpConstraintAmpl : public ClpConstraint {
+class CBCLIB_EXPORT ClpConstraintAmpl : public ClpConstraint {
 
 public:
   ///@name Stuff

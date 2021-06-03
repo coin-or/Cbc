@@ -96,17 +96,20 @@ void sos1a(int &error_count, int &warning_count)
   solver1.loadProblem(numcols, numrows, start, index, value, collb, colub, obj, rowlb, rowub);
   solver1.setObjSense(-1);
 
-  CbcSolverUsefulData data;
+  CbcParameters parameters;
   CbcModel model(solver1);
-  CbcMain0(model, data);
+  CbcMain0(model, parameters);
 
   int which[3] = { 0, 1, 2 };
   CbcObject *sosobject = new CbcSOS(&model, 3, which, NULL, 0, 1);
   model.addObjects(1, &sosobject);
   delete sosobject;
 
-  const char *argv2[] = { "gamstest_sos1a", "-solve", "-quit" };
-  CbcMain1(3, argv2, model, NULL, data);
+  std::deque<std::string> inputQueue;
+  inputQueue.push_back("-solve");
+  inputQueue.push_back("-quit");
+  
+  CbcMain1(inputQueue, model, parameters);
   cout << endl;
   if (!model.isProvenOptimal()) {
     cerr << "Error: Model sos1a not solved to optimality." << endl;
@@ -293,15 +296,19 @@ void sos2a(int &error_count, int &warning_count)
       break;
     }
     CbcModel model(solver1);
-    CbcSolverUsefulData data;
-    CbcMain0(model, data);
+    CbcParameters parameters;
+    CbcMain0(model, parameters);
     int which[3] = { 0, 1, 2 };
     CbcObject *sosobject = new CbcSOS(&model, 3, which, NULL, 0, 2);
     model.addObjects(1, &sosobject);
     delete sosobject;
     const char *argv2[] = { "gamstest_sos2a", "-solve", "-quit" };
     cout << "\nSolving sos2a model with last row having lhs " << solver1.getRowLower()[5] << endl;
-    CbcMain1(3, argv2, model, data);
+    std::deque<std::string> inputQueue;
+    inputQueue.push_back("-solve");
+    inputQueue.push_back("-quit");
+    
+    CbcMain1(inputQueue, model, parameters);
     cout << endl;
     if (!model.isProvenOptimal()) {
       cerr << "Error: Model sos2a not solved to optimality." << endl;
@@ -408,8 +415,8 @@ void semicon1(int &error_count, int &warning_count)
   solver1.loadProblem(numcols, numrows, start, index, value, collb, colub, obj, rowlb, rowub);
   for (int testcase = 0; testcase < 5; ++testcase) {
     CbcModel model(solver1);
-    CbcSolverUsefulData data;
-    CbcMain0(model, data);
+    CbcParameters parameters;
+    CbcMain0(model, parameters);
 
     double points[4] = { 0., 0., 0., 10. };
     double objval;
@@ -482,8 +489,11 @@ void semicon1(int &error_count, int &warning_count)
 
     cout << "\nSolving semicon1 model for lotsize variable being either 0 or between " << points[2] << " and 10.\n"
          << endl;
-    const char *argv2[] = { "gamstest_semicon1", "-solve", "-quit" };
-    CbcMain1(3, argv2, model, NULL, data);
+    std::deque<std::string> inputQueue;
+    inputQueue.push_back("-solve");
+    inputQueue.push_back("-quit");
+    
+    CbcMain1(inputQueue, model, parameters);
     cout << endl;
     if (!model.isProvenOptimal()) {
       cerr << "Error: Model semicon1 not solved to optimality." << endl;
@@ -619,8 +629,8 @@ void semiint1(int &error_count, int &warning_count)
 
   for (int testcase = 0; testcase < 6; ++testcase) {
     CbcModel model(solver1);
-    CbcSolverUsefulData data;
-    CbcMain0(model, data);
+    CbcParameters parameters;
+    CbcMain0(model, parameters);
 
     double points[10];
     points[0] = 0.;
@@ -714,10 +724,13 @@ void semiint1(int &error_count, int &warning_count)
       delete semiintobject;
     }
 
-    cout << "\nSolving semiint1 model for integer lotsize variable being either 0 or between " << points[2] << " and 10.\n"
+    cout << "\nSolving semiint1 model for testcase " << testcase << ".\n"
          << endl;
-    const char *argv2[] = { "gamstest_semiint1", "-solve", "-quit" };
-    CbcMain1(3, argv2, model, NULL, data);
+    std::deque<std::string> inputQueue;
+    inputQueue.push_back("-solve");
+    inputQueue.push_back("-quit");
+    
+    CbcMain1(inputQueue, model, parameters);
     cout << endl;
     if (!model.isProvenOptimal()) {
       cerr << "Error: Model semiint1 not solved to optimality." << endl;

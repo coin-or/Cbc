@@ -1815,63 +1815,71 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           types.push_back("Integer parameters:");
           types.push_back("Double parameters:");
           types.push_back("String parameters:");
+	  types.push_back("Directory parameters:");
+	  types.push_back("File parameters:");
           types.push_back("Keyword parameters:");
-          int across = 0;
-          int lengthLine = 0;
-          int type = -1;
-          std::cout << "#### Cbc Parameters ###" << std::endl;
-          for (int iParam = CbcParam::FIRSTPARAM+1;
-               iParam < CbcParam::LASTPARAM; iParam++) {
-             //TODO Print model parameters
-             if (parameters[iParam]->type() != type) {
-                type = parameters[iParam]->type();
-                if ((verbose % 4) != 0) {
-                   std::cout << std::endl;
-                }
-                std::cout << types[type] << std::endl;
-                if ((verbose & 2) != 0){
-                   std::cout << std::endl;
-                }
-             }
-             if (parameters[iParam]->getDisplayPriority() >= commandPrintLevel){
-                // TODO Fix AMPL mode stuff
-                // but skip if not useful for ampl (and in ampl mode)
+	  std::cout << "#### Cbc Parameters ###" << std::endl;
+	  for (int type = 1;type < 8;type++) {
+	    int across = 0;
+	    int lengthLine = 0;
+	    bool first = true;
+	    for (int iParam = CbcParam::FIRSTPARAM+1;
+		 iParam < CbcParam::LASTPARAM; iParam++) {
+	      //TODO Print model parameters
+	      if (parameters[iParam]->type() != type)
+		continue;
+	      if (first) {
+		std::cout << types[type] << std::endl;
+		first = false;
+	      }
+	      if ((verbose % 4) != 0) {
+		std::cout << std::endl;
+	      }
+	      if ((verbose & 2) != 0){
+		std::cout << std::endl;
+	      }
+	      if (parameters[iParam]->getDisplayPriority() >= commandPrintLevel){
+		// TODO Fix AMPL mode stuff
+		// but skip if not useful for ampl (and in ampl mode)
 #if 0
-                if (verbose >= 4 && (parameters[iParam]->whereUsed() & 4) == 0)
-                   continue;
+		if (verbose >= 4 && (parameters[iParam]->whereUsed() & 4) == 0)
+		  continue;
 #endif
-                if (!across) {
-                   if ((verbose & 2) != 0) {
-                     std::cout << "Command ";
-                   }
-                }
-                int length = parameters[iParam]->lengthMatchName() + 1;
-                if (lengthLine + length > 80) {
-                   std::cout << std::endl;
-                   across = 0;
-                   lengthLine = 0;
-                }
-                std::cout << " " << parameters[iParam]->matchName();
-                lengthLine += length;
-                across++;
-                if (across == maxAcross) {
-                   across = 0;
-                  if ((verbose % 4) != 0) {
-                     // put out description as well
-                     if ((verbose & 1) != 0)
-                       std::cout << " " << parameters[iParam]->shortHelp();
-                    std::cout << std::endl;
-                    if ((verbose & 2) != 0) {
-                       std::cout << "---- description" << std::endl;
-                      parameters[iParam]->printLongHelp();
-                      std::cout << "----" << std::endl << std::endl;
-                    }
-                  } else {
-                     std::cout << std::endl;
-                  }
-                }
-             }
-          }
+		if (!across) {
+		  if ((verbose & 2) != 0) {
+		    std::cout << "Command ";
+		  }
+		}
+		int length = parameters[iParam]->lengthMatchName() + 1;
+		if (lengthLine + length > 80) {
+		  std::cout << std::endl;
+		  across = 0;
+		  lengthLine = 0;
+		}
+		std::cout << " " << parameters[iParam]->matchName();
+		lengthLine += length;
+		across++;
+		if (across == maxAcross) {
+		  across = 0;
+		  if ((verbose % 4) != 0) {
+		    // put out description as well
+		    if ((verbose & 1) != 0)
+		      std::cout << " " << parameters[iParam]->shortHelp();
+		    std::cout << std::endl;
+		    if ((verbose & 2) != 0) {
+		      std::cout << "---- description" << std::endl;
+		      parameters[iParam]->printLongHelp();
+		      std::cout << "----" << std::endl << std::endl;
+		    }
+		  } else {
+		    std::cout << std::endl;
+		  }
+		}
+	      }
+	    }
+	    if (!first)
+	      std::cout << std::endl;
+	  }
 #if 0
           //TODO Make Clp Commands work later
           for (int iParam = ClpParam::FIRSTPARAM + 1;
@@ -1931,6 +1939,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           types.push_back("Action parameters:");
           types.push_back("Integer parameters:");
           types.push_back("Double parameters:");
+	  types.push_back("Directory parameters:");
+	  types.push_back("File parameters:");
           types.push_back("String parameters:");
           types.push_back("Keyword parameters:");
           int across = 0;
@@ -1939,7 +1949,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                iParam < CbcParam::LASTPARAM; iParam++) {
              if (parameters[iParam]->type() != type) {
                 type = parameters[iParam]->type();
-                std::cout << types[type] << std::endl;
+		if (type)
+		  std::cout << types[type] << std::endl;
              }
              if (!across)
                 std::cout << "  ";

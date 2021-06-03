@@ -10,29 +10,41 @@ To make changes, please edit [config.yml](.coin-or/config.yml) or the generation
 
 Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
 It can be used as a callable library or using a stand-alone executable.
-It can be called through
- * AIMMS (via the [AIMMSlinks](https://github.com/coin-or/AIMMSlinks) project),
- * AMPL (natively),
- * [CMPL](https://github.com/coin-or/Cmpl),
- * [CyLP](https://github.com/coin-or/CyLP),
- * GAMS (through the [GAMSlinks](https://github.com/coin-or/GAMSlinks) project),
- * [JuMP](https://github.com/JuliaOpt/JuMP.jl),
- * Mathematica,
- * [MiniZinc](http://www.minizinc.org/),
- * MPL (through the [CoinMP](https://github.com/coin-or/CoinMP) project),
- * [OpenSolver for Excel](http://opensolver.org),
- * [Google's or-tools](https://developers.google.com/optimization),
- * [PuLP](https://github.com/coin-or/PuLP),
- * [python-mip](https://github.com/coin-or/python-mip), and
- * Python (e.g., [cbcpy](https://pypi.org/project/cbcpy)), among others.
+It can be used in a wide variety of ways through various modeling systems, packages, etc. 
+ * Stand-alone modeling languages and systems
+   * AIMMS (via the [AIMMSlinks](https://github.com/coin-or/AIMMSlinks) project),
+   * AMPL (natively),
+   * [CMPL](https://github.com/coin-or/Cmpl),
+   * GAMS (through the [GAMSlinks](https://github.com/coin-or/GAMSlinks) project),
+   * Mathematica,
+   * Matlab (https://inverseproblem.co.nz/OPTI/)
+   * [MiniZinc](http://www.minizinc.org/),
+   * MPL (through the [CoinMP](https://github.com/coin-or/CoinMP) project),
+   * R (https://rdrr.io/github/yuehmeir2/myFormAssembler/man/cbc.html)
+ * Python-based modeling languages and extensions
+   * [cbcpy](https://pypi.org/project/cbcpy).
+   * [cvxpy](https://github.com/cvxpy/cvxpy)
+   * [CyLP](https://github.com/coin-or/CyLP),
+   * [Google's or-tools](https://developers.google.com/optimization),
+   * [PuLP](https://github.com/coin-or/PuLP)/[DiPPy](https://github.com/coin-or/Dip),
+   * [python-mip](https://github.com/coin-or/python-mip),
+   * [yaposib](https://github.com/coin-or/yaposib)
+ * Extensions in other languages
+   * [JuMP](https://github.com/JuliaOpt/JuMP.jl) (Julia),
+   * [rust-lp-modeler](https://github.com/jcavat/rust-lp-modeler) (Rust)
+   * [good_lp](https://github.com/rust-or/good_lp) (Rust)
+ * Spreadsheet extensions
+   * [OpenSolver for Excel](http://opensolver.org)
+   * [OpenSolver for Google Sheets](https://opensolver.org/opensolver-for-google-sheets/)
 
 Binaries for most platforms are available for download from
 [here](https://www.coin-or.org/download/binary/Cbc). AMPL also provides
 stand-alone [Cbc
 executables](http://ampl.com/products/solvers/open-source/#cbc) that can be
-used with (or without) AMPL. Julia also provides a wide range of
+used with (or without) AMPL. Julia provides a wide range of
 [binaries](https://github.com/JuliaBinaryWrappers/Cbc_jll.jl/releases).
-Alternatives include your favorite package manager, as detailed below.
+Alternatives include (conda)[https://github.com/conda-forge/coin-or-cbc-feedstock] and
+your favorite package manager, as detailed [below](https://github.com/coin-or/Cbc#binaries).
 
 Cbc is developed by John Forrest, now retired from IBM Research, and others.
 The project is currently managed by John Forrest, [Ted
@@ -100,7 +112,7 @@ The quick start assumes you are in a bash shell.
 
 ### Using `coinbrew`
 
-To build CoinUtils from source, obtain the `coinbrew` script, do
+To build Cbc from source, obtain the `coinbrew` script, do
 ```
 wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
 chmod u+x coinbrew

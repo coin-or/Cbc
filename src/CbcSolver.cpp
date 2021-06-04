@@ -1603,7 +1603,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
       // find out if valid command
       int numberClpMatches(0), numberClpShortMatches(0), numberClpQuery(0);
       int clpParamCode = CoinParamUtils::lookupParam(field,
-                                                     parameters.paramVec(),
+                                                     clpParameters.paramVec(),
                                                      &numberClpMatches,
                                                      &numberClpShortMatches,
                                                      &numberClpQuery);

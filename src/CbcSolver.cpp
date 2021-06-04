@@ -1620,8 +1620,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
       int numberQuery(numberClpQuery + numberCbcQuery);
 
       if (numberClpMatches > 1 || numberCbcMatches > 1 ||
-          numberClpShortMatches == 1 || numberCbcShortMatches == 1 ||
-          numberQuery > 0) {
+          numberClpShortMatches == 1 || numberCbcShortMatches == 1) {
          continue;
       }
       if (numberMatches == 0){
@@ -1637,6 +1636,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	  continue;
 	}
       }
+      if (numberQuery > 0)
+	continue;
 
       CbcParam *cbcParam = parameters[CbcParam::INVALID];
       ClpParam *clpParam = clpParameters[ClpParam::INVALID];
@@ -1881,60 +1882,53 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	    if (!first)
 	      std::cout << std::endl;
 	  }
-#if 0
-          //TODO Make Clp Commands work later
-          for (int iParam = ClpParam::FIRSTPARAM + 1;
-               iParam < ClpParam::LASTPARAM; iParam++) {
-             int type = clpParameters[iParam]->type();
-             // printf("%d type %d limits %d %d display %d\n",iParam,
-             //     type,limits[iType],limits[iType+1],clpParameters[iParam]->getDisplayPriority());
-             if ((clpParameters[iParam]->getDisplayPriority() >= commandPrintLevel ||
-                  evenHidden) &&
-                 type >= limits[iType] && type < limits[iType + 1]) {
-                //TODO Fix this AMPL stuff
-                // but skip if not useful for ampl (and in ampl mode)
-#if 0
-                if (verbose >= 4 && (clpParameters[iParam]->whereUsed() & 4) == 0)
-                   continue;
-#endif
-                if (!across) {
-                   if ((verbose & 2) != 0)
-                      std::cout << "Command ";
-                }
-                int length = clpParameters[iParam]->lengthMatchName() + 1;
-                if (lengthLine + length > 80) {
-                   std::cout << std::endl;
-                   across = 0;
-                   lengthLine = 0;
-                }
-                std::cout << " " << clpParameters[iParam]->matchName();
-                lengthLine += length;
-                across++;
-                if (across == maxAcross) {
-                   across = 0;
-                   if ((verbose % 4) != 0) {
-                      // put out description as well
-                      if ((verbose & 1) != 0)
-                         std::cout << " " << clpParameters[iParam]->shortHelp();
-                      std::cout << std::endl;
-                      if ((verbose & 2) != 0) {
-                         std::cout << "---- description" << std::endl;
-                         clpParameters[iParam]->printLongHelp();
-                         std::cout << "----" << std::endl << std::endl;
-                      }
-                   } else {
-                      std::cout << std::endl;
-                   }
-                }
-             }
-          }
-          if (across) {
-             std::cout << std::endl;
-          }
-#endif
+	  std::cout << "   Clp Parameters" << std::endl;
+	  // Does not matter if very slow
+	  for (int type = 1;type < 8;type++) {
+	    int across = 0;
+	    int lengthLine = 0;
+	    bool first = true;
+	    for (int iParam = ClpParam::FIRSTPARAM+1;
+		 iParam < ClpParam::LASTPARAM; iParam++) {
+	      if (clpParameters[iParam]->type() != type)
+		continue;
+	      // Check if on cbc list
+	      bool onCbcList = false;
+	      for (int jParam = CbcParam::FIRSTPARAM+1;
+		 jParam < CbcParam::LASTPARAM; jParam++) {
+		if (clpParameters[iParam]->matchName() ==
+		    parameters[jParam]->matchName()) {
+		  onCbcList = true;
+		  break;
+		}
+	      }
+	      if (clpParameters[iParam]->getDisplayPriority() >= commandPrintLevel
+		  && !onCbcList){
+		if (first) {
+		  std::cout << types[type] << std::endl;
+		  first = false;
+		}
+		int length = clpParameters[iParam]->lengthMatchName() + 1;
+		if (lengthLine + length > 80) {
+		  std::cout << std::endl;
+		  across = 0;
+		  lengthLine = 0;
+		}
+		std::cout << " " << clpParameters[iParam]->matchName();
+		lengthLine += length;
+		across++;
+		if (across == maxAcross) {
+		  across = 0;
+		  lengthLine = 0;
+		  std::cout << std::endl;
+		}
+	      }
+	    }
+	    if (!first)
+	      std::cout << std::endl;
+	  }
         } else if (cbcParamCode == CbcParam::FULLGENERALQUERY) {
-          std::cout << "Full list of commands is:" << std::endl;
-          int maxAcross = 5;
+	  // changed to print explanation for each command
           std::vector<std::string> types;
           types.push_back("Invalid parameters:");
           types.push_back("Action parameters:");
@@ -1944,41 +1938,49 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	  types.push_back("File parameters:");
           types.push_back("String parameters:");
           types.push_back("Keyword parameters:");
-          int across = 0;
-          int type = -1;
-          for (int iParam = CbcParam::FIRSTPARAM + 1;
-               iParam < CbcParam::LASTPARAM; iParam++) {
-             if (parameters[iParam]->type() != type) {
-                type = parameters[iParam]->type();
-		if (type)
-		  std::cout << types[type] << std::endl;
-             }
-             if (!across)
-                std::cout << "  ";
-             std::cout << parameters[iParam]->matchName() << "  ";
-             across++;
-             if (across == maxAcross) {
-                std::cout << std::endl;
-                across = 0;
-             }
-          }
-#if 0
-          //TODO Do Clp Parameters
-          for (int iParam = ClpParam::FIRSTPARAM;
-               iParam < ClpParam::LASTPARAM; iParam++) {
-             int type = clpParameters[iParam]->type();
-             if (type >= limits[iType] && type < limits[iType + 1]) {
-                if (!across)
-                   std::cout << "  ";
-                std::cout << clpParameters[iParam]->matchName() << "  ";
-                across++;
-                if (across == maxAcross) {
-                   std::cout << std::endl;
-                   across = 0;
-                }
-             }
-          }
-#endif
+          int commandPrintLevel = parameters[CbcParam::COMMANDPRINTLEVEL]->modeVal();
+          std::cout << "Full list of Cbc commands is:" << std::endl;
+	  for (int type = 1;type < 8;type++) {
+	    for (int iParam = CbcParam::FIRSTPARAM+1;
+		 iParam < CbcParam::LASTPARAM; iParam++) {
+	      if (parameters[iParam]->type() != type)
+		continue;
+	      if (parameters[iParam]->getDisplayPriority() >= commandPrintLevel){
+		// TODO Fix AMPL mode stuff
+		// but skip if not useful for ampl (and in ampl mode)
+		std::cout << parameters[iParam]->matchName();
+		std::cout << " " << parameters[iParam]->shortHelp();
+		std::cout << std::endl;
+	      }
+	    }
+	  }
+          std::cout << "Full list of Clp commands is:" << std::endl;
+	  // Does not matter if very slow
+	  for (int type = 1;type < 8;type++) {
+	    for (int iParam = ClpParam::FIRSTPARAM+1;
+		 iParam < ClpParam::LASTPARAM; iParam++) {
+	      if (clpParameters[iParam]->type() != type)
+		continue;
+	      // Check if on cbc list
+	      bool onCbcList = false;
+	      for (int jParam = CbcParam::FIRSTPARAM+1;
+		 jParam < CbcParam::LASTPARAM; jParam++) {
+		if (clpParameters[iParam]->matchName() ==
+		    parameters[jParam]->matchName()) {
+		  onCbcList = true;
+		  break;
+		}
+	      }
+	      if (clpParameters[iParam]->getDisplayPriority() >= commandPrintLevel
+		  && !onCbcList){
+		// TODO Fix AMPL mode stuff
+		// but skip if not useful for ampl (and in ampl mode)
+		std::cout << clpParameters[iParam]->matchName();
+		std::cout << " " << clpParameters[iParam]->shortHelp();
+		std::cout << std::endl;
+	      }
+	    }
+	  }
         } else if (cbcParam->type() == CoinParam::paramDbl) {
            if (status = cbcParam->readValue(inputQueue, dValue, &message)){
               printGeneralMessage(model_, message);
@@ -10168,10 +10170,11 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           case CbcParam::HELP:
             std::cout << "Cbc version " << CBC_VERSION << ", build " << __DATE__
                       << std::endl;
+#if 0
             std::cout << "Non default values:-" << std::endl;
             std::cout << "Perturbation " << lpSolver->perturbation()
                       << " (default 100)" << std::endl;
-            CoinParamUtils::printString("Presolve being done with 5 passes\n\
+	    std::cout << CoinParamUtils::printString("Presolve being done with 5 passes\n\
 Dual steepest edge steep/partial on matrix shape and factorization density\n\
 Clpnnnn taken out of messages\n\
 If Factorization frequency default then done on size of matrix\n\n\
@@ -10179,6 +10182,10 @@ If Factorization frequency default then done on size of matrix\n\n\
 You can switch to interactive mode at any time so\n\
 clp watson.mps -scaling off -primalsimplex\nis the same as\n\
 clp watson.mps -\nscaling off\nprimalsimplex");
+	    std::endl;
+#endif
+	    std::cout << "Use ? or ??? to see list of commands" << std::endl;
+	    std::cout << "Set allcommands to all to see less common commands" << std::endl;
             break;
           case CbcParam::WRITESTATS: {
             parameters[CbcParam::CSVSTATSFILE]->getVal(field);

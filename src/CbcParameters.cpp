@@ -671,8 +671,8 @@ void CbcParameters::addCbcSolverHelpParams() {
       CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::FULLGENERALQUERY]->setup(
-      "???", "Print a list with *all* commands, even those hidden with `?'",
-      "Print a list with *all* commands, even those hidden with `?'",
+      "???", "Print a list of commands with short explanation",
+      "Print a list of commands with short explanation",
       CoinParam::displayPriorityNone);
 
   // Need display parameter to resolve ambiguity

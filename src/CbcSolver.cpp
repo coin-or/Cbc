@@ -1987,6 +1987,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
            if (cbcParam->setVal(dValue, &message)){
               printGeneralMessage(model_, message);
               continue;
+	   } else {
+	     printGeneralMessage(model_, message);
            }
               // TODO: These should be moved to the push function
            switch (cbcParamCode) {
@@ -2053,42 +2055,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               printGeneralMessage(model_, message);
               continue;
            }      
-        } else if (clpParam->type() == CoinParam::paramInt) {
-           if (status = clpParam->readValue(inputQueue, iValue, &message)){
-              printGeneralMessage(model_, message);
-              continue;
-           } 
-           if (clpParam->setVal(iValue, &message)){
-              printGeneralMessage(model_, message);
-              continue;
-           }
-           if (clpParamCode == ClpParam::PRESOLVEPASS) {
-              preSolve = iValue;
-           } else if (clpParamCode == ClpParam::IDIOT) {
-              doIdiot = iValue;
-           } else if (clpParamCode == ClpParam::SPRINT) {
-              doSprint = iValue;
-           } else if (clpParamCode == ClpParam::OUTPUTFORMAT) {
-              outputFormat = iValue;
-           } else if (clpParamCode == ClpParam::SLPVALUE) {
-              slpValue = iValue;
-           } else if (clpParamCode == ClpParam::CPP) {
-              cppValue = iValue;
-           } else if (clpParamCode == ClpParam::PRESOLVEOPTIONS) {
-              presolveOptions = iValue;
-           } else if (clpParamCode == ClpParam::PRINTOPTIONS) {
-              printOptions = iValue;
-           } else if (clpParamCode == ClpParam::SUBSTITUTION) {
-              substitution = iValue;
-           } else if (clpParamCode == ClpParam::DUALIZE) {
-              dualize = iValue;
-           }
         } else if (cbcParam->type() == CoinParam::paramInt){
            if (status = cbcParam->readValue(inputQueue, iValue, &message)){
-              printGeneralMessage(model_, message);
-              continue;
-           }
-           if (cbcParam->setVal(field, &message)){
               printGeneralMessage(model_, message);
               continue;
            }
@@ -2267,6 +2235,38 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     }
                  }
               }
+           }
+        } else if (clpParam->type() == CoinParam::paramInt) {
+           if (status = clpParam->readValue(inputQueue, iValue, &message)){
+              printGeneralMessage(model_, message);
+              continue;
+           } 
+           if (clpParam->setVal(iValue, &message)){
+              printGeneralMessage(model_, message);
+              continue;
+	   } else {
+	     printGeneralMessage(model_, message);
+           }
+           if (clpParamCode == ClpParam::PRESOLVEPASS) {
+              preSolve = iValue;
+           } else if (clpParamCode == ClpParam::IDIOT) {
+              doIdiot = iValue;
+           } else if (clpParamCode == ClpParam::SPRINT) {
+              doSprint = iValue;
+           } else if (clpParamCode == ClpParam::OUTPUTFORMAT) {
+              outputFormat = iValue;
+           } else if (clpParamCode == ClpParam::SLPVALUE) {
+              slpValue = iValue;
+           } else if (clpParamCode == ClpParam::CPP) {
+              cppValue = iValue;
+           } else if (clpParamCode == ClpParam::PRESOLVEOPTIONS) {
+              presolveOptions = iValue;
+           } else if (clpParamCode == ClpParam::PRINTOPTIONS) {
+              printOptions = iValue;
+           } else if (clpParamCode == ClpParam::SUBSTITUTION) {
+              substitution = iValue;
+           } else if (clpParamCode == ClpParam::DUALIZE) {
+              dualize = iValue;
            }
         } else if (cbcParam->type() == CoinParam::paramKwd) {
            if (status = cbcParam->readValue(inputQueue, field, &message)){

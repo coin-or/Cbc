@@ -1883,7 +1883,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	      std::cout << std::endl;
 	  }
 	  std::cout << "   Clp Parameters" << std::endl;
-	  // Does not matter if very slow
 	  for (int type = 1;type < 8;type++) {
 	    int across = 0;
 	    int lengthLine = 0;
@@ -1892,18 +1891,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		 iParam < ClpParam::LASTPARAM; iParam++) {
 	      if (clpParameters[iParam]->type() != type)
 		continue;
-	      // Check if on cbc list
-	      bool onCbcList = false;
-	      for (int jParam = CbcParam::FIRSTPARAM+1;
-		 jParam < CbcParam::LASTPARAM; jParam++) {
-		if (clpParameters[iParam]->matchName() ==
-		    parameters[jParam]->matchName()) {
-		  onCbcList = true;
-		  break;
-		}
-	      }
-	      if (clpParameters[iParam]->getDisplayPriority() >= commandPrintLevel
-		  && !onCbcList){
+	      if (clpParameters[iParam]->getDisplayPriority() >= commandPrintLevel) {
 		if (first) {
 		  std::cout << types[type] << std::endl;
 		  first = false;
@@ -1955,24 +1943,12 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	    }
 	  }
           std::cout << "Full list of Clp commands is:" << std::endl;
-	  // Does not matter if very slow
 	  for (int type = 1;type < 8;type++) {
 	    for (int iParam = ClpParam::FIRSTPARAM+1;
 		 iParam < ClpParam::LASTPARAM; iParam++) {
 	      if (clpParameters[iParam]->type() != type)
 		continue;
-	      // Check if on cbc list
-	      bool onCbcList = false;
-	      for (int jParam = CbcParam::FIRSTPARAM+1;
-		 jParam < CbcParam::LASTPARAM; jParam++) {
-		if (clpParameters[iParam]->matchName() ==
-		    parameters[jParam]->matchName()) {
-		  onCbcList = true;
-		  break;
-		}
-	      }
-	      if (clpParameters[iParam]->getDisplayPriority() >= commandPrintLevel
-		  && !onCbcList){
+	      if (clpParameters[iParam]->getDisplayPriority() >= commandPrintLevel) {
 		// TODO Fix AMPL mode stuff
 		// but skip if not useful for ampl (and in ampl mode)
 		std::cout << clpParameters[iParam]->matchName();

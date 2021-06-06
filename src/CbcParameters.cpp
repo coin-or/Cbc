@@ -25,7 +25,8 @@
   ordering.
 */
 
-CbcParameters::CbcParameters() : parameters_(CbcParam::LASTPARAM), model_(0)
+CbcParameters::CbcParameters() : parameters_(CbcParam::LASTPARAM), model_(0),
+                                 clpParameters_(ClpParameters(true))
 {
 
    init(DefaultStrategy);
@@ -38,7 +39,6 @@ CbcParameters::CbcParameters() : parameters_(CbcParam::LASTPARAM), model_(0)
 CbcParameters::CbcParameters(int strategy) :
    parameters_(CbcParam::LASTPARAM), model_(0)
 {
-
    init(strategy);
 }
 
@@ -46,7 +46,15 @@ CbcParameters::CbcParameters(int strategy) :
 //###########################################################################
 
 void CbcParameters::init(int strategy){
-   
+
+  // First, initialize Clp parameters 
+  switch (strategy) {
+   case DefaultStrategy:
+   default:
+     clpParameters_.init(ClpParameters::DefaultStrategy);
+     break;
+  }
+        
   for (int i = 0; i < parameters_.size(); i++){
      parameters_[i] = new CbcParam();
   }
@@ -776,7 +784,7 @@ void CbcParameters::addCbcSolverActionParams() {
   parameters_[CbcParam::PRINTVERSION]->setPushFunc(CbcParamUtils::doVersionParam);
 
   parameters_[CbcParam::PRINTSOL]->setup(
-      "writeS!olution", "writes solution to file (or stdout)",
+      "printS!olution", "writes solution to file (or stdout)",
       "This will write a binary solution file to the file set by solutionFile.",
       CoinParam::displayPriorityHigh);
 

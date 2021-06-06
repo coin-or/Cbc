@@ -1619,25 +1619,22 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
       int numberShortMatches(numberClpShortMatches + numberCbcShortMatches);
       int numberQuery(numberClpQuery + numberCbcQuery);
 
-      if (numberClpMatches > 1 || numberCbcMatches > 1 ||
-          numberClpShortMatches == 1 || numberCbcShortMatches == 1) {
+      if (numberQuery > 0 || (numberShortMatches > 0 && !numberMatches)){
          continue;
       }
-      if (numberMatches == 0){
-	if (!interactiveMode){
-	  std::cout << "Unrecognized parameter - " << field
-		    << ", exiting..."
-		    << std::endl;
-	  cbcParamCode = CbcParam::EXIT;
-	} else {
-	  std::cout << "Unrecognized parameter - " << field
-		    << " - enter valid command or end to exit"
-		    << std::endl;
-	  continue;
+      if (!numberMatches) {
+         if (!interactiveMode){
+            std::cout << "Unrecognized parameter - " << field
+                      << ", exiting..."
+                      << std::endl;
+            cbcParamCode = CbcParam::EXIT;
+         } else {
+            std::cout << "Unrecognized parameter - " << field
+                      << " - enter valid command or end to exit"
+                      << std::endl;
+            continue;
 	}
       }
-      if (numberQuery > 0)
-	continue;
 
       CbcParam *cbcParam = parameters[CbcParam::INVALID];
       ClpParam *clpParam = clpParameters[ClpParam::INVALID];
@@ -4891,7 +4888,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   if (preProcess == 2) {
                     strcpy(name, "presolved.mps");
                   } else {
-                    strcpy(name, parameters[CbcParam::IMPORT]->strVal().c_str());
+                    strcpy(name,
+                           parameters[CbcParam::IMPORTFILE]->strVal().c_str());
                     char *dot = strstr(name, ".mps");
                     if (!dot)
                       dot = strstr(name, ".lp");
@@ -9024,16 +9022,18 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
             // delete babModel_;
             // babModel_=NULL;
-            // get next field
-            if (status = cbcParam->readValue(inputQueue, fileName, &message)){
-               printGeneralMessage(model_, message);
-               continue;
-            }
+            // see if we have a file name
+            cbcParam->readValue(inputQueue, fileName, &message);
             // TODO Think about how to do this right
             canOpen = false;
             bool absolutePath = true;
             CoinParamUtils::processFile(fileName,
                                  parameters[CbcParam::DIRECTORY]->dirName());
+            if (fileName == ""){
+               fileName = parameters[CbcParam::IMPORTFILE]->fileName();
+            }else{
+               parameters[CbcParam::IMPORTFILE]->setFileName(fileName);
+            }
             if (fileName[0] != '/' && fileName[0] != '\\' &&
                 !strchr(fileName.c_str(), ':')) {
                absolutePath = false;

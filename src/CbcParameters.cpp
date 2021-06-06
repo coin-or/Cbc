@@ -353,6 +353,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::DEBUGFILE]->setDefault("");
      parameters_[CbcParam::CSVSTATSFILE]->setDefault(std::string("stats.csv"));
      parameters_[CbcParam::EXPORTFILE]->setDefault(std::string("export.mps"));
+     parameters_[CbcParam::IMPORTFILE]->setDefault(std::string("import.mps"));
      parameters_[CbcParam::GMPLSOLFILE]->setDefault(std::string("gmpl.sol"));
      parameters_[CbcParam::MIPSTARTFILE]->setDefault(std::string("mipstart.sol"));
      parameters_[CbcParam::MODELFILE]->setDefault(std::string("prob.mod"));
@@ -990,8 +991,14 @@ void CbcParameters::addCbcSolverFileParams() {
 
   parameters_[CbcParam::EXPORTFILE]->setup(
       "exportF!ile", "sets name for file to export model to",
-      "This will set the name the model will be written to and read from. "
-      "This is initialized to 'prob.mod'. ",
+      "This will set the name of the model will be written to and read from. "
+      "This is initialized to 'export.mps'. ",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::IMPORTFILE]->setup(
+      "importF!ile", "sets name for file to import model from",
+      "This will set the name of the model to be read in with the import "
+      "command. This is initialized to 'import.mps'",
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::GMPLSOLFILE]->setup(

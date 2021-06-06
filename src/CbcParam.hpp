@@ -92,6 +92,7 @@ public:
       CSVSTATSFILE,
       DEBUGFILE,
       EXPORTFILE,
+      IMPORTFILE,
       GMPLSOLFILE,
       MIPSTARTFILE,
       MODELFILE,

@@ -43,7 +43,7 @@ stand-alone [Cbc
 executables](http://ampl.com/products/solvers/open-source/#cbc) that can be
 used with (or without) AMPL. Julia provides a wide range of
 [binaries](https://github.com/JuliaBinaryWrappers/Cbc_jll.jl/releases).
-Alternatives include (conda)[https://github.com/conda-forge/coin-or-cbc-feedstock] and
+Alternatives include [conda](https://github.com/conda-forge/coin-or-cbc-feedstock) and
 your favorite package manager, as detailed [below](https://github.com/coin-or/Cbc#binaries).
 
 Cbc is developed by John Forrest, now retired from IBM Research, and others.

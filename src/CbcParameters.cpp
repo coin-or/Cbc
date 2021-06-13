@@ -347,21 +347,23 @@ void CbcParameters::setDefaults(int strategy) {
       getParam(code)->setDefault(dfltDirectory_);
   }
 
+  parameters_[CbcParam::DEBUGFILE]->setDefault("");
+  parameters_[CbcParam::CSVSTATSFILE]->setDefault(std::string("stats.csv"));
+  parameters_[CbcParam::EXPORTFILE]->setDefault(std::string("export.mps"));
+  parameters_[CbcParam::IMPORTFILE]->setDefault(std::string("import.mps"));
+  parameters_[CbcParam::GMPLSOLFILE]->setDefault(std::string("gmpl.sol"));
+  parameters_[CbcParam::MIPSTARTFILE]->setDefault(std::string("mipstart.sol"));
+  parameters_[CbcParam::MODELFILE]->setDefault(std::string("prob.mod"));
+  parameters_[CbcParam::NEXTSOLFILE]->setDefault(std::string("next.sol"));
+  parameters_[CbcParam::PRINTMASK]->setDefault("");
+  parameters_[CbcParam::PRIORITYFILE]->setDefault(std::string("priorities.txt"));
+  parameters_[CbcParam::SOLUTIONFILE]->setDefault(std::string("opt.sol"));
+  parameters_[CbcParam::SOLUTIONBINARYFILE]->setDefault(std::string("solution.file"));
+  parameters_[CbcParam::COMMANDPRINTLEVEL]->setDefault("high");
+
   // Now set up  parameters according to overall strategies
   switch (strategy) {
    case CbcParameters::DefaultStrategy:
-     parameters_[CbcParam::DEBUGFILE]->setDefault("");
-     parameters_[CbcParam::CSVSTATSFILE]->setDefault(std::string("stats.csv"));
-     parameters_[CbcParam::EXPORTFILE]->setDefault(std::string("export.mps"));
-     parameters_[CbcParam::IMPORTFILE]->setDefault(std::string("import.mps"));
-     parameters_[CbcParam::GMPLSOLFILE]->setDefault(std::string("gmpl.sol"));
-     parameters_[CbcParam::MIPSTARTFILE]->setDefault(std::string("mipstart.sol"));
-     parameters_[CbcParam::MODELFILE]->setDefault(std::string("prob.mod"));
-     parameters_[CbcParam::NEXTSOLFILE]->setDefault(std::string("next.sol"));
-     parameters_[CbcParam::PRINTMASK]->setDefault("");
-     parameters_[CbcParam::PRIORITYFILE]->setDefault(std::string("priorities.txt"));
-     parameters_[CbcParam::SOLUTIONFILE]->setDefault(std::string("opt.sol"));
-     parameters_[CbcParam::COMMANDPRINTLEVEL]->setDefault("high");
      parameters_[CbcParam::CLQSTRENGTHENING]->setDefault("after");
      parameters_[CbcParam::BRANCHPRIORITY]->setDefault("off");
      parameters_[CbcParam::CUTOFFCONSTRAINT]->setDefault("off");
@@ -503,16 +505,6 @@ void CbcParameters::setDefaults(int strategy) {
      break;
   }
 
-  // Set all parameter values to their defaults to begin with
-   
-  for (int code = CbcParam::FIRSTPARAM + 1;
-       code < CbcParam::LASTPARAM; code++) {
-     if (getParam(code)->type() != CoinParam::paramInvalid &&
-         getParam(code)->type() != CoinParam::paramAct){ 
-        getParam(code)->restoreDefault();
-     }
-  }
-  
 }
    
 //###########################################################################
@@ -724,11 +716,21 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
   parameters_[CbcParam::BAB]->setPushFunc(CbcParamUtils::doBaCParam);
 
-  parameters_[CbcParam::ENVIRONMENT]->setup(
-      "environ!ment", "Read commands from environment",
-      "This starts reading from environment variable COIN_ENVIRONMENT.",
+  parameters_[CbcParam::DEBUG]->setup(
+      "debug!In", "Read/write valid solution from/to file", 
+      "This will read a solution file from the given file name.  It will use "
+      "the default directory given by 'directory'.  If no name is supplied, "
+      "the previous value will be used. This is initialized to '', i.e. it "
+      " must be set.\n\nIf set to create it will create a file called "
+      "debug.file after B&C search; if set to createAfterPre it will create "
+      "the file before undoing preprocessing.\n\nThe idea is that if you "
+      "suspect a bad cut generator and you did not use preprocessing you can "
+      "do a good run with debug set to 'create' and then switch on the cuts "
+      "you suspect and re-run with debug set to 'debug.file'  Similarly if "
+      "you do use preprocessing, but use 'createAfterPre'. The 'create' case"
+      "has the same effect as 'saveSolution'.",
       CoinParam::displayPriorityNone);
-  parameters_[CbcParam::ENVIRONMENT]->setPushFunc(CbcParamUtils::doNothingParam);
+  parameters_[CbcParam::DEBUG]->setPushFunc(CbcParamUtils::doDebugParam);
 
   parameters_[CbcParam::END]->setup(
       "end", "Stops execution",
@@ -752,6 +754,12 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
   parameters_[CbcParam::END]->setPushFunc(CbcParamUtils::doExitParam);
 #endif
+
+  parameters_[CbcParam::ENVIRONMENT]->setup(
+      "environ!ment", "Read commands from environment",
+      "This starts reading from environment variable COIN_ENVIRONMENT.",
+      CoinParam::displayPriorityNone);
+  parameters_[CbcParam::ENVIRONMENT]->setPushFunc(CbcParamUtils::doNothingParam);
 
   parameters_[CbcParam::EXPORT]->setup(
       "export", "Export model as mps file",
@@ -780,14 +788,14 @@ void CbcParameters::addCbcSolverActionParams() {
       "outDup!licates", "Takes duplicate rows, etc., out of the integer model",
       "", CoinParam::displayPriorityNone);
 
-  parameters_[CbcParam::PRINTVERSION]->setup(
-      "version", "Print version", "", CoinParam::displayPriorityHigh);
-  parameters_[CbcParam::PRINTVERSION]->setPushFunc(CbcParamUtils::doVersionParam);
-
   parameters_[CbcParam::PRINTSOL]->setup(
       "printS!olution", "writes solution to file (or stdout)",
       "This will write a binary solution file to the file set by solutionFile.",
       CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::PRINTVERSION]->setup(
+      "version", "Print version", "", CoinParam::displayPriorityHigh);
+  parameters_[CbcParam::PRINTVERSION]->setPushFunc(CbcParamUtils::doVersionParam);
 
   parameters_[CbcParam::READMIPSTART]->setup(
       "mipS!tart", "reads an initial feasible solution from file",
@@ -824,9 +832,17 @@ void CbcParameters::addCbcSolverActionParams() {
       "haroldo.santos@gmail.com. ");
 
   parameters_[CbcParam::READMODEL]->setup(
-      "readM!odel", "writes problem to file", 
-      "This will save the problem to the file name set by modelFile "
-      "for future use by readModel.", CoinParam::displayPriorityHigh);
+      "readM!odel", "Reads problem from a binary save file", 
+      "This will read the problem saved by 'writeModel' from the file name "
+      "set by 'modelFile'.",
+      CoinParam::displayPriorityHigh);
+
+  // For backward compatibility
+  parameters_[CbcParam::READMODEL]->setup(
+      "restoreM!odel", "Reads problem from a file", 
+      "This will read the problem saved by 'writeModel' from the file name "
+      "set by 'modelFile'.",
+      CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::READPRIORITIES]->setup(
       "readP!riorities", "reads priorities from file",
@@ -834,12 +850,6 @@ void CbcParameters::addCbcSolverActionParams() {
       "File is in csv format with allowed headings - name, number, priority, "
       "direction, up, down, solution.  Exactly one of name and number must be "
       "given.", CoinParam::displayPriorityHigh);
-
-  parameters_[CbcParam::READSOL]->setup(
-      "readS!olution", "reads solution from file (synonym for mipStart)",
-      "This will read a binary solution file from the file set by solutionFile."
-      "This is a synonym for mipStart. See its help for more information",
-      CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::SHOWUNIMP]->setup(
       "unimp!lemented", "Report unimplemented commands.", "",
@@ -889,24 +899,75 @@ void CbcParameters::addCbcSolverActionParams() {
       "model - will do any reports.",
       CoinParam::displayPriorityHigh);
 
+  // For backward compatibility
+  parameters_[CbcParam::WRITEGMPLSOL]->setup(
+      "gsolu!tion", "Puts glpk solution to file (synonym for writeGSolu!tion)",
+      "Will write a glpk solution file to the given file name.  It will use "
+      "the default directory given by 'directory'.  A name of '$' will use the "
+      "previous value for the name.  This is initialized to 'stdout' (this "
+      "defaults to ordinary solution if stdout). If problem created from gmpl "
+      "model - will do any reports.",
+      CoinParam::displayPriorityHigh);
+
   parameters_[CbcParam::WRITEMODEL]->setup(
-      "writeM!odel", "writes solution to file (or stdout)", 
-      "This will write the problem to the file name set by modelFile"
-      "for future use by readModel.", CoinParam::displayPriorityHigh);
+      "writeM!odel", "save model to binary file", 
+      "This will write the problem in binary foramt to the file name set by "
+      "'modelFile' for future use by readModel.",
+      CoinParam::displayPriorityHigh);
+
+  // For backward compatibility
+  parameters_[CbcParam::WRITEMODEL]->setup(
+      "saveM!odel", "save model to binary file (synonym for writeModel)", 
+      "This will write the problem in binary foramt to the file name set by "
+      "'modelFile' for future use by readModel.",
+      CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::WRITENEXTSOL]->setup(
       "nextB!estSolution", "Prints next best saved solution to file",
-      "To write best solution, just use writeSolution.  This prints next best (if "
-      "exists) and then deletes it. This will write a primitive solution file "
-      "to the given file name.  It will use the directory set by "
-      "nextBestSolutionFile. The amount of output can be varied "
-      "using printi!ngOptions or printMask.");
+      "To write best solution, just use writeSolution.  This prints next best "
+      "(if exists) and then deletes it. This will write a primitive solution "
+      "file to the file name set by 'nextBestSolutionFile'. The amount of "
+      "output can be varied using 'printingOptions' or 'printMask'.");
 
   parameters_[CbcParam::WRITESOL]->setup(
       "writeS!olution", "writes solution to file (or stdout)",
-      "This will write a binary solution file to the file set by solutionFile.",
+      "This will write a primitive solution file to the file set by "
+      "'solutionFile'. The amount of output can be varied using "
+      "'printingOptions' or 'printMask'.",
       CoinParam::displayPriorityHigh);
 
+  // For backward compatibility
+  parameters_[CbcParam::WRITESOL]->setup(
+      "solu!tion", "writes solution to file (or stdout) (synonym for "
+      "writeSolution).",
+      "This will write a primitive solution file to the file set by "
+      "'solutionFile'. The amount of output can be varied using "
+      "'printingOptions' or 'printMask'.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::WRITESOLBINARY]->setup(
+      "writeSolB!inary", "writes solution to file in binary format",
+      "This will write a binary solution file to the file set by "
+      "'solutionBinaryFile'. To read the file use fread(int) twice to pick up "
+      "number of rows and columns, then fread(double) to pick up objective "
+      "value, then pick up row activities, row duals, column activities and "
+      "reduced costs - see bottom of ClpParamUtils.cpp for code that reads or "
+      "writes file. If name contains '_fix_read_', then does not write but "
+      "reads and will fix all variables",
+      CoinParam::displayPriorityHigh);
+
+  // For backward compatibility
+  parameters_[CbcParam::WRITESOLBINARY]->setup(
+      "saveS!olution", "writes solution to file in binary format (synonym for "
+      "writeSolBinary",
+      "This will write a binary solution file to the file set by "
+      "'solutionBinaryFile'. To read the file use fread(int) twice to pick up "
+      "number of rows and columns, then fread(double) to pick up objective "
+      "value, then pick up row activities, row duals, column activities and "
+      "reduced costs - see bottom of ClpParamUtils.cpp for code that reads or "
+      "writes file. If name contains '_fix_read_', then does not write but "
+      "reads and will fix all variables",
+      CoinParam::displayPriorityHigh);
 }
 
 //###########################################################################
@@ -965,29 +1026,27 @@ void CbcParameters::addCbcSolverFileParams() {
   }
 
   parameters_[CbcParam::CSVSTATSFILE]->setup(
-      "csv!Statistics", "Create one line of statistics",
-      "This appends statistics to given file name.  It will use the default "
-      "directory given by 'directory'.  A name of '$' will use the previous "
-      "value for the name.  This is initialized to '', i.e. it must be set.  "
+      "csv!Statistics", "sets file name for writing out statistics",
+      "This appends statistics to given file name.  If name is not "
+      "specified, the previous value will be used. "
+      "This is initialized to '', i.e. it must be set. "
       "Adds header if file empty or does not exist.",
       CoinParam::displayPriorityLow);
-  parameters_[CbcParam::CSVSTATSFILE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
 
-  parameters_[CbcParam::DEBUG]->setup(
-      "debug!In", "Read/write valid solution from/to file", 
+  parameters_[CbcParam::DEBUGFILE]->setup(
+      "debugF!ile", "sets name of file to read/write valid solution from/to", 
       "This will read a solution file from the given file name.  It will use "
-      "the default directory given by 'directory'.  A name of '$' will use the "
-      "previous value for the name.  This is initialized to '', i.e. it must "
-      "be set.\n\nIf set to create it will create a file called debug.file "
-      "after B&C search; if set to createAfterPre it will create the file "
+      "the default directory given by 'directory'.  If no name is specified, "
+      "previous value will be used.  This is initialized to '', i.e. it must "
+      "be set.\n\nIf set to 'create' it will create a file called debug.file "
+      "after B&C search; if set to 'createAfterPre' it will create the file "
       "before undoing preprocessing.\n\nThe idea is that if you suspect a bad "
       "cut generator and you did not use preprocessing you can do a good run "
       "with debug set to 'create' and then switch on the cuts you suspect and "
       "re-run with debug set to 'debug.file'  Similarly if you do use "
-      "preprocessing, but use createAfterPre.  The create case has the same "
-      "effect as saveSolution.",
+      "preprocessing, but use 'createAfterPre'.  The 'create' case has the "
+      "same effect as saveSolution.",
       CoinParam::displayPriorityNone);
-  parameters_[CbcParam::DEBUG]->setPushFunc(CbcParamUtils::doDebugParam);
 
   parameters_[CbcParam::EXPORTFILE]->setup(
       "exportF!ile", "sets name for file to export model to",
@@ -1020,16 +1079,10 @@ void CbcParameters::addCbcSolverFileParams() {
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::NEXTSOLFILE]->setup(
-      "nextSolutionF!ile", "sets name for file to store suboptimal solutions in",
-      "This will set the name solutions will be written to and read from "
-      "This is initialized to 'next.sol'. ",
+      "nextSolutionF!ile", "sets name for file to store suboptimal solutions "
+      "in", "This will set the name solutions will be written to and read "
+      "from. This is initialized to 'next.sol'. ",
       CoinParam::displayPriorityHigh);
-
-  parameters_[CbcParam::SOLUTIONFILE]->setup(
-      "solutionF!ile", "sets name for file to store solution in",
-      "This will set the name the solution will be saved to and read from. "
-      "By default, solutions are written to 'opt.sol'. To print to stdout, "
-      "use printSolution.", CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::PRIORITYFILE]->setup(
       "priorityF!ile", "Name of file to import priorities from",
@@ -1039,7 +1092,20 @@ void CbcParameters::addCbcSolverFileParams() {
       "File is in csv format with allowed headings - name, number, priority, "
       "direction, up, down, solution.  Exactly one of name and number must be "
       "given.");
-  parameters_[CbcParam::PRIORITYFILE]->setPushFunc(CbcParamUtils::pushCbcSolverStrParam);
+
+  parameters_[CbcParam::SOLUTIONBINARYFILE]->setup(
+      "solutionBinaryF!ile",
+      "sets name for file to store solution in binary format",
+      "This will set the name the solution will be saved to and read from. "
+      "By default, binary solutions are written to 'solution.file'." 
+      "use printSolution.", CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::SOLUTIONFILE]->setup(
+      "solutionF!ile", "sets name for file to store solution in",
+      "This will set the name the solution will be saved to and read from. "
+      "By default, solutions are written to 'opt.sol'. To print to stdout, "
+      "use printSolution.", CoinParam::displayPriorityHigh);
+
 }
 
 //###########################################################################

@@ -972,15 +972,12 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   int preSolve = 5;
   int doSprint = -1;
   int testOsiParameters = -1;
-  clpParameters[ClpParam::BASISIN]->setVal("");
-  clpParameters[ClpParam::BASISOUT]->setVal("default.bas");
   clpParameters[ClpParam::DUALBOUND]->setVal(lpSolver->dualBound());
   clpParameters[ClpParam::DUALTOLERANCE]->setVal(lpSolver->dualTolerance());
   clpParameters[ClpParam::IDIOT]->setVal(doIdiot);
   clpParameters[ClpParam::PRESOLVETOLERANCE]->setVal(1.0e-8);
   clpParameters[ClpParam::MAXFACTOR]->setVal(lpSolver->factorizationFrequency());
   clpParameters[ClpParam::MAXITERATION]->setVal(lpSolver->maximumIterations());
-  clpParameters[ClpParam::OUTPUTFORMAT]->setVal(outputFormat);
   clpParameters[ClpParam::PRESOLVEPASS]->setVal(preSolve);
   clpParameters[ClpParam::PERTVALUE]->setVal(lpSolver->perturbation());
   clpParameters[ClpParam::PRIMALTOLERANCE]->setVal(lpSolver->primalTolerance());
@@ -988,6 +985,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   clpParameters[ClpParam::SPRINT]->setVal(doSprint);
   clpParameters[ClpParam::SUBSTITUTION]->setVal(substitution);
   clpParameters[ClpParam::DUALIZE]->setVal(dualize);
+  parameters[CbcParam::OUTPUTFORMAT]->setVal(outputFormat);
   parameters[CbcParam::LOGLEVEL]->setVal(1);
   parameters[CbcParam::LPLOGLEVEL]->setVal(1);
   clpSolver->messageHandler()->setLogLevel(1);
@@ -1079,6 +1077,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   ClpParameters &clpParameters = parameters.clpParameters();
 
   std::ostringstream buffer;
+  std::string field, message, fileName;
+  FILE *fp;
+
   double totalTime = parameters.getTotalTime();
   bool useSignalHandler = parameters.useSignalHandler();
   CbcModel &model_ = model;
@@ -1346,10 +1347,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     double *debugValues = NULL;
     int numberDebugValues = -1;
     int basisHasValues = 0;
-    std::string saveFile = "default.prob";
-    std::string restoreFile = "default.prob";
-    std::string solutionFile = "stdout";
-    std::string solutionSaveFile = "solution.file";
 #ifndef CBC_OTHER_SOLVER
     double normalIncrement = model_.getCutoffIncrement();
     ;
@@ -1514,7 +1511,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     }
 
     bool interactiveMode = false, canOpen;
-    std::string field, message, fileName;
+
     int status, iValue;
     double dValue;
     std::string prompt = "Cbc: ";
@@ -1577,7 +1574,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
          }
       }
 
-      // These are some special case we deal with separately (only in non-interactive mode)
+      // These are some special case we deal with separately
+      // (only in non-interactive mode)
       if (!interactiveMode){
          if (field == "-") {
             std::cout << "Switching to line mode" << std::endl;
@@ -2593,7 +2591,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
            switch (clpParamCode) {
             case ClpParam::DUALSIMPLEX:
             case ClpParam::PRIMALSIMPLEX:
-            case ClpParam::SOLVECONTINUOUS:
             case ClpParam::BARRIER:{
               if (!goodModel) {
                buffer.str("");
@@ -2721,8 +2718,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                  presolveType = ClpSolve::presolveOff;
               }
               solveOptions.setPresolveType(presolveType, preSolve);
-              if (clpParamCode == ClpParam::DUALSIMPLEX ||
-                  clpParamCode == ClpParam::SOLVECONTINUOUS) {
+              if (clpParamCode == ClpParam::DUALSIMPLEX) {
                  method = ClpSolve::useDual;
               } else if (clpParamCode == ClpParam::PRIMALSIMPLEX) {
                  method = ClpSolve::usePrimalorSprint;
@@ -3135,61 +3131,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                printGeneralMessage(model_, buffer.str());
             }
             }break;
-          case ClpParam::MODELIN:
-#ifndef CBC_OTHER_SOLVER
-#ifdef COIN_HAS_LINK
-          {
-            if (status = clpParam->readValue(inputQueue, fileName, &message)){
-               printGeneralMessage(model_, message);
-               continue;
-            }
-            if (fileName == "$") {
-              fileName = clpParam->strVal();
-            } else if (fileName == "EOL") {
-              clpParam->printString();
-              break;
-            } else {
-              clpParam->setVal(fileName);
-            }
-            CoinParamUtils::processFile(fileName,
-                                 parameters[CbcParam::DIRECTORY]->dirName(),
-                                        &canOpen);
-            if (!canOpen) {
-               buffer.str("");
-               buffer << "Unable to open file " << fileName.c_str();
-               printGeneralMessage(model_, buffer.str());
-               continue;
-            }
-            CoinModel coinModel(fileName.c_str(), 2);
-            // load from coin model
-            OsiSolverLink solver1;
-            OsiSolverInterface *solver2 = solver1.clone();
-            model_.assignSolver(solver2, false);
-            OsiSolverLink *si =
-               dynamic_cast<OsiSolverLink *>(model_.solver());
-            assert(si != NULL);
-            si->setDefaultMeshSize(0.001);
-            // need some relative granularity
-            si->setDefaultBound(100.0);
-            double dextra3 = parameters[CbcParam::DEXTRA3]->dblVal();
-            if (dextra3)
-               si->setDefaultMeshSize(dextra3);
-            si->setDefaultBound(100.0);
-            si->setIntegerPriority(1000);
-            si->setBiLinearPriority(10000);
-            CoinModel *model2 = &coinModel;
-            si->load(*model2);
-            // redo
-            solver = model_.solver();
-            clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
-            lpSolver = clpSolver->getModelPtr();
-            clpSolver->messageHandler()->setLogLevel(0);
-            testOsiParameters = 0;
-            complicatedInteger = 2;
-          }
-#endif
-#endif
-          break;
           case ClpParam::BASISIN:{
             if (!goodModel){
                buffer.str("");
@@ -3197,27 +3138,20 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                printGeneralMessage(model_, buffer.str());
                continue;
             }
-            if (status = clpParam->readValue(inputQueue, fileName,
-                                             &message)){
-               printGeneralMessage(model_, message);
-               continue;
-            }
-            if (fileName == "$") {
-               fileName = clpParam->strVal();
-            } else if (fileName == "EOL") {
-               clpParam->printString();
-               break;
-            } else {
-               clpParam->setVal(fileName);
-            }
+            clpParam->readValue(inputQueue, fileName, &message);
             CoinParamUtils::processFile(fileName,
-                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                parameters[ClpParam::DIRECTORY]->dirName(),
                                         &canOpen);
             if (!canOpen) {
                buffer.str("");
                buffer << "Unable to open file " << fileName.c_str();
                printGeneralMessage(model_, buffer.str());
                continue;
+            }
+            if (fileName == ""){
+               fileName = parameters[ClpParam::BASISFILE]->fileName();
+            }else{
+               parameters[ClpParam::BASISFILE]->setFileName(fileName);
             }
 #ifndef CBC_OTHER_SOLVER
             int values = lpSolver->readBasis(fileName.c_str());
@@ -3236,26 +3170,20 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               printGeneralMessage(model_, buffer.str());
               continue;
             }
-            if (status = clpParam->readValue(inputQueue, fileName, &message)){
-               printGeneralMessage(model_, message);
-               continue;
-            }
-            if (fileName == "$") {
-               fileName = clpParam->strVal();
-            } else if (fileName == "EOL") {
-               clpParam->printString();
-               break;
-            } else {
-               clpParam->setVal(fileName);
-            }
+            clpParam->readValue(inputQueue, fileName, &message);
             CoinParamUtils::processFile(fileName,
-                                 parameters[CbcParam::DIRECTORY]->dirName(),
+                                parameters[ClpParam::DIRECTORY]->dirName(),
                                         &canOpen);
             if (!canOpen) {
                buffer.str("");
                buffer << "Unable to open file " << fileName.c_str();
                printGeneralMessage(model_, buffer.str());
                continue;
+            }
+            if (fileName == ""){
+               fileName = parameters[ClpParam::BASISFILE]->fileName();
+            }else{
+               parameters[ClpParam::BASISFILE]->setFileName(fileName);
             }
             ClpSimplex *model2 = lpSolver;
             model2->writeBasis(fileName.c_str(), outputFormat > 1,
@@ -3348,20 +3276,21 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               buffer << "** Current model not valid";
               printGeneralMessage(model_, buffer.str());
             }
-            if (status = clpParam->readValue(inputQueue, fileName, &message)){
-               printGeneralMessage(model_, message);
+            cbcParam->readValue(inputQueue, fileName, &message);
+            CoinParamUtils::processFile(fileName,
+                                parameters[CbcParam::DIRECTORY]->dirName(),
+                                        &canOpen);
+            if (!canOpen) {
+               buffer.str("");
+               buffer << "Unable to open file " << fileName.c_str();
+               printGeneralMessage(model_, buffer.str());
                continue;
             }
-            if (fileName == "$") {
-               fileName = clpParam->strVal();
-            } else if (fileName == "EOL") {
-               clpParam->printString();
-               break;
-            } else {
-               clpParam->setVal(fileName);
+            if (fileName == ""){
+               fileName = parameters[CbcParam::EXPORTFILE]->fileName();
+            }else{
+               parameters[CbcParam::EXPORTFILE]->setFileName(fileName);
             }
-            CoinParamUtils::processFile(fileName,
-                                 parameters[CbcParam::DIRECTORY]->dirName());
             static_cast<ClpSimplexOther *>(lpSolver)->parametrics(
                   fileName.c_str());
             time2 = CoinCpuTime();
@@ -3400,6 +3329,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           }
 
           switch (cbcParamCode) {
+           case CbcParam::SOLVECONTINUOUS:
+             // Solve problem dual simplex
+             inputQueue.push_front("-dualSimplex");
+             continue;
            case CbcParam::STATISTICS:{
             if (!goodModel){
               buffer.str("");
@@ -7128,7 +7061,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 if (cppValue >= 0) {
                   int prepro = useStrategy ? -1 : preProcess;
                   // generate code
-                  FILE *fp = fopen("user_driver.cpp", "w");
+                  fp = fopen("user_driver.cpp", "w");
                   if (fp) {
                     // generate enough to do BAB
                     babModel_->generateCpp(fp, 1);
@@ -9041,16 +8974,15 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               gmpl = -1; //.lp format
             } else {
               // See if .lp
-              {
-                const char *c_name = fileName.c_str();
-                size_t length = strlen(c_name);
-                if ((length > 3 && !strncmp(c_name + length - 3, ".lp", 3)) ||
-                    (length > 6 &&
-                     !strncmp(c_name + length - 6, ".lp.gz", 6)) ||
-                    (length > 7 && !strncmp(c_name + length - 7, ".lp.bz2", 7)))
-                  gmpl = -1; // .lp
+              const char *c_name = fileName.c_str();
+              size_t length = strlen(c_name);
+              if ((length > 3 && !strncmp(c_name + length - 3, ".lp", 3)) ||
+                  (length > 6 &&
+                   !strncmp(c_name + length - 6, ".lp.gz", 6)) ||
+                  (length > 7 && !strncmp(c_name + length - 7, ".lp.bz2", 7))){
+                 gmpl = -1; // .lp
               }
-              size_t length = fileName.size();
+              length = fileName.size();
               size_t percent = fileName.find('%');
               if (percent < length && percent > 0) {
 #ifdef COINUTILS_HAS_GLPK
@@ -9077,7 +9009,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 // can open - lets go for it
                 canOpen = true;
                 if (gmpl == 2) {
-                  FILE *fp;
+                  fp;
                   fp = fopen(gmplData.c_str(), "r");
                   if (fp) {
                     fclose(fp);
@@ -9346,7 +9278,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   model2->writeMps(fileName.c_str(), (outputFormat - 1) / 2,
                                    1 + ((outputFormat - 1) & 1));
                } else {
-                  FILE *fp = fopen(fileName.c_str(), "w");
+                  fp = fopen(fileName.c_str(), "w");
                   if (!fp) {
                      buffer.str("");
                      buffer << "Unable to open file " << fileName.c_str();
@@ -9416,7 +9348,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                           const_cast<const char **>(columnNames),
                           (outputFormat - 1) / 2, 1 + ((outputFormat - 1) & 1));
                   } else {
-                     FILE *fp = fopen(fileName.c_str(), "w");
+                     fp = fopen(fileName.c_str(), "w");
                      if (!fp) {
                         buffer.str("");
                         buffer << "Unable to open file " << fileName.c_str();
@@ -9469,18 +9401,18 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             CoinParamUtils::processFile(fileName,
                                  parameters[CbcParam::DIRECTORY]->dirName(),
                                         &canOpen);
-            if (fileName == ""){
-               fileName = parameters[CbcParam::PRIORITYFILE]->fileName();
-            }else{
-               parameters[CbcParam::PRIORITYFILE]->setFileName(fileName);
-            }
             if (!canOpen) {
                buffer.str("");
                buffer << "Unable to open file " << fileName.c_str();
                printGeneralMessage(model_, buffer.str());
                continue;
             }
-            FILE *fp = fopen(fileName.c_str(), "r");
+            if (fileName == ""){
+               fileName = parameters[CbcParam::PRIORITYFILE]->fileName();
+            }else{
+               parameters[CbcParam::PRIORITYFILE]->setFileName(fileName);
+            }
+            fp = fopen(fileName.c_str(), "r");
             std::string headings[] = {"name",     "number", "direction",
                                       "priority", "up",     "down",
                                       "solution", "priin"};
@@ -9879,18 +9811,18 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             CoinParamUtils::processFile(fileName,
                                  parameters[CbcParam::DIRECTORY]->dirName(),
                                         &canOpen);
-            if (fileName == ""){
-               fileName = parameters[CbcParam::DEBUGFILE]->fileName();
-            }else{
-               parameters[CbcParam::DEBUGFILE]->setFileName(fileName);
-            }
             if (!canOpen){
                buffer.str("");
                buffer << "Unable to open file " << fileName.c_str();
                printGeneralMessage(model_, buffer.str());
                continue;
             }
-            FILE *fp = fopen(fileName.c_str(), "rb");
+            if (fileName == ""){
+               fileName = parameters[CbcParam::DEBUGFILE]->fileName();
+            }else{
+               parameters[CbcParam::DEBUGFILE]->setFileName(fileName);
+            }
+            fp = fopen(fileName.c_str(), "rb");
             // can open - lets go for it
             int numRows;
             double obj;
@@ -9991,16 +9923,16 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             CoinParamUtils::processFile(fileName,
                                  parameters[CbcParam::DIRECTORY]->dirName(),
                                         &canOpen);
-            if (fileName == ""){
-               fileName = parameters[CbcParam::MODELFILE]->fileName();
-            }else{
-               parameters[CbcParam::MODELFILE]->setFileName(fileName);
-            }
             if (!canOpen) {
                buffer.str("");
                buffer << "Unable to open file " << fileName.c_str();
                printGeneralMessage(model_, buffer.str());
                continue;
+            }
+            if (fileName == ""){
+               fileName = parameters[CbcParam::MODELFILE]->fileName();
+            }else{
+               parameters[CbcParam::MODELFILE]->setFileName(fileName);
             }
             int status = lpSolver->restoreModel(fileName.c_str());
             if (!status) {
@@ -10042,18 +9974,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             for (iRow = 0; iRow < numberRows; iRow++)
                dualRowSolution[iRow] = dualRowSolution[iRow];
            } break;
-          case CbcParam::DIRSAMPLE: 
-          case CbcParam::DIRECTORY: 
-          case CbcParam::DIRNETLIB: 
-          case CbcParam::DIRMIPLIB: 
-            if (status = cbcParam->readValue(inputQueue, field, &message)){
-               printGeneralMessage(model_, message);
-               continue;
-            }
-            if (cbcParam->setVal(field, &message)){
-               printGeneralMessage(model_, message);
-               continue;
-            }
           case CbcParam::STDIN:
             interactiveMode = true;
             while (!inputQueue.empty())
@@ -10198,7 +10118,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             int state = 0;
             // FIXME: This needs to fixed up to use modern C++ and to use the inputQueue properly
             char cbuffer[1000];
-            FILE *fp = fopen(fileName.c_str(), "r");
+            fp = fopen(fileName.c_str(), "r");
             if (fp) {
               // file already there
               state = 1;
@@ -10261,6 +10181,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             fclose(fp);
           } break;
           case CbcParam::PRINTSOL:
+          case CbcParam::WRITESOL:
           case CbcParam::WRITENEXTSOL:
           case CbcParam::WRITEGMPLSOL:{
             if (!goodModel){
@@ -10269,53 +10190,83 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                printGeneralMessage(model_, buffer.str());
                continue;
             }
-              // FIXME: Need to figure out when to open in 'w' versus 'a' mode
+              fp = NULL;
               bool append = true;
-
               ClpSimplex *saveLpSolver = NULL;
-
               canOpen = false;
-              if (cbcParamCode == CbcParam::PRINTSOL){
-                 field = "stdout";
-              } else if (cbcParamCode == CbcParam::WRITENEXTSOL) {
+              if (cbcParamCode == CbcParam::PRINTSOL) {
+                 fp = stdout;
+                 fprintf(fp, "\n");
+              } else {
                  cbcParam->readValue(inputQueue, fileName, &message);
-                 CoinParamUtils::processFile(fileName,
+                 if (fileName == "append"){
+                    switch (cbcParamCode){
+                     case CbcParam::WRITESOL:
+                       fileName =
+                          parameters[CbcParam::SOLUTIONFILE]->fileName();
+                       break;
+                     case CbcParam::WRITENEXTSOL:
+                       fileName =
+                          parameters[CbcParam::NEXTSOLFILE]->fileName();
+                       break;
+                     case CbcParam::WRITEGMPLSOL:
+                       fileName =
+                          parameters[CbcParam::SOLUTIONFILE]->fileName();
+                    break;
+                    }
+                    CoinParamUtils::processFile(fileName,
+                                  parameters[CbcParam::DIRECTORY]->dirName(),
+                                                &canOpen);
+                    if (!canOpen) {
+                       buffer.str("");
+                       buffer << "Unable to open file " << fileName.c_str();
+                       printGeneralMessage(model_, buffer.str());
+                       continue;
+                    }
+                    append = true;
+                 } else if (cbcParamCode == CbcParam::WRITESOL) {
+                    cbcParam->readValue(inputQueue, fileName, &message);
+                    CoinParamUtils::processFile(fileName,
                                  parameters[CbcParam::DIRECTORY]->dirName());
-                 if (fileName == ""){
-                    fileName = parameters[CbcParam::NEXTSOLFILE]->fileName();
-                 }else{
-                    parameters[CbcParam::NEXTSOLFILE]->setFileName(fileName);
+                    if (fileName == ""){
+                       fileName =
+                          parameters[CbcParam::SOLUTIONFILE]->fileName();
+                    }else{
+                       parameters[CbcParam::SOLUTIONFILE]->setFileName(fileName);
                  }
-              } else if (cbcParamCode == CbcParam::WRITEGMPLSOL) {
-                 cbcParam->readValue(inputQueue, fileName, &message);
-                 CoinParamUtils::processFile(fileName,
+                 } else if (cbcParamCode == CbcParam::WRITENEXTSOL) {
+                    cbcParam->readValue(inputQueue, fileName, &message);
+                    CoinParamUtils::processFile(fileName,
                                  parameters[CbcParam::DIRECTORY]->dirName());
-                 if (fileName == ""){
-                    fileName = parameters[CbcParam::GMPLSOLFILE]->fileName();
-                 }else{
-                    parameters[CbcParam::GMPLSOLFILE]->setFileName(fileName);
+                    if (fileName == ""){
+                       fileName = parameters[CbcParam::NEXTSOLFILE]->fileName();
+                    }else{
+                       parameters[CbcParam::NEXTSOLFILE]->setFileName(fileName);
+                    }
+                 } else if (cbcParamCode == CbcParam::WRITEGMPLSOL) {
+                    cbcParam->readValue(inputQueue, fileName, &message);
+                    CoinParamUtils::processFile(fileName,
+                                 parameters[CbcParam::DIRECTORY]->dirName());
+                    if (fileName == ""){
+                       fileName = parameters[CbcParam::GMPLSOLFILE]->fileName();
+                    }else{
+                       parameters[CbcParam::GMPLSOLFILE]->setFileName(fileName);
+                    }
+                 }
+                 if (!append){
+                    fp = fopen(fileName.c_str(), "w");
+                 } else {
+                    fp = fopen(fileName.c_str(), "a");
+                 }
+                 if (!fp) {
+                    buffer.str("");
+                    buffer << "Unable to open file " << fileName.c_str();
+                    printGeneralMessage(model_, buffer.str());
+                    continue;
                  }
               }
 
-              FILE *fp = NULL;
-              if (field == "-" || field == "EOL" || field == "stdout") {
-                // stdout
-                fp = stdout;
-              } else if (field == "stderr") {
-                // stderr
-                fp = stderr;
-              } else {
-                 if (!append)
-                    fp = fopen(fileName.c_str(), "w");
-                 else
-                    fp = fopen(fileName.c_str(), "a");
-              }
-              if (!fp) {
-                 buffer.str("");
-                 buffer << "Unable to open file " << fileName.c_str();
-                 printGeneralMessage(model_, buffer.str());
-                 continue;
-              }
+
 #ifndef CBC_OTHER_SOLVER
               // See if Glpk
                 if (cbcParamCode == CbcParam::WRITEGMPLSOL) {
@@ -11008,7 +10959,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   delete[] masks;
                 }
           } break;
-          case CbcParam::WRITESOL:
+          case CbcParam::WRITESOLBINARY:
             if (!goodModel){
                buffer.str("");
                buffer << "** Current model not valid";
@@ -11019,9 +10970,9 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             CoinParamUtils::processFile(fileName,
                                  parameters[CbcParam::DIRECTORY]->dirName());
             if (fileName == ""){
-               fileName = parameters[CbcParam::SOLUTIONFILE]->fileName();
+               fileName = parameters[CbcParam::SOLUTIONBINARYFILE]->fileName();
             }else{
-               parameters[CbcParam::SOLUTIONFILE]->setFileName(fileName);
+               parameters[CbcParam::SOLUTIONBINARYFILE]->setFileName(fileName);
             }
             ClpParamUtils::saveSolution(lpSolver, fileName);
             break;

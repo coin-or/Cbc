@@ -1814,7 +1814,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	  types.push_back("Directory parameters:");
 	  types.push_back("File parameters:");
           types.push_back("Keyword parameters:");
-	  std::cout << "#### Cbc Parameters ###" << std::endl;
+	  std::cout << std::endl << "#### Cbc Parameters ####" << std::endl;
 	  for (int type = 1;type < 8;type++) {
 	    int across = 0;
 	    int lengthLine = 0;
@@ -1877,7 +1877,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	    if (!first)
 	      std::cout << std::endl;
 	  }
-	  std::cout << "   Clp Parameters" << std::endl;
+	  std::cout << std::endl << "#### Clp Parameters ####" << std::endl;
 	  for (int type = 1;type < 8;type++) {
 	    int across = 0;
 	    int lengthLine = 0;
@@ -3331,7 +3331,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           switch (cbcParamCode) {
            case CbcParam::SOLVECONTINUOUS:
              // Solve problem dual simplex
-             inputQueue.push_front("-dualSimplex");
+             inputQueue.push_front("dualSimplex");
              continue;
            case CbcParam::STATISTICS:{
             if (!goodModel){

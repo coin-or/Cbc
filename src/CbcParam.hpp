@@ -84,6 +84,7 @@ public:
       WRITEMODEL,
       WRITENEXTSOL,
       WRITESOL,
+      WRITESOLBINARY,
       WRITESTATS,
       LASTACTIONPARAM,
       
@@ -99,6 +100,7 @@ public:
       NEXTSOLFILE,
       PRIORITYFILE,
       SOLUTIONFILE,
+      SOLUTIONBINARYFILE,
       LASTFILEPARAM,
 
       // Directory Paramaters
@@ -299,7 +301,7 @@ public:
     */
   CbcParam(int code, std::string name, std::string help,
            double lower = -COIN_DBL_MAX, double upper = COIN_DBL_MAX,
-           double defaultValue = 0.0, std::string longHelp = "",
+           std::string longHelp = "",
            CoinDisplayPriority display = displayPriorityHigh);
 
   /*! \brief Constructor for a parameter with an integer value
@@ -308,37 +310,17 @@ public:
     */
   CbcParam(int code, std::string name, std::string help,
            int lower = -COIN_INT_MAX, int upper = COIN_INT_MAX,
-           int defaultValue = 0, std::string longHelp = "",
-           CoinDisplayPriority display = displayPriorityHigh);
-
-  /*! \brief Constructor for a parameter with keyword values
-
-      The string supplied as \p firstValue becomes the first keyword.
-      Additional keywords can be added using appendKwd(). Keywords are numbered
-      from zero. It's necessary to specify both the first keyword (\p
-      firstValue) and the default keyword index (\p dflt) in order to
-      distinguish this constructor from the string and action parameter
-      constructors.
-    */
-  CbcParam(int code, std::string name, std::string help,
-           std::string defaultKwd, int defaultMode,
            std::string longHelp = "",
            CoinDisplayPriority display = displayPriorityHigh);
 
-  /*! \brief Constructor for a string parameter
+  /*! \brief Constructor for a parameter with string values (or no value)
+    Type is not optional to resolve ambiguity.
 
-      The default string value must be specified explicitly to distinguish
-      a string constructor from an action parameter constructor.
-    */
-  CbcParam(int code, std::string name, std::string help,
-           std::string defaultValue, std::string longHelp = "",
-           CoinDisplayPriority display = displayPriorityHigh);
-
-  /*! \brief Constructor for an action parameter */
-  // No defaults to resolve ambiguity
-  CbcParam(int code, std::string name, std::string help,
-           std::string longHelp, CoinDisplayPriority display);
-
+    The default value is "" for all such parameter types
+  */
+  CbcParam(int code, std::string name, CoinParam::CoinParamType type,
+           std::string help, std::string longHelp = "",
+           CoinDisplayPriority displayPriority = CoinParam::displayPriorityHigh);
   /*! \brief Copy constructor */
   CbcParam(const CbcParam &orig);
 

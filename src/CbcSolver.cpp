@@ -10225,8 +10225,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     }
                     append = true;
                  } else if (cbcParamCode == CbcParam::WRITESOL) {
-                    cbcParam->readValue(inputQueue, fileName, &message);
-                    CoinParamUtils::processFile(fileName,
+                     CoinParamUtils::processFile(fileName,
                                  parameters[CbcParam::DIRECTORY]->dirName());
                     if (fileName == ""){
                        fileName =
@@ -10235,8 +10234,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                        parameters[CbcParam::SOLUTIONFILE]->setFileName(fileName);
                  }
                  } else if (cbcParamCode == CbcParam::WRITENEXTSOL) {
-                    cbcParam->readValue(inputQueue, fileName, &message);
-                    CoinParamUtils::processFile(fileName,
+                     CoinParamUtils::processFile(fileName,
                                  parameters[CbcParam::DIRECTORY]->dirName());
                     if (fileName == ""){
                        fileName = parameters[CbcParam::NEXTSOLFILE]->fileName();
@@ -10244,8 +10242,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                        parameters[CbcParam::NEXTSOLFILE]->setFileName(fileName);
                     }
                  } else if (cbcParamCode == CbcParam::WRITEGMPLSOL) {
-                    cbcParam->readValue(inputQueue, fileName, &message);
-                    CoinParamUtils::processFile(fileName,
+                     CoinParamUtils::processFile(fileName,
                                  parameters[CbcParam::DIRECTORY]->dirName());
                     if (fileName == ""){
                        fileName = parameters[CbcParam::GMPLSOLFILE]->fileName();

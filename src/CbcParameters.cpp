@@ -51,7 +51,7 @@ void CbcParameters::init(int strategy){
   switch (strategy) {
    case DefaultStrategy:
    default:
-     clpParameters_.init(ClpParameters::DefaultStrategy);
+     // already done clpParameters_.init(ClpParameters::DefaultStrategy);
      break;
   }
         
@@ -297,7 +297,7 @@ int CbcParameters::matches(std::string field, int &numberMatches){
   "'root' lets CBC run the cut generator generate only at the root node. "     \
   "Value 'ifmove' lets CBC use the cut generator in the tree if it looks as "  \
   "if it is doing some good and moves the objective value. Value 'forceon' "   \
-  "turns on the cut generator and forces CBC to use it at every node."
+  "turns on the cut generator and forces CBC to use it at every node.\n"
 
 #define HEURISTICS_LONGHELP                                                    \
   "Value 'on' means to use the heuristic in each node of the tree, i.e. "      \

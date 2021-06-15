@@ -183,7 +183,13 @@ void formInputQueue(std::deque<std::string> &inputQueue,
 {
    for (int i = 1; i < argc; i++){
       std::string tmp(argv[i]);
-      std::string::size_type found = tmp.find('=');
+      std::string::size_type found = tmp.find("cbc");
+      if (found != std::string::npos) {
+         // For some reason, the command can sometimes be listed more than once
+         // in argv
+         continue;
+      }
+      found = tmp.find('=');
       if (found != std::string::npos) {
          inputQueue.push_back(tmp.substr(0, found));
          inputQueue.push_back(tmp.substr(found + 1));

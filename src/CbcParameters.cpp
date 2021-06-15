@@ -89,6 +89,7 @@ void CbcParameters::init(int strategy){
   cur_lang_ = CoinMessages::us_en;
   msgs_ = 0;
   logLvl_ = 0;
+  lpLogLvl_ = 0;
 
   totalTime_ = 0.0;
 
@@ -154,6 +155,7 @@ void CbcParameters::init(int strategy){
   fpump_.mode_ = CbcParameters::HeurOn;
   fpump_.proto_ = 0;
   fpump_.initialTune_ = -1;
+  fpump_.iters_ = 0;
 
   combine_.mode_ = CbcParameters::HeurOn;
   combine_.proto_ = 0;

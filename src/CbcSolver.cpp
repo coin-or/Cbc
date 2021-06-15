@@ -1599,6 +1599,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
       }
 
       // find out if valid command
+      // ? would it be better to do Cbc first ?
       int numberClpMatches(0), numberClpShortMatches(0), numberClpQuery(999);
       int clpParamCode = CoinParamUtils::lookupParam(field,
                                                      clpParameters.paramVec(),
@@ -1607,6 +1608,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                                                      &numberClpQuery);
       
       int numberCbcMatches(0), numberCbcShortMatches(0), numberCbcQuery(0);
+      if (numberClpQuery>0)
+	numberCbcQuery = 999; // so won't complain if no matches
       int cbcParamCode = CoinParamUtils::lookupParam(field,
                                                      parameters.paramVec(),
                                                      &numberCbcMatches,

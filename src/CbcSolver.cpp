@@ -1637,6 +1637,27 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	}
       }
 
+      // Do some translation for backwards compatibility
+      switch (cbcParamCode){
+       case CbcParam::READMODEL_OLD:
+         cbcParamCode = CbcParam::READMODEL;
+         break;
+       case CbcParam::WRITEGMPLSOL_OLD:
+         cbcParamCode = CbcParam::WRITEGMPLSOL;
+         break;
+       case CbcParam::WRITEMODEL_OLD:
+         cbcParamCode = CbcParam::WRITEMODEL;
+         break;
+       case CbcParam::WRITESOL_OLD:
+         cbcParamCode = CbcParam::WRITESOL;
+         break;
+       case CbcParam::WRITESOLBINARY_OLD:
+         cbcParamCode = CbcParam::WRITESOLBINARY;
+         break;
+       default:
+         break;
+      }
+      
       CbcParam *cbcParam = parameters[CbcParam::INVALID];
       ClpParam *clpParam = clpParameters[ClpParam::INVALID];
 
@@ -1722,9 +1743,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               model_.solver()->initialSolve();
 
               if (model_.solver()->isProvenPrimalInfeasible()) {
-                 buffer.str("");
-                 buffer << "Clique Strengthening says infeasible!";
-                 printGeneralMessage(model_, buffer.str());
+                 printGeneralMessage(model_,
+                                     "Clique Strengthening says infeasible!");
               } else {
                  buffer.str("");
                  buffer << "After applying Clique Strengthening continuous "
@@ -1765,10 +1785,17 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           }
 #endif
         }
-        if (cbcParamCode == CbcParam::GENERALQUERY) {
+        if (cbcParamCode == CbcParam::GENERALQUERY  ||
+            cbcParamCode == CbcParam::FULLGENERALQUERY) {
           //TODO This should be made more transparent
           //bool evenHidden = false;
-          int commandPrintLevel = parameters[CbcParam::COMMANDPRINTLEVEL]->modeVal();
+          int commandPrintLevel =
+             parameters[CbcParam::COMMANDPRINTLEVEL]->modeVal();
+          if (cbcParamCode == CbcParam::FULLGENERALQUERY) {
+             verbose = 1;
+             commandPrintLevel = 1;
+          }	
+#if 0
           if ((verbose & 8) != 0) {
             // even hidden
             // evenHidden = true;
@@ -1776,21 +1803,32 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           }
           if (verbose < 4 && statusUserFunction_[0])
             verbose += 4;
-          if (verbose < 4) {
-            std::cout << "In argument list keywords have leading - "
-                         ", -stdin or just - switches to stdin"
-                      << std::endl;
-            std::cout << "One command per line (and no -)" << std::endl;
-            std::cout << "abcd? gives list of possibilities, if only one + "
-                         "explanation"
-                      << std::endl;
-            std::cout << "abcd?? adds explanation, if only one fuller help"
-                      << std::endl;
-            std::cout
-                << "abcd without value (where expected) gives current value"
-                << std::endl;
-            std::cout << "abcd value sets value" << std::endl;
-            std::cout << "Commands are:" << std::endl;
+#endif
+          if (verbose) {
+             std::cout << std::endl
+                       << "Commands either invoke actions or set parameter values.\n"
+                       << "When specifying multiple commands on one command line,\n"
+                       << "parameter/action names should be prepended with a '-',\n"
+                       << "followed by a value (some actions don't accept values as\n"
+                       << "arguments). Specifying -stdin at anytime switches to stdin.\n"
+                       << std::endl
+                       << "In interactive mode, specify one command per line and\n"
+                       << "don't prepend command names with '-'.\n"
+                       << std::endl
+                       << "Some actions take file names as arguments. If no file name\n"
+                       << "is provided, then the previous name (or initial default)\n"
+                       << "will be used.\n"
+                       << std::endl
+                       << "abcd? will list commands starting with 'abcd'.\n"
+                       << "If there is only one match, a short explanation is given.\n"
+                       << std::endl
+                       << "abcd?? will list commands with explanations.\n"
+                       << "If there is only one match, fuller help is given.\n"
+                       << std::endl
+                       << "abcd without value gives current value (for parameters).\n"
+                       << "abcd 'value' sets value (for parameters)\n"
+                       << std::endl
+                       << "Commands are:" << std::endl;
           } else {
             std::cout << "Cbc options are set within AMPL with commands like:"
                       << std::endl
@@ -1818,67 +1856,81 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	  types.push_back("File parameters:");
           types.push_back("Keyword parameters:");
 	  std::cout << std::endl << "#### Cbc Parameters ####" << std::endl;
-	  for (int type = 1;type < 8;type++) {
+	  for (int type = 1; type < 8; type++) {
 	    int across = 0;
 	    int lengthLine = 0;
 	    bool first = true;
-	    for (int iParam = CbcParam::FIRSTPARAM+1;
-		 iParam < CbcParam::LASTPARAM; iParam++) {
+	    for (int iParam = CbcParam::FIRSTPARAM + 1;
+                 iParam < CbcParam::LASTPARAM; iParam++) {
 	      //TODO Print model parameters
-	      if (parameters[iParam]->type() != type)
-		continue;
+              CbcParam *p = parameters[iParam];
+	      if (p->type() != type ||  
+                  p->getDisplayPriority() < commandPrintLevel){
+                 continue;
+              }
 	      if (first) {
-		std::cout << types[type] << std::endl;
+                std::cout << std::endl
+                          << "*** " << types[type] << " ***"
+                          << std::endl << std::endl;
 		first = false;
 	      }
+#if 0
 	      if ((verbose % 4) != 0) {
 		std::cout << std::endl;
 	      }
 	      if ((verbose & 2) != 0){
 		std::cout << std::endl;
 	      }
-	      if (parameters[iParam]->getDisplayPriority() >= commandPrintLevel){
-		// TODO Fix AMPL mode stuff
-		// but skip if not useful for ampl (and in ampl mode)
-#if 0
-		if (verbose >= 4 && (parameters[iParam]->whereUsed() & 4) == 0)
-		  continue;
+              // TODO Fix AMPL mode stuff
+              // but skip if not useful for ampl (and in ampl mode)
+              if (verbose >= 4 && (p->whereUsed() & 4) == 0)
+                 continue;
 #endif
-		if (!across) {
-		  if ((verbose & 2) != 0) {
+              int length = p->lengthMatchName() + 1;
+              if (lengthLine + length > 80) {
+                 std::cout << std::endl;
+                 across = 0;
+                 lengthLine = 0;
+              }
+              if (!across && (verbose & 2) != 0) {
 		    std::cout << "Command ";
-		  }
-		}
-		int length = parameters[iParam]->lengthMatchName() + 1;
-		if (lengthLine + length > 80) {
-		  std::cout << std::endl;
-		  across = 0;
-		  lengthLine = 0;
-		}
-		std::cout << " " << parameters[iParam]->matchName();
-		lengthLine += length;
-		across++;
-		if (across == maxAcross) {
-		  across = 0;
-		  lengthLine = 0;
-		  if ((verbose % 4) != 0) {
+              }
+              std::cout << p->matchName();
+              lengthLine += length;
+              across++;
+              if (verbose) {
+                 if ((verbose % 4) != 0) {
 		    // put out description as well
-		    if ((verbose & 1) != 0)
-		      std::cout << " " << parameters[iParam]->shortHelp();
-		    std::cout << std::endl;
-		    if ((verbose & 2) != 0) {
-		      std::cout << "---- description" << std::endl;
-		      parameters[iParam]->printLongHelp();
-		      std::cout << "----" << std::endl << std::endl;
+		    if ((verbose & 1) != 0){
+                       if (length < 8){
+                          std::cout << "\t\t\t";
+                       } else if (length < 16) {
+                          std::cout << "\t\t";
+                       } else {
+                          std::cout << "\t";
+                       }
+                       std::cout << p->shortHelp();
+                       std::cout << std::endl;
+                    } else  if ((verbose & 2) != 0) {
+                       std::cout << "---- description" << std::endl;
+                       p->printLongHelp();
+                       std::cout << "----" << std::endl << std::endl;
 		    }
-		  } else {
-		    std::cout << std::endl;
-		  }
-		}
-	      }
-	    }
-	    if (!first)
-	      std::cout << std::endl;
+                 } 
+                 across = 0;
+                 lengthLine = 0;
+              } else {
+               std::cout << " ";
+              }
+              if (across == maxAcross) {
+                 across = 0;
+                 lengthLine = 0;
+                 std::cout << std::endl;
+              }
+            }
+            if (across){
+               std::cout << std::endl;
+            }
 	  }
 	  std::cout << std::endl << "#### Clp Parameters ####" << std::endl;
 	  for (int type = 1;type < 8;type++) {
@@ -1889,73 +1941,65 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		 iParam < ClpParam::LASTPARAM; iParam++) {
 	      if (clpParameters[iParam]->type() != type)
 		continue;
-	      if (clpParameters[iParam]->getDisplayPriority() >= commandPrintLevel) {
-		if (first) {
-		  std::cout << types[type] << std::endl;
-		  first = false;
-		}
-		int length = clpParameters[iParam]->lengthMatchName() + 1;
-		if (lengthLine + length > 80) {
-		  std::cout << std::endl;
-		  across = 0;
-		  lengthLine = 0;
-		}
-		std::cout << " " << clpParameters[iParam]->matchName();
-		lengthLine += length;
-		across++;
-		if (across == maxAcross) {
-		  across = 0;
-		  lengthLine = 0;
-		  std::cout << std::endl;
-		}
-	      }
-	    }
-	    if (!first)
-	      std::cout << std::endl;
-	  }
-        } else if (cbcParamCode == CbcParam::FULLGENERALQUERY) {
-	  // changed to print explanation for each command
-          std::vector<std::string> types;
-          types.push_back("Invalid parameters:");
-          types.push_back("Action parameters:");
-          types.push_back("Integer parameters:");
-          types.push_back("Double parameters:");
-	  types.push_back("Directory parameters:");
-	  types.push_back("File parameters:");
-          types.push_back("String parameters:");
-          types.push_back("Keyword parameters:");
-          int commandPrintLevel = parameters[CbcParam::COMMANDPRINTLEVEL]->modeVal();
-          std::cout << "Full list of Cbc commands is:" << std::endl;
-	  for (int type = 1;type < 8;type++) {
-	    for (int iParam = CbcParam::FIRSTPARAM+1;
-		 iParam < CbcParam::LASTPARAM; iParam++) {
-	      if (parameters[iParam]->type() != type)
-		continue;
-	      if (parameters[iParam]->getDisplayPriority() >= commandPrintLevel){
-		// TODO Fix AMPL mode stuff
-		// but skip if not useful for ampl (and in ampl mode)
-		std::cout << parameters[iParam]->matchName();
-		std::cout << " " << parameters[iParam]->shortHelp();
-		std::cout << std::endl;
-	      }
-	    }
-	  }
-          std::cout << "Full list of Clp commands is:" << std::endl;
-	  for (int type = 1;type < 8;type++) {
-	    for (int iParam = ClpParam::FIRSTPARAM+1;
-		 iParam < ClpParam::LASTPARAM; iParam++) {
-	      if (clpParameters[iParam]->type() != type)
-		continue;
-	      if (clpParameters[iParam]->getDisplayPriority() >= commandPrintLevel) {
-		// TODO Fix AMPL mode stuff
-		// but skip if not useful for ampl (and in ampl mode)
-		std::cout << clpParameters[iParam]->matchName();
-		std::cout << " " << clpParameters[iParam]->shortHelp();
-		std::cout << std::endl;
-	      }
-	    }
-	  }
-        } else if (cbcParam->type() == CoinParam::paramDbl) {
+              ClpParam *p = clpParameters[iParam];
+              if (p->type() != type ||  
+                  p->getDisplayPriority() < commandPrintLevel){
+                 continue;
+              }
+              if (first) {
+                 std::cout << std::endl
+                           << "*** " << types[type] << " ***"
+                           << std::endl << std::endl;
+                 first = false;
+              }
+              int length = p->lengthMatchName() + 1;
+              if (lengthLine + length > 80) {
+                 std::cout << std::endl;
+                 across = 0;
+                 lengthLine = 0;
+              }
+              if (!across && (verbose & 2) != 0){
+                 std::cout << "Command ";
+              }
+              std::cout << p->matchName();
+              lengthLine += length;
+              across++;
+              if (verbose) {
+                 // put out description as well
+                 if ((verbose & 1) != 0){
+                    if (length < 8){
+                       std::cout << "\t\t\t";
+                    } else if (length < 16) {
+                       std::cout << "\t\t";
+                    } else {
+                       std::cout << "\t";
+                    }
+                    std::cout << p->shortHelp();
+                    std::cout << std::endl;
+                 } else if ((verbose & 2) != 0) {
+                    std::cout << "---- description" << std::endl;
+                    p->printLongHelp();
+                    std::cout << "----" << std::endl << std::endl;
+                 }
+                 across = 0;
+                 lengthLine = 0;
+              } else {
+                 std::cout << " ";
+              }
+              if (across == maxAcross) {
+                 across = 0;
+                 lengthLine = 0;
+                 std::cout << std::endl;
+              }
+            }
+            if (across){
+               std::cout << std::endl;
+            }
+          }
+          continue;
+        }
+
+        if (cbcParam->type() == CoinParam::paramDbl) {
            if (status = cbcParam->readValue(inputQueue, dValue, &message)){
               printGeneralMessage(model_, message);
               continue;
@@ -2596,9 +2640,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             case ClpParam::PRIMALSIMPLEX:
             case ClpParam::BARRIER:{
               if (!goodModel) {
-               buffer.str("");
-               buffer << "** Current model not valid";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralWarning(model_, "** Current model not valid\n");
                continue;
               }
               // Say not in integer
@@ -3041,23 +3083,18 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             } break;
           case ClpParam::TIGHTEN:{
             if (!goodModel) {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+              printGeneralMessage(model_, "** Current model not valid\n");
               continue;
             }
             int numberInfeasibilities = lpSolver->tightenPrimalBounds();
             if (numberInfeasibilities) {
-               buffer.str("");
-               buffer << "** Analysis indicates model infeasible";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralMessage(model_,
+                                   "** Analysis indicates model infeasible");
             }
           } break;
           case ClpParam::PLUSMINUS:{
             if (goodModel) {
-               buffer.str("");
-               buffer << "** Current model not valid";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralWarning(model_, "** Current model not valid\n");
                continue;
             }
             ClpMatrixBase *saveMatrix = lpSolver->clpMatrix();
@@ -3069,18 +3106,14 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                if (newMatrix->getIndices()) {
                   lpSolver->replaceMatrix(newMatrix);
                   delete saveMatrix;
-                  buffer.str("");
-                  buffer << "Matrix converted to +- one matrix";
-                  printGeneralMessage(model_, buffer.str());
+                  printGeneralMessage(model_,
+                                      "Matrix converted to +- one matrix");
                } else {
-                  buffer.str("");
-                  buffer << "Matrix can not be converted to +- 1 matrix";
-                  printGeneralMessage(model_, buffer.str());
+                  printGeneralMessage(model_,
+                                "Matrix can not be converted to +- 1 matrix");
                }
             } else {
-               buffer.str("");
-               buffer << "Matrix not a ClpPackedMatrix";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralMessage(model_, "Matrix not a ClpPackedMatrix");
             }
           }break;
           case ClpParam::OUTDUPROWS:
@@ -3098,17 +3131,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                  printGeneralMessage(model_, buffer.str());
               }
             } else {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+              printGeneralMessage(model_, "** Current model not valid\n");
             }
 #endif
             break;
             case ClpParam::NETWORK:{
             if (!goodModel) {
-               buffer.str("");
-               buffer << "** Current model not valid";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralWarning(model_, "** Current model not valid\n");
                continue;
             }
             ClpMatrixBase *saveMatrix = lpSolver->clpMatrix();
@@ -3120,25 +3149,19 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                if (newMatrix->getIndices()) {
                   lpSolver->replaceMatrix(newMatrix);
                   delete saveMatrix;
-                  buffer.str("");
-                  buffer << "Matrix converted to network matrix";
-                  printGeneralMessage(model_, buffer.str());
+                  printGeneralMessage(model_,
+                                      "Matrix converted to network matrix");
                } else {
-                  buffer.str("");
-                  buffer << "Matrix can not be converted to network matrix";
-                  printGeneralMessage(model_, buffer.str());
+                  printGeneralMessage(model_,
+                          "Matrix can not be converted to network matrix");
                }
             } else {
-               buffer.str("");
-               buffer << "Matrix not a ClpPackedMatrix";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralMessage(model_, "Matrix not a ClpPackedMatrix");
             }
             }break;
           case ClpParam::BASISIN:{
             if (!goodModel){
-               buffer.str("");
-               buffer << "** Current model not valid";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralWarning(model_, "** Current model not valid\n");
                continue;
             }
             clpParam->readValue(inputQueue, fileName, &message);
@@ -3168,9 +3191,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           } break;
           case ClpParam::BASISOUT:{
             if (!goodModel){
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+              printGeneralMessage(model_, "** Current model not valid\n");
               continue;
             }
             clpParam->readValue(inputQueue, fileName, &message);
@@ -3275,9 +3296,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             break;
             case ClpParam::PARAMETRICS:{
             if (!goodModel){
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+              printGeneralMessage(model_, "** Current model not valid\n");
             }
             cbcParam->readValue(inputQueue, fileName, &message);
             CoinParamUtils::processFile(fileName,
@@ -3338,9 +3357,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
              continue;
            case CbcParam::STATISTICS:{
             if (!goodModel){
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+              printGeneralMessage(model_, "** Current model not valid\n");
               continue;
             }
             // If presolve on look at presolved
@@ -3985,9 +4002,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #ifndef CBC_OTHER_SOLVER
                 if (!complicatedInteger && preProcess == 0 &&
                     clpSolver->tightenPrimalBounds(0.0, 0, true) != 0) {
-                  buffer.str("");
-                  buffer << "Problem is infeasible - tightenPrimalBounds!";
-                  printGeneralMessage(model_, buffer.str());
+                  printGeneralMessage(model_,
+                              "Problem is infeasible - tightenPrimalBounds!");
                   model_.setProblemStatus(0);
                   model_.setSecondaryStatus(1);
                   // say infeasible for solution
@@ -4095,9 +4111,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 // bounds based on continuous
                 if (tightenFactor && !complicatedInteger) {
                   if (modelC->tightenPrimalBounds(tightenFactor) != 0) {
-                    buffer.str("");
-                    buffer << "Problem is infeasible!";
-                    printGeneralMessage(model_, buffer.str());
+                    printGeneralMessage(model_, "Problem is infeasible!");
                     model_.setProblemStatus(0);
                     model_.setSecondaryStatus(1);
                     // and in babModel if exists
@@ -4267,7 +4281,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 if (iGenerator < numberGenerators) {
                   preProcess = 0;
                   printGeneralMessage(model_,
-                                      "PreProcessing switched off due to lazy constraints");
+                        "PreProcessing switched off due to lazy constraints");
                 }
               }
               if (preProcess && cbcParamCode == CbcParam::BAB) {
@@ -4753,9 +4767,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   break;
                 }
                 if (!solver2) {
-                   buffer.str("");
-                   buffer << "Pre-processing says infeasible or unbounded";
-                   printGeneralMessage(model_, buffer.str());
+                   printGeneralMessage(model_,
+                                "Pre-processing says infeasible or unbounded");
                   // say infeasible for solution
                   integerStatus = 6;
                   delete saveSolver;
@@ -5489,9 +5502,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   solver->setHintParam(OsiDoDualInResolve, takeHint, strength);
 
                   if (solver->isProvenPrimalInfeasible()) {
-                     buffer.str("");
-                     buffer << "Clique Strengthening says infeasible!";
-                     printGeneralMessage(model_, buffer.str());
+                     printGeneralMessage(model_,
+                                   "Clique Strengthening says infeasible!");
                   } else {
                      buffer.str("");
                      buffer << "After applying Clique Strengthening continuous "
@@ -5513,9 +5525,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 // if (noPrinting_)
                 // modelC->setLogLevel(0);
                 if (!complicatedInteger && modelC->tightenPrimalBounds() != 0) {
-                  buffer.str("");
-                  buffer << "Problem is infeasible!";
-                  printGeneralMessage(model_, buffer.str());
+                  printGeneralMessage(model_, "Problem is infeasible!");
                   model_.setProblemStatus(0);
                   model_.setSecondaryStatus(1);
                   // say infeasible for solution
@@ -7982,8 +7992,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   } else {
                     buffer.str("");
                     buffer << "Ending major passes - no solution found";
-                    printGeneralMessage(model_, buffer.str());
                   }
+                  printGeneralMessage(model_, buffer.str());
                   delete[] which;
                   delete[] bestValues;
                   delete[] bestSolutions;
@@ -9209,9 +9219,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           } break;
           case CbcParam::EXPORT: {
             if (!goodModel) {
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+              printGeneralMessage(model_, "** Current model not valid\n");
               continue;
             }
             cbcParam->readValue(inputQueue, fileName, &message);
@@ -9395,9 +9403,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           } break;
            case CbcParam::READPRIORITIES:{
             if (!goodModel){
-              buffer.str("");
-              buffer << "** Current model not valid";
-              printGeneralMessage(model_, buffer.str());
+              printGeneralMessage(model_, "** Current model not valid\n");
               continue;
             }
             cbcParam->readValue(inputQueue, fileName, &message);
@@ -9753,9 +9759,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           case CbcParam::READMIPSTART:
           case CbcParam::READSOL: {
             if (!goodModel){
-               buffer.str("");
-               buffer << "** Current model not valid";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralWarning(model_, "** Current model not valid\n");
                continue;
             }
             cbcParam->readValue(inputQueue, fileName, &message);
@@ -9792,9 +9796,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           } break;
            case CbcParam::DEBUG:{
             if (!goodModel){
-               buffer.str("");
-               buffer << "** Current model not valid";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralWarning(model_, "** Current model not valid\n");
                continue;
             }
             delete[] debugValues;
@@ -10005,9 +10007,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #ifdef USER_HAS_FAKE_CBC
             // Replace the sample code by whatever you want
             if (!goodModel){
-               buffer.str("");
-               buffer << "** Current model not valid";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralWarning(model_, "** Current model not valid\n");
                continue;
             }
             // Way of using an existing piece of code
@@ -10188,9 +10188,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
           case CbcParam::WRITENEXTSOL:
           case CbcParam::WRITEGMPLSOL:{
             if (!goodModel){
-               buffer.str("");
-               buffer << "** Current model not valid";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralWarning(model_, "** Current model not valid\n");
                continue;
             }
               fp = NULL;
@@ -10961,9 +10959,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
           } break;
           case CbcParam::WRITESOLBINARY:
             if (!goodModel){
-               buffer.str("");
-               buffer << "** Current model not valid";
-               printGeneralMessage(model_, buffer.str());
+               printGeneralWarning(model_, "** Current model not valid\n");
                continue;
             }
             cbcParam->readValue(inputQueue, fileName, &message);

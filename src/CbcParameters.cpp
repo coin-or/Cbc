@@ -361,7 +361,7 @@ void CbcParameters::setDefaults(int strategy) {
   parameters_[CbcParam::PRIORITYFILE]->setDefault(std::string("priorities.txt"));
   parameters_[CbcParam::SOLUTIONFILE]->setDefault(std::string("opt.sol"));
   parameters_[CbcParam::SOLUTIONBINARYFILE]->setDefault(std::string("solution.file"));
-  parameters_[CbcParam::COMMANDPRINTLEVEL]->setDefault("high");
+  parameters_[CbcParam::COMMANDPRINTLEVEL]->setDefault("more");
 
   // Now set up  parameters according to overall strategies
   switch (strategy) {
@@ -840,11 +840,11 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
 
   // For backward compatibility
-  parameters_[CbcParam::READMODEL]->setup(
+  parameters_[CbcParam::READMODEL_OLD]->setup(
       "restoreM!odel", "Reads problem from a file", 
       "This will read the problem saved by 'writeModel' from the file name "
       "set by 'modelFile'.",
-      CoinParam::displayPriorityHigh);
+      CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::READPRIORITIES]->setup(
       "readP!riorities", "reads priorities from file",
@@ -902,14 +902,14 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
 
   // For backward compatibility
-  parameters_[CbcParam::WRITEGMPLSOL]->setup(
+  parameters_[CbcParam::WRITEGMPLSOL_OLD]->setup(
       "gsolu!tion", "Puts glpk solution to file (synonym for writeGSolu!tion)",
       "Will write a glpk solution file to the given file name.  It will use "
       "the default directory given by 'directory'.  A name of '$' will use the "
       "previous value for the name.  This is initialized to 'stdout' (this "
       "defaults to ordinary solution if stdout). If problem created from gmpl "
       "model - will do any reports.",
-      CoinParam::displayPriorityHigh);
+      CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::WRITEMODEL]->setup(
       "writeM!odel", "save model to binary file", 
@@ -918,11 +918,11 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
 
   // For backward compatibility
-  parameters_[CbcParam::WRITEMODEL]->setup(
+  parameters_[CbcParam::WRITEMODEL_OLD]->setup(
       "saveM!odel", "save model to binary file (synonym for writeModel)", 
       "This will write the problem in binary foramt to the file name set by "
       "'modelFile' for future use by readModel.",
-      CoinParam::displayPriorityHigh);
+      CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::WRITENEXTSOL]->setup(
       "nextB!estSolution", "Prints next best saved solution to file",
@@ -939,13 +939,13 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
 
   // For backward compatibility
-  parameters_[CbcParam::WRITESOL]->setup(
+  parameters_[CbcParam::WRITESOL_OLD]->setup(
       "solu!tion", "writes solution to file (or stdout) (synonym for "
       "writeSolution).",
       "This will write a primitive solution file to the file set by "
       "'solutionFile'. The amount of output can be varied using "
       "'printingOptions' or 'printMask'.",
-      CoinParam::displayPriorityHigh);
+      CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::WRITESOLBINARY]->setup(
       "writeSolB!inary", "writes solution to file in binary format",
@@ -959,7 +959,7 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
 
   // For backward compatibility
-  parameters_[CbcParam::WRITESOLBINARY]->setup(
+  parameters_[CbcParam::WRITESOLBINARY_OLD]->setup(
       "saveS!olution", "writes solution to file in binary format (synonym for "
       "writeSolBinary",
       "This will write a binary solution file to the file set by "
@@ -969,7 +969,7 @@ void CbcParameters::addCbcSolverActionParams() {
       "reduced costs - see bottom of ClpParamUtils.cpp for code that reads or "
       "writes file. If name contains '_fix_read_', then does not write but "
       "reads and will fix all variables",
-      CoinParam::displayPriorityHigh);
+      CoinParam::displayPriorityLow);
 }
 
 //###########################################################################
@@ -1145,9 +1145,9 @@ void CbcParameters::addCbcSolverKwdParams() {
       "For the sake of your sanity, only the more useful and simple commands "
       "are printed out on ?.",
       CoinParam::displayPriorityNone);
-  parameters_[CbcParam::COMMANDPRINTLEVEL]->appendKwd("high", CbcParameters::displayHigh);
-  parameters_[CbcParam::COMMANDPRINTLEVEL]->appendKwd("all", CbcParameters::displayAll);
-  parameters_[CbcParam::COMMANDPRINTLEVEL]->appendKwd("highlow", CbcParameters::displayLowHigh);
+  parameters_[CbcParam::COMMANDPRINTLEVEL]->appendKwd("all", CbcParameters::displayHigh);
+  parameters_[CbcParam::COMMANDPRINTLEVEL]->appendKwd("more", CbcParameters::displayAll);
+  parameters_[CbcParam::COMMANDPRINTLEVEL]->appendKwd("important", CbcParameters::displayLowHigh);
 
   parameters_[CbcParam::CLQSTRENGTHENING]->setup(
       "clqstr!engthen",

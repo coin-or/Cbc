@@ -74,6 +74,7 @@ public:
       READPRIORITIES,
       READSOL,
       READMODEL,
+      READMODEL_OLD, // For backward compatibility
       SHOWUNIMP,
       SOLVECONTINUOUS,
       STATISTICS,
@@ -81,10 +82,14 @@ public:
       STRENGTHEN,
       UNITTEST,
       WRITEGMPLSOL,
+      WRITEGMPLSOL_OLD, // For backward compatibility
       WRITEMODEL,
+      WRITEMODEL_OLD, // For backward compatibility
       WRITENEXTSOL,
       WRITESOL,
+      WRITESOL_OLD, // For backward compatibility
       WRITESOLBINARY,
+      WRITESOLBINARY_OLD, // For backward compatibility
       WRITESTATS,
       LASTACTIONPARAM,
       

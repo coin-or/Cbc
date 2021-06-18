@@ -1583,7 +1583,7 @@ void CbcParameters::addCbcSolverIntParams() {
       "passes - so there is interaction there. Some parts of this "
       "implementation have their origin in idea of Andrea Lodi, Matteo "
       "Fischetti, Michele Monaci, Domenico Salvagnin, and Andrea Tramontani.",
-      CoinParam::displayPriorityNone);
+      CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::ODDWEXTMETHOD]->setup(
       "oddwext!method",

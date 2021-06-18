@@ -1887,7 +1887,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               if (verbose >= 4 && (p->whereUsed() & 4) == 0)
                  continue;
 #endif
-              int length = p->lengthMatchName() + 1;
+              int length = p->matchName().length();
               if (lengthLine + length > 80) {
                  std::cout << std::endl;
                  across = 0;
@@ -1953,7 +1953,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                            << std::endl << std::endl;
                  first = false;
               }
-              int length = p->lengthMatchName() + 1;
+              int length = p->matchName().length();
               if (lengthLine + length > 80) {
                  std::cout << std::endl;
                  across = 0;
@@ -1997,6 +1997,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                std::cout << std::endl;
             }
           }
+          std::cout << std::endl;
           continue;
         }
 

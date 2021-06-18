@@ -844,7 +844,7 @@ void CbcParameters::addCbcSolverActionParams() {
       "restoreM!odel", "Reads problem from a file", 
       "This will read the problem saved by 'writeModel' from the file name "
       "set by 'modelFile'.",
-      CoinParam::displayPriorityLow);
+      CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::READPRIORITIES]->setup(
       "readP!riorities", "reads priorities from file",
@@ -909,7 +909,7 @@ void CbcParameters::addCbcSolverActionParams() {
       "previous value for the name.  This is initialized to 'stdout' (this "
       "defaults to ordinary solution if stdout). If problem created from gmpl "
       "model - will do any reports.",
-      CoinParam::displayPriorityLow);
+      CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::WRITEMODEL]->setup(
       "writeM!odel", "save model to binary file", 
@@ -922,7 +922,7 @@ void CbcParameters::addCbcSolverActionParams() {
       "saveM!odel", "save model to binary file (synonym for writeModel)", 
       "This will write the problem in binary foramt to the file name set by "
       "'modelFile' for future use by readModel.",
-      CoinParam::displayPriorityLow);
+      CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::WRITENEXTSOL]->setup(
       "nextB!estSolution", "Prints next best saved solution to file",
@@ -945,7 +945,7 @@ void CbcParameters::addCbcSolverActionParams() {
       "This will write a primitive solution file to the file set by "
       "'solutionFile'. The amount of output can be varied using "
       "'printingOptions' or 'printMask'.",
-      CoinParam::displayPriorityLow);
+      CoinParam::displayPriorityNone);
 
   parameters_[CbcParam::WRITESOLBINARY]->setup(
       "writeSolB!inary", "writes solution to file in binary format",
@@ -969,7 +969,7 @@ void CbcParameters::addCbcSolverActionParams() {
       "reduced costs - see bottom of ClpParamUtils.cpp for code that reads or "
       "writes file. If name contains '_fix_read_', then does not write but "
       "reads and will fix all variables",
-      CoinParam::displayPriorityLow);
+      CoinParam::displayPriorityNone);
 }
 
 //###########################################################################

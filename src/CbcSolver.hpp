@@ -428,6 +428,14 @@ void printGeneralMessage(CbcModel &model, std::string message, int type = CBC_GE
 void printGeneralWarning(CbcModel &model, std::string message, int type = CBC_GENERAL_WARNING);
 CBCLIB_EXPORT
 int cbcReadAmpl(ampl_info *info, int argc, char **argv, CbcModel &model);
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+// for backward compatibility (samples)
+#define CbcSolverUsefulData CbcParameters
+CBCLIB_EXPORT
+int CbcMain1(int argc, const char *argv[],
+	     CbcModel &model, CbcParameters &parameterData,
+             int callBack(CbcModel *currentSolver, int whereFrom) =
+             dummyCallback, ampl_info *info = NULL);
+int CbcMain1(int argc, const char *argv[],
+	     CbcModel &model,
+             int callBack(CbcModel *currentSolver, int whereFrom), 
+             CbcParameters &parameterData);

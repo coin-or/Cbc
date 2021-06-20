@@ -12949,7 +12949,27 @@ static void generateCode(CbcModel * /*model*/, const char *fileName, int type,
   fclose(fp);
   printf("C++ file written to %s\n", fileName);
 }
+// To allow old way of CbcMain1
+int CbcMain1(int argc, const char *argv[],
+  CbcModel &model,
+	     CbcParameters &parameterData,
+             int callBack(CbcModel *currentSolver, int whereFrom),
+	     ampl_info *info)
+{
+  std::deque<std::string> inputQueue;
+  CoinParamUtils::formInputQueue(inputQueue, argc, const_cast< char ** >(argv));
+  return CbcMain1(inputQueue,model,parameterData,callBack,info);
+}
 
+int CbcMain1(int argc, const char *argv[],
+  CbcModel &model,
+             int callBack(CbcModel *currentSolver, int whereFrom),
+	     CbcParameters &parameterData)
+{
+  std::deque<std::string> inputQueue;
+  CoinParamUtils::formInputQueue(inputQueue, argc, const_cast< char ** >(argv));
+  return CbcMain1(inputQueue,model,parameterData,callBack,NULL);
+}
 //###########################################################################
 // Print a general message
 //###########################################################################

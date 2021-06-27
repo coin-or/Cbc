@@ -10368,8 +10368,18 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   // Write solution header (suggested by Luigi Poderico)
                   // Refresh solver
                   lpSolver = clpSolver->getModelPtr();
-                  lpSolver->computeObjectiveValue(false);
-                  double objValue = lpSolver->getObjValue();
+		  ClpQuadraticObjective * quadObj =
+		    dynamic_cast<ClpQuadraticObjective *>(lpSolver->objectiveAsObject());
+		  double objValue;
+		  if (!quadObj) {
+		    lpSolver->computeObjectiveValue(false);
+		    objValue = lpSolver->getObjValue();
+		  } else {
+                    double *solution = lpSolver->primalColumnSolution();
+		    objValue = quadObj->objectiveValue(lpSolver,solution);
+		    // offset
+		    objValue -= lpSolver->objectiveOffset();
+		  }
                   int iStat = lpSolver->status();
                   int iStat2 = -1;
                   if (integerStatus >= 0) {

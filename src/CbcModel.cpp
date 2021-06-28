@@ -10339,7 +10339,7 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
     bool generate = generator_[i]->normal();
     // skip if not optimal and should be (maybe a cut generator has fixed
     // variables)
-    if (generator_[i]->howOften() == -100 ||
+    if (generator_[i]->howOften() <= -100 ||
         (generator_[i]->needsOptimalBasis() && !solver_->basisIsAvailable()) ||
         generator_[i]->switchedOff())
       generate = false;

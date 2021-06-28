@@ -209,7 +209,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       howOften = 1; // do anyway
     }
   }
-  if (howOften == -100)
+  if (howOften <= -100)
     return false;
   int pass = model_->getCurrentPassNumber() - 1;
   if (maximumTries_ > 0) {

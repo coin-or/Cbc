@@ -6,7 +6,8 @@
 
 _This file is auto-generated from [config.yml](.coin-or/config.yml) using the 
 [generate_readme](.coin-or/generate_readme) script.
-To make changes, please edit [config.yml](.coin-or/config.yml) or the generation script._
+To make changes, please edit [config.yml](.coin-or/config.yml) or the generation scripts
+[here](.coin-or/generate_readme) and [here](https://github.com/coin-or/coinbrew/blob/master/scripts/generate_readme)._
 
 Cbc (*C*oin-or *b*ranch and *c*ut) is an open-source mixed integer linear programming solver written in C++.
 It can be used as a callable library or using a stand-alone executable.
@@ -64,9 +65,9 @@ The Cbc development site is https://github.com/coin-or/Cbc.
 
 ## CURRENT BUILD STATUS
 
-[![Build Status](https://travis-ci.com/coin-or/Cbc.svg?branch=master)](https://travis-ci.com/coin-or/Cbc)
+[![Windows Builds](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml/badge.svg?branch=master)](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml?query=branch%3Amaster)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/chribnemsgm9th0x/branch/master?svg=true)](https://ci.appveyor.com/project/coin-or/Cbc/branch/master)
+[![Linux and MacOS Builds](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml/badge.svg?branch=master)](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml?query=branch%3Amaster)
 
 ## DOWNLOAD
 

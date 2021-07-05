@@ -1,0 +1,105 @@
+---
+name: Windows build and test
+on:
+  push:
+    branches:
+      - 'master'
+      - 'stable/*'
+  pull_request:
+    branches:
+      - '*'
+  release:
+    types:
+      - created
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          { os: windows-2019, arch: x86_64, msystem: mingw64, debug: true, suffix: "-dbg" },
+          { os: windows-2019, arch: x86_64, msystem: mingw64, debug: false, suffix: "" },
+          { os: windows-2019, arch: i686, msystem: mingw32, debug: true, suffix: "-dbg" },
+          { os: windows-2019, arch: i686, msystem: mingw32, debug: false, suffix: "" },
+          { os: windows-2019, arch: msvc, msystem: mingw64, debug: true, suffix: "-mdd" },
+          { os: windows-2019, arch: msvc, msystem: mingw64, debug: false, suffix: "-md" },
+          { os: windows-2016, arch: msvc, msystem: mingw64, debug: true, suffix: "-mdd" },
+          { os: windows-2016, arch: msvc, msystem: mingw64, debug: false, suffix: "-md" },
+        ]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          path: ${{ github.event.repository.name }}
+      - name: Checkout coinbrew
+        uses: actions/checkout@v2
+        with:
+          repository: coin-or/coinbrew
+          path: coinbrew
+      - name: Set up msvc
+        uses: ilammy/msvc-dev-cmd@v1
+        if: ${{ matrix.arch == 'msvc' }}
+      - name: Set correct host flag and install requirements
+        run: |
+          echo "host_flag=--host=${{ matrix.arch }}-w64-mingw32" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          C:\msys64\usr\bin\pacman -S mingw-w64-${{ matrix.arch }}-lapack mingw-w64-${{ matrix.arch }}-winpthreads-git mingw-w64-${{ matrix.arch }}-readline mingw-w64-${{ matrix.arch }}-suitesparse mingw-w64-${{ matrix.arch }}-metis --noconfirm
+        if: ${{ matrix.arch != 'msvc' }}
+      - name: Set up msys with ${{ matrix.msystem }}
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            base-devel
+            git
+            zip
+          path-type: inherit
+          msystem: ${{ matrix.msystem }}
+      - name: Build project
+        run: |
+          [[ ${{ matrix.debug }} == "false" ]] && debug="" || debug="--enable-debug"
+          ./coinbrew/coinbrew fetch ${{ github.event.repository.name }} --no-prompt --skip-update --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack'
+          ./coinbrew/coinbrew build ${{ github.event.repository.name }} --no-prompt --skip='ThirdParty/Metis ThirdParty/Mumps' --build=x86_64-w64-mingw32 ${{ env.host_flag }} $debug --verbosity 4 --tests main --enable-relocatable
+          cp ${{ github.event.repository.name }}/README.md dist/
+          cp ${{ github.event.repository.name }}/LICENSE dist/
+        shell: msys2 {0}
+      - name: Upload failed build directory
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: ${{ matrix.os}}-{{ matrix.arch }}-debug=${{ matrix.debug }}-failedbuild
+          path: build
+      - name: Generate package name for msvc
+        run: |
+          msvc_version=${VisualStudioVersion%.*}
+          echo "package_suffix=w64-msvc${msvc_version}${{ matrix.suffix }}" >> $GITHUB_ENV
+        shell: msys2 {0}
+        if: ${{ matrix.arch == 'msvc' }}
+      - name: Generate package name
+        run: |
+          echo "package_suffix=${{ matrix.arch }}-w64-${{ matrix.msystem }}${{ matrix.suffix }}" >> $GITHUB_ENV
+        shell: msys2 {0}
+        if: ${{ matrix.arch != 'msvc' }}
+      - name: Upload artifact
+        if: ${{ github.event_name == 'pull_request'}}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}-${{ github.head_ref }}-${{ env.package_suffix }}
+          path: dist
+          if-no-files-found: error
+      - name: Zip up dist contents for release
+        if: ${{ github.event_name == 'release'}}
+        run: cd dist && zip -r ../release.zip *
+        shell: msys2 {0}
+      - name: Upload package to release
+        if: ${{ github.event_name == 'release'}}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./release.zip
+          asset_name: ${{ github.event.repository.name }}-${{ github.event.release.tag_name }}-${{ env.package_suffix }}.zip
+          asset_content_type: application/gzip

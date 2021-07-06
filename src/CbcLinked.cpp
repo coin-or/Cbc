@@ -2925,6 +2925,7 @@ void OsiSolverLink::analyzeObjects()
   // space for starts
   int numberColumns = coinModel_.numberColumns();
   int *start = new int[numberColumns + 1];
+  memset(start,0,(numberColumns+1)*sizeof(int));
   const double *rowLower = getRowLower();
   const double *rowUpper = getRowUpper();
   for (int iNon = 0; iNon < numberNonLinearRows_; iNon++) {

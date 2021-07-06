@@ -3740,10 +3740,17 @@ int CbcMain1(int argc, const char *argv[],
                       double bestObjectiveValue = solver3->bestObjectiveValue();
                       linkSolver->setBestObjectiveValue(bestObjectiveValue);
                       if (solution) {
-                        linkSolver->setBestSolution(solution, solver3->getNumCols());
-			model_.setBestSolution(solution,model_.getNumCols(),
+			// make sure array large enough
+			int arraySize = solver3->getNumCols();
+			int wanted = linkSolver->getNumCols();
+			double * solution2 = new double[wanted];
+			memset(solution2,0,wanted*sizeof(double));
+			memcpy(solution2,solution,arraySize*sizeof(double));
+                        linkSolver->setBestSolution(solution2, solver3->getNumCols());
+			model_.setBestSolution(solution2,model_.getNumCols(),
 					       bestObjectiveValue);
 			model_.setCutoff(bestObjectiveValue+1.0e-4);
+			delete [] solution2;
                       }
                       CbcHeuristicDynamic3 dynamic(model_);
                       dynamic.setHeuristicName("dynamic pass thru");
@@ -8988,6 +8995,7 @@ int CbcMain1(int argc, const char *argv[],
                     assert(fp);
                     OsiClpSolverInterface solver(model2);
                     solver.writeLp(fp, 1.0e-12);
+		    fclose(fp);
                   }
                   if (deleteModel2)
                     delete model2;

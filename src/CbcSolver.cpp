@@ -988,6 +988,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   parameters[CbcParam::OUTPUTFORMAT]->setVal(outputFormat);
   parameters[CbcParam::LOGLEVEL]->setVal(1);
   parameters[CbcParam::LPLOGLEVEL]->setVal(1);
+  clpParameters[ClpParam::LOGLEVEL]->setType(CoinParam::paramInt); // as can be set
   clpSolver->messageHandler()->setLogLevel(1);
   lpSolver->setLogLevel(1);
   parameters[CbcParam::TIMELIMIT]->setVal(1.0e8);

@@ -128,40 +128,6 @@ cbc_CPPFLAGS = $(CBCLIB_CFLAGS)
 
 endif
 
-
-########################################################################
-#                        cbc-generic program                           #
-########################################################################
-
-if CBC_BUILD_CBC_GENERIC
-
-# Name of the executable compiled in this directory.  We want it to be
-# installed in the 'bin' directory
-
-bin_PROGRAMS += cbc-generic
-
-# List all source files for this executable, including headers
-
-cbc_generic_SOURCES = \
-	CbcGenBaB.cpp \
-	CbcGenCbcParam.cpp CbcGenCbcParam.hpp CbcGenCbcParamUtils.cpp \
-	CbcGenCtlBlk.cpp CbcGenCtlBlk.hpp \
-	CbcGeneric.cpp \
-	CbcGenMessages.cpp CbcGenMessages.hpp \
-	CbcGenOsiParam.cpp CbcGenOsiParam.hpp CbcGenOsiParamUtils.cpp \
-	CbcGenParam.cpp CbcGenParam.hpp CbcGenParamUtils.cpp \
-	CbcGenSolution.cpp \
-	CbcGenSolvers.cpp
-
-# List all additionally required solver and Osi libraries
-# the flags for all available LP solvers should have been collected
-# by configure in CBCGENERIC_LFLAGS and CBCGENERIC_CFLAGS
-
-cbc_generic_LDADD = libCbc.la $(CBCGENERIC_LFLAGS)
-cbc_generic_CPPFLAGS = $(CBCGENERIC_CFLAGS)
-
-endif
-
 ########################################################################
 #                            Additional flags                          #
 ########################################################################

@@ -211,11 +211,11 @@ int CbcParamUtils::doSolutionParam(CoinParam &param)
       Setup to return nonfatal/fatal error (1/-1) by default.
     */
   int retval;
-  if (CoinParamUtils::isInteractive()) {
-    retval = 1;
-  } else {
+  //if (CoinParamUtils::isInteractive()) {
+  //  retval = 1;
+  //} else {
     retval = -1;
-  }
+  //}
   /*
       It's hard to print a solution we don't have.
     */
@@ -510,11 +510,11 @@ int CbcParamUtils::doPrintMaskParam(CoinParam &param)
       Setup to return nonfatal/fatal error (1/-1) by default.
     */
   int retval;
-  if (CoinParamUtils::isInteractive()) {
-    retval = 1;
-  } else {
+  //if (CoinParamUtils::isInteractive()) {
+  //  retval = 1;
+  //} else {
     retval = -1;
-  }
+  //}
   /*
       Now do a bit of verification of the mask. It should be non-null and, if
       quoted, the quotes should be matched. Aribtrarily put the absolute maximum

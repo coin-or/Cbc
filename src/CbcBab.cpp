@@ -484,11 +484,11 @@ int doBaCParam(CoinParam &param)
       Setup to return nonfatal/fatal error (1/-1) by default.
     */
   int retval;
-  if (CoinParamUtils::isInteractive()) {
-    retval = 1;
-  } else {
+  //if (CoinParamUtils::isInteractive()) {
+  //  retval = 1;
+  //} else {
     retval = -1;
-  }
+  //}
   parameters->setBaBStatus(CbcParameters::BACAbandon,
                             CbcParameters::BACmInvalid,
                             CbcParameters::BACwNotStarted, false, 0);

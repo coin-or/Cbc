@@ -12978,7 +12978,7 @@ int CbcMain1(int argc, const char *argv[],
 	     ampl_info *info)
 {
   std::deque<std::string> inputQueue;
-  CoinParamUtils::formInputQueue(inputQueue, argc, const_cast< char ** >(argv));
+  CoinParamUtils::formInputQueue(inputQueue, "cbc", argc, const_cast< char ** >(argv));
   return CbcMain1(inputQueue,model,parameterData,callBack,info);
 }
 
@@ -12988,7 +12988,7 @@ int CbcMain1(int argc, const char *argv[],
 	     CbcParameters &parameterData)
 {
   std::deque<std::string> inputQueue;
-  CoinParamUtils::formInputQueue(inputQueue, argc, const_cast< char ** >(argv));
+  CoinParamUtils::formInputQueue(inputQueue, "cbc", argc, const_cast< char ** >(argv));
   return CbcMain1(inputQueue,model,parameterData,callBack,NULL);
 }
 //###########################################################################

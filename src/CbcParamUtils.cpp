@@ -750,11 +750,11 @@ int pushCbcSolverCutParam(CoinParam &param)
     */
   int retval;
 
-  if (CoinParamUtils::isInteractive()) {
-    retval = 1;
-  } else {
+  //if (CoinParamUtils::isInteractive()) {
+  //  retval = 1;
+  //} else {
     retval = -1;
-  }
+  //}
 
   /*
       We've done the basic checks; go ahead and set the relevant field in the
@@ -870,11 +870,11 @@ int doImportParam(CoinParam &param)
      need to do is correct to 0 (no error) if we're successful.
     */
   int retval;
-  if (CoinParamUtils::isInteractive()) {
-    retval = 1;
-  } else {
+  //if (CoinParamUtils::isInteractive()) {
+  //  retval = 1;
+  //} else {
     retval = -1;
-  }
+  //}
   /*
       Figure out where we're going to acquire this new model. As special cases,
       `$' says `use the previous input source' and `-' says `use stdin'.
@@ -958,11 +958,11 @@ int doDebugParam(CoinParam &param)
      need to do is correct to 0 (no error) if we're successful.
     */
   int retval;
-  if (CoinParamUtils::isInteractive()) {
-    retval = 1;
-  } else {
+  //if (CoinParamUtils::isInteractive()) {
+  //  retval = 1;
+  //} else {
     retval = -1;
-  }
+  //}
   /*
        If the file name is `create' or `createAfterPre', we're just setting up
      to make a debug file the next time we do branch-and-cut.

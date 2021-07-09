@@ -60,8 +60,12 @@ jobs:
       - name: Build project
         run: |
           [[ ${{ matrix.debug }} == "false" ]] && debug="" || debug="--enable-debug"
-          ./coinbrew/coinbrew fetch ${{ github.event.repository.name }} --no-prompt --skip-update --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack'
-          ./coinbrew/coinbrew build ${{ github.event.repository.name }} --no-prompt --skip='ThirdParty/Metis ThirdParty/Mumps' --build=x86_64-w64-mingw32 ${{ env.host_flag }} $debug --verbosity 4 --tests main --enable-relocatable
+          [[ ${{ matrix.arch }} == "msvc" ]] && msvc="--enable-msvc" || msvc=""
+          ./coinbrew/coinbrew fetch ${{ github.event.repository.name }} --no-prompt \
+          --skip-update --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack'
+          ./coinbrew/coinbrew build ${{ github.event.repository.name }} --no-prompt \
+          --skip='ThirdParty/Metis ThirdParty/Mumps' --build=x86_64-w64-mingw32 $msvc \
+          ${{ env.host_flag }} $debug --tests main --enable-relocatable
           cp ${{ github.event.repository.name }}/README.md dist/
           cp ${{ github.event.repository.name }}/LICENSE dist/
         shell: msys2 {0}

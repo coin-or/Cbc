@@ -59,13 +59,17 @@ jobs:
           msystem: ${{ matrix.msystem }}
       - name: Build project
         run: |
-          [[ ${{ matrix.debug }} == "false" ]] && debug="" || debug="--enable-debug"
-          [[ ${{ matrix.arch }} == "msvc" ]] && msvc="--enable-msvc" || msvc=""
-          ./coinbrew/coinbrew fetch ${{ github.event.repository.name }} --no-prompt \
-          --skip-update --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack'
-          ./coinbrew/coinbrew build ${{ github.event.repository.name }} --no-prompt \
-          --skip='ThirdParty/Metis ThirdParty/Mumps' --build=x86_64-w64-mingw32 $msvc \
-          ${{ env.host_flag }} $debug --tests main --enable-relocatable
+          ADD_ARGS=()
+          ADD_ARGS+=( --no-prompt )
+          ADD_ARGS+=( --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack' )
+          ADD_BUILD_ARGS=()
+          ADD_BUILD_ARGS+=( --build=x86_64-w64-mingw32 --tests main --enable-relocatable )
+          ADD_BUILD_ARGS+=( --verbosity 2 )
+          [[ ${{ matrix.debug }} == "true" ]] && ADD_BUILD_ARGS+=( --enable-debug )
+          [[ ${{ matrix.arch }} == "msvc" ]] && ADD_BUILD_ARGS+=( --enable-msvc )
+          ./coinbrew/coinbrew fetch ${{ github.event.repository.name }} --skip-update "${ADD_ARGS[@]}"
+          ./coinbrew/coinbrew build ${{ github.event.repository.name }} ${{ env.host_flag }} \
+          "${ADD_ARGS[@]}" "${ADD_BUILD_ARGS[@]}"
           cp ${{ github.event.repository.name }}/README.md dist/
           cp ${{ github.event.repository.name }}/LICENSE dist/
         shell: msys2 {0}

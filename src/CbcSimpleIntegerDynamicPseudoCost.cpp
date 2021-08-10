@@ -786,6 +786,26 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
     //returnValue = 2.0*returnValue + 0.1;
     //}
     if (method_ == 1) {
+#if 1
+      double multiplier = 1.0;
+      if (numberTimesProbingTotal_) {
+	double useDown = numberTimesDownLocalFixed_+
+	  2.0*numberTimesDownTotalFixed_/numberTimesProbingTotal_;
+	double useUp = numberTimesUpLocalFixed_+
+	  2.0*numberTimesUpTotalFixed_/numberTimesProbingTotal_;
+#if 0
+	if ((model_->specialOptions()&2048)==0&&
+	    (model_->getNodeCount()%1000000)==0) {
+	  int n = numberTimesProbingTotal_;
+	  printf("zcol %d down (%g,%d) up (%g,%d) value %g pcost %g\n",
+		 columnNumber_,
+		 numberTimesDownTotalFixed_/n,numberTimesDownLocalFixed_,
+		 numberTimesUpTotalFixed_/n,numberTimesUpLocalFixed_,
+		 value,returnValue);
+	}
+#endif
+      }
+#else
       // probing
       // average
       double up = 1.0e-15;
@@ -796,6 +816,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
       }
       returnValue = 1 + 10.0 * CoinMin(numberTimesDownLocalFixed_, numberTimesUpLocalFixed_) + CoinMin(down, up);
       returnValue *= 1.0e-3;
+#endif
     }
 #ifdef COIN_DEVELOP
     History hist;
@@ -815,6 +836,36 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
 #endif
     return CoinMax(returnValue, 1.0e-15);
   }
+}
+// Infeasibility etc etc
+usefulDynamic
+CbcSimpleIntegerDynamicPseudoCost::usefulStuff(const OsiBranchingInformation *info) const
+{
+  usefulDynamic stuff;
+  double value = model_->testSolution()[columnNumber_];
+  double lower = model_->getCbcColLower()[columnNumber_];
+  double upper = model_->getCbcColUpper()[columnNumber_];
+  value = CoinMax(value, lower);
+  value = CoinMin(value, upper);
+  double nearest = floor(value + 0.5);
+  double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  double below = floor(value + integerTolerance);
+  double above = below + 1.0;
+  if (above > upper) {
+    above = below;
+    below = above - 1;
+  }
+  stuff.pseudoDown = above * downDynamicPseudoCost_;
+  stuff.pseudoUp = below * upDynamicPseudoCost_;
+  stuff.probingDown = 0.0;
+  stuff.probingUp = 0.0;
+  if (numberTimesProbingTotal_) {
+    stuff.probingDown = numberTimesDownLocalFixed_+
+      2.0*numberTimesDownTotalFixed_/numberTimesProbingTotal_;
+    stuff.probingUp = numberTimesUpLocalFixed_+
+      2.0*numberTimesUpTotalFixed_/numberTimesProbingTotal_;
+  }
+  return stuff;
 }
 // Creates a branching object
 CbcBranchingObject *

@@ -21,6 +21,13 @@
 //Stolen from Constraint Integer Programming book (with epsilon change)
 #define WEIGHT_PRODUCT
 
+typedef struct {
+  double pseudoDown;
+  double pseudoUp;
+  double probingDown;
+  double probingUp;
+} usefulDynamic;
+
 /** Define a single integer class but with dynamic pseudo costs.
     Based on work by Achterberg, Koch and Martin.
 
@@ -61,6 +68,9 @@ public:
   /// Infeasibility - large is 0.5
   virtual double infeasibility(const OsiBranchingInformation *info,
     int &preferredWay) const;
+
+  /// Infeasibility etc etc
+  usefulDynamic usefulStuff(const OsiBranchingInformation *info) const;
 
   /// Creates a branching object
   virtual CbcBranchingObject *createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInformation *info, int way);

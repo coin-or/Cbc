@@ -3700,7 +3700,7 @@ int CbcMain1(int argc, const char *argv[],
                       }
                       CbcCompareDefault compare;
                       cbcModel->setNodeComparison(compare);
-                      cbcModel->setNumberBeforeTrust(5);
+                      cbcModel->setNumberBeforeTrust(10);
                       cbcModel->setSpecialOptions(2);
                       cbcModel->messageHandler()->setLogLevel(1);
                       cbcModel->setMaximumCutPassesAtRoot(-100);

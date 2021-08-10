@@ -2084,7 +2084,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CLIQUE_ANALYSIS
   // set up for probing
   // If we're doing clever stuff with cliques, additional info here.
-  if (!parentModel_)
+  if ((specialOptions_&2048)==0)
     probingInfo_ = new CglTreeProbingInfo(solver_);
   else
     probingInfo_ = NULL;

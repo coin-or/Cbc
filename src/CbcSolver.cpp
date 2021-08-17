@@ -4520,6 +4520,7 @@ int CbcMain1(int argc, const char *argv[],
                   {
                     OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
                     osiclp->setSpecialOptions(osiclp->specialOptions() | 1024);
+		    osiclp->getModelPtr()->setClpScaledMatrix(NULL); // safer
                     int savePerturbation = osiclp->getModelPtr()->perturbation();
                     //#define CBC_TEMP1
 #ifdef CBC_TEMP1

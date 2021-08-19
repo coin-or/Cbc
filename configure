@@ -3374,7 +3374,7 @@ fi
       : ${FFLAGS:="-nologo -fpp -Z7 -MDd $ADD_FFLAGS"}
       : ${FCFLAGS:="-nologo -fpp -Z7 -MDd $ADD_FCFLAGS"}
       : ${CFLAGS:="-nologo -Z7 -MDd $ADD_CFLAGS"}
-      : ${CXXFLAGS:="-nologo -EHs -Z7 -MDd $ADD_CXXFLAGS"}
+      : ${CXXFLAGS:="-nologo -EHs -Z7 -MDd -Zc:__cplusplus $ADD_CXXFLAGS"}
     else
       : ${FFLAGS:="-g $ADD_FFLAGS"}
       : ${FCFLAGS:="-g $ADD_FCFLAGS"}
@@ -3386,7 +3386,7 @@ fi
       : ${FFLAGS:="-nologo -fpp -O2 -MD $ADD_FFLAGS"}
       : ${FCFLAGS:="-nologo -fpp -O2 -MD $ADD_FCFLAGS"}
       : ${CFLAGS:="-nologo -DNDEBUG -O2 -MD $ADD_CFLAGS"}
-      : ${CXXFLAGS:="-nologo -EHs -DNDEBUG -O2 -MD $ADD_CXXFLAGS"}
+      : ${CXXFLAGS:="-nologo -EHs -DNDEBUG -O2 -MD -Zc:__cplusplus $ADD_CXXFLAGS"}
     else
       : ${FFLAGS:="-O2 $ADD_FFLAGS"}
       : ${FCFLAGS:="-O2 $ADD_FCFLAGS"}
@@ -22175,31 +22175,12 @@ printf "%s\n" "$coin_has_cplex (COIN_SKIP_PROJECTS)" >&6; }
 
   if test "$coin_has_cplex" = 'no' ; then
     if expr "$cplex_failmode" : '.*header.*' &>/dev/null ; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING:
-Compiler flags are \"$cplex_cflags\". If you expected this test to
-succeed, check that they are correct. You can supply correct values using
---with-cplex-cflags." >&5
-printf "%s\n" "$as_me: WARNING:
-Compiler flags are \"$cplex_cflags\". If you expected this test to
-succeed, check that they are correct. You can supply correct values using
---with-cplex-cflags." >&2;}
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Compiler flags were \"$cplex_cflags\". Use --with-cplex-cflags to overwrite. Check config.log for details of failed compile attempt." >&5
+printf "%s\n" "$as_me: Compiler flags were \"$cplex_cflags\". Use --with-cplex-cflags to overwrite. Check config.log for details of failed compile attempt." >&6;}
     fi
     if expr "$cplex_failmode" : '.*link.*' &>/dev/null ; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING:
-Linker flags are \"$cplex_lflags\". If you expected this test to
-succeed, check that they are correct. You can supply correct values using
---with-cplex-lflags." >&5
-printf "%s\n" "$as_me: WARNING:
-Linker flags are \"$cplex_lflags\". If you expected this test to
-succeed, check that they are correct. You can supply correct values using
---with-cplex-lflags." >&2;}
-    fi
-    if expr "$cplex_failmode" : '.*header.*' &>/dev/null ||
-       expr "$cplex_failmode" : '.*link.*' &>/dev/null ; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING:
-Check config.log for details of failed compile or link attempts." >&5
-printf "%s\n" "$as_me: WARNING:
-Check config.log for details of failed compile or link attempts." >&2;}
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Linker flags are \"$cplex_lflags\". Use --with-cplex-lflags to overwrite. Check config.log for details of failed link attempt." >&5
+printf "%s\n" "$as_me: Linker flags are \"$cplex_lflags\". Use --with-cplex-lflags to overwrite. Check config.log for details of failed link attempt." >&6;}
     fi
     if test "$cplex_userflags" = 'yes' ; then
       as_fn_error $? "user-specified flags for Cplex do not work." "$LINENO" 5
@@ -22575,6 +22556,8 @@ printf %s "checking for library pthreadsw32 with link check... " >&6; }
 
 
 
+
+
   coin_has_pthreadsw32=noInfo
   if test x"$COIN_SKIP_PROJECTS" != x ; then
     for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
@@ -22749,31 +22732,12 @@ printf "%s\n" "$coin_has_pthreadsw32 (COIN_SKIP_PROJECTS)" >&6; }
 
   if test "$coin_has_pthreadsw32" = 'no' ; then
     if expr "$pthreadsw32_failmode" : '.*header.*' &>/dev/null ; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING:
-Compiler flags are \"$pthreadsw32_cflags\". If you expected this
-test to succeed, check that they are correct. You can supply correct values
-using --with-pthreadsw32-cflags." >&5
-printf "%s\n" "$as_me: WARNING:
-Compiler flags are \"$pthreadsw32_cflags\". If you expected this
-test to succeed, check that they are correct. You can supply correct values
-using --with-pthreadsw32-cflags." >&2;}
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Compiler flags were \"$pthreadsw32_cflags\". Use --with-pthreadsw32-cflags to overwrite. Check config.log for details of failed compile attempt." >&5
+printf "%s\n" "$as_me: Compiler flags were \"$pthreadsw32_cflags\". Use --with-pthreadsw32-cflags to overwrite. Check config.log for details of failed compile attempt." >&6;}
     fi
     if expr "$pthreadsw32_failmode" : '.*link.*' &>/dev/null ; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING:
-Linker flags are \"$pthreadsw32_lflags\". If you expected this test
-to succeed, check that they are correct. You can supply correct values using
---with-pthreadsw32-lflags." >&5
-printf "%s\n" "$as_me: WARNING:
-Linker flags are \"$pthreadsw32_lflags\". If you expected this test
-to succeed, check that they are correct. You can supply correct values using
---with-pthreadsw32-lflags." >&2;}
-    fi
-    if expr "$pthreadsw32_failmode" : '.*header.*' &>/dev/null ||
-       expr "$pthreadsw32_failmode" : '.*link.*' &>/dev/null ; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING:
-Check config.log for details of failed compile or link attempts." >&5
-printf "%s\n" "$as_me: WARNING:
-Check config.log for details of failed compile or link attempts." >&2;}
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Linker flags are \"$pthreadsw32_lflags\". Use --with-pthreadsw32-lflags to overwrite. Check config.log for details of failed link attempt." >&5
+printf "%s\n" "$as_me: Linker flags are \"$pthreadsw32_lflags\". Use --with-pthreadsw32-lflags to overwrite. Check config.log for details of failed link attempt." >&6;}
     fi
     if test "$pthreadsw32_userflags" = 'yes' ; then
       as_fn_error $? "user-specified flags for pthreadsw32 do not work." "$LINENO" 5
@@ -22802,6 +22766,8 @@ printf "%s\n" "#define CBC_HAS_PTHREADSW32 1" >>confdefs.h
 
     CBCLIB_LFLAGS="$pthreadsw32_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$pthreadsw32_cflags $CBCLIB_CFLAGS"
+      CBCSOLVERLIB_LFLAGS="$pthreadsw32_lflags $CBCSOLVERLIB_LFLAGS"
+       CBCSOLVERLIB_CFLAGS="$pthreadsw32_cflags $CBCSOLVERLIB_CFLAGS"
 
 
 

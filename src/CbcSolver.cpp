@@ -2273,6 +2273,11 @@ int CbcMain1(int argc, const char *argv[],
         } else if (type < 201) {
           // get next field as int
           int value = CoinReadGetIntField(argc, argv, &valid);
+	  if (valid == 1 && parameters_[iParam].stringValue()!="") {
+	    // look further
+	    value =
+	      parameters_[iParam].optionIntField(getCoinErrorField(), &valid);
+	  }
           if (!valid) {
             if (type < 151) {
               if (parameters_[iParam].type() == CLP_PARAM_INT_PRESOLVEPASS)
@@ -2494,6 +2499,7 @@ int CbcMain1(int argc, const char *argv[],
               }
             }
           } else if (valid == 1) {
+	    std::cout << "String of " << getCoinErrorField();
             std::cout << " is illegal for integer parameter " << parameters_[iParam].name() << " value remains " << parameters_[iParam].intValue() << std::endl;
           } else {
             std::cout << parameters_[iParam].name() << " has value " << parameters_[iParam].intValue() << std::endl;

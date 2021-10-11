@@ -1503,7 +1503,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
       parameters[CbcParam::DIVEOPT]->setVal(2);
       parameters[CbcParam::FPUMPITS]->setVal(30);
       parameters[CbcParam::FPUMPTUNE]->setVal(1005043);
-      parameters[CbcParam::PROCESSTUNE]->setVal(6);
+      parameters[CbcParam::PROCESSTUNE]->setVal(7);
       parameters[CbcParam::DIVINGC]->setVal("on");
       parameters[CbcParam::RINS]->setVal("on");
       parameters[CbcParam::PROBINGCUTS]->setVal("ifmove");
@@ -2085,6 +2085,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
            if (cbcParamCode == CbcParam::LPLOGLEVEL){
               clpSolver->messageHandler()->setLogLevel(iValue); // as well
               clpParameters[ClpParam::LOGLEVEL]->setVal(iValue, &message);
+              cbcParam->setVal(iValue, &message);
               printGeneralMessage(model_, message);
            }else{
               cbcParam->setVal(iValue, &message);
@@ -3790,7 +3791,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       }
                       CbcCompareDefault compare;
                       cbcModel->setNodeComparison(compare);
-                      cbcModel->setNumberBeforeTrust(5);
+                      cbcModel->setNumberBeforeTrust(10);
                       cbcModel->setSpecialOptions(2);
                       cbcModel->messageHandler()->setLogLevel(1);
                       cbcModel->setMaximumCutPassesAtRoot(-100);
@@ -7530,7 +7531,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   }
                 }
                 // If defaults then increase trust for small models
-                if (!strongChanged) {
+                if (!strongChanged && false) { // out for now
                   int numberColumns = babModel_->getNumCols();
                   if (numberColumns <= 50)
                     babModel_->setNumberBeforeTrust(1000);
@@ -8529,7 +8530,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   }
 #endif
                   bool tightenB = false;
-                  {
+                  if (testOsiOptions<0) {
                     int n = babModel_->numberObjects();
                     for (int i = 0; i < n; i++) {
                       const OsiObject *obj = babModel_->object(i);

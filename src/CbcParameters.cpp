@@ -792,7 +792,7 @@ void CbcParameters::addCbcSolverActionParams() {
 
   parameters_[CbcParam::PRINTSOL]->setup(
       "printS!olution", "writes solution to file (or stdout)",
-      "This will write a binary solution file to the file set by solutionFile.",
+      "This will write a binary solution file to the file set by solFile.",
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::PRINTVERSION]->setup(
@@ -934,7 +934,7 @@ void CbcParameters::addCbcSolverActionParams() {
   parameters_[CbcParam::WRITESOL]->setup(
       "writeS!olution", "writes solution to file (or stdout)",
       "This will write a primitive solution file to the file set by "
-      "'solutionFile'. The amount of output can be varied using "
+      "'solFile'. The amount of output can be varied using "
       "'printingOptions' or 'printMask'.",
       CoinParam::displayPriorityHigh);
 
@@ -943,14 +943,14 @@ void CbcParameters::addCbcSolverActionParams() {
       "solu!tion", "writes solution to file (or stdout) (synonym for "
       "writeSolution).",
       "This will write a primitive solution file to the file set by "
-      "'solutionFile'. The amount of output can be varied using "
+      "'solFile'. The amount of output can be varied using "
       "'printingOptions' or 'printMask'.",
-      CoinParam::displayPriorityNone);
+      CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::WRITESOLBINARY]->setup(
       "writeSolB!inary", "writes solution to file in binary format",
       "This will write a binary solution file to the file set by "
-      "'solutionBinaryFile'. To read the file use fread(int) twice to pick up "
+      "'solBinaryFile'. To read the file use fread(int) twice to pick up "
       "number of rows and columns, then fread(double) to pick up objective "
       "value, then pick up row activities, row duals, column activities and "
       "reduced costs - see bottom of ClpParamUtils.cpp for code that reads or "
@@ -963,7 +963,7 @@ void CbcParameters::addCbcSolverActionParams() {
       "saveS!olution", "writes solution to file in binary format (synonym for "
       "writeSolBinary",
       "This will write a binary solution file to the file set by "
-      "'solutionBinaryFile'. To read the file use fread(int) twice to pick up "
+      "'solBinaryFile'. To read the file use fread(int) twice to pick up "
       "number of rows and columns, then fread(double) to pick up objective "
       "value, then pick up row activities, row duals, column activities and "
       "reduced costs - see bottom of ClpParamUtils.cpp for code that reads or "
@@ -1096,14 +1096,14 @@ void CbcParameters::addCbcSolverFileParams() {
       "given.");
 
   parameters_[CbcParam::SOLUTIONBINARYFILE]->setup(
-      "solutionBinaryF!ile",
+      "solBinaryF!ile",
       "sets name for file to store solution in binary format",
       "This will set the name the solution will be saved to and read from. "
       "By default, binary solutions are written to 'solution.file'." 
       "use printSolution.", CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::SOLUTIONFILE]->setup(
-      "solutionF!ile", "sets name for file to store solution in",
+      "solF!ile", "sets name for file to store solution in",
       "This will set the name the solution will be saved to and read from. "
       "By default, solutions are written to 'opt.sol'. To print to stdout, "
       "use printSolution.", CoinParam::displayPriorityHigh);
@@ -1569,6 +1569,9 @@ void CbcParameters::addCbcSolverIntParams() {
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->setup(
       "more2!MipOptions", "More more dubious options for mip", -1, COIN_INT_MAX,
       "", CoinParam::displayPriorityNone);
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero1!More strong branching at root node",8192);
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero2!More strong branching at root node - more",16384);
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero3!More strong branching at root node - yet more",24578);
 
   parameters_[CbcParam::MULTIPLEROOTS]->setup(
       "multiple!RootPasses",

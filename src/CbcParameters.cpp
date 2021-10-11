@@ -1569,9 +1569,9 @@ void CbcParameters::addCbcSolverIntParams() {
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->setup(
       "more2!MipOptions", "More more dubious options for mip", -1, COIN_INT_MAX,
       "", CoinParam::displayPriorityNone);
-  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero1!More strong branching at root node",8192);
-  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero2!More strong branching at root node - more",16384);
-  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero3!More strong branching at root node - yet more",24578);
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero1#More strong branching at root node",8192);
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero2#More strong branching at root node - more",16384);
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero3#More strong branching at root node - yet more",24578);
 
   parameters_[CbcParam::MULTIPLEROOTS]->setup(
       "multiple!RootPasses",
@@ -1627,6 +1627,8 @@ void CbcParameters::addCbcSolverIntParams() {
       "duplicate column checking \n \n     Now aa 99 has special meaning i.e. "
       "just one simple presolve.",
       CoinParam::displayPriorityLow);
+  parameters_[CbcParam::PROCESSTUNE]->appendKwd("heavy!Probing#Do more probing",7);
+  parameters_[CbcParam::PROCESSTUNE]->appendKwd("heavier!Probing#Do yet more probing",519);
 
   parameters_[CbcParam::RANDOMSEED]->setup(
       "randomC!bcSeed", "Random seed for Cbc", -1, COIN_INT_MAX,

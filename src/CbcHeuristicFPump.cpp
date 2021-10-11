@@ -2116,7 +2116,6 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #endif
           delete newSolver;
           newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
-#if 0
           newSolutionValue = -saveOffset;
           double newSumInfeas = 0.0;
           const double *obj = newSolver->getObjCoefficients();
@@ -2129,21 +2128,6 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             newSolutionValue += obj[i] * newSolution[i];
           }
           newSolutionValue *= direction;
-#else
-          for (int i = 0; i < numberColumns; i++) {
-            if (isHeuristicInteger(newSolver, i)) {
-              double value = newSolution[i];
-              double nearest = floor(value + 0.5);
-              newSolver->setColLower(i,nearest);
-              newSolver->setColUpper(i,nearest);
-            }
-	  }
-	  newSolver->resolve();
-	  if (newSolver->isProvenOptimal())
-	    newSolutionValue = newSolver->getObjValue();
-	  else
-	    newSolutionValue = 1.0e100;
-#endif
         }
         bool gotSolution = false;
         if (returnCode && newSolutionValue < saveValue) {

@@ -2063,6 +2063,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       // initialize sum of "infeasibilities"
       sumInfeasibilities_ = 0.0;
       int bestPriority = COIN_INT_MAX;
+      int firstPriority = COIN_INT_MAX;
 #ifdef JJF_ZERO
       int number01 = 0;
       const cliqueEntry *entry = NULL;
@@ -2114,11 +2115,19 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             */
       int problemType = model->problemType();
       bool canDoOneHot = false;
+      // if all dynamic get more information
+      usefulDynamic * otherInfo = NULL;
+      if (model->allDynamic())
+	otherInfo = new usefulDynamic [numberObjects]; 
       for (i = 0; i < numberObjects; i++) {
         OsiObject *object = model->modifiableObject(i);
         CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
         double infeasibility = object->checkInfeasibility(&usefulInfo);
+	if (otherInfo)
+	  otherInfo[i] = dynamicObject->usefulStuff(&usefulInfo);
         int priorityLevel = object->priority();
+	if (firstPriority == COIN_INT_MAX)
+	  firstPriority = priorityLevel;
         if (hotstartSolution) {
           // we are doing hot start
           const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
@@ -2308,6 +2317,46 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           upEstimate[i] = -1.0;
         }
       }
+#if FIXED_BOTH_WAYS
+      if (model->allDynamic()) {
+	if (firstPriority == bestPriority) {
+	  // all same priority
+	  double totalProbings = 0.0;
+	  double totalPseudoDown = 0.0;
+	  double totalPseudoUp = 0.0;
+	  for (int i = 0; i < numberObjects; i++) {
+	    totalProbings += otherInfo[i].probingDown+otherInfo[i].probingUp;
+	    totalPseudoDown += otherInfo[i].pseudoDown;
+	    totalPseudoUp += otherInfo[i].pseudoUp;
+	  };
+	  totalProbings /= numberObjects;
+	  totalPseudoDown /= numberObjects;
+	  totalPseudoUp /= numberObjects;
+	  double mediumLow = 0.7 * totalProbings;
+	  double mediumHigh = 1.5 * totalProbings;
+	  for (int i = 0; i < numberToDo; i++) {
+	    int iObject = whichObject[i];
+	    OsiObject *object = model->modifiableObject(iObject);
+	    CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
+	    int iColumn = dynamicObject->columnNumber();
+	    //if (saveLower[iColumn]==0.0 && saveUpper[iColumn]==1.0)
+	    //continue;
+	    if (dynamicObject->numberTimesDown()>=
+		dynamicObject->numberBeforeTrust())
+	      continue;
+	    double value = sort[i];
+	    double probings = otherInfo[iObject].probingDown+
+	      otherInfo[iObject].probingUp;
+	    if (probings<mediumLow)
+	      sort[i] = value*0.7;
+	    else if (probings>mediumHigh)
+	      sort[i] = value*2.0;
+	  }
+	}
+	delete [] otherInfo;
+      }
+#endif
+      //otherInfo = new usefulDynamic [numberToDo]; 
       if (numberUnsatisfied_) {
         //if (probingInfo&&false)
         //printf("nunsat %d, %d probed, %d other 0-1\n",numberUnsatisfied_,
@@ -2594,7 +2643,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       bestChoice = iBestGot;
     else
       bestChoice = iBestNot;
-    assert(bestChoice >= 0);
+    if(bestChoice < 0)
+      bestChoice = 0;
     // If we have hit max time don't do strong branching
     bool hitMaxTime = (model->getCurrentSeconds() > model->getDblParam(CbcModel::CbcMaximumSeconds));
     // also give up if we are looping round too much
@@ -2871,8 +2921,12 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           if (numberRows < 300 || numberRows + numberColumns < 2500) {
             if (depth_ < 7)
               numberStrong = CoinMin(3 * numberStrong, numberToDo);
-            if (!depth_)
+            if (!depth_) {
               numberStrong = CoinMin(6 * numberStrong, numberToDo);
+	      //if ((model->specialOptions()&2048)==0 &&
+	      //  goToEndInStrongBranching)
+	      //numberStrong = numberToDo;
+	    }
           }
           numberTest = numberStrong;
           skipAll = 0;

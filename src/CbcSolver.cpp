@@ -6290,11 +6290,10 @@ int CbcMain1(int argc, const char *argv[],
                     /* model may not have created objects
                                            If none then create
                                         */
-                    if (!numberIntegers || !babModel_->numberObjects()) {
+                    if (!integersOK) {
                       int type = (pseudoUp) ? 1 : 0;
                       babModel_->findIntegers(true, type);
                       numberIntegers = babModel_->numberIntegers();
-                      integersOK = true;
                     }
                     OsiObject **oldObjects = babModel_->objects();
                     // Do sets and priorities
@@ -6315,35 +6314,6 @@ int CbcMain1(int argc, const char *argv[],
                       newColumn[i] = -1;
                     for (i = 0; i < CoinMin(truncateColumns, numberColumns); i++)
                       newColumn[originalColumns[i]] = i;
-                    if (!integersOK) {
-                      // Change column numbers etc
-                      int n = 0;
-                      for (int iObj = 0; iObj < numberOldObjects; iObj++) {
-                        int iColumn = oldObjects[iObj]->columnNumber();
-                        if (iColumn < 0 || iColumn >= numberOriginalColumns) {
-                          oldObjects[n++] = oldObjects[iObj];
-                        } else {
-                          iColumn = newColumn[iColumn];
-                          if (iColumn >= 0) {
-                            CbcSimpleInteger *obj = dynamic_cast< CbcSimpleInteger * >(oldObjects[iObj]);
-                            if (obj) {
-                              obj->setColumnNumber(iColumn);
-                            } else {
-                              // only other case allowed is lotsizing
-                              CbcLotsize *obj2 = dynamic_cast< CbcLotsize * >(oldObjects[iObj]);
-                              assert(obj2);
-                              obj2->setModelSequence(iColumn);
-                            }
-                            oldObjects[n++] = oldObjects[iObj];
-                          } else {
-                            delete oldObjects[iObj];
-                          }
-                        }
-                      }
-                      babModel_->setNumberObjects(n);
-                      numberOldObjects = n;
-                      babModel_->zapIntegerInformation();
-                    }
                     int nMissing = 0;
                     for (int iObj = 0; iObj < numberOldObjects; iObj++) {
                       if (process.numberSOS())

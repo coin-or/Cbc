@@ -2117,8 +2117,10 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       bool canDoOneHot = false;
       // if all dynamic get more information
       usefulDynamic * otherInfo = NULL;
+#if FIXED_BOTH_WAYS
       if (model->allDynamic())
-	otherInfo = new usefulDynamic [numberObjects]; 
+	otherInfo = new usefulDynamic [numberObjects];
+#endif
       for (i = 0; i < numberObjects; i++) {
         OsiObject *object = model->modifiableObject(i);
         CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);

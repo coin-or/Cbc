@@ -1875,8 +1875,8 @@ void CbcModel::branchAndBound(int doStatistics)
       if ((moreSpecialOptions2_&8388608)!=0) // no crunch
 	clpSolver->setSpecialOptions(clpSolver->specialOptions()|2048);
       // switch off max time in solver
-      clpSolver->getModelPtr()->setMaximumSeconds(1.0e50);
-      clpSolver->getModelPtr()->setMaximumWallSeconds(1.0e50);
+      clpSolver->getModelPtr()->setMaximumSeconds(-1.0);
+      clpSolver->getModelPtr()->setMaximumWallSeconds(-1.0);
 #ifdef JJF_ZERO
       // reduce factorization frequency
       int frequency = clpSolver->getModelPtr()->factorizationFrequency();
@@ -18821,8 +18821,10 @@ bool CbcModel::stoppingCriterionReached() const {
 // Return true if maximum time reached
 bool CbcModel::maximumSecondsReached() const
 {
-  double totalTime = getCurrentSeconds();
   double maxSeconds = getMaximumSeconds();
+  if (maxSeconds>1.0e10)
+    return false;
+  double totalTime = getCurrentSeconds();
   bool hitMaxTime = (totalTime >= maxSeconds);
   if (numberSolutions_ && (!hitMaxTime)) {
       hitMaxTime = totalTime - lastTimeImprovingFeasSol_ >= dblParam_[CbcMaximumSecondsNotImprovingFeasSol];

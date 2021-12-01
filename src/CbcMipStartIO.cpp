@@ -45,29 +45,72 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
   char line[STR_SIZE] = "";
 
   int nLine = 0;
-  while (fgets(line, STR_SIZE, f)) {
-    ++nLine;
-    char col[4][STR_SIZE] = {"", "", "", ""};
-    int nread = sscanf(line, "%s %s %s %s", col[0], col[1], col[2], col[3]);
-    if (!nread)
-      continue;
-    /* line with variable value */
-    if (strlen(col[0]) && isdigit(col[0][0]) && (nread >= 3)) {
-      if (!isNumericStr(col[0])) {
-        sprintf(printLine, "Reading: %s, line %d - first column in mipstart file should be numeric, ignoring.", fileName, nLine);
-        messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
-        continue;
+  // check if psv format!
+  int lengthFilename = strlen(fileName);
+  if (strstr(fileName,".psv") != fileName+lengthFilename-4) {
+    // ordinary
+    while (fgets(line, STR_SIZE, f)) {
+      ++nLine;
+      char col[4][STR_SIZE] = {"", "", "", ""};
+      int nread = sscanf(line, "%s %s %s %s", col[0], col[1], col[2], col[3]);
+      if (!nread)
+	continue;
+      /* line with variable value */
+      if (strlen(col[0]) && isdigit(col[0][0]) && (nread >= 3)) {
+	if (!isNumericStr(col[0])) {
+	  sprintf(printLine, "Reading: %s, line %d - first column in mipstart file should be numeric, ignoring.", fileName, nLine);
+	  messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+	  continue;
+	}
+	if (!isNumericStr(col[2])) {
+	  sprintf(printLine, "Reading: %s, line %d - Third column in mipstart file should be numeric, ignoring.", fileName, nLine);
+	  messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+	  continue;
+	}
+	
+	char *name = col[1];
+	double value = atof(col[2]);
+	
+	colValues.push_back(pair< string, double >(string(name), value));
       }
-      if (!isNumericStr(col[2])) {
-        sprintf(printLine, "Reading: %s, line %d - Third column in mipstart file should be numeric, ignoring.", fileName, nLine);
-        messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
-        continue;
+    }
+  } else {
+    // psv
+    int nBad1 = 0;
+    int nBad2 = 0;
+    while (fgets(line, STR_SIZE, f)) {
+      ++nLine;
+      char * pipe = strchr(line,'|');
+      if (!pipe) {
+	if (!nBad1) {
+	  sprintf(printLine, "Reading: %s, line %d (%s) - mipstart file should contain |.", fileName, nLine,line);
+	  messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+	}
+	nBad1++;
+	continue;
       }
-
-      char *name = col[1];
-      double value = atof(col[2]);
-
-      colValues.push_back(pair< string, double >(string(name), value));
+      *pipe = '\0';
+      // out \n
+      char * outChar = strchr(pipe+1,'\n');
+      if (outChar)
+	*outChar='\0';
+      if (!isNumericStr(pipe+1)) {
+	if (!nBad2) {
+	  sprintf(printLine, "Reading: %s, line %d (%s) - Second column in mipstart file should be numeric.", fileName, nLine,line);
+	  messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+	}
+	nBad2++;
+	continue;
+      }
+	
+      double value = atof(pipe+1);
+      
+      colValues.push_back(pair< string, double >(string(line), value));
+    }
+    if (nBad1||nBad2) {
+      sprintf(printLine, "Reading: %s, %d errors.", fileName, nBad1+nBad2);
+      messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+      return 1;
     }
   }
 
@@ -331,12 +374,20 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
     status = 1;
     goto TERMINATE;
   }
-
   /* some additional effort is needed to provide an integer solution */
   if (lp->getFractionalIndices().size() > 0) {
     sprintf(printLine, "MIPStart solution provided values for %d of %d integer variables, %d variables are still fractional.", fixed, lp->getNumIntegers(), static_cast< int >(lp->getFractionalIndices().size()));
     messHandler->message(CBC_GENERAL, messages)
       << printLine << CoinMessageEol;
+    if (lp->getFractionalIndices().size()<5) {
+      for (int i=0;i<lp->getFractionalIndices().size();i++) {
+	int iColumn = lp->getFractionalIndices()[iColumn];
+	sprintf(printLine, "Variable %d %s has value %g",iColumn,
+		colNames[iColumn].c_str(),lp->getColSolution()[iColumn]);
+	messHandler->message(CBC_GENERAL, messages)
+	  << printLine << CoinMessageEol;
+      }
+    }
     double start = CoinCpuTime();
 #if 1
     CbcSerendipity heuristic(*model);

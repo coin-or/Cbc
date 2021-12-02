@@ -47,7 +47,13 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
   int nLine = 0;
   // check if psv format!
   int lengthFilename = strlen(fileName);
-  if (strstr(fileName,".psv") != fileName+lengthFilename-4) {
+  // separator
+  char separator = ' ';
+  if (strstr(fileName,".psv") == fileName+lengthFilename-4)
+    separator = '|';
+  else if (strstr(fileName,".csv") == fileName+lengthFilename-4) 
+    separator = ',';
+  if (separator==' ') {
     // ordinary
     while (fgets(line, STR_SIZE, f)) {
       ++nLine;
@@ -75,35 +81,56 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
       }
     }
   } else {
-    // psv
+    // csv or psv
     int nBad1 = 0;
     int nBad2 = 0;
     while (fgets(line, STR_SIZE, f)) {
       ++nLine;
-      char * pipe = strchr(line,'|');
-      if (!pipe) {
+      // clean line
+      // out \n \r and blanks
+      int n = strlen(line);
+      int nNew = 0;
+      for (int i=0;i<n;i++) {
+	char charX = line[i];
+	if (charX==' ') {
+	  continue;
+	} else if (charX=='\n'||charX=='\r') {
+	  line[nNew]='\0';
+	  break;
+	} else {
+	  line[nNew++] = charX;
+	}
+      }
+      char * pipeorcomma = strchr(line,separator);
+      if (!pipeorcomma) {
 	if (!nBad1) {
-	  sprintf(printLine, "Reading: %s, line %d (%s) - mipstart file should contain |.", fileName, nLine,line);
-	  messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+	  if (nLine>1) {
+	    sprintf(printLine, "Reading: %s, line %d (%s) - mipstart file should contain |.", fileName, nLine,line);
+	    messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+	  } else {
+	    // may be OK
+	    nBad1--;
+	  }
 	}
 	nBad1++;
 	continue;
       }
-      *pipe = '\0';
-      // out \n
-      char * outChar = strchr(pipe+1,'\n');
-      if (outChar)
-	*outChar='\0';
-      if (!isNumericStr(pipe+1)) {
+      *pipeorcomma = '\0';
+      if (!isNumericStr(pipeorcomma+1)) {
 	if (!nBad2) {
-	  sprintf(printLine, "Reading: %s, line %d (%s) - Second column in mipstart file should be numeric.", fileName, nLine,line);
-	  messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+	  if (nLine>1) {
+	    sprintf(printLine, "Reading: %s, line %d (%s) - Second column in mipstart file should be numeric.", fileName, nLine,line);
+	    messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+	  } else {
+	    // may be OK
+	    nBad2--;
+	  }
 	}
 	nBad2++;
 	continue;
       }
 	
-      double value = atof(pipe+1);
+      double value = atof(pipeorcomma+1);
       
       colValues.push_back(pair< string, double >(string(line), value));
     }
@@ -381,7 +408,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
       << printLine << CoinMessageEol;
     if (lp->getFractionalIndices().size()<5) {
       for (int i=0;i<lp->getFractionalIndices().size();i++) {
-	int iColumn = lp->getFractionalIndices()[iColumn];
+	int iColumn = lp->getFractionalIndices()[i];
 	sprintf(printLine, "Variable %d %s has value %g",iColumn,
 		colNames[iColumn].c_str(),lp->getColSolution()[iColumn]);
 	messHandler->message(CBC_GENERAL, messages)

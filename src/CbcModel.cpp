@@ -1830,6 +1830,9 @@ void CbcModel::branchAndBound(int doStatistics)
       else
         dblParam_[CbcStartSeconds] = CoinGetTimeOfDay();
     }
+    //numberCutGenerators_=0;
+    //printf("zzzzz\n");
+    //getchar();
   }
   dblParam_[CbcSmallestChange] = COIN_DBL_MAX;
   dblParam_[CbcSumChange] = 0.0;
@@ -18822,7 +18825,8 @@ bool CbcModel::stoppingCriterionReached() const {
 bool CbcModel::maximumSecondsReached() const
 {
   double maxSeconds = getMaximumSeconds();
-  if (maxSeconds>1.0e10)
+  if (maxSeconds>1.0e10  &&
+      dblParam_[CbcMaximumSecondsNotImprovingFeasSol]>1.0e10)
     return false;
   double totalTime = getCurrentSeconds();
   bool hitMaxTime = (totalTime >= maxSeconds);

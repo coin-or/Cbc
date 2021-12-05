@@ -4173,7 +4173,7 @@ int CbcMain1(int argc, const char *argv[],
                   printGeneralMessage(model_,
 				      "PreProcessing switched off due to lazy constraints");
 		}
-	      }
+	      } 
               if (preProcess && type == CBC_PARAM_ACTION_BAB) {
                 saveSolver = babModel_->solver()->clone();
                 /* Do not try and produce equality cliques and
@@ -4679,9 +4679,11 @@ int CbcMain1(int argc, const char *argv[],
                   const int *originalColumns = process.originalColumns();
                   int numberColumns = solver2->getNumCols();
                   OsiSolverInterface *originalSolver = model.solver();
+		  int numberOriginalColumns = originalSolver->getNumCols(); 
                   for (int i = 0; i < numberColumns; i++) {
                     int iColumn = originalColumns[i];
-                    solver2->setColName(i, originalSolver->getColName(iColumn));
+		    if (iColumn<numberOriginalColumns)
+		      solver2->setColName(i, originalSolver->getColName(iColumn));
                   }
                   OsiClpSolverInterface *clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(solver2);
                   ClpSimplex *lpSolver = clpSolver2->getModelPtr();

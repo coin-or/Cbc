@@ -327,8 +327,17 @@ int CbcHeuristicDW::solution(double &solutionValue,
   printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
     heuristicName(), numRuns_, numCouldRun_, when_);
 #endif
-  if (bestSolutionIn && objectiveValue(bestSolutionIn) < bestObjective_ - 1.0e-5)
-    passInSolution(bestSolutionIn);
+  if (bestSolutionIn) {
+    if (objectiveValue(bestSolutionIn) < bestObjective_ - 1.0e-5) {
+      passInSolution(bestSolutionIn);
+    } else if (!bestSolution_) {
+      // just possible
+      bestObjective_ = objectiveValue(bestSolutionIn);
+      int numberColumns = solver_->getNumCols();
+      bestSolution_ = new double[numberColumns];
+      memcpy(bestSolution_, bestSolutionIn, numberColumns * sizeof(double));
+    }
+  }
   char dwPrint[200];
   sprintf(dwPrint, "Before PASSes objective is %g",
     bestObjective_);

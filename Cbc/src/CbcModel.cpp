@@ -1631,8 +1631,16 @@ void CbcModel::branchAndBound(int doStatistics)
   int nextCheckRestart = 50;
   // Force minimization !!!!
   bool flipObjective = (solver_->getObjSense() < 0.0);
-  if (flipObjective)
+  if (flipObjective) {
+    // In solver_ cutoff is correct with sign reversed
+    double cutoff;
+    solver_->getDblParam(OsiDblParam::OsiDualObjectiveLimit,cutoff);
+    // treat as if minimize
+    assert(fabs(dblParam_[CbcCurrentCutoff]) == fabs(cutoff) ||
+	   fabs(cutoff)>1.0e40);
+    dblParam_[CbcCurrentCutoff] = -cutoff;
     flipModel();
+  }
   dblParam_[CbcOptimizationDirection] = 1.0; // was solver_->getObjSense();
   strongInfo_[0] = 0;
   strongInfo_[1] = 0;

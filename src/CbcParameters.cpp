@@ -487,7 +487,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::MAXNODES]->setDefault(COIN_INT_MAX);
      parameters_[CbcParam::MAXNODESNOTIMPROVING]->setDefault(COIN_INT_MAX);
      parameters_[CbcParam::MAXSECONDSNOTIMPROVING]->setDefault(COIN_DBL_MAX);
-     parameters_[CbcParam::MAXSOLS]->setDefault(COIN_INT_MAX);
+     parameters_[CbcParam::MAXSOLS]->setDefault(COIN_INT_MAX/2);
      parameters_[CbcParam::MINIMIZE]->setType(CoinParam::paramAct);
      parameters_[CbcParam::MIPOPTIONS]->setDefault(0);
      parameters_[CbcParam::MOREMIPOPTIONS]->setDefault(0);
@@ -638,7 +638,8 @@ void CbcParameters::synchronizeModel() {
     if (doubleValue!=modelDoubleValue)
       printf("changing CUTOFF from %g to %g at line %d\n",modelDoubleValue,doubleValue,__LINE__+1);
 #endif
-    model_->setCutoff(doubleValue);
+    if (fabs(doubleValue)<1.0e40)
+      model_->setCutoff(doubleValue);
     parameters_[CbcParam::TIMELIMIT]->getVal(doubleValue);
 #ifdef PRINT_CBC_CHANGES
     modelDoubleValue = model_->getDblParam(CbcModel::CbcMaximumSeconds);
@@ -1572,7 +1573,7 @@ void CbcParameters::addCbcSolverIntParams() {
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero1#More strong branching at root node",8192);
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero2#More strong branching at root node - more",16384);
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero3#More strong branching at root node - yet more",24578);
-
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("lagrangean#lagrangean cuts at end of root cuts",234881024);
   parameters_[CbcParam::MULTIPLEROOTS]->setup(
       "multiple!RootPasses",
       "Do multiple root passes to collect cuts and solutions", 0, COIN_INT_MAX,
@@ -2275,7 +2276,7 @@ void CbcParameters::addCbcModelParams()
 
   parameters_[CbcParam::MAXSOLS]->setup(
       "maxSo!lutions", "Maximum number of feasible solutions to get", 1,
-      COIN_INT_MAX, 
+      COIN_INT_MAX/2, 
       "You may want to stop after (say) two solutions or an hour. This is "
       "checked every node in tree, so it is possible to get more solutions "
       "from heuristics.");

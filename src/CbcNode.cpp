@@ -3008,6 +3008,10 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           solver->setIntParam(OsiMaxNumIterationHotStart, 100000);
           //printf("Strong branching type %d\n",strongType);
         }
+      } else {
+	if (!depth_&&(model->specialOptions()&2048)==0) {
+	  strongType = 2;
+	}
       }
 #endif
 #ifdef CBC_HAS_NAUTY

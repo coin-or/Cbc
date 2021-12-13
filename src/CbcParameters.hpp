@@ -319,6 +319,7 @@ public:
     CGEndClean,
     CGEndCleanRoot,
     CGEndBoth,
+    CGEndBothRoot,
     CGLong,
     CGLongOn,
     CGLongRoot,

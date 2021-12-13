@@ -946,7 +946,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       process.messageHandler()->setLogLevel(0);
     if (!solver->defaultHandler() && solver->messageHandler()->logLevel(0) != -1000)
       process.passInMessageHandler(solver->messageHandler());
-    //#define CGL_DEBUG
 #ifdef CGL_DEBUG
     /*
 	  We're debugging. (specialOptions 1)
@@ -960,6 +959,10 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 #endif
 #ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
+    if (clpSolver) {
+      clpSolver->getModelPtr()->cleanSolver();
+      clpSolver->getModelPtr()->setWhatsChanged(0);
+    }
     // See if SOS
     if (clpSolver && clpSolver->numberSOS()) {
       // SOS
@@ -1346,22 +1349,9 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         //printf("sol %x\n",inputSolution_);
 #ifdef CGL_DEBUG
         if ((model_->specialOptions() & 1) != 0) {
-          const OsiRowCutDebugger *debugger = model_->solver()->getRowCutDebugger();
-          if (debugger && numberNodes < 0) {
+          const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger();
+          if (debugger) {
             printf("On optimal path CC\n");
-	    // try and redo debugger
-	    int numberColumns = solver2->getNumCols();
-	    const int *originalColumns = process.originalColumns();
-	    OsiRowCutDebugger *debugger = const_cast< OsiRowCutDebugger * >(model.solver()->getRowCutDebuggerAlways());
-	    if (debugger) {
-	      debugger->redoSolution(numberColumns, originalColumns);
-	      const OsiRowCutDebugger *debugger2
-		= model.solver()->getRowCutDebugger();
-	      if (!debugger2) {
-		printf("Does not include optimal solution\n");
-		model.solver()->activateRowCutDebugger(NULL,false);
-	      }
-	    }
           }
         }
 #endif
@@ -2223,7 +2213,6 @@ int CbcRounding::solution(double &solutionValue,
     }
   }
 
-  double penalty = 0.0;
   // see if feasible - just using singletons
   for (i = 0; i < numberRows; i++) {
     double value = rowActivity[i];
@@ -2310,8 +2299,15 @@ int CbcRounding::solution(double &solutionValue,
         newSolutionValue += addCost;
         rowActivity[i] += changeRowActivity;
       }
-      penalty += fabs(thisInfeasibility);
     }
+  }
+  double penalty = 0.0;
+  // integer variables may have wandered
+  for (i = 0; i < numberIntegers; i++) {
+    int iColumn = integerVariable[i];
+    double value = newSolution[iColumn];
+    if (fabs(floor(value + 0.5) - value) > integerTolerance)
+      penalty += fabs(floor(value + 0.5) - value);
   }
   if (penalty) {
     // see if feasible using any

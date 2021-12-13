@@ -456,8 +456,10 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
         }
 #endif
         if (generator->getMaxLook() > 0 && !doCuts) {
-          generator->generateCutsAndModify(*solver, cs, &info);
-          doCuts = true;
+	  if (info.level<4||(info.level&2)==0) {
+	    generator->generateCutsAndModify(*solver, cs, &info);
+	    doCuts = true;
+	  }
         }
       } else {
         // at root - don't always do
@@ -1369,6 +1371,403 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
   }
   return returnCode;
 }
+#ifdef CBC_LAGRANGEAN_SOLVERS
+#include "CglGomory.hpp"
+#include "CglTwomir.hpp"
+// create a lagrangean solver
+static OsiClpSolverInterface * lagrangeanSolver(OsiSolverInterface *solver,
+						OsiSolverInterface *baseSolver,
+						int &typeGenerate) {
+  if (solver->getNumRows()==baseSolver->getNumRows()) { 
+    typeGenerate=-1;
+    return new OsiClpSolverInterface();
+  }
+  // create
+  OsiSolverInterface *lagrangeanSolver = baseSolver->clone();
+  OsiClpSolverInterface * clpSolver = dynamic_cast<OsiClpSolverInterface *>(lagrangeanSolver);
+  ClpSimplex * simplex = clpSolver->getModelPtr();
+  int numberOriginalRows = simplex->numberRows();
+  int numberRows = solver->getNumRows();
+  int numberColumns = solver->getNumCols();
+  // bounds
+  memcpy(simplex->columnLower(),
+	 solver->getColLower(),numberColumns*sizeof(double));
+  memcpy(simplex->columnUpper(),
+	 solver->getColUpper(),numberColumns*sizeof(double));
+  double * obj = simplex->objective();
+  //objective = CoinCopyOfArray(obj,numberColumns);
+  const double * pi = solver->getRowPrice();
+  const CoinPackedMatrix * rowCopy = solver->getMatrixByRow();
+  const int * column = rowCopy->getIndices();
+  const CoinBigIndex * rowStart = rowCopy->getVectorStarts();
+  const int * rowLength = rowCopy->getVectorLengths(); 
+  const double * rowElements = rowCopy->getElements();
+  const double * rowLower = solver->getRowLower();
+  const double * rowUpper = solver->getRowUpper();
+  int numberCopy = 0;
+  int numberAdd = 0;
+  double * rowLower2 = NULL;
+  double * rowUpper2 = NULL;
+  int * column2 = NULL;
+  CoinBigIndex * rowStart2 = NULL;
+  double * rowElements2 = NULL;
+  char * copy = new char [numberRows-numberOriginalRows];
+  memset(copy,0,numberRows-numberOriginalRows);
+  if (typeGenerate==2) {
+    for (int iRow=numberOriginalRows;iRow<numberRows;iRow++) {
+      bool simple = true;
+      for (CoinBigIndex k=rowStart[iRow];
+	   k<rowStart[iRow]+rowLength[iRow];k++) {
+	double value = rowElements[k];
+	if (value!=floor(value+0.5)) {
+	  simple=false;
+	  break;
+	}
+      }
+      if (simple) {
+	numberCopy++;
+	numberAdd+=rowLength[iRow];
+	copy[iRow-numberOriginalRows]=1;
+      }
+    }
+  }
+  if (numberCopy) {
+    rowLower2 = new double [numberCopy];
+    rowUpper2 = new double [numberCopy];
+    rowStart2 = new CoinBigIndex [numberCopy+1];
+    rowStart2[0]=0;
+    column2 = new int [numberAdd];
+    rowElements2 = new double [numberAdd];
+  } else {
+    // just need base - skip other
+    typeGenerate = -typeGenerate;
+  }
+  numberCopy=0;
+  numberAdd=0;
+  const double * rowSolution = solver->getRowActivity();
+  double offset=0.0;
+  for (int iRow=numberOriginalRows;iRow<numberRows;iRow++) {
+    if (!copy[iRow-numberOriginalRows]) {
+      double value = pi[iRow];
+      offset += rowSolution[iRow]*value;
+      for (CoinBigIndex k=rowStart[iRow];
+	   k<rowStart[iRow]+rowLength[iRow];k++) {
+	int iColumn=column[k];
+	obj[iColumn] -= value*rowElements[k];
+      }
+    } else {
+      rowLower2[numberCopy]=rowLower[iRow];
+      rowUpper2[numberCopy]=rowUpper[iRow];
+      for (CoinBigIndex k=rowStart[iRow];
+	   k<rowStart[iRow]+rowLength[iRow];k++) {
+	column2[numberAdd]=column[k];
+	rowElements2[numberAdd++]=rowElements[k];
+      }
+      numberCopy++;
+      rowStart2[numberCopy]=numberAdd;
+    }
+  }
+  if (numberCopy) {
+    clpSolver->addRows(numberCopy,
+		       rowStart2,column2,rowElements2,
+		       rowLower2,rowUpper2);
+    delete [] rowLower2 ;
+    delete [] rowUpper2 ;
+    delete [] column2 ;
+    delete [] rowStart2 ;
+    delete [] rowElements2 ;
+  }
+  delete [] copy;
+  memcpy(simplex->primalColumnSolution(),solver->getColSolution(),
+	 numberColumns*sizeof(double));
+  CoinWarmStart * warmstart = solver->getWarmStart();
+  CoinWarmStartBasis* warm =
+    dynamic_cast<CoinWarmStartBasis*>(warmstart);
+  warm->resize(numberOriginalRows,numberColumns);
+  clpSolver->setBasis(*warm);
+  delete warm;
+  simplex->setDualObjectiveLimit(COIN_DBL_MAX);
+  simplex->setLogLevel(0);
+  simplex->primal(1);
+  // check basis
+  int numberTotal=simplex->numberRows()+simplex->numberColumns();
+  int superbasic=0;
+  for (int i=0;i<numberTotal;i++) {
+    if (simplex->getStatus(i)==ClpSimplex::superBasic)
+      superbasic++;
+  }
+  if (superbasic) {
+    //printf("%d superbasic!\n",superbasic);
+    simplex->dual();
+    superbasic=0;
+    for (int i=0;i<numberTotal;i++) {
+      if (simplex->getStatus(i)==ClpSimplex::superBasic)
+	superbasic++;
+    }
+    assert (!superbasic);
+  }
+  if (!simplex->status()) {
+    clpSolver->setWarmStart(NULL);
+    return clpSolver;
+  } else {
+    //printf("BAD status %d\n",simplex->status());
+    //clpSolver->writeMps("clp");
+    //solver->writeMps("si");
+    typeGenerate=-1;
+    return new OsiClpSolverInterface();
+  }
+}
+bool
+CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface *solver,
+			      CbcNode *node,
+			      OsiSolverInterface *baseLagrangeanSolver,
+			      OsiSolverInterface *cleanLagrangeanSolver)
+{
+  if (node)
+    return generateCuts(cs, fullScan, solver, node);
+  bool returnCode = false;
+#if 1
+  //returnCode = generateCuts(cs, fullScan, solver, node);
+  if (!returnCode && whatLagrangean() &&
+      solver->getNumRows()>model_->continuousSolver()->getNumRows()) {
+    int typeGenerate;
+    if (whatLagrangean()&2) {
+      if (!cleanLagrangeanSolver) {
+	typeGenerate = 2;
+	cleanLagrangeanSolver =
+	  lagrangeanSolver(solver,model_->continuousSolver(),typeGenerate);
+	if (cleanLagrangeanSolver->getNumRows()==
+	    model_->continuousSolver()->getNumRows()) {
+	  // fake base to skip
+	  if (!baseLagrangeanSolver)
+	    baseLagrangeanSolver = new OsiClpSolverInterface();
+	}
+      }
+      returnCode = generateCuts(cs, fullScan, cleanLagrangeanSolver, node);
+    }
+    if (whatLagrangean()&4) {
+      if (!baseLagrangeanSolver) {
+	typeGenerate = 1;
+	baseLagrangeanSolver =
+	  lagrangeanSolver(solver,model_->continuousSolver(),typeGenerate);
+      }
+      if (baseLagrangeanSolver->getNumRows())
+	returnCode = generateCuts(cs, fullScan, baseLagrangeanSolver, node);
+    }
+  }
+  return returnCode;
+#endif
+  /*
+    If wants base -
+    if base empty - create base from originalSolver_ as in generator
+    set flags to say don't want base and pass in base as solver
+    Same for clean
+   */
+  if (!cleanLagrangean() && !originalLagrangean()) {
+    returnCode = generateCuts(cs, fullScan, solver, node);
+  } else {
+    // 0 - skip, 1 - do normal, 2 - do clean, 3 - do base
+    int typeGenerate = cleanLagrangean() ? 3 : 2;
+    // later take out code from Cgl?
+    // also move originalSolver_ so only one copy (use continuousSolver_)
+    CglGomory * gomory = dynamic_cast<CglGomory *>(generator_);
+    CglTwomir * twomir = dynamic_cast<CglTwomir *>(generator_);
+    OsiSolverInterface * originalSolver;
+    int saveType;
+    if (gomory) {
+      originalSolver = gomory->swapOriginalSolver(NULL);
+      saveType = gomory->gomoryType();
+      gomory->setGomoryType(0);
+    } else {
+      originalSolver = twomir->swapOriginalSolver(NULL);
+      saveType = twomir->twomirType();
+      twomir->setTwomirType(0);
+    }
+    if (solver->getNumRows()==model_->continuousSolver()->getNumRows()) 
+      typeGenerate = 1;
+    // but skip if already done
+    // if (otherLagrangeanThere())
+    // typeGenerate = 0;
+    if (typeGenerate==2 && cleanLagrangeanSolver) {
+      returnCode = generateCuts(cs, fullScan, cleanLagrangeanSolver, node);
+    } else if (typeGenerate==3 && baseLagrangeanSolver) {
+      returnCode = generateCuts(cs, fullScan, baseLagrangeanSolver, node);
+    } else if (typeGenerate==1) {
+      returnCode = generateCuts(cs, fullScan, solver, node);
+    } else {
+      // create
+#if 1
+      OsiClpSolverInterface * clpSolver =
+	lagrangeanSolver(solver,model_->continuousSolver(),
+			 typeGenerate);
+      if (typeGenerate == 2) 
+	cleanLagrangeanSolver = clpSolver;
+      else
+	baseLagrangeanSolver = clpSolver;
+      if (typeGenerate)
+	returnCode = generateCuts(cs, fullScan, clpSolver, node);
+    }
+#else
+      OsiClpSolverInterface * clpSolver;
+      if (typeGenerate==2) {
+	cleanLagrangeanSolver = model_->continuousSolver()->clone();
+	clpSolver = dynamic_cast<OsiClpSolverInterface *>(cleanLagrangeanSolver);
+      } else {
+	baseLagrangeanSolver = model_->continuousSolver()->clone();
+	clpSolver = dynamic_cast<OsiClpSolverInterface *>(baseLagrangeanSolver);
+      }
+      ClpSimplex * simplex = clpSolver->getModelPtr();
+      int numberOriginalRows = simplex->numberRows();
+      int numberRows = solver->getNumRows();
+      int numberColumns = solver->getNumCols();
+      // bounds
+      memcpy(simplex->columnLower(),
+	     solver->getColLower(),numberColumns*sizeof(double));
+      memcpy(simplex->columnUpper(),
+	     solver->getColUpper(),numberColumns*sizeof(double));
+      double * obj = simplex->objective();
+      //objective = CoinCopyOfArray(obj,numberColumns);
+      const double * pi = solver->getRowPrice();
+      const CoinPackedMatrix * rowCopy = solver->getMatrixByRow();
+      const int * column = rowCopy->getIndices();
+      const CoinBigIndex * rowStart = rowCopy->getVectorStarts();
+      const int * rowLength = rowCopy->getVectorLengths(); 
+      const double * rowElements = rowCopy->getElements();
+      const double * rowLower = solver->getRowLower();
+      const double * rowUpper = solver->getRowUpper();
+      int numberCopy = 0;
+      int numberAdd = 0;
+      double * rowLower2 = NULL;
+      double * rowUpper2 = NULL;
+      int * column2 = NULL;
+      CoinBigIndex * rowStart2 = NULL;
+      double * rowElements2 = NULL;
+      char * copy = new char [numberRows-numberOriginalRows];
+      memset(copy,0,numberRows-numberOriginalRows);
+      if (typeGenerate==2) {
+	for (int iRow=numberOriginalRows;iRow<numberRows;iRow++) {
+	  bool simple = true;
+	  for (CoinBigIndex k=rowStart[iRow];
+	       k<rowStart[iRow]+rowLength[iRow];k++) {
+	    double value = rowElements[k];
+	    if (value!=floor(value+0.5)) {
+	      simple=false;
+	      break;
+	    }
+	  }
+	  if (simple) {
+	    numberCopy++;
+	    numberAdd+=rowLength[iRow];
+	    copy[iRow-numberOriginalRows]=1;
+	  }
+	}
+      }
+      if (numberCopy) {
+	rowLower2 = new double [numberCopy];
+	rowUpper2 = new double [numberCopy];
+	rowStart2 = new CoinBigIndex [numberCopy+1];
+	rowStart2[0]=0;
+	column2 = new int [numberAdd];
+	rowElements2 = new double [numberAdd];
+      } else {
+	// just need base - skip other
+	// not quite right as assumes all cut generators have same 1/2
+	if (typeGenerate==1&&cleanLagrangeanSolver)
+	  typeGenerate = 0;
+	else if (typeGenerate==2&&baseLagrangeanSolver)
+	  typeGenerate = 0;
+      }
+      if (typeGenerate) {
+	numberCopy=0;
+	numberAdd=0;
+	const double * rowSolution = solver->getRowActivity();
+	double offset=0.0;
+	for (int iRow=numberOriginalRows;iRow<numberRows;iRow++) {
+	  if (!copy[iRow-numberOriginalRows]) {
+	    double value = pi[iRow];
+	    offset += rowSolution[iRow]*value;
+	    for (CoinBigIndex k=rowStart[iRow];
+		 k<rowStart[iRow]+rowLength[iRow];k++) {
+	      int iColumn=column[k];
+	      obj[iColumn] -= value*rowElements[k];
+	    }
+	  } else {
+	    rowLower2[numberCopy]=rowLower[iRow];
+	    rowUpper2[numberCopy]=rowUpper[iRow];
+	    for (CoinBigIndex k=rowStart[iRow];
+		 k<rowStart[iRow]+rowLength[iRow];k++) {
+	      column2[numberAdd]=column[k];
+	      rowElements2[numberAdd++]=rowElements[k];
+	    }
+	    numberCopy++;
+	    rowStart2[numberCopy]=numberAdd;
+	  }
+	}
+	if (numberCopy) {
+	  clpSolver->addRows(numberCopy,
+			     rowStart2,column2,rowElements2,
+			     rowLower2,rowUpper2);
+	  delete [] rowLower2 ;
+	  delete [] rowUpper2 ;
+	  delete [] column2 ;
+	  delete [] rowStart2 ;
+	  delete [] rowElements2 ;
+	}
+	delete [] copy;
+	memcpy(simplex->primalColumnSolution(),solver->getColSolution(),
+	       numberColumns*sizeof(double));
+	CoinWarmStart * warmstart = solver->getWarmStart();
+	CoinWarmStartBasis* warm =
+	  dynamic_cast<CoinWarmStartBasis*>(warmstart);
+	warm->resize(numberOriginalRows,numberColumns);
+	clpSolver->setBasis(*warm);
+	delete warm;
+	simplex->setDualObjectiveLimit(COIN_DBL_MAX);
+	simplex->setLogLevel(0);
+	simplex->primal(1);
+	// check basis
+	int numberTotal=simplex->numberRows()+simplex->numberColumns();
+	int superbasic=0;
+	for (int i=0;i<numberTotal;i++) {
+	  if (simplex->getStatus(i)==ClpSimplex::superBasic)
+	    superbasic++;
+	}
+	if (superbasic) {
+	  //printf("%d superbasic!\n",superbasic);
+	  simplex->dual();
+	  superbasic=0;
+	  for (int i=0;i<numberTotal;i++) {
+	    if (simplex->getStatus(i)==ClpSimplex::superBasic)
+	      superbasic++;
+	  }
+	  assert (!superbasic);
+	}
+	if (!simplex->status()) {
+	  clpSolver->setWarmStart(NULL);
+	} else {
+	  //printf("BAD status %d\n",simplex->status());
+	  //clpSolver->writeMps("clp");
+	  //solver->writeMps("si");
+	  typeGenerate=0;
+	}
+      } else {
+	delete [] copy;
+      }
+      if (typeGenerate)
+	returnCode = generateCuts(cs, fullScan, clpSolver, node);
+    }
+#endif
+    if (gomory) {
+      gomory->swapOriginalSolver(originalSolver);
+      gomory->setGomoryType(saveType);
+    } else {
+      twomir->swapOriginalSolver(originalSolver);
+      twomir->setTwomirType(saveType);
+    }
+  }
+  return returnCode;
+}
+#endif
 void CbcCutGenerator::setHowOften(int howOften)
 {
 

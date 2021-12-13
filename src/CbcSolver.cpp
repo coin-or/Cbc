@@ -1416,6 +1416,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     CglBKClique bkCliqueGen;
     int  bkPivotingStrategy = 3, maxCallsBK = 1000, bkClqExtMethod = 4;
     int cliqueMode = parameters[CbcParam::CLIQUECUTS]->modeVal();
+    bool oldCliqueMode = cliqueMode;
     CglOddWheel oddWheelGen;
     int oddWheelMode = CbcParameters::CGIfMove, oddWExtMethod = 2;
     assert (parameters[CbcParam::ODDWHEELCUTS]->modeVal()==oddWheelMode);
@@ -2334,6 +2335,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             case CbcParam::CLIQUECUTS:
               defaultSettings = false; // user knows what she is doing
               cliqueMode = mode;
+	      oldCliqueMode = cliqueMode;
               break;
             case CbcParam::ODDWHEELCUTS:
               defaultSettings = false; // user knows what she is doing
@@ -4820,14 +4822,35 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   }
                 }
                 //solver2->resolve();
+#ifdef CBC_NAMES_FOR_COMPARE
+		{
+		  OsiClpSolverInterface * solver =
+		    dynamic_cast<OsiClpSolverInterface *>(solver2);
+		  ClpSimplex * simplex = solver->getModelPtr();
+		  int numberRows = simplex->numberRows();
+		  int numberColumns = simplex->numberColumns();
+		  int numberIntegers = 0;
+		  for (int i=0;i<numberColumns;i++) {
+		    if (simplex->isInteger(i))
+		      numberIntegers++;
+		  }
+		  printf("CbC %s after preprocessing %d rows, %d columns, %d integers\n",
+			 simplex->problemName().c_str(),numberRows,
+			 numberColumns,numberIntegers);
+		}
+#endif
                 if (preProcess == 2 || preProcess >= 10) {
                   // names are wrong - redo
-                  const int *originalColumns = process.originalColumns();
+		  // const int *originalColumns = process.originalColumns();
                   int numberColumns = solver2->getNumCols();
-                  OsiSolverInterface *originalSolver = model.solver();
+                  //OsiSolverInterface *originalSolver = model.solver();
+		  //int numberOriginalColumns = originalSolver->getNumCols(); 
                   for (int i = 0; i < numberColumns; i++) {
-                    int iColumn = originalColumns[i];
-                    solver2->setColName(i, originalSolver->getColName(iColumn));
+                    //int iColumn = originalColumns[i];
+		    //if (iColumn<numberOriginalColumns)
+		    char name[10];
+		    sprintf(name,"C%7d",i);
+		    solver2->setColName(i, name);
                   }
                   OsiClpSolverInterface *clpSolver2 =
                       dynamic_cast<OsiClpSolverInterface *>(solver2);
@@ -4837,7 +4860,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     strcpy(name, "presolved.mps");
                   } else {
                     strcpy(name,
-                           parameters[CbcParam::IMPORTFILE]->strVal().c_str());
+                           parameters[CbcParam::IMPORTFILE]->fileName().c_str());
                     char *dot = strstr(name, ".mps");
                     if (!dot)
                       dot = strstr(name, ".lp");
@@ -5481,13 +5504,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 clqstrMode = "off";
               } else if (cgraphMode == "clq") {
                 // old style
-                CglClique clique;
-                clique.setStarCliqueReport(false);
-                clique.setRowCliqueReport(false);
-                clique.setMinViolation(0.05);
-                int translate[] = {-100, -1, -99, -98, 1, -1098};
-                babModel_->addCutGenerator(&clique, translate[cliqueMode],
-                                           "Clique");
+                //CglClique clique;
+                //clique.setStarCliqueReport(false);
+                //clique.setRowCliqueReport(false);
+                //clique.setMinViolation(0.05);
+                //int translate[] = {-100, -1, -99, -98, 1, -1098};
+                //babModel_->addCutGenerator(&clique, translate[cliqueMode],
+		//                         "Clique");
                 cliqueMode = CbcParameters::CGOff;
  		parameters[CbcParam::CLIQUECUTS]->setVal("off");
                 oddWheelMode = CbcParameters::CGOff;
@@ -5704,6 +5727,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               int switches[30] = {};
               int accuracyFlag[30] = {};
               char doAtEnd[30] = {};
+	      int lagrangeanFlag =
+		(parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal()&(7*33554432))>>9;
+#define ALL_LAGRANGEAN 1
               int numberGenerators = 0;
               std::map<int, int> translate;
               translate[CbcParameters::CGOff] = -100;
@@ -5717,6 +5743,22 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               translate[CbcParameters::CGForceOnStrong] = 1;
               translate[CbcParameters::CGForceOnButStrong] = 1;
               translate[CbcParameters::CGStrongRoot] = -1;
+              std::map<int, int> laTranslate;
+	      laTranslate[CbcParameters::CGEndOnlyRoot] = 1;
+	      laTranslate[CbcParameters::CGEndCleanRoot] = 2;
+	      laTranslate[CbcParameters::CGEndBothRoot] = 3;
+	      laTranslate[CbcParameters::CGEndOnly] = 4;
+	      laTranslate[CbcParameters::CGEndClean] = 5;
+	      laTranslate[CbcParameters::CGEndBoth] = 6;
+	      laTranslate[CbcParameters::CGOnlyAsWell] = 7;
+	      laTranslate[CbcParameters::CGOnlyAsWellRoot] = 13;
+	      laTranslate[CbcParameters::CGCleanAsWell] = 8;
+	      laTranslate[CbcParameters::CGCleanAsWellRoot] =14;
+	      laTranslate[CbcParameters::CGBothAsWell] = 9;
+	      laTranslate[CbcParameters::CGBothAsWellRoot] = 15;
+	      laTranslate[CbcParameters::CGOnlyInstead] = 10;
+	      laTranslate[CbcParameters::CGCleanInstead] = 11;
+	      laTranslate[CbcParameters::CGBothInstead] = 12;
               int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS]->intVal();
  	     assert (parameters[CbcParam::PROBINGCUTS]->modeVal()==probingMode);
               if (probingMode) {
@@ -5804,9 +5846,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   babModel_->addCutGenerator(&gomoryGen,
                                              translate[gomoryMode], "Gomory");
                   accuracyFlag[numberGenerators] = 3;
-                  switches[numberGenerators++] = 0;
+                  switches[numberGenerators++] = lagrangeanFlag;
                 } else {
-                  laGomory--;
+		  laGomory = laTranslate[laGomory]-1;
                   int type = (laGomory % 3) + 1;
                   int when = laGomory / 3;
                   char atEnd = (when < 2) ? 1 : 0;
@@ -5840,7 +5882,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                           ->setMaximumTries(99999999);
                       babModel_->cutGenerator(numberGenerators)->setHowOften(1);
                     }
-                    switches[numberGenerators++] = 0;
+                    switches[numberGenerators++] = 16384;
                   }
                   if ((type & 2) != 0) {
                     // simple
@@ -5853,7 +5895,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                           ->setMaximumTries(99999999);
                       babModel_->cutGenerator(numberGenerators)->setHowOften(1);
                     }
-                    switches[numberGenerators++] = 0;
+                    switches[numberGenerators++] = 32768;
                   }
                 }
               }
@@ -5870,7 +5912,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 babModel_->addCutGenerator(
                     &knapsackGen, translate[knapsackMode], "Knapsack");
                 accuracyFlag[numberGenerators] = 1;
-                switches[numberGenerators++] = -2;
+                switches[numberGenerators++] = 0;
               }
               if (redsplitMode && !complicatedInteger) {
                 babModel_->addCutGenerator(&redsplitGen,
@@ -5883,7 +5925,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       ->setMaximumTries(maximumSlowPasses);
                   babModel_->cutGenerator(numberGenerators)->setHowOften(10);
                 }
-                switches[numberGenerators++] = 1;
+                switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN*lagrangeanFlag); 
               }
               if (redsplit2Mode && !complicatedInteger) {
                 int maxLength = 256;
@@ -5906,7 +5948,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   babModel_->cutGenerator(numberGenerators)->setHowOften(5);
                 }
 
-                switches[numberGenerators++] = 1;
+                switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN*lagrangeanFlag);
               }
               if (GMIMode && !complicatedInteger) {
                 if (GMIMode > CbcParameters::CGOnGlobal) {
@@ -5926,7 +5968,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   babModel_->cutGenerator(numberGenerators)->setHowOften(1);
                 }
                 accuracyFlag[numberGenerators] = 5;
-                switches[numberGenerators++] = 0;
+                switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN*lagrangeanFlag);
               }
               if (cliqueMode) {
                 bkCliqueGen.setMaxCallsBK(maxCallsBK);
@@ -5943,7 +5985,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		clique.setRowCliqueReport(false);
 		clique.setMinViolation(0.05);
 		// ifmove
-		babModel_->addCutGenerator(&clique, translate[cliqueMode],
+		babModel_->addCutGenerator(&clique, translate[oldCliqueMode],
 					   "Clique");
                 accuracyFlag[numberGenerators] = 0;
                 switches[numberGenerators++] = 0;
@@ -5961,14 +6003,14 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 babModel_->addCutGenerator(&mixedGen, translate[mixedMode],
                                            "MixedIntegerRounding2");
                 accuracyFlag[numberGenerators] = 2;
-                switches[numberGenerators++] = 0;
+                switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN*lagrangeanFlag);
               }
  	      assert (parameters[CbcParam::FLOWCUTS]->modeVal()==flowMode);
               if (flowMode) {
                 babModel_->addCutGenerator(&flowGen, translate[flowMode],
                                            "FlowCover");
                 accuracyFlag[numberGenerators] = 2;
-                switches[numberGenerators++] = 0;
+                switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN*lagrangeanFlag);
               }
               if (twomirMode && (complicatedInteger != 1 ||
                                    (twomirMode == CbcParameters::CGOn ||
@@ -5988,9 +6030,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   babModel_->addCutGenerator(
                       &twomirGen, translate[twomirMode], "TwoMirCuts");
                   accuracyFlag[numberGenerators] = 4;
-                  switches[numberGenerators++] = 1;
+                  switches[numberGenerators++] = 1 | lagrangeanFlag;
                 } else {
-                  laTwomir--;
+		  laTwomir = laTranslate[laTwomir]-1;
                   int type = (laTwomir % 3) + 1;
                   int when = laTwomir / 3;
                   char atEnd = (when < 2) ? 1 : 0;
@@ -6017,7 +6059,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                                                "TwoMirCutsL1");
                     accuracyFlag[numberGenerators] = 4;
                     doAtEnd[numberGenerators] = atEnd;
-                    switches[numberGenerators++] = atEnd ? 0 : 1;
+                    switches[numberGenerators++] = (atEnd ? 0 : 1) | 16384;
                   }
                   if ((type & 2) != 0) {
                     // simple
@@ -6026,7 +6068,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                                                "TwoMirCutsL2");
                     accuracyFlag[numberGenerators] = 4;
                     doAtEnd[numberGenerators] = atEnd;
-                    switches[numberGenerators++] = atEnd ? 0 : 1;
+                    switches[numberGenerators++] = (atEnd ? 0 : 1) | 32768;
                   }
                 }
               }
@@ -6047,7 +6089,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       ->setMaximumTries(maximumSlowPasses);
                   babModel_->cutGenerator(numberGenerators)->setHowOften(10);
                 }
-                switches[numberGenerators++] = 1;
+                switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN*lagrangeanFlag);
               }
 #endif
  	      assert (parameters[CbcParam::RESIDCAPCUTS]->modeVal()==residualCapacityMode);
@@ -6056,7 +6098,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                                            translate[residualCapacityMode],
                                            "ResidualCapacity");
                 accuracyFlag[numberGenerators] = 5;
-                switches[numberGenerators++] = 1;
+                switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN*lagrangeanFlag);
               }
               if (zerohalfMode) {
                 if (zerohalfMode > CbcParameters::CGForceOn) {
@@ -6068,7 +6110,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 accuracyFlag[numberGenerators] = 5;
                 babModel_->cutGenerator(numberGenerators)
                     ->setNeedsRefresh(true);
-                switches[numberGenerators++] = 2;
+                switches[numberGenerators++] = 2; //| (ALL_LAGRANGEAN*lagrangeanFlag);
               }
               if (dominatedCuts)
                 babModel_->setSpecialOptions(babModel_->specialOptions() | 64);
@@ -6081,9 +6123,18 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 CbcCutGenerator *generator =
                     babModel_->cutGenerator(iGenerator);
                 int howOften = generator->howOften();
-                if (howOften == -98 || howOften == -99 ||
-                    generator->maximumTries() > 0)
-                  generator->setSwitchOffIfLessThan(switches[iGenerator]);
+		int iSwitch = switches[iGenerator];
+		int iSwitch2, iSwitch3;
+		if (iSwitch>=0) {
+		  iSwitch2 = iSwitch&127;
+		  iSwitch3 = iSwitch & ~16383;
+		  // say if wants modified solver
+		  generator->setSwitches(generator->switches()|iSwitch3);
+		} else {
+		  iSwitch2 = iSwitch;
+		}
+                if (howOften == -98 || howOften == -99 || generator->maximumTries() > 0)
+                  generator->setSwitchOffIfLessThan(iSwitch2);
                 // Use if any at root as more likely later and fairly cheap
                 // if (switches[iGenerator]==-2)
                 // generator->setWhetherToUse(true);
@@ -6127,14 +6178,14 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               // if (babModel_->getNumCols()>10*babModel_->getNumRows())
               // babModel_->setNumberStrong(0);
               if (!parameters.noPrinting()) {
-                int iLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
+                int iLevel = parameters[CbcParam::LOGLEVEL]->intVal();
                 if (iLevel < 0) {
                   if (iLevel > -10) {
                     babModel_->setPrintingMode(1);
                   } else {
                     babModel_->setPrintingMode(2);
                     iLevel += 10;
-                    parameters[CbcParam::LPLOGLEVEL]->setVal(iLevel);
+                    parameters[CbcParam::LOGLEVEL]->setVal(iLevel);
                   }
                   iLevel = -iLevel;
                 }
@@ -10001,7 +10052,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
           } break;
           case CbcParam::MAXIMIZE:
-            lpSolver->setOptimizationDirection(-1);
+	    lpSolver->setOptimizationDirection(-1);
             break;
           case CbcParam::MINIMIZE:
             lpSolver->setOptimizationDirection(1);

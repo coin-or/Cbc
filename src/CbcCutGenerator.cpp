@@ -1520,12 +1520,16 @@ static OsiClpSolverInterface * lagrangeanSolver(OsiSolverInterface *solver,
 bool
 CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface *solver,
 			      CbcNode *node,
-			      OsiSolverInterface *baseLagrangeanSolver,
-			      OsiSolverInterface *cleanLagrangeanSolver)
+			      OsiSolverInterface **baseSolver,
+			      OsiSolverInterface **cleanSolver)
 {
   if (node)
     return generateCuts(cs, fullScan, solver, node);
   bool returnCode = false;
+  OsiSolverInterface *baseLagrangeanSolver =
+    *baseSolver;
+  OsiSolverInterface *cleanLagrangeanSolver =
+    *cleanSolver;
 #if 1
   //returnCode = generateCuts(cs, fullScan, solver, node);
   if (!returnCode && whatLagrangean() &&
@@ -1536,11 +1540,14 @@ CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface *sol
 	typeGenerate = 2;
 	cleanLagrangeanSolver =
 	  lagrangeanSolver(solver,model_->continuousSolver(),typeGenerate);
+	*cleanSolver = cleanLagrangeanSolver;
 	if (cleanLagrangeanSolver->getNumRows()==
 	    model_->continuousSolver()->getNumRows()) {
 	  // fake base to skip
-	  if (!baseLagrangeanSolver)
+	  if (!baseLagrangeanSolver) {
 	    baseLagrangeanSolver = new OsiClpSolverInterface();
+	    *baseSolver = baseLagrangeanSolver;
+	  }
 	}
       }
       returnCode = generateCuts(cs, fullScan, cleanLagrangeanSolver, node);
@@ -1550,6 +1557,7 @@ CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface *sol
 	typeGenerate = 1;
 	baseLagrangeanSolver =
 	  lagrangeanSolver(solver,model_->continuousSolver(),typeGenerate);
+	*baseSolver = baseLagrangeanSolver;
       }
       if (baseLagrangeanSolver->getNumRows())
 	returnCode = generateCuts(cs, fullScan, baseLagrangeanSolver, node);

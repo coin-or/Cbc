@@ -72,8 +72,8 @@ public:
 #ifdef CBC_LAGRANGEAN_SOLVERS
   bool generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface *solver,
 		    CbcNode *node,
-		    OsiSolverInterface *baseLagrangeanSolver,
-		    OsiSolverInterface *cleanLagrangeanSolver);
+		    OsiSolverInterface **baseLagrangeanSolver,
+		    OsiSolverInterface **cleanLagrangeanSolver);
 #endif
   //@}
 

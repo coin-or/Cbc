@@ -10453,8 +10453,8 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
       else
 	mustResolve =
 	  generator_[i]->generateCuts(theseCuts, fullScan, solver_, node,
-				      baseLagrangeanSolver,
-				      cleanLagrangeanSolver);
+				      &baseLagrangeanSolver,
+				      &cleanLagrangeanSolver);
 #endif
       numberRowCutsAfter = theseCuts.sizeRowCuts();
       if (fullScan && generator_[i]->howOften() == 1000000 + SCANCUTS_PROBING) {

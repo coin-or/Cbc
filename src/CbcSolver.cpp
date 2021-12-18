@@ -10371,7 +10371,8 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   int iStat2 = -1;
                   if (integerStatus >= 0) {
                     iStat = integerStatus;
-                    iStat2 = babModel_->secondaryStatus();
+                    iStat2 = babModel_ ? babModel_->secondaryStatus()
+		      : model_.secondaryStatus();
                   }
                   if (iStat == 0) {
                     fprintf(fp, "Optimal");

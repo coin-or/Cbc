@@ -15,7 +15,7 @@ lib_LTLIBRARIES = libOsiCbc.la
 libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
 
 # List all additionally required libraries
-libOsiCbc_la_LIBADD = ../libCbc.la
+libOsiCbc_la_LIBADD = ../libCbc.la ../libCbcSolver.la
 
 # This is for libtool
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)

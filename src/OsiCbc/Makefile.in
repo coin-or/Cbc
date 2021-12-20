@@ -154,10 +154,11 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includecoindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libOsiCbc_la_DEPENDENCIES = ../libCbc.la $(am__DEPENDENCIES_1) \
+libOsiCbc_la_DEPENDENCIES = ../libCbc.la ../libCbcSolver.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_libOsiCbc_la_OBJECTS = OsiCbcSolverInterface.lo
 libOsiCbc_la_OBJECTS = $(am_libOsiCbc_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -418,9 +419,9 @@ lib_LTLIBRARIES = libOsiCbc.la
 libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
 
 # List all additionally required libraries
-libOsiCbc_la_LIBADD = ../libCbc.la $(am__append_1) $(am__append_2) \
-	$(am__append_3) $(am__append_4) $(am__append_5) \
-	$(am__append_6) $(am__append_7)
+libOsiCbc_la_LIBADD = ../libCbc.la ../libCbcSolver.la $(am__append_1) \
+	$(am__append_2) $(am__append_3) $(am__append_4) \
+	$(am__append_5) $(am__append_6) $(am__append_7)
 
 # This is for libtool
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)

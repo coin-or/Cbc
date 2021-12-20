@@ -1659,154 +1659,172 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
-  --with-coinutils        Use CoinUtils. If an argument is given, 'yes' is
+  --without-coinutils     Do not use CoinUtils. If an argument is given to
+                          --with-coinutils, then 'yes' is
                           equivalent to --with-coinutils, 'no' is
-                          equivalent to --without-coinutils. Any other
-                          argument is applied as for --with-coinutils-lflags
+                          equivalent to --without-coinutils and any other
+                          argument is applied as for --with-coinutils-lflags.
   --with-coinutils-lflags Linker flags for CoinUtils appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-coinutils-cflags Compiler flags for CoinUtils appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-osi              Use Osi. If an argument is given, 'yes' is
-                          equivalent to --with-osi, 'no' is
-                          equivalent to --without-osi. Any other argument is
-                          applied as for --with-osi-lflags
+  --without-osi           Do not use Osi. If an argument is given to
+                          --with-osi, then 'yes' is equivalent to
+                          --with-osi, 'no' is equivalent to
+                          --without-osi and any other argument is applied as
+                          for --with-osi-lflags.
   --with-osi-lflags       Linker flags for Osi appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-osi-cflags       Compiler flags for Osi appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-cgl              Use Cgl. If an argument is given, 'yes' is
-                          equivalent to --with-cgl, 'no' is
-                          equivalent to --without-cgl. Any other argument is
-                          applied as for --with-cgl-lflags
+  --without-cgl           Do not use Cgl. If an argument is given to
+                          --with-cgl, then 'yes' is equivalent to
+                          --with-cgl, 'no' is equivalent to
+                          --without-cgl and any other argument is applied as
+                          for --with-cgl-lflags.
   --with-cgl-lflags       Linker flags for Cgl appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-cgl-cflags       Compiler flags for Cgl appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-clp              Use Clp. If an argument is given, 'yes' is
-                          equivalent to --with-clp, 'no' is
-                          equivalent to --without-clp. Any other argument is
-                          applied as for --with-clp-lflags
+  --without-clp           Do not use Clp. If an argument is given to
+                          --with-clp, then 'yes' is equivalent to
+                          --with-clp, 'no' is equivalent to
+                          --without-clp and any other argument is applied as
+                          for --with-clp-lflags.
   --with-clp-lflags       Linker flags for Clp appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-clp-cflags       Compiler flags for Clp appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-osiclp           Use OsiClp. If an argument is given, 'yes' is
-                          equivalent to --with-osiclp, 'no' is
-                          equivalent to --without-osiclp. Any other argument
-                          is applied as for --with-osiclp-lflags
+  --without-osiclp        Do not use OsiClp. If an argument is given to
+                          --with-osiclp, then 'yes' is equivalent
+                          to --with-osiclp, 'no' is equivalent to
+                          --without-osiclp and any other argument is applied
+                          as for --with-osiclp-lflags.
   --with-osiclp-lflags    Linker flags for OsiClp appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-osiclp-cflags    Compiler flags for OsiClp appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-asl              Use ASL. If an argument is given, 'yes' is
-                          equivalent to --with-asl, 'no' is
-                          equivalent to --without-asl. Any other argument is
-                          applied as for --with-asl-lflags
+  --without-asl           Do not use ASL. If an argument is given to
+                          --with-asl, then 'yes' is equivalent to
+                          --with-asl, 'no' is equivalent to
+                          --without-asl and any other argument is applied as
+                          for --with-asl-lflags.
   --with-asl-lflags       Linker flags for ASL appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-asl-cflags       Compiler flags for ASL appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-nauty            Use Nauty. If an argument is given, 'yes' is
-                          equivalent to --with-nauty, 'no' is
-                          equivalent to --without-nauty. Any other argument is
-                          applied as for --with-nauty-lflags
+  --without-nauty         Do not use Nauty. If an argument is given to
+                          --with-nauty, then 'yes' is equivalent
+                          to --with-nauty, 'no' is equivalent to
+                          --without-nauty and any other argument is applied as
+                          for --with-nauty-lflags.
   --with-nauty-lflags     Linker flags for Nauty appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-nauty-cflags     Compiler flags for Nauty appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-ositests         Use OsiTests. If an argument is given, 'yes' is
+  --without-ositests      Do not use OsiTests. If an argument is given to
+                          --with-ositests, then 'yes' is
                           equivalent to --with-ositests, 'no' is
-                          equivalent to --without-ositests. Any other argument
-                          is applied as for --with-ositests-lflags
+                          equivalent to --without-ositests and any other
+                          argument is applied as for --with-ositests-lflags.
   --with-ositests-lflags  Linker flags for OsiTests appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-ositests-cflags  Compiler flags for OsiTests appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-sample           Use Sample. If an argument is given, 'yes' is
-                          equivalent to --with-sample, 'no' is
-                          equivalent to --without-sample. Any other argument
-                          is applied as for --with-sample-data
+  --without-sample        Do not use Sample. If an argument is given to
+                          --with-sample, then 'yes' is equivalent
+                          to --with-sample, 'no' is equivalent to
+                          --without-sample and any other argument is applied
+                          as for --with-sample-data.
   --with-sample-data      A data directory specification for Sample
                           appropriate for your environment.
-  --with-netlib           Use Netlib. If an argument is given, 'yes' is
-                          equivalent to --with-netlib, 'no' is
-                          equivalent to --without-netlib. Any other argument
-                          is applied as for --with-netlib-data
+  --without-netlib        Do not use Netlib. If an argument is given to
+                          --with-netlib, then 'yes' is equivalent
+                          to --with-netlib, 'no' is equivalent to
+                          --without-netlib and any other argument is applied
+                          as for --with-netlib-data.
   --with-netlib-data      A data directory specification for Netlib
                           appropriate for your environment.
-  --with-miplib3          Use Miplib3. If an argument is given, 'yes' is
-                          equivalent to --with-miplib3, 'no' is
-                          equivalent to --without-miplib3. Any other argument
-                          is applied as for --with-miplib3-data
+  --without-miplib3       Do not use Miplib3. If an argument is given to
+                          --with-miplib3, then 'yes' is equivalent
+                          to --with-miplib3, 'no' is equivalent to
+                          --without-miplib3 and any other argument is applied
+                          as for --with-miplib3-data.
   --with-miplib3-data     A data directory specification for Miplib3
                           appropriate for your environment.
-  --with-osidylp          Use OsiDyLP. If an argument is given, 'yes' is
-                          equivalent to --with-osidylp, 'no' is
-                          equivalent to --without-osidylp. Any other argument
-                          is applied as for --with-osidylp-lflags
+  --without-osidylp       Do not use OsiDyLP. If an argument is given to
+                          --with-osidylp, then 'yes' is equivalent
+                          to --with-osidylp, 'no' is equivalent to
+                          --without-osidylp and any other argument is applied
+                          as for --with-osidylp-lflags.
   --with-osidylp-lflags   Linker flags for OsiDyLP appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-osidylp-cflags   Compiler flags for OsiDyLP appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-osicpx           Use OsiCpx. If an argument is given, 'yes' is
-                          equivalent to --with-osicpx, 'no' is
-                          equivalent to --without-osicpx. Any other argument
-                          is applied as for --with-osicpx-lflags
+  --without-osicpx        Do not use OsiCpx. If an argument is given to
+                          --with-osicpx, then 'yes' is equivalent
+                          to --with-osicpx, 'no' is equivalent to
+                          --without-osicpx and any other argument is applied
+                          as for --with-osicpx-lflags.
   --with-osicpx-lflags    Linker flags for OsiCpx appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-osicpx-cflags    Compiler flags for OsiCpx appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-osiglpk          Use OsiGlpk. If an argument is given, 'yes' is
-                          equivalent to --with-osiglpk, 'no' is
-                          equivalent to --without-osiglpk. Any other argument
-                          is applied as for --with-osiglpk-lflags
+  --without-osiglpk       Do not use OsiGlpk. If an argument is given to
+                          --with-osiglpk, then 'yes' is equivalent
+                          to --with-osiglpk, 'no' is equivalent to
+                          --without-osiglpk and any other argument is applied
+                          as for --with-osiglpk-lflags.
   --with-osiglpk-lflags   Linker flags for OsiGlpk appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-osiglpk-cflags   Compiler flags for OsiGlpk appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-osimsk           Use OsiMsk. If an argument is given, 'yes' is
-                          equivalent to --with-osimsk, 'no' is
-                          equivalent to --without-osimsk. Any other argument
-                          is applied as for --with-osimsk-lflags
+  --without-osimsk        Do not use OsiMsk. If an argument is given to
+                          --with-osimsk, then 'yes' is equivalent
+                          to --with-osimsk, 'no' is equivalent to
+                          --without-osimsk and any other argument is applied
+                          as for --with-osimsk-lflags.
   --with-osimsk-lflags    Linker flags for OsiMsk appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-osimsk-cflags    Compiler flags for OsiMsk appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-osispx           Use OsiSpx. If an argument is given, 'yes' is
-                          equivalent to --with-osispx, 'no' is
-                          equivalent to --without-osispx. Any other argument
-                          is applied as for --with-osispx-lflags
+  --without-osispx        Do not use OsiSpx. If an argument is given to
+                          --with-osispx, then 'yes' is equivalent
+                          to --with-osispx, 'no' is equivalent to
+                          --without-osispx and any other argument is applied
+                          as for --with-osispx-lflags.
   --with-osispx-lflags    Linker flags for OsiSpx appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-osispx-cflags    Compiler flags for OsiSpx appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-cplex            Use Cplex. If an argument is given, 'yes' is
-                          equivalent to --with-cplex, 'no' is
-                          equivalent to --without-cplex. Any other argument is
-                          applied as for --with-cplex-lflags
+  --without-cplex         Do not use Cplex. If an argument is given to
+                          --with-cplex, then 'yes' is equivalent
+                          to --with-cplex, 'no' is equivalent to
+                          --without-cplex and any other argument is applied as
+                          for --with-cplex-lflags.
   --with-cplex-lflags     Linker flags for Cplex appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-cplex-cflags     Compiler flags for Cplex appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-glpk             Use Glpk. If an argument is given, 'yes' is
-                          equivalent to --with-glpk, 'no' is
-                          equivalent to --without-glpk. Any other argument is
-                          applied as for --with-glpk-lflags
+  --without-glpk          Do not use Glpk. If an argument is given to
+                          --with-glpk, then 'yes' is equivalent to
+                          --with-glpk, 'no' is equivalent to
+                          --without-glpk and any other argument is applied as
+                          for --with-glpk-lflags.
   --with-glpk-lflags      Linker flags for Glpk appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-glpk-cflags      Compiler flags for Glpk appropriate for your
@@ -1815,10 +1833,12 @@ Optional Packages:
   --with-cbc-generic-solver
                           specify default solver for cbc-generic in lower case
                           letters (if not given, clp is assumed)
-  --with-pthreadsw32      Use pthreadsw32. If an argument is given, 'yes' is
+  --without-pthreadsw32   Do not use pthreadsw32. If an argument is given to
+                          --with-pthreadsw32, then 'yes' is
                           equivalent to --with-pthreadsw32, 'no'
-                          is equivalent to --without-pthreadsw32. Any other
-                          argument is applied as for --with-pthreadsw32-lflags
+                          is equivalent to --without-pthreadsw32 and any other
+                          argument is applied as for
+                          --with-pthreadsw32-lflags.
   --with-pthreadsw32-lflags
                           Linker flags for pthreadsw32 appropriate for your
                           environment. (Most often, -l specs for libraries.)

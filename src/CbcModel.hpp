@@ -260,6 +260,8 @@ private:
     int &numberNodesOutput, int &status);
   /// Update size of whichGenerator
   void resizeWhichGenerator(int numberNow, int numberAfter);
+  /// One last go at cuts
+  int oneLastGoAtCuts(OsiCuts &cuts, int typeGo);
 
 public:
 #ifdef CBC_KEEP_DEPRECATED
@@ -2187,6 +2189,9 @@ public:
 	21 bit 2097152 - analyze changed priorities but were equal before
 	22 bit 4194304 - ignore cutoff increment in multiple root solvers
 	23 bit (8388608) - no crunch
+	25 bit 33554432 - also 26,27 lagrangean cuts
+	28 bit 268435456 - alternative lagrangean cuts
+	29 bit 536870912 - one shot of less useful cuts
     */
   inline void setMoreSpecialOptions2(int value)
   {

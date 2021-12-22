@@ -1573,7 +1573,9 @@ void CbcParameters::addCbcSolverIntParams() {
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero1#More strong branching at root node",8192);
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero2#More strong branching at root node - more",16384);
   parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("nodezero3#More strong branching at root node - yet more",24578);
-  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("lagrangean#lagrangean cuts at end of root cuts",234881024);
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("lagrangean1#lagrangean cuts at end of root cuts",234881024);
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("lagrangean2#lagrangean cuts at end of root cuts",268435456);
+  parameters_[CbcParam::MOREMOREMIPOPTIONS]->appendKwd("lessused#less used cuts at beginning of root cuts",536870912);
   parameters_[CbcParam::MULTIPLEROOTS]->setup(
       "multiple!RootPasses",
       "Do multiple root passes to collect cuts and solutions", 0, COIN_INT_MAX,

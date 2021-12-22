@@ -9408,8 +9408,8 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 	  if (!currentDepth_ && (specialOptions_&2048)==0 &&
 	      (moreSpecialOptions2_&(7*33554432)) == 7*33554432
 	      && currentPassNumber_ < 99999) {
-	    numberTries= 4;
-	    printf("Trying lagrangean\n");
+	    numberTries= 6;
+	    //printf("Trying lagrangean\n");
 	    currentPassNumber_ += 100000;
 	  }
         }
@@ -9452,11 +9452,68 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         !numberNodes_) {
       for (int i = 0; i < numberCutGenerators_; i++) {
         if (generator_[i]->whetherCallAtEnd()
-	    && !generator_[i]->whetherInMustCallAgainMode()) {
+	    && !generator_[i]->whetherInMustCallAgainMode()
+	    && currentPassNumber_<9999) {
           // give it some goes and switch off
           numberTries = (saveNumberTries + 4) / 5;
           generator_[i]->setWhetherCallAtEnd(false);
         }
+      }
+      if (!numberTries && (moreSpecialOptions2_&(268435456|536870912)) !=0) {
+	// one last go or one first go
+	int typeGo;
+	if ((moreSpecialOptions2_&536870912)!=0) {
+	  moreSpecialOptions2_ &= ~536870912;
+	  typeGo = 1;
+	} else {
+	  typeGo = 2;
+	  moreSpecialOptions2_ &= ~268435456;
+	} 
+	OsiCuts cuts;
+	int numberNew = oneLastGoAtCuts(cuts,typeGo);
+	int numberColumnCuts = cuts.sizeColCuts();
+	if (numberNew || numberColumnCuts) {
+	  char printLine[100];
+	  sprintf(printLine,"%d row cuts and %d column cuts created by %s pass",numberNew,numberColumnCuts, typeGo ? "first" : "lagrangean");
+	  messageHandler()->message(CBC_FPUMP1, messages())
+	      << printLine << CoinMessageEol ;
+	}
+	if (numberColumnCuts) {
+	  double integerTolerance = getDblParam(CbcIntegerTolerance);
+	  for (int i = 0; i < numberColumnCuts; i++) {
+	    const OsiColCut *thisCut = cuts.colCutPtr(i);
+	    const CoinPackedVector &lbs = thisCut->lbs();
+	    const CoinPackedVector &ubs = thisCut->ubs();
+	    int j;
+	    int n;
+	    const int *which;
+	    const double *values;
+	    n = lbs.getNumElements();
+	    which = lbs.getIndices();
+	    values = lbs.getElements();
+	    for (j = 0; j < n; j++) {
+	      int iColumn = which[j];
+	      solver_->setColLower(iColumn, values[j]);
+	    }
+	    n = ubs.getNumElements();
+	    which = ubs.getIndices();
+	    values = ubs.getElements();
+	    for (j = 0; j < n; j++) {
+	      int iColumn = which[j];
+	      solver_->setColUpper(iColumn, values[j]);
+	    }
+	  }
+	}
+	if (typeGo==2) {
+	  if (numberNew) {
+	    // add to global cuts
+	    for (int i=0;i<numberNew;i++) {
+	      OsiRowCut &rc = cuts.rowCut(i);
+	      globalCuts_.addCutIfNotDuplicate(rc);
+	    }
+	    numberTries=1;
+	  }
+	}
       }
     }
   } while ((numberTries > 0 || keepGoing) && (!this->maximumSecondsReached()));

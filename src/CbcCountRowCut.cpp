@@ -120,6 +120,135 @@ bool CbcCountRowCut::canDropCut(const OsiSolverInterface *solver, int iRow) cons
     return false;
   }
 }
+static double multiplier[] = { 1.23456789e2, -9.87654321 };
+static int hashCut(const OsiRowCut2 &x, int size)
+{
+  int xN = x.row().getNumElements();
+  double xLb = x.lb();
+  double xUb = x.ub();
+  const int *xIndices = x.row().getIndices();
+  const double *xElements = x.row().getElements();
+  unsigned int hashValue;
+  double value = 1.0;
+  if (xLb > -1.0e10)
+    value += xLb * multiplier[0];
+  if (xUb < 1.0e10)
+    value += xUb * multiplier[1];
+  for (int j = 0; j < xN; j++) {
+    int xColumn = xIndices[j];
+    double xValue = xElements[j];
+    int k = (j & 1);
+    value += (j + 1) * multiplier[k] * (xColumn + 1) * xValue;
+  }
+  // should be compile time but too lazy for now
+  union {
+    double d;
+    unsigned int i[2];
+  } xx;
+  if (sizeof(value) > sizeof(hashValue)) {
+    assert(sizeof(value) == 2 * sizeof(hashValue));
+    xx.d = value;
+    hashValue = (xx.i[0] + xx.i[1]);
+  } else {
+    assert(sizeof(value) == sizeof(hashValue));
+    xx.d = value;
+    hashValue = xx.i[0];
+  }
+  return hashValue % (size);
+}
+static int hashCut2(const OsiRowCut2 &x, int size)
+{
+  int xN = x.row().getNumElements();
+  double xLb = x.lb();
+  double xUb = x.ub();
+  const int *xIndices = x.row().getIndices();
+  const double *xElements = x.row().getElements();
+  unsigned int hashValue;
+  double value = 1.0;
+  if (xLb > -1.0e10)
+    value += xLb * multiplier[0];
+  if (xUb < 1.0e10)
+    value += xUb * multiplier[1];
+  for (int j = 0; j < xN; j++) {
+    int xColumn = xIndices[j];
+    double xValue = xElements[j];
+    int k = (j & 1);
+    value += (j + 1) * multiplier[k] * (xColumn + 1) * xValue;
+  }
+  // should be compile time but too lazy for now
+  if (sizeof(value) > sizeof(hashValue)) {
+    assert(sizeof(value) == 2 * sizeof(hashValue));
+    union {
+      double d;
+      unsigned int i[2];
+    } xx;
+    xx.d = value;
+    hashValue = (xx.i[0] + xx.i[1]);
+  } else {
+    assert(sizeof(value) == sizeof(hashValue));
+    union {
+      double d;
+      unsigned int i[2];
+    } xx;
+    xx.d = value;
+    hashValue = xx.i[0];
+  }
+  return hashValue % (size);
+}
+static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
+{
+  int xN = x.row().getNumElements();
+  int yN = y.row().getNumElements();
+  bool identical = false;
+  if (xN == yN) {
+    double xLb = x.lb();
+    double xUb = x.ub();
+    double yLb = y.lb();
+    double yUb = y.ub();
+    if (fabs(xLb - yLb) < 1.0e-8 && fabs(xUb - yUb) < 1.0e-8) {
+      const int *xIndices = x.row().getIndices();
+      const double *xElements = x.row().getElements();
+      const int *yIndices = y.row().getIndices();
+      const double *yElements = y.row().getElements();
+      int j;
+      for (j = 0; j < xN; j++) {
+        if (xIndices[j] != yIndices[j])
+          break;
+        if (fabs(xElements[j] - yElements[j]) > 1.0e-12)
+          break;
+      }
+      identical = (j == xN);
+    }
+  }
+  return identical;
+}
+static bool same2(const OsiRowCut2 &x, const OsiRowCut2 &y)
+{
+  int xN = x.row().getNumElements();
+  int yN = y.row().getNumElements();
+  bool identical = false;
+  if (xN == yN) {
+    double xLb = x.lb();
+    double xUb = x.ub();
+    double yLb = y.lb();
+    double yUb = y.ub();
+    if (fabs(xLb - yLb) < 1.0e-8 && fabs(xUb - yUb) < 1.0e-8) {
+      const int *xIndices = x.row().getIndices();
+      const double *xElements = x.row().getElements();
+      const int *yIndices = y.row().getIndices();
+      const double *yElements = y.row().getElements();
+      int j;
+      for (j = 0; j < xN; j++) {
+        if (xIndices[j] != yIndices[j])
+          break;
+        if (fabs(xElements[j] - yElements[j]) > 1.0e-12)
+          break;
+      }
+      identical = (j == xN);
+    }
+  }
+  return identical;
+}
 CbcRowCuts::CbcRowCuts(int initialMaxSize, int hashMultiplier)
 {
   numberCuts_ = 0;
@@ -471,14 +600,14 @@ int CbcRowCuts::addCutIfNotDuplicateWhenGreedy(const OsiRowCut &cut, int whichTy
     lastHash_ = -1;
     for (int i = 0; i < numberCuts_; i++) {
       temp[i] = rowCut_[i];
-      int ipos = hashCut(*temp[i], hashSize);
+      int ipos = hashCut2(*temp[i], hashSize);
       int found = -1;
       int jpos = ipos;
       while (true) {
         int j1 = hash_[ipos].index;
 
         if (j1 >= 0) {
-          if (!same(*temp[i], *temp[j1])) {
+          if (!same2(*temp[i], *temp[j1])) {
             int k = hash_[ipos].next;
             if (k != -1)
               ipos = k;
@@ -534,14 +663,14 @@ int CbcRowCuts::addCutIfNotDuplicateWhenGreedy(const OsiRowCut &cut, int whichTy
     newCut.setLb(newLb);
     newCut.setUb(newUb);
     newCut.setRow(vector);
-    int ipos = hashCut(newCut, hashSize);
+    int ipos = hashCut2(newCut, hashSize);
     int found = -1;
     int jpos = ipos;
     while (true) {
       int j1 = hash_[ipos].index;
 
       if (j1 >= 0) {
-        if (!same(newCut, *rowCut_[j1])) {
+        if (!same2(newCut, *rowCut_[j1])) {
           int k = hash_[ipos].next;
           if (k != -1)
             ipos = k;

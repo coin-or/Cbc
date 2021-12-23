@@ -9459,6 +9459,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           generator_[i]->setWhetherCallAtEnd(false);
         }
       }
+#ifdef CBC_LAGRANGEAN_SOLVERS
       if (!numberTries && (moreSpecialOptions2_&(268435456|536870912)) !=0) {
 	// one last go or one first go
 	int typeGo;
@@ -9515,6 +9516,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 	  }
 	}
       }
+#endif
     }
   } while ((numberTries > 0 || keepGoing) && (!this->maximumSecondsReached()));
   /*

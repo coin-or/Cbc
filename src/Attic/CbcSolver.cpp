@@ -8659,9 +8659,15 @@ int CbcMain1(int argc, const char *argv[],
                   keepImportNames != 0,
                   allowImportErrors != 0);
               } else if (gmpl > 0) {
+#ifdef COINUTILS_HAS_GLPK
                 status = lpSolver->readGMPL(fileName.c_str(),
                   (gmpl == 2) ? gmplData.c_str() : NULL,
                   keepImportNames != 0);
+#else
+                 std::cout << "Cbc was not built with GMPL support. Exiting.\n"
+                  << std::endl;
+                     abort();
+#endif
               } else {
 #ifdef KILL_ZERO_READLP
                 status = clpSolver->readLp(fileName.c_str(), lpSolver->getSmallElementValue());

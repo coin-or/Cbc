@@ -3357,7 +3357,7 @@ fi
       : ${FFLAGS:="-nologo -fpp -Z7 -MDd $ADD_FFLAGS"}
       : ${FCFLAGS:="-nologo -fpp -Z7 -MDd $ADD_FCFLAGS"}
       : ${CFLAGS:="-nologo -Z7 -MDd $ADD_CFLAGS"}
-      : ${CXXFLAGS:="-nologo -EHs -Z7 -MDd $ADD_CXXFLAGS"}
+      : ${CXXFLAGS:="-nologo -EHs -Z7 -MDd -Zc:__cplusplus $ADD_CXXFLAGS"}
     else
       : ${FFLAGS:="-g $ADD_FFLAGS"}
       : ${FCFLAGS:="-g $ADD_FCFLAGS"}
@@ -3369,7 +3369,7 @@ fi
       : ${FFLAGS:="-nologo -fpp -O2 -MD $ADD_FFLAGS"}
       : ${FCFLAGS:="-nologo -fpp -O2 -MD $ADD_FCFLAGS"}
       : ${CFLAGS:="-nologo -DNDEBUG -O2 -MD $ADD_CFLAGS"}
-      : ${CXXFLAGS:="-nologo -EHs -DNDEBUG -O2 -MD $ADD_CXXFLAGS"}
+      : ${CXXFLAGS:="-nologo -EHs -DNDEBUG -O2 -MD -Zc:__cplusplus $ADD_CXXFLAGS"}
     else
       : ${FFLAGS:="-O2 $ADD_FFLAGS"}
       : ${FCFLAGS:="-O2 $ADD_FCFLAGS"}
@@ -22447,6 +22447,8 @@ printf %s "checking for library pthreadsw32 with link check... " >&6; }
 
 
 
+
+
   coin_has_pthreadsw32=noInfo
   if test x"$COIN_SKIP_PROJECTS" != x ; then
     for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
@@ -22655,6 +22657,8 @@ printf "%s\n" "#define CBC_HAS_PTHREADSW32 1" >>confdefs.h
 
     CBCLIB_LFLAGS="$pthreadsw32_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$pthreadsw32_cflags $CBCLIB_CFLAGS"
+      CBCSOLVERLIB_LFLAGS="$pthreadsw32_lflags $CBCSOLVERLIB_LFLAGS"
+       CBCSOLVERLIB_CFLAGS="$pthreadsw32_cflags $CBCSOLVERLIB_CFLAGS"
 
 
 

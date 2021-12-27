@@ -2115,7 +2115,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             */
       int problemType = model->problemType();
       bool canDoOneHot = false;
-     // if all dynamic get more information
+      // if all dynamic get more information
       usefulDynamic * otherInfo = NULL;
 #if FIXED_BOTH_WAYS
       if (model->allDynamic())
@@ -2547,7 +2547,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       int n = numberToDo;
       numberToDo = 0;
       double best=0.0;
-      iBestGot = -1;
+      // leave as is iBestGot = -1;
       int loN = 999999;
       int hiN = 0;
       for (int i=0;i<n;i++) {
@@ -2580,7 +2580,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 	n = numberToDo;
 	numberToDo = 0;
 	double best=0.0;
-	iBestGot = -1;
+	// leave as is iBestGot = -1;
 	for (int i=0;i<n;i++) {
 	  int iObject = whichObject[i];
 	  int nOrbits = symmetryType[i]>>16;

@@ -40,7 +40,7 @@ void CbcSymmetry::Node::node(int i, double c, double l, double u, int cod, int s
   sign = s;
 }
 
-inline bool CbcSymmetry::compare(register Node &a, register Node &b) const
+inline bool CbcSymmetry::compare(Node &a, Node &b) const
 {
   if (a.get_code() == b.get_code())
     if (a.get_coeff() == b.get_coeff())

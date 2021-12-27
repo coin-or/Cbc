@@ -4663,8 +4663,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     OsiClpSolverInterface *osiclp =
                         dynamic_cast<OsiClpSolverInterface *>(saveSolver);
                     osiclp->setSpecialOptions(osiclp->specialOptions() | 1024);
+		    osiclp->getModelPtr()->setClpScaledMatrix(NULL); // safer
                     int savePerturbation =
-                        osiclp->getModelPtr()->perturbation();
+                       osiclp->getModelPtr()->perturbation();
                     //#define CBC_TEMP1
 #ifdef CBC_TEMP1
                     if (savePerturbation == 50)
@@ -4841,19 +4842,16 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #endif
                 if (preProcess == 2 || preProcess >= 10) {
                   // names are wrong - redo
-		  // const int *originalColumns = process.originalColumns();
+		  const int *originalColumns = process.originalColumns();
                   int numberColumns = solver2->getNumCols();
-                  //OsiSolverInterface *originalSolver = model.solver();
-		  //int numberOriginalColumns = originalSolver->getNumCols(); 
+                  OsiSolverInterface *originalSolver = model.solver();
+		  int numberOriginalColumns = originalSolver->getNumCols(); 
                   for (int i = 0; i < numberColumns; i++) {
-                    //int iColumn = originalColumns[i];
-		    //if (iColumn<numberOriginalColumns)
-		    char name[10];
-		    sprintf(name,"C%7d",i);
-		    solver2->setColName(i, name);
+                    int iColumn = originalColumns[i];
+		    if (iColumn<numberOriginalColumns)
+		      solver2->setColName(i, originalSolver->getColName(iColumn));
                   }
-                  OsiClpSolverInterface *clpSolver2 =
-                      dynamic_cast<OsiClpSolverInterface *>(solver2);
+                  OsiClpSolverInterface *clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(solver2);
                   ClpSimplex *lpSolver = clpSolver2->getModelPtr();
                   char name[100];
                   if (preProcess == 2) {
@@ -6555,6 +6553,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 			}
 		      }
 		      delete [] sosObjects;
+		    }
+		    /* But this is outside branchAndBound so needs to know 
+		       about direction */
+		    if (babModel_->getObjSense()==-1.0) {
+		      double increment = obj-babModel_->getCutoff();
+		      babModel_->setCutoff(-obj-increment);
+		      babModel_->setMinimizationObjValue(-obj);
 		    }
                     /* But this is outside branchAndBound so needs to know
                        about direction */

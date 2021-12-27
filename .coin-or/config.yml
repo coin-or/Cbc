@@ -12,9 +12,7 @@ Description:
   License: Eclipse Public License 2.0
   LicenseURL: http://www.opensource.org/licenses/EPL-2.0
   Zenodo: 173509563
-  Appveyor:
-    Status: chribnemsgm9th0x
-  Bintray:
+  IncludedIn:
     Package: Cbc
   Language:
     - C++
@@ -24,7 +22,7 @@ Description:
 Dependencies:
   - Description: ThirdParty wrapper for building ASL
     URL: https://github.com/coin-or-tools/ThirdParty-ASL
-    Version: master
+    Version: stable/2.0
     Required: Optional
   - Description: ThirdParty wrapper for building Glpk
     URL: https://github.com/coin-or-tools/ThirdParty-Glpk
@@ -32,7 +30,7 @@ Dependencies:
     Required: Optional
   - Description: ThirdParty wrapper for building Mumps
     URL: https://github.com/coin-or-tools/ThirdParty-Mumps
-    Version: master
+    Version: stable/3.0
     Required: Optional
   - Description: Sample data files
     URL: https://github.com/coin-or-tools/Data-Sample

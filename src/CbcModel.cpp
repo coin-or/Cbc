@@ -1877,6 +1877,9 @@ void CbcModel::branchAndBound(int doStatistics)
       else
         dblParam_[CbcStartSeconds] = CoinGetTimeOfDay();
     }
+    //numberCutGenerators_=0;
+    //printf("zzzzz\n");
+    //getchar();
   }
   dblParam_[CbcSmallestChange] = COIN_DBL_MAX;
   dblParam_[CbcSumChange] = 0.0;
@@ -2146,7 +2149,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CLIQUE_ANALYSIS
   // set up for probing
   // If we're doing clever stuff with cliques, additional info here.
-  if (!parentModel_)
+  if ((specialOptions_&2048)==0)
     probingInfo_ = new CglTreeProbingInfo(solver_);
   else
     probingInfo_ = NULL;

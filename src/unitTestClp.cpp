@@ -174,7 +174,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 	found = foundm+1;
 	foundc = sub.find(",",found);
 	int hi;
-	std::istringstream(sub.substr(found,foundm)) >> hi;
+	std::istringstream(sub.substr(found,foundc)) >> hi;
 	if (hi>30 || hi <0) {
 	  std::cout << "Unable to convert to integer " << sub.substr(found)
 		    << std::endl;

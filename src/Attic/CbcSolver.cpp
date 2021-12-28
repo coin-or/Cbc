@@ -7203,9 +7203,17 @@ int CbcMain1(int argc, const char *argv[],
                 }
 #elif CBC_OTHER_SOLVER == 1
 #endif
-                if ((experimentFlag >= 1 || strategyFlag >= 1) && babModel_->fastNodeDepth() == -1) {
-                  if (babModel_->solver()->getNumCols() + babModel_->solver()->getNumRows() < 500)
-                    babModel_->setFastNodeDepth(-12);
+                if ((experimentFlag >= 1 || strategyFlag >= 1) &&
+                    abs(babModel_->fastNodeDepth()) == 1) {
+		  int iType = babModel_->fastNodeDepth();
+		  int iDepth = iType <0 ? -12 : 10;
+                  if (babModel_->solver()->getNumCols() +
+                          babModel_->solver()->getNumRows() <
+                      500) {
+                    babModel_->setFastNodeDepth(iDepth);
+		  } else {
+                    babModel_->setFastNodeDepth(-1); // not sure about when +1
+		  }
                 } else if (babModel_->fastNodeDepth() == -999) {
                   babModel_->setFastNodeDepth(-1);
                 }

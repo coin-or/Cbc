@@ -7206,10 +7206,10 @@ int CbcMain1(int argc, const char *argv[],
                 if ((experimentFlag >= 1 || strategyFlag >= 1) &&
                     abs(babModel_->fastNodeDepth()) == 1) {
 		  int iType = babModel_->fastNodeDepth();
-		  int iDepth = iType <0 ? -12 : 10;
+		  int iDepth = iType <0 ? -12 : 8;
+		  int iSize = iType <0 ? 10000 : 500; 
                   if (babModel_->solver()->getNumCols() +
-                          babModel_->solver()->getNumRows() <
-                      500) {
+                          babModel_->solver()->getNumRows() < iSize) {
                     babModel_->setFastNodeDepth(iDepth);
 		  } else {
                     babModel_->setFastNodeDepth(-1); // not sure about when +1

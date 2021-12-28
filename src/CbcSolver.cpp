@@ -1416,7 +1416,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     CglBKClique bkCliqueGen;
     int  bkPivotingStrategy = 3, maxCallsBK = 1000, bkClqExtMethod = 4;
     int cliqueMode = parameters[CbcParam::CLIQUECUTS]->modeVal();
-    bool oldCliqueMode = cliqueMode;
+    int oldCliqueMode = cliqueMode;
     CglOddWheel oddWheelGen;
     int oddWheelMode = CbcParameters::CGIfMove, oddWExtMethod = 2;
     assert (parameters[CbcParam::ODDWHEELCUTS]->modeVal()==oddWheelMode);
@@ -5910,7 +5910,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 babModel_->addCutGenerator(
                     &knapsackGen, translate[knapsackMode], "Knapsack");
                 accuracyFlag[numberGenerators] = 1;
-                switches[numberGenerators++] = 0;
+                switches[numberGenerators++] = -2;
               }
               if (redsplitMode && !complicatedInteger) {
                 babModel_->addCutGenerator(&redsplitGen,
@@ -7591,11 +7591,16 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #elif CBC_OTHER_SOLVER == 1
 #endif
                 if ((experimentFlag >= 1 || strategyFlag >= 1) &&
-                    babModel_->fastNodeDepth() == -1) {
+                    abs(babModel_->fastNodeDepth()) == 1) {
+		  int iType = babModel_->fastNodeDepth();
+		  int iDepth = iType <0 ? -12 : 10;
                   if (babModel_->solver()->getNumCols() +
                           babModel_->solver()->getNumRows() <
-                      500)
-                    babModel_->setFastNodeDepth(-12);
+                      500) {
+                    babModel_->setFastNodeDepth(iDepth);
+		  } else {
+                    babModel_->setFastNodeDepth(-1); // not sure about when +1
+		  }
                 } else if (babModel_->fastNodeDepth() == -999) {
                   babModel_->setFastNodeDepth(-1);
                 }

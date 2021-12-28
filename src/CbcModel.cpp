@@ -9944,7 +9944,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 	  printf("CbC %s after cuts %d rows, %d columns fixed, obj %g\n",
 		 simplex->problemName().c_str(),numberRows,
 		 numberFixed,simplex->objectiveValue());
-      }
+      } 
 #endif
       // do heuristics again! if feasibility pump still exists
       if ((specialOptions_ & 33554432) != 0 && !parentModel_) {
@@ -15837,15 +15837,19 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
         if (oldNode && (oldNode->depth() == -2 || oldNode->depth() == 4))
           diving = true;
       }
-      if (totalNodes * 40 < totalIterations || numberNodes_ < 1000) {
+      int nodeThreshold = (stateOfSearch_<2) ? 1000 : 250;
+      if (totalNodes * 40 < totalIterations || numberNodes_ < nodeThreshold) {
         doClp = false;
-        //} else if
-        //(oldNode&&fastNodeDepth_>=0&&oldNode->depth()>=testDepth&&(specialOptions_&2048)==0)
-        //{ printf("size %d %d - cuts %d - nodes %d its %d
-        // %c\n",solver_->getNumRows(),
-        //     solver_->getNumCols(),cuts.sizeRowCuts(),
-        //     totalNodes,totalIterations,doClp ? 'Y' : 'N');
       }
+#if 0
+      else if (oldNode&&fastNodeDepth_>=0&&oldNode->depth()>=testDepth&&(specialOptions_&2048)==0) {
+        printf("size %d %d - nodes %d its %d (avgits %d) %c\n",
+	       solver_->getNumRows(),
+	       solver_->getNumCols(),
+	       totalNodes,totalIterations,totalIterations/totalNodes,
+	       doClp ? 'Y' : 'N');
+      }
+#endif
       if (oldNode &&
           ((fastNodeDepth_ >= 0 && oldNode->depth() >= testDepth && doClp) ||
            diving) &&

@@ -5935,7 +5935,7 @@ void CbcModel::branchAndBound(int doStatistics)
   }
 #endif
   if ((fastNodeDepth_ >= 1000000 || (moreSpecialOptions_ & 33554432) != 0) &&
-      !parentModel_) {
+      (specialOptions_&2048) == 0) {
     // delete object off end
     delete object_[numberObjects_];
     if ((moreSpecialOptions_ & 33554432) == 0)

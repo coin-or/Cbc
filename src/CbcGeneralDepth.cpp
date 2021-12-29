@@ -191,6 +191,7 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
         info->presolveType_ = 1;
         delete[] down;
         delete[] up;
+	delete[] priority;
         delete[] numberDown;
         delete[] numberUp;
         delete[] numberDownInfeasible;

@@ -1546,7 +1546,7 @@ void CbcParameters::addCbcSolverIntParams() {
       "more information.");
 
   parameters_[CbcParam::LPLOGLEVEL]->setup(
-      "log!Level", "Level of detail in LP solver output.", -1, 999999,
+      "lplog!Level", "Level of detail in LP solver output.", -1, 999999,
       "If set to 0 then there should be no output in normal circumstances. A "
       "value of 1 is probably the best value for most uses, while 2 and 3 give "
       "more information.");
@@ -2238,12 +2238,6 @@ void CbcParameters::addCbcModelParams()
       "value of a variable and the nearest integer is less than the integer "
       "tolerance, the value is considered to be integral. Beware of setting "
       "this smaller than the primal tolerance.");
-
-  parameters_[CbcParam::LOGLEVEL]->setup(
-      "bclog!Level", "Level of detail in Coin branch and Cut output", -1, 63,
-      "If set to 0 then there should be no output in normal circumstances. A "
-      "value of 1 is probably the best value for most uses, while 2 and 3 give "
-      "more information.");
 
   parameters_[CbcParam::MAXIMIZE]->setup(
       "max!imize", "Set optimization direction to maximize",

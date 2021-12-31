@@ -24,9 +24,7 @@ jobs:
           { os: windows-2019, arch: x86_64, msystem: mingw64, debug: false, suffix: "" },
           { os: windows-2019, arch: i686, msystem: mingw32, debug: true, suffix: "-dbg" },
           { os: windows-2019, arch: i686, msystem: mingw32, debug: false, suffix: "" },
-          { os: windows-2019, arch: msvc, msystem: mingw64, debug: true, suffix: "-mdd" },
           { os: windows-2019, arch: msvc, msystem: mingw64, debug: false, suffix: "-md" },
-          { os: windows-2022, arch: msvc, msystem: mingw64, debug: true, suffix: "-mdd" },
           { os: windows-2022, arch: msvc, msystem: mingw64, debug: false, suffix: "-md" },
         ]
     steps:

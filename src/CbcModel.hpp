@@ -128,7 +128,7 @@ public:
 
     /** Maximum number of nodes without improving the best feasible
      *  solution (just checked if a feasible solution was already found ) */
-    CbcMaxNodesNotImprovingFeasSol,
+    CbcMaxNodesNotImproving,
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastIntParam
   };
@@ -197,7 +197,7 @@ public:
     CbcSmallChange,
     /** \brief Maximum time without improving the best solution found, checked only if a
      * feasible solution is already available */
-    CbcMaximumSecondsNotImprovingFeasSol,
+    CbcMaxSecondsNotImproving,
     /** Just a marker, so that a static sized array can store parameters. */
     CbcLastDblParam
   };
@@ -260,6 +260,8 @@ private:
     int &numberNodesOutput, int &status);
   /// Update size of whichGenerator
   void resizeWhichGenerator(int numberNow, int numberAfter);
+  /// One last go at cuts
+  int oneLastGoAtCuts(OsiCuts &cuts, int typeGo);
 
 public:
 #ifdef CBC_KEEP_DEPRECATED
@@ -640,6 +642,34 @@ public:
   {
     return getIntParam(CbcMaxNumNode);
   }
+
+  /// Set the \link CbcModel::CbcMaxNodesNotImproving limit \endlink
+  inline bool setMaxNodesNotImproving(int value) {
+    return setIntParam(CbcMaxNodesNotImproving, value);
+  }
+
+  /// Get the \link CbcModel::CbcMaxNodesNotImproving limit \endlink
+  inline int getMaxNodesNotImproving() const {
+    return getIntParam(CbcMaxNodesNotImproving);
+  }
+
+  /// Set the \link CbcModel::CbcMaxSecondsNotImproving limit \endlink
+  inline bool setMaxSecondsNotImproving(double value) {
+    return setDblParam(CbcMaxSecondsNotImproving, value);
+  }
+
+  /// Get the \link CbcModel::CbcMaxSecondsNotImproving limit \endlink
+  inline double getMaxSecondsNotImproving() const {
+    return getDblParam(CbcMaxSecondsNotImproving);
+  }
+
+  /// Set the \link CbcModel::CbcMaxSolutions limit \endlink
+  inline bool setMaxSolutions(int value) {
+    return setIntParam(CbcMaxNumSol, value);
+  }
+
+  /// Get the \link CbcModel::CbcMaxSolutions limit \endlink
+  inline int getMaxSolution() const { return getIntParam(CbcMaxNumSol); }
 
   /// If integer variables should be rounded before saving a solution.
   //  For some problems with integer and continuous variables, rounding can
@@ -1863,6 +1893,10 @@ public:
   {
     parentModel_ = &parentModel;
   }
+  /// See if in sub tree
+  inline bool inSmallBranchAndBound() const {
+    return (specialOptions_ & 2048) != 0 && parentModel_;
+  }
   //@}
 
   /** \name Heuristics and priorities */
@@ -2155,6 +2189,9 @@ public:
 	21 bit 2097152 - analyze changed priorities but were equal before
 	22 bit 4194304 - ignore cutoff increment in multiple root solvers
 	23 bit (8388608) - no crunch
+	25 bit 33554432 - also 26,27 lagrangean cuts
+	28 bit 268435456 - alternative lagrangean cuts
+	29 bit 536870912 - one shot of less useful cuts
     */
   inline void setMoreSpecialOptions2(int value)
   {

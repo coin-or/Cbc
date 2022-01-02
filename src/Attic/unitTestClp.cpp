@@ -7,8 +7,6 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#include <deque>
-
 #include "CoinTime.hpp"
 #include "CoinFileIO.hpp"
 #include "CbcModel.hpp"
@@ -127,10 +125,10 @@ bool CbcTestMpsFile(std::string &fname)
      100*(number with bad objective)+(number that exceeded node limit)
 */
 int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
-		   int testSwitch, const double *stuff,
-		   std::deque<std::string> originalInputQueue,
+		   int testSwitch, const double *stuff, int argc,
+		   const char ** argv,
 		   int callBack(CbcModel *currentSolver, int whereFrom),
-		   CbcParameters &parameters)
+		   CbcSolverUsefulData &parameterData)
 {
   // Stop Windows popup
   WindowsErrorPopupBlocker();
@@ -526,23 +524,6 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
   int numberAttempts = 0;
   int numProbSolved = 0;
   double timeTaken = 0.0;
-  // tidy original input queue
-  std::deque<std::string> inputQueue = originalInputQueue;
-  {
-    // take off first two parameters of initial queue
-    inputQueue.pop_front();
-    inputQueue.pop_front();
-    // take off unitTest
-    std::string unitTest = inputQueue.back();
-    std::string check="-unitTest";
-    size_t i;
-    for (i = 0; i < unitTest.size(); i++) {
-      if (tolower(unitTest[i]) != tolower(check[i]))
-        break;
-    }
-    assert (i == unitTest.size());
-    inputQueue.pop_back();
-  }
 
 //#define CLP_FACTORIZATION_INSTRUMENT
 #ifdef CLP_FACTORIZATION_INSTRUMENT
@@ -580,48 +561,46 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
       model->solver()->readMps(fn.c_str(), "");
     } else {
       OsiClpSolverInterface solver1;
-      std::deque<std::string> newInputQueue;
+      const char * newArgv[200];
       char replace[100];
-      //newArgv[0] = "unitTestCbc";
-      newInputQueue.push_back(fn);
-      for (int i = 0; i < inputQueue.size(); i++) {
-	if (inputQueue[i] != "++") {
-           if (testSwitch >=1000000) {
-              // take out dextra3
-              if (inputQueue[i] == "dextra3") {
-                 continue;
-              }
-           }
-	   newInputQueue.push_back(inputQueue[i]);
+      int newArgc = 2;
+      newArgv[0] = "unitTestCbc";
+      newArgv[1] = fn.c_str();
+      for (int i = 3;i < argc-1; i++) {
+	if (!strstr(argv[i],"++")) {
+	  if (testSwitch >=1000000) {
+	    // take out dextra3
+	    if (strstr(argv[i],"dextra3")) {
+	      i++;
+	      continue;
+	    }
+	  }
+	  newArgv[newArgc++] = argv[i];
 	} else {
-          //FIXME: This should be changed to use modern C++
-          int n = strstr(inputQueue[i].c_str(), "++") - inputQueue[i].c_str();
-	  strncpy(replace, inputQueue[i].c_str(), n);
+	  int n = strstr(argv[i],"++")-argv[i];
+	  strncpy(replace,argv[i],n);
 	  const char * mipname = mpsName[m].c_str();
 	  int n1 = n;
-	  for (int j=0;j<strlen(mipname);j++){
+	  for (int j=0;j<strlen(mipname);j++)
 	    replace[n++]=mipname[j];
-          }
-	  for (int j=n1+2;j<inputQueue[i].length();j++){
-             replace[n++]=inputQueue[i].c_str()[j];
-          }
+	  for (int j=n1+2;j<strlen(argv[i]);j++)
+	    replace[n++]=argv[i][j];
 	  replace[n] = '\0';
-	  newInputQueue.push_back(replace);
-	  printf("Replacing %s by %s\n",inputQueue[i].c_str(),replace);
+	  newArgv[newArgc++] = replace;
+	  printf("Replacing %s by %s\n",argv[i],replace);
 	}
       }
       /*
 	Activate the row cut debugger, if requested.
       */
       if (rowCutDebugger[m] == true) {
-         newInputQueue.push_back("-debug");
-         newInputQueue.push_back("unitTest");
+	newArgv[newArgc++]= "-debug";
+	newArgv[newArgc++]= "unitTest";
       }
-      if (newInputQueue.back()!="-solve")
-	newInputQueue.push_back("-solve"); 
+      newArgv[newArgc++] = "solve";
       model = new CbcModel(solver1);
-      CbcMain0(*model, parameters);
-      CbcMain1(newInputQueue, *model, parameters, callBack);
+      CbcMain0(*model,parameterData);
+      CbcMain1(newArgc, newArgv, *model, callBack, parameterData);
     }
     if ((model->getNumRows() != nRows[m] ||
 	 model->getNumCols() != nCols[m]) && model->getNumRows())

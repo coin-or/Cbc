@@ -17,7 +17,7 @@
 */
 
 /*
-*/
+ */
 
 /*! \class CbcOsiParam
     \brief Class for control parameters that act on a OsiSolverInterface object.
@@ -40,7 +40,8 @@ public:
       object. CBCOSI_FIRSTPARAM and CBCOSI_LASTPARAM are markers to allow
       convenient separation of parameter groups.
     */
-  typedef enum { CBCOSI_FIRSTPARAM = CbcCbcParam::CBCCBC_LASTPARAM + 1,
+  typedef enum {
+    CBCOSI_FIRSTPARAM = CbcCbcParam::CBCCBC_LASTPARAM + 1,
 
     ALGORITHM,
     ALLSLACK,
@@ -115,16 +116,15 @@ public:
       constructor for an integer parameter.
     */
   CbcOsiParam(CbcOsiParamCode code, std::string name, std::string help,
-    double lower, double upper, double dflt = 0.0,
-    bool display = true);
+              double lower, double upper, double dflt = 0.0,
+              bool display = true);
 
   /*! \brief Constructor for a parameter with an integer value
 
       The default value is 0.
     */
   CbcOsiParam(CbcOsiParamCode code, std::string name, std::string help,
-    int lower, int upper, int dflt = 0,
-    bool display = true);
+              int lower, int upper, int dflt = 0, bool display = true);
 
   /*! \brief Constructor for a parameter with keyword values
 
@@ -136,7 +136,7 @@ public:
       constructors.
     */
   CbcOsiParam(CbcOsiParamCode code, std::string name, std::string help,
-    std::string firstValue, int dflt, bool display = true);
+              std::string firstValue, int dflt, bool display = true);
 
   /*! \brief Constructor for a string parameter
 
@@ -145,12 +145,12 @@ public:
     */
 
   CbcOsiParam(CbcOsiParamCode code, std::string name, std::string help,
-    std::string dflt, bool display = true);
+              std::string dflt, bool display = true);
 
   /*! \brief Constructor for an action parameter */
 
   CbcOsiParam(CbcOsiParamCode code, std::string name, std::string help,
-    bool display = true);
+              bool display = true);
 
   /*! \brief Copy constructor */
 
@@ -175,31 +175,19 @@ public:
 
   /*! \brief Get the parameter code  */
 
-  inline CbcOsiParamCode paramCode() const
-  {
-    return (paramCode_);
-  }
+  inline CbcOsiParamCode paramCode() const { return (paramCode_); }
 
   /*! \brief Set the parameter code */
 
-  inline void setParamCode(CbcOsiParamCode code)
-  {
-    paramCode_ = code;
-  }
+  inline void setParamCode(CbcOsiParamCode code) { paramCode_ = code; }
 
   /*! \brief Get the underlying OsiSolverInterface object */
 
-  inline OsiSolverInterface *obj() const
-  {
-    return (obj_);
-  }
+  inline OsiSolverInterface *obj() const { return (obj_); }
 
   /*! \brief Set the underlying OsiSolverInterace object */
 
-  inline void setObj(OsiSolverInterface *obj)
-  {
-    obj_ = obj;
-  }
+  inline void setObj(OsiSolverInterface *obj) { obj_ = obj; }
 
   //@}
 
@@ -222,9 +210,8 @@ private:
 
 namespace CbcOsiParamUtils {
 void addCbcOsiParams(int &numParams, CoinParamVec &paramVec,
-  OsiSolverInterface *osi);
-void loadOsiParamObj(const CoinParamVec paramVec,
-  CbcGenCtlBlk *ctlBlk);
+                     OsiSolverInterface *osi);
+void loadOsiParamObj(const CoinParamVec paramVec, CbcGenCtlBlk *ctlBlk);
 void setOsiSolverInterfaceDefaults(OsiSolverInterface *osi);
 
 int pushCbcOsiLogLevel(CoinParam *param);
@@ -232,9 +219,9 @@ int pushCbcOsiInt(CoinParam *param);
 int pushCbcOsiDbl(CoinParam *param);
 int pushCbcOsiKwd(CoinParam *param);
 int pushCbcOsiHint(CoinParam *param);
-}
+} // namespace CbcOsiParamUtils
 
 #endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

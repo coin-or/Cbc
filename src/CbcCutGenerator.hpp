@@ -69,6 +69,12 @@ public:
     */
   bool generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface *solver,
     CbcNode *node);
+#ifdef CBC_LAGRANGEAN_SOLVERS
+  bool generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface *solver,
+		    CbcNode *node,
+		    OsiSolverInterface **baseLagrangeanSolver,
+		    OsiSolverInterface **cleanLagrangeanSolver);
+#endif
   //@}
 
   /**@name Constructors and destructors */
@@ -248,6 +254,43 @@ public:
   inline void incrementTimeInCutGenerator(double value)
   {
     timeInCutGenerator_ += value;
+  }
+  /// Get whether the cut generator uses clean lagrangean
+  inline bool cleanLagrangean() const
+  {
+    return (switches_ & 16384) != 0;
+  }
+  /// Set whether the cut generator uses clean lagrangean
+  inline void setCleanLagrangean(bool value)
+  {
+    switches_ &= ~16384;
+    switches_ |= value ? 16384 : 0;
+  }
+  /// Get whether the cut generator uses continuous lagrangean
+  inline bool originalLagrangean() const
+  {
+    return (switches_ & 32768) != 0;
+  }
+  /// Set whether the cut generator uses continuous lagrangean
+  inline void setOriginalLagrangean(bool value)
+  {
+    switches_ &= ~32768;
+    switches_ |= value ? 32768 : 0;
+  }
+  /** Get what cut generator is to do -
+      0 - normal
+      65536*7 - 1 normal
+      65536*7 - 2 clean
+      65536*7 - 4 base */
+  inline int whatLagrangean() const
+  {
+    return (switches_ & (65536*7)) >> 16;
+  }
+  /// Set what generator should do (lagrangeanwise)
+  inline void setWhatLagrangean(int value)
+  {
+    switches_ &= ~(65536*7);
+    switches_ |= value*65536;
   }
   /// Get the \c CglCutGenerator corresponding to this \c CbcCutGenerator.
   inline CglCutGenerator *generator() const

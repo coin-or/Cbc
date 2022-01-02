@@ -669,16 +669,8 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
-CBCUNITTEST_CFLAGS_NOPC
-CBCUNITTEST_LFLAGS_NOPC
-OSICBCLIB_CFLAGS_NOPC
-OSICBCLIB_LFLAGS_NOPC
-CBCGENERIC_CFLAGS_NOPC
-CBCGENERIC_LFLAGS_NOPC
 CBCSOLVERLIB_CFLAGS_NOPC
 CBCSOLVERLIB_LFLAGS_NOPC
-CBCLIB_CFLAGS_NOPC
-CBCLIB_LFLAGS_NOPC
 coin_doxy_tagfiles
 COIN_HAS_LATEX_FALSE
 COIN_HAS_LATEX_TRUE
@@ -709,8 +701,14 @@ COIN_HAS_PTHREADSW32_FALSE
 COIN_HAS_PTHREADSW32_TRUE
 CBC_BUILD_CBC_GENERIC_FALSE
 CBC_BUILD_CBC_GENERIC_TRUE
-COIN_HAS_GLPK_FALSE
-COIN_HAS_GLPK_TRUE
+CBCUNITTEST_CFLAGS_NOPC
+CBCUNITTEST_LFLAGS_NOPC
+OSICBCLIB_CFLAGS_NOPC
+OSICBCLIB_LFLAGS_NOPC
+CBCGENERIC_CFLAGS_NOPC
+CBCGENERIC_LFLAGS_NOPC
+CBCLIB_CFLAGS_NOPC
+CBCLIB_LFLAGS_NOPC
 COIN_HAS_CPLEX_FALSE
 COIN_HAS_CPLEX_TRUE
 COIN_HAS_OSISPX_FALSE
@@ -759,9 +757,6 @@ OSICBCLIB_LFLAGS
 CBCGENERIC_PCFILES
 CBCGENERIC_CFLAGS
 CBCGENERIC_LFLAGS
-CBCSOLVERLIB_PCFILES
-CBCSOLVERLIB_CFLAGS
-CBCSOLVERLIB_LFLAGS
 CBCLIB_PCFILES
 CBCLIB_CFLAGS
 CBCLIB_LFLAGS
@@ -968,9 +963,6 @@ with_osispx_cflags
 with_cplex
 with_cplex_lflags
 with_cplex_cflags
-with_glpk
-with_glpk_lflags
-with_glpk_cflags
 enable_cbc_generic
 with_cbc_generic_solver
 enable_cbc_parallel
@@ -1801,15 +1793,6 @@ Optional Packages:
   --with-cplex-lflags     Linker flags for Cplex appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-cplex-cflags     Compiler flags for Cplex appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
-  --with-glpk             Use Glpk. If an argument is given, 'yes' is
-                          equivalent to --with-glpk, 'no' is
-                          equivalent to --without-glpk. Any other argument is
-                          applied as for --with-glpk-lflags
-  --with-glpk-lflags      Linker flags for Glpk appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-glpk-cflags      Compiler flags for Glpk appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
   --with-cbc-generic-solver
@@ -17893,9 +17876,6 @@ printf %s "checking for package CoinUtils... " >&6; }
 
 
 
-
-
-
   coin_has_coinutils=noInfo
   if test x"$COIN_SKIP_PROJECTS" != x ; then
     for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
@@ -18116,9 +18096,6 @@ printf "%s\n" "#define CBC_HAS_COINUTILS 1" >>confdefs.h
     CBCLIB_PCFILES="$coinutils_pcfiles $CBCLIB_PCFILES"
        CBCLIB_LFLAGS="$coinutils_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$coinutils_cflags $CBCLIB_CFLAGS"
-      CBCSOLVERLIB_PCFILES="$coinutils_pcfiles $CBCSOLVERLIB_PCFILES"
-       CBCSOLVERLIB_LFLAGS="$coinutils_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$coinutils_cflags $CBCSOLVERLIB_CFLAGS"
       CBCGENERIC_PCFILES="$coinutils_pcfiles $CBCGENERIC_PCFILES"
        CBCGENERIC_LFLAGS="$coinutils_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$coinutils_cflags $CBCGENERIC_CFLAGS"
@@ -18142,9 +18119,6 @@ printf "%s\n" "#define CBC_HAS_COINUTILS 1" >>confdefs.h
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Osi" >&5
 printf %s "checking for package Osi... " >&6; }
-
-
-
 
 
 
@@ -18379,9 +18353,6 @@ printf "%s\n" "#define CBC_HAS_OSI 1" >>confdefs.h
     CBCLIB_PCFILES="$osi_pcfiles $CBCLIB_PCFILES"
        CBCLIB_LFLAGS="$osi_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$osi_cflags $CBCLIB_CFLAGS"
-      CBCSOLVERLIB_PCFILES="$osi_pcfiles $CBCSOLVERLIB_PCFILES"
-       CBCSOLVERLIB_LFLAGS="$osi_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$osi_cflags $CBCSOLVERLIB_CFLAGS"
       CBCGENERIC_PCFILES="$osi_pcfiles $CBCGENERIC_PCFILES"
        CBCGENERIC_LFLAGS="$osi_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osi_cflags $CBCGENERIC_CFLAGS"
@@ -18405,9 +18376,6 @@ printf "%s\n" "#define CBC_HAS_OSI 1" >>confdefs.h
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Cgl" >&5
 printf %s "checking for package Cgl... " >&6; }
-
-
-
 
 
 
@@ -18642,9 +18610,6 @@ printf "%s\n" "#define CBC_HAS_CGL 1" >>confdefs.h
     CBCLIB_PCFILES="$cgl_pcfiles $CBCLIB_PCFILES"
        CBCLIB_LFLAGS="$cgl_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$cgl_cflags $CBCLIB_CFLAGS"
-      CBCSOLVERLIB_PCFILES="$cgl_pcfiles $CBCSOLVERLIB_PCFILES"
-       CBCSOLVERLIB_LFLAGS="$cgl_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$cgl_cflags $CBCSOLVERLIB_CFLAGS"
       CBCGENERIC_PCFILES="$cgl_pcfiles $CBCGENERIC_PCFILES"
        CBCGENERIC_LFLAGS="$cgl_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$cgl_cflags $CBCGENERIC_CFLAGS"
@@ -18668,9 +18633,6 @@ printf "%s\n" "#define CBC_HAS_CGL 1" >>confdefs.h
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Clp" >&5
 printf %s "checking for package Clp... " >&6; }
-
-
-
 
 
 
@@ -18905,9 +18867,6 @@ printf "%s\n" "#define CBC_HAS_CLP 1" >>confdefs.h
     CBCLIB_PCFILES="$clp_pcfiles $CBCLIB_PCFILES"
        CBCLIB_LFLAGS="$clp_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$clp_cflags $CBCLIB_CFLAGS"
-      CBCSOLVERLIB_PCFILES="$clp_pcfiles $CBCSOLVERLIB_PCFILES"
-       CBCSOLVERLIB_LFLAGS="$clp_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$clp_cflags $CBCSOLVERLIB_CFLAGS"
       CBCGENERIC_PCFILES="$clp_pcfiles $CBCGENERIC_PCFILES"
        CBCGENERIC_LFLAGS="$clp_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$clp_cflags $CBCGENERIC_CFLAGS"
@@ -18933,9 +18892,6 @@ printf "%s\n" "#define CBC_HAS_CLP 1" >>confdefs.h
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package OsiClp" >&5
 printf %s "checking for package OsiClp... " >&6; }
-
-
-
 
 
 
@@ -19170,9 +19126,6 @@ printf "%s\n" "#define CBC_HAS_OSICLP 1" >>confdefs.h
     CBCLIB_PCFILES="$osiclp_pcfiles $CBCLIB_PCFILES"
        CBCLIB_LFLAGS="$osiclp_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$osiclp_cflags $CBCLIB_CFLAGS"
-      CBCSOLVERLIB_PCFILES="$osiclp_pcfiles $CBCSOLVERLIB_PCFILES"
-       CBCSOLVERLIB_LFLAGS="$osiclp_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$osiclp_cflags $CBCSOLVERLIB_CFLAGS"
       CBCGENERIC_PCFILES="$osiclp_pcfiles $CBCGENERIC_PCFILES"
        CBCGENERIC_LFLAGS="$osiclp_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osiclp_cflags $CBCGENERIC_CFLAGS"
@@ -19585,9 +19538,9 @@ fi
 
 printf "%s\n" "#define CBC_HAS_ASL 1" >>confdefs.h
 
-    CBCSOLVERLIB_PCFILES="$asl_pcfiles $CBCSOLVERLIB_PCFILES"
-       CBCSOLVERLIB_LFLAGS="$asl_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$asl_cflags $CBCSOLVERLIB_CFLAGS"
+    CBCLIB_PCFILES="$asl_pcfiles $CBCLIB_PCFILES"
+       CBCLIB_LFLAGS="$asl_lflags $CBCLIB_LFLAGS"
+       CBCLIB_CFLAGS="$asl_cflags $CBCLIB_CFLAGS"
 
 
 
@@ -19604,9 +19557,6 @@ printf "%s\n" "#define CBC_HAS_ASL 1" >>confdefs.h
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Nauty" >&5
 printf %s "checking for package Nauty... " >&6; }
-
-
-
 
 
 
@@ -19835,9 +19785,6 @@ printf "%s\n" "#define CBC_HAS_NAUTY 1" >>confdefs.h
     CBCLIB_PCFILES="$nauty_pcfiles $CBCLIB_PCFILES"
        CBCLIB_LFLAGS="$nauty_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$nauty_cflags $CBCLIB_CFLAGS"
-      CBCSOLVERLIB_PCFILES="$nauty_pcfiles $CBCSOLVERLIB_PCFILES"
-       CBCSOLVERLIB_LFLAGS="$nauty_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$nauty_cflags $CBCSOLVERLIB_CFLAGS"
 
 
 
@@ -20998,9 +20945,6 @@ printf %s "checking for package OsiCpx... " >&6; }
 
 
 
-
-
-
   coin_has_osicpx=noInfo
   if test x"$COIN_SKIP_PROJECTS" != x ; then
     for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
@@ -21224,9 +21168,6 @@ printf "%s\n" "#define CBC_HAS_OSICPX 1" >>confdefs.h
       CBCGENERIC_PCFILES="$osicpx_pcfiles $CBCGENERIC_PCFILES"
        CBCGENERIC_LFLAGS="$osicpx_lflags $CBCGENERIC_LFLAGS"
        CBCGENERIC_CFLAGS="$osicpx_cflags $CBCGENERIC_CFLAGS"
-      CBCSOLVERLIB_PCFILES="$osicpx_pcfiles $CBCSOLVERLIB_PCFILES"
-       CBCSOLVERLIB_LFLAGS="$osicpx_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$osicpx_cflags $CBCSOLVERLIB_CFLAGS"
       OSICBCLIB_PCFILES="$osicpx_pcfiles $OSICBCLIB_PCFILES"
        OSICBCLIB_LFLAGS="$osicpx_lflags $OSICBCLIB_LFLAGS"
        OSICBCLIB_CFLAGS="$osicpx_cflags $OSICBCLIB_CFLAGS"
@@ -22219,245 +22160,195 @@ printf "%s\n" "#define CBC_HAS_CPLEX 1" >>confdefs.h
 
 
 
-
-
-
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Glpk" >&5
-printf %s "checking for package Glpk... " >&6; }
-
-
-
-
-
-
-
-
-  coin_has_glpk=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "glpk" ; then
-        coin_has_glpk=skipping
+   if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcLib:" >&5
+printf "%s\n" "$as_me: FINALIZE_FLAGS for CbcLib:" >&6;}
       fi
-    done
-  fi
+      CBCLIB_LFLAGS_NOPC=$CBCLIB_LFLAGS
 
+      CBCLIB_CFLAGS_NOPC=$CBCLIB_CFLAGS
 
-  if test "$coin_has_glpk" != skipping ; then
-
-
-
-
-# Check whether --with-glpk was given.
-if test ${with_glpk+y}
-then :
-  withval=$with_glpk;
-fi
-
-
-
-# Check whether --with-glpk-lflags was given.
-if test ${with_glpk_lflags+y}
-then :
-  withval=$with_glpk_lflags;
-fi
-
-
-
-# Check whether --with-glpk-cflags was given.
-if test ${with_glpk_cflags+y}
-then :
-  withval=$with_glpk_cflags;
-fi
-
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_glpk=requested
-
-  glpk_lflags=
-  glpk_cflags=
-  glpk_data=
-  glpk_pcfiles="coinglpk"
-
-
-  withval="$with_glpk"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_glpk=skipping
-        glpk_failmode='command line'
-        ;;
-      yes )
-        coin_has_glpk=requested
-        glpk_failmode=''
-        ;;
-      build )
-        coin_has_glpk=requested
-        glpk_build=yes
-        glpk_failmode=''
-        ;;
-      * )
-        coin_has_glpk=requested
-        glpk_failmode=''
-        glpk_lflags="$withval"
-        glpk_pcfiles=''
-        ;;
-    esac
-  else
-    if test -n "$with_glpk_lflags" ||
-       test -n "$with_glpk_cflags" ||
-       test -n "$with_glpk_data" ; then
-      coin_has_glpk=requested
-      glpk_failmode=''
-      glpk_pcfiles=''
-    fi
-  fi
-
-
-  if test "$coin_has_glpk" != skipping ; then
-       withval="$with_glpk_lflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify link flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_glpk=yes
-             glpk_lflags="$withval"
-             glpk_pcfiles=''
-             ;;
-         esac
-       fi
-
-       withval="$with_glpk_cflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify compile flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_glpk=yes
-             glpk_cflags="$withval"
-             glpk_pcfiles=''
-             ;;
-         esac
-       fi
-     fi
-
-
-
-
-
-  if test $coin_has_glpk = requested ; then
-    if test -n "$PKG_CONFIG" ; then
-      if test x"$glpk_build" = xyes ; then
-        pcfile="coin$glpk_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      GLPK_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_glpk=yes
-    else
-      GLPK_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_glpk=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module glpk without pkgconf\"" "$LINENO" 5
-  fi
-
+      if test -n "${CBCLIB_PCFILES}" ; then
+        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCLIB_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${CBCLIB_PCFILES}`
+        CBCLIB_CFLAGS="$temp_CFLAGS ${CBCLIB_CFLAGS}"
+        CBCLIB_LFLAGS="$temp_LFLAGS ${CBCLIB_LFLAGS}"
       fi
-      if ! test $coin_has_glpk = yes ; then
-        pcfile="$glpk_pcfiles"
 
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      GLPK_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_glpk=yes
-    else
-      GLPK_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_glpk=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module glpk without pkgconf\"" "$LINENO" 5
-  fi
-
+      # setup XYZ_EXPORT symbol for library users
+      libexport_attribute=
+      if test "$enable_shared" = yes ; then
+        case $build_os in
+          cygwin* | mingw* | msys* | cegcc* )
+            libexport_attribute="__declspec(dllimport)"
+            if test "$enable_static" = yes ; then
+              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+            fi
+          ;;
+        esac
       fi
-      if test $coin_has_glpk = yes ; then
-        glpk_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-        glpk_pcfiles="$pcfile"
+
+printf "%s\n" "#define CBCLIB_EXPORT $libexport_attribute" >>confdefs.h
+
+
+      # add -DXYZ_BUILD to XYZ_CFLAGS
+      CBCLIB_CFLAGS="${CBCLIB_CFLAGS} -DCBCLIB_BUILD"
+
+      # Define BUILDTOOLS_DEBUG to enable debugging output
+      if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCLIB_LFLAGS_NOPC: \"${CBCLIB_LFLAGS_NOPC}\"" >&5
+printf "%s\n" "$as_me: CBCLIB_LFLAGS_NOPC: \"${CBCLIB_LFLAGS_NOPC}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCLIB_CFLAGS_NOPC: \"${CBCLIB_CFLAGS_NOPC}\"" >&5
+printf "%s\n" "$as_me: CBCLIB_CFLAGS_NOPC: \"${CBCLIB_CFLAGS_NOPC}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: adding \"${CBCLIB_PCFILES}\"" >&5
+printf "%s\n" "$as_me: adding \"${CBCLIB_PCFILES}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCLIB_LFLAGS: \"${CBCLIB_LFLAGS}\"" >&5
+printf "%s\n" "$as_me: CBCLIB_LFLAGS: \"${CBCLIB_LFLAGS}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCLIB_CFLAGS: \"${CBCLIB_CFLAGS}\"" >&5
+printf "%s\n" "$as_me: CBCLIB_CFLAGS: \"${CBCLIB_CFLAGS}\"" >&6;}
       fi
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Check for glpk via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-glpk-lflags and --with-glpk-cflags." >&5
-printf "%s\n" "$as_me: WARNING: Check for glpk via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-glpk-lflags and --with-glpk-cflags." >&2;}
-      coin_has_glpk=no
-    fi
-  fi
+     if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcGeneric:" >&5
+printf "%s\n" "$as_me: FINALIZE_FLAGS for CbcGeneric:" >&6;}
+      fi
+      CBCGENERIC_LFLAGS_NOPC=$CBCGENERIC_LFLAGS
+
+      CBCGENERIC_CFLAGS_NOPC=$CBCGENERIC_CFLAGS
+
+      if test -n "${CBCGENERIC_PCFILES}" ; then
+        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCGENERIC_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${CBCGENERIC_PCFILES}`
+        CBCGENERIC_CFLAGS="$temp_CFLAGS ${CBCGENERIC_CFLAGS}"
+        CBCGENERIC_LFLAGS="$temp_LFLAGS ${CBCGENERIC_LFLAGS}"
+      fi
+
+      # setup XYZ_EXPORT symbol for library users
+      libexport_attribute=
+      if test "$enable_shared" = yes ; then
+        case $build_os in
+          cygwin* | mingw* | msys* | cegcc* )
+            libexport_attribute="__declspec(dllimport)"
+            if test "$enable_static" = yes ; then
+              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+            fi
+          ;;
+        esac
+      fi
+
+printf "%s\n" "#define CBCGENERIC_EXPORT $libexport_attribute" >>confdefs.h
 
 
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for glpk: \"$coin_has_glpk\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_PKG result for glpk: \"$coin_has_glpk\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'glpk'" >&5
-printf "%s\n" "$as_me: Collected values for package 'glpk'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: glpk_lflags is \"$glpk_lflags\"" >&5
-printf "%s\n" "$as_me: glpk_lflags is \"$glpk_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: glpk_cflags is \"$glpk_cflags\"" >&5
-printf "%s\n" "$as_me: glpk_cflags is \"$glpk_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: glpk_data is \"$glpk_data\"" >&5
-printf "%s\n" "$as_me: glpk_data is \"$glpk_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: glpk_pcfiles is \"$glpk_pcfiles\"" >&5
-printf "%s\n" "$as_me: glpk_pcfiles is \"$glpk_pcfiles\"" >&6;}
-  fi
+      # add -DXYZ_BUILD to XYZ_CFLAGS
+      CBCGENERIC_CFLAGS="${CBCGENERIC_CFLAGS} -DCBCGENERIC_BUILD"
+
+      # Define BUILDTOOLS_DEBUG to enable debugging output
+      if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCGENERIC_LFLAGS_NOPC: \"${CBCGENERIC_LFLAGS_NOPC}\"" >&5
+printf "%s\n" "$as_me: CBCGENERIC_LFLAGS_NOPC: \"${CBCGENERIC_LFLAGS_NOPC}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCGENERIC_CFLAGS_NOPC: \"${CBCGENERIC_CFLAGS_NOPC}\"" >&5
+printf "%s\n" "$as_me: CBCGENERIC_CFLAGS_NOPC: \"${CBCGENERIC_CFLAGS_NOPC}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: adding \"${CBCGENERIC_PCFILES}\"" >&5
+printf "%s\n" "$as_me: adding \"${CBCGENERIC_PCFILES}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCGENERIC_LFLAGS: \"${CBCGENERIC_LFLAGS}\"" >&5
+printf "%s\n" "$as_me: CBCGENERIC_LFLAGS: \"${CBCGENERIC_LFLAGS}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCGENERIC_CFLAGS: \"${CBCGENERIC_CFLAGS}\"" >&5
+printf "%s\n" "$as_me: CBCGENERIC_CFLAGS: \"${CBCGENERIC_CFLAGS}\"" >&6;}
+      fi
+     if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for OsiCbcLib:" >&5
+printf "%s\n" "$as_me: FINALIZE_FLAGS for OsiCbcLib:" >&6;}
+      fi
+      OSICBCLIB_LFLAGS_NOPC=$OSICBCLIB_LFLAGS
+
+      OSICBCLIB_CFLAGS_NOPC=$OSICBCLIB_CFLAGS
+
+      if test -n "${OSICBCLIB_PCFILES}" ; then
+        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${OSICBCLIB_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${OSICBCLIB_PCFILES}`
+        OSICBCLIB_CFLAGS="$temp_CFLAGS ${OSICBCLIB_CFLAGS}"
+        OSICBCLIB_LFLAGS="$temp_LFLAGS ${OSICBCLIB_LFLAGS}"
+      fi
+
+      # setup XYZ_EXPORT symbol for library users
+      libexport_attribute=
+      if test "$enable_shared" = yes ; then
+        case $build_os in
+          cygwin* | mingw* | msys* | cegcc* )
+            libexport_attribute="__declspec(dllimport)"
+            if test "$enable_static" = yes ; then
+              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+            fi
+          ;;
+        esac
+      fi
+
+printf "%s\n" "#define OSICBCLIB_EXPORT $libexport_attribute" >>confdefs.h
 
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_glpk" >&5
-printf "%s\n" "$coin_has_glpk" >&6; }
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_glpk (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_glpk (COIN_SKIP_PROJECTS)" >&6; }
-  fi
+      # add -DXYZ_BUILD to XYZ_CFLAGS
+      OSICBCLIB_CFLAGS="${OSICBCLIB_CFLAGS} -DOSICBCLIB_BUILD"
+
+      # Define BUILDTOOLS_DEBUG to enable debugging output
+      if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&5
+printf "%s\n" "$as_me: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_CFLAGS_NOPC: \"${OSICBCLIB_CFLAGS_NOPC}\"" >&5
+printf "%s\n" "$as_me: OSICBCLIB_CFLAGS_NOPC: \"${OSICBCLIB_CFLAGS_NOPC}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: adding \"${OSICBCLIB_PCFILES}\"" >&5
+printf "%s\n" "$as_me: adding \"${OSICBCLIB_PCFILES}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_LFLAGS: \"${OSICBCLIB_LFLAGS}\"" >&5
+printf "%s\n" "$as_me: OSICBCLIB_LFLAGS: \"${OSICBCLIB_LFLAGS}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_CFLAGS: \"${OSICBCLIB_CFLAGS}\"" >&5
+printf "%s\n" "$as_me: OSICBCLIB_CFLAGS: \"${OSICBCLIB_CFLAGS}\"" >&6;}
+      fi
+     if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcUnitTest:" >&5
+printf "%s\n" "$as_me: FINALIZE_FLAGS for CbcUnitTest:" >&6;}
+      fi
+      CBCUNITTEST_LFLAGS_NOPC=$CBCUNITTEST_LFLAGS
+
+      CBCUNITTEST_CFLAGS_NOPC=$CBCUNITTEST_CFLAGS
+
+      if test -n "${CBCUNITTEST_PCFILES}" ; then
+        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCUNITTEST_PCFILES}`
+        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${CBCUNITTEST_PCFILES}`
+        CBCUNITTEST_CFLAGS="$temp_CFLAGS ${CBCUNITTEST_CFLAGS}"
+        CBCUNITTEST_LFLAGS="$temp_LFLAGS ${CBCUNITTEST_LFLAGS}"
+      fi
+
+      # setup XYZ_EXPORT symbol for library users
+      libexport_attribute=
+      if test "$enable_shared" = yes ; then
+        case $build_os in
+          cygwin* | mingw* | msys* | cegcc* )
+            libexport_attribute="__declspec(dllimport)"
+            if test "$enable_static" = yes ; then
+              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
+            fi
+          ;;
+        esac
+      fi
+
+printf "%s\n" "#define CBCUNITTEST_EXPORT $libexport_attribute" >>confdefs.h
 
 
-  if test "$coin_has_glpk" != yes ; then
-    coin_has_glpk=no
-  fi
+      # add -DXYZ_BUILD to XYZ_CFLAGS
+      CBCUNITTEST_CFLAGS="${CBCUNITTEST_CFLAGS} -DCBCUNITTEST_BUILD"
 
+      # Define BUILDTOOLS_DEBUG to enable debugging output
+      if test "$BUILDTOOLS_DEBUG" = 1 ; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_LFLAGS_NOPC: \"${CBCUNITTEST_LFLAGS_NOPC}\"" >&5
+printf "%s\n" "$as_me: CBCUNITTEST_LFLAGS_NOPC: \"${CBCUNITTEST_LFLAGS_NOPC}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_CFLAGS_NOPC: \"${CBCUNITTEST_CFLAGS_NOPC}\"" >&5
+printf "%s\n" "$as_me: CBCUNITTEST_CFLAGS_NOPC: \"${CBCUNITTEST_CFLAGS_NOPC}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: adding \"${CBCUNITTEST_PCFILES}\"" >&5
+printf "%s\n" "$as_me: adding \"${CBCUNITTEST_PCFILES}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_LFLAGS: \"${CBCUNITTEST_LFLAGS}\"" >&5
+printf "%s\n" "$as_me: CBCUNITTEST_LFLAGS: \"${CBCUNITTEST_LFLAGS}\"" >&6;}
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCUNITTEST_CFLAGS: \"${CBCUNITTEST_CFLAGS}\"" >&5
+printf "%s\n" "$as_me: CBCUNITTEST_CFLAGS: \"${CBCUNITTEST_CFLAGS}\"" >&6;}
+      fi
 
-   if test $coin_has_glpk = yes; then
-  COIN_HAS_GLPK_TRUE=
-  COIN_HAS_GLPK_FALSE='#'
-else
-  COIN_HAS_GLPK_TRUE='#'
-  COIN_HAS_GLPK_FALSE=
-fi
-
-
-
-  if test $coin_has_glpk = yes ; then
-
-printf "%s\n" "#define CBC_HAS_GLPK 1" >>confdefs.h
-
-    CBCSOLVERLIB_PCFILES="$glpk_pcfiles $CBCSOLVERLIB_PCFILES"
-       CBCSOLVERLIB_LFLAGS="$glpk_lflags $CBCSOLVERLIB_LFLAGS"
-       CBCSOLVERLIB_CFLAGS="$glpk_cflags $CBCSOLVERLIB_CFLAGS"
-
-
-
-  fi
 
 
 #############################################################################
@@ -23315,7 +23206,7 @@ ac_config_files="$ac_config_files doxydoc/doxygen.conf"
 
 
 # Here put the location and name of the configuration header file
-ac_config_headers="$ac_config_headers src/config.h src/config_cbc.h src/config_cbcsolver.h src/OsiCbc/config_osicbc.h"
+ac_config_headers="$ac_config_headers src/config.h src/config_cbc.h src/OsiCbc/config_osicbc.h"
 
 
 
@@ -23782,10 +23673,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_CPLEX_TRUE}" && test -z "${COIN_HAS_CPLEX_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_CPLEX\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COIN_HAS_GLPK_TRUE}" && test -z "${COIN_HAS_GLPK_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_GLPK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CBC_BUILD_CBC_GENERIC_TRUE}" && test -z "${CBC_BUILD_CBC_GENERIC_FALSE}"; then
@@ -24834,7 +24721,6 @@ do
     "doxydoc/doxygen.conf") CONFIG_FILES="$CONFIG_FILES doxydoc/doxygen.conf" ;;
     "src/config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config.h" ;;
     "src/config_cbc.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config_cbc.h" ;;
-    "src/config_cbcsolver.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config_cbcsolver.h" ;;
     "src/OsiCbc/config_osicbc.h") CONFIG_HEADERS="$CONFIG_HEADERS src/OsiCbc/config_osicbc.h" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

@@ -959,6 +959,10 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 #endif
 #ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
+    if (clpSolver) {
+      clpSolver->getModelPtr()->cleanSolver();
+      clpSolver->getModelPtr()->setWhatsChanged(0);
+    }
     // See if SOS
     if (clpSolver && clpSolver->numberSOS()) {
       // SOS
@@ -2209,7 +2213,6 @@ int CbcRounding::solution(double &solutionValue,
     }
   }
 
-  double penalty = 0.0;
   // see if feasible - just using singletons
   for (i = 0; i < numberRows; i++) {
     double value = rowActivity[i];
@@ -2296,8 +2299,15 @@ int CbcRounding::solution(double &solutionValue,
         newSolutionValue += addCost;
         rowActivity[i] += changeRowActivity;
       }
-      penalty += fabs(thisInfeasibility);
     }
+  }
+  double penalty = 0.0;
+  // integer variables may have wandered
+  for (i = 0; i < numberIntegers; i++) {
+    int iColumn = integerVariable[i];
+    double value = newSolution[iColumn];
+    if (fabs(floor(value + 0.5) - value) > integerTolerance)
+      penalty += fabs(floor(value + 0.5) - value);
   }
   if (penalty) {
     // see if feasible using any

@@ -2,7 +2,7 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-#include "CbcSolverConfig.h"
+#include "CbcConfig.h"
 
 #include "CoinTime.hpp"
 
@@ -5216,7 +5216,7 @@ void OsiBiLinear::addExtraRow(int row, double multiplier)
   delete[] multiplier_;
   multiplier_ = tempD;
 }
-static bool testCoarse = true;
+static const bool testCoarse = true;
 // Infeasibility - large is 0.5
 double
 OsiBiLinear::infeasibility(const OsiBranchingInformation *info, int &whichWay) const

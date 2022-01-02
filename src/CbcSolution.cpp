@@ -9,21 +9,19 @@
   This file is part of cbc-generic.
 */
 
-#include <string>
-#include <cstdio>
 #include <cassert>
+#include <cstdio>
+#include <string>
 
+#include "CoinFileIO.hpp"
 #include "CoinHelperFunctions.hpp"
 #include "CoinSort.hpp"
-#include "CoinFileIO.hpp"
 
-#include "CbcGenCtlBlk.hpp"
-#include "CbcGenParam.hpp"
+#include "CbcParam.hpp"
+#include "CbcParamUtils.hpp"
+#include "CbcParameters.hpp"
 
-namespace {
-
-
-}
+namespace {}
 
 namespace {
 
@@ -37,8 +35,8 @@ namespace {
   Returns the number of generated masks, -1 on error.
 */
 
-int generateMasks(std::string proto, int longestName,
-  int *&maskStarts, char **&finalMasks)
+int generateMasks(std::string proto, int longestName, int *&maskStarts,
+                  char **&finalMasks)
 
 {
   int nAst = 0;
@@ -201,45 +199,43 @@ bool maskMatches(const int *starts, char **masks, const char *checkC)
     all (4)	  all primal variables and row activities
 */
 
-int CbcGenParamUtils::doSolutionParam(CoinParam *param)
+int CbcParamUtils::doSolutionParam(CoinParam &param)
 
 {
-  assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
-  assert(genParam != 0);
-  CbcGenCtlBlk *ctlBlk = genParam->obj();
-  assert(ctlBlk != 0);
-  CbcModel *model = ctlBlk->model_;
+  CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
+  CbcModel *model = parameters->getModel();
   assert(model != 0);
   /*
       Setup to return nonfatal/fatal error (1/-1) by default.
     */
   int retval;
-  if (CoinParamUtils::isInteractive()) {
-    retval = 1;
-  } else {
+  //if (CoinParamUtils::isInteractive()) {
+  //  retval = 1;
+  //} else {
     retval = -1;
-  }
+  //}
   /*
       It's hard to print a solution we don't have.
     */
-  if (ctlBlk->bab_.haveAnswer_ == false) {
+  if (!parameters->haveAnswer()) {
     std::cout << "There is no solution available to print." << std::endl;
     return (retval);
   }
-  OsiSolverInterface *osi = ctlBlk->bab_.answerSolver_;
+  OsiSolverInterface *osi = parameters->answerSolver();
   assert(osi != 0);
   /*
       Figure out where we're going to write the solution. As special cases,
       `$' says `use the previous output file' and `-' says `use stdout'.
 
-      cbc will also accept `no string value' as stdout, but that'd be a real pain
-      in this architecture.
+      cbc will also accept `no string value' as stdout, but that'd be a real
+     pain in this architecture.
     */
-  std::string field = genParam->strVal();
+  std::string field = cbcParam.strVal();
   std::string fileName;
   if (field == "$") {
-    fileName = ctlBlk->lastSolnOut_;
+     fileName = parameters->getLastSolnOut();
     field = fileName;
   }
   if (field == "-") {
@@ -260,7 +256,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
       }
     }
     if (!(fileAbsPath(fileName) || fileName.substr(0, 2) == "./")) {
-      fileName = ctlBlk->dfltDirectory_ + fileName;
+      fileName = parameters->getDefaultDirectory() + fileName;
     }
   }
   /*
@@ -276,13 +272,11 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
     fp = fopen(fileName.c_str(), "w");
   }
   if (!fp) {
-    std::cout
-      << "Unable to open file `" << fileName
-      << "', original name '" << genParam->strVal() << "'." << std::endl;
+    std::cout << "Unable to open file `" << fileName << "', original name '"
+              << cbcParam.strVal() << "'." << std::endl;
     return (retval);
   } else {
-    std::cout
-      << "Writing solution to `" << fileName << "'." << std::endl;
+    std::cout << "Writing solution to `" << fileName << "'." << std::endl;
   }
 
   int m = osi->getNumRows();
@@ -294,7 +288,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
       row cut debugger. For the row cut debugger, we want to produce C++ code
       that can be pasted into the debugger's set of known problems.
     */
-  if (ctlBlk->printMode_ == 2) {
+  if (parameters->getPrintMode() == 2) {
     int k = 0;
     bool newLine = true;
     bool comma = false;
@@ -332,7 +326,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
         } else {
           value = ceil(value - .5);
         }
-        int ivalue = static_cast< int >(value);
+        int ivalue = static_cast<int>(value);
         fprintf(fp, "%d.0", ivalue);
         if (++k == 10) {
           k = 0;
@@ -345,15 +339,15 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
   }
   /*
       Begin the code to generate output meant for a human.  What's our longest
-      name? Scan the names we're going to print. printMode_ of 3 or 4 requires we
-      scan the row names too. Force between 8 and 20 characters in any event.
+      name? Scan the names we're going to print. printMode_ of 3 or 4 requires
+     we scan the row names too. Force between 8 and 20 characters in any event.
     */
   int longestName = 0;
   for (int j = 0; j < n; j++) {
     int len = osi->getColName(j).length();
     longestName = CoinMax(longestName, len);
   }
-  if (ctlBlk->printMode_ >= 3) {
+  if (parameters->getPrintMode() >= 3) {
     for (int i = 0; i < m; i++) {
       int len = osi->getRowName(i).length();
       longestName = CoinMax(longestName, len);
@@ -362,12 +356,14 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
   /*
       Generate masks if we need to do so.
     */
-  bool doMask = ctlBlk->printMask_ != "";
+  bool doMask = parameters->getPrintMask() != "";
   int *maskStarts = NULL;
   int maxMasks = 0;
   char **masks = NULL;
   if (doMask) {
-    maxMasks = generateMasks(ctlBlk->printMask_, longestName, maskStarts, masks);
+    maxMasks =
+        generateMasks(parameters->getPrintMask(), longestName, maskStarts,
+                      masks);
     if (maxMasks < 0) {
       return (retval);
     }
@@ -386,7 +382,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
       the row activity and the value of the associated dual.
 
       Which to print? Violated constraints will always be flagged to print.
-      Otherwise, if m < 50 or all rows are requested, print all rows.  Otherwise,
+      Otherwise, if m < 50 or all rows are requested, print all rows. Otherwise,
       print tight constraints (non-zero dual).
 
       All of this is filtered through printMask, if specified.
@@ -395,23 +391,24 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
   osi->getDblParam(OsiPrimalTolerance, primalTolerance);
 
   int iRow;
-  if (ctlBlk->printMode_ >= 3) {
+  if (parameters->getPrintMode() >= 3) {
     const double *dualRowSolution = osi->getRowPrice();
     const double *primalRowSolution = osi->getRowActivity();
     const double *rowLower = osi->getRowLower();
     const double *rowUpper = osi->getRowUpper();
 
-    fprintf(fp, "\n   %7s %-*s%15s%15s\n\n",
-      "Index", longestName, "Row", "Activity", "Dual");
+    fprintf(fp, "\n   %7s %-*s%15s%15s\n\n", "Index", longestName, "Row",
+            "Activity", "Dual");
 
     for (iRow = 0; iRow < m; iRow++) {
       bool violated = false;
       bool print = false;
-      if (primalRowSolution[iRow] > rowUpper[iRow] + primalTolerance || primalRowSolution[iRow] < rowLower[iRow] - primalTolerance) {
+      if (primalRowSolution[iRow] > rowUpper[iRow] + primalTolerance ||
+          primalRowSolution[iRow] < rowLower[iRow] - primalTolerance) {
         violated = true;
         print = true;
       } else {
-        if (m < 50 || ctlBlk->printMode_ >= 4) {
+        if (m < 50 || parameters->getPrintMode() >= 4) {
           print = true;
         } else if (fabs(dualRowSolution[iRow]) > 1.0e-8) {
           print = true;
@@ -428,7 +425,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
           fprintf(fp, "%3s", " ");
         }
         fprintf(fp, "%7d %-*s%15.8g%15.8g\n", iRow, longestName, name,
-          primalRowSolution[iRow], dualRowSolution[iRow]);
+                primalRowSolution[iRow], dualRowSolution[iRow]);
       }
     }
     fprintf(fp, "\n");
@@ -439,25 +436,26 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
       variables, all are printed. All of this is filtered through `integer only'
       and can be further filtered using printMask.
     */
-  if (ctlBlk->printMode_ != 2) {
+  if (parameters->getPrintMode() != 2) {
     const double *columnLower = osi->getColLower();
     const double *columnUpper = osi->getColUpper();
     const double *dualColSolution = osi->getReducedCost();
 
-    fprintf(fp, "\n   %7s %-*s%15s%15s\n\n",
-      "Index", longestName, "Column", "Value", "Reduced Cost");
+    fprintf(fp, "\n   %7s %-*s%15s%15s\n\n", "Index", longestName, "Column",
+            "Value", "Reduced Cost");
 
     for (iColumn = 0; iColumn < n; iColumn++) {
       bool violated = false;
       bool print = false;
-      if (primalColSolution[iColumn] > columnUpper[iColumn] + primalTolerance || primalColSolution[iColumn] < columnLower[iColumn] - primalTolerance) {
+      if (primalColSolution[iColumn] > columnUpper[iColumn] + primalTolerance ||
+          primalColSolution[iColumn] < columnLower[iColumn] - primalTolerance) {
         violated = true;
         print = true;
       } else {
-        if (n < 50 || ctlBlk->printMode_ == 4) {
+        if (n < 50 || parameters->getPrintMode() == 4) {
           print = true;
         } else if (fabs(primalColSolution[iColumn]) > 1.0e-8) {
-          if (ctlBlk->printMode_ == 1) {
+          if (parameters->getPrintMode() == 1) {
             print = osi->isInteger(iColumn);
           } else {
             print = true;
@@ -475,7 +473,7 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
           fprintf(fp, "%3s", " ");
         }
         fprintf(fp, "%7d %-*s%15.8g%15.8g\n", iColumn, longestName, name,
-          primalColSolution[iColumn], dualColSolution[iColumn]);
+                primalColSolution[iColumn], dualColSolution[iColumn]);
       }
     }
   }
@@ -502,36 +500,33 @@ int CbcGenParamUtils::doSolutionParam(CoinParam *param)
   it's valid.
 */
 
-int CbcGenParamUtils::doPrintMaskParam(CoinParam *param)
+int CbcParamUtils::doPrintMaskParam(CoinParam &param)
 
 {
-  assert(param != 0);
-  CbcGenParam *genParam = dynamic_cast< CbcGenParam * >(param);
-  assert(genParam != 0);
-  CbcGenCtlBlk *ctlBlk = genParam->obj();
-  assert(ctlBlk != 0);
+  CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
   /*
       Setup to return nonfatal/fatal error (1/-1) by default.
     */
   int retval;
-  if (CoinParamUtils::isInteractive()) {
-    retval = 1;
-  } else {
+  //if (CoinParamUtils::isInteractive()) {
+  //  retval = 1;
+  //} else {
     retval = -1;
-  }
+  //}
   /*
       Now do a bit of verification of the mask. It should be non-null and, if
       quoted, the quotes should be matched. Aribtrarily put the absolute maximum
-      length at 50 characters. If we have a model loaded, that'll be tightened to
-      the length of the longest name.
+      length at 50 characters. If we have a model loaded, that'll be tightened
+     to the length of the longest name.
     */
-  std::string maskProto = param->strVal();
+  std::string maskProto = cbcParam.strVal();
   int maskLen = maskProto.length();
   if (maskLen <= 0 || maskLen > 50) {
-    std::cerr
-      << "Mask |" << maskProto
-      << "| is " << maskLen << " characters; should be between "
-      << 0 << " and " << 50 << "." << std::endl;
+    std::cerr << "Mask |" << maskProto << "| is " << maskLen
+              << " characters; should be between " << 0 << " and " << 50 << "."
+              << std::endl;
     return (retval);
   }
   /*
@@ -540,9 +535,8 @@ int CbcGenParamUtils::doPrintMaskParam(CoinParam *param)
   if (maskProto[0] == '"' || maskProto[0] == '\'') {
     char quoteChar = maskProto[0];
     if (maskProto[maskLen - 1] != quoteChar) {
-      std::cerr
-        << "Mismatched quotes around mask |" << maskProto
-        << "|." << std::endl;
+      std::cerr << "Mismatched quotes around mask |" << maskProto << "|."
+                << std::endl;
       return (retval);
     } else {
       maskProto = maskProto.substr(1, maskLen - 2);
@@ -552,8 +546,8 @@ int CbcGenParamUtils::doPrintMaskParam(CoinParam *param)
       Mask should not be longer than longest name. Of course, if we don't have a
       model, we can't do this check.
     */
-  if (ctlBlk->goodModel_) {
-    CbcModel *model = ctlBlk->model_;
+  if (parameters->goodModel()) {
+    CbcModel *model = parameters->getModel();
     assert(model != 0);
     OsiSolverInterface *osi = model->solver();
     assert(osi != 0);
@@ -569,18 +563,18 @@ int CbcGenParamUtils::doPrintMaskParam(CoinParam *param)
       longestName = CoinMax(longestName, len);
     }
     if (maskLen > longestName) {
-      std::cerr
-        << "Mask |" << maskProto << "| has " << maskLen << " chars; this"
-        << " is longer than the longest name (" << longestName
-        << " chars)." << std::endl;
+      std::cerr << "Mask |" << maskProto << "| has " << maskLen
+                << " chars; this"
+                << " is longer than the longest name (" << longestName
+                << " chars)." << std::endl;
       return (retval);
     }
   }
 
-  ctlBlk->printMask_ = maskProto;
+  parameters->setPrintMask(maskProto);
 
   return (0);
 }
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

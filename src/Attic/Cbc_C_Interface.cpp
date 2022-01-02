@@ -10,7 +10,6 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <deque>
  
 #include "Cbc_C_Interface.h"
 
@@ -63,6 +62,7 @@
 
 using namespace std;
 
+static char **to_char_vec( const vector< string > &names );
 static void *xmalloc( const size_t size );
 static void *xrealloc( void *ptr, const size_t newSize );
 static void Cbc_updateSlack( Cbc_Model *model, const double *ractivity );
@@ -323,8 +323,7 @@ struct Cbc_Model {
     m->model_->solver()->prop(index, val);     \
   }
 
-//TODO Why is this here?
-//const int VERBOSE = 0;
+const int VERBOSE = 0;
 
 typedef std::map< std::string, int > NameIndex;
 
@@ -1470,7 +1469,7 @@ void CBC_LINKAGE Cbc_computeFeatures(Cbc_Model *model, double *features) {
   OsiFeatures::compute(features, model->solver_);
 }
 
-CBCLIB_EXPORT int CBC_LINKAGE
+CBCSOLVERLIB_EXPORT int CBC_LINKAGE
 Cbc_nFeatures() {
   return OsiFeatures::n;
 }
@@ -1775,11 +1774,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   if (model->lp_method == LPM_Auto) {
     ClpSimplexOther *clpo = static_cast<ClpSimplexOther *>(clps);
     assert(clpo);
-    // Hacky for now
-    std::string opts_str(clpo->guess(0));
-    char opts[256];
-    assert (opts_str.length() <= 256);
-    strcpy(opts, opts_str.c_str());
+    char *opts = const_cast<char *>(clpo->guess(0).c_str());
 
     if (opts) {
       if (strstr(opts, "-primals") != NULL) {
@@ -1839,6 +1834,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
             //printf("Setting dual pivot to pesteep.\n");
           }
       } // dual pivot
+      delete[] opts;
     }
   } // auto
 
@@ -2262,9 +2258,9 @@ Cbc_solve(Cbc_Model *model)
         cbcModel.passInMessageHandler(cbcmh);
       }
 
-      CbcParameters parameters;
-      CbcMain0(cbcModel, parameters);
-      parameters.disableWelcomePrinting();
+      CbcSolverUsefulData cbcData;
+      CbcMain0(cbcModel, cbcData);
+      //cbcData.printWelcome_ = false;
 
       // adds SOSs if any
       Cbc_addAllSOS(model, cbcModel);
@@ -2292,23 +2288,28 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
       // aditional parameters specified by user as strings
-      std::deque< string > inputQueue;
+      std::vector< string > argv;
+      argv.push_back("Cbc_C_Interface");
       for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
         string param = model->vcbcOptions[i];
         string val = model->cbcOptions[param];
         if (val.size()) {
           stringstream ss;
           ss << "-" << param << "=" << val;
-          inputQueue.push_back(ss.str().c_str());
+          argv.push_back(ss.str().c_str());
         } else {
           stringstream ss;
           ss << "-" << param;
-          inputQueue.push_back(ss.str());
+          argv.push_back(ss.str());
         }
       }
 
-      inputQueue.push_back("-solve");
-      inputQueue.push_back("-quit");
+      argv.push_back("-solve");
+      argv.push_back("-quit");
+
+      char **charCbcOpts = to_char_vec(argv);
+      const int nargs = (int) argv.size();
+      const char **args = (const char **)charCbcOpts;
 
       OsiBabSolver defaultC;
       if (model->cutCBAtSol) {
@@ -2334,9 +2335,11 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
       cbcModel.setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
 
-      CbcMain1(inputQueue, cbcModel, parameters, cbc_callb);
+      CbcMain1( nargs, args, cbcModel, cbc_callb, cbcData );
 
       Cbc_getMIPOptimizationResults( model, cbcModel );
+
+      free(charCbcOpts);
 
       if (cbc_eh)
         delete cbc_eh;
@@ -4711,6 +4714,26 @@ Cbc_getRowNameIndex(Cbc_Model *model, const char *name)
   return it->second;
 }
 
+static char **to_char_vec( const vector< string > &names )
+{
+    size_t spaceVec = (sizeof(char*)*names.size());
+    size_t totLen = names.size(); // all \0
+    for ( int i=0 ; (i<(int)names.size()) ; ++i )
+        totLen += names[i].size();
+    totLen *= sizeof(char);
+
+    char **r = (char **)xmalloc(spaceVec+totLen);
+    assert( r );
+    r[0] = (char *)(r + names.size());
+    for ( size_t i=1 ; (i<names.size()) ; ++i )
+        r[i] = r[i-1] + names[i-1].size() + 1;
+
+    for ( size_t i=0 ; (i<names.size()) ; ++i )
+        strcpy(r[i], names[i].c_str());
+
+    return r;
+}
+
 static void *xmalloc( const size_t size )
 {
    void *result = malloc( size );
@@ -4849,6 +4872,3 @@ void CBC_LINKAGE Cbc_getBuildInfo(char *str) {
 #if defined(__MWERKS__)
 #pragma export off
 #endif
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/

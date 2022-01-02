@@ -9,7 +9,7 @@ Description: COIN-OR Branch and Cut
 URL: @PACKAGE_URL@
 Version: @PACKAGE_VERSION@
 Cflags: -I${includedir}
-@COIN_STATIC_BUILD_FALSE@Libs: -L${libdir} -lCbcSolver -lCbc
+@COIN_STATIC_BUILD_FALSE@Libs: -L${libdir} -lCbc
 @COIN_STATIC_BUILD_FALSE@Requires.private: @CBCLIB_PCFILES@
-@COIN_STATIC_BUILD_TRUE@Libs: -L${libdir} -lCbcSolver -lCbc @CBCLIB_LFLAGS_NOPC@
+@COIN_STATIC_BUILD_TRUE@Libs: -L${libdir} -lCbc @CBCLIB_LFLAGS_NOPC@
 @COIN_STATIC_BUILD_TRUE@Requires: @CBCLIB_PCFILES@

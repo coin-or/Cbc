@@ -57,29 +57,29 @@ AC_CHECK_HEADERS([signal.h])
 #############################################################################
 
 m4_foreach_w([myvar],[CoinUtils Osi Cgl Clp],
-  [ AC_COIN_CHK_PKG(myvar,[CbcLib CbcSolverLib CbcGeneric OsiCbcLib])
+  [ AC_COIN_CHK_PKG(myvar,[CbcLib OsiCbcLib])
     if test $coin_has_[]m4_tolower(myvar) != yes ; then
       AC_MSG_ERROR([Required package myvar is not available.])
     fi
   ])
 
-AC_COIN_CHK_PKG(OsiClp,[CbcLib CbcSolverLib CbcGeneric OsiCbcLib],[osi-clp])
+AC_COIN_CHK_PKG(OsiClp,[CbcLib OsiCbcLib],[osi-clp])
 if test $coin_has_osiclp != yes ; then
   AC_MSG_ERROR("Required package OsiClp unavailable.")
 fi
 
 # Optional package for command line edit support
-AC_COIN_CHK_GNU_READLINE([CbcLib CbcGeneric])
+AC_COIN_CHK_GNU_READLINE([CbcLib])
 
 #############################################################################
 #                       Other third party software                          #
 #############################################################################
 
 # Ampl Solver library
-AC_COIN_CHK_PKG(ASL,[CbcSolverLib],[coinasl])
+AC_COIN_CHK_PKG(ASL,[CbcLib],[coinasl])
 
 # Nauty library (for symmetry detection).
-AC_COIN_CHK_PKG([Nauty],[CbcLib CbcSolverLib],[nauty])
+AC_COIN_CHK_PKG([Nauty],[CbcLib],[nauty])
 
 #############################################################################
 
@@ -96,54 +96,55 @@ AC_COIN_CHK_PKG(Miplib3,,[coindatamiplib3],,dataonly)
 
 # Check which other LP solvers are available, some of them become a dependency
 # of CbcGeneric
-AC_COIN_CHK_PKG(OsiDyLP,[CbcGeneric OsiCbcLib],[osi-dylp])
-AC_COIN_CHK_PKG(OsiCpx,[CbcLib CbcGeneric CbcSolverLib OsiCbcLib],[osi-cplex])
-AC_COIN_CHK_PKG(OsiGlpk,[CbcGeneric OsiCbcLib],[osi-glpk])
-#AC_COIN_CHK_PKG(OsiGrb,,[osi-gurobi])
-AC_COIN_CHK_PKG(OsiMsk,[CbcGeneric OsiCbcLib],[osi-mosek])
-AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric OsiCbcLib],[osi-soplex])
+#AC_COIN_CHK_PKG(OsiDyLP,[CbcGeneric OsiCbcLib],[osi-dylp])
+#AC_COIN_CHK_PKG(OsiCpx,[CbcLib CbcGeneric OsiCbcLib],[osi-cplex])
+#AC_COIN_CHK_PKG(OsiGlpk,[CbcGeneric OsiCbcLib],[osi-glpk])
+##AC_COIN_CHK_PKG(OsiGrb,,[osi-gurobi])
+#AC_COIN_CHK_PKG(OsiMsk,[CbcGeneric OsiCbcLib],[osi-mosek])
+#AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric OsiCbcLib],[osi-soplex])
 #AC_COIN_CHK_PKG(OsiXpr,,[osi-xpress])
 
 AC_COIN_CHK_LIB(Cplex,[CbcLib],[-lcplex -lpthread -lm -ldl],[],[],[CPXgetstat])
-AC_COIN_CHK_PKG(Glpk,[CbcSolverLib],[coinglpk])
+
+AC_COIN_FINALIZE_FLAGS([CbcLib OsiCbcLib CbcUnitTest])
 
 #############################################################################
 #                       CbcGeneric configuration                            #
 #############################################################################
 
 # Are we building cbc-generic? Default is no (false).
-AC_ARG_ENABLE([cbc-generic],
-  AS_HELP_STRING([--enable-cbc-generic],[enables build of cbc-generic]),
-  [cbc_generic=$enableval],
-  [cbc_generic=no])
-AM_CONDITIONAL(CBC_BUILD_CBC_GENERIC, test "$cbc_generic" = yes)
+dnl AC_ARG_ENABLE([cbc-generic],
+dnl   AS_HELP_STRING([--enable-cbc-generic],[enables build of cbc-generic]),
+dnl   [cbc_generic=$enableval],
+dnl   [cbc_generic=no])
+dnl AM_CONDITIONAL(CBC_BUILD_CBC_GENERIC, test "$cbc_generic" = yes)
 
-if test "$cbc_generic" = yes ; then
-  # Set the default solver for cbc-generic. In theory, any OsiXXX should work.
-  # In practice, only thoselisted below have had any testing long long ago or never.
-  AC_MSG_CHECKING(for cbc-generic default solver)
-  AC_ARG_WITH([cbc-generic-solver],
-              AS_HELP_STRING([--with-cbc-generic-solver],[specify default solver for cbc-generic in lower case letters (if not given, clp is assumed)]),
-              [cbc_default_solver=$withval],
-              [cbc_default_solver=clp])
-  AC_MSG_RESULT($cbc_default_solver)
+dnl if test "$cbc_generic" = yes ; then
+dnl   # Set the default solver for cbc-generic. In theory, any OsiXXX should work.
+dnl   # In practice, only thoselisted below have had any testing long long ago or never.
+dnl   AC_MSG_CHECKING(for cbc-generic default solver)
+dnl   AC_ARG_WITH([cbc-generic-solver],
+dnl               AS_HELP_STRING([--with-cbc-generic-solver],[specify default solver for cbc-generic in lower case letters (if not given, clp is assumed)]),
+dnl               [cbc_default_solver=$withval],
+dnl               [cbc_default_solver=clp])
+dnl   AC_MSG_RESULT($cbc_default_solver)
 
-  case $cbc_default_solver in
-      clp) ;;
-    cplex) ;;
-     dylp) ;;
-     glpk) ;;
-    highs) ;;
-    mosek) ;;
-   soplex) ;;
-        *) AC_MSG_WARN([Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver.])
-          ;;
-  esac
-  AC_DEFINE_UNQUOTED([CBC_DEFAULT_SOLVER],"$cbc_default_solver",
-    [Define to the name of the default solver to be used in cbc-generic in small letters])
+dnl   case $cbc_default_solver in
+dnl       clp) ;;
+dnl     cplex) ;;
+dnl      dylp) ;;
+dnl      glpk) ;;
+dnl     highs) ;;
+dnl     mosek) ;;
+dnl    soplex) ;;
+dnl         *) AC_MSG_WARN([Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver.])
+dnl           ;;
+dnl   esac
+dnl   AC_DEFINE_UNQUOTED([CBC_DEFAULT_SOLVER],"$cbc_default_solver",
+dnl     [Define to the name of the default solver to be used in cbc-generic in small letters])
 
-  AC_MSG_NOTICE([building cbc-generic with default solver $cbc_default_solver])
-fi
+dnl   AC_MSG_NOTICE([building cbc-generic with default solver $cbc_default_solver])
+dnl fi
 
 #############################################################################
 #                       Cbc parallel configuration	                         #
@@ -358,7 +359,7 @@ AC_CONFIG_FILES([Makefile
 AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Here put the location and name of the configuration header file
-AC_CONFIG_HEADERS([src/config.h src/config_cbc.h src/config_cbcsolver.h src/OsiCbc/config_osicbc.h])
+AC_CONFIG_HEADERS([src/config.h src/config_cbc.h src/OsiCbc/config_osicbc.h])
 
 AC_COIN_FINALIZE_FLAGS([CbcLib CbcSolverLib CbcGeneric OsiCbcLib CbcUnitTest])
 

@@ -202,6 +202,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\CbcBab.cpp" />
     <ClCompile Include="..\..\..\src\CbcBranchAllDifferent.cpp" />
     <ClCompile Include="..\..\..\src\CbcBranchCut.cpp" />
     <ClCompile Include="..\..\..\src\CbcBranchDecision.cpp" />
@@ -210,6 +211,7 @@
     <ClCompile Include="..\..\..\src\CbcBranchingObject.cpp" />
     <ClCompile Include="..\..\..\src\CbcBranchLotsize.cpp" />
     <ClCompile Include="..\..\..\src\CbcBranchToFixLots.cpp" />
+    <ClCompile Include="..\..\..\src\CbcCbcParam.cpp" />
     <ClCompile Include="..\..\..\src\CbcClique.cpp" />
     <ClCompile Include="..\..\..\src\CbcCompareDefault.cpp" />
     <ClCompile Include="..\..\..\src\CbcCompareDepth.cpp" />
@@ -256,10 +258,13 @@
     <ClCompile Include="..\..\..\src\CbcObject.cpp" />
     <ClCompile Include="..\..\..\src\CbcObjectUpdateData.cpp" />
     <ClCompile Include="..\..\..\src\CbcParam.cpp" />
+    <ClCompile Include="..\..\..\src\CbcParameters.cpp" />
+    <ClCompile Include="..\..\..\src\CbcParamUtils.cpp" />
     <ClCompile Include="..\..\..\src\CbcPartialNodeInfo.cpp" />
     <ClCompile Include="..\..\..\src\CbcSimpleInteger.cpp" />
     <ClCompile Include="..\..\..\src\CbcSimpleIntegerDynamicPseudoCost.cpp" />
     <ClCompile Include="..\..\..\src\CbcSimpleIntegerPseudoCost.cpp" />
+    <ClCompile Include="..\..\..\src\CbcSolution.cpp" />
     <ClCompile Include="..\..\..\src\CbcSOS.cpp" />
     <ClCompile Include="..\..\..\src\CbcStatistics.cpp" />
     <ClCompile Include="..\..\..\src\CbcStrategy.cpp" />

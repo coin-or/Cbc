@@ -192,6 +192,7 @@ public:
     - OBForce:
     - OBSimple:
     - OBOn:
+    - OBLightweight:
     - OBMorePrinting:
     - OBEndMarker
    */
@@ -203,6 +204,7 @@ public:
     OBForce,
     OBSimple,
     OBOn,
+    OBLightweight,
     OBMorePrinting,
     OBEndMarker
   };

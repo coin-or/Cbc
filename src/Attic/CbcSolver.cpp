@@ -7708,10 +7708,12 @@ int CbcMain1(int argc, const char *argv[],
                       nautyAdded = nautiedConstraints(*babModel_,
 						      MAX_NAUTY_PASS);
 		    } else {
-		      assert (k==5 || k ==6);
+		      assert (k>=5 && k <=7);
 		      if (k ==5)
 			babModel_->setMoreSpecialOptions2(babModel_->moreSpecialOptions2() | 128 | 256 | 131072);
-		      else
+		      else if (k==6)
+			babModel_->setMoreSpecialOptions2(babModel_->moreSpecialOptions2() | 128 | 256 | 262144);
+		      else 
 			babModel_->setMoreSpecialOptions2(babModel_->moreSpecialOptions2() | 128 | 256 | 131072 | 262144);
                     }
                   }
@@ -11282,7 +11284,11 @@ void CbcMain0(CbcModel &model,
   parameters[whichParam(CBC_PARAM_STR_LOCALTREE, parameters)].setCurrentOption("off");
   parameters[whichParam(CBC_PARAM_STR_COSTSTRATEGY, parameters)].setCurrentOption("off");
 #ifdef CBC_HAS_NAUTY
+#ifndef CBC_LIGHTWEIGHT_NAUTY
   parameters[whichParam(CBC_PARAM_STR_ORBITAL, parameters)].setCurrentOption("on");
+#else
+  parameters[whichParam(CBC_PARAM_STR_ORBITAL, parameters)].setCurrentOption("light");
+#endif
 #endif
 }
 

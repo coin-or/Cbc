@@ -120,7 +120,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Cgl\src\CglBKClique;..\..\..\..\Cgl\src\CglCommon;..\..\..\..\Cgl\src\CglClique;..\..\..\..\Cgl\src\CglCliqueStrengthening;..\..\..\..\Cgl\src\CglZeroHalf;..\..\..\..\Cgl\src\CglGMI;..\..\..\..\Cgl\src\CglLandP;..\..\..\..\Cgl\src\CglTwomir;..\..\..\..\Cgl\src\CglMixedIntegerRounding;..\..\..\..\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\Cgl\src\CglFlowCover;..\..\..\..\Cgl\src\CglOddHole;..\..\..\..\Cgl\src\CglOddWheel;..\..\..\..\Cgl\src\CglKnapsackCover;..\..\..\..\Cgl\src\CglGomory;..\..\..\..\Cgl\src\CglPreProcess;..\..\..\..\Cgl\src\CglDuplicateRow;..\..\..\..\Cgl\src\CglRedSplit;..\..\..\..\Cgl\src\CglProbing;..\..\..\..\Cgl\src\CglResidualCapacity;..\..\..\..\Cgl\src\CglRedSplit2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CBCLIB_BUILD;WIN32;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -135,7 +135,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Cgl\src\CglBKClique;..\..\..\..\Cgl\src\CglCommon;..\..\..\..\Cgl\src\CglClique;..\..\..\..\Cgl\src\CglCliqueStrengthening;..\..\..\..\Cgl\src\CglZeroHalf;..\..\..\..\Cgl\src\CglGMI;..\..\..\..\Cgl\src\CglLandP;..\..\..\..\Cgl\src\CglTwomir;..\..\..\..\Cgl\src\CglMixedIntegerRounding;..\..\..\..\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\Cgl\src\CglFlowCover;..\..\..\..\Cgl\src\CglOddHole;..\..\..\..\Cgl\src\CglOddWheel;..\..\..\..\Cgl\src\CglKnapsackCover;..\..\..\..\Cgl\src\CglGomory;..\..\..\..\Cgl\src\CglPreProcess;..\..\..\..\Cgl\src\CglDuplicateRow;..\..\..\..\Cgl\src\CglRedSplit;..\..\..\..\Cgl\src\CglProbing;..\..\..\..\Cgl\src\CglResidualCapacity;..\..\..\..\Cgl\src\CglRedSplit2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CBCLIB_BUILD;WIN32;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -152,7 +152,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Cgl\src\CglBKClique;..\..\..\..\Cgl\src\CglCommon;..\..\..\..\Cgl\src\CglClique;..\..\..\..\Cgl\src\CglCliqueStrengthening;..\..\..\..\Cgl\src\CglZeroHalf;..\..\..\..\Cgl\src\CglGMI;..\..\..\..\Cgl\src\CglLandP;..\..\..\..\Cgl\src\CglTwomir;..\..\..\..\Cgl\src\CglMixedIntegerRounding;..\..\..\..\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\Cgl\src\CglFlowCover;..\..\..\..\Cgl\src\CglOddHole;..\..\..\..\Cgl\src\CglOddWheel;..\..\..\..\Cgl\src\CglKnapsackCover;..\..\..\..\Cgl\src\CglGomory;..\..\..\..\Cgl\src\CglPreProcess;..\..\..\..\Cgl\src\CglDuplicateRow;..\..\..\..\Cgl\src\CglRedSplit;..\..\..\..\Cgl\src\CglProbing;..\..\..\..\Cgl\src\CglResidualCapacity;..\..\..\..\Cgl\src\CglRedSplit2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;_NDEBUG;CBCLIB_BUILD;WIN32;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -172,7 +172,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Cgl\src\CglBKClique;..\..\..\..\Cgl\src\CglCommon;..\..\..\..\Cgl\src\CglClique;..\..\..\..\Cgl\src\CglCliqueStrengthening;..\..\..\..\Cgl\src\CglZeroHalf;..\..\..\..\Cgl\src\CglGMI;..\..\..\..\Cgl\src\CglLandP;..\..\..\..\Cgl\src\CglTwomir;..\..\..\..\Cgl\src\CglMixedIntegerRounding;..\..\..\..\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\Cgl\src\CglFlowCover;..\..\..\..\Cgl\src\CglOddHole;..\..\..\..\Cgl\src\CglOddWheel;..\..\..\..\Cgl\src\CglKnapsackCover;..\..\..\..\Cgl\src\CglGomory;..\..\..\..\Cgl\src\CglPreProcess;..\..\..\..\Cgl\src\CglDuplicateRow;..\..\..\..\Cgl\src\CglRedSplit;..\..\..\..\Cgl\src\CglProbing;..\..\..\..\Cgl\src\CglResidualCapacity;..\..\..\..\Cgl\src\CglRedSplit2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CBC_THREAD;NDEBUG;_NDEBUG;CBCLIB_BUILD;WIN32;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -192,7 +192,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\..\Cgl\src\CglCliqueStrengthening;..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Cgl\src\CglBKClique;..\..\..\..\Cgl\src\CglCommon;..\..\..\..\Cgl\src\CglClique;..\..\..\..\Cgl\src\CglCliqueStrengthening;..\..\..\..\Cgl\src\CglZeroHalf;..\..\..\..\Cgl\src\CglGMI;..\..\..\..\Cgl\src\CglLandP;..\..\..\..\Cgl\src\CglTwomir;..\..\..\..\Cgl\src\CglMixedIntegerRounding;..\..\..\..\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\Cgl\src\CglFlowCover;..\..\..\..\Cgl\src\CglOddHole;..\..\..\..\Cgl\src\CglOddWheel;..\..\..\..\Cgl\src\CglKnapsackCover;..\..\..\..\Cgl\src\CglGomory;..\..\..\..\Cgl\src\CglPreProcess;..\..\..\..\Cgl\src\CglDuplicateRow;..\..\..\..\Cgl\src\CglRedSplit;..\..\..\..\Cgl\src\CglProbing;..\..\..\..\Cgl\src\CglResidualCapacity;..\..\..\..\Cgl\src\CglRedSplit2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;_NDEBUG;CBCLIB_BUILD;WIN32;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -212,7 +212,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\..\..\pthreads\;..\..\..\src;..\..\..\..\BuildTools\headers;..\..\..\..\CoinUtils\src;..\..\..\..\Osi\src\Osi;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Cgl\src\CglBKClique;..\..\..\..\Cgl\src\CglCommon;..\..\..\..\Cgl\src\CglClique;..\..\..\..\Cgl\src\CglCliqueStrengthening;..\..\..\..\Cgl\src\CglZeroHalf;..\..\..\..\Cgl\src\CglGMI;..\..\..\..\Cgl\src\CglLandP;..\..\..\..\Cgl\src\CglTwomir;..\..\..\..\Cgl\src\CglMixedIntegerRounding;..\..\..\..\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\Cgl\src\CglFlowCover;..\..\..\..\Cgl\src\CglOddHole;..\..\..\..\Cgl\src\CglOddWheel;..\..\..\..\Cgl\src\CglKnapsackCover;..\..\..\..\Cgl\src\CglGomory;..\..\..\..\Cgl\src\CglPreProcess;..\..\..\..\Cgl\src\CglDuplicateRow;..\..\..\..\Cgl\src\CglRedSplit;..\..\..\..\Cgl\src\CglProbing;..\..\..\..\Cgl\src\CglResidualCapacity;..\..\..\..\Cgl\src\CglRedSplit2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>COIN_FAST_CODE;CLP_FAST_CODE;NEW_STYLE_SOLVER=0;CBC_QUIET=1;HAVE_PTW32_CONFIG_H;CBC_THREAD;CBC_THREAD_SAFE;NDEBUG;_NDEBUG;CBCLIB_BUILD;WIN32;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -226,6 +226,29 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\CoinSolve.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Cgl\MSVisualStudio\v16\libCgl\libCgl.vcxproj">
+      <Project>{1e645a44-00ef-4093-9f6a-1d082bd43bdb}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\Clp\MSVisualStudio\v16\libClp\libClp.vcxproj">
+      <Project>{768b67d6-e6d3-4a8f-aa61-511fdbce7937}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\Clp\MSVisualStudio\v16\libOsiClp\libOsiClp.vcxproj">
+      <Project>{79433425-ec16-410f-9b91-8d31d2109c90}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\CoinUtils\MSVisualStudio\v16\libCoinUtils\libCoinUtils.vcxproj">
+      <Project>{6d2ef92a-d693-47e3-a325-a686e78c5ffd}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\Osi\MSVisualStudio\v16\libOsi\libOsi.vcxproj">
+      <Project>{bf5c7532-ee0a-479b-9993-72134087d530}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\libCbcSolver\libCbcSolver.vcxproj">
+      <Project>{5a9043a5-cb87-4e2b-807c-74830bffae39}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\libCbc\libCbc.vcxproj">
+      <Project>{0b054d74-6082-452f-9744-5fbe12c7d476}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

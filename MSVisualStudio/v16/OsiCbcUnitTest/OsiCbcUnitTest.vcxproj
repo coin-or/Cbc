@@ -169,6 +169,11 @@
     <ClCompile Include="..\..\..\test\OsiCbcSolverInterfaceTest.cpp" />
     <ClCompile Include="..\..\..\test\osiUnitTest.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libOsiCbc\libOsiCbc.vcxproj">
+      <Project>{22911998-fedd-44ac-902f-cfefa060c36a}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

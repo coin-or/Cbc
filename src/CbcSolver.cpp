@@ -1033,7 +1033,11 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   parameters[CbcParam::COMBINE]->setVal("off");
   parameters[CbcParam::CROSSOVER]->setVal("off");
 #ifdef CBC_HAS_NAUTY
+#ifndef CBC_LIGHTWEIGHT_NAUTY
   parameters[CbcParam::ORBITAL]->setVal("on");
+#else
+  parameters[CbcParam::ORBITAL]->setVal("lightweight");
+#endif
 #endif
   //parameters[CbcParam::PIVOTANDCOMPLEMENT]->setVal("off");
   parameters[CbcParam::PIVOTANDFIX]->setVal("off");
@@ -8123,11 +8127,15 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       nautyAdded =
                           nautiedConstraints(*babModel_, MAX_NAUTY_PASS);
                     } else {
-                      assert(k == 5 || k == 6);
+		      assert (k>=5 && k <=7);
                       if (k == 5)
                         babModel_->setMoreSpecialOptions2(
                             babModel_->moreSpecialOptions2() | 128 | 256 |
                             131072);
+                      else if (k == 6)
+                        babModel_->setMoreSpecialOptions2(
+                            babModel_->moreSpecialOptions2() | 128 | 256 |
+                            262144);
                       else
                         babModel_->setMoreSpecialOptions2(
                             babModel_->moreSpecialOptions2() | 128 | 256 |

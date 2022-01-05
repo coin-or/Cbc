@@ -13,7 +13,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <cfloat>
-
+#define JJF_REDUCE_HEURISTICS
 //#define PRINT_DEBUG
 #ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
@@ -266,13 +266,16 @@ bool CbcHeuristic::shouldHeurRun(int whereFrom)
   if ((whereFrom_ & (1 << whereFrom)) == 0)
     return false;
     // No longer used for original purpose - so use for ever run at all JJF
-#ifndef JJF_ONE
+#ifndef JJF_REDUCE_HEURISTICS
   // Don't run if hot start or no rows!
   if (model_ && (model_->hotstartSolution() || !model_->getNumRows()))
     return false;
   else
     return true;
 #else
+  // Don't run if hot start or no rows!
+  if (!model_ || (model_->hotstartSolution() || !model_->getNumRows()))
+    return false;
 #ifdef JJF_ZERO
   const CbcNode *currentNode = model_->currentNode();
   if (currentNode == NULL) {
@@ -305,7 +308,7 @@ bool CbcHeuristic::shouldHeurRun(int whereFrom)
     }
     // LL: should we save these nodes in the list of nodes where the heur was
     // LL: run?
-#ifndef JJF_ONE
+#ifndef JJF_REDUCE_HEURISTICS
     if (currentNode != NULL) {
       // Get where we are and create the appropriate CbcHeuristicNode object
       CbcHeuristicNode *nodeDesc = new CbcHeuristicNode(*model_);
@@ -330,7 +333,7 @@ bool CbcHeuristic::shouldHeurRun(int whereFrom)
     // Get where we are and create the appropriate CbcHeuristicNode object
     CbcHeuristicNode *nodeDesc = new CbcHeuristicNode(*model_);
     //#ifdef PRINT_DEBUG
-#ifndef JJF_ONE
+#ifndef JJF_REDUCE_HEURISTICS
     const double minDistanceToRun = 1.5 * log((double)depth) / log((double)2);
 #else
     const double minDistanceToRun = minDistanceToRun_;

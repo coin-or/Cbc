@@ -4690,10 +4690,26 @@ int CbcMain1(int argc, const char *argv[],
                   int numberColumns = solver2->getNumCols();
                   OsiSolverInterface *originalSolver = model.solver();
 		  int numberOriginalColumns = originalSolver->getNumCols(); 
+		  int oddColumn=1;
                   for (int i = 0; i < numberColumns; i++) {
                     int iColumn = originalColumns[i];
-		    if (iColumn<numberOriginalColumns)
-		      solver2->setColName(i, originalSolver->getColName(iColumn));
+		    if (iColumn<numberOriginalColumns) {
+		      std::string columnName = originalSolver->getColName(iColumn);
+		      // check if odd name
+		      if (columnName[0]=='N') {
+			try {
+			  int sequence = stoi(columnName.substr(1));
+			  oddColumn = sequence+1;
+			} catch (...) {
+			}
+		      }
+		      solver2->setColName(i, columnName);
+		    } else {
+		      char name[15];
+		      sprintf(name,"N%.7d",oddColumn);
+		      oddColumn++;
+		      solver2->setColName(i, name);
+		    }
                   }
                   OsiClpSolverInterface *clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(solver2);
                   ClpSimplex *lpSolver = clpSolver2->getModelPtr();

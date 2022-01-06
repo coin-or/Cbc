@@ -32,7 +32,7 @@ Dependencies:
     Required: Optional
   - Description: ThirdParty wrapper for building Mumps
     URL: https://github.com/coin-or-tools/ThirdParty-Mumps
-    Version: master
+    Version: stable/3.0
     Required: Optional
   - Description: Sample data files
     URL: https://github.com/coin-or-tools/Data-Sample

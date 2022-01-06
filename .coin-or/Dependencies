@@ -3,7 +3,7 @@ ThirdParty/Glpk   https://github.com/coin-or-tools/ThirdParty-Glpk master
 ThirdParty/Mumps  https://github.com/coin-or-tools/ThirdParty-Mumps master
 Data/Sample       https://github.com/coin-or-tools/Data-Sample master
 Data/miplib3      https://github.com/coin-or-tools/Data-miplib3 master
-CoinUtils         https://github.com/coin-or/CoinUtils master
-Osi               https://github.com/coin-or/Osi master
-Clp               https://github.com/coin-or/Clp master
-Cgl               https://github.com/coin-or/Cgl master
+CoinUtils         https://github.com/coin-or/CoinUtils 21968ff
+Osi               https://github.com/coin-or/Osi 31ec066
+Clp               https://github.com/coin-or/Clp 8bd9396
+Cgl               https://github.com/coin-or/Cgl 57d8c71

@@ -44,19 +44,19 @@ Dependencies:
     Required: Required
   - Description: COIN-OR Utilities
     URL: https://github.com/coin-or/CoinUtils
-    Version: master
+    Version: 21968ff
     Required: Required
   - Description: Open Solver Interface
     URL: https://github.com/coin-or/Osi
-    Version: master
+    Version: 31ec066
     Required: Required
   - Description: COIN-OR LP Solver
     URL: https://github.com/coin-or/Clp
-    Version: master
+    Version: 8bd9396
     Required: Required
   - Description: The Cut Generator Library
     URL: https://github.com/coin-or/Cgl
-    Version: master
+    Version: 57d8c71
     Required: Required
   - Description: Basic Linear Algebra Subroutines (BLAS)
     URL: http://www.netlib.org/blas

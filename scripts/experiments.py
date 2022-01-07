@@ -4,7 +4,7 @@
 # Apr 2020
 
 # Executable path and name
-pbsfile = '/home/ted/Projects/Cbc/script/batch.pbs'
+pbsfile = '/home/ted/Projects/Cbc/scripts/batch.pbs'
 
 # Instance path
 # Directory name and path containing test instances in .mps format

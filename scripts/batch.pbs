@@ -1,5 +1,5 @@
 
-#PBS -l nodes=1:ppn=15
+#PBS -l nodes=1:ppn=1
 #PBS -l walltime=01:15:00
 #PBS -l pmem=2gb
 #PBS -l vmem=2gb

@@ -14,8 +14,8 @@ testSets = {
 }
 
 versions = {
-    'before' : '/home/ted/Projects/build-cbc-before/bin/cbc',
-#    'after' : '/home/ted/Projects/build-cbc-master/bin/cbc'
+#    'before' : '/home/ted/Projects/build-cbc-before/bin/cbc',
+    'after' : '/home/ted/Projects/build-cbc-master/bin/cbc'
 }
 
 # Output parent path

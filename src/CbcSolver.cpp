@@ -8,6 +8,7 @@
 
 // Need these up front to define symbols for other imports
 #include "CoinUtilsConfig.h"
+#include "ClpConfig.h"
 #include "CbcConfig.h"
 
 #include <cassert>
@@ -9183,7 +9184,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   clpSolver->readMps(fileName.c_str(), keepImportNames != 0,
                                      allowImportErrors != 0);
             } else if (gmpl > 0) {
-#ifdef COINUTILS_HAS_GLPK
+#if defined(CLP_HAS_GLPK) && defined(COINUTILS_HAS_GLPK)
                status = lpSolver->readGMPL(
                     fileName.c_str(), (gmpl == 2) ? gmplData.c_str() : NULL,
                     keepImportNames != 0, &coin_glp_tran, &coin_glp_prob);

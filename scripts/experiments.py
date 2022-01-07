@@ -3,8 +3,6 @@
 # Last edited by yux616
 # Apr 2020
 
-from incumbents import incumbents
-
 # Executable path and name
 pbsfile = '/home/ted/Projects/Cbc/script/batch.pbs'
 
@@ -17,7 +15,7 @@ testSets = {
 
 versions = {
     'before' : '/home/ted/Projects/build-cbc-before/bin/cbc',
-    'after' : '/home/ted/Projects/build-cbc-master/bin/cbc'
+#    'after' : '/home/ted/Projects/build-cbc-master/bin/cbc'
 }
 
 # Output parent path
@@ -30,6 +28,7 @@ testname = 'cbc'
 scenarios = {}
 
 commonParams = {
+    'sec': '3600',
     '-solve' : ''
 }    
 

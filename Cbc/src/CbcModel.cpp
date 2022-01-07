@@ -1634,7 +1634,7 @@ void CbcModel::branchAndBound(int doStatistics)
   if (flipObjective) {
     // In solver_ cutoff is correct with sign reversed
     double cutoff;
-    solver_->getDblParam(OsiDblParam::OsiDualObjectiveLimit,cutoff);
+    solver_->getDblParam(OsiDualObjectiveLimit,cutoff);
     // treat as if minimize
     assert(fabs(dblParam_[CbcCurrentCutoff]) == fabs(cutoff) ||
 	   fabs(cutoff)>1.0e40);

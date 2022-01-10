@@ -669,6 +669,8 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+CBCGENERIC_CFLAGS_NOPC
+CBCGENERIC_LFLAGS_NOPC
 CBCSOLVERLIB_CFLAGS_NOPC
 CBCSOLVERLIB_LFLAGS_NOPC
 coin_doxy_tagfiles
@@ -699,28 +701,16 @@ OSICBC_DFLT_SOLVER_CLP_FALSE
 OSICBC_DFLT_SOLVER_CLP_TRUE
 COIN_HAS_PTHREADSW32_FALSE
 COIN_HAS_PTHREADSW32_TRUE
-CBC_BUILD_CBC_GENERIC_FALSE
-CBC_BUILD_CBC_GENERIC_TRUE
+CBCSOLVERLIB_CFLAGS
+CBCSOLVERLIB_LFLAGS
 CBCUNITTEST_CFLAGS_NOPC
 CBCUNITTEST_LFLAGS_NOPC
 OSICBCLIB_CFLAGS_NOPC
 OSICBCLIB_LFLAGS_NOPC
-CBCGENERIC_CFLAGS_NOPC
-CBCGENERIC_LFLAGS_NOPC
 CBCLIB_CFLAGS_NOPC
 CBCLIB_LFLAGS_NOPC
 COIN_HAS_CPLEX_FALSE
 COIN_HAS_CPLEX_TRUE
-COIN_HAS_OSISPX_FALSE
-COIN_HAS_OSISPX_TRUE
-COIN_HAS_OSIMSK_FALSE
-COIN_HAS_OSIMSK_TRUE
-COIN_HAS_OSIGLPK_FALSE
-COIN_HAS_OSIGLPK_TRUE
-COIN_HAS_OSICPX_FALSE
-COIN_HAS_OSICPX_TRUE
-COIN_HAS_OSIDYLP_FALSE
-COIN_HAS_OSIDYLP_TRUE
 MIPLIB3_DATA
 COIN_HAS_MIPLIB3_FALSE
 COIN_HAS_MIPLIB3_TRUE
@@ -754,9 +744,6 @@ COIN_HAS_COINUTILS_TRUE
 OSICBCLIB_PCFILES
 OSICBCLIB_CFLAGS
 OSICBCLIB_LFLAGS
-CBCGENERIC_PCFILES
-CBCGENERIC_CFLAGS
-CBCGENERIC_LFLAGS
 CBCLIB_PCFILES
 CBCLIB_CFLAGS
 CBCLIB_LFLAGS
@@ -945,26 +932,9 @@ with_netlib
 with_netlib_data
 with_miplib3
 with_miplib3_data
-with_osidylp
-with_osidylp_lflags
-with_osidylp_cflags
-with_osicpx
-with_osicpx_lflags
-with_osicpx_cflags
-with_osiglpk
-with_osiglpk_lflags
-with_osiglpk_cflags
-with_osimsk
-with_osimsk_lflags
-with_osimsk_cflags
-with_osispx
-with_osispx_lflags
-with_osispx_cflags
 with_cplex
 with_cplex_lflags
 with_cplex_cflags
-enable_cbc_generic
-with_cbc_generic_solver
 enable_cbc_parallel
 with_pthreadsw32
 with_pthreadsw32_lflags
@@ -1637,7 +1607,6 @@ Optional Features:
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-readline      do not compile with readline library
-  --enable-cbc-generic    enables build of cbc-generic
   --disable-cbc-parallel  disables compilation of the SMP version of Cbc
 
 Optional Packages:
@@ -1651,157 +1620,123 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
-  --with-coinutils        Use CoinUtils. If an argument is given, 'yes' is
+  --without-coinutils     Do not use CoinUtils. If an argument is given to
+                          --with-coinutils, then 'yes' is
                           equivalent to --with-coinutils, 'no' is
-                          equivalent to --without-coinutils. Any other
-                          argument is applied as for --with-coinutils-lflags
+                          equivalent to --without-coinutils and any other
+                          argument is applied as for --with-coinutils-lflags.
   --with-coinutils-lflags Linker flags for CoinUtils appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-coinutils-cflags Compiler flags for CoinUtils appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-osi              Use Osi. If an argument is given, 'yes' is
-                          equivalent to --with-osi, 'no' is
-                          equivalent to --without-osi. Any other argument is
-                          applied as for --with-osi-lflags
+  --without-osi           Do not use Osi. If an argument is given to
+                          --with-osi, then 'yes' is equivalent to
+                          --with-osi, 'no' is equivalent to
+                          --without-osi and any other argument is applied as
+                          for --with-osi-lflags.
   --with-osi-lflags       Linker flags for Osi appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-osi-cflags       Compiler flags for Osi appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-cgl              Use Cgl. If an argument is given, 'yes' is
-                          equivalent to --with-cgl, 'no' is
-                          equivalent to --without-cgl. Any other argument is
-                          applied as for --with-cgl-lflags
+  --without-cgl           Do not use Cgl. If an argument is given to
+                          --with-cgl, then 'yes' is equivalent to
+                          --with-cgl, 'no' is equivalent to
+                          --without-cgl and any other argument is applied as
+                          for --with-cgl-lflags.
   --with-cgl-lflags       Linker flags for Cgl appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-cgl-cflags       Compiler flags for Cgl appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-clp              Use Clp. If an argument is given, 'yes' is
-                          equivalent to --with-clp, 'no' is
-                          equivalent to --without-clp. Any other argument is
-                          applied as for --with-clp-lflags
+  --without-clp           Do not use Clp. If an argument is given to
+                          --with-clp, then 'yes' is equivalent to
+                          --with-clp, 'no' is equivalent to
+                          --without-clp and any other argument is applied as
+                          for --with-clp-lflags.
   --with-clp-lflags       Linker flags for Clp appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-clp-cflags       Compiler flags for Clp appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-osiclp           Use OsiClp. If an argument is given, 'yes' is
-                          equivalent to --with-osiclp, 'no' is
-                          equivalent to --without-osiclp. Any other argument
-                          is applied as for --with-osiclp-lflags
+  --without-osiclp        Do not use OsiClp. If an argument is given to
+                          --with-osiclp, then 'yes' is equivalent
+                          to --with-osiclp, 'no' is equivalent to
+                          --without-osiclp and any other argument is applied
+                          as for --with-osiclp-lflags.
   --with-osiclp-lflags    Linker flags for OsiClp appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-osiclp-cflags    Compiler flags for OsiClp appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-asl              Use ASL. If an argument is given, 'yes' is
-                          equivalent to --with-asl, 'no' is
-                          equivalent to --without-asl. Any other argument is
-                          applied as for --with-asl-lflags
+  --without-asl           Do not use ASL. If an argument is given to
+                          --with-asl, then 'yes' is equivalent to
+                          --with-asl, 'no' is equivalent to
+                          --without-asl and any other argument is applied as
+                          for --with-asl-lflags.
   --with-asl-lflags       Linker flags for ASL appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-asl-cflags       Compiler flags for ASL appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-nauty            Use Nauty. If an argument is given, 'yes' is
-                          equivalent to --with-nauty, 'no' is
-                          equivalent to --without-nauty. Any other argument is
-                          applied as for --with-nauty-lflags
+  --without-nauty         Do not use Nauty. If an argument is given to
+                          --with-nauty, then 'yes' is equivalent
+                          to --with-nauty, 'no' is equivalent to
+                          --without-nauty and any other argument is applied as
+                          for --with-nauty-lflags.
   --with-nauty-lflags     Linker flags for Nauty appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-nauty-cflags     Compiler flags for Nauty appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-ositests         Use OsiTests. If an argument is given, 'yes' is
+  --without-ositests      Do not use OsiTests. If an argument is given to
+                          --with-ositests, then 'yes' is
                           equivalent to --with-ositests, 'no' is
-                          equivalent to --without-ositests. Any other argument
-                          is applied as for --with-ositests-lflags
+                          equivalent to --without-ositests and any other
+                          argument is applied as for --with-ositests-lflags.
   --with-ositests-lflags  Linker flags for OsiTests appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-ositests-cflags  Compiler flags for OsiTests appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-sample           Use Sample. If an argument is given, 'yes' is
-                          equivalent to --with-sample, 'no' is
-                          equivalent to --without-sample. Any other argument
-                          is applied as for --with-sample-data
+  --without-sample        Do not use Sample. If an argument is given to
+                          --with-sample, then 'yes' is equivalent
+                          to --with-sample, 'no' is equivalent to
+                          --without-sample and any other argument is applied
+                          as for --with-sample-data.
   --with-sample-data      A data directory specification for Sample
                           appropriate for your environment.
-  --with-netlib           Use Netlib. If an argument is given, 'yes' is
-                          equivalent to --with-netlib, 'no' is
-                          equivalent to --without-netlib. Any other argument
-                          is applied as for --with-netlib-data
+  --without-netlib        Do not use Netlib. If an argument is given to
+                          --with-netlib, then 'yes' is equivalent
+                          to --with-netlib, 'no' is equivalent to
+                          --without-netlib and any other argument is applied
+                          as for --with-netlib-data.
   --with-netlib-data      A data directory specification for Netlib
                           appropriate for your environment.
-  --with-miplib3          Use Miplib3. If an argument is given, 'yes' is
-                          equivalent to --with-miplib3, 'no' is
-                          equivalent to --without-miplib3. Any other argument
-                          is applied as for --with-miplib3-data
+  --without-miplib3       Do not use Miplib3. If an argument is given to
+                          --with-miplib3, then 'yes' is equivalent
+                          to --with-miplib3, 'no' is equivalent to
+                          --without-miplib3 and any other argument is applied
+                          as for --with-miplib3-data.
   --with-miplib3-data     A data directory specification for Miplib3
                           appropriate for your environment.
-  --with-osidylp          Use OsiDyLP. If an argument is given, 'yes' is
-                          equivalent to --with-osidylp, 'no' is
-                          equivalent to --without-osidylp. Any other argument
-                          is applied as for --with-osidylp-lflags
-  --with-osidylp-lflags   Linker flags for OsiDyLP appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-osidylp-cflags   Compiler flags for OsiDyLP appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
-  --with-osicpx           Use OsiCpx. If an argument is given, 'yes' is
-                          equivalent to --with-osicpx, 'no' is
-                          equivalent to --without-osicpx. Any other argument
-                          is applied as for --with-osicpx-lflags
-  --with-osicpx-lflags    Linker flags for OsiCpx appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-osicpx-cflags    Compiler flags for OsiCpx appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
-  --with-osiglpk          Use OsiGlpk. If an argument is given, 'yes' is
-                          equivalent to --with-osiglpk, 'no' is
-                          equivalent to --without-osiglpk. Any other argument
-                          is applied as for --with-osiglpk-lflags
-  --with-osiglpk-lflags   Linker flags for OsiGlpk appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-osiglpk-cflags   Compiler flags for OsiGlpk appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
-  --with-osimsk           Use OsiMsk. If an argument is given, 'yes' is
-                          equivalent to --with-osimsk, 'no' is
-                          equivalent to --without-osimsk. Any other argument
-                          is applied as for --with-osimsk-lflags
-  --with-osimsk-lflags    Linker flags for OsiMsk appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-osimsk-cflags    Compiler flags for OsiMsk appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
-  --with-osispx           Use OsiSpx. If an argument is given, 'yes' is
-                          equivalent to --with-osispx, 'no' is
-                          equivalent to --without-osispx. Any other argument
-                          is applied as for --with-osispx-lflags
-  --with-osispx-lflags    Linker flags for OsiSpx appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-osispx-cflags    Compiler flags for OsiSpx appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
-  --with-cplex            Use Cplex. If an argument is given, 'yes' is
-                          equivalent to --with-cplex, 'no' is
-                          equivalent to --without-cplex. Any other argument is
-                          applied as for --with-cplex-lflags
+  --without-cplex         Do not use Cplex. If an argument is given to
+                          --with-cplex, then 'yes' is equivalent
+                          to --with-cplex, 'no' is equivalent to
+                          --without-cplex and any other argument is applied as
+                          for --with-cplex-lflags.
   --with-cplex-lflags     Linker flags for Cplex appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-cplex-cflags     Compiler flags for Cplex appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-cbc-generic-solver
-                          specify default solver for cbc-generic in lower case
-                          letters (if not given, clp is assumed)
-  --with-pthreadsw32      Use pthreadsw32. If an argument is given, 'yes' is
+  --without-pthreadsw32   Do not use pthreadsw32. If an argument is given to
+                          --with-pthreadsw32, then 'yes' is
                           equivalent to --with-pthreadsw32, 'no'
-                          is equivalent to --without-pthreadsw32. Any other
-                          argument is applied as for --with-pthreadsw32-lflags
+                          is equivalent to --without-pthreadsw32 and any other
+                          argument is applied as for
+                          --with-pthreadsw32-lflags.
   --with-pthreadsw32-lflags
                           Linker flags for pthreadsw32 appropriate for your
                           environment. (Most often, -l specs for libraries.)
@@ -17873,9 +17808,6 @@ printf %s "checking for package CoinUtils... " >&6; }
 
 
 
-
-
-
   coin_has_coinutils=noInfo
   if test x"$COIN_SKIP_PROJECTS" != x ; then
     for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
@@ -18096,9 +18028,6 @@ printf "%s\n" "#define CBC_HAS_COINUTILS 1" >>confdefs.h
     CBCLIB_PCFILES="$coinutils_pcfiles $CBCLIB_PCFILES"
        CBCLIB_LFLAGS="$coinutils_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$coinutils_cflags $CBCLIB_CFLAGS"
-      CBCGENERIC_PCFILES="$coinutils_pcfiles $CBCGENERIC_PCFILES"
-       CBCGENERIC_LFLAGS="$coinutils_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$coinutils_cflags $CBCGENERIC_CFLAGS"
       OSICBCLIB_PCFILES="$coinutils_pcfiles $OSICBCLIB_PCFILES"
        OSICBCLIB_LFLAGS="$coinutils_lflags $OSICBCLIB_LFLAGS"
        OSICBCLIB_CFLAGS="$coinutils_cflags $OSICBCLIB_CFLAGS"
@@ -18119,9 +18048,6 @@ printf "%s\n" "#define CBC_HAS_COINUTILS 1" >>confdefs.h
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Osi" >&5
 printf %s "checking for package Osi... " >&6; }
-
-
-
 
 
 
@@ -18353,9 +18279,6 @@ printf "%s\n" "#define CBC_HAS_OSI 1" >>confdefs.h
     CBCLIB_PCFILES="$osi_pcfiles $CBCLIB_PCFILES"
        CBCLIB_LFLAGS="$osi_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$osi_cflags $CBCLIB_CFLAGS"
-      CBCGENERIC_PCFILES="$osi_pcfiles $CBCGENERIC_PCFILES"
-       CBCGENERIC_LFLAGS="$osi_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$osi_cflags $CBCGENERIC_CFLAGS"
       OSICBCLIB_PCFILES="$osi_pcfiles $OSICBCLIB_PCFILES"
        OSICBCLIB_LFLAGS="$osi_lflags $OSICBCLIB_LFLAGS"
        OSICBCLIB_CFLAGS="$osi_cflags $OSICBCLIB_CFLAGS"
@@ -18376,9 +18299,6 @@ printf "%s\n" "#define CBC_HAS_OSI 1" >>confdefs.h
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Cgl" >&5
 printf %s "checking for package Cgl... " >&6; }
-
-
-
 
 
 
@@ -18610,9 +18530,6 @@ printf "%s\n" "#define CBC_HAS_CGL 1" >>confdefs.h
     CBCLIB_PCFILES="$cgl_pcfiles $CBCLIB_PCFILES"
        CBCLIB_LFLAGS="$cgl_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$cgl_cflags $CBCLIB_CFLAGS"
-      CBCGENERIC_PCFILES="$cgl_pcfiles $CBCGENERIC_PCFILES"
-       CBCGENERIC_LFLAGS="$cgl_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$cgl_cflags $CBCGENERIC_CFLAGS"
       OSICBCLIB_PCFILES="$cgl_pcfiles $OSICBCLIB_PCFILES"
        OSICBCLIB_LFLAGS="$cgl_lflags $OSICBCLIB_LFLAGS"
        OSICBCLIB_CFLAGS="$cgl_cflags $OSICBCLIB_CFLAGS"
@@ -18633,9 +18550,6 @@ printf "%s\n" "#define CBC_HAS_CGL 1" >>confdefs.h
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Clp" >&5
 printf %s "checking for package Clp... " >&6; }
-
-
-
 
 
 
@@ -18867,9 +18781,6 @@ printf "%s\n" "#define CBC_HAS_CLP 1" >>confdefs.h
     CBCLIB_PCFILES="$clp_pcfiles $CBCLIB_PCFILES"
        CBCLIB_LFLAGS="$clp_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$clp_cflags $CBCLIB_CFLAGS"
-      CBCGENERIC_PCFILES="$clp_pcfiles $CBCGENERIC_PCFILES"
-       CBCGENERIC_LFLAGS="$clp_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$clp_cflags $CBCGENERIC_CFLAGS"
       OSICBCLIB_PCFILES="$clp_pcfiles $OSICBCLIB_PCFILES"
        OSICBCLIB_LFLAGS="$clp_lflags $OSICBCLIB_LFLAGS"
        OSICBCLIB_CFLAGS="$clp_cflags $OSICBCLIB_CFLAGS"
@@ -18892,9 +18803,6 @@ printf "%s\n" "#define CBC_HAS_CLP 1" >>confdefs.h
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package OsiClp" >&5
 printf %s "checking for package OsiClp... " >&6; }
-
-
-
 
 
 
@@ -19126,9 +19034,6 @@ printf "%s\n" "#define CBC_HAS_OSICLP 1" >>confdefs.h
     CBCLIB_PCFILES="$osiclp_pcfiles $CBCLIB_PCFILES"
        CBCLIB_LFLAGS="$osiclp_lflags $CBCLIB_LFLAGS"
        CBCLIB_CFLAGS="$osiclp_cflags $CBCLIB_CFLAGS"
-      CBCGENERIC_PCFILES="$osiclp_pcfiles $CBCGENERIC_PCFILES"
-       CBCGENERIC_LFLAGS="$osiclp_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$osiclp_cflags $CBCGENERIC_CFLAGS"
       OSICBCLIB_PCFILES="$osiclp_pcfiles $OSICBCLIB_PCFILES"
        OSICBCLIB_LFLAGS="$osiclp_lflags $OSICBCLIB_LFLAGS"
        OSICBCLIB_CFLAGS="$osiclp_cflags $OSICBCLIB_CFLAGS"
@@ -19280,7 +19185,6 @@ fi
     fi
     if test $coin_has_readline = yes ; then
       CBCLIB_LFLAGS="$LIBS $CBCLIB_LFLAGS"
-        CBCGENERIC_LFLAGS="$LIBS $CBCGENERIC_LFLAGS"
 
 
 printf "%s\n" "#define CBC_HAS_READLINE 1" >>confdefs.h
@@ -20674,1253 +20578,12 @@ printf "%s\n" "#define CBC_HAS_MIPLIB3 1" >>confdefs.h
 
 # Check which other LP solvers are available, some of them become a dependency
 # of CbcGeneric
-
-
-
-
-
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package OsiDyLP" >&5
-printf %s "checking for package OsiDyLP... " >&6; }
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osidylp=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "osidylp" ; then
-        coin_has_osidylp=skipping
-      fi
-    done
-  fi
-
-
-  if test "$coin_has_osidylp" != skipping ; then
-
-
-
-
-# Check whether --with-osidylp was given.
-if test ${with_osidylp+y}
-then :
-  withval=$with_osidylp;
-fi
-
-
-
-# Check whether --with-osidylp-lflags was given.
-if test ${with_osidylp_lflags+y}
-then :
-  withval=$with_osidylp_lflags;
-fi
-
-
-
-# Check whether --with-osidylp-cflags was given.
-if test ${with_osidylp_cflags+y}
-then :
-  withval=$with_osidylp_cflags;
-fi
-
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osidylp=requested
-
-  osidylp_lflags=
-  osidylp_cflags=
-  osidylp_data=
-  osidylp_pcfiles="osi-dylp"
-
-
-  withval="$with_osidylp"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_osidylp=skipping
-        osidylp_failmode='command line'
-        ;;
-      yes )
-        coin_has_osidylp=requested
-        osidylp_failmode=''
-        ;;
-      build )
-        coin_has_osidylp=requested
-        osidylp_build=yes
-        osidylp_failmode=''
-        ;;
-      * )
-        coin_has_osidylp=requested
-        osidylp_failmode=''
-        osidylp_lflags="$withval"
-        osidylp_pcfiles=''
-        ;;
-    esac
-  else
-    if test -n "$with_osidylp_lflags" ||
-       test -n "$with_osidylp_cflags" ||
-       test -n "$with_osidylp_data" ; then
-      coin_has_osidylp=requested
-      osidylp_failmode=''
-      osidylp_pcfiles=''
-    fi
-  fi
-
-
-  if test "$coin_has_osidylp" != skipping ; then
-       withval="$with_osidylp_lflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify link flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osidylp=yes
-             osidylp_lflags="$withval"
-             osidylp_pcfiles=''
-             ;;
-         esac
-       fi
-
-       withval="$with_osidylp_cflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify compile flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osidylp=yes
-             osidylp_cflags="$withval"
-             osidylp_pcfiles=''
-             ;;
-         esac
-       fi
-     fi
-
-
-
-
-
-  if test $coin_has_osidylp = requested ; then
-    if test -n "$PKG_CONFIG" ; then
-      if test x"$osidylp_build" = xyes ; then
-        pcfile="coin$osidylp_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSIDYLP_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osidylp=yes
-    else
-      OSIDYLP_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osidylp=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osidylp without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if ! test $coin_has_osidylp = yes ; then
-        pcfile="$osidylp_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSIDYLP_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osidylp=yes
-    else
-      OSIDYLP_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osidylp=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osidylp without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if test $coin_has_osidylp = yes ; then
-        osidylp_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-        osidylp_pcfiles="$pcfile"
-      fi
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Check for osidylp via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osidylp-lflags and --with-osidylp-cflags." >&5
-printf "%s\n" "$as_me: WARNING: Check for osidylp via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osidylp-lflags and --with-osidylp-cflags." >&2;}
-      coin_has_osidylp=no
-    fi
-  fi
-
-
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for osidylp: \"$coin_has_osidylp\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_PKG result for osidylp: \"$coin_has_osidylp\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'osidylp'" >&5
-printf "%s\n" "$as_me: Collected values for package 'osidylp'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osidylp_lflags is \"$osidylp_lflags\"" >&5
-printf "%s\n" "$as_me: osidylp_lflags is \"$osidylp_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osidylp_cflags is \"$osidylp_cflags\"" >&5
-printf "%s\n" "$as_me: osidylp_cflags is \"$osidylp_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osidylp_data is \"$osidylp_data\"" >&5
-printf "%s\n" "$as_me: osidylp_data is \"$osidylp_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osidylp_pcfiles is \"$osidylp_pcfiles\"" >&5
-printf "%s\n" "$as_me: osidylp_pcfiles is \"$osidylp_pcfiles\"" >&6;}
-  fi
-
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osidylp" >&5
-printf "%s\n" "$coin_has_osidylp" >&6; }
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osidylp (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_osidylp (COIN_SKIP_PROJECTS)" >&6; }
-  fi
-
-
-  if test "$coin_has_osidylp" != yes ; then
-    coin_has_osidylp=no
-  fi
-
-
-   if test $coin_has_osidylp = yes; then
-  COIN_HAS_OSIDYLP_TRUE=
-  COIN_HAS_OSIDYLP_FALSE='#'
-else
-  COIN_HAS_OSIDYLP_TRUE='#'
-  COIN_HAS_OSIDYLP_FALSE=
-fi
-
-
-
-  if test $coin_has_osidylp = yes ; then
-
-printf "%s\n" "#define CBC_HAS_OSIDYLP 1" >>confdefs.h
-
-    CBCGENERIC_PCFILES="$osidylp_pcfiles $CBCGENERIC_PCFILES"
-       CBCGENERIC_LFLAGS="$osidylp_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$osidylp_cflags $CBCGENERIC_CFLAGS"
-      OSICBCLIB_PCFILES="$osidylp_pcfiles $OSICBCLIB_PCFILES"
-       OSICBCLIB_LFLAGS="$osidylp_lflags $OSICBCLIB_LFLAGS"
-       OSICBCLIB_CFLAGS="$osidylp_cflags $OSICBCLIB_CFLAGS"
-
-
-
-  fi
-
-
-
-
-
-
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package OsiCpx" >&5
-printf %s "checking for package OsiCpx... " >&6; }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osicpx=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "osicpx" ; then
-        coin_has_osicpx=skipping
-      fi
-    done
-  fi
-
-
-  if test "$coin_has_osicpx" != skipping ; then
-
-
-
-
-# Check whether --with-osicpx was given.
-if test ${with_osicpx+y}
-then :
-  withval=$with_osicpx;
-fi
-
-
-
-# Check whether --with-osicpx-lflags was given.
-if test ${with_osicpx_lflags+y}
-then :
-  withval=$with_osicpx_lflags;
-fi
-
-
-
-# Check whether --with-osicpx-cflags was given.
-if test ${with_osicpx_cflags+y}
-then :
-  withval=$with_osicpx_cflags;
-fi
-
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osicpx=requested
-
-  osicpx_lflags=
-  osicpx_cflags=
-  osicpx_data=
-  osicpx_pcfiles="osi-cplex"
-
-
-  withval="$with_osicpx"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_osicpx=skipping
-        osicpx_failmode='command line'
-        ;;
-      yes )
-        coin_has_osicpx=requested
-        osicpx_failmode=''
-        ;;
-      build )
-        coin_has_osicpx=requested
-        osicpx_build=yes
-        osicpx_failmode=''
-        ;;
-      * )
-        coin_has_osicpx=requested
-        osicpx_failmode=''
-        osicpx_lflags="$withval"
-        osicpx_pcfiles=''
-        ;;
-    esac
-  else
-    if test -n "$with_osicpx_lflags" ||
-       test -n "$with_osicpx_cflags" ||
-       test -n "$with_osicpx_data" ; then
-      coin_has_osicpx=requested
-      osicpx_failmode=''
-      osicpx_pcfiles=''
-    fi
-  fi
-
-
-  if test "$coin_has_osicpx" != skipping ; then
-       withval="$with_osicpx_lflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify link flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osicpx=yes
-             osicpx_lflags="$withval"
-             osicpx_pcfiles=''
-             ;;
-         esac
-       fi
-
-       withval="$with_osicpx_cflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify compile flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osicpx=yes
-             osicpx_cflags="$withval"
-             osicpx_pcfiles=''
-             ;;
-         esac
-       fi
-     fi
-
-
-
-
-
-  if test $coin_has_osicpx = requested ; then
-    if test -n "$PKG_CONFIG" ; then
-      if test x"$osicpx_build" = xyes ; then
-        pcfile="coin$osicpx_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSICPX_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osicpx=yes
-    else
-      OSICPX_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osicpx=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osicpx without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if ! test $coin_has_osicpx = yes ; then
-        pcfile="$osicpx_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSICPX_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osicpx=yes
-    else
-      OSICPX_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osicpx=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osicpx without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if test $coin_has_osicpx = yes ; then
-        osicpx_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-        osicpx_pcfiles="$pcfile"
-      fi
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Check for osicpx via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osicpx-lflags and --with-osicpx-cflags." >&5
-printf "%s\n" "$as_me: WARNING: Check for osicpx via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osicpx-lflags and --with-osicpx-cflags." >&2;}
-      coin_has_osicpx=no
-    fi
-  fi
-
-
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for osicpx: \"$coin_has_osicpx\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_PKG result for osicpx: \"$coin_has_osicpx\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'osicpx'" >&5
-printf "%s\n" "$as_me: Collected values for package 'osicpx'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osicpx_lflags is \"$osicpx_lflags\"" >&5
-printf "%s\n" "$as_me: osicpx_lflags is \"$osicpx_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osicpx_cflags is \"$osicpx_cflags\"" >&5
-printf "%s\n" "$as_me: osicpx_cflags is \"$osicpx_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osicpx_data is \"$osicpx_data\"" >&5
-printf "%s\n" "$as_me: osicpx_data is \"$osicpx_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osicpx_pcfiles is \"$osicpx_pcfiles\"" >&5
-printf "%s\n" "$as_me: osicpx_pcfiles is \"$osicpx_pcfiles\"" >&6;}
-  fi
-
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osicpx" >&5
-printf "%s\n" "$coin_has_osicpx" >&6; }
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osicpx (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_osicpx (COIN_SKIP_PROJECTS)" >&6; }
-  fi
-
-
-  if test "$coin_has_osicpx" != yes ; then
-    coin_has_osicpx=no
-  fi
-
-
-   if test $coin_has_osicpx = yes; then
-  COIN_HAS_OSICPX_TRUE=
-  COIN_HAS_OSICPX_FALSE='#'
-else
-  COIN_HAS_OSICPX_TRUE='#'
-  COIN_HAS_OSICPX_FALSE=
-fi
-
-
-
-  if test $coin_has_osicpx = yes ; then
-
-printf "%s\n" "#define CBC_HAS_OSICPX 1" >>confdefs.h
-
-    CBCLIB_PCFILES="$osicpx_pcfiles $CBCLIB_PCFILES"
-       CBCLIB_LFLAGS="$osicpx_lflags $CBCLIB_LFLAGS"
-       CBCLIB_CFLAGS="$osicpx_cflags $CBCLIB_CFLAGS"
-      CBCGENERIC_PCFILES="$osicpx_pcfiles $CBCGENERIC_PCFILES"
-       CBCGENERIC_LFLAGS="$osicpx_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$osicpx_cflags $CBCGENERIC_CFLAGS"
-      OSICBCLIB_PCFILES="$osicpx_pcfiles $OSICBCLIB_PCFILES"
-       OSICBCLIB_LFLAGS="$osicpx_lflags $OSICBCLIB_LFLAGS"
-       OSICBCLIB_CFLAGS="$osicpx_cflags $OSICBCLIB_CFLAGS"
-
-
-
-  fi
-
-
-
-
-
-
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package OsiGlpk" >&5
-printf %s "checking for package OsiGlpk... " >&6; }
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osiglpk=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "osiglpk" ; then
-        coin_has_osiglpk=skipping
-      fi
-    done
-  fi
-
-
-  if test "$coin_has_osiglpk" != skipping ; then
-
-
-
-
-# Check whether --with-osiglpk was given.
-if test ${with_osiglpk+y}
-then :
-  withval=$with_osiglpk;
-fi
-
-
-
-# Check whether --with-osiglpk-lflags was given.
-if test ${with_osiglpk_lflags+y}
-then :
-  withval=$with_osiglpk_lflags;
-fi
-
-
-
-# Check whether --with-osiglpk-cflags was given.
-if test ${with_osiglpk_cflags+y}
-then :
-  withval=$with_osiglpk_cflags;
-fi
-
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osiglpk=requested
-
-  osiglpk_lflags=
-  osiglpk_cflags=
-  osiglpk_data=
-  osiglpk_pcfiles="osi-glpk"
-
-
-  withval="$with_osiglpk"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_osiglpk=skipping
-        osiglpk_failmode='command line'
-        ;;
-      yes )
-        coin_has_osiglpk=requested
-        osiglpk_failmode=''
-        ;;
-      build )
-        coin_has_osiglpk=requested
-        osiglpk_build=yes
-        osiglpk_failmode=''
-        ;;
-      * )
-        coin_has_osiglpk=requested
-        osiglpk_failmode=''
-        osiglpk_lflags="$withval"
-        osiglpk_pcfiles=''
-        ;;
-    esac
-  else
-    if test -n "$with_osiglpk_lflags" ||
-       test -n "$with_osiglpk_cflags" ||
-       test -n "$with_osiglpk_data" ; then
-      coin_has_osiglpk=requested
-      osiglpk_failmode=''
-      osiglpk_pcfiles=''
-    fi
-  fi
-
-
-  if test "$coin_has_osiglpk" != skipping ; then
-       withval="$with_osiglpk_lflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify link flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osiglpk=yes
-             osiglpk_lflags="$withval"
-             osiglpk_pcfiles=''
-             ;;
-         esac
-       fi
-
-       withval="$with_osiglpk_cflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify compile flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osiglpk=yes
-             osiglpk_cflags="$withval"
-             osiglpk_pcfiles=''
-             ;;
-         esac
-       fi
-     fi
-
-
-
-
-
-  if test $coin_has_osiglpk = requested ; then
-    if test -n "$PKG_CONFIG" ; then
-      if test x"$osiglpk_build" = xyes ; then
-        pcfile="coin$osiglpk_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSIGLPK_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osiglpk=yes
-    else
-      OSIGLPK_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osiglpk=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osiglpk without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if ! test $coin_has_osiglpk = yes ; then
-        pcfile="$osiglpk_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSIGLPK_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osiglpk=yes
-    else
-      OSIGLPK_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osiglpk=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osiglpk without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if test $coin_has_osiglpk = yes ; then
-        osiglpk_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-        osiglpk_pcfiles="$pcfile"
-      fi
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Check for osiglpk via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osiglpk-lflags and --with-osiglpk-cflags." >&5
-printf "%s\n" "$as_me: WARNING: Check for osiglpk via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osiglpk-lflags and --with-osiglpk-cflags." >&2;}
-      coin_has_osiglpk=no
-    fi
-  fi
-
-
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for osiglpk: \"$coin_has_osiglpk\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_PKG result for osiglpk: \"$coin_has_osiglpk\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'osiglpk'" >&5
-printf "%s\n" "$as_me: Collected values for package 'osiglpk'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osiglpk_lflags is \"$osiglpk_lflags\"" >&5
-printf "%s\n" "$as_me: osiglpk_lflags is \"$osiglpk_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osiglpk_cflags is \"$osiglpk_cflags\"" >&5
-printf "%s\n" "$as_me: osiglpk_cflags is \"$osiglpk_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osiglpk_data is \"$osiglpk_data\"" >&5
-printf "%s\n" "$as_me: osiglpk_data is \"$osiglpk_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osiglpk_pcfiles is \"$osiglpk_pcfiles\"" >&5
-printf "%s\n" "$as_me: osiglpk_pcfiles is \"$osiglpk_pcfiles\"" >&6;}
-  fi
-
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osiglpk" >&5
-printf "%s\n" "$coin_has_osiglpk" >&6; }
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osiglpk (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_osiglpk (COIN_SKIP_PROJECTS)" >&6; }
-  fi
-
-
-  if test "$coin_has_osiglpk" != yes ; then
-    coin_has_osiglpk=no
-  fi
-
-
-   if test $coin_has_osiglpk = yes; then
-  COIN_HAS_OSIGLPK_TRUE=
-  COIN_HAS_OSIGLPK_FALSE='#'
-else
-  COIN_HAS_OSIGLPK_TRUE='#'
-  COIN_HAS_OSIGLPK_FALSE=
-fi
-
-
-
-  if test $coin_has_osiglpk = yes ; then
-
-printf "%s\n" "#define CBC_HAS_OSIGLPK 1" >>confdefs.h
-
-    CBCGENERIC_PCFILES="$osiglpk_pcfiles $CBCGENERIC_PCFILES"
-       CBCGENERIC_LFLAGS="$osiglpk_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$osiglpk_cflags $CBCGENERIC_CFLAGS"
-      OSICBCLIB_PCFILES="$osiglpk_pcfiles $OSICBCLIB_PCFILES"
-       OSICBCLIB_LFLAGS="$osiglpk_lflags $OSICBCLIB_LFLAGS"
-       OSICBCLIB_CFLAGS="$osiglpk_cflags $OSICBCLIB_CFLAGS"
-
-
-
-  fi
-
-#AC_COIN_CHK_PKG(OsiGrb,,[osi-gurobi])
-
-
-
-
-
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package OsiMsk" >&5
-printf %s "checking for package OsiMsk... " >&6; }
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osimsk=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "osimsk" ; then
-        coin_has_osimsk=skipping
-      fi
-    done
-  fi
-
-
-  if test "$coin_has_osimsk" != skipping ; then
-
-
-
-
-# Check whether --with-osimsk was given.
-if test ${with_osimsk+y}
-then :
-  withval=$with_osimsk;
-fi
-
-
-
-# Check whether --with-osimsk-lflags was given.
-if test ${with_osimsk_lflags+y}
-then :
-  withval=$with_osimsk_lflags;
-fi
-
-
-
-# Check whether --with-osimsk-cflags was given.
-if test ${with_osimsk_cflags+y}
-then :
-  withval=$with_osimsk_cflags;
-fi
-
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osimsk=requested
-
-  osimsk_lflags=
-  osimsk_cflags=
-  osimsk_data=
-  osimsk_pcfiles="osi-mosek"
-
-
-  withval="$with_osimsk"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_osimsk=skipping
-        osimsk_failmode='command line'
-        ;;
-      yes )
-        coin_has_osimsk=requested
-        osimsk_failmode=''
-        ;;
-      build )
-        coin_has_osimsk=requested
-        osimsk_build=yes
-        osimsk_failmode=''
-        ;;
-      * )
-        coin_has_osimsk=requested
-        osimsk_failmode=''
-        osimsk_lflags="$withval"
-        osimsk_pcfiles=''
-        ;;
-    esac
-  else
-    if test -n "$with_osimsk_lflags" ||
-       test -n "$with_osimsk_cflags" ||
-       test -n "$with_osimsk_data" ; then
-      coin_has_osimsk=requested
-      osimsk_failmode=''
-      osimsk_pcfiles=''
-    fi
-  fi
-
-
-  if test "$coin_has_osimsk" != skipping ; then
-       withval="$with_osimsk_lflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify link flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osimsk=yes
-             osimsk_lflags="$withval"
-             osimsk_pcfiles=''
-             ;;
-         esac
-       fi
-
-       withval="$with_osimsk_cflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify compile flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osimsk=yes
-             osimsk_cflags="$withval"
-             osimsk_pcfiles=''
-             ;;
-         esac
-       fi
-     fi
-
-
-
-
-
-  if test $coin_has_osimsk = requested ; then
-    if test -n "$PKG_CONFIG" ; then
-      if test x"$osimsk_build" = xyes ; then
-        pcfile="coin$osimsk_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSIMSK_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osimsk=yes
-    else
-      OSIMSK_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osimsk=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osimsk without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if ! test $coin_has_osimsk = yes ; then
-        pcfile="$osimsk_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSIMSK_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osimsk=yes
-    else
-      OSIMSK_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osimsk=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osimsk without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if test $coin_has_osimsk = yes ; then
-        osimsk_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-        osimsk_pcfiles="$pcfile"
-      fi
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Check for osimsk via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osimsk-lflags and --with-osimsk-cflags." >&5
-printf "%s\n" "$as_me: WARNING: Check for osimsk via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osimsk-lflags and --with-osimsk-cflags." >&2;}
-      coin_has_osimsk=no
-    fi
-  fi
-
-
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for osimsk: \"$coin_has_osimsk\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_PKG result for osimsk: \"$coin_has_osimsk\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'osimsk'" >&5
-printf "%s\n" "$as_me: Collected values for package 'osimsk'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osimsk_lflags is \"$osimsk_lflags\"" >&5
-printf "%s\n" "$as_me: osimsk_lflags is \"$osimsk_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osimsk_cflags is \"$osimsk_cflags\"" >&5
-printf "%s\n" "$as_me: osimsk_cflags is \"$osimsk_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osimsk_data is \"$osimsk_data\"" >&5
-printf "%s\n" "$as_me: osimsk_data is \"$osimsk_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osimsk_pcfiles is \"$osimsk_pcfiles\"" >&5
-printf "%s\n" "$as_me: osimsk_pcfiles is \"$osimsk_pcfiles\"" >&6;}
-  fi
-
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osimsk" >&5
-printf "%s\n" "$coin_has_osimsk" >&6; }
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osimsk (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_osimsk (COIN_SKIP_PROJECTS)" >&6; }
-  fi
-
-
-  if test "$coin_has_osimsk" != yes ; then
-    coin_has_osimsk=no
-  fi
-
-
-   if test $coin_has_osimsk = yes; then
-  COIN_HAS_OSIMSK_TRUE=
-  COIN_HAS_OSIMSK_FALSE='#'
-else
-  COIN_HAS_OSIMSK_TRUE='#'
-  COIN_HAS_OSIMSK_FALSE=
-fi
-
-
-
-  if test $coin_has_osimsk = yes ; then
-
-printf "%s\n" "#define CBC_HAS_OSIMSK 1" >>confdefs.h
-
-    CBCGENERIC_PCFILES="$osimsk_pcfiles $CBCGENERIC_PCFILES"
-       CBCGENERIC_LFLAGS="$osimsk_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$osimsk_cflags $CBCGENERIC_CFLAGS"
-      OSICBCLIB_PCFILES="$osimsk_pcfiles $OSICBCLIB_PCFILES"
-       OSICBCLIB_LFLAGS="$osimsk_lflags $OSICBCLIB_LFLAGS"
-       OSICBCLIB_CFLAGS="$osimsk_cflags $OSICBCLIB_CFLAGS"
-
-
-
-  fi
-
-
-
-
-
-
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package OsiSpx" >&5
-printf %s "checking for package OsiSpx... " >&6; }
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osispx=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "osispx" ; then
-        coin_has_osispx=skipping
-      fi
-    done
-  fi
-
-
-  if test "$coin_has_osispx" != skipping ; then
-
-
-
-
-# Check whether --with-osispx was given.
-if test ${with_osispx+y}
-then :
-  withval=$with_osispx;
-fi
-
-
-
-# Check whether --with-osispx-lflags was given.
-if test ${with_osispx_lflags+y}
-then :
-  withval=$with_osispx_lflags;
-fi
-
-
-
-# Check whether --with-osispx-cflags was given.
-if test ${with_osispx_cflags+y}
-then :
-  withval=$with_osispx_cflags;
-fi
-
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osispx=requested
-
-  osispx_lflags=
-  osispx_cflags=
-  osispx_data=
-  osispx_pcfiles="osi-soplex"
-
-
-  withval="$with_osispx"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_osispx=skipping
-        osispx_failmode='command line'
-        ;;
-      yes )
-        coin_has_osispx=requested
-        osispx_failmode=''
-        ;;
-      build )
-        coin_has_osispx=requested
-        osispx_build=yes
-        osispx_failmode=''
-        ;;
-      * )
-        coin_has_osispx=requested
-        osispx_failmode=''
-        osispx_lflags="$withval"
-        osispx_pcfiles=''
-        ;;
-    esac
-  else
-    if test -n "$with_osispx_lflags" ||
-       test -n "$with_osispx_cflags" ||
-       test -n "$with_osispx_data" ; then
-      coin_has_osispx=requested
-      osispx_failmode=''
-      osispx_pcfiles=''
-    fi
-  fi
-
-
-  if test "$coin_has_osispx" != skipping ; then
-       withval="$with_osispx_lflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify link flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osispx=yes
-             osispx_lflags="$withval"
-             osispx_pcfiles=''
-             ;;
-         esac
-       fi
-
-       withval="$with_osispx_cflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify compile flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osispx=yes
-             osispx_cflags="$withval"
-             osispx_pcfiles=''
-             ;;
-         esac
-       fi
-     fi
-
-
-
-
-
-  if test $coin_has_osispx = requested ; then
-    if test -n "$PKG_CONFIG" ; then
-      if test x"$osispx_build" = xyes ; then
-        pcfile="coin$osispx_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSISPX_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osispx=yes
-    else
-      OSISPX_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osispx=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osispx without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if ! test $coin_has_osispx = yes ; then
-        pcfile="$osispx_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSISPX_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osispx=yes
-    else
-      OSISPX_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osispx=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osispx without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if test $coin_has_osispx = yes ; then
-        osispx_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-        osispx_pcfiles="$pcfile"
-      fi
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Check for osispx via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osispx-lflags and --with-osispx-cflags." >&5
-printf "%s\n" "$as_me: WARNING: Check for osispx via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osispx-lflags and --with-osispx-cflags." >&2;}
-      coin_has_osispx=no
-    fi
-  fi
-
-
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for osispx: \"$coin_has_osispx\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_PKG result for osispx: \"$coin_has_osispx\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'osispx'" >&5
-printf "%s\n" "$as_me: Collected values for package 'osispx'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osispx_lflags is \"$osispx_lflags\"" >&5
-printf "%s\n" "$as_me: osispx_lflags is \"$osispx_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osispx_cflags is \"$osispx_cflags\"" >&5
-printf "%s\n" "$as_me: osispx_cflags is \"$osispx_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osispx_data is \"$osispx_data\"" >&5
-printf "%s\n" "$as_me: osispx_data is \"$osispx_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osispx_pcfiles is \"$osispx_pcfiles\"" >&5
-printf "%s\n" "$as_me: osispx_pcfiles is \"$osispx_pcfiles\"" >&6;}
-  fi
-
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osispx" >&5
-printf "%s\n" "$coin_has_osispx" >&6; }
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osispx (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_osispx (COIN_SKIP_PROJECTS)" >&6; }
-  fi
-
-
-  if test "$coin_has_osispx" != yes ; then
-    coin_has_osispx=no
-  fi
-
-
-   if test $coin_has_osispx = yes; then
-  COIN_HAS_OSISPX_TRUE=
-  COIN_HAS_OSISPX_FALSE='#'
-else
-  COIN_HAS_OSISPX_TRUE='#'
-  COIN_HAS_OSISPX_FALSE=
-fi
-
-
-
-  if test $coin_has_osispx = yes ; then
-
-printf "%s\n" "#define CBC_HAS_OSISPX 1" >>confdefs.h
-
-    CBCGENERIC_PCFILES="$osispx_pcfiles $CBCGENERIC_PCFILES"
-       CBCGENERIC_LFLAGS="$osispx_lflags $CBCGENERIC_LFLAGS"
-       CBCGENERIC_CFLAGS="$osispx_cflags $CBCGENERIC_CFLAGS"
-      OSICBCLIB_PCFILES="$osispx_pcfiles $OSICBCLIB_PCFILES"
-       OSICBCLIB_LFLAGS="$osispx_lflags $OSICBCLIB_LFLAGS"
-       OSICBCLIB_CFLAGS="$osispx_cflags $OSICBCLIB_CFLAGS"
-
-
-
-  fi
-
+#AC_COIN_CHK_PKG(OsiDyLP,[CbcGeneric OsiCbcLib],[osi-dylp])
+#AC_COIN_CHK_PKG(OsiCpx,[CbcLib CbcGeneric OsiCbcLib],[osi-cplex])
+#AC_COIN_CHK_PKG(OsiGlpk,[CbcGeneric OsiCbcLib],[osi-glpk])
+##AC_COIN_CHK_PKG(OsiGrb,,[osi-gurobi])
+#AC_COIN_CHK_PKG(OsiMsk,[CbcGeneric OsiCbcLib],[osi-mosek])
+#AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric OsiCbcLib],[osi-soplex])
 #AC_COIN_CHK_PKG(OsiXpr,,[osi-xpress])
 
 
@@ -22208,53 +20871,6 @@ printf "%s\n" "$as_me: CBCLIB_LFLAGS: \"${CBCLIB_LFLAGS}\"" >&6;}
 printf "%s\n" "$as_me: CBCLIB_CFLAGS: \"${CBCLIB_CFLAGS}\"" >&6;}
       fi
      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcGeneric:" >&5
-printf "%s\n" "$as_me: FINALIZE_FLAGS for CbcGeneric:" >&6;}
-      fi
-      CBCGENERIC_LFLAGS_NOPC=$CBCGENERIC_LFLAGS
-
-      CBCGENERIC_CFLAGS_NOPC=$CBCGENERIC_CFLAGS
-
-      if test -n "${CBCGENERIC_PCFILES}" ; then
-        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${CBCGENERIC_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${CBCGENERIC_PCFILES}`
-        CBCGENERIC_CFLAGS="$temp_CFLAGS ${CBCGENERIC_CFLAGS}"
-        CBCGENERIC_LFLAGS="$temp_LFLAGS ${CBCGENERIC_LFLAGS}"
-      fi
-
-      # setup XYZ_EXPORT symbol for library users
-      libexport_attribute=
-      if test "$enable_shared" = yes ; then
-        case $build_os in
-          cygwin* | mingw* | msys* | cegcc* )
-            libexport_attribute="__declspec(dllimport)"
-            if test "$enable_static" = yes ; then
-              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
-            fi
-          ;;
-        esac
-      fi
-
-printf "%s\n" "#define CBCGENERIC_EXPORT $libexport_attribute" >>confdefs.h
-
-
-      # add -DXYZ_BUILD to XYZ_CFLAGS
-      CBCGENERIC_CFLAGS="${CBCGENERIC_CFLAGS} -DCBCGENERIC_BUILD"
-
-      # Define BUILDTOOLS_DEBUG to enable debugging output
-      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCGENERIC_LFLAGS_NOPC: \"${CBCGENERIC_LFLAGS_NOPC}\"" >&5
-printf "%s\n" "$as_me: CBCGENERIC_LFLAGS_NOPC: \"${CBCGENERIC_LFLAGS_NOPC}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCGENERIC_CFLAGS_NOPC: \"${CBCGENERIC_CFLAGS_NOPC}\"" >&5
-printf "%s\n" "$as_me: CBCGENERIC_CFLAGS_NOPC: \"${CBCGENERIC_CFLAGS_NOPC}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: adding \"${CBCGENERIC_PCFILES}\"" >&5
-printf "%s\n" "$as_me: adding \"${CBCGENERIC_PCFILES}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCGENERIC_LFLAGS: \"${CBCGENERIC_LFLAGS}\"" >&5
-printf "%s\n" "$as_me: CBCGENERIC_LFLAGS: \"${CBCGENERIC_LFLAGS}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCGENERIC_CFLAGS: \"${CBCGENERIC_CFLAGS}\"" >&5
-printf "%s\n" "$as_me: CBCGENERIC_CFLAGS: \"${CBCGENERIC_CFLAGS}\"" >&6;}
-      fi
-     if test "$BUILDTOOLS_DEBUG" = 1 ; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for OsiCbcLib:" >&5
 printf "%s\n" "$as_me: FINALIZE_FLAGS for OsiCbcLib:" >&6;}
       fi
@@ -22356,59 +20972,9 @@ printf "%s\n" "$as_me: CBCUNITTEST_CFLAGS: \"${CBCUNITTEST_CFLAGS}\"" >&6;}
 #############################################################################
 
 # Are we building cbc-generic? Default is no (false).
-# Check whether --enable-cbc-generic was given.
-if test ${enable_cbc_generic+y}
-then :
-  enableval=$enable_cbc_generic; cbc_generic=$enableval
-else $as_nop
-  cbc_generic=no
-fi
-
- if test "$cbc_generic" = yes; then
-  CBC_BUILD_CBC_GENERIC_TRUE=
-  CBC_BUILD_CBC_GENERIC_FALSE='#'
-else
-  CBC_BUILD_CBC_GENERIC_TRUE='#'
-  CBC_BUILD_CBC_GENERIC_FALSE=
-fi
 
 
-if test "$cbc_generic" = yes ; then
-  # Set the default solver for cbc-generic. In theory, any OsiXXX should work.
-  # In practice, only thoselisted below have had any testing long long ago or never.
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for cbc-generic default solver" >&5
-printf %s "checking for cbc-generic default solver... " >&6; }
 
-# Check whether --with-cbc-generic-solver was given.
-if test ${with_cbc_generic_solver+y}
-then :
-  withval=$with_cbc_generic_solver; cbc_default_solver=$withval
-else $as_nop
-  cbc_default_solver=clp
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $cbc_default_solver" >&5
-printf "%s\n" "$cbc_default_solver" >&6; }
-
-  case $cbc_default_solver in
-      clp) ;;
-    cplex) ;;
-     dylp) ;;
-     glpk) ;;
-    highs) ;;
-    mosek) ;;
-   soplex) ;;
-        *) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver." >&5
-printf "%s\n" "$as_me: WARNING: Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver." >&2;}
-          ;;
-  esac
-
-printf "%s\n" "#define CBC_DEFAULT_SOLVER \"$cbc_default_solver\"" >>confdefs.h
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: building cbc-generic with default solver $cbc_default_solver" >&5
-printf "%s\n" "$as_me: building cbc-generic with default solver $cbc_default_solver" >&6;}
-fi
 
 #############################################################################
 #                       Cbc parallel configuration	                         #
@@ -23651,32 +22217,8 @@ if test -z "${COIN_HAS_MIPLIB3_TRUE}" && test -z "${COIN_HAS_MIPLIB3_FALSE}"; th
   as_fn_error $? "conditional \"COIN_HAS_MIPLIB3\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${COIN_HAS_OSIDYLP_TRUE}" && test -z "${COIN_HAS_OSIDYLP_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_OSIDYLP\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COIN_HAS_OSICPX_TRUE}" && test -z "${COIN_HAS_OSICPX_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_OSICPX\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COIN_HAS_OSIGLPK_TRUE}" && test -z "${COIN_HAS_OSIGLPK_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_OSIGLPK\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COIN_HAS_OSIMSK_TRUE}" && test -z "${COIN_HAS_OSIMSK_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_OSIMSK\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COIN_HAS_OSISPX_TRUE}" && test -z "${COIN_HAS_OSISPX_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_OSISPX\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${COIN_HAS_CPLEX_TRUE}" && test -z "${COIN_HAS_CPLEX_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_CPLEX\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${CBC_BUILD_CBC_GENERIC_TRUE}" && test -z "${CBC_BUILD_CBC_GENERIC_FALSE}"; then
-  as_fn_error $? "conditional \"CBC_BUILD_CBC_GENERIC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_PTHREADSW32_TRUE}" && test -z "${COIN_HAS_PTHREADSW32_FALSE}"; then

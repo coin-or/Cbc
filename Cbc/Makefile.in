@@ -57,12 +57,11 @@ host_triplet = @host@
 # specified.  But we need to list it as subdirectory to make sure that it is
 # included in the tarball
 @ALWAYS_FALSE@am__append_1 = test
-DIST_COMMON = README $(am__configure_deps) \
-	$(srcdir)/BuildTools/Makemain.inc $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(srcdir)/cbc-uninstalled.pc.in \
-	$(srcdir)/cbc.pc.in $(srcdir)/osi-cbc-uninstalled.pc.in \
-	$(srcdir)/osi-cbc.pc.in $(top_srcdir)/configure \
-	$(top_srcdir)/doxydoc/doxygen.conf.in \
+DIST_COMMON = $(am__configure_deps) $(srcdir)/BuildTools/Makemain.inc \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/cbc-uninstalled.pc.in $(srcdir)/cbc.pc.in \
+	$(srcdir)/osi-cbc-uninstalled.pc.in $(srcdir)/osi-cbc.pc.in \
+	$(top_srcdir)/configure $(top_srcdir)/doxydoc/doxygen.conf.in \
 	$(top_srcdir)/examples/Makefile.in AUTHORS INSTALL \
 	config.guess config.sub depcomp install-sh ltmain.sh missing
 @HAVE_EXTERNALS_TRUE@am__append_2 = Dependencies

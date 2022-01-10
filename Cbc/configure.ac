@@ -63,7 +63,7 @@ fi
 
 # Clp and OsiClp are inseparable here.
 
-AC_COIN_CHECK_PACKAGE(Clp, [osi-clp], [CbcLib CbcGeneric])
+AC_COIN_CHECK_PACKAGE(Clp, [clp osi-clp], [CbcLib CbcGeneric])
 if test $coin_has_clp != yes ; then
   AC_MSG_ERROR("Required package Clp unavailable.")
 fi

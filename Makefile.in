@@ -51,11 +51,11 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-DIST_COMMON = README $(am__configure_deps) \
-	$(srcdir)/BuildTools/Makemain.inc $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(top_srcdir)/configure \
-	$(top_srcdir)/doxydoc/doxygen.conf.in AUTHORS INSTALL \
-	config.guess config.sub depcomp install-sh ltmain.sh missing
+DIST_COMMON = $(am__configure_deps) $(srcdir)/BuildTools/Makemain.inc \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(top_srcdir)/configure $(top_srcdir)/doxydoc/doxygen.conf.in \
+	AUTHORS INSTALL config.guess config.sub depcomp install-sh \
+	ltmain.sh missing
 @HAVE_EXTERNALS_TRUE@am__append_1 = Dependencies
 @HAVE_EXTERNALS_TRUE@am__append_2 = .Dependencies-stamp
 subdir = .
@@ -261,7 +261,7 @@ SUBDIRS = $(subdirs)
 # Files that are generated and should be cleaned with make distclean
 DISTCLEANFILES = coin_subdirs.txt $(am__append_2) \
 	$(VPATH_DISTCLEANFILES)
-DocFiles = README AUTHORS LICENSE 
+DocFiles = README README.md AUTHORS AUTHORS.md LICENSE LICENSE.md 
 DocInstallDir = $(datadir)/coin/doc/$(PACKAGE_NAME)
 COIN_HAS_DOXYGEN = @COIN_HAS_DOXYGEN_TRUE@TRUE
 COIN_HAS_LATEX = @COIN_HAS_LATEX_TRUE@TRUE
@@ -828,7 +828,7 @@ uninstall-all-doxygen-docs:
 	  fi ; \
 	done ; 
 
-install-doc: $(DocFiles) 
+install-doc: 
 	test -z "$(DocInstallDir)" || $(mkdir_p) "$(DESTDIR)$(DocInstallDir)"
 	for file in $(DocFiles); do \
 	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \

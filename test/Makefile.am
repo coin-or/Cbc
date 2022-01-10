@@ -18,12 +18,6 @@ if COIN_HAS_CLP
   CBC_TEST_TGTS += test_cbc ctests
 endif
 
-if CBC_BUILD_CBC_GENERIC
-if COIN_HAS_SAMPLE
-  CBC_TEST_TGTS += test_cbc_generic
-endif
-endif
-
 cbcflags =
 ositestsflags =
 if COIN_HAS_SAMPLE

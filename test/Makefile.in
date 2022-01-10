@@ -95,12 +95,11 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @COIN_HAS_CLP_TRUE@am__append_1 = test_cbc ctests
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SAMPLE_TRUE@am__append_2 = test_cbc_generic
 #  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_SAMPLE_TRUE@am__append_3 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_MIPLIB3_TRUE@am__append_4 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
+@COIN_HAS_SAMPLE_TRUE@am__append_2 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
+@COIN_HAS_MIPLIB3_TRUE@am__append_3 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
 #  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-@COIN_HAS_NETLIB_TRUE@am__append_5 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
+@COIN_HAS_NETLIB_TRUE@am__append_4 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
 bin_PROGRAMS = gamsTest$(EXEEXT) osiUnitTest$(EXEEXT) \
 	CInterfaceTest$(EXEEXT)
 subdir = test
@@ -226,17 +225,16 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-CBCGENERIC_CFLAGS = @CBCGENERIC_CFLAGS@
 CBCGENERIC_CFLAGS_NOPC = @CBCGENERIC_CFLAGS_NOPC@
-CBCGENERIC_LFLAGS = @CBCGENERIC_LFLAGS@
 CBCGENERIC_LFLAGS_NOPC = @CBCGENERIC_LFLAGS_NOPC@
-CBCGENERIC_PCFILES = @CBCGENERIC_PCFILES@
 CBCLIB_CFLAGS = @CBCLIB_CFLAGS@
 CBCLIB_CFLAGS_NOPC = @CBCLIB_CFLAGS_NOPC@
 CBCLIB_LFLAGS = @CBCLIB_LFLAGS@
 CBCLIB_LFLAGS_NOPC = @CBCLIB_LFLAGS_NOPC@
 CBCLIB_PCFILES = @CBCLIB_PCFILES@
+CBCSOLVERLIB_CFLAGS = @CBCSOLVERLIB_CFLAGS@
 CBCSOLVERLIB_CFLAGS_NOPC = @CBCSOLVERLIB_CFLAGS_NOPC@
+CBCSOLVERLIB_LFLAGS = @CBCSOLVERLIB_LFLAGS@
 CBCSOLVERLIB_LFLAGS_NOPC = @CBCSOLVERLIB_LFLAGS_NOPC@
 CBCUNITTEST_CFLAGS = @CBCUNITTEST_CFLAGS@
 CBCUNITTEST_CFLAGS_NOPC = @CBCUNITTEST_CFLAGS_NOPC@
@@ -381,9 +379,9 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 ########################################################################
 #                         unitTest for Cbc                             #
 ########################################################################
-CBC_TEST_TGTS = gamstests ositests $(am__append_1) $(am__append_2)
-cbcflags = $(am__append_4)
-ositestsflags = $(am__append_3) $(am__append_5)
+CBC_TEST_TGTS = gamstests ositests $(am__append_1)
+cbcflags = $(am__append_3)
+ositestsflags = $(am__append_2) $(am__append_4)
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbc.la
 

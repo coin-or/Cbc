@@ -186,8 +186,7 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcNodeInfo.lo libCbc_la-CbcNWay.lo \
 	libCbc_la-CbcObject.lo libCbc_la-CbcObjectUpdateData.lo \
 	libCbc_la-CbcParam.lo libCbc_la-CbcParamUtils.lo \
-	libCbc_la-CbcCbcparam.lo libCbc_la-CbcPartialNodeInfo.lo \
-	libCbc_la-CbcSimpleInteger.lo \
+	libCbc_la-CbcPartialNodeInfo.lo libCbc_la-CbcSimpleInteger.lo \
 	libCbc_la-CbcSimpleIntegerDynamicPseudoCost.lo \
 	libCbc_la-CbcSimpleIntegerPseudoCost.lo libCbc_la-CbcSOS.lo \
 	libCbc_la-CbcSolution.lo libCbc_la-CbcSolver.lo \
@@ -233,7 +232,6 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcBranchLotsize.Plo \
 	./$(DEPDIR)/libCbc_la-CbcBranchToFixLots.Plo \
 	./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo \
-	./$(DEPDIR)/libCbc_la-CbcCbcparam.Plo \
 	./$(DEPDIR)/libCbc_la-CbcClique.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo \
@@ -595,7 +593,7 @@ libCbc_la_SOURCES = \
 	CbcObject.cpp CbcObject.hpp \
 	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
 	CbcParam.cpp CbcParam.hpp \
-	CbcParamUtils.cpp CbcParamUtils.hpp CbcCbcparam.cpp \
+	CbcParamUtils.cpp CbcParamUtils.hpp \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.cpp \
@@ -891,7 +889,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBranchLotsize.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBranchToFixLots.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCbcparam.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcClique.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo@am__quote@ # am--include-marker
@@ -1384,13 +1381,6 @@ libCbc_la-CbcParamUtils.lo: CbcParamUtils.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcParamUtils.lo `test -f 'CbcParamUtils.cpp' || echo '$(srcdir)/'`CbcParamUtils.cpp
 
-libCbc_la-CbcCbcparam.lo: CbcCbcparam.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcCbcparam.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcCbcparam.Tpo -c -o libCbc_la-CbcCbcparam.lo `test -f 'CbcCbcparam.cpp' || echo '$(srcdir)/'`CbcCbcparam.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcCbcparam.Tpo $(DEPDIR)/libCbc_la-CbcCbcparam.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcCbcparam.cpp' object='libCbc_la-CbcCbcparam.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcCbcparam.lo `test -f 'CbcCbcparam.cpp' || echo '$(srcdir)/'`CbcCbcparam.cpp
-
 libCbc_la-CbcPartialNodeInfo.lo: CbcPartialNodeInfo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcPartialNodeInfo.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcPartialNodeInfo.Tpo -c -o libCbc_la-CbcPartialNodeInfo.lo `test -f 'CbcPartialNodeInfo.cpp' || echo '$(srcdir)/'`CbcPartialNodeInfo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcPartialNodeInfo.Tpo $(DEPDIR)/libCbc_la-CbcPartialNodeInfo.Plo
@@ -1693,7 +1683,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchLotsize.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchToFixLots.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-CbcCbcparam.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcClique.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo
@@ -1819,7 +1808,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchLotsize.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchToFixLots.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-CbcCbcparam.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcClique.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo

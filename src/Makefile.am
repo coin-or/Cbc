@@ -76,7 +76,7 @@ libCbc_la_SOURCES = \
 	CbcObject.cpp CbcObject.hpp \
 	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
 	CbcParam.cpp CbcParam.hpp \
-	CbcParamUtils.cpp CbcParamUtils.hpp CbcCbcparam.cpp \
+	CbcParamUtils.cpp CbcParamUtils.hpp \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.cpp \

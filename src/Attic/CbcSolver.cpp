@@ -7223,7 +7223,7 @@ int CbcMain1(int argc, const char *argv[],
                     abs(babModel_->fastNodeDepth()) == 1) {
 		  int iType = babModel_->fastNodeDepth();
 		  int iDepth = iType <0 ? -12 : 8;
-		  int iSize = iType <0 ? 10000 : 500; 
+		  int iSize = 500; // think harder iType <0 ? 10000 : 500; 
                   if (babModel_->solver()->getNumCols() +
                           babModel_->solver()->getNumRows() < iSize) {
                     babModel_->setFastNodeDepth(iDepth);

@@ -61,6 +61,9 @@
 
 #include "CbcGenMessages.hpp"
 
+// For now, we need this by default. It will be removed later.
+#define CBC_CLUMSY_CODING
+
 /*
   It turns out that doxygen is not good with anonymous structures. Hence the
   `struct name_struct' style used for structured fields in CbcParameters.

@@ -4698,7 +4698,7 @@ int CbcMain1(int argc, const char *argv[],
 		      // check if odd name
 		      if (columnName[0]=='N') {
 			try {
-			  int sequence = stoi(columnName.substr(1));
+                           int sequence = std::atoi(columnName.substr(1).c_str());
 			  oddColumn = sequence+1;
 			} catch (...) {
 			}

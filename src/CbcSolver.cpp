@@ -1254,7 +1254,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     int doScaling = 4;
 
     if (info) {
-       parameters[ClpParam::LOGLEVEL]->setVal(info->logLevel);
+       parameters[CbcParam::LOGLEVEL]->setVal(info->logLevel);
        goodModel = true;
        // FIXME Do we really need this? Seems to just mean that AMPL is being used
        statusUserFunction_[0] = 1;
@@ -3176,7 +3176,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
             clpParam->readValue(inputQueue, fileName, &message);
             CoinParamUtils::processFile(fileName,
-                                parameters[ClpParam::DIRECTORY]->dirName(),
+                                parameters[CbcParam::DIRECTORY]->dirName(),
                                         &canOpen);
             if (!canOpen) {
                buffer.str("");
@@ -3185,9 +3185,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                continue;
             }
             if (fileName == ""){
-               fileName = parameters[ClpParam::BASISFILE]->fileName();
+               fileName = clpParameters[ClpParam::BASISFILE]->fileName();
             }else{
-               parameters[ClpParam::BASISFILE]->setFileName(fileName);
+               clpParameters[ClpParam::BASISFILE]->setFileName(fileName);
             }
 #ifndef CBC_OTHER_SOLVER
             int values = lpSolver->readBasis(fileName.c_str());
@@ -3206,7 +3206,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
             clpParam->readValue(inputQueue, fileName, &message);
             CoinParamUtils::processFile(fileName,
-                                parameters[ClpParam::DIRECTORY]->dirName(),
+                                parameters[CbcParam::DIRECTORY]->dirName(),
                                         &canOpen);
             if (!canOpen) {
                buffer.str("");
@@ -3215,9 +3215,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                continue;
             }
             if (fileName == ""){
-               fileName = parameters[ClpParam::BASISFILE]->fileName();
+               fileName = clpParameters[ClpParam::BASISFILE]->fileName();
             }else{
-               parameters[ClpParam::BASISFILE]->setFileName(fileName);
+               clpParameters[ClpParam::BASISFILE]->setFileName(fileName);
             }
             ClpSimplex *model2 = lpSolver;
             model2->writeBasis(fileName.c_str(), outputFormat > 1,

@@ -7601,8 +7601,9 @@ void CbcModel::addCutGenerator(CglCutGenerator *generator, int howOften,
   // and before any changes
   temp = virginGenerator_;
   virginGenerator_ = new CbcCutGenerator *[numberCutGenerators_ + 1];
-  memcpy(virginGenerator_, temp,
-         numberCutGenerators_ * sizeof(CbcCutGenerator *));
+  if( numberCutGenerators_ > 0 )
+    memcpy(virginGenerator_, temp,
+           numberCutGenerators_ * sizeof(CbcCutGenerator *));
   delete[] temp;
   virginGenerator_[numberCutGenerators_++] = new CbcCutGenerator(
       this, generator, howOften, name, normal, atSolution, whenInfeasible,
@@ -12274,8 +12275,9 @@ void CbcModel::findIntegers(bool startAgain, int type) {
     }
   }
   delete[] mark;
-  // Now append other objects
-  memcpy(object_ + numberIntegers_, oldObject, nObjects * sizeof(OsiObject *));
+  // Now append other objects, if any
+  if( nObjects > 0 )
+    memcpy(object_ + numberIntegers_, oldObject, nObjects * sizeof(OsiObject *));
   // Delete old array (just array)
   delete[] oldObject;
 

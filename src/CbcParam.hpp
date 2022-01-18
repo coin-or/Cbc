@@ -10,6 +10,7 @@
 #define CbcParam_H
 
 #include "CoinParam.hpp"
+#include "CbcConfig.h"
 
 /* \file CbcParam.hpp
    \brief Declarations for parameters that control the cbc-generic main
@@ -29,7 +30,7 @@ class CbcParameters;
     object.
 */
 
-class CbcParam : public CoinParam {
+class CBCLIB_EXPORT CbcParam : public CoinParam {
 
 public:
 

@@ -6348,7 +6348,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 int moreMipOptions = parameters[CbcParam::MOREMIPOPTIONS]->intVal();
                 if (moreMipOptions >= 0) {
                   buffer.str("");
-                  buffer << "more mip options" << moreMipOptions;
+                  buffer << "more mip options " << moreMipOptions;
                   printGeneralMessage(model_, buffer.str());
 #if 1
                   // some options may have been set already

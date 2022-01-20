@@ -3263,6 +3263,176 @@ void CbcModel::branchAndBound(int doStatistics)
       convertToDynamic();
     }
   }
+#ifdef CBC_HAS_NAUTY
+  // maybe also see if can restart (before nauty)
+#define MAX_NAUTY_PASS 2000
+  int testOptions = moreSpecialOptions2_&(131072|262144|128|256); 
+  if (!parentModel_ && (testOptions==131072||testOptions==262144)) {
+    bool changed = true;
+    int numberAdded = 0;
+    int numberPasses = 0;
+    int changeType = 0; //(more2&(128|256))>>7;
+    OsiSolverInterface *solverOriginal = solver_;
+    OsiSolverInterface *continuousSolver = continuousSolver_;
+    continuousSolver_ = NULL;
+    int numberOriginalRows = solverOriginal->getNumRows();
+    OsiSolverInterface *solver = solverOriginal->clone();
+    solver_ = solver;
+    while (changed) {
+      changed = false;
+      CbcSymmetry symmetryInfo;
+      // symmetryInfo.setModel(&model);
+      // for now strong is just on counts - use user option
+      // int maxN=5000000;
+      // OsiSolverInterface * solver = solver();
+      symmetryInfo.setupSymmetry(this);
+      int numberGenerators = symmetryInfo.getNtyInfo()->getNumGenerators();
+      if (numberGenerators) {
+	// symmetryInfo.Print_Orbits();
+	int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();
+	if (numberUsefulOrbits) {
+	  symmetryInfo.Compute_Symmetry();
+	  symmetryInfo.fillOrbits(/*true*/);
+	  const int *orbits = symmetryInfo.whichOrbit();
+	  int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();
+	  int *counts = new int[numberUsefulOrbits];
+	  memset(counts, 0, numberUsefulOrbits * sizeof(int));
+	  int numberColumns = solver->getNumCols();
+	  int numberUseful = 0;
+	  if (changeType == 1) {
+	    // just 0-1
+	    for (int i = 0; i < numberColumns; i++) {
+	      int iOrbit = orbits[i];
+	      if (iOrbit >= 0) {
+		if (solver->isBinary(i)) {
+		  counts[iOrbit]++;
+		  numberUseful++;
+		}
+	      }
+	    }
+	  } else if (changeType == 2) {
+	    // just integer
+	    for (int i = 0; i < numberColumns; i++) {
+	      int iOrbit = orbits[i];
+	      if (iOrbit >= 0) {
+		if (solver->isInteger(i)) {
+		  counts[iOrbit]++;
+		  numberUseful++;
+		}
+	      }
+	    }
+	  } else {
+	    // all
+	    for (int i = 0; i < numberColumns; i++) {
+	      int iOrbit = orbits[i];
+	      if (iOrbit >= 0) {
+		counts[iOrbit]++;
+		numberUseful++;
+	      }
+	    }
+	  }
+	  int iOrbit = -1;
+#define LONGEST 0
+#if LONGEST
+	  // choose longest
+	  int maxOrbit = 0;
+	  for (int i = 0; i < numberUsefulOrbits; i++) {
+	    if (counts[i] > maxOrbit) {
+	      maxOrbit = counts[i];
+	      iOrbit = i;
+	    }
+	  }
+#else
+	  // choose closest to 2
+	  int minOrbit = numberColumns + 1;
+	  for (int i = 0; i < numberUsefulOrbits; i++) {
+	    if (counts[i] > 1 && counts[i] < minOrbit) {
+	      minOrbit = counts[i];
+	      iOrbit = i;
+	    }
+	  }
+#endif
+	  delete[] counts;
+	  if (!numberUseful)
+	    break;
+	  // take largest
+	  const double *solution = solver->getColSolution();
+	  double *size = new double[numberColumns];
+	  int *which = new int[numberColumns];
+	  int nIn = 0;
+	  for (int i = 0; i < numberColumns; i++) {
+	    if (orbits[i] == iOrbit) {
+	      size[nIn] = -solution[i];
+	      which[nIn++] = i;
+	    }
+	  }
+	  if (nIn > 1) {
+	    // printf("Using orbit length %d\n",nIn);
+	    CoinSort_2(size, size + nIn, which);
+	    size[0] = 1.0;
+	    size[1] = -1.0;
+#if LONGEST == 0
+	    solver->addRow(2, which, size, 0.0, COIN_DBL_MAX);
+	    numberAdded++;
+#elif LONGEST == 1
+	    for (int i = 0; i < nIn - 1; i++) {
+	      solver->addRow(2, which + i, size, 0.0, COIN_DBL_MAX);
+	      numberAdded++;
+	    }
+#else
+	    for (int i = 0; i < nIn - 1; i++) {
+	      solver->addRow(2, which, size, 0.0, COIN_DBL_MAX);
+	      which[1] = which[2 + i];
+	      numberAdded++;
+	    }
+#endif
+	    numberPasses++;
+	    if (numberPasses < MAX_NAUTY_PASS)
+	      changed = true;
+	  }
+	  delete[] size;
+	  delete[] which;
+	}
+      }
+    }
+    // switch off
+    moreSpecialOptions2_&=~(131072|262144);
+    solver_ = solverOriginal;
+    if (numberAdded) {
+      char general[100];
+      if (numberPasses < MAX_NAUTY_PASS)
+	sprintf(general, "%d symmetry cuts added in %d passes", numberAdded,
+		numberPasses);
+      else
+	sprintf(
+		general,
+		"%d symmetry cuts added in %d passes (maximum) - must be better way",
+		numberAdded, numberPasses);
+      messageHandler()->message(CBC_GENERAL, messages())
+        << general << CoinMessageEol;
+    }
+    continuousSolver_ = continuousSolver;
+    int numberRows = solver->getNumRows();
+    if (numberRows > numberOriginalRows) {
+      const CoinPackedMatrix *rowCopy = solver->getMatrixByRow();
+      const int *column = rowCopy->getIndices();
+      const int *rowLength = rowCopy->getVectorLengths();
+      const CoinBigIndex *rowStart = rowCopy->getVectorStarts();
+      const double *elements = rowCopy->getElements();
+      const double *rowLower = solver->getRowLower();
+      const double *rowUpper = solver->getRowUpper();
+      for (int iRow = numberOriginalRows; iRow < numberRows; iRow++) {
+	OsiRowCut rc;
+	rc.setLb(rowLower[iRow]);
+	rc.setUb(rowUpper[iRow]);
+	CoinBigIndex start = rowStart[iRow];
+	rc.setRow(rowLength[iRow], column + start, elements + start, false);
+	globalCuts_.addCutIfNotDuplicate(rc);
+      }
+    }
+    delete solver;
+  }
+#endif
 
   /*
       Do an initial round of cut generation for the root node. Depending on the

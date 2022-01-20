@@ -1236,6 +1236,7 @@ void CbcParameters::addCbcSolverKwdParams() {
       "Orbit!alBranching", "Whether to try orbital branching", 
       "This switches on Orbital branching. Value 'on' just adds orbital, "
       "'strong' tries extra fixing in strong branching."
+      "'cuts' just adds global cuts to break symmetry."
       "'lightweight' is as on where computation seems cheap");
   parameters_[CbcParam::ORBITAL]->appendKwd("off", CbcParameters::OBOff);
   parameters_[CbcParam::ORBITAL]->appendKwd("slowish", CbcParameters::OBSlowish);
@@ -1245,6 +1246,8 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::ORBITAL]->appendKwd("on", CbcParameters::OBOn);
   parameters_[CbcParam::ORBITAL]->appendKwd("lightweight", CbcParameters::OBLightweight);
   parameters_[CbcParam::ORBITAL]->appendKwd("moreprinting", CbcParameters::OBMorePrinting);  
+  parameters_[CbcParam::ORBITAL]->appendKwd("cuts", CbcParameters::OBCuts);
+  parameters_[CbcParam::ORBITAL]->appendKwd("cutslight", CbcParameters::OBCutsLight);
 
   parameters_[CbcParam::PREPROCESS]->setup(
       "preprocess", "Whether to use integer preprocessing", 

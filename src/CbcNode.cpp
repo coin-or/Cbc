@@ -3149,6 +3149,21 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 	//	 iDo,numberBoth);
       }
 #endif
+      //#define CBC_PLAY_WITH_BRANCHING 1
+      // To enable experimental ideas
+#if CBC_PLAY_WITH_BRANCHING
+      typedef struct {
+	double solutionValue;
+	double downEst;
+	double upEst;
+	int jColumn;
+	int ways;
+      } branchInfo;
+      branchInfo * info22 = new branchInfo[numberToDo];
+      memset(info22,0,numberToDo*sizeof(branchInfo));
+      for (iDo = 0; iDo < numberToDo; iDo++)
+	info22[iDo].jColumn=-1;
+#endif
       for (iDo = 0; iDo < numberToDo; iDo++) {
         int iObject = whichObject[iDo];
         OsiObject *object = model->modifiableObject(iObject);
@@ -3784,11 +3799,20 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                 */
         // reset
         choice.possibleBranch->resetNumberBranchesLeft();
+#if CBC_PLAY_WITH_BRANCHING
+	info22[iDo].jColumn = iColumn;
+	info22[iDo].downEst = choice.downMovement;
+	info22[iDo].upEst = choice.upMovement;
+	info22[iDo].ways = 0;
+#endif
         if (choice.upMovement < 1.0e100) {
           if (choice.downMovement < 1.0e100) {
             // In case solution coming in was odd
             choice.upMovement = CoinMax(0.0, choice.upMovement);
             choice.downMovement = CoinMax(0.0, choice.downMovement);
+#if CBC_PLAY_WITH_BRANCHING
+	    info22[iDo].ways = 3;
+#endif
 #if ZERO_ONE == 2
             // branch on 0-1 first (temp)
             if (fabs(choice.possibleBranch->value()) < 1.0) {
@@ -3884,6 +3908,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               }
             }
           } else {
+#if CBC_PLAY_WITH_BRANCHING
+	    info22[iDo].ways = 2;
+#endif
             // up feasible, down infeasible
             anyAction = -1;
             worstFeasible = CoinMax(worstFeasible, choice.upMovement);
@@ -3958,6 +3985,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           }
         } else {
           if (choice.downMovement < 1.0e100) {
+#if CBC_PLAY_WITH_BRANCHING
+	    info22[iDo].ways = 1;
+#endif
             // down feasible, up infeasible
             anyAction = -1;
             worstFeasible = CoinMax(worstFeasible, choice.downMovement);
@@ -4112,6 +4142,161 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           }
         }
       }
+#if CBC_PLAY_WITH_BRANCHING
+      {
+#if CBC_PLAY_WITH_BRANCHING > 1
+	int printOut=1;
+	static int saveState=-1;
+#endif
+	int iObject = whichObject[whichChoice];
+	OsiObject *object = model->modifiableObject(iObject);
+	CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
+	int nMinus1 = 0;
+	if (dynamicObject && (model->specialOptions()&2048)==0) {
+#if CBC_PLAY_WITH_BRANCHING > 1
+	  int stateOfSearch = saveStateOfSearch;
+	  if (stateOfSearch!=saveState) {
+	    printf("zz search state changed from %d to %d\n",saveState,stateOfSearch);
+	    printOut=2;
+	    saveState = stateOfSearch;
+	  }
+	  for (iDo = 0; iDo < numberToDo; iDo++) {
+	    if (info22[iDo].jColumn<0)
+	      nMinus1++;
+	  }
+	  if (numberToDo==1&&!nMinus1)
+	    printOut=0;
+	  int iColumn = dynamicObject->columnNumber();
+	  if (printOut)
+	    printf("choosing %d (column %d) stateSearch %d numberToDo %d (%d) anya %d\n", bestChoice,
+		   iColumn, stateOfSearch, numberToDo,numberToDo-nMinus1,anyAction);
+#endif
+	  int iNewBest = -1;
+	  double bestFake = 0.0;
+	  int typeFake=0;
+	  int state2 = model->stateOfSearch();
+	  // to switch off
+	  //state2 = 0;
+	  double minWeight = 0.2;
+	  double maxWeight = 1.0-minWeight;
+	  // 1 - no solutions
+	  // 2 - all heuristic solutions
+	  // 3 - a solution reached by branching (could be strong)
+	  // 4 - no solution but many nodes
+	  if (state2<10) {
+	    if (state2==1) {
+	      typeFake = 1;
+	      minWeight = 0.1;
+	      maxWeight = 0.9;
+	    } else if (state2==2) {
+	      typeFake = 1;
+	      minWeight = 0.2;
+	      maxWeight = 0.8;
+	    } else if (state2==3) {
+	      typeFake = 1;
+	      if (numberNodes<6*solver->getNumRows()) {
+		minWeight = 0.5;
+		maxWeight = 0.5;
+	      } else {
+		minWeight = 0.7;
+		maxWeight = 0.3;
+	      }
+	    } else if (state2==4) {
+	      // odd getting here
+	      typeFake = 1;
+	      minWeight = 0.7;
+	      maxWeight = 0.3;
+	    } else {
+	      abort();
+	    }
+	  } else {
+	    // many nodes
+	    typeFake = 1;
+	    minWeight = 0.9;
+	    maxWeight = 0.1;
+	  }
+	  double maxWeightBig = 0.0;
+	  double maxWeightRest = 0.0;
+	  int iBigOne = -1;
+	  for (iDo = 0; iDo < numberToDo; iDo++) {
+	    if (info22[iDo].jColumn>=0) {
+	      int jColumn = info22[iDo].jColumn;
+	      double downEst = info22[iDo].downEst;
+	      double upEst = info22[iDo].upEst;
+#if CBC_PLAY_WITH_BRANCHING > 1
+	      if (printOut>1)
+	      printf("%s%d sol %g down %g up %g %d\n",(iDo==whichChoice) ? "*** ":"",
+		     jColumn,saveSolution[jColumn],
+		     downEst,upEst,info22[iDo].ways);
+#endif
+	      if (saveLower[jColumn]==saveUpper[jColumn])
+		continue;
+	      double minChange = CoinMin(downEst,upEst);
+	      double maxChange = CoinMax(downEst,upEst);
+	      // more info
+	      OsiObject *object = model->modifiableObject(whichObject[iDo]);
+	      CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
+	      int numberTimesDown = dynamicObject->numberTimesDown();
+	      int numberTimesDownInfeasible =
+		dynamicObject->numberTimesDownInfeasible();;
+	      double sumDownChange = dynamicObject->sumDownChange();
+	      int numberTimesUp = dynamicObject->numberTimesUp();
+	      int numberTimesUpInfeasible =
+		dynamicObject->numberTimesUpInfeasible();;
+	      double sumUpChange = dynamicObject->sumUpChange();
+	      double value=0.0;
+	      if (typeFake==1) 
+		double value = minWeight*minChange+maxWeight*maxChange;
+	      else if (typeFake==2) 
+		double value = minWeight*minChange+maxWeight*maxChange;
+	      else if (typeFake==3) 
+		double value = minWeight*minChange+maxWeight*maxChange;
+	      if (value>bestFake) {
+		bestFake = value;
+		iNewBest = iDo;
+	      }
+	      if (maxChange>maxWeightBig) {
+		maxWeightRest = maxWeightBig;
+		maxWeightBig = maxChange;
+		iBigOne = iDo;
+	      } else if (maxChange>maxWeightRest) {
+		maxWeightRest = maxChange;
+	      }
+	    }
+	  } iNewBest = -1;// iNewBest = iObject; // for just big , -1 for off
+	  if (maxWeightBig>5.0*maxWeightRest && maxWeightBig<1.0e50 && false) {
+	    iNewBest = iBigOne;
+	    double downEst = info22[iNewBest].downEst;
+	    double upEst = info22[iNewBest].upEst;
+#if 1 //CBC_PLAY_WITH_BRANCHING > 1
+	    if (iNewBest!=iObject) 
+	      printf("Choosing on max estimate  obj %d down %g up %g\n",
+		     iNewBest,downEst,upEst);
+#endif
+	  }
+	  if (iNewBest>=0&&iNewBest!=iObject) {
+	    int iNewWay = (info22[iNewBest].downEst<info22[iNewBest].upEst) ? -1 : 1;
+	    OsiObject *object = model->modifiableObject(whichObject[iNewBest]);
+	    CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
+	    int iColumn = dynamicObject->columnNumber();
+	    delete branch_;
+	    CbcDynamicPseudoCostBranchingObject * obj =
+	      new CbcDynamicPseudoCostBranchingObject(model, iColumn,
+						      iNewWay, saveSolution[iColumn], whichObject[iNewBest]);
+	    branch_ = obj;
+	    branch_->setOriginalObject(dynamicObject);
+	    obj->setOriginalObject(dynamicObject);
+	    CbcBranchingObject *branchObj = dynamic_cast< CbcBranchingObject * >(branch_);
+	    assert(branchObj);
+#if CBC_PLAY_WITH_BRANCHING > 1
+	    if (printOut)
+	      printf("**choosing column %d\n", iColumn);
+#endif
+	  }
+	}
+      }
+      delete [] info22;
+#endif
       // If  fixed then round again
       // See if candidate still possible
       if (branch_) {

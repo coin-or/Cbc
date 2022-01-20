@@ -197,6 +197,8 @@ public:
     - OBOn:
     - OBLightweight:
     - OBMorePrinting:
+    - OBCuts:
+    - OBCutsLight:
     - OBEndMarker
    */
 
@@ -209,6 +211,8 @@ public:
     OBOn,
     OBLightweight,
     OBMorePrinting,
+    OBCuts,
+    OBCutsLight,
     OBEndMarker
   };
 

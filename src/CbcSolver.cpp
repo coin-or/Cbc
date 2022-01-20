@@ -8136,7 +8136,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 {
                   if (parameters[CbcParam::ORBITAL]->modeVal()) {
                     int k = parameters[CbcParam::ORBITAL]->modeVal();
-                    if (k < 4) {
+		    if (k < 4) {
                       babModel_->setMoreSpecialOptions2(
                           babModel_->moreSpecialOptions2() | (k * 128));
                     } else if (k == 4) {
@@ -8144,7 +8144,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       nautyAdded =
                           nautiedConstraints(*babModel_, MAX_NAUTY_PASS);
                     } else {
-		      assert (k>=5 && k <=7);
+		      assert (k>=5 && k <=9);
                       if (k == 5)
                         babModel_->setMoreSpecialOptions2(
                             babModel_->moreSpecialOptions2() | 128 | 256 |
@@ -8153,10 +8153,16 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                         babModel_->setMoreSpecialOptions2(
                             babModel_->moreSpecialOptions2() | 128 | 256 |
                             262144);
-                      else
+                      else if (k == 7)
                         babModel_->setMoreSpecialOptions2(
                             babModel_->moreSpecialOptions2() | 128 | 256 |
                             131072 | 262144);
+                      else if (k == 8)
+                        babModel_->setMoreSpecialOptions2(
+                            babModel_->moreSpecialOptions2() | 131072);
+                      else 
+                        babModel_->setMoreSpecialOptions2(
+                            babModel_->moreSpecialOptions2() | 262144);
                     }
                   }
                 }
@@ -13065,12 +13071,13 @@ static int nautiedConstraints(CbcModel &model, int maxPass) {
   int numberPasses = 0;
   int changeType = 0; //(more2&(128|256))>>7;
   OsiSolverInterface *solverOriginal = model.solver();
-#define REALLY_CHANGE
+  //#define REALLY_CHANGE
 #ifdef REALLY_CHANGE
   OsiSolverInterface *solver = solverOriginal;
 #else
   int numberOriginalRows = solverOriginal->getNumRows();
   OsiSolverInterface *solver = solverOriginal->clone();
+  model.swapSolver(solver);
 #endif
   while (changed) {
     changed = false;
@@ -13080,7 +13087,12 @@ static int nautiedConstraints(CbcModel &model, int maxPass) {
     // int maxN=5000000;
     // OsiSolverInterface * solver = model.solver();
     symmetryInfo.setupSymmetry(&model);
+#if 0
     int numberGenerators = symmetryInfo.statsOrbits(&model, 0);
+    printf("%d %d\n",numberGenerators,symmetryInfo.getNtyInfo()->getNumGenerators());
+#else
+    int numberGenerators = symmetryInfo.getNtyInfo()->getNumGenerators();
+#endif
     if (numberGenerators) {
       // symmetryInfo.Print_Orbits();
       int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();
@@ -13232,6 +13244,7 @@ static int nautiedConstraints(CbcModel &model, int maxPass) {
       globalCuts->addCutIfNotDuplicate(rc);
     }
   }
+  model.swapSolver(solverOriginal);
   delete solver;
 #endif
   return numberAdded;

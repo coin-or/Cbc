@@ -8685,7 +8685,9 @@ int CbcMain1(int argc, const char *argv[],
                   keepImportNames != 0,
                   allowImportErrors != 0);
               } else if (gmpl > 0) {
-#ifdef COINUTILS_HAS_GLPK
+#undef CLP_HAS_GLPK // out for now
+#undef COINUTILS_HAS_GLPK 
+#if defined(COINUTILS_HAS_GLPK) && defined(CLP_HAS_GLPK)
                 status = lpSolver->readGMPL(fileName.c_str(),
                   (gmpl == 2) ? gmplData.c_str() : NULL,
                   keepImportNames != 0);

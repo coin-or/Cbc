@@ -22,6 +22,7 @@ public:
 
   bool operator()(CbcNode *x, CbcNode *y)
   {
+    if (x == y) return false;
     return test_->test(x, y);
   }
   bool compareNodes(CbcNode *x, CbcNode *y)

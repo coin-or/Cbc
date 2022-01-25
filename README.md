@@ -1,4 +1,4 @@
-# Cbc 2.10
+# Cbc 2.10.7
 
 [![A COIN-OR Project](https://coin-or.github.io/coin-or-badge.png)](https://www.coin-or.org)
 
@@ -63,12 +63,11 @@ The Cbc development site is https://github.com/coin-or/Cbc.
 
 Code: [![DOI](https://zenodo.org/badge/173509563.svg)](https://zenodo.org/badge/latestdoi/173509563)
 
-
 ## CURRENT BUILD STATUS
 
-[![Windows Builds](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml/badge.svg?branch=stable/2.10)](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml?query=branch%3Astable/2.10)
+[![Windows Builds](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml/badge.svg?branch=releases/2.10.7)](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml?query=branch%3Areleases/2.10.7)
 
-[![Linux and MacOS Builds](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml/badge.svg?branch=stable/2.10)](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml?query=branch%3Astable/2.10)
+[![Linux and MacOS Builds](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml/badge.svg?branch=releases/2.10.7)](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml?query=branch%3Areleases/2.10.7)
 
 ## DOWNLOAD
 
@@ -104,8 +103,8 @@ If binaries are not available for your platform for the latest version and you w
 Source code can be obtained either by
 
  * Downloading a snapshot of the source code for the latest release version of Cbc from the
- [releases](https://github.com/coin-or/Cbc/releases) page.
- * Cloning this repository from [Github](https://github.com/coin-or/Cbc) or 
+ [releases](https://github.com/coin-or/Cbc/releases) page,
+ * Cloning this repository from [Github](https://github.com/coin-or/Cbc), or 
  * Using the [coinbrew](https://github.com/coin-or/coinbrew) script to get the project and all dependencies (recommended, see below).   
 
 ### Dependencies
@@ -130,7 +129,7 @@ following on the command line.
 ```
 wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
 chmod u+x coinbrew
-./coinbrew fetch Cbc@2.10
+./coinbrew fetch Cbc@2.10.7
 ./coinbrew build Cbc
 ```
 For more detailed instructions on coinbrew, see https://coin-or.github.io/coinbrew.
@@ -208,7 +207,7 @@ If you have `Doxygen` available, you can build a HTML documentation by typing
 `make doxygen-docs` 
 
 in the build directory. If Cbc was built via `coinbrew`, then the build
-directory will be `./build/Cbc/2.10` by default. The doxygen documentation main file
+directory will be `./build/Cbc/2.10.7` by default. The doxygen documentation main file
 is found at `<build-dir>/doxydoc/html/index.html`.
 
 If you don't have `doxygen` installed locally, you can use also find the

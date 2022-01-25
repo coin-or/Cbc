@@ -15,7 +15,10 @@ AUTOMAKE_OPTIONS = foreign
 CBC_TEST_TGTS = gamstests ositests
 
 if COIN_HAS_CLP
-  CBC_TEST_TGTS += test_cbc ctests
+if COIN_HAS_SAMPLE
+  CBC_TEST_TGTS += test_cbc
+endif
+  CBC_TEST_TGTS += ctests
 endif
 if CBC_BUILD_CBC_GENERIC
 if COIN_HAS_SAMPLE
@@ -26,7 +29,7 @@ endif
 cbcflags =
 ositestsflags =
 if COIN_HAS_SAMPLE
-#  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
+  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
   ositestsflags += -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
 endif
 if COIN_HAS_MIPLIB3

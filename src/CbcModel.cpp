@@ -1877,9 +1877,6 @@ void CbcModel::branchAndBound(int doStatistics)
       else
         dblParam_[CbcStartSeconds] = CoinGetTimeOfDay();
     }
-    //numberCutGenerators_=0;
-    //printf("zzzzz\n");
-    //getchar();
   }
   dblParam_[CbcSmallestChange] = COIN_DBL_MAX;
   dblParam_[CbcSumChange] = 0.0;
@@ -3263,7 +3260,7 @@ void CbcModel::branchAndBound(int doStatistics)
       convertToDynamic();
     }
   }
-#ifdef CBC_HAS_NAUTY
+#if 0 //def CBC_HAS_NAUTY
   // maybe also see if can restart (before nauty)
 #define MAX_NAUTY_PASS 2000
   int testOptions = moreSpecialOptions2_&(131072|262144|128|256); 

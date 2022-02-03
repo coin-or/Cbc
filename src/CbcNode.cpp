@@ -1746,6 +1746,11 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   memcpy(saveSolution, solver->getColSolution(), numberColumns * sizeof(double));
   model->reserveCurrentSolution(saveSolution);
   double integerTolerance = model->getDblParam(CbcModel::CbcIntegerTolerance);
+  //#define CBC_CHECK_INTEGER_TOLEREANCE
+#ifdef CBC_CHECK_INTEGER_TOLEREANCE
+  double saveIntegerTolerance = integerTolerance; 
+  int smallInfeasColumn=-1;
+#endif
   if (hotstartSolution) {
     if ((model->moreSpecialOptions() & 1024) != 0 || true) {
       int nBad = 0;
@@ -2112,7 +2117,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             2 - Set partitioning ==
             3 - Set covering
             4 - all +- 1 or all +1 and odd
-            */
+      */
       int problemType = model->problemType();
       bool canDoOneHot = false;
       // if all dynamic get more information
@@ -2319,6 +2324,125 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           upEstimate[i] = -1.0;
         }
       }
+#ifdef CBC_CHECK_INTEGER_TOLEREANCE
+      if (!numberUnsatisfied_ && model->numberIntegers()==numberObjects) {
+	// check more closely
+	// reset tolerance
+	model->setDblParam(CbcModel::CbcIntegerTolerance,saveIntegerTolerance);
+	integerTolerance = saveIntegerTolerance;
+	usefulInfo.integerTolerance_ = integerTolerance;
+	smallInfeasColumn=-1;
+	OsiSolverInterface * solver = model->solver();
+	const double *rowLower = solver->getRowLower();
+	const double *rowUpper = solver->getRowUpper();
+	const double *columnLower = solver->getColLower();
+	const double *columnUpper = solver->getColUpper();
+	int numberColumns = solver->getNumCols();
+	int numberRows = solver->getNumRows();
+	double *rowActivity = new double[numberRows];
+	memset(rowActivity, 0, numberRows * sizeof(double));
+	const double *element = solver->getMatrixByCol()->getElements();
+	const int *row = solver->getMatrixByCol()->getIndices();
+	const CoinBigIndex *columnStart =
+          solver->getMatrixByCol()->getVectorStarts();
+	const int *columnLength = solver->getMatrixByCol()->getVectorLengths();
+	const CoinPackedMatrix *rowCopy = solver->getMatrixByRow();
+	const int *column = rowCopy->getIndices();
+	const int *rowLength = rowCopy->getVectorLengths();
+	const CoinBigIndex *rowStart = rowCopy->getVectorStarts();
+	const double *elementByRow = rowCopy->getElements();
+	double primalTolerance;
+	solver->getDblParam(OsiPrimalTolerance, primalTolerance);
+	// accumulate correct row activity
+	for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	  double value = saveSolution[iColumn];
+	  if (value) {
+	    if (solver->isInteger(iColumn)) {
+	      value = floor(value+0.5);
+	    }
+	    for (CoinBigIndex j=columnStart[iColumn];
+		 j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	      int iRow = row[j];
+	      rowActivity[iRow] += value*element[j];
+	    }
+	  }
+	}
+	int worstRow = -1;
+	double worstInfeasibility = primalTolerance;
+	for (int iRow=0;iRow<numberRows;iRow++) {
+	  double value = rowActivity[iRow];
+	  if (value>rowUpper[iRow]+worstInfeasibility) {
+	    worstInfeasibility = value-rowUpper[iRow];
+	    worstRow = iRow;
+	  } else if (value<rowLower[iRow]-worstInfeasibility) {
+	    worstInfeasibility = rowLower[iRow]-value;;
+	    worstRow = iRow;
+	  }
+	}
+	if (worstRow>=0) {
+	  //printf("Looking more closely need to branch as infeas %g on row %d\n",
+	  //	 worstInfeasibility,worstRow);
+	  double mult = (rowActivity[worstRow]>rowUpper[worstRow]) ? 1.0 : -1.0;
+	  CoinBigIndex start = rowStart[worstRow];
+	  CoinBigIndex end = start + rowLength[worstRow];
+	  int iColumn = -1;
+	  double worst = 0.0;
+	  double newTolerance;
+	  for (CoinBigIndex j=start;j<end;j++) {
+	    int jColumn = column[j];
+	    if (solver->isInteger(jColumn)) {
+	      double value = saveSolution[jColumn];
+	      if (value<columnLower[jColumn]||value>columnUpper[jColumn]) {
+		iColumn = -1;
+		printf("Column %d %g <= %.15g <= %g - leave as is\n",
+		       jColumn,columnLower[jColumn],value,columnUpper[jColumn]);
+		break;
+	      }
+	      double nearest = floor(value+0.5);
+	      double movement = (nearest-value)*elementByRow[j];
+	      if (mult*movement>worst) {
+		worst = mult*movement;
+		iColumn = jColumn;
+		newTolerance = 0.5*fabs(nearest-value);
+	      }
+	    }
+	  }
+	  if (iColumn<0) {
+	    //printf("XX wrong - can't find bad column\n");
+	  } else {
+	    // find object
+	    int iObject = -1;
+	    for (int i = 0; i < numberObjects; i++) {
+	      OsiObject *object = model->modifiableObject(i);
+	      const CbcSimpleInteger *simple = static_cast< const CbcSimpleInteger * >(object);
+	      if (simple->columnNumber()==iColumn) {
+		iObject = i;
+		char line[100];
+		sprintf(line,"Branching on %d with value %.15g as nearest gives infeasibility of %g",iColumn,saveSolution[iColumn],worstInfeasibility);
+		model->messageHandler()->message(CBC_FPUMP1, *model->messagesPointer())
+		  << line << CoinMessageEol;
+		break;
+	      }
+	    }
+	    assert (iObject>=0);
+	    sort[0]=-1.0e-13;
+	    whichObject[0] = iObject;
+	    numberToDo = 1;
+	    numberUnsatisfied_ = 1;
+	    numberBeforeTrust=9999999;
+	    iBestGot = 0;
+	    // set tolerance for now
+	    model->setDblParam(CbcModel::CbcIntegerTolerance,newTolerance);
+	    integerTolerance = newTolerance;
+	    usefulInfo.integerTolerance_ = newTolerance;
+	    // tiny infeasibility - do strong branching
+	    strongType=2;
+	    smallInfeasColumn=iColumn;
+	  }
+	}
+	delete [] rowActivity;
+      }
+#endif
 #if FIXED_BOTH_WAYS
       if (model->allDynamic()) {
 	if (firstPriority == bestPriority) {
@@ -2599,6 +2723,13 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     }
 #endif
     int skipAll = (numberNotTrusted == 0 || numberToDo == 1) ? 1 : 0;
+#ifdef CBC_CHECK_INTEGER_TOLEREANCE
+    if (smallInfeasColumn>=0) {
+      // tiny infeasibility - do strong branching
+      strongType=2;
+      skipAll = -1;
+    }
+#endif
     bool doneHotStart = false;
     //DEPRECATED_STRATEGYint searchStrategy = saveSearchStrategy>=0 ? (saveSearchStrategy%10) : -1;
     int searchStrategy = model->searchStrategy();
@@ -2953,6 +3084,12 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       if (skipAll < 0)
         numberToDo = 1;
       strongType = 0;
+#ifdef CBC_CHECK_INTEGER_TOLEREANCE
+      if (smallInfeasColumn>=0) {
+	strongType = 2;
+	skipAll=0;
+      }
+#endif
 #ifdef DO_ALL_AT_ROOT
       if (model->strongStrategy()) {
         int iStrategy = model->strongStrategy();
@@ -4533,6 +4670,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     // and switch off
     model->setMoreSpecialOptions(model->moreSpecialOptions() & (~1023));
   }
+#ifdef CBC_CHECK_INTEGER_TOLEREANCE
+  model->setDblParam(CbcModel::CbcIntegerTolerance,saveIntegerTolerance);
+#endif
   return anyAction;
 }
 // 0 is down, 1 is up

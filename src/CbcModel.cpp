@@ -3260,15 +3260,18 @@ void CbcModel::branchAndBound(int doStatistics)
       convertToDynamic();
     }
   }
-#if 0 //def CBC_HAS_NAUTY
-  // maybe also see if can restart (before nauty)
+#ifdef CBC_HAS_NAUTY
 #define MAX_NAUTY_PASS 2000
-  int testOptions = moreSpecialOptions2_&(131072|262144|128|256); 
-  if (!parentModel_ && (testOptions==131072||testOptions==262144)) {
+  int testOptions = moreSpecialOptions2_&1073741824;
+  /* nauty switches off 128,256 - so bug - for now just if heavy
+     as we can test for that */
+  if (!parentModel_ && testOptions) {
     bool changed = true;
     int numberAdded = 0;
     int numberPasses = 0;
-    int changeType = 0; //(more2&(128|256))>>7;
+    moreSpecialOptions2_ &= ~1073741824;
+    testOptions = moreSpecialOptions2_;
+    int changeType = 0;
     OsiSolverInterface *solverOriginal = solver_;
     OsiSolverInterface *continuousSolver = continuousSolver_;
     continuousSolver_ = NULL;
@@ -3277,6 +3280,7 @@ void CbcModel::branchAndBound(int doStatistics)
     solver_ = solver;
     while (changed) {
       changed = false;
+      moreSpecialOptions2_ = testOptions;
       CbcSymmetry symmetryInfo;
       // symmetryInfo.setModel(&model);
       // for now strong is just on counts - use user option
@@ -3294,14 +3298,14 @@ void CbcModel::branchAndBound(int doStatistics)
 	  int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();
 	  int *counts = new int[numberUsefulOrbits];
 	  memset(counts, 0, numberUsefulOrbits * sizeof(int));
-	  int numberColumns = solver->getNumCols();
+	  int numberColumns = solver_->getNumCols();
 	  int numberUseful = 0;
 	  if (changeType == 1) {
 	    // just 0-1
 	    for (int i = 0; i < numberColumns; i++) {
 	      int iOrbit = orbits[i];
 	      if (iOrbit >= 0) {
-		if (solver->isBinary(i)) {
+		if (solver_->isBinary(i)) {
 		  counts[iOrbit]++;
 		  numberUseful++;
 		}
@@ -3312,7 +3316,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	    for (int i = 0; i < numberColumns; i++) {
 	      int iOrbit = orbits[i];
 	      if (iOrbit >= 0) {
-		if (solver->isInteger(i)) {
+		if (solver_->isInteger(i)) {
 		  counts[iOrbit]++;
 		  numberUseful++;
 		}
@@ -3353,7 +3357,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  if (!numberUseful)
 	    break;
 	  // take largest
-	  const double *solution = solver->getColSolution();
+	  const double *solution = solver_->getColSolution();
 	  double *size = new double[numberColumns];
 	  int *which = new int[numberColumns];
 	  int nIn = 0;
@@ -3369,16 +3373,16 @@ void CbcModel::branchAndBound(int doStatistics)
 	    size[0] = 1.0;
 	    size[1] = -1.0;
 #if LONGEST == 0
-	    solver->addRow(2, which, size, 0.0, COIN_DBL_MAX);
+	    solver_->addRow(2, which, size, 0.0, COIN_DBL_MAX);
 	    numberAdded++;
 #elif LONGEST == 1
 	    for (int i = 0; i < nIn - 1; i++) {
-	      solver->addRow(2, which + i, size, 0.0, COIN_DBL_MAX);
+	      solver_->addRow(2, which + i, size, 0.0, COIN_DBL_MAX);
 	      numberAdded++;
 	    }
 #else
 	    for (int i = 0; i < nIn - 1; i++) {
-	      solver->addRow(2, which, size, 0.0, COIN_DBL_MAX);
+	      solver_->addRow(2, which, size, 0.0, COIN_DBL_MAX);
 	      which[1] = which[2 + i];
 	      numberAdded++;
 	    }
@@ -3407,6 +3411,8 @@ void CbcModel::branchAndBound(int doStatistics)
 		numberAdded, numberPasses);
       messageHandler()->message(CBC_GENERAL, messages())
         << general << CoinMessageEol;
+      // have to switch nauty off totally!
+      moreSpecialOptions2_ &= ~(128 | 256);
     }
     continuousSolver_ = continuousSolver;
     int numberRows = solver->getNumRows();
@@ -9050,7 +9056,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
                                      2048 /*4096*/); // Bonmin <something>
       }
 #endif
-      resolve(node ? node->nodeInfo() : NULL, 3);
+      feasible = resolve(node ? node->nodeInfo() : NULL, 3);
 #ifdef JJF_ZERO // def CBC_HAS_CLP
       if (clpSolver)
         clpSolver->setSpecialOptions(save);
@@ -9140,7 +9146,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         }
       }
     }
-    if (!keepGoing || lazy) {
+    if ((!keepGoing || lazy ) && feasible) {
       // Status for single pass of cut generation
       int status = 0;
       /*

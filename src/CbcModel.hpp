@@ -2192,6 +2192,7 @@ public:
 	25 bit 33554432 - also 26,27 lagrangean cuts
 	28 bit 268435456 - alternative lagrangean cuts
 	29 bit 536870912 - one shot of less useful cuts
+	30 bit (1073741824) - Just make orbital into global cuts
     */
   inline void setMoreSpecialOptions2(int value)
   {

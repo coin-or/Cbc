@@ -8159,10 +8159,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                             131072 | 262144);
                       else if (k == 8)
                         babModel_->setMoreSpecialOptions2(
-                            babModel_->moreSpecialOptions2() | 131072);
+                            babModel_->moreSpecialOptions2()|131072|1073741824);
                       else 
                         babModel_->setMoreSpecialOptions2(
-                            babModel_->moreSpecialOptions2() | 262144);
+                            babModel_->moreSpecialOptions2()|262144|1073741824);
                     }
                   }
                 }
@@ -13092,12 +13092,12 @@ static int nautiedConstraints(CbcModel &model, int maxPass) {
     // int maxN=5000000;
     // OsiSolverInterface * solver = model.solver();
     symmetryInfo.setupSymmetry(&model);
-#if 0
-    int numberGenerators = symmetryInfo.statsOrbits(&model, 0);
-    printf("%d %d\n",numberGenerators,symmetryInfo.getNtyInfo()->getNumGenerators());
-#else
-    int numberGenerators = symmetryInfo.getNtyInfo()->getNumGenerators();
-#endif
+    int numberGenerators;
+    if (!numberPasses) {
+      numberGenerators = symmetryInfo.statsOrbits(&model, 0);
+    } else {
+      numberGenerators = symmetryInfo.getNtyInfo()->getNumGenerators();
+    }
     if (numberGenerators) {
       // symmetryInfo.Print_Orbits();
       int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();

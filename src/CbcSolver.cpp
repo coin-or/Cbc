@@ -8930,12 +8930,17 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                        << statusName[iStat].c_str() << minor[iStat2].c_str()
                        << std::endl;
                 printGeneralMessage(model_, buffer.str());
+		buffer.str("");
                 if (babModel_->bestSolution()) {
-                    buffer.str("");
+		    /* This is an important value 
+		       - don't lose too much precision but try
+		       and make pretty - suggestions welcome -
+		       so back to sprintf */
+		    char line[20];
+		    sprintf(line,"%.12g",babModel_->getObjValue());
                     buffer << "Objective value:                "
-                           << babModel_->getObjValue() << std::endl;
+                           << line << std::endl;
                 } else {
-                    buffer.str("");
                     buffer << "No feasible solution found\n";
                 }
                 if (iStat2 >= 2 && iStat2 <= 6) {

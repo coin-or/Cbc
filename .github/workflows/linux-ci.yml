@@ -7,7 +7,7 @@ on:
       - 'stable/*'
   pull_request:
     branches:
-      - '*'
+      - '**'
   release:
     types:
       - created
@@ -49,20 +49,20 @@ jobs:
       - name: Build project
         run: |
           export ${{ matrix.flags }}
-          source coinbrew/.ci/setup_environment.sh
-          bash coinbrew/coinbrew fetch ${{ github.event.repository.name }} \
-          --no-prompt --skip-update \
-          --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack'
-          bash coinbrew/coinbrew build ${{ github.event.repository.name }} --disable-mysql \
-          --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack' \
-          "${COMMON_ARGS[@]}" "${ADD_ARGS[@]}" "${DBG_ARGS[@]}" \
+          ADD_ARGS=()
+          ADD_ARGS+=( --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack' )
+          ADD_BUILD_ARGS=()
+          ADD_BUILD_ARGS+=( --tests main --enable-relocatable )
+          ADD_BUILD_ARGS+=( --verbosity 2 )
+          [[ ${{ matrix.build_static }} == "true" ]] && \
+          ADD_BUILD_ARGS+=( --static --with-lapack='-llapack -lblas -lgfortran -lquadmath -lm' )
+          bash coinbrew/coinbrew fetch ${{ github.event.repository.name }} --skip-update \
+          "${ADD_ARGS[@]}"
+          bash coinbrew/coinbrew build ${{ github.event.repository.name }} \
+          "${ADD_ARGS[@]}" "${ADD_BUILD_ARGS[@]}" \
           ADD_CXXFLAGS="${ADD_CXXFLAGS}" CC=${CC} CXX=${CXX}
           [[ ${CC} ]] && CC="${CC}" || CC=""
           echo "CC=${CC}" >> $GITHUB_ENV
-        env:
-          BUILD_STATIC: ${{ matrix.build_static }}
-          DEBUG: false
-          ASAN: false
       - name: Archive dist contents
         run: |
           cp ${{ github.event.repository.name }}/README.md dist/

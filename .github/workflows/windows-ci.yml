@@ -7,7 +7,7 @@ on:
       - 'stable/*'
   pull_request:
     branches:
-      - '*'
+      - '**'
   release:
     types:
       - created
@@ -58,7 +58,6 @@ jobs:
       - name: Build project
         run: |
           ADD_ARGS=()
-          ADD_ARGS+=( --no-prompt )
           ADD_ARGS+=( --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack' )
           ADD_BUILD_ARGS=()
           ADD_BUILD_ARGS+=( --build=x86_64-w64-mingw32 --tests main --enable-relocatable )

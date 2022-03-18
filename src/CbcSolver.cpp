@@ -1555,13 +1555,18 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #endif
 
     // If no arguments, just go into interactive mode
-    if (!inputQueue.size()){
-       interactiveMode = true;
-       // let's give the sucker a hint
-       std::cout
+    if (!inputQueue.size()) {
+      // see if AMPL
+      if (!info) {
+	interactiveMode = true;
+	// let's give the sucker a hint
+	std::cout
           << "Cbc takes input from arguments ( - switches to stdin)"
           << std::endl
           << "Enter ? for list of commands or help" << std::endl;
+      } else {
+	numberGoodCommands=1;
+      }
     }
       
     while (1) {
@@ -8980,12 +8985,11 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   clpSolver = dynamic_cast<OsiClpSolverInterface *>(
                       babModel_->solver());
                   lpSolver = clpSolver->getModelPtr();
-                  double value =
-                      babModel_->getObjValue() * lpSolver->getObjSense();
+                  double value = babModel_->getObjValue();
                   char buf[300];
                   int pos = 0;
                   if (iStat == 0) {
-                    if (babModel_->getObjValue() < 1.0e40) {
+                    if (fabs(value) < 1.0e40) {
                       pos += sprintf(buf + pos, "optimal,");
                     } else {
                       // infeasible
@@ -9011,7 +9015,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   }
                   info->problemStatus = iStat;
                   info->objValue = value;
-                  if (babModel_->getObjValue() < 1.0e40) {
+                  if (fabs(value) < 1.0e40) {
                     int precision = ampl_obj_prec();
                     if (precision > 0)
                       pos += sprintf(buf + pos, " objective %.*g", precision,
@@ -11220,7 +11224,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
 int cbcReadAmpl(ampl_info *info, int argc, char **argv, CbcModel &model)
 {
    OsiSolverInterface *solver = model.solver();
-   memset(&info, 0, sizeof(info));
+   memset(info, 0, sizeof(info));
    if (argc > 2 && !strcmp(argv[2], "-AMPL")) {
       // see if log in list
       bool noPrinting = true;

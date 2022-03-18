@@ -7975,7 +7975,7 @@ int CbcMain1(int argc, const char *argv[],
                 if (statusUserFunction_[0]) {
                   clpSolver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
                   lpSolver = clpSolver->getModelPtr();
-                  double value = babModel_->getObjValue() * lpSolver->getObjSense();
+                  double value = babModel_->getObjValue();
                   char buf[300];
                   int pos = 0;
                   if (iStat == 0) {
@@ -8004,7 +8004,7 @@ int CbcMain1(int argc, const char *argv[],
                   }
                   info.problemStatus = iStat;
                   info.objValue = value;
-                  if (babModel_->getObjValue() < 1.0e40) {
+                  if (fabs(value) < 1.0e40) {
                     int precision = ampl_obj_prec();
                     if (precision > 0)
                       pos += sprintf(buf + pos, " objective %.*g", precision,

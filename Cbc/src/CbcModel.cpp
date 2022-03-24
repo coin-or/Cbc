@@ -5461,8 +5461,17 @@ void CbcModel::initialSolve()
   solver_->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL);
   solver_->initialSolve();
   solver_->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo, NULL);
-  if (!solver_->isProvenOptimal())
+  if (!solver_->isProvenOptimal()) {
+#ifdef COIN_HAS_CLP
+    OsiClpSolverInterface *clpSolver
+      = dynamic_cast< OsiClpSolverInterface * >(solver_);
+    // Do not resolve if presolve found infeasible/unbounded 
+    if (!clpSolver || clpSolver->getModelPtr()->secondaryStatus()!=11)
+      solver_->resolve();
+#else
     solver_->resolve();
+#endif
+  }
   // But set up so Jon Lee will be happy
   status_ = -1;
   secondaryStatus_ = -1;

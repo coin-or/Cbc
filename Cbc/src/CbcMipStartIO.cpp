@@ -138,6 +138,9 @@ int computeCompleteSolution(CbcModel *model,
       lp->setColBounds(i, 0.0, 0.0);
   }
 #endif
+  const double *lower = lp->getColLower();
+  const double *upper = lp->getColUpper();
+  int nBadValues = 0;
   for (int i = 0; (i < static_cast< int >(colValues.size())); ++i) {
     map< string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
     if (mIt == colIdx.end()) {
@@ -147,6 +150,13 @@ int computeCompleteSolution(CbcModel *model,
     } else {
       const int idx = mIt->second;
       double v = colValues[i].second;
+      if (v>upper[idx]) {
+	nBadValues++;
+	v = upper[idx];
+      } else if (v<lower[idx]) {
+	nBadValues++;
+	v = lower[idx];
+      }
 #if JUST_FIX_INTEGER
       if (!lp->isInteger(idx))
         continue;
@@ -161,6 +171,13 @@ int computeCompleteSolution(CbcModel *model,
       lp->setColBounds(idx, v, v);
       ++fixed;
     }
+  }
+  if (nBadValues) {
+    char line[100];
+    sprintf(line,"Warning: modifying %d solution values outside bounds",
+	    nBadValues);
+    model->messageHandler()->message(CBC_GENERAL, model->messages())
+      << line << CoinMessageEol;
   }
 
   if (!fixed) {

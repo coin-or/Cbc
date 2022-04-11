@@ -152,13 +152,28 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
       fullValues.push_back(pair< string, double >(solver->getColName(i), 0.0));
       colIdx[solver->getColName(i)] = i;
     }
+    const double *lower = solver->getColLower();
+    const double *upper = solver->getColUpper();
+    int nBadValues = 0;
     for (int i = 0; (i < static_cast< int >(colValues.size())); ++i) {
       map< string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
       if (mIt != colIdx.end()) {
         const int idx = mIt->second;
         double v = colValues[i].second;
+	if (v>upper[idx]) {
+	  nBadValues++;
+	  v = upper[idx];
+	} else if (v<lower[idx]) {
+	  nBadValues++;
+	  v = lower[idx];
+	}
         fullValues[idx].second = v;
       }
+    }
+    if (nBadValues) {
+      sprintf(printLine,"Warning: modifying %d solution values outside bounds",
+	      nBadValues);
+      messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
     }
     colValues = fullValues;
   } else {

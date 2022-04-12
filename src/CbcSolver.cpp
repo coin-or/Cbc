@@ -2561,10 +2561,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               lpSolver->factorization()->setBiasLU(mode);
               break;
             case ClpParam::PERTURBATION:
-              if (mode == 0)
-                 lpSolver->setPerturbation(50);
-              else
+              if (mode == 1) {
+		if (lpSolver->perturbation()==100)
+		  lpSolver->setPerturbation(50);
+              } else {
                  lpSolver->setPerturbation(100);
+		 clpParam->setVal(100);
+	      }
               break;
             case ClpParam::KEEPNAMES:
               keepImportNames = 1 - mode;
@@ -6008,6 +6011,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		clique.setStarCliqueReport(false);
 		clique.setRowCliqueReport(false);
 		clique.setMinViolation(0.05);
+		oddWheelMode = 0;
 		// ifmove
 		babModel_->addCutGenerator(&clique, translate[oldCliqueMode],
 					   "Clique");

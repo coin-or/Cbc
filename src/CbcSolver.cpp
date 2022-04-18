@@ -5528,6 +5528,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 // switch off new clique, odd wheel and clique strengthening
                 cliqueMode = CbcParameters::CGOff;
                 oddWheelMode = CbcParameters::CGOff;
+		parameters[CbcParam::ODDWHEELCUTS]->setModeVal(CbcParameters::CGOff);
                 clqstrMode = "off";
               } else if (cgraphMode == "clq") {
                 // old style
@@ -6012,7 +6013,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		clique.setRowCliqueReport(false);
 		clique.setMinViolation(0.05);
 		oddWheelMode = 0;
-		// ifmove
+		parameters[CbcParam::ODDWHEELCUTS]->setModeVal(CbcParameters::CGOff);
 		babModel_->addCutGenerator(&clique, translate[oldCliqueMode],
 					   "Clique");
                 accuracyFlag[numberGenerators] = 0;

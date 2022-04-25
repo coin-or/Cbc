@@ -2,6 +2,8 @@
 
 [![A COIN-OR Project](https://coin-or.github.io/coin-or-badge.png)](https://www.coin-or.org)
 
+[COIN-OR](https://www.coin-or.org) projects are maintained by a small group of dedicated volunteers. Please consider becoming a [sponsor](https://github.com/sponsors/coin-or)! 
+
 [![Latest Release](https://img.shields.io/github/v/release/coin-or/Cbc?sort=semver)](https://github.com/coin-or/Cbc/releases)
 
 _This file is auto-generated from [config.yml](.coin-or/config.yml) using the 
@@ -112,8 +114,10 @@ are archived as part of Cbc
      ```
  * *Windows*: The easiest way to get Cbc on Windows is to download an archive as described above.
  * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through [Homebrew](https://brew.sh).
-   * `brew tap coin-or-tools/coinor`
-   * `brew install coin-or-tools/coinor/cbc`
+     ```
+     $ brew tap coin-or-tools/coinor
+     $ brew install coin-or-tools/coinor/cbc
+     ```
  * *conda* (cross-platform, no Windows for now):
      ```
      $ conda install coincbc

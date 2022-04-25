@@ -55,14 +55,13 @@ Santos](https://github.com/h-g-s), and the rest of the Cbc team.
 
 Cbc is written in C++ and is released as open source under the [Eclipse Public License 2.0](http://www.opensource.org/licenses/EPL-2.0).
 
-It is distributed under the auspices of the [COIN-OR Foundation](https://www.coin-or.org)
+It is distributed under the auspices of the [COIN-OR Foundation](https://www.coin-or.org).
 
 The Cbc development site is https://github.com/coin-or/Cbc.
 
 ## CITE
 
 Code: [![DOI](https://zenodo.org/badge/173509563.svg)](https://zenodo.org/badge/latestdoi/173509563)
-
 
 ## CURRENT BUILD STATUS
 
@@ -90,11 +89,35 @@ releases in Github
 are archived as part of Cbc
 [here](https://www.coin-or.org/download/binary/Cbc).
 
- * *Linux*: On Debian/Ubuntu, Cbc is available in the package `coinor-cbc` and can be installed with apt. On Fedora, Cbc is available in the package `coin-or-Cbc`.
+ * *Linux* (see https://repology.org/project/coin-or-cbc/versions for a complete listing): 
+   * arch:
+     ```
+     $ sudo pacman -S  coin-or-cbc
+     ```
+   * Debian/Ubuntu:
+     ```
+     $ sudo apt-get install  coinor-cbc coinor-libcbc-dev
+     ```
+   * Fedora/Redhat/CentOS:
+     ```
+     $ sudo yum install  coin-or-Cbc coin-or-Cbc-devel
+     ```
+   * freebsd:
+     ```
+     $ sudo pkg install math/cbc
+     ```
+   * linuxbrew:
+     ```
+     $ brew install cbc
+     ```
  * *Windows*: The easiest way to get Cbc on Windows is to download an archive as described above.
  * *Mac OS X*: The easiest way to get Cbc on Mac OS X is through [Homebrew](https://brew.sh).
    * `brew tap coin-or-tools/coinor`
    * `brew install coin-or-tools/coinor/cbc`
+ * *conda* (cross-platform, no Windows for now):
+     ```
+     $ conda install coincbc
+     ```
 
 Due to license incompatibilities, pre-compiled binaries lack some functionality.
 If binaries are not available for your platform for the latest version and you would like to request them to be built and posted, feel free to let us know on the mailing list.
@@ -104,8 +127,8 @@ If binaries are not available for your platform for the latest version and you w
 Source code can be obtained either by
 
  * Downloading a snapshot of the source code for the latest release version of Cbc from the
- [releases](https://github.com/coin-or/Cbc/releases) page.
- * Cloning this repository from [Github](https://github.com/coin-or/Cbc) or 
+ [releases](https://github.com/coin-or/Cbc/releases) page,
+ * Cloning this repository from [Github](https://github.com/coin-or/Cbc), or 
  * Using the [coinbrew](https://github.com/coin-or/coinbrew) script to get the project and all dependencies (recommended, see below).   
 
 ### Dependencies
@@ -121,7 +144,7 @@ OS by default).
 
 ## BUILDING from source
 
-The quick start assumes you are in a bash shell. 
+These quick start instructions assumes you are in a bash shell. 
 
 ### Using `coinbrew`
 
@@ -226,7 +249,8 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
 
  * [Code of Conduct](https://www.coin-or.org/code-of-conduct/)
  * [COIN-OR Web Site](http://www.coin-or.org/)
- * [Discussion formum](https://github.com/coin-or/Cbc/discussions)
+ * [COIN-OR general discussion forum](https://github.com/orgs/coin-or/discussions)
+ * [Cbc Discussion forum](https://github.com/coin-or/Cbc/discussions)
  * [Report a bug](https://github.com/coin-or/Cbc/issues/new)
  * [Doxygen-generated html documentation](http://coin-or.github.io/Cbc/Doxygen)
 

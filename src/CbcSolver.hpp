@@ -435,6 +435,7 @@ int CbcMain1(int argc, const char *argv[],
 	     CbcModel &model, CbcParameters &parameterData,
              int callBack(CbcModel *currentSolver, int whereFrom) =
              dummyCallback, ampl_info *info = NULL);
+CBCLIB_EXPORT
 int CbcMain1(int argc, const char *argv[],
 	     CbcModel &model,
              int callBack(CbcModel *currentSolver, int whereFrom), 

@@ -2,7 +2,10 @@
 
 [![A COIN-OR Project](https://coin-or.github.io/coin-or-badge.png)](https://www.coin-or.org)
 
-[COIN-OR](https://www.coin-or.org) projects are maintained by a small group of dedicated volunteers. Please consider becoming a [sponsor](https://github.com/sponsors/coin-or)! 
+Projects such as this one are maintained by a small group of volunteers under
+the auspices of the non-profit [COIN-OR Foundation](https://www.coin-or.org)
+and we need your help! Please consider [sponsoring our
+activities](https://github.com/sponsors/coin-or).
 
 [![Latest Release](https://img.shields.io/github/v/release/coin-or/Cbc?sort=semver)](https://github.com/coin-or/Cbc/releases)
 

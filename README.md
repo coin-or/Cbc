@@ -1,4 +1,4 @@
-# Cbc 2.10
+# Cbc 2.10.8
 
 [![A COIN-OR Project](https://coin-or.github.io/coin-or-badge.png)](https://www.coin-or.org)
 
@@ -70,9 +70,9 @@ Code: [![DOI](https://zenodo.org/badge/173509563.svg)](https://zenodo.org/badge/
 
 ## CURRENT BUILD STATUS
 
-[![Windows Builds](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml/badge.svg?branch=stable/2.10)](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml?query=branch%3Astable/2.10)
+[![Windows Builds](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml/badge.svg?branch=releases/2.10.8)](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml?query=branch%3Areleases/2.10.8)
 
-[![Linux and MacOS Builds](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml/badge.svg?branch=stable/2.10)](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml?query=branch%3Astable/2.10)
+[![Linux and MacOS Builds](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml/badge.svg?branch=releases/2.10.8)](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml?query=branch%3Areleases/2.10.8)
 
 ## DOWNLOAD
 
@@ -163,7 +163,7 @@ following on the command line.
 ```
 wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
 chmod u+x coinbrew
-./coinbrew fetch Cbc@2.10
+./coinbrew fetch Cbc@2.10.8
 ./coinbrew build Cbc
 ```
 For more detailed instructions on coinbrew, see https://coin-or.github.io/coinbrew.
@@ -241,7 +241,7 @@ If you have `Doxygen` available, you can build a HTML documentation by typing
 `make doxygen-docs` 
 
 in the build directory. If Cbc was built via `coinbrew`, then the build
-directory will be `./build/Cbc/2.10` by default. The doxygen documentation main file
+directory will be `./build/Cbc/2.10.8` by default. The doxygen documentation main file
 is found at `<build-dir>/doxydoc/html/index.html`.
 
 If you don't have `doxygen` installed locally, you can use also find the
@@ -323,8 +323,19 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
           - `oddwext`: strategy used to search for wheel centers for the cuts found by CglOddWheel - 0=off, 1=one variable, 2=clique - default=2.
       - CglClique was replaced by CglBKClique as the default clique separator in CbcSolver.cpp.
 
+ * Release 2.10.8
+   * Re-generate binaries due to mistake in Github Actions configuration and 
+     incorporate new release of Cgl. 
+
+ * Release 2.10.7
+   * Fix a bug that would cause the unit test not to run correctly if the 
+     MIPLIB3 project was not present
+
+ * Release 2.10.6
+   * Accumulated fixes related to build, test, and CI. 
+
  * Release 2.10.5
-   * revert fix that stopped Clp when timelimit reached, as that lead to
+   * Revert fix that stopped Clp when timelimit reached, as that lead to
      all cleanup solves afterwards to stop without proper finishing and
      giving wrong results
 
@@ -334,7 +345,8 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
    * More bugfixes.
 
  * Release 2.10.3
-   * Improve performance of some primal heuristics, incl. feasibility pump, by making integer slacks continuous
+   * Improve performance of some primal heuristics, incl. feasibility pump, 
+     by making integer slacks continuous
    * Added additional timelimit checks
    * Fixed initialization of Cbc_clone result
    * Additional bugfixes

@@ -1,0 +1,50 @@
+<map id="CbcHeuristicCrossover" name="CbcHeuristicCrossover">
+<area shape="rect" id="node1" title="Crossover Search class." alt="" coords="1411,109,1567,136"/>
+<area shape="rect" id="node2" href="$classCbcHeuristic.html" title="Heuristic base class." alt="" coords="1133,255,1230,281"/>
+<area shape="rect" id="node8" href="$classCbcModel.html" title="Simple Branch and bound class." alt="" coords="1449,584,1529,611"/>
+<area shape="rect" id="node3" href="$classCbcHeuristicNodeList.html" title=" " alt="" coords="2803,139,2953,165"/>
+<area shape="rect" id="node4" title=" " alt="" coords="2541,94,2709,135"/>
+<area shape="rect" id="node5" href="$classCbcHeuristicNode.html" title="A class describing the branching decisions that were made to get to the node where a heuristic was in..." alt="" coords="2304,375,2432,401"/>
+<area shape="rect" id="node6" href="$classCbcBranchingObject.html" title="Abstract branching object base class Now just difference with OsiBranchingObject." alt="" coords="2060,543,2201,569"/>
+<area shape="rect" id="node24" href="$classCbcBranchDecision.html" title=" " alt="" coords="2300,689,2436,716"/>
+<area shape="rect" id="node7" title=" " alt="" coords="1755,525,1893,552"/>
+<area shape="rect" id="node36" href="$classCbcObject.html" title=" " alt="" coords="1783,412,1865,439"/>
+<area shape="rect" id="node38" href="$classCbcCutGenerator.html" title="Interface between Cbc and Cut Generation Library." alt="" coords="1763,576,1885,603"/>
+<area shape="rect" id="node44" href="$classCbcEventHandler.html" title="Base class for Cbc event handling." alt="" coords="1763,296,1885,323"/>
+<area shape="rect" id="node9" href="$classCbcStatistics.html" title="For gathering statistics." alt="" coords="1131,864,1231,891"/>
+<area shape="rect" id="node10" href="$classCbcNode.html" title="Information required while the node is live." alt="" coords="436,681,512,708"/>
+<area shape="rect" id="node12" href="$classCbcNodeInfo.html" title="Information required to recreate the subproblem at this node." alt="" coords="774,775,873,801"/>
+<area shape="rect" id="node40" title=" " alt="" coords="740,483,907,509"/>
+<area shape="rect" id="node11" title=" " alt="" coords="169,681,275,708"/>
+<area shape="rect" id="node13" href="$classCbcCountRowCut.html" title="OsiRowCut augmented with bookkeeping." alt="" coords="1119,685,1244,712"/>
+<area shape="rect" id="node17" href="$classCbcFullNodeInfo.html" title="Information required to recreate the subproblem at this node." alt="" coords="1122,813,1241,840"/>
+<area shape="rect" id="node14" title=" " alt="" coords="779,685,867,712"/>
+<area shape="rect" id="node15" href="$classCbcFeasibilityBase.html" title=" " alt="" coords="1115,915,1248,941"/>
+<area shape="rect" id="node16" href="$classCbcCutModifier.html" title="Abstract cut modifier base class." alt="" coords="1126,965,1237,992"/>
+<area shape="rect" id="node18" href="$classCbcRowCuts.html" title=" " alt="" coords="1132,1017,1231,1044"/>
+<area shape="rect" id="node19" href="$structCoinHashLink.html" title="Really for Conflict cuts to &#45; a) stop duplicates b) allow half baked cuts The whichRow_ field in OsiR..." alt="" coords="771,1017,875,1044"/>
+<area shape="rect" id="node20" title=" " alt="" coords="935,170,1091,211"/>
+<area shape="rect" id="node21" title="STL class." alt="" coords="418,155,530,181"/>
+<area shape="rect" id="node27" title=" " alt="" coords="736,265,911,306"/>
+<area shape="rect" id="node48" title=" " alt="" coords="941,109,1084,136"/>
+<area shape="rect" id="node22" title=" " alt="" coords="5,155,44,181"/>
+<area shape="rect" id="node31" title="STL class." alt="" coords="149,280,295,307"/>
+<area shape="rect" id="node45" title="STL class." alt="" coords="163,103,281,129"/>
+<area shape="rect" id="node23" href="$classCbcStrategy.html" title="Strategy base class." alt="" coords="1135,1068,1228,1095"/>
+<area shape="rect" id="node25" href="$classCbcSymmetry.html" title="Class to deal with symmetry." alt="" coords="1130,465,1233,492"/>
+<area shape="rect" id="node26" href="$structCbcSymmetry_1_1myclass.html" title=" " alt="" coords="745,381,902,408"/>
+<area shape="rect" id="node28" href="$classCbcSymmetry_1_1Node.html" title=" " alt="" coords="404,293,544,320"/>
+<area shape="rect" id="node29" href="$classCbcNauty.html" title=" " alt="" coords="784,432,863,459"/>
+<area shape="rect" id="node30" title=" " alt="" coords="410,379,538,421"/>
+<area shape="rect" id="node32" title=" " alt="" coords="5,257,44,284"/>
+<area shape="rect" id="node33" href="$structCbcSymmetry_1_1myclass0.html" title=" " alt="" coords="741,331,905,357"/>
+<area shape="rect" id="node34" href="$classCbcThread.html" title="A class to encapsulate thread stuff." alt="" coords="1139,364,1224,391"/>
+<area shape="rect" id="node35" href="$classCbcObjectUpdateData.html" title=" " alt="" coords="2055,441,2207,468"/>
+<area shape="rect" id="node37" title=" " alt="" coords="1449,340,1529,367"/>
+<area shape="rect" id="node39" href="$classCbcTree.html" title="Using MS heap implementation." alt="" coords="1146,533,1217,560"/>
+<area shape="rect" id="node41" href="$classCbcCompare.html" title=" " alt="" coords="775,533,872,560"/>
+<area shape="rect" id="node42" href="$classCbcCompareBase.html" title=" " alt="" coords="411,559,537,585"/>
+<area shape="rect" id="node43" href="$classCbcBaseModel.html" title="Base model." alt="" coords="1126,415,1237,441"/>
+<area shape="rect" id="node46" title="STL class." alt="" coords="784,213,863,240"/>
+<area shape="rect" id="node47" title="STL class." alt="" coords="412,206,536,247"/>
+</map>

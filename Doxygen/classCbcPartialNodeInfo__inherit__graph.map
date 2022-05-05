@@ -1,0 +1,4 @@
+<map id="CbcPartialNodeInfo" name="CbcPartialNodeInfo">
+<area shape="rect" id="node1" title="Holds information for recreating a subproblem by incremental change from the parent." alt="" coords="5,80,140,107"/>
+<area shape="rect" id="node2" href="$classCbcNodeInfo.html" title="Information required to recreate the subproblem at this node." alt="" coords="23,5,122,32"/>
+</map>

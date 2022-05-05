@@ -124,9 +124,8 @@ make_doxygen_info
 echo "## DOCUMENTATION
 
  * [User's Guide](https://coin-or.github.io/Cbc) (from 2005)
- * [Doxygen generated documentation](http://www.coin-or.org/Doxygen/Cbc/hierarchy.html)
  * Source code [examples](examples)
- * [Cbc command-line guide](https://projects.coin-or.org/CoinBinary/export/1059/OptimizationSuite/trunk/Installer/files/doc/cbcCommandLine.pdf)
+ * [Cbc command-line guide](https://github.com/coin-or/COIN-OR-OptimizationSuite/raw/master/Installer/files/doc/cbcCommandLine.pdf)
 "
 
 make_links

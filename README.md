@@ -250,9 +250,8 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
 ## DOCUMENTATION
 
  * [User's Guide](https://coin-or.github.io/Cbc) (from 2005)
- * [Doxygen generated documentation](http://www.coin-or.org/Doxygen/Cbc/hierarchy.html)
  * Source code [examples](examples)
- * [Cbc command-line guide](https://projects.coin-or.org/CoinBinary/export/1059/OptimizationSuite/trunk/Installer/files/doc/cbcCommandLine.pdf)
+ * [Cbc command-line guide](https://github.com/coin-or/COIN-OR-OptimizationSuite/raw/master/Installer/files/doc/cbcCommandLine.pdf)
 
 
 ## Project Links
@@ -262,7 +261,7 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
  * [COIN-OR general discussion forum](https://github.com/orgs/coin-or/discussions)
  * [Cbc Discussion forum](https://github.com/coin-or/Cbc/discussions)
  * [Report a bug](https://github.com/coin-or/Cbc/issues/new)
- * [Doxygen-generated html documentation](http://coin-or.github.io/Cbc/Doxygen)
+ * [Doxygen generated documentation](http://coin-or.github.io/Cbc/Doxygen)
 
 ## CHANGELOG
 

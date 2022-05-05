@@ -1,7 +1,0 @@
-<map id="CbcTreeLocal" name="CbcTreeLocal">
-<area shape="rect" id="node2" href="$classCbcTree.html" title="Using MS heap implementation. " alt="" coords="209,273,280,300"/>
-<area shape="rect" id="node4" href="$classCbcNode.html" title="Information required while the node is live. " alt="" coords="20,95,96,121"/>
-<area shape="rect" id="node6" title="STL class. " alt="" coords="121,95,233,121"/>
-<area shape="rect" id="node8" href="$classCbcCompare.html" title="CbcCompare" alt="" coords="275,184,372,211"/>
-<area shape="rect" id="node9" href="$classCbcCompareBase.html" title="CbcCompareBase" alt="" coords="260,95,387,121"/>
-</map>

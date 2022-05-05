@@ -1,5 +1,0 @@
-<map id="CbcSimpleInteger" name="CbcSimpleInteger">
-<area shape="rect" id="node4" href="$classCbcSimpleIntegerDynamicPseudoCost.html" title="Define a single integer class but with dynamic pseudo costs. " alt="" coords="5,229,252,256"/>
-<area shape="rect" id="node5" href="$classCbcSimpleIntegerPseudoCost.html" title="Define a single integer class but with pseudo costs. " alt="" coords="276,229,472,256"/>
-<area shape="rect" id="node2" href="$classCbcObject.html" title="CbcObject" alt="" coords="210,80,293,107"/>
-</map>

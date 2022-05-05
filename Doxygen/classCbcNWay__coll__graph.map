@@ -1,5 +1,0 @@
-<map id="CbcNWay" name="CbcNWay">
-<area shape="rect" id="node2" href="$classCbcObject.html" title="CbcObject" alt="" coords="56,95,139,121"/>
-<area shape="rect" id="node4" href="$classCbcModel.html" title="Simple Branch and bound class. " alt="" coords="109,5,189,32"/>
-<area shape="rect" id="node5" href="$classCbcConsequence.html" title="Abstract base class for consequent bounds. " alt="" coords="163,95,287,121"/>
-</map>

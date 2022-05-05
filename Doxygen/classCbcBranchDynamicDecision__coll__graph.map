@@ -1,6 +1,0 @@
-<map id="CbcBranchDynamicDecision" name="CbcBranchDynamicDecision">
-<area shape="rect" id="node2" href="$classCbcBranchDecision.html" title="CbcBranchDecision" alt="" coords="31,273,167,300"/>
-<area shape="rect" id="node3" href="$classCbcBranchingObject.html" title="Abstract branching object base class Now just difference with OsiBranchingObject. ..." alt="" coords="185,184,327,211"/>
-<area shape="rect" id="node5" href="$classCbcModel.html" title="Simple Branch and bound class. " alt="" coords="261,5,341,32"/>
-<area shape="rect" id="node6" href="$classCbcObject.html" title="CbcObject" alt="" coords="371,95,453,121"/>
-</map>

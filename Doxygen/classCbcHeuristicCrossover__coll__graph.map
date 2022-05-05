@@ -1,8 +1,0 @@
-<map id="CbcHeuristicCrossover" name="CbcHeuristicCrossover">
-<area shape="rect" id="node2" href="$classCbcHeuristic.html" title="Heuristic base class. " alt="" coords="208,199,305,225"/>
-<area shape="rect" id="node3" href="$classCbcHeuristicNodeList.html" title="CbcHeuristicNodeList" alt="" coords="5,109,156,136"/>
-<area shape="rect" id="node4" href="$classCbcModel.html" title="Simple Branch and bound class. " alt="" coords="181,109,261,136"/>
-<area shape="rect" id="node5" title="STL class. " alt="" coords="285,109,364,136"/>
-<area shape="rect" id="node6" title="STL class. " alt="" coords="263,5,387,47"/>
-<area shape="rect" id="node8" title="STL class. " alt="" coords="389,109,501,136"/>
-</map>

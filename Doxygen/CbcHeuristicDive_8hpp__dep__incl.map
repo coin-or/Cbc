@@ -1,8 +1,0 @@
-<map id="src/CbcHeuristicDive.hpp" name="src/CbcHeuristicDive.hpp">
-<area shape="rect" id="node2" href="$CbcHeuristicDiveCoefficient_8hpp.html" title="src/CbcHeuristicDiveCoefficient.hpp" alt="" coords="5,87,235,114"/>
-<area shape="rect" id="node3" href="$CbcHeuristicDiveFractional_8hpp.html" title="src/CbcHeuristicDiveFractional.hpp" alt="" coords="259,87,485,114"/>
-<area shape="rect" id="node4" href="$CbcHeuristicDiveGuided_8hpp.html" title="src/CbcHeuristicDiveGuided.hpp" alt="" coords="509,87,720,114"/>
-<area shape="rect" id="node5" href="$CbcHeuristicDiveLineSearch_8hpp.html" title="src/CbcHeuristicDiveLine\lSearch.hpp" alt="" coords="744,80,915,121"/>
-<area shape="rect" id="node6" href="$CbcHeuristicDivePseudoCost_8hpp.html" title="src/CbcHeuristicDivePseudo\lCost.hpp" alt="" coords="939,80,1128,121"/>
-<area shape="rect" id="node7" href="$CbcHeuristicDiveVectorLength_8hpp.html" title="src/CbcHeuristicDiveVector\lLength.hpp" alt="" coords="1153,80,1335,121"/>
-</map>

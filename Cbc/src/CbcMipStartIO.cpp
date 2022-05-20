@@ -18,6 +18,7 @@
 
 using namespace std;
 
+static
 bool isNumericStr(const char *str)
 {
   const size_t l = strlen(str);

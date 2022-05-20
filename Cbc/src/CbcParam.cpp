@@ -34,10 +34,10 @@ CbcParam::CbcParam()
   , shortHelp_()
   , longHelp_()
   , action_(CBC_PARAM_NOTUSED_INVALID)
+  , currentKeyWord_(-1)
   , display_(false)
   , intValue_(0)
   , doubleValue_(0)
-  , currentKeyWord_(-1)
   , indexNumber_(0)
 {
 }

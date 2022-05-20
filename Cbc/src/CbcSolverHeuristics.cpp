@@ -8,6 +8,7 @@
 */
 
 #include "CbcConfig.h"
+#include "CbcSolverHeuristics.hpp"
 #include "CoinPragma.hpp"
 
 #include "CoinTime.hpp"
@@ -15,10 +16,6 @@
 #include "OsiClpSolverInterface.hpp"
 
 #include "ClpPresolve.hpp"
-
-#include "CbcOrClpParam.hpp"
-
-#include "CbcModel.hpp"
 
 #include "CbcHeuristicLocal.hpp"
 #include "CbcHeuristicPivotAndFix.hpp"

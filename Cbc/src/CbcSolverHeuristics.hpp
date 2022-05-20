@@ -10,6 +10,9 @@
 #ifndef CbcSolverHeuristics_H
 #define CbcSolverHeuristics_H
 
+#include "CbcModel.hpp"
+#include "CbcOrClpParam.hpp"
+
 void crunchIt(ClpSimplex *model);
 
 /*

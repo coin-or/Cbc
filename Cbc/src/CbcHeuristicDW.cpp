@@ -1097,16 +1097,16 @@ int CbcHeuristicDW::solution(double &solutionValue,
       //model.solver()->setHintParam(OsiDoPresolveInResolve, false, OsiHintDo, 0) ;
       model.initialSolve();
       if (bestObjective_ > model.solver()->getObjValue() + 1.0e-1) {
-        const double *dj = model.solver()->getReducedCost();
         int nFix = 0;
+#ifdef HOT_START
+        // Set up hot start
+        const double *dj = model.solver()->getReducedCost();
         const double *lower = model.solver()->getColLower();
         const double *upper = model.solver()->getColUpper();
         const double *solution = model.solver()->getColSolution();
         double gap = CoinMax(bestObjective_ - model.solver()->getObjValue(),
           1.0e-3);
         int numberColumns2 = model.solver()->getNumCols();
-#ifdef HOT_START
-        // Set up hot start
         const int *originalColumns = pinfo.originalColumns();
         double *hot = new double[2 * numberColumns2];
         int *hotPriorities = new int[numberColumns2 * 2];

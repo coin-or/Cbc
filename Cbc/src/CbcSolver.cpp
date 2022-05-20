@@ -5885,14 +5885,12 @@ int CbcMain1(int argc, const char *argv[],
                   // CbcObjects
                   if (preProcess && (process.numberSOS() || babModel_->numberObjects())) {
                     int numberSOS = process.numberSOS();
-                    int numberIntegers = babModel_->numberIntegers();
                     /* model may not have created objects
                                            If none then create
                                         */
                     if (!integersOK) {
                       int type = (pseudoUp) ? 1 : 0;
                       babModel_->findIntegers(true, type);
-                      numberIntegers = babModel_->numberIntegers();
                     }
                     OsiObject **oldObjects = babModel_->objects();
                     // Do sets and priorities
@@ -7478,12 +7476,6 @@ int CbcMain1(int argc, const char *argv[],
                     }
                   }
                 }
-#ifndef CBC_OTHER_SOLVER
-		{
-		  OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
-		  ClpSimplex *simplex = solver->getModelPtr();
-		}
-#endif
                 int returnCode = CbcClpUnitTest(model_, dirMiplib, extra2, stuff,argc,argv,callBack,parameterData);
                 babModel_ = NULL;
                 return returnCode;

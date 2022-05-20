@@ -402,7 +402,9 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   int iteration = 0;
   int numberAtBoundFixed = 0;
   int numberGeneralFixed = 0; // fixed as satisfied but not at bound
+#if DIVE_PRINT > 1
   int numberReducedCostFixed = 0;
+#endif
   while (numberFractionalVariables) {
     iteration++;
 

@@ -71,7 +71,7 @@ int readMIPStart(CbcModel *model, const char *fileName,
   if (colValues.size()) {
     sprintf(printLine, "MIPStart values read for %d variables.", static_cast< int >(colValues.size()));
     model->messageHandler()->message(CBC_GENERAL, model->messages()) << printLine << CoinMessageEol;
-    if (colValues.size() < model->getNumCols()) {
+    if ((int)colValues.size() < model->getNumCols()) {
       int numberColumns = model->getNumCols();
       OsiSolverInterface *solver = model->solver();
       vector< pair< string, double > > fullValues;
@@ -120,7 +120,7 @@ int computeCompleteSolution(CbcModel *model,
   for (int i = 0; (i < static_cast< int >(colNames.size())); ++i)
     colIdx[colNames[i]] = i;
 
-  char printLine[STR_SIZE];
+  char printLine[STR_SIZE+100];
   int fixed = 0;
   int notFound = 0;
   char colNotFound[256] = "";

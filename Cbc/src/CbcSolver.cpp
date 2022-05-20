@@ -1432,12 +1432,16 @@ int CbcMain1(int argc, const char *argv[],
       break;
     }
   }
+#if CBC_QUIET == 0
   double time0;
   double time0Elapsed = CoinGetTimeOfDay();
+#endif
   {
     double time1 = CoinCpuTime(), time2;
+#if CBC_QUIET == 0
     time0 = time1;
     double time1Elapsed = time0Elapsed;
+#endif
     bool goodModel = (originalSolver->getNumCols()) ? true : false;
 
     // register signal handler
@@ -1941,7 +1945,9 @@ int CbcMain1(int argc, const char *argv[],
       field = CoinReadGetCommand(argc, argv);
       // Reset time
       time1 = CoinCpuTime();
+#if CBC_QUIET == 0
       time1Elapsed = CoinGetTimeOfDay();
+#endif
       // adjust field if has odd trailing characters
       char temp[200];
       strcpy(temp, field.c_str());

@@ -11,6 +11,8 @@
 #ifndef CbcSolverAnalyze_H
 #define CbcSolverAnalyze_H
 
+#include "OsiClpSolverInterface.hpp"
+
 int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
   double &increment, bool changeInt,
   CoinMessageHandler *generalMessageHandler, bool noPrinting);

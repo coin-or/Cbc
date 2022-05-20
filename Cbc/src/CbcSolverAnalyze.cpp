@@ -15,9 +15,8 @@
 */
 
 #include "CbcConfig.h"
+#include "CbcSolverAnalyze.hpp"
 #include "CoinPragma.hpp"
-
-#include "OsiClpSolverInterface.hpp"
 
 #include "ClpMessage.hpp"
 

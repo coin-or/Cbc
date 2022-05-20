@@ -14,11 +14,8 @@
 */
 
 #include "CbcConfig.h"
+#include "CbcSolverExpandKnapsack.hpp"
 #include "CoinPragma.hpp"
-
-#include "OsiSolverInterface.hpp"
-
-#include "CglStored.hpp"
 
 #ifndef COIN_HAS_LINK
 #define COIN_HAS_LINK

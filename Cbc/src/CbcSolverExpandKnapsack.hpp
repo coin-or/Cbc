@@ -11,6 +11,9 @@
 #ifndef CbcSolverExpandKnapsack_H
 #define CbcSolverExpandKnapsack_H
 
+#include "OsiClpSolverInterface.hpp"
+#include "CglStored.hpp"
+
 OsiSolverInterface *
 expandKnapsack(CoinModel &model, int *whichColumn, int *knapsackStart,
   int *knapsackRow, int &numberKnapsack,

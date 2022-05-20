@@ -12113,7 +12113,7 @@ static void statistics(ClpSimplex *originalModel, ClpSimplex *model)
                   }
                 } else {
                   int row2 = mapRow[iRow];
-                  assert(iRow = mapRow[row2]);
+                  assert(iRow == mapRow[row2]);
                   if (rowLower[iRow] != rowLower[row2] || rowLower[row2] != rowLower[iRow])
                     good = false;
                   CoinBigIndex offset2 = rowStart[row2] - start;

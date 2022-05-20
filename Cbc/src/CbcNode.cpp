@@ -4111,6 +4111,7 @@ typedef struct {
    2 set if down was infeasible
    4 set if up was infeasible
  */
+static
 int solveAnalyze(void *info)
 {
   StrongBundle *bundle = reinterpret_cast< StrongBundle * >(info);

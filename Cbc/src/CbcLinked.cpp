@@ -7147,6 +7147,7 @@ CglTemporary::operator=(const CglTemporary &rhs)
   }
   return *this;
 }
+static
 void checkQP(ClpSimplex * /*model*/)
 {
 #ifdef JJF_ZERO

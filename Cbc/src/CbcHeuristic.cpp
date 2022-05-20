@@ -196,6 +196,7 @@ CbcHeuristic::operator=(const CbcHeuristic &rhs)
   return *this;
 }
 
+static
 void CbcHeurDebugNodes(CbcModel *model_)
 {
   CbcNode *node = model_->currentNode();

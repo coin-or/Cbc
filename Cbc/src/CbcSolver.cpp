@@ -874,6 +874,7 @@ static void signal_handler_error(int whichSignal)
   a noop when COIN_DEVELOP is not defined. To avoid compiler warnings, the
   formal parameters also need to go away.
 */
+static
 #ifdef COIN_DEVELOP
 void checkSOS(CbcModel *babModel, const OsiSolverInterface *solver)
 #else

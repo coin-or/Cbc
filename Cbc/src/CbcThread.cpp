@@ -243,7 +243,10 @@ void CbcSpecificThread::setStatus(int value)
 #else
 #endif
 }
-// Parallel heuristics
+// Parallel heuristics, used in CbcModel.cpp
+void parallelHeuristics(int numberThreads,
+  int sizeOfData,
+  void *argBundle);
 void parallelHeuristics(int numberThreads,
   int sizeOfData,
   void *argBundle)

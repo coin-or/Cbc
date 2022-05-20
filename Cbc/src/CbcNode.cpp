@@ -4233,7 +4233,7 @@ int solveAnalyze(void *info)
         }
         choice->movement[iWay] = newObjectiveValue;
       } else {
-#ifdef COIN_HAS_CLP
+#if 0 //def COIN_HAS_CLP
         OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
         ClpSimplex *simplex = osiclp ? osiclp->getModelPtr() : NULL;
 #endif
@@ -4592,7 +4592,6 @@ int CbcNode::analyze(CbcModel *model, double *results)
   double *currentSolution = model->currentSolution();
   double objMin = 1.0e50;
   double objMax = -1.0e50;
-  bool needResolve = false;
   int maxChoices = 1;
   int currentChoice = 0;
   int numberThreads = 0;
@@ -4763,7 +4762,6 @@ int CbcNode::analyze(CbcModel *model, double *results)
     Now calculate the cost forcing the variable up and down.
   */
   int iDo = 0;
-  int iDone = -1;
   int numberDone = 0;
   int iThread = 0;
   int threadStatus = 0;
@@ -4805,9 +4803,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       double value = currentSolution[iColumn];
       double nearest = floor(value + 0.5);
       double lowerValue = floor(value);
-      bool satisfied = false;
       if (fabs(value - nearest) <= integerTolerance || value < saveLower[iColumn] || value > saveUpper[iColumn]) {
-        satisfied = true;
         if (nearest < saveUpper[iColumn]) {
           lowerValue = nearest;
         } else {
@@ -4965,7 +4961,6 @@ int CbcNode::analyze(CbcModel *model, double *results)
             << CoinMessageEol;
         } else {
           // up feasible, down infeasible
-          needResolve = true;
           numberToFix++;
           saveLower[iColumn] = choice.upLowerBound;
           solver->setColLower(iColumn, choice.upLowerBound);
@@ -4978,7 +4973,6 @@ int CbcNode::analyze(CbcModel *model, double *results)
       } else {
         if (choice.movement[0] < 1.0e100) {
           // down feasible, up infeasible
-          needResolve = true;
           numberToFix++;
           saveUpper[iColumn] = choice.downUpperBound;
           solver->setColUpper(iColumn, choice.downUpperBound);
@@ -5044,7 +5038,6 @@ int CbcNode::analyze(CbcModel *model, double *results)
       } else {
         if (choice.movement[0] < 1.0e100) {
           // down feasible, up infeasible
-          needResolve = true;
           numberToFix++;
           saveUpper[iColumn] = lowerValue;
           solver->setColUpper(iColumn, lowerValue);
@@ -5275,7 +5268,6 @@ int CbcNode::analyze(CbcModel *model, double *results)
     double primalTolerance;
     solver->getDblParam(OsiPrimalTolerance, primalTolerance);
     iDo = 0;
-    iDone = -1;
     numberDone = 0;
     int iThread = 0;
     threadStatus = 0;

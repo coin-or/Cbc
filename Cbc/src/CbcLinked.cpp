@@ -140,7 +140,7 @@ void OsiSolverLink::initialSolve()
     for (int i = 0; i < numberVariables_; i++) {
       info_[i].updateBounds(modelPtr_);
     }
-    int updated = updateCoefficients(modelPtr_, temp);
+    /* int updated =*/ updateCoefficients(modelPtr_, temp);
     //if (updated || 1) {
       temp->removeGaps(1.0e-14);
       ClpMatrixBase *save = modelPtr_->clpMatrix();

@@ -378,7 +378,6 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
   for (iRow = 0; iRow < numberRows; iRow++) {
     for (CoinBigIndex j = rowStart[iRow];
          j < rowStart[iRow] + rowLength[iRow]; j++) {
-      int jColumn = column[j];
       double value = elementByRow[j];
       if (value != 1.0)
         num_affine++;
@@ -430,7 +429,6 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
     for (iRow = 0; iRow < numberRows; iRow++) {
       for (CoinBigIndex j = rowStart[iRow];
            j < rowStart[iRow] + rowLength[iRow]; j++) {
-        int jColumn = column[j];
         double value = elementByRow[j];
         if (value == 1.0) {
           numberElements += 2;

@@ -2372,7 +2372,7 @@ void CbcModel::branchAndBound(int doStatistics)
   if ((moreSpecialOptions2_ & (128 | 256)) != 0 && !parentModel_) {
     symmetryInfo_ = new CbcSymmetry();
     symmetryInfo_->setupSymmetry(this);
-    int numberGenerators = symmetryInfo_->statsOrbits(this, 0);
+    /*int numberGenerators =*/ symmetryInfo_->statsOrbits(this, 0);  /* FIXME can this call be removed? */
     if (!symmetryInfo_->numberUsefulOrbits() && (moreSpecialOptions2_ & (128 | 256)) != (128 | 256)) {
       delete symmetryInfo_;
       symmetryInfo_ = NULL;

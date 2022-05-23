@@ -346,6 +346,7 @@ CbcParam::doubleParameter(OsiSolverInterface *model) const
   default:
     abort();
   }
+  (void)getDblParamRetValue;
   return value;
 }
 int CbcParam::setIntParameter(OsiSolverInterface *model, int value) const

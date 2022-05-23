@@ -4576,9 +4576,8 @@ int CbcMain1(int argc, const char *argv[],
                       int iColumn = originalColumns[i];
                       back[iColumn] = i;
                     }
-                    int numberSOSOld = osiclp->numberSOS();
                     int numberSOS = osiclp2->numberSOS();
-                    assert(numberSOS == numberSOSOld);
+                    assert(numberSOS == osiclp->numberSOS());
                     CoinSet *setInfo = const_cast< CoinSet * >(osiclp2->setInfo());
                     for (int i = 0; i < numberSOS; i++) {
                       //int type = setInfo[i].setType();

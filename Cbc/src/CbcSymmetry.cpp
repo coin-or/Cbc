@@ -1437,8 +1437,7 @@ void CbcOrbitalBranchingObject::print()
 */
 int CbcOrbitalBranchingObject::compareOriginalObject(const CbcBranchingObject *brObj) const
 {
-  const CbcOrbitalBranchingObject *br = dynamic_cast< const CbcOrbitalBranchingObject * >(brObj);
-  assert(!br);
+  assert(dynamic_cast< const CbcOrbitalBranchingObject * >(brObj) != NULL);
   abort();
   return 0;
 }
@@ -1454,8 +1453,7 @@ int CbcOrbitalBranchingObject::compareOriginalObject(const CbcBranchingObject *b
 CbcRangeCompare
 CbcOrbitalBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, const bool replaceIfOverlap)
 {
-  const CbcOrbitalBranchingObject *br = dynamic_cast< const CbcOrbitalBranchingObject * >(brObj);
-  assert(!br);
+  assert(dynamic_cast< const CbcOrbitalBranchingObject * >(brObj) != NULL);
   abort();
   return CbcRangeDisjoint;
 }

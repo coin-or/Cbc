@@ -5239,12 +5239,14 @@ int CbcNode::analyze(CbcModel *model, double *results)
     temp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
     temp->resolve();
     {
+#ifndef NDEBUG
       const double *lower = temp->getColLower();
       const double *upper = temp->getColUpper();
       for (int i = 0; i < numberColumns; i++) {
         assert(lower[i] == saveLower[i]);
         assert(upper[i] == saveUpper[i]);
       }
+#endif
     }
     delete ws;
     ws = temp->getWarmStart();

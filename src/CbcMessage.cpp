@@ -70,6 +70,7 @@ static Cbc_message us_english[] = {
   { CBC_MAXITERS, 50, 1, "Exiting on maximum number of iterations" },
   { CBC_NOINT, 3007, 1, "No integer variables" },
   { CBC_WARNING_STRONG, 3008, 1, "Strong branching is fixing too many variables, too expensively!" },
+  { CBC_GENERAL_WARNING, 3009, 1, "%s" },
   { CBC_DUMMY_END, 999999, 0, "" }
 };
 /* Constructor */

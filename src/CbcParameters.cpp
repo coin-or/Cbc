@@ -1070,7 +1070,7 @@ void CbcParameters::addCbcSolverFileParams() {
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::MIPSTARTFILE]->setup(
-      "mipStartF!ile", "sets name for file to read mip start from",
+      "mipReadF!ile", "sets name for file to read mip start from",
       "This will set the name the model will be written to and read from. "
       "This is initialized to 'prob.mod'. ",
       CoinParam::displayPriorityHigh);
@@ -1514,7 +1514,7 @@ void CbcParameters::addCbcSolverIntParams() {
       "passes.");
 
   parameters_[CbcParam::FPUMPTUNE]->setup(
-      "pumpT!une", "Dubious ideas for feasibility pump", 0, 100000000,
+      "pumpT!une", "Dubious ideas for feasibility pump", 0, 1000000000,
       "This fine tunes Feasibility Pump     \n\t>=10000000 use as objective "
       "weight switch     \n\t>=1000000 use as accumulate switch     \n\t>=1000 "
       "use index+1 as number of large loops     \n\t==100 use objvalue "
@@ -1527,7 +1527,8 @@ void CbcParameters::addCbcSolverIntParams() {
   parameters_[CbcParam::FPUMPTUNE2]->setup(
       "moreT!une", "Yet more dubious ideas for feasibility pump", 0, 100000000,
       "Yet more ideas for Feasibility Pump     \n\t/100000 == 1 use box "
-      "constraints and original obj in cleanup     \n\t/1000 == 1 Pump will "
+      "constraints and original obj in cleanup     \n\t/10000 == 1 use true "
+      "objective more \n\t/1000 == 1 Pump will "
       "run twice if no solution found     \n\t/1000 == 2 Pump will only run "
       "after root cuts if no solution found     \n\t/1000 >10 as above but "
       "even if solution found     \n\t/100 == 1,3.. exact 1.0 for objective "
@@ -2115,6 +2116,9 @@ void CbcParameters::addCbcSolverHeurParams() {
        code < CbcParam::LASTHEURPARAM; code++) {
     // First the common keywords
     switch (code) {
+     case CbcParam::DW:
+       parameters_[code]->appendKwd("special", CbcParameters::CGLong);
+       parameters_[code]->appendKwd("trial", CbcParameters::CGLonger);
      case CbcParam::HEURISTICSTRATEGY:
      case CbcParam::COMBINE:
      case CbcParam::CROSSOVER:
@@ -2126,7 +2130,6 @@ void CbcParameters::addCbcSolverHeurParams() {
      case CbcParam::DIVINGP:
      case CbcParam::DIVINGS:
      case CbcParam::DIVINGV:
-     case CbcParam::DW:
      case CbcParam::FPUMP:
      case CbcParam::GREEDY:
      case CbcParam::NAIVE:

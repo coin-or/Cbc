@@ -1262,6 +1262,25 @@ CoinReadGetDoubleField(int &whichArgument, int argc, const char *argv[], int *va
 #define CoinReadGetIntField(x, y, z) CoinReadGetIntField(whichArgument, x, y, z)
 #define CoinReadGetDoubleField(x, y, z) CoinReadGetDoubleField(whichArgument, x, y, z)
 #endif
+// For setting maximum time after postprocessing
+static void setMaximumSeconds(OsiSolverInterface * solver,double originalLimit,
+			      double startTime, double startTimeElapsed,
+			      bool useCpuTime)
+{
+  OsiClpSolverInterface *osiclp =
+    dynamic_cast< OsiClpSolverInterface * >(solver);
+  if (osiclp) {
+    ClpSimplex *lpSolver = osiclp->getModelPtr();
+    // How much have we got left
+    if (useCpuTime) {
+      double timeLeft = originalLimit-(CoinCpuTime()-startTime);
+      lpSolver->setMaximumSeconds(CoinMax(timeLeft,0.0));
+    } else {
+      double timeLeft = originalLimit-(CoinGetTimeOfDay()-startTimeElapsed);
+      lpSolver->setMaximumWallSeconds(CoinMax(timeLeft,0.0));
+    }
+  }
+}
 // Default Constructor
 CbcSolverUsefulData::CbcSolverUsefulData()
 {
@@ -7279,10 +7298,30 @@ int CbcMain1(int argc, const char *argv[],
                     int k = parameters_[jParam].currentOptionAsInteger();
                     if (k < 4) {
                       babModel_->setMoreSpecialOptions2(babModel_->moreSpecialOptions2() | (k * 128));
-                    } else {
+                    } else if (k==4 ) {
 #define MAX_NAUTY_PASS 2000
                       nautyAdded = nautiedConstraints(*babModel_,
 						      MAX_NAUTY_PASS);
+		    } else {
+		      assert (k>=5 && k <=9);
+                      if (k == 5)
+                        babModel_->setMoreSpecialOptions2(
+                            babModel_->moreSpecialOptions2() | 128 | 256 |
+                            131072);
+                      else if (k == 6)
+                        babModel_->setMoreSpecialOptions2(
+                            babModel_->moreSpecialOptions2() | 128 | 256 |
+                            262144);
+                      else if (k == 7)
+                        babModel_->setMoreSpecialOptions2(
+                            babModel_->moreSpecialOptions2() | 128 | 256 |
+                            131072 | 262144);
+                      else if (k == 8)
+                        babModel_->setMoreSpecialOptions2(
+                            babModel_->moreSpecialOptions2()|131072|1073741824);
+                      else 
+                        babModel_->setMoreSpecialOptions2(
+                            babModel_->moreSpecialOptions2()|262144|1073741824);
                     }
                   }
                 }
@@ -7719,12 +7758,19 @@ int CbcMain1(int argc, const char *argv[],
                       << generalPrint
                       << CoinMessageEol;
                   }
-                  saveSolver->resolve();
+		  // set time limit for really bad problems
+		  double timeLimit = parameters_[whichParam(CBC_PARAM_DBL_TIMELIMIT_BAB, parameters_)].doubleValue();
+		  bool useCpuTime = !model_.useElapsedTime();
+		  setMaximumSeconds(saveSolver, timeLimit,
+				    time0, time0Elapsed, useCpuTime);
+                  saveSolver->resolve(); 
                   if (!saveSolver->isProvenOptimal()) {
                     // try all slack
                     CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(babModel_->solver()->getEmptyWarmStart());
                     saveSolver->setWarmStart(basis);
                     delete basis;
+		    setMaximumSeconds(saveSolver, timeLimit,
+				      time0, time0Elapsed, useCpuTime);
                     saveSolver->initialSolve();
 #ifdef COIN_DEVELOP
                     saveSolver->writeMps("inf2");
@@ -7746,12 +7792,16 @@ int CbcMain1(int argc, const char *argv[],
                   CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(babModel_->solver()->getWarmStart());
                   originalSolver->setBasis(*basis);
                   delete basis;
+		  setMaximumSeconds(originalSolver, timeLimit,
+				    time0, time0Elapsed, useCpuTime);
                   originalSolver->resolve();
                   if (!originalSolver->isProvenOptimal()) {
                     // try all slack
                     CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(babModel_->solver()->getEmptyWarmStart());
                     originalSolver->setBasis(*basis);
                     delete basis;
+		    setMaximumSeconds(originalSolver, timeLimit,
+				      time0, time0Elapsed, useCpuTime);
                     originalSolver->initialSolve();
                     OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(originalSolver);
                     if (osiclp)

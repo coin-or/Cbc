@@ -14,14 +14,6 @@
 
 #ifdef COIN_HAS_NTY
 
-extern "C" {
-#include "nauty.h"
-#include "nausparse.h"
-#ifdef NTY_TRACES
-#include "traces.h"
-#endif
-}
-
 #include <stdio.h>
 #include <cassert>
 #include <vector>
@@ -31,25 +23,12 @@ extern "C" {
 
 #include "CbcSymmetry.hpp"
 #include "CbcBranchingObject.hpp"
+#include "CbcSimpleInteger.hpp"
 #include "CoinTime.hpp"
 #define NAUTY_MAX_LEVEL 0
 #if NAUTY_MAX_LEVEL
 extern int nauty_maxalllevel;
 #endif
-/* Deliberately not threadsafe to save effort
-   Just for statistics
-   and not worth gathering across threads
-   can redo later
- */
-static int nautyBranchCalls_ = 0;
-static int lastNautyBranchCalls_ = 0;
-static int nautyBranchSucceeded_ = 0;
-static int nautyFixCalls_ = 0;
-static int lastNautyFixCalls_ = 0;
-static int nautyFixSucceeded_ = 0;
-static double nautyTime_ = 0.0;
-static double nautyFixes_ = 0.0;
-static double nautyOtherBranches_ = 0.0;
 
 void CbcSymmetry::Node::node(int i, double c, double l, double u, int cod, int s)
 {
@@ -76,6 +55,8 @@ inline bool CbcSymmetry::compare(register Node &a, register Node &b) const
 // simple nauty definitely not thread safe
 static int calls = 0;
 static int maxLevel = 0;
+static char message_[200];
+static CbcSymmetry * baseSymmetry=NULL;
 static void
 userlevelproc(int *lab, int *ptn, int level, int *orbits, statsblk *stats,
   int tv, int index, int tcellsize,
@@ -83,8 +64,7 @@ userlevelproc(int *lab, int *ptn, int level, int *orbits, statsblk *stats,
 {
   calls++;
   if (level > maxLevel) {
-    printf("Level %d after %d calls\n", level, calls);
-    fprintf(stderr, "Level %d after %d calls\n", level, calls);
+    sprintf(message_,"Nauty:: level %d after %d calls", level, calls);
     maxLevel = level;
   }
   if (level > 1500) {
@@ -93,10 +73,94 @@ userlevelproc(int *lab, int *ptn, int level, int *orbits, statsblk *stats,
   //}
   return;
 }
+
+static void userautomproc(int numGenerators,
+		   int * perm,
+		   int * orbits, int numorbits,
+		   int stabvertex, int n)
+{
+  //printf("count %d\n",numGenerators);
+  if (numGenerators>64)
+    return;
+  assert (baseSymmetry);
+  int numberColumns = baseSymmetry->numberColumns();
+  int * workperm = new int [n];
+  int * orbitsX = new int [numberColumns];
+  memset(workperm,0,n*sizeof(int));
+  for (int i=0;i<numberColumns;i++)
+    orbitsX[i]=-1;
+  int numberPerms=0;
+  int numberInPerm=-1;
+  int firstL=-1;
+  for (int i = 0; i < n; ++i) {
+    if (workperm[i] == 0 && perm[i] != i) {
+      int nRow=0;
+      int nCol=0;
+      int l = i;
+      if (l<numberColumns) {
+#ifdef PRINT_CBCAUTO
+	printf("%d ",l);
+#endif
+	nCol++;
+	firstL=l;
+	assert (orbitsX[l]<0);
+      } else {
+	nRow++;
+      }
+      int k;
+      do {
+	  k = l;
+	  l = perm[l];
+	  workperm[k] = 1;
+	  if (l != i) {
+	    if (l<numberColumns) {
+#ifdef PRINT_CBCAUTO
+	      printf("%d ",l);
+#endif
+	      nCol++;
+	      assert (orbitsX[l]<0);
+	      orbitsX[k]=l;
+	    } else {
+	      nRow++;
+	    }
+	  }
+      } while (l != i);
+      if (nCol) {
+	orbitsX[k]=firstL;
+#ifdef PRINT_CBCAUTO
+	printf("\n");
+#endif
+      }
+      assert (nCol==0||nRow==0);
+      if (nCol>0) {
+	if (numberInPerm<0) {
+	  numberInPerm=nCol;
+	} else {
+	  assert (numberInPerm==nCol);
+	}
+	numberPerms++;
+      }
+    }
+  }
+#ifdef PRINT_CBCAUTO
+  printf("%d permutations, %d in each\n",numberPerms,numberInPerm);
+#endif
+  delete [] workperm;
+  if (numberPerms) {
+    cbc_permute permute;
+    permute.numberInPerm=numberInPerm;
+    permute.numberPerms=numberPerms;
+    permute.orbits=orbitsX;
+    baseSymmetry->addPermutation(permute);
+  } else {
+    delete [] orbitsX;
+  }
+}
 void CbcSymmetry::Compute_Symmetry() const
 {
 
   nauty_info_->options()->userlevelproc = userlevelproc;
+  message_[0]='\0';
   std::sort(node_info_.begin(), node_info_.end(), node_sort);
 
   for (std::vector< Node >::iterator i = node_info_.begin(); i != node_info_.end(); ++i)
@@ -126,6 +190,39 @@ void CbcSymmetry::Compute_Symmetry() const
 
   //Print_Orbits ();
   nauty_info_->computeAuto();
+#ifdef PRINT_MORE
+  if (permutations_) {
+    int * marked = new int [4*numberColumns_];
+    //int * whichMarked = marked + numberColumns_;
+    //int * save = whichOrbit_+4*numberColumns_;
+    memset(marked,0,numberColumns_*sizeof(int));
+    int maxMarked = 0;
+    for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+      if (!permutations_[iPerm].numberPerms)
+	continue; // summary permutation
+      const int * orbit = permutations_[iPerm].orbits;
+      int nIn = 0;
+      for (int i=0;i<numberColumns_;i++) {
+	if (orbit[i]>=0) {
+	  nIn++;
+	  marked[i]++;
+	  maxMarked = CoinMax(maxMarked,marked[i]);
+	}
+      }
+      printf("Generator %d has %d\n",iPerm,nIn);
+    }
+    for (int iMark=1;iMark<=maxMarked;iMark++) {
+      int n=0;
+      for (int i=0;i<numberColumns_;i++) {
+	if (marked[i]==iMark)
+	  n++;
+      }
+      if (n)
+	printf("%d are in %d generators\n",n,iMark);
+    }
+    delete [] marked;
+  }
+#endif
   //Print_Orbits ();
 }
 
@@ -134,6 +231,8 @@ int CbcSymmetry::statsOrbits(CbcModel *model, int type) const
   char general[200];
   int returnCode = 0;
   bool printSomething = true;
+  if (type == 1 && (model->moreSpecialOptions2()&(131072|262144)) != 131072) 
+    return 0;
   if (type) {
     double branchSuccess = 0.0;
     if (nautyBranchSucceeded_)
@@ -141,12 +240,21 @@ int CbcSymmetry::statsOrbits(CbcModel *model, int type) const
     double fixSuccess = 0.0;
     if (nautyFixSucceeded_)
       fixSuccess = nautyFixes_ / nautyFixSucceeded_;
-    if (nautyBranchCalls_ > lastNautyBranchCalls_ || nautyFixCalls_ > lastNautyFixCalls_) {
+    if (nautyBranchSucceeded_ > lastNautyBranchSucceeded_ || nautyFixSucceeded_ > lastNautyFixSucceeded_) {
       sprintf(general, "Orbital branching tried %d times, succeeded %d times - average extra %7.3f, fixing %d times (%d, %7.3f)",
         nautyBranchCalls_, nautyBranchSucceeded_, branchSuccess,
         nautyFixCalls_, nautyFixSucceeded_, fixSuccess);
-      lastNautyBranchCalls_ = nautyBranchCalls_;
-      lastNautyFixCalls_ = nautyFixCalls_;
+      if ((model->moreSpecialOptions2()&(131072|262144)) == 131072) {
+	sprintf(general, "Orbital branching succeeded %d times - average extra %7.3f, fixing (%d, %7.3f)",
+		nautyBranchSucceeded_, branchSuccess,
+		nautyFixSucceeded_, fixSuccess);
+	model->messageHandler()->message(CBC_GENERAL,
+					 model->messages())
+	  << general << CoinMessageEol;
+	return 0;
+      }
+      lastNautyBranchSucceeded_ = nautyBranchSucceeded_;
+      lastNautyFixSucceeded_ = nautyFixSucceeded_;
     } else {
       printSomething = false;
     }
@@ -154,16 +262,27 @@ int CbcSymmetry::statsOrbits(CbcModel *model, int type) const
     returnCode = nauty_info_->getNumGenerators();
     if (!nauty_info_->errorStatus()) {
       if (returnCode && numberUsefulOrbits_) {
-        sprintf(general, "Nauty: %d orbits (%d useful covering %d variables), %d generators, group size: %g - dense size %d, sparse %d - took %g seconds",
+	if ((model->moreSpecialOptions2()&(131072|262144)) != 131072) 
+	  model->messageHandler()->message(CBC_GENERAL,
+					   model->messages())
+	    << message_ << CoinMessageEol;
+        sprintf(general, "Nauty: %d orbits (%d useful covering %d variables), %d generators, group size: %g - sparse size %d - took %g seconds",
           nauty_info_->getNumOrbits(), numberUsefulOrbits_, numberUsefulObjects_,
           nauty_info_->getNumGenerators(),
           nauty_info_->getGroupSize(),
-          whichOrbit_[0], whichOrbit_[1], nautyTime_);
+          stats_[1], nautyTime_);
       } else {
-        if ((model->moreSpecialOptions2() & (128 | 256)) != (128 | 256))
+	int options2 = model->moreSpecialOptions2();
+        if ((options2 & (128 | 256)) != (128 | 256)) {
           sprintf(general, "Nauty did not find any useful orbits in time %g", nautyTime_);
-        else
-          sprintf(general, "Nauty did not find any useful orbits - but keeping Nauty on");
+        } else {
+	  if ((options2 & 131072) == 0) {
+	    sprintf(general, "Nauty did not find any useful orbits - but keeping Nauty on");
+	  } else {
+	    sprintf(general, "Nauty did not find any useful orbits in time %g", nautyTime_);
+	    model->setMoreSpecialOptions2(options2 & ~(128 | 256 | 131072));
+	  }
+	}
       }
     } else {
       // error
@@ -176,20 +295,68 @@ int CbcSymmetry::statsOrbits(CbcModel *model, int type) const
     model->messageHandler()->message(CBC_GENERAL,
       model->messages())
       << general << CoinMessageEol;
+  if (!type && (model->moreSpecialOptions2()&(131072|262144)) !=
+		131072)
+    Print_Orbits ();
+#if 0
+  if (!type && (model->moreSpecialOptions2()&(131072|262144)) != 0) {
+    printf("Setting priorities on symmetric\n");
+    int * priorities = new int [numberColumns_];
+    for (int i=0;i<numberColumns_;i++)
+      priorities[i] = -1;
+    for (int iOrbit=0;iOrbit<numberColumns_;iOrbit++) {
+      int n = 0;
+      for (int i=0;i<numberColumns_;i++) {
+	if (whichOrbit_[i]==iOrbit)
+	  n++;
+      }
+      if (!n)
+	break;
+      for (int i=0;i<numberColumns_;i++) {
+	if (whichOrbit_[i]==iOrbit)
+	  priorities[i] = 1000-n;
+      }
+    }	  
+    OsiObject **objects = model->objects();
+    int numberObjects = model->numberObjects();
+    for (int iObj = 0; iObj < numberObjects; iObj++) {
+      CbcSimpleInteger *obj = dynamic_cast< CbcSimpleInteger * >(objects[iObj]);
+      if (!obj)
+	continue;
+      int iColumn = obj->columnNumber();
+      int iPriority = priorities[iColumn];
+      if (iPriority > 0)
+	obj->setPriority(iPriority);
+    }
+    delete [] priorities;
+  }
+#endif
   return returnCode;
 }
 
-void CbcSymmetry::Print_Orbits() const
+void
+CbcSymmetry::fixSuccess(int nFixed)
+{
+  nautyFixSucceeded_++;
+  nautyFixes_+=nFixed;
+}
+// Adjust statistics from threads
+void
+CbcSymmetry::adjustStats(const CbcSymmetry * other)
+{
+  nautyFixes_ += other->nautyFixes_;
+  nautyFixSucceeded_ += other->nautyFixSucceeded_;
+  nautyBranchCalls_ += other->nautyBranchCalls_;
+  nautyBranchSucceeded_ += other->nautyBranchSucceeded_;
+}
+
+void CbcSymmetry::Print_Orbits(int type) const
 {
 
   //printf ("num gens = %d, num orbits = %d \n", nauty_info_ -> getNumGenerators(), nauty_info_ -> getNumOrbits() );
-
+  if (!nauty_info_->getN())
+    return;
   std::vector< std::vector< int > > *new_orbits = nauty_info_->getOrbits();
-
-  printf("Nauty: %d generators, group size: %.0g",
-    //  nauty_info_->getNumOrbits(),
-    nauty_info_->getNumGenerators(),
-    nauty_info_->getGroupSize());
 
   int nNonTrivialOrbits = 0;
 
@@ -206,7 +373,7 @@ void CbcSymmetry::Print_Orbits() const
     // printf("] \n");
   }
 
-  printf(" (%d non-trivial orbits).\n", nNonTrivialOrbits);
+  //printf(" (%d non-trivial orbits).\n", nNonTrivialOrbits);
 
 #if 1
   if (nNonTrivialOrbits) {
@@ -214,16 +381,38 @@ void CbcSymmetry::Print_Orbits() const
     int orbCnt = 0;
 
     std::vector< std::vector< int > > *orbits = nauty_info_->getOrbits();
+    if (type) {
+      for (std::vector< std::vector< int > >::iterator i = orbits->begin(); i != orbits->end(); ++i) {
 
-    for (std::vector< std::vector< int > >::iterator i = orbits->begin(); i != orbits->end(); ++i) {
+	printf("Orbit %d: ", orbCnt++);
 
-      printf("Orbit %d: ", orbCnt++);
-
-      for (std::vector< int >::iterator j = i->begin(); j != i->end(); ++j)
-        printf(" %d", *j);
-
-      printf("\n");
+	for (std::vector< int >::iterator j = i->begin(); j != i->end(); ++j)
+	  printf(" %d", *j);
+	
+	printf("\n");
+      }
+    } else {
+      for (std::vector< std::vector< int > >::iterator i = orbits->begin(); i != orbits->end(); ++i) {
+	bool useful=false;
+	if (i->size() > 1) {
+	  for (std::vector< int >::iterator j = i->begin(); j != i->end(); ++j) {
+	    if (*j < numberColumns_) {
+	      useful = true;
+	      break;
+	    }
+	  }
+	  if (useful) {
+	    printf("Orbit %d: ", orbCnt++);
+	    
+	    for (std::vector< int >::iterator j = i->begin(); j != i->end(); ++j)
+	      printf(" %d", *j);
+	    
+	    printf("\n");
+	  }
+	}
+      }
     }
+    delete orbits;
   }
 #endif
 
@@ -246,8 +435,9 @@ void CbcSymmetry::Print_Orbits() const
 }
 void CbcSymmetry::fillOrbits()
 {
-  for (int i = 0; i < numberColumns_; i++)
+  for (int i = 0; i < numberColumns_; i++) {
     whichOrbit_[i] = -1;
+  }
   numberUsefulOrbits_ = 0;
   numberUsefulObjects_ = 0;
 
@@ -256,6 +446,7 @@ void CbcSymmetry::fillOrbits()
   for (std::vector< std::vector< int > >::iterator i = orbits->begin(); i != orbits->end(); ++i) {
     int nUseful = 0;
     int jColumn = -2;
+    
     for (std::vector< int >::iterator j = i->begin(); j != i->end(); ++j) {
       int iColumn = *j;
       if (iColumn < numberColumns_) {
@@ -345,9 +536,605 @@ void CbcSymmetry::ChangeBounds(const double *new_lb, const double *new_ub,
     //printf("Var %d  INPUT lower bound: %f   upper bound %f \n", i, node_info_[i].get_lb(), node_info_[i].get_ub());
   }
 }
+/* for simple stuff - returns number if can use saved orbit (mode 1)
+   otherwise may fix and return number (mode 0) */
+int
+CbcSymmetry::changeBounds(int iColumn, double * saveLower,
+			  double * saveUpper,
+			  OsiSolverInterface * solver,
+			  int mode) const
+{
+  if (saveUpper[iColumn]>1.0e12 || whichOrbit_[iColumn]<0 || saveLower[iColumn])
+    return 0; // only 0-1 at present
+  if (mode>0)
+    nautyBranchCalls_++;
+  int nFixed = 0;
+  int * originalUpper = whichOrbit_ + numberColumns_;
+  double * columnLower = saveLower;
+  double * columnUpper = saveUpper;
+  const double * currentLower = solver->getColLower();
+  double saveUp = columnUpper[iColumn];
+  columnUpper[iColumn] = 0.0;//solver->getColUpper()[iColumn];
+  int * marked = originalUpper + numberColumns_;
+  int * whichMarked = marked + numberColumns_;
+  int * save = whichOrbit_+4*numberColumns_;
+  memset(marked,0,numberColumns_*sizeof(int));
+  for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+    if (!permutations_[iPerm].numberPerms)
+      continue; // summary permutation
+    const int * orbit = permutations_[iPerm].orbits;
+    if (orbit[iColumn]<0)
+      continue;
+    int nMarked = 0;
+    int nTotalOdd = 0;
+    int goodOddOne = -1;
+    for (int i=0;i<numberColumns_;i++) {
+      if (orbit[i]>=0 && !marked[i]) {
+	// OK is all same or one fixed to 0 and rest same
+	int oddOne = -1;
+	int nOdd = 0;
+	int first = i;
+	marked[i] = 1;
+	whichMarked[nMarked++] = i;
+	int j = orbit[i];
+	int lower = static_cast<int>(columnLower[i]);
+	if (lower) nOdd=999; //temp
+	int upper = static_cast<int>(columnUpper[i]);
+	if (upper==0) {
+	  int upperj = static_cast<int>(columnUpper[j]);
+	  if (upperj) {
+	    oddOne = i;
+	    nOdd = 1;
+	    upper = upperj;
+	  }
+	}
+	while (j!=i) {
+	  marked[j] = 1;
+	  whichMarked[nMarked++] = j;
+	  int lowerj = static_cast<int>(columnLower[j]);
+	  if (lowerj) nOdd=999; //temp
+	  int upperj = static_cast<int>(columnUpper[j]);
+	  if (lower!=lowerj || upper != upperj) {
+	    if (nOdd) {
+	      // bad
+	      nOdd = numberColumns_;
+	    } else {
+	      oddOne = j;
+	      nOdd = 1;
+	    }
+	  }
+	  j = orbit[j];
+	}
+	if (!nOdd) {
+	} else if (nOdd==1) {
+	  if (!nTotalOdd)
+	    goodOddOne = oddOne;
+	  nTotalOdd ++;
+	} else {
+	  nTotalOdd = -2*numberColumns_;
+	}
+      }
+    }
+    //printf("permutation %d had %d odd\n",iPerm,nTotalOdd);
+    for (int i=0;i<nMarked;i++) 
+      marked[whichMarked[i]]=0;
+    if (nTotalOdd==1) {
+      int j = orbit[goodOddOne];
+      if (columnUpper[goodOddOne]&&!currentLower[goodOddOne]) {
+	save[nFixed++]=goodOddOne;
+	if (mode<=0) {
+	  //printf("setting goodOddOne %d to zero\n",goodOddOne);
+	  solver->setColUpper(goodOddOne,0.0);
+	  if (mode<0)
+	    columnUpper[goodOddOne] = 0.0;
+	}
+      }
+      while (j!=goodOddOne) {
+	if (columnUpper[j]&&!currentLower[j]) {
+	  //printf("setting %d to zero\n",j);
+	  if (mode<=0) 
+	    solver->setColUpper(j,0.0);
+	  if (mode<0)
+	    columnUpper[j] = 0.0;
+	  save[nFixed++]=j;
+	}
+	j = orbit[j];
+      }
+    }
+  }
+  columnUpper[iColumn] = saveUp;
+  if (mode>0 && nFixed>0) {
+    // done in CbcOrbital nautyBranchSucceeded_++;
+    nautyOtherBranches_+=nFixed;
+  }
+  return nFixed;
+}
+// fix some and return number
+int
+CbcSymmetry::fixSome(int iColumn, double * columnLower,
+			  double * columnUpper) const
+{
+  if (columnUpper[iColumn]>1.0 || whichOrbit_[iColumn]<0 || columnLower[iColumn])
+    return 0; // only 0-1 at present
+  int nFixed = 0;
+  int * originalUpper = whichOrbit_ + numberColumns_;
+  int * marked = originalUpper + numberColumns_;
+  int * whichMarked = marked + numberColumns_;
+  int * save = whichOrbit_+4*numberColumns_;
+  memset(marked,0,numberColumns_*sizeof(int));
+  for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+    if (!permutations_[iPerm].numberPerms)
+      continue; // summary permutation
+    const int * orbit = permutations_[iPerm].orbits;
+    if (orbit[iColumn]<0)
+      continue;
+    int nMarked = 0;
+    int nTotalOdd = 0;
+    int goodOddOne = -1;
+    for (int i=0;i<numberColumns_;i++) {
+      if (orbit[i]>=0 && !marked[i]) {
+	// OK is all same or one fixed to 0 and rest same
+	int oddOne = -1;
+	int nOdd = 0;
+	int first = i;
+	marked[i] = 1;
+	whichMarked[nMarked++] = i;
+	int j = orbit[i];
+	int lower = static_cast<int>(columnLower[i]);
+	if (lower) nOdd=999; //temp
+	int upper = static_cast<int>(columnUpper[i]);
+	if (upper==0) {
+	  int upperj = static_cast<int>(columnUpper[j]);
+	  if (upperj) {
+	    oddOne = i;
+	    nOdd = 1;
+	    upper = upperj;
+	  }
+	}
+	while (j!=i) {
+	  marked[j] = 1;
+	  whichMarked[nMarked++] = j;
+	  int lowerj = static_cast<int>(columnLower[j]);
+	  if (lowerj) nOdd=999; //temp
+	  int upperj = static_cast<int>(columnUpper[j]);
+	  if (lower!=lowerj || upper != upperj) {
+	    if (nOdd) {
+	      // bad
+	      nOdd = numberColumns_;
+	    } else {
+	      oddOne = j;
+	      nOdd = 1;
+	    }
+	  }
+	  j = orbit[j];
+	}
+	if (!nOdd) {
+	} else if (nOdd==1) {
+	  if (!nTotalOdd)
+	    goodOddOne = oddOne;
+	  nTotalOdd ++;
+	} else {
+	  nTotalOdd = -2*numberColumns_;
+	}
+      }
+    }
+    //printf("permutation %d had %d odd\n",iPerm,nTotalOdd);
+    for (int i=0;i<nMarked;i++) 
+      marked[whichMarked[i]]=0;
+    if (nTotalOdd==1) {
+      int j = orbit[goodOddOne];
+      if (columnUpper[goodOddOne]&&!columnLower[goodOddOne]) {
+	save[nFixed++]=goodOddOne;
+      }
+      while (j!=goodOddOne) {
+	if (columnUpper[j]&&!columnLower[j]) {
+	  //printf("setting %d to zero\n",j);
+	  save[nFixed++]=j;
+	}
+	j = orbit[j];
+      }
+    }
+  }
+  return nFixed;
+}
+int
+CbcSymmetry::changeBounds(double *saveLower,
+			  double *saveUpper,
+			  OsiSolverInterface * solver) const
+{
+  int nFixed = 0;
+  int * originalUpper = whichOrbit_ + numberColumns_;
+  int * marked = originalUpper + numberColumns_;
+  int * whichMarked = marked + numberColumns_;
+  int * save = whichOrbit_+4*numberColumns_;
+  double * columnLower = saveLower;
+  double * columnUpper = saveUpper;
+  int numberColumns = solver->getNumCols();
+  // Do faster later (i.e. use orbits more)
+  for (int iColumn = 0;iColumn<numberColumns;iColumn++) {
+    if (whichOrbit_[iColumn] < 0 || saveUpper[iColumn])
+      continue;
+    double saveUp = columnUpper[iColumn];
+    columnUpper[iColumn] = 0.0;//solver->getColUpper()[iColumn];
+    memset(marked,0,numberColumns_*sizeof(int));
+    for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+      if (!permutations_[iPerm].numberPerms)
+	continue; // summary permutation
+      const int * orbit = permutations_[iPerm].orbits;
+      if (orbit[iColumn]<0)
+	continue;
+      int nMarked = 0;
+      int nTotalOdd = 0;
+      int goodOddOne = -1;
+      for (int i=0;i<numberColumns_;i++) {
+	if (orbit[i]>=0 && !marked[i]) {
+	  // OK is all same or one fixed to 0 and rest same
+	  int oddOne = -1;
+	  int nOdd = 0;
+	  int first = i;
+	  marked[i] = 1;
+	  whichMarked[nMarked++] = i;
+	  int j = orbit[i];
+	  int lower = static_cast<int>(columnLower[i]);
+	  if (lower) nOdd=999; //temp
+	  int upper = static_cast<int>(columnUpper[i]);
+	  if (upper==0) {
+	    int upperj = static_cast<int>(columnUpper[j]);
+	    if (upperj) {
+	      oddOne = i;
+	      nOdd = 1;
+	      upper = upperj;
+	    }
+	  }
+	  while (j!=i) {
+	    marked[j] = 1;
+	    whichMarked[nMarked++] = j;
+	    int lowerj = static_cast<int>(columnLower[j]);
+	    if (lowerj) nOdd=999; //temp
+	    int upperj = static_cast<int>(columnUpper[j]);
+	    if (lower!=lowerj || upper != upperj) {
+	      if (nOdd) {
+		// bad
+		nOdd = numberColumns_;
+	      } else {
+		oddOne = j;
+		nOdd = 1;
+	      }
+	    }
+	    j = orbit[j];
+	  }
+	  if (!nOdd) {
+	  } else if (nOdd==1) {
+	    if (!nTotalOdd)
+	      goodOddOne = oddOne;
+	    nTotalOdd ++;
+	  } else {
+	    nTotalOdd = -2*numberColumns_;
+	  }
+	}
+      }
+      //printf("permutation %d had %d odd\n",iPerm,nTotalOdd);
+      for (int i=0;i<nMarked;i++) 
+	marked[whichMarked[i]]=0;
+      if (nTotalOdd==1) {
+	int j = orbit[goodOddOne];
+	if (columnUpper[goodOddOne]) {
+	  save[nFixed++]=goodOddOne;
+	  solver->setColUpper(goodOddOne,0.0);
+	}
+	while (j!=goodOddOne) {
+	  if (columnUpper[j]) {
+	    //printf("setting %d to zero\n",j);
+	    solver->setColUpper(j,0.0);
+	    save[nFixed++]=j;
+	  }
+	  j = orbit[j];
+	}
+      }
+    }
+    columnUpper[iColumn] = saveUp;
+  }
+  return nFixed;
+}
+int
+CbcSymmetry::changeBounds2(double *saveLower,
+			  double *saveUpper,
+			  OsiSolverInterface * solver) const
+{
+  int nFixed = 0;
+  int * originalUpper = whichOrbit_ + numberColumns_;
+  int * marked = originalUpper + numberColumns_;
+  int * whichMarked = marked + numberColumns_;
+  int * save = whichOrbit_+4*numberColumns_;
+  double * columnLower = saveLower;
+  double * columnUpper = saveUpper;
+  int numberColumns = solver->getNumCols();
+  // Do faster later (i.e. use orbits more)
+  for (int iColumn = 0;iColumn<numberColumns;iColumn++) {
+    if (whichOrbit_[iColumn] < 0 || saveUpper[iColumn])
+      continue;
+    double saveUp = columnUpper[iColumn];
+    columnUpper[iColumn] = 0.0;//solver->getColUpper()[iColumn];
+    memset(marked,0,numberColumns_*sizeof(int));
+    for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+      if (!permutations_[iPerm].numberPerms)
+	continue; // summary permutation
+      const int * orbit = permutations_[iPerm].orbits;
+      if (orbit[iColumn]<0)
+	continue;
+      int nMarked = 0;
+      int nTotalOdd = 0;
+      int goodOddOne = -1;
+      for (int i=0;i<numberColumns_;i++) {
+	if (orbit[i]>=0 && !marked[i]) {
+	  // OK is all same or one fixed to 0 and rest same
+	  int oddOne = -1;
+	  int nOdd = 0;
+	  int first = i;
+	  marked[i] = 1;
+	  whichMarked[nMarked++] = i;
+	  int j = orbit[i];
+	  int lower = static_cast<int>(columnLower[i]);
+	  if (lower) nOdd=999; //temp
+	  int upper = static_cast<int>(columnUpper[i]);
+	  if (upper==0) {
+	    int upperj = static_cast<int>(columnUpper[j]);
+	    if (upperj) {
+	      oddOne = i;
+	      nOdd = 1;
+	      upper = upperj;
+	    }
+	  }
+	  while (j!=i) {
+	    marked[j] = 1;
+	    whichMarked[nMarked++] = j;
+	    int lowerj = static_cast<int>(columnLower[j]);
+	    if (lowerj) nOdd=999; //temp
+	    int upperj = static_cast<int>(columnUpper[j]);
+	    if (lower!=lowerj || upper != upperj) {
+	      if (nOdd) {
+		// bad
+		nOdd = numberColumns_;
+	      } else {
+		oddOne = j;
+		nOdd = 1;
+	      }
+	    }
+	    j = orbit[j];
+	  }
+	  if (!nOdd) {
+	  } else if (nOdd==1) {
+	    if (!nTotalOdd)
+	      goodOddOne = oddOne;
+	    nTotalOdd ++;
+	  } else {
+	    nTotalOdd = -2*numberColumns_;
+	  }
+	}
+      }
+      //printf("permutation %d had %d odd\n",iPerm,nTotalOdd);
+      for (int i=0;i<nMarked;i++) 
+	marked[whichMarked[i]]=0;
+      if (nTotalOdd==1) {
+	int j = orbit[goodOddOne];
+	if (columnUpper[goodOddOne]) {
+	  save[nFixed++]=goodOddOne;
+	  columnUpper[goodOddOne] = 0.0;
+	}
+	while (j!=goodOddOne) {
+	  if (columnUpper[j]) {
+	    //printf("setting %d to zero\n",j);
+	    columnUpper[j] = 0.0;
+	    save[nFixed++]=j;
+	  }
+	  j = orbit[j];
+	}
+      }
+    }
+    columnUpper[iColumn] = saveUp;
+  }
+  return nFixed;
+}
+// return number of orbits if worth branching
+int
+CbcSymmetry::worthBranching(const double *columnLower, const double *columnUpper,
+		     int iColumn, int & nFixed) const
+{
+  cbc_permute *permute  = permutations_+numberPermutations_-1;
+  assert (!permute->numberPerms);
+  int * allMarked = permute->orbits;
+  if (!allMarked[iColumn] || columnLower[iColumn])
+    return 0;
+  nFixed = 0;
+  int * originalUpper = whichOrbit_ + numberColumns_;
+  int * marked = originalUpper + numberColumns_;
+  int * whichMarked = marked + numberColumns_;
+  int * save = whichOrbit_+4*numberColumns_;
+  memset(marked,0,numberColumns_*sizeof(int));
+  for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+    if (!permutations_[iPerm].numberPerms)
+      continue; // summary permutation
+    const int * orbit = permutations_[iPerm].orbits;
+    if (orbit[iColumn]<0)
+      continue;
+    int nMarked = 0;
+    int nTotalOdd = 0;
+    int goodOddOne = -1;
+    for (int i=0;i<numberColumns_;i++) {
+      if (orbit[i]>=0 && !marked[i]) {
+	// OK is all same or one fixed to 0 and rest same
+	int oddOne = -1;
+	int nOdd = 0;
+	int first = i;
+	marked[i] = 1;
+	whichMarked[nMarked++] = i;
+	int j = orbit[i];
+	int lower = static_cast<int>(columnLower[i]);
+	if (lower) nOdd=999; //temp
+	int upper = (i != iColumn) ? static_cast<int>(columnUpper[i]) : 0.0;
+	if (upper==0) {
+	  int upperj = (j != iColumn) ? static_cast<int>(columnUpper[j]) : 0.0;
+	  if (upperj) {
+	    oddOne = i;
+	    nOdd = 1;
+	    upper = upperj;
+	  }
+	}
+	while (j!=i) {
+	  marked[j] = 1;
+	  whichMarked[nMarked++] = j;
+	  int lowerj = static_cast<int>(columnLower[j]);
+	  if (lowerj) nOdd=999; //temp
+	  int upperj = (j != iColumn) ? static_cast<int>(columnUpper[j]) : 0.0;
+	  if (lower!=lowerj || upper != upperj) {
+	    if (nOdd) {
+	      // bad
+	      nOdd = numberColumns_;
+	    } else {
+	      oddOne = j;
+	      nOdd = 1;
+	    }
+	  }
+	  j = orbit[j];
+	}
+	if (!nOdd) {
+	} else if (nOdd==1) {
+	  if (!nTotalOdd)
+	    goodOddOne = oddOne;
+	  nTotalOdd ++;
+	} else {
+	  nTotalOdd = -2*numberColumns_;
+	}
+      }
+    }
+    //printf("permutation %d had %d odd\n",iPerm,nTotalOdd);
+    for (int i=0;i<nMarked;i++) 
+      marked[whichMarked[i]]=0;
+    if (nTotalOdd==1) {
+      int j = orbit[goodOddOne];
+      if (columnUpper[goodOddOne]&&!columnLower[goodOddOne]) {
+	nFixed++;
+      }
+      while (j!=goodOddOne) {
+	if (columnUpper[j]&&!columnLower[j]) {
+	  nFixed++;
+	}
+	j = orbit[j];
+      }
+    }
+  }
+  return allMarked[iColumn];
+  //return nFixed;
+}
+
+int
+CbcSymmetry::orbitalFixing2(OsiSolverInterface * solver) 
+{
+  int nFixed = 0;
+  int iCheck;
+  const double * columnLower = solver->getColLower();
+  const double * columnUpper = solver->getColUpper();
+  for (iCheck=0;iCheck<numberColumns_;iCheck++) {
+    if (whichOrbit_[iCheck]>=0 && !columnUpper[iCheck])
+      break;
+  }
+  if (iCheck==numberColumns_)
+    return 0; 
+  nautyFixCalls_ ++;
+  int * originalUpper = whichOrbit_ + numberColumns_;
+  int * marked = originalUpper + numberColumns_;
+  int * whichMarked = marked + numberColumns_;
+  int * save = whichOrbit_+4*numberColumns_;
+  memset(marked,0,numberColumns_*sizeof(int));
+  int possibleNauty = 0;
+  for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+    if (!permutations_[iPerm].numberPerms)
+      continue; // summary permutation
+    const int * orbit = permutations_[iPerm].orbits;
+    int nMarked = 0;
+    int nTotalOdd = 0;
+    int goodOddOne = -1;
+    for (int i=0;i<numberColumns_;i++) {
+      if (orbit[i]>=0 && !marked[i]) {
+	// OK is all same or one fixed to 0 and rest same
+	int oddOne = -1;
+	int nOdd = 0;
+	int first = i;
+	marked[i] = 1;
+	whichMarked[nMarked++] = i;
+	int j = orbit[i];
+	int lower = static_cast<int>(columnLower[i]);
+	if (lower) nOdd=999; //temp
+	int upper = static_cast<int>(columnUpper[i]);
+	if (upper==0) {
+	  int upperj = static_cast<int>(columnUpper[j]);
+	  if (upperj) {
+	    oddOne = i;
+	    nOdd = 1;
+	    upper = upperj;
+	  }
+	}
+	while (j!=i) {
+	  marked[j] = 1;
+	  whichMarked[nMarked++] = j;
+	  int lowerj = static_cast<int>(columnLower[j]);
+	  if (lowerj) nOdd=999; //temp
+	  int upperj = static_cast<int>(columnUpper[j]);
+	  if (lower!=lowerj || upper != upperj) {
+	    if (nOdd) {
+	      // bad
+	      nOdd = numberColumns_;
+	    } else {
+	      oddOne = j;
+	      nOdd = 1;
+	    }
+	  }
+	  j = orbit[j];
+	}
+	if (!nOdd) {
+	} else if (nOdd==1) {
+	  if (!nTotalOdd)
+	    goodOddOne = oddOne;
+	  nTotalOdd ++;
+	} else {
+	  nTotalOdd = -2*numberColumns_;
+	}
+      }
+    }
+    //printf("permutation %d had %d odd\n",iPerm,nTotalOdd);
+    for (int i=0;i<nMarked;i++) 
+      marked[whichMarked[i]]=0;
+    if (nTotalOdd==1) {
+      nautyFixSucceeded_++;
+      int j = orbit[goodOddOne];
+      if (columnUpper[goodOddOne]) {
+	nautyFixes_++;
+	save[nFixed++]=goodOddOne;
+	solver->setColUpper(goodOddOne,0.0); 
+      }
+      while (j!=goodOddOne) {
+	if (columnUpper[j]) {
+	  //printf("setting %d to zero\n",j);
+	  nautyFixes_++;
+	  solver->setColUpper(j,0.0);
+	  save[nFixed++]=j;
+	}
+	j = orbit[j];
+      }
+      possibleNauty++;
+    } else if (!nTotalOdd) {
+      possibleNauty++;
+    }
+  }
+  if (!nFixed && !possibleNauty)
+    nFixed = -1; // say no good from here on
+  return nFixed;
+}
 void CbcSymmetry::setupSymmetry(CbcModel * model)
 {
   OsiSolverInterface * solver = model->continuousSolver();
+  if (!solver)
+    solver = model->solver();
   double startCPU = CoinCpuTime();
   const double *objective = solver->getObjCoefficients();
   const double *columnLower = solver->getColLower();
@@ -355,22 +1142,22 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
   int numberColumns = solver->getNumCols();
   int numberRows = solver->getNumRows();
   int iRow, iColumn;
-
+  
   // Row copy
   CoinPackedMatrix matrixByRow(*solver->getMatrixByRow());
   const double *elementByRow = matrixByRow.getElements();
   const int *column = matrixByRow.getIndices();
   const CoinBigIndex *rowStart = matrixByRow.getVectorStarts();
   const int *rowLength = matrixByRow.getVectorLengths();
-
+  
   const double *rowLower = solver->getRowLower();
   const double *rowUpper = solver->getRowUpper();
   //  // Find Coefficients
-
+  
   /// initialize nauty
-
+  
   int num_affine = 0;
-
+  
   for (iColumn = 0; iColumn < numberColumns; iColumn++) {
     if (objective[iColumn] && objective[iColumn] != 1.0)
       num_affine++;
@@ -378,12 +1165,13 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
   for (iRow = 0; iRow < numberRows; iRow++) {
     for (CoinBigIndex j = rowStart[iRow];
          j < rowStart[iRow] + rowLength[iRow]; j++) {
+      int jColumn = column[j];
       double value = elementByRow[j];
       if (value != 1.0)
         num_affine++;
     }
   }
-
+  
   // Create Nauty object
 
   int coef_count = numberRows + numberColumns + 1;
@@ -413,168 +1201,192 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
   spaceDense *= nc + WORDSIZE - 1;
   spaceDense /= WORDSIZE;
   int spaceSparse = 0;
-  {
-    size_t numberElements = 0;
+  size_t numberElements = 0;
+  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+    double value = objective[iColumn];
+    if (value) {
+      if (value == 1.0) {
+	numberElements += 2;
+      } else {
+	numberElements += 4;
+	coef_count++;
+      }
+    }
+  }
+  for (iRow = 0; iRow < numberRows; iRow++) {
+    for (CoinBigIndex j = rowStart[iRow];
+	 j < rowStart[iRow] + rowLength[iRow]; j++) {
+      int jColumn = column[j];
+      double value = elementByRow[j];
+      if (value == 1.0) {
+	numberElements += 2;
+      } else {
+	numberElements += 4;
+	coef_count++;
+      }
+    }
+  }
+  spaceSparse = 2 * nc + numberElements;
+  double maxNauty1 = 1.0e8;
+  double maxNauty2 = 1.0e11;
+  int options2 = model->moreSpecialOptions2();
+  if ((options2&(131072|262144)) == 262144) {
+    // lightweight
+    options2 &= ~262144;
+    options2 |= 131072;
+    model->setMoreSpecialOptions2(options2);
+    maxNauty1 = 1.0e7;
+    maxNauty2 = 1.0e9;
+  }
+  double n_squared = static_cast<double>(coef_count)*coef_count;
+  if (spaceSparse > maxNauty1/100 || n_squared > maxNauty2/100) {
+    char general[200];
+    sprintf(general,"Nauty sparseSpace %d affine %d coefficient count %d",
+	    spaceSparse,num_affine,coef_count);
+    model->messageHandler()->message(CBC_GENERAL,
+				     model->messages())
+      << general << CoinMessageEol;
+  }
+  if (spaceSparse > maxNauty1 || n_squared > maxNauty2) {
+    // too big
+    options2 &= ~(128|256|131072|262144);
+    model->setMoreSpecialOptions2(options2);
+    nauty_info_ = new CbcNauty(0,NULL,NULL,NULL);
+    return;
+  }
+#ifdef NTY_TRACES
+  bool goSparse = true;
+#else
+  bool goSparse = (spaceSparse < spaceDense);
+#endif
+  // for now always sparse
+  goSparse = true;
+  if (goSparse) {
+    sparse = true;
+    v = new size_t[nc + 1];
+    d = new int[nc];
+    e = new int[numberElements];
+    size_t *counts = new size_t[coef_count + 1];
+    memset(counts, 0, coef_count * sizeof(size_t));
+    coef_count = numberRows + numberColumns + 1;
+    // create graph (part 2)
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
       double value = objective[iColumn];
       if (value) {
-        if (value == 1.0) {
-          numberElements += 2;
-        } else {
-          numberElements += 4;
-          coef_count++;
-        }
+	if (value == 1.0) {
+	  counts[index]++;
+	  counts[iColumn]++;
+	} else {
+	  counts[index]++;
+	  counts[coef_count] += 2;
+	  counts[iColumn]++;
+	  coef_count++;
+	}
       }
     }
+    index++;
     for (iRow = 0; iRow < numberRows; iRow++) {
       for (CoinBigIndex j = rowStart[iRow];
-           j < rowStart[iRow] + rowLength[iRow]; j++) {
-        double value = elementByRow[j];
-        if (value == 1.0) {
-          numberElements += 2;
-        } else {
-          numberElements += 4;
-          coef_count++;
-        }
-      }
-    }
-    spaceSparse = 2 * nc + numberElements;
-    //printf("Space for sparse is %d for dense %g\n",
-    //	   spaceSparse,spaceDense);
-#ifdef NTY_TRACES
-    bool goSparse = true;
-#else
-    bool goSparse = (spaceSparse < spaceDense);
-#endif
-    // for now always sparse
-    goSparse = true;
-    if (goSparse) {
-      sparse = true;
-      v = new size_t[nc + 1];
-      d = new int[nc];
-      e = new int[numberElements];
-      size_t *counts = new size_t[coef_count + 1];
-      memset(counts, 0, coef_count * sizeof(size_t));
-      coef_count = numberRows + numberColumns + 1;
-      // create graph (part 2)
-      for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-        double value = objective[iColumn];
-        if (value) {
-          if (value == 1.0) {
-            counts[index]++;
-            counts[iColumn]++;
-          } else {
-            counts[index]++;
-            counts[coef_count] += 2;
-            counts[iColumn]++;
-            coef_count++;
-          }
-        }
+	   j < rowStart[iRow] + rowLength[iRow]; j++) {
+	int jColumn = column[j];
+	double value = elementByRow[j];
+	if (value == 1.0) {
+	  counts[index]++;
+	  counts[jColumn]++;
+	} else {
+	  counts[index]++;
+	  counts[coef_count] += 2;
+	  counts[jColumn]++;
+	  coef_count++;
+	}
       }
       index++;
-      for (iRow = 0; iRow < numberRows; iRow++) {
-        for (CoinBigIndex j = rowStart[iRow];
-             j < rowStart[iRow] + rowLength[iRow]; j++) {
-          int jColumn = column[j];
-          double value = elementByRow[j];
-          if (value == 1.0) {
-            counts[index]++;
-            counts[jColumn]++;
-          } else {
-            counts[index]++;
-            counts[coef_count] += 2;
-            counts[jColumn]++;
-            coef_count++;
-          }
-        }
-        index++;
+    }
+    // create graph (part 3)
+    assert(nc == coef_count);
+    numberElements = 0;
+    v[0] = 0;
+    for (int i = 0; i < nc; i++) {
+      int count = counts[i];
+      d[i] = count;
+      counts[i] = v[i];
+      numberElements += count;
+      ;
+      v[i + 1] = numberElements;
+    }
+    index = numberColumns;
+    coef_count = numberRows + numberColumns + 1;
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      double value = objective[iColumn];
+      if (value) {
+	int where;
+	if (value == 1.0) {
+	  where = counts[index];
+	  counts[index]++;
+	  e[where] = iColumn;
+	  where = counts[iColumn];
+	  counts[iColumn]++;
+	  e[where] = index;
+	} else {
+	  Node coef_vertex;
+	  coef_vertex.node(coef_count, value, value, value, -2, 0);
+	  node_info_.push_back(coef_vertex);
+	  where = counts[index];
+	  counts[index]++;
+	  e[where] = coef_count;
+	  where = counts[coef_count];
+	  counts[coef_count]++;
+	  e[where] = index;
+	  where = counts[coef_count];
+	  counts[coef_count]++;
+	  e[where] = iColumn;
+	  where = counts[iColumn];
+	  counts[iColumn]++;
+	  e[where] = coef_count;
+	  coef_count++;
+	}
       }
-      // create graph (part 3)
-      assert(nc == coef_count);
-      numberElements = 0;
-      v[0] = 0;
-      for (int i = 0; i < nc; i++) {
-        int count = counts[i];
-        d[i] = count;
-        counts[i] = v[i];
-        numberElements += count;
-        ;
-        v[i + 1] = numberElements;
-      }
-      index = numberColumns;
-      coef_count = numberRows + numberColumns + 1;
-      for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-        double value = objective[iColumn];
-        if (value) {
-          int where;
-          if (value == 1.0) {
-            where = counts[index];
-            counts[index]++;
-            e[where] = iColumn;
-            where = counts[iColumn];
-            counts[iColumn]++;
-            e[where] = index;
-          } else {
-            Node coef_vertex;
-            coef_vertex.node(coef_count, value, value, value, -2, 0);
-            node_info_.push_back(coef_vertex);
-            where = counts[index];
-            counts[index]++;
-            e[where] = coef_count;
-            where = counts[coef_count];
-            counts[coef_count]++;
-            e[where] = index;
-            where = counts[coef_count];
-            counts[coef_count]++;
-            e[where] = iColumn;
-            where = counts[iColumn];
-            counts[iColumn]++;
-            e[where] = coef_count;
-            coef_count++;
-          }
-        }
+    }
+    index++;
+    for (iRow = 0; iRow < numberRows; iRow++) {
+      Node vertex;
+      vertex.node(index, 0.0, rowLower[iRow], rowUpper[iRow],
+		  COUENNE_HACKED_EXPRGROUP, 0);
+      node_info_.push_back(vertex);
+      for (CoinBigIndex j = rowStart[iRow];
+	   j < rowStart[iRow] + rowLength[iRow]; j++) {
+	int jColumn = column[j];
+	double value = elementByRow[j];
+	int where;
+	if (value == 1.0) {
+	  where = counts[index];
+	  counts[index]++;
+	  e[where] = jColumn;
+	  where = counts[jColumn];
+	  counts[jColumn]++;
+	  e[where] = index;
+	} else {
+	  Node coef_vertex;
+	  coef_vertex.node(coef_count, value, value, value, -2, 0);
+	  node_info_.push_back(coef_vertex);
+	  where = counts[index];
+	  counts[index]++;
+	  e[where] = coef_count;
+	  where = counts[coef_count];
+	  counts[coef_count]++;
+	  e[where] = index;
+	  where = counts[coef_count];
+	  counts[coef_count]++;
+	  e[where] = jColumn;
+	  where = counts[jColumn];
+	  counts[jColumn]++;
+	  e[where] = coef_count;
+	  coef_count++;
+	}
       }
       index++;
-      for (iRow = 0; iRow < numberRows; iRow++) {
-        Node vertex;
-        vertex.node(index, 0.0, rowLower[iRow], rowUpper[iRow],
-          COUENNE_HACKED_EXPRGROUP, 0);
-        node_info_.push_back(vertex);
-        for (CoinBigIndex j = rowStart[iRow];
-             j < rowStart[iRow] + rowLength[iRow]; j++) {
-          int jColumn = column[j];
-          double value = elementByRow[j];
-          int where;
-          if (value == 1.0) {
-            where = counts[index];
-            counts[index]++;
-            e[where] = jColumn;
-            where = counts[jColumn];
-            counts[jColumn]++;
-            e[where] = index;
-          } else {
-            Node coef_vertex;
-            coef_vertex.node(coef_count, value, value, value, -2, 0);
-            node_info_.push_back(coef_vertex);
-            where = counts[index];
-            counts[index]++;
-            e[where] = coef_count;
-            where = counts[coef_count];
-            counts[coef_count]++;
-            e[where] = index;
-            where = counts[coef_count];
-            counts[coef_count]++;
-            e[where] = jColumn;
-            where = counts[jColumn];
-            counts[jColumn]++;
-            e[where] = coef_count;
-            coef_count++;
-          }
-        }
-        index++;
-      }
-      delete[] counts;
     }
+    delete[] counts;
   }
 
   nauty_info_ = new CbcNauty(nc, v, d, e);
@@ -630,7 +1442,12 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
     }
   }
   numberColumns_ = numberColumns;
-  whichOrbit_ = new int[2 * numberColumns_];
+  whichOrbit_ = new int[5*numberColumns_];
+  for (int i = 0; i < 2*numberColumns_; i++)
+    whichOrbit_[i] = -1;
+  // zero out static stuff
+  calls = 0;
+  maxLevel = 0;
   nautyBranchCalls_ = 0;
   nautyBranchSucceeded_ = 0;
   nautyFixCalls_ = 0;
@@ -638,6 +1455,12 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
   nautyTime_ = 0.0;
   nautyFixes_ = 0.0;
   nautyOtherBranches_ = 0.0;
+  lastNautyBranchSucceeded_ = 0;
+  lastNautyFixSucceeded_ = 0;
+  if ((options2&131072)!=0) {
+    baseSymmetry = this;
+    nauty_info_->options()->userautomproc = userautomproc;
+  }
   try {
     Compute_Symmetry();
   } catch (CoinError &e) {
@@ -648,14 +1471,36 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
       <<general <<CoinMessageEol;
   }
   fillOrbits();
-  //whichOrbit_[2]=numberUsefulOrbits_;
+  if (numberUsefulOrbits_ && (options2&131072)!=0) {
+    // store original bounds for integers
+    // only do for 0 lower bound
+    int nPossible = 0;
+    int * originalUpper = whichOrbit_ + numberColumns_;
+    for (int i=0;i<numberColumns_;i++) {
+      int kUpper = -1;
+      if (!columnLower[i]) 
+	kUpper = static_cast<int>(columnUpper[i]);
+      if (kUpper>0) {
+	originalUpper[i] = kUpper;
+	nPossible++;
+      } else {
+	originalUpper[i] = -1;
+      }
+    }
+    if (!nPossible) 
+      model->setMoreSpecialOptions2(options2 & ~(128 | 256 | 131072));
+  } else {
+    if ((options2&131072)!=0)
+      options2 &= ~(128 | 256);
+    model->setMoreSpecialOptions2(options2 & ~131072);
+  }
   //Print_Orbits ();
   // stats in array
   if (spaceDense < COIN_INT_MAX)
-    whichOrbit_[0] = spaceDense;
+    stats_[0] = spaceDense;
   else
-    whichOrbit_[0] = COIN_INT_MAX;
-  whichOrbit_[1] = spaceSparse;
+    stats_[0] = COIN_INT_MAX;
+  stats_[1] = spaceSparse;
   double endCPU = CoinCpuTime();
   nautyTime_ = endCPU - startCPU;
 }
@@ -721,13 +1566,35 @@ int CbcSymmetry::orbitalFixing(OsiSolverInterface *solver)
   }
   return n;
 }
+// takes ownership of cbc_permute (orbits part)
+void
+CbcSymmetry::addPermutation(cbc_permute permutation)
+{
+  cbc_permute * temp = new cbc_permute[numberPermutations_+1];
+  memcpy(temp,permutations_,numberPermutations_*sizeof(cbc_permute));
+  delete [] permutations_;
+  permutations_=temp;
+  permutations_[numberPermutations_] = permutation;
+  numberPermutations_++;
+}
 // Default Constructor
 CbcSymmetry::CbcSymmetry()
   : nauty_info_(NULL)
   , numberColumns_(0)
   , numberUsefulOrbits_(0)
   , numberUsefulObjects_(0)
+  , numberPermutations_(0)
+  , permutations_(NULL)
   , whichOrbit_(NULL)
+  , nautyTime_(0.0)
+  , nautyFixes_(0.0)
+  , nautyOtherBranches_(0.0)
+  , nautyBranchCalls_(0)
+  , lastNautyBranchSucceeded_(0)
+  , nautyBranchSucceeded_(0)
+  , nautyFixCalls_(0)
+  , lastNautyFixSucceeded_(0)
+  , nautyFixSucceeded_(0)
 {
 }
 // Copy constructor
@@ -739,11 +1606,29 @@ CbcSymmetry::CbcSymmetry(const CbcSymmetry &rhs)
   numberUsefulObjects_ = rhs.numberUsefulObjects_;
   numberColumns_ = rhs.numberColumns_;
   if (rhs.whichOrbit_)
-    whichOrbit_ = CoinCopyOfArray(rhs.whichOrbit_, numberColumns_);
+    whichOrbit_ = CoinCopyOfArray(rhs.whichOrbit_, 5*numberColumns_);
   else
     whichOrbit_ = NULL;
+  numberPermutations_ = rhs.numberPermutations_;
+  if (numberPermutations_) {
+    permutations_ = CoinCopyOfArray(rhs.permutations_, numberPermutations_);
+    for (int i=0;i<numberPermutations_;i++) {
+      permutations_[i].orbits = CoinCopyOfArray(permutations_[i].orbits,
+						numberColumns_);
+    }
+  } else {
+    permutations_ = NULL;
+  }
+  nautyTime_ = rhs.nautyTime_;
+  nautyFixes_ = rhs.nautyFixes_;
+  nautyOtherBranches_ = rhs.nautyOtherBranches_;
+  nautyBranchCalls_ = rhs.nautyBranchCalls_;
+  lastNautyBranchSucceeded_ = rhs.lastNautyBranchSucceeded_;
+  nautyBranchSucceeded_ = rhs.nautyBranchSucceeded_;
+  nautyFixCalls_ = rhs.nautyFixCalls_;
+  lastNautyFixSucceeded_ = rhs.lastNautyFixSucceeded_;
+  nautyFixSucceeded_ = rhs.nautyFixSucceeded_;
 }
-
 // Assignment operator
 CbcSymmetry &
 CbcSymmetry::operator=(const CbcSymmetry &rhs)
@@ -753,13 +1638,38 @@ CbcSymmetry::operator=(const CbcSymmetry &rhs)
     node_info_ = rhs.node_info_;
     nauty_info_ = new CbcNauty(*rhs.nauty_info_);
     delete[] whichOrbit_;
+    if (numberPermutations_) {
+      for (int i=0;i<numberPermutations_;i++) {
+	delete [] permutations_[i].orbits;
+      }
+      delete [] permutations_;
+    }
     numberColumns_ = rhs.numberColumns_;
     numberUsefulOrbits_ = rhs.numberUsefulOrbits_;
     numberUsefulObjects_ = rhs.numberUsefulObjects_;
     if (rhs.whichOrbit_)
-      whichOrbit_ = CoinCopyOfArray(rhs.whichOrbit_, numberColumns_);
+      whichOrbit_ = CoinCopyOfArray(rhs.whichOrbit_, 5*numberColumns_);
     else
       whichOrbit_ = NULL;
+    numberPermutations_ = rhs.numberPermutations_;
+    if (numberPermutations_) {
+      permutations_ = CoinCopyOfArray(rhs.permutations_, numberPermutations_);
+      for (int i=0;i<numberPermutations_;i++) {
+	permutations_[i].orbits = CoinCopyOfArray(permutations_[i].orbits,
+						  numberColumns_);
+      }
+    } else {
+      permutations_ = NULL;
+    }
+    nautyTime_ = rhs.nautyTime_;
+    nautyFixes_ = rhs.nautyFixes_;
+    nautyOtherBranches_ = rhs.nautyOtherBranches_;
+    nautyBranchCalls_ = rhs.nautyBranchCalls_;
+    lastNautyBranchSucceeded_ = rhs.lastNautyBranchSucceeded_;
+    nautyBranchSucceeded_ = rhs.nautyBranchSucceeded_;
+    nautyFixCalls_ = rhs.nautyFixCalls_;
+    lastNautyFixSucceeded_ = rhs.lastNautyFixSucceeded_;
+    nautyFixSucceeded_ = rhs.nautyFixSucceeded_;
   }
   return *this;
 }
@@ -769,6 +1679,12 @@ CbcSymmetry::~CbcSymmetry()
 {
   delete nauty_info_;
   delete[] whichOrbit_;
+  if (numberPermutations_) {
+    for (int i=0;i<numberPermutations_;i++) {
+      delete [] permutations_[i].orbits;
+    }
+    delete [] permutations_;
+  }
 }
 
 CbcNauty::CbcNauty(int vertices, const size_t *v, const int *d, const int *e)
@@ -879,6 +1795,8 @@ CbcNauty::CbcNauty(int vertices, const size_t *v, const int *d, const int *e)
   vstat_ = new int[n_];
   clearPartitions();
   afp_ = NULL;
+  if (!n_)
+    stats_->errstatus=1; // deliberate error
 }
 
 CbcNauty::~CbcNauty()
@@ -1147,6 +2065,10 @@ void CbcNauty::computeAuto()
   // Need to make sure all generators are written
   if (afp_)
     fflush(afp_);
+  // make sure memory freed (was not on some failures)
+  nautil_freedyn();
+  nauty_freedyn();
+  nausparse_freedyn();
 }
 
 void CbcNauty::deleteElement(int ix, int jx)
@@ -1313,14 +2235,14 @@ CbcOrbitalBranchingObject::CbcOrbitalBranchingObject(CbcModel *model, int column
   int iOrbit = orbit[column];
   assert(iOrbit >= 0);
   int numberColumns = model->getNumCols();
-  numberOther_ = -1;
+  numberOther_=-1;
   for (int i = 0; i < numberColumns; i++) {
     if (orbit[i] == iOrbit)
       numberOther_++;
   }
   assert(numberOther_ > 0);
-  nautyBranchSucceeded_++;
-  nautyOtherBranches_ += numberOther_;
+  symmetryInfo->incrementBranchSucceeded();
+  symmetryInfo->incrementNautyBranches(numberOther_);
   numberExtra_ = numberExtra;
   fixToZero_ = new int[numberOther_ + numberExtra_];
   int n = 0;
@@ -1331,6 +2253,24 @@ CbcOrbitalBranchingObject::CbcOrbitalBranchingObject(CbcModel *model, int column
   for (int i = 0; i < numberExtra; i++) {
     fixToZero_[n++] = extraToZero[i];
   }
+}
+
+// Useful constructor
+CbcOrbitalBranchingObject::CbcOrbitalBranchingObject(CbcModel *model,
+						     int column,
+						     int nFixed)
+  : CbcBranchingObject(model, -1, 1, 0.5)
+  , column_(column)
+  , numberOther_(nFixed)
+  , numberExtra_(0)
+  , fixToZero_(NULL)
+{
+  CbcSymmetry *symmetryInfo = model->rootSymmetryInfo();
+  assert(symmetryInfo);
+  symmetryInfo->incrementBranchSucceeded();
+  
+  fixToZero_ = CoinCopyOfArray(model->rootSymmetryInfo()->fixedToZero(),
+			       nFixed);
 }
 
 // Copy constructor
@@ -1437,7 +2377,8 @@ void CbcOrbitalBranchingObject::print()
 */
 int CbcOrbitalBranchingObject::compareOriginalObject(const CbcBranchingObject *brObj) const
 {
-  assert(dynamic_cast< const CbcOrbitalBranchingObject * >(brObj) != NULL);
+  const CbcOrbitalBranchingObject *br = dynamic_cast< const CbcOrbitalBranchingObject * >(brObj);
+  assert(!br);
   abort();
   return 0;
 }
@@ -1453,11 +2394,9 @@ int CbcOrbitalBranchingObject::compareOriginalObject(const CbcBranchingObject *b
 CbcRangeCompare
 CbcOrbitalBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, const bool replaceIfOverlap)
 {
-  assert(dynamic_cast< const CbcOrbitalBranchingObject * >(brObj) != NULL);
+  const CbcOrbitalBranchingObject *br = dynamic_cast< const CbcOrbitalBranchingObject * >(brObj);
+  assert(!br);
   abort();
   return CbcRangeDisjoint;
 }
 #endif
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/

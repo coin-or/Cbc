@@ -2594,8 +2594,20 @@ public:
   {
     return symmetryInfo_;
   }
+  /// Set symmetry information
+  inline void setSymmetryInfo(CbcSymmetry * info)
+  {
+    symmetryInfo_ = info;
+  }
   /// get rid of all
   void zapSymmetry();
+  /// Root symmetry information
+  inline CbcSymmetry *rootSymmetryInfo() const
+  {
+    return rootSymmetryInfo_;
+  }
+  /// get rid of all
+  void zapRootSymmetry();
 #endif
   /// Set depth for fast nodes
   inline void setFastNodeDepth(int value)
@@ -3082,8 +3094,12 @@ private:
 #else
   CbcEventHandler *eventHandler_;
 #endif
+#ifdef COIN_HAS_NTY
   /// Symmetry information
   CbcSymmetry *symmetryInfo_;
+  /// Root symmetry information
+  CbcSymmetry *rootSymmetryInfo_;
+#endif
   /// Total number of objects
   int numberObjects_;
 

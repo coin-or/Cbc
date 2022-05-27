@@ -1064,7 +1064,28 @@ void CbcModel::analyzeObjective()
 
   if (coeffMultiplier)
       delete[] coeffMultiplier;
-
+#ifdef COIN_HAS_NTY
+    if (rootSymmetryInfo_) {
+      CbcSymmetry *info = rootSymmetryInfo_;
+      int numberColumns = solver_->getNumCols();
+      int numberPermutations = info->numberPermutations();
+      int *marked = new int[numberColumns];
+      memset(marked, 0, numberColumns * sizeof(int));
+      for (int iPerm = 0; iPerm < numberPermutations; iPerm++) {
+	const int *orbit = info->permutation(iPerm);
+	for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	  if (orbit[iColumn] >= 0)
+	    marked[iColumn]++;
+	}
+      }
+      // add in summary permutation
+      cbc_permute permutation;
+      permutation.orbits = marked;
+      permutation.numberPerms = 0;
+      permutation.numberInPerm = 1;
+      info->addPermutation(permutation);
+    }
+#endif
   return;
 }
 
@@ -1098,6 +1119,24 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForR
       const double *solution = saveSolver->getColSolution();
       const double *reducedCost = saveSolver->getReducedCost();
 
+#ifdef COIN_HAS_NTY
+#define COIN_HAS_NTY2
+#endif
+#ifdef COIN_HAS_NTY2
+      double *saveLower = NULL;
+      double *saveUpper = NULL;
+      if (rootSymmetryInfo_ && (moreSpecialOptions2_ & 131072) != 0) {
+        if (true) { // try both ways
+          saveLower = CoinCopyOfArray(solver_->getColLower(), numberColumns);
+          saveUpper = CoinCopyOfArray(solver_->getColUpper(), numberColumns);
+        } else {
+          saveLower =
+              CoinCopyOfArray(continuousSolver_->getColLower(), numberColumns);
+          saveUpper =
+              CoinCopyOfArray(continuousSolver_->getColUpper(), numberColumns);
+        }
+      }
+#endif
       int numberFixed = 0;
       int numberFixed2 = 0;
       for (int i = 0; i < numberIntegers_; i++) {
@@ -1145,6 +1184,25 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver, double *checkCutoffForR
       }
       printf("Restart could fix %d integers (%d already fixed)\n",
         numberFixed + numberFixed2, numberFixed2);
+#endif
+#ifdef COIN_HAS_NTY2
+      if (rootSymmetryInfo_ && (moreSpecialOptions2_ & 131072) != 0) {
+        // better to sort changed for least interaction?
+        if (numberFixed + numberFixed2) {
+          int nExtra = 0;
+          for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+            if (!upper[iColumn] && saveUpper[iColumn])
+              nExtra += rootSymmetryInfo_->changeBounds(
+                  iColumn, saveLower, saveUpper, saveSolver, 0);
+          }
+          if (nExtra) {
+            // printf("TIGHTEN2 orbital %d bounds\n",nExtra);
+            rootSymmetryInfo_->fixSuccess(nExtra);
+          }
+        }
+        delete[] saveLower;
+        delete[] saveUpper;
+      }
 #endif
       numberFixed += numberFixed2;
       if (numberFixed * 20 < numberColumns)
@@ -2369,17 +2427,28 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
 #ifdef COIN_HAS_NTY
   // maybe allow on fix and restart later
-  if ((moreSpecialOptions2_ & (128 | 256)) != 0 && !parentModel_) {
-    symmetryInfo_ = new CbcSymmetry();
-    symmetryInfo_->setupSymmetry(this);
-    /*int numberGenerators =*/ symmetryInfo_->statsOrbits(this, 0);  /* FIXME can this call be removed? */
-    if (!symmetryInfo_->numberUsefulOrbits() && (moreSpecialOptions2_ & (128 | 256)) != (128 | 256)) {
-      delete symmetryInfo_;
-      symmetryInfo_ = NULL;
-      moreSpecialOptions2_ &= ~(128 | 256);
-    }
-    if ((moreSpecialOptions2_ & (128 | 256)) == (128 | 256)) {
-      //moreSpecialOptions2_ &= ~256;
+  if ((moreSpecialOptions2_ & (128 | 256)) != 0) {
+    if ((specialOptions_ & 2048) == 0) {
+      symmetryInfo_ = new CbcSymmetry();
+      symmetryInfo_->setupSymmetry(this);
+      int numberGenerators = symmetryInfo_->statsOrbits(this, 0);
+      if (!symmetryInfo_->numberUsefulOrbits() &&
+          (moreSpecialOptions2_ & (128 | 256)) != (128 | 256)) {
+        delete symmetryInfo_;
+        symmetryInfo_ = NULL;
+        moreSpecialOptions2_ &= ~(128 | 256 | 131072);
+      }
+      if ((moreSpecialOptions2_ & (128 | 256)) == (128 | 256)) {
+        if ((moreSpecialOptions2_ & 131072) != 0) {
+          // keep it simple
+          moreSpecialOptions2_ &= ~(128 | 256);
+          rootSymmetryInfo_ = symmetryInfo_;
+          symmetryInfo_ = NULL;
+        }
+      }
+    } else {
+      // small B&B
+      moreSpecialOptions2_ &= ~(128 | 256 | 131072);
     }
   }
 #endif
@@ -2871,6 +2940,182 @@ void CbcModel::branchAndBound(int doStatistics)
       convertToDynamic();
     }
   }
+#ifdef COIN_HAS_NTY
+#define MAX_NAUTY_PASS 2000
+  int testOptions = moreSpecialOptions2_&1073741824;
+  /* nauty switches off 128,256 - so bug - for now just if heavy
+     as we can test for that */
+  if (!parentModel_ && testOptions) {
+    bool changed = true;
+    int numberAdded = 0;
+    int numberPasses = 0;
+    moreSpecialOptions2_ &= ~1073741824;
+    testOptions = moreSpecialOptions2_;
+    int changeType = 0;
+    OsiSolverInterface *solverOriginal = solver_;
+    OsiSolverInterface *continuousSolver = continuousSolver_;
+    continuousSolver_ = NULL;
+    int numberOriginalRows = solverOriginal->getNumRows();
+    OsiSolverInterface *solver = solverOriginal->clone();
+    solver_ = solver;
+    while (changed) {
+      changed = false;
+      moreSpecialOptions2_ = testOptions;
+      CbcSymmetry symmetryInfo;
+      // symmetryInfo.setModel(&model);
+      // for now strong is just on counts - use user option
+      // int maxN=5000000;
+      // OsiSolverInterface * solver = solver();
+      symmetryInfo.setupSymmetry(this);
+      int numberGenerators = symmetryInfo.getNtyInfo()->getNumGenerators();
+      if (numberGenerators) {
+	// symmetryInfo.Print_Orbits();
+	int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();
+	if (numberUsefulOrbits) {
+	  symmetryInfo.Compute_Symmetry();
+	  symmetryInfo.fillOrbits(/*true*/);
+	  const int *orbits = symmetryInfo.whichOrbit();
+	  int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();
+	  int *counts = new int[numberUsefulOrbits];
+	  memset(counts, 0, numberUsefulOrbits * sizeof(int));
+	  int numberColumns = solver_->getNumCols();
+	  int numberUseful = 0;
+	  if (changeType == 1) {
+	    // just 0-1
+	    for (int i = 0; i < numberColumns; i++) {
+	      int iOrbit = orbits[i];
+	      if (iOrbit >= 0) {
+		if (solver_->isBinary(i)) {
+		  counts[iOrbit]++;
+		  numberUseful++;
+		}
+	      }
+	    }
+	  } else if (changeType == 2) {
+	    // just integer
+	    for (int i = 0; i < numberColumns; i++) {
+	      int iOrbit = orbits[i];
+	      if (iOrbit >= 0) {
+		if (solver_->isInteger(i)) {
+		  counts[iOrbit]++;
+		  numberUseful++;
+		}
+	      }
+	    }
+	  } else {
+	    // all
+	    for (int i = 0; i < numberColumns; i++) {
+	      int iOrbit = orbits[i];
+	      if (iOrbit >= 0) {
+		counts[iOrbit]++;
+		numberUseful++;
+	      }
+	    }
+	  }
+	  int iOrbit = -1;
+#define LONGEST 0
+#if LONGEST
+	  // choose longest
+	  int maxOrbit = 0;
+	  for (int i = 0; i < numberUsefulOrbits; i++) {
+	    if (counts[i] > maxOrbit) {
+	      maxOrbit = counts[i];
+	      iOrbit = i;
+	    }
+	  }
+#else
+	  // choose closest to 2
+	  int minOrbit = numberColumns + 1;
+	  for (int i = 0; i < numberUsefulOrbits; i++) {
+	    if (counts[i] > 1 && counts[i] < minOrbit) {
+	      minOrbit = counts[i];
+	      iOrbit = i;
+	    }
+	  }
+#endif
+	  delete[] counts;
+	  if (!numberUseful)
+	    break;
+	  // take largest
+	  const double *solution = solver_->getColSolution();
+	  double *size = new double[numberColumns];
+	  int *which = new int[numberColumns];
+	  int nIn = 0;
+	  for (int i = 0; i < numberColumns; i++) {
+	    if (orbits[i] == iOrbit) {
+	      size[nIn] = -solution[i];
+	      which[nIn++] = i;
+	    }
+	  }
+	  if (nIn > 1) {
+	    // printf("Using orbit length %d\n",nIn);
+	    CoinSort_2(size, size + nIn, which);
+	    size[0] = 1.0;
+	    size[1] = -1.0;
+#if LONGEST == 0
+	    solver_->addRow(2, which, size, 0.0, COIN_DBL_MAX);
+	    numberAdded++;
+#elif LONGEST == 1
+	    for (int i = 0; i < nIn - 1; i++) {
+	      solver_->addRow(2, which + i, size, 0.0, COIN_DBL_MAX);
+	      numberAdded++;
+	    }
+#else
+	    for (int i = 0; i < nIn - 1; i++) {
+	      solver_->addRow(2, which, size, 0.0, COIN_DBL_MAX);
+	      which[1] = which[2 + i];
+	      numberAdded++;
+	    }
+#endif
+	    numberPasses++;
+	    if (numberPasses < MAX_NAUTY_PASS)
+	      changed = true;
+	  }
+	  delete[] size;
+	  delete[] which;
+	}
+      }
+    }
+    // switch off
+    moreSpecialOptions2_&=~(131072|262144);
+    solver_ = solverOriginal;
+    if (numberAdded) {
+      char general[100];
+      if (numberPasses < MAX_NAUTY_PASS)
+	sprintf(general, "%d symmetry cuts added in %d passes", numberAdded,
+		numberPasses);
+      else
+	sprintf(
+		general,
+		"%d symmetry cuts added in %d passes (maximum) - must be better way",
+		numberAdded, numberPasses);
+      messageHandler()->message(CBC_GENERAL, messages())
+        << general << CoinMessageEol;
+      // have to switch nauty off totally!
+      moreSpecialOptions2_ &= ~(128 | 256);
+    }
+    continuousSolver_ = continuousSolver;
+    int numberRows = solver->getNumRows();
+    if (numberRows > numberOriginalRows) {
+      const CoinPackedMatrix *rowCopy = solver->getMatrixByRow();
+      const int *column = rowCopy->getIndices();
+      const int *rowLength = rowCopy->getVectorLengths();
+      const CoinBigIndex *rowStart = rowCopy->getVectorStarts();
+      const double *elements = rowCopy->getElements();
+      const double *rowLower = solver->getRowLower();
+      const double *rowUpper = solver->getRowUpper();
+      for (int iRow = numberOriginalRows; iRow < numberRows; iRow++) {
+	OsiRowCut rc;
+	rc.setLb(rowLower[iRow]);
+	rc.setUb(rowUpper[iRow]);
+	CoinBigIndex start = rowStart[iRow];
+	rc.setRow(rowLength[iRow], column + start, elements + start, false);
+	globalCuts_.addCutIfNotDuplicate(rc);
+      }
+    }
+    delete solver;
+  }
+#endif
 
   /*
       Do an initial round of cut generation for the root node. Depending on the
@@ -5014,6 +5259,14 @@ void CbcModel::branchAndBound(int doStatistics)
   }
 #ifdef CBC_THREAD
   if (master_) {
+#ifdef COIN_HAS_NTY
+    if (rootSymmetryInfo_) {
+      // adjust statistics
+      for (int iModel=0;iModel<numberThreads_;iModel++) {
+	rootSymmetryInfo_->adjustStats(master_->model(iModel)->rootSymmetryInfo());
+      }
+    }
+#endif
     delete master_;
     master_ = NULL;
     masterThread_ = NULL;
@@ -5036,6 +5289,10 @@ void CbcModel::branchAndBound(int doStatistics)
   if (eventHandler) {
     eventHandler->event(CbcEventHandler::endSearch);
   }
+#ifdef COIN_HAS_NTY
+  if (rootSymmetryInfo_)
+    rootSymmetryInfo_->statsOrbits(this, 2);
+#endif
   if (!status_) {
     // Set best possible unless stopped on gap
     if (secondaryStatus_ != 2)
@@ -5087,6 +5344,8 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef COIN_HAS_NTY
   if (symmetryInfo_)
     symmetryInfo_->statsOrbits(this, 1);
+  if (rootSymmetryInfo_)
+    rootSymmetryInfo_->statsOrbits(this, 1);
 #endif
   if (doStatistics == 100) {
     for (int i = 0; i < numberObjects_; i++) {
@@ -5613,6 +5872,7 @@ CbcModel::CbcModel()
   , eventHandler_(NULL)
 #ifdef COIN_HAS_NTY
   , symmetryInfo_(NULL)
+  , rootSymmetryInfo_(NULL)
 #endif
   , numberObjects_(0)
   , object_(NULL)
@@ -5785,6 +6045,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , eventHandler_(NULL)
 #ifdef COIN_HAS_NTY
   , symmetryInfo_(NULL)
+  , rootSymmetryInfo_(NULL)
 #endif
   , numberObjects_(0)
   , object_(NULL)
@@ -6326,6 +6587,10 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
     symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
   else
     symmetryInfo_ = NULL;
+  if (rhs.rootSymmetryInfo_)
+    rootSymmetryInfo_ = new CbcSymmetry(*rhs.rootSymmetryInfo_);
+  else
+    rootSymmetryInfo_ = NULL;
 #endif
   synchronizeModel();
   if (cloneHandler && !defaultHandler_) {
@@ -6677,6 +6942,10 @@ CbcModel::operator=(const CbcModel &rhs)
       symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
     else
       symmetryInfo_ = NULL;
+    if (rhs.rootSymmetryInfo_)
+      rootSymmetryInfo_ = new CbcSymmetry(*rhs.rootSymmetryInfo_);
+    else
+      rootSymmetryInfo_ = NULL;
 #endif
     synchronizeModel();
     cbcColLower_ = NULL;
@@ -6770,6 +7039,8 @@ void CbcModel::gutsOfDestructor2()
 #ifdef COIN_HAS_NTY
   delete symmetryInfo_;
   symmetryInfo_ = NULL;
+  delete rootSymmetryInfo_;
+  rootSymmetryInfo_ = NULL;
 #endif
 }
 // Clears out enough to reset CbcModel
@@ -6997,11 +7268,15 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
     branchingMethod_ = NULL;
   messageHandler()->setLogLevel(rhs.messageHandler()->logLevel());
   whenCuts_ = rhs.whenCuts_;
-#ifdef COIN_HAS_NTY
-  if (rhs.symmetryInfo_)
-    symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
-  else
+#ifdef COIN_HAS_NTY // better to do again
+  //if (rhs.symmetryInfo_)
+  //symmetryInfo_ = new CbcSymmetry(*rhs.symmetryInfo_);
+  //else
     symmetryInfo_ = NULL;
+    //if (rhs.rootSymmetryInfo_)
+    //rootSymmetryInfo_ = new CbcSymmetry(*rhs.rootSymmetryInfo_);
+    //else
+    rootSymmetryInfo_ = NULL;
 #endif
   synchronizeModel();
 }
@@ -10347,8 +10622,68 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom,
     if ((specialOptions_ & 1) != 0 && onOptimalPath) {
       solver_->writeMpsNative("before-tighten.mps", NULL, NULL, 2);
     }
-    if (clpSolver && (!currentNode_ || (currentNode_->depth() & 2) != 0) && !solverCharacteristics_->solutionAddsCuts() && (moreSpecialOptions_ & 1073741824) == 0)
+    if (clpSolver && (!currentNode_ || (currentNode_->depth() & 2) != 0) &&
+        !solverCharacteristics_->solutionAddsCuts() &&
+        (moreSpecialOptions_ & 1073741824) == 0 &&
+        (moreSpecialOptions2_ & 65536) == 0) {
+#ifdef COIN_HAS_NTY
+      double *saveLower = NULL;
+      double *saveUpper = NULL;
+      if (getMaximumNodes() > 1000000 && (moreSpecialOptions2_ & 131072) != 0) {
+        if (getMaximumNodes() - 1000000 < numberNodes_) {
+          printf("switching off after %d nodes\n", numberNodes_);
+          moreSpecialOptions2_ &= ~131072;
+        }
+      }
+#define ORBIT_OLD_WAY 1
+      if (rootSymmetryInfo_ && (moreSpecialOptions2_ & 131072) != 0) {
+        int numberColumns = solver_->getNumCols();
+        if (numberNodes_ && ORBIT_OLD_WAY) {
+          saveLower = CoinCopyOfArray(solver_->getColLower(), numberColumns);
+          saveUpper = CoinCopyOfArray(solver_->getColUpper(), numberColumns);
+        } else {
+          saveLower =
+              CoinCopyOfArray(continuousSolver_->getColLower(), numberColumns);
+          saveUpper =
+              CoinCopyOfArray(continuousSolver_->getColUpper(), numberColumns);
+        }
+      }
+#endif
       nTightened = clpSolver->tightenBounds();
+#ifdef COIN_HAS_NTY
+      if (rootSymmetryInfo_ && (moreSpecialOptions2_ & 131072) != 0) {
+        // better to sort changed for least interaction?
+        if (nTightened || true) {
+          int numberColumns = solver_->getNumCols();
+          const double *upper = solver_->getColUpper();
+          const double *lower = solver_->getColLower();
+          int nExtra = 0;
+          for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+            if (!upper[iColumn] && saveUpper[iColumn] && !lower[iColumn])
+              nExtra += rootSymmetryInfo_->changeBounds(
+                  iColumn, saveLower, saveUpper, solver_, ORBIT_OLD_WAY - 1);
+          }
+          if (nExtra) {
+            rootSymmetryInfo_->fixSuccess(nExtra);
+            if ((specialOptions_ & 1) != 0 && onOptimalPath) {
+              const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
+              if (!debugger) {
+                // tighten did something???
+                solver_->getRowCutDebuggerAlways()->printOptimalSolution(
+                    *solver_);
+                solver_->writeMpsNative("infeas4.mps", NULL, NULL, 2);
+                printf("Not on optimalpath orbital tighten\n");
+                // abort();
+                onOptimalPath = false;
+              }
+            }
+          }
+        }
+        delete[] saveLower;
+        delete[] saveUpper;
+      }
+#endif
+    }
     if (nTightened) {
       //printf("%d bounds tightened\n",nTightened);
       if ((specialOptions_ & 1) != 0 && onOptimalPath) {
@@ -15118,6 +15453,19 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
             }
           }
         }
+      } else if (rootSymmetryInfo_) {
+        int n = rootSymmetryInfo_->orbitalFixing2(solver_);
+        if (n) {
+#if PRINT_MORE == 0
+          if (logLevel() > 1)
+            printf("%d orbital fixes\n", n);
+#endif
+          solver_->resolve();
+          if (!isProvenOptimal()) {
+            if (logLevel() > 1)
+              printf("infeasible after orbital fixing\n");
+          }
+        }
       }
 #endif
       if (numberBeforeTrust_ == 0) {
@@ -18954,6 +19302,12 @@ static void *doRootCbcThread(void *voidInfo)
       model->messages())
       << general << CoinMessageEol;
   }
+#endif
+  // switch off nauty
+#ifdef COIN_HAS_NTY
+  int newOptions = model->moreSpecialOptions2();
+  newOptions &= ~(128 | 256);
+  model->setMoreSpecialOptions2(newOptions);
 #endif
   model->branchAndBound();
   sprintf(general, "Ending multiple root solver");

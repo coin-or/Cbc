@@ -24,21 +24,21 @@
 
   To use it is -orbit on
 
-  Nauty has this -
-*   Permission 
-*   is hereby given for use and/or distribution with the exception of        *
-*   sale for profit or application with nontrivial military significance.    *
-  so you can use it internally even if you are a company.
  */
 #ifndef CBC_SYMMETRY_HPP
 #define CBC_SYMMETRY_HPP
+
+#include "CbcConfig.h"
+
+#ifdef COIN_HAS_NTY
 extern "C" {
-#include "nauty.h"
-#include "nausparse.h"
+#include "nauty/nauty.h"
+#include "nauty/nausparse.h"
 #ifdef NTY_TRACES
-#include "traces.h"
+#include "nauty/traces.h"
 #endif
 }
+#endif
 
 #include <vector>
 #include <map>
@@ -49,9 +49,14 @@ extern "C" {
 class OsiObject;
 // when to give up (depth since last success)
 #ifndef NTY_BAD_DEPTH
-#define NTY_BAD_DEPTH 10
+#define NTY_BAD_DEPTH 4
 #endif
 class CbcNauty;
+typedef struct {
+  int numberInPerm;
+  int numberPerms;
+  int * orbits;
+} cbc_permute;
 
 #define COUENNE_HACKED_EPS 1.e-07
 #define COUENNE_HACKED_EPS_SYMM 1e-8
@@ -138,13 +143,19 @@ public:
   void Compute_Symmetry() const;
   int statsOrbits(CbcModel *model, int type) const;
   //double timeNauty () const;
-  void Print_Orbits() const;
+  void Print_Orbits(int type=0) const;
   void fillOrbits();
   /// Fixes variables using orbits (returns number fixed)
   int orbitalFixing(OsiSolverInterface *solver);
+  /// Fixes variables using root orbits (returns number fixed)
+  int orbitalFixing2(OsiSolverInterface *solver);
   inline int *whichOrbit()
   {
     return numberUsefulOrbits_ ? whichOrbit_ : NULL;
+  }
+  inline int *fixedToZero() const
+  {
+    return whichOrbit_+4*numberColumns_;
   }
   inline int numberUsefulOrbits() const
   {
@@ -157,6 +168,24 @@ public:
   int largestOrbit(const double *lower, const double *upper) const;
   void ChangeBounds(const double *lower, const double *upper,
     int numberColumns, bool justFixedAtOne) const;
+  /** for simple stuff - returns number can fix if can use saved orbit (mode 1)
+      otherwise may fix and return number can fix (mode 0) */
+  int changeBounds(int kColumn, double * saveLower,
+		    double * saveUpper,
+		    OsiSolverInterface * solver,int mode) const;
+  int changeBounds(double *saveLower, double *saveUpper,
+		   OsiSolverInterface * solver) const;
+  int changeBounds2(double *saveLower, double *saveUpper,
+		   OsiSolverInterface * solver) const;
+  int fixSome(int iColumn, double *columnLower, double *columnUpper) const;
+  /// return number of orbits if worth branching
+  int worthBranching(const double *saveLower, const double *saveUpper,
+		     int iColumn, int & numberCouldFix) const;
+  void fixSuccess(int nFixed);
+  /// Adjust statistics from threads
+  void adjustStats(const CbcSymmetry * other);
+  inline int numberColumns() const
+  { return numberColumns_;}
   inline bool compare(register Node &a, register Node &b) const;
   CbcNauty *getNtyInfo() { return nauty_info_; }
 
@@ -166,13 +195,39 @@ public:
   /// empty if no NTY, symmetry data structure setup otherwise
   void setupSymmetry(CbcModel * model);
 
+  /// takes ownership of cbc_permute (orbits part)
+  void addPermutation(cbc_permute permutation);
+  /// Number of permutation arrays
+  inline int numberPermutations() const
+  { return numberPermutations_;}
+  /// Permutation arrays
+  inline int * permutation(int which) const
+  { return permutations_[which].orbits;}
+  inline int numberInPermutation(int which) const
+  { return permutations_[which].numberInPerm;}
+  inline void incrementNautyBranches(int n)
+  { nautyOtherBranches_ += n;}
+  inline void incrementBranchSucceeded()
+  { nautyBranchSucceeded_ ++;}
 private:
   mutable std::vector< Node > node_info_;
   mutable CbcNauty *nauty_info_;
   int numberColumns_;
   int numberUsefulOrbits_;
   int numberUsefulObjects_;
+  int numberPermutations_;
+  cbc_permute * permutations_;
   int *whichOrbit_;
+  int stats_[5];
+  double nautyTime_;
+  double nautyFixes_;
+  mutable double nautyOtherBranches_;
+  mutable int nautyBranchCalls_;
+  mutable int lastNautyBranchSucceeded_;
+  int nautyBranchSucceeded_;
+  mutable int nautyFixCalls_;
+  mutable int lastNautyFixSucceeded_;
+  int nautyFixSucceeded_;
 };
 
 class CbcNauty {
@@ -309,6 +364,8 @@ public:
   CbcOrbitalBranchingObject(CbcModel *model, int column,
     int way,
     int numberExtra, const int *extraToZero);
+  // Useful constructor (uses stored list)
+  CbcOrbitalBranchingObject(CbcModel *model, int column, int nFixed);
 
   // Copy constructor
   CbcOrbitalBranchingObject(const CbcOrbitalBranchingObject &);
@@ -379,8 +436,5 @@ private:
   /// Fix to zero
   int *fixToZero_;
 };
-
+//#define PRINT_CBCAUTO
 #endif
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/

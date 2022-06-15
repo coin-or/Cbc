@@ -107,7 +107,9 @@ public:
     /*! Having generated cuts, allows user to think. */
     generatedCuts,
     /*! End of search. */
-    endSearch
+    endSearch,
+    /*! Just before starting branching i.e. after root cuts. */
+    afterRootCuts
   };
 
   /*! \brief Action codes returned by the event handler.

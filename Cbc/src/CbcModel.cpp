@@ -2431,7 +2431,7 @@ void CbcModel::branchAndBound(int doStatistics)
     if ((specialOptions_ & 2048) == 0) {
       symmetryInfo_ = new CbcSymmetry();
       symmetryInfo_->setupSymmetry(this);
-      int numberGenerators = symmetryInfo_->statsOrbits(this, 0);
+      //int numberGenerators = symmetryInfo_->statsOrbits(this, 0);
       if (!symmetryInfo_->numberUsefulOrbits() &&
           (moreSpecialOptions2_ & (128 | 256)) != (128 | 256)) {
         delete symmetryInfo_;
@@ -9606,6 +9606,8 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         specialOptions_ &= ~33554432;
         doHeuristicsAtRoot();
       }
+      if (eventHandler_) 
+        eventHandler_->event(CbcEventHandler::afterRootCuts);
     }
     /*
           Count the number of cuts produced by each cut generator on this call. Not

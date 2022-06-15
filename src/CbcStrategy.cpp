@@ -736,7 +736,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
     }
   }
 
-  if (found && (howOften >= -1 || howOften == -98)) {
+  if (found && (howOften >= -1 || howOften == -98 || howOften == -99)) {
     found = false;
     for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
       CglCutGenerator *generator = model.cutGenerator(iGenerator)->generator();

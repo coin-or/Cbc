@@ -257,7 +257,7 @@ bool CbcHeuristicUser::shouldHeurRun(int whereFrom)
   case 0:
     return (model_->specialOptions()&2048)==0; //not in submodel
   case 1:
-    return model_->getSolutionCount()==numberSolutions_;
+    return model_->getSolutionCount()!=numberSolutions_;
   default:
     return false;
   }

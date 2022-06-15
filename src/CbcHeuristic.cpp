@@ -1009,7 +1009,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       delete[] sosStart;
       delete[] sosType;
       process.passInProhibited(prohibited, numberColumns);
-      delete[] prohibited;
+      delete[] prohibited; 
     }
 #endif
     setPreProcessingMode(solver,1);

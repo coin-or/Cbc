@@ -548,6 +548,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 #ifdef CLP_FACTORIZATION_INSTRUMENT
   double timeTakenFac = 0.0;
 #endif
+  int totalNodes = 0;
+  int totalIterations = 0;
   /*
   Open the main loop to step through the MPS problems.
   */
@@ -986,6 +988,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 	  << " (on the bright side solution is correct) ";
       }
     }
+    totalNodes += model->getNodeCount();
+    totalIterations += model->getIterationCount();
     timeTaken += timeOfSolution;
     std::cout
       << " -- (" << model->getNodeCount() << " n / "
@@ -1011,10 +1015,13 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
       std::cout << " (" << numberFailures << " gave bad answer!)";
       returnCode += 100 * numberFailures;
     }
+    std::cout
+      << " and took " << timeTaken << " seconds." << std::endl;
+  } else {
+    std::cout
+      << " and took " << timeTaken << " seconds." << std::endl;
+    std::cout << "cbc_clp Total nodes " << totalNodes << " and " << totalIterations << " iterations - time " << timeTaken << std::endl;
   }
-  std::cout
-    << " and took " << timeTaken << " seconds." << std::endl;
-
   if (testSwitch == -2) {
     if (numberFailures || numberOnNodes) {
       std::cout << "****** Unit Test failed." << std::endl;

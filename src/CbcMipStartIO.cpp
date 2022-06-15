@@ -224,7 +224,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
   }
 
 #ifndef JUST_FIX_INTEGER
-#define JUST_FIX_INTEGER 0
+#define JUST_FIX_INTEGER 2
 #endif
 
 #if JUST_FIX_INTEGER > 1

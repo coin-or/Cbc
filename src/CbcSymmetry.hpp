@@ -174,6 +174,9 @@ public:
 		    OsiSolverInterface * solver,int mode) const;
   int changeBounds(double *saveLower, double *saveUpper,
 		   OsiSolverInterface * solver) const;
+  int changeBounds2(double *saveLower, double *saveUpper,
+		   OsiSolverInterface * solver) const;
+  int fixSome(int iColumn, double *columnLower, double *columnUpper) const;
   /// return number of orbits if worth branching
   int worthBranching(const double *saveLower, const double *saveUpper,
 		     int iColumn, int & numberCouldFix) const;

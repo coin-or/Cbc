@@ -1200,6 +1200,15 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   int useDW = parameters[CbcParam::DW]->modeVal();
   int kType = (type < 10) ? type : 1;
   assert(kType == 1 || kType == 2);
+#ifdef GET_ALL_SOLUTIONS
+  // Very experimental
+  if ((useDW == 13 || useDW == 33) && kType == 1) {
+    CbcHeuristicDW heuristic13(*model);
+    heuristic13.setHeuristicName("Dantzig-Wolfe-expansion");
+    heuristic13.setNumberPasses(-100-useDW);
+    model->addHeuristic(&heuristic13);
+  }
+#endif
   // FPump done first as it only works if no solution
   if (useFpump >= kType && useFpump <= kType + 1) {
     anyToDo = true;
@@ -1218,7 +1227,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     if (pumpTune > 0) {
       bool printStuff =
           (pumpTune != initialPumpTune || logLevel > 1 || pumpTune2 > 0) &&
-          !noPrinting_;
+	!noPrinting_;
       if (printStuff) {
         generalMessageHandler->message(CBC_GENERAL, generalMessages)
             << "Options for feasibility pump - " << CoinMessageEol;
@@ -1241,8 +1250,10 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       int c = w % 10;
       w /= 10;
       int r = w;
+      //printf("pumpTune %d i %d fakecutoff %d r %d\n",pumpTune,i,c,r);
       int accumulate = r / 1000;
       r -= 1000 * accumulate;
+      //printf("r now %d accumulate %d\n",r,accumulate);
       if (accumulate >= 100) {
         int which = accumulate / 100;
         accumulate -= 100 * which;
@@ -1278,6 +1289,11 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       }
       int offRandomEtc = 0;
       if (pumpTune2) {
+	int temp = pumpTune2 %1000000;
+	if (temp>=100000) {
+	  accumulate |= 256;
+	  pumpTune2 -= 100000;
+	}
         if ((pumpTune2 / 1000) != 0) {
           offRandomEtc = 1000000 * (pumpTune2 / 1000);
           if (printStuff) {
@@ -1303,6 +1319,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
           }
         }
       }
+      //printf("accumulate now %d\n",accumulate);
       if (accumulate) {
         heuristic4.setAccumulate(accumulate);
         if (printStuff) {

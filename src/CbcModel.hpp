@@ -349,7 +349,6 @@ public:
         newNode NULL if no new node created
     */
   int doOneNode(CbcModel *baseModel, CbcNode *&node, CbcNode *&newNode);
-
 public:
   /** \brief Reoptimise an LP relaxation
 
@@ -1835,6 +1834,11 @@ public:
   inline int numberCutGenerators() const
   {
     return numberCutGenerators_;
+  }
+  /// Set the number of cut generators
+  inline void setNumberCutGenerators(int value) 
+  {
+    numberCutGenerators_ = value;
   }
   /// Get the list of cut generators
   inline CbcCutGenerator **cutGenerators() const
@@ -3399,5 +3403,22 @@ void setCutAndHeuristicOptions(CbcModel &model);
 #else
   inline void setPreProcessingMode(OsiSolverInterface * solver,int processMode)
   {}
+#endif
+#ifdef CBC_HAS_CLP
+/**
+   A terse way of doing common types of solves.
+   Set any extra options in cbcModel e.g. maximum nodes.
+   cbcModel should not have any solver - but can have cut generators and heuristics
+   options - 
+   0 2 bit cuts - 0 off, 1 root + probing, 2 normal, 3
+   2 2 heuristics - 0 off, 1 normal, 2, 3
+   4 2 preprocessing - 0 off, 1 very lightweight, 2 normal, 3
+   6 2 solution in if 1
+   return code ?
+ */
+int clpBranchAndCut(CbcModel * cbcModel, ClpSimplex * clpModel,
+		    unsigned int options=5);
+int clpBranchAndCut(CbcModel * cbcModel, OsiClpSolverInterface * solver,
+		    unsigned int options=5);
 #endif
 #endif

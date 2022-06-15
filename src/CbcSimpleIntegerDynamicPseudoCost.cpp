@@ -25,6 +25,19 @@
 #ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
+#if 0
+#undef TYPE2
+#undef INFEAS
+#undef MOD_SHADOW
+#undef WEIGHT_PRODUCT
+#define TYPE2 0 // 0 can be 1 or 2 (1 or 2 errors)
+//#define FUNNY_BRANCHING
+//#define FUNNY_BRANCHING2
+#define INFEAS 1 // 1 can be 0 (not much difference) or 2 (marginally better?)
+#define INFEAS_MULTIPLIER 1.5 // default 1.5
+#define MOD_SHADOW 1 // 1 can be 0 or 2
+#define WEIGHT_PRODUCT // on
+#endif
 #ifdef COIN_DEVELOP
 typedef struct {
   double sumUp_;

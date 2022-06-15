@@ -121,7 +121,7 @@ public:
   virtual CbcNodeInfo *clone() const = 0;
   /// Called when number branches left down to zero
   virtual void allBranchesGone() {}
-#ifndef JJF_ONE
+#if 1 //ndef JJF_ONE
   /// Increment number of references
   inline void increment(int amount = 1)
   {
@@ -205,6 +205,11 @@ public:
   inline void nullParent()
   {
     parent_ = NULL;
+  }
+  /// Set parent 
+  inline void setParent(CbcNodeInfo * parent)
+  {
+    parent_ = parent;
   }
 
   void addCuts(OsiCuts &cuts, int numberToBranch, //int * whichGenerator,
@@ -307,7 +312,7 @@ public:
   {
     active_ |= 16;
   }
-
+inline int numberRows() const {return numberRows_;}
   /// Branching object for the parent
   inline const OsiBranchingObject *parentBranch() const
   {
@@ -365,7 +370,7 @@ protected:
 private:
   /// Illegal Assignment operator
   CbcNodeInfo &operator=(const CbcNodeInfo &rhs);
-
+ public:
   /// routine common to constructors
   void setParentBasedData();
 };

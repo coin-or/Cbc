@@ -201,8 +201,9 @@ CbcHeuristicFPump::operator=(const CbcHeuristicFPump &rhs)
 }
 
 // Resets stuff if model changes
-void CbcHeuristicFPump::resetModel(CbcModel *)
+void CbcHeuristicFPump::resetModel(CbcModel * model)
 {
+  model_ = model;
 }
 
 /**************************BEGIN MAIN PROCEDURE ***********************************/
@@ -920,10 +921,46 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
               }
             }
             if (numberLeft) {
+	      //#define SAVE_FPUMP_MATRIX
+#ifdef SAVE_FPUMP_MATRIX
+	      static int xxxxxx=0;
+#endif
               sprintf(pumpPrint, "Branch and bound needed to clear up %d general integers", numberLeft);
               model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
                 << pumpPrint
                 << CoinMessageEol;
+#ifdef SAVE_FPUMP_MATRIX
+	      OsiSolverInterface * solver2 = solver->clone();
+	      {
+		const double * lower = solver2->getColLower(); 
+		const double * upper = solver2->getColUpper();
+		const double * sol = solver2->getColSolution();
+		int numberColumns = solver2->getNumCols();
+		solver2->resolve();
+		for (int i=0;i<numberColumns;i++) {
+		  if (solver2->isIntegerNonBinary(i)) {
+		    double value = sol[i];
+		    double nearest = floor(value+0.5);
+		    double lo;
+		    double up;
+		    if (fabs(value-nearest)<1.0e-5) {
+		      lo = nearest-1;
+		      up = nearest+1;
+		    } else {
+		      lo = floor(value)-1;
+		      up = lo+3;
+		    }
+		    solver2->setColLower(i,lo);
+		    solver2->setColUpper(i,up);
+		  }
+		}
+	      }
+	      xxxxxx++;
+	      char filename[40];
+	      sprintf(filename,"/tmp/part%d",xxxxxx);
+	      solver2->writeMps(filename);
+	      delete solver2;
+#endif
               returnCode = smallBranchAndBound(solver, numberNodes_, newSolution, newSolutionValue,
                 solutionValue, "CbcHeuristicFpump");
               if (returnCode < 0) {
@@ -1252,6 +1289,16 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           if (newValue != oldObjective[iColumn]) {
             numberChanged++;
           }
+#if 1
+	  if (!newValue && (accumulate_&256) !=0 ) {
+	    double objValue=saveObjective[iColumn];
+	    if (objValue<-10000.0)
+	      objValue = -10000;
+	    else if (objValue>10000.0)
+	      objValue = 10000;
+	    newValue = 1.0e-6*randomFactor[iColumn]*objValue;
+	  }
+#endif
           solver->setObjCoeff(iColumn, newValue);
           offset += costValue * newSolution[iColumn];
         }
@@ -2617,6 +2664,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
   /*char * pumpPrint,*/ int iter,
   /*bool roundExpensive,*/ double downValue, int *flip)
 {
+  bool roundExpensive = false;//true;
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
   double primalTolerance;
   solver->getDblParam(OsiPrimalTolerance, primalTolerance);
@@ -2638,7 +2686,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
   const double *rowLower = solver->getRowLower();
   const double *rowUpper = solver->getRowUpper();
   int numberRows = solver->getNumRows();
-  if (false && (iter & 1) != 0) {
+  if (false && (iter & 7) == 1) {
     // Do set covering variables
     const CoinPackedMatrix *matrixByRow = solver->getMatrixByRow();
     const double *elementByRow = matrixByRow->getElements();
@@ -2780,6 +2828,8 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
   int newNumberInfeas = 0;
   for (i = 0; i < numberIntegers; i++) {
     int iColumn = integerVariable[i];
+    if (columnUpper[iColumn]>columnLower[iColumn]+1.1)
+      roundExpensive = false; 
     double value = solution[iColumn];
     double round = floor(value + 0.5);
     if (fabs(value - round) > primalTolerance) {
@@ -2822,70 +2872,209 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
       return 1;
     }
   }
-  //double * saveSolution = CoinCopyOfArray(solution,numberColumns);
   // return rounded solution
-  for (i = 0; i < numberIntegers; i++) {
-    int iColumn = integerVariable[i];
-    double value = solution[iColumn];
-    double round = floor(value + primalTolerance);
-    if (value - round > downValue)
-      round += 1.;
-#ifndef JJF_ONE
-    if (round < integerTolerance && cost[iColumn] < -1. + integerTolerance)
-      flip_down++;
-    if (round > 1. - integerTolerance && cost[iColumn] > 1. - integerTolerance)
-      flip_up++;
-#else
-    if (round < columnLower[iColumn] + integerTolerance && cost[iColumn] < -1. + integerTolerance)
-      flip_down++;
-    if (round > columnUpper[iColumn] - integerTolerance && cost[iColumn] > 1. - integerTolerance)
-      flip_up++;
+#ifdef CBC_HAS_CLP
+  if (!roundExpensive) {
 #endif
-    if (flip_up + flip_down == 0) {
-      for (int k = 0; k < nn; k++) {
-        if (fabs(value - round) > val[k]) {
-          nnv++;
-          for (int j = nn - 2; j >= k; j--) {
-            val[j + 1] = val[j];
-            list[j + 1] = list[j];
-          }
-          val[k] = fabs(value - round);
-          list[k] = iColumn;
-          break;
-        }
+    //double * saveSolution = CoinCopyOfArray(solution,numberColumns);
+    for (i = 0; i < numberIntegers; i++) {
+      int iColumn = integerVariable[i];
+      double value = solution[iColumn];
+      double round = floor(value + primalTolerance);
+      if (value - round > downValue)
+	round += 1.;
+#ifndef JJF_ONE
+      if (round < integerTolerance && cost[iColumn] < -1. + integerTolerance)
+	flip_down++;
+      if (round > 1. - integerTolerance && cost[iColumn] > 1. - integerTolerance)
+	flip_up++;
+#else
+      if (round < columnLower[iColumn] + integerTolerance && cost[iColumn] < -1. + integerTolerance)
+	flip_down++;
+      if (round > columnUpper[iColumn] - integerTolerance && cost[iColumn] > 1. - integerTolerance)
+	flip_up++;
+#endif
+      if (flip_up + flip_down == 0) {
+	for (int k = 0; k < nn; k++) {
+	  if (fabs(value - round) > val[k]) {
+	    nnv++;
+	    for (int j = nn - 2; j >= k; j--) {
+	      val[j + 1] = val[j];
+	      list[j + 1] = list[j];
+	    }
+	    val[k] = fabs(value - round);
+	    list[k] = iColumn;
+	    break;
+	  }
+	}
       }
+      solution[iColumn] = round;
     }
-    solution[iColumn] = round;
-  }
-
-  if (nnv > nn)
-    nnv = nn;
-  //if (iter != 0)
-  //sprintf(pumpPrint+strlen(pumpPrint),"up = %5d , down = %5d", flip_up, flip_down);
-  *flip = flip_up + flip_down;
-
-  if (*flip == 0 && iter != 0) {
-    //sprintf(pumpPrint+strlen(pumpPrint)," -- rand = %4d (%4d) ", nnv, nn);
-    for (i = 0; i < nnv; i++) {
-      // was solution[list[i]] = 1. - solution[list[i]]; but does that work for 7>=x>=6
-      int index = list[i];
-      double value = solution[index];
-      if (value <= 1.0) {
-        solution[index] = 1.0 - value;
-      } else if (value < columnLower[index] + integerTolerance) {
-        solution[index] = value + 1.0;
-      } else if (value > columnUpper[index] - integerTolerance) {
-        solution[index] = value - 1.0;
-      } else {
-        solution[index] = value - 1.0;
+    
+    if (nnv > nn)
+      nnv = nn;
+    //if (iter != 0)
+    //sprintf(pumpPrint+strlen(pumpPrint),"up = %5d , down = %5d", flip_up, flip_down);
+    *flip = flip_up + flip_down;
+    
+    if (*flip == 0 && iter != 0) {
+      //sprintf(pumpPrint+strlen(pumpPrint)," -- rand = %4d (%4d) ", nnv, nn);
+      for (i = 0; i < nnv; i++) {
+	// was solution[list[i]] = 1. - solution[list[i]]; but does that work for 7>=x>=6
+	int index = list[i];
+	double value = solution[index];
+	if (value <= 1.0) {
+	  solution[index] = 1.0 - value;
+	} else if (value < columnLower[index] + integerTolerance) {
+	  solution[index] = value + 1.0;
+	} else if (value > columnUpper[index] - integerTolerance) {
+	  solution[index] = value - 1.0;
+	} else {
+	  solution[index] = value - 1.0;
+	}
       }
+      *flip = nnv;
+    } else {
+      //sprintf(pumpPrint+strlen(pumpPrint)," ");
     }
-    *flip = nnv;
+#ifdef CBC_HAS_CLP
   } else {
-    //sprintf(pumpPrint+strlen(pumpPrint)," ");
+    // very very slow at first
+    OsiClpSolverInterface * clpSolver = dynamic_cast<OsiClpSolverInterface *>
+      (solver);
+    ClpSimplex * simplex = clpSolver->getModelPtr();
+    double * lowerMod = simplex->columnLower();
+    double * upperMod = simplex->columnUpper();
+    double * saveLower = CoinCopyOfArray(simplex->columnLower(),numberColumns);
+    double * saveUpper = CoinCopyOfArray(simplex->columnUpper(),numberColumns);
+    double * goodLower = CoinCopyOfArray(simplex->columnLower(),numberColumns);
+    double * goodUpper = CoinCopyOfArray(simplex->columnUpper(),numberColumns);
+    // could do in random order
+    int nChanged = 0;
+    for (i = 0; i < numberIntegers; i++) {
+      int iColumn = integerVariable[i];
+      double value = solution[iColumn];
+      double round = floor(value + primalTolerance);
+      if (value - round > downValue)
+	round += 1.;
+#ifndef JJF_ONE
+      if (round < integerTolerance && cost[iColumn] < -1. + integerTolerance)
+	flip_down++;
+      if (round > 1. - integerTolerance && cost[iColumn] > 1. - integerTolerance)
+	flip_up++;
+#else
+      if (round < columnLower[iColumn] + integerTolerance && cost[iColumn] < -1. + integerTolerance)
+	flip_down++;
+      if (round > columnUpper[iColumn] - integerTolerance && cost[iColumn] > 1. - integerTolerance)
+	flip_up++;
+#endif
+      if (flip_up + flip_down == 0) {
+	for (int k = 0; k < nn; k++) {
+	  if (fabs(value - round) > val[k]) {
+	    nnv++;
+	    for (int j = nn - 2; j >= k; j--) {
+	      val[j + 1] = val[j];
+	      list[j + 1] = list[j];
+	    }
+	    val[k] = fabs(value - round);
+	    list[k] = iColumn;
+	    break;
+	  }
+	}
+      }
+      solution[iColumn] = round;
+      lowerMod[iColumn] = round;
+      upperMod[iColumn] = round;
+      if (roundExpensive) {
+	// SLOW
+	int ninfeas = simplex->tightenPrimalBounds(0.0,1,true);
+	if (ninfeas) {
+	  memcpy(lowerMod,goodLower,numberColumns*sizeof(double));
+	  memcpy(upperMod,goodUpper,numberColumns*sizeof(double));
+	  nChanged++;
+	  if (round==saveLower[iColumn]) 
+	    round += 1.0;
+	  else
+	    round -= 1.0;
+	  lowerMod[iColumn] = round; 
+	  upperMod[iColumn] = round;
+	  ninfeas = simplex->tightenPrimalBounds(0.0,1,true);
+	  if (ninfeas) {
+	    roundExpensive = false;
+	    printf("tighten infeasible %d\n",ninfeas);
+	  } else {
+	    memcpy(goodLower,lowerMod,numberColumns*sizeof(double));
+	    memcpy(goodUpper,upperMod,numberColumns*sizeof(double));
+	  }
+	} else {
+	  memcpy(goodLower,lowerMod,numberColumns*sizeof(double));
+	  memcpy(goodUpper,upperMod,numberColumns*sizeof(double));
+	}
+      }
+    }
+    memcpy(lowerMod,saveLower,numberColumns*sizeof(double));
+    memcpy(upperMod,saveUpper,numberColumns*sizeof(double));
+    delete [] saveLower;
+    delete [] saveUpper;
+    delete [] goodLower;
+    delete [] goodUpper;
+    if (nnv > nn)
+      nnv = nn;
+    //if (iter != 0)
+    //sprintf(pumpPrint+strlen(pumpPrint),"up = %5d , down = %5d", flip_up, flip_down);
+    *flip = flip_up + flip_down;
+    
+    if (*flip == 0 && iter != 0) {
+      //sprintf(pumpPrint+strlen(pumpPrint)," -- rand = %4d (%4d) ", nnv, nn);
+      for (i = 0; i < nnv; i++) {
+	// was solution[list[i]] = 1. - solution[list[i]]; but does that work for 7>=x>=6
+	int index = list[i];
+	double value = solution[index];
+	if (value <= 1.0) {
+	  solution[index] = 1.0 - value;
+	} else if (value < columnLower[index] + integerTolerance) {
+	  solution[index] = value + 1.0;
+	} else if (value > columnUpper[index] - integerTolerance) {
+	  solution[index] = value - 1.0;
+	} else {
+	  solution[index] = value - 1.0;
+	}
+      }
+      *flip = nnv;
+    } else {
+      //sprintf(pumpPrint+strlen(pumpPrint)," ");
+    }
   }
+#endif
   delete[] list;
   delete[] val;
+#if 0
+  // temp slow
+  {
+    const CoinPackedMatrix *matrixByRow = solver->getMatrixByRow();
+    const double *elementByRow = matrixByRow->getElements();
+    const int *column = matrixByRow->getIndices();
+    const CoinBigIndex *rowStart = matrixByRow->getVectorStarts();
+    const int *rowLength = matrixByRow->getVectorLengths();
+    for (int i = 0; i < numberRows; i++) {
+      if (rowLower[i] == 1.0 && rowUpper[i] == 1.0) {
+	bool cover = true;
+	for (CoinBigIndex k = rowStart[i]; k < rowStart[i] + rowLength[i]; k++) {
+	  int iColumn = column[k];
+	  if (elementByRow[k] != 1.0 || !isHeuristicInteger(solver, iColumn)) {
+	    cover = false;
+	    break;
+	  } else if (solution[iColumn]==1.0) {
+	    cover = false;
+	    break;
+	  }
+	}
+	if (cover) {
+	}
+      }
+    }
+  }
+#endif
   //iter++;
 
   // get row activities
@@ -2910,8 +3099,10 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
       sumInfeasibility += value;
     }
   }
-#ifdef JJF_ZERO
-  if (largestInfeasibility > primalTolerance && numberBadRows * 10 < numberRows) {
+#if 1 // def JJF_ZERO
+  int fakeNodeDepth = model_->fastNodeDepth();
+  if (largestInfeasibility > primalTolerance && numberBadRows * 10 < numberRows
+      && fakeNodeDepth > 1000000 && (fakeNodeDepth&1)) {
     // Can we improve by flipping
     for (int iPass = 0; iPass < 10; iPass++) {
       int numberColumns = solver->getNumCols();
@@ -3132,6 +3323,8 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
       double theta = 0.0;
       for (i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
+	if (!solver->isInteger(iColumn))
+	  continue; // may have been made continuous
         double solValue = solution[iColumn];
         assert(fabs(solValue - floor(solValue + 0.5)) < 1.0e-8);
         double improvementUp = 0.0;

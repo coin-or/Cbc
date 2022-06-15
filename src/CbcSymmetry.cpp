@@ -648,6 +648,94 @@ CbcSymmetry::changeBounds(int iColumn, double * saveLower,
   }
   return nFixed;
 }
+// fix some and return number
+int
+CbcSymmetry::fixSome(int iColumn, double * columnLower,
+			  double * columnUpper) const
+{
+  if (columnUpper[iColumn]>1.0 || whichOrbit_[iColumn]<0 || columnLower[iColumn])
+    return 0; // only 0-1 at present
+  int nFixed = 0;
+  int * originalUpper = whichOrbit_ + numberColumns_;
+  int * marked = originalUpper + numberColumns_;
+  int * whichMarked = marked + numberColumns_;
+  int * save = whichOrbit_+4*numberColumns_;
+  memset(marked,0,numberColumns_*sizeof(int));
+  for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+    if (!permutations_[iPerm].numberPerms)
+      continue; // summary permutation
+    const int * orbit = permutations_[iPerm].orbits;
+    if (orbit[iColumn]<0)
+      continue;
+    int nMarked = 0;
+    int nTotalOdd = 0;
+    int goodOddOne = -1;
+    for (int i=0;i<numberColumns_;i++) {
+      if (orbit[i]>=0 && !marked[i]) {
+	// OK is all same or one fixed to 0 and rest same
+	int oddOne = -1;
+	int nOdd = 0;
+	int first = i;
+	marked[i] = 1;
+	whichMarked[nMarked++] = i;
+	int j = orbit[i];
+	int lower = static_cast<int>(columnLower[i]);
+	if (lower) nOdd=999; //temp
+	int upper = static_cast<int>(columnUpper[i]);
+	if (upper==0) {
+	  int upperj = static_cast<int>(columnUpper[j]);
+	  if (upperj) {
+	    oddOne = i;
+	    nOdd = 1;
+	    upper = upperj;
+	  }
+	}
+	while (j!=i) {
+	  marked[j] = 1;
+	  whichMarked[nMarked++] = j;
+	  int lowerj = static_cast<int>(columnLower[j]);
+	  if (lowerj) nOdd=999; //temp
+	  int upperj = static_cast<int>(columnUpper[j]);
+	  if (lower!=lowerj || upper != upperj) {
+	    if (nOdd) {
+	      // bad
+	      nOdd = numberColumns_;
+	    } else {
+	      oddOne = j;
+	      nOdd = 1;
+	    }
+	  }
+	  j = orbit[j];
+	}
+	if (!nOdd) {
+	} else if (nOdd==1) {
+	  if (!nTotalOdd)
+	    goodOddOne = oddOne;
+	  nTotalOdd ++;
+	} else {
+	  nTotalOdd = -2*numberColumns_;
+	}
+      }
+    }
+    //printf("permutation %d had %d odd\n",iPerm,nTotalOdd);
+    for (int i=0;i<nMarked;i++) 
+      marked[whichMarked[i]]=0;
+    if (nTotalOdd==1) {
+      int j = orbit[goodOddOne];
+      if (columnUpper[goodOddOne]&&!columnLower[goodOddOne]) {
+	save[nFixed++]=goodOddOne;
+      }
+      while (j!=goodOddOne) {
+	if (columnUpper[j]&&!columnLower[j]) {
+	  //printf("setting %d to zero\n",j);
+	  save[nFixed++]=j;
+	}
+	j = orbit[j];
+      }
+    }
+  }
+  return nFixed;
+}
 int
 CbcSymmetry::changeBounds(double *saveLower,
 			  double *saveUpper,
@@ -737,6 +825,105 @@ CbcSymmetry::changeBounds(double *saveLower,
 	  if (columnUpper[j]) {
 	    //printf("setting %d to zero\n",j);
 	    solver->setColUpper(j,0.0);
+	    save[nFixed++]=j;
+	  }
+	  j = orbit[j];
+	}
+      }
+    }
+    columnUpper[iColumn] = saveUp;
+  }
+  return nFixed;
+}
+int
+CbcSymmetry::changeBounds2(double *saveLower,
+			  double *saveUpper,
+			  OsiSolverInterface * solver) const
+{
+  int nFixed = 0;
+  int * originalUpper = whichOrbit_ + numberColumns_;
+  int * marked = originalUpper + numberColumns_;
+  int * whichMarked = marked + numberColumns_;
+  int * save = whichOrbit_+4*numberColumns_;
+  double * columnLower = saveLower;
+  double * columnUpper = saveUpper;
+  int numberColumns = solver->getNumCols();
+  // Do faster later (i.e. use orbits more)
+  for (int iColumn = 0;iColumn<numberColumns;iColumn++) {
+    if (whichOrbit_[iColumn] < 0 || saveUpper[iColumn])
+      continue;
+    double saveUp = columnUpper[iColumn];
+    columnUpper[iColumn] = 0.0;//solver->getColUpper()[iColumn];
+    memset(marked,0,numberColumns_*sizeof(int));
+    for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
+      if (!permutations_[iPerm].numberPerms)
+	continue; // summary permutation
+      const int * orbit = permutations_[iPerm].orbits;
+      if (orbit[iColumn]<0)
+	continue;
+      int nMarked = 0;
+      int nTotalOdd = 0;
+      int goodOddOne = -1;
+      for (int i=0;i<numberColumns_;i++) {
+	if (orbit[i]>=0 && !marked[i]) {
+	  // OK is all same or one fixed to 0 and rest same
+	  int oddOne = -1;
+	  int nOdd = 0;
+	  int first = i;
+	  marked[i] = 1;
+	  whichMarked[nMarked++] = i;
+	  int j = orbit[i];
+	  int lower = static_cast<int>(columnLower[i]);
+	  if (lower) nOdd=999; //temp
+	  int upper = static_cast<int>(columnUpper[i]);
+	  if (upper==0) {
+	    int upperj = static_cast<int>(columnUpper[j]);
+	    if (upperj) {
+	      oddOne = i;
+	      nOdd = 1;
+	      upper = upperj;
+	    }
+	  }
+	  while (j!=i) {
+	    marked[j] = 1;
+	    whichMarked[nMarked++] = j;
+	    int lowerj = static_cast<int>(columnLower[j]);
+	    if (lowerj) nOdd=999; //temp
+	    int upperj = static_cast<int>(columnUpper[j]);
+	    if (lower!=lowerj || upper != upperj) {
+	      if (nOdd) {
+		// bad
+		nOdd = numberColumns_;
+	      } else {
+		oddOne = j;
+		nOdd = 1;
+	      }
+	    }
+	    j = orbit[j];
+	  }
+	  if (!nOdd) {
+	  } else if (nOdd==1) {
+	    if (!nTotalOdd)
+	      goodOddOne = oddOne;
+	    nTotalOdd ++;
+	  } else {
+	    nTotalOdd = -2*numberColumns_;
+	  }
+	}
+      }
+      //printf("permutation %d had %d odd\n",iPerm,nTotalOdd);
+      for (int i=0;i<nMarked;i++) 
+	marked[whichMarked[i]]=0;
+      if (nTotalOdd==1) {
+	int j = orbit[goodOddOne];
+	if (columnUpper[goodOddOne]) {
+	  save[nFixed++]=goodOddOne;
+	  columnUpper[goodOddOne] = 0.0;
+	}
+	while (j!=goodOddOne) {
+	  if (columnUpper[j]) {
+	    //printf("setting %d to zero\n",j);
+	    columnUpper[j] = 0.0;
 	    save[nFixed++]=j;
 	  }
 	  j = orbit[j];

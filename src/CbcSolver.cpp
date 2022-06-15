@@ -8211,6 +8211,14 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #endif
                 }
 #endif
+		//if (callBack != NULL)
+		//returnCode = callBack(babModel_, 13);
+		if (returnCode) {
+		  // exit if user wants
+		  delete babModel_;
+		  babModel_ = NULL;
+		  return returnCode;
+		}
                 babModel_->branchAndBound(statistics);
 #ifdef CBC_HAS_NAUTY
                 if (nautyAdded) {

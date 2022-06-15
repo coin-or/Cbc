@@ -47,6 +47,7 @@
 #include "CbcCountRowCut.hpp"
 #include "CbcFeasibilityBase.hpp"
 #include "CbcMessage.hpp"
+#include "CbcFathom.hpp"
 #ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #include "ClpSimplexOther.hpp"
@@ -687,10 +688,37 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         choice[i].possibleBranch = NULL;
       numberStrong = 0;
       bool canDoOneHot = false;
+#ifdef GET_ALL_SOLUTIONS
+      if (model->getCutoffIncrement()==-3333.0) {
+	int n1=0;
+	int n2=0;
+	for (i = 0; i < numberObjects; i++) {
+	  OsiObject *object = model->modifiableObject(i);
+	  int preferredWay;
+	  double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+          const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
+	  int iColumn = thisOne->columnNumber();
+	  if (saveUpper[iColumn]>saveLower[iColumn]) {
+	    n1++;
+	    if (infeasibility)
+	      n2++;
+	  }
+	}
+	//printf("%d free %d infeasible\n",n1,n2);
+      }
+#endif
       for (i = 0; i < numberObjects; i++) {
         OsiObject *object = model->modifiableObject(i);
         int preferredWay;
         double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+#ifdef GET_ALL_SOLUTIONS
+	if (model->getCutoffIncrement()==-3333.0) {
+          const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
+	  int iColumn = thisOne->columnNumber();
+	  if (saveUpper[iColumn]>saveLower[iColumn]) 
+	    infeasibility = 0.5;
+	}
+#endif
         int priorityLevel = object->priority();
         if (hotstartSolution) {
           // we are doing hot start
@@ -6563,12 +6591,39 @@ int CbcNode::chooseClpBranch(CbcModel *model,
   OsiObject *object = model->modifiableObject(numberObjects);
   CbcGeneralDepth *thisOne = dynamic_cast< CbcGeneralDepth * >(object);
   assert(thisOne);
-  OsiClpSolverInterface *clpSolver
+  OsiClpSolverInterface *clpSolver 
     = dynamic_cast< OsiClpSolverInterface * >(solver);
   assert(clpSolver);
   ClpSimplex *simplex = clpSolver->getModelPtr();
+  infoForCbc infoCbc;
+  memset(&infoCbc,0,sizeof(infoCbc));
+  infoCbc.model = model;
+#ifdef CBC_HAS_NAUTY
+  if (model->rootSymmetryInfo()) {
+    int numberColumns = simplex->numberColumns();
+    double * lower = new double [5*numberColumns];
+    int * backward = reinterpret_cast<int *>(lower+4*numberColumns);
+    int * orbitalInfo = backward+numberColumns;
+    memcpy(orbitalInfo,model->rootSymmetryInfo()->whichOrbit(),
+	   numberColumns*sizeof(int));
+    infoCbc.usefulData = lower;
+    memcpy(lower,simplex->columnLower(),numberColumns*sizeof(double));
+    memcpy(lower+numberColumns,
+	   simplex->columnUpper(),numberColumns*sizeof(double));
+    thisOne->info()->callCbc_ = (void *)(fromFathomMany);
+  }
+#endif
+  infoCbc.originalNumberColumns = numberColumns;
+  thisOne->info()->usefulCbc_ = &infoCbc;
+    //(void *)(CbcGeneralDepth::orbitalBranching(int, double *));
   int preferredWay;
   double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+#ifdef CBC_HAS_NAUTY
+  if (model->rootSymmetryInfo()) {
+    delete [] infoCbc.usefulData;
+  }
+#endif
+  thisOne->info()->usefulCbc_ = NULL;
   if (thisOne->whichSolution() >= 0) {
     ClpNode *nodeInfo = NULL;
     if ((model->moreSpecialOptions() & 33554432) == 0) {

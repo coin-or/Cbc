@@ -121,6 +121,9 @@ bool CbcCountRowCut::canDropCut(const OsiSolverInterface *solver, int iRow) cons
   }
 }
 static double multiplier[] = { 1.23456789e2, -9.87654321 };
+#define COUNT_PRINT_LEVEL 0
+//#define CBC_SAME_CUT_TOLERANCE 1.0e-12
+#ifndef CBC_SAME_CUT_TOLERANCE
 static int hashCut(const OsiRowCut2 &x, int size)
 {
   int xN = x.row().getNumElements();
@@ -156,6 +159,50 @@ static int hashCut(const OsiRowCut2 &x, int size)
   }
   return hashValue % (size);
 }
+#else
+static int hashCut(const OsiRowCut2 &x, int size)
+{
+  int xN = x.row().getNumElements();
+  double xLb = x.lb();
+  double xUb = x.ub();
+  const int *xIndices = x.row().getIndices();
+  const double *xElements = x.row().getElements();
+  unsigned int hashValue;
+  float value = 1.0;
+#define TOLERANCE_MULTIPLIER 1.0/CBC_SAME_CUT_TOLERANCE
+  if (xLb > -1.0e10) {
+    xLb = floor(xLb*TOLERANCE_MULTIPLIER);
+    value += xLb * multiplier[0];
+  }
+  if (xUb < 1.0e10) {
+    xUb = floor(xUb*TOLERANCE_MULTIPLIER);
+    value += xUb * multiplier[1];
+  }
+  for (int j = 0; j < xN; j++) {
+    int xColumn = xIndices[j];
+    double xValue = xElements[j];
+    xValue = floor(xValue*TOLERANCE_MULTIPLIER);
+    int k = (j & 1);
+    value += (j + 1) * multiplier[k] * (xColumn + 1) * xValue;
+  }
+  // should be compile time but too lazy for now
+  union {
+    double d;
+    unsigned int i[2];
+  } xx;
+  if (sizeof(value) > sizeof(hashValue)) {
+    assert(sizeof(value) == 2 * sizeof(hashValue));
+    xx.d = value;
+    hashValue = (xx.i[0] + xx.i[1]);
+  } else {
+    assert(sizeof(value) == sizeof(hashValue));
+    xx.d = value;
+    hashValue = static_cast<unsigned int>(xx.i[0]); 
+    //hashValue = xx.i[0];
+  }
+  return hashValue % (size);
+}
+#endif
 static int hashCut2(const OsiRowCut2 &x, int size)
 {
   int xN = x.row().getNumElements();
@@ -195,6 +242,7 @@ static int hashCut2(const OsiRowCut2 &x, int size)
   }
   return hashValue % (size);
 }
+#ifndef CBC_SAME_CUT_TOLERANCE
 static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
 {
   int xN = x.row().getNumElements();
@@ -222,6 +270,89 @@ static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
   }
   return identical;
 }
+#else
+#define TOLERANCE_MULTIPLIER 1.0/CBC_SAME_CUT_TOLERANCE
+static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
+{
+  int xN = x.row().getNumElements();
+  int yN = y.row().getNumElements();
+  double xLb = x.lb();
+  double xUb = x.ub();
+  double yLb = y.lb();
+  double yUb = y.ub();
+  const int *xIndices = x.row().getIndices();
+  const double *xElements = x.row().getElements();
+  const int *yIndices = y.row().getIndices();
+  const double *yElements = y.row().getElements();
+  // get scaling factors
+  int xScale2 = 0;
+  double xScale = 0.0;
+  if (xLb > -1.0e10) {
+    xScale = fabs(xLb);
+    xScale2 = 1;
+  }
+  if (xUb < 1.0e10) {
+    xScale = CoinMax(xScale,fabs(xUb));
+    xScale2 |= 2;
+  }
+  int xN2 = 0;
+  for (int j = 0; j < xN; j++) {
+    double value = fabs(xElements[j]);
+    if (value > CBC_SAME_CUT_TOLERANCE) {
+      xN2++;
+      xScale = CoinMax(xScale,value);
+    }
+  }
+  int yScale2 = 0;
+  double yScale = 0.0;
+  if (yLb > -1.0e10) {
+    yScale = fabs(yLb);
+    yScale2 = 1;
+  }
+  if (yUb < 1.0e10) {
+    yScale = CoinMax(yScale,fabs(yUb));
+    yScale2 |= 2;
+  }
+  int yN2 = 0;
+  for (int j = 0; j < yN; j++) {
+    double value = fabs(yElements[j]);
+    if (value > CBC_SAME_CUT_TOLERANCE) {
+      yN2++;
+      yScale = CoinMax(yScale,value);
+    }
+  }
+  bool identical = false;
+  if (xN2 == yN2 && xScale2 == yScale2) {
+    xScale = 1.0/xScale;
+    yScale = 1.0/yScale;
+    if ((fabs(xLb*xScale - yLb*yScale) < CBC_SAME_CUT_TOLERANCE||(xScale2&1)==0)
+	&& (fabs(xUb*xScale - yUb*yScale) < CBC_SAME_CUT_TOLERANCE||(xScale2&2)==0)) {
+      int jX = 0;
+      int jY = 0 ;
+      identical = true;
+      for (; jX < xN; jX++) {
+	if (fabs(xElements[jX]*xScale) < CBC_SAME_CUT_TOLERANCE
+	    && jX < xN-1)
+	  continue;
+	while(fabs(yElements[jY]*yScale) < CBC_SAME_CUT_TOLERANCE
+	      && jY < yN-1)
+	  jY++;
+	if (xIndices[jX] != yIndices[jY]) {
+	  identical = false;
+	  break;
+	}
+	if (fabs(xElements[jX]*xScale - yElements[jY]*yScale) >
+	    CBC_SAME_CUT_TOLERANCE) {
+	  identical = false;
+	  break;
+	}
+	jY++;
+      }
+    }
+  }
+  return identical;
+}
+#endif
 static bool same2(const OsiRowCut2 &x, const OsiRowCut2 &y)
 {
   int xN = x.row().getNumElements();
@@ -252,7 +383,7 @@ static bool same2(const OsiRowCut2 &x, const OsiRowCut2 &y)
 CbcRowCuts::CbcRowCuts(int initialMaxSize, int hashMultiplier)
 {
   numberCuts_ = 0;
-  size_ = initialMaxSize;
+  size_ = initialMaxSize;//size_=10000;
   hashMultiplier_ = hashMultiplier;
   int hashSize = hashMultiplier_ * size_;
   if (size_) {
@@ -449,10 +580,16 @@ void CbcRowCuts::truncate(int numberAfter)
   delete[] rowCut_;
   rowCut_ = temp;
 }
+#if COUNT_PRINT_LEVEL > 0
+static int xxxxxx=0;
+#endif
 // Return 0 if added, 1 if not, -1 if not added because of space
 int CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut &cut, int whichType)
 {
   int hashSize = size_ * hashMultiplier_;
+#if COUNT_PRINT_LEVEL > 0
+  xxxxxx++;
+#endif
   bool globallyValid = cut.globallyValid();
   if (numberCuts_ == size_) {
     size_ = 2 * size_ + 100;
@@ -490,7 +627,7 @@ int CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut &cut, int whichType)
       }
       if (found < 0) {
         assert(hash_[ipos].next == -1);
-        if (ipos == jpos) {
+        if (ipos == jpos && hash_[ipos].index == -1) {
           // first
           hash_[ipos].index = i;
         } else {
@@ -504,6 +641,9 @@ int CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut &cut, int whichType)
           hash_[ipos].next = lastHash_;
           hash_[lastHash_].index = i;
         }
+      } else {
+	printf("bad duplicate\n");
+	abort();
       }
     }
     delete[] rowCut_;
@@ -524,8 +664,16 @@ int CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut &cut, int whichType)
       if (value < 1.0e-12 || value > 1.0e12)
         bad = true;
     }
-    if (bad)
+    if (bad) {
+#if COUNT_PRINT_LEVEL > 0
+      printf("DUP1 %d ",xxxxxx);
+#if COUNT_PRINT_LEVEL > 2
+      cut.print();
+#endif
+#endif
+      //xxxxxx++;
       return 1;
+    }
     OsiRowCut2 newCut(whichType);
     newCut.setLb(newLb);
     newCut.setUb(newUb);
@@ -552,8 +700,14 @@ int CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut &cut, int whichType)
       }
     }
     if (found < 0) {
+#if COUNT_PRINT_LEVEL > 0
+      printf("NOTDUP %d ",xxxxxx);
+#if COUNT_PRINT_LEVEL > 1
+      cut.print();
+#endif
+#endif
       assert(hash_[ipos].next == -1);
-      if (ipos == jpos) {
+      if (ipos == jpos && hash_[ipos].index == -1) {
         // first
         hash_[ipos].index = numberCuts_;
       } else {
@@ -577,6 +731,12 @@ int CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut &cut, int whichType)
       //     cut.row().getNumElements(),this,numberCuts_);
       return 0;
     } else {
+#if COUNT_PRINT_LEVEL > 0
+      printf("DUP2 %d ",xxxxxx);
+#if COUNT_PRINT_LEVEL > 1
+      cut.print();
+#endif
+#endif
       return 1;
     }
   } else {

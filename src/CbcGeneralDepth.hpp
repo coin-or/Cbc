@@ -85,10 +85,16 @@ public:
   {
     return nodeInfo_->nodeInfo_[which];
   }
+  /// Get ClpNodeStuff
+  inline ClpNodeStuff *info()
+  {
+    return nodeInfo_;
+  }
 
   /// Redoes data when sequence numbers change
   virtual void redoSequenceEtc(CbcModel *model, int numberColumns, const int *originalColumns);
-
+  /// For orbital branching
+  int orbitalBranching(int sequence, double * upper);
 protected:
   /// data
   /// Maximum depth

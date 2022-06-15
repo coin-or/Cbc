@@ -50,16 +50,18 @@ CbcGeneralDepth::CbcGeneralDepth(CbcModel *model, int maximumDepth)
   , numberNodes_(0)
   , nodeInfo_(NULL)
 {
-  assert(maximumDepth_ < 1000000);
+  assert(maximumDepth_ < 10000000);
   if (maximumDepth_ == 0)
     maximumDepth_ = 1;
+#define MAX_DEPTH 1000
+#define MAX_NODES 200
+  int realMaximumDepth = maximumDepth_ % MAX_DEPTH;
   if (maximumDepth_ > 0)
-    maximumNodes_ = (1 << maximumDepth_) + 1 + maximumDepth_;
+    maximumNodes_ = (1 << realMaximumDepth) + 1 + realMaximumDepth;
   else 
     maximumNodes_ = 1 + 1 - maximumDepth_;
-#define MAX_NODES 100
-  maximumNodes_ = CoinMin(maximumNodes_, 1 + abs(maximumDepth_) + MAX_NODES);
-  maximumNodes_ = CoinMax(maximumNodes_, 4);
+  maximumNodes_ = CoinMin(maximumNodes_, 1 + abs(realMaximumDepth) + MAX_NODES);
+  maximumNodes_ = CoinMax(maximumNodes_, 10);
   if (maximumNodes_) {
     nodeInfo_ = new ClpNodeStuff();
     nodeInfo_->maximumNodes_ = maximumNodes_;
@@ -67,7 +69,7 @@ CbcGeneralDepth::CbcGeneralDepth(CbcModel *model, int maximumDepth)
     // for reduced costs and duals
     info->solverOptions_ |= 7;
     if (maximumDepth_ > 0) {
-      info->nDepth_ = maximumDepth_;
+      info->nDepth_ = realMaximumDepth;
     } else {
       info->nDepth_ = -maximumDepth_;
       info->solverOptions_ |= 32;
@@ -86,6 +88,7 @@ CbcGeneralDepth::CbcGeneralDepth(const CbcGeneralDepth &rhs)
   : CbcGeneral(rhs)
 {
   maximumDepth_ = rhs.maximumDepth_;
+  int realMaximumDepth = maximumDepth_ % MAX_DEPTH;
   maximumNodes_ = rhs.maximumNodes_;
   whichSolution_ = -1;
   numberNodes_ = 0;
@@ -95,7 +98,7 @@ CbcGeneralDepth::CbcGeneralDepth(const CbcGeneralDepth &rhs)
     nodeInfo_->maximumNodes_ = maximumNodes_;
     ClpNodeStuff *info = nodeInfo_;
     if (maximumDepth_ > 0) {
-      info->nDepth_ = maximumDepth_;
+      info->nDepth_ = realMaximumDepth;
     } else {
       info->nDepth_ = -maximumDepth_;
       info->solverOptions_ |= 32;
@@ -126,6 +129,7 @@ CbcGeneralDepth::operator=(const CbcGeneralDepth &rhs)
     CbcGeneral::operator=(rhs);
     delete nodeInfo_;
     maximumDepth_ = rhs.maximumDepth_;
+    int realMaximumDepth = maximumDepth_ % MAX_DEPTH;
     maximumNodes_ = rhs.maximumNodes_;
     whichSolution_ = -1;
     numberNodes_ = 0;

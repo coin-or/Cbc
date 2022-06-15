@@ -17,6 +17,7 @@
 #include "CbcMessage.hpp"
 #include "CbcHeuristicDW.hpp"
 #include "CbcStrategy.hpp"
+#include "CbcCutGenerator.hpp"
 #include "ClpPresolve.hpp"
 #include "CglProbing.hpp"
 
@@ -106,7 +107,7 @@ void CbcHeuristicDW::setDefaults()
   phase_ = 0;
   pass_ = 0;
   nNeededBase_ = 200;
-  nNodesBase_ = 500;
+  nNodesBase_ = 5000;
   nNeeded_ = nNeededBase_;
   nNodes_ = nNodesBase_;
   solveState_ = 0;
@@ -162,8 +163,8 @@ void CbcHeuristicDW::gutsOfCopy(const CbcHeuristicDW &rhs)
     else
       affinity_ = NULL;
     backwardRow_ = CoinCopyOfArray(rhs.backwardRow_, numberRows);
-    startRowBlock_ = CoinCopyOfArray(rhs.startRowBlock_, numberBlocks_ + 1);
-    startColumnBlock_ = CoinCopyOfArray(rhs.startColumnBlock_, numberBlocks_ + 1);
+    startRowBlock_ = CoinCopyOfArray(rhs.startRowBlock_, numberBlocks_ + 2);
+    startColumnBlock_ = CoinCopyOfArray(rhs.startColumnBlock_, numberBlocks_ + 2);
     intsInBlock_ = CoinCopyOfArray(rhs.intsInBlock_, numberBlocks_);
   } else {
     saveLower_ = NULL;
@@ -309,6 +310,17 @@ void CbcHeuristicDW::resetModel(CbcModel *model)
     abort();
   model_ = model;
 }
+#ifdef GET_ALL_SOLUTIONS
+extern int nget_All_solutions;
+extern int get_All_master;
+extern int *get_All_starts;
+extern int *get_All_rows;
+extern double *get_All_values;
+extern double *get_All_objs;
+extern double *get_All_trueobj;
+// debug
+extern int *get_All_trueseq;
+#endif
 /*
   First tries setting a variable to better value.  If feasible then
   tries setting others.  If not feasible then tries swaps
@@ -319,13 +331,653 @@ int CbcHeuristicDW::solution(double &solutionValue,
   numCouldRun_++;
   int returnCode = 0;
   const double *bestSolutionIn = model_->bestSolution();
-  if (!bestSolutionIn && !bestSolution_)
+  if (numberPasses_ == -200)
+    return 0;
+  if (!bestSolutionIn && !bestSolution_ && numberPasses_ > 0)
     return 0; // No solution found yet
   if (numberBlocks_ < 3)
     return 0; // no point
 #ifdef HEURISTIC_INFORM
   printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
     heuristicName(), numRuns_, numCouldRun_, when_);
+#endif
+#ifdef GET_ALL_SOLUTIONS
+  if (numberPasses_ == -113) {
+    numberPasses_ = -200;
+    OsiClpSolverInterface * solver =
+      dynamic_cast<OsiClpSolverInterface *>(model_->solver());
+    ClpSimplex * simplex = solver->getModelPtr();
+    int numberRows = simplex->numberRows();
+    {
+      int numberColumns = simplex->numberColumns();
+      for (int iBlock=0;iBlock<numberBlocks_;iBlock++) {
+	printf("Block %d-",iBlock);
+	for (int i=0;i<numberColumns;i++) {
+	  if (whichColumnBlock_[i]==iBlock)
+	    printf(" %d",i);
+	}
+	printf("\n");
+      }
+    }
+    CoinPackedMatrix * matrix = simplex->matrix();
+    // get row copy
+    CoinPackedMatrix rowCopy = *matrix;
+    rowCopy.reverseOrdering();
+    const int * row = matrix->getIndices();
+    const int * columnLength = matrix->getVectorLengths();
+    const CoinBigIndex * columnStart = matrix->getVectorStarts();
+    const double * elementByColumn = matrix->getElements();
+    const double * objective = simplex->objective();
+    const int * column = rowCopy.getIndices();
+    const int * rowLength = rowCopy.getVectorLengths();
+    const CoinBigIndex * rowStart = rowCopy.getVectorStarts();
+    //const double * elementByRow = rowCopy.getElements();
+    int numberColumns = simplex->numberColumns();
+    // make up problems
+    int maximumNewColumns = 5*numberColumns;
+    int numberNewColumns = 0;
+    int numberElements = matrix->getNumElements();
+    int maximumValues = 5*numberElements;
+    // Create all
+    // Could do faster - but do that later
+    // Should use arrays already created
+    int * whichRow = new int [4*numberRows+numberBlocks_];
+    int * delRows = whichRow+numberRows;
+    int * whichMaster = delRows+numberRows;
+    int * backward = whichMaster+numberRows;
+    int * whichColumn = new int [numberColumns];
+    int *starts = new int[maximumNewColumns+1];
+    starts[0] = 0;
+    double *objs = new double[maximumNewColumns];
+    int *rows = new int[maximumValues];
+    double *values = new double[maximumValues];
+    double *rand = new double[numberMasterRows_];
+    int * newColumnBlock = new int [2*numberBlocks_+2];
+    int * newRowBlock = newColumnBlock+numberBlocks_+1;
+    memset(backward,0,(numberRows+numberBlocks_)*sizeof(int));
+    // bugs all over place if master rows at end
+    int nTemp = 0;
+    bool masterAtTop=true;
+    if (whichRowBlock_[0]==-1) {
+      for (int i=0;i<numberMasterRows_;i++) { 
+	whichMaster[nTemp] = i;
+	nTemp++;
+      }
+    } else {
+      masterAtTop = false;
+      int startMasterRows = numberRows-numberMasterRows_;
+      for (int i=0;i<numberMasterRows_;i++) { 
+	whichMaster[nTemp] = startMasterRows+i;
+	nTemp++;
+      }
+    }
+    assert (nTemp==numberMasterRows_);
+    for (int i=0;i<numberMasterRows_;i++)
+      rand[i]=drand48();
+    // get columns only in master
+    int numberMasterColumns = 0;
+    int numberNewRows = numberRows;
+    starts[0]=0;
+    int numberNewElements = 0;
+    int startMasterColumns = startColumnBlock_[numberBlocks_];
+    int endMasterColumns = startColumnBlock_[numberBlocks_+1];
+    int startMasterRows = 0;
+    int endMasterRows = startRowBlock_[numberBlocks_+1];
+    for (int j =startMasterColumns; j<endMasterColumns;j++) {
+      int iColumn = columnsInBlock_[j];
+      assert (whichColumnBlock_[iColumn]==-1);
+      objs[numberMasterColumns] = objective[iColumn];
+      for (int j=columnStart[iColumn];
+	   j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	int iRow = row[j];
+	rows[numberNewElements] = iRow;
+	backward[iRow]++;
+	values[numberNewElements++] = elementByColumn[j];
+      }
+      numberMasterColumns++;
+      starts[numberMasterColumns] = numberNewElements;
+    }
+    newColumnBlock[0] = numberMasterColumns;
+    newRowBlock[0] = numberMasterRows_;
+    numberNewColumns = numberMasterColumns;
+    int * typeBlock = new int [numberBlocks_];
+    memset(typeBlock,0,numberBlocks_*sizeof(int));
+    int numberExtraRows = 0;
+    int numberExtraColumns = 0;
+    int numberExtraElements = 0;
+    for (int iBlock = 0; iBlock < numberBlocks_; iBlock++) {
+      int numberInt2 = 0;
+      int startRow = startRowBlock_[iBlock];
+      int numberRow2 = startRowBlock_[iBlock+1]-startRow;
+      int startColumn = startColumnBlock_[iBlock];
+      int numberColumn2 = startColumnBlock_[iBlock+1]-startColumn;
+      for (int j =startColumn;j<startColumnBlock_[iBlock+1];j++) {
+	int iColumn = columnsInBlock_[j];
+	if (simplex->isInteger(iColumn))
+	  numberInt2++;
+      }
+      int numberInBlock = startColumnBlock_[iBlock+1]-startColumnBlock_[iBlock];
+      if (numberInt2<numberColumn2 ||
+	  numberInBlock>2000) {
+	// not all integer or just one row or too many
+	typeBlock[iBlock]=-1;
+	//numberExtraRows += startRowBlock_[iBlock+1]-startRowBlock_[iBlock];
+	int startC = startColumnBlock_[iBlock];
+	for (int i=startC;i<startC+numberInBlock;i++) {
+	  int iColumn = columnsInBlock_[i];
+	  objs[numberNewColumns] = objective[iColumn];
+	  for (int j=columnStart[iColumn];
+	       j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	    int iRow = row[j];
+	    rows[numberNewElements] = iRow;
+	    backward[iRow]++;
+	    values[numberNewElements++] = elementByColumn[j];
+	  }
+	  numberNewColumns++;
+	  starts[numberNewColumns] = numberNewElements;
+	}
+	newRowBlock[iBlock+1]=numberNewRows;
+	newColumnBlock[iBlock+1] = numberNewColumns;
+	continue;
+      } else {
+	memcpy(whichRow,whichMaster,
+	       numberMasterRows_*sizeof(int));
+	int nTemp = numberMasterRows_;
+	for (int i=startRowBlock_[iBlock];i<startRowBlock_[iBlock+1];i++) {
+	  int iRow = rowsInBlock_[i];
+	  whichRow[nTemp] = iRow;
+	  nTemp++;
+	}
+	ClpSimplex tempS(simplex,numberMasterRows_+numberRow2,whichRow,
+			 numberColumn2,columnsInBlock_+startColumn,true,false);
+	get_All_trueseq = columnsInBlock_+startColumn;
+	// Get rid of objective offset
+	tempS.setObjectiveOffset(0.0);
+	// get rid of empty rows
+	CoinPackedMatrix * matrix2 = tempS.matrix();
+	const int * row2 = matrix2->getIndices();
+	const int * columnLength2 = matrix2->getVectorLengths();
+	const CoinBigIndex * columnStart2 = matrix2->getVectorStarts();
+	memset(delRows,0,numberMasterRows_*sizeof(int));
+	for (int i=0;i<numberColumn2;i++) {
+	  for (CoinBigIndex j=columnStart2[i];j<columnStart2[i]+columnLength2[i];j++) {
+	    delRows[row2[j]]++;
+	  }
+	}
+	// out for a bit
+#if 0
+	int nD=0;
+	get_All_master=0;
+	for (int i=0;i<numberMasterRows_;i++) {
+	  if (delRows[i]==0) {
+	    delRows[nD++] = i;
+	  } else {
+	    whichRow[get_All_master] = i;
+	    get_All_master++;
+	  }
+	}
+	if (nD)
+	  tempS.deleteRows(nD,delRows);
+#else
+	get_All_master=numberMasterRows_;
+#endif
+	// could Save model and then fake rhs and objective
+	//saveModel[iBlock] = new ClpSimplex(tempS);
+	double *rowLowerS = tempS.rowLower();
+	double *rowUpperS = tempS.rowUpper();
+	for (int i=0;i<get_All_master;i++) {
+	  rowLowerS[i] = -COIN_DBL_MAX;
+	  rowUpperS[i] = 100000.0;
+	}
+	double * obj = tempS.objective();
+	get_All_trueobj = new double[numberColumn2];
+	for (int i=0;i<numberColumn2;i++) {
+	  get_All_trueobj[i] = obj[i];
+	  double value = drand48();
+	  while(value<1.0e-3)
+	    value *= 10.0;
+	  obj[i]=0;//value;
+	}
+	OsiClpSolverInterface solver(&tempS);
+	solver.setHintParam(OsiDoReducePrint, true,
+			    OsiHintTry);
+	CbcModel cbc(solver);
+	cbc.setLogLevel(0);
+	printf("Doing block %d with %d rows, %d columns and %d elements\n",
+	       iBlock,tempS.numberRows(),tempS.numberColumns(),tempS.matrix()->getNumElements());
+#define PRINT_MORE_GET
+#ifdef PRINT_MORE_GET
+	printf("columns - ");
+	int startC = startColumnBlock_[iBlock];
+	int nC = startColumnBlock_[iBlock+1]-startColumnBlock_[iBlock];
+	for (int i=startC;i<startC+nC;i++) {
+	  int iColumn = columnsInBlock_[i];
+	  printf("%d ",iColumn);
+	}
+	printf("\n");
+	char pppp[40];
+	sprintf(pppp,"/tmp/sub%d.mps",iBlock);
+	tempS.writeMps(pppp);
+#endif
+	cbc.setCutoffIncrement(-3333.0);
+	cbc.branchAndBound();
+	delete [] get_All_trueobj;
+	int nPossibleDups = 0;
+	printf("%d solutions and %d elements\n",
+	       nget_All_solutions,get_All_starts[nget_All_solutions]);
+#define LEAVE_TEST 300000
+	if (nget_All_solutions<LEAVE_TEST) {
+	  for (int i=0;i<nget_All_solutions;i++) {
+	    if (numberNewColumns+numberColumns>=maximumNewColumns) {
+	      int nNew = maximumNewColumns*2;
+	      int nNew2 = nNew+numberColumns;
+	      int * tempI = starts;
+	      double * tempD = objs;
+	      starts = new int[nNew2+1];
+	      objs = new double[nNew2];
+	      memcpy(starts,tempI,(numberNewColumns+1)*sizeof(int));
+	      memcpy(objs,tempD,numberNewColumns*sizeof(double));
+	      delete [] tempI;
+	      delete [] tempD;
+	      maximumNewColumns = nNew;
+	    }
+	    assert (numberNewElements == starts[numberNewColumns]);
+	    if (numberNewElements+numberRows+numberElements>=maximumValues) {
+	      int nNew = maximumValues*2;
+	      int nNew2 = nNew+numberElements;
+	      int * tempI = rows;
+	      double * tempD = values;
+	      rows = new int[nNew2];
+	      values = new double[nNew2];
+	      memcpy(rows,tempI,numberNewElements*sizeof(int));
+	      memcpy(values,tempD,numberNewElements*sizeof(double));
+	      maximumValues = nNew;
+	      delete [] tempI;
+	      delete [] tempD;
+	    }
+	    objs[numberNewColumns] = get_All_objs[i];
+#if 0 //def PRINT_MORE_GET
+	    printf("subcol %d with cost %g\n",numberNewColumns,get_All_objs[i]);
+#endif
+	    for (int j=get_All_starts[i];j<get_All_starts[i+1];j++) {
+	      int iRow=get_All_rows[j];
+	      iRow = whichRow[iRow];
+	      rows[numberNewElements]=iRow;
+	      backward[iRow]++;
+#if 0//def PRINT_MORE_GET
+	      printf("subcol %d row %d value %g\n",numberNewColumns,
+		     iRow,get_All_values[j]);
+#endif
+	      assert (iRow<numberMasterRows_);
+	      values[numberNewElements++]=get_All_values[j];
+	    }
+	    // convexity row
+	    rows[numberNewElements] = numberNewRows;
+	    backward[numberNewRows]++;
+	    values[numberNewElements++] = 1.0;
+	    numberNewColumns++;
+	    starts[numberNewColumns] = numberNewElements;
+	  }
+	  numberNewRows++;
+	  newRowBlock[iBlock+1]=numberNewRows;
+	  newColumnBlock[iBlock+1] = numberNewColumns;
+	} else {
+	  typeBlock[iBlock]=-2;
+	  int startC = startColumnBlock_[iBlock];
+	  int nC = startColumnBlock_[iBlock+1]-startColumnBlock_[iBlock];
+	  for (int i=startC;i<startC+nC;i++) {
+	    int iColumn = columnsInBlock_[i];
+	    objs[numberNewColumns] = objective[iColumn];
+	    for (int j=columnStart[iColumn];
+		 j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	      int iRow = row[j];
+	      rows[numberNewElements] = iRow;
+	      backward[iRow]++;
+	      values[numberNewElements++] = elementByColumn[j];
+	    }
+	    numberNewColumns++;
+	    starts[numberNewColumns] = numberNewElements;
+	  }
+	  newRowBlock[iBlock+1]=numberNewRows;
+	  newColumnBlock[iBlock+1] = numberNewColumns;
+	}
+      }
+    }
+    // redo rows
+    int nNew = 0;
+    int nEl = 0;
+    for (int i=0;i<numberNewRows;i++) {
+      if (backward[i]||true) {
+	nEl += backward[i];
+	backward[i] = nNew;
+	nNew++;
+      } else {
+	backward[i] = -1;
+      }
+    }
+    for (int i=0;i<numberBlocks_;i++) {
+      newRowBlock[i+1] = backward[newRowBlock[i+1]];
+    }
+    numberNewRows = nNew;
+    for (int i=0;i<nEl;i++) {
+      int iRow = backward[rows[i]];
+      assert (iRow>=0 && iRow<nNew);
+      rows[i] = iRow;
+    }
+    for (int i=0;i<numberNewColumns;i++) {
+      for (int j=starts[i];j<starts[i+1];j++) {
+	if (rows[j]<0||rows[j]>=numberNewRows) {
+	  abort();
+	}
+      }
+    }
+    // create model
+    ClpSimplex newModel;
+    newModel.loadProblem(numberNewColumns,numberNewRows,starts,rows,values,
+			 NULL,NULL,objs,NULL,NULL);
+    double * rowLower = newModel.rowLower();
+    double * rowUpper = newModel.rowUpper();
+    double * columnLower = newModel.columnLower();
+    double * columnUpper = newModel.columnUpper();
+    double * rowLowerIn = simplex->rowLower();
+    double * rowUpperIn = simplex->rowUpper();
+    double * columnLowerIn = simplex->columnLower();
+    double * columnUpperIn = simplex->columnUpper();
+    // master
+    int n = 0;
+    for (int j =startMasterColumns; j<endMasterColumns;j++) {
+      int iColumn = columnsInBlock_[j];
+      assert (whichColumnBlock_[iColumn]==-1);
+      columnLower[n] = columnLowerIn[iColumn];
+      columnUpper[n] = columnUpperIn[iColumn];
+      if (simplex->isInteger(iColumn))
+	newModel.setInteger(n);
+      n++;
+    }
+    // temp
+    memset(rowLower,0,numberNewRows*sizeof(double));
+    memset(rowUpper,0,numberNewRows*sizeof(double));
+    // master rhs
+    n = 0;
+    for (int i=0;i<numberMasterRows_;i++) {
+      int iRow = whichMaster[i];
+      rowLower[n] = rowLowerIn[iRow];
+      rowUpper[n] = rowUpperIn[iRow];
+      n++;
+    }
+    for (int iBlock = 0;iBlock<numberBlocks_;iBlock++) {
+      if (typeBlock[iBlock]>=0) {
+	// SOS
+	for (int i=newColumnBlock[iBlock];i<newColumnBlock[iBlock+1];i++) {
+	  columnLower[i] = 0.0;
+	  columnUpper[i] = 1.0;
+	  newModel.setInteger(i);
+	}
+	int iRow = newRowBlock[iBlock];
+	rowLower[iRow]=1.0;
+	rowUpper[iRow]=1.0;
+      } else {
+	int n = newColumnBlock[iBlock];
+	int startC = startColumnBlock_[iBlock];
+	int nC = startColumnBlock_[iBlock+1]-startColumnBlock_[iBlock];
+	for (int i=startC;i<startC+nC;i++) {
+	  int iColumn = columnsInBlock_[i];
+	  columnLower[n] = columnLowerIn[iColumn];
+	  columnUpper[n] = columnUpperIn[iColumn];
+	  if (simplex->isInteger(iColumn))
+	    newModel.setInteger(n);
+	  n++;
+	}
+	int startR = startRowBlock_[iBlock];
+	int nR = startRowBlock_[iBlock+1]-startRowBlock_[iBlock];
+	for (int i=startR;i<startR+nR;i++) {
+	  int iRow = rowsInBlock_[i];
+	  int iPut = backward[iRow];
+	  rowLower[iPut] = rowLowerIn[iRow];
+	  rowUpper[iPut] = rowUpperIn[iRow];
+	}
+      }
+    }
+    newModel.setObjectiveOffset(simplex->objectiveOffset());
+    newModel.writeMps("/tmp/query.mps");
+    // see if we think it worthwhile
+    delete [] starts;
+    delete [] objs;
+    delete [] rows;
+    delete [] values;
+    delete [] rand;
+    delete [] whichRow;
+    delete [] whichColumn;
+    delete [] get_All_starts;
+    delete [] get_All_objs;
+    delete [] get_All_rows;
+    delete [] get_All_values;
+    // could preprocess - or at least presolve
+    OsiClpSolverInterface * newSolver =
+      new OsiClpSolverInterface(&newModel,false);
+    CbcModel modelX(*model_);
+    modelX.resetModel();
+    OsiSolverInterface *solver3 = newSolver->clone();
+    modelX.assignSolver(solver3,true);
+    modelX.createContinuousSolver();
+    modelX.deleteObjects();
+    int numberCutGenerators = modelX.numberCutGenerators();
+    for (int i=0;i<numberCutGenerators;i++) {
+      CbcCutGenerator * generator = modelX.cutGenerator(i);
+      generator->refreshModel(&modelX);
+    }
+#ifdef CBC_HAS_NAUTY
+    if (modelX.symmetryInfo()||modelX.rootSymmetryInfo()) {
+      modelX.zapSymmetry();
+      int options2 = modelX.moreSpecialOptions2();
+      modelX.setMoreSpecialOptions2(options2|128|256);
+    }
+#endif
+    // replace heuristics
+    int numberHeuristics = modelX.numberHeuristics();
+    for (int i=0;i<numberHeuristics;i++) {
+      CbcHeuristic * heuristic = modelX.heuristic(i);
+      heuristic->resetModel(&modelX);
+    } //modelX.setMaximumNodes(1);
+    modelX.branchAndBound();
+    if (modelX.bestSolution()) {
+      // put back in model
+      const double * solution = modelX.bestSolution();
+      double * tempSolution = new double[numberNewColumns];
+      int * doStuffRow = new int [numberRows+numberColumns];
+      int * doStuffColumn = doStuffRow+numberRows;
+      // Put back master column solution
+      int nGet = 0;
+      for (int j =startMasterColumns; j<endMasterColumns;j++) {
+	int iColumn = columnsInBlock_[j];
+	betterSolution[iColumn] = solution[nGet++];
+      }
+      for (int iBlock=0;iBlock<numberBlocks_;iBlock++) {
+	if (typeBlock[iBlock]<0) {
+	  // use solution
+	  for (int j =startColumnBlock_[iBlock];
+	       j<startColumnBlock_[iBlock+1];j++) {
+	    int iColumn = columnsInBlock_[j];
+	    betterSolution[iColumn] = solution[nGet++];
+	  }
+	} else {
+	  // Get effective RHS
+	  memcpy(tempSolution,solution,numberNewColumns*sizeof(double));
+	  int startC = newColumnBlock[iBlock];
+	  int endC = newColumnBlock[iBlock+1];
+	  for (int i=startC;i<endC;i++) {
+	    tempSolution[i] = 0.0;
+	  }
+	  nGet += endC-startC;
+	  double * rhs = newModel.primalRowSolution();
+	  memset(rhs,0,numberNewRows*sizeof(double));
+	  newModel.matrix()->times(tempSolution,rhs);
+	  for (int i=0;i<numberRows;i++)
+	    doStuffRow[i]=i;
+	  int n =0;
+	  for (int i=startColumnBlock_[iBlock];
+	       i<startColumnBlock_[iBlock+1];i++) {
+	    int iColumn = columnsInBlock_[i];
+	    doStuffColumn[n++] = iColumn;
+	  }
+	  ClpSimplex tempS(simplex,numberRows,doStuffRow,
+			   n,doStuffColumn,true,false);
+	  double * rowLower = tempS.rowLower();
+	  double * rowUpper = tempS.rowUpper();
+	  if (masterAtTop) {
+	    for (int i=0;i<numberMasterRows_;i++) {
+	      if (rowLower[i]>-1.0e20)
+		rowLower[i] -= rhs[i];
+	      if (rowUpper[i]<1.0e20)
+		rowUpper[i] -= rhs[i];
+	    }
+	  } else {
+	    int n = numberRows-numberMasterRows_;
+	    for (int i=0;i<numberMasterRows_;i++) {
+	      if (rowLower[i+n]>-1.0e20)
+		rowLower[i+n] -= rhs[i];
+	      if (rowUpper[i+n]<1.0e20)
+		rowUpper[i+n] -= rhs[i];
+	    }
+	  }
+	  // get row copy
+	  CoinPackedMatrix rowCopy = *tempS.matrix();
+	  rowCopy.reverseOrdering();
+	  const int * rowLength = rowCopy.getVectorLengths();
+	  int nD=0;
+	  for (int i=0;i<numberRows;i++) {
+	    if (!rowLength[i])
+	      doStuffRow[nD++]=i;
+	  }
+	  tempS.deleteRows(nD,doStuffRow);
+	  OsiClpSolverInterface solver(&tempS);
+	  solver.setHintParam(OsiDoReducePrint, true,
+			      OsiHintTry);
+	  CbcModel cbc(solver);
+	  cbc.setLogLevel(0);
+	  printf("Doing block %d with %d rows, %d columns and %d elements\n",
+		 iBlock,tempS.numberRows(),tempS.numberColumns(),tempS.matrix()->getNumElements());
+	  cbc.branchAndBound();
+	  const double * bestSol = cbc.bestSolution();
+	  n=0;
+	  for (int i=startColumnBlock_[iBlock];
+	       i<startColumnBlock_[iBlock+1];i++) {
+	    int iColumn = columnsInBlock_[i];
+	    betterSolution[iColumn] = bestSol[n++];
+	  }
+	}
+      }
+      delete [] tempSolution;
+      delete [] doStuffRow;
+      delete [] typeBlock;
+      delete newSolver;
+      if (modelX.status()==0) {
+	model_->setCutoffIncrement(1.0e10);
+	model_->setCutoff(1.0e10);
+	// delete all generators and heuristics
+	//int numberCutGenerators = model_->numberCutGenerators();
+	//CbcCutGenerator ** generators = model_->cutGenerators();
+	//for (int i=0;i<numberCutGenerators;i++) 
+	//delete generators[i];
+	//model_->setNumberCutGenerators(0);
+	int numberHeuristics = model_->numberHeuristics();
+	// miss out this
+	for (int i=1;i<numberHeuristics;i++) 
+	  delete model_->heuristic(i);
+	model_->setNumberHeuristics(1);
+      }
+      solutionValue = modelX.getMinimizationObjValue();
+      //memcpy(betterSolution,0,numberColumns*sizeof(double));
+      delete [] newColumnBlock;
+      return 1;
+    } else {
+      delete [] newColumnBlock;
+      return 0;
+    }
+  } else if (numberPasses_==-200) {
+    return 0;
+  } else if (numberPasses_ == -133) {
+    numberPasses_ = -200;
+    OsiClpSolverInterface * solver =
+      dynamic_cast<OsiClpSolverInterface *>(model_->solver());
+    ClpSimplex * simplex = solver->getModelPtr();
+    int numberRows = simplex->numberRows();
+    int numberColumns = simplex->numberColumns();
+    const double * sol = model_->bestSolution();
+    memcpy(simplex->primalColumnSolution(),sol,numberColumns*sizeof(double));
+    if (0) {
+      int numberColumns = simplex->numberColumns();
+      for (int iBlock=0;iBlock<numberBlocks_;iBlock++) {
+	printf("Block %d-",iBlock);
+	for (int i=0;i<numberColumns;i++) {
+	  if (whichColumnBlock_[i]==iBlock)
+	    printf(" %d",i);
+	}
+	printf("\n");
+      }
+    }
+    int last;
+    int * whichRow = new int[numberRows+numberBlocks_+2];
+    int * sizeRow = whichRow+numberRows;
+    for (int i=0;i<numberRows;i++) {
+      int iBlock = whichRowBlock_[i];
+      whichRow[i] = ((iBlock+1)<<24)+i;
+    }
+    std::sort(whichRow,whichRow+numberRows);
+    sizeRow[0]=0;
+    last = 0;
+    for (int i=0;i<numberRows;i++) {
+      int iBlock = whichRow[i]>>24;
+      if (iBlock>last) {
+	sizeRow[iBlock]=i;
+	last=iBlock;
+      }
+      whichRow[i] = whichRow[i]&0x0ffffff;
+    }
+    sizeRow[numberBlocks_]=numberRows;
+    int * whichColumn = new int[numberColumns+numberBlocks_+2];
+    int * sizeColumn = whichColumn+numberColumns;
+    for (int i=0;i<numberColumns;i++) {
+      int iBlock = whichColumnBlock_[i];
+      whichColumn[i] = ((iBlock+1)<<24)+i;
+    }
+    std::sort(whichColumn,whichColumn+numberColumns);
+    sizeColumn[0]=0;
+    last = 0;
+    for (int i=0;i<numberColumns;i++) {
+      int iBlock = whichColumn[i]>>24;
+      if (iBlock>last) {
+	sizeColumn[iBlock]=i;
+	last=iBlock;
+      }
+      whichColumn[i] = whichColumn[i]&0x0ffffff;
+    }
+    sizeColumn[numberBlocks_]=numberColumns;
+    ClpSimplex sorted(simplex,numberRows,whichRow,
+		      numberColumns,whichColumn,true,false);
+    sorted.writeMps("/tmp/sorted.mps");
+    FILE * fp = fopen("/tmp/sorted.stuff","w");
+    fprintf(fp,"%d %d %d\n",numberRows,numberColumns,numberBlocks_);
+    for (int i=0;i<numberBlocks_+1;i++)
+      fprintf(fp,"%d %d\n",sizeRow[i],sizeColumn[i]);
+    sol = sorted.primalColumnSolution();
+    double * lower = sorted.columnLower();
+    double * upper = sorted.columnUpper();
+    for (int i=0;i<numberColumns;i++) {
+      fprintf(fp,"%d %.18g\n",i,sol[i]);
+      if (sorted.isInteger(i)) {
+	double value = floor(sol[i]+0.5);
+	lower[i] = value;
+	upper[i] = value;
+      }
+    }
+    sorted.writeMps("/tmp/sortedFix.mps");
+    fclose(fp);
+    delete [] whichRow;
+    delete [] whichColumn;
+    exit(77);
+    return 0;
+  }
 #endif
   if (bestSolutionIn) {
     if (objectiveValue(bestSolutionIn) < bestObjective_ - 1.0e-5) {

@@ -1068,6 +1068,71 @@ static void Cbc_iniBuffer(Cbc_Model *model)
 static void Cbc_iniParams( Cbc_Model *model );
 static void Cbc_cleanOptResults(Cbc_Model *model);
 
+/* Update CBC (old to new) parameters */
+static void synchronizeParams( CbcModel *model, CbcParameters *parameters ) {
+  int intValue;
+
+  intValue = model->getIntParam(CbcModel::CbcMaxNumNode);
+  parameters->setParamVal(CbcParam::MAXNODES, intValue);
+
+  intValue = model->getIntParam(CbcModel::CbcMaxNodesNotImproving);
+  parameters->setParamVal(CbcParam::MAXNODESNOTIMPROVING, intValue);
+
+  intValue = model->getIntParam(CbcModel::CbcMaxNumSol);
+  parameters->setParamVal(CbcParam::MAXSOLS, intValue);
+
+  intValue = model->numberStrong();
+  parameters->setParamVal(CbcParam::STRONGBRANCHING, intValue);
+
+  intValue = model->numberBeforeTrust();
+  parameters->setParamVal(CbcParam::NUMBERBEFORE, intValue);
+
+  intValue = model->numberAnalyzeIterations();
+  parameters->setParamVal(CbcParam::NUMBERANALYZE, intValue);
+
+  intValue = model->getMaximumCutPasses();
+  parameters->setParamVal(CbcParam::CUTPASSINTREE, intValue);
+
+  intValue = model->getMaximumCutPassesAtRoot();
+  parameters->setParamVal(CbcParam::CUTPASS, intValue);
+
+#ifdef CBC_THREAD
+  intValue = model->getNumberThreads();
+  parameters->setParamVal(CbcParam::THREADS, intValue);
+#endif
+
+  intValue = model->getRandomSeed();
+  parameters->setParamVal(CbcParam::RANDOMSEED, intValue);
+
+  double doubleValue;
+
+  doubleValue = model->getDblParam(CbcModel::CbcInfeasibilityWeight);
+  parameters->setParamVal(CbcParam::INFEASIBILITYWEIGHT, doubleValue);
+
+  doubleValue = model->getDblParam(CbcModel::CbcIntegerTolerance);
+  parameters->setParamVal(CbcParam::INTEGERTOLERANCE, doubleValue);
+
+  doubleValue = model->getDblParam(CbcModel::CbcCutoffIncrement);
+  parameters->setParamVal(CbcParam::INCREMENT, doubleValue);
+
+  doubleValue = model->getDblParam(CbcModel::CbcAllowableGap);
+  parameters->setParamVal(CbcParam::ALLOWABLEGAP, doubleValue);
+
+  doubleValue = model->getDblParam(CbcModel::CbcAllowableFractionGap);
+  parameters->setParamVal(CbcParam::GAPRATIO, doubleValue);
+
+  doubleValue = model->getCutoff();
+  if (fabs(doubleValue)<1.0e40)
+    parameters->setParamVal(CbcParam::CUTOFF, doubleValue);
+
+  doubleValue = model->getDblParam(CbcModel::CbcMaximumSeconds);
+  parameters->setParamVal(CbcParam::TIMELIMIT, doubleValue);
+
+  doubleValue = model->getDblParam(CbcModel::CbcMaxSecondsNotImproving);
+  parameters->setParamVal(CbcParam::MAXSECONDSNOTIMPROVING, doubleValue);
+}
+
+
 /* Default Cbc_Model constructor */
 Cbc_Model *CBC_LINKAGE
 Cbc_newModel()
@@ -2333,6 +2398,8 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
       cbcModel.setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
       cbcModel.setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
+
+      synchronizeParams(&cbcModel, &parameters);
 
       CbcMain1(inputQueue, cbcModel, parameters, cbc_callb);
 

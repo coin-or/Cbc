@@ -124,9 +124,8 @@ make_doxygen_info
 echo "## DOCUMENTATION
 
  * [User's Guide](https://coin-or.github.io/Cbc) (from 2005)
- * [Doxygen generated documentation](http://www.coin-or.org/Doxygen/Cbc/hierarchy.html)
  * Source code [examples](examples)
- * [Cbc command-line guide](https://projects.coin-or.org/CoinBinary/export/1059/OptimizationSuite/trunk/Installer/files/doc/cbcCommandLine.pdf)
+ * [Cbc command-line guide](https://github.com/coin-or/COIN-OR-OptimizationSuite/raw/master/Installer/files/doc/cbcCommandLine.pdf)
 "
 
 make_links
@@ -191,8 +190,19 @@ echo "## CHANGELOG
           - \`oddwext\`: strategy used to search for wheel centers for the cuts found by CglOddWheel - 0=off, 1=one variable, 2=clique - default=2.
       - CglClique was replaced by CglBKClique as the default clique separator in CbcSolver.cpp.
 
+ * Release 2.10.8
+   * Re-generate binaries due to mistake in Github Actions configuration and 
+     incorporate new release of Cgl. 
+
+ * Release 2.10.7
+   * Fix a bug that would cause the unit test not to run correctly if the 
+     MIPLIB3 project was not present
+
+ * Release 2.10.6
+   * Accumulated fixes related to build, test, and CI. 
+
  * Release 2.10.5
-   * revert fix that stopped Clp when timelimit reached, as that lead to
+   * Revert fix that stopped Clp when timelimit reached, as that lead to
      all cleanup solves afterwards to stop without proper finishing and
      giving wrong results
 
@@ -202,7 +212,8 @@ echo "## CHANGELOG
    * More bugfixes.
 
  * Release 2.10.3
-   * Improve performance of some primal heuristics, incl. feasibility pump, by making integer slacks continuous
+   * Improve performance of some primal heuristics, incl. feasibility pump, 
+     by making integer slacks continuous
    * Added additional timelimit checks
    * Fixed initialization of Cbc_clone result
    * Additional bugfixes

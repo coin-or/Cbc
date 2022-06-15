@@ -6595,35 +6595,8 @@ int CbcNode::chooseClpBranch(CbcModel *model,
     = dynamic_cast< OsiClpSolverInterface * >(solver);
   assert(clpSolver);
   ClpSimplex *simplex = clpSolver->getModelPtr();
-  infoForCbc infoCbc;
-  memset(&infoCbc,0,sizeof(infoCbc));
-  infoCbc.model = model;
-#ifdef CBC_HAS_NAUTY
-  if (model->rootSymmetryInfo()) {
-    int numberColumns = simplex->numberColumns();
-    double * lower = new double [5*numberColumns];
-    int * backward = reinterpret_cast<int *>(lower+4*numberColumns);
-    int * orbitalInfo = backward+numberColumns;
-    memcpy(orbitalInfo,model->rootSymmetryInfo()->whichOrbit(),
-	   numberColumns*sizeof(int));
-    infoCbc.usefulData = lower;
-    memcpy(lower,simplex->columnLower(),numberColumns*sizeof(double));
-    memcpy(lower+numberColumns,
-	   simplex->columnUpper(),numberColumns*sizeof(double));
-    thisOne->info()->callCbc_ = (void *)(fromFathomMany);
-  }
-#endif
-  infoCbc.originalNumberColumns = numberColumns;
-  thisOne->info()->usefulCbc_ = &infoCbc;
-    //(void *)(CbcGeneralDepth::orbitalBranching(int, double *));
   int preferredWay;
   double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
-#ifdef CBC_HAS_NAUTY
-  if (model->rootSymmetryInfo()) {
-    delete [] infoCbc.usefulData;
-  }
-#endif
-  thisOne->info()->usefulCbc_ = NULL;
   if (thisOne->whichSolution() >= 0) {
     ClpNode *nodeInfo = NULL;
     if ((model->moreSpecialOptions() & 33554432) == 0) {

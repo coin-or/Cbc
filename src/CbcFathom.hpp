@@ -129,9 +129,6 @@ protected:
   CbcModel *cbcModel_;
   //@}
 };
-/** Do something when called from Clp fathomMany
-    needed as Clp does not know about Cbc */
-int fromFathomMany(int typeCall, infoForCbc *stuff);
 #endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2

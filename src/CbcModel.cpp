@@ -2180,8 +2180,11 @@ void CbcModel::branchAndBound(int doStatistics)
   }
   eventHappened_ = false;
   CbcEventHandler *eventHandler = getEventHandler();
-  if (eventHandler)
+  if (eventHandler) {
     eventHandler->setModel(this);
+    // and signal model set up
+    eventHandler->event(CbcEventHandler::startUp);
+  }
 #define CLIQUE_ANALYSIS
 #ifdef CLIQUE_ANALYSIS
   // set up for probing
@@ -10198,6 +10201,8 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         specialOptions_ &= ~33554432;
         doHeuristicsAtRoot();
       }
+      if (eventHandler_) 
+        eventHandler_->event(CbcEventHandler::afterRootCuts);
     }
     /*
           Count the number of cuts produced by each cut generator on this call.

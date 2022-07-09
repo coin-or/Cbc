@@ -7404,7 +7404,7 @@ int CbcMain1(int argc, const char *argv[],
                   if (numberSolutions > 1) {
                     for (int iSolution = numberSolutions - 1; iSolution >= 0; iSolution--) {
                       model_.setBestSolution(babModel_->savedSolution(iSolution),
-                        model_.solver()->getNumCols(),
+					     CoinMin(model_.solver()->getNumCols(),babModel_->solver()->getNumCols()),
                         babModel_->savedSolutionObjective(iSolution));
                     }
                   }

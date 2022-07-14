@@ -4777,7 +4777,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
         if (tryNewSearch) {
           // back to solver without cuts?
-          OsiSolverInterface *solver2 = saveSolver->clone();
+          OsiSolverInterface *solver2 = continuousSolver_->clone();
           const double *lower = saveSolver->getColLower();
           const double *upper = saveSolver->getColUpper();
           for (int i = 0; i < numberIntegers_; i++) {

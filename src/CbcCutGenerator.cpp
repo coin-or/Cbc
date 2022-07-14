@@ -710,7 +710,36 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       const double *upper = solver->getColUpper();
       const double *solution = solver->getColSolution();
 #endif
-      for (k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
+#define ADJUST_CUTS 1
+#ifdef ADJUST_CUTS
+      const double * solution = solver->getColSolution();
+      const double *colUpper = solver->getColUpper();
+      const double *colLower = solver->getColLower();
+      double smallValue1; // = 1.0e-4;
+      double smallValue2; // = 1.0e-5;
+      double largeRatio = 1.0e8;
+      if (!depth) {
+	smallValue1 = 1.0e-5;
+	smallValue2 = 1.0e-5;
+      } else {
+	smallValue1 = 1.0e-4;
+	smallValue2 = 1.0e-4;
+      }
+      //largeRatio = 1.0e8;
+#define ALLOW_INEFFECTIVE
+#ifdef ALLOW_INEFFECTIVE
+      // allow ineffective cuts at root
+      bool allowIneffective = false;
+      if (!depth) {
+	if (strstr(generatorName_,"Probing")||
+	    strstr(generatorName_,"Knapsack")||
+	    strstr(generatorName_,"Clique")||
+	    strstr(generatorName_,"OddWheel"))
+	  allowIneffective = true;
+      }
+#endif
+#endif
+      for (k = numberRowCutsAfter - 1; k >= numberRowCutsBefore; k--) {
         OsiRowCut *thisCut = cs.rowCutPtr(k);
 #ifdef WEAKEN_CUTS
         // weaken cut if coefficients not integer
@@ -808,6 +837,111 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
         }
 #endif
         thisCut->mutableRow().setTestForDuplicateIndex(false);
+#ifdef ADJUST_CUTS
+	{
+	  CoinPackedVector rpv = thisCut->row();
+	  int n = rpv.getNumElements();
+	  int *indices = rpv.getIndices();
+	  double *elements = rpv.getElements();
+	  double rlo = thisCut->lb();
+	  double rup = thisCut->ub();
+	  bool upper;
+	  double rhs;
+	  if (rup < 1.0e20) {
+	    upper = true;
+	    rhs = rup;
+	    // for now
+	    if (rlo>-1.0e20)
+	      continue;
+	  } else {
+	    upper = false;
+	    rhs = rlo;
+	  }
+	  double largest=0.0;
+	  double smallest=1.0e30;
+	  bool bad=false;
+	  double sum = 0.0;
+	  int number = 0;
+	  for (int i=0;i<n;i++) {
+	    double value=elements[i];
+	    int iColumn = indices[i];
+	    sum += value*solution[iColumn];
+	  }
+	  if (fabs(sum-rhs)<smallValue1) {
+#ifdef ALLOW_INEFFECTIVE
+	    if (!allowIneffective)
+#endif
+	    bad = true; // could be dangerous cut
+	  }
+	  double tolerance = smallValue1;//CoinMax(smallValue1,fabs(sum)*0.0001*smallValue1);
+	  if (upper && sum < rhs+tolerance) {
+#ifdef ALLOW_INEFFECTIVE
+	    if (!allowIneffective)
+#endif
+	    bad = true; //continue;
+	  } else if(!upper &&sum > rhs-tolerance) {
+#ifdef ALLOW_INEFFECTIVE
+	    if (!allowIneffective)
+#endif
+	    bad = true; //continue; // not doing much good?
+	  }
+	  for (int i=0;i<n;i++) {
+	    double value=fabs(elements[i]);
+	    if (value<smallValue2) { // was 1.0e-9
+	      int iColumn = indices[i];
+	      if (colUpper[iColumn]-colLower[iColumn]<100.0) {
+		// weaken cut
+		if (upper) {
+		  if (elements[i]>0.0) 
+		    rhs -= value*colLower[iColumn];
+		  else
+		    rhs += value*colUpper[iColumn];
+		  if (sum < rhs+smallValue1) {
+		    // throw away
+		    bad=true;
+		    break;
+		  }
+		} else {
+		  if (elements[i]>0.0) 
+		    rhs -= value*colUpper[iColumn];
+		  else
+		    rhs += value*colLower[iColumn];
+		  if (sum > rhs-smallValue1) {
+		    // throw away
+		    bad=true;
+		    break;
+		  }
+		}
+	      } else {
+		// throw away
+		bad=true;
+		break;
+	      }
+	    } else {
+	      int iColumn = indices[i];
+	      if (colUpper[iColumn]!=colLower[iColumn]) {
+		largest=CoinMax(largest,value);
+		smallest=CoinMin(smallest,value);
+		indices[number]=indices[i];
+		elements[number++]=elements[i];
+	      } else {
+		// fixed so subtract out
+		rhs -= elements[i]*colLower[iColumn];
+	      }
+	    }
+	  }
+	  //if (number>80)
+	  //bad = true;
+	  if (largest<largeRatio*smallest&&!bad) {
+	    if (number<n)
+	      rpv.truncate(number);
+	  } else if (!bad) {
+	  }
+	  if (bad) {
+	    cs.eraseRowCut(k);
+	  }
+	}
+#endif
       }
     }
     // Add in saved cuts if violated

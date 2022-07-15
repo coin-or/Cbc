@@ -176,6 +176,13 @@ void test_message_handler(CbcModel &model){
 #endif
 
 //#############################################################################
+#ifdef CBC_DEBUG_EXTRA
+// useful stuff for debugging or tuning
+#define MAX_INT_DEBUG 4
+int cbc_int_debug[MAX_INT_DEBUG]={-1,-1,-1,-1};
+#define MAX_DBL_DEBUG 4
+double cbc_dbl_debug[MAX_DBL_DEBUG]={0.0};
+#endif
 //#############################################################################
 
 int main(int argc, const char *argv[])
@@ -205,7 +212,10 @@ int main(int argc, const char *argv[])
 #ifdef TEST_MESSAGE_HANDLER
   test_message_handler(&model);
 #endif
-     
+#ifdef CBC_DEBUG_EXTRA
+  double startTime = CoinCpuTime();
+  bool debugTuning = false;
+#endif     
   std::deque<std::string> inputQueue;
   
   if (argc > 2 && !strcmp(argv[2], "-AMPL")) {
@@ -223,9 +233,68 @@ int main(int argc, const char *argv[])
                               &info);
      }
   } else {
-     // Put arguments into a queue.
+ #ifdef CBC_DEBUG_EXTRA
+    int n = argc;
+    argc = 1;
+    for (argc=1;argc<n;argc++) {
+      if (!strcmp(argv[argc],"debugit"))
+	break;
+    }
+    for (int i=0;i<MAX_INT_DEBUG;i++)
+      cbc_int_debug[i] = -1;
+    for (int i=0;i<MAX_DBL_DEBUG;i++)
+      cbc_dbl_debug[i] = 0.0;
+    if (argc<n) {
+      // set debug stuff
+      if (((n-argc)&1)==0) {
+	printf("must be exact number of pairs\n");
+	exit(77);
+      }
+      debugTuning = true;
+      for (int i=argc+1;i<n;i+=2) { 
+	const char * name = argv[i];
+	if (strstr(name,"int")) {
+	  int k = name[3]-'0';
+	  if (k<0||k>=MAX_INT_DEBUG) {
+	    printf("bad debug field %s\n",name);
+	    exit(77);
+	  } else {
+	    cbc_int_debug[k] = atoi(argv[i+1]);
+	    printf("cbc_int_debug[%d] set to %d\n",k,cbc_int_debug[k]);
+	  }
+	} else if (strstr(name,"dbl")) {
+	  int k = name[3]-'0';
+	  if (k<0||k>=MAX_DBL_DEBUG) {
+	    printf("bad debug field %s\n",name);
+	    exit(77);
+	  } else {
+	    cbc_dbl_debug[k] = atof(argv[i+1]);
+	    printf("cbc_dbl_debug[%d] set to %g\n",k,cbc_dbl_debug[k]);
+	  }
+	} else {
+	  printf("unknown debug field %s\n",name);
+	  exit(77);
+	}
+      }
+    }
+#endif
+    // Put arguments into a queue.
      CoinParamUtils::formInputQueue(inputQueue, "cbc", argc, const_cast< char ** >(argv));
      returnCode = CbcMain1(inputQueue, model, parameters);
+#ifdef CBC_DEBUG_EXTRA
+     if (debugTuning) {
+       printf("Run took %g seconds",CoinCpuTime()-startTime);
+       for (int i=0;i<MAX_INT_DEBUG;i++) {
+	 if (cbc_int_debug[i] != -1)
+	   printf(" int%d value %d",i,cbc_int_debug[i]);
+       }
+       for (int i=0;i<MAX_DBL_DEBUG;i++) {
+	 if (cbc_dbl_debug[i])
+	   printf(" dbl%d value %g",i,cbc_dbl_debug[i]);
+       }
+       printf("\n");
+     }
+#endif     
   }     
 
 #ifdef CLP_DEBUG_MALLOC

@@ -90,6 +90,13 @@ typedef struct {
   int switches;
   int iModel;
 } rootBundle;
+#ifdef CBC_DEBUG_EXTRA
+// This really more for tuning than debugging
+// It allows developer to play around more
+// See CoinSolve.cpp
+extern int cbc_int_debug[4];
+extern double cbc_dbl_debug[4];
+#endif
 static void *doRootCbcThread(void *voidInfo);
 
 namespace {

@@ -2431,7 +2431,7 @@ void CbcModel::branchAndBound(int doStatistics)
       // best solution found by various heuristics - set solution
       char general[200];
       sprintf(general, "Solution of %g already found by heuristic",
-              bestObjective_);
+              trueBestObjValue());
       messageHandler()->message(CBC_GENERAL, messages())
           << general << CoinMessageEol;
       setCutoff(1.0e50); // As best solution should be worse than cutoff
@@ -5496,24 +5496,24 @@ void CbcModel::branchAndBound(int doStatistics)
         else
           lastBestPossibleObjective = bestPossibleObjective_;
         messageHandler()->message(CBC_STATUS, messages())
-            << numberNodes_ << CoinMax(nNodes, 1) << bestObjective_
-            << bestPossibleObjective_ << getCurrentSeconds() << CoinMessageEol;
+            << numberNodes_ << CoinMax(nNodes, 1) << trueBestObjValue()
+            << trueObjValue(bestPossibleObjective_) << getCurrentSeconds() << CoinMessageEol;
       } else if (intParam_[CbcPrinting] == 1) {
         messageHandler()->message(CBC_STATUS2, messages())
-            << numberNodes_ << nNodes << bestObjective_
-            << bestPossibleObjective_ << tree_->lastDepth()
+            << numberNodes_ << nNodes << trueBestObjValue()
+            << trueObjValue(bestPossibleObjective_) << tree_->lastDepth()
             << tree_->lastUnsatisfied() << tree_->lastObjective()
             << numberIterations_ << getCurrentSeconds() << CoinMessageEol;
       } else if (!numberExtraIterations_) {
         messageHandler()->message(CBC_STATUS2, messages())
-            << numberNodes_ << nNodes << bestObjective_
-            << bestPossibleObjective_ << tree_->lastDepth()
+            << numberNodes_ << nNodes << trueBestObjValue()
+            << trueObjValue(bestPossibleObjective_) << tree_->lastDepth()
             << tree_->lastUnsatisfied() << numberIterations_
             << getCurrentSeconds() << CoinMessageEol;
       } else {
         messageHandler()->message(CBC_STATUS3, messages())
             << numberNodes_ << numberFathoms_ << numberExtraNodes_ << nNodes
-            << bestObjective_ << bestPossibleObjective_ << tree_->lastDepth()
+            << trueBestObjValue() << trueObjValue(bestPossibleObjective_) << tree_->lastDepth()
             << tree_->lastUnsatisfied() << numberIterations_
             << numberExtraIterations_ << getCurrentSeconds() << CoinMessageEol;
       }
@@ -5791,11 +5791,11 @@ void CbcModel::branchAndBound(int doStatistics)
     if (secondaryStatus_ != 2)
       bestPossibleObjective_ = bestObjective_;
     handler_->message(CBC_END_GOOD, messages_)
-        << bestObjective_ << numberIterations_ << numberNodes_
+        << trueBestObjValue() << numberIterations_ << numberNodes_
         << getCurrentSeconds() << CoinMessageEol;
   } else {
     handler_->message(CBC_END, messages_)
-        << bestObjective_ << bestPossibleObjective_ << numberIterations_
+      << trueBestObjValue() << trueObjValue(bestPossibleObjective_) << numberIterations_
         << numberNodes_ << getCurrentSeconds() << CoinMessageEol;
   }
   if ((moreSpecialOptions_ & 4194304) != 0) {
@@ -9197,7 +9197,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       handler_->message(CBC_ROOT_DETAIL, messages_)
           << currentPassNumber_ << solver_->getNumRows()
           << solver_->getNumRows() - numberRowsAtContinuous_
-          << solver_->getObjValue() << CoinMessageEol;
+          << trueObjValue(solver_->getObjValue()) << CoinMessageEol;
     }
     // see if looks like solution
     bool lazy = false;
@@ -10183,7 +10183,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     }
     if (!numberNodes_) {
       handler_->message(CBC_ROOT, messages_)
-          << numberNewCuts_ << startObjective << thisObjective
+	<< numberNewCuts_ << trueObjValue(startObjective) << trueObjValue(thisObjective)
           << currentPassNumber_%100000 << CoinMessageEol;
 #ifdef CBC_NAMES_FOR_COMPARE
       if ((specialOptions_&2048) == 0) {
@@ -14244,11 +14244,11 @@ void CbcModel::setBestSolution(CBC_Message how, double &objectiveValue,
 #endif
         if (largestAway > integerTolerance) {
           handler_->message(CBC_RELAXED1, messages_)
-              << objectiveValue2 << iAway << largestAway << integerTolerance
+	    << trueObjValue(objectiveValue2) << iAway << largestAway << integerTolerance
               << CoinMessageEol;
         } else {
           handler_->message(CBC_RELAXED2, messages_)
-              << objectiveValue2 << integerTolerance << CoinMessageEol;
+	    << trueObjValue(objectiveValue2) << integerTolerance << CoinMessageEol;
           // take
           CoinCopyN(solution2, numberColumns, solution);
           objectiveValue = objectiveValue2;
@@ -14301,7 +14301,7 @@ void CbcModel::setBestSolution(CBC_Message how, double &objectiveValue,
         handler_->message(CBC_NOTFEAS1, messages_) << CoinMessageEol;
       else
         handler_->message(CBC_NOTFEAS2, messages_)
-            << objectiveValue << cutoff << CoinMessageEol;
+	  << trueObjValue(objectiveValue) << trueObjValue(cutoff) << CoinMessageEol;
     } else if (objectiveValue < bestObjective_) {
       /*
               We have a winner. Install it as the new incumbent.
@@ -14397,7 +14397,7 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
 
       if (how != CBC_ROUNDING) {
         handler_->message(how, messages_)
-            << bestObjective_ << numberIterations_ << numberNodes_
+            << trueBestObjValue() << numberIterations_ << numberNodes_
             << getCurrentSeconds() << CoinMessageEol;
         dealWithEventHandler(CbcEventHandler::solution, objectiveValue,
                              solution);
@@ -14411,7 +14411,7 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
 	int saveLevel = handler_->logLevel();
 	handler_->setLogLevel(1);
         handler_->message(CBC_ROUNDING, messages_)
-            << bestObjective_ << name << numberIterations_ << numberNodes_
+            << trueBestObjValue() << name << numberIterations_ << numberNodes_
             << getCurrentSeconds() << CoinMessageEol;
 	handler_->setLogLevel(saveLevel);
         dealWithEventHandler(CbcEventHandler::heuristicSolution, objectiveValue,
@@ -14489,7 +14489,7 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
             handler_->message(CBC_NOTFEAS1, messages_) << CoinMessageEol;
           else
             handler_->message(CBC_NOTFEAS2, messages_)
-                << objectiveValue << cutoff << CoinMessageEol;
+	      << trueObjValue(objectiveValue) << cutoff << CoinMessageEol;
         }
       }
     } else {
@@ -14527,13 +14527,13 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
 
         if (how != CBC_ROUNDING) {
           handler_->message(how, messages_)
-              << bestObjective_ << numberIterations_ << numberNodes_
+              << trueBestObjValue() << numberIterations_ << numberNodes_
               << getCurrentSeconds() << CoinMessageEol;
         } else {
           assert(lastHeuristic_);
           const char *name = lastHeuristic_->heuristicName();
           handler_->message(CBC_ROUNDING, messages_)
-              << bestObjective_ << name << numberIterations_ << numberNodes_
+              << trueBestObjValue() << name << numberIterations_ << numberNodes_
               << getCurrentSeconds() << CoinMessageEol;
         }
       }
@@ -16604,7 +16604,7 @@ void CbcModel::setBestSolution(const double *solution, int numberColumns,
       double objValue = direction * solver_->getObjValue();
       if (objValue > objectiveValue + 1.0e-8 * (1.0 + fabs(objectiveValue))) {
         sprintf(printBuffer, "Given objective value %g, computed %g",
-                objectiveValue, objValue);
+                trueObjValue(objectiveValue), objValue);
         messageHandler()->message(CBC_GENERAL, messages())
             << printBuffer << CoinMessageEol;
       }
@@ -16634,7 +16634,7 @@ void CbcModel::setBestSolution(const double *solution, int numberColumns,
     } else {
       // message
       sprintf(printBuffer, "Solution with objective value %g saved",
-              objectiveValue);
+              trueObjValue(objectiveValue));
       messageHandler()->message(CBC_GENERAL, messages())
           << printBuffer << CoinMessageEol;
     }
@@ -18396,7 +18396,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         }
         if (newNode->branchingObject()) {
           handler_->message(CBC_BRANCH, messages_)
-              << numberNodes_ << newNode->objectiveValue()
+	    << numberNodes_ << trueObjValue(newNode->objectiveValue())
               << newNode->numberUnsatisfied() << newNode->depth()
               << CoinMessageEol;
           // Increment cut counts (taking off current)
@@ -18640,7 +18640,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
       CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
       baseModel->setCutoff(getCutoff());
       baseModel->handler_->message(CBC_ROUNDING, messages_)
-          << bestObjective_ << "heuristic" << baseModel->numberIterations_
+          << trueBestObjValue() << "heuristic" << baseModel->numberIterations_
           << baseModel->numberNodes_ << getCurrentSeconds() << CoinMessageEol;
     }
     baseModel->numberSolutions_++;
@@ -19773,6 +19773,11 @@ void CbcModel::flipModel() {
   flipSolver(atSolutionSolver_, cutoff);
   flipSolver(continuousSolver_, cutoff);
   flipSolver(solver_, cutoff);
+  // flip interesting bit
+  if ((moreSpecialOptions2_&16777216)==0)
+    moreSpecialOptions2_ |= 16777216;
+  else
+    moreSpecialOptions2_ &= ~16777216;
 }
 #ifdef CBC_KEEP_DEPRECATED
 /* preProcess problem - replacing solver

@@ -8456,11 +8456,14 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               }
 #endif
               statistics_cut_time = 0.0;
+	      double direction =
+		babModel_->solver()->getObjSense();
                 // Print more statistics
                 buffer.str("");
                 buffer << "Cuts at root node changed objective from "
-                       << babModel_->getContinuousObjective() << " to " 
-                       << babModel_->rootObjectiveAfterCuts();
+                       << babModel_->getContinuousObjective()*direction
+		       << " to " 
+                       << babModel_->rootObjectiveAfterCuts()*direction;
                 printGeneralMessage(model_, buffer.str());
                 numberGenerators = babModel_->numberCutGenerators();
                 // can get here twice!

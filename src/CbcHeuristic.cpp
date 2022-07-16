@@ -1426,7 +1426,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             value *= solver3->getObjSense();
             model.setCutoff(value);
             sprintf(generalPrint, "Unable to insert previous solution - using cutoff of %g",
-              value);
+		    trueObjValue(value));
             model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
               << generalPrint
               << CoinMessageEol;

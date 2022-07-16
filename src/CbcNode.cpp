@@ -4633,7 +4633,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   if (model->logLevel() > 1)
     printf("Node %d depth %d unsatisfied %d sum %g obj %g guess %g branching on %d\n",
       model->getNodeCount(), depth_, numberUnsatisfied_,
-      sumInfeasibilities_, objectiveValue_, guessedObjectiveValue_,
+	   sumInfeasibilities_, model->trueObjValue(objectiveValue_),
+	   model->trueObjValue(guessedObjectiveValue_),
       kColumn);
 #ifdef DO_ALL_AT_ROOT
   if (strongType) {

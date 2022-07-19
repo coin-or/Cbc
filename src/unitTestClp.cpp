@@ -570,8 +570,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 */
     CbcModel *model = NULL;
     std::string fn = dirMiplib + mpsName[m];
-    //std::string fn = "/tmp/" + mpsName[m] + "_max.mps";
-   if (!CbcTestMpsFile(fn)) {
+    if (!CbcTestMpsFile(fn)) {
       std::cout << "ERROR: Cannot find MPS file " << fn << "." << std::endl;
       continue;
     }

@@ -338,7 +338,7 @@ public:
   /// Return objective function value with sign corrected
   inline double trueObjValue(double value) const
   {
-    return (model_->moreSpecialOptions2()&67108864)==0 ? value : -value;
+    return (model_->moreSpecialOptions2()&16777216)==0 ? value : -value;
   }
   /// Is it integer for heuristics?
 #ifdef CBC_HAS_CLP

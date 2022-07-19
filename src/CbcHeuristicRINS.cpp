@@ -276,6 +276,7 @@ int CbcHeuristicRINS::solution(double &solutionValue,
         int nAtLb = 0;
         //double sumDj=0.0;
         const double *dj = newSolver->getReducedCost();
+        double direction = newSolver->getObjSense();
         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
           if (!isHeuristicInteger(newSolver, iColumn)) {
             double value = bestSolution[iColumn];
@@ -296,7 +297,7 @@ int CbcHeuristicRINS::solution(double &solutionValue,
             if (!isHeuristicInteger(newSolver, iColumn)) {
               double value = bestSolution[iColumn];
               if (value < colLower[iColumn] + 1.0e-8) {
-                double djValue = dj[iColumn];
+                double djValue = dj[iColumn] * direction;
                 if (djValue > 1.0e-6) {
                   sort[nFix2] = -djValue;
                   which[nFix2++] = iColumn;

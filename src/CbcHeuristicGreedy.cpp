@@ -144,7 +144,6 @@ int CbcHeuristicGreedyCover::solution(double &solutionValue,
   numRuns_++;
   assert(numberRows == matrix_.getNumRows());
   int iRow, iColumn;
-  double direction = solver->getObjSense();
   double offset;
   solver->getDblParam(OsiObjOffset, offset);
   double newSolutionValue = -offset;
@@ -178,7 +177,7 @@ int CbcHeuristicGreedyCover::solution(double &solutionValue,
     value = CoinMin(value, columnUpper[iColumn]);
     value = CoinMax(value, columnLower[iColumn]);
     newSolution[iColumn] = value;
-    double cost = direction * objective[iColumn];
+    double cost = objective[iColumn];
     newSolutionValue += value * cost;
     for (j = columnStart[iColumn];
          j < columnStart[iColumn] + columnLength[iColumn]; j++) {
@@ -209,7 +208,7 @@ int CbcHeuristicGreedyCover::solution(double &solutionValue,
           }
           if (choose) {
             newSolution[iColumn] = 1.0;
-            double cost = direction * objective[iColumn];
+            double cost = objective[iColumn];
             newSolutionValue += cost;
             for (j = columnStart[iColumn];
                  j < columnStart[iColumn] + columnLength[iColumn]; j++) {
@@ -239,7 +238,7 @@ int CbcHeuristicGreedyCover::solution(double &solutionValue,
       int iColumn = which[jColumn];
       CoinBigIndex j;
       double value = newSolution[iColumn];
-      double cost = direction * objective[iColumn];
+      double cost = objective[iColumn];
       if (isHeuristicInteger(solver, iColumn)) {
         // use current upper or original upper
         if (value + 0.99 < originalUpper[iColumn]) {
@@ -313,7 +312,7 @@ int CbcHeuristicGreedyCover::solution(double &solutionValue,
       break; // we have finished
     // Increase chosen column
     newSolution[bestColumn] += bestStepSize;
-    double cost = direction * objective[bestColumn];
+    double cost = objective[bestColumn];
     newSolutionValue += bestStepSize * cost;
     for (CoinBigIndex j = columnStart[bestColumn];
          j < columnStart[bestColumn] + columnLength[bestColumn]; j++) {
@@ -388,7 +387,6 @@ void CbcHeuristicGreedyCover::validate()
     const double *columnLower = solver->getColLower();
     const double *rowUpper = solver->getRowUpper();
     const double *objective = solver->getObjCoefficients();
-    double direction = solver->getObjSense();
 
     int numberRows = solver->getNumRows();
     int numberColumns = solver->getNumCols();
@@ -403,7 +401,7 @@ void CbcHeuristicGreedyCover::validate()
         good = false;
     }
     for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-      if (objective[iColumn] * direction < 0.0)
+      if (objective[iColumn] < 0.0)
         good = false;
       if (columnLower[iColumn] < 0.0)
         good = false;
@@ -552,7 +550,6 @@ int CbcHeuristicGreedyEquality::solution(double &solutionValue,
 
   assert(numberRows == matrix_.getNumRows());
   int iRow, iColumn;
-  double direction = solver->getObjSense();
   double offset;
   solver->getDblParam(OsiObjOffset, offset);
   double newSolutionValue = -offset;
@@ -590,7 +587,7 @@ int CbcHeuristicGreedyEquality::solution(double &solutionValue,
     value = CoinMin(value, columnUpper[iColumn]);
     value = CoinMax(value, columnLower[iColumn]);
     newSolution[iColumn] = value;
-    double cost = direction * objective[iColumn];
+    double cost = objective[iColumn];
     newSolutionValue += value * cost;
     for (j = columnStart[iColumn];
          j < columnStart[iColumn] + columnLength[iColumn]; j++) {
@@ -622,7 +619,7 @@ int CbcHeuristicGreedyEquality::solution(double &solutionValue,
           }
           if (choose) {
             newSolution[iColumn] = 1.0;
-            double cost = direction * objective[iColumn];
+            double cost = objective[iColumn];
             newSolutionValue += cost;
             for (j = columnStart[iColumn];
                  j < columnStart[iColumn] + columnLength[iColumn]; j++) {
@@ -653,7 +650,7 @@ int CbcHeuristicGreedyEquality::solution(double &solutionValue,
       int iColumn = which[jColumn];
       CoinBigIndex j;
       double value = newSolution[iColumn];
-      double cost = direction * objective[iColumn];
+      double cost = objective[iColumn];
       if (isHeuristicInteger(solver, iColumn)) {
         // use current upper or original upper
         if (value + 0.9999 < originalUpper[iColumn]) {
@@ -719,7 +716,7 @@ int CbcHeuristicGreedyEquality::solution(double &solutionValue,
       break; // we have finished
     // Increase chosen column
     newSolution[bestColumn] += bestStepSize;
-    double cost = direction * objective[bestColumn];
+    double cost = objective[bestColumn];
     newSolutionValue += bestStepSize * cost;
     for (CoinBigIndex j = columnStart[bestColumn];
          j < columnStart[bestColumn] + columnLength[bestColumn]; j++) {
@@ -815,7 +812,6 @@ void CbcHeuristicGreedyEquality::validate()
     const double *rowUpper = solver->getRowUpper();
     const double *rowLower = solver->getRowLower();
     const double *objective = solver->getObjCoefficients();
-    double direction = solver->getObjSense();
 
     int numberRows = solver->getNumRows();
     int numberColumns = solver->getNumCols();
@@ -834,7 +830,7 @@ void CbcHeuristicGreedyEquality::validate()
         good = false;
     }
     for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-      if (objective[iColumn] * direction < 0.0)
+      if (objective[iColumn] < 0.0)
         good = false;
       if (columnLower[iColumn] < 0.0)
         good = false;
@@ -1059,7 +1055,6 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
   int *firstGub = new int[numberRows];
   int *nextGub = new int[numberColumns];
   int iRow, iColumn;
-  double direction = solver->getObjSense();
   double *slackCost = new double[numberRows];
   double *modifiedCost = CoinCopyOfArray(objective, numberColumns);
   for (int iRow = 0; iRow < numberRows; iRow++) {
@@ -1072,7 +1067,7 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
     int iRow = sosRow[iColumn];
     if (columnLength[iColumn] == 1 && iRow >= 0) {
       // SOS slack
-      double cost = direction * objective[iColumn];
+      double cost = objective[iColumn];
       assert(rhs[iRow] < 0.0);
       slackCost[iRow] = CoinMin(slackCost[iRow], cost);
     }
@@ -1098,7 +1093,7 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
     }
   }
   for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-    double cost = direction * modifiedCost[iColumn];
+    double cost = modifiedCost[iColumn];
     CoinBigIndex j;
     for (j = columnStart[iColumn];
          j < columnStart[iColumn] + columnLength[iColumn]; j++) {

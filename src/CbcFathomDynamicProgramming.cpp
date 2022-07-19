@@ -456,7 +456,6 @@ int CbcFathomDynamicProgramming::fathom(double *&betterSolution)
     const double *lower = solver->getColLower();
     const double *upper = solver->getColUpper();
     const double *objective = solver->getObjCoefficients();
-    double direction = solver->getObjSense();
     const CoinPackedMatrix *matrix = solver->getMatrixByCol();
     // Column copy
     const double *element = matrix->getElements();
@@ -479,7 +478,7 @@ int CbcFathomDynamicProgramming::fathom(double *&betterSolution)
         COIN_DETAIL_PRINT(printf("column %d\n", i));
       double lowerValue = lower[i];
       assert(lowerValue == floor(lowerValue));
-      double cost = direction * objective[i];
+      double cost = objective[i];
       fixedObj += lowerValue * cost;
       int gap = static_cast< int >(upper[i] - lowerValue);
       CoinBigIndex start = columnStart[i];

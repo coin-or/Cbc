@@ -1242,8 +1242,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
          at bounds 4 and static continuous, 5 as 3 but no internal integers 6 as
          3 but all slack basis!
             */
-      double value =
-          model->solver()->getObjSense() * model->solver()->getObjValue();
+      double value = model->solver()->getObjValue();
       int w = pumpTune / 10;
       int i = w % 10;
       w /= 10;

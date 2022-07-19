@@ -631,7 +631,7 @@ bool CbcHeuristic::exitNow(double bestObjective) const
   }
   // See if can stop on gap
   OsiSolverInterface *solver = model_->solver();
-  double bestPossibleObjective = solver->getObjValue() * solver->getObjSense();
+  double bestPossibleObjective = solver->getObjValue();
   double absGap = CoinMax(model_->getAllowableGap(),
     model_->getHeuristicGap());
   double fracGap = CoinMax(model_->getAllowableFractionGap(),
@@ -915,7 +915,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   solver->getHintParam(OsiDoReducePrint, takeHint, strength);
   solver->setHintParam(OsiDoReducePrint, true, OsiHintTry);
   solver->setHintParam(OsiDoPresolveInInitial, false, OsiHintTry);
-  double signedCutoff = cutoff * solver->getObjSense();
+  double signedCutoff = cutoff;
   solver->setDblParam(OsiDualObjectiveLimit, signedCutoff);
   solver->initialSolve();
   if (solver->isProvenOptimal()) {
@@ -1287,7 +1287,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
                             4 and static continuous, 5 as 3 but no internal integers
                             6 as 3 but all slack basis!
                             */
-              double value = solver2->getObjSense() * solver2->getObjValue();
+              double value = solver2->getObjValue();
               int w = pumpTune / 10;
               int ix = w % 10;
               w /= 10;
@@ -1413,17 +1413,15 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           if (solver3->isProvenOptimal()) {
             // good
             CbcSerendipity heuristic(model);
-            double value = solver3->getObjSense() * solver3->getObjValue();
+            double value = solver3->getObjValue();
             heuristic.setInputSolution(solver3->getColSolution(), value);
             value = value + 1.0e-7 * (1.0 + fabs(value));
-            value *= solver3->getObjSense();
             model.setCutoff(value);
             model.addHeuristic(&heuristic, "Previous solution", 0);
             //printf("added seren\n");
           } else {
             double value = model_->getMinimizationObjValue();
             value = value + 1.0e-7 * (1.0 + fabs(value));
-            value *= solver3->getObjSense();
             model.setCutoff(value);
             sprintf(generalPrint, "Unable to insert previous solution - using cutoff of %g",
 		    trueObjValue(value));
@@ -1531,7 +1529,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           }
         } else {
           // empty model
-          model.setMinimizationObjValue(model.solver()->getObjSense() * model.solver()->getObjValue());
+          model.setMinimizationObjValue(model.solver()->getObjValue());
         }
         if (logLevel > 1)
           model_->messageHandler()->message(CBC_END_SUB, model_->messages())
@@ -1555,7 +1553,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 	  setPreProcessingMode(model.solver(),2);
           process.postProcess(*model.solver());
 	  setPreProcessingMode(solver,0);
-          if (solver->isProvenOptimal() && solver->getObjValue() * solver->getObjSense() < cutoff) {
+          if (solver->isProvenOptimal() && solver->getObjValue() < cutoff) {
             // Solution now back in solver
             int numberColumns = solver->getNumCols();
             memcpy(newSolution, solver->getColSolution(),
@@ -2087,8 +2085,7 @@ int CbcRounding::solution(double &solutionValue,
     heuristicName(), numRuns_, numCouldRun_, when_);
 #endif
   OsiSolverInterface *solver = model_->solver();
-  double direction = solver->getObjSense();
-  double newSolutionValue = direction * solver->getObjValue();
+  double newSolutionValue = solver->getObjValue();
   return solution(solutionValue, betterSolution, newSolutionValue);
 }
 // See if rounding will give solution
@@ -2125,7 +2122,6 @@ int CbcRounding::solution(double &solutionValue,
   int numberIntegers = model_->numberIntegers();
   const int *integerVariable = model_->integerVariable();
   int i;
-  double direction = solver->getObjSense();
   //double newSolutionValue = direction*solver->getObjValue();
   int returnCode = 0;
   // Column copy
@@ -2187,7 +2183,7 @@ int CbcRounding::solution(double &solutionValue,
     if (fabs(floor(value + 0.5) - value) > integerTolerance) {
       double below = floor(value);
       double newValue = newSolution[iColumn];
-      double cost = direction * objective[iColumn];
+      double cost = objective[iColumn];
       double move;
       if (cost > 0.0) {
         // try up
@@ -2249,14 +2245,14 @@ int CbcRounding::solution(double &solutionValue,
             if ((currentValue - lowerValue) * absElement >= absInfeasibility) {
               // possible - check if integer
               double distance = absInfeasibility / absElement;
-              double thisCost = -direction * objective[iColumn] * distance;
+              double thisCost = -objective[iColumn] * distance;
               if (isIntegerHere[iColumn]) {
                 distance = ceil(distance - useTolerance);
                 if (currentValue - distance >= lowerValue - useTolerance) {
                   if (absInfeasibility - distance * absElement < -gap - useTolerance)
                     thisCost = 1.0e100; // no good
                   else
-                    thisCost = -direction * objective[iColumn] * distance;
+                    thisCost = -objective[iColumn] * distance;
                 } else {
                   thisCost = 1.0e100; // no good
                 }
@@ -2274,14 +2270,14 @@ int CbcRounding::solution(double &solutionValue,
             if ((upperValue - currentValue) * absElement >= absInfeasibility) {
               // possible - check if integer
               double distance = absInfeasibility / absElement;
-              double thisCost = direction * objective[iColumn] * distance;
+              double thisCost = objective[iColumn] * distance;
               if (isIntegerHere[iColumn]) {
                 distance = ceil(distance - 1.0e-7);
                 assert(currentValue - distance <= upperValue + useTolerance);
                 if (absInfeasibility - distance * absElement < -gap - useTolerance)
                   thisCost = 1.0e100; // no good
                 else
-                  thisCost = direction * objective[iColumn] * distance;
+                  thisCost = objective[iColumn] * distance;
               }
               if (thisCost < bestCost) {
                 bestCost = thisCost;
@@ -2451,7 +2447,7 @@ int CbcRounding::solution(double &solutionValue,
         penaltyChange += improvement * distance;
         distance *= way;
         newSolution[iColumn] += distance;
-        newSolutionValue += direction * objective[iColumn] * distance;
+        newSolutionValue += objective[iColumn] * distance;
         for (j = columnStart[iColumn];
              j < columnStart[iColumn] + columnLength[iColumn]; j++) {
           int iRow = row[j];
@@ -2627,7 +2623,7 @@ int CbcRounding::solution(double &solutionValue,
           lastChange += improvement * distance;
           distance *= way;
           newSolution[iColumn] += distance;
-          newSolutionValue += direction * objective[iColumn] * distance;
+          newSolutionValue += objective[iColumn] * distance;
           for (j = columnStart[iColumn];
                j < columnStart[iColumn] + columnLength[iColumn]; j++) {
             int iRow = row[j];
@@ -2682,7 +2678,7 @@ int CbcRounding::solution(double &solutionValue,
         double value = newSolution[iColumn];
         assert(fabs(floor(value + 0.5) - value) <= integerTolerance);
 #endif
-        double cost = direction * objective[iColumn];
+        double cost = objective[iColumn];
         double move = 0.0;
         if (cost > 0.0)
           move = -1.0;
@@ -2727,7 +2723,6 @@ int CbcRounding::solution(double &solutionValue,
     newSolutionValue = -objOffset;
     for (i = 0; i < numberColumns; i++)
       newSolutionValue += objective[i] * newSolution[i];
-    newSolutionValue *= direction;
     //printf("new solution value %g %g\n",newSolutionValue,solutionValue);
     if (newSolutionValue < solutionValue) {
       // paranoid check

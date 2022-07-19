@@ -540,7 +540,7 @@ CbcLotsize::preferredNewFeasible() const
   OsiSolverInterface *solver = model_->solver();
 
   assert(findRange(model_->testSolution()[columnNumber_]));
-  double dj = solver->getObjSense() * solver->getReducedCost()[columnNumber_];
+  double dj = solver->getReducedCost()[columnNumber_];
   CbcLotsizeBranchingObject *object = NULL;
   double lo, up;
   if (dj >= 0.0) {
@@ -593,7 +593,7 @@ CbcLotsize::notPreferredNewFeasible() const
   // Lotsizing variables could be a lot larger
   assert(fabs(value - nearest) <= (10.0 + 10.0 * fabs(nearest)) * integerTolerance);
 #endif
-  double dj = solver->getObjSense() * solver->getReducedCost()[columnNumber_];
+  double dj = solver->getReducedCost()[columnNumber_];
   CbcLotsizeBranchingObject *object = NULL;
   double lo, up;
   if (dj <= 0.0) {

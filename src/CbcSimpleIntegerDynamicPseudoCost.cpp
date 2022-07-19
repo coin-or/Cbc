@@ -1032,7 +1032,7 @@ CbcSimpleIntegerDynamicPseudoCost::createUpdateInformation(const OsiSolverInterf
 {
   double originalValue = node->objectiveValue();
   int originalUnsatisfied = node->numberUnsatisfied();
-  double objectiveValue = solver->getObjValue() * solver->getObjSense();
+  double objectiveValue = solver->getObjValue();
   int unsatisfied = 0;
   int i;
   //might be base model - doesn't matter
@@ -1078,10 +1078,7 @@ CbcSimpleIntegerDynamicPseudoCost::createUpdateInformation(const OsiSolverInterf
     change, iStatus,
     originalUnsatisfied - unsatisfied, value);
   newData.originalObjective_ = originalValue;
-  // Solvers know about direction
-  double direction = solver->getObjSense();
   solver->getDblParam(OsiDualObjectiveLimit, newData.cutoff_);
-  newData.cutoff_ *= direction;
   return newData;
 }
 // Just update using feasible branches and keep count of infeasible

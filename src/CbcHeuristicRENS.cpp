@@ -113,11 +113,10 @@ int CbcHeuristicRENS::solution(double &solutionValue,
   int type = rensType_ & 15;
   if (type < 12)
     newSolver->resolve();
-  double direction = newSolver->getObjSense();
   double cutoff = model_->getCutoff();
   newSolver->setDblParam(OsiDualObjectiveLimit, 1.0e100);
   //cutoff *= direction;
-  double gap = cutoff - newSolver->getObjValue() * direction;
+  double gap = cutoff - newSolver->getObjValue();
   double tolerance;
   newSolver->getDblParam(OsiDualTolerance, tolerance);
   if ((gap > 0.0 || !newSolver->isProvenOptimal()) && type < 12) {
@@ -229,7 +228,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
               CoinBigIndex j = columnStart[iColumn];
               int iRow = row[j];
               if (bestDj[iRow] < 1.0e30) {
-                double obj = direction * objective[iColumn];
+                double obj = objective[iColumn];
                 if (obj < cheapest[iRow]) {
                   cheapest[iRow] = obj;
                   best[iRow] = iColumn;
@@ -774,7 +773,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
     double upper = colUpper[iColumn];
     value = CoinMax(value, lower);
     value = CoinMin(value, upper);
-    double djValue = dj[iColumn] * direction;
+    double djValue = dj[iColumn];
     bool dontFix = marked[iColumn] != 0;
 #define RENS_FIX_ONLY_LOWER
 #ifndef RENS_FIX_ONLY_LOWER
@@ -844,7 +843,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
         if (!newSolver->isInteger(iColumn)) {
           double value = currentSolution[iColumn];
           if (value < colLower[iColumn] + 1.0e-8) {
-            double djValue = dj[iColumn] * direction;
+            double djValue = dj[iColumn];
             nAtLb++;
             sumDj += djValue;
           }
@@ -860,7 +859,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
           if (!newSolver->isInteger(iColumn)) {
             double value = currentSolution[iColumn];
             if (value < colLower[iColumn] + 1.0e-8) {
-              double djValue = dj[iColumn] * direction;
+              double djValue = dj[iColumn];
               if (djValue > threshold) {
                 sort[nFix2] = -djValue;
                 which[nFix2++] = iColumn;
@@ -896,12 +895,11 @@ int CbcHeuristicRENS::solution(double &solutionValue,
         int nAtLb = 0;
         double sumDj = 0.0;
         const double *dj = newSolver->getReducedCost();
-        double direction = newSolver->getObjSense();
         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
           if (!newSolver->isInteger(iColumn)) {
             double value = currentSolution[iColumn];
             if (value < colLower[iColumn] + 1.0e-8) {
-              double djValue = dj[iColumn] * direction;
+              double djValue = dj[iColumn];
               nAtLb++;
               sumDj += djValue;
             }
@@ -917,7 +915,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
             if (!newSolver->isInteger(iColumn)) {
               double value = currentSolution[iColumn];
               if (value < colLower[iColumn] + 1.0e-8) {
-                double djValue = dj[iColumn] * direction;
+                double djValue = dj[iColumn];
                 if (djValue > threshold) {
                   sort[nFix2] = -djValue;
                   which[nFix2++] = iColumn;

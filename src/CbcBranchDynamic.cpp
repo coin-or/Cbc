@@ -232,7 +232,7 @@ void CbcBranchDynamicDecision::updateInformation(OsiSolverInterface *solver,
   const CbcModel *model = object_->model();
   double originalValue = node->objectiveValue();
   int originalUnsatisfied = node->numberUnsatisfied();
-  double objectiveValue = solver->getObjValue() * model->getObjSense();
+  double objectiveValue = solver->getObjValue();
   int unsatisfied = 0;
   int i;
   int numberIntegers = model->numberIntegers();

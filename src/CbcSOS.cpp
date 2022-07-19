@@ -628,7 +628,7 @@ CbcSOS::createUpdateInformation(const OsiSolverInterface *solver,
 {
   double originalValue = node->objectiveValue();
   int originalUnsatisfied = node->numberUnsatisfied();
-  double objectiveValue = solver->getObjValue();
+  double objectiveValue = solver->getObjValue() * solver->getObjSense();
   int unsatisfied = 0;
   int i;
   //might be base model - doesn't matter
@@ -671,7 +671,9 @@ CbcSOS::createUpdateInformation(const OsiSolverInterface *solver,
     originalUnsatisfied - unsatisfied, value);
   newData.originalObjective_ = originalValue;
   // Solvers know about direction
+  double direction = solver->getObjSense();
   solver->getDblParam(OsiDualObjectiveLimit, newData.cutoff_);
+  newData.cutoff_ *= direction;
   return newData;
 }
 // Update object by CbcObjectUpdateData

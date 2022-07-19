@@ -1489,21 +1489,21 @@ public:
   /// Return true if model flipped to make minimize (for printing)
   inline bool modelFlipped() const
   {
-    return (moreSpecialOptions2_&67108864)!=0;
+    return (moreSpecialOptions2_&16777216)!=0;
   }
   /// Return objective function value with sign corrected
   inline double trueObjValue(double value) const
   {
-    return (moreSpecialOptions2_&67108864)==0 ? value : -value;
+    return (moreSpecialOptions2_&16777216)==0 ? value : -value;
   }
   inline double trueBestObjValue() const
   {
-    return (moreSpecialOptions2_&67108864)==0 ? bestObjective_ : -bestObjective_;
+    return (moreSpecialOptions2_&16777216)==0 ? bestObjective_ : -bestObjective_;
   }
   /// Return cutoff value with sign corrected
   inline double trueCutoff() const
   {
-    return (moreSpecialOptions2_&67108864)==0 ?
+    return (moreSpecialOptions2_&16777216)==0 ?
       dblParam_[CbcCurrentCutoff] : -dblParam_[CbcCurrentCutoff]; 
   }
 
@@ -3131,7 +3131,7 @@ private:
 	21 bit 2097152 - analyze changed priorities but were equal before
 	22 bit 4194304 - ignore cutoff increment in multiple root solvers
 	23 bit (8388608) - no crunch
-	24 bit (67108864) - model has been flipped
+	24 bit (16777216) - model has been flipped
     */
   int moreSpecialOptions2_;
   /// User node comparison function

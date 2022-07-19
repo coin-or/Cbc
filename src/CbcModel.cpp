@@ -19774,10 +19774,10 @@ void CbcModel::flipModel() {
   flipSolver(continuousSolver_, cutoff);
   flipSolver(solver_, cutoff);
   // flip interesting bit
-  if ((moreSpecialOptions2_&16777216)==0)
-    moreSpecialOptions2_ |= 16777216;
+  if ((moreSpecialOptions2_&67108864)==0)
+    moreSpecialOptions2_ |= 67108864;
   else
-    moreSpecialOptions2_ &= ~16777216;
+    moreSpecialOptions2_ &= ~67108864;
 }
 #ifdef CBC_KEEP_DEPRECATED
 /* preProcess problem - replacing solver

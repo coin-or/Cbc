@@ -224,10 +224,10 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
 {
   int i;
   if ((what & 1) != 0) {
-    printf("CbcSubapply depth %d column %d way %d bvalue %g obj %g\n",
-      this->depth_, this->branchVariable_, this->problemStatus_,
-      this->branchValue_, this->objectiveValue_);
-    printf("current bounds %g <= %g <= %g\n", solver->getColLower()[branchVariable_], branchValue_, solver->getColUpper()[branchVariable_]);
+    //printf("CbcSubapply depth %d column %d way %d bvalue %g obj %g\n",
+    //this->depth_, this->branchVariable_, this->problemStatus_,
+    //this->branchValue_, this->objectiveValue_);
+    //printf("current bounds %g <= %g <= %g\n", solver->getColLower()[branchVariable_], branchValue_, solver->getColUpper()[branchVariable_]);
 #ifndef NDEBUG
     int nSame = 0;
 #endif
@@ -287,7 +287,7 @@ void CbcSubProblem::apply(OsiSolverInterface *solver, int what) const
         numberChangedBounds_, what);
 #endif
 #endif
-    printf("new bounds %g <= %g <= %g\n", solver->getColLower()[branchVariable_], branchValue_, solver->getColUpper()[branchVariable_]);
+    //printf("new bounds %g <= %g <= %g\n", solver->getColLower()[branchVariable_], branchValue_, solver->getColUpper()[branchVariable_]);
   }
 #ifdef JJF_ZERO
   if ((what & 2) != 0) {

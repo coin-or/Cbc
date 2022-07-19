@@ -320,9 +320,12 @@ CbcBranchingObject *
 CbcGeneralDepth::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInformation *info, int /*way*/)
 {
   int numberDo = numberNodes_;
-  if (whichSolution_ >= 0 && (model_->moreSpecialOptions() & 33554432) == 0)
+  if (whichSolution_ >= 0 && (model_->moreSpecialOptions() & 33554432) == 0) {
     numberDo--;
-  assert(numberDo > 0);
+    if (numberDo <= 0)
+      return NULL; // solution but complete search
+  }
+ assert(numberDo > 0);
   // create object
   CbcGeneralBranchingObject *branch = new CbcGeneralBranchingObject(model_);
   // skip solution

@@ -337,6 +337,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
 */
     CbcModel *model = NULL;
     std::string fn = dirMiplib + mpsName[m];
+    //std::string fn = "/tmp/" + mpsName[m] + "_max.mps";
     if (!CbcTestMpsFile(fn)) {
       std::cout << "ERROR: Cannot find MPS file " << fn << "." << std::endl;
       continue;
@@ -368,9 +369,16 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
 
       CbcMain1(newArgc, newArgv, *model, callBack, parameterData);
     }
-
-    assert(model->getNumRows() == nRows[m]);
-    assert(model->getNumCols() == nCols[m]);
+    // warn if sizes do not match
+    if ((model->getNumRows() != nRows[m] ||
+	 model->getNumCols() != nCols[m]) && model->getNumRows()) {
+      printf("WARNING - model has %d row, %d columns - expected %d, %d\n",
+	     model->getNumRows(),model->getNumCols(),
+	     nRows[m],nCols[m]);
+      fprintf(stderr, "WARNING - model has %d row, %d columns - expected %d, %d\n",
+	     model->getNumRows(),model->getNumCols(),
+	     nRows[m],nCols[m]);
+    }
 
     if (oldStyle) {
 

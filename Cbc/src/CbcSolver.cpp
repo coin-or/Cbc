@@ -7540,9 +7540,12 @@ int CbcMain1(int argc, const char *argv[],
 #endif
               statistics_cut_time = 0.0;
               if (!noPrinting_) {
+		double direction =
+		  babModel_->solver()->getObjSense();
                 // Print more statistics
                 sprintf(generalPrint, "Cuts at root node changed objective from %g to %g",
-                  babModel_->getContinuousObjective(), babModel_->rootObjectiveAfterCuts());
+                  babModel_->getContinuousObjective()*direction,
+			babModel_->rootObjectiveAfterCuts()*direction);
                 generalMessageHandler->message(CLP_GENERAL, generalMessages)
                   << generalPrint
                   << CoinMessageEol;

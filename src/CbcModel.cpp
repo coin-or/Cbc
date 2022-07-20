@@ -16604,7 +16604,7 @@ void CbcModel::setBestSolution(const double *solution, int numberColumns,
       double objValue = direction * solver_->getObjValue();
       if (objValue > objectiveValue + 1.0e-8 * (1.0 + fabs(objectiveValue))) {
         sprintf(printBuffer, "Given objective value %g, computed %g",
-                trueObjValue(objectiveValue), objValue);
+                trueObjValue(objectiveValue), trueObjValue(objValue));
         messageHandler()->message(CBC_GENERAL, messages())
             << printBuffer << CoinMessageEol;
       }

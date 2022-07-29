@@ -29,6 +29,7 @@
 #include "OsiClpSolverInterface.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "ClpNode.hpp"
+#include "ClpFactorization.hpp"
 #include "CbcBranchDynamic.hpp"
 // Default Constructor
 CbcGeneralDepth::CbcGeneralDepth()
@@ -193,6 +194,29 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
           numberDownInfeasible,
           numberUpInfeasible, numberIntegers);
         info->presolveType_ = 1;
+	// possible bug if 0 as can have mismatch on dense/nondense factorization
+	// could check if number rows large enough
+        info->presolveType_ = 1;
+	ClpSimplex *simplex = clpSolver->getModelPtr();
+	int numberRows = simplex->numberRows();
+	if (simplex->factorization()->goDenseThreshold() < numberRows) {
+	  const double *lower = simplex->columnLower();
+	  const double *upper = simplex->columnUpper();
+	  const int *integerVariable = model_->integerVariable();
+	  int nFixed = 0;
+	  for (int i=0;i<numberIntegers;i++) {
+	    int iColumn = integerVariable[i];
+	    if (upper[iColumn]==lower[iColumn])
+	      nFixed++;
+	  }
+	  if (nFixed*2<numberIntegers) {
+	    info->presolveType_=0;
+	    for (int i=0;i<info->maximumNodes_;i++) {
+	      if (info->nodeInfo_[i]) 
+		info->nodeInfo_[i]->cleanUpForCrunch();
+	    }
+	  }
+	}
         delete[] down;
         delete[] up;
 	delete[] priority;
@@ -203,7 +227,6 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
         bool takeHint;
         OsiHintStrength strength;
         solver->getHintParam(OsiDoReducePrint, takeHint, strength);
-        ClpSimplex *simplex = clpSolver->getModelPtr();
         int saveLevel = simplex->logLevel();
         if (strength != OsiHintIgnore && takeHint && saveLevel == 1)
           simplex->setLogLevel(0);

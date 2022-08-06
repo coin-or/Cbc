@@ -404,7 +404,6 @@ private:
   //@{
   //@}
 };
-#endif
 
 //###########################################################################
 // Empty callback to pass as default (why needed?)
@@ -440,3 +439,4 @@ int CbcMain1(int argc, const char *argv[],
 	     CbcModel &model,
              int callBack(CbcModel *currentSolver, int whereFrom), 
              CbcParameters &parameterData);
+#endif //CbcSolver_H

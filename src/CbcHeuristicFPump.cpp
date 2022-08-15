@@ -993,8 +993,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
                 for (i = 0; i < numberColumns; i++) {
                   newSolutionValue += saveObjective[i] * newSolution[i];
                 }
-                // not needed now - newSolutionValue *= direction;
-                sprintf(pumpPrint, "Relaxing continuous gives %g", newSolutionValue);
+                sprintf(pumpPrint, "Relaxing continuous gives %g",
+			model_->trueObjValue(newSolutionValue));
                 //#define DEBUG_BEST
 #ifdef DEBUG_BEST
                 {

@@ -370,7 +370,7 @@ int pushCbcSolverIntParam(CoinParam &param)
     parameters->setTestOsi(val);
     break;
   }
-#ifdef CBC_THREADS
+#ifdef CBC_THREAD
   case CbcParam::THREADS: {
     parameters->setThreads(val);
     break;
@@ -1152,7 +1152,8 @@ int pushCbcModelDblParam(CoinParam &param)
   double val = cbcParam.dblVal();
   int cbcParamCode = cbcParam.paramCode();
 
-  assert(model != 0);
+  if(!model)
+    return 0;
 
   int retval = 0;
   /*
@@ -1224,7 +1225,8 @@ int pushCbcModelIntParam(CoinParam &param)
   int val = cbcParam.intVal();
   int cbcParamCode = cbcParam.paramCode();
 
-  assert(model != 0);
+  if(!model)
+    return 0;
 
   int retval = 0;
   /*

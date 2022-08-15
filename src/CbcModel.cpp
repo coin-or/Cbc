@@ -5782,10 +5782,6 @@ void CbcModel::branchAndBound(int doStatistics)
   if (eventHandler) {
     eventHandler->event(CbcEventHandler::endSearch);
   }
-#ifdef CBC_HAS_NAUTY
-  if (rootSymmetryInfo_)
-    rootSymmetryInfo_->statsOrbits(this, 2);
-#endif
   if (!status_) {
     // Set best possible unless stopped on gap
     if (secondaryStatus_ != 2)

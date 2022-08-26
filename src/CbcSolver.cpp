@@ -2570,7 +2570,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	      }
               break;
             case ClpParam::KEEPNAMES:
-              keepImportNames = 1 - mode;
+              keepImportNames = mode;
               break;
             case ClpParam::PRESOLVE:
               if (mode == 0)

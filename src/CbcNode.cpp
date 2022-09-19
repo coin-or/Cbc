@@ -3340,8 +3340,10 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         double predictedChange = 0.0;
         // may have become feasible
         if (!infeasibility) {
-          if (strongType != 2 || solver->getColLower()[iColumn] == solver->getColUpper()[iColumn])
-            continue;
+           if (strongType != 2 ||
+	      iColumn >= numberColumns ||
+	      solver->getColLower()[iColumn] == solver->getColUpper()[iColumn])
+           continue;
         }
 #ifndef NDEBUG
         if (iColumn < numberColumns) {

@@ -717,9 +717,9 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
         }
       }
     }
-    printf("%d other, LB %d natural, %d neutral, %d forced, UB %d natural, %d neutral, %d forced\n",
-      nOther, nNaturalLB, nMaybeLB, nForcedLB,
-      nNaturalUB, nMaybeUB, nForcedUB = 0);
+    //printf("%d other, LB %d natural, %d neutral, %d forced, UB %d natural, %d neutral, %d forced\n",
+    //nOther, nNaturalLB, nMaybeLB, nForcedLB,
+    //nNaturalUB, nMaybeUB, nForcedUB = 0);
 #endif
   }
 

@@ -416,6 +416,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::MULTIPLEROOTS]->setDefault(0);
      parameters_[CbcParam::ODDWEXTMETHOD]->setDefault(2);
      parameters_[CbcParam::OUTPUTFORMAT]->setDefault(2);
+     parameters_[CbcParam::OPTIONS]->setDefault(0);
      parameters_[CbcParam::PRINTOPTIONS]->setDefault(0);
      parameters_[CbcParam::PROCESSTUNE]->setDefault(0);
      parameters_[CbcParam::RANDOMSEED]->setDefault(-1);
@@ -1604,6 +1605,11 @@ void CbcParameters::addCbcSolverIntParams() {
       0, 2,
       "Sets the method used in the extension module of Odd Wheel Cut "
       "Separation routine: 0=no extension; 1=one variable; 2=clique");
+
+  parameters_[CbcParam::OPTIONS]->setup(
+      "option!s", "Fine tuning of specialOptions", 0, COIN_INT_MAX,
+      "If set Or's with specialOptions just before entering branchAndBound.",
+      CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::OUTPUTFORMAT]->setup(
       "output!Format", "Which output format to use", 1, 6,

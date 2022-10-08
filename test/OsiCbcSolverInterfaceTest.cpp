@@ -20,13 +20,15 @@
 //#############################################################################
 
 namespace {
-CoinPackedMatrix &BuildExmip1Mtx()
+const CoinPackedMatrix* BuildExmip1Mtx()
 /*
   Simple function to build a packed matrix for the exmip1 example used in
   tests. The function exists solely to hide the intermediate variables.
   Probably could be written as an initialised declaration.
   See COIN/Mps/Sample/exmip1.mps for a human-readable presentation.
-
+  
+  Don't forget to dispose of the matrix when you're done with it.
+  
   Ordered triples seem easiest. They're listed in row-major order.
 */
 
@@ -47,7 +49,7 @@ CoinPackedMatrix &BuildExmip1Mtx()
     2.8, -1.2,
     5.6, 1.0, 1.9 };
 
-  static CoinPackedMatrix exmip1mtx = CoinPackedMatrix(true, &rowndxs[0], &colndxs[0], &coeffs[0], 14);
+  CoinPackedMatrix *exmip1mtx = new CoinPackedMatrix(true, &rowndxs[0], &colndxs[0], &coeffs[0], 14);
 
   return (exmip1mtx);
 }
@@ -241,9 +243,12 @@ void OsiCbcSolverInterfaceUnitTest(const std::string &mpsDir, const std::string 
       OSIUNITTEST_ASSERT_ERROR(ei[13] == 7, {}, "cbc", "getMatrixByRow: indices");
 #else // OSICBC_TEST_MTX_STRUCTURE
 
+      const CoinPackedMatrix *goldByCol = BuildExmip1Mtx();
       CoinPackedMatrix exmip1Mtx;
-      exmip1Mtx.reverseOrderedCopyOf(BuildExmip1Mtx());
+      exmip1Mtx.reverseOrderedCopyOf(*goldByCol);
       OSIUNITTEST_ASSERT_ERROR(exmip1Mtx.isEquivalent(*smP), {}, "cbc", "getMatrixByRow");
+      delete goldByCol;
+
 #endif // OSICBC_TEST_MTX_STRUCTURE
     }
 
@@ -363,8 +368,9 @@ void OsiCbcSolverInterfaceUnitTest(const std::string &mpsDir, const std::string 
       OSIUNITTEST_ASSERT_ERROR(ei[13] == 4, {}, "cbc", "getMatrixByCol: indices");
 #else // OSICBC_TEST_MTX_STRUCTURE
 
-      CoinPackedMatrix &exmip1Mtx = BuildExmip1Mtx();
-      OSIUNITTEST_ASSERT_ERROR(exmip1Mtx.isEquivalent(*smP), {}, "cbc", "getMatrixByCol");
+      const CoinPackedMatrix *exmip1Mtx = BuildExmip1Mtx();
+      OSIUNITTEST_ASSERT_ERROR(exmip1Mtx->isEquivalent(*smP), {}, "cbc", "getMatrixByCol");
+      delete exmip1Mtx;
 #endif // OSICBC_TEST_MTX_STRUCTURE
     }
 
@@ -445,9 +451,11 @@ void OsiCbcSolverInterfaceUnitTest(const std::string &mpsDir, const std::string 
         OSIUNITTEST_ASSERT_ERROR(ei[13] == 7, {}, "cbc", "matrix by row: indices");
 #else // OSICBC_TEST_MTX_STRUCTURE
 
+        const CoinPackedMatrix *goldByCol = BuildExmip1Mtx();
         CoinPackedMatrix exmip1Mtx;
-        exmip1Mtx.reverseOrderedCopyOf(BuildExmip1Mtx());
+        exmip1Mtx.reverseOrderedCopyOf(*goldByCol);
         OSIUNITTEST_ASSERT_ERROR(exmip1Mtx.isEquivalent(*siC1mbr), {}, "cbc", "matrix by row");
+        delete goldByCol;
 #endif // OSICBC_TEST_MTX_STRUCTURE
 
         OSIUNITTEST_ASSERT_WARNING(siC1rs == siC1.getRowSense(), {}, "cbc", "row sense");
@@ -566,11 +574,13 @@ void OsiCbcSolverInterfaceUnitTest(const std::string &mpsDir, const std::string 
   for inserting a cut of the form -Inf <= +Inf (i.e., a cut with no
   coefficients).
 */
+      const CoinPackedMatrix *goldByCol = BuildExmip1Mtx();
       CoinPackedMatrix exmip1Mtx;
-      exmip1Mtx.reverseOrderedCopyOf(BuildExmip1Mtx());
+      exmip1Mtx.reverseOrderedCopyOf(*goldByCol);
       CoinPackedVector freeRow;
       exmip1Mtx.appendRow(freeRow);
       OSIUNITTEST_ASSERT_ERROR(exmip1Mtx.isEquivalent(*lhsmbr), {}, "cbc", "matrix by row after assignment");
+      delete goldByCol;
 #endif // OSICBC_TEST_MTX_STRUCTURE
     }
   }

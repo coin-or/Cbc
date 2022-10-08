@@ -142,6 +142,10 @@ void CbcCrashHandler(int sig);
 #include "CbcSolverHeuristics.hpp"
 #include "CbcStrategy.hpp"
 #include "CbcTreeLocal.hpp"
+//#define CBC_USE_OPENMP
+#ifdef CBC_USE_OPENMP
+#include "omp.h"
+#endif
 
 //#############################################################################
 //#############################################################################
@@ -2131,6 +2135,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                  model_.setNumberStrong(iValue);
               } else if (cbcParamCode == CbcParam::PROCESSTUNE) {
                  tunePreProcess = iValue;
+	      } else if (cbcParamCode == CbcParam::PRINTOPTIONS) {
+		printOptions = iValue;
               } else if (cbcParamCode == CbcParam::VERBOSE) {
                  verbose = iValue;
               } else if (cbcParamCode == CbcParam::EXPERIMENT && iValue < 10000) {
@@ -3840,7 +3846,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #ifdef CBC_THREAD
                       int numberThreads = parameters[CbcParam::THREADS]->intVal();
                       cbcModel->setNumberThreads(numberThreads % 100);
-                      cbcModel->setThreadMode(CoinMin(numberThreads / 100, 7));
+                      cbcModel->setThreadMode(CoinMin((numberThreads%1000) / 100, 7));
 #endif
                       // setCutAndHeuristicOptions(*cbcModel);
                       cbcModel->branchAndBound();
@@ -7597,7 +7603,38 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #ifdef CBC_THREAD
                 int numberThreads = parameters[CbcParam::THREADS]->intVal();
                 babModel_->setNumberThreads(numberThreads % 100);
-                babModel_->setThreadMode(numberThreads / 100);
+                babModel_->setThreadMode((numberThreads%1000) / 100);
+#ifdef CBC_USE_OPENMP
+		if (numberThreads>100) {
+		  int realThreads = numberThreads%100;
+		  int pretendThreads;
+		  bool ompMode = true;
+		  if (numberThreads<1000) {
+		    if (numberThreads<800) {
+		      omp_set_num_threads(realThreads);
+		      pretendThreads = 2*realThreads;
+		    } else {
+		      babModel_->setThreadMode(1);
+		      ompMode = false;
+		      pretendThreads = realThreads;
+		    }
+		  } else {
+		    int multiplier = CoinMax((numberThreads%1000)/100,1);
+		    babModel_->setThreadMode(1);
+		    pretendThreads = multiplier*realThreads;
+		  }
+		  char buffer[100];
+		  if (ompMode) {
+		    omp_set_num_threads(realThreads);
+		    sprintf(buffer,"Deterministic parallel using %d OpenMP threads and pretending %d",realThreads,pretendThreads); 
+		  } else {
+		    sprintf(buffer,"Deterministic parallel using %d threads",realThreads); 
+		  }
+		  babModel_->messageHandler()->message(CBC_GENERAL, babModel_->messages())
+		    << buffer << CoinMessageEol;
+		  babModel_->setNumberThreads(pretendThreads);
+		}
+#endif
 #endif
                 int returnCode = 0;
                 if (callBack != NULL)
@@ -7849,6 +7886,12 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   babModel_->setBestSolution(osiclp->getColSolution(),
                                              osiclp->getNumCols(), 1.5325e10);
                 } else {
+		  // for very fine tuning
+		  if (parameters[CbcParam::OPTIONS]->intVal()) {
+		    int addOptions = parameters[CbcParam::OPTIONS]->intVal();
+		    int options = babModel_->specialOptions();
+		    babModel_->setSpecialOptions(options|addOptions);
+		  }
                   babModel_->branchAndBound(statistics);
                 }
 #else
@@ -8219,6 +8262,12 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		  babModel_ = NULL;
 		  return returnCode;
 		}
+		// for very fine tuning
+		if (parameters[CbcParam::OPTIONS]->intVal()) {
+		  int addOptions = parameters[CbcParam::OPTIONS]->intVal();
+		  int options = babModel_->specialOptions();
+		  babModel_->setSpecialOptions(options|addOptions);
+		}
                 babModel_->branchAndBound(statistics);
 #ifdef CBC_HAS_NAUTY
                 if (nautyAdded) {
@@ -8301,13 +8350,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                                             babModel_->numberBeforeTrust());
                 // Set up pre-processing
                 int translate2[] = {9999, 1, 1, 3, 2, 4, 5, 6, 6};
-                if (preProcess)
+                if (preProcess) 
                   strategy.setupPreProcessing(translate2[preProcess]);
                 babModel_->setStrategy(strategy);
 #ifdef CBC_THREAD
                 int numberThreads = parameters[CbcParam::THREADS]->intVal();
                 babModel_->setNumberThreads(numberThreads % 100);
-                babModel_->setThreadMode(numberThreads / 100);
+                babModel_->setThreadMode((numberThreads%1000) / 100);
 #endif
 #ifndef CBC_OTHER_SOLVER
                 if (outputFormat == 5) {
@@ -13119,6 +13168,7 @@ static int nautiedConstraints(CbcModel &model, int maxPass) {
       numberGenerators = symmetryInfo.getNtyInfo()->getNumGenerators();
     }
     if (numberGenerators) {
+      const double * solution = solver->getColSolution(); 
       // symmetryInfo.Print_Orbits();
       int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();
       if (numberUsefulOrbits) {
@@ -13126,8 +13176,9 @@ static int nautiedConstraints(CbcModel &model, int maxPass) {
         symmetryInfo.fillOrbits(/*true*/);
         const int *orbits = symmetryInfo.whichOrbit();
         int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();
-        int *counts = new int[numberUsefulOrbits];
-        memset(counts, 0, numberUsefulOrbits * sizeof(int));
+        int *counts = new int[2*numberUsefulOrbits];
+	int *active = counts+numberUsefulOrbits;
+        memset(counts, 0, 2*numberUsefulOrbits * sizeof(int));
         int numberColumns = solver->getNumCols();
         int numberUseful = 0;
         if (changeType == 1) {
@@ -13138,6 +13189,9 @@ static int nautiedConstraints(CbcModel &model, int maxPass) {
               if (solver->isBinary(i)) {
                 counts[iOrbit]++;
                 numberUseful++;
+		double value = solution[i];
+		if (fabs(value-floor(value+0.5))>1.0e-5)
+		  active[iOrbit]++;
               }
             }
           }
@@ -13149,6 +13203,9 @@ static int nautiedConstraints(CbcModel &model, int maxPass) {
               if (solver->isInteger(i)) {
                 counts[iOrbit]++;
                 numberUseful++;
+		double value = solution[i];
+		if (fabs(value-floor(value+0.5))>1.0e-5)
+		  active[iOrbit]++;
               }
             }
           }
@@ -13159,17 +13216,25 @@ static int nautiedConstraints(CbcModel &model, int maxPass) {
             if (iOrbit >= 0) {
               counts[iOrbit]++;
               numberUseful++;
+	      double value = solution[i];
+	      if (fabs(value-floor(value+0.5))>1.0e-5)
+		active[iOrbit]++;
             }
           }
         }
         int iOrbit = -1;
-#define LONGEST 0
+#define LONGEST 1
 #if LONGEST
-        // choose longest
+        // choose longest (and most active)
         int maxOrbit = 0;
+	int maxActive = 0;
         for (int i = 0; i < numberUsefulOrbits; i++) {
           if (counts[i] > maxOrbit) {
             maxOrbit = counts[i];
+	    maxActive = active[i];
+            iOrbit = i;
+          } else if (counts[i] == maxOrbit && active[i] > maxActive) {
+	    maxActive = active[i];
             iOrbit = i;
           }
         }

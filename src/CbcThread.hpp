@@ -312,6 +312,16 @@ public:
   {
     iterationsThisTime_ = value;
   }
+  /// Get number of strong iterations this time
+  inline int strongIterationsThisTime() const
+  {
+    return strongIterationsThisTime_;
+  }
+  /// Set number of strong iterations this time
+  inline void setStrongIterationsThisTime(int value)
+  {
+    strongIterationsThisTime_ = value;
+  }
   /// Get save stuff array
   inline int *saveStuff()
   {
@@ -347,6 +357,7 @@ public: // private:
   int maxDeleteNode_;
   int nodesThisTime_;
   int iterationsThisTime_;
+  int strongIterationsThisTime_;
   int deterministic_;
 #ifdef THREAD_DEBUG
 public:

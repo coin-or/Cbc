@@ -1214,6 +1214,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 	    specialOptions &= ~(2048|32768);
           // but say we are doing full search
           model.setSpecialOptions(specialOptions | 67108864);
+          saveModelOptions  &= (~32768); // don't do twice!
           bool takeHint;
           OsiHintStrength strength;
           // Switch off printing if asked to

@@ -1393,8 +1393,13 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver,
         tryNewSearch = false;
 #else
       numberFixed += numberFixed2;
-      if (numberFixed * 20 < numberColumns)
-        tryNewSearch = false;
+      if (numberNodes_) {
+	if (numberFixed * 20 < numberColumns)
+	  tryNewSearch = false;
+      } else {
+	if (!numberFixed)
+	  tryNewSearch = false;
+      }
 #endif
     }
     // check for odd cuts
@@ -3260,6 +3265,15 @@ void CbcModel::branchAndBound(int doStatistics)
       solver_->initialSolve();
     }
   }
+  //#define CBC_EARLY_RESTART
+#ifdef CBC_EARLY_RESTART
+  if (!parentModel_&&(specialOptions_&32768)!=0) {
+    // Save copy of solver
+    OsiSolverInterface *saveSolver = solver_->clone();
+    double checkCutoffForRestart = 1.0e100;
+    saveModel(saveSolver, &checkCutoffForRestart, &feasible);
+  }
+#endif
   /*
       Grepping through the code, it would appear that this is a command line
       debugging hook.  There's no obvious place in the code where this is set to

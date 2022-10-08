@@ -1403,6 +1403,14 @@ public:
     oddWextMethod_ = oddWextMethod;
   }
 
+  /*! \brief Get Options setting */
+  inline int getOptions() { return options_; }
+
+  /*! \brief Set Options setting */
+  inline void setOptions(int options) {
+    options_ = options;
+  }
+
   /*! \brief Get OutputFormat setting */
   inline int getOutputFormat() { return outputFormat_; }
 
@@ -2430,6 +2438,7 @@ private:
   int moreMoreOptions_;
   int multipleRoots_;
   int oddWextMethod_;
+  int options_;
   int outputFormat_;
   int processTune_;
   int randomSeed_;

@@ -201,6 +201,10 @@ int pushCbcSolverDblParam(CoinParam &param)
       parameters->setFeasPumpFakeIncrement(val);
       break;
    }
+   case CbcParam::OPTIONS: {
+      parameters->setOptions(val);
+      break;
+   }
    case CbcParam::SMALLBAB: {
       parameters->setSmallBab(val);
       break;

@@ -11245,6 +11245,42 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
       onOptimalPath = true;
       printf("On optimal path d\n");
       solver_->writeMpsNative("onopt.mps", NULL, NULL, 2);
+      // but check cuts
+      OsiSolverInterface * temp = solver_->clone();
+      const double *solution = debugger->optimalSolution();
+      const double *lower = temp->getColLower();
+      const double *upper = temp->getColUpper();
+      int numberColumns = temp->getNumCols();
+      int numberRows = temp->getNumRows();
+      int n = continuousSolver_->getNumRows();
+      const CoinPackedMatrix *rowCopy = temp->getMatrixByRow();
+      const int *column = rowCopy->getIndices();
+      const int *rowLength = rowCopy->getVectorLengths();
+      const CoinBigIndex *rowStart = rowCopy->getVectorStarts();
+      const double *rowLower = temp->getRowLower();
+      const double *rowUpper = temp->getRowUpper();
+      const double *element = rowCopy->getElements();
+      for (int i=n;i<numberRows;i++) {
+	double sum = 0.0;
+	for (CoinBigIndex j=rowStart[i];j<rowStart[i]+rowLength[i];j++) {
+	  int iColumn = column[j];
+	  sum += element[j]*solution[iColumn];
+	}
+	if (sum<rowLower[i]-1.0e-4 || sum>rowUpper[i]+1.0e-4)
+	  printf("bad row %d %g <= %g <= %g\n",
+		 i,rowLower[i],sum,rowUpper[i]);
+      }
+      for (int i = 0; i < numberColumns; i++) {
+	if (temp->isInteger(i)) {
+	  double value = floor(solution[i] + 0.5);
+	  assert(value >= lower[i] && value <= upper[i]);
+	  temp->setColLower(i, value);
+	  temp->setColUpper(i, value);
+	}
+      }
+      temp->resolve();
+      assert (temp->isProvenOptimal());
+      delete temp;
     }
   }
   // We may have deliberately added in violated cuts - check to avoid message

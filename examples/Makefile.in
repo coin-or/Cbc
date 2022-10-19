@@ -96,8 +96,8 @@ CXXLINKFLAGS = @RPATH_FLAGS@
 INCL += $(ADDINCFLAGS)
 
 # Linker flags
-@COIN_HAS_PKGCONFIG_TRUE@LIBS = `PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ @PKG_CONFIG@ --libs osi-cbc cbc cgl osi-clp`
-@COIN_HAS_PKGCONFIG_FALSE@LIBS = -L@libdir@ -lOsiCbc -lCbcSolver -lCbc -lCgl
+@COIN_HAS_PKGCONFIG_TRUE@LIBS = `PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ @PKG_CONFIG@ --libs osi-cbc cbc cgl osi-clp clp osi coinutils`
+@COIN_HAS_PKGCONFIG_FALSE@LIBS = -L@libdir@ -lOsiCbc -lCbcSolver -lCbc -lCgl -lOsi -lOsiClp -lClp -lCoinUtils
 LIBS += $(ADDLIBS)
 
 # The following is necessary under cygwin, if native compilers are used
@@ -144,8 +144,8 @@ all: $(EXE)
 
 .SUFFIXES: .cpp .c .@OBJEXT@
 
-$(EXE): $(OBJS)
-	$(CXX) $(CXXLINKFLAGS) $(CXXFLAGS) -o $@ $< $(LIBS)
+$(EXE): $(OBJS) $(EXTRAOBJS)
+	$(CXX) $(CXXLINKFLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:
 	rm -rf $(CLEANFILES) $(OBJS) $(EXTRAOBJS)

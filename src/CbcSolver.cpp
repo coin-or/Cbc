@@ -9510,7 +9510,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                      continue;
                   }
                   OsiClpSolverInterface solver(model2);
-                  solver.writeLp(fp, 1.0e-12);
+                  solver.writeLp(fp, 1.0e-12, 10, 10);
 		  fclose(fp);
                }
                if (deleteModel2)
@@ -9580,7 +9580,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                         printGeneralMessage(model_, buffer.str());
                         continue;
                      }
-                     clpSolver->writeLp(fp, 1.0e-12);
+                     clpSolver->writeLp(fp, 1.0e-12, 10, 10);
                   }
                   if (rowNames) {
                      for (iRow = 0; iRow < numberRows; iRow++) {

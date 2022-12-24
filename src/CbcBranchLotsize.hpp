@@ -141,7 +141,7 @@ private:
   /// Just for debug (CBC_PRINT defined in CbcBranchLotsize.cpp)
   void printLotsize(double value, bool condition, int type) const;
 
-private:
+protected:
   /// data
 
   /// Column number in model

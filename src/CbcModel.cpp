@@ -11419,7 +11419,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
     }
 #endif
     if (nTightened >= 0) {
-      resolve(solver_);
+      int nFix = resolve(solver_);
       numberIterations_ += solver_->getIterationCount();
       feasible = (solver_->isProvenOptimal() &&
                   !solver_->isDualObjectiveLimitReached());
@@ -11439,7 +11439,10 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
           feasible = false;
         }
       } else if (solver_->isAbandoned()) {
-        setMaximumSeconds(-COIN_DBL_MAX);
+ 	if (nFix!=-1) 
+ 	  setMaximumSeconds(-COIN_DBL_MAX);
+ 	else
+ 	  feasible = false;
       }
 #ifdef CBC_HAS_CLP
       if (clpSolver && feasible && !numberNodes_ && false) {
@@ -15524,7 +15527,7 @@ int CbcModel::resolve(OsiSolverInterface *solver) {
       if (clpSolver)
         clpSolver->getModelPtr()->setProblemStatus(1);
 #endif
-      return 0;
+      return -1;
     }
   }
 #endif
@@ -16075,7 +16078,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
   if (currentNode_ && currentNode_->depth() >= 8)
     stateOfSearch_ += 10;
   int maxNodes = getMaximumNodes();
-  if (maxNodes > 999999 && maxNodes < 1000020) {
+  if (maxNodes > 999999 && maxNodes < 1000020 && false) {
     stateOfSearch_ = maxNodes - 1000000;
     if (!numberNodes_)
       printf("stateOfSearch always %d\n", stateOfSearch_);

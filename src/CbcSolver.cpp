@@ -3965,7 +3965,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 si->setWarmStart(NULL);
                 int returnCode = 0;
                 if (callBack != NULL)
-                  callBack(&model_, 1);
+                  returnCode = callBack(&model_, 1); printf("RETCODE %d\n",returnCode);
                 if (returnCode) {
                   // exit if user wants
                   delete babModel_;

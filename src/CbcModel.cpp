@@ -8526,6 +8526,19 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   double cut_obj[CUT_HISTORY];
   for (int j = 0; j < CUT_HISTORY; j++)
     cut_obj[j] = -COIN_DBL_MAX;
+  // if lazy constraints were added before normal cuts done - delete them
+  if ((moreSpecialOptions2_ & 65536) != 0) {
+    int numberRowsBefore = continuousSolver_->getNumRows();
+    int numberRowsNow = solver_->getNumRows();
+    if (numberRowsNow>numberRowsBefore) {
+      int numberDelete = numberRowsNow-numberRowsBefore;
+      int * which = new int [numberDelete];
+      for (int i=0;i<numberDelete;i++)
+	which[i] = i+numberRowsBefore;
+      solver_->deleteRows(numberDelete,which);
+      delete [] which;
+    }
+  }
 #ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver =
       dynamic_cast<OsiClpSolverInterface *>(solver_);

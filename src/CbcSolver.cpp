@@ -1099,6 +1099,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   // Save a copy of input for unit testing
   // Could also be used for friendly error messages?
   std::deque<std::string> saveInputQueue = inputQueue;
+  // copy if we are reading from option file
+  std::deque<std::string> partInputQueue;
   // Meaning 0 - start at very beginning
   // 1 start at beginning of preprocessing
   // 2 start at beginning of branch and bound
@@ -1586,7 +1588,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             // we just had file name - do branch and bound
             field = "-solve";
          } else {
-            break;
+	   if (!partInputQueue.size())
+	     break;
+	   // switch back to original queue
+	   inputQueue = partInputQueue;
+	   std::deque<std::string> tempQueue;
+	   partInputQueue = tempQueue;
+	   continue;
          }
       }
 
@@ -1607,6 +1615,67 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             if (field != "--") {
                // take off -
                field = field.substr(1);
+	       if (field == "optionfile") {
+		 if (!inputQueue.empty()) {
+		   field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
+		   partInputQueue = inputQueue;
+		   std::deque<std::string> tempQueue;
+		   FILE * fp = fopen(field.c_str(),"r");
+		   if (!fp) {
+		     std::cout << "unable to open option file "
+			       << field << std::endl;
+		     continue;
+		   }
+		   /* format of file -
+		      comments line starts with *
+		      first character not blank
+		      command is first - if no - then - added
+		   */
+		   char line[200];
+		   std::cout << "Extra options - ";
+		   while (fgets(line, 200, fp)) {
+		     // skip comment
+		     if (line[0]=='*')
+		       continue;
+		     int nchar = strlen(line);
+		     if (nchar<2)
+		       continue;
+		     if (line[0]!='-') {
+		       memmove(line+1,line,nchar+1);
+		       nchar++;
+		       line[0]='-';
+		     }
+		     char *pos=line;
+		     char *put=line;
+		     while (true) {
+		       while (*pos != '\n' && *pos != '\0'
+			      && *pos != ' ' && *pos != '\t') 
+			 pos++;
+		       char save = *pos;
+		       *pos = '\0';
+		       if (strlen(put)) {
+			 tempQueue.push_back(put);
+			 std::cout << put << " ";
+		       }
+		       if (save == ' ' || save == '\t') {
+			 pos++;
+			 while (*pos == ' ' || *pos == '\t')
+			   pos++;
+			 put = pos;
+		       } else {
+			 break; // end of line
+		       }
+		     }
+		   }
+		   fclose(fp);
+		   std::cout << std::endl;
+   		   inputQueue = tempQueue;
+		   continue;
+		 } else if (partInputQueue.size()) {
+		   inputQueue = partInputQueue;
+		   continue;
+		 }
+	       }
             } else {
                // special dispensation - taken as -import --
                field = "import";

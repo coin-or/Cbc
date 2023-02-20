@@ -25,13 +25,25 @@ static Cbc_message us_english[] = {
   { CBC_STRONG, 7, 4, "Strong branching on %d (%d), down %g (%d) up %g (%d) value %g" },
   { CBC_SOLINDIVIDUAL, 8, 2, "%d has value %g" },
   { CBC_INTEGERINCREMENT, 9, 3, "Objective coefficients multiple of %g" },
+#ifdef CBC_FEW_NODE_COUNTS
   { CBC_STATUS, 10, 1, "After %d nodes, %d on tree, %g best solution, best possible %g (%.2f seconds)" },
+#else
+  { CBC_STATUS, 10, 1, "After %ld nodes, %d on tree, %g best solution, best possible %g (%.2f seconds)" },
+#endif
   { CBC_GAP, 11, 1, "Exiting as integer gap of %g less than %g or %g%%" },
+#ifdef CBC_FEW_NODE_COUNTS
   { CBC_ROUNDING, 12, 1, "Integer solution of %g found by %s after %d iterations and %d nodes (%.2f seconds)" },
+#else
+  { CBC_ROUNDING, 12, 1, "Integer solution of %g found by %s after %ld iterations and %ld nodes (%.2f seconds)" },
+#endif
   { CBC_ROOT, 13, 1, "At root node, %d cuts changed objective from %g to %g in %d passes" },
   { CBC_GENERATOR, 14, 1, "Cut generator %d (%s) - %d row cuts average %.1f elements, %d column cuts (%d active) %? in %.3f seconds - new frequency is %d" },
   { CBC_BRANCH, 15, 3, "Node %d Obj %g Unsat %d depth %d" },
+#ifdef CBC_FEW_NODE_COUNTS
   { CBC_STRONGSOL, 16, 1, "Integer solution of %g found by strong branching after %d iterations and %d nodes (%.2f seconds)" },
+#else
+  { CBC_STRONGSOL, 16, 1, "Integer solution of %g found by strong branching after %ld iterations and %ld nodes (%.2f seconds)" },
+#endif
   { CBC_VUB_PASS, 17, 1, "%d solved, %d variables fixed, %d tightened" },
   { CBC_VUB_END, 18, 1, "After tightenVubs, %d variables fixed, %d tightened" },
   { CBC_MAXSOLS, 19, 1, "Exiting on maximum solutions" },
@@ -39,31 +51,56 @@ static Cbc_message us_english[] = {
   { CBC_NOTFEAS1, 21, 2, "On closer inspection node is infeasible" },
   { CBC_NOTFEAS2, 22, 2, "On closer inspection objective value of %g above cutoff of %g" },
   { CBC_NOTFEAS3, 23, 2, "Allowing solution, even though largest row infeasibility is %g" },
+#ifdef CBC_FEW_NODE_COUNTS
   { CBC_TREE_SOL, 24, 1, "Integer solution of %g found by subtree after %d iterations and %d nodes (%.2f seconds)" },
+#else
+  { CBC_TREE_SOL, 24, 1, "Integer solution of %g found by subtree after %ld iterations and %ld nodes (%.2f seconds)" },
+#endif
   { CBC_ITERATE_STRONG, 25, 3, "%d cleanup iterations before strong branching" },
   { CBC_PRIORITY, 26, 1, "Setting priorities for objects %d to %d inclusive (out of %d)" },
   { CBC_EVENT, 27, 1, "Exiting on user event" },
   { CBC_START_SUB, 28, 1, "Starting sub-tree for %s - maximum nodes %d" },
   { CBC_END_SUB, 29, 1, "Ending sub-tree for %s" },
-  { CBC_THREAD_STATS, 30, 1, "%s%? %d used %d times,  waiting to start %g, %?%g cpu time,%? %g waiting for threads, %? %d locks, %g locked, %g waiting for locks" },
+#ifdef CBC_FEW_NODE_COUNTS
+#else
+  { CBC_THREAD_STATS, 30, 1, "%s%? %d used %ld times,  waiting to start %g, %?%g cpu time,%? %g waiting for threads, %? %d locks, %g locked, %g waiting for locks" },
+#endif
   { CBC_CUTS_STATS, 31, 1, "%d added rows had average density of %g" },
+#ifdef CBC_FEW_NODE_COUNTS
   { CBC_STRONG_STATS, 32, 1, "Strong branching done %d times (%d iterations), fathomed %d nodes and fixed %d variables" },
   { CBC_SOLUTION2, 33, 1, "Integer solution of %g found (by alternate solver) after %d iterations and %d nodes (%.2f seconds)" },
+#else
+  { CBC_STRONG_STATS, 32, 1, "Strong branching done %ld times (%ld iterations), fathomed %ld nodes and fixed %d variables" },
+  { CBC_SOLUTION2, 33, 1, "Integer solution of %g found (by alternate solver) after %ld iterations and %ld nodes (%.2f seconds)" },
+#endif
   { CBC_UNBOUNDED, 34, 1, "The LP relaxation is unbounded!" },
   { CBC_OTHER_STATS, 35, 1, "Maximum depth %d, %g variables fixed on reduced cost" },
   { CBC_HEURISTICS_OFF, 36, 1, "Heuristics switched off as %d branching objects are of wrong type" },
+#ifdef CBC_FEW_NODE_COUNTS
   { CBC_STATUS2, 37, 1, "%d nodes, %d on tree, best %g - possible %g depth %d unsat %d value %g its %d (%.2f seconds)" },
+#else
+  { CBC_STATUS2, 37, 1, "%ld nodes, %d on tree, best %g - possible %g depth %d unsat %d value %g its %ld (%.2f seconds)" },
+#endif
   { CBC_FPUMP1, 38, 1, "%s" },
   { CBC_FPUMP2, 39, 2, "%s" },
+#ifdef CBC_FEW_NODE_COUNTS
   { CBC_STATUS3, 40, 1, "%d nodes (+%d/%d), %d on tree, best %g - possible %g depth %d unsat %d its %d (+%d) (%.2f seconds)" },
   { CBC_OTHER_STATS2, 41, 1, "Maximum depth %d, %g variables fixed on reduced cost (complete fathoming %d times, %d nodes taking %d iterations)" },
+#else
+  { CBC_STATUS3, 40, 1, "%ld nodes (+%d/%d), %d on tree, best %g - possible %g depth %d unsat %d its %ld (+%d) (%.2f seconds)" },
+  { CBC_OTHER_STATS2, 41, 1, "Maximum depth %d, %g variables fixed on reduced cost (complete fathoming %ld times, %ld nodes taking %ld iterations)" },
+#endif
   { CBC_RELAXED1, 42, 1, "Possible objective of %.18g but variable %d is %g from integer value, integer tolerance %g" },
   { CBC_RELAXED2, 43, 2, "Possible objective of %.18g but had to fudge solution with tolerance of %g - check scaling of problem?" },
   { CBC_RESTART, 44, 1, "Reduced cost fixing - %d rows, %d columns - restarting search" },
   { CBC_GENERAL, 45, 1, "%s" },
   { CBC_ROOT_DETAIL, 46, 2, "Root node pass %d, %d rows, %d total tight cuts  -  objective %g" },
   { CBC_CUTOFF_WARNING1, 47, 1, "Cutoff set to %g - equivalent to best solution of %g" },
+#ifdef CBC_FEW_NODE_COUNTS
   { CBC_END_SOLUTION, 48, 2, "Final check on integer solution of %g found after %d iterations and %d nodes (%.2f seconds)" },
+#else
+  { CBC_END_SOLUTION, 48, 2, "Final check on integer solution of %g found after %ld iterations and %ld nodes (%.2f seconds)" },
+#endif
 #ifndef NO_FATHOM_PRINT
   { CBC_FATHOM_CHANGE, 49, 1, "Complete fathoming at depth >= %d" },
 #endif

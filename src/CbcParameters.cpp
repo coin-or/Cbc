@@ -1610,6 +1610,10 @@ void CbcParameters::addCbcSolverIntParams() {
       "option!s", "Fine tuning of specialOptions", 0, COIN_INT_MAX,
       "If set Or's with specialOptions just before entering branchAndBound.",
       CoinParam::displayPriorityLow);
+#ifdef CBC_TRY_SCIP
+  parameters_[CbcParam::OPTIONS]->appendKwd("usescip#use Scip after root cuts",16384);
+  parameters_[CbcParam::OPTIONS]->appendKwd("onlyscip#use Scip but not root cuts",16384|134217728);
+#endif
 
   parameters_[CbcParam::OUTPUTFORMAT]->setup(
       "output!Format", "Which output format to use", 1, 6,

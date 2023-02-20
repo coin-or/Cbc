@@ -172,8 +172,8 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
         info->numberBeforeTrust_ = model_->numberBeforeTrust();
         info->stateOfSearch_ = model_->stateOfSearch();
         // Compute "small" change in branch
-        int nBranches = model_->getIntParam(CbcModel::CbcNumberBranches);
-        if (nBranches) {
+        long int nBranches = model_->getNodeCount();
+        if (nBranches) { 
           double average = model_->getDblParam(CbcModel::CbcSumChange) / static_cast< double >(nBranches);
           info->smallChange_ = CoinMax(average * 1.0e-5, model_->getDblParam(CbcModel::CbcSmallestChange));
           info->smallChange_ = CoinMax(info->smallChange_, 1.0e-8);

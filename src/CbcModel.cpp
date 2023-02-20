@@ -4175,6 +4175,17 @@ void CbcModel::branchAndBound(int doStatistics)
     feasible = false;
   }
 #endif
+#ifdef CBC_TRY_SCIP
+  if (feasible && (specialOptions_ & 16384) != 0 && !parentModel_) {
+    int tryScip(CbcModel * model, int type);
+    // Use Scip to do search!
+    // if 27 bit (134217728) - use continuousSolver
+    int useCurrent = (specialOptions_&134217728) ? 0 : 1;
+    lastHeuristic_ = NULL;
+    status_ = tryScip(this,useCurrent);
+    feasible = false;
+  }
+#endif
   if (!parentModel_ && (moreSpecialOptions_ & 268435456) != 0) {
     // try idiotic idea
     CbcObject *obj = new CbcIdiotBranch(this);
@@ -4195,7 +4206,7 @@ void CbcModel::branchAndBound(int doStatistics)
     delete obj;
   }
   int saveNumberSolves = numberSolves_;
-  int saveNumberIterations = numberIterations_;
+  node_count saveNumberIterations = numberIterations_;
   if ((fastNodeDepth_ >= 0 || (moreSpecialOptions_ & 33554432) != 0) &&
       /*!parentModel_*/ (specialOptions_ & 2048) == 0) {
     // add in a general depth object doClp
@@ -4958,8 +4969,8 @@ void CbcModel::branchAndBound(int doStatistics)
   CbcNode *delNode[MAX_DEL_NODE + 1];
   int nDeleteNode = 0;
   // For Printing etc when parallel
-  int lastEvery1000 = 0;
-  int lastPrintEvery = 0;
+  node_count lastEvery1000 = 0;
+  node_count lastPrintEvery = 0;
   int numberConsecutiveInfeasible = 0;
 #define PERTURB_IN_FATHOM
 #ifdef PERTURB_IN_FATHOM
@@ -7795,7 +7806,14 @@ bool CbcModel::isProvenDualInfeasible() const {
 }
 // Node limit reached?
 bool CbcModel::isNodeLimitReached() const {
+#ifndef CBC_FEW_NODE_COUNTS
+  if (intParam_[CbcMaxNumNode] == COIN_INT_MAX)
+    return false;
+  else
+    return numberNodes_ >= intParam_[CbcMaxNumNode];
+#else
   return numberNodes_ >= intParam_[CbcMaxNumNode];
+#endif
 }
 // Time limit reached?
 bool CbcModel::isSecondsLimitReached() const {
@@ -19719,11 +19737,12 @@ void CbcModel::setOptionalInteger(int index) {
 }
 
 bool CbcModel::stoppingCriterionReached() const {
-  return (numberNodes_ >= intParam_[CbcMaxNumNode] ||
+  return (isNodeLimitReached() ||
           numberSolutions_ >= intParam_[CbcMaxNumSol] || stoppedOnGap_ ||
           eventHappened_ || maximumSecondsReached() ||
-          (numberSolutions_ && (numberNodes_ - lastNodeImprovingFeasSol_ >=
-                                intParam_[CbcMaxNodesNotImproving])) ||
+          (numberSolutions_ &&
+	   (intParam_[CbcMaxNodesNotImproving] != COIN_INT_MAX && (numberNodes_ - lastNodeImprovingFeasSol_ >=
+		   intParam_[CbcMaxNodesNotImproving]))) ||
           (!(maximumNumberIterations_ < 0 ||
              numberIterations_ < maximumNumberIterations_)));
 }

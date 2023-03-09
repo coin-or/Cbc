@@ -1624,6 +1624,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		   if (!fp) {
 		     std::cout << "unable to open option file "
 			       << field << std::endl;
+		     std::deque<std::string> tempQueue;
+		     partInputQueue = tempQueue;
 		     continue;
 		   }
 		   /* format of file -

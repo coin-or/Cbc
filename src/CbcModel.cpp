@@ -16,6 +16,8 @@
 //#define CHECK_NODE_FULL
 //#define NODE_LOG
 //#define GLOBAL_CUTS_JUST_POINTERS
+//#define MORE_DJ_FIXING
+//#define HEURISTIC_INFORM
 #ifdef CGL_DEBUG_GOMORY
 extern int gomory_try;
 #endif
@@ -1852,6 +1854,7 @@ void CbcModel::AddIntegers() {
 */
 
 #ifdef CONFLICT_CUTS
+//#define PRINT_CONFLICT 1
 #if PRINT_CONFLICT == 1
 static int numberConflictCuts = 0;
 static int lastNumberConflictCuts = 0;
@@ -2739,7 +2742,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CBC_HAS_NAUTY
   // maybe allow on fix and restart later
   if ((moreSpecialOptions2_ & (128 | 256)) != 0) {
-    if ((specialOptions_ & 2048) == 0) {
+    if ((specialOptions_ & 2048) == 0 && numberIntegers_ == numberObjects_) {
       symmetryInfo_ = new CbcSymmetry();
       symmetryInfo_->setupSymmetry(this);
       int numberGenerators = symmetryInfo_->statsOrbits(this, 0);
@@ -8362,6 +8365,8 @@ int CbcModel::reducedCostFix()
   double cutoff = getCutoff();
   double direction = solver_->getObjSense();
   double gap = cutoff - solver_->getObjValue() * direction;
+  if (gap>1.0e10)
+    return 0; // no solution yet
   double tolerance;
   solver_->getDblParam(OsiDualTolerance, tolerance);
   if (gap <= 0.0)
@@ -8660,11 +8665,14 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       (moreSpecialOptions_ & 4194304) != 0 && clpSolver) {
     if (!topOfTree_ && masterThread_)
       topOfTree_ = masterThread_->master_->baseModel_->topOfTree_;
-    assert(topOfTree_);
     int iType = 0;
-    OsiRowCut *cut =
-        clpSolver->modelCut(topOfTree_->lower(), topOfTree_->upper(),
-                            numberRowsAtContinuous_, whichGenerator_, iType);
+    OsiRowCut *cut; 
+    if (topOfTree_)
+      cut = clpSolver->modelCut(topOfTree_->lower(), topOfTree_->upper(),
+			numberRowsAtContinuous_, whichGenerator_, iType);
+    else
+      cut = clpSolver->modelCut(solver_->getColLower(), solver_->getColUpper(),
+			numberRowsAtContinuous_, whichGenerator_, iType);
     if (cut) {
       // cut->print();
       if (!iType) {
@@ -8741,6 +8749,11 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 #ifdef CHECK_KNOWN_SOLUTION
   if (onOptimalPath && (solver_->isDualObjectiveLimitReached() || !feasible)) {
     printf("help 1\n");
+  }
+#endif
+#ifdef MORE_DJ_FIXING
+  if (feasible) {
+    reducedCostFix();
   }
 #endif
   /*
@@ -8988,9 +9001,6 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   /*
       Do reduced cost fixing.
     */
-  int xxxxxx = 0;
-  if (xxxxxx)
-    solver_->resolve();
   reducedCostFix();
   /*
       Set up for at most numberTries rounds of cut generation. If numberTries is
@@ -9717,7 +9727,9 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 	  }
         }
         if (numberTries > 0) {
+#ifndef MORE_DJ_FIXING
           reducedCostFix();
+#endif
           lastObjective = direction * solver_->getObjValue();
         }
       }
@@ -11323,6 +11335,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
 	  temp->setColUpper(i, value);
 	}
       }
+      temp->writeMpsNative("onopt2.mps", NULL, NULL, 2);
       temp->resolve();
       assert (temp->isProvenOptimal());
       delete temp;

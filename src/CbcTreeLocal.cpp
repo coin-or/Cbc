@@ -314,16 +314,15 @@ CbcTreeLocal::clone() const
 void CbcTreeLocal::passInSolution(const double *solution, double solutionValue)
 {
   int numberColumns = model_->getNumCols();
-  delete[] savedSolution_;
-  savedSolution_ = new double[numberColumns];
-  memcpy(savedSolution_, solution, numberColumns * sizeof(double));
+  double * saveSolution = CoinCopyOfArray(solution,numberColumns);
+  double saveRhs = rhs_;
   rhs_ = range_;
   // Check feasible
   int goodSolution = createCut(solution, cut_);
   if (goodSolution >= 0) {
+    delete [] savedSolution_;
+    savedSolution_ = saveSolution;
     bestCutoff_ = CoinMin(solutionValue, model_->getCutoff());
-  } else {
-    model_ = NULL;
   }
 }
 // Return the top node of the heap

@@ -1451,7 +1451,7 @@ int CbcHeuristicNaive::solution(double &solutionValue,
     if (isHeuristicInteger(newSolver, iColumn)) {
       newLower = CoinMax(lower, floor(value) - 2.0);
       newUpper = CoinMin(upper, ceil(value) + 2.0);
-    } else {
+    } else if (value >= lower && value <= upper) {
       newLower = CoinMax(lower, value - 1.0e5);
       newUpper = CoinMin(upper, value + 1.0e-5);
     }

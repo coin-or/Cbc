@@ -196,9 +196,9 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcStatistics.lo libCbc_la-CbcStrategy.lo \
 	libCbc_la-CbcSubProblem.lo libCbc_la-CbcSymmetry.lo \
 	libCbc_la-CbcThread.lo libCbc_la-CbcTree.lo \
-	libCbc_la-CbcTreeLocal.lo libCbc_la-Cbc_C_Interface.lo \
-	libCbc_la-CbcLinked.lo libCbc_la-CbcLinkedUtils.lo \
-	libCbc_la-unitTestClp.lo
+	libCbc_la-CbcTreeLocal.lo libCbc_la-CbcUseScip.lo \
+        libCbc_la-Cbc_C_Interface.lo libCbc_la-CbcLinked.lo \
+        libCbc_la-CbcLinkedUtils.lo libCbc_la-unitTestClp.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -299,6 +299,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcThread.Plo \
 	./$(DEPDIR)/libCbc_la-CbcTree.Plo \
 	./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo \
+	./$(DEPDIR)/libCbc_la-CbcUseScip.Plo \
 	./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo \
 	./$(DEPDIR)/libCbc_la-unitTestClp.Plo
 am__mv = mv -f
@@ -614,6 +615,7 @@ libCbc_la_SOURCES = \
 	CbcThread.cpp CbcThread.hpp \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp \
+	CbcUseScip.cpp CbcUseScip.hpp \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
 	unitTestClp.cpp 
@@ -723,6 +725,7 @@ includecoin_HEADERS = \
 	CbcTree.hpp \
 	CbcLinked.hpp \
 	CbcTreeLocal.hpp \
+	CbcUseScip.hpp \
 	ClpConstraintAmpl.hpp \
 	ClpAmplObjective.hpp 
 
@@ -958,6 +961,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcThread.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcTree.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcUseScip.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-unitTestClp.Plo@am__quote@ # am--include-marker
 
@@ -1509,6 +1513,13 @@ libCbc_la-CbcTreeLocal.lo: CbcTreeLocal.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcTreeLocal.lo `test -f 'CbcTreeLocal.cpp' || echo '$(srcdir)/'`CbcTreeLocal.cpp
 
+libCbc_la-CbcUseScip.lo: CbcUseScip.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcUseScip.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcUseScip.Tpo -c -o libCbc_la-CbcUseScip.lo `test -f 'CbcUseScip.cpp' || echo '$(srcdir)/'`CbcUseScip.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcUseScip.Tpo $(DEPDIR)/libCbc_la-CbcUseScip.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcUseScip.cpp' object='libCbc_la-CbcUseScip.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcUseScip.lo `test -f 'CbcUseScip.cpp' || echo '$(srcdir)/'`CbcUseScip.cpp
+
 libCbc_la-Cbc_C_Interface.lo: Cbc_C_Interface.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-Cbc_C_Interface.lo -MD -MP -MF $(DEPDIR)/libCbc_la-Cbc_C_Interface.Tpo -c -o libCbc_la-Cbc_C_Interface.lo `test -f 'Cbc_C_Interface.cpp' || echo '$(srcdir)/'`Cbc_C_Interface.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-Cbc_C_Interface.Tpo $(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo
@@ -1752,6 +1763,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcThread.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTree.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcUseScip.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-unitTestClp.Plo
 	-rm -f Makefile
@@ -1877,6 +1889,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcThread.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTree.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcUseScip.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-unitTestClp.Plo
 	-rm -f Makefile

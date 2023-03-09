@@ -89,6 +89,9 @@ void CbcCrashHandler(int sig);
 #include "OsiCpxSolverInterface.hpp"
 #endif
 #endif
+#if CBC_TRY_SCIP > 1
+#include "CbcUseScip.hpp"
+#endif
 
 #include "CglBKClique.hpp"
 #include "CglClique.hpp"
@@ -1095,6 +1098,11 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   CbcModel &model_ = model;
   CglPreProcess *preProcessPointer = NULL;
   OsiSolverInterface *saveSolver = NULL;
+#if CBC_TRY_SCIP > 1
+  int scipMode = 0;
+  OsiSolverInterface *saveOriginalSolver = NULL;
+  CbcUseScip * scipData = NULL;
+#endif
   CglPreProcess process;
   // Save a copy of input for unit testing
   // Could also be used for friendly error messages?
@@ -1516,6 +1524,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
       parameters[CbcParam::FPUMPITS]->setVal(30);
       parameters[CbcParam::FPUMPTUNE]->setVal(1005043);
       parameters[CbcParam::PROCESSTUNE]->setVal(7);
+#if CBC_TRY_SCIP > 1
+      parameters[CbcParam::SCIPMODE]->setVal(0);
+#endif
       parameters[CbcParam::DIVINGC]->setVal("on");
       parameters[CbcParam::RINS]->setVal("on");
       parameters[CbcParam::PROBINGCUTS]->setVal("ifmove");
@@ -1624,6 +1635,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		   if (!fp) {
 		     std::cout << "unable to open option file "
 			       << field << std::endl;
+		     std::deque<std::string> tempQueue;
+		     partInputQueue = tempQueue;
 		     continue;
 		   }
 		   /* format of file -
@@ -2206,6 +2219,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                  tunePreProcess = iValue;
 	      } else if (cbcParamCode == CbcParam::PRINTOPTIONS) {
 		printOptions = iValue;
+#if CBC_TRY_SCIP > 1
+	      } else if (cbcParamCode == CbcParam::SCIPMODE) {
+		scipMode = iValue;
+#endif
               } else if (cbcParamCode == CbcParam::VERBOSE) {
                  verbose = iValue;
               } else if (cbcParamCode == CbcParam::EXPERIMENT && iValue < 10000) {
@@ -3644,6 +3661,35 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	      parameters.setModel(&model_);
 	      parameters.setGoodModel(true);
 	      parameters.synchronizeModel();
+#endif
+#if CBC_TRY_SCIP > 1
+	      if ((scipMode&2) != 0) {
+		scipData = new CbcUseScip();
+#ifndef CBC_OTHER_SOLVER
+		assert(originalSolver == 
+		       dynamic_cast<OsiClpSolverInterface *>(model_.solver()));
+#endif
+		int returnCode = scipData->presolveModel(model_.solver());
+		if (!returnCode) {
+		  OsiSolverInterface * solver = scipData->modifiedSolver();
+		  saveOriginalSolver = originalSolver;
+		  OsiSolverInterface *solver2 = model_.swapSolver(solver);
+#ifndef CBC_OTHER_SOLVER
+		  assert(originalSolver == 
+			 dynamic_cast<OsiClpSolverInterface *>(solver2));
+		  originalSolver = 
+		    dynamic_cast<OsiClpSolverInterface *>(solver);
+		  clpSolver = originalSolver;
+		  lpSolver = clpSolver->getModelPtr();
+#endif
+		  if (scipMode!=3)
+		    preProcess = 0;
+		} else {
+		  // Scip solved - so cant'use! - must be easy
+		  delete scipData;
+		  scipData = NULL;
+		}
+	      }
 #endif
               bool miplib = cbcParamCode == CbcParam::MIPLIB;
               int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
@@ -9013,6 +9059,31 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               }
 #endif
               if (cbcParamCode == CbcParam::BAB) {
+#if CBC_TRY_SCIP > 1
+		if (scipData) {
+		  // saveOriginalSolver in scipData
+		  OsiSolverInterface * solver = model_.solver();
+		  // returnCode 0 if OK
+		  int returnCode =
+		    scipData->afterSolve(bestSolution,
+					 babModel_->getObjValue());
+		  solver = model_.swapSolver(saveOriginalSolver);
+		  delete solver;
+		  delete scipData;
+		  scipData = NULL;
+		  if (!returnCode) {
+		    delete [] bestSolution;
+		    int n = saveOriginalSolver->getNumCols();
+		    bestSolution = CoinCopyOfArray(saveOriginalSolver->getColSolution(),n);
+		  }
+#ifndef CBC_OTHER_SOLVER
+		  originalSolver = 
+		    dynamic_cast<OsiClpSolverInterface *>(model_.solver());
+		  clpSolver = originalSolver;
+		  lpSolver = clpSolver->getModelPtr();
+#endif
+		}
+#endif
 #ifndef CBC_OTHER_SOLVER
                 // move best solution (should be there -- but ..)
                 int n = lpSolver->getNumCols();

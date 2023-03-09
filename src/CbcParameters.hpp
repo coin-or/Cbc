@@ -1457,13 +1457,22 @@ public:
 
   /*! \brief Set ProcessTune setting */
   inline void setProcessTune(int processTune) { processTune_ = processTune; }
-
+  
   /*! \brief Get RandomSeed setting */
   inline int getRandomSeed() { return randomSeed_; }
 
   /*! \brief Set RandomSeed setting */
   inline void setRandomSeed(int randomSeed) { randomSeed_ = randomSeed; }
 
+#ifdef CBC_TRY_SCIP
+
+  /*! \brief Get ProcessTune setting */
+  inline int getScipMode() { return scipMode_; }
+
+  /*! \brief Set ProcessTune setting */
+  inline void setScipMode(int scipMode) { scipMode_ = scipMode; }
+#endif
+  
   /*! \brief Get StrongStrategy setting */
   inline int getStrongStrategy() { return strongStrategy_; }
 
@@ -2442,6 +2451,9 @@ private:
   int outputFormat_;
   int processTune_;
   int randomSeed_;
+#ifdef CBC_TRY_SCIP
+  int scipMode_;
+#endif
   int strongStrategy_;
   int testOsi_;
   int threads_;

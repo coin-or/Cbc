@@ -235,6 +235,7 @@ public:
       PRINTOPTIONS,
       PROCESSTUNE,
       RANDOMSEED,
+      SCIPMODE,
       STRONGSTRATEGY,
       TESTOSI,
       THREADS,

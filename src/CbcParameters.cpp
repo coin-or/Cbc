@@ -420,6 +420,9 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::PRINTOPTIONS]->setDefault(0);
      parameters_[CbcParam::PROCESSTUNE]->setDefault(0);
      parameters_[CbcParam::RANDOMSEED]->setDefault(-1);
+#if CBC_TRY_SCIP > 1
+     parameters_[CbcParam::SCIPMODE]->setDefault(0);
+#endif
      parameters_[CbcParam::STRONGSTRATEGY]->setDefault(0);
      parameters_[CbcParam::TESTOSI]->setDefault(-1);
 #ifdef CBC_THREAD
@@ -1610,7 +1613,7 @@ void CbcParameters::addCbcSolverIntParams() {
       "option!s", "Fine tuning of specialOptions", 0, COIN_INT_MAX,
       "If set Or's with specialOptions just before entering branchAndBound.",
       CoinParam::displayPriorityLow);
-#ifdef CBC_TRY_SCIP
+#if CBC_TRY_SCIP
   parameters_[CbcParam::OPTIONS]->appendKwd("usescip#use Scip after root cuts",16384);
   parameters_[CbcParam::OPTIONS]->appendKwd("onlyscip#use Scip but not root cuts",16384|134217728);
 #endif
@@ -1655,6 +1658,16 @@ void CbcParameters::addCbcSolverIntParams() {
       "in heuristics such as the Feasibility Pump to decide whether to round "
       "up or down. The special value of 0 lets Cbc use the time of the day for "
       "the initial seed.");
+  
+#if CBC_TRY_SCIP > 1
+  parameters_[CbcParam::SCIPMODE]->setup(
+      "scip!Mode", "Allow Scip to be used in various ways", 0,
+      COIN_INT_MAX,
+      " 1 - use Scip's branch and bound inside branch and bound\n "
+      " 2 - use Scip's presolver.",
+      CoinParam::displayPriorityLow);
+  //parameters_[CbcParam::SCIPMODE]->appendKwd("",7);
+#endif
 
   parameters_[CbcParam::STRONGSTRATEGY]->setup(
       "expensive!Strong", "Whether to do even more strong branching", 0,

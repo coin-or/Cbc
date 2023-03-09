@@ -95,6 +95,7 @@ libCbc_la_SOURCES = \
 	CbcThread.cpp CbcThread.hpp \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp \
+	CbcUseScip.cpp CbcUseScip.hpp \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
 	unitTestClp.cpp 
@@ -217,6 +218,7 @@ includecoin_HEADERS = \
 	CbcTree.hpp \
 	CbcLinked.hpp \
 	CbcTreeLocal.hpp \
+	CbcUseScip.hpp \
 	ClpConstraintAmpl.hpp \
 	ClpAmplObjective.hpp 
 

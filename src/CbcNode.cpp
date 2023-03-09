@@ -3504,7 +3504,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           } else {
             iStatus = 1; // infeasible
 #ifdef CONFLICT_CUTS
-#undef CONFLICT_CUTS
+	    //#undef CONFLICT_CUTS
             //#define CONFLICT_CUTS 2
 #endif
 #ifdef CONFLICT_CUTS

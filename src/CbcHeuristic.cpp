@@ -1079,11 +1079,12 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           const int *originalColumns = process.originalColumns();
           CoinSet *setInfo = const_cast< CoinSet * >(clpSolver->setInfo());
           int numberSOS = clpSolver->numberSOS();
+	  CbcObject ** objects = new CbcObject * [numberSOS];
           for (int iSOS = 0; iSOS < numberSOS; iSOS++) {
-            //int type = setInfo[iSOS].setType();
+            int type = setInfo[iSOS].setType();
             int n = setInfo[iSOS].numberEntries();
-            int *which = setInfo[iSOS].modifiableWhich();
-            double *weights = setInfo[iSOS].modifiableWeights();
+            int *which = CoinCopyOfArray(setInfo[iSOS].which(),n);
+            double *weights = CoinCopyOfArray(setInfo[iSOS].weights(),n);
             int n2 = 0;
             for (int j = 0; j < n; j++) {
               int iColumn = which[j];
@@ -1098,7 +1099,15 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
               }
             }
             setInfo[iSOS].setNumberEntries(n2);
+	    objects[iSOS] = new CbcSOS(&model,n2,which,weights,iSOS,type);
+	    delete [] which;
+	    delete [] weights;
           }
+	  model.clearIntegers(); // so will refresh correctly
+	  model.addObjects(numberSOS,objects);
+          for (int iSOS = 0; iSOS < numberSOS; iSOS++)
+	    delete objects[iSOS];
+	  delete [] objects;
         }
 #endif
         if (numberNodes >= 0) {

@@ -1210,6 +1210,11 @@ public:
   {
     return numberIntegers_;
   }
+  /// Set number of integers in problem to zero to force refresh
+  inline void clearIntegers()
+  {
+    numberIntegers_ = 0;
+  }
   // Integer variables
   inline const int *integerVariable() const
   {

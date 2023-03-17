@@ -244,14 +244,14 @@ void OsiSolverLink::initialSolve()
               memcpy(gradient, qpTemp.objectiveAsObject()->gradient(&qpTemp, bestSolution_, offset, true, 2),
                 numberColumns * sizeof(double));
               // assume convex
-              double rhs = 0.0;
+              //double rhs = 0.0;
               int *column = new int[numberColumns + 1];
               int n = 0;
               for (int i = 0; i < numberColumns; i++) {
                 double value = gradient[i];
                 if (fabs(value) > 1.0e-12) {
                   gradient[n] = value;
-                  rhs += value * solution[i];
+                  //rhs += value * solution[i];
                   column[n++] = i;
                 }
               }
@@ -503,14 +503,14 @@ void OsiSolverLink::resolve()
                   }
                 }
                 // assume convex
-                double rhs = 0.0;
+                //double rhs = 0.0;
                 int *column = new int[numberColumns + 1];
                 int n = 0;
                 for (int i = 0; i < numberColumns; i++) {
                   double value = gradient[i];
                   if (fabs(value) > 1.0e-12) {
                     gradient[n] = value;
-                    rhs += value * solution[i];
+                    //rhs += value * solution[i];
                     column[n++] = i;
                   }
                 }
@@ -2626,14 +2626,14 @@ OsiSolverLink::linearizedBAB(CglStored *cut)
       double *gradient = new double[numberColumns + 1];
       memcpy(gradient, qp->objectiveAsObject()->gradient(qp, solution, offset, true, 2),
         numberColumns * sizeof(double));
-      double rhs = 0.0;
+      //double rhs = 0.0;
       int *column = new int[numberColumns + 1];
       int n = 0;
       for (int i = 0; i < numberColumns; i++) {
         double value = gradient[i];
         if (fabs(value) > 1.0e-12) {
           gradient[n] = value;
-          rhs += value * solution[i];
+          //rhs += value * solution[i];
           column[n++] = i;
         }
       }
@@ -3415,13 +3415,13 @@ int OsiSolverLink::fathom(bool allFixed)
     const double *objective = modelPtr_->objective();
     int numberColumns = newSolver.getNumCols();
     bool zeroObjective = true;
-    double sum = 0.0;
+    //double sum = 0.0;
     for (i = 0; i < numberColumns; i++) {
       if (upper[i] > lower[i] && objective[i]) {
         zeroObjective = false;
         break;
       } else {
-        sum += lower[i] * objective[i];
+        //sum += lower[i] * objective[i];
       }
     }
     int fake[] = { 5, 4, 3, 2, 0, 0, 0 };
@@ -4071,8 +4071,10 @@ OsiOldLink::infeasibility(const OsiBranchingInformation *info, int &whichWay) co
   //const double * lower = info->lower_;
   const double *upper = info->upper_;
   double integerTolerance = info->integerTolerance_;
+#ifdef DISTANCE
   double weight = 0.0;
   double sum = 0.0;
+#endif
 
   // check bounds etc
   double lastWeight = -1.0e100;
@@ -4084,7 +4086,9 @@ OsiOldLink::infeasibility(const OsiBranchingInformation *info, int &whichWay) co
         throw CoinError("Weights too close together in OsiLink", "infeasibility", "OsiLink");
       lastWeight = weights_[j];
       double value = CoinMax(0.0, solution[iColumn]);
+#ifdef DISTANCE
       sum += value;
+#endif
       if (value > integerTolerance && upper[iColumn]) {
         // Possibly due to scaling a fixed variable might slip through
         if (value > upper[iColumn] + 1.0e-8) {
@@ -4094,7 +4098,9 @@ OsiOldLink::infeasibility(const OsiBranchingInformation *info, int &whichWay) co
 #endif
         }
         value = CoinMin(value, upper[iColumn]);
+#ifdef DISTANCE
         weight += weights_[j] * value;
+#endif
         if (firstNonZero < 0)
           firstNonZero = j;
         lastNonZero = j;
@@ -4107,8 +4113,10 @@ OsiOldLink::infeasibility(const OsiBranchingInformation *info, int &whichWay) co
   whichWay_ = 1;
   if (lastNonZero - firstNonZero >= sosType_) {
     // find where to branch
+#ifdef DISTANCE
     assert(sum > 0.0);
     weight /= sum;
+#endif
     valueInfeasibility = lastNonZero - firstNonZero + 1;
     valueInfeasibility *= 0.5 / static_cast< double >(numberMembers_);
     //#define DISTANCE
@@ -4229,17 +4237,21 @@ OsiOldLink::feasibleRegion(OsiSolverInterface *solver, const OsiBranchingInforma
   const double *solution = info->solution_;
   const double *upper = info->upper_;
   double integerTolerance = info->integerTolerance_;
+#ifdef DISTANCE
   double weight = 0.0;
-  double sum = 0.0;
+#endif
+  // double sum = 0.0;
 
   int base = 0;
   for (j = 0; j < numberMembers_; j++) {
     for (int k = 0; k < numberLinks_; k++) {
       int iColumn = members_[base + k];
       double value = CoinMax(0.0, solution[iColumn]);
-      sum += value;
+      //sum += value;
       if (value > integerTolerance && upper[iColumn]) {
+#ifdef DISTANCE
         weight += weights_[j] * value;
+#endif
         if (firstNonZero < 0)
           firstNonZero = j;
         lastNonZero = j;
@@ -6377,7 +6389,9 @@ OsiBiLinear::computeLambdas(const double xB[3], const double yB[3], const double
   }
   lambda[3] = 1.0 - (lambda[0] + lambda[1] + lambda[2]);
   double infeasibility = 0.0;
+#ifndef NDEBUG
   double xy = 0.0;
+#endif
   for (int j = 0; j < 4; j++) {
     double value = lambda[j];
     if (value > 1.0) {
@@ -6389,7 +6403,9 @@ OsiBiLinear::computeLambdas(const double xB[3], const double yB[3], const double
       value = 0.0;
     }
     lambda[j] = value;
+#ifndef NDEBUG
     xy += xybar[j] * value;
+#endif
   }
   assert(fabs(xy - x * y) < 1.0e-4);
   return infeasibility;
@@ -7330,6 +7346,7 @@ OsiSolverLinearizedQuadratic::operator=(const OsiSolverLinearizedQuadratic &rhs)
   }
   return *this;
 }
+
 #include "ClpConstraint.hpp"
 #include "ClpConstraintLinear.hpp"
 #include "ClpConstraintQuadratic.hpp"

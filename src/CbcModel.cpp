@@ -11782,9 +11782,11 @@ CbcModel *CbcModel::findCliques(bool makeEquality, int atLeastThisMany,
     lookup[integerVariable_[i]] = i;
 
   // Statistics
+#if COIN_DEVELOP > 1
   int totalP1 = 0, totalM1 = 0;
   int numberBig = 0, totalBig = 0;
   int numberFixed = 0;
+#endif
 
   // Row copy
   const double *elementByRow = matrixByRow.getElements();
@@ -11884,7 +11886,9 @@ CbcModel *CbcModel::findCliques(bool makeEquality, int atLeastThisMany,
         break;
       } else if (abs(state) == 2) {
         // we can fix all
+#if COIN_DEVELOP > 1
         numberFixed += numberP1 + numberM1;
+#endif
         if (state > 0) {
           // fix all +1 at 0, -1 at 1
           for (i = 0; i < numberP1; i++)
@@ -11934,8 +11938,10 @@ CbcModel *CbcModel::findCliques(bool makeEquality, int atLeastThisMany,
              of a clique against the row upper bound.
                     */
           if (state > 0) {
+#if COIN_DEVELOP > 1
             totalP1 += numberP1;
             totalM1 += numberM1;
+#endif
             for (i = 0; i < numberP1; i++)
               type[i] = 1;
             for (i = 0; i < numberM1; i++) {
@@ -11943,8 +11949,10 @@ CbcModel *CbcModel::findCliques(bool makeEquality, int atLeastThisMany,
               type[numberP1++] = 0;
             }
           } else {
+#if COIN_DEVELOP > 1
             totalP1 += numberM1;
             totalM1 += numberP1;
+#endif
             for (i = 0; i < numberP1; i++)
               type[i] = 0;
             for (i = 0; i < numberM1; i++) {
@@ -11970,8 +11978,10 @@ CbcModel *CbcModel::findCliques(bool makeEquality, int atLeastThisMany,
           numberCliques++;
         } else if (numberP1 + numberM1 >= lessThanThis) {
           // too big
+#if COIN_DEVELOP > 1
           numberBig++;
           totalBig += numberP1 + numberM1;
+#endif
         }
       }
     }

@@ -877,15 +877,21 @@ int CbcHeuristicLocal::solution(double &solutionValue,
         }
       }
       int numberBad = 0;
+#ifdef COIN_DETAIL
       double sumBad = 0.0;
+#endif
       // check was approximately feasible
       for (i = 0; i < numberRows; i++) {
         if (rowActivity[i] < rowLower[i]) {
+#ifdef COIN_DETAIL
           sumBad += rowLower[i] - rowActivity[i];
+#endif
           if (rowActivity[i] < rowLower[i] - 10.0 * primalTolerance)
             numberBad++;
         } else if (rowActivity[i] > rowUpper[i]) {
+#ifdef COIN_DETAIL
           sumBad += rowUpper[i] - rowActivity[i];
+#endif
           if (rowActivity[i] > rowUpper[i] + 10.0 * primalTolerance)
             numberBad++;
         }

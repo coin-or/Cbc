@@ -285,11 +285,11 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   // but can't be exactly coin_int_max
   maxSimplexIterations = CoinMin(maxSimplexIterations, COIN_INT_MAX >> 3);
   bool fixGeneralIntegers = false;
-  int maxIterations = maxIterations_;
+  //int maxIterations = maxIterations_;
   int saveSwitches = switches_;
   if ((maxIterations_ % 10) != 0) {
     int digit = maxIterations_ % 10;
-    maxIterations -= digit;
+    //maxIterations -= digit;
     switches_ |= 65536;
     if ((digit & 3) != 0)
       fixGeneralIntegers = true;

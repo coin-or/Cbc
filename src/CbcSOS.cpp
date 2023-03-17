@@ -461,16 +461,16 @@ void CbcSOS::feasibleRegion()
   double integerTolerance2 = model_->getDblParam(CbcModel::CbcIntegerTolerance);
   int firstNonZero2 = -1;
   int lastNonZero2 = -1;
-  double weight = 0.0;
-  double sum = 0.0;
+  //double weight = 0.0;
+  //double sum = 0.0;
 
   for (j = 0; j < numberMembers_; j++) {
     int iColumn = members_[j];
     double value = CoinMax(lower[iColumn], solution[iColumn]);
     value = CoinMin(upper[iColumn], value);
-    sum += value;
+    //sum += value;
     if (fabs(value) > integerTolerance && (upper[iColumn] || oddValues_)) {
-      weight += weights_[j] * value;
+      //weight += weights_[j] * value;
       if (firstNonZero < 0)
         firstNonZero = j;
       lastNonZero = j;

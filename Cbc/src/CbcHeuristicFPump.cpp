@@ -2100,14 +2100,14 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           delete newSolver;
           newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
           newSolutionValue = -saveOffset;
-          double newSumInfeas = 0.0;
+          //double newSumInfeas = 0.0;
           const double *obj = newSolver->getObjCoefficients();
           for (int i = 0; i < numberColumns; i++) {
-            if (isHeuristicInteger(newSolver, i)) {
-              double value = newSolution[i];
-              double nearest = floor(value + 0.5);
-              newSumInfeas += fabs(value - nearest);
-            }
+            //if (isHeuristicInteger(newSolver, i)) {
+            //  double value = newSolution[i];
+            //  double nearest = floor(value + 0.5);
+            //  newSumInfeas += fabs(value - nearest);
+            //}
             newSolutionValue += obj[i] * newSolution[i];
           }
           newSolutionValue *= direction;
@@ -2759,14 +2759,14 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
   const double *columnLower = solver->getColLower();
   const double *columnUpper = solver->getColUpper();
   // Check if valid with current solution (allow for 0.99999999s)
-  double newSumInfeas = 0.0;
+  //double newSumInfeas = 0.0;
   int newNumberInfeas = 0;
   for (i = 0; i < numberIntegers; i++) {
     int iColumn = integerVariable[i];
     double value = solution[iColumn];
     double round = floor(value + 0.5);
     if (fabs(value - round) > primalTolerance) {
-      newSumInfeas += fabs(value - round);
+      //newSumInfeas += fabs(value - round);
       newNumberInfeas++;
     }
   }
@@ -2876,7 +2876,9 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
   memset(rowActivity, 0, numberRows * sizeof(double));
   solver->getMatrixByCol()->times(solution, rowActivity);
   double largestInfeasibility = primalTolerance;
+#ifdef JJF_ZERO
   double sumInfeasibility = 0.0;
+#endif
   int numberBadRows = 0;
   for (i = 0; i < numberRows; i++) {
     double value;
@@ -2884,13 +2886,17 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
     if (value > primalTolerance) {
       numberBadRows++;
       largestInfeasibility = CoinMax(largestInfeasibility, value);
+#ifdef JJF_ZERO
       sumInfeasibility += value;
+#endif
     }
     value = rowActivity[i] - rowUpper[i];
     if (value > primalTolerance) {
       numberBadRows++;
       largestInfeasibility = CoinMax(largestInfeasibility, value);
+#ifdef JJF_ZERO
       sumInfeasibility += value;
+#endif
     }
   }
 #ifdef JJF_ZERO

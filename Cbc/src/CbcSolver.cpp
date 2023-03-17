@@ -1363,7 +1363,9 @@ int CbcMain1(int argc, const char *argv[],
   CbcSolverUsefulData &parameterData)
 {
   std::vector< CbcOrClpParam > parameters_(parameterData.parameters_);
+#ifdef COIN_HAS_ASL
   double totalTime = parameterData.totalTime_;
+#endif
   bool noPrinting = parameterData.noPrinting_;
   bool useSignalHandler = parameterData.useSignalHandler_;
   CbcModel &model_ = model;
@@ -3729,14 +3731,14 @@ int CbcMain1(int argc, const char *argv[],
                         double *gradient = new double[numberColumns + 1];
                         memcpy(gradient, qp->objectiveAsObject()->gradient(qp, solution, offset, true, 2),
                           numberColumns * sizeof(double));
-                        double rhs = 0.0;
+                        //double rhs = 0.0;
                         int *column = new int[numberColumns + 1];
                         int n = 0;
                         for (int i = 0; i < numberColumns; i++) {
                           double value = gradient[i];
                           if (fabs(value) > 1.0e-12) {
                             gradient[n] = value;
-                            rhs += value * solution[i];
+                            //rhs += value * solution[i];
                             column[n++] = i;
                           }
                         }
@@ -4027,7 +4029,9 @@ int CbcMain1(int argc, const char *argv[],
               babModel_->assignSolver(solver3);
 #endif
               time2 = CoinCpuTime();
+#ifdef COIN_HAS_ASL
               totalTime += time2 - time1;
+#endif
               //time1 = time2;
               double timeLeft = babModel_->getMaximumSeconds();
               int numberOriginalColumns = babModel_->solver()->getNumCols();
@@ -7611,7 +7615,9 @@ int CbcMain1(int argc, const char *argv[],
               }
               // adjust time to allow for children on some systems
               time2 = CoinCpuTime() + CoinCpuTimeJustChildren();
+#ifdef COIN_HAS_ASL
               totalTime += time2 - time1;
+#endif
               // For best solution
               double *bestSolution = NULL;
               // Say in integer
@@ -8369,7 +8375,9 @@ int CbcMain1(int argc, const char *argv[],
                 goodModel = true;
 #endif
                 time2 = CoinCpuTime();
+#ifdef COIN_HAS_ASL
                 totalTime += time2 - time1;
+#endif
                 time1 = time2;
                 // Go to canned file if just input file
                 if (CbcOrClpRead_mode == 2 && argc == 2) {
@@ -8667,7 +8675,9 @@ int CbcMain1(int argc, const char *argv[],
 #endif
                 }
                 time2 = CoinCpuTime();
+#ifdef COIN_HAS_ASL
                 totalTime += time2 - time1;
+#endif
                 time1 = time2;
               }
             } else {
@@ -9269,7 +9279,9 @@ int CbcMain1(int argc, const char *argv[],
                 ClpSimplex *model2 = lpSolver;
                 model2->writeBasis(fileName.c_str(), outputFormat > 1, outputFormat - 2);
                 time2 = CoinCpuTime();
+#ifdef COIN_HAS_ASL
                 totalTime += time2 - time1;
+#endif
                 time1 = time2;
               }
             } else {
@@ -9343,7 +9355,9 @@ int CbcMain1(int argc, const char *argv[],
               if (!status) {
                 goodModel = true;
                 time2 = CoinCpuTime();
+#ifdef COIN_HAS_ASL
                 totalTime += time2 - time1;
+#endif
                 time1 = time2;
               } else {
                 // errors
@@ -9393,7 +9407,9 @@ int CbcMain1(int argc, const char *argv[],
               if (!status) {
                 goodModel = true;
                 time2 = CoinCpuTime();
+#ifdef COIN_HAS_ASL
                 totalTime += time2 - time1;
+#endif
                 time1 = time2;
               } else {
                 // errors
@@ -10561,7 +10577,9 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               }
               static_cast< ClpSimplexOther * >(lpSolver)->parametrics(fileName.c_str());
               time2 = CoinCpuTime();
+#ifdef COIN_HAS_ASL
               totalTime += time2 - time1;
+#endif
               time1 = time2;
             } else {
               sprintf(generalPrint, "** Current model not valid");

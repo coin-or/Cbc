@@ -1513,19 +1513,19 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
 
         // get average cost per iteration and assume stopped ones
         // would stop after 50% more iterations at average cost??? !!! ???
-        double averageCostPerIteration = 0.0;
-        double totalNumberIterations = 1.0;
-        int smallestNumberInfeasibilities = COIN_INT_MAX;
-        for (i = 0; i < numberStrong; i++) {
-          totalNumberIterations += choice[i].numItersDown + choice[i].numItersUp;
-          averageCostPerIteration += choice[i].downMovement + choice[i].upMovement;
-          smallestNumberInfeasibilities = CoinMin(CoinMin(choice[i].numIntInfeasDown,
-                                                    choice[i].numIntInfeasUp),
-            smallestNumberInfeasibilities);
-        }
+        //double averageCostPerIteration = 0.0;
+        //double totalNumberIterations = 1.0;
+        //int smallestNumberInfeasibilities = COIN_INT_MAX;
+        //for (i = 0; i < numberStrong; i++) {
+        //  totalNumberIterations += choice[i].numItersDown + choice[i].numItersUp;
+        //  averageCostPerIteration += choice[i].downMovement + choice[i].upMovement;
+        //  smallestNumberInfeasibilities = CoinMin(CoinMin(choice[i].numIntInfeasDown,
+        //                                            choice[i].numIntInfeasUp),
+        //    smallestNumberInfeasibilities);
+        //}
         //if (smallestNumberInfeasibilities>=numberIntegerInfeasibilities)
         //numberNodes=1000000; // switch off search for better solution
-        averageCostPerIteration /= totalNumberIterations;
+        //averageCostPerIteration /= totalNumberIterations;
         // all feasible - choose best bet
 
         // New method does all at once so it can be more sophisticated

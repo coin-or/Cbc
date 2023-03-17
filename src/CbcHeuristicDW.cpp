@@ -2460,12 +2460,12 @@ void CbcHeuristicDW::findStructure()
       int nTotalZero = 0;
       int base = 0;
       for (int iBlock = 0; iBlock < numberBlocks_; iBlock++) {
-        int aff = 0;
+        //int aff = 0;
         int nZero = 0;
         for (int jBlock = 0; jBlock < numberBlocks_; jBlock++) {
           if (iBlock != jBlock) {
             if (affinity_[base + jBlock])
-              aff += affinity_[base + jBlock];
+              ;//aff += affinity_[base + jBlock];
             else
               nZero++;
           }

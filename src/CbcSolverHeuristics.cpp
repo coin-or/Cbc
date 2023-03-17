@@ -720,7 +720,9 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
         }
         int jLayer = 0;
         int nFixed = -1;
+#ifdef COIN_DETAIL
         int nTotalFixed = 0;
+#endif
         while (nFixed) {
           nFixed = 0;
           for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -746,7 +748,9 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
               }
             }
           }
+#ifdef COIN_DETAIL
           nTotalFixed += nFixed;
+#endif
           jLayer += 100;
         }
         COIN_DETAIL_PRINT(printf(
@@ -810,7 +814,9 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
       // skipZero2=0; // leave 0 fixing
       int jLayer = 0;
       int nFixed = -1;
+#ifdef COIN_DETAIL
       int nTotalFixed = 0;
+#endif
       while (nFixed) {
         nFixed = 0;
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -836,7 +842,9 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
             }
           }
         }
+#ifdef COIN_DETAIL
         nTotalFixed += nFixed;
+#endif
         jLayer += 100;
       }
       COIN_DETAIL_PRINT(
@@ -926,9 +934,9 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
         break;
       iRelax++;
       int n = 0;
-      double sum0 = 0.0;
-      double sum00 = 0.0;
-      double sum1 = 0.0;
+      //double sum0 = 0.0;
+      //double sum00 = 0.0;
+      //double sum1 = 0.0;
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
         if (!clpSolver->isInteger(iColumn) || fix[iColumn] > kLayer)
           continue;
@@ -941,7 +949,7 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
           assert(fullSolution[iColumn] > 0.1);
           if (djValue > 0.0) {
             // printf("YY dj of %d at %g is %g\n",iColumn,value,djValue);
-            sum1 += djValue;
+            //sum1 += djValue;
             sort[n] = iColumn;
             dsort[n++] = -djValue;
           } else {
@@ -967,8 +975,8 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
             // %g\n",iColumn,value,djValue,
             // nn,fixColumn[iColumn+1]-fixColumn[iColumn],otherValue);
             if (djValue < 1.0e-8) {
-              sum0 -= djValue;
-              sum00 -= otherValue;
+              //sum0 -= djValue;
+              //sum00 -= otherValue;
               sort[n] = iColumn;
               if (djValue < -1.0e-2)
                 dsort[n++] = djValue + otherValue;
@@ -1031,7 +1039,9 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
           printf("%d fixed %d orig 0 %d 1\n", nFixed, nFixed0, nFixed1));
       int jLayer = 0;
       nFixed = -1;
+#ifdef COIN_DETAIL
       int nTotalFixed = 0;
+#endif
       while (nFixed) {
         nFixed = 0;
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -1058,7 +1068,9 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
             }
           }
         }
+#ifdef COIN_DETAIL
         nTotalFixed += nFixed;
+#endif
         jLayer += 100;
       }
       nFixed = 0;

@@ -4073,8 +4073,8 @@ OsiOldLink::infeasibility(const OsiBranchingInformation *info, int &whichWay) co
   double integerTolerance = info->integerTolerance_;
 #ifdef DISTANCE
   double weight = 0.0;
-#endif
   double sum = 0.0;
+#endif
 
   // check bounds etc
   double lastWeight = -1.0e100;
@@ -4086,7 +4086,9 @@ OsiOldLink::infeasibility(const OsiBranchingInformation *info, int &whichWay) co
         throw CoinError("Weights too close together in OsiLink", "infeasibility", "OsiLink");
       lastWeight = weights_[j];
       double value = CoinMax(0.0, solution[iColumn]);
+#ifdef DISTANCE
       sum += value;
+#endif
       if (value > integerTolerance && upper[iColumn]) {
         // Possibly due to scaling a fixed variable might slip through
         if (value > upper[iColumn] + 1.0e-8) {
@@ -4111,8 +4113,8 @@ OsiOldLink::infeasibility(const OsiBranchingInformation *info, int &whichWay) co
   whichWay_ = 1;
   if (lastNonZero - firstNonZero >= sosType_) {
     // find where to branch
-    assert(sum > 0.0);
 #ifdef DISTANCE
+    assert(sum > 0.0);
     weight /= sum;
 #endif
     valueInfeasibility = lastNonZero - firstNonZero + 1;

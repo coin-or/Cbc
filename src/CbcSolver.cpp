@@ -561,6 +561,7 @@ static void putBackOtherSolutions(CbcModel *presolvedModel, CbcModel *model,
     presolvedModel->setBestObjectiveValue(objectiveValue);
     presolvedModel->solver()->setColSolution(bestSolution);
     // presolvedModel->setBestSolution(bestSolution,numberColumns,objectiveValue);
+    delete [] bestSolution;
   }
 }
 
@@ -5032,12 +5033,23 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		      iColumn = back[iColumn];
 		      if (iColumn>=0) {
 			if (columnLower[iColumn]<lotsize[i].low&&
-			    columnUpper[iColumn]>lotsize[i].low) {
+			    columnUpper[iColumn]>lotsize[i].low-1.0e-8) {
 			  points[2] = lotsize[i].low;
 			  points[3] = columnUpper[iColumn];
 			  objects[numberLotSizing++] =
 			    new CbcLotsize(babModel_, iColumn, 2,
 					   points, true);
+			} else {
+			  //printf("SC %d new bounds %g,%g was %d low %g high %g\n",iColumn,
+			  //	 columnLower[iColumn],columnUpper[iColumn],
+			  //	 lotsize[i].column,lotsize[i].low,lotsize[i].high);
+			  if (columnUpper[iColumn]<lotsize[i].low) {
+			    if (columnLower[iColumn]) {
+			      printf("Infeasible due to SC variables?!\n");
+			    } else {
+			      solver2->setColUpper(iColumn,0.0);
+			    }
+			  }
 			}
 		      }
                     }

@@ -30,11 +30,11 @@ jobs:
         ]
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ github.event.repository.name }}
       - name: Checkout coinbrew
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: coin-or/coinbrew
           path: coinbrew
@@ -65,12 +65,22 @@ jobs:
           ADD_ARGS=()
           ADD_ARGS+=( --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack' )
           ./coinbrew/coinbrew fetch ${{ github.event.repository.name }} --skip-update "${ADD_ARGS[@]}"
+          echo "##################################################"
+          echo "### Extracting Netlib and Miplib3 if available"
+          if [ -d "./Data/Netlib/" ]; then gunzip ./Data/Netlib/*.gz; fi
+          if [ -d "./Data/Miplib3/" ]; then gunzip ./Data/Miplib3/*.gz; fi
+          echo "##################################################"       
         shell: msys2 {0}
       - name: Build project for msvs
         if: ${{ matrix.arch == 'msvs' }}
         shell: cmd
         run: |
           msbuild ${{ github.event.repository.name }}\MSVisualStudio\v17\${{ github.event.repository.name }}.sln /p:Configuration=Release /p:Platform=x64 /m
+      - name: Test project for msvs
+        if: ${{ matrix.arch == 'msvs' }}
+        shell: cmd
+        run: |
+          .\${{ github.event.repository.name }}\MSVisualStudio\v17\${{ github.event.repository.name }}Test.cmd .\${{ github.event.repository.name }}\MSVisualStudio\v17\x64\Release .\Data\Sample .\Data\Netlib .\Data\Miplib3
       - name: Install project for msvs
         if: ${{ matrix.arch == 'msvs' }}
         shell: cmd

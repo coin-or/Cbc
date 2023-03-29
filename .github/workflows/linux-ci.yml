@@ -18,22 +18,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04, ubuntu-20.04]
+        os: [ubuntu-20.04, ubuntu-22.04]
         build_static: [true, false]
         flags: [ADD_CXXFLAGS=-fvisibility=hidden]
         download_requirements: [sudo apt install -y -qq gfortran liblapack-dev libmetis-dev libnauty2-dev]
         include:
-          - os: macos-10.15
+          - os: macos-12
             build_static: false
-            flags: CC=clang OSX=10.15
+            flags: CC=clang OSX=12
             download_requirements: brew install metis bash
-          - os: macos-10.15
+          - os: macos-12
             build_static: false
-            flags: CC=gcc-9 CXX=g++-9 OSX=10.15
+            flags: CC=gcc-9 CXX=g++-9 OSX=12
             download_requirements: brew install metis bash
-          - os: macos-10.15
+          - os: macos-12
             build_static: false
-            flags: CC=gcc-10 CXX=g++-10 OSX=10.15
+            flags: CC=gcc-10 CXX=g++-10 OSX=12
             download_requirements: brew install metis bash
     steps:
       - name: Checkout source

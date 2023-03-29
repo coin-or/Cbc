@@ -37,13 +37,13 @@ jobs:
             download_requirements: brew install metis bash
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ github.event.repository.name }}
       - name: Install required packages from package manager
         run: ${{ matrix.download_requirements }}
       - name: Checkout coinbrew
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: coin-or/coinbrew
           path: coinbrew
@@ -70,7 +70,7 @@ jobs:
           cp ${{ github.event.repository.name }}/LICENSE dist/
           tar -czvf release.tar.gz -C dist .
       - name: Checkout package name generation script
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: coin-or-tools/platform-analysis-tools
           path: tools

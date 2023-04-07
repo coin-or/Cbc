@@ -85,7 +85,7 @@ jobs:
           echo "platform_string=${platform_str}" >> $GITHUB_ENV
       - name: Upload Artifact
         if: ${{ github.event_name == 'pull_request'}}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ github.event.repository.name }}-${{ github.head_ref }}-${{ env.platform_string }}.tar.gz
           path: release.tar.gz

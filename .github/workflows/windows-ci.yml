@@ -29,17 +29,17 @@ jobs:
         ]
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ github.event.repository.name }}
       - name: Checkout coinbrew
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: coin-or/coinbrew
           path: coinbrew
       - name: Set up msvc
-        uses: ilammy/msvc-dev-cmd@v1
         if: ${{ matrix.arch == 'msvc' }}
+        uses: ilammy/msvc-dev-cmd@v1
       - name: Set correct host flag and install requirements
         run: |
           echo "host_flag=--host=${{ matrix.arch }}-w64-mingw32" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -71,7 +71,7 @@ jobs:
           cp ${{ github.event.repository.name }}/LICENSE dist/
         shell: msys2 {0}
       - name: Upload failed build directory
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: ${{ matrix.os}}-{{ matrix.arch }}-debug=${{ matrix.debug }}-failedbuild
@@ -89,7 +89,7 @@ jobs:
         if: ${{ matrix.arch != 'msvc' }}
       - name: Upload artifact
         if: ${{ github.event_name == 'pull_request'}}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ github.event.repository.name }}-${{ github.head_ref }}-${{ env.package_suffix }}
           path: dist

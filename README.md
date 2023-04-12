@@ -5,7 +5,7 @@
 Projects such as this one are maintained by a small group of volunteers under
 the auspices of the non-profit [COIN-OR Foundation](https://www.coin-or.org)
 and we need your help! Please consider [sponsoring our
-activities](https://github.com/sponsors/coin-or).
+activities](https://github.com/sponsors/coin-or) or [volunteering](mailto:volunteer@coin-or.org) to help!
 
 [![Latest Release](https://img.shields.io/github/v/release/coin-or/Cbc?sort=semver)](https://github.com/coin-or/Cbc/releases)
 
@@ -154,7 +154,7 @@ OS by default).
 
 ## BUILDING from source
 
-These quick start instructions assumes you are in a bash shell. 
+These quick start instructions assume you are in a bash shell. 
 
 ### Using `coinbrew`
 
@@ -323,8 +323,22 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
           - `oddwext`: strategy used to search for wheel centers for the cuts found by CglOddWheel - 0=off, 1=one variable, 2=clique - default=2.
       - CglClique was replaced by CglBKClique as the default clique separator in CbcSolver.cpp.
 
+ * Release 2.10.9
+   * Maintenance release to push out accumulates patches.
+
+ * Release 2.10.8
+   * Re-generate binaries due to mistake in Github Actions configuration and 
+     incorporate new release of Cgl. 
+
+ * Release 2.10.7
+   * Fix a bug that would cause the unit test not to run correctly if the 
+     MIPLIB3 project was not present
+
+ * Release 2.10.6
+   * Accumulated fixes related to build, test, and CI. 
+
  * Release 2.10.5
-   * revert fix that stopped Clp when timelimit reached, as that lead to
+   * Revert fix that stopped Clp when timelimit reached, as that lead to
      all cleanup solves afterwards to stop without proper finishing and
      giving wrong results
 
@@ -334,7 +348,8 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
    * More bugfixes.
 
  * Release 2.10.3
-   * Improve performance of some primal heuristics, incl. feasibility pump, by making integer slacks continuous
+   * Improve performance of some primal heuristics, incl. feasibility pump, 
+     by making integer slacks continuous
    * Added additional timelimit checks
    * Fixed initialization of Cbc_clone result
    * Additional bugfixes

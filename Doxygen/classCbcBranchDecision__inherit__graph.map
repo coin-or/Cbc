@@ -1,0 +1,6 @@
+<map id="CbcBranchDecision" name="CbcBranchDecision">
+<area shape="rect" id="node1" title=" " alt="" coords="233,5,369,32"/>
+<area shape="rect" id="node2" href="$classCbcBranchDefaultDecision.html" title="Branching decision default class." alt="" coords="5,80,183,107"/>
+<area shape="rect" id="node3" href="$classCbcBranchDynamicDecision.html" title="Branching decision dynamic class." alt="" coords="207,80,394,107"/>
+<area shape="rect" id="node4" href="$classCbcBranchUserDecision.html" title="Branching decision user class." alt="" coords="419,80,583,107"/>
+</map>

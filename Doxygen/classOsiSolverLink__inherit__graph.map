@@ -1,5 +1,0 @@
-<map id="OsiSolverLink" name="OsiSolverLink">
-<area shape="rect" id="node1" title="This is to allow the user to replace initialSolve and resolve This version changes coefficients." alt="" coords="28,155,132,181"/>
-<area shape="rect" id="node2" href="$classCbcOsiSolver.html" title="This is for codes where solver needs to know about CbcModel Seems to provide only one value&#45;added fea..." alt="" coords="29,80,131,107"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,155,32"/>
-</map>

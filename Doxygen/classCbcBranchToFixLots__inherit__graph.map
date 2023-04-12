@@ -1,6 +1,0 @@
-<map id="CbcBranchToFixLots" name="CbcBranchToFixLots">
-<area shape="rect" id="node1" title="Define a branch class that branches so that one way variables are fixed while the other way cuts off ..." alt="" coords="5,229,149,256"/>
-<area shape="rect" id="node2" href="$classCbcBranchCut.html" title="Define a cut branching class." alt="" coords="24,155,131,181"/>
-<area shape="rect" id="node3" href="$classCbcObject.html" title=" " alt="" coords="36,80,119,107"/>
-<area shape="rect" id="node4" title=" " alt="" coords="37,5,117,32"/>
-</map>

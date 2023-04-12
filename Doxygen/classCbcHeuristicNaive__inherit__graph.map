@@ -1,4 +1,0 @@
-<map id="CbcHeuristicNaive" name="CbcHeuristicNaive">
-<area shape="rect" id="node1" title="Naive class a) Fix all ints as close to zero as possible b) Fix all ints with nonzero costs and &lt; lar..." alt="" coords="5,80,136,107"/>
-<area shape="rect" id="node2" href="$classCbcHeuristic.html" title="Heuristic base class." alt="" coords="22,5,119,32"/>
-</map>

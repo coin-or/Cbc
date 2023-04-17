@@ -61,7 +61,9 @@ extern int gomory_try;
 #include "CbcFeasibilityBase.hpp"
 #include "CbcFathom.hpp"
 #include "CbcFullNodeInfo.hpp"
+#ifdef COIN_HAS_NTY
 #include "CbcSymmetry.hpp"
+#endif
 // include Probing
 #include "CglProbing.hpp"
 #include "CglGomory.hpp"

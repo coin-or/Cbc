@@ -3115,12 +3115,10 @@ private:
 #else
   CbcEventHandler *eventHandler_;
 #endif
-#ifdef COIN_HAS_NTY
   /// Symmetry information
   CbcSymmetry *symmetryInfo_;
   /// Root symmetry information
   CbcSymmetry *rootSymmetryInfo_;
-#endif
   /// Total number of objects
   int numberObjects_;
 

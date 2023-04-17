@@ -61,9 +61,7 @@ extern int gomory_try;
 #include "CbcFeasibilityBase.hpp"
 #include "CbcFathom.hpp"
 #include "CbcFullNodeInfo.hpp"
-#ifdef COIN_HAS_NTY
 #include "CbcSymmetry.hpp"
-#endif
 // include Probing
 #include "CglProbing.hpp"
 #include "CglGomory.hpp"
@@ -5870,10 +5868,8 @@ CbcModel::CbcModel()
   , lastHeuristic_(NULL)
   , fastNodeDepth_(-1)
   , eventHandler_(NULL)
-#ifdef COIN_HAS_NTY
   , symmetryInfo_(NULL)
   , rootSymmetryInfo_(NULL)
-#endif
   , numberObjects_(0)
   , object_(NULL)
   , ownObjects_(true)
@@ -6043,10 +6039,8 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , lastHeuristic_(NULL)
   , fastNodeDepth_(-1)
   , eventHandler_(NULL)
-#ifdef COIN_HAS_NTY
   , symmetryInfo_(NULL)
   , rootSymmetryInfo_(NULL)
-#endif
   , numberObjects_(0)
   , object_(NULL)
   , ownObjects_(true)

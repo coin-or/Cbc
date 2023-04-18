@@ -1,7 +1,0 @@
-<map id="CbcIntegerBranchingObject" name="CbcIntegerBranchingObject">
-<area shape="rect" id="node1" title="Simple branching object for an integer variable." alt="" coords="148,155,329,181"/>
-<area shape="rect" id="node4" href="$classCbcDynamicPseudoCostBranchingObject.html" title="Simple branching object for an integer variable with pseudo costs." alt="" coords="5,229,229,271"/>
-<area shape="rect" id="node5" href="$classCbcIntegerPseudoCostBranchingObject.html" title="Simple branching object for an integer variable with pseudo costs." alt="" coords="254,229,469,271"/>
-<area shape="rect" id="node2" href="$classCbcBranchingObject.html" title="Abstract branching object base class Now just difference with OsiBranchingObject." alt="" coords="168,80,309,107"/>
-<area shape="rect" id="node3" title=" " alt="" coords="169,5,308,32"/>
-</map>

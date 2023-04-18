@@ -1,4 +1,0 @@
-<map id="CbcHeuristicPartial" name="CbcHeuristicPartial">
-<area shape="rect" id="node1" title="Partial solution class If user knows a partial solution this tries to get an integer solution it uses..." alt="" coords="5,80,140,107"/>
-<area shape="rect" id="node2" href="$classCbcHeuristic.html" title="Heuristic base class." alt="" coords="24,5,121,32"/>
-</map>

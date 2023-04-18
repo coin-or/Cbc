@@ -1,4 +1,0 @@
-<map id="CbcHeuristicJustOne" name="CbcHeuristicJustOne">
-<area shape="rect" id="node1" title="Just One class &#45; this chooses one at random." alt="" coords="5,80,152,107"/>
-<area shape="rect" id="node2" href="$classCbcHeuristic.html" title="Heuristic base class." alt="" coords="30,5,127,32"/>
-</map>

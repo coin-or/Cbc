@@ -1,4 +1,0 @@
-<map id="CbcHeuristicGreedySOS" name="CbcHeuristicGreedySOS">
-<area shape="rect" id="node1" title="Greedy heuristic for SOS and L rows (and positive elements)" alt="" coords="5,80,172,107"/>
-<area shape="rect" id="node2" href="$classCbcHeuristic.html" title="Heuristic base class." alt="" coords="40,5,137,32"/>
-</map>

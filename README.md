@@ -323,7 +323,11 @@ documentation [here](http://coin-or.github.io/Cbc/Doxygen).
           - `oddwext`: strategy used to search for wheel centers for the cuts found by CglOddWheel - 0=off, 1=one variable, 2=clique - default=2.
       - CglClique was replaced by CglBKClique as the default clique separator in CbcSolver.cpp.
 
+ * Release 2.10.10
+   * Fix for accidental introduction of private symbol into public header.
+
  * Release 2.10.9
+   * Improvements to symmetry handling.
    * Maintenance release to push out accumulates patches.
 
  * Release 2.10.8

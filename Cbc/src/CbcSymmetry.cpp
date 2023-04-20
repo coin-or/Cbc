@@ -573,7 +573,7 @@ CbcSymmetry::changeBounds(int iColumn, double * saveLower,
 	// OK is all same or one fixed to 0 and rest same
 	int oddOne = -1;
 	int nOdd = 0;
-	int first = i;
+	//int first = i;
 	marked[i] = 1;
 	whichMarked[nMarked++] = i;
 	int j = orbit[i];
@@ -676,7 +676,7 @@ CbcSymmetry::fixSome(int iColumn, double * columnLower,
 	// OK is all same or one fixed to 0 and rest same
 	int oddOne = -1;
 	int nOdd = 0;
-	int first = i;
+	//int first = i;
 	marked[i] = 1;
 	whichMarked[nMarked++] = i;
 	int j = orbit[i];
@@ -771,7 +771,7 @@ CbcSymmetry::changeBounds(double *saveLower,
 	  // OK is all same or one fixed to 0 and rest same
 	  int oddOne = -1;
 	  int nOdd = 0;
-	  int first = i;
+	  //int first = i;
 	  marked[i] = 1;
 	  whichMarked[nMarked++] = i;
 	  int j = orbit[i];
@@ -870,7 +870,7 @@ CbcSymmetry::changeBounds2(double *saveLower,
 	  // OK is all same or one fixed to 0 and rest same
 	  int oddOne = -1;
 	  int nOdd = 0;
-	  int first = i;
+	  //int first = i;
 	  marked[i] = 1;
 	  whichMarked[nMarked++] = i;
 	  int j = orbit[i];
@@ -949,7 +949,7 @@ CbcSymmetry::worthBranching(const double *columnLower, const double *columnUpper
   int * originalUpper = whichOrbit_ + numberColumns_;
   int * marked = originalUpper + numberColumns_;
   int * whichMarked = marked + numberColumns_;
-  int * save = whichOrbit_+4*numberColumns_;
+  //int * save = whichOrbit_+4*numberColumns_;
   memset(marked,0,numberColumns_*sizeof(int));
   for (int iPerm = 0;iPerm < numberPermutations_;iPerm++) {
     if (!permutations_[iPerm].numberPerms)
@@ -965,7 +965,7 @@ CbcSymmetry::worthBranching(const double *columnLower, const double *columnUpper
 	// OK is all same or one fixed to 0 and rest same
 	int oddOne = -1;
 	int nOdd = 0;
-	int first = i;
+	//int first = i;
 	marked[i] = 1;
 	whichMarked[nMarked++] = i;
 	int j = orbit[i];
@@ -1059,7 +1059,7 @@ CbcSymmetry::orbitalFixing2(OsiSolverInterface * solver)
 	// OK is all same or one fixed to 0 and rest same
 	int oddOne = -1;
 	int nOdd = 0;
-	int first = i;
+	//int first = i;
 	marked[i] = 1;
 	whichMarked[nMarked++] = i;
 	int j = orbit[i];
@@ -1165,7 +1165,7 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
   for (iRow = 0; iRow < numberRows; iRow++) {
     for (CoinBigIndex j = rowStart[iRow];
          j < rowStart[iRow] + rowLength[iRow]; j++) {
-      int jColumn = column[j];
+      //int jColumn = column[j];
       double value = elementByRow[j];
       if (value != 1.0)
         num_affine++;
@@ -1216,7 +1216,7 @@ void CbcSymmetry::setupSymmetry(CbcModel * model)
   for (iRow = 0; iRow < numberRows; iRow++) {
     for (CoinBigIndex j = rowStart[iRow];
 	 j < rowStart[iRow] + rowLength[iRow]; j++) {
-      int jColumn = column[j];
+      //int jColumn = column[j];
       double value = elementByRow[j];
       if (value == 1.0) {
 	numberElements += 2;
@@ -2377,7 +2377,9 @@ void CbcOrbitalBranchingObject::print()
 */
 int CbcOrbitalBranchingObject::compareOriginalObject(const CbcBranchingObject *brObj) const
 {
+#ifndef NDEBUG
   const CbcOrbitalBranchingObject *br = dynamic_cast< const CbcOrbitalBranchingObject * >(brObj);
+#endif
   assert(!br);
   abort();
   return 0;
@@ -2394,7 +2396,9 @@ int CbcOrbitalBranchingObject::compareOriginalObject(const CbcBranchingObject *b
 CbcRangeCompare
 CbcOrbitalBranchingObject::compareBranchingObject(const CbcBranchingObject *brObj, const bool replaceIfOverlap)
 {
+#ifndef NDEBUG
   const CbcOrbitalBranchingObject *br = dynamic_cast< const CbcOrbitalBranchingObject * >(brObj);
+#endif
   assert(!br);
   abort();
   return CbcRangeDisjoint;

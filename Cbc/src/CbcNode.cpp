@@ -4088,7 +4088,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       }
     }
   } else if (model->rootSymmetryInfo() && kColumn >=0) {
-    CbcObject *obj = (dynamic_cast< CbcBranchingObject * >(branch_))->object();
+    //CbcObject *obj = (dynamic_cast< CbcBranchingObject * >(branch_))->object();
     int returnCode =
       model->rootSymmetryInfo()->changeBounds(kColumn,
 					      saveLower,saveUpper,

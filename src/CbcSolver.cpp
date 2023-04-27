@@ -10956,7 +10956,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     // bound or rhs ranging
                   case 6:
                   case 7:
-                    solver->primalRanging(numberRows, which, valueIncrease,
+                    solver->primalRanging(number, which, valueIncrease,
                                           sequenceIncrease, valueDecrease,
                                           sequenceDecrease);
                     break;

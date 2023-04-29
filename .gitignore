@@ -3,7 +3,17 @@ aclocal*
 autom4te*
 Cbc/*
 
+# Ignore VS files
+*.suo
+*.db
+*.bak
+*.user
+**/.vs/
+/MSVisualStudio/**/Release/
+/MSVisualStudio/**/ReleaseParallel/
+/MSVisualStudio/**/Debug/
+
 # Ignore files created during unit tests
-/MSVisualStudio/v17/*.mps
-/MSVisualStudio/v17/*.lp
-/MSVisualStudio/v17/*.out
+/MSVisualStudio/v??/*.mps
+/MSVisualStudio/v??/*.lp
+/MSVisualStudio/v??/*.out

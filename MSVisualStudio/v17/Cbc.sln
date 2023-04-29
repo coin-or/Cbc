@@ -66,6 +66,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libOsiCommonTest", "..\..\.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{FAA08B0C-E9D4-4A64-AB36-B18DB3112D87}"
 	ProjectSection(SolutionItems) = preProject
+		..\..\.gitignore = ..\..\.gitignore
 		..\..\AUTHORS = ..\..\AUTHORS
 		..\..\LICENSE = ..\..\LICENSE
 		..\..\README.md = ..\..\README.md
@@ -216,6 +217,7 @@ Global
 		{109D6E6F-6D91-460F-86AE-DF27400E09A9}.ReleaseParallel|x64.ActiveCfg = Release|x64
 		{109D6E6F-6D91-460F-86AE-DF27400E09A9}.ReleaseParallel|x64.Build.0 = Release|x64
 		{109D6E6F-6D91-460F-86AE-DF27400E09A9}.ReleaseParallel|x86.ActiveCfg = Release|Win32
+		{109D6E6F-6D91-460F-86AE-DF27400E09A9}.ReleaseParallel|x86.Build.0 = Release|Win32
 		{BB058D80-D376-4F0F-87F7-E4760BC2C84D}.Debug|x64.ActiveCfg = Debug|x64
 		{BB058D80-D376-4F0F-87F7-E4760BC2C84D}.Debug|x64.Build.0 = Debug|x64
 		{BB058D80-D376-4F0F-87F7-E4760BC2C84D}.Debug|x86.ActiveCfg = Debug|Win32
@@ -238,8 +240,8 @@ Global
 		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.Release|x86.Build.0 = Release|Win32
 		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.ReleaseParallel|x64.ActiveCfg = ReleaseParallel|x64
 		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.ReleaseParallel|x64.Build.0 = ReleaseParallel|x64
-		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.ReleaseParallel|x86.ActiveCfg = Release|Win32
-		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.ReleaseParallel|x86.Build.0 = Release|Win32
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.ReleaseParallel|x86.ActiveCfg = ReleaseParallel|Win32
+		{FB60CCAF-A0F0-4557-9586-58524835E2BF}.ReleaseParallel|x86.Build.0 = ReleaseParallel|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

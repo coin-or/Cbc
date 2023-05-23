@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseParallel|Win32">
+      <Configuration>ReleaseParallel</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseParallel|x64">
+      <Configuration>ReleaseParallel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{EAF01AC1-8D19-4E37-9852-736DCFF67865}</ProjectGuid>
+    <RootNamespace>cbc</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LibraryPath>..\..\..\MSVisualStudio\v17\x64\Debug\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LibraryPath>..\..\..\MSVisualStudio\v17\x64\Release\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|x64'">
+    <LibraryPath>..\..\..\..\..\pthreads-w32\pthreads.2;..\..\..\MSVisualStudio\v17\x64\Release\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
+    <IncludePath>..\..\..\..\..\pthreads-w32\pthreads.2;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LibraryPath>..\..\..\MSVisualStudio\v17\Release\;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|Win32'">
+    <LibraryPath>..\..\..\MSVisualStudio\v17\Release\;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <IncludePath>..\..\..\..\..\pthreads-w32\pthreads.2;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\..\..\src\;..\..\..\..\..\Cgl\Cgl\src;..\..\..\..\..\Cgl\Cgl\src\CglClique;..\..\..\..\..\Cgl\Cgl\src\CglDuplicateRow;..\..\..\..\..\Cgl\Cgl\src\CglOddHole;..\..\..\..\..\Cgl\Cgl\src\CglFlowCover;..\..\..\..\..\Cgl\Cgl\src\CglGomory;..\..\..\..\..\Cgl\Cgl\src\CglKnapsackCover;..\..\..\..\..\Cgl\Cgl\src\CglLandP;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\..\Cgl\Cgl\src\CglPreProcess;..\..\..\..\..\Cgl\Cgl\src\CglProbing;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit2;..\..\..\..\..\Cgl\Cgl\src\CglResidualCapacity;..\..\..\..\..\Cgl\Cgl\src\CglTwomir;..\..\..\..\..\Cgl\Cgl\src\CglZeroHalf;..\..\..\..\..\Clp\Clp\src;..\..\..\..\..\Clp\Clp\src\OsiClp;..\..\..\..\..\Osi\Osi\src\Osi;..\..\..\..\..\CoinUtils\CoinUtils\src;..\..\..\..\..\pthreads\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CONSOLE;_DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\..\..\src\;..\..\..\..\..\Cgl\Cgl\src;..\..\..\..\..\Cgl\Cgl\src\CglClique;..\..\..\..\..\Cgl\Cgl\src\CglDuplicateRow;..\..\..\..\..\Cgl\Cgl\src\CglOddHole;..\..\..\..\..\Cgl\Cgl\src\CglFlowCover;..\..\..\..\..\Cgl\Cgl\src\CglGomory;..\..\..\..\..\Cgl\Cgl\src\CglKnapsackCover;..\..\..\..\..\Cgl\Cgl\src\CglLandP;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\..\Cgl\Cgl\src\CglPreProcess;..\..\..\..\..\Cgl\Cgl\src\CglProbing;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit2;..\..\..\..\..\Cgl\Cgl\src\CglResidualCapacity;..\..\..\..\..\Cgl\Cgl\src\CglTwomir;..\..\..\..\..\Cgl\Cgl\src\CglZeroHalf;..\..\..\..\..\Clp\Clp\src;..\..\..\..\..\Clp\Clp\src\OsiClp;..\..\..\..\..\Osi\Osi\src\Osi;..\..\..\..\..\CoinUtils\CoinUtils\src;..\..\..\..\..\pthreads\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CONSOLE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\..\..\src\;..\..\..\..\..\Cgl\Cgl\src;..\..\..\..\..\Cgl\Cgl\src\CglClique;..\..\..\..\..\Cgl\Cgl\src\CglDuplicateRow;..\..\..\..\..\Cgl\Cgl\src\CglOddHole;..\..\..\..\..\Cgl\Cgl\src\CglFlowCover;..\..\..\..\..\Cgl\Cgl\src\CglGomory;..\..\..\..\..\Cgl\Cgl\src\CglKnapsackCover;..\..\..\..\..\Cgl\Cgl\src\CglLandP;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\..\Cgl\Cgl\src\CglPreProcess;..\..\..\..\..\Cgl\Cgl\src\CglProbing;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit2;..\..\..\..\..\Cgl\Cgl\src\CglResidualCapacity;..\..\..\..\..\Cgl\Cgl\src\CglTwomir;..\..\..\..\..\Cgl\Cgl\src\CglZeroHalf;..\..\..\..\..\Clp\Clp\src;..\..\..\..\..\Clp\Clp\src\OsiClp;..\..\..\..\..\Osi\Osi\src\Osi;..\..\..\..\..\CoinUtils\CoinUtils\src;..\..\..\..\..\pthreads\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CONSOLE;NDEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\..\..\src\;..\..\..\..\..\Cgl\Cgl\src;..\..\..\..\..\Cgl\Cgl\src\CglClique;..\..\..\..\..\Cgl\Cgl\src\CglDuplicateRow;..\..\..\..\..\Cgl\Cgl\src\CglOddHole;..\..\..\..\..\Cgl\Cgl\src\CglFlowCover;..\..\..\..\..\Cgl\Cgl\src\CglGomory;..\..\..\..\..\Cgl\Cgl\src\CglKnapsackCover;..\..\..\..\..\Cgl\Cgl\src\CglLandP;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\..\Cgl\Cgl\src\CglPreProcess;..\..\..\..\..\Cgl\Cgl\src\CglProbing;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit2;..\..\..\..\..\Cgl\Cgl\src\CglResidualCapacity;..\..\..\..\..\Cgl\Cgl\src\CglTwomir;..\..\..\..\..\Cgl\Cgl\src\CglZeroHalf;..\..\..\..\..\Clp\Clp\src;..\..\..\..\..\Clp\Clp\src\OsiClp;..\..\..\..\..\Osi\Osi\src\Osi;..\..\..\..\..\CoinUtils\CoinUtils\src;..\..\..\..\..\pthreads\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CONSOLE;CBC_THREAD;NDEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pthread.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\..\..\src\;..\..\..\..\..\Cgl\Cgl\src;..\..\..\..\..\Cgl\Cgl\src\CglClique;..\..\..\..\..\Cgl\Cgl\src\CglDuplicateRow;..\..\..\..\..\Cgl\Cgl\src\CglOddHole;..\..\..\..\..\Cgl\Cgl\src\CglFlowCover;..\..\..\..\..\Cgl\Cgl\src\CglGomory;..\..\..\..\..\Cgl\Cgl\src\CglKnapsackCover;..\..\..\..\..\Cgl\Cgl\src\CglLandP;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\..\Cgl\Cgl\src\CglPreProcess;..\..\..\..\..\Cgl\Cgl\src\CglProbing;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit2;..\..\..\..\..\Cgl\Cgl\src\CglResidualCapacity;..\..\..\..\..\Cgl\Cgl\src\CglTwomir;..\..\..\..\..\Cgl\Cgl\src\CglZeroHalf;..\..\..\..\..\Clp\Clp\src;..\..\..\..\..\Clp\Clp\src\OsiClp;..\..\..\..\..\Osi\Osi\src\Osi;..\..\..\..\..\CoinUtils\CoinUtils\src;..\..\..\..\..\pthreads\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CONSOLE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>NotSet</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseParallel|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\..\..\src\;..\..\..\..\..\Cgl\Cgl\src;..\..\..\..\..\Cgl\Cgl\src\CglClique;..\..\..\..\..\Cgl\Cgl\src\CglDuplicateRow;..\..\..\..\..\Cgl\Cgl\src\CglOddHole;..\..\..\..\..\Cgl\Cgl\src\CglFlowCover;..\..\..\..\..\Cgl\Cgl\src\CglGomory;..\..\..\..\..\Cgl\Cgl\src\CglKnapsackCover;..\..\..\..\..\Cgl\Cgl\src\CglLandP;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding;..\..\..\..\..\Cgl\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\..\Cgl\Cgl\src\CglPreProcess;..\..\..\..\..\Cgl\Cgl\src\CglProbing;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit;..\..\..\..\..\Cgl\Cgl\src\CglRedSplit2;..\..\..\..\..\Cgl\Cgl\src\CglResidualCapacity;..\..\..\..\..\Cgl\Cgl\src\CglTwomir;..\..\..\..\..\Cgl\Cgl\src\CglZeroHalf;..\..\..\..\..\Clp\Clp\src;..\..\..\..\..\Clp\Clp\src\OsiClp;..\..\..\..\..\Osi\Osi\src\Osi;..\..\..\..\..\CoinUtils\CoinUtils\src;..\..\..\..\..\pthreads\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CONSOLE;CBC_THREAD;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>NotSet</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pthread.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\CoinSolve.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\Cgl\Cgl\MSVisualStudio\v17\libCgl\libCgl.vcxproj">
+      <Project>{1e645a44-00ef-4093-9f6a-1d082bd43bdb}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\Clp\Clp\MSVisualStudio\v17\libClp\libClp.vcxproj">
+      <Project>{768b67d6-e6d3-4a8f-aa61-511fdbce7937}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\Clp\Clp\MSVisualStudio\v17\libOsiClp\libOsiClp.vcxproj">
+      <Project>{79433425-ec16-410f-9b91-8d31d2109c90}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\CoinUtils\CoinUtils\MSVisualStudio\v17\libCoinUtils\libCoinUtils.vcxproj">
+      <Project>{6d2ef92a-d693-47e3-a325-a686e78c5ffd}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\Osi\Osi\MSVisualStudio\v17\libOsi\libOsi.vcxproj">
+      <Project>{bf5c7532-ee0a-479b-9993-72134087d530}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\libCbcSolver\libCbcSolver.vcxproj">
+      <Project>{5a9043a5-cb87-4e2b-807c-74830bffae39}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\libCbc\libCbc.vcxproj">
+      <Project>{0b054d74-6082-452f-9744-5fbe12c7d476}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

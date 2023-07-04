@@ -208,14 +208,18 @@ int CbcHeuristicDivePseudoCost::fixOtherVariables(OsiSolverInterface *solver,
   bool fixGeneralIntegers = (switches_ & 65536) != 0;
   // fix other integer variables that are at their bounds
   int cnt = 0;
+#ifdef CLP_INVESTIGATE
   int numberFree = 0;
   int numberFixedAlready = 0;
+#endif
   for (int i = 0; i < numberIntegers; i++) {
     int iColumn = integerVariable[i];
     if (!isHeuristicInteger(solver, iColumn))
       continue;
     if (upper[iColumn] > lower[iColumn]) {
+#ifdef CLP_INVESTIGATE
       numberFree++;
+#endif
       double value = solution[iColumn];
       if (value - lower[iColumn] <= integerTolerance) {
         candidate[cnt].var = iColumn;
@@ -234,7 +238,9 @@ int CbcHeuristicDivePseudoCost::fixOtherVariables(OsiSolverInterface *solver,
           * random[i];
       }
     } else {
+#ifdef CLP_INVESTIGATE
       numberFixedAlready++;
+#endif
     }
   }
 #ifdef CLP_INVESTIGATE

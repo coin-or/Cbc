@@ -1822,9 +1822,11 @@ CbcHeuristicNode::distance(const CbcHeuristicNode *node) const
   const double disjointWeight = 1;
   const double overlapWeight = 0.4;
   const double subsetWeight = 0.2;
+#ifdef COIN_DETAIL
   int countDisjointWeight = 0;
   int countOverlapWeight = 0;
   int countSubsetWeight = 0;
+#endif
   int i = 0;
   int j = 0;
   double dist = 0.0;
@@ -1856,11 +1858,15 @@ CbcHeuristicNode::distance(const CbcHeuristicNode *node) const
     const int brComp = compare3BranchingObjects(br0, br1);
     if (brComp < 0) {
       dist += subsetWeight;
+#ifdef COIN_DETAIL
       countSubsetWeight++;
+#endif
       ++i;
     } else if (brComp > 0) {
       dist += subsetWeight;
+#ifdef COIN_DETAIL
       countSubsetWeight++;
+#endif
       ++j;
     } else {
       const int comp = br0->compareBranchingObject(br1, false);
@@ -1870,16 +1876,22 @@ CbcHeuristicNode::distance(const CbcHeuristicNode *node) const
         break;
       case CbcRangeDisjoint: // disjoint decisions
         dist += disjointWeight;
+#ifdef COIN_DETAIL
         countDisjointWeight++;
+#endif
         break;
       case CbcRangeSubset: // subset one way or another
       case CbcRangeSuperset:
         dist += subsetWeight;
+#ifdef COIN_DETAIL
         countSubsetWeight++;
+#endif
         break;
       case CbcRangeOverlap: // overlap
         dist += overlapWeight;
+#ifdef COIN_DETAIL
         countOverlapWeight++;
+#endif
         break;
       }
       ++i;
@@ -1887,7 +1899,9 @@ CbcHeuristicNode::distance(const CbcHeuristicNode *node) const
     }
   }
   dist += subsetWeight * (numObjects_ - i + node->numObjects_ - j);
+#ifdef COIN_DETAIL
   countSubsetWeight += (numObjects_ - i + node->numObjects_ - j);
+#endif
   COIN_DETAIL_PRINT(printf("subset = %i, overlap = %i, disjoint = %i\n", countSubsetWeight,
     countOverlapWeight, countDisjointWeight));
   return dist;

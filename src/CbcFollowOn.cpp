@@ -189,7 +189,9 @@ int CbcFollowOn::gutsOfFollowOn(int &otherRow, int &preferredWay) const
 #endif
     for (int k = 0; k < nSort - 1; k++) {
       i = sort[k];
+#if defined(COUNT) || !defined(NDEBUG)
       int numberUnsatisfied = 0;
+#endif
       int n = 0;
       CoinBigIndex j;
       for (j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
@@ -197,7 +199,9 @@ int CbcFollowOn::gutsOfFollowOn(int &otherRow, int &preferredWay) const
         if (columnLower[iColumn] != columnUpper[iColumn]) {
           double solValue = solution[iColumn] - columnLower[iColumn];
           if (solValue < 1.0 - integerTolerance && solValue > integerTolerance) {
+#if defined(COUNT) || !defined(NDEBUG)
             numberUnsatisfied++;
+#endif
             for (CoinBigIndex jj = columnStart[iColumn]; jj < columnStart[iColumn] + columnLength[iColumn]; jj++) {
               int iRow = row[jj];
               if (rhs_[iRow]) {

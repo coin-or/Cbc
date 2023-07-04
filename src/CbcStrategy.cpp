@@ -382,7 +382,9 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       //const int * row = matrix->getIndices();
       const CoinBigIndex *columnStart = matrix->getVectorStarts();
       const int *columnLength = matrix->getVectorLengths();
+#ifdef COIN_DETAIL
       int numberInt = 0;
+#endif
       int numberNon = 0;
       int numberClose = 0;
       int numberColumns = clpSolver->getNumCols();
@@ -396,13 +398,17 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
           if (value > 1.0e7) {
             if (value != floor(value))
               numberNon++;
+#ifdef COIN_DETAIL
             else
               numberInt++;
+#endif
           } else {
             int iValue = static_cast< int >(100 * (value + 0.005));
             double value2 = iValue;
             if (value2 == 100.0 * value) {
+#ifdef COIN_DETAIL
               numberInt++;
+#endif
             } else if (fabs(value2 - 100.0 * value) < 1.0e-5) {
               numberClose++;
             } else {

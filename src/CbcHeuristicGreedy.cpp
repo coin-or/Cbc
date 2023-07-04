@@ -244,7 +244,7 @@ int CbcHeuristicGreedyCover::solution(double &solutionValue,
         // use current upper or original upper
         if (value + 0.99 < originalUpper[iColumn]) {
           double sum = 0.0;
-          int numberExact = 0;
+          //int numberExact = 0;
           for (j = columnStart[iColumn];
                j < columnStart[iColumn] + columnLength[iColumn]; j++) {
             int iRow = row[j];
@@ -252,8 +252,8 @@ int CbcHeuristicGreedyCover::solution(double &solutionValue,
             double elementValue = allOnes ? 1.0 : element[j];
             if (gap > 1.0e-7) {
               sum += CoinMin(elementValue, gap);
-              if (fabs(elementValue - gap) < 1.0e-7)
-                numberExact++;
+              //if (fabs(elementValue - gap) < 1.0e-7)
+              //  numberExact++;
             }
           }
           // could bias if exact
@@ -1258,7 +1258,10 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
     CoinSort_2(contribution, contribution + numberColumns, which);
     // Go through columns
     int nAdded = 0;
+    //#define REPORT 1
+#ifdef REPORT
     int nSlacks = 0;
+#endif
     for (int jColumn = 0; jColumn < numberColumns; jColumn++) {
       if (contribution[jColumn] >= 1.0e30)
         break;
@@ -1280,7 +1283,6 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
         }
       }
       if (possible) {
-        //#define REPORT 1
 #ifdef REPORT
         if ((nAdded % 1000) == 0) {
           double gap = 0.0;
@@ -1294,8 +1296,10 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
         }
 #endif
         nAdded++;
+#ifdef REPORT
         if (columnLength[iColumn] == 1)
           nSlacks++;
+#endif
         // Increase chosen column
         newSolution[iColumn] = 1.0;
         double cost = modifiedCost[iColumn];
@@ -1374,8 +1378,10 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
       // get list of columns which can go down without making
       // things much worse
       int nPossible = 0;
+#ifdef REPORT
       int nEasyDown = 0;
       int nSlackDown = 0;
+#endif
       for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
         if (newSolution[iColumn] && columnUpper[iColumn] > columnLower[iColumn]) {
           bool canGoDown = true;
@@ -1428,12 +1434,14 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
                     int iRow = row[j];
                     rowActivity[iRow] += element[j];
                   }
+#ifdef REPORT
                   nEasyDown++;
                   if (columnLength[iColumn] > 1) {
                     //printf("%d is easy down\n",iColumn);
                   } else {
                     nSlackDown++;
                   }
+#endif
                 }
               } else if (modifiedCost[iColumn] > 0.0) {
                 // easy down
@@ -1445,7 +1453,9 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
                   int iRow = row[j];
                   rowActivity[iRow] -= element[j];
                 }
+#ifdef REPORT
                 nEasyDown++;
+#endif
               }
             } else {
               which[nPossible++] = iColumn;

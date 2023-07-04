@@ -8894,7 +8894,7 @@ int CbcMain1(int argc, const char *argv[],
                     int nBadDir = 0;
                     int nBadPri = 0;
                     int nBadName = 0;
-                    int nBadLine = 0;
+                    //int nBadLine = 0;
                     int nLine = 0;
                     iColumn = -1;
                     int lowestPriority = -COIN_INT_MAX;
@@ -8938,7 +8938,7 @@ int CbcMain1(int argc, const char *argv[],
                         if (comma) {
                           *comma = '\0';
                         } else if (i < nAcross - 1) {
-                          nBadLine++;
+                          //nBadLine++;
                           break;
                         }
                         switch (order[i]) {

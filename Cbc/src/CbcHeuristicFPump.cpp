@@ -1099,7 +1099,9 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           if (matched)
             break;
         }
+#ifdef COIN_DEVELOP
         int numberPerturbed = 0;
+#endif
         if (matched || numberPasses % 100 == 0) {
           // perturbation
           //sprintf(pumpPrint+strlen(pumpPrint)," perturbation applied");
@@ -1161,7 +1163,9 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             double value = randomX[i];
             double difference = fabs(solution[iColumn] - newSolution[iColumn]);
             if (difference + value * factor > 0.5) {
+#ifdef COIN_DEVELOP
               numberPerturbed++;
+#endif
               if (newSolution[iColumn] < lower[iColumn] + primalTolerance) {
                 newSolution[iColumn] += 1.0;
               } else if (newSolution[iColumn] > upper[iColumn] - primalTolerance) {
@@ -2878,24 +2882,24 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
   double largestInfeasibility = primalTolerance;
 #ifdef JJF_ZERO
   double sumInfeasibility = 0.0;
-#endif
   int numberBadRows = 0;
+#endif
   for (i = 0; i < numberRows; i++) {
     double value;
     value = rowLower[i] - rowActivity[i];
     if (value > primalTolerance) {
-      numberBadRows++;
       largestInfeasibility = CoinMax(largestInfeasibility, value);
 #ifdef JJF_ZERO
       sumInfeasibility += value;
+      numberBadRows++;
 #endif
     }
     value = rowActivity[i] - rowUpper[i];
     if (value > primalTolerance) {
-      numberBadRows++;
       largestInfeasibility = CoinMax(largestInfeasibility, value);
 #ifdef JJF_ZERO
       sumInfeasibility += value;
+      numberBadRows++;
 #endif
     }
   }

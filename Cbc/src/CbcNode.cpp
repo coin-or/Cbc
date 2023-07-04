@@ -583,23 +583,25 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
     numberStrong = 0;
     if ((model->moreSpecialOptions() & 1024) != 0 || true) {
       int nBad = 0;
+#ifdef CLP_INVESTIGATE
       int nUnsat = 0;
       int nDiff = 0;
+#endif
       for (int i = 0; i < numberObjects; i++) {
         OsiObject *object = model->modifiableObject(i);
         const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
         if (thisOne) {
           int iColumn = thisOne->columnNumber();
           double targetValue = hotstartSolution[iColumn];
+#ifdef CLP_INVESTIGATE
           double value = saveSolution[iColumn];
           if (fabs(value - floor(value + 0.5)) > 1.0e-6) {
             nUnsat++;
-#ifdef CLP_INVESTIGATE
             printf("H %d is %g target %g\n", iColumn, value, targetValue);
-#endif
           } else if (fabs(targetValue - value) > 1.0e-6) {
             nDiff++;
           }
+#endif
           if (targetValue < saveLower[iColumn] || targetValue > saveUpper[iColumn]) {
 #ifdef CLP_INVESTIGATE
             printf("%d has target %g and current bounds %g and %g\n",
@@ -622,7 +624,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
     }
   }
   int numberStrongDone = 0;
-  int numberUnfinished = 0;
+  //int numberUnfinished = 0;
   int numberStrongInfeasible = 0;
   int numberStrongIterations = 0;
   int saveNumberStrong = numberStrong;
@@ -647,7 +649,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
     estimatedDegradation = 0.0;
     //int numberIntegerInfeasibilities=0; // without odd ones
     numberStrongDone = 0;
-    numberUnfinished = 0;
+    //numberUnfinished = 0;
     numberStrongInfeasible = 0;
     numberStrongIterations = 0;
 
@@ -1186,7 +1188,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         } else {
           // Can't say much as we did not finish
           choice[i].finishedDown = false;
-          numberUnfinished++;
+          //numberUnfinished++;
         }
         choice[i].downMovement = objectiveChange;
 
@@ -1293,7 +1295,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         } else {
           // Can't say much as we did not finish
           choice[i].finishedUp = false;
-          numberUnfinished++;
+          //numberUnfinished++;
         }
         choice[i].upMovement = objectiveChange;
 
@@ -1730,23 +1732,25 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   if (hotstartSolution) {
     if ((model->moreSpecialOptions() & 1024) != 0 || true) {
       int nBad = 0;
+#ifdef CLP_INVESTIGATE
       int nUnsat = 0;
       int nDiff = 0;
+#endif
       for (int i = 0; i < numberObjects; i++) {
         OsiObject *object = model->modifiableObject(i);
         const CbcSimpleInteger *thisOne = dynamic_cast< const CbcSimpleInteger * >(object);
         if (thisOne) {
           int iColumn = thisOne->columnNumber();
           double targetValue = hotstartSolution[iColumn];
+#ifdef CLP_INVESTIGATE
           double value = saveSolution[iColumn];
           if (fabs(value - floor(value + 0.5)) > 1.0e-6) {
             nUnsat++;
-#ifdef CLP_INVESTIGATE
             printf("H %d is %g target %g\n", iColumn, value, targetValue);
-#endif
           } else if (fabs(targetValue - value) > 1.0e-6) {
             nDiff++;
           }
+#endif
           if (targetValue < saveLower[iColumn] || targetValue > saveUpper[iColumn]) {
 #ifdef CLP_INVESTIGATE
             printf("%d has target %g and current bounds %g and %g\n",
@@ -1775,7 +1779,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   CbcBranchDecision *decision = model->branchingMethod();
   if (!decision)
     decision = new CbcBranchDynamicDecision();
-  int xMark = 0;
+  //int xMark = 0;
   // Get arrays to sort
   double *sort = new double[numberObjects];
 #ifndef COIN_HAS_NTY
@@ -2351,9 +2355,11 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           const int *row = model->solver()->getMatrixByCol()->getIndices();
           const CoinBigIndex *columnStart = model->solver()->getMatrixByCol()->getVectorStarts();
           const int *columnLength = model->solver()->getMatrixByCol()->getVectorLengths();
+#ifdef CLP_INVESTIGATE
           int nFree = 0;
-          int nFreeNon = 0;
           int nFixedNon = 0;
+#endif
+          int nFreeNon = 0;
           double mostAway = 0.0;
           int whichAway = -1;
           const double *columnLower = solver->getColLower();
@@ -2376,10 +2382,14 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                   whichAway = i;
                 }
               } else {
+#ifdef CLP_INVESTIGATE
                 nFree++;
+#endif
               }
             } else if (solution[i] != saveSolution[i]) {
+#ifdef CLP_INVESTIGATE
               nFixedNon++;
+#endif
             }
           }
           const double *lower = solver->getRowLower();
@@ -2658,7 +2668,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 #endif
           }
           doneHotStart = true;
-          xMark++;
+          //xMark++;
           kPass++;
           osiclp->passInRanges(NULL);
           const double *downCost = osiclp->upRange();
@@ -3128,7 +3138,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               skipAll = -2;
               canSkip = 1;
             }
-            xMark++;
+            //xMark++;
           }
         }
         if (!canSkip) {
@@ -3386,7 +3396,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               skipAll = -2;
               canSkip = 1;
             }
-            xMark++;
+            //xMark++;
           }
 #if 0 //def DO_ALL_AT_ROOT
                     if (strongType)
@@ -3625,7 +3635,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               skipAll = -2;
               canSkip = 1;
             }
-            xMark++;
+            //xMark++;
           }
 
 #if 0 //def DO_ALL_AT_ROOT
@@ -3786,7 +3796,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               skipAll = -2;
               canSkip = 1;
             }
-            xMark++;
+            //xMark++;
             // may be infeasible (if other way stopped on iterations)
             if (goneInfeasible) {
               // neither side feasible
@@ -3848,7 +3858,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               skipAll = -2;
               canSkip = 1;
             }
-            xMark++;
+            //xMark++;
             // may be infeasible (if other way stopped on iterations)
             if (goneInfeasible) {
               // neither side feasible

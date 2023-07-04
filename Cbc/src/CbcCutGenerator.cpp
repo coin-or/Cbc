@@ -791,7 +791,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       int nEls = 0;
       int nCuts = numberRowCutsAfter - numberRowCutsBefore;
       // Remove NULL cuts!
-      int nNull = 0;
+      //int nNull = 0;
       const double *solution = solver->getColSolution();
       bool feasible = true;
       double primalTolerance = 1.0e-7;
@@ -822,7 +822,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
           } else {
             sum = 0.0;
             cs.eraseRowCut(k);
-            nNull++;
+            //nNull++;
           }
         }
       }
@@ -996,7 +996,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
         }
         CoinSort_2(sort, sort + nCuts, which);
         // Now see which ones are too similar
-        int nParallel = 0;
+        //int nParallel = 0;
         double testValue = (depth > 1) ? 0.99 : 0.999999;
         for (k = 0; k < nCuts; k++) {
           int j = which[k];
@@ -1048,7 +1048,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
               if (fabs(ub - ubB) > tolerance)
                 parallel = false;
               if (parallel) {
-                nParallel++;
+                //nParallel++;
                 sort[k] = 0.0;
                 break;
               }

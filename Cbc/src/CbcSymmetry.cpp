@@ -94,7 +94,9 @@ static void userautomproc(int numGenerators,
   int firstL=-1;
   for (int i = 0; i < n; ++i) {
     if (workperm[i] == 0 && perm[i] != i) {
+#ifndef NDEBUG
       int nRow=0;
+#endif
       int nCol=0;
       int l = i;
       if (l<numberColumns) {
@@ -105,7 +107,9 @@ static void userautomproc(int numGenerators,
 	firstL=l;
 	assert (orbitsX[l]<0);
       } else {
+#ifndef NDEBUG
 	nRow++;
+#endif
       }
       int k;
       do {
@@ -121,7 +125,9 @@ static void userautomproc(int numGenerators,
 	      assert (orbitsX[l]<0);
 	      orbitsX[k]=l;
 	    } else {
+#ifndef NDEBUG
 	      nRow++;
+#endif
 	    }
 	  }
       } while (l != i);

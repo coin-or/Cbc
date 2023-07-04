@@ -134,22 +134,32 @@ fixVubs(CbcModel &model, int skipZero2,
       saveUB = CoinCopyOfArray(columnUpper, numberColumns);
       const double *objective = originalLpSolver->getObjCoefficients();
       int iColumn;
+#ifdef COIN_DETAIL
       int nFix = 0;
       int nArt = 0;
+#endif
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
         if (objective[iColumn] > fixAbove) {
           if (solution[iColumn] < columnLower[iColumn] + 1.0e-8) {
             columnUpper[iColumn] = columnLower[iColumn];
+#ifdef COIN_DETAIL
             nFix++;
+#endif
           } else {
+#ifdef COIN_DETAIL
             nArt++;
+#endif
           }
         } else if (objective[iColumn] < -fixAbove) {
           if (solution[iColumn] > columnUpper[iColumn] - 1.0e-8) {
             columnLower[iColumn] = columnUpper[iColumn];
+#ifdef COIN_DETAIL
             nFix++;
+#endif
           } else {
+#ifdef COIN_DETAIL
             nArt++;
+#endif
           }
         }
       }
@@ -543,11 +553,15 @@ fixVubs(CbcModel &model, int skipZero2,
       memset(countsI, 0, nCheck * sizeof(int));
       memset(countsC, 0, nCheck * sizeof(int));
       check[nCheck - 1] = numberColumns;
+#ifdef COIN_DETAIL
       int numberLayered = 0;
       int numberInteger = 0;
+#endif
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
         if (fix[iColumn] == jLayer) {
+#ifdef COIN_DETAIL
           numberLayered++;
+#endif
           int nFix = static_cast< int >(fixColumn[iColumn + 1] - fixColumn[iColumn]);
           if (iPass) {
             // just integers
@@ -565,7 +579,9 @@ fixVubs(CbcModel &model, int skipZero2,
           }
           assert(iFix < nCheck);
           if (clpSolver->isInteger(iColumn)) {
+#ifdef COIN_DETAIL
             numberInteger++;
+#endif
             countsI[iFix]++;
           } else {
             countsC[iFix]++;
@@ -640,8 +656,10 @@ fixVubs(CbcModel &model, int skipZero2,
       double smallest = 1.1;
       int iLargest = -1;
       int iSmallest = -1;
+#ifdef COIN_DETAIL
       int atZero = 0;
       int atOne = 0;
+#endif
       int toZero = 0;
       int toOne = 0;
       int numberFree = 0;
@@ -755,10 +773,12 @@ fixVubs(CbcModel &model, int skipZero2,
         double lower = columnLower[iColumn];
         double upper = columnUpper[iColumn];
         if (lower == upper) {
+#ifdef COIN_DETAIL
           if (lower)
             atOne++;
           else
             atZero++;
+#endif
           continue;
         }
         if (value < 1.0e-7) {
@@ -933,12 +953,12 @@ fixVubs(CbcModel &model, int skipZero2,
           assert(fullSolution[iColumn] < 0.1);
           assert(!columnUpper[iColumn]);
           double otherValue = 0.0;
-          int nn = 0;
+          //int nn = 0;
           for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn + 1]; i++) {
             int jColumn = otherColumn[i];
             if (columnUpper[jColumn] == 0.0) {
               if (dj[jColumn] < -1.0e-5) {
-                nn++;
+                //nn++;
                 otherValue += dj[jColumn]; // really need to look at rest
               }
             }
@@ -973,14 +993,18 @@ fixVubs(CbcModel &model, int skipZero2,
       memcpy(columnLower, originalColumnLower, numberColumns * sizeof(double));
       memcpy(columnUpper, originalColumnUpper, numberColumns * sizeof(double));
       int nFixed = 0;
+#ifdef COIN_DETAIL
       int nFixed0 = 0;
       int nFixed1 = 0;
+#endif
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
         if (state[iColumn] == 0 || state[iColumn] == 10) {
           columnUpper[iColumn] = 0.0;
           assert(lo[iColumn] == 0.0);
           nFixed++;
+#ifdef COIN_DETAIL
           nFixed0++;
+#endif
           for (CoinBigIndex i = fixColumn[iColumn]; i < fixColumn[iColumn + 1]; i++) {
             int jColumn = otherColumn[i];
             if (columnUpper[jColumn]) {
@@ -1001,7 +1025,9 @@ fixVubs(CbcModel &model, int skipZero2,
           }
         } else if (state[iColumn] == 1) {
           columnLower[iColumn] = 1.0;
+#ifdef COIN_DETAIL
           nFixed1++;
+#endif
         }
       }
       COIN_DETAIL_PRINT(printf("%d fixed %d orig 0 %d 1\n", nFixed, nFixed0, nFixed1));
@@ -1050,13 +1076,17 @@ fixVubs(CbcModel &model, int skipZero2,
       }
       COIN_DETAIL_PRINT(printf("This fixes %d variables in lower priorities - total %d (%d integer) - all target %d, int target %d\n",
         nTotalFixed, nFixed, nFixedI, static_cast< int >(fractionFixed * numberColumns), static_cast< int >(fractionIntFixed * numberInteger)));
+#ifndef NDEBUG
       int nBad = 0;
+#endif
       int nRelax = 0;
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
         if (lo[iColumn] < columnLower[iColumn] || up[iColumn] > columnUpper[iColumn]) {
           COIN_DETAIL_PRINT(printf("bad %d old %g %g, new %g %g\n", iColumn, lo[iColumn], up[iColumn],
             columnLower[iColumn], columnUpper[iColumn]));
+#ifndef NDEBUG
           nBad++;
+#endif
         }
         if (lo[iColumn] > columnLower[iColumn] || up[iColumn] < columnUpper[iColumn]) {
           nRelax++;

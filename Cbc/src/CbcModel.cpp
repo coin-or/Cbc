@@ -810,12 +810,16 @@ void CbcModel::analyzeObjective()
       // now look at continuous
       bool allGood = true;
       double direction = solver_->getObjSense();
+#if COIN_DEVELOP > 1
       int numberObj = 0;
+#endif
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
         if (upper[iColumn] > lower[iColumn]) {
           double objValue = objective[iColumn] * direction;
           if (objValue && !solver_->isInteger(iColumn)) {
+#if COIN_DEVELOP > 1
             numberObj++;
+#endif
             CoinBigIndex start = columnStart[iColumn];
             CoinBigIndex end = start + columnLength[iColumn];
             if (objValue > 0.0) {
@@ -7744,13 +7748,13 @@ int CbcModel::addCuts(CbcNode *node, CoinWarmStartBasis *&lastws)
           int i1 = 0;
           int i2 = 0;
           int nDiff = 0;
-          int nSame = 0;
+          //int nSame = 0;
           if (lastNumberCuts2_ == numberToAdd) {
             for (int i = 0; i < numberToCheck; i++) {
               if (lastCut_[i1++] != addCuts[i2++]) {
                 nDiff++;
               } else {
-                nSame++;
+                //nSame++;
               }
             }
           } else if (lastNumberCuts2_ > numberToAdd) {
@@ -7762,14 +7766,14 @@ int CbcModel::addCuts(CbcNode *node, CoinWarmStartBasis *&lastws)
                   i1++;
                   nDiff2--;
                   if (lastCut_[i1] == addCuts[i2]) {
-                    nSame++;
+                    //nSame++;
                     break;
                   } else {
                     nDiff++;
                   }
                 }
               } else {
-                nSame++;
+                //nSame++;
               }
             }
             nDiff += nDiff2;
@@ -7782,14 +7786,14 @@ int CbcModel::addCuts(CbcNode *node, CoinWarmStartBasis *&lastws)
                   i2++;
                   nDiff2--;
                   if (lastCut_[i1] == addCuts[i2]) {
-                    nSame++;
+                    //nSame++;
                     break;
                   } else {
                     nDiff++;
                   }
                 }
               } else {
-                nSame++;
+                //nSame++;
               }
             }
             nDiff += nDiff2;

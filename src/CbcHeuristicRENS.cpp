@@ -728,8 +728,10 @@ int CbcHeuristicRENS::solution(double &solutionValue,
   solver->getDblParam(OsiPrimalTolerance, primalTolerance);
 
   int i;
+#ifdef CLP_INVESTIGATE2
   int numberTightened = 0;
   int numberAtBound = 0;
+#endif
   int numberContinuous = numberColumns - numberIntegers;
   /*
       0 - allow fixing
@@ -783,13 +785,19 @@ int CbcHeuristicRENS::solution(double &solutionValue,
       if (dontFix) {
         continue;
       }
+#ifdef CLP_INVESTIGATE2
       if (value == lower || value == upper)
         numberAtBound++;
+#endif
       newSolver->setColLower(iColumn, value);
       newSolver->setColUpper(iColumn, value);
+#ifdef CLP_INVESTIGATE2
       numberFixed++;
+#endif
     } else if (colUpper[iColumn] - colLower[iColumn] >= 2.0) {
+#ifdef CLP_INVESTIGATE2
       numberTightened++;
+#endif
       newSolver->setColLower(iColumn, floor(value));
       newSolver->setColUpper(iColumn, ceil(value));
     }
@@ -799,7 +807,9 @@ int CbcHeuristicRENS::solution(double &solutionValue,
         continue;
       }
       value = floor(value + 0.5);
+#ifdef CLP_INVESTIGATE2
       numberAtBound++;
+#endif
       newSolver->setColLower(iColumn, value);
       newSolver->setColUpper(iColumn, value);
       numberFixed++;
@@ -808,12 +818,16 @@ int CbcHeuristicRENS::solution(double &solutionValue,
       if (dontFix) {
         continue;
       }
+#ifdef CLP_INVESTIGATE2
       numberAtBound++;
+#endif
       newSolver->setColLower(iColumn, value);
       newSolver->setColUpper(iColumn, value);
       numberFixed++;
     } else if (colUpper[iColumn] - colLower[iColumn] >= 2.0 && djTolerance < 0.0) {
+#ifdef CLP_INVESTIGATE2
       numberTightened++;
+#endif
       if (fabs(value - floor(value + 0.5)) < 1.0e-8) {
         value = floor(value + 0.5);
         if (value < upper) {
@@ -955,8 +969,10 @@ int CbcHeuristicRENS::solution(double &solutionValue,
 #endif
         for (int iPass = 0; iPass < RENS_PASS; iPass++) {
           int nFixed = 0;
+#ifdef CLP_INVESTIGATE2
           int nFixedAlready = 0;
           int nFixedContinuous = 0;
+#endif
           for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (colUpper[iColumn] > colLower[iColumn]) {
               if (newSolver->isInteger(iColumn)) {
@@ -969,10 +985,12 @@ int CbcHeuristicRENS::solution(double &solutionValue,
                   newSolver->setColUpper(iColumn, fixTo);
                 }
               }
+#ifdef CLP_INVESTIGATE2
             } else if (newSolver->isInteger(iColumn)) {
               nFixedAlready++;
             } else {
               nFixedContinuous++;
+#endif
             }
           }
 #ifdef CLP_INVESTIGATE2

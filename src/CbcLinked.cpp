@@ -528,13 +528,17 @@ void OsiSolverLink::resolve()
       } else if (satisfied == 2) {
         // is there anything left to do?
         int i;
+#if 0
         int numberContinuous = 0;
+#endif
         double gap = 0.0;
         for (i = 0; i < numberObjects_; i++) {
           OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
           if (obj) {
             if (obj->xMeshSize() < 1.0 && obj->yMeshSize() < 1.0) {
+#if 0
               numberContinuous++;
+#endif
               int xColumn = obj->xColumn();
               double gapX = upper[xColumn] - lower[xColumn];
               int yColumn = obj->yColumn();
@@ -986,7 +990,6 @@ void OsiSolverLink::load(CoinModel &coinModelOriginal, bool tightenBounds, int l
   for (iColumn = 0; iColumn < numberColumns; iColumn++) {
     CoinModelLink triple = coinModelOriginal.firstInColumn(iColumn);
     bool linear = true;
-    int n = 0;
     // See if quadratic objective
     const char *expr = coinModelOriginal.getColumnObjectiveAsString(iColumn);
     if (strcmp(expr, "Numeric")) {
@@ -999,7 +1002,6 @@ void OsiSolverLink::load(CoinModel &coinModelOriginal, bool tightenBounds, int l
         linear = false;
       }
       triple = coinModelOriginal.next(triple);
-      n++;
     }
     if (!linear) {
       which[numberVariables_++] = iColumn;
@@ -1471,7 +1473,6 @@ void OsiSolverLink::load(CoinModel &coinModelOriginal, bool tightenBounds, int l
     }
   }
   // See if there are any quadratic bounds
-  int nQ = 0;
   const CoinPackedMatrix *rowCopy = getMatrixByRow();
   //const double * element = rowCopy->getElements();
   //const int * column = rowCopy->getIndices();
@@ -1485,7 +1486,6 @@ void OsiSolverLink::load(CoinModel &coinModelOriginal, bool tightenBounds, int l
       int xyRow = obj->xyRow();
       if (rowLength[xyRow] == 4 && false) {
         // we have simple bound
-        nQ++;
         double coefficient = obj->coefficient();
         double lo = rowLower[xyRow];
         double up = rowUpper[xyRow];
@@ -1862,7 +1862,6 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
   for (iColumn = 0; iColumn < numberColumns; iColumn++) {
     CoinModelLink triple = coinModel.firstInColumn(iColumn);
     bool linear = true;
-    int n = 0;
     // See if nonlinear objective
     const char *expr = coinModel.getColumnObjectiveAsString(iColumn);
     if (strcmp(expr, "Numeric")) {
@@ -1912,7 +1911,6 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
         }
       }
       triple = coinModel.next(triple);
-      n++;
     }
     if (!linear) {
       markNonlinear[iColumn] = 1;
@@ -2225,8 +2223,10 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
     }
     double maxGap = 0.0;
     int numberSmaller = 0;
+#ifdef CLP_DEBUG
     int numberSmaller2 = 0;
     int numberLarger = 0;
+#endif
     for (jNon = 0; jNon < numberNonLinearColumns; jNon++) {
       iColumn = listNonLinearColumn[jNon];
       maxDelta = CoinMax(maxDelta,
@@ -2235,11 +2235,15 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
         if (last[0][jNon] * last[1][jNon] < 0) {
           // halve
           trust[jNon] *= 0.5;
+#ifdef CLP_DEBUG
           numberSmaller2++;
+#endif
         } else {
           if (last[0][jNon] == last[1][jNon] && last[0][jNon] == last[2][jNon])
             trust[jNon] = CoinMin(1.5 * trust[jNon], 1.0e6);
+#ifdef CLP_DEBUG
           numberLarger++;
+#endif
         }
       } else if (goodMove != -2 && trust[jNon] > 10.0 * deltaTolerance) {
         trust[jNon] *= 0.2;

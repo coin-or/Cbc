@@ -70,11 +70,11 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
   memset(changeRhs, 0, numberRows * sizeof(double));
   memset(ignore, 0, numberRows);
   numberChanged = 0;
-  int numberInteger = 0;
-  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-    if (upper[iColumn] > lower[iColumn] + 1.0e-8 && solver->isInteger(iColumn))
-      numberInteger++;
-  }
+  //int numberInteger = 0;
+  //for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+  //  if (upper[iColumn] > lower[iColumn] + 1.0e-8 && solver->isInteger(iColumn))
+  //    numberInteger++;
+  //}
   bool finished = false;
   while (!finished) {
     int saveNumberChanged = numberChanged;

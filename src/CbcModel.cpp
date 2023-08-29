@@ -1253,10 +1253,18 @@ void CbcModel::analyzeObjective()
       value *= scaleFactor;
       // trueIncrement=CoinMax(cutoff,value);;
       if (value * 0.999 > cutoff) {
-        messageHandler()->message(CBC_INTEGERINCREMENT, messages())
+	if ((moreSpecialOptions2_ & 65536) == 0) {
+	  messageHandler()->message(CBC_INTEGERINCREMENT, messages())
             << value << CoinMessageEol;
-        setDblParam(CbcModel::CbcCutoffIncrement,
-                    CoinMax(value * 0.999, value - 1.0e-4));
+	  setDblParam(CbcModel::CbcCutoffIncrement,
+		      CoinMax(value * 0.999, value - 1.0e-4));
+	} else {
+	  // lazy constraints - can't be certain
+	  char temp[100];
+	  sprintf(temp,"May be able to increase cutoff increment to %g - but we have lazy constraints",CoinMax(value*0.999,value-1.0e-4));
+	  messageHandler()->message(CBC_GENERAL, messages())
+            << temp << CoinMessageEol;
+	}
       }
     }
   }
@@ -2375,9 +2383,10 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
   bool feasible;
   numberSolves_ = 0;
-  {
-    // check
+  if (!parentModel_) {
     int numberOdd = 0;
+    moreSpecialOptions2_ &= ~65536; // say no lazy constraints
+    // check
     int numberSOS = 0;
     for (int i = 0; i < numberObjects_; i++) {
       CbcSimpleInteger *obj = dynamic_cast<CbcSimpleInteger *>(object_[i]);
@@ -2395,18 +2404,18 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
         specialOptions_ &= ~(512 | 32768);
     }
-    moreSpecialOptions2_ &= ~65536; // say no lazy constraints
-    if (!numberOdd && !parentModel_) {
-      // see if lazy constraints
-      bool needCuts = false;
-      for (int i = 0; i < numberCutGenerators_; i++) {
-        bool generate = generator_[i]->atSolution();
-        if (generate) {
-          needCuts = true;
-        }
+    // see if lazy constraints
+    bool needCuts = false;
+    for (int i = 0; i < numberCutGenerators_; i++) {
+      bool generate = generator_[i]->atSolution();
+      if (generate) {
+	needCuts = true;
       }
-      if (needCuts)
-        moreSpecialOptions2_ |= 65536; // lazy constraints
+    }
+    if (needCuts) {
+      moreSpecialOptions2_ |= 65536; // lazy constraints
+      // switch off nauty
+      moreSpecialOptions2_ &= ~(128|256);
     }
   }
   // If NLP then we assume already solved outside branchAndbound

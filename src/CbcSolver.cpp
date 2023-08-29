@@ -2310,7 +2310,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     buffer.str("");
                     buffer << "switching on global root cuts for gomory and "
                            << "knapsack" << std::endl;
-                    buffer << "using OSL factorization" << std::endl;
+                    //buffer << "using OSL factorization" << std::endl;
                     buffer << "extra options - -rens on -extra4 " << extra4
                            << " -passc 1000!" << std::endl;
                     printGeneralMessage(model_, buffer.str());
@@ -2321,7 +2321,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     parameters[CbcParam::KNAPSACKCUTS]->setVal("onGlobal");
                     knapsackMode = CbcParameters::CGOnGlobal;
                     clpParameters[ClpParam::FACTORIZATION]->setVal("osl");
-                    lpSolver->factorization()->forceOtherFactorization(3);
+                    //lpSolver->factorization()->forceOtherFactorization(3);
                     parameters[CbcParam::MAXHOTITS]->setVal(100);
                     parameters[CbcParam::CUTPASS]->setVal(1000);
                     cutPass = 1000;
@@ -6339,9 +6339,11 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               double increment = babModel_->getCutoffIncrement();
               ;
               int *changed = NULL;
-              if (!miplib && increment == normalIncrement)
+#ifdef UNSAFE_FOR_LAZY_CUTS
+              if (!miplib && increment == normalIncrement) 
                 changed = analyze(osiclp, numberChanged, increment, false,
                                   generalMessageHandler, parameters.noPrinting());
+#endif
 #elif CBC_OTHER_SOLVER == 1
               double increment = babModel_->getCutoffIncrement();
               ;

@@ -2371,7 +2371,58 @@ Cbc_solve(Cbc_Model *model)
           inputQueue.push_back(ss.str());
         }
       }
-
+      // add in from options file
+      if (getenv("COIN_CBC_OPTIONS")) {
+	FILE * fp =fopen(getenv("COIN_CBC_OPTIONS"),"r");
+	if (fp) {
+	  char line[512];
+	  int logLevel = Cbc_getLogLevel(model);
+	  if (logLevel)
+	    printf("Adding options from file %s\n",getenv("COIN_CBC_OPTIONS"));
+	  while (fgets(line, 200, fp)) {
+	    // skip comment
+	    if (line[0]=='*')
+	      continue;
+	    int nchar = strlen(line);
+	    if (nchar<2)
+	      continue;
+	    if (line[0]!='-') {
+	      memmove(line+1,line,nchar+1);
+	      nchar++;
+	      line[0]='-';
+	    }
+	    char *pos=line;
+	    char *put=line;
+	    while (true) {
+	      while (*pos != '\n' && *pos != '\0'
+		     && *pos != ' ' && *pos != '\t') 
+		pos++;
+	      char save = *pos;
+	      *pos = '\0';
+	      if (strlen(put)) {
+		inputQueue.push_back(put);
+		if (logLevel)
+		  std::cout << put << " ";
+	      }
+	      if (save == ' ' || save == '\t') {
+		pos++;
+		while (*pos == ' ' || *pos == '\t')
+		  pos++;
+		put = pos;
+	      } else {
+		break; // end of line
+	      }
+	    }
+	  }
+	  if (logLevel)
+	    std::cout << std::endl;
+	  fclose(fp);
+	} else {
+	  fprintf(stderr, "Unable to open COIN_CBC_OPTIONS file %s\n",
+		  getenv("COIN_CBC_OPTIONS")); 
+	  fflush(stderr);			
+	}
+      }
       inputQueue.push_back("-solve");
       inputQueue.push_back("-quit");
 

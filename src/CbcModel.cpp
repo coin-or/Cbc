@@ -1937,7 +1937,7 @@ void CbcModel::branchAndBound(int doStatistics)
   if (!parentModel_) {
     /* 
         Capture a time stamp before we start (unless set).
-      */
+    */
     if (!dblParam_[CbcStartSeconds]) {
       if (!useElapsedTime())
         dblParam_[CbcStartSeconds] = CoinCpuTime();
@@ -14523,13 +14523,9 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
           name = lastHeuristic_->heuristicName();
         else
           name = "Reduced search";
-	// temp to see if threaded passing solutions back
-	int saveLevel = handler_->logLevel();
-	handler_->setLogLevel(1);
         handler_->message(CBC_ROUNDING, messages_)
             << trueBestObjValue() << name << numberIterations_ << numberNodes_
             << getCurrentSeconds() << CoinMessageEol;
-	handler_->setLogLevel(saveLevel);
         dealWithEventHandler(CbcEventHandler::heuristicSolution, objectiveValue,
                              solution);
       }

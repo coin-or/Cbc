@@ -528,6 +528,13 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
   double timeTaken = 0.0;
   // tidy original input queue
   std::deque<std::string> inputQueue = originalInputQueue;
+  // See if "maximize"
+  bool maximize = false;
+  for (int i = 0; i < inputQueue.size(); i++) {
+    if (inputQueue[i] == "-maximize") {
+      maximize = true;
+    }
+  }
   {
     // take off first two parameters of initial queue
     inputQueue.pop_front();
@@ -585,6 +592,21 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
       std::deque<std::string> newInputQueue;
       char replace[100];
       //newArgv[0] = "unitTestCbc";
+      if (maximize) {
+	solver1.readMps(fn.c_str(), "");
+	double objectiveOffset;
+	solver1.getDblParam(OsiObjOffset, objectiveOffset);
+	solver1.setDblParam(OsiObjOffset, -objectiveOffset);
+	int numberColumns = solver1.getNumCols();
+	double *array =
+	  CoinCopyOfArray(solver1.getObjCoefficients(), numberColumns);
+	for (int i = 0; i < numberColumns; i++)
+	  array[i] = -array[i];
+	solver1.setObjective(array);
+	solver1.writeMps("maxVersion");
+	delete[] array;
+	fn = "maxVersion.mps";
+      }
       newInputQueue.push_back(fn);
       for (int i = 0; i < inputQueue.size(); i++) {
 	if (inputQueue[i] != "++") {
@@ -620,7 +642,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
          newInputQueue.push_back("unitTest");
       }
       if (newInputQueue.back()!="-solve")
-	newInputQueue.push_back("-solve"); 
+	newInputQueue.push_back("-solve");
       model = new CbcModel(solver1);
       CbcMain0(*model, parameters);
       CbcMain1(newInputQueue, *model, parameters, callBack);
@@ -954,6 +976,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
   Check for the correct answer.
 */
     double objActual = model->getObjValue();
+    if (maximize)
+      objActual = -objActual;
     double objExpect = objValue[m];
     double tolerance = CoinMin(fabs(objActual), fabs(objExpect));
     tolerance = CoinMax(1.0e-4, 1.0e-5 * tolerance);

@@ -764,7 +764,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       const double *colLower = solver->getColLower();
       double smallValue1; // = 1.0e-4;
       double smallValue2; // = 1.0e-5;
-      double largeRatio = 1.0e8;
+      double largeRatio = 1.0e9;
       if (!depth) {
 	smallValue1 = 1.0e-5;
 	smallValue2 = 1.0e-5;
@@ -908,6 +908,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 	  double smallest=1.0e30;
 	  bool bad=false;
 	  double sum = 0.0;
+	  double origRhs = rhs;
 	  int number = 0;
 	  for (int i=0;i<n;i++) {
 	    double value=elements[i];
@@ -966,25 +967,20 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 	      }
 	    } else {
 	      int iColumn = indices[i];
-	      if (colUpper[iColumn]!=colLower[iColumn]) {
-		largest=CoinMax(largest,value);
-		smallest=CoinMin(smallest,value);
-		indices[number]=indices[i];
-		elements[number++]=elements[i];
-	      } else {
-		// fixed so subtract out
-		rhs -= elements[i]*colLower[iColumn];
-	      }
+	      largest=CoinMax(largest,value);
+	      smallest=CoinMin(smallest,value);
+	      indices[number]=indices[i];
+	      elements[number++]=elements[i];
 	    }
 	  }
-	  //if (number>80)
-	  //bad = true;
-	  if (largest<largeRatio*smallest&&!bad) {
-	    if (number<n)
-	      rpv.truncate(number);
-	  } else if (!bad) {
+	  if (rhs!=origRhs) {
+	    if (upper)
+	      thisCut->setUb(rhs);
+	    else
+	      thisCut->setLb(rhs);
 	  }
-	  if (bad) {
+	  if (bad || largest > largeRatio*smallest) {
+	    // safer to throw away
 	    cs.eraseRowCut(k);
 	  }
 	}

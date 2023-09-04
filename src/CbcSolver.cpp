@@ -1090,6 +1090,15 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   std::ostringstream buffer;
   std::string field, message, fileName;
   FILE *fp;
+#ifdef DEBUG_CBC_PYTHON
+  // Probably being stupid but finding it difficult to debug from python
+  static int startedPython=0;
+  if (!startedPython) {
+    printf("debug python:");
+    getchar();
+    startedPython=1;
+  }
+#endif
 
   double totalTime = parameters.getTotalTime();
   bool useSignalHandler = parameters.useSignalHandler();

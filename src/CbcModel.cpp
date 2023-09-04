@@ -16397,8 +16397,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
       }
     }
     if (solverCharacteristics_ &&
-        solverCharacteristics_
-            ->solutionAddsCuts() && // we are in some OA based bab
+        solverCharacteristics_->solverType()>2 && // we are in some OA based bab
         feasible &&
         (newNode->numberUnsatisfied() ==
          0) // solution has become integer feasible during strong branching
@@ -16422,7 +16421,12 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
       resolve(solver_);
       double objval = solver_->getObjValue();
       lastHeuristic_ = NULL;
+      // switch off odd stuff if no cuts were found
+      int solverType = solverCharacteristics_->solverType();
+      if (feasCuts.sizeCuts()==0 && solverCharacteristics_->solverType()>2) 
+	solverCharacteristics_->setSolverType(0);
       setBestSolution(CBC_SOLUTION, objval, solver_->getColSolution());
+      solverCharacteristics_->setSolverType(solverType);
       int easy = 2;
       if (!solverCharacteristics_
                ->mipFeasible()) // did we prove that the node could be pruned?
@@ -18503,6 +18507,11 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
               // need dummy branch
               newNode->setBranchingObject(new CbcDummyBranchingObject(this));
               newNode->nodeInfo()->initializeInfo(1);
+	      // add in cuts
+	      for (int i=0;i<numberRowCutsAfter;i++) {
+		theseCuts.rowCut(i).setEffectiveness(COIN_DBL_MAX);
+		globalCuts_.addCutIfNotDuplicate(theseCuts.rowCut(i));
+	      }
             }
           }
         }

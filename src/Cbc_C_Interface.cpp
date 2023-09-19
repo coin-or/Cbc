@@ -1756,6 +1756,29 @@ static int cbc_callb(CbcModel *cbcModel, int whereFrom) {
   return 0;
 }
 
+void CBC_LINKAGE
+Osi_setColSolution(Cbc_Model* model, double* solution) {
+  model->solver_->setColSolution(solution);
+}
+
+void CBC_LINKAGE
+Osi_setRowPrice(Cbc_Model* model, double* price) {
+  model->solver_->setRowPrice(price);
+}
+
+void CBC_LINKAGE
+Osi_setBasisStatus(Cbc_Model* model, int* vardata, int* condata) {
+  model->solver_->setBasisStatus(vardata, condata);
+}
+
+void CBC_LINKAGE
+Osi_getBasisStatus(Cbc_Model* model, int* vardata, int* condata) {
+  model->solver_->getBasisStatus(vardata, condata);
+}
+
+
+
+
 // adds all sos objects to the current cbcModel_ object
 static void Cbc_addAllSOS( Cbc_Model *model, CbcModel &cbcModel );
 

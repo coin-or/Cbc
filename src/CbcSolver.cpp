@@ -10680,6 +10680,15 @@ clp watson.mps -\nscaling off\nprimalsimplex");
 #endif
                   break;
                 }
+
+                bool printingAllAsCsv = false;
+                if (printMode == 15) {
+                  // when allcsv then set printMode to all and
+                  // change the output format to csv
+                  printMode = 4;
+                  printingAllAsCsv = true;
+                }
+
                 if (printMode < 5) {
                   if (cbcParamCode == CbcParam::WRITENEXTSOL) {
                     // save
@@ -11043,6 +11052,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   }
                   break;
                 }
+
                 char printFormat[50];
                 sprintf(printFormat, " %s         %s\n",
                         CLP_QUOTE(CLP_OUTPUT_FORMAT),
@@ -11050,11 +11060,19 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 if (printMode > 2 && printMode < 5) {
                   for (iRow = 0; iRow < numberRows; iRow++) {
                     int type = printMode - 3;
+
+                    std::string valueHasTolerance;
+                    std::string rowName;
+
                     if (primalRowSolution[iRow] >
                             rowUpper[iRow] + primalTolerance ||
                         primalRowSolution[iRow] <
                             rowLower[iRow] - primalTolerance) {
-                      fprintf(fp, "** ");
+                      if (printingAllAsCsv) {
+                        valueHasTolerance = "**";
+                      } else {
+                        fprintf(fp, "** ");
+                      }
                       type = 2;
                     } else if (fabs(primalRowSolution[iRow]) > 1.0e-8) {
                       type = 1;
@@ -11065,18 +11083,39 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                         !maskMatches(maskStarts, masks, rowNames[iRow]))
                       type = 0;
                     if (type) {
-                      fprintf(fp, "%7d ", iRow);
-                      if (lengthName) {
-                        const char *name = rowNames[iRow].c_str();
-                        size_t n = strlen(name);
-                        size_t i;
-                        for (i = 0; i < n; i++)
-                          fprintf(fp, "%c", name[i]);
-                        for (; i < lengthPrint; i++)
-                          fprintf(fp, " ");
+                      if (!printingAllAsCsv) {
+                        fprintf(fp, "%7d ", iRow);
                       }
-                      fprintf(fp, printFormat, primalRowSolution[iRow],
-                              dualRowSolution[iRow]);
+
+                      if (lengthName) {
+                        if (printingAllAsCsv) {
+                          rowName = rowNames[iRow];
+                        }
+                        else{
+                          const char *name = rowNames[iRow].c_str();
+                          size_t n = strlen(name);
+                          size_t i;
+                        
+                          for (i = 0; i < n; i++)
+                              fprintf(fp, "%c", name[i]);
+                          for (; i < lengthPrint; i++)
+                              fprintf(fp, " ");
+                        }
+                      }
+
+                      if (!printingAllAsCsv) {
+                        fprintf(fp, printFormat, primalRowSolution[iRow],
+                          dualRowSolution[iRow]);
+                      }
+                      else{
+                        fprintf(fp,
+                                "%s,%d,%s,%.15g,%.15g\n",
+                                valueHasTolerance.c_str(),
+                                iRow,
+                                rowName.c_str(),
+                                primalRowSolution[iRow],
+                                dualRowSolution[iRow]);
+                        }
                     }
                   }
                 }
@@ -11097,11 +11136,19 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   }
                   for (iColumn = 0; iColumn < numberColumns; iColumn++) {
                     int type = (printMode > 3) ? 1 : 0;
+
+                    std::string valueHasTolerance;
+                    std::string colName; 
+
                     if (primalColumnSolution[iColumn] >
                             columnUpper[iColumn] + primalTolerance ||
                         primalColumnSolution[iColumn] <
                             columnLower[iColumn] - primalTolerance) {
-                      fprintf(fp, "** ");
+                      if (printingAllAsCsv) {
+                        valueHasTolerance = "**";
+                      } else {
+                        fprintf(fp, "** ");
+                      }
                       type = 2;
                     } else if (fabs(primalColumnSolution[iColumn]) > 1.0e-8) {
                       type = 1;
@@ -11118,18 +11165,35 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                       type = 0;
                     if (type) {
                       if (printMode != 5) {
-                        fprintf(fp, "%7d ", iColumn);
-                        if (lengthName) {
-                          const char *name = columnNames[iColumn].c_str();
-                          size_t n = strlen(name);
-                          size_t i;
-                          for (i = 0; i < n; i++)
-                            fprintf(fp, "%c", name[i]);
-                          for (; i < lengthPrint; i++)
-                            fprintf(fp, " ");
+                        if (!printingAllAsCsv) {
+                          fprintf(fp, "%7d ", iColumn);
                         }
-                        fprintf(fp, printFormat, primalColumnSolution[iColumn],
-                                dualColumnSolution[iColumn]);
+
+                        if (lengthName) {
+                          if (printingAllAsCsv) {
+                              colName = columnNames[iColumn];
+                          } else {
+                              const char *name = columnNames[iColumn].c_str();
+                              size_t n = strlen(name);
+                              size_t i;
+                              for (i = 0; i < n; i++)
+                                 fprintf(fp, "%c", name[i]);
+                              for (; i < lengthPrint; i++)
+                                 fprintf(fp, " ");
+                          }
+                        }
+                        if (!printingAllAsCsv) {
+                          fprintf(fp, printFormat, primalColumnSolution[iColumn],
+                            dualColumnSolution[iColumn]);
+                        } else {
+                          fprintf(fp,
+                            "%s,%d,%s,%.15g,%.15g\n",
+                            valueHasTolerance.c_str(),
+                            iColumn,
+                            colName.c_str(),
+                            primalColumnSolution[iColumn],
+                            dualColumnSolution[iColumn]);
+                        }
                       } else {
                         char temp[100];
                         if (lengthName) {
@@ -11152,6 +11216,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                       }
                     }
                   }
+
                   if (cbcParamCode == CbcParam::WRITENEXTSOL) {
                     if (saveLpSolver) {
                       clpSolver->swapModelPtr(saveLpSolver);

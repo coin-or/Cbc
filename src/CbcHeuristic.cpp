@@ -303,7 +303,7 @@ bool CbcHeuristic::shouldHeurRun(int whereFrom)
     // Very large howOftenShallow_ will give the original test:
     // (model_->getCurrentPassNumber() != 1)
     //    if ((numInvocationsInShallow_ % howOftenShallow_) != 1) {
-    if ((numInvocationsInShallow_ % howOftenShallow_) != 0) {
+    if (howOftenShallow_ && (numInvocationsInShallow_ % howOftenShallow_) != 0) {
       return false;
     }
     // LL: should we save these nodes in the list of nodes where the heur was

@@ -8890,11 +8890,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   babModel_->assignSolver(saveSolver);
                   memcpy(bestSolution, babModel_->solver()->getColSolution(),
                          n * sizeof(double));
+		  babModel_->setObjValue(babModel_->solver()->getObjValue());
                 } else {
                   n = babModel_->solver()->getNumCols();
                   bestSolution = new double[n];
                   memcpy(bestSolution, babModel_->solver()->getColSolution(),
                          n * sizeof(double));
+		  babModel_->setObjValue(babModel_->solver()->getObjValue());
 #ifndef CBC_OTHER_SOLVER
 		  // and put back bounds in very original solver
                   ClpSimplex *original = originalSolver->getModelPtr();

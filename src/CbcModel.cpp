@@ -16570,7 +16570,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
           assert(lastws->fullBasis());
           newNode2->createInfo(this, oldNode, lastws, lowerBefore, upperBefore,
                                numberOldActiveCuts_, numberNewCuts_);
-          newNode2->nodeInfo()->setNumberBranchesLeft(1);
+          newNode2->nodeInfo()->initializeInfo(1);
           // newNode2->nodeInfo()->unsetParentBasedData();
           if (i < nProbMinus1) {
             // OsiBranchingObject * object =

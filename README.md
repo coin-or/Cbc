@@ -1,4 +1,4 @@
-# Cbc 2.10
+# Cbc 2.10.11
 
 [![A COIN-OR Project](https://coin-or.github.io/coin-or-badge.png)](https://www.coin-or.org)
 
@@ -70,9 +70,9 @@ Code: [![DOI](https://zenodo.org/badge/173509563.svg)](https://zenodo.org/badge/
 
 ## CURRENT BUILD STATUS
 
-[![Windows Builds](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml/badge.svg?branch=stable/2.10)](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml?query=branch%3Astable/2.10)
+[![Windows Builds](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml/badge.svg?branch=releases/2.10.11)](https://github.com/coin-or/Cbc/actions/workflows/windows-ci.yml?query=branch%3Areleases/2.10.11)
 
-[![Linux and MacOS Builds](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml/badge.svg?branch=stable/2.10)](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml?query=branch%3Astable/2.10)
+[![Linux and MacOS Builds](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml/badge.svg?branch=releases/2.10.11)](https://github.com/coin-or/Cbc/actions/workflows/linux-ci.yml?query=branch%3Areleases/2.10.11)
 
 ## DOWNLOAD
 
@@ -163,7 +163,7 @@ following on the command line.
 ```
 wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
 chmod u+x coinbrew
-./coinbrew fetch Cbc@2.10
+./coinbrew fetch Cbc@2.10.11
 ./coinbrew build Cbc
 ```
 For more detailed instructions on coinbrew, see https://coin-or.github.io/coinbrew.
@@ -238,10 +238,10 @@ Steps (based on VS 2013):
 
 If you have `Doxygen` available, you can build a HTML documentation by typing
 
-`make doxygen-docs` 
+`make doxydoc` 
 
 in the build directory. If Cbc was built via `coinbrew`, then the build
-directory will be `./build/Cbc/2.10` by default. The doxygen documentation main file
+directory will be `./build/Cbc/2.10.11` by default. The doxygen documentation main file
 is found at `<build-dir>/doxydoc/html/index.html`.
 
 If you don't have `doxygen` installed locally, you can use also find the

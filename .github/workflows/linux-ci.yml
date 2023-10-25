@@ -23,17 +23,20 @@ jobs:
         flags: [ADD_CXXFLAGS=-fvisibility=hidden]
         download_requirements: [sudo apt install -y -qq gfortran liblapack-dev libmetis-dev libnauty2-dev]
         include:
-          - os: macos-12
+          - os: macos-13
+            arch: auto
             build_static: false
-            flags: CC=clang OSX=12
+            flags: CC=clang OSX=13
             download_requirements: brew install metis bash
-          - os: macos-12
+          - os: macos-13
+            arch: auto
             build_static: false
-            flags: CC=gcc-11 CXX=g++-11 OSX=12
+            flags: CC=gcc-13 CXX=g++-13 OSX=13
             download_requirements: brew install metis bash
-          - os: macos-12
+          - os: macos-13
+            arch: arm64
             build_static: false
-            flags: CC=gcc-12 CXX=g++-12 OSX=12
+            flags: CC=clang OSX=13
             download_requirements: brew install metis bash
     steps:
       - name: Checkout source

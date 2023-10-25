@@ -32,11 +32,6 @@ jobs:
             build_static: false
             flags: CC=gcc-13 CXX=g++-13 OSX=13
             download_requirements: brew install metis bash
-          - os: macos-13
-            arch: arm64
-            build_static: false
-            flags: CC=clang OSX=13
-            download_requirements: brew install metis bash
     steps:
       - name: Checkout source
         uses: actions/checkout@v3

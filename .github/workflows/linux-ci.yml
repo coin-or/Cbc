@@ -24,19 +24,12 @@ jobs:
         download_requirements: [sudo apt install -y -qq gfortran liblapack-dev libmetis-dev libnauty2-dev]
         include:
           - os: macos-13
-            arch: auto
             build_static: false
             flags: CC=clang OSX=13
             download_requirements: brew install metis bash
           - os: macos-13
-            arch: auto
             build_static: false
             flags: CC=gcc-13 CXX=g++-13 OSX=13
-            download_requirements: brew install metis bash
-          - os: macos-13
-            arch: arm64
-            build_static: false
-            flags: CC=clang OSX=13
             download_requirements: brew install metis bash
     steps:
       - name: Checkout source

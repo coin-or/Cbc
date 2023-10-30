@@ -1352,9 +1352,8 @@ int CbcModel::splitModel(int numberModels, CbcModel **model,
       OsiBranchingObject *bobj = node->modifiableBranchingObject();
       CbcBranchingObject *cbcobj = dynamic_cast< CbcBranchingObject * >(bobj);
       //assert (cbcobj);
-      if (cbcobj) {
+      if (cbcobj && cbcobj->object()) {
         CbcObject *object = cbcobj->object();
-        assert(object);
         int position = object->position();
         assert(position >= 0);
         assert(object_[position] == object);
@@ -1720,9 +1719,8 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
           // Make node join correctly
           OsiBranchingObject *bobj = node->modifiableBranchingObject();
           CbcBranchingObject *cbcobj = dynamic_cast< CbcBranchingObject * >(bobj);
-          if (cbcobj) {
+          if (cbcobj && cbcobj->object()) {
             CbcObject *object = cbcobj->object();
-            assert(object);
             int position = object->position();
             assert(position >= 0);
             assert(object_[position] == object);

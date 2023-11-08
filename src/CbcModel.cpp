@@ -7768,6 +7768,9 @@ void CbcModel::moveInfo(const CbcModel &rhs) {
   numberRowsAtContinuous_ = rhs.numberRowsAtContinuous_;
   cutoffRowNumber_ = rhs.cutoffRowNumber_;
   maximumDepth_ = rhs.maximumDepth_;
+  numberExtraNodes_ = rhs.numberExtraNodes_;
+  numberExtraIterations_ = rhs.numberExtraIterations_;
+  numberFathoms_ = rhs.numberFathoms_;
 }
 // Save a copy of the current solver so can be reset to
 void CbcModel::saveReferenceSolver() {
@@ -16221,7 +16224,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
           diving = true;
       }
       if (fastNodeDepth_<2000000) { 
-	int nodeThreshold = (stateOfSearch_<2) ? 1000 : 250;
+	int nodeThreshold = (stateOfSearch_<2) ? 200 : 100; //? 1000 : 250;
 	if (totalNodes * 40 < totalIterations || numberNodes_ < nodeThreshold) {
 	  doClp = false;
 	}

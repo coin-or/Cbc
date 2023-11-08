@@ -7755,13 +7755,16 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 if ((experimentFlag >= 1 || strategyFlag >= 1) &&
                     abs(babModel_->fastNodeDepth()) == 1) {
 		  int iType = babModel_->fastNodeDepth();
-		  int iDepth = iType <0 ? -12 : 8;
+		  int iDepth = iType <0 ? -12 : 5;
 		  int iSize = 500; // think harder iType <0 ? 10000 : 500; 
                   if (babModel_->solver()->getNumCols() +
                           babModel_->solver()->getNumRows() < iSize) {
                     babModel_->setFastNodeDepth(iDepth);
 		  } else {
-                    babModel_->setFastNodeDepth(-1); // not sure about when +1
+ 		    if (iDepth==-12)
+		      babModel_->setFastNodeDepth(-1);
+		    else
+		      babModel_->setFastNodeDepth(8);
 		  }
                 } else if (babModel_->fastNodeDepth() == -999) {
                   babModel_->setFastNodeDepth(-1);

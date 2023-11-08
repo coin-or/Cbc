@@ -557,6 +557,13 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 #endif
   int totalNodes = 0;
   int totalIterations = 0;
+  int totalStrong = 0;
+  int totalStrongIts = 0;
+  int totalStrongFathomed = 0;
+  int totalStrongFixed = 0;
+  int totalFathomCount = 0;
+  int totalExtraNodes = 0;
+  int totalExtraIterations = 0;
   /*
   Open the main loop to step through the MPS problems.
   */
@@ -1014,6 +1021,14 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
     }
     totalNodes += model->getNodeCount();
     totalIterations += model->getIterationCount();
+    const int * strongInfo = model->strongInfo();
+    totalStrong += strongInfo[0];
+    totalStrongIts += model->numberStrongIterations();
+    totalStrongFathomed += strongInfo[2];
+    totalStrongFixed += strongInfo[1];
+    totalFathomCount += model->getFathomCount();
+    totalExtraNodes += model->getExtraNodeCount();
+    totalExtraIterations += model->numberExtraIterations();
     timeTaken += timeOfSolution;
     std::cout
       << " -- (" << model->getNodeCount() << " n / "
@@ -1045,11 +1060,16 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
     std::cout
       << " and took " << timeTaken << " seconds." << std::endl;
     std::cout << "cbc_clp Total nodes " << totalNodes << " and " << totalIterations << " iterations - time " << timeTaken << std::endl;
+    std::cout << "cbc_clp Total Strong " << totalStrong << " times (" <<
+      totalStrongIts << " iterations) - fathomed " <<
+      totalStrongFathomed << "- fixed " << totalStrongFixed << std::endl;
+    std::cout << "cbc_clp Total Fast node fathoming " << totalFathomCount
+	      << " times (" << totalExtraNodes << " nodes, "
+	      << totalExtraIterations << " iterations)" << std::endl;
   }
   if (testSwitch == -2) {
     if (numberFailures || numberOnNodes) {
       std::cout << "****** Unit Test failed." << std::endl;
-      std::cerr << "****** Unit Test failed." << std::endl;
     } else {
       std::cerr << "****** Unit Test succeeded." << std::endl;
     }

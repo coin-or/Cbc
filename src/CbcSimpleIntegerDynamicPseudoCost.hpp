@@ -20,6 +20,13 @@
 #define WEIGHT_BEFORE 0.1
 //Stolen from Constraint Integer Programming book (with epsilon change)
 #define WEIGHT_PRODUCT
+/* If 0 then as was
+   1 then allow for playing with reliability
+   -1 take out last..Cost etc as not used
+*/
+#ifndef CBC_DYNAMIC_EXPERIMENT
+#define CBC_DYNAMIC_EXPERIMENT -1
+#endif
 
 typedef struct {
   double pseudoDown;
@@ -169,9 +176,18 @@ public:
   inline void addToSumDownCost(double value)
   {
     sumDownCost_ += value;
+#if CBC_DYNAMIC_EXPERIMENT==0
     lastDownCost_ = value;
+#endif
   }
-
+#if CBC_DYNAMIC_EXPERIMENT > 0
+  /// Return downOver
+  inline float downOver() const
+  { return downOver_;}
+  /// Return downUnder
+  inline float downUnder() const
+  { return downUnder_;}
+#endif
   /// Up sum cost
   inline double sumUpCost() const
   {
@@ -186,8 +202,18 @@ public:
   inline void addToSumUpCost(double value)
   {
     sumUpCost_ += value;
+#if CBC_DYNAMIC_EXPERIMENT == 0
     lastUpCost_ = value;
+#endif
   }
+#if CBC_DYNAMIC_EXPERIMENT > 0
+  /// Return upOver
+  inline float upOver() const
+  { return upOver_;}
+  /// Return upUnder
+  inline float upUnder() const
+  { return upUnder_;}
+#endif
 
   /// Down sum change
   inline double sumDownChange() const
@@ -343,6 +369,7 @@ public:
   /// Return "down" estimate (default 1.0e-5)
   virtual double downEstimate() const;
 
+#if CBC_DYNAMIC_EXPERIMENT == 0
   /// method - see below for details
   inline int method() const
   {
@@ -353,6 +380,7 @@ public:
   {
     method_ = value;
   }
+#endif
 
   /// Pass in information on a down branch
   void setDownInformation(double changeObjectiveDown, int changeInfeasibilityDown);
@@ -394,10 +422,21 @@ protected:
   double sumDownDecrease_;
   /// Sum up decrease number infeasibilities from strong or actual
   double sumUpDecrease_;
+#if CBC_DYNAMIC_EXPERIMENT == 0
   /// Last down cost from strong (i.e. as computed by last strong)
   double lastDownCost_;
   /// Last up cost from strong (i.e. as computed by last strong)
   double lastUpCost_;
+#elif CBC_DYNAMIC_EXPERIMENT > 0
+  /// Going down average ratio over (when over and max 10)
+  float downOver_;
+  /// Going down average ratio under (when under and max 10)
+  float downUnder_;
+  /// Going up average ratio over (when over and max 10)
+  float upOver_;
+  /// Going up average ratio under (when under and max 10)
+  float upUnder_;
+#endif
   /// Last down decrease number infeasibilities from strong (i.e. as computed by last strong)
   mutable int lastDownDecrease_;
   /// Last up decrease number infeasibilities from strong (i.e. as computed by last strong)
@@ -412,6 +451,7 @@ protected:
   int numberTimesUpInfeasible_;
   /// Number of branches before we trust
   int numberBeforeTrust_;
+#if CBC_DYNAMIC_EXPERIMENT == 0
   /// Number of local probing fixings going down
   int numberTimesDownLocalFixed_;
   /// Number of local probing fixings going up
@@ -428,6 +468,7 @@ protected:
         1 - probing
     */
   int method_;
+#endif
 };
 /** Simple branching object for an integer variable with pseudo costs
 

@@ -88,7 +88,7 @@ CbcTreeLocal::CbcTreeLocal(CbcModel *model, const double *solution,
     // needed to sync cutoffs
     double value;
     solver->getDblParam(OsiDualObjectiveLimit, value);
-    model_->setCutoff(value * solver->getObjSense());
+    model_->setCutoff(value * solver->getObjSenseInCbc());
   }
   bestCutoff_ = model_->getCutoff();
   // save current gap
@@ -99,7 +99,7 @@ CbcTreeLocal::CbcTreeLocal(CbcModel *model, const double *solution,
   int numberIntegers = model_->numberIntegers();
   const int *integerVariable = model_->integerVariable();
   int i;
-  double direction = solver->getObjSense();
+  double direction = solver->getObjSenseInCbc();
   double newSolutionValue = 1.0e50;
   if (solution) {
     // copy solution
@@ -948,7 +948,7 @@ CbcTreeVariable::CbcTreeVariable(CbcModel *model, const double *solution,
     // needed to sync cutoffs
     double value;
     solver->getDblParam(OsiDualObjectiveLimit, value);
-    model_->setCutoff(value * solver->getObjSense());
+    model_->setCutoff(value * solver->getObjSenseInCbc());
   }
   bestCutoff_ = model_->getCutoff();
   // save current gap
@@ -959,7 +959,7 @@ CbcTreeVariable::CbcTreeVariable(CbcModel *model, const double *solution,
   int numberIntegers = model_->numberIntegers();
   const int *integerVariable = model_->integerVariable();
   int i;
-  double direction = solver->getObjSense();
+  double direction = solver->getObjSenseInCbc();
   double newSolutionValue = 1.0e50;
   if (solution) {
     // copy solution

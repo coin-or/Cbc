@@ -337,7 +337,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   assert(numberRows <= solver->getNumRows());
   int numberIntegers = model_->numberIntegers();
   const int *integerVariable = model_->integerVariable();
-  double direction = solver->getObjSense(); // 1 for min, -1 for max
+  double direction = solver->getObjSenseInCbc(); // 1 for min, -1 for max
   double newSolutionValue = direction * solver->getObjValue();
   int returnCode = 0;
   // Column copy
@@ -609,7 +609,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
 #ifdef GAP
       double cutoff = model_->getCutoff();
       if (cutoff < 1.0e20 && false) {
-        double direction = solver->getObjSense();
+        double direction = solver->getObjSenseInCbc();
         gap = cutoff - solver->getObjValue() * direction;
         gap *= 0.1; // Fix more if plausible
         double tolerance;
@@ -1418,7 +1418,7 @@ int CbcHeuristicDive::reducedCostFix(OsiSolverInterface *solver)
 #ifdef DIVE_DEBUG
   std::cout << "cutoff = " << cutoff << std::endl;
 #endif
-  double direction = solver->getObjSense();
+  double direction = solver->getObjSenseInCbc();
   double gap = cutoff - solver->getObjValue() * direction;
   gap *= 0.5; // Fix more
   double tolerance;
@@ -1508,13 +1508,13 @@ int CbcHeuristicDive::fixOtherVariables(OsiSolverInterface *solver,
   // fix other integer variables that are at their bounds
   int cnt = 0;
 #ifdef GAP
-  double direction = solver->getObjSense(); // 1 for min, -1 for max
+  double direction = solver->getObjSenseInCbc(); // 1 for min, -1 for max
   double gap = 1.0e30;
 #endif
 #ifdef GAP
   double cutoff = model_->getCutoff();
   if (cutoff < 1.0e20 && false) {
-    double direction = solver->getObjSense();
+    double direction = solver->getObjSenseInCbc();
     gap = cutoff - solver->getObjValue() * direction;
     gap *= 0.1; // Fix more if plausible
     double tolerance;

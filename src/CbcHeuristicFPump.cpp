@@ -283,7 +283,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   model_->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
   double realCutoff = cutoff;
   bool secondMajorPass = false;
-  double direction = model_->solver()->getObjSense();
+  double direction = model_->solver()->getObjSenseInCbc();
   cutoff *= direction;
   int numberBandBsolutions = 0;
   double firstCutoff = fabs(cutoff);
@@ -432,7 +432,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   numRuns_++;
   if (cutoff < 1.0e50 && false) {
     // Fix on djs
-    double direction = model_->solver()->getObjSense();
+    double direction = model_->solver()->getObjSenseInCbc();
     double gap = cutoff - model_->solver()->getObjValue() * direction;
     double tolerance;
     model_->solver()->getDblParam(OsiDualTolerance, tolerance);
@@ -452,7 +452,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     saveBasis = *basis;
     delete basis;
   }
-  double continuousObjectiveValue = model_->solver()->getObjValue() * model_->solver()->getObjSense();
+  double continuousObjectiveValue = model_->solver()->getObjValue() * model_->solver()->getObjSenseInCbc();
   double *firstPerturbedObjective = NULL;
   double *firstPerturbedSolution = NULL;
   double firstPerturbedValue = COIN_DBL_MAX;
@@ -584,7 +584,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #endif
     if (CoinMin(fakeCutoff_, cutoff) < 1.0e50) {
       // Fix on djs
-      double direction = solver->getObjSense();
+      double direction = solver->getObjSenseInCbc();
       double gap = CoinMin(fakeCutoff_, cutoff) - solver->getObjValue() * direction;
       double tolerance;
       solver->getDblParam(OsiDualTolerance, tolerance);
@@ -712,7 +712,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       }
     }
     bool finished = false;
-    double direction = solver->getObjSense();
+    double direction = solver->getObjSenseInCbc();
     int returnCode = 0;
     bool takeHint;
     OsiHintStrength strength;
@@ -1241,7 +1241,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 
         // 2. update the objective function based on the new rounded solution
         double offset = 0.0;
-        double costValue = (1.0 - scaleFactor) * solver->getObjSense();
+        double costValue = (1.0 - scaleFactor) * solver->getObjSenseInCbc();
         int numberChanged = 0;
         const double *oldObjective = solver->getObjCoefficients();
         bool fixOnesAtBound = false;
@@ -2261,7 +2261,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #endif
             newSolver->initialSolve();
             if (newSolver->isProvenOptimal()) {
-              double value = newSolver->getObjValue() * newSolver->getObjSense();
+              double value = newSolver->getObjValue() * newSolver->getObjSenseInCbc();
               if (value < newSolutionValue) {
                 //newSolver->writeMpsNative("query.mps", NULL, NULL, 2);
 #ifdef JJF_ZERO
@@ -2327,7 +2327,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             }
             newSolver->initialSolve();
             if (newSolver->isProvenOptimal()) {
-              double value = newSolver->getObjValue() * newSolver->getObjSense();
+              double value = newSolver->getObjValue() * newSolver->getObjSenseInCbc();
               if (value < saveValue) {
                 sprintf(pumpPrint, "Freeing continuous variables gives a solution of %g", trueObjValue(value));
                 model_->messageHandler()->message(CBC_FPUMP1, model_->messages())

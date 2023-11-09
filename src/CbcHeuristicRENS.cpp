@@ -113,7 +113,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
   int type = rensType_ & 15;
   if (type < 12)
     newSolver->resolve();
-  double direction = newSolver->getObjSense();
+  double direction = newSolver->getObjSenseInCbc();
   double cutoff = model_->getCutoff();
   newSolver->setDblParam(OsiDualObjectiveLimit, 1.0e100);
   //cutoff *= direction;
@@ -910,7 +910,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
         int nAtLb = 0;
         double sumDj = 0.0;
         const double *dj = newSolver->getReducedCost();
-        double direction = newSolver->getObjSense();
+        double direction = newSolver->getObjSenseInCbc();
         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
           if (!newSolver->isInteger(iColumn)) {
             double value = currentSolution[iColumn];

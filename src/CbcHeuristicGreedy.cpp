@@ -144,7 +144,7 @@ int CbcHeuristicGreedyCover::solution(double &solutionValue,
   numRuns_++;
   assert(numberRows == matrix_.getNumRows());
   int iRow, iColumn;
-  double direction = solver->getObjSense();
+  double direction = solver->getObjSenseInCbc();
   double offset;
   solver->getDblParam(OsiObjOffset, offset);
   double newSolutionValue = -offset;
@@ -388,7 +388,7 @@ void CbcHeuristicGreedyCover::validate()
     const double *columnLower = solver->getColLower();
     const double *rowUpper = solver->getRowUpper();
     const double *objective = solver->getObjCoefficients();
-    double direction = solver->getObjSense();
+    double direction = solver->getObjSenseInCbc();
 
     int numberRows = solver->getNumRows();
     int numberColumns = solver->getNumCols();
@@ -552,7 +552,7 @@ int CbcHeuristicGreedyEquality::solution(double &solutionValue,
 
   assert(numberRows == matrix_.getNumRows());
   int iRow, iColumn;
-  double direction = solver->getObjSense();
+  double direction = solver->getObjSenseInCbc();
   double offset;
   solver->getDblParam(OsiObjOffset, offset);
   double newSolutionValue = -offset;
@@ -815,7 +815,7 @@ void CbcHeuristicGreedyEquality::validate()
     const double *rowUpper = solver->getRowUpper();
     const double *rowLower = solver->getRowLower();
     const double *objective = solver->getObjCoefficients();
-    double direction = solver->getObjSense();
+    double direction = solver->getObjSenseInCbc();
 
     int numberRows = solver->getNumRows();
     int numberColumns = solver->getNumCols();
@@ -1059,7 +1059,7 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
   int *firstGub = new int[numberRows];
   int *nextGub = new int[numberColumns];
   int iRow, iColumn;
-  double direction = solver->getObjSense();
+  double direction = solver->getObjSenseInCbc();
   double *slackCost = new double[numberRows];
   double *modifiedCost = CoinCopyOfArray(objective, numberColumns);
   for (int iRow = 0; iRow < numberRows; iRow++) {

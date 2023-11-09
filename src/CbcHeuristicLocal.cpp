@@ -257,7 +257,7 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
         int nAtLb = 0;
         //double sumDj=0.0;
         const double *dj = newSolver->getReducedCost();
-        double direction = newSolver->getObjSense();
+        double direction = newSolver->getObjSenseInCbc();
         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
           if (!isHeuristicInteger(newSolver, iColumn)) {
             if (!used_[iColumn]) {
@@ -414,7 +414,7 @@ int CbcHeuristicLocal::solution(double &solutionValue,
   const int *integerVariable = model_->integerVariable();
 
   int i;
-  double direction = solver->getObjSense();
+  double direction = solver->getObjSenseInCbc();
   double newSolutionValue = model_->getObjValue() * direction;
   int returnCode = 0;
   numRuns_++;
@@ -1333,7 +1333,7 @@ int CbcHeuristicNaive::solution(double &solutionValue,
   numRuns_++;
   double cutoff;
   model_->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
-  double direction = model_->solver()->getObjSense();
+  double direction = model_->solver()->getObjSenseInCbc();
   cutoff *= direction;
   cutoff = CoinMin(cutoff, solutionValue);
   OsiSolverInterface *solver = model_->continuousSolver();
@@ -1620,7 +1620,7 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
   numRuns_++;
   double cutoff;
   model_->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
-  double direction = model_->solver()->getObjSense();
+  double direction = model_->solver()->getObjSenseInCbc();
   cutoff *= direction;
   cutoff = CoinMin(cutoff, solutionValue);
   OsiSolverInterface *solver = cloneBut(2);

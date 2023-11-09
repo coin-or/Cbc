@@ -232,7 +232,7 @@ void CbcBranchDynamicDecision::updateInformation(OsiSolverInterface *solver,
   const CbcModel *model = object_->model();
   double originalValue = node->objectiveValue();
   int originalUnsatisfied = node->numberUnsatisfied();
-  double objectiveValue = solver->getObjValue() * model->getObjSense();
+  double objectiveValue = solver->getObjValue() * model->getObjSenseInCbc();
   int unsatisfied = 0;
   int i;
   int numberIntegers = model->numberIntegers();
@@ -758,12 +758,17 @@ int CbcDynamicPseudoCostBranchingObject::fillStrongInfo(CbcStrongInfo &info)
   info.finishedDown = false;
   info.numItersDown = 0;
   info.fix = 0;
-  if (object_->numberTimesUp() < object_->numberBeforeTrust() + 2 * object_->numberTimesUpInfeasible() || object_->numberTimesDown() < object_->numberBeforeTrust() + 2 * object_->numberTimesDownInfeasible()) {
+#define FL_MULTIPLIER -2.0
+  if (object_->numberTimesUp() < object_->numberBeforeTrust() + fabs(FL_MULTIPLIER) * object_->numberTimesUpInfeasible() || object_->numberTimesDown() < object_->numberBeforeTrust() + fabs(FL_MULTIPLIER) * object_->numberTimesDownInfeasible()) {
     return 0;
   } else {
+#if CBC_DYNAMIC_EXPERIMENT > 0
+    if (object_->numberBeforeTrust()>1) {
+      if (FL_MULTIPLIER<0.0) {
+	return 0;
+      }
+    }
+#endif
     return 1;
   }
 }
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/

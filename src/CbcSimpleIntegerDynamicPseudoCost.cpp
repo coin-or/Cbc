@@ -140,8 +140,15 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost()
   , upShadowPrice_(0.0)
   , sumDownDecrease_(0.0)
   , sumUpDecrease_(0.0)
+#if CBC_DYNAMIC_EXPERIMENT == 0
   , lastDownCost_(0.0)
   , lastUpCost_(0.0)
+#elif CBC_DYNAMIC_EXPERIMENT > 0
+  , downOver_(1.0)
+  , downUnder_(1.0)
+  , upOver_(1.0)
+  , upUnder_(1.0)
+#endif
   , lastDownDecrease_(0)
   , lastUpDecrease_(0)
   , numberTimesDown_(0)
@@ -149,12 +156,14 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost()
   , numberTimesDownInfeasible_(0)
   , numberTimesUpInfeasible_(0)
   , numberBeforeTrust_(0)
+#if CBC_DYNAMIC_EXPERIMENT == 0
   , numberTimesDownLocalFixed_(0)
   , numberTimesUpLocalFixed_(0)
   , numberTimesDownTotalFixed_(0.0)
   , numberTimesUpTotalFixed_(0.0)
   , numberTimesProbingTotal_(0)
   , method_(0)
+#endif
 {
 }
 
@@ -174,8 +183,15 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost(CbcModel *m
   , upShadowPrice_(0.0)
   , sumDownDecrease_(0.0)
   , sumUpDecrease_(0.0)
+#if CBC_DYNAMIC_EXPERIMENT == 0
   , lastDownCost_(0.0)
   , lastUpCost_(0.0)
+#elif CBC_DYNAMIC_EXPERIMENT > 0
+  , downOver_(1.0)
+  , downUnder_(1.0)
+  , upOver_(1.0)
+  , upUnder_(1.0)
+#endif
   , lastDownDecrease_(0)
   , lastUpDecrease_(0)
   , numberTimesDown_(0)
@@ -183,12 +199,14 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost(CbcModel *m
   , numberTimesDownInfeasible_(0)
   , numberTimesUpInfeasible_(0)
   , numberBeforeTrust_(0)
+#if CBC_DYNAMIC_EXPERIMENT == 0
   , numberTimesDownLocalFixed_(0)
   , numberTimesUpLocalFixed_(0)
   , numberTimesDownTotalFixed_(0.0)
   , numberTimesUpTotalFixed_(0.0)
   , numberTimesProbingTotal_(0)
   , method_(0)
+#endif
 {
   const double *cost = model->getObjCoefficients();
   double costValue = CoinMax(1.0e-5, fabs(cost[iColumn]));
@@ -238,8 +256,15 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost(CbcModel *m
   , upShadowPrice_(0.0)
   , sumDownDecrease_(0.0)
   , sumUpDecrease_(0.0)
+#if CBC_DYNAMIC_EXPERIMENT == 0
   , lastDownCost_(0.0)
   , lastUpCost_(0.0)
+#elif CBC_DYNAMIC_EXPERIMENT > 0
+  , downOver_(1.0)
+  , downUnder_(1.0)
+  , upOver_(1.0)
+  , upUnder_(1.0)
+#endif
   , lastDownDecrease_(0)
   , lastUpDecrease_(0)
   , numberTimesDown_(0)
@@ -247,12 +272,14 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost(CbcModel *m
   , numberTimesDownInfeasible_(0)
   , numberTimesUpInfeasible_(0)
   , numberBeforeTrust_(0)
+#if CBC_DYNAMIC_EXPERIMENT == 0
   , numberTimesDownLocalFixed_(0)
   , numberTimesUpLocalFixed_(0)
   , numberTimesDownTotalFixed_(0.0)
   , numberTimesUpTotalFixed_(0.0)
   , numberTimesProbingTotal_(0)
   , method_(0)
+#endif
 {
   downDynamicPseudoCost_ = downDynamicPseudoCost;
   upDynamicPseudoCost_ = upDynamicPseudoCost;
@@ -309,8 +336,15 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost(const CbcSi
   , upShadowPrice_(rhs.upShadowPrice_)
   , sumDownDecrease_(rhs.sumDownDecrease_)
   , sumUpDecrease_(rhs.sumUpDecrease_)
+#if CBC_DYNAMIC_EXPERIMENT == 0
   , lastDownCost_(rhs.lastDownCost_)
   , lastUpCost_(rhs.lastUpCost_)
+#elif CBC_DYNAMIC_EXPERIMENT > 0
+  , downOver_(rhs.downOver_)
+  , downUnder_(rhs.downUnder_)
+  , upOver_(rhs.upOver_)
+  , upUnder_(rhs.upUnder_)
+#endif
   , lastDownDecrease_(rhs.lastDownDecrease_)
   , lastUpDecrease_(rhs.lastUpDecrease_)
   , numberTimesDown_(rhs.numberTimesDown_)
@@ -318,13 +352,14 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost(const CbcSi
   , numberTimesDownInfeasible_(rhs.numberTimesDownInfeasible_)
   , numberTimesUpInfeasible_(rhs.numberTimesUpInfeasible_)
   , numberBeforeTrust_(rhs.numberBeforeTrust_)
+#if CBC_DYNAMIC_EXPERIMENT == 0
   , numberTimesDownLocalFixed_(rhs.numberTimesDownLocalFixed_)
   , numberTimesUpLocalFixed_(rhs.numberTimesUpLocalFixed_)
   , numberTimesDownTotalFixed_(rhs.numberTimesDownTotalFixed_)
   , numberTimesUpTotalFixed_(rhs.numberTimesUpTotalFixed_)
   , numberTimesProbingTotal_(rhs.numberTimesProbingTotal_)
   , method_(rhs.method_)
-
+#endif
 {
 }
 
@@ -352,8 +387,15 @@ CbcSimpleIntegerDynamicPseudoCost::operator=(const CbcSimpleIntegerDynamicPseudo
     upShadowPrice_ = rhs.upShadowPrice_;
     sumDownDecrease_ = rhs.sumDownDecrease_;
     sumUpDecrease_ = rhs.sumUpDecrease_;
+#if CBC_DYNAMIC_EXPERIMENT == 0
     lastDownCost_ = rhs.lastDownCost_;
     lastUpCost_ = rhs.lastUpCost_;
+#elif CBC_DYNAMIC_EXPERIMENT > 0
+    downOver_ = rhs.downOver_;
+    downUnder_ = rhs.downUnder_;
+    upOver_ = rhs.upOver_;
+    upUnder_ = rhs.upUnder_;
+#endif
     lastDownDecrease_ = rhs.lastDownDecrease_;
     lastUpDecrease_ = rhs.lastUpDecrease_;
     numberTimesDown_ = rhs.numberTimesDown_;
@@ -361,12 +403,14 @@ CbcSimpleIntegerDynamicPseudoCost::operator=(const CbcSimpleIntegerDynamicPseudo
     numberTimesDownInfeasible_ = rhs.numberTimesDownInfeasible_;
     numberTimesUpInfeasible_ = rhs.numberTimesUpInfeasible_;
     numberBeforeTrust_ = rhs.numberBeforeTrust_;
+#if CBC_DYNAMIC_EXPERIMENT == 0
     numberTimesDownLocalFixed_ = rhs.numberTimesDownLocalFixed_;
     numberTimesUpLocalFixed_ = rhs.numberTimesUpLocalFixed_;
     numberTimesDownTotalFixed_ = rhs.numberTimesDownTotalFixed_;
     numberTimesUpTotalFixed_ = rhs.numberTimesUpTotalFixed_;
     numberTimesProbingTotal_ = rhs.numberTimesProbingTotal_;
     method_ = rhs.method_;
+#endif
   }
   return *this;
 }
@@ -388,19 +432,28 @@ void CbcSimpleIntegerDynamicPseudoCost::copySome(const CbcSimpleIntegerDynamicPs
   upShadowPrice_ = otherObject->upShadowPrice_;
   sumDownDecrease_ = otherObject->sumDownDecrease_;
   sumUpDecrease_ = otherObject->sumUpDecrease_;
+#if CBC_DYNAMIC_EXPERIMENT == 0
   lastDownCost_ = otherObject->lastDownCost_;
   lastUpCost_ = otherObject->lastUpCost_;
+#elif CBC_DYNAMIC_EXPERIMENT > 0
+  downOver_ = otherObject->downOver_;
+  downUnder_ = otherObject->downUnder_;
+  upOver_ = otherObject->upOver_;
+  upUnder_ = otherObject->upUnder_;
+#endif
   lastDownDecrease_ = otherObject->lastDownDecrease_;
   lastUpDecrease_ = otherObject->lastUpDecrease_;
   numberTimesDown_ = otherObject->numberTimesDown_;
   numberTimesUp_ = otherObject->numberTimesUp_;
   numberTimesDownInfeasible_ = otherObject->numberTimesDownInfeasible_;
   numberTimesUpInfeasible_ = otherObject->numberTimesUpInfeasible_;
+#if CBC_DYNAMIC_EXPERIMENT == 0
   numberTimesDownLocalFixed_ = otherObject->numberTimesDownLocalFixed_;
   numberTimesUpLocalFixed_ = otherObject->numberTimesUpLocalFixed_;
   numberTimesDownTotalFixed_ = otherObject->numberTimesDownTotalFixed_;
   numberTimesUpTotalFixed_ = otherObject->numberTimesUpTotalFixed_;
   numberTimesProbingTotal_ = otherObject->numberTimesProbingTotal_;
+#endif
 }
 // Updates stuff like pseudocosts before threads
 void CbcSimpleIntegerDynamicPseudoCost::updateBefore(const OsiObject *rhs)
@@ -448,19 +501,29 @@ void CbcSimpleIntegerDynamicPseudoCost::updateAfter(const OsiObject *rhs, const 
   upShadowPrice_ = 0.0;
   sumDownDecrease_ += rhsObject->sumDownDecrease_ - baseObject->sumDownDecrease_;
   sumUpDecrease_ += rhsObject->sumUpDecrease_ - baseObject->sumUpDecrease_;
+#if CBC_DYNAMIC_EXPERIMENT == 0
   lastDownCost_ += rhsObject->lastDownCost_ - baseObject->lastDownCost_;
   lastUpCost_ += rhsObject->lastUpCost_ - baseObject->lastUpCost_;
+#elif CBC_DYNAMIC_EXPERIMENT > 0
+  // Bad - think - hope only when threaded
+  downOver_ = 0.1*rhsObject->downOver_ + 0.9*baseObject->downOver_;
+  downUnder_ = 0.1*rhsObject->downUnder_ + 0.9*baseObject->downUnder_;
+  upOver_ = 0.1*rhsObject->upOver_ + 0.9*baseObject->upOver_;
+  upUnder_ = 0.1*rhsObject->upUnder_ + 0.9*baseObject->upUnder_;
+#endif
   lastDownDecrease_ += rhsObject->lastDownDecrease_ - baseObject->lastDownDecrease_;
   lastUpDecrease_ += rhsObject->lastUpDecrease_ - baseObject->lastUpDecrease_;
   numberTimesDown_ += rhsObject->numberTimesDown_ - baseObject->numberTimesDown_;
   numberTimesUp_ += rhsObject->numberTimesUp_ - baseObject->numberTimesUp_;
   numberTimesDownInfeasible_ += rhsObject->numberTimesDownInfeasible_ - baseObject->numberTimesDownInfeasible_;
   numberTimesUpInfeasible_ += rhsObject->numberTimesUpInfeasible_ - baseObject->numberTimesUpInfeasible_;
+#if CBC_DYNAMIC_EXPERIMENT == 0
   numberTimesDownLocalFixed_ += rhsObject->numberTimesDownLocalFixed_ - baseObject->numberTimesDownLocalFixed_;
   numberTimesUpLocalFixed_ += rhsObject->numberTimesUpLocalFixed_ - baseObject->numberTimesUpLocalFixed_;
   numberTimesDownTotalFixed_ += rhsObject->numberTimesDownTotalFixed_ - baseObject->numberTimesDownTotalFixed_;
   numberTimesUpTotalFixed_ += rhsObject->numberTimesUpTotalFixed_ - baseObject->numberTimesUpTotalFixed_;
   numberTimesProbingTotal_ += rhsObject->numberTimesProbingTotal_ - baseObject->numberTimesProbingTotal_;
+#endif
   if (numberTimesDown_ > 0) {
     setDownDynamicPseudoCost(sumDown / static_cast< double >(numberTimesDown_));
   }
@@ -495,10 +558,12 @@ bool CbcSimpleIntegerDynamicPseudoCost::same(const CbcSimpleIntegerDynamicPseudo
     okay = false;
   if (sumUpDecrease_ != otherObject->sumUpDecrease_)
     okay = false;
+#if CBC_DYNAMIC_EXPERIMENT == 0
   if (lastDownCost_ != otherObject->lastDownCost_)
     okay = false;
   if (lastUpCost_ != otherObject->lastUpCost_)
     okay = false;
+#endif
   if (lastDownDecrease_ != otherObject->lastDownDecrease_)
     okay = false;
   if (lastUpDecrease_ != otherObject->lastUpDecrease_)
@@ -511,6 +576,7 @@ bool CbcSimpleIntegerDynamicPseudoCost::same(const CbcSimpleIntegerDynamicPseudo
     okay = false;
   if (numberTimesUpInfeasible_ != otherObject->numberTimesUpInfeasible_)
     okay = false;
+#if CBC_DYNAMIC_EXPERIMENT == 0
   if (numberTimesDownLocalFixed_ != otherObject->numberTimesDownLocalFixed_)
     okay = false;
   if (numberTimesUpLocalFixed_ != otherObject->numberTimesUpLocalFixed_)
@@ -521,6 +587,7 @@ bool CbcSimpleIntegerDynamicPseudoCost::same(const CbcSimpleIntegerDynamicPseudo
     okay = false;
   if (numberTimesProbingTotal_ != otherObject->numberTimesProbingTotal_)
     okay = false;
+#endif
   return okay;
 }
 /* Create an OsiSolverBranch object
@@ -798,6 +865,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
     //} else if (value>0.9) {
     //returnValue = 2.0*returnValue + 0.1;
     //}
+#if CBC_DYNAMIC_EXPERIMENT == 0
     if (method_ == 1) {
 #if 1
       double multiplier = 1.0;
@@ -831,6 +899,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
       returnValue *= 1.0e-3;
 #endif
     }
+#endif
 #ifdef COIN_DEVELOP
     History hist;
     hist.where_ = where;
@@ -850,6 +919,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
     return CoinMax(returnValue, 1.0e-15);
   }
 }
+#if CBC_DYNAMIC_EXPERIMENT == 0
 // Infeasibility etc etc
 usefulDynamic
 CbcSimpleIntegerDynamicPseudoCost::usefulStuff(const OsiBranchingInformation *info) const
@@ -880,6 +950,7 @@ CbcSimpleIntegerDynamicPseudoCost::usefulStuff(const OsiBranchingInformation *in
   }
   return stuff;
 }
+#endif
 // Creates a branching object
 CbcBranchingObject *
 CbcSimpleIntegerDynamicPseudoCost::createCbcBranch(OsiSolverInterface * /*solver*/,
@@ -1032,7 +1103,7 @@ CbcSimpleIntegerDynamicPseudoCost::createUpdateInformation(const OsiSolverInterf
 {
   double originalValue = node->objectiveValue();
   int originalUnsatisfied = node->numberUnsatisfied();
-  double objectiveValue = solver->getObjValue() * solver->getObjSense();
+  double objectiveValue = solver->getObjValue() * solver->getObjSenseInCbc();
   int unsatisfied = 0;
   int i;
   //might be base model - doesn't matter
@@ -1079,7 +1150,7 @@ CbcSimpleIntegerDynamicPseudoCost::createUpdateInformation(const OsiSolverInterf
     originalUnsatisfied - unsatisfied, value);
   newData.originalObjective_ = originalValue;
   // Solvers know about direction
-  double direction = solver->getObjSense();
+  double direction = solver->getObjSenseInCbc();
   solver->getDblParam(OsiDualObjectiveLimit, newData.cutoff_);
   newData.cutoff_ *= direction;
   return newData;
@@ -1119,6 +1190,17 @@ void CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateD
 #elif TYPE2 == 2
       addToSumDownCost(change * TYPERATIO + (1.0 - TYPERATIO) * change / (1.0e-30 + movement));
       setDownDynamicPseudoCost(sumDownCost() * (TYPERATIO / sumDownChange() + (1.0 - TYPERATIO) / (double)numberTimesDown()));
+#endif
+#if CBC_DYNAMIC_EXPERIMENT > 0
+      if (change>movement*downDynamicPseudoCost_) {
+	double over = change/(movement*downDynamicPseudoCost_);
+	downOver_ = (numberTimesDown_-1)*downOver_ + CoinMin(over,10.0);
+	downOver_ /= numberTimesDown_;
+      } else {
+	double under = change/(movement*downDynamicPseudoCost_);
+	downUnder_ = (numberTimesDown_-1)*downUnder_ + CoinMax(under,0.1);
+	downUnder_ /= numberTimesDown_;
+      }
 #endif
     } else {
 #ifdef COIN_DEVELOP
@@ -1182,6 +1264,17 @@ void CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateD
 #elif TYPE2 == 2
       addToSumUpCost(change * TYPERATIO + (1.0 - TYPERATIO) * change / (1.0e-30 + movement));
       setUpDynamicPseudoCost(sumUpCost() * (TYPERATIO / sumUpChange() + (1.0 - TYPERATIO) / (double)numberTimesUp()));
+#endif
+#if CBC_DYNAMIC_EXPERIMENT > 0
+      if (change>movement*upDynamicPseudoCost_) {
+	double over = change/(movement*upDynamicPseudoCost_);
+	upOver_ = (numberTimesUp_-1)*upOver_ + CoinMin(over,10.0);
+	upOver_ /= numberTimesUp_;
+      } else {
+	double under = change/(movement*upDynamicPseudoCost_);
+	upUnder_ = (numberTimesUp_-1)*upUnder_ + CoinMax(under,0.1);
+	upUnder_ /= numberTimesUp_;
+      }
 #endif
     } else {
 #ifdef COIN_DEVELOP
@@ -1278,6 +1371,7 @@ void CbcSimpleIntegerDynamicPseudoCost::updateAfterMini(int numberDown, int numb
   }
   assert(downDynamicPseudoCost_ > 1.0e-40 && upDynamicPseudoCost_ > 1.0e-40);
 }
+#if CBC_DYNAMIC_EXPERIMENT == 0
 // Pass in probing information
 void CbcSimpleIntegerDynamicPseudoCost::setProbingInformation(int fixedDown, int fixedUp)
 {
@@ -1287,6 +1381,7 @@ void CbcSimpleIntegerDynamicPseudoCost::setProbingInformation(int fixedDown, int
   numberTimesUpLocalFixed_ = fixedUp;
   numberTimesUpTotalFixed_ += fixedUp;
 }
+#endif
 // Print
 void CbcSimpleIntegerDynamicPseudoCost::print(int type, double value) const
 {

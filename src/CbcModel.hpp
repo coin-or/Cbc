@@ -1309,6 +1309,10 @@ public:
     //assert (dblParam_[CbcOptimizationDirection]== solver_->getObjSense());
     return dblParam_[CbcOptimizationDirection];
   }
+  /// For getting rid of many getObjSense()'s
+  /// When known to be minimization
+  inline double getObjSenseInCbc() const
+  { assert (getObjSense()==1.0);return 1.0;}
 
   /// Return true if variable is continuous
   inline bool isContinuous(int colIndex) const

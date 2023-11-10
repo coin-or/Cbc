@@ -2538,7 +2538,7 @@ void CbcModel::branchAndBound(int doStatistics)
     if (flipObjective)
       flipModel();
     solverCharacteristics_ = NULL;
-    bestObjective_ = solver_->getObjValue() * solver_->getObjSenseInCbc();
+    bestObjective_ = solver_->getObjValue() * solver_->getObjSense();
     int numberColumns = solver_->getNumCols();
     delete[] bestSolution_;
     bestSolution_ = new double[numberColumns];
@@ -15201,7 +15201,7 @@ void CbcModel::setBestObjectiveValue(double objectiveValue) {
 }
 double CbcModel::getBestPossibleObjValue() const {
   return CoinMin(bestPossibleObjective_, bestObjective_) *
-         solver_->getObjSenseInCbc();
+         solver_->getObjSense();
 }
 // Make given rows (L or G) into global cuts and remove from lp
 void CbcModel::makeGlobalCuts(int number, const int *which) {
@@ -16721,7 +16721,7 @@ void CbcModel::setBestSolution(const double *solution, int numberColumns,
     }
     bool looksGood = solver_->isProvenOptimal();
     if (looksGood) {
-      double direction = solver_->getObjSenseInCbc();
+      double direction = solver_->getObjSense();
       double objValue = direction * solver_->getObjValue();
       if (objValue > objectiveValue + 1.0e-8 * (1.0 + fabs(objectiveValue))) {
         sprintf(printBuffer, "Given objective value %g, computed %g",
@@ -17907,7 +17907,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
           } else {
             // try cplex
             OsiCpxSolverInterface cpxSolver;
-            double direction = clpSolver->getObjSenseInCbc();
+            double direction = clpSolver->getObjSense();
             cpxSolver.setObjSense(direction);
             // load up cplex
             const CoinPackedMatrix *matrix = clpSolver->getMatrixByCol();

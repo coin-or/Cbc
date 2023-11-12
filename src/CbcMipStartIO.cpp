@@ -218,8 +218,8 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
 
   // assuming that variables not fixed are more likely to have zero as value,
   // inserting as default objective function 1
-  {
-    vector< double > obj(lp->getNumCols(), 1.0);
+  if (0) { // to get more accurate answers
+    vector< double > obj(lp->getNumCols(), lp->getObjSense());
     lp->setObjective(&obj[0]);
   }
 
@@ -317,7 +317,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
   lp->setHintParam(OsiDoPresolveInInitial, true, OsiHintDo);
 #endif
 
-  lp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
+  //lp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
   lp->initialSolve();
 
   if ((lp->isProvenPrimalInfeasible()) || (lp->isProvenDualInfeasible())) {

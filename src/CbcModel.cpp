@@ -13292,8 +13292,8 @@ void CbcModel::setCutoff(double value)
     double direction = solver_->getObjSenseInCbc();
 #else
     double direction = 1.0;
-    if (!dynamic_cast<OsiClpSolverInterface *>(solver_))
-      direction = solver_->getObjSenseInCbc();
+    if (!dynamic_cast<OsiClpSolverInterface *>(solver_)|| !modelFlipped())
+      direction = solver_->getObjSense();
 #endif
     solver_->setDblParam(OsiDualObjectiveLimit, value * direction);
   }
@@ -13844,7 +13844,7 @@ double CbcModel::checkSolution(double cutoff, double *solution,
       // assert(solver_->isProvenOptimal());
       solver_->setHintParam(OsiDoDualInInitial, saveTakeHint, saveStrength);
       objectiveValue = solver_->isProvenOptimal()
-                           ? solver_->getObjValue() * solver_->getObjSenseInCbc()
+                           ? solver_->getObjValue() * solver_->getObjSense()
                            : 1.0e50;
     }
     bestSolutionBasis_ = CoinWarmStartBasis();
@@ -14500,9 +14500,8 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
         moreSpecialOptions2_ &= ~2;
       }
       // This is not correct - that way cutoff can go up if maximization
-      // double direction = solver_->getObjSenseInCbc();
-      // setCutoff(cutoff*direction);
-      setCutoff(cutoff);
+      double direction = !modelFlipped() ? solver_->getObjSense() : 1.0;
+      setCutoff(cutoff*direction);
       // change cutoff as constraint if wanted
       if (cutoffRowNumber_ >= 0) {
         if (solver_->getNumRows() > cutoffRowNumber_) {

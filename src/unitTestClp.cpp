@@ -1062,7 +1062,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
     std::cout << "cbc_clp Total nodes " << totalNodes << " and " << totalIterations << " iterations - time " << timeTaken << std::endl;
     std::cout << "cbc_clp Total Strong " << totalStrong << " times (" <<
       totalStrongIts << " iterations) - fathomed " <<
-      totalStrongFathomed << "- fixed " << totalStrongFixed << std::endl;
+      totalStrongFathomed << " - fixed " << totalStrongFixed << std::endl;
     std::cout << "cbc_clp Total Fast node fathoming " << totalFathomCount
 	      << " times (" << totalExtraNodes << " nodes, "
 	      << totalExtraIterations << " iterations)" << std::endl;

@@ -3496,152 +3496,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             if (deleteModel2)
                delete model2;
            } break;
-          case CbcParam::DOHEURISTIC:{
-            if (!goodModel){
-               continue;
-            }
-#if CBC_USE_INITIAL_TIME == 1
-            if (model_.useElapsedTime())
-               model_.setDblParam(CbcModel::CbcStartSeconds,
-                                  CoinGetTimeOfDay());
-            else
-               model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
-#endif
-            int vubMode = parameters[CbcParam::VUBTRY]->intVal();
-            if (vubMode != -1) {
-               // look at vubs
-               // extra1 is number of ints to leave free
-               // Just ones which affect >= extra3
-               int extra3 = parameters[CbcParam::EXTRA3]->intVal();
-               /* 2 is cost above which to fix if feasible
-                  3 is fraction of integer variables fixed if
-                  relaxing (0.97) 4 is fraction of all variables fixed if
-                  relaxing (0.0)
-               */
-               double dextra[6];
-               int extra[5];
-               extra[1] = parameters[CbcParam::EXTRA1]->intVal();
-               int exp1 = parameters[CbcParam::EXPERIMENT]->intVal();
-               if (exp1 == 4 && extra[1] == -1)
-                  extra[1] = 999998;
-               dextra[1] = parameters[CbcParam::FAKEINCREMENT]->dblVal();
-               dextra[2] = parameters[CbcParam::FAKECUTOFF]->dblVal();
-               dextra[3] = parameters[CbcParam::DEXTRA3]->dblVal();
-               dextra[4] = parameters[CbcParam::DEXTRA4]->dblVal();
-               dextra[5] = parameters[CbcParam::DEXTRA5]->dblVal();
-               if (!dextra[3])
-                  dextra[3] = 0.97;
-               // OsiClpSolverInterface * newSolver =
-               fixVubs(model_, extra3, vubMode, generalMessageHandler,
-                       debugValues, dextra, extra);
-               // assert (!newSolver);
-            }
-            // Actually do heuristics
-            // may need to flip objective
-            bool needFlip = model_.solver()->getObjSense() < 0.0;
-            if (needFlip)
-               model_.flipModel();
-            // if we do then - fix priorities in
-            // clonebutmodel_.convertToDynamic();
-            bool objectsExist = model_.objects() != NULL;
-            if (!objectsExist) {
-               model_.findIntegers(false);
-               model_.convertToDynamic();
-            }
-            // set priorities etc
-            if (priorities) {
-               OsiObject **objects = model_.objects();
-               int numberObjects = model_.numberObjects();
-               for (int iObj = 0; iObj < numberObjects; iObj++) {
-                  CbcSimpleInteger *obj =
-                     dynamic_cast<CbcSimpleInteger *>(objects[iObj]);
-                  if (!obj)
-                     continue;
-                  int iColumn = obj->columnNumber();
-                  if (branchDirection) {
-                     obj->setPreferredWay(branchDirection[iColumn]);
-                  }
-                  if (priorities) {
-                     int iPriority = priorities[iColumn];
-                     if (iPriority > 0)
-                        obj->setPriority(iPriority);
-                  }
-                  if (pseudoUp && pseudoUp[iColumn]) {
-                     CbcSimpleIntegerPseudoCost *obj1a =
-                        dynamic_cast<CbcSimpleIntegerPseudoCost *>(
-                            objects[iObj]);
-                    assert(obj1a);
-                    if (pseudoDown[iColumn] > 0.0)
-                       obj1a->setDownPseudoCost(pseudoDown[iColumn]);
-                    if (pseudoUp[iColumn] > 0.0)
-                       obj1a->setUpPseudoCost(pseudoUp[iColumn]);
-                  }
-               }
-            }
-            doHeuristics(&model_, 2, parameters, parameters.noPrinting(),
-                         initialPumpTune);
-            if (!objectsExist) {
-               model_.deleteObjects(false);
-            }
-            if (needFlip)
-               model_.flipModel();
-            if (model_.bestSolution()) {
-               model_.setProblemStatus(1);
-               model_.setSecondaryStatus(6);
-               if (statusUserFunction_[0] && info) {
-                  double value = model_.getObjValue();
-                  char buf[300];
-                  int pos = 0;
-                  pos += sprintf(buf + pos, "feasible,");
-                  info->problemStatus = 0;
-                  info->objValue = value;
-                  pos += sprintf(buf + pos, " objective %.*g", ampl_obj_prec(),
-                                 value);
-                  sprintf(buf + pos, "\n0 iterations");
-                  free(info->primalSolution);
-                  int numberColumns = lpSolver->numberColumns();
-                  info->primalSolution = reinterpret_cast<double *>(
-                      malloc(numberColumns * sizeof(double)));
-                  CoinCopyN(model_.bestSolution(), numberColumns,
-                            info->primalSolution);
-                  int numberRows = lpSolver->numberRows();
-                  free(info->dualSolution);
-                  info->dualSolution = reinterpret_cast<double *>(
-                      malloc(numberRows * sizeof(double)));
-                  CoinZeroN(info->dualSolution, numberRows);
-                  CoinWarmStartBasis *basis = lpSolver->getBasis();
-                  free(info->rowStatus);
-                  info->rowStatus =
-                      reinterpret_cast<int *>(malloc(numberRows * sizeof(int)));
-                  free(info->columnStatus);
-                  info->columnStatus = reinterpret_cast<int *>(
-                      malloc(numberColumns * sizeof(int)));
-                  // Put basis in
-                  int i;
-                  // free,basic,ub,lb are 0,1,2,3
-                  for (i = 0; i < numberRows; i++) {
-                    CoinWarmStartBasis::Status status =
-                        basis->getArtifStatus(i);
-                    info->rowStatus[i] = status;
-                  }
-                  for (i = 0; i < numberColumns; i++) {
-                    CoinWarmStartBasis::Status status =
-                        basis->getStructStatus(i);
-                    info->columnStatus[i] = status;
-                  }
-                  // put buffer into info
-                  strcpy(info->buffer, buf);
-                  delete basis;
-               }
-            }
-            int returnCode = callBack(&model, 6);
-            if (returnCode) {
-               // exit if user wants
-               delete babModel_;
-               babModel_ = NULL;
-               return returnCode;
-            }
-          }break;
           case CbcParam::MIPLIB:
             // User can set options - main difference is lack of model and
             // CglPreProcess
@@ -3665,6 +3519,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               double *truncatedRhsLower = NULL;
               double *truncatedRhsUpper = NULL;
               int *newPriorities = NULL;
+	      if (model_.solver()->getObjSense()==-1.0) {
+		// If cutoff set flip
+		if (model_.getCutoff()<1.0e30) {
+		  double cutoff = model_.getCutoff();
+		  model_.setCutoff(-cutoff);
+		}
+	      }
               // Reduce printout
               if (logLevel <= 1) {
                 model_.solver()->setHintParam(OsiDoReducePrint, true,
@@ -4374,6 +4235,153 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   model_.setSolutionCount(1);
                 }
               }
+	      // Do heuristics if asked for
+	      //HEURSTART
+ 	      // Do heuristics if asked for
+	      if (parameters[CbcParam::DOHEURISTIC]->modeVal()) {
+#if CBC_USE_INITIAL_TIME == 1
+		if (model_.useElapsedTime())
+		  model_.setDblParam(CbcModel::CbcStartSeconds,
+				     CoinGetTimeOfDay());
+		else
+		  model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
+#endif
+		int vubMode = parameters[CbcParam::VUBTRY]->intVal();
+		if (vubMode != -1) {
+		  // look at vubs
+		  // extra1 is number of ints to leave free
+		  // Just ones which affect >= extra3
+		  int extra3 = parameters[CbcParam::EXTRA3]->intVal();
+		  /* 2 is cost above which to fix if feasible
+		     3 is fraction of integer variables fixed if
+		     relaxing (0.97) 4 is fraction of all variables fixed if
+		     relaxing (0.0)
+		  */
+		  double dextra[6];
+		  int extra[5];
+		  extra[1] = parameters[CbcParam::EXTRA1]->intVal();
+		  int exp1 = parameters[CbcParam::EXPERIMENT]->intVal();
+		  if (exp1 == 4 && extra[1] == -1)
+		    extra[1] = 999998;
+		  dextra[1] = parameters[CbcParam::FAKEINCREMENT]->dblVal();
+		  dextra[2] = parameters[CbcParam::FAKECUTOFF]->dblVal();
+		  dextra[3] = parameters[CbcParam::DEXTRA3]->dblVal();
+		  dextra[4] = parameters[CbcParam::DEXTRA4]->dblVal();
+		  dextra[5] = parameters[CbcParam::DEXTRA5]->dblVal();
+		  if (!dextra[3])
+		    dextra[3] = 0.97;
+		  // OsiClpSolverInterface * newSolver =
+		  fixVubs(model_, extra3, vubMode, generalMessageHandler,
+			  debugValues, dextra, extra);
+		  // assert (!newSolver);
+		}
+		// Actually do heuristics
+		// may need to flip objective
+		bool needFlip = model_.solver()->getObjSense() < 0.0;
+		if (needFlip)
+		  model_.flipModel();
+		// if we do then - fix priorities in
+		// clonebutmodel_.convertToDynamic();
+		bool objectsExist = model_.objects() != NULL;
+		if (!objectsExist) {
+		  model_.findIntegers(false);
+		  model_.convertToDynamic();
+		}
+		// set priorities etc
+		if (priorities) {
+		  OsiObject **objects = model_.objects();
+		  int numberObjects = model_.numberObjects();
+		  for (int iObj = 0; iObj < numberObjects; iObj++) {
+		    CbcSimpleInteger *obj =
+		      dynamic_cast<CbcSimpleInteger *>(objects[iObj]);
+		    if (!obj)
+		      continue;
+		    int iColumn = obj->columnNumber();
+		    if (branchDirection) {
+		      obj->setPreferredWay(branchDirection[iColumn]);
+		    }
+		    if (priorities) {
+		      int iPriority = priorities[iColumn];
+		      if (iPriority > 0)
+                        obj->setPriority(iPriority);
+		    }
+		    if (pseudoUp && pseudoUp[iColumn]) {
+		      CbcSimpleIntegerPseudoCost *obj1a =
+                        dynamic_cast<CbcSimpleIntegerPseudoCost *>(
+								   objects[iObj]);
+		      assert(obj1a);
+		      if (pseudoDown[iColumn] > 0.0)
+			obj1a->setDownPseudoCost(pseudoDown[iColumn]);
+		      if (pseudoUp[iColumn] > 0.0)
+			obj1a->setUpPseudoCost(pseudoUp[iColumn]);
+		    }
+		  }
+		}
+		doHeuristics(&model_, 2, parameters, parameters.noPrinting(),
+			     initialPumpTune);
+		if (!objectsExist) {
+		  model_.deleteObjects(false);
+		}
+		if (needFlip)
+		  model_.flipModel();
+		if (model_.bestSolution()) {
+		  model_.setProblemStatus(1);
+		  model_.setSecondaryStatus(6);
+		  if (statusUserFunction_[0] && info) {
+		    double value = model_.getObjValue();
+		    char buf[300];
+		    int pos = 0;
+		    pos += sprintf(buf + pos, "feasible,");
+		    info->problemStatus = 0;
+		    info->objValue = value;
+		    pos += sprintf(buf + pos, " objective %.*g", ampl_obj_prec(),
+				   value);
+		    sprintf(buf + pos, "\n0 iterations");
+		    free(info->primalSolution);
+		    int numberColumns = lpSolver->numberColumns();
+		    info->primalSolution = reinterpret_cast<double *>(
+								      malloc(numberColumns * sizeof(double)));
+		    CoinCopyN(model_.bestSolution(), numberColumns,
+			      info->primalSolution);
+		    int numberRows = lpSolver->numberRows();
+		    free(info->dualSolution);
+		    info->dualSolution = reinterpret_cast<double *>(
+								    malloc(numberRows * sizeof(double)));
+		    CoinZeroN(info->dualSolution, numberRows);
+		    CoinWarmStartBasis *basis = lpSolver->getBasis();
+		    free(info->rowStatus);
+		    info->rowStatus =
+                      reinterpret_cast<int *>(malloc(numberRows * sizeof(int)));
+		    free(info->columnStatus);
+		    info->columnStatus = reinterpret_cast<int *>(
+								 malloc(numberColumns * sizeof(int)));
+		    // Put basis in
+		    int i;
+		    // free,basic,ub,lb are 0,1,2,3
+		    for (i = 0; i < numberRows; i++) {
+		      CoinWarmStartBasis::Status status =
+                        basis->getArtifStatus(i);
+		      info->rowStatus[i] = status;
+		    }
+		    for (i = 0; i < numberColumns; i++) {
+		      CoinWarmStartBasis::Status status =
+                        basis->getStructStatus(i);
+		      info->columnStatus[i] = status;
+		    }
+		    // put buffer into info
+		    strcpy(info->buffer, buf);
+		    delete basis;
+		  }
+		}
+		int returnCode = callBack(&model, 6);
+		if (returnCode) {
+		  // exit if user wants
+		  delete babModel_;
+		  babModel_ = NULL;
+		  return returnCode;
+		}
+	      }
+	      //HEUREND
               bool hasTimePreproc = !babModel_->maximumSecondsReached();
               if (!hasTimePreproc)
                 preProcess = 0;
@@ -4915,12 +4923,32 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   const int *originalColumns = process.originalColumns();
                   int numberColumns =
                       CoinMin(solver2->getNumCols(), babModel_->getNumCols());
+#if 0		  
                   double *bestSolution = babModel_->bestSolution();
                   const double *oldBestSolution = model_.bestSolution();
                   for (int i = 0; i < numberColumns; i++) {
                     int jColumn = originalColumns[i];
                     bestSolution[i] = oldBestSolution[jColumn];
                   }
+#else
+		  int numberColumnsB = babModel_->getNumCols();
+                  int numberColumns2 =
+                      CoinMax(solver2->getNumCols(), numberColumnsB);
+                  double *bestSolution = new double [numberColumns2];
+		  memset(bestSolution,0,numberColumns2*sizeof(double));
+                  const double *oldBestSolution = model_.bestSolution();
+                  for (int i = 0; i < numberColumns; i++) {
+                    int jColumn = originalColumns[i];
+		    if (jColumn<numberColumnsB)
+		      bestSolution[i] = oldBestSolution[jColumn];
+                  }
+		  double obj=model_.getObjValue();
+                  double newCutoff =
+                      CoinMin(model_.getCutoff(), obj + 1.0e-4);
+		  babModel_->setBestSolution(bestSolution,numberColumns,1.0e10,false);
+                  babModel_->setCutoff(newCutoff);
+		  delete [] bestSolution;
+#endif
                 }
                 //solver2->resolve();
 #ifdef CBC_NAMES_FOR_COMPARE
@@ -6688,17 +6716,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		    /* But this is outside branchAndBound so needs to know 
 		       about direction */
 		    if (babModel_->getObjSense()==-1.0) {
-		      double increment = obj-babModel_->getCutoff();
-		      babModel_->setCutoff(-obj-increment);
+		      babModel_->setCutoff(-obj);
 		      babModel_->setMinimizationObjValue(-obj);
 		    }
-                    /* But this is outside branchAndBound so needs to know
-                       about direction */
-                    if (babModel_->getObjSense() == -1.0) {
-                      double increment = obj - babModel_->getCutoff();
-                      babModel_->setCutoff(-obj - increment);
-                      babModel_->setMinimizationObjValue(-obj);
-                    }
                     babModel_->clearContinuousSolver();
                     babModel_->passInSolverCharacteristics(NULL);
                     if (useSolution == 0)

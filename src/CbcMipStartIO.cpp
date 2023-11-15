@@ -302,10 +302,23 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
   if (extraActions)
     fixed = lp->getNumIntegers();
   if (!fixed) {
-    messHandler->message(CBC_GENERAL, messages)
-      << "Warning: MIPstart solution is not valid, column names do not match, ignoring it."
-      << CoinMessageEol;
-    goto TERMINATE;
+    // but might be SOS
+    if (model) {
+      int numberObjects = model->numberObjects();
+      for (int i = 0; i < numberObjects; i++) {
+	const CbcSOS *object = dynamic_cast< const CbcSOS * >(model->object(i));
+	if (object) {
+	  fixed=1;
+	  break; // SOS assume user is expert
+	}
+      }
+    }
+    if (!fixed) {
+      messHandler->message(CBC_GENERAL, messages)
+	<< "Warning: MIPstart solution is not valid, column names do not match, ignoring it."
+	<< CoinMessageEol;
+      goto TERMINATE;
+    }
   }
 
   if (notFound >= ((static_cast< double >(colNames.size())) * 0.5)) {

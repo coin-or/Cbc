@@ -8656,9 +8656,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   buffer << generator->cutGeneratorName() << " was tried "
                          << generator->numberTimesEntered() << " times and created "
                          << generator->numberCutsInTotal() + generator->numberColumnCuts()
-                         << " cuts of which "
-                         << generator->numberCutsActive()
-                         << " were active after adding rounds of cuts";
+                         << " cuts";
                   if (generator->timing()) {
                      buffer << " (" << generator->timeInCutGenerator() <<  " seconds)";
                      statistics_cut_time += generator->timeInCutGenerator();

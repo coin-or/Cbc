@@ -791,9 +791,7 @@ int doBaCParam(CoinParam &param)
     CbcCutGenerator *generator = babModel.cutGenerator(iGen);
     std::cout << generator->cutGeneratorName() << " was tried "
               << generator->numberTimesEntered() << " times and created "
-              << generator->numberCutsInTotal() << " cuts of which "
-              << generator->numberCutsActive()
-              << " were active after adding rounds of cuts";
+              << generator->numberCutsInTotal() << " cuts";
     if (generator->timing()) {
       std::cout << " ( " << generator->timeInCutGenerator() << " seconds)";
     }

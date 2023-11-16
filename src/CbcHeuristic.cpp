@@ -1520,11 +1520,10 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             for (int iGenerator = 0; iGenerator < model.numberCutGenerators(); iGenerator++) {
               CbcCutGenerator *generator = model.cutGenerator(iGenerator);
               sprintf(generalPrint,
-                "%s was tried %d times and created %d cuts of which %d were active after adding rounds of cuts (%.3f seconds)",
+                "%s was tried %d times and created %d cuts (%.3f seconds)",
                 generator->cutGeneratorName(),
                 generator->numberTimesEntered(),
                 generator->numberCutsInTotal() + generator->numberColumnCuts(),
-                generator->numberCutsActive(),
                 generator->timeInCutGenerator());
               CglStored *stored = dynamic_cast< CglStored * >(generator->generator());
               if (stored && !generator->numberCutsInTotal())
@@ -1753,6 +1752,12 @@ void CbcHeuristicNode::gutsOfConstructor(CbcModel &model)
 {
   //  CbcHeurDebugNodes(&model);
   CbcNode *node = model.currentNode();
+  if (!node) {
+    // at root
+    brObj_ = NULL;
+    numObjects_ = 0;
+    return;
+  }
   brObj_ = new CbcBranchingObject *[node->depth()];
   CbcNodeInfo *nodeInfo = node->nodeInfo();
   int cnt = 0;

@@ -5808,7 +5808,7 @@ int CbcMain1(int argc, const char *argv[],
                     std::vector< std::pair< std::string, double > > mipStart2;
                     for (int i = 0; (i < babModel_->solver()->getNumCols()); ++i) {
                       int iColumn = babModel_->originalColumns()[i];
-                      if (iColumn >= 0) {
+                      if (iColumn >= 0 && iColumn < model.getNumCols()) {
                         std::string cname = model_.solver()->getColName(iColumn);
                         colNames.push_back(cname);
                         babModel_->solver()->setColName(i, cname);

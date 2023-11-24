@@ -296,11 +296,11 @@ public:
     branch_ = branchingObject;
   }
   /// The node number
-  inline int nodeNumber() const
+  inline node_count nodeNumber() const
   {
     return nodeNumber_;
   }
-  inline void setNodeNumber(int node)
+  inline void setNodeNumber(node_count node)
   {
     nodeNumber_ = node;
   }
@@ -365,7 +365,7 @@ private:
   /// The number of objects unsatisfied at this node.
   int numberUnsatisfied_;
   /// The node number
-  int nodeNumber_;
+  node_count nodeNumber_;
   /** State
         1 - on tree
         2 - active

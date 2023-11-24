@@ -20,13 +20,6 @@
 #ifndef CBC_OTHER_SOLVER
 #include "OsiClpSolverInterface.hpp"
 #endif
-// ints for some counts - which should really be long ints
-#define CBC_FEW_NODE_COUNTS
-#ifndef CBC_FEW_NODE_COUNTS
-typedef long int node_count;
-#else
-typedef int node_count; 
-#endif
 class CbcCutGenerator;
 class CbcBaseModel;
 class OsiRowCut;
@@ -2518,7 +2511,7 @@ public:
   ///@name semi-private i.e. users should not use
   //@{
   /// Get how many Nodes it took to solve the problem.
-  int getNodeCount2() const
+  node_count getNodeCount2() const
   {
     return numberNodes2_;
   }
@@ -2782,7 +2775,7 @@ public:
     numberFathoms_ = 0;
   }
   /// Number of extra iterations
-  inline int numberExtraIterations() const
+  inline node_count numberExtraIterations() const
   {
     return numberExtraIterations_;
   }
@@ -2985,10 +2978,6 @@ private:
   int numberHeuristicSolutions_;
   /// Cumulative number of nodes
   node_count numberNodes_;
-#ifndef CBC_FEW_NODE_COUNTS
-  /// Cumulative number of branches
-  node_count numberBranches_;
-#endif
   /// Last node where a better feasible solution was found
   int lastNodeImprovingFeasSol_;
   /// Last time when a better feasible solution was found
@@ -3292,7 +3281,7 @@ private:
   int howOftenGlobalScan_;
   /** Number of times global cuts violated.  When global cut pool then this
         should be kept for each cut and type of cut */
-  int numberGlobalViolations_;
+  node_count numberGlobalViolations_;
   /// Number of extra iterations in fast lp
   node_count numberExtraIterations_;
   /// Number of extra nodes in fast lp
@@ -3351,7 +3340,7 @@ private:
   /// Whether event happened
   mutable bool eventHappened_;
   /// Number of long strong goes
-  int numberLongStrong_;
+  node_count numberLongStrong_;
   /// Number of old active cuts
   int numberOldActiveCuts_;
   /// Number of new cuts
@@ -3371,7 +3360,7 @@ private:
      */
   int strongStrategy_;
   /// Number of iterations in strong branching
-  int numberStrongIterations_;
+  node_count numberStrongIterations_;
   /** 0 - number times strong branching done, 1 - number fixed, 2 - number infeasible
         Second group of three is a snapshot at node [6] */
   int strongInfo_[7];

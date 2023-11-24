@@ -266,11 +266,11 @@ public:
     return owner_;
   }
   /// The node number
-  inline int nodeNumber() const
+  inline node_count nodeNumber() const
   {
     return nodeNumber_;
   }
-  inline void setNodeNumber(int node)
+  inline void setNodeNumber(node_count node)
   {
     nodeNumber_ = node;
   }
@@ -344,7 +344,7 @@ protected:
   int numberCuts_;
 
   /// The node number
-  int nodeNumber_;
+  node_count nodeNumber_;
 
   /// Array of pointers to cuts
   CbcCountRowCut **cuts_;

@@ -7825,14 +7825,10 @@ bool CbcModel::isProvenDualInfeasible() const {
 }
 // Node limit reached?
 bool CbcModel::isNodeLimitReached() const {
-#ifndef CBC_FEW_NODE_COUNTS
   if (intParam_[CbcMaxNumNode] == COIN_INT_MAX)
     return false;
   else
     return numberNodes_ >= intParam_[CbcMaxNumNode];
-#else
-  return numberNodes_ >= intParam_[CbcMaxNumNode];
-#endif
 }
 // Time limit reached?
 bool CbcModel::isSecondsLimitReached() const {

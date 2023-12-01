@@ -256,7 +256,7 @@ struct Cbc_Model {
   /* space to query conflict graph */
   size_t cg_space;
   size_t *cg_neighs;
-  bool *cg_iv;
+  char *cg_iv;
 
   // parameters
   enum LPMethod lp_method;
@@ -4069,8 +4069,8 @@ CGNeighbors CBC_LINKAGE CG_conflictingNodes(Cbc_Model *model, void *cgraph, size
     model->cg_space = Cbc_getNumCols(model)*2;
 
     model->cg_neighs  = (size_t *) xmalloc( sizeof(size_t)*model->cg_space );
-    model->cg_iv  = (bool *) xmalloc( sizeof(bool)*model->cg_space );
-    memset(model->cg_iv, 0, sizeof(bool)*model->cg_space);
+    model->cg_iv  = (char *) xmalloc( sizeof(char)*model->cg_space );
+    memset(model->cg_iv, 0, sizeof(char)*model->cg_space);
   }
 
   const CoinStaticConflictGraph *cg = (CoinStaticConflictGraph *)cgraph;

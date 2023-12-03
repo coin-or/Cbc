@@ -62,6 +62,7 @@ static Cbc_message us_english[] = {
   { CBC_START_SUB, 28, 1, "Starting sub-tree for %s - maximum nodes %d" },
   { CBC_END_SUB, 29, 1, "Ending sub-tree for %s" },
 #ifndef CBC_MANY_NODE_COUNTS
+  { CBC_THREAD_STATS, 30, 1, "%s%? %d used %d times,  waiting to start %g, %?%g cpu time,%? %g waiting for threads, %? %d locks, %g locked, %g waiting for locks" },
 #else
   { CBC_THREAD_STATS, 30, 1, "%s%? %d used %ld times,  waiting to start %g, %?%g cpu time,%? %g waiting for threads, %? %d locks, %g locked, %g waiting for locks" },
 #endif

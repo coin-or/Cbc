@@ -27,6 +27,13 @@ class CbcNode;
 class CbcSubProblem;
 class CbcGeneralBranchingObject;
 
+// ints for some counts - which should really be long ints
+#ifdef CBC_MANY_NODE_COUNTS
+typedef long int node_count;
+#else
+typedef int node_count;
+#endif
+
 //#############################################################################
 /** Information required to recreate the subproblem at this node
 

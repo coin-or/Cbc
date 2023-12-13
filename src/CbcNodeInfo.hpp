@@ -29,9 +29,9 @@ class CbcGeneralBranchingObject;
 
 // ints for some counts - which should really be long ints
 #ifdef CBC_MANY_NODE_COUNTS
-typedef long int node_count;
+typedef long int cbc_node_count;
 #else
-typedef int node_count;
+typedef int cbc_node_count;
 #endif
 
 //#############################################################################
@@ -273,11 +273,11 @@ public:
     return owner_;
   }
   /// The node number
-  inline node_count nodeNumber() const
+  inline cbc_node_count nodeNumber() const
   {
     return nodeNumber_;
   }
-  inline void setNodeNumber(node_count node)
+  inline void setNodeNumber(cbc_node_count node)
   {
     nodeNumber_ = node;
   }
@@ -351,7 +351,7 @@ protected:
   int numberCuts_;
 
   /// The node number
-  node_count nodeNumber_;
+  cbc_node_count nodeNumber_;
 
   /// Array of pointers to cuts
   CbcCountRowCut **cuts_;

@@ -54,11 +54,5 @@
 #endif
 
 #endif /* HAVE_CONFIG_H */
-// ints for some counts - which should really be long ints
-#ifdef CBC_MANY_NODE_COUNTS
-typedef long int node_count;
-#else
-typedef int node_count; 
-#endif
 
 #endif /*__CBCCONFIG_H__*/

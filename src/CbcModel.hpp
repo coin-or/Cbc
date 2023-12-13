@@ -1084,7 +1084,7 @@ public:
   /// Solution limit reached?
   bool isSolutionLimitReached() const;
   /// Get how many iterations it took to solve the problem.
-  inline node_count getIterationCount() const
+  inline cbc_node_count getIterationCount() const
   {
     return numberIterations_;
   }
@@ -1094,7 +1094,7 @@ public:
     numberIterations_ += value;
   }
   /// Get how many Nodes it took to solve the problem (including those in complete fathoming B&B inside CLP).
-  inline node_count getNodeCount() const
+  inline cbc_node_count getNodeCount() const
   {
     return numberNodes_;
   }
@@ -1104,12 +1104,12 @@ public:
     numberNodes_ += value;
   }
   /// Get how many Nodes were enumerated in complete fathoming B&B inside CLP
-  inline node_count getExtraNodeCount() const
+  inline cbc_node_count getExtraNodeCount() const
   {
     return numberExtraNodes_;
   }
   /// Get how many times complete fathoming B&B was done
-  inline node_count getFathomCount() const
+  inline cbc_node_count getFathomCount() const
   {
     return numberFathoms_;
   }
@@ -2511,7 +2511,7 @@ public:
   ///@name semi-private i.e. users should not use
   //@{
   /// Get how many Nodes it took to solve the problem.
-  node_count getNodeCount2() const
+  cbc_node_count getNodeCount2() const
   {
     return numberNodes2_;
   }
@@ -2701,12 +2701,12 @@ public:
     return &randomNumberGenerator_;
   }
   /// Set the number of iterations done in strong branching.
-  inline void setNumberStrongIterations(node_count number)
+  inline void setNumberStrongIterations(cbc_node_count number)
   {
     numberStrongIterations_ = number;
   }
   /// Get the number of iterations done in strong branching.
-  inline node_count numberStrongIterations() const
+  inline cbc_node_count numberStrongIterations() const
   {
     return numberStrongIterations_;
   }
@@ -2775,7 +2775,7 @@ public:
     numberFathoms_ = 0;
   }
   /// Number of extra iterations
-  inline node_count numberExtraIterations() const
+  inline cbc_node_count numberExtraIterations() const
   {
     return numberExtraIterations_;
   }
@@ -2977,7 +2977,7 @@ private:
   /// Number of heuristic solutions
   int numberHeuristicSolutions_;
   /// Cumulative number of nodes
-  node_count numberNodes_;
+  cbc_node_count numberNodes_;
   /// Last node where a better feasible solution was found
   int lastNodeImprovingFeasSol_;
   /// Last time when a better feasible solution was found
@@ -2985,11 +2985,11 @@ private:
   /** Cumulative number of nodes for statistics.
         Must fix to match up
     */
-  node_count numberNodes2_;
+  cbc_node_count numberNodes2_;
   /// Cumulative number of iterations
-  node_count numberIterations_;
+  cbc_node_count numberIterations_;
   /// Cumulative number of solves
-  node_count numberSolves_;
+  cbc_node_count numberSolves_;
   /// Status of problem - 0 finished, 1 stopped, 2 difficulties
   int status_;
   /** Secondary status of problem
@@ -3281,13 +3281,13 @@ private:
   int howOftenGlobalScan_;
   /** Number of times global cuts violated.  When global cut pool then this
         should be kept for each cut and type of cut */
-  node_count numberGlobalViolations_;
+  cbc_node_count numberGlobalViolations_;
   /// Number of extra iterations in fast lp
-  node_count numberExtraIterations_;
+  cbc_node_count numberExtraIterations_;
   /// Number of extra nodes in fast lp
-  node_count numberExtraNodes_;
+  cbc_node_count numberExtraNodes_;
   /// Number of times fast lp entered
-  node_count numberFathoms_;
+  cbc_node_count numberFathoms_;
   /** Value of objective at continuous
         (Well actually after initial round of cuts)
     */
@@ -3340,7 +3340,7 @@ private:
   /// Whether event happened
   mutable bool eventHappened_;
   /// Number of long strong goes
-  node_count numberLongStrong_;
+  cbc_node_count numberLongStrong_;
   /// Number of old active cuts
   int numberOldActiveCuts_;
   /// Number of new cuts
@@ -3360,7 +3360,7 @@ private:
      */
   int strongStrategy_;
   /// Number of iterations in strong branching
-  node_count numberStrongIterations_;
+  cbc_node_count numberStrongIterations_;
   /** 0 - number times strong branching done, 1 - number fixed, 2 - number infeasible
         Second group of three is a snapshot at node [6] */
   int strongInfo_[7];

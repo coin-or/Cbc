@@ -4222,7 +4222,7 @@ void CbcModel::branchAndBound(int doStatistics)
     delete obj;
   }
   int saveNumberSolves = numberSolves_;
-  node_count saveNumberIterations = numberIterations_;
+  cbc_node_count saveNumberIterations = numberIterations_;
   if ((fastNodeDepth_ >= 0 || (moreSpecialOptions_ & 33554432) != 0) &&
       /*!parentModel_*/ (specialOptions_ & 2048) == 0) {
     // add in a general depth object doClp
@@ -4985,8 +4985,8 @@ void CbcModel::branchAndBound(int doStatistics)
   CbcNode *delNode[MAX_DEL_NODE + 1];
   int nDeleteNode = 0;
   // For Printing etc when parallel
-  node_count lastEvery1000 = 0;
-  node_count lastPrintEvery = 0;
+  cbc_node_count lastEvery1000 = 0;
+  cbc_node_count lastPrintEvery = 0;
   int numberConsecutiveInfeasible = 0;
 #define PERTURB_IN_FATHOM
 #ifdef PERTURB_IN_FATHOM

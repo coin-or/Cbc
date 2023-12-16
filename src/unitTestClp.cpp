@@ -610,7 +610,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 	for (int i = 0; i < numberColumns; i++)
 	  array[i] = -array[i];
 	solver1.setObjective(array);
-	solver1.writeMps("maxVersion");
+	// keep accuracy
+	solver1.writeMpsNative("maxVersion.mps",NULL,NULL,2);
 	delete[] array;
 	fn = "maxVersion.mps";
       }

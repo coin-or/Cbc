@@ -1763,7 +1763,7 @@ static void Cbc_addAllSOS( Cbc_Model *model, CbcModel &cbcModel );
 static void Cbc_addMS( Cbc_Model *model, CbcModel &cbcModel  );
 
 int CBC_LINKAGE
-Cbc_solveLinearProgram(Cbc_Model *model) 
+Cbc_solveLinearProgram(Cbc_Model *model, enum LPReductions red_type)
 {
   Cbc_flush( model );
   OsiClpSolverInterface *solver = model->solver_;
@@ -1909,6 +1909,16 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   /* for integer or linear optimization starting with LP relaxation */
   ClpSolve clpOptions;
+  switch (red_type) {
+  case LPR_NoDualReds: {
+    ClpSolve options;
+    // set special option in Clp to disable dual reductions
+    clpOptions.setSpecialOption(5, 1);
+  } break;
+  case LPR_Default: {
+    break;
+  }
+  }
   char methodName[256] = "";
   switch (model->lp_method) {
     case LPM_Auto:

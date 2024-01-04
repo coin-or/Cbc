@@ -2211,11 +2211,11 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
 }
 
 int CBC_LINKAGE
-Cbc_solve(Cbc_Model *model)
+Cbc_solve(Cbc_Model *model, enum LPReductions red_type)
 {
   Cbc_cleanOptResults(model);
 
-  int res = Cbc_solveLinearProgram(model);
+  int res = Cbc_solveLinearProgram(model, red_type);
 
   if (res == 1)
     return 1;

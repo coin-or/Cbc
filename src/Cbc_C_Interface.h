@@ -1086,6 +1086,12 @@ Cbc_setCutoff(Cbc_Model *model, double cutoff);
 CBCLIB_EXPORT void CBC_LINKAGE
 Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm );
 
+/**
+ * sets flag to disable dual reductions when solving the LP
+*/
+CBCLIB_EXPORT void CBC_LINKAGE
+Cbc_disableDualReds(Cbc_Model *model, enum LPReductions red);
+
 /** Returns a pointer to the OsiClpSolverInterface object 
  * containing the problem
  */
@@ -1149,7 +1155,6 @@ CBCLIB_EXPORT void CBC_LINKAGE Cbc_addProgrCallback(
 /** @brief Solves the model with CBC
    *
    * @param model problem object
-   * @param red_type presolve reduction type to be used by Clp.
    * @return execution status, for MIPs: 
    *   -1 before branchAndBound 
    *   0  finished - check isProvenOptimal or isProvenInfeasible to see if solution found (or check value of best solution) 
@@ -1158,12 +1163,11 @@ CBCLIB_EXPORT void CBC_LINKAGE Cbc_addProgrCallback(
    *   5  event user programmed event occurred
    **/
 CBCLIB_EXPORT int CBC_LINKAGE
-Cbc_solve(Cbc_Model *model, enum LPReductions red_type = LPR_Default);
+Cbc_solve(Cbc_Model *model);
 
 /** @brief Solves only the linear programming relaxation
  *
  * @param model problem object
- * @param reduction presolve reduction type
  * @return execution status
  *   0  optimal
  *   1  incomplete search (stopped on time, iterations)
@@ -1171,7 +1175,7 @@ Cbc_solve(Cbc_Model *model, enum LPReductions red_type = LPR_Default);
  *   3  unbounded
  **/
 CBCLIB_EXPORT int CBC_LINKAGE
-Cbc_solveLinearProgram(Cbc_Model *model, enum LPReductions red_type);
+Cbc_solveLinearProgram(Cbc_Model *model);
 
 
 

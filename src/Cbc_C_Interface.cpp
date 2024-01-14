@@ -4750,8 +4750,18 @@ Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm ) {
   model->lp_method = lpm;
 }
 
+/** gets the dual reductions to be used when solving the LP
+ */
+double CBC_LINKAGE
+Cbc_getDualReductionsType(Cbc_Model *model){
+  return model->red_type;
+}
+
+/** sets the dual reductions to be used when solving the LP
+ */
+
 void CBC_LINKAGE
-Cbc_disableDualReds(Cbc_Model *model, enum LPReductions red) {
+Cbc_setDualReductionsType(Cbc_Model *model, enum LPReductions red) {
   model->red_type = red;
 }
 

@@ -1087,10 +1087,16 @@ CBCLIB_EXPORT void CBC_LINKAGE
 Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm );
 
 /**
- * sets flag to disable dual reductions when solving the LP
+ * gets type of dual reductions to use when solving the LP
+*/
+CBCLIB_EXPORT double CBC_LINKAGE
+Cbc_getDualReductionsType(Cbc_Model *model);
+
+/**
+ * sets whether not to use dual reductions when solving the LP
 */
 CBCLIB_EXPORT void CBC_LINKAGE
-Cbc_disableDualReds(Cbc_Model *model, enum LPReductions red);
+Cbc_setDualReductionsType(Cbc_Model *model, enum LPReductions red);
 
 /** Returns a pointer to the OsiClpSolverInterface object 
  * containing the problem

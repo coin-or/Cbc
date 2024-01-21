@@ -1653,7 +1653,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		     if (nchar<2)
 		       continue;
 		     if (line[0]!='-') {
-		       memmove(line+1,line,nchar+1);
+		       for (int i=nchar;i>=0;i--)
+			 line[i+1] = line[i];
+		       //memmove(line+1,line,nchar+1);
 		       nchar++;
 		       line[0]='-';
 		     }

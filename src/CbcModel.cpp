@@ -6827,6 +6827,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   strongInfo_[5] = rhs.strongInfo_[5];
   strongInfo_[6] = rhs.strongInfo_[6];
   keepNamesPreproc = rhs.keepNamesPreproc;
+  mipStart_ = rhs.mipStart_;
   solverCharacteristics_ = NULL;
   if (rhs.emptyWarmStart_)
     emptyWarmStart_ = rhs.emptyWarmStart_->clone();

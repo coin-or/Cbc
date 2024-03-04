@@ -618,32 +618,41 @@ int CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut &cut, int whichType)
             else
               break;
           } else {
+	    // managed to get an error== when -O3
+#if 0
             found = j1;
             break;
+#else
+	    // Somehow managed to happen with -O3
+	    // weaken cut (more reliable than deleting)
+	    double xLb = temp[i]->lb();
+	    double xUb = temp[i]->ub();
+	    if (xUb<1.0e10)
+	      temp[i]->setUb(xUb + 1.0+fabs(xUb*1.0e-8));
+	    else
+	      temp[i]->setLb(xLb - 1.0+fabs(xLb*1.0e-8));
+	    ipos = hashCut(*temp[i], hashSize);
+#endif
           }
         } else {
           break;
         }
       }
-      if (found < 0) {
-        assert(hash_[ipos].next == -1);
-        if (ipos == jpos && hash_[ipos].index == -1) {
-          // first
-          hash_[ipos].index = i;
-        } else {
-          // find next space
-          while (true) {
-            ++lastHash_;
-            assert(lastHash_ < hashSize);
-            if (hash_[lastHash_].index == -1)
-              break;
-          }
-          hash_[ipos].next = lastHash_;
-          hash_[lastHash_].index = i;
-        }
+      assert (found < 0);
+      assert(hash_[ipos].next == -1);
+      if (ipos == jpos && hash_[ipos].index == -1) {
+	// first
+	hash_[ipos].index = i;
       } else {
-	printf("bad duplicate\n");
-	abort();
+	// find next space
+	while (true) {
+	  ++lastHash_;
+	  assert(lastHash_ < hashSize);
+	  if (hash_[lastHash_].index == -1)
+	    break;
+	}
+	hash_[ipos].next = lastHash_;
+	hash_[lastHash_].index = i;
       }
     }
     delete[] rowCut_;

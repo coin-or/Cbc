@@ -2717,7 +2717,9 @@ int CbcRounding::solution(double &solutionValue,
           move = -1.0;
         else if (cost < 0.0)
           move = 1.0;
-        while (move) {
+	int times=20;
+        while (move && times) {
+	  times--;
           bool good = true;
           double newValue = newSolution[iColumn] + move;
           if (newValue < lower[iColumn] - useTolerance || newValue > upper[iColumn] + useTolerance) {

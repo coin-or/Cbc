@@ -29,17 +29,17 @@ jobs:
             download_requirements: brew install metis bash
           - os: macos-13
             build_static: false
-            flags: CC=gcc-13 CXX=g++-13 OSX=13
+            flags: CC=gcc-13 CXX=g++-13 OSX=13 ADD_CXXFLAGS=-Wl,-ld_classic
             download_requirements: brew install metis bash
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{ github.event.repository.name }}
       - name: Install required packages from package manager
         run: ${{ matrix.download_requirements }}
       - name: Checkout coinbrew
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: coin-or/coinbrew
           path: coinbrew
@@ -66,7 +66,7 @@ jobs:
           cp ${{ github.event.repository.name }}/LICENSE dist/
           tar -czvf release.tar.gz -C dist .
       - name: Checkout package name generation script
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: coin-or-tools/platform-analysis-tools
           path: tools
@@ -81,9 +81,9 @@ jobs:
           echo "platform_string=${platform_str}" >> $GITHUB_ENV
       - name: Upload Artifact
         if: ${{ github.event_name == 'pull_request'}}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-${{ github.head_ref }}-${{ env.platform_string }}.tar.gz
+          name: ${{ github.event.repository.name }}-${{ env.platform_string }}.tar.gz
           path: release.tar.gz
           if-no-files-found: error
       - name: Upload package to release

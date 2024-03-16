@@ -90,14 +90,11 @@ jobs:
           copy ${{ github.event.repository.name }}\AUTHORS.* dist\.
           copy ${{ github.event.repository.name }}\LICENSE.* dist\.
           mkdir dist\bin
-          copy ${{ github.event.repository.name }}\MSVisualStudio\v17\x64\Release\*.exe dist\bin\.
-          mkdir dist\include\coin
-          copy ${{ github.event.repository.name }}\src\*.h dist\include\coin\.
-          copy ${{ github.event.repository.name }}\src\*.hpp dist\include\coin\.
-          mkdir dist\lib
-          copy ${{ github.event.repository.name }}\MSVisualStudio\v17\x64\Release\*.lib dist\lib\.
-          mkdir dist\share\coin\Data
-          xcopy Data dist\share\coin\Data\. /s /e
+          copy ${{ github.event.repository.name }}\MSVisualStudio\v17\x64\Release\*.exe dist\bin\
+          mkdir dist\share
+          if exist .\Data\Sample xcopy .\Data\Sample dist\share\coin-or-sample /i
+          if exist .\Data\Netlib xcopy .\Data\Netlib dist\share\coin-or-netlib /i
+          if exist .\Data\Miplib3 xcopy .\Data\Miplib3 dist\share\coin-or-miplib3 /i
       - name: Build project using coinbrew
         if: ${{ matrix.arch != 'msvs' }}
         run: |

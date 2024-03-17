@@ -1083,6 +1083,96 @@ void testTSPUlysses22( char lazy ) {
     Cbc_deleteModel(m);
 }
 
+void testDualReductionsType( enum LPReductions red ){
+    Cbc_Model *model = Cbc_newModel();
+
+    /* Simple knapsack problem
+       Maximize  5x[1] + 3x[2] + 2x[3] + 7x[4] + 4x[5]
+       s.t.      2x[1] + 8x[2] + 4x[3] + 2x[4] + 5x[5] <= 10
+       All x binary
+       */
+    
+    CoinBigIndex start[] = {0, 1, 2, 3, 4, 5, 6};
+    int rowindex[] = {0, 0, 0, 0, 0};
+    double value[] = {2, 8, 4, 2, 5};
+    double collb[] = {0,0,0,0,0};
+    double colub[] = {1,1,1,1,1};
+    double obj[] = {5, 3, 2, 7, 4};
+    double feasible[] = {1,1,0,0,0};
+    double rowlb[] = {-INFINITY};
+    double rowub[] = {10};
+    const double *sol;
+    const char* setname = "test model";
+    char *getname = malloc(20);
+    int i;
+
+    printf("Interface reports Cbc version %s\n", Cbc_getVersion());
+
+    Cbc_loadProblem(model, 5, 1, start, rowindex, value, collb, colub, obj, rowlb, rowub);
+
+    Cbc_setColName(model, 2, "var2");
+    Cbc_setRowName(model, 0, "constr0");
+
+
+    assert(Cbc_getNumCols(model) == 5);
+    assert(Cbc_getNumRows(model) == 1);
+
+    for (i = 0; i < 5; i++) {
+        Cbc_setInteger(model, i);
+        assert(Cbc_isInteger(model,i));
+    }
+
+    Cbc_setObjSense(model, -1);
+    assert(Cbc_getObjSense(model) == -1);
+
+    Cbc_setProblemName(model, setname);
+
+    Cbc_registerCallBack(model, test_callback);
+
+    Cbc_setInitialSolution(model, feasible);
+
+    Cbc_setDualReductionsType(model, red);
+
+    assert(Cbc_getDualReductionsType(model) == red);
+
+    Cbc_solve(model);
+
+    assert(Cbc_isProvenOptimal(model));
+    assert(!Cbc_isAbandoned(model));
+    assert(!Cbc_isProvenInfeasible(model));
+    assert(!Cbc_isContinuousUnbounded(model));
+    assert(!Cbc_isNodeLimitReached(model));
+    assert(!Cbc_isSecondsLimitReached(model));
+    assert(!Cbc_isSolutionLimitReached(model));
+    assert(fabs(Cbc_getObjValue(model)- (16.0)) < 1e-6);
+    assert(fabs(Cbc_getBestPossibleObjValue(model)- 16.0) < 1e-6);
+
+    assert(callback_called == 1);
+    
+    sol = Cbc_getColSolution(model);
+    
+    assert(fabs(sol[0] - 1.0) < 1e-6);
+    assert(fabs(sol[1] - 0.0) < 1e-6);
+    assert(fabs(sol[2] - 0.0) < 1e-6);
+    assert(fabs(sol[3] - 1.0) < 1e-6);
+    assert(fabs(sol[4] - 1.0) < 1e-6);
+
+    Cbc_problemName(model, 20, getname);
+    i = strcmp(getname,setname);
+    assert( (i == 0) );
+
+    Cbc_getColName(model, 2, getname, 20);
+    i = strcmp(getname, "var2");
+    assert( (i == 0) );
+    Cbc_getRowName(model, 0, getname, 20);
+    i = strcmp(getname, "constr0");
+    assert( (i == 0) );
+    assert( Cbc_maxNameLength(model) >= 7 );
+    
+    Cbc_deleteModel(model);
+    free(getname);
+}
+
 int main() {
     printf("\nStarting C Interface test.\n\n");
     char buildInfo[1024];
@@ -1114,6 +1204,10 @@ int main() {
      * lazy constraints */
     testTSPUlysses22( 1 );
     testTSPUlysses22( 0 );
+
+    printf("Dual reduction type test\n");
+    testDualReductionsType(LPR_Default);
+    testDualReductionsType(LPR_NoDualReds);
 
     return 0;
 }

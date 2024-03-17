@@ -261,6 +261,7 @@ struct Cbc_Model {
   // parameters
   enum LPMethod lp_method;
   enum DualPivot dualp;
+  enum LPReductions red_type = LPR_Default;
 
   // lazy constraints
   CglStored *lazyConstrs;
@@ -1763,7 +1764,7 @@ static void Cbc_addAllSOS( Cbc_Model *model, CbcModel &cbcModel );
 static void Cbc_addMS( Cbc_Model *model, CbcModel &cbcModel  );
 
 int CBC_LINKAGE
-Cbc_solveLinearProgram(Cbc_Model *model) 
+Cbc_solveLinearProgram(Cbc_Model *model)
 {
   Cbc_flush( model );
   OsiClpSolverInterface *solver = model->solver_;
@@ -1909,6 +1910,10 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   /* for integer or linear optimization starting with LP relaxation */
   ClpSolve clpOptions;
+  if (model->red_type == LPR_NoDualReds){
+    // set special option in Clp to disable dual reductions
+    clpOptions.setSpecialOption(5, 1);
+  }
   char methodName[256] = "";
   switch (model->lp_method) {
     case LPM_Auto:
@@ -4743,6 +4748,21 @@ Cbc_setCutoff(Cbc_Model* model, double cutoff)
 void CBC_LINKAGE
 Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm ) {
   model->lp_method = lpm;
+}
+
+/** gets the dual reductions to be used when solving the LP
+ */
+double CBC_LINKAGE
+Cbc_getDualReductionsType(Cbc_Model *model){
+  return model->red_type;
+}
+
+/** sets the dual reductions to be used when solving the LP
+ */
+
+void CBC_LINKAGE
+Cbc_setDualReductionsType(Cbc_Model *model, enum LPReductions red) {
+  model->red_type = red;
 }
 
 

@@ -53,6 +53,13 @@ enum LPMethod {
   LPM_BarrierNoCross = 4   /*! Barrier algorithm, not to be followed by crossover */
 };
 
+/*! Whether specific presolve reductions should be disabled
+ * */
+enum LPReductions {
+  LPR_Default = 0, /*! Solver will use default presolve transformations */
+  LPR_NoDualReds = 1 /*! Dual reduction transformation will be disabled */
+};
+
 /*! Selects the pivot selection strategy to be used
  * in the dual simplex algorithm.
  * */
@@ -1079,6 +1086,18 @@ Cbc_setCutoff(Cbc_Model *model, double cutoff);
 CBCLIB_EXPORT void CBC_LINKAGE
 Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm );
 
+/**
+ * gets type of dual reductions to use when solving the LP
+*/
+CBCLIB_EXPORT double CBC_LINKAGE
+Cbc_getDualReductionsType(Cbc_Model *model);
+
+/**
+ * sets whether not to use dual reductions when solving the LP
+*/
+CBCLIB_EXPORT void CBC_LINKAGE
+Cbc_setDualReductionsType(Cbc_Model *model, enum LPReductions red);
+
 /** Returns a pointer to the OsiClpSolverInterface object 
  * containing the problem
  */
@@ -1153,16 +1172,17 @@ CBCLIB_EXPORT int CBC_LINKAGE
 Cbc_solve(Cbc_Model *model);
 
 /** @brief Solves only the linear programming relaxation
-  *
-  * @param model problem object
-  * @return execution status
-  *   0  optimal 
-  *   1  incomplete search (stopped on time, iterations)
-  *   2  infeasible
-  *   3  unbounded
-  **/
+ *
+ * @param model problem object
+ * @return execution status
+ *   0  optimal
+ *   1  incomplete search (stopped on time, iterations)
+ *   2  infeasible
+ *   3  unbounded
+ **/
 CBCLIB_EXPORT int CBC_LINKAGE
 Cbc_solveLinearProgram(Cbc_Model *model);
+
 
 
 /** @brief This is a pre-processing that tries to 

@@ -1916,6 +1916,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   model->lastOptimization = ContinuousOptimization;
   solver->initialSolve();
+  fflush(stdout); fflush(stderr);
 
   if (solver->isProvenOptimal()) {
     model->obj_value = solver->getObjValue();

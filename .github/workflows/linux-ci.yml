@@ -31,6 +31,11 @@ jobs:
             build_static: false
             flags: CC=gcc-13 CXX=g++-13 OSX=13 ADD_CXXFLAGS=-Wl,-ld_classic
             download_requirements: brew install metis bash
+          - os: macos-14
+            arch: arm64
+            build_static: false
+            flags: CC=gcc-13 CXX=g++-13 OSX=14 ADD_CXXFLAGS=-Wl,-ld_classic
+            download_requirements: brew install metis bash
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -70,7 +75,7 @@ jobs:
         with:
           repository: coin-or-tools/platform-analysis-tools
           path: tools
-          ref: 0.0.1
+          ref: 0.0.2
       - name: Retrieve platform info
         run: |
           python3 -m venv venv
@@ -80,7 +85,6 @@ jobs:
           platform_str=`python3 tools/hsf_get_platform.py -b $buildtype`
           echo "platform_string=${platform_str}" >> $GITHUB_ENV
       - name: Upload Artifact
-        if: ${{ github.event_name == 'pull_request'}}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.repository.name }}-${{ env.platform_string }}.tar.gz

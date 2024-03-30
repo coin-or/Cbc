@@ -75,7 +75,7 @@ jobs:
         with:
           repository: coin-or-tools/platform-analysis-tools
           path: tools
-          ref: 0.0.1
+          ref: 0.0.2
       - name: Retrieve platform info
         run: |
           python3 -m venv venv

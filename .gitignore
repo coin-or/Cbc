@@ -1,9 +1,25 @@
-*~
-aclocal*
+aclocal.m4*
+aclocal.m4.orig*
 autom4te*
-Cbc/*
+*~
+Makefile
+config.cache
+config.log
+config.status
+libtool
+dist
+
+# Ignore VS files
+*.suo
+*.db
+*.bak
+*.user
+**/.vs/
+**/MSVisualStudio/**/Release/
+**/MSVisualStudio/**/ReleaseParallel/
+**/MSVisualStudio/**/Debug/
 
 # Ignore files created during unit tests
-/MSVisualStudio/v17/*.mps
-/MSVisualStudio/v17/*.lp
-/MSVisualStudio/v17/*.out
+**/MSVisualStudio/**/*.mps
+**/MSVisualStudio/**/*.lp
+**/MSVisualStudio/**/*.out

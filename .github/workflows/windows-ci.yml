@@ -24,7 +24,6 @@ jobs:
           { os: windows-2019, arch: x86_64, msystem: mingw64, debug: false, suffix: "" },
           { os: windows-2019, arch: msvc, msystem: mingw64, debug: false, suffix: "-md" },
           { os: windows-2022, arch: msvc, msystem: mingw64, debug: false, suffix: "-md" },
-          { os: windows-2022, arch: msvs, msystem: mingw64, debug: false, suffix: "" },
         ]
     steps:
       - name: Checkout source
@@ -39,11 +38,8 @@ jobs:
       - name: Set up msvc
         if: ${{ matrix.arch == 'msvc' }}
         uses: ilammy/msvc-dev-cmd@v1
-      - name: Set up for msvs
-        if: ${{ matrix.arch == 'msvs' }}
-        uses: microsoft/setup-msbuild@v2
       - name: Set correct host flag and install requirements
-        if: ${{ matrix.arch != 'msvc' && matrix.arch != 'msvs' }}
+        if: ${{ matrix.arch != 'msvc' }}
         run: |
           echo "host_flag=--host=${{ matrix.arch }}-w64-mingw32" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           C:\msys64\usr\bin\pacman -S mingw-w64-${{ matrix.arch }}-lapack mingw-w64-${{ matrix.arch }}-winpthreads-git mingw-w64-${{ matrix.arch }}-readline mingw-w64-${{ matrix.arch }}-suitesparse mingw-w64-${{ matrix.arch }}-metis --noconfirm
@@ -57,44 +53,7 @@ jobs:
             zip
           path-type: inherit
           msystem: ${{ matrix.msystem }}
-      - name: Fetch project for msvs
-        if: ${{ matrix.arch == 'msvs' }}
-        run: |
-          ADD_ARGS=()
-          ADD_ARGS+=( --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack' )
-          ./coinbrew/coinbrew fetch ${{ github.event.repository.name }} --skip-update "${ADD_ARGS[@]}"
-          echo "##################################################"
-          echo "### Extracting Netlib and Miplib3 if available"
-          if [ -d "./Data/Netlib/" ]; then gunzip ./Data/Netlib/*.gz; fi
-          if [ -d "./Data/Miplib3/" ]; then gunzip ./Data/Miplib3/*.gz; fi
-          echo "##################################################"       
-        shell: msys2 {0}
-      - name: Build project for msvs
-        if: ${{ matrix.arch == 'msvs' }}
-        shell: cmd
-        run: |
-          msbuild ${{ github.event.repository.name }}\MSVisualStudio\v17\${{ github.event.repository.name }}.sln /p:Configuration=Release /p:Platform=x64 /m
-      - name: Test project for msvs
-        if: ${{ matrix.arch == 'msvs' }}
-        shell: cmd
-        run: |
-          .\${{ github.event.repository.name }}\MSVisualStudio\v17\${{ github.event.repository.name }}Test.cmd .\${{ github.event.repository.name }}\MSVisualStudio\v17\x64\Release .\Data\Sample .\Data\Netlib .\Data\Miplib3
-      - name: Install project for msvs
-        if: ${{ matrix.arch == 'msvs' }}
-        shell: cmd
-        run: |
-          mkdir dist
-          copy ${{ github.event.repository.name }}\README.* dist\.
-          copy ${{ github.event.repository.name }}\AUTHORS.* dist\.
-          copy ${{ github.event.repository.name }}\LICENSE.* dist\.
-          mkdir dist\bin
-          copy ${{ github.event.repository.name }}\MSVisualStudio\v17\x64\Release\*.exe dist\bin\
-          mkdir dist\share
-          if exist .\Data\Sample xcopy .\Data\Sample dist\share\coin-or-sample /i
-          if exist .\Data\Netlib xcopy .\Data\Netlib dist\share\coin-or-netlib /i
-          if exist .\Data\Miplib3 xcopy .\Data\Miplib3 dist\share\coin-or-miplib3 /i
-      - name: Build project using coinbrew
-        if: ${{ matrix.arch != 'msvs' }}
+      - name: Build project
         run: |
           ADD_ARGS=()
           ADD_ARGS+=( --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack' )

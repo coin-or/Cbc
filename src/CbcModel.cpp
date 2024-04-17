@@ -6415,7 +6415,7 @@ CbcModel::CbcModel()
       numberStrong_(5), numberBeforeTrust_(10), numberPenalties_(20),
       stopNumberIterations_(-1), penaltyScaleFactor_(3.0),
       numberAnalyzeIterations_(0), analyzeResults_(NULL),
-      numberInfeasibleNodes_(0), problemType_(0), printFrequency_(1),
+      numberInfeasibleNodes_(0), problemType_(0), printFrequency_(100),
       secsPrintFrequency_(1), lastSecPrintProgress_(0.0),
       numberCutGenerators_(0), generator_(NULL), virginGenerator_(NULL),
       numberHeuristics_(0), heuristic_(NULL), lastHeuristic_(NULL),
@@ -6518,7 +6518,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
       presolve_(0), numberStrong_(5), numberBeforeTrust_(10),
       numberPenalties_(20), stopNumberIterations_(-1), penaltyScaleFactor_(3.0),
       numberAnalyzeIterations_(0), analyzeResults_(NULL),
-      numberInfeasibleNodes_(0), problemType_(0), printFrequency_(1),
+      numberInfeasibleNodes_(0), problemType_(0), printFrequency_(100),
       secsPrintFrequency_(1), lastSecPrintProgress_(0.0),
       numberCutGenerators_(0), generator_(NULL), virginGenerator_(NULL),
       numberHeuristics_(0), heuristic_(NULL), lastHeuristic_(NULL),
@@ -19792,7 +19792,7 @@ bool CbcModel::stoppingCriterionReached() const {
 // Return true if maximum time reached
 bool CbcModel::maximumSecondsReached() const {
   double maxSeconds = getMaximumSeconds();
-  if (maxSeconds>1.0e10  &&
+  if (maxSeconds>0.99e8  &&
       dblParam_[CbcMaxSecondsNotImproving]>1.0e10)
     return false;
   double totalTime = getCurrentSeconds();

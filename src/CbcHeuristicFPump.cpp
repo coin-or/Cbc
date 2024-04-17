@@ -572,6 +572,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       if (clpSolver) {
         // better to clean up using primal?
         ClpSimplex *lp = clpSolver->getModelPtr();
+	// try and re-use factorization
+	clpSolver->setSpecialOptions(clpSolver->specialOptions()|8);
         int options = lp->specialOptions();
         lp->setSpecialOptions(options | 8192);
         //lp->setSpecialOptions(options|0x01000000);

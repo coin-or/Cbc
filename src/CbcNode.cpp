@@ -527,6 +527,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
     depth_ = 0;
   delete branch_;
   branch_ = NULL;
+  double maxTime = model->getDblParam(CbcModel::CbcMaximumSeconds);
   OsiSolverInterface *solver = model->solver();
   // Mark variables which need to be clean
   char *cleanVariables = NULL;
@@ -929,7 +930,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
     //if (!model->parentModel())
     //solver->writeMps("query");
     // If we have hit max time don't do strong branching
-    bool hitMaxTime = (model->getCurrentSeconds() > model->getDblParam(CbcModel::CbcMaximumSeconds));
+    bool hitMaxTime = maxTime>1.0e18 ? false :(model->getCurrentSeconds() > maxTime);
     // also give up if we are looping round too much
     if (hitMaxTime || numberPassesLeft <= 0)
       numberStrong = 0;
@@ -1405,7 +1406,7 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
             break;
           }
         }
-        bool hitMaxTime = (model->getCurrentSeconds() > model->getDblParam(CbcModel::CbcMaximumSeconds));
+	bool hitMaxTime = maxTime>1.0e18 ? false :(model->getCurrentSeconds() > maxTime);
         if (hitMaxTime) {
           numberStrong = i + 1;
           break;
@@ -1657,6 +1658,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     depth_ = lastNode->depth_ + 1;
   else
     depth_ = 0;
+  double maxTime = model->getDblParam(CbcModel::CbcMaximumSeconds);
+  bool hitMaxTime = maxTime>1.0e18 ? false :(model->getCurrentSeconds() > maxTime);
   const double *hotstartSolution = model->hotstartSolution();
   const int *hotstartPriorities = model->hotstartPriorities();
   // Go to other choose if hot start
@@ -2830,7 +2833,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     if(bestChoice < 0)
       bestChoice = 0;
     // If we have hit max time don't do strong branching
-    bool hitMaxTime = (model->getCurrentSeconds() > model->getDblParam(CbcModel::CbcMaximumSeconds));
     // also give up if we are looping round too much
     if (hitMaxTime || numberPassesLeft <= 0 || useShadow == 2) {
       int iObject = whichObject[bestChoice];
@@ -4421,7 +4423,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           }
         }
         // Check max time
-        hitMaxTime = (model->getCurrentSeconds() > model->getDblParam(CbcModel::CbcMaximumSeconds));
         if (hitMaxTime) {
           // make sure rest are fast
           for (int jDo = iDo + 1; jDo < numberToDo; jDo++) {

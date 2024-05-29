@@ -1009,6 +1009,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   parameters[CbcParam::ODDWHEELCUTS]->setVal("ifmove");
   parameters[CbcParam::CLQSTRENGTHENING]->setVal("after");
   parameters[CbcParam::USECGRAPH]->setVal("on");
+  parameters[CbcParam::AGGREGATEMIXED]->setVal(1);
   parameters[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
   parameters[CbcParam::BKMAXCALLS]->setVal(1000);
   parameters[CbcParam::BKCLQEXTMETHOD]->setVal(4);
@@ -1446,6 +1447,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     CglMixedIntegerRounding2 mixedGen(1, true, 1);
     // set default action (0=off,1=on,2=root,3=ifmove)
     int mixedMode = CbcParameters::CGIfMove;
+    int mixedRoundStrategy = 1; 
     assert (parameters[CbcParam::MIRCUTS]->modeVal()==mixedMode);
     mixedGen.setDoPreproc(1); // safer (and better)
 
@@ -2200,6 +2202,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               } else if (cbcParamCode == CbcParam::FPUMPTUNE || cbcParamCode == CbcParam::FPUMPTUNE2 ||
                          cbcParamCode == CbcParam::FPUMPITS) {
                  pumpChanged = true;
+              } else if (cbcParamCode == CbcParam::AGGREGATEMIXED) {
+                 mixedRoundStrategy = iValue;
               } else if (cbcParamCode == CbcParam::BKPIVOTINGSTRATEGY) {
                  bkPivotingStrategy = iValue;
               } else if (cbcParamCode == CbcParam::BKMAXCALLS) {
@@ -6157,6 +6161,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               }
  	      assert (parameters[CbcParam::MIRCUTS]->modeVal()==mixedMode);
               if (mixedMode) {
+		if (mixedRoundStrategy != 1)
+		  mixedGen.setMAXAGGR_(mixedRoundStrategy);
                 babModel_->addCutGenerator(&mixedGen, translate[mixedMode],
                                            "MixedIntegerRounding2");
                 accuracyFlag[numberGenerators] = 2;

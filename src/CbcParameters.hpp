@@ -1277,6 +1277,14 @@ public:
 
   //@{
 
+  /*! \brief Get MixedRoundStrategy setting */
+  inline int getMixedRoundStrategy() { return mixedRoundStrategy_; }
+
+  /*! \brief Set MixedRoundStrategy setting */
+  inline void setMixedRoundStrategy(int mixedRoundStrategy) {
+    mixedRoundStrategy_ = mixedRoundStrategy;
+  }
+
   /*! \brief Get BkPivotStrategy setting */
   inline int getBkPivotStrategy() { return bkPivotStrategy_; }
 
@@ -2420,6 +2428,7 @@ private:
   */
   //@{
 
+  int mixedRoundStrategy_;
   int bkPivotStrategy_;
   int bkMaxCalls_;
   int bkClqExtMethod_;

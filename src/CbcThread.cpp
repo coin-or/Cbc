@@ -2150,7 +2150,8 @@ void CbcModel::lockThread() {}
 void CbcModel::unlockThread() {}
 void CbcModel::setInfoInChild(int type, CbcThread *info) {}
 void CbcModel::moveToModel(CbcModel *baseModel, int mode) {}
-int CbcModel::splitModel(int numberModels, CbcModel **model, int numberNodes) { return 0; }
+int CbcModel::splitModel(int numberModels, CbcModel **model, int numberNodes,
+			 CbcNode ** nodes) { return 0; }
 void CbcModel::startSplitModel(int numberIterations) {}
 void CbcModel::mergeModels(int numberModel, CbcModel **model, int numberNodes) {}
 #endif

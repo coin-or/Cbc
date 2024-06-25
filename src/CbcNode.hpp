@@ -215,6 +215,11 @@ public:
   {
     return nodeInfo_;
   }
+  // Set
+  inline void setNodeInfo(CbcNodeInfo *info)
+  {
+    nodeInfo_ = info;
+  }
 
   // Objective value
   inline double objectiveValue() const

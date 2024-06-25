@@ -25,6 +25,7 @@
 #include "CbcCutGenerator.hpp"
 #include "CbcModel.hpp"
 #include "CbcFathom.hpp"
+#include "CbcGeneralDepth.hpp"
 #include "CbcSimpleIntegerDynamicPseudoCost.hpp"
 #include "ClpDualRowDantzig.hpp"
 #include "OsiAuxInfo.hpp"
@@ -395,6 +396,8 @@ void CbcThread::unlockThread()
 #endif
   }
 }
+// maybe do on problem size?
+#define CBC_WAIT_TIME 1000000
 /* Wait for child to have return code NOT == to currentCode
    type - 0 timed wait
    1 wait
@@ -404,14 +407,14 @@ bool CbcThread::wait(int type, int currentCode)
   if (!type) {
     // just timed wait
     master_->threadStuff_.lockThread2();
-    master_->threadStuff_.timedWait(1000000);
+    master_->threadStuff_.timedWait(CBC_WAIT_TIME);
     master_->threadStuff_.unlockThread2();
   } else {
     // wait until return code changes
     while (returnCode_ == currentCode) {
       threadStuff_.signal();
       master_->threadStuff_.lockThread2();
-      master_->threadStuff_.timedWait(1000000);
+      master_->threadStuff_.timedWait(CBC_WAIT_TIME);
       master_->threadStuff_.unlockThread2();
     }
   }
@@ -491,6 +494,8 @@ void CbcThread::exitThread()
 {
   threadStuff_.exitThread();
 }
+#define DEFAULT_NODES 2
+#define DEFAULT_ITERATIONS 400
 // Default constructor
 CbcBaseModel::CbcBaseModel()
   : numberThreads_(0)
@@ -500,8 +505,11 @@ CbcBaseModel::CbcBaseModel()
   , threadModel_(NULL)
   , numberObjects_(0)
   , saveObjects_(NULL)
-  , defaultParallelIterations_(400)
-  , defaultParallelNodes_(2)
+  , defaultParallelIterations_(DEFAULT_ITERATIONS)
+  , defaultParallelNodes_(DEFAULT_NODES)
+  , numberGeneralBranches_(0)
+  , totalGeneralNodes_(0)
+  , totalGeneralIterations_(0)
 {
 }
 // Constructor with model
@@ -512,8 +520,11 @@ CbcBaseModel::CbcBaseModel(CbcModel &model, int type)
   , threadModel_(NULL)
   , numberObjects_(0)
   , saveObjects_(NULL)
-  , defaultParallelIterations_(400)
-  , defaultParallelNodes_(2)
+  , defaultParallelIterations_(DEFAULT_ITERATIONS)
+  , defaultParallelNodes_(DEFAULT_NODES)
+  , numberGeneralBranches_(0)
+  , totalGeneralNodes_(0)
+  , totalGeneralIterations_(0)
 {
   numberThreads_ = model.getNumberThreads();
   if (numberThreads_) {
@@ -531,20 +542,27 @@ CbcBaseModel::CbcBaseModel(CbcModel &model, int type)
     threadModel_ = new CbcModel *[numberThreads_ + 1];
     memset(threadStats_, 0, sizeof(threadStats_));
     if (type_ > 0) {
+      // allow for fathomMany
       // May need for deterministic
       numberObjects_ = model.numberObjects();
-      saveObjects_ = new OsiObject *[numberObjects_];
-      for (int i = 0; i < numberObjects_; i++) {
+      int n = model.fastNodeDepth()<1000000 ? numberObjects_ : numberObjects_+1;
+      saveObjects_ = new OsiObject *[n];
+      for (int i = 0; i < n; i++) {
         saveObjects_[i] = model.object(i)->clone();
       }
     }
     // we don't want a strategy object
     CbcStrategy *saveStrategy = model.strategy();
     model.setStrategy(NULL);
+    int printLevel = model.messageHandler()->logLevel();
+    if (printLevel>0 && type_>0)
+      printLevel--;
     for (int i = 0; i < numberThreads_; i++) {
       //threadModel_[i] = new CbcModel(model, true);
       threadModel_[i] = model.clone(true);
       threadModel_[i]->synchronizeHandlers(1);
+      // reduce printout
+      threadModel_[i]->messageHandler()->setLogLevel(printLevel);
 #ifdef CBC_HAS_CLP
       // Solver may need to know about model
       CbcModel *thisModel = threadModel_[i];
@@ -604,7 +622,8 @@ void CbcBaseModel::stopThreads(int type)
   }
   delete[] children_;
   delete[] threadModel_;
-  for (int i = 0; i < numberObjects_; i++)
+  int n = baseModel->fastNodeDepth()<1000000 ? numberObjects_ : numberObjects_+1;
+  for (int i = 0; i < n; i++)
     delete saveObjects_[i];
   delete[] saveObjects_;
   children_ = NULL;
@@ -921,7 +940,7 @@ void CbcBaseModel::waitForThreadsInCuts(int type, OsiCuts *eachCuts,
       }
     }
     while (!finished) {
-      children_[numberThreads_].waitNano(1000000);
+      children_[numberThreads_].waitNano(CBC_WAIT_TIME);
       for (iThread = 0; iThread < numberThreads_; iThread++) {
         if (children_[iThread].returnCode() > 0) {
           finished = true;
@@ -1009,7 +1028,7 @@ void CbcBaseModel::deterministicParallel()
   bool finished = false;
   double time = getTime();
   while (!finished) {
-    children_[numberThreads_].waitNano(1000000); // millisecond
+    children_[numberThreads_].waitNano(CBC_WAIT_TIME); // millisecond
     finished = true;
     for (iThread = 0; iThread < numberThreads_; iThread++) {
       if (children_[iThread].returnCode() <= 0) {
@@ -1027,7 +1046,7 @@ void CbcBaseModel::deterministicParallel()
     children_[iThread].setReturnCode(0);
     children_[iThread].signal();
     while (!finished) {
-      children_[numberThreads_].waitNano(1000000); // millisecond
+      children_[numberThreads_].waitNano(CBC_WAIT_TIME); // millisecond
       finished = (children_[iThread].returnCode() > 0);
     }
     children_[iThread].setReturnCode(-1);
@@ -1073,17 +1092,114 @@ void CbcBaseModel::deterministicParallel()
   }
   delete[] threadModel;
 }
+
+// Split model and do work in deterministic parallel - fathomMany
+void CbcBaseModel::deterministicParallel(CbcNode ** nodes)
+{
+  CbcModel *baseModel = children_[0].baseModel();
+  int nExplore = 0;
+  for (int i = 0; i < numberThreads_; i++) {
+    if (nodes[i]) {
+      threadCount_[i]++;
+      nExplore++;
+    }
+  }
+  int saveTreeSize = baseModel->tree()->size();
+  // For now create threadModel - later modify splitModel
+  CbcModel **threadModel = new CbcModel *[nExplore];
+  int iThread;
+  for (iThread = 0; iThread < nExplore; iThread++) 
+    threadModel[iThread] = children_[iThread].thisModel();
+
+  baseModel->splitModel(nExplore, threadModel, 9999999, nodes);
+  // Save current state
+  int iObject;
+  OsiObject **object = baseModel->objects();
+  for (iObject = 0; iObject < numberObjects_; iObject++) {
+    saveObjects_[iObject]->updateBefore(object[iObject]);
+  }
+  int maxNodes = baseModel->getMaximumNodes();
+  bool finished = false;
+  double time = getTime();
+  if (maxNodes!=1234567) {
+    for (iThread = 0; iThread < nExplore; iThread++) {
+      children_[iThread].setReturnCode(0);
+      children_[iThread].signal();
+    }
+    // wait
+    while (!finished) {
+      children_[numberThreads_].waitNano(CBC_WAIT_TIME); // millisecond
+      finished = true;
+      for (iThread = 0; iThread < nExplore; iThread++) {
+	if (children_[iThread].returnCode() <= 0) {
+	  finished = false;
+	}
+      }
+    }
+    for (iThread = 0; iThread < nExplore; iThread++)
+      children_[iThread].setReturnCode(-1);
+  } else {
+    // wait
+    for (iThread = 0; iThread < nExplore; iThread++) {
+      children_[iThread].setReturnCode(0);
+      children_[iThread].signal();
+      while (!finished) {
+	children_[numberThreads_].waitNano(CBC_WAIT_TIME); // millisecond
+	finished = (children_[iThread].returnCode() > 0);
+      }
+      children_[iThread].setReturnCode(-1);
+      finished = false;
+    }
+  }
+  children_[numberThreads_].incrementTimeInThread(getTime() - time);
+  // Unmark marked
+  for (int i = 0; i < nExplore; i++) {
+    baseModel->walkback()[i]->unmark();
+  }
+#ifdef MORE_PRINTING
+  if (numberGeneralBranches_>0) {
+    double averageNodes =
+      ((double) totalGeneralNodes_)/numberGeneralBranches_;
+    double averageIterations =
+      ((double) totalGeneralIterations_)/numberGeneralBranches_;
+    if (numberGeneralBranches_<10||(numberGeneralBranches_%100)==0)
+      printf("GEN %d times average nodes %.2f iterations %.2f\n",
+	     numberGeneralBranches_,averageNodes,averageIterations);
+  }
+#endif
+  numberGeneralBranches_++;
+  int iModel;
+  for (iModel = 0; iModel < nExplore; iModel++) {
+    threadModel[iModel]->moveToModel(baseModel, 11);
+    // Update base model
+    OsiObject **threadObject = threadModel[iModel]->objects();
+    for (iObject = 0; iObject < numberObjects_; iObject++) {
+      object[iObject]->updateAfter(threadObject[iObject], saveObjects_[iObject]);
+    }
+    // update statistics for use next time
+    totalGeneralNodes_ += children_[iModel].nodesThisTime(); 
+    totalGeneralIterations_ += children_[iModel].iterationsThisTime(); 
+    // empty tree
+    double cutoff = -1.0e100;
+    double bestPossible=0.0;
+    threadModel[iModel]->tree()->cleanTree(threadModel[iModel],cutoff,
+					   bestPossible);
+  }
+  delete[] threadModel;
+}
 // Destructor
 CbcBaseModel::~CbcBaseModel()
 {
   delete[] threadCount_;
 #if 1
+  int nobj = (threadModel_[0]->fastNodeDepth()<1000000) ?
+    numberObjects_ : numberObjects_+1;
   for (int i = 0; i < numberThreads_; i++)
     delete threadModel_[i];
   delete[] threadModel_;
   delete[] children_;
 #endif
-  for (int i = 0; i < numberObjects_; i++)
+  for (int i = 0; i < nobj; i++)
     delete saveObjects_[i];
   delete[] saveObjects_;
 }
@@ -1130,7 +1246,7 @@ static void *doNodesThread(void *voidInfo)
         CbcNode **delNode = stuff->delNode();
         int returnCode = 1;
         // this should be updated by heuristics strong branching etc etc
-        assert(numberIterations > 0);
+        //assert(numberIterations > 0);
         thisModel->setNumberThreads(0);
         int nodesThisTime = thisModel->getNodeCount();
         int iterationsThisTime = thisModel->getIterationCount();
@@ -1154,7 +1270,8 @@ static void *doNodesThread(void *voidInfo)
           bool exit1 = (NODE_ITERATIONS * ((nodesNow - nodesThisTime) + ((strongNow - strongThisTime) >> 1)) + (iterationsNow - iterationsThisTime) > numberIterations);
           //bool exit2 =(thisModel->getIterationCount()>thisModel->getStopNumberIterations()) ;
           //assert (exit1==exit2);
-          if (exit1 && nodesNow - nodesThisTime >= 10) {
+          if ((exit1 && nodesNow - nodesThisTime >= 10)) {
+	    // || thisModel->getMaximumNodes()==nodesNow) {
             // out of loop
             //printf("out of loop\n");
 #ifdef CLP_INVESTIGATE3
@@ -1170,9 +1287,28 @@ static void *doNodesThread(void *voidInfo)
           if (!node)
             continue;
           CbcNode *createdNode = NULL;
+	  ClpNodeStuff * stuffA= NULL;
+	  const CbcOneGeneralBranchingObject * genBranch =
+	    dynamic_cast<const CbcOneGeneralBranchingObject *>(node->branchingObject());
+	  if (genBranch) {
+	    const OsiObject * object = thisModel->object(thisModel->numberObjects());
+	    const CbcGeneralDepth * depth =
+	      dynamic_cast<const CbcGeneralDepth *>(object);
+	    stuffA= const_cast<CbcGeneralDepth *>(depth)->info();
+	    // adjust for size of model and use history
+	    stuffA->maximumIterations_ = stuff->nDeleteNode_;
+	  }
           // Do real work of node
           thisModel->doOneNode(NULL, node, createdNode);
-          assert(createdNode);
+          assert(createdNode); // general object nodeinfo_ has stuff
+	  if (stuffA) {
+	    int numberNodes = stuffA->numberNodesExplored_;
+	    int numberIterations = stuffA->numberIterations_;
+	    //printf("NN nodes %d %d its %d %d\n",numberNodes,stuff->nodesThisTime(),
+	    //numberIterations,stuff->iterationsThisTime());
+	    stuff->setNodesThisTime(numberNodes);
+	    stuff->setIterationsThisTime(numberIterations);
+	  }
           if (!createdNode->active()) {
             delete createdNode;
           } else {
@@ -1273,7 +1409,7 @@ static void *doCutsThread(void *voidInfo)
 }
 // Split up nodes - returns number of CbcNodeInfo's affected
 int CbcModel::splitModel(int numberModels, CbcModel **model,
-  int numberNodes)
+			 int numberNodes, CbcNode ** nodes)
 {
   int iModel;
   int i;
@@ -1285,6 +1421,8 @@ int CbcModel::splitModel(int numberModels, CbcModel **model,
     otherModel->bestPossibleObjective_ = bestPossibleObjective_;
     otherModel->sumChangeObjective1_ = sumChangeObjective1_;
     otherModel->sumChangeObjective2_ = sumChangeObjective2_;
+    int nodesThisTime = otherModel->getNodeCount();
+    otherModel->setMaximumNodes(nodesThisTime+1);
     int numberColumns = solver_->getNumCols();
     if (otherModel->bestSolution_) {
       assert(bestSolution_);
@@ -1329,12 +1467,21 @@ int CbcModel::splitModel(int numberModels, CbcModel **model,
   }
   double cutoff = getCutoff();
   int nAffected = 0;
-  while (!tree_->empty()) {
+  bool someNodes = (nodes==NULL) ? !tree_->empty() : true;
+  while (someNodes) {
+    if (nodes)
+      someNodes = false;
     for (iModel = 0; iModel < numberModels; iModel++) {
-      if (tree_->empty())
-        break;
       CbcModel *otherModel = model[iModel];
-      CbcNode *node = tree_->bestNode(cutoff);
+      CbcNode *node;
+      if (!nodes) {
+	if (tree_->empty())
+	  break;
+	node = tree_->bestNode(cutoff);
+      } else {
+	// fathommany
+	node = nodes[iModel];
+      }
       CbcNodeInfo *nodeInfo = node->nodeInfo();
       assert(nodeInfo);
       if (!nodeInfo->marked()) {
@@ -1501,13 +1648,13 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
     }
     if (eventHappened_)
       baseModel->eventHappened_ = true;
-    baseModel->numberNodes_++;
-    baseModel->numberIterations_ += numberIterations_ - numberFixedAtRoot_;
-    baseModel->numberSolves_ += numberSolves_;
     if (stuff->node())
       baseModel->tree_->push(stuff->node());
     if (stuff->createdNode())
       baseModel->tree_->push(stuff->createdNode());
+    baseModel->numberNodes_++;
+    baseModel->numberIterations_ += numberIterations_ - numberFixedAtRoot_;
+    baseModel->numberSolves_ += numberSolves_;
     // add new global cuts to base and take off
     CbcRowCuts *baseGlobal = baseModel->globalCuts();
     CbcRowCuts *thisGlobal = globalCuts();
@@ -1658,10 +1805,10 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
     stuff->saveStuff()[0] = searchStrategy_;
     stateOfSearch_ = baseModel->stateOfSearch_;
     stuff->saveStuff()[1] = stateOfSearch_;
-    OsiObject **baseObject = baseModel->object_;
-    for (int iObject = 0; iObject < numberObjects_; iObject++) {
-      object_[iObject]->updateBefore(baseObject[iObject]);
-    }
+    //OsiObject **baseObject = baseModel->object_;
+    //for (int iObject = 0; iObject < numberObjects_; iObject++) {
+    //object_[iObject]->updateBefore(baseObject[iObject]);
+    //}
     //delete [] stuff->nodeCount;
     //stuff->nodeCount = new int [baseModel->maximumDepth_+1];
   } else if (mode == 11) {
@@ -1854,7 +2001,7 @@ int CbcModel::parallelCuts(CbcBaseModel *master, OsiCuts &theseCuts,
           if (debugger->invalidCut(thisCut)) {
             solver_->getRowCutDebuggerAlways()->printOptimalSolution(*solver_);
             solver_->writeMpsNative("badCut.mps", NULL, NULL, 2);
-#ifdef NDEBUG
+#ifdef NDEBUG 
             printf("Cut generator %d (%s) produced invalid cut (%dth in this go)\n",
               i, generator_[i]->cutGeneratorName(), k - numberRowCutsBefore);
             const double *lower = getColLower();

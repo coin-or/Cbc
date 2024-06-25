@@ -2500,7 +2500,7 @@ public:
   void moveToModel(CbcModel *baseModel, int mode);
   /// Split up nodes
   int splitModel(int numberModels, CbcModel **model,
-    int numberNodes);
+		 int numberNodes,CbcNode ** nodes = NULL);
   /// Start threads
   void startSplitModel(int numberIterations);
   /// Merge models

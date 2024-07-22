@@ -72,6 +72,8 @@ bool CbcHeuristicDiveCoefficient::selectVariableToBranch(OsiSolverInterface *sol
   int numberIntegers = model_->numberIntegers();
   const int *integerVariable = model_->integerVariable();
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
 
   bestColumn = -1;
   bestRound = -1; // -1 rounds down, +1 rounds up
@@ -84,6 +86,9 @@ bool CbcHeuristicDiveCoefficient::selectVariableToBranch(OsiSolverInterface *sol
     if (!isHeuristicInteger(solver, iColumn))
       continue;
     double value = newSolution[iColumn];
+    // deal with tolerance problems
+    if (value<lower[iColumn] || value>upper[iColumn])
+      continue;
     double fraction = value - floor(value);
     int round = 0;
     if (fabs(floor(value + 0.5) - value) > integerTolerance) {

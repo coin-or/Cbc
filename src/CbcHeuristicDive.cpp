@@ -389,6 +389,15 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     back[iColumn] = i;
     double value = newSolution[iColumn];
     // clean
+    if (value<lower[iColumn]) {
+      value = lower[iColumn];
+      newSolution[iColumn] = value;
+      solver->setColUpper(iColumn,value);
+    } else if (value>upper[iColumn]) {
+      value = upper[iColumn];
+      newSolution[iColumn] = value;
+      solver->setColLower(iColumn,value);
+    }
     value = CoinMin(value, upperBefore[iColumn]);
     value = CoinMax(value, lowerBefore[iColumn]);
     newSolution[iColumn] = value;
@@ -434,6 +443,9 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
         if (!isHeuristicInteger(solver, iColumn))
           continue;
         double value = newSolution[iColumn];
+	// deal with tolerance problems
+	if (value<lower[iColumn] || value>upper[iColumn])
+	  continue;
         if (fabs(floor(value + 0.5) - value) > integerTolerance) {
           assert(downLocks_[i] == 0 || upLocks_[i] == 0);
           double obj = objective[iColumn];
@@ -459,6 +471,16 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
             if (!isHeuristicInteger(solver, iColumn))
               continue;
             double value = newSolution[iColumn];
+	    // clean
+	    if (value<lower[iColumn]) {
+	      value = lower[iColumn];
+	      newSolution[iColumn] = value;
+	      solver->setColUpper(iColumn,value);
+	    } else if (value>upper[iColumn]) {
+	      value = upper[iColumn];
+	      newSolution[iColumn] = value;
+	      solver->setColLower(iColumn,value);
+	    }
             if (fabs(floor(value + 0.5) - value) > integerTolerance) {
               assert(downLocks_[i] == 0 || upLocks_[i] == 0);
               if (downLocks_[i] == 0 && upLocks_[i] == 0) {

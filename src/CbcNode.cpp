@@ -2553,8 +2553,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           anyAction = -2;
           break;
 	} else {
-	  double tolerance = CoinMax(1.0e-6,1.0e-7*fabs(objectiveValue_));
-	  if (objectiveValue_>model->getMinimizationObjValue()-tolerance) {
+	  if (objectiveValue_>=model->getCutoff()) {
 	    // treat as if infeasible
 	    //printf("INF Best obj %.15g this %.15g bestposs %.15g\n",
 	    //	   model->getMinimizationObjValue(),
@@ -2697,8 +2696,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             anyAction = -2;
             break;
           } else {
-	    double tolerance = CoinMax(1.0e-6,1.0e-7*fabs(objectiveValue_));
-	    if (objectiveValue_>model->getMinimizationObjValue()-tolerance) {
+	    if (objectiveValue_>=model->getCutoff()) {
 	      // treat as if infeasible
 	      //printf("INF Best obj %.15g this %.15g bestposs %.15g\n",
 	      //     model->getMinimizationObjValue(),
@@ -4439,7 +4437,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         }
       }
       if (model->messageHandler()->logLevel() > 3) {
-        if (anyAction == -2) {
+        if (anyAction == -2) { 
           printf("infeasible\n");
         } else if (anyAction == -1) {
           printf("%d fixed AND choosing %d iDo %d iChosenWhen %d numberToDo %d\n", numberToFix, bestChoice,

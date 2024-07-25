@@ -563,13 +563,11 @@ CbcBaseModel::CbcBaseModel(CbcModel &model, int type)
       threadModel_[i]->synchronizeHandlers(1);
       // reduce printout
       threadModel_[i]->messageHandler()->setLogLevel(printLevel);
-#ifdef CBC_HAS_CLP
       // Solver may need to know about model
       CbcModel *thisModel = threadModel_[i];
       CbcOsiSolver *solver = dynamic_cast< CbcOsiSolver * >(thisModel->solver());
       if (solver)
         solver->setCbcModel(thisModel);
-#endif
       children_[i].setUsefulStuff(threadModel_[i], type_, &model,
         children_ + numberThreads_, mutex_main);
 #ifdef THREAD_DEBUG

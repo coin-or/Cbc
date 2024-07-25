@@ -3437,7 +3437,6 @@ void setCutAndHeuristicOptions(CbcModel &model);
   inline void setPreProcessingMode(OsiSolverInterface * solver,int processMode)
   {}
 #endif
-#ifdef CBC_HAS_CLP
 /**
    A terse way of doing common types of solves.
    Set any extra options in cbcModel e.g. maximum nodes.
@@ -3453,5 +3452,4 @@ int clpBranchAndCut(CbcModel * cbcModel, ClpSimplex * clpModel,
 		    unsigned int options=5);
 int clpBranchAndCut(CbcModel * cbcModel, OsiClpSolverInterface * solver,
 		    unsigned int options=5);
-#endif
 #endif

@@ -2102,7 +2102,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
         }
 
         if (cbcParam->type() == CoinParam::paramDbl) {
-           if (status = cbcParam->readValue(inputQueue, dValue, &message)){
+           if ((status = cbcParam->readValue(inputQueue, dValue, &message))){
               printGeneralMessage(model_, message);
               continue;
            }
@@ -2168,7 +2168,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               break;
            }
         } else if (clpParam->type() == CoinParam::paramDbl) {
-           if (status = clpParam->readValue(inputQueue, dValue, &message)){
+           if ((status = clpParam->readValue(inputQueue, dValue, &message))){
               printGeneralMessage(model_, message);
               continue;
            } 
@@ -2178,7 +2178,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               continue;
            }      
         } else if (cbcParam->type() == CoinParam::paramInt){
-           if (status = cbcParam->readValue(inputQueue, iValue, &message)){
+           if ((status = cbcParam->readValue(inputQueue, iValue, &message))){
               printGeneralMessage(model_, message);
               continue;
            }
@@ -2364,7 +2364,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               }
            }
         } else if (clpParam->type() == CoinParam::paramInt) {
-           if (status = clpParam->readValue(inputQueue, iValue, &message)){
+           if ((status = clpParam->readValue(inputQueue, iValue, &message))){
               printGeneralMessage(model_, message);
               continue;
            } 
@@ -2396,7 +2396,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               dualize = iValue;
            }
         } else if (cbcParam->type() == CoinParam::paramKwd) {
-           if (status = cbcParam->readValue(inputQueue, field, &message)){
+           if ((status = cbcParam->readValue(inputQueue, field, &message))){
               printGeneralMessage(model_, message);
 	      continue;
            }
@@ -2571,7 +2571,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               break;
            }
         } else if (clpParam->type() == CoinParam::paramKwd) { 
-           if (status = clpParam->readValue(inputQueue, field, &message)){
+           if ((status = clpParam->readValue(inputQueue, field, &message))){
               printGeneralMessage(model_, message);
               continue;
            }
@@ -2710,7 +2710,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               break;
            }
         } else if (cbcParam->type() == CoinParam::paramDir){
-           if (status = cbcParam->readValue(inputQueue, field, &message)){
+           if ((status = cbcParam->readValue(inputQueue, field, &message))){
               printGeneralMessage(model_, message);
               continue;
            }
@@ -2719,7 +2719,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                continue;
            }
         } else if (cbcParam->type() == CoinParam::paramFile){
-           if (status = cbcParam->readValue(inputQueue, field, &message)){
+           if ((status = cbcParam->readValue(inputQueue, field, &message))){
               printGeneralMessage(model_, message);
               continue;
            }
@@ -3343,7 +3343,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                continue;
             }
             // get bound
-            if (status = clpParam->readValue(inputQueue, dValue, &message)){
+            if ((status = clpParam->readValue(inputQueue, dValue, &message))){
                std::cout << "Must enter value for " << clpParam->name()
                          << std::endl;
                continue;
@@ -10204,7 +10204,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
            } break;
           case CbcParam::PRINTMASK:
-            if (status = cbcParam->readValue(inputQueue, field, &message)){
+            if ((status = cbcParam->readValue(inputQueue, field, &message))){
                printGeneralMessage(model_, message);
                continue;
             }

@@ -5155,7 +5155,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 // we have to keep solver2 so pass clone
                 solver2 = solver2->clone();
                 // see if extra variables wanted
-                bool threshold = parameters[CbcParam::EXTRAVARIABLES]->intVal();
+                int threshold = parameters[CbcParam::EXTRAVARIABLES]->intVal();
                 int more2 = parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal();
                 if (threshold || (more2 & (512 | 1024)) != 0) {
                   int numberColumns = solver2->getNumCols();

@@ -1213,6 +1213,7 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::INTPRINT]->appendKwd("boundsall", CbcParameters::PMBoundsAll);
   parameters_[CbcParam::INTPRINT]->appendKwd("fixint", CbcParameters::PMFixInt);
   parameters_[CbcParam::INTPRINT]->appendKwd("fixall", CbcParameters::PMFixAll);
+  parameters_[CbcParam::INTPRINT]->appendKwd("allcsv", CbcParameters::PMAllCsv);
 
   parameters_[CbcParam::NODESTRATEGY]->setup(
       "node!Strategy",

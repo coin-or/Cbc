@@ -55,7 +55,6 @@
 #include "ClpDualRowSteepest.hpp"
 #include "ClpPrimalColumnPivot.hpp"
 #endif
-using namespace std;
 #include "CglCutGenerator.hpp"
 
 CbcNode::CbcNode()

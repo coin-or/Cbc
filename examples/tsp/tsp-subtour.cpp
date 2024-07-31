@@ -29,8 +29,6 @@ int time_limit = 3600;
 // leave empty if no log log should be generated
 char results_file[] = "results.csv";
 
-using namespace std;
-
 typedef struct 
 {
   int n;          // number of cities
@@ -88,7 +86,7 @@ int main(int argc, char **argv)
   c[0] = new int[n*n];
   for ( int i=1 ; (i<n) ; ++i )
     c[i] = c[i-1]+n;
-  fill(c[0], c[0]+n*n, 0);
+  std::fill(c[0], c[0]+n*n, 0);
 
   for ( int i=0 ; (i<n) ; ++i )
     for ( int j=0 ; (j<n) ; ++j )
@@ -103,14 +101,14 @@ int main(int argc, char **argv)
 
   int *idx = new int[n];
   double *coef = new double[n];
-  fill(coef, coef+n, 1.0);
+  std::fill(coef, coef+n, 1.0);
   double *lb  = new double[n*n];
-  fill(lb, lb+n*n, 0.0);
+  std::fill(lb, lb+n*n, 0.0);
   double *ub = new double[n*n];
-  fill(ub, ub+n*n, 1.0);
+  std::fill(ub, ub+n*n, 1.0);
   double *obj = new double[n*n];
   char name[256];
-  vector< string > cnames;
+  std::vector< std::string > cnames;
 
   // creating x variables
   OsiClpSolverInterface *mip = new OsiClpSolverInterface();
@@ -126,7 +124,7 @@ int main(int argc, char **argv)
     }
   }
   CoinBigIndex *starts = new CoinBigIndex[n*n+1];
-  fill(starts, starts+n*n+1, 0);
+  std::fill(starts, starts+n*n+1, 0);
   mip->addCols(k, starts, NULL, NULL, lb, ub, obj);
 
   // out degree constraints
@@ -296,7 +294,7 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
         continue;
       double v = s[x[i][j]];
       double idist = fabs(v - floor(v+0.5));
-      maxidist = max(idist, maxidist);
+      maxidist = std::max(idist, maxidist);
     }
   }
 
@@ -314,7 +312,7 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
 
   int *idx = new int[n*n];
   double *coef = new double[n*n];
-  fill(coef, coef+n*n, 1.0);
+  std::fill(coef, coef+n*n, 1.0);
 
   int *els = new int[n];
   char *visited = new char[n];
@@ -337,7 +335,7 @@ void CglSubTour::generateCuts(const OsiSolverInterface& si, OsiCuts & cs,
     if (!nnodes)
       break;
 
-    fill(visited, visited+n, 0);
+    std::fill(visited, visited+n, 0);
     for ( int i=0 ; (i<nnodes) ; ++i )
       visited[els[i]] = 1;
 
@@ -393,7 +391,7 @@ int find_subtour( const TSPInfo *tspi, const double *s, int *els, int start )
   int n = tspi->n;
   const int **x = (const int **)tspi->x;
   char *visited = new char[n];
-  fill(visited, visited+n, 0);
+  std::fill(visited, visited+n, 0);
   visited[start] = 1;
 
   char has_sub = 0;
@@ -455,7 +453,7 @@ int find_subtour_frac( const TSPInfo *tspi, const double *s, int *els, int start
   int n = tspi->n;
   const int **x = (const int **)tspi->x;
   char *visited = new char[n];
-  fill(visited, visited+n, 0);
+  std::fill(visited, visited+n, 0);
   visited[start] = 1;
 
   int nnodes = 1;
@@ -473,7 +471,7 @@ int find_subtour_frac( const TSPInfo *tspi, const double *s, int *els, int start
   {
     // checks for the most connected node to the node already inserted ones
     // that still outside s
-    fill(link, link+n, 0.0);
+    std::fill(link, link+n, 0.0);
 
     // how much the already inserted nodes are connnected
     for ( int i=0 ; (i<n) ; ++i ) { // tail

@@ -8,7 +8,6 @@
 #endif
 #include <cassert>
 #include <iostream>
-using namespace std;
 #include "CoinHelperFunctions.hpp"
 #include "CoinError.hpp"
 #include "CbcSolver.hpp"
@@ -37,18 +36,18 @@ int main(int argc, const char *argv[])
   int warning_count = 0;
 
   sos1a(error_count, warning_count);
-  cout << "\n***********************\n"
-       << endl;
+  std::cout << "\n***********************\n"
+       << std::endl;
   sos2a(error_count, warning_count);
-  cout << "\n***********************\n"
-       << endl;
+  std::cout << "\n***********************\n"
+       << std::endl;
   semicon1(error_count, warning_count);
-  cout << "\n***********************\n"
-       << endl;
+  std::cout << "\n***********************\n"
+       << std::endl;
   semiint1(error_count, warning_count);
 
-  cout << endl
-       << "Finished - there have been " << error_count << " errors and " << warning_count << " warnings." << endl;
+  std::cout << std::endl
+       << "Finished - there have been " << error_count << " errors and " << warning_count << " warnings." << std::endl;
   return error_count;
 }
 void sos1a(int &error_count, int &warning_count)
@@ -110,9 +109,9 @@ void sos1a(int &error_count, int &warning_count)
   inputQueue.push_back("-quit");
   
   CbcMain1(inputQueue, model, parameters);
-  cout << endl;
+  std::cout << std::endl;
   if (!model.isProvenOptimal()) {
-    cerr << "Error: Model sos1a not solved to optimality." << endl;
+    std::cerr << "Error: Model sos1a not solved to optimality." << std::endl;
     ++error_count;
     return; // other tests make no sense ---- memory leak here
   }
@@ -120,33 +119,33 @@ void sos1a(int &error_count, int &warning_count)
   OsiSolverInterface *solver = model.solver();
   assert(solver);
 
-  cout << "Objective value model: " << model.getObjValue()
+  std::cout << "Objective value model: " << model.getObjValue()
        << "\t solver: " << solver->getObjValue()
-       << "\t expected: 0.72" << endl;
+       << "\t expected: 0.72" << std::endl;
   if (CoinAbs(model.getObjValue() - 0.72) > testtol || CoinAbs(solver->getObjValue() - 0.72) > testtol) {
-    cerr << "Error: Objective value incorrect." << endl;
+    std::cerr << "Error: Objective value incorrect." << std::endl;
     ++error_count;
   }
 
-  cout << "Primal value variable 0 in model: " << model.bestSolution()[0]
+  std::cout << "Primal value variable 0 in model: " << model.bestSolution()[0]
        << "\t in solver: " << solver->getColSolution()[0]
-       << "\t expected: 0.8" << endl;
+       << "\t expected: 0.8" << std::endl;
   if (CoinAbs(model.bestSolution()[0] - 0.8) > testtol || CoinAbs(solver->getColSolution()[0] - 0.8) > testtol) {
-    cerr << "Error: Primal value incorrect." << endl;
+    std::cerr << "Error: Primal value incorrect." << std::endl;
     ++error_count;
   }
-  cout << "Primal value variable 1 in model: " << model.bestSolution()[1]
+  std::cout << "Primal value variable 1 in model: " << model.bestSolution()[1]
        << "\t in solver: " << solver->getColSolution()[1]
-       << "\t expected: 0.0" << endl;
+       << "\t expected: 0.0" << std::endl;
   if (CoinAbs(model.bestSolution()[1]) > testtol || CoinAbs(solver->getColSolution()[1]) > testtol) {
-    cerr << "Error: Primal value incorrect." << endl;
+    std::cerr << "Error: Primal value incorrect." << std::endl;
     ++error_count;
   }
-  cout << "Primal value variable 2 in model: " << model.bestSolution()[2]
+  std::cout << "Primal value variable 2 in model: " << model.bestSolution()[2]
        << "\t in solver: " << solver->getColSolution()[2]
-       << "\t expected: 0.0" << endl;
+       << "\t expected: 0.0" << std::endl;
   if (CoinAbs(model.bestSolution()[2]) > testtol || CoinAbs(solver->getColSolution()[2]) > testtol) {
-    cerr << "Error: Primal value incorrect." << endl;
+    std::cerr << "Error: Primal value incorrect." << std::endl;
     ++error_count;
   }
   delete[] start;
@@ -303,44 +302,44 @@ void sos2a(int &error_count, int &warning_count)
     model.addObjects(1, &sosobject);
     delete sosobject;
     const char *argv2[] = { "gamstest_sos2a", "-solve", "-quit" };
-    cout << "\nSolving sos2a model with last row having lhs " << solver1.getRowLower()[5] << endl;
+    std::cout << "\nSolving sos2a model with last row having lhs " << solver1.getRowLower()[5] << std::endl;
     std::deque<std::string> inputQueue;
     inputQueue.push_back("-solve");
     inputQueue.push_back("-quit");
     
     CbcMain1(inputQueue, model, parameters);
-    cout << endl;
+    std::cout << std::endl;
     if (!model.isProvenOptimal()) {
-      cerr << "Error: Model sos2a not solved to optimality." << endl;
+      std::cerr << "Error: Model sos2a not solved to optimality." << std::endl;
       ++error_count;
       continue; // other tests make no sense
     }
     OsiSolverInterface *solver = model.solver();
     assert(solver);
-    cout << "Objective value model: " << model.getObjValue()
+    std::cout << "Objective value model: " << model.getObjValue()
          << "\t solver: " << solver->getObjValue()
-         << "\t expected: " << optvalue << endl;
+         << "\t expected: " << optvalue << std::endl;
     if (CoinAbs(model.getObjValue() - optvalue) > testtol || CoinAbs(solver->getObjValue() - optvalue) > testtol) {
-      cerr << "Error: Objective value incorrect." << endl;
+      std::cerr << "Error: Objective value incorrect." << std::endl;
       ++error_count;
     }
     for (int i = 0; i < numcols; ++i) {
-      cout << "Primal value variable " << i << " in model: " << model.bestSolution()[i]
+      std::cout << "Primal value variable " << i << " in model: " << model.bestSolution()[i]
            << "\t in solver: " << solver->getColSolution()[i]
            << "\t expected: " << primalval[i]
-           << endl;
+           << std::endl;
       if (CoinAbs(model.bestSolution()[i] - primalval[i]) > testtol || CoinAbs(solver->getColSolution()[i] - primalval[i]) > testtol) {
-        cerr << "Error: Primal value incorrect." << endl;
+        std::cerr << "Error: Primal value incorrect." << std::endl;
         ++error_count;
       }
     }
     for (int i = 0; i < numcols; ++i) {
-      cout << "Reduced cost variable " << i << " in model: " << model.getReducedCost()[i]
+      std::cout << "Reduced cost variable " << i << " in model: " << model.getReducedCost()[i]
            << "\t in solver: " << solver->getReducedCost()[i]
            << "\t expected: " << redcost[i]
-           << endl;
+           << std::endl;
       if (CoinAbs(model.getReducedCost()[i] - redcost[i]) > testtol || CoinAbs(solver->getReducedCost()[i] - redcost[i]) > testtol) {
-        cerr << "Warning: Reduced cost incorrect." << endl;
+        std::cerr << "Warning: Reduced cost incorrect." << std::endl;
         ++warning_count;
       }
     }
@@ -487,74 +486,74 @@ void semicon1(int &error_count, int &warning_count)
     model.addObjects(1, &semiconobject);
     delete semiconobject;
 
-    cout << "\nSolving semicon1 model for lotsize variable being either 0 or between " << points[2] << " and 10.\n"
-         << endl;
+    std::cout << "\nSolving semicon1 model for lotsize variable being either 0 or between " << points[2] << " and 10.\n"
+         << std::endl;
     std::deque<std::string> inputQueue;
     inputQueue.push_back("-solve");
     inputQueue.push_back("-quit");
     
     CbcMain1(inputQueue, model, parameters);
-    cout << endl;
+    std::cout << std::endl;
     if (!model.isProvenOptimal()) {
-      cerr << "Error: Model semicon1 not solved to optimality." << endl;
+      std::cerr << "Error: Model semicon1 not solved to optimality." << std::endl;
       ++error_count;
       continue; // other tests make no sense
     }
     OsiSolverInterface *solver = model.solver();
     assert(solver);
-    cout << "Objective value in model: " << model.getObjValue()
+    std::cout << "Objective value in model: " << model.getObjValue()
          << "\t in solver: " << solver->getObjValue()
-         << "\t expected: " << objval << endl;
+         << "\t expected: " << objval << std::endl;
     if (CoinAbs(model.getObjValue() - objval) > testtol || CoinAbs(solver->getObjValue() - objval) > testtol) {
-      cerr << "Error: Objective value incorrect." << endl;
+      std::cerr << "Error: Objective value incorrect." << std::endl;
       ++error_count;
     }
     for (int i = 0; i < numcols; ++i) {
-      cout << "Primal value variable " << i << " in model: " << model.bestSolution()[i]
+      std::cout << "Primal value variable " << i << " in model: " << model.bestSolution()[i]
            << "\t in solver: " << solver->getColSolution()[i]
            << "\t expected: " << primalval[i]
-           << endl;
+           << std::endl;
       if (CoinAbs(model.bestSolution()[i] - primalval[i]) > testtol || CoinAbs(solver->getColSolution()[i] - primalval[i]) > testtol) {
-        cerr << "Error: Primal value incorrect." << endl;
+        std::cerr << "Error: Primal value incorrect." << std::endl;
         ++error_count;
       }
     }
-    cout << "Reduced cost variable " << 0 << " in model: " << model.getReducedCost()[0]
+    std::cout << "Reduced cost variable " << 0 << " in model: " << model.getReducedCost()[0]
          << "\t in solver: " << solver->getReducedCost()[0]
          << "\t expected: " << redcost[0]
-         << endl;
+         << std::endl;
     if (CoinAbs(model.getReducedCost()[0] - redcost[0]) > testtol || CoinAbs(solver->getReducedCost()[0] - redcost[0]) > testtol) {
-      cerr << "Warning: Reduced cost incorrect." << endl;
+      std::cerr << "Warning: Reduced cost incorrect." << std::endl;
       ++warning_count;
     }
-    cout << "Reduced cost variable " << 3 << " in model: " << model.getReducedCost()[3]
+    std::cout << "Reduced cost variable " << 3 << " in model: " << model.getReducedCost()[3]
          << "\t in solver: " << solver->getReducedCost()[3]
          << "\t expected: " << redcost[3]
-         << endl;
+         << std::endl;
     if (CoinAbs(model.getReducedCost()[3] - redcost[3]) > testtol || CoinAbs(solver->getReducedCost()[3] - redcost[3]) > testtol) {
-      cerr << "Warning: Reduced cost incorrect." << endl;
+      std::cerr << "Warning: Reduced cost incorrect." << std::endl;
       ++warning_count;
     }
-    cout << "Reduced cost variable 1 plus - dual of row 0 in model: " << model.getReducedCost()[1] - model.getRowPrice()[0]
+    std::cout << "Reduced cost variable 1 plus - dual of row 0 in model: " << model.getReducedCost()[1] - model.getRowPrice()[0]
          << "\t expected: " << redcost[1]
-         << endl;
+         << std::endl;
     if (CoinAbs(model.getReducedCost()[1] - model.getRowPrice()[0] - redcost[1]) > testtol) {
-      cerr << "Warning: Reduced cost or row margin incorrect." << endl;
+      std::cerr << "Warning: Reduced cost or row margin incorrect." << std::endl;
       ++warning_count;
     }
-    cout << "Reduced cost variable 2 plus + dual of row 1 in model: " << model.getReducedCost()[2] + model.getRowPrice()[1]
+    std::cout << "Reduced cost variable 2 plus + dual of row 1 in model: " << model.getReducedCost()[2] + model.getRowPrice()[1]
          << "\t expected: " << redcost[2]
-         << endl;
+         << std::endl;
     if (CoinAbs(model.getReducedCost()[2] + model.getRowPrice()[1] - redcost[2]) > testtol) {
-      cerr << "Warning: Reduced cost or row margin incorrect." << endl;
+      std::cerr << "Warning: Reduced cost or row margin incorrect." << std::endl;
       ++warning_count;
     }
 
-    cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2]
+    std::cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2]
          << "\t in solver: " << solver->getRowPrice()[2]
-         << "\t expected: " << row2marg << endl;
+         << "\t expected: " << row2marg << std::endl;
     if (CoinAbs(model.getRowPrice()[2] - row2marg) > testtol || CoinAbs(solver->getRowPrice()[2] - row2marg) > testtol) {
-      cerr << "Warning: Row price incorrect." << endl;
+      std::cerr << "Warning: Row price incorrect." << std::endl;
       ++warning_count;
     }
   }
@@ -724,67 +723,67 @@ void semiint1(int &error_count, int &warning_count)
       delete semiintobject;
     }
 
-    cout << "\nSolving semiint1 model for testcase " << testcase << ".\n"
-         << endl;
+    std::cout << "\nSolving semiint1 model for testcase " << testcase << ".\n"
+         << std::endl;
     std::deque<std::string> inputQueue;
     inputQueue.push_back("-solve");
     inputQueue.push_back("-quit");
     
     CbcMain1(inputQueue, model, parameters);
-    cout << endl;
+    std::cout << std::endl;
     if (!model.isProvenOptimal()) {
-      cerr << "Error: Model semiint1 not solved to optimality." << endl;
+      std::cerr << "Error: Model semiint1 not solved to optimality." << std::endl;
       ++error_count;
       continue; // other tests make no sense
     }
     OsiSolverInterface *solver = model.solver();
     assert(solver);
-    cout << "Objective value in model: " << model.getObjValue()
+    std::cout << "Objective value in model: " << model.getObjValue()
          << "\t in solver: " << solver->getObjValue()
-         << "\t expected: " << objval << endl;
+         << "\t expected: " << objval << std::endl;
     if (CoinAbs(model.getObjValue() - objval) > testtol || CoinAbs(solver->getObjValue() - objval) > testtol) {
-      cerr << "Error: Objective value incorrect." << endl;
+      std::cerr << "Error: Objective value incorrect." << std::endl;
       ++error_count;
     }
     for (int i = 0; i < numcols; ++i) {
-      cout << "Primal value variable " << i << " in model: " << model.bestSolution()[i]
+      std::cout << "Primal value variable " << i << " in model: " << model.bestSolution()[i]
            << "\t in solver: " << solver->getColSolution()[i]
            << "\t expected: " << primalval[i]
-           << endl;
+           << std::endl;
       if (CoinAbs(model.bestSolution()[i] - primalval[i]) > testtol || CoinAbs(solver->getColSolution()[i] - primalval[i]) > testtol) {
-        cerr << "Error: Primal value incorrect." << endl;
+        std::cerr << "Error: Primal value incorrect." << std::endl;
         ++error_count;
       }
     }
-    cout << "Reduced cost variable " << 0 << " in model: " << model.getReducedCost()[0]
+    std::cout << "Reduced cost variable " << 0 << " in model: " << model.getReducedCost()[0]
          << "\t in solver: " << solver->getReducedCost()[0]
          << "\t expected: " << redcost[0]
-         << endl;
+         << std::endl;
     if (CoinAbs(model.getReducedCost()[0] - redcost[0]) > testtol || CoinAbs(solver->getReducedCost()[0] - redcost[0]) > testtol) {
-      cerr << "Warning: Reduced cost incorrect." << endl;
+      std::cerr << "Warning: Reduced cost incorrect." << std::endl;
       ++warning_count;
     }
-    cout << "Reduced cost variable " << 3 << " in model: " << model.getReducedCost()[3]
+    std::cout << "Reduced cost variable " << 3 << " in model: " << model.getReducedCost()[3]
          << "\t in solver: " << solver->getReducedCost()[3]
          << "\t expected: " << redcost[3]
-         << endl;
+         << std::endl;
     if (CoinAbs(model.getReducedCost()[3] - redcost[3]) > testtol || CoinAbs(solver->getReducedCost()[3] - redcost[3]) > testtol) {
-      cerr << "Warning: Reduced cost incorrect." << endl;
+      std::cerr << "Warning: Reduced cost incorrect." << std::endl;
       ++warning_count;
     }
-    cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2]
+    std::cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2]
          << "\t in solver: " << solver->getRowPrice()[2]
-         << "\t expected: " << row2marg << endl;
+         << "\t expected: " << row2marg << std::endl;
     if (CoinAbs(model.getRowPrice()[2] - row2marg) > testtol || CoinAbs(solver->getRowPrice()[2] - row2marg) > testtol) {
-      cerr << "Warning: Row price incorrect." << endl;
+      std::cerr << "Warning: Row price incorrect." << std::endl;
       ++warning_count;
     }
 
-    cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2]
+    std::cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2]
          << "\t in solver: " << solver->getRowPrice()[2]
-         << "\t expected: " << row2marg << endl;
+         << "\t expected: " << row2marg << std::endl;
     if (CoinAbs(model.getRowPrice()[2] - row2marg) > testtol || CoinAbs(solver->getRowPrice()[2] - row2marg) > testtol) {
-      cerr << "Warning: Row price incorrect." << endl;
+      std::cerr << "Warning: Row price incorrect." << std::endl;
       ++warning_count;
     }
   }

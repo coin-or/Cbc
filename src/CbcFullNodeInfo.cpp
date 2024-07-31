@@ -41,7 +41,6 @@
 #include "OsiClpSolverInterface.hpp"
 #include "ClpSimplexOther.hpp"
 #endif
-using namespace std;
 #include "CglCutGenerator.hpp"
 
 CbcFullNodeInfo::CbcFullNodeInfo()

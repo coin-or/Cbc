@@ -7,7 +7,6 @@
 #ifndef CbcSubProblem_H
 #define CbcSubProblem_H
 
-#ifdef CBC_HAS_CLP
 #include "ClpSimplex.hpp"
 #include "ClpNode.hpp"
 
@@ -76,7 +75,6 @@ public:
   int branchVariable_;
 };
 
-#endif //CBC_HAS_CLP
 #endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2

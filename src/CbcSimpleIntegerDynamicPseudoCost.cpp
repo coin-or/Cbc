@@ -22,9 +22,7 @@
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
 #include "CbcSimpleIntegerDynamicPseudoCost.hpp"
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
-#endif
 #if 0
 #undef TYPE2
 #undef INFEAS
@@ -1789,20 +1787,16 @@ int CbcSwitchingBinary::setAssociatedBounds(OsiSolverInterface *solver,
 {
   if (!solver)
     solver = model_->solver();
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver
     = dynamic_cast< OsiClpSolverInterface * >(solver);
   if (cleanBasis != 1)
     clpSolver = NULL;
-#endif
   const double *columnLower = solver->getColLower();
   const double *columnUpper = solver->getColUpper();
   int nChanged = 0;
   if (!columnUpper[columnNumber_]) {
-#ifdef CBC_HAS_CLP
     if (clpSolver)
       clpSolver->setColumnStatus(columnNumber_, ClpSimplex::isFixed);
-#endif
     for (int i = 0; i < numberOther_; i++) {
       int otherColumn = otherVariable_[i];
       if (zeroLowerBound_[i] > columnLower[otherColumn]) {
@@ -1822,10 +1816,8 @@ int CbcSwitchingBinary::setAssociatedBounds(OsiSolverInterface *solver,
       }
     }
   } else if (columnLower[columnNumber_] == 1.0) {
-#ifdef CBC_HAS_CLP
     if (clpSolver)
       clpSolver->setColumnStatus(columnNumber_, ClpSimplex::isFixed);
-#endif
     for (int i = 0; i < numberOther_; i++) {
       int otherColumn = otherVariable_[i];
       if (oneLowerBound_[i] > columnLower[otherColumn]) {

@@ -15,9 +15,7 @@
 #include <cfloat>
 
 #include "OsiSolverInterface.hpp"
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
-#endif
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcStrategy.hpp"
@@ -373,7 +371,6 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
     // Pass in models message handler
     process->passInMessageHandler(model.messageHandler());
     OsiSolverInterface *solver = model.solver();
-#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
     if (clpSolver && false) {
       // see if all coefficients multiple of 0.01 (close enough)
@@ -442,7 +439,6 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
         }
       }
     }
-#endif
     {
       // mark some columns as ineligible for presolve
       int numberColumns = solver->getNumCols();
@@ -481,7 +477,6 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       delete[] prohibited;
     }
     int logLevel = model.messageHandler()->logLevel();
-#ifdef CBC_HAS_CLP
     //OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
     ClpSimplex *lpSolver = NULL;
     if (clpSolver) {
@@ -493,7 +488,6 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       /// If user left factorization frequency then compute
       lpSolver->defaultFactorizationFrequency();
     }
-#endif
     // Tell solver we are in Branch and Cut
     solver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo);
     // Default set of cut generators
@@ -528,7 +522,6 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       process_ = NULL;
     } else {
       // now tighten bounds
-#ifdef CBC_HAS_CLP
       if (clpSolver) {
         // model has changed
         solver = model.solver();
@@ -541,7 +534,6 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
           feasible = false;
         }
       }
-#endif
       if (feasible) {
         preProcessState_ = 1;
         process_ = process;

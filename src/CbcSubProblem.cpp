@@ -21,9 +21,7 @@
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
 
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
-#endif
 
 // Default Constructor
 CbcSubProblem::CbcSubProblem()

@@ -13,9 +13,7 @@
 
 #include "OsiSolverInterface.hpp"
 #include "CbcModel.hpp"
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
-#endif
 #include "CbcMessage.hpp"
 #include "CbcHeuristicFPump.hpp"
 #include "CbcBranchActual.hpp"
@@ -330,10 +328,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     const OsiSimpleInteger *integerObject2 = dynamic_cast< const OsiSimpleInteger * >(object);
     assert(integerObject || integerObject2);
 #endif
-#ifdef CBC_HAS_CLP
     if (!isHeuristicInteger(model_->solver(), iColumn))
       continue;
-#endif
     double value = initialSolution[iColumn];
     double nearest = floor(value + 0.5);
     sumUnsatisfied += fabs(value - nearest);
@@ -368,10 +364,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     j = 0;
     for (i = 0; i < numberIntegers; i++) {
       int iColumn = integerVariableOrig[i];
-#ifdef CBC_HAS_CLP
       if (!isHeuristicInteger(model_->solver(), iColumn))
         continue;
-#endif
       if (upper[iColumn] - lower[iColumn] < 1.000001)
         integerVariable[j++] = iColumn;
     }
@@ -516,7 +510,6 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   }
   // Number of passes to do
   int maximumPasses = maximumPasses_;
-#ifdef CBC_HAS_CLP
   {
     OsiClpSolverInterface *clpSolver
       = dynamic_cast< OsiClpSolverInterface * >(model_->solver());
@@ -531,7 +524,6 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       clpSolver->getModelPtr()->randomNumberGenerator()->randomize();
     }
   }
-#endif
 #ifdef RAND_RAND
   double *randomFactor = new double[numberColumns];
   for (int i = 0; i < numberColumns; i++) {
@@ -565,7 +557,6 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     numberTries++;
     // Clone solver - otherwise annoys root node computations
     solver = cloneBut(2); // was model_->solver()->clone();
-#ifdef CBC_HAS_CLP
     {
       OsiClpSolverInterface *clpSolver
         = dynamic_cast< OsiClpSolverInterface * >(solver);
@@ -583,7 +574,6 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 #endif
       }
     }
-#endif
     if (CoinMin(fakeCutoff_, cutoff) < 1.0e50) {
       // Fix on djs
       double direction = solver->getObjSenseInCbc();
@@ -827,7 +817,6 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         // always use same seed
         randomNumberGenerator_.setSeed(987654321);
       }
-#ifdef CBC_HAS_CLP
       {
         OsiClpSolverInterface *clpSolver
           = dynamic_cast< OsiClpSolverInterface * >(clonedSolver);
@@ -860,7 +849,6 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           }
         }
       }
-#endif
       returnCode = rounds(solver, newSolution, /*saveObjective,*/
         numberIntegers, integerVariable,
         /*pumpPrint,*/ numberPasses,
@@ -909,10 +897,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             int numberLeft = 0;
             for (i = 0; i < numberIntegersOrig; i++) {
               int iColumn = integerVariableOrig[i];
-#ifdef CBC_HAS_CLP
               if (!isHeuristicInteger(solver, iColumn))
                 continue;
-#endif
               double value = floor(newSolution[iColumn] + 0.5);
               if (solver->isBinary(iColumn)) {
                 solver->setColLower(iColumn, value);
@@ -1436,10 +1422,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
                 int nChanged = 0;
                 for (i = 0; i < numberIntegersOrig; i++) {
                   int iColumn = integerVariableOrig[i];
-#ifdef CBC_HAS_CLP
                   if (!isHeuristicInteger(solver, iColumn))
                     continue;
-#endif
 #ifdef RAND_RAND
                   if (nChanged > numberChanged)
                     break;
@@ -1461,10 +1445,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
                 if (!nChanged) {
                   for (i = 0; i < numberIntegersOrig; i++) {
                     int iColumn = integerVariableOrig[i];
-#ifdef CBC_HAS_CLP
                     if (!isHeuristicInteger(solver, iColumn))
                       continue;
-#endif
                     if (objective[iColumn] > 0.0) {
                       if (basis->getStructStatus(iColumn) == CoinWarmStartBasis::basic) {
                         solution[iColumn] = lower[iColumn];
@@ -1858,10 +1840,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           const double *objective = solver->getObjCoefficients();
           for (i = 0; i < numberIntegersOrig; i++) {
             int iColumn = integerVariableOrig[i];
-#ifdef CBC_HAS_CLP
             if (!isHeuristicInteger(solver, iColumn))
               continue;
-#endif
             if (objective[iColumn] > 0.0)
               closestSolution[i] = 0;
             else
@@ -2026,10 +2006,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         int nFixC2 = 0;
         for (i = 0; i < numberIntegersOrig; i++) {
           int iColumn = integerVariableOrig[i];
-#ifdef CBC_HAS_CLP
           if (!isHeuristicInteger(newSolver, iColumn))
             continue;
-#endif
           //const OsiObject * object = model_->object(i);
           //double originalLower;
           //double originalUpper;
@@ -2244,7 +2222,6 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
               delete[] rowActivity;
             }
 #endif
-#ifdef CBC_HAS_CLP
             OsiClpSolverInterface *clpSolver
               = dynamic_cast< OsiClpSolverInterface * >(newSolver);
             if (clpSolver) {
@@ -2260,7 +2237,6 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
               simplex->setLogLevel(logLevel);
               clpSolver->setWarmStart(NULL);
             }
-#endif
             newSolver->initialSolve();
             if (newSolver->isProvenOptimal()) {
               double value = newSolver->getObjValue() * newSolver->getObjSenseInCbc();
@@ -2539,10 +2515,8 @@ int CbcHeuristicFPump::solution(double &objectiveValue, double *newSolution)
       solver->setContinuous(i);
     for (int i = 0; i < numberIntegers; i++) {
       int iColumn = integerVariableOrig[i];
-#ifdef CBC_HAS_CLP
       if (!isHeuristicInteger(solver, iColumn))
         continue;
-#endif
       double value = initialSolution[iColumn];
       double nearest = floor(value + 0.5);
       if (upper[iColumn] - lower[iColumn] > 1.000001) {
@@ -2593,10 +2567,8 @@ int CbcHeuristicFPump::solution(double &objectiveValue, double *newSolution)
       int nAddRow = 0;
       for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariableOrig[i];
-#ifdef CBC_HAS_CLP
         if (!isHeuristicInteger(solver, iColumn))
           continue;
-#endif
         if (upper[iColumn] - lower[iColumn] > 1.000001) {
           int up = static_cast< int >(upper[iColumn]);
           int lo = static_cast< int >(lower[iColumn]);
@@ -2875,9 +2847,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
     }
   }
   // return rounded solution
-#ifdef CBC_HAS_CLP
   if (!roundExpensive) {
-#endif
     //double * saveSolution = CoinCopyOfArray(solution,numberColumns);
     for (i = 0; i < numberIntegers; i++) {
       int iColumn = integerVariable[i];
@@ -2939,7 +2909,6 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
     } else {
       //sprintf(pumpPrint+strlen(pumpPrint)," ");
     }
-#ifdef CBC_HAS_CLP
   } else {
     // very very slow at first
     OsiClpSolverInterface * clpSolver = dynamic_cast<OsiClpSolverInterface *>
@@ -3047,7 +3016,6 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
       //sprintf(pumpPrint+strlen(pumpPrint)," ");
     }
   }
-#endif
   delete[] list;
   delete[] val;
 #if 0
@@ -3428,8 +3396,6 @@ void CbcHeuristicFPump::setMaximumTime(double value)
   maximumTime_ = value;
 }
 
-#ifdef CBC_HAS_CLP
-
 //#############################################################################
 // Constructors / Destructor / Assignment
 //#############################################################################
@@ -3508,7 +3474,6 @@ void CbcDisasterHandler::setCbcModel(CbcModel *model)
       setSimplex(NULL);
   }
 }
-#endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

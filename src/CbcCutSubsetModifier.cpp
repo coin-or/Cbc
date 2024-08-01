@@ -14,11 +14,7 @@
 #include <cmath>
 #include <cfloat>
 
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
-#else
-#include "OsiSolverInterface.hpp"
-#endif
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcCutGenerator.hpp"

@@ -5069,18 +5069,14 @@ int CbcMain1(int argc, const char *argv[],
                         columnAddDummy, NULL, NULL,
                         lowerNew, upperNew, objectiveNew);
                       // add constraints and make integer if all integer in group
-#ifdef CBC_HAS_CLP
                       OsiClpSolverInterface *clpSolver2
                         = dynamic_cast< OsiClpSolverInterface * >(solver2);
-#endif
                       for (int iObj = 0; iObj < numberDifferentObj; iObj++) {
                         lowerNew[iObj] = 0.0;
                         upperNew[iObj] = 0.0;
                         solver2->setInteger(numberColumns + iObj);
-#ifdef CBC_HAS_CLP
                         if (clpSolver2)
                           clpSolver2->setOptionalInteger(numberColumns + iObj);
-#endif
                       }
                       solver2->addRows(numberDifferentObj,
                         rowAdd, columnAdd, elementAdd,
@@ -7292,7 +7288,6 @@ int CbcMain1(int argc, const char *argv[],
                 }
 #endif
 #ifdef SOS_AS_CUTS
-#ifdef CBC_HAS_CLP
                 /* SOS as cuts
 				   Could be a bit more sophisticated e.g. only non duplicates
 				   Could do something for SOS 2?
@@ -7405,7 +7400,6 @@ int CbcMain1(int argc, const char *argv[],
                     delete[] starts;
                   }
                 }
-#endif
 #endif
                 if (useSolution > 1) {
                   // use hotstart to try and find solution

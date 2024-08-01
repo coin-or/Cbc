@@ -15,9 +15,7 @@
 #include <cfloat>
 #define JJF_REDUCE_HEURISTICS
 //#define PRINT_DEBUG
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
-#endif
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcHeuristic.hpp"
@@ -543,10 +541,8 @@ CbcHeuristic::cloneBut(int type)
     solver = model_->solver()->clone();
   else
     solver = model_->continuousSolver()->clone();
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver
     = dynamic_cast< OsiClpSolverInterface * >(solver);
-#endif
   if ((type & 2) != 0) {
     int n = model_->numberObjects();
     int priority = model_->continuousPriority();
@@ -561,7 +557,6 @@ CbcHeuristic::cloneBut(int type)
         }
       }
     }
-#ifdef CBC_HAS_CLP
     if (clpSolver) {
       for (int i = 0; i < n; i++) {
         const OsiObject *obj = model_->object(i);
@@ -573,9 +568,7 @@ CbcHeuristic::cloneBut(int type)
         }
       }
     }
-#endif
   }
-#ifdef CBC_HAS_CLP
   if ((type & 4) != 0 && clpSolver) {
     int options = clpSolver->getModelPtr()->moreSpecialOptions();
     clpSolver->getModelPtr()->setMoreSpecialOptions(options | 64);
@@ -615,7 +608,6 @@ CbcHeuristic::cloneBut(int type)
 	clpSolver->setContinuous(jColumn);
     }
   }
-#endif
   return solver;
 }
 // Whether to exit at once on gap
@@ -754,7 +746,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 #endif
     }
   }
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
   if (clpSolver && (clpSolver->specialOptions() & 65536) == 0) {
     // go faster stripes
@@ -770,7 +761,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     lpSolver->setSpecialOptions(lpSolver->specialOptions() | 0x01000000); // say is Cbc (and in branch and bound)
     lpSolver->setSpecialOptions(lpSolver->specialOptions() | (/*16384+*/ 4096 + 512 + 128));
   }
-#endif
 #ifdef HISTORY_STATISTICS
   getHistoryStatistics_ = false;
 #endif
@@ -960,7 +950,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       }
     }
 #endif
-#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
     if (clpSolver) {
       clpSolver->getModelPtr()->cleanSolver();
@@ -1011,7 +1000,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       process.passInProhibited(prohibited, numberColumns);
       delete[] prohibited; 
     }
-#endif
     setPreProcessingMode(solver,1);
     solver2 = process.preProcessNonDefault(*solver, 0,
       numberPasses);
@@ -1056,13 +1044,11 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         }
       }
 #endif
-#ifdef CBC_HAS_CLP
       if (clpSolver) {
         OsiClpSolverInterface *clpSolver2
           = dynamic_cast< OsiClpSolverInterface * >(solver2);
 	clpSolver2->setSpecialOptions(clpSolver->specialOptions());
       }
-#endif
       if (returnCode == 1) {
         solver2->resolve();
         CbcModel model(*solver2);
@@ -1070,7 +1056,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         model.setDblParam(CbcModel::CbcStartSeconds, startTime);
         // move seed across
         model.randomNumberGenerator()->setSeed(model_->randomNumberGenerator()->getSeed());
-#ifdef CBC_HAS_CLP
         // redo SOS
         OsiClpSolverInterface *clpSolver
           = dynamic_cast< OsiClpSolverInterface * >(model.solver());
@@ -1109,7 +1094,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 	    delete objects[iSOS];
 	  delete [] objects;
         }
-#endif
         if (numberNodes >= 0) {
           // normal
           model.setSpecialOptions(saveModelOptions | 2048);
@@ -1553,13 +1537,11 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           else
             returnCode = 3;
             // post process
-#ifdef CBC_HAS_CLP
           OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model.solver());
           if (clpSolver) {
             ClpSimplex *lpSolver = clpSolver->getModelPtr();
             lpSolver->setSpecialOptions(lpSolver->specialOptions() | 0x01000000); // say is Cbc (and in branch and bound)
           }
-#endif
           //if (fractionSmall_ < 1000000.0)
 	  setPreProcessingMode(model.solver(),2);
           process.postProcess(*model.solver());
@@ -1570,7 +1552,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             memcpy(newSolution, solver->getColSolution(),
               numberColumns * sizeof(double));
             newSolutionValue = model.getMinimizationObjValue();
-#ifdef CBC_HAS_CLP
             if (clpSolver) {
               if (clpSolver && clpSolver->numberSOS()) {
                 // SOS
@@ -1606,7 +1587,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
                 }
               }
             }
-#endif
           } else {
             // odd - but no good
             returnCode = 0; // so will be infeasible

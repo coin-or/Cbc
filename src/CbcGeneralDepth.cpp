@@ -25,7 +25,6 @@
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
 
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "ClpNode.hpp"
@@ -820,7 +819,6 @@ CbcOneGeneralBranchingObject::compareBranchingObject(const CbcBranchingObject * 
 {
   throw("must implement");
 }
-#endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

@@ -309,8 +309,6 @@ private:
     */
 };
 
-#ifdef CBC_HAS_CLP
-
 class CBCLIB_EXPORT CbcDisasterHandler : public OsiClpDisasterHandler {
 public:
   /**@name Virtual methods that the derived classe should provide.
@@ -366,7 +364,6 @@ protected:
 
   //@}
 };
-#endif
 
 #endif
 

@@ -23,14 +23,12 @@ extern int gomory_try;
 #include <cassert>
 #include <cfloat>
 #include <cmath>
-#ifdef CBC_HAS_CLP
 // include Presolve from Clp
 #include "ClpDualRowDantzig.hpp"
 #include "ClpNode.hpp"
 #include "ClpPresolve.hpp"
 #include "ClpSimplexPrimal.hpp"
 #include "OsiClpSolverInterface.hpp"
-#endif
 
 #include "CbcEventHandler.hpp"
 
@@ -685,7 +683,6 @@ void CbcModel::analyzeObjective()
           }
         }
       }
-#ifdef CBC_HAS_CLP
       OsiClpSolverInterface *clpSolver =
           dynamic_cast<OsiClpSolverInterface *>(solver_);
       if (clpSolver && createFake) {
@@ -746,7 +743,6 @@ void CbcModel::analyzeObjective()
         clpSolver->setFakeObjective(fakeObj);
         delete[] fakeObj;
       }
-#endif
     } else if (largestObj < smallestObj * 5.0 && !parentModel_ &&
                !numberContinuousObj && !numberGeneralIntegerObj &&
                numberIntegerObj * 2 < CoinMin(numberColumns, 20)) {
@@ -1728,7 +1724,6 @@ void CbcModel::AddIntegers() {
   // See if what's left is a network
   bool couldBeNetwork = false;
   if (copy1->getNumRows() && copy1->getNumCols()) {
-#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(copy1);
     if (false && clpSolver) {
@@ -1752,7 +1747,6 @@ void CbcModel::AddIntegers() {
         }
       }
     } else
-#endif
     {
       numberColumns = copy1->getNumCols();
       numberRows = copy1->getNumRows();
@@ -1985,7 +1979,6 @@ void CbcModel::branchAndBound(int doStatistics)
   int saveMoreSpecialOptions = moreSpecialOptions_;
   if (dynamic_cast<CbcTreeLocal *>(tree_))
     specialOptions_ |= 4096 + 8192;
-#ifdef CBC_HAS_CLP
   {
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
@@ -2009,7 +2002,6 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
     }
   }
-#endif
   // original solver (only set if pre-processing)
   OsiSolverInterface *originalSolver = NULL;
   int numberOriginalObjects = numberObjects_;
@@ -2349,7 +2341,6 @@ void CbcModel::branchAndBound(int doStatistics)
   /* Tell solver we are in Branch and Cut
        Could use last parameter for subtle differences */
   solver_->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL);
-#ifdef CBC_HAS_CLP
   {
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
@@ -2382,7 +2373,6 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
     }
   }
-#endif
   bool feasible;
   numberSolves_ = 0;
   if (!parentModel_) {
@@ -2662,7 +2652,6 @@ void CbcModel::branchAndBound(int doStatistics)
 	 looking at a different node
       */
       bool switchOff = true;
-#ifdef CBC_HAS_CLP
       OsiClpSolverInterface *clpSolver
 	= dynamic_cast< OsiClpSolverInterface * >(solver_);
       if (clpSolver) {
@@ -2670,7 +2659,6 @@ void CbcModel::branchAndBound(int doStatistics)
 	if ((clpSimplex->moreSpecialOptions()&2048) != 0)
 	  switchOff = false;
       }
-#endif
       if (switchOff)
 	fastNodeDepth_ = -1;
     }
@@ -2738,7 +2726,6 @@ void CbcModel::branchAndBound(int doStatistics)
   continuousSolver_ = solver_->clone();
 #ifdef CONFLICT_CUTS
   if ((moreSpecialOptions_ & 4194304) != 0) {
-#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
     if (clpSolver) {
@@ -2752,7 +2739,6 @@ void CbcModel::branchAndBound(int doStatistics)
                                                     ~(32 | 2097152));
     }
   }
-#endif
 #endif
 #ifdef CBC_HAS_NAUTY
   // maybe allow on fix and restart later
@@ -2834,7 +2820,6 @@ void CbcModel::branchAndBound(int doStatistics)
       setCutoff(cutoff);
     }
   }
-#ifdef CBC_HAS_CLP
   // Possible save of pivot method
   ClpDualRowPivot *savePivotMethod = NULL;
   {
@@ -2849,7 +2834,6 @@ void CbcModel::branchAndBound(int doStatistics)
     }
 #endif
   }
-#endif
   /*
       Set up for cut generation. addedCuts_ holds the cuts which are relevant
      for the active subproblem. whichGenerator will be used to record the
@@ -3057,13 +3041,11 @@ void CbcModel::branchAndBound(int doStatistics)
       newSeed = static_cast<unsigned int>(time);
     } else if (newSeed < 0) {
       newSeed = 123456789;
-#ifdef CBC_HAS_CLP
       OsiClpSolverInterface *clpSolver =
           dynamic_cast<OsiClpSolverInterface *>(solver_);
       if (clpSolver) {
         newSeed += clpSolver->getModelPtr()->randomNumberGenerator()->getSeed();
       }
-#endif
     }
     CoinWarmStartBasis *basis =
         dynamic_cast<CoinWarmStartBasis *>(solver_->getEmptyWarmStart());
@@ -3104,7 +3086,6 @@ void CbcModel::branchAndBound(int doStatistics)
       rootModels[i]->setMoreSpecialOptions2(moreSpecialOptions2_ |
                                             16777216);
       rootModels[i]->solver_->setWarmStart(basis);
-#ifdef CBC_HAS_CLP
       OsiClpSolverInterface *clpSolver =
           dynamic_cast<OsiClpSolverInterface *>(rootModels[i]->solver_);
 #define NEW_RANDOM_BASIS
@@ -3147,7 +3128,6 @@ void CbcModel::branchAndBound(int doStatistics)
         } else {
 #ifndef NEW_RANDOM_BASIS
           simplex->primal();
-#endif
 #endif
         }
 #ifdef NEW_RANDOM_BASIS
@@ -4247,7 +4227,6 @@ void CbcModel::branchAndBound(int doStatistics)
       obj->setPosition(numberObjects_);
     }
   }
-#ifdef CBC_HAS_CLP
 #ifdef NO_CRUNCH
   if (true) {
     OsiClpSolverInterface *clpSolver =
@@ -4259,7 +4238,6 @@ void CbcModel::branchAndBound(int doStatistics)
       clpSimplex->setPersistenceFlag(2);
     }
   }
-#endif
 #endif
   // Save copy of solver
   OsiSolverInterface *saveSolver = NULL;
@@ -4302,7 +4280,6 @@ void CbcModel::branchAndBound(int doStatistics)
   numberFixedAtRoot_ = 0;
   numberFixedNow_ = 0;
   if (!parentModel_ && (moreSpecialOptions2_ & 2) != 0) {
-#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
     if (clpSolver) {
@@ -4321,11 +4298,8 @@ void CbcModel::branchAndBound(int doStatistics)
         moreSpecialOptions2_ &= ~2;
       }
     } else {
-#endif
       moreSpecialOptions2_ &= ~2;
-#ifdef CBC_HAS_CLP
     }
-#endif
   }
   int numberIterationsAtContinuous = numberIterations_;
   // solverCharacteristics_->setSolver(solver_);
@@ -4932,7 +4906,6 @@ void CbcModel::branchAndBound(int doStatistics)
     masterThread_ = master_->masterThread();
   }
 #endif
-#ifdef CBC_HAS_CLP
   {
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
@@ -4940,7 +4913,6 @@ void CbcModel::branchAndBound(int doStatistics)
       clpSolver->computeLargestAway();
     }
   }
-#endif
   /*
       At last, the actual branch-and-cut search loop, which will iterate until
       the live set is empty or we hit some limit (integrality gap, time, node
@@ -5000,10 +4972,8 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
   while (true) {
     lockThread();
-#ifdef CBC_HAS_CLP
     // See if we want dantzig row choice
     goToDantzig(100, savePivotMethod);
-#endif
     //#define REPORT_DYNAMIC 2
 #if REPORT_DYNAMIC
     if (numberNodes_ && !parentModel_ &&
@@ -5138,7 +5108,6 @@ void CbcModel::branchAndBound(int doStatistics)
         nextCheckRestart = 100;
       else
         nextCheckRestart = COIN_INT_MAX;
-#ifdef CBC_HAS_CLP
       OsiClpSolverInterface *clpSolver =
           dynamic_cast<OsiClpSolverInterface *>(solver_);
       if (clpSolver && ((specialOptions_ & 131072) == 0) && true) {
@@ -5158,7 +5127,6 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
         }
       }
-#endif
       /*
               Decide if we want to do a restart.
             */
@@ -5457,10 +5425,8 @@ void CbcModel::branchAndBound(int doStatistics)
         */
     if (numberNodes_ >= lastEvery1000) {
       lockThread();
-#ifdef CBC_HAS_CLP
       // See if we want dantzig row choice
       goToDantzig(1000, savePivotMethod);
-#endif
       if ((specialOptions_ & 2048) == 0 || true) {
         if (numberNodes_ < 100)
           lastEvery1000 = numberNodes_ + 10;
@@ -6266,7 +6232,6 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     solver_->initialSolve();
   }
-#ifdef CBC_HAS_CLP
   {
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
@@ -6281,7 +6246,6 @@ void CbcModel::branchAndBound(int doStatistics)
       clpSolver->setLargestAway(-1.0);
     }
   }
-#endif
   if ((fastNodeDepth_ >= 1000000 || (moreSpecialOptions_ & 33554432) != 0) &&
       (specialOptions_&2048) == 0) {
     // delete object off end
@@ -6334,14 +6298,12 @@ void CbcModel::branchAndBound(int doStatistics)
   }
   if (flipObjective)
     flipModel();
-#ifdef CBC_HAS_CLP
   {
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
     if (clpSolver)
       clpSolver->setFakeObjective(static_cast<double *>(NULL));
   }
-#endif
   moreSpecialOptions_ = saveMoreSpecialOptions;
 #ifdef GET_ALL_SOLUTIONS
   if (dblParam_[CbcCutoffIncrement]==-3333.0) {
@@ -6401,15 +6363,11 @@ void CbcModel::initialSolve() {
   solver_->initialSolve();
   solver_->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo, NULL);
   if (!solver_->isProvenOptimal()) {
-#ifdef COIN_HAS_CLP
     OsiClpSolverInterface *clpSolver
       = dynamic_cast< OsiClpSolverInterface * >(solver_);
     // Do not resolve if presolve found infeasible/unbounded 
     if (!clpSolver || clpSolver->getModelPtr()->secondaryStatus()!=11)
       solver_->resolve();
-#else
-    solver_->resolve();
-#endif
   }
   // But set up so Jon Lee will be happy
   status_ = -1;
@@ -8441,7 +8399,6 @@ void CbcModel::synchronizeHandlers(int /*makeDefault*/) {
     handler_ = handler_->clone(); // Not sure - worst is small memory leak
     defaultHandler_ = true;
   }
-#ifdef CBC_HAS_CLP
   if (!defaultHandler) {
     OsiClpSolverInterface *solver;
     solver = dynamic_cast<OsiClpSolverInterface *>(solver_);
@@ -8455,7 +8412,6 @@ void CbcModel::synchronizeHandlers(int /*makeDefault*/) {
       solver->getModelPtr()->passInMessageHandler(handler_);
     }
   }
-#endif
 }
 
 /*
@@ -8489,13 +8445,11 @@ int CbcModel::reducedCostFix()
   int numberFixed = 0;
   int numberTightened = 0;
 
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver =
       dynamic_cast<OsiClpSolverInterface *>(solver_);
   ClpSimplex *clpSimplex = NULL;
   if (clpSolver)
     clpSimplex = clpSolver->getModelPtr();
-#endif
   for (int i = 0; i < numberIntegers_; i++) {
     int iColumn = integerVariable_[i];
     double djValue = direction * reducedCost[iColumn];
@@ -8503,7 +8457,6 @@ int CbcModel::reducedCostFix()
     if (boundGap > integerTolerance) {
       if (solution[iColumn] < lower[iColumn] + integerTolerance &&
           djValue * boundGap > gap) {
-#ifdef CBC_HAS_CLP
         // may just have been fixed before
         if (clpSimplex) {
           if (clpSimplex->getColumnStatus(iColumn) == ClpSimplex::basic) {
@@ -8518,7 +8471,6 @@ int CbcModel::reducedCostFix()
                    clpSimplex->getColumnStatus(iColumn) == ClpSimplex::isFixed);
           }
         }
-#endif
         double newBound = lower[iColumn];
         if (boundGap > 1.99) {
           boundGap = gap / djValue + 1.0e-4 * boundGap;
@@ -8532,7 +8484,6 @@ int CbcModel::reducedCostFix()
         numberFixed++;
       } else if (solution[iColumn] > upper[iColumn] - integerTolerance &&
                  -djValue > boundGap * gap) {
-#ifdef CBC_HAS_CLP
         // may just have been fixed before
         if (clpSimplex) {
           if (clpSimplex->getColumnStatus(iColumn) == ClpSimplex::basic) {
@@ -8547,7 +8498,6 @@ int CbcModel::reducedCostFix()
                    clpSimplex->getColumnStatus(iColumn) == ClpSimplex::isFixed);
           }
         }
-#endif
         double newBound = upper[iColumn];
         if (boundGap > 1.99) {
           boundGap = -gap / djValue + 1.0e-4 * boundGap;
@@ -8669,13 +8619,11 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       delete [] which;
     }
   }
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver =
       dynamic_cast<OsiClpSolverInterface *>(solver_);
   int saveClpOptions = 0;
   if (clpSolver)
     saveClpOptions = clpSolver->specialOptions();
-#endif
     // solver_->writeMps("saved");
 #ifdef CBC_THREAD
   /*
@@ -8766,7 +8714,6 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   int returnCode = resolve(node ? node->nodeInfo() : NULL, 1);
   moreSpecialOptions_ = save;
 #ifdef CONFLICT_CUTS
-#ifdef CBC_HAS_CLP
   // if infeasible conflict analysis
   if (solver_->isProvenPrimalInfeasible() && !parentModel_ &&
       (moreSpecialOptions_ & 4194304) != 0 && clpSolver) {
@@ -8822,7 +8769,6 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       clpSolver->getModelPtr()->infeasibilityRay() && !parentModel_) {
     printf("ray exists\n");
   }
-#endif
 #endif
   double lastObjective = solver_->getObjValue() * solver_->getObjSenseInCbc();
   cut_obj[CUT_HISTORY - 1] = lastObjective;
@@ -9052,10 +8998,8 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 
   if (!feasible) {
     numberInfeasibleNodes_++;
-#ifdef CBC_HAS_CLP
     if (clpSolver)
       clpSolver->setSpecialOptions(saveClpOptions);
-#endif
     return (false);
   }
   double change = lastObjective - objectiveValue;
@@ -9098,10 +9042,8 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   if (!numberTries) {
     cuts = OsiCuts();
     numberNewCuts_ = 0;
-#ifdef CBC_HAS_CLP
     if (clpSolver)
       clpSolver->setSpecialOptions(saveClpOptions);
-#endif
     setPointers(solver_);
     return true;
   }
@@ -10819,7 +10761,6 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
             resolve(solver_);
           }
         }
-#ifdef CBC_HAS_CLP
         OsiClpSolverInterface *clpSolver =
             dynamic_cast<OsiClpSolverInterface *>(solver_);
         if (clpSolver) {
@@ -10828,9 +10769,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           // clpSolver->setSpecialOptions(options|128);
           clpSolver->synchronizeModel();
         }
-#endif
       } else {
-#ifdef CBC_HAS_CLP
         OsiClpSolverInterface *clpSolver =
             dynamic_cast<OsiClpSolverInterface *>(solver_);
         if (clpSolver) {
@@ -10838,11 +10777,9 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           int options = clpSolver->specialOptions();
           clpSolver->setSpecialOptions(options & (~8));
         }
-#endif
       }
     }
   } else {
-#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
     if (clpSolver) {
@@ -10851,7 +10788,6 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       // clpSolver->setSpecialOptions(options|128);
       clpSolver->synchronizeModel();
     }
-#endif
     if (numberCutGenerators_) {
       int i;
       // What if not feasible as cuts may have helped
@@ -10889,10 +10825,8 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
     assert(feasible);
 #endif
-#ifdef CBC_HAS_CLP
   if (clpSolver)
     clpSolver->setSpecialOptions(saveClpOptions);
-#endif
 #ifdef CBC_THREAD
   // Get rid of all threaded stuff
   if (master) {
@@ -11526,10 +11460,8 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
         feasible = false;
     }
   }
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver =
       dynamic_cast<OsiClpSolverInterface *>(solver_);
-#endif
   /*
       Reoptimize. Consider the possibility that we should fathom on bounds. But
      be careful --- where the objective takes on integral values, we may want to
@@ -11537,7 +11469,6 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
     */
   if (feasible) {
     int nTightened = 0;
-#ifdef CBC_HAS_CLP
     // Pierre pointed out that this is not valid for all solvers
     // so just do if Clp
     if ((specialOptions_ & 1) != 0 && onOptimalPath) {
@@ -11624,7 +11555,6 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
         }
       }
     }
-#endif
     if (nTightened >= 0) {
       int nFix = resolve(solver_);
       numberIterations_ += solver_->getIterationCount();
@@ -11651,7 +11581,6 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
  	else
  	  feasible = false;
       }
-#ifdef CBC_HAS_CLP
       if (clpSolver && feasible && !numberNodes_ && false) {
         double direction = solver_->getObjSenseInCbc();
         double tolerance;
@@ -11732,7 +11661,6 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
         // clpSimplex->primal(1);
         clpSolver->setWarmStart(NULL);
       }
-#endif
       if ((specialOptions_ & 1) != 0 && onOptimalPath) {
         if (!solver_->getRowCutDebugger()) {
           // tighten did something???
@@ -11865,13 +11793,11 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
     memcpy(saveLower, solver_->getColLower(), numberColumns * sizeof(double));
     memcpy(saveUpper, solver_->getColUpper(), numberColumns * sizeof(double));
   }
-#ifdef CBC_HAS_CLP
   if (clpSolver && !feasible) {
     // make sure marked infeasible
     if (!clpSolver->isProvenDualInfeasible())
       clpSolver->getModelPtr()->setProblemStatus(1);
   }
-#endif
   int returnStatus = feasible ? 1 : 0;
   if (strategy_) {
     /*
@@ -12729,7 +12655,6 @@ void CbcModel::findIntegers(bool startAgain, int type) {
     }
   }
   // See if there any SOS
-#ifdef CBC_HAS_CLP
   if (!nObjects) {
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
@@ -12769,7 +12694,6 @@ void CbcModel::findIntegers(bool startAgain, int type) {
       }
     }
   }
-#endif
 
   /*
       Found any? Allocate an array to hold the indices of the integer variables.
@@ -13488,13 +13412,9 @@ void CbcModel::setCutoff(double value)
   if (solver_) {
     // Solvers know about direction
     // but Clp tries to be too clever and flips twice!
-#ifndef CBC_HAS_CLP
-    double direction = solver_->getObjSenseInCbc();
-#else
     double direction = 1.0;
     if (!dynamic_cast<OsiClpSolverInterface *>(solver_)|| !modelFlipped())
       direction = solver_->getObjSense();
-#endif
     solver_->setDblParam(OsiDualObjectiveLimit, value * direction);
   }
 }
@@ -13521,7 +13441,6 @@ double CbcModel::checkSolution(double cutoff, double *solution,
   if (!solverCharacteristics_->solutionAddsCuts()) {
     // Can trust solution
     int numberColumns = solver_->getNumCols();
-#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpContinuousSolver =
         dynamic_cast<OsiClpSolverInterface *>(continuousSolver_);
     // But not if odd solver
@@ -13579,7 +13498,6 @@ double CbcModel::checkSolution(double cutoff, double *solution,
                                              (~1)); // switch off crunch
 #endif
     }
-#endif
 
     /*
           Grab the continuous solver (the pristine copy of the problem, made
@@ -13773,7 +13691,6 @@ double CbcModel::checkSolution(double cutoff, double *solution,
             */
         solver_ = saveSolver;
         testSolution_ = save;
-#ifdef CBC_HAS_CLP
         if (modifiedTolerances) {
           // Restore
           ClpSimplex *clp = clpContinuousSolver->getModelPtr();
@@ -13794,7 +13711,6 @@ double CbcModel::checkSolution(double cutoff, double *solution,
           clpContinuousSolver->setSpecialOptions(saveSpecialOptions);
 #endif
         }
-#endif
         return 1.0e50;
       }
     }
@@ -13974,13 +13890,11 @@ double CbcModel::checkSolution(double cutoff, double *solution,
 #ifdef JJF_ZERO
       if (solver_->isProvenOptimal()) {
         solver_->writeMpsNative("feasible.mps", NULL, NULL, 2);
-#ifdef CBC_HAS_CLP
         OsiClpSolverInterface *clpSolver =
             dynamic_cast<OsiClpSolverInterface *>(solver_);
         if (clpSolver) {
           clpSolver->getModelPtr()->writeBasis("feasible.bas", true);
         }
-#endif
         printf("XXXXXXXXXXXX - saving feasible\n");
       }
 #endif
@@ -14015,7 +13929,6 @@ double CbcModel::checkSolution(double cutoff, double *solution,
 #endif
           solver_->initialSolve();
           // solver_->writeMps("bad");
-#ifdef CBC_HAS_CLP
           if (!solver_->isProvenOptimal() && modifiedTolerances) {
             // Restore
             ClpSimplex *clp = clpContinuousSolver->getModelPtr();
@@ -14033,7 +13946,6 @@ double CbcModel::checkSolution(double cutoff, double *solution,
 #endif
             solver_->resolve();
           }
-#endif
 #if CBC_FEASIBILITY_INVESTIGATE
           if (!solver_->isProvenOptimal()) {
             printf("checkSolution still infeas!\n");
@@ -14164,14 +14076,12 @@ double CbcModel::checkSolution(double cutoff, double *solution,
         solver_->setHintParam(OsiDoScale, saveTakeHint, saveStrength);
 #endif
         double largestInfeasibility = 0.0;
-#ifdef CBC_HAS_CLP
         if (clpContinuousSolver) {
           ClpSimplex *clp = clpContinuousSolver->getModelPtr();
           if ((modifiedTolerances & 1) != 0)
             clp->setPrimalTolerance(savePrimalTolerance);
           assert(savePrimalTolerance);
         }
-#endif
         double primalTolerance;
         solver_->getDblParam(OsiPrimalTolerance, primalTolerance);
         const double *rowLower = solver_->getRowLower();
@@ -14282,7 +14192,6 @@ double CbcModel::checkSolution(double cutoff, double *solution,
         */
     solver_ = saveSolver;
     testSolution_ = save;
-#ifdef CBC_HAS_CLP
     if (modifiedTolerances) {
       // Restore
       ClpSimplex *clp = clpContinuousSolver->getModelPtr();
@@ -14302,7 +14211,6 @@ double CbcModel::checkSolution(double cutoff, double *solution,
       clpContinuousSolver->setSpecialOptions(saveSpecialOptions);
 #endif
     }
-#endif
     return objectiveValue;
   } else {
     // Outer approximation or similar
@@ -15778,10 +15686,8 @@ void CbcModel::passInEventHandler(const CbcEventHandler *eventHandler) {
 // Encapsulates solver resolve
 int CbcModel::resolve(OsiSolverInterface *solver) {
   numberSolves_++;
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver =
       dynamic_cast<OsiClpSolverInterface *>(solver);
-#endif
 #ifdef CLIQUE_ANALYSIS
   if (probingInfo_ && currentDepth_ > 0) {
     int nFix = probingInfo_->fixColumns(*solver);
@@ -15790,15 +15696,12 @@ int CbcModel::resolve(OsiSolverInterface *solver) {
       fixAssociated(solver_, 0);
 #endif
     if (nFix < 0) {
-#ifdef CBC_HAS_CLP
       if (clpSolver)
         clpSolver->getModelPtr()->setProblemStatus(1);
-#endif
       return -1;
     }
   }
 #endif
-#ifdef CBC_HAS_CLP
   if (clpSolver) {
     /*bool takeHint;
         OsiHintStrength strength;
@@ -15956,9 +15859,6 @@ int CbcModel::resolve(OsiSolverInterface *solver) {
   } else {
     solver->resolve();
   }
-#else
-  solver->resolve();
-#endif
 #ifdef SWITCH_VARIABLES
   if (solver_->isProvenOptimal()) {
     int nBad = checkAssociated(solver_, solver_->getColSolution(), 0);
@@ -16216,7 +16116,6 @@ void CbcModel::setLogLevel(int value) {
     int oldLevel = solver_->messageHandler()->logLevel();
     if (value < oldLevel)
       solver_->messageHandler()->setLogLevel(value);
-#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
     if (clpSolver) {
@@ -16225,15 +16124,6 @@ void CbcModel::setLogLevel(int value) {
       if (value < oldLevel)
         clpSimplex->setLogLevel(value);
     }
-#else  // CBC_HAS_CLP
-    /*
-          For generic OSI solvers, if the new log level is 0, try the
-          DoReducePrint hint for emphasis.
-        */
-    if (value == 0) {
-      solver_->setHintParam(OsiDoReducePrint, true, OsiHintDo);
-    }
-#endif // CBC_HAS_CLP
   }
 }
 
@@ -16409,7 +16299,6 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
        particularly in chooseDynamicBranch.
         */
     if (!branchingMethod_ || !branchingMethod_->chooseMethod()) {
-#ifdef CBC_HAS_CLP
       bool doClp = oldNode && (oldNode->depth() % 2) == 1;
       if (!doCutsNow(1))
         doClp = true;
@@ -16479,8 +16368,6 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
             break;
         }
       }
-#endif
-#ifdef CBC_HAS_CLP
       // Deal with funny variables
       if ((moreSpecialOptions2_ & 32768) != 0)
         cleanBounds(solver_, NULL);
@@ -16494,7 +16381,6 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
             save |
             0x11200000); // say is Cbc (and in branch and bound - but save ray)
       }
-#endif
 #ifdef CBC_HAS_NAUTY
       if (symmetryInfo_) {
         CbcNodeInfo *infoX = oldNode ? oldNode->nodeInfo() : NULL;
@@ -16561,12 +16447,10 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
               this, oldNode, numberPassesLeft); // dynamic did nothing
       }
       currentNode_ = NULL;
-#ifdef CBC_HAS_CLP
       if (clpSolver && (moreSpecialOptions_ & 4194304) != 0) {
         ClpSimplex *clpSimplex = clpSolver->getModelPtr();
         clpSimplex->setSpecialOptions(save);
       }
-#endif
       /*
               We're on the new (Osi) side of the branching hierarchy.
             */
@@ -17825,7 +17709,6 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
           if (lower[i] || !upper[i])
             printf("%d fixed to %g\n", i, lower[i]);
       }
-#ifdef CBC_HAS_CLP
       OsiClpSolverInterface *clpSolver =
           dynamic_cast<OsiClpSolverInterface *>(solver_);
       if ((clpSolver || (specialOptions_ & 16384) != 0) &&
@@ -18189,9 +18072,6 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         int numberPasses = /*doCutsNow(1) ?*/ maximumCutPasses_ /*: 0*/;
         feasible = solveWithCuts(cuts, numberPasses, node);
       }
-#else
-      feasible = solveWithCuts(cuts, maximumCutPasses_, node);
-#endif
     }
     if ((specialOptions_ & 1) != 0 && onOptimalPath) {
       if (solver_->getRowCutDebuggerAlways()->optimalValue() < getCutoff()) {
@@ -19498,7 +19378,7 @@ void CbcModel::deleteSavedSolution(int which) {
     savedSolutions_[numberSavedSolutions_] = NULL;
   }
 }
-#ifdef CBC_HAS_CLP
+
 void CbcModel::goToDantzig(int numberNodes, ClpDualRowPivot *&savePivotMethod) {
   // Possible change of pivot method
   if (!savePivotMethod && !parentModel_) {
@@ -19531,12 +19411,7 @@ void CbcModel::goToDantzig(int numberNodes, ClpDualRowPivot *&savePivotMethod) {
     }
   }
 }
-#else
-CbcModel::goToDantzig(int numberNodes, ClpDualRowPivot *&savePivotMethod) {
-  printf("Need Clp to go to Dantzig\n");
-  abort();
-}
-#endif
+
 // Below this is deprecated or at least fairly deprecated
 /*
    Do Integer Presolve. Returns new model.
@@ -19732,7 +19607,6 @@ bool CbcModel::integerPresolveThisModel(OsiSolverInterface *originalSolver,
     if (debugger)
       assert(debugger->onOptimalPath(*cleanModel));
 #endif
-#ifdef CBC_HAS_CLP
     // do presolve - for now just clp but easy to get osi interface
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(cleanModel);
@@ -19873,7 +19747,6 @@ bool CbcModel::integerPresolveThisModel(OsiSolverInterface *originalSolver,
         }
       }
     }
-#endif
     if (!feasible || !doIntegerPresolve) {
       break;
     }
@@ -19987,13 +19860,11 @@ void CbcModel::originalModel(CbcModel *presolvedModel, bool weak) {
   synchronizeModel();
 }
 void CbcModel::setOptionalInteger(int index) {
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver =
       dynamic_cast<OsiClpSolverInterface *>(solver_);
   if (clpSolver)
     clpSolver->setOptionalInteger(index);
   else
-#endif
     solver_->setInteger(index);
 }
 
@@ -20082,7 +19953,6 @@ static void flipSolver(OsiSolverInterface *solver, double newCutoff) {
     solver->setObjective(array);
     delete[] array;
     solver->setDblParam(OsiDualObjectiveLimit, newCutoff);
-#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver);
     if (clpSolver) {
@@ -20095,12 +19965,9 @@ static void flipSolver(OsiSolverInterface *solver, double newCutoff) {
         pi[i] = -pi[i];
       clpSolver->getModelPtr()->setObjectiveValue(-objValue);
     } else {
-#endif
       // update values
       solver->resolve();
-#ifdef CBC_HAS_CLP
     }
-#endif
   }
 }
 /*
@@ -20731,7 +20598,6 @@ static void *doRootCbcThread(void *voidInfo)
 {
   rootBundle * bundle = reinterpret_cast< rootBundle *>(voidInfo);
   CbcModel *model = bundle->model;
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver =
       dynamic_cast<OsiClpSolverInterface *>(model->solver());
   char general[200];
@@ -20755,7 +20621,6 @@ static void *doRootCbcThread(void *voidInfo)
     model->messageHandler()->message(CBC_GENERAL, model->messages())
         << general << CoinMessageEol;
   }
-#endif
   // switch off nauty
 #ifdef CBC_HAS_NAUTY
   int newOptions = model->moreSpecialOptions2();
@@ -20773,7 +20638,6 @@ OsiRowCut *CbcModel::conflictCut(const OsiSolverInterface *solver,
                                  bool &localCuts) {
   OsiRowCut *cut = NULL;
   localCuts = false;
-#ifdef CBC_HAS_CLP
   const OsiClpSolverInterface *clpSolver =
       dynamic_cast<const OsiClpSolverInterface *>(solver);
   if (clpSolver && topOfTree_) {
@@ -21143,7 +21007,6 @@ OsiRowCut *CbcModel::conflictCut(const OsiSolverInterface *solver,
       printf("No dual ray\n");
     }
   }
-#endif
   return cut;
 }
 
@@ -21167,7 +21030,6 @@ void CbcModel::zapSymmetry() {
    Also updates integer info. */
 void CbcModel::addSOSEtcToSolver() {
   // at present just for OsiClp
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver =
       dynamic_cast<OsiClpSolverInterface *>(solver_);
   if (clpSolver) {
@@ -21231,7 +21093,6 @@ void CbcModel::addSOSEtcToSolver() {
       clpSolver->replaceSetInfo(numberSOS, setInfo);
     }
   }
-#endif
 }
 
 void CbcModel::roundIntVars() {
@@ -21251,7 +21112,6 @@ void CbcModel::roundIntVars() {
 */
 int CbcModel::cleanBounds(OsiSolverInterface *solver, char *cleanIn) {
   int numberBad = 0;
-#ifdef CBC_HAS_CLP
 #ifndef ZERO_ODD_TOLERANCE
 #define ZERO_ODD_TOLERANCE 1.0e-14
 #endif
@@ -21317,7 +21177,6 @@ int CbcModel::cleanBounds(OsiSolverInterface *solver, char *cleanIn) {
     if (!cleanIn)
       delete[] cleanVariables;
   }
-#endif
   return numberBad;
 }
 // Sets up cleanVariables array (i.e. ones to be careful about)
@@ -21473,7 +21332,7 @@ bool CbcModel::reallyValid(OsiCuts *existingCuts) {
 void CbcModel::setRoundIntegerVariables(bool round_) {
   this->roundIntVars_ = round_;
 }
-#ifdef CBC_HAS_CLP
+
 #include "CglFlowCover.hpp"
 #include "CglMixedIntegerRounding2.hpp"
 #include "CglTwomir.hpp"
@@ -21681,4 +21540,3 @@ int clpBranchAndCut(CbcModel * cbcModel, OsiClpSolverInterface * solver,
   }
   return 0;
 }
-#endif

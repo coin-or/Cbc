@@ -12,11 +12,7 @@
 #include <cmath>
 #include <cfloat>
 
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
-#else
-#include "OsiSolverInterface.hpp"
-#endif
 //#define CGL_DEBUG 1
 #ifdef CGL_DEBUG
 #include "OsiRowCutDebugger.hpp"
@@ -265,14 +261,12 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
   }
   if (fullScan || doThis) {
     CoinThreadRandom *randomNumberGenerator = NULL;
-#ifdef CBC_HAS_CLP
     {
       OsiClpSolverInterface *clpSolver
         = dynamic_cast< OsiClpSolverInterface * >(solver);
       if (clpSolver)
         randomNumberGenerator = clpSolver->getModelPtr()->randomNumberGenerator();
     }
-#endif
     double time1 = 0.0;
     //#undef CBC_THREAD
     /* TODO there should be check in configure or the Posix version C preprocessor variable
@@ -609,13 +603,11 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       //returnCode=true;
       if (!returnCode) {
         // bounds changed but still optimal
-#ifdef CBC_HAS_CLP
         OsiClpSolverInterface *clpSolver
           = dynamic_cast< OsiClpSolverInterface * >(solver);
         if (clpSolver) {
           clpSolver->setLastAlgorithm(2);
         }
-#endif
       }
 #ifdef JJF_ZERO
       // Pass across info to pseudocosts

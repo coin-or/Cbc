@@ -11,9 +11,7 @@
 #include <cmath>
 #include <cfloat>
 
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
-#endif
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcFathom.hpp"
@@ -47,7 +45,6 @@ void CbcFathom::setModel(CbcModel *model)
 {
   model_ = model;
 }
-#ifdef CBC_HAS_CLP
 
 //#############################################################################
 // Constructors, destructors clone and assignment
@@ -102,7 +99,6 @@ CbcOsiSolver::operator=(const CbcOsiSolver &rhs)
   }
   return *this;
 }
-#endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

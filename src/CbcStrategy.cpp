@@ -184,7 +184,7 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
   CglBKClique generator5;
   generator5.setMaxCallsBK(1000);
   generator5.setExtendingMethod(4);
-  generator5.setPivotingStrategy(3);
+  generator5.setPivotingStrategy(CoinBronKerbosch::PivotingStrategy::Weight);
 
   CglMixedIntegerRounding2 mixedGen;
   CglFlowCover flowGen;
@@ -711,7 +711,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
   CglBKClique generator5;
   generator5.setMaxCallsBK(1000);
   generator5.setExtendingMethod(4);
-  generator5.setPivotingStrategy(3);
+  generator5.setPivotingStrategy(CoinBronKerbosch::PivotingStrategy::Weight);
 
   CglMixedIntegerRounding2 mixedGen;
   CglFlowCover flowGen;

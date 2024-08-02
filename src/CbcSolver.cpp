@@ -1436,7 +1436,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     std::string cgraphMode = "on";
     std::string clqstrMode = "after";
     CglBKClique bkCliqueGen;
-    int  bkPivotingStrategy = 3, maxCallsBK = 1000, bkClqExtMethod = 4;
+    CoinBronKerbosch::PivotingStrategy bkPivotingStrategy = CoinBronKerbosch::PivotingStrategy::Weight;
+    int maxCallsBK = 1000, bkClqExtMethod = 4;
     int cliqueMode = parameters[CbcParam::CLIQUECUTS]->modeVal();
     int oldCliqueMode = cliqueMode;
     CglOddWheel oddWheelGen;
@@ -2205,7 +2206,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               } else if (cbcParamCode == CbcParam::AGGREGATEMIXED) {
                  mixedRoundStrategy = iValue;
               } else if (cbcParamCode == CbcParam::BKPIVOTINGSTRATEGY) {
-                 bkPivotingStrategy = iValue;
+                 bkPivotingStrategy = static_cast<CoinBronKerbosch::PivotingStrategy>(iValue);
               } else if (cbcParamCode == CbcParam::BKMAXCALLS) {
                  maxCallsBK = iValue;
               } else if (cbcParamCode == CbcParam::BKCLQEXTMETHOD) {
@@ -3690,7 +3691,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       CglBKClique bkClique;
                       bkClique.setMaxCallsBK(1000);
                       bkClique.setExtendingMethod(4);
-                      bkClique.setPivotingStrategy(3);
+                      bkClique.setPivotingStrategy(CoinBronKerbosch::PivotingStrategy::Weight);
                       cbcModel->addCutGenerator(&bkClique, -98, "Clique", true,
                                                 false, false, -100, -1, -1);
                       cbcModel->cutGenerator(numCutGens++)->setTiming(true);

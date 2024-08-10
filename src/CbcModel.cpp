@@ -9037,6 +9037,10 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   }
   // if ((numberNodes_%100)==0)
   // printf("XXa sum obj changed by %g\n",sumChangeObjective1_);
+  /*
+    Do reduced cost fixing.
+  */
+  reducedCostFix();
   objectiveValue = solver_->getObjValue() * solver_->getObjSenseInCbc();
   // Return at once if numberTries zero
   if (!numberTries) {
@@ -9047,10 +9051,6 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     setPointers(solver_);
     return true;
   }
-  /*
-      Do reduced cost fixing.
-    */
-  reducedCostFix();
   /*
       Set up for at most numberTries rounds of cut generation. If numberTries is
       negative, we'll ignore the minimumDrop_ cutoff and keep generating cuts

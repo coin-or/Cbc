@@ -152,8 +152,8 @@ CbcUserSOS::infeasibility(const OsiBranchingInformation *info,
 
     if (lastWeight >= weights_[j] - 1.0e-7)
       throw CoinError("Weights too close together in SOS", "infeasibility", "CbcSOS");
-    double value = CoinMax(lower[iColumn], solution[iColumn]);
-    value = CoinMin(upper[iColumn], value);
+    double value = std::max(lower[iColumn], solution[iColumn]);
+    value = std::min(upper[iColumn], value);
     sum += value;
     if (fabs(value) > integerTolerance && (upper[iColumn] > 0.0 || oddValues_)) {
       weight += weights_[j] * value;
@@ -233,7 +233,7 @@ CbcUserSOS::infeasibility(const OsiBranchingInformation *info,
         // if move makes infeasible then make at least default
         double newValue = activity[iRow] + movement;
         if (newValue > upper[iRow] + tolerance || newValue < lower[iRow] - tolerance) {
-          shadowEstimateDown_ += fabs(movement) * CoinMax(fabs(valueP), info->defaultDual_);
+          shadowEstimateDown_ += fabs(movement) * std::max(fabs(valueP), info->defaultDual_);
           infeasible = true;
         }
       }
@@ -286,7 +286,7 @@ CbcUserSOS::infeasibility(const OsiBranchingInformation *info,
         // if move makes infeasible then make at least default
         double newValue = activity[iRow] + movement;
         if (newValue > upper[iRow] + tolerance || newValue < lower[iRow] - tolerance) {
-          shadowEstimateUp_ += fabs(movement) * CoinMax(fabs(valueP), info->defaultDual_);
+          shadowEstimateUp_ += fabs(movement) * std::max(fabs(valueP), info->defaultDual_);
           infeasible = true;
         }
       }
@@ -307,8 +307,8 @@ CbcUserSOS::infeasibility(const OsiBranchingInformation *info,
 #define WEIGHT_BEFORE 0.1
       int stateOfSearch = model_->stateOfSearch() % 10;
       double returnValue = 0.0;
-      double minValue = CoinMin(downCost, upCost);
-      double maxValue = CoinMax(downCost, upCost);
+      double minValue = std::min(downCost, upCost);
+      double maxValue = std::max(downCost, upCost);
       if (stateOfSearch <= 2) {
         // no branching solution
         returnValue = WEIGHT_BEFORE * minValue + (1.0 - WEIGHT_BEFORE) * maxValue;
@@ -342,8 +342,8 @@ CbcUserSOS::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInform
   int lastNonZero = -1;
   for (j = 0; j < numberMembers_; j++) {
     int iColumn = members_[j];
-    double value = CoinMax(lower[iColumn], solution[iColumn]);
-    value = CoinMin(upper[iColumn], value);
+    double value = std::max(lower[iColumn], solution[iColumn]);
+    value = std::min(upper[iColumn], value);
     if (fabs(value) > integerTolerance) {
       if (firstNonZero < 0)
         firstNonZero = j;

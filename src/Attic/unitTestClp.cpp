@@ -668,8 +668,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 	      double value = fabs(elements[j]);
 	      if (!isInteger)
 		flag[iRow] = 1;
-	      smallest[iRow] = CoinMin(smallest[iRow], value);
-	      largest[iRow] = CoinMax(largest[iRow], value);
+	      smallest[iRow] = std::min(smallest[iRow], value);
+	      largest[iRow] = std::max(largest[iRow], value);
 	    }
 	  }
 	  double *rowLower = modelC->rowLower();
@@ -733,10 +733,10 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 	    double above = value - rowLower[iRow];
 	    double below = rowUpper[iRow] - value;
 	    if (above < 1.0e12) {
-	      largest = CoinMax(largest, above);
+	      largest = std::max(largest, above);
 	    }
 	    if (below < 1.0e12) {
-	      largest = CoinMax(largest, below);
+	      largest = std::max(largest, below);
 	    }
 	    if (rowScale) {
 	      double multiplier = rowScale[iRow];
@@ -744,10 +744,10 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 	      below *= multiplier;
 	    }
 	    if (above < 1.0e12) {
-	      largestScaled = CoinMax(largestScaled, above);
+	      largestScaled = std::max(largestScaled, above);
 	    }
 	    if (below < 1.0e12) {
-	      largestScaled = CoinMax(largestScaled, below);
+	      largestScaled = std::max(largestScaled, below);
 	    }
 	  }
 	  
@@ -762,10 +762,10 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 	    double above = value - columnLower[iColumn];
 	    double below = columnUpper[iColumn] - value;
 	    if (above < 1.0e12) {
-	      largest = CoinMax(largest, above);
+	      largest = std::max(largest, above);
 	    }
 	    if (below < 1.0e12) {
-	      largest = CoinMax(largest, below);
+	      largest = std::max(largest, below);
 	    }
 	    if (columnScale) {
 	      double multiplier = 1.0 / columnScale[iColumn];
@@ -773,20 +773,20 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 	      below *= multiplier;
 	    }
 	    if (above < 1.0e12) {
-	      largestScaled = CoinMax(largestScaled, above);
+	      largestScaled = std::max(largestScaled, above);
 	    }
 	    if (below < 1.0e12) {
-	      largestScaled = CoinMax(largestScaled, below);
+	      largestScaled = std::max(largestScaled, below);
 	    }
 	  }
 	  std::cout << "Largest (scaled) away from bound " << largestScaled
 		    << " unscaled " << largest << std::endl;
 #ifdef JJF_ZERO
-	  modelC->setDualBound(CoinMax(1.0001e8,
-				       CoinMin(1000.0 * largestScaled, 1.00001e10)));
+	  modelC->setDualBound(std::max(1.0001e8,
+				       std::min(1000.0 * largestScaled, 1.00001e10)));
 #else
-	  modelC->setDualBound(CoinMax(1.0001e9,
-				       CoinMin(1000.0 * largestScaled, 1.0001e10)));
+	  modelC->setDualBound(std::max(1.0001e9,
+				       std::min(1000.0 * largestScaled, 1.0001e10)));
 #endif
 	}
       } // end clp-specific setup
@@ -794,7 +794,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 	Cut passes: For small models (n < 500) always do 100 passes, if possible
 	(-100). For larger models, use minimum drop to stop (100, 20).
       */
-      model->setMinimumDrop(CoinMin(5.0e-2,
+      model->setMinimumDrop(std::min(5.0e-2,
 				    fabs(model->getMinimizationObjValue()) * 1.0e-3 + 1.0e-4));
       if (CoinAbs(model->getMaximumCutPassesAtRoot()) <= 100) {
 	if (model->getNumCols() < 500) {
@@ -932,8 +932,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
 */
     double objActual = model->getObjValue();
     double objExpect = objValue[m];
-    double tolerance = CoinMin(fabs(objActual), fabs(objExpect));
-    tolerance = CoinMax(1.0e-4, 1.0e-5 * tolerance);
+    double tolerance = std::min(fabs(objActual), fabs(objExpect));
+    tolerance = std::max(1.0e-4, 1.0e-5 * tolerance);
     if (!model->status()) {
 
       //CoinRelFltEq eq(1.0e-3) ;

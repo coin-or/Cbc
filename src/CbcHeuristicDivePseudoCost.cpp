@@ -170,7 +170,7 @@ void CbcHeuristicDivePseudoCost::initializeData()
     if (diveOptions >= 100)
       k += 32;
     model_->pseudoShadow(k - 1);
-    int numberInts = CoinMin(model_->numberObjects(), numberIntegers);
+    int numberInts = std::min(model_->numberObjects(), numberIntegers);
     OsiObject **objects = model_->objects();
     for (int i = 0; i < numberInts; i++) {
       CbcSimpleIntegerDynamicPseudoCost *obj1 = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(objects[i]);
@@ -180,11 +180,11 @@ void CbcHeuristicDivePseudoCost::initializeData()
         double downShadow = obj1->downShadowPrice();
         double upPseudoCost = 1.0e-2 * obj1->upDynamicPseudoCost();
         double upShadow = obj1->upShadowPrice();
-        downPseudoCost = CoinMax(downPseudoCost, downShadow);
-        downPseudoCost = CoinMax(downPseudoCost, 0.001 * upShadow);
+        downPseudoCost = std::max(downPseudoCost, downShadow);
+        downPseudoCost = std::max(downPseudoCost, 0.001 * upShadow);
         downArray_[i] = downPseudoCost;
-        upPseudoCost = CoinMax(upPseudoCost, upShadow);
-        upPseudoCost = CoinMax(upPseudoCost, 0.001 * downShadow);
+        upPseudoCost = std::max(upPseudoCost, upShadow);
+        upPseudoCost = std::max(upPseudoCost, 0.001 * downShadow);
         upArray_[i] = upPseudoCost;
       }
     }
@@ -223,17 +223,17 @@ int CbcHeuristicDivePseudoCost::fixOtherVariables(OsiSolverInterface *solver,
       double value = solution[iColumn];
       if (value - lower[iColumn] <= integerTolerance) {
         candidate[cnt].var = iColumn;
-        candidate[cnt++].pseudoRedCost = CoinMax(1.0e-2 * reducedCost[iColumn],
+        candidate[cnt++].pseudoRedCost = std::max(1.0e-2 * reducedCost[iColumn],
                                            downArray_[i])
           * random[i];
       } else if (upper[iColumn] - value <= integerTolerance) {
         candidate[cnt].var = iColumn;
-        candidate[cnt++].pseudoRedCost = CoinMax(-1.0e-2 * reducedCost[iColumn],
+        candidate[cnt++].pseudoRedCost = std::max(-1.0e-2 * reducedCost[iColumn],
                                            downArray_[i])
           * random[i];
       } else if (fixGeneralIntegers && fabs(floor(value + 0.5) - value) <= integerTolerance) {
         candidate[cnt].var = iColumn;
-        candidate[cnt++].pseudoRedCost = CoinMax(-1.0e-6 * reducedCost[iColumn],
+        candidate[cnt++].pseudoRedCost = std::max(-1.0e-6 * reducedCost[iColumn],
                                            1.0e-4 * downArray_[i])
           * random[i];
       }

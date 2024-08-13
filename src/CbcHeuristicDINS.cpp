@@ -197,7 +197,7 @@ int CbcHeuristicDINS::solution(double &solutionValue,
       double nearest = floor(value + 0.5);
       values_[0][i] = static_cast< int >(nearest);
     }
-    numberKeptSolutions_ = CoinMin(numberKeptSolutions_ + 1, maximumKeepSolutions_);
+    numberKeptSolutions_ = std::min(numberKeptSolutions_ + 1, maximumKeepSolutions_);
   }
   int finalReturnCode = 0;
   if (((model_->getNodeCount() % howOften_) == howOften_ / 2 || !model_->getNodeCount()) && (model_->getCurrentPassNumber() <= 1 || model_->getCurrentPassNumber() == 999999)) {
@@ -252,11 +252,11 @@ int CbcHeuristicDINS::solution(double &solutionValue,
           // Re-bound
           nBound++;
           if (intValue >= currentValue) {
-            currentLower = CoinMax(currentLower, ceil(2 * currentValue - intValue));
+            currentLower = std::max(currentLower, ceil(2 * currentValue - intValue));
             currentUpper = intValue;
           } else {
             currentLower = intValue;
-            currentUpper = CoinMin(currentUpper, floor(2 * currentValue - intValue));
+            currentUpper = std::min(currentUpper, floor(2 * currentValue - intValue));
           }
           newSolver->setColLower(iColumn, currentLower);
           newSolver->setColUpper(iColumn, currentUpper);
@@ -380,7 +380,7 @@ int CbcHeuristicDINS::solution(double &solutionValue,
             }
           }
           if ((returnCode & 1) != 0) {
-            cutoff = CoinMin(cutoff, solutionValue - model_->getCutoffIncrement());
+            cutoff = std::min(cutoff, solutionValue - model_->getCutoffIncrement());
             finalReturnCode = 1;
           }
         }

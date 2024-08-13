@@ -186,7 +186,7 @@ int main(int argc, const char *argv[])
 
   // Could tune more
   double objValue = model.solver()->getObjSense() * model.solver()->getObjValue();
-  double minimumDropA = CoinMin(1.0, fabs(objValue) * 1.0e-3 + 1.0e-4);
+  double minimumDropA = std::min(1.0, fabs(objValue) * 1.0e-3 + 1.0e-4);
   double minimumDrop = fabs(objValue) * 1.0e-4 + 1.0e-4;
   printf("min drop %g (A %g)\n", minimumDrop, minimumDropA);
   model.setMinimumDrop(minimumDrop);

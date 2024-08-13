@@ -108,8 +108,8 @@ CbcSimpleInteger::infeasibility(const OsiBranchingInformation *info,
   int &preferredWay) const
 {
   double value = info->solution_[columnNumber_];
-  value = CoinMax(value, info->lower_[columnNumber_]);
-  value = CoinMin(value, info->upper_[columnNumber_]);
+  value = std::max(value, info->lower_[columnNumber_]);
+  value = std::min(value, info->upper_[columnNumber_]);
   double nearest = floor(value + (1.0 - breakEven_));
   assert(breakEven_ > 0.0 && breakEven_ < 1.0);
   if (nearest > value)
@@ -137,8 +137,8 @@ CbcSimpleInteger::feasibleRegion(OsiSolverInterface *solver, const OsiBranchingI
   if (fabs(value - floor(value + 0.5)) > 1.0e-5)
     printf("value for %d away from integer %g\n", columnNumber_, value);
 #endif
-  double newValue = CoinMax(value, info->lower_[columnNumber_]);
-  newValue = CoinMin(newValue, info->upper_[columnNumber_]);
+  double newValue = std::max(value, info->lower_[columnNumber_]);
+  newValue = std::min(newValue, info->upper_[columnNumber_]);
   newValue = floor(newValue + 0.5);
   solver->setColLower(columnNumber_, newValue);
   solver->setColUpper(columnNumber_, newValue);
@@ -159,8 +159,8 @@ CbcSimpleInteger::solverBranch(OsiSolverInterface * /*solver*/,
   const OsiBranchingInformation *info) const
 {
   double value = info->solution_[columnNumber_];
-  value = CoinMax(value, info->lower_[columnNumber_]);
-  value = CoinMin(value, info->upper_[columnNumber_]);
+  value = std::max(value, info->lower_[columnNumber_]);
+  value = std::min(value, info->upper_[columnNumber_]);
   assert(info->upper_[columnNumber_] > info->lower_[columnNumber_]);
 #ifndef NDEBUG
   double nearest = floor(value + 0.5);
@@ -184,8 +184,8 @@ void CbcSimpleInteger::fillCreateBranch(CbcIntegerBranchingObject *branch, const
 {
   branch->setOriginalObject(this);
   double value = info->solution_[columnNumber_];
-  value = CoinMax(value, info->lower_[columnNumber_]);
-  value = CoinMin(value, info->upper_[columnNumber_]);
+  value = std::max(value, info->lower_[columnNumber_]);
+  value = std::min(value, info->upper_[columnNumber_]);
   assert(info->upper_[columnNumber_] > info->lower_[columnNumber_]);
   if (!info->hotstartSolution_ && priority_ != -999) {
 #if 0 // out because of very strong branching ndef NDEBUG
@@ -449,7 +449,7 @@ CbcIntegerBranchingObject::branch()
 #ifndef CBCSIMPLE_TIGHTEN_BOUNDS
     model_->solver()->setColLower(iColumn, down_[0]);
 #else
-    model_->solver()->setColLower(iColumn, CoinMax(down_[0], olb));
+    model_->solver()->setColLower(iColumn, std::max(down_[0], olb));
 #endif
     model_->solver()->setColUpper(iColumn, down_[1]);
     //#define CBC_PRINT2
@@ -500,7 +500,7 @@ CbcIntegerBranchingObject::branch()
 #ifndef CBCSIMPLE_TIGHTEN_BOUNDS
     model_->solver()->setColUpper(iColumn, up_[1]);
 #else
-    model_->solver()->setColUpper(iColumn, CoinMin(up_[1], oub));
+    model_->solver()->setColUpper(iColumn, std::min(up_[1], oub));
 #endif
 #ifdef CBC_PRINT2
     printf("%d branching up has bounds %g %g", iColumn, up_[0], up_[1]);
@@ -543,7 +543,7 @@ CbcIntegerBranchingObject::branch()
     printf("bad lb change for column %d from %g to %g\n", iColumn, olb, nlb);
 #endif
     //abort();
-    model_->solver()->setColLower(iColumn, CoinMin(olb, nub));
+    model_->solver()->setColLower(iColumn, std::min(olb, nub));
     nlb = olb;
   }
   if (nub > oub) {
@@ -551,7 +551,7 @@ CbcIntegerBranchingObject::branch()
     printf("bad ub change for column %d from %g to %g\n", iColumn, oub, nub);
 #endif
     //abort();
-    model_->solver()->setColUpper(iColumn, CoinMax(oub, nlb));
+    model_->solver()->setColUpper(iColumn, std::max(oub, nlb));
   }
 #ifdef CBC_PRINT2
   if (nlb < olb + 1.0e-8 && nub > oub - 1.0e-8 && false)
@@ -595,10 +595,10 @@ bool CbcIntegerBranchingObject::tighten(OsiSolverInterface *solver)
   double lower = solver->getColLower()[variable_];
   double upper = solver->getColUpper()[variable_];
   assert(upper > lower);
-  down_[0] = CoinMax(down_[0], lower);
-  up_[0] = CoinMax(up_[0], lower);
-  down_[1] = CoinMin(down_[1], upper);
-  up_[1] = CoinMin(up_[1], upper);
+  down_[0] = std::max(down_[0], lower);
+  up_[0] = std::max(up_[0], lower);
+  down_[1] = std::min(down_[1], upper);
+  up_[1] = std::min(up_[1], upper);
   return (down_[0] == up_[1]);
 }
 #ifdef FUNNY_BRANCHING2
@@ -616,12 +616,12 @@ int CbcIntegerBranchingObject::applyExtraBounds(int iColumn, double lower, doubl
   if (variable_ == iColumn) {
     printf("odd applyExtra %d\n", iColumn);
     if (way < 0) {
-      down_[0] = CoinMax(lower, down_[0]);
-      down_[1] = CoinMin(upper, down_[1]);
+      down_[0] = std::max(lower, down_[0]);
+      down_[1] = std::min(upper, down_[1]);
       assert(down_[0] <= down_[1]);
     } else {
-      up_[0] = CoinMax(lower, up_[0]);
-      up_[1] = CoinMin(upper, up_[1]);
+      up_[0] = std::max(lower, up_[0]);
+      up_[1] = std::min(upper, up_[1]);
       assert(up_[0] <= up_[1]);
     }
     return 0;
@@ -637,12 +637,12 @@ int CbcIntegerBranchingObject::applyExtraBounds(int iColumn, double lower, doubl
         if ((variable & 0x80000000) == 0) {
           // lower bound changing
           found |= 1;
-          newBounds_[i] = CoinMax(lower, newBounds_[i]);
+          newBounds_[i] = std::max(lower, newBounds_[i]);
           newLower = newBounds_[i];
         } else {
           // upper bound changing
           found |= 2;
-          newBounds_[i] = CoinMin(upper, newBounds_[i]);
+          newBounds_[i] = std::min(upper, newBounds_[i]);
           newUpper = newBounds_[i];
         }
       }

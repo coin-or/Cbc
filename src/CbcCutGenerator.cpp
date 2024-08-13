@@ -523,8 +523,8 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
                   if (tightLower[j] > solution[j] + primalTolerance || tightUpper[j] < solution[j] - primalTolerance)
                     returnCode = true;
                 } else if (tightenBounds && tightenBounds[j]) {
-                  solver->setColLower(j, CoinMax(tightLower[j], lower[j]));
-                  solver->setColUpper(j, CoinMin(tightUpper[j], upper[j]));
+                  solver->setColLower(j, std::max(tightLower[j], lower[j]));
+                  solver->setColUpper(j, std::min(tightUpper[j], upper[j]));
                   if (tightLower[j] > solution[j] + primalTolerance || tightUpper[j] < solution[j] - primalTolerance)
                     returnCode = true;
                 }
@@ -567,8 +567,8 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
                   if (tightLower[j] > solution[j] + primalTolerance || tightUpper[j] < solution[j] - primalTolerance)
                     ifCut = true;
                 } else if (tightenBounds && tightenBounds[j]) {
-                  lbs.insert(j, CoinMax(tightLower[j], lower[j]));
-                  ubs.insert(j, CoinMin(tightUpper[j], upper[j]));
+                  lbs.insert(j, std::max(tightLower[j], lower[j]));
+                  ubs.insert(j, std::min(tightUpper[j], upper[j]));
                   if (tightLower[j] > solution[j] + primalTolerance || tightUpper[j] < solution[j] - primalTolerance)
                     ifCut = true;
                 }
@@ -803,10 +803,10 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
               integral = false;
             if (solver->isInteger(column)) {
               nInteger++;
-              double largerBound = CoinMax(fabs(lower[column]),
+              double largerBound = std::max(fabs(lower[column]),
                 fabs(upper[column]));
               double solutionBound = fabs(solution[column]) + 10.0;
-              bound += CoinMin(largerBound, solutionBound);
+              bound += std::min(largerBound, solutionBound);
             }
           }
 #if WEAKEN_CUTS == 1
@@ -845,7 +845,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
           }
           // is it nearly violated
           if (sum > ub - 1.0e-8 || sum < lb + 1.0e-8) {
-            double violation = CoinMax(sum - ub, lb - sum);
+            double violation = std::max(sum - ub, lb - sum);
             std::cout << generatorName_ << " cut with " << n
                       << " coefficients, nearly cuts off known solutions by " << violation
                       << ", lo=" << lb << ", ub=" << ub << std::endl;
@@ -913,7 +913,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 #endif
 	    bad = true; // could be dangerous cut
 	  }
-	  double tolerance = smallValue1;//CoinMax(smallValue1,fabs(sum)*0.0001*smallValue1);
+	  double tolerance = smallValue1;//std::max(smallValue1,fabs(sum)*0.0001*smallValue1);
 	  if (upper && sum < rhs+tolerance) {
 #ifdef ALLOW_INEFFECTIVE
 	    if (!allowIneffective)
@@ -959,8 +959,8 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 	      }
 	    } else {
 	      int iColumn = indices[i];
-	      largest=CoinMax(largest,value);
-	      smallest=CoinMin(smallest,value);
+	      largest=std::max(largest,value);
+	      smallest=std::min(smallest,value);
 	      indices[number]=indices[i];
 	      elements[number++]=elements[i];
 	    }
@@ -1075,14 +1075,14 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
         if (inaccuracy_ < 3) {
           nAdd = 10000;
           if (pass > 0 && numberColumns > -500)
-            nAdd = CoinMin(nAdd, nElsNow + 2 * numberRows);
+            nAdd = std::min(nAdd, nElsNow + 2 * numberRows);
         } else {
           nAdd = 10000;
           if (pass > 0)
-            nAdd = CoinMin(nAdd, nElsNow + 2 * numberRows);
+            nAdd = std::min(nAdd, nElsNow + 2 * numberRows);
         }
         nAdd2 = 5 * numberColumns;
-        nReasonable = CoinMax(nAdd2, nElsNow / 8 + nAdd);
+        nReasonable = std::max(nAdd2, nElsNow / 8 + nAdd);
         if (!depth && !pass) {
           // allow more
           nAdd += nElsNow / 2;
@@ -1094,14 +1094,14 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       } else {
         nAdd = 200;
         nAdd2 = 2 * numberColumns;
-        nReasonable = CoinMax(nAdd2, nElsNow / 8 + nAdd);
+        nReasonable = std::max(nAdd2, nElsNow / 8 + nAdd);
       }
       //#define UNS_WEIGHT 0.1
 #ifdef UNS_WEIGHT
       const double *colLower = solver->getColLower();
       const double *colUpper = solver->getColUpper();
 #endif
-      if (/*nEls>CoinMax(nAdd2,nElsNow/8+nAdd)*/ nCuts && feasible) {
+      if (/*nEls>std::max(nAdd2,nElsNow/8+nAdd)*/ nCuts && feasible) {
         //printf("need to remove cuts\n");
         // just add most effective
 #ifndef JJF_ONE
@@ -1186,7 +1186,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 #ifdef USE_OBJECTIVE
             if (sum) {
 #if USE_OBJECTIVE == 1
-              obj = CoinMax(1.0e-6, fabs(obj));
+              obj = std::max(1.0e-6, fabs(obj));
               norm = sqrt(obj * norm);
               //sum += fabs(obj)*invObjNorm;
               //printf("sum %g norm %g normobj %g invNorm %g mod %g\n",
@@ -1239,7 +1239,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
             element2[column[i]] = value;
             norm += value * value;
           }
-          int kkk = CoinMin(nCuts, k + 5);
+          int kkk = std::min(nCuts, k + 5);
           for (int kk = k + 1; kk < kkk; kk++) {
             int jj = which[kk];
             const OsiRowCut *thisCut2 = cs.rowCutPtr(jj);
@@ -1263,12 +1263,12 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
               if ((lb < -1.0e20 && lbB > -1.0e20) || (lbB < -1.0e20 && lb > -1.0e20))
                 parallel = false;
               double tolerance;
-              tolerance = CoinMax(fabs(lb), fabs(lbB)) + 1.0e-6;
+              tolerance = std::max(fabs(lb), fabs(lbB)) + 1.0e-6;
               if (fabs(lb - lbB) > tolerance)
                 parallel = false;
               if ((ub > 1.0e20 && ubB < 1.0e20) || (ubB > 1.0e20 && ub < 1.0e20))
                 parallel = false;
-              tolerance = CoinMax(fabs(ub), fabs(ubB)) + 1.0e-6;
+              tolerance = std::max(fabs(ub), fabs(ubB)) + 1.0e-6;
               if (fabs(ub - ubB) > tolerance)
                 parallel = false;
               if (parallel) {
@@ -1425,7 +1425,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
             }
             double orthoScore = 1.0 - product * normNew * normB;
             if (orthoScore >= testValue) {
-              ortho[k] = CoinMin(orthoScore, ortho[k]);
+              ortho[k] = std::min(orthoScore, ortho[k]);
               double test = score[k] + ortho[k];
               if (test > best) {
                 best = score[k];

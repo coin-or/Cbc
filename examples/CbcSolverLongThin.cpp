@@ -348,7 +348,7 @@ void CbcSolverLongThin::resolve()
       for (i = 0; i < numberColumns2; i++) {
         temp2.setInteger(i);
         double value = solution2[i];
-        value = CoinMin(CoinMax(value, colLower2[i]), colUpper2[i]);
+        value = std::min(std::max(value, colLower2[i]), colUpper2[i]);
         cleanSolution2[i] = value;
       }
       temp2.setColSolution(cleanSolution2);
@@ -496,7 +496,7 @@ void CbcSolverLongThin::resolve()
       int i;
       for (i = 0; i < numberColumns; i++) {
         if (solution[i] > 1.0e-6 || modelPtr_->getStatus(i) == ClpSimplex::basic) {
-          node_[i] = CoinMax(count_, node_[i]);
+          node_[i] = std::max(count_, node_[i]);
           howMany_[i]++;
         }
       }
@@ -601,7 +601,7 @@ void CbcSolverLongThin::resolve()
       printf("count %d, bad %d\n", count_, timesBad_);
     for (i = 0; i < numberColumns; i++) {
       if (solution[i] > 1.0e-6 || modelPtr_->getStatus(i) == ClpSimplex::basic) {
-        node_[i] = CoinMax(count_, node_[i]);
+        node_[i] = std::max(count_, node_[i]);
         howMany_[i]++;
       }
     }

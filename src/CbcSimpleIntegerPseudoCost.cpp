@@ -49,7 +49,7 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost(CbcModel *model,
   : CbcSimpleInteger(model, iColumn, breakEven)
 {
   const double *cost = model->getObjCoefficients();
-  double costValue = CoinMax(1.0e-5, fabs(cost[iColumn]));
+  double costValue = std::max(1.0e-5, fabs(cost[iColumn]));
   // treat as if will cost what it says up
   upPseudoCost_ = costValue;
   // and balance at breakeven
@@ -67,8 +67,8 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost(CbcModel *model,
   double upPseudoCost)
   : CbcSimpleInteger(model, iColumn)
 {
-  downPseudoCost_ = CoinMax(1.0e-10, downPseudoCost);
-  upPseudoCost_ = CoinMax(1.0e-10, upPseudoCost);
+  downPseudoCost_ = std::max(1.0e-10, downPseudoCost);
+  upPseudoCost_ = std::max(1.0e-10, upPseudoCost);
   breakEven_ = upPseudoCost_ / (upPseudoCost_ + downPseudoCost_);
   upDownSeparator_ = -1.0;
   method_ = 0;
@@ -127,8 +127,8 @@ CbcSimpleIntegerPseudoCost::createCbcBranch(OsiSolverInterface *solver, const Os
   const double *lower = solver->getColLower();
   const double *upper = solver->getColUpper();
   double value = solution[columnNumber_];
-  value = CoinMax(value, lower[columnNumber_]);
-  value = CoinMin(value, upper[columnNumber_]);
+  value = std::max(value, lower[columnNumber_]);
+  value = std::min(value, upper[columnNumber_]);
 #ifndef NDEBUG
   double nearest = floor(value + 0.5);
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
@@ -151,7 +151,7 @@ CbcSimpleIntegerPseudoCost::createCbcBranch(OsiSolverInterface *solver, const Os
   double changeInGuessed = up - down;
   if (way > 0)
     changeInGuessed = -changeInGuessed;
-  changeInGuessed = CoinMax(0.0, changeInGuessed);
+  changeInGuessed = std::max(0.0, changeInGuessed);
   //if (way>0)
   //changeInGuessed += 1.0e8; // bias to stay up
   newObject->setChangeInGuessed(changeInGuessed);
@@ -172,8 +172,8 @@ CbcSimpleIntegerPseudoCost::infeasibility(const OsiBranchingInformation * /*info
     return 0.0;
   }
   double value = solution[columnNumber_];
-  value = CoinMax(value, lower[columnNumber_]);
-  value = CoinMin(value, upper[columnNumber_]);
+  value = std::max(value, lower[columnNumber_]);
+  value = std::min(value, upper[columnNumber_]);
   /*printf("%d %g %g %g %g\n",columnNumber_,value,lower[columnNumber_],
       solution[columnNumber_],upper[columnNumber_]);*/
   double nearest = floor(value + 0.5);
@@ -184,8 +184,8 @@ CbcSimpleIntegerPseudoCost::infeasibility(const OsiBranchingInformation * /*info
     above = below;
     below = above - 1;
   }
-  double downCost = CoinMax((value - below) * downPseudoCost_, 0.0);
-  double upCost = CoinMax((above - value) * upPseudoCost_, 0.0);
+  double downCost = std::max((value - below) * downPseudoCost_, 0.0);
+  double upCost = std::max((above - value) * upPseudoCost_, 0.0);
   if (downCost >= upCost)
     preferredWay = 1;
   else
@@ -202,9 +202,9 @@ CbcSimpleIntegerPseudoCost::infeasibility(const OsiBranchingInformation * /*info
     // can't get at model so 1,2 don't make sense
     assert(method_ < 1 || method_ > 2);
     if (!method_)
-      return CoinMin(downCost, upCost);
+      return std::min(downCost, upCost);
     else
-      return CoinMax(downCost, upCost);
+      return std::max(downCost, upCost);
   }
 }
 
@@ -217,8 +217,8 @@ CbcSimpleIntegerPseudoCost::upEstimate() const
   const double *lower = solver->getColLower();
   const double *upper = solver->getColUpper();
   double value = solution[columnNumber_];
-  value = CoinMax(value, lower[columnNumber_]);
-  value = CoinMin(value, upper[columnNumber_]);
+  value = std::max(value, lower[columnNumber_]);
+  value = std::min(value, upper[columnNumber_]);
   if (upper[columnNumber_] == lower[columnNumber_]) {
     // fixed
     return 0.0;
@@ -230,7 +230,7 @@ CbcSimpleIntegerPseudoCost::upEstimate() const
     above = below;
     below = above - 1;
   }
-  double upCost = CoinMax((above - value) * upPseudoCost_, 0.0);
+  double upCost = std::max((above - value) * upPseudoCost_, 0.0);
   return upCost;
 }
 // Return "down" estimate
@@ -242,8 +242,8 @@ CbcSimpleIntegerPseudoCost::downEstimate() const
   const double *lower = solver->getColLower();
   const double *upper = solver->getColUpper();
   double value = solution[columnNumber_];
-  value = CoinMax(value, lower[columnNumber_]);
-  value = CoinMin(value, upper[columnNumber_]);
+  value = std::max(value, lower[columnNumber_]);
+  value = std::min(value, upper[columnNumber_]);
   if (upper[columnNumber_] == lower[columnNumber_]) {
     // fixed
     return 0.0;
@@ -255,7 +255,7 @@ CbcSimpleIntegerPseudoCost::downEstimate() const
     above = below;
     below = above - 1;
   }
-  double downCost = CoinMax((value - below) * downPseudoCost_, 0.0);
+  double downCost = std::max((value - below) * downPseudoCost_, 0.0);
   return downCost;
 }
 

@@ -181,8 +181,8 @@ CbcClique::infeasibility(const OsiBranchingInformation * /*info*/,
     int sequence = members_[j];
     int iColumn = integer[sequence];
     double value = solution[iColumn];
-    value = CoinMax(value, lower[iColumn]);
-    value = CoinMin(value, upper[iColumn]);
+    value = std::max(value, lower[iColumn]);
+    value = std::min(value, upper[iColumn]);
     double nearest = floor(value + 0.5);
     double distance = fabs(value - nearest);
     if (distance > integerTolerance) {
@@ -191,7 +191,7 @@ CbcClique::infeasibility(const OsiBranchingInformation * /*info*/,
       // if slack then choose that
       if (j == slack_ && value > 0.05)
         slackValue = value;
-      largestValue = CoinMax(value, largestValue);
+      largestValue = std::max(value, largestValue);
       sort[numberUnsatis++] = -value;
     } else if (upper[iColumn] > lower[iColumn]) {
       numberFree++;
@@ -254,8 +254,8 @@ void CbcClique::feasibleRegion()
     int sequence = members_[j];
     int iColumn = integer[sequence];
     double value = solution[iColumn];
-    value = CoinMax(value, lower[iColumn]);
-    value = CoinMin(value, upper[iColumn]);
+    value = std::max(value, lower[iColumn]);
+    value = std::min(value, upper[iColumn]);
     double nearest = floor(value + 0.5);
 #ifndef NDEBUG
     double distance = fabs(value - nearest);
@@ -317,8 +317,8 @@ CbcClique::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInforma
     int sequence = members_[j];
     int iColumn = integer[sequence];
     double value = solution[iColumn];
-    value = CoinMax(value, lower[iColumn]);
-    value = CoinMin(value, upper[iColumn]);
+    value = std::max(value, lower[iColumn]);
+    value = std::min(value, upper[iColumn]);
     double nearest = floor(value + 0.5);
     double distance = fabs(value - nearest);
     if (distance > integerTolerance) {

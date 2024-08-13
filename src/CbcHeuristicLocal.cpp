@@ -183,7 +183,7 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
     double originalLower;
     double originalUpper;
     getIntegerInformation(object, originalLower, originalUpper);
-    newSolver->setColLower(iColumn, CoinMax(colLower[iColumn], originalLower));
+    newSolver->setColLower(iColumn, std::max(colLower[iColumn], originalLower));
     if (!used_[iColumn]) {
       newSolver->setColUpper(iColumn, colLower[iColumn]);
       nFix++;
@@ -217,8 +217,8 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
     }
     CoinSort_2(sort, sort + n, which);
     // only half fixed in total
-    n = CoinMin(n, numberIntegers / 2 - nFix);
-    int allow = CoinMax(numberSolutions_ - 2, sort[0]);
+    n = std::min(n, numberIntegers / 2 - nFix);
+    int allow = std::max(numberSolutions_ - 2, sort[0]);
     int nFix2 = 0;
     for (i = 0; i < n; i++) {
       int iColumn = integerVariable[i];
@@ -271,7 +271,7 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
           // fix some continuous
           double *sort = new double[nAtLb];
           int *which = new int[nAtLb];
-          //double threshold = CoinMax((0.01*sumDj)/static_cast<double>(nAtLb),1.0e-6);
+          //double threshold = std::max((0.01*sumDj)/static_cast<double>(nAtLb),1.0e-6);
           int nFix2 = 0;
           for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (!isHeuristicInteger(newSolver, iColumn)) {
@@ -286,7 +286,7 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
           }
           CoinSort_2(sort, sort + nFix2, which);
           int divisor = 2;
-          nFix2 = CoinMin(nFix2, (numberColumns - nFix) / divisor);
+          nFix2 = std::min(nFix2, (numberColumns - nFix) / divisor);
           for (int i = 0; i < nFix2; i++) {
             int iColumn = which[i];
             newSolver->setColUpper(iColumn, colLower[iColumn]);
@@ -582,15 +582,15 @@ int CbcHeuristicLocal::solution(double &solutionValue,
       int type = swap / 10;
       if (type == 1) {
         // reduce
-        maxIntegers = CoinMin(1000, numberIntegers);
+        maxIntegers = std::min(1000, numberIntegers);
       } else if (type == 2) {
         // reduce even more
         maxTries = 100000;
-        maxIntegers = CoinMin(500, numberIntegers);
+        maxIntegers = std::min(500, numberIntegers);
       } else if (type > 2) {
         assert(type < 10);
         int totals[7] = { 1000, 500, 100, 50, 50, 50, 50 };
-        maxIntegers = CoinMin(totals[type - 3], numberIntegers);
+        maxIntegers = std::min(totals[type - 3], numberIntegers);
         double *weight = new double[numberIntegers];
         for (int i = 0; i < numberIntegers; i++) {
           weight[i] = model_->randomNumberGenerator()->randomDouble();
@@ -613,7 +613,7 @@ int CbcHeuristicLocal::solution(double &solutionValue,
     for (i = 0; i < numberIntegers; i++) {
       int iColumn = integerVariable[i];
       bestChange = 0.0;
-      int endInner = CoinMin(numberIntegers, i + maxIntegers);
+      int endInner = std::min(numberIntegers, i + maxIntegers);
 
       double objectiveCoefficient = cost[i];
       int k;
@@ -1228,7 +1228,7 @@ int CbcHeuristicProximity::solution(double &solutionValue,
     if (!numberIncrease && !numberDecrease) {
       // somehow tolerances are such that we can slip through
       // change for next time
-      increment_ += CoinMax(increment_, fabs(solutionValue + offset) * 1.0e-10);
+      increment_ += std::max(increment_, fabs(solutionValue + offset) * 1.0e-10);
     }
   } else {
     sprintf(proxPrint, "Proximity search ran %d nodes - no new solution",
@@ -1333,7 +1333,7 @@ int CbcHeuristicNaive::solution(double &solutionValue,
   model_->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
   double direction = model_->solver()->getObjSenseInCbc();
   cutoff *= direction;
-  cutoff = CoinMin(cutoff, solutionValue);
+  cutoff = std::min(cutoff, solutionValue);
   OsiSolverInterface *solver = model_->continuousSolver();
   if (!solver)
     solver = model_->solver();
@@ -1453,11 +1453,11 @@ int CbcHeuristicNaive::solution(double &solutionValue,
     double newLower;
     double newUpper;
     if (isHeuristicInteger(newSolver, iColumn)) {
-      newLower = CoinMax(lower, floor(value) - 2.0);
-      newUpper = CoinMin(upper, ceil(value) + 2.0);
+      newLower = std::max(lower, floor(value) - 2.0);
+      newUpper = std::min(upper, ceil(value) + 2.0);
     } else if (value >= lower && value <= upper) {
-      newLower = CoinMax(lower, value - 1.0e5);
-      newUpper = CoinMin(upper, value + 1.0e-5);
+      newLower = std::max(lower, value - 1.0e5);
+      newUpper = std::min(upper, value + 1.0e-5);
     }
     newSolver->setColLower(iColumn, newLower);
     newSolver->setColUpper(iColumn, newUpper);
@@ -1483,8 +1483,8 @@ int CbcHeuristicNaive::solution(double &solutionValue,
             nFix++;
             newLower = upper;
           } else {
-            newLower = CoinMax(lower, floor(value) - 2.0);
-            newUpper = CoinMin(upper, ceil(value) + 2.0);
+            newLower = std::max(lower, floor(value) - 2.0);
+            newUpper = std::min(upper, ceil(value) + 2.0);
           }
         }
         newSolver->setColLower(iColumn, newLower);
@@ -1609,7 +1609,7 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
     return 0;
   numberSolutions_ = model_->getSolutionCount();
   OsiSolverInterface *continuousSolver = model_->continuousSolver();
-  int useNumber = CoinMin(model_->numberSavedSolutions(), useNumber_);
+  int useNumber = std::min(model_->numberSavedSolutions(), useNumber_);
   if (useNumber < 2 || !continuousSolver)
     return 0;
   // Fix later
@@ -1620,7 +1620,7 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
   model_->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
   double direction = model_->solver()->getObjSenseInCbc();
   cutoff *= direction;
-  cutoff = CoinMin(cutoff, solutionValue);
+  cutoff = std::min(cutoff, solutionValue);
   OsiSolverInterface *solver = cloneBut(2);
   // But reset bounds
   solver->setColLower(continuousSolver->getColLower());

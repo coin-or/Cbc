@@ -141,7 +141,7 @@ int CbcBranchUserDecision::bestBranch(CbcBranchingObject **objects, int numberOb
     case 0:
       // could add in depth as well
       for (i = 0; i < numberObjects; i++) {
-        int thisNumber = CoinMin(numberInfeasibilitiesUp[i], numberInfeasibilitiesDown[i]);
+        int thisNumber = std::min(numberInfeasibilitiesUp[i], numberInfeasibilitiesDown[i]);
         if (thisNumber <= bestNumber) {
           int betterWay = 0;
           if (numberInfeasibilitiesUp[i] < numberInfeasibilitiesDown[i]) {
@@ -164,7 +164,7 @@ int CbcBranchUserDecision::bestBranch(CbcBranchingObject **objects, int numberOb
             if (numberInfeasibilitiesUp[i] < bestNumber) {
               better = true;
             } else if (numberInfeasibilitiesUp[i] == bestNumber) {
-              if (CoinMin(changeUp[i], changeDown[i]) < bestCriterion)
+              if (std::min(changeUp[i], changeDown[i]) < bestCriterion)
                 better = true;
               ;
             }
@@ -177,7 +177,7 @@ int CbcBranchUserDecision::bestBranch(CbcBranchingObject **objects, int numberOb
             }
           }
           if (betterWay) {
-            bestCriterion = CoinMin(changeUp[i], changeDown[i]);
+            bestCriterion = std::min(changeUp[i], changeDown[i]);
             bestNumber = thisNumber;
             whichObject = i;
             bestWay = betterWay;
@@ -196,7 +196,7 @@ int CbcBranchUserDecision::bestBranch(CbcBranchingObject **objects, int numberOb
             betterWay = -1;
         }
         if (betterWay) {
-          bestCriterion = CoinMin(changeUp[i], changeDown[i]);
+          bestCriterion = std::min(changeUp[i], changeDown[i]);
           whichObject = i;
           bestWay = betterWay;
         }
@@ -204,7 +204,7 @@ int CbcBranchUserDecision::bestBranch(CbcBranchingObject **objects, int numberOb
       break;
     case 2:
       for (i = 0; i < numberObjects; i++) {
-        double change = CoinMin(changeUp[i], changeDown[i]);
+        double change = std::min(changeUp[i], changeDown[i]);
         double sum = changeUp[i] + changeDown[i];
         bool take = false;
         if (change > 1.1 * bestCriterion)
@@ -257,7 +257,7 @@ int CbcBranchUserDecision::bestBranch(CbcBranchingObject **objects, int numberOb
       // first get best number or when going down
       // now choose smallest change up amongst equal number infeas
       for (i = 0; i < numberObjects; i++) {
-        int thisNumber = CoinMin(numberInfeasibilitiesUp[i], numberInfeasibilitiesDown[i]);
+        int thisNumber = std::min(numberInfeasibilitiesUp[i], numberInfeasibilitiesDown[i]);
         if (thisNumber <= bestNumber) {
           int betterWay = 0;
           if (numberInfeasibilitiesUp[i] < numberInfeasibilitiesDown[i]) {
@@ -280,7 +280,7 @@ int CbcBranchUserDecision::bestBranch(CbcBranchingObject **objects, int numberOb
             if (numberInfeasibilitiesUp[i] < bestNumber) {
               better = true;
             } else if (numberInfeasibilitiesUp[i] == bestNumber) {
-              if (CoinMin(changeUp[i], changeDown[i]) < bestCriterion)
+              if (std::min(changeUp[i], changeDown[i]) < bestCriterion)
                 better = true;
               ;
             }
@@ -293,7 +293,7 @@ int CbcBranchUserDecision::bestBranch(CbcBranchingObject **objects, int numberOb
             }
           }
           if (betterWay) {
-            bestCriterion = CoinMin(changeUp[i], changeDown[i]);
+            bestCriterion = std::min(changeUp[i], changeDown[i]);
             bestNumber = thisNumber;
             whichObject = i;
             bestWay = betterWay;
@@ -381,8 +381,8 @@ CbcSimpleIntegerFixed::infeasibility(int &preferredWay) const
   const double *lower = solver->getColLower();
   const double *upper = solver->getColUpper();
   double value = solution[columnNumber_];
-  value = CoinMax(value, lower[columnNumber_]);
-  value = CoinMin(value, upper[columnNumber_]);
+  value = std::max(value, lower[columnNumber_]);
+  value = std::min(value, upper[columnNumber_]);
   /*printf("%d %g %g %g %g\n",columnNumber_,value,lower[columnNumber_],
     solution[columnNumber_],upper[columnNumber_]);*/
   double nearest = floor(value + (1.0 - breakEven_));
@@ -418,8 +418,8 @@ CbcSimpleIntegerFixed::createBranch(OsiSolverInterface *solver,
   const double *lower = solver->getColLower();
   const double *upper = solver->getColUpper();
   double value = solution[columnNumber_];
-  value = CoinMax(value, lower[columnNumber_]);
-  value = CoinMin(value, upper[columnNumber_]);
+  value = std::max(value, lower[columnNumber_]);
+  value = std::min(value, upper[columnNumber_]);
   assert(upper[columnNumber_] > lower[columnNumber_]);
   if (!model_->hotstartSolution()) {
     double nearest = floor(value + 0.5);

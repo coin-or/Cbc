@@ -1148,7 +1148,7 @@ int CbcHeuristicDW::solution(double &solutionValue,
         << CoinMessageEol;
     }
     if ((pass_ % 10) == 9) {
-      for (int iImp = CoinMax(1, numberImproving - 10); iImp < numberImproving; iImp++) {
+      for (int iImp = std::max(1, numberImproving - 10); iImp < numberImproving; iImp++) {
         int *blocks = improvingBlocks[iImp];
         int nBlocks = blocks[0];
         blocks++;
@@ -1203,7 +1203,7 @@ int CbcHeuristicDW::solution(double &solutionValue,
           << dwPrint
           << CoinMessageEol;
         nNeeded_ += nNeeded_ / 10;
-        nNeeded_ = CoinMin(nNeeded_, 800);
+        nNeeded_ = std::min(nNeeded_, 800);
         nNodes_ = nNodesBase_;
         (*(functionPointer_))(this, NULL, 6);
       } else {
@@ -1214,10 +1214,10 @@ int CbcHeuristicDW::solution(double &solutionValue,
           << CoinMessageEol;
         if (phase_) {
           nNodes_ += nNodes_ / 5;
-          nNodes_ = CoinMin(nNodes_, 1000);
+          nNodes_ = std::min(nNodes_, 1000);
         }
         nNeeded_ -= nNeeded_ / 20;
-        nNeeded_ = CoinMax(nNeeded_, 50);
+        nNeeded_ = std::max(nNeeded_, 50);
         (*(functionPointer_))(this, NULL, 7);
       }
     } else {
@@ -1230,7 +1230,7 @@ int CbcHeuristicDW::solution(double &solutionValue,
         //nNodesBase_ += nNodesBase_/50;
       }
       nNeeded_ -= nNeeded_ / 10;
-      nNeeded_ = CoinMax(nNeededBase_, nNeeded_);
+      nNeeded_ = std::max(nNeededBase_, nNeeded_);
       nNodes_ = nNodesBase_;
       (*(functionPointer_))(this, NULL, 8);
     }
@@ -1310,8 +1310,8 @@ int CbcHeuristicDW::solution(double &solutionValue,
           for (int i = start; i < end; i++) {
             int jColumn = i - start;
             int iColumn = columnsInBlock_[i];
-            columnLowerX[jColumn] = CoinMax(saveLower_[iColumn], -1.0e12);
-            columnUpperX[jColumn] = CoinMin(saveUpper_[iColumn], 1.0e12);
+            columnLowerX[jColumn] = std::max(saveLower_[iColumn], -1.0e12);
+            columnUpperX[jColumn] = std::min(saveUpper_[iColumn], 1.0e12);
             if (solver->isInteger(iColumn))
               tempModel->setInteger(jColumn);
             double cost = objectiveX[jColumn];
@@ -1387,8 +1387,8 @@ int CbcHeuristicDW::solution(double &solutionValue,
           for (int i = start; i < end; i++) {
             int jColumn = i - start;
             int iColumn = columnsInBlock_[i];
-            columnLowerX[jColumn] = CoinMax(saveLower_[iColumn], -1.0e12);
-            columnUpperX[jColumn] = CoinMin(saveUpper_[iColumn], 1.0e12);
+            columnLowerX[jColumn] = std::max(saveLower_[iColumn], -1.0e12);
+            columnUpperX[jColumn] = std::min(saveUpper_[iColumn], 1.0e12);
             if (solver->isInteger(iColumn))
               tempModel->setInteger(jColumn);
             double cost = objectiveX[jColumn];
@@ -1762,7 +1762,7 @@ int CbcHeuristicDW::solution(double &solutionValue,
         const double *lower = model.solver()->getColLower();
         const double *upper = model.solver()->getColUpper();
         const double *solution = model.solver()->getColSolution();
-        double gap = CoinMax(bestObjective_ - model.solver()->getObjValue(),
+        double gap = std::max(bestObjective_ - model.solver()->getObjValue(),
           1.0e-3);
         int numberColumns2 = model.solver()->getNumCols();
 #ifdef HOT_START
@@ -2090,7 +2090,7 @@ void CbcHeuristicDW::findStructure()
         blockStart[iBlock] = jColumn;
         blockCount[iBlock] += numberMarkedColumns - n;
       }
-      maximumBlockSize = CoinMax(maximumBlockSize, blockCount[iBlock]);
+      maximumBlockSize = std::max(maximumBlockSize, blockCount[iBlock]);
       numberRowsDone++;
       if (thisBestValue * numberRowsDone > maximumBlockSize && numberRowsDone > halfway) {
         thisBestBreak = iRow;
@@ -2313,7 +2313,7 @@ void CbcHeuristicDW::findStructure()
     int nColumn = 0;
     int maxIntsInBlock = 0;
     for (int i = 0; i < numberBlocks_; i++) {
-      maxIntsInBlock = CoinMax(maxIntsInBlock, intsInBlock_[i]);
+      maxIntsInBlock = std::max(maxIntsInBlock, intsInBlock_[i]);
       startRowBlock_[i] = nRow;
       startColumnBlock_[i] = nColumn;
       nRow += rowsInBlock_[i];

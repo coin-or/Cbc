@@ -167,12 +167,12 @@ CbcNWay::infeasibility(const OsiBranchingInformation * /*info*/,
   for (j = 0; j < numberMembers_; j++) {
     int iColumn = members_[j];
     double value = solution[iColumn];
-    value = CoinMax(value, lower[iColumn]);
-    value = CoinMin(value, upper[iColumn]);
-    double distance = CoinMin(value - lower[iColumn], upper[iColumn] - value);
+    value = std::max(value, lower[iColumn]);
+    value = std::min(value, upper[iColumn]);
+    double distance = std::min(value - lower[iColumn], upper[iColumn] - value);
     if (distance > integerTolerance) {
       numberUnsatis++;
-      largestValue = CoinMax(distance, largestValue);
+      largestValue = std::max(distance, largestValue);
     }
   }
   preferredWay = 1;
@@ -195,8 +195,8 @@ void CbcNWay::feasibleRegion()
   for (j = 0; j < numberMembers_; j++) {
     int iColumn = members_[j];
     double value = solution[iColumn];
-    value = CoinMax(value, lower[iColumn]);
-    value = CoinMin(value, upper[iColumn]);
+    value = std::max(value, lower[iColumn]);
+    value = std::min(value, upper[iColumn]);
     if (value >= upper[iColumn] - integerTolerance) {
       solver->setColLower(iColumn, upper[iColumn]);
     } else {
@@ -245,8 +245,8 @@ CbcNWay::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInformati
   for (j = 0; j < numberMembers_; j++) {
     int iColumn = members_[j];
     double value = solution[iColumn];
-    value = CoinMax(value, lower[iColumn]);
-    value = CoinMin(value, upper[iColumn]);
+    value = std::max(value, lower[iColumn]);
+    value = std::min(value, upper[iColumn]);
     if (upper[iColumn] > lower[iColumn]) {
       double distance = upper[iColumn] - value;
       list[numberFree] = j;

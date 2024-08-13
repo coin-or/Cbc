@@ -108,7 +108,7 @@ CbcSOS::CbcSOS(CbcModel *model, int numberMembers,
     double last = -COIN_DBL_MAX;
     int i;
     for (i = 0; i < numberMembers_; i++) {
-      double possible = CoinMax(last + 1.0e-10, weights_[i]);
+      double possible = std::max(last + 1.0e-10, weights_[i]);
       weights_[i] = possible;
       last = possible;
     }
@@ -230,8 +230,8 @@ CbcSOS::infeasibility(const OsiBranchingInformation *info,
 
     if (lastWeight >= weights_[j] - 1.0e-7)
       throw CoinError("Weights too close together in SOS", "infeasibility", "CbcSOS");
-    double value = CoinMax(lower[iColumn], solution[iColumn]);
-    value = CoinMin(upper[iColumn], value);
+    double value = std::max(lower[iColumn], solution[iColumn]);
+    value = std::min(upper[iColumn], value);
     sum += value;
     if (fabs(value) > integerTolerance && (upper[iColumn] > 0.0 || oddValues_)) {
       //if (lower[iColumn] > integerTolerance ||
@@ -326,7 +326,7 @@ CbcSOS::infeasibility(const OsiBranchingInformation *info,
         // if move makes infeasible then make at least default
         double newValue = activity[iRow] + movement;
         if (newValue > upper[iRow] + tolerance || newValue < lower[iRow] - tolerance) {
-          shadowEstimateDown_ += fabs(movement) * CoinMax(fabs(valueP), info->defaultDual_);
+          shadowEstimateDown_ += fabs(movement) * std::max(fabs(valueP), info->defaultDual_);
           infeasible = true;
         }
       }
@@ -394,7 +394,7 @@ CbcSOS::infeasibility(const OsiBranchingInformation *info,
         // if move makes infeasible then make at least default
         double newValue = activity[iRow] + movement;
         if (newValue > upper[iRow] + tolerance || newValue < lower[iRow] - tolerance) {
-          shadowEstimateUp_ += fabs(movement) * CoinMax(fabs(valueP), info->defaultDual_);
+          shadowEstimateUp_ += fabs(movement) * std::max(fabs(valueP), info->defaultDual_);
           infeasible = true;
         }
       }
@@ -418,8 +418,8 @@ CbcSOS::infeasibility(const OsiBranchingInformation *info,
 #define WEIGHT_BEFORE 0.1
       int stateOfSearch = model_->stateOfSearch() % 10;
       double returnValue = 0.0;
-      double minValue = CoinMin(downCost, upCost);
-      double maxValue = CoinMax(downCost, upCost);
+      double minValue = std::min(downCost, upCost);
+      double maxValue = std::max(downCost, upCost);
       if (stateOfSearch <= 2) {
         // no branching solution
         returnValue = WEIGHT_BEFORE * minValue + (1.0 - WEIGHT_BEFORE) * maxValue;
@@ -466,8 +466,8 @@ void CbcSOS::feasibleRegion()
 
   for (j = 0; j < numberMembers_; j++) {
     int iColumn = members_[j];
-    double value = CoinMax(lower[iColumn], solution[iColumn]);
-    value = CoinMin(upper[iColumn], value);
+    double value = std::max(lower[iColumn], solution[iColumn]);
+    value = std::min(upper[iColumn], value);
     //sum += value;
     if (fabs(value) > integerTolerance && (upper[iColumn] || oddValues_)) {
       //weight += weights_[j] * value;
@@ -551,8 +551,8 @@ CbcSOS::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInformatio
   double sum = 0.0;
   for (j = 0; j < numberMembers_; j++) {
     int iColumn = members_[j];
-    double value = CoinMax(lower[iColumn], solution[iColumn]);
-    value = CoinMin(upper[iColumn], value);
+    double value = std::max(lower[iColumn], solution[iColumn]);
+    value = std::min(upper[iColumn], value);
     sum += value;
     if (fabs(value) > integerTolerance) {
       weight += weights_[j] * value;
@@ -593,8 +593,8 @@ CbcSOS::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInformatio
   bool firstLot=true;
   for (j = 0; j < numberMembers_; j++) {
     int iColumn = members_[j];
-    double value = CoinMax(lower[iColumn], solution[iColumn]);
-    value = CoinMin(upper[iColumn], value);
+    double value = std::max(lower[iColumn], solution[iColumn]);
+    value = std::min(upper[iColumn], value);
     if (fabs(value) < integerTolerance)
       value=0.0;
     if (firstLot) {
@@ -637,7 +637,7 @@ CbcSOS::createUpdateInformation(const OsiSolverInterface *solver,
   const double *solution = solver->getColSolution();
   //const double * lower = solver->getColLower();
   //const double * upper = solver->getColUpper();
-  double change = CoinMax(0.0, objectiveValue - originalValue);
+  double change = std::max(0.0, objectiveValue - originalValue);
   int iStatus;
   if (solver->isProvenOptimal())
     iStatus = 0; // optimal
@@ -695,7 +695,7 @@ void CbcSOS::updateInformation(const CbcObjectUpdateData &data)
       else
         change = (downDynamicPseudoRatio_ * shadowEstimateDown_ + 1.0e-3) * 10.0;
     }
-    change = CoinMax(1.0e-12 * (1.0 + fabs(originalValue)), change);
+    change = std::max(1.0e-12 * (1.0 + fabs(originalValue)), change);
 #ifdef PRINT_SHADOW
     if (numberTimesDown_)
       printf("Updating id %d - down change %g (true %g) - ndown %d estimated change %g - raw shadow estimate %g\n",
@@ -718,7 +718,7 @@ void CbcSOS::updateInformation(const CbcObjectUpdateData &data)
       else
         change = (upDynamicPseudoRatio_ * shadowEstimateUp_ + 1.0e-3) * 10.0;
     }
-    change = CoinMax(1.0e-12 * (1.0 + fabs(originalValue)), change);
+    change = std::max(1.0e-12 * (1.0 + fabs(originalValue)), change);
 #ifdef PRINT_SHADOW
     if (numberTimesUp_)
       printf("Updating id %d - up change %g (true %g) - nup %d estimated change %g - raw shadow estimate %g\n",
@@ -761,8 +761,8 @@ CbcSOS::solverBranch() const
     // fix all on one side or other (even if fixed)
     fix[j] = 0.0;
     which[j] = iColumn;
-    double value = CoinMax(lower[iColumn], solution[iColumn]);
-    value = CoinMin(upper[iColumn], value);
+    double value = std::max(lower[iColumn], solution[iColumn]);
+    value = std::min(upper[iColumn], value);
     sum += value;
     if (fabs(value) > integerTolerance) {
       weight += weights_[j] * value;
@@ -1023,8 +1023,8 @@ void CbcSOSBranchingObject::print()
   for (i = 0; i < numberMembers; i++) {
     double bound = upper[which[i]];
     if (bound) {
-      first = CoinMin(first, i);
-      last = CoinMax(last, i);
+      first = std::min(first, i);
+      last = std::max(last, i);
     }
   }
   // *** for way - up means fix all those in down section

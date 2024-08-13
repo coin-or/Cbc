@@ -165,7 +165,7 @@ CbcLink::infeasibility(int &preferredWay) const
       //throw CoinError("Non zero lower bound in CBCLink","infeasibility","CbcLink");
       if (lastWeight >= weights_[j] - 1.0e-7)
         throw CoinError("Weights too close together in CBCLink", "infeasibility", "CbcLink");
-      double value = CoinMax(0.0, solution[iColumn]);
+      double value = std::max(0.0, solution[iColumn]);
       sum += value;
       if (value > integerTolerance && upper[iColumn]) {
         // Possibly due to scaling a fixed variable might slip through
@@ -177,7 +177,7 @@ CbcLink::infeasibility(int &preferredWay) const
               iColumn, j, value, upper[iColumn]);
 #endif
         }
-        value = CoinMin(value, upper[iColumn]);
+        value = std::min(value, upper[iColumn]);
         weight += weights_[j] * value;
         if (firstNonZero < 0)
           firstNonZero = j;
@@ -228,9 +228,9 @@ CbcLink::infeasibility(int &preferredWay) const
       for (j = firstNonZero; j <= lastNonZero; j++) {
         for (int k = 0; k < numberLinks_; k++) {
           int iColumn = which_[base + k];
-          double value = CoinMax(0.0, solution[iColumn]);
+          double value = std::max(0.0, solution[iColumn]);
           if (value > integerTolerance && upper[iColumn]) {
-            value = CoinMin(value, upper[iColumn]);
+            value = std::min(value, upper[iColumn]);
             for (int j = columnStart[iColumn]; j < columnStart[iColumn] + columnLength[iColumn]; j++) {
               int iRow = row[j];
               double a = array[iRow];
@@ -317,7 +317,7 @@ void CbcLink::feasibleRegion()
   for (j = 0; j < numberMembers_; j++) {
     for (int k = 0; k < numberLinks_; k++) {
       int iColumn = which_[base + k];
-      double value = CoinMax(0.0, solution[iColumn]);
+      double value = std::max(0.0, solution[iColumn]);
       sum += value;
       if (value > integerTolerance && upper[iColumn]) {
         weight += weights_[j] * value;
@@ -361,9 +361,9 @@ void CbcLink::feasibleRegion()
       for (j = firstNonZero; j <= lastNonZero; j++) {
         for (int k = 0; k < numberLinks_; k++) {
           int iColumn = which_[base + k];
-          double value = CoinMax(0.0, solution[iColumn]);
+          double value = std::max(0.0, solution[iColumn]);
           if (value > integerTolerance && upper[iColumn]) {
-            value = CoinMin(value, upper[iColumn]);
+            value = std::min(value, upper[iColumn]);
             for (int j = columnStart[iColumn]; j < columnStart[iColumn] + columnLength[iColumn]; j++) {
               int iRow = row[j];
               double a = array[iRow];
@@ -470,7 +470,7 @@ CbcLink::createCbcBranch(OsiSolverInterface * /*solver*/, const OsiBranchingInfo
     for (int k = 0; k < numberLinks_; k++) {
       int iColumn = which_[base + k];
       if (upper[iColumn]) {
-        double value = CoinMax(0.0, solution[iColumn]);
+        double value = std::max(0.0, solution[iColumn]);
         sum += value;
         if (firstNonFixed < 0)
           firstNonFixed = j;
@@ -619,8 +619,8 @@ void CbcLinkBranchingObject::print()
       int iColumn = which[base + k];
       double bound = upper[iColumn];
       if (bound) {
-        first = CoinMin(first, i);
-        last = CoinMax(last, i);
+        first = std::min(first, i);
+        last = std::max(last, i);
       }
     }
     base += numberLinks;

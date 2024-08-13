@@ -103,7 +103,7 @@ static int callBack(CbcModel *model, int whereFrom)
     currentBranchModel = model;
     /*******************************
         This tells code to be normal in heuristics i.e. smaller problems
-        in practice you should probably make CoinMax(...,20000) or
+        in practice you should probably make std::max(...,20000) or
         some such.
         You may wish to switch off strong branching and use priorities
         or something - as strong branching uses large model
@@ -371,10 +371,10 @@ void CbcSolverShortFat::initialSolve()
     }
   }
   numberSort /= 2;
-  numberSort = CoinMax(numberSort, numberNonBasicRows);
+  numberSort = std::max(numberSort, numberNonBasicRows);
   // Just add this number of rows each time in small problem
   int smallNumberRows = 2 * numberColumns;
-  smallNumberRows = CoinMin(smallNumberRows, originalNumberRows / 20);
+  smallNumberRows = std::min(smallNumberRows, originalNumberRows / 20);
   // and pad out with random rows
   double ratio = (static_cast< double >(smallNumberRows - numberSort)) / (static_cast< double >(originalNumberRows));
   bool primalInfeasible = false;
@@ -395,8 +395,8 @@ void CbcSolverShortFat::initialSolve()
     double *columnLower = model->columnLower();
     double *columnUpper = model->columnUpper();
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-      columnLower[iColumn] = CoinMax(-1.0e6, columnLower[iColumn]);
-      columnUpper[iColumn] = CoinMin(1.0e6, columnUpper[iColumn]);
+      columnLower[iColumn] = std::max(-1.0e6, columnLower[iColumn]);
+      columnUpper[iColumn] = std::min(1.0e6, columnUpper[iColumn]);
     }
   }
   double *fullSolution = model->primalRowSolution();
@@ -496,7 +496,7 @@ void CbcSolverShortFat::initialSolve()
           // Basic - we can get rid of if early on
           if (iPass < takeOutPass && !dualInfeasible) {
             // may have hit max iterations so check
-            double infeasibility = CoinMax(fullSolution[iRow] - rowUpper[iRow],
+            double infeasibility = std::max(fullSolution[iRow] - rowUpper[iRow],
               rowLower[iRow] - fullSolution[iRow]);
             weight[iRow] = -infeasibility;
             if (infeasibility > 1.0e-8) {
@@ -523,7 +523,7 @@ void CbcSolverShortFat::initialSolve()
         sort[iRow] = iRow;
         if (weight[iRow] == 1.123e50) {
           // not looked at yet
-          double infeasibility = CoinMax(fullSolution[iRow] - rowUpper[iRow],
+          double infeasibility = std::max(fullSolution[iRow] - rowUpper[iRow],
             rowLower[iRow] - fullSolution[iRow]);
           weight[iRow] = -infeasibility;
           if (infeasibility > 1.0e-8) {
@@ -534,7 +534,7 @@ void CbcSolverShortFat::initialSolve()
       }
       // sort
       CoinSort_2(weight, weight + originalNumberRows, sort);
-      numberSort = CoinMin(originalNumberRows, smallNumberRows + numberKept);
+      numberSort = std::min(originalNumberRows, smallNumberRows + numberKept);
       memset(take, 0, originalNumberRows);
       for (iRow = 0; iRow < numberSort; iRow++)
         take[sort[iRow]] = 1;

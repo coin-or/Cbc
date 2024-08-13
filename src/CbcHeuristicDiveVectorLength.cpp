@@ -107,9 +107,9 @@ bool CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface *so
         }
         double objDelta;
         if (round == 1)
-          objDelta = (1.0 - fraction) * CoinMax(obj, smallObjective_);
+          objDelta = (1.0 - fraction) * std::max(obj, smallObjective_);
         else
-          objDelta = -fraction * CoinMin(obj, -smallObjective_);
+          objDelta = -fraction * std::min(obj, -smallObjective_);
 
         // we want the smaller score
         double score = objDelta / (static_cast< double >(columnLength[iColumn]) + 1.0);

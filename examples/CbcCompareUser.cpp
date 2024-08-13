@@ -100,7 +100,7 @@ CbcCompareUser::test (CbcNode * x, CbcNode * y)
           return x->depth() < y->depth();
       } else {
         // after solution
-        double weight = CoinMax(weight_,0.0);
+        double weight = std::max(weight_,0.0);
         return x->objectiveValue()+ weight*x->numberUnsatisfied() > 
           y->objectiveValue() + weight*y->numberUnsatisfied();
         //return x->guessedObjectiveValue()>y->guessedObjectiveValue();
@@ -202,7 +202,7 @@ bool CbcCompareUser::test(CbcNode *x, CbcNode *y)
     }
   } else {
     // after solution
-    double weight = CoinMax(weight_, 0.0);
+    double weight = std::max(weight_, 0.0);
     double testX = x->objectiveValue() + weight * x->numberUnsatisfied();
     double testY = y->objectiveValue() + weight * y->numberUnsatisfied();
     if (testX != testY)

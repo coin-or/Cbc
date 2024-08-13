@@ -345,12 +345,12 @@ int CbcParamUtils::doSolutionParam(CoinParam &param)
   int longestName = 0;
   for (int j = 0; j < n; j++) {
     int len = osi->getColName(j).length();
-    longestName = CoinMax(longestName, len);
+    longestName = std::max(longestName, len);
   }
   if (parameters->getPrintMode() >= 3) {
     for (int i = 0; i < m; i++) {
       int len = osi->getRowName(i).length();
-      longestName = CoinMax(longestName, len);
+      longestName = std::max(longestName, len);
     }
   }
   /*
@@ -555,12 +555,12 @@ int CbcParamUtils::doPrintMaskParam(CoinParam &param)
     int n = osi->getNumCols();
     for (int j = 0; j < n; j++) {
       int len = osi->getColName(j).length();
-      longestName = CoinMax(longestName, len);
+      longestName = std::max(longestName, len);
     }
     int m = osi->getNumRows();
     for (int i = 0; i < m; i++) {
       int len = osi->getRowName(i).length();
-      longestName = CoinMax(longestName, len);
+      longestName = std::max(longestName, len);
     }
     if (maskLen > longestName) {
       std::cerr << "Mask |" << maskProto << "| has " << maskLen

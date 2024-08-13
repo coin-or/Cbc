@@ -627,7 +627,7 @@ expandKnapsack(CoinModel &model, int *whichColumn, int *knapsackStart,
         if (markKnapsack[iKnapsack] >= 0) {
           someNonlinear = true;
           int iColumn = markKnapsack[iKnapsack];
-          maxCoefficient = CoinMax(maxCoefficient, fabs(coefficient[iKnapsack] * coinModel.columnUpper(iColumn)));
+          maxCoefficient = std::max(maxCoefficient, fabs(coefficient[iKnapsack] * coinModel.columnUpper(iColumn)));
         }
       }
       if (someNonlinear) {
@@ -690,14 +690,14 @@ expandKnapsack(CoinModel &model, int *whichColumn, int *knapsackStart,
         if (nelCreate < 0)
           badModel = true;
         nTotal += nCreate;
-        nLargest = CoinMax(nLargest, nCreate);
-        nelLargest = CoinMax(nelLargest, nelCreate);
+        nLargest = std::max(nLargest, nCreate);
+        nelLargest = std::max(nelLargest, nelCreate);
       }
       if (nTotal > maxTotal)
         badModel = true;
       if (!badModel) {
         // Now arrays for building
-        nelLargest = CoinMax(nelLargest, nLargest) + 1;
+        nelLargest = std::max(nelLargest, nLargest) + 1;
         double *buildObj = new double[nLargest];
         double *buildElement = new double[nelLargest];
         CoinBigIndex *buildStart = new CoinBigIndex[nLargest + 1];

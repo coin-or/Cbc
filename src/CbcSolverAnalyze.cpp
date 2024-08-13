@@ -155,8 +155,8 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
             int n = 0;
             CoinBigIndex i;
             double objChange = direction * (objective[jColumn1] + objective[jColumn2]);
-            double bound = CoinMin(upper[jColumn1], upper[jColumn2]);
-            bound = CoinMin(bound, 1.0e20);
+            double bound = std::min(upper[jColumn1], upper[jColumn2]);
+            bound = std::min(bound, 1.0e20);
             for (i = columnStart[jColumn1]; i < columnStart[jColumn1] + columnLength[jColumn1]; i++) {
               int jRow = row[i];
               double value = element[i];

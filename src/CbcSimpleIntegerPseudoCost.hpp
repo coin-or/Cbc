@@ -108,9 +108,9 @@ protected:
   double upDownSeparator_;
   /** Method -
         0 - normal - return min (up,down)
-        1 - if before any solution return CoinMax(up,down)
-        2 - if before branched solution return CoinMax(up,down)
-        3 - always return CoinMax(up,down)
+        1 - if before any solution return std::max(up,down)
+        2 - if before branched solution return std::max(up,down)
+        3 - always return std::max(up,down)
     */
   int method_;
 };

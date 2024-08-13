@@ -291,7 +291,7 @@ int CbcHeuristicRINS::solution(double &solutionValue,
           // fix some continuous
           double *sort = new double[nAtLb];
           int *which = new int[nAtLb];
-          //double threshold = CoinMax((0.01*sumDj)/static_cast<double>(nAtLb),1.0e-6);
+          //double threshold = std::max((0.01*sumDj)/static_cast<double>(nAtLb),1.0e-6);
           int nFix2 = 0;
           for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (!isHeuristicInteger(newSolver, iColumn)) {
@@ -311,7 +311,7 @@ int CbcHeuristicRINS::solution(double &solutionValue,
             divisor = stateOfFixing_;
           else if (stateOfFixing_ < -1)
             divisor = (-stateOfFixing_) - 1;
-          nFix2 = CoinMin(nFix2, (numberColumns - nFix) / divisor);
+          nFix2 = std::min(nFix2, (numberColumns - nFix) / divisor);
           for (int i = 0; i < nFix2; i++) {
             int iColumn = which[i];
             newSolver->setColUpper(iColumn, colLower[iColumn]);

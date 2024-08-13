@@ -208,7 +208,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
                 if (element[j] != 1.0)
                   bestDj[iRow] = 1.0e30;
                 else
-                  bestDj[iRow] = CoinMin(fabs(dj[iColumn]), bestDj[iRow]);
+                  bestDj[iRow] = std::min(fabs(dj[iColumn]), bestDj[iRow]);
               }
             }
           }
@@ -526,7 +526,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
                 int numberTimesAtOne = mark[iColumn];
                 int numberTimesNonZero = nonzero[iColumn] + numberTimesAtOne;
                 if (numberTimesAtOne < nCheck && numberTimesNonZero) {
-                  mixed[iSOS] += CoinMin(numberTimesNonZero,
+                  mixed[iSOS] += std::min(numberTimesNonZero,
                     nCheck - numberTimesNonZero);
                 }
               }
@@ -540,7 +540,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
             }
           }
           CoinSort_2(sort, sort + nFix, mixed);
-          nFix = CoinMin(nFix, numberSetsToFix);
+          nFix = std::min(nFix, numberSetsToFix);
           memset(sort, 0, sizeof(double) * numberRows);
           for (int i = 0; i < nFix; i++)
             sort[mixed[i]] = 1.0;
@@ -600,7 +600,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
     }
     std::sort(sort, sort + numberColumns);
     int last = static_cast< int >(numberColumns * fractionSmall_);
-    djTolerance = CoinMax(sort[last], 1.0e-5);
+    djTolerance = std::max(sort[last], 1.0e-5);
     delete[] sort;
   } else if (type == 12) {
     // Do layered in a different way
@@ -745,8 +745,8 @@ int CbcHeuristicRENS::solution(double &solutionValue,
       double value = currentSolution[iColumn];
       double lower = colLower[iColumn];
       double upper = colUpper[iColumn];
-      value = CoinMax(value, lower);
-      value = CoinMin(value, upper);
+      value = std::max(value, lower);
+      value = std::min(value, upper);
       if (fabs(bestSolution[iColumn] - value) > 0.999)
         marked[iColumn] = 1;
     }
@@ -756,8 +756,8 @@ int CbcHeuristicRENS::solution(double &solutionValue,
     int highPriority = COIN_INT_MAX;
     for (i = 0; i < numberIntegers; i++) {
       int priority = model_->priority(i);
-      lowPriority = CoinMax(lowPriority, priority);
-      highPriority = CoinMin(highPriority, priority);
+      lowPriority = std::max(lowPriority, priority);
+      highPriority = std::min(highPriority, priority);
     }
     if (highPriority < lowPriority) {
       int keepPriority = ((rensType_ & 64) != 0) ? highPriority : lowPriority;
@@ -774,8 +774,8 @@ int CbcHeuristicRENS::solution(double &solutionValue,
     double value = currentSolution[iColumn];
     double lower = colLower[iColumn];
     double upper = colUpper[iColumn];
-    value = CoinMax(value, lower);
-    value = CoinMin(value, upper);
+    value = std::max(value, lower);
+    value = std::min(value, upper);
     double djValue = dj[iColumn] * direction;
     bool dontFix = marked[iColumn] != 0;
 #define RENS_FIX_ONLY_LOWER
@@ -831,8 +831,8 @@ int CbcHeuristicRENS::solution(double &solutionValue,
       if (fabs(value - floor(value + 0.5)) < 1.0e-8) {
         value = floor(value + 0.5);
         if (value < upper) {
-          newSolver->setColLower(iColumn, CoinMax(value - 1.0, lower));
-          newSolver->setColUpper(iColumn, CoinMin(value + 1.0, upper));
+          newSolver->setColLower(iColumn, std::max(value - 1.0, lower));
+          newSolver->setColUpper(iColumn, std::min(value + 1.0, upper));
         } else {
           newSolver->setColLower(iColumn, upper - 1.0);
         }
@@ -868,7 +868,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
         // fix some continuous
         double *sort = new double[nAtLb];
         int *which = new int[nAtLb];
-        double threshold = CoinMax((0.01 * sumDj) / static_cast< double >(nAtLb), 1.0e-6);
+        double threshold = std::max((0.01 * sumDj) / static_cast< double >(nAtLb), 1.0e-6);
         int nFix2 = 0;
         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
           if (!newSolver->isInteger(iColumn)) {
@@ -883,7 +883,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
           }
         }
         CoinSort_2(sort, sort + nFix2, which);
-        nFix2 = CoinMin(nFix2, (numberColumns - numberFixed) / 2);
+        nFix2 = std::min(nFix2, (numberColumns - numberFixed) / 2);
         for (int i = 0; i < nFix2; i++) {
           int iColumn = which[i];
           newSolver->setColUpper(iColumn, colLower[iColumn]);
@@ -925,7 +925,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
           // fix some continuous
           double *sort = new double[nAtLb];
           int *which = new int[nAtLb];
-          double threshold = CoinMax((0.01 * sumDj) / static_cast< double >(nAtLb), 1.0e-6);
+          double threshold = std::max((0.01 * sumDj) / static_cast< double >(nAtLb), 1.0e-6);
           int nFix2 = 0;
           for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (!newSolver->isInteger(iColumn)) {
@@ -940,7 +940,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
             }
           }
           CoinSort_2(sort, sort + nFix2, which);
-          nFix2 = CoinMin(nFix2, (numberColumns - numberFixed) / 2);
+          nFix2 = std::min(nFix2, (numberColumns - numberFixed) / 2);
           for (int i = 0; i < nFix2; i++) {
             int iColumn = which[i];
             newSolver->setColUpper(iColumn, colLower[iColumn]);

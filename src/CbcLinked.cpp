@@ -543,7 +543,7 @@ void OsiSolverLink::resolve()
               double gapX = upper[xColumn] - lower[xColumn];
               int yColumn = obj->yColumn();
               double gapY = upper[yColumn] - lower[yColumn];
-              gap = CoinMax(gap, CoinMax(gapX, gapY));
+              gap = std::max(gap, std::max(gapX, gapY));
             }
           }
         }
@@ -580,13 +580,13 @@ void OsiSolverLink::resolve()
                   int yColumn = obj->yColumn();
                   if (gapX > gap) {
                     double value = solution[xColumn];
-                    double newLower = CoinMax(lower2[xColumn], value - 0.5 * gap);
-                    double newUpper = CoinMin(upper2[xColumn], value + 0.5 * gap);
+                    double newLower = std::max(lower2[xColumn], value - 0.5 * gap);
+                    double newUpper = std::min(upper2[xColumn], value + 0.5 * gap);
                     if (newUpper - newLower < 0.99 * gap) {
                       if (newLower == lower2[xColumn])
-                        newUpper = CoinMin(upper2[xColumn], newLower + gap);
+                        newUpper = std::min(upper2[xColumn], newLower + gap);
                       else if (newUpper == upper2[xColumn])
-                        newLower = CoinMax(lower2[xColumn], newUpper - gap);
+                        newLower = std::max(lower2[xColumn], newUpper - gap);
                     }
                     // see if problem
 #ifndef NDEBUG
@@ -610,13 +610,13 @@ void OsiSolverLink::resolve()
                   double gapY = upper[yColumn] - lower[yColumn];
                   if (gapY > gap) {
                     double value = solution[yColumn];
-                    double newLower = CoinMax(lower2[yColumn], value - 0.5 * gap);
-                    double newUpper = CoinMin(upper2[yColumn], value + 0.5 * gap);
+                    double newLower = std::max(lower2[yColumn], value - 0.5 * gap);
+                    double newUpper = std::min(upper2[yColumn], value + 0.5 * gap);
                     if (newUpper - newLower < 0.99 * gap) {
                       if (newLower == lower2[yColumn])
-                        newUpper = CoinMin(upper2[yColumn], newLower + gap);
+                        newUpper = std::min(upper2[yColumn], newLower + gap);
                       else if (newUpper == upper2[yColumn])
-                        newLower = CoinMax(lower2[yColumn], newUpper - gap);
+                        newLower = std::max(lower2[yColumn], newUpper - gap);
                     }
                     // see if problem
 #ifndef NDEBUG
@@ -635,7 +635,7 @@ void OsiSolverLink::resolve()
                     setColLower(yColumn, newLower);
                     setColUpper(yColumn, newUpper);
                   }
-                  newGap = CoinMax(newGap, CoinMax(gapX, gapY));
+                  newGap = std::max(newGap, std::max(gapX, gapY));
                 }
               }
             }
@@ -718,7 +718,7 @@ void OsiSolverLink::resolve()
             const int *column2 = originalRowCopy_->getIndices();
             const CoinBigIndex *rowStart = originalRowCopy_->getVectorStarts();
             //const int * rowLength = originalRowCopy_->getVectorLengths();
-            int numberColumns2 = CoinMax(coinModel_.numberColumns(), objectiveVariable_ + 1);
+            int numberColumns2 = std::max(coinModel_.numberColumns(), objectiveVariable_ + 1);
             double *gradient = new double[numberColumns2];
             int *column = new int[numberColumns2];
             //const double * columnLower = modelPtr_->columnLower();
@@ -1564,7 +1564,7 @@ void OsiSolverLink::addTighterConstraints()
       list[xW[numberW]] = 1;
       list[yW[numberW]] = 1;
       wW[numberW] = obj->firstLambda();
-      firstLambda = CoinMin(firstLambda, obj->firstLambda());
+      firstLambda = std::min(firstLambda, obj->firstLambda());
       alphaW[numberW] = obj->coefficient();
       //assert (alphaW[numberW]==1.0); // fix when occurs
       numberW++;
@@ -1745,7 +1745,7 @@ void OsiSolverLink::setBiLinearPriorities(int value, double meshSize)
     OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(object_[i]);
     if (obj) {
       if (obj->xMeshSize() < 1.0 && obj->yMeshSize() < 1.0) {
-        double oldSatisfied = CoinMax(obj->xSatisfied(),
+        double oldSatisfied = std::max(obj->xSatisfied(),
           obj->ySatisfied());
         OsiBiLinear *objNew = new OsiBiLinear(*obj);
         newObject[numberOdd++] = objNew;
@@ -1825,7 +1825,7 @@ void OsiSolverLink::setMeshSizes(double value)
         double gapX = upper[xColumn] - lower[xColumn];
         int yColumn = obj->yColumn();
         double gapY = upper[yColumn] - lower[yColumn];
-        gap = CoinMax(gap, CoinMax(gapX, gapY));
+        gap = std::max(gap, std::max(gapX, gapY));
 #endif
         obj->setMeshSizes(this, value, value);
       }
@@ -1922,7 +1922,7 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
     if (markNonlinear[iColumn]) {
       // put in something
       double lower = coinModel.columnLower(iColumn);
-      double upper = CoinMin(coinModel.columnUpper(iColumn), lower + 1000.0);
+      double upper = std::min(coinModel.columnUpper(iColumn), lower + 1000.0);
       coinModel.associateElement(coinModel.columnName(iColumn), 0.5 * (lower + upper));
       //coinModel.associateElement(coinModel.columnName(iColumn),xxxx[iColumn]);
       listNonLinearColumn[numberNonLinearColumns++] = iColumn;
@@ -2091,14 +2091,14 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
             double bound = columnLower[iColumn];
             oldValue -= bound;
             if (oldValue + maxTheta * alpha < 0.0) {
-              maxTheta = CoinMax(0.0, oldValue / (-alpha));
+              maxTheta = std::max(0.0, oldValue / (-alpha));
             }
           } else if (alpha > 1.0e-15) {
             // variable going towards upper bound
             double bound = columnUpper[iColumn];
             oldValue = bound - oldValue;
             if (oldValue - maxTheta * alpha < 0.0) {
-              maxTheta = CoinMax(0.0, oldValue / alpha);
+              maxTheta = std::max(0.0, oldValue / alpha);
             }
           }
         } else {
@@ -2108,14 +2108,14 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
             double bound = trueLower[jNon];
             oldValue -= bound;
             if (oldValue + maxTheta * alpha < 0.0) {
-              maxTheta = CoinMax(0.0, oldValue / (-alpha));
+              maxTheta = std::max(0.0, oldValue / (-alpha));
             }
           } else if (alpha > 1.0e-15) {
             // variable going towards upper bound
             double bound = trueUpper[jNon];
             oldValue = bound - oldValue;
             if (oldValue - maxTheta * alpha < 0.0) {
-              maxTheta = CoinMax(0.0, oldValue / alpha);
+              maxTheta = std::max(0.0, oldValue / alpha);
             }
           }
           jNon++;
@@ -2134,14 +2134,14 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
           double bound = rowLower[iRow];
           oldValue -= bound;
           if (oldValue + maxTheta * alpha < 0.0) {
-            maxTheta = CoinMax(0.0, oldValue / (-alpha));
+            maxTheta = std::max(0.0, oldValue / (-alpha));
           }
         } else if (alpha > 1.0e-15) {
           // variable going towards upper bound
           double bound = rowUpper[iRow];
           oldValue = bound - oldValue;
           if (oldValue - maxTheta * alpha < 0.0) {
-            maxTheta = CoinMax(0.0, oldValue / alpha);
+            maxTheta = std::max(0.0, oldValue / alpha);
           }
         }
       }
@@ -2153,7 +2153,7 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
       memcpy(saveRowSolution, rowActivity, numberRows * sizeof(double));
     }
     if (goodMove >= 0) {
-      //theta = CoinMin(theta2,maxTheta);
+      //theta = std::min(theta2,maxTheta);
       theta = maxTheta;
       if (theta > 0.0 && theta <= 1.0) {
         // update solution
@@ -2229,7 +2229,7 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
 #endif
     for (jNon = 0; jNon < numberNonLinearColumns; jNon++) {
       iColumn = listNonLinearColumn[jNon];
-      maxDelta = CoinMax(maxDelta,
+      maxDelta = std::max(maxDelta,
         fabs(solution[iColumn] - saveSolution[iColumn]));
       if (goodMove > 0) {
         if (last[0][jNon] * last[1][jNon] < 0) {
@@ -2240,7 +2240,7 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
 #endif
         } else {
           if (last[0][jNon] == last[1][jNon] && last[0][jNon] == last[2][jNon])
-            trust[jNon] = CoinMin(1.5 * trust[jNon], 1.0e6);
+            trust[jNon] = std::min(1.5 * trust[jNon], 1.0e6);
 #ifdef CLP_DEBUG
           numberLarger++;
 #endif
@@ -2249,7 +2249,7 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
         trust[jNon] *= 0.2;
         numberSmaller++;
       }
-      maxGap = CoinMax(maxGap, trust[jNon]);
+      maxGap = std::max(maxGap, trust[jNon]);
     }
 #ifdef CLP_DEBUG
     if (logLevel & 32)
@@ -2284,10 +2284,10 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
     double *r = model.dualColumnSolution();
     for (jNon = 0; jNon < numberNonLinearColumns; jNon++) {
       iColumn = listNonLinearColumn[jNon];
-      columnLower[iColumn] = CoinMax(solution[iColumn]
+      columnLower[iColumn] = std::max(solution[iColumn]
           - trust[jNon],
         trueLower[jNon]);
-      columnUpper[iColumn] = CoinMin(solution[iColumn]
+      columnUpper[iColumn] = std::min(solution[iColumn]
           + trust[jNon],
         trueUpper[jNon]);
     }
@@ -2312,22 +2312,22 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
     for (jNon = 0; jNon < numberNonLinearColumns; jNon++) {
       iColumn = listNonLinearColumn[jNon];
       if (statusCheck[iColumn] == 'L' && r[iColumn] < -1.0e-4) {
-        columnLower[iColumn] = CoinMax(solution[iColumn],
+        columnLower[iColumn] = std::max(solution[iColumn],
           trueLower[jNon]);
-        columnUpper[iColumn] = CoinMin(solution[iColumn]
+        columnUpper[iColumn] = std::min(solution[iColumn]
             + trust[jNon],
           trueUpper[jNon]);
       } else if (statusCheck[iColumn] == 'U' && r[iColumn] > 1.0e-4) {
-        columnLower[iColumn] = CoinMax(solution[iColumn]
+        columnLower[iColumn] = std::max(solution[iColumn]
             - trust[jNon],
           trueLower[jNon]);
-        columnUpper[iColumn] = CoinMin(solution[iColumn],
+        columnUpper[iColumn] = std::min(solution[iColumn],
           trueUpper[jNon]);
       } else {
-        columnLower[iColumn] = CoinMax(solution[iColumn]
+        columnLower[iColumn] = std::max(solution[iColumn]
             - trust[jNon],
           trueLower[jNon]);
-        columnUpper[iColumn] = CoinMin(solution[iColumn]
+        columnUpper[iColumn] = std::min(solution[iColumn]
             + trust[jNon],
           trueUpper[jNon]);
       }
@@ -2346,7 +2346,7 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
                   << std::endl;
 #endif
       lastObjective = objValue;
-      if (targetDrop < CoinMax(1.0e-8, CoinMin(1.0e-6, 1.0e-6 * fabs(objValue))) && lastGoodMove && iPass > 3) {
+      if (targetDrop < std::max(1.0e-8, std::min(1.0e-6, 1.0e-6 * fabs(objValue))) && lastGoodMove && iPass > 3) {
         if (logLevel > 1)
           printf("Exiting on target drop %g\n", targetDrop);
         break;
@@ -2390,10 +2390,10 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
         memcpy(model.statusArray(), saveStatus, numberRows + numberColumns);
         for (jNon = 0; jNon < numberNonLinearColumns; jNon++) {
           iColumn = listNonLinearColumn[jNon];
-          columnLower[iColumn] = CoinMax(solution[iColumn]
+          columnLower[iColumn] = std::max(solution[iColumn]
               - trust[jNon],
             trueLower[jNon]);
-          columnUpper[iColumn] = CoinMin(solution[iColumn]
+          columnUpper[iColumn] = std::min(solution[iColumn]
               + trust[jNon],
             trueUpper[jNon]);
         }
@@ -2460,9 +2460,9 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
   solution = model.primalColumnSolution();
   for (jNon = 0; jNon < numberNonLinearColumns; jNon++) {
     iColumn = listNonLinearColumn[jNon];
-    columnLower[iColumn] = CoinMax(solution[iColumn],
+    columnLower[iColumn] = std::max(solution[iColumn],
       trueLower[jNon]);
-    columnUpper[iColumn] = CoinMin(solution[iColumn],
+    columnUpper[iColumn] = std::min(solution[iColumn],
       trueUpper[jNon]);
   }
   model.primal(1);
@@ -2505,8 +2505,8 @@ OsiSolverLink::linearizedBAB(CglStored *cut)
     const double *lower2 = getColLower();
     const double *upper2 = getColUpper();
     for (int i = 0; i < numberColumns; i++) {
-      lower[i] = CoinMax(lower[i], lower2[i]);
-      upper[i] = CoinMin(upper[i], upper2[i]);
+      lower[i] = std::max(lower[i], lower2[i]);
+      upper[i] = std::min(upper[i], upper2[i]);
     }
     qp->nonlinearSLP(20, 1.0e-5);
     qp->primal();
@@ -2679,12 +2679,12 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
         double value = solution[iColumn];
         value = floor(value + 0.5);
         if (fabs(value - solution[iColumn]) > 0.01) {
-          setColLower(iColumn, CoinMax(lower[iColumn], value - CoinMax(defaultBound_, 0.0)));
-          setColUpper(iColumn, CoinMin(upper[iColumn], value + CoinMax(defaultBound_, 1.0)));
+          setColLower(iColumn, std::max(lower[iColumn], value - std::max(defaultBound_, 0.0)));
+          setColUpper(iColumn, std::min(upper[iColumn], value + std::max(defaultBound_, 1.0)));
         } else {
           // could fix to integer
-          setColLower(iColumn, CoinMax(lower[iColumn], value - CoinMax(defaultBound_, 0.0)));
-          setColUpper(iColumn, CoinMin(upper[iColumn], value + CoinMax(defaultBound_, 0.0)));
+          setColLower(iColumn, std::max(lower[iColumn], value - std::max(defaultBound_, 0.0)));
+          setColUpper(iColumn, std::min(upper[iColumn], value + std::max(defaultBound_, 0.0)));
         }
       }
     }
@@ -2857,7 +2857,7 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
     clpModel->setLogLevel(saveLogLevel);
     clpModel->dual(); // clean up
     // compute some things using problem size
-    cbcModel->setMinimumDrop(CoinMin(5.0e-2,
+    cbcModel->setMinimumDrop(std::min(5.0e-2,
       fabs(cbcModel->getMinimizationObjValue()) * 1.0e-3 + 1.0e-4));
     if (cbcModel->getNumCols() < 500)
       cbcModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
@@ -3239,7 +3239,7 @@ void OsiSolverLink::setBestSolution(const double *solution, int numberColumns)
   int numberColumnsThis = modelPtr_->numberColumns();
   bestSolution_ = new double[numberColumnsThis];
   CoinZeroN(bestSolution_, numberColumnsThis);
-  memcpy(bestSolution_, solution, CoinMin(numberColumns, numberColumnsThis) * sizeof(double));
+  memcpy(bestSolution_, solution, std::min(numberColumns, numberColumnsThis) * sizeof(double));
 }
 /* Two tier integer problem where when set of variables with priority
    less than this are fixed the problem becomes an easier integer problem
@@ -3552,7 +3552,7 @@ int OsiSolverLink::fathom(bool allFixed)
       clpModel->setLogLevel(saveLogLevel);
       clpModel->dual(); // clean up
       // compute some things using problem size
-      cbcModel->setMinimumDrop(CoinMin(5.0e-2,
+      cbcModel->setMinimumDrop(std::min(5.0e-2,
         fabs(cbcModel->getMinimizationObjValue()) * 1.0e-3 + 1.0e-4));
       if (cbcModel->getNumCols() < 500)
         cbcModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
@@ -3614,7 +3614,7 @@ int OsiSolverLink::fathom(bool allFixed)
             if (clpModel->isInteger(i)) {
               double largest = 0.0;
               for (int j = columnStart[i]; j < columnStart[i] + columnLength[i]; j++) {
-                largest = CoinMax(largest, fabs(element[j]));
+                largest = std::max(largest, fabs(element[j]));
               }
               sort2[nint] = nint;
               sort[nint++] = -largest;
@@ -3828,9 +3828,9 @@ void OsiLinkedBound::updateBounds(ClpSimplex *solver)
       int iColumn = affected_[j].affected;
       double useValue = (affected_[j].ubUsed) ? up : lo;
       if (affected_[j].affect == 0)
-        lower[iColumn] = CoinMin(upper[iColumn], CoinMax(lower[iColumn], multiplier * useValue));
+        lower[iColumn] = std::min(upper[iColumn], std::max(lower[iColumn], multiplier * useValue));
       else
-        upper[iColumn] = CoinMax(lower[iColumn], CoinMin(upper[iColumn], multiplier * useValue));
+        upper[iColumn] = std::max(lower[iColumn], std::min(upper[iColumn], multiplier * useValue));
     }
   }
 }
@@ -4089,7 +4089,7 @@ OsiOldLink::infeasibility(const OsiBranchingInformation *info, int &whichWay) co
       if (lastWeight >= weights_[j] - 1.0e-7)
         throw CoinError("Weights too close together in OsiLink", "infeasibility", "OsiLink");
       lastWeight = weights_[j];
-      double value = CoinMax(0.0, solution[iColumn]);
+      double value = std::max(0.0, solution[iColumn]);
 #ifdef DISTANCE
       sum += value;
 #endif
@@ -4101,7 +4101,7 @@ OsiOldLink::infeasibility(const OsiBranchingInformation *info, int &whichWay) co
             iColumn, j, value, upper[iColumn]);
 #endif
         }
-        value = CoinMin(value, upper[iColumn]);
+        value = std::min(value, upper[iColumn]);
 #ifdef DISTANCE
         weight += weights_[j] * value;
 #endif
@@ -4157,9 +4157,9 @@ OsiOldLink::infeasibility(const OsiBranchingInformation *info, int &whichWay) co
       for (j = firstNonZero; j <= lastNonZero; j++) {
         for (int k = 0; k < numberLinks_; k++) {
           int iColumn = members_[base + k];
-          double value = CoinMax(0.0, solution[iColumn]);
+          double value = std::max(0.0, solution[iColumn]);
           if (value > integerTolerance && upper[iColumn]) {
-            value = CoinMin(value, upper[iColumn]);
+            value = std::min(value, upper[iColumn]);
             for (int j = columnStart[iColumn]; j < columnStart[iColumn] + columnLength[iColumn]; j++) {
               int iRow = row[j];
               double a = array[iRow];
@@ -4250,7 +4250,7 @@ OsiOldLink::feasibleRegion(OsiSolverInterface *solver, const OsiBranchingInforma
   for (j = 0; j < numberMembers_; j++) {
     for (int k = 0; k < numberLinks_; k++) {
       int iColumn = members_[base + k];
-      double value = CoinMax(0.0, solution[iColumn]);
+      double value = std::max(0.0, solution[iColumn]);
       //sum += value;
       if (value > integerTolerance && upper[iColumn]) {
 #ifdef DISTANCE
@@ -4296,9 +4296,9 @@ OsiOldLink::feasibleRegion(OsiSolverInterface *solver, const OsiBranchingInforma
       for (j = firstNonZero; j <= lastNonZero; j++) {
         for (int k = 0; k < numberLinks_; k++) {
           int iColumn = members_[base + k];
-          double value = CoinMax(0.0, solution[iColumn]);
+          double value = std::max(0.0, solution[iColumn]);
           if (value > integerTolerance && upper[iColumn]) {
-            value = CoinMin(value, upper[iColumn]);
+            value = std::min(value, upper[iColumn]);
             for (int j = columnStart[iColumn]; j < columnStart[iColumn] + columnLength[iColumn]; j++) {
               int iRow = row[j];
               double a = array[iRow];
@@ -4433,7 +4433,7 @@ OsiOldLink::createBranch(OsiSolverInterface *solver, const OsiBranchingInformati
     for (int k = 0; k < numberLinks_; k++) {
       int iColumn = members_[base + k];
       if (upper[iColumn]) {
-        double value = CoinMax(0.0, solution[iColumn]);
+        double value = std::max(0.0, solution[iColumn]);
         sum += value;
         if (firstNonFixed < 0)
           firstNonFixed = j;
@@ -4583,8 +4583,8 @@ void OsiOldLinkBranchingObject::print(const OsiSolverInterface *solver)
       int iColumn = which[base + k];
       double bound = upper[iColumn];
       if (bound) {
-        first = CoinMin(first, i);
-        last = CoinMax(last, i);
+        first = std::min(first, i);
+        last = std::max(last, i);
       }
     }
     base += numberLinks;
@@ -4755,16 +4755,16 @@ OsiBiLinear::OsiBiLinear(OsiSolverInterface *solver, int xColumn,
   yB[1] = upper[yColumn_];
   if (xMeshSize_ != floor(xMeshSize_)) {
     // not integral
-    xSatisfied_ = CoinMax(xSatisfied_, 0.51 * xMeshSize_);
+    xSatisfied_ = std::max(xSatisfied_, 0.51 * xMeshSize_);
     if (!yMeshSize_) {
-      xySatisfied_ = CoinMax(xySatisfied_, xSatisfied_ * CoinMax(fabs(yB[0]), fabs(yB[1])));
+      xySatisfied_ = std::max(xySatisfied_, xSatisfied_ * std::max(fabs(yB[0]), fabs(yB[1])));
     }
   }
   if (yMeshSize_ != floor(yMeshSize_)) {
     // not integral
-    ySatisfied_ = CoinMax(ySatisfied_, 0.51 * yMeshSize_);
+    ySatisfied_ = std::max(ySatisfied_, 0.51 * yMeshSize_);
     if (!xMeshSize_) {
-      xySatisfied_ = CoinMax(xySatisfied_, ySatisfied_ * CoinMax(fabs(xB[0]), fabs(xB[1])));
+      xySatisfied_ = std::max(xySatisfied_, ySatisfied_ * std::max(fabs(xB[0]), fabs(xB[1])));
     }
   }
   // adjust
@@ -4776,7 +4776,7 @@ OsiBiLinear::OsiBiLinear(OsiSolverInterface *solver, int xColumn,
     distance = xB[0] + xMeshSize_ * steps;
     if (fabs(xB[1] - distance) > xSatisfied_) {
       printf("bad x mesh %g %g %g -> %g\n", xB[0], xMeshSize_, xB[1], distance);
-      //double newValue = CoinMax(fabs(xB[1]-distance),xMeshSize_);
+      //double newValue = std::max(fabs(xB[1]-distance),xMeshSize_);
       //printf("xSatisfied increased to %g\n",newValue);
       //xSatisfied_ = newValue;
       //xB[1]=distance;
@@ -4789,7 +4789,7 @@ OsiBiLinear::OsiBiLinear(OsiSolverInterface *solver, int xColumn,
     distance = yB[0] + yMeshSize_ * steps;
     if (fabs(yB[1] - distance) > ySatisfied_) {
       printf("bad y mesh %g %g %g -> %g\n", yB[0], yMeshSize_, yB[1], distance);
-      //double newValue = CoinMax(fabs(yB[1]-distance),yMeshSize_);
+      //double newValue = std::max(fabs(yB[1]-distance),yMeshSize_);
       //printf("ySatisfied increased to %g\n",newValue);
       //ySatisfied_ = newValue;
       //yB[1]=distance;
@@ -4900,16 +4900,16 @@ void OsiBiLinear::setMeshSizes(const OsiSolverInterface *solver, double x, doubl
   yB[1] = upper[yColumn_];
   if (xMeshSize_ != floor(xMeshSize_)) {
     // not integral
-    xSatisfied_ = CoinMax(xSatisfied_, 0.51 * xMeshSize_);
+    xSatisfied_ = std::max(xSatisfied_, 0.51 * xMeshSize_);
     if (!yMeshSize_) {
-      xySatisfied_ = CoinMax(xySatisfied_, xSatisfied_ * CoinMax(fabs(yB[0]), fabs(yB[1])));
+      xySatisfied_ = std::max(xySatisfied_, xSatisfied_ * std::max(fabs(yB[0]), fabs(yB[1])));
     }
   }
   if (yMeshSize_ != floor(yMeshSize_)) {
     // not integral
-    ySatisfied_ = CoinMax(ySatisfied_, 0.51 * yMeshSize_);
+    ySatisfied_ = std::max(ySatisfied_, 0.51 * yMeshSize_);
     if (!xMeshSize_) {
-      xySatisfied_ = CoinMax(xySatisfied_, ySatisfied_ * CoinMax(fabs(xB[0]), fabs(xB[1])));
+      xySatisfied_ = std::max(xySatisfied_, ySatisfied_ * std::max(fabs(xB[0]), fabs(xB[1])));
     }
   }
 }
@@ -5001,16 +5001,16 @@ OsiBiLinear::OsiBiLinear(CoinModel *coinModel, int xColumn,
   yB[1] = upper[yColumn_];
   if (xMeshSize_ != floor(xMeshSize_)) {
     // not integral
-    xSatisfied_ = CoinMax(xSatisfied_, 0.51 * xMeshSize_);
+    xSatisfied_ = std::max(xSatisfied_, 0.51 * xMeshSize_);
     if (!yMeshSize_) {
-      xySatisfied_ = CoinMax(xySatisfied_, xSatisfied_ * CoinMax(fabs(yB[0]), fabs(yB[1])));
+      xySatisfied_ = std::max(xySatisfied_, xSatisfied_ * std::max(fabs(yB[0]), fabs(yB[1])));
     }
   }
   if (yMeshSize_ != floor(yMeshSize_)) {
     // not integral
-    ySatisfied_ = CoinMax(ySatisfied_, 0.51 * yMeshSize_);
+    ySatisfied_ = std::max(ySatisfied_, 0.51 * yMeshSize_);
     if (!xMeshSize_) {
-      xySatisfied_ = CoinMax(xySatisfied_, ySatisfied_ * CoinMax(fabs(xB[0]), fabs(xB[1])));
+      xySatisfied_ = std::max(xySatisfied_, ySatisfied_ * std::max(fabs(xB[0]), fabs(xB[1])));
     }
   }
   // adjust
@@ -5022,7 +5022,7 @@ OsiBiLinear::OsiBiLinear(CoinModel *coinModel, int xColumn,
     distance = xB[0] + xMeshSize_ * steps;
     if (fabs(xB[1] - distance) > xSatisfied_) {
       printf("bad x mesh %g %g %g -> %g\n", xB[0], xMeshSize_, xB[1], distance);
-      //double newValue = CoinMax(fabs(xB[1]-distance),xMeshSize_);
+      //double newValue = std::max(fabs(xB[1]-distance),xMeshSize_);
       //printf("xSatisfied increased to %g\n",newValue);
       //xSatisfied_ = newValue;
       //xB[1]=distance;
@@ -5035,7 +5035,7 @@ OsiBiLinear::OsiBiLinear(CoinModel *coinModel, int xColumn,
     distance = yB[0] + yMeshSize_ * steps;
     if (fabs(yB[1] - distance) > ySatisfied_) {
       printf("bad y mesh %g %g %g -> %g\n", yB[0], yMeshSize_, yB[1], distance);
-      //double newValue = CoinMax(fabs(yB[1]-distance),yMeshSize_);
+      //double newValue = std::max(fabs(yB[1]-distance),yMeshSize_);
       //printf("ySatisfied increased to %g\n",newValue);
       //ySatisfied_ = newValue;
       //yB[1]=distance;
@@ -5262,11 +5262,11 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation *info, int &whichWay) c
   }
 #endif
   double x = info->solution_[xColumn_];
-  x = CoinMax(x, xB[0]);
-  x = CoinMin(x, xB[1]);
+  x = std::max(x, xB[0]);
+  x = std::min(x, xB[1]);
   double y = info->solution_[yColumn_];
-  y = CoinMax(y, yB[0]);
-  y = CoinMin(y, yB[1]);
+  y = std::max(y, yB[0]);
+  y = std::min(y, yB[1]);
   int j;
   // seems something wrong here
 #if 0 //ndef NDEBUG
@@ -5522,7 +5522,7 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation *info, int &whichWay) c
     if (boundType_ == 0) {
       move *= coefficient_;
       move *= info->pi_[xyRow_];
-      move = CoinMax(move, 0.0);
+      move = std::max(move, 0.0);
     } else if (boundType_ == 1) {
       // if OK then say satisfied
     } else if (boundType_ == 2) {
@@ -5666,10 +5666,10 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation *info, int &whichWay) c
   if (chosen_ == -1) {
     infeasibility_ = 0.0;
   } else if (chosen_ == 0) {
-    infeasibility_ = CoinMax(fabs(xyBranchValue_ - x), 1.0e-12);
+    infeasibility_ = std::max(fabs(xyBranchValue_ - x), 1.0e-12);
     //assert (xyBranchValue_>=info->lower_[xColumn_]&&xyBranchValue_<=info->upper_[xColumn_]);
   } else {
-    infeasibility_ = CoinMax(fabs(xyBranchValue_ - y), 1.0e-12);
+    infeasibility_ = std::max(fabs(xyBranchValue_ - y), 1.0e-12);
     //assert (xyBranchValue_>=info->lower_[yColumn_]&&xyBranchValue_<=info->upper_[yColumn_]);
   }
   if (info->defaultDual_ < 0.0) {
@@ -5708,11 +5708,11 @@ void OsiBiLinear::getPseudoShadow(const OsiBranchingInformation *info)
   yB[0] = info->lower_[yColumn_];
   yB[1] = info->upper_[yColumn_];
   double x = info->solution_[xColumn_];
-  x = CoinMax(x, xB[0]);
-  x = CoinMin(x, xB[1]);
+  x = std::max(x, xB[0]);
+  x = std::min(x, xB[1]);
   double y = info->solution_[yColumn_];
-  y = CoinMax(y, yB[0]);
-  y = CoinMin(y, yB[1]);
+  y = std::max(y, yB[0]);
+  y = std::min(y, yB[1]);
   int j;
   double xyTrue = x * y;
   double xyLambda = 0.0;
@@ -5771,7 +5771,7 @@ void OsiBiLinear::getPseudoShadow(const OsiBranchingInformation *info)
     // if move makes infeasible then make at least default
     double newValue = activity[xyRow_] + movement * coefficient_;
     if (newValue > upper[xyRow_] + tolerance || newValue < lower[xyRow_] - tolerance) {
-      infeasibility_ += fabs(movement * coefficient_) * CoinMax(fabs(valueP), info->defaultDual_);
+      infeasibility_ += fabs(movement * coefficient_) * std::max(fabs(valueP), info->defaultDual_);
       infeasible = true;
     }
   } else {
@@ -5789,7 +5789,7 @@ void OsiBiLinear::getPseudoShadow(const OsiBranchingInformation *info)
     // if move makes infeasible then make at least default
     double newValue = activity[iRow] + movement * multiplier_[i];
     if (newValue > upper[iRow] + tolerance || newValue < lower[iRow] - tolerance) {
-      infeasibility_ += fabs(movement * multiplier_[i]) * CoinMax(fabs(valueP), info->defaultDual_);
+      infeasibility_ += fabs(movement * multiplier_[i]) * std::max(fabs(valueP), info->defaultDual_);
       infeasible = true;
     }
   }
@@ -5799,7 +5799,7 @@ void OsiBiLinear::getPseudoShadow(const OsiBranchingInformation *info)
     else
       infeasibility_ = info->integerTolerance_;
   }
-  otherInfeasibility_ = CoinMax(1.0e-12, infeasibility_ * 10.0);
+  otherInfeasibility_ = std::max(1.0e-12, infeasibility_ * 10.0);
 }
 // Gets sum of movements to correct value
 double
@@ -5813,11 +5813,11 @@ OsiBiLinear::getMovement(const OsiBranchingInformation *info)
   yB[0] = info->lower_[yColumn_];
   yB[1] = info->upper_[yColumn_];
   double x = info->solution_[xColumn_];
-  x = CoinMax(x, xB[0]);
-  x = CoinMin(x, xB[1]);
+  x = std::max(x, xB[0]);
+  x = std::min(x, xB[1]);
   double y = info->solution_[yColumn_];
-  y = CoinMax(y, yB[0]);
-  y = CoinMin(y, yB[1]);
+  y = std::max(y, yB[0]);
+  y = std::min(y, yB[1]);
   int j;
   double xyTrue = x * y;
   double xyLambda = 0.0;
@@ -5857,7 +5857,7 @@ OsiBiLinear::getMovement(const OsiBranchingInformation *info)
   }
   // If we move to xy then we move by coefficient * (xyTrue-xyLambda) on row xyRow_
   double movement = xyTrue - xyLambda;
-  double mesh = CoinMax(xMeshSize_, yMeshSize_);
+  double mesh = std::max(xMeshSize_, yMeshSize_);
   if (fabs(movement) < xySatisfied_ && (xB[1] - xB[0] < mesh || yB[1] - yB[0] < mesh))
     return 0.0; // say feasible
   const double *activity = info->rowActivity_;
@@ -5963,8 +5963,8 @@ OsiBiLinear::feasibleRegion(OsiSolverInterface *solver, const OsiBranchingInform
       assert(xNew >= xB[0] - xSatisfied_);
     }
     if (xMeshSize_ < 1.0 && fabs(xNew - x) <= xSatisfied_) {
-      double lo = CoinMax(xB[0], x - 0.5 * xSatisfied_);
-      double up = CoinMin(xB[1], x + 0.5 * xSatisfied_);
+      double lo = std::max(xB[0], x - 0.5 * xSatisfied_);
+      double up = std::min(xB[1], x + 0.5 * xSatisfied_);
       solver->setColLower(xColumn_, lo);
       solver->setColUpper(xColumn_, up);
     } else {
@@ -5988,8 +5988,8 @@ OsiBiLinear::feasibleRegion(OsiSolverInterface *solver, const OsiBranchingInform
       assert(yNew >= yB[0] - ySatisfied_);
     }
     if (yMeshSize_ < 1.0 && fabs(yNew - y) <= ySatisfied_) {
-      double lo = CoinMax(yB[0], y - 0.5 * ySatisfied_);
-      double up = CoinMin(yB[1], y + 0.5 * ySatisfied_);
+      double lo = std::max(yB[0], y - 0.5 * ySatisfied_);
+      double up = std::min(yB[1], y + 0.5 * ySatisfied_);
       solver->setColLower(yColumn_, lo);
       solver->setColUpper(yColumn_, up);
     } else {
@@ -6183,8 +6183,8 @@ void OsiBiLinear::newBounds(OsiSolverInterface *solver, int way, short xOrY, dou
       double lowerLambda[4];
       double upperLambda[4];
       for (i = 0; i < 4; i++) {
-        lower[i] = CoinMax(0.0, columnLower[firstLambda_ + i]);
-        upper[i] = CoinMin(1.0, columnUpper[firstLambda_ + i]);
+        lower[i] = std::max(0.0, columnLower[firstLambda_ + i]);
+        upper[i] = std::min(1.0, columnUpper[firstLambda_ + i]);
         lowerLambda[i] = 1.0;
         upperLambda[i] = 0.0;
       }
@@ -6198,8 +6198,8 @@ void OsiBiLinear::newBounds(OsiSolverInterface *solver, int way, short xOrY, dou
           yB[2] = y;
           computeLambdas(xB, yB, xybar, lambda);
           for (i = 0; i < 4; i++) {
-            lowerLambda[i] = CoinMin(lowerLambda[i], lambda[i]);
-            upperLambda[i] = CoinMax(upperLambda[i], lambda[i]);
+            lowerLambda[i] = std::min(lowerLambda[i], lambda[i]);
+            upperLambda[i] = std::max(upperLambda[i], lambda[i]);
           }
         }
       }
@@ -6888,9 +6888,9 @@ OsiBiLinearEquality::newGrid(OsiSolverInterface *solver, int type) const
     }
     // new step size
     assert(numberPoints_ > 2);
-    step = CoinMax((1.5 * step) / static_cast< double >(numberPoints_ - 1), 0.5 * step);
-    xB[0] = CoinMax(xB[0], xValue - 0.5 * step);
-    xB[1] = CoinMin(xB[1], xValue + 0.5 * step);
+    step = std::max((1.5 * step) / static_cast< double >(numberPoints_ - 1), 0.5 * step);
+    xB[0] = std::max(xB[0], xValue - 0.5 * step);
+    xB[1] = std::min(xB[1], xValue + 0.5 * step);
     // and now divide these
     mesh = (xB[1] - xB[0]) / static_cast< double >(numberPoints_ - 1);
   } else {
@@ -6988,8 +6988,8 @@ double
 OsiSimpleFixedInteger::infeasibility(const OsiBranchingInformation *info, int &whichWay) const
 {
   double value = info->solution_[columnNumber_];
-  value = CoinMax(value, info->lower_[columnNumber_]);
-  value = CoinMin(value, info->upper_[columnNumber_]);
+  value = std::max(value, info->lower_[columnNumber_]);
+  value = std::min(value, info->upper_[columnNumber_]);
   double nearest = floor(value + (1.0 - 0.5));
   if (nearest > value) {
     whichWay = 1;
@@ -7047,21 +7047,21 @@ OsiSimpleFixedInteger::infeasibility(const OsiBranchingInformation *info, int &w
       // if up makes infeasible then make at least default
       double newUp = activity[iRow] + upMovement * el2;
       if (newUp > upper[iRow] + tolerance || newUp < lower[iRow] - tolerance)
-        u = CoinMax(u, info->defaultDual_);
+        u = std::max(u, info->defaultDual_);
       upEstimate += u * upMovement * fabs(el2);
       // if down makes infeasible then make at least default
       double newDown = activity[iRow] - downMovement * el2;
       if (newDown > upper[iRow] + tolerance || newDown < lower[iRow] - tolerance)
-        d = CoinMax(d, info->defaultDual_);
+        d = std::max(d, info->defaultDual_);
       downEstimate += d * downMovement * fabs(el2);
     }
     if (downEstimate >= upEstimate) {
-      infeasibility_ = CoinMax(1.0e-12, upEstimate);
-      otherInfeasibility_ = CoinMax(1.0e-12, downEstimate);
+      infeasibility_ = std::max(1.0e-12, upEstimate);
+      otherInfeasibility_ = std::max(1.0e-12, downEstimate);
       whichWay = 1;
     } else {
-      infeasibility_ = CoinMax(1.0e-12, downEstimate);
-      otherInfeasibility_ = CoinMax(1.0e-12, upEstimate);
+      infeasibility_ = std::max(1.0e-12, downEstimate);
+      otherInfeasibility_ = std::max(1.0e-12, upEstimate);
       whichWay = 0;
     }
   }
@@ -7075,8 +7075,8 @@ OsiBranchingObject *
 OsiSimpleFixedInteger::createBranch(OsiSolverInterface *solver, const OsiBranchingInformation *info, int way) const
 {
   double value = info->solution_[columnNumber_];
-  value = CoinMax(value, info->lower_[columnNumber_]);
-  value = CoinMin(value, info->upper_[columnNumber_]);
+  value = std::max(value, info->lower_[columnNumber_]);
+  value = std::min(value, info->upper_[columnNumber_]);
   assert(info->upper_[columnNumber_] > info->lower_[columnNumber_]);
   double nearest = floor(value + 0.5);
   double integerTolerance = info->integerTolerance_;
@@ -7468,7 +7468,7 @@ approximateSolution(CoinModel &coinModel,
         triple = coinModel.next(triple);
       }
       which[numberConstraints++] = iRow;
-      maximumQuadraticElements = CoinMax(maximumQuadraticElements, numberQuadratic);
+      maximumQuadraticElements = std::max(maximumQuadraticElements, numberQuadratic);
     }
   }
   ClpSimplex *model = new ClpSimplex();
@@ -7547,7 +7547,7 @@ approximateSolution(CoinModel &coinModel,
         }
         const char *expr = coinModel.getElementAsString(iRow, iColumn);
         if (strcmp("Numeric", expr)) {
-          largestColumn = CoinMax(largestColumn, iColumn);
+          largestColumn = std::max(largestColumn, iColumn);
           // value*x*y
           char temp[20000];
           strcpy(temp, expr);
@@ -7563,7 +7563,7 @@ approximateSolution(CoinModel &coinModel,
                 elementQuadratic[numberQuadratic++] = 2.0 * value; // convention
               else
                 elementQuadratic[numberQuadratic++] = 1.0 * value; // convention
-              largestColumn = CoinMax(largestColumn, jColumn);
+              largestColumn = std::max(largestColumn, jColumn);
             } else if (jColumn == -2) {
               linearTerm[iColumn] = value;
               // and put in as row -1
@@ -7572,7 +7572,7 @@ approximateSolution(CoinModel &coinModel,
                 elementQuadratic[numberQuadratic++] = 2.0 * value; // convention
               else
                 elementQuadratic[numberQuadratic++] = 1.0 * value; // convention
-              largestColumn = CoinMax(largestColumn, iColumn);
+              largestColumn = std::max(largestColumn, iColumn);
             } else {
               printf("bad nonlinear term %s\n", temp);
               abort();
@@ -7586,7 +7586,7 @@ approximateSolution(CoinModel &coinModel,
           columnQuadratic[numberQuadratic] = -1;
           elementQuadratic[numberQuadratic++] = linearTerm[iColumn];
           if (linearTerm[iColumn])
-            largestColumn = CoinMax(largestColumn, iColumn);
+            largestColumn = std::max(largestColumn, iColumn);
         }
         triple = coinModel.next(triple);
       }
@@ -7858,8 +7858,8 @@ OsiUsesBiLinear::infeasibility(const OsiBranchingInformation *info, int &whichWa
 {
   assert(type_ == 0); // just continuous for now
   double value = info->solution_[columnNumber_];
-  value = CoinMax(value, info->lower_[columnNumber_]);
-  value = CoinMin(value, info->upper_[columnNumber_]);
+  value = std::max(value, info->lower_[columnNumber_]);
+  value = std::min(value, info->upper_[columnNumber_]);
   infeasibility_ = 0.0;
   for (int i = 0; i < numberBiLinear_; i++) {
     OsiBiLinear *obj = dynamic_cast< OsiBiLinear * >(objects_[i]);
@@ -7891,8 +7891,8 @@ OsiBranchingObject *
 OsiUsesBiLinear::createBranch(OsiSolverInterface *solver, const OsiBranchingInformation *info, int way) const
 {
   double value = info->solution_[columnNumber_];
-  value = CoinMax(value, info->lower_[columnNumber_]);
-  value = CoinMin(value, info->upper_[columnNumber_]);
+  value = std::max(value, info->lower_[columnNumber_]);
+  value = std::min(value, info->upper_[columnNumber_]);
   assert(info->upper_[columnNumber_] > info->lower_[columnNumber_]);
   double nearest = floor(value + 0.5);
   double integerTolerance = info->integerTolerance_;
@@ -7917,8 +7917,8 @@ OsiUsesBiLinear::feasibleRegion(OsiSolverInterface *solver,
   const OsiBranchingInformation *info) const
 {
   double value = info->solution_[columnNumber_];
-  double newValue = CoinMax(value, info->lower_[columnNumber_]);
-  newValue = CoinMin(newValue, info->upper_[columnNumber_]);
+  double newValue = std::max(value, info->lower_[columnNumber_]);
+  newValue = std::min(newValue, info->upper_[columnNumber_]);
   solver->setColLower(columnNumber_, newValue);
   solver->setColUpper(columnNumber_, newValue);
   return fabs(value - newValue);

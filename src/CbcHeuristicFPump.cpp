@@ -285,7 +285,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   cutoff *= direction;
   int numberBandBsolutions = 0;
   double firstCutoff = fabs(cutoff);
-  cutoff = CoinMin(cutoff, solutionValue);
+  cutoff = std::min(cutoff, solutionValue);
   // check plausible and space for rounded solution
   int numberColumns = model_->getNumCols();
   int numberIntegers = model_->numberIntegers();
@@ -570,14 +570,14 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         //lp->setSpecialOptions(options|0x01000000);
 #ifdef CLP_INVESTIGATE
         clpSolver->setHintParam(OsiDoReducePrint, false, OsiHintTry);
-        lp->setLogLevel(CoinMax(1, lp->logLevel()));
+        lp->setLogLevel(std::max(1, lp->logLevel()));
 #endif
       }
     }
-    if (CoinMin(fakeCutoff_, cutoff) < 1.0e50) {
+    if (std::min(fakeCutoff_, cutoff) < 1.0e50) {
       // Fix on djs
       double direction = solver->getObjSenseInCbc();
-      double gap = CoinMin(fakeCutoff_, cutoff) - solver->getObjValue() * direction;
+      double gap = std::min(fakeCutoff_, cutoff) - solver->getObjValue() * direction;
       double tolerance;
       solver->getDblParam(OsiDualTolerance, tolerance);
       if (gap > 0.0 && (fixOnReducedCosts_ == 1 || (numberTries == 1 && fixOnReducedCosts_ == 2))) {
@@ -597,10 +597,10 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     bool useCutoff = (fabs(cutoff) < 1.0e20 && (fakeCutoff_ != COIN_DBL_MAX || numberTries > 1));
     bool tryOneClosePass = fakeCutoff_ < solver->getObjValue();
     // but there may be a close one
-    if (firstCutoff < 2.0 * solutionValue && numberTries == 1 && CoinMin(cutoff, fakeCutoff_) < 1.0e20)
+    if (firstCutoff < 2.0 * solutionValue && numberTries == 1 && std::min(cutoff, fakeCutoff_) < 1.0e20)
       useCutoff = true;
     if (useCutoff || tryOneClosePass) {
-      double rhs = CoinMin(cutoff, fakeCutoff_);
+      double rhs = std::min(cutoff, fakeCutoff_);
       if (tryOneClosePass) {
         // If way off then .05
         if (fakeCutoff_ <= -1.0e100) {
@@ -725,7 +725,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       double value = saveObjective[i];
       scaleFactor += value * value;
 #ifdef COIN_DEVELOP
-      largestCost = CoinMax(largestCost, fabs(value));
+      largestCost = std::max(largestCost, fabs(value));
       if (value * direction >= artificialCost_)
         nArtificial++;
 #endif
@@ -777,7 +777,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         double perPass = totalNumberIterations / (totalNumberPasses + numberPasses + 1.0e-5);
         perPass /= (solver->getNumRows() + numberColumns);
         double test = moreIterations ? 0.3 : 0.05;
-        if (n > CoinMax(20000, 3 * averageIterationsPerTry)
+        if (n > std::max(20000, 3 * averageIterationsPerTry)
           && (switches_ & 2) == 0 && maximumPasses < 200 && perPass > test) {
           exitAll = true;
         }
@@ -1049,7 +1049,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 				  printf("Row %d inf %g %g <= %g <= %g\n",
 					 i, inf, rowLower[i], rowActivity[i], rowUpper[i]);
 #endif
-                    double infeasibility = CoinMax(rowActivity[i] - rowUpper[i],
+                    double infeasibility = std::max(rowActivity[i] - rowUpper[i],
                       rowLower[i] - rowActivity[i]);
                     if (infeasibility > largestInfeasibility) {
                       largestInfeasibility = infeasibility;
@@ -1151,7 +1151,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           double target = -1.0;
           double *randomX = new double[numberIntegers];
           for (i = 0; i < numberIntegers; i++)
-            randomX[i] = CoinMax(0.0, randomNumberGenerator_.randomDouble() - 0.3);
+            randomX[i] = std::max(0.0, randomNumberGenerator_.randomDouble() - 0.3);
           for (int k = 0; k < 10; k++) {
 #ifdef COIN_DEVELOP_x
             printf("kpass %d\n", k);
@@ -1169,7 +1169,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             if (target < 0.0) {
               if (numberX[9] <= 200)
                 break; // not very many changes
-              target = CoinMax(200.0, CoinMin(0.05 * numberX[9], 1000.0));
+              target = std::max(200.0, std::min(0.05 * numberX[9], 1000.0));
             }
             int iX = -1;
             int iBand = -1;
@@ -1660,7 +1660,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             CbcRounding heuristic1(*model_);
             heuristic1.setHeuristicName("rounding in feaspump!");
             heuristic1.setWhen(1);
-            roundingObjective = CoinMin(roundingObjective, solutionValue);
+            roundingObjective = std::min(roundingObjective, solutionValue);
             double testSolutionValue = newTrueSolutionValue;
             int returnCode = heuristic1.solution(roundingObjective,
               roundingSolution,
@@ -1860,7 +1860,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
               useRhs += 0.1 * gap;
               if (exactMultiple) {
                 useRhs = exactMultiple * ceil(useRhs / exactMultiple);
-                useRhs = CoinMax(useRhs, oldRhs + exactMultiple);
+                useRhs = std::max(useRhs, oldRhs + exactMultiple);
               }
               trying = true;
             }
@@ -1872,8 +1872,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             for (int i = 0; i < SIZE_BOBBLE - 1; i++) {
               double value = saveSumInf[i + 1];
               saveSumInf[i] = value;
-              largest = CoinMax(largest, value);
-              smallest = CoinMin(smallest, value);
+              largest = std::max(largest, value);
+              smallest = std::min(smallest, value);
             }
             saveSumInf[SIZE_BOBBLE - 1] = newSumInfeas;
             if (smallest * 1.5 > largest && smallest > 2.0) {
@@ -1883,7 +1883,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
                 useRhs -= 0.4 * gap;
                 if (exactMultiple) {
                   double value = floor(useRhs / exactMultiple);
-                  useRhs = CoinMin(value * exactMultiple, oldRhs - exactMultiple);
+                  useRhs = std::min(value * exactMultiple, oldRhs - exactMultiple);
                 }
                 if (useRhs < continuousObjectiveValue) {
                   // skip decrease
@@ -1903,7 +1903,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
                 }
                 if (exactMultiple) {
                   double value = ceil(useRhs / exactMultiple);
-                  useRhs = CoinMin(value * exactMultiple,
+                  useRhs = std::min(value * exactMultiple,
                     solutionValue - exactMultiple);
                 }
               }
@@ -1917,9 +1917,9 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             if (exactMultiple) {
               double value = floor(useRhs / exactMultiple);
               double bestPossible = ceil(continuousObjectiveValue / exactMultiple);
-              useRhs = CoinMax(value, bestPossible) * exactMultiple;
+              useRhs = std::max(value, bestPossible) * exactMultiple;
             } else {
-              useRhs = CoinMax(useRhs, continuousObjectiveValue);
+              useRhs = std::max(useRhs, continuousObjectiveValue);
             }
             int k = solver->getNumRows() - 1;
             solver->setRowUpper(k, useRhs + useOffset);
@@ -1996,7 +1996,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       bool stopBAB = false;
       int allowedPass = -1;
       if (maximumAllowed > 0)
-        allowedPass = CoinMax(numberPasses - maximumAllowed, -1);
+        allowedPass = std::max(numberPasses - maximumAllowed, -1);
       while (!stopBAB) {
         stopBAB = true;
         int i;
@@ -2013,10 +2013,10 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           //double originalUpper;
           //getIntegerInformation( object,originalLower, originalUpper);
           //assert(colLower[iColumn]==originalLower);
-          //newSolver->setColLower(iColumn,CoinMax(colLower[iColumn],originalLower));
+          //newSolver->setColLower(iColumn,std::max(colLower[iColumn],originalLower));
           newSolver->setColLower(iColumn, colLower[iColumn]);
           //assert(colUpper[iColumn]==originalUpper);
-          //newSolver->setColUpper(iColumn,CoinMin(colUpper[iColumn],originalUpper));
+          //newSolver->setColUpper(iColumn,std::min(colUpper[iColumn],originalUpper));
           newSolver->setColUpper(iColumn, colUpper[iColumn]);
           if (usedColumn[iColumn] <= allowedPass) {
             double value = lastSolution[iColumn];
@@ -2078,8 +2078,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
           if (numberTries > 1 && !numberBandBsolutions)
             fractionSmall_ *= 0.5;
           // Give branch and bound a bit more freedom
-          double cutoff2 = newSolutionValue + CoinMax(model_->getCutoffIncrement(), 1.0e-3);
-          cutoff2 = CoinMin(cutoff2, realCutoff);
+          double cutoff2 = newSolutionValue + std::max(model_->getCutoffIncrement(), 1.0e-3);
+          cutoff2 = std::min(cutoff2, realCutoff);
 #if 0
 		      {
                         OsiClpSolverInterface * clpSolver
@@ -2207,13 +2207,13 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
                 value = rowLower[i] - rowActivity[i];
                 if (value > primalTolerance) {
                   numberBadRows++;
-                  largestInfeasibility = CoinMax(largestInfeasibility, value);
+                  largestInfeasibility = std::max(largestInfeasibility, value);
                   sumInfeasibility += value;
                 }
                 value = rowActivity[i] - rowUpper[i];
                 if (value > primalTolerance) {
                   numberBadRows++;
-                  largestInfeasibility = CoinMax(largestInfeasibility, value);
+                  largestInfeasibility = std::max(largestInfeasibility, value);
                   sumInfeasibility += value;
                 }
               }
@@ -2354,7 +2354,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     }
     if (solutionFound)
       finalReturnCode = 1;
-    cutoff = CoinMin(cutoff, solutionValue - model_->getCutoffIncrement());
+    cutoff = std::min(cutoff, solutionValue - model_->getCutoffIncrement());
     realCutoff = cutoff;
     if (numberTries >= maximumRetries_ || !solutionFound || exitAll || cutoff < continuousObjectiveValue + 1.0e-7) {
       break;
@@ -2362,12 +2362,12 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       solutionFound = false;
       if (absoluteIncrement_ > 0.0 || relativeIncrement_ > 0.0) {
         double gap = relativeIncrement_ * fabs(solutionValue);
-        double change = CoinMax(gap, absoluteIncrement_);
-        cutoff = CoinMin(cutoff, solutionValue - change);
+        double change = std::max(gap, absoluteIncrement_);
+        cutoff = std::min(cutoff, solutionValue - change);
       } else {
         //double weights[10]={0.1,0.1,0.2,0.2,0.2,0.3,0.3,0.3,0.4,0.5};
         double weights[10] = { 0.1, 0.2, 0.3, 0.3, 0.4, 0.4, 0.4, 0.5, 0.5, 0.6 };
-        cutoff -= weights[CoinMin(numberTries - 1, 9)] * (cutoff - continuousObjectiveValue);
+        cutoff -= weights[std::min(numberTries - 1, 9)] * (cutoff - continuousObjectiveValue);
       }
       // But round down
       if (exactMultiple)
@@ -2528,8 +2528,8 @@ int CbcHeuristicFPump::solution(double &objectiveValue, double *newSolution)
           int up = static_cast< int >(upper[iColumn]);
           int lo = static_cast< int >(lower[iColumn]);
           int near = static_cast< int >(nearest);
-          up = CoinMin(up, near + maxAround);
-          lo = CoinMax(lo, near - maxAround);
+          up = std::min(up, near + maxAround);
+          lo = std::max(lo, near - maxAround);
           solver->setColLower(iColumn, lo);
           solver->setColUpper(iColumn, up);
           int n = up - lo;
@@ -2763,7 +2763,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
         continue;
       if (thisValue == 1.0)
         nOne++;
-      smallest = CoinMin(smallest, thisValue);
+      smallest = std::min(smallest, thisValue);
       solution[jColumn] = 1.0;
       double largest = 0.0;
       for (CoinBigIndex jEl = columnStart[jColumn];
@@ -3059,13 +3059,13 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
     value = rowLower[i] - rowActivity[i];
     if (value > primalTolerance) {
       numberBadRows++;
-      largestInfeasibility = CoinMax(largestInfeasibility, value);
+      largestInfeasibility = std::max(largestInfeasibility, value);
       sumInfeasibility += value;
     }
     value = rowActivity[i] - rowUpper[i];
     if (value > primalTolerance) {
       numberBadRows++;
-      largestInfeasibility = CoinMax(largestInfeasibility, value);
+      largestInfeasibility = std::max(largestInfeasibility, value);
       sumInfeasibility += value;
     }
   }
@@ -3343,7 +3343,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
           }
           improvementDown = oldSum - newSum;
         }
-        double improvement = CoinMax(improvementUp, improvementDown);
+        double improvement = std::max(improvementUp, improvementDown);
         if (improvement > bestImprovement) {
           bestImprovement = improvement;
           bestColumn = iColumn;

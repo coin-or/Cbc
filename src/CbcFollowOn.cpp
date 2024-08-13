@@ -154,8 +154,8 @@ int CbcFollowOn::gutsOfFollowOn(int &otherRow, int &preferredWay) const
         double value = elementByRow[j];
         double solValue = solution[iColumn];
         if (columnLower[iColumn] != columnUpper[iColumn]) {
-          smallest = CoinMin(smallest, value);
-          largest = CoinMax(largest, value);
+          smallest = std::min(smallest, value);
+          largest = std::max(largest, value);
           if (value == 1.0)
             number1++;
           if (solValue < 1.0 - integerTolerance && solValue > integerTolerance)
@@ -621,13 +621,13 @@ CbcIdiotBranch::buildCut(const OsiBranchingInformation *info, int /*type*/, int 
   const double *lower = info->lower_;
   const double *upper = info->upper_;
   double integerTolerance = model_->getIntegerTolerance();
-  //int nMax=CoinMin(4,numberIntegers/2);
+  //int nMax=std::min(4,numberIntegers/2);
   int n = 0;
   for (int i = 0; i < numberIntegers; i++) {
     int iColumn = integerVariable[i];
     double value = solution[iColumn];
-    value = CoinMax(value, lower[iColumn]);
-    value = CoinMin(value, upper[iColumn]);
+    value = std::max(value, lower[iColumn]);
+    value = std::min(value, upper[iColumn]);
     //#define JUST_SMALL
 #ifndef JUST_SMALL
     double nearest = floor(value + 0.5);
@@ -663,8 +663,8 @@ CbcIdiotBranch::buildCut(const OsiBranchingInformation *info, int /*type*/, int 
     for (int i = 0; i < n; i++) {
       int iColumn = which[i];
       double value = solution[iColumn];
-      value = CoinMax(value, lower[iColumn]);
-      value = CoinMin(value, upper[iColumn]);
+      value = std::max(value, lower[iColumn]);
+      value = std::min(value, upper[iColumn]);
 #define PLUS_MINUS
 #ifndef PLUS_MINUS
       away[i] = 1.0;

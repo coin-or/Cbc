@@ -177,7 +177,7 @@ void CbcFixVariable::applyToSolver(OsiSolverInterface *solver, int state) const
     double value = newBound_[i];
     double oldValue = solver->getColLower()[iColumn];
     //printf("for %d old lower bound %g, new %g",iColumn,oldValue,value);
-    solver->setColLower(iColumn, CoinMax(value, oldValue));
+    solver->setColLower(iColumn, std::max(value, oldValue));
     //printf(" => %g\n",solver->getColLower()[iColumn]);
   }
   // Set new upper bounds
@@ -186,7 +186,7 @@ void CbcFixVariable::applyToSolver(OsiSolverInterface *solver, int state) const
     double value = newBound_[i];
     double oldValue = solver->getColUpper()[iColumn];
     //printf("for %d old upper bound %g, new %g",iColumn,oldValue,value);
-    solver->setColUpper(iColumn, CoinMin(value, oldValue));
+    solver->setColUpper(iColumn, std::min(value, oldValue));
     //printf(" => %g\n",solver->getColUpper()[iColumn]);
   }
 }

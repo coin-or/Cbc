@@ -393,7 +393,7 @@ int CbcFathomDynamicProgramming::checkPossible(int allowableSize)
       for (i = 0; i < numberRows; i++) {
         int newRow = lookup_[i];
         if (newRow >= 0) {
-          int gap = static_cast< int >(rowUpper[i] - CoinMax(0.0, rowLower[i]));
+          int gap = static_cast< int >(rowUpper[i] - std::max(0.0, rowLower[i]));
           lower2[newRow] = rhs_[newRow] - gap;
           int numberBits = numberBits_[newRow];
           int startBit = startBit_[newRow];
@@ -519,7 +519,7 @@ int CbcFathomDynamicProgramming::fathom(double *&betterSolution)
       for (i = 0; i < numberRows; i++) {
         int newRow = lookup_[i];
         if (newRow >= 0) {
-          int gap = static_cast< int >(rowUpper[i] - CoinMax(0.0, rowLower[i]));
+          int gap = static_cast< int >(rowUpper[i] - std::max(0.0, rowLower[i]));
           lower[newRow] = rhs_[newRow] - gap;
           int numberBits = numberBits_[newRow];
           int startBit = startBit_[newRow];

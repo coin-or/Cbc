@@ -1678,7 +1678,7 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
     }
     if (parallelMode() >= 0)
       nodeCompare_ = NULL;
-    baseModel->maximumDepthActual_ = CoinMax(baseModel->maximumDepthActual_, maximumDepthActual_);
+    baseModel->maximumDepthActual_ = std::max(baseModel->maximumDepthActual_, maximumDepthActual_);
     baseModel->numberDJFixed_ += numberDJFixed_;
     baseModel->numberStrongIterations_ += numberStrongIterations_;
     int i;

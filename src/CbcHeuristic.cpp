@@ -400,7 +400,7 @@ bool CbcHeuristic::shouldHeurRun_randomChoice()
 #ifdef COIN_DEVELOP
             int old = howOften_;
 #endif
-            howOften_ = CoinMin(CoinMax(static_cast< int >(howOften_ * 1.1), howOften_ + 1), 1000000);
+            howOften_ = std::min(std::max(static_cast< int >(howOften_ * 1.1), howOften_ + 1), 1000000);
 #ifdef COIN_DEVELOP
             printf("Howoften changed from %d to %d for %s\n",
               old, howOften_, heuristicName_.c_str());
@@ -624,11 +624,11 @@ bool CbcHeuristic::exitNow(double bestObjective) const
   // See if can stop on gap
   OsiSolverInterface *solver = model_->solver();
   double bestPossibleObjective = solver->getObjValue() * solver->getObjSenseInCbc();
-  double absGap = CoinMax(model_->getAllowableGap(),
+  double absGap = std::max(model_->getAllowableGap(),
     model_->getHeuristicGap());
-  double fracGap = CoinMax(model_->getAllowableFractionGap(),
+  double fracGap = std::max(model_->getAllowableFractionGap(),
     model_->getHeuristicFractionGap());
-  double testGap = CoinMax(absGap, fracGap * CoinMax(fabs(bestObjective), fabs(bestPossibleObjective)));
+  double testGap = std::max(absGap, fracGap * std::max(fabs(bestObjective), fabs(bestPossibleObjective)));
 
   if (bestObjective - bestPossibleObjective < testGap
     && model_->getCutoffIncrement() >= 0.0) {
@@ -737,7 +737,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   double before = 2 * numberRowsStart + numberColumnsStart;
   if (before > 40000.0) {
     // fairly large - be more conservative
-    double multiplier = 1.0 - 0.3 * CoinMin(100000.0, before - 40000.0) / 100000.0;
+    double multiplier = 1.0 - 0.3 * std::min(100000.0, before - 40000.0) / 100000.0;
     if (multiplier < 1.0) {
       fractionSmall *= multiplier;
 #ifdef CLP_INVESTIGATE
@@ -819,7 +819,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
           if (upper[iColumn] > lower[iColumn]) {
             if (solver->isBinary(iColumn))
-              maxUsed = CoinMax(maxUsed, used[iColumn]);
+              maxUsed = std::max(maxUsed, used[iColumn]);
           }
         }
         if (maxUsed) {
@@ -1135,8 +1135,8 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           CbcStrategyDefaultSubTree strategy(model_, 1, 5, 1, 0);
           model.setStrategy(strategy);
           model.solver()->setIntParam(OsiMaxNumIterationHotStart, 10);
-          model.setMaximumCutPassesAtRoot(CoinMin(20, CoinAbs(model_->getMaximumCutPassesAtRoot())));
-          model.setMaximumCutPasses(CoinMin(10, model_->getMaximumCutPasses()));
+          model.setMaximumCutPassesAtRoot(std::min(20, CoinAbs(model_->getMaximumCutPassesAtRoot())));
+          model.setMaximumCutPasses(std::min(10, model_->getMaximumCutPasses()));
           // Set best solution (even if bad for this submodel)
           if (model_->bestSolution()) {
             const double *bestSolution = model_->bestSolution();
@@ -1304,7 +1304,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
               if (c) {
                 double cutoff;
                 solver2->getDblParam(OsiDualObjectiveLimit, cutoff);
-                cutoff = CoinMin(cutoff, value + 0.1 * fabs(value) * c);
+                cutoff = std::min(cutoff, value + 0.1 * fabs(value) * c);
                 heuristic4.setFakeCutoff(cutoff);
               }
               if (r) {
@@ -1530,7 +1530,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           model_->messageHandler()->message(CBC_END_SUB, model_->messages())
             << name
             << CoinMessageEol;
-        if (model.getMinimizationObjValue() < CoinMin(cutoff, 1.0e30)) {
+        if (model.getMinimizationObjValue() < std::min(cutoff, 1.0e30)) {
           // solution
           if (model.getNumCols())
             returnCode = model.isProvenOptimal() ? 3 : 1;
@@ -1909,7 +1909,7 @@ CbcHeuristicNode::minDistance(const CbcHeuristicNodeList &nodeList) const
 {
   double minDist = COIN_DBL_MAX;
   for (int i = nodeList.size() - 1; i >= 0; --i) {
-    minDist = CoinMin(minDist, distance(nodeList.node(i)));
+    minDist = std::min(minDist, distance(nodeList.node(i)));
   }
   return minDist;
 }
@@ -2600,7 +2600,7 @@ int CbcRounding::solution(double &solutionValue,
                 if (!isInteger)
                   distance = -gap / value;
                 else
-                  distance = CoinMax(-gap / value, 1.0);
+                  distance = std::max(-gap / value, 1.0);
               }
             } else if (rowActivity[iRow] < rowLower[iRow] - primalTolerance) {
               // infeasible below
@@ -2611,7 +2611,7 @@ int CbcRounding::solution(double &solutionValue,
                 if (!isInteger)
                   distance = -gap / value;
                 else
-                  distance = CoinMax(-gap / value, 1.0);
+                  distance = std::max(-gap / value, 1.0);
               }
             } else {
               // feasible
@@ -3040,8 +3040,8 @@ int CbcHeuristicPartial::solution(double &solutionValue,
       double value = hotstartSolution[iColumn];
       double lower = colLower[iColumn];
       double upper = colUpper[iColumn];
-      value = CoinMax(value, lower);
-      value = CoinMin(value, upper);
+      value = std::max(value, lower);
+      value = std::min(value, upper);
       if (fabs(value - floor(value + 0.5)) < 1.0e-8) {
         value = floor(value + 0.5);
         newSolver->setColLower(iColumn, value);

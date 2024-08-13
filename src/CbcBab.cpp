@@ -368,7 +368,7 @@ void installCutGenerators(CbcParameters *parameters, CbcModel *model)
     */
   {
     double objFrac = fabs(model->getMinimizationObjValue()) * .001 + .0001;
-    double minDrop = CoinMin(.05, objFrac);
+    double minDrop = std::min(.05, objFrac);
     model->setMinimumDrop(minDrop);
   }
   /*

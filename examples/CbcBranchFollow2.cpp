@@ -148,8 +148,8 @@ int CbcFollowOn2::gutsOfFollowOn2(int &otherRow, int &preferredWay,
         double value = elementByRow[j];
         double solValue = solution[iColumn];
         if (columnLower[iColumn] != columnUpper[iColumn]) {
-          smallest = CoinMin(smallest, value);
-          largest = CoinMax(largest, value);
+          smallest = std::min(smallest, value);
+          largest = std::max(largest, value);
           if (value == 1.0)
             number1++;
           else

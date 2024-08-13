@@ -211,7 +211,7 @@ void CbcSymmetry::Compute_Symmetry() const
 	if (orbit[i]>=0) {
 	  nIn++;
 	  marked[i]++;
-	  maxMarked = CoinMax(maxMarked,marked[i]);
+	  maxMarked = std::max(maxMarked,marked[i]);
 	}
       }
       printf("Generator %d has %d\n",iPerm,nIn);

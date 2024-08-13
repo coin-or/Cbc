@@ -3520,6 +3520,17 @@ Cbc_setInteger(Cbc_Model *model, int iColumn)
 
   model->solver_->setInteger(iColumn);
 }
+ 
+/** Change matrix coefficients */
+void CBC_LINKAGE
+Cbc_modifyCoefficient(Cbc_Model *model, int row, int column, double newValue )
+{
+  Cbc_flush(model);
+  VALIDATE_ROW_INDEX(row, model);
+  VALIDATE_COL_INDEX(column, model);
+
+  model->solver_->modifyCoefficient(row, column, newValue);
+}
 
 /** Adds a new column */
 void CBC_LINKAGE

@@ -263,7 +263,7 @@ void CbcBranchDynamicDecision::updateInformation(OsiSolverInterface *solver,
 	change is the change in objective due to the branch we've just imposed. It's
 	possible we may have gone infeasible.
 	*/
-  double change = CoinMax(0.0, objectiveValue - originalValue);
+  double change = std::max(0.0, objectiveValue - originalValue);
   // probably should also ignore if stopped
   // FIXME. Could use enum to avoid numbers for iStatus (e.g. optimal, unknown, infeasible)
   int iStatus;
@@ -303,7 +303,7 @@ void CbcBranchDynamicDecision::updateInformation(OsiSolverInterface *solver,
     // down
     if (feasible) {
       double movement = value - floor(value);
-      movement = CoinMax(movement, MINIMUM_MOVEMENT);
+      movement = std::max(movement, MINIMUM_MOVEMENT);
       //printf("(down change %g value down %g ",change,movement);
       object->incrementNumberTimesDown();
       object->addToSumDownChange(nonZeroAmount + movement);
@@ -330,7 +330,7 @@ void CbcBranchDynamicDecision::updateInformation(OsiSolverInterface *solver,
         change = distanceToCutoff * 2.0;
       else
         change = object->downDynamicPseudoCost() * movement * 10.0;
-      change = CoinMax(1.0e-12 * (1.0 + fabs(originalValue)), change);
+      change = std::max(1.0e-12 * (1.0 + fabs(originalValue)), change);
       object->addToSumDownChange(nonZeroAmount + movement);
       object->addToSumDownDecrease(originalUnsatisfied - unsatisfied);
 #if TYPE2 == 0
@@ -349,7 +349,7 @@ void CbcBranchDynamicDecision::updateInformation(OsiSolverInterface *solver,
     // up
     if (feasible) {
       double movement = ceil(value) - value;
-      movement = CoinMax(movement, MINIMUM_MOVEMENT);
+      movement = std::max(movement, MINIMUM_MOVEMENT);
       //printf("(up change %g value down %g ",change,movement);
       object->incrementNumberTimesUp();
       object->addToSumUpChange(nonZeroAmount + movement);
@@ -376,7 +376,7 @@ void CbcBranchDynamicDecision::updateInformation(OsiSolverInterface *solver,
         change = distanceToCutoff * 2.0;
       else
         change = object->upDynamicPseudoCost() * movement * 10.0;
-      change = CoinMax(1.0e-12 * (1.0 + fabs(originalValue)), change);
+      change = std::max(1.0e-12 * (1.0 + fabs(originalValue)), change);
       object->addToSumUpChange(nonZeroAmount + movement);
       object->addToSumUpDecrease(unsatisfied - originalUnsatisfied);
 #if TYPE2 == 0
@@ -424,7 +424,7 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
 #ifdef TRY_STUFF
     // before solution - choose smallest number
     // could add in depth as well
-    int bestNumber = CoinMin(bestNumberUp_, bestNumberDown_);
+    int bestNumber = std::min(bestNumberUp_, bestNumberDown_);
     if (numInfUp < numInfDown) {
       if (numInfUp < bestNumber) {
         betterWay = 1;
@@ -445,7 +445,7 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
       if (numInfUp < bestNumber) {
         better = true;
       } else if (numInfUp == bestNumber) {
-        if (CoinMin(changeUp, changeDown) < CoinMin(bestChangeUp_, bestChangeDown_) - 1.0e-5)
+        if (std::min(changeUp, changeDown) < std::min(bestChangeUp_, bestChangeDown_) - 1.0e-5)
           better = true;
         ;
       }
@@ -458,7 +458,7 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
       }
     }
     if (betterWay) {
-      value = CoinMin(numInfUp, numInfDown);
+      value = std::min(numInfUp, numInfDown);
     }
 #else
     // use pseudo shadow prices modified by locks
@@ -470,12 +470,12 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
       distanceToCutoff *= 10.0;
     else
       distanceToCutoff = 1.0e2 + fabs(objectiveValue);
-    distanceToCutoff = CoinMax(distanceToCutoff, 1.0e-12 * (1.0 + fabs(objectiveValue)));
+    distanceToCutoff = std::max(distanceToCutoff, 1.0e-12 * (1.0 + fabs(objectiveValue)));
     double continuousObjective = model->getContinuousObjective();
     double distanceToCutoffC = model->getCutoff() - continuousObjective;
     if (distanceToCutoffC > 1.0e20)
       distanceToCutoffC = 1.0e2 + fabs(objectiveValue);
-    distanceToCutoffC = CoinMax(distanceToCutoffC, 1.0e-12 * (1.0 + fabs(objectiveValue)));
+    distanceToCutoffC = std::max(distanceToCutoffC, 1.0e-12 * (1.0 + fabs(objectiveValue)));
     int numberInfC = model->getContinuousInfeasibilities();
     double perInf = distanceToCutoffC / static_cast< double >(numberInfC);
     assert(perInf > 0.0);
@@ -495,8 +495,8 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
     }
 #endif
 #endif
-    double minValue = CoinMin(changeDown, changeUp);
-    double maxValue = CoinMax(changeDown, changeUp);
+    double minValue = std::min(changeDown, changeUp);
+    double maxValue = std::max(changeDown, changeUp);
     value = WEIGHT_BEFORE * minValue + (1.0 - WEIGHT_BEFORE) * maxValue;
     if (value > bestCriterion_ + 1.0e-8) {
       if (changeUp <= 1.5 * changeDown) {
@@ -516,22 +516,22 @@ int CbcBranchDynamicDecision::betterBranch(CbcBranchingObject *thisOne,
     double objectiveValue = node ? node->objectiveValue() : 0.0;
 #endif
     // got a solution
-    double minValue = CoinMin(changeDown, changeUp);
-    double maxValue = CoinMax(changeDown, changeUp);
+    double minValue = std::min(changeDown, changeUp);
+    double maxValue = std::max(changeDown, changeUp);
     // Reduce
 #ifndef WEIGHT_PRODUCT
     value = WEIGHT_AFTER * minValue + (1.0 - WEIGHT_AFTER) * maxValue;
 #else
     double minProductWeight = model->getDblParam(CbcModel::CbcSmallChange);
-    value = CoinMax(minValue, minProductWeight) * CoinMax(maxValue, minProductWeight);
+    value = std::max(minValue, minProductWeight) * std::max(maxValue, minProductWeight);
     //value += minProductWeight*minValue;
 #endif
     double useValue = value;
     double useBest = bestCriterion_;
 #if TRY_STUFF > 1
     if (node) {
-      int thisNumber = CoinMin(numInfUp, numInfDown);
-      int bestNumber = CoinMin(bestNumberUp_, bestNumberDown_);
+      int thisNumber = std::min(numInfUp, numInfDown);
+      int bestNumber = std::min(bestNumberUp_, bestNumberDown_);
       double distance = cutoff - objectiveValue;
       assert(distance >= 0.0);
       if (useValue + 0.1 * distance > useBest && useValue * 1.1 > useBest && useBest + 0.1 * distance > useValue && useBest * 1.1 > useValue) {
@@ -624,7 +624,7 @@ void printHistory(const char *file)
   int i;
   for (i = 0; i < numberHistory; i++) {
     if (history[i].where_ != 'C' || history[i].status_ != 'I')
-      numberIntegers = CoinMax(numberIntegers, history[i].sequence_);
+      numberIntegers = std::max(numberIntegers, history[i].sequence_);
   }
   numberIntegers++;
   for (int iC = 0; iC < numberIntegers; iC++) {
@@ -748,12 +748,12 @@ int CbcDynamicPseudoCostBranchingObject::fillStrongInfo(CbcStrongInfo &info)
   info.upMovement = object_->upDynamicPseudoCost() * (ceil(value_) - value_);
   info.downMovement = object_->downDynamicPseudoCost() * (value_ - floor(value_));
   info.numIntInfeasUp -= static_cast< int >(object_->sumUpDecrease() / (1.0e-12 + static_cast< double >(object_->numberTimesUp())));
-  info.numIntInfeasUp = CoinMax(info.numIntInfeasUp, 0);
+  info.numIntInfeasUp = std::max(info.numIntInfeasUp, 0);
   info.numObjInfeasUp = 0;
   info.finishedUp = false;
   info.numItersUp = 0;
   info.numIntInfeasDown -= static_cast< int >(object_->sumDownDecrease() / (1.0e-12 + static_cast< double >(object_->numberTimesDown())));
-  info.numIntInfeasDown = CoinMax(info.numIntInfeasDown, 0);
+  info.numIntInfeasDown = std::max(info.numIntInfeasDown, 0);
   info.numObjInfeasDown = 0;
   info.finishedDown = false;
   info.numItersDown = 0;

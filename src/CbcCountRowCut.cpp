@@ -292,7 +292,7 @@ static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
     xScale2 = 1;
   }
   if (xUb < 1.0e10) {
-    xScale = CoinMax(xScale,fabs(xUb));
+    xScale = std::max(xScale,fabs(xUb));
     xScale2 |= 2;
   }
   int xN2 = 0;
@@ -300,7 +300,7 @@ static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
     double value = fabs(xElements[j]);
     if (value > CBC_SAME_CUT_TOLERANCE) {
       xN2++;
-      xScale = CoinMax(xScale,value);
+      xScale = std::max(xScale,value);
     }
   }
   int yScale2 = 0;
@@ -310,7 +310,7 @@ static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
     yScale2 = 1;
   }
   if (yUb < 1.0e10) {
-    yScale = CoinMax(yScale,fabs(yUb));
+    yScale = std::max(yScale,fabs(yUb));
     yScale2 |= 2;
   }
   int yN2 = 0;
@@ -318,7 +318,7 @@ static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
     double value = fabs(yElements[j]);
     if (value > CBC_SAME_CUT_TOLERANCE) {
       yN2++;
-      yScale = CoinMax(yScale,value);
+      yScale = std::max(yScale,value);
     }
   }
   bool identical = false;

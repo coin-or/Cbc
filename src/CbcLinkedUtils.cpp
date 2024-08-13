@@ -562,7 +562,7 @@ int ClpAmplObjective::markNonlinear(char *which)
   int iColumn;
   CbcAmplInfo *info = (CbcAmplInfo *)amplObjective_;
   ASL_pfgh *asl = info->asl_;
-  int nonLinear = CoinMax(nlvc, nlvo);
+  int nonLinear = std::max(nlvc, nlvo);
   for (iColumn = 0; iColumn < nonLinear; iColumn++) {
     which[iColumn] = 1;
   }
@@ -734,7 +734,7 @@ int ClpConstraintAmpl::markNonlinear(char *which) const
   ASL_pfgh *asl = info->asl_;
   int iColumn;
   int numberNon = 0;
-  int nonLinear = CoinMax(nlvc, nlvo);
+  int nonLinear = std::max(nlvc, nlvo);
   for (iColumn = 0; iColumn < numberCoefficients_; iColumn++) {
     int jColumn = column_[iColumn];
     if (jColumn < nonLinear) {

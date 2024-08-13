@@ -47,7 +47,7 @@ void CbcSolver2::resolve()
       int i;
       for (i = 0; i < numberColumns; i++) {
         if (solution[i] > 1.0e-6 || modelPtr_->getStatus(i) == ClpSimplex::basic) {
-          node_[i] = CoinMax(count_, node_[i]);
+          node_[i] = std::max(count_, node_[i]);
           howMany_[i]++;
         }
       }
@@ -342,7 +342,7 @@ void CbcSolver2::resolve()
       printf("count %d, bad %d - iterations %d\n", count_, timesBad_, iterationsBad_);
     for (i = 0; i < numberColumns; i++) {
       if (solution[i] > 1.0e-6 || modelPtr_->getStatus(i) == ClpSimplex::basic) {
-        node_[i] = CoinMax(count_, node_[i]);
+        node_[i] = std::max(count_, node_[i]);
         howMany_[i]++;
       }
     }

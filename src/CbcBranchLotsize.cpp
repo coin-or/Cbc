@@ -172,7 +172,7 @@ CbcLotsize::CbcLotsize(CbcModel *model,
     // and for safety
     bound_[numberRanges_] = bound_[numberRanges_ - 1];
     for (i = 1; i < numberRanges_; i++) {
-      largestGap_ = CoinMax(largestGap_, bound_[i] - bound_[i - 1]);
+      largestGap_ = std::max(largestGap_, bound_[i] - bound_[i - 1]);
     }
   } else {
     bound_ = new double[2 * numberPoints + 2];
@@ -191,7 +191,7 @@ CbcLotsize::CbcLotsize(CbcModel *model,
         hi = thisHi;
       } else {
         //overlap
-        hi = CoinMax(hi, thisHi);
+        hi = std::max(hi, thisHi);
         bound_[2 * numberRanges_ - 1] = hi;
       }
     }
@@ -199,7 +199,7 @@ CbcLotsize::CbcLotsize(CbcModel *model,
     bound_[2 * numberRanges_] = bound_[2 * numberRanges_ - 2];
     bound_[2 * numberRanges_ + 1] = bound_[2 * numberRanges_ - 1];
     for (i = 1; i < numberRanges_; i++) {
-      largestGap_ = CoinMax(largestGap_, bound_[2 * i] - bound_[2 * i - 1]);
+      largestGap_ = std::max(largestGap_, bound_[2 * i] - bound_[2 * i - 1]);
     }
   }
   delete[] sort;
@@ -424,8 +424,8 @@ CbcLotsize::infeasibility(const OsiBranchingInformation * /*info*/,
   const double *lower = solver->getColLower();
   const double *upper = solver->getColUpper();
   double value = solution[columnNumber_];
-  value = CoinMax(value, lower[columnNumber_]);
-  value = CoinMin(value, upper[columnNumber_]);
+  value = std::max(value, lower[columnNumber_]);
+  value = std::min(value, upper[columnNumber_]);
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
   /*printf("%d %g %g %g %g\n",columnNumber_,value,lower[columnNumber_],
       solution[columnNumber_],upper[columnNumber_]);*/
@@ -484,8 +484,8 @@ void CbcLotsize::feasibleRegion()
   const double *upper = solver->getColUpper();
   const double *solution = model_->testSolution();
   double value = solution[columnNumber_];
-  value = CoinMax(value, lower[columnNumber_]);
-  value = CoinMin(value, upper[columnNumber_]);
+  value = std::max(value, lower[columnNumber_]);
+  value = std::min(value, upper[columnNumber_]);
   findRange(value);
   double nearest;
   if (rangeType_ == 1) {
@@ -494,8 +494,8 @@ void CbcLotsize::feasibleRegion()
     solver->setColUpper(columnNumber_, nearest);
   } else {
     // ranges
-    solver->setColLower(columnNumber_, CoinMax(bound_[2 * range_], lower[columnNumber_]));
-    solver->setColUpper(columnNumber_, CoinMin(bound_[2 * range_ + 1], upper[columnNumber_]));
+    solver->setColLower(columnNumber_, std::max(bound_[2 * range_], lower[columnNumber_]));
+    solver->setColUpper(columnNumber_, std::min(bound_[2 * range_ + 1], upper[columnNumber_]));
     if (value > bound_[2 * range_ + 1])
       nearest = bound_[2 * range_ + 1];
     else if (value < bound_[2 * range_])
@@ -522,8 +522,8 @@ CbcLotsize::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingInform
   const double *lower = solver->getColLower();
   const double *upper = solver->getColUpper();
   double value = solution[columnNumber_];
-  value = CoinMax(value, lower[columnNumber_]);
-  value = CoinMin(value, upper[columnNumber_]);
+  value = std::max(value, lower[columnNumber_]);
+  value = std::min(value, upper[columnNumber_]);
   assert(!findRange(value));
   return new CbcLotsizeBranchingObject(model_, columnNumber_, way,
     value, this);

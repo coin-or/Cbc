@@ -198,7 +198,7 @@ int CbcPartialNodeInfo::applyBounds(int iColumn, double &lower, double &upper, i
       if ((variable & 0x80000000) == 0) {
         // lower bound changing
         found |= 1;
-        newLower = CoinMax(newLower, newBounds_[i]);
+        newLower = std::max(newLower, newBounds_[i]);
         if ((force & 1) == 0) {
           if (lower > newBounds_[i])
             COIN_DETAIL_PRINT(printf("%d odd lower going from %g to %g\n", iColumn, lower, newBounds_[i]));
@@ -210,7 +210,7 @@ int CbcPartialNodeInfo::applyBounds(int iColumn, double &lower, double &upper, i
       } else {
         // upper bound changing
         found |= 2;
-        newUpper = CoinMin(newUpper, newBounds_[i]);
+        newUpper = std::min(newUpper, newBounds_[i]);
         if ((force & 2) == 0) {
           if (upper < newBounds_[i])
             COIN_DETAIL_PRINT(printf("%d odd upper going from %g to %g\n", iColumn, upper, newBounds_[i]));
@@ -222,8 +222,8 @@ int CbcPartialNodeInfo::applyBounds(int iColumn, double &lower, double &upper, i
       }
     }
   }
-  newLower = CoinMax(newLower, lower);
-  newUpper = CoinMin(newUpper, upper);
+  newLower = std::max(newLower, lower);
+  newUpper = std::min(newUpper, upper);
   int nAdd = 0;
   if ((force & 2) != 0 && (found & 2) == 0) {
     // need to add new upper

@@ -169,14 +169,14 @@ int CbcHeuristicGreedyCover::solution(double &solutionValue,
     if (isHeuristicInteger(solver, iColumn)) {
       // Round down integer
       if (fabs(floor(value + 0.5) - value) < integerTolerance) {
-        value = floor(CoinMax(value + 1.0e-3, columnLower[iColumn]));
+        value = floor(std::max(value + 1.0e-3, columnLower[iColumn]));
       } else {
-        value = CoinMax(floor(value), columnLower[iColumn]);
+        value = std::max(floor(value), columnLower[iColumn]);
       }
     }
     // make sure clean
-    value = CoinMin(value, columnUpper[iColumn]);
-    value = CoinMax(value, columnLower[iColumn]);
+    value = std::min(value, columnUpper[iColumn]);
+    value = std::max(value, columnLower[iColumn]);
     newSolution[iColumn] = value;
     double cost = direction * objective[iColumn];
     newSolutionValue += value * cost;
@@ -251,7 +251,7 @@ int CbcHeuristicGreedyCover::solution(double &solutionValue,
             double gap = rowLower[iRow] - rowActivity[iRow];
             double elementValue = allOnes ? 1.0 : element[j];
             if (gap > 1.0e-7) {
-              sum += CoinMin(elementValue, gap);
+              sum += std::min(elementValue, gap);
               //if (fabs(elementValue - gap) < 1.0e-7)
               //  numberExact++;
             }
@@ -581,14 +581,14 @@ int CbcHeuristicGreedyEquality::solution(double &solutionValue,
     if (isHeuristicInteger(solver, iColumn)) {
       // Round down integer
       if (fabs(floor(value + 0.5) - value) < integerTolerance) {
-        value = floor(CoinMax(value + 1.0e-3, columnLower[iColumn]));
+        value = floor(std::max(value + 1.0e-3, columnLower[iColumn]));
       } else {
-        value = CoinMax(floor(value), columnLower[iColumn]);
+        value = std::max(floor(value), columnLower[iColumn]);
       }
     }
     // make sure clean
-    value = CoinMin(value, columnUpper[iColumn]);
-    value = CoinMax(value, columnLower[iColumn]);
+    value = std::min(value, columnUpper[iColumn]);
+    value = std::max(value, columnLower[iColumn]);
     newSolution[iColumn] = value;
     double cost = direction * objective[iColumn];
     newSolutionValue += value * cost;
@@ -1074,7 +1074,7 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
       // SOS slack
       double cost = direction * objective[iColumn];
       assert(rhs[iRow] < 0.0);
-      slackCost[iRow] = CoinMin(slackCost[iRow], cost);
+      slackCost[iRow] = std::min(slackCost[iRow], cost);
     }
   }
   double offset2 = 0.0;
@@ -1141,13 +1141,13 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
       double value = solution[iColumn];
       // Round down integer
       if (fabs(floor(value + 0.5) - value) < integerTolerance) {
-        value = floor(CoinMax(value + 1.0e-3, columnLower[iColumn]));
+        value = floor(std::max(value + 1.0e-3, columnLower[iColumn]));
       } else {
-        value = CoinMax(floor(value), columnLower[iColumn]);
+        value = std::max(floor(value), columnLower[iColumn]);
       }
       // make sure clean
-      value = CoinMin(value, columnUpper[iColumn]);
-      value = CoinMax(value, columnLower[iColumn]);
+      value = std::min(value, columnUpper[iColumn]);
+      value = std::max(value, columnLower[iColumn]);
       newSolution0[iColumn] = value;
     }
   }
@@ -1288,7 +1288,7 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
           double gap = 0.0;
           for (int i = 0; i < numberRows; i++) {
             if (rowUpper[i] > 1.0e20)
-              gap += CoinMax(rowLower[i] - rowActivity[i], 0.0);
+              gap += std::max(rowLower[i] - rowActivity[i], 0.0);
           }
           if (gap)
             printf("after %d added gap %g - %d slacks\n",
@@ -1488,7 +1488,7 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
               int iRow = row[j];
               if (sos[iRow] < 0) {
                 if (needed[iRow])
-                  value += CoinMin(element[j] / needed[iRow], 1.0);
+                  value += std::min(element[j] / needed[iRow], 1.0);
               } else {
                 iSos = iRow;
               }
@@ -1507,7 +1507,7 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
                j < columnStart[iColumn] + columnLength[iColumn]; j++) {
             int iRow = row[j];
             if (needed[iRow])
-              helps += CoinMin(needed[iRow], element[j]);
+              helps += std::min(needed[iRow], element[j]);
           }
           if (helps) {
             newSolution[iColumn] = 1.0;
@@ -1558,7 +1558,7 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
               int iRow = row[j];
               if (sos[iRow] < 0) {
                 if (needed[iRow])
-                  value += CoinMin(element[j] / needed[iRow], 1.0);
+                  value += std::min(element[j] / needed[iRow], 1.0);
               } else {
                 iSos = iRow;
               }
@@ -1578,11 +1578,11 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
                    j < columnStart[jColumn] + columnLength[jColumn]; j++) {
                 int iRow = row[j];
                 if (needed[iRow])
-                  value2 += CoinMin(element[j] / needed[iRow], 1.0);
+                  value2 += std::min(element[j] / needed[iRow], 1.0);
               }
               if (value > value2) {
                 weight[nPossible] = -(value - value2);
-                largestWeight = CoinMax(largestWeight, (value - value2));
+                largestWeight = std::max(largestWeight, (value - value2));
                 sort[nPossible++] = iColumn;
               }
             }
@@ -1637,12 +1637,12 @@ int CbcHeuristicGreedySOS::solution(double &solutionValue,
               double newValue = rowActivity[iRow] + temp[iRow];
               if (temp[iRow] > 1.0e-8) {
                 if (rowActivity[iRow] < rowLower[iRow] - 1.0e-8) {
-                  helps += CoinMin(temp[iRow],
+                  helps += std::min(temp[iRow],
                     rowLower[iRow] - rowActivity[iRow]);
                 }
               } else if (temp[iRow] < -1.0e-8) {
                 if (newValue < rowLower[iRow] - 1.0e-12) {
-                  helps -= CoinMin(-temp[iRow],
+                  helps -= std::min(-temp[iRow],
                     1.0 * (rowLower[iRow] - newValue));
                 }
               }

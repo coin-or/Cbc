@@ -2325,7 +2325,7 @@ Cbc_solve(Cbc_Model *model)
         int numberThreads = model->int_param[INT_PARAM_THREADS];
         if (numberThreads >= 1) {
           cbcModel.setNumberThreads(numberThreads);
-          cbcModel.setThreadMode(CoinMin(numberThreads / 100, 7));
+          cbcModel.setThreadMode(std::min(numberThreads / 100, 7));
         }
       }
 #endif

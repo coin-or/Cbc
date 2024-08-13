@@ -567,10 +567,10 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
 	    printf("Row %d inf %g sum %g %g <= %g <= %g\n",
 		   i, inf, rowSum[i], rowLower[i], rowActivity[i], rowUpper[i]);
 #endif
-	  double infeasibility = CoinMax(rowActivity[i]-rowUpper[i],
+	  double infeasibility = std::max(rowActivity[i]-rowUpper[i],
 					 rowLower[i]-rowActivity[i]);
 	  // but allow for errors
-	  double factor = CoinMax(1.0,rowSum[i]*1.0e-3);
+	  double factor = std::max(1.0,rowSum[i]*1.0e-3);
 	  if (infeasibility>largestInfeasibility*factor) {
 	    largestInfeasibility = infeasibility/factor;
 	    printf("Cinf of %g on row %d sum %g scaled %g\n",
@@ -671,10 +671,10 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
 	    printf("Row %d inf %g sum %g %g <= %g <= %g\n",
 		   i, inf, rowSum[i], rowLower[i], rowActivity[i], rowUpper[i]);
 #endif
-	  double infeasibility = CoinMax(rowActivity[i]-rowUpper[i],
+	  double infeasibility = std::max(rowActivity[i]-rowUpper[i],
 					 rowLower[i]-rowActivity[i]);
 	  // but allow for errors
-	  double factor = CoinMax(1.0,rowSum[i]*1.0e-3);
+	  double factor = std::max(1.0,rowSum[i]*1.0e-3);
 	  if (infeasibility>largestInfeasibility*factor) {
 	    largestInfeasibility = infeasibility/factor;
 	    printf("Dinf of %g on row %d sum %g scaled %g\n",

@@ -78,8 +78,8 @@ CbcGeneralDepth::CbcGeneralDepth(CbcModel *model, int maximumDepth)
     maximumNodes_ = (1 << realMaximumDepth) + 1 + realMaximumDepth;
   else 
     maximumNodes_ = 1 + 1 - maximumDepth_;
-  maximumNodes_ = CoinMin(maximumNodes_, 1 + abs(realMaximumDepth) + MAX_NODES);
-  maximumNodes_ = CoinMax(maximumNodes_, 10);
+  maximumNodes_ = std::min(maximumNodes_, 1 + abs(realMaximumDepth) + MAX_NODES);
+  maximumNodes_ = std::max(maximumNodes_, 10);
   // special for 1
   if (maximumDepth_==1) {
     // DETERMINISTIC_TUNING think harder
@@ -187,8 +187,8 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
       depth++;
     }
     int nnodes = (1 << depth) + 1 + depth;
-    nnodes = CoinMin(nnodes, 1 + 20 + MAX_NODES);
-    nnodes = CoinMax(nnodes, 10);
+    nnodes = std::min(nnodes, 1 + 20 + MAX_NODES);
+    nnodes = std::max(nnodes, 10);
     nodeInfo_->maximumNodes_ = nnodes;
     nodeInfo_->nDepth_ = depth;
   }
@@ -212,8 +212,8 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
         long int nBranches = model_->getNodeCount();
         if (nBranches) { 
           double average = model_->getDblParam(CbcModel::CbcSumChange) / static_cast< double >(nBranches);
-          info->smallChange_ = CoinMax(average * 1.0e-5, model_->getDblParam(CbcModel::CbcSmallestChange));
-          info->smallChange_ = CoinMax(info->smallChange_, 1.0e-8);
+          info->smallChange_ = std::max(average * 1.0e-5, model_->getDblParam(CbcModel::CbcSmallestChange));
+          info->smallChange_ = std::max(info->smallChange_, 1.0e-8);
         } else {
           info->smallChange_ = 1.0e-8;
         }

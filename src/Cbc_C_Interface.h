@@ -408,7 +408,17 @@ Cbc_setContinuous(Cbc_Model *model, int iColumn);
   **/
 CBCLIB_EXPORT void CBC_LINKAGE
 Cbc_setInteger(Cbc_Model *model, int iColumn);
-
+  
+/** @brief Change matrix coefficients
+  *
+  * @param model problem object
+  * @param row row index
+  * @param column column index
+  * @param newValue new value of the coefficient
+  **/
+CBCLIB_EXPORT void CBC_LINKAGE
+Cbc_modifyCoefficient(Cbc_Model *model, int row, int column, double newValue);
+  
 /** @brief Frees memory of model object 
   *
   * @param model problem object */

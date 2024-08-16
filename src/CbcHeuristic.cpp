@@ -1135,7 +1135,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           CbcStrategyDefaultSubTree strategy(model_, 1, 5, 1, 0);
           model.setStrategy(strategy);
           model.solver()->setIntParam(OsiMaxNumIterationHotStart, 10);
-          model.setMaximumCutPassesAtRoot(std::min(20, CoinAbs(model_->getMaximumCutPassesAtRoot())));
+          model.setMaximumCutPassesAtRoot(std::min(20, std::abs(model_->getMaximumCutPassesAtRoot())));
           model.setMaximumCutPasses(std::min(10, model_->getMaximumCutPasses()));
           // Set best solution (even if bad for this submodel)
           if (model_->bestSolution()) {

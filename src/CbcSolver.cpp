@@ -2214,7 +2214,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               } else if (cbcParamCode == CbcParam::ODDWEXTMETHOD) {
                  oddWExtMethod = iValue;
               } else if (cbcParamCode == CbcParam::LOGLEVEL) {
-                 model_.messageHandler()->setLogLevel(CoinAbs(iValue));
+                 model_.messageHandler()->setLogLevel(std::abs(iValue));
               } else if (cbcParamCode == CbcParam::MAXNODES) {
                  model_.setIntParam(CbcModel::CbcMaxNumNode, iValue);
               } else if (cbcParamCode == CbcParam::MAXSOLS) {

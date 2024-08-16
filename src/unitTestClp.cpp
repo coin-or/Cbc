@@ -932,7 +932,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
       */
       model->setMinimumDrop(std::min(5.0e-2,
 				    fabs(model->getMinimizationObjValue()) * 1.0e-3 + 1.0e-4));
-      if (CoinAbs(model->getMaximumCutPassesAtRoot()) <= 100) {
+      if (std::abs(model->getMaximumCutPassesAtRoot()) <= 100) {
 	if (model->getNumCols() < 500) {
 	  model->setMaximumCutPassesAtRoot(-100);
 	} else if (model->getNumCols() < 5000) {

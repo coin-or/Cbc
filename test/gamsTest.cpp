@@ -122,7 +122,7 @@ void sos1a(int &error_count, int &warning_count)
   std::cout << "Objective value model: " << model.getObjValue()
        << "\t solver: " << solver->getObjValue()
        << "\t expected: 0.72" << std::endl;
-  if (CoinAbs(model.getObjValue() - 0.72) > testtol || CoinAbs(solver->getObjValue() - 0.72) > testtol) {
+  if (std::abs(model.getObjValue() - 0.72) > testtol || std::abs(solver->getObjValue() - 0.72) > testtol) {
     std::cerr << "Error: Objective value incorrect." << std::endl;
     ++error_count;
   }
@@ -130,21 +130,21 @@ void sos1a(int &error_count, int &warning_count)
   std::cout << "Primal value variable 0 in model: " << model.bestSolution()[0]
        << "\t in solver: " << solver->getColSolution()[0]
        << "\t expected: 0.8" << std::endl;
-  if (CoinAbs(model.bestSolution()[0] - 0.8) > testtol || CoinAbs(solver->getColSolution()[0] - 0.8) > testtol) {
+  if (std::abs(model.bestSolution()[0] - 0.8) > testtol || std::abs(solver->getColSolution()[0] - 0.8) > testtol) {
     std::cerr << "Error: Primal value incorrect." << std::endl;
     ++error_count;
   }
   std::cout << "Primal value variable 1 in model: " << model.bestSolution()[1]
        << "\t in solver: " << solver->getColSolution()[1]
        << "\t expected: 0.0" << std::endl;
-  if (CoinAbs(model.bestSolution()[1]) > testtol || CoinAbs(solver->getColSolution()[1]) > testtol) {
+  if (std::abs(model.bestSolution()[1]) > testtol || std::abs(solver->getColSolution()[1]) > testtol) {
     std::cerr << "Error: Primal value incorrect." << std::endl;
     ++error_count;
   }
   std::cout << "Primal value variable 2 in model: " << model.bestSolution()[2]
        << "\t in solver: " << solver->getColSolution()[2]
        << "\t expected: 0.0" << std::endl;
-  if (CoinAbs(model.bestSolution()[2]) > testtol || CoinAbs(solver->getColSolution()[2]) > testtol) {
+  if (std::abs(model.bestSolution()[2]) > testtol || std::abs(solver->getColSolution()[2]) > testtol) {
     std::cerr << "Error: Primal value incorrect." << std::endl;
     ++error_count;
   }
@@ -319,7 +319,7 @@ void sos2a(int &error_count, int &warning_count)
     std::cout << "Objective value model: " << model.getObjValue()
          << "\t solver: " << solver->getObjValue()
          << "\t expected: " << optvalue << std::endl;
-    if (CoinAbs(model.getObjValue() - optvalue) > testtol || CoinAbs(solver->getObjValue() - optvalue) > testtol) {
+    if (std::abs(model.getObjValue() - optvalue) > testtol || std::abs(solver->getObjValue() - optvalue) > testtol) {
       std::cerr << "Error: Objective value incorrect." << std::endl;
       ++error_count;
     }
@@ -328,7 +328,7 @@ void sos2a(int &error_count, int &warning_count)
            << "\t in solver: " << solver->getColSolution()[i]
            << "\t expected: " << primalval[i]
            << std::endl;
-      if (CoinAbs(model.bestSolution()[i] - primalval[i]) > testtol || CoinAbs(solver->getColSolution()[i] - primalval[i]) > testtol) {
+      if (std::abs(model.bestSolution()[i] - primalval[i]) > testtol || std::abs(solver->getColSolution()[i] - primalval[i]) > testtol) {
         std::cerr << "Error: Primal value incorrect." << std::endl;
         ++error_count;
       }
@@ -338,7 +338,7 @@ void sos2a(int &error_count, int &warning_count)
            << "\t in solver: " << solver->getReducedCost()[i]
            << "\t expected: " << redcost[i]
            << std::endl;
-      if (CoinAbs(model.getReducedCost()[i] - redcost[i]) > testtol || CoinAbs(solver->getReducedCost()[i] - redcost[i]) > testtol) {
+      if (std::abs(model.getReducedCost()[i] - redcost[i]) > testtol || std::abs(solver->getReducedCost()[i] - redcost[i]) > testtol) {
         std::cerr << "Warning: Reduced cost incorrect." << std::endl;
         ++warning_count;
       }
@@ -504,7 +504,7 @@ void semicon1(int &error_count, int &warning_count)
     std::cout << "Objective value in model: " << model.getObjValue()
          << "\t in solver: " << solver->getObjValue()
          << "\t expected: " << objval << std::endl;
-    if (CoinAbs(model.getObjValue() - objval) > testtol || CoinAbs(solver->getObjValue() - objval) > testtol) {
+    if (std::abs(model.getObjValue() - objval) > testtol || std::abs(solver->getObjValue() - objval) > testtol) {
       std::cerr << "Error: Objective value incorrect." << std::endl;
       ++error_count;
     }
@@ -513,7 +513,7 @@ void semicon1(int &error_count, int &warning_count)
            << "\t in solver: " << solver->getColSolution()[i]
            << "\t expected: " << primalval[i]
            << std::endl;
-      if (CoinAbs(model.bestSolution()[i] - primalval[i]) > testtol || CoinAbs(solver->getColSolution()[i] - primalval[i]) > testtol) {
+      if (std::abs(model.bestSolution()[i] - primalval[i]) > testtol || std::abs(solver->getColSolution()[i] - primalval[i]) > testtol) {
         std::cerr << "Error: Primal value incorrect." << std::endl;
         ++error_count;
       }
@@ -522,7 +522,7 @@ void semicon1(int &error_count, int &warning_count)
          << "\t in solver: " << solver->getReducedCost()[0]
          << "\t expected: " << redcost[0]
          << std::endl;
-    if (CoinAbs(model.getReducedCost()[0] - redcost[0]) > testtol || CoinAbs(solver->getReducedCost()[0] - redcost[0]) > testtol) {
+    if (std::abs(model.getReducedCost()[0] - redcost[0]) > testtol || std::abs(solver->getReducedCost()[0] - redcost[0]) > testtol) {
       std::cerr << "Warning: Reduced cost incorrect." << std::endl;
       ++warning_count;
     }
@@ -530,21 +530,21 @@ void semicon1(int &error_count, int &warning_count)
          << "\t in solver: " << solver->getReducedCost()[3]
          << "\t expected: " << redcost[3]
          << std::endl;
-    if (CoinAbs(model.getReducedCost()[3] - redcost[3]) > testtol || CoinAbs(solver->getReducedCost()[3] - redcost[3]) > testtol) {
+    if (std::abs(model.getReducedCost()[3] - redcost[3]) > testtol || std::abs(solver->getReducedCost()[3] - redcost[3]) > testtol) {
       std::cerr << "Warning: Reduced cost incorrect." << std::endl;
       ++warning_count;
     }
     std::cout << "Reduced cost variable 1 plus - dual of row 0 in model: " << model.getReducedCost()[1] - model.getRowPrice()[0]
          << "\t expected: " << redcost[1]
          << std::endl;
-    if (CoinAbs(model.getReducedCost()[1] - model.getRowPrice()[0] - redcost[1]) > testtol) {
+    if (std::abs(model.getReducedCost()[1] - model.getRowPrice()[0] - redcost[1]) > testtol) {
       std::cerr << "Warning: Reduced cost or row margin incorrect." << std::endl;
       ++warning_count;
     }
     std::cout << "Reduced cost variable 2 plus + dual of row 1 in model: " << model.getReducedCost()[2] + model.getRowPrice()[1]
          << "\t expected: " << redcost[2]
          << std::endl;
-    if (CoinAbs(model.getReducedCost()[2] + model.getRowPrice()[1] - redcost[2]) > testtol) {
+    if (std::abs(model.getReducedCost()[2] + model.getRowPrice()[1] - redcost[2]) > testtol) {
       std::cerr << "Warning: Reduced cost or row margin incorrect." << std::endl;
       ++warning_count;
     }
@@ -552,7 +552,7 @@ void semicon1(int &error_count, int &warning_count)
     std::cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2]
          << "\t in solver: " << solver->getRowPrice()[2]
          << "\t expected: " << row2marg << std::endl;
-    if (CoinAbs(model.getRowPrice()[2] - row2marg) > testtol || CoinAbs(solver->getRowPrice()[2] - row2marg) > testtol) {
+    if (std::abs(model.getRowPrice()[2] - row2marg) > testtol || std::abs(solver->getRowPrice()[2] - row2marg) > testtol) {
       std::cerr << "Warning: Row price incorrect." << std::endl;
       ++warning_count;
     }
@@ -741,7 +741,7 @@ void semiint1(int &error_count, int &warning_count)
     std::cout << "Objective value in model: " << model.getObjValue()
          << "\t in solver: " << solver->getObjValue()
          << "\t expected: " << objval << std::endl;
-    if (CoinAbs(model.getObjValue() - objval) > testtol || CoinAbs(solver->getObjValue() - objval) > testtol) {
+    if (std::abs(model.getObjValue() - objval) > testtol || std::abs(solver->getObjValue() - objval) > testtol) {
       std::cerr << "Error: Objective value incorrect." << std::endl;
       ++error_count;
     }
@@ -750,7 +750,7 @@ void semiint1(int &error_count, int &warning_count)
            << "\t in solver: " << solver->getColSolution()[i]
            << "\t expected: " << primalval[i]
            << std::endl;
-      if (CoinAbs(model.bestSolution()[i] - primalval[i]) > testtol || CoinAbs(solver->getColSolution()[i] - primalval[i]) > testtol) {
+      if (std::abs(model.bestSolution()[i] - primalval[i]) > testtol || std::abs(solver->getColSolution()[i] - primalval[i]) > testtol) {
         std::cerr << "Error: Primal value incorrect." << std::endl;
         ++error_count;
       }
@@ -759,7 +759,7 @@ void semiint1(int &error_count, int &warning_count)
          << "\t in solver: " << solver->getReducedCost()[0]
          << "\t expected: " << redcost[0]
          << std::endl;
-    if (CoinAbs(model.getReducedCost()[0] - redcost[0]) > testtol || CoinAbs(solver->getReducedCost()[0] - redcost[0]) > testtol) {
+    if (std::abs(model.getReducedCost()[0] - redcost[0]) > testtol || std::abs(solver->getReducedCost()[0] - redcost[0]) > testtol) {
       std::cerr << "Warning: Reduced cost incorrect." << std::endl;
       ++warning_count;
     }
@@ -767,14 +767,14 @@ void semiint1(int &error_count, int &warning_count)
          << "\t in solver: " << solver->getReducedCost()[3]
          << "\t expected: " << redcost[3]
          << std::endl;
-    if (CoinAbs(model.getReducedCost()[3] - redcost[3]) > testtol || CoinAbs(solver->getReducedCost()[3] - redcost[3]) > testtol) {
+    if (std::abs(model.getReducedCost()[3] - redcost[3]) > testtol || std::abs(solver->getReducedCost()[3] - redcost[3]) > testtol) {
       std::cerr << "Warning: Reduced cost incorrect." << std::endl;
       ++warning_count;
     }
     std::cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2]
          << "\t in solver: " << solver->getRowPrice()[2]
          << "\t expected: " << row2marg << std::endl;
-    if (CoinAbs(model.getRowPrice()[2] - row2marg) > testtol || CoinAbs(solver->getRowPrice()[2] - row2marg) > testtol) {
+    if (std::abs(model.getRowPrice()[2] - row2marg) > testtol || std::abs(solver->getRowPrice()[2] - row2marg) > testtol) {
       std::cerr << "Warning: Row price incorrect." << std::endl;
       ++warning_count;
     }
@@ -782,7 +782,7 @@ void semiint1(int &error_count, int &warning_count)
     std::cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2]
          << "\t in solver: " << solver->getRowPrice()[2]
          << "\t expected: " << row2marg << std::endl;
-    if (CoinAbs(model.getRowPrice()[2] - row2marg) > testtol || CoinAbs(solver->getRowPrice()[2] - row2marg) > testtol) {
+    if (std::abs(model.getRowPrice()[2] - row2marg) > testtol || std::abs(solver->getRowPrice()[2] - row2marg) > testtol) {
       std::cerr << "Warning: Row price incorrect." << std::endl;
       ++warning_count;
     }

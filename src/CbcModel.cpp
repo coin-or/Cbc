@@ -1734,7 +1734,7 @@ void CbcModel::AddIntegers() {
 #if CBC_USEFUL_PRINTING > 1
       printf("INTA network %d rows out of %d\n", n, numberRows);
 #endif
-      if (CoinAbs(n) == numberRows) {
+      if (std::abs(n) == numberRows) {
         couldBeNetwork = true;
         for (int i = 0; i < numberRows; i++) {
           if (!possibleRow[i]) {
@@ -8242,7 +8242,7 @@ int CbcModel::addCuts(CbcNode *node, CoinWarmStartBasis *&lastws) {
       bool canMissStuff = false;
       if ((specialOptions_ & 4096) == 0) {
         bool redoCuts = true;
-        if (CoinAbs(lastNumberCuts2_ - numberToAdd) < 5) {
+        if (std::abs(lastNumberCuts2_ - numberToAdd) < 5) {
           int numberToCheck = std::min(lastNumberCuts2_, numberToAdd);
           int i1 = 0;
           int i2 = 0;
@@ -10210,7 +10210,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
             }
 #ifdef JJF_ZERO
           } else if (currentPassNumber_ <
-                     std::min(CoinAbs(maximumCutPassesAtRoot_), 8)) {
+                     std::min(std::abs(maximumCutPassesAtRoot_), 8)) {
             if (whenCuts_ == 999999) {
               whenCuts_ = 8000008;
               maximumCutPasses_ = 1;
@@ -10219,7 +10219,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
               maximumCutPasses_ = 1;
             }
           } else if (currentPassNumber_ <
-                     std::min(CoinAbs(maximumCutPassesAtRoot_), 50)) {
+                     std::min(std::abs(maximumCutPassesAtRoot_), 50)) {
             if (whenCuts_ == 999999) {
               whenCuts_ = 8000008;
               maximumCutPasses_ = 1;
@@ -10227,7 +10227,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
               whenCuts_ = 10000006;
               maximumCutPasses_ = 1;
             }
-          } else if (currentPassNumber_ < CoinAbs(maximumCutPassesAtRoot_)) {
+          } else if (currentPassNumber_ < std::abs(maximumCutPassesAtRoot_)) {
             if (whenCuts_ == 999999) {
               whenCuts_ = 8000008;
               maximumCutPasses_ = 1;
@@ -10251,7 +10251,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           // Objective changed
 #ifdef JJF_ZERO
           if (currentPassNumber_ <
-              std::min(CoinAbs(maximumCutPassesAtRoot_), 8)) {
+              std::min(std::abs(maximumCutPassesAtRoot_), 8)) {
             if (whenCuts_ == 999999) {
               whenCuts_ = 8000008;
               maximumCutPasses_ = 1;
@@ -10260,7 +10260,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
               maximumCutPasses_ = 1;
             }
           } else if (currentPassNumber_ <
-                     std::min(CoinAbs(maximumCutPassesAtRoot_), 50)) {
+                     std::min(std::abs(maximumCutPassesAtRoot_), 50)) {
             if (whenCuts_ == 999999) {
               whenCuts_ = 8000008;
               maximumCutPasses_ = 1;
@@ -10270,7 +10270,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
             }
           } else
 #endif
-              if (currentPassNumber_ < CoinAbs(maximumCutPassesAtRoot_)) {
+              if (currentPassNumber_ < std::abs(maximumCutPassesAtRoot_)) {
             if (whenCuts_ == 999999) {
               whenCuts_ = 8000008;
               if (!smallProblem)

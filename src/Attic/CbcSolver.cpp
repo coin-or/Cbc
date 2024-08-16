@@ -13351,7 +13351,7 @@ CbcOrClpParam::setIntParameterWithMessage(CbcModel &model, int value, int &retur
     switch (type_) {
     case CLP_PARAM_INT_LOGLEVEL:
       oldValue = model.messageHandler()->logLevel();
-      model.messageHandler()->setLogLevel(CoinAbs(value));
+      model.messageHandler()->setLogLevel(std::abs(value));
       break;
     case CLP_PARAM_INT_SOLVERLOGLEVEL:
       oldValue = model.solver()->messageHandler()->logLevel();

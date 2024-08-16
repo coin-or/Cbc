@@ -756,9 +756,9 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
                   } else {
                     preferredWay = 1;
                   }
-                  priorityLevel = CoinAbs(priorityLevel);
+                  priorityLevel = std::abs(priorityLevel);
                 } else if (priorityLevel < 0) {
-                  priorityLevel = CoinAbs(priorityLevel);
+                  priorityLevel = std::abs(priorityLevel);
                   if (targetValue == saveLower[iColumn]) {
                     infeasibility = integerTolerance + 1.0e-12;
                     preferredWay = -1;

@@ -32,7 +32,12 @@ jobs:
             download_requirements: brew install metis bash
           - os: macos-14
             arch: arm64
-            build_static: [true, false]
+            build_static: false
+            flags: CC=gcc-13 CXX=g++-13 OSX=14 ADD_CXXFLAGS=-Wl,-ld_classic
+            download_requirements: brew install metis bash
+          - os: macos-14
+            arch: arm64
+            build_static: true
             flags: CC=gcc-13 CXX=g++-13 OSX=14 ADD_CXXFLAGS=-Wl,-ld_classic
             download_requirements: brew install metis bash
     steps:

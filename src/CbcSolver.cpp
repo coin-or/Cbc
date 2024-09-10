@@ -1430,7 +1430,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     int redsplit2Mode = CbcParameters::CGOff;
     assert (parameters[CbcParam::REDSPLIT2CUTS]->modeVal()==redsplit2Mode);
 
-    CglGMI GMIGen;
+    CglGMI GMIGen; 
     int GMIMode = parameters[CbcParam::GMICUTS]->modeVal();
 
     std::string cgraphMode = "on";
@@ -4827,9 +4827,73 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		    if (keepPPN)
 		      babModel_->setKeepNamesPreproc(1);
 		    setPreProcessingMode(saveSolver,1);
+#if CBC_USE_PAPILO
+		    extern void zapPapilo(int pOptions,CglPreProcess * process);
+		    int pOptions = 0;
+		    int tune2 = preProcess;
+		    // Convert to minimize if papilo
+		    bool maximize = false;
+		    if (tune2>11) {
+		      OsiClpSolverInterface * clpSolver =
+			dynamic_cast<OsiClpSolverInterface *>(saveSolver);
+		      if (clpSolver->getObjSense()==-1.0) {
+			maximize = true;
+			clpSolver->setObjSense(1.0);
+			double objOffset;
+			clpSolver->getDblParam(OsiObjOffset, objOffset);
+			int numberColumns = clpSolver->getNumCols();
+			double * objective = clpSolver->getModelPtr()->objective();
+			for (int i=0;i<numberColumns;i++)
+			  objective[i] = -objective[i];
+			clpSolver->setDblParam(OsiObjOffset, -objOffset);
+		      }
+		      bool stopAfter = false;
+		      if (tune2>15) {
+			preProcess=10; // say stop
+			tune2 -=4;
+		      } else {
+			preProcess=1;
+		      }
+#ifdef CBC_THREAD
+		      pOptions = (tune2&1) != 0 ? 2 : 0; // bug when 1???
+#endif
+		      if ((tune2&2) == 0)
+			pOptions|= 8; // at beginning
+		      else
+			pOptions|= 16; // at end
+		    }
+		    zapPapilo(pOptions,&process);
+#endif
                     solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                       tunePreProcess);
-		    setPreProcessingMode(saveSolver,0);
+ 		    setPreProcessingMode(saveSolver,0);
+#if CBC_USE_PAPILO
+		    // Convert back
+		    if (maximize) {
+		      OsiClpSolverInterface * clpSolver =
+			dynamic_cast<OsiClpSolverInterface *>(saveSolver);
+		      double objOffset;
+		      clpSolver->setObjSense(-1.0);
+		      clpSolver->getDblParam(OsiObjOffset, objOffset);
+		      int numberColumns = clpSolver->getNumCols();
+		      double * objective = clpSolver->getModelPtr()->objective();
+		      for (int i=0;i<numberColumns;i++)
+			objective[i] = -objective[i];
+		      clpSolver->setDblParam(OsiObjOffset, -objOffset);
+		      if (solver2) {
+			OsiClpSolverInterface * clpSolver =
+			  dynamic_cast<OsiClpSolverInterface *>(solver2);
+			double objOffset;
+			clpSolver->setObjSense(-1.0);
+			clpSolver->getDblParam(OsiObjOffset, objOffset);
+			int numberColumns = clpSolver->getNumCols();
+			double * objective = clpSolver->getModelPtr()->objective();
+			for (int i=0;i<numberColumns;i++)
+			  objective[i] = -objective[i];
+			clpSolver->setDblParam(OsiObjOffset, -objOffset);
+		      }
+		    }
+#endif
                     if (solver2) {
                       setPreProcessingMode(solver2, 0);
                       model_.setOriginalColumns(process.originalColumns(),
@@ -7722,6 +7786,12 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #ifdef CBC_THREAD
                 int numberThreads = parameters[CbcParam::THREADS]->intVal();
                 babModel_->setNumberThreads(numberThreads % 100);
+		// switch off deterministic if large problem and fastNodeDepth>0
+		if (numberThreads/100==2) {
+		  numberThreads -= 100;
+		  if (babModel_->fastNodeDepth()>0 && babModel_->solver()->getNumRows()>2000) 
+		    babModel_->setFastNodeDepth(-999);
+		}
                 babModel_->setThreadMode((numberThreads%1000) / 100);
 #ifdef CBC_USE_OPENMP
 		if (numberThreads>100) {

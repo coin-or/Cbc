@@ -39,9 +39,9 @@ static Cbc_message us_english[] = {
 #endif
   { CBC_GAP, 11, 1, "Exiting as integer gap of %g less than %g or %g%%" },
 #ifndef CBC_MANY_NODE_COUNTS
-  { CBC_ROUNDING, 12, 1, "Integer solution of %g found by %s after %d iterations and %d nodes (%.2f seconds)" },
+  { CBC_ROUNDING, 12, 1, "Integer solution of %.13g found by %s after %d iterations and %d nodes (%.2f seconds)" },
 #else
-  { CBC_ROUNDING, 12, 1, "Integer solution of %g found by %s after %ld iterations and %ld nodes (%.2f seconds)" },
+  { CBC_ROUNDING, 12, 1, "Integer solution of %.13g found by %s after %ld iterations and %ld nodes (%.2f seconds)" },
 #endif
   { CBC_ROOT, 13, 1, "At root node, %d cuts changed objective from %g to %g in %d passes" },
   { CBC_GENERATOR, 14, 1, "Cut generator %d (%s) - %d row cuts average %.1f elements, %d column cuts (%d active) %? in %.3f seconds - new frequency is %d" },

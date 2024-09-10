@@ -886,7 +886,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         for (i = 0; i < numberColumns; i++)
           newSolutionValue += saveObjective[i] * newSolution[i];
         newSolutionValue *= direction;
-        sprintf(pumpPrint, "Solution found of %g", trueObjValue(newSolutionValue));
+        sprintf(pumpPrint, "Solution found of %.13g", trueObjValue(newSolutionValue));
         model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
           << pumpPrint
           << CoinMessageEol;
@@ -981,7 +981,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
                 for (i = 0; i < numberColumns; i++) {
                   newSolutionValue += saveObjective[i] * newSolution[i];
                 }
-                sprintf(pumpPrint, "Relaxing continuous gives %g",
+                sprintf(pumpPrint, "Relaxing continuous gives %.13g",
 			model_->trueObjValue(newSolutionValue));
                 //#define DEBUG_BEST
 #ifdef DEBUG_BEST
@@ -1102,7 +1102,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             if (numberSolutions >= maxSolutions)
               exitAll = true;
             if (general && saveValue != newSolutionValue) {
-              sprintf(pumpPrint, "Cleaned solution of %g", trueObjValue(solutionValue));
+              sprintf(pumpPrint, "Cleaned solution of %.13g", trueObjValue(solutionValue));
               model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
                 << pumpPrint
                 << CoinMessageEol;
@@ -1116,7 +1116,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
               << CoinMessageEol;
           }
         } else {
-      sprintf(pumpPrint, "After further testing solution no better than previous of %g", trueObjValue(solutionValue));
+      sprintf(pumpPrint, "After further testing solution no better than previous of %.13g", trueObjValue(solutionValue));
           model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
             << pumpPrint
             << CoinMessageEol;
@@ -1349,7 +1349,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             for (i = 0; i < numberColumns; i++)
               newSolutionValue += saveObjective[i] * newSolution[i];
             newSolutionValue *= direction;
-            sprintf(pumpPrint, "Intermediate solution found of %g", trueObjValue(newSolutionValue));
+            sprintf(pumpPrint, "Intermediate solution found of %.13g", trueObjValue(newSolutionValue));
             model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
               << pumpPrint
               << CoinMessageEol;
@@ -1951,7 +1951,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     // see if rounding worked!
     if (roundingObjective < solutionValue) {
       if (roundingObjective < solutionValue - 1.0e-6 * fabs(roundingObjective)) {
-        sprintf(pumpPrint, "Rounding solution of %g is better than previous of %g\n",
+        sprintf(pumpPrint, "Rounding solution of %.13g is better than previous of %.13g\n",
 		trueObjValue(roundingObjective), trueObjValue(solutionValue));
         model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
           << pumpPrint
@@ -2158,7 +2158,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         }
         bool gotSolution = false;
         if (returnCode && newSolutionValue < saveValue) {
-          sprintf(pumpPrint, "Mini branch and bound improved solution from %g to %g (%.2f seconds)",
+          sprintf(pumpPrint, "Mini branch and bound improved solution from %.13g to %.13g (%.2f seconds)",
 		  trueObjValue(saveValue), trueObjValue(newSolutionValue), model_->getCurrentSeconds());
           model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
             << pumpPrint
@@ -2266,7 +2266,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
                     newSumInfeas);
                 }
 #endif
-                sprintf(pumpPrint, "Freeing continuous variables gives a solution of %g", trueObjValue(value));
+                sprintf(pumpPrint, "Freeing continuous variables gives a solution of %.13g", trueObjValue(value));
                 model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
                   << pumpPrint
                   << CoinMessageEol;
@@ -2307,7 +2307,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             if (newSolver->isProvenOptimal()) {
               double value = newSolver->getObjValue() * newSolver->getObjSenseInCbc();
               if (value < saveValue) {
-                sprintf(pumpPrint, "Freeing continuous variables gives a solution of %g", trueObjValue(value));
+                sprintf(pumpPrint, "Freeing continuous variables gives a solution of %.13g", trueObjValue(value));
                 model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
                   << pumpPrint
                   << CoinMessageEol;
@@ -2455,10 +2455,10 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     sprintf(pumpPrint, "After %.2f seconds - Feasibility pump exiting - took %.2f seconds",
       model_->getCurrentSeconds(), CoinCpuTime() - time1);
   else if (numberSolutions < maxSolutions)
-    sprintf(pumpPrint, "After %.2f seconds - Feasibility pump exiting with objective of %g - took %.2f seconds",
+    sprintf(pumpPrint, "After %.2f seconds - Feasibility pump exiting with objective of %.13g - took %.2f seconds",
 	    model_->getCurrentSeconds(), trueObjValue(solutionValue), CoinCpuTime() - time1);
   else
-    sprintf(pumpPrint, "After %.2f seconds - Feasibility pump exiting with objective of %g (stopping after %d solutions) - took %.2f seconds",
+    sprintf(pumpPrint, "After %.2f seconds - Feasibility pump exiting with objective of %.13g (stopping after %d solutions) - took %.2f seconds",
 	    model_->getCurrentSeconds(), trueObjValue(solutionValue),
       numberSolutions, CoinCpuTime() - time1);
   model_->messageHandler()->message(CBC_FPUMP1, model_->messages())

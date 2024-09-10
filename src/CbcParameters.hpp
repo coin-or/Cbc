@@ -137,6 +137,16 @@ public:
     IPPForceSOS,
     IPPStopAfterSaving,
     IPPEqualAllStop,
+#if CBC_USE_PAPILO
+    IPPPapilo,
+    IPPPapilo2,
+    IPPPapiloEnd,
+    IPPPapilo2End,
+    IPPPapiloStop,
+    IPPPapilo2Stop,
+    IPPPapiloStopEnd,
+    IPPPapilo2StopEnd,
+#endif
     IPPEndMarker
   };
 

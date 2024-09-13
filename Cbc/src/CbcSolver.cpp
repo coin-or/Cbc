@@ -5840,6 +5840,14 @@ int CbcMain1(int argc, const char *argv[],
                     babModel_->createContinuousSolver();
                     babModel_->setBestSolution(CBC_ROUNDING,
                       obj, &x[0], 1);
+		    /* But this is outside branchAndBound so needs to know 
+		       about direction */
+		    if (babModel_->getObjSense()==-1.0) {
+		      babModel_->setCutoff(-obj);
+		      babModel_->setMinimizationObjValue(-obj);
+		      // and solver (solver will flip)
+		      babModel_->solver()->setDblParam(OsiDualObjectiveLimit,obj);
+		    }
                     babModel_->clearContinuousSolver();
                     babModel_->passInSolverCharacteristics(NULL);
                     if (useSolution == 0)

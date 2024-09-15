@@ -4855,7 +4855,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 			preProcess=1;
 		      }
 #ifdef CBC_THREAD
-		      pOptions = (tune2&1) != 0 ? 2 : 0; // bug when 1???
+		      pOptions = (tune2&1) != 0 ? 2 : 1;
 #endif
 		      if ((tune2&2) == 0)
 			pOptions|= 8; // at beginning

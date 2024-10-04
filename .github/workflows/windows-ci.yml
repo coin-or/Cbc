@@ -20,10 +20,12 @@ jobs:
       fail-fast: false
       matrix:
         include: [
-          { os: windows-2019, arch: x86_64, msystem: mingw64, debug: true, suffix: "-dbg" },
+          { os: windows-2019, arch: x86_64, msystem: mingw64, debug: true, suffix: "dbg" },
           { os: windows-2019, arch: x86_64, msystem: mingw64, debug: false, suffix: "" },
-          { os: windows-2019, arch: msvc, msystem: mingw64, debug: false, suffix: "-md" },
-          { os: windows-2022, arch: msvc, msystem: mingw64, debug: false, suffix: "-md" },
+          { os: windows-2019, arch: msvc, msystem: mingw64, debug: false, suffix: "MT" },
+          { os: windows-2022, arch: msvc, msystem: mingw64, debug: false, suffix: "MT" },
+          { os: windows-2019, arch: msvc, msystem: mingw64, debug: false, suffix: "MD" },
+          { os: windows-2022, arch: msvc, msystem: mingw64, debug: false, suffix: "MD" },
         ]
     steps:
       - name: Checkout source
@@ -61,7 +63,7 @@ jobs:
           ADD_BUILD_ARGS+=( --build=x86_64-w64-mingw32 --tests main --enable-relocatable )
           ADD_BUILD_ARGS+=( --verbosity 2 )
           [[ ${{ matrix.debug }} == "true" ]] && ADD_BUILD_ARGS+=( --enable-debug )
-          [[ ${{ matrix.arch }} == "msvc" ]] && ADD_BUILD_ARGS+=( --enable-msvc )
+          [[ ${{ matrix.arch }} == "msvc" ]] && ADD_BUILD_ARGS+=( --enable-msvc=${{ matrix.suffix }} )
           ./coinbrew/coinbrew fetch ${{ github.event.repository.name }} --skip-update "${ADD_ARGS[@]}"
           ./coinbrew/coinbrew build ${{ github.event.repository.name }} ${{ env.host_flag }} \
           "${ADD_ARGS[@]}" "${ADD_BUILD_ARGS[@]}"
@@ -77,12 +79,12 @@ jobs:
       - name: Generate package name for msvc
         run: |
           msvc_version=${VisualStudioVersion%.*}
-          echo "package_suffix=w64-msvc${msvc_version}${{ matrix.suffix }}" >> $GITHUB_ENV
+          echo "package_suffix=w64-msvc${msvc_version}-${{ matrix.suffix }}" >> $GITHUB_ENV
         shell: msys2 {0}
         if: ${{ matrix.arch == 'msvc' }}
       - name: Generate package name
         run: |
-          echo "package_suffix=${{ matrix.arch }}-w64-${{ matrix.msystem }}${{ matrix.suffix }}" >> $GITHUB_ENV
+          echo "package_suffix=${{ matrix.arch }}-w64-${{ matrix.msystem }}-${{ matrix.suffix }}" >> $GITHUB_ENV
         shell: msys2 {0}
         if: ${{ matrix.arch != 'msvc' }}
       - name: Upload artifact

@@ -562,7 +562,7 @@ void CbcTree::cleanTree(CbcModel *model, double cutoff, double &bestPossibleObje
         depth[kDelete] = node->depth();
       }
     } else {
-      bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+      bestPossibleObjective = std::min(bestPossibleObjective, value);
       nodeArray[k++] = node;
     }
   }
@@ -665,7 +665,7 @@ void CbcTree::cleanTree(CbcModel *model, double cutoff, double &bestPossibleObje
       if (child->node()) {
         double value = child->node()->objectiveValue();
         // adjust
-        bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+        bestPossibleObjective = std::min(bestPossibleObjective, value);
       }
     }
   }
@@ -931,7 +931,7 @@ CbcTreeArray::getBestPossibleObjective()
     }
   }
   if (lastNode_) {
-    bestPossibleObjective = CoinMin(bestPossibleObjective, lastNode_->objectiveValue());
+    bestPossibleObjective = std::min(bestPossibleObjective, lastNode_->objectiveValue());
   }
 #ifdef CBC_THREAD
   if (model->parallelMode() > 0 && model->master()) {
@@ -943,7 +943,7 @@ CbcTreeArray::getBestPossibleObjective()
       if (child->node()) {
         double value = child->node()->objectiveValue();
         // adjust
-        bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+        bestPossibleObjective = std::min(bestPossibleObjective, value);
       }
     }
   }
@@ -991,7 +991,7 @@ void CbcTreeArray::cleanTree(CbcModel *model, double cutoff, double &bestPossibl
         depth[kDelete] = node->depth();
       }
     } else {
-      bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+      bestPossibleObjective = std::min(bestPossibleObjective, value);
       nodeArray[k++] = node;
     }
   }
@@ -1005,14 +1005,14 @@ void CbcTreeArray::cleanTree(CbcModel *model, double cutoff, double &bestPossibl
       if (child->node()) {
         double value = child->node()->objectiveValue();
         // adjust
-        bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+        bestPossibleObjective = std::min(bestPossibleObjective, value);
       }
     }
   }
 #endif
   if (lastNode_) {
     double value = lastNode_->objectiveValue();
-    bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+    bestPossibleObjective = std::min(bestPossibleObjective, value);
     if (value >= cutoff || !lastNode_->active()) {
       nodeArray[--kDelete] = lastNode_;
       depth[kDelete] = lastNode_->depth();
@@ -1296,7 +1296,7 @@ void CbcTree::cleanTree(CbcModel *model, double cutoff, double &bestPossibleObje
       // double check in case node can change its mind!
       value = node->checkIsCutoff(cutoff);
     }
-    bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+    bestPossibleObjective = std::min(bestPossibleObjective, value);
     if (value >= cutoff) {
       if (node) {
         nodeArray[--kDelete] = node;
@@ -1316,7 +1316,7 @@ void CbcTree::cleanTree(CbcModel *model, double cutoff, double &bestPossibleObje
       if (child->node()) {
         double value = child->node()->objectiveValue();
         // adjust
-        bestPossibleObjective = CoinMin(bestPossibleObjective, value);
+        bestPossibleObjective = std::min(bestPossibleObjective, value);
       }
     }
   }

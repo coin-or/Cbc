@@ -960,7 +960,7 @@ fixVubs(CbcModel &model, int skipZero2,
       double *originalColumnUpper = saveColumnUpper;
       double *lo = CoinCopyOfArray(columnLower, numberColumns);
       double *up = CoinCopyOfArray(columnUpper, numberColumns);
-      for (int k = 0; k < CoinMin(chunk, n); k++) {
+      for (int k = 0; k < std::min(chunk, n); k++) {
         iColumn = sort[k];
         state[iColumn] = -2;
       }
@@ -1088,8 +1088,8 @@ fixVubs(CbcModel &model, int skipZero2,
     double *newColumnUpper = lpSolver->columnUpper();
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
       int jColumn = originalColumns[iColumn];
-      columnLower[jColumn] = CoinMax(columnLower[jColumn], newColumnLower[iColumn]);
-      columnUpper[jColumn] = CoinMin(columnUpper[jColumn], newColumnUpper[iColumn]);
+      columnLower[jColumn] = std::max(columnLower[jColumn], newColumnLower[iColumn]);
+      columnUpper[jColumn] = std::min(columnUpper[jColumn], newColumnUpper[iColumn]);
     }
     numberColumns = originalLpSolver->numberColumns();
     delete[] originalColumns;
@@ -1217,7 +1217,7 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcOrClpParam > paramet
       if (c) {
         double cutoff;
         model->solver()->getDblParam(OsiDualObjectiveLimit, cutoff);
-        cutoff = CoinMin(cutoff, value + 0.05 * fabs(value) * c);
+        cutoff = std::min(cutoff, value + 0.05 * fabs(value) * c);
         double fakeCutoff = parameters_[whichParam(CBC_PARAM_DBL_FAKECUTOFF, parameters_)].doubleValue();
         if (fakeCutoff)
           cutoff = fakeCutoff;
@@ -1606,7 +1606,7 @@ int doHeuristics(CbcModel *model, int type, std::vector< CbcOrClpParam > paramet
       if (solver->isInteger(i))
         numberIntegers++;
     }
-    heuristic13.setNumberNeeded(CoinMin(200, numberIntegers / 10));
+    heuristic13.setNumberNeeded(std::min(200, numberIntegers / 10));
     model->addHeuristic(&heuristic13);
     anyToDo = true;
   }

@@ -1009,6 +1009,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   parameters[CbcParam::ODDWHEELCUTS]->setVal("ifmove");
   parameters[CbcParam::CLQSTRENGTHENING]->setVal("after");
   parameters[CbcParam::USECGRAPH]->setVal("on");
+  parameters[CbcParam::AGGREGATEMIXED]->setVal(1);
   parameters[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
   parameters[CbcParam::BKMAXCALLS]->setVal(1000);
   parameters[CbcParam::BKCLQEXTMETHOD]->setVal(4);
@@ -1429,13 +1430,14 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     int redsplit2Mode = CbcParameters::CGOff;
     assert (parameters[CbcParam::REDSPLIT2CUTS]->modeVal()==redsplit2Mode);
 
-    CglGMI GMIGen;
+    CglGMI GMIGen; 
     int GMIMode = parameters[CbcParam::GMICUTS]->modeVal();
 
     std::string cgraphMode = "on";
     std::string clqstrMode = "after";
     CglBKClique bkCliqueGen;
-    int  bkPivotingStrategy = 3, maxCallsBK = 1000, bkClqExtMethod = 4;
+    CoinBronKerbosch::PivotingStrategy bkPivotingStrategy = CoinBronKerbosch::PivotingStrategy::Weight;
+    int maxCallsBK = 1000, bkClqExtMethod = 4;
     int cliqueMode = parameters[CbcParam::CLIQUECUTS]->modeVal();
     int oldCliqueMode = cliqueMode;
     CglOddWheel oddWheelGen;
@@ -1446,6 +1448,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     CglMixedIntegerRounding2 mixedGen(1, true, 1);
     // set default action (0=off,1=on,2=root,3=ifmove)
     int mixedMode = CbcParameters::CGIfMove;
+    int mixedRoundStrategy = 1; 
     assert (parameters[CbcParam::MIRCUTS]->modeVal()==mixedMode);
     mixedGen.setDoPreproc(1); // safer (and better)
 
@@ -1653,7 +1656,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		     if (nchar<2)
 		       continue;
 		     if (line[0]!='-') {
-		       memmove(line+1,line,nchar+1);
+		       for (int i=nchar;i>=0;i--)
+			 line[i+1] = line[i];
+		       //memmove(line+1,line,nchar+1);
 		       nchar++;
 		       line[0]='-';
 		     }
@@ -1876,8 +1881,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             double *upper = lpSolver->columnUpper();
             int numberColumns = lpSolver->numberColumns();
             for (int i = 0; i < numberColumns; i++) {
-              lower[i] = CoinMax(lower[i], -CBC_MAXIMUM_BOUND);
-              upper[i] = CoinMin(upper[i], CBC_MAXIMUM_BOUND);
+              lower[i] = std::max(lower[i], -CBC_MAXIMUM_BOUND);
+              upper[i] = std::min(upper[i], CBC_MAXIMUM_BOUND);
             }
 #endif
           }
@@ -2098,7 +2103,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
         }
 
         if (cbcParam->type() == CoinParam::paramDbl) {
-           if (status = cbcParam->readValue(inputQueue, dValue, &message)){
+           if ((status = cbcParam->readValue(inputQueue, dValue, &message))){
               printGeneralMessage(model_, message);
               continue;
            }
@@ -2164,7 +2169,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               break;
            }
         } else if (clpParam->type() == CoinParam::paramDbl) {
-           if (status = clpParam->readValue(inputQueue, dValue, &message)){
+           if ((status = clpParam->readValue(inputQueue, dValue, &message))){
               printGeneralMessage(model_, message);
               continue;
            } 
@@ -2174,7 +2179,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               continue;
            }      
         } else if (cbcParam->type() == CoinParam::paramInt){
-           if (status = cbcParam->readValue(inputQueue, iValue, &message)){
+           if ((status = cbcParam->readValue(inputQueue, iValue, &message))){
               printGeneralMessage(model_, message);
               continue;
            }
@@ -2198,8 +2203,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               } else if (cbcParamCode == CbcParam::FPUMPTUNE || cbcParamCode == CbcParam::FPUMPTUNE2 ||
                          cbcParamCode == CbcParam::FPUMPITS) {
                  pumpChanged = true;
+              } else if (cbcParamCode == CbcParam::AGGREGATEMIXED) {
+                 mixedRoundStrategy = iValue;
               } else if (cbcParamCode == CbcParam::BKPIVOTINGSTRATEGY) {
-                 bkPivotingStrategy = iValue;
+                 bkPivotingStrategy = static_cast<CoinBronKerbosch::PivotingStrategy>(iValue);
               } else if (cbcParamCode == CbcParam::BKMAXCALLS) {
                  maxCallsBK = iValue;
               } else if (cbcParamCode == CbcParam::BKCLQEXTMETHOD) {
@@ -2207,7 +2214,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               } else if (cbcParamCode == CbcParam::ODDWEXTMETHOD) {
                  oddWExtMethod = iValue;
               } else if (cbcParamCode == CbcParam::LOGLEVEL) {
-                 model_.messageHandler()->setLogLevel(CoinAbs(iValue));
+                 model_.messageHandler()->setLogLevel(std::abs(iValue));
               } else if (cbcParamCode == CbcParam::MAXNODES) {
                  model_.setIntParam(CbcModel::CbcMaxNumNode, iValue);
               } else if (cbcParamCode == CbcParam::MAXSOLS) {
@@ -2358,7 +2365,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               }
            }
         } else if (clpParam->type() == CoinParam::paramInt) {
-           if (status = clpParam->readValue(inputQueue, iValue, &message)){
+           if ((status = clpParam->readValue(inputQueue, iValue, &message))){
               printGeneralMessage(model_, message);
               continue;
            } 
@@ -2390,7 +2397,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               dualize = iValue;
            }
         } else if (cbcParam->type() == CoinParam::paramKwd) {
-           if (status = cbcParam->readValue(inputQueue, field, &message)){
+           if ((status = cbcParam->readValue(inputQueue, field, &message))){
               printGeneralMessage(model_, message);
 	      continue;
            }
@@ -2565,7 +2572,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               break;
            }
         } else if (clpParam->type() == CoinParam::paramKwd) { 
-           if (status = clpParam->readValue(inputQueue, field, &message)){
+           if ((status = clpParam->readValue(inputQueue, field, &message))){
               printGeneralMessage(model_, message);
               continue;
            }
@@ -2704,7 +2711,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               break;
            }
         } else if (cbcParam->type() == CoinParam::paramDir){
-           if (status = cbcParam->readValue(inputQueue, field, &message)){
+           if ((status = cbcParam->readValue(inputQueue, field, &message))){
               printGeneralMessage(model_, message);
               continue;
            }
@@ -2713,7 +2720,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                continue;
            }
         } else if (cbcParam->type() == CoinParam::paramFile){
-           if (status = cbcParam->readValue(inputQueue, field, &message)){
+           if ((status = cbcParam->readValue(inputQueue, field, &message))){
               printGeneralMessage(model_, message);
               continue;
            }
@@ -2979,7 +2986,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 }
                 if (solution) {
                   memcpy(model2->primalColumnSolution(), solution,
-                         CoinMin(model2->numberColumns(),
+                         std::min(model2->numberColumns(),
                                  linkSolver->coinModel()->numberColumns()) *
                              sizeof(double));
                   delete[] solution;
@@ -3337,7 +3344,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                continue;
             }
             // get bound
-            if (status = clpParam->readValue(inputQueue, dValue, &message)){
+            if ((status = clpParam->readValue(inputQueue, dValue, &message))){
                std::cout << "Must enter value for " << clpParam->name()
                          << std::endl;
                continue;
@@ -3353,8 +3360,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             for (iRow = 0; iRow < numberRows; iRow++) {
                // leave free ones for now
                if (rowLower[iRow] > -1.0e20 || rowUpper[iRow] < 1.0e20) {
-                  rowLower[iRow] = CoinMax(rowLower[iRow], -dValue);
-                  rowUpper[iRow] = CoinMin(rowUpper[iRow], dValue);
+                  rowLower[iRow] = std::max(rowLower[iRow], -dValue);
+                  rowUpper[iRow] = std::min(rowUpper[iRow], dValue);
                }
             }
             int iColumn;
@@ -3366,8 +3373,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                if (columnLower[iColumn] > -1.0e20 ||
                    columnUpper[iColumn] < 1.0e20) {
                   columnLower[iColumn] =
-                     CoinMax(columnLower[iColumn], -dValue);
-                  columnUpper[iColumn] = CoinMin(columnUpper[iColumn], dValue);
+                     std::max(columnLower[iColumn], -dValue);
+                  columnUpper[iColumn] = std::min(columnUpper[iColumn], dValue);
                }
             }
           }break;
@@ -3496,152 +3503,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             if (deleteModel2)
                delete model2;
            } break;
-          case CbcParam::DOHEURISTIC:{
-            if (!goodModel){
-               continue;
-            }
-#if CBC_USE_INITIAL_TIME == 1
-            if (model_.useElapsedTime())
-               model_.setDblParam(CbcModel::CbcStartSeconds,
-                                  CoinGetTimeOfDay());
-            else
-               model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
-#endif
-            int vubMode = parameters[CbcParam::VUBTRY]->intVal();
-            if (vubMode != -1) {
-               // look at vubs
-               // extra1 is number of ints to leave free
-               // Just ones which affect >= extra3
-               int extra3 = parameters[CbcParam::EXTRA3]->intVal();
-               /* 2 is cost above which to fix if feasible
-                  3 is fraction of integer variables fixed if
-                  relaxing (0.97) 4 is fraction of all variables fixed if
-                  relaxing (0.0)
-               */
-               double dextra[6];
-               int extra[5];
-               extra[1] = parameters[CbcParam::EXTRA1]->intVal();
-               int exp1 = parameters[CbcParam::EXPERIMENT]->intVal();
-               if (exp1 == 4 && extra[1] == -1)
-                  extra[1] = 999998;
-               dextra[1] = parameters[CbcParam::FAKEINCREMENT]->dblVal();
-               dextra[2] = parameters[CbcParam::FAKECUTOFF]->dblVal();
-               dextra[3] = parameters[CbcParam::DEXTRA3]->dblVal();
-               dextra[4] = parameters[CbcParam::DEXTRA4]->dblVal();
-               dextra[5] = parameters[CbcParam::DEXTRA5]->dblVal();
-               if (!dextra[3])
-                  dextra[3] = 0.97;
-               // OsiClpSolverInterface * newSolver =
-               fixVubs(model_, extra3, vubMode, generalMessageHandler,
-                       debugValues, dextra, extra);
-               // assert (!newSolver);
-            }
-            // Actually do heuristics
-            // may need to flip objective
-            bool needFlip = model_.solver()->getObjSense() < 0.0;
-            if (needFlip)
-               model_.flipModel();
-            // if we do then - fix priorities in
-            // clonebutmodel_.convertToDynamic();
-            bool objectsExist = model_.objects() != NULL;
-            if (!objectsExist) {
-               model_.findIntegers(false);
-               model_.convertToDynamic();
-            }
-            // set priorities etc
-            if (priorities) {
-               OsiObject **objects = model_.objects();
-               int numberObjects = model_.numberObjects();
-               for (int iObj = 0; iObj < numberObjects; iObj++) {
-                  CbcSimpleInteger *obj =
-                     dynamic_cast<CbcSimpleInteger *>(objects[iObj]);
-                  if (!obj)
-                     continue;
-                  int iColumn = obj->columnNumber();
-                  if (branchDirection) {
-                     obj->setPreferredWay(branchDirection[iColumn]);
-                  }
-                  if (priorities) {
-                     int iPriority = priorities[iColumn];
-                     if (iPriority > 0)
-                        obj->setPriority(iPriority);
-                  }
-                  if (pseudoUp && pseudoUp[iColumn]) {
-                     CbcSimpleIntegerPseudoCost *obj1a =
-                        dynamic_cast<CbcSimpleIntegerPseudoCost *>(
-                            objects[iObj]);
-                    assert(obj1a);
-                    if (pseudoDown[iColumn] > 0.0)
-                       obj1a->setDownPseudoCost(pseudoDown[iColumn]);
-                    if (pseudoUp[iColumn] > 0.0)
-                       obj1a->setUpPseudoCost(pseudoUp[iColumn]);
-                  }
-               }
-            }
-            doHeuristics(&model_, 2, parameters, parameters.noPrinting(),
-                         initialPumpTune);
-            if (!objectsExist) {
-               model_.deleteObjects(false);
-            }
-            if (needFlip)
-               model_.flipModel();
-            if (model_.bestSolution()) {
-               model_.setProblemStatus(1);
-               model_.setSecondaryStatus(6);
-               if (statusUserFunction_[0] && info) {
-                  double value = model_.getObjValue();
-                  char buf[300];
-                  int pos = 0;
-                  pos += sprintf(buf + pos, "feasible,");
-                  info->problemStatus = 0;
-                  info->objValue = value;
-                  pos += sprintf(buf + pos, " objective %.*g", ampl_obj_prec(),
-                                 value);
-                  sprintf(buf + pos, "\n0 iterations");
-                  free(info->primalSolution);
-                  int numberColumns = lpSolver->numberColumns();
-                  info->primalSolution = reinterpret_cast<double *>(
-                      malloc(numberColumns * sizeof(double)));
-                  CoinCopyN(model_.bestSolution(), numberColumns,
-                            info->primalSolution);
-                  int numberRows = lpSolver->numberRows();
-                  free(info->dualSolution);
-                  info->dualSolution = reinterpret_cast<double *>(
-                      malloc(numberRows * sizeof(double)));
-                  CoinZeroN(info->dualSolution, numberRows);
-                  CoinWarmStartBasis *basis = lpSolver->getBasis();
-                  free(info->rowStatus);
-                  info->rowStatus =
-                      reinterpret_cast<int *>(malloc(numberRows * sizeof(int)));
-                  free(info->columnStatus);
-                  info->columnStatus = reinterpret_cast<int *>(
-                      malloc(numberColumns * sizeof(int)));
-                  // Put basis in
-                  int i;
-                  // free,basic,ub,lb are 0,1,2,3
-                  for (i = 0; i < numberRows; i++) {
-                    CoinWarmStartBasis::Status status =
-                        basis->getArtifStatus(i);
-                    info->rowStatus[i] = status;
-                  }
-                  for (i = 0; i < numberColumns; i++) {
-                    CoinWarmStartBasis::Status status =
-                        basis->getStructStatus(i);
-                    info->columnStatus[i] = status;
-                  }
-                  // put buffer into info
-                  strcpy(info->buffer, buf);
-                  delete basis;
-               }
-            }
-            int returnCode = callBack(&model, 6);
-            if (returnCode) {
-               // exit if user wants
-               delete babModel_;
-               babModel_ = NULL;
-               return returnCode;
-            }
-          }break;
           case CbcParam::MIPLIB:
             // User can set options - main difference is lack of model and
             // CglPreProcess
@@ -3665,6 +3526,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               double *truncatedRhsLower = NULL;
               double *truncatedRhsUpper = NULL;
               int *newPriorities = NULL;
+	      if (model_.solver()->getObjSense()==-1.0) {
+		// If cutoff set flip
+		if (model_.getCutoff()<1.0e30) {
+		  double cutoff = model_.getCutoff();
+		  model_.setCutoff(-cutoff);
+		}
+	      }
               // Reduce printout
               if (logLevel <= 1) {
                 model_.solver()->setHintParam(OsiDoReducePrint, true,
@@ -3736,7 +3604,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   if (obj) {
                     preProcess = 0;
                     int testOsiOptions = parameters[CbcParam::TESTOSI]->intVal();
-                    parameters[CbcParam::TESTOSI]->setVal(CoinMax(0, testOsiOptions));
+                    parameters[CbcParam::TESTOSI]->setVal(std::max(0, testOsiOptions));
                     // create coin model
                     coinModel = lpSolver->createCoinModel();
                     assert(coinModel);
@@ -3772,8 +3640,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                         dynamic_cast<OsiSolverLink *>(coinSolver);
                     if (linkSolver->quadraticModel()) {
                       ClpSimplex *qp = linkSolver->quadraticModel();
-                      // linkSolver->nonlinearSLP(CoinMax(slpValue,10),1.0e-5);
-                      qp->nonlinearSLP(CoinMax(slpValue, 40), 1.0e-5);
+                      // linkSolver->nonlinearSLP(std::max(slpValue,10),1.0e-5);
+                      qp->nonlinearSLP(std::max(slpValue, 40), 1.0e-5);
                       qp->primal(1);
                       OsiSolverLinearizedQuadratic solver2(qp);
                       const double *solution = NULL;
@@ -3823,7 +3691,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       CglBKClique bkClique;
                       bkClique.setMaxCallsBK(1000);
                       bkClique.setExtendingMethod(4);
-                      bkClique.setPivotingStrategy(3);
+                      bkClique.setPivotingStrategy(CoinBronKerbosch::PivotingStrategy::Weight);
                       cbcModel->addCutGenerator(&bkClique, -98, "Clique", true,
                                                 false, false, -100, -1, -1);
                       cbcModel->cutGenerator(numCutGens++)->setTiming(true);
@@ -3927,7 +3795,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #ifdef CBC_THREAD
                       int numberThreads = parameters[CbcParam::THREADS]->intVal();
                       cbcModel->setNumberThreads(numberThreads % 100);
-                      cbcModel->setThreadMode(CoinMin((numberThreads%1000) / 100, 7));
+                      cbcModel->setThreadMode(std::min((numberThreads%1000) / 100, 7));
 #endif
                       // setCutAndHeuristicOptions(*cbcModel);
                       cbcModel->branchAndBound();
@@ -4145,10 +4013,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     double above = value - rowLower[iRow];
                     double below = rowUpper[iRow] - value;
                     if (above < 1.0e12) {
-                      largest = CoinMax(largest, above);
+                      largest = std::max(largest, above);
                     }
                     if (below < 1.0e12) {
-                      largest = CoinMax(largest, below);
+                      largest = std::max(largest, below);
                     }
                     if (rowScale) {
                       double multiplier = rowScale[iRow];
@@ -4156,10 +4024,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       below *= multiplier;
                     }
                     if (above < 1.0e12) {
-                      largestScaled = CoinMax(largestScaled, above);
+                      largestScaled = std::max(largestScaled, above);
                     }
                     if (below < 1.0e12) {
-                      largestScaled = CoinMax(largestScaled, below);
+                      largestScaled = std::max(largestScaled, below);
                     }
                   }
 
@@ -4174,10 +4042,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     double above = value - columnLower[iColumn];
                     double below = columnUpper[iColumn] - value;
                     if (above < 1.0e12) {
-                      largest = CoinMax(largest, above);
+                      largest = std::max(largest, above);
                     }
                     if (below < 1.0e12) {
-                      largest = CoinMax(largest, below);
+                      largest = std::max(largest, below);
                     }
                     if (columnScale) {
                       double multiplier = 1.0 / columnScale[iColumn];
@@ -4185,10 +4053,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       below *= multiplier;
                     }
                     if (above < 1.0e12) {
-                      largestScaled = CoinMax(largestScaled, above);
+                      largestScaled = std::max(largestScaled, above);
                     }
                     if (below < 1.0e12) {
-                      largestScaled = CoinMax(largestScaled, below);
+                      largestScaled = std::max(largestScaled, below);
                     }
                   }
 #ifdef COIN_DEVELOP
@@ -4199,7 +4067,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   printGeneralMessage(model_, buffer.str());
 #endif
                   clpSolver->setDualBound(
-                      CoinMax(1.0001e8, CoinMin(100.0 * largest, 1.00001e10)));
+                      std::max(1.0001e8, std::min(100.0 * largest, 1.00001e10)));
                 }
                 si->resolve(); // clean up
 #endif
@@ -4276,7 +4144,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                               (cutoff2 - cutoff1) / freq1 +
                               (numberRows - cutoff2) / freq2;
                 lpSolver->setFactorizationFrequency(
-                    CoinMin(maximum, frequency));
+                    std::min(maximum, frequency));
               }
 #elif CBC_OTHER_SOLVER == 1
               OsiSolverInterface *solver3 = model_.solver()->clone();
@@ -4363,7 +4231,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 // set cutoff ( a trifle high)
                 if (!status) {
                   double newCutoff =
-                      CoinMin(babModel_->getCutoff(), obj + 1.0e-4);
+                      std::min(babModel_->getCutoff(), obj + 1.0e-4);
                   babModel_->setBestSolution(&x[0], static_cast<int>(x.size()),
                                              obj, false);
                   babModel_->setCutoff(newCutoff);
@@ -4374,6 +4242,153 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   model_.setSolutionCount(1);
                 }
               }
+	      // Do heuristics if asked for
+	      //HEURSTART
+ 	      // Do heuristics if asked for
+	      if (parameters[CbcParam::DOHEURISTIC]->modeVal()) {
+#if CBC_USE_INITIAL_TIME == 1
+		if (model_.useElapsedTime())
+		  model_.setDblParam(CbcModel::CbcStartSeconds,
+				     CoinGetTimeOfDay());
+		else
+		  model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
+#endif
+		int vubMode = parameters[CbcParam::VUBTRY]->intVal();
+		if (vubMode != -1) {
+		  // look at vubs
+		  // extra1 is number of ints to leave free
+		  // Just ones which affect >= extra3
+		  int extra3 = parameters[CbcParam::EXTRA3]->intVal();
+		  /* 2 is cost above which to fix if feasible
+		     3 is fraction of integer variables fixed if
+		     relaxing (0.97) 4 is fraction of all variables fixed if
+		     relaxing (0.0)
+		  */
+		  double dextra[6];
+		  int extra[5];
+		  extra[1] = parameters[CbcParam::EXTRA1]->intVal();
+		  int exp1 = parameters[CbcParam::EXPERIMENT]->intVal();
+		  if (exp1 == 4 && extra[1] == -1)
+		    extra[1] = 999998;
+		  dextra[1] = parameters[CbcParam::FAKEINCREMENT]->dblVal();
+		  dextra[2] = parameters[CbcParam::FAKECUTOFF]->dblVal();
+		  dextra[3] = parameters[CbcParam::DEXTRA3]->dblVal();
+		  dextra[4] = parameters[CbcParam::DEXTRA4]->dblVal();
+		  dextra[5] = parameters[CbcParam::DEXTRA5]->dblVal();
+		  if (!dextra[3])
+		    dextra[3] = 0.97;
+		  // OsiClpSolverInterface * newSolver =
+		  fixVubs(model_, extra3, vubMode, generalMessageHandler,
+			  debugValues, dextra, extra);
+		  // assert (!newSolver);
+		}
+		// Actually do heuristics
+		// may need to flip objective
+		bool needFlip = model_.solver()->getObjSense() < 0.0;
+		if (needFlip)
+		  model_.flipModel();
+		// if we do then - fix priorities in
+		// clonebutmodel_.convertToDynamic();
+		bool objectsExist = model_.objects() != NULL;
+		if (!objectsExist) {
+		  model_.findIntegers(false);
+		  model_.convertToDynamic();
+		}
+		// set priorities etc
+		if (priorities) {
+		  OsiObject **objects = model_.objects();
+		  int numberObjects = model_.numberObjects();
+		  for (int iObj = 0; iObj < numberObjects; iObj++) {
+		    CbcSimpleInteger *obj =
+		      dynamic_cast<CbcSimpleInteger *>(objects[iObj]);
+		    if (!obj)
+		      continue;
+		    int iColumn = obj->columnNumber();
+		    if (branchDirection) {
+		      obj->setPreferredWay(branchDirection[iColumn]);
+		    }
+		    if (priorities) {
+		      int iPriority = priorities[iColumn];
+		      if (iPriority > 0)
+                        obj->setPriority(iPriority);
+		    }
+		    if (pseudoUp && pseudoUp[iColumn]) {
+		      CbcSimpleIntegerPseudoCost *obj1a =
+                        dynamic_cast<CbcSimpleIntegerPseudoCost *>(
+								   objects[iObj]);
+		      assert(obj1a);
+		      if (pseudoDown[iColumn] > 0.0)
+			obj1a->setDownPseudoCost(pseudoDown[iColumn]);
+		      if (pseudoUp[iColumn] > 0.0)
+			obj1a->setUpPseudoCost(pseudoUp[iColumn]);
+		    }
+		  }
+		}
+		doHeuristics(&model_, 2, parameters, parameters.noPrinting(),
+			     initialPumpTune);
+		if (!objectsExist) {
+		  model_.deleteObjects(false);
+		}
+		if (needFlip)
+		  model_.flipModel();
+		if (model_.bestSolution()) {
+		  model_.setProblemStatus(1);
+		  model_.setSecondaryStatus(6);
+		  if (statusUserFunction_[0] && info) {
+		    double value = model_.getObjValue();
+		    char buf[300];
+		    int pos = 0;
+		    pos += sprintf(buf + pos, "feasible,");
+		    info->problemStatus = 0;
+		    info->objValue = value;
+		    pos += sprintf(buf + pos, " objective %.*g", ampl_obj_prec(),
+				   value);
+		    sprintf(buf + pos, "\n0 iterations");
+		    free(info->primalSolution);
+		    int numberColumns = lpSolver->numberColumns();
+		    info->primalSolution = reinterpret_cast<double *>(
+								      malloc(numberColumns * sizeof(double)));
+		    CoinCopyN(model_.bestSolution(), numberColumns,
+			      info->primalSolution);
+		    int numberRows = lpSolver->numberRows();
+		    free(info->dualSolution);
+		    info->dualSolution = reinterpret_cast<double *>(
+								    malloc(numberRows * sizeof(double)));
+		    CoinZeroN(info->dualSolution, numberRows);
+		    CoinWarmStartBasis *basis = lpSolver->getBasis();
+		    free(info->rowStatus);
+		    info->rowStatus =
+                      reinterpret_cast<int *>(malloc(numberRows * sizeof(int)));
+		    free(info->columnStatus);
+		    info->columnStatus = reinterpret_cast<int *>(
+								 malloc(numberColumns * sizeof(int)));
+		    // Put basis in
+		    int i;
+		    // free,basic,ub,lb are 0,1,2,3
+		    for (i = 0; i < numberRows; i++) {
+		      CoinWarmStartBasis::Status status =
+                        basis->getArtifStatus(i);
+		      info->rowStatus[i] = status;
+		    }
+		    for (i = 0; i < numberColumns; i++) {
+		      CoinWarmStartBasis::Status status =
+                        basis->getStructStatus(i);
+		      info->columnStatus[i] = status;
+		    }
+		    // put buffer into info
+		    strcpy(info->buffer, buf);
+		    delete basis;
+		  }
+		}
+		int returnCode = callBack(&model, 6);
+		if (returnCode) {
+		  // exit if user wants
+		  delete babModel_;
+		  babModel_ = NULL;
+		  return returnCode;
+		}
+	      }
+	      //HEUREND
               bool hasTimePreproc = !babModel_->maximumSecondsReached();
               if (!hasTimePreproc)
                 preProcess = 0;
@@ -4410,7 +4425,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   generator1.setMaxPass(1);
                   generator1.setMaxPassRoot(1);
                   generator1.setMaxProbeRoot(
-                      CoinMin(3000, saveSolver->getNumCols()));
+                      std::min(3000, saveSolver->getNumCols()));
                   generator1.setMaxElements(100);
                   generator1.setMaxElementsRoot(200);
                   generator1.setMaxLookRoot(50);
@@ -4435,9 +4450,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #endif
                     generator1.setMaxProbeRoot(saveSolver->getNumCols());
  		    if ((tune2 & 512) != 0) 
-		      generator1.setMaxLookRoot(CoinMin(saveSolver->getNumCols(),1000));
+		      generator1.setMaxLookRoot(std::min(saveSolver->getNumCols(),1000));
 		    else
-		      generator1.setMaxLookRoot(CoinMin(saveSolver->getNumCols(),400));
+		      generator1.setMaxLookRoot(std::min(saveSolver->getNumCols(),400));
                   }
                   if ((babModel_->specialOptions() & 65536) != 0)
                     process.setOptions(1);
@@ -4648,7 +4663,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 			tup[n]=0.0;
 			els[2*n] = 1.0;
 			// should be able to get correct value
-			els[2*n+1] = -CoinMin(10000.0,columnUpper[iColumn]);
+			els[2*n+1] = -std::min(10000.0,columnUpper[iColumn]);
 			cols[2*n] = iColumn;
 			cols[2*n+1] = i+numberColumns;
 			n++;
@@ -4812,9 +4827,73 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		    if (keepPPN)
 		      babModel_->setKeepNamesPreproc(1);
 		    setPreProcessingMode(saveSolver,1);
+#if CBC_USE_PAPILO
+		    extern void zapPapilo(int pOptions,CglPreProcess * process);
+		    int pOptions = 0;
+		    int tune2 = preProcess;
+		    // Convert to minimize if papilo
+		    bool maximize = false;
+		    if (tune2>11) {
+		      OsiClpSolverInterface * clpSolver =
+			dynamic_cast<OsiClpSolverInterface *>(saveSolver);
+		      if (clpSolver->getObjSense()==-1.0) {
+			maximize = true;
+			clpSolver->setObjSense(1.0);
+			double objOffset;
+			clpSolver->getDblParam(OsiObjOffset, objOffset);
+			int numberColumns = clpSolver->getNumCols();
+			double * objective = clpSolver->getModelPtr()->objective();
+			for (int i=0;i<numberColumns;i++)
+			  objective[i] = -objective[i];
+			clpSolver->setDblParam(OsiObjOffset, -objOffset);
+		      }
+		      bool stopAfter = false;
+		      if (tune2>15) {
+			preProcess=10; // say stop
+			tune2 -=4;
+		      } else {
+			preProcess=1;
+		      }
+#ifdef CBC_THREAD
+		      pOptions = (tune2&1) != 0 ? 2 : 1;
+#endif
+		      if ((tune2&2) == 0)
+			pOptions|= 8; // at beginning
+		      else
+			pOptions|= 16; // at end
+		    }
+		    zapPapilo(pOptions,&process);
+#endif
                     solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                       tunePreProcess);
-		    setPreProcessingMode(saveSolver,0);
+ 		    setPreProcessingMode(saveSolver,0);
+#if CBC_USE_PAPILO
+		    // Convert back
+		    if (maximize) {
+		      OsiClpSolverInterface * clpSolver =
+			dynamic_cast<OsiClpSolverInterface *>(saveSolver);
+		      double objOffset;
+		      clpSolver->setObjSense(-1.0);
+		      clpSolver->getDblParam(OsiObjOffset, objOffset);
+		      int numberColumns = clpSolver->getNumCols();
+		      double * objective = clpSolver->getModelPtr()->objective();
+		      for (int i=0;i<numberColumns;i++)
+			objective[i] = -objective[i];
+		      clpSolver->setDblParam(OsiObjOffset, -objOffset);
+		      if (solver2) {
+			OsiClpSolverInterface * clpSolver =
+			  dynamic_cast<OsiClpSolverInterface *>(solver2);
+			double objOffset;
+			clpSolver->setObjSense(-1.0);
+			clpSolver->getDblParam(OsiObjOffset, objOffset);
+			int numberColumns = clpSolver->getNumCols();
+			double * objective = clpSolver->getModelPtr()->objective();
+			for (int i=0;i<numberColumns;i++)
+			  objective[i] = -objective[i];
+			clpSolver->setDblParam(OsiObjOffset, -objOffset);
+		      }
+		    }
+#endif
                     if (solver2) {
                       setPreProcessingMode(solver2, 0);
                       model_.setOriginalColumns(process.originalColumns(),
@@ -4914,13 +4993,33 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   // just get integer part right
                   const int *originalColumns = process.originalColumns();
                   int numberColumns =
-                      CoinMin(solver2->getNumCols(), babModel_->getNumCols());
+                      std::min(solver2->getNumCols(), babModel_->getNumCols());
+#if 0		  
                   double *bestSolution = babModel_->bestSolution();
                   const double *oldBestSolution = model_.bestSolution();
                   for (int i = 0; i < numberColumns; i++) {
                     int jColumn = originalColumns[i];
                     bestSolution[i] = oldBestSolution[jColumn];
                   }
+#else
+		  int numberColumnsB = babModel_->getNumCols();
+                  int numberColumns2 =
+                      std::max(solver2->getNumCols(), numberColumnsB);
+                  double *bestSolution = new double [numberColumns2];
+		  memset(bestSolution,0,numberColumns2*sizeof(double));
+                  const double *oldBestSolution = model_.bestSolution();
+                  for (int i = 0; i < numberColumns; i++) {
+                    int jColumn = originalColumns[i];
+		    if (jColumn<numberColumnsB)
+		      bestSolution[i] = oldBestSolution[jColumn];
+                  }
+		  double obj=model_.getObjValue();
+                  double newCutoff =
+                      std::min(model_.getCutoff(), obj + 1.0e-4);
+		  babModel_->setBestSolution(bestSolution,numberColumns,1.0e10,false);
+                  babModel_->setCutoff(newCutoff);
+		  delete [] bestSolution;
+#endif
                 }
                 //solver2->resolve();
 #ifdef CBC_NAMES_FOR_COMPARE
@@ -5121,7 +5220,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 // we have to keep solver2 so pass clone
                 solver2 = solver2->clone();
                 // see if extra variables wanted
-                bool threshold = parameters[CbcParam::EXTRAVARIABLES]->intVal();
+                int threshold = parameters[CbcParam::EXTRAVARIABLES]->intVal();
                 int more2 = parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal();
                 if (threshold || (more2 & (512 | 1024)) != 0) {
                   int numberColumns = solver2->getNumCols();
@@ -5342,18 +5441,14 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                                        NULL, lowerNew, upperNew, objectiveNew);
                       // add constraints and make integer if all integer in
                       // group
-#ifdef CBC_HAS_CLP
                       OsiClpSolverInterface *clpSolver2 =
                           dynamic_cast<OsiClpSolverInterface *>(solver2);
-#endif
                       for (int iObj = 0; iObj < numberDifferentObj; iObj++) {
                         lowerNew[iObj] = 0.0;
                         upperNew[iObj] = 0.0;
                         solver2->setInteger(numberColumns + iObj);
-#ifdef CBC_HAS_CLP
                         if (clpSolver2)
                           clpSolver2->setOptionalInteger(numberColumns + iObj);
-#endif
                       }
                       solver2->addRows(numberDifferentObj, rowAdd, columnAdd,
                                        elementAdd, lowerNew, upperNew);
@@ -5406,17 +5501,17 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                               newColumn[n++] = iColumn;
                               if (nearest > 0.0) {
                                 newLower +=
-                                    CoinMax(columnLower[iColumn], -1.0e20) *
+                                    std::max(columnLower[iColumn], -1.0e20) *
                                     nearest;
                                 newUpper +=
-                                    CoinMin(columnUpper[iColumn], 1.0e20) *
+                                    std::min(columnUpper[iColumn], 1.0e20) *
                                     nearest;
                               } else {
                                 newUpper +=
-                                    CoinMax(columnLower[iColumn], -1.0e20) *
+                                    std::max(columnLower[iColumn], -1.0e20) *
                                     nearest;
                                 newLower +=
-                                    CoinMin(columnUpper[iColumn], 1.0e20) *
+                                    std::min(columnUpper[iColumn], 1.0e20) *
                                     nearest;
                               }
                             }
@@ -5499,29 +5594,29 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                                     if (newConstant <= 0.0)
                                       constantObjective = COIN_DBL_MAX;
                                     else
-                                      constantObjective = CoinMin(
+                                      constantObjective = std::min(
                                           constantObjective, newConstant);
                                   } else {
                                     if (newConstant >= 0.0)
                                       constantObjective = COIN_DBL_MAX;
                                     else
-                                      constantObjective = CoinMax(
+                                      constantObjective = std::max(
                                           constantObjective, newConstant);
                                   }
                                 }
                                 if (nearest > 0.0) {
                                   newLower +=
-                                      CoinMax(columnLower[iColumn], -1.0e20) *
+                                      std::max(columnLower[iColumn], -1.0e20) *
                                       nearest;
                                   newUpper +=
-                                      CoinMin(columnUpper[iColumn], 1.0e20) *
+                                      std::min(columnUpper[iColumn], 1.0e20) *
                                       nearest;
                                 } else {
                                   newUpper +=
-                                      CoinMax(columnLower[iColumn], -1.0e20) *
+                                      std::max(columnLower[iColumn], -1.0e20) *
                                       nearest;
                                   newLower +=
-                                      CoinMin(columnUpper[iColumn], 1.0e20) *
+                                      std::min(columnUpper[iColumn], 1.0e20) *
                                       nearest;
                                 }
                               }
@@ -5545,10 +5640,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                               }
                             }
                             newColumnLower[addSlacks] =
-                                CoinMax(newLower, ceil(rowLower[iRow]));
+                                std::max(newLower, ceil(rowLower[iRow]));
                             ;
                             newColumnUpper[addSlacks] =
-                                CoinMin(newUpper, floor(rowUpper[iRow]));
+                                std::min(newUpper, floor(rowUpper[iRow]));
                             addSlacks++;
                           }
                         }
@@ -5848,7 +5943,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               }
               int experimentFlag = parameters[CbcParam::EXPERIMENT]->intVal();
               int strategyFlag = parameters[CbcParam::STRATEGY]->modeVal();
-              int bothFlags = CoinMax(CoinMin(experimentFlag, 1), strategyFlag);
+              int bothFlags = std::max(std::min(experimentFlag, 1), strategyFlag);
               // add cut generators if wanted
               int switches[30] = {};
               int accuracyFlag[30] = {};
@@ -5893,7 +5988,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   probingGen.setMaxElements(numberColumns);
                   probingGen.setMaxElementsRoot(numberColumns);
                 }
-                probingGen.setMaxProbeRoot(CoinMin(2000, numberColumns));
+                probingGen.setMaxProbeRoot(std::min(2000, numberColumns));
                 probingGen.setMaxProbeRoot(123);
                 probingGen.setMaxProbe(123);
                 probingGen.setMaxLookRoot(20);
@@ -6127,6 +6222,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               }
  	      assert (parameters[CbcParam::MIRCUTS]->modeVal()==mixedMode);
               if (mixedMode) {
+		if (mixedRoundStrategy != 1)
+		  mixedGen.setMAXAGGR_(mixedRoundStrategy);
                 babModel_->addCutGenerator(&mixedGen, translate[mixedMode],
                                            "MixedIntegerRounding2");
                 accuracyFlag[numberGenerators] = 2;
@@ -6278,7 +6375,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               if (!miplib) {
                 double minimumDrop =
                     fabs(babModel_->solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
-                babModel_->setMinimumDrop(CoinMin(5.0e-2, minimumDrop));
+                babModel_->setMinimumDrop(std::min(5.0e-2, minimumDrop));
                 if (cutPass == -1234567) {
                   if (babModel_->getNumCols() < 500)
                     babModel_->setMaximumCutPassesAtRoot(
@@ -6407,7 +6504,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 }
               }
               babModel_->setCutoffIncrement(
-                  CoinMax(babModel_->getCutoffIncrement(), increment));
+                  std::max(babModel_->getCutoffIncrement(), increment));
               // Turn this off if you get problems
               // Used to be automatically set
               int mipOptions = parameters[CbcParam::MIPOPTIONS]->intVal() % 10000;
@@ -6688,17 +6785,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		    /* But this is outside branchAndBound so needs to know 
 		       about direction */
 		    if (babModel_->getObjSense()==-1.0) {
-		      double increment = obj-babModel_->getCutoff();
-		      babModel_->setCutoff(-obj-increment);
+		      babModel_->setCutoff(-obj);
 		      babModel_->setMinimizationObjValue(-obj);
 		    }
-                    /* But this is outside branchAndBound so needs to know
-                       about direction */
-                    if (babModel_->getObjSense() == -1.0) {
-                      double increment = obj - babModel_->getCutoff();
-                      babModel_->setCutoff(-obj - increment);
-                      babModel_->setMinimizationObjValue(-obj);
-                    }
                     babModel_->clearContinuousSolver();
                     babModel_->passInSolverCharacteristics(NULL);
                     if (useSolution == 0)
@@ -6725,7 +6814,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     int numberColumns = babModel_->getNumCols();
                     // extend arrays in case SOS
                     int n = originalColumns[numberColumns - 1] + 1;
-                    int nSmaller = CoinMin(n, numberOriginalColumns);
+                    int nSmaller = std::min(n, numberOriginalColumns);
                     double *solutionIn2 = new double[n];
                     int *prioritiesIn2 = new int[n];
                     int i;
@@ -6793,16 +6882,16 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     // backward pointer to new variables
                     // extend arrays in case SOS
                     assert(originalColumns);
-                    int n = CoinMin(truncateColumns, numberColumns);
+                    int n = std::min(truncateColumns, numberColumns);
                     // allow for empty problem
                     n = (n) ? originalColumns[n - 1] + 1 : 0;
-                    n = CoinMax(n,
-                                CoinMax(numberColumns, numberOriginalColumns));
+                    n = std::max(n,
+                                std::max(numberColumns, numberOriginalColumns));
                     int *newColumn = new int[n];
                     int i;
                     for (i = 0; i < numberOriginalColumns; i++)
                       newColumn[i] = -1;
-                    for (i = 0; i < CoinMin(truncateColumns, numberColumns);
+                    for (i = 0; i < std::min(truncateColumns, numberColumns);
                          i++)
                       newColumn[originalColumns[i]] = i;
                     int nMissing = 0;
@@ -7697,6 +7786,12 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #ifdef CBC_THREAD
                 int numberThreads = parameters[CbcParam::THREADS]->intVal();
                 babModel_->setNumberThreads(numberThreads % 100);
+		// switch off deterministic if large problem and fastNodeDepth>0
+		if (numberThreads/100==2) {
+		  numberThreads -= 100;
+		  if (babModel_->fastNodeDepth()>0 && babModel_->solver()->getNumRows()>2000) 
+		    babModel_->setFastNodeDepth(-999);
+		}
                 babModel_->setThreadMode((numberThreads%1000) / 100);
 #ifdef CBC_USE_OPENMP
 		if (numberThreads>100) {
@@ -7713,7 +7808,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		      pretendThreads = realThreads;
 		    }
 		  } else {
-		    int multiplier = CoinMax((numberThreads%1000)/100,1);
+		    int multiplier = std::max((numberThreads%1000)/100,1);
 		    babModel_->setThreadMode(1);
 		    pretendThreads = multiplier*realThreads;
 		  }
@@ -7755,13 +7850,16 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 if ((experimentFlag >= 1 || strategyFlag >= 1) &&
                     abs(babModel_->fastNodeDepth()) == 1) {
 		  int iType = babModel_->fastNodeDepth();
-		  int iDepth = iType <0 ? -12 : 8;
+		  int iDepth = iType <0 ? -12 : 5;
 		  int iSize = 500; // think harder iType <0 ? 10000 : 500; 
                   if (babModel_->solver()->getNumCols() +
                           babModel_->solver()->getNumRows() < iSize) {
                     babModel_->setFastNodeDepth(iDepth);
 		  } else {
-                    babModel_->setFastNodeDepth(-1); // not sure about when +1
+ 		    if (iDepth==-12)
+		      babModel_->setFastNodeDepth(-1);
+		    else
+		      babModel_->setFastNodeDepth(8);
 		  }
                 } else if (babModel_->fastNodeDepth() == -999) {
                   babModel_->setFastNodeDepth(-1);
@@ -7827,7 +7925,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 }
 #endif
 #ifdef SOS_AS_CUTS
-#ifdef CBC_HAS_CLP
                 /* SOS as cuts
                                    Could be a bit more sophisticated e.g. only
                    non duplicates Could do something for SOS 2?
@@ -7859,7 +7956,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #if 0
 				    int numberRows=fakeSimplex->numberRows();
 				    int * starts =
-				      new int[CoinMax(numberSOS+1,numberRows)];
+				      new int[std::max(numberSOS+1,numberRows)];
 				    int * columns = new int[nEls];
 				    for (int i=0;i<numberRows;i++)
 				      starts[i]=i;
@@ -7925,7 +8022,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                           n = -1;
                           break; // no good
                         }
-                        rhs = CoinMax(upper[iColumn] + previous, rhs);
+                        rhs = std::max(upper[iColumn] + previous, rhs);
                         if (type == 2)
                           previous = upper[iColumn];
                       }
@@ -7942,7 +8039,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     delete[] starts;
                   }
                 }
-#endif
 #endif
                  if (useSolution > 1) {
                   // use hotstart to try and find solution
@@ -8633,9 +8729,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   buffer << generator->cutGeneratorName() << " was tried "
                          << generator->numberTimesEntered() << " times and created "
                          << generator->numberCutsInTotal() + generator->numberColumnCuts()
-                         << " cuts of which "
-                         << generator->numberCutsActive()
-                         << " were active after adding rounds of cuts";
+                         << " cuts";
                   if (generator->timing()) {
                      buffer << " (" << generator->timeInCutGenerator() <<  " seconds)";
                      statistics_cut_time += generator->timeInCutGenerator();
@@ -8890,11 +8984,13 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   babModel_->assignSolver(saveSolver);
                   memcpy(bestSolution, babModel_->solver()->getColSolution(),
                          n * sizeof(double));
+		  babModel_->setObjValue(babModel_->solver()->getObjValue());
                 } else {
                   n = babModel_->solver()->getNumCols();
                   bestSolution = new double[n];
                   memcpy(bestSolution, babModel_->solver()->getColSolution(),
                          n * sizeof(double));
+		  babModel_->setObjValue(babModel_->solver()->getObjValue());
 #ifndef CBC_OTHER_SOLVER
 		  // and put back bounds in very original solver
                   ClpSimplex *original = originalSolver->getModelPtr();
@@ -9971,7 +10067,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                            // priority
                          case 3:
                            pri = atoi(pos);
-                           lowestPriority = CoinMax(lowestPriority, pri);
+                           lowestPriority = std::max(lowestPriority, pri);
                            break;
                            // up
                          case 4:
@@ -10173,7 +10269,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             }
            } break;
           case CbcParam::PRINTMASK:
-            if (status = cbcParam->readValue(inputQueue, field, &message)){
+            if ((status = cbcParam->readValue(inputQueue, field, &message))){
                printGeneralMessage(model_, message);
                continue;
             }
@@ -10797,7 +10893,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 double primalTolerance;
                 clpSolver->getDblParam(OsiPrimalTolerance, primalTolerance);
                 size_t lengthPrint =
-                    static_cast<size_t>(CoinMax(lengthName, 8));
+                    static_cast<size_t>(std::max(lengthName, 8));
                 bool doMask = (parameters[CbcParam::PRINTMASK]->strVal()
                                != "" && lengthName);
                 int *maskStarts = NULL;
@@ -11300,7 +11396,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                       for (; i < lengthPrint; i++)
                         fprintf(fp, " ");
                       CoinConvertDouble(5, 2,
-                                        CoinMax(-1.0e30, columnLower[iColumn]),
+                                        std::max(-1.0e30, columnLower[iColumn]),
                                         outputValue);
                       fprintf(fp, "  %s\n", outputValue);
                       fprintf(fp, " UP BOUND001  ");
@@ -11309,7 +11405,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                       for (; i < lengthPrint; i++)
                         fprintf(fp, " ");
                       CoinConvertDouble(5, 2,
-                                        CoinMin(1.0e30, columnUpper[iColumn]),
+                                        std::min(1.0e30, columnUpper[iColumn]),
                                         outputValue);
                       fprintf(fp, "  %s\n", outputValue);
                     }
@@ -12193,7 +12289,7 @@ static void statistics(ClpSimplex *originalModel, ClpSimplex *model) {
           blockStart[iBlock] = jColumn;
           blockCount[iBlock] += numberMarkedColumns - n;
         }
-        maximumBlockSize = CoinMax(maximumBlockSize, blockCount[iBlock]);
+        maximumBlockSize = std::max(maximumBlockSize, blockCount[iBlock]);
         numberRowsDone++;
         if (thisBestValue * numberRowsDone > maximumBlockSize &&
             numberRowsDone > halfway) {
@@ -13045,7 +13141,7 @@ static void generateCode(CbcModel * /*model*/, const char *fileName, int type,
   if (sizecode) {
     // override some settings
     strcpy(line[numberLines++], "5  // compute some things using problem size");
-    strcpy(line[numberLines++], "5  cbcModel->setMinimumDrop(CoinMin(5.0e-2,");
+    strcpy(line[numberLines++], "5  cbcModel->setMinimumDrop(std::min(5.0e-2,");
     strcpy(
         line[numberLines++],
         "5       fabs(cbcModel->getMinimizationObjValue())*1.0e-3+1.0e-4));");

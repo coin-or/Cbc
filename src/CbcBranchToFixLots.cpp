@@ -125,7 +125,7 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface *solver, const OsiBranchi
   const int *integerVariable = model_->integerVariable();
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
   // make smaller ?
-  double tolerance = CoinMin(1.0e-8, integerTolerance);
+  double tolerance = std::min(1.0e-8, integerTolerance);
   // How many fixed are we aiming at
   int wantedFixed = static_cast< int >(static_cast< double >(numberIntegers) * fractionFixed_);
   int nSort = 0;
@@ -160,7 +160,7 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface *solver, const OsiBranchi
       }
       // sort
       CoinSort_2(dsort, dsort + nSort, sort);
-      nSort = CoinMin(nSort, wantedFixed - numberFixed);
+      nSort = std::min(nSort, wantedFixed - numberFixed);
     } else if (type < 10) {
       int i;
       //const double * rowLower = solver->getRowLower();
@@ -226,7 +226,7 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface *solver, const OsiBranchi
           if (!mark_ || !mark_[iColumn]) {
             double distanceDown = solution[iColumn] - lower[iColumn];
             double distanceUp = upper[iColumn] - solution[iColumn];
-            double distance = CoinMin(distanceDown, distanceUp);
+            double distance = std::min(distanceDown, distanceUp);
             if (distance > 0.001 && distance < 0.5) {
               dsort[nSort] = distance;
               sort[nSort++] = iColumn;
@@ -245,7 +245,7 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface *solver, const OsiBranchi
         else
           break;
       }
-      nSort = CoinMin(n, numberClean_ / 1000000);
+      nSort = std::min(n, numberClean_ / 1000000);
     }
   } else {
 #define FIX_IF_LESS -0.1
@@ -351,7 +351,7 @@ int CbcBranchToFixLots::shallWe() const
         if (!mark_ || !mark_[iColumn]) {
           double distanceDown = solution[iColumn] - lower[iColumn];
           double distanceUp = upper[iColumn] - solution[iColumn];
-          double distance = CoinMin(distanceDown, distanceUp);
+          double distance = std::min(distanceDown, distanceUp);
           if (distance > 0.001 && distance < 0.5) {
             dsort[nSort] = distance;
             sort[nSort++] = iColumn;
@@ -376,7 +376,7 @@ int CbcBranchToFixLots::shallWe() const
   }
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
   // make smaller ?
-  double tolerance = CoinMin(1.0e-8, integerTolerance);
+  double tolerance = std::min(1.0e-8, integerTolerance);
   // How many fixed are we aiming at
   int wantedFixed = static_cast< int >(static_cast< double >(numberIntegers) * fractionFixed_);
   if (djTolerance_ < 1.0e10) {
@@ -490,7 +490,7 @@ CbcBranchToFixLots::infeasibility(const OsiBranchingInformation * /*info*/,
   CbcNode *node = model_->currentNode();
   int depth;
   if (node)
-    depth = CoinMax(node->depth(), 0);
+    depth = std::max(node->depth(), 0);
   else
     return 0.0;
   if (depth_ < 0) {

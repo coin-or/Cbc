@@ -116,8 +116,8 @@ void CglStoredUser::generateCuts(const OsiSolverInterface &si, OsiCuts &cs,
     for (i = 0; i < numberColumns; i++) {
       double value = solution[i];
       // In case slightly away from bounds
-      value = CoinMax(colLower[i], value);
-      value = CoinMin(colUpper[i], value);
+      value = std::max(colLower[i], value);
+      value = std::min(colUpper[i], value);
       if (si.isInteger(i) && fabs(value - fabs(value + 0.5)) > 1.0e-5)
         numberAway++;
     }
@@ -326,7 +326,7 @@ int main(int argc, const char *argv[])
       }
     }
     // leave some rows to avoid empty problem (Gomory does not like)
-    nDelete = CoinMax(CoinMin(nDelete, numberRows - 5), 0);
+    nDelete = std::max(std::min(nDelete, numberRows - 5), 0);
     for (int jRow = 0; jRow < nDelete; jRow++) {
       iRow = whichRow[jRow];
       int start = rowStart[iRow];
@@ -441,7 +441,7 @@ int main(int argc, const char *argv[])
 
   // Could tune more
   double objValue = model.solver()->getObjSense() * model.solver()->getObjValue();
-  double minimumDropA = CoinMin(1.0, fabs(objValue) * 1.0e-3 + 1.0e-4);
+  double minimumDropA = std::min(1.0, fabs(objValue) * 1.0e-3 + 1.0e-4);
   double minimumDrop = fabs(objValue) * 1.0e-4 + 1.0e-4;
   printf("min drop %g (A %g)\n", minimumDrop, minimumDropA);
   model.setMinimumDrop(minimumDrop);

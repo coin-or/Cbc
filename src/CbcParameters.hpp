@@ -137,6 +137,16 @@ public:
     IPPForceSOS,
     IPPStopAfterSaving,
     IPPEqualAllStop,
+#if CBC_USE_PAPILO
+    IPPPapilo,
+    IPPPapilo2,
+    IPPPapiloEnd,
+    IPPPapilo2End,
+    IPPPapiloStop,
+    IPPPapilo2Stop,
+    IPPPapiloStopEnd,
+    IPPPapilo2StopEnd,
+#endif
     IPPEndMarker
   };
 
@@ -1277,6 +1287,14 @@ public:
   */
 
   //@{
+
+  /*! \brief Get MixedRoundStrategy setting */
+  inline int getMixedRoundStrategy() { return mixedRoundStrategy_; }
+
+  /*! \brief Set MixedRoundStrategy setting */
+  inline void setMixedRoundStrategy(int mixedRoundStrategy) {
+    mixedRoundStrategy_ = mixedRoundStrategy;
+  }
 
   /*! \brief Get BkPivotStrategy setting */
   inline int getBkPivotStrategy() { return bkPivotStrategy_; }
@@ -2421,6 +2439,7 @@ private:
   */
   //@{
 
+  int mixedRoundStrategy_;
   int bkPivotStrategy_;
   int bkMaxCalls_;
   int bkClqExtMethod_;

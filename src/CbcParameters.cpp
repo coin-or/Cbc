@@ -386,6 +386,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::FAKEINCREMENT]->setDefault(0.0);
      parameters_[CbcParam::SMALLBAB]->setDefault(0.5);
      parameters_[CbcParam::TIGHTENFACTOR]->setDefault(0.0);
+     parameters_[CbcParam::AGGREGATEMIXED]->setDefault(1);
      parameters_[CbcParam::BKPIVOTINGSTRATEGY]->setDefault(3);
      parameters_[CbcParam::BKMAXCALLS]->setDefault(1000);
      parameters_[CbcParam::BKCLQEXTMETHOD]->setDefault(4);
@@ -1271,9 +1272,20 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::PREPROCESS]->appendKwd("strategy", CbcParameters::IPPStrategy);
   parameters_[CbcParam::PREPROCESS]->appendKwd("aggregate", CbcParameters::IPPAggregate);
   parameters_[CbcParam::PREPROCESS]->appendKwd("forcesos", CbcParameters::IPPForceSOS);
+#if CBC_USE_PAPILO
+  parameters_[CbcParam::PREPROCESS]->appendKwd("papilob!egin", CbcParameters::IPPPapilo);
+  parameters_[CbcParam::PREPROCESS]->appendKwd("papilo2b!egin", CbcParameters::IPPPapilo2);
+  parameters_[CbcParam::PREPROCESS]->appendKwd("papilo", CbcParameters::IPPPapiloEnd);
+  parameters_[CbcParam::PREPROCESS]->appendKwd("papilo2", CbcParameters::IPPPapilo2End);
+#endif
   parameters_[CbcParam::PREPROCESS]->appendKwd("stop!aftersaving", CbcParameters::IPPStopAfterSaving);
   parameters_[CbcParam::PREPROCESS]->appendKwd("equalallstop", CbcParameters::IPPEqualAllStop);
-
+#if CBC_USE_PAPILO
+  parameters_[CbcParam::PREPROCESS]->appendKwd("papilobeginstop", CbcParameters::IPPPapiloStop);
+  parameters_[CbcParam::PREPROCESS]->appendKwd("papilo2beginstop", CbcParameters::IPPPapilo2Stop);
+  parameters_[CbcParam::PREPROCESS]->appendKwd("papilostop", CbcParameters::IPPPapiloStopEnd);
+  parameters_[CbcParam::PREPROCESS]->appendKwd("papilo2stop", CbcParameters::IPPPapilo2StopEnd);
+#endif
   parameters_[CbcParam::SOSPRIORITIZE]->setup(
       "sosP!rioritize", "How to deal with SOS priorities", 
       "This sets priorities for SOS.  Values 'high' and 'low' just set a "
@@ -1392,6 +1404,13 @@ void CbcParameters::addCbcSolverIntParams() {
        code < CbcParam::LASTINTPARAM; code++) {
     getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverIntParam);
   }
+
+  parameters_[CbcParam::AGGREGATEMIXED]->setup(
+       "agg!regatelevel", "Level of aggregation used in CglMixedRounding", -1, 5,
+       "MixedIntegerRounding2 can work on constraints created by aggregating "
+       "constraints in model.  Although the coding for this has been in for "
+       "some time, it is being modified and the user may wish to play with this. "
+       "-1 varies the level at various times.");
 
   parameters_[CbcParam::BKPIVOTINGSTRATEGY]->setup(
       "bkpivot!ing", "Pivoting strategy used in Bron-Kerbosch algorithm", 0, 6);

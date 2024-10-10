@@ -150,8 +150,8 @@ static int callBack(CbcModel *model, int whereFrom)
 	    continue;
 	  if (loValue[i]>upperBound)
 	    break;
-	  loValue[i] = CoinMax(lowerBound,loValue[i]);
-	  upValue[i] = CoinMin(upperBound,upValue[i]);
+	  loValue[i] = std::max(lowerBound,loValue[i]);
+	  upValue[i] = std::min(upperBound,upValue[i]);
 	  pairs[2*nPairs] = loValue[i];
 	  pairs[2*nPairs+1] = upValue[i];
 	  nPairs++;

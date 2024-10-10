@@ -406,6 +406,8 @@ public:
 
   /// Split model and do work in deterministic parallel
   void deterministicParallel();
+  /// Split model and do work in deterministic parallel using fathomMany
+  void deterministicParallel(CbcNode ** nodes);
   /**
        Locks a thread if parallel so that stuff like cut pool
        can be updated and/or used.
@@ -466,8 +468,14 @@ private:
   int numberObjects_;
   OsiObject **saveObjects_;
   int threadStats_[6];
+  int numberThreadsWaiting_;
+  int numberThreadsDone_;
+  int numberThreadsUsed_;
   int defaultParallelIterations_;
   int defaultParallelNodes_;
+  int numberGeneralBranches_;
+  int totalGeneralNodes_;
+  int totalGeneralIterations_;
 };
 #else
 // Dummy threads

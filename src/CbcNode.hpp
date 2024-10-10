@@ -215,6 +215,11 @@ public:
   {
     return nodeInfo_;
   }
+  // Set
+  inline void setNodeInfo(CbcNodeInfo *info)
+  {
+    nodeInfo_ = info;
+  }
 
   // Objective value
   inline double objectiveValue() const
@@ -296,11 +301,11 @@ public:
     branch_ = branchingObject;
   }
   /// The node number
-  inline int nodeNumber() const
+  inline cbc_node_count nodeNumber() const
   {
     return nodeNumber_;
   }
-  inline void setNodeNumber(int node)
+  inline void setNodeNumber(cbc_node_count node)
   {
     nodeNumber_ = node;
   }
@@ -365,7 +370,7 @@ private:
   /// The number of objects unsatisfied at this node.
   int numberUnsatisfied_;
   /// The node number
-  int nodeNumber_;
+  cbc_node_count nodeNumber_;
   /** State
         1 - on tree
         2 - active

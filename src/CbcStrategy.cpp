@@ -15,9 +15,7 @@
 #include <cfloat>
 
 #include "OsiSolverInterface.hpp"
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
-#endif
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcStrategy.hpp"
@@ -186,7 +184,7 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
   CglBKClique generator5;
   generator5.setMaxCallsBK(1000);
   generator5.setExtendingMethod(4);
-  generator5.setPivotingStrategy(3);
+  generator5.setPivotingStrategy(CoinBronKerbosch::PivotingStrategy::Weight);
 
   CglMixedIntegerRounding2 mixedGen;
   CglFlowCover flowGen;
@@ -282,15 +280,15 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
   int currentPasses = model.getMaximumCutPassesAtRoot();
   if (currentPasses >= 0) {
     if (model.getNumCols() < 5000)
-      model.setMaximumCutPassesAtRoot(CoinMax(50, currentPasses)); // use minimum drop
+      model.setMaximumCutPassesAtRoot(std::max(50, currentPasses)); // use minimum drop
     else
-      model.setMaximumCutPassesAtRoot(CoinMax(20, currentPasses));
+      model.setMaximumCutPassesAtRoot(std::max(20, currentPasses));
   } else {
     currentPasses = -currentPasses;
     if (model.getNumCols() < 500)
-      model.setMaximumCutPassesAtRoot(-CoinMax(100, currentPasses)); // always do 100 if possible
+      model.setMaximumCutPassesAtRoot(-std::max(100, currentPasses)); // always do 100 if possible
     else
-      model.setMaximumCutPassesAtRoot(-CoinMax(20, currentPasses));
+      model.setMaximumCutPassesAtRoot(-std::max(20, currentPasses));
   }
 }
 // Setup heuristics
@@ -344,9 +342,9 @@ void CbcStrategyDefault::setupPrinting(CbcModel &model, int modelLogLevel)
     model.messageHandler()->setLogLevel(1);
     model.solver()->messageHandler()->setLogLevel(0);
   } else {
-    model.messageHandler()->setLogLevel(CoinMax(2, model.messageHandler()->logLevel()));
-    model.solver()->messageHandler()->setLogLevel(CoinMax(1, model.solver()->messageHandler()->logLevel()));
-    model.setPrintFrequency(CoinMin(50, model.printFrequency()));
+    model.messageHandler()->setLogLevel(std::max(2, model.messageHandler()->logLevel()));
+    model.solver()->messageHandler()->setLogLevel(std::max(1, model.solver()->messageHandler()->logLevel()));
+    model.setPrintFrequency(std::min(50, model.printFrequency()));
   }
 }
 
@@ -373,7 +371,6 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
     // Pass in models message handler
     process->passInMessageHandler(model.messageHandler());
     OsiSolverInterface *solver = model.solver();
-#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
     if (clpSolver && false) {
       // see if all coefficients multiple of 0.01 (close enough)
@@ -442,7 +439,6 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
         }
       }
     }
-#endif
     {
       // mark some columns as ineligible for presolve
       int numberColumns = solver->getNumCols();
@@ -481,19 +477,17 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       delete[] prohibited;
     }
     int logLevel = model.messageHandler()->logLevel();
-#ifdef CBC_HAS_CLP
     //OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
     ClpSimplex *lpSolver = NULL;
     if (clpSolver) {
       if (clpSolver->messageHandler()->logLevel())
         clpSolver->messageHandler()->setLogLevel(1);
       if (logLevel > -1)
-        clpSolver->messageHandler()->setLogLevel(CoinMin(logLevel, clpSolver->messageHandler()->logLevel()));
+        clpSolver->messageHandler()->setLogLevel(std::min(logLevel, clpSolver->messageHandler()->logLevel()));
       lpSolver = clpSolver->getModelPtr();
       /// If user left factorization frequency then compute
       lpSolver->defaultFactorizationFrequency();
     }
-#endif
     // Tell solver we are in Branch and Cut
     solver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo);
     // Default set of cut generators
@@ -502,7 +496,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
     generator1.setUsingObjective(true);
     generator1.setMaxPass(1);
     generator1.setMaxPassRoot(1);
-    generator1.setMaxProbeRoot(CoinMin(3000, solver->getNumCols()));
+    generator1.setMaxProbeRoot(std::min(3000, solver->getNumCols()));
     generator1.setMaxProbeRoot(123);
     generator1.setMaxElements(100);
     generator1.setMaxElementsRoot(200);
@@ -528,7 +522,6 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       process_ = NULL;
     } else {
       // now tighten bounds
-#ifdef CBC_HAS_CLP
       if (clpSolver) {
         // model has changed
         solver = model.solver();
@@ -541,7 +534,6 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
           feasible = false;
         }
       }
-#endif
       if (feasible) {
         preProcessState_ = 1;
         process_ = process;
@@ -719,7 +711,7 @@ void CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel &model)
   CglBKClique generator5;
   generator5.setMaxCallsBK(1000);
   generator5.setExtendingMethod(4);
-  generator5.setPivotingStrategy(3);
+  generator5.setPivotingStrategy(CoinBronKerbosch::PivotingStrategy::Weight);
 
   CglMixedIntegerRounding2 mixedGen;
   CglFlowCover flowGen;

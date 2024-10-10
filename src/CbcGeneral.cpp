@@ -46,7 +46,7 @@ CbcGeneral::CbcGeneral(const CbcGeneral &rhs)
   : CbcObject(rhs)
 {
 }
-#ifdef CBC_HAS_CLP
+
 #include "OsiClpSolverInterface.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "ClpNode.hpp"
@@ -74,7 +74,6 @@ CbcGeneral::createCbcBranch(OsiSolverInterface * /*solver*/, const OsiBranchingI
   abort();
   return NULL;
 }
-#endif
 #ifdef CBC_TRY_SCIP
 // I have put Scip "interface" here to encourage modifying it
 #include <scip/scip.h>

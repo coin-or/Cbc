@@ -292,7 +292,7 @@ static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
     xScale2 = 1;
   }
   if (xUb < 1.0e10) {
-    xScale = CoinMax(xScale,fabs(xUb));
+    xScale = std::max(xScale,fabs(xUb));
     xScale2 |= 2;
   }
   int xN2 = 0;
@@ -300,7 +300,7 @@ static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
     double value = fabs(xElements[j]);
     if (value > CBC_SAME_CUT_TOLERANCE) {
       xN2++;
-      xScale = CoinMax(xScale,value);
+      xScale = std::max(xScale,value);
     }
   }
   int yScale2 = 0;
@@ -310,7 +310,7 @@ static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
     yScale2 = 1;
   }
   if (yUb < 1.0e10) {
-    yScale = CoinMax(yScale,fabs(yUb));
+    yScale = std::max(yScale,fabs(yUb));
     yScale2 |= 2;
   }
   int yN2 = 0;
@@ -318,7 +318,7 @@ static bool same(const OsiRowCut2 &x, const OsiRowCut2 &y)
     double value = fabs(yElements[j]);
     if (value > CBC_SAME_CUT_TOLERANCE) {
       yN2++;
-      yScale = CoinMax(yScale,value);
+      yScale = std::max(yScale,value);
     }
   }
   bool identical = false;
@@ -618,32 +618,41 @@ int CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut &cut, int whichType)
             else
               break;
           } else {
+	    // managed to get an error== when -O3
+#if 0
             found = j1;
             break;
+#else
+	    // Somehow managed to happen with -O3
+	    // weaken cut (more reliable than deleting)
+	    double xLb = temp[i]->lb();
+	    double xUb = temp[i]->ub();
+	    if (xUb<1.0e10)
+	      temp[i]->setUb(xUb + 1.0+fabs(xUb*1.0e-8));
+	    else
+	      temp[i]->setLb(xLb - 1.0+fabs(xLb*1.0e-8));
+	    ipos = hashCut(*temp[i], hashSize);
+#endif
           }
         } else {
           break;
         }
       }
-      if (found < 0) {
-        assert(hash_[ipos].next == -1);
-        if (ipos == jpos && hash_[ipos].index == -1) {
-          // first
-          hash_[ipos].index = i;
-        } else {
-          // find next space
-          while (true) {
-            ++lastHash_;
-            assert(lastHash_ < hashSize);
-            if (hash_[lastHash_].index == -1)
-              break;
-          }
-          hash_[ipos].next = lastHash_;
-          hash_[lastHash_].index = i;
-        }
+      assert (found < 0);
+      assert(hash_[ipos].next == -1);
+      if (ipos == jpos && hash_[ipos].index == -1) {
+	// first
+	hash_[ipos].index = i;
       } else {
-	printf("bad duplicate\n");
-	abort();
+	// find next space
+	while (true) {
+	  ++lastHash_;
+	  assert(lastHash_ < hashSize);
+	  if (hash_[lastHash_].index == -1)
+	    break;
+	}
+	hash_[ipos].next = lastHash_;
+	hash_[lastHash_].index = i;
       }
     }
     delete[] rowCut_;

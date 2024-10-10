@@ -15,9 +15,7 @@
 #include <cfloat>
 #define JJF_REDUCE_HEURISTICS
 //#define PRINT_DEBUG
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
-#endif
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcHeuristic.hpp"
@@ -303,7 +301,7 @@ bool CbcHeuristic::shouldHeurRun(int whereFrom)
     // Very large howOftenShallow_ will give the original test:
     // (model_->getCurrentPassNumber() != 1)
     //    if ((numInvocationsInShallow_ % howOftenShallow_) != 1) {
-    if ((numInvocationsInShallow_ % howOftenShallow_) != 0) {
+    if (howOftenShallow_ && (numInvocationsInShallow_ % howOftenShallow_) != 0) {
       return false;
     }
     // LL: should we save these nodes in the list of nodes where the heur was
@@ -402,7 +400,7 @@ bool CbcHeuristic::shouldHeurRun_randomChoice()
 #ifdef COIN_DEVELOP
             int old = howOften_;
 #endif
-            howOften_ = CoinMin(CoinMax(static_cast< int >(howOften_ * 1.1), howOften_ + 1), 1000000);
+            howOften_ = std::min(std::max(static_cast< int >(howOften_ * 1.1), howOften_ + 1), 1000000);
 #ifdef COIN_DEVELOP
             printf("Howoften changed from %d to %d for %s\n",
               old, howOften_, heuristicName_.c_str());
@@ -543,10 +541,8 @@ CbcHeuristic::cloneBut(int type)
     solver = model_->solver()->clone();
   else
     solver = model_->continuousSolver()->clone();
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver
     = dynamic_cast< OsiClpSolverInterface * >(solver);
-#endif
   if ((type & 2) != 0) {
     int n = model_->numberObjects();
     int priority = model_->continuousPriority();
@@ -561,7 +557,6 @@ CbcHeuristic::cloneBut(int type)
         }
       }
     }
-#ifdef CBC_HAS_CLP
     if (clpSolver) {
       for (int i = 0; i < n; i++) {
         const OsiObject *obj = model_->object(i);
@@ -573,9 +568,7 @@ CbcHeuristic::cloneBut(int type)
         }
       }
     }
-#endif
   }
-#ifdef CBC_HAS_CLP
   if ((type & 4) != 0 && clpSolver) {
     int options = clpSolver->getModelPtr()->moreSpecialOptions();
     clpSolver->getModelPtr()->setMoreSpecialOptions(options | 64);
@@ -615,7 +608,6 @@ CbcHeuristic::cloneBut(int type)
 	clpSolver->setContinuous(jColumn);
     }
   }
-#endif
   return solver;
 }
 // Whether to exit at once on gap
@@ -631,12 +623,12 @@ bool CbcHeuristic::exitNow(double bestObjective) const
   }
   // See if can stop on gap
   OsiSolverInterface *solver = model_->solver();
-  double bestPossibleObjective = solver->getObjValue() * solver->getObjSense();
-  double absGap = CoinMax(model_->getAllowableGap(),
+  double bestPossibleObjective = solver->getObjValue() * solver->getObjSenseInCbc();
+  double absGap = std::max(model_->getAllowableGap(),
     model_->getHeuristicGap());
-  double fracGap = CoinMax(model_->getAllowableFractionGap(),
+  double fracGap = std::max(model_->getAllowableFractionGap(),
     model_->getHeuristicFractionGap());
-  double testGap = CoinMax(absGap, fracGap * CoinMax(fabs(bestObjective), fabs(bestPossibleObjective)));
+  double testGap = std::max(absGap, fracGap * std::max(fabs(bestObjective), fabs(bestPossibleObjective)));
 
   if (bestObjective - bestPossibleObjective < testGap
     && model_->getCutoffIncrement() >= 0.0) {
@@ -745,7 +737,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   double before = 2 * numberRowsStart + numberColumnsStart;
   if (before > 40000.0) {
     // fairly large - be more conservative
-    double multiplier = 1.0 - 0.3 * CoinMin(100000.0, before - 40000.0) / 100000.0;
+    double multiplier = 1.0 - 0.3 * std::min(100000.0, before - 40000.0) / 100000.0;
     if (multiplier < 1.0) {
       fractionSmall *= multiplier;
 #ifdef CLP_INVESTIGATE
@@ -754,7 +746,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 #endif
     }
   }
-#ifdef CBC_HAS_CLP
   OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
   if (clpSolver && (clpSolver->specialOptions() & 65536) == 0) {
     // go faster stripes
@@ -770,7 +761,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     lpSolver->setSpecialOptions(lpSolver->specialOptions() | 0x01000000); // say is Cbc (and in branch and bound)
     lpSolver->setSpecialOptions(lpSolver->specialOptions() | (/*16384+*/ 4096 + 512 + 128));
   }
-#endif
 #ifdef HISTORY_STATISTICS
   getHistoryStatistics_ = false;
 #endif
@@ -829,7 +819,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
           if (upper[iColumn] > lower[iColumn]) {
             if (solver->isBinary(iColumn))
-              maxUsed = CoinMax(maxUsed, used[iColumn]);
+              maxUsed = std::max(maxUsed, used[iColumn]);
           }
         }
         if (maxUsed) {
@@ -915,7 +905,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   solver->getHintParam(OsiDoReducePrint, takeHint, strength);
   solver->setHintParam(OsiDoReducePrint, true, OsiHintTry);
   solver->setHintParam(OsiDoPresolveInInitial, false, OsiHintTry);
-  double signedCutoff = cutoff * solver->getObjSense();
+  double signedCutoff = cutoff * solver->getObjSenseInCbc();
   solver->setDblParam(OsiDualObjectiveLimit, signedCutoff);
   solver->initialSolve();
   if (solver->isProvenOptimal()) {
@@ -960,7 +950,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       }
     }
 #endif
-#ifdef CBC_HAS_CLP
     OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
     if (clpSolver) {
       clpSolver->getModelPtr()->cleanSolver();
@@ -1011,7 +1000,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       process.passInProhibited(prohibited, numberColumns);
       delete[] prohibited; 
     }
-#endif
     setPreProcessingMode(solver,1);
     solver2 = process.preProcessNonDefault(*solver, 0,
       numberPasses);
@@ -1056,13 +1044,11 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         }
       }
 #endif
-#ifdef CBC_HAS_CLP
       if (clpSolver) {
         OsiClpSolverInterface *clpSolver2
           = dynamic_cast< OsiClpSolverInterface * >(solver2);
 	clpSolver2->setSpecialOptions(clpSolver->specialOptions());
       }
-#endif
       if (returnCode == 1) {
         solver2->resolve();
         CbcModel model(*solver2);
@@ -1070,7 +1056,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         model.setDblParam(CbcModel::CbcStartSeconds, startTime);
         // move seed across
         model.randomNumberGenerator()->setSeed(model_->randomNumberGenerator()->getSeed());
-#ifdef CBC_HAS_CLP
         // redo SOS
         OsiClpSolverInterface *clpSolver
           = dynamic_cast< OsiClpSolverInterface * >(model.solver());
@@ -1109,7 +1094,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 	    delete objects[iSOS];
 	  delete [] objects;
         }
-#endif
         if (numberNodes >= 0) {
           // normal
           model.setSpecialOptions(saveModelOptions | 2048);
@@ -1151,8 +1135,8 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           CbcStrategyDefaultSubTree strategy(model_, 1, 5, 1, 0);
           model.setStrategy(strategy);
           model.solver()->setIntParam(OsiMaxNumIterationHotStart, 10);
-          model.setMaximumCutPassesAtRoot(CoinMin(20, CoinAbs(model_->getMaximumCutPassesAtRoot())));
-          model.setMaximumCutPasses(CoinMin(10, model_->getMaximumCutPasses()));
+          model.setMaximumCutPassesAtRoot(std::min(20, std::abs(model_->getMaximumCutPassesAtRoot())));
+          model.setMaximumCutPasses(std::min(10, model_->getMaximumCutPasses()));
           // Set best solution (even if bad for this submodel)
           if (model_->bestSolution()) {
             const double *bestSolution = model_->bestSolution();
@@ -1297,7 +1281,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
                             4 and static continuous, 5 as 3 but no internal integers
                             6 as 3 but all slack basis!
                             */
-              double value = solver2->getObjSense() * solver2->getObjValue();
+              double value = solver2->getObjSenseInCbc() * solver2->getObjValue();
               int w = pumpTune / 10;
               int ix = w % 10;
               w /= 10;
@@ -1320,7 +1304,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
               if (c) {
                 double cutoff;
                 solver2->getDblParam(OsiDualObjectiveLimit, cutoff);
-                cutoff = CoinMin(cutoff, value + 0.1 * fabs(value) * c);
+                cutoff = std::min(cutoff, value + 0.1 * fabs(value) * c);
                 heuristic4.setFakeCutoff(cutoff);
               }
               if (r) {
@@ -1423,17 +1407,17 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           if (solver3->isProvenOptimal()) {
             // good
             CbcSerendipity heuristic(model);
-            double value = solver3->getObjSense() * solver3->getObjValue();
+            double value = solver3->getObjSenseInCbc() * solver3->getObjValue();
             heuristic.setInputSolution(solver3->getColSolution(), value);
             value = value + 1.0e-7 * (1.0 + fabs(value));
-            value *= solver3->getObjSense();
+            value *= solver3->getObjSenseInCbc();
             model.setCutoff(value);
             model.addHeuristic(&heuristic, "Previous solution", 0);
             //printf("added seren\n");
           } else {
             double value = model_->getMinimizationObjValue();
             value = value + 1.0e-7 * (1.0 + fabs(value));
-            value *= solver3->getObjSense();
+            value *= solver3->getObjSenseInCbc();
             model.setCutoff(value);
             sprintf(generalPrint, "Unable to insert previous solution - using cutoff of %g",
 		    trueObjValue(value));
@@ -1520,11 +1504,10 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             for (int iGenerator = 0; iGenerator < model.numberCutGenerators(); iGenerator++) {
               CbcCutGenerator *generator = model.cutGenerator(iGenerator);
               sprintf(generalPrint,
-                "%s was tried %d times and created %d cuts of which %d were active after adding rounds of cuts (%.3f seconds)",
+                "%s was tried %d times and created %d cuts (%.3f seconds)",
                 generator->cutGeneratorName(),
                 generator->numberTimesEntered(),
                 generator->numberCutsInTotal() + generator->numberColumnCuts(),
-                generator->numberCutsActive(),
                 generator->timeInCutGenerator());
               CglStored *stored = dynamic_cast< CglStored * >(generator->generator());
               if (stored && !generator->numberCutsInTotal())
@@ -1541,37 +1524,34 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           }
         } else {
           // empty model
-          model.setMinimizationObjValue(model.solver()->getObjSense() * model.solver()->getObjValue());
+          model.setMinimizationObjValue(model.solver()->getObjSenseInCbc() * model.solver()->getObjValue());
         }
         if (logLevel > 1)
           model_->messageHandler()->message(CBC_END_SUB, model_->messages())
             << name
             << CoinMessageEol;
-        if (model.getMinimizationObjValue() < CoinMin(cutoff, 1.0e30)) {
+        if (model.getMinimizationObjValue() < std::min(cutoff, 1.0e30)) {
           // solution
           if (model.getNumCols())
             returnCode = model.isProvenOptimal() ? 3 : 1;
           else
             returnCode = 3;
             // post process
-#ifdef CBC_HAS_CLP
           OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model.solver());
           if (clpSolver) {
             ClpSimplex *lpSolver = clpSolver->getModelPtr();
             lpSolver->setSpecialOptions(lpSolver->specialOptions() | 0x01000000); // say is Cbc (and in branch and bound)
           }
-#endif
           //if (fractionSmall_ < 1000000.0)
 	  setPreProcessingMode(model.solver(),2);
           process.postProcess(*model.solver());
 	  setPreProcessingMode(solver,0);
-          if (solver->isProvenOptimal() && solver->getObjValue() * solver->getObjSense() < cutoff) {
+          if (solver->isProvenOptimal() && solver->getObjValue() * solver->getObjSenseInCbc() < cutoff) {
             // Solution now back in solver
             int numberColumns = solver->getNumCols();
             memcpy(newSolution, solver->getColSolution(),
               numberColumns * sizeof(double));
             newSolutionValue = model.getMinimizationObjValue();
-#ifdef CBC_HAS_CLP
             if (clpSolver) {
               if (clpSolver && clpSolver->numberSOS()) {
                 // SOS
@@ -1607,7 +1587,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
                 }
               }
             }
-#endif
           } else {
             // odd - but no good
             returnCode = 0; // so will be infeasible
@@ -1753,6 +1732,12 @@ void CbcHeuristicNode::gutsOfConstructor(CbcModel &model)
 {
   //  CbcHeurDebugNodes(&model);
   CbcNode *node = model.currentNode();
+  if (!node) {
+    // at root
+    brObj_ = NULL;
+    numObjects_ = 0;
+    return;
+  }
   brObj_ = new CbcBranchingObject *[node->depth()];
   CbcNodeInfo *nodeInfo = node->nodeInfo();
   int cnt = 0;
@@ -1924,7 +1909,7 @@ CbcHeuristicNode::minDistance(const CbcHeuristicNodeList &nodeList) const
 {
   double minDist = COIN_DBL_MAX;
   for (int i = nodeList.size() - 1; i >= 0; --i) {
-    minDist = CoinMin(minDist, distance(nodeList.node(i)));
+    minDist = std::min(minDist, distance(nodeList.node(i)));
   }
   return minDist;
 }
@@ -2111,7 +2096,7 @@ int CbcRounding::solution(double &solutionValue,
     heuristicName(), numRuns_, numCouldRun_, when_);
 #endif
   OsiSolverInterface *solver = model_->solver();
-  double direction = solver->getObjSense();
+  double direction = solver->getObjSenseInCbc();
   double newSolutionValue = direction * solver->getObjValue();
   return solution(solutionValue, betterSolution, newSolutionValue);
 }
@@ -2149,7 +2134,7 @@ int CbcRounding::solution(double &solutionValue,
   int numberIntegers = model_->numberIntegers();
   const int *integerVariable = model_->integerVariable();
   int i;
-  double direction = solver->getObjSense();
+  double direction = solver->getObjSenseInCbc();
   //double newSolutionValue = direction*solver->getObjValue();
   int returnCode = 0;
   // Column copy
@@ -2615,7 +2600,7 @@ int CbcRounding::solution(double &solutionValue,
                 if (!isInteger)
                   distance = -gap / value;
                 else
-                  distance = CoinMax(-gap / value, 1.0);
+                  distance = std::max(-gap / value, 1.0);
               }
             } else if (rowActivity[iRow] < rowLower[iRow] - primalTolerance) {
               // infeasible below
@@ -2626,7 +2611,7 @@ int CbcRounding::solution(double &solutionValue,
                 if (!isInteger)
                   distance = -gap / value;
                 else
-                  distance = CoinMax(-gap / value, 1.0);
+                  distance = std::max(-gap / value, 1.0);
               }
             } else {
               // feasible
@@ -2712,7 +2697,9 @@ int CbcRounding::solution(double &solutionValue,
           move = -1.0;
         else if (cost < 0.0)
           move = 1.0;
-        while (move) {
+	int times=20;
+        while (move && times) {
+	  times--;
           bool good = true;
           double newValue = newSolution[iColumn] + move;
           if (newValue < lower[iColumn] - useTolerance || newValue > upper[iColumn] + useTolerance) {
@@ -3053,8 +3040,8 @@ int CbcHeuristicPartial::solution(double &solutionValue,
       double value = hotstartSolution[iColumn];
       double lower = colLower[iColumn];
       double upper = colUpper[iColumn];
-      value = CoinMax(value, lower);
-      value = CoinMin(value, upper);
+      value = std::max(value, lower);
+      value = std::min(value, upper);
       if (fabs(value - floor(value + 0.5)) < 1.0e-8) {
         value = floor(value + 0.5);
         newSolver->setColLower(iColumn, value);

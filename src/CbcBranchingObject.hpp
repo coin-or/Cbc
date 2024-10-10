@@ -87,6 +87,9 @@ public:
     branchIndex_ = 0;
     numberBranches_ = value;
   }
+  /// Number of branches to do
+  inline int numberBranches() const
+  { return numberBranches_; }
 
   /** \brief Execute the actions required to branch, as specified by the
            current state of the branching object, and advance the object's

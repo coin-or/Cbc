@@ -1,4 +1,5 @@
 /*
+
   Copyright (C) 2007, Lou Hafer, International Business Machines Corporation
   and others.  All Rights Reserved.
 
@@ -246,6 +247,10 @@ int pushCbcSolverIntParam(CoinParam &param)
       Figure out what we're doing and set the relevant field.
     */
   switch (cbcParamCode) {
+  case CbcParam::AGGREGATEMIXED: {
+    parameters->setMixedRoundStrategy(val);
+    break;
+  }
   case CbcParam::BKPIVOTINGSTRATEGY: {
     parameters->setBkPivotStrategy(val);
     break;

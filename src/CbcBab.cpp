@@ -368,7 +368,7 @@ void installCutGenerators(CbcParameters *parameters, CbcModel *model)
     */
   {
     double objFrac = fabs(model->getMinimizationObjValue()) * .001 + .0001;
-    double minDrop = CoinMin(.05, objFrac);
+    double minDrop = std::min(.05, objFrac);
     model->setMinimumDrop(minDrop);
   }
   /*
@@ -791,9 +791,7 @@ int doBaCParam(CoinParam &param)
     CbcCutGenerator *generator = babModel.cutGenerator(iGen);
     std::cout << generator->cutGeneratorName() << " was tried "
               << generator->numberTimesEntered() << " times and created "
-              << generator->numberCutsInTotal() << " cuts of which "
-              << generator->numberCutsActive()
-              << " were active after adding rounds of cuts";
+              << generator->numberCutsInTotal() << " cuts";
     if (generator->timing()) {
       std::cout << " ( " << generator->timeInCutGenerator() << " seconds)";
     }

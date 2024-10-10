@@ -201,6 +201,7 @@ public:
       
       // Integer Parameters
       FIRSTINTPARAM,
+      AGGREGATEMIXED,
       BKPIVOTINGSTRATEGY,
       BKMAXCALLS,
       BKCLQEXTMETHOD,

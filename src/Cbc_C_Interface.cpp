@@ -61,8 +61,6 @@
 #include <OsiAuxInfo.hpp>
 #include "CoinFileIO.hpp"
 
-using namespace std;
-
 static void *xmalloc( const size_t size );
 static void *xrealloc( void *ptr, const size_t newSize );
 static void Cbc_updateSlack( Cbc_Model *model, const double *ractivity );
@@ -165,8 +163,8 @@ struct Cbc_Model {
    **/
   OsiClpSolverInterface *solver_;
 
-  vector< string > vcbcOptions; // to keep the order of the options
-  map< string, string > cbcOptions; // to quickly check current value of option
+  std::vector< std::string > vcbcOptions; // to keep the order of the options
+  std::map< std::string, std::string > cbcOptions; // to quickly check current value of option
 
   char relax_;
 
@@ -187,7 +185,7 @@ struct Cbc_Model {
   int *cIdx;
   double *cCoef;
 
-  vector< double > *iniSol;
+  std::vector< double > *iniSol;
   double iniObj;
 
   // buffer for rows
@@ -212,7 +210,7 @@ struct Cbc_Model {
   cbc_callback userCallBack;
 
   cbc_cut_callback cut_callback;
-  string cutCBName;
+  std::string cutCBName;
   void *cutCBData;
   int cutCBhowOften;
   char cutCBAtSol;
@@ -256,11 +254,12 @@ struct Cbc_Model {
   /* space to query conflict graph */
   size_t cg_space;
   size_t *cg_neighs;
-  bool *cg_iv;
+  char *cg_iv;
 
   // parameters
   enum LPMethod lp_method;
   enum DualPivot dualp;
+  enum LPReductions red_type = LPR_Default;
 
   // lazy constraints
   CglStored *lazyConstrs;
@@ -518,7 +517,7 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
         if (this->inc_callback != NULL) {
           int charSize = 0;
           const double *x = solver->getColSolution();
-          std::vector< std::pair<string, double> > sol;
+          std::vector< std::pair<std::string, double> > sol;
           for (int i = 0; (i < solver->getNumCols()); ++i) {
             if (fabs(x[i]) <= 1e-7)
                 continue;
@@ -787,7 +786,7 @@ static void Cbc_checkSpaceColBuffer( Cbc_Model *model, int additionlNameSpace, i
     model->colSpace = INI_COL_SPACE;
     int c = model->colSpace;
     model->nCols = 0;
-    model->cNameSpace = max(INI_COL_SPACE*7, additionlNameSpace*10);
+    model->cNameSpace = std::max(INI_COL_SPACE*7, additionlNameSpace*10);
 
     model->cNameStart = (int *) xmalloc( sizeof(int)*c );
     model->cNameStart[0] = 0;
@@ -800,7 +799,7 @@ static void Cbc_checkSpaceColBuffer( Cbc_Model *model, int additionlNameSpace, i
     model->cStart = (CoinBigIndex *) xmalloc( sizeof(CoinBigIndex)*c );
     model->cStart[0] = 0;
 
-    model->cElementsSpace = max(INI_COL_SPACE*5, additionalNzSpace*10);
+    model->cElementsSpace = std::max(INI_COL_SPACE*5, additionalNzSpace*10);
     model->cIdx = (int *) xmalloc( sizeof(int)*model->cElementsSpace );
     model->cCoef = (double *) xmalloc( sizeof(double)*model->cElementsSpace );
   }
@@ -826,7 +825,7 @@ static void Cbc_checkSpaceColBuffer( Cbc_Model *model, int additionlNameSpace, i
     int reqsize = slen + model->cNameStart[model->nCols]+1;
     if (reqsize>model->cNameSpace)
     {
-      model->cNameSpace = max(model->cNameSpace*2, additionlNameSpace);
+      model->cNameSpace = std::max(model->cNameSpace*2, additionlNameSpace);
       model->cNames = (char *) xrealloc( model->cNames, sizeof(char)*model->cNameSpace );
     }
 
@@ -857,7 +856,7 @@ static void Cbc_addColBuffer( Cbc_Model *model,
 
   int ps = model->cNameStart[p];
   strncpy( model->cNames+ps, name, MAX_COL_NAME_SIZE );
-  int len = min( (int)strlen(name), MAX_COL_NAME_SIZE );
+  int len = std::min( (int)strlen(name), MAX_COL_NAME_SIZE );
 
   int stNz = model->cStart[p];
 
@@ -922,7 +921,7 @@ static void Cbc_checkSpaceRowBuffer(Cbc_Model *model, int nzRow, int rowNameLen)
     model->rIdx = (int *)xmalloc(sizeof(int)*model->rElementsSpace);
     model->rCoef = (double *)xmalloc(sizeof(double)*model->rElementsSpace);
 
-    model->rNameSpace = max(INI_ROW_SPACE*10, rowNameLen*10);
+    model->rNameSpace = std::max(INI_ROW_SPACE*10, rowNameLen*10);
     model->rNames = (char *)xmalloc(sizeof(char)*model->rNameSpace);
   }
   else
@@ -1439,7 +1438,7 @@ Cbc_setInitialSolution(Cbc_Model *model, const double *sol)
     double *iniSol = &((*model->iniSol)[0]);
     memcpy( iniSol, sol, sizeof(double)*Cbc_getNumCols(model) );
   } else {
-    model->iniSol = new vector<double>(sol, sol+n);
+    model->iniSol = new std::vector<double>(sol, sol+n);
   }
 
   model->iniObj = objval;
@@ -1473,9 +1472,9 @@ Cbc_getIntParam(Cbc_Model *model, enum IntParam which) {
 void CBC_LINKAGE
 Cbc_setParameter(Cbc_Model *model, const char *name, const char *value)
 {
-  if (model->cbcOptions.find(string(name))==model->cbcOptions.end())
-    model->vcbcOptions.push_back(string(name));
-  model->cbcOptions[name] = string(value);
+  if (model->cbcOptions.find(std::string(name))==model->cbcOptions.end())
+    model->vcbcOptions.push_back(std::string(name));
+  model->cbcOptions[name] = std::string(value);
 }
 
 /* Fills in array with problem name  */
@@ -1650,10 +1649,10 @@ Cbc_maxNameLength(Cbc_Model *model)
 
   // go trough buffered names also
   for ( size_t i=0 ; (i<(size_t)model->nCols) ; ++i )
-    result = max( result, strlen(model->cNames+model->cNameStart[i]) );
+    result = std::max( result, strlen(model->cNames+model->cNameStart[i]) );
 
   for ( size_t i=0 ; (i<(size_t)model->nRows) ; ++i )
-    result = max( result, strlen(model->rNames+model->rNameStart[i]) );
+    result = std::max( result, strlen(model->rNames+model->rNameStart[i]) );
 
   return result;
 }
@@ -1763,7 +1762,7 @@ static void Cbc_addAllSOS( Cbc_Model *model, CbcModel &cbcModel );
 static void Cbc_addMS( Cbc_Model *model, CbcModel &cbcModel  );
 
 int CBC_LINKAGE
-Cbc_solveLinearProgram(Cbc_Model *model) 
+Cbc_solveLinearProgram(Cbc_Model *model)
 {
   Cbc_flush( model );
   OsiClpSolverInterface *solver = model->solver_;
@@ -1909,6 +1908,10 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   /* for integer or linear optimization starting with LP relaxation */
   ClpSolve clpOptions;
+  if (model->red_type == LPR_NoDualReds){
+    // set special option in Clp to disable dual reductions
+    clpOptions.setSpecialOption(5, 1);
+  }
   char methodName[256] = "";
   switch (model->lp_method) {
     case LPM_Auto:
@@ -2015,7 +2018,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
 void Cbc_updateSlack( Cbc_Model *model, const double *ractivity ) {
   if (model->slack == NULL) {
-    model->slack = new vector<double>();
+    model->slack = new std::vector<double>();
   }
   model->slack->resize(Cbc_getNumRows(model));
 
@@ -2038,7 +2041,7 @@ void Cbc_updateSlack( Cbc_Model *model, const double *ractivity ) {
         slack_[i] = fabs(activity-rhs);
         break;
       case 'R':
-        slack_[i] = min( model->solver_->getRowUpper()[i] - activity, 
+        slack_[i] = std::min( model->solver_->getRowUpper()[i] - activity,
                          activity - model->solver_->getRowLower()[i] );
         break;
     }
@@ -2114,7 +2117,7 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
 
   /* allocating space for MIP solution(s) related structures */
   if (model->mipBestSolution == NULL) {
-    model->mipSavedSolution = new std::vector< vector< double > >();
+    model->mipSavedSolution = new std::vector< std::vector< double > >();
     model->mipSavedSolutionObj = new std::vector< double >();
     model->mipBestSolution = new std::vector< double >();
     model->mipRowActivity = new std::vector< double >();
@@ -2175,8 +2178,8 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
     model->colValuesMS = NULL;
   }
 
-  vector< string > cnames;
-  vector< double > cvalues;
+  std::vector< std::string > cnames;
+  std::vector< double > cvalues;
   model->charSpaceMS = 0;
   for ( int j=0 ; (j<cbcModel.getNumCols()) ; ++j ) {
     if ( cbcModel.bestSolution()[j] >= 1e-8 ) {
@@ -2357,16 +2360,16 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
       // aditional parameters specified by user as strings
-      std::deque< string > inputQueue;
+      std::deque< std::string > inputQueue;
       for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
-        string param = model->vcbcOptions[i];
-        string val = model->cbcOptions[param];
+        std::string param = model->vcbcOptions[i];
+        std::string val = model->cbcOptions[param];
         if (val.size()) {
-          stringstream ss;
+          std::stringstream ss;
           ss << "-" << param << "=" << val;
           inputQueue.push_back(ss.str().c_str());
         } else {
-          stringstream ss;
+          std::stringstream ss;
           ss << "-" << param;
           inputQueue.push_back(ss.str());
         }
@@ -2442,7 +2445,7 @@ Cbc_solve(Cbc_Model *model)
         int numberThreads = model->int_param[INT_PARAM_THREADS];
         if (numberThreads >= 1) {
           cbcModel.setNumberThreads(numberThreads);
-          cbcModel.setThreadMode(CoinMin(numberThreads / 100, 7));
+          cbcModel.setThreadMode(std::min(numberThreads / 100, 7));
         }
       }
 #endif
@@ -2497,7 +2500,7 @@ void CBC_LINKAGE Cbc_addCutCallback(
     char atSolution )
 {
   model->cut_callback = cutcb;
-  model->cutCBName = string(name);
+  model->cutCBName = std::string(name);
   model->cutCBData = appData;
   model->cutCBhowOften = howOften;
   model->cutCBAtSol = atSolution;
@@ -3330,7 +3333,7 @@ Cbc_clone(Cbc_Model *model)
   result->lastOptimization = model->lastOptimization;
 
   if (model->slack) {
-    result->slack = new vector<double>(model->slack->begin(), model->slack->end());
+    result->slack = new std::vector<double>(model->slack->begin(), model->slack->end());
   }
   else {
     result->slack = NULL;
@@ -3350,7 +3353,7 @@ Cbc_clone(Cbc_Model *model)
   Cbc_iniBuffer(result);
 
   if (model->iniSol) {
-    result->iniSol = new vector<double>( model->iniSol->begin(), model->iniSol->end() );
+    result->iniSol = new std::vector<double>( model->iniSol->begin(), model->iniSol->end() );
     result->iniObj = model->iniObj;
   }
   else
@@ -3429,10 +3432,10 @@ Cbc_clone(Cbc_Model *model)
   result->mipNodeCount = model->mipNodeCount;
 
   if (model->mipSavedSolution) {
-    result->mipSavedSolution = new vector< vector<double> >(model->mipSavedSolution->begin(), model->mipSavedSolution->end());
-    result->mipSavedSolutionObj = new vector<double>(model->mipSavedSolutionObj->begin(), model->mipSavedSolutionObj->end());
-    result->mipBestSolution = new vector<double>(model->mipBestSolution->begin(), model->mipBestSolution->end());
-    result->mipRowActivity = new vector<double>(model->mipRowActivity->begin(), model->mipRowActivity->end());
+    result->mipSavedSolution = new std::vector< std::vector<double> >(model->mipSavedSolution->begin(), model->mipSavedSolution->end());
+    result->mipSavedSolutionObj = new std::vector<double>(model->mipSavedSolutionObj->begin(), model->mipSavedSolutionObj->end());
+    result->mipBestSolution = new std::vector<double>(model->mipBestSolution->begin(), model->mipBestSolution->end());
+    result->mipRowActivity = new std::vector<double>(model->mipRowActivity->begin(), model->mipRowActivity->end());
   } else {
     result->mipSavedSolution = NULL;
     result->mipSavedSolutionObj = NULL;
@@ -3516,6 +3519,17 @@ Cbc_setInteger(Cbc_Model *model, int iColumn)
   VALIDATE_COL_INDEX( iColumn, model );
 
   model->solver_->setInteger(iColumn);
+}
+ 
+/** Change matrix coefficients */
+void CBC_LINKAGE
+Cbc_modifyCoefficient(Cbc_Model *model, int row, int column, double newValue )
+{
+  Cbc_flush(model);
+  VALIDATE_ROW_INDEX(row, model);
+  VALIDATE_COL_INDEX(column, model);
+
+  model->solver_->modifyCoefficient(row, column, newValue);
 }
 
 /** Adds a new column */
@@ -3792,7 +3806,7 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
       model->sosRowStart = (int *) xrealloc(model->sosRowStart, sizeof(int)*(model->sosCap+1) );
       model->sosType = (int *) xrealloc(model->sosRowStart, sizeof(int)*(model->sosCap) );
     } else {
-      model->sosCap = max(1024, numRows);
+      model->sosCap = std::max(1024, numRows);
       model->sosRowStart = (int *) xmalloc(sizeof(int)*(model->sosCap+1) );
       model->sosType = (int *) xmalloc(sizeof(int)*(model->sosCap) );
       model->sosRowStart[0] = 0;
@@ -3808,7 +3822,7 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
     model->sosType[model->nSos+i] = type;
 
   if ( model->sosElSize + newEl > model->sosElCap ) {
-    model->sosElCap = max( 2*model->sosElCap, model->sosElSize + newEl );
+    model->sosElCap = std::max( 2*model->sosElCap, model->sosElSize + newEl );
     model->sosEl = (int *) xrealloc( model->sosEl, sizeof(int)*model->sosElCap );
     model->sosElWeight  = (double *) xrealloc( model->sosElWeight, sizeof(double)*model->sosElCap );
   }
@@ -4069,8 +4083,8 @@ CGNeighbors CBC_LINKAGE CG_conflictingNodes(Cbc_Model *model, void *cgraph, size
     model->cg_space = Cbc_getNumCols(model)*2;
 
     model->cg_neighs  = (size_t *) xmalloc( sizeof(size_t)*model->cg_space );
-    model->cg_iv  = (bool *) xmalloc( sizeof(bool)*model->cg_space );
-    memset(model->cg_iv, 0, sizeof(bool)*model->cg_space);
+    model->cg_iv  = (char *) xmalloc( sizeof(char)*model->cg_space );
+    memset(model->cg_iv, 0, sizeof(char)*model->cg_space);
   }
 
   const CoinStaticConflictGraph *cg = (CoinStaticConflictGraph *)cgraph;
@@ -4745,6 +4759,21 @@ Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm ) {
   model->lp_method = lpm;
 }
 
+/** gets the dual reductions to be used when solving the LP
+ */
+double CBC_LINKAGE
+Cbc_getDualReductionsType(Cbc_Model *model){
+  return model->red_type;
+}
+
+/** sets the dual reductions to be used when solving the LP
+ */
+
+void CBC_LINKAGE
+Cbc_setDualReductionsType(Cbc_Model *model, enum LPReductions red) {
+  model->red_type = red;
+}
+
 
 void * CBC_LINKAGE
 Cbc_getSolverPtr(Cbc_Model *model) {
@@ -4857,7 +4886,7 @@ void Cbc_addAllSOS( Cbc_Model *model, CbcModel &cbcModel ) {
   if (model->nSos == 0)
     return;
 
-  vector< CbcObject *> objects;
+  std::vector< CbcObject *> objects;
   objects.reserve( model->nSos );
   for ( int i=0 ; i<model->nSos ; ++i ) {
     objects.push_back(

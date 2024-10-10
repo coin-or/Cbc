@@ -37,11 +37,8 @@
 #include "CbcCountRowCut.hpp"
 #include "CbcFeasibilityBase.hpp"
 #include "CbcMessage.hpp"
-#ifdef CBC_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #include "ClpSimplexOther.hpp"
-#endif
-using namespace std;
 #include "CglCutGenerator.hpp"
 #include "CbcNodeInfo.hpp"
 

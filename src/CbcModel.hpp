@@ -20,13 +20,6 @@
 #ifndef CBC_OTHER_SOLVER
 #include "OsiClpSolverInterface.hpp"
 #endif
-// ints for some counts - which should really be long ints
-#define CBC_FEW_NODE_COUNTS
-#ifndef CBC_FEW_NODE_COUNTS
-typedef long int node_count;
-#else
-typedef int node_count; 
-#endif
 class CbcCutGenerator;
 class CbcBaseModel;
 class OsiRowCut;
@@ -1091,7 +1084,7 @@ public:
   /// Solution limit reached?
   bool isSolutionLimitReached() const;
   /// Get how many iterations it took to solve the problem.
-  inline node_count getIterationCount() const
+  inline cbc_node_count getIterationCount() const
   {
     return numberIterations_;
   }
@@ -1101,7 +1094,7 @@ public:
     numberIterations_ += value;
   }
   /// Get how many Nodes it took to solve the problem (including those in complete fathoming B&B inside CLP).
-  inline node_count getNodeCount() const
+  inline cbc_node_count getNodeCount() const
   {
     return numberNodes_;
   }
@@ -1111,12 +1104,12 @@ public:
     numberNodes_ += value;
   }
   /// Get how many Nodes were enumerated in complete fathoming B&B inside CLP
-  inline node_count getExtraNodeCount() const
+  inline cbc_node_count getExtraNodeCount() const
   {
     return numberExtraNodes_;
   }
   /// Get how many times complete fathoming B&B was done
-  inline node_count getFathomCount() const
+  inline cbc_node_count getFathomCount() const
   {
     return numberFathoms_;
   }
@@ -1309,6 +1302,10 @@ public:
     //assert (dblParam_[CbcOptimizationDirection]== solver_->getObjSense());
     return dblParam_[CbcOptimizationDirection];
   }
+  /// For getting rid of many getObjSense()'s
+  /// When known to be minimization
+  inline double getObjSenseInCbc() const
+  { assert (getObjSense()==1.0);return 1.0;}
 
   /// Return true if variable is continuous
   inline bool isContinuous(int colIndex) const
@@ -2503,7 +2500,7 @@ public:
   void moveToModel(CbcModel *baseModel, int mode);
   /// Split up nodes
   int splitModel(int numberModels, CbcModel **model,
-    int numberNodes);
+		 int numberNodes,CbcNode ** nodes = NULL);
   /// Start threads
   void startSplitModel(int numberIterations);
   /// Merge models
@@ -2514,7 +2511,7 @@ public:
   ///@name semi-private i.e. users should not use
   //@{
   /// Get how many Nodes it took to solve the problem.
-  int getNodeCount2() const
+  cbc_node_count getNodeCount2() const
   {
     return numberNodes2_;
   }
@@ -2704,12 +2701,12 @@ public:
     return &randomNumberGenerator_;
   }
   /// Set the number of iterations done in strong branching.
-  inline void setNumberStrongIterations(node_count number)
+  inline void setNumberStrongIterations(cbc_node_count number)
   {
     numberStrongIterations_ = number;
   }
   /// Get the number of iterations done in strong branching.
-  inline node_count numberStrongIterations() const
+  inline cbc_node_count numberStrongIterations() const
   {
     return numberStrongIterations_;
   }
@@ -2778,7 +2775,7 @@ public:
     numberFathoms_ = 0;
   }
   /// Number of extra iterations
-  inline int numberExtraIterations() const
+  inline cbc_node_count numberExtraIterations() const
   {
     return numberExtraIterations_;
   }
@@ -2980,11 +2977,7 @@ private:
   /// Number of heuristic solutions
   int numberHeuristicSolutions_;
   /// Cumulative number of nodes
-  node_count numberNodes_;
-#ifndef CBC_FEW_NODE_COUNTS
-  /// Cumulative number of branches
-  node_count numberBranches_;
-#endif
+  cbc_node_count numberNodes_;
   /// Last node where a better feasible solution was found
   int lastNodeImprovingFeasSol_;
   /// Last time when a better feasible solution was found
@@ -2992,11 +2985,11 @@ private:
   /** Cumulative number of nodes for statistics.
         Must fix to match up
     */
-  node_count numberNodes2_;
+  cbc_node_count numberNodes2_;
   /// Cumulative number of iterations
-  node_count numberIterations_;
+  cbc_node_count numberIterations_;
   /// Cumulative number of solves
-  node_count numberSolves_;
+  cbc_node_count numberSolves_;
   /// Status of problem - 0 finished, 1 stopped, 2 difficulties
   int status_;
   /** Secondary status of problem
@@ -3288,13 +3281,13 @@ private:
   int howOftenGlobalScan_;
   /** Number of times global cuts violated.  When global cut pool then this
         should be kept for each cut and type of cut */
-  int numberGlobalViolations_;
+  cbc_node_count numberGlobalViolations_;
   /// Number of extra iterations in fast lp
-  node_count numberExtraIterations_;
+  cbc_node_count numberExtraIterations_;
   /// Number of extra nodes in fast lp
-  node_count numberExtraNodes_;
+  cbc_node_count numberExtraNodes_;
   /// Number of times fast lp entered
-  node_count numberFathoms_;
+  cbc_node_count numberFathoms_;
   /** Value of objective at continuous
         (Well actually after initial round of cuts)
     */
@@ -3347,7 +3340,7 @@ private:
   /// Whether event happened
   mutable bool eventHappened_;
   /// Number of long strong goes
-  int numberLongStrong_;
+  cbc_node_count numberLongStrong_;
   /// Number of old active cuts
   int numberOldActiveCuts_;
   /// Number of new cuts
@@ -3367,7 +3360,7 @@ private:
      */
   int strongStrategy_;
   /// Number of iterations in strong branching
-  int numberStrongIterations_;
+  cbc_node_count numberStrongIterations_;
   /** 0 - number times strong branching done, 1 - number fixed, 2 - number infeasible
         Second group of three is a snapshot at node [6] */
   int strongInfo_[7];
@@ -3444,7 +3437,6 @@ void setCutAndHeuristicOptions(CbcModel &model);
   inline void setPreProcessingMode(OsiSolverInterface * solver,int processMode)
   {}
 #endif
-#ifdef CBC_HAS_CLP
 /**
    A terse way of doing common types of solves.
    Set any extra options in cbcModel e.g. maximum nodes.
@@ -3460,5 +3452,4 @@ int clpBranchAndCut(CbcModel * cbcModel, ClpSimplex * clpModel,
 		    unsigned int options=5);
 int clpBranchAndCut(CbcModel * cbcModel, OsiClpSolverInterface * solver,
 		    unsigned int options=5);
-#endif
 #endif

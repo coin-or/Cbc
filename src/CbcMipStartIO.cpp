@@ -16,8 +16,6 @@
 #include "CbcSOS.hpp"
 #include "CoinTime.hpp"
 
-using namespace std;
-
 bool isNumericStr(const char *str)
 {
   const size_t l = strlen(str);
@@ -77,7 +75,7 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
 	char *name = col[1];
 	double value = atof(col[2]);
 	
-	colValues.push_back(pair< string, double >(string(name), value));
+	colValues.push_back(std::pair< std::string, double >(std::string(name), value));
       }
     }
   } else {
@@ -132,7 +130,7 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
 	
       double value = atof(pipeorcomma+1);
       
-      colValues.push_back(pair< string, double >(string(line), value));
+      colValues.push_back(std::pair< std::string, double >(std::string(line), value));
     }
     if (nBad1||nBad2) {
       sprintf(printLine, "Reading: %s, %d errors.", fileName, nBad1+nBad2);
@@ -145,18 +143,18 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
   if (colValues.size()) {
     sprintf(printLine, "MIPStart values read for %d variables.", static_cast< int >(colValues.size()));
     messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
-    vector< pair< string, double > > fullValues;
+    std::vector< std::pair< std::string, double > > fullValues;
     /* for fast search of column names */
-    map< string, int > colIdx;
+    std::map< std::string, int > colIdx;
     for (int i = 0; i < numCols; i++) {
-      fullValues.push_back(pair< string, double >(solver->getColName(i), 0.0));
+      fullValues.push_back(std::pair< std::string, double >(solver->getColName(i), 0.0));
       colIdx[solver->getColName(i)] = i;
     }
     const double *lower = solver->getColLower();
     const double *upper = solver->getColUpper();
     int nBadValues = 0;
     for (int i = 0; (i < static_cast< int >(colValues.size())); ++i) {
-      map< string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
+      std::map< std::string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
       if (mIt != colIdx.end()) {
         const int idx = mIt->second;
         double v = colValues[i].second;
@@ -202,7 +200,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
   bool foundIntegerSol = false;
   OsiSolverInterface *lp = solver->clone();
 
-  map< string, int > colIdx;
+  std::map< std::string, int > colIdx;
   assert((static_cast< int >(colNames.size())) == lp->getNumCols());
   /* for fast search of column names */
   for (int i = 0; (i < static_cast< int >(colNames.size())); ++i)
@@ -218,8 +216,8 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
 
   // assuming that variables not fixed are more likely to have zero as value,
   // inserting as default objective function 1
-  {
-    vector< double > obj(lp->getNumCols(), 1.0);
+  if (0) { // to get more accurate answers
+    std::vector< double > obj(lp->getNumCols(), lp->getObjSense());
     lp->setObjective(&obj[0]);
   }
 
@@ -275,7 +273,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
     }
   }
   for (int i = 0; (i < static_cast< int >(colValues.size())); ++i) {
-    map< string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
+    std::map< std::string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
     if (mIt == colIdx.end()) {
       if (!notFound)
         strcpy(colNotFound, colValues[i].first.c_str());
@@ -302,10 +300,23 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
   if (extraActions)
     fixed = lp->getNumIntegers();
   if (!fixed) {
-    messHandler->message(CBC_GENERAL, messages)
-      << "Warning: MIPstart solution is not valid, column names do not match, ignoring it."
-      << CoinMessageEol;
-    goto TERMINATE;
+    // but might be SOS
+    if (model) {
+      int numberObjects = model->numberObjects();
+      for (int i = 0; i < numberObjects; i++) {
+	const CbcSOS *object = dynamic_cast< const CbcSOS * >(model->object(i));
+	if (object) {
+	  fixed=1;
+	  break; // SOS assume user is expert
+	}
+      }
+    }
+    if (!fixed) {
+      messHandler->message(CBC_GENERAL, messages)
+	<< "Warning: MIPstart solution is not valid, column names do not match, ignoring it."
+	<< CoinMessageEol;
+      goto TERMINATE;
+    }
   }
 
   if (notFound >= ((static_cast< double >(colNames.size())) * 0.5)) {
@@ -317,7 +328,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
   lp->setHintParam(OsiDoPresolveInInitial, true, OsiHintDo);
 #endif
 
-  lp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
+  //lp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
   lp->initialSolve();
 
   if ((lp->isProvenPrimalInfeasible()) || (lp->isProvenDualInfeasible())) {
@@ -482,7 +493,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
     for ( int i=0 ; (i<lp->getNumCols()) ; ++i )
       obj += realObj[i]*lp->getColSolution()[i];
     compObj = obj;
-    copy(lp->getColSolution(), lp->getColSolution() + lp->getNumCols(), sol);
+    std::copy(lp->getColSolution(), lp->getColSolution() + lp->getNumCols(), sol);
   }
 
   if (foundIntegerSol) {
@@ -556,10 +567,10 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
 	    printf("Row %d inf %g sum %g %g <= %g <= %g\n",
 		   i, inf, rowSum[i], rowLower[i], rowActivity[i], rowUpper[i]);
 #endif
-	  double infeasibility = CoinMax(rowActivity[i]-rowUpper[i],
+	  double infeasibility = std::max(rowActivity[i]-rowUpper[i],
 					 rowLower[i]-rowActivity[i]);
 	  // but allow for errors
-	  double factor = CoinMax(1.0,rowSum[i]*1.0e-3);
+	  double factor = std::max(1.0,rowSum[i]*1.0e-3);
 	  if (infeasibility>largestInfeasibility*factor) {
 	    largestInfeasibility = infeasibility/factor;
 	    printf("Cinf of %g on row %d sum %g scaled %g\n",
@@ -660,10 +671,10 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
 	    printf("Row %d inf %g sum %g %g <= %g <= %g\n",
 		   i, inf, rowSum[i], rowLower[i], rowActivity[i], rowUpper[i]);
 #endif
-	  double infeasibility = CoinMax(rowActivity[i]-rowUpper[i],
+	  double infeasibility = std::max(rowActivity[i]-rowUpper[i],
 					 rowLower[i]-rowActivity[i]);
 	  // but allow for errors
-	  double factor = CoinMax(1.0,rowSum[i]*1.0e-3);
+	  double factor = std::max(1.0,rowSum[i]*1.0e-3);
 	  if (infeasibility>largestInfeasibility*factor) {
 	    largestInfeasibility = infeasibility/factor;
 	    printf("Dinf of %g on row %d sum %g scaled %g\n",

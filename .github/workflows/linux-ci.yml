@@ -23,27 +23,28 @@ jobs:
         flags: [ADD_CXXFLAGS=-fvisibility=hidden]
         download_requirements: [sudo apt install -y -qq gfortran liblapack-dev libmetis-dev libnauty2-dev]
         include:
-          - os: macos-12
+          - os: macos-13
             build_static: false
-            flags: CC=clang OSX=12
+            flags: CC=clang OSX=13
             download_requirements: brew install metis bash
-          - os: macos-12
+          - os: macos-13
             build_static: false
-            flags: CC=gcc-11 CXX=g++-11 OSX=12
+            flags: CC=gcc-13 CXX=g++-13 OSX=13 ADD_CXXFLAGS=-Wl,-ld_classic
             download_requirements: brew install metis bash
-          - os: macos-12
+          - os: macos-14
+            arch: arm64
             build_static: false
-            flags: CC=gcc-12 CXX=g++-12 OSX=12
+            flags: CC=gcc-13 CXX=g++-13 OSX=14 ADD_CXXFLAGS=-Wl,-ld_classic
             download_requirements: brew install metis bash
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{ github.event.repository.name }}
       - name: Install required packages from package manager
         run: ${{ matrix.download_requirements }}
       - name: Checkout coinbrew
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: coin-or/coinbrew
           path: coinbrew
@@ -70,11 +71,11 @@ jobs:
           cp ${{ github.event.repository.name }}/LICENSE dist/
           tar -czvf release.tar.gz -C dist .
       - name: Checkout package name generation script
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: coin-or-tools/platform-analysis-tools
           path: tools
-          ref: 0.0.1
+          ref: 0.0.2
       - name: Retrieve platform info
         run: |
           python3 -m venv venv
@@ -84,10 +85,9 @@ jobs:
           platform_str=`python3 tools/hsf_get_platform.py -b $buildtype`
           echo "platform_string=${platform_str}" >> $GITHUB_ENV
       - name: Upload Artifact
-        if: ${{ github.event_name == 'pull_request'}}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-${{ github.head_ref }}-${{ env.platform_string }}.tar.gz
+          name: ${{ github.event.repository.name }}-${{ env.platform_string }}.tar.gz
           path: release.tar.gz
           if-no-files-found: error
       - name: Upload package to release

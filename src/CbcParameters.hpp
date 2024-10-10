@@ -474,8 +474,8 @@ public:
     PMBoundsAll,
     PMFixInt,
     PMFixAll,
-    PMEndMarker,
-    PMAllCsv
+    PMAllCsv,
+    PMEndMarker
   };
 
   /*! \brief Major status codes for branch-and-cut

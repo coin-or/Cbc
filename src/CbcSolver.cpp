@@ -1642,7 +1642,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		     continue;
 		   }
 		   /* format of file -
-		      comments line starts with *
+		      comments line starts with * or #
 		      first character not blank
 		      command is first - if no - then - added
 		   */
@@ -1650,7 +1650,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		   std::cout << "Extra options - ";
 		   while (fgets(line, 200, fp)) {
 		     // skip comment
-		     if (line[0]=='*')
+		     if (line[0]=='*'|| line[0]=='#')
 		       continue;
 		     int nchar = strlen(line);
 		     if (nchar<2)
@@ -8458,7 +8458,20 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		  int options = babModel_->specialOptions();
 		  babModel_->setSpecialOptions(options|addOptions);
 		}
-                babModel_->branchAndBound(statistics);
+#ifndef CBC_OTHER_SOLVER
+		if (doVector) {
+		  OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
+		  ClpSimplex *lpSolver = solver->getModelPtr();
+                  ClpMatrixBase *matrix = lpSolver->clpMatrix();
+                  if (dynamic_cast<ClpPackedMatrix *>(matrix)) {
+                    ClpPackedMatrix *clpMatrix =
+		      dynamic_cast<ClpPackedMatrix *>(matrix);
+                    clpMatrix->makeSpecialColumnCopy();
+		    lpSolver->setVectorMode(1);
+                  }
+                }
+#endif
+		babModel_->branchAndBound(statistics);
 #ifdef CBC_HAS_NAUTY
                 if (nautyAdded) {
                   int *which = new int[nautyAdded];

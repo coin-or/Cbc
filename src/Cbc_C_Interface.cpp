@@ -1103,6 +1103,9 @@ static void synchronizeParams( CbcModel *model, CbcParameters *parameters ) {
   intValue = model->getRandomSeed();
   parameters->setParamVal(CbcParam::RANDOMSEED, intValue);
 
+  intValue = model->logLevel();
+  parameters->setParamVal(CbcParam::LOGLEVEL, intValue);
+
   double doubleValue;
 
   doubleValue = model->getDblParam(CbcModel::CbcInfeasibilityWeight);

@@ -43,15 +43,6 @@ It can be used in a wide variety of ways through various modeling systems, packa
    * [OpenSolver for Excel](http://opensolver.org)
    * [OpenSolver for Google Sheets](https://opensolver.org/opensolver-for-google-sheets/)
 
-Binaries for most platforms are available for download from
-[here](https://www.coin-or.org/download/binary/Cbc). AMPL also provides
-stand-alone [Cbc
-executables](http://ampl.com/products/solvers/open-source/#cbc) that can be
-used with (or without) AMPL. Julia provides a wide range of
-[binaries](https://github.com/JuliaBinaryWrappers/Cbc_jll.jl/releases).
-Alternatives include [conda](https://github.com/conda-forge/coin-or-cbc-feedstock) and
-your favorite package manager, as detailed [below](https://github.com/coin-or/Cbc#binaries).
-
 Cbc is developed by John Forrest, now retired from IBM Research, and others.
 The project is currently managed by John Forrest, [Ted
 Ralphs](http://github.com/tkralphs), [Stefan
@@ -238,7 +229,7 @@ Steps (based on VS 2013):
 
 If you have `Doxygen` available, you can build a HTML documentation by typing
 
-`make doxygen-docs` 
+`make doxydoc` 
 
 in the build directory. If Cbc was built via `coinbrew`, then the build
 directory will be `./build/Cbc/master` by default. The doxygen documentation main file

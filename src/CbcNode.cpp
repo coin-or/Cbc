@@ -6675,7 +6675,7 @@ int CbcNode::chooseClpBranch(CbcModel *model,
   depth_ = lastNode->depth_ + 1;
   delete branch_;
   branch_ = NULL;
-#ifdef CBC_HAS_NAUTY
+#if 0 //def CBC_HAS_NAUTY
   {
     int nx = model->fixFromGlobalCuts();
     //if (nx)

@@ -5917,6 +5917,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     *model->messagesPointer())
     << general
     << CoinMessageEol;
+#if 0 // taken out as can easily overflow
   sprintf(general, "Breakdown ");
   for (i = 0; i < numberIntegers; i++) {
     int iColumn = integerVariable[i];
@@ -5939,6 +5940,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
     *model->messagesPointer())
     << general
     << CoinMessageEol;
+#endif
   delete[] objMovement;
   if ((solveType & 2) == 0) {
     // Delete the snapshot
@@ -6673,6 +6675,13 @@ int CbcNode::chooseClpBranch(CbcModel *model,
   depth_ = lastNode->depth_ + 1;
   delete branch_;
   branch_ = NULL;
+#ifdef CBC_HAS_NAUTY
+  {
+    int nx = model->fixFromGlobalCuts();
+    //if (nx)
+    //printf("NX %d\n",nx);
+  }
+#endif
   OsiSolverInterface *solver = model->solver();
   //double saveObjectiveValue = solver->getObjValue();
   //double objectiveValue = std::max(solver->getObjSenseInCbc()*saveObjectiveValue,objectiveValue_);

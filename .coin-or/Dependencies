@@ -1,4 +1,4 @@
-ThirdParty/ASL    https://github.com/coin-or-tools/ThirdParty-ASL stable/2.0
+ThirdParty/ASL    https://github.com/coin-or-tools/ThirdParty-ASL stable/2.1
 ThirdParty/Glpk   https://github.com/coin-or-tools/ThirdParty-Glpk master
 ThirdParty/Mumps  https://github.com/coin-or-tools/ThirdParty-Mumps stable/3.0
 Data/Sample       https://github.com/coin-or-tools/Data-Sample master

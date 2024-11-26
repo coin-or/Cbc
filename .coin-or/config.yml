@@ -22,7 +22,7 @@ Description:
 Dependencies:
   - Description: ThirdParty wrapper for building ASL
     URL: https://github.com/coin-or-tools/ThirdParty-ASL
-    Version: stable/2.0
+    Version: stable/2.1
     Required: Optional
   - Description: ThirdParty wrapper for building Glpk
     URL: https://github.com/coin-or-tools/ThirdParty-Glpk

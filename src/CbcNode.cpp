@@ -6675,12 +6675,8 @@ int CbcNode::chooseClpBranch(CbcModel *model,
   depth_ = lastNode->depth_ + 1;
   delete branch_;
   branch_ = NULL;
-#if 0 //def CBC_HAS_NAUTY
-  {
-    int nx = model->fixFromGlobalCuts();
-    //if (nx)
-    //printf("NX %d\n",nx);
-  }
+#ifdef CBC_MORE_USE_GLOBAL_CUTS
+  model->fixFromGlobalCuts();
 #endif
   OsiSolverInterface *solver = model->solver();
   //double saveObjectiveValue = solver->getObjValue();

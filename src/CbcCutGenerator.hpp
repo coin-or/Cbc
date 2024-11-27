@@ -10,8 +10,8 @@
 #include "CglCutGenerator.hpp"
 #include "CbcCutModifier.hpp"
 #include "CbcConfig.h"
+#include "CbcModel.hpp"
 
-class CbcModel;
 class OsiRowCut;
 class OsiRowCutDebugger;
 

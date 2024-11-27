@@ -89,6 +89,17 @@ typedef struct {
   int switches;
   int iModel;
 } rootBundle;
+#ifdef CBC_PROBE_10
+typedef struct {
+  int number10Depth;
+  int lastGoodProbe10Depth;
+  int numberGoodProbe10Depth;
+  int number10DepthChanged;
+  int number10ChangedTotal;
+  int numberInf10Depth;
+  CglProbing * probe10Depth;
+} depth10;
+#endif
 #ifdef CBC_DEBUG_EXTRA
 // This really more for tuning than debugging
 // It allows developer to play around more
@@ -1927,6 +1938,41 @@ void CbcModel::branchAndBound(int doStatistics)
     get_All_rand = new double[get_All_master];
     for (int i=0;i<get_All_master;i++)
       get_All_rand[i]=drand48();
+  }
+#endif
+#ifdef CBC_PROBE_10
+  if ((specialOptions_&2048)==0) {
+    depth10 *info10 = reinterpret_cast<depth10 *>(depth10Probing_);
+    if (info10) {
+      delete info10->probe10Depth;
+      delete info10;
+      depth10Probing_ = NULL;
+    }
+    CglProbing * tempProbing = NULL;
+    for (int i=0;i<numberCutGenerators_;i++) {
+      if (dynamic_cast<CglProbing *>(generator_[i]->generator())) {
+	tempProbing = dynamic_cast<CglProbing *>(generator_[i]->generator());
+	break;
+      }
+    }
+    // Could do when parallel - think later
+    if (tempProbing && numberThreads_<2) {
+      info10 = new depth10;
+      memset(info10,0,sizeof(depth10));
+      depth10Probing_ = info10;
+      CglProbing * probe10Depth = new CglProbing(*tempProbing);
+      // look at these
+      probe10Depth->setUsingObjective(true);
+      probe10Depth->setMaxPass(1);
+      probe10Depth->setMaxPassRoot(0);
+      probe10Depth->setMaxLook(100);
+      probe10Depth->setRowCuts(3);
+      probe10Depth->setMaxElements(300);
+      info10->probe10Depth = probe10Depth;
+      //probe10Depth->setMaxProbeRoot(solver_->getNumCols());
+      // Mark variables to be tightened
+      //void tightenThese(const OsiSolverInterface & solver, int number, const int * which);
+    }
   }
 #endif
   // randomNumberGenerator_.setSeed(987654321);
@@ -4279,6 +4325,34 @@ void CbcModel::branchAndBound(int doStatistics)
   double rootObjectiveValue = solver_->getObjValue(); 
   numberFixedAtRoot_ = 0;
   numberFixedNow_ = 0;
+#ifdef CBC_MORE_USE_GLOBAL_CUTS
+  // sort global cuts
+  if ((specialOptions_&2048)==0) {
+    CbcRowCuts newGlobal;
+    int numberCuts = globalCuts_.sizeRowCuts();
+    const double * lower = solver_->getColLower();
+    const double * upper = solver_->getColUpper();
+    int nTwo=0;
+    for (int i = 0; i < numberCuts; i++) {
+      OsiRowCut *cut = globalCuts_.cut(i);
+      if (cut->row().getNumElements()==2) {
+	nTwo++;
+	newGlobal.addCutIfNotDuplicate(*cut);
+      }
+    }
+    if (nTwo) {
+#ifdef CBC_MORE_PRINTING
+      printf("%d two element global cuts\n",nTwo);
+#endif
+      for (int i = 0; i < numberCuts; i++) {
+	OsiRowCut *cut = globalCuts_.cut(i);
+	if (cut->row().getNumElements()!=2) 
+	  newGlobal.addCutIfNotDuplicate(*cut);
+      }
+      globalCuts_ = newGlobal;
+    }
+  }
+#endif
   if (!parentModel_ && (moreSpecialOptions2_ & 2) != 0) {
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
@@ -4835,8 +4909,7 @@ void CbcModel::branchAndBound(int doStatistics)
   if (newNode) {
     continuousObjective_ = newNode->objectiveValue();
     delete[] continuousSolution_;
-    continuousSolution_ =
-        CoinCopyOfArray(solver_->getColSolution(), numberColumns);
+    continuousSolution_ = NULL;
     continuousInfeasibilities_ = newNode->numberUnsatisfied();
   }
   /*
@@ -6322,6 +6395,20 @@ void CbcModel::branchAndBound(int doStatistics)
     delete [] get_All_rand2;
   }
 #endif
+#ifdef CBC_PROBE_10
+  if ((specialOptions_&2048)==0 && depth10Probing_) {
+    depth10 *info10 = reinterpret_cast<depth10 *>(depth10Probing_);
+#ifdef CBC_MORE_PRINTING
+    printf("%d 10Depth probes %d success %d bounds changed in %d cuts (%d times infeasible)\n",
+	   info10->number10Depth,info10->numberGoodProbe10Depth,
+	   info10->number10ChangedTotal,info10->number10DepthChanged,
+	   info10->numberInf10Depth);
+#endif
+    delete info10->probe10Depth;
+    delete info10;
+    depth10Probing_ = NULL;
+  }
+#endif
   return;
 }
 
@@ -6378,8 +6465,7 @@ void CbcModel::initialSolve() {
   if (solver_->isProvenDualInfeasible())
     originalContinuousObjective_ = -COIN_DBL_MAX;
   delete[] continuousSolution_;
-  continuousSolution_ =
-      CoinCopyOfArray(solver_->getColSolution(), solver_->getNumCols());
+  continuousSolution_ = NULL;
   setPointers(solver_);
   solverCharacteristics_ = NULL;
 }
@@ -6564,12 +6650,13 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
       secsPrintFrequency_(1), lastSecPrintProgress_(0.0),
       numberCutGenerators_(0), generator_(NULL), virginGenerator_(NULL),
       numberHeuristics_(0), heuristic_(NULL), lastHeuristic_(NULL),
-      fastNodeDepth_(-1), eventHandler_(NULL)
+      fastNodeDepth_(-1), eventHandler_(NULL),
 #ifdef CBC_HAS_NAUTY
-      ,
-      symmetryInfo_(NULL), rootSymmetryInfo_(NULL)
+      symmetryInfo_(NULL), rootSymmetryInfo_(NULL),
 #endif
-      ,
+#ifdef CBC_PROBE_10
+      depth10Probing_(NULL),
+#endif
       numberObjects_(0), object_(NULL), ownObjects_(true),
       originalColumns_(NULL), howOftenGlobalScan_(3),
       numberGlobalViolations_(0), numberExtraIterations_(0),
@@ -6652,8 +6739,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   if (numberColumns) {
     // Space for current solution
     currentSolution_ = new double[numberColumns];
-    continuousSolution_ =
-        CoinCopyOfArray(solver_->getColSolution(), numberColumns);
+    continuousSolution_ = NULL;
     usedInSolution_ = new int[numberColumns];
     CoinZeroN(usedInSolution_, numberColumns);
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -6728,7 +6814,7 @@ void CbcModel::assignSolver(OsiSolverInterface *&solver, bool deleteSolver)
     if (nNew > nOld) {
       originalColumns_ = resizeInt(originalColumns_, nOld, nNew);
       usedInSolution_ = resizeInt(usedInSolution_, nOld, nNew);
-      continuousSolution_ = resizeDouble(continuousSolution_, nOld, nNew);
+      continuousSolution_ = NULL;
       hotstartSolution_ = resizeDouble(hotstartSolution_, nOld, nNew);
       bestSolution_ = resizeDouble(bestSolution_, nOld, nNew);
       currentSolution_ = resizeDouble(currentSolution_, nOld, nNew);
@@ -7028,8 +7114,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   // Space for current solution
   if (numberColumns) {
     currentSolution_ = new double[numberColumns];
-    continuousSolution_ =
-        CoinCopyOfArray(solver_->getColSolution(), numberColumns);
+    continuousSolution_ = NULL;
     usedInSolution_ = new int[numberColumns];
     CoinZeroN(usedInSolution_, numberColumns);
   } else {
@@ -7079,6 +7164,9 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
     rootSymmetryInfo_ = new CbcSymmetry(*rhs.rootSymmetryInfo_);
   else
     rootSymmetryInfo_ = NULL;
+#endif
+#ifdef CBC_PROBE_10
+  depth10Probing_ = NULL;
 #endif
   synchronizeModel();
   if (cloneHandler && !defaultHandler_) {
@@ -7167,8 +7255,7 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs) {
     if (numberColumns) {
       // Space for current solution
       currentSolution_ = new double[numberColumns];
-      continuousSolution_ =
-          CoinCopyOfArray(solver_->getColSolution(), numberColumns);
+      continuousSolution_ = NULL;
       usedInSolution_ = new int[numberColumns];
       CoinZeroN(usedInSolution_, numberColumns);
     } else {
@@ -7449,6 +7536,9 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs) {
     else
       rootSymmetryInfo_ = NULL;
 #endif
+#ifdef CBC_PROBE_10
+    depth10Probing_ = NULL;
+#endif
     synchronizeModel();
     cbcColLower_ = NULL;
     cbcColUpper_ = NULL;
@@ -7550,6 +7640,10 @@ void CbcModel::gutsOfDestructor2() {
   symmetryInfo_ = NULL;
   delete rootSymmetryInfo_;
   rootSymmetryInfo_ = NULL;
+#endif
+#ifdef CBC_PROBE_10
+  delete reinterpret_cast<depth10 *>(depth10Probing_);
+  depth10Probing_ = NULL;
 #endif
 }
 // Clears out enough to reset CbcModel
@@ -7783,6 +7877,10 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode) {
 #ifdef CBC_HAS_NAUTY // better to do again
   symmetryInfo_ = NULL;
   rootSymmetryInfo_ = NULL;
+#endif
+#ifdef CBC_PROBE_10
+  delete reinterpret_cast<depth10 *>(depth10Probing_);
+  depth10Probing_ = NULL;
 #endif
   synchronizeModel();
 }
@@ -8441,7 +8539,6 @@ int CbcModel::reducedCostFix()
   const double *upper = solver_->getColUpper();
   const double *solution = solver_->getColSolution();
   const double *reducedCost = solver_->getReducedCost();
-
   int numberFixed = 0;
   int numberTightened = 0;
 
@@ -9041,6 +9138,105 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     Do reduced cost fixing.
   */
   reducedCostFix();
+#ifdef CBC_PROBE_10
+  if (depth10Probing_ &&
+      (currentDepth_==10||(CBC_PROBE_10>2&&currentDepth_>0)) &&
+      (specialOptions_&2048)==0) {
+    // do a quick probe - just for column cuts
+    // could also do before fathommany (i.e. from cbcnode)
+    OsiCuts cs;
+    CglTreeInfo info;
+    info.level = 10;
+    info.pass = 0;
+    info.formulation_rows = solver_->getNumRows();
+    info.inTree = true;
+    // miss out some things
+    info.options = 16384;
+    // if works specialize 
+    depth10 *info10 = reinterpret_cast<depth10 *>(depth10Probing_);
+    int ninfeas = info10->probe10Depth->generateCutsAndModify(*solver_,cs,&info);
+    //int ninfeas = probe10Depth->generateCuts7(*solver_,cs,&info);
+    info10->number10Depth++;
+    if (ninfeas) {
+      // infeasible
+      info10->numberInf10Depth++;
+      info10->numberGoodProbe10Depth +=2;
+      return false;
+    }
+    int nCuts = cs.sizeColCuts();
+    if (!nCuts) {
+      if (info10->number10Depth>info10->lastGoodProbe10Depth+10&&
+	  info10->numberGoodProbe10Depth*10<info10->number10Depth) {
+	// give up
+#ifdef CBC_MORE_PRINTING
+	printf("Giving up after %d 10Depth probes %d success %d bounds changed in %d cuts (%d times infeasible)\n",
+	       info10->number10Depth,info10->numberGoodProbe10Depth,
+	       info10->number10ChangedTotal,info10->number10DepthChanged,
+	       info10->numberInf10Depth);
+#endif
+	delete info10->probe10Depth;
+	delete info10;
+	depth10Probing_ = NULL;
+      }
+    } else {
+      //printf("XYZ after %d 10Depth probes %d success %d bounds changed in %d cuts (%d times infeasible)\n",
+      //       number10Depth,numberGoodProbe10Depth,number10ChangedTotal,number10DepthChanged,numberInf10Depth);
+      // some cuts
+      // how do we see if infeasible
+      info10->lastGoodProbe10Depth=info10->number10Depth;
+      info10->numberGoodProbe10Depth++;
+      int n = 0;
+      const double * lower = solver_->getColLower();
+      const double * upper = solver_->getColUpper();
+      const double * solution = solver_->getColSolution();
+      int numberColumns = solver_->getNumCols();
+      const double * newLower = info10->probe10Depth->colLower();
+      const double * newUpper = info10->probe10Depth->colUpper();
+      // may want resolve even if still feasible??
+      bool resolveNeeded=false;
+      for (int i=0;i<numberColumns;i++) {
+	double lo = newLower[i];
+	if (lo>lower[i]) {
+	  //printf("A %d lower %g to %g\n",i,lower[i],lo);
+	  n++;
+#if CBC_PROBE_10 > 1
+	  if (solver_->isInteger(i)) {
+	    lo = ceil(lo-1.0e-5);
+	    solver_->setColLower(i,lo);
+	    if (lo>solution[i])
+	      resolveNeeded=true;
+	  } else if (lo<=solution[i]) {
+	    solver_->setColLower(i,lo);
+	  }
+#endif
+	}
+	double up = newUpper[i];
+	if (up<upper[i]) {
+	  //printf("A %d upper %g to %g\n",i,upper[i],up);
+	  n++;
+#if CBC_PROBE_10 > 1
+	  if (solver_->isInteger(i)) {
+	    up = floor(up+1.0e-5);
+	    solver_->setColUpper(i,up);
+	    if (up<solution[i])
+	      resolveNeeded=true;
+	  } else if (up>=solution[i]) {
+	    solver_->setColUpper(i,up);
+	  }
+#endif
+	}
+      }
+      info10->number10DepthChanged += n;
+      info10->number10ChangedTotal += n;
+#if CBC_PROBE_10 > 1
+      if (resolveNeeded) {
+	//printf("Resolve needed\n");
+	solver_->resolve();
+      }
+#endif
+    }
+  }
+#endif
   objectiveValue = solver_->getObjValue() * solver_->getObjSenseInCbc();
   // Return at once if numberTries zero
   if (!numberTries) {
@@ -21540,3 +21736,195 @@ int clpBranchAndCut(CbcModel * cbcModel, OsiClpSolverInterface * solver,
   }
   return 0;
 }
+#ifdef CBC_MORE_USE_GLOBAL_CUTS
+/* Fix variables using two element global cuts */
+void CbcModel::fixFromGlobalCuts()
+{
+  // look at global cuts
+  int numberCuts = globalCuts_.sizeRowCuts();
+  const double * lower = solver_->getColLower();
+  const double * upper = solver_->getColUpper();
+#ifdef CBC_COUNT_FIX
+  int nFixed=0;
+#endif
+#define DECREASE 0
+  for (int i = 0; i < numberCuts; i++) {
+    OsiRowCut *COIN_RESTRICT cut = globalCuts_.cut(i);
+    if (cut->row().getNumElements()==2) {
+      const int *COIN_RESTRICT column = cut->row().getIndices();
+      int col0 = column[0];
+      int col1 = column[1];
+      if (lower[col0]==upper[col0] && lower[col1]<upper[col1]) {
+	const double *COIN_RESTRICT element = cut->row().getElements();
+	double lo = cut->lb()-lower[col0]*element[0];
+	double up = cut->ub()-lower[col0]*element[0];
+	double el1 = element[1];
+	double lo1 = lower[col1];
+	double up1 = upper[col1];
+	if (el1>0.0) {
+	  if (el1*up1>up+1.0e-5) {
+	    // up1 can be reduced
+	    up1 = (up+1.0e-5)/el1;
+	    if (isInteger(col1))
+	      up1 = floor(up1+1.0e-5);
+#if DECREASE == 0
+	    if (lo1==up1 ) 
+	      solver_->setColUpper(col1,up1);
+#elif DECREASE > 0
+	      solver_->setColUpper(col1,up1);
+#else
+	      if (up1 < lo1 +1.0e-8) 
+	      solver_->setColUpper(col1,up1);
+#endif
+#ifdef CBC_COUNT_FIX
+	    if (lo1==up1) nFixed++;
+#endif
+	  }
+	  if (el1*lo1<lo) {
+	    // lo1 can be increased
+	    lo1 = (lo-1.0e-5)/el1;
+	    if (isInteger(col1))
+	      lo1 = ceil(lo1-1.0e-5);
+#if DECREASE == 0
+	    if (lo1==up1 ) 
+	      solver_->setColLower(col1,lo1);
+#elif DECREASE > 0
+	      solver_->setColLower(col1,lo1);
+#else
+	      if (up1 < lo1 +1.0e-8) 
+	      solver_->setColLower(col1,lo1);
+#endif
+#ifdef CBC_COUNT_FIX
+	    if (lo1==up1) nFixed++;
+#endif
+	  }
+	} else {
+	  if (el1*up1<lo) {
+	    // up1 can be reduced
+	    up1 = (lo-1.0e-5)/el1;
+	    if (isInteger(col1))
+	      up1 = floor(up1+1.0e-5);
+#if DECREASE == 0
+	    if (lo1==up1 ) 
+	      solver_->setColUpper(col1,up1);
+#elif DECREASE > 0
+	      solver_->setColUpper(col1,up1);
+#else
+	      if (up1 < lo1 +1.0e-8) 
+	      solver_->setColUpper(col1,up1);
+#endif
+#ifdef CBC_COUNT_FIX
+	    if (lo1==up1) nFixed++;
+#endif
+	  }
+	  if (el1*lo1>up) {
+	    // lo1 can be increased
+	    lo1 = (up+1.0e-5)/el1;
+	    if (isInteger(col1))
+	      lo1 = ceil(lo1-1.0e-5);
+#if DECREASE == 0
+	    if (lo1==up1 ) 
+	      solver_->setColLower(col1,lo1);
+#elif DECREASE > 0
+	      solver_->setColLower(col1,lo1);
+#else
+	      if (up1 < lo1 +1.0e-8) 
+	      solver_->setColLower(col1,lo1);
+#endif
+#ifdef CBC_COUNT_FIX
+	    if (lo1==up1) nFixed++;
+#endif
+	  }
+	}
+      } else if (lower[col0]<upper[col0] && lower[col1]==upper[col1]) {
+	const double *COIN_RESTRICT element = cut->row().getElements();
+	double lo = cut->lb()-lower[col1]*element[1];
+	double up = cut->ub()-lower[col1]*element[1];
+	double el0 = element[0];
+	double lo0 = lower[col0];
+	double up0 = upper[col0];
+	if (el0>0.0) {
+	  if (el0*up0>up+1.0e-5) {
+	    // up0 can be reduced
+	    up0 = (up+1.0e-5)/el0;
+	    if (isInteger(col0))
+	      up0 = floor(up0+1.0e-5);
+#if DECREASE == 0
+	    if (lo0==up0 ) 
+	      solver_->setColUpper(col0,up0);
+#elif DECREASE > 0
+	      solver_->setColUpper(col0,up0);
+#else
+	      if (up0 < lo0 +1.0e-8) 
+	      solver_->setColUpper(col0,up0);
+#endif
+#ifdef CBC_COUNT_FIX
+	    if (lo0==up0) nFixed++;
+#endif
+	  }
+	  if (el0*lo0<lo) {
+	    // lo0 can be increased
+	    lo0 = (lo-1.0e-5)/el0;
+	    if (isInteger(col0))
+	      lo0 = ceil(lo0-1.0e-5);
+#if DECREASE == 0
+	    if (lo0==up0 ) 
+	      solver_->setColLower(col0,lo0);
+#elif DECREASE > 0
+	      solver_->setColLower(col0,lo0);
+#else
+	      if (up0 < lo0 +1.0e-8) 
+	      solver_->setColLower(col0,lo0);
+#endif
+#ifdef CBC_COUNT_FIX
+	    if (lo0==up0) nFixed++;
+#endif
+	  }
+	} else {
+	  if (el0*up0<lo) {
+	    // up0 can be reduced
+	    up0 = (lo-1.0e-5)/el0;
+	    if (isInteger(col0))
+	      up0 = floor(up0+1.0e-5);
+#if DECREASE == 0
+	    if (lo0==up0 ) 
+	      solver_->setColUpper(col0,up0);
+#elif DECREASE > 0
+	      solver_->setColUpper(col0,up0);
+#else
+	      if (up0 < lo0 +1.0e-8) 
+	      solver_->setColUpper(col0,up0);
+#endif
+#ifdef CBC_COUNT_FIX
+	    if (lo0==up0) nFixed++;
+#endif
+	  }
+	  if (el0*lo0>up) {
+	    // lo0 can be increased
+	    lo0 = (up+0.0e-5)/el0;
+	    if (isInteger(col0))
+	      lo0 = ceil(lo0-1.0e-5);
+#if DECREASE == 0
+	    if (lo0==up0 ) 
+	      solver_->setColLower(col0,lo0);
+#elif DECREASE > 0
+	      solver_->setColLower(col0,lo0);
+#else
+	      if (up0 < lo0 +1.0e-8) 
+	      solver_->setColLower(col0,lo0);
+#endif
+#ifdef CBC_COUNT_FIX
+	    if (lo0==up0) nFixed++;
+#endif
+	  }
+	}
+      }
+    } else {
+      break;
+    }
+  }
+#ifdef CBC_COUNT_FIX
+  return nFixed;
+#endif
+}
+#endif

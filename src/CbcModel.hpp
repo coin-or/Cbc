@@ -4,6 +4,28 @@
 
 #ifndef CbcModel_H
 #define CbcModel_H
+#ifdef CBC_MORE_CUTS_ETC
+// Switches on a set of defines with just one define in build procedure
+#define CBC_LAGRANGEAN_SOLVERS 1 // extra pass cuts
+#define CBC_PROBE_10 2 // does more probing at times inside Cbc
+#define CBC_MORE_USE_GLOBAL_CUTS
+// These would have to defined in build procedure as not Cbc
+// CLP_USE_OPENBLAS=1  // Needs openblas and makes serial
+// CLP_OLD_PROGRESS=1 // printout on nodes not time
+// CBC_HAS_CLP
+// COIN_FAST_CODE
+// COIN_USE_RESTRICT
+// COIN_PREFETCH
+// CBC_HAS_NAUTY // may not be needed if nauty well installed
+// CBC_LAGRANGEAN_SOLVERS=1
+// USE_MEMCPY
+// COIN_NOTEST_DUPLICATE
+// CBC_PREPROCESS_EXPERIMENT=1
+// SOS_SUB_STUFF
+// FIXED_BOTH_WAYS=1
+// CGL_HAS_CLP_GOMORY
+// CLP_FACTORIZATION
+#endif
 #include <string>
 #include <vector>
 #include "CbcConfig.h"
@@ -2173,6 +2195,7 @@ public:
   }
   /** Set more special options
         at present bottom 6 bits used for shadow price mode
+	(but if bottom 3 bits are zero next 3 can be used for stuff)
         1024 for experimental hotstart
         2048,4096 breaking out of cuts
         8192 slowly increase minimum drop
@@ -2585,6 +2608,10 @@ public:
 
     */
   int addCuts(CbcNode *node, CoinWarmStartBasis *&lastws);
+#ifdef CBC_MORE_USE_GLOBAL_CUTS
+  /** Fix variables using two element global cuts */
+  void fixFromGlobalCuts();
+#endif
 
   /** Traverse the tree from node to root and prep the model
 
@@ -3257,6 +3284,10 @@ private:
   CbcSymmetry *symmetryInfo_;
   /// Root symmetry information
   CbcSymmetry *rootSymmetryInfo_;
+#endif
+#ifdef CBC_PROBE_10 
+  /// Pointer for depth 10 probing etc
+  void *depth10Probing_;
 #endif
   /// Total number of objects
   int numberObjects_;

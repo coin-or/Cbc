@@ -295,6 +295,8 @@ EOF
   cl | *[/\\]cl | cl.exe | *[/\\]cl.exe | \
   clang-cl | *[/\\]clang-cl | clang-cl.exe | *[/\\]clang-cl.exe | \
   icl | *[/\\]icl | icl.exe | *[/\\]icl.exe | \
+  icx | *[/\\]icx | icx.exe | *[/\\]icx.exe | \
+  ifx | *[/\\]ifx | ifx.exe | *[/\\]ifx.exe | \
   ifort | *[/\\]ifort | ifort.exe | *[/\\]ifort.exe )
     func_cl_wrapper "$@"      # Doesn't return...
     ;;

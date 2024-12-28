@@ -182,6 +182,7 @@ void printGeneralWarning(CbcModel &model, std::string message, int type)
 
 #ifndef CLP_OUTPUT_FORMAT
 #define CLP_OUTPUT_FORMAT % 15.8g
+#define CLP_INTEGER_OUTPUT_FORMAT % 15ld
 #endif
 
 #define CLP_QUOTE(s) CLP_STRING(s)
@@ -11166,6 +11167,10 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 sprintf(printFormat, " %s         %s\n",
                         CLP_QUOTE(CLP_OUTPUT_FORMAT),
                         CLP_QUOTE(CLP_OUTPUT_FORMAT));
+                char printIntFormat[50];
+                sprintf(printIntFormat, " %s         %s\n",
+                        CLP_QUOTE(CLP_INTEGER_OUTPUT_FORMAT),
+                        CLP_QUOTE(CLP_OUTPUT_FORMAT));
                 if (printMode > 2 && printMode < 5) {
                   for (iRow = 0; iRow < numberRows; iRow++) {
                     int type = printMode - 3;
@@ -11292,8 +11297,17 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                           }
                         }
                         if (!printingAllAsCsv) {
-                          fprintf(fp, printFormat, primalColumnSolution[iColumn],
-                            dualColumnSolution[iColumn]);
+			  double value = primalColumnSolution[iColumn];
+			  double nearest = floor(value+0.5);
+			  if (!clpSolver->isInteger(iColumn)||fabs(value-nearest)>1.0e-8) {
+			    fprintf(fp, printFormat, value,
+				    dualColumnSolution[iColumn]);
+			  } else {
+			    // allow for very very large integer values
+			    long int iValue = nearest; 
+			    fprintf(fp, printIntFormat, iValue,
+				    dualColumnSolution[iColumn]);
+			  }
                         } else {
                           fprintf(fp,
                             "%s,%d,%s,%.15g,%.15g\n",

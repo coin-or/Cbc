@@ -6735,6 +6735,14 @@ int CbcNode::chooseClpBranch(CbcModel *model,
     int saveLogLevel = simplex->logLevel();
     simplex->setLogLevel(0);
     simplex->dual();
+    if (simplex->status()) {
+#ifdef CBC_MORE_PRINTING
+      model->messageHandler()->message(CBC_FPUMP1, *model->messagesPointer())
+	<< "fathomMany solution -trying again from allslack" << CoinMessageEol;
+#endif
+      simplex->allSlackBasis(true);
+      simplex->dual();
+    }
     simplex->setLogLevel(saveLogLevel);
     double cutoff = model->getCutoff();
     bool goodSolution = true;

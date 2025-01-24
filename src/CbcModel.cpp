@@ -14804,7 +14804,8 @@ nPartiallyFixed %d , nPartiallyFixedBut %d , nUntouched %d\n",
         moreSpecialOptions2_ &= ~2;
       }
       // This is not correct - that way cutoff can go up if maximization
-      double direction = !modelFlipped() ? solver_->getObjSense() : 1.0;
+      double direction = !modelFlipped() ? solver_->getObjSense() : 1.0; 
+      cutoff += 0.001; // relax
       setCutoff(cutoff*direction);
       // change cutoff as constraint if wanted
       if (cutoffRowNumber_ >= 0) {

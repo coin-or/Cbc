@@ -2528,6 +2528,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               if (!mode) {
                  // switch off clique strengthening
                  clqstrMode = "off";
+		 cgraphMode = "off";
               }
               break;
             case CbcParam::HEURISTICSTRATEGY:

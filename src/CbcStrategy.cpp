@@ -154,6 +154,8 @@ void CbcStrategyDefault::setupCutGenerators(CbcModel &model)
   int nNodes = model.getMaximumNodes();
   if (nNodes >= 190000 && nNodes < 190064)
     genFlags = nNodes - 190000;
+#else
+  genFlags=0;
 #endif
 
   CglProbing generator1;

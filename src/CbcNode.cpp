@@ -3647,7 +3647,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                 double changePer = objectiveChange / (down + 1.0e-7);
                 double distance = (cutoff - objectiveValue_) / changePer;
                 distance += 1.0e-3;
-                if (distance < 5.0) {
+                if (distance < 5.0 && down > 1.0e-3) {
 #if TRY_NODE_DOUBLE>0
 		  if (doubleTry==2&&distance<2.0) {
 		    // look carefully
@@ -3943,7 +3943,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                 double changePer = objectiveChange / (up + 1.0e-7);
                 double distance = (cutoff - objectiveValue_) / changePer;
                 distance += 1.0e-3;
-                if (distance < 5.0) {
+                if (distance < 5.0 && up > 1.0e-3) {
 #if TRY_NODE_DOUBLE>0
 		  if (doubleTry==2&&distance<2.0) {
 		    // look carefully

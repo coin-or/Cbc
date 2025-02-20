@@ -7563,7 +7563,8 @@ CbcModel::~CbcModel() {
     delete solver_;
     solver_ = NULL;
   }
-  if (((fastNodeDepth_ >= 1000000 && fastNodeDepth_ < 1001000)
+  if (((fastNodeDepth_ >= 1000000 && fastNodeDepth_ < 1001000
+	&& numberObjects_)
        || (moreSpecialOptions_ & 33554432) != 0) &&
       (specialOptions_&2048) == 0) {
     // delete object off end

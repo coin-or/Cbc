@@ -5515,6 +5515,19 @@ void CbcModel::branchAndBound(int doStatistics)
         lastEvery1000 = numberNodes_ + 1000;
       }
       bool redoTree = nodeCompare_->every1000Nodes(this, numberNodes_);
+      // check for ctrl-c
+      if (parentModel_ && (specialOptions_&2048)==0) {
+	// in restarted search
+	CbcModel * model = parentModel_;
+	while (model) {
+	  if (model->eventHappened()) {
+	    sayEventHappened();
+	    setProblemStatus(5);
+	    break;
+	  }
+	  model = model->parentModel();
+	}
+      }
 #ifdef CHECK_CUT_SIZE
       verifyCutSize(tree_, *this);
 #endif

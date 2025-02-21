@@ -2180,6 +2180,11 @@ public:
   {
     eventHappened_ = true;
   }
+  /// See if event happened
+  inline bool eventHappened()
+  {
+    return eventHappened_;
+  }
   /// Says if normal solver i.e. has well defined CoinPackedMatrix
   inline bool normalSolver() const
   {

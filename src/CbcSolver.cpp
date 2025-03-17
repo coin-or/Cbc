@@ -10793,7 +10793,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 }
 
                 bool printingAllAsCsv = false;
-                if (printMode == 15) {
+                if (printMode == 14) {
                   // when allcsv then set printMode to all and
                   // change the output format to csv
                   printMode = 4;

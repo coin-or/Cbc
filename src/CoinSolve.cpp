@@ -280,7 +280,13 @@ int main(int argc, const char *argv[])
 #endif
     // Put arguments into a queue.
      CoinParamUtils::formInputQueue(inputQueue, "cbc", argc, const_cast< char ** >(argv));
-     returnCode = CbcMain1(inputQueue, model, parameters);
+     // Code for CoinError
+     try {
+       returnCode = CbcMain1(inputQueue, model, parameters);
+     } catch (CoinError& e) {
+       e.print();
+       return 99;
+     }
 #ifdef CBC_DEBUG_EXTRA
      if (debugTuning) {
        printf("Run took %g seconds",CoinCpuTime()-startTime);

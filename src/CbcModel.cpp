@@ -2692,6 +2692,10 @@ void CbcModel::branchAndBound(int doStatistics)
       fastNodeDepth_ = -1;
       moreSpecialOptions_ &= ~33554432; // no diving
     }
+    if (!numberStrong_&&fastNodeDepth_>0) {
+      // does not work if no strong
+      fastNodeDepth_ = -1;
+    }
     if (numberThreads_ > 0 && ((threadMode_&1) == 0 || fastNodeDepth_<=0)) {
       /* switch off fast nodes for now (unless user really wants)
 	 Trouble is that by time mini bab finishes code is

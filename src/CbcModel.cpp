@@ -4983,7 +4983,7 @@ void CbcModel::branchAndBound(int doStatistics)
     masterThread_ = master_->masterThread();
   }
 #endif
-  {
+  if (feasible) {
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
     if (clpSolver && !parentModel_) {

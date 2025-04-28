@@ -14166,6 +14166,36 @@ double CbcModel::checkSolution(double cutoff, double *solution,
           }
 #endif
         }
+	if (solver_->isProvenOptimal()) {
+	  // double double check
+	  int numberColumns = solver_->getNumCols();
+	  const double *solution = solver_->getColSolution();
+	  const double *columnLower = solver_->getColLower();
+	  const double *columnUpper = solver_->getColUpper();
+	  double sumInf = 0.0;
+	  double tolerance;
+	  solver_->getDblParam(OsiPrimalTolerance, tolerance);
+	  for (int i=0;i<numberColumns;i++) {
+	    double value = solution[i];
+	    if (value>columnUpper[i]+tolerance)
+	      sumInf += value-(columnUpper[i]+tolerance);
+	    else if (value<columnLower[i]-tolerance)
+	      sumInf += (columnLower[i]-tolerance)-value;
+	  }
+	  static int badTimes = 0;
+	  char temp[120];
+	  if (!sumInf) { 
+	    sprintf(temp,"Possible tolerance issue - had to re-solve on final check");
+	  } else { 
+	    sprintf(temp,"Possible tolerance issue - sum of infeasibilities on final check - %g",
+		    sumInf);
+	    cutoff = -0.5*COIN_DBL_MAX;
+	  }
+	  if (!badTimes) 
+	    messageHandler()->message(CBC_GENERAL, messages())
+	      << temp << CoinMessageEol;
+	  badTimes++;
+	}
       }
       // assert(solver_->isProvenOptimal());
       solver_->setHintParam(OsiDoDualInInitial, saveTakeHint, saveStrength);

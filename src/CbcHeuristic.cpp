@@ -1011,8 +1011,49 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     } else {
       setPreProcessingMode(solver2,0);
 #ifdef COIN_DEVELOP_z
-      if (numberNodes < 0) {
-        solver2->writeMpsNative("after2.mps", NULL, NULL, 2, 1);
+      // Only way to get to work on restart
+      if (numberNodes < 0 && solver->getRowCutDebugger()) {
+	printf("TRying rowcutdebugger - need sol from /tmp/after2.mps in tmp/after2.sol\n");
+	FILE * fp= fopen("/tmp/after2.sol","r");
+	if (!fp) {
+	  solver->writeMpsNative("/tmp/before2.mps", NULL, NULL, 2, 1);
+	  solver2->writeMpsNative("/tmp/after2.mps", NULL, NULL, 2, 1);
+	  printf("Solve after2 and re-run\n");
+	  exit(77);
+	} else {
+	  int ncols = solver2->getNumCols();
+	  double *sol = new double[ncols];
+	  memset(sol,0,ncols*sizeof(double));
+	  char line[120];
+	  fgets(line,120,fp); // skip first
+	  while(fgets(line,120,fp)) {
+	    // Sequence
+	    char * charA = line;
+	    while(*charA==' ')
+	      charA++;
+	    char name[20];
+	    char * charB = charA;
+	    while(*charB!=' ')
+	      charB++;
+	    *charB='\0';
+	    int sequence = atoi(charA);
+	    // skip name
+	    charB++;
+	    while(*charB!=' ')
+	      charB++;
+	    while(*charB==' ')
+	      charB++; // start of value
+	    charA = charB+1;
+	    while(*charA!=' ')
+	      charA++;
+	    *charA= '\0';
+	    double value = atof(charB);
+	    sol[sequence] = value;
+	  }
+	  fclose(fp);
+	  solver2->activateRowCutDebugger(sol);
+	  delete [] sol;
+	}
       }
 #endif
       // see if too big

@@ -8964,7 +8964,6 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     if (osiclp)
                       osiclp->getModelPtr()->checkUnscaledSolution();
                   }
-
                   // assert(saveSolver->isProvenOptimal());
 #ifndef CBC_OTHER_SOLVER
                   // and original solver
@@ -8997,9 +8996,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   // assert(originalSolver->isProvenOptimal());
 #endif
                   babModel_->assignSolver(saveSolver);
-                  memcpy(bestSolution, babModel_->solver()->getColSolution(),
+                  memcpy(bestSolution, originalSolver->getColSolution(),
                          n * sizeof(double));
-		  babModel_->setObjValue(babModel_->solver()->getObjValue());
+		  // already set babModel_->setObjValue(babModel_->solver()->getObjValue());
                 } else {
                   n = babModel_->solver()->getNumCols();
                   bestSolution = new double[n];
@@ -10850,7 +10849,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
 		  double objValue;
 		  if (!quadObj) {
 		    lpSolver->computeObjectiveValue(false);
-		    objValue = lpSolver->getObjValue();
+		    objValue = lpSolver->getObjValue(); // why not just use model_.getObjValue(); - maybe if no solution
 		  } else {
                     double *solution = lpSolver->primalColumnSolution();
 		    objValue = quadObj->objectiveValue(lpSolver,solution);

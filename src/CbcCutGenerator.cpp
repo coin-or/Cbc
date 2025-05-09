@@ -366,6 +366,28 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
         info2->originalColumns = model_->originalColumns();
         info2->randomNumberGenerator = randomNumberGenerator;
         generator->generateCutsAndModify(*solver, cs, info2);
+#if CGL_DEBUG
+	int numberRowCutsAfter = cs.sizeRowCuts();
+	for (int k = 0; k < numberRowCutsAfter; k++) {
+	  OsiRowCut thisCut = cs.rowCut(k);
+	  printf("cut from %s has bounds %.10g and %.10g\n",
+		 generatorName_, thisCut.lb(), thisCut.ub());
+	  if (thisCut.lb() <= thisCut.ub() && false) {
+	    /* check size of elements.
+	       We can allow smaller but this helps debug generators as it
+	       is unsafe to have small elements */
+	    int n = thisCut.row().getNumElements();
+	    const int *column = thisCut.row().getIndices();
+	    const double *element = thisCut.row().getElements();
+	    assert(n);
+	    for (int i = 0; i < n; i++) {
+	      double value = element[i];
+	      //	      if (fabs(value) <= 1.0e-12 || fabs(value) >= 1.0e20)
+	      //nBad++;
+	    }
+	  }
+	}
+#endif
         doCuts = true;
       } else if (depth) {
         /* The idea behind this is that probing may work in a different
@@ -966,10 +988,21 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
 	    }
 	  }
 	  if (rhs!=origRhs) {
+	    double weaken = fabs(rhs-origRhs);
+#if 0
+	    if (!bad && largest <= largeRatio*smallest) {
+	      if (upper)
+		printf("weakening upper on cut from %.10g to %.10g\n",
+		       origRhs,origRhs+weaken);
+	      else
+		printf("weakening lower on cut from %.10g to %.10g\n",
+		       origRhs,origRhs-weaken);
+	    }
+#endif
 	    if (upper)
-	      thisCut->setUb(rhs);
+	      thisCut->setUb(origRhs+weaken);
 	    else
-	      thisCut->setLb(rhs);
+	      thisCut->setLb(origRhs-weaken);
 	  }
 	  if (bad || largest > largeRatio*smallest) {
 	    // safer to throw away

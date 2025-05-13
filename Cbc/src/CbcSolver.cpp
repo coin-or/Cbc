@@ -7776,9 +7776,11 @@ int CbcMain1(int argc, const char *argv[],
 		  // set time limit for really bad problems
 		  double timeLimit = parameters_[whichParam(CBC_PARAM_DBL_TIMELIMIT_BAB, parameters_)].doubleValue();
 		  bool useCpuTime = !model_.useElapsedTime();
-		  setMaximumSeconds(saveSolver, timeLimit,
-				    time0, time0Elapsed, useCpuTime);
-                  saveSolver->resolve(); 
+		  // But only if not stopped on time!
+		  if (!babModel_->status())
+		    setMaximumSeconds(saveSolver, timeLimit,
+				      time0, time0Elapsed, useCpuTime);
+                  saveSolver->resolve();
                   if (!saveSolver->isProvenOptimal()) {
                     // try all slack
                     CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(babModel_->solver()->getEmptyWarmStart());
@@ -10034,7 +10036,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                   }
                   fprintf(fp, " - objective value %.8f\n", objValue);
                 }
-#endif
+#endif 
                 // make fancy later on
                 int iRow;
                 int numberRows = clpSolver->getNumRows();

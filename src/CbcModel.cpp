@@ -1419,8 +1419,7 @@ void CbcModel::saveModel(OsiSolverInterface *saveSolver,
 	if (numberFixed * 20 < numberColumns)
 	  tryNewSearch = false;
       } else {
-	//if (numberFixed * 20 < numberColumns)
-	if (!numberFixed)
+	if (numberFixed * 20 < numberColumns) //	if (!numberFixed)
 	  tryNewSearch = false;
       }
 #endif
@@ -9679,6 +9678,13 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 #ifdef JJF_ZERO
     // switch on to get all cuts printed
     theseCuts.printCuts();
+    if (debugger) {
+      int numberRowCuts = theseCuts.sizeRowCuts();
+      for (int k = 0; k < numberRowCuts; k++) {
+	OsiRowCut thisCut = theseCuts.rowCut(k);
+	assert (!debugger->invalidCut(thisCut));
+      }
+    }
 #endif
     int numberColumnCuts = theseCuts.sizeColCuts();
     int numberRowCuts = theseCuts.sizeRowCuts();
@@ -11634,7 +11640,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
 	  sum += element[j]*solution[iColumn];
 	}
 	if (sum<rowLower[i]-1.0e-6 || sum>rowUpper[i]+1.0e-6)
-	  printf("bad row %d %g <= %g <= %g\n",
+	  printf("bad row %d %.10g <= %.10g <= %.10g\n",
 		 i,rowLower[i],sum,rowUpper[i]);
       }
       for (int i = 0; i < numberColumns; i++) {
@@ -14119,7 +14125,6 @@ double CbcModel::checkSolution(double cutoff, double *solution,
         // bool saveTakeHint;
         // OsiHintStrength saveStrength;
         // bool savePrintHint;
-        // solver_->writeMpsNative("infeas.mps", NULL, NULL, 2);
         // bool gotHint =
         // (solver_->getHintParam(OsiDoReducePrint,savePrintHint,saveStrength));
         // gotHint =

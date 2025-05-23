@@ -526,7 +526,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       // now tighten bounds
       if (clpSolver) {
         // model has changed
-        solver = model.solver();
+        solver = solver2; //model.solver();
         OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
         ClpSimplex *lpSolver = clpSolver->getModelPtr();
         lpSolver->passInMessageHandler(solver->messageHandler());

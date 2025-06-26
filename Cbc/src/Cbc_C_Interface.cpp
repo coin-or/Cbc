@@ -845,7 +845,7 @@ Cbc_solve(Cbc_Model *model)
   Cbc_flush( model );
 
   OsiSolverInterface *solver = model->solver_;
-  if (solver->getNumIntegers() == 0 || model->relax_ == 1) {
+  if (solver->getNumIntegers() + model->model_->numberObjects() == 0 || model->relax_ == 1) {
     if (solver->basisIsAvailable()) {
       solver->resolve();
     } else {

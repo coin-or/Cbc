@@ -1729,12 +1729,14 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   int i;
   int saveStateOfSearch = model->stateOfSearch() % 10;
   int numberStrong = model->numberStrong();
+  //if (!depth_&&(model->specialOptions()&2048)==0)
+  //numberStrong = numberObjects;
   /* Ranging is switched off.
        The idea is that you can find out the effect of one iteration
        on each unsatisfied variable cheaply.  Then use this
        if you have not got much else to go on.
     */
-#define CBC_RANGING
+  //#define CBC_RANGING
 #ifdef CBC_RANGING
   // must have clp
   // Pass number

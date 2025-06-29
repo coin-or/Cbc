@@ -868,13 +868,15 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
         CoinWarmStartBasis *ws = dynamic_cast< CoinWarmStartBasis * >(solver->getWarmStart());
         if (!ws)
           break;
+        double tolerance;
+        solver->getDblParam(OsiPrimalTolerance, tolerance);
         for (i = 0; i < numberColumns; i++) {
           double value = saveSolution[i];
-          if (value < lower[i]) {
+          if (value < lower[i] - tolerance) {
             saveSolution[i] = lower[i];
             roundAgain = true;
             ws->setStructStatus(i, CoinWarmStartBasis::atLowerBound);
-          } else if (value > upper[i]) {
+          } else if (value > upper[i] + tolerance) {
             saveSolution[i] = upper[i];
             roundAgain = true;
             ws->setStructStatus(i, CoinWarmStartBasis::atUpperBound);
@@ -1675,7 +1677,12 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     for (int i = model->numberIntegers(); i < numberObjects; i++) {
       OsiObject *object = model->modifiableObject(i);
       CbcObject *obj = dynamic_cast< CbcObject * >(object);
-      if (!obj || !obj->optionalObject()) {
+      CbcSimpleIntegerDynamicPseudoCost * ps =
+	dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(obj);
+      // also allow SOS
+      CbcSOS * sos =
+	dynamic_cast<CbcSOS *>(obj);
+      if (!obj || (!obj->optionalObject()&&!ps&&!sos)) {
         double infeasibility = object->checkInfeasibility(&usefulInfo);
         if (infeasibility) {
           useOldWay = true;

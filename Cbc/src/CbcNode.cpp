@@ -1647,7 +1647,12 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     for (int i = model->numberIntegers(); i < numberObjects; i++) {
       OsiObject *object = model->modifiableObject(i);
       CbcObject *obj = dynamic_cast< CbcObject * >(object);
-      if (!obj || !obj->optionalObject()) {
+      CbcSimpleIntegerDynamicPseudoCost * ps =
+	dynamic_cast<CbcSimpleIntegerDynamicPseudoCost *>(obj);
+      // also allow SOS
+      CbcSOS * sos =
+	dynamic_cast<CbcSOS *>(obj);
+      if (!obj || (!obj->optionalObject()&&!ps&&!sos)) {
         double infeasibility = object->checkInfeasibility(&usefulInfo);
         if (infeasibility) {
           useOldWay = true;

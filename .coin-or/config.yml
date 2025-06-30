@@ -1,7 +1,7 @@
 Description:
   Slug: Cbc
   ShortName: Cbc
-  LongName:
+  LongName: COIN-OR Branch-and-cut
   ShortDescription: An LP-based branch-and-cut library.
   LongDescription: |2
     "CBC is an open-source MILP solver. It uses many of the COIN-OR components

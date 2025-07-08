@@ -594,7 +594,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       }
     }
     // if cutoff exists then add constraint
-    bool useCutoff = (fabs(cutoff) < 1.0e20 && (fakeCutoff_ != COIN_DBL_MAX || numberTries > 1));
+    bool useCutoff = (fabs(cutoff) < 1.0e20 && (fakeCutoff_ != COIN_DBL_MAX || numberTries > 0));
     bool tryOneClosePass = fakeCutoff_ < solver->getObjValue();
     // but there may be a close one
     if (firstCutoff < 2.0 * solutionValue && numberTries == 1 && std::min(cutoff, fakeCutoff_) < 1.0e20)
@@ -3196,7 +3196,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
                 else if (value < lower)
                   newSum += lower - value;
               }
-              assert(newSum <= oldSum);
+              assert(newSum <= oldSum+1.0e-3);
               sumInfeasibility += newSum - oldSum;
             }
           }

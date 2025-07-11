@@ -82,7 +82,7 @@ static void Cbc_updateSlack( Cbc_Model *model, const double *ractivity );
   }
 
 // returns a pointer to the first position of a std::vector
-#define VEC_PTR(vec) (&((*vec)[0]))
+#define VEC_PTR(vec) (vec->data())
 
 /* to check if solution (and of which type)
  * is available */
@@ -1438,7 +1438,7 @@ Cbc_setInitialSolution(Cbc_Model *model, const double *sol)
 
   if (model->iniSol) {
     model->iniSol->resize( Cbc_getNumCols(model) );
-    double *iniSol = &((*model->iniSol)[0]);
+    double *iniSol = model->iniSol->data();
     memcpy( iniSol, sol, sizeof(double)*Cbc_getNumCols(model) );
   } else {
     model->iniSol = new std::vector<double>(sol, sol+n);
@@ -1997,7 +1997,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
     model->x = solver->getColSolution();
     model->rActv = solver->getRowActivity();
     Cbc_updateSlack(model, solver->getRowActivity());
-    model->rSlk = &((*(model->slack))[0]);
+    model->rSlk = model->slack->data();
     clps->setMaximumSeconds(prevMaxSecs);
     return 0;
   }
@@ -2148,7 +2148,7 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
   for ( int i=0 ; i<numSols ; ++i ) {
     (*(model->mipSavedSolutionObj))[i] = cbcModel.savedSolutionObjective(i);
     const double *xi = cbcModel.savedSolution(i);
-    double *xd = &((*(model->mipSavedSolution))[i][0]);
+    double *xd = model->mipSavedSolution->operator[](i).data();
     memcpy(xd, xi, sizeof(double)*numCols );
     if (model->int_param[INT_PARAM_ROUND_INT_VARS]) {
       for ( int j=0 ; (j<numCols) ; ++j ) {
@@ -2161,7 +2161,7 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
 
   Cbc_updateSlack(model, cbcModel.getRowActivity() );
   /* storing row activity in MIP sol */
-  memcpy(&((*(model->mipRowActivity))[0]), cbcModel.getRowActivity(), sizeof(double)*numRows );
+  memcpy(model->mipRowActivity->data(), cbcModel.getRowActivity(), sizeof(double)*numRows );
 
   if (cbcModel.getObjSense()==-1) {
     model->obj_value = 0.0;
@@ -2203,7 +2203,7 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
     strcpy(model->colNamesMS[i], cnames[i].c_str());
   }
   model->colValuesMS = (double*)xmalloc(sizeof(double)*model->nColsMS);
-  memcpy(model->colValuesMS, &cvalues[0], sizeof(double)*model->nColsMS);
+  memcpy(model->colValuesMS, cvalues.data(), sizeof(double)*model->nColsMS);
 }
 
 int CBC_LINKAGE
@@ -2227,7 +2227,7 @@ Cbc_solve(Cbc_Model *model)
       model->obj_value = solver->getObjValue();
       Cbc_updateSlack(model, solver->getRowActivity() );
       model->x = solver->getColSolution();
-      model->rSlk = &((*(model->slack))[0]);
+      model->rSlk = model->slack->data();
       model->rActv = solver->getRowActivity();
     }
 
@@ -2268,7 +2268,7 @@ Cbc_solve(Cbc_Model *model)
     
       /* initial solution */
       if (model->iniSol)
-        cbcModel.setBestSolution(&((*model->iniSol)[0]), Cbc_getNumCols(model), model->iniObj, true);
+        cbcModel.setBestSolution(model->iniSol->data(), Cbc_getNumCols(model), model->iniObj, true);
 
       // add cut generator if necessary
       if (model->cut_callback) {
@@ -2782,7 +2782,7 @@ Cbc_savedSolution(Cbc_Model *model, int whichSol)
         fflush(stderr);
         abort();
       }
-      return &((*model->mipSavedSolution)[whichSol][0]);
+      return model->mipSavedSolution->operator[](whichSol).data();
   }
 
   return NULL;
@@ -4904,7 +4904,7 @@ void Cbc_addAllSOS( Cbc_Model *model, CbcModel &cbcModel ) {
         ); // add in objects
   }
 
-  cbcModel.addObjects( (int) objects.size(), &objects[0] );
+  cbcModel.addObjects( (int) objects.size(), objects.data() );
 
   for ( int i=0 ; i<model->nSos ; ++i ) 
     delete objects[i];

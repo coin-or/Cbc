@@ -53,5 +53,8 @@ echo INFO: Starting Tests
 "%BINDIR%\cbc.exe" -dirMiplib %MIPLIBDIR% -unitTest
 @if not %errorlevel%==0 goto :error
 
+"%BINDIR%\CInterfaceTest.exe"
+@if not %errorlevel%==0 goto :error
+
 @echo off
 echo INFO: Finished Tests successfully (%ERRORLEVEL%)

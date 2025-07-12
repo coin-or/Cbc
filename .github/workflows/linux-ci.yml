@@ -18,9 +18,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04]
+        os: [ubuntu-22.04, ubuntu-24.04]
         build_static: [true, false]
-        download_requirements: [sudo apt install -y -qq gfortran liblapack-dev libmetis-dev libnauty2-dev]
+        download_requirements: [sudo apt install -y -qq gfortran liblapack-dev libmetis-dev libnauty-dev]
         include:
           - os: macos-13
             build_static: false
@@ -55,7 +55,6 @@ jobs:
           ADD_BUILD_ARGS=()
           ADD_BUILD_ARGS+=( --tests main --enable-relocatable )
           ADD_BUILD_ARGS+=( --verbosity 2 )
-          [[ ${{ matrix.os }} == ubuntu* ]] && ADD_ARGS+=( --with-nauty-incdir=/usr/include/x86_64-linux-gnu/nauty --with-nauty-lib="-L/usr/lib/ -lnauty" )
           [[ ${{ matrix.build_static }} == "true" ]] && \
           ADD_BUILD_ARGS+=( --static --with-lapack='-llapack -lblas -lgfortran -lquadmath -lm' )
           bash coinbrew/coinbrew fetch ${{ github.event.repository.name }} --skip-update \

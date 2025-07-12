@@ -74,7 +74,7 @@ jobs:
       - name: Build project
         shell: cmd
         run: |
-          msbuild ${{ github.event.repository.name }}\${{ github.event.repository.name }}\MSVisualStudio\v17\${{ github.event.repository.name }}.sln /p:Configuration=Release /p:Platform=x64 /m
+          msbuild ${{ github.event.repository.name }}\${{ github.event.repository.name }}\MSVisualStudio\v17\${{ github.event.repository.name }}.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /m
       - name: Test project
         shell: cmd
         run: |

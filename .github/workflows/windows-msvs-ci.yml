@@ -22,7 +22,8 @@ jobs:
         include: [
           # Only os: windows-2022 has Visual Studio 2022 (v17) installed with toolset v143, which is required.
           # configuration: "Release" or "Debug", platform: "x86" or "x64". See solution Configuration Manager.
-          { os: windows-2022, configuration: "Release", platform: "x64" },
+          { os: windows-2022, configuration: "Debug", platform: "x64" },
+          { os: windows-2025, configuration: "Release", platform: "x64" }
         ]
     steps:
       - name: Set up environment variables

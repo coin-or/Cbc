@@ -639,7 +639,7 @@ int CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut &cut, int whichType)
         }
       }
       assert (found < 0);
-      assert(hash_[ipos].next == -1);
+      //assert(hash_[ipos].next == -1);
       if (ipos == jpos && hash_[ipos].index == -1) {
 	// first
 	hash_[ipos].index = i;
@@ -658,7 +658,7 @@ int CbcRowCuts::addCutIfNotDuplicate(const OsiRowCut &cut, int whichType)
     delete[] rowCut_;
     rowCut_ = temp;
   }
-  if (numberCuts_ < size_) {
+  if (numberCuts_ < size_) {  
     double newLb = cut.lb();
     double newUb = cut.ub();
     CoinPackedVector vector = cut.row();

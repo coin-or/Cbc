@@ -510,6 +510,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   }
   // Number of passes to do
   int maximumPasses = maximumPasses_;
+  const char * intVar = model_->solver()->getColType();
   {
     OsiClpSolverInterface *clpSolver
       = dynamic_cast< OsiClpSolverInterface * >(model_->solver());
@@ -900,7 +901,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
               if (!isHeuristicInteger(solver, iColumn))
                 continue;
               double value = floor(newSolution[iColumn] + 0.5);
-              if (solver->isBinary(iColumn)) {
+              if (intVar[iColumn]==1) {
                 solver->setColLower(iColumn, value);
                 solver->setColUpper(iColumn, value);
               } else {
@@ -925,8 +926,9 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 		const double * sol = solver2->getColSolution();
 		int numberColumns = solver2->getNumCols();
 		solver2->resolve();
+		char * intVar = solver2->getColType(true);
 		for (int i=0;i<numberColumns;i++) {
-		  if (solver2->isIntegerNonBinary(i)) {
+		  if (intVar[i]==2) {
 		    double value = sol[i];
 		    double nearest = floor(value+0.5);
 		    double lo;
@@ -1250,7 +1252,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
             //solver->setObjCoeff(iColumn,scaleFactor*saveObjective[iColumn]);
             solver->setObjCoeff(iColumn, (artificialFactor * saveObjective[iColumn]) / artificialCost_);
           }
-          if (!solver->isBinary(iColumn) && !doGeneral)
+          if (intVar[iColumn]!=1 && !doGeneral)
             continue;
           // deal with fixed variables (i.e., upper=lower)
           if (fabs(lower[iColumn] - upper[iColumn]) < primalTolerance || !isHeuristicInteger(solver, iColumn)) {
@@ -2642,6 +2644,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
   double primalTolerance;
   solver->getDblParam(OsiPrimalTolerance, primalTolerance);
+  const char * intVar = solver->getColType();
 
   int i;
 
@@ -3293,7 +3296,7 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
       double theta = 0.0;
       for (i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
-	if (!solver->isInteger(iColumn))
+	if (!intVar[iColumn])
 	  continue; // may have been made continuous
         double solValue = solution[iColumn];
         assert(fabs(solValue - floor(solValue + 0.5)) < 1.0e-8);

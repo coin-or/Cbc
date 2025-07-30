@@ -70,7 +70,9 @@ bool CbcHeuristicDiveLineSearch::selectVariableToBranch(OsiSolverInterface *solv
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
 
   // get the LP relaxation solution at the root node
-  double *rootNodeLPSol = model_->continuousSolution();
+  const double *rootNodeLPSol = model_->continuousSolution();
+  if (!rootNodeLPSol) 
+    rootNodeLPSol = model_->solver()->getColSolution();
 
   bestColumn = -1;
   bestRound = -1; // -1 rounds down, +1 rounds up

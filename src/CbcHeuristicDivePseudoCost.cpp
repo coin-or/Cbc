@@ -71,7 +71,9 @@ bool CbcHeuristicDivePseudoCost::selectVariableToBranch(OsiSolverInterface *solv
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
 
   // get the LP relaxation solution at the root node
-  double *rootNodeLPSol = model_->continuousSolution();
+  const double *rootNodeLPSol = model_->continuousSolution();
+  if (!rootNodeLPSol) 
+    rootNodeLPSol = model_->solver()->getColSolution();
 
   // get pseudo costs
   double *pseudoCostDown = downArray_;

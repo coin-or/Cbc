@@ -453,7 +453,7 @@ void CbcModel::analyzeObjective()
               cost = objValue;
             else if (cost != objValue)
               cost = -COIN_DBL_MAX;
-            int gap = static_cast<int>(upper[iColumn] - lower[iColumn]);
+            int64_t gap = static_cast<int64_t>(upper[iColumn] - lower[iColumn]);
             if (gap > 1) {
               numberGeneralIntegerObj++;
               numberIntegerWeight += gap;

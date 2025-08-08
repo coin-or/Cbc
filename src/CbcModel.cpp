@@ -427,7 +427,7 @@ void CbcModel::analyzeObjective()
     int numberInteger = 0;
     int numberIntegerObj = 0;
     int numberGeneralIntegerObj = 0;
-    int numberIntegerWeight = 0;
+    int64_t numberIntegerWeight = 0;
     int numberContinuousObj = 0;
     double cost = COIN_DBL_MAX;
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {

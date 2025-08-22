@@ -631,11 +631,13 @@ bool CbcTreeLocal::empty()
       if (model_->messageHandler()->logLevel() > 1)
         printf("inserting cut - now %d cuts, rhs %g %g, cutspace %g, diversification %d\n",
           n, rowCut->lb(), rowCut->ub(), rhs_, diversification_);
+#ifdef CHECK_KNOWN_SOLUTION
       const OsiRowCutDebugger *debugger = model_->solver()->getRowCutDebuggerAlways();
       if (debugger) {
         if (debugger->invalidCut(*rowCut))
           printf("ZZZZTree Global cut - cuts off optimal solution!\n");
       }
+#endif
       for (int i = 0; i < n; i++) {
         rowCut = global->rowCutPtr(i);
         if (model_->messageHandler()->logLevel() > 1)
@@ -829,11 +831,13 @@ void CbcTreeLocal::reverseCut(int state, double bias)
   if (model_->messageHandler()->logLevel() > 1)
     printf("new rhs %g %g, bias %g smallest %g ",
       rowCut->lb(), rowCut->ub(), bias, smallest);
+#ifdef CHECK_KNOWN_SOLUTION
   const OsiRowCutDebugger *debugger = model_->solver()->getRowCutDebuggerAlways();
   if (debugger) {
     if (debugger->invalidCut(*rowCut))
       printf("ZZZZTree Global cut - cuts off optimal solution!\n");
   }
+#endif
 }
 // Delete last cut branch
 void CbcTreeLocal::deleteCut(OsiRowCut &cut)
@@ -1492,11 +1496,13 @@ bool CbcTreeVariable::empty()
       if (model_->messageHandler()->logLevel() > 1)
         printf("inserting cut - now %d cuts, rhs %g %g, cutspace %g, diversification %d\n",
           n, rowCut->lb(), rowCut->ub(), rhs_, diversification_);
+#ifdef CHECK_KNOWN_SOLUTION
       const OsiRowCutDebugger *debugger = model_->solver()->getRowCutDebuggerAlways();
       if (debugger) {
         if (debugger->invalidCut(*rowCut))
           printf("ZZZZTree Global cut - cuts off optimal solution!\n");
       }
+#endif
       for (int i = 0; i < n; i++) {
         rowCut = global->rowCutPtr(i);
         if (model_->messageHandler()->logLevel() > 1)
@@ -1681,11 +1687,13 @@ void CbcTreeVariable::reverseCut(int state, double bias)
   if (model_->messageHandler()->logLevel() > 1)
     printf("new rhs %g %g, bias %g smallest %g ",
       rowCut->lb(), rowCut->ub(), bias, smallest);
+#ifdef CHECK_KNOWN_SOLUTION
   const OsiRowCutDebugger *debugger = model_->solver()->getRowCutDebuggerAlways();
   if (debugger) {
     if (debugger->invalidCut(*rowCut))
       printf("ZZZZTree Global cut - cuts off optimal solution!\n");
   }
+#endif
 }
 // Delete last cut branch
 void CbcTreeVariable::deleteCut(OsiRowCut &cut)

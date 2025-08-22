@@ -2094,6 +2094,7 @@ void CbcModel::branchAndBound(int doStatistics)
         const int *originalColumns = process->originalColumns();
         // allow for cliques etc
         nOrig = std::max(nOrig, originalColumns[numberColumns - 1] + 1);
+#ifdef CHECK_KNOWN_SOLUTION
         // try and redo debugger
         OsiRowCutDebugger *debugger =
             const_cast<OsiRowCutDebugger *>(solver_->getRowCutDebuggerAlways());
@@ -2103,6 +2104,7 @@ void CbcModel::branchAndBound(int doStatistics)
           else
             debugger = NULL; // no idea how to handle (SOS?)
         }
+#endif
         // User-provided solution might have been best. Synchronise.
         if (bestSolution_) {
           // need to redo - in case no better found in BAB
@@ -2229,11 +2231,13 @@ void CbcModel::branchAndBound(int doStatistics)
         CglPreProcess *process = strategy_->process();
         assert(process);
         const int *originalColumns = process->originalColumns();
+#ifdef CHECK_KNOWN_SOLUTION
         // try and redo debugger
         OsiRowCutDebugger *debugger =
             const_cast<OsiRowCutDebugger *>(solver_->getRowCutDebuggerAlways());
         if (debugger)
           debugger->redoSolution(numberColumns, originalColumns);
+#endif
       }
     } else {
       // no preprocessing
@@ -3650,8 +3654,10 @@ void CbcModel::branchAndBound(int doStatistics)
               CoinBigIndex start = rowStart[iRow];
               rc.setRow(rowLength[iRow], column + start, elements + start,
                         false);
+#ifdef CHECK_KNOWN_SOLUTION
               if (debugger)
                 CoinAssert(!debugger->invalidCut(rc));
+#endif
               globalCuts_.addCutIfNotDuplicate(rc);
             }
 
@@ -4999,6 +5005,7 @@ void CbcModel::branchAndBound(int doStatistics)
       The first action is to winnow the live set to remove nodes which are worse
       than the current objective cutoff.
     */
+#ifdef CHECK_KNOWN_SOLUTION
   if (solver_->getRowCutDebuggerAlways()) {
     OsiRowCutDebugger *debuggerX =
         const_cast<OsiRowCutDebugger *>(solver_->getRowCutDebuggerAlways());
@@ -5021,6 +5028,7 @@ void CbcModel::branchAndBound(int doStatistics)
       // abort();
     }
   }
+#endif
   {
     // may be able to change cutoff now
     double cutoff = getCutoff();
@@ -8333,7 +8341,7 @@ int CbcModel::addCuts(CbcNode *node, CoinWarmStartBasis *&lastws) {
           assert(i < maximumWhich_);
           whichGenerator_[numberToAdd] = whichGenerator_[i];
           addCuts[numberToAdd++] = addedCuts_[i];
-#if 1
+#ifdef CHECK_KNOWN_SOLUTION
           if ((specialOptions_ & 1) != 0) {
             const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
             if (debugger)
@@ -8449,8 +8457,7 @@ int CbcModel::addCuts(CbcNode *node, CoinWarmStartBasis *&lastws) {
           solver_->deleteRows(numberCuts, which);
           delete[] which;
         }
-        //#define CHECK_DEBUGGER
-#ifdef CHECK_DEBUGGER
+#ifdef CHECK_KNOWN_SOLUTION
         if ((specialOptions_ & 1) != 0) {
           const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
           if (debugger) {
@@ -8528,7 +8535,6 @@ void CbcModel::synchronizeHandlers(int /*makeDefault*/) {
     }
   }
 }
-
 /*
   Perform reduced cost fixing on integer variables.
 
@@ -8687,6 +8693,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   }
 #endif
 #define STOP_CUTS_NOW 6
+#define START_FATHOM 6
 #if 0
   numberTries=0;
 #else
@@ -8784,6 +8791,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   }
 
   bool onOptimalPath = false;
+#ifdef CHECK_KNOWN_SOLUTION
   const OsiRowCutDebugger *debugger = NULL;
   if ((specialOptions_ & 1) != 0) {
     /*
@@ -8795,6 +8803,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     if (debugger)
       onOptimalPath = (debugger->onOptimalPath(*solver_));
   }
+#endif
   /*
       As the final action in each round of cut generation (the numberTries
      loop), we'll call takeOffCuts to remove slack cuts. These are saved into
@@ -8861,6 +8870,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           }
 #endif
         }
+#ifdef CHECK_KNOWN_SOLUTION
         if ((specialOptions_ & 1) != 0) {
           debugger = continuousSolver_->getRowCutDebugger();
           if (debugger) {
@@ -8871,6 +8881,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
             CoinAssert(!debugger->invalidCut(*cut));
           }
         }
+#endif
       } else {
         makePartialCut(cut);
       }
@@ -8912,7 +8923,6 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   if (problemFeasibility_->feasible(this, 0) < 0) {
     feasible = false; // pretend infeasible
   }
-  //#define CHECK_KNOWN_SOLUTION
 #ifdef CHECK_KNOWN_SOLUTION
   if (onOptimalPath && (solver_->isDualObjectiveLimitReached() || !feasible)) {
     printf("help 1\n");
@@ -9088,6 +9098,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     printf("Infeasible %d rows\n", solver_->getNumRows());
   }
 #endif
+#ifdef CHECK_KNOWN_SOLUTION
   if ((specialOptions_ & 1) != 0) {
     /*
           If the RowCutDebugger said we were compatible with the optimal
@@ -9109,6 +9120,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       assert(feasible);
     }
   }
+#endif
 
   if (!feasible) {
     numberInfeasibleNodes_++;
@@ -9442,8 +9454,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           assert(
               thisCut->violated(cbcColSolution_) > 0.005 /*primalTolerance*/ ||
               thisCut->effectiveness() == COIN_DBL_MAX);
-#define CHECK_DEBUGGER
-#ifdef CHECK_DEBUGGER
+#ifdef CHECK_KNOWN_SOLUTION
           if ((specialOptions_ & 1) != 0 && !parentModel_) {
             CoinAssert(
                 !solver_->getRowCutDebuggerAlways()->invalidCut(*thisCut));
@@ -10382,6 +10393,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     if (!numberNodes_) {
       if (!parentModel_) {
         // printf("%d global cuts\n",globalCuts_.sizeRowCuts()) ;
+#ifdef CHECK_KNOWN_SOLUTION
         if ((specialOptions_ & 1) != 0) {
           // specialOptions_ &= ~1;
           int numberCuts = globalCuts_.sizeRowCuts();
@@ -10399,6 +10411,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
             }
           }
         }
+#endif
       }
       // solver_->writeMps("second");
       if (numberRowsAdded)
@@ -11207,6 +11220,7 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
           status = -1;
         if (returnCode < 0 && !status)
           status = 2;
+#ifdef CHECK_KNOWN_SOLUTION
         if ((specialOptions_ & 1) != 0) {
           debugger = solver_->getRowCutDebugger();
           if (debugger)
@@ -11216,12 +11230,14 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
           if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
             assert(status >= 0);
         }
+#endif
         if (status < 0)
           break;
       }
     }
     numberRowCutsAfter = theseCuts.sizeRowCuts();
     numberColumnCutsAfter = theseCuts.sizeColCuts();
+#ifdef CHECK_KNOWN_SOLUTION
     if ((specialOptions_ & 1) != 0) {
       if (onOptimalPath) {
         int k;
@@ -11247,6 +11263,7 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
         }
       }
     }
+#endif
     /*
           The cut generator has done its thing, and maybe it generated some
           cuts.  Do a bit of bookkeeping: load
@@ -11611,6 +11628,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
   void cbc_resolve_check(const OsiSolverInterface *solver);
   cbc_resolve_check(solver_);
 #endif
+#ifdef CHECK_KNOWN_SOLUTION
   bool onOptimalPath = false;
   if ((specialOptions_ & 1) != 0) {
     const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
@@ -11658,6 +11676,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
       delete temp;
     }
   }
+#endif
   // We may have deliberately added in violated cuts - check to avoid message
   int iRow;
   int numberRows = solver_->getNumRows();
@@ -11691,9 +11710,11 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
     int nTightened = 0;
     // Pierre pointed out that this is not valid for all solvers
     // so just do if Clp
+#ifdef CHECK_KNOWN_SOLUTION
     if ((specialOptions_ & 1) != 0 && onOptimalPath) {
       solver_->writeMpsNative("before-tighten.mps", NULL, NULL, 2);
     }
+#endif
     if (clpSolver && (!currentNode_ || (currentNode_->depth() & 2) != 0) &&
         !solverCharacteristics_->solutionAddsCuts() &&
         (moreSpecialOptions_ & 1073741824) == 0 &&
@@ -11742,6 +11763,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
           }
           if (nExtra) {
             rootSymmetryInfo_->fixSuccess(nExtra);
+#ifdef CHECK_KNOWN_SOLUTION
             if ((specialOptions_ & 1) != 0 && onOptimalPath) {
               const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
               if (!debugger) {
@@ -11754,6 +11776,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
                 onOptimalPath = false;
               }
             }
+#endif
           }
         }
         delete[] saveLower;
@@ -11763,6 +11786,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
     }
     if (nTightened) {
       // printf("%d bounds tightened\n",nTightened);
+#ifdef CHECK_KNOWN_SOLUTION
       if ((specialOptions_ & 1) != 0 && onOptimalPath) {
         const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
         if (!debugger) {
@@ -11774,6 +11798,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
           onOptimalPath = false;
         }
       }
+#endif
     }
     if (nTightened >= 0) {
       int nFix = resolve(solver_);
@@ -11881,6 +11906,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
         // clpSimplex->primal(1);
         clpSolver->setWarmStart(NULL);
       }
+#ifdef CHECK_KNOWN_SOLUTION
       if ((specialOptions_ & 1) != 0 && onOptimalPath) {
         if (!solver_->getRowCutDebugger()) {
           // tighten did something???
@@ -11891,6 +11917,7 @@ int CbcModel::resolve(CbcNodeInfo *parent, int whereFrom, double *saveSolution,
           // abort();
         }
       }
+#endif
     } else {
       feasible = false;
     }
@@ -15780,6 +15807,7 @@ void CbcModel::makePartialCut(const OsiRowCut *partialCut,
   printf("CUTa has %d (started at %d) - final bSum %g - depth %d\n", nConflict,
          nC, bSum, currentDepth_);
   if (nConflict > 1) {
+#ifdef CHECK_KNOWN_SOLUTION
     if ((specialOptions_ & 1) != 0) {
       const OsiRowCutDebugger *debugger =
           continuousSolver_->getRowCutDebugger();
@@ -15791,6 +15819,7 @@ void CbcModel::makePartialCut(const OsiRowCut *partialCut,
         CoinAssert(!debugger->invalidCut(newCut));
       }
     }
+#endif
     newCut.setGloballyValidAsInteger(2);
     newCut.mutableRow().setTestForDuplicateIndex(false);
     globalCuts_.addCutIfNotDuplicate(newCut);
@@ -16016,7 +16045,7 @@ int CbcModel::resolve(OsiSolverInterface *solver) {
 #ifdef CHECK_KNOWN_SOLUTION
     if ((specialOptions_ & 1) != 0 && onOptimalPath) {
       const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger();
-      if (debugger) {
+      if (debugger&& solver_->isProvenOptimal()) {
         printf("On optimal path after resolve\n");
       } else {
         solver_->writeMpsNative("badSolve.mps", NULL, NULL, 2);
@@ -16553,7 +16582,7 @@ int CbcModel::chooseBranch(CbcNode *&newNode, int numberPassesLeft,
       if (!doCutsNow(1))
         doClp = true;
       // doClp = true;
-      int testDepth = STOP_CUTS_NOW;
+      int testDepth = START_FATHOM;
       // Don't do if many iterations per node
       int totalNodes = numberNodes_ + numberExtraNodes_;
       int totalIterations = numberIterations_ + numberExtraIterations_;
@@ -18323,6 +18352,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         feasible = solveWithCuts(cuts, numberPasses, node);
       }
     }
+#ifdef CHECK_KNOWN_SOLUTION
     if ((specialOptions_ & 1) != 0 && onOptimalPath) {
       if (solver_->getRowCutDebuggerAlways()->optimalValue() < getCutoff()) {
         if (!solver_->getRowCutDebugger() || !feasible) {
@@ -18354,6 +18384,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         }
       }
     }
+#endif
     if (statistics_) {
       assert(numberNodes2_);
       assert(statistics_[numberNodes2_ - 1]);
@@ -18375,6 +18406,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
           alternate equivalent answer and subsequently fathom the solution
           known to the row cut debugger due to bounds.
         */
+#ifdef CHECK_KNOWN_SOLUTION
     if (onOptimalPath) {
       bool objLim = solver_->isDualObjectiveLimitReached();
       if (!feasible && !objLim) {
@@ -18393,6 +18425,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         }
       }
     }
+#endif
     bool checkingNode = false;
     if (feasible) {
 #ifdef FUNNY_BRANCHING2
@@ -21541,6 +21574,7 @@ bool CbcModel::reallyValid(OsiCuts *existingCuts) {
         // Check if cut generator is stupid
         if (thisCut->violated(solution) > integerTolerance) {
           if (thisCut->globallyValid()) {
+#ifdef CHECK_KNOWN_SOLUTION
             if ((specialOptions_ & 1) != 0) {
               /* As these are global cuts -
                  a) Always get debugger object
@@ -21554,6 +21588,7 @@ bool CbcModel::reallyValid(OsiCuts *existingCuts) {
                   printf("ZZZZ Global cut - cuts off optimal solution!\n");
               }
             }
+#endif
             // add to global list
             OsiRowCut newCut(*thisCut);
             newCut.setGloballyValid(true);

@@ -1991,6 +1991,7 @@ int CbcModel::parallelCuts(CbcBaseModel *master, OsiCuts &theseCuts,
       }
     }
 #endif
+#ifdef CHECK_KNOWN_SOLUTION
     if ((specialOptions_ & 1) != 0) {
       if (onOptimalPath) {
         int k;
@@ -2014,6 +2015,7 @@ int CbcModel::parallelCuts(CbcBaseModel *master, OsiCuts &theseCuts,
         }
       }
     }
+#endif
     /*
           The cut generator has done its thing, and maybe it generated some
           cuts.  Do a bit of bookkeeping: load

@@ -1010,15 +1010,24 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       returnCode = 2; // so will be infeasible
     } else {
       setPreProcessingMode(solver2,0);
-#ifdef COIN_DEVELOP_z
+#ifdef CHECK_KNOWN_SOLUTION
       // Only way to get to work on restart
       if (numberNodes < 0 && solver->getRowCutDebugger()) {
-	printf("TRying rowcutdebugger - need sol from /tmp/after2.mps in tmp/after2.sol\n");
+#if defined(_MSC_VER)
+	printf("Trying rowcutdebugger on restart - need sol from after2.mps in tmp/after2.sol\n");
+	FILE * fp= fopen("after2.sol","r");
+	if (!fp) {
+	  solver->writeMpsNative("before2.mps", NULL, NULL, 2, 1);
+	  solver2->writeMpsNative("after2.mps", NULL, NULL, 2, 1);
+	  printf("Solve after2.mps and re-run\n");
+#else
+	printf("Trying rowcutdebugger on restart - need sol from /tmp/after2.mps in tmp/after2.sol\n");
 	FILE * fp= fopen("/tmp/after2.sol","r");
 	if (!fp) {
 	  solver->writeMpsNative("/tmp/before2.mps", NULL, NULL, 2, 1);
 	  solver2->writeMpsNative("/tmp/after2.mps", NULL, NULL, 2, 1);
-	  printf("Solve after2 and re-run\n");
+	  printf("Solve /tmp/after2.mps and re-run\n");
+#endif
 	  exit(77);
 	} else {
 	  int ncols = solver2->getNumCols();
@@ -1037,6 +1046,10 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 	      charB++;
 	    *charB='\0';
 	    int sequence = atoi(charA);
+	    if (sequence>=ncols) {
+	      printf("mismatch on after2.sol - delete and try again\n");
+	      exit(77);
+	    }
 	    // skip name
 	    charB++;
 	    while(*charB!=' ')

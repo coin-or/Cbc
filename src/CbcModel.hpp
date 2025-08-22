@@ -3111,7 +3111,7 @@ private:
   int *usedInSolution_;
   /**
         Special options
-        0 bit (1) - check if cuts valid (if on debugger list)
+        0 bit (1) - check if cuts valid (if on debugger list) ifdef CHECK_KNOWN_SOLUTION
         1 bit (2) - use current basis to check integer solution (rather than all slack)
         2 bit (4) - don't check integer solution (by solving LP)
         3 bit (8) - fast analyze

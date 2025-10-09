@@ -135,9 +135,9 @@ jobs:
           cp "${{ github.event.repository.name }}/${{ github.event.repository.name }}/MSVisualStudio/v17/${{ env.output_dir }}"/*.exe dist/bin
           cp vcpkg_installed/x64-windows/x64-windows/bin/pthreadVC3.dll dist/bin
           mkdir dist/share
-          test -d "./Data/Sample" && rsync -av ./Data/Sample dist/share/coin-or-sample --exclude='.git*'
-          test -d "./Data/Netlib" && rsync -av ./Data/Sample dist/share/coin-or-netlib --exclude='.git*'
-          test -d "./Data/Miplib3" && rsync -av ./Data/Sample dist/share/coin-or-miplib3 --exclude='.git*'
+          test -d "./Data/Sample" && rsync -av ./Data/Sample/ dist/share/coin-or-sample --exclude='.git*'
+          test -d "./Data/Netlib" && rsync -av ./Data/Netlib/ dist/share/coin-or-netlib --exclude='.git*'
+          test -d "./Data/Miplib3" && rsync -av ./Data/Miplib3/ dist/share/coin-or-miplib3 --exclude='.git*'
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

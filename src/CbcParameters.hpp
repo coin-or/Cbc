@@ -1625,6 +1625,13 @@ public:
   /*! \brief Set print mask */
    inline void setPrintMask(std::string mask) { printMask_ = mask; }
 
+   /*! \brief Get output precision */
+   inline std::string getOutputPrecision() { return (outputPrecision_);
+  }
+
+  /*! \brief Set output precision */
+   inline void setOutputPrecision(std::string outputPrecision) { outputPrecision_ = outputPrecision; }
+
   /*! \brief Get node search strategy */
   inline CbcParameters::NodeStrategy getNodeStrategy() { return (nodeStrategy_);
   }
@@ -2068,6 +2075,8 @@ private:
       060920.
     */
   std::string printMask_;
+
+  std::string outputPrecision_;
 
   /*! \brief Disable printing altogether */
   bool noPrinting_;

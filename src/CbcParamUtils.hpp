@@ -30,6 +30,7 @@ int doExitParam(CoinParam &param);
 int doHelpParam(CoinParam &param);
 int doImportParam(CoinParam &param);
 int doPrintMaskParam(CoinParam &param);
+int doOutputPrecisionParam(CoinParam &param);
 int doNothingParam(CoinParam &param);
 int doSolutionParam(CoinParam &param);
 int doUnimplementedParam(CoinParam &param);

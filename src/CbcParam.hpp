@@ -120,6 +120,7 @@ public:
       // String Parameters
       FIRSTSTRINGPARAM,
       PRINTMASK,
+      OUTPUTPRECISION,
       LASTSTRINGPARAM,
       
       // Cut Parameters

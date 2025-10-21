@@ -575,6 +575,15 @@ int CbcParamUtils::doPrintMaskParam(CoinParam &param)
 
   return (0);
 }
-
-/* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
- */
+int CbcParamUtils::doOutputPrecisionParam(CoinParam &param)
+{
+  CbcParam &cbcParam = dynamic_cast<CbcParam &>(param);
+  CbcParameters *parameters = cbcParam.parameters();
+  assert(parameters != 0);
+  
+  std::string outputPrecision = cbcParam.strVal();
+  
+  parameters->setOutputPrecision(outputPrecision);
+  
+  return (0);
+}

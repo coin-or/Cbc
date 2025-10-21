@@ -65,6 +65,11 @@ void CbcParameters::init(int strategy){
   lastSolnOut_ = "stdout";
   printMode_ = 0;
   printMask_ = "";
+#ifndef CLP_OUTPUT_FORMAT
+  outputPrecision_ = "%15.8g";
+#else
+  outputPrecision_ = "CLP_OUTPUT_FORMAT";
+#endif
   noPrinting_ = false;
   printWelcome_ = true;
   useSignalHandler_ = false;
@@ -358,6 +363,7 @@ void CbcParameters::setDefaults(int strategy) {
   parameters_[CbcParam::MODELFILE]->setDefault(std::string("prob.mod"));
   parameters_[CbcParam::NEXTSOLFILE]->setDefault(std::string("next.sol"));
   parameters_[CbcParam::PRINTMASK]->setDefault("");
+  parameters_[CbcParam::OUTPUTPRECISION]->setDefault("%15.8g");
   parameters_[CbcParam::PRIORITYFILE]->setDefault(std::string("priorities.txt"));
   parameters_[CbcParam::SOLUTIONFILE]->setDefault(std::string("opt.sol"));
   parameters_[CbcParam::SOLUTIONBINARYFILE]->setDefault(std::string("solution.file"));
@@ -1131,8 +1137,14 @@ void CbcParameters::addCbcSolverStrParams() {
       "This is only active if model has names.");
   parameters_[CbcParam::PRINTMASK]->setPushFunc(CbcParamUtils::doPrintMaskParam);
 
+  parameters_[CbcParam::OUTPUTPRECISION]->setup(
+      "precision!Output", "Handle format precision with string print mask",
+      "Precision: %.nf → n digits after decimal; %.ng → n significant digits"
+      "Width: %mw → minimum field width, padded with spaces by default."
+      "Remember the f or g at end as %18.5 by itself gives garbage".
+  );
+  parameters_[CbcParam::OUTPUTPRECISION]->setPushFunc(CbcParamUtils::doOutputPrecisionParam);
 }
-
 //###########################################################################
 //###########################################################################
 

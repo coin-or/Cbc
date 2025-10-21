@@ -181,7 +181,7 @@ void printGeneralWarning(CbcModel &model, std::string message, int type)
 #endif
 
 #ifndef CLP_OUTPUT_FORMAT
-#define CLP_OUTPUT_FORMAT % 15.8g
+//char CLP_OUTPUT_FORMAT[32] = "%15.8g";
 #define CLP_INTEGER_OUTPUT_FORMAT % 15ld
 #endif
 
@@ -10292,8 +10292,17 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                continue;
             }
             break;
-            
-          case CbcParam::WRITEMODEL:{
+	  case CbcParam::OUTPUTPRECISION:
+            if ((status = cbcParam->readValue(inputQueue, field, &message))){
+	      printGeneralMessage(model_, message);
+	      continue;
+            }
+            if (cbcParam->setVal(field, &message)){
+	      printGeneralMessage(model_, message);
+	      continue;
+            }
+	    break;
+	  case CbcParam::WRITEMODEL:{
             cbcParam->readValue(inputQueue, fileName, &message);
             CoinParamUtils::processFile(fileName,
                                  parameters[CbcParam::DIRECTORY]->dirName());
@@ -11165,12 +11174,12 @@ clp watson.mps -\nscaling off\nprimalsimplex");
 
                 char printFormat[50];
                 sprintf(printFormat, " %s         %s\n",
-                        CLP_QUOTE(CLP_OUTPUT_FORMAT),
-                        CLP_QUOTE(CLP_OUTPUT_FORMAT));
+                        parameters[CbcParam::OUTPUTPRECISION]->strVal().c_str(),
+                        parameters[CbcParam::OUTPUTPRECISION]->strVal().c_str());
                 char printIntFormat[50];
                 sprintf(printIntFormat, " %s         %s\n",
                         CLP_QUOTE(CLP_INTEGER_OUTPUT_FORMAT),
-                        CLP_QUOTE(CLP_OUTPUT_FORMAT));
+                        parameters[CbcParam::OUTPUTPRECISION]->strVal().c_str());
                 if (printMode > 2 && printMode < 5) {
                   for (iRow = 0; iRow < numberRows; iRow++) {
                     int type = printMode - 3;

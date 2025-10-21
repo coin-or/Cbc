@@ -1139,9 +1139,9 @@ void CbcParameters::addCbcSolverStrParams() {
 
   parameters_[CbcParam::OUTPUTPRECISION]->setup(
       "precision!Output", "Handle format precision with string print mask",
-      "Precision: %.nf → n digits after decimal; %.ng → n significant digits"
-      "Width: %mw → minimum field width, padded with spaces by default."
-      "Remember the f or g at end as %18.5 by itself gives garbage".
+      "Precision: %.nf -> n digits after decimal; %.ng -> n significant digits; "
+      "Width: %mw -> minimum field width, padded with spaces by default. "
+      "Remember the f or g at end as %18.5 by itself gives garbage."
   );
   parameters_[CbcParam::OUTPUTPRECISION]->setPushFunc(CbcParamUtils::doOutputPrecisionParam);
 }

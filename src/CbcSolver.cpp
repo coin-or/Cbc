@@ -4868,6 +4868,15 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 #endif
                     solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                       tunePreProcess);
+		    if (!solver2||!solver2->isProvenOptimal()) {
+		      /* Infeasible - but most real problems are not
+			 infeasible - so try simpler preprocessing which
+			 is less affected by tolerance issues */
+		      process.clean();
+		      solver2 =
+			process.preProcessNonDefault(*saveSolver,
+						     0,99,0);
+		    }
  		    setPreProcessingMode(saveSolver,0);
 #if CBC_USE_PAPILO
 		    // Convert back

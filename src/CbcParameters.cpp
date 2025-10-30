@@ -400,7 +400,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::CUTDEPTH]->setDefault(getCutDepth());
      parameters_[CbcParam::CUTLENGTH]->setDefault(-1);
      parameters_[CbcParam::CUTPASSINTREE]->setDefault(1);
-     parameters_[CbcParam::DEPTHMINIBAB]->setDefault(-1);
+     parameters_[CbcParam::DEPTHMINIBAB]->setDefault(1);
      parameters_[CbcParam::DIVEOPT]->setDefault(-1);
      parameters_[CbcParam::DIVEOPTSOLVES]->setDefault(100);
      parameters_[CbcParam::DUMMY]->setDefault(0);
@@ -1485,7 +1485,9 @@ void CbcParameters::addCbcSolverIntParams() {
       "500 nodes.  If you really want to switch it off for small problems then "
       "set this to -999.  If >=0 the value doesn't matter very much.  The code "
       "will do approximately 100 nodes of fast branch and bound every now and "
-      "then at depth>=5. The actual logic is too twisted to describe here.");
+      "then at depth>=5. The actual logic is too twisted to describe here. "
+      "The default has been changed from -1 to +1.  This uses Clp and saves "
+       "factorizations etc to be faster.");
 
   parameters_[CbcParam::DIVEOPT]->setup(
       "diveO!pt", "Diving options", -1, 20,

@@ -5788,7 +5788,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 ClpSimplex *modelC = si->getModelPtr();
                 // if (noPrinting_)
                 // modelC->setLogLevel(0);
-                if (!complicatedInteger && modelC->tightenPrimalBounds() != 0) {
+                if (!complicatedInteger && modelC->tightenPrimalBounds(0.0,0,true) != 0) {
                   printGeneralMessage(model_, "Problem is infeasible!");
                   model_.setProblemStatus(0);
                   model_.setSecondaryStatus(1);

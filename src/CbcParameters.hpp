@@ -1892,6 +1892,13 @@ public:
 #ifdef CBC_CLUMSY_CODING
   /*! \brief Synchronize Cbc (and Clp) model - Int and Dbl */
   void synchronizeModel();
+
+  void synchronizeParameter(CbcParam::CbcParamCode paramCode, CbcModel::CbcIntParam cbcIntParam);
+
+  void synchronizeParameter(CbcParam::CbcParamCode paramCode, CbcModel::CbcDblParam cbcDblParam);
+
+  template <typename IntType>
+  void synchronizeParameter(CbcParam::CbcParamCode paramCode, void (CbcModel::*setIntMethod)(IntType), IntType (CbcModel::*getIntMethod)() const);
 #endif
 
   /*! \brief Get total time */

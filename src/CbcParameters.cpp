@@ -516,152 +516,131 @@ void CbcParameters::setDefaults(int strategy) {
   }
 
 }
-   
+
+  
 //###########################################################################
 //###########################################################################
 
 #ifdef CBC_CLUMSY_CODING
+
+struct CbcIntParamToModelEntry {                                                                                                                                                          
+    CbcParam::CbcParamCode paramCode;                                                                                                                                          
+    CbcModel::CbcIntParam  modelKey;                                                                                                                                           
+};
+
+struct CbcDblParamToModelEntry {                                                                                                                                                          
+    CbcParam::CbcParamCode paramCode;                                                                                                                                          
+    CbcModel::CbcDblParam  modelKey;                                                                                                                                           
+};
+
+template <typename IntType>
+struct CbcParamAcessorsEntry {                                                                                                                                                          
+    CbcParam::CbcParamCode paramCode;                                                                                                                                          
+    void (CbcModel::*setter)(IntType);
+    IntType (CbcModel::*getter)() const;
+};
+
+void CbcParameters::synchronizeParameter(CbcParam::CbcParamCode paramCode, CbcModel::CbcIntParam modelParam) {
+  int value;
+  parameters_[paramCode]->getVal(value);
+#ifdef PRINT_CBC_CHANGES
+    int modelIntValue = model_->getIntParam(modelParam);
+    if (value!=modelIntValue) {
+      const std::string &name = parameters_[paramCode]->name();
+      std::cout << "Changing " << name << " from " << modelIntValue << " to " << value << "." << std::endl;
+    }
+#endif
+    model_->setIntParam(modelParam, value);
+}
+
+void CbcParameters::synchronizeParameter(CbcParam::CbcParamCode paramCode, CbcModel::CbcDblParam modelParam) {
+  double value;
+  parameters_[paramCode]->getVal(value);
+#ifdef PRINT_CBC_CHANGES
+    double modelValue = model_->getDblParam(modelParam);
+    if (value!=modelValue) {
+      const std::string &name = parameters_[paramCode]->name();
+      std::cout << "Changing " << name << " from " << modelValue << " to " << value << "." << std::endl;
+    }
+#endif
+    model_->setDblParam(modelParam, value);
+
+}
+
+template <typename IntType>
+void CbcParameters::synchronizeParameter(CbcParam::CbcParamCode paramCode, void (CbcModel::*setIntMethod)(IntType), IntType (CbcModel::*getIntMethod)() const) {
+  int value; // CbcParam only supports int
+  parameters_[paramCode]->getVal(value); 
+#ifdef PRINT_CBC_CHANGES
+    IntType modelIntValue = (model_->*getIntMethod)();
+    if (value!=modelIntValue) {
+      const std::string &name = parameters_[paramCode]->name();
+      std::cout << "Changing " << name << " from " << modelIntValue << " to " << value << "." << std::endl;
+    }
+#endif
+
+  (model_->*setIntMethod)(value);
+}
+ 
 // Synchronize Cbc (and Clp) model - Int and Dbl 
 void CbcParameters::synchronizeModel() {
   if (goodModel_) {
     assert (model_);
-    // Integer parameters
-    int intValue;
-    int modelIntValue;
-    parameters_[CbcParam::MAXNODES]->getVal(intValue);
-    //#define PRINT_CBC_CHANGES
-#ifdef PRINT_CBC_CHANGES
-    modelIntValue = model_->getIntParam(CbcModel::CbcMaxNumNode);
-    if (intValue!=modelIntValue)
-      printf("changing MAXNODES from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
-#endif
-    model_->setIntParam(CbcModel::CbcMaxNumNode, intValue);
-    parameters_[CbcParam::MAXNODESNOTIMPROVING]->getVal(intValue);
-#ifdef PRINT_CBC_CHANGES
-    modelIntValue = model_->getIntParam(CbcModel::CbcMaxNodesNotImproving);
-    if (intValue!=modelIntValue)
-      printf("changing MAXNODESNOTIMPROVING from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
-#endif
-    model_->setIntParam(CbcModel::CbcMaxNodesNotImproving, intValue);
-    parameters_[CbcParam::MAXSOLS]->getVal(intValue);
-#ifdef PRINT_CBC_CHANGES
-    modelIntValue = model_->getIntParam(CbcModel::CbcMaxNumSol);
-    if (intValue!=modelIntValue)
-      printf("changing MAXSOLS from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
-#endif
-    model_->setIntParam(CbcModel::CbcMaxNumSol, intValue);
-    // ?case CBC_PARAM_INT_MAXSAVEDSOLS:
-    parameters_[CbcParam::STRONGBRANCHING]->getVal(intValue);
-#ifdef PRINT_CBC_CHANGES
-    modelIntValue = model_->numberStrong();
-    if (intValue!=modelIntValue)
-      printf("changing STRONGBRANCHING from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
-#endif
-    model_->setNumberStrong(intValue);
-    parameters_[CbcParam::NUMBERBEFORE]->getVal(intValue);
-#ifdef PRINT_CBC_CHANGES
-    modelIntValue = model_->numberBeforeTrust();
-    if (intValue!=modelIntValue)
-      printf("changing NUMBERBEFORE from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
-#endif
-    model_->setNumberBeforeTrust(intValue);
-    parameters_[CbcParam::NUMBERANALYZE]->getVal(intValue);
-    modelIntValue = model_->numberAnalyzeIterations();
-#ifdef PRINT_CBC_CHANGES
-    if (intValue!=modelIntValue)
-      printf("changing NUMBERANALYZE from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
-#endif
-    model_->setNumberAnalyzeIterations(intValue);
-    parameters_[CbcParam::CUTPASSINTREE]->getVal(intValue);
-#ifdef PRINT_CBC_CHANGES
-    modelIntValue = model_->getMaximumCutPasses();
-    if (intValue!=modelIntValue)
-      printf("changing CUTPASSINTREE from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
-#endif
-    model_->setMaximumCutPasses(intValue);
-    parameters_[CbcParam::CUTPASS]->getVal(intValue);
-#ifdef PRINT_CBC_CHANGES
-    modelIntValue = model_->getMaximumCutPassesAtRoot();
-    if (intValue!=modelIntValue)
-      printf("changing CUTPASS from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
-#endif
-    model_->setMaximumCutPassesAtRoot(intValue);
+
+    static const CbcIntParamToModelEntry paramToModelEntries[] = {                                                                                                                                
+        { CbcParam::MAXNODES,             CbcModel::CbcMaxNumNode },                                                                                                               
+        { CbcParam::MAXNODESNOTIMPROVING, CbcModel::CbcMaxNodesNotImproving },                                                                                                     
+        { CbcParam::MAXSOLS,              CbcModel::CbcMaxNumSol },                                                                                                                
+    };
+
+    for (const auto& entry : paramToModelEntries)
+      synchronizeParameter(entry.paramCode, entry.modelKey);
+
+    static const CbcParamAcessorsEntry<int> intParamsEntries[] = {
+        { CbcParam::STRONGBRANCHING, &CbcModel::setNumberStrong, &CbcModel::numberStrong },
+        { CbcParam::NUMBERBEFORE, &CbcModel::setNumberBeforeTrust, &CbcModel::numberBeforeTrust }, 
+        { CbcParam::NUMBERANALYZE, &CbcModel::setNumberAnalyzeIterations, &CbcModel::numberAnalyzeIterations },
+        { CbcParam::CUTPASSINTREE, &CbcModel::setMaximumCutPasses, &CbcModel::getMaximumCutPasses },
+        { CbcParam::CUTPASS, &CbcModel::setMaximumCutPassesAtRoot, &CbcModel::getMaximumCutPassesAtRoot },
 #ifdef CBC_THREAD
-    parameters_[CbcParam::THREADS]->getVal(intValue);
-#ifdef PRINT_CBC_CHANGES
-    modelIntValue = model_->getNumberThreads();
-    if (intValue!=modelIntValue)
-      printf("changing THREADS from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
+        { CbcParam::THREADS, &CbcModel::setNumberThreads, &CbcModel::getNumberThreads },
 #endif
-    model_->setNumberThreads(intValue);
-#endif
-    parameters_[CbcParam::RANDOMSEED]->getVal(intValue);
-#ifdef PRINT_CBC_CHANGES
-    modelIntValue = model_->getRandomSeed();
-    if (intValue!=modelIntValue)
-      printf("changing RANDOMSEED from %d to %d at line %d\n",modelIntValue,intValue,__LINE__+1);
-#endif
-    model_->setRandomSeed(intValue);
-    // Double parameters
+    };
+
+    for (const auto& entry : intParamsEntries)
+      synchronizeParameter(entry.paramCode, entry.setter, entry.getter);
+
+    static const CbcParamAcessorsEntry<unsigned int> uIntParamEntries[] = {
+        { CbcParam::RANDOMSEED, &CbcModel::setRandomSeed, &CbcModel::getRandomSeed },
+    };
+
+    for (const auto& entry : uIntParamEntries)
+      synchronizeParameter(entry.paramCode, entry.setter, entry.getter);
+
+    static const CbcDblParamToModelEntry doubleParamEntries[] = {                                                                                                                                
+        { CbcParam::INFEASIBILITYWEIGHT,    CbcModel::CbcInfeasibilityWeight },                                                                                                               
+        { CbcParam::INTEGERTOLERANCE,       CbcModel::CbcIntegerTolerance },                                                                                                               
+        { CbcParam::INCREMENT,              CbcModel::CbcCutoffIncrement },                                                                                                               
+        { CbcParam::ALLOWABLEGAP,           CbcModel::CbcAllowableGap },                                                                                                               
+        { CbcParam::GAPRATIO,               CbcModel::CbcAllowableFractionGap },                                                                                                               
+        { CbcParam::TIMELIMIT,              CbcModel::CbcMaximumSeconds },                                                                                                               
+        { CbcParam::MAXSECONDSNOTIMPROVING, CbcModel::CbcMaxSecondsNotImproving },                                                                                                               
+    };
+
+    for (const auto& entry : doubleParamEntries)
+      synchronizeParameter(entry.paramCode, entry.modelKey);
+
+    // specific case for cutoff
     double doubleValue;
-    double modelDoubleValue;
-    parameters_[CbcParam::INFEASIBILITYWEIGHT]->getVal(doubleValue);
-#ifdef PRINT_CBC_CHANGES
-    modelDoubleValue = model_->getDblParam(CbcModel::CbcInfeasibilityWeight);
-    if (doubleValue!=modelDoubleValue)
-      printf("changing INFEASIBILITYWEIGHT from %g to %g at line %d\n",modelDoubleValue,doubleValue,__LINE__+1);
-#endif
-    model_->setDblParam(CbcModel::CbcInfeasibilityWeight, intValue);
-    parameters_[CbcParam::INTEGERTOLERANCE]->getVal(doubleValue);
-#ifdef PRINT_CBC_CHANGES
-    modelDoubleValue = model_->getDblParam(CbcModel::CbcIntegerTolerance);
-    if (doubleValue!=modelDoubleValue)
-      printf("changing INTEGERTOLERANCE from %g to %g at line %d\n",modelDoubleValue,doubleValue,__LINE__+1);
-#endif
-    model_->setDblParam(CbcModel::CbcIntegerTolerance, doubleValue);
-    parameters_[CbcParam::INCREMENT]->getVal(doubleValue);
-#ifdef PRINT_CBC_CHANGES
-    modelDoubleValue = model_->getDblParam(CbcModel::CbcCutoffIncrement);
-    if (doubleValue!=modelDoubleValue)
-      printf("changing INCREMENT from %g to %g at line %d\n",modelDoubleValue,doubleValue,__LINE__+1);
-#endif
-    model_->setDblParam(CbcModel::CbcCutoffIncrement, doubleValue);
-    parameters_[CbcParam::ALLOWABLEGAP]->getVal(doubleValue);
-#ifdef PRINT_CBC_CHANGES
-    modelDoubleValue = model_->getDblParam(CbcModel::CbcAllowableGap);
-    if (doubleValue!=modelDoubleValue)
-      printf("changing ALLOWABLEGAP from %g to %g at line %d\n",modelDoubleValue,doubleValue,__LINE__+1);
-#endif
-    model_->setDblParam(CbcModel::CbcAllowableGap, doubleValue);
-    parameters_[CbcParam::GAPRATIO]->getVal(doubleValue);
-#ifdef PRINT_CBC_CHANGES
-    if (doubleValue!=modelDoubleValue)
-    modelDoubleValue = model_->getDblParam(CbcModel::CbcAllowableFractionGap);
-      printf("changing GAPRATIO from %g to %g at line %d\n",modelDoubleValue,doubleValue,__LINE__+1);
-#endif
-    model_->setDblParam(CbcModel::CbcAllowableFractionGap, doubleValue);
     parameters_[CbcParam::CUTOFF]->getVal(doubleValue);
 #ifdef PRINT_CBC_CHANGES
-    modelDoubleValue = model_->getCutoff();
+    double modelDoubleValue = model_->getCutoff();
     if (doubleValue!=modelDoubleValue)
       printf("changing CUTOFF from %g to %g at line %d\n",modelDoubleValue,doubleValue,__LINE__+1);
 #endif
     if (fabs(doubleValue)<1.0e40)
       model_->setCutoff(doubleValue);
-    parameters_[CbcParam::TIMELIMIT]->getVal(doubleValue);
-#ifdef PRINT_CBC_CHANGES
-    modelDoubleValue = model_->getDblParam(CbcModel::CbcMaximumSeconds);
-    if (doubleValue!=modelDoubleValue)
-      printf("changing TIMELIMIT from %g to %g at line %d\n",modelDoubleValue,doubleValue,__LINE__+1);
-#endif
-    model_->setDblParam(CbcModel::CbcMaximumSeconds, doubleValue);
-    parameters_[CbcParam::MAXSECONDSNOTIMPROVING]->getVal(doubleValue);
-#ifdef PRINT_CBC_CHANGES
-    modelDoubleValue = model_->getDblParam(CbcModel::CbcMaxSecondsNotImproving);
-    if (doubleValue!=modelDoubleValue)
-      printf("changing MAXSECONDSNOTIMPROVING from %g to %g at line %d\n",modelDoubleValue,doubleValue,__LINE__+1);
-#endif
-    model_->setDblParam(CbcModel::CbcMaxSecondsNotImproving, doubleValue);
+
     if (clpParameters_.getModel())
       clpParameters_.synchronizeModel();
   }

@@ -89,6 +89,7 @@ libCbc_la_SOURCES = \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
 	CbcParameters.cpp CbcParameters.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
+	CbcSolverStatistics.cpp CbcSolverStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
 	CbcSymmetry.cpp CbcSymmetry.hpp \
@@ -97,7 +98,7 @@ libCbc_la_SOURCES = \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
-	unitTestClp.cpp 
+	unitTestClp.cpp
 
 # List all additionally required libraries
 libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
@@ -218,7 +219,8 @@ includecoin_HEADERS = \
 	CbcLinked.hpp \
 	CbcTreeLocal.hpp \
 	ClpConstraintAmpl.hpp \
-	ClpAmplObjective.hpp 
+	CbcSolverStatistics.hpp \
+	ClpAmplObjective.hpp
 
 #######################################################################
 # Create the Config.h file that has all public defines and install it #

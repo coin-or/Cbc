@@ -194,12 +194,12 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcSolverAnalyze.lo \
 	libCbc_la-CbcSolverExpandKnapsack.lo \
 	libCbc_la-CbcSolverHeuristics.lo libCbc_la-CbcParameters.lo \
-	libCbc_la-CbcStatistics.lo libCbc_la-CbcStrategy.lo \
-	libCbc_la-CbcSubProblem.lo libCbc_la-CbcSymmetry.lo \
-	libCbc_la-CbcThread.lo libCbc_la-CbcTree.lo \
-	libCbc_la-CbcTreeLocal.lo libCbc_la-Cbc_C_Interface.lo \
-	libCbc_la-CbcLinked.lo libCbc_la-CbcLinkedUtils.lo \
-	libCbc_la-unitTestClp.lo
+	libCbc_la-CbcStatistics.lo libCbc_la-CbcSolverStatistics.lo \
+	libCbc_la-CbcStrategy.lo libCbc_la-CbcSubProblem.lo \
+	libCbc_la-CbcSymmetry.lo libCbc_la-CbcThread.lo \
+	libCbc_la-CbcTree.lo libCbc_la-CbcTreeLocal.lo \
+	libCbc_la-Cbc_C_Interface.lo libCbc_la-CbcLinked.lo \
+	libCbc_la-CbcLinkedUtils.lo libCbc_la-unitTestClp.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -293,6 +293,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcSolverAnalyze.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSolverExpandKnapsack.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSolverHeuristics.Plo \
+	./$(DEPDIR)/libCbc_la-CbcSolverStatistics.Plo \
 	./$(DEPDIR)/libCbc_la-CbcStatistics.Plo \
 	./$(DEPDIR)/libCbc_la-CbcStrategy.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSubProblem.Plo \
@@ -611,6 +612,7 @@ libCbc_la_SOURCES = \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
 	CbcParameters.cpp CbcParameters.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
+	CbcSolverStatistics.cpp CbcSolverStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
 	CbcSymmetry.cpp CbcSymmetry.hpp \
@@ -619,7 +621,7 @@ libCbc_la_SOURCES = \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
-	unitTestClp.cpp 
+	unitTestClp.cpp
 
 
 # List all additionally required libraries
@@ -727,7 +729,7 @@ includecoin_HEADERS = \
 	CbcLinked.hpp \
 	CbcTreeLocal.hpp \
 	ClpConstraintAmpl.hpp \
-	ClpAmplObjective.hpp 
+	ClpAmplObjective.hpp
 
 all: config.h config_cbc.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -947,6 +949,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSolverAnalyze.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSolverExpandKnapsack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSolverHeuristics.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSolverStatistics.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcStatistics.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcStrategy.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSubProblem.Plo@am__quote@ # am--include-marker
@@ -1463,6 +1466,13 @@ libCbc_la-CbcStatistics.lo: CbcStatistics.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcStatistics.lo `test -f 'CbcStatistics.cpp' || echo '$(srcdir)/'`CbcStatistics.cpp
 
+libCbc_la-CbcSolverStatistics.lo: CbcSolverStatistics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcSolverStatistics.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcSolverStatistics.Tpo -c -o libCbc_la-CbcSolverStatistics.lo `test -f 'CbcSolverStatistics.cpp' || echo '$(srcdir)/'`CbcSolverStatistics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcSolverStatistics.Tpo $(DEPDIR)/libCbc_la-CbcSolverStatistics.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcSolverStatistics.cpp' object='libCbc_la-CbcSolverStatistics.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcSolverStatistics.lo `test -f 'CbcSolverStatistics.cpp' || echo '$(srcdir)/'`CbcSolverStatistics.cpp
+
 libCbc_la-CbcStrategy.lo: CbcStrategy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcStrategy.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcStrategy.Tpo -c -o libCbc_la-CbcStrategy.lo `test -f 'CbcStrategy.cpp' || echo '$(srcdir)/'`CbcStrategy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcStrategy.Tpo $(DEPDIR)/libCbc_la-CbcStrategy.Plo
@@ -1741,6 +1751,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverAnalyze.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverExpandKnapsack.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverHeuristics.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverStatistics.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStatistics.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStrategy.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSubProblem.Plo
@@ -1866,6 +1877,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverAnalyze.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverExpandKnapsack.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverHeuristics.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcSolverStatistics.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStatistics.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStrategy.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSubProblem.Plo

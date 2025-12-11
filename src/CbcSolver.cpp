@@ -20,6 +20,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include "CbcSolverStatistics.hpp"
 
 #if defined(NEW_DEBUG_AND_FILL) || defined(CLP_MALLOC_STATISTICS)
 #include <exception>
@@ -239,7 +240,7 @@ bool malloc_counts_on = true;
 // Forward declarations (move to header?)
 //###########################################################################
 
-static void statistics(ClpSimplex *originalModel, ClpSimplex *model);
+static void clpStatistics(ClpSimplex *originalModel, ClpSimplex *model);
 static bool maskMatches(const int *starts, char **masks, std::string &check);
 static void generateCode(CbcModel *model, const char *fileName, int type,
                          int preProcess);
@@ -1133,19 +1134,11 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   int returnMode = 1;
   int statusUserFunction_[1];
   int numberUserFunctions_ = 1; // to allow for ampl
+                                //
   // Statistics
-  double statistics_seconds = 0.0, statistics_obj = 0.0;
-  double statistics_sys_seconds = 0.0, statistics_elapsed_seconds = 0.0;
+  CbcSolverStatistics statistics;
+
   CoinWallclockTime();
-  double statistics_continuous = 0.0, statistics_tighter = 0.0;
-  double statistics_cut_time = 0.0;
-  int statistics_nodes = 0, statistics_iterations = 0;
-  int statistics_nrows = 0, statistics_ncols = 0;
-  int statistics_nprocessedrows = 0, statistics_nprocessedcols = 0;
-  std::string statistics_result;
-  int *statistics_number_cuts = NULL;
-  const char **statistics_name_generators = NULL;
-  int statistics_number_generators = 0;
   int currentBestSolution = 0;
   memset(statusUserFunction_, 0, numberUserFunctions_ * sizeof(int));
   /* Note
@@ -1293,7 +1286,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           const int *column = matrixByRow->getIndices();
           const CoinBigIndex *rowStart = matrixByRow->getVectorStarts();
           const int *rowLength = matrixByRow->getVectorLengths();
-          
+
           const double *rowLower = solver->getRowLower();
           const double *rowUpper = solver->getRowUpper();
           int nDelete = 0;
@@ -1322,7 +1315,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 
       //FIXME A big block was deleted which seemed as though it should never be entered.
       //      Check that.
-      
+
       // If we had a solution use it
       if (info->primalSolution) {
          solver->setColSolution(info->primalSolution);
@@ -1356,7 +1349,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
             solver->setInteger(i);
       }
     }
-    
+
     // set reasonable defaults
     int preSolve = 5;
     int preProcess = 4;
@@ -1431,7 +1424,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     int redsplit2Mode = CbcParameters::CGOff;
     assert (parameters[CbcParam::REDSPLIT2CUTS]->modeVal()==redsplit2Mode);
 
-    CglGMI GMIGen; 
+    CglGMI GMIGen;
     int GMIMode = parameters[CbcParam::GMICUTS]->modeVal();
 
     std::string cgraphMode = "on";
@@ -1449,7 +1442,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     CglMixedIntegerRounding2 mixedGen(1, true, 1);
     // set default action (0=off,1=on,2=root,3=ifmove)
     int mixedMode = CbcParameters::CGIfMove;
-    int mixedRoundStrategy = 1; 
+    int mixedRoundStrategy = 1;
     assert (parameters[CbcParam::MIRCUTS]->modeVal()==mixedMode);
     mixedGen.setDoPreproc(1); // safer (and better)
 
@@ -1560,7 +1553,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
         buffer.str("");
         buffer << "command line -";
         for (int i = 0; i < inputQueue.size(); i++) {
-           size_t found = inputQueue[i].find("strat"); 
+           size_t found = inputQueue[i].find("strat");
            if (found != std::string::npos){
               foundStrategy = true;
            }
@@ -1588,7 +1581,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	numberGoodCommands=1;
       }
     }
-      
+
     while (1) {
       // Reset time
       time1 = CoinCpuTime();
@@ -1667,7 +1660,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		     char *put=line;
 		     while (true) {
 		       while (*pos != '\n' && *pos != '\0'
-			      && *pos != ' ' && *pos != '\t') 
+			      && *pos != ' ' && *pos != '\t')
 			 pos++;
 		       char save = *pos;
 		       *pos = '\0';
@@ -1709,7 +1702,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                                                      &numberClpMatches,
                                                      &numberClpShortMatches,
                                                      &numberClpQuery);
-      
+
       int numberCbcMatches(0), numberCbcShortMatches(0), numberCbcQuery(0);
       if (numberClpQuery>0)
 	numberCbcQuery = 999; // so won't complain if no matches
@@ -1760,7 +1753,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
        default:
          break;
       }
-      
+
       CbcParam *cbcParam = parameters[CbcParam::INVALID];
       ClpParam *clpParam = clpParameters[ClpParam::INVALID];
 
@@ -1898,7 +1891,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
           if (cbcParamCode == CbcParam::FULLGENERALQUERY) {
              verbose = 1;
              commandPrintLevel = 1;
-          }	
+          }
 #if 0
           if ((verbose & 8) != 0) {
             // even hidden
@@ -1968,7 +1961,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                  iParam < CbcParam::LASTPARAM; iParam++) {
 	      //TODO Print model parameters
               CbcParam *p = parameters[iParam];
-	      if (p->type() != type ||  
+	      if (p->type() != type ||
                   p->getDisplayPriority() < commandPrintLevel){
                  continue;
               }
@@ -2020,7 +2013,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                        p->printLongHelp();
                        std::cout << "----" << std::endl << std::endl;
 		    }
-                 } 
+                 }
                  across = 0;
                  lengthLine = 0;
               } else {
@@ -2046,7 +2039,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 	      if (clpParameters[iParam]->type() != type)
 		continue;
               ClpParam *p = clpParameters[iParam];
-              if (p->type() != type ||  
+              if (p->type() != type ||
                   p->getDisplayPriority() < commandPrintLevel){
                  continue;
               }
@@ -2173,12 +2166,12 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
            if ((status = clpParam->readValue(inputQueue, dValue, &message))){
               printGeneralMessage(model_, message);
               continue;
-           } 
+           }
            // We have a Clp parameter
            if (clpParam->setVal(dValue, &message)){
               printGeneralMessage(model_, message);
               continue;
-           }      
+           }
         } else if (cbcParam->type() == CoinParam::paramInt){
            if ((status = cbcParam->readValue(inputQueue, iValue, &message))){
               printGeneralMessage(model_, message);
@@ -2369,7 +2362,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
            if ((status = clpParam->readValue(inputQueue, iValue, &message))){
               printGeneralMessage(model_, message);
               continue;
-           } 
+           }
            if (clpParam->setVal(iValue, &message)){
               printGeneralMessage(model_, message);
               continue;
@@ -2573,7 +2566,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               // abort();
               break;
            }
-        } else if (clpParam->type() == CoinParam::paramKwd) { 
+        } else if (clpParam->type() == CoinParam::paramKwd) {
            if ((status = clpParam->readValue(inputQueue, field, &message))){
               printGeneralMessage(model_, message);
               continue;
@@ -2748,7 +2741,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               }
               break; // stop all
            }
-           
+
            switch (clpParamCode) {
             case ClpParam::DUALSIMPLEX:
             case ClpParam::PRIMALSIMPLEX:
@@ -3501,7 +3494,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                printf("Statistics for unpresolved model\n");
                model2 = lpSolver;
             }
-            statistics(lpSolver, model2);
+            clpStatistics(lpSolver, model2);
             if (deleteModel2)
                delete model2;
            } break;
@@ -3592,10 +3585,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     dynamic_cast<OsiCpxSolverInterface *>(solver);
                 assert(si != NULL);
 #endif
-                statistics_nrows = si->getNumRows();
-                statistics_ncols = si->getNumCols();
-                statistics_nprocessedrows = si->getNumRows();
-                statistics_nprocessedcols = si->getNumCols();
+                statistics.nrows = si->getNumRows();
+                statistics.ncols = si->getNumCols();
+                statistics.nprocessedrows = si->getNumRows();
+                statistics.nprocessedcols = si->getNumCols();
                 // See if quadratic
 #ifndef CBC_OTHER_SOLVER
 #ifdef COIN_HAS_LINK
@@ -4451,7 +4444,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       generator1.setMaxElements(1000);
 #endif
                     generator1.setMaxProbeRoot(saveSolver->getNumCols());
- 		    if ((tune2 & 512) != 0) 
+ 		    if ((tune2 & 512) != 0)
 		      generator1.setMaxLookRoot(std::min(saveSolver->getNumCols(),1000));
 		    else
 		      generator1.setMaxLookRoot(std::min(saveSolver->getNumCols(),400));
@@ -4654,7 +4647,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		      ClpSimplex *model = si->getModelPtr();
 		      model->tightenPrimalBounds(0.0,0);
 		      model->addColumns(numberLotSizing,tlo,tup,els,NULL,NULL,NULL);
-		      for (int i=0;i<numberLotSizing;i++) 
+		      for (int i=0;i<numberLotSizing;i++)
 			model->setInteger(i+numberColumns);
 		      starts[0]=0;
 		      CoinBigIndex n=0;
@@ -4746,7 +4739,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                         numberProhibited++;
                       }
                     }
-                    if (numberProhibited) 
+                    if (numberProhibited)
                       process.passInProhibited(prohibited, numberColumns);
                     delete[] prohibited;
                   }
@@ -4980,11 +4973,8 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   babModel_->setProblemStatus(0);
                   babModel_->setSecondaryStatus(1);
                 } else {
-                    // printf("processed model has %d rows, %d columns and %d
-                    // elements\n",
-                    //     solver2->getNumRows(),solver2->getNumCols(),solver2->getNumElements());
-                  statistics_nprocessedrows = solver2->getNumRows();
-                  statistics_nprocessedcols = solver2->getNumCols();
+                  statistics.nprocessedrows = solver2->getNumRows();
+                  statistics.nprocessedcols = solver2->getNumCols();
                   model_.setProblemStatus(-1);
                   babModel_->setProblemStatus(-1);
                 }
@@ -5005,7 +4995,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   const int *originalColumns = process.originalColumns();
                   int numberColumns =
                       std::min(solver2->getNumCols(), babModel_->getNumCols());
-#if 0		  
+#if 0
                   double *bestSolution = babModel_->bestSolution();
                   const double *oldBestSolution = model_.bestSolution();
                   for (int i = 0; i < numberColumns; i++) {
@@ -5051,7 +5041,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		}
 #endif
                 if (preProcess == 2 || preProcess >= 10) {
-                  // names are wrong - redo 
+                  // names are wrong - redo
 		  const int *originalColumns = process.originalColumns();
                   int numberColumns = solver2->getNumCols();
                   OsiSolverInterface *originalSolver = model.solver();
@@ -5315,7 +5305,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   }
                   buffer.str("");
                   buffer << numberSort << " integer have nonzero objective, "
-                         << numberZero << " have zero objective, " 
+                         << numberZero << " have zero objective, "
                          << numberDifferentObj << " different nonzero (taking abs)";
                   printGeneralMessage(model_, buffer.str());
                   if (numberDifferentObj <= threshold + (numberZero)
@@ -6157,7 +6147,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       ->setMaximumTries(maximumSlowPasses);
                   babModel_->cutGenerator(numberGenerators)->setHowOften(10);
                 }
-                switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN*lagrangeanFlag); 
+                switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN*lagrangeanFlag);
               }
               if (redsplit2Mode && !complicatedInteger) {
                 int maxLength = 256;
@@ -6457,7 +6447,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
               ;
               int *changed = NULL;
 #ifdef UNSAFE_FOR_LAZY_CUTS
-              if (!miplib && increment == normalIncrement) 
+              if (!miplib && increment == normalIncrement)
                 changed = analyze(osiclp, numberChanged, increment, false,
                                   generalMessageHandler, parameters.noPrinting());
 #endif
@@ -6793,7 +6783,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		      }
 		      delete [] sosObjects;
 		    }
-		    /* But this is outside branchAndBound so needs to know 
+		    /* But this is outside branchAndBound so needs to know
 		       about direction */
 		    if (babModel_->getObjSense()==-1.0) {
 		      babModel_->setCutoff(-obj);
@@ -7346,7 +7336,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   }
                   // *************************************************************
                 }
-                int statistics = (printOptions > 0) ? printOptions : 0;
+                int doStatistics = (printOptions > 0) ? printOptions : 0;
                 if (!statusUserFunction_[0]) {
                   free(priorities);
                   priorities = NULL;
@@ -7800,7 +7790,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		// switch off deterministic if large problem and fastNodeDepth>0
 		if (numberThreads/100==2) {
 		  numberThreads -= 100;
-		  if (babModel_->fastNodeDepth()>0 && babModel_->solver()->getNumRows()>2000) 
+		  if (babModel_->fastNodeDepth()>0 && babModel_->solver()->getNumRows()>2000)
 		    babModel_->setFastNodeDepth(-999);
 		}
                 babModel_->setThreadMode((numberThreads%1000) / 100);
@@ -7826,9 +7816,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		  char buffer[100];
 		  if (ompMode) {
 		    omp_set_num_threads(realThreads);
-		    sprintf(buffer,"Deterministic parallel using %d OpenMP threads and pretending %d",realThreads,pretendThreads); 
+		    sprintf(buffer,"Deterministic parallel using %d OpenMP threads and pretending %d",realThreads,pretendThreads);
 		  } else {
-		    sprintf(buffer,"Deterministic parallel using %d threads",realThreads); 
+		    sprintf(buffer,"Deterministic parallel using %d threads",realThreads);
 		  }
 		  babModel_->messageHandler()->message(CBC_GENERAL, babModel_->messages())
 		    << buffer << CoinMessageEol;
@@ -7862,7 +7852,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                     abs(babModel_->fastNodeDepth()) == 1) {
 		  int iType = babModel_->fastNodeDepth();
 		  int iDepth = iType <0 ? -12 : 5;
-		  int iSize = 500; // think harder iType <0 ? 10000 : 500; 
+		  int iSize = 500; // think harder iType <0 ? 10000 : 500;
                   if (babModel_->solver()->getNumCols() +
                           babModel_->solver()->getNumRows() < iSize) {
                     babModel_->setFastNodeDepth(iDepth);
@@ -8093,7 +8083,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
 		    int options = babModel_->specialOptions();
 		    babModel_->setSpecialOptions(options|addOptions);
 		  }
-                  babModel_->branchAndBound(statistics);
+                  babModel_->branchAndBound(doStatistics);
                 }
 #else
 #ifdef ORBITAL
@@ -8414,7 +8404,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                       else if (k == 8)
                         babModel_->setMoreSpecialOptions2(
                             babModel_->moreSpecialOptions2()|131072|1073741824);
-                      else 
+                      else
                         babModel_->setMoreSpecialOptions2(
                             babModel_->moreSpecialOptions2()|262144|1073741824);
                     }
@@ -8482,7 +8472,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   }
                 }
 #endif
-		babModel_->branchAndBound(statistics);
+		babModel_->branchAndBound(doStatistics);
 #ifdef CBC_HAS_NAUTY
                 if (nautyAdded) {
                   int *which = new int[nautyAdded];
@@ -8551,7 +8541,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   delete babModel_;
                   babModel_ = NULL;
                   return returnCode;
-                } 
+                }
 #ifdef CLP_MALLOC_STATISTICS
                 malloc_stats();
                 malloc_stats2();
@@ -8564,7 +8554,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                                             babModel_->numberBeforeTrust());
                 // Set up pre-processing
                 int translate2[] = {9999, 1, 1, 3, 2, 4, 5, 6, 6};
-                if (preProcess) 
+                if (preProcess)
                   strategy.setupPreProcessing(translate2[preProcess]);
                 babModel_->setStrategy(strategy);
 #ifdef CBC_THREAD
@@ -8718,36 +8708,36 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 ClpParamUtils::saveSolution(osiclp->getModelPtr(), "debug.file");
               }
 #endif
-              statistics_cut_time = 0.0;
+              statistics.cut_time = 0.0;
 	      double direction =
 		babModel_->solver()->getObjSense();
                 // Print more statistics
                 buffer.str("");
                 buffer << "Cuts at root node changed objective from "
                        << babModel_->getContinuousObjective()*direction
-		       << " to " 
+		       << " to "
                        << babModel_->rootObjectiveAfterCuts()*direction;
                 printGeneralMessage(model_, buffer.str());
                 numberGenerators = babModel_->numberCutGenerators();
                 // can get here twice!
-                if (statistics_number_cuts != NULL)
-                  delete[] statistics_number_cuts;
-                statistics_number_cuts = new int[numberGenerators];
+                if (statistics.number_cuts != NULL)
+                  delete[] statistics.number_cuts;
+                statistics.number_cuts = new int[numberGenerators];
 
-                if (statistics_name_generators != NULL)
-                  delete[] statistics_name_generators;
-                statistics_name_generators = new const char *[numberGenerators];
+                if (statistics.name_generators != NULL)
+                  delete[] statistics.name_generators;
+                statistics.name_generators = new const char *[numberGenerators];
 
-                statistics_number_generators = numberGenerators;
+                statistics.number_generators = numberGenerators;
 
                 char timing[30];
                 for (iGenerator = 0; iGenerator < numberGenerators;
                      iGenerator++) {
                   CbcCutGenerator *generator =
                       babModel_->cutGenerator(iGenerator);
-                  statistics_name_generators[iGenerator] =
+                  statistics.name_generators[iGenerator] =
                       generator->cutGeneratorName();
-                  statistics_number_cuts[iGenerator] =
+                  statistics.number_cuts[iGenerator] =
                      generator->numberCutsInTotal();
                   buffer.str("");
                   buffer << generator->cutGeneratorName() << " was tried "
@@ -8756,7 +8746,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                          << " cuts";
                   if (generator->timing()) {
                      buffer << " (" << generator->timeInCutGenerator() <<  " seconds)";
-                     statistics_cut_time += generator->timeInCutGenerator();
+                     statistics.cut_time += generator->timeInCutGenerator();
                   }
                   CglStored *stored = dynamic_cast<CglStored *>(generator->generator());
                   if (stored && !generator->numberCutsInTotal()){
@@ -9199,15 +9189,15 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   iStat2 = 8;
                 if (!iStat && iStat2 == 1 && bestSolution)
                   iStat2 = 0; // solution and search completed
-                statistics_seconds = time2 - time1;
-                statistics_sys_seconds = CoinSysTime();
-                statistics_elapsed_seconds = CoinWallclockTime();
-                statistics_obj = babModel_->getObjValue();
-                statistics_continuous = babModel_->getContinuousObjective();
-                statistics_tighter = babModel_->rootObjectiveAfterCuts();
-                statistics_nodes = babModel_->getNodeCount();
-                statistics_iterations = babModel_->getIterationCount();
-                statistics_result = statusName[iStat];
+                statistics.seconds = time2 - time1;
+                statistics.sys_seconds = CoinSysTime();
+                statistics.elapsed_seconds = CoinWallclockTime();
+                statistics.obj = babModel_->getObjValue();
+                statistics.continuous = babModel_->getContinuousObjective();
+                statistics.tighter = babModel_->rootObjectiveAfterCuts();
+                statistics.nodes = babModel_->getNodeCount();
+                statistics.iterations = babModel_->getIterationCount();
+                statistics.result = statusName[iStat];
                 buffer.str("");
                 buffer << std::endl << "Result - "
                        << statusName[iStat].c_str() << minor[iStat2].c_str()
@@ -9215,7 +9205,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                 printGeneralMessage(model_, buffer.str());
 		buffer.str("");
                 if (babModel_->bestSolution()) {
-		    /* This is an important value 
+		    /* This is an important value
 		       - don't lose too much precision but try
 		       and make pretty - suggestions welcome -
 		       so back to sprintf */
@@ -9740,7 +9730,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                   int numberRows = model2->numberRows();
                   int iColumn;
                   int numberColumns = model2->numberColumns();
-                  
+
                   char **rowNames = NULL;
                   char **columnNames = NULL;
                   if (model2->lengthNames()) {
@@ -9749,7 +9739,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                         rowNames[iRow] =
                            CoinStrdup(model2->rowName(iRow).c_str());
                      }
-                     
+
                      columnNames = new char *[numberColumns];
                      for (iColumn = 0; iColumn < numberColumns; iColumn++) {
                         columnNames[iColumn] =
@@ -10207,9 +10197,9 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                buffer << "Unable to open file " << fileName.c_str();
                printGeneralMessage(model_, buffer.str());
                continue;
-            }              
+            }
             double msObj;
-            
+
             CbcMipStartIO::read(model_.solver(), fileName.c_str(), mipStart,
                                 msObj, model_.messageHandler(),
                                 model_.messagesPointer());
@@ -10357,7 +10347,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
                printGeneralMessage(model_, "There were errors on output");
             }
           } break;
-            
+
           case CbcParam::READMODEL: {
 
             cbcParam->readValue(inputQueue, fileName, &message);
@@ -10548,81 +10538,23 @@ clp watson.mps -\nscaling off\nprimalsimplex");
           case CbcParam::WRITESTATS: {
             cbcParam->readValue(inputQueue, fileName, &message);
             CoinParamUtils::processFile(fileName,
-                                 parameters[CbcParam::DIRECTORY]->dirName());
+                       parameters[CbcParam::DIRECTORY]->dirName());
             if (fileName == ""){
                fileName = parameters[CbcParam::CSVSTATSFILE]->fileName();
             }else{
                parameters[CbcParam::CSVSTATSFILE]->setFileName(fileName);
             }
-            int state = 0;
-            // FIXME: This needs to fixed up to use modern C++ and to use the inputQueue properly
-            char cbuffer[1000];
-            fp = fopen(fileName.c_str(), "r");
-            if (fp) {
-              // file already there
-              state = 1;
-              char *getBuffer = fgets(cbuffer, 1000, fp);
-              if (getBuffer) {
-                // assume header there
-                state = 2;
-              }
-              fclose(fp);
-            }
-            fp = fopen(fileName.c_str(), "a");
-            if (!fp) {
+            if (!statistics.writeCsv(parameters, fileName, saveInputQueue)) {
                buffer.str("");
                buffer << "Unable to open file " << fileName.c_str();
                printGeneralMessage(model_, buffer.str());
                continue;
             }
-            // can open - lets go for it
-            // first header if needed
-            if (state != 2) {
-               fprintf(fp, "Name,result,time,sys,elapsed,objective,continuous,"
-                       "tightened,cut_time,nodes,iterations,rows,columns,"
-                       "processed_rows,processed_columns");
-               for (int i = 0; i < statistics_number_generators; i++)
-                  fprintf(fp, ",%s", statistics_name_generators[i]);
-               fprintf(fp, ",runtime_options");
-               fprintf(fp, "\n");
-            }
-            strcpy(cbuffer, inputQueue[0].c_str());
-            char *slash = cbuffer;
-            for (int i = 0; i < static_cast<int>(strlen(cbuffer)); i++) {
-               if (cbuffer[i] == '/' || cbuffer[i] == '\\')
-                  slash = cbuffer + i + 1;
-            }
-            fprintf(fp,
-                    "%s,%s,%.2f,%.2f,%.2f,%.16g,%g,%g,%.2f,%d,%d,%d,%d,%d,%d",
-                    slash, statistics_result.c_str(), statistics_seconds,
-                    statistics_sys_seconds, statistics_elapsed_seconds,
-                    statistics_obj, statistics_continuous, statistics_tighter,
-                    statistics_cut_time, statistics_nodes,
-                    statistics_iterations, statistics_nrows, statistics_ncols,
-                    statistics_nprocessedrows, statistics_nprocessedcols);
-            for (int i = 0; i < statistics_number_generators; i++)
-               fprintf(fp, ",%d",
-                       statistics_number_cuts != NULL
-                       ? statistics_number_cuts[i]
-                       : 0);
-            fprintf(fp, ",");
-            for (int i = 0; i < inputQueue.size(); i++) {
-               if (strstr(inputQueue[i].c_str(), ".gz") ||
-                   strstr(inputQueue[i].c_str(), ".mps")){
-                  continue;
-               }
-               if (!inputQueue[i].c_str() || !strncmp(inputQueue[i].c_str(), "-csv", 4)){
-                  break;
-               }
-               fprintf(fp, "%s ", inputQueue[i].c_str());
-            }
-            fprintf(fp, "\n");
-            fclose(fp);
           } break;
           case CbcParam::PRINTSOL:
           case CbcParam::WRITESOL:
           case CbcParam::WRITENEXTSOL:
-	    
+
           case CbcParam::WRITEGMPLSOL:{
             if (!goodModel){
                printGeneralWarning(model_, "** Current model not valid\n");
@@ -10829,7 +10761,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                       break;
                     } else {
                       buffer.str("");
-                      buffer << "Alternative solution - "  
+                      buffer << "Alternative solution - "
                              << model_.numberSavedSolutions() - 2 << " remaining";
                       printGeneralMessage(model_, buffer.str());
                     }
@@ -11227,7 +11159,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                           const char *name = rowNames[iRow].c_str();
                           size_t n = strlen(name);
                           size_t i;
-                        
+
                           for (i = 0; i < n; i++)
                               fprintf(fp, "%c", name[i]);
                           for (; i < lengthPrint; i++)
@@ -11270,7 +11202,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                     int type = (printMode > 3) ? 1 : 0;
 
                     std::string valueHasTolerance;
-                    std::string colName; 
+                    std::string colName;
 
                     if (primalColumnSolution[iColumn] >
                             columnUpper[iColumn] + primalTolerance ||
@@ -11322,7 +11254,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
 				    dualColumnSolution[iColumn]);
 			  } else {
 			    // allow for very very large integer values
-			    long int iValue = nearest; 
+			    long int iValue = nearest;
 			    fprintf(fp, printIntFormat, iValue,
 				    dualColumnSolution[iColumn]);
 			  }
@@ -11546,11 +11478,11 @@ clp watson.mps -\nscaling off\nprimalsimplex");
   }
 #endif
   delete[] lotsize;
-  if (statistics_number_cuts != NULL)
-    delete[] statistics_number_cuts;
+  if (statistics.number_cuts != NULL)
+    delete[] statistics.number_cuts;
 
-  if (statistics_name_generators != NULL)
-    delete[] statistics_name_generators;
+  if (statistics.name_generators != NULL)
+    delete[] statistics.name_generators;
     // By now all memory should be freed
 #ifdef DMALLOC
     // dmalloc_log_unfreed();
@@ -11605,7 +11537,7 @@ int cbcReadAmpl(ampl_info *info, int argc, char **argv, CbcModel &model)
             }
          }
       }
-      
+
       void *voidModel;
       int returnCode = readAmpl(info, argc, const_cast<char **>(argv),
                                 &voidModel, "cbc");
@@ -11716,7 +11648,7 @@ static void sortOnOther(int *column, const CoinBigIndex *rowStart, int *order,
 //###########################################################################
 //###########################################################################
 
-static void statistics(ClpSimplex *originalModel, ClpSimplex *model) {
+static void clpStatistics(ClpSimplex *originalModel, ClpSimplex *model) {
   int numberColumns = originalModel->numberColumns();
   const char *integerInformation = originalModel->integerInformation();
   const double *columnLower = originalModel->columnLower();
@@ -13468,7 +13400,7 @@ static int nautiedConstraints(CbcModel &model, int maxPass) {
       numberGenerators = symmetryInfo.getNtyInfo()->getNumGenerators();
     }
     if (numberGenerators) {
-      const double * solution = solver->getColSolution(); 
+      const double * solution = solver->getColSolution();
       // symmetryInfo.Print_Orbits();
       int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();
       if (numberUsefulOrbits) {

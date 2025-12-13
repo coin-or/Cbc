@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -168,6 +169,45 @@ void printGeneralWarning(CbcModel &model, std::string message, int type)
       model.messageHandler()->message(type, model.messages())
          << message << CoinMessageEol;
    }
+}
+
+// Parse an option file into a queue of command tokens.
+static bool loadOptionFileIntoQueue(const std::string &fileName,
+  std::deque< std::string > &inputQueue,
+  std::deque< std::string > &partInputQueue)
+{
+  std::ifstream file(fileName.c_str());
+  if (!file) {
+    std::cout << "unable to open option file " << fileName << std::endl;
+    partInputQueue.clear();
+    return false;
+  }
+
+  std::deque< std::string > tempQueue;
+  std::string line;
+
+  std::cout << "Extra options - ";
+  while (std::getline(file, line)) {
+    if (line.empty())
+      continue;
+    if (line[0] == '*' || line[0] == '#')
+      continue;
+    if (line.size() < 2)
+      continue;
+    if (line[0] != '-')
+      line.insert(line.begin(), '-');
+
+    std::istringstream lineStream(line);
+    std::string token;
+    while (lineStream >> token) {
+      tempQueue.push_back(token);
+      std::cout << token << " ";
+    }
+  }
+  std::cout << std::endl;
+
+  inputQueue = tempQueue;
+  return true;
 }
 
 //###########################################################################
@@ -1626,61 +1666,9 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               if (!inputQueue.empty()) {
                 field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
                 partInputQueue = inputQueue;
-                std::deque< std::string > tempQueue;
-                FILE *fp = fopen(field.c_str(), "r");
-                if (!fp) {
-                  std::cout << "unable to open option file "
-                            << field << std::endl;
-                  std::deque< std::string > tempQueue;
-                  partInputQueue = tempQueue;
+                if (loadOptionFileIntoQueue(field, inputQueue, partInputQueue)) {
                   continue;
                 }
-                /* format of file -
-                   comments line starts with * or #
-                   first character not blank
-                   command is first - if no - then - added
-                */
-                char line[200];
-                std::cout << "Extra options - ";
-                while (fgets(line, 200, fp)) {
-                  // skip comment
-                  if (line[0] == '*' || line[0] == '#')
-                    continue;
-                  int nchar = strlen(line);
-                  if (nchar < 2)
-                    continue;
-                  if (line[0] != '-') {
-                    for (int i = nchar; i >= 0; i--)
-                      line[i + 1] = line[i];
-                    // memmove(line+1,line,nchar+1);
-                    nchar++;
-                    line[0] = '-';
-                  }
-                  char *pos = line;
-                  char *put = line;
-                  while (true) {
-                    while (*pos != '\n' && *pos != '\0'
-                      && *pos != ' ' && *pos != '\t')
-                      pos++;
-                    char save = *pos;
-                    *pos = '\0';
-                    if (strlen(put)) {
-                      tempQueue.push_back(put);
-                      std::cout << put << " ";
-                    }
-                    if (save == ' ' || save == '\t') {
-                      pos++;
-                      while (*pos == ' ' || *pos == '\t')
-                        pos++;
-                      put = pos;
-                    } else {
-                      break; // end of line
-                    }
-                  }
-                }
-                fclose(fp);
-                std::cout << std::endl;
-                inputQueue = tempQueue;
                 continue;
               } else if (partInputQueue.size()) {
                 inputQueue = partInputQueue;

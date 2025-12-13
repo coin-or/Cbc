@@ -210,6 +210,215 @@ static bool loadOptionFileIntoQueue(const std::string &fileName,
   return true;
 }
 
+// Print the general query/help listing for Cbc and Clp parameters.
+static void printGeneralQueryHelp(int verbose,
+  int commandPrintLevel,
+  CbcParameters &cbcParams,
+  ClpParameters &clpParams)
+{
+#if 0
+  // legacy logic retained for future consideration
+  if ((verbose & 8) != 0) {
+    // even hidden
+    // evenHidden = true;
+    verbose &= ~8;
+  }
+  if (verbose < 4 && statusUserFunction_[0])
+    verbose += 4;
+#endif
+  if (verbose) {
+    std::cout << std::endl
+              << "Commands either invoke actions or set parameter values.\n"
+              << "When specifying multiple commands on one command line,\n"
+              << "parameter/action names should be prepended with a '-',\n"
+              << "followed by a value (some actions don't accept values as\n"
+              << "arguments). Specifying -stdin at anytime switches to stdin.\n"
+              << std::endl
+              << "In interactive mode, specify one command per line and\n"
+              << "don't prepend command names with '-'.\n"
+              << std::endl
+              << "Some actions take file names as arguments. If no file name\n"
+              << "is provided, then the previous name (or initial default)\n"
+              << "will be used.\n"
+              << std::endl
+              << "abcd? will list commands starting with 'abcd'.\n"
+              << "If there is only one match, a short explanation is given.\n"
+              << std::endl
+              << "abcd?? will list commands with explanations.\n"
+              << "If there is only one match, fuller help is given.\n"
+              << std::endl
+              << "abcd without value gives current value (for parameters).\n"
+              << "abcd 'value' sets value (for parameters)\n"
+              << std::endl
+              << "Commands are:" << std::endl;
+  } else {
+    std::cout << "Cbc options are set within AMPL with commands like:" << std::endl
+              << std::endl;
+    std::cout << "         option cbc_options \"cuts=root log=2 "
+                 "feas=on slog=1\"" << std::endl
+              << std::endl;
+    std::cout << "only maximize, dual, primal, help and quit are "
+                 "recognized without =" << std::endl;
+  }
+
+  int maxAcross = 10;
+  if ((verbose % 4) != 0) {
+    maxAcross = 1;
+  }
+
+  std::vector< std::string > types;
+  types.push_back("Invalid parameters:");
+  types.push_back("Action parameters:");
+  types.push_back("Integer parameters:");
+  types.push_back("Double parameters:");
+  types.push_back("String parameters:");
+  types.push_back("Directory parameters:");
+  types.push_back("File parameters:");
+  types.push_back("Keyword parameters:");
+
+  std::cout << std::endl
+            << "#### Cbc Parameters ####" << std::endl;
+  for (int type = 1; type < 8; type++) {
+    int across = 0;
+    int lengthLine = 0;
+    bool first = true;
+    for (int iParam = CbcParam::FIRSTPARAM + 1;
+      iParam < CbcParam::LASTPARAM; iParam++) {
+      CbcParam *p = cbcParams[iParam];
+      if (p->type() != type || p->getDisplayPriority() < commandPrintLevel)
+        continue;
+#if 0
+      // legacy formatting and AMPL-specific filtering retained for reference
+      if ((verbose % 4) != 0) {
+        std::cout << std::endl;
+      }
+      if ((verbose & 2) != 0) {
+        std::cout << std::endl;
+      }
+      // TODO Fix AMPL mode stuff
+      // but skip if not useful for ampl (and in ampl mode)
+      if (verbose >= 4 && (p->whereUsed() & 4) == 0)
+        continue;
+#endif
+      if (first) {
+        std::cout << std::endl
+                  << "*** " << types[type] << " ***" << std::endl
+                  << std::endl;
+        first = false;
+      }
+
+      int length = p->lengthMatchName() + 1;
+      if (lengthLine + length > 80) {
+        std::cout << std::endl;
+        across = 0;
+        lengthLine = 0;
+      }
+      if (!across && (verbose & 2) != 0) {
+        std::cout << "Command ";
+      }
+      std::cout << p->matchName();
+      lengthLine += length;
+      across++;
+      if (verbose) {
+        if ((verbose % 4) != 0) {
+          if ((verbose & 1) != 0) {
+            if (length < 8) {
+              std::cout << "\t\t\t";
+            } else if (length < 16) {
+              std::cout << "\t\t";
+            } else {
+              std::cout << "\t";
+            }
+            std::cout << p->shortHelp();
+            std::cout << std::endl;
+          } else if ((verbose & 2) != 0) {
+            std::cout << "---- description" << std::endl;
+            p->printLongHelp();
+            std::cout << "----" << std::endl
+                      << std::endl;
+          }
+        }
+        across = 0;
+        lengthLine = 0;
+      } else {
+        std::cout << " ";
+      }
+      if (across == maxAcross) {
+        across = 0;
+        lengthLine = 0;
+        std::cout << std::endl;
+      }
+    }
+    if (across) {
+      std::cout << std::endl;
+    }
+  }
+
+  std::cout << std::endl
+            << "#### Clp Parameters ####" << std::endl;
+  for (int type = 1; type < 8; type++) {
+    int across = 0;
+    int lengthLine = 0;
+    bool first = true;
+    for (int iParam = ClpParam::FIRSTPARAM + 1;
+      iParam < ClpParam::LASTPARAM; iParam++) {
+      if (clpParams[iParam]->type() != type)
+        continue;
+      ClpParam *p = clpParams[iParam];
+      if (p->type() != type || p->getDisplayPriority() < commandPrintLevel)
+        continue;
+      if (first) {
+        std::cout << std::endl
+                  << "*** " << types[type] << " ***" << std::endl
+                  << std::endl;
+        first = false;
+      }
+      int length = p->lengthMatchName() + 1;
+      if (lengthLine + length > 80) {
+        std::cout << std::endl;
+        across = 0;
+        lengthLine = 0;
+      }
+      if (!across && (verbose & 2) != 0) {
+        std::cout << "Command ";
+      }
+      std::cout << p->matchName();
+      lengthLine += length;
+      across++;
+      if (verbose) {
+        if ((verbose & 1) != 0) {
+          if (length < 8) {
+            std::cout << "\t\t\t";
+          } else if (length < 16) {
+            std::cout << "\t\t";
+          } else {
+            std::cout << "\t";
+          }
+          std::cout << p->shortHelp();
+          std::cout << std::endl;
+        } else if ((verbose & 2) != 0) {
+          std::cout << "---- description" << std::endl;
+          p->printLongHelp();
+          std::cout << "----" << std::endl
+                    << std::endl;
+        }
+        across = 0;
+        lengthLine = 0;
+      } else {
+        std::cout << " ";
+      }
+      if (across == maxAcross) {
+        across = 0;
+        lengthLine = 0;
+        std::cout << std::endl;
+      }
+    }
+    if (across) {
+      std::cout << std::endl;
+    }
+  }
+}
+
 //###########################################################################
 // Define symbols
 //###########################################################################
@@ -1128,7 +1337,6 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
   int callBack(CbcModel *currentSolver, int whereFrom),
   ampl_info *info)
 {
-
   ClpParameters &clpParameters = parameters.clpParameters();
 
   std::ostringstream buffer;
@@ -1875,211 +2083,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           verbose = 1;
           commandPrintLevel = 1;
         }
-#if 0
-          if ((verbose & 8) != 0) {
-            // even hidden
-            // evenHidden = true;
-            verbose &= ~8;
-          }
-          if (verbose < 4 && statusUserFunction_[0])
-            verbose += 4;
-#endif
-        if (verbose) {
-          std::cout << std::endl
-                    << "Commands either invoke actions or set parameter values.\n"
-                    << "When specifying multiple commands on one command line,\n"
-                    << "parameter/action names should be prepended with a '-',\n"
-                    << "followed by a value (some actions don't accept values as\n"
-                    << "arguments). Specifying -stdin at anytime switches to stdin.\n"
-                    << std::endl
-                    << "In interactive mode, specify one command per line and\n"
-                    << "don't prepend command names with '-'.\n"
-                    << std::endl
-                    << "Some actions take file names as arguments. If no file name\n"
-                    << "is provided, then the previous name (or initial default)\n"
-                    << "will be used.\n"
-                    << std::endl
-                    << "abcd? will list commands starting with 'abcd'.\n"
-                    << "If there is only one match, a short explanation is given.\n"
-                    << std::endl
-                    << "abcd?? will list commands with explanations.\n"
-                    << "If there is only one match, fuller help is given.\n"
-                    << std::endl
-                    << "abcd without value gives current value (for parameters).\n"
-                    << "abcd 'value' sets value (for parameters)\n"
-                    << std::endl
-                    << "Commands are:" << std::endl;
-        } else {
-          std::cout << "Cbc options are set within AMPL with commands like:"
-                    << std::endl
-                    << std::endl;
-          std::cout << "         option cbc_options \"cuts=root log=2 "
-                       "feas=on slog=1\""
-                    << std::endl
-                    << std::endl;
-          std::cout << "only maximize, dual, primal, help and quit are "
-                       "recognized without ="
-                    << std::endl;
-        }
-        // TODO Fix these!
-        int maxAcross = 10;
-        if ((verbose % 4) != 0) {
-          maxAcross = 1;
-        }
-        std::vector< std::string > types;
-        types.push_back("Invalid parameters:");
-        types.push_back("Action parameters:");
-        types.push_back("Integer parameters:");
-        types.push_back("Double parameters:");
-        types.push_back("String parameters:");
-        types.push_back("Directory parameters:");
-        types.push_back("File parameters:");
-        types.push_back("Keyword parameters:");
-        std::cout << std::endl
-                  << "#### Cbc Parameters ####" << std::endl;
-        for (int type = 1; type < 8; type++) {
-          int across = 0;
-          int lengthLine = 0;
-          bool first = true;
-          for (int iParam = CbcParam::FIRSTPARAM + 1;
-            iParam < CbcParam::LASTPARAM; iParam++) {
-            // TODO Print model parameters
-            CbcParam *p = parameters[iParam];
-            if (p->type() != type || p->getDisplayPriority() < commandPrintLevel) {
-              continue;
-            }
-            if (first) {
-              std::cout << std::endl
-                        << "*** " << types[type] << " ***"
-                        << std::endl
-                        << std::endl;
-              first = false;
-            }
-#if 0
-	      if ((verbose % 4) != 0) {
-		std::cout << std::endl;
-	      }
-	      if ((verbose & 2) != 0){
-		std::cout << std::endl;
-	      }
-              // TODO Fix AMPL mode stuff
-              // but skip if not useful for ampl (and in ampl mode)
-              if (verbose >= 4 && (p->whereUsed() & 4) == 0)
-                 continue;
-#endif
-            int length = p->lengthMatchName() + 1;
-            if (lengthLine + length > 80) {
-              std::cout << std::endl;
-              across = 0;
-              lengthLine = 0;
-            }
-            if (!across && (verbose & 2) != 0) {
-              std::cout << "Command ";
-            }
-            std::cout << p->matchName();
-            lengthLine += length;
-            across++;
-            if (verbose) {
-              if ((verbose % 4) != 0) {
-                // put out description as well
-                if ((verbose & 1) != 0) {
-                  if (length < 8) {
-                    std::cout << "\t\t\t";
-                  } else if (length < 16) {
-                    std::cout << "\t\t";
-                  } else {
-                    std::cout << "\t";
-                  }
-                  std::cout << p->shortHelp();
-                  std::cout << std::endl;
-                } else if ((verbose & 2) != 0) {
-                  std::cout << "---- description" << std::endl;
-                  p->printLongHelp();
-                  std::cout << "----" << std::endl
-                            << std::endl;
-                }
-              }
-              across = 0;
-              lengthLine = 0;
-            } else {
-              std::cout << " ";
-            }
-            if (across == maxAcross) {
-              across = 0;
-              lengthLine = 0;
-              std::cout << std::endl;
-            }
-          }
-          if (across) {
-            std::cout << std::endl;
-          }
-        }
-        std::cout << std::endl
-                  << "#### Clp Parameters ####" << std::endl;
-        for (int type = 1; type < 8; type++) {
-          int across = 0;
-          int lengthLine = 0;
-          bool first = true;
-          for (int iParam = ClpParam::FIRSTPARAM + 1;
-            iParam < ClpParam::LASTPARAM; iParam++) {
-            if (clpParameters[iParam]->type() != type)
-              continue;
-            ClpParam *p = clpParameters[iParam];
-            if (p->type() != type || p->getDisplayPriority() < commandPrintLevel) {
-              continue;
-            }
-            if (first) {
-              std::cout << std::endl
-                        << "*** " << types[type] << " ***"
-                        << std::endl
-                        << std::endl;
-              first = false;
-            }
-            int length = p->lengthMatchName() + 1;
-            if (lengthLine + length > 80) {
-              std::cout << std::endl;
-              across = 0;
-              lengthLine = 0;
-            }
-            if (!across && (verbose & 2) != 0) {
-              std::cout << "Command ";
-            }
-            std::cout << p->matchName();
-            lengthLine += length;
-            across++;
-            if (verbose) {
-              // put out description as well
-              if ((verbose & 1) != 0) {
-                if (length < 8) {
-                  std::cout << "\t\t\t";
-                } else if (length < 16) {
-                  std::cout << "\t\t";
-                } else {
-                  std::cout << "\t";
-                }
-                std::cout << p->shortHelp();
-                std::cout << std::endl;
-              } else if ((verbose & 2) != 0) {
-                std::cout << "---- description" << std::endl;
-                p->printLongHelp();
-                std::cout << "----" << std::endl
-                          << std::endl;
-              }
-              across = 0;
-              lengthLine = 0;
-            } else {
-              std::cout << " ";
-            }
-            if (across == maxAcross) {
-              across = 0;
-              lengthLine = 0;
-              std::cout << std::endl;
-            }
-          }
-          if (across) {
-            std::cout << std::endl;
-          }
-        }
+        printGeneralQueryHelp(verbose, commandPrintLevel, parameters, clpParameters);
         continue;
       }
 

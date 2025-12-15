@@ -64,17 +64,20 @@
   Hooks for a debugging wrapper for malloc/free. This bit of definition hooks
   C++ new / delete and diverts them into the debugging wrapper.
 */
-
 //#define CLP_DEBUG_MALLOC
 #ifdef CLP_DEBUG_MALLOC
-void *operator new(size_t size) throw(std::bad_alloc)
+void *operator new(size_t size) throw()
 {
-  void *p = clp_malloc(size);
+  void *p = malloc(size); // can do clp_malloc &free
   return p;
 }
 void operator delete(void *p) throw()
 {
-  clp_free(p);
+  free(p);
+}
+void operator delete(void *p,unsigned long ) throw()
+{
+  free(p);
 }
 #endif // CLP_DEBUG_MALLOC
 

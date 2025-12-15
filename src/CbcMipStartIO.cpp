@@ -56,6 +56,7 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
     while (fgets(line, STR_SIZE, f)) {
       ++nLine;
       char col[4][STR_SIZE] = {"", "", "", ""};
+#ifndef MIPLIB2017_FORMAT
       int nread = sscanf(line, "%s %s %s %s", col[0], col[1], col[2], col[3]);
       if (!nread)
 	continue;
@@ -66,6 +67,12 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
 	  messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
 	  continue;
 	}
+#else
+      int nread = sscanf(line, "%s %s", col[1], col[2]);
+      if (nread<=0)
+	continue;
+      if (true) {
+#endif
 	if (!isNumericStr(col[2])) {
 	  sprintf(printLine, "Reading: %s, line %d - Third column in mipstart file should be numeric, ignoring.", fileName, nLine);
 	  messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;

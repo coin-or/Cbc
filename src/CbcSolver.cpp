@@ -160,6 +160,77 @@ void printGeneralMessage(CbcModel &model, std::string message, int type)
    }
 }
 
+static bool applyCliqueStrengthening(OsiSolverInterface *solver,
+  CoinMessageHandler *handler,
+  const std::string &mode,
+  int strengthenMode,
+  std::ostringstream &buffer,
+  CbcModel &model)
+{
+  if (mode != "before" && mode != "after")
+    return false;
+
+  solver->checkCGraph(handler);
+  const CoinStaticConflictGraph *cgraph = solver->getCGraph();
+  if (cgraph == NULL)
+    return false;
+
+  int nBoundsChanged = 0;
+  if (cgraph->updatedBounds().size()) {
+    for (const auto &bnd_change : cgraph->updatedBounds()) {
+      size_t idx = bnd_change.first;
+      double curr_lb = solver->getColLower()[idx];
+      double curr_ub = solver->getColUpper()[idx];
+      double lb = bnd_change.second.first;
+      double ub = bnd_change.second.second;
+
+      if (lb != curr_lb || ub != curr_ub) {
+#ifdef CGRAPH_DEEP_DIVE
+        printf("CGraph var bnd update:  [%s](%zu) coltype %d from [%g,%g] to [%g,%g]\n",
+               solver->getColName(idx).c_str(), idx, solver->getColType()[idx], curr_lb, curr_ub, lb, ub);
+#endif CGRAPH_DEEP_DIVE
+        solver->setColLower(idx, lb);
+        solver->setColUpper(idx, ub);
+        nBoundsChanged++;
+      }
+    }
+  }
+
+  if (nBoundsChanged > 0 && handler && handler->logLevel()) {
+    handler->message(COIN_CGRAPH_FIX_VAR, solver->messages()) << nBoundsChanged << CoinMessageEol;
+  }
+
+  CglCliqueStrengthening clqStr(solver, handler);
+  clqStr.strengthenCliques(strengthenMode);
+
+  int changes = clqStr.constraintsExtended() + clqStr.constraintsDominated() + nBoundsChanged;
+
+  if (changes == 0)
+    return false;
+
+  if (mode == "before") {
+    solver->initialSolve();
+  } else {
+    bool takeHint;
+    OsiHintStrength strength;
+    solver->getHintParam(OsiDoDualInResolve, takeHint, strength);
+    solver->setHintParam(OsiDoDualInResolve, false, OsiHintTry);
+    solver->resolve();
+    solver->setHintParam(OsiDoDualInResolve, takeHint, strength);
+  }
+
+  if (solver->isProvenPrimalInfeasible()) {
+    printGeneralMessage(model, "Clique Strengthening says infeasible!");
+  } else {
+    buffer.str("");
+    buffer << "After applying Clique Strengthening continuous objective value is "
+           << solver->getObjValue();
+    printGeneralMessage(model, buffer.str());
+  }
+
+  return true;
+}
+
 //#############################################################################
 //#############################################################################
 
@@ -2026,23 +2097,12 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       if (cbcParamCode == CbcParam::BAB && goodModel) {
         if (clqstrMode == "before") { // performing clique strengthening
                                       // before initial solve
-          CglCliqueStrengthening clqStr(model_.solver(),
-            model_.messageHandler());
-          clqStr.strengthenCliques(2);
-
-          if (clqStr.constraintsExtended() + clqStr.constraintsDominated() > 0) {
-            model_.solver()->initialSolve();
-
-            if (model_.solver()->isProvenPrimalInfeasible()) {
-              printGeneralMessage(model_,
-                "Clique Strengthening says infeasible!");
-            } else {
-              buffer.str("");
-              buffer << "After applying Clique Strengthening continuous "
-                     << "objective value is " << model_.solver()->getObjValue();
-              printGeneralMessage(model_, buffer.str());
-            }
-          }
+          applyCliqueStrengthening(model_.solver(),
+            model_.messageHandler(),
+            clqstrMode,
+            2,
+            buffer,
+            model_);
         }
 #if CBC_USE_INITIAL_TIME == 1
         if (model_.useElapsedTime())
@@ -3885,8 +3945,9 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #elif CBC_OTHER_SOLVER == 1
 #endif
             buffer.str("");
+            statistics.lp_seconds = CoinCpuTime() - time1a;
             buffer << "Continuous objective value is " << solver->getObjValue() << " - "
-                   << CoinCpuTime() - time1a << " seconds";
+                   << statistics.lp_seconds << " seconds";
             printGeneralMessage(model_, buffer.str());
             if (model_.getMaximumNodes() == -987654321) {
               // See if No objective!
@@ -5603,30 +5664,12 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             clqstrMode = "off";
           }
           if (clqstrMode == "after") {
-            CglCliqueStrengthening clqStr(babModel_->solver(),
-              babModel_->messageHandler());
-            clqStr.strengthenCliques(4);
-
-            if (clqStr.constraintsExtended() + clqStr.constraintsDominated() > 0) {
-              OsiSolverInterface *solver = babModel_->solver();
-              bool takeHint;
-              OsiHintStrength strength;
-              solver->getHintParam(OsiDoDualInResolve, takeHint, strength);
-              solver->setHintParam(OsiDoDualInResolve, false, OsiHintTry);
-              solver->resolve();
-              solver->setHintParam(OsiDoDualInResolve, takeHint, strength);
-
-              if (solver->isProvenPrimalInfeasible()) {
-                printGeneralMessage(model_,
-                  "Clique Strengthening says infeasible!");
-              } else {
-                buffer.str("");
-                buffer << "After applying Clique Strengthening continuous "
-                       << "objective value is "
-                       << solver->getObjValue();
-                printGeneralMessage(model_, buffer.str());
-              } // results of clique Strengthening stengthening
-            } // checking impact of clique Strengthening stengthening
+            applyCliqueStrengthening(babModel_->solver(),
+              babModel_->messageHandler(),
+              clqstrMode,
+              4,
+              buffer,
+              model_);
           } // clique Strengthening
 
           // now tighten bounds

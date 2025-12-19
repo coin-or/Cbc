@@ -106,7 +106,7 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
 
   if (!hasHeader) {
     std::ostringstream header;
-    header << "Name,result,time,sys,elapsed,objective,continuous,tightened,cut_time,";
+    header << "Name,result,time,sys,elapsed,objective,continuous,lp_seconds,tightened,cut_time,";
     header << "nodes,iterations,rows,columns,processed_rows,processed_columns";
     for (int i = 0; i < number_generators; ++i) {
       const char *name = (name_generators && name_generators[i]) ? name_generators[i] : "cut";
@@ -129,6 +129,7 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
        << formatDouble(elapsed_seconds, 2, std::ios_base::fixed) << ','
        << formatDouble(obj, 16) << ','
        << formatDouble(continuous, 6) << ','
+       << formatDouble(lp_seconds, 2, std::ios_base::fixed) << ','
        << formatDouble(tighter, 6) << ','
        << formatDouble(cut_time, 2, std::ios_base::fixed) << ','
        << nodes << ',' << iterations << ',' << nrows << ',' << ncols << ','

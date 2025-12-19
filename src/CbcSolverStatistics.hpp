@@ -1,3 +1,14 @@
+/**
+ * Copyright COIN-OR Foundation (C) 2025
+ * All Rights Reserved.
+ * This file is distributed under the Eclipse Public License.
+ *
+ * Purpose: Store several metrics related to the performance and results
+ * of the CBC MIP solver.
+ *
+ **/
+
+
 #ifndef CBC_SOLVER_STATISTICS
 #define CBC_SOLVER_STATISTICS
 
@@ -21,6 +32,9 @@ public:
 
   /** LP relaxation cost */
   double continuous = 0.0;
+
+  /** LP relaxation time */
+  double lp_seconds = 0.0;
 
   /** Cost after tightening LP relaxation with cuts */
   double tighter = 0.0;

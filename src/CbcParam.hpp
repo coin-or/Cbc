@@ -36,26 +36,26 @@ public:
 
    /*! \name Enumeration types used to index parameters */
    //@{
-   
+
    /*! \brief Codes to specify psramters */
 
    enum CbcParamCode {
       FIRSTPARAM = 0,
-      
+
       // Unused paramters that we may delete
       FIRSTUNUSEDPARAM,
       BRANCHSTRATEGY,
       CLEARCUTS,
       SOLVER,
       LASTUNUSEDPARAM,
-      
+
       // Help and Information Parameters
       FIRSTHELPPARAM,
       GENERALQUERY,
       FULLGENERALQUERY,
       HELP,
       LASTHELPPARAM,
-      
+
       // Action Parameters
       FIRSTACTIONPARAM,
       BAB,
@@ -93,7 +93,7 @@ public:
       WRITESOLBINARY_OLD, // For backward compatibility
       WRITESTATS,
       LASTACTIONPARAM,
-      
+
       // File Parameters
       FIRSTFILEPARAM,
       CSVSTATSFILE,
@@ -122,7 +122,7 @@ public:
       PRINTMASK,
       OUTPUTPRECISION,
       LASTSTRINGPARAM,
-      
+
       // Cut Parameters
       FIRSTCUTPARAM,
       CLIQUECUTS,
@@ -144,7 +144,7 @@ public:
       TWOMIRCUTS,
       ZEROHALFCUTS,
       LASTCUTPARAM,
-      
+
       // Heuristic Parameters
       FIRSTHEURPARAM,
       COMBINE,
@@ -172,7 +172,7 @@ public:
       ROUNDING,
       VND,
       LASTHEURPARAM,
-      
+
       // On/Off Parameters
       FIRSTBOOLPARAM,
       CPX,
@@ -183,7 +183,7 @@ public:
       SOS,
       USESOLUTION,
       LASTBOOLPARAM,
-      
+
       // Keyword Parameters
       FIRSTKWDPARAM,
       COMMANDPRINTLEVEL,
@@ -199,7 +199,7 @@ public:
       TIMEMODE,
       USECGRAPH,
       LASTKWDPARAM,
-      
+
       // Integer Parameters
       FIRSTINTPARAM,
       AGGREGATEMIXED,
@@ -244,7 +244,7 @@ public:
       VERBOSE,
       VUBTRY,
       LASTINTPARAM,
-      
+
       // Double Parameters
       FIRSTDBLPARAM,
       ARTIFICIALCOST,
@@ -257,7 +257,7 @@ public:
       SMALLBAB,
       TIGHTENFACTOR,
       LASTDBLPARAM,
-      
+
       FIRSTMODELPARAM,
       ALLOWABLEGAP,
       COSTSTRATEGY,
@@ -284,9 +284,9 @@ public:
       STRONGBRANCHING,
       TIMELIMIT,
       LASTMODELPARAM,
-      
+
       INVALID,
-   
+
       LASTPARAM
    };
 

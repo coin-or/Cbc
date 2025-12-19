@@ -439,7 +439,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::DOHEURISTIC]->setDefault("off");
      parameters_[CbcParam::ERRORSALLOWED]->setDefault("off");
      parameters_[CbcParam::MESSAGES]->setDefault("off");
-     parameters_[CbcParam::PREPROCNAMES]->setDefault("off");
+     parameters_[CbcParam::PREPROCNAMES]->setDefault("on");
      parameters_[CbcParam::SOS]->setDefault("off");
      parameters_[CbcParam::USESOLUTION]->setDefault("off");
      parameters_[CbcParam::CUTSTRATEGY]->setDefault("off");

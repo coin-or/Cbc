@@ -18,6 +18,13 @@ dist
 **/MSVisualStudio/**/Release/
 **/MSVisualStudio/**/ReleaseParallel/
 **/MSVisualStudio/**/Debug/
+*.Po
+*.Plo
+*.a
+*.la
+*.lai
+*.o
+*.lo
 
 # Ignore files created during unit tests
 **/MSVisualStudio/**/*.mps

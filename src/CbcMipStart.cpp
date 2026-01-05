@@ -12,9 +12,11 @@
 #include "CbcMessage.hpp"
 #include "CbcHeuristic.hpp"
 #include <CbcModel.hpp>
-#include "CbcMipStartIO.hpp"
+#include "CbcMipStart.hpp"
 #include "CbcSOS.hpp"
 #include "CoinTime.hpp"
+
+#define MAX_MIPSTART_WARNINGS_TYPES 10
 
 bool isNumericStr(const char *str)
 {
@@ -27,17 +29,92 @@ bool isNumericStr(const char *str)
   return true;
 }
 
-int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
+std::vector< std::pair< std::string, double > > CbcMipStart::validateMIPStartValues(
+  OsiSolverInterface *solver, const std::vector< std::pair< std::string, double > > &colValues,
+  CoinMessageHandler *messHandler, CoinMessages *pcoinmsgs,
+  bool preProcessedModel)
+{
+  messHandler->setMessageLimit(CBC_MIPSTART_INVALID_VALUE, MAX_MIPSTART_WARNINGS_TYPES);
+  messHandler->setMessageLimit(CBC_MIPSTART_INVALID_COLUMN, MAX_MIPSTART_WARNINGS_TYPES);
+  messHandler->setMessageLimit(CBC_MIPSTART_OUT_OF_BOUNDS, MAX_MIPSTART_WARNINGS_TYPES);
+  messHandler->setMessageLimit(CBC_MIPSTART_NON_INTEGRAL, MAX_MIPSTART_WARNINGS_TYPES);
+  messHandler->setMessageLimit(CBC_MIPSTART_UNKNOWN_COLUMN, MAX_MIPSTART_WARNINGS_TYPES);
+
+  std::vector< std::pair< std::string, double > > validValues;
+
+  CoinMessages &messages = *pcoinmsgs;
+  const int numCols = solver->getNumCols();
+
+  std::map< std::string, int > colIndex;
+  for (int col = 0; col < numCols; ++col)
+    colIndex[solver->getColName(col)] = col;
+
+  const double *lower = solver->getColLower();
+  const double *upper = solver->getColUpper();
+  const double integerTol = solver->getIntegerTolerance();
+  double primalTol = 1e-8;
+  solver->getDblParam(OsiPrimalTolerance, primalTol);
+
+  if (!preProcessedModel) {
+    // if original model, we would expect all columns to be know
+    for (size_t i = 0; i < colValues.size(); ++i) {
+      const std::string &colName = colValues[i].first;
+      std::map< std::string, int >::const_iterator it = colIndex.find(colName);
+      if (it == colIndex.end()) {
+        messHandler->message(CBC_MIPSTART_UNKNOWN_COLUMN, messages)
+          << colName << colValues[i].second << CoinMessageEol;
+      }
+    }
+  }
+
+  // checking bounds and integrality of each variable and check if value
+  // provided in MIP start is Ok
+  for (size_t i = 0; i < colValues.size(); ++i) {
+    const std::string &colName = colValues[i].first;
+    const double value = colValues[i].second;
+    std::map< std::string, int >::const_iterator it = colIndex.find(colName);
+    if (it == colIndex.end()) {
+      // variable does not appears in MIPStart
+      continue;
+    }
+
+    const int idx = it->second;
+    const double lo = lower[idx];
+    const double up = upper[idx];
+    if (value < lo - primalTol || value > up + primalTol) {
+      messHandler->message(CBC_MIPSTART_OUT_OF_BOUNDS, messages)
+        << value << colName << lo << up << CoinMessageEol;
+      continue;
+    }
+
+    bool isInt = solver->isInteger(idx) || solver->isBinary(idx);
+    if (isInt) {
+      double nearest = floor(value + 0.5);
+      double gap = fabs(value - nearest);
+      if (gap > integerTol) {
+        messHandler->message(CBC_MIPSTART_NON_INTEGRAL, messages)
+          << value << colName << gap << integerTol << CoinMessageEol;
+        continue;
+      }
+    }
+
+    validValues.push_back(colValues[i]);
+  }
+
+  return validValues;
+}
+
+int CbcMipStart::read(OsiSolverInterface *solver, const char *fileName,
   std::vector< std::pair< std::string, double > > &colValues,
   double &solObj, CoinMessageHandler *messHandler, CoinMessages *pcoinmsgs)
 {
   CoinMessages &messages = *pcoinmsgs;
-#define STR_SIZE 256
+#define STR_SIZE 4096
   char printLine[STR_SIZE] = "";
   FILE *f = fopen(fileName, "r");
   if (!f) {
     sprintf(printLine, "Unable to open file %s.", fileName);
-    messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+    messHandler->message(CBC_MIPSTART_WARNING, messages) << printLine << CoinMessageEol;
     return 1;
   }
   char line[STR_SIZE] = "";
@@ -47,42 +124,40 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
   int lengthFilename = strlen(fileName);
   // separator
   char separator = ' ';
-  if (strstr(fileName,".psv") == fileName+lengthFilename-4)
+  if (strstr(fileName, ".psv") == fileName + lengthFilename - 4)
     separator = '|';
-  else if (strstr(fileName,".csv") == fileName+lengthFilename-4) 
+  else if (strstr(fileName, ".csv") == fileName + lengthFilename - 4)
     separator = ',';
-  if (separator==' ') {
+  if (separator == ' ') {
     // ordinary
     while (fgets(line, STR_SIZE, f)) {
       ++nLine;
-      char col[4][STR_SIZE] = {"", "", "", ""};
+      char col[4][STR_SIZE] = { "", "", "", "" };
 #ifndef MIPLIB2017_FORMAT
       int nread = sscanf(line, "%s %s %s %s", col[0], col[1], col[2], col[3]);
       if (!nread)
-	continue;
+        continue;
       /* line with variable value */
       if (strlen(col[0]) && isdigit(col[0][0]) && (nread >= 3)) {
-	if (!isNumericStr(col[0])) {
-	  sprintf(printLine, "Reading: %s, line %d - first column in mipstart file should be numeric, ignoring.", fileName, nLine);
-	  messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
-	  continue;
-	}
+        if (!isNumericStr(col[0])) {
+          messHandler->message(CBC_MIPSTART_INVALID_COLUMN, messages) << fileName << nLine << "first" << CoinMessageEol;
+          continue;
+        }
 #else
       int nread = sscanf(line, "%s %s", col[1], col[2]);
-      if (nread<=0)
-	continue;
+      if (nread <= 0)
+        continue;
       if (true) {
 #endif
-	if (!isNumericStr(col[2])) {
-	  sprintf(printLine, "Reading: %s, line %d - Third column in mipstart file should be numeric, ignoring.", fileName, nLine);
-	  messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
-	  continue;
-	}
-	
-	char *name = col[1];
-	double value = atof(col[2]);
-	
-	colValues.push_back(std::pair< std::string, double >(std::string(name), value));
+        if (!isNumericStr(col[2])) {
+          messHandler->message(CBC_MIPSTART_INVALID_COLUMN, messages) << fileName << nLine << "third" << CoinMessageEol;
+          continue;
+        }
+
+        char *name = col[1];
+        double value = atof(col[2]);
+
+        colValues.push_back(std::pair< std::string, double >(std::string(name), value));
       }
     }
   } else {
@@ -95,53 +170,52 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
       // out \n \r and blanks
       int n = strlen(line);
       int nNew = 0;
-      for (int i=0;i<n;i++) {
-	char charX = line[i];
-	if (charX==' ') {
-	  continue;
-	} else if (charX=='\n'||charX=='\r') {
-	  line[nNew]='\0';
-	  break;
-	} else {
-	  line[nNew++] = charX;
-	}
+      for (int i = 0; i < n; i++) {
+        char charX = line[i];
+        if (charX == ' ') {
+          continue;
+        } else if (charX == '\n' || charX == '\r') {
+          line[nNew] = '\0';
+          break;
+        } else {
+          line[nNew++] = charX;
+        }
       }
-      char * pipeorcomma = strchr(line,separator);
+      char *pipeorcomma = strchr(line, separator);
       if (!pipeorcomma) {
-	if (!nBad1) {
-	  if (nLine>1) {
-	    sprintf(printLine, "Reading: %s, line %d (%s) - mipstart file should contain |.", fileName, nLine,line);
-	    messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
-	  } else {
-	    // may be OK
-	    nBad1--;
-	  }
-	}
-	nBad1++;
-	continue;
+        if (!nBad1) {
+          if (nLine > 1) {
+            sprintf(printLine, "Reading: %s, line %d (%s) - mipstart file should contain |.", fileName, nLine, line);
+            messHandler->message(CBC_MIPSTART_WARNING, messages) << printLine << CoinMessageEol;
+          } else {
+            // may be OK
+            nBad1--;
+          }
+        }
+        nBad1++;
+        continue;
       }
       *pipeorcomma = '\0';
-      if (!isNumericStr(pipeorcomma+1)) {
-	if (!nBad2) {
-	  if (nLine>1) {
-	    sprintf(printLine, "Reading: %s, line %d (%s) - Second column in mipstart file should be numeric.", fileName, nLine,line);
-	    messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
-	  } else {
-	    // may be OK
-	    nBad2--;
-	  }
-	}
-	nBad2++;
-	continue;
+      if (!isNumericStr(pipeorcomma + 1)) {
+        if (!nBad2) {
+          if (nLine > 1) {
+            messHandler->message(CBC_MIPSTART_INVALID_COLUMN, messages) << fileName << nLine << "second" << CoinMessageEol;
+          } else {
+            // may be OK
+            nBad2--;
+          }
+        }
+        nBad2++;
+        continue;
       }
-	
-      double value = atof(pipeorcomma+1);
-      
+
+      double value = atof(pipeorcomma + 1);
+
       colValues.push_back(std::pair< std::string, double >(std::string(line), value));
     }
-    if (nBad1||nBad2) {
-      sprintf(printLine, "Reading: %s, %d errors.", fileName, nBad1+nBad2);
-      messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+    if (nBad1 || nBad2) {
+      sprintf(printLine, "Reading: %s, %d errors.", fileName, nBad1 + nBad2);
+      messHandler->message(CBC_MIPSTART_WARNING, messages) << printLine << CoinMessageEol;
       return 1;
     }
   }
@@ -159,26 +233,24 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
     }
     const double *lower = solver->getColLower();
     const double *upper = solver->getColUpper();
-    int nBadValues = 0;
+
+    // check bounds and integrality
+    std::vector< std::pair< std::string, double > > fixedValues =
+      validateMIPStartValues(solver, colValues, messHandler, pcoinmsgs, false);
+
+    int nBadValues = colValues.size() - fixedValues.size();
     for (int i = 0; (i < static_cast< int >(colValues.size())); ++i) {
       std::map< std::string, int >::const_iterator mIt = colIdx.find(colValues[i].first);
       if (mIt != colIdx.end()) {
         const int idx = mIt->second;
         double v = colValues[i].second;
-	if (v>upper[idx]) {
-	  nBadValues++;
-	  v = upper[idx];
-	} else if (v<lower[idx]) {
-	  nBadValues++;
-	  v = lower[idx];
-	}
         fullValues[idx].second = v;
       }
     }
     if (nBadValues) {
-      sprintf(printLine,"Warning: modifying %d solution values outside bounds",
-	      nBadValues);
-      messHandler->message(CBC_GENERAL, messages) << printLine << CoinMessageEol;
+      sprintf(printLine, "Warning: modifying %d solution values outside bounds",
+        nBadValues);
+      messHandler->message(CBC_MIPSTART_WARNING, messages) << printLine << CoinMessageEol;
     }
     colValues = fullValues;
   } else {
@@ -192,14 +264,14 @@ int CbcMipStartIO::read(OsiSolverInterface *solver, const char *fileName,
   return 0;
 }
 
-int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *solver,
-  const std::vector< std::string > colNames,
+int CbcMipStart::computeCompleteSolution(CbcModel *model, OsiSolverInterface *solver,
+  const std::vector< std::string > &colNames,
   const std::vector< std::pair< std::string, double > > &colValues,
   double *sol, double &obj, int extraActions, CoinMessageHandler *messHandler, CoinMessages *pmessages)
 {
   if (!solver->getNumCols())
     return 0;
-  
+
   CoinMessages &messages = *pmessages;
 
   int status = 0;
@@ -219,7 +291,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
   char colNotFound[256] = "";
   int nContinuousFixed = 0;
   double *realObj = new double[lp->getNumCols()];
-  memcpy(realObj, lp->getObjCoefficients(), sizeof(double)*lp->getNumCols());
+  memcpy(realObj, lp->getObjCoefficients(), sizeof(double) * lp->getNumCols());
 
   // assuming that variables not fixed are more likely to have zero as value,
   // inserting as default objective function 1
@@ -240,9 +312,9 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
   }
 #endif
   if (extraActions) {
-    const double * objective = lp->getObjCoefficients();
-    const double * lower = lp->getColLower();
-    const double * upper = lp->getColUpper();
+    const double *objective = lp->getObjCoefficients();
+    const double *lower = lp->getColLower();
+    const double *upper = lp->getColUpper();
     for (int i = 0; (i < lp->getNumCols()); ++i) {
       if (lp->isInteger(i)) {
         double objValue = objective[i];
@@ -257,22 +329,22 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
           break;
         case 3:
           lp->setColBounds(i, lowerValue, lowerValue);
-          if (objValue<0.0)
+          if (objValue < 0.0)
             lp->setColBounds(i, upperValue, upperValue);
           break;
         case 4:
           lp->setColBounds(i, upperValue, upperValue);
-          if (objValue>0.0)
+          if (objValue > 0.0)
             lp->setColBounds(i, lowerValue, lowerValue);
           break;
         case 5:
           lp->setColBounds(i, lowerValue, lowerValue);
-          if (objValue>0.0)
+          if (objValue > 0.0)
             lp->setColBounds(i, upperValue, upperValue);
           break;
         case 6:
           lp->setColBounds(i, upperValue, upperValue);
-          if (objValue<0.0)
+          if (objValue < 0.0)
             lp->setColBounds(i, lowerValue, lowerValue);
           break;
         }
@@ -298,7 +370,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
         v = floor(v + 0.5); // fractional garbage
       else
         nContinuousFixed++;
-      
+
       lp->setColBounds(idx, v, v);
       ++fixed;
     }
@@ -311,17 +383,17 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
     if (model) {
       int numberObjects = model->numberObjects();
       for (int i = 0; i < numberObjects; i++) {
-	const CbcSOS *object = dynamic_cast< const CbcSOS * >(model->object(i));
-	if (object) {
-	  fixed=1;
-	  break; // SOS assume user is expert
-	}
+        const CbcSOS *object = dynamic_cast< const CbcSOS * >(model->object(i));
+        if (object) {
+          fixed = 1;
+          break; // SOS assume user is expert
+        }
       }
     }
     if (!fixed) {
       messHandler->message(CBC_GENERAL, messages)
-	<< "Warning: MIPstart solution is not valid, column names do not match, ignoring it."
-	<< CoinMessageEol;
+        << "Warning: MIPstart solution is not valid, column names do not match, ignoring it."
+        << CoinMessageEol;
       goto TERMINATE;
     }
   }
@@ -335,7 +407,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
   lp->setHintParam(OsiDoPresolveInInitial, true, OsiHintDo);
 #endif
 
-  //lp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
+  // lp->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
   lp->initialSolve();
 
   if ((lp->isProvenPrimalInfeasible()) || (lp->isProvenDualInfeasible())) {
@@ -405,7 +477,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
               }
             }
           }
-        }        
+        }
       }
 
       delete[] savedSol;
@@ -439,13 +511,13 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
     sprintf(printLine, "MIPStart solution provided values for %d of %d integer variables, %d variables are still fractional.", fixed, lp->getNumIntegers(), static_cast< int >(lp->getFractionalIndices().size()));
     messHandler->message(CBC_GENERAL, messages)
       << printLine << CoinMessageEol;
-    if (lp->getFractionalIndices().size()<5) {
-      for (int i=0;i<lp->getFractionalIndices().size();i++) {
-	int iColumn = lp->getFractionalIndices()[i];
-	sprintf(printLine, "Variable %d %s has value %g",iColumn,
-		colNames[iColumn].c_str(),lp->getColSolution()[iColumn]);
-	messHandler->message(CBC_GENERAL, messages)
-	  << printLine << CoinMessageEol;
+    if (lp->getFractionalIndices().size() < 5) {
+      for (int i = 0; i < lp->getFractionalIndices().size(); i++) {
+        int iColumn = lp->getFractionalIndices()[i];
+        sprintf(printLine, "Variable %d %s has value %g", iColumn,
+          colNames[iColumn].c_str(), lp->getColSolution()[iColumn]);
+        messHandler->message(CBC_GENERAL, messages)
+          << printLine << CoinMessageEol;
       }
     }
     double start = CoinCpuTime();
@@ -466,8 +538,8 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
       foundIntegerSol = true;
       lp->getDblParam(OsiObjOffset, obj);
       obj = -obj;
-      for ( int i=0 ; (i<lp->getNumCols()) ; ++i )
-          obj += realObj[i]*sol[i];
+      for (int i = 0; (i < lp->getNumCols()); ++i)
+        obj += realObj[i] * sol[i];
     }
 #else
     CbcModel babModel(*lp);
@@ -494,11 +566,11 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
     }
   } else {
     foundIntegerSol = true;
-    
+
     lp->getDblParam(OsiObjOffset, obj);
     obj = -obj;
-    for ( int i=0 ; (i<lp->getNumCols()) ; ++i )
-      obj += realObj[i]*lp->getColSolution()[i];
+    for (int i = 0; (i < lp->getNumCols()); ++i)
+      obj += realObj[i] * lp->getColSolution()[i];
     compObj = obj;
     std::copy(lp->getColSolution(), lp->getColSolution() + lp->getNumCols(), sol);
   }
@@ -563,7 +635,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
 	  }
 	}
 	for (int i = 0 ; i < numberRows ; i++) {
-#if 0 //def CLP_INVESTIGATE
+#if 0 // def CLP_INVESTIGATE
 	  double inf;
 	  inf = rowLower[i] - rowActivity[i];
 	  if (inf > primalTolerance)
@@ -608,8 +680,8 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
                sol[i] = floor( sol[i]+0.5 );
 #else
       if (lp->isInteger(i)) {
-        //if (fabs(sol[i] - floor( sol[i]+0.5 ))>1.0e-8)
-        //printf("bad sol for %d - %.12g\n",i,sol[i]);
+        // if (fabs(sol[i] - floor( sol[i]+0.5 ))>1.0e-8)
+        // printf("bad sol for %d - %.12g\n",i,sol[i]);
         sol[i] = floor(sol[i] + 0.5);
       }
 #endif
@@ -667,7 +739,7 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
 	  }
 	}
 	for (int i = 0 ; i < numberRows ; i++) {
-#if 0 //def CLP_INVESTIGATE
+#if 0 // def CLP_INVESTIGATE
 	  double inf;
 	  inf = rowLower[i] - rowActivity[i];
 	  if (inf > primalTolerance)
@@ -735,9 +807,9 @@ int CbcMipStartIO::computeCompleteSolution(CbcModel *model, OsiSolverInterface *
         }
       }
     }
-    //printf("%d other, LB %d natural, %d neutral, %d forced, UB %d natural, %d neutral, %d forced\n",
-    //nOther, nNaturalLB, nMaybeLB, nForcedLB,
-    //nNaturalUB, nMaybeUB, nForcedUB = 0);
+    // printf("%d other, LB %d natural, %d neutral, %d forced, UB %d natural, %d neutral, %d forced\n",
+    // nOther, nNaturalLB, nMaybeLB, nForcedLB,
+    // nNaturalUB, nMaybeUB, nForcedUB = 0);
 #endif
   }
 
@@ -749,4 +821,4 @@ TERMINATE:
 #undef STR_SIZE
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
-*/
+ */

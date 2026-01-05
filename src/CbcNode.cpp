@@ -6754,19 +6754,7 @@ int CbcNode::chooseClpBranch(CbcModel *model,
     }
     simplex->setLogLevel(saveLogLevel);
     double cutoff = model->getCutoff();
-    bool goodSolution = true;
-    if (simplex->status()) {
-      //simplex->writeMps("bad7.mps",2);
-      if (nodeInfo) {
-        if (nodeInfo->objectiveValue() > cutoff - 1.0e-2)
-          goodSolution = false;
-        else
-          assert(!simplex->status());
-      } else {
-        // debug diving
-        assert(!simplex->status());
-      }
-    }
+    bool goodSolution = !simplex->status();
     if (goodSolution) {
       double newObjectiveValue = solver->getObjSenseInCbc() * solver->getObjValue();
       // See if integer solution

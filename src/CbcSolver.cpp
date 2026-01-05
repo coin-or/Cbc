@@ -21,6 +21,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <map>
 #include "CbcSolverStatistics.hpp"
 
 #if defined(NEW_DEBUG_AND_FILL) || defined(CLP_MALLOC_STATISTICS)
@@ -134,7 +135,7 @@ void CbcCrashHandler(int sig);
 #include "CbcHeuristicRINS.hpp"
 #include "CbcHeuristicRandRound.hpp"
 #include "CbcMessage.hpp"
-#include "CbcMipStartIO.hpp"
+#include "CbcMipStart.hpp"
 #include "CbcModel.hpp"
 #include "CbcParam.hpp"
 #include "CbcParamUtils.hpp"
@@ -149,8 +150,8 @@ void CbcCrashHandler(int sig);
 #include "omp.h"
 #endif
 
-//#############################################################################
-//#############################################################################
+#define CGRAPH_INFEASIBLE_IMPLICATION_WARNING_LIMIT 5
+
 
 void printGeneralMessage(CbcModel &model, std::string message, int type)
 {
@@ -160,41 +161,164 @@ void printGeneralMessage(CbcModel &model, std::string message, int type)
    }
 }
 
-static bool applyCliqueStrengthening(OsiSolverInterface *solver,
+static void checkValidityOfUpdatedBoundsWithMIPStart(std::map< std::string, double > &mipStartMap,
+  size_t colIdx,
+  const std::string &varName,
+  double lb,
+  double ub,
+  CoinMessageHandler *handler,
+  CoinMessages *messages,
+  const double primalTolerance = 1e-8)
+{
+  std::map< std::string, double >::const_iterator it = mipStartMap.find(varName);
+  if (it == mipStartMap.end())
+    return;
+
+  double valInMIPStart = it->second;
+  if (valInMIPStart >= (lb - primalTolerance) && valInMIPStart <= (ub + primalTolerance))
+    return;
+
+  handler->message(COIN_CGRAPH_FIX_VAR_DIFFER_MIPSTART, *messages)
+    << varName << static_cast< int >(colIdx) << valInMIPStart << lb << ub << CoinMessageEol;
+  mipStartMap.erase(varName);
+}
+
+/**
+ * \brief Apply bound tightening derived from the conflict graph and check MIP-start consistency.
+ *
+ * For each column touched by the latest conflict-graph analysis, this helper updates the solver
+ * bounds, emits diagnostics when bounds change, and verifies that any provided MIP start remains
+ * feasible w.r.t. the tightened interval. If a MIP-start assignment now violates a bound, a
+ * warning is issued (limited via \c COIN_CGRAPH_FIX_VAR_DIFFER_MIPSTART) and the offending entry
+ * is removed from \p mipStartMap so downstream consumers do not rely on stale values.
+ *
+ * \param cgraph       Conflict graph instance that exposes the pending bound updates.
+ * \param solver       Solver whose column bounds are tightened in-place.
+ * \param handler      Message handler used to announce updates and warnings.
+ * \param model        CBC model leveraged for logging helper messages.
+ * \param mipStartMap  Map of variable names to MIP-start values; entries are erased if invalidated.
+ * \return Number of columns whose bounds were modified.
+ */
+static int applyConflictGraphBoundUpdates(const CoinStaticConflictGraph *cgraph,
+  OsiSolverInterface *solver,
+  CoinMessageHandler *handler,
+  CbcModel &model,
+  std::map< std::string, double > &mipStartMap)
+{
+  handler->setMessageLimit(COIN_CGRAPH_FIX_VAR_DIFFER_MIPSTART, 10);
+  double primalTolerance = 1e-8;
+  solver->getDblParam(OsiPrimalTolerance, primalTolerance);
+
+  int nBoundsChanged = 0;
+  if (!cgraph || !cgraph->updatedBounds().size())
+    return nBoundsChanged;
+
+  const double *colsLower = solver->getColLower();
+  const double *colsUpper = solver->getColUpper();
+
+  for (const auto &bnd_change : cgraph->updatedBounds()) {
+    size_t idx = bnd_change.first;
+    double curr_lb = colsLower[idx];
+    double curr_ub = colsUpper[idx];
+    double lb = bnd_change.second.first;
+    double ub = bnd_change.second.second;
+
+    if (lb == curr_lb && ub == curr_ub)
+      continue;
+
+#ifdef CGRAPH_DEEP_DIVE
+    printf("CGraph var bnd update:  [%s](%zu) coltype %d from [%g,%g] to [%g,%g]\n",
+      solver->getColName(idx).c_str(), idx, solver->getColType()[idx], curr_lb, curr_ub, lb, ub);
+#endif // CGRAPH_DEEP_DIVE
+
+    solver->setColLower(idx, lb);
+    solver->setColUpper(idx, ub);
+
+    checkValidityOfUpdatedBoundsWithMIPStart(mipStartMap,
+      idx,
+      solver->getColName(idx),
+      lb,
+      ub,
+      handler,
+      solver->messagesPointer(),
+      primalTolerance);
+
+    nBoundsChanged++;
+  }
+
+  return nBoundsChanged;
+}
+
+/**
+ * \brief Build the conflict graph, tighten bounds, and strengthen cliques.
+ *
+ * This helper fetches the most recent conflict graph from the solver, applies any
+ * bound changes implied by the graph, warns when those changes invalidate values
+ * from an existing MIP start, and then runs clique strengthening to extend or
+ * dominate constraints. Depending on \p mode, the solver is re-solved either before
+ * or after the strengthening pass to propagate the tightened model state.
+ *
+ * \param solver           Active solver instance that owns the conflict graph.
+ * \param handler          Message handler used for logging diagnostics.
+ * \param mode             When equal to "before" the routine performs an initial solve;
+ *                         when equal to "after" it performs a resolve.
+ * \param strengthenMode   Strategy flag forwarded to \c CglCliqueStrengthening.
+ * \param model            CBC model used for high-level logging.
+ * \param mipStart         Named values of the current MIP start, checked against new bounds.
+ * \return true if any bounds or constraints were strengthened, false otherwise.
+ */
+static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
   CoinMessageHandler *handler,
   const std::string &mode,
   int strengthenMode,
-  std::ostringstream &buffer,
-  CbcModel &model)
+  CbcModel &model,
+  const std::vector< std::pair< std::string, double > > &mipStart)
 {
+  std::ostringstream buffer;
+  std::map<std::string, double> mipStartMap;
+  for (std::vector<std::pair<std::string, double>>::const_iterator it = mipStart.begin(); it != mipStart.end(); ++it) {
+      mipStartMap[it->first] = it->second;
+  }
+
   if (mode != "before" && mode != "after")
     return false;
 
+  solver->getColType(true); // Ensure column types are up to date
   solver->checkCGraph(handler);
   const CoinStaticConflictGraph *cgraph = solver->getCGraph();
   if (cgraph == NULL)
     return false;
 
-  int nBoundsChanged = 0;
-  if (cgraph->updatedBounds().size()) {
-    for (const auto &bnd_change : cgraph->updatedBounds()) {
-      size_t idx = bnd_change.first;
-      double curr_lb = solver->getColLower()[idx];
-      double curr_ub = solver->getColUpper()[idx];
-      double lb = bnd_change.second.first;
-      double ub = bnd_change.second.second;
-
-      if (lb != curr_lb || ub != curr_ub) {
-#ifdef CGRAPH_DEEP_DIVE
-        printf("CGraph var bnd update:  [%s](%zu) coltype %d from [%g,%g] to [%g,%g]\n",
-               solver->getColName(idx).c_str(), idx, solver->getColType()[idx], curr_lb, curr_ub, lb, ub);
-#endif CGRAPH_DEEP_DIVE
-        solver->setColLower(idx, lb);
-        solver->setColUpper(idx, ub);
-        nBoundsChanged++;
-      }
+  const std::vector<CoinConflictGraph::BinaryBoundInfeasibility> &infeasibleImplications = cgraph->infeasibleImplications();
+  if (!infeasibleImplications.empty() && handler) {
+    handler->setMessageLimit(COIN_CGRAPH_INFEASIBLE_IMPLICATION,
+      CGRAPH_INFEASIBLE_IMPLICATION_WARNING_LIMIT);
+    for (const CoinConflictGraph::BinaryBoundInfeasibility &info : infeasibleImplications) {
+      handler->message(COIN_CGRAPH_INFEASIBLE_IMPLICATION, solver->messages())
+        << info.variableName.c_str() << static_cast<int>(info.variableIndex)
+        << info.fixedToZero.rowName.c_str() << info.fixedToZero.rowIndex
+        << info.fixedToOne.rowName.c_str() << info.fixedToOne.rowIndex
+        << CoinMessageEol;
     }
   }
+
+  int nBoundsChanged = applyConflictGraphBoundUpdates(cgraph,
+    solver,
+    handler,
+    model,
+    mipStartMap);
+
+#ifdef CGRAPH_DEEP_DIVE
+  if (mipStart.size() > 0) {
+    cgraph->validateConflictGraphUsingFeasibleSolution(
+        solver->getNumCols(),
+        solver->getColType(),
+        solver->getColLower(),
+        solver->getColUpper(),
+        solver->getColNames(),
+        mipStart);
+  }
+#endif
 
   if (nBoundsChanged > 0 && handler && handler->logLevel()) {
     handler->message(COIN_CGRAPH_FIX_VAR, solver->messages()) << nBoundsChanged << CoinMessageEol;
@@ -229,6 +353,7 @@ static bool applyCliqueStrengthening(OsiSolverInterface *solver,
   }
 
   return true;
+#undef MAX_WARNINGS_MIPSTART
 }
 
 //#############################################################################
@@ -2097,12 +2222,11 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       if (cbcParamCode == CbcParam::BAB && goodModel) {
         if (clqstrMode == "before") { // performing clique strengthening
                                       // before initial solve
-          applyCliqueStrengthening(model_.solver(),
+          buildConflictGraphAndStrengthenCliques(model_.solver(),
             model_.messageHandler(),
             clqstrMode,
             2,
-            buffer,
-            model_);
+            model_, mipStart);
         }
 #if CBC_USE_INITIAL_TIME == 1
         if (model_.useElapsedTime())
@@ -4218,7 +4342,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               colNames.push_back(model_.solver()->getColName(i));
             std::vector< double > x(model_.getNumCols(), 0.0);
             double obj;
-            int status = CbcMipStartIO::computeCompleteSolution(
+            int status = CbcMipStart::computeCompleteSolution(
               &tempModel, tempModel.solver(), colNames, mipStartBefore,
               &x[0], obj, 0, tempModel.messageHandler(),
               tempModel.messagesPointer());
@@ -5664,12 +5788,11 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             clqstrMode = "off";
           }
           if (clqstrMode == "after") {
-            applyCliqueStrengthening(babModel_->solver(),
+            buildConflictGraphAndStrengthenCliques(babModel_->solver(),
               babModel_->messageHandler(),
               clqstrMode,
               4,
-              buffer,
-              model_);
+              model_, mipStart);
           } // clique Strengthening
 
           // now tighten bounds
@@ -6580,7 +6703,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 extraActions = 0;
               else
                 extraActions++;
-              int status = CbcMipStartIO::computeCompleteSolution(
+              int status = CbcMipStart::computeCompleteSolution(
                 babModel_, babModel_->solver(), colNames, mipStart, &x[0],
                 obj, extraActions, babModel_->messageHandler(),
                 babModel_->messagesPointer());
@@ -9954,7 +10077,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           }
           double msObj;
 
-          CbcMipStartIO::read(model_.solver(), fileName.c_str(), mipStart,
+          CbcMipStart::read(model_.solver(), fileName.c_str(), mipStart,
             msObj, model_.messageHandler(),
             model_.messagesPointer());
           // copy to before preprocess if has .before.

@@ -250,7 +250,7 @@
     <ClCompile Include="..\..\..\src\CbcHeuristicRINS.cpp" />
     <ClCompile Include="..\..\..\src\CbcHeuristicVND.cpp" />
     <ClCompile Include="..\..\..\src\CbcMessage.cpp" />
-    <ClCompile Include="..\..\..\src\CbcMipStartIO.cpp" />
+    <ClCompile Include="..\..\..\src\CbcMipStart.cpp" />
     <ClCompile Include="..\..\..\src\CbcModel.cpp" />
     <ClCompile Include="..\..\..\src\CbcNode.cpp" />
     <ClCompile Include="..\..\..\src\CbcNodeInfo.cpp" />

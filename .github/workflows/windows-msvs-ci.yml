@@ -1,6 +1,7 @@
 ---
 name: Windows MSVS build and test
 on:
+  workflow_dispatch:
   push:
     branches:
       - 'master'

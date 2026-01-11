@@ -22,13 +22,13 @@ jobs:
         build_static: [true, false]
         download_requirements: [sudo apt install -y -qq gfortran liblapack-dev libmetis-dev libnauty-dev]
         include:
-          - os: macos-13
+          - os: macos-15-intel
             build_static: false
-            flags: CC=clang OSX=13
+            flags: CC=clang CXX=clang++ OSX=15
             download_requirements: brew install metis bash
-          - os: macos-13
+          - os: macos-15-intel
             build_static: false
-            flags: CC=gcc-13 CXX=g++-13 OSX=13 ADD_CXXFLAGS=-Wl,-ld_classic
+            flags: CC=gcc-15 CXX=g++-15 OSX=15 ADD_CXXFLAGS=-Wl,-ld_classic
             download_requirements: brew install metis bash
           - os: macos-14
             arch: arm64

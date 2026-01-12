@@ -4964,9 +4964,13 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                   /* Infeasible - but most real problems are not
                      infeasible - so try simpler preprocessing which
                      is less affected by tolerance issues */
-                  process.clean();
-                  solver2 = process.preProcessNonDefault(*saveSolver,
-                    0, 99, 0);
+		  // double check
+		  solver2->resolve();
+		  if (!solver2->isProvenOptimal()) {
+		    process.clean();
+		    solver2 = process.preProcessNonDefault(*saveSolver,
+							   0, 99, 0);
+		  }
                 }
                 setPreProcessingMode(saveSolver, 0);
 #if CBC_USE_PAPILO

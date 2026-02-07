@@ -611,6 +611,8 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
   double timeTaken = 0.0;
   // tidy original input queue
   std::deque<std::string> inputQueue = originalInputQueue;
+  // for operations after "solve"
+  std::deque<std::string> extraQueue;
   // See if "maximize"
   bool maximize = false;
   for (int i = 0; i < inputQueue.size(); i++) {
@@ -619,19 +621,38 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
     }
   }
   {
+    // I apologize for old style
     // take off first two parameters of initial queue
     inputQueue.pop_front();
     inputQueue.pop_front();
-    // take off unitTest
-    std::string unitTest = inputQueue.back();
-    std::string check="-unitTest";
-    size_t i;
-    for (i = 0; i < unitTest.size(); i++) {
-      if (tolower(unitTest[i]) != tolower(check[i]))
-        break;
+    // take off unitTest and save extra commands
+    size_t unitTestPos;
+    std::string check="-unittest";
+    for ( unitTestPos = 0; unitTestPos < inputQueue.size(); unitTestPos++) {
+      if (strlen(inputQueue[unitTestPos].c_str())==9) {
+	int i;
+	for (i = 0; i < 9; i++) {
+	  if (tolower(inputQueue[unitTestPos][i]) != check[i])
+	    break;
+	}
+	if (i==9)
+	  break;
+      }
     }
-    assert (i == unitTest.size());
-    inputQueue.pop_back();
+    if (unitTestPos==inputQueue.size()-1) {
+      inputQueue.pop_back();
+    } else {
+      std::cout << "Warning - extra operations after solve" << std::endl;
+      // put on extra queue
+      for ( int i = unitTestPos+1; i < inputQueue.size(); i++) {
+	extraQueue.push_back(inputQueue[i]);
+	std::cout << inputQueue[i] <<" ";
+      }
+      std::cout << std::endl;
+      // and take off
+      for ( int i = inputQueue.size()-1; i >= unitTestPos; i--)
+	inputQueue.pop_back();
+    }
   }
 
 //#define CLP_FACTORIZATION_INSTRUMENT
@@ -700,7 +721,7 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
       }
       newInputQueue.push_back(fn);
       for (int i = 0; i < inputQueue.size(); i++) {
-	if (inputQueue[i] != "++") {
+	if (!strstr(inputQueue[i].c_str(),"++")) {
            if (testSwitch >=1000000) {
               // take out dextra3
               if (inputQueue[i] == "dextra3") {
@@ -734,6 +755,27 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
       }
       if (newInputQueue.back()!="-solve")
 	newInputQueue.push_back("-solve");
+      // add in extra commands
+      for (int i = 0; i < extraQueue.size(); i++) {
+	if (!strstr(extraQueue[i].c_str(),"++")) {
+	   newInputQueue.push_back(extraQueue[i]);
+	} else {
+          //FIXME: This should be changed to use modern C++
+          int n = strstr(extraQueue[i].c_str(), "++") - extraQueue[i].c_str();
+	  strncpy(replace, extraQueue[i].c_str(), n);
+	  const char * mipname = mpsName[m].c_str();
+	  int n1 = n;
+	  for (int j=0;j<strlen(mipname);j++){
+	    replace[n++]=mipname[j];
+          }
+	  for (int j=n1+2;j<extraQueue[i].length();j++){
+             replace[n++]=extraQueue[i].c_str()[j];
+          }
+	  replace[n] = '\0';
+	  newInputQueue.push_back(replace);
+	  printf("Replacing %s by %s\n",extraQueue[i].c_str(),replace);
+	}
+      }
       model = new CbcModel(solver1);
       CbcMain0(*model, parameters);
       CbcMain1(newInputQueue, *model, parameters, callBack);

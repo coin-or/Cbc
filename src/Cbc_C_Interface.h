@@ -1560,6 +1560,9 @@ Osi_getObjSense();
 CBCLIB_EXPORT const double * CBC_LINKAGE
 Osi_getColSolution( void *osi );
 
+
+
+
 /** @brief Returns vector of reduced costs */
 CBCLIB_EXPORT const double * CBC_LINKAGE
 Osi_getReducedCost( void *osi );
@@ -1789,6 +1792,22 @@ OsiCuts_senseRowCut( void *osiCuts, int iRowCut );
 /** Deletes a cut pool */
 CBCLIB_EXPORT void CBC_LINKAGE 
 OsiCuts_delete( void *osiCuts );
+
+/** Set a starting solution */
+CBCLIB_EXPORT void CBC_LINKAGE
+Osi_setColSolution(Cbc_Model *model, double* solution);
+
+/** Set a starting dual solution */
+CBCLIB_EXPORT void CBC_LINKAGE
+Osi_setRowPrice(Cbc_Model *model, double *price);
+
+/** Set basis statuses */
+CBCLIB_EXPORT void CBC_LINKAGE
+Osi_setBasisStatus(Cbc_Model *model, int* vardata, int* condata);
+
+/** Get basis statuses */
+CBCLIB_EXPORT void CBC_LINKAGE
+Osi_getBasisStatus(Cbc_Model *model, int *vardata, int *condata);
 
 
 

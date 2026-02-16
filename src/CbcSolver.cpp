@@ -9108,6 +9108,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             statistics.nodes = babModel_->getNodeCount();
             statistics.iterations = babModel_->getIterationCount();
             statistics.result = statusName[iStat];
+            statistics.cgraph_time = babModel_->solver()->getCGraphBuildTime();
+            statistics.cgraph_density = babModel_->solver()->getCGraphDensity();
             buffer.str("");
             buffer << std::endl
                    << "Result - "

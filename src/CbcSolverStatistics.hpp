@@ -63,6 +63,12 @@ public:
   /** Solver status */
   std::string result;
 
+  /** Time (CPU seconds) to build the conflict graph */
+  double cgraph_time = 0.0;
+
+  /** Density of the conflict graph */
+  double cgraph_density = 0.0;
+
   /** Number of cut generators */
   int number_generators = 0;
 

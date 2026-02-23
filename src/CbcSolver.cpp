@@ -2227,6 +2227,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             clqstrMode,
             2,
             model_, mipStart);
+          statistics.cgraph_time += model_.solver()->getCGraphBuildTime();
+          statistics.cgraph_density = model_.solver()->getCGraphDensity();
         }
 #if CBC_USE_INITIAL_TIME == 1
         if (model_.useElapsedTime())
@@ -5797,6 +5799,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               clqstrMode,
               4,
               model_, mipStart);
+            statistics.cgraph_time += babModel_->solver()->getCGraphBuildTime();
+            statistics.cgraph_density = babModel_->solver()->getCGraphDensity();
           } // clique Strengthening
 
           // now tighten bounds
@@ -8688,6 +8692,12 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #endif
             printGeneralMessage(model_, buffer.str());
           }
+          // Capture cgraph stats if built lazily by cut generators
+          // (only if not already captured from explicit buildConflictGraph calls)
+          if (statistics.cgraph_time == 0.0 && statistics.cgraph_density == 0.0) {
+            statistics.cgraph_time = babModel_->solver()->getCGraphBuildTime();
+            statistics.cgraph_density = babModel_->solver()->getCGraphDensity();
+          }
 #ifdef COIN_DEVELOP
           printf("%d solutions found by heuristics\n",
             babModel_->getNumberHeuristicSolutions());
@@ -9107,9 +9117,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             statistics.tighter = babModel_->rootObjectiveAfterCuts();
             statistics.nodes = babModel_->getNodeCount();
             statistics.iterations = babModel_->getIterationCount();
-            statistics.result = statusName[iStat];
-            statistics.cgraph_time = babModel_->solver()->getCGraphBuildTime();
-            statistics.cgraph_density = babModel_->solver()->getCGraphDensity();
+            statistics.result = statusName[iStat] + minor[iStat2];
             buffer.str("");
             buffer << std::endl
                    << "Result - "

@@ -122,6 +122,7 @@ static Cbc_message us_english[] = {
   { CBC_MIPSTART_OUT_OF_BOUNDS, 3013, 1, "MIPstart value %.16g for variable [%s] is outside bounds [%g,%g], discarding." },
   { CBC_MIPSTART_NON_INTEGRAL, 3014, 1, "MIPstart value %.16g for integer variable [%s] differs from nearest integer by %g (tolerance %g), discarding." },
   { CBC_MIPSTART_UNKNOWN_COLUMN, 3015, 1, "MIPstart variable [%s] is not part of the current model, ignoring value %g." },
+  { CBC_INSTANCE_FEATURES, 3016, 1, "Instance features computed in %.3f seconds and written to %s" },
   { CBC_DUMMY_END, 999999, 0, "" }
 };
 /* Constructor */

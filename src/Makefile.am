@@ -90,6 +90,7 @@ libCbc_la_SOURCES = \
 	CbcParameters.cpp CbcParameters.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcSolverStatistics.cpp CbcSolverStatistics.hpp \
+	CbcInstanceFeatures.cpp CbcInstanceFeatures.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
 	CbcSymmetry.cpp CbcSymmetry.hpp \
@@ -220,6 +221,7 @@ includecoin_HEADERS = \
 	CbcTreeLocal.hpp \
 	ClpConstraintAmpl.hpp \
 	CbcSolverStatistics.hpp \
+	CbcInstanceFeatures.hpp \
 	ClpAmplObjective.hpp
 
 #######################################################################

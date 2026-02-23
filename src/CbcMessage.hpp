@@ -84,6 +84,7 @@ enum CBC_Message {
 #ifndef NO_FATHOM_PRINT
   CBC_FATHOM_CHANGE,
 #endif
+  CBC_INSTANCE_FEATURES,
   CBC_DUMMY_END
 };
 

@@ -92,10 +92,12 @@ public:
       WRITESOLBINARY,
       WRITESOLBINARY_OLD, // For backward compatibility
       WRITESTATS,
+      WRITEFEATURES,
       LASTACTIONPARAM,
 
       // File Parameters
       FIRSTFILEPARAM,
+      CSVFEATURESFILE,
       CSVSTATSFILE,
       DEBUGFILE,
       EXPORTFILE,

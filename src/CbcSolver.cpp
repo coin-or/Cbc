@@ -23,6 +23,7 @@
 #include <iostream>
 #include <map>
 #include "CbcSolverStatistics.hpp"
+#include "CbcInstanceFeatures.hpp"
 
 #if defined(NEW_DEBUG_AND_FILL) || defined(CLP_MALLOC_STATISTICS)
 #include <exception>
@@ -10435,6 +10436,34 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             buffer << "Unable to open file " << fileName.c_str();
             printGeneralMessage(model_, buffer.str());
             continue;
+          }
+        } break;
+        case CbcParam::WRITEFEATURES: {
+          cbcParam->readValue(inputQueue, fileName, &message);
+          CoinParamUtils::processFile(fileName,
+            parameters[CbcParam::DIRECTORY]->dirName());
+          if (fileName == "") {
+            fileName = parameters[CbcParam::CSVFEATURESFILE]->fileName();
+          } else {
+            parameters[CbcParam::CSVFEATURESFILE]->setFileName(fileName);
+          }
+          if (!goodModel) {
+            printGeneralWarning(model_, "** Current model not valid\n");
+            continue;
+          }
+          {
+            double featTime = CoinCpuTime();
+            CbcInstanceFeatures instanceFeatures;
+            instanceFeatures.extract(model_.solver());
+            featTime = CoinCpuTime() - featTime;
+            if (!instanceFeatures.writeCsv(parameters, fileName)) {
+              buffer.str("");
+              buffer << "Unable to open file " << fileName.c_str();
+              printGeneralMessage(model_, buffer.str());
+              continue;
+            }
+            model_.messageHandler()->message(CBC_INSTANCE_FEATURES, model_.messages())
+                << featTime << fileName.c_str() << CoinMessageEol;
           }
         } break;
         case CbcParam::PRINTSOL:

@@ -356,6 +356,7 @@ void CbcParameters::setDefaults(int strategy) {
 
   parameters_[CbcParam::DEBUGFILE]->setDefault("");
   parameters_[CbcParam::CSVSTATSFILE]->setDefault(std::string("stats.csv"));
+  parameters_[CbcParam::CSVFEATURESFILE]->setDefault(std::string("features.csv"));
   parameters_[CbcParam::EXPORTFILE]->setDefault(std::string("export.mps"));
   parameters_[CbcParam::IMPORTFILE]->setDefault(std::string("import.mps"));
   parameters_[CbcParam::GMPLSOLFILE]->setDefault(std::string("gmpl.sol"));
@@ -933,6 +934,27 @@ void CbcParameters::addCbcSolverActionParams() {
       "the command is run, the previous CSV statistics file name is used.",
       CoinParam::displayPriorityHigh);
 
+    parameters_[CbcParam::WRITEFEATURES]->setup(
+      "writeFeat!ures", "writes instance features to CSV file",
+      "This extracts all OsiFeatures from the current MIP instance and appends "
+      "them as a single row to the file designated by csvFeatures (default "
+      "'features.csv'). If no file name is supplied the previous value is used. "
+      "The header row is written automatically when the file is new or empty. "
+      "A total of 207 numeric features are extracted, covering:\n"
+      "  - Problem size: number of columns (variables) and rows (constraints),\n"
+      "    non-zeros, matrix density, columns-per-row ratio.\n"
+      "  - Variable types: counts and percentages of binary, general integer\n"
+      "    and continuous variables; unbounded variables.\n"
+      "  - Constraint classes: partitioning, packing, covering, cardinality,\n"
+      "    knapsack, integer knapsack, invariant knapsack, singleton, aggregation,\n"
+      "    precedence, variable-bound and bin-packing rows.\n"
+      "  - Objective and matrix statistics: min/max/mean/std-dev of non-zero\n"
+      "    coefficients, objective coefficients and right-hand-side values;\n"
+      "    column non-zero distribution (fraction of columns with >= k non-zeros\n"
+      "    for k = 1, 2, 4, ..., 4096).\n"
+      "All features are computed in O(nz) time.",
+      CoinParam::displayPriorityHigh);
+
   // For backward compatibility
   parameters_[CbcParam::WRITESOL_OLD]->setup(
       "solu!tion", "writes solution to file (or stdout) (synonym for "
@@ -1021,6 +1043,14 @@ void CbcParameters::addCbcSolverFileParams() {
        code < CbcParam::LASTFILEPARAM; code++) {
     getParam(code)->setType(CoinParam::paramFile);
   }
+
+  parameters_[CbcParam::CSVFEATURESFILE]->setup(
+      "csvFeat!ures", "sets file name for writing out instance features",
+      "Sets the file name used by writeFeatures. If name is not specified "
+      "the previous value is used. Initialized to 'features.csv'. "
+      "The header row listing all 207 feature names is written automatically "
+      "when the file is new or empty; subsequent calls append a new row.",
+      CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::CSVSTATSFILE]->setup(
       "csv!Statistics", "sets file name for writing out statistics",

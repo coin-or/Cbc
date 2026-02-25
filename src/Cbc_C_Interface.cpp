@@ -1894,7 +1894,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
             *s = '\0';
           double psi = atof(str);
           //printf("Setting psi to %g\n", psi);
-          model->int_param[DBL_PARAM_PSI] = psi;
+          model->dbl_param[DBL_PARAM_PSI] = psi;
         }
       } // perturbation value
       if ((s=strstr(opts, "-dualpivot"))) {

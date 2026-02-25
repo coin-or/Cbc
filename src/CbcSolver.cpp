@@ -1651,8 +1651,12 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       signal(SIGINT, signal_handler);
 #endif
     // Set up all non-standard stuff
-    int cutPass = -1234567;
-    int cutPassInTree = -1234567;
+    // Initialize from parameters so values set before CbcMain1 are respected.
+    // The sentinel -1234567 means "let CBC auto-size based on problem dimensions".
+    int cutPass = parameters[CbcParam::CUTPASS]->intVal();
+    if (cutPass == 100) cutPass = -1234567; // 100 is the default; treat as "not user-set"
+    int cutPassInTree = parameters[CbcParam::CUTPASSINTREE]->intVal();
+    if (cutPassInTree == 10) cutPassInTree = -1234567; // 10 is CbcMain0's default; treat as "not user-set"
     int tunePreProcess = 0;
     int testOsiParameters = -1;
     // 0 normal, 1 from ampl or MIQP etc (2 allows cuts)
@@ -1965,7 +1969,10 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       tunePreProcess = 6;
       probingMode = CbcParameters::CGIfMove;
       parameters[CbcParam::DIVEOPT]->setVal(2);
-      parameters[CbcParam::FPUMPITS]->setVal(30);
+      // Only apply the strategy default for FPUMPITS if the user hasn't set it
+      // (constructor default is 0; 0 here means "not user-set").
+      if (parameters[CbcParam::FPUMPITS]->intVal() == 0)
+        parameters[CbcParam::FPUMPITS]->setVal(30);
       parameters[CbcParam::FPUMPTUNE]->setVal(1005043);
       parameters[CbcParam::PROCESSTUNE]->setVal(7);
       parameters[CbcParam::DIVINGC]->setVal("on");

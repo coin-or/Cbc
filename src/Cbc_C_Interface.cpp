@@ -1783,6 +1783,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   solver->setDblParam( OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL]);
 
   clps->setPerturbation(model->int_param[INT_PARAM_PERT_VALUE]);
+  clps->setSmallElementValue(model->dbl_param[DBL_PARAM_ZERO_TOL]);
   solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
   if (! cbc_annouced) {
@@ -2457,6 +2458,34 @@ Cbc_solve(Cbc_Model *model)
       cbcModel.setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
 
       synchronizeParams(&cbcModel, &parameters);
+
+      // Forward C interface params not covered by synchronizeParams.
+      // These override the CbcMain0 defaults so that values set via
+      // Cbc_setIntParam / Cbc_setDblParam are actually respected.
+      cbcModel.setNumberStrong(model->int_param[INT_PARAM_STRONG_BRANCHING]);
+      parameters.setParamVal(CbcParam::STRONGBRANCHING,
+                             model->int_param[INT_PARAM_STRONG_BRANCHING]);
+      cbcModel.setNumberBeforeTrust(model->int_param[INT_PARAM_NUMBER_BEFORE]);
+      parameters.setParamVal(CbcParam::NUMBERBEFORE,
+                             model->int_param[INT_PARAM_NUMBER_BEFORE]);
+      if (model->int_param[INT_PARAM_CUT_PASS] != -1) {
+        cbcModel.setMaximumCutPassesAtRoot(model->int_param[INT_PARAM_CUT_PASS]);
+        parameters.setParamVal(CbcParam::CUTPASS,
+                               model->int_param[INT_PARAM_CUT_PASS]);
+      }
+      parameters.setParamVal(CbcParam::CUTDEPTH,
+                             model->int_param[INT_PARAM_CUT_DEPTH]);
+      parameters.setParamVal(CbcParam::FPUMPITS,
+                             model->int_param[INT_PARAM_FPUMP_ITS]);
+      parameters.setParamVal(CbcParam::MAXSAVEDSOLS,
+                             model->int_param[INT_PARAM_MAX_SAVED_SOLS]);
+      parameters.setParamVal(CbcParam::MULTIPLEROOTS,
+                             model->int_param[INT_PARAM_MULTIPLE_ROOTS]);
+      {
+        ClpParameters &clpParams = parameters.clpParameters();
+        clpParams.setParamVal(ClpParam::PRESOLVETOLERANCE,
+                              model->dbl_param[DBL_PARAM_PRESOLVE_TOL]);
+      }
 
       CbcMain1(inputQueue, cbcModel, parameters, cbc_callb);
 
@@ -4935,6 +4964,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_NUMBER_BEFORE]           =        5;
   model->int_param[INT_PARAM_FPUMP_ITS]               =       30;
   model->int_param[INT_PARAM_MAX_SOLS]                =  INT_MAX;
+  model->int_param[INT_PARAM_CUT_PASS]                =       -1;
   model->int_param[INT_PARAM_CUT_PASS_IN_TREE]        =        1;
   model->int_param[INT_PARAM_LOG_LEVEL]               =        1;
   model->int_param[INT_PARAM_MAX_SAVED_SOLS]          =       10;

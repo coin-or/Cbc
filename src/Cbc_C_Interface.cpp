@@ -2518,8 +2518,19 @@ Cbc_solve(Cbc_Model *model)
                              model->int_param[INT_PARAM_NUMBER_BEFORE]);
       parameters.setParamVal(CbcParam::CUTDEPTH,
                              model->int_param[INT_PARAM_CUT_DEPTH]);
-      parameters.setParamVal(CbcParam::CUTPASSINTREE,
-                             model->int_param[INT_PARAM_CUT_PASS_IN_TREE]);
+      // Only forward CUTPASS / CUTPASSINTREE when the user explicitly changed them
+      // (defaults are -1 and 1 respectively in the C interface).  Forwarding the
+      // default value would override CbcMain0's own sizing logic.
+      if (model->int_param[INT_PARAM_CUT_PASS] != -1)
+        parameters.setParamVal(CbcParam::CUTPASS,
+                               model->int_param[INT_PARAM_CUT_PASS]);
+      if (model->int_param[INT_PARAM_CUT_PASS_IN_TREE] != 1)
+        parameters.setParamVal(CbcParam::CUTPASSINTREE,
+                               model->int_param[INT_PARAM_CUT_PASS_IN_TREE]);
+      // FPUMPITS: C interface default is 30; only forward if the user changed it.
+      if (model->int_param[INT_PARAM_FPUMP_ITS] != 30)
+        parameters.setParamVal(CbcParam::FPUMPITS,
+                               model->int_param[INT_PARAM_FPUMP_ITS]);
       parameters.setParamVal(CbcParam::MAXSAVEDSOLS,
                              model->int_param[INT_PARAM_MAX_SAVED_SOLS]);
       parameters.setParamVal(CbcParam::MULTIPLEROOTS,
@@ -2550,19 +2561,6 @@ Cbc_solve(Cbc_Model *model)
       // MAXSAVEDSOLS: babModel_ is a copy of cbcModel made inside CbcMain1,
       // so setting it here is sufficient (the copy inherits the value).
       cbcModel.setMaximumSavedSolutions(model->int_param[INT_PARAM_MAX_SAVED_SOLS]);
-      // CUTPASS and FPUMPITS: CbcMain1 resets them via local sentinel variables
-      // before reading inputQueue, so setParamVal alone is not enough.
-      // Use the correct abbreviated keyword names ("passC" and "passF").
-      if (model->int_param[INT_PARAM_CUT_PASS] != -1) {
-        char str[64];
-        sprintf(str, "-passC=%d", model->int_param[INT_PARAM_CUT_PASS]);
-        inputQueue.push_front(str);
-      }
-      {
-        char str[64];
-        sprintf(str, "-passF=%d", model->int_param[INT_PARAM_FPUMP_ITS]);
-        inputQueue.push_front(str);
-      }
 
       CbcMain1(inputQueue, cbcModel, parameters, cbc_callb);
 

@@ -8,6 +8,12 @@
 #endif
 #include "CbcConfig.h"
 
+#if CLP_USE_OPENBLAS
+extern "C" {
+void openblas_set_num_threads(int num_threads);
+}
+#endif
+
 #include <string>
 //#define CBC_DEBUG 1
 //#define CHECK_CUT_COUNTS
@@ -4988,6 +4994,20 @@ void CbcModel::branchAndBound(int doStatistics)
     masterThread_ = master_->masterThread();
   }
 #endif
+#if defined(CBC_HAS_CLP) && CLP_USE_OPENBLAS
+  // When CBC is running parallel B&B, restrict OpenBLAS to 1 thread inside
+  // resolve() to avoid N_cbc x M_blas thread explosion.
+  // If the user already configured blasNumThreads_ explicitly, respect it.
+  bool autoSetBLASCap = false;
+  if (numberThreads_ > 0 && !parentModel_) {
+    OsiClpSolverInterface *clpSolverBLAS =
+      dynamic_cast<OsiClpSolverInterface *>(solver_);
+    if (clpSolverBLAS && clpSolverBLAS->getModelPtr()->blasNumThreads() < 0) {
+      clpSolverBLAS->getModelPtr()->setBLASNumThreads(1);
+      autoSetBLASCap = true;
+    }
+  }
+#endif
   if (feasible) {
     OsiClpSolverInterface *clpSolver =
         dynamic_cast<OsiClpSolverInterface *>(solver_);
@@ -6431,6 +6451,17 @@ void CbcModel::branchAndBound(int doStatistics)
     delete info10->probe10Depth;
     delete info10;
     depth10Probing_ = NULL;
+  }
+#endif
+#if defined(CBC_HAS_CLP) && CLP_USE_OPENBLAS
+  // Restore BLAS threading to the original setting after B&B.
+  if (autoSetBLASCap) {
+    OsiClpSolverInterface *clpSolverBLAS =
+      dynamic_cast<OsiClpSolverInterface *>(solver_);
+    if (clpSolverBLAS) {
+      clpSolverBLAS->getModelPtr()->setBLASNumThreads(-1);
+      openblas_set_num_threads(CLP_USE_OPENBLAS);
+    }
   }
 #endif
   return;

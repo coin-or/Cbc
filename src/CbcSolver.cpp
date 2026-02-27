@@ -1563,6 +1563,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
   // Meaning 0 - start at very beginning
   // 1 start at beginning of preprocessing
   // 2 start at beginning of branch and bound
+  // Default to elapsed (wall-clock) time mode - overridable with -timeM cpu.
+  model_.setUseElapsedTime(true);
 #ifndef CBC_USE_INITIAL_TIME
 #define CBC_USE_INITIAL_TIME 1
 #endif
@@ -3120,7 +3122,20 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               barrierOptions |= 256; // try presolve in crossover
             solveOptions.setSpecialOption(4, barrierOptions);
           }
-          model2->setMaximumSeconds(model_.getMaximumSeconds());
+          if (model_.getMaximumSeconds() < 1.0e8) {
+            // Propagate remaining time limit to LP solver, honouring time mode.
+            if (!model_.getDblParam(CbcModel::CbcStartSeconds)) {
+              // Capture start time if not yet set for this solve sequence.
+              model_.setDblParam(CbcModel::CbcStartSeconds,
+                model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
+            }
+            double remaining = std::max(
+              model_.getMaximumSeconds() - model_.getCurrentSeconds(), 0.0);
+            if (model_.useElapsedTime())
+              model2->setMaximumWallSeconds(remaining);
+            else
+              model2->setMaximumSeconds(remaining);
+          }
 #ifdef COIN_HAS_LINK
           OsiSolverInterface *coinSolver = model_.solver();
           OsiSolverLink *linkSolver = dynamic_cast< OsiSolverLink * >(coinSolver);
@@ -3158,6 +3173,9 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #else
           model2->initialSolve(solveOptions);
 #endif
+          // Clear time limits from LP solver to avoid leaking into later solves.
+          model2->setMaximumSeconds(-1.0);
+          model2->setMaximumWallSeconds(-1.0);
           {
             // map states
             /* clp status
@@ -3252,9 +3270,11 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               buffer << "Enumerated nodes:           0" << std::endl;
               buffer << "Total iterations:           0" << std::endl;
 #if CBC_QUIET == 0
-              buffer << "Time (CPU seconds):         " << CoinCpuTime() - time0 << std::endl;
-              buffer << "Time (Wallclock Seconds):   " << CoinGetTimeOfDay() - time0Elapsed
-                     << std::endl;
+              if (model_.useElapsedTime())
+                buffer << "Time (Wallclock seconds):   " << CoinGetTimeOfDay() - time0Elapsed
+                       << std::endl;
+              else
+                buffer << "Time (CPU seconds):         " << CoinCpuTime() - time0 << std::endl;
 #endif
               printGeneralMessage(model_, buffer.str());
             }
@@ -4068,8 +4088,11 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               const char *msg[] = { "infeasible", "unbounded", "stopped",
                 "difficulties", "other" };
               buffer.str("");
-              buffer << "Problem is " << msg[iStatus - 1] << " - " << CoinCpuTime() - time1a
-                     << " seconds";
+              if (iStatus == 3 && clpSolver->secondaryStatus() == 9)
+                buffer << "LP relaxation stopped on time limit";
+              else
+                buffer << "Problem is " << msg[iStatus - 1];
+              buffer << " - " << CoinCpuTime() - time1a << " seconds";
               printGeneralMessage(model_, buffer.str());
               break;
             }
@@ -9160,10 +9183,12 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             buffer << "Total iterations:               ";
             buffer << babModel_->getIterationCount() << std::endl;
 #if CBC_QUIET == 0
-            buffer << "Time (CPU seconds):             "
-                   << CoinCpuTime() - time1 << std::endl;
-            buffer << "Time (Wallclock seconds):       "
-                   << CoinGetTimeOfDay() - time1Elapsed << std::endl;
+            if (babModel_->useElapsedTime())
+              buffer << "Time (B&C, Wallclock seconds):  "
+                     << CoinGetTimeOfDay() - time1Elapsed << std::endl;
+            else
+              buffer << "Time (B&C, CPU seconds):        "
+                     << CoinCpuTime() - time1 << std::endl;
 #endif
             printGeneralMessage(model_, buffer.str());
             int returnCode = 0;
@@ -10724,6 +10749,10 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               iStat = integerStatus;
               iStat2 = babModel_ ? babModel_->secondaryStatus()
                                  : model_.secondaryStatus();
+            } else if (iStat == 3) {
+              // LP solve stopped before B&B: translate Clp secondary status
+              // (9 = time limit) to CBC secondary status (4 = time limit).
+              iStat2 = (lpSolver->secondaryStatus() == 9) ? 4 : 3;
             }
             if (iStat == 0) {
               fprintf(fp, "Optimal");
@@ -10750,6 +10779,8 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               }
               if (babModel_ && !babModel_->bestSolution())
                 fprintf(fp, " (no integer solution - continuous used)");
+              else if (integerStatus < 0 && iStat == 3)
+                fprintf(fp, " (LP relaxation not completed - no integer solution)");
             } else if (iStat == 6) {
               // bab infeasible
               fprintf(fp, "Integer infeasible");
@@ -11351,9 +11382,12 @@ clp watson.mps -\nscaling off\nprimalsimplex");
   }
 #if CBC_QUIET == 0
   buffer.str("");
-  buffer << "Total time (CPU seconds):       " << CoinCpuTime() - time0
-         << "   (Wallclock seconds):       "
-         << CoinGetTimeOfDay() - time0Elapsed << std::endl;
+  if (model_.useElapsedTime())
+    buffer << "Total time (Wallclock seconds): " << CoinGetTimeOfDay() - time0Elapsed
+           << "   (CPU seconds):             " << CoinCpuTime() - time0 << std::endl;
+  else
+    buffer << "Total time (CPU seconds):       " << CoinCpuTime() - time0
+           << "   (Wallclock seconds):       " << CoinGetTimeOfDay() - time0Elapsed << std::endl;
   printGeneralMessage(model_, buffer.str());
 #endif
 #ifdef COINUTILS_HAS_GLPK

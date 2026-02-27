@@ -6458,26 +6458,33 @@ void CbcModel::initialSolve() {
   }
   solverCharacteristics_->setSolver(solver_);
   solver_->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL);
-  // doesn't seem to be uniform time limit
-  // NOT a good idea as can stop in cleanup
-#if 0 // def CBC_HAS_CLP
-  OsiClpSolverInterface *clpSolver
+#ifdef CBC_HAS_CLP
+  OsiClpSolverInterface *clpSolverTL
     = dynamic_cast< OsiClpSolverInterface * >(solver_);
-  if (clpSolver) {
-    double maxTime = dblParam_[CbcMaximumSeconds]-dblParam_[CbcStartSeconds];
-    if ((moreSpecialOptions_&131072)==0)
-      clpSolver->getModelPtr()->setMaximumSeconds(maxTime);
+  if (clpSolverTL && dblParam_[CbcMaximumSeconds] < 1.0e8) {
+    // Propagate remaining time limit to LP solver, respecting time mode.
+    double remaining = std::max(dblParam_[CbcMaximumSeconds] - getCurrentSeconds(), 0.0);
+    if (useElapsedTime())
+      clpSolverTL->getModelPtr()->setMaximumWallSeconds(remaining);
     else
-      clpSolver->getModelPtr()->setMaximumWallSeconds(maxTime);
+      clpSolverTL->getModelPtr()->setMaximumSeconds(remaining);
   }
 #endif
   solver_->initialSolve();
   solver_->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo, NULL);
+#ifdef CBC_HAS_CLP
+  if (clpSolverTL) {
+    // Clear LP time limits - they were only for this initialSolve call.
+    clpSolverTL->getModelPtr()->setMaximumSeconds(-1.0);
+    clpSolverTL->getModelPtr()->setMaximumWallSeconds(-1.0);
+  }
+#endif
   if (!solver_->isProvenOptimal()) {
     OsiClpSolverInterface *clpSolver
       = dynamic_cast< OsiClpSolverInterface * >(solver_);
-    // Do not resolve if presolve found infeasible/unbounded 
-    if (!clpSolver || clpSolver->getModelPtr()->secondaryStatus()!=11)
+    // Do not resolve if presolve found infeasible/unbounded or time limit hit
+    if (!clpSolver || (clpSolver->getModelPtr()->secondaryStatus() != 11
+                       && clpSolver->getModelPtr()->status() != 3))
       solver_->resolve();
   }
   // But set up so Jon Lee will be happy

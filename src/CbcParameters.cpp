@@ -382,7 +382,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::PREPROCESS]->setDefault("off");
      parameters_[CbcParam::SOSPRIORITIZE]->setDefault("off");
      parameters_[CbcParam::STRATEGY]->setDefault("default");
-     parameters_[CbcParam::TIMEMODE]->setDefault("cpu");
+     parameters_[CbcParam::TIMEMODE]->setDefault("elapsed");
      parameters_[CbcParam::USECGRAPH]->setDefault("on");
      parameters_[CbcParam::ARTIFICIALCOST]->setDefault(getArtVarThreshold());
      parameters_[CbcParam::DEXTRA3]->setDefault(0.0);
@@ -1342,7 +1342,8 @@ void CbcParameters::addCbcSolverKwdParams() {
 
   parameters_[CbcParam::TIMEMODE]->setup(
       "timeM!ode", "Whether to use CPU or elapsed time",
-      "cpu uses CPU time for stopping, while elapsed uses elapsed time. (On "
+      "elapsed uses elapsed (wall-clock) time for stopping, while cpu uses CPU "
+      "time. Elapsed is the default as it is more natural for users. (On "
       "Windows, elapsed time is always used).");
   parameters_[CbcParam::TIMEMODE]->appendKwd( "cpu", CbcParameters::ClockCpu);
   parameters_[CbcParam::TIMEMODE]->appendKwd("elapsed", CbcParameters::ClockElapsed);

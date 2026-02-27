@@ -204,7 +204,17 @@ void CbcSpecificThread::signal()
 void CbcSpecificThread::startThread(void *(*routine)(void *), CbcThread *thread)
 {
 #ifdef CBC_PTHREAD
-  pthread_create(&(threadId_.thr), NULL, routine, thread);
+  {
+    /* macOS creates pthreads with only 512 KB of stack (vs 8 MB on Linux).
+     * OpenBLAS dgetrf_single allocates a large panel buffer on the stack,
+     * which overflows 512 KB when called from a B&B worker thread, causing
+     * SIGSEGV.  Request 8 MB explicitly so behaviour matches Linux. */
+    pthread_attr_t _attr;
+    pthread_attr_init(&_attr);
+    pthread_attr_setstacksize(&_attr, 8 * 1024 * 1024);
+    pthread_create(&(threadId_.thr), &_attr, routine, thread);
+    pthread_attr_destroy(&_attr);
+  }
   threadId_.status = 1;
 #else
 #endif
@@ -251,8 +261,13 @@ void parallelHeuristics(int numberThreads,
   Coin_pthread_t *threadId = new Coin_pthread_t[numberThreads];
   char *args = reinterpret_cast< char * >(argBundle);
   for (int i = 0; i < numberThreads; i++) {
-    pthread_create(&(threadId[i].thr), NULL, doHeurThread,
+    /* macOS default pthread stack is 512 KB; OpenBLAS dgetrf_single needs more. */
+    pthread_attr_t _attr;
+    pthread_attr_init(&_attr);
+    pthread_attr_setstacksize(&_attr, 8 * 1024 * 1024);
+    pthread_create(&(threadId[i].thr), &_attr, doHeurThread,
       args + i * sizeOfData);
+    pthread_attr_destroy(&_attr);
   }
   // now wait
   for (int i = 0; i < numberThreads; i++) {

@@ -7,6 +7,7 @@
 #ifndef CbcNodeInfo_H
 #define CbcNodeInfo_H
 
+#include <atomic>
 #include <string>
 #include <vector>
 
@@ -132,14 +133,13 @@ public:
   /// Increment number of references
   inline void increment(int amount = 1)
   {
-    numberPointingToThis_ += amount; /*printf("CbcNodeInfo %x incremented by %d to %d\n",this,amount,numberPointingToThis_);*/
+    numberPointingToThis_.fetch_add(amount, std::memory_order_relaxed);
   }
 
   /// Decrement number of references and return number left
   inline int decrement(int amount = 1)
   {
-    numberPointingToThis_ -= amount; /*printf("CbcNodeInfo %x decremented by %d to %d\n",this,amount,numberPointingToThis_);*/
-    return numberPointingToThis_;
+    return numberPointingToThis_.fetch_sub(amount, std::memory_order_acq_rel) - amount;
   }
 #else
   /// Increment number of references
@@ -154,7 +154,7 @@ public:
 
   inline void initializeInfo(int number)
   {
-    numberPointingToThis_ = number;
+    numberPointingToThis_.store(number, std::memory_order_relaxed);
     numberBranchesLeft_ = number;
   }
 
@@ -173,25 +173,25 @@ public:
   /// Return number of objects pointing to this
   inline int numberPointingToThis() const
   {
-    return numberPointingToThis_;
+    return numberPointingToThis_.load(std::memory_order_relaxed);
   }
 
   /// Set number of objects pointing to this
   inline void setNumberPointingToThis(int number)
   {
-    numberPointingToThis_ = number;
+    numberPointingToThis_.store(number, std::memory_order_relaxed);
   }
 
   /// Increment number of objects pointing to this
   inline void incrementNumberPointingToThis()
   {
-    numberPointingToThis_++;
+    numberPointingToThis_.fetch_add(1, std::memory_order_relaxed);
   }
 
   /// Say one branch taken
   inline int branchedOn()
   {
-    numberPointingToThis_--;
+    numberPointingToThis_.fetch_sub(1, std::memory_order_relaxed);
     numberBranchesLeft_--;
     return numberBranchesLeft_;
   }
@@ -199,7 +199,7 @@ public:
   /// Say thrown away
   inline void throwAway()
   {
-    numberPointingToThis_ -= numberBranchesLeft_;
+    numberPointingToThis_.fetch_sub(numberBranchesLeft_, std::memory_order_relaxed);
     numberBranchesLeft_ = 0;
   }
 
@@ -336,7 +336,7 @@ protected:
       `Potential' means children still to be created (#numberBranchesLeft_ of
       this CbcNodeInfo).
     */
-  int numberPointingToThis_;
+  std::atomic<int> numberPointingToThis_;
 
   /// parent
   CbcNodeInfo *parent_;

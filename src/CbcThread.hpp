@@ -5,6 +5,7 @@
 #ifndef CbcThread_H
 #define CbcThread_H
 
+#include <atomic>
 #include "CbcModel.hpp"
 #include "CbcNode.hpp"
 class OsiObject;
@@ -149,12 +150,12 @@ public:
   /// Get return code
   inline int returnCode() const
   {
-    return returnCode_;
+    return returnCode_.load(std::memory_order_acquire);
   }
   /// Set return code
   inline void setReturnCode(int value)
   {
-    returnCode_ = value;
+    returnCode_.store(value, std::memory_order_release);
   }
   /// Get base model
   inline CbcModel *baseModel() const
@@ -169,22 +170,22 @@ public:
   /// Get node
   inline CbcNode *node() const
   {
-    return node_;
+    return node_.load(std::memory_order_acquire);
   }
   /// Set node
   inline void setNode(CbcNode *node)
   {
-    node_ = node;
+    node_.store(node, std::memory_order_release);
   }
   /// Get created node
   inline CbcNode *createdNode() const
   {
-    return createdNode_;
+    return createdNode_.load(std::memory_order_acquire);
   }
   /// Set created node
   inline void setCreatedNode(CbcNode *node)
   {
-    createdNode_ = node;
+    createdNode_.store(node, std::memory_order_release);
   }
   /// Get dantzig state
   inline int dantzigState() const
@@ -199,42 +200,50 @@ public:
   /// Get time in thread
   inline double timeInThread() const
   {
-    return timeInThread_;
+    return timeInThread_.load(std::memory_order_relaxed);
   }
   /// Increment time in thread
   inline void incrementTimeInThread(double value)
   {
-    timeInThread_ += value;
+    double old = timeInThread_.load(std::memory_order_relaxed);
+    while (!timeInThread_.compare_exchange_weak(old, old + value, std::memory_order_relaxed))
+      ;
   }
   /// Get time waiting to start
   inline double timeWaitingToStart() const
   {
-    return timeWaitingToStart_;
+    return timeWaitingToStart_.load(std::memory_order_relaxed);
   }
   /// Increment time waiting to start
   inline void incrementTimeWaitingToStart(double value)
   {
-    timeWaitingToStart_ += value;
+    double old = timeWaitingToStart_.load(std::memory_order_relaxed);
+    while (!timeWaitingToStart_.compare_exchange_weak(old, old + value, std::memory_order_relaxed))
+      ;
   }
   /// Get time locked
   inline double timeLocked() const
   {
-    return timeLocked_;
+    return timeLocked_.load(std::memory_order_relaxed);
   }
   /// Increment time locked
   inline void incrementTimeLocked(double value)
   {
-    timeLocked_ += value;
+    double old = timeLocked_.load(std::memory_order_relaxed);
+    while (!timeLocked_.compare_exchange_weak(old, old + value, std::memory_order_relaxed))
+      ;
   }
   /// Get time waiting to lock
   inline double timeWaitingToLock() const
   {
-    return timeWaitingToLock_;
+    return timeWaitingToLock_.load(std::memory_order_relaxed);
   }
   /// Increment time waiting to lock
   inline void incrementTimeWaitingToLock(double value)
   {
-    timeWaitingToLock_ += value;
+    double old = timeWaitingToLock_.load(std::memory_order_relaxed);
+    while (!timeWaitingToLock_.compare_exchange_weak(old, old + value, std::memory_order_relaxed))
+      ;
   }
   /// Get if deterministic
   inline int deterministic() const
@@ -337,14 +346,14 @@ public: // private:
   CbcSpecificThread threadStuff_;
   CbcModel *baseModel_;
   CbcModel *thisModel_;
-  CbcNode *node_; // filled in every time
-  CbcNode *createdNode_; // filled in every time on return
+  std::atomic<CbcNode *> node_; // filled in every time
+  std::atomic<CbcNode *> createdNode_; // filled in every time on return
   CbcThread *master_; // points back to master thread
-  int returnCode_; // -1 available, 0 busy, 1 finished , 2??
-  double timeLocked_;
-  double timeWaitingToLock_;
-  double timeWaitingToStart_;
-  double timeInThread_;
+  std::atomic<int> returnCode_; // -1 available, 0 busy, 1 finished , 2??
+  std::atomic<double> timeLocked_;
+  std::atomic<double> timeWaitingToLock_;
+  std::atomic<double> timeWaitingToStart_;
+  std::atomic<double> timeInThread_;
   double timeWhenLocked_; // time when thread got lock (in seconds)
   int numberTimesLocked_;
   int numberTimesUnlocked_;

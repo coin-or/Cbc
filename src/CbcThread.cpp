@@ -366,7 +366,7 @@ void CbcThread::lockThread()
     threadStuff_.lockThread();
     locked_ = true;
     timeWhenLocked_ = getTime();
-    timeWaitingToLock_ += timeWhenLocked_ - time2;
+    { double old = timeWaitingToLock_.load(std::memory_order_relaxed); while (!timeWaitingToLock_.compare_exchange_weak(old, old + (timeWhenLocked_ - time2), std::memory_order_relaxed)); }
     ;
     numberTimesLocked_++;
 #ifdef THREAD_DEBUG
@@ -394,7 +394,7 @@ void CbcThread::unlockThread()
     locked_ = false;
     threadStuff_.unlockThread();
     double time2 = getTime();
-    timeLocked_ += time2 - timeWhenLocked_;
+    { double old = timeLocked_.load(std::memory_order_relaxed); while (!timeLocked_.compare_exchange_weak(old, old + (time2 - timeWhenLocked_), std::memory_order_relaxed)); }
     numberTimesUnlocked_++;
 #ifdef THREAD_DEBUG
 #if THREAD_DEBUG > 1
@@ -426,14 +426,14 @@ bool CbcThread::wait(int type, int currentCode)
     master_->threadStuff_.unlockThread2();
   } else {
     // wait until return code changes
-    while (returnCode_ == currentCode) {
+    while (returnCode_.load(std::memory_order_acquire) == currentCode) {
       threadStuff_.signal();
       master_->threadStuff_.lockThread2();
       master_->threadStuff_.timedWait(CBC_WAIT_TIME);
       master_->threadStuff_.unlockThread2();
     }
   }
-  return (returnCode_ != currentCode);
+  return (returnCode_.load(std::memory_order_acquire) != currentCode);
 }
 #if 0
 pthread_cond_signal(&condition2_);
@@ -457,10 +457,10 @@ void CbcThread::waitThread()
 {
   double time = getTime();
   threadStuff_.lockThread2();
-  while (returnCode_) {
+  while (returnCode_.load(std::memory_order_acquire)) {
     threadStuff_.timedWait(-10); // 10 seconds
   }
-  timeWaitingToStart_ += getTime() - time;
+  { const double delta = getTime() - time; double old = timeWaitingToStart_.load(std::memory_order_relaxed); while (!timeWaitingToStart_.compare_exchange_weak(old, old + delta, std::memory_order_relaxed)); }
   numberTimesWaitingToStart_++;
 }
 // Just wait for so many nanoseconds
@@ -756,8 +756,12 @@ int CbcBaseModel::waitForThreadsInTree(int type)
     return anyLeft;
   } else if (type == 1) {
     // normal
+    // Read cutoff and pop best node under the masterMutex to avoid racing
+    // with workers that may update the cutoff via setCutoff().
+    lockThread();
     double cutoff = baseModel->getCutoff();
     CbcNode *node = baseModel->tree()->bestNode(cutoff);
+    unlockThread();
     // Possible one on tree worse than cutoff
     if (!node || node->objectiveValue() > cutoff)
       return 1;
@@ -1560,6 +1564,7 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
   }
 #endif
   if (mode == 0) {
+    lockThread(); // guard base-model reads against concurrent worker updates
     setCutoff(baseModel->getCutoff());
     bestObjective_ = baseModel->bestObjective_;
     //assert (!baseModel->globalCuts_.sizeRowCuts());
@@ -1577,6 +1582,7 @@ void CbcModel::moveToModel(CbcModel *baseModel, int mode)
     numberFixedAtRoot_ = numberIterations_; // for statistics
     numberSolves_ = 0;
     phase_ = baseModel->phase_;
+    unlockThread();
     assert(!nextRowCut_);
     nodeCompare_ = baseModel->nodeCompare_;
     tree_ = baseModel->tree_;

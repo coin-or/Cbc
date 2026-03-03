@@ -5424,6 +5424,15 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     /*  Check for abort on limits: node count, solution count, time, integrality
      * gap. */
+#ifdef CBC_THREAD
+    if (master_) {
+      lockThread();
+      bool stopping = stoppingCriterionReached();
+      unlockThread();
+      if (stopping)
+        break;
+    } else
+#endif
     if (stoppingCriterionReached())
       break;
 #ifdef BONMIN
@@ -5451,8 +5460,18 @@ void CbcModel::branchAndBound(int doStatistics)
       }
     }
     // replace current cutoff?
-    if (cutoff > getCutoff()) {
-      double newCutoff = getCutoff();
+    // In parallel mode read getCutoff() under the masterMutex to avoid racing
+    // with a worker thread that may be writing it via setCutoff().
+#ifdef CBC_THREAD
+    if (master_) lockThread();
+#endif
+    bool cutoffImproved = (cutoff > getCutoff());
+    double latestCutoff = getCutoff();
+#ifdef CBC_THREAD
+    if (master_) unlockThread();
+#endif
+    if (cutoffImproved) {
+      double newCutoff = latestCutoff;
       if (analyzeResults_) {
         // see if we could fix any (more)
         int n = 0;
@@ -5520,7 +5539,14 @@ void CbcModel::branchAndBound(int doStatistics)
       }
       unlockThread();
     }
-    cutoff = getCutoff();
+#ifdef CBC_THREAD
+    if (master_) {
+      lockThread();
+      cutoff = getCutoff();
+      unlockThread();
+    } else
+#endif
+      cutoff = getCutoff();
     /*
             Periodic activities: Opportunities to
             + tweak the nodeCompare criteria,
@@ -5597,9 +5623,10 @@ void CbcModel::branchAndBound(int doStatistics)
         int numberThreads = master_->numberThreads();
         for (int i = 0; i < numberThreads; i++) {
           CbcThread *child = master_->child(i);
-          if (child->node()) {
+          CbcNode *childNode = child->node(); // single atomic load
+          if (childNode) {
             // adjust
-            double value = child->node()->objectiveValue();
+            double value = childNode->objectiveValue();
             bestPossibleObjective_ = std::min(bestPossibleObjective_, value);
           }
         }
@@ -5668,6 +5695,17 @@ void CbcModel::branchAndBound(int doStatistics)
       lastSecPrintProgress_ = CoinWallclockTime();
     }
     // See if can stop on gap
+    // In parallel mode read bestObjective_ under the masterMutex to avoid
+    // racing with a worker thread that may be writing it.
+#ifdef CBC_THREAD
+    if (master_) {
+      lockThread();
+      bool gap = canStopOnGap();
+      unlockThread();
+      if (gap)
+        stoppedOnGap_ = true;
+    } else
+#endif
     if (canStopOnGap()) {
       stoppedOnGap_ = true;
     }
@@ -9035,9 +9073,10 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       // Care! We must be careful not to update the same variable in parallel
       // threads.
       addUpdateInformation(update);
-      // update here
+      // update here using THIS model's own object (not the potentially shared
+      // update.object_ which may belong to the base model or another thread's model)
       {
-        CbcObject *object = dynamic_cast<CbcObject *>(update.object_);
+        CbcObject *object = dynamic_cast<CbcObject *>(object_[update.objectNumber_]);
         if (object)
           object->updateInformation(update);
       }
@@ -19097,6 +19136,16 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
       if (parallelMode() >= 0) {
         if (!node->nodeInfo()->numberBranchesLeft())
           node->nodeInfo()->allBranchesGone(); // can clean up
+        // Clear the CbcThread node pointer while holding the lock so the
+        // master thread cannot read a dangling pointer after we free the node.
+        // Re-acquire if it was released earlier (e.g. for heuristic runs).
+        if (masterThread_) {
+          if (!locked) {
+            lockThread();
+            locked = true;
+          }
+          masterThread_->setNode(NULL);
+        }
         deleteNode(node);
         node = NULL;
       } else {
@@ -19166,7 +19215,9 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         baseModel->bestSolution_ = new double[numberColumns];
       CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
       baseModel->setCutoff(getCutoff());
-      baseModel->handler_->message(CBC_ROUNDING, messages_)
+      // Use this worker's own handler to avoid racing with the main thread on
+      // baseModel->handler_ (workers are cloned with their own handlers).
+      handler_->message(CBC_ROUNDING, messages_)
           << trueBestObjValue() << "heuristic" << baseModel->numberIterations_
           << baseModel->numberNodes_ << getCurrentSeconds() << CoinMessageEol;
     }

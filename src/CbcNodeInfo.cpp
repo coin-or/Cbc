@@ -11,6 +11,7 @@
 
 #include "CbcConfig.h"
 
+#include <atomic>
 #include <string>
 //#define CBC_DEBUG 1
 //#define CHECK_CUT_COUNTS
@@ -107,7 +108,7 @@ CbcNodeInfo::CbcNodeInfo(CbcNodeInfo *parent)
 
 // Copy Constructor
 CbcNodeInfo::CbcNodeInfo(const CbcNodeInfo &rhs)
-  : numberPointingToThis_(rhs.numberPointingToThis_)
+  : numberPointingToThis_(rhs.numberPointingToThis_.load(std::memory_order_relaxed))
   , parent_(rhs.parent_)
   , parentBranch_(NULL)
   , owner_(rhs.owner_)

@@ -203,6 +203,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\CbcCbcParam.cpp" />
+    <ClCompile Include="..\..\..\src\CbcInstanceFeatures.cpp" />
     <ClCompile Include="..\..\..\src\CbcLinked.cpp" />
     <ClCompile Include="..\..\..\src\CbcLinkedUtils.cpp" />
     <ClCompile Include="..\..\..\src\CbcMipStartIO.cpp" />

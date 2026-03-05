@@ -496,6 +496,8 @@ public:
   CbcThread() {}
 
   virtual ~CbcThread() {}
+
+  inline void setNode(CbcNode *) {}
 };
 /** Base model */
 

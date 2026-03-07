@@ -212,7 +212,9 @@ void CbcHeuristicFPump::resetModel(CbcModel * model)
 int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   double *betterSolution)
 {
-  startTime_ = CoinCpuTime();
+  // Record start time using the same clock as model_->getCurrentSeconds()
+  // so that maximumTime_ budget checks are elapsed-mode-aware.
+  startTime_ = model_->getCurrentSeconds();
   numCouldRun_++;
   double incomingObjective = solutionValue;
 #define LEN_PRINT 200
@@ -411,8 +413,10 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   }
   double time1 = CoinCpuTime();
   /*
-  Obtain a relaxed lp solution.
+  Obtain a relaxed lp solution.  Bail early if CBC time limit already reached.
 */
+  if (model_->maximumSecondsReached())
+    return 0;
   model_->solver()->resolve();
   if (!model_->solver()->isProvenOptimal()) {
 
@@ -547,6 +551,20 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   //printf("exact multiple %g\n",exactMultiple);
   // Clone solver for rounding
   OsiSolverInterface *clonedSolver = cloneBut(2); // wasmodel_->solver()->clone();
+  // Propagate remaining CBC time limit to this cloned LP solver so a single
+  // resolve() cannot outlast the global deadline.
+  {
+    OsiClpSolverInterface *clpClonedSolver = dynamic_cast<OsiClpSolverInterface *>(clonedSolver);
+    if (clpClonedSolver) {
+      double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
+      if (remaining > 0.0) {
+        if (model_->useElapsedTime())
+          clpClonedSolver->getModelPtr()->setMaximumWallSeconds(remaining);
+        else
+          clpClonedSolver->getModelPtr()->setMaximumSeconds(remaining);
+      }
+    }
+  }
   while (!exitAll) {
     // Cutoff rhs
     double useRhs = COIN_DBL_MAX;
@@ -573,6 +591,17 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         clpSolver->setHintParam(OsiDoReducePrint, false, OsiHintTry);
         lp->setLogLevel(std::max(1, lp->logLevel()));
 #endif
+        // Propagate remaining CBC time limit so individual LP resolves cannot
+        // outlast the global deadline.  The existing maximumSecondsReached()
+        // checks inside the loop catch inter-solve overruns; this caps each
+        // individual solve.
+        double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
+        if (remaining > 0.0) {
+          if (model_->useElapsedTime())
+            lp->setMaximumWallSeconds(remaining);
+          else
+            lp->setMaximumSeconds(remaining);
+        }
       }
     }
     if (std::min(fakeCutoff_, cutoff) < 1.0e50) {
@@ -805,7 +834,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         // too many passes anyway
         exitAll = true;
       }
-      if (maximumTime_ > 0.0 && CoinCpuTime() >= startTime_ + maximumTime_) {
+      if (maximumTime_ > 0.0 && model_->getCurrentSeconds() >= startTime_ + maximumTime_) {
         exitAll = true;
         // force exit
         switches_ |= 2048;
@@ -2493,6 +2522,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
 */
 int CbcHeuristicFPump::solution(double &objectiveValue, double *newSolution)
 {
+  if (model_->maximumSecondsReached())
+    return 0;
   double *newSolution2 = NULL;
   double objective2 = COIN_DBL_MAX;
   int returnCode2 = 0;
@@ -3395,7 +3426,10 @@ int CbcHeuristicFPump::rounds(OsiSolverInterface *solver, double *solution,
 // Set maximum Time (default off) - also sets starttime to current
 void CbcHeuristicFPump::setMaximumTime(double value)
 {
-  startTime_ = CoinCpuTime();
+  // Use getCurrentSeconds() if model is available for elapsed-mode consistency;
+  // otherwise fall back to CPU time.  solutionInternal() will override this
+  // with the correct clock at entry, so this is mainly for documentation.
+  startTime_ = model_ ? model_->getCurrentSeconds() : CoinCpuTime();
   maximumTime_ = value;
 }
 

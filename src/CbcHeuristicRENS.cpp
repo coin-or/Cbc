@@ -13,6 +13,8 @@
 #include <cmath>
 #include <cfloat>
 
+#include "CoinTime.hpp"
+#include "OsiClpSolverInterface.hpp"
 #include "OsiSolverInterface.hpp"
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
@@ -109,6 +111,25 @@ int CbcHeuristicRENS::solution(double &solutionValue,
   const int *integerVariable = model_->integerVariable();
 
   OsiSolverInterface *newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
+
+  // Propagate remaining CBC time to the LP solver so individual re-solves
+  // cannot run past the global deadline.  Also bail out immediately if the
+  // time budget is already exhausted.
+  if (model_->maximumSecondsReached()) {
+    delete newSolver;
+    return 0;
+  }
+  if (model_->getMaximumSeconds() < 1.0e10) {
+    OsiClpSolverInterface *clpSolverR = dynamic_cast< OsiClpSolverInterface * >(newSolver);
+    if (clpSolverR) {
+      double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
+      if (model_->useElapsedTime())
+        clpSolverR->getModelPtr()->setMaximumWallSeconds(remaining);
+      else
+        clpSolverR->getModelPtr()->setMaximumSeconds(remaining);
+    }
+  }
+
   const double *currentSolution = newSolver->getColSolution();
   int type = rensType_ & 15;
   if (type < 12)
@@ -700,6 +721,8 @@ int CbcHeuristicRENS::solution(double &solutionValue,
         }
       }
       // solve
+      if (model_->maximumSecondsReached())
+        break;
       returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
         model_->getCutoff(), "CbcHeuristicRENS");
       if (returnCode < 0) {
@@ -900,6 +923,11 @@ int CbcHeuristicRENS::solution(double &solutionValue,
 #ifdef COIN_DEVELOP
     printf("%d integers fixed and %d tightened\n", numberFixed, numberTightened);
 #endif
+    if (model_->maximumSecondsReached()) {
+      fractionSmall_ = saveFractionSmall;
+      delete newSolver;
+      return 0;
+    }
     returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
       model_->getCutoff(), "CbcHeuristicRENS");
     if (returnCode < 0 || returnCode == 0) {
@@ -952,8 +980,9 @@ int CbcHeuristicRENS::solution(double &solutionValue,
             numberFixed, numberTightened, numberAtBound, nFix2);
 #endif
         }
-        returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
-          model_->getCutoff(), "CbcHeuristicRENS");
+        if (!model_->maximumSecondsReached())
+          returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
+            model_->getCutoff(), "CbcHeuristicRENS");
       }
 #endif
       if (returnCode < 0 || returnCode == 0) {
@@ -1014,7 +1043,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
 #else
           if (nFixed) {
             newSolver->resolve();
-            if (!newSolver->isProvenOptimal()) {
+            if (!newSolver->isProvenOptimal() || model_->maximumSecondsReached()) {
               returnCode = 0;
               break;
             }
@@ -1038,7 +1067,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
         }
         delete[] saveLower;
         delete[] saveUpper;
-        if (nSolved)
+        if (nSolved && !model_->maximumSecondsReached())
           returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
             model_->getCutoff(), "CbcHeuristicRENS");
         else

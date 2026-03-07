@@ -4993,17 +4993,23 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #endif
                 solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                   tunePreProcess);
-                if (!solver2 || !solver2->isProvenOptimal()) {
+                if (!solver2) {
+                  // Case A: preprocessing itself detected infeasibility —
+                  // retry with simpler settings (no double check possible)
+                  process.clean();
+                  solver2 = process.preProcessNonDefault(*saveSolver,
+                    0, 99, 0);
+                } else if (!solver2->isProvenOptimal()) {
                   /* Infeasible - but most real problems are not
                      infeasible - so try simpler preprocessing which
                      is less affected by tolerance issues */
-		  // double check
-		  solver2->resolve();
-		  if (!solver2->isProvenOptimal()) {
-		    process.clean();
-		    solver2 = process.preProcessNonDefault(*saveSolver,
-							   0, 99, 0);
-		  }
+                  // Case B: LP relaxation infeasible — double check with resolve()
+                  solver2->resolve();
+                  if (!solver2->isProvenOptimal()) {
+                    process.clean();
+                    solver2 = process.preProcessNonDefault(*saveSolver,
+                      0, 99, 0);
+                  }
                 }
                 setPreProcessingMode(saveSolver, 0);
 #if CBC_USE_PAPILO

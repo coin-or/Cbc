@@ -258,6 +258,73 @@ void testSOS() {
 }
 
 
+void testInfeasiblePreprocess() {
+    /* Tests that CBC correctly detects infeasibility for an instance where
+     * preprocessing (preProcessNonDefault) returns null, i.e. the null-solver2
+     * case. This was triggering a SIGSEGV in CbcMain1 (da489d33). The instance
+     * represents a vertex-coloring / matching problem with 8 binary variables
+     * and 14 constraints that is provably infeasible. */
+
+    Cbc_Model *model = Cbc_newModel();
+
+    /* 8 binary variables: a=0 b=1 c=2 d=3 e=4 f=5 g=6 h=7
+     *
+     * b+c+f+g <= 3       (vars 1,2,5,6)
+     * a+d+e+h <= 3       (vars 0,3,4,7)
+     * a+b == 1           (vars 0,1)
+     * c+d == 1           (vars 2,3)
+     * e+f == 1           (vars 4,5)
+     * g+h == 1           (vars 6,7)
+     * a+c <= 1           (vars 0,2)
+     * b+d <= 1           (vars 1,3)
+     * c+e <= 1           (vars 2,4)
+     * d+f <= 1           (vars 3,5)
+     * e+g <= 1           (vars 4,6)
+     * f+h <= 1           (vars 5,7)
+     * a+g <= 1           (vars 0,6)
+     * b+h <= 1           (vars 1,7)
+     */
+
+    const int ncols = 8;
+    const int nrows = 14;
+
+    double collb[8] = {0,0,0,0,0,0,0,0};
+    double colub[8] = {1,1,1,1,1,1,1,1};
+    double obj[8]   = {0,0,0,0,0,0,0,0};
+
+    /* Column-wise: start[j]..start[j+1]-1 are the nonzeros of column j.
+     * Each variable appears in exactly 4 rows (one per group below).
+     * col 0 (a): rows 1,2,6,12
+     * col 1 (b): rows 0,2,7,13
+     * col 2 (c): rows 0,3,6,8
+     * col 3 (d): rows 1,3,7,9
+     * col 4 (e): rows 1,4,8,10
+     * col 5 (f): rows 0,4,9,11
+     * col 6 (g): rows 0,5,10,12
+     * col 7 (h): rows 1,5,11,13
+     */
+    CoinBigIndex start[]  = {0, 4, 8, 12, 16, 20, 24, 28, 32};
+    int    rowindex[] = {1,2,6,12,  0,2,7,13,  0,3,6,8,  1,3,7,9,  1,4,8,10,  0,4,9,11,  0,5,10,12,  1,5,11,13};
+    double values[]   = {1,1,1,1,   1,1,1,1,   1,1,1,1,  1,1,1,1,  1,1,1,1,   1,1,1,1,   1,1,1,1,    1,1,1,1};
+
+    double rowlb[] = {-1e30,-1e30, 1, 1, 1, 1, -1e30,-1e30,-1e30,-1e30,-1e30,-1e30,-1e30,-1e30};
+    double rowub[] = {    3,    3, 1, 1, 1, 1,     1,    1,    1,    1,    1,    1,    1,    1};
+
+    Cbc_loadProblem(model, ncols, nrows, start, rowindex, values,
+                    collb, colub, obj, rowlb, rowub);
+
+    int i;
+    for (i = 0; i < ncols; i++)
+        Cbc_setInteger(model, i);
+
+    Cbc_solve(model);
+
+    assert(!Cbc_isProvenOptimal(model));
+    assert(Cbc_isProvenInfeasible(model));
+
+    Cbc_deleteModel(model);
+}
+
 void testIntegerInfeasible() {
 
     Cbc_Model *model = Cbc_newModel();
@@ -1184,6 +1251,8 @@ int main() {
     testKnapsack();
     printf("SOS test\n");
     testSOS();
+    printf("Infeasible (preprocess returns null) test\n");
+    testInfeasiblePreprocess();
     printf("Infeasible test\n");
     testIntegerInfeasible();
     printf("Unbounded test\n");

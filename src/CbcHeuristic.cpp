@@ -915,6 +915,17 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   solver->setHintParam(OsiDoPresolveInInitial, false, OsiHintTry);
   double signedCutoff = cutoff * solver->getObjSenseInCbc();
   solver->setDblParam(OsiDualObjectiveLimit, signedCutoff);
+  // Propagate remaining CBC time to LP solver for the preprocessing solve.
+  if (model_->getMaximumSeconds() < 1.0e10) {
+    OsiClpSolverInterface *clpSolverPre = dynamic_cast< OsiClpSolverInterface * >(solver);
+    if (clpSolverPre) {
+      double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
+      if (model_->useElapsedTime())
+        clpSolverPre->getModelPtr()->setMaximumWallSeconds(remaining);
+      else
+        clpSolverPre->getModelPtr()->setMaximumSeconds(remaining);
+    }
+  }
   solver->initialSolve();
   if (solver->isProvenOptimal()) {
     CglPreProcess process;
@@ -1112,6 +1123,17 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 	clpSolver2->setSpecialOptions(clpSolver->specialOptions());
       }
       if (returnCode == 1) {
+        // Propagate remaining CBC time to the post-presolve LP re-solve.
+        if (model_->getMaximumSeconds() < 1.0e10) {
+          OsiClpSolverInterface *clpSolver2TL = dynamic_cast< OsiClpSolverInterface * >(solver2);
+          if (clpSolver2TL) {
+            double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
+            if (model_->useElapsedTime())
+              clpSolver2TL->getModelPtr()->setMaximumWallSeconds(remaining);
+            else
+              clpSolver2TL->getModelPtr()->setMaximumSeconds(remaining);
+          }
+        }
         solver2->resolve();
         CbcModel model(*solver2);
         double startTime = model_->getDblParam(CbcModel::CbcStartSeconds);

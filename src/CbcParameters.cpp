@@ -462,7 +462,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::COMBINE]->setDefault("off");
      parameters_[CbcParam::CROSSOVER]->setDefault("off");
      parameters_[CbcParam::DINS]->setDefault("off");
-     parameters_[CbcParam::DIVINGC]->setDefault("off");
+     parameters_[CbcParam::DIVINGC]->setDefault("on");
      parameters_[CbcParam::DIVINGF]->setDefault("off");
      parameters_[CbcParam::DIVINGG]->setDefault("off");
      parameters_[CbcParam::DIVINGL]->setDefault("off");
@@ -470,8 +470,8 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::DIVINGS]->setDefault("off");
      parameters_[CbcParam::DIVINGV]->setDefault("off");
      parameters_[CbcParam::DW]->setDefault("off");
-     parameters_[CbcParam::FPUMP]->setDefault("off");
-     parameters_[CbcParam::GREEDY]->setDefault("off");
+     parameters_[CbcParam::FPUMP]->setDefault("on");
+     parameters_[CbcParam::GREEDY]->setDefault("on");
      parameters_[CbcParam::HEURISTICSTRATEGY]->setDefault("off");
      parameters_[CbcParam::LOCALTREE]->setDefault("off");
      parameters_[CbcParam::NAIVE]->setDefault("off");
@@ -482,8 +482,8 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::PROXIMITY]->setDefault("off");
      parameters_[CbcParam::RANDROUND]->setDefault("off");
      parameters_[CbcParam::RENS]->setDefault("off");
-     parameters_[CbcParam::RINS]->setDefault("off");
-     parameters_[CbcParam::ROUNDING]->setDefault("off");
+     parameters_[CbcParam::RINS]->setDefault("on");
+     parameters_[CbcParam::ROUNDING]->setDefault("on");
      parameters_[CbcParam::VND]->setDefault("off");
      parameters_[CbcParam::ALLOWABLEGAP]->setDefault(1.0e-12);
      parameters_[CbcParam::CUTOFF]->setDefault(1.0e50);
@@ -1329,13 +1329,18 @@ void CbcParameters::addCbcSolverKwdParams() {
 
   parameters_[CbcParam::STRATEGY]->setup(
       "strat!egy", "Switches on groups of features",
-      "This turns on newer features. "
-      "Default uses Gomory cuts with a tolerance of 0.01 at the root "
-      "node, does a possible restart after 100 nodes if many variables could "
-      "be fixed, activates a diving and RINS heuristic, and makes the "
-      "feasibility pump more aggressive."); // This does not apply to unit tests
-                                            // (where 'experiment' may have
-                                            // similar effects)
+      "Selects a preset configuration that adjusts cuts, heuristics, and "
+      "solver tuning as a group.\n\n"
+      "  easy (0): A lighter configuration. Uses Gomory cuts with a looser "
+      "tolerance (0.01 at root), shorter FPump runs (20 passes, tune=1003), "
+      "no preprocessing tuning, and disables RINS and DivingCoefficient.\n\n"
+      "  default (1): The recommended configuration. Tightens Gomory and "
+      "TwoMir cut tolerances, runs FPump more aggressively (30 passes, "
+      "tune=1005043), enables DivingCoefficient and RINS heuristics, and "
+      "activates probing cuts (ifmove). This is what runs when no -strategy "
+      "flag is given.\n\n"
+      "  aggressive (2): Reserved for future use; currently identical to "
+      "default.");
   parameters_[CbcParam::STRATEGY]->appendKwd("easy", CbcParameters::StrategyEasy);
   parameters_[CbcParam::STRATEGY]->appendKwd("default", CbcParameters::StrategyDefault);
   parameters_[CbcParam::STRATEGY]->appendKwd("aggressive", CbcParameters::StrategyAggressive);

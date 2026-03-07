@@ -366,13 +366,14 @@ bool CbcHeuristic::shouldHeurRun_randomChoice()
     double probability = numerator / denominator;
     double randomNumber = randomNumberGenerator_.randomDouble();
     int when = when_ % 100;
-    if (when > 2 && when < 8) {
+    if (when > 2 && when < 9) {
       /* JJF adjustments
             3 only at root and if no solution
             4 only at root and if this heuristic has not got solution
             5 decay (but only if no solution)
             6 if depth <3 or decay
             7 run up to 2 times if solution found 4 otherwise
+            8 always fire when no incumbent; fall back to d^2/2^d once one exists
             */
       switch (when) {
       case 3:
@@ -416,6 +417,13 @@ bool CbcHeuristic::shouldHeurRun_randomChoice()
       case 7:
         if ((model_->bestSolution() && numRuns_ >= 2) || numRuns_ >= 4)
           probability = -1.0;
+        break;
+      case 8:
+        // Aggressive feasibility mode: fire at every node until an incumbent is
+        // found, then revert to the default d^2/2^d schedule.
+        if (!model_->bestSolution())
+          probability = 1.1; // guaranteed to fire
+        // else: leave probability as d^2/2^d (same as mode 2)
         break;
       }
     }

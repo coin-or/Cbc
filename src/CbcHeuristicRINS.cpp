@@ -339,6 +339,10 @@ int CbcHeuristicRINS::solution(double &solutionValue,
         return 0;
       }
       //printf("RINS %d integers have same value\n",nFix);
+      if (model_->maximumSecondsReached()) {
+        delete newSolver;
+        return 0;
+      }
       returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
         model_->getCutoff(), "CbcHeuristicRINS");
       if (returnCode < 0) {

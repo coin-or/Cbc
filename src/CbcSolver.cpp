@@ -1485,6 +1485,8 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   parameters[CbcParam::ROUNDING]->setVal("on");
   parameters[CbcParam::FPUMP]->setVal("on");
   parameters[CbcParam::GREEDY]->setVal("on");
+  parameters[CbcParam::DIVINGC]->setVal("on");
+  parameters[CbcParam::RINS]->setVal("on");
   parameters[CbcParam::COMBINE]->setVal("off");
   parameters[CbcParam::CROSSOVER]->setVal("off");
 #ifdef CBC_HAS_NAUTY
@@ -1498,7 +1500,6 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   parameters[CbcParam::PIVOTANDFIX]->setVal("off");
   parameters[CbcParam::RANDROUND]->setVal("off");
   parameters[CbcParam::NAIVE]->setVal("off");
-  parameters[CbcParam::RINS]->setVal("off");
   parameters[CbcParam::DINS]->setVal("off");
   parameters[CbcParam::RENS]->setVal("off");
   parameters[CbcParam::LOCALTREE]->setVal("off");
@@ -1977,8 +1978,6 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
         parameters[CbcParam::FPUMPITS]->setVal(30);
       parameters[CbcParam::FPUMPTUNE]->setVal(1005043);
       parameters[CbcParam::PROCESSTUNE]->setVal(7);
-      parameters[CbcParam::DIVINGC]->setVal("on");
-      parameters[CbcParam::RINS]->setVal("on");
       parameters[CbcParam::PROBINGCUTS]->setVal("ifmove");
       // parameters[iParam]->setVal("forceOnStrong");
       // probingMode = 8;
@@ -2525,6 +2524,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               initialPumpTune = 1003;
               parameters[CbcParam::PROCESSTUNE]->setVal(0);
               tunePreProcess = 0;
+              parameters[CbcParam::DIVINGC]->setVal("off");
               parameters[CbcParam::RINS]->setVal("off");
               // but not if cuts off
               if (parameters[CbcParam::CUTSTRATEGY]->modeVal()) {

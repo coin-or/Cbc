@@ -732,6 +732,11 @@ int CbcHeuristicGreedyEquality::solution(double &solutionValue,
   }
   delete[] which;
   if (fraction_ < 1.0 && rhsNeeded < 1.0e-8 && newSolutionValue < solutionValue) {
+    if (model_->maximumSecondsReached()) {
+      delete[] newSolution;
+      delete[] rowActivity;
+      return 0;
+    }
     // do branch and cut
     // fix all nonzero
     OsiSolverInterface *newSolver = model_->continuousSolver()->clone();
@@ -781,7 +786,7 @@ int CbcHeuristicGreedyEquality::solution(double &solutionValue,
   }
   delete[] newSolution;
   delete[] rowActivity;
-  if (atRoot && fraction_ == 1.0) {
+  if (atRoot && fraction_ == 1.0 && !model_->maximumSecondsReached()) {
     // try quick search
     fraction_ = 0.4;
     int newCode = this->solution(solutionValue, betterSolution);

@@ -40,6 +40,7 @@ CbcHeuristicDive::CbcHeuristicDive()
   whereFrom_ = 255 - 2 - 16 + 256;
   decayFactor_ = 1.0;
   smallObjective_ = 1.0e-10;
+  numConsecutiveInfeasible_ = 0;
 }
 
 // Constructor from model
@@ -69,6 +70,7 @@ CbcHeuristicDive::CbcHeuristicDive(CbcModel &model)
   whereFrom_ = 255 - 2 - 16 + 256;
   decayFactor_ = 1.0;
   smallObjective_ = 1.0e-10;
+  numConsecutiveInfeasible_ = 0;
 }
 
 // Destructor
@@ -114,6 +116,7 @@ CbcHeuristicDive::CbcHeuristicDive(const CbcHeuristicDive &rhs)
   , maxIterations_(rhs.maxIterations_)
   , maxSimplexIterations_(rhs.maxSimplexIterations_)
   , maxSimplexIterationsAtRoot_(rhs.maxSimplexIterationsAtRoot_)
+  , numConsecutiveInfeasible_(rhs.numConsecutiveInfeasible_)
 {
   downArray_ = NULL;
   upArray_ = NULL;
@@ -143,6 +146,7 @@ CbcHeuristicDive::operator=(const CbcHeuristicDive &rhs)
     maxSimplexIterationsAtRoot_ = rhs.maxSimplexIterationsAtRoot_;
     maxTime_ = rhs.maxTime_;
     smallObjective_ = rhs.smallObjective_;
+    numConsecutiveInfeasible_ = rhs.numConsecutiveInfeasible_;
     delete[] downLocks_;
     delete[] upLocks_;
     delete[] priority_;
@@ -274,13 +278,31 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     maxSimplexIterations_, maxSimplexIterationsAtRoot_, when());
 #endif
   int reasonToStop = 0;
-  double time1 = CoinCpuTime();
+  // Use the same time function as CbcModel so the dive respects -timem elapsed.
+  double time1 = model_->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime();
+  // Compute how much time remains in the overall CBC solve and cap the dive's
+  // own budget to that value (plus a small margin so we don't overshoot).
+  double cbcRemaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
+  double effectiveMaxTime = (cbcRemaining < maxTime_) ? cbcRemaining : maxTime_;
+  if (effectiveMaxTime <= 0.0)
+    return 0; // CBC time already exhausted — skip the dive entirely
   int numberSimplexIterations = 0;
   int maxSimplexIterations = (model_->getNodeCount()) ? maxSimplexIterations_
                                                       : maxSimplexIterationsAtRoot_;
   int maxIterationsInOneSolve = (maxSimplexIterations < 1000000) ? 1000 : 10000;
   // but can't be exactly coin_int_max
   maxSimplexIterations = std::min(maxSimplexIterations, COIN_INT_MAX >> 3);
+
+  // diveopt 8: aggressive feasibility mode — when no incumbent exists, lift
+  // limits to match root-node quality so the dive gets every chance to find
+  // the first feasible solution.
+  int savedMaxIterations = maxIterations_;
+  if ((when_ % 100) == 8 && !model_->bestSolution()) {
+    maxSimplexIterations = std::min(maxSimplexIterationsAtRoot_, COIN_INT_MAX >> 3);
+    maxIterationsInOneSolve = 10000;
+    maxIterations_ = std::max(maxIterations_, 1000);
+  }
+
   bool fixGeneralIntegers = false;
   //int maxIterations = maxIterations_;
   int saveSwitches = switches_;
@@ -302,6 +324,15 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     if (maxSimplexIterations > 1000000)
       maxIterationsInOneSolve = oneSolveIts;
     clpSimplex->setMaximumIterations(oneSolveIts);
+    // Pass the remaining CBC time to the LP solver so that a single LP
+    // re-solve cannot run past the global deadline.
+    if (model_->getMaximumSeconds() < 1.0e10) {
+      double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
+      if (model_->useElapsedTime())
+        clpSimplex->setMaximumWallSeconds(remaining);
+      else
+        clpSimplex->setMaximumSeconds(remaining);
+    }
     if (!nodes) {
       // say give up easily
       clpSimplex->setMoreSpecialOptions(clpSimplex->moreSpecialOptions() | 64);
@@ -370,6 +401,9 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   }
 
   int maxNumberAtBoundToFix = static_cast< int >(floor(percentageToFix_ * numberIntegers));
+  // Always fix at least 1 variable so the dive makes progress
+  if (maxNumberAtBoundToFix < 1)
+    maxNumberAtBoundToFix = 1;
   assert(!maxNumberAtBoundToFix || !nodes);
 
   // count how many fractional variables
@@ -931,7 +965,9 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
       reasonToStop += 1;
     } else if (iteration > maxIterations_) {
       reasonToStop += 2;
-    } else if (CoinCpuTime() - time1 > maxTime_) {
+    } else if (model_->maximumSecondsReached()) {
+      reasonToStop += 5;
+    } else if ((model_->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime()) - time1 > effectiveMaxTime) {
       reasonToStop += 3;
     } else if (numberSimplexIterations > maxSimplexIterations) {
       reasonToStop += 4;
@@ -1134,6 +1170,40 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   upArray_ = NULL;
   delete solver;
   switches_ = saveSwitches;
+  maxIterations_ = savedMaxIterations; // restore in case diveopt 8 boosted it
+
+  // diveopt 8 adaptive percentageToFix_: if fixing too many variables causes
+  // infeasibility, back off. Each heuristic instance has its own counter so
+  // this is safe in multi-threaded runs (each thread holds a cloned copy).
+  if ((when_ % 100) == 8 && !model_->bestSolution()) {
+    if (returnCode > 0) {
+      // Found a solution — reset the infeasibility streak
+      numConsecutiveInfeasible_ = 0;
+    } else {
+      // No solution found. Treat an early exit due to LP infeasibility
+      // (reasonToStop % 10 == 1 or reasonToStop >= 100) as a signal that we
+      // are fixing too many variables.
+      bool hitInfeasibility = (reasonToStop % 10 == 1) || (reasonToStop / 100 > 0);
+      if (hitInfeasibility) {
+        numConsecutiveInfeasible_++;
+        // After 3 consecutive infeasible dives, halve percentageToFix_,
+        // but never go below the threshold that fixes exactly 1 variable.
+        if (numConsecutiveInfeasible_ >= 3 && numberIntegers > 0) {
+          double minPercentage = 1.0 / static_cast< double >(numberIntegers);
+          double newPct = percentageToFix_ * 0.5;
+          if (newPct < minPercentage)
+            newPct = minPercentage;
+          percentageToFix_ = newPct;
+          numConsecutiveInfeasible_ = 0; // reset streak after adapting
+        }
+      } else {
+        // Dive completed without infeasibility but found no better solution
+        // (e.g. objective too weak); don't penalise percentageToFix_.
+        numConsecutiveInfeasible_ = 0;
+      }
+    }
+  }
+
   return returnCode;
 }
 // See if diving will give better solution

@@ -190,6 +190,9 @@ protected:
 
   // Maximum number of simplex iterations at root node
   int maxSimplexIterationsAtRoot_;
+
+  // diveopt 8: track consecutive infeasible dives to adapt percentageToFix_
+  int numConsecutiveInfeasible_;
 };
 #endif
 

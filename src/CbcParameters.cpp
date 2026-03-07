@@ -1513,11 +1513,13 @@ void CbcParameters::addCbcSolverIntParams() {
 
   parameters_[CbcParam::DIVEOPT]->setup(
       "diveO!pt", "Diving options", -1, 20,
-      "If >2 && <20 then modify diving options -	 \n\t3 only at root "
+      "If >2 && <=8 then modify diving options -	 \n\t3 only at root "
       "and if no solution,	 \n\t4 only at root and if this heuristic has "
       "not got solution,	 \n\t5 decay only if no solution,	 \n\t6 "
       "if depth <3 or decay,	 \n\t7 run up to 2 times if solution found 4 "
-      "otherwise,	 \n\t>10 All only at root (DivingC normal as "
+      "otherwise,	 \n\t8 fire at every node until first incumbent then "
+      "revert to default d^2/2^d schedule (aggressive feasibility mode),	 "
+      "\n\t>10 All only at root (DivingC normal as "
       "value-10),	 \n\t>20 All with value-20).",
       CoinParam::displayPriorityLow);
 

@@ -12,6 +12,7 @@
 #include <cfloat>
 
 #include "OsiSolverInterface.hpp"
+#include "OsiClpSolverInterface.hpp"
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcHeuristicLocal.hpp"
@@ -159,6 +160,19 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
   Why continuousSolver(), as opposed to solver()?
 */
   OsiSolverInterface *newSolver = model_->continuousSolver()->clone();
+  // Propagate remaining CBC time limit to the cloned LP solver.
+  {
+    OsiClpSolverInterface *clp = dynamic_cast<OsiClpSolverInterface *>(newSolver);
+    if (clp) {
+      double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
+      if (remaining > 0.0) {
+        if (model_->useElapsedTime())
+          clp->getModelPtr()->setMaximumWallSeconds(remaining);
+        else
+          clp->getModelPtr()->setMaximumSeconds(remaining);
+      }
+    }
+  }
   const double *colLower = newSolver->getColLower();
   //const double * colUpper = newSolver->getColUpper();
 
@@ -239,6 +253,10 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
 #endif
   }
   if (nFix * 10 > numberIntegers) {
+    if (model_->maximumSecondsReached()) {
+      delete newSolver;
+      return 0;
+    }
     returnCode = smallBranchAndBound(newSolver, numberNodes_, newSolution, objectiveValue,
       objectiveValue, "CbcHeuristicLocal");
     /*
@@ -297,10 +315,11 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
           printf("%d integers have zero value, and %d continuous fixed at lb\n",
             nFix, nFix2);
 #endif
-          returnCode = smallBranchAndBound(newSolver,
-            numberNodes_, newSolution,
-            objectiveValue,
-            objectiveValue, "CbcHeuristicLocal");
+          if (!model_->maximumSecondsReached())
+            returnCode = smallBranchAndBound(newSolver,
+              numberNodes_, newSolution,
+              objectiveValue,
+              objectiveValue, "CbcHeuristicLocal");
           if (returnCode < 0)
             returnCode = 0; // returned on size
         }
@@ -1121,6 +1140,19 @@ int CbcHeuristicProximity::solution(double &solutionValue,
   Why continuousSolver(), as opposed to solver()?
 */
   OsiSolverInterface *newSolver = model_->continuousSolver()->clone();
+  // Propagate remaining CBC time limit to the cloned LP solver.
+  {
+    OsiClpSolverInterface *clp = dynamic_cast<OsiClpSolverInterface *>(newSolver);
+    if (clp) {
+      double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
+      if (remaining > 0.0) {
+        if (model_->useElapsedTime())
+          clp->getModelPtr()->setMaximumWallSeconds(remaining);
+        else
+          clp->getModelPtr()->setMaximumSeconds(remaining);
+      }
+    }
+  }
   int numberColumns = newSolver->getNumCols();
   double *obj = CoinCopyOfArray(newSolver->getObjCoefficients(), numberColumns);
   int *indices = new int[numberColumns];
@@ -1173,6 +1205,16 @@ int CbcHeuristicProximity::solution(double &solutionValue,
     }
     if (pumpAdded)
       model_->addHeuristic(feasibilityPump_);
+  }
+  if (model_->maximumSecondsReached()) {
+    if (pumpAdded) {
+      int lastHeuristic = model_->numberHeuristics() - 1;
+      model_->setNumberHeuristics(lastHeuristic);
+      delete model_->heuristic(lastHeuristic);
+    }
+    model_->setMaximumSolutions(maxSolutions);
+    delete newSolver;
+    return 0;
   }
   int returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
     1.0e20, "CbcHeuristicProximity");
@@ -1355,6 +1397,19 @@ int CbcHeuristicNaive::solution(double &solutionValue,
   }
   // First just fix all integers as close to zero as possible
   OsiSolverInterface *newSolver = cloneBut(7); // wassolver->clone();
+  // Propagate remaining CBC time limit to the cloned LP solver.
+  {
+    OsiClpSolverInterface *clp = dynamic_cast<OsiClpSolverInterface *>(newSolver);
+    if (clp) {
+      double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
+      if (remaining > 0.0) {
+        if (model_->useElapsedTime())
+          clp->getModelPtr()->setMaximumWallSeconds(remaining);
+        else
+          clp->getModelPtr()->setMaximumSeconds(remaining);
+      }
+    }
+  }
   for (i = 0; i < numberIntegers; i++) {
     int iColumn = integerVariable[i];
     if (!isHeuristicInteger(newSolver, iColumn))
@@ -1420,6 +1475,9 @@ int CbcHeuristicNaive::solution(double &solutionValue,
         // try branch and bound
         double *newSolution = new double[numberColumns];
         COIN_DETAIL_PRINT(printf("%d fixed after fixing costs\n", nFix));
+        if (model_->maximumSecondsReached()) {
+          delete[] newSolution;
+        } else {
         int returnCode = smallBranchAndBound(newSolver,
           numberNodes_, newSolution,
           solutionValue,
@@ -1439,6 +1497,7 @@ int CbcHeuristicNaive::solution(double &solutionValue,
           cutoff = solutionValue - model_->getCutoffIncrement();
         }
         delete[] newSolution;
+        } // end else (time not exceeded)
       }
     }
   }
@@ -1493,6 +1552,7 @@ int CbcHeuristicNaive::solution(double &solutionValue,
       // try branch and bound
       double *newSolution = new double[numberColumns];
       COIN_DETAIL_PRINT(printf("%d fixed after maximizing\n", nFix));
+      if (!model_->maximumSecondsReached()) {
       int returnCode = smallBranchAndBound(newSolver,
         numberNodes_, newSolution,
         solutionValue,
@@ -1511,6 +1571,7 @@ int CbcHeuristicNaive::solution(double &solutionValue,
         COIN_DETAIL_PRINT(printf("Naive maximizing gave solution of %g\n", solutionValue));
         cutoff = solutionValue - model_->getCutoffIncrement();
       }
+      } // end if (!maximumSecondsReached)
       delete[] newSolution;
     }
   }
@@ -1622,6 +1683,19 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
   cutoff *= direction;
   cutoff = std::min(cutoff, solutionValue);
   OsiSolverInterface *solver = cloneBut(2);
+  // Propagate remaining CBC time limit to the cloned LP solver.
+  {
+    OsiClpSolverInterface *clp = dynamic_cast<OsiClpSolverInterface *>(solver);
+    if (clp) {
+      double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
+      if (remaining > 0.0) {
+        if (model_->useElapsedTime())
+          clp->getModelPtr()->setMaximumWallSeconds(remaining);
+        else
+          clp->getModelPtr()->setMaximumSeconds(remaining);
+      }
+    }
+  }
   // But reset bounds
   solver->setColLower(continuousSolver->getColLower());
   solver->setColUpper(continuousSolver->getColUpper());
@@ -1658,6 +1732,11 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
         }
       }
     }
+  }
+  if (model_->maximumSecondsReached()) {
+    delete[] fixed;
+    delete solver;
+    return 0;
   }
   int returnCode = smallBranchAndBound(solver, numberNodes_, betterSolution,
     solutionValue,

@@ -4106,6 +4106,19 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             buffer << "Continuous objective value is " << solver->getObjValue() << " - "
                    << statistics.lp_seconds << " seconds";
             printGeneralMessage(model_, buffer.str());
+            // If the LP solve itself consumed all (or most) of the time budget
+            // there is nothing useful left to do — exit early rather than
+            // spending hundreds of seconds in preprocessing, conflict graph
+            // build, or cut generation with essentially no time remaining.
+            if (model_.maximumSecondsReached()) {
+              model_.setProblemStatus(1); // stopped on time
+              model_.setSecondaryStatus(4);
+              if (babModel_) {
+                babModel_->setProblemStatus(1);
+                babModel_->setSecondaryStatus(4);
+              }
+              break;
+            }
             if (model_.getMaximumNodes() == -987654321) {
               // See if No objective!
               int numberColumns = clpSolver->getNumCols();
@@ -4156,6 +4169,17 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             if (clpSolver->dualBound() == 1.0e10) {
               ClpSimplex temp = *clpSolver;
               temp.setLogLevel(0);
+              // Cap this silent re-solve so it cannot consume a large portion
+              // of the remaining budget.  For large models the solve is
+              // expensive; the default dual bound of 1e10 is acceptable when
+              // there is not enough time for a thorough calibration.
+              {
+                double remaining = model_.getMaximumSeconds() - model_.getCurrentSeconds();
+                if (remaining < 0.0) remaining = 0.0;
+                // Use at most 5% of remaining time, capped at 60 s.
+                double budget = std::min(remaining * 0.05, 60.0);
+                temp.setMaximumSeconds(budget);
+              }
               temp.dual(0, 7);
               // user did not set - so modify
               // get largest scaled away from bound
@@ -4227,6 +4251,16 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #endif
               clpSolver->setDualBound(
                 std::max(1.0001e8, std::min(100.0 * largest, 1.00001e10)));
+            }
+            // Set the remaining time as a limit on this clean-up re-solve so
+            // it cannot run past the CBC time limit on large instances.
+            {
+              OsiClpSolverInterface *siClp = dynamic_cast< OsiClpSolverInterface * >(si);
+              if (siClp) {
+                double remaining = model_.getMaximumSeconds() - model_.getCurrentSeconds();
+                if (remaining < 0.0) remaining = 0.0;
+                siClp->getModelPtr()->setMaximumSeconds(remaining);
+              }
             }
             si->resolve(); // clean up
 #endif
@@ -5831,13 +5865,15 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             clqstrMode = "off";
           }
           if (clqstrMode == "after") {
-            buildConflictGraphAndStrengthenCliques(babModel_->solver(),
-              babModel_->messageHandler(),
-              clqstrMode,
-              4,
-              model_, mipStart);
-            statistics.cgraph_time += babModel_->solver()->getCGraphBuildTime();
-            statistics.cgraph_density = babModel_->solver()->getCGraphDensity();
+            if (!babModel_->maximumSecondsReached()) {
+              buildConflictGraphAndStrengthenCliques(babModel_->solver(),
+                babModel_->messageHandler(),
+                clqstrMode,
+                4,
+                model_, mipStart);
+              statistics.cgraph_time += babModel_->solver()->getCGraphBuildTime();
+              statistics.cgraph_density = babModel_->solver()->getCGraphDensity();
+            }
           } // clique Strengthening
 
           // now tighten bounds
@@ -5864,7 +5900,14 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               }
               break;
             }
-            si->resolve();
+            if (!babModel_->maximumSecondsReached()) {
+              // Set remaining time on the solver so this clean-up re-solve
+              // cannot run past the CBC time limit.
+              double remaining = babModel_->getMaximumSeconds() - babModel_->getCurrentSeconds();
+              if (remaining < 0.0) remaining = 0.0;
+              modelC->setMaximumSeconds(remaining);
+              si->resolve();
+            }
 #elif CBC_OTHER_SOLVER == 1
 #endif
           }

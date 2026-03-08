@@ -9412,8 +9412,15 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   // that per-pass detail messages are throttled to at most one per second.
   double lastRootCutMsgTime = -1.0;
   if (!node) {
-    handler_->message(CBC_ROOT_START, messages_) << CoinMessageEol;
-    lastRootCutMsgTime = getCurrentSeconds();
+    // If the time limit has already been reached (e.g. FPump consumed all the
+    // budget), skip cut generation entirely rather than hanging in an
+    // expensive CglProbing pass that has no internal time limit.
+    if (maximumSecondsReached()) {
+      numberTries = 0;
+    } else {
+      handler_->message(CBC_ROOT_START, messages_) << CoinMessageEol;
+      lastRootCutMsgTime = getCurrentSeconds();
+    }
   }
   /*
       Begin cut generation loop. Cuts generated during each iteration are

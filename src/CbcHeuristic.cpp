@@ -3377,7 +3377,17 @@ int CbcHeuristicJustOne::solution(double &solutionValue,
   printf("JustOne running %s\n",
     heuristic_[i]->heuristicName());
 #endif
+  // Temporarily propagate the outer when_ value to the inner heuristic so
+  // that mode-specific logic inside solution() (e.g. diveopt 8 aggressive
+  // feasibility mode) can see the correct setting.  Inner heuristics stored
+  // here always have when_=-999, which bypasses the probability gate but
+  // loses the mode information.  We restore -999 immediately after.
+  int savedInnerWhen = heuristic_[i]->when();
+  if (when_ != savedInnerWhen)
+    heuristic_[i]->setWhen(when_);
   returnCode = heuristic_[i]->solution(solutionValue, betterSolution);
+  if (when_ != savedInnerWhen)
+    heuristic_[i]->setWhen(savedInnerWhen);
 #ifdef COIN_DEVELOP
   if (returnCode)
     printf("JustOne running %s found solution\n",

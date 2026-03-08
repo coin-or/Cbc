@@ -9408,6 +9408,13 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   int numberLagrangeanR = 0;
   for (int i = 0; i < numberCutGenerators_; i++)
     generator_[i]->setWhetherInMustCallAgainMode(false);
+  // Announce the start of root-node cut generation and record the time so
+  // that per-pass detail messages are throttled to at most one per second.
+  double lastRootCutMsgTime = -1.0;
+  if (!node) {
+    handler_->message(CBC_ROOT_START, messages_) << CoinMessageEol;
+    lastRootCutMsgTime = getCurrentSeconds();
+  }
   /*
       Begin cut generation loop. Cuts generated during each iteration are
       collected in theseCuts. The loop can be divided into four phases:
@@ -9640,12 +9647,16 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
              1.0e-7 + 1.0e-6 * fabs(cut_obj[CUT_HISTORY - 1]));
     for (i = 0; i < numberCutGenerators_; i++)
       generator_[i]->setIneffectualCuts(strongCuts);
-    // Print details
+    // Print per-pass details at root, throttled to at most one message per second.
     if (!node) {
-      handler_->message(CBC_ROOT_DETAIL, messages_)
-          << currentPassNumber_ << solver_->getNumRows()
-          << solver_->getNumRows() - numberRowsAtContinuous_
-          << trueObjValue(solver_->getObjValue()) << CoinMessageEol;
+      double now = getCurrentSeconds();
+      if (now - lastRootCutMsgTime >= 1.0) {
+        handler_->message(CBC_ROOT_DETAIL, messages_)
+            << currentPassNumber_ << solver_->getNumRows()
+            << solver_->getNumRows() - numberRowsAtContinuous_
+            << trueObjValue(solver_->getObjValue()) << now << CoinMessageEol;
+        lastRootCutMsgTime = now;
+      }
     }
     // see if looks like solution
     bool lazy = false;

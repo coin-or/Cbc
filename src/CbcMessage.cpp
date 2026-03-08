@@ -102,7 +102,8 @@ static Cbc_message us_english[] = {
   { CBC_RELAXED2, 43, 2, "Possible objective of %.18g but had to fudge solution with tolerance of %g - check scaling of problem?" },
   { CBC_RESTART, 44, 1, "Reduced cost fixing - %d rows, %d columns - restarting search" },
   { CBC_GENERAL, 45, 1, "%s" },
-  { CBC_ROOT_DETAIL, 46, 2, "Root node pass %d, %d rows, %d total tight cuts  -  objective %g" },
+  { CBC_ROOT_START, 51, 1, "Starting cut generation at root node" },
+  { CBC_ROOT_DETAIL, 46, 1, "Root node pass %d, %d rows, %d total tight cuts  -  objective %g (%.2f seconds)" },
   { CBC_CUTOFF_WARNING1, 47, 1, "Cutoff set to %g - equivalent to best solution of %g" },
 #ifndef CBC_MANY_NODE_COUNTS
   { CBC_END_SOLUTION, 48, 2, "Final check on integer solution of %g found after %d iterations and %d nodes (%.2f seconds)" },

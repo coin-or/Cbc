@@ -1491,7 +1491,8 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     CbcHeuristicJustOne heuristicJustOne(*model);
     heuristicJustOne.setHeuristicName("DiveAny");
     heuristicJustOne.setWhen(diveOptions);
-    // add in others
+    // add in others — when_ is propagated from the outer JustOne at call time
+    // (see CbcHeuristicJustOne::solution), so we do not need to set it here.
     CbcHeuristicDiveCoefficient heuristicDC(*model);
     heuristicDC.setHeuristicName("DiveCoefficient");
     heuristicJustOne.addHeuristic(&heuristicDC, 1.0);

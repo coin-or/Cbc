@@ -343,6 +343,12 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       // Pass across model information in case it could be useful
       //void * saveData = solver->getApplicationData();
       //solver->setApplicationData(model_);
+      // Propagate remaining wall-clock time so cut generators can self-limit.
+      {
+        double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
+        if (remaining > 0.0)
+          generator_->setMaxSeconds(remaining);
+      }
       generator_->generateCuts(*solver, cs, info);
       //solver->setApplicationData(saveData);
     } else {

@@ -96,7 +96,7 @@ are archived as part of Cbc
      ```
    * Fedora/Redhat/CentOS:
      ```
-     $ sudo yum install  coin-or-Cbc coin-or-Cbc-devel
+     $ sudo dnf install  coin-or-Cbc coin-or-Cbc-devel
      ```
    * freebsd:
      ```
@@ -113,7 +113,7 @@ are archived as part of Cbc
      $ brew install coin-or-tools/coinor/cbc
      ```
 
-* *conda* (cross-platform, no Windows for now):
+* *conda* (cross-platform):
      ```
      $ conda install coin-or-cbc
      ```
@@ -121,7 +121,7 @@ are archived as part of Cbc
 Due to license incompatibilities, pre-compiled binaries lack some 
 functionality. If binaries are not available for your platform for the latest 
 version and you would like to request them to be built and posted, feel free 
-to let us know on the mailing list. 
+to open a discussion on Github. 
 
 ### Source
 

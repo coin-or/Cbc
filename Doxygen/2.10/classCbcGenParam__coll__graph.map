@@ -1,0 +1,52 @@
+<map id="CbcGenParam" name="CbcGenParam">
+<area shape="rect" id="node1" title="Class for cbc&#45;generic control parameters." alt="" coords="1967,855,2073,881"/>
+<area shape="rect" id="node2" title=" " alt="" coords="1795,829,1882,856"/>
+<area shape="rect" id="node3" href="$classCbcGenCtlBlk.html" title=" " alt="" coords="1787,880,1891,907"/>
+<area shape="rect" id="node4" href="$structCbcGenCtlBlk_1_1greedyCoverCtl__struct.html" title="Control variable and prototype for greedy cover heuristic." alt="" coords="1240,41,1423,82"/>
+<area shape="rect" id="node5" href="$classCbcHeuristicGreedyCover.html" title="Greedy heuristic classes." alt="" coords="751,5,923,32"/>
+<area shape="rect" id="node6" href="$classCbcHeuristic.html" title="Heuristic base class." alt="" coords="461,53,559,80"/>
+<area shape="rect" id="node7" href="$classCbcModel.html" title="Simple Branch and bound class." alt="" coords="797,511,877,537"/>
+<area shape="rect" id="node18" href="$classCbcBranchDecision.html" title=" " alt="" coords="1080,416,1216,443"/>
+<area shape="rect" id="node22" href="$classCbcCutGenerator.html" title="Interface between Cbc and Cut Generation Library." alt="" coords="1087,493,1209,520"/>
+<area shape="rect" id="node26" href="$classCbcEventHandler.html" title="Base class for Cbc event handling." alt="" coords="1087,605,1209,632"/>
+<area shape="rect" id="node37" href="$classCbcTreeLocal.html" title=" " alt="" coords="1097,820,1199,847"/>
+<area shape="rect" id="node8" href="$classCbcStatistics.html" title="For gathering statistics." alt="" coords="460,116,560,143"/>
+<area shape="rect" id="node9" href="$classCbcNode.html" title="Information required while the node is live." alt="" coords="5,360,81,387"/>
+<area shape="rect" id="node10" href="$classCbcNodeInfo.html" title="Information required to recreate the subproblem at this node." alt="" coords="191,360,289,387"/>
+<area shape="rect" id="node11" href="$classCbcCountRowCut.html" title="OsiRowCut augmented with bookkeeping." alt="" coords="447,268,573,295"/>
+<area shape="rect" id="node14" href="$classCbcFullNodeInfo.html" title="Information required to recreate the subproblem at this node." alt="" coords="451,420,569,447"/>
+<area shape="rect" id="node12" href="$classCbcFeasibilityBase.html" title=" " alt="" coords="443,319,577,345"/>
+<area shape="rect" id="node13" href="$classCbcCutModifier.html" title="Abstract cut modifier base class." alt="" coords="455,369,565,396"/>
+<area shape="rect" id="node15" href="$classCbcRowCuts.html" title=" " alt="" coords="461,471,559,497"/>
+<area shape="rect" id="node16" title=" " alt="" coords="432,522,588,563"/>
+<area shape="rect" id="node17" href="$classCbcStrategy.html" title="Strategy base class." alt="" coords="463,588,557,615"/>
+<area shape="rect" id="node19" href="$classCbcSymmetry.html" title="Class to deal with symmetry." alt="" coords="459,639,561,665"/>
+<area shape="rect" id="node20" href="$classCbcThread.html" title="A class to encapsulate thread stuff." alt="" coords="467,689,553,716"/>
+<area shape="rect" id="node21" href="$classCbcObjectUpdateData.html" title=" " alt="" coords="434,740,586,767"/>
+<area shape="rect" id="node23" href="$classCbcTree.html" title="Using MS heap implementation." alt="" coords="475,791,545,817"/>
+<area shape="rect" id="node24" href="$classCbcCompareBase.html" title=" " alt="" coords="447,880,573,907"/>
+<area shape="rect" id="node25" href="$classCbcBaseModel.html" title="Base model." alt="" coords="455,931,565,957"/>
+<area shape="rect" id="node27" title=" " alt="" coords="201,145,279,172"/>
+<area shape="rect" id="node28" href="$structCbcGenCtlBlk_1_1twomirCtl__struct.html" title="Control variable and prototype for Two&#45;MIR cut generator." alt="" coords="1463,285,1629,326"/>
+<area shape="rect" id="node29" href="$structCbcGenCtlBlk_1_1oddHoleCtl__struct.html" title="Control variable and prototype for odd hole cut generator." alt="" coords="1459,350,1633,391"/>
+<area shape="rect" id="node30" href="$structCbcGenCtlBlk_1_1knapsackCtl__struct.html" title="Control variable and prototype for knapsack cover cut generator." alt="" coords="1455,415,1637,457"/>
+<area shape="rect" id="node31" href="$structCbcGenCtlBlk_1_1genParamsInfo__struct.html" title="Start and end of cbc&#45;generic parameters in parameter vector." alt="" coords="1447,481,1645,522"/>
+<area shape="rect" id="node32" href="$structCbcGenCtlBlk_1_1djFixCtl__struct.html" title="Control use of reduced cost fixing prior to B&amp;C." alt="" coords="1469,546,1623,587"/>
+<area shape="rect" id="node33" href="$structCbcGenCtlBlk_1_1cbcParamsInfo__struct.html" title="Start and end of CbcModel parameters in parameter vector." alt="" coords="1447,611,1645,653"/>
+<area shape="rect" id="node34" href="$structCbcGenCtlBlk_1_1mirCtl__struct.html" title="Control variable and prototype for MIR cut generator." alt="" coords="1474,677,1618,718"/>
+<area shape="rect" id="node35" href="$structCbcGenCtlBlk_1_1probingCtl__struct.html" title="Control variable and prototype for probing cut generator." alt="" coords="1462,742,1630,783"/>
+<area shape="rect" id="node36" href="$structCbcGenCtlBlk_1_1localTreeCtl__struct.html" title="Control variables for local tree." alt="" coords="1457,807,1635,849"/>
+<area shape="rect" id="node38" href="$structCbcGenCtlBlk_1_1roundingCtl__struct.html" title="Control variable and prototype for simple rounding heuristic." alt="" coords="1459,873,1633,914"/>
+<area shape="rect" id="node39" href="$structCbcGenCtlBlk_1_1greedyEqualityCtl__struct.html" title="Control variable and prototype for greedy equality heuristic." alt="" coords="1449,938,1643,979"/>
+<area shape="rect" id="node40" href="$structCbcGenCtlBlk_1_1redSplitCtl__struct.html" title="Control variable and prototype for reduce&#45;and&#45;split cut generator." alt="" coords="1461,1003,1631,1045"/>
+<area shape="rect" id="node41" href="$structCbcGenCtlBlk_1_1gomoryCtl__struct.html" title="Control variable and prototype for Gomory cut generator." alt="" coords="1462,1069,1630,1110"/>
+<area shape="rect" id="node42" href="$structCbcGenCtlBlk_1_1chooseStrongCtl__struct.html" title="Control variables for a strong branching method." alt="" coords="1451,1134,1641,1175"/>
+<area shape="rect" id="node43" href="$structCbcGenCtlBlk_1_1debugSolInfo__struct.html" title="Array of primal variable values for debugging." alt="" coords="1453,1199,1639,1241"/>
+<area shape="rect" id="node44" title=" " alt="" coords="1482,1265,1610,1292"/>
+<area shape="rect" id="node45" href="$structCbcGenCtlBlk_1_1fpumpCtl__struct.html" title="Control variable and prototype for feasibility pump heuristic." alt="" coords="1465,1317,1627,1358"/>
+<area shape="rect" id="node46" href="$structCbcGenCtlBlk_1_1babState__struct.html" title="State of branch&#45;and&#45;cut." alt="" coords="1465,1382,1627,1423"/>
+<area shape="rect" id="node47" href="$structCbcGenCtlBlk_1_1flowCtl__struct.html" title="Control variable and prototype for flow cover cut generator." alt="" coords="1471,1447,1621,1489"/>
+<area shape="rect" id="node48" href="$structCbcGenCtlBlk_1_1combineCtl__struct.html" title="Control variable and prototype for combine heuristic." alt="" coords="1459,1513,1633,1554"/>
+<area shape="rect" id="node49" href="$structCbcGenCtlBlk_1_1cliqueCtl__struct.html" title="Control variable and prototype for clique cut generator." alt="" coords="1466,1578,1626,1619"/>
+<area shape="rect" id="node50" href="$structCbcGenCtlBlk_1_1osiParamsInfo__struct.html" title="Start and end of OsiSolverInterface parameters in parameter vector." alt="" coords="1449,1643,1643,1685"/>
+</map>

@@ -1,0 +1,6 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classCbcStrategy.html" title="Strategy base class." alt="" coords="5,56,99,83"/>
+<area shape="rect" id="node2" href="$classCbcStrategyDefault.html" title="Default class." alt="" coords="171,5,305,32"/>
+<area shape="rect" id="node3" href="$classCbcStrategyDefaultSubTree.html" title="Default class for sub trees." alt="" coords="147,56,329,83"/>
+<area shape="rect" id="node4" href="$classCbcStrategyNull.html" title="Null class." alt="" coords="180,107,296,133"/>
+</map>

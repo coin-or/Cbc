@@ -1,0 +1,10 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" title=" " alt="" coords="5,132,155,159"/>
+<area shape="rect" id="node2" href="$classCbcOsiSolver.html" title="This is for codes where solver needs to know about CbcModel Seems to provide only one value&#45;added fea..." alt="" coords="249,5,351,32"/>
+<area shape="rect" id="node4" href="$classCbcSolver2.html" title="This is to allow the user to replace initialSolve and resolve." alt="" coords="255,56,345,83"/>
+<area shape="rect" id="node5" href="$classCbcSolver3.html" title="This is to allow the user to replace initialSolve and resolve." alt="" coords="255,107,345,133"/>
+<area shape="rect" id="node6" href="$classCbcSolverLongThin.html" title="This is to allow the user to replace initialSolve and resolve." alt="" coords="232,157,368,184"/>
+<area shape="rect" id="node7" href="$classClpQuadInterface.html" title="This is to allow the user to replace initialSolve and resolve." alt="" coords="239,208,361,235"/>
+<area shape="rect" id="node8" href="$classOsiSolverLinearizedQuadratic.html" title="This is to allow the user to replace initialSolve and resolve." alt="" coords="203,259,397,285"/>
+<area shape="rect" id="node3" href="$classOsiSolverLink.html" title="This is to allow the user to replace initialSolve and resolve This version changes coefficients." alt="" coords="445,5,549,32"/>
+</map>

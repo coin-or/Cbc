@@ -1,0 +1,10 @@
+<map id="CbcHeuristicDive" name="CbcHeuristicDive">
+<area shape="rect" id="node1" title="Dive class." alt="" coords="151,132,273,159"/>
+<area shape="rect" id="node3" href="$classCbcHeuristicDiveCoefficient.html" title="DiveCoefficient class." alt="" coords="331,5,513,32"/>
+<area shape="rect" id="node4" href="$classCbcHeuristicDiveFractional.html" title="DiveFractional class." alt="" coords="332,56,512,83"/>
+<area shape="rect" id="node5" href="$classCbcHeuristicDiveGuided.html" title="DiveGuided class." alt="" coords="340,107,504,133"/>
+<area shape="rect" id="node6" href="$classCbcHeuristicDiveLineSearch.html" title="DiveLineSearch class." alt="" coords="327,157,517,184"/>
+<area shape="rect" id="node7" href="$classCbcHeuristicDivePseudoCost.html" title="DivePseudoCost class." alt="" coords="325,208,519,235"/>
+<area shape="rect" id="node8" href="$classCbcHeuristicDiveVectorLength.html" title="DiveVectorLength class." alt="" coords="321,259,523,285"/>
+<area shape="rect" id="node2" href="$classCbcHeuristic.html" title="Heuristic base class." alt="" coords="5,132,103,159"/>
+</map>

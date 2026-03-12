@@ -1,0 +1,7 @@
+<map id="CbcCountRowCut" name="CbcCountRowCut">
+<area shape="rect" id="node1" title="OsiRowCut augmented with bookkeeping." alt="" coords="126,81,251,108"/>
+<area shape="rect" id="node3" href="$classCbcNodeInfo.html" title="Information required to recreate the subproblem at this node." alt="" coords="139,171,238,197"/>
+<area shape="rect" id="node2" title=" " alt="" coords="145,5,233,32"/>
+<area shape="rect" id="node4" href="$classCbcNode.html" title="Information required while the node is live." alt="" coords="64,260,140,287"/>
+<area shape="rect" id="node5" title=" " alt="" coords="5,171,111,197"/>
+</map>

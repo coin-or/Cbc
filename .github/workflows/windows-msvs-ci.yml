@@ -13,6 +13,26 @@ on:
     types:
       - created
 
+env:
+  THIRD_PARTY_NOTICES: |
+    THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
+    
+    This distribution includes third‑party software components subject to the licenses and notices listed below. 
+    “The contents of the NOTICE file are for informational purposes only and do not modify the License.” 
+    (Excerpted from the Apache License 2.0 notice guidance.)
+    
+    ----------------------------------------------------------------------
+    Component: PThreads4W - POSIX threads for Windows
+    License: Apache-2.0
+    Copyright: (c) 1998 John E. Bossom, 1999-2018 Pthreads4w contributors
+    Source files: https://github.com/jwinarske/pthreads4w
+    Attribution: This package includes threadsVC3.dll object code thanks to the Pthreads4w contributors.
+    Full license text: see LICENSES/Apache-2.0.txt
+    
+    This product includes software developed through the colaborative
+    effort of several individuals, each of whom is listed in the file
+    NOTICES/CONTRIBUTORS_pthreads4w included with this software.
+
 jobs:
   test:
     name: Run tests
@@ -24,14 +44,14 @@ jobs:
           # Only os: windows-2022 has Visual Studio 2022 (v17) installed with toolset v143, which is required.
           # configuration: "Release" or "Debug", platform: "x86" or "x64". See solution Configuration Manager.
           { os: windows-2022, configuration: "Debug", platform: "x64" },
-          { os: windows-2025, configuration: "Release", platform: "x64" }
+          { os: windows-2025, configuration: "ReleaseParallel", platform: "x64" }
         ]
     steps:
       - name: Set up environment variables
         shell: cmd
         # For cmd, dont use double quotes in the echo command and dont put a space before >> %GITHUB_ENV%
         run: |
-          if "${{ matrix.platform }}"=="x64" echo output_dir=x64\${{ matrix.configuration }}>> %GITHUB_ENV%
+          if "${{ matrix.platform }}"=="x64" echo output_dir=x64/${{ matrix.configuration }}>> %GITHUB_ENV%
           if "${{ matrix.platform }}"=="x86" echo output_dir=${{ matrix.configuration }}>> %GITHUB_ENV%
           echo package_suffix=${{ matrix.os}}-msvs-v17-${{ matrix.configuration }}-${{ matrix.platform }}>> %GITHUB_ENV%
       - name: Check environment variables
@@ -41,58 +61,84 @@ jobs:
           echo Package suffix - '${{ env.package_suffix }}'
           if "${{ env.output_dir }}"=="" echo ERROR - No output_dir set, possibly unsupported platform '${{ matrix.platform }}'. Expecting x64 or x86. && exit 1
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ${{ github.event.repository.name }}
       - name: Checkout coinbrew
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: coin-or/coinbrew
           path: coinbrew
       - name: Set up msbuild
         uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
       - name: Set up msys for coinbrew
         uses: msys2/setup-msys2@v2
         with:
-          update: true
+          update: false
           install: >-
-            base-devel
             git
             zip
+            rsync
           path-type: inherit
           msystem: mingw64
       - name: Fetch project
+        shell: msys2 {0}
         run: |
           ADD_ARGS=()
           ADD_ARGS+=( --skip='ThirdParty/Metis ThirdParty/Mumps ThirdParty/Blas ThirdParty/Lapack' )
           ./coinbrew/coinbrew fetch ${{ github.event.repository.name }} --skip-update "${ADD_ARGS[@]}"
           echo "##################################################"
           echo "### Extracting Netlib and Miplib3 if available"
-          if [ -d "./Data/Netlib/" ]; then gunzip ./Data/Netlib/*.gz; fi
-          if [ -d "./Data/Miplib3/" ]; then gunzip ./Data/Miplib3/*.gz; fi
+          test -d "./Data/Netlib/" && gunzip ./Data/Netlib/*.gz
+          test -d "./Data/Miplib3/" && gunzip ./Data/Miplib3/*.gz
           echo "##################################################"       
-        shell: msys2 {0}
-      - name: Build project
+      - name: setup vcpkg
         shell: cmd
         run: |
-          msbuild ${{ github.event.repository.name }}\${{ github.event.repository.name }}\MSVisualStudio\v17\${{ github.event.repository.name }}.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /m
+          vcpkg new --application
+          vcpkg add port pthreads
+          vcpkg integrate install
+      - name: Compile project
+        shell: cmd
+        run: |
+          msbuild "${{ github.event.repository.name }}/${{ github.event.repository.name }}/MSVisualStudio/v17/${{ github.event.repository.name }}.sln" -t:ClCompile -p:VcpkgEnableManifest=true -p:Configuration=${{ matrix.configuration }} -p:Platform=${{ matrix.platform }} -m
+      - name: Make pthread.lib link to pthreadVC3.lib
+        # msbuild tries to link to pthread.lib, but the pthreads4w lib names have suffixes
+        shell: cmd
+        run: |
+          mklink "vcpkg_installed/x64-windows/x64-windows/lib/pthread.lib" pthreadVC3.lib
+      - name: Link project
+        shell: cmd
+        run: |
+          msbuild "${{ github.event.repository.name }}/${{ github.event.repository.name }}/MSVisualStudio/v17/${{ github.event.repository.name }}.sln" -p:VcpkgEnableManifest=true -p:Configuration=${{ matrix.configuration }} -p:Platform=${{ matrix.platform }} -m
       - name: Test project
         shell: cmd
         run: |
-          .\${{ github.event.repository.name }}\${{ github.event.repository.name }}\MSVisualStudio\v17\${{ github.event.repository.name }}Test.cmd .\${{ github.event.repository.name }}\${{ github.event.repository.name }}\MSVisualStudio\v17\${{ env.output_dir }} .\Data\Sample .\Data\Netlib .\Data\Miplib3
+          "./${{ github.event.repository.name }}/${{ github.event.repository.name }}/MSVisualStudio/v17/${{ github.event.repository.name }}Test.cmd" "./${{ github.event.repository.name }}/${{ github.event.repository.name }}/MSVisualStudio/v17/${{ env.output_dir }}" "./Data/Sample" "./Data/Netlib" "./Data/Miplib3"
+      - name: Put together legalese for third party components
+        # the content of file NOTICE from pthreads4w goes into ThirdPartyNotices.txt, but it references CONTRIBUTORS
+        shell: msys2 {0}
+        run: |
+          echo "${{ env.THIRD_PARTY_NOTICES }}" > ThirdPartyNotices.txt
+          mkdir LICENSES
+          wget -o LICENSES/Apache-2.0.txt https://github.com/jwinarske/pthreads4w/raw/refs/heads/cmake/LICENSE
+          mkdir NOTICES
+          wget -o NOTICES/CONTRIBUTORS_pthreads4w https://github.com/jwinarske/pthreads4w/raw/refs/heads/cmake/CONTRIBUTORS
       - name: Install project
-        shell: cmd
+        shell: msys2 {0}
         run: |
           mkdir dist
-          copy ${{ github.event.repository.name }}\README.* dist\.
-          copy ${{ github.event.repository.name }}\AUTHORS.* dist\.
-          copy ${{ github.event.repository.name }}\LICENSE.* dist\.
-          mkdir dist\bin
-          copy ${{ github.event.repository.name }}\${{ github.event.repository.name }}\MSVisualStudio\v17\${{ env.output_dir }}\*.exe dist\bin\.
-          mkdir dist\share
-          if exist .\Data\Sample xcopy .\Data\Sample dist\share\coin-or-sample /i
-          if exist .\Data\Netlib xcopy .\Data\Netlib dist\share\coin-or-netlib /i
-          if exist .\Data\Miplib3 xcopy .\Data\Miplib3 dist\share\coin-or-miplib3 /i
+          cp "${{ github.event.repository.name }}"/{README,AUTHORS,LICENSE}* dist
+          cp -r ThirdPartyNotices.txt LICENSES NOTICES dist
+          mkdir dist/bin
+          cp "${{ github.event.repository.name }}/${{ github.event.repository.name }}/MSVisualStudio/v17/${{ env.output_dir }}"/*.exe dist/bin
+          cp vcpkg_installed/x64-windows/x64-windows/bin/pthreadVC3.dll dist/bin
+          mkdir dist/share
+          test -d "./Data/Sample" && rsync -av ./Data/Sample/ dist/share/coin-or-sample --exclude='.git*'
+          test -d "./Data/Netlib" && rsync -av ./Data/Netlib/ dist/share/coin-or-netlib --exclude='.git*'
+          test -d "./Data/Miplib3" && rsync -av ./Data/Miplib3/ dist/share/coin-or-miplib3 --exclude='.git*'
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

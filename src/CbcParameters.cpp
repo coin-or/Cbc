@@ -452,7 +452,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::LANDPCUTS]->setDefault("off");
      parameters_[CbcParam::LATWOMIRCUTS]->setDefault("off");
      parameters_[CbcParam::MIRCUTS]->setDefault("ifmove");
-     parameters_[CbcParam::ODDWHEELCUTS]->setDefault("ifmove");
+     parameters_[CbcParam::ODDWHEELCUTS]->setDefault("off");
      parameters_[CbcParam::PROBINGCUTS]->setDefault("ifmove");
      parameters_[CbcParam::REDSPLITCUTS]->setDefault("off");
      parameters_[CbcParam::REDSPLIT2CUTS]->setDefault("ifmove");

@@ -1454,7 +1454,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
 #endif
   // Set up likely cut generators and defaults
   parameters[CbcParam::CLIQUECUTS]->setVal("ifmove");
-  parameters[CbcParam::ODDWHEELCUTS]->setVal("ifmove");
+  parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
   parameters[CbcParam::CLQSTRENGTHENING]->setVal("after");
   parameters[CbcParam::USECGRAPH]->setVal("on");
   parameters[CbcParam::AGGREGATEMIXED]->setVal(1);
@@ -1887,7 +1887,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
     int cliqueMode = parameters[CbcParam::CLIQUECUTS]->modeVal();
     int oldCliqueMode = cliqueMode;
     CglOddWheel oddWheelGen;
-    int oddWheelMode = CbcParameters::CGIfMove, oddWExtMethod = 2;
+    int oddWheelMode = parameters[CbcParam::ODDWHEELCUTS]->modeVal(), oddWExtMethod = 2;
     assert(parameters[CbcParam::ODDWHEELCUTS]->modeVal() == oddWheelMode);
 
     // maxaggr,multiply,criterion(1-3)

@@ -4032,7 +4032,6 @@ int CbcMain1(int argc, const char *argv[],
               totalTime += time2 - time1;
 #endif
               //time1 = time2;
-              double timeLeft = babModel_->getMaximumSeconds();
               int numberOriginalColumns = babModel_->solver()->getNumCols();
               if (preProcess == 7) {
                 // use strategy instead
@@ -5073,7 +5072,6 @@ int CbcMain1(int argc, const char *argv[],
                 babModel_->setOriginalColumns(process.originalColumns(),
                   truncateColumns);
                 babModel_->initialSolve();
-                babModel_->setMaximumSeconds(timeLeft - ((useCpuTime ? CoinCpuTime() : CoinGetTimeOfDay()) - time2));
               }
               // now tighten bounds
               if (!miplib) {

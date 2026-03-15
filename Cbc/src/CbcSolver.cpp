@@ -1454,9 +1454,11 @@ int CbcMain1(int argc, const char *argv[],
   }
   double time0;
   double time0Elapsed = CoinGetTimeOfDay();
+  bool useCpuTime = !model_.useElapsedTime();
   {
-    double time1 = CoinCpuTime(), time2;
-    time0 = time1;
+    double time1, time2;
+    time1 = useCpuTime ? CoinCpuTime() : CoinGetTimeOfDay();
+    time0 = CoinCpuTime();
 #if CBC_QUIET == 0
     double time1Elapsed = time0Elapsed;
 #endif
@@ -1962,7 +1964,7 @@ int CbcMain1(int argc, const char *argv[],
       // next command
       field = CoinReadGetCommand(argc, argv);
       // Reset time
-      time1 = CoinCpuTime();
+      time1 = useCpuTime ? CoinCpuTime() : CoinGetTimeOfDay();
 #if CBC_QUIET == 0
       time1Elapsed = CoinGetTimeOfDay();
 #endif
@@ -4025,12 +4027,11 @@ int CbcMain1(int argc, const char *argv[],
               OsiSolverInterface *solver3 = model_.solver()->clone();
               babModel_->assignSolver(solver3);
 #endif
-              time2 = CoinCpuTime();
+              time2 = useCpuTime ? CoinCpuTime() : CoinGetTimeOfDay();
 #ifdef COIN_HAS_ASL
               totalTime += time2 - time1;
 #endif
               //time1 = time2;
-              double timeLeft = babModel_->getMaximumSeconds();
               int numberOriginalColumns = babModel_->solver()->getNumCols();
               if (preProcess == 7) {
                 // use strategy instead
@@ -5071,7 +5072,6 @@ int CbcMain1(int argc, const char *argv[],
                 babModel_->setOriginalColumns(process.originalColumns(),
                   truncateColumns);
                 babModel_->initialSolve();
-                babModel_->setMaximumSeconds(timeLeft - (CoinCpuTime() - time2));
               }
               // now tighten bounds
               if (!miplib) {
@@ -7619,7 +7619,7 @@ int CbcMain1(int argc, const char *argv[],
 #endif
               }
               // adjust time to allow for children on some systems
-              time2 = CoinCpuTime() + CoinCpuTimeJustChildren();
+              time2 = useCpuTime ? CoinCpuTime() + CoinCpuTimeJustChildren() : CoinGetTimeOfDay();
 #ifdef COIN_HAS_ASL
               totalTime += time2 - time1;
 #endif
@@ -7774,7 +7774,6 @@ int CbcMain1(int argc, const char *argv[],
                   }
 		  // set time limit for really bad problems
 		  double timeLimit = parameters_[whichParam(CBC_PARAM_DBL_TIMELIMIT_BAB, parameters_)].doubleValue();
-		  bool useCpuTime = !model_.useElapsedTime();
 		  // But only if not stopped on time!
 		  if (!babModel_->status())
 		    setMaximumSeconds(saveSolver, timeLimit,
@@ -8381,7 +8380,7 @@ int CbcMain1(int argc, const char *argv[],
                 lengthName = 0;
                 goodModel = true;
 #endif
-                time2 = CoinCpuTime();
+                time2 = useCpuTime ? CoinCpuTime() : CoinGetTimeOfDay();
 #ifdef COIN_HAS_ASL
                 totalTime += time2 - time1;
 #endif
@@ -8681,7 +8680,7 @@ int CbcMain1(int argc, const char *argv[],
                   }
 #endif
                 }
-                time2 = CoinCpuTime();
+                time2 = useCpuTime ? CoinCpuTime() : CoinGetTimeOfDay();
 #ifdef COIN_HAS_ASL
                 totalTime += time2 - time1;
 #endif
@@ -9285,7 +9284,7 @@ int CbcMain1(int argc, const char *argv[],
               if (canOpen) {
                 ClpSimplex *model2 = lpSolver;
                 model2->writeBasis(fileName.c_str(), outputFormat > 1, outputFormat - 2);
-                time2 = CoinCpuTime();
+                time2 = useCpuTime ? CoinCpuTime() : CoinGetTimeOfDay();
 #ifdef COIN_HAS_ASL
                 totalTime += time2 - time1;
 #endif
@@ -9361,7 +9360,7 @@ int CbcMain1(int argc, const char *argv[],
                 delete model2;
               if (!status) {
                 goodModel = true;
-                time2 = CoinCpuTime();
+                time2 = useCpuTime ? CoinCpuTime() : CoinGetTimeOfDay();
 #ifdef COIN_HAS_ASL
                 totalTime += time2 - time1;
 #endif
@@ -9413,7 +9412,7 @@ int CbcMain1(int argc, const char *argv[],
               int status = lpSolver->restoreModel(fileName.c_str());
               if (!status) {
                 goodModel = true;
-                time2 = CoinCpuTime();
+                time2 = useCpuTime ? CoinCpuTime() : CoinGetTimeOfDay();
 #ifdef COIN_HAS_ASL
                 totalTime += time2 - time1;
 #endif
@@ -10595,7 +10594,7 @@ clp watson.mps -\nscaling off\nprimalsimplex");
                 fileName = directory + field;
               }
               static_cast< ClpSimplexOther * >(lpSolver)->parametrics(fileName.c_str());
-              time2 = CoinCpuTime();
+              time2 = useCpuTime ? CoinCpuTime() : CoinGetTimeOfDay();
 #ifdef COIN_HAS_ASL
               totalTime += time2 - time1;
 #endif

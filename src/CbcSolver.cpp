@@ -1923,6 +1923,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
     assert(parameters[CbcParam::RESIDCAPCUTS]->modeVal() == residualCapacityMode);
 
     CglZeroHalf zerohalfGen;
+    zerohalfGen.setSepGraphSparseThreshold(parameters[CbcParam::ZEROHALFSPARSETHRESH]->intVal());
     // zerohalfGen.switchOnExpensive();
     // set default action (0=off,1=on,2=root,3=ifmove)
     int zerohalfMode = CbcParameters::CGIfMove;
@@ -5271,6 +5272,10 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 name, lpSolver->getNumRows(), lpSolver->getNumCols());
               if (preProcess >= 10) {
                 printf("user wanted to stop\n");
+                delete saveSolver;
+                saveSolver = NULL;
+                delete babModel_;
+                babModel_ = NULL;
                 return 0; // exit(0);
               }
             }
@@ -6437,6 +6442,11 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             babModel_->addCutGenerator(
               &zerohalfGen, translate[zerohalfMode], "ZeroHalf");
             accuracyFlag[numberGenerators] = 5;
+            CglZeroHalf *storedZeroHalf =
+              dynamic_cast<CglZeroHalf *>(babModel_->cutGenerator(numberGenerators)->generator());
+            if (storedZeroHalf)
+              storedZeroHalf->setSepGraphSparseThreshold(
+                parameters[CbcParam::ZEROHALFSPARSETHRESH]->intVal());
             babModel_->cutGenerator(numberGenerators)
               ->setNeedsRefresh(true);
             switches[numberGenerators++] = 2; //| (ALL_LAGRANGEAN*lagrangeanFlag);

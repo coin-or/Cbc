@@ -245,6 +245,7 @@ public:
       USERCBC,
       VERBOSE,
       VUBTRY,
+      ZEROHALFSPARSETHRESH,
       LASTINTPARAM,
 
       // Double Parameters

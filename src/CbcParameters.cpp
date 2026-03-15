@@ -436,6 +436,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::USERCBC]->setDefault(0);
      parameters_[CbcParam::VERBOSE]->setDefault(verbose_);
      parameters_[CbcParam::VUBTRY]->setDefault(-1);
+     parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
      parameters_[CbcParam::CPX]->setDefault("off");
      parameters_[CbcParam::DOHEURISTIC]->setDefault("off");
      parameters_[CbcParam::ERRORSALLOWED]->setDefault("off");
@@ -1758,6 +1759,16 @@ void CbcParameters::addCbcSolverIntParams() {
       "vub!heuristic", "Type of VUB heuristic", -2, 20,
       "This heuristic tries to fix some integer variables.",
       CoinParam::displayPriorityNone);
+
+  parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setup(
+      "zeroHalfSparse!Threshold",
+      "Active-node threshold for sparse ZeroHalf separation graph", -1, COIN_INT_MAX,
+      "If positive, ZeroHalf will use the sparse separation-graph implementation "
+      "when the number of active separator nodes exceeds this threshold. "
+      "A value of 0 forces sparse mode for testing. Negative values disable "
+      "threshold-based switching, but sparse mode is still used automatically "
+      "when the dense graph would be unsafe.",
+      CoinParam::displayPriorityLow);
 }
 
 //###########################################################################

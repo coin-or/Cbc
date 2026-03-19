@@ -1924,6 +1924,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 
     CglZeroHalf zerohalfGen;
     zerohalfGen.setSepGraphSparseThreshold(parameters[CbcParam::ZEROHALFSPARSETHRESH]->intVal());
+    zerohalfGen.setRowMaxPairCount(parameters[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->intVal());
+    zerohalfGen.setRowMaxFractionalCount(parameters[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->intVal());
     // zerohalfGen.switchOnExpensive();
     // set default action (0=off,1=on,2=root,3=ifmove)
     int zerohalfMode = CbcParameters::CGIfMove;
@@ -6447,6 +6449,12 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             if (storedZeroHalf)
               storedZeroHalf->setSepGraphSparseThreshold(
                 parameters[CbcParam::ZEROHALFSPARSETHRESH]->intVal());
+            if (storedZeroHalf)
+              storedZeroHalf->setRowMaxPairCount(
+                parameters[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->intVal());
+            if (storedZeroHalf)
+              storedZeroHalf->setRowMaxFractionalCount(
+                parameters[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->intVal());
             babModel_->cutGenerator(numberGenerators)
               ->setNeedsRefresh(true);
             switches[numberGenerators++] = 2; //| (ALL_LAGRANGEAN*lagrangeanFlag);

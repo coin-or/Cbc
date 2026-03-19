@@ -436,6 +436,8 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::USERCBC]->setDefault(0);
      parameters_[CbcParam::VERBOSE]->setDefault(verbose_);
      parameters_[CbcParam::VUBTRY]->setDefault(-1);
+     parameters_[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->setDefault(-1);
+     parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
      parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
      parameters_[CbcParam::CPX]->setDefault("off");
      parameters_[CbcParam::DOHEURISTIC]->setDefault("off");
@@ -1759,6 +1761,21 @@ void CbcParameters::addCbcSolverIntParams() {
       "vub!heuristic", "Type of VUB heuristic", -2, 20,
       "This heuristic tries to fix some integer variables.",
       CoinParam::displayPriorityNone);
+
+  parameters_[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->setup(
+      "zeroHalfRowMax!FractionalCount",
+      "Skip ZeroHalf rows whose fractional count exceeds this threshold", -1, COIN_INT_MAX,
+      "If nonnegative, ZeroHalf skips any candidate row whose number of fractional "
+      "variables in the current LP solution exceeds this threshold. Negative values "
+      "disable the filter.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setup(
+      "zeroHalfRowMax!PairCount",
+      "Skip ZeroHalf rows whose pair count exceeds this threshold", -1, COIN_INT_MAX,
+      "If nonnegative, ZeroHalf skips any candidate row whose weakening pair count "
+      "exceeds this threshold. Negative values disable the filter.",
+      CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setup(
       "zeroHalfSparse!Threshold",

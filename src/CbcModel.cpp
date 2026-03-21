@@ -11230,6 +11230,16 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
           bkClq->setMaxSeconds(rem > 0.0 ? rem : 0.0);
         }
       }
+      // Wire CBC's remaining time into CglProbing so its bound-propagation
+      // loop does not run past the global time limit.
+      {
+        CglProbing *probing = dynamic_cast< CglProbing * >(generator_[i]->generator());
+        if (probing) {
+          const double maxSec = getMaximumSeconds();
+          const double rem = (maxSec < 1.0e10) ? (maxSec - getCurrentSeconds()) : 0.0;
+          probing->setMaxSeconds(rem > 0.0 ? rem : 0.0);
+        }
+      }
 #ifndef CBC_LAGRANGEAN_SOLVERS
       bool mustResolve = generator_[i]->generateCuts(theseCuts, fullScan, solver_, node);
 #else

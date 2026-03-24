@@ -3464,8 +3464,7 @@ void setCutAndHeuristicOptions(CbcModel &model);
 #ifndef CBC_OTHER_SOLVER
   inline void setPreProcessingMode(OsiSolverInterface * solver,int processMode)
   {
-    OsiClpSolverInterface *osiclp =
-      dynamic_cast< OsiClpSolverInterface * >(solver);
+    OsiClpSolverInterface *osiclp = getClpSolver(solver);
     assert (osiclp);
     osiclp->setPreProcessingMode(processMode);
   }

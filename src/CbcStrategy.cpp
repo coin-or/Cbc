@@ -373,7 +373,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
     // Pass in models message handler
     process->passInMessageHandler(model.messageHandler());
     OsiSolverInterface *solver = model.solver();
-    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
+    OsiClpSolverInterface *clpSolver = getClpSolver(solver);
     if (clpSolver && false) {
       // see if all coefficients multiple of 0.01 (close enough)
       CoinPackedMatrix *matrix = clpSolver->getModelPtr()->matrix();
@@ -527,7 +527,7 @@ void CbcStrategyDefault::setupOther(CbcModel &model)
       if (clpSolver) {
         // model has changed
         solver = solver2; //model.solver();
-        OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
+        OsiClpSolverInterface *clpSolver = getClpSolver(solver);
         ClpSimplex *lpSolver = clpSolver->getModelPtr();
         lpSolver->passInMessageHandler(solver->messageHandler());
         if (lpSolver->tightenPrimalBounds() == 0) {

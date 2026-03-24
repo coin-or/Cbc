@@ -1202,7 +1202,7 @@ CbcSolver::CbcSolver(const CbcSolver &rhs)
   originalSolver_ = NULL;
   if (rhs.originalSolver_) {
     OsiSolverInterface *temp = rhs.originalSolver_->clone();
-    originalSolver_ = dynamic_cast<OsiClpSolverInterface *>(temp);
+    originalSolver_ = getClpSolver(temp);
     assert(originalSolver_);
   }
   originalCoinModel_ = NULL;
@@ -1249,7 +1249,7 @@ CbcSolver &CbcSolver::operator=(const CbcSolver &rhs) {
     originalSolver_ = NULL;
     if (rhs.originalSolver_) {
       OsiSolverInterface *temp = rhs.originalSolver_->clone();
-      originalSolver_ = dynamic_cast<OsiClpSolverInterface *>(temp);
+      originalSolver_ = getClpSolver(temp);
       assert(originalSolver_);
     }
     originalCoinModel_ = NULL;
@@ -1339,7 +1339,7 @@ void CbcSolver::setUserCallBack(CbcStopNow *function) {
 void CbcSolver::setOriginalSolver(OsiClpSolverInterface *originalSolver) {
   delete originalSolver_;
   OsiSolverInterface *temp = originalSolver->clone();
-  originalSolver_ = dynamic_cast<OsiClpSolverInterface *>(temp);
+  originalSolver_ = getClpSolver(temp);
   assert(originalSolver_);
 }
 
@@ -1397,7 +1397,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
 
 #ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface *originalSolver =
-      dynamic_cast<OsiClpSolverInterface *>(model.solver());
+      getClpSolver(model.solver());
 #elif CBC_OTHER_SOLVER == 1
   OsiCpxSolverInterface *originalSolver =
       dynamic_cast<OsiCpxSolverInterface *>(model.solver());
@@ -1412,7 +1412,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
 #ifndef CBC_OTHER_SOLVER
   OsiSolverInterface *solver = model.solver();
   OsiClpSolverInterface *clpSolver =
-      dynamic_cast<OsiClpSolverInterface *>(solver);
+      getClpSolver(solver);
   ClpSimplex *lpSolver = clpSolver->getModelPtr();
   lpSolver->setPerturbation(50);
   lpSolver->messageHandler()->setPrefix(false);
@@ -1609,7 +1609,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
   } lotStruct2;
   lotStruct2 passSCtopreprocess;
 #ifndef CBC_OTHER_SOLVER
-  OsiClpSolverInterface *originalSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+  OsiClpSolverInterface *originalSolver = getClpSolver(model_.solver());
   assert(originalSolver);
   // Move handler across if not default
   if (!originalSolver->defaultHandler() && originalSolver->getModelPtr()->defaultHandler())
@@ -1666,7 +1666,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
     int complicatedInteger = 0;
     OsiSolverInterface *solver = model_.solver();
 #ifndef CBC_OTHER_SOLVER
-    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
+    OsiClpSolverInterface *clpSolver = getClpSolver(solver);
     ClpSimplex *lpSolver = clpSolver->getModelPtr();
     if (parameters.noPrinting()) {
       lpSolver->setLogLevel(0);
@@ -2303,7 +2303,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #ifndef CBC_OTHER_SOLVER
           if (goodModel && djFix < 1.0e20) {
             // do some fixing
-            clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+            clpSolver = getClpSolver(model_.solver());
             clpSolver->initialSolve();
             lpSolver = clpSolver->getModelPtr();
             int numberColumns = lpSolver->numberColumns();
@@ -2476,7 +2476,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               model_.setSpecialOptions(model_.specialOptions() | (512 | 32768));
 #ifndef CBC_OTHER_SOLVER
               if (iValue > 1) {
-                OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+                OsiClpSolverInterface *osiclp = getClpSolver(model_.solver());
                 osiclp->setSpecialOptions(osiclp->specialOptions() & ~32);
               }
 #endif
@@ -3570,7 +3570,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           // Replace the sample code by whatever you want
           if (goodModel) {
             // Way of using an existing piece of code
-            OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+            OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
             ClpSimplex *lpSolver = clpSolver->getModelPtr();
             // set time from integer model
             double timeToGo = model_.getMaximumSeconds();
@@ -3612,7 +3612,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
         } break;
         case ClpParam::GUESS:
           if (goodModel && model_.solver()) {
-            OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+            OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
             assert(clpSolver);
             lpSolver = clpSolver->getModelPtr();
             assert(lpSolver);
@@ -3720,7 +3720,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           {
             OsiSolverInterface *solver = model_.solver();
 #ifndef CBC_OTHER_SOLVER
-            OsiClpSolverInterface *si = dynamic_cast< OsiClpSolverInterface * >(solver);
+            OsiClpSolverInterface *si = getClpSolver(solver);
             assert(si != NULL);
             si->getModelPtr()->scaling(doScaling);
             ClpSimplex *lpSolver = si->getModelPtr();
@@ -3797,7 +3797,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 si->load(*model2, true, parameters[CbcParam::LPLOGLEVEL]->intVal());
                 // redo
                 solver = model_.solver();
-                clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
+                clpSolver = getClpSolver(solver);
                 lpSolver = clpSolver->getModelPtr();
                 clpSolver->messageHandler()->setLogLevel(0);
                 testOsiParameters = 0;
@@ -3817,7 +3817,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                   // Now do requested saves and modifications
                   CbcModel *cbcModel = &model2;
                   OsiSolverInterface *osiModel = model2.solver();
-                  OsiClpSolverInterface *osiclpModel = dynamic_cast< OsiClpSolverInterface * >(osiModel);
+                  OsiClpSolverInterface *osiclpModel = getClpSolver(osiModel);
                   ClpSimplex *clpModel = osiclpModel->getModelPtr();
 
                   // Set changed values
@@ -4042,8 +4042,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             double time1a = CoinCpuTime();
             OsiSolverInterface *solver = model_.solver();
 #ifndef CBC_OTHER_SOLVER
-            OsiClpSolverInterface *si = dynamic_cast< OsiClpSolverInterface * >(solver);
-            if (si)
+            OsiClpSolverInterface *si = getClpSolver(solver);
+            if (CBC_SKIP_CLP_TEST||si)
               si->setSpecialOptions(si->specialOptions() | 1024);
 #endif
             model_.initialSolve();
@@ -4258,8 +4258,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             // Set the remaining time as a limit on this clean-up re-solve so
             // it cannot run past the CBC time limit on large instances.
             {
-              OsiClpSolverInterface *siClp = dynamic_cast< OsiClpSolverInterface * >(si);
-              if (siClp) {
+              OsiClpSolverInterface *siClp = getClpSolver(si);
+              if (CBC_SKIP_CLP_TEST||siClp) {
                 double remaining = model_.getMaximumSeconds() - model_.getCurrentSeconds();
                 if (remaining < 0.0) remaining = 0.0;
                 siClp->getModelPtr()->setMaximumSeconds(remaining);
@@ -4274,7 +4274,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             if (!doScaling)
               solver->setHintParam(OsiDoScale, false, OsiHintTry);
 #ifndef CBC_OTHER_SOLVER
-            OsiClpSolverInterface *si = dynamic_cast< OsiClpSolverInterface * >(solver);
+            OsiClpSolverInterface *si = getClpSolver(solver);
             assert(si != NULL);
             // get clp itself
             ClpSimplex *modelC = si->getModelPtr();
@@ -4311,7 +4311,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           int numberChanged = 0;
           OsiSolverInterface *solver3 = clpSolver->clone();
           babModel_->assignSolver(solver3);
-          OsiClpSolverInterface *clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
+          OsiClpSolverInterface *clpSolver2 = getClpSolver(babModel_->solver());
           if (clpSolver2->messageHandler()->logLevel())
             clpSolver2->messageHandler()->setLogLevel(1);
           if (logLevel > -1)
@@ -4821,7 +4821,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 			tup[i]=1.0;
 			els[i]=0.0; // objective
 		      }
-		      OsiClpSolverInterface *si = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
+		      OsiClpSolverInterface *si = getClpSolver(saveSolver);
 		      assert(si != NULL);
 		      // get clp itself
 		      ClpSimplex *model = si->getModelPtr();
@@ -4937,7 +4937,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                   options, extraInfo, independentOptions);
                 // say use in OsiClp
                 clpSolve.setSpecialOption(6, 1);
-                OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
+                OsiClpSolverInterface *osiclp = getClpSolver(saveSolver);
                 osiclp->setSolveOptions(clpSolve);
                 osiclp->setHintParam(OsiDoDualInResolve, false);
                 // switch off row copy
@@ -4948,7 +4948,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #endif
 #ifndef CBC_OTHER_SOLVER
               {
-                OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
+                OsiClpSolverInterface *osiclp = getClpSolver(saveSolver);
                 osiclp->setSpecialOptions(osiclp->specialOptions() | 1024);
                 osiclp->getModelPtr()->setClpScaledMatrix(NULL); // safer
                 int savePerturbation = osiclp->getModelPtr()->perturbation();
@@ -4999,7 +4999,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 // Convert to minimize if papilo
                 bool maximize = false;
                 if (tune2 > 11) {
-                  OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
+                  OsiClpSolverInterface *clpSolver = getClpSolver(saveSolver);
                   if (clpSolver->getObjSense() == -1.0) {
                     maximize = true;
                     clpSolver->setObjSense(1.0);
@@ -5052,7 +5052,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #if CBC_USE_PAPILO
                 // Convert back
                 if (maximize) {
-                  OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
+                  OsiClpSolverInterface *clpSolver = getClpSolver(saveSolver);
                   double objOffset;
                   clpSolver->setObjSense(-1.0);
                   clpSolver->getDblParam(OsiObjOffset, objOffset);
@@ -5062,7 +5062,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                     objective[i] = -objective[i];
                   clpSolver->setDblParam(OsiObjOffset, -objOffset);
                   if (solver2) {
-                    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver2);
+                    OsiClpSolverInterface *clpSolver = getClpSolver(solver2);
                     double objOffset;
                     clpSolver->setObjSense(-1.0);
                     clpSolver->getDblParam(OsiObjOffset, objOffset);
@@ -5086,11 +5086,9 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                   OsiClpSolverInterface *solver;
                   solver = dynamic_cast< OsiClpSolverInterface * >(solver2);
                   solver->getModelPtr()->cleanScalingEtc();
-                  solver = dynamic_cast< OsiClpSolverInterface * >(
-                    process.originalModel());
+                  solver = getClpSolver(process.originalModel());
                   solver->getModelPtr()->cleanScalingEtc();
-                  solver = dynamic_cast< OsiClpSolverInterface * >(
-                    process.startModel());
+                  solver = getClpSolver(process.startModel());
                   if (solver)
                     solver->getModelPtr()->cleanScalingEtc();
                   int numberSolvers = process.numberSolvers();
@@ -5098,12 +5096,10 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                     numberSolvers = 1; // really just 1
                   // some of these may be same
                   for (int i = 0; i < numberSolvers; i++) {
-                    solver = dynamic_cast< OsiClpSolverInterface * >(
-                      process.modelAtPass(i));
+                    solver = getClpSolver(process.modelAtPass(i));
                     if (solver)
                       solver->getModelPtr()->cleanScalingEtc();
-                    solver = dynamic_cast< OsiClpSolverInterface * >(
-                      process.modifiedModel(i));
+                    solver = getClpSolver(process.modifiedModel(i));
                     if (solver)
                       solver->getModelPtr()->cleanScalingEtc();
                   }
@@ -5198,7 +5194,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             // solver2->resolve();
 #ifdef CBC_NAMES_FOR_COMPARE
             {
-              OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(solver2);
+              OsiClpSolverInterface *solver = getClpSolver(solver2);
               ClpSimplex *simplex = solver->getModelPtr();
               int numberRows = simplex->numberRows();
               int numberColumns = simplex->numberColumns();
@@ -5239,7 +5235,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                   solver2->setColName(i, name);
                 }
               }
-              OsiClpSolverInterface *clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(solver2);
+              OsiClpSolverInterface *clpSolver2 = getClpSolver(solver2);
               ClpSimplex *lpSolver = clpSolver2->getModelPtr();
               char name[100];
               if (preProcess == 2) {
@@ -5285,9 +5281,9 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               // look at new integers
               int numberOriginalColumns = process.originalModel()->getNumCols();
               const int *originalColumns = process.originalColumns();
-              OsiClpSolverInterface *osiclp2 = dynamic_cast< OsiClpSolverInterface * >(solver2);
+              OsiClpSolverInterface *osiclp2 = getClpSolver(solver2);
               int numberColumns = osiclp2->getNumCols();
-              OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
+              OsiClpSolverInterface *osiclp = getClpSolver(saveSolver);
               for (int i = 0; i < numberColumns; i++) {
                 int iColumn = originalColumns[i];
                 if (iColumn < numberOriginalColumns) {
@@ -5600,7 +5596,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                     NULL, lowerNew, upperNew, objectiveNew);
                   // add constraints and make integer if all integer in
                   // group
-                  OsiClpSolverInterface *clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(solver2);
+                  OsiClpSolverInterface *clpSolver2 = getClpSolver(solver2);
                   for (int iObj = 0; iObj < numberDifferentObj; iObj++) {
                     lowerNew[iObj] = 0.0;
                     upperNew[iObj] = 0.0;
@@ -5886,7 +5882,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           // now tighten bounds
           if (!miplib) {
 #ifndef CBC_OTHER_SOLVER
-            OsiClpSolverInterface *si = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
+            OsiClpSolverInterface *si =getClpSolver(babModel_->solver());
             assert(si != NULL);
             // get clp itself
             ClpSimplex *modelC = si->getModelPtr();
@@ -5964,7 +5960,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                     extra1, extra2, saveTightenedModel);
                   if (solver) {
 #ifndef CBC_OTHER_SOLVER
-                    clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
+                    clpSolver = getClpSolver(solver);
                     assert(clpSolver);
                     lpSolver = clpSolver->getModelPtr();
 #endif
@@ -6545,7 +6541,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             OsiMaxNumIterationHotStart,
             parameters[CbcParam::MAXHOTITS]->intVal());
 #ifndef CBC_OTHER_SOLVER
-          OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
+          OsiClpSolverInterface *osiclp = getClpSolver(babModel_->solver());
           // go faster stripes
           if ((osiclp->getNumRows() < 300 && osiclp->getNumCols() < 500)) {
             osiclp->setupForRepeatedUse(2, parameters[CbcParam::LPLOGLEVEL]->intVal());
@@ -6679,8 +6675,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               babModel_->setMoreSpecialOptions(
                 moreMipOptions | babModel_->moreSpecialOptions());
 #else
-              OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(
-                babModel_->solver());
+              OsiClpSolverInterface *osiclp = getClpSolver(babModel_->solver());
               if (moreMipOptions == 10000) {
                 // test memory saving
                 moreMipOptions -= 10000;
@@ -7488,8 +7483,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               if (fp) {
                 // generate enough to do BAB
                 babModel_->generateCpp(fp, 1);
-                OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(
-                  babModel_->solver());
+                OsiClpSolverInterface *osiclp = getClpSolver(babModel_->solver());
                 // Make general so do factorization
                 int factor = osiclp->getModelPtr()->factorizationFrequency();
                 osiclp->getModelPtr()->setFactorizationFrequency(200);
@@ -7691,8 +7685,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 extraInfo, independentOptions);
               // say use in OsiClp
               clpSolve.setSpecialOption(6, 1);
-              OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(
-                babModel_->solver());
+              OsiClpSolverInterface *osiclp = getClpSolver(babModel_->solver());
               osiclp->setSolveOptions(clpSolve);
               osiclp->setHintParam(OsiDoDualInResolve, false);
               // switch off row copy
@@ -7756,8 +7749,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #endif
 #ifndef CBC_OTHER_SOLVER
             if (outputFormat == 5) {
-              osiclp = dynamic_cast< OsiClpSolverInterface * >(
-                babModel_->solver());
+              osiclp = getClpSolver(babModel_->solver());
               lpSolver = osiclp->getModelPtr();
               lpSolver->setPersistenceFlag(1);
             }
@@ -7914,7 +7906,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               return returnCode;
             }
 #ifndef CBC_OTHER_SOLVER
-            osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
+            osiclp = getClpSolver(babModel_->solver());
             lpSolver = osiclp->getModelPtr();
             int hotits = parameters[CbcParam::MAXHOTITS]->intVal();
             if (hotits > 100) {
@@ -7976,7 +7968,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                   if (nGomory < 2) {
                     gomory->useAlternativeFactorization();
                   } else if (gomory->originalSolver()) {
-                    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(
+                    OsiClpSolverInterface *clpSolver = getClpSolver(
                       gomory->originalSolver());
                     if (clpSolver) {
                       ClpSimplex *simplex = clpSolver->getModelPtr();
@@ -8001,8 +7993,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                non duplicates Could do something for SOS 2?
                             */
             {
-              OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(
-                babModel_->solver());
+              OsiClpSolverInterface *clpSolver = getClpSolver(babModel_->solver());
               if (clpSolver && clpSolver->numberSOS()) {
                 // SOS
                 int numberSOS = clpSolver->numberSOS();
@@ -8188,7 +8179,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               donor.setSpecialOptions(options | 262144);
               ClpSimplex *lpSolver2;
               OsiClpSolverInterface *clpSolver2;
-              clpSolver2 = dynamic_cast< OsiClpSolverInterface * >(donor.solver());
+              clpSolver2 = getClpSolver(donor.solver());
               assert(clpSolver2);
               lpSolver2 = clpSolver2->getModelPtr();
               assert(lpSolver2);
@@ -8379,7 +8370,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                   tempModel.heuristic(i)->setSeed(
                     tempModel.heuristic(i)->getSeed() + 100000000 * iGo);
 #ifndef CBC_OTHER_SOLVER
-                OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(
+                OsiClpSolverInterface *solver = getClpSolver(
                   tempModel.solver());
                 ClpSimplex *simplex = solver->getModelPtr();
                 int solverSeed = simplex->randomNumberGenerator()->getSeed();
@@ -8465,7 +8456,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             }
 #ifndef CBC_OTHER_SOLVER
             {
-              OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
+              OsiClpSolverInterface *solver = getClpSolver(babModel_->solver());
               ClpSimplex *simplex = solver->getModelPtr();
               // if wanted go back to old printing method
               double value = simplex->getMinIntervalProgressUpdate();
@@ -8509,7 +8500,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             }
 #ifndef CBC_OTHER_SOLVER
             if (doVector) {
-              OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
+              OsiClpSolverInterface *solver = getClpSolver(babModel_->solver());
               ClpSimplex *lpSolver = solver->getModelPtr();
               ClpMatrixBase *matrix = lpSolver->clpMatrix();
               if (dynamic_cast< ClpPackedMatrix * >(matrix)) {
@@ -8610,8 +8601,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #endif
 #ifndef CBC_OTHER_SOLVER
             if (outputFormat == 5) {
-              osiclp = dynamic_cast< OsiClpSolverInterface * >(
-                babModel_->solver());
+              osiclp = getClpSolver(babModel_->solver());
               lpSolver = osiclp->getModelPtr();
               lpSolver->setPersistenceFlag(1);
             }
@@ -8630,7 +8620,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             model_ = *babModel_;
 #ifndef CBC_OTHER_SOLVER
             {
-              osiclp = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+              osiclp = getClpSolver(model_.solver());
               lpSolver = osiclp->getModelPtr();
               lpSolver->setSpecialOptions(
                 lpSolver->specialOptions() | IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and
@@ -8706,7 +8696,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             }
 #ifndef CBC_OTHER_SOLVER
             {
-              OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+              OsiClpSolverInterface *solver = getClpSolver(model_.solver());
               ClpSimplex *simplex = solver->getModelPtr();
               // if wanted go back to old printing method
               double value = simplex->getMinIntervalProgressUpdate();
@@ -8733,7 +8723,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           }
           currentBranchModel = NULL;
 #ifndef CBC_OTHER_SOLVER
-          osiclp = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
+          osiclp = getClpSolver(babModel_->solver());
           if (parameters[CbcParam::DEBUGFILE]->fileName() == "createAfterPre" && babModel_->bestSolution()) {
             lpSolver = osiclp->getModelPtr();
             // move best solution (should be there -- but ..)
@@ -8841,8 +8831,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               n = saveSolver->getNumCols();
               bestSolution = new double[n];
 #ifndef CBC_OTHER_SOLVER
-              OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(
-                babModel_->solver());
+              OsiClpSolverInterface *clpSolver = getClpSolver(babModel_->solver());
 #else
               OsiCpxSolverInterface *clpSolver = dynamic_cast< OsiCpxSolverInterface * >(
                 babModel_->solver());
@@ -8936,8 +8925,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 }
 #ifdef JJF_ZERO
                 // See if sos so we can fix
-                OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
-                if (osiclp && osiclp->numberSOS()) {
+                OsiClpSolverInterface *osiclp = getClpSolver(saveSolver);
+                if ((CBC_SKIP_CLP_TEST||osiclp) && osiclp->numberSOS()) {
                   // SOS
                   numberSOS = osiclp->numberSOS();
                   const CoinSet *setInfo = osiclp->setInfo();
@@ -8987,8 +8976,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #ifdef COIN_DEVELOP
                 saveSolver->writeMps("inf2");
 #endif
-                OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(saveSolver);
-                if (osiclp)
+                OsiClpSolverInterface *osiclp = getClpSolver(saveSolver);
+                if (CBC_SKIP_CLP_TEST||osiclp)
                   osiclp->getModelPtr()->checkUnscaledSolution();
               }
               // assert(saveSolver->isProvenOptimal());
@@ -9013,8 +9002,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 originalSolver->setBasis(*basis);
                 delete basis;
                 originalSolver->initialSolve();
-                OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(originalSolver);
-                if (osiclp)
+                OsiClpSolverInterface *osiclp = getClpSolver(originalSolver);
+                if (CBC_SKIP_CLP_TEST||osiclp)
                   osiclp->getModelPtr()->checkUnscaledSolution();
               }
               // assert(originalSolver->isProvenOptimal());
@@ -9089,8 +9078,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 originalSolver->setBasis(*basis);
                 delete basis;
                 originalSolver->initialSolve();
-                OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(originalSolver);
-                if (osiclp)
+                OsiClpSolverInterface *osiclp = getClpSolver(originalSolver);
+                if (CBC_SKIP_CLP_TEST||osiclp)
                   osiclp->getModelPtr()->checkUnscaledSolution();
 #ifdef CLP_INVESTIGATE
                 if (!originalSolver->isProvenOptimal()) {
@@ -9153,7 +9142,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           // clpSolver = dynamic_cast< OsiClpSolverInterface*>
           // (strengthenedModel);
           else if (statusUserFunction_[0])
-            clpSolver = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
+            clpSolver = getClpSolver(babModel_->solver());
           lpSolver = clpSolver->getModelPtr();
           if (numberChanged) {
             for (int i = 0; i < numberChanged; i++) {
@@ -9269,8 +9258,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               return returnCode;
             }
             if (info && statusUserFunction_[0]) {
-              clpSolver = dynamic_cast< OsiClpSolverInterface * >(
-                babModel_->solver());
+              clpSolver = getClpSolver(babModel_->solver());
               lpSolver = clpSolver->getModelPtr();
               double value = babModel_->getObjValue();
               char buf[300];
@@ -9352,7 +9340,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           if (statusUserFunction_[0]) {
             // keep if going to be destroyed
             OsiSolverInterface *solver = babModel_->solver();
-            OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver);
+            OsiClpSolverInterface *clpSolver = getClpSolver(solver);
             ClpSimplex *lpSolver2 = clpSolver->getModelPtr();
             if (lpSolver == lpSolver2)
               babModel_->setModelOwnsSolver(false);
@@ -10426,7 +10414,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             continue;
           }
           // Way of using an existing piece of code
-          OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+          OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
           ClpSimplex *lpSolver = clpSolver->getModelPtr();
           // set time from integer model
           double timeToGo = model_.getMaximumSeconds();
@@ -10437,7 +10425,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           int iStat = lpSolver->status();
           int iStat2 = lpSolver->secondaryStatus();
           // make sure solution back in correct place
-          clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+          clpSolver = getClpSolver(model_.solver());
           lpSolver = clpSolver->getModelPtr();
           if (info && statusUserFunction_[0]) {
             int n = clpSolver->getNumCols();
@@ -11481,9 +11469,9 @@ clp watson.mps -\nscaling off\nprimalsimplex");
   if (babModel_) {
     model_.moveInfo(*babModel_);
 #ifndef CBC_OTHER_SOLVER
-    OsiClpSolverInterface *clpSolver0 = dynamic_cast< OsiClpSolverInterface * >(babModel_->solver());
+    OsiClpSolverInterface *clpSolver0 = getClpSolver(babModel_->solver());
     ClpSimplex *lpSolver0 = clpSolver0->getModelPtr();
-    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(model_.solver());
+    OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
     ClpSimplex *lpSolver = clpSolver->getModelPtr();
     if (lpSolver0 != lpSolver && lpSolver != originalSolver->getModelPtr())
       lpSolver->moveInfo(*lpSolver0);
@@ -13525,7 +13513,7 @@ static int nautiedConstraints(CbcModel &model, int maxPass) {
         << general << CoinMessageEol;
 #ifdef SAVE_NAUTY
     OsiClpSolverInterface *clpSolver =
-        dynamic_cast<OsiClpSolverInterface *>(solver);
+        getClpSolver(solver);
     ClpSimplex *lpSolver = clpSolver->getModelPtr();
     char name[100];
     strcpy(name, lpSolver->problemName().c_str());

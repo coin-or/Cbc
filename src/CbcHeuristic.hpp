@@ -341,12 +341,15 @@ public:
   /// Is it integer for heuristics?
   inline bool isHeuristicInteger(const OsiSolverInterface *solver, int iColumn) const
   {
-    const OsiClpSolverInterface *clpSolver
-      = dynamic_cast< const OsiClpSolverInterface * >(solver);
+    const OsiClpSolverInterface *clpSolver = getConstClpSolver(solver);
+#ifndef CBC_OTHER_SOLVER
+    return clpSolver->isHeuristicInteger(iColumn);
+#else
     if (clpSolver)
       return clpSolver->isHeuristicInteger(iColumn);
     else
       return solver->isInteger(iColumn);
+#endif
   }
   /*! \brief Clone, but ...
 

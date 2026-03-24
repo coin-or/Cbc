@@ -105,7 +105,7 @@ int CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
   double start = CoinCpuTime();
 
   OsiClpSolverInterface *clpSolverOriginal
-    = dynamic_cast< OsiClpSolverInterface * >(model_->solver());
+    = getClpSolver(model_->solver());
   assert(clpSolverOriginal);
   OsiClpSolverInterface *clpSolver(clpSolverOriginal);
 

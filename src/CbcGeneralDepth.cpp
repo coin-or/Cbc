@@ -200,7 +200,7 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
   if (true) {
     OsiSolverInterface *solver = model_->solver();
     OsiClpSolverInterface *clpSolver
-      = dynamic_cast< OsiClpSolverInterface * >(solver);
+      = getClpSolver(solver);
     if (clpSolver) {
       if ((model_->moreSpecialOptions() & 33554432) == 0) {
         ClpNodeStuff *info = nodeInfo_;
@@ -408,7 +408,7 @@ CbcGeneralDepth::createCbcBranch(OsiSolverInterface *solver, const OsiBranchingI
   int iNode;
   //OsiSolverInterface * solver = model_->solver();
   OsiClpSolverInterface *clpSolver
-    = dynamic_cast< OsiClpSolverInterface * >(solver);
+    = getClpSolver(solver);
   assert(clpSolver);
   ClpSimplex *simplex = clpSolver->getModelPtr();
   int numberColumns = simplex->numberColumns();
@@ -619,7 +619,7 @@ CbcGeneralBranchingObject::branch()
         OsiSolverInterface *solver = model_->solver();
         thisProb->apply(solver);
         OsiClpSolverInterface *clpSolver
-          = dynamic_cast< OsiClpSolverInterface * >(solver);
+          = getClpSolver(solver);
         assert(clpSolver);
         // Move status to basis
         clpSolver->setWarmStart(NULL);

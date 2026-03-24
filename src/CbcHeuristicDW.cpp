@@ -345,7 +345,7 @@ int CbcHeuristicDW::solution(double &solutionValue,
   if (numberPasses_ == -113) {
     numberPasses_ = -200;
     OsiClpSolverInterface * solver =
-      dynamic_cast<OsiClpSolverInterface *>(model_->solver());
+      getClpSolver(model_->solver());
     ClpSimplex * simplex = solver->getModelPtr();
     int numberRows = simplex->numberRows();
     {
@@ -899,7 +899,7 @@ int CbcHeuristicDW::solution(double &solutionValue,
   } else if (numberPasses_ == -133) {
     numberPasses_ = -200;
     OsiClpSolverInterface * solver =
-      dynamic_cast<OsiClpSolverInterface *>(model_->solver());
+      getClpSolver(model_->solver());
     ClpSimplex * simplex = solver->getModelPtr();
     int numberRows = simplex->numberRows();
     int numberColumns = simplex->numberColumns();
@@ -1006,7 +1006,7 @@ int CbcHeuristicDW::solution(double &solutionValue,
   int numberColumns = solver_->getNumCols();
   int logLevel = model_->messageHandler()->logLevel();
   // For moment just OsiClp
-  OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(solver_);
+  OsiClpSolverInterface *solver = getClpSolver(solver_);
   ClpSimplex *simplex = solver->getModelPtr();
   double *columnLower = simplex->columnLower();
   double *columnUpper = simplex->columnUpper();
@@ -2831,7 +2831,7 @@ void CbcHeuristicDW::setupDWStructures()
     if (iBlock < 0)
       tempColumn[numberMasterColumns++] = i;
   }
-  OsiClpSolverInterface *solver = dynamic_cast< OsiClpSolverInterface * >(solver_);
+  OsiClpSolverInterface *solver = getClpSolver(solver_);
   ClpSimplex *tempModel = new ClpSimplex(solver->getModelPtr(),
     numberMasterRows, tempRow,
     numberMasterColumns, tempColumn);

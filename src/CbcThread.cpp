@@ -686,7 +686,7 @@ int CbcBaseModel::waitForThreadsInTree(int type)
           children_[iThread].setDantzigState(1);
           CbcModel *model = children_[iThread].thisModel();
           OsiClpSolverInterface *clpSolver2
-            = dynamic_cast< OsiClpSolverInterface * >(model->solver());
+            = getClpSolver(model->solver());
           assert(clpSolver2);
           ClpSimplex *simplex2 = clpSolver2->getModelPtr();
           ClpDualRowDantzig dantzig;

@@ -263,7 +263,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
     CoinThreadRandom *randomNumberGenerator = NULL;
     {
       OsiClpSolverInterface *clpSolver
-        = dynamic_cast< OsiClpSolverInterface * >(solver);
+        = getClpSolver(solver);
       if (clpSolver)
         randomNumberGenerator = clpSolver->getModelPtr()->randomNumberGenerator();
     }
@@ -632,7 +632,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       if (!returnCode) {
         // bounds changed but still optimal
         OsiClpSolverInterface *clpSolver
-          = dynamic_cast< OsiClpSolverInterface * >(solver);
+          = getClpSolver(solver);
         if (clpSolver) {
           clpSolver->setLastAlgorithm(2);
         }
@@ -1592,7 +1592,7 @@ static OsiClpSolverInterface * lagrangeanSolver(OsiSolverInterface *solver,
   }
   // create
   OsiSolverInterface *lagrangeanSolver = baseSolver->clone();
-  OsiClpSolverInterface * clpSolver = dynamic_cast<OsiClpSolverInterface *>(lagrangeanSolver);
+  OsiClpSolverInterface * clpSolver = getClpSolver(lagrangeanSolver);
   ClpSimplex * simplex = clpSolver->getModelPtr();
   int numberOriginalRows = simplex->numberRows(); 
   int numberRows = solver->getNumRows();
@@ -1842,12 +1842,12 @@ CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface *sol
       OsiClpSolverInterface * clpSolver;
       if (typeGenerate==2) {
 	cleanLagrangeanSolver = model_->continuousSolver()->clone();
-	clpSolver = dynamic_cast<OsiClpSolverInterface *>(cleanLagrangeanSolver);
+	clpSolver = getClpSolver(cleanLagrangeanSolver);
 	*cleanSolver = cleanLagrangeanSolver;
       } else {
 	baseLagrangeanSolver = model_->continuousSolver()->clone();
 	*baseSolver = baseLagrangeanSolver;
-	clpSolver = dynamic_cast<OsiClpSolverInterface *>(baseLagrangeanSolver);
+	clpSolver = getClpSolver(baseLagrangeanSolver);
       }
       ClpSimplex * simplex = clpSolver->getModelPtr();
       int numberOriginalRows = simplex->numberRows();
@@ -2101,7 +2101,7 @@ CbcModel::oneLastGoAtCuts(OsiCuts &cuts, int typeGo)
   if (typeGo==2) {
     lSolver = lagrangeanSolver(solver_,continuousSolver_,typeGenerate);
   } else {
-    lSolver = dynamic_cast<OsiClpSolverInterface *>(solver_);
+    lSolver = getClpSolver(solver_);
   }
   // cuts seem to dislike a pointer
   OsiClpSolverInterface solver = *lSolver;

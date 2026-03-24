@@ -60,13 +60,13 @@ int main(int argc, const char *argv[])
     testingMessage("Testing OsiRowCutDebugger with OsiCbcSolverInterface\n");
     OSIUNITTEST_CATCH_ERROR(OsiRowCutDebuggerUnitTest(&cbcSi, mpsDir), {}, cbcSi, "rowcut debugger unittest");
   }
-
+#ifdef CBC_OTHER_SOLVER
   /*
     Run the OsiCbc class test. This will also call OsiSolverInterfaceCommonUnitTest.
    */
   testingMessage("Testing OsiCbcSolverInterface\n");
   OSIUNITTEST_CATCH_ERROR(OsiCbcSolverInterfaceUnitTest(mpsDir, netlibDir), {}, "cbc", "osicbc unittest");
-
+#endif
   /*
     We have run the specialised unit test.
     Check now to see if we need to run through the Netlib problems.

@@ -529,9 +529,9 @@ int CbcNode::chooseBranch(CbcModel *model, CbcNode *lastNode, int numberPassesLe
   OsiSolverInterface *solver = model->solver();
   // Mark variables which need to be clean
   char *cleanVariables = NULL;
-  OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
+  OsiClpSolverInterface *osiclp = getClpSolver(solver);
   int saveClpOptions = 0;
-  if (osiclp) {
+  if (CBC_SKIP_CLP_TEST||osiclp) {
     // for faster hot start
     saveClpOptions = osiclp->specialOptions();
     osiclp->setSpecialOptions(saveClpOptions | 8192);
@@ -1902,9 +1902,9 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   int numberToFix = 0;
   // Mark variables which need to be clean
   char *cleanVariables = NULL;
-  OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
+  OsiClpSolverInterface *osiclp = getClpSolver(solver);
   int saveClpOptions = 0;
-  if (osiclp) {
+  if (CBC_SKIP_CLP_TEST||osiclp) {
     if ((model->moreSpecialOptions2() & 32768) != 0) {
       cleanVariables = model->setupCleanVariables(); // for odd ints/sos etc
     }
@@ -4942,7 +4942,7 @@ int solveAnalyze(void *info)
           // restore basis
           solver->setWarmStart(staticInfo->ws);
           if (staticInfo->dualRowPivot) {
-            OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
+            OsiClpSolverInterface *osiclp = getClpSolver(solver);
             ClpSimplex *simplex = osiclp->getModelPtr();
             simplex->setDualRowPivotAlgorithm(*staticInfo->dualRowPivot);
             //simplex->dualRowPivot()->saveWeights(simplex,4);
@@ -5016,7 +5016,7 @@ int solveAnalyze(void *info)
         }
         choice->movement[iWay] = newObjectiveValue;
       } else {
-        OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
+        OsiClpSolverInterface *osiclp = getClpSolver(solver);
         ClpSimplex *simplex = osiclp ? osiclp->getModelPtr() : NULL;
         // doing continuous and general integer
         solver->setColSolution(staticInfo->originalSolution);
@@ -5100,7 +5100,7 @@ int solveAnalyze(void *info)
           solver->setDblParam(OsiObjOffset, offset);
           solver->setObjective(staticInfo->newObjective);
           if (!solver->isProvenOptimal()) {
-            OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
+            OsiClpSolverInterface *osiclp = getClpSolver(solver);
             ClpSimplex *simplex = osiclp->getModelPtr();
             double sum = simplex->sumPrimalInfeasibilities();
             sum /= static_cast< double >(simplex->numberPrimalInfeasibilities());
@@ -5312,10 +5312,10 @@ int CbcNode::analyze(CbcModel *model, double *results)
       numberIterationsAllowed = COIN_INT_MAX;
   }
   int saveAllowed = numberIterationsAllowed;
-  OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
+  OsiClpSolverInterface *osiclp = getClpSolver(solver);
   int saveClpOptions = 0;
   bool fastIterations = (model->specialOptions() & 8) != 0;
-  if (osiclp) {
+  if (CBC_SKIP_CLP_TEST||osiclp) {
     saveClpOptions = osiclp->specialOptions();
     // for faster hot start
     if (fastIterations)
@@ -5440,7 +5440,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
   for (int i = 0; i < numberThreads; i++) {
     if (osiclp && (solveType & 2) != 0 && !DO_STEEPEST_SERIAL) {
       OsiSolverInterface *solver = reinterpret_cast< OsiSolverInterface * >(threadInfo.threadInfo_[i].extraInfo2);
-      OsiClpSolverInterface *osiclp = dynamic_cast< OsiClpSolverInterface * >(solver);
+      OsiClpSolverInterface *osiclp = getClpSolver(solver);
       ClpSimplex *simplex = osiclp->getModelPtr();
       simplex->setLogLevel(0);
       simplex->dual(0, 1);
@@ -6268,7 +6268,7 @@ int CbcNode::analyze(CbcModel *model, double *results)
       solver->writeMps("analyzed");
       temp->writeMps("analyzed2");
     } else {
-      OsiClpSolverInterface *osiclp2 = dynamic_cast< OsiClpSolverInterface * >(temp);
+      OsiClpSolverInterface *osiclp2 = getClpSolver(temp);
       osiclp->getModelPtr()->writeMps("analyzed.mps", 2, 1);
       osiclp2->getModelPtr()->writeMps("analyzed2.mps", 2, 1);
     }
@@ -6722,7 +6722,7 @@ int CbcNode::chooseClpBranch(CbcModel *model,
   CbcGeneralDepth *thisOne = dynamic_cast< CbcGeneralDepth * >(object);
   assert(thisOne);
   OsiClpSolverInterface *clpSolver 
-    = dynamic_cast< OsiClpSolverInterface * >(solver);
+    = getClpSolver(solver);
   assert(clpSolver);
   ClpSimplex *simplex = clpSolver->getModelPtr();
   int preferredWay;

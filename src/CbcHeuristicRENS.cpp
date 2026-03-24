@@ -120,8 +120,8 @@ int CbcHeuristicRENS::solution(double &solutionValue,
     return 0;
   }
   if (model_->getMaximumSeconds() < 1.0e10) {
-    OsiClpSolverInterface *clpSolverR = dynamic_cast< OsiClpSolverInterface * >(newSolver);
-    if (clpSolverR) {
+    OsiClpSolverInterface *clpSolverR = getClpSolver(newSolver);
+    if (CBC_SKIP_CLP_TEST||clpSolverR) {
       double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
       if (model_->useElapsedTime())
         clpSolverR->getModelPtr()->setMaximumWallSeconds(remaining);

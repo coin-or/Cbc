@@ -2518,7 +2518,7 @@ OsiSolverLink::linearizedBAB(CglStored *cut)
     // Now do requested saves and modifications
     CbcModel *cbcModel = &model2;
     OsiSolverInterface *osiModel = model2.solver();
-    OsiClpSolverInterface *osiclpModel = dynamic_cast< OsiClpSolverInterface * >(osiModel);
+    OsiClpSolverInterface *osiclpModel = getClpSolver(osiModel);
     ClpSimplex *clpModel = osiclpModel->getModelPtr();
 
     // Set changed values
@@ -2760,7 +2760,7 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
   // Now do requested saves and modifications
   CbcModel *cbcModel = &model;
   OsiSolverInterface *osiModel = model.solver();
-  OsiClpSolverInterface *osiclpModel = dynamic_cast< OsiClpSolverInterface * >(osiModel);
+  OsiClpSolverInterface *osiclpModel = getClpSolver(osiModel);
   ClpSimplex *clpModel = osiclpModel->getModelPtr();
   CglProbing probing;
   probing.setMaxProbe(10);
@@ -3459,7 +3459,7 @@ int OsiSolverLink::fathom(bool allFixed)
     // Now do requested saves and modifications
     CbcModel *cbcModel = &model;
     OsiSolverInterface *osiModel = model.solver();
-    OsiClpSolverInterface *osiclpModel = dynamic_cast< OsiClpSolverInterface * >(osiModel);
+    OsiClpSolverInterface *osiclpModel = getClpSolver(osiModel);
     ClpSimplex *clpModel = osiclpModel->getModelPtr();
     CglProbing probing;
     probing.setMaxProbe(10);

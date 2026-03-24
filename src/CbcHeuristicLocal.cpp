@@ -162,8 +162,8 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
   OsiSolverInterface *newSolver = model_->continuousSolver()->clone();
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
-    OsiClpSolverInterface *clp = dynamic_cast<OsiClpSolverInterface *>(newSolver);
-    if (clp) {
+    OsiClpSolverInterface *clp = getClpSolver(newSolver);
+    if (CBC_SKIP_CLP_TEST||clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())
@@ -586,8 +586,8 @@ int CbcHeuristicLocal::solution(double &solutionValue,
     // integerVariable may be randomized copy!
     int *integerVariable = CoinCopyOfArray(model_->integerVariable(), numberIntegers);
     OsiClpSolverInterface *clpSolver
-      = dynamic_cast< OsiClpSolverInterface * >(model_->solver());
-    if (clpSolver) {
+      = getClpSolver(model_->solver());
+    if (CBC_SKIP_CLP_TEST||clpSolver) {
       // take out some integers
       int nn = numberIntegers;
       numberIntegers = 0;
@@ -1142,8 +1142,8 @@ int CbcHeuristicProximity::solution(double &solutionValue,
   OsiSolverInterface *newSolver = model_->continuousSolver()->clone();
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
-    OsiClpSolverInterface *clp = dynamic_cast<OsiClpSolverInterface *>(newSolver);
-    if (clp) {
+    OsiClpSolverInterface *clp = getClpSolver(newSolver);
+    if (CBC_SKIP_CLP_TEST||clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())
@@ -1399,8 +1399,8 @@ int CbcHeuristicNaive::solution(double &solutionValue,
   OsiSolverInterface *newSolver = cloneBut(7); // wassolver->clone();
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
-    OsiClpSolverInterface *clp = dynamic_cast<OsiClpSolverInterface *>(newSolver);
-    if (clp) {
+    OsiClpSolverInterface *clp = getClpSolver(newSolver);
+    if (CBC_SKIP_CLP_TEST||clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())
@@ -1685,8 +1685,8 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
   OsiSolverInterface *solver = cloneBut(2);
   // Propagate remaining CBC time limit to the cloned LP solver.
   {
-    OsiClpSolverInterface *clp = dynamic_cast<OsiClpSolverInterface *>(solver);
-    if (clp) {
+    OsiClpSolverInterface *clp = getClpSolver(solver);
+    if (CBC_SKIP_CLP_TEST||clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
         if (model_->useElapsedTime())

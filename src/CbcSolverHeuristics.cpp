@@ -107,7 +107,7 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
   int leaveIntFree = extra[1];
   OsiSolverInterface *originalSolver = model.solver();
   OsiClpSolverInterface *originalClpSolver =
-      dynamic_cast<OsiClpSolverInterface *>(originalSolver);
+      getClpSolver(originalSolver);
   ClpSimplex *originalLpSolver = originalClpSolver->getModelPtr();
   int *originalColumns = NULL;
   OsiClpSolverInterface *clpSolver;
@@ -178,7 +178,7 @@ OsiClpSolverInterface *fixVubs(CbcModel &model, int skipZero2, int &doAction,
     doAction = 1;
   } else {
     OsiSolverInterface *solver = originalSolver->clone();
-    clpSolver = dynamic_cast<OsiClpSolverInterface *>(solver);
+    clpSolver = getClpSolver(solver);
     lpSolver = clpSolver->getModelPtr();
   }
   // Tighten bounds

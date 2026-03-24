@@ -316,8 +316,8 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
 
   OsiSolverInterface *solver = cloneBut(6); // was model_->solver()->clone();
   OsiClpSolverInterface *clpSolver
-    = dynamic_cast< OsiClpSolverInterface * >(solver);
-  if (clpSolver) {
+    = getClpSolver(solver);
+  if (CBC_SKIP_CLP_TEST||clpSolver) {
     ClpSimplex *clpSimplex = clpSolver->getModelPtr();
     int oneSolveIts = clpSimplex->maximumIterations();
     oneSolveIts = std::min(1000 + 2 * (clpSimplex->numberRows() + clpSimplex->numberColumns()), oneSolveIts);
@@ -1526,9 +1526,9 @@ int CbcHeuristicDive::reducedCostFix(OsiSolverInterface *solver)
   int numberFixed = 0;
 
   OsiClpSolverInterface *clpSolver
-    = dynamic_cast< OsiClpSolverInterface * >(solver);
+    = getClpSolver(solver);
   ClpSimplex *clpSimplex = NULL;
-  if (clpSolver)
+  if (CBC_SKIP_CLP_TEST||clpSolver)
     clpSimplex = clpSolver->getModelPtr();
   for (int i = 0; i < numberIntegers; i++) {
     int iColumn = integerVariable[i];

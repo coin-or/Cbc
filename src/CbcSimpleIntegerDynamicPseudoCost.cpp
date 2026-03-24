@@ -1788,7 +1788,7 @@ int CbcSwitchingBinary::setAssociatedBounds(OsiSolverInterface *solver,
   if (!solver)
     solver = model_->solver();
   OsiClpSolverInterface *clpSolver
-    = dynamic_cast< OsiClpSolverInterface * >(solver);
+    = getClpSolver(solver);
   if (cleanBasis != 1)
     clpSolver = NULL;
   const double *columnLower = solver->getColLower();

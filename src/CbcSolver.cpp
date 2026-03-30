@@ -701,6 +701,30 @@ void fakeMain(ClpSimplex &model, OsiSolverInterface &osiSolver,
 void fakeMain2(ClpSimplex &model, OsiClpSolverInterface &osiSolver,
                int options);
 
+// Set a remaining-time budget on a Clp LP, honouring the CBC time mode.
+// Always pair with clearClpTimeLimits() after the solve.
+static void applyClpTimeLimit(const CbcModel &cbcModel, ClpSimplex *clp,
+  double budget)
+{
+  if (cbcModel.useElapsedTime())
+    clp->setMaximumWallSeconds(budget);
+  else
+    clp->setMaximumSeconds(budget);
+}
+// Overload: use full remaining CBC budget.
+static void applyClpTimeLimit(const CbcModel &cbcModel, ClpSimplex *clp)
+{
+  double remaining = std::max(
+    cbcModel.getMaximumSeconds() - cbcModel.getCurrentSeconds(), 0.0);
+  applyClpTimeLimit(cbcModel, clp, remaining);
+}
+// Clear both CPU and wall-clock limits to prevent leaking into later solves.
+static void clearClpTimeLimits(ClpSimplex *clp)
+{
+  clp->setMaximumSeconds(-1.0);
+  clp->setMaximumWallSeconds(-1.0);
+}
+
 int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
                    int testSwitch, const double *stuff, std::deque<std::string>,
                    int callBack(CbcModel *currentSolver, int whereFrom),
@@ -1587,7 +1611,6 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
   // Statistics
   CbcSolverStatistics statistics;
 
-  CoinWallclockTime();
   int currentBestSolution = 0;
   memset(statusUserFunction_, 0, numberUserFunctions_ * sizeof(int));
   /* Note
@@ -3132,12 +3155,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               model_.setDblParam(CbcModel::CbcStartSeconds,
                 model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
             }
-            double remaining = std::max(
-              model_.getMaximumSeconds() - model_.getCurrentSeconds(), 0.0);
-            if (model_.useElapsedTime())
-              model2->setMaximumWallSeconds(remaining);
-            else
-              model2->setMaximumSeconds(remaining);
+            applyClpTimeLimit(model_, model2);
           }
 #ifdef COIN_HAS_LINK
           OsiSolverInterface *coinSolver = model_.solver();
@@ -3177,8 +3195,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           model2->initialSolve(solveOptions);
 #endif
           // Clear time limits from LP solver to avoid leaking into later solves.
-          model2->setMaximumSeconds(-1.0);
-          model2->setMaximumWallSeconds(-1.0);
+          clearClpTimeLimits(model2);
           {
             // map states
             /* clp status
@@ -3572,12 +3589,12 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             // Way of using an existing piece of code
             OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
             ClpSimplex *lpSolver = clpSolver->getModelPtr();
-            // set time from integer model
-            double timeToGo = model_.getMaximumSeconds();
-            lpSolver->setMaximumSeconds(timeToGo);
+            // Propagate remaining time to LP solver, honouring time mode.
+            applyClpTimeLimit(model_, lpSolver);
             int extra1 = parameters[CbcParam::EXTRA1]->intVal();
             fakeMain2(*lpSolver, *clpSolver, extra1);
             lpSolver = clpSolver->getModelPtr();
+            clearClpTimeLimits(lpSolver);
             // My actual usage has objective only in clpSolver
             // double objectiveValue=clpSolver->getObjValue();
             // int iStat = lpSolver->status();
@@ -4181,7 +4198,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 if (remaining < 0.0) remaining = 0.0;
                 // Use at most 5% of remaining time, capped at 60 s.
                 double budget = std::min(remaining * 0.05, 60.0);
-                temp.setMaximumSeconds(budget);
+                applyClpTimeLimit(model_, &temp, budget);
               }
               temp.dual(0, 7);
               // user did not set - so modify
@@ -4260,12 +4277,15 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             {
               OsiClpSolverInterface *siClp = getClpSolver(si);
               if (CBC_SKIP_CLP_TEST||siClp) {
-                double remaining = model_.getMaximumSeconds() - model_.getCurrentSeconds();
-                if (remaining < 0.0) remaining = 0.0;
-                siClp->getModelPtr()->setMaximumSeconds(remaining);
+                applyClpTimeLimit(model_, siClp->getModelPtr());
               }
             }
             si->resolve(); // clean up
+            {
+              OsiClpSolverInterface *siClp = dynamic_cast< OsiClpSolverInterface * >(si);
+              if (siClp)
+                clearClpTimeLimits(siClp->getModelPtr());
+            }
 #endif
           }
           // If user made settings then use them
@@ -5906,10 +5926,9 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             if (!babModel_->maximumSecondsReached()) {
               // Set remaining time on the solver so this clean-up re-solve
               // cannot run past the CBC time limit.
-              double remaining = babModel_->getMaximumSeconds() - babModel_->getCurrentSeconds();
-              if (remaining < 0.0) remaining = 0.0;
-              modelC->setMaximumSeconds(remaining);
+              applyClpTimeLimit(*babModel_, modelC);
               si->resolve();
+              clearClpTimeLimits(modelC);
             }
 #elif CBC_OTHER_SOLVER == 1
 #endif
@@ -10416,17 +10435,16 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           // Way of using an existing piece of code
           OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
           ClpSimplex *lpSolver = clpSolver->getModelPtr();
-          // set time from integer model
-          double timeToGo = model_.getMaximumSeconds();
-          lpSolver->setMaximumSeconds(timeToGo);
+          // Propagate remaining time to LP solver, honouring time mode.
+          applyClpTimeLimit(model_, lpSolver);
           fakeMain(*lpSolver, *clpSolver, model);
-          // My actual usage has objective only in clpSolver
-          double objectiveValue = clpSolver->getObjValue();
-          int iStat = lpSolver->status();
-          int iStat2 = lpSolver->secondaryStatus();
           // make sure solution back in correct place
           clpSolver = getClpSolver(model_.solver());
           lpSolver = clpSolver->getModelPtr();
+          clearClpTimeLimits(lpSolver);
+          double objectiveValue = clpSolver->getObjValue();
+          int iStat = lpSolver->status();
+          int iStat2 = lpSolver->secondaryStatus();
           if (info && statusUserFunction_[0]) {
             int n = clpSolver->getNumCols();
             double value = objectiveValue * lpSolver->getObjSense();

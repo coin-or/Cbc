@@ -1703,29 +1703,15 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     heuristic2a.setFractionSmall(9999999.0);
     heuristic2a.setNumberNodes(30);
     heuristic2a.setFeasibilityPumpOptions(-2);
-    if (useProximity >= 4) {
-      const int nodes[] = {10, 100, 300};
-      heuristic2a.setNumberNodes(nodes[useProximity - 4]);
-      // more print out and stronger feasibility pump
-      if (useProximity == 6)
-        heuristic2a.setFeasibilityPumpOptions(-3);
-    } else {
-       //TODO: there should be a separate parameter for setting proximity number
-      std::string proximityKwd = parameters[CbcParam::PROXIMITY]->kwdVal();
-      int proximityNumber = 0;
-      if (proximityKwd == "10"){
-         proximityNumber = 10;
-      }else if (proximityKwd == "100"){
-         proximityNumber = 300;
-      }else if (proximityKwd == "300"){
-         proximityNumber = 300;
-      }         
-      if (proximityNumber > 0) {
-        heuristic2a.setNumberNodes(proximityNumber);
-        // more print out and stronger feasibility pump
-        if (proximityNumber >= 300)
-          heuristic2a.setFeasibilityPumpOptions(-3);
-      }
+    // Map proximity keyword enum values to node counts.
+    // HeurTen=10 nodes, HeurOneHundred=100 nodes, HeurThreeHundred=300 nodes.
+    if (useProximity == CbcParameters::HeurTen) {
+      heuristic2a.setNumberNodes(10);
+    } else if (useProximity == CbcParameters::HeurOneHundred) {
+      heuristic2a.setNumberNodes(100);
+    } else if (useProximity == CbcParameters::HeurThreeHundred) {
+      heuristic2a.setNumberNodes(300);
+      heuristic2a.setFeasibilityPumpOptions(-3);
     }
     model->addHeuristic(&heuristic2a);
     anyToDo = true;

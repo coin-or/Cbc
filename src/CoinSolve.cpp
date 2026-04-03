@@ -152,7 +152,12 @@ void cbc_resolve_check(const OsiSolverInterface *solver)
   For 99.99% of problems this is not a good idea.
   The openblas_set_num_threads(1) seems to work even with other blas
  */
-#if CLP_USE_OPENBLAS
+// Limit OpenBLAS threads unconditionally via a weak symbol: no-op when
+// OpenBLAS is not linked, takes effect whenever it is — independent of
+// whether -DCLP_USE_OPENBLAS was passed at compile time.
+#if defined(__GNUC__) || defined(__clang__)
+extern "C" void openblas_set_num_threads(int num_threads) __attribute__((weak));
+#elif CLP_USE_OPENBLAS
 extern "C" {
 void openblas_set_num_threads(int num_threads);
 }
@@ -196,7 +201,9 @@ int main(int argc, const char *argv[])
 #endif
 #ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface solver1;
-#if CLP_USE_OPENBLAS
+#if defined(__GNUC__) || defined(__clang__)
+  if (openblas_set_num_threads) openblas_set_num_threads(1);
+#elif CLP_USE_OPENBLAS
   openblas_set_num_threads(CLP_USE_OPENBLAS);
 #endif
 #elif CBC_OTHER_SOLVER == 1

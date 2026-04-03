@@ -8,7 +8,12 @@
 #endif
 #include "CbcConfig.h"
 
-#if CLP_USE_OPENBLAS
+// Limit OpenBLAS threads unconditionally via a weak symbol: no-op when
+// OpenBLAS is not linked, takes effect whenever it is — independent of
+// whether -DCLP_USE_OPENBLAS was passed at compile time.
+#if defined(__GNUC__) || defined(__clang__)
+extern "C" void openblas_set_num_threads(int num_threads) __attribute__((weak));
+#elif CLP_USE_OPENBLAS
 extern "C" {
 void openblas_set_num_threads(int num_threads);
 }
@@ -4889,7 +4894,7 @@ void CbcModel::branchAndBound(int doStatistics)
     masterThread_ = master_->masterThread();
   }
 #endif
-#if defined(CBC_HAS_CLP) && CLP_USE_OPENBLAS
+#if defined(CBC_HAS_CLP) && (defined(__GNUC__) || defined(__clang__) || CLP_USE_OPENBLAS)
   // When CBC is running parallel B&B, restrict OpenBLAS to 1 thread inside
   // resolve() to avoid N_cbc x M_blas thread explosion.
   // If the user already configured blasNumThreads_ explicitly, respect it.
@@ -6349,13 +6354,17 @@ void CbcModel::branchAndBound(int doStatistics)
     depth10Probing_ = NULL;
   }
 #endif
-#if defined(CBC_HAS_CLP) && CLP_USE_OPENBLAS
+#if defined(CBC_HAS_CLP) && (defined(__GNUC__) || defined(__clang__) || CLP_USE_OPENBLAS)
   // Restore BLAS threading to the original setting after B&B.
   if (autoSetBLASCap) {
     OsiClpSolverInterface *clpSolverBLAS = dynamic_cast< OsiClpSolverInterface * >(solver_);
     if (clpSolverBLAS) {
       clpSolverBLAS->getModelPtr()->setBLASNumThreads(-1);
+#if defined(__GNUC__) || defined(__clang__)
+      if (openblas_set_num_threads) openblas_set_num_threads(1);
+#elif CLP_USE_OPENBLAS
       openblas_set_num_threads(CLP_USE_OPENBLAS);
+#endif
     }
   }
 #endif

@@ -28,11 +28,11 @@ jobs:
         ]
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: ${{ github.event.repository.name }}
       - name: Checkout coinbrew
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: coin-or/coinbrew
           path: coinbrew
@@ -70,7 +70,7 @@ jobs:
           cp ${{ github.event.repository.name }}/LICENSE dist/
         shell: msys2 {0}
       - name: Upload failed build directory
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: ${{ matrix.os}}-{{ matrix.arch }}-debug=${{ matrix.debug }}-failedbuild
@@ -87,7 +87,7 @@ jobs:
         shell: msys2 {0}
         if: ${{ matrix.arch != 'msvc' }}
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ github.event.repository.name }}-${{ env.package_suffix }}
           path: dist

@@ -24,28 +24,28 @@ jobs:
         flags: [ADD_CXXFLAGS=-fvisibility=hidden]
         download_requirements: [sudo apt install -y -qq gfortran liblapack-dev libmetis-dev libnauty-dev]
         include:
-          - os: macos-15-intel
+          - os: macos-26-intel
             build_static: false
-            flags: CC=clang CXX=clang++ OSX=15
+            flags: CC=clang CXX=clang++
             download_requirements: brew install metis bash
-          - os: macos-15-intel
+          - os: macos-26
             build_static: false
-            flags: CC=gcc-15 CXX=g++-15 OSX=15 ADD_CXXFLAGS=-Wl,-ld_classic
+            flags: CC=gcc-15 CXX=g++-15 ADD_CXXFLAGS=-Wl,-ld_classic
             download_requirements: brew install metis bash
-          - os: macos-14
-            arch: arm64
+          - os: macos-15
             build_static: false
-            flags: CC=gcc-13 CXX=g++-13 OSX=14 ADD_CXXFLAGS=-Wl,-ld_classic
+            flags: CC=clang CXX=clang++
             download_requirements: brew install metis bash
+
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: ${{ github.event.repository.name }}
       - name: Install required packages from package manager
         run: ${{ matrix.download_requirements }}
       - name: Checkout coinbrew
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: coin-or/coinbrew
           path: coinbrew
@@ -72,7 +72,7 @@ jobs:
           cp ${{ github.event.repository.name }}/LICENSE dist/
           tar -czvf release.tar.gz -C dist .
       - name: Checkout package name generation script
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: coin-or-tools/platform-analysis-tools
           path: tools
@@ -86,7 +86,7 @@ jobs:
           platform_str=`python3 tools/hsf_get_platform.py -b $buildtype`
           echo "platform_string=${platform_str}" >> $GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ github.event.repository.name }}-${{ env.platform_string }}.tar.gz
           path: release.tar.gz

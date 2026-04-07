@@ -23774,6 +23774,16 @@ printf "%s\n" "$as_me: CBCUNITTEST_CFLAGS: \"${CBCUNITTEST_CFLAGS}\"" >&6;}
 
 
 
+# Capture git hash for development builds (records state at configure time)
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking git revision" >&5
+printf %s "checking git revision... " >&6; }
+CBC_GIT_HASH=`cd $srcdir && (git describe --always --dirty 2>/dev/null || echo "unknown")`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CBC_GIT_HASH" >&5
+printf "%s\n" "$CBC_GIT_HASH" >&6; }
+
+printf "%s\n" "#define CBC_GIT_HASH \"$CBC_GIT_HASH\"" >>confdefs.h
+
+
 # Finally, we let configure write all the output...
 
   cat >confcache <<\_ACEOF

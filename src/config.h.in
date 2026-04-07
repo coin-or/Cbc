@@ -12,6 +12,9 @@
 /* Library Visibility Attribute */
 #undef CBCUNITTEST_EXPORT
 
+/* Git hash at configure time */
+#undef CBC_GIT_HASH
+
 /* Define to 1 if ASL is available. */
 #undef CBC_HAS_ASL
 

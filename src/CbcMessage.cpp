@@ -102,8 +102,9 @@ static Cbc_message us_english[] = {
   { CBC_RELAXED2, 43, 2, "Possible objective of %.18g but had to fudge solution with tolerance of %g - check scaling of problem?" },
   { CBC_RESTART, 44, 1, "Reduced cost fixing - %d rows, %d columns - restarting search" },
   { CBC_GENERAL, 45, 1, "%s" },
+  { CBC_GENERAL2, 46, 2, "%s" },
   { CBC_ROOT_START, 51, 1, "Starting cut generation at root node" },
-  { CBC_ROOT_DETAIL, 46, 1, "Root node pass %d, %d rows, %d total tight cuts  -  objective %g (%.2f seconds)" },
+  { CBC_ROOT_DETAIL, 46, 1, "Root node pass %d, %d rows, %d tight cuts, %d frac, %g suminf - objective %g (%.2f seconds)" },
   { CBC_CUTOFF_WARNING1, 47, 1, "Cutoff set to %g - equivalent to best solution of %g" },
 #ifndef CBC_MANY_NODE_COUNTS
   { CBC_END_SOLUTION, 48, 2, "Final check on integer solution of %g found after %d iterations and %d nodes (%.2f seconds)" },
@@ -124,6 +125,8 @@ static Cbc_message us_english[] = {
   { CBC_MIPSTART_NON_INTEGRAL, 3014, 1, "MIPstart value %.16g for integer variable [%s] differs from nearest integer by %g (tolerance %g), discarding." },
   { CBC_MIPSTART_UNKNOWN_COLUMN, 3015, 1, "MIPstart variable [%s] is not part of the current model, ignoring value %g." },
   { CBC_INSTANCE_FEATURES, 3016, 1, "Instance features computed in %.3f seconds and written to %s" },
+  { CBC_HEADER, 3017, 1, "%s" },
+  { CBC_PROBLEM_SUMMARY, 3018, 1, "%s" },
   { CBC_DUMMY_END, 999999, 0, "" }
 };
 /* Constructor */

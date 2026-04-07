@@ -6,6 +6,8 @@
 #define CbcHeuristicFeasibilityPump_H
 
 #include "CbcHeuristic.hpp"
+
+class CbcFPumpOutput;
 #include "OsiClpSolverInterface.hpp"
 
 /** Feasibility Pump class
@@ -32,6 +34,11 @@ public:
   virtual CbcHeuristic *clone() const;
   /// Create C++ lines to get to current state
   virtual void generateCpp(FILE *fp);
+
+  /// Set the FP output handler (not owned; set nullptr to disable).
+  void setFPumpOutput(CbcFPumpOutput *output) { fpOutput_ = output; }
+  /// Get the FP output handler.
+  CbcFPumpOutput *getFPumpOutput() const { return fpOutput_; }
 
   /// Resets stuff if model changes
   virtual void resetModel(CbcModel *model);
@@ -289,6 +296,8 @@ protected:
   int fixOnReducedCosts_;
   /// If true round to expensive
   bool roundExpensive_;
+  /// Output handler for tabular FP progress (not owned, caller manages lifetime)
+  CbcFPumpOutput *fpOutput_ = nullptr;
 
 private:
   /** Rounds solution - down if < downValue

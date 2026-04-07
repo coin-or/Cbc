@@ -68,6 +68,7 @@ libCbc_la_SOURCES = \
 	CbcHeuristicVND.cpp CbcHeuristicVND.hpp \
 	CbcHeuristicDW.cpp CbcHeuristicDW.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
+	CbcOutput.cpp CbcOutput.hpp \
 	CbcMipStart.cpp CbcMipStart.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
@@ -199,6 +200,7 @@ includecoin_HEADERS = \
 	CbcHeuristicVND.hpp \
 	CbcHeuristicDW.hpp \
 	CbcMessage.hpp \
+	CbcOutput.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \
 	CbcNodeInfo.hpp \

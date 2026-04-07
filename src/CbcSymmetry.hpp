@@ -208,6 +208,7 @@ public:
   { nautyOtherBranches_ += n;}
   inline void incrementBranchSucceeded()
   { nautyBranchSucceeded_ ++;}
+  inline double getNautyTime() const { return nautyTime_; }
 private:
   mutable std::vector< Node > node_info_;
   mutable CbcNauty *nauty_info_;

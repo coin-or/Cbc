@@ -393,6 +393,8 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::FAKEINCREMENT]->setDefault(0.0);
      parameters_[CbcParam::SMALLBAB]->setDefault(0.5);
      parameters_[CbcParam::TIGHTENFACTOR]->setDefault(0.0);
+     parameters_[CbcParam::LPTIMEFREQ]->setDefault(5.0);
+     parameters_[CbcParam::FPUMPTIMEFREQ]->setDefault(5.0);
      parameters_[CbcParam::AGGREGATEMIXED]->setDefault(1);
      parameters_[CbcParam::BKPIVOTINGSTRATEGY]->setDefault(3);
      parameters_[CbcParam::BKMAXCALLS]->setDefault(1000);
@@ -417,6 +419,8 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::HEUROPTIONS]->setDefault(0);
      parameters_[CbcParam::LOGLEVEL]->setDefault(getLogLevel());
      parameters_[CbcParam::LPLOGLEVEL]->setDefault(getLpLogLevel());
+     parameters_[CbcParam::LPITERFREQ]->setDefault(0);
+     parameters_[CbcParam::FPUMPPASSFREQ]->setDefault(0);
      parameters_[CbcParam::MAXHOTITS]->setDefault(0);
      parameters_[CbcParam::MAXSAVEDSOLS]->setDefault(1);
      parameters_[CbcParam::MAXSLOWCUTS]->setDefault(10);
@@ -1430,6 +1434,19 @@ void CbcParameters::addCbcSolverDblParams() {
       "Tighten bounds using value times largest activity at continuous "
       "solution",
       0.0, COIN_DBL_MAX, "This sleazy trick can help on some problems.");
+
+  parameters_[CbcParam::LPTIMEFREQ]->setup(
+      "lpTimeFreq", "Print LP progress every N seconds (0 = disabled).",
+      0.0, COIN_DBL_MAX,
+      "When solving the LP relaxation at the root node, print a progress "
+      "row every N seconds. Set to 0 to disable time-based printing. "
+      "Use lpIterFreq for iteration-based printing.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::FPUMPTIMEFREQ]->setup(
+      "fpumpTimeFreq",
+      "Print feasibility pump progress every N seconds (0 = disabled, default 5).",
+      0.0, 1e10, "", CoinParam::displayPriorityLow);
 }
 
 //###########################################################################
@@ -1618,6 +1635,44 @@ void CbcParameters::addCbcSolverIntParams() {
       "If set to 0 then there should be no output in normal circumstances. A "
       "value of 1 is probably the best value for most uses, while 2 and 3 give "
       "more information.");
+
+  parameters_[CbcParam::FLUSHPERNEWLINE]->setup(
+      "flushPerNewLine", "Flush output after every message line.", 0, 1,
+      "When set to 1 (default), each output line is flushed immediately. "
+      "This is already the default behaviour of CoinMessageHandler (which calls "
+      "fflush after every CoinMessageEol). Setting to 0 is reserved for future "
+      "use to allow batching of output for performance in non-interactive "
+      "scenarios.", CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::USEUTF8]->setup(
+      "useUTF8", "Use UTF-8 characters in output.", -1, 1,
+      "Controls whether UTF-8 characters (∈, κ, —) are used in solver output. "
+      "-1 (default) auto-detects from the locale (LANG/LC_ALL environment "
+      "variables). 0 forces ASCII-only output. 1 forces UTF-8 output.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::COMPACTTABLES]->setup(
+      "compactTables", "Use compact (borderless) table style in output.", 0, 1,
+      "Controls the table style used for progress tables (LP relaxation, "
+      "preprocessing, feasibility pump, cut generation, branch-and-bound). "
+      "1 (default) uses a compact style: no column borders, "
+      "columns separated by spaces, and a single thin rule under the header "
+      "(a continuous line in UTF-8 mode, per-column dashes in ASCII mode). "
+      "0 uses the full bordered box-drawing style.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::LPITERFREQ]->setup(
+      "lpIterFreq", "Print LP progress every N iterations (0 = disabled).", 0,
+      COIN_INT_MAX,
+      "When solving the LP relaxation at the root node, print a progress "
+      "row every N iterations. Set to 0 to disable iteration-based printing. "
+      "Use lpTimeFreq for time-based printing.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::FPUMPPASSFREQ]->setup(
+      "fpumpPassFreq",
+      "Print feasibility pump progress every N passes (0 = disabled).",
+      0, 1000000, "", CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::MAXHOTITS]->setup(
       "hot!StartMaxIts", "Maximum iterations on hot start",

@@ -24,6 +24,7 @@
 #include "CoinTime.hpp"
 
 #include "CbcModel.hpp"
+#include "CbcOutput.hpp"
 #include "CbcSolver.hpp"
 #include "CbcBranchActual.hpp"
 
@@ -297,6 +298,10 @@ struct Cbc_Model {
   std::vector< double > *slack;
 
   int mipIterationCount;
+
+  // set to 1 after problem summary has been printed (by Cbc_readMps / Cbc_readLp)
+  // so Cbc_solve does not print it a second time.
+  char problemSummaryPrinted;
 };
 
 /* Buffers sizes */
@@ -1144,6 +1149,7 @@ Cbc_newModel()
   Cbc_iniParams(model);
 
   model->solver_ = new OsiClpSolverInterface();
+  model->solver_->messageHandler()->setPrefix(false);
   model->solver_->setIntParam(OsiNameDiscipline, 1);
 
   model->relax_ = 0;
@@ -1186,6 +1192,8 @@ Cbc_newModel()
 #endif
 
   model->lazyConstrs = NULL;
+
+  model->problemSummaryPrinted = 0;
 
   return model;
 }
@@ -1326,6 +1334,17 @@ Cbc_readMps(Cbc_Model *model, const char *filename)
 
   fillAllNameIndexes(model);
 
+  if (status == 0) {
+    if (!cbc_annouced) {
+      CbcOutput::printSolverHeader(solver->messageHandler(),
+        model->int_param[INT_PARAM_LOG_LEVEL]);
+      cbc_annouced = 1;
+    }
+    CbcOutput::printProblemSummary(solver->messageHandler(),
+      *solver, model->int_param[INT_PARAM_LOG_LEVEL]);
+    model->problemSummaryPrinted = 1;
+  }
+
   return status;
 }
 
@@ -1398,6 +1417,17 @@ Cbc_readLp(Cbc_Model *model, const char *filename)
   Cbc_iniBuffer(model);
 
   fillAllNameIndexes(model);
+
+  if (result == 0) {
+    if (!cbc_annouced) {
+      CbcOutput::printSolverHeader(solver->messageHandler(),
+        model->int_param[INT_PARAM_LOG_LEVEL]);
+      cbc_annouced = 1;
+    }
+    CbcOutput::printProblemSummary(solver->messageHandler(),
+      *solver, model->int_param[INT_PARAM_LOG_LEVEL]);
+    model->problemSummaryPrinted = 1;
+  }
 
   return result;
 }
@@ -1819,28 +1849,9 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   solver->messageHandler()->setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
 
   if (! cbc_annouced) {
-    char generalPrint[512];
-      sprintf(generalPrint,
-        "Welcome to the CBC MILP Solver \n");
-      if (strcmp(CBC_VERSION, "trunk")) {
-        sprintf(generalPrint + strlen(generalPrint),
-          "Version: %s \n", CBC_VERSION);
-      } else {
-        sprintf(generalPrint + strlen(generalPrint),
-          "Version: Trunk\n");
-      }
-      sprintf(generalPrint + strlen(generalPrint),
-        "Build Date: %s \n", __DATE__);
-#ifdef CBC_SVN_REV
-      sprintf(generalPrint + strlen(generalPrint),
-        "Revision Number: %d \n", CBC_SVN_REV);
-#endif
-      solver->messageHandler()->setPrefix(false);
-      solver->messageHandler()->message(CLP_GENERAL, generalMessages)
-        << generalPrint
-        << CoinMessageEol;
-      solver->messageHandler()->setPrefix(true);
-      cbc_annouced = 1;
+    CbcOutput::printSolverHeader(solver->messageHandler(),
+      model->int_param[INT_PARAM_LOG_LEVEL]);
+    cbc_annouced = 1;
   }
 
   model->lastOptimization = ContinuousOptimization;
@@ -1948,7 +1959,6 @@ Cbc_solveLinearProgram(Cbc_Model *model)
     // set special option in Clp to disable dual reductions
     clpOptions.setSpecialOption(5, 1);
   }
-  char methodName[256] = "";
   switch (model->lp_method) {
     case LPM_Auto:
       fprintf(stderr, "Method should be already configured.\n");
@@ -1958,20 +1968,16 @@ Cbc_solveLinearProgram(Cbc_Model *model)
       if (model->int_param[INT_PARAM_IDIOT] > 0)
         clpOptions.setSpecialOption(1, 2, model->int_param[INT_PARAM_IDIOT]);
       clpOptions.setSolveType( ClpSolve::usePrimal );
-      sprintf(methodName, "Primal Simplex");
       break;
     case LPM_Dual:
       clpOptions.setSolveType( ClpSolve::useDual );
-      sprintf(methodName, "Dual Simplex");
       break;
     case LPM_Barrier:
       clpOptions.setSolveType( ClpSolve::useBarrier );
       clpOptions.setSpecialOption(4, 4);
-      sprintf(methodName, "Barrier");
       break;
     case LPM_BarrierNoCross:
       clpOptions.setSolveType( ClpSolve::useBarrierNoCross );
-      sprintf(methodName, "Barrier No Crossover");
       break;
   }
   solver->setSolveOptions(clpOptions);
@@ -2009,21 +2015,36 @@ Cbc_solveLinearProgram(Cbc_Model *model)
       }
   }
 
-  if (model->int_param[INT_PARAM_LOG_LEVEL] > 0)
-  {
-    char phaseName[128] = "";
-    if (solver->getNumIntegers() && (!model->relax_))
-      sprintf(phaseName, "Linear programming relaxation problem");
-    else
-      sprintf(phaseName, "Linear programming problem");
+  model->lastOptimization = ContinuousOptimization;
 
-    char msg[512] = "";
-    sprintf(msg, "Starting solution of the %s using %s\n", phaseName, methodName );
-    printf("%s\n", msg); fflush(stdout);
+  // Root LP progress output via event handler
+  int lpLogLevel = model->int_param[INT_PARAM_LOG_LEVEL];
+  // Default frequencies: every 5 seconds, no iteration-based
+  const int lpIterFreq = 0;
+  const double lpTimeFreq = 5.0;
+  CbcRootLpEventHandler *lpProgressHandler = nullptr;
+  int savedClpLogLevel = -1;
+  if (lpLogLevel >= 1 && (lpIterFreq > 0 || lpTimeFreq > 0.0)) {
+    savedClpLogLevel = clps->logLevel();
+    clps->setLogLevel(0);
+    lpProgressHandler = new CbcRootLpEventHandler(
+      solver->messageHandler(), lpLogLevel, lpIterFreq, lpTimeFreq);
+    clps->passInEventHandler(lpProgressHandler);
+    delete lpProgressHandler;
+    lpProgressHandler = dynamic_cast< CbcRootLpEventHandler * >(
+      clps->eventHandler());
   }
 
-  model->lastOptimization = ContinuousOptimization;
   solver->initialSolve();
+
+  if (savedClpLogLevel >= 0) {
+    if (lpProgressHandler)
+      lpProgressHandler->printFinalStatus();
+    clps->setLogLevel(savedClpLogLevel);
+    // Remove LP progress handler so subsequent LP solves are silent
+    ClpEventHandler defaultHandler;
+    clps->passInEventHandler(&defaultHandler);
+  }
 
   if (solver->isProvenOptimal()) {
     model->obj_value = solver->getObjValue();
@@ -2453,6 +2474,10 @@ Cbc_solve(Cbc_Model *model)
 	  fflush(stderr);
 	}
       }
+      // LP progress was already printed by Cbc_solveLinearProgram(); suppress it
+      // inside CbcMain1 regardless of what the user configured via Cbc_setParameter.
+      inputQueue.push_back("-lpIterFreq=0");
+      inputQueue.push_back("-lpTimeFreq=0");
       inputQueue.push_back("-solve");
       inputQueue.push_back("-quit");
 
@@ -2463,10 +2488,16 @@ Cbc_solve(Cbc_Model *model)
         cbcModel.passInSolverCharacteristics(&defaultC);
       }
 
-      if (model->int_param[INT_PARAM_LOG_LEVEL] >= 1) {
-        printf("\nStarting MIP optimization\n");
-        fflush(stdout);
+      // Print compact problem summary through the handler so C API callbacks
+      // can intercept it. Uses cbcModel's solver, which was built from linearProgram
+      // (copy of solver_), so dimensions are correct regardless of how the model
+      // was constructed. For programmatic API users (no Cbc_readMps/Cbc_readLp),
+      // this is the only opportunity to print the summary.
+      if (!model->problemSummaryPrinted) {
+        CbcOutput::printProblemSummary(cbcModel.messageHandler(),
+          *cbcModel.solver(), model->int_param[INT_PARAM_LOG_LEVEL]);
       }
+      model->problemSummaryPrinted = 0; // reset for subsequent solves
 #ifdef CBC_THREAD
       {
         int numberThreads = model->int_param[INT_PARAM_THREADS];
@@ -3537,6 +3568,8 @@ Cbc_clone(Cbc_Model *model)
   result-> mipBestPossibleObjValue = model-> mipBestPossibleObjValue;
   result->mipNumSavedSolutions = model->mipNumSavedSolutions;
   result->mipNodeCount = model->mipNodeCount;
+
+  result->problemSummaryPrinted = model->problemSummaryPrinted;
 
   if (model->mipSavedSolution) {
     result->mipSavedSolution = new std::vector< std::vector<double> >(model->mipSavedSolution->begin(), model->mipSavedSolution->end());

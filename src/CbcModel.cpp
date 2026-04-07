@@ -13,8 +13,8 @@
 // the symbol via dlsym(RTLD_DEFAULT) on first call: the helper is a no-op
 // when the symbol is absent and fires automatically when OpenBLAS is linked
 // directly or transitively — regardless of compiler or -DCLP_USE_OPENBLAS.
-// On MSVC we fall back to the compile-time CLP_USE_OPENBLAS guard.
-#if !defined(_MSC_VER)
+// On Windows (MSVC and MinGW) we fall back to the compile-time CLP_USE_OPENBLAS guard.
+#if !defined(_WIN32)
 #include <dlfcn.h>
 namespace {
 inline void set_openblas_threads(int n)
@@ -4904,7 +4904,7 @@ void CbcModel::branchAndBound(int doStatistics)
     masterThread_ = master_->masterThread();
   }
 #endif
-#if defined(CBC_HAS_CLP) && (!defined(_MSC_VER) || defined(CLP_USE_OPENBLAS))
+#if defined(CBC_HAS_CLP) && (!defined(_WIN32) || defined(CLP_USE_OPENBLAS))
   // When CBC is running parallel B&B, restrict OpenBLAS to 1 thread inside
   // resolve() to avoid N_cbc x M_blas thread explosion.
   // If the user already configured blasNumThreads_ explicitly, respect it.
@@ -6364,7 +6364,7 @@ void CbcModel::branchAndBound(int doStatistics)
     depth10Probing_ = NULL;
   }
 #endif
-#if defined(CBC_HAS_CLP) && (!defined(_MSC_VER) || defined(CLP_USE_OPENBLAS))
+#if defined(CBC_HAS_CLP) && (!defined(_WIN32) || defined(CLP_USE_OPENBLAS))
   // Restore BLAS threading to the original setting after B&B.
   if (autoSetBLASCap) {
     OsiClpSolverInterface *clpSolverBLAS = dynamic_cast< OsiClpSolverInterface * >(solver_);

@@ -32,6 +32,9 @@
 #include "CbcBranchActual.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CoinMpsIO.hpp"
+#ifdef CBC_HAS_NAUTY
+#include "CbcOutput.hpp"
+#endif
 //==============================================================================
 
 CbcHeuristicNode::CbcHeuristicNode(const CbcHeuristicNode &rhs)
@@ -1246,6 +1249,31 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             << CoinMessageEol;
           // going for full search and copy across more stuff
           model.gutsOfCopy(*model_, 2);
+          // Route sub-model messages through our structured handler so that
+          // the restart cut-gen and B&B phases are printed as new sections.
+          // If our handler is not present (e.g. in tests), fall back to silent.
+          if (logLevel <= 1 && feasibilityPumpOptions_ != -3) {
+#ifdef CBC_HAS_NAUTY
+            CbcNautyHandler *h = dynamic_cast<CbcNautyHandler*>(model_->messageHandler());
+            if (h) {
+              h->beginRestartMode();
+              // Attach our structured handler to the CBC model so restart
+              // cut-gen and B&B messages are routed through it.
+              model.passInMessageHandler(h);
+              // Detach h from the LP solver: CbcStrategyDefault::setupPrinting()
+              // calls solver->messageHandler()->setLogLevel(0), and since the
+              // solver shares h that would silence all CBC messages too.
+              // Give the LP solver its own silent handler so h's logLevel is safe.
+              if (model.solver())
+                model.solver()->passInMessageHandler(h->getLpSilentHandler());
+              model.setLogLevel(1);
+            } else {
+              model.setLogLevel(0);
+            }
+#else
+            model.setLogLevel(0);
+#endif
+          }
 #ifdef CBC_HAS_NAUTY
 	  if ((model.moreSpecialOptions2()&131072) != 0) {
 	    // need new copy of symmetry

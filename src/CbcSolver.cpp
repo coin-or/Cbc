@@ -18,10 +18,12 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <memory>
 #include <string>
 #include <sstream>
 #include <iostream>
 #include <map>
+#include <vector>
 #include "CbcSolverStatistics.hpp"
 #include "CbcInstanceFeatures.hpp"
 
@@ -136,6 +138,9 @@ void CbcCrashHandler(int sig);
 #include "CbcHeuristicRINS.hpp"
 #include "CbcHeuristicRandRound.hpp"
 #include "CbcMessage.hpp"
+#include "CbcOutput.hpp"
+#include "ClpOutput.hpp"
+#include "CoinTable.hpp"
 #include "CbcMipStart.hpp"
 #include "CbcModel.hpp"
 #include "CbcParam.hpp"
@@ -146,6 +151,9 @@ void CbcCrashHandler(int sig);
 #include "CbcSolverHeuristics.hpp"
 #include "CbcStrategy.hpp"
 #include "CbcTreeLocal.hpp"
+#ifdef CBC_HAS_NAUTY
+#include "CbcSymmetry.hpp"
+#endif
 //#define CBC_USE_OPENMP
 #ifdef CBC_USE_OPENMP
 #include "omp.h"
@@ -273,7 +281,9 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
   const std::string &mode,
   int strengthenMode,
   CbcModel &model,
-  const std::vector< std::pair< std::string, double > > &mipStart)
+  const std::vector< std::pair< std::string, double > > &mipStart,
+  int *clqExtendedOut = nullptr,
+  int *clqDominatedOut = nullptr)
 {
   std::ostringstream buffer;
   std::map<std::string, double> mipStartMap;
@@ -328,6 +338,9 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
   CglCliqueStrengthening clqStr(solver, handler);
   clqStr.strengthenCliques(strengthenMode);
 
+  if (clqExtendedOut) *clqExtendedOut = clqStr.constraintsExtended();
+  if (clqDominatedOut) *clqDominatedOut = clqStr.constraintsDominated();
+
   int changes = clqStr.constraintsExtended() + clqStr.constraintsDominated() + nBoundsChanged;
 
   if (changes == 0)
@@ -346,11 +359,6 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
 
   if (solver->isProvenPrimalInfeasible()) {
     printGeneralMessage(model, "Clique Strengthening says infeasible!");
-  } else {
-    buffer.str("");
-    buffer << "After applying Clique Strengthening continuous objective value is "
-           << solver->getObjValue();
-    printGeneralMessage(model, buffer.str());
   }
 
   return true;
@@ -1432,7 +1440,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
 #endif
   assert(originalSolver);
   CoinMessageHandler *generalMessageHandler = originalSolver->messageHandler();
-  generalMessageHandler->setPrefix(true);
+  generalMessageHandler->setPrefix(false);
 #ifndef CBC_OTHER_SOLVER
   OsiSolverInterface *solver = model.solver();
   OsiClpSolverInterface *clpSolver =
@@ -1742,6 +1750,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
     if (info) {
       parameters[CbcParam::LOGLEVEL]->setVal(info->logLevel);
       goodModel = true;
+      CbcOutput::printProblemSummary(model_, *solver);
       // FIXME Do we really need this? Seems to just mean that AMPL is being used
       statusUserFunction_[0] = 1;
       if (info->numberSos) {
@@ -2017,31 +2026,45 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 
 #if CBC_QUIET == 0
     if (parameters.printWelcome()) {
-      buffer.str("");
-      buffer << "Welcome to the CBC MILP Solver" << std::endl;
-      if (strcmp(CBC_VERSION, "devel")) {
-        buffer << "Version: " << CBC_VERSION << std::endl;
-      } else {
-        buffer << "Version: Devel (unstable)" << std::endl;
+      // Pre-scan the input queue for explicit -log and -utf8 overrides so that
+      // e.g. "cbc -log 0 file.mps -solve" suppresses the header even before
+      // the command loop processes the -log token.
+      int preScannedLogLevel = model_.messageHandler()->logLevel();
+      int preScannedUtf8 = -1; // -1 = auto-detect
+      int preScannedCompact = -1; // -1 = not set, 0 = false, 1 = true
+      for (int i = 0; i + 1 < (int)inputQueue.size(); i++) {
+        const std::string &tok = inputQueue[i];
+        if (tok == "-log" || tok == "log" || tok == "-loglevel" || tok == "loglevel") {
+          try { preScannedLogLevel = std::stoi(inputQueue[i + 1]); } catch (...) {}
+        } else if (tok == "-useUTF8" || tok == "useUTF8" || tok == "-utf8" || tok == "utf8") {
+          try { preScannedUtf8 = std::stoi(inputQueue[i + 1]); } catch (...) {}
+        } else if (tok == "-compactTables" || tok == "compactTables" || tok == "-compact" || tok == "compact") {
+          try { preScannedCompact = std::stoi(inputQueue[i + 1]) ? 1 : 0; } catch (...) {}
+        }
       }
-      buffer << "Build Date: " << __DATE__ << std::endl;
-      printGeneralMessage(model_, buffer.str());
-      // Print command line
-      if (!inputQueue.empty()) {
+      if (preScannedUtf8 >= 0) {
+        CbcOutput::setUtf8(preScannedUtf8 != 0);
+        ClpOutput::setUtf8(preScannedUtf8 != 0);
+      }
+      if (preScannedCompact >= 0) {
+        CbcOutput::setCompact(preScannedCompact != 0);
+        ClpOutput::setCompact(preScannedCompact != 0);
+      }
+
+      if (preScannedLogLevel >= 1) {
+        // Build args string from the input queue
+        std::string args;
         bool foundStrategy = false;
-        buffer.str("");
-        buffer << "command line -";
-        for (int i = 0; i < inputQueue.size(); i++) {
-          size_t found = inputQueue[i].find("strat");
-          if (found != std::string::npos) {
+        for (int i = 0; i < (int)inputQueue.size(); i++) {
+          if (inputQueue[i].find("strat") != std::string::npos)
             foundStrategy = true;
-          }
-          buffer << " " << inputQueue[i];
+          args += " ";
+          args += inputQueue[i];
         }
-        if (!foundStrategy) {
-          buffer << " (default strategy 1)";
-        }
-        printGeneralMessage(model_, buffer.str());
+        std::string strategyNote;
+        if (!foundStrategy)
+          strategyNote = "default strategy 1";
+        CbcOutput::printSolverHeader(model_, args, strategyNote);
       }
     }
 #endif
@@ -2317,7 +2340,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           printGeneralMessage(model_, message);
           continue;
         } else {
-          printGeneralMessage(model_, message);
+          printGeneralMessage(model_, message, CBC_GENERAL2);
         }
         // TODO: These should be moved to the push function
         switch (cbcParamCode) {
@@ -2391,10 +2414,10 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           clpSolver->messageHandler()->setLogLevel(iValue); // as well
           clpParameters[ClpParam::LOGLEVEL]->setVal(iValue, &message);
           cbcParam->setVal(iValue, &message);
-          printGeneralMessage(model_, message);
+          printGeneralMessage(model_, message, CBC_GENERAL2);
         } else {
           cbcParam->setVal(iValue, &message);
-          printGeneralMessage(model_, message);
+          printGeneralMessage(model_, message, CBC_GENERAL2);
           if (cbcParamCode == CbcParam::CUTPASS) {
             cutPass = iValue;
           } else if (cbcParamCode == CbcParam::USESOLUTION) {
@@ -2417,6 +2440,14 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             oddWExtMethod = iValue;
           } else if (cbcParamCode == CbcParam::LOGLEVEL) {
             model_.messageHandler()->setLogLevel(std::abs(iValue));
+          } else if (cbcParamCode == CbcParam::USEUTF8) {
+            if (iValue >= 0) {
+              CbcOutput::setUtf8(iValue != 0);
+              ClpOutput::setUtf8(iValue != 0);
+            }
+          } else if (cbcParamCode == CbcParam::COMPACTTABLES) {
+            CbcOutput::setCompact(iValue != 0);
+            ClpOutput::setCompact(iValue != 0);
           } else if (cbcParamCode == CbcParam::MAXNODES) {
             model_.setIntParam(CbcModel::CbcMaxNumNode, iValue);
           } else if (cbcParamCode == CbcParam::MAXSOLS) {
@@ -2441,23 +2472,23 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               case 4:
                 // hotstart 500, -200 cut passes
                 parameters[CbcParam::MAXHOTITS]->setVal(500, &message);
-                printGeneralMessage(model_, message);
+                printGeneralMessage(model_, message, CBC_GENERAL2);
                 parameters[CbcParam::CUTPASS]->setVal(-200, &message);
-                printGeneralMessage(model_, message);
+                printGeneralMessage(model_, message, CBC_GENERAL2);
               case 3:
                 // multiple 4
                 parameters[CbcParam::MULTIPLEROOTS]->setVal(4, &message);
-                printGeneralMessage(model_, message);
+                printGeneralMessage(model_, message, CBC_GENERAL2);
               case 2:
                 // rens plus all diving at root
                 parameters[CbcParam::DIVEOPT]->setVal(16, &message);
-                printGeneralMessage(model_, message);
+                printGeneralMessage(model_, message, CBC_GENERAL2);
                 model_.setNumberAnalyzeIterations(-iValue);
                 // -tune 7 zero,lagomory,gmi at root - probing on
               case 1:
                 tunePreProcess = 7;
                 parameters[CbcParam::PROCESSTUNE]->setVal(7, &message);
-                printGeneralMessage(model_, message);
+                printGeneralMessage(model_, message, CBC_GENERAL2);
                 // message =
                 // parameters[CbcParam::MIPOPTIONS,
                 // parameters)]->setValWithMessage(1025); if
@@ -2467,14 +2498,14 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 //  << message << CoinMessageEol;
                 parameters[CbcParam::PROBINGCUTS]->setVal("on", &message);
                 probingMode = CbcParameters::CGOn;
-                printGeneralMessage(model_, message);
+                printGeneralMessage(model_, message, CBC_GENERAL2);
                 parameters[CbcParam::ZEROHALFCUTS]->setVal("root", &message);
-                printGeneralMessage(model_, message);
+                printGeneralMessage(model_, message, CBC_GENERAL2);
                 parameters[CbcParam::LAGOMORYCUTS]->setVal("root", &message);
-                printGeneralMessage(model_, message);
+                printGeneralMessage(model_, message, CBC_GENERAL2);
                 GMIMode = CbcParameters::CGRoot;
                 parameters[CbcParam::GMICUTS]->setVal("root", &message);
-                printGeneralMessage(model_, message);
+                printGeneralMessage(model_, message, CBC_GENERAL2);
               }
               iValue = 0;
             }
@@ -2572,7 +2603,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           printGeneralMessage(model_, message);
           continue;
         } else {
-          printGeneralMessage(model_, message);
+          printGeneralMessage(model_, message, CBC_GENERAL2);
         }
         if (clpParamCode == ClpParam::PRESOLVEPASS) {
           preSolve = iValue;
@@ -2889,7 +2920,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           doVector = mode;
           break;
         case ClpParam::MESSAGES:
-          lpSolver->messageHandler()->setPrefix(mode != 0);
+          lpSolver->messageHandler()->setPrefix(false);
           break;
         case ClpParam::CHOLESKY:
           choleskyType = mode;
@@ -3157,6 +3188,27 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             }
             applyClpTimeLimit(model_, model2);
           }
+          // ------ LP action progress output (Idiot/Sprint/LP unified table) ------
+#ifndef CBC_OTHER_SOLVER
+          auto lpActState = std::make_shared<ClpLpPhaseState>();
+          lpActState->fp       = model_.messageHandler()->filePointer();
+          lpActState->utf8     = CbcOutput::useUtf8();
+          lpActState->compact  = CbcOutput::useCompact();
+          lpActState->logLevel = model2->logLevel();
+          lpActState->iterFreq = 0;
+          lpActState->timeFreq = 5.0;
+          lpActState->startTime = CoinWallclockTime();
+          lpActState->lastPrintTime = lpActState->startTime;
+          lpActState->title = "LP solve";
+          ClpLpMsgHandler   lpActMsgH(lpActState);
+          ClpLpEventHandler lpActEvtH(lpActState);
+          bool lpActMsgOldDefault;
+          CoinMessageHandler *lpActSavedMsg =
+            model2->pushMessageHandler(&lpActMsgH, lpActMsgOldDefault);
+          model2->passInEventHandler(&lpActEvtH);
+          ClpLpEventHandler *lpActProg =
+            dynamic_cast<ClpLpEventHandler *>(model2->eventHandler());
+#endif
 #ifdef COIN_HAS_LINK
           OsiSolverInterface *coinSolver = model_.solver();
           OsiSolverLink *linkSolver = dynamic_cast< OsiSolverLink * >(coinSolver);
@@ -3196,6 +3248,13 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #endif
           // Clear time limits from LP solver to avoid leaking into later solves.
           clearClpTimeLimits(model2);
+          // ------ LP action progress teardown ------
+#ifndef CBC_OTHER_SOLVER
+          if (lpActProg)
+            lpActProg->printFinalStatus();
+          model2->popMessageHandler(lpActSavedMsg, lpActMsgOldDefault);
+          { ClpEventHandler defEvt; model2->passInEventHandler(&defEvt); }
+#endif
           {
             // map states
             /* clp status
@@ -4063,7 +4122,75 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             if (CBC_SKIP_CLP_TEST||si)
               si->setSpecialOptions(si->specialOptions() | 1024);
 #endif
+            // ------ root LP progress output ------
+#ifndef CBC_OTHER_SOLVER
+            int lpIterFreq = parameters[CbcParam::LPITERFREQ]->intVal();
+            double lpTimeFreq = parameters[CbcParam::LPTIMEFREQ]->dblVal();
+            ClpLpEventHandler *lpProgressHandler = nullptr;
+            ClpLpMsgHandler   *lpMsgHandler = nullptr;
+            bool lpMsgOldDefault = false;
+            CoinMessageHandler *lpSavedMsg = nullptr;
+            if (logLevel >= 1 && si && (lpIterFreq > 0 || lpTimeFreq > 0.0)) {
+              ClpSimplex *clpModel = si->getModelPtr();
+              // Do NOT setLogLevel(0) — Idiot checks model log level before
+              // constructing any messages; setting it to 0 silences Idiot entirely.
+              // ClpLpMsgHandler suppresses all noisy Clp messages instead.
+              auto lpState = std::make_shared<ClpLpPhaseState>();
+              lpState->fp       = model_.messageHandler()->filePointer();
+              lpState->utf8     = CbcOutput::useUtf8();
+              lpState->compact  = CbcOutput::useCompact();
+              lpState->logLevel = logLevel;
+              lpState->iterFreq = lpIterFreq;
+              lpState->timeFreq = lpTimeFreq;
+              lpState->startTime = CoinWallclockTime();
+              lpState->lastPrintTime = lpState->startTime;
+              lpState->title = "Root LP relaxation";
+              lpMsgHandler = new ClpLpMsgHandler(lpState);
+              ClpLpEventHandler tmpEvt(lpState);
+              lpSavedMsg = clpModel->pushMessageHandler(lpMsgHandler, lpMsgOldDefault);
+              clpModel->passInEventHandler(&tmpEvt);
+              lpProgressHandler = dynamic_cast<ClpLpEventHandler *>(clpModel->eventHandler());
+            }
+#endif
+            // Capture integer variable info before solve (solver may relax types internally)
+            int numMipInts = 0;
+            std::vector<int> intCols;
+            if (si) {
+              int nc = si->getNumCols();
+              for (int j = 0; j < nc; ++j) {
+                if (!si->isContinuous(j))
+                  intCols.push_back(j);
+              }
+              numMipInts = static_cast<int>(intCols.size());
+            }
             model_.initialSolve();
+#ifndef CBC_OTHER_SOLVER
+            if (lpSavedMsg && si) {
+              ClpSimplex *clpModel = si->getModelPtr();
+              if (lpProgressHandler) {
+                // Compute fractional integer variable count for status line
+                int numFrac = 0;
+                const OsiSolverInterface *osi = model_.solver();
+                if (osi && numMipInts > 0) {
+                  const double *sol = osi->getColSolution();
+                  for (int j : intCols) {
+                    double v = sol[j];
+                    double frac = std::fabs(v - std::floor(v));
+                    if (frac > 0.5) frac = 1.0 - frac;
+                    if (frac > 1e-5) ++numFrac;
+                  }
+                }
+                lpProgressHandler->printFinalStatus(numMipInts, numFrac);
+              }
+              // Restore message handler and remove LP event handler
+              clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
+              delete lpMsgHandler;
+              lpMsgHandler = nullptr;
+              ClpEventHandler defaultHandler;
+              clpModel->passInEventHandler(&defaultHandler);
+            }
+#endif
+            // ------ end root LP progress output ------
 #ifndef CBC_OTHER_SOLVER
             ClpSimplex *clpSolver = si->getModelPtr();
             int iStatus = clpSolver->status();
@@ -4123,9 +4250,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #endif
             buffer.str("");
             statistics.lp_seconds = CoinCpuTime() - time1a;
-            buffer << "Continuous objective value is " << solver->getObjValue() << " - "
-                   << statistics.lp_seconds << " seconds";
-            printGeneralMessage(model_, buffer.str());
+            // "Continuous objective value is ..." suppressed: shown by LP progress table footer.
             // If the LP solve itself consumed all (or most) of the time budget
             // there is nothing useful left to do — exit early rather than
             // spending hundreds of seconds in preprocessing, conflict graph
@@ -4591,6 +4716,9 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             }
           }
           // HEUREND
+          // Preprocessing output handler (installed on CglPreProcess if preProcess is on)
+          CbcPreprocHandler *preprocHandler = nullptr;
+          double preprocStart = 0.0;
           bool hasTimePreproc = !babModel_->maximumSecondsReached();
           if (!hasTimePreproc)
             preProcess = 0;
@@ -4781,13 +4909,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                     }
                   }
                 }
-                if (numberChanged || numberInteresting1 || numberInteresting2) {
-                  buffer.str("");
-                  buffer << numberChanged << " variables in SOS1 sets made integer, "
-                         << numberInteresting1 << " non integer in SOS1, "
-                         << numberInteresting2 << " in SOS2" << std::endl;
-                  printGeneralMessage(model_, buffer.str());
-                }
+                // SOS info shown in Problem loading section; skip redundant message here.
                 delete[] sameElement;
                 delete[] rowCount;
                 process.passInProhibited(prohibited, numberColumns);
@@ -5012,6 +5134,21 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 if (keepPPN)
                   babModel_->setKeepNamesPreproc(1);
                 setPreProcessingMode(saveSolver, 1);
+
+                // Install preprocessing output handler
+                {
+                  int ll = babModel_->messageHandler()->logLevel();
+                  if (ll >= 1) {
+                    FILE *fp = babModel_->messageHandler()->filePointer();
+                    bool u8 = CbcOutput::useUtf8();
+                    preprocHandler = new CbcPreprocHandler(fp, u8, ll);
+                    process.passInMessageHandler(preprocHandler);
+                    fprintf(fp, "\n%s\n\n",
+                      CoinTable::phaseStart("Preprocessing", u8).c_str());
+                    preprocStart = CoinWallclockTime();
+                    fflush(fp);
+                  }
+                }
 #if CBC_USE_PAPILO
                 extern void zapPapilo(int pOptions, CglPreProcess *process);
                 int pOptions = 0;
@@ -5069,6 +5206,10 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                   }
                 }
                 setPreProcessingMode(saveSolver, 0);
+
+                // Print preprocessing table summary
+                if (preprocHandler)
+                  preprocHandler->printTableEnd();
 #if CBC_USE_PAPILO
                 // Convert back
                 if (maximize) {
@@ -5151,11 +5292,18 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 "infeasible/unbounded by pre-processing");
               info->primalSolution = NULL;
               info->dualSolution = NULL;
-              break;
+              if (preprocHandler) {
+                preprocHandler->markInfeasible("infeasible or unbounded");
+                process.passInMessageHandler(model_.messageHandler());
+                delete preprocHandler;
+                preprocHandler = nullptr;
+              }
             }
             if (!solver2) {
               printGeneralMessage(model_,
                 "Pre-processing says infeasible or unbounded");
+              if (preprocHandler)
+                preprocHandler->markInfeasible("infeasible or unbounded");
               // say infeasible for solution
               integerStatus = 6;
               delete saveSolver;
@@ -5174,13 +5322,23 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             if (callBack != NULL)
               returnCode = callBack(babModel_, 2);
             if (returnCode) {
-              // exit if user wants
+              // exit if user wants — close preprocessing section first
+              if (preprocHandler) {
+                process.passInMessageHandler(model_.messageHandler());
+                delete preprocHandler;
+                preprocHandler = nullptr;
+              }
               delete babModel_;
               babModel_ = NULL;
               return returnCode;
             }
-            if (!solver2)
+            if (!solver2) {
+              // preprocessing says infeasible — section closed by destructor below
+              process.passInMessageHandler(model_.messageHandler());
+              delete preprocHandler;
+              preprocHandler = nullptr;
               break;
+            }
             if (model_.bestSolution()) {
               // need to redo - in case no better found in BAB
               // just get integer part right
@@ -5477,22 +5635,6 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 }
               }
               numberDifferentObj++;
-              buffer.str("");
-              buffer << "Problem has " << numberIntegers << " integers (" << numberBinary
-                     << " of which are binary) and " << numberColumns - numberIntegers
-                     << " continuous";
-              printGeneralMessage(model_, buffer.str());
-              if (numberColumns > numberIntegers) {
-                buffer.str("");
-                buffer << numberContinuous << " continuous have nonzero objective, "
-                       << numberZeroContinuous << " have zero objective";
-                printGeneralMessage(model_, buffer.str());
-              }
-              buffer.str("");
-              buffer << numberSort << " integer have nonzero objective, "
-                     << numberZero << " have zero objective, "
-                     << numberDifferentObj << " different nonzero (taking abs)";
-              printGeneralMessage(model_, buffer.str());
               if (numberDifferentObj <= threshold + (numberZero)
                   ? 1
                   : 0 && numberDifferentObj) {
@@ -5889,15 +6031,35 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           }
           if (clqstrMode == "after") {
             if (!babModel_->maximumSecondsReached()) {
+              int clqExtended = 0, clqDominated = 0;
               buildConflictGraphAndStrengthenCliques(babModel_->solver(),
                 babModel_->messageHandler(),
                 clqstrMode,
                 4,
-                model_, mipStart);
+                model_, mipStart,
+                &clqExtended, &clqDominated);
               statistics.cgraph_time += babModel_->solver()->getCGraphBuildTime();
               statistics.cgraph_density = babModel_->solver()->getCGraphDensity();
+              // Print cgraph + clique summary through preproc handler
+              if (preprocHandler) {
+                bool cgraphBuilt = (statistics.cgraph_time > 0.0 || statistics.cgraph_density > 0.0);
+                preprocHandler->printCgraphSummary(cgraphBuilt,
+                  statistics.cgraph_time, statistics.cgraph_density,
+                  true, clqExtended, clqDominated);
+              }
             }
           } // clique Strengthening
+
+          // Print overall preprocessing phase-end banner and clean up handler.
+          // Restore process's handler to a valid one before deleting preprocHandler,
+          // because process.postProcess() (below) calls handler_->message().
+          if (preprocHandler) {
+            double totalPreprocTime = CoinWallclockTime() - preprocStart;
+            preprocHandler->printPhaseEnd(totalPreprocTime);
+            process.passInMessageHandler(model_.messageHandler());
+            delete preprocHandler;
+            preprocHandler = nullptr;
+          }
 
           // now tighten bounds
           if (!miplib) {
@@ -8529,8 +8691,130 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               }
             }
 #endif
-            babModel_->branchAndBound(doStatistics);
+            // ------ feasibility pump progress output ------
+            int fpumpPassFreq = parameters[CbcParam::FPUMPPASSFREQ]->intVal();
+            double fpumpTimeFreq = parameters[CbcParam::FPUMPTIMEFREQ]->dblVal();
+            std::unique_ptr<CbcFPumpOutput> fpumpOut;
+            if (logLevel >= 1 && (fpumpPassFreq > 0 || fpumpTimeFreq > 0.0)) {
+              for (int iHeur = 0; iHeur < babModel_->numberHeuristics(); iHeur++) {
+                CbcHeuristicFPump *pump = dynamic_cast<CbcHeuristicFPump *>(
+                  babModel_->heuristic(iHeur));
+                if (pump) {
+                  FILE *outfp = model_.messageHandler()->filePointer();
+                  if (!outfp) outfp = stdout;
+                  fpumpOut = std::make_unique<CbcFPumpOutput>(
+                    outfp, CbcOutput::useUtf8(), logLevel,
+                    fpumpPassFreq, fpumpTimeFreq);
+                  pump->setFPumpOutput(fpumpOut.get());
+                  break;
+                }
+              }
+            }
+            // ------ end feasibility pump progress output ------
+
 #ifdef CBC_HAS_NAUTY
+            // ------ B&B message handler (Nauty interception + FPump suppression + cut gen) ------
+            // Install a handler that:
+            //  1. Intercepts Nauty CBC_GENERAL messages → formatted section
+            //  2. Suppresses the raw Cbc0012I "found by feasibility pump" while
+            //     the FPump table is active (our table already shows solution events)
+            //  3. Reformats root-node cut generation output
+            CbcNautyHandler *nautyHandler = nullptr;
+            CoinMessageHandler *savedNautyMsgHandler = nullptr;
+            CoinMessageHandler *lpSilentHandler = nullptr;  // given to LP solver to prevent logLevel mutation
+
+            // Cut generation output — active for all MIP solves at logLevel >= 1
+            std::unique_ptr<CbcCutGenOutput> cutGenOut;
+            if (logLevel >= 1 && babModel_->numberIntegers() > 0) {
+              FILE *outfp = babModel_->messageHandler()->filePointer();
+              if (!outfp) outfp = stdout;
+              cutGenOut.reset(new CbcCutGenOutput(outfp, CbcOutput::useUtf8(), logLevel));
+            }
+
+            // B&B tree output — active for all MIP solves at logLevel >= 1
+            std::unique_ptr<CbcBnBOutput> bnbOut;
+            if (logLevel >= 1 && babModel_->numberIntegers() > 0) {
+              FILE *outfp = babModel_->messageHandler()->filePointer();
+              if (!outfp) outfp = stdout;
+              bnbOut.reset(new CbcBnBOutput(outfp, CbcOutput::useUtf8(), logLevel));
+            }
+
+            if (logLevel >= 1
+              && ((babModel_->moreSpecialOptions2() & (128 | 256)) != 0
+                || fpumpOut   != nullptr
+                || cutGenOut  != nullptr
+                || bnbOut     != nullptr)) {
+              FILE *outfp = babModel_->messageHandler()->filePointer();
+              if (!outfp) outfp = stdout;
+              nautyHandler = new CbcNautyHandler(outfp, CbcOutput::useUtf8(), logLevel);
+              nautyHandler->setFPumpOutput(fpumpOut.get());    // may be null
+              nautyHandler->setCutGenOutput(cutGenOut.get());  // may be null
+              nautyHandler->setBnBOutput(bnbOut.get());        // may be null
+              // Save model_'s handler (not babModel_'s) as the restore target.
+              // babModel_ owns its own default CoinMessageHandler, which will be
+              // deleted by passInMessageHandler(nautyHandler) below. Saving
+              // babModel_->messageHandler() would produce a dangling pointer.
+              // model_'s handler is never deleted by babModel_ and outlives B&B.
+              savedNautyMsgHandler = model_.messageHandler();
+              babModel_->passInMessageHandler(nautyHandler);
+              // OsiClpSolverInterface calls setLogLevel(0) on whatever handler
+              // the LP sub-solver uses during LP solves (OsiDoReducePrint hint).
+              // Prevent that from silencing our CBC-level handler by giving the
+              // LP solver its own separate, permanently-silent handler.
+              lpSilentHandler = new CoinMessageHandler();
+              lpSilentHandler->setLogLevel(0);
+              babModel_->solver()->passInMessageHandler(lpSilentHandler);
+            }
+            // ------ end B&B message handler setup ------
+#endif
+
+            // Configure B&B status emission for our structured handler.
+            // Respect -progressInterval: positive = time-based (seconds between rows),
+            // zero/negative = node-based (deterministic; -N means every N nodes).
+            // Use printing mode 1 (CBC_STATUS2) which includes depth.
+            if (bnbOut) {
+              OsiClpSolverInterface *bnbSolver = getClpSolver(babModel_->solver());
+              double progVal = bnbSolver->getModelPtr()->getMinIntervalProgressUpdate();
+              if (progVal <= 0.0) {
+                // Node-count based: deterministic output
+                babModel_->setSecsPrintFrequency(-1.0);
+                if (progVal < -1.0)
+                  babModel_->setPrintFrequency(static_cast< int >(-progVal));
+                else
+                  babModel_->setPrintFrequency(babModel_->getNumCols() > 2000 ? 100 : 1000);
+              } else {
+                // Time-based: emit every node, gated by time interval
+                babModel_->setPrintFrequency(1);
+                babModel_->setSecsPrintFrequency(progVal);
+              }
+              babModel_->setPrintingMode(1);
+            }
+
+            babModel_->branchAndBound(doStatistics);
+
+            // Close cut generation section (flushes generator table)
+            if (cutGenOut)
+              cutGenOut->close();
+            // Clean up FPump handler
+            if (fpumpOut) {
+              for (int iHeur = 0; iHeur < babModel_->numberHeuristics(); iHeur++) {
+                CbcHeuristicFPump *pump = dynamic_cast<CbcHeuristicFPump *>(
+                  babModel_->heuristic(iHeur));
+                if (pump) {
+                  pump->setFPumpOutput(nullptr);
+                  break;
+                }
+              }
+            }
+#ifdef CBC_HAS_NAUTY
+            // Restore original message handler (removing Nauty interceptor)
+            if (nautyHandler) {
+              babModel_->passInMessageHandler(savedNautyMsgHandler);
+              delete nautyHandler;
+              nautyHandler = nullptr;
+              delete lpSilentHandler;
+              lpSilentHandler = nullptr;
+            }
             if (nautyAdded) {
               int *which = new int[nautyAdded];
               int numberOldRows = babModel_->solver()->getNumRows() - nautyAdded;
@@ -8754,13 +9038,17 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #endif
           statistics.cut_time = 0.0;
           double direction = babModel_->solver()->getObjSense();
-          // Print more statistics
-          buffer.str("");
-          buffer << "Cuts at root node changed objective from "
-                 << babModel_->getContinuousObjective() * direction
-                 << " to "
-                 << babModel_->rootObjectiveAfterCuts() * direction;
-          printGeneralMessage(model_, buffer.str());
+          // "Cuts at root node..." and per-generator "was tried..." lines are
+          // shown in our formatted cut generation section when logLevel >= 1.
+          const bool suppressCutStats = (logLevel >= 1 && babModel_->numberIntegers() > 0);
+          if (!suppressCutStats) {
+            buffer.str("");
+            buffer << "Cuts at root node changed objective from "
+                   << babModel_->getContinuousObjective() * direction
+                   << " to "
+                   << babModel_->rootObjectiveAfterCuts() * direction;
+            printGeneralMessage(model_, buffer.str());
+          }
           numberGenerators = babModel_->numberCutGenerators();
           // can get here twice!
           if (statistics.number_cuts != NULL)
@@ -8797,7 +9085,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             if (implication && !generator->numberCutsInTotal())
               continue;
 #endif
-            printGeneralMessage(model_, buffer.str());
+            if (!suppressCutStats)
+              printGeneralMessage(model_, buffer.str());
           }
           // Capture cgraph stats if built lazily by cut generators
           // (only if not already captured from explicit buildConflictGraph calls)
@@ -9478,6 +9767,13 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           delete[] lotsize;
 #ifndef CBC_OTHER_SOLVER
           ClpSimplex *lpSolver = clpSolver->getModelPtr();
+          // Install capturing handler to intercept MPS/LP parse errors.
+          // Use push/pop to avoid ownership issues (passInMessageHandler deletes
+          // the old handler when defaultHandler_==true).
+          CbcImportHandler importHandler;
+          bool origDefault;
+          CoinMessageHandler *origLpHandler = lpSolver->pushMessageHandler(
+            &importHandler, origDefault);
           if (!gmpl) {
             status = clpSolver->readMps(fileName.c_str(), keepImportNames != 0,
               allowImportErrors != 0);
@@ -9495,8 +9791,10 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             status = clpSolver->readLp(fileName.c_str(), 1.0e-12);
 #endif
           }
+          lpSolver->popMessageHandler(origLpHandler, origDefault);
 #else
           status = clpSolver->readMps(fileName.c_str(), "");
+          CbcImportHandler importHandler; // empty, CBC_OTHER_SOLVER path
 #endif
           if (!status || (status > 0 && allowImportErrors)) {
 #ifndef CBC_OTHER_SOLVER
@@ -9529,6 +9827,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               lpSolver->setObjectiveOffset(objScale * lpSolver->objectiveOffset());
             }
             goodModel = true;
+            CbcOutput::printProblemSummary(model_, *clpSolver, &importHandler);
             // sets to all slack (not necessary?)
             lpSolver->createStatus();
             // See if sos
@@ -9615,6 +9914,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #else
             lengthName = 0;
             goodModel = true;
+            CbcOutput::printProblemSummary(model_, *model_.solver());
 #endif
             time2 = CoinCpuTime();
             totalTime += time2 - time1;
@@ -9637,10 +9937,17 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               }
             }
           } else {
-            // errors
-            buffer.str("");
-            buffer << "There were " << status << " errors on input";
-            printGeneralMessage(model_, buffer.str());
+            // errors — model did not load
+            FILE *fp = model_.messageHandler()->filePointer();
+            if (!fp) fp = stdout;
+            const bool u8 = CbcOutput::useUtf8();
+            const char *x = u8 ? "✗" : "X";
+            fprintf(fp, "\n%s\n\n", CoinTable::phaseStart("Problem loading", u8).c_str());
+            CbcOutput::printImportErrors(fp, importHandler);
+            // Print failure banner directly (not via phaseEnd which always shows ✔).
+            fprintf(fp, "\n%s Problem loading failed — %d error(s)\n",
+              x, status);
+            fflush(fp);
           }
         } break;
         case CbcParam::EXPORT: {
@@ -10364,6 +10671,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           int status = lpSolver->restoreModel(fileName.c_str());
           if (!status) {
             goodModel = true;
+            CbcOutput::printProblemSummary(model_, *clpSolver);
             time2 = CoinCpuTime();
             totalTime += time2 - time1;
             time1 = time2;

@@ -14,15 +14,25 @@
 
 #include "Cbc_C_Interface.h"
 
-// Limit OpenBLAS threads unconditionally via a weak symbol: no-op when
-// OpenBLAS is not linked, takes effect whenever it is — independent of
-// whether -DCLP_USE_OPENBLAS was passed at compile time.
-#if defined(__GNUC__) || defined(__clang__)
-extern "C" void openblas_set_num_threads(int num_threads) __attribute__((weak));
-#elif CLP_USE_OPENBLAS
-extern "C" {
-void openblas_set_num_threads(int num_threads);
+// Limit OpenBLAS threads whenever OpenBLAS is present, without requiring a
+// link-time dependency on it.  On POSIX systems (Linux, macOS) we look up
+// the symbol via dlsym(RTLD_DEFAULT) on first call: the helper is a no-op
+// when the symbol is absent and fires automatically when OpenBLAS is linked
+// directly or transitively — regardless of compiler or -DCLP_USE_OPENBLAS.
+// On MSVC we fall back to the compile-time CLP_USE_OPENBLAS guard.
+#if !defined(_MSC_VER)
+#include <dlfcn.h>
+namespace {
+inline void set_openblas_threads(int n)
+{
+  typedef void (*fn_t)(int);
+  static fn_t fn = reinterpret_cast<fn_t>(dlsym(RTLD_DEFAULT, "openblas_set_num_threads"));
+  if (fn)
+    fn(n);
 }
+} // namespace
+#elif defined(CLP_USE_OPENBLAS)
+extern "C" void openblas_set_num_threads(int num_threads);
 #endif
 
 #ifdef CBC_THREAD
@@ -1163,10 +1173,8 @@ Cbc_newModel()
   model->solver_->messageHandler()->setPrefix(false);
   model->solver_->setIntParam(OsiNameDiscipline, 1);
 
-#if defined(__GNUC__) || defined(__clang__)
-  if (openblas_set_num_threads) openblas_set_num_threads(1);
-#elif CLP_USE_OPENBLAS
-  openblas_set_num_threads(1);
+#if !defined(_MSC_VER) || defined(CLP_USE_OPENBLAS)
+  set_openblas_threads(1);
 #endif
 
   model->relax_ = 0;

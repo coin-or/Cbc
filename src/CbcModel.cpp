@@ -3739,8 +3739,9 @@ void CbcModel::branchAndBound(int doStatistics)
             }
           }
         }
-        if (feasible)
+        if (feasible) {
           feasible = solveWithCuts(cuts, maximumCutPassesAtRoot_, NULL);
+        }
         if (multipleRootTries_ && (moreSpecialOptions_ & 134217728) != 0) {
           FILE *fp = NULL;
           size_t nRead;
@@ -9448,9 +9449,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   int numberLagrangeanR = 0;
   for (int i = 0; i < numberCutGenerators_; i++)
     generator_[i]->setWhetherInMustCallAgainMode(false);
-  // Announce the start of root-node cut generation and record the time so
-  // that per-pass detail messages are throttled to at most one per second.
-  double lastRootCutMsgTime = -1.0;
+  // Announce the start of root-node cut generation.
   if (!node) {
     // If the time limit has already been reached (e.g. FPump consumed all the
     // budget), skip cut generation entirely rather than hanging in an
@@ -9459,7 +9458,6 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       numberTries = 0;
     } else {
       handler_->message(CBC_ROOT_START, messages_) << CoinMessageEol;
-      lastRootCutMsgTime = getCurrentSeconds();
     }
   }
   /*
@@ -9686,16 +9684,27 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     bool strongCuts = (!node && cut_obj[CUT_HISTORY - 1] != -COIN_DBL_MAX && fabs(cut_obj[CUT_HISTORY - 1] - cut_obj[CUT_HISTORY - 2]) < 1.0e-7 + 1.0e-6 * fabs(cut_obj[CUT_HISTORY - 1]));
     for (i = 0; i < numberCutGenerators_; i++)
       generator_[i]->setIneffectualCuts(strongCuts);
-    // Print per-pass details at root, throttled to at most one message per second.
+    // Print per-pass details at root (every pass).
     if (!node) {
       double now = getCurrentSeconds();
-      if (now - lastRootCutMsgTime >= 1.0) {
-        handler_->message(CBC_ROOT_DETAIL, messages_)
-          << currentPassNumber_ << solver_->getNumRows()
-          << solver_->getNumRows() - numberRowsAtContinuous_
-          << trueObjValue(solver_->getObjValue()) << now << CoinMessageEol;
-        lastRootCutMsgTime = now;
+      int nFrac = 0;
+      double suminf = 0.0;
+      const double *solution = solver_->getColSolution();
+      const double intTol = getIntegerTolerance();
+      for (int i = 0; i < numberIntegers_; i++) {
+        double val = solution[integerVariable_[i]];
+        double frac = val - std::floor(val);
+        if (frac > 0.5) frac = 1.0 - frac;
+        if (frac > intTol) {
+          nFrac++;
+          suminf += frac;
+        }
       }
+      handler_->message(CBC_ROOT_DETAIL, messages_)
+        << currentPassNumber_ << solver_->getNumRows()
+        << solver_->getNumRows() - numberRowsAtContinuous_
+        << nFrac << suminf
+        << trueObjValue(solver_->getObjValue()) << now << CoinMessageEol;
     }
     // see if looks like solution
     bool lazy = false;

@@ -2770,6 +2770,11 @@ public:
   {
     return rootSymmetryInfo_;
   }
+  /// Set root symmetry information
+  inline void setRootSymmetryInfo(CbcSymmetry *info)
+  {
+    rootSymmetryInfo_ = info;
+  }
   /// get rid of all
   void zapRootSymmetry();
 #endif

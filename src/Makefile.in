@@ -182,12 +182,13 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcHeuristicRandRound.lo \
 	libCbc_la-CbcHeuristicRENS.lo libCbc_la-CbcHeuristicRINS.lo \
 	libCbc_la-CbcHeuristicVND.lo libCbc_la-CbcHeuristicDW.lo \
-	libCbc_la-CbcMessage.lo libCbc_la-CbcMipStart.lo \
-	libCbc_la-CbcModel.lo libCbc_la-CbcNode.lo \
-	libCbc_la-CbcNodeInfo.lo libCbc_la-CbcNWay.lo \
-	libCbc_la-CbcObject.lo libCbc_la-CbcObjectUpdateData.lo \
-	libCbc_la-CbcParam.lo libCbc_la-CbcParamUtils.lo \
-	libCbc_la-CbcPartialNodeInfo.lo libCbc_la-CbcSimpleInteger.lo \
+	libCbc_la-CbcMessage.lo libCbc_la-CbcOutput.lo \
+	libCbc_la-CbcMipStart.lo libCbc_la-CbcModel.lo \
+	libCbc_la-CbcNode.lo libCbc_la-CbcNodeInfo.lo \
+	libCbc_la-CbcNWay.lo libCbc_la-CbcObject.lo \
+	libCbc_la-CbcObjectUpdateData.lo libCbc_la-CbcParam.lo \
+	libCbc_la-CbcParamUtils.lo libCbc_la-CbcPartialNodeInfo.lo \
+	libCbc_la-CbcSimpleInteger.lo \
 	libCbc_la-CbcSimpleIntegerDynamicPseudoCost.lo \
 	libCbc_la-CbcSimpleIntegerPseudoCost.lo libCbc_la-CbcSOS.lo \
 	libCbc_la-CbcSolution.lo libCbc_la-CbcSolver.lo \
@@ -282,6 +283,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcNodeInfo.Plo \
 	./$(DEPDIR)/libCbc_la-CbcObject.Plo \
 	./$(DEPDIR)/libCbc_la-CbcObjectUpdateData.Plo \
+	./$(DEPDIR)/libCbc_la-CbcOutput.Plo \
 	./$(DEPDIR)/libCbc_la-CbcParam.Plo \
 	./$(DEPDIR)/libCbc_la-CbcParamUtils.Plo \
 	./$(DEPDIR)/libCbc_la-CbcParameters.Plo \
@@ -593,6 +595,7 @@ libCbc_la_SOURCES = \
 	CbcHeuristicVND.cpp CbcHeuristicVND.hpp \
 	CbcHeuristicDW.cpp CbcHeuristicDW.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
+	CbcOutput.cpp CbcOutput.hpp \
 	CbcMipStart.cpp CbcMipStart.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
@@ -711,6 +714,7 @@ includecoin_HEADERS = \
 	CbcHeuristicVND.hpp \
 	CbcHeuristicDW.hpp \
 	CbcMessage.hpp \
+	CbcOutput.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \
 	CbcNodeInfo.hpp \
@@ -942,6 +946,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcNodeInfo.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcObject.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcObjectUpdateData.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcOutput.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcParam.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcParamUtils.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcParameters.Plo@am__quote@ # am--include-marker
@@ -1324,6 +1329,13 @@ libCbc_la-CbcMessage.lo: CbcMessage.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcMessage.cpp' object='libCbc_la-CbcMessage.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcMessage.lo `test -f 'CbcMessage.cpp' || echo '$(srcdir)/'`CbcMessage.cpp
+
+libCbc_la-CbcOutput.lo: CbcOutput.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcOutput.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcOutput.Tpo -c -o libCbc_la-CbcOutput.lo `test -f 'CbcOutput.cpp' || echo '$(srcdir)/'`CbcOutput.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcOutput.Tpo $(DEPDIR)/libCbc_la-CbcOutput.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcOutput.cpp' object='libCbc_la-CbcOutput.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcOutput.lo `test -f 'CbcOutput.cpp' || echo '$(srcdir)/'`CbcOutput.cpp
 
 libCbc_la-CbcMipStart.lo: CbcMipStart.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcMipStart.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcMipStart.Tpo -c -o libCbc_la-CbcMipStart.lo `test -f 'CbcMipStart.cpp' || echo '$(srcdir)/'`CbcMipStart.cpp
@@ -1752,6 +1764,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcNodeInfo.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcObject.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcObjectUpdateData.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcOutput.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcParam.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcParamUtils.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcParameters.Plo
@@ -1879,6 +1892,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcNodeInfo.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcObject.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcObjectUpdateData.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcOutput.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcParam.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcParamUtils.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcParameters.Plo

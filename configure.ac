@@ -363,5 +363,11 @@ AC_CONFIG_HEADERS([src/config.h src/config_cbc.h src/OsiCbc/config_osicbc.h])
 
 AC_COIN_FINALIZE_FLAGS([CbcLib CbcSolverLib CbcGeneric OsiCbcLib CbcUnitTest])
 
+# Capture git hash for development builds (records state at configure time)
+AC_MSG_CHECKING([git revision])
+CBC_GIT_HASH=`cd $srcdir && (git describe --always --dirty 2>/dev/null || echo "unknown")`
+AC_MSG_RESULT([$CBC_GIT_HASH])
+AC_DEFINE_UNQUOTED([CBC_GIT_HASH], ["$CBC_GIT_HASH"], [Git hash at configure time])
+
 # Finally, we let configure write all the output...
 AC_COIN_FINALIZE

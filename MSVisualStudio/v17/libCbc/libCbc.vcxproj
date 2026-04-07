@@ -257,6 +257,7 @@
     <ClCompile Include="..\..\..\src\CbcNWay.cpp" />
     <ClCompile Include="..\..\..\src\CbcObject.cpp" />
     <ClCompile Include="..\..\..\src\CbcObjectUpdateData.cpp" />
+    <ClCompile Include="..\..\..\src\CbcOutput.cpp" />
     <ClCompile Include="..\..\..\src\CbcParam.cpp" />
     <ClCompile Include="..\..\..\src\CbcParameters.cpp" />
     <ClCompile Include="..\..\..\src\CbcParamUtils.cpp" />

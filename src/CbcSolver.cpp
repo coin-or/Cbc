@@ -8712,17 +8712,6 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             }
             // ------ end feasibility pump progress output ------
 
-#ifdef CBC_HAS_NAUTY
-            // ------ B&B message handler (Nauty interception + FPump suppression + cut gen) ------
-            // Install a handler that:
-            //  1. Intercepts Nauty CBC_GENERAL messages → formatted section
-            //  2. Suppresses the raw Cbc0012I "found by feasibility pump" while
-            //     the FPump table is active (our table already shows solution events)
-            //  3. Reformats root-node cut generation output
-            CbcNautyHandler *nautyHandler = nullptr;
-            CoinMessageHandler *savedNautyMsgHandler = nullptr;
-            CoinMessageHandler *lpSilentHandler = nullptr;  // given to LP solver to prevent logLevel mutation
-
             // Cut generation output — active for all MIP solves at logLevel >= 1
             std::unique_ptr<CbcCutGenOutput> cutGenOut;
             if (logLevel >= 1 && babModel_->numberIntegers() > 0) {
@@ -8738,6 +8727,17 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               if (!outfp) outfp = stdout;
               bnbOut.reset(new CbcBnBOutput(outfp, CbcOutput::useUtf8(), logLevel));
             }
+
+#ifdef CBC_HAS_NAUTY
+            // ------ B&B message handler (Nauty interception + FPump suppression + cut gen) ------
+            // Install a handler that:
+            //  1. Intercepts Nauty CBC_GENERAL messages → formatted section
+            //  2. Suppresses the raw Cbc0012I "found by feasibility pump" while
+            //     the FPump table is active (our table already shows solution events)
+            //  3. Reformats root-node cut generation output
+            CbcNautyHandler *nautyHandler = nullptr;
+            CoinMessageHandler *savedNautyMsgHandler = nullptr;
+            CoinMessageHandler *lpSilentHandler = nullptr;  // given to LP solver to prevent logLevel mutation
 
             if (logLevel >= 1
               && ((babModel_->moreSpecialOptions2() & (128 | 256)) != 0

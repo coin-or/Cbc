@@ -6279,8 +6279,11 @@ void CbcModel::branchAndBound(int doStatistics)
   if ((fastNodeDepth_ >= 1000000 || (moreSpecialOptions_ & 33554432) != 0) && (specialOptions_ & 2048) == 0) {
     // delete object off end
     delete object_[numberObjects_];
+    object_[numberObjects_] = NULL; // prevent destructor from re-deleting
     if ((moreSpecialOptions_ & 33554432) == 0)
       fastNodeDepth_ -= 1000000;
+    else
+      moreSpecialOptions_ &= ~33554432; // clear flag so destructor doesn't re-delete
   }
   delete saveSolver;
   // Undo preprocessing performed during BaB.
@@ -7174,6 +7177,14 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
         if (obj)
           obj->setModel(this);
       }
+      // If we didn't allocate the extra fathomMany slot (because !cloneHandler),
+      // clear the flags that would cause the destructor to access out-of-bounds memory.
+      if (!cloneHandler) {
+        if (fastNodeDepth_ >= 1000000 && fastNodeDepth_ < 1001000)
+          fastNodeDepth_ -= 1000000;
+        if ((moreSpecialOptions_ & 33554432) != 0)
+          moreSpecialOptions_ &= ~33554432;
+      }
     } else {
       object_ = NULL;
     }
@@ -7728,8 +7739,10 @@ CbcModel::~CbcModel()
          && numberObjects_)
         || (moreSpecialOptions_ & 33554432) != 0)
     && (specialOptions_ & 2048) == 0) {
-    // delete object off end
-    delete object_[numberObjects_];
+    // delete object off end (guard against double-free in case branchAndBound
+    // already deleted it and nulled the pointer)
+    if (object_[numberObjects_])
+      delete object_[numberObjects_];
     if ((moreSpecialOptions_ & 33554432) == 0)
       fastNodeDepth_ -= 1000000;
   }

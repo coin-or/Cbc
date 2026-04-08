@@ -323,6 +323,8 @@ void CbcTreeLocal::passInSolution(const double *solution, double solutionValue)
     delete [] savedSolution_;
     savedSolution_ = saveSolution;
     bestCutoff_ = std::min(solutionValue, model_->getCutoff());
+  } else {
+    delete [] saveSolution;
   }
 }
 // Return the top node of the heap

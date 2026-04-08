@@ -9,6 +9,7 @@
 #include "CbcCountRowCut.hpp"
 #include "CbcCompareActual.hpp"
 #include "CbcBranchActual.hpp"
+#include <unordered_set>
 
 #if CBC_DEBUG_HEAP > 0
 
@@ -605,6 +606,11 @@ void CbcTree::cleanTree(CbcModel *model, double cutoff, double &bestPossibleObje
       doing more work than needed, modifying the model to match a subproblem
       at a node that will be discarded.  Then again, we seem to need the basis.
     */
+  // Track cuts deleted in this cleanup pass. addCuts1 rebuilds addedCuts_ from
+  // nodeInfo for each node, so a cut freed for an earlier node can reappear as
+  // a stale pointer for a later node. Guard against that use-after-free by
+  // recording every freed pointer and skipping it on subsequent encounters.
+  std::unordered_set< CbcCountRowCut * > deletedCuts;
   for (j = nNodes - 1; j >= kDelete; j--) {
     CbcNode *node = nodeArray[j];
     CoinWarmStartBasis *lastws = (cutoff != -COIN_DBL_MAX) ? model->getEmptyBasis() : NULL;
@@ -620,8 +626,15 @@ void CbcTree::cleanTree(CbcModel *model, double cutoff, double &bestPossibleObje
         // take off node
         CoinWarmStartBasis::Status status = lastws->getArtifStatus(i + model->numberRowsAtContinuous());
         if (status != CoinWarmStartBasis::basic && model->addedCuts()[i]) {
-          if (!model->addedCuts()[i]->decrement(numberLeft))
+          if (deletedCuts.count(model->addedCuts()[i])) {
+            model->addedCuts()[i] = NULL;
+            continue;
+          }
+          if (!model->addedCuts()[i]->decrement(numberLeft)) {
+            deletedCuts.insert(model->addedCuts()[i]);
             delete model->addedCuts()[i];
+            model->addedCuts()[i] = NULL;
+          }
         }
       }
     } else {
@@ -630,8 +643,15 @@ void CbcTree::cleanTree(CbcModel *model, double cutoff, double &bestPossibleObje
         // take off node
         if (model->addedCuts()[i]) {
           if (model->parallelMode() != 1 || true) {
-            if (!model->addedCuts()[i]->decrement(numberLeft))
+            if (deletedCuts.count(model->addedCuts()[i])) {
+              model->addedCuts()[i] = NULL;
+              continue;
+            }
+            if (!model->addedCuts()[i]->decrement(numberLeft)) {
+              deletedCuts.insert(model->addedCuts()[i]);
               delete model->addedCuts()[i];
+              model->addedCuts()[i] = NULL;
+            }
           }
         }
       }

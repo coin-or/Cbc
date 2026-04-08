@@ -128,10 +128,12 @@ CbcNodeInfo::CbcNodeInfo(const CbcNodeInfo &rhs)
     for (int i = 0; i < numberCuts_; i++) {
       CbcCountRowCut *thisCut = rhs.cuts_[i];
       if (thisCut) {
-        // I think this is correct - new one should take priority
+        // Transfer ownership to the new copy; clear the old owner's slot to
+        // prevent ~CbcNodeInfo from double-deleting the same cut.
         thisCut->setInfo(this, n);
         thisCut->increment(numberBranchesLeft_);
         cuts_[n++] = thisCut;
+        const_cast<CbcNodeInfo &>(rhs).cuts_[i] = NULL;
       }
     }
     numberCuts_ = n;

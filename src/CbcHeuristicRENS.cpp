@@ -152,6 +152,7 @@ int CbcHeuristicRENS::solution(double &solutionValue,
         << CoinMessageEol;
     }
   } else if (type < 12) {
+    delete newSolver;
     return 0; // finished?
   }
   int numberColumns = solver->getNumCols();

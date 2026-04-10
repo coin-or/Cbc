@@ -5632,8 +5632,14 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
       // Possible one on tree worse than cutoff
       // Weird comparison function can leave ineligible nodes on tree
-      if (!node || node->objectiveValue() > cutoff)
+      if (!node || node->objectiveValue() > cutoff) {
+        // Node was already removed from tree by bestNode(); free it to avoid leak.
+        if (node) {
+          deleteNode(node);
+          node = NULL;
+        }
         continue;
+      }
       // Do main work of solving node here
       doOneNode(this, node, createdNode);
 #ifdef JJF_ZERO
@@ -5685,8 +5691,13 @@ void CbcModel::branchAndBound(int doStatistics)
         parentNode_ = node;
 #endif
         // Possible one on tree worse than cutoff
-        if (!node || node->objectiveValue() > cutoff)
+        if (!node || node->objectiveValue() > cutoff) {
+          if (node) {
+            deleteNode(node);
+            node = NULL;
+          }
           continue;
+        }
         // Do main work of solving node here
         doOneNode(this, node, createdNode);
         assert(createdNode);

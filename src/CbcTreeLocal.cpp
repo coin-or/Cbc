@@ -381,6 +381,9 @@ void CbcTreeLocal::push(CbcNode *x)
     startTime_ = static_cast< int >(model_->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
     saveNumberSolutions_ = model_->getSolutionCount();
   }
+  lastObjective_ = x->objectiveValue();
+  lastDepth_ = x->depth();
+  lastUnsatisfied_ = x->numberUnsatisfied();
   nodes_.push_back(x);
 #ifdef CBC_DEBUG
   if (model_->messageHandler()->logLevel() > 0)
@@ -504,6 +507,7 @@ bool CbcTreeLocal::empty()
           // We need to check we have best solution given these 0-1 values
           OsiSolverInterface *subSolver = model_->continuousSolver()->clone();
           CbcModel *subModel = model_->subTreeModel(subSolver);
+          subModel->setMaximumSavedSolutions(0);
           CbcTree normalTree;
           subModel->passInTreeHandler(normalTree);
           int numberIntegers = model_->numberIntegers();
@@ -1255,6 +1259,9 @@ void CbcTreeVariable::push(CbcNode *x)
     startTime_ = static_cast< int >(model_->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
     saveNumberSolutions_ = model_->getSolutionCount();
   }
+  lastObjective_ = x->objectiveValue();
+  lastDepth_ = x->depth();
+  lastUnsatisfied_ = x->numberUnsatisfied();
   nodes_.push_back(x);
 #ifdef CBC_DEBUG
   if (model_->messageHandler()->logLevel() > 0)
@@ -1378,6 +1385,7 @@ bool CbcTreeVariable::empty()
           // We need to check we have best solution given these 0-1 values
           OsiSolverInterface *subSolver = model_->continuousSolver()->clone();
           CbcModel *subModel = model_->subTreeModel(subSolver);
+          subModel->setMaximumSavedSolutions(0);
           CbcTree normalTree;
           subModel->passInTreeHandler(normalTree);
           int numberIntegers = model_->numberIntegers();

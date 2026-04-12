@@ -143,6 +143,9 @@ CbcTree::CbcTree()
   maximumNodeNumber_ = 0;
   numberBranching_ = 0;
   maximumBranching_ = 0;
+  lastObjective_ = 0.0;
+  lastDepth_ = 0;
+  lastUnsatisfied_ = 0;
   branched_ = NULL;
   newBound_ = NULL;
 }
@@ -158,6 +161,9 @@ CbcTree::CbcTree(const CbcTree &rhs)
   maximumNodeNumber_ = rhs.maximumNodeNumber_;
   numberBranching_ = rhs.numberBranching_;
   maximumBranching_ = rhs.maximumBranching_;
+  lastObjective_ = rhs.lastObjective_;
+  lastDepth_ = rhs.lastDepth_;
+  lastUnsatisfied_ = rhs.lastUnsatisfied_;
   if (maximumBranching_ > 0) {
     branched_ = CoinCopyOfArray(rhs.branched_, maximumBranching_);
     newBound_ = CoinCopyOfArray(rhs.newBound_, maximumBranching_);
@@ -173,6 +179,9 @@ CbcTree::operator=(const CbcTree &rhs)
   if (this != &rhs) {
     nodes_ = rhs.nodes_;
     maximumNodeNumber_ = rhs.maximumNodeNumber_;
+    lastObjective_ = rhs.lastObjective_;
+    lastDepth_ = rhs.lastDepth_;
+    lastUnsatisfied_ = rhs.lastUnsatisfied_;
     delete[] branched_;
     delete[] newBound_;
     numberBranching_ = rhs.numberBranching_;

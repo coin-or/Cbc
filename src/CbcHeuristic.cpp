@@ -1249,6 +1249,14 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             << CoinMessageEol;
           // going for full search and copy across more stuff
           model.gutsOfCopy(*model_, 2);
+          if (model.maximumSavedSolutions()) {
+            // Saved solutions from the parent live in the original model's column
+            // space. Drop the copied pool here so the reduced submodel can build
+            // its own pool instead of carrying stale allocations across restart B&B.
+            int maximumSavedSolutions = model.maximumSavedSolutions();
+            model.setMaximumSavedSolutions(0);
+            model.setMaximumSavedSolutions(maximumSavedSolutions);
+          }
           // Route sub-model messages through our structured handler so that
           // the restart cut-gen and B&B phases are printed as new sections.
           // If our handler is not present (e.g. in tests), fall back to silent.

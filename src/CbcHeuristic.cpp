@@ -32,9 +32,7 @@
 #include "CbcBranchActual.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CoinMpsIO.hpp"
-#ifdef CBC_HAS_NAUTY
 #include "CbcOutput.hpp"
-#endif
 //==============================================================================
 
 CbcHeuristicNode::CbcHeuristicNode(const CbcHeuristicNode &rhs)

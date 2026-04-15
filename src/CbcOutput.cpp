@@ -217,6 +217,16 @@ int CbcPreprocHandler::print()
   const int ext = cm.externalNumber();
   const char *buf = messageBuffer();
 
+  // COIN_CGRAPH_INFO (ext=11, source="Coin"): "Conflict graph built in X seconds"
+  // COIN_CGRAPH_INFO is shown formatted by printCgraphSummary(); suppress raw version.
+  if (src == "Coin" && ext == 11)
+    return 0;
+
+  // CGL_PROCESS_CLQSTR (ext=15, source="Cgl"): "Clique Strengthening extended N, N dominated"
+  // Shown formatted by printCgraphSummary(); suppress raw version.
+  if (src == "Cgl" && ext == 15)
+    return 0;
+
   // CGL_MADE_INTEGER (ext=11): "N variables made integer"
   // Buffer may have prefix "Cgl0011I N variables made integer"
   if (src == "Cgl" && ext == 11) {
@@ -1046,10 +1056,10 @@ void CbcOutput::printImportErrors(FILE *fp, const CbcImportHandler &ih)
   fflush(fp);
 }
 
-#ifdef CBC_HAS_NAUTY
 // ===========================================================================
 // CbcOutput::printNautySection — formatted symmetry detection output (static)
 // ===========================================================================
+#ifdef CBC_HAS_NAUTY
 
 void CbcOutput::printNautySection(FILE *fp, bool utf8,
   int numUsefulOrbits, int numUsefulObjects,
@@ -1090,8 +1100,10 @@ void CbcOutput::printNautySection(FILE *fp, bool utf8,
   fflush(fp);
 }
 
+#endif /* CBC_HAS_NAUTY — printNautySection */
+
 // ===========================================================================
-// CbcNautyHandler — intercepts Nauty messages during branchAndBound()
+// CbcNautyHandler — message handler installed during branchAndBound()
 // ===========================================================================
 
 CbcNautyHandler::CbcNautyHandler(FILE *fp, bool utf8, int logLevel)
@@ -1165,6 +1177,51 @@ int CbcNautyHandler::print()
     if (ext == 38)
       return 0;
 
+    // ext=45: Heuristic timing — "Heuristic X took Y seconds (good/no good)"
+    // Only emitted by CbcModel when logLevel > 1; format cleanly without raw prefix.
+    if (ext == 45 && std::strstr(buf, "Heuristic ") && std::strstr(buf, " took ")) {
+      const char *p = buf;
+      if (std::strncmp(p, "Cbc", 3) == 0) {
+        while (*p && *p != ' ') ++p;
+        if (*p == ' ') ++p;
+      }
+      const char *hp = std::strstr(p, "Heuristic ");
+      if (hp) {
+        const char *tookPtr = std::strstr(hp, " took ");
+        if (tookPtr) {
+          char name[64] = "";
+          double t = 0.0;
+          char result[32] = "no good";
+          int nameLen = static_cast<int>(tookPtr - hp - static_cast<int>(std::strlen("Heuristic ")));
+          if (nameLen > 0 && nameLen < 63) {
+            std::strncpy(name, hp + std::strlen("Heuristic "), nameLen);
+            name[nameLen] = '\0';
+          }
+          std::sscanf(tookPtr + std::strlen(" took "), "%lf seconds (%31[^)])", &t, result);
+          FILE *fp = filePointer();
+          if (fp && name[0])
+            fprintf(fp, "  Heuristic %s: %.3fs (%s)\n", name, t, result);
+        }
+      }
+      return 0;
+    }
+
+    // ext=39 (CBC_FPUMP2): diagnostic messages during heuristic runs (level=2 only).
+    // Examples: "Infeasible on initial solve", "Pre-processing says infeasible",
+    // "Strong branching on all N unfixed variables..."
+    // Strip raw prefix and show as an indented note.
+    if (ext == 39) {
+      const char *p = buf;
+      if (std::strncmp(p, "Cbc", 3) == 0) {
+        while (*p && *p != ' ') ++p;
+        if (*p == ' ') ++p;
+      }
+      FILE *fp = filePointer();
+      if (fp && *p)
+        fprintf(fp, "  (%s)\n", p);
+      return 0;
+    }
+
     // ── B&B tree progress ────────────────────────────────────────────────
     if (bnbOut_) {
       // Any first B&B message must flush pending cut-gen generator table first.
@@ -1176,6 +1233,11 @@ int CbcNautyHandler::print()
       // CBC_GAP (ext=11): "Exiting as integer gap of X less than Y or Z%"
       // Suppress — the ✔ Optimal banner from ext=1 already conveys this.
       if (ext == 11)
+        return 0;
+
+      // CBC_START_SUB (ext=28) / CBC_END_SUB (ext=29): sub-tree start/end for Reduce.
+      // The restart banner (from ext=44) already conveys this; suppress to avoid raw prefix.
+      if (ext == 28 || ext == 29)
         return 0;
 
       // ext=37 (CBC_STATUS2): periodic progress with depth
@@ -1399,6 +1461,7 @@ int CbcNautyHandler::print()
 
   // ── Nauty messages ───────────────────────────────────────────────────────
   // We only intercept CBC_GENERAL messages from "Cbc" that contain "Nauty"
+#ifdef CBC_HAS_NAUTY
   if (currentSource() == "Cbc" && std::strstr(buf, "Nauty")) {
     sectionStarted_ = true;
 
@@ -1440,11 +1503,39 @@ int CbcNautyHandler::print()
     // Unknown Nauty message — suppress to avoid raw prefix output
     return 0;
   } // end Nauty block
+#endif /* CBC_HAS_NAUTY */
 
   // If cut gen generators are accumulated and a non-cut-gen message has arrived,
   // flush the generator table now (before B&B tree output begins).
   if (cutGenOut_ && cutGenOut_->hasPendingGenerators())
     cutGenOut_->close();
+
+  // Suppress messages already shown in formatted tables:
+  // Coin0011I — conflict graph density, shown in preprocessing table.
+  if (currentSource() == "Coin" && ext == 11)
+    return 0;
+  // Cgl0015I — clique strengthening summary, shown in preprocessing table.
+  if (currentSource() == "Cgl" && ext == 15)
+    return 0;
+  // Cgl0004I — processed model dimensions, shown in preprocessing/restart banner.
+  if (currentSource() == "Cgl" && ext == 4)
+    return 0;
+
+  // Cgl0000I — "Cut generators found to be infeasible! (or unbounded)"
+  // Format as indented warning instead of raw prefix.
+  if (currentSource() == "Cgl" && ext == 0) {
+    FILE *fp = filePointer();
+    if (fp) {
+      const char *p = buf;
+      if (std::strncmp(p, "Cgl", 3) == 0) {
+        while (*p && *p != ' ') ++p;
+        if (*p == ' ') ++p;
+      }
+      fprintf(fp, "  ⚠ %s\n", p);
+      fflush(fp);
+    }
+    return 0;
+  }
 
   // CLP_GENERAL_WARNING (ext=3006) from Clp: accuracy/infeasibility warnings during B&B.
   // Strip the raw "ClpNNNNW" prefix and print as an indented warning.
@@ -1465,12 +1556,12 @@ int CbcNautyHandler::print()
   return CoinMessageHandler::print();
 }
 
-void CbcNautyHandler::printSection()
+void CbcNautyHandler::routeIncumbentMessage(const char *buf, int /*ext*/)
 {
-  CbcOutput::printNautySection(fp_, utf8_,
-    usefulOrbits_, usefulVars_, totalOrbits_,
-    numGens_, groupSize_, nautyTime_,
-    hasError_ ? errorCode_ : 0);
+  if (!bnbOut_) return;
+  IncumbentMsg im;
+  if (parseIncumbentMsg(buf, im))
+    bnbOut_->onHeurIncumbent(im.obj, im.method.c_str(), im.nodes, im.elapsed);
 }
 
 void CbcNautyHandler::beginRestartMode()
@@ -1481,14 +1572,14 @@ void CbcNautyHandler::beginRestartMode()
   restartMode_ = true;
 }
 
-void CbcNautyHandler::routeIncumbentMessage(const char *buf, int /*ext*/)
+#ifdef CBC_HAS_NAUTY
+void CbcNautyHandler::printSection()
 {
-  if (!bnbOut_) return;
-  IncumbentMsg im;
-  if (parseIncumbentMsg(buf, im))
-    bnbOut_->onHeurIncumbent(im.obj, im.method.c_str(), im.nodes, im.elapsed);
+  CbcOutput::printNautySection(fp_, utf8_,
+    usefulOrbits_, usefulVars_, totalOrbits_,
+    numGens_, groupSize_, nautyTime_,
+    hasError_ ? errorCode_ : 0);
 }
-
 #endif /* CBC_HAS_NAUTY */
 
 // ===========================================================================

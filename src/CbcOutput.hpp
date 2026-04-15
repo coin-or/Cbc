@@ -572,14 +572,15 @@ private:
 };
 
 // ---------------------------------------------------------------------------
-// CbcNautyHandler — intercepts Nauty messages inside branchAndBound()
+// CbcNautyHandler — message handler installed on CbcModel before branchAndBound()
 // ---------------------------------------------------------------------------
 
-#ifdef CBC_HAS_NAUTY
 /** Message handler temporarily installed on CbcModel before branchAndBound().
- *  Intercepts CBC_GENERAL messages containing "Nauty" and formats them into a
- *  clean symmetry-detection section.  All other messages are forwarded through
- *  the normal CoinMessageHandler::print() path.
+ *  Reformats cut generation, B&B progress and heuristic output into clean
+ *  structured sections.  When built with CBC_HAS_NAUTY it also intercepts
+ *  Nauty CBC_GENERAL messages and renders them as a symmetry-detection section.
+ *  All other messages are forwarded through the normal CoinMessageHandler::print()
+ *  path.
  *
  *  Usage:
  *    CbcNautyHandler nh(fp, CbcOutput::useUtf8(), logLevel);
@@ -619,9 +620,6 @@ public:
   bool didRun() const { return sectionStarted_; }
 
 private:
-  void printSection();
-  // Parse an "Integer solution of ... found by ... after ... nodes (...)"
-  // message and route it to bnbOut_.
   void routeIncumbentMessage(const char *buf, int ext);
 
   FILE *fp_;
@@ -634,6 +632,8 @@ private:
   CbcCutGenOutput *cutGenOut_ = nullptr; // for root cut generation output
   CbcBnBOutput *bnbOut_ = nullptr;       // for B&B progress table
 
+#ifdef CBC_HAS_NAUTY
+  void printSection();
   // Stats accumulated from the "Nauty: N orbits ..." message
   int totalOrbits_ = 0;
   int usefulOrbits_ = 0;
@@ -643,8 +643,8 @@ private:
   double nautyTime_ = 0.0;
   bool hasError_ = false;
   int errorCode_ = 0;
+#endif
 };
-#endif /* CBC_HAS_NAUTY */
 
 #endif /* CbcOutput_H */
 

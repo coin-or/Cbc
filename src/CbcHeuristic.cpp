@@ -957,9 +957,13 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         delete[] type;
       }
     }
-    if (logLevel <= 1)
+    // Silence CglPreProcess messages when the structured handler is active
+    // (nautyHandler) — they go through an unrelated solver's handler and would
+    // appear as raw prefixed output, duplicating info shown in formatted tables.
+    CbcNautyHandler *nh = dynamic_cast<CbcNautyHandler*>(model_->messageHandler());
+    if (logLevel <= 1 || nh)
       process.messageHandler()->setLogLevel(0);
-    if (!solver->defaultHandler() && solver->messageHandler()->logLevel(0) != -1000)
+    if (!nh && !solver->defaultHandler() && solver->messageHandler()->logLevel(0) != -1000)
       process.passInMessageHandler(solver->messageHandler());
 #ifdef CGL_DEBUG
     /*
@@ -1184,7 +1188,8 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
         if (numberNodes >= 0) {
           // normal
           model.setSpecialOptions(saveModelOptions | 2048);
-          if (logLevel <= 1 && feasibilityPumpOptions_ != -3)
+          if ((logLevel <= 1 && feasibilityPumpOptions_ != -3)
+              || dynamic_cast<CbcNautyHandler*>(model_->messageHandler()))
             model.setLogLevel(0);
           else
             model.setLogLevel(logLevel);
@@ -1259,9 +1264,10 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           }
           // Route sub-model messages through our structured handler so that
           // the restart cut-gen and B&B phases are printed as new sections.
+          // Always do this when the handler is present (regardless of logLevel)
+          // so that messages are not double-printed at higher log levels.
           // If our handler is not present (e.g. in tests), fall back to silent.
-          if (logLevel <= 1 && feasibilityPumpOptions_ != -3) {
-#ifdef CBC_HAS_NAUTY
+          if (feasibilityPumpOptions_ != -3) {
             CbcNautyHandler *h = dynamic_cast<CbcNautyHandler*>(model_->messageHandler());
             if (h) {
               h->beginRestartMode();
@@ -1274,13 +1280,10 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
               // Give the LP solver its own silent handler so h's logLevel is safe.
               if (model.solver())
                 model.solver()->passInMessageHandler(h->getLpSilentHandler());
-              model.setLogLevel(1);
-            } else {
+              model.setLogLevel(h->logLevel());
+            } else if (logLevel <= 1) {
               model.setLogLevel(0);
             }
-#else
-            model.setLogLevel(0);
-#endif
           }
 #ifdef CBC_HAS_NAUTY
 	  if ((model.moreSpecialOptions2()&131072) != 0) {

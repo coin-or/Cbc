@@ -3772,6 +3772,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #endif
           bool miplib = cbcParamCode == CbcParam::MIPLIB;
           int logLevel = parameters[CbcParam::LPLOGLEVEL]->intVal();
+          int cbcLogLevel = parameters[CbcParam::LOGLEVEL]->intVal();
           int truncateColumns = COIN_INT_MAX;
           int truncateRows = -1;
           bool redoSOS = false;
@@ -4130,7 +4131,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             ClpLpMsgHandler   *lpMsgHandler = nullptr;
             bool lpMsgOldDefault = false;
             CoinMessageHandler *lpSavedMsg = nullptr;
-            if (logLevel >= 1 && si && (lpIterFreq > 0 || lpTimeFreq > 0.0)) {
+            if (cbcLogLevel >= 1 && logLevel >= 1 && si && (lpIterFreq > 0 || lpTimeFreq > 0.0)) {
               ClpSimplex *clpModel = si->getModelPtr();
               // Do NOT setLogLevel(0) — Idiot checks model log level before
               // constructing any messages; setting it to 0 silences Idiot entirely.
@@ -6032,8 +6033,14 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           if (clqstrMode == "after") {
             if (!babModel_->maximumSecondsReached()) {
               int clqExtended = 0, clqDominated = 0;
+              // Use preprocHandler when available so that Coin0011I and Cgl0015I
+              // are intercepted and suppressed (they will be shown formatted by
+              // printCgraphSummary() below). Fall back to model handler otherwise.
+              CoinMessageHandler *clqHandler = preprocHandler
+                ? static_cast<CoinMessageHandler *>(preprocHandler)
+                : babModel_->messageHandler();
               buildConflictGraphAndStrengthenCliques(babModel_->solver(),
-                babModel_->messageHandler(),
+                clqHandler,
                 clqstrMode,
                 4,
                 model_, mipStart,
@@ -8695,7 +8702,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             int fpumpPassFreq = parameters[CbcParam::FPUMPPASSFREQ]->intVal();
             double fpumpTimeFreq = parameters[CbcParam::FPUMPTIMEFREQ]->dblVal();
             std::unique_ptr<CbcFPumpOutput> fpumpOut;
-            if (logLevel >= 1 && (fpumpPassFreq > 0 || fpumpTimeFreq > 0.0)) {
+            if (cbcLogLevel >= 1 && (fpumpPassFreq > 0 || fpumpTimeFreq > 0.0)) {
               for (int iHeur = 0; iHeur < babModel_->numberHeuristics(); iHeur++) {
                 CbcHeuristicFPump *pump = dynamic_cast<CbcHeuristicFPump *>(
                   babModel_->heuristic(iHeur));
@@ -8703,7 +8710,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                   FILE *outfp = model_.messageHandler()->filePointer();
                   if (!outfp) outfp = stdout;
                   fpumpOut = std::make_unique<CbcFPumpOutput>(
-                    outfp, CbcOutput::useUtf8(), logLevel,
+                    outfp, CbcOutput::useUtf8(), cbcLogLevel,
                     fpumpPassFreq, fpumpTimeFreq);
                   pump->setFPumpOutput(fpumpOut.get());
                   break;
@@ -8714,39 +8721,42 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 
             // Cut generation output — active for all MIP solves at logLevel >= 1
             std::unique_ptr<CbcCutGenOutput> cutGenOut;
-            if (logLevel >= 1 && babModel_->numberIntegers() > 0) {
+            if (cbcLogLevel >= 1 && babModel_->numberIntegers() > 0) {
               FILE *outfp = babModel_->messageHandler()->filePointer();
               if (!outfp) outfp = stdout;
-              cutGenOut.reset(new CbcCutGenOutput(outfp, CbcOutput::useUtf8(), logLevel));
+              cutGenOut.reset(new CbcCutGenOutput(outfp, CbcOutput::useUtf8(), cbcLogLevel));
             }
 
             // B&B tree output — active for all MIP solves at logLevel >= 1
             std::unique_ptr<CbcBnBOutput> bnbOut;
-            if (logLevel >= 1 && babModel_->numberIntegers() > 0) {
+            if (cbcLogLevel >= 1 && babModel_->numberIntegers() > 0) {
               FILE *outfp = babModel_->messageHandler()->filePointer();
               if (!outfp) outfp = stdout;
-              bnbOut.reset(new CbcBnBOutput(outfp, CbcOutput::useUtf8(), logLevel));
+              bnbOut.reset(new CbcBnBOutput(outfp, CbcOutput::useUtf8(), cbcLogLevel));
             }
 
-#ifdef CBC_HAS_NAUTY
-            // ------ B&B message handler (Nauty interception + FPump suppression + cut gen) ------
+            // ------ B&B message handler (FPump suppression + cut gen + B&B + optional Nauty) ------
             // Install a handler that:
-            //  1. Intercepts Nauty CBC_GENERAL messages → formatted section
-            //  2. Suppresses the raw Cbc0012I "found by feasibility pump" while
+            //  1. Suppresses the raw Cbc0012I "found by feasibility pump" while
             //     the FPump table is active (our table already shows solution events)
-            //  3. Reformats root-node cut generation output
+            //  2. Reformats root-node cut generation output
+            //  3. Reformats B&B progress output
+            //  4. (When built with CBC_HAS_NAUTY) Intercepts Nauty CBC_GENERAL messages
             CbcNautyHandler *nautyHandler = nullptr;
             CoinMessageHandler *savedNautyMsgHandler = nullptr;
             CoinMessageHandler *lpSilentHandler = nullptr;  // given to LP solver to prevent logLevel mutation
 
-            if (logLevel >= 1
-              && ((babModel_->moreSpecialOptions2() & (128 | 256)) != 0
-                || fpumpOut   != nullptr
+            if (cbcLogLevel >= 1
+              && (fpumpOut   != nullptr
                 || cutGenOut  != nullptr
-                || bnbOut     != nullptr)) {
+                || bnbOut     != nullptr
+#ifdef CBC_HAS_NAUTY
+                || (babModel_->moreSpecialOptions2() & (128 | 256)) != 0
+#endif
+                )) {
               FILE *outfp = babModel_->messageHandler()->filePointer();
               if (!outfp) outfp = stdout;
-              nautyHandler = new CbcNautyHandler(outfp, CbcOutput::useUtf8(), logLevel);
+              nautyHandler = new CbcNautyHandler(outfp, CbcOutput::useUtf8(), cbcLogLevel);
               nautyHandler->setFPumpOutput(fpumpOut.get());    // may be null
               nautyHandler->setCutGenOutput(cutGenOut.get());  // may be null
               nautyHandler->setBnBOutput(bnbOut.get());        // may be null
@@ -8766,7 +8776,6 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               babModel_->solver()->passInMessageHandler(lpSilentHandler);
             }
             // ------ end B&B message handler setup ------
-#endif
 
             // Configure B&B status emission for our structured handler.
             // Respect -progressInterval: positive = time-based (seconds between rows),
@@ -8806,8 +8815,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 }
               }
             }
-#ifdef CBC_HAS_NAUTY
-            // Restore original message handler (removing Nauty interceptor)
+            // Restore original message handler (removing B&B interceptor)
             if (nautyHandler) {
               babModel_->passInMessageHandler(savedNautyMsgHandler);
               delete nautyHandler;
@@ -8815,6 +8823,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               delete lpSilentHandler;
               lpSilentHandler = nullptr;
             }
+#ifdef CBC_HAS_NAUTY
             if (nautyAdded) {
               int *which = new int[nautyAdded];
               int numberOldRows = babModel_->solver()->getNumRows() - nautyAdded;
@@ -9039,8 +9048,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           statistics.cut_time = 0.0;
           double direction = babModel_->solver()->getObjSense();
           // "Cuts at root node..." and per-generator "was tried..." lines are
-          // shown in our formatted cut generation section when logLevel >= 1.
-          const bool suppressCutStats = (logLevel >= 1 && babModel_->numberIntegers() > 0);
+          // shown in our formatted cut generation section when cbcLogLevel >= 1.
+          const bool suppressCutStats = (cbcLogLevel >= 1 && babModel_->numberIntegers() > 0);
           if (!suppressCutStats) {
             buffer.str("");
             buffer << "Cuts at root node changed objective from "

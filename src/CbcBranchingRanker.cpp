@@ -17,9 +17,13 @@ CbcBranchingRanker::CbcBranchingRanker()
   , weightRange_(0.0)
   , scalingPowerRangeTrusted_(0.5)
   , scalingPowerRangeUntrusted_(1.0)
+  , weightNonzeros_(0.0)
+  , scalingPowerNzTrusted_(0.25)
+  , scalingPowerNzUntrusted_(0.5)
   , nBoostsApplied_(0)
   , nZeroScore_(0)
   , nRangeBoostsApplied_(0)
+  , nNzBoostsApplied_(0)
   , headerPrinted_(false)
 {
 }
@@ -32,9 +36,13 @@ CbcBranchingRanker::CbcBranchingRanker(const CbcBranchingRanker &rhs)
   , weightRange_(rhs.weightRange_)
   , scalingPowerRangeTrusted_(rhs.scalingPowerRangeTrusted_)
   , scalingPowerRangeUntrusted_(rhs.scalingPowerRangeUntrusted_)
+  , weightNonzeros_(rhs.weightNonzeros_)
+  , scalingPowerNzTrusted_(rhs.scalingPowerNzTrusted_)
+  , scalingPowerNzUntrusted_(rhs.scalingPowerNzUntrusted_)
   , nBoostsApplied_(0)
   , nZeroScore_(0)
   , nRangeBoostsApplied_(0)
+  , nNzBoostsApplied_(0)
   , headerPrinted_(false)
 {
 }
@@ -49,6 +57,9 @@ CbcBranchingRanker &CbcBranchingRanker::operator=(const CbcBranchingRanker &rhs)
     weightRange_ = rhs.weightRange_;
     scalingPowerRangeTrusted_ = rhs.scalingPowerRangeTrusted_;
     scalingPowerRangeUntrusted_ = rhs.scalingPowerRangeUntrusted_;
+    weightNonzeros_ = rhs.weightNonzeros_;
+    scalingPowerNzTrusted_ = rhs.scalingPowerNzTrusted_;
+    scalingPowerNzUntrusted_ = rhs.scalingPowerNzUntrusted_;
   }
   return *this;
 }
@@ -106,7 +117,24 @@ void CbcBranchingRanker::resetCounters() const
   nBoostsApplied_      = 0;
   nZeroScore_          = 0;
   nRangeBoostsApplied_ = 0;
+  nNzBoostsApplied_    = 0;
   headerPrinted_       = false;
+}
+
+double CbcBranchingRanker::applyNonzerosBoost(double sortKey, int nz,
+  bool trusted) const
+{
+  if (weightNonzeros_ == 0.0 || nz <= 0)
+    return sortKey;
+
+  // Raw score = nz raised to a slow-growing power (default 0.25 = 4th root).
+  // No normalization needed: 4th-root grows so slowly it stays in a small range
+  // (nz=1→1.0, nz=16→2.0, nz=100→3.16) and the weight keeps the boost mild.
+  const double power = trusted ? scalingPowerNzTrusted_ : scalingPowerNzUntrusted_;
+  const double score = std::pow(static_cast< double >(nz), power);
+
+  ++nNzBoostsApplied_;
+  return sortKey * (1.0 + weightNonzeros_ * score);
 }
 
 double CbcBranchingRanker::applyRangeBoost(double sortKey, double lb, double ub,

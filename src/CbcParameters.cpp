@@ -1778,6 +1778,35 @@ void CbcParameters::addCbcSolverDblParams() {
       "When pseudo-cost observations are insufficient, range information is given "
       "stronger influence. 1.0 = linear (default), 0.5 = square root (moderate).",
       CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKNONZEROS]->setup(
+      "rankNonzeros",
+      "Weight for column non-zeros criterion nz^power in strong branching sort-key (0 = disabled).",
+      0.0, 100.0,
+      "When positive, the number of constraints a variable appears in is used to "
+      "augment the sort key that determines strong branching candidate priority. "
+      "Score = nz^scalingPower (default 4th-root, very slow growth). "
+      "Variables appearing in many constraints propagate their fixing more broadly. "
+      "Applies to all integer variables. Designed as a cheap tie-breaker. "
+      "Default 0.0 (disabled). Typical useful range: 0.01 to 0.1.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::RANKNONZEROSPOWERTRUSTED]->setup(
+      "rankNonzerosPowerTrusted",
+      "Scaling exponent for nz score when pseudo-costs are trusted (4th-root = 0.25).",
+      0.0, 1.0,
+      "When pseudo-cost observations are sufficient, nz information acts as a "
+      "gentle tie-breaker. Score = nz^power: 0.25 = 4th root (default, very slow "
+      "growth), 0.5 = sqrt, 1.0 = linear.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKNONZEROSPOWERUNTRUSTED]->setup(
+      "rankNonzerosPowerUntrusted",
+      "Scaling exponent for nz score when pseudo-costs are untrusted (sqrt = 0.5).",
+      0.0, 1.0,
+      "When pseudo-cost observations are insufficient, nz information is given "
+      "slightly more influence. 0.5 = sqrt (default), 1.0 = linear.",
+      CoinParam::displayPriorityLow);
 }
 
 //###########################################################################

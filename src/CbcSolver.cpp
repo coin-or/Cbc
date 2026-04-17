@@ -6576,6 +6576,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     std::string rankConflictType = "min";
     double rankConflictPowerTrusted = 0.5;
     double rankConflictPowerUntrusted = 1.0;
+    double rankRangeWeight = 0.0;
+    double rankRangePowerTrusted = 0.5;
+    double rankRangePowerUntrusted = 1.0;
     CglBKClique bkCliqueGen;
     bkPivotingStrategy_ = 3;
     CoinBronKerbosch::PivotingStrategy bkPivotingStrategy = CoinBronKerbosch::PivotingStrategy::Weight;
@@ -7086,6 +7089,15 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           break;
         case CbcParam::RANKCONFLICTPOWERUNTRUSTED:
           rankConflictPowerUntrusted = dValue;
+          break;
+        case CbcParam::RANKRANGE:
+          rankRangeWeight = dValue;
+          break;
+        case CbcParam::RANKRANGEPOWERTRUSTED:
+          rankRangePowerTrusted = dValue;
+          break;
+        case CbcParam::RANKRANGEPOWERUNTRUSTED:
+          rankRangePowerUntrusted = dValue;
           break;
         default:
           break;
@@ -8811,7 +8823,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           bool integersOK = true;
           // Build conflict-graph branching ranker if requested, and attach it
           // to model_ before babModel_ is copy-constructed (so it propagates).
-          if (rankConflictWeight > 0.0) {
+          if (rankConflictWeight > 0.0 || rankRangeWeight > 0.0) {
             CbcBranchingRanker *ranker = new CbcBranchingRanker();
             ranker->weightConflict_ = rankConflictWeight;
             ranker->scalingPowerTrusted_ = rankConflictPowerTrusted;
@@ -8822,6 +8834,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               ranker->formula_ = CbcBranchingRanker::CONFLICT_PRODUCT;
             else
               ranker->formula_ = CbcBranchingRanker::CONFLICT_MIN;
+            ranker->weightRange_ = rankRangeWeight;
+            ranker->scalingPowerRangeTrusted_ = rankRangePowerTrusted;
+            ranker->scalingPowerRangeUntrusted_ = rankRangePowerUntrusted;
             model_.setBranchingRanker(ranker); // model_ takes ownership
           }
           delete babModel_;
@@ -11458,14 +11473,20 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             // babModel_ holds a copy of the ranker with accumulated counters.
             if (cbcLogLevel >= 1) {
               const CbcBranchingRanker *rk = babModel_->branchingRanker();
-              if (rk && rk->weightConflict_ > 0.0) {
-                char buf[256];
+              if (rk && rk->isActive()) {
+                char buf[512];
+                char conflictPart[256] = "";
+                char rangePart[256]    = "";
+                if (rk->weightConflict_ > 0.0)
+                  std::snprintf(conflictPart, sizeof(conflictPart),
+                    " conflict:%lld boosts,%lld zero-score",
+                    rk->nBoostsApplied_, rk->nZeroScore_);
+                if (rk->weightRange_ > 0.0)
+                  std::snprintf(rangePart, sizeof(rangePart),
+                    " range:%lld boosts", rk->nRangeBoostsApplied_);
                 std::snprintf(buf, sizeof(buf),
-                  "RankConflict: %lld boosts applied, %lld zero-score skips"
-                  " (weight=%.4g formula=%s powerT=%.3g powerU=%.3g)",
-                  rk->nBoostsApplied_, rk->nZeroScore_,
-                  rk->weightConflict_, rk->formulaName(),
-                  rk->scalingPowerTrusted_, rk->scalingPowerUntrusted_);
+                  "RankConflict summary —%s%s",
+                  conflictPart, rangePart);
                 model_.messageHandler()->message(CBC_GENERAL, model_.messages())
                   << buf << CoinMessageEol;
               }

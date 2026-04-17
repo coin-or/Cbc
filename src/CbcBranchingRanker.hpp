@@ -112,10 +112,28 @@ public:
   double applyConflictBoost(double sortKey, std::size_t d0, std::size_t d1,
     bool trusted) const;
 
+  /** Apply the variable-range boost to an existing sort key.
+   *
+   *  Score = 1 / (ub - lb).  For integer variables the minimum range is 1
+   *  (binary), so the score is naturally in (0, 1].  High score = tight
+   *  domain = closer to being fixed = deserves higher strong-branching priority.
+   *
+   *  \param sortKey  Current sort key (negative, possibly already conflict-boosted).
+   *  \param lb       Current lower bound of the variable (saveLower[iColumn]).
+   *  \param ub       Current upper bound of the variable (saveUpper[iColumn]).
+   *  \param trusted  True if pseudo-cost observations are sufficient.
+   *  \return         Boosted sort key, or sortKey unchanged when weightRange_ == 0.
+   */
+  double applyRangeBoost(double sortKey, double lb, double ub,
+    bool trusted) const;
+
   // --- Diagnostics --------------------------------------------------------
 
   /** Human-readable name of the current formula ("min", "sum", "product"). */
   const char *formulaName() const;
+
+  /** Returns true if any criterion is active (any weight > 0). */
+  bool isActive() const { return weightConflict_ > 0.0 || weightRange_ > 0.0; }
 
   /** Reset cumulative diagnostic counters (e.g. between solves). */
   void resetCounters() const;
@@ -143,20 +161,35 @@ public:
    *  Set to 0.5 for sqrt (moderate). */
   double scalingPowerUntrusted_;
 
+  /** Weight for the variable range criterion (1 / (ub - lb)).
+   *  Applies to all integer variables (not just binary).  A variable with
+   *  a small domain is closer to being fixed and prioritized accordingly.
+   *  Default: 0.0 (disabled).  Typical useful range: [0.01, 0.5]. */
+  double weightRange_;
+
+  /** Scaling exponent for the range score when pseudo-costs are trusted.
+   *  Default: 0.5 (sqrt) — gentle tie-breaker, like scalingPowerTrusted_. */
+  double scalingPowerRangeTrusted_;
+
+  /** Scaling exponent for the range score when pseudo-costs are untrusted.
+   *  Default: 1.0 (linear) — full influence when pseudo-costs are weak. */
+  double scalingPowerRangeUntrusted_;
+
   // --- Diagnostic counters (mutable — updated by const methods) -----------
 
   /** Total number of binary variable candidates that received a non-zero
-   *  conflict boost across all chooseDynamicBranch calls.  Accumulates
-   *  across the whole solve; reset with resetCounters(). */
+   *  conflict boost across all chooseDynamicBranch calls. */
   mutable long long nBoostsApplied_;
 
   /** Binary variable candidates skipped because their conflict score was
-   *  zero (both directional degrees zero).  Useful for diagnosing whether
-   *  the conflict graph is populated for the instance. */
+   *  zero (both directional degrees zero). */
   mutable long long nZeroScore_;
 
-  /** Set to true after the one-shot startup diagnostic message is printed
-   *  (first chooseDynamicBranch call with an active ranker). */
+  /** Total number of integer variable candidates that received a non-zero
+   *  range boost (score = 1/(ub-lb) > 0, which is always true for integers). */
+  mutable long long nRangeBoostsApplied_;
+
+  /** Set to true after the one-shot startup diagnostic message is printed. */
   mutable bool headerPrinted_;
 };
 

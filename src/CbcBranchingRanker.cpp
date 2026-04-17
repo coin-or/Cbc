@@ -14,8 +14,12 @@ CbcBranchingRanker::CbcBranchingRanker()
   , formula_(CONFLICT_MIN)
   , scalingPowerTrusted_(0.5)
   , scalingPowerUntrusted_(1.0)
+  , weightRange_(0.0)
+  , scalingPowerRangeTrusted_(0.5)
+  , scalingPowerRangeUntrusted_(1.0)
   , nBoostsApplied_(0)
   , nZeroScore_(0)
+  , nRangeBoostsApplied_(0)
   , headerPrinted_(false)
 {
 }
@@ -25,8 +29,12 @@ CbcBranchingRanker::CbcBranchingRanker(const CbcBranchingRanker &rhs)
   , formula_(rhs.formula_)
   , scalingPowerTrusted_(rhs.scalingPowerTrusted_)
   , scalingPowerUntrusted_(rhs.scalingPowerUntrusted_)
+  , weightRange_(rhs.weightRange_)
+  , scalingPowerRangeTrusted_(rhs.scalingPowerRangeTrusted_)
+  , scalingPowerRangeUntrusted_(rhs.scalingPowerRangeUntrusted_)
   , nBoostsApplied_(0)
   , nZeroScore_(0)
+  , nRangeBoostsApplied_(0)
   , headerPrinted_(false)
 {
 }
@@ -38,6 +46,9 @@ CbcBranchingRanker &CbcBranchingRanker::operator=(const CbcBranchingRanker &rhs)
     formula_ = rhs.formula_;
     scalingPowerTrusted_ = rhs.scalingPowerTrusted_;
     scalingPowerUntrusted_ = rhs.scalingPowerUntrusted_;
+    weightRange_ = rhs.weightRange_;
+    scalingPowerRangeTrusted_ = rhs.scalingPowerRangeTrusted_;
+    scalingPowerRangeUntrusted_ = rhs.scalingPowerRangeUntrusted_;
   }
   return *this;
 }
@@ -92,9 +103,30 @@ const char *CbcBranchingRanker::formulaName() const
 
 void CbcBranchingRanker::resetCounters() const
 {
-  nBoostsApplied_ = 0;
-  nZeroScore_     = 0;
-  headerPrinted_  = false;
+  nBoostsApplied_      = 0;
+  nZeroScore_          = 0;
+  nRangeBoostsApplied_ = 0;
+  headerPrinted_       = false;
+}
+
+double CbcBranchingRanker::applyRangeBoost(double sortKey, double lb, double ub,
+  bool trusted) const
+{
+  if (weightRange_ == 0.0)
+    return sortKey;
+
+  const double range = ub - lb;
+  if (range <= 0.0)
+    return sortKey;
+
+  // Score = 1/range: binary [0,1] → 1.0, [0,9] → 0.111, [0,99] → 0.010.
+  // Naturally in (0, 1] for integers (minimum range = 1).
+  const double score = 1.0 / range;
+  const double power = trusted ? scalingPowerRangeTrusted_ : scalingPowerRangeUntrusted_;
+  const double scaledScore = (power == 1.0) ? score : std::pow(score, power);
+
+  ++nRangeBoostsApplied_;
+  return sortKey * (1.0 + weightRange_ * scaledScore);
 }
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2

@@ -1749,6 +1749,35 @@ void CbcParameters::addCbcSolverDblParams() {
       "is given stronger influence. The raw conflict score is raised to this power: "
       "1.0 = linear (default, full influence), 0.5 = square root (moderate).",
       CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKRANGE]->setup(
+      "rankRange",
+      "Weight for variable-range criterion 1/(ub-lb) in strong branching sort-key (0 = disabled).",
+      0.0, 100.0,
+      "When positive, the domain width of integer variables is used to augment the "
+      "sort key that determines which candidates receive strong branching LP solves. "
+      "Score = 1/(ub-lb): binary [0,1] scores 1.0, wider domains score lower. "
+      "Applies to all integer variables (not just binary). "
+      "The boost factor is (1 + weight * scaledScore). "
+      "Default 0.0 (disabled). Typical useful range: 0.01 to 0.3.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::RANKRANGEPOWERTRUSTED]->setup(
+      "rankRangePowerTrusted",
+      "Scaling exponent for range score when pseudo-costs are trusted (sqrt = 0.5).",
+      0.0, 1.0,
+      "When pseudo-cost observations are sufficient (trusted), range information acts "
+      "as a gentle tie-breaker. The raw score 1/(ub-lb) is raised to this power: "
+      "0.5 = square root (default, mild nudge), 0.333 = cube root, 1.0 = linear.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKRANGEPOWERUNTRUSTED]->setup(
+      "rankRangePowerUntrusted",
+      "Scaling exponent for range score when pseudo-costs are untrusted (linear = 1.0).",
+      0.0, 1.0,
+      "When pseudo-cost observations are insufficient, range information is given "
+      "stronger influence. 1.0 = linear (default), 0.5 = square root (moderate).",
+      CoinParam::displayPriorityLow);
 }
 
 //###########################################################################

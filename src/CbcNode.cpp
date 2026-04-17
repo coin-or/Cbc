@@ -2096,6 +2096,39 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     const CoinConflictGraph *cgraph = nullptr;
     if (ranker && ranker->weightConflict_ > 0.0)
       cgraph = solver->getCGraph();
+
+    // One-shot diagnostic: on the first call with an active ranker, print
+    // configuration and cgraph availability so the user can confirm the
+    // feature is enabled before running experiments.
+    if (ranker && ranker->weightConflict_ > 0.0 && !ranker->headerPrinted_) {
+      ranker->headerPrinted_ = true;
+      char buf[256];
+      if (cgraph) {
+        // Report number of columns to confirm the graph covers this problem.
+        int nc = solver->getNumCols();
+        std::snprintf(buf, sizeof(buf),
+          "RankConflict: active — weight=%.4g formula=%s"
+          " powerTrusted=%.3g powerUntrusted=%.3g"
+          " | conflict graph AVAILABLE (%d cols)",
+          ranker->weightConflict_, ranker->formulaName(),
+          ranker->scalingPowerTrusted_, ranker->scalingPowerUntrusted_, nc);
+      } else {
+        std::snprintf(buf, sizeof(buf),
+          "RankConflict: active — weight=%.4g formula=%s"
+          " powerTrusted=%.3g powerUntrusted=%.3g"
+          " | conflict graph NOT AVAILABLE (boost will be skipped)",
+          ranker->weightConflict_, ranker->formulaName(),
+          ranker->scalingPowerTrusted_, ranker->scalingPowerUntrusted_);
+      }
+      model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+        << buf << CoinMessageEol;
+    }
+    // Per-call diagnostic counters for conflict boost (only used at logLevel > 3).
+    int rankDbgBoosted  = 0; // vars that received a non-zero boost this call
+    int rankDbgZero     = 0; // binary vars with zero conflict score this call
+    int rankDbgTotal    = 0; // total binary vars considered for boost
+    double rankDbgMinMult = 1e30; // smallest boost multiplier seen
+    double rankDbgMaxMult = 0.0;  // largest boost multiplier seen
     // We may go round this loop three times (only if we think we have solution)
     for (int iPass = 0; iPass < 3; iPass++) {
 
@@ -2364,11 +2397,22 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           if (cgraph && iColumn < numberColumns
             && saveLower[iColumn] == 0.0 && saveUpper[iColumn] == 1.0) {
             const bool trusted = (gotDown && gotUp);
+            const double keyBefore = sort[numberToDo];
             sort[numberToDo] = ranker->applyConflictBoost(
               sort[numberToDo],
               cgraph->degree(static_cast< std::size_t >(iColumn + numberColumns)), // d0: x=0
               cgraph->degree(static_cast< std::size_t >(iColumn)),                 // d1: x=1
               trusted);
+            ++rankDbgTotal;
+            if (sort[numberToDo] != keyBefore) {
+              ++rankDbgBoosted;
+              // Multiplier = boostedKey / originalKey (both negative, ratio > 1).
+              const double mult = sort[numberToDo] / keyBefore;
+              if (mult < rankDbgMinMult) rankDbgMinMult = mult;
+              if (mult > rankDbgMaxMult) rankDbgMaxMult = mult;
+            } else {
+              ++rankDbgZero;
+            }
           }
           whichObject[numberToDo++] = i;
         } else {
@@ -3067,7 +3111,27 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       // Actions 0 - exit for repeat, 1 resolve and try old choice,2 exit for continue
       if (anyAction)
         numberToDo = 0; // skip as we will be trying again
-      // Sort
+      // Print per-call conflict boost diagnostics at high log level.
+      if (cgraph && rankDbgTotal > 0
+          && model->messageHandler()->logLevel() > 3) {
+        char buf[256];
+        if (rankDbgBoosted > 0) {
+          std::snprintf(buf, sizeof(buf),
+            "RankConflict [node %lld]: %d/%d binary vars boosted"
+            " (mult [%.4f..%.4f]), %d zero-score",
+            static_cast< long long >(model->getNodeCount()),
+            rankDbgBoosted, rankDbgTotal,
+            rankDbgMinMult, rankDbgMaxMult, rankDbgZero);
+        } else {
+          std::snprintf(buf, sizeof(buf),
+            "RankConflict [node %lld]: 0/%d binary vars boosted"
+            " (all zero-score — no conflicts in graph for these vars)",
+            static_cast< long long >(model->getNodeCount()), rankDbgTotal);
+        }
+        model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+          << buf << CoinMessageEol;
+      }
+      // Sort candidates by (boosted) sort key — more negative = higher priority.
       CoinSort_2(sort, sort + numberToDo, whichObject);
       // Change in objective opposite infeasible
       double worstFeasible = 0.0;

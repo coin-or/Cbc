@@ -18,6 +18,8 @@
 #ifdef CBC_HAS_NAUTY
 #include "CbcSymmetry.hpp"
 #endif
+#include "CbcBranchingRanker.hpp"
+#include "CoinConflictGraph.hpp"
 //#define DEBUG_SOLUTION
 #ifdef DEBUG_SOLUTION
 #define COIN_DETAIL
@@ -2087,6 +2089,13 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 #ifdef CBC_HAS_NAUTY
     int numberOfInterest; 
 #endif
+    // Conflict-graph ranker: fetch once per chooseDynamicBranch call.
+    // cgraph is only retrieved when the ranker has a non-zero conflict weight,
+    // avoiding any overhead when the feature is disabled (the default).
+    const CbcBranchingRanker *ranker = model->branchingRanker();
+    const CoinConflictGraph *cgraph = nullptr;
+    if (ranker && ranker->weightConflict_ > 0.0)
+      cgraph = solver->getCGraph();
     // We may go round this loop three times (only if we think we have solution)
     for (int iPass = 0; iPass < 3; iPass++) {
 
@@ -2347,6 +2356,20 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 	    }
 	  }
 #endif
+          // Conflict-graph degree boost: only for binary variables (the conflict
+          // graph is defined over binary assignments x=0 and x=1).
+          // trusted flag mirrors the existing (gotDown && gotUp) condition so that
+          // we apply the weaker sqrt scaling when pseudo-costs are reliable and the
+          // stronger linear scaling when they are not.
+          if (cgraph && iColumn < numberColumns
+            && saveLower[iColumn] == 0.0 && saveUpper[iColumn] == 1.0) {
+            const bool trusted = (gotDown && gotUp);
+            sort[numberToDo] = ranker->applyConflictBoost(
+              sort[numberToDo],
+              cgraph->degree(static_cast< std::size_t >(iColumn + numberColumns)), // d0: x=0
+              cgraph->degree(static_cast< std::size_t >(iColumn)),                 // d1: x=1
+              trusted);
+          }
           whichObject[numberToDo++] = i;
         } else {
           // for debug

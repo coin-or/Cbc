@@ -124,6 +124,7 @@ void CbcCrashHandler(int sig);
 #include "CbcBranchActual.hpp"
 #include "CbcBranchCut.hpp"
 #include "CbcBranchLotsize.hpp"
+#include "CbcBranchingRanker.hpp"
 #include "CbcCompareActual.hpp"
 #include "CbcCompareObjective.hpp"
 #include "CbcCutGenerator.hpp"
@@ -6568,6 +6569,12 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     clqstrMode_ = "after";
     std::string &cgraphMode = cgraphMode_;
     std::string &clqstrMode = clqstrMode_;
+    // Conflict-graph branching ranker configuration (collected from params,
+    // applied to model_ before babModel_ is constructed).
+    double rankConflictWeight = 0.0;
+    std::string rankConflictType = "min";
+    double rankConflictPowerTrusted = 0.5;
+    double rankConflictPowerUntrusted = 1.0;
     CglBKClique bkCliqueGen;
     bkPivotingStrategy_ = 3;
     CoinBronKerbosch::PivotingStrategy bkPivotingStrategy = CoinBronKerbosch::PivotingStrategy::Weight;
@@ -7070,6 +7077,15 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           if (!complicatedInteger)
             defaultSettings = false; // user knows what she is doing
           break;
+        case CbcParam::RANKCONFLICT:
+          rankConflictWeight = dValue;
+          break;
+        case CbcParam::RANKCONFLICTPOWERTRUSTED:
+          rankConflictPowerTrusted = dValue;
+          break;
+        case CbcParam::RANKCONFLICTPOWERUNTRUSTED:
+          rankConflictPowerUntrusted = dValue;
+          break;
         default:
           break;
         }
@@ -7343,6 +7359,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           break;
         case CbcParam::USECGRAPH:
           cgraphMode = field;
+          break;
+        case CbcParam::RANKCONFLICTTYPE:
+          rankConflictType = field;
           break;
         case CbcParam::CLIQUECUTS:
           defaultSettings = false; // user knows what she is doing
@@ -8789,6 +8808,21 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           // CglPreProcess process;
           // Say integers in sync
           bool integersOK = true;
+          // Build conflict-graph branching ranker if requested, and attach it
+          // to model_ before babModel_ is copy-constructed (so it propagates).
+          if (rankConflictWeight > 0.0) {
+            CbcBranchingRanker *ranker = new CbcBranchingRanker();
+            ranker->weightConflict_ = rankConflictWeight;
+            ranker->scalingPowerTrusted_ = rankConflictPowerTrusted;
+            ranker->scalingPowerUntrusted_ = rankConflictPowerUntrusted;
+            if (rankConflictType == "sum")
+              ranker->formula_ = CbcBranchingRanker::CONFLICT_SUM;
+            else if (rankConflictType == "product")
+              ranker->formula_ = CbcBranchingRanker::CONFLICT_PRODUCT;
+            else
+              ranker->formula_ = CbcBranchingRanker::CONFLICT_MIN;
+            model_.setBranchingRanker(ranker); // model_ takes ownership
+          }
           delete babModel_;
           babModel_ = new CbcModel(model_);
 #ifndef CBC_OTHER_SOLVER

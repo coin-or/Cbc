@@ -11454,6 +11454,22 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             printHistory("branch.log" /*,babModel_*/);
 #endif
             returnCode = 0;
+            // Print conflict-graph ranker summary if active (logLevel >= 1).
+            // babModel_ holds a copy of the ranker with accumulated counters.
+            if (cbcLogLevel >= 1) {
+              const CbcBranchingRanker *rk = babModel_->branchingRanker();
+              if (rk && rk->weightConflict_ > 0.0) {
+                char buf[256];
+                std::snprintf(buf, sizeof(buf),
+                  "RankConflict: %lld boosts applied, %lld zero-score skips"
+                  " (weight=%.4g formula=%s powerT=%.3g powerU=%.3g)",
+                  rk->nBoostsApplied_, rk->nZeroScore_,
+                  rk->weightConflict_, rk->formulaName(),
+                  rk->scalingPowerTrusted_, rk->scalingPowerUntrusted_);
+                model_.messageHandler()->message(CBC_GENERAL, model_.messages())
+                  << buf << CoinMessageEol;
+              }
+            }
             if (callBack != NULL)
               returnCode = callBack(babModel_, 4);
             if (returnCode) {

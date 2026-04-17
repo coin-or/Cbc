@@ -112,6 +112,14 @@ public:
   double applyConflictBoost(double sortKey, std::size_t d0, std::size_t d1,
     bool trusted) const;
 
+  // --- Diagnostics --------------------------------------------------------
+
+  /** Human-readable name of the current formula ("min", "sum", "product"). */
+  const char *formulaName() const;
+
+  /** Reset cumulative diagnostic counters (e.g. between solves). */
+  void resetCounters() const;
+
   // --- Parameters ---------------------------------------------------------
 
   /** Weight for the conflict degree criterion.
@@ -134,6 +142,22 @@ public:
    *  Default: 1.0 (linear) — stronger influence among new variables.
    *  Set to 0.5 for sqrt (moderate). */
   double scalingPowerUntrusted_;
+
+  // --- Diagnostic counters (mutable — updated by const methods) -----------
+
+  /** Total number of binary variable candidates that received a non-zero
+   *  conflict boost across all chooseDynamicBranch calls.  Accumulates
+   *  across the whole solve; reset with resetCounters(). */
+  mutable long long nBoostsApplied_;
+
+  /** Binary variable candidates skipped because their conflict score was
+   *  zero (both directional degrees zero).  Useful for diagnosing whether
+   *  the conflict graph is populated for the instance. */
+  mutable long long nZeroScore_;
+
+  /** Set to true after the one-shot startup diagnostic message is printed
+   *  (first chooseDynamicBranch call with an active ranker). */
+  mutable bool headerPrinted_;
 };
 
 #endif /* CbcBranchingRanker_H */

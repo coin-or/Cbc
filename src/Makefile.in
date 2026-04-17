@@ -155,10 +155,10 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcBranchAllDifferent.lo libCbc_la-CbcBranchCut.lo \
 	libCbc_la-CbcBranchDecision.lo \
 	libCbc_la-CbcBranchDefaultDecision.lo \
-	libCbc_la-CbcBranchDynamic.lo libCbc_la-CbcBranchingObject.lo \
-	libCbc_la-CbcBranchLotsize.lo libCbc_la-CbcBranchToFixLots.lo \
-	libCbc_la-CbcCompareDefault.lo libCbc_la-CbcCompareDepth.lo \
-	libCbc_la-CbcCompareEstimate.lo \
+	libCbc_la-CbcBranchingRanker.lo libCbc_la-CbcBranchDynamic.lo \
+	libCbc_la-CbcBranchingObject.lo libCbc_la-CbcBranchLotsize.lo \
+	libCbc_la-CbcBranchToFixLots.lo libCbc_la-CbcCompareDefault.lo \
+	libCbc_la-CbcCompareDepth.lo libCbc_la-CbcCompareEstimate.lo \
 	libCbc_la-CbcCompareObjective.lo libCbc_la-CbcConsequence.lo \
 	libCbc_la-CbcClique.lo libCbc_la-CbcCountRowCut.lo \
 	libCbc_la-CbcCutGenerator.lo libCbc_la-CbcCutModifier.lo \
@@ -237,6 +237,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcBranchLotsize.Plo \
 	./$(DEPDIR)/libCbc_la-CbcBranchToFixLots.Plo \
 	./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo \
+	./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo \
 	./$(DEPDIR)/libCbc_la-CbcClique.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo \
 	./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo \
@@ -553,6 +554,7 @@ libCbc_la_SOURCES = \
 	CbcBranchCut.cpp CbcBranchCut.hpp \
 	CbcBranchDecision.cpp CbcBranchDecision.hpp \
 	CbcBranchDefaultDecision.cpp CbcBranchDefaultDecision.hpp \
+	CbcBranchingRanker.cpp CbcBranchingRanker.hpp \
 	CbcBranchDynamic.cpp CbcBranchDynamic.hpp \
 	CbcBranchingObject.cpp CbcBranchingObject.hpp \
 	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
@@ -905,6 +907,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBranchLotsize.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBranchToFixLots.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcClique.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo@am__quote@ # am--include-marker
@@ -1044,6 +1047,13 @@ libCbc_la-CbcBranchDefaultDecision.lo: CbcBranchDefaultDecision.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcBranchDefaultDecision.cpp' object='libCbc_la-CbcBranchDefaultDecision.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcBranchDefaultDecision.lo `test -f 'CbcBranchDefaultDecision.cpp' || echo '$(srcdir)/'`CbcBranchDefaultDecision.cpp
+
+libCbc_la-CbcBranchingRanker.lo: CbcBranchingRanker.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcBranchingRanker.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcBranchingRanker.Tpo -c -o libCbc_la-CbcBranchingRanker.lo `test -f 'CbcBranchingRanker.cpp' || echo '$(srcdir)/'`CbcBranchingRanker.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcBranchingRanker.Tpo $(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcBranchingRanker.cpp' object='libCbc_la-CbcBranchingRanker.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcBranchingRanker.lo `test -f 'CbcBranchingRanker.cpp' || echo '$(srcdir)/'`CbcBranchingRanker.cpp
 
 libCbc_la-CbcBranchDynamic.lo: CbcBranchDynamic.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcBranchDynamic.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcBranchDynamic.Tpo -c -o libCbc_la-CbcBranchDynamic.lo `test -f 'CbcBranchDynamic.cpp' || echo '$(srcdir)/'`CbcBranchDynamic.cpp
@@ -1739,6 +1749,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchLotsize.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchToFixLots.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcClique.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo
@@ -1869,6 +1880,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchLotsize.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchToFixLots.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingObject.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchingRanker.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcClique.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDefault.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCompareDepth.Plo

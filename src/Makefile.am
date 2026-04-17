@@ -22,6 +22,7 @@ libCbc_la_SOURCES = \
 	CbcBranchCut.cpp CbcBranchCut.hpp \
 	CbcBranchDecision.cpp CbcBranchDecision.hpp \
 	CbcBranchDefaultDecision.cpp CbcBranchDefaultDecision.hpp \
+	CbcBranchingRanker.cpp CbcBranchingRanker.hpp \
 	CbcBranchDynamic.cpp CbcBranchDynamic.hpp \
 	CbcBranchingObject.cpp CbcBranchingObject.hpp \
 	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \

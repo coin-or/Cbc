@@ -1752,11 +1752,12 @@ void CbcParameters::addCbcSolverDblParams() {
 
   parameters_[CbcParam::RANKRANGE]->setup(
       "rankRange",
-      "Weight for variable-range criterion 1/(ub-lb) in strong branching sort-key (0 = disabled).",
+      "Weight for variable-range criterion 1/min(maxRange,ub-lb) in strong branching sort-key (0 = disabled).",
       0.0, 100.0,
       "When positive, the domain width of integer variables is used to augment the "
       "sort key that determines which candidates receive strong branching LP solves. "
-      "Score = 1/(ub-lb): binary [0,1] scores 1.0, wider domains score lower. "
+      "Score = 1/min(rankRangeMax, ub-lb): binary [0,1] scores 1.0, domains >= rankRangeMax "
+      "score 1/rankRangeMax (floor), preventing large/unbounded vars from collapsing to ~0. "
       "Applies to all integer variables (not just binary). "
       "The boost factor is (1 + weight * scaledScore). "
       "Default 0.0 (disabled). Typical useful range: 0.01 to 0.3.",
@@ -1767,7 +1768,7 @@ void CbcParameters::addCbcSolverDblParams() {
       "Scaling exponent for range score when pseudo-costs are trusted (sqrt = 0.5).",
       0.0, 1.0,
       "When pseudo-cost observations are sufficient (trusted), range information acts "
-      "as a gentle tie-breaker. The raw score 1/(ub-lb) is raised to this power: "
+      "as a gentle tie-breaker. The raw score 1/min(maxRange,ub-lb) is raised to this power: "
       "0.5 = square root (default, mild nudge), 0.333 = cube root, 1.0 = linear.",
       CoinParam::displayPriorityLow);
 
@@ -1777,6 +1778,17 @@ void CbcParameters::addCbcSolverDblParams() {
       0.0, 1.0,
       "When pseudo-cost observations are insufficient, range information is given "
       "stronger influence. 1.0 = linear (default), 0.5 = square root (moderate).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKRANGEMAXRANGE]->setup(
+      "rankRangeMax",
+      "Cap on domain width for range criterion: score = 1/min(rankRangeMax, ub-lb). Default 10.",
+      1.0, 1e30,
+      "Variables with domain width >= rankRangeMax all receive the same floor score "
+      "(1/rankRangeMax), preventing large or unbounded integer domains from collapsing "
+      "to a near-zero range score. Binary [0,1] always scores 1.0 (unaffected). "
+      "Default 10.0: domains of 10 or wider are treated equally (floor score = 0.1). "
+      "Increase to give more differentiation among wider domains.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::RANKNONZEROS]->setup(

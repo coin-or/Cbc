@@ -6578,6 +6578,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     double rankRangeWeight = 0.0;
     double rankRangePowerTrusted = 0.5;
     double rankRangePowerUntrusted = 1.0;
+    double rankRangeMax = 10.0;
     double rankNzWeight = 0.0;
     double rankNzPowerTrusted = 0.25;
     double rankNzPowerUntrusted = 0.5;
@@ -7100,6 +7101,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           break;
         case CbcParam::RANKRANGEPOWERUNTRUSTED:
           rankRangePowerUntrusted = dValue;
+          break;
+        case CbcParam::RANKRANGEMAXRANGE:
+          rankRangeMax = dValue;
           break;
         case CbcParam::RANKNONZEROS:
           rankNzWeight = dValue;
@@ -8848,6 +8852,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             ranker->weightRange_ = rankRangeWeight;
             ranker->scalingPowerRangeTrusted_ = rankRangePowerTrusted;
             ranker->scalingPowerRangeUntrusted_ = rankRangePowerUntrusted;
+            ranker->maxRangeForPriority_ = rankRangeMax;
             ranker->weightNonzeros_ = rankNzWeight;
             ranker->scalingPowerNzTrusted_ = rankNzPowerTrusted;
             ranker->scalingPowerNzUntrusted_ = rankNzPowerUntrusted;

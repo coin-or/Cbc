@@ -128,9 +128,11 @@ public:
 
   /** Apply the variable-range boost to an existing sort key.
    *
-   *  Score = 1 / (ub - lb).  For integer variables the minimum range is 1
-   *  (binary), so the score is naturally in (0, 1].  High score = tight
-   *  domain = closer to being fixed = deserves higher strong-branching priority.
+   *  Score = 1 / min(maxRangeForPriority_, ub - lb).  The cap ensures that
+   *  large or unbounded domains do not collapse to near-zero: they all receive
+   *  the floor score 1/maxRangeForPriority_ (default 0.1 with maxRange=10).
+   *  Binary [0,1] always scores 1.0.  Score is naturally in
+   *  [1/maxRange, 1.0] for integer variables.
    *
    *  \param sortKey  Current sort key (negative, possibly already conflict-boosted).
    *  \param lb       Current lower bound of the variable (saveLower[iColumn]).
@@ -178,9 +180,11 @@ public:
    *  Set to 0.5 for sqrt (moderate). */
   double scalingPowerUntrusted_;
 
-  /** Weight for the variable range criterion (1 / (ub - lb)).
+  /** Weight for the variable range criterion 1 / min(maxRangeForPriority_, ub-lb).
    *  Applies to all integer variables (not just binary).  A variable with
    *  a small domain is closer to being fixed and prioritized accordingly.
+   *  Large or unbounded domains are capped at maxRangeForPriority_ so they
+   *  all receive the same (non-zero) floor score rather than collapsing to ~0.
    *  Default: 0.0 (disabled).  Typical useful range: [0.01, 0.5]. */
   double weightRange_;
 
@@ -191,6 +195,13 @@ public:
   /** Scaling exponent for the range score when pseudo-costs are untrusted.
    *  Default: 1.0 (linear) — full influence when pseudo-costs are weak. */
   double scalingPowerRangeUntrusted_;
+
+  /** Cap on domain width used in the range score: score = 1 / min(maxRange, ub-lb).
+   *  Prevents large or unbounded domains from collapsing to a near-zero score.
+   *  All variables with range >= maxRange receive the same floor score (1/maxRange).
+   *  Binary [0,1] always scores 1.0 regardless of this cap.
+   *  Default: 10.0.  Set higher to give more differentiation among wide domains. */
+  double maxRangeForPriority_;
 
   /** Weight for the column non-zeros criterion (nz / maxNz).
    *  A variable appearing in many constraints propagates fixing information

@@ -17,6 +17,7 @@ CbcBranchingRanker::CbcBranchingRanker()
   , weightRange_(0.0)
   , scalingPowerRangeTrusted_(0.5)
   , scalingPowerRangeUntrusted_(1.0)
+  , maxRangeForPriority_(10.0)
   , weightNonzeros_(0.0)
   , scalingPowerNzTrusted_(0.25)
   , scalingPowerNzUntrusted_(0.5)
@@ -36,6 +37,7 @@ CbcBranchingRanker::CbcBranchingRanker(const CbcBranchingRanker &rhs)
   , weightRange_(rhs.weightRange_)
   , scalingPowerRangeTrusted_(rhs.scalingPowerRangeTrusted_)
   , scalingPowerRangeUntrusted_(rhs.scalingPowerRangeUntrusted_)
+  , maxRangeForPriority_(rhs.maxRangeForPriority_)
   , weightNonzeros_(rhs.weightNonzeros_)
   , scalingPowerNzTrusted_(rhs.scalingPowerNzTrusted_)
   , scalingPowerNzUntrusted_(rhs.scalingPowerNzUntrusted_)
@@ -57,6 +59,7 @@ CbcBranchingRanker &CbcBranchingRanker::operator=(const CbcBranchingRanker &rhs)
     weightRange_ = rhs.weightRange_;
     scalingPowerRangeTrusted_ = rhs.scalingPowerRangeTrusted_;
     scalingPowerRangeUntrusted_ = rhs.scalingPowerRangeUntrusted_;
+    maxRangeForPriority_ = rhs.maxRangeForPriority_;
     weightNonzeros_ = rhs.weightNonzeros_;
     scalingPowerNzTrusted_ = rhs.scalingPowerNzTrusted_;
     scalingPowerNzUntrusted_ = rhs.scalingPowerNzUntrusted_;
@@ -147,9 +150,11 @@ double CbcBranchingRanker::applyRangeBoost(double sortKey, double lb, double ub,
   if (range <= 0.0)
     return sortKey;
 
-  // Score = 1/range: binary [0,1] → 1.0, [0,9] → 0.111, [0,99] → 0.010.
-  // Naturally in (0, 1] for integers (minimum range = 1).
-  const double score = 1.0 / range;
+  // Cap range at maxRangeForPriority_ so large/unbounded vars get a floor
+  // score (1/maxRange) rather than collapsing to near-zero.
+  // Binary [0,1] → score=1.0; range>=maxRange → score=1/maxRange (floor).
+  const double cappedRange = std::min(range, maxRangeForPriority_);
+  const double score = 1.0 / cappedRange;
   const double power = trusted ? scalingPowerRangeTrusted_ : scalingPowerRangeUntrusted_;
   const double scaledScore = (power == 1.0) ? score : std::pow(score, power);
 

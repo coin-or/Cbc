@@ -112,6 +112,20 @@ public:
   double applyConflictBoost(double sortKey, std::size_t d0, std::size_t d1,
     bool trusted) const;
 
+  /** Apply the column non-zeros boost to an existing sort key.
+   *
+   *  Score = nz^scalingPower (raw count raised to a slow-growing power).
+   *  No normalization is needed: the 4th-root default (scalingPowerNzTrusted_ = 0.25)
+   *  grows very slowly (nz=1→1.0, nz=16→2.0, nz=100→3.16), making this a
+   *  cheap O(1) tie-breaker that does not require a max-scan over all columns.
+   *
+   *  \param sortKey  Current sort key (negative, possibly already boosted).
+   *  \param nz       Number of non-zeros in this column (constraint count).
+   *  \param trusted  True if pseudo-cost observations are sufficient.
+   *  \return         Boosted sort key, or sortKey unchanged when weightNonzeros_ == 0.
+   */
+  double applyNonzerosBoost(double sortKey, int nz, bool trusted) const;
+
   /** Apply the variable-range boost to an existing sort key.
    *
    *  Score = 1 / (ub - lb).  For integer variables the minimum range is 1
@@ -133,7 +147,10 @@ public:
   const char *formulaName() const;
 
   /** Returns true if any criterion is active (any weight > 0). */
-  bool isActive() const { return weightConflict_ > 0.0 || weightRange_ > 0.0; }
+  bool isActive() const
+  {
+    return weightConflict_ > 0.0 || weightRange_ > 0.0 || weightNonzeros_ > 0.0;
+  }
 
   /** Reset cumulative diagnostic counters (e.g. between solves). */
   void resetCounters() const;
@@ -175,6 +192,22 @@ public:
    *  Default: 1.0 (linear) — full influence when pseudo-costs are weak. */
   double scalingPowerRangeUntrusted_;
 
+  /** Weight for the column non-zeros criterion (nz / maxNz).
+   *  A variable appearing in many constraints propagates fixing information
+   *  more broadly and is generally a more impactful branching choice.
+   *  Applies to all integer variables.  Score ∈ (0,1].
+   *  Default: 0.0 (disabled).  Designed as a tie-breaker; typical range: [0.01, 0.1]. */
+  double weightNonzeros_;
+
+  /** Scaling exponent for the non-zeros score when pseudo-costs are trusted.
+   *  Default: 0.25 (4th root) — very slow growth, cheap tie-breaker.
+   *  nz=1→1.0, nz=16→2.0, nz=100→3.16.  No max-scan needed. */
+  double scalingPowerNzTrusted_;
+
+  /** Scaling exponent for the non-zeros score when pseudo-costs are untrusted.
+   *  Default: 0.5 (sqrt) — moderate growth, more influence early in the tree. */
+  double scalingPowerNzUntrusted_;
+
   // --- Diagnostic counters (mutable — updated by const methods) -----------
 
   /** Total number of binary variable candidates that received a non-zero
@@ -188,6 +221,9 @@ public:
   /** Total number of integer variable candidates that received a non-zero
    *  range boost (score = 1/(ub-lb) > 0, which is always true for integers). */
   mutable long long nRangeBoostsApplied_;
+
+  /** Total number of integer variable candidates that received a non-zeros boost. */
+  mutable long long nNzBoostsApplied_;
 
   /** Set to true after the one-shot startup diagnostic message is printed. */
   mutable bool headerPrinted_;

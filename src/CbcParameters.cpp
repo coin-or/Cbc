@@ -1619,6 +1619,17 @@ void CbcParameters::addCbcSolverKwdParams() {
     "primal", CbcParameters::LPPrimal);
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "barrier", CbcParameters::LPBarrier);
+
+  parameters_[CbcParam::RANKCONFLICTTYPE]->setup(
+      "rankConflictType",
+      "Formula for combining directional conflict degrees into a single score.",
+      "Controls how d0 (conflicts when x=0) and d1 (conflicts when x=1) are "
+      "combined: \n\t min: min(d0,d1) — both directions must be strong (default);"
+      "\n\t sum: d0+d1 — total propagation power; "
+      "\n\t product: sqrt(d0*d1) — product score analog, rewards balance.");
+  parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("min", 0);
+  parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("sum", 1);
+  parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("product", 2);
 }
 
 //###########################################################################
@@ -1706,6 +1717,38 @@ void CbcParameters::addCbcSolverDblParams() {
       "fpumpTimeFreq",
       "Print feasibility pump progress every N seconds (0 = disabled, default 5).",
       0.0, 1e10, "", CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKCONFLICT]->setup(
+      "rankConflict",
+      "Weight for conflict-graph degree in strong branching sort-key (0 = disabled).",
+      0.0, 100.0,
+      "When positive, the conflict graph degree of binary variables is used to "
+      "augment the pseudo-cost-based sort key that determines which candidates "
+      "receive strong branching LP solves. Higher-degree variables (those whose "
+      "branching triggers more propagations) are prioritized. The boost factor "
+      "is (1 + weight * scaledScore), where scaledScore depends on rankConflictType "
+      "and the per-trust scaling powers. Default 0.0 (disabled, no behavioral change). "
+      "Typical useful range: 0.01 to 0.3.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::RANKCONFLICTPOWERTRUSTED]->setup(
+      "rankConflictPowerTrusted",
+      "Scaling exponent for conflict score when pseudo-costs are trusted (sqrt = 0.5).",
+      0.0, 1.0,
+      "When pseudo-cost observations are sufficient (trusted), conflict information "
+      "acts as a gentle tie-breaker. The raw conflict score is raised to this power "
+      "before weighting: 0.5 = square root (default, mild nudge), 0.333 = cube root "
+      "(very mild), 1.0 = linear (full influence even when trusted).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKCONFLICTPOWERUNTRUSTED]->setup(
+      "rankConflictPowerUntrusted",
+      "Scaling exponent for conflict score when pseudo-costs are untrusted (linear = 1.0).",
+      0.0, 1.0,
+      "When pseudo-cost observations are insufficient (untrusted), conflict information "
+      "is given stronger influence. The raw conflict score is raised to this power: "
+      "1.0 = linear (default, full influence), 0.5 = square root (moderate).",
+      CoinParam::displayPriorityLow);
 }
 
 //###########################################################################

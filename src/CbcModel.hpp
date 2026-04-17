@@ -50,6 +50,7 @@ class OsiRowCutDebugger;
 class CglCutGenerator;
 class CglStored;
 class CbcCutModifier;
+class CbcBranchingRanker;
 class CglTreeProbingInfo;
 class CbcHeuristic;
 class OsiObject;
@@ -1831,6 +1832,13 @@ public:
     delete branchingMethod_;
     branchingMethod_ = method.clone();
   }
+  /// Get the current branching ranker (conflict-graph-informed sort-key augmentor).
+  inline CbcBranchingRanker *branchingRanker() const
+  {
+    return branchingRanker_;
+  }
+  /** Set the branching ranker.  CbcModel takes ownership and will delete it. */
+  void setBranchingRanker(CbcBranchingRanker *ranker);
   /// Get the current cut modifier method
   inline CbcCutModifier *cutModifier() const
   {
@@ -3204,6 +3212,8 @@ private:
   int numberStoppedSubTrees_;
   /// Variable selection function
   CbcBranchDecision *branchingMethod_;
+  /// Conflict-graph-informed sort-key augmentor for strong branching priority
+  CbcBranchingRanker *branchingRanker_;
   /// Cut modifier function
   CbcCutModifier *cutModifier_;
   /// Strategy

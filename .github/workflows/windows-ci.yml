@@ -38,7 +38,7 @@ jobs:
           path: coinbrew
       - name: Set up msvc
         if: ${{ matrix.arch == 'msvc' }}
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: egor-tensin/vs-shell@v2
       - name: Set correct host flag and install requirements
         if: ${{ matrix.arch != 'msvc' }}
         run: |

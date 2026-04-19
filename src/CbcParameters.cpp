@@ -1624,11 +1624,11 @@ void CbcParameters::addCbcSolverKwdParams() {
       "rankConflictType",
       "Formula for combining directional conflict degrees into a single score.",
       "Controls how d0 (conflicts when x=0) and d1 (conflicts when x=1) are "
-      "combined: \n\t min: min(d0,d1) — both directions must be strong (default);"
-      "\n\t sum: d0+d1 — total propagation power; "
+      "combined: \n\t sum: d0+d1 — total propagation power (default);"
+      "\n\t min: min(d0,d1) — both directions must be strong; "
       "\n\t product: sqrt(d0*d1) — product score analog, rewards balance.");
-  parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("min", 0);
   parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("sum", 1);
+  parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("min", 0);
   parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("product", 2);
 }
 
@@ -1727,8 +1727,8 @@ void CbcParameters::addCbcSolverDblParams() {
       "receive strong branching LP solves. Higher-degree variables (those whose "
       "branching triggers more propagations) are prioritized. The boost factor "
       "is (1 + weight * scaledScore), where scaledScore depends on rankConflictType "
-      "and the per-trust scaling powers. Default 0.0 (disabled, no behavioral change). "
-      "Typical useful range: 0.01 to 0.3.",
+      "and the per-trust scaling powers. Default 0.4 (enabled, sum formula). "
+      "Set to 0.0 to disable. Typical useful range: 0.1 to 0.5.",
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::RANKCONFLICTPOWERTRUSTED]->setup(
@@ -1789,6 +1789,36 @@ void CbcParameters::addCbcSolverDblParams() {
       "to a near-zero range score. Binary [0,1] always scores 1.0 (unaffected). "
       "Default 10.0: domains of 10 or wider are treated equally (floor score = 0.1). "
       "Increase to give more differentiation among wider domains.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKOBJCOEFF]->setup(
+      "rankObjCoeff",
+      "Weight for objective coefficient magnitude criterion |c_j|^power in strong branching sort-key (0 = disabled).",
+      0.0, 100.0,
+      "When positive, the absolute value of a variable's objective coefficient |c_j| is used "
+      "to augment the sort key that determines strong branching candidate priority. "
+      "Score = |c_j|^scalingPower. Variables not in the objective (c_j=0) receive no boost. "
+      "Most useful for untrusted variables where pseudo-costs are unreliable; for trusted "
+      "variables pseudo-costs already capture the objective coefficient implicitly. "
+      "Default 0.0 (disabled). Typical useful range: 0.01 to 0.3.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::RANKOBJCOEFFPOWERTRUSTED]->setup(
+      "rankObjCoeffPowerTrusted",
+      "Scaling exponent for obj-coeff score when pseudo-costs are trusted. Default 0.1 (very slow growth).",
+      0.0, 1.0,
+      "When pseudo-cost observations are sufficient, objective coefficient acts as a "
+      "gentle tie-breaker. Score = |c_j|^power: 0.1 (default) gives c=100→1.58, "
+      "c=10000→2.51. Use 0.05 for even milder effect, 0.2 for more influence.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKOBJCOEFFPOWERUNTRUSTED]->setup(
+      "rankObjCoeffPowerUntrusted",
+      "Scaling exponent for obj-coeff score when pseudo-costs are untrusted. Default 0.2.",
+      0.0, 1.0,
+      "When pseudo-cost observations are insufficient, objective coefficient is allowed "
+      "more influence. 0.2 (default): c=100→2.51, c=10000→6.31. Use 0.1 to match "
+      "trusted, or 0.5 for sqrt (moderate growth).",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::RANKNONZEROS]->setup(

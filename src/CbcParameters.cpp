@@ -1849,6 +1849,18 @@ void CbcParameters::addCbcSolverDblParams() {
       "When pseudo-cost observations are insufficient, nz information is given "
       "slightly more influence. 0.5 = sqrt (default), 1.0 = linear.",
       CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKCONFLICTMAXPERCBIN]->setup(
+      "rankConflictMaxPercBin",
+      "Maximum % of binary integer variables for the conflict ranker to activate (default 97).",
+      0.0, 100.0,
+      "The conflict-graph ranker is beneficial primarily on mixed-integer problems "
+      "(where not all integer variables are binary). When the fraction of binary "
+      "variables among all integer variables is >= this threshold, the ranker is "
+      "automatically disabled to avoid performance regressions on near-pure-binary "
+      "instances. Set to 100 to always activate regardless of binary fraction.",
+      CoinParam::displayPriorityLow);
+  parameters_[CbcParam::RANKCONFLICTMAXPERCBIN]->setDefault(97.0);
 }
 
 //###########################################################################

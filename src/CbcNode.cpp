@@ -2106,15 +2106,21 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         colLengths = mat->getVectorLengths();
     }
 
+    // Objective coefficients: fetch pointer once (O(1)).
+    const double *objCoeffs = nullptr;
+    if (ranker && ranker->weightObjCoeff_ > 0.0)
+      objCoeffs = solver->getObjCoefficients();
+
     // One-shot diagnostic: on the first call with an active ranker, print
     // configuration and cgraph availability so the user can confirm the
     // feature is enabled before running experiments.
     if (ranker && ranker->isActive() && !ranker->headerPrinted_) {
       ranker->headerPrinted_ = true;
-      char buf[512];
+      char buf[640];
       char conflictPart[256] = "";
-      char rangePart[256]    = "";
+      char rangePart[128]    = "";
       char nzPart[128]       = "";
+      char objPart[128]      = "";
       if (ranker->weightConflict_ > 0.0) {
         std::snprintf(conflictPart, sizeof(conflictPart),
           " conflict(w=%.4g,f=%s,pT=%.3g,pU=%.3g)%s",
@@ -2134,8 +2140,14 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           ranker->weightNonzeros_,
           ranker->scalingPowerNzTrusted_, ranker->scalingPowerNzUntrusted_);
       }
-      std::snprintf(buf, sizeof(buf), "RankConflict: active —%s%s%s",
-        conflictPart, rangePart, nzPart);
+      if (ranker->weightObjCoeff_ > 0.0) {
+        std::snprintf(objPart, sizeof(objPart),
+          " obj(w=%.4g,pT=%.3g,pU=%.3g)",
+          ranker->weightObjCoeff_,
+          ranker->scalingPowerObjTrusted_, ranker->scalingPowerObjUntrusted_);
+      }
+      std::snprintf(buf, sizeof(buf), "RankConflict: active —%s%s%s%s",
+        conflictPart, rangePart, nzPart, objPart);
       model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
         << buf << CoinMessageEol;
     }
@@ -2149,6 +2161,8 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     int rankRangeDbgTotal   = 0; // total integer vars considered for range boost
     int rankNzDbgBoosted = 0;    // vars that received a non-zero nz boost
     int rankNzDbgTotal   = 0;    // total integer vars considered for nz boost
+    int rankObjDbgBoosted = 0;   // vars that received a non-zero obj-coeff boost
+    int rankObjDbgTotal   = 0;   // total integer vars considered for obj-coeff boost
     // We may go round this loop three times (only if we think we have solution)
     for (int iPass = 0; iPass < 3; iPass++) {
 
@@ -2458,6 +2472,18 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
             ++rankNzDbgTotal;
             if (sort[numberToDo] != keyBefore)
               ++rankNzDbgBoosted;
+          }
+          // Objective coefficient magnitude boost: score = |c_j|^power.
+          // O(1) lookup. Applies to all integer variables. Most influential
+          // for untrusted variables where pseudo-costs are unreliable.
+          if (objCoeffs && iColumn < numberColumns) {
+            const bool trusted = (gotDown && gotUp);
+            const double keyBefore = sort[numberToDo];
+            sort[numberToDo] = ranker->applyObjCoeffBoost(
+              sort[numberToDo], std::fabs(objCoeffs[iColumn]), trusted);
+            ++rankObjDbgTotal;
+            if (sort[numberToDo] != keyBefore)
+              ++rankObjDbgBoosted;
           }
           whichObject[numberToDo++] = i;
         } else {
@@ -3158,10 +3184,11 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         numberToDo = 0; // skip as we will be trying again
       // Print per-call conflict/range boost diagnostics at high log level.
       if (ranker && ranker->isActive() && model->messageHandler()->logLevel() > 3) {
-        char buf[512];
+        char buf[640];
         char conflictPart[256] = "";
-        char rangePart[256]    = "";
+        char rangePart[128]    = "";
         char nzPart[128]       = "";
+        char objPart[128]      = "";
         if (ranker->weightConflict_ > 0.0 && cgraph) {
           if (rankDbgBoosted > 0)
             std::snprintf(conflictPart, sizeof(conflictPart),
@@ -3178,10 +3205,13 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
         if (ranker->weightNonzeros_ > 0.0)
           std::snprintf(nzPart, sizeof(nzPart),
             " nz:%d/%d", rankNzDbgBoosted, rankNzDbgTotal);
+        if (ranker->weightObjCoeff_ > 0.0)
+          std::snprintf(objPart, sizeof(objPart),
+            " obj:%d/%d", rankObjDbgBoosted, rankObjDbgTotal);
         std::snprintf(buf, sizeof(buf),
-          "RankConflict [node %lld]:%s%s%s",
+          "RankConflict [node %lld]:%s%s%s%s",
           static_cast< long long >(model->getNodeCount()),
-          conflictPart, rangePart, nzPart);
+          conflictPart, rangePart, nzPart, objPart);
         model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
           << buf << CoinMessageEol;
       }

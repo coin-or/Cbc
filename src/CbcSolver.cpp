@@ -6586,6 +6586,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     double rankObjCoeffWeight = 0.0;
     double rankObjCoeffPowerTrusted = 0.1;
     double rankObjCoeffPowerUntrusted = 0.2;
+    double rankConflictMaxPercBin = 97.0;
     CglBKClique bkCliqueGen;
     bkPivotingStrategy_ = 3;
     CoinBronKerbosch::PivotingStrategy bkPivotingStrategy = CoinBronKerbosch::PivotingStrategy::Weight;
@@ -7126,6 +7127,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           break;
         case CbcParam::RANKNONZEROSPOWERUNTRUSTED:
           rankNzPowerUntrusted = dValue;
+          break;
+        case CbcParam::RANKCONFLICTMAXPERCBIN:
+          rankConflictMaxPercBin = dValue;
           break;
         default:
           break;
@@ -8853,27 +8857,60 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           // to model_ before babModel_ is copy-constructed (so it propagates).
           if (rankConflictWeight > 0.0 || rankRangeWeight > 0.0 || rankNzWeight > 0.0
             || rankObjCoeffWeight > 0.0) {
-            CbcBranchingRanker *ranker = new CbcBranchingRanker();
-            ranker->weightConflict_ = rankConflictWeight;
-            ranker->scalingPowerTrusted_ = rankConflictPowerTrusted;
-            ranker->scalingPowerUntrusted_ = rankConflictPowerUntrusted;
-            if (rankConflictType == "sum")
-              ranker->formula_ = CbcBranchingRanker::CONFLICT_SUM;
-            else if (rankConflictType == "product")
-              ranker->formula_ = CbcBranchingRanker::CONFLICT_PRODUCT;
-            else
-              ranker->formula_ = CbcBranchingRanker::CONFLICT_MIN;
-            ranker->weightRange_ = rankRangeWeight;
-            ranker->scalingPowerRangeTrusted_ = rankRangePowerTrusted;
-            ranker->scalingPowerRangeUntrusted_ = rankRangePowerUntrusted;
-            ranker->maxRangeForPriority_ = rankRangeMax;
-            ranker->weightNonzeros_ = rankNzWeight;
-            ranker->scalingPowerNzTrusted_ = rankNzPowerTrusted;
-            ranker->scalingPowerNzUntrusted_ = rankNzPowerUntrusted;
-            ranker->weightObjCoeff_ = rankObjCoeffWeight;
-            ranker->scalingPowerObjTrusted_ = rankObjCoeffPowerTrusted;
-            ranker->scalingPowerObjUntrusted_ = rankObjCoeffPowerUntrusted;
-            model_.setBranchingRanker(ranker); // model_ takes ownership
+            // Auto-disable on near-pure-binary instances: the conflict ranker
+            // helps most when not all integer variables are binary. If percBin
+            // of the instance is >= rankConflictMaxPercBin, skip the ranker.
+            bool rankerEnabled = true;
+            if (rankConflictMaxPercBin < 100.0) {
+              const OsiSolverInterface *si = model_.solver();
+              if (si) {
+                int nInt = 0, nBin = 0;
+                const double *lb = si->getColLower();
+                const double *ub = si->getColUpper();
+                for (int j = 0; j < si->getNumCols(); j++) {
+                  if (si->isInteger(j)) {
+                    nInt++;
+                    if (lb[j] == 0.0 && ub[j] == 1.0)
+                      nBin++;
+                  }
+                }
+                if (nInt > 0) {
+                  double percBin = 100.0 * nBin / nInt;
+                  if (percBin >= rankConflictMaxPercBin) {
+                    rankerEnabled = false;
+                    char msgBuf[128];
+                    std::snprintf(msgBuf, sizeof(msgBuf),
+                      "RankConflict: disabled (%.1f%% binary >= maxPercBin=%.1f%%)",
+                      percBin, rankConflictMaxPercBin);
+                    model_.messageHandler()->message(CBC_GENERAL,
+                      *model_.messagesPointer()) << msgBuf << CoinMessageEol;
+                  }
+                }
+              }
+            }
+            if (rankerEnabled) {
+              CbcBranchingRanker *ranker = new CbcBranchingRanker();
+              ranker->weightConflict_ = rankConflictWeight;
+              ranker->scalingPowerTrusted_ = rankConflictPowerTrusted;
+              ranker->scalingPowerUntrusted_ = rankConflictPowerUntrusted;
+              if (rankConflictType == "sum")
+                ranker->formula_ = CbcBranchingRanker::CONFLICT_SUM;
+              else if (rankConflictType == "product")
+                ranker->formula_ = CbcBranchingRanker::CONFLICT_PRODUCT;
+              else
+                ranker->formula_ = CbcBranchingRanker::CONFLICT_MIN;
+              ranker->weightRange_ = rankRangeWeight;
+              ranker->scalingPowerRangeTrusted_ = rankRangePowerTrusted;
+              ranker->scalingPowerRangeUntrusted_ = rankRangePowerUntrusted;
+              ranker->maxRangeForPriority_ = rankRangeMax;
+              ranker->weightNonzeros_ = rankNzWeight;
+              ranker->scalingPowerNzTrusted_ = rankNzPowerTrusted;
+              ranker->scalingPowerNzUntrusted_ = rankNzPowerUntrusted;
+              ranker->weightObjCoeff_ = rankObjCoeffWeight;
+              ranker->scalingPowerObjTrusted_ = rankObjCoeffPowerTrusted;
+              ranker->scalingPowerObjUntrusted_ = rankObjCoeffPowerUntrusted;
+              model_.setBranchingRanker(ranker); // model_ takes ownership
+            }
           }
           delete babModel_;
           babModel_ = new CbcModel(model_);

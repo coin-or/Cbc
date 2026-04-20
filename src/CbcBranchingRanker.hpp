@@ -112,6 +112,28 @@ public:
   double applyConflictBoost(double sortKey, std::size_t d0, std::size_t d1,
     bool trusted) const;
 
+  /** Apply the objective coefficient magnitude boost to an existing sort key.
+   *
+   *  Score = |c_j|^scalingPower.  For untrusted variables (no pseudo-cost
+   *  observations), objective coefficient provides genuinely new information:
+   *  a variable with a large |c_j| moves the objective bound more when fixed,
+   *  making it a better branching candidate.  For trusted variables, pseudo-costs
+   *  already implicitly capture this effect, so the boost acts as a mild
+   *  tie-breaker.  Variables with c_j == 0 receive no boost (score = 0).
+   *
+   *  The default powers are very small (0.1 trusted, 0.2 untrusted) so that
+   *  even large coefficient differences produce only modest score differences:
+   *  c=1→1.0, c=100→1.58(pwr=0.1), c=10000→2.51(pwr=0.1).
+   *
+   *  \param sortKey     Current sort key (negative, possibly already boosted).
+   *  \param absObjCoeff Absolute value of the objective coefficient |c_j|.
+   *  \param trusted     True if pseudo-cost observations are sufficient.
+   *  \return            Boosted sort key, or sortKey unchanged when
+   *                     weightObjCoeff_ == 0 or absObjCoeff == 0.
+   */
+  double applyObjCoeffBoost(double sortKey, double absObjCoeff,
+    bool trusted) const;
+
   /** Apply the column non-zeros boost to an existing sort key.
    *
    *  Score = nz^scalingPower (raw count raised to a slow-growing power).
@@ -151,7 +173,8 @@ public:
   /** Returns true if any criterion is active (any weight > 0). */
   bool isActive() const
   {
-    return weightConflict_ > 0.0 || weightRange_ > 0.0 || weightNonzeros_ > 0.0;
+    return weightConflict_ > 0.0 || weightRange_ > 0.0 || weightNonzeros_ > 0.0
+      || weightObjCoeff_ > 0.0;
   }
 
   /** Reset cumulative diagnostic counters (e.g. between solves). */
@@ -203,6 +226,25 @@ public:
    *  Default: 10.0.  Set higher to give more differentiation among wide domains. */
   double maxRangeForPriority_;
 
+  /** Weight for the objective coefficient magnitude criterion |c_j|^power.
+   *  Variables with larger objective coefficients move the bound more when
+   *  fixed, making them higher-impact branching choices.  Most useful for
+   *  untrusted variables where pseudo-costs are unreliable.  For trusted
+   *  variables, pseudo-costs already capture this effect implicitly.
+   *  Variables with c_j == 0 receive no boost.
+   *  Default: 0.0 (disabled).  Typical range: [0.01, 0.3]. */
+  double weightObjCoeff_;
+
+  /** Scaling exponent for the objective coefficient score when pseudo-costs
+   *  are trusted.  Default: 0.1 (very slow growth — pure tie-breaker).
+   *  c=1→1.0, c=100→1.58, c=10000→2.51. */
+  double scalingPowerObjTrusted_;
+
+  /** Scaling exponent for the objective coefficient score when pseudo-costs
+   *  are untrusted.  Default: 0.2 (slow growth — more influence than trusted).
+   *  c=1→1.0, c=100→2.51, c=10000→6.31. */
+  double scalingPowerObjUntrusted_;
+
   /** Weight for the column non-zeros criterion (nz / maxNz).
    *  A variable appearing in many constraints propagates fixing information
    *  more broadly and is generally a more impactful branching choice.
@@ -232,6 +274,10 @@ public:
   /** Total number of integer variable candidates that received a non-zero
    *  range boost (score = 1/(ub-lb) > 0, which is always true for integers). */
   mutable long long nRangeBoostsApplied_;
+
+  /** Total number of integer variable candidates that received a non-zero
+   *  objective coefficient boost. */
+  mutable long long nObjCoeffBoostsApplied_;
 
   /** Total number of integer variable candidates that received a non-zeros boost. */
   mutable long long nNzBoostsApplied_;

@@ -18,12 +18,16 @@ CbcBranchingRanker::CbcBranchingRanker()
   , scalingPowerRangeTrusted_(0.5)
   , scalingPowerRangeUntrusted_(1.0)
   , maxRangeForPriority_(10.0)
+  , weightObjCoeff_(0.0)
+  , scalingPowerObjTrusted_(0.1)
+  , scalingPowerObjUntrusted_(0.2)
   , weightNonzeros_(0.0)
   , scalingPowerNzTrusted_(0.25)
   , scalingPowerNzUntrusted_(0.5)
   , nBoostsApplied_(0)
   , nZeroScore_(0)
   , nRangeBoostsApplied_(0)
+  , nObjCoeffBoostsApplied_(0)
   , nNzBoostsApplied_(0)
   , headerPrinted_(false)
 {
@@ -38,12 +42,16 @@ CbcBranchingRanker::CbcBranchingRanker(const CbcBranchingRanker &rhs)
   , scalingPowerRangeTrusted_(rhs.scalingPowerRangeTrusted_)
   , scalingPowerRangeUntrusted_(rhs.scalingPowerRangeUntrusted_)
   , maxRangeForPriority_(rhs.maxRangeForPriority_)
+  , weightObjCoeff_(rhs.weightObjCoeff_)
+  , scalingPowerObjTrusted_(rhs.scalingPowerObjTrusted_)
+  , scalingPowerObjUntrusted_(rhs.scalingPowerObjUntrusted_)
   , weightNonzeros_(rhs.weightNonzeros_)
   , scalingPowerNzTrusted_(rhs.scalingPowerNzTrusted_)
   , scalingPowerNzUntrusted_(rhs.scalingPowerNzUntrusted_)
   , nBoostsApplied_(0)
   , nZeroScore_(0)
   , nRangeBoostsApplied_(0)
+  , nObjCoeffBoostsApplied_(0)
   , nNzBoostsApplied_(0)
   , headerPrinted_(false)
 {
@@ -60,6 +68,9 @@ CbcBranchingRanker &CbcBranchingRanker::operator=(const CbcBranchingRanker &rhs)
     scalingPowerRangeTrusted_ = rhs.scalingPowerRangeTrusted_;
     scalingPowerRangeUntrusted_ = rhs.scalingPowerRangeUntrusted_;
     maxRangeForPriority_ = rhs.maxRangeForPriority_;
+    weightObjCoeff_ = rhs.weightObjCoeff_;
+    scalingPowerObjTrusted_ = rhs.scalingPowerObjTrusted_;
+    scalingPowerObjUntrusted_ = rhs.scalingPowerObjUntrusted_;
     weightNonzeros_ = rhs.weightNonzeros_;
     scalingPowerNzTrusted_ = rhs.scalingPowerNzTrusted_;
     scalingPowerNzUntrusted_ = rhs.scalingPowerNzUntrusted_;
@@ -117,11 +128,27 @@ const char *CbcBranchingRanker::formulaName() const
 
 void CbcBranchingRanker::resetCounters() const
 {
-  nBoostsApplied_      = 0;
-  nZeroScore_          = 0;
-  nRangeBoostsApplied_ = 0;
-  nNzBoostsApplied_    = 0;
-  headerPrinted_       = false;
+  nBoostsApplied_          = 0;
+  nZeroScore_              = 0;
+  nRangeBoostsApplied_     = 0;
+  nObjCoeffBoostsApplied_  = 0;
+  nNzBoostsApplied_        = 0;
+  headerPrinted_           = false;
+}
+
+double CbcBranchingRanker::applyObjCoeffBoost(double sortKey, double absObjCoeff,
+  bool trusted) const
+{
+  if (weightObjCoeff_ == 0.0 || absObjCoeff <= 0.0)
+    return sortKey;
+
+  // Score = |c_j|^power.  Very small default powers (0.1/0.2) ensure slow
+  // growth: c=1→1.0, c=100→1.58(pwr=0.1), c=10000→2.51(pwr=0.1).
+  const double power = trusted ? scalingPowerObjTrusted_ : scalingPowerObjUntrusted_;
+  const double score = std::pow(absObjCoeff, power);
+
+  ++nObjCoeffBoostsApplied_;
+  return sortKey * (1.0 + weightObjCoeff_ * score);
 }
 
 double CbcBranchingRanker::applyNonzerosBoost(double sortKey, int nz,

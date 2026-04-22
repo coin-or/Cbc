@@ -1727,7 +1727,7 @@ void CbcParameters::addCbcSolverDblParams() {
       "receive strong branching LP solves. Higher-degree variables (those whose "
       "branching triggers more propagations) are prioritized. The boost factor "
       "is (1 + weight * scaledScore), where scaledScore depends on rankConflictType "
-      "and the per-trust scaling powers. Default 0.4 (enabled, sum formula). "
+      "and the per-trust scaling powers. Default 0.2 (enabled, sum formula). "
       "Set to 0.0 to disable. Typical useful range: 0.1 to 0.5.",
       CoinParam::displayPriorityHigh);
 

@@ -6571,7 +6571,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     std::string &clqstrMode = clqstrMode_;
     // Conflict-graph branching ranker configuration (collected from params,
     // applied to model_ before babModel_ is constructed).
-    double rankConflictWeight = 0.4;
+    double rankConflictWeight = 0.2;
     std::string rankConflictType = "sum";
     double rankConflictPowerTrusted = 0.5;
     double rankConflictPowerUntrusted = 1.0;

@@ -448,6 +448,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::ERRORSALLOWED]->setDefault("off");
      parameters_[CbcParam::MESSAGES]->setDefault("off");
      parameters_[CbcParam::PREPROCNAMES]->setDefault("on");
+     parameters_[CbcParam::SINGLETONBOUNDS]->setDefault("on");
      parameters_[CbcParam::SOS]->setDefault("off");
      parameters_[CbcParam::USESOLUTION]->setDefault("off");
      parameters_[CbcParam::CUTSTRATEGY]->setDefault("off");
@@ -1898,6 +1899,14 @@ void CbcParameters::addCbcSolverBoolParams() {
       "sos!Options", "Whether to use SOS from AMPL",
       "Normally if AMPL says there are SOS variables they should be used, but "
       "sometimes they should be turned off - this does so.");
+
+  parameters_[CbcParam::SINGLETONBOUNDS]->setup(
+      "singleton!Bounds",
+      "Whether to tighten variable bounds from singleton rows before solve",
+      "When on, singleton rows (rows with a single nonzero) are used to "
+      "tighten variable bounds before the initial LP solve and conflict "
+      "graph construction. This is a cheap preprocessing step that can "
+      "fix variables and reduce the problem size.");
 
   parameters_[CbcParam::USESOLUTION]->setup(
       "force!Solution", "Whether to use given solution as crash for BAB",

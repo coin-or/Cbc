@@ -2278,6 +2278,25 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       int status;
       numberGoodCommands++;
       if (cbcParamCode == CbcParam::BAB && goodModel) {
+        // Singleton bound tightening — cheap preprocessing before anything else
+        if (parameters[CbcParam::SINGLETONBOUNDS]->modeVal()) {
+          double time1 = CoinCpuTime();
+          int nFixed = 0;
+          int nTightened = model_.solver()->tightenBoundsFromSingletonRows(nFixed);
+          double timeTaken = CoinCpuTime() - time1;
+          if (nTightened && model_.messageHandler()->logLevel() >= 1) {
+            char buf[256];
+            if (nFixed)
+              std::snprintf(buf, sizeof(buf),
+                "Singleton rows: %d bounds tightened, %d variables fixed (%.2fs)",
+                nTightened, nFixed, timeTaken);
+            else
+              std::snprintf(buf, sizeof(buf),
+                "Singleton rows: %d bounds tightened (%.2fs)",
+                nTightened, timeTaken);
+            printGeneralMessage(model_, buf);
+          }
+        }
         if (clqstrMode == "before") { // performing clique strengthening
                                       // before initial solve
           buildConflictGraphAndStrengthenCliques(model_.solver(),

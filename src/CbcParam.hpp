@@ -182,6 +182,7 @@ public:
       ERRORSALLOWED,
       MESSAGES,
       PREPROCNAMES,
+      SINGLETONBOUNDS,
       SOS,
       USESOLUTION,
       LASTBOOLPARAM,

@@ -434,7 +434,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::OPTIONS]->setDefault(0);
      parameters_[CbcParam::PRINTOPTIONS]->setDefault(0);
      parameters_[CbcParam::PROCESSTUNE]->setDefault(0);
-     parameters_[CbcParam::RANDOMSEED]->setDefault(-1);
+     parameters_[CbcParam::RANDOMSEED]->setDefault(42);
      parameters_[CbcParam::STRONGSTRATEGY]->setDefault(0);
      parameters_[CbcParam::TESTOSI]->setDefault(-1);
 #ifdef CBC_THREAD

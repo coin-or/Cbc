@@ -93,6 +93,7 @@ public:
       WRITESOLBINARY_OLD, // For backward compatibility
       WRITESTATS,
       WRITEFEATURES,
+      CHECKSOLUTION,
       FASTPREPROCESS,
       LASTACTIONPARAM,
 
@@ -203,6 +204,7 @@ public:
       TIMEMODE,
       USECGRAPH,
       FASTPREPROCESSLEVEL,
+      LPMETHOD,
       LASTKWDPARAM,
 
       // Integer Parameters

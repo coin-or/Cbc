@@ -171,6 +171,104 @@ void printGeneralMessage(CbcModel &model, std::string message, int type)
    }
 }
 
+/** Write a solution validation report to a file.
+ *  Calls ClpSimplex::checkSolution() to recompute violations, then writes
+ *  a tab-separated report with feasibility status, error metrics, and
+ *  the worst-violating row/column. */
+static bool writeCheckSolution(CbcModel &model, const std::string &fileName)
+{
+  OsiClpSolverInterface *clpSolver =
+    dynamic_cast<OsiClpSolverInterface *>(model.solver());
+  if (!clpSolver)
+    return false;
+  ClpSimplex *lp = clpSolver->getModelPtr();
+  lp->checkSolution();
+
+  double primalTol = 0, dualTol = 0;
+  clpSolver->getDblParam(OsiPrimalTolerance, primalTol);
+  clpSolver->getDblParam(OsiDualTolerance, dualTol);
+
+  bool lpFeasible = (lp->largestPrimalError() < primalTol
+                  && lp->numberPrimalInfeasibilities() == 0);
+
+  // Check integrality only if an integer solution exists
+  double intTol = clpSolver->getIntegerTolerance();
+  bool hasIntSol = (model.bestSolution() != nullptr);
+  int numIntViol = 0;
+  double worstIntViol = 0.0;
+  int worstIntCol = -1;
+  if (hasIntSol) {
+    const double *sol = model.bestSolution();
+    int nCols = clpSolver->getNumCols();
+    for (int j = 0; j < nCols; j++) {
+      if (clpSolver->isInteger(j)) {
+        double val = sol[j];
+        double frac = val - floor(val + 0.5);
+        double viol = fabs(frac);
+        if (viol > intTol)
+          numIntViol++;
+        if (viol > worstIntViol) {
+          worstIntViol = viol;
+          worstIntCol = j;
+        }
+      }
+    }
+  }
+
+  // Find row/col with largest LP violation
+  int worstRow = -1, worstCol = -1;
+  double worstRowViol = 0.0, worstColViol = 0.0;
+  int nRows = lp->numberRows(), nCols = lp->numberColumns();
+  const double *rowAct = lp->primalRowSolution();
+  const double *rowLo = lp->rowLower();
+  const double *rowUp = lp->rowUpper();
+  for (int i = 0; i < nRows; i++) {
+    double viol = std::max(rowLo[i] - rowAct[i], rowAct[i] - rowUp[i]);
+    if (viol > worstRowViol) { worstRowViol = viol; worstRow = i; }
+  }
+  const double *colSol = lp->primalColumnSolution();
+  const double *colLo = lp->columnLower();
+  const double *colUp = lp->columnUpper();
+  for (int j = 0; j < nCols; j++) {
+    double viol = std::max(colLo[j] - colSol[j], colSol[j] - colUp[j]);
+    if (viol > worstColViol) { worstColViol = viol; worstCol = j; }
+  }
+
+  FILE *fp = fopen(fileName.c_str(), "w");
+  if (!fp)
+    return false;
+  fprintf(fp, "solution_type\t%s\n", hasIntSol ? "integer" : "continuous");
+  fprintf(fp, "lp_feasible\t%s\n", lpFeasible ? "yes" : "no");
+  if (hasIntSol)
+    fprintf(fp, "integer_feasible\t%s\n", (numIntViol == 0) ? "yes" : "no");
+  fprintf(fp, "primal_tolerance\t%.2e\n", primalTol);
+  fprintf(fp, "dual_tolerance\t%.2e\n", dualTol);
+  if (hasIntSol)
+    fprintf(fp, "integer_tolerance\t%.2e\n", intTol);
+  fprintf(fp, "largest_primal_error\t%.2e\n", lp->largestPrimalError());
+  fprintf(fp, "largest_dual_error\t%.2e\n", lp->largestDualError());
+  fprintf(fp, "sum_primal_infeasibilities\t%.2e\n", lp->sumPrimalInfeasibilities());
+  fprintf(fp, "sum_dual_infeasibilities\t%.2e\n", lp->sumDualInfeasibilities());
+  fprintf(fp, "num_primal_infeasibilities\t%d\n", lp->numberPrimalInfeasibilities());
+  fprintf(fp, "num_dual_infeasibilities\t%d\n", lp->numberDualInfeasibilities());
+  if (hasIntSol) {
+    fprintf(fp, "num_integrality_violations\t%d\n", numIntViol);
+    fprintf(fp, "largest_integrality_violation\t%.2e\n", worstIntViol);
+  }
+  fprintf(fp, "objective\t%.15g\n", hasIntSol ? model.getObjValue() : lp->objectiveValue());
+  if (worstRow >= 0)
+    fprintf(fp, "worst_row\t%d\t%s\t%.2e\n", worstRow,
+      lp->rowName(worstRow).c_str(), worstRowViol);
+  if (worstCol >= 0)
+    fprintf(fp, "worst_col\t%d\t%s\t%.2e\n", worstCol,
+      lp->columnName(worstCol).c_str(), worstColViol);
+  if (hasIntSol && worstIntCol >= 0)
+    fprintf(fp, "worst_int_col\t%d\t%s\t%.2e\n", worstIntCol,
+      lp->columnName(worstIntCol).c_str(), worstIntViol);
+  fclose(fp);
+  return true;
+}
+
 static void checkValidityOfUpdatedBoundsWithMIPStart(std::map< std::string, double > &mipStartMap,
   size_t colIdx,
   const std::string &varName,
@@ -732,6 +830,101 @@ static void clearClpTimeLimits(ClpSimplex *clp)
 {
   clp->setMaximumSeconds(-1.0);
   clp->setMaximumWallSeconds(-1.0);
+}
+
+// Apply the -lpMethod parameter to configure the LP solver before initialSolve.
+// Runs fast MILP preprocessing (if enabled) as the first step, then sets up
+// the LP algorithm.
+//
+// Returns:
+//   -1  infeasibility proved during preprocessing — caller should skip solve
+//    0  LP solve already done here (barrier) — caller should NOT call initialSolve
+//    1  caller should call model_.initialSolve() (dual/primal hint already set)
+static int applyLpMethod(CbcModel &model, CbcParameters &parameters)
+{
+  // --- Fast MILP preprocessing (bound tightening before LP solve) ---
+  const CbcParameters::FastPreProcessLevel paramLevel =
+    parameters.getFastPreProcessLevel();
+
+  CbcFastMILPPreProcess::Level fppLevel;
+  switch (paramLevel) {
+  case CbcParameters::FPPSingletons:
+    fppLevel = CbcFastMILPPreProcess::Singletons;
+    break;
+  case CbcParameters::FPPMILPbt:
+    fppLevel = CbcFastMILPPreProcess::MILPbt;
+    break;
+  case CbcParameters::FPPFixpoint:
+    fppLevel = CbcFastMILPPreProcess::Fixpoint;
+    break;
+  default:
+    fppLevel = CbcFastMILPPreProcess::Off;
+    break;
+  }
+
+  if (fppLevel != CbcFastMILPPreProcess::Off) {
+    const bool useElapsed = model.useElapsedTime();
+    const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+    const double timeLimit = model.getDblParam(CbcModel::CbcMaximumSeconds);
+    const int maxRounds = parameters.getFastPreProcessMaxRounds();
+    const int logLevel = model.messageHandler()->logLevel();
+
+    CbcFastMILPPreProcess fpp;
+    const bool feasible = fpp.run(model.solver(),
+      model.messageHandler(), logLevel,
+      fppLevel, maxRounds,
+      useElapsed, timeLimit, startTime);
+
+    if (!feasible) {
+      if (logLevel >= 1)
+        printGeneralMessage(model,
+          "Fast preprocessing: infeasibility proved — skipping solve.");
+      return -1;
+    }
+  } else if (parameters[CbcParam::SINGLETONBOUNDS]->modeVal()) {
+    // Legacy fallback: singleton tightening only
+    double time1 = CoinCpuTime();
+    int nFixed = 0;
+    int nTightened = model.solver()->tightenBoundsFromSingletonRows(nFixed);
+    double timeTaken = CoinCpuTime() - time1;
+    if (nTightened && model.messageHandler()->logLevel() >= 1) {
+      char buf[256];
+      if (nFixed)
+        std::snprintf(buf, sizeof(buf),
+          "Singleton rows: %d bounds tightened, %d variables fixed (%.2fs)",
+          nTightened, nFixed, timeTaken);
+      else
+        std::snprintf(buf, sizeof(buf),
+          "Singleton rows: %d bounds tightened (%.2fs)",
+          nTightened, timeTaken);
+      printGeneralMessage(model, buf);
+    }
+  }
+
+  // --- LP method selection ---
+  OsiSolverInterface *solver = model.solver();
+  CbcParameters::LPMethod method = parameters.getLpMethod();
+
+  if (method == CbcParameters::LPPrimal) {
+    solver->setHintParam(OsiDoDualInInitial, false, OsiHintDo);
+    return 1;
+  }
+  if (method == CbcParameters::LPBarrier) {
+    OsiClpSolverInterface *si =
+      dynamic_cast<OsiClpSolverInterface *>(solver);
+    if (si) {
+      ClpSimplex *clp = si->getModelPtr();
+      ClpSolve solveOptions;
+      solveOptions.setSolveType(ClpSolve::useBarrier);
+      solveOptions.setPresolveType(ClpSolve::presolveOn);
+      clp->initialSolve(solveOptions);
+      si->setWarmStart(nullptr);
+    }
+    return 0;
+  }
+  // LPDual (default)
+  solver->setHintParam(OsiDoDualInInitial, true, OsiHintDo);
+  return 1;
 }
 
 int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
@@ -2279,76 +2472,12 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       int status;
       numberGoodCommands++;
       if (cbcParamCode == CbcParam::BAB && goodModel) {
-      // Fast MILP preprocessing — cheap bound tightening before anything else.
-      // The timer is started here so preprocessing time counts against the
-      // overall time budget.
 #if CBC_USE_INITIAL_TIME == 1
         if (model_.useElapsedTime())
           model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
         else
           model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
-        {
-          const bool useElapsed = model_.useElapsedTime();
-          const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
-          const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
-
-          const CbcParameters::FastPreProcessLevel paramLevel =
-            parameters.getFastPreProcessLevel();
-
-          // Map CbcParameters enum → CbcFastMILPPreProcess::Level
-          CbcFastMILPPreProcess::Level fppLevel;
-          switch (paramLevel) {
-          case CbcParameters::FPPSingletons:
-            fppLevel = CbcFastMILPPreProcess::Singletons;
-            break;
-          case CbcParameters::FPPMILPbt:
-            fppLevel = CbcFastMILPPreProcess::MILPbt;
-            break;
-          case CbcParameters::FPPFixpoint:
-            fppLevel = CbcFastMILPPreProcess::Fixpoint;
-            break;
-          default: // FPPOff: fall back to legacy singletonBounds behaviour
-            fppLevel = CbcFastMILPPreProcess::Off;
-            break;
-          }
-
-          if (fppLevel != CbcFastMILPPreProcess::Off) {
-            CbcFastMILPPreProcess fpp;
-            const int maxRounds = parameters.getFastPreProcessMaxRounds();
-            const int logLevel = model_.messageHandler()->logLevel();
-            const bool feasible = fpp.run(model_.solver(),
-              model_.messageHandler(), logLevel,
-              fppLevel, maxRounds,
-              useElapsed, timeLimit, startTime);
-
-            if (!feasible) {
-              // run() already logged the infeasibility details at level >= 1
-              if (logLevel >= 1)
-                printGeneralMessage(model_,
-                  "Fast preprocessing: infeasibility proved — skipping solve.");
-              continue; // skip BAB
-            }
-          } else if (parameters[CbcParam::SINGLETONBOUNDS]->modeVal()) {
-            // Legacy fallback: singleton tightening only
-            double time1 = CoinCpuTime();
-            int nFixed = 0;
-            int nTightened = model_.solver()->tightenBoundsFromSingletonRows(nFixed);
-            double timeTaken = CoinCpuTime() - time1;
-            if (nTightened && model_.messageHandler()->logLevel() >= 1) {
-              char buf[256];
-              if (nFixed)
-                std::snprintf(buf, sizeof(buf),
-                  "Singleton rows: %d bounds tightened, %d variables fixed (%.2fs)",
-                  nTightened, nFixed, timeTaken);
-              else
-                std::snprintf(buf, sizeof(buf),
-                  "Singleton rows: %d bounds tightened (%.2fs)",
-                  nTightened, timeTaken);
-              printGeneralMessage(model_, buf);
-            }
-          }
-        }
         if (clqstrMode == "before") { // performing clique strengthening
                                       // before initial solve
           buildConflictGraphAndStrengthenCliques(model_.solver(),
@@ -3781,10 +3910,17 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
         }
 
         switch (cbcParamCode) {
-        case CbcParam::SOLVECONTINUOUS:
-          // Solve problem dual simplex
-          inputQueue.push_front("-dualSimplex");
+        case CbcParam::SOLVECONTINUOUS: {
+          // Solve LP relaxation using the configured LP method
+          CbcParameters::LPMethod lpMethod = parameters.getLpMethod();
+          if (lpMethod == CbcParameters::LPPrimal)
+            inputQueue.push_front("-primalSimplex");
+          else if (lpMethod == CbcParameters::LPBarrier)
+            inputQueue.push_front("-barrier");
+          else
+            inputQueue.push_front("-dualSimplex");
           continue;
+        }
         case CbcParam::STATISTICS: {
           if (!goodModel) {
             printGeneralMessage(model_, "** Current model not valid\n");
@@ -4211,6 +4347,12 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               lpState->startTime = CoinWallclockTime();
               lpState->lastPrintTime = lpState->startTime;
               lpState->title = "Root LP relaxation";
+              // Print the section title now so that fast preprocessing
+              // messages (from applyLpMethod) appear inside this section.
+              // Clear title so lpPhaseOpenTable prints only the table header.
+              fprintf(lpState->fp, "\n%s\n\n",
+                CoinTable::phaseStart(lpState->title, lpState->utf8).c_str());
+              lpState->title.clear();
               lpMsgHandler = new ClpLpMsgHandler(lpState);
               ClpLpEventHandler tmpEvt(lpState);
               lpSavedMsg = clpModel->pushMessageHandler(lpMsgHandler, lpMsgOldDefault);
@@ -4229,7 +4371,23 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               }
               numMipInts = static_cast<int>(intCols.size());
             }
-            model_.initialSolve();
+            int lpMethodResult = applyLpMethod(model_, parameters);
+            if (lpMethodResult < 0) {
+              // Infeasible — clean up LP progress handler and skip BAB
+#ifndef CBC_OTHER_SOLVER
+              if (lpSavedMsg && si) {
+                ClpSimplex *clpModel = si->getModelPtr();
+                clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
+                delete lpMsgHandler;
+                lpMsgHandler = nullptr;
+                ClpEventHandler defaultHandler;
+                clpModel->passInEventHandler(&defaultHandler);
+              }
+#endif
+              continue;
+            }
+            if (lpMethodResult > 0)
+              model_.initialSolve();
 #ifndef CBC_OTHER_SOLVER
             if (lpSavedMsg && si) {
               ClpSimplex *clpModel = si->getModelPtr();
@@ -10995,6 +11153,34 @@ clp watson.mps -\nscaling off\nprimalsimplex");
               // Mark model bad so downstream commands know.
               goodModel = false;
             }
+          }
+        } break;
+        case CbcParam::CHECKSOLUTION: {
+          cbcParam->readValue(inputQueue, fileName, &message);
+          CoinParamUtils::processFile(fileName,
+            parameters[CbcParam::DIRECTORY]->dirName());
+          if (fileName == "")
+            fileName = "sol_validation.txt";
+          if (!goodModel) {
+            printGeneralWarning(model_, "** Current model not valid\n");
+            continue;
+          }
+          if (!writeCheckSolution(model_, fileName)) {
+            buffer.str("");
+            buffer << "Unable to open file " << fileName;
+            printGeneralMessage(model_, buffer.str());
+            continue;
+          }
+          {
+            OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
+            ClpSimplex *lp = clpSolver->getModelPtr();
+            bool hasIntSol = (model_.bestSolution() != nullptr);
+            buffer.str("");
+            buffer << "Solution validation written to " << fileName
+                   << " (" << (hasIntSol ? "integer" : "continuous")
+                   << ", largest_primal=" << lp->largestPrimalError()
+                   << ", largest_dual=" << lp->largestDualError() << ")";
+            printGeneralMessage(model_, buffer.str());
           }
         } break;
         case CbcParam::PRINTSOL:

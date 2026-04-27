@@ -385,6 +385,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::TIMEMODE]->setDefault("elapsed");
      parameters_[CbcParam::USECGRAPH]->setDefault("on");
      parameters_[CbcParam::FASTPREPROCESSLEVEL]->setDefault("milpbt");
+     parameters_[CbcParam::LPMETHOD]->setDefault("dual");
      parameters_[CbcParam::FASTPREPROCESSMAXROUNDS]->setDefault(100);
      parameters_[CbcParam::ARTIFICIALCOST]->setDefault(getArtVarThreshold());
      parameters_[CbcParam::DEXTRA3]->setDefault(0.0);
@@ -974,6 +975,16 @@ void CbcParameters::addCbcSolverActionParams() {
       "After running, use writeModel to save the tightened problem.",
       CoinParam::displayPriorityHigh);
 
+  parameters_[CbcParam::CHECKSOLUTION]->setup(
+      "checkSol!ution",
+      "Check LP/MIP solution feasibility and write validation report",
+      "Recomputes constraint and bound violations from scratch and writes "
+      "a machine-readable report to the specified file (default "
+      "'sol_validation.txt'). Reports feasibility status, largest primal "
+      "and dual errors, and identifies the constraint/variable with the "
+      "largest violation.",
+      CoinParam::displayPriorityHigh);
+
   // For backward compatibility
   parameters_[CbcParam::WRITESOL_OLD]->setup(
       "solu!tion", "writes solution to file (or stdout) (synonym for "
@@ -1404,6 +1415,21 @@ void CbcParameters::addCbcSolverKwdParams() {
     "milpbt", CbcParameters::FPPMILPbt);
   parameters_[CbcParam::FASTPREPROCESSLEVEL]->appendKwd(
     "fixpoint", CbcParameters::FPPFixpoint);
+
+  parameters_[CbcParam::LPMETHOD]->setup(
+    "lpM!ethod",
+    "Which LP algorithm to use for the initial LP relaxation solve",
+    "Controls which LP algorithm is used when -solve or -initialSolve "
+    "triggers the root LP relaxation.\n"
+    "  dual:    dual simplex (default).\n"
+    "  primal:  primal simplex.\n"
+    "  barrier: interior-point (barrier) method.");
+  parameters_[CbcParam::LPMETHOD]->appendKwd(
+    "dual", CbcParameters::LPDual);
+  parameters_[CbcParam::LPMETHOD]->appendKwd(
+    "primal", CbcParameters::LPPrimal);
+  parameters_[CbcParam::LPMETHOD]->appendKwd(
+    "barrier", CbcParameters::LPBarrier);
 }
 
 //###########################################################################

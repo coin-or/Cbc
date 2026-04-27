@@ -26,6 +26,7 @@
 #include <vector>
 #include "CbcSolverStatistics.hpp"
 #include "CbcInstanceFeatures.hpp"
+#include "CbcFastMILPPreProcess.hpp"
 
 #if defined(NEW_DEBUG_AND_FILL) || defined(CLP_MALLOC_STATISTICS)
 #include <exception>
@@ -2278,23 +2279,74 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       int status;
       numberGoodCommands++;
       if (cbcParamCode == CbcParam::BAB && goodModel) {
-        // Singleton bound tightening — cheap preprocessing before anything else
-        if (parameters[CbcParam::SINGLETONBOUNDS]->modeVal()) {
-          double time1 = CoinCpuTime();
-          int nFixed = 0;
-          int nTightened = model_.solver()->tightenBoundsFromSingletonRows(nFixed);
-          double timeTaken = CoinCpuTime() - time1;
-          if (nTightened && model_.messageHandler()->logLevel() >= 1) {
-            char buf[256];
-            if (nFixed)
-              std::snprintf(buf, sizeof(buf),
-                "Singleton rows: %d bounds tightened, %d variables fixed (%.2fs)",
-                nTightened, nFixed, timeTaken);
-            else
-              std::snprintf(buf, sizeof(buf),
-                "Singleton rows: %d bounds tightened (%.2fs)",
-                nTightened, timeTaken);
-            printGeneralMessage(model_, buf);
+      // Fast MILP preprocessing — cheap bound tightening before anything else.
+      // The timer is started here so preprocessing time counts against the
+      // overall time budget.
+#if CBC_USE_INITIAL_TIME == 1
+        if (model_.useElapsedTime())
+          model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
+        else
+          model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
+#endif
+        {
+          const bool useElapsed = model_.useElapsedTime();
+          const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+          const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
+
+          const CbcParameters::FastPreProcessLevel paramLevel =
+            parameters.getFastPreProcessLevel();
+
+          // Map CbcParameters enum → CbcFastMILPPreProcess::Level
+          CbcFastMILPPreProcess::Level fppLevel;
+          switch (paramLevel) {
+          case CbcParameters::FPPSingletons:
+            fppLevel = CbcFastMILPPreProcess::Singletons;
+            break;
+          case CbcParameters::FPPMILPbt:
+            fppLevel = CbcFastMILPPreProcess::MILPbt;
+            break;
+          case CbcParameters::FPPFixpoint:
+            fppLevel = CbcFastMILPPreProcess::Fixpoint;
+            break;
+          default: // FPPOff: fall back to legacy singletonBounds behaviour
+            fppLevel = CbcFastMILPPreProcess::Off;
+            break;
+          }
+
+          if (fppLevel != CbcFastMILPPreProcess::Off) {
+            CbcFastMILPPreProcess fpp;
+            const int maxRounds = parameters.getFastPreProcessMaxRounds();
+            const int logLevel = model_.messageHandler()->logLevel();
+            const bool feasible = fpp.run(model_.solver(),
+              model_.messageHandler(), logLevel,
+              fppLevel, maxRounds,
+              useElapsed, timeLimit, startTime);
+
+            if (!feasible) {
+              // run() already logged the infeasibility details at level >= 1
+              if (logLevel >= 1)
+                printGeneralMessage(model_,
+                  "Fast preprocessing: infeasibility proved — skipping solve.");
+              continue; // skip BAB
+            }
+          } else if (parameters[CbcParam::SINGLETONBOUNDS]->modeVal()) {
+            // Legacy fallback: singleton tightening only
+            double time1 = CoinCpuTime();
+            int nFixed = 0;
+            int nTightened = model_.solver()->tightenBoundsFromSingletonRows(nFixed);
+            double timeTaken = CoinCpuTime() - time1;
+            if (nTightened && model_.messageHandler()->logLevel() >= 1) {
+              char buf[256];
+              if (nFixed)
+                std::snprintf(buf, sizeof(buf),
+                  "Singleton rows: %d bounds tightened, %d variables fixed (%.2fs)",
+                  nTightened, nFixed, timeTaken);
+              else
+                std::snprintf(buf, sizeof(buf),
+                  "Singleton rows: %d bounds tightened (%.2fs)",
+                  nTightened, timeTaken);
+              printGeneralMessage(model_, buf);
+            }
           }
         }
         if (clqstrMode == "before") { // performing clique strengthening
@@ -2307,12 +2359,6 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           statistics.cgraph_time += model_.solver()->getCGraphBuildTime();
           statistics.cgraph_density = model_.solver()->getCGraphDensity();
         }
-#if CBC_USE_INITIAL_TIME == 1
-        if (model_.useElapsedTime())
-          model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
-        else
-          model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
-#endif
         biLinearProblem = false;
         // check if any integers
 #ifndef CBC_OTHER_SOLVER
@@ -10905,6 +10951,50 @@ clp watson.mps -\nscaling off\nprimalsimplex");
             }
             model_.messageHandler()->message(CBC_INSTANCE_FEATURES, model_.messages())
                 << featTime << fileName.c_str() << CoinMessageEol;
+          }
+        } break;
+        case CbcParam::FASTPREPROCESS: {
+          if (!goodModel) {
+            printGeneralWarning(model_, "** Current model not valid\n");
+            continue;
+          }
+          {
+            const CbcParameters::FastPreProcessLevel paramLevel =
+              parameters.getFastPreProcessLevel();
+            if (paramLevel == CbcParameters::FPPOff) {
+              printGeneralMessage(model_,
+                "Fast preprocessing is disabled (fastPreProcessLevel=off); "
+                "nothing to do.");
+              continue;
+            }
+            CbcFastMILPPreProcess::Level fppLevel;
+            switch (paramLevel) {
+            case CbcParameters::FPPSingletons:
+              fppLevel = CbcFastMILPPreProcess::Singletons;
+              break;
+            case CbcParameters::FPPFixpoint:
+              fppLevel = CbcFastMILPPreProcess::Fixpoint;
+              break;
+            default: // FPPMILPbt
+              fppLevel = CbcFastMILPPreProcess::MILPbt;
+              break;
+            }
+            const bool useElapsed = model_.useElapsedTime();
+            const double startTime =
+              useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+            // Use a generous time limit for the standalone action
+            const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
+            CbcFastMILPPreProcess fpp;
+            const int maxRounds = parameters.getFastPreProcessMaxRounds();
+            const int logLevel = model_.messageHandler()->logLevel();
+            const bool feasible = fpp.run(model_.solver(),
+              model_.messageHandler(), logLevel,
+              fppLevel, maxRounds, useElapsed, timeLimit, startTime);
+            if (!feasible) {
+              // run() already logged the infeasibility details at level >= 1.
+              // Mark model bad so downstream commands know.
+              goodModel = false;
+            }
           }
         } break;
         case CbcParam::PRINTSOL:

@@ -93,6 +93,7 @@ public:
       WRITESOLBINARY_OLD, // For backward compatibility
       WRITESTATS,
       WRITEFEATURES,
+      FASTPREPROCESS,
       LASTACTIONPARAM,
 
       // File Parameters
@@ -201,6 +202,7 @@ public:
       STRATEGY,
       TIMEMODE,
       USECGRAPH,
+      FASTPREPROCESSLEVEL,
       LASTKWDPARAM,
 
       // Integer Parameters
@@ -254,6 +256,7 @@ public:
       ZEROHALFROWMAXFRACTIONALCOUNT,
       ZEROHALFROWMAXPAIRCOUNT,
       ZEROHALFSPARSETHRESH,
+      FASTPREPROCESSMAXROUNDS,
       LASTINTPARAM,
 
       // Double Parameters

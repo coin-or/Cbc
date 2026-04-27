@@ -281,6 +281,37 @@ public:
 
   enum CGraphMode { CGraphOff = 0, CGraphOn, CGraphClique, CGraphEndMarker };
 
+  /*! \brief Aggression level for fast MILP preprocessing
+
+    - FPPOff:       disabled; falls back to the singletonBounds on/off setting.
+    - FPPSingletons: singleton rows only (same as singletonBounds on).
+    - FPPMILPbt:    singletons followed by CoinMILPBoundTightening for up to
+                    fastPreProcessMaxRounds rounds (default 100, effectively
+                    fixpoint for all practical instances).
+    - FPPFixpoint:  singletons followed by CoinMILPBoundTightening until no
+                    new fixings are found (ignores maxRounds).
+  */
+  enum FastPreProcessLevel {
+    FPPOff = 0,
+    FPPSingletons,
+    FPPMILPbt,
+    FPPFixpoint,
+    FPPEndMarker
+  };
+
+  /*! \brief Get fast preprocessing level */
+  inline FastPreProcessLevel getFastPreProcessLevel() const
+  {
+    return static_cast< FastPreProcessLevel >(
+      parameters_[CbcParam::FASTPREPROCESSLEVEL]->modeVal());
+  }
+
+  /*! \brief Get fast preprocessing max rounds */
+  inline int getFastPreProcessMaxRounds() const
+  {
+    return parameters_[CbcParam::FASTPREPROCESSMAXROUNDS]->intVal();
+  }
+
   /*
       In order for initialisation to work properly, the order of declaration of
       the enum constants here must match the order of keyword declaration for

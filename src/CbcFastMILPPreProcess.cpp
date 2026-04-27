@@ -53,7 +53,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
       timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
 
       if (logLevel >= 1)
-        printf("Fast preprocessing: INFEASIBLE (singleton tightening), "
+        printf("  Fast preprocessing: INFEASIBLE (singleton tightening), "
                "%.3f s.\n",
           timeUsed_);
 
@@ -64,7 +64,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
     nSingletonTightened_ = nTightened - nFixed;
 
     if (logLevel >= 2 && nTightened > 0)
-      printf("Fast preprocessing (singletons): %d tightened, %d fixed.\n",
+      printf("  Fast preprocessing (singletons): %d tightened, %d fixed.\n",
         nSingletonTightened_, nSingletonFixed_);
   }
 
@@ -73,7 +73,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
     timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
 
     if (logLevel >= 1)
-      printf("Fast preprocessing: fixed %d, tightened %d (singletons only), "
+      printf("  Fast preprocessing: fixed %d, tightened %d (singletons only), "
              "%.3f s.\n",
         nSingletonFixed_, nSingletonTightened_, timeUsed_);
 
@@ -110,7 +110,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
       timeUsed_ = tNow - t0;
 
       if (logLevel >= 1)
-        printf("Fast preprocessing: fixed %d (%d singleton + %d MILPbt, "
+        printf("  Fast preprocessing: fixed %d (%d singleton + %d MILPbt, "
                "%d round(s), TIME LIMIT), %.3f s.\n",
           nSingletonFixed_ + nMILPbtFixed_, nSingletonFixed_, nMILPbtFixed_,
           nRoundsRun_, timeUsed_);
@@ -140,7 +140,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
           const std::string colName = (infeasibleCol_ < solver->getNumCols())
             ? solver->getColName(infeasibleCol_)
             : "(unknown)";
-          printf("Fast preprocessing: INFEASIBLE in round %d — "
+          printf("  Fast preprocessing: INFEASIBLE in round %d — "
                  "row %d (%s), col %d (%s), %.3f s.\n",
             nRoundsRun_, infeasibleRow_, rowName.c_str(),
             infeasibleCol_, colName.c_str(), timeUsed_);
@@ -148,11 +148,11 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
           const std::string rowName = (infeasibleRow_ < solver->getNumRows())
             ? solver->getRowName(infeasibleRow_)
             : "(unknown)";
-          printf("Fast preprocessing: INFEASIBLE in round %d — "
+          printf("  Fast preprocessing: INFEASIBLE in round %d — "
                  "row %d (%s), %.3f s.\n",
             nRoundsRun_, infeasibleRow_, rowName.c_str(), timeUsed_);
         } else {
-          printf("Fast preprocessing: INFEASIBLE in round %d, %.3f s.\n",
+          printf("  Fast preprocessing: INFEASIBLE in round %d, %.3f s.\n",
             nRoundsRun_, timeUsed_);
         }
       }
@@ -169,7 +169,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
       timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
 
       if (logLevel >= 2)
-        printf("Fast preprocessing (MILPbt): fixpoint reached after %d "
+        printf("  Fast preprocessing (MILPbt): fixpoint reached after %d "
                "round(s).\n",
           nRoundsRun_);
 
@@ -187,7 +187,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
     nMILPbtFixed_ += nNew;
 
     if (logLevel >= 2)
-      printf("Fast preprocessing (MILPbt): round %d fixed %d variables "
+      printf("  Fast preprocessing (MILPbt): round %d fixed %d variables "
              "(total %d).\n",
         nRoundsRun_, nNew, nMILPbtFixed_);
   }
@@ -201,7 +201,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
   if (logLevel >= 1) {
     const int totalFixed = nSingletonFixed_ + nMILPbtFixed_;
     const char *stopNote = (stopReason_ == HitMaxRounds) ? ", MAX ROUNDS" : "";
-    printf("Fast preprocessing: fixed %d (%d singleton + %d MILPbt, "
+    printf("  Fast preprocessing: fixed %d (%d singleton + %d MILPbt, "
            "%d round(s)%s), %.3f s.\n",
       totalFixed, nSingletonFixed_, nMILPbtFixed_,
       nRoundsRun_, stopNote, timeUsed_);

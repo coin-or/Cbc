@@ -384,6 +384,8 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::STRATEGY]->setDefault("default");
      parameters_[CbcParam::TIMEMODE]->setDefault("elapsed");
      parameters_[CbcParam::USECGRAPH]->setDefault("on");
+     parameters_[CbcParam::FASTPREPROCESSLEVEL]->setDefault("milpbt");
+     parameters_[CbcParam::FASTPREPROCESSMAXROUNDS]->setDefault(100);
      parameters_[CbcParam::ARTIFICIALCOST]->setDefault(getArtVarThreshold());
      parameters_[CbcParam::DEXTRA3]->setDefault(0.0);
      parameters_[CbcParam::DEXTRA4]->setDefault(0.0);
@@ -963,6 +965,15 @@ void CbcParameters::addCbcSolverActionParams() {
       "All features are computed in O(nz) time.",
       CoinParam::displayPriorityHigh);
 
+    parameters_[CbcParam::FASTPREPROCESS]->setup(
+      "fastPreProcess",
+      "Run fast MILP preprocessing on the loaded model",
+      "Immediately runs the fast MILP preprocessor on the currently loaded "
+      "model, applying bound tightenings to the problem in place. "
+      "The aggression level is controlled by fastPreProcessLevel. "
+      "After running, use writeModel to save the tightened problem.",
+      CoinParam::displayPriorityHigh);
+
   // For backward compatibility
   parameters_[CbcParam::WRITESOL_OLD]->setup(
       "solu!tion", "writes solution to file (or stdout) (synonym for "
@@ -1373,6 +1384,26 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::USECGRAPH]->appendKwd("on", CbcParameters::CGraphOn);
   parameters_[CbcParam::USECGRAPH]->appendKwd("off", CbcParameters::CGraphOff);
   parameters_[CbcParam::USECGRAPH]->appendKwd("clq", CbcParameters::CGraphClique);
+
+  parameters_[CbcParam::FASTPREPROCESSLEVEL]->setup(
+    "fastPreProcessL!evel",
+    "Aggression level for fast MILP preprocessing before solve",
+    "Controls how aggressively fast preprocessing tightens variable bounds "
+    "before the initial LP solve.\n"
+    "  off:       disabled (falls back to singletonBounds setting).\n"
+    "  singletons: singleton rows only — same as singletonBounds on.\n"
+    "  milpbt:    singletons then knapsack-based bound tightening for up to "
+    "fastPreProcessMaxRounds rounds (default 100, effectively fixpoint).\n"
+    "  fixpoint:  singletons then bound tightening until no new fixings are "
+    "found, regardless of fastPreProcessMaxRounds.");
+  parameters_[CbcParam::FASTPREPROCESSLEVEL]->appendKwd(
+    "off", CbcParameters::FPPOff);
+  parameters_[CbcParam::FASTPREPROCESSLEVEL]->appendKwd(
+    "singletons", CbcParameters::FPPSingletons);
+  parameters_[CbcParam::FASTPREPROCESSLEVEL]->appendKwd(
+    "milpbt", CbcParameters::FPPMILPbt);
+  parameters_[CbcParam::FASTPREPROCESSLEVEL]->appendKwd(
+    "fixpoint", CbcParameters::FPPFixpoint);
 }
 
 //###########################################################################
@@ -1841,6 +1872,17 @@ void CbcParameters::addCbcSolverIntParams() {
       "A value of 0 forces sparse mode for testing. Negative values disable "
       "threshold-based switching, but sparse mode is still used automatically "
       "when the dense graph would be unsafe.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FASTPREPROCESSMAXROUNDS]->setup(
+      "fastPreProcessM!axRounds",
+      "Maximum number of bound-tightening rounds in fast preprocessing",
+      1, COIN_INT_MAX,
+      "Maximum number of CoinMILPBoundTightening rounds when "
+      "fastPreProcessLevel is 'milpbt'. Each round re-examines all rows using "
+      "the bounds fixed in previous rounds; the process stops early if a round "
+      "produces no new fixings. Has no effect when fastPreProcessLevel is "
+      "'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.",
       CoinParam::displayPriorityLow);
 }
 

@@ -226,6 +226,7 @@
     <ClCompile Include="..\..\..\src\CbcEventHandler.cpp" />
     <ClCompile Include="..\..\..\src\CbcFathom.cpp" />
     <ClCompile Include="..\..\..\src\CbcFathomDynamicProgramming.cpp" />
+    <ClCompile Include="..\..\..\src\CbcFastMILPPreProcess.cpp" />
     <ClCompile Include="..\..\..\src\CbcFixVariable.cpp" />
     <ClCompile Include="..\..\..\src\CbcFollowOn.cpp" />
     <ClCompile Include="..\..\..\src\CbcFullNodeInfo.cpp" />

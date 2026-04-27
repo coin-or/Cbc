@@ -196,7 +196,8 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcSolverExpandKnapsack.lo \
 	libCbc_la-CbcSolverHeuristics.lo libCbc_la-CbcParameters.lo \
 	libCbc_la-CbcStatistics.lo libCbc_la-CbcSolverStatistics.lo \
-	libCbc_la-CbcInstanceFeatures.lo libCbc_la-CbcStrategy.lo \
+	libCbc_la-CbcInstanceFeatures.lo \
+	libCbc_la-CbcFastMILPPreProcess.lo libCbc_la-CbcStrategy.lo \
 	libCbc_la-CbcSubProblem.lo libCbc_la-CbcSymmetry.lo \
 	libCbc_la-CbcThread.lo libCbc_la-CbcTree.lo \
 	libCbc_la-CbcTreeLocal.lo libCbc_la-Cbc_C_Interface.lo \
@@ -247,6 +248,7 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcCutSubsetModifier.Plo \
 	./$(DEPDIR)/libCbc_la-CbcDummyBranchingObject.Plo \
 	./$(DEPDIR)/libCbc_la-CbcEventHandler.Plo \
+	./$(DEPDIR)/libCbc_la-CbcFastMILPPreProcess.Plo \
 	./$(DEPDIR)/libCbc_la-CbcFathom.Plo \
 	./$(DEPDIR)/libCbc_la-CbcFathomDynamicProgramming.Plo \
 	./$(DEPDIR)/libCbc_la-CbcFixVariable.Plo \
@@ -619,6 +621,7 @@ libCbc_la_SOURCES = \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcSolverStatistics.cpp CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.cpp CbcInstanceFeatures.hpp \
+	CbcFastMILPPreProcess.cpp CbcFastMILPPreProcess.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
 	CbcSymmetry.cpp CbcSymmetry.hpp \
@@ -738,6 +741,7 @@ includecoin_HEADERS = \
 	ClpConstraintAmpl.hpp \
 	CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.hpp \
+	CbcFastMILPPreProcess.hpp \
 	ClpAmplObjective.hpp
 
 all: config.h config_cbc.h
@@ -910,6 +914,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcCutSubsetModifier.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcDummyBranchingObject.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcEventHandler.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcFastMILPPreProcess.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcFathom.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcFathomDynamicProgramming.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcFixVariable.Plo@am__quote@ # am--include-marker
@@ -1498,6 +1503,13 @@ libCbc_la-CbcInstanceFeatures.lo: CbcInstanceFeatures.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcInstanceFeatures.lo `test -f 'CbcInstanceFeatures.cpp' || echo '$(srcdir)/'`CbcInstanceFeatures.cpp
 
+libCbc_la-CbcFastMILPPreProcess.lo: CbcFastMILPPreProcess.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcFastMILPPreProcess.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcFastMILPPreProcess.Tpo -c -o libCbc_la-CbcFastMILPPreProcess.lo `test -f 'CbcFastMILPPreProcess.cpp' || echo '$(srcdir)/'`CbcFastMILPPreProcess.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcFastMILPPreProcess.Tpo $(DEPDIR)/libCbc_la-CbcFastMILPPreProcess.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcFastMILPPreProcess.cpp' object='libCbc_la-CbcFastMILPPreProcess.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcFastMILPPreProcess.lo `test -f 'CbcFastMILPPreProcess.cpp' || echo '$(srcdir)/'`CbcFastMILPPreProcess.cpp
+
 libCbc_la-CbcStrategy.lo: CbcStrategy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcStrategy.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcStrategy.Tpo -c -o libCbc_la-CbcStrategy.lo `test -f 'CbcStrategy.cpp' || echo '$(srcdir)/'`CbcStrategy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcStrategy.Tpo $(DEPDIR)/libCbc_la-CbcStrategy.Plo
@@ -1728,6 +1740,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCutSubsetModifier.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcDummyBranchingObject.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcEventHandler.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcFastMILPPreProcess.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcFathom.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcFathomDynamicProgramming.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcFixVariable.Plo
@@ -1856,6 +1869,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcCutSubsetModifier.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcDummyBranchingObject.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcEventHandler.Plo
+	-rm -f ./$(DEPDIR)/libCbc_la-CbcFastMILPPreProcess.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcFathom.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcFathomDynamicProgramming.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcFixVariable.Plo

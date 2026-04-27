@@ -299,6 +299,20 @@ public:
     FPPEndMarker
   };
 
+  /*! \brief Which LP algorithm to use for initialSolve in -solve and
+      -initialSolve paths
+
+    - LPDual:    dual simplex (default)
+    - LPPrimal:  primal simplex
+    - LPBarrier: barrier (interior point)
+  */
+  enum LPMethod {
+    LPDual = 0,
+    LPPrimal,
+    LPBarrier,
+    LPEndMarker
+  };
+
   /*! \brief Get fast preprocessing level */
   inline FastPreProcessLevel getFastPreProcessLevel() const
   {
@@ -1715,6 +1729,17 @@ public:
   inline void setCGraphMode(CbcParameters::CGraphMode mode) { cgraphMode_ = mode;
   }
 
+  /*! \brief Get LP method for initial solve */
+  inline CbcParameters::LPMethod getLpMethod() const
+  {
+    return static_cast<LPMethod>(
+      parameters_[CbcParam::LPMETHOD]->modeVal());
+  }
+
+  /*! \brief Set LP method for initial solve */
+  inline void setLpMethod(CbcParameters::LPMethod method) { lpMethod_ = method;
+  }
+
   /*! \brief Get threshold for artificial costs */
   inline double getArtVarThreshold() { return (artVar_.threshold_); }
 
@@ -2534,6 +2559,7 @@ private:
   CbcParameters::StrategyMode strategyMode_;
   CbcParameters::ClockType clockType_;
   CbcParameters::CGraphMode cgraphMode_;
+  CbcParameters::LPMethod lpMethod_;
 
   //@}
 

@@ -425,7 +425,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::LPITERFREQ]->setDefault(0);
      parameters_[CbcParam::FPUMPPASSFREQ]->setDefault(0);
      parameters_[CbcParam::MAXHOTITS]->setDefault(0);
-     parameters_[CbcParam::MAXSAVEDSOLS]->setDefault(1);
+     parameters_[CbcParam::MAXSAVEDSOLS]->setDefault(10);
      parameters_[CbcParam::MAXSLOWCUTS]->setDefault(10);
      parameters_[CbcParam::MOREMOREMIPOPTIONS]->setDefault(0);
      parameters_[CbcParam::MULTIPLEROOTS]->setDefault(0);

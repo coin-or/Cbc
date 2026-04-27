@@ -8552,6 +8552,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                 int options = babModel_->specialOptions();
                 babModel_->setSpecialOptions(options | addOptions);
               }
+              babModel_->setMaximumSavedSolutions(parameters.getMaxSavedSols());
               babModel_->branchAndBound(doStatistics);
             }
 #else

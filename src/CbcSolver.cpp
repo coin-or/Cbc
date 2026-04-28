@@ -1745,6 +1745,616 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
 //###########################################################################
 //###########################################################################
 
+// Register all cut generators on babModel based on parameter settings,
+// then apply per-generator tuning (switches, accuracy, timing, cutDepth).
+static void installCutGenerators(
+  CbcModel &babModel,
+  CbcParameters &parameters,
+  int complicatedInteger,
+  bool dominatedCuts,
+  bool miplib,
+  const std::string &cgraphMode,
+  int oldCliqueMode,
+  int maxCallsBK,
+  int bkClqExtMethod,
+  CoinBronKerbosch::PivotingStrategy bkPivotingStrategy,
+  int oddWExtMethod,
+  int mixedRoundStrategy)
+{
+  int switches[30] = {};
+  int accuracyFlag[30] = {};
+  char doAtEnd[30] = {};
+  int lagrangeanFlag = (parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal() & (7 * 33554432)) >> 9;
+#define ALL_LAGRANGEAN 1
+  int numberGenerators = 0;
+  std::map<int, int> translate;
+  translate[CbcParameters::CGOff] = -100;
+  translate[CbcParameters::CGOn] = -1;
+  translate[CbcParameters::CGRoot] = -99;
+  translate[CbcParameters::CGIfMove] = -98;
+  translate[CbcParameters::CGForceOn] = 1;
+  translate[CbcParameters::CGOnGlobal] = -1098;
+  translate[CbcParameters::CGForceOnGlobal] = -999;
+  translate[CbcParameters::CGForceOnBut] = 1;
+  translate[CbcParameters::CGForceOnStrong] = 1;
+  translate[CbcParameters::CGForceOnButStrong] = 1;
+  translate[CbcParameters::CGStrongRoot] = -1;
+  std::map<int, int> laTranslate;
+  laTranslate[CbcParameters::CGEndOnlyRoot] = 1;
+  laTranslate[CbcParameters::CGEndCleanRoot] = 2;
+  laTranslate[CbcParameters::CGEndBothRoot] = 3;
+  laTranslate[CbcParameters::CGEndOnly] = 4;
+  laTranslate[CbcParameters::CGEndClean] = 5;
+  laTranslate[CbcParameters::CGEndBoth] = 6;
+  laTranslate[CbcParameters::CGOnlyAsWell] = 7;
+  laTranslate[CbcParameters::CGOnlyAsWellRoot] = 13;
+  laTranslate[CbcParameters::CGCleanAsWell] = 8;
+  laTranslate[CbcParameters::CGCleanAsWellRoot] = 14;
+  laTranslate[CbcParameters::CGBothAsWell] = 9;
+  laTranslate[CbcParameters::CGBothAsWellRoot] = 15;
+  laTranslate[CbcParameters::CGOnlyInstead] = 10;
+  laTranslate[CbcParameters::CGCleanInstead] = 11;
+  laTranslate[CbcParameters::CGBothInstead] = 12;
+  int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS]->intVal();
+
+  // --- Probing ---
+  int probingMode = parameters[CbcParam::PROBINGCUTS]->modeVal();
+  if (probingMode) {
+    CglProbing probingGen;
+    probingGen.setUsingObjective(1);
+    probingGen.setMaxPass(1);
+    probingGen.setMaxPassRoot(1);
+    probingGen.setMaxProbe(10);
+    probingGen.setMaxProbeRoot(50);
+    probingGen.setMaxLook(10);
+    probingGen.setMaxLookRoot(50);
+    probingGen.setMaxLookRoot(10);
+    probingGen.setMaxElements(200);
+    probingGen.setMaxElementsRoot(300);
+    probingGen.setRowCuts(3);
+    int numberColumns = babModel.solver()->getNumCols();
+    if (probingMode > CbcParameters::CGForceOnBut) {
+      probingGen.setMaxElements(numberColumns);
+      probingGen.setMaxElementsRoot(numberColumns);
+    }
+    probingGen.setMaxProbeRoot(std::min(2000, numberColumns));
+    probingGen.setMaxProbeRoot(123);
+    probingGen.setMaxProbe(123);
+    probingGen.setMaxLookRoot(20);
+    if (probingMode == CbcParameters::CGForceOnBut || probingMode == CbcParameters::CGForceOnButStrong)
+      probingGen.setRowCuts(-3);
+    if (probingMode == CbcParameters::CGForceOnStrong || probingMode == CbcParameters::CGForceOnButStrong) {
+      probingGen.setMaxProbeRoot(numberColumns);
+      probingGen.setMaxProbe(numberColumns);
+      probingGen.setMaxLook(50);
+      probingGen.setMaxLookRoot(50);
+    }
+    if (probingMode == CbcParameters::CGStrongRoot) {
+      probingGen.setMaxPassRoot(2);
+      probingGen.setMaxProbeRoot(numberColumns);
+      probingGen.setMaxLookRoot(numberColumns);
+    }
+    int iMode = translate[probingMode];
+    if (probingMode == CbcParameters::CGOnGlobal)
+      iMode = 1;
+    babModel.addCutGenerator(&probingGen, iMode, "Probing");
+    accuracyFlag[numberGenerators] = 5;
+    switches[numberGenerators++] = 0;
+  }
+
+  // --- Gomory ---
+  int gomoryMode = parameters[CbcParam::GOMORYCUTS]->modeVal();
+  if (gomoryMode && (complicatedInteger != 1 || (gomoryMode == 1 || gomoryMode >= 4))) {
+    CglGomory gomoryGen;
+    gomoryGen.setLimitAtRoot(1000);
+    gomoryGen.setLimit(50);
+    // MORE_CUTS defaults (applied in the "Default strategy stuff" block)
+#define MORE_CUTS
+#ifdef MORE_CUTS
+    gomoryGen.setAwayAtRoot(0.005);
+#else
+    gomoryGen.setAwayAtRoot(0.01);
+#endif
+    // Strategy 0 overrides awayAtRoot
+    if (parameters[CbcParam::STRATEGY]->modeVal() == 0)
+      gomoryGen.setAwayAtRoot(0.05);
+    int numberColumns = babModel.getNumCols();
+    if (gomoryMode == CbcParameters::CGForceOnBut) {
+      gomoryMode = CbcParameters::CGForceOn;
+      gomoryGen.setLimitAtRoot(numberColumns);
+      gomoryGen.setLimit(numberColumns);
+    } else if (gomoryMode == CbcParameters::CGForceOnStrong) {
+      gomoryMode = CbcParameters::CGIfMove;
+      gomoryGen.setLimitAtRoot(numberColumns);
+      gomoryGen.setLimit(200);
+    } else if (gomoryMode == CbcParameters::CGForceOnButStrong) {
+      gomoryMode = CbcParameters::CGIfMove;
+      gomoryGen.setLimitAtRoot(500);
+      gomoryGen.setLimit(200);
+    } else if (numberColumns > 5000) {
+#ifdef MORE_CUTS2
+      gomoryGen.setLimitAtRoot(numberColumns);
+      gomoryGen.setLimit(200);
+#else
+      gomoryGen.setLimitAtRoot(2000);
+#endif
+    } else {
+#ifdef MORE_CUTS2
+      gomoryGen.setLimitAtRoot(numberColumns);
+      gomoryGen.setLimit(200);
+#endif
+    }
+    int cutLength = parameters[CbcParam::CUTLENGTH]->intVal();
+    if (cutLength != -1) {
+      gomoryGen.setLimitAtRoot(cutLength);
+      if (cutLength < 10000000) {
+        gomoryGen.setLimit(cutLength);
+      } else {
+        gomoryGen.setLimit(cutLength % 10000000);
+      }
+    }
+    int laGomory = parameters[CbcParam::LAGOMORYCUTS]->modeVal();
+    int gType = translate[gomoryMode];
+    if (!laGomory) {
+      babModel.addCutGenerator(&gomoryGen, translate[gomoryMode], "Gomory");
+      accuracyFlag[numberGenerators] = 3;
+      switches[numberGenerators++] = lagrangeanFlag;
+    } else {
+      laGomory = laTranslate[laGomory] - 1;
+      int type = (laGomory % 3) + 1;
+      int when = laGomory / 3;
+      char atEnd = (when < 2) ? 1 : 0;
+      int gomoryTypeMajor = 10;
+      if (when != 3) {
+        babModel.addCutGenerator(&gomoryGen, gType, "Gomory");
+        accuracyFlag[numberGenerators] = 3;
+        switches[numberGenerators++] = 0;
+        if (when == 2) {
+          gomoryTypeMajor = 20;
+        } else if (when == 4) {
+          gomoryTypeMajor = 20;
+          when = 0;
+        }
+      } else {
+        when--;
+        gomoryTypeMajor = 20;
+      }
+      if (!when)
+        gType = -99;
+      gomoryGen.passInOriginalSolver(babModel.solver());
+      if ((type & 1) != 0) {
+        gomoryGen.setGomoryType(gomoryTypeMajor + 1);
+        babModel.addCutGenerator(&gomoryGen, gType, "GomoryL1");
+        accuracyFlag[numberGenerators] = 3;
+        doAtEnd[numberGenerators] = atEnd;
+        if (atEnd) {
+          babModel.cutGenerator(numberGenerators)
+            ->setMaximumTries(99999999);
+          babModel.cutGenerator(numberGenerators)->setHowOften(1);
+        }
+        switches[numberGenerators++] = 16384;
+      }
+      if ((type & 2) != 0) {
+        gomoryGen.setGomoryType(gomoryTypeMajor + 2);
+        babModel.addCutGenerator(&gomoryGen, gType, "GomoryL2");
+        accuracyFlag[numberGenerators] = 3;
+        doAtEnd[numberGenerators] = atEnd;
+        if (atEnd) {
+          babModel.cutGenerator(numberGenerators)
+            ->setMaximumTries(99999999);
+          babModel.cutGenerator(numberGenerators)->setHowOften(1);
+        }
+        switches[numberGenerators++] = 32768;
+      }
+    }
+  }
+
+#ifdef CLIQUE_ANALYSIS
+  if (miplib) {
+    CglStored storedAmpl;
+    if (!storedAmpl.sizeRowCuts()) {
+      printf("looking at probing\n");
+      babModel.addCutGenerator(&storedAmpl, 1, "Stored");
+      accuracyFlag[numberGenerators] = 0;
+      switches[numberGenerators++] = 0;
+    }
+  }
+#endif
+
+  // --- Knapsack ---
+  int knapsackMode = parameters[CbcParam::KNAPSACKCUTS]->modeVal();
+  if (knapsackMode) {
+    CglKnapsackCover knapsackGen;
+    babModel.addCutGenerator(&knapsackGen, translate[knapsackMode], "Knapsack");
+    accuracyFlag[numberGenerators] = 1;
+    switches[numberGenerators++] = -2;
+  }
+
+  // --- RedSplit ---
+  int redsplitMode = parameters[CbcParam::REDSPLITCUTS]->modeVal();
+  if (redsplitMode && !complicatedInteger) {
+    CglRedSplit redsplitGen;
+    babModel.addCutGenerator(&redsplitGen, translate[redsplitMode], "Reduce-and-split");
+    accuracyFlag[numberGenerators] = 5;
+    if (redsplitMode != CbcParameters::CGOn) {
+      babModel.cutGenerator(numberGenerators)
+        ->setMaximumTries(maximumSlowPasses);
+      babModel.cutGenerator(numberGenerators)->setHowOften(10);
+    }
+    switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
+  }
+
+  // --- RedSplit2 ---
+  int redsplit2Mode = parameters[CbcParam::REDSPLIT2CUTS]->modeVal();
+  if (redsplit2Mode && !complicatedInteger) {
+    CglRedSplit2 redsplit2Gen;
+    int maxLength = 256;
+    if (redsplit2Mode > CbcParameters::CGRoot) {
+      redsplit2Mode -= 2;
+      maxLength = COIN_INT_MAX;
+    }
+    CglRedSplit2Param &rs2params = redsplit2Gen.getParam();
+    rs2params.setMaxNonzeroesTab(maxLength);
+    babModel.addCutGenerator(&redsplit2Gen, translate[redsplit2Mode], "Reduce-and-split(2)");
+    accuracyFlag[numberGenerators] = 5;
+    if (redsplit2Mode != CbcParameters::CGOn) {
+      babModel.cutGenerator(numberGenerators)
+        ->setHowOften(maximumSlowPasses);
+      babModel.cutGenerator(numberGenerators)
+        ->setMaximumTries(maximumSlowPasses);
+      babModel.cutGenerator(numberGenerators)->setHowOften(5);
+    }
+    switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
+  }
+
+  // --- GMI ---
+  int GMIMode = parameters[CbcParam::GMICUTS]->modeVal();
+  if (GMIMode && !complicatedInteger) {
+    CglGMI GMIGen;
+    if (GMIMode > CbcParameters::CGOnGlobal) {
+      GMIMode -= 5;
+      CglGMIParam &gmiParams = GMIGen.getParam();
+      gmiParams.setMaxSupportRel(1.0);
+    }
+    babModel.addCutGenerator(&GMIGen, translate[GMIMode], "Gomory(2)");
+    if (GMIMode == CbcParameters::CGOnGlobal) {
+      GMIMode = CbcParameters::CGRoot;
+      doAtEnd[numberGenerators] = 1;
+      babModel.cutGenerator(numberGenerators)
+        ->setMaximumTries(99999999);
+      babModel.cutGenerator(numberGenerators)->setHowOften(1);
+    }
+    accuracyFlag[numberGenerators] = 5;
+    switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN * lagrangeanFlag);
+  }
+
+  // --- Clique ---
+  int cliqueMode = parameters[CbcParam::CLIQUECUTS]->modeVal();
+  int oddWheelMode = parameters[CbcParam::ODDWHEELCUTS]->modeVal();
+  if (cliqueMode) {
+    CglBKClique bkCliqueGen;
+    bkCliqueGen.setMaxCallsBK(maxCallsBK);
+    bkCliqueGen.setExtendingMethod(bkClqExtMethod);
+    bkCliqueGen.setPivotingStrategy(bkPivotingStrategy);
+    babModel.addCutGenerator(&bkCliqueGen, translate[cliqueMode], "Clique");
+    accuracyFlag[numberGenerators] = 0;
+    switches[numberGenerators++] = 0;
+  } else if (cgraphMode == "clq") {
+    CglClique clique;
+    clique.setStarCliqueReport(false);
+    clique.setRowCliqueReport(false);
+    clique.setMinViolation(0.05);
+    oddWheelMode = 0;
+    parameters[CbcParam::ODDWHEELCUTS]->setModeVal(CbcParameters::CGOff);
+    babModel.addCutGenerator(&clique, translate[oldCliqueMode], "Clique");
+    accuracyFlag[numberGenerators] = 0;
+    switches[numberGenerators++] = 0;
+  }
+
+  // --- OddWheel ---
+  if (oddWheelMode) {
+    CglOddWheel oddWheelGen;
+    oddWheelGen.setExtendingMethod(oddWExtMethod);
+    babModel.addCutGenerator(&oddWheelGen, translate[oddWheelMode], "OddWheel");
+    accuracyFlag[numberGenerators] = 0;
+    switches[numberGenerators++] = 0;
+  }
+
+  // --- MIR ---
+  int mixedMode = parameters[CbcParam::MIRCUTS]->modeVal();
+  if (mixedMode) {
+    CglMixedIntegerRounding2 mixedGen(1, true, 1);
+    mixedGen.setDoPreproc(1);
+    if (mixedRoundStrategy != 1)
+      mixedGen.setMAXAGGR_(mixedRoundStrategy);
+    babModel.addCutGenerator(&mixedGen, translate[mixedMode], "MixedIntegerRounding2");
+    accuracyFlag[numberGenerators] = 2;
+    switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN * lagrangeanFlag);
+  }
+
+  // --- FlowCover ---
+  int flowMode = parameters[CbcParam::FLOWCUTS]->modeVal();
+  if (flowMode) {
+    CglFlowCover flowGen;
+    babModel.addCutGenerator(&flowGen, translate[flowMode], "FlowCover");
+    accuracyFlag[numberGenerators] = 2;
+    switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN * lagrangeanFlag);
+  }
+
+  // --- TwoMir ---
+  int twomirMode = parameters[CbcParam::TWOMIRCUTS]->modeVal();
+  if (twomirMode && (complicatedInteger != 1 || (twomirMode == CbcParameters::CGOn || twomirMode >= CbcParameters::CGForceOn))) {
+    CglTwomir twomirGen;
+    twomirGen.setMaxElements(250);
+    // MORE_CUTS defaults
+#ifdef MORE_CUTS
+    twomirGen.setAwayAtRoot(0.005);
+    twomirGen.setAway(0.01);
+#else
+    twomirGen.setAwayAtRoot(0.01);
+    twomirGen.setAway(0.01);
+#endif
+    int numberColumns = babModel.getNumCols();
+    if (twomirMode == CbcParameters::CGForceOnBut) {
+      twomirMode = CbcParameters::CGForceOn;
+      twomirGen.setMaxElements(numberColumns);
+    } else if (numberColumns > 5000 && twomirMode == CbcParameters::CGForceOn) {
+      twomirGen.setMaxElements(2000);
+    }
+    int laTwomir = parameters[CbcParam::LATWOMIRCUTS]->modeVal();
+    int twomirType = translate[twomirMode];
+    if (!laTwomir) {
+      babModel.addCutGenerator(&twomirGen, translate[twomirMode], "TwoMirCuts");
+      accuracyFlag[numberGenerators] = 4;
+      switches[numberGenerators++] = 1 | lagrangeanFlag;
+    } else {
+      laTwomir = laTranslate[laTwomir] - 1;
+      int type = (laTwomir % 3) + 1;
+      int when = laTwomir / 3;
+      char atEnd = (when < 2) ? 1 : 0;
+      int twomirTypeMajor = 10;
+      if (when < 3) {
+        babModel.addCutGenerator(&twomirGen, translate[twomirMode], "TwoMirCuts");
+        accuracyFlag[numberGenerators] = 4;
+        switches[numberGenerators++] = 1;
+        if (when == 2)
+          twomirTypeMajor = 10;
+      } else {
+        when--;
+        twomirTypeMajor = 20;
+      }
+      if (!when)
+        twomirType = -99;
+      twomirGen.passInOriginalSolver(babModel.solver());
+      if ((type & 1) != 0) {
+        twomirGen.setTwomirType(twomirTypeMajor + 1);
+        babModel.addCutGenerator(&twomirGen, twomirType, "TwoMirCutsL1");
+        accuracyFlag[numberGenerators] = 4;
+        doAtEnd[numberGenerators] = atEnd;
+        switches[numberGenerators++] = (atEnd ? 0 : 1) | 16384;
+      }
+      if ((type & 2) != 0) {
+        twomirGen.setTwomirType(twomirTypeMajor + 2);
+        babModel.addCutGenerator(&twomirGen, twomirType, "TwoMirCutsL2");
+        accuracyFlag[numberGenerators] = 4;
+        doAtEnd[numberGenerators] = atEnd;
+        switches[numberGenerators++] = (atEnd ? 0 : 1) | 32768;
+      }
+    }
+  }
+
+  // --- LandP ---
+#ifndef DEBUG_MALLOC
+  int landpMode = parameters[CbcParam::LANDPCUTS]->modeVal();
+  if (landpMode) {
+    CglLandP landpGen;
+    landpGen.parameter().maximumCutLength = 2000;
+    landpGen.validator().setMinViolation(1.0e-4);
+    if (landpMode == CbcParameters::CGOnGlobal) {
+      landpGen.parameter().maximumCutLength = 2000000;
+      landpMode = CbcParameters::CGIfMove;
+    }
+    babModel.addCutGenerator(&landpGen, translate[landpMode], "LiftAndProject");
+    accuracyFlag[numberGenerators] = 5;
+    if (landpMode != CbcParameters::CGOn) {
+      babModel.cutGenerator(numberGenerators)
+        ->setMaximumTries(maximumSlowPasses);
+      babModel.cutGenerator(numberGenerators)->setHowOften(10);
+    }
+    switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
+  }
+#endif
+
+  // --- ResidualCapacity ---
+  int residualCapacityMode = parameters[CbcParam::RESIDCAPCUTS]->modeVal();
+  if (residualCapacityMode) {
+    CglResidualCapacity residualCapacityGen;
+    residualCapacityGen.setDoPreproc(1);
+    babModel.addCutGenerator(&residualCapacityGen,
+      translate[residualCapacityMode], "ResidualCapacity");
+    accuracyFlag[numberGenerators] = 5;
+    switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
+  }
+
+  // --- ZeroHalf ---
+  int zerohalfMode = parameters[CbcParam::ZEROHALFCUTS]->modeVal();
+  if (zerohalfMode) {
+    CglZeroHalf zerohalfGen;
+    zerohalfGen.setSepGraphSparseThreshold(parameters[CbcParam::ZEROHALFSPARSETHRESH]->intVal());
+    zerohalfGen.setRowMaxPairCount(parameters[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->intVal());
+    zerohalfGen.setRowMaxFractionalCount(parameters[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->intVal());
+    if (zerohalfMode > CbcParameters::CGForceOn)
+      zerohalfGen.setFlags(1);
+    babModel.addCutGenerator(&zerohalfGen, translate[zerohalfMode], "ZeroHalf");
+    accuracyFlag[numberGenerators] = 5;
+    CglZeroHalf *storedZeroHalf =
+      dynamic_cast<CglZeroHalf *>(babModel.cutGenerator(numberGenerators)->generator());
+    if (storedZeroHalf)
+      storedZeroHalf->setSepGraphSparseThreshold(
+        parameters[CbcParam::ZEROHALFSPARSETHRESH]->intVal());
+    if (storedZeroHalf)
+      storedZeroHalf->setRowMaxPairCount(
+        parameters[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->intVal());
+    if (storedZeroHalf)
+      storedZeroHalf->setRowMaxFractionalCount(
+        parameters[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->intVal());
+    babModel.cutGenerator(numberGenerators)->setNeedsRefresh(true);
+    switches[numberGenerators++] = 2;
+  }
+
+  if (dominatedCuts)
+    babModel.setSpecialOptions(babModel.specialOptions() | 64);
+
+  // Per-generator tuning
+  numberGenerators = babModel.numberCutGenerators();
+  int cutDepth = parameters[CbcParam::CUTDEPTH]->intVal();
+  for (int iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
+    CbcCutGenerator *generator = babModel.cutGenerator(iGenerator);
+    int howOften = generator->howOften();
+    int iSwitch = switches[iGenerator];
+    int iSwitch2, iSwitch3;
+    if (iSwitch >= 0) {
+      iSwitch2 = iSwitch & 127;
+      iSwitch3 = iSwitch & ~16383;
+      generator->setSwitches(generator->switches() | iSwitch3);
+    } else {
+      iSwitch2 = iSwitch;
+    }
+    if (howOften == -98 || howOften == -99 || generator->maximumTries() > 0)
+      generator->setSwitchOffIfLessThan(iSwitch2);
+    generator->setInaccuracy(accuracyFlag[iGenerator]);
+    if (doAtEnd[iGenerator]) {
+      generator->setWhetherCallAtEnd(true);
+    }
+    generator->setTiming(true);
+    if (cutDepth >= 0)
+      generator->setWhatDepth(cutDepth);
+  }
+}
+
+// RAII guard that installs structured B&B message handlers (FPump progress,
+// cut-generation table, B&B tree output, Nauty interception) on babModel
+// before branchAndBound() and restores the original handler on destruction.
+class BabHandlerGuard
+{
+public:
+  BabHandlerGuard(CbcModel &babModel, CbcModel &originalModel,
+    CbcParameters &parameters, int cbcLogLevel)
+    : babModel_(babModel)
+  {
+    // FPump progress output
+    int fpumpPassFreq = parameters[CbcParam::FPUMPPASSFREQ]->intVal();
+    double fpumpTimeFreq = parameters[CbcParam::FPUMPTIMEFREQ]->dblVal();
+    if (cbcLogLevel >= 1 && (fpumpPassFreq > 0 || fpumpTimeFreq > 0.0)) {
+      for (int i = 0; i < babModel_.numberHeuristics(); i++) {
+        CbcHeuristicFPump *pump = dynamic_cast<CbcHeuristicFPump *>(
+          babModel_.heuristic(i));
+        if (pump) {
+          FILE *outfp = originalModel.messageHandler()->filePointer();
+          if (!outfp)
+            outfp = stdout;
+          fpumpOut_ = std::make_unique<CbcFPumpOutput>(
+            outfp, CbcOutput::useUtf8(), cbcLogLevel,
+            fpumpPassFreq, fpumpTimeFreq);
+          pump->setFPumpOutput(fpumpOut_.get());
+          break;
+        }
+      }
+    }
+
+    // Cut generation output
+    if (cbcLogLevel >= 1 && babModel_.numberIntegers() > 0) {
+      FILE *outfp = babModel_.messageHandler()->filePointer();
+      if (!outfp)
+        outfp = stdout;
+      cutGenOut_ = std::make_unique<CbcCutGenOutput>(outfp, CbcOutput::useUtf8(), cbcLogLevel);
+    }
+
+    // B&B tree output
+    if (cbcLogLevel >= 1 && babModel_.numberIntegers() > 0) {
+      FILE *outfp = babModel_.messageHandler()->filePointer();
+      if (!outfp)
+        outfp = stdout;
+      bnbOut_ = std::make_unique<CbcBnBOutput>(outfp, CbcOutput::useUtf8(), cbcLogLevel);
+    }
+
+    // Composite message handler (Nauty + FPump suppression + cut gen + B&B)
+    if (cbcLogLevel >= 1
+      && (fpumpOut_ != nullptr
+        || cutGenOut_ != nullptr
+        || bnbOut_ != nullptr
+#ifdef CBC_HAS_NAUTY
+        || (babModel_.moreSpecialOptions2() & (128 | 256)) != 0
+#endif
+        )) {
+      FILE *outfp = babModel_.messageHandler()->filePointer();
+      if (!outfp)
+        outfp = stdout;
+      nautyHandler_ = new CbcNautyHandler(outfp, CbcOutput::useUtf8(), cbcLogLevel);
+      nautyHandler_->setFPumpOutput(fpumpOut_.get());
+      nautyHandler_->setCutGenOutput(cutGenOut_.get());
+      nautyHandler_->setBnBOutput(bnbOut_.get());
+      savedMsgHandler_ = originalModel.messageHandler();
+      babModel_.passInMessageHandler(nautyHandler_);
+      // Give the LP solver its own silent handler so OsiDoReducePrint
+      // doesn't silence our CBC-level handler.
+      lpSilentHandler_ = new CoinMessageHandler();
+      lpSilentHandler_->setLogLevel(0);
+      babModel_.solver()->passInMessageHandler(lpSilentHandler_);
+    }
+
+    // Configure B&B status print frequency for structured output.
+    if (bnbOut_) {
+      OsiClpSolverInterface *bnbSolver = getClpSolver(babModel_.solver());
+      double progVal = bnbSolver->getModelPtr()->getMinIntervalProgressUpdate();
+      if (progVal <= 0.0) {
+        babModel_.setSecsPrintFrequency(-1.0);
+        if (progVal < -1.0)
+          babModel_.setPrintFrequency(static_cast<int>(-progVal));
+        else
+          babModel_.setPrintFrequency(babModel_.getNumCols() > 2000 ? 100 : 1000);
+      } else {
+        babModel_.setPrintFrequency(1);
+        babModel_.setSecsPrintFrequency(progVal);
+      }
+      babModel_.setPrintingMode(1);
+    }
+  }
+
+  ~BabHandlerGuard()
+  {
+    if (cutGenOut_)
+      cutGenOut_->close();
+    if (fpumpOut_) {
+      for (int i = 0; i < babModel_.numberHeuristics(); i++) {
+        CbcHeuristicFPump *pump = dynamic_cast<CbcHeuristicFPump *>(
+          babModel_.heuristic(i));
+        if (pump) {
+          pump->setFPumpOutput(nullptr);
+          break;
+        }
+      }
+    }
+    if (nautyHandler_) {
+      babModel_.passInMessageHandler(savedMsgHandler_);
+      delete nautyHandler_;
+      delete lpSilentHandler_;
+    }
+  }
+
+  BabHandlerGuard(const BabHandlerGuard &) = delete;
+  BabHandlerGuard &operator=(const BabHandlerGuard &) = delete;
+
+private:
+  CbcModel &babModel_;
+  std::unique_ptr<CbcFPumpOutput> fpumpOut_;
+  std::unique_ptr<CbcCutGenOutput> cutGenOut_;
+  std::unique_ptr<CbcBnBOutput> bnbOut_;
+  CbcNautyHandler *nautyHandler_ = nullptr;
+  CoinMessageHandler *savedMsgHandler_ = nullptr;
+  CoinMessageHandler *lpSilentHandler_ = nullptr;
+};
+
 //###########################################################################
 // CbcMain 1
 // Meaning of whereFrom:
@@ -6470,436 +7080,11 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           int strategyFlag = parameters[CbcParam::STRATEGY]->modeVal();
           int bothFlags = std::max(std::min(experimentFlag, 1), strategyFlag);
           // add cut generators if wanted
-          int switches[30] = {};
-          int accuracyFlag[30] = {};
-          char doAtEnd[30] = {};
-          int lagrangeanFlag = (parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal() & (7 * 33554432)) >> 9;
-#define ALL_LAGRANGEAN 1
-          int numberGenerators = 0;
-          std::map< int, int > translate;
-          translate[CbcParameters::CGOff] = -100;
-          translate[CbcParameters::CGOn] = -1;
-          translate[CbcParameters::CGRoot] = -99;
-          translate[CbcParameters::CGIfMove] = -98;
-          translate[CbcParameters::CGForceOn] = 1;
-          translate[CbcParameters::CGOnGlobal] = -1098;
-          translate[CbcParameters::CGForceOnGlobal] = -999;
-          translate[CbcParameters::CGForceOnBut] = 1;
-          translate[CbcParameters::CGForceOnStrong] = 1;
-          translate[CbcParameters::CGForceOnButStrong] = 1;
-          translate[CbcParameters::CGStrongRoot] = -1;
-          std::map< int, int > laTranslate;
-          laTranslate[CbcParameters::CGEndOnlyRoot] = 1;
-          laTranslate[CbcParameters::CGEndCleanRoot] = 2;
-          laTranslate[CbcParameters::CGEndBothRoot] = 3;
-          laTranslate[CbcParameters::CGEndOnly] = 4;
-          laTranslate[CbcParameters::CGEndClean] = 5;
-          laTranslate[CbcParameters::CGEndBoth] = 6;
-          laTranslate[CbcParameters::CGOnlyAsWell] = 7;
-          laTranslate[CbcParameters::CGOnlyAsWellRoot] = 13;
-          laTranslate[CbcParameters::CGCleanAsWell] = 8;
-          laTranslate[CbcParameters::CGCleanAsWellRoot] = 14;
-          laTranslate[CbcParameters::CGBothAsWell] = 9;
-          laTranslate[CbcParameters::CGBothAsWellRoot] = 15;
-          laTranslate[CbcParameters::CGOnlyInstead] = 10;
-          laTranslate[CbcParameters::CGCleanInstead] = 11;
-          laTranslate[CbcParameters::CGBothInstead] = 12;
-          int maximumSlowPasses = parameters[CbcParam::MAXSLOWCUTS]->intVal();
-          assert(parameters[CbcParam::PROBINGCUTS]->modeVal() == probingMode);
-          if (probingMode) {
-            int numberColumns = babModel_->solver()->getNumCols();
-            if (probingMode > CbcParameters::CGForceOnBut) {
-              probingGen.setMaxElements(numberColumns);
-              probingGen.setMaxElementsRoot(numberColumns);
-            }
-            probingGen.setMaxProbeRoot(std::min(2000, numberColumns));
-            probingGen.setMaxProbeRoot(123);
-            probingGen.setMaxProbe(123);
-            probingGen.setMaxLookRoot(20);
-            if (probingMode == CbcParameters::CGForceOnBut || probingMode == CbcParameters::CGForceOnButStrong)
-              probingGen.setRowCuts(-3); // strengthening etc just at root
-            if (probingMode == CbcParameters::CGForceOnStrong || probingMode == CbcParameters::CGForceOnButStrong) {
-              // Number of unsatisfied variables to look at
-              probingGen.setMaxProbeRoot(numberColumns);
-              probingGen.setMaxProbe(numberColumns);
-              // How far to follow the consequences
-              probingGen.setMaxLook(50);
-              probingGen.setMaxLookRoot(50);
-            }
-            if (probingMode == CbcParameters::CGStrongRoot) {
-              probingGen.setMaxPassRoot(2);
-              probingGen.setMaxProbeRoot(numberColumns);
-              probingGen.setMaxLookRoot(numberColumns);
-            }
-            // If 5 then force on
-            int iMode = translate[probingMode];
-            if (probingMode == CbcParameters::CGOnGlobal)
-              iMode = 1;
-            babModel_->addCutGenerator(&probingGen, iMode, "Probing");
-            accuracyFlag[numberGenerators] = 5;
-            switches[numberGenerators++] = 0;
-          }
-          assert(parameters[CbcParam::GOMORYCUTS]->modeVal() == gomoryMode);
-          if (gomoryMode && (complicatedInteger != 1 || (gomoryMode == 1 || gomoryMode >= 4))) {
-            // try larger limit
-            int numberColumns = babModel_->getNumCols();
-            if (gomoryMode == CbcParameters::CGForceOnBut) {
-              gomoryMode = CbcParameters::CGForceOn;
-              gomoryGen.setLimitAtRoot(numberColumns);
-              gomoryGen.setLimit(numberColumns);
-            } else if (gomoryMode == CbcParameters::CGForceOnStrong) {
-              gomoryMode = CbcParameters::CGIfMove;
-              gomoryGen.setLimitAtRoot(numberColumns);
-              gomoryGen.setLimit(200);
-            } else if (gomoryMode == CbcParameters::CGForceOnButStrong) {
-              gomoryMode = CbcParameters::CGIfMove;
-              gomoryGen.setLimitAtRoot(500);
-              gomoryGen.setLimit(200);
-            } else if (numberColumns > 5000) {
-              // #define MORE_CUTS2
-#ifdef MORE_CUTS2
-              // try larger limit
-              gomoryGen.setLimitAtRoot(numberColumns);
-              gomoryGen.setLimit(200);
-#else
-              gomoryGen.setLimitAtRoot(2000);
-              // gomoryGen.setLimit(200);
-#endif
-            } else {
-#ifdef MORE_CUTS2
-              // try larger limit
-              gomoryGen.setLimitAtRoot(numberColumns);
-              gomoryGen.setLimit(200);
-#endif
-            }
-            int cutLength = parameters[CbcParam::CUTLENGTH]->intVal();
-            if (cutLength != -1) {
-              gomoryGen.setLimitAtRoot(cutLength);
-              if (cutLength < 10000000) {
-                gomoryGen.setLimit(cutLength);
-              } else {
-                gomoryGen.setLimit(cutLength % 10000000);
-              }
-            }
-            int laGomory = parameters[CbcParam::LAGOMORYCUTS]->modeVal();
-            int gType = translate[gomoryMode];
-            if (!laGomory) {
-              // Normal
-              babModel_->addCutGenerator(&gomoryGen,
-                translate[gomoryMode], "Gomory");
-              accuracyFlag[numberGenerators] = 3;
-              switches[numberGenerators++] = lagrangeanFlag;
-            } else {
-              laGomory = laTranslate[laGomory] - 1;
-              int type = (laGomory % 3) + 1;
-              int when = laGomory / 3;
-              char atEnd = (when < 2) ? 1 : 0;
-              int gomoryTypeMajor = 10;
-              if (when != 3) {
-                // normal as well
-                babModel_->addCutGenerator(&gomoryGen, gType, "Gomory");
-                accuracyFlag[numberGenerators] = 3;
-                switches[numberGenerators++] = 0;
-                if (when == 2) {
-                  gomoryTypeMajor = 20;
-                } else if (when == 4) {
-                  gomoryTypeMajor = 20;
-                  when = 0;
-                }
-              } else {
-                when--; // so on
-                gomoryTypeMajor = 20;
-              }
-              if (!when)
-                gType = -99; // root
-              gomoryGen.passInOriginalSolver(babModel_->solver());
-              if ((type & 1) != 0) {
-                // clean
-                gomoryGen.setGomoryType(gomoryTypeMajor + 1);
-                babModel_->addCutGenerator(&gomoryGen, gType, "GomoryL1");
-                accuracyFlag[numberGenerators] = 3;
-                doAtEnd[numberGenerators] = atEnd;
-                if (atEnd) {
-                  babModel_->cutGenerator(numberGenerators)
-                    ->setMaximumTries(99999999);
-                  babModel_->cutGenerator(numberGenerators)->setHowOften(1);
-                }
-                switches[numberGenerators++] = 16384;
-              }
-              if ((type & 2) != 0) {
-                // simple
-                gomoryGen.setGomoryType(gomoryTypeMajor + 2);
-                babModel_->addCutGenerator(&gomoryGen, gType, "GomoryL2");
-                accuracyFlag[numberGenerators] = 3;
-                doAtEnd[numberGenerators] = atEnd;
-                if (atEnd) {
-                  babModel_->cutGenerator(numberGenerators)
-                    ->setMaximumTries(99999999);
-                  babModel_->cutGenerator(numberGenerators)->setHowOften(1);
-                }
-                switches[numberGenerators++] = 32768;
-              }
-            }
-          }
-#ifdef CLIQUE_ANALYSIS
-          if (miplib && !storedAmpl.sizeRowCuts()) {
-            printf("looking at probing\n");
-            babModel_->addCutGenerator(&storedAmpl, 1, "Stored");
-            accuracyFlag[numberGenerators] = 0;
-            switches[numberGenerators++] = 0;
-          }
-#endif
-          assert(parameters[CbcParam::KNAPSACKCUTS]->modeVal() == knapsackMode);
-          if (knapsackMode) {
-            babModel_->addCutGenerator(
-              &knapsackGen, translate[knapsackMode], "Knapsack");
-            accuracyFlag[numberGenerators] = 1;
-            switches[numberGenerators++] = -2;
-          }
-          if (redsplitMode && !complicatedInteger) {
-            babModel_->addCutGenerator(&redsplitGen,
-              translate[redsplitMode],
-              "Reduce-and-split");
-            accuracyFlag[numberGenerators] = 5;
-            // slow ? - just do a few times
-            if (redsplitMode != CbcParameters::CGOn) {
-              babModel_->cutGenerator(numberGenerators)
-                ->setMaximumTries(maximumSlowPasses);
-              babModel_->cutGenerator(numberGenerators)->setHowOften(10);
-            }
-            switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
-          }
-          if (redsplit2Mode && !complicatedInteger) {
-            int maxLength = 256;
-            if (redsplit2Mode > CbcParameters::CGRoot) {
-              redsplit2Mode -= 2;
-              maxLength = COIN_INT_MAX;
-            }
-            CglRedSplit2Param &parameters = redsplit2Gen.getParam();
-            parameters.setMaxNonzeroesTab(maxLength);
-            babModel_->addCutGenerator(&redsplit2Gen,
-              translate[redsplit2Mode],
-              "Reduce-and-split(2)");
-            accuracyFlag[numberGenerators] = 5;
-            // slow ? - just do a few times
-            if (redsplit2Mode != CbcParameters::CGOn) {
-              babModel_->cutGenerator(numberGenerators)
-                ->setHowOften(maximumSlowPasses);
-              babModel_->cutGenerator(numberGenerators)
-                ->setMaximumTries(maximumSlowPasses);
-              babModel_->cutGenerator(numberGenerators)->setHowOften(5);
-            }
-
-            switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
-          }
-          if (GMIMode && !complicatedInteger) {
-            if (GMIMode > CbcParameters::CGOnGlobal) {
-              // long
-              GMIMode -= 5;
-              CglGMIParam &parameters = GMIGen.getParam();
-              parameters.setMaxSupportRel(1.0);
-            }
-            babModel_->addCutGenerator(&GMIGen, translate[GMIMode],
-              "Gomory(2)");
-            if (GMIMode == CbcParameters::CGOnGlobal) {
-              // just at end and root
-              GMIMode = CbcParameters::CGRoot;
-              doAtEnd[numberGenerators] = 1;
-              babModel_->cutGenerator(numberGenerators)
-                ->setMaximumTries(99999999);
-              babModel_->cutGenerator(numberGenerators)->setHowOften(1);
-            }
-            accuracyFlag[numberGenerators] = 5;
-            switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN * lagrangeanFlag);
-          }
-          if (cliqueMode) {
-            bkCliqueGen.setMaxCallsBK(maxCallsBK);
-            bkCliqueGen.setExtendingMethod(bkClqExtMethod);
-            bkCliqueGen.setPivotingStrategy(bkPivotingStrategy);
-            babModel_->addCutGenerator(&bkCliqueGen,
-              translate[cliqueMode], "Clique");
-            accuracyFlag[numberGenerators] = 0;
-            switches[numberGenerators++] = 0;
-          } else if (cgraphMode == "clq") {
-            // old style
-            CglClique clique;
-            clique.setStarCliqueReport(false);
-            clique.setRowCliqueReport(false);
-            clique.setMinViolation(0.05);
-            oddWheelMode = 0;
-            parameters[CbcParam::ODDWHEELCUTS]->setModeVal(CbcParameters::CGOff);
-            babModel_->addCutGenerator(&clique, translate[oldCliqueMode],
-              "Clique");
-            accuracyFlag[numberGenerators] = 0;
-            switches[numberGenerators++] = 0;
-          }
-          assert(parameters[CbcParam::ODDWHEELCUTS]->modeVal() == oddWheelMode);
-          if (oddWheelMode) {
-            oddWheelGen.setExtendingMethod(oddWExtMethod);
-            babModel_->addCutGenerator(
-              &oddWheelGen, translate[oddWheelMode], "OddWheel");
-            accuracyFlag[numberGenerators] = 0;
-            switches[numberGenerators++] = 0;
-          }
-          assert(parameters[CbcParam::MIRCUTS]->modeVal() == mixedMode);
-          if (mixedMode) {
-            if (mixedRoundStrategy != 1)
-              mixedGen.setMAXAGGR_(mixedRoundStrategy);
-            babModel_->addCutGenerator(&mixedGen, translate[mixedMode],
-              "MixedIntegerRounding2");
-            accuracyFlag[numberGenerators] = 2;
-            switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN * lagrangeanFlag);
-          }
-          assert(parameters[CbcParam::FLOWCUTS]->modeVal() == flowMode);
-          if (flowMode) {
-            babModel_->addCutGenerator(&flowGen, translate[flowMode],
-              "FlowCover");
-            accuracyFlag[numberGenerators] = 2;
-            switches[numberGenerators++] = 0 | (ALL_LAGRANGEAN * lagrangeanFlag);
-          }
-          if (twomirMode && (complicatedInteger != 1 || (twomirMode == CbcParameters::CGOn || twomirMode >= CbcParameters::CGForceOn))) {
-            // try larger limit
-            int numberColumns = babModel_->getNumCols();
-            if (twomirMode == CbcParameters::CGForceOnBut) {
-              twomirMode = CbcParameters::CGForceOn;
-              twomirGen.setMaxElements(numberColumns);
-            } else if (numberColumns > 5000 && twomirMode == CbcParameters::CGForceOn) {
-              twomirGen.setMaxElements(2000);
-            }
-            int laTwomir = parameters[CbcParam::LATWOMIRCUTS]->modeVal();
-            int twomirType = translate[twomirMode];
-            if (!laTwomir) {
-              // Normal
-              babModel_->addCutGenerator(
-                &twomirGen, translate[twomirMode], "TwoMirCuts");
-              accuracyFlag[numberGenerators] = 4;
-              switches[numberGenerators++] = 1 | lagrangeanFlag;
-            } else {
-              laTwomir = laTranslate[laTwomir] - 1;
-              int type = (laTwomir % 3) + 1;
-              int when = laTwomir / 3;
-              char atEnd = (when < 2) ? 1 : 0;
-              int twomirTypeMajor = 10;
-              if (when < 3) {
-                // normal as well
-                babModel_->addCutGenerator(
-                  &twomirGen, translate[twomirMode], "TwoMirCuts");
-                accuracyFlag[numberGenerators] = 4;
-                switches[numberGenerators++] = 1;
-                if (when == 2)
-                  twomirTypeMajor = 10;
-              } else {
-                when--; // so on
-                twomirTypeMajor = 20;
-              }
-              if (!when)
-                twomirType = -99; // root
-              twomirGen.passInOriginalSolver(babModel_->solver());
-              if ((type & 1) != 0) {
-                // clean
-                twomirGen.setTwomirType(twomirTypeMajor + 1);
-                babModel_->addCutGenerator(&twomirGen, twomirType,
-                  "TwoMirCutsL1");
-                accuracyFlag[numberGenerators] = 4;
-                doAtEnd[numberGenerators] = atEnd;
-                switches[numberGenerators++] = (atEnd ? 0 : 1) | 16384;
-              }
-              if ((type & 2) != 0) {
-                // simple
-                twomirGen.setTwomirType(twomirTypeMajor + 2);
-                babModel_->addCutGenerator(&twomirGen, twomirType,
-                  "TwoMirCutsL2");
-                accuracyFlag[numberGenerators] = 4;
-                doAtEnd[numberGenerators] = atEnd;
-                switches[numberGenerators++] = (atEnd ? 0 : 1) | 32768;
-              }
-            }
-          }
-#ifndef DEBUG_MALLOC
-          assert(parameters[CbcParam::LANDPCUTS]->modeVal() == landpMode);
-          if (landpMode) {
-            if (landpMode == CbcParameters::CGOnGlobal) {
-              // allow longer
-              landpGen.parameter().maximumCutLength = 2000000;
-              landpMode = CbcParameters::CGIfMove;
-            }
-            babModel_->addCutGenerator(&landpGen, translate[landpMode],
-              "LiftAndProject");
-            accuracyFlag[numberGenerators] = 5;
-            // slow ? - just do a few times
-            if (landpMode != CbcParameters::CGOn) {
-              babModel_->cutGenerator(numberGenerators)
-                ->setMaximumTries(maximumSlowPasses);
-              babModel_->cutGenerator(numberGenerators)->setHowOften(10);
-            }
-            switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
-          }
-#endif
-          assert(parameters[CbcParam::RESIDCAPCUTS]->modeVal() == residualCapacityMode);
-          if (residualCapacityMode) {
-            babModel_->addCutGenerator(&residualCapacityGen,
-              translate[residualCapacityMode],
-              "ResidualCapacity");
-            accuracyFlag[numberGenerators] = 5;
-            switches[numberGenerators++] = 1 | (ALL_LAGRANGEAN * lagrangeanFlag);
-          }
-          if (zerohalfMode) {
-            if (zerohalfMode > CbcParameters::CGForceOn) {
-              // zerohalfMode -=4;
-              zerohalfGen.setFlags(1);
-            }
-            babModel_->addCutGenerator(
-              &zerohalfGen, translate[zerohalfMode], "ZeroHalf");
-            accuracyFlag[numberGenerators] = 5;
-            CglZeroHalf *storedZeroHalf =
-              dynamic_cast<CglZeroHalf *>(babModel_->cutGenerator(numberGenerators)->generator());
-            if (storedZeroHalf)
-              storedZeroHalf->setSepGraphSparseThreshold(
-                parameters[CbcParam::ZEROHALFSPARSETHRESH]->intVal());
-            if (storedZeroHalf)
-              storedZeroHalf->setRowMaxPairCount(
-                parameters[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->intVal());
-            if (storedZeroHalf)
-              storedZeroHalf->setRowMaxFractionalCount(
-                parameters[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->intVal());
-            babModel_->cutGenerator(numberGenerators)
-              ->setNeedsRefresh(true);
-            switches[numberGenerators++] = 2; //| (ALL_LAGRANGEAN*lagrangeanFlag);
-          }
-          if (dominatedCuts)
-            babModel_->setSpecialOptions(babModel_->specialOptions() | 64);
-          // Say we want timings
-          numberGenerators = babModel_->numberCutGenerators();
-          int iGenerator;
-          int cutDepth = parameters[CbcParam::CUTDEPTH]->intVal();
-          for (iGenerator = 0; iGenerator < numberGenerators;
-            iGenerator++) {
-            CbcCutGenerator *generator = babModel_->cutGenerator(iGenerator);
-            int howOften = generator->howOften();
-            int iSwitch = switches[iGenerator];
-            int iSwitch2, iSwitch3;
-            if (iSwitch >= 0) {
-              iSwitch2 = iSwitch & 127;
-              iSwitch3 = iSwitch & ~16383;
-              // say if wants modified solver
-              generator->setSwitches(generator->switches() | iSwitch3);
-            } else {
-              iSwitch2 = iSwitch;
-            }
-            if (howOften == -98 || howOften == -99 || generator->maximumTries() > 0)
-              generator->setSwitchOffIfLessThan(iSwitch2);
-            // Use if any at root as more likely later and fairly cheap
-            // if (switches[iGenerator]==-2)
-            // generator->setWhetherToUse(true);
-            generator->setInaccuracy(accuracyFlag[iGenerator]);
-            if (doAtEnd[iGenerator]) {
-              generator->setWhetherCallAtEnd(true);
-              // generator->setMustCallAgain(true);
-            }
-            generator->setTiming(true);
-            if (cutDepth >= 0)
-              generator->setWhatDepth(cutDepth);
-          }
+          installCutGenerators(*babModel_, parameters,
+            complicatedInteger, dominatedCuts, miplib,
+            cgraphMode, oldCliqueMode,
+            maxCallsBK, bkClqExtMethod, bkPivotingStrategy,
+            oddWExtMethod, mixedRoundStrategy);
           // Could tune more
           if (!miplib) {
             double minimumDrop = fabs(babModel_->solver()->getObjValue()) * 1.0e-5 + 1.0e-5;
@@ -8922,130 +9107,12 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               }
             }
 #endif
-            // ------ feasibility pump progress output ------
-            int fpumpPassFreq = parameters[CbcParam::FPUMPPASSFREQ]->intVal();
-            double fpumpTimeFreq = parameters[CbcParam::FPUMPTIMEFREQ]->dblVal();
-            std::unique_ptr<CbcFPumpOutput> fpumpOut;
-            if (cbcLogLevel >= 1 && (fpumpPassFreq > 0 || fpumpTimeFreq > 0.0)) {
-              for (int iHeur = 0; iHeur < babModel_->numberHeuristics(); iHeur++) {
-                CbcHeuristicFPump *pump = dynamic_cast<CbcHeuristicFPump *>(
-                  babModel_->heuristic(iHeur));
-                if (pump) {
-                  FILE *outfp = model_.messageHandler()->filePointer();
-                  if (!outfp) outfp = stdout;
-                  fpumpOut = std::make_unique<CbcFPumpOutput>(
-                    outfp, CbcOutput::useUtf8(), cbcLogLevel,
-                    fpumpPassFreq, fpumpTimeFreq);
-                  pump->setFPumpOutput(fpumpOut.get());
-                  break;
-                }
-              }
-            }
-            // ------ end feasibility pump progress output ------
-
-            // Cut generation output — active for all MIP solves at logLevel >= 1
-            std::unique_ptr<CbcCutGenOutput> cutGenOut;
-            if (cbcLogLevel >= 1 && babModel_->numberIntegers() > 0) {
-              FILE *outfp = babModel_->messageHandler()->filePointer();
-              if (!outfp) outfp = stdout;
-              cutGenOut.reset(new CbcCutGenOutput(outfp, CbcOutput::useUtf8(), cbcLogLevel));
-            }
-
-            // B&B tree output — active for all MIP solves at logLevel >= 1
-            std::unique_ptr<CbcBnBOutput> bnbOut;
-            if (cbcLogLevel >= 1 && babModel_->numberIntegers() > 0) {
-              FILE *outfp = babModel_->messageHandler()->filePointer();
-              if (!outfp) outfp = stdout;
-              bnbOut.reset(new CbcBnBOutput(outfp, CbcOutput::useUtf8(), cbcLogLevel));
-            }
-
-            // ------ B&B message handler (FPump suppression + cut gen + B&B + optional Nauty) ------
-            // Install a handler that:
-            //  1. Suppresses the raw Cbc0012I "found by feasibility pump" while
-            //     the FPump table is active (our table already shows solution events)
-            //  2. Reformats root-node cut generation output
-            //  3. Reformats B&B progress output
-            //  4. (When built with CBC_HAS_NAUTY) Intercepts Nauty CBC_GENERAL messages
-            CbcNautyHandler *nautyHandler = nullptr;
-            CoinMessageHandler *savedNautyMsgHandler = nullptr;
-            CoinMessageHandler *lpSilentHandler = nullptr;  // given to LP solver to prevent logLevel mutation
-
-            if (cbcLogLevel >= 1
-              && (fpumpOut   != nullptr
-                || cutGenOut  != nullptr
-                || bnbOut     != nullptr
-#ifdef CBC_HAS_NAUTY
-                || (babModel_->moreSpecialOptions2() & (128 | 256)) != 0
-#endif
-                )) {
-              FILE *outfp = babModel_->messageHandler()->filePointer();
-              if (!outfp) outfp = stdout;
-              nautyHandler = new CbcNautyHandler(outfp, CbcOutput::useUtf8(), cbcLogLevel);
-              nautyHandler->setFPumpOutput(fpumpOut.get());    // may be null
-              nautyHandler->setCutGenOutput(cutGenOut.get());  // may be null
-              nautyHandler->setBnBOutput(bnbOut.get());        // may be null
-              // Save model_'s handler (not babModel_'s) as the restore target.
-              // babModel_ owns its own default CoinMessageHandler, which will be
-              // deleted by passInMessageHandler(nautyHandler) below. Saving
-              // babModel_->messageHandler() would produce a dangling pointer.
-              // model_'s handler is never deleted by babModel_ and outlives B&B.
-              savedNautyMsgHandler = model_.messageHandler();
-              babModel_->passInMessageHandler(nautyHandler);
-              // OsiClpSolverInterface calls setLogLevel(0) on whatever handler
-              // the LP sub-solver uses during LP solves (OsiDoReducePrint hint).
-              // Prevent that from silencing our CBC-level handler by giving the
-              // LP solver its own separate, permanently-silent handler.
-              lpSilentHandler = new CoinMessageHandler();
-              lpSilentHandler->setLogLevel(0);
-              babModel_->solver()->passInMessageHandler(lpSilentHandler);
-            }
-            // ------ end B&B message handler setup ------
-
-            // Configure B&B status emission for our structured handler.
-            // Respect -progressInterval: positive = time-based (seconds between rows),
-            // zero/negative = node-based (deterministic; -N means every N nodes).
-            // Use printing mode 1 (CBC_STATUS2) which includes depth.
-            if (bnbOut) {
-              OsiClpSolverInterface *bnbSolver = getClpSolver(babModel_->solver());
-              double progVal = bnbSolver->getModelPtr()->getMinIntervalProgressUpdate();
-              if (progVal <= 0.0) {
-                // Node-count based: deterministic output
-                babModel_->setSecsPrintFrequency(-1.0);
-                if (progVal < -1.0)
-                  babModel_->setPrintFrequency(static_cast< int >(-progVal));
-                else
-                  babModel_->setPrintFrequency(babModel_->getNumCols() > 2000 ? 100 : 1000);
-              } else {
-                // Time-based: emit every node, gated by time interval
-                babModel_->setPrintFrequency(1);
-                babModel_->setSecsPrintFrequency(progVal);
-              }
-              babModel_->setPrintingMode(1);
-            }
-
-            babModel_->branchAndBound(doStatistics);
-
-            // Close cut generation section (flushes generator table)
-            if (cutGenOut)
-              cutGenOut->close();
-            // Clean up FPump handler
-            if (fpumpOut) {
-              for (int iHeur = 0; iHeur < babModel_->numberHeuristics(); iHeur++) {
-                CbcHeuristicFPump *pump = dynamic_cast<CbcHeuristicFPump *>(
-                  babModel_->heuristic(iHeur));
-                if (pump) {
-                  pump->setFPumpOutput(nullptr);
-                  break;
-                }
-              }
-            }
-            // Restore original message handler (removing B&B interceptor)
-            if (nautyHandler) {
-              babModel_->passInMessageHandler(savedNautyMsgHandler);
-              delete nautyHandler;
-              nautyHandler = nullptr;
-              delete lpSilentHandler;
-              lpSilentHandler = nullptr;
+            // Install structured B&B message handlers (FPump progress,
+            // cut-generation table, B&B tree output, Nauty interception).
+            // The RAII guard restores the original handler on scope exit.
+            {
+              BabHandlerGuard handlerGuard(*babModel_, model_, parameters, cbcLogLevel);
+              babModel_->branchAndBound(doStatistics);
             }
 #ifdef CBC_HAS_NAUTY
             if (nautyAdded) {
@@ -9282,8 +9349,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
                    << babModel_->rootObjectiveAfterCuts() * direction;
             printGeneralMessage(model_, buffer.str());
           }
-          numberGenerators = babModel_->numberCutGenerators();
-          // can get here twice!
+          int numberGenerators = babModel_->numberCutGenerators();
           if (statistics.number_cuts != NULL)
             delete[] statistics.number_cuts;
           statistics.number_cuts = new int[numberGenerators];
@@ -9295,7 +9361,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           statistics.number_generators = numberGenerators;
 
           char timing[30];
-          for (iGenerator = 0; iGenerator < numberGenerators;
+          for (int iGenerator = 0; iGenerator < numberGenerators;
             iGenerator++) {
             CbcCutGenerator *generator = babModel_->cutGenerator(iGenerator);
             statistics.name_generators[iGenerator] = generator->cutGeneratorName();

@@ -411,6 +411,15 @@ public:
     CGEndMarker
   };
 
+  /*! \brief Codes to specify whether to check time a lot
+   */
+
+  enum CheckTimeMode {
+    CHECKless = 0,
+    CHECKmore,
+    CHECKEndMarker
+  };
+
   /*! \brief Codes to specify whether to use a cutoff constraint
    */
 
@@ -1641,7 +1650,14 @@ public:
   /*! \brief Set mode for branching priorities */
   inline void setBranchPriority(CbcParameters::BPMode mode) { branchPriority_ = mode;
   }
-
+  
+  /*! \brief Get mode for checking time frequency */
+  inline CbcParameters::CheckTimeMode getCheckTimeMode() { return (checkTimeMode_); }
+  
+  /*! \brief Set mode for checking time frequency */
+  inline void setCheckTimeMode(CbcParameters::CheckTimeMode mode) { checkTimeMode_ = mode;
+  }
+  
   /*! \brief Get mode for use of cutoff constraint */
   inline CbcParameters::CutoffMode getCutoffMode() { return (cutoffMode_); }
 
@@ -2551,6 +2567,7 @@ private:
   CbcParameters::CommandDisplayMode commandDisplayMode_;
   CbcParameters::ClqStrMode clqStrMode_;
   CbcParameters::BPMode branchPriority_;
+  CbcParameters::CheckTimeMode checkTimeMode_;
   CbcParameters::CutoffMode cutoffMode_;
   CbcParameters::IntPrintMode intPrintMode_;
   CbcParameters::NodeStrategy nodeStrategy_;

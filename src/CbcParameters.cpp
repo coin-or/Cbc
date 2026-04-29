@@ -2578,7 +2578,8 @@ void CbcParameters::addCbcModelParams()
   parameters_[CbcParam::TIMELIMIT]->setup(
       "sec!onds", "Maximum seconds for branch and cut", -1.0, 1.0e12,
       "After this many seconds the program will act as if maximum nodes had "
-      "been reached.");
+      "been reached. You may wish to also set '-check less' which stops " 
+      "cbc checking time quite as often which reduces system time.");
 
   parameters_[CbcParam::STRONGBRANCHING]->setup(
       "strong!Branching", "Number of variables to look at in strong branching",

@@ -443,6 +443,10 @@ int pushCbcSolverKwdParam(CoinParam &param) {
     parameters->setBranchingPriorityMode(CbcParameters::BPOff);
     break;
   }
+  case CbcParam::CHECKTIMEFREQ: {
+    parameters->setCheckTimeMode(static_cast<CbcParameters::CheckTimeMode>(mode));
+    break;
+  }
   case CbcParam::CUTOFFCONSTRAINT: {
     parameters->setCutoffMode(static_cast<CbcParameters::CutoffMode>(mode));
     break;

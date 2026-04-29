@@ -280,6 +280,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
     clockid_t threadClockId;
     if (timing()) {
       if (!model_->getNumberThreads()) {
+	// If elapsed time used - is this correct? - but who cares.
 	time1 = CoinCpuTime();
       } else {
 	// Get thread clock Id
@@ -346,7 +347,7 @@ bool CbcCutGenerator::generateCuts(OsiCuts &cs, int fullScan, OsiSolverInterface
       // Propagate remaining wall-clock time so cut generators can self-limit.
       {
         double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
-        if (remaining > 0.0)
+        if (remaining > 0.0 && remaining <5.0e7)
           generator_->setMaxSeconds(remaining);
       }
       generator_->generateCuts(*solver, cs, info);

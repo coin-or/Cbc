@@ -375,6 +375,7 @@ void CbcParameters::setDefaults(int strategy) {
    case CbcParameters::DefaultStrategy:
      parameters_[CbcParam::CLQSTRENGTHENING]->setDefault("after");
      parameters_[CbcParam::BRANCHPRIORITY]->setDefault("off");
+     parameters_[CbcParam::CHECKTIMEFREQ]->setDefault("often");
      parameters_[CbcParam::CUTOFFCONSTRAINT]->setDefault("off");
      parameters_[CbcParam::INTPRINT]->setDefault("normal");
      parameters_[CbcParam::NODESTRATEGY]->setDefault("hybrid");
@@ -1235,6 +1236,16 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("nonzero", CbcParameters::BPNonzero);
   parameters_[CbcParam::BRANCHPRIORITY]->appendKwd("general!Force?", CbcParameters::BPGeneral);
 
+  
+  parameters_[CbcParam::CHECKTIMEFREQ]->setup(
+      "check!timeFrequency", "How often to check time for stopping",
+      "Checking the time costs more than one might think. "
+      "In cbc one does not normally need to stop after generating a "
+      "cut or doing an iteration. So less checks less often and often is more "
+      "likely to check every iteration.");
+   parameters_[CbcParam::CHECKTIMEFREQ]->appendKwd("less", CbcParameters::CHECKless);
+  parameters_[CbcParam::CHECKTIMEFREQ]->appendKwd("often", CbcParameters::CHECKmore);
+ 
   parameters_[CbcParam::CUTOFFCONSTRAINT]->setup(
       "constraint!fromCutoff", "Whether to use cutoff as constraint",
       "For some problems, cut generators and general branching work better if "

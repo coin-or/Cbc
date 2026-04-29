@@ -9107,6 +9107,14 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               }
             }
 #endif
+	    // Try and reduce timing calls
+	    if (!parameters[CbcParam::CHECKTIMEFREQ]->modeVal()) {
+              OsiClpSolverInterface *solver = getClpSolver(babModel_->solver());
+	      if (solver) {
+		ClpSimplex *lpSolver = solver->getModelPtr();
+		lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x010000000);
+	      }
+	    }
             // Install structured B&B message handlers (FPump progress,
             // cut-generation table, B&B tree output, Nauty interception).
             // The RAII guard restores the original handler on scope exit.

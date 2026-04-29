@@ -11281,7 +11281,7 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
         CglBKClique *bkClq = dynamic_cast< CglBKClique * >(generator_[i]->generator());
         if (bkClq) {
           const double maxSec = getMaximumSeconds();
-          const double rem = (maxSec < 1.0e10) ? (maxSec - getCurrentSeconds()) : 0.0;
+          const double rem = (maxSec < 5.0e7) ? (maxSec - getCurrentSeconds()) : 0.0;
           bkClq->setMaxSeconds(rem > 0.0 ? rem : 0.0);
         }
       }
@@ -11291,7 +11291,7 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
         CglProbing *probing = dynamic_cast< CglProbing * >(generator_[i]->generator());
         if (probing) {
           const double maxSec = getMaximumSeconds();
-          const double rem = (maxSec < 1.0e10) ? (maxSec - getCurrentSeconds()) : 0.0;
+          const double rem = (maxSec < 5.0e7) ? (maxSec - getCurrentSeconds()) : 0.0;
           probing->setMaxSeconds(rem > 0.0 ? rem : 0.0);
         }
       }

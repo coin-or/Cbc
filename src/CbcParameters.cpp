@@ -398,7 +398,7 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::NODESTRATEGY]->setTopic("Branching");
   parameters_[CbcParam::ORBITAL]->setTopic("Branching");
   parameters_[CbcParam::SOSPRIORITIZE]->setTopic("Branching");
-  parameters_[CbcParam::CUTOFFCONSTRAINT]->setTopic("Stopping");
+  parameters_[CbcParam::CUTOFFCONSTRAINT]->setTopic("Solving");
   parameters_[CbcParam::COMMANDPRINTLEVEL]->setTopic("Output");
   parameters_[CbcParam::INTPRINT]->setTopic("Output");
   parameters_[CbcParam::TIMEMODE]->setTopic("Output");

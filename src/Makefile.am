@@ -86,6 +86,7 @@ libCbc_la_SOURCES = \
 	CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp CbcSolution.cpp \
 	CbcSolver.cpp CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
+	CbcSolverCutSetup.cpp CbcSolverCutSetup.hpp \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
 	CbcParameters.cpp CbcParameters.hpp \

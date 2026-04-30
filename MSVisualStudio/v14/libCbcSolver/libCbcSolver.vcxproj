@@ -146,6 +146,7 @@
     <ClCompile Include="..\..\..\src\CbcLinkedUtils.cpp" />
     <ClCompile Include="..\..\..\src\CbcSolver.cpp" />
     <ClCompile Include="..\..\..\src\CbcSolverAnalyze.cpp" />
+    <ClCompile Include="..\..\..\src\CbcSolverCutSetup.cpp" />
     <ClCompile Include="..\..\..\src\CbcSolverExpandKnapsack.cpp" />
     <ClCompile Include="..\..\..\src\CbcSolverHeuristics.cpp" />
     <ClCompile Include="..\..\..\src\unitTestClp.cpp" />
@@ -154,6 +155,7 @@
     <ClInclude Include="..\..\..\src\CbcLinked.hpp" />
     <ClInclude Include="..\..\..\src\CbcSolver.hpp" />
     <ClInclude Include="..\..\..\src\CbcSolverAnalyze.hpp" />
+    <ClInclude Include="..\..\..\src\CbcSolverCutSetup.hpp" />
     <ClInclude Include="..\..\..\src\CbcSolverExpandKnapsack.hpp" />
     <ClInclude Include="..\..\..\src\CbcSolverHeuristics.hpp" />
   </ItemGroup>

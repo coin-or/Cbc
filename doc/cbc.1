@@ -1,0 +1,212 @@
+.\" Man page for cbc - COIN-OR Branch and Cut MIP solver
+.\" Generated from cbc --help topic metadata
+.TH CBC 1 "April 2026" "CBC devel" "COIN-OR Utilities"
+.SH NAME
+cbc \- mixed-integer linear programming solver
+.SH SYNOPSIS
+.B cbc
+.IR model.mps[.gz]
+.RI [ options ]
+.B \-solve
+.br
+.B cbc
+.RI [ options ]
+.B \-import
+.I file
+.B \-solve
+.SH DESCRIPTION
+.B cbc
+is the COIN-OR Branch and Cut solver, an open-source mixed-integer
+programming (MIP) solver.  It reads a model in MPS or LP format,
+applies preprocessing, cut generation, and heuristics, then solves
+via branch and bound.
+.PP
+Parameters must appear \fBbefore\fR \fB\-solve\fR to take effect.
+Both single-dash (\fB\-sec\fR) and double-dash (\fB\-\-sec\fR) styles
+are accepted.
+.SH EXAMPLES
+.TP
+.B cbc model.mps \-solve
+Solve with default settings.
+.TP
+.B cbc model.mps \-sec 300 \-solve
+Solve with a 5-minute time limit.
+.TP
+.B cbc model.mps \-maxN 10000 \-ratio 0.01 \-solve
+Stop after 10000 nodes or 1% gap.
+.TP
+.B cbc model.mps \-preprocess off \-solve
+Disable integer preprocessing.
+.TP
+.B cbc model.mps \-cuts off \-solve
+Disable all cut generators.
+.TP
+.B cbc model.mps \-heur off \-solve
+Disable all primal heuristics.
+.TP
+.B cbc model.mps \-log 0 \-solve
+Silent mode (no output).
+.TP
+.B cbc model.mps \-csvStatistics r.csv \-solve \-writeStatistics
+Solve and append per-solve statistics to a CSV file.
+.SH STOPPING CRITERIA
+.TP
+.BI \-sec " seconds"
+Maximum wall-clock seconds (default: 1e8).
+.TP
+.BI \-maxN " nodes"
+Maximum branch-and-bound nodes.
+.TP
+.BI \-maxSol " solutions"
+Stop after finding this many feasible solutions.
+.TP
+.BI \-allow " gap"
+Stop when absolute gap between best bound and incumbent < \fIgap\fR.
+.TP
+.BI \-ratio " fraction"
+Stop when relative gap < \fIfraction\fR (e.g., 0.01 for 1%).
+.TP
+.BI \-cutoff " value"
+All solutions must have objective better than \fIvalue\fR.
+.SH CUT GENERATION
+.TP
+.BI \-cuts " mode"
+Switch all cut generators on/off/root/ifmove/forceon.
+.TP
+.BI \-gomory " mode"
+Gomory mixed-integer cuts.
+.TP
+.BI \-probing " mode"
+Probing cuts.
+.TP
+.BI \-knapsack " mode"
+Knapsack cover cuts.
+.TP
+.BI \-clique " mode"
+Bron-Kerbosch clique cuts (requires conflict graph).
+.TP
+.BI \-oddwheel " mode"
+Odd-wheel cuts (requires conflict graph).
+.TP
+.BI \-mir " mode"
+Mixed-integer rounding cuts.
+.TP
+.BI \-flow " mode"
+Flow cover cuts.
+.TP
+.BI \-twomir " mode"
+Two-phase MIR cuts.
+.TP
+.BI \-zerohalf " mode"
+Zero-half cuts.
+.TP
+.BI \-passCuts " n"
+Number of cut passes at root node.
+.TP
+.BI \-passTreeCuts " n"
+Number of cut passes in the tree.
+.PP
+Cut modes: \fBoff\fR, \fBon\fR, \fBroot\fR (root only),
+\fBifmove\fR (if they improve bound), \fBforceon\fR.
+.SH HEURISTICS
+.TP
+.BI \-heur " mode"
+Switch most heuristics on/off.
+.TP
+.BI \-feas " mode"
+Feasibility pump heuristic.
+.TP
+.BI \-round " mode"
+Rounding heuristic.
+.TP
+.BI \-greedy " mode"
+Greedy heuristic.
+.TP
+.BI \-Rins " mode"
+Relaxation Induced Neighborhood Search.
+.TP
+.BI \-Rens " mode"
+Relaxation Enforced Neighborhood Search.
+.TP
+.BI \-DivingC " mode"
+Coefficient diving heuristic.
+.TP
+.BI \-combine " mode"
+Combine solutions heuristic.
+.PP
+Heuristic modes: \fBoff\fR, \fBon\fR, \fBboth\fR, \fBbefore\fR.
+.SH PREPROCESSING
+.TP
+.BI \-preprocess " mode"
+Integer preprocessing (off/on/sos/equal/...).
+.TP
+.BI \-clqstr " mode"
+Clique strengthening (off/after/before).
+.TP
+.BI \-cgraph " mode"
+Conflict graph (on/off/clq).
+.TP
+.BI \-presolve " mode"
+LP presolve (on/off/more).
+.SH BRANCHING
+.TP
+.BI \-strong " n"
+Number of variables for strong branching (default: 5).
+.TP
+.BI \-trust " n"
+Branches before trusting pseudocosts (default: 10).
+.TP
+.BI \-node " strategy"
+Node selection: hybrid/fewest/depth/upfewest/downfewest/updepth/downdepth.
+.SH TOLERANCES
+.TP
+.BI \-integerT " tol"
+Integer tolerance (default: 1e-6).
+.TP
+.BI \-increment " val"
+Minimum improvement for a new solution (default: 1e-5).
+.TP
+.BI \-primalT " tol"
+Primal feasibility tolerance.
+.TP
+.BI \-dualT " tol"
+Dual feasibility tolerance.
+.SH OUTPUT
+.TP
+.BI \-log " level"
+Output verbosity: 0 (silent), 1 (default), 2+ (verbose).
+.TP
+.BI \-csvStatistics " file.csv"
+Set CSV file for per-solve statistics.
+.TP
+.B \-writeStatistics
+Append one row of statistics to the CSV file after solving.
+.TP
+.BI \-printMask " regex"
+Only print solution variables matching \fIregex\fR.
+.SH SOLVING
+.TP
+.B \-solve
+Invoke branch and cut (required to start solving).
+.TP
+.B \-initialSolve
+Solve LP relaxation only.
+.TP
+.BI \-threads " n"
+Number of threads (each solve is single-threaded; used for deterministic parallel).
+.SH INTERACTIVE MODE
+When invoked without arguments or with \fB\-\fR, cbc enters interactive
+mode.  Type \fB?\fR for a command list, \fB???\fR for all commands,
+or \fIparam\fB??\fR for detailed help on a specific parameter.
+.SH EXIT STATUS
+.B cbc
+returns 0 on success.
+.SH SEE ALSO
+.BR clp (1),
+.BR glpsol (1)
+.PP
+Project page: https://github.com/coin-or/Cbc
+.SH AUTHORS
+COIN-OR Cbc development team.
+.br
+https://www.coin-or.org/

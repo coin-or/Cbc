@@ -341,6 +341,172 @@ void CbcParameters::addCbcParams() {
     getParam(code)->setParamCode(code);
   }
 
+  // --- Assign semantic topics to every parameter ---
+
+  // Bulk-set: all cut params
+  for (int i = CbcParam::FIRSTCUTPARAM + 1; i < CbcParam::LASTCUTPARAM; i++)
+    parameters_[i]->setTopic("Cuts");
+
+  // Bulk-set: all heuristic params
+  for (int i = CbcParam::FIRSTHEURPARAM + 1; i < CbcParam::LASTHEURPARAM; i++)
+    parameters_[i]->setTopic("Heuristics");
+
+  // Bulk-set: file params
+  for (int i = CbcParam::FIRSTFILEPARAM + 1; i < CbcParam::LASTFILEPARAM; i++)
+    parameters_[i]->setTopic("I/O");
+
+  // Bulk-set: directory params
+  for (int i = CbcParam::FIRSTDIRECTORYPARAM + 1; i < CbcParam::LASTDIRECTORYPARAM; i++)
+    parameters_[i]->setTopic("I/O");
+
+  // Action params — I/O actions
+  for (int code : {CbcParam::IMPORT, CbcParam::EXPORT,
+                    CbcParam::READMODEL, CbcParam::READMODEL_OLD,
+                    CbcParam::WRITEMODEL, CbcParam::WRITEMODEL_OLD,
+                    CbcParam::READMIPSTART, CbcParam::READPRIORITIES,
+                    CbcParam::READSOL,
+                    CbcParam::PRINTSOL, CbcParam::WRITESOL,
+                    CbcParam::WRITESOL_OLD, CbcParam::WRITESOLBINARY,
+                    CbcParam::WRITESOLBINARY_OLD,
+                    CbcParam::WRITENEXTSOL,
+                    CbcParam::WRITEGMPLSOL, CbcParam::WRITEGMPLSOL_OLD,
+                    CbcParam::WRITESTATS, CbcParam::WRITEFEATURES,
+                    CbcParam::CHECKSOLUTION})
+    parameters_[code]->setTopic("I/O");
+
+  // Action params — solving
+  parameters_[CbcParam::BAB]->setTopic("Solving");
+  parameters_[CbcParam::SOLVECONTINUOUS]->setTopic("Solving");
+  parameters_[CbcParam::STRENGTHEN]->setTopic("Solving");
+
+  // Action params — preprocessing
+  parameters_[CbcParam::FASTPREPROCESS]->setTopic("Preprocessing");
+
+  // Action params — other
+  parameters_[CbcParam::STATISTICS]->setTopic("Output");
+  parameters_[CbcParam::OUTDUPROWS]->setTopic("Preprocessing");
+
+  // Keyword params
+  parameters_[CbcParam::PREPROCESS]->setTopic("Preprocessing");
+  parameters_[CbcParam::FASTPREPROCESSLEVEL]->setTopic("Preprocessing");
+  parameters_[CbcParam::CLQSTRENGTHENING]->setTopic("Preprocessing");
+  parameters_[CbcParam::USECGRAPH]->setTopic("Conflict Graph");
+  parameters_[CbcParam::STRATEGY]->setTopic("Strategy");
+  parameters_[CbcParam::BRANCHPRIORITY]->setTopic("Branching");
+  parameters_[CbcParam::NODESTRATEGY]->setTopic("Branching");
+  parameters_[CbcParam::ORBITAL]->setTopic("Branching");
+  parameters_[CbcParam::SOSPRIORITIZE]->setTopic("Branching");
+  parameters_[CbcParam::CUTOFFCONSTRAINT]->setTopic("Stopping");
+  parameters_[CbcParam::COMMANDPRINTLEVEL]->setTopic("Output");
+  parameters_[CbcParam::INTPRINT]->setTopic("Output");
+  parameters_[CbcParam::TIMEMODE]->setTopic("Output");
+  parameters_[CbcParam::CHECKTIMEFREQ]->setTopic("Output");
+  parameters_[CbcParam::LPMETHOD]->setTopic("Solving");
+
+  // Double params
+  parameters_[CbcParam::ARTIFICIALCOST]->setTopic("Heuristics");
+  parameters_[CbcParam::DJFIX]->setTopic("Preprocessing");
+  parameters_[CbcParam::FAKECUTOFF]->setTopic("Strategy");
+  parameters_[CbcParam::FAKEINCREMENT]->setTopic("Strategy");
+  parameters_[CbcParam::SMALLBAB]->setTopic("Strategy");
+  parameters_[CbcParam::TIGHTENFACTOR]->setTopic("Preprocessing");
+  parameters_[CbcParam::LPTIMEFREQ]->setTopic("Output");
+  parameters_[CbcParam::FPUMPTIMEFREQ]->setTopic("Output");
+
+  // Integer params — Cuts
+  for (int code : {CbcParam::CUTDEPTH, CbcParam::CUTLENGTH,
+                    CbcParam::CUTPASSINTREE, CbcParam::MAXSLOWCUTS,
+                    CbcParam::AGGREGATEMIXED})
+    parameters_[code]->setTopic("Cuts");
+
+  // Integer params — Conflict Graph
+  for (int code : {CbcParam::BKPIVOTINGSTRATEGY, CbcParam::BKMAXCALLS,
+                    CbcParam::BKCLQEXTMETHOD, CbcParam::ODDWEXTMETHOD})
+    parameters_[code]->setTopic("Conflict Graph");
+
+  // Integer params — Heuristics
+  for (int code : {CbcParam::DIVEOPT, CbcParam::DIVEOPTSOLVES,
+                    CbcParam::FPUMPITS, CbcParam::FPUMPTUNE,
+                    CbcParam::FPUMPTUNE2, CbcParam::HEUROPTIONS,
+                    CbcParam::FPUMPPASSFREQ, CbcParam::DEPTHMINIBAB,
+                    CbcParam::VUBTRY})
+    parameters_[code]->setTopic("Heuristics");
+
+  // Integer params — Output
+  for (int code : {CbcParam::LOGLEVEL, CbcParam::LPLOGLEVEL,
+                    CbcParam::FLUSHPERNEWLINE, CbcParam::USEUTF8,
+                    CbcParam::COMPACTTABLES, CbcParam::LPITERFREQ,
+                    CbcParam::OUTPUTFORMAT, CbcParam::PRINTOPTIONS,
+                    CbcParam::VERBOSE})
+    parameters_[code]->setTopic("Output");
+
+  // Integer params — Preprocessing
+  for (int code : {CbcParam::PROCESSTUNE, CbcParam::CPP,
+                    CbcParam::EXTRAVARIABLES,
+                    CbcParam::FASTPREPROCESSMAXROUNDS})
+    parameters_[code]->setTopic("Preprocessing");
+
+  // Integer params — Strategy
+  for (int code : {CbcParam::EXPERIMENT, CbcParam::OPTIONS,
+                    CbcParam::MOREMOREMIPOPTIONS, CbcParam::MULTIPLEROOTS,
+                    CbcParam::MAXHOTITS, CbcParam::STRONGSTRATEGY})
+    parameters_[code]->setTopic("Strategy");
+
+  // Integer params — other
+  parameters_[CbcParam::RANDOMSEED]->setTopic("Solving");
+  parameters_[CbcParam::MAXSAVEDSOLS]->setTopic("Solving");
+  parameters_[CbcParam::THREADS]->setTopic("Parallelism");
+
+  // Integer params — ZeroHalf tuning (sub-topic of Cuts)
+  for (int code : {CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT,
+                    CbcParam::ZEROHALFROWMAXPAIRCOUNT,
+                    CbcParam::ZEROHALFSPARSETHRESH})
+    parameters_[code]->setTopic("Cuts");
+
+  // Bool params
+  parameters_[CbcParam::SOS]->setTopic("Preprocessing");
+  parameters_[CbcParam::SINGLETONBOUNDS]->setTopic("Preprocessing");
+  parameters_[CbcParam::PREPROCNAMES]->setTopic("Preprocessing");
+  parameters_[CbcParam::DOHEURISTIC]->setTopic("Heuristics");
+  parameters_[CbcParam::USESOLUTION]->setTopic("Heuristics");
+  parameters_[CbcParam::MESSAGES]->setTopic("Output");
+  parameters_[CbcParam::ERRORSALLOWED]->setTopic("I/O");
+
+  // String params
+  parameters_[CbcParam::PRINTMASK]->setTopic("Output");
+  parameters_[CbcParam::OUTPUTPRECISION]->setTopic("Output");
+
+  // Model params — Stopping criteria
+  for (int code : {CbcParam::TIMELIMIT, CbcParam::MAXNODES,
+                    CbcParam::MAXSOLS, CbcParam::ALLOWABLEGAP,
+                    CbcParam::GAPRATIO, CbcParam::CUTOFF,
+                    CbcParam::MAXNODESNOTIMPROVING,
+                    CbcParam::MAXSECONDSNOTIMPROVING})
+    parameters_[code]->setTopic("Stopping");
+
+  // Model params — Tolerances
+  for (int code : {CbcParam::INTEGERTOLERANCE, CbcParam::INCREMENT,
+                    CbcParam::INFEASIBILITYWEIGHT})
+    parameters_[code]->setTopic("Tolerances");
+
+  // Model params — Branching
+  for (int code : {CbcParam::STRONGBRANCHING, CbcParam::NUMBERBEFORE,
+                    CbcParam::COSTSTRATEGY})
+    parameters_[code]->setTopic("Branching");
+
+  // Model params — Cuts
+  parameters_[CbcParam::CUTPASS]->setTopic("Cuts");
+
+  // Model params — Strategy
+  for (int code : {CbcParam::MIPOPTIONS, CbcParam::MOREMIPOPTIONS,
+                    CbcParam::NUMBERANALYZE})
+    parameters_[code]->setTopic("Strategy");
+
+  // Model params — Solving
+  for (int code : {CbcParam::DIRECTION, CbcParam::MAXIMIZE,
+                    CbcParam::MINIMIZE, CbcParam::REVERSE})
+    parameters_[code]->setTopic("Solving");
+
   return;
 }
 

@@ -28,6 +28,9 @@ python3 "$SCRIPT_DIR/generate_manpage.py" "$CBC" > "$SCRIPT_DIR/cbc.1"
 echo "Generating LaTeX reference..."
 python3 "$SCRIPT_DIR/generate_latex_reference.py" "$CBC" > "$SCRIPT_DIR/cbc-parameters.tex"
 
+echo "Generating Markdown reference..."
+python3 "$SCRIPT_DIR/generate_markdown_reference.py" "$CBC" > "$SCRIPT_DIR/cbc-parameters.md"
+
 if command -v pdflatex >/dev/null 2>&1; then
     echo "Compiling PDF..."
     TMPDIR=$(mktemp -d)
@@ -43,4 +46,4 @@ fi
 
 echo ""
 echo "Generated:"
-ls -lh "$SCRIPT_DIR/cbc.1" "$SCRIPT_DIR/cbc-parameters.tex" "$SCRIPT_DIR/cbc-parameters.pdf" 2>/dev/null
+ls -lh "$SCRIPT_DIR/cbc.1" "$SCRIPT_DIR/cbc-parameters.tex" "$SCRIPT_DIR/cbc-parameters.md" "$SCRIPT_DIR/cbc-parameters.pdf" 2>/dev/null

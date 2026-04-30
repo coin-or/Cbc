@@ -22,6 +22,8 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
+#include <algorithm>
 #include <map>
 #include <vector>
 #include "CbcSolverStatistics.hpp"
@@ -513,6 +515,73 @@ static bool loadOptionFileIntoQueue(const std::string &fileName,
 
   inputQueue = tempQueue;
   return true;
+}
+
+// Print --help output: usage examples and parameters grouped by topic.
+static void printHelp(CbcParameters &cbcParams, ClpParameters &clpParams)
+{
+  std::cout
+    << "Cbc version " << CBC_VERSION << " — COIN-OR Branch and Cut MIP solver\n"
+    << "\n"
+    << "Usage:\n"
+    << "  cbc <model.mps[.gz]> [options] -solve\n"
+    << "  cbc [options] -import <file> -solve\n"
+    << "\n"
+    << "Examples:\n"
+    << "  cbc model.mps -solve                        Solve with defaults\n"
+    << "  cbc model.mps -sec 300 -solve               5-minute time limit\n"
+    << "  cbc model.mps -maxN 10000 -ratio 0.01 -solve\n"
+    << "  cbc model.mps -preprocess off -solve        Disable preprocessing\n"
+    << "  cbc model.mps -cuts off -solve              Disable all cuts\n"
+    << "  cbc model.mps -heur off -solve              Disable all heuristics\n"
+    << "  cbc model.mps -log 0 -solve                 Silent mode\n"
+    << "  cbc model.mps -csvStatistics r.csv -solve -writeStatistics\n"
+    << "\n"
+    << "Note: parameters must appear BEFORE -solve to take effect.\n"
+    << "      Use ? for a flat parameter list, ??? for all including hidden.\n"
+    << "      Use <param>?? for detailed help on a specific parameter.\n"
+    << "\n";
+
+  // Collect parameters by topic from both Cbc and Clp
+  std::map<std::string, std::vector<CoinParam *>> byTopic;
+  auto collect = [&](CoinParamVec &pv, int first, int last) {
+    for (int i = first + 1; i < last; i++) {
+      CoinParam *p = pv[i];
+      if (!p || p->type() == CoinParam::paramInvalid)
+        continue;
+      if (p->getDisplayPriority() == CoinParam::displayPriorityNone)
+        continue;
+      const std::string &t = p->topic();
+      if (!t.empty())
+        byTopic[t].push_back(p);
+    }
+  };
+  collect(cbcParams.paramVec(), CbcParam::FIRSTPARAM, CbcParam::LASTPARAM);
+  collect(clpParams.paramVec(), ClpParam::FIRSTPARAM, ClpParam::LASTPARAM);
+
+  // Preferred display order
+  const char *order[] = {
+    "Stopping", "Cuts", "Heuristics", "Preprocessing", "Branching",
+    "Tolerances", "Conflict Graph", "Strategy", "Solving",
+    "Simplex", "Barrier", "Scaling",
+    "Output", "I/O", "Parallelism", nullptr
+  };
+
+  std::cout << "Parameters by topic:\n";
+  for (int k = 0; order[k]; k++) {
+    auto it = byTopic.find(order[k]);
+    if (it == byTopic.end())
+      continue;
+    std::cout << "\n  " << it->first << ":\n";
+    for (CoinParam *p : it->second) {
+      std::string nm = p->name();
+      // Strip the ! used for min-match display
+      nm.erase(std::remove(nm.begin(), nm.end(), '!'), nm.end());
+      std::cout << "    -" << std::left << std::setw(28) << nm
+                << p->shortHelp() << "\n";
+    }
+  }
+  std::cout << std::endl;
 }
 
 // Print the general query/help listing for Cbc and Clp parameters.
@@ -2437,8 +2506,10 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           field = "import";
         } else {
           if (field != "--") {
-            // take off -
+            // take off leading '-' (or '--' for GNU-style long options)
             field = field.substr(1);
+            if (!field.empty() && field[0] == '-')
+              field = field.substr(1);
             if (field == "optionfile") {
               if (!inputQueue.empty()) {
                 field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
@@ -10634,24 +10705,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #endif
         } break;
         case CbcParam::HELP:
-          std::cout << "Cbc version " << CBC_VERSION << ", build " << __DATE__
-                    << std::endl;
-#if 0
-            std::cout << "Non default values:-" << std::endl;
-            std::cout << "Perturbation " << lpSolver->perturbation()
-                      << " (default 100)" << std::endl;
-	    std::cout << CoinParamUtils::printString("Presolve being done with 5 passes\n\
-Dual steepest edge steep/partial on matrix shape and factorization density\n\
-Clpnnnn taken out of messages\n\
-If Factorization frequency default then done on size of matrix\n\n\
-(-)unitTest, (-)netlib or (-)netlibp will do standard tests\n\n\
-You can switch to interactive mode at any time so\n\
-clp watson.mps -scaling off -primalsimplex\nis the same as\n\
-clp watson.mps -\nscaling off\nprimalsimplex");
-	    std::endl;
-#endif
-          std::cout << "Use ? or ??? to see list of commands" << std::endl;
-          std::cout << "Set allcommands to all to see less common commands" << std::endl;
+          printHelp(parameters, clpParameters);
           break;
         case CbcParam::WRITESTATS: {
           cbcParam->readValue(inputQueue, fileName, &message);

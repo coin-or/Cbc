@@ -37,18 +37,6 @@ are accepted.  In interactive mode, omit the leading dash.
 
 \section{Stopping}
 
-\subsection*{\texttt{-constraintfromCutoff}}
-\addcontentsline{toc}{subsection}{\texttt{-constraintfromCutoff}}
-
-\textit{Keyword} (cbc)
-\medskip
-
-Whether to use cutoff as constraint
-
-For some problems, cut generators and general branching work better if the problem would be infeasible if the cost is too high. If this option is enabled, the objective function is added as a constraint which right hand side is set to the current cutoff value (objective value of best known solution)
-
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{variable}, \texttt{forcevariable}, \texttt{conflict} (default: \texttt{off})
-
 \subsection*{\texttt{-allowableGap}}
 \addcontentsline{toc}{subsection}{\texttt{-allowableGap}}
 
@@ -1492,6 +1480,18 @@ This just solves the problem to the continuous optimum, without adding any cuts.
 Create strengthened problem
 
 This creates a new problem by applying the root node cuts. All tight constraints will be in resulting problem.
+
+\subsection*{\texttt{-constraintfromCutoff}}
+\addcontentsline{toc}{subsection}{\texttt{-constraintfromCutoff}}
+
+\textit{Keyword} (cbc)
+\medskip
+
+Whether to use cutoff as constraint
+
+For some problems, cut generators and general branching work better if the problem would be infeasible if the cost is too high. If this option is enabled, the objective function is added as a constraint which right hand side is set to the current cutoff value (objective value of best known solution)
+
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{variable}, \texttt{forcevariable}, \texttt{conflict} (default: \texttt{off})
 
 \subsection*{\texttt{-lpMethod}}
 \addcontentsline{toc}{subsection}{\texttt{-lpMethod}}

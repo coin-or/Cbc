@@ -51,9 +51,6 @@ Silent mode (no output).
 Solve and append per-solve statistics to a CSV file.
 .SH STOPPING
 .TP
-.BI \-constraintfromCutoff
-Whether to use cutoff as constraint
-.TP
 .BI \-allowableGap
 Stop when gap between best possible and incumbent is less than this
 .TP
@@ -409,6 +406,9 @@ Solve to continuous optimum
 .TP
 .BI \-strengthen
 Create strengthened problem
+.TP
+.BI \-constraintfromCutoff
+Whether to use cutoff as constraint
 .TP
 .BI \-lpMethod
 Which LP algorithm to use for the initial LP relaxation solve

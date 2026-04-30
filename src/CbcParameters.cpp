@@ -374,6 +374,8 @@ void CbcParameters::addCbcParams() {
                     CbcParam::CHECKSOLUTION})
     parameters_[code]->setTopic("I/O");
 
+  parameters_[CbcParam::DUMPPARAMS]->setTopic("Output");
+
   // Action params — solving
   parameters_[CbcParam::BAB]->setTopic("Solving");
   parameters_[CbcParam::SOLVECONTINUOUS]->setTopic("Solving");
@@ -1151,6 +1153,14 @@ void CbcParameters::addCbcSolverActionParams() {
       "and dual errors, and identifies the constraint/variable with the "
       "largest violation.",
       CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::DUMPPARAMS]->setup(
+      "dumpParam!eters",
+      "Dump all parameter metadata as JSON to stdout",
+      "Writes a JSON array with every parameter's name, topic, type, "
+      "short help, long help, keywords, range, and default value. "
+      "Useful for generating documentation (man pages, LaTeX references).",
+      CoinParam::displayPriorityNone);
 
   // For backward compatibility
   parameters_[CbcParam::WRITESOL_OLD]->setup(

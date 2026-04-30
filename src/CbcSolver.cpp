@@ -584,6 +584,93 @@ static void printHelp(CbcParameters &cbcParams, ClpParameters &clpParams)
   std::cout << std::endl;
 }
 
+// Escape a string for JSON output.
+static std::string jsonEscape(const std::string &s)
+{
+  std::string out;
+  out.reserve(s.size() + 16);
+  for (char c : s) {
+    switch (c) {
+    case '"': out += "\\\""; break;
+    case '\\': out += "\\\\"; break;
+    case '\n': out += "\\n"; break;
+    case '\r': out += "\\r"; break;
+    case '\t': out += "\\t"; break;
+    default: out += c;
+    }
+  }
+  return out;
+}
+
+// Dump all parameter metadata as a JSON array.
+static void dumpParametersAsJson(CbcParameters &cbcParams,
+  ClpParameters &clpParams, std::ostream &out)
+{
+  static const char *typeNames[] = {
+    "invalid", "action", "integer", "double",
+    "string", "directory", "file", "keyword"
+  };
+
+  out << "[\n";
+  bool first = true;
+
+  auto dump = [&](CoinParamVec &pv, int lo, int hi, const char *source) {
+    for (int i = lo + 1; i < hi; i++) {
+      CoinParam *p = pv[i];
+      if (!p || p->type() == CoinParam::paramInvalid)
+        continue;
+      // Strip ! from name
+      std::string nm = p->name();
+      nm.erase(std::remove(nm.begin(), nm.end(), '!'), nm.end());
+      if (nm.empty())
+        continue;
+
+      if (!first) out << ",\n";
+      first = false;
+
+      int t = static_cast<int>(p->type());
+      const char *tn = (t >= 0 && t <= 7) ? typeNames[t] : "unknown";
+
+      out << "  {\"name\": \"" << jsonEscape(nm) << "\""
+          << ", \"source\": \"" << source << "\""
+          << ", \"type\": \"" << tn << "\""
+          << ", \"topic\": \"" << jsonEscape(p->topic()) << "\""
+          << ", \"shortHelp\": \"" << jsonEscape(p->shortHelp()) << "\""
+          << ", \"longHelp\": \"" << jsonEscape(p->longHelp()) << "\""
+          << ", \"displayPriority\": " << static_cast<int>(p->getDisplayPriority());
+
+      if (p->type() == CoinParam::paramInt) {
+        out << ", \"lowerInt\": " << p->lowerIntVal()
+            << ", \"upperInt\": " << p->upperIntVal()
+            << ", \"defaultValue\": " << p->intVal();
+      } else if (p->type() == CoinParam::paramDbl) {
+        out << std::setprecision(15)
+            << ", \"lowerDbl\": " << p->lowerDblVal()
+            << ", \"upperDbl\": " << p->upperDblVal()
+            << ", \"defaultValue\": " << p->dblVal();
+      } else if (p->type() == CoinParam::paramKwd) {
+        out << ", \"keywords\": [";
+        auto kwds = p->definedKwdsSorted();
+        for (size_t k = 0; k < kwds.size(); k++) {
+          if (k) out << ", ";
+          out << "\"" << jsonEscape(kwds[k]) << "\"";
+        }
+        out << "]"
+            << ", \"defaultValue\": \"" << jsonEscape(p->kwdVal()) << "\"";
+      } else if (p->type() == CoinParam::paramStr) {
+        out << ", \"defaultValue\": \"" << jsonEscape(p->strVal()) << "\"";
+      }
+
+      out << "}";
+    }
+  };
+
+  dump(cbcParams.paramVec(), CbcParam::FIRSTPARAM, CbcParam::LASTPARAM, "cbc");
+  dump(clpParams.paramVec(), ClpParam::FIRSTPARAM, ClpParam::LASTPARAM, "clp");
+
+  out << "\n]\n";
+}
+
 // Print the general query/help listing for Cbc and Clp parameters.
 static void printGeneralQueryHelp(int verbose,
   int commandPrintLevel,
@@ -10794,6 +10881,9 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
               goodModel = false;
             }
           }
+        } break;
+        case CbcParam::DUMPPARAMS: {
+          dumpParametersAsJson(parameters, clpParameters, std::cout);
         } break;
         case CbcParam::CHECKSOLUTION: {
           cbcParam->readValue(inputQueue, fileName, &message);

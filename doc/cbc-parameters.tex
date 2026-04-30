@@ -1,23 +1,10 @@
-Parsing --help output...
-Found 15 topics, 221 parameters
-  querying parameter 20/221...
-  querying parameter 40/221...
-  querying parameter 60/221...
-  querying parameter 80/221...
-  querying parameter 100/221...
-  querying parameter 120/221...
-  querying parameter 140/221...
-  querying parameter 160/221...
-  querying parameter 180/221...
-  querying parameter 200/221...
-Queried 216 unique parameters
 \documentclass[11pt,a4paper]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage[margin=2.5cm]{geometry}
-\usepackage{hyperref}
 \usepackage{xcolor}
+\usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{enumitem}
@@ -27,7 +14,7 @@ Queried 216 unique parameters
 
 \title{CBC Parameter Reference}
 \author{COIN-OR Cbc Development Team}
-\date{April 2026 — CBC devel}
+\date{April 2026 --- CBC devel}
 
 \begin{document}
 \maketitle
@@ -53,1030 +40,1444 @@ are accepted.  In interactive mode, omit the leading dash.
 \subsection*{\texttt{-constraintfromCutoff}}
 \addcontentsline{toc}{subsection}{\texttt{-constraintfromCutoff}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use cutoff as constraint
 
-For some problems, cut generators and general branching work better if the problem would be infeasible if the cost is too high. If this option is enabled, the objective function is added as a constraint which right hand side is set to the current cutoff value (objective value of best known solution) <current: off>
+For some problems, cut generators and general branching work better if the problem would be infeasible if the cost is too high. If this option is enabled, the objective function is added as a constraint which right hand side is set to the current cutoff value (objective value of best known solution)
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{variable}, \texttt{forcevariable}, \texttt{conflict}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{variable}, \texttt{forcevariable}, \texttt{conflict} (default: \texttt{off})
 
 \subsection*{\texttt{-allowableGap}}
 \addcontentsline{toc}{subsection}{\texttt{-allowableGap}}
 
+\textit{Double} (cbc)
+\medskip
+
 Stop when gap between best possible and incumbent is less than this
 
-If the gap between best solution and best possible solution is less than this then the search will be terminated. Also see ratioGap. current 1e-12>
+If the gap between best solution and best possible solution is less than this then the search will be terminated. Also see ratioGap.
 
-\textbf{Range:} 0 to 1e+20
+\textbf{Range:} 0 to 1e+20 (default: 1e-12)
 
 \subsection*{\texttt{-cutoff}}
 \addcontentsline{toc}{subsection}{\texttt{-cutoff}}
 
+\textit{Double} (cbc)
+\medskip
+
 All solutions must be better than this
 
-All solutions must be better than this value (in a minimization sense). This is also set by cbc whenever it obtains a solution and is set to the value of the objective for the solution minus the cutoff increment. current 1e+50>
+All solutions must be better than this value (in a minimization sense).  This is also set by cbc whenever it obtains a solution and is set to the value of the objective for the solution minus the cutoff increment.
 
-\textbf{Range:} -1e+60 to 1e+60
+\textbf{Range:} -1e+60 to 1e+60 (default: 1e+50)
 
 \subsection*{\texttt{-ratioGap}}
 \addcontentsline{toc}{subsection}{\texttt{-ratioGap}}
 
+\textit{Double} (cbc)
+\medskip
+
 Stop when the gap between the best possible solution and the incumbent is less than this fraction of the larger of the two
 
-If the gap between the best solution and the best possible solution is less than this fraction of the objective value at the root node then the search will terminate.  See 'allowableGap' for a way of using absolute value rather than fraction. current 0>
+If the gap between the best solution and the best possible solution is less than this fraction of the objective value at the root node then the search will terminate.  See 'allowableGap' for a way of using absolute value rather than fraction.
 
-\textbf{Range:} 0 to 1e+20
+\textbf{Range:} 0 to 1e+20 (default: 0)
 
 \subsection*{\texttt{-maxNodes}}
 \addcontentsline{toc}{subsection}{\texttt{-maxNodes}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Maximum number of nodes to evaluate
 
-This is a repeatable way to limit search.  Normally using time is easier but then the results may not be repeatable. current 2147483647>
+This is a repeatable way to limit search.  Normally using time is easier but then the results may not be repeatable.
 
-\textbf{Range:} 1 to 2147483647
+\textbf{Range:} 1 to 2147483647 (default: 2147483647)
 
 \subsection*{\texttt{-maxNNIFS}}
 \addcontentsline{toc}{subsection}{\texttt{-maxNNIFS}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Maximum number of nodes to be processed without improving the incumbent solution.
 
-This criterion specifies that when a feasible solution is available, the search should continue only if better feasible solutions were produced in the last nodes. current 2147483647>
+This criterion specifies that when a feasible solution is available, the search should continue only if better feasible solutions were produced in the last nodes.
 
-\textbf{Range:} -1 to 2147483647
+\textbf{Range:} -1 to 2147483647 (default: 2147483647)
 
 \subsection*{\texttt{-secnifs}}
 \addcontentsline{toc}{subsection}{\texttt{-secnifs}}
+
+\textit{Double} (cbc)
+\medskip
 
 maximum seconds without improving the incumbent solution
 
 With this stopping criterion, after a feasible solution is found, the search should continue only if the incumbent solution was updated recently, the tolerance is specified here. A discussion on why this criterion can be useful is included here: https://yetanothermathprogrammingconsultant.blogspot.com/2019/11/mip-solver-stopping-criteria.html .
 
+\textbf{Range:} -1 to inf (default: inf)
+
 \subsection*{\texttt{-maxSolutions}}
 \addcontentsline{toc}{subsection}{\texttt{-maxSolutions}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Maximum number of feasible solutions to get
 
-You may want to stop after (say) two solutions or an hour. This is checked every node in tree, so it is possible to get more solutions from heuristics. current 1073741823>
+You may want to stop after (say) two solutions or an hour. This is checked every node in tree, so it is possible to get more solutions from heuristics.
 
-\textbf{Range:} 1 to 1073741823
+\textbf{Range:} 1 to 1073741823 (default: 1073741823)
 
 \subsection*{\texttt{-seconds}}
 \addcontentsline{toc}{subsection}{\texttt{-seconds}}
 
+\textit{Double} (cbc)
+\medskip
+
 Maximum seconds for branch and cut
 
-After this many seconds the program will act as if maximum nodes had been reached. You may wish to also set '-check less' which stops cbc checking time quite as often which reduces system time. current 1e+08>
+After this many seconds the program will act as if maximum nodes had been reached. You may wish to also set '-check less' which stops cbc checking time quite as often which reduces system time.
 
-\textbf{Range:} -1 to 1e+12
+\textbf{Range:} -1 to 1000000000000 (default: 100000000)
 
 \subsection*{\texttt{-lpseconds}}
 \addcontentsline{toc}{subsection}{\texttt{-lpseconds}}
 
+\textit{Double} (clp)
+\medskip
+
 Maximum seconds
 
-After this many seconds clp will act as if maximum iterations had been reached (if value >=0). current -1>
+After this many seconds clp will act as if maximum iterations had been reached (if value >=0).
 
-\textbf{Range:} -1 to 1.79769e+308
+\textbf{Range:} -1 to inf (default: -1)
 
 \section{Cuts}
 
 \subsection*{\texttt{-cliqueCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-cliqueCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use clique cuts
 
-This switches on clique cuts (either at root or in entire tree). An improved version of the Bron-Kerbosch algorithm is used to separate cliques. onglobal <current: ifmove>
+This switches on clique cuts (either at root or in entire tree). An improved version of the Bron-Kerbosch algorithm is used to separate cliques.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{onglobal} (default: \texttt{ifmove})
 
 \subsection*{\texttt{-cutsOnOff}}
 \addcontentsline{toc}{subsection}{\texttt{-cutsOnOff}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Switches all cuts on or off
 
-This can be used to switch on or off all cuts (apart from Reduce and Split).  Then you can set individual ones off or on.  See branchAndCut for information on options. <current: on>
+This can be used to switch on or off all cuts (apart from Reduce and Split).  Then you can set individual ones off or on.  See branchAndCut for information on options.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon} (default: \texttt{on})
 
 \subsection*{\texttt{-flowCoverCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-flowCoverCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Flow Cover cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Reference: https://github.com/coin-or/Cgl/wiki/CglFlowCover onglobal <current: ifmove>
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+ Reference: https://github.com/coin-or/Cgl/wiki/CglFlowCover
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{onglobal} (default: \texttt{ifmove})
 
 \subsection*{\texttt{-GMICuts}}
 \addcontentsline{toc}{subsection}{\texttt{-GMICuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use alternative Gomory cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. This version is by Giacomo Nannicini and may be more robust than gomoryCuts. longendonly <current: off>
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+ This version is by Giacomo Nannicini and may be more robust than gomoryCuts.
 
-\textbf{Values:} \texttt{endonly}, \texttt{long}, \texttt{longroot}, \texttt{longifmove}, \texttt{forcelongon}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{endonly}, \texttt{long}, \texttt{longroot}, \texttt{longifmove}, \texttt{forcelongon}, \texttt{longendonly} (default: \texttt{off})
 
 \subsection*{\texttt{-gomoryCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-gomoryCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Gomory cuts
 
-The original cuts - beware of imitations!  Having gone out of favor, they are now more fashionable as LP solvers are more robust and they interact well with other cuts.  They will almost always give cuts (although in this executable they are limited as to number of variables in cut).  However the cuts may be dense so it is worth experimenting (Long allows any length). Value 'on' enables the cut generator and fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Reference: https://github.com/coin-or/Cgl/wiki/CglGomory <current: ifmove>
+The original cuts - beware of imitations!  Having gone out of favor, they are now more fashionable as LP solvers are more robust and they interact well with other cuts.  They will almost always give cuts (although in this executable they are limited as to number of variables in cut).  However the cuts may be dense so it is worth experimenting (Long allows any length). Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+ Reference: https://github.com/coin-or/Cgl/wiki/CglGomory
 
-\textbf{Values:} \texttt{forceandglobal}, \texttt{forcelongon}, \texttt{onglobal}, \texttt{longer}, \texttt{shorter}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{forceandglobal}, \texttt{forcelongon}, \texttt{onglobal}, \texttt{longer}, \texttt{shorter} (default: \texttt{ifmove})
 
 \subsection*{\texttt{-knapsackCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-knapsackCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Knapsack cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Reference: https://github.com/coin-or/Cgl/wiki/CglKnapsackCover <current: ifmove>
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+ Reference: https://github.com/coin-or/Cgl/wiki/CglKnapsackCover
 
-\textbf{Values:} \texttt{forceandglobal}, \texttt{onglobal}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{forceandglobal}, \texttt{onglobal} (default: \texttt{ifmove})
 
 \subsection*{\texttt{-lagomoryCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-lagomoryCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Lagrangean Gomory cuts
 
-This is a gross simplification of 'A Relax-and-Cut Framework for Gomory's Mixed-Integer Cuts' by Matteo Fischetti \& Domenico Salvagnin.  This simplification just uses original constraints while modifying objective using other cuts. So you don't use messy constraints generated by Gomory etc. A variant is to allow non messy cuts e.g. clique cuts. So 'only' does this while 'clean' also allows integral valued cuts. 'End' is recommended and waits until other cuts have finished before it does a few passes. The length options for gomory cuts are used. bothinstead <current: off>
+This is a gross simplification of 'A Relax-and-Cut Framework for Gomory's Mixed-Integer Cuts' by Matteo Fischetti \& Domenico Salvagnin.  This simplification just uses original constraints while modifying objective using other cuts. So you don't use messy constraints generated by Gomory etc. A variant is to allow non messy cuts e.g. clique cuts. So 'only' does this while 'clean' also allows integral valued cuts.  'End' is recommended and waits until other cuts have finished before it does a few passes. The length options for gomory cuts are used.
 
-\textbf{Values:} \texttt{cleanaswellroot}, \texttt{bothaswell}, \texttt{bothaswellroot}, \texttt{onlyinstead}, \texttt{cleaninstead}
+\textbf{Values:} \texttt{off}, \texttt{root}, \texttt{endonly}, \texttt{endonlyroot}, \texttt{endclean}, \texttt{endcleanroot}, \texttt{endboth}, \texttt{onlyaswell}, \texttt{onlyaswellroot}, \texttt{cleanaswell}, \texttt{cleanaswellroot}, \texttt{bothaswell}, \texttt{bothaswellroot}, \texttt{onlyinstead}, \texttt{cleaninstead}, \texttt{bothinstead} (default: \texttt{off})
 
 \subsection*{\texttt{-liftAndProjectCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-liftAndProjectCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use lift-and-project cuts
 
-These cuts may be expensive to compute. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Reference: https://github.com/coin-or/Cgl/wiki/CglLandP iflongon <current: off>
+These cuts may be expensive to compute. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+ Reference: https://github.com/coin-or/Cgl/wiki/CglLandP
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{iflongon} (default: \texttt{off})
 
 \subsection*{\texttt{-latwomirCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-latwomirCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Lagrangean Twomir cuts
 
-This is a Lagrangean relaxation for Twomir cuts.  See lagomoryCuts for description of options. <current: off>
+This is a Lagrangean relaxation for Twomir cuts.  See lagomoryCuts for description of options.
 
-\textbf{Values:} \texttt{cleaninstead}, \texttt{bothinstead}
+\textbf{Values:} \texttt{off}, \texttt{endonly}, \texttt{endonlyroot}, \texttt{endclean}, \texttt{endcleanroot}, \texttt{endboth}, \texttt{onlyaswell}, \texttt{cleanaswell}, \texttt{bothaswell}, \texttt{onlyinstead}, \texttt{cleaninstead}, \texttt{bothinstead} (default: \texttt{off})
 
 \subsection*{\texttt{-mixedIntegerRoundingCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-mixedIntegerRoundingCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Mixed Integer Rounding cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Reference: https://github.com/coin-or/Cgl/wiki/CglMixedIntegerRounding2 onglobal <current: ifmove>
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+ Reference: https://github.com/coin-or/Cgl/wiki/CglMixedIntegerRounding2
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{onglobal} (default: \texttt{ifmove})
 
 \subsection*{\texttt{-oddwheelCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-oddwheelCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use odd wheel cuts
 
-This switches on odd-wheel inequalities (either at root or in entire tree). onglobal <current: off>
+This switches on odd-wheel inequalities (either at root or in entire tree).
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{onglobal} (default: \texttt{off})
 
 \subsection*{\texttt{-probingCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-probingCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Probing cuts
 
-Value 'forceOnBut' turns on probing and forces CBC to do probing at every node, but does only probing, not strengthening etc. Value 'strong' forces CBC to strongly do probing at every node, that is, also when 'forceonbutstrong' is like 'forceonstrong', but does only probing (column fixing) and turns off row strengthening, so the matrix will not change inside the branch and bound.Reference: https://github.com/coin-or/Cgl/wiki/CglProbing strongroot <current: ifmove>
+Value 'forceOnBut' turns on probing and forces CBC to do probing at every node, but does only probing, not strengthening etc. Value 'strong' forces CBC to strongly do probing at every node, that is, also when CBC would usually turn it off because it hasn't found something. Value 'forceonbutstrong' is like 'forceonstrong', but does only probing (column fixing) and turns off row strengthening, so the matrix will not change inside the branch and bound.Reference: https://github.com/coin-or/Cgl/wiki/CglProbing
 
-\textbf{Values:} \texttt{forceonbut}, \texttt{forceonbutstrong}, \texttt{forceonglobal}, \texttt{forceonstrong}, \texttt{onglobal}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{forceonbut}, \texttt{forceonbutstrong}, \texttt{forceonglobal}, \texttt{forceonstrong}, \texttt{onglobal}, \texttt{strongroot} (default: \texttt{ifmove})
 
 \subsection*{\texttt{-reduceAndSplitCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-reduceAndSplitCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Reduce-and-Split cuts
 
-These cuts may be expensive to generate. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Reference: https://github.com/coin-or/Cgl/wiki/CglRedSplit <current: off>
+These cuts may be expensive to generate. Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+ Reference: https://github.com/coin-or/Cgl/wiki/CglRedSplit
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon} (default: \texttt{off})
 
 \subsection*{\texttt{-reduce2AndSplitCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-reduce2AndSplitCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Reduce-and-Split cuts - style 2
 
-This switches on reduce and split cuts (either at root or in entire tree). This version is by Giacomo Nannicini based on Francois Margot's version. Standard setting only uses rows in tableau <= 256, long uses all. These cuts may be expensive to generate. See option cuts for more information on the possible values. <current: off>
+This switches on reduce and split cuts (either at root or in entire tree). This version is by Giacomo Nannicini based on Francois Margot's version. Standard setting only uses rows in tableau <= 256, long uses all. These cuts may be expensive to generate. See option cuts for more information on the possible values.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{longon}, \texttt{longroot}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{longon}, \texttt{longroot} (default: \texttt{off})
 
 \subsection*{\texttt{-residualCapacityCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-residualCapacityCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Residual Capacity cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Reference: https://github.com/coin-or/Cgl/wiki/CglResidualCapacity <current: off>
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+ Reference: https://github.com/coin-or/Cgl/wiki/CglResidualCapacity
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon} (default: \texttt{off})
 
 \subsection*{\texttt{-twoMirCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-twoMirCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Two phase Mixed Integer Rounding cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. Reference: https://github.com/coin-or/Cgl/wiki/CglTwomir <current: ifmove>
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+ Reference: https://github.com/coin-or/Cgl/wiki/CglTwomir
 
-\textbf{Values:} \texttt{forceandglobal}, \texttt{forcelongon}, \texttt{onglobal}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{forceandglobal}, \texttt{forcelongon}, \texttt{onglobal} (default: \texttt{ifmove})
 
 \subsection*{\texttt{-zeroHalfCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-zeroHalfCuts}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use zero half cuts
 
-Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node. This implementation was written by Alberto Caprara. onglobal <current: ifmove>
+Value 'on' enables the cut generator and CBC will try it in the branch and cut tree (see cutDepth on how to fine tune the behavior). Value 'root' lets CBC run the cut generator generate only at the root node. Value 'ifmove' lets CBC use the cut generator in the tree if it looks as if it is doing some good and moves the objective value. Value 'forceon' turns on the cut generator and forces CBC to use it at every node.
+ This implementation was written by Alberto Caprara.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{root}, \texttt{ifmove}, \texttt{forceon}, \texttt{onglobal} (default: \texttt{ifmove})
 
 \subsection*{\texttt{-aggregatelevel}}
 \addcontentsline{toc}{subsection}{\texttt{-aggregatelevel}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Level of aggregation used in CglMixedRounding
 
-MixedIntegerRounding2 can work on constraints created by aggregating constraints in model.  Although the coding for this has been in for some time, it is being modified and the user may wish to play with this. -1 varies the level at various times. current 1>
+MixedIntegerRounding2 can work on constraints created by aggregating constraints in model.  Although the coding for this has been in for some time, it is being modified and the user may wish to play with this. -1 varies the level at various times.
 
-\textbf{Range:} -1 to 5
+\textbf{Range:} -1 to 5 (default: 1)
 
 \subsection*{\texttt{-cutDepth}}
 \addcontentsline{toc}{subsection}{\texttt{-cutDepth}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Depth in tree at which to do cuts
 
-Cut generators may be off, on only at the root, on if they look useful, and on at some interval.  If they are done every node then that is that, but it may be worth doing them every so often.  The original method was every so many nodes but it is more logical to do it whenever depth in tree is a multiple of K.  This option does that and defaults to -1 (off). current -1>
+Cut generators may be off, on only at the root, on if they look useful, and on at some interval.  If they are done every node then that is that, but it may be worth doing them every so often.  The original method was every so many nodes but it is more logical to do it whenever depth in tree is a multiple of K.  This option does that and defaults to -1 (off).
 
-\textbf{Range:} -1 to 2147483647
+\textbf{Range:} -1 to 2147483647 (default: -1)
 
 \subsection*{\texttt{-cutLength}}
 \addcontentsline{toc}{subsection}{\texttt{-cutLength}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Length of a cut
 
-At present this only applies to Gomory cuts. -1 (default) leaves as is. Any value >0 says that all cuts <= this length can be generated both at root node and in tree. 0 says to use some dynamic lengths. If value >=10,000,000 then the length in tree is value\%10000000 - so 10000100 means unlimited length at root and 100 in tree. current -1>
+At present this only applies to Gomory cuts. -1 (default) leaves as is. Any value >0 says that all cuts <= this length can be generated both at root node and in tree. 0 says to use some dynamic lengths.  If value >=10,000,000 then the length in tree is value\%10000000 - so 10000100 means unlimited length at root and 100 in tree.
 
-\textbf{Range:} -1 to 2147483647
+\textbf{Range:} -1 to 2147483647 (default: -1)
 
 \subsection*{\texttt{-passTreeCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-passTreeCuts}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Number of rounds that cut generators are applied in the tree
 
-The default is to do one pass. A negative value -n means that n passes are also applied if the objective does not drop. current 10>
+The default is to do one pass. A negative value -n means that n passes are also applied if the objective does not drop.
 
-\textbf{Range:} -2147483647 to 2147483647
+\textbf{Range:} -2147483647 to 2147483647 (default: 10)
 
 \subsection*{\texttt{-slowcutpasses}}
 \addcontentsline{toc}{subsection}{\texttt{-slowcutpasses}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Maximum number of rounds for slower cut generators
 
-Some cut generators are fairly slow - this limits the number of times they are tried. The cut generators identified as 'may be slow' at present are Lift and project cuts and both versions of Reduce and Split cuts. current 10>
+Some cut generators are fairly slow - this limits the number of times they are tried. The cut generators identified as 'may be slow' at present are Lift and project cuts and both versions of Reduce and Split cuts.
 
-\textbf{Range:} -1 to 2147483647
+\textbf{Range:} -1 to 2147483647 (default: 10)
+
+\subsection*{\texttt{-zeroHalfRowMaxFractionalCount}}
+\addcontentsline{toc}{subsection}{\texttt{-zeroHalfRowMaxFractionalCount}}
+
+\textit{Integer} (cbc)
+\medskip
+
+Skip ZeroHalf rows whose fractional count exceeds this threshold
+
+If nonnegative, ZeroHalf skips any candidate row whose number of fractional variables in the current LP solution exceeds this threshold. Negative values disable the filter.
+
+\textbf{Range:} -1 to 2147483647 (default: -1)
 
 \subsection*{\texttt{-zeroHalfRowMaxPairCount}}
 \addcontentsline{toc}{subsection}{\texttt{-zeroHalfRowMaxPairCount}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Skip ZeroHalf rows whose pair count exceeds this threshold
 
-If nonnegative, ZeroHalf skips any candidate row whose weakening pair count exceeds this threshold. Negative values disable the filter. current 150000>
+If nonnegative, ZeroHalf skips any candidate row whose weakening pair count exceeds this threshold. Negative values disable the filter.
 
-\textbf{Range:} -1 to 2147483647
+\textbf{Range:} -1 to 2147483647 (default: 150000)
 
 \subsection*{\texttt{-zeroHalfSparseThreshold}}
 \addcontentsline{toc}{subsection}{\texttt{-zeroHalfSparseThreshold}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Active-node threshold for sparse ZeroHalf separation graph
 
-If positive, ZeroHalf will use the sparse separation-graph implementation when the number of active separator nodes exceeds this threshold. A value of 0 forces sparse mode for testing. Negative values disable threshold-based switching, but sparse mode is still used automatically when the dense graph would be unsafe. current 8000>
+If positive, ZeroHalf will use the sparse separation-graph implementation when the number of active separator nodes exceeds this threshold. A value of 0 forces sparse mode for testing. Negative values disable threshold-based switching, but sparse mode is still used automatically when the dense graph would be unsafe.
 
-\textbf{Range:} -1 to 2147483647
+\textbf{Range:} -1 to 2147483647 (default: 8000)
 
 \subsection*{\texttt{-passCuts}}
 \addcontentsline{toc}{subsection}{\texttt{-passCuts}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Number of cut passes at root node
 
-The default is 100 passes if less than 500 columns, 100 passes (but stop if the drop is small) if less than 5000 columns, 20 otherwise. current 100>
+The default is 100 passes if less than 500 columns, 100 passes (but stop if the drop is small) if less than 5000 columns, 20 otherwise.
 
-\textbf{Range:} -2147483647 to 2147483647
+\textbf{Range:} -2147483647 to 2147483647 (default: 100)
 
 \section{Heuristics}
 
 \subsection*{\texttt{-combineSolutions}}
 \addcontentsline{toc}{subsection}{\texttt{-combineSolutions}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use combine solution heuristic
 
-This switches on a heuristic which does branch and cut on the problem given by just using variables which have appeared in one or more solutions. It is obviously only tried after two or more solutions.Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+This switches on a heuristic which does branch and cut on the problem given by just using variables which have appeared in one or more solutions. It is obviously only tried after two or more solutions.Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{bothquick}, \texttt{beforequick}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{onequick}, \texttt{bothquick}, \texttt{beforequick} (default: \texttt{off})
 
 \subsection*{\texttt{-combine2Solutions}}
 \addcontentsline{toc}{subsection}{\texttt{-combine2Solutions}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use crossover solution heuristic
 
-This heuristic does branch and cut on the problem given by fixing variables which have the same value in two or more solutions. It obviously only tries after two or more solutions. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+This heuristic does branch and cut on the problem given by fixing variables which have the same value in two or more solutions. It obviously only tries after two or more solutions. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
 \subsection*{\texttt{-Dins}}
 \addcontentsline{toc}{subsection}{\texttt{-Dins}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Distance Induced Neighborhood Search
 
-Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{often}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{often} (default: \texttt{off})
 
 \subsection*{\texttt{-DivingCoefficient}}
 \addcontentsline{toc}{subsection}{\texttt{-DivingCoefficient}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Coefficient diving heuristic
 
-Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: on>
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{on})
 
 \subsection*{\texttt{-DivingFractional}}
 \addcontentsline{toc}{subsection}{\texttt{-DivingFractional}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Fractional diving heuristic
 
-Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
 \subsection*{\texttt{-DivingGuided}}
 \addcontentsline{toc}{subsection}{\texttt{-DivingGuided}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Guided diving heuristic
 
-Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
 \subsection*{\texttt{-DivingLineSearch}}
 \addcontentsline{toc}{subsection}{\texttt{-DivingLineSearch}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Linesearch diving heuristic
 
-Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
 \subsection*{\texttt{-DivingPseudocost}}
 \addcontentsline{toc}{subsection}{\texttt{-DivingPseudocost}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Pseudocost diving heuristic
 
-Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
 \subsection*{\texttt{-DivingSome}}
 \addcontentsline{toc}{subsection}{\texttt{-DivingSome}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Diving heuristics
 
-This switches on a random diving heuristic at various times. One may prefer to individually turn diving heuristics on or off. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+This switches on a random diving heuristic at various times. One may prefer to individually turn diving heuristics on or off. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
 \subsection*{\texttt{-DivingVectorLength}}
 \addcontentsline{toc}{subsection}{\texttt{-DivingVectorLength}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Vectorlength diving heuristic
 
-Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
 \subsection*{\texttt{-dwHeuristic}}
 \addcontentsline{toc}{subsection}{\texttt{-dwHeuristic}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Dantzig Wolfe heuristic
 
-This heuristic is very very compute intensive. It tries to find a Dantzig Wolfe structure and use that. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. trial <current: off>
+This heuristic is very very compute intensive. It tries to find a Dantzig Wolfe structure and use that. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{special}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{special}, \texttt{trial} (default: \texttt{off})
 
 \subsection*{\texttt{-feasibilityPump}}
 \addcontentsline{toc}{subsection}{\texttt{-feasibilityPump}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Feasibility Pump
 
-This switches on feasibility pump heuristic at root. This is due to Fischetti and Lodi and uses a sequence of LPs to try and get an integer feasible solution.  Some fine tuning is available by passFeasibilityPump.Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: on>
+This switches on feasibility pump heuristic at root. This is due to Fischetti and Lodi and uses a sequence of LPs to try and get an integer feasible solution.  Some fine tuning is available by passFeasibilityPump.Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{on})
 
 \subsection*{\texttt{-greedyHeuristic}}
 \addcontentsline{toc}{subsection}{\texttt{-greedyHeuristic}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use a greedy heuristic
 
-Switches on a pair of greedy heuristic which will try and obtain a solution.  It may just fix a percentage of variables and then try a small branch and cut run.Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: on>
+Switches on a pair of greedy heuristic which will try and obtain a solution.  It may just fix a percentage of variables and then try a small branch and cut run.Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{on})
 
 \subsection*{\texttt{-heuristicsOnOff}}
 \addcontentsline{toc}{subsection}{\texttt{-heuristicsOnOff}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Switches most heuristics on or off
 
-This can be used to switch on or off all heuristics.  Then you can set individual ones off or on.  CbcTreeLocal is not included as it dramatically alters search. <current: on>
+This can be used to switch on or off all heuristics.  Then you can set individual ones off or on.  CbcTreeLocal is not included as it dramatically alters search.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{on})
 
 \subsection*{\texttt{-localTreeSearch}}
 \addcontentsline{toc}{subsection}{\texttt{-localTreeSearch}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use local tree search
 
-This switches on a local search algorithm when a solution is found. This is from Fischetti and Lodi and is not really a heuristic although it can be used as one. When used from this program it has limited functionality. <current: off>
+This switches on a local search algorithm when a solution is found.  This is from Fischetti and Lodi and is not really a heuristic although it can be used as one. When used from this program it has limited functionality.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{10}, \texttt{100}, \texttt{300}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{10}, \texttt{100}, \texttt{300} (default: \texttt{off})
 
 \subsection*{\texttt{-naiveHeuristics}}
 \addcontentsline{toc}{subsection}{\texttt{-naiveHeuristics}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try some stupid heuristic
 
-This is naive heuristics which, e.g., fix all integers with costs to zero!. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+This is naive heuristics which, e.g., fix all integers with costs to zero!. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
 \subsection*{\texttt{-pivotAndFix}}
 \addcontentsline{toc}{subsection}{\texttt{-pivotAndFix}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Pivot and Fix heuristic
 
-Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
 \subsection*{\texttt{-proximitySearch}}
 \addcontentsline{toc}{subsection}{\texttt{-proximitySearch}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to do proximity search heuristic
 
-This heuristic looks for a solution close to the incumbent solution (Fischetti and Monaci, 2012). The idea is to define a sub-MIP without additional constraints but with a modified objective function intended to attract the search in the proximity of the incumbent. The approach works well for 0-1 MIPs whose solution landscape is not too irregular (meaning the there is reasonable probability of finding an improved solution by flipping a small number of binary variables), in particular when it is applied to the first heuristic solutions found at the root node. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+This heuristic looks for a solution close to the incumbent solution (Fischetti and Monaci, 2012). The idea is to define a sub-MIP without additional constraints but with a modified objective function intended to attract the search in the proximity of the incumbent. The approach works well for 0-1 MIPs whose solution landscape is not too irregular (meaning the there is reasonable probability of finding an improved solution by flipping a small number of binary variables), in particular when it is applied to the first heuristic solutions found at the root node. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{100}, \texttt{300}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{10}, \texttt{100}, \texttt{300} (default: \texttt{off})
 
 \subsection*{\texttt{-randomizedRounding}}
 \addcontentsline{toc}{subsection}{\texttt{-randomizedRounding}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try randomized rounding heuristic
 
-Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: off>
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{off})
 
 \subsection*{\texttt{-Rens}}
 \addcontentsline{toc}{subsection}{\texttt{-Rens}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Relaxation Enforced Neighborhood Search
 
-Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. Value 'on' just does 50 nodes. 200, 1000, and 10000 does that many nodes. <current: off>
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. Value 'on' just does 50 nodes. 200, 1000, and 10000 does that many nodes.
 
-\textbf{Values:} \texttt{1000}, \texttt{10000}, \texttt{dj}, \texttt{djbefore}, \texttt{usesolution}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{200}, \texttt{1000}, \texttt{10000}, \texttt{dj}, \texttt{djbefore}, \texttt{usesolution} (default: \texttt{off})
 
 \subsection*{\texttt{-Rins}}
 \addcontentsline{toc}{subsection}{\texttt{-Rins}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try Relaxed Induced Neighborhood Search
 
-Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve. <current: on>
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{often}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{often} (default: \texttt{on})
 
 \subsection*{\texttt{-roundingHeuristic}}
 \addcontentsline{toc}{subsection}{\texttt{-roundingHeuristic}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use Rounding heuristic
 
-This switches on a simple (but effective) rounding heuristic at each node of tree. <current: on>
+This switches on a simple (but effective) rounding heuristic at each node of tree.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before} (default: \texttt{on})
+
+\subsection*{\texttt{-VndVariableNeighborhoodSearch}}
+\addcontentsline{toc}{subsection}{\texttt{-VndVariableNeighborhoodSearch}}
+
+\textit{Keyword} (cbc)
+\medskip
+
+Whether to try Variable Neighborhood Search
+
+Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
+
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{both}, \texttt{before}, \texttt{intree} (default: \texttt{off})
 
 \subsection*{\texttt{-doHeuristic}}
 \addcontentsline{toc}{subsection}{\texttt{-doHeuristic}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Do heuristics before any preprocessing
 
-Normally heuristics are done in branch and bound.  It may be useful to do them outside. Only those heuristics with 'both' or 'before' set will run. Doing this may also set cutoff, which can help with preprocessing. <current: off>
+Normally heuristics are done in branch and bound.  It may be useful to do them outside. Only those heuristics with 'both' or 'before' set will run. Doing this may also set cutoff, which can help with preprocessing.
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
 \subsection*{\texttt{-forceSolution}}
 \addcontentsline{toc}{subsection}{\texttt{-forceSolution}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use given solution as crash for BAB
 
-If on then tries to branch to solution given by AMPL or priorities file. <current: off>
+If on then tries to branch to solution given by AMPL or priorities file.
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
 \subsection*{\texttt{-depthMiniBab}}
 \addcontentsline{toc}{subsection}{\texttt{-depthMiniBab}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Depth at which to try mini branch-and-bound
 
-Rather a complicated parameter but can be useful. -1 means off for large problems but on as if -12 for problems where rows+columns<500, -2 means use Cplex if it is linked in.  Otherwise if negative then go into depth first complete search fast branch and bound when depth>= -value-2 (so -3 will use this at depth>=1).  This mode is only switched on after 500 nodes.  If you really want to switch it off for small problems then set this to -999.  If >=0 the value doesn't matter very much.  The code will do approximately 100 nodes of fast branch and bound every now and then at depth>=5. The actual logic is too twisted to describe here. The default has been changed from -1 to +1.  This uses Clp and saves factorizations etc to be faster. current 1>
+Rather a complicated parameter but can be useful. -1 means off for large problems but on as if -12 for problems where rows+columns<500, -2 means use Cplex if it is linked in.  Otherwise if negative then go into depth first complete search fast branch and bound when depth>= -value-2 (so -3 will use this at depth>=1).  This mode is only switched on after 500 nodes.  If you really want to switch it off for small problems then set this to -999.  If >=0 the value doesn't matter very much.  The code will do approximately 100 nodes of fast branch and bound every now and then at depth>=5. The actual logic is too twisted to describe here. The default has been changed from -1 to +1.  This uses Clp and saves factorizations etc to be faster.
 
-\textbf{Range:} -2147483647 to 2147483647
+\textbf{Range:} -2147483647 to 2147483647 (default: 1)
 
 \subsection*{\texttt{-diveOpt}}
 \addcontentsline{toc}{subsection}{\texttt{-diveOpt}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Diving options
 
-If >2 \&\& <=8 then modify diving options - 3 only at root and if no solution, 4 only at root and if this heuristic has not got solution, 5 decay only if no solution, 6 if depth <3 or decay, 7 run up to 2 times if solution found 4 otherwise, 8 fire at every node until first incumbent then revert to default d\textasciicircum{}2/2\textasciicircum{}d schedule (aggressive feasibility mode), >10 All only at root (DivingC normal as value-10), >20 All with value-20). current 2>
+If >2 \&\& <=8 then modify diving options -	 
+	3 only at root and if no solution,	 
+	4 only at root and if this heuristic has not got solution,	 
+	5 decay only if no solution,	 
+	6 if depth <3 or decay,	 
+	7 run up to 2 times if solution found 4 otherwise,	 
+	8 fire at every node until first incumbent then revert to default d\textasciicircum{}2/2\textasciicircum{}d schedule (aggressive feasibility mode),	 
+	>10 All only at root (DivingC normal as value-10),	 
+	>20 All with value-20).
 
-\textbf{Range:} -1 to 20
+\textbf{Range:} -1 to 20 (default: 2)
 
 \subsection*{\texttt{-diveSolves}}
 \addcontentsline{toc}{subsection}{\texttt{-diveSolves}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Diving solve option
 
-If >0 then do up to this many solves. However, the last digit is ignored and used for extra options: 1-3 enables fixing of satisfied integer variables (but not at bound), where 1 switches this off for that dive if the dive goes infeasible, and 2 switches it off permanently if the dive goes infeasible. current 100>
+If >0 then do up to this many solves. However, the last digit is ignored and used for extra options: 1-3 enables fixing of satisfied integer variables (but not at bound), where 1 switches this off for that dive if the dive goes infeasible, and 2 switches it off permanently if the dive goes infeasible.
 
-\textbf{Range:} -1 to 200000
+\textbf{Range:} -1 to 200000 (default: 100)
 
 \subsection*{\texttt{-passFeasibilityPump}}
 \addcontentsline{toc}{subsection}{\texttt{-passFeasibilityPump}}
 
+\textit{Integer} (cbc)
+\medskip
+
 How many passes in feasibility pump
 
-This fine tunes the Feasibility Pump heuristic by doing more or fewer passes. current 30>
+This fine tunes the Feasibility Pump heuristic by doing more or fewer passes.
 
-\textbf{Range:} 0 to 10000
+\textbf{Range:} 0 to 10000 (default: 30)
 
 \subsection*{\texttt{-pumpTune}}
 \addcontentsline{toc}{subsection}{\texttt{-pumpTune}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Dubious ideas for feasibility pump
 
-This fine tunes Feasibility Pump >=10000000 use as objective weight switch >=1000000 use as accumulate switch >=1000 use index+1 as number of large loops ==100 use objvalue +0.05*fabs(objvalue) as cutoff OR fakeCutoff if set \%100 == 10,20 affects how each solve is done 1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds. If accumulate is on then after a major pass, variables which have not moved are fixed and a small branch and bound is tried. current 1005043>
+This fine tunes Feasibility Pump     
+	>=10000000 use as objective weight switch     
+	>=1000000 use as accumulate switch     
+	>=1000 use index+1 as number of large loops     
+	==100 use objvalue +0.05*fabs(objvalue) as cutoff OR fakeCutoff if set     
+	\%100 == 10,20 affects how each solve is done     
+	1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds. If accumulate is on then after a major pass, variables which have not moved are fixed and a small branch and bound is tried.
 
-\textbf{Range:} 0 to 1000000000
+\textbf{Range:} 0 to 1000000000 (default: 1005043)
 
 \subsection*{\texttt{-hOptions}}
 \addcontentsline{toc}{subsection}{\texttt{-hOptions}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Heuristic options
 
-Value 1 stops heuristics immediately if the allowable gap has been reached. Other values are for the feasibility pump - 2 says do exact number of passes given, 4 only applies if an initial cutoff has been given and says relax after 50 passes, while 8 will adapt the cutoff rhs after the first solution if it looks as if the code is stalling. current 0>
+Value 1 stops heuristics immediately if the allowable gap has been reached. Other values are for the feasibility pump - 2 says do exact number of passes given, 4 only applies if an initial cutoff has been given and says relax after 50 passes, while 8 will adapt the cutoff rhs after the first solution if it looks as if the code is stalling.
 
-\textbf{Range:} -2147483647 to 2147483647
+\textbf{Range:} -2147483647 to 2147483647 (default: 0)
 
 \subsection*{\texttt{-fpumpPassFreq}}
 \addcontentsline{toc}{subsection}{\texttt{-fpumpPassFreq}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Print feasibility pump progress every N passes (0 = disabled).
 
-Print feasibility pump progress every N passes (0 = disabled). current 0>
-
-\textbf{Range:} 0 to 1000000
+\textbf{Range:} 0 to 1000000 (default: 0)
 
 \subsection*{\texttt{-artificialCost}}
 \addcontentsline{toc}{subsection}{\texttt{-artificialCost}}
 
+\textit{Double} (cbc)
+\medskip
+
 Costs >= this treated as artificials in feasibility pump
 
-Costs >= this treated as artificials in feasibility pump current 0>
-
-\textbf{Range:} 0 to 1.79769e+308
+\textbf{Range:} 0 to inf (default: 0)
 
 \section{Preprocessing}
 
 \subsection*{\texttt{-fastPreProcess}}
 \addcontentsline{toc}{subsection}{\texttt{-fastPreProcess}}
 
+\textit{Action} (cbc)
+\medskip
+
 Run fast MILP preprocessing on the loaded model
 
-fastPreProcess : Run fast MILP preprocessing on the loaded model fastPreProcessL(evel) : Aggression level for fast MILP preprocessing before solve fastPreProcessM(axRounds) : Maximum number of bound-tightening rounds in fast preprocessing
+Immediately runs the fast MILP preprocessor on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by fastPreProcessLevel. After running, use writeModel to save the tightened problem.
 
 \subsection*{\texttt{-PrepNames}}
 \addcontentsline{toc}{subsection}{\texttt{-PrepNames}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 If column names will be kept in pre-processed model
 
-Normally the preprocessed model has column names replaced by new names C0000... Setting this option to on keeps original names in variables which still exist in the preprocessed problem <current: on>
+Normally the preprocessed model has column names replaced by new names C0000... Setting this option to on keeps original names in variables which still exist in the preprocessed problem
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{on})
 
 \subsection*{\texttt{-singletonBounds}}
 \addcontentsline{toc}{subsection}{\texttt{-singletonBounds}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to tighten variable bounds from singleton rows before solve
 
-When on, singleton rows (rows with a single nonzero) are used to tighten variable bounds before the initial LP solve and conflict graph construction. This is a cheap preprocessing step that can fix variables and reduce the problem size. <current: on>
+When on, singleton rows (rows with a single nonzero) are used to tighten variable bounds before the initial LP solve and conflict graph construction. This is a cheap preprocessing step that can fix variables and reduce the problem size.
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{on})
 
 \subsection*{\texttt{-sosOptions}}
 \addcontentsline{toc}{subsection}{\texttt{-sosOptions}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use SOS from AMPL
 
-Normally if AMPL says there are SOS variables they should be used, but sometimes they should be turned off - this does so. <current: off>
+Normally if AMPL says there are SOS variables they should be used, but sometimes they should be turned off - this does so.
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
 \subsection*{\texttt{-clqstrengthen}}
 \addcontentsline{toc}{subsection}{\texttt{-clqstrengthen}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether and when to perform Clique Strengthening preprocessing routine
 
-Whether and when to perform Clique Strengthening preprocessing routine <current: after>
-
-\textbf{Values:} \texttt{off}, \texttt{before}, \texttt{after}
+\textbf{Values:} \texttt{off}, \texttt{before}, \texttt{after} (default: \texttt{after})
 
 \subsection*{\texttt{-preprocess}}
 \addcontentsline{toc}{subsection}{\texttt{-preprocess}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use integer preprocessing
 
-This tries to reduce size of the model in a similar way to presolve and it also tries to strengthen the model. This can be very useful and is worth trying.  save option saves on file presolved.mps.  equal will turn <= cliques into ==.  sos will create sos sets if all 0-1 in sets (well one extra is allowed) and no overlaps.  trysos is same but allows any number extra. equalall will turn all valid inequalities into equalities with integer slacks. strategy is as on but uses CbcStrategy. stop(aftersaving)  equalallstop <current: sos>
+This tries to reduce size of the model in a similar way to presolve and it also tries to strengthen the model. This can be very useful and is worth trying.  save option saves on file presolved.mps.  equal will turn <= cliques into ==.  sos will create sos sets if all 0-1 in sets (well one extra is allowed) and no overlaps.  trysos is same but allows any number extra. equalall will turn all valid inequalities into equalities with integer slacks. strategy is as on but uses CbcStrategy.
 
-\textbf{Values:} \texttt{trysos}, \texttt{equalall}, \texttt{strategy}, \texttt{aggregate}, \texttt{forcesos}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{save}, \texttt{equal}, \texttt{sos}, \texttt{trysos}, \texttt{equalall}, \texttt{strategy}, \texttt{aggregate}, \texttt{forcesos}, \texttt{stop!aftersaving}, \texttt{equalallstop} (default: \texttt{sos})
 
 \subsection*{\texttt{-fastPreProcessLevel}}
 \addcontentsline{toc}{subsection}{\texttt{-fastPreProcessLevel}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Aggression level for fast MILP preprocessing before solve
 
-Controls how aggressively fast preprocessing tightens variable bounds before the initial LP solve. off:       disabled (falls back to singletonBounds setting). singletons: singleton rows only --- same as singletonBounds on. milpbt:    singletons then knapsack-based bound tightening for up to fastPreProcessMaxRounds rounds (default 100, effectively fixpoint). fixpoint:  singletons then bound tightening until no new fixings are found, regardless of fastPreProcessMaxRounds. <current: milpbt>
+Controls how aggressively fast preprocessing tightens variable bounds before the initial LP solve.
+  off:       disabled (falls back to singletonBounds setting).
+  singletons: singleton rows only --- same as singletonBounds on.
+  milpbt:    singletons then knapsack-based bound tightening for up to fastPreProcessMaxRounds rounds (default 100, effectively fixpoint).
+  fixpoint:  singletons then bound tightening until no new fixings are found, regardless of fastPreProcessMaxRounds.
 
-\textbf{Values:} \texttt{off}, \texttt{singletons}, \texttt{milpbt}, \texttt{fixpoint}
+\textbf{Values:} \texttt{off}, \texttt{singletons}, \texttt{milpbt}, \texttt{fixpoint} (default: \texttt{milpbt})
 
 \subsection*{\texttt{-cppGenerate}}
 \addcontentsline{toc}{subsection}{\texttt{-cppGenerate}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Generates C++ code
 
-Once you like what the stand-alone solver does then this allows you to generate user\_driver.cpp which approximates the code. 0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values. This is now deprecated as you can call stand-alone solver - see Cbc/examples/driver4.cpp. current 0> Once you like what the stand-alone solver does then this allows you to generate user\_driver.cpp which approximates the code.  0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values. current 0>
+Once you like what the stand-alone solver does then this allows you to generate user\_driver.cpp which approximates the code.  0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values.
 
-\textbf{Range:} 0 to 4
+\textbf{Range:} 0 to 4 (default: 0)
 
 \subsection*{\texttt{-extraVariables}}
 \addcontentsline{toc}{subsection}{\texttt{-extraVariables}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Allow creation of extra integer variables
 
-Switches on a trivial re-formulation that introduces extra integer variables to group together variables with same cost. current 0>
+Switches on a trivial re-formulation that introduces extra integer variables to group together variables with same cost.
 
-\textbf{Range:} -2147483647 to 2147483647
+\textbf{Range:} -2147483647 to 2147483647 (default: 0)
 
 \subsection*{\texttt{-tunePreProcess}}
 \addcontentsline{toc}{subsection}{\texttt{-tunePreProcess}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Dubious tuning parameters for preprocessing
 
-Format aabbcccc - If aa then this is number of major passes (i.e. with presolve) If bb and bb>0 then this is number of minor passes (if unset or 0 then 10) cccc is bit set 0 - 1 Heavy probing 1 - 2 Make variables integer if possible (if obj value) 2 - 4 As above but even if zero objective value 7 - 128 Try and create cliques 8 - 256 If all +1 try hard for dominated rows 9 - 512 Even heavier probing 10 - 1024 Use a larger feasibility tolerance in presolve 11 - 2048 Try probing before creating cliques 12 - 4096 Switch off duplicate column checking for integers 13 - 8192 Allow scaled duplicate column checking Now aa 99 has special meaning i.e. just one simple presolve. Alternative syntax - kwd1+kwd2+1234 - - heavy(Probing) (Do more probing) -> 7 - heavier(Probing) (Do yet more probing) -> 519 current 7>
+Format aabbcccc - 
+ If aa then this is number of major passes (i.e. with presolve) 
+ If bb and bb>0 then this is number of minor passes (if unset or 0 then 10) 
+ cccc is bit set 
+ 0 - 1 Heavy probing 
+ 1 - 2 Make variables integer if possible (if obj value)
+ 2 - 4 As above but even if zero objective value
+ 7 - 128 Try and create cliques
+ 8 - 256 If all +1 try hard for dominated rows
+ 9 - 512 Even heavier probing 
+ 10 - 1024 Use a larger feasibility tolerance in presolve
+ 11 - 2048 Try probing before creating cliques
+ 12 - 4096 Switch off duplicate column checking for integers 
+ 13 - 8192 Allow scaled duplicate column checking 
+ 
+     Now aa 99 has special meaning i.e. just one simple presolve.
 
-\textbf{Range:} 0 to 2147483647
+\textbf{Range:} 0 to 2147483647 (default: 7)
 
 \subsection*{\texttt{-fastPreProcessMaxRounds}}
 \addcontentsline{toc}{subsection}{\texttt{-fastPreProcessMaxRounds}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Maximum number of bound-tightening rounds in fast preprocessing
 
-Maximum number of CoinMILPBoundTightening rounds when fastPreProcessLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when fastPreProcessLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'. current 100>
+Maximum number of CoinMILPBoundTightening rounds when fastPreProcessLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when fastPreProcessLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.
 
-\textbf{Range:} 1 to 2147483647
+\textbf{Range:} 1 to 2147483647 (default: 100)
 
 \subsection*{\texttt{-fixOnDj}}
 \addcontentsline{toc}{subsection}{\texttt{-fixOnDj}}
 
+\textit{Double} (cbc)
+\medskip
+
 Try heuristic that fixes variables based on reduced costs
 
-If set, integer variables with reduced costs greater than the specified value will be fixed before branch and bound - use with extreme caution! current 0>
+If set, integer variables with reduced costs greater than the specified value will be fixed before branch and bound - use with extreme caution!
 
-\textbf{Range:} -1e+20 to 1e+20
+\textbf{Range:} -1e+20 to 1e+20 (default: 0)
 
 \subsection*{\texttt{-tightenFactor}}
 \addcontentsline{toc}{subsection}{\texttt{-tightenFactor}}
 
+\textit{Double} (cbc)
+\medskip
+
 Tighten bounds using value times largest activity at continuous solution
 
-This sleazy trick can help on some problems. current 0>
+This sleazy trick can help on some problems.
 
-\textbf{Range:} 0 to 1.79769e+308
+\textbf{Range:} 0 to inf (default: 0)
 
 \subsection*{\texttt{-presolve}}
 \addcontentsline{toc}{subsection}{\texttt{-presolve}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Whether to presolve problem
 
-Presolve analyzes the model to find such things as redundant equations, equations which fix some variables, equations which can be transformed into bounds, etc. For the initial solve of any problem this is worth doing unless one knows that it will have no effect. Option 'on' will normally do 5 passes, while using 'more' will do 10.  If the problem is very large one can let CLP write the original problem to file by using 'file'. <current: on>
+Presolve analyzes the model to find such things as redundant equations, equations which fix some variables, equations which can be transformed into bounds, etc. For the initial solve of any problem this is worth doing unless one knows that it will have no effect. Option 'on' will normally do 5 passes, while using 'more' will do 10.  If the problem is very large one can let CLP write the original problem to file by using 'file'.
 
-\textbf{Values:} \texttt{on}, \texttt{off}, \texttt{more}, \texttt{file}
+\textbf{Values:} \texttt{on}, \texttt{off}, \texttt{more}, \texttt{file} (default: \texttt{on})
 
 \subsection*{\texttt{-cppGenerate}}
 \addcontentsline{toc}{subsection}{\texttt{-cppGenerate}}
 
+\textit{Integer} (clp)
+\medskip
+
 Generates C++ code
 
-Once you like what the stand-alone solver does then this allows you to generate user\_driver.cpp which approximates the code. 0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values. This is now deprecated as you can call stand-alone solver - see Cbc/examples/driver4.cpp. current 0> Once you like what the stand-alone solver does then this allows you to generate user\_driver.cpp which approximates the code.  0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values. current 0>
+Once you like what the stand-alone solver does then this allows you to generate user\_driver.cpp which approximates the code. 0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values. This is now deprecated as you can call stand-alone solver - see Cbc/examples/driver4.cpp.
 
-\textbf{Range:} 0 to 4
+\textbf{Range:} -1 to 50000 (default: 0)
 
 \subsection*{\texttt{-decompose}}
 \addcontentsline{toc}{subsection}{\texttt{-decompose}}
 
+\textit{Integer} (clp)
+\medskip
+
 Whether to try decomposition
 
-0 - off, 1 choose blocks >1 use as blocks Dantzig Wolfe if primal, Benders if dual - uses sprint pass for number of passes current 0>
+0 - off, 1 choose blocks >1 use as blocks Dantzig Wolfe if primal, Benders if dual - uses sprint pass for number of passes
 
-\textbf{Range:} -2147483647 to 2147483647
+\textbf{Range:} -2147483647 to 2147483647 (default: 0)
 
 \subsection*{\texttt{-dualize}}
 \addcontentsline{toc}{subsection}{\texttt{-dualize}}
 
+\textit{Integer} (clp)
+\medskip
+
 Solves dual reformulation
 
-Don't even think about it. current 3>
+Don't even think about it.
 
-\textbf{Range:} 0 to 4
+\textbf{Range:} 0 to 4 (default: 3)
 
 \subsection*{\texttt{-passPresolve}}
 \addcontentsline{toc}{subsection}{\texttt{-passPresolve}}
 
+\textit{Integer} (clp)
+\medskip
+
 How many passes in presolve
 
-Normally Presolve does 10 passes but you may want to do less to make it more lightweight or do more if improvements are still being made. As Presolve will return if nothing is being taken out, you should not normally need to use this fine tuning. current 5>
+Normally Presolve does 10 passes but you may want to do less to make it more lightweight or do more if improvements are still being made.  As Presolve will return if nothing is being taken out, you should not normally need to use this fine tuning.
 
-\textbf{Range:} -200 to 100
+\textbf{Range:} -200 to 100 (default: 5)
 
 \section{Branching}
 
 \subsection*{\texttt{-branchPriorities}}
 \addcontentsline{toc}{subsection}{\texttt{-branchPriorities}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 What rule (if any) to use in prioritizing variables for branching
 
-What rule (if any) to use in prioritizing variables for branching - 'priorities' assigns highest priority to variables with largest absolute cost. This primitive strategy can be surprisingly effective. - 'columnorder' assigns the priorities with respect to the column ordering. - '01first' ('01last') gives highest priority to binary variables. - 'length' assigns high priority to variables that occur in many constraints. off  pri(orities)  column(Order)  01f(irst?)  01l(ast?) length(?)  singletons  nonzero  general(Force?) <current: off>
+What rule (if any) to use in prioritizing variables for branching
+ - 'priorities' assigns highest priority to variables with largest absolute cost.
+                This primitive strategy can be surprisingly effective. 
+ - 'columnorder' assigns the priorities with respect to the column ordering.
+ - '01first' ('01last') gives highest priority to binary variables.
+ - 'length' assigns high priority to variables that occur in many constraints.
+
+
+\textbf{Values:} \texttt{off}, \texttt{pri!orities}, \texttt{column!Order}, \texttt{01f!irst?}, \texttt{01l!ast?}, \texttt{length!?}, \texttt{singletons}, \texttt{nonzero}, \texttt{general!Force?} (default: \texttt{off})
 
 \subsection*{\texttt{-nodeStrategy}}
 \addcontentsline{toc}{subsection}{\texttt{-nodeStrategy}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 What strategy to use to select the next node from the branch and cut tree
 
-Normally before a feasible solution is found, CBC will choose a node with fewest infeasibilities. Alternatively, one may choose tree-depth as the criterion. This requires the minimal amount of memory, but may take a long time to find the best solution. Additionally, one may specify whether up or down branches must be selected first (the up-down choice will carry on after a first solution has been bound). The choice 'hybrid' does breadth first on small depth nodes and then switches to 'fewest'. <current: fewest>
+Normally before a feasible solution is found, CBC will choose a node with fewest infeasibilities. Alternatively, one may choose tree-depth as the criterion. This requires the minimal amount of memory, but may take a long time to find the best solution. Additionally, one may specify whether up or down branches must be selected first (the up-down choice will carry on after a first solution has been bound). The choice 'hybrid' does breadth first on small depth nodes and then switches to 'fewest'.
 
-\textbf{Values:} \texttt{updepth}, \texttt{downdepth}
+\textbf{Values:} \texttt{hybrid}, \texttt{fewest}, \texttt{depth}, \texttt{upfewest}, \texttt{downfewest}, \texttt{updepth}, \texttt{downdepth} (default: \texttt{fewest})
 
 \subsection*{\texttt{-OrbitalBranching}}
 \addcontentsline{toc}{subsection}{\texttt{-OrbitalBranching}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to try orbital branching
 
-This switches on Orbital branching. Value 'on' just adds orbital, 'strong' tries extra fixing in strong branching.'cuts' just adds global cuts to break symmetry.'lightweight' is as on where computation seems cheap <current: off>
+This switches on Orbital branching. Value 'on' just adds orbital, 'strong' tries extra fixing in strong branching.'cuts' just adds global cuts to break symmetry.'lightweight' is as on where computation seems cheap
 
-\textbf{Values:} \texttt{on}, \texttt{lightweight}, \texttt{moreprinting}, \texttt{cuts}, \texttt{cutslight}
+\textbf{Values:} \texttt{off}, \texttt{slowish}, \texttt{strong}, \texttt{force}, \texttt{simple}, \texttt{on}, \texttt{lightweight}, \texttt{moreprinting}, \texttt{cuts}, \texttt{cutslight} (default: \texttt{off})
 
 \subsection*{\texttt{-sosPrioritize}}
 \addcontentsline{toc}{subsection}{\texttt{-sosPrioritize}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 How to deal with SOS priorities
 
-This sets priorities for SOS.  Values 'high' and 'low' just set a priority relative to the for integer variables.  Value 'orderhigh' gives first highest priority to the first SOS and integer variables a low priority.  Value 'orderlow' gives integer variables a high priority then SOS in order. <current: off>
+This sets priorities for SOS.  Values 'high' and 'low' just set a priority relative to the for integer variables.  Value 'orderhigh' gives first highest priority to the first SOS and integer variables a low priority.  Value 'orderlow' gives integer variables a high priority then SOS in order.
 
-\textbf{Values:} \texttt{off}, \texttt{high}, \texttt{low}, \texttt{orderhigh}, \texttt{orderlow}
+\textbf{Values:} \texttt{off}, \texttt{high}, \texttt{low}, \texttt{orderhigh}, \texttt{orderlow} (default: \texttt{off})
 
 \subsection*{\texttt{-trustPseudocosts}}
 \addcontentsline{toc}{subsection}{\texttt{-trustPseudocosts}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Number of branches before we trust pseudocosts
 
-Using strong branching computes pseudo-costs.  After this many times for a variable we just trust the pseudo costs and do not do any more strong branching. current 10>
+Using strong branching computes pseudo-costs.  After this many times for a variable we just trust the pseudo costs and do not do any more strong branching.
 
-\textbf{Range:} -3 to 2147483647
+\textbf{Range:} -3 to 2147483647 (default: 10)
 
 \subsection*{\texttt{-strongBranching}}
 \addcontentsline{toc}{subsection}{\texttt{-strongBranching}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Number of variables to look at in strong branching
 
-In order to decide which variable to branch on, the code will choose up to this number of unsatisfied variables and try mini up and down branches.  The most effective one is chosen. If a variable is branched on many times then the previous average up and down costs may be used - see number before trust. current 5>
+In order to decide which variable to branch on, the code will choose up to this number of unsatisfied variables and try mini up and down branches.  The most effective one is chosen. If a variable is branched on many times then the previous average up and down costs may be used - see number before trust.
 
-\textbf{Range:} 0 to 999999
+\textbf{Range:} 0 to 999999 (default: 5)
 
 \section{Tolerances}
 
 \subsection*{\texttt{-increment}}
 \addcontentsline{toc}{subsection}{\texttt{-increment}}
 
+\textit{Double} (cbc)
+\medskip
+
 A new solution must be at least this much better than the incumbent
 
-Whenever a solution is found the bound on future solutions is set to the objective of the solution (in a minimization sense) plus the specified increment.  If this option is not specified, the code will try and work out an increment.  E.g., if all objective coefficients are multiples of 0.01 and only integer variables have entries in objective then the increment can be set to 0.01.  Be careful if you set this negative! current 0.0001>
+Whenever a solution is found the bound on future solutions is set to the objective of the solution (in a minimization sense) plus the specified increment.  If this option is not specified, the code will try and work out an increment.  E.g., if all objective coefficients are multiples of 0.01 and only integer variables have entries in objective then the increment can be set to 0.01.  Be careful if you set this negative!
 
-\textbf{Range:} -1e+20 to 1e+20
+\textbf{Range:} -1e+20 to 1e+20 (default: 0.0001)
 
 \subsection*{\texttt{-infeasibilityWeight}}
 \addcontentsline{toc}{subsection}{\texttt{-infeasibilityWeight}}
 
+\textit{Double} (cbc)
+\medskip
+
 Each integer infeasibility is expected to cost this much
 
-A primitive way of deciding which node to explore next.  Satisfying each integer infeasibility is expected to cost this much. current 0>
+A primitive way of deciding which node to explore next.  Satisfying each integer infeasibility is expected to cost this much.
 
-\textbf{Range:} 0 to 1e+20
+\textbf{Range:} 0 to 1e+20 (default: 0)
 
 \subsection*{\texttt{-integerTolerance}}
 \addcontentsline{toc}{subsection}{\texttt{-integerTolerance}}
 
+\textit{Double} (cbc)
+\medskip
+
 For an optimal solution, no integer variable may be farther than this from an integer value
 
-When checking a solution for feasibility, if the difference between the value of a variable and the nearest integer is less than the integer tolerance, the value is considered to be integral. Beware of setting this smaller than the primal tolerance. current 1e-06>
+When checking a solution for feasibility, if the difference between the value of a variable and the nearest integer is less than the integer tolerance, the value is considered to be integral. Beware of setting this smaller than the primal tolerance.
 
-\textbf{Range:} -20 to 0.5
+\textbf{Range:} 1e-20 to 0.5 (default: 1e-06)
 
 \subsection*{\texttt{-dualTolerance}}
 \addcontentsline{toc}{subsection}{\texttt{-dualTolerance}}
 
+\textit{Double} (clp)
+\medskip
+
 For an optimal solution no dual infeasibility may exceed this value
 
-Normally the default tolerance is fine, but one may want to increase it a bit if the dual simplex algorithm seems to be having a hard time. One method which can be faster is to use a large tolerance e.g. 1.0e-4 and the dual simplex algorithm and then to clean up the problem using the primal simplex algorithm with the correct tolerance (remembering to switch off presolve for this final short clean up phase). current 1e-06>
+Normally the default tolerance is fine, but one may want to increase it a bit if the dual simplex algorithm seems to be having a hard time. One method which can be faster is to use a large tolerance e.g. 1.0e-4 and the dual simplex algorithm and then to clean up the problem using the primal simplex algorithm with the correct tolerance (remembering to switch off presolve for this final short clean up phase).
 
-\textbf{Range:} -20 to 1.79769e+308
+\textbf{Range:} 1e-20 to inf (default: 1e-06)
 
 \subsection*{\texttt{-preTolerance}}
 \addcontentsline{toc}{subsection}{\texttt{-preTolerance}}
 
+\textit{Double} (clp)
+\medskip
+
 Tolerance to use in presolve
 
-One may want to increase this tolerance if presolve says the problem is infeasible and one has awkward numbers and is sure that the problem is really feasible. current 1e-08>
+One may want to increase this tolerance if presolve says the problem is infeasible and one has awkward numbers and is sure that the problem is really feasible.
 
-\textbf{Range:} -20 to 1.79769e+308
+\textbf{Range:} 1e-20 to inf (default: 1e-08)
 
 \subsection*{\texttt{-primalTolerance}}
 \addcontentsline{toc}{subsection}{\texttt{-primalTolerance}}
 
+\textit{Double} (clp)
+\medskip
+
 For a feasible solution no primal infeasibility, i.e., constraint violation, may exceed this value
 
-Normally the default tolerance is fine, but one may want to increase it a bit if the primal simplex algorithm seems to be having a hard time. current 1e-06>
+Normally the default tolerance is fine, but one may want to increase it a bit if the primal simplex algorithm seems to be having a hard time.
 
-\textbf{Range:} -20 to 1.79769e+308
+\textbf{Range:} 1e-20 to inf (default: 1e-06)
 
 \subsection*{\texttt{-zeroTolerance}}
 \addcontentsline{toc}{subsection}{\texttt{-zeroTolerance}}
 
+\textit{Double} (clp)
+\medskip
+
 Kill all coefficients whose absolute value is less than this value
 
-This applies to reading mps files (and also lp files if KILL\_ZERO\_READLP defined) current 1e-20>
+This applies to reading mps files (and also lp files if KILL\_ZERO\_READLP defined)
 
-\textbf{Range:} -100 to 1e
+\textbf{Range:} 1e-100 to 1e-05 (default: 1e-20)
 
 \section{Conflict Graph}
 
 \subsection*{\texttt{-cgraph}}
 \addcontentsline{toc}{subsection}{\texttt{-cgraph}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use the conflict graph-based preprocessing and cut separation routines.
 
-This switches the conflict graph-based preprocessing and cut separation routines (CglBKClique, CglOddWheel and CliqueStrengthening) on or off. Values: off: turns these routines off; on: turns these routines on; clq: turns these routines off and enables the cut separator of CglClique. <current: on>
+This switches the conflict graph-based preprocessing and cut separation routines (CglBKClique, CglOddWheel and CliqueStrengthening) on or off. Values: 
+	 off: turns these routines off;
+	 on: turns these routines on; 
+	 clq: turns these routines off and enables the cut separator of CglClique.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{clq}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{clq} (default: \texttt{on})
 
 \subsection*{\texttt{-bkpivoting}}
 \addcontentsline{toc}{subsection}{\texttt{-bkpivoting}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Pivoting strategy used in Bron-Kerbosch algorithm
 
-Pivoting strategy used in Bron-Kerbosch algorithm current 3>
-
-\textbf{Range:} 0 to 6
+\textbf{Range:} 0 to 6 (default: 3)
 
 \subsection*{\texttt{-bkmaxcalls}}
 \addcontentsline{toc}{subsection}{\texttt{-bkmaxcalls}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Maximum number of recursive calls made by Bron-Kerbosch algorithm
 
-Maximum number of recursive calls made by Bron-Kerbosch algorithm current 1000>
-
-\textbf{Range:} 1 to 2147483647
+\textbf{Range:} 1 to 2147483647 (default: 1000)
 
 \subsection*{\texttt{-bkclqextmethod}}
 \addcontentsline{toc}{subsection}{\texttt{-bkclqextmethod}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Strategy used to extend violated cliques found by BK Clique Cut Separation routine
 
-Sets the method used in the extension module of BK Clique Cut Separation routine: 0=no extension; 1=random; 2=degree; 3=modified degree; 4=reduced cost(inversely proportional); 5=reduced cost(inversely proportional) + modified degree current 4>
+Sets the method used in the extension module of BK Clique Cut Separation routine: 0=no extension; 1=random; 2=degree; 3=modified degree; 4=reduced cost(inversely proportional); 5=reduced cost(inversely proportional) + modified degree
 
-\textbf{Range:} 0 to 5
+\textbf{Range:} 0 to 5 (default: 4)
 
 \subsection*{\texttt{-oddwextmethod}}
 \addcontentsline{toc}{subsection}{\texttt{-oddwextmethod}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Strategy used to search for wheel centers for the cuts found by Odd Wheel Cut Separation routine
 
-Sets the method used in the extension module of Odd Wheel Cut Separation routine: 0=no extension; 1=one variable; 2=clique current 2>
+Sets the method used in the extension module of Odd Wheel Cut Separation routine: 0=no extension; 1=one variable; 2=clique
 
-\textbf{Range:} 0 to 2
+\textbf{Range:} 0 to 2 (default: 2)
 
 \section{Strategy}
 
 \subsection*{\texttt{-strategy}}
 \addcontentsline{toc}{subsection}{\texttt{-strategy}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Switches on groups of features
 
-Selects a preset configuration that adjusts cuts, heuristics, and solver tuning as a group. easy (0): A lighter configuration. Uses Gomory cuts with a looser tolerance (0.01 at root), shorter FPump runs (20 passes, tune=1003), no preprocessing tuning, and disables RINS and DivingCoefficient. default (1): The recommended configuration. Tightens Gomory and TwoMir cut tolerances, runs FPump more aggressively (30 passes, tune=1005043), enables DivingCoefficient and RINS heuristics, and activates probing cuts (ifmove). This is what runs when no -strategy flag is given. aggressive (2): Reserved for future use; currently identical to default. <current: default>
+Selects a preset configuration that adjusts cuts, heuristics, and solver tuning as a group.
 
-\textbf{Values:} \texttt{easy}, \texttt{default}, \texttt{aggressive}
+  easy (0): A lighter configuration. Uses Gomory cuts with a looser tolerance (0.01 at root), shorter FPump runs (20 passes, tune=1003), no preprocessing tuning, and disables RINS and DivingCoefficient.
+
+  default (1): The recommended configuration. Tightens Gomory and TwoMir cut tolerances, runs FPump more aggressively (30 passes, tune=1005043), enables DivingCoefficient and RINS heuristics, and activates probing cuts (ifmove). This is what runs when no -strategy flag is given.
+
+  aggressive (2): Reserved for future use; currently identical to default.
+
+\textbf{Values:} \texttt{easy}, \texttt{default}, \texttt{aggressive} (default: \texttt{default})
 
 \subsection*{\texttt{-experiment}}
 \addcontentsline{toc}{subsection}{\texttt{-experiment}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Whether to use testing features
 
-Defines how adventurous you want to be in using new ideas. 0 then no new ideas, 1 fairly sensible, 2 a bit dubious, 3 you are on your own! current 0>
+Defines how adventurous you want to be in using new ideas. 0 then no new ideas, 1 fairly sensible, 2 a bit dubious, 3 you are on your own!
 
-\textbf{Range:} -1 to 200000
+\textbf{Range:} -1 to 200000 (default: 0)
 
 \subsection*{\texttt{-hotStartMaxIts}}
 \addcontentsline{toc}{subsection}{\texttt{-hotStartMaxIts}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Maximum iterations on hot start
 
-Maximum iterations on hot start current 100>
-
-\textbf{Range:} 0 to 2147483647
+\textbf{Range:} 0 to 2147483647 (default: 100)
 
 \subsection*{\texttt{-multipleRootPasses}}
 \addcontentsline{toc}{subsection}{\texttt{-multipleRootPasses}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Do multiple root passes to collect cuts and solutions
 
-Solve (in parallel, if enabled) the root phase this number of times, each with its own different seed, and collect all solutions and cuts generated. The actual format is aabbcc where aa is the number of extra passes; if bb is non zero, then it is number of threads to use (otherwise uses threads setting); and cc is the number of times to do root phase. The solvers do not interact with each other.  However if extra passes are specified then cuts are collected and used in later passes - so there is interaction there. Some parts of this implementation have their origin in idea of Andrea Lodi, Matteo Fischetti, Michele Monaci, Domenico Salvagnin, and Andrea Tramontani. current 0>
+Solve (in parallel, if enabled) the root phase this number of times, each with its own different seed, and collect all solutions and cuts generated. The actual format is aabbcc where aa is the number of extra passes; if bb is non zero, then it is number of threads to use (otherwise uses threads setting); and cc is the number of times to do root phase. The solvers do not interact with each other.  However if extra passes are specified then cuts are collected and used in later passes - so there is interaction there. Some parts of this implementation have their origin in idea of Andrea Lodi, Matteo Fischetti, Michele Monaci, Domenico Salvagnin, and Andrea Tramontani.
 
-\textbf{Range:} 0 to 2147483647
+\textbf{Range:} 0 to 2147483647 (default: 0)
 
 \subsection*{\texttt{-options}}
 \addcontentsline{toc}{subsection}{\texttt{-options}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Fine tuning of specialOptions
 
-If set Or's with specialOptions just before entering branchAndBound. current 0>
+If set Or's with specialOptions just before entering branchAndBound.
 
-\textbf{Range:} 0 to 2147483647
+\textbf{Range:} 0 to 2147483647 (default: 0)
 
 \subsection*{\texttt{-pumpCutoff}}
 \addcontentsline{toc}{subsection}{\texttt{-pumpCutoff}}
 
+\textit{Double} (cbc)
+\medskip
+
 Fake cutoff for use in feasibility pump
 
-A value of 0.0 means off. Otherwise, add a constraint forcing objective below this value in feasibility pump current 0>
+A value of 0.0 means off. Otherwise, add a constraint forcing objective below this value in feasibility pump
 
-\textbf{Range:} -1.79769e+308 to 1.79769e+308
+\textbf{Range:} -inf to inf (default: 0)
 
 \subsection*{\texttt{-pumpIncrement}}
 \addcontentsline{toc}{subsection}{\texttt{-pumpIncrement}}
 
+\textit{Double} (cbc)
+\medskip
+
 Fake increment for use in feasibility pump
 
-A value of 0.0 means off. Otherwise, add a constraint forcing objective below this value in feasibility pump current 0>
+A value of 0.0 means off. Otherwise, add a constraint forcing objective below this value in feasibility pump
 
-\textbf{Range:} -1.79769e+308 to 1.79769e+308
+\textbf{Range:} -inf to inf (default: 0)
 
 \subsection*{\texttt{-fractionforBAB}}
 \addcontentsline{toc}{subsection}{\texttt{-fractionforBAB}}
 
+\textit{Double} (cbc)
+\medskip
+
 Fraction in feasibility pump
 
-After a pass in the feasibility pump, variables which have not moved about are fixed and if the preprocessed model is smaller than this fraction of the original problem, a few nodes of branch and bound are done on the reduced problem. current 0.5>
+After a pass in the feasibility pump, variables which have not moved about are fixed and if the preprocessed model is smaller than this fraction of the original problem, a few nodes of branch and bound are done on the reduced problem.
 
-\textbf{Range:} -05 to 1.1
+\textbf{Range:} 1e-05 to 1.1 (default: 0.5)
 
 \subsection*{\texttt{-fakeBound}}
 \addcontentsline{toc}{subsection}{\texttt{-fakeBound}}
 
+\textit{Double} (clp)
+\medskip
+
 All bounds <= this value - DEBUG
 
-All bounds <= this value - DEBUG current 0>
-
-\textbf{Range:} 1 to 1e+15
+\textbf{Range:} 1 to 1000000000000000.0 (default: 0)
 
 \section{Solving}
 
 \subsection*{\texttt{-solve}}
 \addcontentsline{toc}{subsection}{\texttt{-solve}}
 
+\textit{Action} (cbc)
+\medskip
+
 invoke branch and cut to solve the current problem
 
-This does branch and cut. There are many parameters which can affect the performance.  First just try with default cbcSettings and look carefully at the log file.  Did cuts help?  Did they take too long? Look at output to see which cuts were effective and then do some tuning. You will see that the options for cuts are off, on, root and ifmove. Off is obvious, on means that this cut generator will be tried in the branch and cut tree (you can fine tune using 'depth').  Root means just at the root node while 'ifmove' means that cuts will be used in the tree if they look as if they are doing some good and moving the objective value.  If pre-processing reduced the size of the problem or strengthened many coefficients then it is probably wise to leave it on.  Switch off heuristics which did not provide solutions.  The other major area to look at is the search.  Hopefully good solutions were obtained fairly early in the search so the important point is to select the best variable to branch on.  See whether strong branching did a good job - or did it just take a lot of iterations.  Adjust the strongBranching and trustPseudoCosts parameters.
+This does branch and cut. There are many parameters which can affect the performance.  First just try with default cbcSettings and look carefully at the log file.  Did cuts help?  Did they take too long?  Look at output to see which cuts were effective and then do some tuning.  You will see that the options for cuts are off, on, root and ifmove.  Off is obvious, on means that this cut generator will be tried in the branch and cut tree (you can fine tune using 'depth').  Root means just at the root node while 'ifmove' means that cuts will be used in the tree if they look as if they are doing some good and moving the objective value.  If pre-processing reduced the size of the problem or strengthened many coefficients then it is probably wise to leave it on.  Switch off heuristics which did not provide solutions.  The other major area to look at is the search.  Hopefully good solutions were obtained fairly early in the search so the important point is to select the best variable to branch on.  See whether strong branching did a good job - or did it just take a lot of iterations.  Adjust the strongBranching and trustPseudoCosts parameters.
 
 \subsection*{\texttt{-initialSolve}}
 \addcontentsline{toc}{subsection}{\texttt{-initialSolve}}
+
+\textit{Action} (cbc)
+\medskip
 
 Solve to continuous optimum
 
@@ -1085,6 +1486,9 @@ This just solves the problem to the continuous optimum, without adding any cuts.
 \subsection*{\texttt{-strengthen}}
 \addcontentsline{toc}{subsection}{\texttt{-strengthen}}
 
+\textit{Action} (cbc)
+\medskip
+
 Create strengthened problem
 
 This creates a new problem by applying the root node cuts. All tight constraints will be in resulting problem.
@@ -1092,53 +1496,82 @@ This creates a new problem by applying the root node cuts. All tight constraints
 \subsection*{\texttt{-lpMethod}}
 \addcontentsline{toc}{subsection}{\texttt{-lpMethod}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Which LP algorithm to use for the initial LP relaxation solve
 
-Controls which LP algorithm is used when -solve or -initialSolve triggers the root LP relaxation. dual:    dual simplex (default). primal:  primal simplex. barrier: interior-point (barrier) method. <current: dual>
+Controls which LP algorithm is used when -solve or -initialSolve triggers the root LP relaxation.
+  dual:    dual simplex (default).
+  primal:  primal simplex.
+  barrier: interior-point (barrier) method.
 
-\textbf{Values:} \texttt{dual}, \texttt{primal}, \texttt{barrier}
+\textbf{Values:} \texttt{dual}, \texttt{primal}, \texttt{barrier} (default: \texttt{dual})
 
 \subsection*{\texttt{-maxSavedSolutions}}
 \addcontentsline{toc}{subsection}{\texttt{-maxSavedSolutions}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Maximum number of solutions to save
 
-Number of solutions to save. current 10>
+Number of solutions to save.
 
-\textbf{Range:} 0 to 2147483647
+\textbf{Range:} 0 to 2147483647 (default: 10)
 
 \subsection*{\texttt{-randomCbcSeed}}
 \addcontentsline{toc}{subsection}{\texttt{-randomCbcSeed}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Random seed for Cbc
 
-Allows initialization of the random seed for pseudo-random numbers used in heuristics such as the Feasibility Pump to decide whether to round up or down. The special value of 0 lets Cbc use the time of the day for the initial seed. current 42>
+Allows initialization of the random seed for pseudo-random numbers used in heuristics such as the Feasibility Pump to decide whether to round up or down. The special value of 0 lets Cbc use the time of the day for the initial seed.
 
-\textbf{Range:} -1 to 2147483647
+\textbf{Range:} -1 to 2147483647 (default: 42)
 
 \subsection*{\texttt{-direction}}
 \addcontentsline{toc}{subsection}{\texttt{-direction}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Minimize or maximize
 
-The default is minimize - use 'direction maximize' for maximization. You can also use the parameters 'maximize' or 'minimize'. min(imize)  max(imize)  zero <current: min(imize)> The default is minimize - use 'direction maximize' for maximization. You can also use the parameters\_ 'maximize' or 'minimize'. max(imize)  min(imize)  zero <current: min(imize)>
+The default is minimize - use 'direction maximize' for maximization.
+You can also use the parameters\_ 'maximize' or 'minimize'.
+
+\textbf{Values:} \texttt{max!imize}, \texttt{min!imize}, \texttt{zero} (default: \texttt{min(imize)})
 
 \subsection*{\texttt{-maximize}}
 \addcontentsline{toc}{subsection}{\texttt{-maximize}}
 
+\textit{Action} (cbc)
+\medskip
+
 Set optimization direction to maximize
 
-The default is minimize - use 'maximize' for maximization. A synonym for 'direction maximize'.
+The default is minimize - use 'maximize' for maximization.
+ A synonym for 'direction maximize'.
 
 \subsection*{\texttt{-minimize}}
 \addcontentsline{toc}{subsection}{\texttt{-minimize}}
 
+\textit{Action} (cbc)
+\medskip
+
 Set optimization direction to minimize
 
-The default is minimize - use 'maximize' for maximization. This should only be necessary if you have previously set maximization. A synonym for 'direction minimize'.
+The default is minimize - use 'maximize' for maximization.
+This should only be necessary if you have previously set maximization. A synonym for 'direction minimize'.
 
 \subsection*{\texttt{-allSlack}}
 \addcontentsline{toc}{subsection}{\texttt{-allSlack}}
+
+\textit{Action} (clp)
+\medskip
 
 Set basis back to all slack and reset solution
 
@@ -1147,12 +1580,18 @@ Mainly useful for tuning purposes.  Normally the first dual or primal will be us
 \subsection*{\texttt{-barrier}}
 \addcontentsline{toc}{subsection}{\texttt{-barrier}}
 
+\textit{Action} (clp)
+\medskip
+
 Solve using primal dual predictor corrector algorithm
 
 This command solves the current model using the  primal dual predictor corrector algorithm. You may want to link in an alternative ordering and factorization. It will also solve models with quadratic objectives.
 
 \subsection*{\texttt{-dualSimplex}}
 \addcontentsline{toc}{subsection}{\texttt{-dualSimplex}}
+
+\textit{Action} (clp)
+\medskip
 
 Do dual simplex algorithm
 
@@ -1161,12 +1600,18 @@ This command solves the continuous relaxation of the current model using the dua
 \subsection*{\texttt{-eitherSimplex}}
 \addcontentsline{toc}{subsection}{\texttt{-eitherSimplex}}
 
+\textit{Action} (clp)
+\medskip
+
 Do dual or primal simplex algorithm
 
 This command solves the continuous relaxation of the current model using the dual or primal algorithm, based on a dubious analysis of model.
 
 \subsection*{\texttt{-guess}}
 \addcontentsline{toc}{subsection}{\texttt{-guess}}
+
+\textit{Action} (clp)
+\medskip
 
 Guesses at good parameters
 
@@ -1175,6 +1620,9 @@ This looks at model statistics and does an initial solve setting some parameters
 \subsection*{\texttt{-network}}
 \addcontentsline{toc}{subsection}{\texttt{-network}}
 
+\textit{Action} (clp)
+\medskip
+
 Tries to make network matrix
 
 Clp will go faster if the matrix can be converted to a network.  The matrix operations may be a bit faster with more efficient storage, but the main advantage comes from using a network factorization. It will probably not be as fast as a specialized network code.
@@ -1182,12 +1630,18 @@ Clp will go faster if the matrix can be converted to a network.  The matrix oper
 \subsection*{\texttt{-parametrics}}
 \addcontentsline{toc}{subsection}{\texttt{-parametrics}}
 
+\textit{Action} (clp)
+\medskip
+
 Import data from file and do parametrics
 
-This will read a file with parametric data from the given file name and then do parametrics. It will use the default directory given by 'directory'. A name of '\$' will use the previous value for the name. This is initialized to '', i.e. it must be set.  This can not read from compressed files. File is in modified csv format - a line ROWS will be followed by rows data while a line COLUMNS will be followed by column data.  The last line should be ENDATA. The ROWS line must exist and is in the format ROWS, inital theta, final theta, interval theta, n where n is 0 to get CLPI0062 message at interval or at each change of theta and 1 to get CLPI0063 message at each iteration. If interval theta is 0.0 or >= final theta then no interval reporting. n may be missed out when it is taken as 0.  If there is Row data then there is a headings line with allowed headings - name, number, lower(rhs change), upper(rhs change), rhs(change).  Either the lower and upper fields should be given or the rhs field. The optional COLUMNS line is followed by a headings line with allowed headings - name, number, objective(change), lower(change), upper(change). Exactly one of name and number must be given for either section and missing ones have value 0.0.
+This will read a file with parametric data from the given file name and then do parametrics. It will use the default directory given by 'directory'. A name of '\$' will use the previous value for the name. This is initialized to '', i.e. it must be set.  This can not read from compressed files. File is in modified csv format - a line ROWS will be followed by rows data while a line COLUMNS will be followed by column data.  The last line should be ENDATA. The ROWS line must exist and is in the format ROWS, inital theta, final theta, interval theta, n where n is 0 to get CLPI0062 message at interval or at each change of theta and 1 to get CLPI0063 message at each iteration.  If interval theta is 0.0 or >= final theta then no interval reporting.  n may be missed out when it is taken as 0.  If there is Row data then there is a headings line with allowed headings - name, number, lower(rhs change), upper(rhs change), rhs(change).  Either the lower and upper fields should be given or the rhs field. The optional COLUMNS line is followed by a headings line with allowed headings - name, number, objective(change), lower(change), upper(change). Exactly one of name and number must be given for either section and missing ones have value 0.0.
 
 \subsection*{\texttt{-plusMinus}}
 \addcontentsline{toc}{subsection}{\texttt{-plusMinus}}
+
+\textit{Action} (clp)
+\medskip
 
 Tries to make +- 1 matrix
 
@@ -1196,6 +1650,9 @@ Clp will go slightly faster if the matrix can be converted so that the elements 
 \subsection*{\texttt{-primalSimplex}}
 \addcontentsline{toc}{subsection}{\texttt{-primalSimplex}}
 
+\textit{Action} (clp)
+\medskip
+
 Do primal simplex algorithm
 
 This command solves the continuous relaxation of the current model using the primal algorithm. The default is to use exact devex. The time and iterations may be affected by settings such as presolve, scaling, crash and also by column selection  method, infeasibility weight and dual and primal tolerances.
@@ -1203,278 +1660,380 @@ This command solves the continuous relaxation of the current model using the pri
 \subsection*{\texttt{-reallyScale}}
 \addcontentsline{toc}{subsection}{\texttt{-reallyScale}}
 
+\textit{Action} (clp)
+\medskip
+
 Scales model in place
 
 \subsection*{\texttt{-reverse}}
 \addcontentsline{toc}{subsection}{\texttt{-reverse}}
 
+\textit{Action} (clp)
+\medskip
+
 Reverses sign of objective
 
-Useful for testing if maximization works correctly Useful for testing if maximization works correctly
+Useful for testing if maximization works correctly
 
 \subsection*{\texttt{-direction}}
 \addcontentsline{toc}{subsection}{\texttt{-direction}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Minimize or Maximize
 
-The default is minimize - use 'direction maximize' for maximization. You can also use the parameters 'maximize' or 'minimize'. min(imize)  max(imize)  zero <current: min(imize)> The default is minimize - use 'direction maximize' for maximization. You can also use the parameters\_ 'maximize' or 'minimize'. max(imize)  min(imize)  zero <current: min(imize)>
+The default is minimize - use 'direction maximize' for maximization.
+ You can also use the parameters 'maximize' or 'minimize'.
+
+\textbf{Values:} \texttt{min!imize}, \texttt{max!imize}, \texttt{zero} (default: \texttt{min(imize)})
 
 \subsection*{\texttt{-vector}}
 \addcontentsline{toc}{subsection}{\texttt{-vector}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Whether to use vector? Form of matrix in simplex
 
-If this is on ClpPackedMatrix uses extra column copy in odd format. <current: off>
+If this is on ClpPackedMatrix uses extra column copy in odd format.
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
 \subsection*{\texttt{-randomSeed}}
 \addcontentsline{toc}{subsection}{\texttt{-randomSeed}}
 
+\textit{Integer} (clp)
+\medskip
+
 Random seed for Clp
 
-Initialization of the random seed for pseudo-random numbers used to break ties in degenerate problems. This may yield a different continuous optimum and, in the context of Cbc, different cuts and heuristic solutions. The special value of 0 lets CLP use the time of the day for the initial seed. current 1234567>
+Initialization of the random seed for pseudo-random numbers used to break ties in degenerate problems. This may yield a different continuous optimum and, in the context of Cbc, different cuts and heuristic solutions. The special value of 0 lets CLP use the time of the day for the initial seed.
 
-\textbf{Range:} 0 to 2147483647
+\textbf{Range:} 0 to 2147483647 (default: 1234567)
 
 \section{Simplex}
 
 \subsection*{\texttt{-KKT}}
 \addcontentsline{toc}{subsection}{\texttt{-KKT}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Whether to use KKT factorization in barrier
 
-Whether to use KKT factorization in barrier <current: off>
-
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
 \subsection*{\texttt{-perturbation}}
 \addcontentsline{toc}{subsection}{\texttt{-perturbation}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Whether to perturb the problem
 
-Perturbation helps to stop cycling, but CLP uses other measures for this. However, large problems and especially ones with unit elements and unit right hand sides or costs benefit from perturbation.  Normally CLP tries to be intelligent, but one can switch this off. <current: on>
+Perturbation helps to stop cycling, but CLP uses other measures for this. However, large problems and especially ones with unit elements and unit right hand sides or costs benefit from perturbation.  Normally CLP tries to be intelligent, but one can switch this off.
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{on})
 
 \subsection*{\texttt{-crash}}
 \addcontentsline{toc}{subsection}{\texttt{-crash}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Whether to create basis for problem
 
-If crash is set to 'on' and there is an all slack basis then Clp will flip or put structural variables into the basis with the aim of getting dual feasible.  On average, dual simplex seems to perform better without it and there are alternative types of 'crash' for primal simplex, e.g. 'idiot' or 'sprint'. A variant due to Solow and Halim which is as 'on' but just flips is also available. off  on  so(low\_halim)  lots  free zero  single(ton)  idiot1  idiot2  idiot3 <current: off>
+If crash is set to 'on' and there is an all slack basis then Clp will flip or put structural variables into the basis with the aim of getting dual feasible.  On average, dual simplex seems to perform better without it and there are alternative types of 'crash' for primal simplex, e.g. 'idiot' or 'sprint'. A variant due to Solow and Halim which is as 'on' but just flips is also available.
 
-\textbf{Values:} \texttt{idiot4}, \texttt{idiot5}, \texttt{idiot6}, \texttt{idiot7}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{so!low\_halim}, \texttt{lots}, \texttt{free}, \texttt{zero}, \texttt{single!ton}, \texttt{idiot1}, \texttt{idiot2}, \texttt{idiot3}, \texttt{idiot4}, \texttt{idiot5}, \texttt{idiot6}, \texttt{idiot7} (default: \texttt{off})
 
 \subsection*{\texttt{-dualPivot}}
 \addcontentsline{toc}{subsection}{\texttt{-dualPivot}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Dual pivot choice algorithm
 
-The Dantzig method is simple but its use is deprecated.  Steepest is the method of choice and there are two variants which keep all weights updated but only scan a subset each iteration. Partial switches this on while automatic decides at each iteration based on information about the factorization. The PE variants add the Positive Edge criterion. This selects incoming variables to try to avoid degenerate moves. See also option psi. auto(matic)  dant(zig)  partial  steep(est)  PEsteep(est) PEdantzig <current: auto(matic)>
+The Dantzig method is simple but its use is deprecated.  Steepest is the method of choice and there are two variants which keep all weights updated but only scan a subset each iteration. Partial switches this on while automatic decides at each iteration based on information about the factorization. The PE variants add the Positive Edge criterion. This selects incoming variables to try to avoid degenerate moves. See also option psi.
+
+\textbf{Values:} \texttt{auto!matic}, \texttt{dant!zig}, \texttt{partial}, \texttt{steep!est}, \texttt{PEsteep!est}, \texttt{PEdantzig} (default: \texttt{auto(matic)})
 
 \subsection*{\texttt{-factorization}}
 \addcontentsline{toc}{subsection}{\texttt{-factorization}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Which factorization to use
 
-The default is to use the normal CoinFactorization, but other choices are a dense one, OSL's, or one designed for small problems. <current: normal>
+The default is to use the normal CoinFactorization, but other choices are a dense one, OSL's, or one designed for small problems.
 
-\textbf{Values:} \texttt{normal}, \texttt{dense}, \texttt{simple}, \texttt{osl}
+\textbf{Values:} \texttt{normal}, \texttt{dense}, \texttt{simple}, \texttt{osl} (default: \texttt{normal})
 
 \subsection*{\texttt{-primalPivot}}
 \addcontentsline{toc}{subsection}{\texttt{-primalPivot}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Primal pivot choice algorithm
 
-The Dantzig method is simple but its use is deprecated.  Exact devex is the method of choice and there are two variants which keep all weights updated but only scan a subset each iteration. Partial switches this on while 'change' initially does 'dantzig' until the factorization becomes denser. This is still a work in progress. The PE variants add the Positive Edge criterion. This selects incoming variables to try to avoid degenerate moves. See also Towhidi, M., Desrosiers, J., Soumis, F., The positive edge criterion within COIN-OR's CLP; Omer, J., Towhidi, M., Soumis, F., The positive edge pricing rule for the dual simplex. auto(matic)  exa(ct)  dant(zig)  part(ial)  steep(est) change  sprint  PEsteep(est)  PEdantzig <current: auto(matic)>
+The Dantzig method is simple but its use is deprecated.  Exact devex is the method of choice and there are two variants which keep all weights updated but only scan a subset each iteration. Partial switches this on while 'change' initially does 'dantzig' until the factorization becomes denser. This is still a work in progress. The PE variants add the Positive Edge criterion. This selects incoming variables to try to avoid degenerate moves. See also Towhidi, M., Desrosiers, J., Soumis, F., The positive edge criterion within COIN-OR's CLP; Omer, J., Towhidi, M., Soumis, F., The positive edge pricing rule for the dual simplex.
+
+\textbf{Values:} \texttt{auto!matic}, \texttt{exa!ct}, \texttt{dant!zig}, \texttt{part!ial}, \texttt{steep!est}, \texttt{change}, \texttt{sprint}, \texttt{PEsteep!est}, \texttt{PEdantzig} (default: \texttt{auto(matic)})
 
 \subsection*{\texttt{-denseThreshold}}
 \addcontentsline{toc}{subsection}{\texttt{-denseThreshold}}
 
+\textit{Integer} (clp)
+\medskip
+
 Threshold for using dense factorization
 
-If processed problem <= this use dense factorization current -1>
+If processed problem <= this use dense factorization
 
-\textbf{Range:} -1 to 10000
+\textbf{Range:} -1 to 10000 (default: -1)
 
 \subsection*{\texttt{-idiotCrash}}
 \addcontentsline{toc}{subsection}{\texttt{-idiotCrash}}
 
+\textit{Integer} (clp)
+\medskip
+
 Whether to try idiot crash
 
-This is a type of 'crash' which works well on some homogeneous problems. It works best on problems with unit elements and rhs but will do something to any model.  It should only be used before the primal simplex algorithm. It can be set to -1 when the code decides for itself whether to use it, 0 to switch off, or n > 0 to do n passes. current -1>
+This is a type of 'crash' which works well on some homogeneous problems. It works best on problems with unit elements and rhs but will do something to any model.  It should only be used before the primal simplex algorithm.  It can be set to -1 when the code decides for itself whether to use it, 0 to switch off, or n > 0 to do n passes.
 
-\textbf{Range:} -1 to 2147483647
+\textbf{Range:} -1 to 2147483647 (default: -1)
 
 \subsection*{\texttt{-maxFactor}}
 \addcontentsline{toc}{subsection}{\texttt{-maxFactor}}
 
+\textit{Integer} (clp)
+\medskip
+
 Maximum number of iterations between refactorizations
 
-If this is left at its default value of 200 then CLP will guess a value to use.  CLP may decide to re-factorize earlier for accuracy. current 200>
+If this is left at its default value of 200 then CLP will guess a  value to use.  CLP may decide to re-factorize earlier for accuracy.
 
-\textbf{Range:} 1 to 2147483647
+\textbf{Range:} 1 to 2147483647 (default: 200)
 
 \subsection*{\texttt{-maxIterations}}
 \addcontentsline{toc}{subsection}{\texttt{-maxIterations}}
 
+\textit{Integer} (clp)
+\medskip
+
 Maximum number of iterations before stopping
 
-This can be used for testing purposes.  The corresponding library call setMaximumIterations(value) can be useful.  If the code stops on seconds or by an interrupt this will be treated as stopping on maximum iterations. This is ignored in branchAndCut - use maxN!odes. current 2147483647>
+This can be used for testing purposes.  The corresponding library call
+ 	setMaximumIterations(value)
+ can be useful.  If the code stops on seconds or by an interrupt this will be treated as stopping on maximum iterations. This is ignored in branchAndCut - use maxN!odes.
 
-\textbf{Range:} 0 to 2147483647
+\textbf{Range:} 0 to 2147483647 (default: 2147483647)
 
 \subsection*{\texttt{-moreSpecialOptions}}
 \addcontentsline{toc}{subsection}{\texttt{-moreSpecialOptions}}
 
+\textit{Integer} (clp)
+\medskip
+
 Yet more dubious options for Simplex
 
-See ClpSimplex.hpp. Alternative syntax - kwd1+kwd2+1234 - - keep(DualOrPrimal) (If you ask for dual you will always get dual (and for primal)) -> 8192 - clean(Scaled) (Make sure unscaled problem is feasible if scaled problem is feasible) -> 134217728 current 0>
+See ClpSimplex.hpp.
 
-\textbf{Range:} 0 to 2147483647
+\textbf{Range:} 0 to 2147483647 (default: 0)
 
 \subsection*{\texttt{-pertValue}}
 \addcontentsline{toc}{subsection}{\texttt{-pertValue}}
 
+\textit{Integer} (clp)
+\medskip
+
 Method of perturbation
 
-Method of perturbation current 50>
-
-\textbf{Range:} -5000 to 102
+\textbf{Range:} -5000 to 102 (default: 50)
 
 \subsection*{\texttt{-sprintCrash}}
 \addcontentsline{toc}{subsection}{\texttt{-sprintCrash}}
 
+\textit{Integer} (clp)
+\medskip
+
 Whether to try sprint crash
 
-For long and thin problems this method may solve a series of small problems created by taking a subset of the columns.  The idea as 'Sprint' was introduced by J. Forrest after an LP code of that name of the 60's which tried the same tactic (not totally successfully). CPLEX calls it 'sifting'.  -1 lets CLP automatically choose the number of passes, 0 is off, n is number of passes current -1>
+For long and thin problems this method may solve a series of small problems created by taking a subset of the columns.  The idea as 'Sprint' was introduced by J. Forrest after an LP code of that name of the 60's which tried the same tactic (not totally successfully). CPLEX calls it 'sifting'.  -1 lets CLP automatically choose the number of passes, 0 is off, n is number of passes
 
-\textbf{Range:} -1 to 2147483647
+\textbf{Range:} -1 to 2147483647 (default: -1)
 
 \subsection*{\texttt{-slpValue}}
 \addcontentsline{toc}{subsection}{\texttt{-slpValue}}
 
+\textit{Integer} (clp)
+\medskip
+
 Number of slp passes before primal
 
-If you are solving a quadratic problem using primal then it may be helpful to do some sequential Lps to get a good approximate solution. current 0>
+If you are solving a quadratic problem using primal then it may be helpful to do some sequential Lps to get a good approximate solution.
 
-\textbf{Range:} -50000 to 50000
+\textbf{Range:} -50000 to 50000 (default: 0)
 
 \subsection*{\texttt{-smallFactorization}}
 \addcontentsline{toc}{subsection}{\texttt{-smallFactorization}}
 
+\textit{Integer} (clp)
+\medskip
+
 Threshold for using small factorization
 
-If processed problem <= this use small factorization current -1>
+If processed problem <= this use small factorization
 
-\textbf{Range:} -1 to 10000
+\textbf{Range:} -1 to 10000 (default: -1)
 
 \subsection*{\texttt{-specialOptions}}
 \addcontentsline{toc}{subsection}{\texttt{-specialOptions}}
 
+\textit{Integer} (clp)
+\medskip
+
 Dubious options for Simplex - see ClpSimplex.hpp
 
-Dubious options for Simplex - see ClpSimplex.hpp current 0>
-
-\textbf{Range:} 0 to 2147483647
+\textbf{Range:} 0 to 2147483647 (default: 0)
 
 \subsection*{\texttt{-dualBound}}
 \addcontentsline{toc}{subsection}{\texttt{-dualBound}}
 
+\textit{Double} (clp)
+\medskip
+
 Initially algorithm acts as if no gap between bounds exceeds this value
 
-The dual algorithm in Clp is a single phase algorithm as opposed to a two phase algorithm where you first get feasible then optimal. If a problem has both upper and lower bounds then it is trivial to get dual feasible by setting non basic variables to correct bound. If the gap between the upper and lower bounds of a variable is more than the value of dualBound Clp introduces fake bounds so that it can make the problem dual feasible.  This has the same effect as a composite objective function in the primal algorithm.  Too high a value may mean more iterations, while too low a bound means the code may go all the way and then have to increase the bounds.  OSL had a heuristic to adjust bounds, maybe we need that here. current 1e+10>
+The dual algorithm in Clp is a single phase algorithm as opposed to a two phase algorithm where you first get feasible then optimal.  If a problem has both upper and lower bounds then it is trivial to get dual feasible by setting non basic variables to correct bound.  If the gap between the upper and lower bounds of a variable is more than the value of dualBound Clp introduces fake bounds so that it can make the problem dual feasible.  This has the same effect as a composite objective function in the primal algorithm.  Too high a value may mean more iterations, while too low a bound means the code may go all the way and then have to increase the bounds.  OSL had a heuristic to adjust bounds, maybe we need that here.
 
-\textbf{Range:} -20 to 1e+20
+\textbf{Range:} 1e-20 to 1e+20 (default: 10000000000)
 
 \subsection*{\texttt{-primalWeight}}
 \addcontentsline{toc}{subsection}{\texttt{-primalWeight}}
 
+\textit{Double} (clp)
+\medskip
+
 Initially algorithm acts as if it costs this much to be infeasible
 
-The primal algorithm in Clp is a single phase algorithm as opposed to a two phase algorithm where you first get feasible then optimal. So Clp is minimizing this weight times the sum of primal infeasibilities plus the true objective function (in minimization sense). Too high a value may mean more iterations, while too low a value means the algorithm may iterate into the wrong directory for long and then has to increase the weight in order to get feasible. current 1e+10>
+The primal algorithm in Clp is a single phase algorithm as opposed to a two phase algorithm where you first get feasible then optimal.  So Clp is minimizing this weight times the sum of primal infeasibilities plus the true objective function (in minimization sense). Too high a value may mean more iterations, while too low a value means the algorithm may iterate into the wrong directory for long and then has to increase the weight in order to get feasible.
 
-\textbf{Range:} -20 to 1.79769e+308
+\textbf{Range:} 1e-20 to inf (default: 10000000000)
 
 \subsection*{\texttt{-psi}}
 \addcontentsline{toc}{subsection}{\texttt{-psi}}
 
+\textit{Double} (clp)
+\medskip
+
 Two-dimension pricing factor for Positive Edge criterion
 
-The Positive Edge criterion has been added to select incoming variables to try and avoid degenerate moves. Variables not in the promising set have their infeasibility weight multiplied by psi, so 0.01 would mean that if there were any promising variables, then they would always be chosen, while 1.0 effectively switches the algorithm off. There are two ways of switching this feature on. One way is to set psi to a positive value and then the Positive Edge criterion will be used for both primal and dual simplex. The other way is to select PEsteepest in dualpivot choice (for example), then the absolute value of psi is used. Code donated by Jeremy Omer. See Towhidi, M., Desrosiers, J., Soumis, F., The positive edge criterion within COIN-OR's CLP; Omer, J., Towhidi, M., Soumis, F., The positive edge pricing rule for the dual simplex. current -0.5>
+The Positive Edge criterion has been added to select incoming variables to try and avoid degenerate moves. Variables not in the promising set have their infeasibility weight multiplied by psi, so 0.01 would mean that if there were any promising variables, then they would always be chosen, while 1.0 effectively switches the algorithm off. There are two ways of switching this feature on. One way is to set psi to a positive value and then the Positive Edge criterion will be used for both primal and dual simplex. The other way is to select PEsteepest in dualpivot choice (for example), then the absolute value of psi is used. Code donated by Jeremy Omer. See Towhidi, M., Desrosiers, J., Soumis, F., The positive edge criterion within COIN-OR's CLP; Omer, J., Towhidi, M., Soumis, F., The positive edge pricing rule for the dual simplex.
 
-\textbf{Range:} -1.1 to 1.1
+\textbf{Range:} -1.1 to 1.1 (default: -0.5)
 
 \section{Barrier}
 
 \subsection*{\texttt{-cholesky}}
 \addcontentsline{toc}{subsection}{\texttt{-cholesky}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Which cholesky algorithm
 
-For a barrier code to be effective it needs a good Cholesky ordering and factorization. The native ordering and factorization is not state of the art, although acceptable. You may want to link in one from another source.  See Makefile.locations for some possibilities. native  dense  fudge(Long\_dummy)  wssmp\_dummy  Uni(versityOfFlorida\_dummy) <current: native>
+For a barrier code to be effective it needs a good Cholesky ordering and factorization. The native ordering and factorization is not state of the art, although acceptable. You may want to link in one from another source.  See Makefile.locations for some possibilities.
 
-\textbf{Values:} \texttt{Taucs\_dummy}, \texttt{Mumps\_dummy}, \texttt{Pardiso\_dummy}
+\textbf{Values:} \texttt{native}, \texttt{dense}, \texttt{fudge!Long\_dummy}, \texttt{wssmp\_dummy}, \texttt{Uni!versityOfFlorida\_dummy}, \texttt{Taucs\_dummy}, \texttt{Mumps\_dummy}, \texttt{Pardiso\_dummy} (default: \texttt{native})
 
 \subsection*{\texttt{-crossover}}
 \addcontentsline{toc}{subsection}{\texttt{-crossover}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Whether to get a basic solution with the simplex algorithm after the barrier algorithm finished
 
-Interior point algorithms do not obtain a basic solution. This option will crossover to a basic solution suitable for ranging or branch and cut. With the current state of the solver for quadratic programs it may be a good idea to switch off crossover for this case (and maybe presolve as well) - the option 'maybe' does this. <current: on>
+Interior point algorithms do not obtain a basic solution. This option will crossover to a basic solution suitable for ranging or branch and cut. With the current state of the solver for quadratic programs it may be a good idea to switch off crossover for this case (and maybe presolve as well) - the option 'maybe' does this.
 
-\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{maybe}, \texttt{presolve}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{maybe}, \texttt{presolve} (default: \texttt{on})
 
 \subsection*{\texttt{-gamma(Delta)}}
 \addcontentsline{toc}{subsection}{\texttt{-gamma(Delta)}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Whether to regularize barrier
 
-Whether to regularize barrier <current: off>
-
-\textbf{Values:} \texttt{gammastrong}, \texttt{deltastrong}
+\textbf{Values:} \texttt{off}, \texttt{on}, \texttt{gamma}, \texttt{delta}, \texttt{onstrong}, \texttt{gammastrong}, \texttt{deltastrong} (default: \texttt{off})
 
 \section{Scaling}
 
 \subsection*{\texttt{-scaling}}
 \addcontentsline{toc}{subsection}{\texttt{-scaling}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Whether to scale problem
 
-Scaling can help in solving problems which might otherwise fail because of lack of accuracy.  It can also reduce the number of iterations. It is not applied if the range of elements is small.  When the solution is evaluated in the unscaled problem, it is possible that small primal and/or dual infeasibilities occur. - 'equilibrium' uses the largest element for scaling. - 'geometric' uses the squareroot of the product of largest and smallest element. - 'auto' lets CLP choose a method that gives the best ratio of the largest element to the smallest one. off  equi(librium)  geo(metric)  auto(matic)  dynamic rows(only) <current: auto(matic)>
+Scaling can help in solving problems which might otherwise fail because of lack of accuracy.  It can also reduce the number of iterations. It is not applied if the range of elements is small.  When the solution is evaluated in the unscaled problem, it is possible that small primal and/or dual infeasibilities occur. 
+ - 'equilibrium' uses the largest element for scaling. 
+ - 'geometric' uses the squareroot of the product of largest and smallest element.
+ - 'auto' lets CLP choose a method that gives the best ratio of the largest element to the smallest one.
+
+\textbf{Values:} \texttt{off}, \texttt{equi!librium}, \texttt{geo!metric}, \texttt{auto!matic}, \texttt{dynamic}, \texttt{rows!only} (default: \texttt{auto(matic)})
 
 \subsection*{\texttt{-objectiveScale}}
 \addcontentsline{toc}{subsection}{\texttt{-objectiveScale}}
 
+\textit{Double} (clp)
+\medskip
+
 Scale factor to apply to objective
 
-If the objective function has some very large values, you may wish to scale them internally by this amount.  It can also be set by autoscale. It is applied after scaling.  You are unlikely to need this. current 1>
+If the objective function has some very large values, you may wish to scale them internally by this amount.  It can also be set by autoscale. It is applied after scaling.  You are unlikely to need this.
 
-\textbf{Range:} -1.79769e+308 to 1.79769e+308
+\textbf{Range:} -inf to inf (default: 1)
 
 \subsection*{\texttt{-reallyObjectiveScale}}
 \addcontentsline{toc}{subsection}{\texttt{-reallyObjectiveScale}}
 
+\textit{Double} (clp)
+\medskip
+
 Scale factor to apply to objective in place
 
-You can set this to -1.0 to test maximization or other to stress code current 1>
+You can set this to -1.0 to test maximization or other to stress code
 
-\textbf{Range:} -1.79769e+308 to 1.79769e+308
+\textbf{Range:} -inf to inf (default: 1)
 
 \subsection*{\texttt{-rhsScale}}
 \addcontentsline{toc}{subsection}{\texttt{-rhsScale}}
 
+\textit{Double} (clp)
+\medskip
+
 Scale factor to apply to rhs and bounds
 
-If the rhs or bounds have some very large meaningful values, you may wish to scale them internally by this amount.  It can also be set by autoscale.  This should not be needed. current 1>
+If the rhs or bounds have some very large meaningful values, you may wish to scale them internally by this amount.  It can also be set by autoscale.  This should not be needed.
 
-\textbf{Range:} -1.79769e+308 to 1.79769e+308
+\textbf{Range:} -inf to inf (default: 1)
 
 \section{Output}
 
 \subsection*{\texttt{-statistics}}
 \addcontentsline{toc}{subsection}{\texttt{-statistics}}
+
+\textit{Action} (cbc)
+\medskip
 
 Print some statistics
 
@@ -1483,206 +2042,294 @@ This command prints some statistics for the current model. If log level >1 then 
 \subsection*{\texttt{-printMask}}
 \addcontentsline{toc}{subsection}{\texttt{-printMask}}
 
+\textit{String} (cbc)
+\medskip
+
 Control printing of solution with a regular expression
 
-If set then only those names which match mask are printed in a solution. '?' matches any character and '*' matches any set of characters. The default is '' (unset) so all variables are printed. This is only active if model has names. <Current value is (unset)>
+If set then only those names which match mask are printed in a solution. '?' matches any character and '*' matches any set of characters.  The default is '' (unset) so all variables are printed. This is only active if model has names.
 
 \subsection*{\texttt{-precisionOutput}}
 \addcontentsline{toc}{subsection}{\texttt{-precisionOutput}}
 
+\textit{String} (cbc)
+\medskip
+
 Handle format precision with string print mask
 
-Precision: \%.nf -> n digits after decimal; \%.ng -> n significant digits; Width: \%mw -> minimum field width, padded with spaces by default. Remember the f or g at end as \%18.5 by itself gives garbage. <Current value is `\%15.8g'>
+Precision: \%.nf -> n digits after decimal; \%.ng -> n significant digits; Width: \%mw -> minimum field width, padded with spaces by default. Remember the f or g at end as \%18.5 by itself gives garbage.
 
 \subsection*{\texttt{-messages}}
 \addcontentsline{toc}{subsection}{\texttt{-messages}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Controls whether standardised message prefix is printed
 
-The default behavior is to put out messages such as: Clp0005 2261  Objective 109.024 Primal infeas 944413 (758) but this program turns this off to make it look more friendly.  It can be useful to turn them back on if you want to be able to 'grep' for particular messages or if you intend to override the behavior of a particular message. <current: off> By default, messages have a standard prefix, such as: Cbc0005 2261  Objective 109.024 Primal infeas 944413 (758) but this program turns this off to make it look more friendly.  It can be useful to turn them back on if you want to be able to 'grep' for particular messages or if you intend to override the behavior of a particular message. <current: off>
+By default, messages have a standard prefix, such as:
+   Cbc0005 2261  Objective 109.024 Primal infeas 944413 (758)
+but this program turns this off to make it look more friendly.  It can be useful to turn them back on if you want to be able to 'grep' for particular messages or if you intend to override the behavior of a particular message.
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
 \subsection*{\texttt{-checktimeFrequency}}
 \addcontentsline{toc}{subsection}{\texttt{-checktimeFrequency}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 How often to check time for stopping
 
-Checking the time costs more than one might think. In cbc one does not normally need to stop after generating a cut or doing an iteration. So less checks less often and often is more likely to check every iteration. <current: often>
+Checking the time costs more than one might think. In cbc one does not normally need to stop after generating a cut or doing an iteration. So less checks less often and often is more likely to check every iteration.
 
-\textbf{Values:} \texttt{less}, \texttt{often}
+\textbf{Values:} \texttt{less}, \texttt{often} (default: \texttt{often})
 
 \subsection*{\texttt{-printingOptions}}
 \addcontentsline{toc}{subsection}{\texttt{-printingOptions}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Print options
 
-This changes the amount and format of printing a solution: normal - nonzero column variables integer - nonzero integer column variables special - in format suitable for OsiRowCutDebugger rows - nonzero column variables and row activities all - all column variables and row activities. For non-integer problems 'integer' and 'special' act like 'normal'. Also see printMask for controlling output. csv  bound(ranging)  rhs(ranging)  objective(ranging)  stats <current: normal> This changes the amount and format of printing a solution: normal - nonzero column variables integer - nonzero integer column variables special - in format suitable for OsiRowCutDebugger rows - nonzero column variables and row activities all - all column variables and row activities. For non-integer problems 'integer' and 'special' act like 'normal'. Also see printMask for controlling output. csv  bound(ranging)  rhs(ranging)  objective(ranging)  stats <current: normal>
+This changes the amount and format of printing a solution:
+ normal - nonzero column variables 
+integer - nonzero integer column variables
+ special - in format suitable for OsiRowCutDebugger
+ rows - nonzero column variables and row activities
+ all - all column variables and row activities.
 
-\textbf{Values:} \texttt{boundsint}, \texttt{boundsall}, \texttt{fixint}, \texttt{fixall}, \texttt{allcsv}
+ For non-integer problems 'integer' and 'special' act like 'normal'.  Also see printMask for controlling output.
+
+\textbf{Values:} \texttt{normal}, \texttt{integer}, \texttt{special}, \texttt{rows}, \texttt{all}, \texttt{csv}, \texttt{bound!ranging}, \texttt{rhs!ranging}, \texttt{objective!ranging}, \texttt{stats}, \texttt{boundsint}, \texttt{boundsall}, \texttt{fixint}, \texttt{fixall}, \texttt{allcsv} (default: \texttt{normal})
 
 \subsection*{\texttt{-timeMode}}
 \addcontentsline{toc}{subsection}{\texttt{-timeMode}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to use CPU or elapsed time
 
-elapsed uses elapsed (wall-clock) time for stopping, while cpu uses CPU time. Elapsed is the default as it is more natural for users. (On Windows, elapsed time is always used). <current: elapsed>
+elapsed uses elapsed (wall-clock) time for stopping, while cpu uses CPU time. Elapsed is the default as it is more natural for users. (On Windows, elapsed time is always used).
 
-\textbf{Values:} \texttt{cpu}, \texttt{elapsed}
+\textbf{Values:} \texttt{cpu}, \texttt{elapsed} (default: \texttt{elapsed})
 
 \subsection*{\texttt{-logLevel}}
 \addcontentsline{toc}{subsection}{\texttt{-logLevel}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Level of detail in CBC output.
 
-If set to 0 then there should be no output in normal circumstances. A value of 1 is probably the best value for most uses, while 2 and 3 give more information. current 1>
+If set to 0 then there should be no output in normal circumstances. A value of 1 is probably the best value for most uses, while 2 and 3 give more information.
 
-\textbf{Range:} -1 to 999999
+\textbf{Range:} -1 to 999999 (default: 1)
 
 \subsection*{\texttt{-lplogLevel}}
 \addcontentsline{toc}{subsection}{\texttt{-lplogLevel}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Level of detail in LP solver output.
 
-If set to 0 then there should be no output in normal circumstances. A value of 1 is probably the best value for most uses, while 2 and 3 give more information. current 1>
+If set to 0 then there should be no output in normal circumstances. A value of 1 is probably the best value for most uses, while 2 and 3 give more information.
 
-\textbf{Range:} -1 to 999999
+\textbf{Range:} -1 to 999999 (default: 1)
 
 \subsection*{\texttt{-flushPerNewLine}}
 \addcontentsline{toc}{subsection}{\texttt{-flushPerNewLine}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Flush output after every message line.
 
-When set to 1 (default), each output line is flushed immediately. This is already the default behaviour of CoinMessageHandler (which calls fflush after every CoinMessageEol). Setting to 0 is reserved for future use to allow batching of output for performance in non-interactive scenarios. current 0>
+When set to 1 (default), each output line is flushed immediately. This is already the default behaviour of CoinMessageHandler (which calls fflush after every CoinMessageEol). Setting to 0 is reserved for future use to allow batching of output for performance in non-interactive scenarios.
 
-\textbf{Range:} 0 to 1
+\textbf{Range:} 0 to 1 (default: 0)
 
 \subsection*{\texttt{-useUTF8}}
 \addcontentsline{toc}{subsection}{\texttt{-useUTF8}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Use UTF-8 characters in output.
 
-Controls whether UTF-8 characters ($\in$, $\kappa$, ---) are used in solver output. -1 (default) auto-detects from the locale (LANG/LC\_ALL environment variables). 0 forces ASCII-only output. 1 forces UTF-8 output. current 0>
+Controls whether UTF-8 characters ($\in$, $\kappa$, ---) are used in solver output. -1 (default) auto-detects from the locale (LANG/LC\_ALL environment variables). 0 forces ASCII-only output. 1 forces UTF-8 output.
 
-\textbf{Range:} -1 to 1
+\textbf{Range:} -1 to 1 (default: 0)
 
 \subsection*{\texttt{-compactTables}}
 \addcontentsline{toc}{subsection}{\texttt{-compactTables}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Use compact (borderless) table style in output.
 
-Controls the table style used for progress tables (LP relaxation, preprocessing, feasibility pump, cut generation, branch-and-bound). 1 (default) uses a compact style: no column borders, columns separated by spaces, and a single thin rule under the header (a continuous line in UTF-8 mode, per-column dashes in ASCII mode). 0 uses the full bordered box-drawing style. current 0>
+Controls the table style used for progress tables (LP relaxation, preprocessing, feasibility pump, cut generation, branch-and-bound). 1 (default) uses a compact style: no column borders, columns separated by spaces, and a single thin rule under the header (a continuous line in UTF-8 mode, per-column dashes in ASCII mode). 0 uses the full bordered box-drawing style.
 
-\textbf{Range:} 0 to 1
+\textbf{Range:} 0 to 1 (default: 0)
 
 \subsection*{\texttt{-lpIterFreq}}
 \addcontentsline{toc}{subsection}{\texttt{-lpIterFreq}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Print LP progress every N iterations (0 = disabled).
 
-When solving the LP relaxation at the root node, print a progress row every N iterations. Set to 0 to disable iteration-based printing. Use lpTimeFreq for time-based printing. current 0>
+When solving the LP relaxation at the root node, print a progress row every N iterations. Set to 0 to disable iteration-based printing. Use lpTimeFreq for time-based printing.
 
-\textbf{Range:} 0 to 2147483647
+\textbf{Range:} 0 to 2147483647 (default: 0)
 
 \subsection*{\texttt{-outputFormat}}
 \addcontentsline{toc}{subsection}{\texttt{-outputFormat}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Which output format to use
 
-Normally export will be done using normal representation for numbers and two values per line.  You may want to do just one per line (for grep or suchlike) and you may wish to save with absolute accuracy using a coded version of the IEEE value. A value of 2 is normal. Otherwise, odd values give one value per line, even values two.  Values of 1 and 2 give normal format, 3 and 4 give greater precision, 5 and 6 give IEEE values.  When exporting a basis, 1 does not save values, 2 saves values, 3 saves with greater accuracy and 4 saves in IEEE format. current 2>
+Normally export will be done using normal representation for numbers and two values per line.  You may want to do just one per line (for grep or suchlike) and you may wish to save with absolute accuracy using a coded version of the IEEE value. A value of 2 is normal. Otherwise, odd values give one value per line, even values two.  Values of 1 and 2 give normal format, 3 and 4 give greater precision, 5 and 6 give IEEE values.  When exporting a basis, 1 does not save values, 2 saves values, 3 saves with greater accuracy and 4 saves in IEEE format.
 
-\textbf{Range:} 1 to 6
+\textbf{Range:} 1 to 6 (default: 2)
 
 \subsection*{\texttt{-pOptions}}
 \addcontentsline{toc}{subsection}{\texttt{-pOptions}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Dubious print options
 
-If this is greater than 0 then presolve will give more information and branch and cut will give statistics current 0>
+If this is greater than 0 then presolve will give more information and branch and cut will give statistics
 
-\textbf{Range:} 0 to 2147483647
+\textbf{Range:} 0 to 2147483647 (default: 0)
 
 \subsection*{\texttt{-lpTimeFreq}}
 \addcontentsline{toc}{subsection}{\texttt{-lpTimeFreq}}
 
+\textit{Double} (cbc)
+\medskip
+
 Print LP progress every N seconds (0 = disabled).
 
-When solving the LP relaxation at the root node, print a progress row every N seconds. Set to 0 to disable time-based printing. Use lpIterFreq for iteration-based printing. current 5>
+When solving the LP relaxation at the root node, print a progress row every N seconds. Set to 0 to disable time-based printing. Use lpIterFreq for iteration-based printing.
 
-\textbf{Range:} 0 to 1.79769e+308
+\textbf{Range:} 0 to inf (default: 5)
 
 \subsection*{\texttt{-fpumpTimeFreq}}
 \addcontentsline{toc}{subsection}{\texttt{-fpumpTimeFreq}}
 
+\textit{Double} (cbc)
+\medskip
+
 Print feasibility pump progress every N seconds (0 = disabled, default 5).
 
-Print feasibility pump progress every N seconds (0 = disabled, default 5). current 5>
-
-\textbf{Range:} 0 to 1e+10
+\textbf{Range:} 0 to 10000000000 (default: 5)
 
 \subsection*{\texttt{-bufferedMode}}
 \addcontentsline{toc}{subsection}{\texttt{-bufferedMode}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Whether to flush print buffer
 
-Default is on, off switches on unbuffered output <current: on>
+Default is on, off switches on unbuffered output
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{on})
 
 \subsection*{\texttt{-messages}}
 \addcontentsline{toc}{subsection}{\texttt{-messages}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Controls if Clpnnnn is printed
 
-The default behavior is to put out messages such as: Clp0005 2261  Objective 109.024 Primal infeas 944413 (758) but this program turns this off to make it look more friendly.  It can be useful to turn them back on if you want to be able to 'grep' for particular messages or if you intend to override the behavior of a particular message. <current: off> By default, messages have a standard prefix, such as: Cbc0005 2261  Objective 109.024 Primal infeas 944413 (758) but this program turns this off to make it look more friendly.  It can be useful to turn them back on if you want to be able to 'grep' for particular messages or if you intend to override the behavior of a particular message. <current: off>
+The default behavior is to put out messages such as:
+ Clp0005 2261  Objective 109.024 Primal infeas 944413 (758)
+ but this program turns this off to make it look more friendly.  It can be useful to turn them back on if you want to be able to 'grep' for particular messages or if you intend to override the behavior of a particular message.
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
 \subsection*{\texttt{-allCommands}}
 \addcontentsline{toc}{subsection}{\texttt{-allCommands}}
 
+\textit{Keyword} (clp)
+\medskip
+
 What priority level of commands to print
 
-For the sake of your sanity, only the more useful and simple commands are printed out on ?. <current: more> For the sake of your sanity, only the more useful and simple commands are printed out on ?. <current: more>
+For the sake of your sanity, only the more useful and simple commands are printed out on ?.
 
-\textbf{Values:} \texttt{more}, \texttt{important}, \texttt{all}
+\textbf{Values:} \texttt{all}, \texttt{more}, \texttt{important} (default: \texttt{more})
 
 \subsection*{\texttt{-printingOptions}}
 \addcontentsline{toc}{subsection}{\texttt{-printingOptions}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Print options
 
-This changes the amount and format of printing a solution: normal - nonzero column variables integer - nonzero integer column variables special - in format suitable for OsiRowCutDebugger rows - nonzero column variables and row activities all - all column variables and row activities. For non-integer problems 'integer' and 'special' act like 'normal'. Also see printMask for controlling output. csv  bound(ranging)  rhs(ranging)  objective(ranging)  stats <current: normal> This changes the amount and format of printing a solution: normal - nonzero column variables integer - nonzero integer column variables special - in format suitable for OsiRowCutDebugger rows - nonzero column variables and row activities all - all column variables and row activities. For non-integer problems 'integer' and 'special' act like 'normal'. Also see printMask for controlling output. csv  bound(ranging)  rhs(ranging)  objective(ranging)  stats <current: normal>
+This changes the amount and format of printing a solution:
+normal - nonzero column variables 
+ integer - nonzero integer column variables
+ special - in format suitable for OsiRowCutDebugger
+ rows - nonzero column variables and row activities
+ all - all column variables and row activities.
 
-\textbf{Values:} \texttt{boundsint}, \texttt{boundsall}, \texttt{fixint}, \texttt{fixall}, \texttt{allcsv}
+ For non-integer problems 'integer' and 'special' act like 'normal'. Also see printMask for controlling output.
+
+\textbf{Values:} \texttt{normal}, \texttt{integer}, \texttt{special}, \texttt{rows}, \texttt{all}, \texttt{csv}, \texttt{bound!ranging}, \texttt{rhs!ranging}, \texttt{objective!ranging}, \texttt{stats}, \texttt{boundsint}, \texttt{boundsall}, \texttt{fixint}, \texttt{fixall} (default: \texttt{normal})
 
 \subsection*{\texttt{-progressInterval}}
 \addcontentsline{toc}{subsection}{\texttt{-progressInterval}}
 
+\textit{Double} (clp)
+\medskip
+
 Time interval for printing progress
 
-This sets a minimum interval for some printing - elapsed seconds current 0.7>
+This sets a minimum interval for some printing - elapsed seconds
 
-\textbf{Range:} -1.79769e+308 to 1.79769e+308
+\textbf{Range:} -inf to inf (default: 0.7)
 
 \section{I/O}
 
 \subsection*{\texttt{-export}}
 \addcontentsline{toc}{subsection}{\texttt{-export}}
 
+\textit{Action} (cbc)
+\medskip
+
 Export model as mps file
 
-export : Export model as mps file exportF(ile) : sets name for file to export model to
+This will write an MPS format file to the given file name.  It will use the default directory given by 'directory'.  A name of '\$' will use the previous value for the name.  This is initialized to 'default.mps'. It can be useful to get rid of the original names and go over to using Rnnnnnnn and Cnnnnnnn.  This can be done by setting 'keepnames' off before importing mps file.
 
 \subsection*{\texttt{-import}}
 \addcontentsline{toc}{subsection}{\texttt{-import}}
 
+\textit{Action} (cbc)
+\medskip
+
 Import model from file
 
-import : Import model from file importF(ile) : sets name for file to import model from
+This will read an MPS format file from the given file name.  It will use the default directory given by 'directory'.  A name of '\$' will use the previous value for the name.  This is initialized to '', i.e., it must be set.  If you have libgz then it can read compressed files 'xxxxxxxx.gz'.
 
 \subsection*{\texttt{-printSolution}}
 \addcontentsline{toc}{subsection}{\texttt{-printSolution}}
+
+\textit{Action} (cbc)
+\medskip
 
 writes solution to file (or stdout)
 
@@ -1691,12 +2338,34 @@ This will write a binary solution file to the file set by solFile.
 \subsection*{\texttt{-mipStart}}
 \addcontentsline{toc}{subsection}{\texttt{-mipStart}}
 
+\textit{Action} (cbc)
+\medskip
+
 reads an initial feasible solution from file
 
-The MIPStart allows one to enter an initial integer feasible solution to CBC. Values of the main decision variables which are active (have non-zero values) in this solution are specified in a text  file. The text file format used is the same of the solutions saved by CBC, but not all fields are required to be filled. First line may contain the solution status and will be ignored, remaining lines contain column indexes, names and values as in this example: Stopped on iterations - objective value 57597.00000000 0  x(1,1,2,2)               1 1  x(3,1,3,2)               1 5  v(5,1)                   2 33 x(8,1,5,2)               1 ... Column indexes are also ignored since pre-processing can change them. There is no need to include values for continuous or integer auxiliary variables, since they can be computed based on main decision variables. Starting CBC with an integer feasible solution can dramatically improve its performance: several MIP heuristics (e.g. RINS) rely on having at least one feasible solution available and can start immediately if the user provides one. Feasibility Pump (FP) is a heuristic which tries to overcome the problem of taking too long to find feasible solution (or not finding at all), but it not always succeeds. If you provide one starting solution you will probably save some time by disabling FP. Knowledge specific to your problem can be considered to write an external module to quickly produce an initial feasible solution - some alternatives are the implementation of simple greedy heuristics or the solution (by CBC for example) of a simpler model created just to find a feasible solution. Silly options added.  If filename ends .low then integers not mentioned are set low - also .high, .lowcheap, .highcheap, .lowexpensive, .highexpensive where .lowexpensive sets costed ones to make expensive others low. Also if filename starts empty. then no file is read at all - just actions done. Question and suggestions regarding MIPStart can be directed to haroldo.santos@gmail.com.
+The MIPStart allows one to enter an initial integer feasible solution to CBC. Values of the main decision variables which are active (have non-zero values) in this solution are specified in a text  file. The text file format used is the same of the solutions saved by CBC, but not all fields are required to be filled. First line may contain the solution status and will be ignored, remaining lines contain column indexes, names and values as in this example:
+
+ Stopped on iterations - objective value 57597.00000000
+      0  x(1,1,2,2)               1 
+      1  x(3,1,3,2)               1 
+      5  v(5,1)                   2 
+      33 x(8,1,5,2)               1 
+      ...
+
+ Column indexes are also ignored since pre-processing can change them. There is no need to include values for continuous or integer auxiliary variables, since they can be computed based on main decision variables. Starting CBC with an integer feasible solution can dramatically improve its performance: several MIP heuristics (e.g. RINS) rely on having at least one feasible solution available and can start immediately if the user provides one. Feasibility Pump (FP) is a heuristic which tries to overcome the problem of taking too long to find feasible solution (or not finding at all), but it not always succeeds. If you provide one starting solution you will probably save some time by disabling FP. 
+
+ Knowledge specific to your problem can be considered to write an external module to quickly produce an initial feasible solution - some alternatives are the implementation of simple greedy heuristics or the solution (by CBC for example) of a simpler model created just to find a feasible solution. 
+
+ Silly options added.  If filename ends .low then integers not mentioned are set low - also .high, .lowcheap, .highcheap, .lowexpensive, .highexpensive where .lowexpensive sets costed ones to make expensive others low. Also if filename starts empty. then no file is read at all - just actions done. 
+
+ Question and suggestions regarding MIPStart can be directed to
+ haroldo.santos@gmail.com. 
 
 \subsection*{\texttt{-readPriorities}}
 \addcontentsline{toc}{subsection}{\texttt{-readPriorities}}
+
+\textit{Action} (cbc)
+\medskip
 
 reads priorities from file
 
@@ -1705,12 +2374,18 @@ Read priorities from the file name designated by PRIORITYFILE. File is in csv fo
 \subsection*{\texttt{-readModel}}
 \addcontentsline{toc}{subsection}{\texttt{-readModel}}
 
+\textit{Action} (cbc)
+\medskip
+
 Reads problem from a binary save file
 
 This will read the problem saved by 'writeModel' from the file name set by 'modelFile'.
 
 \subsection*{\texttt{-writeGSolution}}
 \addcontentsline{toc}{subsection}{\texttt{-writeGSolution}}
+
+\textit{Action} (cbc)
+\medskip
 
 Puts glpk solution to file
 
@@ -1719,12 +2394,18 @@ Will write a glpk solution file to the given file name.  It will use the default
 \subsection*{\texttt{-writeModel}}
 \addcontentsline{toc}{subsection}{\texttt{-writeModel}}
 
+\textit{Action} (cbc)
+\medskip
+
 save model to binary file
 
 This will write the problem in binary foramt to the file name set by 'modelFile' for future use by readModel.
 
 \subsection*{\texttt{-nextBestSolution}}
 \addcontentsline{toc}{subsection}{\texttt{-nextBestSolution}}
+
+\textit{Action} (cbc)
+\medskip
 
 Prints next best saved solution to file
 
@@ -1733,12 +2414,18 @@ To write best solution, just use writeSolution.  This prints next best (if exist
 \subsection*{\texttt{-writeSolution}}
 \addcontentsline{toc}{subsection}{\texttt{-writeSolution}}
 
+\textit{Action} (cbc)
+\medskip
+
 writes solution to file (or stdout)
 
 This will write a primitive solution file to the file set by 'solFile'. The amount of output can be varied using 'printingOptions' or 'printMask'.
 
 \subsection*{\texttt{-solution}}
 \addcontentsline{toc}{subsection}{\texttt{-solution}}
+
+\textit{Action} (cbc)
+\medskip
 
 writes solution to file (or stdout) (synonym for writeSolution).
 
@@ -1747,12 +2434,18 @@ This will write a primitive solution file to the file set by 'solFile'. The amou
 \subsection*{\texttt{-writeSolBinary}}
 \addcontentsline{toc}{subsection}{\texttt{-writeSolBinary}}
 
+\textit{Action} (cbc)
+\medskip
+
 writes solution to file in binary format
 
 This will write a binary solution file to the file set by 'solBinaryFile'. To read the file use fread(int) twice to pick up number of rows and columns, then fread(double) to pick up objective value, then pick up row activities, row duals, column activities and reduced costs - see bottom of ClpParamUtils.cpp for code that reads or writes file. If name contains '\_fix\_read\_', then does not write but reads and will fix all variables
 
 \subsection*{\texttt{-writeStatistics}}
 \addcontentsline{toc}{subsection}{\texttt{-writeStatistics}}
+
+\textit{Action} (cbc)
+\medskip
 
 writes collected statistics to CSV file
 
@@ -1761,12 +2454,30 @@ This writes the statistics gathered so far to the file designated by csvStatisti
 \subsection*{\texttt{-writeFeatures}}
 \addcontentsline{toc}{subsection}{\texttt{-writeFeatures}}
 
+\textit{Action} (cbc)
+\medskip
+
 writes instance features to CSV file
 
-This extracts all OsiFeatures from the current MIP instance and appends them as a single row to the file designated by csvFeatures (default 'features.csv'). If no file name is supplied the previous value is used. The header row is written automatically when the file is new or empty. A total of 207 numeric features are extracted, covering: - Problem size: number of columns (variables) and rows (constraints), non-zeros, matrix density, columns-per-row ratio. - Variable types: counts and percentages of binary, general integer and continuous variables; unbounded variables. - Constraint classes: partitioning, packing, covering, cardinality, knapsack, integer knapsack, invariant knapsack, singleton, aggregation, precedence, variable-bound and bin-packing rows. - Objective and matrix statistics: min/max/mean/std-dev of non-zero coefficients, objective coefficients and right-hand-side values; column non-zero distribution (fraction of columns with >= k non-zeros for k = 1, 2, 4, ..., 4096). All features are computed in O(nz) time.
+This extracts all OsiFeatures from the current MIP instance and appends them as a single row to the file designated by csvFeatures (default 'features.csv'). If no file name is supplied the previous value is used. The header row is written automatically when the file is new or empty. A total of 207 numeric features are extracted, covering:
+  - Problem size: number of columns (variables) and rows (constraints),
+    non-zeros, matrix density, columns-per-row ratio.
+  - Variable types: counts and percentages of binary, general integer
+    and continuous variables; unbounded variables.
+  - Constraint classes: partitioning, packing, covering, cardinality,
+    knapsack, integer knapsack, invariant knapsack, singleton, aggregation,
+    precedence, variable-bound and bin-packing rows.
+  - Objective and matrix statistics: min/max/mean/std-dev of non-zero
+    coefficients, objective coefficients and right-hand-side values;
+    column non-zero distribution (fraction of columns with >= k non-zeros
+    for k = 1, 2, 4, ..., 4096).
+All features are computed in O(nz) time.
 
 \subsection*{\texttt{-checkSolution}}
 \addcontentsline{toc}{subsection}{\texttt{-checkSolution}}
+
+\textit{Action} (cbc)
+\medskip
 
 Check LP/MIP solution feasibility and write validation report
 
@@ -1775,173 +2486,241 @@ Recomputes constraint and bound violations from scratch and writes a machine-rea
 \subsection*{\texttt{-csvFeatures}}
 \addcontentsline{toc}{subsection}{\texttt{-csvFeatures}}
 
+\textit{File} (cbc)
+\medskip
+
 sets file name for writing out instance features
 
-Sets the file name used by writeFeatures. If name is not specified the previous value is used. Initialized to 'features.csv'. The header row listing all 207 feature names is written automatically when the file is new or empty; subsequent calls append a new row. <Current value is `features.csv'>
+Sets the file name used by writeFeatures. If name is not specified the previous value is used. Initialized to 'features.csv'. The header row listing all 207 feature names is written automatically when the file is new or empty; subsequent calls append a new row.
 
 \subsection*{\texttt{-csvStatistics}}
 \addcontentsline{toc}{subsection}{\texttt{-csvStatistics}}
 
+\textit{File} (cbc)
+\medskip
+
 sets file name for writing out statistics
 
-This appends statistics to given file name.  If name is not specified, the previous value will be used. This is initialized to '', i.e. it must be set. Adds header if file empty or does not exist. <Current value is `stats.csv'>
+This appends statistics to given file name.  If name is not specified, the previous value will be used. This is initialized to '', i.e. it must be set. Adds header if file empty or does not exist.
 
 \subsection*{\texttt{-exportFile}}
 \addcontentsline{toc}{subsection}{\texttt{-exportFile}}
 
+\textit{File} (cbc)
+\medskip
+
 sets name for file to export model to
 
-This will set the name of the model will be written to and read from. This is initialized to 'export.mps'. <Current value is `export.mps'>
+This will set the name of the model will be written to and read from. This is initialized to 'export.mps'. 
 
 \subsection*{\texttt{-importFile}}
 \addcontentsline{toc}{subsection}{\texttt{-importFile}}
 
+\textit{File} (cbc)
+\medskip
+
 sets name for file to import model from
 
-This will set the name of the model to be read in with the import command. This is initialized to 'import.mps' <Current value is `import.mps'>
+This will set the name of the model to be read in with the import command. This is initialized to 'import.mps'
 
 \subsection*{\texttt{-gmplSolutionFile}}
 \addcontentsline{toc}{subsection}{\texttt{-gmplSolutionFile}}
 
+\textit{File} (cbc)
+\medskip
+
 sets name for file to store GMPL solution in
 
-This will set the name the GMPL solution will be written to and read from. This is initialized to 'gmpl.sol'. <Current value is `gmpl.sol'>
+This will set the name the GMPL solution will be written to and read from. This is initialized to 'gmpl.sol'. 
 
 \subsection*{\texttt{-mipReadFile}}
 \addcontentsline{toc}{subsection}{\texttt{-mipReadFile}}
 
+\textit{File} (cbc)
+\medskip
+
 sets name for file to read mip start from
 
-This will set the name the model will be written to and read from. This is initialized to 'prob.mod'. <Current value is `mipstart.sol'>
+This will set the name the model will be written to and read from. This is initialized to 'prob.mod'. 
 
 \subsection*{\texttt{-modelFile}}
 \addcontentsline{toc}{subsection}{\texttt{-modelFile}}
 
+\textit{File} (cbc)
+\medskip
+
 sets name for file to store model in
 
-This will set the name the model will be written to and read from. This is initialized to 'prob.mod'. <Current value is `prob.mod'>
+This will set the name the model will be written to and read from. This is initialized to 'prob.mod'. 
 
 \subsection*{\texttt{-nextSolutionFile}}
 \addcontentsline{toc}{subsection}{\texttt{-nextSolutionFile}}
 
+\textit{File} (cbc)
+\medskip
+
 sets name for file to store suboptimal solutions in
 
-This will set the name solutions will be written to and read from. This is initialized to 'next.sol'. <Current value is `next.sol'>
+This will set the name solutions will be written to and read from. This is initialized to 'next.sol'. 
 
 \subsection*{\texttt{-priorityFile}}
 \addcontentsline{toc}{subsection}{\texttt{-priorityFile}}
 
+\textit{File} (cbc)
+\medskip
+
 Name of file to import priorities from
 
-Priorities will be read from the given file name.  It will use the default directory given by 'directory'. The default name is priorities.txt and it cannot be a compressed file.File is in csv format with allowed headings - name, number, priority, direction, up, down, solution. Exactly one of name and number must be given. <Current value is `priorities.txt'>
+Priorities will be read from the given file name.  It will use the default directory given by 'directory'. The default name is priorities.txt and it cannot be a compressed file.File is in csv format with allowed headings - name, number, priority, direction, up, down, solution.  Exactly one of name and number must be given.
 
 \subsection*{\texttt{-solFile}}
 \addcontentsline{toc}{subsection}{\texttt{-solFile}}
 
+\textit{File} (cbc)
+\medskip
+
 sets name for file to store solution in
 
-This will set the name the solution will be saved to and read from. By default, solutions are written to 'opt.sol'. To print to stdout, use printSolution. <Current value is `opt.sol'>
+This will set the name the solution will be saved to and read from. By default, solutions are written to 'opt.sol'. To print to stdout, use printSolution.
 
 \subsection*{\texttt{-solBinaryFile}}
 \addcontentsline{toc}{subsection}{\texttt{-solBinaryFile}}
 
+\textit{File} (cbc)
+\medskip
+
 sets name for file to store solution in binary format
 
-This will set the name the solution will be saved to and read from. By default, binary solutions are written to 'solution.file'.use printSolution. <Current value is `solution.file'>
+This will set the name the solution will be saved to and read from. By default, binary solutions are written to 'solution.file'.use printSolution.
 
 \subsection*{\texttt{-directory}}
 \addcontentsline{toc}{subsection}{\texttt{-directory}}
 
+\textit{Directory} (cbc)
+\medskip
+
 Set Default directory for import etc.
 
-This sets the directory which import, export, saveModel, restoreModel etc. will use. It is initialized to the current directory. <Current value is (unset)>
+This sets the directory which import, export, saveModel, restoreModel etc. will use. It is initialized to the current directory.
 
 \subsection*{\texttt{-dirSample}}
 \addcontentsline{toc}{subsection}{\texttt{-dirSample}}
 
+\textit{Directory} (cbc)
+\medskip
+
 Set directory where the COIN-OR sample problems are.
 
-This sets the directory where the COIN-OR sample problems reside. It is used only when -unitTest is passed to cbc. cbc will pick up the test problems from this directory. <Current value is (unset)>
+This sets the directory where the COIN-OR sample problems reside. It is used only when -unitTest is passed to cbc. cbc will pick up the test problems from this directory.
 
 \subsection*{\texttt{-dirNetlib}}
 \addcontentsline{toc}{subsection}{\texttt{-dirNetlib}}
 
+\textit{Directory} (cbc)
+\medskip
+
 Set directory where the netlib problems are.
 
-This sets the directory where the netlib problems reside. One can get the netlib problems from COIN-OR or from the main netlib site. This parameter is used only when -netlib is passed to cbc. cbc will pick up the netlib problems from this directory. If cbc is built without zlib support then the problems must be uncompressed. <Current value is (unset)>
+This sets the directory where the netlib problems reside. One can get the netlib problems from COIN-OR or from the main netlib site. This parameter is used only when -netlib is passed to cbc. cbc will pick up the netlib problems from this directory. If cbc is built without zlib support then the problems must be uncompressed.
 
 \subsection*{\texttt{-dirMiplib}}
 \addcontentsline{toc}{subsection}{\texttt{-dirMiplib}}
 
+\textit{Directory} (cbc)
+\medskip
+
 Set directory where the miplib 2003 problems are.
 
-This sets the directory where the miplib 2003 problems reside. One can get the miplib problems from COIN-OR or from the main miplib site. This parameter is used only when -miplib is passed to cbc. cbc will pick up the miplib problems from this directory. If cbc is built without zlib support then the problems must be uncompressed. <Current value is (unset)>
+This sets the directory where the miplib 2003 problems reside. One can get the miplib problems from COIN-OR or from the main miplib site. This parameter is used only when -miplib is passed to cbc. cbc will pick up the miplib problems from this directory. If cbc is built without zlib support then the problems must be uncompressed.
 
 \subsection*{\texttt{-errorsAllowed}}
 \addcontentsline{toc}{subsection}{\texttt{-errorsAllowed}}
 
+\textit{Keyword} (cbc)
+\medskip
+
 Whether to allow import errors
 
-The default is not to use any model which had errors when reading the mps file. Setting this to 'on' will allow all errors from which the code can recover simply by ignoring the error.  There are some errors from which the code can not recover e.g. no ENDATA.  This has to be set before import i.e. -errorsAllowed on -import xxxxxx.mps. <current: off> The default is not to use any model which had errors when reading the mps file.  Setting this to 'on' will allow all errors from which the code can recover simply by ignoring the error.  There are some errors from which the code can not recover, e.g., no ENDATA.  This has to be set before import, i.e., -errorsAllowed on -import xxxxxx.mps. <current: off>
+The default is not to use any model which had errors when reading the mps file.  Setting this to 'on' will allow all errors from which the code can recover simply by ignoring the error.  There are some errors from which the code can not recover, e.g., no ENDATA.  This has to be set before import, i.e., -errorsAllowed on -import xxxxxx.mps.
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
 \subsection*{\texttt{-basisIn}}
 \addcontentsline{toc}{subsection}{\texttt{-basisIn}}
 
+\textit{Action} (clp)
+\medskip
+
 Import basis from bas file
 
-This will read an MPS format basis file from the given file name. It will use the default directory given by 'directory'.  A name of '\$' will use the previous value for the name. This is initialized to '', i.e. it must be set.  If you have libz then it can read compressed files 'xxxxxxxx.gz' or xxxxxxxx.bz2.
+This will read an MPS format basis file from the given file name.  It will use the default directory given by 'directory'.  A name of '\$' will use the previous value for the name. This is initialized to '', i.e. it must be set.  If you have libz then it can read compressed files 'xxxxxxxx.gz' or xxxxxxxx.bz2.
 
 \subsection*{\texttt{-basisOut}}
 \addcontentsline{toc}{subsection}{\texttt{-basisOut}}
 
+\textit{Action} (clp)
+\medskip
+
 Export basis as bas file
 
-This will write an MPS format basis file to the given file name. It will use the default directory given by 'directory'.  A name of '\$' will use the previous value for the name.  This is initialized to 'default.bas'.
+This will write an MPS format basis file to the given file name.  It will use the default directory given by 'directory'.  A name of '\$' will use the previous value for the name.  This is initialized to 'default.bas'.
 
 \subsection*{\texttt{-basisFile}}
 \addcontentsline{toc}{subsection}{\texttt{-basisFile}}
 
+\textit{File} (clp)
+\medskip
+
 sets the name for file for reading/writing the basis
 
-This will read an MPS format basis file from the given file name. It will use the default directory given by 'directory'.  If no name is specified, the previous value will be used. This is initialized to '', i.e. it must be set.  If you have libz then it can read compressed files 'xxxxxxxx.gz' or xxxxxxxx.bz2. <Current value is `default.bas'>
+This will read an MPS format basis file from the given file name.  It will use the default directory given by 'directory'.  If no name is specified, the previous value will be used. This is initialized to '', i.e. it must be set.  If you have libz then it can read compressed files 'xxxxxxxx.gz' or xxxxxxxx.bz2.
 
 \subsection*{\texttt{-paramFile}}
 \addcontentsline{toc}{subsection}{\texttt{-paramFile}}
 
+\textit{File} (clp)
+\medskip
+
 set name of file to import parametrics data from
 
-This will read a file with parametric data from the given file name and then do parametrics. It will use the default directory given by 'directory'. A name of '\$' will use the previous value for the name. This is initialized to '', i.e. it must be set.  This can not read from compressed files. File is in modified csv format - a line ROWS will be followed by rows data while a line COLUMNS will be followed by column data.  The last line should be ENDATA. The ROWS line must exist and is in the format ROWS, inital theta, final theta, interval theta, n where n is 0 to get CLPI0062 message at interval or at each change of theta and 1 to get CLPI0063 message at each iteration. If interval theta is 0.0 or >= final theta then no interval reporting. n may be missed out when it is taken as 0.  If there is Row data then there is a headings line with allowed headings - name, number, lower(rhs change), upper(rhs change), rhs(change).  Either the lower and upper fields should be given or the rhs field. The optional COLUMNS line is followed by a headings line with allowed headings - name, number, objective(change), lower(change), upper(change). Exactly one of name and number must be given for either section and missing ones have value 0.0. <Current value is `default.mps'>
+This will read a file with parametric data from the given file name and then do parametrics. It will use the default directory given by 'directory'. A name of '\$' will use the previous value for the name. This is initialized to '', i.e. it must be set.  This can not read from compressed files. File is in modified csv format - a line ROWS will be followed by rows data while a line COLUMNS will be followed by column data.  The last line should be ENDATA. The ROWS line must exist and is in the format ROWS, inital theta, final theta, interval theta, n where n is 0 to get CLPI0062 message at interval or at each change of theta and 1 to get CLPI0063 message at each iteration.  If interval theta is 0.0 or >= final theta then no interval reporting.  n may be missed out when it is taken as 0.  If there is Row data then there is a headings line with allowed headings - name, number, lower(rhs change), upper(rhs change), rhs(change).  Either the lower and upper fields should be given or the rhs field. The optional COLUMNS line is followed by a headings line with allowed headings - name, number, objective(change), lower(change), upper(change). Exactly one of name and number must be given for either section and missing ones have value 0.0.
 
 \subsection*{\texttt{-errorsAllowed}}
 \addcontentsline{toc}{subsection}{\texttt{-errorsAllowed}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Whether to allow import errors
 
-The default is not to use any model which had errors when reading the mps file. Setting this to 'on' will allow all errors from which the code can recover simply by ignoring the error.  There are some errors from which the code can not recover e.g. no ENDATA.  This has to be set before import i.e. -errorsAllowed on -import xxxxxx.mps. <current: off> The default is not to use any model which had errors when reading the mps file.  Setting this to 'on' will allow all errors from which the code can recover simply by ignoring the error.  There are some errors from which the code can not recover, e.g., no ENDATA.  This has to be set before import, i.e., -errorsAllowed on -import xxxxxx.mps. <current: off>
+The default is not to use any model which had errors when reading the mps file. Setting this to 'on' will allow all errors from which the code can recover simply by ignoring the error.  There are some errors from which the code can not recover e.g. no ENDATA.  This has to be set before import i.e. -errorsAllowed on -import xxxxxx.mps.
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{off})
 
 \subsection*{\texttt{-keepNames}}
 \addcontentsline{toc}{subsection}{\texttt{-keepNames}}
 
+\textit{Keyword} (clp)
+\medskip
+
 Whether to keep names from import
 
-It saves space to get rid of names so if you need to you can set this to off. This needs to be set before the import of model - so -keepnames off -import xxxxx.mps. <current: on>
+It saves space to get rid of names so if you need to you can set this to off. This needs to be set before the import of model - so -keepnames off -import xxxxx.mps.
 
-\textbf{Values:} \texttt{off}, \texttt{on}
+\textbf{Values:} \texttt{off}, \texttt{on} (default: \texttt{on})
 
 \section{Parallelism}
 
 \subsection*{\texttt{-threads}}
 \addcontentsline{toc}{subsection}{\texttt{-threads}}
 
+\textit{Integer} (cbc)
+\medskip
+
 Number of threads to try and use
 
-To use multiple threads, set threads to number wanted.  It may be better to use one or two more than number of cpus available.  If 100+n then n threads and search is repeatable (maybe be somewhat slower), if 200+n use threads for root cuts, 400+n threads used in sub-trees. current 0>
+To use multiple threads, set threads to number wanted.  It may be better to use one or two more than number of cpus available.  If 100+n then n threads and search is repeatable (maybe be somewhat slower), if 200+n use threads for root cuts, 400+n threads used in sub-trees.
 
-\textbf{Range:} -100 to 100000
-
+\textbf{Range:} -100 to 100000 (default: 0)
 
 \end{document}

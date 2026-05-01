@@ -66,6 +66,7 @@ extern int gomory_try;
 #include "CbcHeuristicRINS.hpp"
 #include "CbcMessage.hpp"
 #include "CbcModel.hpp"
+#include "CbcOutput.hpp"
 #include "CbcStatistics.hpp"
 #include "CbcStrategy.hpp"
 #include "CbcTreeLocal.hpp"
@@ -17329,6 +17330,8 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
         exitNow = true;
     }
     if (!exitNow) {
+      if (rootHeurOutput_ && rootHeurOutput_->isActive())
+        rootHeurOutput_->onStart();
       /** -1 first time otherwise number of solutions last time */
       int lastSolutionCount = -1;
       while (lastSolutionCount) {
@@ -17433,6 +17436,8 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
             // see if heuristic will do anything
             double saveValue = heuristicValue;
             double before = getCurrentSeconds();
+            double wallBefore = CoinWallclockTime();
+            bool isFPump = (dynamic_cast< CbcHeuristicFPump * >(heuristic_[i]) != nullptr);
             int ifSol = heuristic_[i]->solution(heuristicValue, newSolution);
             if (handler_->logLevel() > 1) {
               char line[100];
@@ -17487,6 +17492,11 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                 // increment number of solutions so other heuristics can test
                 //                            numberSolutions_++;
                 numberHeuristicSolutions_++;
+                if (rootHeurOutput_ && !isFPump)
+                  rootHeurOutput_->onHeurResult(heuristic_[i]->heuristicName(),
+                    true, trueObjValue(bestObjective_), CoinWallclockTime() - wallBefore);
+                else if (rootHeurOutput_ && isFPump)
+                  rootHeurOutput_->noteFPSolution(trueObjValue(bestObjective_));
 #ifdef HEURISTIC_INFORM
                 printf("HEUR %s where %d C\n", lastHeuristic_->heuristicName(),
                   whereFrom);
@@ -17524,9 +17534,15 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 #endif
                 lastHeuristic_ = saveHeuristic;
                 heuristicValue = saveValue;
+                if (rootHeurOutput_ && !isFPump)
+                  rootHeurOutput_->onHeurResult(heuristic_[i]->heuristicName(),
+                    false, 1e30, CoinWallclockTime() - wallBefore);
               }
             } else {
               heuristicValue = saveValue;
+              if (rootHeurOutput_ && !isFPump)
+                rootHeurOutput_->onHeurResult(heuristic_[i]->heuristicName(),
+                  false, 1e30, CoinWallclockTime() - wallBefore);
             }
             if (eventHandler) {
               if (!eventHandler->event(CbcEventHandler::afterHeuristic)) {
@@ -17545,6 +17561,10 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
       }
     }
     currentPassNumber_ = 0;
+    if (rootHeurOutput_) {
+      rootHeurOutput_->onEnd();
+      rootHeurOutput_ = nullptr;
+    }
     /*
           Did any of the heuristics turn up a new solution? Record it before we
        free the vector. tree_ will not necessarily be a CbcTreeLocal; the main

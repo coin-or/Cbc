@@ -64,6 +64,7 @@ class CbcEventHandler;
 class CglPreProcess;
 class OsiClpSolverInterface;
 class ClpNodeStuff;
+class CbcRootHeurOutput;
 
 // #define CBC_CHECK_BASIS 1
 
@@ -1989,6 +1990,11 @@ public:
     lastHeuristic_ = last;
   }
 
+  /// Set root-node heuristics output handler (not owned; set to nullptr after use)
+  inline void setRootHeurOutput(CbcRootHeurOutput *rho) { rootHeurOutput_ = rho; }
+  /// Get root-node heuristics output handler
+  inline CbcRootHeurOutput *getRootHeurOutput() const { return rootHeurOutput_; }
+
   /** Pass in branching priorities.
 
         If ifClique then priorities are on cliques otherwise priorities are
@@ -3281,6 +3287,8 @@ private:
   CbcHeuristic **heuristic_;
   /// Pointer to heuristic solver which found last solution (or NULL)
   CbcHeuristic *lastHeuristic_;
+  /// Output handler for root-node heuristics (not owned; nullptr after doHeuristicsAtRoot)
+  CbcRootHeurOutput *rootHeurOutput_ = nullptr;
   /// Depth for fast nodes
   int fastNodeDepth_;
   /*! Pointer to the event handler */

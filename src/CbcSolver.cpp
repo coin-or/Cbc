@@ -561,8 +561,10 @@ static void printHelp(CbcParameters &cbcParams, ClpParameters &clpParams)
 
   // Preferred display order
   const char *order[] = {
-    "Stopping", "Cuts", "Heuristics", "Preprocessing", "Branching",
-    "Tolerances", "Conflict Graph", "Strategy", "Solving",
+    "Stopping", "Cuts", "Heuristics",
+    "LP Presolve", "MIP Preprocessing", "MIP Preprocessing \u2014 Fast",
+    "Branching", "Tolerances", "Conflict Graph",
+    "Strategy", "Solving",
     "Simplex", "Barrier", "Scaling",
     "Output", "I/O", "Parallelism", nullptr
   };
@@ -572,13 +574,19 @@ static void printHelp(CbcParameters &cbcParams, ClpParameters &clpParams)
     auto it = byTopic.find(order[k]);
     if (it == byTopic.end())
       continue;
-    std::cout << "\n  " << it->first << ":\n";
+    // Subsection: topic contains " — " → indent more
+    std::string topic = it->first;
+    bool isSub = topic.find(" \u2014 ") != std::string::npos;
+    if (isSub)
+      std::cout << "\n    " << topic << ":\n";
+    else
+      std::cout << "\n  " << topic << ":\n";
     for (CoinParam *p : it->second) {
       std::string nm = p->name();
       // Strip the ! used for min-match display
       nm.erase(std::remove(nm.begin(), nm.end(), '!'), nm.end());
-      std::cout << "    -" << std::left << std::setw(28) << nm
-                << p->shortHelp() << "\n";
+      std::cout << (isSub ? "      -" : "    -") << std::left
+                << std::setw(28) << nm << p->shortHelp() << "\n";
     }
   }
   std::cout << std::endl;

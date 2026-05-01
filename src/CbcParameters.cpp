@@ -382,16 +382,16 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::STRENGTHEN]->setTopic("Solving");
 
   // Action params — preprocessing
-  parameters_[CbcParam::FASTPREPROCESS]->setTopic("Preprocessing");
+  parameters_[CbcParam::FASTPREPROCESS]->setTopic("MIP Preprocessing \u2014 Fast");
 
   // Action params — other
   parameters_[CbcParam::STATISTICS]->setTopic("Output");
-  parameters_[CbcParam::OUTDUPROWS]->setTopic("Preprocessing");
+  parameters_[CbcParam::OUTDUPROWS]->setTopic("MIP Preprocessing");
 
   // Keyword params
-  parameters_[CbcParam::PREPROCESS]->setTopic("Preprocessing");
-  parameters_[CbcParam::FASTPREPROCESSLEVEL]->setTopic("Preprocessing");
-  parameters_[CbcParam::CLQSTRENGTHENING]->setTopic("Preprocessing");
+  parameters_[CbcParam::PREPROCESS]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::FASTPREPROCESSLEVEL]->setTopic("MIP Preprocessing \u2014 Fast");
+  parameters_[CbcParam::CLQSTRENGTHENING]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::USECGRAPH]->setTopic("Conflict Graph");
   parameters_[CbcParam::STRATEGY]->setTopic("Strategy");
   parameters_[CbcParam::BRANCHPRIORITY]->setTopic("Branching");
@@ -407,11 +407,11 @@ void CbcParameters::addCbcParams() {
 
   // Double params
   parameters_[CbcParam::ARTIFICIALCOST]->setTopic("Heuristics");
-  parameters_[CbcParam::DJFIX]->setTopic("Preprocessing");
+  parameters_[CbcParam::DJFIX]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::FAKECUTOFF]->setTopic("Strategy");
   parameters_[CbcParam::FAKEINCREMENT]->setTopic("Strategy");
   parameters_[CbcParam::SMALLBAB]->setTopic("Strategy");
-  parameters_[CbcParam::TIGHTENFACTOR]->setTopic("Preprocessing");
+  parameters_[CbcParam::TIGHTENFACTOR]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::LPTIMEFREQ]->setTopic("Output");
   parameters_[CbcParam::FPUMPTIMEFREQ]->setTopic("Output");
 
@@ -442,11 +442,11 @@ void CbcParameters::addCbcParams() {
                     CbcParam::VERBOSE})
     parameters_[code]->setTopic("Output");
 
-  // Integer params — Preprocessing
+  // Integer params — MIP Preprocessing
   for (int code : {CbcParam::PROCESSTUNE, CbcParam::CPP,
-                    CbcParam::EXTRAVARIABLES,
-                    CbcParam::FASTPREPROCESSMAXROUNDS})
-    parameters_[code]->setTopic("Preprocessing");
+                    CbcParam::EXTRAVARIABLES})
+    parameters_[code]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::FASTPREPROCESSMAXROUNDS]->setTopic("MIP Preprocessing \u2014 Fast");
 
   // Integer params — Strategy
   for (int code : {CbcParam::EXPERIMENT, CbcParam::OPTIONS,
@@ -466,9 +466,9 @@ void CbcParameters::addCbcParams() {
     parameters_[code]->setTopic("Cuts");
 
   // Bool params
-  parameters_[CbcParam::SOS]->setTopic("Preprocessing");
-  parameters_[CbcParam::SINGLETONBOUNDS]->setTopic("Preprocessing");
-  parameters_[CbcParam::PREPROCNAMES]->setTopic("Preprocessing");
+  parameters_[CbcParam::SOS]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::SINGLETONBOUNDS]->setTopic("MIP Preprocessing \u2014 Fast");
+  parameters_[CbcParam::PREPROCNAMES]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::DOHEURISTIC]->setTopic("Heuristics");
   parameters_[CbcParam::USESOLUTION]->setTopic("Heuristics");
   parameters_[CbcParam::MESSAGES]->setTopic("Output");

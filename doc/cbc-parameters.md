@@ -1,6 +1,6 @@
 # CBC Parameter Reference
 
-*CBC devel — April 2026*
+*CBC devel — May 2026*
 
 Parameters are specified on the command line **before** `-solve`:
 ```
@@ -14,18 +14,20 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [Stopping](#stopping) (9 parameters)
 - [Cuts](#cuts) (26 parameters)
 - [Heuristics](#heuristics) (33 parameters)
-- [Preprocessing](#preprocessing) (18 parameters)
 - [Branching](#branching) (6 parameters)
-- [Tolerances](#tolerances) (7 parameters)
+- [Tolerances](#tolerances) (6 parameters)
 - [Conflict Graph](#conflict-graph) (5 parameters)
 - [Strategy](#strategy) (9 parameters)
-- [Solving](#solving) (24 parameters)
+- [Solving](#solving) (26 parameters)
 - [Simplex](#simplex) (19 parameters)
 - [Barrier](#barrier) (3 parameters)
 - [Scaling](#scaling) (4 parameters)
-- [Output](#output) (22 parameters)
+- [Output](#output) (23 parameters)
 - [I/O](#i/o) (37 parameters)
 - [Parallelism](#parallelism) (1 parameters)
+- [MIP Preprocessing — Fast](#mip-preprocessing-—-fast) (4 parameters)
+- [MIP Preprocessing](#mip-preprocessing) (9 parameters)
+- [LP Presolve](#lp-presolve) (3 parameters)
 
 ---
 
@@ -735,203 +737,6 @@ Costs >= this treated as artificials in feasibility pump
 
 **Range:** 0 to inf (default: 0)
 
-## Preprocessing
-
-### `-fastPreProcess`
-
-*Action* (cbc)
-
-Run fast MILP preprocessing on the loaded model
-
-Immediately runs the fast MILP preprocessor on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by fastPreProcessLevel. After running, use writeModel to save the tightened problem.
-
-### `-PrepNames`
-
-*Keyword* (cbc)
-
-If column names will be kept in pre-processed model
-
-Normally the preprocessed model has column names replaced by new names C0000... Setting this option to on keeps original names in variables which still exist in the preprocessed problem
-
-**Values:** `off`, `on` (default: `on`)
-
-### `-singletonBounds`
-
-*Keyword* (cbc)
-
-Whether to tighten variable bounds from singleton rows before solve
-
-When on, singleton rows (rows with a single nonzero) are used to tighten variable bounds before the initial LP solve and conflict graph construction. This is a cheap preprocessing step that can fix variables and reduce the problem size.
-
-**Values:** `off`, `on` (default: `on`)
-
-### `-sosOptions`
-
-*Keyword* (cbc)
-
-Whether to use SOS from AMPL
-
-Normally if AMPL says there are SOS variables they should be used, but sometimes they should be turned off - this does so.
-
-**Values:** `off`, `on` (default: `off`)
-
-### `-clqstrengthen`
-
-*Keyword* (cbc)
-
-Whether and when to perform Clique Strengthening preprocessing routine
-
-**Values:** `off`, `before`, `after` (default: `after`)
-
-### `-preprocess`
-
-*Keyword* (cbc)
-
-Whether to use integer preprocessing
-
-This tries to reduce size of the model in a similar way to presolve and it also tries to strengthen the model. This can be very useful and is worth trying.  save option saves on file presolved.mps.  equal will turn <= cliques into ==.  sos will create sos sets if all 0-1 in sets (well one extra is allowed) and no overlaps.  trysos is same but allows any number extra. equalall will turn all valid inequalities into equalities with integer slacks. strategy is as on but uses CbcStrategy.
-
-**Values:** `off`, `on`, `save`, `equal`, `sos`, `trysos`, `equalall`, `strategy`, `aggregate`, `forcesos`, `stop!aftersaving`, `equalallstop` (default: `sos`)
-
-### `-fastPreProcessLevel`
-
-*Keyword* (cbc)
-
-Aggression level for fast MILP preprocessing before solve
-
-Controls how aggressively fast preprocessing tightens variable bounds before the initial LP solve.
-  off:       disabled (falls back to singletonBounds setting).
-  singletons: singleton rows only — same as singletonBounds on.
-  milpbt:    singletons then knapsack-based bound tightening for up to fastPreProcessMaxRounds rounds (default 100, effectively fixpoint).
-  fixpoint:  singletons then bound tightening until no new fixings are found, regardless of fastPreProcessMaxRounds.
-
-**Values:** `off`, `singletons`, `milpbt`, `fixpoint` (default: `milpbt`)
-
-### `-cppGenerate`
-
-*Integer* (cbc)
-
-Generates C++ code
-
-Once you like what the stand-alone solver does then this allows you to generate user_driver.cpp which approximates the code.  0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values.
-
-**Range:** 0 to 4 (default: 0)
-
-### `-extraVariables`
-
-*Integer* (cbc)
-
-Allow creation of extra integer variables
-
-Switches on a trivial re-formulation that introduces extra integer variables to group together variables with same cost.
-
-**Range:** -2147483647 to 2147483647 (default: 0)
-
-### `-tunePreProcess`
-
-*Integer* (cbc)
-
-Dubious tuning parameters for preprocessing
-
-Format aabbcccc - 
- If aa then this is number of major passes (i.e. with presolve) 
- If bb and bb>0 then this is number of minor passes (if unset or 0 then 10) 
- cccc is bit set 
- 0 - 1 Heavy probing 
- 1 - 2 Make variables integer if possible (if obj value)
- 2 - 4 As above but even if zero objective value
- 7 - 128 Try and create cliques
- 8 - 256 If all +1 try hard for dominated rows
- 9 - 512 Even heavier probing 
- 10 - 1024 Use a larger feasibility tolerance in presolve
- 11 - 2048 Try probing before creating cliques
- 12 - 4096 Switch off duplicate column checking for integers 
- 13 - 8192 Allow scaled duplicate column checking 
- 
-     Now aa 99 has special meaning i.e. just one simple presolve.
-
-**Range:** 0 to 2147483647 (default: 7)
-
-### `-fastPreProcessMaxRounds`
-
-*Integer* (cbc)
-
-Maximum number of bound-tightening rounds in fast preprocessing
-
-Maximum number of CoinMILPBoundTightening rounds when fastPreProcessLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when fastPreProcessLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.
-
-**Range:** 1 to 2147483647 (default: 100)
-
-### `-fixOnDj`
-
-*Double* (cbc)
-
-Try heuristic that fixes variables based on reduced costs
-
-If set, integer variables with reduced costs greater than the specified value will be fixed before branch and bound - use with extreme caution!
-
-**Range:** -1e+20 to 1e+20 (default: 0)
-
-### `-tightenFactor`
-
-*Double* (cbc)
-
-Tighten bounds using value times largest activity at continuous solution
-
-This sleazy trick can help on some problems.
-
-**Range:** 0 to inf (default: 0)
-
-### `-presolve`
-
-*Keyword* (clp)
-
-Whether to presolve problem
-
-Presolve analyzes the model to find such things as redundant equations, equations which fix some variables, equations which can be transformed into bounds, etc. For the initial solve of any problem this is worth doing unless one knows that it will have no effect. Option 'on' will normally do 5 passes, while using 'more' will do 10.  If the problem is very large one can let CLP write the original problem to file by using 'file'.
-
-**Values:** `on`, `off`, `more`, `file` (default: `on`)
-
-### `-cppGenerate`
-
-*Integer* (clp)
-
-Generates C++ code
-
-Once you like what the stand-alone solver does then this allows you to generate user_driver.cpp which approximates the code. 0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values. This is now deprecated as you can call stand-alone solver - see Cbc/examples/driver4.cpp.
-
-**Range:** -1 to 50000 (default: 0)
-
-### `-decompose`
-
-*Integer* (clp)
-
-Whether to try decomposition
-
-0 - off, 1 choose blocks >1 use as blocks Dantzig Wolfe if primal, Benders if dual - uses sprint pass for number of passes
-
-**Range:** -2147483647 to 2147483647 (default: 0)
-
-### `-dualize`
-
-*Integer* (clp)
-
-Solves dual reformulation
-
-Don't even think about it.
-
-**Range:** 0 to 4 (default: 3)
-
-### `-passPresolve`
-
-*Integer* (clp)
-
-How many passes in presolve
-
-Normally Presolve does 10 passes but you may want to do less to make it more lightweight or do more if improvements are still being made.  As Presolve will return if nothing is being taken out, you should not normally need to use this fine tuning.
-
-**Range:** -200 to 100 (default: 5)
-
 ## Branching
 
 ### `-branchPriorities`
@@ -1041,16 +846,6 @@ For an optimal solution no dual infeasibility may exceed this value
 Normally the default tolerance is fine, but one may want to increase it a bit if the dual simplex algorithm seems to be having a hard time. One method which can be faster is to use a large tolerance e.g. 1.0e-4 and the dual simplex algorithm and then to clean up the problem using the primal simplex algorithm with the correct tolerance (remembering to switch off presolve for this final short clean up phase).
 
 **Range:** 1e-20 to inf (default: 1e-06)
-
-### `-preTolerance`
-
-*Double* (clp)
-
-Tolerance to use in presolve
-
-One may want to increase this tolerance if presolve says the problem is infeasible and one has awkward numbers and is sure that the problem is really feasible.
-
-**Range:** 1e-20 to inf (default: 1e-08)
 
 ### `-primalTolerance`
 
@@ -1421,6 +1216,26 @@ Whether to use vector? Form of matrix in simplex
 If this is on ClpPackedMatrix uses extra column copy in odd format.
 
 **Values:** `off`, `on` (default: `off`)
+
+### `-decompose`
+
+*Integer* (clp)
+
+Whether to try decomposition
+
+0 - off, 1 choose blocks >1 use as blocks Dantzig Wolfe if primal, Benders if dual - uses sprint pass for number of passes
+
+**Range:** -2147483647 to 2147483647 (default: 0)
+
+### `-dualize`
+
+*Integer* (clp)
+
+Solves dual reformulation
+
+Don't even think about it.
+
+**Range:** 0 to 4 (default: 3)
 
 ### `-randomSeed`
 
@@ -1917,6 +1732,16 @@ normal - nonzero column variables
 
 **Values:** `normal`, `integer`, `special`, `rows`, `all`, `csv`, `bound!ranging`, `rhs!ranging`, `objective!ranging`, `stats`, `boundsint`, `boundsall`, `fixint`, `fixall` (default: `normal`)
 
+### `-cppGenerate`
+
+*Integer* (clp)
+
+Generates C++ code
+
+Once you like what the stand-alone solver does then this allows you to generate user_driver.cpp which approximates the code. 0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values. This is now deprecated as you can call stand-alone solver - see Cbc/examples/driver4.cpp.
+
+**Range:** -1 to 50000 (default: 0)
+
 ### `-progressInterval`
 
 *Double* (clp)
@@ -2270,4 +2095,185 @@ Number of threads to try and use
 To use multiple threads, set threads to number wanted.  It may be better to use one or two more than number of cpus available.  If 100+n then n threads and search is repeatable (maybe be somewhat slower), if 200+n use threads for root cuts, 400+n threads used in sub-trees.
 
 **Range:** -100 to 100000 (default: 0)
+
+## MIP Preprocessing — Fast
+
+### `-fastPreProcess`
+
+*Action* (cbc)
+
+Run fast MILP preprocessing on the loaded model
+
+Immediately runs the fast MILP preprocessor on the currently loaded model, applying bound tightenings to the problem in place. The aggression level is controlled by fastPreProcessLevel. After running, use writeModel to save the tightened problem.
+
+### `-singletonBounds`
+
+*Keyword* (cbc)
+
+Whether to tighten variable bounds from singleton rows before solve
+
+When on, singleton rows (rows with a single nonzero) are used to tighten variable bounds before the initial LP solve and conflict graph construction. This is a cheap preprocessing step that can fix variables and reduce the problem size.
+
+**Values:** `off`, `on` (default: `on`)
+
+### `-fastPreProcessLevel`
+
+*Keyword* (cbc)
+
+Aggression level for fast MILP preprocessing before solve
+
+Controls how aggressively fast preprocessing tightens variable bounds before the initial LP solve.
+  off:       disabled (falls back to singletonBounds setting).
+  singletons: singleton rows only — same as singletonBounds on.
+  milpbt:    singletons then knapsack-based bound tightening for up to fastPreProcessMaxRounds rounds (default 100, effectively fixpoint).
+  fixpoint:  singletons then bound tightening until no new fixings are found, regardless of fastPreProcessMaxRounds.
+
+**Values:** `off`, `singletons`, `milpbt`, `fixpoint` (default: `milpbt`)
+
+### `-fastPreProcessMaxRounds`
+
+*Integer* (cbc)
+
+Maximum number of bound-tightening rounds in fast preprocessing
+
+Maximum number of CoinMILPBoundTightening rounds when fastPreProcessLevel is 'milpbt'. Each round re-examines all rows using the bounds fixed in previous rounds; the process stops early if a round produces no new fixings. Has no effect when fastPreProcessLevel is 'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.
+
+**Range:** 1 to 2147483647 (default: 100)
+
+## MIP Preprocessing
+
+### `-PrepNames`
+
+*Keyword* (cbc)
+
+If column names will be kept in pre-processed model
+
+Normally the preprocessed model has column names replaced by new names C0000... Setting this option to on keeps original names in variables which still exist in the preprocessed problem
+
+**Values:** `off`, `on` (default: `on`)
+
+### `-sosOptions`
+
+*Keyword* (cbc)
+
+Whether to use SOS from AMPL
+
+Normally if AMPL says there are SOS variables they should be used, but sometimes they should be turned off - this does so.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-clqstrengthen`
+
+*Keyword* (cbc)
+
+Whether and when to perform Clique Strengthening preprocessing routine
+
+**Values:** `off`, `before`, `after` (default: `after`)
+
+### `-preprocess`
+
+*Keyword* (cbc)
+
+Whether to use integer preprocessing
+
+This tries to reduce size of the model in a similar way to presolve and it also tries to strengthen the model. This can be very useful and is worth trying.  save option saves on file presolved.mps.  equal will turn <= cliques into ==.  sos will create sos sets if all 0-1 in sets (well one extra is allowed) and no overlaps.  trysos is same but allows any number extra. equalall will turn all valid inequalities into equalities with integer slacks. strategy is as on but uses CbcStrategy.
+
+**Values:** `off`, `on`, `save`, `equal`, `sos`, `trysos`, `equalall`, `strategy`, `aggregate`, `forcesos`, `stop!aftersaving`, `equalallstop` (default: `sos`)
+
+### `-cppGenerate`
+
+*Integer* (cbc)
+
+Generates C++ code
+
+Once you like what the stand-alone solver does then this allows you to generate user_driver.cpp which approximates the code.  0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values.
+
+**Range:** 0 to 4 (default: 0)
+
+### `-extraVariables`
+
+*Integer* (cbc)
+
+Allow creation of extra integer variables
+
+Switches on a trivial re-formulation that introduces extra integer variables to group together variables with same cost.
+
+**Range:** -2147483647 to 2147483647 (default: 0)
+
+### `-tunePreProcess`
+
+*Integer* (cbc)
+
+Dubious tuning parameters for preprocessing
+
+Format aabbcccc - 
+ If aa then this is number of major passes (i.e. with presolve) 
+ If bb and bb>0 then this is number of minor passes (if unset or 0 then 10) 
+ cccc is bit set 
+ 0 - 1 Heavy probing 
+ 1 - 2 Make variables integer if possible (if obj value)
+ 2 - 4 As above but even if zero objective value
+ 7 - 128 Try and create cliques
+ 8 - 256 If all +1 try hard for dominated rows
+ 9 - 512 Even heavier probing 
+ 10 - 1024 Use a larger feasibility tolerance in presolve
+ 11 - 2048 Try probing before creating cliques
+ 12 - 4096 Switch off duplicate column checking for integers 
+ 13 - 8192 Allow scaled duplicate column checking 
+ 
+     Now aa 99 has special meaning i.e. just one simple presolve.
+
+**Range:** 0 to 2147483647 (default: 7)
+
+### `-fixOnDj`
+
+*Double* (cbc)
+
+Try heuristic that fixes variables based on reduced costs
+
+If set, integer variables with reduced costs greater than the specified value will be fixed before branch and bound - use with extreme caution!
+
+**Range:** -1e+20 to 1e+20 (default: 0)
+
+### `-tightenFactor`
+
+*Double* (cbc)
+
+Tighten bounds using value times largest activity at continuous solution
+
+This sleazy trick can help on some problems.
+
+**Range:** 0 to inf (default: 0)
+
+## LP Presolve
+
+### `-presolve`
+
+*Keyword* (clp)
+
+Whether to presolve problem
+
+Presolve analyzes the model to find such things as redundant equations, equations which fix some variables, equations which can be transformed into bounds, etc. For the initial solve of any problem this is worth doing unless one knows that it will have no effect. Option 'on' will normally do 5 passes, while using 'more' will do 10.  If the problem is very large one can let CLP write the original problem to file by using 'file'.
+
+**Values:** `on`, `off`, `more`, `file` (default: `on`)
+
+### `-passPresolve`
+
+*Integer* (clp)
+
+How many passes in presolve
+
+Normally Presolve does 10 passes but you may want to do less to make it more lightweight or do more if improvements are still being made.  As Presolve will return if nothing is being taken out, you should not normally need to use this fine tuning.
+
+**Range:** -200 to 100 (default: 5)
+
+### `-preTolerance`
+
+*Double* (clp)
+
+Tolerance to use in presolve
+
+One may want to increase this tolerance if presolve says the problem is infeasible and one has awkward numbers and is sure that the problem is really feasible.
+
+**Range:** 1e-20 to inf (default: 1e-08)
 

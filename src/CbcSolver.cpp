@@ -1937,6 +1937,15 @@ public:
       cutGenOut_ = std::make_unique<CbcCutGenOutput>(outfp, CbcOutput::useUtf8(), cbcLogLevel);
     }
 
+    // Root node heuristics output
+    if (cbcLogLevel >= 1 && babModel_.numberHeuristics() > 0 && babModel_.numberIntegers() > 0) {
+      FILE *outfp = babModel_.messageHandler()->filePointer();
+      if (!outfp)
+        outfp = stdout;
+      rootHeurOut_ = std::make_unique<CbcRootHeurOutput>(outfp, CbcOutput::useUtf8(), cbcLogLevel);
+      babModel_.setRootHeurOutput(rootHeurOut_.get());
+    }
+
     // B&B tree output
     if (cbcLogLevel >= 1 && babModel_.numberIntegers() > 0) {
       FILE *outfp = babModel_.messageHandler()->filePointer();
@@ -1948,6 +1957,7 @@ public:
     // Composite message handler (Nauty + FPump suppression + cut gen + B&B)
     if (cbcLogLevel >= 1
       && (fpumpOut_ != nullptr
+        || rootHeurOut_ != nullptr
         || cutGenOut_ != nullptr
         || bnbOut_ != nullptr
 #ifdef CBC_HAS_NAUTY
@@ -1959,6 +1969,7 @@ public:
         outfp = stdout;
       nautyHandler_ = new CbcNautyHandler(outfp, CbcOutput::useUtf8(), cbcLogLevel);
       nautyHandler_->setFPumpOutput(fpumpOut_.get());
+      nautyHandler_->setRootHeurOutput(rootHeurOut_.get());
       nautyHandler_->setCutGenOutput(cutGenOut_.get());
       nautyHandler_->setBnBOutput(bnbOut_.get());
       savedMsgHandler_ = originalModel.messageHandler();
@@ -2015,6 +2026,7 @@ public:
 private:
   CbcModel &babModel_;
   std::unique_ptr<CbcFPumpOutput> fpumpOut_;
+  std::unique_ptr<CbcRootHeurOutput> rootHeurOut_;
   std::unique_ptr<CbcCutGenOutput> cutGenOut_;
   std::unique_ptr<CbcBnBOutput> bnbOut_;
   CbcNautyHandler *nautyHandler_ = nullptr;

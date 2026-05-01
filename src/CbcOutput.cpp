@@ -1269,6 +1269,7 @@ int CbcNautyHandler::print()
       // ext=16: strong branching found a solution (show as ★ during B&B)
       if (ext == 12 || ext == 16) {
         if (ext == 12 && fpumpOut_ && fpumpOut_->isInPhase()) return 0;
+        if (ext == 12 && rootHeurOut_ && rootHeurOut_->isInPhase()) return 0;
         IncumbentMsg im;
         if (cutGenOut_ && !cutGenOut_->hasClosed()) {
           // Heuristic found before/during root cut gen — queue for the B&B table.
@@ -1840,6 +1841,99 @@ void CbcFPumpOutput::onEnd(double bestSol, double /*elapsed_cpu*/, int rounds, i
   fprintf(fp_, "\n%s\n", CoinTable::phaseEnd(detail, utf8_).c_str());
   fflush(fp_);
   inPhase_ = false;
+}
+
+// ===========================================================================
+// CbcRootHeurOutput — per-heuristic summary for root-node heuristics
+// ===========================================================================
+
+static const int RH_W_NAME    = 24;
+static const int RH_W_STATUS  = 12;
+static const int RH_W_BEST    = 14;
+static const int RH_W_TIME    = 8;
+
+static CoinTable makeRhTable(bool utf8, bool compact)
+{
+  return CoinTable({
+    { "Heuristic", RH_W_NAME,   /*leftAlign=*/true },
+    { "Status",    RH_W_STATUS, /*leftAlign=*/true },
+    { "BestSol",   RH_W_BEST   },
+    { "Time(s)",   RH_W_TIME   },
+  }, utf8, /*indent=*/2, compact);
+}
+
+CbcRootHeurOutput::CbcRootHeurOutput(FILE *fp, bool utf8, int logLevel)
+  : fp_(fp), utf8_(utf8), compact_(CbcOutput::useCompact()), logLevel_(logLevel)
+{
+}
+
+void CbcRootHeurOutput::onStart()
+{
+  if (!isActive()) return;
+  startTime_ = CoinWallclockTime();
+  inPhase_ = true;
+  ended_ = false;
+  tableOpen_ = false;
+  bestSol_ = 1e30;
+  fprintf(fp_, "\n%s\n", CoinTable::phaseStart("Root node heuristics", utf8_).c_str());
+  fflush(fp_);
+}
+
+void CbcRootHeurOutput::ensureTableHeader()
+{
+  if (tableOpen_) return;
+  tableOpen_ = true;
+  CoinTable tbl = makeRhTable(utf8_, compact_);
+  fprintf(fp_, "\n");
+  printTableOpen(fp_, tbl);
+}
+
+void CbcRootHeurOutput::onHeurResult(const char *name, bool accepted,
+  double userObj, double elapsed)
+{
+  if (!isActive() || !inPhase_) return;
+  ensureTableHeader();
+
+  const char *bar = tableBar(utf8_, compact_);
+  const char *pfx = (accepted && userObj < 1e30)
+    ? (utf8_ ? " \xe2\x98\x85" : " *")
+    : "  ";
+  const char *status = accepted ? "solution" : "no solution";
+  if (accepted && userObj < bestSol_) bestSol_ = userObj;
+
+  char objBuf[32] = "";
+  if (accepted && userObj < 1e30)
+    std::snprintf(objBuf, sizeof(objBuf), "%.6g", userObj);
+
+  const std::string timeStr = fmtTime(elapsed);
+
+  fprintf(fp_, "%s%-*s%s%-*s%s%*s%s%*s\n",
+    pfx,
+    RH_W_NAME,   name,   bar,
+    RH_W_STATUS, status, bar,
+    RH_W_BEST,   objBuf, bar,
+    RH_W_TIME,   timeStr.c_str());
+  fflush(fp_);
+}
+
+void CbcRootHeurOutput::onEnd()
+{
+  if (!isActive() || !inPhase_ || ended_) return;
+  ended_ = true;
+  inPhase_ = false;
+
+  const double duration = CoinWallclockTime() - startTime_;
+  char detail[128];
+  if (bestSol_ < 1e30)
+    std::snprintf(detail, sizeof(detail),
+      "Root node heuristics%sbest %.6g in %ss",
+      CoinTable::dashSep(utf8_), bestSol_, fmtTime(duration).c_str());
+  else
+    std::snprintf(detail, sizeof(detail),
+      "Root node heuristics%sno solution in %ss",
+      CoinTable::dashSep(utf8_), fmtTime(duration).c_str());
+  fprintf(fp_, "\n%s\n", CoinTable::phaseEnd(detail, utf8_).c_str());
+  fflush(fp_);
 }
 
 // ===========================================================================

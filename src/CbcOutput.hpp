@@ -462,6 +462,59 @@ private:
 };
 
 // ---------------------------------------------------------------------------
+// CbcRootHeurOutput — per-heuristic summary for root-node heuristics
+// ---------------------------------------------------------------------------
+
+/** Formats output for the non-FPump heuristics that run at the root node
+ *  (Proximity Search, RENS, VND, Diving variants, etc.).
+ *
+ *  Usage in doHeuristicsAtRoot():
+ *    rootHeurOut_->onStart();          // prints ▶ Root node heuristics
+ *    // for each non-FP heuristic:
+ *    rootHeurOut_->onHeurResult(...);  // prints a table row immediately
+ *    rootHeurOut_->onEnd();            // prints ✔ Root node heuristics
+ */
+class CBCLIB_EXPORT CbcRootHeurOutput {
+public:
+  CbcRootHeurOutput(FILE *fp, bool utf8, int logLevel);
+  ~CbcRootHeurOutput() = default;
+
+  bool isActive() const { return logLevel_ >= 1; }
+  bool isInPhase() const { return inPhase_; }
+
+  /** Print the ▶ Root node heuristics section header. */
+  void onStart();
+
+  /** Record and immediately print a result row for one non-FP heuristic.
+   *  accepted: true if the heuristic found a solution improving the incumbent.
+   *  userObj:  user-facing objective (sign-adjusted); 1e30 if not accepted.
+   *  elapsed:  wall-clock seconds for this heuristic run. */
+  void onHeurResult(const char *name, bool accepted, double userObj, double elapsed);
+
+  /** Notify the section that FPump (which has its own sub-section) found
+   *  a solution with the given user-facing objective. Used to keep the
+   *  outer section footer's best-solution accurate. */
+  void noteFPSolution(double userObj) { if (userObj < bestSol_) bestSol_ = userObj; }
+
+  /** Print the ✔ Root node heuristics footer. Idempotent. */
+  void onEnd();
+
+private:
+  void ensureTableHeader();
+
+  FILE *fp_;
+  bool utf8_;
+  bool compact_;
+  int logLevel_;
+
+  double startTime_      = 0.0;
+  bool inPhase_          = false;
+  bool tableOpen_        = false;
+  bool ended_            = false;
+  double bestSol_        = 1e30;
+};
+
+// ---------------------------------------------------------------------------
 // CbcBnBOutput — tabular B&B tree progress output
 // ---------------------------------------------------------------------------
 
@@ -608,6 +661,9 @@ public:
   /** Set the cut-gen output handler so root-node cut messages are reformatted. */
   void setCutGenOutput(CbcCutGenOutput *cg) { cutGenOut_ = cg; }
 
+  /** Set the root-node heuristics output handler. */
+  void setRootHeurOutput(CbcRootHeurOutput *rh) { rootHeurOut_ = rh; }
+
   /** Set the B&B output handler for tree progress reformatting. */
   void setBnBOutput(CbcBnBOutput *bnb) { bnbOut_ = bnb; }
 
@@ -628,7 +684,8 @@ private:
   bool sectionStarted_ = false;
   bool restartMode_    = false; ///< True while intercepting a B&B restart sub-model
   CoinMessageHandler *lpSilentHandler_ = nullptr; ///< Silent handler lent to LP solver
-  CbcFPumpOutput *fpumpOut_ = nullptr;   // for Cbc0012I FPump suppression
+  CbcFPumpOutput *fpumpOut_ = nullptr;      // for Cbc0012I FPump suppression
+  CbcRootHeurOutput *rootHeurOut_ = nullptr; // for root heuristics output
   CbcCutGenOutput *cutGenOut_ = nullptr; // for root cut generation output
   CbcBnBOutput *bnbOut_ = nullptr;       // for B&B progress table
 

@@ -989,6 +989,47 @@ static void clearClpTimeLimits(ClpSimplex *clp)
   clp->setMaximumWallSeconds(-1.0);
 }
 
+// If PSI > 0, wrap the current dual/primal pivot algorithm with its
+// Positive Edge (PE) variant, preserving the underlying mode.
+static void applyPositiveEdge(ClpSimplex *lpSolver, double psi)
+{
+  if (psi <= 0.0)
+    return;
+  ClpDualRowPivot *dualp = lpSolver->dualRowPivot();
+  ClpDualRowSteepest *d1 = dynamic_cast< ClpDualRowSteepest * >(dualp);
+  ClpDualRowDantzig *d2 = dynamic_cast< ClpDualRowDantzig * >(dualp);
+  if (d1) {
+    ClpPEDualRowSteepest p(psi, d1->mode());
+    lpSolver->setDualRowPivotAlgorithm(p);
+  } else if (d2) {
+    ClpPEDualRowDantzig p(psi);
+    lpSolver->setDualRowPivotAlgorithm(p);
+  }
+  ClpPrimalColumnPivot *primalp = lpSolver->primalColumnPivot();
+  ClpPrimalColumnSteepest *p1 = dynamic_cast< ClpPrimalColumnSteepest * >(primalp);
+  ClpPrimalColumnDantzig *p2 = dynamic_cast< ClpPrimalColumnDantzig * >(primalp);
+  if (p1) {
+    ClpPEPrimalColumnSteepest p(psi, p1->mode());
+    lpSolver->setPrimalColumnPivotAlgorithm(p);
+  } else if (p2) {
+    ClpPEPrimalColumnDantzig p(psi);
+    lpSolver->setPrimalColumnPivotAlgorithm(p);
+  }
+}
+
+// Enable vectorized matrix operations.  When setMode is true the solver's
+// vector mode flag is also turned on (needed before B&B but not before a
+// standalone LP solve).
+static void applyVectorMode(ClpSimplex *lpSolver, bool setMode = false)
+{
+  ClpMatrixBase *matrix = lpSolver->clpMatrix();
+  if (ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(matrix)) {
+    clpMatrix->makeSpecialColumnCopy();
+    if (setMode)
+      lpSolver->setVectorMode(1);
+  }
+}
+
 // Apply the -lpMethod parameter to configure the LP solver before initialSolve.
 // Runs fast MILP preprocessing (if enabled) as the first step, then sets up
 // the LP algorithm.
@@ -3471,30 +3512,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           // Say not in integer
           integerStatus = -1;
           double objScale = clpParameters[ClpParam::OBJSCALE2]->dblVal();
-          // deal with positive edge
-          double psi = clpParameters[ClpParam::PSI]->dblVal();
-          if (psi > 0.0) {
-            ClpDualRowPivot *dualp = lpSolver->dualRowPivot();
-            ClpDualRowSteepest *d1 = dynamic_cast< ClpDualRowSteepest * >(dualp);
-            ClpDualRowDantzig *d2 = dynamic_cast< ClpDualRowDantzig * >(dualp);
-            if (d1) {
-              ClpPEDualRowSteepest p(psi, d1->mode());
-              lpSolver->setDualRowPivotAlgorithm(p);
-            } else if (d2) {
-              ClpPEDualRowDantzig p(psi);
-              lpSolver->setDualRowPivotAlgorithm(p);
-            }
-            ClpPrimalColumnPivot *primalp = lpSolver->primalColumnPivot();
-            ClpPrimalColumnSteepest *p1 = dynamic_cast< ClpPrimalColumnSteepest * >(primalp);
-            ClpPrimalColumnDantzig *p2 = dynamic_cast< ClpPrimalColumnDantzig * >(primalp);
-            if (p1) {
-              ClpPEPrimalColumnSteepest p(psi, p1->mode());
-              lpSolver->setPrimalColumnPivotAlgorithm(p);
-            } else if (p2) {
-              ClpPEPrimalColumnDantzig p(psi);
-              lpSolver->setPrimalColumnPivotAlgorithm(p);
-            }
-          }
+          applyPositiveEdge(lpSolver, clpParameters[ClpParam::PSI]->dblVal());
           if (objScale != 1.0) {
             int iColumn;
             int numberColumns = lpSolver->numberColumns();
@@ -3606,11 +3624,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
           solveOptions.setSpecialOption(4, presolveOptions);
           solveOptions.setSpecialOption(5, printOptions);
           if (doVector) {
-            ClpMatrixBase *matrix = lpSolver->clpMatrix();
-            if (dynamic_cast< ClpPackedMatrix * >(matrix)) {
-              ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(matrix);
-              clpMatrix->makeSpecialColumnCopy();
-            }
+            applyVectorMode(lpSolver);
           }
           if (method == ClpSolve::useDual) {
             // dual
@@ -4293,36 +4307,9 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             assert(si != NULL);
             si->getModelPtr()->scaling(doScaling);
             ClpSimplex *lpSolver = si->getModelPtr();
-            // deal with positive edge
-            double psi = clpParameters[ClpParam::PSI]->dblVal();
-            if (psi > 0.0) {
-              ClpDualRowPivot *dualp = lpSolver->dualRowPivot();
-              ClpDualRowSteepest *d1 = dynamic_cast< ClpDualRowSteepest * >(dualp);
-              ClpDualRowDantzig *d2 = dynamic_cast< ClpDualRowDantzig * >(dualp);
-              if (d1) {
-                ClpPEDualRowSteepest p(psi, d1->mode());
-                lpSolver->setDualRowPivotAlgorithm(p);
-              } else if (d2) {
-                ClpPEDualRowDantzig p(psi);
-                lpSolver->setDualRowPivotAlgorithm(p);
-              }
-              ClpPrimalColumnPivot *primalp = lpSolver->primalColumnPivot();
-              ClpPrimalColumnSteepest *p1 = dynamic_cast< ClpPrimalColumnSteepest * >(primalp);
-              ClpPrimalColumnDantzig *p2 = dynamic_cast< ClpPrimalColumnDantzig * >(primalp);
-              if (p1) {
-                ClpPEPrimalColumnSteepest p(psi, p1->mode());
-                lpSolver->setPrimalColumnPivotAlgorithm(p);
-              } else if (p2) {
-                ClpPEPrimalColumnDantzig p(psi);
-                lpSolver->setPrimalColumnPivotAlgorithm(p);
-              }
-            }
+            applyPositiveEdge(lpSolver, clpParameters[ClpParam::PSI]->dblVal());
             if (doVector) {
-              ClpMatrixBase *matrix = lpSolver->clpMatrix();
-              if (dynamic_cast< ClpPackedMatrix * >(matrix)) {
-                ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(matrix);
-                clpMatrix->makeSpecialColumnCopy();
-              }
+              applyVectorMode(lpSolver);
             }
 #elif CBC_OTHER_SOLVER == 1
             OsiCpxSolverInterface *si = dynamic_cast< OsiCpxSolverInterface * >(solver);
@@ -8780,12 +8767,7 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
             if (doVector) {
               OsiClpSolverInterface *solver = getClpSolver(babModel_->solver());
               ClpSimplex *lpSolver = solver->getModelPtr();
-              ClpMatrixBase *matrix = lpSolver->clpMatrix();
-              if (dynamic_cast< ClpPackedMatrix * >(matrix)) {
-                ClpPackedMatrix *clpMatrix = dynamic_cast< ClpPackedMatrix * >(matrix);
-                clpMatrix->makeSpecialColumnCopy();
-                lpSolver->setVectorMode(1);
-              }
+              applyVectorMode(lpSolver, true);
             }
 #endif
 	    // Try and reduce timing calls

@@ -32,6 +32,7 @@
 #include "CbcBranchActual.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CoinMpsIO.hpp"
+#include "CbcFastMILPPreProcess.hpp"
 #include "CbcOutput.hpp"
 //==============================================================================
 
@@ -786,6 +787,21 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   int saveModelOptions = model_->specialOptions();
   //assert ((saveModelOptions&2048) == 0);
   model_->setSpecialOptions(saveModelOptions | 2048);
+  // Fast MILP preprocessing: singleton tightening + knapsack bound tightening.
+  // Runs before the LP solve — purely combinatorial, no basis needed.
+  {
+    CbcFastMILPPreProcess fpp;
+    const bool useElapsed = model_->useElapsedTime();
+    const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+    const double timeLimit = model_->getMaximumSeconds();
+    const bool feasible = fpp.run(solver, model_->messageHandler(), logLevel,
+      CbcFastMILPPreProcess::MILPbt, 100,
+      useElapsed, timeLimit, startTime);
+    if (!feasible) {
+      model_->setSpecialOptions(saveModelOptions);
+      return 2; // infeasible
+    }
+  }
   if (fractionSmall < 1.0) {
     int saveLogLevel = solver->messageHandler()->logLevel();
     if (saveLogLevel == 1)

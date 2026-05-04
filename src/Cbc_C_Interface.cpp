@@ -2127,6 +2127,36 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   return -1;
 }
 
+int CBC_LINKAGE
+Cbc_resolve(Cbc_Model *model)
+{
+  Cbc_flush(model);
+  OsiClpSolverInterface *solver = model->solver_;
+
+  if (!solver->basisIsAvailable())
+    return Cbc_solveLinearProgram(model);
+
+  // Apply key parameters
+  ClpSimplex *clps = solver->getModelPtr();
+  clps->setMaximumSeconds(model->dbl_param[DBL_PARAM_TIME_LIMIT]);
+  solver->setDblParam(OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
+  solver->setDblParam(OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL]);
+  solver->messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
+
+  model->lastOptimization = ContinuousOptimization;
+  solver->resolve();
+
+  if (solver->isProvenOptimal())
+    return 0;
+  if (solver->isIterationLimitReached())
+    return 1;
+  if (solver->isProvenPrimalInfeasible())
+    return 2;
+  if (solver->isProvenDualInfeasible())
+    return 3;
+  return -1;
+}
+
 void Cbc_updateSlack( Cbc_Model *model, const double *ractivity ) {
   if (model->slack == NULL) {
     model->slack = new std::vector<double>();

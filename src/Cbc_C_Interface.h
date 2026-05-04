@@ -1225,8 +1225,33 @@ Cbc_solve(Cbc_Model *model);
  *   2  infeasible
  *   3  unbounded
  **/
+/** Solves the LP relaxation (or re-solves after modifications).
+ *
+ * If a basis is available (from a previous solve), uses warm-start
+ * (resolve). Otherwise does a full initial solve.
+ *
+ * Uses the LP method set via Cbc_setLPmethod() or Cbc_setParam("lpMethod",...).
+ * Respects time limit, tolerances, and log level from the current parameters.
+ *
+ * @param model problem object
+ * @return 0=optimal, 1=stopped, 2=infeasible, 3=unbounded
+ **/
 CBCLIB_EXPORT int CBC_LINKAGE
 Cbc_solveLinearProgram(Cbc_Model *model);
+
+/** Re-solves the LP using the current basis (warm start).
+ *
+ * This is the fast path for reoptimization after bound changes,
+ * adding/removing rows, or modifying coefficients. Uses dual simplex
+ * by default (efficient for bound changes and added constraints).
+ *
+ * If no basis is available, falls back to Cbc_solveLinearProgram().
+ *
+ * @param model problem object
+ * @return 0=optimal, 1=stopped, 2=infeasible, 3=unbounded, -1=error
+ **/
+CBCLIB_EXPORT int CBC_LINKAGE
+Cbc_resolve(Cbc_Model *model);
 
 
 

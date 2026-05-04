@@ -2432,36 +2432,18 @@ Cbc_solve(Cbc_Model *model)
         cbcModel.passInMessageHandler(cbcmh);
       }
 
-      CbcParameters parameters;
-      CbcMain0(cbcModel, parameters);
-      parameters.disableWelcomePrinting();
+      // --- Use CbcSolver for parameter handling and solve ---
+      CbcSolver cbcSolver(cbcModel);
+      cbcSolver.initialize();
+      cbcSolver.parameters().disableWelcomePrinting();
 
       // adds SOSs if any
-      Cbc_addAllSOS(model, cbcModel);
+      Cbc_addAllSOS(model, *cbcSolver.model());
 
       // adds MIPStart if any
-      Cbc_addMS(model, cbcModel);
+      Cbc_addMS(model, *cbcSolver.model());
 
-      // stopping criteria
-      if  ( model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX )
-        cbcModel.setMaximumSeconds( model->dbl_param[DBL_PARAM_TIME_LIMIT] );
-      if (model->int_param[INT_PARAM_MAX_SOLS] != INT_MAX)
-        cbcModel.setMaximumSolutions( model->int_param[INT_PARAM_MAX_SOLS] );
-      if (model->int_param[INT_PARAM_MAX_NODES] != INT_MAX)
-        cbcModel.setMaximumNodes( model->int_param[INT_PARAM_MAX_NODES] );
-
-      // cutoff
-      if (model->dbl_param[DBL_PARAM_CUTOFF] != COIN_DBL_MAX)
-        cbcModel.setCutoff( model->dbl_param[DBL_PARAM_CUTOFF] );
-
-      // tolerances
-      cbcModel.setAllowableGap( model->dbl_param[DBL_PARAM_ALLOWABLE_GAP] );
-      cbcModel.setAllowableFractionGap( model->dbl_param[DBL_PARAM_GAP_RATIO] );
-      cbcModel.setIntegerTolerance( model->dbl_param[DBL_PARAM_INT_TOL] );
-
-      cbcModel.setLogLevel( model->int_param[INT_PARAM_LOG_LEVEL] );
-
-      // aditional parameters specified by user as strings
+      // Build command queue from string parameters set via Cbc_setParam/Cbc_setParameter
       std::deque< std::string > inputQueue;
       for ( size_t i=0 ; i<model->vcbcOptions.size() ; ++i ) {
         std::string param = model->vcbcOptions[i];
@@ -2485,7 +2467,6 @@ Cbc_solve(Cbc_Model *model)
 	  if (logLevel)
 	    printf("Adding options from file %s\n",getenv("COIN_CBC_OPTIONS"));
 	  while (fgets(line, 200, fp)) {
-	    // skip comment
 	    if (line[0]=='*')
 	      continue;
 	    int nchar = strlen(line);
@@ -2515,7 +2496,7 @@ Cbc_solve(Cbc_Model *model)
 		  pos++;
 		put = pos;
 	      } else {
-		break; // end of line
+		break;
 	      }
 	    }
 	  }
@@ -2528,8 +2509,54 @@ Cbc_solve(Cbc_Model *model)
 	  fflush(stderr);
 	}
       }
+
+      // Translate typed C interface parameters to command-queue strings.
+      // This replaces the manual cbcModel.setXxx() + parameters.setParamVal() boilerplate.
+      {
+        auto addParam = [&](const char *n, double v) {
+          char buf[64]; snprintf(buf, sizeof(buf), "%g", v);
+          std::string s = std::string("-") + n + "=" + buf;
+          inputQueue.push_back(s);
+        };
+        auto addParamI = [&](const char *n, int v) {
+          char buf[32]; snprintf(buf, sizeof(buf), "%d", v);
+          std::string s = std::string("-") + n + "=" + buf;
+          inputQueue.push_back(s);
+        };
+
+        if (model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX)
+          addParam("sec", model->dbl_param[DBL_PARAM_TIME_LIMIT]);
+        if (model->int_param[INT_PARAM_MAX_NODES] != INT_MAX)
+          addParamI("maxN", model->int_param[INT_PARAM_MAX_NODES]);
+        if (model->int_param[INT_PARAM_MAX_SOLS] != INT_MAX)
+          addParamI("maxSo", model->int_param[INT_PARAM_MAX_SOLS]);
+        if (model->dbl_param[DBL_PARAM_CUTOFF] != COIN_DBL_MAX)
+          addParam("cutoff", model->dbl_param[DBL_PARAM_CUTOFF]);
+        addParam("allow", model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]);
+        addParam("ratio", model->dbl_param[DBL_PARAM_GAP_RATIO]);
+        addParam("integerT", model->dbl_param[DBL_PARAM_INT_TOL]);
+        addParamI("log", model->int_param[INT_PARAM_LOG_LEVEL]);
+        addParamI("strong", model->int_param[INT_PARAM_STRONG_BRANCHING]);
+        addParamI("trust", model->int_param[INT_PARAM_NUMBER_BEFORE]);
+        if (model->int_param[INT_PARAM_CUT_PASS] != -1)
+          addParamI("passC", model->int_param[INT_PARAM_CUT_PASS]);
+        if (model->int_param[INT_PARAM_CUT_PASS_IN_TREE] != 1)
+          addParamI("passt", model->int_param[INT_PARAM_CUT_PASS_IN_TREE]);
+        if (model->int_param[INT_PARAM_FPUMP_ITS] != 30)
+          addParamI("passF", model->int_param[INT_PARAM_FPUMP_ITS]);
+        addParamI("maxSaved", model->int_param[INT_PARAM_MAX_SAVED_SOLS]);
+        addParamI("multiple", model->int_param[INT_PARAM_MULTIPLE_ROOTS]);
+#ifdef CBC_THREAD
+        if (model->int_param[INT_PARAM_THREADS] >= 1)
+          addParamI("threads", model->int_param[INT_PARAM_THREADS]);
+#endif
+        if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX)
+          addParam("maxSecondsBest", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
+        if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX)
+          addParamI("maxNodesBest", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
+      }
+
       // LP progress was already printed by Cbc_solveLinearProgram(); suppress it
-      // inside CbcMain1 regardless of what the user configured via Cbc_setParameter.
       inputQueue.push_back("-lpIterFreq=0");
       inputQueue.push_back("-lpTimeFreq=0");
       inputQueue.push_back("-solve");
@@ -2538,118 +2565,23 @@ Cbc_solve(Cbc_Model *model)
       OsiBabSolver defaultC;
       if (model->cutCBAtSol) {
         defaultC.setSolverType(4);
-        cbcModel.solver()->setAuxiliaryInfo(&defaultC);
-        cbcModel.passInSolverCharacteristics(&defaultC);
+        cbcSolver.model()->solver()->setAuxiliaryInfo(&defaultC);
+        cbcSolver.model()->passInSolverCharacteristics(&defaultC);
       }
 
-      // Print compact problem summary through the handler so C API callbacks
-      // can intercept it. Uses cbcModel's solver, which was built from linearProgram
-      // (copy of solver_), so dimensions are correct regardless of how the model
-      // was constructed. For programmatic API users (no Cbc_readMps/Cbc_readLp),
-      // this is the only opportunity to print the summary.
       if (!model->problemSummaryPrinted) {
-        CbcOutput::printProblemSummary(cbcModel.messageHandler(),
-          *cbcModel.solver(), model->int_param[INT_PARAM_LOG_LEVEL]);
+        CbcOutput::printProblemSummary(cbcSolver.model()->messageHandler(),
+          *cbcSolver.model()->solver(), model->int_param[INT_PARAM_LOG_LEVEL]);
       }
-      model->problemSummaryPrinted = 0; // reset for subsequent solves
-#ifdef CBC_THREAD
-      {
-        int numberThreads = model->int_param[INT_PARAM_THREADS];
-        if (numberThreads >= 1) {
-          cbcModel.setNumberThreads(numberThreads);
-          cbcModel.setThreadMode(std::min(numberThreads / 100, 7));
-        }
-      }
-#endif
-      cbcModel.setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
-      cbcModel.setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
-      cbcModel.setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
+      model->problemSummaryPrinted = 0;
 
-      // Apply all C interface parameter values to CbcParameters, then let
-      // CbcParameters::synchronizeModel() push them to cbcModel in one place.
-      // This is the correct direction: C interface values -> parameters -> model.
-      //
-      // Stopping criteria (already applied directly to cbcModel above; mirror
-      // into parameters so CbcMain1 / synchronizeModel see consistent values).
-      if (model->dbl_param[DBL_PARAM_TIME_LIMIT] != COIN_DBL_MAX)
-        parameters.setParamVal(CbcParam::TIMELIMIT,
-                               model->dbl_param[DBL_PARAM_TIME_LIMIT]);
-      if (model->int_param[INT_PARAM_MAX_NODES] != INT_MAX)
-        parameters.setParamVal(CbcParam::MAXNODES,
-                               model->int_param[INT_PARAM_MAX_NODES]);
-      if (model->int_param[INT_PARAM_MAX_SOLS] != INT_MAX)
-        parameters.setParamVal(CbcParam::MAXSOLS,
-                               model->int_param[INT_PARAM_MAX_SOLS]);
-      if (model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS] != COIN_DBL_MAX)
-        parameters.setParamVal(CbcParam::MAXSECONDSNOTIMPROVING,
-                               model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
-      if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX)
-        parameters.setParamVal(CbcParam::MAXNODESNOTIMPROVING,
-                               model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
-      // Gap tolerances
-      parameters.setParamVal(CbcParam::ALLOWABLEGAP,
-                             model->dbl_param[DBL_PARAM_ALLOWABLE_GAP]);
-      parameters.setParamVal(CbcParam::GAPRATIO,
-                             model->dbl_param[DBL_PARAM_GAP_RATIO]);
-      parameters.setParamVal(CbcParam::INTEGERTOLERANCE,
-                             model->dbl_param[DBL_PARAM_INT_TOL]);
-      if (model->dbl_param[DBL_PARAM_CUTOFF] != COIN_DBL_MAX)
-        parameters.setParamVal(CbcParam::CUTOFF,
-                               model->dbl_param[DBL_PARAM_CUTOFF]);
-      // B&B parameters
-      parameters.setParamVal(CbcParam::STRONGBRANCHING,
-                             model->int_param[INT_PARAM_STRONG_BRANCHING]);
-      parameters.setParamVal(CbcParam::NUMBERBEFORE,
-                             model->int_param[INT_PARAM_NUMBER_BEFORE]);
-      parameters.setParamVal(CbcParam::CUTDEPTH,
-                             model->int_param[INT_PARAM_CUT_DEPTH]);
-      // Only forward CUTPASS / CUTPASSINTREE when the user explicitly changed them
-      // (defaults are -1 and 1 respectively in the C interface).  Forwarding the
-      // default value would override CbcMain0's own sizing logic.
-      if (model->int_param[INT_PARAM_CUT_PASS] != -1)
-        parameters.setParamVal(CbcParam::CUTPASS,
-                               model->int_param[INT_PARAM_CUT_PASS]);
-      if (model->int_param[INT_PARAM_CUT_PASS_IN_TREE] != 1)
-        parameters.setParamVal(CbcParam::CUTPASSINTREE,
-                               model->int_param[INT_PARAM_CUT_PASS_IN_TREE]);
-      // FPUMPITS: C interface default is 30; only forward if the user changed it.
-      if (model->int_param[INT_PARAM_FPUMP_ITS] != 30)
-        parameters.setParamVal(CbcParam::FPUMPITS,
-                               model->int_param[INT_PARAM_FPUMP_ITS]);
-      parameters.setParamVal(CbcParam::MAXSAVEDSOLS,
-                             model->int_param[INT_PARAM_MAX_SAVED_SOLS]);
-      parameters.setParamVal(CbcParam::MULTIPLEROOTS,
-                             model->int_param[INT_PARAM_MULTIPLE_ROOTS]);
-      parameters.setParamVal(CbcParam::LOGLEVEL,
-                             model->int_param[INT_PARAM_LOG_LEVEL]);
-      parameters.setParamVal(CbcParam::RANDOMSEED,
-                             (int)model->int_param[INT_PARAM_RANDOM_SEED]);
-      // CLP parameters (consumed by ClpParameters::synchronizeModel)
-      {
-        ClpParameters &clpParams = parameters.clpParameters();
-        clpParams.setParamVal(ClpParam::PERTVALUE,
-                              model->int_param[INT_PARAM_PERT_VALUE]);
-        clpParams.setParamVal(ClpParam::ZEROTOLERANCE,
-                              model->dbl_param[DBL_PARAM_ZERO_TOL]);
-        clpParams.setParamVal(ClpParam::PRESOLVETOLERANCE,
-                              model->dbl_param[DBL_PARAM_PRESOLVE_TOL]);
-        clpParams.setParamVal(ClpParam::DUALTOLERANCE,
-                              model->dbl_param[DBL_PARAM_DUAL_TOL]);
-        clpParams.setParamVal(ClpParam::PRIMALTOLERANCE,
-                              model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
-      }
-      // Apply all parameters -> cbcModel (and -> ClpSimplex via clpParameters).
-      // Must set the model pointer first so synchronizeModel knows where to write.
-      parameters.setModel(&cbcModel);
-      parameters.setGoodModel(true);
-      parameters.synchronizeModel();
-      // MAXSAVEDSOLS: babModel_ is a copy of cbcModel made inside CbcMain1,
-      // so setting it here is sufficient (the copy inherits the value).
-      cbcModel.setMaximumSavedSolutions(model->int_param[INT_PARAM_MAX_SAVED_SOLS]);
+      cbcSolver.model()->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
+      cbcSolver.model()->setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
+      cbcSolver.model()->setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
 
-      CbcMain1(inputQueue, cbcModel, parameters, cbc_callb);
+      cbcSolver.run(inputQueue, cbc_callb);
 
-      Cbc_getMIPOptimizationResults( model, cbcModel );
+      Cbc_getMIPOptimizationResults( model, *cbcSolver.model() );
 
       if (cbc_eh)
         delete cbc_eh;

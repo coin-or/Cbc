@@ -468,6 +468,36 @@ private:
     CbcSolverStatistics &statistics,
     int &returnCode,
     int callBack(CbcModel *currentSolver, int whereFrom));
+
+  /** Run CglPreProcess preprocessing on the model.
+      Called from the BAB action when preProcess is enabled.
+      \return 0=success, 1=break BAB, 3=return from run()
+  */
+  int preprocess(
+    CglPreProcess &process,
+    OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
+    OsiClpSolverInterface *originalSolver,
+    CbcSolverStatistics &statistics,
+    int &returnCode,
+    int callBack(CbcModel *currentSolver, int whereFrom),
+    ampl_info *info,
+    int &truncateColumns, int &truncateRows,
+    bool &redoSOS, double *&truncatedRhsLower, double *&truncatedRhsUpper,
+    int *&newPriorities, bool integersOK, int numberOriginalColumns);
+
+  /** Run postprocessing after branch-and-bound and report results.
+      Called at the end of the BAB action.
+      \return 0=success (caller breaks BAB), 3=return from run()
+  */
+  int postprocess(
+    CglPreProcess &process,
+    OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver,
+    OsiClpSolverInterface *originalSolver,
+    CbcSolverStatistics &statistics,
+    double time1, double time1Elapsed,
+    int &returnCode,
+    int callBack(CbcModel *currentSolver, int whereFrom),
+    ampl_info *info);
   //@}
 };
 

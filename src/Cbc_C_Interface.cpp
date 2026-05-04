@@ -1535,6 +1535,35 @@ Cbc_setParameter(Cbc_Model *model, const char *name, const char *value)
   model->cbcOptions[name] = std::string(value);
 }
 
+int CBC_LINKAGE
+Cbc_setParam(Cbc_Model *model, const char *name, const char *value)
+{
+  // Store the parameter. Validation happens at solve time when the
+  // command queue is processed by CbcMain1/run(). Invalid parameters
+  // will produce "Unrecognized parameter" messages during solve.
+  // This avoids static initialization issues with CbcParameters.
+  if (!name || !name[0])
+    return 1;
+  if (model->cbcOptions.find(std::string(name)) == model->cbcOptions.end())
+    model->vcbcOptions.push_back(std::string(name));
+  model->cbcOptions[name] = std::string(value ? value : "");
+  return 0;
+}
+
+int CBC_LINKAGE
+Cbc_getParam(Cbc_Model *model, const char *name, char *value, int maxLen)
+{
+  auto it = model->cbcOptions.find(std::string(name));
+  if (it != model->cbcOptions.end()) {
+    strncpy(value, it->second.c_str(), maxLen - 1);
+    value[maxLen - 1] = '\0';
+    return 0;
+  }
+  // Not set explicitly — return empty
+  if (maxLen > 0) value[0] = '\0';
+  return 1;
+}
+
 /* Fills in array with problem name  */
 void CBC_LINKAGE
 Cbc_problemName(Cbc_Model *model, int maxNumberCharacters, char *array)

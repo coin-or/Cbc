@@ -2666,6 +2666,345 @@ void CbcSolver::importModel(std::deque<std::string> &inputQueue,
 //###########################################################################
 
 //TODO Should we replace with the STL version
+
+//###########################################################################
+//###########################################################################
+
+int CbcSolver::solveInitialLp(
+  int logLevel, int cbcLogLevel,
+  CbcSolverStatistics &statistics,
+  int &returnCode,
+  int callBack(CbcModel *currentSolver, int whereFrom))
+{
+  std::ostringstream buffer;
+
+            if (!preSolve_) {
+              model_.solver()->setHintParam(OsiDoPresolveInInitial, false,
+                OsiHintTry);
+              model_.solver()->setHintParam(OsiDoPresolveInResolve, false,
+                OsiHintTry);
+            }
+            double time1a = CoinCpuTime();
+            OsiSolverInterface *solver = model_.solver();
+#ifndef CBC_OTHER_SOLVER
+            OsiClpSolverInterface *si = getClpSolver(solver);
+            if (CBC_SKIP_CLP_TEST||si)
+              si->setSpecialOptions(si->specialOptions() | 1024);
+#endif
+            // ------ root LP progress output ------
+#ifndef CBC_OTHER_SOLVER
+            int lpIterFreq = parameters_[CbcParam::LPITERFREQ]->intVal();
+            double lpTimeFreq = parameters_[CbcParam::LPTIMEFREQ]->dblVal();
+            ClpLpEventHandler *lpProgressHandler = nullptr;
+            ClpLpMsgHandler   *lpMsgHandler = nullptr;
+            bool lpMsgOldDefault = false;
+            CoinMessageHandler *lpSavedMsg = nullptr;
+            if (cbcLogLevel >= 1 && logLevel >= 1 && si && (lpIterFreq > 0 || lpTimeFreq > 0.0)) {
+              ClpSimplex *clpModel = si->getModelPtr();
+              // Do NOT setLogLevel(0) — Idiot checks model log level before
+              // constructing any messages; setting it to 0 silences Idiot entirely.
+              // ClpLpMsgHandler suppresses all noisy Clp messages instead.
+              auto lpState = std::make_shared<ClpLpPhaseState>();
+              lpState->fp       = model_.messageHandler()->filePointer();
+              lpState->utf8     = CbcOutput::useUtf8();
+              lpState->compact  = CbcOutput::useCompact();
+              lpState->logLevel = logLevel;
+              lpState->iterFreq = lpIterFreq;
+              lpState->timeFreq = lpTimeFreq;
+              lpState->startTime = CoinWallclockTime();
+              lpState->lastPrintTime = lpState->startTime;
+              lpState->title = "Root LP relaxation";
+              // Print the section title now so that fast preprocessing
+              // messages (from applyLpMethod) appear inside this section.
+              // Clear title so lpPhaseOpenTable prints only the table header.
+              fprintf(lpState->fp, "\n%s\n\n",
+                CoinTable::phaseStart(lpState->title, lpState->utf8).c_str());
+              lpState->title.clear();
+              lpMsgHandler = new ClpLpMsgHandler(lpState);
+              ClpLpEventHandler tmpEvt(lpState);
+              lpSavedMsg = clpModel->pushMessageHandler(lpMsgHandler, lpMsgOldDefault);
+              clpModel->passInEventHandler(&tmpEvt);
+              lpProgressHandler = dynamic_cast<ClpLpEventHandler *>(clpModel->eventHandler());
+            }
+#endif
+            // Capture integer variable info before solve (solver may relax types internally)
+            int numMipInts = 0;
+            std::vector<int> intCols;
+            if (si) {
+              int nc = si->getNumCols();
+              for (int j = 0; j < nc; ++j) {
+                if (!si->isContinuous(j))
+                  intCols.push_back(j);
+              }
+              numMipInts = static_cast<int>(intCols.size());
+            }
+            int lpMethodResult = applyLpMethod(model_, parameters_);
+            if (lpMethodResult < 0) {
+              // Infeasible — clean up LP progress handler and skip BAB
+#ifndef CBC_OTHER_SOLVER
+              if (lpSavedMsg && si) {
+                ClpSimplex *clpModel = si->getModelPtr();
+                clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
+                delete lpMsgHandler;
+                lpMsgHandler = nullptr;
+                ClpEventHandler defaultHandler;
+                clpModel->passInEventHandler(&defaultHandler);
+              }
+#endif
+              return 2;
+            }
+            if (lpMethodResult > 0)
+              model_.initialSolve();
+#ifndef CBC_OTHER_SOLVER
+            if (lpSavedMsg && si) {
+              ClpSimplex *clpModel = si->getModelPtr();
+              if (lpProgressHandler) {
+                // Compute fractional integer variable count for status line
+                int numFrac = 0;
+                const OsiSolverInterface *osi = model_.solver();
+                if (osi && numMipInts > 0) {
+                  const double *sol = osi->getColSolution();
+                  for (int j : intCols) {
+                    double v = sol[j];
+                    double frac = std::fabs(v - std::floor(v));
+                    if (frac > 0.5) frac = 1.0 - frac;
+                    if (frac > 1e-5) ++numFrac;
+                  }
+                }
+                lpProgressHandler->printFinalStatus(numMipInts, numFrac);
+              }
+              // Restore message handler and remove LP event handler
+              clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
+              delete lpMsgHandler;
+              lpMsgHandler = nullptr;
+              ClpEventHandler defaultHandler;
+              clpModel->passInEventHandler(&defaultHandler);
+            }
+#endif
+            // ------ end root LP progress output ------
+#ifndef CBC_OTHER_SOLVER
+            ClpSimplex *clpSolver = si->getModelPtr();
+            int iStatus = clpSolver->status();
+            int iStatus2 = clpSolver->secondaryStatus();
+            if (iStatus == 0) {
+              iStatus2 = 0;
+            } else if (iStatus == 1) {
+              iStatus = 0;
+              iStatus2 = 1; // say infeasible
+            } else if (iStatus == 2) {
+              iStatus = 0;
+              iStatus2 = 7; // say unbounded
+            } else if (iStatus == 3) {
+              iStatus = 1;
+              if (iStatus2 == 9)
+                iStatus2 = 4;
+              else
+                iStatus2 = 3; // Use nodes - as closer than solutions
+            } else if (iStatus == 4) {
+              iStatus = 2; // difficulties
+              iStatus2 = 0;
+            }
+            model_.setProblemStatus(iStatus);
+            model_.setSecondaryStatus(iStatus2);
+            si->setWarmStart(NULL);
+            returnCode = 0;
+            if (callBack != NULL)
+              returnCode = callBack(&model_, 1);
+            if (returnCode) {
+              // exit if user wants
+              delete babModel_;
+              babModel_ = NULL;
+              return 3;
+            }
+            if (clpSolver->status() > 0) {
+              // and in babModel if exists
+              if (babModel_) {
+                babModel_->setProblemStatus(iStatus);
+                babModel_->setSecondaryStatus(iStatus2);
+              }
+              iStatus = clpSolver->status();
+              const char *msg[] = { "infeasible", "unbounded", "stopped",
+                "difficulties", "other" };
+              buffer.str("");
+              if (iStatus == 3 && clpSolver->secondaryStatus() == 9)
+                buffer << "LP relaxation stopped on time limit";
+              else
+                buffer << "Problem is " << msg[iStatus - 1];
+              buffer << " - " << CoinCpuTime() - time1a << " seconds";
+              printGeneralMessage(model_, buffer.str());
+              return 1;
+            }
+            clpSolver->setSpecialOptions(
+              clpSolver->specialOptions() | IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and
+                                                                  // bound)
+#elif CBC_OTHER_SOLVER == 1
+#endif
+            buffer.str("");
+            statistics.lp_seconds = CoinCpuTime() - time1a;
+            // "Continuous objective value is ..." suppressed: shown by LP progress table footer.
+            // If the LP solve itself consumed all (or most) of the time budget
+            // there is nothing useful left to do — exit early rather than
+            // spending hundreds of seconds in preprocessing, conflict graph
+            // build, or cut generation with essentially no time remaining.
+            if (model_.maximumSecondsReached()) {
+              model_.setProblemStatus(1); // stopped on time
+              model_.setSecondaryStatus(4);
+              if (babModel_) {
+                babModel_->setProblemStatus(1);
+                babModel_->setSecondaryStatus(4);
+              }
+              return 1;
+            }
+            if (model_.getMaximumNodes() == -987654321) {
+              // See if No objective!
+              int numberColumns = clpSolver->getNumCols();
+              const double *obj = clpSolver->getObjCoefficients();
+              const double *lower = clpSolver->getColLower();
+              const double *upper = clpSolver->getColUpper();
+              int nObj = 0;
+              for (int i = 0; i < numberColumns; i++) {
+                if (upper[i] > lower[i] && obj[i])
+                  nObj++;
+              }
+              if (!nObj) {
+                printf("************No objective!!\n");
+                model_.setMaximumSolutions(1);
+                // Column copy
+                CoinPackedMatrix matrixByCol(
+                  *model_.solver()->getMatrixByCol());
+                // const double * element = matrixByCol.getElements();
+                // const int * row = matrixByCol.getIndices();
+                // const CoinBigIndex * columnStart =
+                // matrixByCol.getVectorStarts();
+                const int *columnLength = matrixByCol.getVectorLengths();
+                for (int i = 0; i < numberColumns; i++) {
+                  double value = (CoinDrand48() + 0.5) * 10000;
+                  value = 10;
+                  value *= columnLength[i];
+                  int iValue = static_cast< int >(value) / 10;
+                  // iValue=1;
+                  clpSolver->setObjCoeff(i, iValue);
+                }
+              }
+            }
+#ifndef CBC_OTHER_SOLVER
+            if (!complicatedInteger_ && preProcess_ == 0 && clpSolver->tightenPrimalBounds(0.0, 0, true) != 0) {
+              printGeneralMessage(model_,
+                "Problem is infeasible - tightenPrimalBounds!");
+              model_.setProblemStatus(0);
+              model_.setSecondaryStatus(1);
+              // say infeasible for solution
+              integerStatus_ = 6;
+              // and in babModel if exists
+              if (babModel_) {
+                babModel_->setProblemStatus(0);
+                babModel_->setSecondaryStatus(1);
+              }
+              return 1;
+            }
+            if (clpSolver->dualBound() == 1.0e10) {
+              ClpSimplex temp = *clpSolver;
+              temp.setLogLevel(0);
+              // Cap this silent re-solve so it cannot consume a large portion
+              // of the remaining budget.  For large models the solve is
+              // expensive; the default dual bound of 1e10 is acceptable when
+              // there is not enough time for a thorough calibration.
+              {
+                double remaining = model_.getMaximumSeconds() - model_.getCurrentSeconds();
+                if (remaining < 0.0) remaining = 0.0;
+                // Use at most 5% of remaining time, capped at 60 s.
+                double budget = std::min(remaining * 0.05, 60.0);
+                applyClpTimeLimit(model_, &temp, budget);
+              }
+              temp.dual(0, 7);
+              // user did not set - so modify
+              // get largest scaled away from bound
+              double largest = 1.0e-12;
+              double largestScaled = 1.0e-12;
+              int numberRows = temp.numberRows();
+              const double *rowPrimal = temp.primalRowSolution();
+              const double *rowLower = temp.rowLower();
+              const double *rowUpper = temp.rowUpper();
+              const double *rowScale = temp.rowScale();
+              int iRow;
+              for (iRow = 0; iRow < numberRows; iRow++) {
+                double value = rowPrimal[iRow];
+                double above = value - rowLower[iRow];
+                double below = rowUpper[iRow] - value;
+                if (above < 1.0e12) {
+                  largest = std::max(largest, above);
+                }
+                if (below < 1.0e12) {
+                  largest = std::max(largest, below);
+                }
+                if (rowScale) {
+                  double multiplier = rowScale[iRow];
+                  above *= multiplier;
+                  below *= multiplier;
+                }
+                if (above < 1.0e12) {
+                  largestScaled = std::max(largestScaled, above);
+                }
+                if (below < 1.0e12) {
+                  largestScaled = std::max(largestScaled, below);
+                }
+              }
+
+              int numberColumns = temp.numberColumns();
+              const double *columnPrimal = temp.primalColumnSolution();
+              const double *columnLower = temp.columnLower();
+              const double *columnUpper = temp.columnUpper();
+              const double *columnScale = temp.columnScale();
+              int iColumn;
+              for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                double value = columnPrimal[iColumn];
+                double above = value - columnLower[iColumn];
+                double below = columnUpper[iColumn] - value;
+                if (above < 1.0e12) {
+                  largest = std::max(largest, above);
+                }
+                if (below < 1.0e12) {
+                  largest = std::max(largest, below);
+                }
+                if (columnScale) {
+                  double multiplier = 1.0 / columnScale[iColumn];
+                  above *= multiplier;
+                  below *= multiplier;
+                }
+                if (above < 1.0e12) {
+                  largestScaled = std::max(largestScaled, above);
+                }
+                if (below < 1.0e12) {
+                  largestScaled = std::max(largestScaled, below);
+                }
+              }
+#ifdef COIN_DEVELOP
+              buffer.str("");
+              buffer << "Largest (scaled) away from bound "
+                     << largestScaled << " unscaled " << largest
+                     << std::endl;
+              printGeneralMessage(model_, buffer.str());
+#endif
+              clpSolver->setDualBound(
+                std::max(1.0001e8, std::min(100.0 * largest, 1.00001e10)));
+            }
+            // Set the remaining time as a limit on this clean-up re-solve so
+            // it cannot run past the CBC time limit on large instances.
+            {
+              OsiClpSolverInterface *siClp = getClpSolver(si);
+              if (CBC_SKIP_CLP_TEST||siClp) {
+                applyClpTimeLimit(model_, siClp->getModelPtr());
+              }
+            }
+            si->resolve(); // clean up
+            {
+              OsiClpSolverInterface *siClp = dynamic_cast< OsiClpSolverInterface * >(si);
+              if (siClp)
+                clearClpTimeLimits(siClp->getModelPtr());
+            }
+#endif
+  return 0;
+}
 void CbcSolver::writeSolution(int cbcParamCode,
   std::deque<std::string> &inputQueue,
   OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver)
@@ -6410,331 +6749,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 #endif
           }
           if (!miplib) {
-            if (!preSolve) {
-              model_.solver()->setHintParam(OsiDoPresolveInInitial, false,
-                OsiHintTry);
-              model_.solver()->setHintParam(OsiDoPresolveInResolve, false,
-                OsiHintTry);
-            }
-            double time1a = CoinCpuTime();
-            OsiSolverInterface *solver = model_.solver();
-#ifndef CBC_OTHER_SOLVER
-            OsiClpSolverInterface *si = getClpSolver(solver);
-            if (CBC_SKIP_CLP_TEST||si)
-              si->setSpecialOptions(si->specialOptions() | 1024);
-#endif
-            // ------ root LP progress output ------
-#ifndef CBC_OTHER_SOLVER
-            int lpIterFreq = parameters[CbcParam::LPITERFREQ]->intVal();
-            double lpTimeFreq = parameters[CbcParam::LPTIMEFREQ]->dblVal();
-            ClpLpEventHandler *lpProgressHandler = nullptr;
-            ClpLpMsgHandler   *lpMsgHandler = nullptr;
-            bool lpMsgOldDefault = false;
-            CoinMessageHandler *lpSavedMsg = nullptr;
-            if (cbcLogLevel >= 1 && logLevel >= 1 && si && (lpIterFreq > 0 || lpTimeFreq > 0.0)) {
-              ClpSimplex *clpModel = si->getModelPtr();
-              // Do NOT setLogLevel(0) — Idiot checks model log level before
-              // constructing any messages; setting it to 0 silences Idiot entirely.
-              // ClpLpMsgHandler suppresses all noisy Clp messages instead.
-              auto lpState = std::make_shared<ClpLpPhaseState>();
-              lpState->fp       = model_.messageHandler()->filePointer();
-              lpState->utf8     = CbcOutput::useUtf8();
-              lpState->compact  = CbcOutput::useCompact();
-              lpState->logLevel = logLevel;
-              lpState->iterFreq = lpIterFreq;
-              lpState->timeFreq = lpTimeFreq;
-              lpState->startTime = CoinWallclockTime();
-              lpState->lastPrintTime = lpState->startTime;
-              lpState->title = "Root LP relaxation";
-              // Print the section title now so that fast preprocessing
-              // messages (from applyLpMethod) appear inside this section.
-              // Clear title so lpPhaseOpenTable prints only the table header.
-              fprintf(lpState->fp, "\n%s\n\n",
-                CoinTable::phaseStart(lpState->title, lpState->utf8).c_str());
-              lpState->title.clear();
-              lpMsgHandler = new ClpLpMsgHandler(lpState);
-              ClpLpEventHandler tmpEvt(lpState);
-              lpSavedMsg = clpModel->pushMessageHandler(lpMsgHandler, lpMsgOldDefault);
-              clpModel->passInEventHandler(&tmpEvt);
-              lpProgressHandler = dynamic_cast<ClpLpEventHandler *>(clpModel->eventHandler());
-            }
-#endif
-            // Capture integer variable info before solve (solver may relax types internally)
-            int numMipInts = 0;
-            std::vector<int> intCols;
-            if (si) {
-              int nc = si->getNumCols();
-              for (int j = 0; j < nc; ++j) {
-                if (!si->isContinuous(j))
-                  intCols.push_back(j);
-              }
-              numMipInts = static_cast<int>(intCols.size());
-            }
-            int lpMethodResult = applyLpMethod(model_, parameters);
-            if (lpMethodResult < 0) {
-              // Infeasible — clean up LP progress handler and skip BAB
-#ifndef CBC_OTHER_SOLVER
-              if (lpSavedMsg && si) {
-                ClpSimplex *clpModel = si->getModelPtr();
-                clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
-                delete lpMsgHandler;
-                lpMsgHandler = nullptr;
-                ClpEventHandler defaultHandler;
-                clpModel->passInEventHandler(&defaultHandler);
-              }
-#endif
-              continue;
-            }
-            if (lpMethodResult > 0)
-              model_.initialSolve();
-#ifndef CBC_OTHER_SOLVER
-            if (lpSavedMsg && si) {
-              ClpSimplex *clpModel = si->getModelPtr();
-              if (lpProgressHandler) {
-                // Compute fractional integer variable count for status line
-                int numFrac = 0;
-                const OsiSolverInterface *osi = model_.solver();
-                if (osi && numMipInts > 0) {
-                  const double *sol = osi->getColSolution();
-                  for (int j : intCols) {
-                    double v = sol[j];
-                    double frac = std::fabs(v - std::floor(v));
-                    if (frac > 0.5) frac = 1.0 - frac;
-                    if (frac > 1e-5) ++numFrac;
-                  }
-                }
-                lpProgressHandler->printFinalStatus(numMipInts, numFrac);
-              }
-              // Restore message handler and remove LP event handler
-              clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
-              delete lpMsgHandler;
-              lpMsgHandler = nullptr;
-              ClpEventHandler defaultHandler;
-              clpModel->passInEventHandler(&defaultHandler);
-            }
-#endif
-            // ------ end root LP progress output ------
-#ifndef CBC_OTHER_SOLVER
-            ClpSimplex *clpSolver = si->getModelPtr();
-            int iStatus = clpSolver->status();
-            int iStatus2 = clpSolver->secondaryStatus();
-            if (iStatus == 0) {
-              iStatus2 = 0;
-            } else if (iStatus == 1) {
-              iStatus = 0;
-              iStatus2 = 1; // say infeasible
-            } else if (iStatus == 2) {
-              iStatus = 0;
-              iStatus2 = 7; // say unbounded
-            } else if (iStatus == 3) {
-              iStatus = 1;
-              if (iStatus2 == 9)
-                iStatus2 = 4;
-              else
-                iStatus2 = 3; // Use nodes - as closer than solutions
-            } else if (iStatus == 4) {
-              iStatus = 2; // difficulties
-              iStatus2 = 0;
-            }
-            model_.setProblemStatus(iStatus);
-            model_.setSecondaryStatus(iStatus2);
-            si->setWarmStart(NULL);
             int returnCode = 0;
-            if (callBack != NULL)
-              returnCode = callBack(&model_, 1);
-            if (returnCode) {
-              // exit if user wants
-              delete babModel_;
-              babModel_ = NULL;
-              return returnCode;
-            }
-            if (clpSolver->status() > 0) {
-              // and in babModel if exists
-              if (babModel_) {
-                babModel_->setProblemStatus(iStatus);
-                babModel_->setSecondaryStatus(iStatus2);
-              }
-              iStatus = clpSolver->status();
-              const char *msg[] = { "infeasible", "unbounded", "stopped",
-                "difficulties", "other" };
-              buffer.str("");
-              if (iStatus == 3 && clpSolver->secondaryStatus() == 9)
-                buffer << "LP relaxation stopped on time limit";
-              else
-                buffer << "Problem is " << msg[iStatus - 1];
-              buffer << " - " << CoinCpuTime() - time1a << " seconds";
-              printGeneralMessage(model_, buffer.str());
-              break;
-            }
-            clpSolver->setSpecialOptions(
-              clpSolver->specialOptions() | IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and
-                                                                  // bound)
-#elif CBC_OTHER_SOLVER == 1
-#endif
-            buffer.str("");
-            statistics.lp_seconds = CoinCpuTime() - time1a;
-            // "Continuous objective value is ..." suppressed: shown by LP progress table footer.
-            // If the LP solve itself consumed all (or most) of the time budget
-            // there is nothing useful left to do — exit early rather than
-            // spending hundreds of seconds in preprocessing, conflict graph
-            // build, or cut generation with essentially no time remaining.
-            if (model_.maximumSecondsReached()) {
-              model_.setProblemStatus(1); // stopped on time
-              model_.setSecondaryStatus(4);
-              if (babModel_) {
-                babModel_->setProblemStatus(1);
-                babModel_->setSecondaryStatus(4);
-              }
-              break;
-            }
-            if (model_.getMaximumNodes() == -987654321) {
-              // See if No objective!
-              int numberColumns = clpSolver->getNumCols();
-              const double *obj = clpSolver->getObjCoefficients();
-              const double *lower = clpSolver->getColLower();
-              const double *upper = clpSolver->getColUpper();
-              int nObj = 0;
-              for (int i = 0; i < numberColumns; i++) {
-                if (upper[i] > lower[i] && obj[i])
-                  nObj++;
-              }
-              if (!nObj) {
-                printf("************No objective!!\n");
-                model_.setMaximumSolutions(1);
-                // Column copy
-                CoinPackedMatrix matrixByCol(
-                  *model_.solver()->getMatrixByCol());
-                // const double * element = matrixByCol.getElements();
-                // const int * row = matrixByCol.getIndices();
-                // const CoinBigIndex * columnStart =
-                // matrixByCol.getVectorStarts();
-                const int *columnLength = matrixByCol.getVectorLengths();
-                for (int i = 0; i < numberColumns; i++) {
-                  double value = (CoinDrand48() + 0.5) * 10000;
-                  value = 10;
-                  value *= columnLength[i];
-                  int iValue = static_cast< int >(value) / 10;
-                  // iValue=1;
-                  clpSolver->setObjCoeff(i, iValue);
-                }
-              }
-            }
-#ifndef CBC_OTHER_SOLVER
-            if (!complicatedInteger && preProcess == 0 && clpSolver->tightenPrimalBounds(0.0, 0, true) != 0) {
-              printGeneralMessage(model_,
-                "Problem is infeasible - tightenPrimalBounds!");
-              model_.setProblemStatus(0);
-              model_.setSecondaryStatus(1);
-              // say infeasible for solution
-              integerStatus = 6;
-              // and in babModel if exists
-              if (babModel_) {
-                babModel_->setProblemStatus(0);
-                babModel_->setSecondaryStatus(1);
-              }
-              break;
-            }
-            if (clpSolver->dualBound() == 1.0e10) {
-              ClpSimplex temp = *clpSolver;
-              temp.setLogLevel(0);
-              // Cap this silent re-solve so it cannot consume a large portion
-              // of the remaining budget.  For large models the solve is
-              // expensive; the default dual bound of 1e10 is acceptable when
-              // there is not enough time for a thorough calibration.
-              {
-                double remaining = model_.getMaximumSeconds() - model_.getCurrentSeconds();
-                if (remaining < 0.0) remaining = 0.0;
-                // Use at most 5% of remaining time, capped at 60 s.
-                double budget = std::min(remaining * 0.05, 60.0);
-                applyClpTimeLimit(model_, &temp, budget);
-              }
-              temp.dual(0, 7);
-              // user did not set - so modify
-              // get largest scaled away from bound
-              double largest = 1.0e-12;
-              double largestScaled = 1.0e-12;
-              int numberRows = temp.numberRows();
-              const double *rowPrimal = temp.primalRowSolution();
-              const double *rowLower = temp.rowLower();
-              const double *rowUpper = temp.rowUpper();
-              const double *rowScale = temp.rowScale();
-              int iRow;
-              for (iRow = 0; iRow < numberRows; iRow++) {
-                double value = rowPrimal[iRow];
-                double above = value - rowLower[iRow];
-                double below = rowUpper[iRow] - value;
-                if (above < 1.0e12) {
-                  largest = std::max(largest, above);
-                }
-                if (below < 1.0e12) {
-                  largest = std::max(largest, below);
-                }
-                if (rowScale) {
-                  double multiplier = rowScale[iRow];
-                  above *= multiplier;
-                  below *= multiplier;
-                }
-                if (above < 1.0e12) {
-                  largestScaled = std::max(largestScaled, above);
-                }
-                if (below < 1.0e12) {
-                  largestScaled = std::max(largestScaled, below);
-                }
-              }
-
-              int numberColumns = temp.numberColumns();
-              const double *columnPrimal = temp.primalColumnSolution();
-              const double *columnLower = temp.columnLower();
-              const double *columnUpper = temp.columnUpper();
-              const double *columnScale = temp.columnScale();
-              int iColumn;
-              for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                double value = columnPrimal[iColumn];
-                double above = value - columnLower[iColumn];
-                double below = columnUpper[iColumn] - value;
-                if (above < 1.0e12) {
-                  largest = std::max(largest, above);
-                }
-                if (below < 1.0e12) {
-                  largest = std::max(largest, below);
-                }
-                if (columnScale) {
-                  double multiplier = 1.0 / columnScale[iColumn];
-                  above *= multiplier;
-                  below *= multiplier;
-                }
-                if (above < 1.0e12) {
-                  largestScaled = std::max(largestScaled, above);
-                }
-                if (below < 1.0e12) {
-                  largestScaled = std::max(largestScaled, below);
-                }
-              }
-#ifdef COIN_DEVELOP
-              buffer.str("");
-              buffer << "Largest (scaled) away from bound "
-                     << largestScaled << " unscaled " << largest
-                     << std::endl;
-              printGeneralMessage(model_, buffer.str());
-#endif
-              clpSolver->setDualBound(
-                std::max(1.0001e8, std::min(100.0 * largest, 1.00001e10)));
-            }
-            // Set the remaining time as a limit on this clean-up re-solve so
-            // it cannot run past the CBC time limit on large instances.
-            {
-              OsiClpSolverInterface *siClp = getClpSolver(si);
-              if (CBC_SKIP_CLP_TEST||siClp) {
-                applyClpTimeLimit(model_, siClp->getModelPtr());
-              }
-            }
-            si->resolve(); // clean up
-            {
-              OsiClpSolverInterface *siClp = dynamic_cast< OsiClpSolverInterface * >(si);
-              if (siClp)
-                clearClpTimeLimits(siClp->getModelPtr());
-            }
-#endif
+            int lpStatus = solveInitialLp(logLevel, cbcLogLevel, statistics, returnCode, callBack);
+            if (lpStatus == 1) break;
+            if (lpStatus == 2) continue;
+            if (lpStatus == 3) return returnCode;
           }
           // If user made settings then use them
           if (!defaultSettings) {

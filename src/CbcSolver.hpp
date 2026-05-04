@@ -439,6 +439,15 @@ private:
     OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver,
     double &time1, double &totalTime);
 
+  /** Run CglPreProcess on the model before branch-and-bound.
+      Extracted from run() — the `if (preProcess && cbcParamCode == CbcParam::BAB)` block.
+      \return 0=ok, 1=break, 2=continue, 3=return (returnCode set)
+  */
+  int preprocess(int preProcess, int cbcParamCode,
+    OsiClpSolverInterface *&clpSolver, ClpSimplex *&lpSolver,
+    CglPreProcess &process, CbcSolverStatistics &statistics,
+    int &returnCode, ampl_info *info);
+
   /** Handle the WRITESOL/PRINTSOL/WRITEGMPLSOL/WRITENEXTSOL action.
       Called from run() when a solution-writing command is encountered.
       \param cbcParamCode  Which solution-write variant was requested
@@ -449,6 +458,16 @@ private:
   void writeSolution(int cbcParamCode,
     std::deque<std::string> &inputQueue,
     OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver);
+
+  /** Solve the root LP relaxation.
+      Called from the BAB action when !miplib.
+      \return 0=success, 1=break BAB, 2=continue loop, 3=return from run()
+  */
+  int solveInitialLp(
+    int logLevel, int cbcLogLevel,
+    CbcSolverStatistics &statistics,
+    int &returnCode,
+    int callBack(CbcModel *currentSolver, int whereFrom));
   //@}
 };
 

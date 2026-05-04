@@ -2374,6 +2374,24 @@ int CbcSolver::run(int argc, const char *argv[],
 //###########################################################################
 //###########################################################################
 
+int CbcSolver::solve(const std::string &filename)
+{
+  // Ensure the model has a solver attached
+  if (!model_.solver()) {
+    OsiSolverInterface *s = new OsiClpSolverInterface();
+    model_.assignSolver(s);
+  }
+  initialize();
+  std::deque<std::string> q;
+  q.push_back(filename);
+  q.push_back("-solve");
+  q.push_back("-quit");
+  return run(q);
+}
+
+//###########################################################################
+//###########################################################################
+
 void CbcSolver::importModel(std::deque<std::string> &inputQueue,
   OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver,
   double &time1, double &totalTime)
@@ -14497,29 +14515,39 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   int callBack(CbcModel *currentSolver, int whereFrom),
   ampl_info *info)
 {
-  // Heap-allocate to avoid CbcModel destruction issues after a full solve.
-  // CbcModel's destructor can crash when the model has been through
-  // preprocessing + B&B + postprocessing (solver replacement, shared state).
-  // This is a known limitation that will be fixed when CbcModel ownership
-  // is modernized. For now, we intentionally leak the CbcSolver.
+  // Heap-allocate and intentionally leak. CbcMain0 modifies the caller's
+  // model (signal handlers, parameter pointers to solver internals).
+  // Copying that model into CbcSolver and then destroying it corrupts
+  // shared state, causing the caller's model destructor to crash.
+  // The direct CbcSolver API (construct → initialize → run → destroy)
+  // works cleanly; this leak only affects the backward-compat wrapper
+  // which runs in the CLI path where the process exits immediately after.
   CbcSolver *solver = new CbcSolver(model);
   solver->parameters() = parameters;
   int rc = solver->run(inputQueue, callBack, info);
-  // Copy results back to the caller's model
-  model.moveInfo(*solver->model());
+  // Copy essential results back to the caller's model
+  CbcModel *solved = solver->model();
+  model.setProblemStatus(solved->status());
+  model.setSecondaryStatus(solved->secondaryStatus());
+  if (solved->bestSolution()) {
+    int n = solved->solver()->getNumCols();
+    model.setBestSolution(solved->bestSolution(), n,
+      solved->getObjValue(), true);
+  }
+  model.setNumberHeuristicSolutions(solved->getNumberHeuristicSolutions());
   {
     OsiClpSolverInterface *srcClp =
-      dynamic_cast<OsiClpSolverInterface *>(solver->model()->solver());
+      dynamic_cast<OsiClpSolverInterface *>(solved->solver());
     OsiClpSolverInterface *dstClp =
       dynamic_cast<OsiClpSolverInterface *>(model.solver());
-    if (srcClp && dstClp && srcClp->getModelPtr() != dstClp->getModelPtr())
-      dstClp->getModelPtr()->moveInfo(*srcClp->getModelPtr());
+    if (srcClp && dstClp) {
+      int nc = dstClp->getNumCols();
+      if (nc == srcClp->getNumCols())
+        dstClp->setColSolution(srcClp->getColSolution());
+    }
   }
   parameters = solver->parameters();
-  // Note: solver is intentionally not deleted here. CbcModel destruction
-  // after a full solve cycle is fragile (shared solver state, replaced
-  // solvers). This will be addressed when ownership is modernized.
-  // The process is about to exit anyway in the CLI path.
+  // solver intentionally not deleted (see comment above)
   return rc;
 }
 

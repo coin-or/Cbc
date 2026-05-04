@@ -52,23 +52,35 @@ class CbcStopNow;
 
 /*! \brief Top-level driver class for the CBC MIP solver.
 
-    Encapsulates the full solve pipeline that was previously spread across
-    the free functions CbcMain0 (initialization) and CbcMain1 (execution).
+    Encapsulates the full solve pipeline: parameter initialization,
+    command parsing, LP solve, preprocessing, cut/heuristic setup,
+    branch-and-bound, post-processing, and result reporting.
 
-    Typical usage:
+    Usage patterns:
 
     \code
-    OsiClpSolverInterface solver;
-    solver.readMps("problem.mps");
-    CbcModel model(solver);
-    CbcSolver cbc(model);
+    // Pattern 1: One-call solve
+    CbcSolver cbc;
+    cbc.solve("problem.mps");
+    if (cbc.hasSolution())
+      printf("Obj: %g\n", cbc.objectiveValue());
+
+    // Pattern 2: Import, configure, then solve
+    CbcSolver cbc;
+    cbc.importModel("problem.mps");
+    cbc.parameters()[CbcParam::TIMELIMIT]->setVal(300.0);
+    cbc.parameters()[CbcParam::GOMORYCUTS]->setVal("off");
+    std::deque<std::string> q = {"-solve", "-quit"};
+    cbc.run(q);
+
+    // Pattern 3: argc/argv (backward compatible)
+    CbcSolver cbc(solver);
     cbc.initialize();
-    std::deque<std::string> args = {"-solve", "-quit"};
-    cbc.run(args);
+    cbc.run(argc, argv);
     \endcode
 
-    For backward compatibility, the free functions CbcMain0/CbcMain1 still
-    work and delegate to this class internally.
+    The free functions CbcMain0/CbcMain1 still work for backward
+    compatibility and delegate to this class internally.
 */
 
 class CBCLIB_EXPORT CbcSolver {
@@ -110,6 +122,33 @@ public:
       \return 0 on success
   */
   int solve(const std::string &filename);
+
+  /** Import a model from a file.
+      Calls initialize() if not already done, then reads the file.
+      \param filename  Path to MPS/LP/GMPL file (supports .gz/.bz2)
+      \return 0 on success
+  */
+  int importModel(const std::string &filename);
+  //@}
+
+  ///@name Result accessors (valid after solve/run)
+  //@{
+  /// Solve status: 0=optimal, 1=infeasible, 2=unbounded, 3+=stopped
+  int status() const;
+  /// Best objective value found (COIN_DBL_MAX if no solution)
+  double objectiveValue() const;
+  /// Best bound (dual bound from B&B tree)
+  double bestBound() const;
+  /// Best integer solution (NULL if none found)
+  const double *bestSolution() const;
+  /// Number of columns in the model
+  int numCols() const;
+  /// Number of B&B nodes explored
+  int nodeCount() const;
+  /// Number of simplex iterations
+  int iterationCount() const;
+  /// Whether a feasible solution was found
+  bool hasSolution() const;
   //@}
 
   ///@name Run (replaces CbcMain1)

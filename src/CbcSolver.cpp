@@ -2391,6 +2391,65 @@ int CbcSolver::solve(const std::string &filename)
 //###########################################################################
 //###########################################################################
 
+int CbcSolver::importModel(const std::string &filename)
+{
+  if (!model_.solver()) {
+    OsiSolverInterface *s = new OsiClpSolverInterface();
+    model_.assignSolver(s);
+  }
+  initialize();
+  std::deque<std::string> q;
+  q.push_back(filename);
+  q.push_back("-quit");
+  return run(q);
+}
+
+//###########################################################################
+//###########################################################################
+
+int CbcSolver::status() const
+{
+  return model_.status();
+}
+
+double CbcSolver::objectiveValue() const
+{
+  return model_.getObjValue();
+}
+
+double CbcSolver::bestBound() const
+{
+  return model_.getBestPossibleObjValue();
+}
+
+const double *CbcSolver::bestSolution() const
+{
+  return model_.bestSolution();
+}
+
+int CbcSolver::numCols() const
+{
+  return model_.solver() ? model_.solver()->getNumCols() : 0;
+}
+
+int CbcSolver::nodeCount() const
+{
+  return model_.getNodeCount();
+}
+
+int CbcSolver::iterationCount() const
+{
+  return model_.getIterationCount();
+}
+
+bool CbcSolver::hasSolution() const
+{
+  return model_.bestSolution() != nullptr;
+}
+
+//###########################################################################
+//###########################################################################
+
 void CbcSolver::importModel(std::deque<std::string> &inputQueue,
   OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver,
   double &time1, double &totalTime)

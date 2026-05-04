@@ -942,11 +942,46 @@ Cbc_maxNameLength(Cbc_Model *model);
 /**@name Solver parameters */
 /*@{*/
 
-/** Sets a parameter
+/** Sets a parameter by name.
+ *
+ * Sets a CBC or CLP parameter by name. Use the same parameter names as
+ * the CBC command line (e.g. "cuts", "preprocess", "timelimit",
+ * "gomory", "heur", "sec", "maxn", "ratio", etc.).
+ *
+ * Parameter validation occurs at solve time — invalid names will
+ * produce "Unrecognized parameter" messages during Cbc_solve().
+ *
+ * This is the preferred parameter-setting function. It replaces the
+ * need for Cbc_setIntParam/Cbc_setDblParam for most use cases.
+ *
+ * @param model problem object
+ * @param name parameter name (e.g. "cuts", "sec", "gomory")
+ * @param value parameter value as string (e.g. "off", "300", "ifmove")
+ * @return 0 on success, 1 if name is NULL/empty
+ **/
+CBCLIB_EXPORT int CBC_LINKAGE
+Cbc_setParam(Cbc_Model *model, const char *name, const char *value);
+
+/** Gets the current value of a parameter set via Cbc_setParam.
+ *
+ * @param model problem object
+ * @param name parameter name
+ * @param value output buffer for the value string
+ * @param maxLen maximum length of the output buffer
+ * @return 0 if found, 1 if parameter was not previously set
+ **/
+CBCLIB_EXPORT int CBC_LINKAGE
+Cbc_getParam(Cbc_Model *model, const char *name, char *value, int maxLen);
+
+/** Sets a parameter (unvalidated, legacy).
+ *
+ * Stores the parameter for later use when Cbc_solve() is called.
+ * No validation is performed — use Cbc_setParam() instead for
+ * immediate validation.
  *
  * @param model problem object
  * @param name parameter name, e.g. cuts
- * @param name parameter value, e.g. off
+ * @param value parameter value, e.g. off
  * 
  **/
 CBCLIB_EXPORT void CBC_LINKAGE

@@ -102,6 +102,16 @@ public:
   void initialize();
   //@}
 
+  ///@name High-level solve
+  //@{
+  /** Import a model file and solve it with current parameters.
+      Convenience method that chains initialize() + import + run(-solve -quit).
+      \param filename  Path to MPS/LP/GMPL file (supports .gz/.bz2)
+      \return 0 on success
+  */
+  int solve(const std::string &filename);
+  //@}
+
   ///@name Run (replaces CbcMain1)
   //@{
   /** Run the solver with a command queue.

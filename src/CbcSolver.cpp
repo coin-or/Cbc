@@ -940,7 +940,7 @@ extern int debugNumberColumns;
 
 static CbcModel *currentBranchModel = NULL;
 
-CglPreProcess *cbcPreProcessPointer = NULL;
+// cbcPreProcessPointer removed — was dead code (written but never read)
 
 static char cbcCrashAnnounced = 0;
 
@@ -2287,8 +2287,7 @@ void CbcSolver::initialize()
   parameters_[CbcParam::TESTOSI]->setVal(testOsiParameters);
   parameters_[CbcParam::FPUMPTUNE]->setVal(1003);
   initialPumpTune_ = 1003;
-  // Keep file-scope global in sync for backward compatibility
-  initialPumpTune = 1003;
+  initialPumpTune = 1003; // keep file-scope global in sync
 #ifdef CBC_THREAD
   parameters_[CbcParam::THREADS]->setVal(0);
 #endif
@@ -3081,8 +3080,6 @@ int CbcSolver::preprocess(
 #endif
       if ((model_.moreSpecialOptions() & 65536) != 0)
         process.setOptions(2 + 4 + 8); // no cuts
-      cbcPreProcessPointer = &process;
-      cbcPreProcessPointer = &process; // threadsafe
       int saveOptions = osiclp->getModelPtr()->moreSpecialOptions();
       if ((model_.specialOptions() & 16777216) != 0 && model_.getCutoff() > 1.0e30) {
         osiclp->getModelPtr()->setMoreSpecialOptions(saveOptions | 262144);
@@ -3247,8 +3244,6 @@ int CbcSolver::preprocess(
       }
     }
 #elif CBC_OTHER_SOLVER == 1
-    cbcPreProcessPointer = &process;
-    cbcPreProcessPointer = &process; // threadsafe
     redoSOS = true;
     if (model.getKeepNamesPreproc())
       process.setKeepColumnNames(true);
@@ -6056,7 +6051,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
   bool useSignalHandler = parameters.useSignalHandler();
   // model_ is the class member; 'model' alias for code that uses it without underscore
   CbcModel &model = model_;
-  CglPreProcess *preProcessPointer = NULL;
+  // preProcessPointer removed — was always NULL (dead code)
   // saveSolver_ is a class member
   CglPreProcess process;
   // Save a copy of input for unit testing
@@ -6579,7 +6574,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
       twomirGen.setAway(0.01);
 #endif
       // TODO: See what's going on with these free-standing parameters
-      initialPumpTune = 1005043;
+      initialPumpTune_ = 1005043;
       tunePreProcess = 6;
       probingMode = CbcParameters::CGIfMove;
       parameters[CbcParam::DIVEOPT]->setVal(2);
@@ -7157,7 +7152,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               parameters[CbcParam::DIVEOPT]->setVal(-1);
               parameters[CbcParam::FPUMPITS]->setVal(20);
               parameters[CbcParam::FPUMPTUNE]->setVal(1003);
-              initialPumpTune = 1003;
+              initialPumpTune_ = 1003;
               parameters[CbcParam::PROCESSTUNE]->setVal(0);
               tunePreProcess = 0;
               parameters[CbcParam::DIVINGC]->setVal("off");
@@ -8891,7 +8886,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               }
             }
             doHeuristics(&model_, 2, parameters, parameters.noPrinting(),
-              initialPumpTune);
+              initialPumpTune_);
             if (!objectsExist) {
               model_.deleteObjects(false);
             }
@@ -9207,7 +9202,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
           // Set up heuristics
           doHeuristics(babModel_, ((!miplib) ? 1 : 10), parameters,
-            parameters.noPrinting(), initialPumpTune);
+            parameters.noPrinting(), initialPumpTune_);
           if (!miplib) {
             if (parameters[CbcParam::LOCALTREE]->modeVal()) {
               CbcTreeLocal localTree(babModel_, NULL, 10, 0, 0, 10000,
@@ -11190,10 +11185,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               }
             }
 #endif
-            // Set up pointer to preProcess
-            if (preProcessPointer) {
-              babModel_->setPreProcess(preProcessPointer);
-            }
+            // preProcessPointer removed — was always NULL (dead code)
 #ifndef CBC_OTHER_SOLVER
             {
               OsiClpSolverInterface *solver = getClpSolver(babModel_->solver());

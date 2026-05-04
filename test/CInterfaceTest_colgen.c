@@ -132,8 +132,9 @@ int main() {
   printf("\nOptimal LP value: %.4f (need at least %.0f bars)\n",
     finalObj, ceil(finalObj));
 
-  /* Verify: for this instance the LP relaxation should need at least 3 bars */
-  assert(finalObj >= 2.9 && finalObj <= 6.1);
+  /* Verify: LP relaxation optimal is exactly 3 bars for this instance
+     (same data as python-mip cuttingstock_cg.py) */
+  assert(fabs(finalObj - 3.0) < 1e-4);
 
   const double *sol = Cbc_getColSolution(master);
   printf("Pattern usage:\n");

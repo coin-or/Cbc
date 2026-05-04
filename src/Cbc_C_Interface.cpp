@@ -1938,73 +1938,11 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   /* checking if options should be automatically tuned */
   if (model->lp_method == LPM_Auto) {
-    ClpSimplexOther *clpo = static_cast<ClpSimplexOther *>(clps);
-    assert(clpo);
-    // Hacky for now
-    std::string opts_str(clpo->guess(0));
-    char opts[256];
-    assert (opts_str.length() <= 256);
-    strcpy(opts, opts_str.c_str());
-
-    if (opts) {
-      if (strstr(opts, "-primals") != NULL) {
-        model->lp_method = LPM_Primal;
-        //printf("Using primal;\n");
-      }
-      else if (strstr(opts, "-duals") != NULL) {
-        model->lp_method = LPM_Dual;
-        //printf("Using dual;\n");
-      }
-      else if (strstr(opts, "-barrier") != NULL) {
-        //printf("Using barrier;\n");
-        model->lp_method = LPM_Barrier;
-      }
-
-      char *s = NULL;
-      char str[256] = "";
-      if ((s=strstr(opts, "-idiot"))) {
-        s = strstr(s+1, " ");
-        if (s) {
-          strcpy(str, s+1);
-          if ((s = strstr(str+1, " ")))
-            *s = '\0';
-          int idiot = atoi(str);
-          //printf("Setting idiot to %d\n", idiot);
-          model->int_param[INT_PARAM_IDIOT] = idiot;
-        }
-      } // idiot
-      if ((s=strstr(opts, "-pertv"))) {
-        s = strstr(s+1, " ");
-        if (s) {
-          strcpy(str, s+1);
-          if ((s = strstr(str+1, " ")))
-            *s = '\0';
-          int pertv = atoi(str);
-          //printf("Setting pertv to %d\n", pertv);
-          model->int_param[INT_PARAM_PERT_VALUE] = pertv;
-        }
-      } // perturbation value
-      if ((s=strstr(opts, "-psi"))) {
-        s = strstr(s+1, " ");
-        if (s) {
-          strcpy(str, s+1);
-          if ((s = strstr(str+1, " ")))
-            *s = '\0';
-          double psi = atof(str);
-          //printf("Setting psi to %g\n", psi);
-          model->dbl_param[DBL_PARAM_PSI] = psi;
-        }
-      } // perturbation value
-      if ((s=strstr(opts, "-dualpivot"))) {
-          strcpy(str, s+1);
-          if ((s = strstr(str+1, " ")))
-            *s = '\0';
-          if (strstr(str, "pesteep")) {
-            model->dualp = DP_PESteepest;
-            //printf("Setting dual pivot to pesteep.\n");
-          }
-      } // dual pivot
-    }
+    // Default to dual simplex — it's the best choice for most problems.
+    // Clp's initialSolve() also auto-selects internally, so this just
+    // sets the ClpSolve type. Previously this block parsed the string
+    // output of ClpSimplexOther::guess() which was fragile.
+    model->lp_method = LPM_Dual;
   } // auto
 
   /* for integer or linear optimization starting with LP relaxation */

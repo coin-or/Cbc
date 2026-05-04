@@ -2374,7 +2374,1140 @@ int CbcSolver::run(int argc, const char *argv[],
 //###########################################################################
 //###########################################################################
 
+void CbcSolver::importModel(std::deque<std::string> &inputQueue,
+  OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver,
+  double &time1, double &totalTime)
+{
+  CbcParameters &parameters = parameters_;
+  ClpParameters &clpParameters = parameters.clpParameters();
+  std::ostringstream buffer;
+  std::string fileName, message;
+  FILE *fp;
+
+  if (!statusUserFunction_[0]) {
+    free(priorities_);
+    priorities_ = NULL;
+    free(branchDirection_);
+    branchDirection_ = NULL;
+    free(pseudoDown_);
+    pseudoDown_ = NULL;
+    free(pseudoUp_);
+    pseudoUp_ = NULL;
+    free(solutionIn_);
+    solutionIn_ = NULL;
+    free(prioritiesIn_);
+    prioritiesIn_ = NULL;
+    free(sosStart_);
+    sosStart_ = NULL;
+    free(sosIndices_);
+    sosIndices_ = NULL;
+    free(sosType_);
+    sosType_ = NULL;
+    free(sosReference_);
+    sosReference_ = NULL;
+    free(cut_);
+    cut_ = NULL;
+    free(sosPriority_);
+    sosPriority_ = NULL;
+  }
+
+  CbcParam *cbcParam = parameters[CbcParam::IMPORT];
+  cbcParam->readValue(inputQueue, fileName, &message);
+  bool canOpen = false;
+  bool absolutePath = true;
+  CoinParamUtils::processFile(fileName,
+    parameters[CbcParam::DIRECTORY]->dirName());
+  if (fileName == "") {
+    fileName = parameters[CbcParam::IMPORTFILE]->fileName();
+  } else {
+    parameters[CbcParam::IMPORTFILE]->setFileName(fileName);
+  }
+  if (fileName[0] != '/' && fileName[0] != '\\' && !strchr(fileName.c_str(), ':')) {
+    absolutePath = false;
+  }
+  // See if gmpl file
+  int gmpl = 0;
+  std::string gmplData;
+  if (fileName == "-") {
+    canOpen = true;
+  } else if (fileName == "-lp") {
+    canOpen = true;
+    fileName = "-";
+    gmpl = -1;
+  } else {
+    const char *c_name = fileName.c_str();
+    size_t length = strlen(c_name);
+    if ((length > 3 && !strncmp(c_name + length - 3, ".lp", 3)) || (length > 6 && !strncmp(c_name + length - 6, ".lp.gz", 6)) || (length > 7 && !strncmp(c_name + length - 7, ".lp.bz2", 7))) {
+      gmpl = -1;
+    }
+    length = fileName.size();
+    size_t percent = fileName.find('%');
+    if (percent < length && percent > 0) {
+#ifdef COINUTILS_HAS_GLPK
+      gmpl = 1;
+      fileName = fileName.substr(0, percent);
+      gmplData = fileName.substr(percent + 1);
+      if (!absolutePath) {
+        fileName = parameters[CbcParam::DIRECTORY]->dirName() + fileName;
+        gmplData = parameters[CbcParam::DIRECTORY]->dirName() + fileName;
+      }
+      gmpl = (percent < length - 1) ? 2 : 1;
+      printf("GMPL model file %s and data file %s\n",
+        fileName.c_str(), gmplData.c_str());
+#else
+      printf("Cbc was not built with GMPL support. Exiting.\n");
+      abort();
+#endif
+    }
+    if (fileCoinReadable(fileName)) {
+      canOpen = true;
+      if (gmpl == 2) {
+        fp = fopen(gmplData.c_str(), "r");
+        if (fp) {
+          fclose(fp);
+        } else {
+          buffer.str("");
+          buffer << "Unable to open file " << gmplData.c_str();
+          printGeneralMessage(model_, buffer.str());
+          return;
+        }
+      }
+    } else {
+      buffer.str("");
+      buffer << "Unable to open file " << fileName.c_str();
+      printGeneralMessage(model_, buffer.str());
+      return;
+    }
+  }
+  int status;
+  numberLotSizing_ = 0;
+  delete[] lotsize_;
+  lotsize_ = NULL;
+#ifndef CBC_OTHER_SOLVER
+  lpSolver = clpSolver->getModelPtr();
+  CbcImportHandler importHandler;
+  bool origDefault;
+  CoinMessageHandler *origLpHandler = lpSolver->pushMessageHandler(
+    &importHandler, origDefault);
+  if (!gmpl) {
+    status = clpSolver->readMps(fileName.c_str(), keepImportNames_ != 0,
+      allowImportErrors_ != 0);
+  } else if (gmpl > 0) {
+#if defined(CLP_HAS_GLPK) && defined(COINUTILS_HAS_GLPK)
+    status = lpSolver->readGMPL(
+      fileName.c_str(), (gmpl == 2) ? gmplData.c_str() : NULL,
+      keepImportNames_ != 0, &coin_glp_tran_, &coin_glp_prob_);
+#endif
+  } else {
+#ifdef KILL_ZERO_READLP
+    status = clpSolver->readLp(fileName.c_str(),
+      lpSolver->getSmallElementValue());
+#else
+    status = clpSolver->readLp(fileName.c_str(), 1.0e-12);
+#endif
+  }
+  lpSolver->popMessageHandler(origLpHandler, origDefault);
+#else
+  status = clpSolver->readMps(fileName.c_str(), "");
+  CbcImportHandler importHandler;
+#endif
+  if (!status || (status > 0 && allowImportErrors_)) {
+#ifndef CBC_OTHER_SOLVER
+    if (keepImportNames_) {
+      lengthName_ = lpSolver->lengthNames();
+      rowNames_ = *(lpSolver->rowNames());
+      columnNames_ = *(lpSolver->columnNames());
+    } else {
+      lengthName_ = 0;
+    }
+    double objScale = clpParameters[ClpParam::OBJSCALE2]->dblVal();
+    if (objScale != 1.0) {
+      int iColumn;
+      int numberColumns = lpSolver->numberColumns();
+      double *dualColumnSolution = lpSolver->dualColumnSolution();
+      ClpObjective *obj = lpSolver->objectiveAsObject();
+      assert(dynamic_cast< ClpLinearObjective * >(obj));
+      double offset;
+      double *objective = obj->gradient(NULL, NULL, offset, true);
+      for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+        dualColumnSolution[iColumn] *= objScale;
+        objective[iColumn] *= objScale;
+      }
+      int iRow;
+      int numberRows = lpSolver->numberRows();
+      double *dualRowSolution = lpSolver->dualRowSolution();
+      for (iRow = 0; iRow < numberRows; iRow++)
+        dualRowSolution[iRow] *= objScale;
+      lpSolver->setObjectiveOffset(objScale * lpSolver->objectiveOffset());
+    }
+    goodModel_ = true;
+    CbcOutput::printProblemSummary(model_, *clpSolver, &importHandler);
+    lpSolver->createStatus();
+    // See if sos
+    if (clpSolver->numberSOS()) {
+      numberSOS_ = clpSolver->numberSOS();
+      const CoinSet *setInfo = clpSolver->setInfo();
+      sosStart_ = reinterpret_cast< int * >(
+        malloc((numberSOS_ + 1) * sizeof(int)));
+      sosType_ = reinterpret_cast< char * >(
+        malloc(numberSOS_ * sizeof(char)));
+      const double *lower = clpSolver->getColLower();
+      const double *upper = clpSolver->getColUpper();
+      int i;
+      int nTotal = 0;
+      sosStart_[0] = 0;
+      for (i = 0; i < numberSOS_; i++) {
+        int type = setInfo[i].setType();
+        int n = setInfo[i].numberEntries();
+        sosType_[i] = static_cast< char >(type);
+        nTotal += n;
+        sosStart_[i + 1] = nTotal;
+      }
+      sosIndices_ = reinterpret_cast< int * >(malloc(nTotal * sizeof(int)));
+      sosReference_ = reinterpret_cast< double * >(
+        malloc(nTotal * sizeof(double)));
+      for (i = 0; i < numberSOS_; i++) {
+        int n = setInfo[i].numberEntries();
+        const int *which = setInfo[i].which();
+        const double *weights = setInfo[i].weights();
+        int base = sosStart_[i];
+        for (int j = 0; j < n; j++) {
+          int k = which[j];
+          if (upper[k] > 1.0e15)
+            clpSolver->setColUpper(k, 1.0e15);
+          if (lower[k] < -1.0e15)
+            clpSolver->setColLower(k, -1.0e15);
+          sosIndices_[j + base] = k;
+          sosReference_[j + base] = weights ? weights[j] : static_cast< double >(j);
+        }
+      }
+    }
+    // make sure integer; also deal with semi-continuous
+    int numberColumns = lpSolver->numberColumns();
+    int i;
+    for (i = 0; i < numberColumns; i++) {
+      if (clpSolver->integerType(i) > 2)
+        break;
+      if (lpSolver->isInteger(i))
+        clpSolver->setInteger(i);
+    }
+    if (i < numberColumns) {
+      clpSolver->setSpecialOptions(clpSolver->specialOptions() | 8388608);
+      int iStart = i;
+      for (i = iStart; i < numberColumns; i++) {
+        if (clpSolver->integerType(i) > 2)
+          numberLotSizing_++;
+      }
+      typedef struct { double low; double high; int column; } lotStruct;
+      lotsize_ = reinterpret_cast<LotStruct *>(new lotStruct[numberLotSizing_]);
+      numberLotSizing_ = 0;
+      const double *lower = clpSolver->getColLower();
+      const double *upper = clpSolver->getColUpper();
+      for (i = iStart; i < numberColumns; i++) {
+        if (clpSolver->integerType(i) > 2) {
+          int iType = clpSolver->integerType(i) - 3;
+          if (!iType)
+            clpSolver->setContinuous(i);
+          else
+            clpSolver->setInteger(i);
+          lotsize_[numberLotSizing_].column = i;
+          lotsize_[numberLotSizing_].high = upper[i];
+          if (lower[i]) {
+            lotsize_[numberLotSizing_++].low = lower[i];
+            clpSolver->setColLower(i, 0.0);
+          } else {
+            lotsize_[numberLotSizing_++].low = 1.0;
+          }
+        }
+      }
+    }
+#else
+    lengthName_ = 0;
+    goodModel_ = true;
+    CbcOutput::printProblemSummary(model_, *model_.solver());
+#endif
+    double time2 = CoinCpuTime();
+    totalTime += time2 - time1;
+    time1 = time2;
+    // Go to canned file if just input file
+    if (inputQueue.empty()) {
+      char *find = const_cast< char * >(strstr(fileName.c_str(), ".mps"));
+      if (find && find[4] == '\0') {
+        find[1] = 'p';
+        find[2] = 'a';
+        find[3] = 'r';
+        std::ifstream ifs(fileName.c_str());
+        if (ifs.is_open()) {
+          while (!inputQueue.empty()) {
+            inputQueue.pop_front();
+          }
+          CoinParamUtils::readFromStream(inputQueue, ifs);
+        }
+      }
+    }
+  } else {
+    // errors — model did not load
+    FILE *fpErr = model_.messageHandler()->filePointer();
+    if (!fpErr) fpErr = stdout;
+    const bool u8 = CbcOutput::useUtf8();
+    const char *x = u8 ? "✗" : "X";
+    fprintf(fpErr, "\n%s\n\n", CoinTable::phaseStart("Problem loading", u8).c_str());
+    CbcOutput::printImportErrors(fpErr, importHandler);
+    fprintf(fpErr, "\n%s Problem loading failed — %d error(s)\n",
+      x, status);
+    fflush(fpErr);
+  }
+}
+
+//###########################################################################
+//###########################################################################
+
+//###########################################################################
+//###########################################################################
+
 //TODO Should we replace with the STL version
+void CbcSolver::writeSolution(int cbcParamCode,
+  std::deque<std::string> &inputQueue,
+  OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver)
+{
+  std::ostringstream buffer;
+  std::string fileName, message;
+  FILE *fp = NULL;
+  bool canOpen = false;
+
+  if (!goodModel_) {
+    printGeneralWarning(model_, "** Current model not valid\n");
+    return;
+  }
+  fp = NULL;
+  bool append = true;
+  ClpSimplex *saveLpSolver = NULL;
+  canOpen = false;
+  if (cbcParamCode == CbcParam::PRINTSOL) {
+    fp = stdout;
+    fprintf(fp, "\n");
+  } else {
+    parameters_[cbcParamCode]->readValue(inputQueue, fileName, &message);
+    if (fileName == "append") {
+      switch (cbcParamCode) {
+      case CbcParam::WRITESOL:
+        fileName = parameters_[CbcParam::SOLUTIONFILE]->fileName();
+        break;
+      case CbcParam::WRITENEXTSOL:
+        fileName = parameters_[CbcParam::NEXTSOLFILE]->fileName();
+        break;
+      case CbcParam::WRITEGMPLSOL:
+        fileName = parameters_[CbcParam::SOLUTIONFILE]->fileName();
+        break;
+      }
+      CoinParamUtils::processFile(fileName,
+        parameters_[CbcParam::DIRECTORY]->dirName(),
+        &canOpen);
+      if (!canOpen) {
+        buffer.str("");
+        buffer << "Unable to open file " << fileName.c_str();
+        printGeneralMessage(model_, buffer.str());
+        return;
+      }
+      append = true;
+    } else if (cbcParamCode == CbcParam::WRITESOL) {
+      CoinParamUtils::processFile(fileName,
+        parameters_[CbcParam::DIRECTORY]->dirName());
+      if (fileName == "") {
+        fileName = parameters_[CbcParam::SOLUTIONFILE]->fileName();
+      } else {
+        parameters_[CbcParam::SOLUTIONFILE]->setFileName(fileName);
+      }
+    } else if (cbcParamCode == CbcParam::WRITENEXTSOL) {
+      CoinParamUtils::processFile(fileName,
+        parameters_[CbcParam::DIRECTORY]->dirName());
+      if (fileName == "") {
+        fileName = parameters_[CbcParam::NEXTSOLFILE]->fileName();
+      } else {
+        parameters_[CbcParam::NEXTSOLFILE]->setFileName(fileName);
+      }
+    } else if (cbcParamCode == CbcParam::WRITEGMPLSOL) {
+      CoinParamUtils::processFile(fileName,
+        parameters_[CbcParam::DIRECTORY]->dirName());
+      if (fileName == "") {
+        fileName = parameters_[CbcParam::GMPLSOLFILE]->fileName();
+      } else {
+        parameters_[CbcParam::GMPLSOLFILE]->setFileName(fileName);
+      }
+    }
+    if (!append) {
+      fp = fopen(fileName.c_str(), "w");
+    } else {
+      fp = fopen(fileName.c_str(), "a");
+    }
+    if (!fp) {
+      buffer.str("");
+      buffer << "Unable to open file " << fileName.c_str();
+      printGeneralMessage(model_, buffer.str());
+      return;
+    }
+  }
+
+#ifndef CBC_OTHER_SOLVER
+  // See if Glpk
+  if (cbcParamCode == CbcParam::WRITEGMPLSOL) {
+    int numberRows = lpSolver->getNumRows();
+    int numberColumns = lpSolver->getNumCols();
+    int numberGlpkRows = numberRows + 1;
+#ifdef COINUTILS_HAS_GLPK
+    if (coin_glp_prob_) {
+      // from gmpl
+      numberGlpkRows = glp_get_num_rows(coin_glp_prob_);
+      if (numberGlpkRows != numberRows)
+        printf("Mismatch - cbc %d rows, glpk %d\n", numberRows,
+          numberGlpkRows);
+    }
+#endif
+    fprintf(fp, "%d %d\n", numberGlpkRows, numberColumns);
+    int iStat = lpSolver->status();
+    int iStat2 = GLP_UNDEF;
+    bool integerProblem = false;
+    if (integerStatus_ >= 0) {
+      iStat = integerStatus_;
+      integerProblem = true;
+    }
+    if (iStat == 0) {
+      // optimal
+      if (integerProblem)
+        iStat2 = GLP_OPT;
+      else
+        iStat2 = GLP_FEAS;
+    } else if (iStat == 1) {
+      // infeasible
+      iStat2 = GLP_NOFEAS;
+    } else if (iStat == 2) {
+      // unbounded
+      // leave as 1
+    } else if (iStat >= 3 && iStat <= 5) {
+      if (babModel_ && !babModel_->bestSolution())
+        iStat2 = GLP_NOFEAS;
+      else
+        iStat2 = GLP_FEAS;
+    } else if (iStat == 6) {
+      // bab infeasible
+      iStat2 = GLP_NOFEAS;
+    }
+    lpSolver->computeObjectiveValue(false);
+    double objValue = clpSolver->getObjValue();
+    if (integerProblem)
+      fprintf(fp, "%d %g\n", iStat2, objValue);
+    else
+      fprintf(fp, "%d 2 %g\n", iStat2, objValue);
+    if (numberGlpkRows > numberRows) {
+      // objective as row
+      if (integerProblem) {
+        fprintf(fp, "%g\n", objValue);
+      } else {
+        fprintf(fp, "4 %g 1.0\n", objValue);
+      }
+    }
+    int lookup[6] = { 4, 1, 3, 2, 4, 5 };
+    const double *primalRowSolution = lpSolver->primalRowSolution();
+    const double *dualRowSolution = lpSolver->dualRowSolution();
+    for (int i = 0; i < numberRows; i++) {
+      if (integerProblem) {
+        fprintf(fp, "%g\n", primalRowSolution[i]);
+      } else {
+        fprintf(fp, "%d %g %g\n",
+          lookup[lpSolver->getRowStatus(i)],
+          primalRowSolution[i], dualRowSolution[i]);
+      }
+    }
+    const double *primalColumnSolution = lpSolver->primalColumnSolution();
+    const double *dualColumnSolution = lpSolver->dualColumnSolution();
+    for (int i = 0; i < numberColumns; i++) {
+      if (integerProblem) {
+        fprintf(fp, "%g\n", primalColumnSolution[i]);
+      } else {
+        fprintf(fp, "%d %g %g\n",
+          lookup[lpSolver->getColumnStatus(i)],
+          primalColumnSolution[i], dualColumnSolution[i]);
+      }
+    }
+    fclose(fp);
+#ifdef COINUTILS_HAS_GLPK
+    if (coin_glp_prob_) {
+      if (integerProblem) {
+        glp_read_mip(coin_glp_prob_, fileName.c_str());
+        glp_mpl_postsolve(coin_glp_tran_, coin_glp_prob_, GLP_MIP);
+      } else {
+        glp_read_sol(coin_glp_prob_, fileName.c_str());
+        glp_mpl_postsolve(coin_glp_tran_, coin_glp_prob_, GLP_SOL);
+      }
+      // free up as much as possible
+      glp_free(coin_glp_prob_);
+      glp_mpl_free_wksp(coin_glp_tran_);
+      coin_glp_prob_ = NULL;
+      coin_glp_tran_ = NULL;
+      // gmp_free_mem();
+      /* check that no memory blocks are still allocated */
+      glp_free_env();
+    }
+#endif
+    return;
+  }
+
+  bool printingAllAsCsv = false;
+  if (printMode_ == 14) {
+    // when allcsv then set printMode_ to all and
+    // change the output format to csv
+    printMode_ = 4;
+    printingAllAsCsv = true;
+  }
+
+  if (printMode_ < 5) {
+    if (cbcParamCode == CbcParam::WRITENEXTSOL) {
+      // save
+      const double *nextBestSolution = model_.savedSolution(currentBestSolution_++);
+      if (!nextBestSolution) {
+        buffer.str("");
+        buffer << "All alternative solutions printed";
+        printGeneralMessage(model_, buffer.str());
+        return;
+      } else {
+        buffer.str("");
+        buffer << "Alternative solution - "
+               << model_.numberSavedSolutions() - 2 << " remaining";
+        printGeneralMessage(model_, buffer.str());
+      }
+      saveLpSolver = lpSolver;
+      assert(clpSolver->getModelPtr() == saveLpSolver);
+      lpSolver = new ClpSimplex(*saveLpSolver);
+#ifndef NDEBUG
+      ClpSimplex *oldSimplex = clpSolver->swapModelPtr(lpSolver);
+      assert(oldSimplex == saveLpSolver);
+#else
+      clpSolver->swapModelPtr(lpSolver);
+#endif
+      double *solution = lpSolver->primalColumnSolution();
+      double *lower = lpSolver->columnLower();
+      double *upper = lpSolver->columnUpper();
+      int numberColumns = lpSolver->numberColumns();
+      memcpy(solution, nextBestSolution,
+        numberColumns * sizeof(double));
+      model_.deleteSavedSolution(1);
+      for (int i = 0; i < numberColumns; i++) {
+        if (clpSolver->isInteger(i)) {
+          double value = floor(solution[i] + 0.5);
+          lower[i] = value;
+          upper[i] = value;
+        }
+      }
+      lpSolver->allSlackBasis();
+      lpSolver->initialSolve();
+    }
+    // Write solution header (suggested by Luigi Poderico)
+    // Refresh solver
+    lpSolver = clpSolver->getModelPtr();
+    ClpQuadraticObjective *quadObj = dynamic_cast< ClpQuadraticObjective * >(lpSolver->objectiveAsObject());
+    double objValue;
+    if (!quadObj) {
+      lpSolver->computeObjectiveValue(false);
+      objValue = lpSolver->getObjValue(); // why not just use model_.getObjValue(); - maybe if no solution
+    } else {
+      double *solution = lpSolver->primalColumnSolution();
+      objValue = quadObj->objectiveValue(lpSolver, solution);
+      // offset
+      objValue -= lpSolver->objectiveOffset();
+    }
+    int iStat = lpSolver->status();
+    int iStat2 = -1;
+    if (integerStatus_ >= 0) {
+      iStat = integerStatus_;
+      iStat2 = babModel_ ? babModel_->secondaryStatus()
+                           : model_.secondaryStatus();
+    } else if (iStat == 3) {
+      // LP solve stopped before B&B: translate Clp secondary status
+      // (9 = time limit) to CBC secondary status (4 = time limit).
+      iStat2 = (lpSolver->secondaryStatus() == 9) ? 4 : 3;
+    }
+    if (iStat == 0) {
+      fprintf(fp, "Optimal");
+      if (iStat2 == 2) {
+        fprintf(fp, " (within gap tolerance)");
+      }
+    } else if (iStat == 1) {
+      // infeasible
+      fprintf(fp, "Infeasible");
+    } else if (iStat == 2) {
+      // unbounded
+      fprintf(fp, "Unbounded");
+    } else if (iStat >= 3 && iStat <= 5) {
+      if (iStat == 3) {
+        if (iStat2 == 4) {
+          fprintf(fp, "Stopped on time");
+        } else {
+          fprintf(fp, "Stopped on iterations");
+        }
+      } else if (iStat == 4) {
+        fprintf(fp, "Stopped on difficulties");
+      } else {
+        fprintf(fp, "Stopped on ctrl-c");
+      }
+      if (babModel_ && !babModel_->bestSolution())
+        fprintf(fp, " (no integer solution - continuous used)");
+      else if (integerStatus_ < 0 && iStat == 3)
+        fprintf(fp, " (LP relaxation not completed - no integer solution)");
+    } else if (iStat == 6) {
+      // bab infeasible
+      fprintf(fp, "Integer infeasible");
+    } else {
+      fprintf(fp, "Status unknown");
+    }
+    fprintf(fp, " - objective value %.8f\n", objValue);
+  }
+#endif
+  // make fancy later on
+  int iRow;
+  int numberRows = clpSolver->getNumRows();
+  const double *dualRowSolution = clpSolver->getRowPrice();
+  const double *primalRowSolution = clpSolver->getRowActivity();
+  const double *rowLower = clpSolver->getRowLower();
+  const double *rowUpper = clpSolver->getRowUpper();
+  double primalTolerance;
+  clpSolver->getDblParam(OsiPrimalTolerance, primalTolerance);
+  size_t lengthPrint = static_cast< size_t >(std::max(lengthName_, 8));
+  bool doMask = (parameters_[CbcParam::PRINTMASK]->strVal()
+      != ""
+    && lengthName_);
+  int *maskStarts = NULL;
+  int maxMasks = 0;
+  char **masks = NULL;
+  if (doMask) {
+    int nAst = 0;
+    const char *pMask2 = parameters_[CbcParam::PRINTMASK]->strVal().c_str();
+    char pMask[100];
+    size_t iChar;
+    size_t lengthMask = strlen(pMask2);
+    assert(lengthMask < 100);
+    if (*pMask2 == '"') {
+      if (pMask2[lengthMask - 1] != '"') {
+        printf("mismatched \" in mask %s\n", pMask2);
+        return;
+      } else {
+        strcpy(pMask, pMask2 + 1);
+        *strchr(pMask, '"') = '\0';
+      }
+    } else if (*pMask2 == '\'') {
+      if (pMask2[lengthMask - 1] != '\'') {
+        printf("mismatched ' in mask %s\n", pMask2);
+        return;
+      } else {
+        strcpy(pMask, pMask2 + 1);
+        *strchr(pMask, '\'') = '\0';
+      }
+    } else {
+      strcpy(pMask, pMask2);
+    }
+    if (lengthMask > static_cast< size_t >(lengthName_)) {
+      printf("mask %s too long - skipping\n", pMask);
+      return;
+    }
+    maxMasks = 1;
+    for (iChar = 0; iChar < lengthMask; iChar++) {
+      if (pMask[iChar] == '*') {
+        nAst++;
+        maxMasks *= (lengthName_ + 1);
+      }
+    }
+    int nEntries = 1;
+    maskStarts = new int[lengthName_ + 2];
+    masks = new char *[maxMasks];
+    char **newMasks = new char *[maxMasks];
+    int i;
+    for (i = 0; i < maxMasks; i++) {
+      masks[i] = new char[lengthName_ + 1];
+      newMasks[i] = new char[lengthName_ + 1];
+    }
+    strcpy(masks[0], pMask);
+    for (int iAst = 0; iAst < nAst; iAst++) {
+      int nOldEntries = nEntries;
+      nEntries = 0;
+      for (int iEntry = 0; iEntry < nOldEntries; iEntry++) {
+        char *oldMask = masks[iEntry];
+        char *ast = strchr(oldMask, '*');
+        assert(ast);
+        size_t length = strlen(oldMask) - 1;
+        size_t nBefore = ast - oldMask;
+        size_t nAfter = length - nBefore;
+        // and add null
+        nAfter++;
+        for (int i = 0;
+          i <= lengthName_ - static_cast< int >(length); i++) {
+          char *maskOut = newMasks[nEntries];
+          memcpy(maskOut, oldMask, nBefore);
+          for (int k = 0; k < i; k++)
+            maskOut[k + nBefore] = '?';
+          memcpy(maskOut + nBefore + i, ast + 1, nAfter);
+          nEntries++;
+          assert(nEntries <= maxMasks);
+        }
+      }
+      char **temp = masks;
+      masks = newMasks;
+      newMasks = temp;
+    }
+    // Now extend and sort
+    int *sort = new int[nEntries];
+    for (i = 0; i < nEntries; i++) {
+      char *maskThis = masks[i];
+      size_t length = strlen(maskThis);
+      while (length > 0 && maskThis[length - 1] == ' ')
+        length--;
+      maskThis[length] = '\0';
+      sort[i] = static_cast< int >(length);
+    }
+    CoinSort_2(sort, sort + nEntries, masks);
+    int lastLength = -1;
+    for (i = 0; i < nEntries; i++) {
+      int length = sort[i];
+      while (length > lastLength)
+        maskStarts[++lastLength] = i;
+    }
+    maskStarts[++lastLength] = nEntries;
+    delete[] sort;
+    for (i = 0; i < maxMasks; i++)
+      delete[] newMasks[i];
+    delete[] newMasks;
+  }
+  if (printMode_ > 5 && printMode_ < 12) {
+    ClpSimplex *solver = clpSolver->getModelPtr();
+    int numberColumns = numberPrintingColumns(clpSolver);
+    // int numberColumns = solver->numberColumns();
+    // column length unless rhs ranging
+    int number = numberColumns;
+    if (lpSolver->status()) {
+      fprintf(fp, "**** Results not valid when LP not optimal\n");
+      number = 0;
+    }
+    switch (printMode_) {
+      // bound ranging
+    case 6:
+      fprintf(fp, "Bound ranging");
+      break;
+      // rhs ranging
+    case 7:
+      fprintf(fp, "Rhs ranging");
+      if (!lpSolver->status())
+        number = numberRows;
+      break;
+      // objective ranging
+    case 8:
+      fprintf(fp, "Objective ranging");
+      break;
+    }
+    if (lengthName_)
+      fprintf(fp, ",name");
+    fprintf(fp, ",increase,variable,decrease,variable\n");
+    int *which = new int[number];
+    if (printMode_ != 7) {
+      if (!doMask) {
+        for (int i = 0; i < number; i++)
+          which[i] = i;
+      } else {
+        int n = 0;
+        for (int i = 0; i < number; i++) {
+          if (maskMatches(maskStarts, masks, columnNames_[i]))
+            which[n++] = i;
+        }
+        if (n) {
+          number = n;
+        } else {
+          printf("No names match - doing all\n");
+          for (int i = 0; i < number; i++)
+            which[i] = i;
+        }
+      }
+    } else {
+      if (!doMask) {
+        for (int i = 0; i < number; i++)
+          which[i] = i + numberColumns;
+      } else {
+        int n = 0;
+        for (int i = 0; i < number; i++) {
+          if (maskMatches(maskStarts, masks, rowNames_[i]))
+            which[n++] = i + numberColumns;
+        }
+        if (n) {
+          number = n;
+        } else {
+          printf("No names match - doing all\n");
+          for (int i = 0; i < number; i++)
+            which[i] = i + numberColumns;
+        }
+      }
+    }
+    double *valueIncrease = new double[number];
+    int *sequenceIncrease = new int[number];
+    double *valueDecrease = new double[number];
+    int *sequenceDecrease = new int[number];
+    switch (printMode_) {
+      // bound or rhs ranging
+    case 6:
+    case 7:
+      solver->primalRanging(number, which, valueIncrease,
+        sequenceIncrease, valueDecrease,
+        sequenceDecrease);
+      break;
+      // objective ranging
+    case 8:
+      solver->dualRanging(number, which, valueIncrease,
+        sequenceIncrease, valueDecrease,
+        sequenceDecrease);
+      break;
+    }
+    for (int i = 0; i < number; i++) {
+      int iWhich = which[i];
+      fprintf(fp, "%d,",
+        (iWhich < numberColumns) ? iWhich
+                                 : iWhich - numberColumns);
+      if (lengthName_) {
+        const char *name = (printMode_ == 7)
+          ? rowNames_[iWhich - numberColumns].c_str()
+          : columnNames_[iWhich].c_str();
+        fprintf(fp, "%s,", name);
+      }
+      if (valueIncrease[i] < 1.0e30) {
+        fprintf(fp, "%.10g,", valueIncrease[i]);
+        int outSequence = sequenceIncrease[i];
+        if (outSequence < numberColumns) {
+          if (lengthName_)
+            fprintf(fp, "%s,", columnNames_[outSequence].c_str());
+          else
+            fprintf(fp, "C%7.7d,", outSequence);
+        } else {
+          outSequence -= numberColumns;
+          if (lengthName_)
+            fprintf(fp, "%s,", rowNames_[outSequence].c_str());
+          else
+            fprintf(fp, "R%7.7d,", outSequence);
+        }
+      } else {
+        fprintf(fp, "1.0e100,,");
+      }
+      if (valueDecrease[i] < 1.0e30) {
+        fprintf(fp, "%.10g,", valueDecrease[i]);
+        int outSequence = sequenceDecrease[i];
+        if (outSequence < numberColumns) {
+          if (lengthName_)
+            fprintf(fp, "%s", columnNames_[outSequence].c_str());
+          else
+            fprintf(fp, "C%7.7d", outSequence);
+        } else {
+          outSequence -= numberColumns;
+          if (lengthName_)
+            fprintf(fp, "%s", rowNames_[outSequence].c_str());
+          else
+            fprintf(fp, "R%7.7d", outSequence);
+        }
+      } else {
+        fprintf(fp, "1.0e100,");
+      }
+      fprintf(fp, "\n");
+    }
+    if (fp != stdout)
+      fclose(fp);
+    delete[] which;
+    delete[] valueIncrease;
+    delete[] sequenceIncrease;
+    delete[] valueDecrease;
+    delete[] sequenceDecrease;
+    if (masks) {
+      delete[] maskStarts;
+      for (int i = 0; i < maxMasks; i++)
+        delete[] masks[i];
+      delete[] masks;
+    }
+    return;
+  }
+
+  char printFormat[50];
+  sprintf(printFormat, " %s         %s\n",
+    parameters_[CbcParam::OUTPUTPRECISION]->strVal().c_str(),
+    parameters_[CbcParam::OUTPUTPRECISION]->strVal().c_str());
+  char printIntFormat[50];
+  sprintf(printIntFormat, " %s         %s\n",
+    CLP_QUOTE(CLP_INTEGER_OUTPUT_FORMAT),
+    parameters_[CbcParam::OUTPUTPRECISION]->strVal().c_str());
+  if (printMode_ > 2 && printMode_ < 5) {
+    for (iRow = 0; iRow < numberRows; iRow++) {
+      int type = printMode_ - 3;
+
+      std::string valueHasTolerance;
+      std::string rowName;
+
+      if (primalRowSolution[iRow] > rowUpper[iRow] + primalTolerance || primalRowSolution[iRow] < rowLower[iRow] - primalTolerance) {
+        if (printingAllAsCsv) {
+          valueHasTolerance = "**";
+        } else {
+          fprintf(fp, "** ");
+        }
+        type = 2;
+      } else if (fabs(primalRowSolution[iRow]) > 1.0e-8) {
+        type = 1;
+      } else if (numberRows < 50) {
+        type = 3;
+      }
+      if (doMask && !maskMatches(maskStarts, masks, rowNames_[iRow]))
+        type = 0;
+      if (type) {
+        if (!printingAllAsCsv) {
+          fprintf(fp, "%7d ", iRow);
+        }
+
+        if (lengthName_) {
+          if (printingAllAsCsv) {
+            rowName = rowNames_[iRow];
+          } else {
+            const char *name = rowNames_[iRow].c_str();
+            size_t n = strlen(name);
+            size_t i;
+
+            for (i = 0; i < n; i++)
+              fprintf(fp, "%c", name[i]);
+            for (; i < lengthPrint; i++)
+              fprintf(fp, " ");
+          }
+        }
+
+        if (!printingAllAsCsv) {
+          fprintf(fp, printFormat, primalRowSolution[iRow],
+            dualRowSolution[iRow]);
+        } else {
+          fprintf(fp,
+            "%s,%d,%s,%.15g,%.15g\n",
+            valueHasTolerance.c_str(),
+            iRow,
+            rowName.c_str(),
+            primalRowSolution[iRow],
+            dualRowSolution[iRow]);
+        }
+      }
+    }
+  }
+  int iColumn;
+  int numberColumns = numberPrintingColumns(clpSolver);
+  const double *dualColumnSolution = clpSolver->getReducedCost();
+  const double *primalColumnSolution = clpSolver->getColSolution();
+  const double *columnLower = clpSolver->getColLower();
+  const double *columnUpper = clpSolver->getColUpper();
+  if (printMode_ != 2 && printMode_ < 12) {
+    if (printMode_ == 5) {
+      if (lengthName_)
+        fprintf(fp, "name");
+      else
+        fprintf(fp, "number");
+      fprintf(fp, ",solution\n");
+    }
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      int type = (printMode_ > 3) ? 1 : 0;
+
+      std::string valueHasTolerance;
+      std::string colName;
+
+      if (primalColumnSolution[iColumn] > columnUpper[iColumn] + primalTolerance || primalColumnSolution[iColumn] < columnLower[iColumn] - primalTolerance) {
+        if (printingAllAsCsv) {
+          valueHasTolerance = "**";
+        } else {
+          fprintf(fp, "** ");
+        }
+        type = 2;
+      } else if (fabs(primalColumnSolution[iColumn]) > 1.0e-8) {
+        type = 1;
+      } else if (numberColumns < 50) {
+        type = 3;
+      }
+      // see if integer
+      if ((!clpSolver->isInteger(iColumn) || fabs(primalColumnSolution[iColumn]) < 1.0e-8) && printMode_ == 1)
+        type = 0;
+      if (doMask && !maskMatches(maskStarts, masks, columnNames_[iColumn]))
+        type = 0;
+      if (type) {
+        if (printMode_ != 5) {
+          if (!printingAllAsCsv) {
+            fprintf(fp, "%7d ", iColumn);
+          }
+
+          if (lengthName_) {
+            if (printingAllAsCsv) {
+              colName = columnNames_[iColumn];
+            } else {
+              const char *name = columnNames_[iColumn].c_str();
+              size_t n = strlen(name);
+              size_t i;
+              for (i = 0; i < n; i++)
+                fprintf(fp, "%c", name[i]);
+              for (; i < lengthPrint; i++)
+                fprintf(fp, " ");
+            }
+          }
+          if (!printingAllAsCsv) {
+            double value = primalColumnSolution[iColumn];
+            double nearest = floor(value + 0.5);
+            if (!clpSolver->isInteger(iColumn) || fabs(value - nearest) > 1.0e-8) {
+              fprintf(fp, printFormat, value,
+                dualColumnSolution[iColumn]);
+            } else {
+              // allow for very very large integer values
+              long int iValue = nearest;
+              fprintf(fp, printIntFormat, iValue,
+                dualColumnSolution[iColumn]);
+            }
+          } else {
+            fprintf(fp,
+              "%s,%d,%s,%.15g,%.15g\n",
+              valueHasTolerance.c_str(),
+              iColumn,
+              colName.c_str(),
+              primalColumnSolution[iColumn],
+              dualColumnSolution[iColumn]);
+          }
+        } else {
+          char temp[100];
+          if (lengthName_) {
+            const char *name = columnNames_[iColumn].c_str();
+            for (int i = 0; i < lengthName_; i++)
+              temp[i] = name[i];
+            temp[lengthName_] = '\0';
+          } else {
+            sprintf(temp, "%7d", iColumn);
+          }
+          sprintf(temp + strlen(temp), ", %15.8g",
+            primalColumnSolution[iColumn]);
+          size_t n = strlen(temp);
+          size_t k = 0;
+          for (size_t i = 0; i < n + 1; i++) {
+            if (temp[i] != ' ')
+              temp[k++] = temp[i];
+          }
+          fprintf(fp, "%s\n", temp);
+        }
+      }
+    }
+
+    if (cbcParamCode == CbcParam::WRITENEXTSOL) {
+      if (saveLpSolver) {
+        clpSolver->swapModelPtr(saveLpSolver);
+        delete lpSolver;
+        lpSolver = saveLpSolver;
+        saveLpSolver = NULL;
+      }
+    }
+  } else if (printMode_ == 2) {
+    // special format suitable for OsiRowCutDebugger
+    int n = 0;
+    bool comma = false;
+    bool newLine = false;
+    fprintf(fp, "\tint intIndicesV[]={\n");
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      if (primalColumnSolution[iColumn] > 0.5 && model_.solver()->isInteger(iColumn)) {
+        if (comma)
+          fprintf(fp, ",");
+        if (newLine)
+          fprintf(fp, "\n");
+        fprintf(fp, "%d ", iColumn);
+        comma = true;
+        newLine = false;
+        n++;
+        if (n == 10) {
+          n = 0;
+          newLine = true;
+        }
+      }
+    }
+    fprintf(fp, "};\n");
+    n = 0;
+    comma = false;
+    newLine = false;
+    fprintf(fp, "\tdouble intSolnV[]={\n");
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      if (primalColumnSolution[iColumn] > 0.5 && model_.solver()->isInteger(iColumn)) {
+        if (comma)
+          fprintf(fp, ",");
+        if (newLine)
+          fprintf(fp, "\n");
+        int value = static_cast< int >(primalColumnSolution[iColumn] + 0.5);
+        fprintf(fp, "%d. ", value);
+        comma = true;
+        newLine = false;
+        n++;
+        if (n == 10) {
+          n = 0;
+          newLine = true;
+        }
+      }
+    }
+    fprintf(fp, "};\n");
+  } else {
+    // Make up a fake bounds section
+    char outputValue[24];
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      if (printMode_ == 13 || model_.solver()->isInteger(iColumn)) {
+        fprintf(fp, " FX BOUND001  ");
+        const char *name = columnNames_[iColumn].c_str();
+        size_t n = strlen(name);
+        size_t i;
+        for (i = 0; i < n; i++)
+          fprintf(fp, "%c", name[i]);
+        for (; i < lengthPrint; i++)
+          fprintf(fp, " ");
+        CoinConvertDouble(5, 2, primalColumnSolution[iColumn],
+          outputValue);
+        fprintf(fp, "  %s\n", outputValue);
+      } else {
+        fprintf(fp, " LO BOUND001  ");
+        const char *name = columnNames_[iColumn].c_str();
+        size_t n = strlen(name);
+        size_t i;
+        for (i = 0; i < n; i++)
+          fprintf(fp, "%c", name[i]);
+        for (; i < lengthPrint; i++)
+          fprintf(fp, " ");
+        CoinConvertDouble(5, 2,
+          std::max(-1.0e30, columnLower[iColumn]),
+          outputValue);
+        fprintf(fp, "  %s\n", outputValue);
+        fprintf(fp, " UP BOUND001  ");
+        for (i = 0; i < n; i++)
+          fprintf(fp, "%c", name[i]);
+        for (; i < lengthPrint; i++)
+          fprintf(fp, " ");
+        CoinConvertDouble(5, 2,
+          std::min(1.0e30, columnUpper[iColumn]),
+          outputValue);
+        fprintf(fp, "  %s\n", outputValue);
+      }
+    }
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      if (primalColumnSolution[iColumn] > columnUpper[iColumn] + primalTolerance || primalColumnSolution[iColumn] < columnLower[iColumn] - primalTolerance) {
+        fprintf(fp, " FX BOUND002  ");
+        const char *name = columnNames_[iColumn].c_str();
+        size_t n = strlen(name);
+        size_t i;
+        for (i = 0; i < n; i++)
+          fprintf(fp, "%c", name[i]);
+        for (; i < lengthPrint; i++)
+          fprintf(fp, " ");
+        CoinConvertDouble(5, 2, primalColumnSolution[iColumn],
+          outputValue);
+        fprintf(fp, "  %s\n", outputValue);
+      }
+    }
+  }
+  if (fp != stdout)
+    fclose(fp);
+  if (masks) {
+    delete[] maskStarts;
+    for (int i = 0; i < maxMasks; i++)
+      delete[] masks[i];
+    delete[] masks;
+  }
+}
 static bool ends_with(std::string const &value, std::string const &ending) {
   if (ending.size() > value.size())
     return false;
@@ -10315,298 +11448,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           // babModel_=NULL;
         } break;
         case CbcParam::IMPORT: {
-          if (!statusUserFunction_[0]) {
-            free(priorities);
-            priorities = NULL;
-            free(branchDirection);
-            branchDirection = NULL;
-            free(pseudoDown);
-            pseudoDown = NULL;
-            free(pseudoUp);
-            pseudoUp = NULL;
-            free(solutionIn);
-            solutionIn = NULL;
-            free(prioritiesIn);
-            prioritiesIn = NULL;
-            free(sosStart);
-            sosStart = NULL;
-            free(sosIndices);
-            sosIndices = NULL;
-            free(sosType);
-            sosType = NULL;
-            free(sosReference);
-            sosReference = NULL;
-            free(cut);
-            cut = NULL;
-            free(sosPriority);
-            sosPriority = NULL;
-          }
-          // delete babModel_;
-          // babModel_=NULL;
-          // see if we have a file name
-          cbcParam->readValue(inputQueue, fileName, &message);
-          // TODO Think about how to do this right
-          canOpen = false;
-          bool absolutePath = true;
-          CoinParamUtils::processFile(fileName,
-            parameters[CbcParam::DIRECTORY]->dirName());
-          if (fileName == "") {
-            fileName = parameters[CbcParam::IMPORTFILE]->fileName();
-          } else {
-            parameters[CbcParam::IMPORTFILE]->setFileName(fileName);
-          }
-          if (fileName[0] != '/' && fileName[0] != '\\' && !strchr(fileName.c_str(), ':')) {
-            absolutePath = false;
-          }
-          // See if gmpl file
-          int gmpl = 0;
-          std::string gmplData;
-          if (fileName == "-") {
-            // stdin
-            canOpen = true;
-          } else if (fileName == "-lp") {
-            // stdin
-            canOpen = true;
-            fileName = "-";
-            gmpl = -1; //.lp format
-          } else {
-            // See if .lp
-            const char *c_name = fileName.c_str();
-            size_t length = strlen(c_name);
-            if ((length > 3 && !strncmp(c_name + length - 3, ".lp", 3)) || (length > 6 && !strncmp(c_name + length - 6, ".lp.gz", 6)) || (length > 7 && !strncmp(c_name + length - 7, ".lp.bz2", 7))) {
-              gmpl = -1; // .lp
-            }
-            length = fileName.size();
-            size_t percent = fileName.find('%');
-            if (percent < length && percent > 0) {
-#ifdef COINUTILS_HAS_GLPK
-              gmpl = 1;
-              fileName = fileName.substr(0, percent);
-              gmplData = fileName.substr(percent + 1);
-              if (!absolutePath) {
-                fileName = parameters[CbcParam::DIRECTORY]->dirName() + fileName;
-                gmplData = parameters[CbcParam::DIRECTORY]->dirName() + fileName;
-              }
-              gmpl = (percent < length - 1) ? 2 : 1;
-              printf("GMPL model file %s and data file %s\n",
-                fileName.c_str(), gmplData.c_str());
-#else
-              printf("Cbc was not built with GMPL support. Exiting.\n");
-              // This is surely not the right thing to do here. Should we
-              // throw an exceptioon? Exit?
-              abort();
-#endif
-            }
-            if (fileCoinReadable(fileName)) {
-              // can open - lets go for it
-              canOpen = true;
-              if (gmpl == 2) {
-                fp;
-                fp = fopen(gmplData.c_str(), "r");
-                if (fp) {
-                  fclose(fp);
-                } else {
-                  canOpen = false;
-                  buffer.str("");
-                  buffer << "Unable to open file " << gmplData.c_str();
-                  printGeneralMessage(model_, buffer.str());
-                  continue;
-                }
-              }
-            } else {
-              buffer.str("");
-              buffer << "Unable to open file " << fileName.c_str();
-              printGeneralMessage(model_, buffer.str());
-              continue;
-            }
-          }
-          int status;
-          numberLotSizing = 0;
-          delete[] lotsize;
-#ifndef CBC_OTHER_SOLVER
-          ClpSimplex *lpSolver = clpSolver->getModelPtr();
-          // Install capturing handler to intercept MPS/LP parse errors.
-          // Use push/pop to avoid ownership issues (passInMessageHandler deletes
-          // the old handler when defaultHandler_==true).
-          CbcImportHandler importHandler;
-          bool origDefault;
-          CoinMessageHandler *origLpHandler = lpSolver->pushMessageHandler(
-            &importHandler, origDefault);
-          if (!gmpl) {
-            status = clpSolver->readMps(fileName.c_str(), keepImportNames != 0,
-              allowImportErrors != 0);
-          } else if (gmpl > 0) {
-#if defined(CLP_HAS_GLPK) && defined(COINUTILS_HAS_GLPK)
-            status = lpSolver->readGMPL(
-              fileName.c_str(), (gmpl == 2) ? gmplData.c_str() : NULL,
-              keepImportNames != 0, &coin_glp_tran, &coin_glp_prob);
-#endif
-          } else {
-#ifdef KILL_ZERO_READLP
-            status = clpSolver->readLp(fileName.c_str(),
-              lpSolver->getSmallElementValue());
-#else
-            status = clpSolver->readLp(fileName.c_str(), 1.0e-12);
-#endif
-          }
-          lpSolver->popMessageHandler(origLpHandler, origDefault);
-#else
-          status = clpSolver->readMps(fileName.c_str(), "");
-          CbcImportHandler importHandler; // empty, CBC_OTHER_SOLVER path
-#endif
-          if (!status || (status > 0 && allowImportErrors)) {
-#ifndef CBC_OTHER_SOLVER
-            if (keepImportNames) {
-              lengthName = lpSolver->lengthNames();
-              rowNames = *(lpSolver->rowNames());
-              columnNames = *(lpSolver->columnNames());
-            } else {
-              lengthName = 0;
-            }
-            // really just for testing
-            double objScale = clpParameters[ClpParam::OBJSCALE2]->dblVal();
-            if (objScale != 1.0) {
-              int iColumn;
-              int numberColumns = lpSolver->numberColumns();
-              double *dualColumnSolution = lpSolver->dualColumnSolution();
-              ClpObjective *obj = lpSolver->objectiveAsObject();
-              assert(dynamic_cast< ClpLinearObjective * >(obj));
-              double offset;
-              double *objective = obj->gradient(NULL, NULL, offset, true);
-              for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                dualColumnSolution[iColumn] *= objScale;
-                objective[iColumn] *= objScale;
-              }
-              int iRow;
-              int numberRows = lpSolver->numberRows();
-              double *dualRowSolution = lpSolver->dualRowSolution();
-              for (iRow = 0; iRow < numberRows; iRow++)
-                dualRowSolution[iRow] *= objScale;
-              lpSolver->setObjectiveOffset(objScale * lpSolver->objectiveOffset());
-            }
-            goodModel = true;
-            CbcOutput::printProblemSummary(model_, *clpSolver, &importHandler);
-            // sets to all slack (not necessary?)
-            lpSolver->createStatus();
-            // See if sos
-            if (clpSolver->numberSOS()) {
-              // SOS
-              numberSOS = clpSolver->numberSOS();
-              const CoinSet *setInfo = clpSolver->setInfo();
-              sosStart = reinterpret_cast< int * >(
-                malloc((numberSOS + 1) * sizeof(int)));
-              sosType = reinterpret_cast< char * >(
-                malloc(numberSOS * sizeof(char)));
-              const double *lower = clpSolver->getColLower();
-              const double *upper = clpSolver->getColUpper();
-              int i;
-              int nTotal = 0;
-              sosStart[0] = 0;
-              for (i = 0; i < numberSOS; i++) {
-                int type = setInfo[i].setType();
-                int n = setInfo[i].numberEntries();
-                sosType[i] = static_cast< char >(type);
-                nTotal += n;
-                sosStart[i + 1] = nTotal;
-              }
-              sosIndices = reinterpret_cast< int * >(malloc(nTotal * sizeof(int)));
-              sosReference = reinterpret_cast< double * >(
-                malloc(nTotal * sizeof(double)));
-              for (i = 0; i < numberSOS; i++) {
-                int n = setInfo[i].numberEntries();
-                const int *which = setInfo[i].which();
-                const double *weights = setInfo[i].weights();
-                int base = sosStart[i];
-                for (int j = 0; j < n; j++) {
-                  int k = which[j];
-                  // don't allow free
-                  if (upper[k] > 1.0e15)
-                    clpSolver->setColUpper(k, 1.0e15);
-                  if (lower[k] < -1.0e15)
-                    clpSolver->setColLower(k, -1.0e15);
-                  sosIndices[j + base] = k;
-                  sosReference[j + base] = weights ? weights[j] : static_cast< double >(j);
-                }
-              }
-            }
-            // make sure integer
-            // also deal with semi-continuous
-            int numberColumns = lpSolver->numberColumns();
-            int i;
-            for (i = 0; i < numberColumns; i++) {
-              if (clpSolver->integerType(i) > 2)
-                break;
-              if (lpSolver->isInteger(i))
-                clpSolver->setInteger(i);
-            }
-            if (i < numberColumns) {
-              // semi-continuous
-              clpSolver->setSpecialOptions(clpSolver->specialOptions() | 8388608);
-              int iStart = i;
-              for (i = iStart; i < numberColumns; i++) {
-                if (clpSolver->integerType(i) > 2)
-                  numberLotSizing++;
-              }
-              lotsize = new lotStruct[numberLotSizing];
-              numberLotSizing = 0;
-              const double *lower = clpSolver->getColLower();
-              const double *upper = clpSolver->getColUpper();
-              for (i = iStart; i < numberColumns; i++) {
-                if (clpSolver->integerType(i) > 2) {
-                  int iType = clpSolver->integerType(i) - 3;
-                  if (!iType)
-                    clpSolver->setContinuous(i);
-                  else
-                    clpSolver->setInteger(i);
-                  lotsize[numberLotSizing].column = i;
-                  lotsize[numberLotSizing].high = upper[i];
-                  if (lower[i]) {
-                    lotsize[numberLotSizing++].low = lower[i];
-                    clpSolver->setColLower(i, 0.0);
-                  } else {
-                    lotsize[numberLotSizing++].low = 1.0;
-                  }
-                }
-              }
-            }
-#else
-            lengthName = 0;
-            goodModel = true;
-            CbcOutput::printProblemSummary(model_, *model_.solver());
-#endif
-            time2 = CoinCpuTime();
-            totalTime += time2 - time1;
-            time1 = time2;
-            // Go to canned file if just input file
-            if (inputQueue.empty()) {
-              // only if ends .mps
-              char *find = const_cast< char * >(strstr(fileName.c_str(), ".mps"));
-              if (find && find[4] == '\0') {
-                find[1] = 'p';
-                find[2] = 'a';
-                find[3] = 'r';
-                std::ifstream ifs(fileName.c_str());
-                if (ifs.is_open()) {
-                  while (!inputQueue.empty()) {
-                    inputQueue.pop_front();
-                  }
-                  CoinParamUtils::readFromStream(inputQueue, ifs);
-                }
-              }
-            }
-          } else {
-            // errors — model did not load
-            FILE *fp = model_.messageHandler()->filePointer();
-            if (!fp) fp = stdout;
-            const bool u8 = CbcOutput::useUtf8();
-            const char *x = u8 ? "✗" : "X";
-            fprintf(fp, "\n%s\n\n", CoinTable::phaseStart("Problem loading", u8).c_str());
-            CbcOutput::printImportErrors(fp, importHandler);
-            // Print failure banner directly (not via phaseEnd which always shows ✔).
-            fprintf(fp, "\n%s Problem loading failed — %d error(s)\n",
-              x, status);
-            fflush(fp);
-          }
+          importModel(inputQueue, clpSolver, lpSolver, time1, totalTime);
         } break;
         case CbcParam::EXPORT: {
           if (!goodModel) {
@@ -11600,838 +12442,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         case CbcParam::WRITENEXTSOL:
 
         case CbcParam::WRITEGMPLSOL: {
-          if (!goodModel) {
-            printGeneralWarning(model_, "** Current model not valid\n");
-            continue;
-          }
-          fp = NULL;
-          bool append = true;
-          ClpSimplex *saveLpSolver = NULL;
-          canOpen = false;
-          if (cbcParamCode == CbcParam::PRINTSOL) {
-            fp = stdout;
-            fprintf(fp, "\n");
-          } else {
-            cbcParam->readValue(inputQueue, fileName, &message);
-            if (fileName == "append") {
-              switch (cbcParamCode) {
-              case CbcParam::WRITESOL:
-                fileName = parameters[CbcParam::SOLUTIONFILE]->fileName();
-                break;
-              case CbcParam::WRITENEXTSOL:
-                fileName = parameters[CbcParam::NEXTSOLFILE]->fileName();
-                break;
-              case CbcParam::WRITEGMPLSOL:
-                fileName = parameters[CbcParam::SOLUTIONFILE]->fileName();
-                break;
-              }
-              CoinParamUtils::processFile(fileName,
-                parameters[CbcParam::DIRECTORY]->dirName(),
-                &canOpen);
-              if (!canOpen) {
-                buffer.str("");
-                buffer << "Unable to open file " << fileName.c_str();
-                printGeneralMessage(model_, buffer.str());
-                continue;
-              }
-              append = true;
-            } else if (cbcParamCode == CbcParam::WRITESOL) {
-              CoinParamUtils::processFile(fileName,
-                parameters[CbcParam::DIRECTORY]->dirName());
-              if (fileName == "") {
-                fileName = parameters[CbcParam::SOLUTIONFILE]->fileName();
-              } else {
-                parameters[CbcParam::SOLUTIONFILE]->setFileName(fileName);
-              }
-            } else if (cbcParamCode == CbcParam::WRITENEXTSOL) {
-              CoinParamUtils::processFile(fileName,
-                parameters[CbcParam::DIRECTORY]->dirName());
-              if (fileName == "") {
-                fileName = parameters[CbcParam::NEXTSOLFILE]->fileName();
-              } else {
-                parameters[CbcParam::NEXTSOLFILE]->setFileName(fileName);
-              }
-            } else if (cbcParamCode == CbcParam::WRITEGMPLSOL) {
-              CoinParamUtils::processFile(fileName,
-                parameters[CbcParam::DIRECTORY]->dirName());
-              if (fileName == "") {
-                fileName = parameters[CbcParam::GMPLSOLFILE]->fileName();
-              } else {
-                parameters[CbcParam::GMPLSOLFILE]->setFileName(fileName);
-              }
-            }
-            if (!append) {
-              fp = fopen(fileName.c_str(), "w");
-            } else {
-              fp = fopen(fileName.c_str(), "a");
-            }
-            if (!fp) {
-              buffer.str("");
-              buffer << "Unable to open file " << fileName.c_str();
-              printGeneralMessage(model_, buffer.str());
-              continue;
-            }
-          }
-
-#ifndef CBC_OTHER_SOLVER
-          // See if Glpk
-          if (cbcParamCode == CbcParam::WRITEGMPLSOL) {
-            int numberRows = lpSolver->getNumRows();
-            int numberColumns = lpSolver->getNumCols();
-            int numberGlpkRows = numberRows + 1;
-#ifdef COINUTILS_HAS_GLPK
-            if (coin_glp_prob) {
-              // from gmpl
-              numberGlpkRows = glp_get_num_rows(coin_glp_prob);
-              if (numberGlpkRows != numberRows)
-                printf("Mismatch - cbc %d rows, glpk %d\n", numberRows,
-                  numberGlpkRows);
-            }
-#endif
-            fprintf(fp, "%d %d\n", numberGlpkRows, numberColumns);
-            int iStat = lpSolver->status();
-            int iStat2 = GLP_UNDEF;
-            bool integerProblem = false;
-            if (integerStatus >= 0) {
-              iStat = integerStatus;
-              integerProblem = true;
-            }
-            if (iStat == 0) {
-              // optimal
-              if (integerProblem)
-                iStat2 = GLP_OPT;
-              else
-                iStat2 = GLP_FEAS;
-            } else if (iStat == 1) {
-              // infeasible
-              iStat2 = GLP_NOFEAS;
-            } else if (iStat == 2) {
-              // unbounded
-              // leave as 1
-            } else if (iStat >= 3 && iStat <= 5) {
-              if (babModel_ && !babModel_->bestSolution())
-                iStat2 = GLP_NOFEAS;
-              else
-                iStat2 = GLP_FEAS;
-            } else if (iStat == 6) {
-              // bab infeasible
-              iStat2 = GLP_NOFEAS;
-            }
-            lpSolver->computeObjectiveValue(false);
-            double objValue = clpSolver->getObjValue();
-            if (integerProblem)
-              fprintf(fp, "%d %g\n", iStat2, objValue);
-            else
-              fprintf(fp, "%d 2 %g\n", iStat2, objValue);
-            if (numberGlpkRows > numberRows) {
-              // objective as row
-              if (integerProblem) {
-                fprintf(fp, "%g\n", objValue);
-              } else {
-                fprintf(fp, "4 %g 1.0\n", objValue);
-              }
-            }
-            int lookup[6] = { 4, 1, 3, 2, 4, 5 };
-            const double *primalRowSolution = lpSolver->primalRowSolution();
-            const double *dualRowSolution = lpSolver->dualRowSolution();
-            for (int i = 0; i < numberRows; i++) {
-              if (integerProblem) {
-                fprintf(fp, "%g\n", primalRowSolution[i]);
-              } else {
-                fprintf(fp, "%d %g %g\n",
-                  lookup[lpSolver->getRowStatus(i)],
-                  primalRowSolution[i], dualRowSolution[i]);
-              }
-            }
-            const double *primalColumnSolution = lpSolver->primalColumnSolution();
-            const double *dualColumnSolution = lpSolver->dualColumnSolution();
-            for (int i = 0; i < numberColumns; i++) {
-              if (integerProblem) {
-                fprintf(fp, "%g\n", primalColumnSolution[i]);
-              } else {
-                fprintf(fp, "%d %g %g\n",
-                  lookup[lpSolver->getColumnStatus(i)],
-                  primalColumnSolution[i], dualColumnSolution[i]);
-              }
-            }
-            fclose(fp);
-#ifdef COINUTILS_HAS_GLPK
-            if (coin_glp_prob) {
-              if (integerProblem) {
-                glp_read_mip(coin_glp_prob, fileName.c_str());
-                glp_mpl_postsolve(coin_glp_tran, coin_glp_prob, GLP_MIP);
-              } else {
-                glp_read_sol(coin_glp_prob, fileName.c_str());
-                glp_mpl_postsolve(coin_glp_tran, coin_glp_prob, GLP_SOL);
-              }
-              // free up as much as possible
-              glp_free(coin_glp_prob);
-              glp_mpl_free_wksp(coin_glp_tran);
-              coin_glp_prob = NULL;
-              coin_glp_tran = NULL;
-              // gmp_free_mem();
-              /* check that no memory blocks are still allocated */
-              glp_free_env();
-            }
-#endif
-            break;
-          }
-
-          bool printingAllAsCsv = false;
-          if (printMode == 14) {
-            // when allcsv then set printMode to all and
-            // change the output format to csv
-            printMode = 4;
-            printingAllAsCsv = true;
-          }
-
-          if (printMode < 5) {
-            if (cbcParamCode == CbcParam::WRITENEXTSOL) {
-              // save
-              const double *nextBestSolution = model_.savedSolution(currentBestSolution++);
-              if (!nextBestSolution) {
-                buffer.str("");
-                buffer << "All alternative solutions printed";
-                printGeneralMessage(model_, buffer.str());
-                break;
-              } else {
-                buffer.str("");
-                buffer << "Alternative solution - "
-                       << model_.numberSavedSolutions() - 2 << " remaining";
-                printGeneralMessage(model_, buffer.str());
-              }
-              saveLpSolver = lpSolver;
-              assert(clpSolver->getModelPtr() == saveLpSolver);
-              lpSolver = new ClpSimplex(*saveLpSolver);
-#ifndef NDEBUG
-              ClpSimplex *oldSimplex = clpSolver->swapModelPtr(lpSolver);
-              assert(oldSimplex == saveLpSolver);
-#else
-              clpSolver->swapModelPtr(lpSolver);
-#endif
-              double *solution = lpSolver->primalColumnSolution();
-              double *lower = lpSolver->columnLower();
-              double *upper = lpSolver->columnUpper();
-              int numberColumns = lpSolver->numberColumns();
-              memcpy(solution, nextBestSolution,
-                numberColumns * sizeof(double));
-              model_.deleteSavedSolution(1);
-              for (int i = 0; i < numberColumns; i++) {
-                if (clpSolver->isInteger(i)) {
-                  double value = floor(solution[i] + 0.5);
-                  lower[i] = value;
-                  upper[i] = value;
-                }
-              }
-              lpSolver->allSlackBasis();
-              lpSolver->initialSolve();
-            }
-            // Write solution header (suggested by Luigi Poderico)
-            // Refresh solver
-            lpSolver = clpSolver->getModelPtr();
-            ClpQuadraticObjective *quadObj = dynamic_cast< ClpQuadraticObjective * >(lpSolver->objectiveAsObject());
-            double objValue;
-            if (!quadObj) {
-              lpSolver->computeObjectiveValue(false);
-              objValue = lpSolver->getObjValue(); // why not just use model_.getObjValue(); - maybe if no solution
-            } else {
-              double *solution = lpSolver->primalColumnSolution();
-              objValue = quadObj->objectiveValue(lpSolver, solution);
-              // offset
-              objValue -= lpSolver->objectiveOffset();
-            }
-            int iStat = lpSolver->status();
-            int iStat2 = -1;
-            if (integerStatus >= 0) {
-              iStat = integerStatus;
-              iStat2 = babModel_ ? babModel_->secondaryStatus()
-                                 : model_.secondaryStatus();
-            } else if (iStat == 3) {
-              // LP solve stopped before B&B: translate Clp secondary status
-              // (9 = time limit) to CBC secondary status (4 = time limit).
-              iStat2 = (lpSolver->secondaryStatus() == 9) ? 4 : 3;
-            }
-            if (iStat == 0) {
-              fprintf(fp, "Optimal");
-              if (iStat2 == 2) {
-                fprintf(fp, " (within gap tolerance)");
-              }
-            } else if (iStat == 1) {
-              // infeasible
-              fprintf(fp, "Infeasible");
-            } else if (iStat == 2) {
-              // unbounded
-              fprintf(fp, "Unbounded");
-            } else if (iStat >= 3 && iStat <= 5) {
-              if (iStat == 3) {
-                if (iStat2 == 4) {
-                  fprintf(fp, "Stopped on time");
-                } else {
-                  fprintf(fp, "Stopped on iterations");
-                }
-              } else if (iStat == 4) {
-                fprintf(fp, "Stopped on difficulties");
-              } else {
-                fprintf(fp, "Stopped on ctrl-c");
-              }
-              if (babModel_ && !babModel_->bestSolution())
-                fprintf(fp, " (no integer solution - continuous used)");
-              else if (integerStatus < 0 && iStat == 3)
-                fprintf(fp, " (LP relaxation not completed - no integer solution)");
-            } else if (iStat == 6) {
-              // bab infeasible
-              fprintf(fp, "Integer infeasible");
-            } else {
-              fprintf(fp, "Status unknown");
-            }
-            fprintf(fp, " - objective value %.8f\n", objValue);
-          }
-#endif
-          // make fancy later on
-          int iRow;
-          int numberRows = clpSolver->getNumRows();
-          const double *dualRowSolution = clpSolver->getRowPrice();
-          const double *primalRowSolution = clpSolver->getRowActivity();
-          const double *rowLower = clpSolver->getRowLower();
-          const double *rowUpper = clpSolver->getRowUpper();
-          double primalTolerance;
-          clpSolver->getDblParam(OsiPrimalTolerance, primalTolerance);
-          size_t lengthPrint = static_cast< size_t >(std::max(lengthName, 8));
-          bool doMask = (parameters[CbcParam::PRINTMASK]->strVal()
-              != ""
-            && lengthName);
-          int *maskStarts = NULL;
-          int maxMasks = 0;
-          char **masks = NULL;
-          if (doMask) {
-            int nAst = 0;
-            const char *pMask2 = parameters[CbcParam::PRINTMASK]->strVal().c_str();
-            char pMask[100];
-            size_t iChar;
-            size_t lengthMask = strlen(pMask2);
-            assert(lengthMask < 100);
-            if (*pMask2 == '"') {
-              if (pMask2[lengthMask - 1] != '"') {
-                printf("mismatched \" in mask %s\n", pMask2);
-                break;
-              } else {
-                strcpy(pMask, pMask2 + 1);
-                *strchr(pMask, '"') = '\0';
-              }
-            } else if (*pMask2 == '\'') {
-              if (pMask2[lengthMask - 1] != '\'') {
-                printf("mismatched ' in mask %s\n", pMask2);
-                break;
-              } else {
-                strcpy(pMask, pMask2 + 1);
-                *strchr(pMask, '\'') = '\0';
-              }
-            } else {
-              strcpy(pMask, pMask2);
-            }
-            if (lengthMask > static_cast< size_t >(lengthName)) {
-              printf("mask %s too long - skipping\n", pMask);
-              break;
-            }
-            maxMasks = 1;
-            for (iChar = 0; iChar < lengthMask; iChar++) {
-              if (pMask[iChar] == '*') {
-                nAst++;
-                maxMasks *= (lengthName + 1);
-              }
-            }
-            int nEntries = 1;
-            maskStarts = new int[lengthName + 2];
-            masks = new char *[maxMasks];
-            char **newMasks = new char *[maxMasks];
-            int i;
-            for (i = 0; i < maxMasks; i++) {
-              masks[i] = new char[lengthName + 1];
-              newMasks[i] = new char[lengthName + 1];
-            }
-            strcpy(masks[0], pMask);
-            for (int iAst = 0; iAst < nAst; iAst++) {
-              int nOldEntries = nEntries;
-              nEntries = 0;
-              for (int iEntry = 0; iEntry < nOldEntries; iEntry++) {
-                char *oldMask = masks[iEntry];
-                char *ast = strchr(oldMask, '*');
-                assert(ast);
-                size_t length = strlen(oldMask) - 1;
-                size_t nBefore = ast - oldMask;
-                size_t nAfter = length - nBefore;
-                // and add null
-                nAfter++;
-                for (int i = 0;
-                  i <= lengthName - static_cast< int >(length); i++) {
-                  char *maskOut = newMasks[nEntries];
-                  memcpy(maskOut, oldMask, nBefore);
-                  for (int k = 0; k < i; k++)
-                    maskOut[k + nBefore] = '?';
-                  memcpy(maskOut + nBefore + i, ast + 1, nAfter);
-                  nEntries++;
-                  assert(nEntries <= maxMasks);
-                }
-              }
-              char **temp = masks;
-              masks = newMasks;
-              newMasks = temp;
-            }
-            // Now extend and sort
-            int *sort = new int[nEntries];
-            for (i = 0; i < nEntries; i++) {
-              char *maskThis = masks[i];
-              size_t length = strlen(maskThis);
-              while (length > 0 && maskThis[length - 1] == ' ')
-                length--;
-              maskThis[length] = '\0';
-              sort[i] = static_cast< int >(length);
-            }
-            CoinSort_2(sort, sort + nEntries, masks);
-            int lastLength = -1;
-            for (i = 0; i < nEntries; i++) {
-              int length = sort[i];
-              while (length > lastLength)
-                maskStarts[++lastLength] = i;
-            }
-            maskStarts[++lastLength] = nEntries;
-            delete[] sort;
-            for (i = 0; i < maxMasks; i++)
-              delete[] newMasks[i];
-            delete[] newMasks;
-          }
-          if (printMode > 5 && printMode < 12) {
-            ClpSimplex *solver = clpSolver->getModelPtr();
-            int numberColumns = numberPrintingColumns(clpSolver);
-            // int numberColumns = solver->numberColumns();
-            // column length unless rhs ranging
-            int number = numberColumns;
-            if (lpSolver->status()) {
-              fprintf(fp, "**** Results not valid when LP not optimal\n");
-              number = 0;
-            }
-            switch (printMode) {
-              // bound ranging
-            case 6:
-              fprintf(fp, "Bound ranging");
-              break;
-              // rhs ranging
-            case 7:
-              fprintf(fp, "Rhs ranging");
-              if (!lpSolver->status())
-                number = numberRows;
-              break;
-              // objective ranging
-            case 8:
-              fprintf(fp, "Objective ranging");
-              break;
-            }
-            if (lengthName)
-              fprintf(fp, ",name");
-            fprintf(fp, ",increase,variable,decrease,variable\n");
-            int *which = new int[number];
-            if (printMode != 7) {
-              if (!doMask) {
-                for (int i = 0; i < number; i++)
-                  which[i] = i;
-              } else {
-                int n = 0;
-                for (int i = 0; i < number; i++) {
-                  if (maskMatches(maskStarts, masks, columnNames[i]))
-                    which[n++] = i;
-                }
-                if (n) {
-                  number = n;
-                } else {
-                  printf("No names match - doing all\n");
-                  for (int i = 0; i < number; i++)
-                    which[i] = i;
-                }
-              }
-            } else {
-              if (!doMask) {
-                for (int i = 0; i < number; i++)
-                  which[i] = i + numberColumns;
-              } else {
-                int n = 0;
-                for (int i = 0; i < number; i++) {
-                  if (maskMatches(maskStarts, masks, rowNames[i]))
-                    which[n++] = i + numberColumns;
-                }
-                if (n) {
-                  number = n;
-                } else {
-                  printf("No names match - doing all\n");
-                  for (int i = 0; i < number; i++)
-                    which[i] = i + numberColumns;
-                }
-              }
-            }
-            double *valueIncrease = new double[number];
-            int *sequenceIncrease = new int[number];
-            double *valueDecrease = new double[number];
-            int *sequenceDecrease = new int[number];
-            switch (printMode) {
-              // bound or rhs ranging
-            case 6:
-            case 7:
-              solver->primalRanging(number, which, valueIncrease,
-                sequenceIncrease, valueDecrease,
-                sequenceDecrease);
-              break;
-              // objective ranging
-            case 8:
-              solver->dualRanging(number, which, valueIncrease,
-                sequenceIncrease, valueDecrease,
-                sequenceDecrease);
-              break;
-            }
-            for (int i = 0; i < number; i++) {
-              int iWhich = which[i];
-              fprintf(fp, "%d,",
-                (iWhich < numberColumns) ? iWhich
-                                         : iWhich - numberColumns);
-              if (lengthName) {
-                const char *name = (printMode == 7)
-                  ? rowNames[iWhich - numberColumns].c_str()
-                  : columnNames[iWhich].c_str();
-                fprintf(fp, "%s,", name);
-              }
-              if (valueIncrease[i] < 1.0e30) {
-                fprintf(fp, "%.10g,", valueIncrease[i]);
-                int outSequence = sequenceIncrease[i];
-                if (outSequence < numberColumns) {
-                  if (lengthName)
-                    fprintf(fp, "%s,", columnNames[outSequence].c_str());
-                  else
-                    fprintf(fp, "C%7.7d,", outSequence);
-                } else {
-                  outSequence -= numberColumns;
-                  if (lengthName)
-                    fprintf(fp, "%s,", rowNames[outSequence].c_str());
-                  else
-                    fprintf(fp, "R%7.7d,", outSequence);
-                }
-              } else {
-                fprintf(fp, "1.0e100,,");
-              }
-              if (valueDecrease[i] < 1.0e30) {
-                fprintf(fp, "%.10g,", valueDecrease[i]);
-                int outSequence = sequenceDecrease[i];
-                if (outSequence < numberColumns) {
-                  if (lengthName)
-                    fprintf(fp, "%s", columnNames[outSequence].c_str());
-                  else
-                    fprintf(fp, "C%7.7d", outSequence);
-                } else {
-                  outSequence -= numberColumns;
-                  if (lengthName)
-                    fprintf(fp, "%s", rowNames[outSequence].c_str());
-                  else
-                    fprintf(fp, "R%7.7d", outSequence);
-                }
-              } else {
-                fprintf(fp, "1.0e100,");
-              }
-              fprintf(fp, "\n");
-            }
-            if (fp != stdout)
-              fclose(fp);
-            delete[] which;
-            delete[] valueIncrease;
-            delete[] sequenceIncrease;
-            delete[] valueDecrease;
-            delete[] sequenceDecrease;
-            if (masks) {
-              delete[] maskStarts;
-              for (int i = 0; i < maxMasks; i++)
-                delete[] masks[i];
-              delete[] masks;
-            }
-            break;
-          }
-
-          char printFormat[50];
-          sprintf(printFormat, " %s         %s\n",
-            parameters[CbcParam::OUTPUTPRECISION]->strVal().c_str(),
-            parameters[CbcParam::OUTPUTPRECISION]->strVal().c_str());
-          char printIntFormat[50];
-          sprintf(printIntFormat, " %s         %s\n",
-            CLP_QUOTE(CLP_INTEGER_OUTPUT_FORMAT),
-            parameters[CbcParam::OUTPUTPRECISION]->strVal().c_str());
-          if (printMode > 2 && printMode < 5) {
-            for (iRow = 0; iRow < numberRows; iRow++) {
-              int type = printMode - 3;
-
-              std::string valueHasTolerance;
-              std::string rowName;
-
-              if (primalRowSolution[iRow] > rowUpper[iRow] + primalTolerance || primalRowSolution[iRow] < rowLower[iRow] - primalTolerance) {
-                if (printingAllAsCsv) {
-                  valueHasTolerance = "**";
-                } else {
-                  fprintf(fp, "** ");
-                }
-                type = 2;
-              } else if (fabs(primalRowSolution[iRow]) > 1.0e-8) {
-                type = 1;
-              } else if (numberRows < 50) {
-                type = 3;
-              }
-              if (doMask && !maskMatches(maskStarts, masks, rowNames[iRow]))
-                type = 0;
-              if (type) {
-                if (!printingAllAsCsv) {
-                  fprintf(fp, "%7d ", iRow);
-                }
-
-                if (lengthName) {
-                  if (printingAllAsCsv) {
-                    rowName = rowNames[iRow];
-                  } else {
-                    const char *name = rowNames[iRow].c_str();
-                    size_t n = strlen(name);
-                    size_t i;
-
-                    for (i = 0; i < n; i++)
-                      fprintf(fp, "%c", name[i]);
-                    for (; i < lengthPrint; i++)
-                      fprintf(fp, " ");
-                  }
-                }
-
-                if (!printingAllAsCsv) {
-                  fprintf(fp, printFormat, primalRowSolution[iRow],
-                    dualRowSolution[iRow]);
-                } else {
-                  fprintf(fp,
-                    "%s,%d,%s,%.15g,%.15g\n",
-                    valueHasTolerance.c_str(),
-                    iRow,
-                    rowName.c_str(),
-                    primalRowSolution[iRow],
-                    dualRowSolution[iRow]);
-                }
-              }
-            }
-          }
-          int iColumn;
-          int numberColumns = numberPrintingColumns(clpSolver);
-          const double *dualColumnSolution = clpSolver->getReducedCost();
-          const double *primalColumnSolution = clpSolver->getColSolution();
-          const double *columnLower = clpSolver->getColLower();
-          const double *columnUpper = clpSolver->getColUpper();
-          if (printMode != 2 && printMode < 12) {
-            if (printMode == 5) {
-              if (lengthName)
-                fprintf(fp, "name");
-              else
-                fprintf(fp, "number");
-              fprintf(fp, ",solution\n");
-            }
-            for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-              int type = (printMode > 3) ? 1 : 0;
-
-              std::string valueHasTolerance;
-              std::string colName;
-
-              if (primalColumnSolution[iColumn] > columnUpper[iColumn] + primalTolerance || primalColumnSolution[iColumn] < columnLower[iColumn] - primalTolerance) {
-                if (printingAllAsCsv) {
-                  valueHasTolerance = "**";
-                } else {
-                  fprintf(fp, "** ");
-                }
-                type = 2;
-              } else if (fabs(primalColumnSolution[iColumn]) > 1.0e-8) {
-                type = 1;
-              } else if (numberColumns < 50) {
-                type = 3;
-              }
-              // see if integer
-              if ((!clpSolver->isInteger(iColumn) || fabs(primalColumnSolution[iColumn]) < 1.0e-8) && printMode == 1)
-                type = 0;
-              if (doMask && !maskMatches(maskStarts, masks, columnNames[iColumn]))
-                type = 0;
-              if (type) {
-                if (printMode != 5) {
-                  if (!printingAllAsCsv) {
-                    fprintf(fp, "%7d ", iColumn);
-                  }
-
-                  if (lengthName) {
-                    if (printingAllAsCsv) {
-                      colName = columnNames[iColumn];
-                    } else {
-                      const char *name = columnNames[iColumn].c_str();
-                      size_t n = strlen(name);
-                      size_t i;
-                      for (i = 0; i < n; i++)
-                        fprintf(fp, "%c", name[i]);
-                      for (; i < lengthPrint; i++)
-                        fprintf(fp, " ");
-                    }
-                  }
-                  if (!printingAllAsCsv) {
-                    double value = primalColumnSolution[iColumn];
-                    double nearest = floor(value + 0.5);
-                    if (!clpSolver->isInteger(iColumn) || fabs(value - nearest) > 1.0e-8) {
-                      fprintf(fp, printFormat, value,
-                        dualColumnSolution[iColumn]);
-                    } else {
-                      // allow for very very large integer values
-                      long int iValue = nearest;
-                      fprintf(fp, printIntFormat, iValue,
-                        dualColumnSolution[iColumn]);
-                    }
-                  } else {
-                    fprintf(fp,
-                      "%s,%d,%s,%.15g,%.15g\n",
-                      valueHasTolerance.c_str(),
-                      iColumn,
-                      colName.c_str(),
-                      primalColumnSolution[iColumn],
-                      dualColumnSolution[iColumn]);
-                  }
-                } else {
-                  char temp[100];
-                  if (lengthName) {
-                    const char *name = columnNames[iColumn].c_str();
-                    for (int i = 0; i < lengthName; i++)
-                      temp[i] = name[i];
-                    temp[lengthName] = '\0';
-                  } else {
-                    sprintf(temp, "%7d", iColumn);
-                  }
-                  sprintf(temp + strlen(temp), ", %15.8g",
-                    primalColumnSolution[iColumn]);
-                  size_t n = strlen(temp);
-                  size_t k = 0;
-                  for (size_t i = 0; i < n + 1; i++) {
-                    if (temp[i] != ' ')
-                      temp[k++] = temp[i];
-                  }
-                  fprintf(fp, "%s\n", temp);
-                }
-              }
-            }
-
-            if (cbcParamCode == CbcParam::WRITENEXTSOL) {
-              if (saveLpSolver) {
-                clpSolver->swapModelPtr(saveLpSolver);
-                delete lpSolver;
-                lpSolver = saveLpSolver;
-                saveLpSolver = NULL;
-              }
-            }
-          } else if (printMode == 2) {
-            // special format suitable for OsiRowCutDebugger
-            int n = 0;
-            bool comma = false;
-            bool newLine = false;
-            fprintf(fp, "\tint intIndicesV[]={\n");
-            for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-              if (primalColumnSolution[iColumn] > 0.5 && model_.solver()->isInteger(iColumn)) {
-                if (comma)
-                  fprintf(fp, ",");
-                if (newLine)
-                  fprintf(fp, "\n");
-                fprintf(fp, "%d ", iColumn);
-                comma = true;
-                newLine = false;
-                n++;
-                if (n == 10) {
-                  n = 0;
-                  newLine = true;
-                }
-              }
-            }
-            fprintf(fp, "};\n");
-            n = 0;
-            comma = false;
-            newLine = false;
-            fprintf(fp, "\tdouble intSolnV[]={\n");
-            for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-              if (primalColumnSolution[iColumn] > 0.5 && model_.solver()->isInteger(iColumn)) {
-                if (comma)
-                  fprintf(fp, ",");
-                if (newLine)
-                  fprintf(fp, "\n");
-                int value = static_cast< int >(primalColumnSolution[iColumn] + 0.5);
-                fprintf(fp, "%d. ", value);
-                comma = true;
-                newLine = false;
-                n++;
-                if (n == 10) {
-                  n = 0;
-                  newLine = true;
-                }
-              }
-            }
-            fprintf(fp, "};\n");
-          } else {
-            // Make up a fake bounds section
-            char outputValue[24];
-            for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-              if (printMode == 13 || model_.solver()->isInteger(iColumn)) {
-                fprintf(fp, " FX BOUND001  ");
-                const char *name = columnNames[iColumn].c_str();
-                size_t n = strlen(name);
-                size_t i;
-                for (i = 0; i < n; i++)
-                  fprintf(fp, "%c", name[i]);
-                for (; i < lengthPrint; i++)
-                  fprintf(fp, " ");
-                CoinConvertDouble(5, 2, primalColumnSolution[iColumn],
-                  outputValue);
-                fprintf(fp, "  %s\n", outputValue);
-              } else {
-                fprintf(fp, " LO BOUND001  ");
-                const char *name = columnNames[iColumn].c_str();
-                size_t n = strlen(name);
-                size_t i;
-                for (i = 0; i < n; i++)
-                  fprintf(fp, "%c", name[i]);
-                for (; i < lengthPrint; i++)
-                  fprintf(fp, " ");
-                CoinConvertDouble(5, 2,
-                  std::max(-1.0e30, columnLower[iColumn]),
-                  outputValue);
-                fprintf(fp, "  %s\n", outputValue);
-                fprintf(fp, " UP BOUND001  ");
-                for (i = 0; i < n; i++)
-                  fprintf(fp, "%c", name[i]);
-                for (; i < lengthPrint; i++)
-                  fprintf(fp, " ");
-                CoinConvertDouble(5, 2,
-                  std::min(1.0e30, columnUpper[iColumn]),
-                  outputValue);
-                fprintf(fp, "  %s\n", outputValue);
-              }
-            }
-            for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-              if (primalColumnSolution[iColumn] > columnUpper[iColumn] + primalTolerance || primalColumnSolution[iColumn] < columnLower[iColumn] - primalTolerance) {
-                fprintf(fp, " FX BOUND002  ");
-                const char *name = columnNames[iColumn].c_str();
-                size_t n = strlen(name);
-                size_t i;
-                for (i = 0; i < n; i++)
-                  fprintf(fp, "%c", name[i]);
-                for (; i < lengthPrint; i++)
-                  fprintf(fp, " ");
-                CoinConvertDouble(5, 2, primalColumnSolution[iColumn],
-                  outputValue);
-                fprintf(fp, "  %s\n", outputValue);
-              }
-            }
-          }
-          if (fp != stdout)
-            fclose(fp);
-          if (masks) {
-            delete[] maskStarts;
-            for (int i = 0; i < maxMasks; i++)
-              delete[] masks[i];
-            delete[] masks;
-          }
+          writeSolution(cbcParamCode, inputQueue, clpSolver, lpSolver);
         } break;
         case CbcParam::WRITESOLBINARY:
           if (!goodModel) {

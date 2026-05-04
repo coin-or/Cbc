@@ -426,6 +426,29 @@ private:
   //@{
   /// Reset cross-phase state to defaults (called by initialize)
   void resetRunState();
+
+  /** Handle the IMPORT action: read an MPS/LP/GMPL file into the model.
+      Called from run() when the IMPORT command is encountered.
+      \param inputQueue  Command queue (for reading filename and .par file)
+      \param clpSolver   Current OsiClp solver interface
+      \param lpSolver    Current ClpSimplex (may be updated)
+      \param time1       CPU time reference (updated on success)
+      \param totalTime   Accumulated time (updated on success)
+  */
+  void importModel(std::deque<std::string> &inputQueue,
+    OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver,
+    double &time1, double &totalTime);
+
+  /** Handle the WRITESOL/PRINTSOL/WRITEGMPLSOL/WRITENEXTSOL action.
+      Called from run() when a solution-writing command is encountered.
+      \param cbcParamCode  Which solution-write variant was requested
+      \param inputQueue    Command queue (for reading filename)
+      \param clpSolver     Current OsiClp solver interface
+      \param lpSolver      Current ClpSimplex
+  */
+  void writeSolution(int cbcParamCode,
+    std::deque<std::string> &inputQueue,
+    OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver);
   //@}
 };
 

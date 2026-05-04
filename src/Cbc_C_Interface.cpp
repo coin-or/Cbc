@@ -2133,9 +2133,6 @@ Cbc_resolve(Cbc_Model *model)
   Cbc_flush(model);
   OsiClpSolverInterface *solver = model->solver_;
 
-  if (!solver->basisIsAvailable())
-    return Cbc_solveLinearProgram(model);
-
   // Apply key parameters
   ClpSimplex *clps = solver->getModelPtr();
   clps->setMaximumSeconds(model->dbl_param[DBL_PARAM_TIME_LIMIT]);
@@ -2144,10 +2141,24 @@ Cbc_resolve(Cbc_Model *model)
   solver->messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
 
   model->lastOptimization = ContinuousOptimization;
-  solver->resolve();
 
-  if (solver->isProvenOptimal())
+  // Use resolve() for warm-start reoptimization. This is the correct
+  // method for incremental changes (bound tightening, added rows) —
+  // it operates directly on the current model state and reuses the basis.
+  // Falls back to initialSolve() if no basis is available.
+  if (solver->basisIsAvailable()) {
+    solver->resolve();
+  } else {
+    solver->initialSolve();
+  }
+
+  // Update cached results
+  if (solver->isProvenOptimal()) {
+    model->obj_value = solver->getObjValue();
+    model->x = solver->getColSolution();
+    model->rActv = solver->getRowActivity();
     return 0;
+  }
   if (solver->isIterationLimitReached())
     return 1;
   if (solver->isProvenPrimalInfeasible())

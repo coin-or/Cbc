@@ -2407,6 +2407,34 @@ int CbcSolver::importModel(const std::string &filename)
 //###########################################################################
 //###########################################################################
 
+int CbcSolver::solveLp(const std::string &method)
+{
+  OsiSolverInterface *solver = model_.solver();
+  if (!solver) return 1;
+  OsiClpSolverInterface *clpSolver =
+    dynamic_cast<OsiClpSolverInterface *>(solver);
+  if (!clpSolver) return 1;
+  ClpSimplex *lpSolver = clpSolver->getModelPtr();
+
+  if (method == "primal" || method == "primalsimplex") {
+    solver->setHintParam(OsiDoDualInInitial, false, OsiHintDo);
+    solver->initialSolve();
+  } else if (method == "barrier") {
+    ClpSolve solveOptions;
+    solveOptions.setSolveType(ClpSolve::useBarrier);
+    solveOptions.setPresolveType(ClpSolve::presolveOn);
+    lpSolver->initialSolve(solveOptions);
+  } else {
+    // dual (default)
+    solver->setHintParam(OsiDoDualInInitial, true, OsiHintDo);
+    solver->initialSolve();
+  }
+  return lpSolver->status();
+}
+
+//###########################################################################
+//###########################################################################
+
 int CbcSolver::status() const
 {
   return model_.status();
@@ -2414,7 +2442,11 @@ int CbcSolver::status() const
 
 double CbcSolver::objectiveValue() const
 {
-  return model_.getObjValue();
+  double obj = model_.getObjValue();
+  // If no MIP solve was done, get the LP objective from the solver
+  if (obj >= 1.0e50 && model_.solver())
+    obj = model_.solver()->getObjValue();
+  return obj;
 }
 
 double CbcSolver::bestBound() const

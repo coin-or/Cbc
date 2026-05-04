@@ -129,6 +129,13 @@ public:
       \return 0 on success
   */
   int importModel(const std::string &filename);
+
+  /** Solve the LP relaxation only (no branch-and-bound).
+      Uses the current -lpMethod setting (dual/primal/barrier).
+      \param method  "dual", "primal", or "barrier" (empty = use current setting)
+      \return 0 on success
+  */
+  int solveLp(const std::string &method = "");
   //@}
 
   ///@name Result accessors (valid after solve/run)

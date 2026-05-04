@@ -1552,47 +1552,84 @@ CbcStopNow *CbcStopNow::clone() const { return new CbcStopNow(*this); }
 //###########################################################################
 
 CbcSolver::CbcSolver()
-    : babModel_(NULL), userFunction_(NULL), statusUserFunction_(NULL),
-      originalSolver_(NULL), originalCoinModel_(NULL), cutGenerator_(NULL),
-      numberUserFunctions_(0), numberCutGenerators_(0),
+    : babModel_(nullptr), userFunction_(nullptr), statusUserFunction_(nullptr),
+      originalSolver_(nullptr), originalCoinModel_(nullptr),
+      cutGenerator_(nullptr), numberUserFunctions_(0),
+      numberCutGenerators_(0), callBack_(new CbcStopNow()),
       startTime_(CoinCpuTime()), doMiplib_(false), noPrinting_(false),
-      readMode_(1) {
-  callBack_ = new CbcStopNow();
-  //fillParameters();
+      readMode_(1), saveSolver_(nullptr), goodModel_(false),
+      interactiveMode_(false), defaultSettings_(true), preSolve_(5),
+      preProcess_(4), useStrategy_(false), preSolveFile_(false),
+      strongChanged_(false), pumpChanged_(false), cutPass_(-1234567),
+      cutPassInTree_(-1234567), tunePreProcess_(0), testOsiParameters_(-1),
+      complicatedInteger_(0), initialPumpTune_(1003), djFix_(1.0e100),
+      tightenFactor_(0.0), normalIncrement_(0.0), returnMode_(1),
+      integerStatus_(-1), numberGoodCommands_(0), nodeStrategy_(0),
+      dominatedCuts_(false), doSOS_(1), verbose_(0), useCosts_(0),
+      useSolution_(-1), currentBestSolution_(0), doIdiot_(-1),
+      outputFormat_(2), slpValue_(-1), cppValue_(-1), printOptions_(0),
+      printMode_(0), presolveOptions_(0), substitution_(3), dualize_(3),
+      doCrash_(0), doVector_(0), doSprint_(-1), doScaling_(4),
+      choleskyType_(0), gamma_(0), scaleBarrier_(0), doKKT_(0),
+      crossover_(2), biLinearProblem_(false),
+      gomoryMode_(CbcParameters::CGIfMove),
+      probingMode_(CbcParameters::CGIfMove),
+      knapsackMode_(CbcParameters::CGIfMove),
+      redsplitMode_(CbcParameters::CGOff),
+      redsplit2Mode_(CbcParameters::CGOff), GMIMode_(CbcParameters::CGOff),
+      cliqueMode_(CbcParameters::CGIfMove), oldCliqueMode_(CbcParameters::CGIfMove),
+      oddWheelMode_(CbcParameters::CGOff),
+      mixedMode_(CbcParameters::CGIfMove), mixedRoundStrategy_(1),
+      flowMode_(CbcParameters::CGIfMove),
+      twomirMode_(CbcParameters::CGIfMove),
+      landpMode_(CbcParameters::CGOff),
+      residualCapacityMode_(CbcParameters::CGOff),
+      zerohalfMode_(CbcParameters::CGIfMove), cgraphMode_("on"),
+      clqstrMode_("after"), bkPivotingStrategy_(3), maxCallsBK_(1000),
+      bkClqExtMethod_(4), oddWExtMethod_(2), priorities_(nullptr),
+      branchDirection_(nullptr), pseudoDown_(nullptr), pseudoUp_(nullptr),
+      solutionIn_(nullptr), prioritiesIn_(nullptr), numberSOS_(0),
+      sosStart_(nullptr), sosIndices_(nullptr), sosType_(nullptr),
+      sosReference_(nullptr), cut_(nullptr), sosPriority_(nullptr),
+      whichColumn_(nullptr), knapsackStart_(nullptr), knapsackRow_(nullptr),
+      numberKnapsack_(0), allowImportErrors_(0), keepImportNames_(1),
+      lengthName_(0), debugValues_(nullptr), numberDebugValues_(-1),
+      basisHasValues_(0), lotsize_(nullptr), numberLotSizing_(0),
+#ifdef COINUTILS_HAS_GLPK
+      coin_glp_tran_(nullptr), coin_glp_prob_(nullptr),
+#endif
+      totalTime_(0.0), time0_(0.0), time0Elapsed_(0.0)
+{
 }
 
 //###########################################################################
 //###########################################################################
 
 CbcSolver::CbcSolver(const OsiClpSolverInterface &solver)
-    : babModel_(NULL), userFunction_(NULL), statusUserFunction_(NULL),
-      originalSolver_(NULL), originalCoinModel_(NULL), cutGenerator_(NULL),
-      numberUserFunctions_(0), numberCutGenerators_(0),
-      startTime_(CoinCpuTime()), doMiplib_(false), noPrinting_(false),
-      readMode_(1) {
-  callBack_ = new CbcStopNow();
+    : CbcSolver()
+{
   model_ = CbcModel(solver);
-  //fillParameters();
 }
 
 //###########################################################################
 //###########################################################################
 
 CbcSolver::CbcSolver(const CbcModel &solver)
-    : babModel_(NULL), userFunction_(NULL), statusUserFunction_(NULL),
-      originalSolver_(NULL), originalCoinModel_(NULL), cutGenerator_(NULL),
-      numberUserFunctions_(0), numberCutGenerators_(0),
-      startTime_(CoinCpuTime()), doMiplib_(false), noPrinting_(false),
-      readMode_(1) {
-  callBack_ = new CbcStopNow();
+    : CbcSolver()
+{
   model_ = solver;
-  //fillParameters();
 }
 
 //###########################################################################
 //###########################################################################
 
-CbcSolver::~CbcSolver() {
+CbcSolver::~CbcSolver()
+{
+  // Reset model solver state to prevent issues during CbcModel destruction
+  // after a full solve cycle (the solver may have been replaced/modified)
+  if (model_.solver()) {
+    model_.solver()->setWarmStart(nullptr);
+  }
   int i;
   for (i = 0; i < numberUserFunctions_; i++)
     delete userFunction_[i];
@@ -1605,6 +1642,34 @@ CbcSolver::~CbcSolver() {
   delete originalCoinModel_;
   delete babModel_;
   delete callBack_;
+  // New members
+  delete saveSolver_;
+  delete[] priorities_;
+  delete[] branchDirection_;
+  delete[] pseudoDown_;
+  delete[] pseudoUp_;
+  delete[] solutionIn_;
+  delete[] prioritiesIn_;
+  delete[] sosStart_;
+  delete[] sosIndices_;
+  delete[] sosType_;
+  delete[] sosReference_;
+  delete[] cut_;
+  delete[] sosPriority_;
+  delete[] whichColumn_;
+  delete[] knapsackStart_;
+  delete[] knapsackRow_;
+  delete[] debugValues_;
+  delete[] lotsize_;
+  delete[] statistics_.number_cuts;
+  delete[] statistics_.name_generators;
+#ifdef COINUTILS_HAS_GLPK
+  if (coin_glp_prob_) {
+    glp_free(coin_glp_prob_);
+    glp_mpl_free_wksp(coin_glp_tran_);
+    glp_free_env();
+  }
+#endif
 }
 
 //###########################################################################
@@ -1612,81 +1677,294 @@ CbcSolver::~CbcSolver() {
 
 // Copy constructor
 CbcSolver::CbcSolver(const CbcSolver &rhs)
-    : model_(rhs.model_), babModel_(NULL), userFunction_(NULL),
-      statusUserFunction_(NULL),
-      cutGenerator_(new CglCutGenerator *[rhs.numberCutGenerators()]),
+    : model_(rhs.model_), babModel_(nullptr), userFunction_(nullptr),
+      statusUserFunction_(nullptr),
+      cutGenerator_(nullptr),
       numberUserFunctions_(rhs.numberUserFunctions_),
-      numberCutGenerators_(rhs.numberCutGenerators()),
+      numberCutGenerators_(rhs.numberCutGenerators_),
+      callBack_(rhs.callBack_ ? rhs.callBack_->clone() : new CbcStopNow()),
       startTime_(CoinCpuTime()), doMiplib_(rhs.doMiplib_),
-      noPrinting_(rhs.noPrinting_), readMode_(rhs.readMode_) {
-   //fillParameters();
+      noPrinting_(rhs.noPrinting_), readMode_(rhs.readMode_),
+      saveSolver_(nullptr), goodModel_(rhs.goodModel_),
+      interactiveMode_(rhs.interactiveMode_),
+      defaultSettings_(rhs.defaultSettings_), preSolve_(rhs.preSolve_),
+      preProcess_(rhs.preProcess_), useStrategy_(rhs.useStrategy_),
+      preSolveFile_(rhs.preSolveFile_), strongChanged_(rhs.strongChanged_),
+      pumpChanged_(rhs.pumpChanged_), cutPass_(rhs.cutPass_),
+      cutPassInTree_(rhs.cutPassInTree_),
+      tunePreProcess_(rhs.tunePreProcess_),
+      testOsiParameters_(rhs.testOsiParameters_),
+      complicatedInteger_(rhs.complicatedInteger_),
+      initialPumpTune_(rhs.initialPumpTune_), djFix_(rhs.djFix_),
+      tightenFactor_(rhs.tightenFactor_),
+      normalIncrement_(rhs.normalIncrement_), returnMode_(rhs.returnMode_),
+      integerStatus_(rhs.integerStatus_),
+      numberGoodCommands_(rhs.numberGoodCommands_),
+      nodeStrategy_(rhs.nodeStrategy_),
+      dominatedCuts_(rhs.dominatedCuts_), doSOS_(rhs.doSOS_),
+      verbose_(rhs.verbose_), useCosts_(rhs.useCosts_),
+      useSolution_(rhs.useSolution_),
+      currentBestSolution_(rhs.currentBestSolution_),
+      doIdiot_(rhs.doIdiot_), outputFormat_(rhs.outputFormat_),
+      slpValue_(rhs.slpValue_), cppValue_(rhs.cppValue_),
+      printOptions_(rhs.printOptions_), printMode_(rhs.printMode_),
+      presolveOptions_(rhs.presolveOptions_),
+      substitution_(rhs.substitution_), dualize_(rhs.dualize_),
+      doCrash_(rhs.doCrash_), doVector_(rhs.doVector_),
+      doSprint_(rhs.doSprint_), doScaling_(rhs.doScaling_),
+      choleskyType_(rhs.choleskyType_), gamma_(rhs.gamma_),
+      scaleBarrier_(rhs.scaleBarrier_), doKKT_(rhs.doKKT_),
+      crossover_(rhs.crossover_), biLinearProblem_(rhs.biLinearProblem_),
+      gomoryMode_(rhs.gomoryMode_), probingMode_(rhs.probingMode_),
+      knapsackMode_(rhs.knapsackMode_), redsplitMode_(rhs.redsplitMode_),
+      redsplit2Mode_(rhs.redsplit2Mode_), GMIMode_(rhs.GMIMode_),
+      cliqueMode_(rhs.cliqueMode_), oldCliqueMode_(rhs.oldCliqueMode_),
+      oddWheelMode_(rhs.oddWheelMode_), mixedMode_(rhs.mixedMode_),
+      mixedRoundStrategy_(rhs.mixedRoundStrategy_),
+      flowMode_(rhs.flowMode_), twomirMode_(rhs.twomirMode_),
+      landpMode_(rhs.landpMode_),
+      residualCapacityMode_(rhs.residualCapacityMode_),
+      zerohalfMode_(rhs.zerohalfMode_), cgraphMode_(rhs.cgraphMode_),
+      clqstrMode_(rhs.clqstrMode_),
+      bkPivotingStrategy_(rhs.bkPivotingStrategy_),
+      maxCallsBK_(rhs.maxCallsBK_),
+      bkClqExtMethod_(rhs.bkClqExtMethod_),
+      oddWExtMethod_(rhs.oddWExtMethod_),
+      // Transient per-run arrays: null in copy
+      priorities_(nullptr), branchDirection_(nullptr),
+      pseudoDown_(nullptr), pseudoUp_(nullptr), solutionIn_(nullptr),
+      prioritiesIn_(nullptr), numberSOS_(0), sosStart_(nullptr),
+      sosIndices_(nullptr), sosType_(nullptr), sosReference_(nullptr),
+      cut_(nullptr), sosPriority_(nullptr), whichColumn_(nullptr),
+      knapsackStart_(nullptr), knapsackRow_(nullptr), numberKnapsack_(0),
+      allowImportErrors_(rhs.allowImportErrors_),
+      keepImportNames_(rhs.keepImportNames_), lengthName_(rhs.lengthName_),
+      rowNames_(rhs.rowNames_), columnNames_(rhs.columnNames_),
+      debugValues_(nullptr), numberDebugValues_(rhs.numberDebugValues_),
+      basisHasValues_(rhs.basisHasValues_), lotsize_(nullptr),
+      numberLotSizing_(0),
+#ifdef COINUTILS_HAS_GLPK
+      coin_glp_tran_(nullptr), coin_glp_prob_(nullptr),
+#endif
+      totalTime_(rhs.totalTime_), time0_(rhs.time0_),
+      time0Elapsed_(rhs.time0Elapsed_),
+      mipStart_(rhs.mipStart_), mipStartBefore_(rhs.mipStartBefore_),
+      mipStartFile_(rhs.mipStartFile_),
+      saveInputQueue_(rhs.saveInputQueue_)
+{
   if (rhs.babModel_)
     babModel_ = new CbcModel(*rhs.babModel_);
-  userFunction_ = new CbcUser *[numberUserFunctions_];
-  int i;
-  for (i = 0; i < numberUserFunctions_; i++)
-    userFunction_[i] = rhs.userFunction_[i]->clone();
-  this->parameters_ = rhs.parameters_;
-  this->clpParameters_ = rhs.clpParameters_;
-  for (i = 0; i < numberCutGenerators_; i++)
-    cutGenerator_[i] = rhs.cutGenerator_[i]->clone();
-  callBack_ = rhs.callBack_->clone();
-  originalSolver_ = NULL;
+  if (numberUserFunctions_ > 0) {
+    userFunction_ = new CbcUser *[numberUserFunctions_];
+    for (int i = 0; i < numberUserFunctions_; i++)
+      userFunction_[i] = rhs.userFunction_[i]->clone();
+  }
+  parameters_ = rhs.parameters_;
+  clpParameters_ = rhs.clpParameters_;
+  if (numberCutGenerators_ > 0) {
+    cutGenerator_ = new CglCutGenerator *[numberCutGenerators_];
+    for (int i = 0; i < numberCutGenerators_; i++)
+      cutGenerator_[i] = rhs.cutGenerator_[i]->clone();
+  }
   if (rhs.originalSolver_) {
     OsiSolverInterface *temp = rhs.originalSolver_->clone();
     originalSolver_ = getClpSolver(temp);
     assert(originalSolver_);
+  } else {
+    originalSolver_ = nullptr;
   }
-  originalCoinModel_ = NULL;
   if (rhs.originalCoinModel_)
     originalCoinModel_ = new CoinModel(*rhs.originalCoinModel_);
+  else
+    originalCoinModel_ = nullptr;
+  if (rhs.saveSolver_)
+    saveSolver_ = rhs.saveSolver_->clone();
 }
 
 //###########################################################################
 //###########################################################################
 
 // Assignment operator
-CbcSolver &CbcSolver::operator=(const CbcSolver &rhs) {
+CbcSolver &CbcSolver::operator=(const CbcSolver &rhs)
+{
   if (this != &rhs) {
+    // Clean up existing state
     int i;
     for (i = 0; i < numberUserFunctions_; i++)
       delete userFunction_[i];
     delete[] userFunction_;
     for (i = 0; i < numberCutGenerators_; i++)
       delete cutGenerator_[i];
+    delete[] cutGenerator_;
     delete[] statusUserFunction_;
+    statusUserFunction_ = nullptr;
     delete originalSolver_;
     delete originalCoinModel_;
-    statusUserFunction_ = NULL;
     delete babModel_;
     delete callBack_;
+    delete saveSolver_;
+    delete[] priorities_;
+    delete[] branchDirection_;
+    delete[] pseudoDown_;
+    delete[] pseudoUp_;
+    delete[] solutionIn_;
+    delete[] prioritiesIn_;
+    delete[] sosStart_;
+    delete[] sosIndices_;
+    delete[] sosType_;
+    delete[] sosReference_;
+    delete[] cut_;
+    delete[] sosPriority_;
+    delete[] whichColumn_;
+    delete[] knapsackStart_;
+    delete[] knapsackRow_;
+    delete[] debugValues_;
+    delete[] lotsize_;
+
+    // Copy core state
+    model_ = rhs.model_;
+    babModel_ = rhs.babModel_ ? new CbcModel(*rhs.babModel_) : nullptr;
     numberUserFunctions_ = rhs.numberUserFunctions_;
+    numberCutGenerators_ = rhs.numberCutGenerators_;
     startTime_ = rhs.startTime_;
-    this->parameters_ = rhs.parameters_;
-    this->clpParameters_ = rhs.clpParameters_;
-    for (i = 0; i < numberCutGenerators_; i++)
-      cutGenerator_[i] = rhs.cutGenerator_[i]->clone();
+    parameters_ = rhs.parameters_;
+    clpParameters_ = rhs.clpParameters_;
     noPrinting_ = rhs.noPrinting_;
     readMode_ = rhs.readMode_;
     doMiplib_ = rhs.doMiplib_;
-    model_ = rhs.model_;
-    if (rhs.babModel_)
-      babModel_ = new CbcModel(*rhs.babModel_);
-    else
-      babModel_ = NULL;
+
     userFunction_ = new CbcUser *[numberUserFunctions_];
     for (i = 0; i < numberUserFunctions_; i++)
       userFunction_[i] = rhs.userFunction_[i]->clone();
-    callBack_ = rhs.callBack_->clone();
-    originalSolver_ = NULL;
+    if (numberCutGenerators_ > 0) {
+      cutGenerator_ = new CglCutGenerator *[numberCutGenerators_];
+      for (i = 0; i < numberCutGenerators_; i++)
+        cutGenerator_[i] = rhs.cutGenerator_[i]->clone();
+    } else {
+      cutGenerator_ = nullptr;
+    }
+    callBack_ = rhs.callBack_ ? rhs.callBack_->clone() : new CbcStopNow();
     if (rhs.originalSolver_) {
       OsiSolverInterface *temp = rhs.originalSolver_->clone();
       originalSolver_ = getClpSolver(temp);
       assert(originalSolver_);
+    } else {
+      originalSolver_ = nullptr;
     }
-    originalCoinModel_ = NULL;
-    if (rhs.originalCoinModel_)
-      originalCoinModel_ = new CoinModel(*rhs.originalCoinModel_);
+    originalCoinModel_ = rhs.originalCoinModel_
+      ? new CoinModel(*rhs.originalCoinModel_) : nullptr;
+    saveSolver_ = rhs.saveSolver_ ? rhs.saveSolver_->clone() : nullptr;
+
+    // Copy scalar cross-phase state
+    goodModel_ = rhs.goodModel_;
+    interactiveMode_ = rhs.interactiveMode_;
+    defaultSettings_ = rhs.defaultSettings_;
+    preSolve_ = rhs.preSolve_;
+    preProcess_ = rhs.preProcess_;
+    useStrategy_ = rhs.useStrategy_;
+    preSolveFile_ = rhs.preSolveFile_;
+    strongChanged_ = rhs.strongChanged_;
+    pumpChanged_ = rhs.pumpChanged_;
+    cutPass_ = rhs.cutPass_;
+    cutPassInTree_ = rhs.cutPassInTree_;
+    tunePreProcess_ = rhs.tunePreProcess_;
+    testOsiParameters_ = rhs.testOsiParameters_;
+    complicatedInteger_ = rhs.complicatedInteger_;
+    initialPumpTune_ = rhs.initialPumpTune_;
+    djFix_ = rhs.djFix_;
+    tightenFactor_ = rhs.tightenFactor_;
+    normalIncrement_ = rhs.normalIncrement_;
+    returnMode_ = rhs.returnMode_;
+    integerStatus_ = rhs.integerStatus_;
+    numberGoodCommands_ = rhs.numberGoodCommands_;
+    nodeStrategy_ = rhs.nodeStrategy_;
+    dominatedCuts_ = rhs.dominatedCuts_;
+    doSOS_ = rhs.doSOS_;
+    verbose_ = rhs.verbose_;
+    useCosts_ = rhs.useCosts_;
+    useSolution_ = rhs.useSolution_;
+    currentBestSolution_ = rhs.currentBestSolution_;
+    doIdiot_ = rhs.doIdiot_;
+    outputFormat_ = rhs.outputFormat_;
+    slpValue_ = rhs.slpValue_;
+    cppValue_ = rhs.cppValue_;
+    printOptions_ = rhs.printOptions_;
+    printMode_ = rhs.printMode_;
+    presolveOptions_ = rhs.presolveOptions_;
+    substitution_ = rhs.substitution_;
+    dualize_ = rhs.dualize_;
+    doCrash_ = rhs.doCrash_;
+    doVector_ = rhs.doVector_;
+    doSprint_ = rhs.doSprint_;
+    doScaling_ = rhs.doScaling_;
+    choleskyType_ = rhs.choleskyType_;
+    gamma_ = rhs.gamma_;
+    scaleBarrier_ = rhs.scaleBarrier_;
+    doKKT_ = rhs.doKKT_;
+    crossover_ = rhs.crossover_;
+    biLinearProblem_ = rhs.biLinearProblem_;
+    gomoryMode_ = rhs.gomoryMode_;
+    probingMode_ = rhs.probingMode_;
+    knapsackMode_ = rhs.knapsackMode_;
+    redsplitMode_ = rhs.redsplitMode_;
+    redsplit2Mode_ = rhs.redsplit2Mode_;
+    GMIMode_ = rhs.GMIMode_;
+    cliqueMode_ = rhs.cliqueMode_;
+    oldCliqueMode_ = rhs.oldCliqueMode_;
+    oddWheelMode_ = rhs.oddWheelMode_;
+    mixedMode_ = rhs.mixedMode_;
+    mixedRoundStrategy_ = rhs.mixedRoundStrategy_;
+    flowMode_ = rhs.flowMode_;
+    twomirMode_ = rhs.twomirMode_;
+    landpMode_ = rhs.landpMode_;
+    residualCapacityMode_ = rhs.residualCapacityMode_;
+    zerohalfMode_ = rhs.zerohalfMode_;
+    cgraphMode_ = rhs.cgraphMode_;
+    clqstrMode_ = rhs.clqstrMode_;
+    bkPivotingStrategy_ = rhs.bkPivotingStrategy_;
+    maxCallsBK_ = rhs.maxCallsBK_;
+    bkClqExtMethod_ = rhs.bkClqExtMethod_;
+    oddWExtMethod_ = rhs.oddWExtMethod_;
+    allowImportErrors_ = rhs.allowImportErrors_;
+    keepImportNames_ = rhs.keepImportNames_;
+    lengthName_ = rhs.lengthName_;
+    rowNames_ = rhs.rowNames_;
+    columnNames_ = rhs.columnNames_;
+    numberDebugValues_ = rhs.numberDebugValues_;
+    basisHasValues_ = rhs.basisHasValues_;
+    totalTime_ = rhs.totalTime_;
+    time0_ = rhs.time0_;
+    time0Elapsed_ = rhs.time0Elapsed_;
+    mipStart_ = rhs.mipStart_;
+    mipStartBefore_ = rhs.mipStartBefore_;
+    mipStartFile_ = rhs.mipStartFile_;
+    saveInputQueue_ = rhs.saveInputQueue_;
+
+    // Null transient per-run arrays
+    priorities_ = nullptr;
+    branchDirection_ = nullptr;
+    pseudoDown_ = nullptr;
+    pseudoUp_ = nullptr;
+    solutionIn_ = nullptr;
+    prioritiesIn_ = nullptr;
+    numberSOS_ = 0;
+    sosStart_ = nullptr;
+    sosIndices_ = nullptr;
+    sosType_ = nullptr;
+    sosReference_ = nullptr;
+    cut_ = nullptr;
+    sosPriority_ = nullptr;
+    whichColumn_ = nullptr;
+    knapsackStart_ = nullptr;
+    knapsackRow_ = nullptr;
+    numberKnapsack_ = 0;
+    debugValues_ = nullptr;
+    lotsize_ = nullptr;
+    numberLotSizing_ = 0;
+#ifdef COINUTILS_HAS_GLPK
+    coin_glp_tran_ = nullptr;
+    coin_glp_prob_ = nullptr;
+#endif
   }
   return *this;
 }
@@ -1796,6 +2074,301 @@ void CbcSolver::addCutGenerator(CglCutGenerator *generator) {
   delete[] cutGenerator_;
   cutGenerator_ = temp;
   cutGenerator_[numberCutGenerators_++] = generator->clone();
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcSolver::resetRunState()
+{
+  // Clean up any per-run allocations
+  delete babModel_;
+  babModel_ = nullptr;
+  delete saveSolver_;
+  saveSolver_ = nullptr;
+  delete[] priorities_;
+  priorities_ = nullptr;
+  delete[] branchDirection_;
+  branchDirection_ = nullptr;
+  delete[] pseudoDown_;
+  pseudoDown_ = nullptr;
+  delete[] pseudoUp_;
+  pseudoUp_ = nullptr;
+  delete[] solutionIn_;
+  solutionIn_ = nullptr;
+  delete[] prioritiesIn_;
+  prioritiesIn_ = nullptr;
+  delete[] sosStart_;
+  sosStart_ = nullptr;
+  delete[] sosIndices_;
+  sosIndices_ = nullptr;
+  delete[] sosType_;
+  sosType_ = nullptr;
+  delete[] sosReference_;
+  sosReference_ = nullptr;
+  delete[] cut_;
+  cut_ = nullptr;
+  delete[] sosPriority_;
+  sosPriority_ = nullptr;
+  delete[] whichColumn_;
+  whichColumn_ = nullptr;
+  delete[] knapsackStart_;
+  knapsackStart_ = nullptr;
+  delete[] knapsackRow_;
+  knapsackRow_ = nullptr;
+  delete[] debugValues_;
+  debugValues_ = nullptr;
+  delete[] lotsize_;
+  lotsize_ = nullptr;
+  delete[] statistics_.number_cuts;
+  statistics_.number_cuts = nullptr;
+  delete[] statistics_.name_generators;
+  statistics_.name_generators = nullptr;
+#ifdef COINUTILS_HAS_GLPK
+  if (coin_glp_prob_) {
+    glp_free(coin_glp_prob_);
+    glp_mpl_free_wksp(coin_glp_tran_);
+    glp_free_env();
+    coin_glp_prob_ = nullptr;
+    coin_glp_tran_ = nullptr;
+  }
+#endif
+
+  // Reset scalars to defaults
+  goodModel_ = false;
+  interactiveMode_ = false;
+  defaultSettings_ = true;
+  preSolve_ = 5;
+  preProcess_ = 4;
+  useStrategy_ = false;
+  preSolveFile_ = false;
+  strongChanged_ = false;
+  pumpChanged_ = false;
+  cutPass_ = -1234567;
+  cutPassInTree_ = -1234567;
+  tunePreProcess_ = 0;
+  testOsiParameters_ = -1;
+  complicatedInteger_ = 0;
+  initialPumpTune_ = 1003;
+  djFix_ = 1.0e100;
+  tightenFactor_ = 0.0;
+  normalIncrement_ = 0.0;
+  returnMode_ = 1;
+  integerStatus_ = -1;
+  numberGoodCommands_ = 0;
+  nodeStrategy_ = 0;
+  dominatedCuts_ = false;
+  doSOS_ = 1;
+  verbose_ = 0;
+  useCosts_ = 0;
+  useSolution_ = -1;
+  currentBestSolution_ = 0;
+  doIdiot_ = -1;
+  outputFormat_ = 2;
+  slpValue_ = -1;
+  cppValue_ = -1;
+  printOptions_ = 0;
+  printMode_ = 0;
+  presolveOptions_ = 0;
+  substitution_ = 3;
+  dualize_ = 3;
+  doCrash_ = 0;
+  doVector_ = 0;
+  doSprint_ = -1;
+  doScaling_ = 4;
+  choleskyType_ = 0;
+  gamma_ = 0;
+  scaleBarrier_ = 0;
+  doKKT_ = 0;
+  crossover_ = 2;
+  biLinearProblem_ = false;
+  gomoryMode_ = CbcParameters::CGIfMove;
+  probingMode_ = CbcParameters::CGIfMove;
+  knapsackMode_ = CbcParameters::CGIfMove;
+  redsplitMode_ = CbcParameters::CGOff;
+  redsplit2Mode_ = CbcParameters::CGOff;
+  GMIMode_ = CbcParameters::CGOff;
+  cliqueMode_ = CbcParameters::CGIfMove;
+  oldCliqueMode_ = CbcParameters::CGIfMove;
+  oddWheelMode_ = CbcParameters::CGOff;
+  mixedMode_ = CbcParameters::CGIfMove;
+  mixedRoundStrategy_ = 1;
+  flowMode_ = CbcParameters::CGIfMove;
+  twomirMode_ = CbcParameters::CGIfMove;
+  landpMode_ = CbcParameters::CGOff;
+  residualCapacityMode_ = CbcParameters::CGOff;
+  zerohalfMode_ = CbcParameters::CGIfMove;
+  cgraphMode_ = "on";
+  clqstrMode_ = "after";
+  bkPivotingStrategy_ = 3;
+  maxCallsBK_ = 1000;
+  bkClqExtMethod_ = 4;
+  oddWExtMethod_ = 2;
+  numberSOS_ = 0;
+  numberKnapsack_ = 0;
+  allowImportErrors_ = 0;
+  keepImportNames_ = 1;
+  lengthName_ = 0;
+  rowNames_.clear();
+  columnNames_.clear();
+  numberDebugValues_ = -1;
+  basisHasValues_ = 0;
+  numberLotSizing_ = 0;
+  totalTime_ = 0.0;
+  time0_ = 0.0;
+  time0Elapsed_ = 0.0;
+  mipStart_.clear();
+  mipStartBefore_.clear();
+  mipStartFile_.clear();
+  saveInputQueue_.clear();
+  statistics_ = CbcSolverStatistics();
+}
+
+//###########################################################################
+//###########################################################################
+
+void CbcSolver::initialize()
+{
+#if defined(HAVE_SIGNAL_H) && defined(HAVE_EXECINFO_H)
+  signal(SIGSEGV, CbcCrashHandler);
+  signal(SIGABRT, CbcCrashHandler);
+  signal(SIGFPE, CbcCrashHandler);
+#endif
+
+  ClpParameters &clpParameters = parameters_.clpParameters();
+
+#ifndef CBC_OTHER_SOLVER
+  OsiClpSolverInterface *origSolver = getClpSolver(model_.solver());
+#elif CBC_OTHER_SOLVER == 1
+  OsiCpxSolverInterface *origSolver =
+      dynamic_cast<OsiCpxSolverInterface *>(model_.solver());
+  OsiClpSolverInterface dummySolver;
+  ClpSimplex *lpSolver = dummySolver.getModelPtr();
+  OsiCpxSolverInterface *clpSolver = origSolver;
+#endif
+  assert(origSolver);
+  CoinMessageHandler *generalMessageHandler = origSolver->messageHandler();
+  generalMessageHandler->setPrefix(false);
+#ifndef CBC_OTHER_SOLVER
+  OsiSolverInterface *solver = model_.solver();
+  OsiClpSolverInterface *clpSolver = getClpSolver(solver);
+  ClpSimplex *lpSolver = clpSolver->getModelPtr();
+  lpSolver->setPerturbation(50);
+  lpSolver->messageHandler()->setPrefix(false);
+  clpParameters.setModel(lpSolver);
+#endif
+  int doIdiot = -1;
+  int outputFormat = 2;
+  int substitution = 3;
+  int dualize = 3;
+  int preSolve = 5;
+  int doSprint = -1;
+  int testOsiParameters = -1;
+  clpParameters[ClpParam::DUALBOUND]->setVal(lpSolver->dualBound());
+  clpParameters[ClpParam::DUALTOLERANCE]->setVal(lpSolver->dualTolerance());
+  clpParameters[ClpParam::IDIOT]->setVal(doIdiot);
+  clpParameters[ClpParam::PRESOLVETOLERANCE]->setVal(1.0e-8);
+  clpParameters[ClpParam::MAXFACTOR]->setVal(lpSolver->factorizationFrequency());
+  clpParameters[ClpParam::MAXITERATION]->setVal(lpSolver->maximumIterations());
+  clpParameters[ClpParam::PRESOLVEPASS]->setVal(preSolve);
+  clpParameters[ClpParam::PERTVALUE]->setVal(lpSolver->perturbation());
+  clpParameters[ClpParam::PRIMALTOLERANCE]->setVal(lpSolver->primalTolerance());
+  clpParameters[ClpParam::PRIMALWEIGHT]->setVal(lpSolver->infeasibilityCost());
+  clpParameters[ClpParam::SPRINT]->setVal(doSprint);
+  clpParameters[ClpParam::SUBSTITUTION]->setVal(substitution);
+  clpParameters[ClpParam::DUALIZE]->setVal(dualize);
+  parameters_[CbcParam::OUTPUTFORMAT]->setVal(outputFormat);
+  parameters_[CbcParam::LOGLEVEL]->setVal(1);
+  parameters_[CbcParam::LPLOGLEVEL]->setVal(1);
+  clpParameters[ClpParam::LOGLEVEL]->setType(CoinParam::paramInt);
+  clpSolver->messageHandler()->setLogLevel(1);
+  lpSolver->setLogLevel(1);
+  parameters_[CbcParam::TIMELIMIT]->setVal(1.0e8);
+  parameters_[CbcParam::TESTOSI]->setVal(testOsiParameters);
+  parameters_[CbcParam::FPUMPTUNE]->setVal(1003);
+  initialPumpTune_ = 1003;
+  // Keep file-scope global in sync for backward compatibility
+  initialPumpTune = 1003;
+#ifdef CBC_THREAD
+  parameters_[CbcParam::THREADS]->setVal(0);
+#endif
+  parameters_[CbcParam::CLIQUECUTS]->setVal("ifmove");
+  parameters_[CbcParam::ODDWHEELCUTS]->setVal("off");
+  parameters_[CbcParam::CLQSTRENGTHENING]->setVal("after");
+  parameters_[CbcParam::USECGRAPH]->setVal("on");
+  parameters_[CbcParam::AGGREGATEMIXED]->setVal(1);
+  parameters_[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
+  parameters_[CbcParam::BKMAXCALLS]->setVal(1000);
+  parameters_[CbcParam::BKCLQEXTMETHOD]->setVal(4);
+  parameters_[CbcParam::ODDWEXTMETHOD]->setVal(2);
+  parameters_[CbcParam::PREPROCESS]->setVal("sos");
+  parameters_[CbcParam::MIPOPTIONS]->setVal(1057);
+  parameters_[CbcParam::CUTPASSINTREE]->setVal(10);
+  parameters_[CbcParam::MOREMIPOPTIONS]->setVal(-1);
+  parameters_[CbcParam::MAXHOTITS]->setVal(100);
+  parameters_[CbcParam::CUTSTRATEGY]->setVal("on");
+  parameters_[CbcParam::HEURISTICSTRATEGY]->setVal("on");
+  parameters_[CbcParam::NODESTRATEGY]->setVal("fewest");
+  parameters_[CbcParam::GOMORYCUTS]->setVal("ifmove");
+  parameters_[CbcParam::PROBINGCUTS]->setVal("ifmove");
+  parameters_[CbcParam::KNAPSACKCUTS]->setVal("ifmove");
+  parameters_[CbcParam::ZEROHALFCUTS]->setVal("ifmove");
+  parameters_[CbcParam::REDSPLITCUTS]->setVal("off");
+  parameters_[CbcParam::REDSPLIT2CUTS]->setVal("off");
+  parameters_[CbcParam::GMICUTS]->setVal("off");
+  parameters_[CbcParam::MIRCUTS]->setVal("ifmove");
+  parameters_[CbcParam::FLOWCUTS]->setVal("ifmove");
+  parameters_[CbcParam::TWOMIRCUTS]->setVal("ifmove");
+  parameters_[CbcParam::LANDPCUTS]->setVal("off");
+  parameters_[CbcParam::RESIDCAPCUTS]->setVal("off");
+  parameters_[CbcParam::ROUNDING]->setVal("on");
+  parameters_[CbcParam::FPUMP]->setVal("on");
+  parameters_[CbcParam::GREEDY]->setVal("on");
+  parameters_[CbcParam::DIVINGC]->setVal("on");
+  parameters_[CbcParam::RINS]->setVal("on");
+  parameters_[CbcParam::COMBINE]->setVal("off");
+  parameters_[CbcParam::CROSSOVER]->setVal("off");
+#ifdef CBC_HAS_NAUTY
+#ifndef CBC_LIGHTWEIGHT_NAUTY
+  parameters_[CbcParam::ORBITAL]->setVal("on");
+#else
+  parameters_[CbcParam::ORBITAL]->setVal("lightweight");
+#endif
+#endif
+  parameters_[CbcParam::PIVOTANDFIX]->setVal("off");
+  parameters_[CbcParam::RANDROUND]->setVal("off");
+  parameters_[CbcParam::NAIVE]->setVal("off");
+  parameters_[CbcParam::DINS]->setVal("off");
+  parameters_[CbcParam::RENS]->setVal("off");
+  parameters_[CbcParam::LOCALTREE]->setVal("off");
+  parameters_[CbcParam::BRANCHPRIORITY]->setVal("off");
+
+  model_.messageHandler()->setLogLevel(1);
+  model_.setNumberBeforeTrust(10);
+  parameters_[CbcParam::NUMBERBEFORE]->setVal(10);
+  parameters_[CbcParam::MAXNODES]->setVal(model_.getMaximumNodes());
+  model_.setNumberStrong(5);
+  parameters_[CbcParam::STRONGBRANCHING]->setVal(model_.numberStrong());
+  parameters_[CbcParam::INFEASIBILITYWEIGHT]->setVal(
+    model_.getDblParam(CbcModel::CbcInfeasibilityWeight));
+  parameters_[CbcParam::INTEGERTOLERANCE]->setVal(
+    model_.getDblParam(CbcModel::CbcIntegerTolerance));
+  parameters_[CbcParam::INCREMENT]->setVal(
+    model_.getDblParam(CbcModel::CbcCutoffIncrement));
+}
+
+//###########################################################################
+//###########################################################################
+
+// argc/argv overload of run()
+int CbcSolver::run(int argc, const char *argv[],
+  int callBack(CbcModel *currentSolver, int whereFrom),
+  ampl_info *info)
+{
+  std::deque<std::string> inputQueue;
+  CoinParamUtils::formInputQueue(inputQueue, "cbc", argc,
+    const_cast<char **>(argv));
+  return run(inputQueue, callBack, info);
 }
 
 //###########################################################################
@@ -2094,11 +2667,11 @@ private:
 //   6 after a user called heuristic phase
 //###########################################################################
 
-int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
-  CbcParameters &parameters,
+int CbcSolver::run(std::deque< std::string > inputQueue,
   int callBack(CbcModel *currentSolver, int whereFrom),
   ampl_info *info)
 {
+  CbcParameters &parameters = parameters_;
   ClpParameters &clpParameters = parameters.clpParameters();
 
   std::ostringstream buffer;
@@ -2116,13 +2689,14 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 
   double totalTime = parameters.getTotalTime();
   bool useSignalHandler = parameters.useSignalHandler();
-  CbcModel &model_ = model;
+  // model_ is the class member; 'model' alias for code that uses it without underscore
+  CbcModel &model = model_;
   CglPreProcess *preProcessPointer = NULL;
-  OsiSolverInterface *saveSolver = NULL;
+  // saveSolver_ is a class member
   CglPreProcess process;
   // Save a copy of input for unit testing
   // Could also be used for friendly error messages?
-  std::deque< std::string > saveInputQueue = inputQueue;
+  saveInputQueue_ = inputQueue;
   // copy if we are reading from option file
   std::deque< std::string > partInputQueue;
   // Meaning 0 - start at very beginning
@@ -2139,33 +2713,45 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
   else
     model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
-  CbcModel *babModel_ = NULL;
+  babModel_ = NULL;
 #ifdef COINUTILS_HAS_GLPK
-  glp_tran *coin_glp_tran = NULL;
-  glp_prob *coin_glp_prob = NULL;
+  coin_glp_tran_ = NULL;
+  coin_glp_prob_ = NULL;
+  glp_tran *&coin_glp_tran = coin_glp_tran_;
+  glp_prob *&coin_glp_prob = coin_glp_prob_;
 #endif
-  int returnMode = 1;
-  int statusUserFunction_[1];
-  int numberUserFunctions_ = 1; // to allow for ampl
+  returnMode_ = 1;
+  // statusUserFunction_ and numberUserFunctions_ are class members
+  // but CbcMain1 used stack-local versions; keep a local for AMPL compat
+  int statusUserFunction_local[1];
+  int numberUserFunctions_local = 1; // to allow for ampl
+  // The body code uses statusUserFunction_[0] — shadow the member with local
+  int *statusUserFunction_save = statusUserFunction_;
+  statusUserFunction_ = statusUserFunction_local;
                                 //
   // Statistics
-  CbcSolverStatistics statistics;
+  statistics_ = CbcSolverStatistics();
 
-  int currentBestSolution = 0;
-  memset(statusUserFunction_, 0, numberUserFunctions_ * sizeof(int));
+  currentBestSolution_ = 0;
+  memset(statusUserFunction_local, 0, numberUserFunctions_local * sizeof(int));
   /* Note
        This is meant as a stand-alone executable to do as much of coin as
      possible. It should only have one solver known to it.
     */
   CoinMessageHandler *generalMessageHandler = model_.messageHandler();
   generalMessageHandler->setPrefix(false);
-  int numberLotSizing = 0;
+  numberLotSizing_ = 0;
   typedef struct {
     double low;
     double high;
     int column;
   } lotStruct;
-  lotStruct *lotsize = NULL;
+  // lotsize_ is a class member (LotStruct *), but the local code uses lotStruct
+  // We keep a local alias for the code that uses 'lotsize'
+  delete[] lotsize_;
+  lotsize_ = NULL;
+  // lotStruct and LotStruct have identical layout
+  lotStruct *&lotsize = reinterpret_cast<lotStruct *&>(lotsize_);
   typedef struct {
     lotStruct *lotsize;
     int numberLotSizing;
@@ -2199,16 +2785,15 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
   parameters.enablePrinting();
 #endif
   // Say not in integer
-  int integerStatus = -1;
+  integerStatus_ = -1;
   // Say no resolve after cuts
   model_.setResolveAfterTakeOffCuts(false);
-  double time0;
-  double time0Elapsed = CoinGetTimeOfDay();
+  time0Elapsed_ = CoinGetTimeOfDay();
   {
     double time1 = CoinCpuTime(), time2;
-    time0 = time1;
-    double time1Elapsed = time0Elapsed;
-    bool goodModel = (originalSolver->getNumCols()) ? true : false;
+    time0_ = time1;
+    double time1Elapsed = time0Elapsed_;
+    goodModel_ = (originalSolver->getNumCols()) ? true : false;
 
     // register signal handler
     // CoinSighandler_t saveSignal=signal(SIGINT,signal_handler);
@@ -2217,16 +2802,16 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       signal(SIGINT, signal_handler);
 #endif
     // Set up all non-standard stuff
-    // Initialize from parameters so values set before CbcMain1 are respected.
+    // Initialize from parameters so values set before run() are respected.
     // The sentinel -1234567 means "let CBC auto-size based on problem dimensions".
-    int cutPass = parameters[CbcParam::CUTPASS]->intVal();
-    if (cutPass == 100) cutPass = -1234567; // 100 is the default; treat as "not user-set"
-    int cutPassInTree = parameters[CbcParam::CUTPASSINTREE]->intVal();
-    if (cutPassInTree == 10) cutPassInTree = -1234567; // 10 is CbcMain0's default; treat as "not user-set"
-    int tunePreProcess = 0;
-    int testOsiParameters = -1;
+    cutPass_ = parameters[CbcParam::CUTPASS]->intVal();
+    if (cutPass_ == 100) cutPass_ = -1234567; // 100 is the default; treat as "not user-set"
+    cutPassInTree_ = parameters[CbcParam::CUTPASSINTREE]->intVal();
+    if (cutPassInTree_ == 10) cutPassInTree_ = -1234567; // 10 is CbcMain0's default; treat as "not user-set"
+    tunePreProcess_ = 0;
+    testOsiParameters_ = -1;
     // 0 normal, 1 from ampl or MIQP etc (2 allows cuts)
-    int complicatedInteger = 0;
+    complicatedInteger_ = 0;
     OsiSolverInterface *solver = model_.solver();
 #ifndef CBC_OTHER_SOLVER
     OsiClpSolverInterface *clpSolver = getClpSolver(solver);
@@ -2237,61 +2822,81 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #else
     ClpSimplex *lpSolver = NULL;
 #endif
-    // For priorities etc
-    int *priorities = NULL;
-    int *branchDirection = NULL;
-    double *pseudoDown = NULL;
-    double *pseudoUp = NULL;
-    double *solutionIn = NULL;
-    int *prioritiesIn = NULL;
-    std::vector< std::pair< std::string, double > > mipStart;
-    std::vector< std::pair< std::string, double > > mipStartBefore;
-    std::string mipStartFile = "";
-    int numberSOS = 0;
-    int *sosStart = NULL;
-    int *sosIndices = NULL;
-    char *sosType = NULL;
-    double *sosReference = NULL;
-    int *cut = NULL;
-    int *sosPriority = NULL;
+    // For priorities etc — use member pointers
+    priorities_ = NULL;
+    branchDirection_ = NULL;
+    pseudoDown_ = NULL;
+    pseudoUp_ = NULL;
+    solutionIn_ = NULL;
+    prioritiesIn_ = NULL;
+    mipStart_.clear();
+    mipStartBefore_.clear();
+    mipStartFile_.clear();
+    numberSOS_ = 0;
+    sosStart_ = NULL;
+    sosIndices_ = NULL;
+    sosType_ = NULL;
+    sosReference_ = NULL;
+    cut_ = NULL;
+    sosPriority_ = NULL;
     CglStored storedAmpl;
     CoinModel *coinModel = NULL;
     CoinModel saveCoinModel;
     CoinModel saveTightenedModel;
-    int *whichColumn = NULL;
-    int *knapsackStart = NULL;
-    int *knapsackRow = NULL;
-    int numberKnapsack = 0;
-    // default action on import
-    int allowImportErrors = 0;
-    int keepImportNames = 1;
-    int doIdiot = -1;
-    int outputFormat = 2;
-    int slpValue = -1;
-    int cppValue = -1;
-    int printOptions = 0;
-    int printMode = 0;
-    int presolveOptions = 0;
-    int substitution = 3;
-    int dualize = 3;
-    int doCrash = 0;
-    int doVector = 0;
-    int doSprint = -1;
-    int doScaling = 4;
+    // knapsack arrays are class members; use local aliases
+    whichColumn_ = NULL;
+    knapsackStart_ = NULL;
+    knapsackRow_ = NULL;
+    numberKnapsack_ = 0;
+    int *&whichColumn = whichColumn_;
+    int *&knapsackStart = knapsackStart_;
+    int *&knapsackRow = knapsackRow_;
+    int &numberKnapsack = numberKnapsack_;
+    // default action on import — use member-backed aliases
+    allowImportErrors_ = 0;
+    keepImportNames_ = 1;
+    doIdiot_ = -1;
+    outputFormat_ = 2;
+    slpValue_ = -1;
+    cppValue_ = -1;
+    printOptions_ = 0;
+    printMode_ = 0;
+    presolveOptions_ = 0;
+    substitution_ = 3;
+    dualize_ = 3;
+    doCrash_ = 0;
+    doVector_ = 0;
+    doSprint_ = -1;
+    doScaling_ = 4;
+    int &allowImportErrors = allowImportErrors_;
+    int &keepImportNames = keepImportNames_;
+    int &doIdiot = doIdiot_;
+    int &outputFormat = outputFormat_;
+    int &slpValue = slpValue_;
+    int &cppValue = cppValue_;
+    int &printOptions = printOptions_;
+    int &printMode = printMode_;
+    int &presolveOptions = presolveOptions_;
+    int &substitution = substitution_;
+    int &dualize = dualize_;
+    int &doCrash = doCrash_;
+    int &doVector = doVector_;
+    int &doSprint = doSprint_;
+    int &doScaling = doScaling_;
 
     if (info) {
       parameters[CbcParam::LOGLEVEL]->setVal(info->logLevel);
-      goodModel = true;
+      goodModel_ = true;
       CbcOutput::printProblemSummary(model_, *solver);
       // FIXME Do we really need this? Seems to just mean that AMPL is being used
-      statusUserFunction_[0] = 1;
+      statusUserFunction_local[0] = 1;
       if (info->numberSos) {
-        numberSOS = info->numberSos;
-        sosStart = info->sosStart;
-        sosIndices = info->sosIndices;
-        sosType = info->sosType;
-        sosReference = info->sosReference;
-        sosPriority = info->sosPriority;
+        numberSOS_ = info->numberSos;
+        sosStart_ = info->sosStart;
+        sosIndices_ = info->sosIndices;
+        sosType_ = info->sosType;
+        sosReference_ = info->sosReference;
+        sosPriority_ = info->sosPriority;
       }
       if (info->cut) {
         int numberRows = info->numberRows;
@@ -2366,39 +2971,94 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       }
     }
 
-    // set reasonable defaults
-    int preSolve = 5;
-    int preProcess = 4;
-    bool useStrategy = false;
-    bool preSolveFile = false;
-    bool strongChanged = false;
-    bool pumpChanged = false;
+    // set reasonable defaults — use member-backed aliases
+    preSolve_ = 5;
+    preProcess_ = 4;
+    useStrategy_ = false;
+    preSolveFile_ = false;
+    strongChanged_ = false;
+    pumpChanged_ = false;
 
-    double djFix = 1.0e100;
-    double tightenFactor = 0.0;
+    djFix_ = 1.0e100;
+    tightenFactor_ = 0.0;
     const char dirsep = CoinFindDirSeparator();
-    double *debugValues = NULL;
-    int numberDebugValues = -1;
-    int basisHasValues = 0;
+    debugValues_ = NULL;
+    numberDebugValues_ = -1;
+    basisHasValues_ = 0;
 #ifndef CBC_OTHER_SOLVER
-    double normalIncrement = model_.getCutoffIncrement();
+    normalIncrement_ = model_.getCutoffIncrement();
     ;
 #endif
-    if (testOsiParameters >= 0) {
+    if (testOsiParameters_ >= 0) {
       // trying nonlinear - switch off some stuff
-      preProcess = 0;
+      preProcess_ = 0;
     }
     // Set up likely cut generators and defaults
-    int nodeStrategy = 0;
-    bool dominatedCuts = false;
-    int doSOS = 1;
-    int verbose = 0;
+    nodeStrategy_ = 0;
+    dominatedCuts_ = false;
+    doSOS_ = 1;
+    verbose_ = 0;
+    // Local reference aliases so the rest of the code compiles unchanged
+    int &preSolve = preSolve_;
+    int &preProcess = preProcess_;
+    bool &useStrategy = useStrategy_;
+    bool &preSolveFile = preSolveFile_;
+    bool &strongChanged = strongChanged_;
+    bool &pumpChanged = pumpChanged_;
+    double &djFix = djFix_;
+    double &tightenFactor = tightenFactor_;
+    double *&debugValues = debugValues_;
+    int &numberDebugValues = numberDebugValues_;
+    int &basisHasValues = basisHasValues_;
+    double &normalIncrement = normalIncrement_;
+    int &nodeStrategy = nodeStrategy_;
+    bool &dominatedCuts = dominatedCuts_;
+    int &doSOS = doSOS_;
+    int &verbose = verbose_;
+    int &testOsiParameters = testOsiParameters_;
+    int &complicatedInteger = complicatedInteger_;
+    int &cutPass = cutPass_;
+    int &cutPassInTree = cutPassInTree_;
+    int &tunePreProcess = tunePreProcess_;
+    int &integerStatus = integerStatus_;
+    int &returnMode = returnMode_;
+    int &currentBestSolution = currentBestSolution_;
+    int &numberGoodCommands = numberGoodCommands_;
+    bool &defaultSettings = defaultSettings_;
+    bool &goodModel = goodModel_;
+    bool &interactiveMode = interactiveMode_;
+    double &time0 = time0_;
+    double &time0Elapsed = time0Elapsed_;
+    int *&priorities = priorities_;
+    int *&branchDirection = branchDirection_;
+    double *&pseudoDown = pseudoDown_;
+    double *&pseudoUp = pseudoUp_;
+    double *&solutionIn = solutionIn_;
+    int *&prioritiesIn = prioritiesIn_;
+    std::vector<std::pair<std::string, double>> &mipStart = mipStart_;
+    std::vector<std::pair<std::string, double>> &mipStartBefore = mipStartBefore_;
+    std::string &mipStartFile = mipStartFile_;
+    int &numberSOS = numberSOS_;
+    int *&sosStart = sosStart_;
+    int *&sosIndices = sosIndices_;
+    char *&sosType = sosType_;
+    double *&sosReference = sosReference_;
+    int *&sosPriority = sosPriority_;
+    int *&cut = cut_;
+    int &numberLotSizing = numberLotSizing_;
+    int &lengthName = lengthName_;
+    std::vector<std::string> &rowNames = rowNames_;
+    std::vector<std::string> &columnNames = columnNames_;
+    std::deque<std::string> &saveInputQueue = saveInputQueue_;
+    CbcSolverStatistics &statistics = statistics_;
+    OsiSolverInterface *&saveSolver = saveSolver_;
     CglGomory gomoryGen;
     // try larger limit
     gomoryGen.setLimitAtRoot(1000);
     gomoryGen.setLimit(50);
     // set default action (0=off,1=on,2=root,3=ifmove)
-    int gomoryMode = CbcParameters::CGIfMove;
+    gomoryMode_ = CbcParameters::CGIfMove;
+    int &gomoryMode = gomoryMode_;
     assert(parameters[CbcParam::GOMORYCUTS]->modeVal() == gomoryMode);
 
     CglProbing probingGen;
@@ -2417,73 +3077,82 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
     probingGen.setMaxElementsRoot(300);
     probingGen.setRowCuts(3);
     // set default action (0=off,1=on,2=root,3=ifmove)
-    int probingMode = CbcParameters::CGIfMove;
+    probingMode_ = CbcParameters::CGIfMove;
+    int &probingMode = probingMode_;
     assert(parameters[CbcParam::PROBINGCUTS]->modeVal() == probingMode);
 
     CglKnapsackCover knapsackGen;
-    // knapsackGen.switchOnExpensive();
-    // knapsackGen.setMaxInKnapsack(100);
-    // set default action (0=off,1=on,2=root,3=ifmove)
-    int knapsackMode = CbcParameters::CGIfMove;
+    knapsackMode_ = CbcParameters::CGIfMove;
+    int &knapsackMode = knapsackMode_;
     assert(parameters[CbcParam::KNAPSACKCUTS]->modeVal() == knapsackMode);
 
     CglRedSplit redsplitGen;
-    // set default action (0=off,1=on,2=root,3=ifmove)
-    // Off as seems to give some bad cuts
-    int redsplitMode = CbcParameters::CGOff;
+    redsplitMode_ = CbcParameters::CGOff;
+    int &redsplitMode = redsplitMode_;
     assert(parameters[CbcParam::REDSPLITCUTS]->modeVal() == redsplitMode);
 
     CglRedSplit2 redsplit2Gen;
-    // redsplit2Gen.setLimit(100);
-    // set default action (0=off,1=on,2=root,3=ifmove)
-    // Off
-    int redsplit2Mode = CbcParameters::CGOff;
+    redsplit2Mode_ = CbcParameters::CGOff;
+    int &redsplit2Mode = redsplit2Mode_;
     assert(parameters[CbcParam::REDSPLIT2CUTS]->modeVal() == redsplit2Mode);
 
     CglGMI GMIGen;
-    int GMIMode = parameters[CbcParam::GMICUTS]->modeVal();
+    GMIMode_ = parameters[CbcParam::GMICUTS]->modeVal();
+    int &GMIMode = GMIMode_;
 
-    std::string cgraphMode = "on";
-    std::string clqstrMode = "after";
+    cgraphMode_ = "on";
+    clqstrMode_ = "after";
+    std::string &cgraphMode = cgraphMode_;
+    std::string &clqstrMode = clqstrMode_;
     CglBKClique bkCliqueGen;
+    bkPivotingStrategy_ = 3;
     CoinBronKerbosch::PivotingStrategy bkPivotingStrategy = CoinBronKerbosch::PivotingStrategy::Weight;
-    int maxCallsBK = 1000, bkClqExtMethod = 4;
-    int cliqueMode = parameters[CbcParam::CLIQUECUTS]->modeVal();
-    int oldCliqueMode = cliqueMode;
+    maxCallsBK_ = 1000;
+    bkClqExtMethod_ = 4;
+    int &maxCallsBK = maxCallsBK_;
+    int &bkClqExtMethod = bkClqExtMethod_;
+    cliqueMode_ = parameters[CbcParam::CLIQUECUTS]->modeVal();
+    oldCliqueMode_ = cliqueMode_;
+    int &cliqueMode = cliqueMode_;
+    int &oldCliqueMode = oldCliqueMode_;
     CglOddWheel oddWheelGen;
-    int oddWheelMode = parameters[CbcParam::ODDWHEELCUTS]->modeVal(), oddWExtMethod = 2;
+    oddWheelMode_ = parameters[CbcParam::ODDWHEELCUTS]->modeVal();
+    oddWExtMethod_ = 2;
+    int &oddWheelMode = oddWheelMode_;
+    int &oddWExtMethod = oddWExtMethod_;
     assert(parameters[CbcParam::ODDWHEELCUTS]->modeVal() == oddWheelMode);
 
     // maxaggr,multiply,criterion(1-3)
     CglMixedIntegerRounding2 mixedGen(1, true, 1);
-    // set default action (0=off,1=on,2=root,3=ifmove)
-    int mixedMode = CbcParameters::CGIfMove;
-    int mixedRoundStrategy = 1;
+    mixedMode_ = CbcParameters::CGIfMove;
+    mixedRoundStrategy_ = 1;
+    int &mixedMode = mixedMode_;
+    int &mixedRoundStrategy = mixedRoundStrategy_;
     assert(parameters[CbcParam::MIRCUTS]->modeVal() == mixedMode);
     mixedGen.setDoPreproc(1); // safer (and better)
 
     CglFlowCover flowGen;
-    // set default action (0=off,1=on,2=root,3=ifmove)
-    int flowMode = CbcParameters::CGIfMove;
+    flowMode_ = CbcParameters::CGIfMove;
+    int &flowMode = flowMode_;
     assert(parameters[CbcParam::FLOWCUTS]->modeVal() == flowMode);
 
     CglTwomir twomirGen;
     twomirGen.setMaxElements(250);
-    // set default action (0=off,1=on,2=root,3=ifmove)
-    int twomirMode = CbcParameters::CGIfMove;
+    twomirMode_ = CbcParameters::CGIfMove;
+    int &twomirMode = twomirMode_;
     assert(parameters[CbcParam::TWOMIRCUTS]->modeVal() == twomirMode);
 #ifndef DEBUG_MALLOC
     CglLandP landpGen;
     landpGen.parameter().maximumCutLength = 2000;
     landpGen.validator().setMinViolation(1.0e-4);
 #endif
-    // set default action (0=off,1=on,2=root,3=ifmove)
-    int landpMode = CbcParameters::CGOff;
+    landpMode_ = CbcParameters::CGOff;
+    int &landpMode = landpMode_;
     assert(parameters[CbcParam::LANDPCUTS]->modeVal() == landpMode);
     CglResidualCapacity residualCapacityGen;
     residualCapacityGen.setDoPreproc(1); // always preprocess
-    // set default action (0=off,1=on,2=root,3=ifmove)
-    int residualCapacityMode = CbcParameters::CGOff;
+    residualCapacityMode_ = CbcParameters::CGOff;
+    int &residualCapacityMode = residualCapacityMode_;
     assert(parameters[CbcParam::RESIDCAPCUTS]->modeVal() == residualCapacityMode);
 
     CglZeroHalf zerohalfGen;
@@ -2492,32 +3161,42 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
     zerohalfGen.setRowMaxFractionalCount(parameters[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->intVal());
     // zerohalfGen.switchOnExpensive();
     // set default action (0=off,1=on,2=root,3=ifmove)
-    int zerohalfMode = CbcParameters::CGIfMove;
-    assert(parameters[CbcParam::ZEROHALFCUTS]->modeVal() == zerohalfMode);
+    assert(parameters[CbcParam::ZEROHALFCUTS]->modeVal() == zerohalfMode_);
 
     // Stored cuts
     // bool storedCuts = false;
 
-    int useCosts = 0;
+    zerohalfMode_ = CbcParameters::CGIfMove;
+    int &zerohalfMode = zerohalfMode_;
+
+    useCosts_ = 0;
+    int &useCosts = useCosts_;
     // don't use input solution
-    int useSolution = -1;
+    useSolution_ = -1;
+    int &useSolution = useSolution_;
 
     // total number of commands read
-    int numberGoodCommands = 0;
+    numberGoodCommands = 0;
     // Set false if user does anything advanced
-    bool defaultSettings = true;
+    defaultSettings = true;
 
     // Hidden stuff for barrier
-    int choleskyType = 0;
-    int gamma = 0;
-    int scaleBarrier = 0;
-    int doKKT = 0;
-    int crossover = 2; // do crossover unless quadratic
-    bool biLinearProblem = false;
+    choleskyType_ = 0;
+    gamma_ = 0;
+    scaleBarrier_ = 0;
+    doKKT_ = 0;
+    crossover_ = 2; // do crossover unless quadratic
+    biLinearProblem_ = false;
+    int &choleskyType = choleskyType_;
+    int &gamma = gamma_;
+    int &scaleBarrier = scaleBarrier_;
+    int &doKKT = doKKT_;
+    int &crossover = crossover_;
+    bool &biLinearProblem = biLinearProblem_;
     // For names
-    int lengthName = 0;
-    std::vector< std::string > rowNames;
-    std::vector< std::string > columnNames;
+    lengthName = 0;
+    rowNames.clear();
+    columnNames.clear();
     // Default strategy stuff
     {
       // try changing tolerance at root
@@ -2550,7 +3229,8 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
       // probingMode = 8;
     }
 
-    bool interactiveMode = false, canOpen;
+    interactiveMode = false;
+    bool canOpen;
 
     int status, iValue;
     double dValue;
@@ -11800,29 +12480,32 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 #if CBC_QUIET == 0
   buffer.str("");
   if (model_.useElapsedTime())
-    buffer << "Total time (Wallclock seconds): " << CoinGetTimeOfDay() - time0Elapsed
-           << "   (CPU seconds):             " << CoinCpuTime() - time0 << std::endl;
+    buffer << "Total time (Wallclock seconds): " << CoinGetTimeOfDay() - time0Elapsed_
+           << "   (CPU seconds):             " << CoinCpuTime() - time0_ << std::endl;
   else
-    buffer << "Total time (CPU seconds):       " << CoinCpuTime() - time0
-           << "   (Wallclock seconds):       " << CoinGetTimeOfDay() - time0Elapsed << std::endl;
+    buffer << "Total time (CPU seconds):       " << CoinCpuTime() - time0_
+           << "   (Wallclock seconds):       " << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
   printGeneralMessage(model_, buffer.str());
 #endif
 #ifdef COINUTILS_HAS_GLPK
-  if (coin_glp_prob) {
+  if (coin_glp_prob_) {
     // free up as much as possible
-    glp_free(coin_glp_prob);
-    glp_mpl_free_wksp(coin_glp_tran);
+    glp_free(coin_glp_prob_);
+    glp_mpl_free_wksp(coin_glp_tran_);
     glp_free_env();
-    coin_glp_prob = NULL;
-    coin_glp_tran = NULL;
+    coin_glp_prob_ = NULL;
+    coin_glp_tran_ = NULL;
   }
 #endif
-  delete[] lotsize;
-  if (statistics.number_cuts != NULL)
-    delete[] statistics.number_cuts;
+  delete[] lotsize_;
+  lotsize_ = NULL;
+  if (statistics_.number_cuts != NULL)
+    delete[] statistics_.number_cuts;
 
-  if (statistics.name_generators != NULL)
-    delete[] statistics.name_generators;
+  if (statistics_.name_generators != NULL)
+    delete[] statistics_.name_generators;
+  statistics_.number_cuts = NULL;
+  statistics_.name_generators = NULL;
   // By now all memory should be freed
 #ifdef DMALLOC
   // dmalloc_log_unfreed();
@@ -11845,8 +12528,10 @@ int CbcMain1(std::deque< std::string > inputQueue, CbcModel &model,
 
   babModel_ = NULL;
   model_.solver()->setWarmStart(NULL);
+  // Restore the member pointer (was temporarily pointed to local array)
+  statusUserFunction_ = statusUserFunction_save;
   buffer.str("");
-  buffer << "Total time " << CoinCpuTime() - time0;
+  buffer << "Total time " << CoinCpuTime() - time0_;
   // generalMessageHandler->message(CLP_GENERAL, generalMessages)
   //<< generalPrint
   //<< CoinMessageEol;
@@ -13676,6 +14361,38 @@ static void generateCode(CbcModel * /*model*/, const char *fileName, int type,
   printf("C++ file written to %s\n", fileName);
 }
 // To allow old way of CbcMain1
+// Primary CbcMain1 overload — delegates to CbcSolver::run()
+int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
+  CbcParameters &parameters,
+  int callBack(CbcModel *currentSolver, int whereFrom),
+  ampl_info *info)
+{
+  // Heap-allocate to avoid CbcModel destruction issues after a full solve.
+  // CbcModel's destructor can crash when the model has been through
+  // preprocessing + B&B + postprocessing (solver replacement, shared state).
+  // This is a known limitation that will be fixed when CbcModel ownership
+  // is modernized. For now, we intentionally leak the CbcSolver.
+  CbcSolver *solver = new CbcSolver(model);
+  solver->parameters() = parameters;
+  int rc = solver->run(inputQueue, callBack, info);
+  // Copy results back to the caller's model
+  model.moveInfo(*solver->model());
+  {
+    OsiClpSolverInterface *srcClp =
+      dynamic_cast<OsiClpSolverInterface *>(solver->model()->solver());
+    OsiClpSolverInterface *dstClp =
+      dynamic_cast<OsiClpSolverInterface *>(model.solver());
+    if (srcClp && dstClp && srcClp->getModelPtr() != dstClp->getModelPtr())
+      dstClp->getModelPtr()->moveInfo(*srcClp->getModelPtr());
+  }
+  parameters = solver->parameters();
+  // Note: solver is intentionally not deleted here. CbcModel destruction
+  // after a full solve cycle is fragile (shared solver state, replaced
+  // solvers). This will be addressed when ownership is modernized.
+  // The process is about to exit anyway in the CLI path.
+  return rc;
+}
+
 int CbcMain1(int argc, const char *argv[],
   CbcModel &model,
 	     CbcParameters &parameterData,

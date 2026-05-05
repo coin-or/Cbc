@@ -12,11 +12,12 @@
 #ifndef CBC_SOLVER_STATISTICS
 #define CBC_SOLVER_STATISTICS
 
+#include "CbcConfig.h"
 #include <deque>
 #include <string>
 #include "CbcParameters.hpp"
 
-class CbcSolverStatistics {
+class CBCLIB_EXPORT CbcSolverStatistics {
 public:
   /** Elapsed total time */
   double seconds = 0.0;

@@ -212,6 +212,7 @@
     <ClCompile Include="..\..\..\src\CbcSolverCutSetup.cpp" />
     <ClCompile Include="..\..\..\src\CbcSolverExpandKnapsack.cpp" />
     <ClCompile Include="..\..\..\src\CbcSolverHeuristics.cpp" />
+    <ClCompile Include="..\..\..\src\CbcSolverPreprocess.cpp" />
     <ClCompile Include="..\..\..\src\Cbc_C_Interface.cpp" />
     <ClCompile Include="..\..\..\src\unitTestClp.cpp" />
   </ItemGroup>

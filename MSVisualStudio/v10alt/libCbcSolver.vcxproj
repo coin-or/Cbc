@@ -260,6 +260,7 @@ move /y $(OutDir)$(TargetName).lib $(CoinLibDir)</Command>
     <ClCompile Include="..\..\src\CbcSolverCutSetup.cpp" />
     <ClCompile Include="..\..\src\CbcSolverExpandKnapsack.cpp" />
     <ClCompile Include="..\..\src\CbcSolverHeuristics.cpp" />
+    <ClCompile Include="..\..\..\src\CbcSolverPreprocess.cpp" />
     <ClCompile Include="..\..\src\unitTestClp.cpp" />
   </ItemGroup>
   <ItemGroup>

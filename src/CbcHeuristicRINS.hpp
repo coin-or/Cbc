@@ -76,6 +76,22 @@ public:
   {
     numberSolutions_ = value;
   }
+  /** Sets maximum fractional distance from best-solution integer value for
+      "close" fixing fallback.  When the standard RINS fix-count threshold
+      is not met, integer variables whose current LP value is within this
+      distance of the corresponding best-solution integer value are sorted by
+      closeness and greedily fixed (closest first) until the threshold is met.
+      A value of 0.0 disables the fallback. Default: 0.4.
+      Typical useful values: 0.2 – 0.4.
+   */
+  inline void setFixCloseMaxDist(double value)
+  {
+    fixCloseMaxDist_ = value;
+  }
+  inline double fixCloseMaxDist() const
+  {
+    return fixCloseMaxDist_;
+  }
 
 protected:
   // Data
@@ -98,6 +114,9 @@ protected:
   int lastNode_;
   /// Whether a variable has been in a solution
   char *used_;
+  /** Maximum fractional distance from best-solution integer value for the
+      close-fixing fallback (0.0 = disabled). */
+  double fixCloseMaxDist_;
 };
 #endif
 

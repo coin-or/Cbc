@@ -414,6 +414,7 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::TIGHTENFACTOR]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::LPTIMEFREQ]->setTopic("Output");
   parameters_[CbcParam::FPUMPTIMEFREQ]->setTopic("Output");
+  parameters_[CbcParam::RINSCLOSEMAXDIST]->setTopic("Heuristics");
 
   // Integer params — Cuts
   for (int code : {CbcParam::CUTDEPTH, CbcParam::CUTLENGTH,
@@ -565,6 +566,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::FAKEINCREMENT]->setDefault(0.0);
      parameters_[CbcParam::SMALLBAB]->setDefault(0.5);
      parameters_[CbcParam::TIGHTENFACTOR]->setDefault(0.0);
+     parameters_[CbcParam::RINSCLOSEMAXDIST]->setDefault(0.4);
      parameters_[CbcParam::LPTIMEFREQ]->setDefault(5.0);
      parameters_[CbcParam::FPUMPTIMEFREQ]->setDefault(5.0);
      parameters_[CbcParam::AGGREGATEMIXED]->setDefault(1);
@@ -1679,6 +1681,18 @@ void CbcParameters::addCbcSolverDblParams() {
       "Tighten bounds using value times largest activity at continuous "
       "solution",
       0.0, COIN_DBL_MAX, "This sleazy trick can help on some problems.");
+
+  parameters_[CbcParam::RINSCLOSEMAXDIST]->setup(
+      "rinsClose!MaxDist",
+      "Maximum fractional distance for RINS close-fixing fallback",
+      0.0, 0.5,
+      "When the standard RINS fix-count threshold (>20%% of integers must "
+      "agree between LP and best solution) is not met, integer variables "
+      "whose current LP value is within this distance of the corresponding "
+      "best-solution integer value are sorted by closeness and greedily "
+      "fixed (closest first) until the threshold is satisfied. A value of "
+      "0.0 disables the fallback. Default: 0.4. Typical useful values: 0.2-0.5.",
+      CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::LPTIMEFREQ]->setup(
       "lpTimeFreq", "Print LP progress every N seconds (0 = disabled).",

@@ -1666,6 +1666,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       heuristic5.setFractionSmall(0.6);
       heuristic5.setDecayFactor(1.5);
     }
+    heuristic5.setFixCloseMaxDist(parameters[CbcParam::RINSCLOSEMAXDIST]->dblVal());
     model->addHeuristic(&heuristic5);
     anyToDo = true;
   }

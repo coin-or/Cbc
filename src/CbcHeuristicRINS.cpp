@@ -32,6 +32,7 @@ CbcHeuristicRINS::CbcHeuristicRINS()
   howOften_ = 100;
   decayFactor_ = 0.5;
   used_ = NULL;
+  fixCloseMaxDist_ = 0.4;
   whereFrom_ = 1 + 8 + 16 + 255 * 256;
   whereFrom_ = 1 + 8 + 255 * 256;
 }
@@ -53,6 +54,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(CbcModel &model)
   int numberColumns = model.solver()->getNumCols();
   used_ = new char[numberColumns];
   memset(used_, 0, numberColumns);
+  fixCloseMaxDist_ = 0.4;
   whereFrom_ = 1 + 8 + 16 + 255 * 256;
   whereFrom_ = 1 + 8 + 255 * 256;
 }
@@ -82,6 +84,7 @@ CbcHeuristicRINS::operator=(const CbcHeuristicRINS &rhs)
     numberTries_ = rhs.numberTries_;
     stateOfFixing_ = rhs.stateOfFixing_;
     lastNode_ = rhs.lastNode_;
+    fixCloseMaxDist_ = rhs.fixCloseMaxDist_;
     delete[] used_;
     if (model_ && rhs.used_) {
       int numberColumns = model_->solver()->getNumCols();
@@ -117,6 +120,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(const CbcHeuristicRINS &rhs)
   , numberTries_(rhs.numberTries_)
   , stateOfFixing_(rhs.stateOfFixing_)
   , lastNode_(rhs.lastNode_)
+  , fixCloseMaxDist_(rhs.fixCloseMaxDist_)
 {
   if (model_ && rhs.used_) {
     int numberColumns = model_->solver()->getNumCols();
@@ -201,6 +205,10 @@ int CbcHeuristicRINS::solution(double &solutionValue,
   }
   if ((numberNodes % howOften_) == 0 && (model_->getCurrentPassNumber() <= 1 || model_->getCurrentPassNumber() == 999999)) {
     lastNode_ = model_->getNodeCount();
+#ifdef RINS_CLOSE_DEBUG
+    printf("RINS close-fix: entering work block at node=%d passNumber=%d\n",
+      model_->getNodeCount(), model_->getCurrentPassNumber());
+#endif
     OsiSolverInterface *solver = model_->solver();
 
     int numberIntegers = model_->numberIntegers();
@@ -267,6 +275,111 @@ int CbcHeuristicRINS::solution(double &solutionValue,
       }
     }
     int divisor = 0;
+    // Note: nFix counts only vars directly agreed between LP and best solution.
+    // Variables that would be additionally fixed by consequence (via the fast
+    // pre-processing inside smallBranchAndBound) are NOT counted here, so the
+    // threshold below may be overly conservative.
+#ifdef RINS_CLOSE_DEBUG
+    {
+      // Count candidates for close-fixing (regardless of threshold) for diagnostics
+      int nExact = nFix;
+      const double *cln = newSolver->getColLower();
+      const double *cun = newSolver->getColUpper();
+      int nCloseAvail = 0;
+      for (int ii = 0; ii < numberIntegers; ii++) {
+        int ic = integerVariable[ii];
+        if (!isHeuristicInteger(solver, ic)) continue;
+        if (cln[ic] == cun[ic]) continue;
+        const OsiObject *obj = model_->object(ii);
+        double lo, hi;
+        getIntegerInformation(obj, lo, hi);
+        double vb = bestSolution[ic];
+        if (vb < lo) vb = lo; else if (vb > hi) vb = hi;
+        double nr = floor(vb + 0.5);
+        double dist = fabs(currentSolution[ic] - nr);
+        if (dist >= 10.0 * primalTolerance && dist <= fixCloseMaxDist_) nCloseAvail++;
+      }
+      printf("RINS@node=%d: nExact=%d nIntegers=%d (%.1f%%) | closeAvail=%d | threshold=%s\n",
+        model_->getNodeCount(), nExact, numberIntegers,
+        100.0 * nExact / (numberIntegers ? numberIntegers : 1),
+        nCloseAvail,
+        (5 * nExact > numberIntegers) ? "MET" : "NOT MET");
+    }
+#endif
+
+    // Close-fixing fallback: when the threshold is not met, additionally fix
+    // integer variables whose current LP value is within fixCloseMaxDist_ of
+    // the best-solution integer value.  Variables are sorted by closeness
+    // (ascending) and greedily fixed until the threshold is satisfied.
+    if (5 * nFix <= numberIntegers && fixCloseMaxDist_ > 0.0) {
+      const double *colLowerNew = newSolver->getColLower();
+      const double *colUpperNew = newSolver->getColUpper();
+      double *sortDist = new double[numberIntegers];
+      int *whichClose = new int[numberIntegers];
+      int nClose = 0;
+      for (i = 0; i < numberIntegers; i++) {
+        int iColumn = integerVariable[i];
+        if (!isHeuristicInteger(solver, iColumn))
+          continue;
+        if (colLowerNew[iColumn] == colUpperNew[iColumn])
+          continue; // already fixed in the exact-match pass
+        const OsiObject *object = model_->object(i);
+        double originalLower;
+        double originalUpper;
+        getIntegerInformation(object, originalLower, originalUpper);
+        double valueInt = bestSolution[iColumn];
+        if (valueInt < originalLower)
+          valueInt = originalLower;
+        else if (valueInt > originalUpper)
+          valueInt = originalUpper;
+        double nearest = floor(valueInt + 0.5);
+        double dist = fabs(currentSolution[iColumn] - nearest);
+        if (dist < 10.0 * primalTolerance || dist > fixCloseMaxDist_)
+          continue;
+        // Apply the same shallowDepth_ filter used in the exact-match pass
+        bool include = false;
+        switch (shallowDepth_) {
+        case 0:
+          include = true;
+          break;
+        case 1:
+          include = (nearest == originalLower);
+          break;
+        case 2:
+          include = (nearest != originalLower);
+          break;
+        case 3:
+          include = (nearest == originalLower && !used[iColumn]);
+          break;
+        default:
+          include = true;
+          break;
+        }
+        if (include) {
+          sortDist[nClose] = dist;
+          whichClose[nClose++] = iColumn;
+        }
+      }
+      // Sort closest first
+      CoinSort_2(sortDist, sortDist + nClose, whichClose);
+      int nFixBefore = nFix;
+      // Greedily fix until threshold is met or candidates exhausted
+      for (int j = 0; j < nClose && 5 * nFix <= numberIntegers; j++) {
+        int iColumn = whichClose[j];
+        double nearest = floor(bestSolution[iColumn] + 0.5);
+        newSolver->setColLower(iColumn, nearest);
+        newSolver->setColUpper(iColumn, nearest);
+        nFix++;
+      }
+#ifdef RINS_CLOSE_DEBUG
+      printf("RINS close-fix fallback: added %d vars (nFix %d->%d), candidates=%d, threshold_met=%s\n",
+        nFix - nFixBefore, nFixBefore, nFix, nClose,
+        (5 * nFix > numberIntegers) ? "YES" : "NO");
+#endif
+      delete[] sortDist;
+      delete[] whichClose;
+    }
+
     if (5 * nFix > numberIntegers) {
       if (numberContinuous > 2 * numberIntegers && ((nFix * 10 < numberColumns && !numRuns_ && numberTries_ > 2) || stateOfFixing_)) {
 #define RINS_FIX_CONTINUOUS

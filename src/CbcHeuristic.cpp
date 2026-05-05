@@ -794,6 +794,16 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     const bool useElapsed = model_->useElapsedTime();
     const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
     const double timeLimit = model_->getMaximumSeconds();
+#ifdef RINS_CLOSE_DEBUG
+    int nFixedPreFPP = 0;
+    {
+      const double *lb = solver->getColLower();
+      const double *ub = solver->getColUpper();
+      for (int j = 0; j < numberColumns; j++)
+        if (lb[j] == ub[j]) nFixedPreFPP++;
+      printf("RINS SBB pre-FPP:  fixed=%d / %d cols\n", nFixedPreFPP, numberColumns);
+    }
+#endif
     const bool feasible = fpp.run(solver, model_->messageHandler(), logLevel,
       CbcFastMILPPreProcess::MILPbt, 100,
       useElapsed, timeLimit, startTime);
@@ -801,6 +811,17 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       model_->setSpecialOptions(saveModelOptions);
       return 2; // infeasible
     }
+#ifdef RINS_CLOSE_DEBUG
+    {
+      int nFixedPostFPP = 0;
+      const double *lb = solver->getColLower();
+      const double *ub = solver->getColUpper();
+      for (int j = 0; j < numberColumns; j++)
+        if (lb[j] == ub[j]) nFixedPostFPP++;
+      printf("RINS SBB post-FPP: fixed=%d / %d cols  (implied by FPP=%d)\n",
+        nFixedPostFPP, numberColumns, nFixedPostFPP - nFixedPreFPP);
+    }
+#endif
   }
   if (fractionSmall < 1.0) {
     int saveLogLevel = solver->messageHandler()->logLevel();

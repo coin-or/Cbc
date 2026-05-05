@@ -38,6 +38,9 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
 {
   assert(level != Off);
 
+  if (!solver || solver->getNumCols() == 0)
+    return true;
+
   const double t0 = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
 
   // ---------------------------------------------------------------

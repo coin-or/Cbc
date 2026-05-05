@@ -8410,6 +8410,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
              comparison, scaling. Print elapsed time at the end.
                       */
         case CbcParam::BAB: {
+          if (!goodModel) {
+            printGeneralWarning(model_, "** Current model not valid\n");
+            break;
+          }
 #ifdef CBC_CLUMSY_CODING
           parameters.setModel(&model_);
           parameters.setGoodModel(true);
@@ -14629,7 +14633,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
       dynamic_cast<OsiClpSolverInterface *>(model.solver());
     if (srcClp && dstClp) {
       int nc = dstClp->getNumCols();
-      if (nc == srcClp->getNumCols())
+      if (nc > 0 && nc == srcClp->getNumCols())
         dstClp->setColSolution(srcClp->getColSolution());
     }
   }

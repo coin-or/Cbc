@@ -804,7 +804,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
       printf("RINS SBB pre-FPP:  fixed=%d / %d cols\n", nFixedPreFPP, numberColumns);
     }
 #endif
-    const bool feasible = fpp.run(solver, model_->messageHandler(), logLevel,
+    const bool feasible = fpp.run(solver, model_->messageHandler(), 0,
       CbcFastMILPPreProcess::MILPbt, 100,
       useElapsed, timeLimit, startTime);
     if (!feasible) {
@@ -1251,6 +1251,9 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
             }
           }
           model.setMaximumNodes(numberNodes);
+          // Propagate parent's time limit to sub-MIP (start time is shared).
+          if (model_->getMaximumSeconds() < 1.0e8)
+            model.setMaximumSeconds(model_->getMaximumSeconds());
           model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
           if ((saveModelOptions & 2048) == 0)
             model.setMoreSpecialOptions(model_->moreSpecialOptions());

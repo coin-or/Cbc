@@ -14612,10 +14612,14 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   CbcModel *solved = solver->model();
   model.setProblemStatus(solved->status());
   model.setSecondaryStatus(solved->secondaryStatus());
+  model.setMinimizationObjValue(solved->getMinimizationObjValue());
   if (solved->bestSolution()) {
     int n = solved->solver()->getNumCols();
-    model.setBestSolution(solved->bestSolution(), n,
-      solved->getObjValue(), true);
+    int nc = model.solver()->getNumCols();
+    // Use false (don't check feasibility) — the solution was already
+    // verified in the solved model which may have different structure.
+    model.setBestSolution(solved->bestSolution(), std::min(n, nc),
+      solved->getMinimizationObjValue(), false);
   }
   model.setNumberHeuristicSolutions(solved->getNumberHeuristicSolutions());
   {

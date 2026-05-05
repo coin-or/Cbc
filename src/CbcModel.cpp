@@ -5529,6 +5529,10 @@ void CbcModel::branchAndBound(int doStatistics)
         newNode->setObjectiveValue(rootObjectiveValue);
       }
 #endif
+      // In parallel mode read bestObjective_ under the masterMutex to avoid
+      // racing with a worker thread that may be writing it (same pattern as
+      // getCutoff() and canStopOnGap() elsewhere in this loop).
+      double currentBestObj = trueBestObjValue();
       unlockThread();
 #if CBC_USEFUL_PRINTING > 1
       if (getCutoff() < 1.0e20) {
@@ -5545,17 +5549,17 @@ void CbcModel::branchAndBound(int doStatistics)
         else
           lastBestPossibleObjective = bestPossibleObjective_;
         messageHandler()->message(CBC_STATUS, messages())
-          << numberNodes_ << std::max(nNodes, 1) << trueBestObjValue()
+          << numberNodes_ << std::max(nNodes, 1) << currentBestObj
           << trueObjValue(bestPossibleObjective_) << getCurrentSeconds() << CoinMessageEol;
       } else if (intParam_[CbcPrinting] == 1) {
         messageHandler()->message(CBC_STATUS2, messages())
-          << numberNodes_ << nNodes << trueBestObjValue()
+          << numberNodes_ << nNodes << currentBestObj
           << trueObjValue(bestPossibleObjective_) << tree_->lastDepth()
           << tree_->lastUnsatisfied() << tree_->lastObjective()
           << numberIterations_ << getCurrentSeconds() << CoinMessageEol;
       } else if (!numberExtraIterations_) {
         messageHandler()->message(CBC_STATUS2, messages())
-          << numberNodes_ << nNodes << trueBestObjValue()
+          << numberNodes_ << nNodes << currentBestObj
           << trueObjValue(bestPossibleObjective_) << tree_->lastDepth()
           << tree_->lastUnsatisfied() << tree_->lastObjective()
           << numberIterations_
@@ -5563,7 +5567,7 @@ void CbcModel::branchAndBound(int doStatistics)
       } else {
         messageHandler()->message(CBC_STATUS3, messages())
           << numberNodes_ << numberFathoms_ << numberExtraNodes_ << nNodes
-          << trueBestObjValue() << trueObjValue(bestPossibleObjective_) << tree_->lastDepth()
+          << currentBestObj << trueObjValue(bestPossibleObjective_) << tree_->lastDepth()
           << tree_->lastUnsatisfied() << numberIterations_
           << numberExtraIterations_ << getCurrentSeconds() << CoinMessageEol;
       }

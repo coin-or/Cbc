@@ -5993,9 +5993,9 @@ public:
           FILE *outfp = originalModel.messageHandler()->filePointer();
           if (!outfp)
             outfp = stdout;
-          fpumpOut_ = std::make_unique<CbcFPumpOutput>(
+          fpumpOut_ = std::unique_ptr<CbcFPumpOutput>(new CbcFPumpOutput(
             outfp, CbcOutput::useUtf8(), cbcLogLevel,
-            fpumpPassFreq, fpumpTimeFreq);
+            fpumpPassFreq, fpumpTimeFreq));
           pump->setFPumpOutput(fpumpOut_.get());
           break;
         }
@@ -6007,7 +6007,7 @@ public:
       FILE *outfp = babModel_.messageHandler()->filePointer();
       if (!outfp)
         outfp = stdout;
-      cutGenOut_ = std::make_unique<CbcCutGenOutput>(outfp, CbcOutput::useUtf8(), cbcLogLevel);
+      cutGenOut_ = std::unique_ptr<CbcCutGenOutput>(new CbcCutGenOutput(outfp, CbcOutput::useUtf8(), cbcLogLevel));
     }
 
     // Root node heuristics output
@@ -6015,7 +6015,7 @@ public:
       FILE *outfp = babModel_.messageHandler()->filePointer();
       if (!outfp)
         outfp = stdout;
-      rootHeurOut_ = std::make_unique<CbcRootHeurOutput>(outfp, CbcOutput::useUtf8(), cbcLogLevel);
+      rootHeurOut_ = std::unique_ptr<CbcRootHeurOutput>(new CbcRootHeurOutput(outfp, CbcOutput::useUtf8(), cbcLogLevel));
       babModel_.setRootHeurOutput(rootHeurOut_.get());
     }
 
@@ -6024,7 +6024,7 @@ public:
       FILE *outfp = babModel_.messageHandler()->filePointer();
       if (!outfp)
         outfp = stdout;
-      bnbOut_ = std::make_unique<CbcBnBOutput>(outfp, CbcOutput::useUtf8(), cbcLogLevel);
+      bnbOut_ = std::unique_ptr<CbcBnBOutput>(new CbcBnBOutput(outfp, CbcOutput::useUtf8(), cbcLogLevel));
     }
 
     // Composite message handler (Nauty + FPump suppression + cut gen + B&B)

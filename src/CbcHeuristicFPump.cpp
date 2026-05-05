@@ -422,7 +422,7 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
   /*
   Obtain a relaxed lp solution.  Bail early if CBC time limit already reached.
 */
-  if (model_->maximumSecondsReached())
+  if (model_->maximumSecondsReached() || model_->eventHappened())
     return 0;
   model_->solver()->resolve();
   if (!model_->solver()->isProvenOptimal()) {
@@ -800,9 +800,24 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
       double newSumInfeas = 0.0;
       int newNumberInfeas = 0;
       returnCode = 0;
-      if (model_->maximumSecondsReached()) {
+      if (model_->maximumSecondsReached() || model_->eventHappened()) {
         exitAll = true;
         break;
+      }
+      // Refresh LP solver time limit so individual resolves cannot outlast
+      // the global deadline (the limit was set once at round start and may
+      // now be stale).
+      {
+        OsiClpSolverInterface *clpSolver = getClpSolver(solver);
+        if (CBC_SKIP_CLP_TEST || clpSolver) {
+          double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
+          if (remaining > 0.0) {
+            if (model_->useElapsedTime())
+              clpSolver->getModelPtr()->setMaximumWallSeconds(remaining);
+            else
+              clpSolver->getModelPtr()->setMaximumSeconds(remaining);
+          }
+        }
       }
       // see what changed
       if (usedColumn) {

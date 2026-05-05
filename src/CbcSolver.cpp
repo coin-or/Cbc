@@ -438,6 +438,11 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
   }
 
   CglCliqueStrengthening clqStr(solver, handler);
+  {
+    double remaining = model.getMaximumSeconds() - model.getCurrentSeconds();
+    if (remaining > 0.0)
+      clqStr.setMaximumSeconds(remaining);
+  }
   clqStr.strengthenCliques(strengthenMode);
 
   if (clqExtendedOut) *clqExtendedOut = clqStr.constraintsExtended();
@@ -4732,8 +4737,13 @@ int CbcSolver::solveInitialLp(
 #endif
               return 2;
             }
-            if (lpMethodResult > 0)
+            if (lpMethodResult > 0) {
+              if (lpProgressHandler && !lpProgressHandler->tableStarted()) {
+                fprintf(lpProgressHandler->fp(), "  Solving LP relaxation ...\n");
+                fflush(lpProgressHandler->fp());
+              }
               model_.initialSolve();
+            }
 #ifndef CBC_OTHER_SOLVER
             if (lpSavedMsg && si) {
               ClpSimplex *clpModel = si->getModelPtr();

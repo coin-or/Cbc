@@ -17435,7 +17435,7 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
               continue;
             if (lastSolutionCount > 0 && (heuristic_[i]->switches() & 16) == 0)
               continue; // no point
-            if (maximumSecondsReached()) {
+            if (maximumSecondsReached() || eventHappened_) {
               thisSolutionCount = -1000000;
               break;
             }

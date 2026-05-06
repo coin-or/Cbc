@@ -163,7 +163,48 @@ by fractionality, avoiding the "fix nearly-integer variables" trap.
 
 1. **A (min fractionality threshold)** — immediate improvement, trivial to implement
 2. **B (disable LineSearch at root)** — removes wasted computation
-3. **D (adaptive percentageToFix_)** — helps all diving heuristics avoid infeasibility
-4. **C (diversify direction)** — addresses the main failure mode
-5. **E (DiveConflict)** — leverages CBC's unique conflict graph infrastructure
-6. **F (DiveObjective)** — simple alternative to VectorLength
+3. **G (bound propagation in dive loop)** — fast infeasibility detection + free fixings
+4. **D (adaptive percentageToFix_)** — helps all diving heuristics avoid infeasibility
+5. **C (diversify direction)** — addresses the main failure mode
+6. **E (DiveConflict)** — leverages CBC's unique conflict graph infrastructure
+7. **F (DiveObjective)** — simple alternative to VectorLength
+
+### G. Bound propagation after each dive fixing (medium effort, high impact)
+
+After each iteration fixes `bestColumn`, run a single round of `CoinMILPBoundTightening`
+on the modified solver. This provides:
+
+1. **Early infeasibility detection** — if the fixing creates a bound conflict (lb > ub),
+   we detect it in O(rows) time instead of spending 50-200 simplex iterations on an
+   infeasible LP. In the empirical data, VectorLength spent 631 simplex iterations
+   before discovering infeasibility — propagation could have caught it in < 1ms.
+
+2. **Free variable fixings** — propagation through singleton rows and knapsack constraints
+   can fix additional variables without LP resolves. Each "free" fixing is equivalent to
+   an extra dive iteration at zero cost.
+
+3. **Faster LP resolves** — with more variables fixed, subsequent LP resolves have fewer
+   free variables and converge faster.
+
+**Cost:** One round of MILPbt is O(rows × cols) ≈ 0.1-1ms for typical problems.
+An LP resolve is 10-100ms. The overhead is negligible.
+
+**Integration point:** In `CbcHeuristicDive.cpp`, after the `bestColumn` bound tightening
+(line ~810) and before `solver->resolve()`:
+
+```cpp
+// After fixing bestColumn, propagate bounds
+CbcFastMILPPreProcess propagator;
+bool feasible = propagator.run(solver, nullptr, 0,
+    CbcFastMILPPreProcess::MILPbt, 1,  // single round
+    model_->useElapsedTime(), 1e8, 0.0);
+if (!feasible) {
+    reasonToStop = 1;  // infeasible detected without LP
+    break;
+}
+totalBoundFixed += propagator.nFixed();
+```
+
+**Expected impact:** Significant on problems where diving frequently hits infeasibility
+(set-partitioning, set-covering). The propagation catches infeasibility 10-100× faster
+than the LP solver, and the free fixings accelerate successful dives.

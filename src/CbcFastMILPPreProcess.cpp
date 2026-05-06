@@ -76,7 +76,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
     timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
 
     if (logLevel >= 1)
-      printf("  Fast preprocessing fixed %d vars in %.3f s.\n",
+      printf("  Fast preprocessing fixed %d vars in %.3f s.\n\n",
         nSingletonFixed_, timeUsed_);
 
     return true;
@@ -202,7 +202,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
 
   if (logLevel >= 1) {
     const int totalFixed = nSingletonFixed_ + nMILPbtFixed_;
-    printf("  Fast preprocessing fixed %d vars in %.3f s.\n",
+    printf("  Fast preprocessing fixed %d vars in %.3f s.\n\n",
       totalFixed, timeUsed_);
   }
 

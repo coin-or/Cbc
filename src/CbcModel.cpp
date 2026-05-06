@@ -6593,6 +6593,9 @@ CbcModel::CbcModel()
   , symmetryInfo_(NULL)
   , rootSymmetryInfo_(NULL)
 #endif
+#ifdef CBC_PROBE_10
+  , depth10Probing_(NULL)
+#endif
   , numberObjects_(0)
   , object_(NULL)
   , ownObjects_(true)

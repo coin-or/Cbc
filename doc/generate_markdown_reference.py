@@ -77,46 +77,132 @@ def emit(version, topics, out):
 def emit_topic(topic, params, out):
     out.write(f"## {topic}\n\n")
 
+    if topic == "Heuristics":
+        emit_heuristics_topic(params, out)
+        return
+
+    for p in params:
+        emit_param(p, out, level="###")
+
+
+# Heuristic parameters classified by category.
+# Constructive: do not need an existing feasible solution.
+# Improvement: need at least one feasible solution.
+# Improvement (2+ solutions): need at least two feasible solutions.
+CONSTRUCTIVE_HEURISTICS = {
+    "feasibilityPump", "DivingCoefficient", "DivingFractional",
+    "DivingGuided", "DivingLineSearch", "DivingPseudocost",
+    "DivingVectorLength", "DivingSome", "roundingHeuristic",
+    "greedyHeuristic", "naiveHeuristics", "pivotAndFix",
+    "randomizedRounding", "Rens",
+}
+
+IMPROVEMENT_HEURISTICS = {
+    "Rins", "VndVariableNeighborhoodSearch", "Dins",
+    "proximitySearch", "dwHeuristic", "localTreeSearch",
+}
+
+IMPROVEMENT_2_HEURISTICS = {
+    "combineSolutions", "combine2Solutions",
+}
+
+
+def emit_heuristics_topic(params, out):
+    """Emit heuristic parameters grouped by category."""
+    constructive = []
+    improvement = []
+    improvement2 = []
+    general = []
+
     for p in params:
         name = p["name"]
-        ptype = p.get("type", "")
-        short_help = p.get("shortHelp", "")
-        long_help = p.get("longHelp", "")
-        source = p.get("source", "")
-        keywords = p.get("keywords", [])
-        tlabel = TYPE_LABELS.get(ptype, ptype)
+        if name in CONSTRUCTIVE_HEURISTICS:
+            constructive.append(p)
+        elif name in IMPROVEMENT_HEURISTICS:
+            improvement.append(p)
+        elif name in IMPROVEMENT_2_HEURISTICS:
+            improvement2.append(p)
+        else:
+            general.append(p)
 
-        out.write(f"### `-{name}`\n\n")
-        out.write(f"*{tlabel}* ({source})\n\n")
-        out.write(f"{short_help}\n\n")
+    if constructive:
+        out.write("### Constructive Heuristics\n\n")
+        out.write("These heuristics do **not** require an existing feasible solution. "
+                  "They attempt to construct a feasible solution from scratch.\n\n")
+        for p in constructive:
+            emit_param(p, out, level="####")
 
-        if long_help and long_help != short_help:
-            # Replace literal \n with actual newlines
-            text = long_help.replace("\\n", "\n")
-            out.write(f"{text}\n\n")
+    if improvement:
+        out.write("### Improvement Heuristics\n\n")
+        out.write("These heuristics require **at least one** existing feasible solution. "
+                  "They attempt to improve upon the incumbent.\n\n")
+        for p in improvement:
+            emit_param(p, out, level="####")
 
-        if keywords:
-            dv = p.get("defaultValue", "")
-            kw_str = ", ".join(f"`{k}`" for k in keywords)
-            out.write(f"**Values:** {kw_str}")
-            if dv:
-                out.write(f" (default: `{dv}`)")
-            out.write("\n\n")
+    if improvement2:
+        out.write("### Improvement Heuristics (2+ solutions)\n\n")
+        out.write("These heuristics require **at least two** existing feasible solutions. "
+                  "They combine or crossover multiple solutions.\n\n")
+        for p in improvement2:
+            emit_param(p, out, level="####")
 
-        if ptype == "integer":
-            lo, hi = p.get("lowerInt", ""), p.get("upperInt", "")
-            dv = p.get("defaultValue", "")
-            out.write(f"**Range:** {lo} to {hi}")
-            if dv != "":
-                out.write(f" (default: {dv})")
-            out.write("\n\n")
-        elif ptype == "double":
-            lo, hi = p.get("lowerDbl", ""), p.get("upperDbl", "")
-            dv = p.get("defaultValue", "")
-            out.write(f"**Range:** {lo} to {hi}")
-            if dv != "":
-                out.write(f" (default: {dv})")
-            out.write("\n\n")
+    if general:
+        out.write("### General Heuristic Settings\n\n")
+        for p in general:
+            emit_param(p, out, level="####")
+
+
+def humanize_bound(v):
+    """Replace sentinel values with human-readable labels."""
+    s = str(v)
+    if s == "2147483647":
+        return "INT_MAX"
+    if s == "-2147483647":
+        return "-INT_MAX"
+    if s in ("1e+60", "1e+20"):
+        return "∞"
+    if s in ("-1e+60", "-1e+20"):
+        return "-∞"
+    return s
+
+
+def emit_param(p, out, level="###"):
+    name = p["name"]
+    ptype = p.get("type", "")
+    short_help = p.get("shortHelp", "")
+    long_help = p.get("longHelp", "")
+    keywords = p.get("keywords", [])
+
+    out.write(f"{level} `-{name}`\n\n")
+    out.write(f"{short_help}\n\n")
+
+    if long_help and long_help != short_help:
+        # Replace literal \n with actual newlines
+        text = long_help.replace("\\n", "\n")
+        out.write(f"{text}\n\n")
+
+    if keywords:
+        dv = p.get("defaultValue", "")
+        kw_str = ", ".join(f"`{k}`" for k in keywords)
+        out.write(f"**Values:** {kw_str}")
+        if dv:
+            out.write(f" (default: `{dv}`)")
+        out.write("\n\n")
+
+    if ptype == "integer":
+        lo, hi = p.get("lowerInt", ""), p.get("upperInt", "")
+        dv = p.get("defaultValue", "")
+        out.write(f"**Range:** {humanize_bound(lo)} to {humanize_bound(hi)}")
+        if dv != "":
+            out.write(f" (default: {dv})")
+        out.write("\n\n")
+    elif ptype == "double":
+        lo, hi = p.get("lowerDbl", ""), p.get("upperDbl", "")
+        dv = p.get("defaultValue", "")
+        out.write(f"**Range:** {humanize_bound(lo)} to {humanize_bound(hi)}")
+        if dv != "":
+            out.write(f" (default: {dv})")
+        out.write("\n\n")
 
 
 def main():

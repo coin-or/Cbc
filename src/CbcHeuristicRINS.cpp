@@ -151,11 +151,11 @@ void CbcHeuristicRINS::resetModel(CbcModel * /*model*/)
 int CbcHeuristicRINS::solution(double &solutionValue,
   double *betterSolution)
 {
-  numCouldRun_++;
   int returnCode = 0;
   const double *bestSolution = model_->bestSolution();
   if (!bestSolution)
-    return 0; // No solution found yet
+    return -2; // Cannot run — no incumbent solution yet
+  numCouldRun_++;
 #ifdef HEURISTIC_INFORM
   printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
     heuristicName(), numRuns_, numCouldRun_, when_);

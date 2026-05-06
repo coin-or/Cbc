@@ -442,10 +442,10 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
 
   int iteration = 0;
   int numberAtBoundFixed = 0;
-#if DIVE_PRINT > 1
   int numberGeneralFixed = 0; // fixed as satisfied but not at bound
-#endif
   int numberReducedCostFixed = 0;
+  int totalBoundFixed = 0;    // cumulative vars fixed at bounds across all iterations
+  int totalFractionalFixed = 0; // cumulative fractional vars rounded
   while (numberFractionalVariables) {
     iteration++;
 
@@ -558,16 +558,11 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     }
 
     // do reduced cost fixing
-#if DIVE_PRINT > 1
     numberReducedCostFixed = reducedCostFix(solver);
-#else
-    reducedCostFix(solver);
-#endif
 
+    totalBoundFixed += numberAtBoundFixed;
     numberAtBoundFixed = 0;
-#if DIVE_PRINT > 1
-    numberGeneralFixed = 0; // fixed as satisfied but not at bound
-#endif
+    numberGeneralFixed = 0;
 #ifdef DIVE_FIX_BINARY_VARIABLES
     // fix binary variables based on pseudo reduced cost
     if (binVarIndex_.size()) {
@@ -758,9 +753,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
               solver->setColUpper(iColumn, lower[iColumn]);
             } else {
               // fix to interior value
-#if DIVE_PRINT > 1
               numberGeneralFixed++;
-#endif
               double fixValue = floor(value + 0.5);
               columnFixed[numberAtBoundFixed] = iColumn;
               originalBound[numberAtBoundFixed] = upper[iColumn];
@@ -807,6 +800,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     double bestColumnValue;
     int whichWay;
     if (bestColumn >= 0) {
+      totalFractionalFixed++;
       bestColumnValue = newSolution[bestColumn];
       if (bestRound < 0) {
         originalBoundBestColumn = upper[bestColumn];
@@ -1147,6 +1141,14 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
       //printf("Debug CbcHeuristicDive giving bad solution\n");
     }
     delete[] rowActivity;
+  }
+
+  // Runtime dive summary (log level >= 2)
+  if (model_->messageHandler()->logLevel() >= 2) {
+    const char *status = returnCode > 0 ? "solution" : "no solution";
+    printf("  %s: %d iters, %d fractional fixed, %d at-bound fixed, %d simplex its (%s)\n",
+      heuristicName_.c_str(), iteration, totalFractionalFixed,
+      totalBoundFixed, numberSimplexIterations, status);
   }
 
 #if DIVE_PRINT

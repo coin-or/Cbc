@@ -9313,7 +9313,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     intParam_[CbcNumberBranches]++;
   }
   sumChangeObjective1_ += solver_->getObjValue() * solver_->getObjSenseInCbc() - objectiveValue;
-  if (maximumSecondsReached())
+  if (maximumSecondsReached() || eventHappened_)
     numberTries = 0; // exit
   if ((moreSpecialOptions2_ & (2048 | 4096)) != 0 && currentDepth_ > 5) {
     // howOftenGlobalScan_ = 10;
@@ -9508,7 +9508,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     // If the time limit has already been reached (e.g. FPump consumed all the
     // budget), skip cut generation entirely rather than hanging in an
     // expensive CglProbing pass that has no internal time limit.
-    if (maximumSecondsReached()) {
+    if (maximumSecondsReached() || eventHappened_) {
       numberTries = 0;
     } else {
       handler_->message(CBC_ROOT_START, messages_) << CoinMessageEol;
@@ -10337,7 +10337,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       }
 #endif
     }
-  } while ((numberTries > 0 || keepGoing) && (!this->maximumSecondsReached()));
+  } while ((numberTries > 0 || keepGoing) && (!this->maximumSecondsReached()) && !eventHappened_);
   /*
       End cut generation loop.
     */
@@ -11249,7 +11249,7 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
   OsiSolverInterface *baseLagrangeanSolver = NULL;
   OsiSolverInterface *cleanLagrangeanSolver = NULL;
 #endif
-  for (i = 0; i < numberCutGenerators_ && (!this->maximumSecondsReached());
+  for (i = 0; i < numberCutGenerators_ && (!this->maximumSecondsReached()) && !eventHappened_;
     i++) {
     int numberRowCutsBefore = theseCuts.sizeRowCuts();
     int numberColumnCutsBefore = theseCuts.sizeColCuts();

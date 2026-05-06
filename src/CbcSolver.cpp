@@ -4682,6 +4682,7 @@ int CbcSolver::solveInitialLp(
             ClpLpEventHandler *lpProgressHandler = nullptr;
             ClpLpMsgHandler   *lpMsgHandler = nullptr;
             bool lpMsgOldDefault = false;
+            bool lpSavedOsiDefault = true;
             CoinMessageHandler *lpSavedMsg = nullptr;
             if (cbcLogLevel >= 1 && logLevel >= 1 && si && (lpIterFreq > 0 || lpTimeFreq > 0.0)) {
               ClpSimplex *clpModel = si->getModelPtr();
@@ -4707,6 +4708,10 @@ int CbcSolver::solveInitialLp(
               lpMsgHandler = new ClpLpMsgHandler(lpState);
               ClpLpEventHandler tmpEvt(lpState);
               lpSavedMsg = clpModel->pushMessageHandler(lpMsgHandler, lpMsgOldDefault);
+              // Temporarily mark OsiClp as using default handler so initialSolve()
+              // won't override our ClpSimplex handler with its own.
+              lpSavedOsiDefault = si->defaultHandler();
+              si->setDefaultHandler(true);
               clpModel->passInEventHandler(&tmpEvt);
               lpProgressHandler = dynamic_cast<ClpLpEventHandler *>(clpModel->eventHandler());
             }
@@ -4729,6 +4734,7 @@ int CbcSolver::solveInitialLp(
               if (lpSavedMsg && si) {
                 ClpSimplex *clpModel = si->getModelPtr();
                 clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
+                si->setDefaultHandler(lpSavedOsiDefault);
                 delete lpMsgHandler;
                 lpMsgHandler = nullptr;
                 ClpEventHandler defaultHandler;
@@ -4764,6 +4770,7 @@ int CbcSolver::solveInitialLp(
               }
               // Restore message handler and remove LP event handler
               clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
+              si->setDefaultHandler(lpSavedOsiDefault);
               delete lpMsgHandler;
               lpMsgHandler = nullptr;
               ClpEventHandler defaultHandler;

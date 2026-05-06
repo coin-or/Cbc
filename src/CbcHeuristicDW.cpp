@@ -328,15 +328,15 @@ extern int *get_All_trueseq;
 int CbcHeuristicDW::solution(double &solutionValue,
   double *betterSolution)
 {
-  numCouldRun_++;
   int returnCode = 0;
   const double *bestSolutionIn = model_->bestSolution();
   if (numberPasses_ == -200)
     return 0;
   if (!bestSolutionIn && !bestSolution_ && numberPasses_ > 0)
-    return 0; // No solution found yet
+    return -2; // Cannot run — no incumbent solution yet
   if (numberBlocks_ < 3)
     return 0; // no point
+  numCouldRun_++;
 #ifdef HEURISTIC_INFORM
   printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
     heuristicName(), numRuns_, numCouldRun_, when_);

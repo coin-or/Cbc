@@ -2434,19 +2434,54 @@ void CbcParameters::addCbcSolverHeurParams() {
 
   parameters_[CbcParam::DIVINGC]->setup(
       "DivingC!oefficient", "Whether to try Coefficient diving heuristic",
+      "Coefficient diving selects the fractional variable with the fewest "
+      "constraint locks in the rounding direction. It rounds toward the "
+      "direction with fewer locks (constraints that would be violated), "
+      "breaking ties by smallest fractionality. This tends to minimize "
+      "constraint violations during the dive. "
       HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGF]->setup(
-      "DivingF!ractional", "Whether to try Fractional diving heuristic", HEURISTICS_LONGHELP);
+      "DivingF!ractional", "Whether to try Fractional diving heuristic",
+      "Fractional diving selects the fractional variable closest to an "
+      "integer value and rounds it to the nearest integer. This is the "
+      "simplest diving strategy: it always fixes the 'easiest' variable "
+      "(smallest fractionality), minimizing the perturbation to the LP "
+      "relaxation at each step. "
+      HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGG]->setup(
-      "DivingG!uided", "Whether to try Guided diving heuristic", HEURISTICS_LONGHELP);
+      "DivingG!uided", "Whether to try Guided diving heuristic",
+      "Guided diving uses the best known feasible solution (incumbent) to "
+      "decide the rounding direction: each fractional variable is rounded "
+      "toward its value in the incumbent. Among candidates, it picks the "
+      "variable with the smallest fractional distance in that direction. "
+      "This explores the neighborhood of the incumbent, looking for "
+      "improving solutions nearby. Requires at least one feasible solution. "
+      HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGL]->setup(
-      "DivingL!ineSearch", "Whether to try Linesearch diving heuristic", HEURISTICS_LONGHELP);
+      "DivingL!ineSearch", "Whether to try Linesearch diving heuristic",
+      "Linesearch diving selects the variable where rounding to integrality "
+      "requires the smallest step relative to how far the variable has moved "
+      "from the root LP relaxation. It computes a ratio: (fractional gap to "
+      "round) / (distance moved from root). A small ratio means the variable "
+      "is nearly integer relative to its movement, making it a natural "
+      "candidate to fix. The rounding direction follows the direction of "
+      "movement from the root LP solution. "
+      HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGP]->setup(
-      "DivingP!seudocost", "Whether to try Pseudocost diving heuristic", HEURISTICS_LONGHELP);
+      "DivingP!seudocost", "Whether to try Pseudocost diving heuristic",
+      "Pseudocost diving uses estimated costs of rounding (pseudocosts) to "
+      "select the variable and direction that maximizes a score balancing "
+      "the fractionality and the ratio of pseudocosts. It rounds in the "
+      "direction suggested by the root LP movement and pseudocost "
+      "comparison, then scores each variable by "
+      "fraction * (pCostDown+1)/(pCostUp+1) (or the reverse). This "
+      "combines information from the LP relaxation trajectory with "
+      "branching history to make informed rounding decisions. "
+      HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DIVINGS]->setup(
       "DivingS!ome", "Whether to try Diving heuristics",
@@ -2456,6 +2491,12 @@ void CbcParameters::addCbcSolverHeurParams() {
 
   parameters_[CbcParam::DIVINGV]->setup(
       "DivingV!ectorLength", "Whether to try Vectorlength diving heuristic",
+      "Vector length diving selects the variable that minimizes the ratio "
+      "of objective degradation to the number of constraints the variable "
+      "appears in (its column length). The rounding direction is chosen to "
+      "improve the objective. This favors variables that are 'well-connected' "
+      "in the constraint matrix, since fixing a variable appearing in many "
+      "constraints propagates more information to the LP. "
       HEURISTICS_LONGHELP);
 
   parameters_[CbcParam::DW]->setup(

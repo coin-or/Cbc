@@ -9834,7 +9834,6 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         // see if heuristic will do anything
         double saveValue = heuristicValue;
         int ifSol = heuristic_[i]->solution(heuristicValue, newSolution);
-        // theseCuts) ;
         if (ifSol > 0) {
           // better solution found
           heuristic_[i]->incrementNumberSolutionsFound();

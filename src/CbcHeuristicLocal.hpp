@@ -28,6 +28,9 @@ public:
   /// Clone
   virtual CbcHeuristic *clone() const;
 
+  /// Classification: improvement heuristic (needs ≥2 solutions)
+  virtual HeuristicCategory category() const { return HeuristicCategory::IMPROVEMENT_2; }
+
   /// Assignment operator
   CbcHeuristicLocal &operator=(const CbcHeuristicLocal &rhs);
 
@@ -104,6 +107,9 @@ public:
 
   /// Clone
   virtual CbcHeuristic *clone() const;
+
+  /// Classification: improvement heuristic (needs ≥1 solution)
+  virtual HeuristicCategory category() const { return HeuristicCategory::IMPROVEMENT; }
 
   /// Assignment operator
   CbcHeuristicProximity &operator=(const CbcHeuristicProximity &rhs);
@@ -228,6 +234,9 @@ public:
 
   /// Clone
   virtual CbcHeuristic *clone() const;
+
+  /// Classification: improvement heuristic (needs ≥2 solutions)
+  virtual HeuristicCategory category() const { return HeuristicCategory::IMPROVEMENT_2; }
 
   /// Assignment operator
   CbcHeuristicCrossover &operator=(const CbcHeuristicCrossover &rhs);

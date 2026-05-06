@@ -375,7 +375,6 @@ int CbcHeuristicLocal::solution(double &solutionValue,
   were called.
 */
 
-  numCouldRun_++;
   // See if frequency kills off idea
   int swap = swap_ % 100;
   int skip = swap_ / 100;
@@ -388,10 +387,6 @@ int CbcHeuristicLocal::solution(double &solutionValue,
   numberSolutions_ = model_->getSolutionCount();
   if (nodeCount < lastRunDeep_ + skip)
     return 0;
-#ifdef HEURISTIC_INFORM
-  printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
-    heuristicName(), numRuns_, numCouldRun_, when_);
-#endif
   lastRunDeep_ = nodeCount;
   howOftenShallow_ = numberSolutions_;
 
@@ -410,19 +405,21 @@ int CbcHeuristicLocal::solution(double &solutionValue,
   Why wait until we have more than one solution?
 */
   if ((model_->getNumCols() > 100000 && model_->getNumCols() > 10 * model_->getNumRows()) || numberSolutions_ <= 1)
-    return 0; // probably not worth it
+    return -2; // Cannot run — needs at least 2 solutions
   // worth trying
+
+  const double *solution = model_->bestSolution();
+  if (!solution)
+    return -2; // Cannot run — no incumbent solution yet
+  numCouldRun_++;
+#ifdef HEURISTIC_INFORM
+  printf("Entering heuristic %s - nRuns %d numCould %d when %d\n",
+    heuristicName(), numRuns_, numCouldRun_, when_);
+#endif
 
   OsiSolverInterface *solver = model_->solver();
   const double *rowLower = solver->getRowLower();
   const double *rowUpper = solver->getRowUpper();
-  const double *solution = model_->bestSolution();
-  /*
-  Shouldn't this test be redundant if we've already checked that
-  numberSolutions_ > 1? Stronger: shouldn't this be an assertion?
-*/
-  if (!solution)
-    return 0; // No solution found yet
   const double *objective = solver->getObjCoefficients();
   double primalTolerance;
   solver->getDblParam(OsiPrimalTolerance, primalTolerance);
@@ -1123,12 +1120,12 @@ int CbcHeuristicProximity::solution(double &solutionValue,
   were called.
 */
 
-  numCouldRun_++;
   int nodeCount = model_->getNodeCount();
   if (numberSolutions_ == model_->getSolutionCount())
     return 0;
   if (!model_->bestSolution())
-    return 0; // odd - because in parallel mode
+    return -2; // Cannot run — no incumbent solution yet
+  numCouldRun_++;
   numberSolutions_ = model_->getSolutionCount();
   lastRunDeep_ = nodeCount;
   numRuns_++;
@@ -1664,7 +1661,6 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
 {
   if (when_ == 0)
     return 0;
-  numCouldRun_++;
   bool useBest = (numberSolutions_ != model_->getSolutionCount());
   if (!useBest && (when_ % 10) == 1)
     return 0;
@@ -1672,7 +1668,8 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
   OsiSolverInterface *continuousSolver = model_->continuousSolver();
   int useNumber = std::min(model_->numberSavedSolutions(), useNumber_);
   if (useNumber < 2 || !continuousSolver)
-    return 0;
+    return -2; // Cannot run — needs at least 2 solutions
+  numCouldRun_++;
   // Fix later
   if (!useBest)
     abort();

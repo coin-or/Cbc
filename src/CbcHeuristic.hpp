@@ -79,6 +79,18 @@ public:
 };
 
 //#############################################################################
+
+/** Classification of heuristics by solution requirements.
+    - CONSTRUCTIVE: does not need an existing feasible solution (e.g. FPump, Diving, Rounding)
+    - IMPROVEMENT: needs at least one feasible solution (e.g. RINS, VND, DINS, Proximity)
+    - IMPROVEMENT_2: needs at least two feasible solutions (e.g. Combine, Crossover)
+*/
+enum class HeuristicCategory {
+  CONSTRUCTIVE = 0,
+  IMPROVEMENT = 1,
+  IMPROVEMENT_2 = 2
+};
+
 /** Heuristic base class */
 
 class CBCLIB_EXPORT CbcHeuristic {
@@ -100,6 +112,9 @@ public:
 
   /// Clone
   virtual CbcHeuristic *clone() const = 0;
+
+  /// Classification: constructive vs improvement heuristic
+  virtual HeuristicCategory category() const { return HeuristicCategory::CONSTRUCTIVE; }
 
   /// Assignment operator
   CbcHeuristic &operator=(const CbcHeuristic &rhs);

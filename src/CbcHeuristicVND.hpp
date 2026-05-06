@@ -31,6 +31,9 @@ public:
   /// Clone
   virtual CbcHeuristic *clone() const;
 
+  /// Classification: improvement heuristic (needs ≥1 solution)
+  virtual HeuristicCategory category() const { return HeuristicCategory::IMPROVEMENT; }
+
   /// Assignment operator
   CbcHeuristicVND &operator=(const CbcHeuristicVND &rhs);
 

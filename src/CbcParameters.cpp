@@ -93,8 +93,8 @@ void CbcParameters::init(int strategy){
   ourMsgHandler_ = true;
   cur_lang_ = CoinMessages::us_en;
   msgs_ = 0;
-  logLvl_ = 0;
-  lpLogLvl_ = 0;
+  logLvl_ = 1;
+  lpLogLvl_ = 1;
 
   totalTime_ = 0.0;
 

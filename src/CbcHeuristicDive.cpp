@@ -805,6 +805,9 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
       if (bestRound < 0) {
         originalBoundBestColumn = upper[bestColumn];
         solver->setColUpper(bestColumn, floor(bestColumnValue));
+        if (model_->messageHandler()->logLevel() >= 3)
+          printf("    iter %d: x%-6d = %.4f → fix ≤ %.0f\n",
+            iteration, bestColumn, bestColumnValue, floor(bestColumnValue));
 #ifdef DIVE_DEBUG
         if (priority_) {
           printf("setting %d (priority %d) upper bound to %g (%g)\n",
@@ -815,6 +818,9 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
       } else {
         originalBoundBestColumn = lower[bestColumn];
         solver->setColLower(bestColumn, ceil(bestColumnValue));
+        if (model_->messageHandler()->logLevel() >= 3)
+          printf("    iter %d: x%-6d = %.4f → fix ≥ %.0f\n",
+            iteration, bestColumn, bestColumnValue, ceil(bestColumnValue));
 #ifdef DIVE_DEBUG
         if (priority_) {
           printf("setting %d (priority %d) lower bound to %g (%g)\n",

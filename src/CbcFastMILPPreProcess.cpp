@@ -76,9 +76,8 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
     timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
 
     if (logLevel >= 1)
-      printf("  Fast preprocessing: fixed %d, tightened %d (singletons only), "
-             "%.3f s.\n",
-        nSingletonFixed_, nSingletonTightened_, timeUsed_);
+      printf("  Fast preprocessing fixed %d vars in %.3f s.\n",
+        nSingletonFixed_, timeUsed_);
 
     return true;
   }
@@ -203,11 +202,8 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
 
   if (logLevel >= 1) {
     const int totalFixed = nSingletonFixed_ + nMILPbtFixed_;
-    const char *stopNote = (stopReason_ == HitMaxRounds) ? ", MAX ROUNDS" : "";
-    printf("  Fast preprocessing: fixed %d (%d singleton + %d MILPbt, "
-           "%d round(s)%s), %.3f s.\n",
-      totalFixed, nSingletonFixed_, nMILPbtFixed_,
-      nRoundsRun_, stopNote, timeUsed_);
+    printf("  Fast preprocessing fixed %d vars in %.3f s.\n",
+      totalFixed, timeUsed_);
   }
 
   return true;

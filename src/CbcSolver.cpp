@@ -4744,10 +4744,6 @@ int CbcSolver::solveInitialLp(
               return 2;
             }
             if (lpMethodResult > 0) {
-              if (lpProgressHandler && !lpProgressHandler->tableStarted()) {
-                fprintf(lpProgressHandler->fp(), "  Solving LP relaxation ...\n");
-                fflush(lpProgressHandler->fp());
-              }
               model_.initialSolve();
             }
 #ifndef CBC_OTHER_SOLVER

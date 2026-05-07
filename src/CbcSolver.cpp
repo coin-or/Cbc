@@ -3402,13 +3402,13 @@ int CbcSolver::preprocess(
     delete babModel_;
     babModel_ = NULL;
     returnCode = returnCode_local;
+    delete preprocHandler;
     return 3;
   }
   if (!solver2) {
     // preprocessing says infeasible — section closed by destructor below
     process.passInMessageHandler(model_.messageHandler());
     delete preprocHandler;
-    preprocHandler = nullptr;
     return 1;
   }
   if (model_.bestSolution()) {
@@ -4080,6 +4080,7 @@ int CbcSolver::preprocess(
   // time2));
 #endif
 
+  delete preprocHandler;
   return 0;
 }
 
@@ -14652,6 +14653,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   }
   parameters = solver->parameters();
   // solver intentionally not deleted (see comment above)
+  // I (JJHF) strongly disapprove of intentional leaks
   return rc;
 }
 

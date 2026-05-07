@@ -315,7 +315,7 @@ private:
  *  2. A per-generator summary table after all generators report (name, cuts,
  *     density, time, next-run frequency).
  *
- *  Messages are intercepted via CbcNautyHandler which calls the on*() methods.
+ *  Messages are intercepted via CbcOutputHandler which calls the on*() methods.
  *  close() must be called after branchAndBound() returns to flush any pending
  *  generator table that hasn't been printed yet.
  */
@@ -334,7 +334,7 @@ public:
 
   CbcCutGenOutput(FILE *fp, bool utf8, int logLevel);
 
-  // Called by CbcNautyHandler for each relevant ext code
+  // Called by CbcOutputHandler for each relevant ext code
   void onStart();                                                   // ext=51
   void onPass(int pass, int rows, int tight, int frac, double suminf, double obj, double t); // ext=46
   void onSummary(int ncuts, double fromObj, double toObj, int passes); // ext=13
@@ -523,7 +523,7 @@ private:
  *  2. ★-prefixed rows whenever a new incumbent is found (always printed).
  *  3. A footer with strong-branching, depth, and orbital-branching stats.
  *
- *  Driven by CbcNautyHandler::print() which calls the on*() methods.
+ *  Driven by CbcOutputHandler::print() which calls the on*() methods.
  */
 class CBCLIB_EXPORT CbcBnBOutput {
 public:
@@ -625,7 +625,7 @@ private:
 };
 
 // ---------------------------------------------------------------------------
-// CbcNautyHandler — message handler installed on CbcModel before branchAndBound()
+// CbcOutputHandler — message handler installed on CbcModel before branchAndBound()
 // ---------------------------------------------------------------------------
 
 /** Message handler temporarily installed on CbcModel before branchAndBound().
@@ -636,23 +636,30 @@ private:
  *  path.
  *
  *  Usage:
- *    CbcNautyHandler nh(fp, CbcOutput::useUtf8(), logLevel);
+ *    CbcOutputHandler nh(fp, CbcOutput::useUtf8(), logLevel);
  *    CoinMessageHandler *saved = babModel_->messageHandler();
  *    babModel_->passInMessageHandler(&nh);
  *    babModel_->branchAndBound(doStatistics);
  *    babModel_->passInMessageHandler(saved);
  */
-class CBCLIB_EXPORT CbcNautyHandler : public CoinMessageHandler {
+class CBCLIB_EXPORT CbcOutputHandler : public CoinMessageHandler {
 public:
-  CbcNautyHandler(FILE *fp, bool utf8, int logLevel);
-  virtual ~CbcNautyHandler();
+  CbcOutputHandler(FILE *fp, bool utf8, int logLevel);
+  virtual ~CbcOutputHandler();
 
   /** Return a permanently-owned silent CoinMessageHandler suitable for use
    *  as an LP-solver message handler in the restart sub-model.  This keeps
-   *  the CbcNautyHandler's own logLevel safe when CbcStrategyDefault's
+   *  the CbcOutputHandler's own logLevel safe when CbcStrategyDefault's
    *  setupPrinting() calls solver->messageHandler()->setLogLevel(0). */
   CoinMessageHandler *getLpSilentHandler();
   virtual int print() override;
+
+  /** Clone returns a silent CoinMessageHandler.
+   *  Thread sub-models clone the base model's handler; we give them a
+   *  silent one so raw Cbc0004I/Cbc0012I messages don't leak to stdout.
+   *  All incumbent reporting for threaded solves is handled centrally in
+   *  CbcThread.cpp via the base model's handler. */
+  virtual CoinMessageHandler *clone() const override;
 
   /** Set the FPump output handler so we can suppress the raw Cbc0012I
    *  "found by feasibility pump" message while the FPump table is active. */

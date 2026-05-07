@@ -1103,10 +1103,10 @@ void CbcOutput::printNautySection(FILE *fp, bool utf8,
 #endif /* CBC_HAS_NAUTY — printNautySection */
 
 // ===========================================================================
-// CbcNautyHandler — message handler installed during branchAndBound()
+// CbcOutputHandler — message handler installed during branchAndBound()
 // ===========================================================================
 
-CbcNautyHandler::CbcNautyHandler(FILE *fp, bool utf8, int logLevel)
+CbcOutputHandler::CbcOutputHandler(FILE *fp, bool utf8, int logLevel)
   : fp_(fp ? fp : stdout)
   , utf8_(utf8)
   , compact_(CbcOutput::useCompact())
@@ -1115,12 +1115,33 @@ CbcNautyHandler::CbcNautyHandler(FILE *fp, bool utf8, int logLevel)
   setFilePointer(fp_);
 }
 
-CbcNautyHandler::~CbcNautyHandler()
+CbcOutputHandler::~CbcOutputHandler()
 {
   delete lpSilentHandler_;
 }
 
-CoinMessageHandler *CbcNautyHandler::getLpSilentHandler()
+// A handler that never prints anything, regardless of log level.
+// CbcThread.cpp calls setLogLevel(printLevel) on cloned handlers after
+// cloning, so a plain handler with logLevel=0 would have its level
+// overwritten. Overriding print() to be a no-op is the only safe approach.
+namespace {
+class CbcSilentHandler : public CoinMessageHandler {
+public:
+  virtual int print() override { return 0; }
+  virtual CoinMessageHandler *clone() const override { return new CbcSilentHandler(*this); }
+};
+} // namespace
+
+CoinMessageHandler *CbcOutputHandler::clone() const
+{
+  // Thread sub-models clone the main model's handler. Return a silent handler
+  // so raw Cbc0004I/Cbc0012I messages from thread workers don't bypass the
+  // structured B&B output. Incumbent reporting is handled centrally in
+  // CbcThread.cpp via the base model's handler.
+  return new CbcSilentHandler();
+}
+
+CoinMessageHandler *CbcOutputHandler::getLpSilentHandler()
 {
   if (!lpSilentHandler_) {
     lpSilentHandler_ = new CoinMessageHandler();
@@ -1129,7 +1150,7 @@ CoinMessageHandler *CbcNautyHandler::getLpSilentHandler()
   return lpSilentHandler_;
 }
 
-int CbcNautyHandler::print()
+int CbcOutputHandler::print()
 {
   const char *buf = messageBuffer();
   const int ext   = currentMessage().externalNumber();
@@ -1392,6 +1413,10 @@ int CbcNautyHandler::print()
       }
     } // end bnbOut_ block
 
+    // ext=30 (CBC_THREAD_STATS): per-thread lock/wait stats at solve end.
+    // Low-value diagnostic noise at log level 1; suppress.
+    if (ext == 30) return 0;
+
     // ext=12 without bnbOut_ but with fpumpOut_: suppress between phases
     if (ext == 12 && fpumpOut_) return 0;
   }
@@ -1557,7 +1582,7 @@ int CbcNautyHandler::print()
   return CoinMessageHandler::print();
 }
 
-void CbcNautyHandler::routeIncumbentMessage(const char *buf, int /*ext*/)
+void CbcOutputHandler::routeIncumbentMessage(const char *buf, int /*ext*/)
 {
   if (!bnbOut_) return;
   IncumbentMsg im;
@@ -1565,7 +1590,7 @@ void CbcNautyHandler::routeIncumbentMessage(const char *buf, int /*ext*/)
     bnbOut_->onHeurIncumbent(im.obj, im.method.c_str(), im.nodes, im.elapsed);
 }
 
-void CbcNautyHandler::beginRestartMode()
+void CbcOutputHandler::beginRestartMode()
 {
   // Reset cut-gen output for the part-2 run and flag that the next
   // ext==1 / ext==5 from a sub-model must not close the B&B section.
@@ -1574,7 +1599,7 @@ void CbcNautyHandler::beginRestartMode()
 }
 
 #ifdef CBC_HAS_NAUTY
-void CbcNautyHandler::printSection()
+void CbcOutputHandler::printSection()
 {
   CbcOutput::printNautySection(fp_, utf8_,
     usefulOrbits_, usefulVars_, totalOrbits_,

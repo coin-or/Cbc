@@ -995,7 +995,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     // Silence CglPreProcess messages when the structured handler is active
     // (nautyHandler) — they go through an unrelated solver's handler and would
     // appear as raw prefixed output, duplicating info shown in formatted tables.
-    CbcNautyHandler *nh = dynamic_cast<CbcNautyHandler*>(model_->messageHandler());
+    CbcOutputHandler *nh = dynamic_cast<CbcOutputHandler*>(model_->messageHandler());
     if (logLevel <= 1 || nh)
       process.messageHandler()->setLogLevel(0);
     if (!nh && !solver->defaultHandler() && solver->messageHandler()->logLevel(0) != -1000)
@@ -1224,7 +1224,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           // normal
           model.setSpecialOptions(saveModelOptions | 2048);
           if ((logLevel <= 1 && feasibilityPumpOptions_ != -3)
-              || dynamic_cast<CbcNautyHandler*>(model_->messageHandler()))
+              || dynamic_cast<CbcOutputHandler*>(model_->messageHandler()))
             model.setLogLevel(0);
           else
             model.setLogLevel(logLevel);
@@ -1306,7 +1306,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           // so that messages are not double-printed at higher log levels.
           // If our handler is not present (e.g. in tests), fall back to silent.
           if (feasibilityPumpOptions_ != -3) {
-            CbcNautyHandler *h = dynamic_cast<CbcNautyHandler*>(model_->messageHandler());
+            CbcOutputHandler *h = dynamic_cast<CbcOutputHandler*>(model_->messageHandler());
             if (h) {
               h->beginRestartMode();
               // Attach our structured handler to the CBC model so restart

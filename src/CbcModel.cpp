@@ -4905,17 +4905,19 @@ void CbcModel::branchAndBound(int doStatistics)
     masterThread_ = master_->masterThread();
   }
 #endif
-#if defined(CBC_HAS_CLP) && (!defined(_WIN32) || defined(CLP_USE_OPENBLAS))
-  // When CBC is running parallel B&B, restrict OpenBLAS to 1 thread inside
-  // resolve() to avoid N_cbc x M_blas thread explosion.
-  // If the user already configured blasNumThreads_ explicitly, respect it.
+#if !defined(_WIN32)
+  // Restrict OpenBLAS to 1 thread during B&B tree search (called once here,
+  // not on every resolve).  The root LP is already solved at this point so
+  // multi-threaded BLAS is no longer beneficial.  Inside the B&B tree each
+  // node LP is tiny; allowing OpenBLAS to use many threads causes severe
+  // per-call overhead (thread-pool management >> LP solve time) and
+  // non-deterministic floating-point that can change cut counts.  Applies to
+  // both single-threaded and parallel CBC (the latter also avoids
+  // N_cbc × M_blas thread explosion).
   bool autoSetBLASCap = false;
-  if (numberThreads_ > 0 && !parentModel_) {
-    OsiClpSolverInterface *clpSolverBLAS = dynamic_cast< OsiClpSolverInterface * >(solver_);
-    if (clpSolverBLAS && clpSolverBLAS->getModelPtr()->blasNumThreads() < 0) {
-      clpSolverBLAS->getModelPtr()->setBLASNumThreads(1);
-      autoSetBLASCap = true;
-    }
+  if (!parentModel_) {
+    autoSetBLASCap = true;
+    set_openblas_threads(1);
   }
 #endif
   if (feasible) {
@@ -6384,15 +6386,12 @@ void CbcModel::branchAndBound(int doStatistics)
     depth10Probing_ = NULL;
   }
 #endif
-#if defined(CBC_HAS_CLP) && (!defined(_WIN32) || defined(CLP_USE_OPENBLAS))
-  // Restore BLAS threading to the original setting after B&B.
-  if (autoSetBLASCap) {
-    OsiClpSolverInterface *clpSolverBLAS = dynamic_cast< OsiClpSolverInterface * >(solver_);
-    if (clpSolverBLAS) {
-      clpSolverBLAS->getModelPtr()->setBLASNumThreads(-1);
-      set_openblas_threads(1);
-    }
-  }
+#if !defined(_WIN32)
+  // Restore OpenBLAS to its default thread count after B&B.
+  // Use a high value so it reverts to the system default (OpenBLAS itself
+  // clamps to the actual number of CPUs).
+  if (autoSetBLASCap)
+    set_openblas_threads(64);
 #endif
   return;
 }

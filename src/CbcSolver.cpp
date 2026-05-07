@@ -6053,13 +6053,13 @@ public:
       FILE *outfp = babModel_.messageHandler()->filePointer();
       if (!outfp)
         outfp = stdout;
-      nautyHandler_ = new CbcNautyHandler(outfp, CbcOutput::useUtf8(), cbcLogLevel);
-      nautyHandler_->setFPumpOutput(fpumpOut_.get());
-      nautyHandler_->setRootHeurOutput(rootHeurOut_.get());
-      nautyHandler_->setCutGenOutput(cutGenOut_.get());
-      nautyHandler_->setBnBOutput(bnbOut_.get());
+      outputHandler_ = new CbcOutputHandler(outfp, CbcOutput::useUtf8(), cbcLogLevel);
+      outputHandler_->setFPumpOutput(fpumpOut_.get());
+      outputHandler_->setRootHeurOutput(rootHeurOut_.get());
+      outputHandler_->setCutGenOutput(cutGenOut_.get());
+      outputHandler_->setBnBOutput(bnbOut_.get());
       savedMsgHandler_ = originalModel.messageHandler();
-      babModel_.passInMessageHandler(nautyHandler_);
+      babModel_.passInMessageHandler(outputHandler_);
       // Give the LP solver its own silent handler so OsiDoReducePrint
       // doesn't silence our CBC-level handler.
       lpSilentHandler_ = new CoinMessageHandler();
@@ -6099,9 +6099,9 @@ public:
         }
       }
     }
-    if (nautyHandler_) {
+    if (outputHandler_) {
       babModel_.passInMessageHandler(savedMsgHandler_);
-      delete nautyHandler_;
+      delete outputHandler_;
       delete lpSilentHandler_;
     }
   }
@@ -6115,7 +6115,7 @@ private:
   std::unique_ptr<CbcRootHeurOutput> rootHeurOut_;
   std::unique_ptr<CbcCutGenOutput> cutGenOut_;
   std::unique_ptr<CbcBnBOutput> bnbOut_;
-  CbcNautyHandler *nautyHandler_ = nullptr;
+  CbcOutputHandler *outputHandler_ = nullptr;
   CoinMessageHandler *savedMsgHandler_ = nullptr;
   CoinMessageHandler *lpSilentHandler_ = nullptr;
 };

@@ -4475,6 +4475,7 @@ int CbcSolver::postprocess(
     }
 #endif
     delete saveSolver_;
+    saveSolver_ = nullptr;
     delete[] bestSolution;
     std::string statusName[] = {
       "", "Stopped on ", "Run abandoned", "", "", "User ctrl-c"

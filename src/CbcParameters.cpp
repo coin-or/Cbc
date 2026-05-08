@@ -1619,6 +1619,17 @@ void CbcParameters::addCbcSolverKwdParams() {
     "primal", CbcParameters::LPPrimal);
   parameters_[CbcParam::LPMETHOD]->appendKwd(
     "barrier", CbcParameters::LPBarrier);
+
+  parameters_[CbcParam::RANKCONFLICTTYPE]->setup(
+      "rankConflictType",
+      "Formula for combining directional conflict degrees into a single score.",
+      "Controls how d0 (conflicts when x=0) and d1 (conflicts when x=1) are "
+      "combined: \n\t sum: d0+d1 — total propagation power (default);"
+      "\n\t min: min(d0,d1) — both directions must be strong; "
+      "\n\t product: sqrt(d0*d1) — product score analog, rewards balance.");
+  parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("sum", 1);
+  parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("min", 0);
+  parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("product", 2);
 }
 
 //###########################################################################
@@ -1706,6 +1717,150 @@ void CbcParameters::addCbcSolverDblParams() {
       "fpumpTimeFreq",
       "Print feasibility pump progress every N seconds (0 = disabled, default 5).",
       0.0, 1e10, "", CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKCONFLICT]->setup(
+      "rankConflict",
+      "Weight for conflict-graph degree in strong branching sort-key (0 = disabled).",
+      0.0, 100.0,
+      "When positive, the conflict graph degree of binary variables is used to "
+      "augment the pseudo-cost-based sort key that determines which candidates "
+      "receive strong branching LP solves. Higher-degree variables (those whose "
+      "branching triggers more propagations) are prioritized. The boost factor "
+      "is (1 + weight * scaledScore), where scaledScore depends on rankConflictType "
+      "and the per-trust scaling powers. Default 0.2 (enabled, sum formula). "
+      "Set to 0.0 to disable. Typical useful range: 0.1 to 0.5.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::RANKCONFLICTPOWERTRUSTED]->setup(
+      "rankConflictPowerTrusted",
+      "Scaling exponent for conflict score when pseudo-costs are trusted (sqrt = 0.5).",
+      0.0, 1.0,
+      "When pseudo-cost observations are sufficient (trusted), conflict information "
+      "acts as a gentle tie-breaker. The raw conflict score is raised to this power "
+      "before weighting: 0.5 = square root (default, mild nudge), 0.333 = cube root "
+      "(very mild), 1.0 = linear (full influence even when trusted).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKCONFLICTPOWERUNTRUSTED]->setup(
+      "rankConflictPowerUntrusted",
+      "Scaling exponent for conflict score when pseudo-costs are untrusted (linear = 1.0).",
+      0.0, 1.0,
+      "When pseudo-cost observations are insufficient (untrusted), conflict information "
+      "is given stronger influence. The raw conflict score is raised to this power: "
+      "1.0 = linear (default, full influence), 0.5 = square root (moderate).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKRANGE]->setup(
+      "rankRange",
+      "Weight for variable-range criterion 1/min(maxRange,ub-lb) in strong branching sort-key (0 = disabled).",
+      0.0, 100.0,
+      "When positive, the domain width of integer variables is used to augment the "
+      "sort key that determines which candidates receive strong branching LP solves. "
+      "Score = 1/min(rankRangeMax, ub-lb): binary [0,1] scores 1.0, domains >= rankRangeMax "
+      "score 1/rankRangeMax (floor), preventing large/unbounded vars from collapsing to ~0. "
+      "Applies to all integer variables (not just binary). "
+      "The boost factor is (1 + weight * scaledScore). "
+      "Default 0.0 (disabled). Typical useful range: 0.01 to 0.3.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::RANKRANGEPOWERTRUSTED]->setup(
+      "rankRangePowerTrusted",
+      "Scaling exponent for range score when pseudo-costs are trusted (sqrt = 0.5).",
+      0.0, 1.0,
+      "When pseudo-cost observations are sufficient (trusted), range information acts "
+      "as a gentle tie-breaker. The raw score 1/min(maxRange,ub-lb) is raised to this power: "
+      "0.5 = square root (default, mild nudge), 0.333 = cube root, 1.0 = linear.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKRANGEPOWERUNTRUSTED]->setup(
+      "rankRangePowerUntrusted",
+      "Scaling exponent for range score when pseudo-costs are untrusted (linear = 1.0).",
+      0.0, 1.0,
+      "When pseudo-cost observations are insufficient, range information is given "
+      "stronger influence. 1.0 = linear (default), 0.5 = square root (moderate).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKRANGEMAXRANGE]->setup(
+      "rankRangeMax",
+      "Cap on domain width for range criterion: score = 1/min(rankRangeMax, ub-lb). Default 10.",
+      1.0, 1e30,
+      "Variables with domain width >= rankRangeMax all receive the same floor score "
+      "(1/rankRangeMax), preventing large or unbounded integer domains from collapsing "
+      "to a near-zero range score. Binary [0,1] always scores 1.0 (unaffected). "
+      "Default 10.0: domains of 10 or wider are treated equally (floor score = 0.1). "
+      "Increase to give more differentiation among wider domains.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKOBJCOEFF]->setup(
+      "rankObjCoeff",
+      "Weight for objective coefficient magnitude criterion |c_j|^power in strong branching sort-key (0 = disabled).",
+      0.0, 100.0,
+      "When positive, the absolute value of a variable's objective coefficient |c_j| is used "
+      "to augment the sort key that determines strong branching candidate priority. "
+      "Score = |c_j|^scalingPower. Variables not in the objective (c_j=0) receive no boost. "
+      "Most useful for untrusted variables where pseudo-costs are unreliable; for trusted "
+      "variables pseudo-costs already capture the objective coefficient implicitly. "
+      "Default 0.0 (disabled). Typical useful range: 0.01 to 0.3.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::RANKOBJCOEFFPOWERTRUSTED]->setup(
+      "rankObjCoeffPowerTrusted",
+      "Scaling exponent for obj-coeff score when pseudo-costs are trusted. Default 0.1 (very slow growth).",
+      0.0, 1.0,
+      "When pseudo-cost observations are sufficient, objective coefficient acts as a "
+      "gentle tie-breaker. Score = |c_j|^power: 0.1 (default) gives c=100→1.58, "
+      "c=10000→2.51. Use 0.05 for even milder effect, 0.2 for more influence.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKOBJCOEFFPOWERUNTRUSTED]->setup(
+      "rankObjCoeffPowerUntrusted",
+      "Scaling exponent for obj-coeff score when pseudo-costs are untrusted. Default 0.2.",
+      0.0, 1.0,
+      "When pseudo-cost observations are insufficient, objective coefficient is allowed "
+      "more influence. 0.2 (default): c=100→2.51, c=10000→6.31. Use 0.1 to match "
+      "trusted, or 0.5 for sqrt (moderate growth).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKNONZEROS]->setup(
+      "rankNonzeros",
+      "Weight for column non-zeros criterion nz^power in strong branching sort-key (0 = disabled).",
+      0.0, 100.0,
+      "When positive, the number of constraints a variable appears in is used to "
+      "augment the sort key that determines strong branching candidate priority. "
+      "Score = nz^scalingPower (default 4th-root, very slow growth). "
+      "Variables appearing in many constraints propagate their fixing more broadly. "
+      "Applies to all integer variables. Designed as a cheap tie-breaker. "
+      "Default 0.0 (disabled). Typical useful range: 0.01 to 0.1.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::RANKNONZEROSPOWERTRUSTED]->setup(
+      "rankNonzerosPowerTrusted",
+      "Scaling exponent for nz score when pseudo-costs are trusted (4th-root = 0.25).",
+      0.0, 1.0,
+      "When pseudo-cost observations are sufficient, nz information acts as a "
+      "gentle tie-breaker. Score = nz^power: 0.25 = 4th root (default, very slow "
+      "growth), 0.5 = sqrt, 1.0 = linear.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKNONZEROSPOWERUNTRUSTED]->setup(
+      "rankNonzerosPowerUntrusted",
+      "Scaling exponent for nz score when pseudo-costs are untrusted (sqrt = 0.5).",
+      0.0, 1.0,
+      "When pseudo-cost observations are insufficient, nz information is given "
+      "slightly more influence. 0.5 = sqrt (default), 1.0 = linear.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::RANKCONFLICTMAXPERCBIN]->setup(
+      "rankConflictMaxPercBin",
+      "Maximum % of binary integer variables for the conflict ranker to activate (default 97).",
+      0.0, 100.0,
+      "The conflict-graph ranker is beneficial primarily on mixed-integer problems "
+      "(where not all integer variables are binary). When the fraction of binary "
+      "variables among all integer variables is >= this threshold, the ranker is "
+      "automatically disabled to avoid performance regressions on near-pure-binary "
+      "instances. Set to 100 to always activate regardless of binary fraction.",
+      CoinParam::displayPriorityLow);
+  parameters_[CbcParam::RANKCONFLICTMAXPERCBIN]->setDefault(97.0);
 }
 
 //###########################################################################

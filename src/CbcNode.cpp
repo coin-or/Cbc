@@ -18,6 +18,8 @@
 #ifdef CBC_HAS_NAUTY
 #include "CbcSymmetry.hpp"
 #endif
+#include "CbcBranchingRanker.hpp"
+#include "CoinConflictGraph.hpp"
 //#define DEBUG_SOLUTION
 #ifdef DEBUG_SOLUTION
 #define COIN_DETAIL
@@ -2087,6 +2089,80 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 #ifdef CBC_HAS_NAUTY
     int numberOfInterest; 
 #endif
+    // Conflict-graph ranker: fetch once per chooseDynamicBranch call.
+    // cgraph is only retrieved when the ranker has a non-zero conflict weight,
+    // avoiding any overhead when the feature is disabled (the default).
+    const CbcBranchingRanker *ranker = model->branchingRanker();
+    const CoinConflictGraph *cgraph = nullptr;
+    if (ranker && ranker->weightConflict_ > 0.0)
+      cgraph = solver->getCGraph();
+
+    // Column non-zeros: fetch the lengths array once (O(1) pointer read).
+    // No max-scan needed — the 4th-root default keeps the raw score slow-growing.
+    const int *colLengths = nullptr;
+    if (ranker && ranker->weightNonzeros_ > 0.0) {
+      const CoinPackedMatrix *mat = solver->getMatrixByCol();
+      if (mat)
+        colLengths = mat->getVectorLengths();
+    }
+
+    // Objective coefficients: fetch pointer once (O(1)).
+    const double *objCoeffs = nullptr;
+    if (ranker && ranker->weightObjCoeff_ > 0.0)
+      objCoeffs = solver->getObjCoefficients();
+
+    // One-shot diagnostic: on the first call with an active ranker, print
+    // configuration and cgraph availability so the user can confirm the
+    // feature is enabled before running experiments.
+    if (ranker && ranker->isActive() && !ranker->headerPrinted_) {
+      ranker->headerPrinted_ = true;
+      char buf[640];
+      char conflictPart[256] = "";
+      char rangePart[128]    = "";
+      char nzPart[128]       = "";
+      char objPart[128]      = "";
+      if (ranker->weightConflict_ > 0.0) {
+        std::snprintf(conflictPart, sizeof(conflictPart),
+          " conflict(w=%.4g,f=%s,pT=%.3g,pU=%.3g)%s",
+          ranker->weightConflict_, ranker->formulaName(),
+          ranker->scalingPowerTrusted_, ranker->scalingPowerUntrusted_,
+          cgraph ? "" : "[NO CGRAPH — will be skipped]");
+      }
+      if (ranker->weightRange_ > 0.0) {
+        std::snprintf(rangePart, sizeof(rangePart),
+          " range(w=%.4g,pT=%.3g,pU=%.3g)",
+          ranker->weightRange_,
+          ranker->scalingPowerRangeTrusted_, ranker->scalingPowerRangeUntrusted_);
+      }
+      if (ranker->weightNonzeros_ > 0.0) {
+        std::snprintf(nzPart, sizeof(nzPart),
+          " nz(w=%.4g,pT=%.3g,pU=%.3g)",
+          ranker->weightNonzeros_,
+          ranker->scalingPowerNzTrusted_, ranker->scalingPowerNzUntrusted_);
+      }
+      if (ranker->weightObjCoeff_ > 0.0) {
+        std::snprintf(objPart, sizeof(objPart),
+          " obj(w=%.4g,pT=%.3g,pU=%.3g)",
+          ranker->weightObjCoeff_,
+          ranker->scalingPowerObjTrusted_, ranker->scalingPowerObjUntrusted_);
+      }
+      std::snprintf(buf, sizeof(buf), "RankConflict: active —%s%s%s%s",
+        conflictPart, rangePart, nzPart, objPart);
+      model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+        << buf << CoinMessageEol;
+    }
+    // Per-call diagnostic counters for conflict, range, and nz boosts (logLevel > 3).
+    int rankDbgBoosted  = 0; // vars that received a non-zero conflict boost
+    int rankDbgZero     = 0; // binary vars with zero conflict score
+    int rankDbgTotal    = 0; // total binary vars considered for conflict boost
+    double rankDbgMinMult = 1e30;
+    double rankDbgMaxMult = 0.0;
+    int rankRangeDbgBoosted = 0; // vars that received a non-zero range boost
+    int rankRangeDbgTotal   = 0; // total integer vars considered for range boost
+    int rankNzDbgBoosted = 0;    // vars that received a non-zero nz boost
+    int rankNzDbgTotal   = 0;    // total integer vars considered for nz boost
+    int rankObjDbgBoosted = 0;   // vars that received a non-zero obj-coeff boost
+    int rankObjDbgTotal   = 0;   // total integer vars considered for obj-coeff boost
     // We may go round this loop three times (only if we think we have solution)
     for (int iPass = 0; iPass < 3; iPass++) {
 
@@ -2347,6 +2423,68 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 	    }
 	  }
 #endif
+          // Conflict-graph degree boost: only for binary variables (the conflict
+          // graph is defined over binary assignments x=0 and x=1).
+          // trusted flag mirrors the existing (gotDown && gotUp) condition so that
+          // we apply the weaker sqrt scaling when pseudo-costs are reliable and the
+          // stronger linear scaling when they are not.
+          if (cgraph && iColumn < numberColumns
+            && saveLower[iColumn] == 0.0 && saveUpper[iColumn] == 1.0) {
+            const bool trusted = (gotDown && gotUp);
+            const double keyBefore = sort[numberToDo];
+            sort[numberToDo] = ranker->applyConflictBoost(
+              sort[numberToDo],
+              cgraph->degree(static_cast< std::size_t >(iColumn + numberColumns)), // d0: x=0
+              cgraph->degree(static_cast< std::size_t >(iColumn)),                 // d1: x=1
+              trusted);
+            ++rankDbgTotal;
+            if (sort[numberToDo] != keyBefore) {
+              ++rankDbgBoosted;
+              // Multiplier = boostedKey / originalKey (both negative, ratio > 1).
+              const double mult = sort[numberToDo] / keyBefore;
+              if (mult < rankDbgMinMult) rankDbgMinMult = mult;
+              if (mult > rankDbgMaxMult) rankDbgMaxMult = mult;
+            } else {
+              ++rankDbgZero;
+            }
+          }
+          // Variable range boost: applies to all integer columns.
+          // Score = 1/(ub-lb): binary [0,1] → 1.0, tighter domains score higher.
+          // Applied after conflict boost so both stack multiplicatively.
+          if (ranker && ranker->weightRange_ > 0.0 && iColumn < numberColumns) {
+            const bool trusted = (gotDown && gotUp);
+            const double keyBefore = sort[numberToDo];
+            sort[numberToDo] = ranker->applyRangeBoost(
+              sort[numberToDo],
+              saveLower[iColumn], saveUpper[iColumn],
+              trusted);
+            ++rankRangeDbgTotal;
+            if (sort[numberToDo] != keyBefore)
+              ++rankRangeDbgBoosted;
+          }
+          // Column non-zeros boost: score = nz^power (4th-root default).
+          // O(1) lookup — no normalization, no scan. Applies to all integers.
+          if (colLengths && iColumn < numberColumns) {
+            const bool trusted = (gotDown && gotUp);
+            const double keyBefore = sort[numberToDo];
+            sort[numberToDo] = ranker->applyNonzerosBoost(
+              sort[numberToDo], colLengths[iColumn], trusted);
+            ++rankNzDbgTotal;
+            if (sort[numberToDo] != keyBefore)
+              ++rankNzDbgBoosted;
+          }
+          // Objective coefficient magnitude boost: score = |c_j|^power.
+          // O(1) lookup. Applies to all integer variables. Most influential
+          // for untrusted variables where pseudo-costs are unreliable.
+          if (objCoeffs && iColumn < numberColumns) {
+            const bool trusted = (gotDown && gotUp);
+            const double keyBefore = sort[numberToDo];
+            sort[numberToDo] = ranker->applyObjCoeffBoost(
+              sort[numberToDo], std::fabs(objCoeffs[iColumn]), trusted);
+            ++rankObjDbgTotal;
+            if (sort[numberToDo] != keyBefore)
+              ++rankObjDbgBoosted;
+          }
           whichObject[numberToDo++] = i;
         } else {
           // for debug
@@ -3044,7 +3182,40 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       // Actions 0 - exit for repeat, 1 resolve and try old choice,2 exit for continue
       if (anyAction)
         numberToDo = 0; // skip as we will be trying again
-      // Sort
+      // Print per-call conflict/range boost diagnostics at high log level.
+      if (ranker && ranker->isActive() && model->messageHandler()->logLevel() > 3) {
+        char buf[640];
+        char conflictPart[256] = "";
+        char rangePart[128]    = "";
+        char nzPart[128]       = "";
+        char objPart[128]      = "";
+        if (ranker->weightConflict_ > 0.0 && cgraph) {
+          if (rankDbgBoosted > 0)
+            std::snprintf(conflictPart, sizeof(conflictPart),
+              " conflict:%d/%d(mult[%.3f..%.3f],z=%d)",
+              rankDbgBoosted, rankDbgTotal,
+              rankDbgMinMult, rankDbgMaxMult, rankDbgZero);
+          else
+            std::snprintf(conflictPart, sizeof(conflictPart),
+              " conflict:0/%d(all-zero-score)", rankDbgTotal);
+        }
+        if (ranker->weightRange_ > 0.0)
+          std::snprintf(rangePart, sizeof(rangePart),
+            " range:%d/%d", rankRangeDbgBoosted, rankRangeDbgTotal);
+        if (ranker->weightNonzeros_ > 0.0)
+          std::snprintf(nzPart, sizeof(nzPart),
+            " nz:%d/%d", rankNzDbgBoosted, rankNzDbgTotal);
+        if (ranker->weightObjCoeff_ > 0.0)
+          std::snprintf(objPart, sizeof(objPart),
+            " obj:%d/%d", rankObjDbgBoosted, rankObjDbgTotal);
+        std::snprintf(buf, sizeof(buf),
+          "RankConflict [node %lld]:%s%s%s%s",
+          static_cast< long long >(model->getNodeCount()),
+          conflictPart, rangePart, nzPart, objPart);
+        model->messageHandler()->message(CBC_GENERAL, *model->messagesPointer())
+          << buf << CoinMessageEol;
+      }
+      // Sort candidates by (boosted) sort key — more negative = higher priority.
       CoinSort_2(sort, sort + numberToDo, whichObject);
       // Change in objective opposite infeasible
       double worstFeasible = 0.0;

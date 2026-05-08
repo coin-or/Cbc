@@ -209,6 +209,7 @@
     <ClCompile Include="..\..\..\src\CbcBranchDefaultDecision.cpp" />
     <ClCompile Include="..\..\..\src\CbcBranchDynamic.cpp" />
     <ClCompile Include="..\..\..\src\CbcBranchingObject.cpp" />
+    <ClCompile Include="..\..\..\src\CbcBranchingRanker.cpp" />
     <ClCompile Include="..\..\..\src\CbcBranchLotsize.cpp" />
     <ClCompile Include="..\..\..\src\CbcBranchToFixLots.cpp" />
     <ClCompile Include="..\..\..\src\CbcCbcParam.cpp" />

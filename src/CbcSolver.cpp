@@ -124,6 +124,7 @@ void CbcCrashHandler(int sig);
 #include "CbcBranchActual.hpp"
 #include "CbcBranchCut.hpp"
 #include "CbcBranchLotsize.hpp"
+#include "CbcBranchingRanker.hpp"
 #include "CbcCompareActual.hpp"
 #include "CbcCompareObjective.hpp"
 #include "CbcCutGenerator.hpp"
@@ -3402,13 +3403,13 @@ int CbcSolver::preprocess(
     delete babModel_;
     babModel_ = NULL;
     returnCode = returnCode_local;
+    delete preprocHandler;
     return 3;
   }
   if (!solver2) {
     // preprocessing says infeasible — section closed by destructor below
     process.passInMessageHandler(model_.messageHandler());
     delete preprocHandler;
-    preprocHandler = nullptr;
     return 1;
   }
   if (model_.bestSolution()) {
@@ -4080,6 +4081,7 @@ int CbcSolver::preprocess(
   // time2));
 #endif
 
+  delete preprocHandler;
   return 0;
 }
 
@@ -6568,6 +6570,23 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     clqstrMode_ = "after";
     std::string &cgraphMode = cgraphMode_;
     std::string &clqstrMode = clqstrMode_;
+    // Conflict-graph branching ranker configuration (collected from params,
+    // applied to model_ before babModel_ is constructed).
+    double rankConflictWeight = 0.2;
+    std::string rankConflictType = "sum";
+    double rankConflictPowerTrusted = 0.5;
+    double rankConflictPowerUntrusted = 1.0;
+    double rankRangeWeight = 0.0;
+    double rankRangePowerTrusted = 0.5;
+    double rankRangePowerUntrusted = 1.0;
+    double rankRangeMax = 10.0;
+    double rankNzWeight = 0.0;
+    double rankNzPowerTrusted = 0.25;
+    double rankNzPowerUntrusted = 0.5;
+    double rankObjCoeffWeight = 0.0;
+    double rankObjCoeffPowerTrusted = 0.1;
+    double rankObjCoeffPowerUntrusted = 0.2;
+    double rankConflictMaxPercBin = 97.0;
     CglBKClique bkCliqueGen;
     bkPivotingStrategy_ = 3;
     CoinBronKerbosch::PivotingStrategy bkPivotingStrategy = CoinBronKerbosch::PivotingStrategy::Weight;
@@ -7070,6 +7089,48 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           if (!complicatedInteger)
             defaultSettings = false; // user knows what she is doing
           break;
+        case CbcParam::RANKCONFLICT:
+          rankConflictWeight = dValue;
+          break;
+        case CbcParam::RANKCONFLICTPOWERTRUSTED:
+          rankConflictPowerTrusted = dValue;
+          break;
+        case CbcParam::RANKCONFLICTPOWERUNTRUSTED:
+          rankConflictPowerUntrusted = dValue;
+          break;
+        case CbcParam::RANKRANGE:
+          rankRangeWeight = dValue;
+          break;
+        case CbcParam::RANKRANGEPOWERTRUSTED:
+          rankRangePowerTrusted = dValue;
+          break;
+        case CbcParam::RANKRANGEPOWERUNTRUSTED:
+          rankRangePowerUntrusted = dValue;
+          break;
+        case CbcParam::RANKRANGEMAXRANGE:
+          rankRangeMax = dValue;
+          break;
+        case CbcParam::RANKOBJCOEFF:
+          rankObjCoeffWeight = dValue;
+          break;
+        case CbcParam::RANKOBJCOEFFPOWERTRUSTED:
+          rankObjCoeffPowerTrusted = dValue;
+          break;
+        case CbcParam::RANKOBJCOEFFPOWERUNTRUSTED:
+          rankObjCoeffPowerUntrusted = dValue;
+          break;
+        case CbcParam::RANKNONZEROS:
+          rankNzWeight = dValue;
+          break;
+        case CbcParam::RANKNONZEROSPOWERTRUSTED:
+          rankNzPowerTrusted = dValue;
+          break;
+        case CbcParam::RANKNONZEROSPOWERUNTRUSTED:
+          rankNzPowerUntrusted = dValue;
+          break;
+        case CbcParam::RANKCONFLICTMAXPERCBIN:
+          rankConflictMaxPercBin = dValue;
+          break;
         default:
           break;
         }
@@ -7343,6 +7404,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           break;
         case CbcParam::USECGRAPH:
           cgraphMode = field;
+          break;
+        case CbcParam::RANKCONFLICTTYPE:
+          rankConflictType = field;
           break;
         case CbcParam::CLIQUECUTS:
           defaultSettings = false; // user knows what she is doing
@@ -8789,6 +8853,65 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           // CglPreProcess process;
           // Say integers in sync
           bool integersOK = true;
+          // Build conflict-graph branching ranker if requested, and attach it
+          // to model_ before babModel_ is copy-constructed (so it propagates).
+          if (rankConflictWeight > 0.0 || rankRangeWeight > 0.0 || rankNzWeight > 0.0
+            || rankObjCoeffWeight > 0.0) {
+            // Auto-disable on near-pure-binary instances: the conflict ranker
+            // helps most when not all integer variables are binary. If percBin
+            // of the instance is >= rankConflictMaxPercBin, skip the ranker.
+            bool rankerEnabled = true;
+            if (rankConflictMaxPercBin < 100.0) {
+              const OsiSolverInterface *si = model_.solver();
+              if (si) {
+                int nInt = 0, nBin = 0;
+                const double *lb = si->getColLower();
+                const double *ub = si->getColUpper();
+                for (int j = 0; j < si->getNumCols(); j++) {
+                  if (si->isInteger(j)) {
+                    nInt++;
+                    if (lb[j] == 0.0 && ub[j] == 1.0)
+                      nBin++;
+                  }
+                }
+                if (nInt > 0) {
+                  double percBin = 100.0 * nBin / nInt;
+                  if (percBin >= rankConflictMaxPercBin) {
+                    rankerEnabled = false;
+                    char msgBuf[128];
+                    std::snprintf(msgBuf, sizeof(msgBuf),
+                      "RankConflict: disabled (%.1f%% binary >= maxPercBin=%.1f%%)",
+                      percBin, rankConflictMaxPercBin);
+                    model_.messageHandler()->message(CBC_GENERAL,
+                      *model_.messagesPointer()) << msgBuf << CoinMessageEol;
+                  }
+                }
+              }
+            }
+            if (rankerEnabled) {
+              CbcBranchingRanker *ranker = new CbcBranchingRanker();
+              ranker->weightConflict_ = rankConflictWeight;
+              ranker->scalingPowerTrusted_ = rankConflictPowerTrusted;
+              ranker->scalingPowerUntrusted_ = rankConflictPowerUntrusted;
+              if (rankConflictType == "sum")
+                ranker->formula_ = CbcBranchingRanker::CONFLICT_SUM;
+              else if (rankConflictType == "product")
+                ranker->formula_ = CbcBranchingRanker::CONFLICT_PRODUCT;
+              else
+                ranker->formula_ = CbcBranchingRanker::CONFLICT_MIN;
+              ranker->weightRange_ = rankRangeWeight;
+              ranker->scalingPowerRangeTrusted_ = rankRangePowerTrusted;
+              ranker->scalingPowerRangeUntrusted_ = rankRangePowerUntrusted;
+              ranker->maxRangeForPriority_ = rankRangeMax;
+              ranker->weightNonzeros_ = rankNzWeight;
+              ranker->scalingPowerNzTrusted_ = rankNzPowerTrusted;
+              ranker->scalingPowerNzUntrusted_ = rankNzPowerUntrusted;
+              ranker->weightObjCoeff_ = rankObjCoeffWeight;
+              ranker->scalingPowerObjTrusted_ = rankObjCoeffPowerTrusted;
+              ranker->scalingPowerObjUntrusted_ = rankObjCoeffPowerUntrusted;
+              model_.setBranchingRanker(ranker); // model_ takes ownership
+            }
+          }
           delete babModel_;
           babModel_ = new CbcModel(model_);
 #ifndef CBC_OTHER_SOLVER
@@ -11419,6 +11542,32 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             printHistory("branch.log" /*,babModel_*/);
 #endif
             returnCode = 0;
+            // Print conflict-graph ranker summary if active (logLevel >= 1).
+            // babModel_ holds a copy of the ranker with accumulated counters.
+            if (cbcLogLevel >= 1) {
+              const CbcBranchingRanker *rk = babModel_->branchingRanker();
+              if (rk && rk->isActive()) {
+                char buf[512];
+                char conflictPart[256] = "";
+                char rangePart[256]    = "";
+                char nzPart[128]       = "";
+                if (rk->weightConflict_ > 0.0)
+                  std::snprintf(conflictPart, sizeof(conflictPart),
+                    " conflict:%lld boosts,%lld zero-score",
+                    rk->nBoostsApplied_, rk->nZeroScore_);
+                if (rk->weightRange_ > 0.0)
+                  std::snprintf(rangePart, sizeof(rangePart),
+                    " range:%lld boosts", rk->nRangeBoostsApplied_);
+                if (rk->weightNonzeros_ > 0.0)
+                  std::snprintf(nzPart, sizeof(nzPart),
+                    " nz:%lld boosts", rk->nNzBoostsApplied_);
+                std::snprintf(buf, sizeof(buf),
+                  "RankConflict summary —%s%s%s",
+                  conflictPart, rangePart, nzPart);
+                model_.messageHandler()->message(CBC_GENERAL, model_.messages())
+                  << buf << CoinMessageEol;
+              }
+            }
             if (callBack != NULL)
               returnCode = callBack(babModel_, 4);
             if (returnCode) {
@@ -14652,6 +14801,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   }
   parameters = solver->parameters();
   // solver intentionally not deleted (see comment above)
+  // I (JJHF) strongly disapprove of intentional leaks
   return rc;
 }
 

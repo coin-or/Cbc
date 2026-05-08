@@ -264,6 +264,7 @@ move /y $(OutDir)$(TargetName).lib $(CoinLibDir)
     <ClCompile Include="..\..\src\CbcBranchDefaultDecision.cpp" />
     <ClCompile Include="..\..\src\CbcBranchDynamic.cpp" />
     <ClCompile Include="..\..\src\CbcBranchingObject.cpp" />
+    <ClCompile Include="..\..\src\CbcBranchingRanker.cpp" />
     <ClCompile Include="..\..\src\CbcBranchLotsize.cpp" />
     <ClCompile Include="..\..\src\CbcBranchToFixLots.cpp" />
     <ClCompile Include="..\..\src\CbcClique.cpp" />
@@ -331,6 +332,7 @@ move /y $(OutDir)$(TargetName).lib $(CoinLibDir)
     <ClInclude Include="..\..\src\CbcBranchDefaultDecision.hpp" />
     <ClInclude Include="..\..\src\CbcBranchDynamic.hpp" />
     <ClInclude Include="..\..\src\CbcBranchingObject.hpp" />
+    <ClInclude Include="..\..\src\CbcBranchingRanker.hpp" />
     <ClInclude Include="..\..\src\CbcBranchLotsize.hpp" />
     <ClInclude Include="..\..\src\CbcBranchToFixLots.hpp" />
     <ClInclude Include="..\..\src\CbcClique.hpp" />

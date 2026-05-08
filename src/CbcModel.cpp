@@ -55,6 +55,7 @@ extern int gomory_try;
 
 #include "CbcBranchActual.hpp"
 #include "CbcBranchDynamic.hpp"
+#include "CbcBranchingRanker.hpp"
 #include "CbcCountRowCut.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CbcFathom.hpp"
@@ -6674,6 +6675,7 @@ CbcModel::CbcModel()
   problemFeasibility_ = new CbcFeasibilityBase();
   tree_ = new CbcTree();
   branchingMethod_ = NULL;
+  branchingRanker_ = NULL;
   cutModifier_ = NULL;
   strategy_ = NULL;
   parentModel_ = NULL;
@@ -6861,6 +6863,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   problemFeasibility_ = new CbcFeasibilityBase();
   tree_ = new CbcTree();
   branchingMethod_ = NULL;
+  branchingRanker_ = NULL;
   cutModifier_ = NULL;
   strategy_ = NULL;
   parentModel_ = NULL;
@@ -7270,6 +7273,8 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
     branchingMethod_ = rhs.branchingMethod_->clone();
   else
     branchingMethod_ = NULL;
+  branchingRanker_ = rhs.branchingRanker_
+    ? new CbcBranchingRanker(*rhs.branchingRanker_) : NULL;
   if (rhs.cutModifier_)
     cutModifier_ = rhs.cutModifier_->clone();
   else
@@ -7654,6 +7659,9 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
       branchingMethod_ = rhs.branchingMethod_->clone();
     else
       branchingMethod_ = NULL;
+    delete branchingRanker_;
+    branchingRanker_ = rhs.branchingRanker_
+      ? new CbcBranchingRanker(*rhs.branchingRanker_) : NULL;
     if (rhs.cutModifier_)
       cutModifier_ = rhs.cutModifier_->clone();
     else
@@ -7837,6 +7845,8 @@ void CbcModel::gutsOfDestructor2()
   ownership_ = 0x80000000;
   delete branchingMethod_;
   branchingMethod_ = NULL;
+  delete branchingRanker_;
+  branchingRanker_ = NULL;
   delete cutModifier_;
   cutModifier_ = NULL;
   topOfTree_ = NULL;
@@ -8075,6 +8085,8 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
     branchingMethod_ = rhs.branchingMethod_->clone();
   else
     branchingMethod_ = NULL;
+  branchingRanker_ = rhs.branchingRanker_
+    ? new CbcBranchingRanker(*rhs.branchingRanker_) : NULL;
   messageHandler()->setLogLevel(rhs.messageHandler()->logLevel());
   whenCuts_ = rhs.whenCuts_;
 #ifdef CBC_HAS_NAUTY // better to do again
@@ -17910,6 +17922,13 @@ void CbcModel::setCutModifier(CbcCutModifier &modifier)
 {
   delete cutModifier_;
   cutModifier_ = modifier.clone();
+}
+/* Set the branching ranker (CbcModel takes ownership).
+ */
+void CbcModel::setBranchingRanker(CbcBranchingRanker *ranker)
+{
+  delete branchingRanker_;
+  branchingRanker_ = ranker;
 }
 /* Do one node - broken out for clarity?
    also for parallel (when baseModel!=this)

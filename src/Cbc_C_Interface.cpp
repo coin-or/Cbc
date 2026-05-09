@@ -3577,6 +3577,8 @@ OsiClpSolverInterface* Cbc_cloneSolver(OsiClpSolverInterface *solver) {
   solver->getStrParam(OsiProbName, probName);
   newSolver->setStrParam(OsiProbName, probName);
 
+  newSolver->setObjSense(solver->getObjSense());
+
   return newSolver;
 }
 

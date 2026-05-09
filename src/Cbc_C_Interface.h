@@ -129,8 +129,9 @@ enum IntParam {
   INT_PARAM_CGRAPH                  = 17, /*! Conflict graph: controls if the conflict graph is created or not. 0: off, 1: auto, 2: on 3: fast weaker clique sep */
   INT_PARAM_CLIQUE_MERGING          = 18, /*! Clique merging options: 0: off , 1 auto , 2 before solving LP, 3 after solving LP and pre-processing */
   INT_PARAM_MAX_NODES_NOT_IMPROV_FS = 19, /*! Maximum number of nodes processed without improving best solution, after a feasible solution is found */
+  INT_PARAM_LP_FAST_PREPROCESS      = 20, /*! Fast MILP preprocessing before LP solve (Cbc_resolve / Cbc_solveLinearProgram). 0: off (default, pure LP relaxation); 1: singleton bound tightening only; 2: singletons + knapsack-based bound tightening (milpbt); 3: fixpoint (milpbt until no new fixings). Has no effect on MIP solves (Cbc_solve), which control preprocessing via the fastPreProcessLevel parameter. */
 };
-#define N_INT_PARAMS 20
+#define N_INT_PARAMS 21
   
 /** typedef for cbc callback to monitor the progress of the search
  * in terms of improved upper and lower bounds */

@@ -2121,6 +2121,8 @@ Cbc_resolve(Cbc_Model *model)
     model->obj_value = solver->getObjValue();
     model->x = solver->getColSolution();
     model->rActv = solver->getRowActivity();
+    Cbc_updateSlack(model, solver->getRowActivity());
+    model->rSlk = model->slack->data();
     return 0;
   }
   if (solver->isIterationLimitReached())

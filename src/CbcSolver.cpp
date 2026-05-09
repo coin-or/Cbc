@@ -4081,7 +4081,12 @@ int CbcSolver::preprocess(
   // time2));
 #endif
 
-  delete preprocHandler;
+  // Restore process handler to model's handler before deleting preprocHandler,
+  // because process.postProcess() (called later in run()) will call handler_->message().
+  if (preprocHandler) {
+    process.passInMessageHandler(model_.messageHandler());
+    delete preprocHandler;
+  }
   return 0;
 }
 

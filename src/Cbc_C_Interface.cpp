@@ -78,6 +78,7 @@ extern "C" void openblas_set_num_threads(int num_threads);
 #include "ClpPEDualRowSteepest.hpp"
 #include "ClpPEDualRowDantzig.hpp"
 #include "CbcMipStart.hpp"
+#include "CbcFastMILPPreProcess.hpp"
 #include "ClpMessage.hpp"
 #include "CoinStaticConflictGraph.hpp"
 #include <OsiAuxInfo.hpp>
@@ -2077,6 +2078,31 @@ Cbc_resolve(Cbc_Model *model)
   solver->setDblParam(OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
   solver->setDblParam(OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL]);
   solver->messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
+
+  // Optional fast MILP preprocessing (disabled by default for pure LP relaxation).
+  // When enabled, tightens variable bounds using combinatorial analysis of the
+  // integer structure before the LP is solved. Useful in custom B&B loops where
+  // each node LP benefits from bound propagation, but must be left off when the
+  // caller requires the unmodified LP relaxation.
+  const int fppLevel = model->int_param[INT_PARAM_LP_FAST_PREPROCESS];
+  if (fppLevel > 0) {
+    CbcFastMILPPreProcess::Level level;
+    switch (fppLevel) {
+      case 1:  level = CbcFastMILPPreProcess::Singletons; break;
+      case 2:  level = CbcFastMILPPreProcess::MILPbt;     break;
+      default: level = CbcFastMILPPreProcess::Fixpoint;   break;
+    }
+    const double timeLimit = model->dbl_param[DBL_PARAM_TIME_LIMIT];
+    const bool useElapsed = (model->int_param[INT_PARAM_ELAPSED_TIME] == 1);
+    const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+    const int logLevel = model->int_param[INT_PARAM_LOG_LEVEL];
+    CbcFastMILPPreProcess fpp;
+    const bool feasible = fpp.run(solver, solver->messageHandler(), logLevel,
+                                  level, /*maxRounds=*/100,
+                                  useElapsed, timeLimit, startTime);
+    if (!feasible)
+      return 2;  // infeasible proved by preprocessing
+  }
 
   model->lastOptimization = ContinuousOptimization;
 

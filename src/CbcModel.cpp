@@ -1954,6 +1954,10 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
   // randomNumberGenerator_.setSeed(987654321);
   if (!parentModel_) {
+#if !defined(_WIN32)
+    // make sure openblas only uses one thread
+    set_openblas_threads(1);
+#endif
     /*
         Capture a time stamp before we start (unless set).
     */

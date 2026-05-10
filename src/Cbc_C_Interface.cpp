@@ -8,6 +8,7 @@
 #include <climits>
 #include <cctype>
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <deque>
@@ -352,7 +353,7 @@ struct Cbc_Model {
 //TODO Why is this here?
 //const int VERBOSE = 0;
 
-typedef std::map< std::string, int > NameIndex;
+typedef std::unordered_map< std::string, int > NameIndex;
 
 // cut generator to accept callbacks in CBC
 //
@@ -1892,6 +1893,8 @@ Cbc_solveLinearProgram(Cbc_Model *model)
   // stopping criteria
   double prevMaxSecs = clps->maximumSeconds();
   clps->setMaximumSeconds(model->dbl_param[DBL_PARAM_TIME_LIMIT]);
+  int prevMaxIter = clps->maximumIterations();
+  clps->setMaximumIterations(model->int_param[INT_PARAM_MAX_ITER]);
 
   CoinMessages generalMessages = clps->messages();
   clps->setRandomSeed( model->int_param[INT_PARAM_RANDOM_SEED] );
@@ -1915,22 +1918,37 @@ Cbc_solveLinearProgram(Cbc_Model *model)
     solver->resolve();
     if (solver->isProvenOptimal()) {
       clps->setMaximumSeconds(prevMaxSecs);
+      clps->setMaximumIterations(prevMaxIter);
       return 0;
     }
     if (solver->isProvenDualInfeasible()) {
       clps->setMaximumSeconds(prevMaxSecs);
+      clps->setMaximumIterations(prevMaxIter);
       return 3;
     }
     if (solver->isProvenPrimalInfeasible()) {
       clps->setMaximumSeconds(prevMaxSecs);
+      clps->setMaximumIterations(prevMaxIter);
       return 2;
     }
     if (solver->isIterationLimitReached() || solver->isPrimalObjectiveLimitReached() || solver->isDualObjectiveLimitReached()) {
       clps->setMaximumSeconds(prevMaxSecs);
+      clps->setMaximumIterations(prevMaxIter);
+      const bool pFeas = clps->primalFeasible();
+      const bool dFeas = clps->dualFeasible();
+      if (pFeas || dFeas)
+        model->obj_value = solver->getObjValue();
+      if (pFeas) {
+        model->x = solver->getColSolution();
+        model->rActv = solver->getRowActivity();
+        Cbc_updateSlack(model, solver->getRowActivity());
+        model->rSlk = model->slack->data();
+      }
       return 1;
     }
     if (solver->isAbandoned()) {
       clps->setMaximumSeconds(prevMaxSecs);
+      clps->setMaximumIterations(prevMaxIter);
       fprintf(stderr, "Error while resolving the linear program.\n");
       fflush(stdout); fflush(stderr);
       abort();
@@ -2046,23 +2064,41 @@ Cbc_solveLinearProgram(Cbc_Model *model)
     Cbc_updateSlack(model, solver->getRowActivity());
     model->rSlk = model->slack->data();
     clps->setMaximumSeconds(prevMaxSecs);
+    clps->setMaximumIterations(prevMaxIter);
     return 0;
   }
-  if (solver->isIterationLimitReached()) {
-    model->obj_value = solver->getObjValue();
-    clps->setMaximumSeconds(prevMaxSecs);
-    return 1;
+  {
+    const bool timeLimitHit = (clps->status() == 3 && clps->secondaryStatus() == 9);
+    const bool truncated = timeLimitHit || solver->isIterationLimitReached();
+    if (truncated) {
+      const bool pFeas = clps->primalFeasible();
+      const bool dFeas = clps->dualFeasible();
+      if (pFeas || dFeas)
+        model->obj_value = solver->getObjValue();
+      if (pFeas) {
+        model->x = solver->getColSolution();
+        model->rActv = solver->getRowActivity();
+        Cbc_updateSlack(model, solver->getRowActivity());
+        model->rSlk = model->slack->data();
+      }
+      clps->setMaximumSeconds(prevMaxSecs);
+      clps->setMaximumIterations(prevMaxIter);
+      return 1;
+    }
   }
   if (solver->isProvenDualInfeasible()) {
     clps->setMaximumSeconds(prevMaxSecs);
+    clps->setMaximumIterations(prevMaxIter);
     return 3;
   }
   if (solver->isProvenPrimalInfeasible()) {
     clps->setMaximumSeconds(prevMaxSecs);
+    clps->setMaximumIterations(prevMaxIter);
     return 2;
   }
 
   clps->setMaximumSeconds(prevMaxSecs);
+  clps->setMaximumIterations(prevMaxIter);
   return -1;
 }
 
@@ -2075,6 +2111,7 @@ Cbc_resolve(Cbc_Model *model)
   // Apply key parameters
   ClpSimplex *clps = solver->getModelPtr();
   clps->setMaximumSeconds(model->dbl_param[DBL_PARAM_TIME_LIMIT]);
+  clps->setMaximumIterations(model->int_param[INT_PARAM_MAX_ITER]);
   solver->setDblParam(OsiPrimalTolerance, model->dbl_param[DBL_PARAM_PRIMAL_TOL]);
   solver->setDblParam(OsiDualTolerance, model->dbl_param[DBL_PARAM_DUAL_TOL]);
   solver->messageHandler()->setLogLevel(model->int_param[INT_PARAM_LOG_LEVEL]);
@@ -2106,13 +2143,30 @@ Cbc_resolve(Cbc_Model *model)
 
   model->lastOptimization = ContinuousOptimization;
 
-  // Use resolve() for warm-start reoptimization. This is the correct
-  // method for incremental changes (bound tightening, added rows) —
-  // it operates directly on the current model state and reuses the basis.
-  // Falls back to initialSolve() if no basis is available.
+  // Use resolve() for warm-start reoptimization (reuses current basis and method).
+  // For cold starts, apply the LP method setting (defaulting to dual simplex,
+  // which guarantees a valid dual bound when truncated by a time/iter limit).
   if (solver->basisIsAvailable()) {
     solver->resolve();
   } else {
+    LPMethod method = (model->lp_method == LPM_Auto) ? LPM_Dual : model->lp_method;
+    ClpSolve clpOptions;
+    switch (method) {
+      case LPM_Primal:
+        clpOptions.setSolveType(ClpSolve::usePrimal);
+        break;
+      case LPM_Barrier:
+        clpOptions.setSolveType(ClpSolve::useBarrier);
+        clpOptions.setSpecialOption(4, 4);
+        break;
+      case LPM_BarrierNoCross:
+        clpOptions.setSolveType(ClpSolve::useBarrierNoCross);
+        break;
+      default:
+        clpOptions.setSolveType(ClpSolve::useDual);
+        break;
+    }
+    solver->setSolveOptions(clpOptions);
     solver->initialSolve();
   }
 
@@ -2125,8 +2179,23 @@ Cbc_resolve(Cbc_Model *model)
     model->rSlk = model->slack->data();
     return 0;
   }
-  if (solver->isIterationLimitReached())
-    return 1;
+  {
+    const bool timeLimitHit = (clps->status() == 3 && clps->secondaryStatus() == 9);
+    const bool truncated = timeLimitHit || solver->isIterationLimitReached();
+    if (truncated) {
+      const bool pFeas = clps->primalFeasible();
+      const bool dFeas = clps->dualFeasible();
+      if (pFeas || dFeas)
+        model->obj_value = solver->getObjValue();
+      if (pFeas) {
+        model->x = solver->getColSolution();
+        model->rActv = solver->getRowActivity();
+        Cbc_updateSlack(model, solver->getRowActivity());
+        model->rSlk = model->slack->data();
+      }
+      return 1;
+    }
+  }
   if (solver->isProvenPrimalInfeasible())
     return 2;
   if (solver->isProvenDualInfeasible())
@@ -4813,6 +4882,22 @@ Cbc_setMaximumNodes(Cbc_Model *model, int maxNodes)
   model->int_param[INT_PARAM_MAX_NODES] = maxNodes;
 }
 
+/** returns the maximum number of simplex iterations for LP solves
+ */
+int CBC_LINKAGE
+Cbc_getMaximumIterations(Cbc_Model *model)
+{
+  return model->int_param[INT_PARAM_MAX_ITER];
+}
+
+/** sets the maximum number of simplex iterations for LP solves
+ */
+void CBC_LINKAGE
+Cbc_setMaximumIterations(Cbc_Model *model, int maxIterations)
+{
+  model->int_param[INT_PARAM_MAX_ITER] = maxIterations;
+}
+
 /** returns solution limit for the search process
  */
 int CBC_LINKAGE
@@ -5079,6 +5164,7 @@ void Cbc_iniParams( Cbc_Model *model ) {
   model->int_param[INT_PARAM_CGRAPH]                  =        1;
   model->int_param[INT_PARAM_CLIQUE_MERGING]          =       -1; // not set
   model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] =  INT_MAX;
+  model->int_param[INT_PARAM_MAX_ITER]                =  INT_MAX;
 
   model->dbl_param[DBL_PARAM_PRIMAL_TOL]             =          1e-6;
   model->dbl_param[DBL_PARAM_DUAL_TOL]               =          1e-6;

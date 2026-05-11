@@ -11741,7 +11741,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           double direction = babModel_->solver()->getObjSense();
           // "Cuts at root node..." and per-generator "was tried..." lines are
           // shown in our formatted cut generation section when cbcLogLevel >= 1.
-          const bool suppressCutStats = (cbcLogLevel >= 1 && babModel_->numberIntegers() > 0);
+          // Also suppress when there are no integer variables — all stats will
+          // be zero and the new output already conveyed that info.
+          const bool suppressCutStats = (cbcLogLevel >= 1);
           if (!suppressCutStats) {
             buffer.str("");
             buffer << "Cuts at root node changed objective from "

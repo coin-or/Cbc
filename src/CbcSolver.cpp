@@ -85,6 +85,7 @@ void CbcCrashHandler(int sig);
 #include "OsiAuxInfo.hpp"
 #include "OsiChooseVariable.hpp"
 #include "OsiClpSolverInterface.hpp"
+#include "ClpRacingSolver.hpp"
 #include "OsiColCut.hpp"
 #include "OsiCuts.hpp"
 #include "OsiRowCut.hpp"
@@ -1116,6 +1117,33 @@ static int applyLpMethod(CbcModel &model, CbcParameters &parameters)
   // --- LP method selection ---
   OsiSolverInterface *solver = model.solver();
   CbcParameters::LPMethod method = parameters.getLpMethod();
+
+  // LP racing: race multiple methods on the original model
+  int racingLP = parameters[CbcParam::RACINGLP]->intVal();
+  if (racingLP > 0) {
+    OsiClpSolverInterface *si = dynamic_cast<OsiClpSolverInterface *>(solver);
+    if (si) {
+      ClpSimplex *clp = si->getModelPtr();
+      ClpRacingSolver racer(clp, racingLP);
+      racer.solve();
+      if (racer.winnerIndex() >= 0) {
+        // Ensure iteration count is visible to progress handler
+        clp->setNumberIterations(racer.winnerIterations());
+        if (model.messageHandler()->logLevel() > 0) {
+          const char *names[] = {"dual", "primal+idiot", "primal+sprint"};
+          int w = racer.winnerIndex();
+          char msg[200];
+          snprintf(msg, sizeof(msg),
+            "LP racing: winner=%s time=%.2fs iters=%d",
+            (w >= 0 && w < 3 ? names[w] : "unknown"),
+            racer.winnerTime(), racer.winnerIterations());
+          model.messageHandler()->message(0, "", msg, ' ') << CoinMessageEol;
+        }
+        return 0; // LP already solved
+      }
+      // All racers failed — fall through to normal LP solve
+    }
+  }
 
   if (method == CbcParameters::LPPrimal) {
     solver->setHintParam(OsiDoDualInInitial, false, OsiHintDo);

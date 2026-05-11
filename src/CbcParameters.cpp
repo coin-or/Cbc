@@ -459,6 +459,7 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::RANDOMSEED]->setTopic("Solving");
   parameters_[CbcParam::MAXSAVEDSOLS]->setTopic("Solving");
   parameters_[CbcParam::THREADS]->setTopic("Parallelism");
+  parameters_[CbcParam::RACINGLP]->setTopic("Parallelism");
 
   // Integer params — ZeroHalf tuning (sub-topic of Cuts)
   for (int code : {CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT,
@@ -605,6 +606,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::OPTIONS]->setDefault(0);
      parameters_[CbcParam::PRINTOPTIONS]->setDefault(0);
      parameters_[CbcParam::PROCESSTUNE]->setDefault(0);
+     parameters_[CbcParam::RACINGLP]->setDefault(0);
      parameters_[CbcParam::RANDOMSEED]->setDefault(42);
      parameters_[CbcParam::STRONGSTRATEGY]->setDefault(0);
      parameters_[CbcParam::TESTOSI]->setDefault(-1);
@@ -2178,6 +2180,18 @@ void CbcParameters::addCbcSolverIntParams() {
       CoinParam::displayPriorityLow);
   parameters_[CbcParam::PROCESSTUNE]->appendKwd("heavy!Probing#Do more probing",7);
   parameters_[CbcParam::PROCESSTUNE]->appendKwd("heavier!Probing#Do yet more probing",519);
+
+  parameters_[CbcParam::RACINGLP]->setup(
+      "racing!LP",
+      "Number of threads for opportunistic parallel LP racing at root node", 0,
+      8,
+      "When set to a value > 0, the root LP relaxation is solved by racing "
+      "multiple LP method configurations in parallel (dual simplex, primal "
+      "with Idiot crash, primal with Sprint). The first to reach optimality "
+      "wins and the others are aborted. This can significantly reduce root LP "
+      "time for problems where the default method is not the fastest. A value "
+      "of 3 races all three configurations. Set to 0 to disable.",
+      CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::RANDOMSEED]->setup(
       "randomC!bcSeed", "Random seed for Cbc", -1, COIN_INT_MAX,

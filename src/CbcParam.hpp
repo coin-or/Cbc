@@ -251,6 +251,7 @@ public:
       OPTIONS,
       PRINTOPTIONS,
       PROCESSTUNE,
+      RACINGLP,
       RANDOMSEED,
       STRONGSTRATEGY,
       TESTOSI,

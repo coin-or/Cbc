@@ -1112,6 +1112,11 @@ public:
   {
     return numberIterations_;
   }
+  /// Set how many iterations it took to solve the problem.
+  inline void setIterationCount(cbc_node_count value)
+  {
+    numberIterations_ = value;
+  }
   /// Increment how many iterations it took to solve the problem.
   inline void incrementIterationCount(int value)
   {
@@ -1121,6 +1126,11 @@ public:
   inline cbc_node_count getNodeCount() const
   {
     return numberNodes_;
+  }
+  /// Set how many Nodes it took to solve the problem (including those in complete fathoming B&B inside CLP).
+  inline void setNodeCount(cbc_node_count value)
+  {
+    numberNodes_ = value;
   }
   /// Increment how many nodes it took to solve the problem.
   inline void incrementNodeCount(int value)
@@ -1683,6 +1693,11 @@ public:
   inline double rootObjectiveAfterCuts() const
   {
     return continuousObjective_;
+  }
+  /// Set value of objective after root node cuts added
+  inline void setRootObjectiveAfterCuts(double value)
+  {
+    continuousObjective_ = value;
   }
   /// Sum of Changes to objective by first solve
   inline double sumChangeObjective() const

@@ -14785,6 +14785,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   model.setProblemStatus(solved->status());
   model.setSecondaryStatus(solved->secondaryStatus());
   model.setMinimizationObjValue(solved->getMinimizationObjValue());
+  model.setContinuousObjective(solved->getContinuousObjective());
+  model.setRootObjectiveAfterCuts(solved->rootObjectiveAfterCuts());
+  model.setNodeCount(solved->getNodeCount());
+  model.setIterationCount(solved->getIterationCount());
   if (solved->bestSolution()) {
     int n = solved->solver()->getNumCols();
     int nc = model.solver()->getNumCols();

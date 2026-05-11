@@ -130,8 +130,9 @@ enum IntParam {
   INT_PARAM_CLIQUE_MERGING          = 18, /*! Clique merging options: 0: off , 1 auto , 2 before solving LP, 3 after solving LP and pre-processing */
   INT_PARAM_MAX_NODES_NOT_IMPROV_FS = 19, /*! Maximum number of nodes processed without improving best solution, after a feasible solution is found */
   INT_PARAM_LP_FAST_PREPROCESS      = 20, /*! Fast MILP preprocessing before LP solve (Cbc_resolve / Cbc_solveLinearProgram). 0: off (default, pure LP relaxation); 1: singleton bound tightening only; 2: singletons + knapsack-based bound tightening (milpbt); 3: fixpoint (milpbt until no new fixings). Has no effect on MIP solves (Cbc_solve), which control preprocessing via the fastPreProcessLevel parameter. */
+  INT_PARAM_MAX_ITER                = 21, /*! Maximum number of simplex iterations for LP solves (Cbc_resolve / Cbc_solveLinearProgram). Default INT_MAX (no limit). */
 };
-#define N_INT_PARAMS 21
+#define N_INT_PARAMS 22
   
 /** typedef for cbc callback to monitor the progress of the search
  * in terms of improved upper and lower bounds */
@@ -1096,6 +1097,17 @@ Cbc_getMaximumNodes(Cbc_Model *model);
  */
 CBCLIB_EXPORT void CBC_LINKAGE
 Cbc_setMaximumNodes(Cbc_Model *model, int maxNodes);
+
+/** returns the maximum number of simplex iterations for LP solves
+ */
+CBCLIB_EXPORT int CBC_LINKAGE
+Cbc_getMaximumIterations(Cbc_Model *model);
+
+/** sets the maximum number of simplex iterations for LP solves.
+ *  Default is INT_MAX (no limit). Applies to Cbc_resolve and Cbc_solveLinearProgram.
+ */
+CBCLIB_EXPORT void CBC_LINKAGE
+Cbc_setMaximumIterations(Cbc_Model *model, int maxIterations);
 
 /** returns solution limit for the search process
  */

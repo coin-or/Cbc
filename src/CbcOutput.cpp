@@ -1579,6 +1579,46 @@ int CbcOutputHandler::print()
     return 0;
   }
 
+  // CBC_NOINT (ext=3007): "No integer variables" — fired when preprocessing
+  // leaves no branching objects.  The new-style output already shows LP
+  // fraction 0% and a collapsed processed model, so this adds no new
+  // information.  Suppress to avoid the old-style Cbc3007W prefix.
+  if (currentSource() == "Cbc" && ext == 3007)
+    return 0;
+
+  // CBC_GENERAL (ext=45): "RankConflict: active ..." — configuration note,
+  // only useful for diagnostics; suppress at logLevel < 2.
+  if (currentSource() == "Cbc" && ext == 45
+      && std::strstr(buf, "RankConflict: active")) {
+    if (logLevel() < 2)
+      return 0;
+    FILE *fp = filePointer();
+    if (fp) {
+      const char *p = std::strstr(buf, "RankConflict:");
+      if (!p) p = buf;
+      fprintf(fp, "  ℹ %s\n", p);
+      fflush(fp);
+    }
+    return 0;
+  }
+
+  // CBC_GENERAL (ext=45): "Possible tolerance issue" — genuine numerical
+  // warning not conveyed elsewhere; format as an indented ⚠ line.
+  if (currentSource() == "Cbc" && ext == 45
+      && std::strstr(buf, "Possible tolerance issue")) {
+    FILE *fp = filePointer();
+    if (fp) {
+      const char *p = buf;
+      if (std::strncmp(p, "Cbc", 3) == 0) {
+        while (*p && *p != ' ') ++p;
+        if (*p == ' ') ++p;
+      }
+      fprintf(fp, "  ⚠ %s\n", p);
+      fflush(fp);
+    }
+    return 0;
+  }
+
   return CoinMessageHandler::print();
 }
 

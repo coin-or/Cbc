@@ -366,11 +366,13 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     }
     int oneSolveIts = clpSimplex->maximumIterations();
     oneSolveIts = std::min(1000 + 2 * (clpSimplex->numberRows() + clpSimplex->numberColumns()), oneSolveIts);
-    if (maxSimplexIterations >= 100000) {
-      // User set a very high simplex budget — don't cap individual solves,
-      // rely only on the time limit to stop the dive.
+    if (maxSimplexIterations >= COIN_INT_MAX / 2) {
+      // Effectively unlimited — don't cap individual solves
       maxIterationsInOneSolve = COIN_INT_MAX >> 3;
       oneSolveIts = COIN_INT_MAX >> 3;
+    } else {
+      // Cap each LP so no single resolve can overshoot the total budget badly
+      oneSolveIts = std::min(oneSolveIts, maxSimplexIterations);
     }
     clpSimplex->setMaximumIterations(oneSolveIts);
     // Pass the remaining CBC time to the LP solver so that a single LP
@@ -525,6 +527,10 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
         double blended = (1.0 - guidedObjOrigWeight_) * guidedCoef
                        + guidedObjOrigWeight_ * savedObjective[col];
         solver->setObjCoeff(col, blended);
+      }
+      if (clpSolver && maxSimplexIterations < COIN_INT_MAX / 2) {
+        int remaining = maxSimplexIterations - numberSimplexIterations;
+        clpSolver->getModelPtr()->setMaximumIterations(std::max(remaining, 100));
       }
       solver->resolve();
       numberSimplexIterations += solver->getIterationCount();
@@ -997,6 +1003,10 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
       }
 
       model_->setSpecialOptions(saveModelOptions | 2048);
+      if (clpSolver && maxSimplexIterations < COIN_INT_MAX / 2) {
+        int remaining = maxSimplexIterations - numberSimplexIterations;
+        clpSolver->getModelPtr()->setMaximumIterations(std::max(remaining, 100));
+      }
       solver->resolve();
       numberSimplexIterations += solver->getIterationCount();
 #if DIVE_PRINT > 1

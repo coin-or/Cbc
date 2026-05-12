@@ -134,7 +134,7 @@ int CbcRootHeuristicSchedule::run()
     double elapsed = CoinGetTimeOfDay() - t0;
 
     if (logLevel >= 1) {
-      if (found > 0)
+      if (found > 0 && model_.getObjValue() < objBefore - 1.0e-5)
         printf("✔ Phase 2 — improved %.6g → %.6g in %.3fs\n",
           objBefore, model_.getObjValue(), elapsed);
       else
@@ -292,17 +292,24 @@ int CbcRootHeuristicSchedule::runParallel(
   }
 
   // Register solutions with model (best first)
+  int accepted = 0;
   if (bestIdx >= 0) {
+    double before = model_.getObjValue();
     model_.setBestSolution(CBC_ROUNDING, results[bestIdx].obj,
       results[bestIdx].solution.data());
+    if (model_.getObjValue() < before - 1.0e-5)
+      accepted++;
   }
-  // Register other solutions too (they update usedInSolution)
+  // Register other solutions too
   for (int i = 0; i < nHeur; i++) {
     if (results[i].status > 0 && i != bestIdx) {
+      double before = model_.getObjValue();
       model_.setBestSolution(CBC_ROUNDING, results[i].obj,
         results[i].solution.data());
+      if (model_.getObjValue() < before - 1.0e-5)
+        accepted++;
     }
   }
 
-  return found;
+  return accepted > 0 ? accepted : found;
 }

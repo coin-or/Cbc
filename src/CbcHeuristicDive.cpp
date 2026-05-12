@@ -1314,7 +1314,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   // Machine-parseable dive statistics (always printed at log level >= 1)
   if (model_->messageHandler()->logLevel() >= 1) {
     double elapsed = (model_->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime()) - time1;
-    if (model_->messageHandler()->logLevel() >= 2)
+    if (model_->messageHandler()->logLevel() >= 3)
       printf("DIVE_STATS %s %d %d %d %d %d %d %.4f\n",
         heuristicName_.c_str(), returnCode > 0 ? 1 : 0, reasonToStop,
         iteration, totalFractionalFixed, totalBoundFixed,

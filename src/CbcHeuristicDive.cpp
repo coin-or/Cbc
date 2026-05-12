@@ -1244,12 +1244,14 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     }
   }
 
-  // re-compute new solution value
+  // re-compute new solution value using ORIGINAL objective
+  // (guided objective modifies coefficients, but solution value must reflect true obj)
   double objOffset = 0.0;
   solver->getDblParam(OsiObjOffset, objOffset);
   newSolutionValue = -objOffset;
+  const double *trueObj = savedObjective.empty() ? objective : savedObjective.data();
   for (int i = 0; i < numberColumns; i++)
-    newSolutionValue += objective[i] * newSolution[i];
+    newSolutionValue += trueObj[i] * newSolution[i];
   newSolutionValue *= direction;
   //printf("new solution value %g %g\n",newSolutionValue,solutionValue);
   if (newSolutionValue < solutionValue && !reasonToStop) {

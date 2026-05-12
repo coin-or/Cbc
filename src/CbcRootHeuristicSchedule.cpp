@@ -66,7 +66,7 @@ void CbcRootHeuristicSchedule::addDefaultDivingConfigs()
   add("Blend30_r05_s3", 1, 0.5, 3, 1, 0.3, 0, 1);
 }
 
-int CbcRootHeuristicSchedule::run()
+int CbcRootHeuristicSchedule::run(bool afterCuts)
 {
   solutionsFound_ = 0;
   int logLevel = model_.messageHandler()->logLevel();
@@ -106,7 +106,8 @@ int CbcRootHeuristicSchedule::run()
   if (!constructive.empty()) {
     double t0 = CoinGetTimeOfDay();
     if (logLevel >= 1)
-      printf("\n▶ Root heuristics — Phase 1: constructive (%d heuristics, %d threads)\n",
+      printf("\n▶ Root heuristics%s — Phase 1: constructive (%d heuristics, %d threads)\n",
+        afterCuts ? " (after cuts)" : "",
         (int)constructive.size(), numThreads_ > 0 ? numThreads_ : 1);
 
     int found = runPhase1(constructive);
@@ -128,7 +129,8 @@ int CbcRootHeuristicSchedule::run()
     double t0 = CoinGetTimeOfDay();
     double objBefore = model_.getObjValue();
     if (logLevel >= 1)
-      printf("\n▶ Root heuristics — Phase 2: improvement (%d heuristics)\n",
+      printf("\n▶ Root heuristics%s — Phase 2: improvement (%d heuristics)\n",
+        afterCuts ? " (after cuts)" : "",
         (int)improvement.size());
 
     int found = runPhase2(improvement);

@@ -69,6 +69,10 @@ int CbcRootHeuristicSchedule::run()
   solutionsFound_ = 0;
   int logLevel = model_.messageHandler()->logLevel();
 
+  // Check time/event before starting
+  if (model_.maximumSecondsReached() || model_.eventHappened())
+    return 0;
+
   // Partition heuristics into constructive vs improvement
   std::vector<CbcHeuristic *> constructive;
   std::vector<CbcHeuristic *> improvement;
@@ -117,7 +121,8 @@ int CbcRootHeuristicSchedule::run()
   }
 
   // Phase 2: improvement heuristics (only if we have a solution)
-  if (model_.bestSolution() && !improvement.empty()) {
+  if (model_.bestSolution() && !improvement.empty()
+      && !model_.maximumSecondsReached() && !model_.eventHappened()) {
     double t0 = CoinGetTimeOfDay();
     double objBefore = model_.getObjValue();
     if (logLevel >= 1)
@@ -191,6 +196,10 @@ int CbcRootHeuristicSchedule::runParallel(
   auto worker = [&](int idx) {
     if (maxSolutions > 0 && solutionCount.load() >= maxSolutions)
       return;
+    if (model_.maximumSecondsReached() || model_.eventHappened()) {
+      stopFlag_.store(true);
+      return;
+    }
 
     results[idx].solution.resize(nCols);
     results[idx].obj = model_.getCutoff();

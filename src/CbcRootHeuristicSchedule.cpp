@@ -39,8 +39,8 @@ void CbcRootHeuristicSchedule::addDefaultDivingConfigs()
     h->setWeightFractionality(1.0);
     h->setTargetFractionality(0.5);
     h->setMaxIterations(1000);
-    h->setMaxSimplexIterations(100000);
-    h->setMaxSimplexIterationsAtRoot(200000);
+    h->setMaxSimplexIterations(50000);
+    h->setMaxSimplexIterationsAtRoot(100000);
     h->setSeed(seed);
     h->setGuidedObjMode(guideMode);
     h->setGuidedObjWeight(1.0);
@@ -254,7 +254,7 @@ int CbcRootHeuristicSchedule::runParallel(
     // Print summary table — only show heuristics that took meaningful time
     bool headerPrinted = false;
     for (int i = 0; i < nHeur; i++) {
-      if (results[i].time < 0.001 && results[i].status <= 0)
+      if (results[i].time < 0.01 && results[i].status <= 0)
         continue; // skip trivially fast failures
       if (!headerPrinted) {
         printf("\n  %-24s %-14s %14s %8s\n",

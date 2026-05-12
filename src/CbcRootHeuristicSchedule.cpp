@@ -39,10 +39,10 @@ void CbcRootHeuristicSchedule::addDefaultDivingConfigs()
     h->setWeightFractionality(1.0);
     h->setTargetFractionality(0.5);
     h->setMaxIterations(1000);
-    // 200K simplex iters covers P99+ of successful dives in experiments
+    // 100K simplex iters covers P99+ of successful dives in experiments
     // COIN_INT_MAX bypasses adjustHeuristics() override
-    h->setMaxSimplexIterations(200000);
-    h->setMaxSimplexIterationsAtRoot(200000);
+    h->setMaxSimplexIterations(100000);
+    h->setMaxSimplexIterationsAtRoot(100000);
     h->setSeed(seed);
     h->setGuidedObjMode(guideMode);
     h->setGuidedObjWeight(1.0);

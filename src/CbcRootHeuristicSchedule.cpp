@@ -284,8 +284,16 @@ int CbcRootHeuristicSchedule::runParallel(
         // Show dive stats if available
         CbcHeuristicDive *dive = dynamic_cast<CbcHeuristicDive *>(heuristics[i]);
         if (dive && dive->lastDiveIterations() > 0) {
-          snprintf(statusBuf, sizeof(statusBuf), "%d iters, %dK simplex",
-            dive->lastDiveIterations(), dive->lastSimplexIterations() / 1000);
+          int reason = dive->lastReasonToStop();
+          const char *reasonStr = "";
+          if (reason == 6) reasonStr = " (aborted)";
+          else if (reason / 100 > 0) reasonStr = " (propagation)";
+          else if (reason % 10 == 1) reasonStr = " (infeasible)";
+          else if (reason % 10 == 2) reasonStr = " (simplex lim)";
+          else if (reason % 10 == 4) reasonStr = " (iter limit)";
+          snprintf(statusBuf, sizeof(statusBuf), "%d dives, %dK lp its%s",
+            dive->lastDiveIterations(), dive->lastSimplexIterations() / 1000,
+            reasonStr);
         } else {
           snprintf(statusBuf, sizeof(statusBuf), "no solution");
         }

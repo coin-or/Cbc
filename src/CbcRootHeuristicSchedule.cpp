@@ -270,26 +270,33 @@ int CbcRootHeuristicSchedule::runParallel(
       if (results[i].time < 0.01 && results[i].status <= 0)
         continue; // skip trivially fast failures
       if (!headerPrinted) {
-        printf("\n  %-24s %-14s %14s %8s\n",
+        printf("\n  %-24s %-22s %14s %8s\n",
           "Heuristic", "Status", "Objective", "Time(s)");
-        printf("  ──────────────────────── ────────────── ────────────── ────────\n");
+        printf("  ──────────────────────── ────────────────────── ────────────── ────────\n");
         headerPrinted = true;
       }
-      const char *status;
+      char statusBuf[64];
       int statusWidth;
       if (results[i].status > 0) {
-        status = "★ solution";
-        statusWidth = 16; // 14 display + 2 extra bytes for UTF-8 ★
+        snprintf(statusBuf, sizeof(statusBuf), "★ solution");
+        statusWidth = 24; // 22 display + 2 UTF-8 bytes
       } else {
-        status = "no solution";
-        statusWidth = 14;
+        // Show dive stats if available
+        CbcHeuristicDive *dive = dynamic_cast<CbcHeuristicDive *>(heuristics[i]);
+        if (dive && dive->lastDiveIterations() > 0) {
+          snprintf(statusBuf, sizeof(statusBuf), "%d iters, %dK simplex",
+            dive->lastDiveIterations(), dive->lastSimplexIterations() / 1000);
+        } else {
+          snprintf(statusBuf, sizeof(statusBuf), "no solution");
+        }
+        statusWidth = 22;
       }
       if (results[i].status > 0)
         printf("  %-24s %-*s %14.4f %8.3f\n",
-          heuristics[i]->heuristicName(), statusWidth, status, results[i].obj, results[i].time);
+          heuristics[i]->heuristicName(), statusWidth, statusBuf, results[i].obj, results[i].time);
       else
         printf("  %-24s %-*s %14s %8.3f\n",
-          heuristics[i]->heuristicName(), statusWidth, status, "", results[i].time);
+          heuristics[i]->heuristicName(), statusWidth, statusBuf, "", results[i].time);
     }
     if (headerPrinted)
       printf("\n");

@@ -207,6 +207,16 @@ protected:
   // diveopt 8: track consecutive infeasible dives to adapt percentageToFix_
   int numConsecutiveInfeasible_;
 
+  // Last run statistics (populated after solution() returns)
+  int lastDiveIterations_;
+  int lastSimplexIterations_;
+  int lastReasonToStop_;
+
+public:
+  int lastDiveIterations() const { return lastDiveIterations_; }
+  int lastSimplexIterations() const { return lastSimplexIterations_; }
+  int lastReasonToStop() const { return lastReasonToStop_; }
+
   // --- Explicit flags replacing magic number encodings ---
 
   /// When true, lift iteration/simplex limits when no incumbent exists.

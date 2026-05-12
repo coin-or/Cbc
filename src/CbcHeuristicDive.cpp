@@ -44,6 +44,9 @@ CbcHeuristicDive::CbcHeuristicDive()
   decayFactor_ = 1.0;
   smallObjective_ = 1.0e-10;
   numConsecutiveInfeasible_ = 0;
+  lastDiveIterations_ = 0;
+  lastSimplexIterations_ = 0;
+  lastReasonToStop_ = 0;
   aggressiveMode_ = false;
   adaptiveFixing_ = false;
   fixGeneralIntegers_ = false;
@@ -83,6 +86,9 @@ CbcHeuristicDive::CbcHeuristicDive(CbcModel &model)
   decayFactor_ = 1.0;
   smallObjective_ = 1.0e-10;
   numConsecutiveInfeasible_ = 0;
+  lastDiveIterations_ = 0;
+  lastSimplexIterations_ = 0;
+  lastReasonToStop_ = 0;
   aggressiveMode_ = false;
   adaptiveFixing_ = false;
   fixGeneralIntegers_ = false;
@@ -1316,6 +1322,11 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   // Machine-parseable dive statistics (always printed at log level >= 1)
   if (model_->messageHandler()->logLevel() >= 1) {
     double elapsed = (model_->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime()) - time1;
+    // Store stats for external reporting
+    lastDiveIterations_ = iteration;
+    lastSimplexIterations_ = numberSimplexIterations;
+    lastReasonToStop_ = reasonToStop;
+
     if (model_->messageHandler()->logLevel() >= 3)
       printf("DIVE_STATS %s %d %d %d %d %d %d %.4f\n",
         heuristicName_.c_str(), returnCode > 0 ? 1 : 0, reasonToStop,
@@ -1354,6 +1365,9 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     if (returnCode > 0) {
       // Found a solution — reset the infeasibility streak
       numConsecutiveInfeasible_ = 0;
+  lastDiveIterations_ = 0;
+  lastSimplexIterations_ = 0;
+  lastReasonToStop_ = 0;
     } else {
       // No solution found. Treat an early exit due to LP infeasibility
       // (reasonToStop % 10 == 1 or reasonToStop >= 100) as a signal that we
@@ -1369,12 +1383,18 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
           if (newPct < minPercentage)
             newPct = minPercentage;
           percentageToFix_ = newPct;
-          numConsecutiveInfeasible_ = 0; // reset streak after adapting
+          numConsecutiveInfeasible_ = 0;
+  lastDiveIterations_ = 0;
+  lastSimplexIterations_ = 0;
+  lastReasonToStop_ = 0; // reset streak after adapting
         }
       } else {
         // Dive completed without infeasibility but found no better solution
         // (e.g. objective too weak); don't penalise percentageToFix_.
         numConsecutiveInfeasible_ = 0;
+  lastDiveIterations_ = 0;
+  lastSimplexIterations_ = 0;
+  lastReasonToStop_ = 0;
       }
     }
   }

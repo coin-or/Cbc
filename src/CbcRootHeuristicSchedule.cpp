@@ -38,7 +38,7 @@ void CbcRootHeuristicSchedule::addDefaultDivingConfigs()
     h->setMinFractionality(0.10);
     h->setWeightFractionality(1.0);
     h->setTargetFractionality(0.5);
-    h->setMaxIterations(1000);
+    h->setMaxIterations(500);
     // 100K simplex iters covers P99+ of successful dives in experiments
     // COIN_INT_MAX bypasses adjustHeuristics() override
     h->setMaxSimplexIterations(100000);
@@ -281,7 +281,7 @@ int CbcRootHeuristicSchedule::runParallel(
         status = "★ solution";
         statusWidth = 16; // 14 display + 2 extra bytes for UTF-8 ★
       } else {
-        status = "—";
+        status = "no solution";
         statusWidth = 14;
       }
       if (results[i].status > 0)

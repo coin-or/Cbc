@@ -39,6 +39,8 @@ void CbcRootHeuristicSchedule::addDefaultDivingConfigs()
     h->setWeightFractionality(1.0);
     h->setTargetFractionality(0.5);
     h->setMaxIterations(1000);
+    h->setMaxSimplexIterations(100000);
+    h->setMaxSimplexIterationsAtRoot(200000);
     h->setSeed(seed);
     h->setGuidedObjMode(guideMode);
     h->setGuidedObjWeight(1.0);

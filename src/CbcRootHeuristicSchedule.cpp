@@ -270,16 +270,16 @@ int CbcRootHeuristicSchedule::runParallel(
       if (results[i].time < 0.01 && results[i].status <= 0)
         continue; // skip trivially fast failures
       if (!headerPrinted) {
-        printf("\n  %-24s %-28s %14s %8s\n",
+        printf("\n  %-24s %-32s %14s %8s\n",
           "Heuristic", "Status", "Objective", "Time(s)");
-        printf("  ──────────────────────── ──────────────────────────── ────────────── ────────\n");
+        printf("  ──────────────────────── ──────────────────────────────── ────────────── ────────\n");
         headerPrinted = true;
       }
       char statusBuf[64];
       int statusWidth;
       if (results[i].status > 0) {
         snprintf(statusBuf, sizeof(statusBuf), "★ solution");
-        statusWidth = 30; // 22 display + 2 UTF-8 bytes
+        statusWidth = 34; // 22 display + 2 UTF-8 bytes
       } else {
         // Show dive stats if available
         CbcHeuristicDive *dive = dynamic_cast<CbcHeuristicDive *>(heuristics[i]);
@@ -299,7 +299,7 @@ int CbcRootHeuristicSchedule::runParallel(
         } else {
           snprintf(statusBuf, sizeof(statusBuf), "no solution");
         }
-        statusWidth = 28;
+        statusWidth = 32;
       }
       if (results[i].status > 0)
         printf("  %-24s %-*s %14.4f %8.3f\n",

@@ -14822,10 +14822,12 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   if (solved->bestSolution()) {
     int n = solved->solver()->getNumCols();
     int nc = model.solver()->getNumCols();
+    // Only copy solution back if the caller's model has a solver loaded.
     // Use false (don't check feasibility) — the solution was already
     // verified in the solved model which may have different structure.
-    model.setBestSolution(solved->bestSolution(), std::min(n, nc),
-      solved->getMinimizationObjValue(), false);
+    if (nc > 0)
+      model.setBestSolution(solved->bestSolution(), std::min(n, nc),
+        solved->getMinimizationObjValue(), false);
   }
   model.setNumberHeuristicSolutions(solved->getNumberHeuristicSolutions());
   {

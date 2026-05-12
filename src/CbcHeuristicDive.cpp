@@ -15,6 +15,9 @@
 #include "CoinTime.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "CbcHeuristicDive.hpp"
+#include "CoinMILPBoundTightening.hpp"
+#include "ClpAbortHandler.hpp"
+#include <vector>
 
 //#define DIVE_FIX_BINARY_VARIABLES
 //#define DIVE_DEBUG
@@ -41,6 +44,15 @@ CbcHeuristicDive::CbcHeuristicDive()
   decayFactor_ = 1.0;
   smallObjective_ = 1.0e-10;
   numConsecutiveInfeasible_ = 0;
+  aggressiveMode_ = false;
+  adaptiveFixing_ = false;
+  fixGeneralIntegers_ = false;
+  abortFlag_ = nullptr;
+  guidedObjMode_ = 0;
+  guidedObjWeight_ = 1.0;
+  guidedObjOrigWeight_ = 0.0;
+  guidedObjWarmup_ = 0;
+  guidedObjFrequency_ = 1;
 }
 
 // Constructor from model
@@ -71,6 +83,15 @@ CbcHeuristicDive::CbcHeuristicDive(CbcModel &model)
   decayFactor_ = 1.0;
   smallObjective_ = 1.0e-10;
   numConsecutiveInfeasible_ = 0;
+  aggressiveMode_ = false;
+  adaptiveFixing_ = false;
+  fixGeneralIntegers_ = false;
+  abortFlag_ = nullptr;
+  guidedObjMode_ = 0;
+  guidedObjWeight_ = 1.0;
+  guidedObjOrigWeight_ = 0.0;
+  guidedObjWarmup_ = 0;
+  guidedObjFrequency_ = 1;
 }
 
 // Destructor
@@ -117,6 +138,15 @@ CbcHeuristicDive::CbcHeuristicDive(const CbcHeuristicDive &rhs)
   , maxSimplexIterations_(rhs.maxSimplexIterations_)
   , maxSimplexIterationsAtRoot_(rhs.maxSimplexIterationsAtRoot_)
   , numConsecutiveInfeasible_(rhs.numConsecutiveInfeasible_)
+  , aggressiveMode_(rhs.aggressiveMode_)
+  , adaptiveFixing_(rhs.adaptiveFixing_)
+  , fixGeneralIntegers_(rhs.fixGeneralIntegers_)
+  , abortFlag_(rhs.abortFlag_)
+  , guidedObjMode_(rhs.guidedObjMode_)
+  , guidedObjWeight_(rhs.guidedObjWeight_)
+  , guidedObjOrigWeight_(rhs.guidedObjOrigWeight_)
+  , guidedObjWarmup_(rhs.guidedObjWarmup_)
+  , guidedObjFrequency_(rhs.guidedObjFrequency_)
 {
   downArray_ = NULL;
   upArray_ = NULL;
@@ -147,6 +177,9 @@ CbcHeuristicDive::operator=(const CbcHeuristicDive &rhs)
     maxTime_ = rhs.maxTime_;
     smallObjective_ = rhs.smallObjective_;
     numConsecutiveInfeasible_ = rhs.numConsecutiveInfeasible_;
+    aggressiveMode_ = rhs.aggressiveMode_;
+    adaptiveFixing_ = rhs.adaptiveFixing_;
+    fixGeneralIntegers_ = rhs.fixGeneralIntegers_;
     delete[] downLocks_;
     delete[] upLocks_;
     delete[] priority_;
@@ -289,7 +322,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   int numberSimplexIterations = 0;
   int maxSimplexIterations = (model_->getNodeCount()) ? maxSimplexIterations_
                                                       : maxSimplexIterationsAtRoot_;
-  int maxIterationsInOneSolve = (maxSimplexIterations < 1000000) ? 1000 : 10000;
+  int maxIterationsInOneSolve = (maxSimplexIterations < 100000) ? 1000 : 10000;
   // but can't be exactly coin_int_max
   maxSimplexIterations = std::min(maxSimplexIterations, COIN_INT_MAX >> 3);
 
@@ -297,13 +330,14 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   // limits to match root-node quality so the dive gets every chance to find
   // the first feasible solution.
   int savedMaxIterations = maxIterations_;
-  if ((when_ % 100) == 8 && !model_->bestSolution()) {
+  bool useAggressiveMode = aggressiveMode_ || ((when_ % 100) == 8);
+  if (useAggressiveMode && !model_->bestSolution()) {
     maxSimplexIterations = std::min(maxSimplexIterationsAtRoot_, COIN_INT_MAX >> 3);
     maxIterationsInOneSolve = 10000;
     maxIterations_ = std::max(maxIterations_, 1000);
   }
 
-  bool fixGeneralIntegers = false;
+  bool fixGeneralIntegers = fixGeneralIntegers_;
   //int maxIterations = maxIterations_;
   int saveSwitches = switches_;
   if ((maxIterations_ % 10) != 0) {
@@ -319,10 +353,19 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     = getClpSolver(solver);
   if (CBC_SKIP_CLP_TEST||clpSolver) {
     ClpSimplex *clpSimplex = clpSolver->getModelPtr();
+    // Attach abort handler for parallel cancellation
+    if (abortFlag_) {
+      ClpAbortHandler abortHandler(abortFlag_);
+      clpSimplex->passInEventHandler(&abortHandler);
+    }
     int oneSolveIts = clpSimplex->maximumIterations();
     oneSolveIts = std::min(1000 + 2 * (clpSimplex->numberRows() + clpSimplex->numberColumns()), oneSolveIts);
-    if (maxSimplexIterations > 1000000)
-      maxIterationsInOneSolve = oneSolveIts;
+    if (maxSimplexIterations >= 100000) {
+      // User set a very high simplex budget — don't cap individual solves,
+      // rely only on the time limit to stop the dive.
+      maxIterationsInOneSolve = COIN_INT_MAX >> 3;
+      oneSolveIts = COIN_INT_MAX >> 3;
+    }
     clpSimplex->setMaximumIterations(oneSolveIts);
     // Pass the remaining CBC time to the LP solver so that a single LP
     // re-solve cannot run past the global deadline.
@@ -446,8 +489,52 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   int numberReducedCostFixed = 0;
   int totalBoundFixed = 0;    // cumulative vars fixed at bounds across all iterations
   int totalFractionalFixed = 0; // cumulative fractional vars rounded
+
+  // --- Guided objective setup ---
+  std::vector<double> savedObjective;
+  if (guidedObjMode_ > 0) {
+    const double *obj = solver->getObjCoefficients();
+    savedObjective.assign(obj, obj + numberColumns);
+
+    // Warmup: pure guidance LP resolves before fixing
+    for (int w = 0; w < guidedObjWarmup_ && numberFractionalVariables > 0; w++) {
+      const double *sol = solver->getColSolution();
+      for (int i = 0; i < numberIntegers; i++) {
+        int col = integerVariable[i];
+        if (solver->getColUpper()[col] - solver->getColLower()[col] < 1.0e-8 || !isHeuristicInteger(solver, col))
+          continue;
+        double val = sol[col];
+        double frac = val - floor(val);
+        if (frac < 1.0e-8 || frac > 1.0 - 1.0e-8)
+          continue;
+        double guidedCoef;
+        if (solver->isBinary(col)) {
+          guidedCoef = (frac > 0.5) ? -guidedObjWeight_ : guidedObjWeight_;
+        } else if (guidedObjMode_ >= 2) {
+          double nearest = floor(val + 0.5);
+          guidedCoef = (val > nearest) ? -guidedObjWeight_ : guidedObjWeight_;
+        } else {
+          continue;
+        }
+        double blended = (1.0 - guidedObjOrigWeight_) * guidedCoef
+                       + guidedObjOrigWeight_ * savedObjective[col];
+        solver->setObjCoeff(col, blended);
+      }
+      solver->resolve();
+      numberSimplexIterations += solver->getIterationCount();
+      if (!solver->isProvenOptimal())
+        break;
+    }
+  }
+
   while (numberFractionalVariables) {
     iteration++;
+
+    // Check external abort flag (parallel cancellation)
+    if (abortFlag_ && abortFlag_->load(std::memory_order_relaxed)) {
+      reasonToStop = 6;
+      break;
+    }
 
     // initialize any data
     initializeData();
@@ -835,7 +922,73 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     }
     int originalBestRound = bestRound;
     int saveModelOptions = model_->specialOptions();
+
+    // --- Bound propagation: detect infeasibility cheaply and get free fixings ---
+    {
+      const CoinPackedMatrix *matByRow = solver->getMatrixByRow();
+      if (matByRow) {
+        const int nCols = solver->getNumCols();
+        const char *colType = solver->getColType(false);
+        const char *rowSense = solver->getRowSense();
+        const double *rowRHS = solver->getRightHandSide();
+        const double *rowRange = solver->getRowRange();
+        double pTol = primalTolerance;
+        double inf = solver->getInfinity();
+
+        CoinMILPBoundTightening bt(nCols, colType,
+          lower, upper, matByRow, rowSense, rowRHS, rowRange,
+          pTol, inf);
+
+        if (bt.isInfeasible()) {
+          // Infeasibility detected without LP — skip the expensive resolve
+          if (!solver->isProvenOptimal())
+            solver->setColSolution(newSolution); // keep state consistent
+          // Fall through to the infeasibility handling below
+          reasonToStop = 1;
+          break;
+        }
+
+        // Apply free fixings from propagation
+        const auto &bounds = bt.updatedBounds();
+        for (const auto &p : bounds) {
+          int col = static_cast<int>(p.first);
+          solver->setColLower(col, p.second.first);
+          solver->setColUpper(col, p.second.second);
+          totalBoundFixed++;
+        }
+      }
+    }
+
     while (1) {
+
+      // Apply guided objective modification
+      if (guidedObjMode_ > 0 && (iteration % guidedObjFrequency_ == 0)) {
+        const double *sol = solver->getColSolution();
+        for (int i = 0; i < numberIntegers; i++) {
+          int col = integerVariable[i];
+          if (solver->getColUpper()[col] - solver->getColLower()[col] < 1.0e-8 || !isHeuristicInteger(solver, col))
+            continue;
+          double val = sol[col];
+          double frac = val - floor(val);
+          if (frac < 1.0e-8 || frac > 1.0 - 1.0e-8) {
+            // Already integer — restore original obj
+            solver->setObjCoeff(col, savedObjective[col]);
+            continue;
+          }
+          double guidedCoef;
+          if (solver->isBinary(col)) {
+            guidedCoef = (frac > 0.5) ? -guidedObjWeight_ : guidedObjWeight_;
+          } else if (guidedObjMode_ >= 2) {
+            double nearest = floor(val + 0.5);
+            guidedCoef = (val > nearest) ? -guidedObjWeight_ : guidedObjWeight_;
+          } else {
+            continue;
+          }
+          double blended = (1.0 - guidedObjOrigWeight_) * guidedCoef
+                         + guidedObjOrigWeight_ * savedObjective[col];
+          solver->setObjCoeff(col, blended);
+        }
+      }
 
       model_->setSpecialOptions(saveModelOptions | 2048);
       solver->resolve();
@@ -1158,6 +1311,15 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
       totalBoundFixed, numberSimplexIterations, status);
   }
 
+  // Machine-parseable dive statistics (always printed at log level >= 1)
+  if (model_->messageHandler()->logLevel() >= 1) {
+    double elapsed = (model_->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime()) - time1;
+    printf("DIVE_STATS %s %d %d %d %d %d %d %.4f\n",
+      heuristicName_.c_str(), returnCode > 0 ? 1 : 0, reasonToStop,
+      iteration, totalFractionalFixed, totalBoundFixed,
+      numberSimplexIterations, elapsed);
+  }
+
 #if DIVE_PRINT
   std::cout << heuristicName_
             << " nRoundInfeasible = " << nRoundInfeasible
@@ -1184,7 +1346,8 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   // diveopt 8 adaptive percentageToFix_: if fixing too many variables causes
   // infeasibility, back off. Each heuristic instance has its own counter so
   // this is safe in multi-threaded runs (each thread holds a cloned copy).
-  if ((when_ % 100) == 8 && !model_->bestSolution()) {
+  bool useAdaptiveFixing = adaptiveFixing_ || ((when_ % 100) == 8);
+  if (useAdaptiveFixing && !model_->bestSolution()) {
     if (returnCode > 0) {
       // Found a solution — reset the infeasibility streak
       numConsecutiveInfeasible_ = 0;
@@ -1505,7 +1668,7 @@ int CbcHeuristicDive::reducedCostFix(OsiSolverInterface *solver)
 {
   //return 0; // temp
 #ifndef JJF_ONE
-  if (!model_->solverCharacteristics()->reducedCostsAccurate())
+  if (model_->solverCharacteristics() && !model_->solverCharacteristics()->reducedCostsAccurate())
     return 0; //NLP
 #endif
   double cutoff = model_->getCutoff();

@@ -63,6 +63,7 @@ extern int gomory_try;
 #include "CbcFullNodeInfo.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicDive.hpp"
+#include "CbcRootHeuristicSchedule.hpp"
 #include "CbcHeuristicFPump.hpp"
 #include "CbcHeuristicRINS.hpp"
 #include "CbcMessage.hpp"
@@ -17344,6 +17345,18 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
         */
     // Modify based on size etc
     adjustHeuristics();
+
+    // Two-phase parallel root heuristic schedule
+    if (useRootHeuristicSchedule_) {
+      CbcRootHeuristicSchedule schedule(*this);
+      schedule.addDefaultDivingConfigs();
+      schedule.setMaxSolutionsPhase1(1);
+      schedule.setNumThreads(numberThreads_);
+      schedule.run();
+      delete[] newSolution;
+      return;
+    }
+
     // See if already within allowable gap
     bool exitNow = false;
     for (i = 0; i < numberHeuristics_; i++) {

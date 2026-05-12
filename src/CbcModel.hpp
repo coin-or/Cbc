@@ -2018,6 +2018,9 @@ public:
   /// Get root-node heuristics output handler
   inline CbcRootHeurOutput *getRootHeurOutput() const { return rootHeurOutput_; }
 
+  /// Enable/disable two-phase parallel root heuristic schedule
+  inline void setUseRootHeuristicSchedule(bool v) { useRootHeuristicSchedule_ = v; }
+  inline bool useRootHeuristicSchedule() const { return useRootHeuristicSchedule_; }
   /** Pass in branching priorities.
 
         If ifClique then priorities are on cliques otherwise priorities are
@@ -3314,6 +3317,9 @@ private:
   CbcHeuristic *lastHeuristic_;
   /// Output handler for root-node heuristics (not owned; nullptr after doHeuristicsAtRoot)
   CbcRootHeurOutput *rootHeurOutput_ = nullptr;
+
+  /// When true, use CbcRootHeuristicSchedule (two-phase parallel) at root
+  bool useRootHeuristicSchedule_ = false;
   /// Depth for fast nodes
   int fastNodeDepth_;
   /*! Pointer to the event handler */

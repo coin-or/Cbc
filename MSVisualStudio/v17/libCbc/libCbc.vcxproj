@@ -237,6 +237,9 @@
     <ClCompile Include="..\..\..\src\CbcHeuristicDINS.cpp" />
     <ClCompile Include="..\..\..\src\CbcHeuristicDive.cpp" />
     <ClCompile Include="..\..\..\src\CbcHeuristicDiveCoefficient.cpp" />
+    <ClCompile Include="..\..\..\src\CbcHeuristicDiveConfigurable.cpp" />
+    <ClCompile Include="..\..\..\src\CbcDiveScheduler.cpp" />
+    <ClCompile Include="..\..\..\src\CbcRootHeuristicSchedule.cpp" />
     <ClCompile Include="..\..\..\src\CbcHeuristicDiveFractional.cpp" />
     <ClCompile Include="..\..\..\src\CbcHeuristicDiveGuided.cpp" />
     <ClCompile Include="..\..\..\src\CbcHeuristicDiveLineSearch.cpp" />

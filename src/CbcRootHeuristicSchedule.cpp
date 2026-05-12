@@ -39,8 +39,8 @@ void CbcRootHeuristicSchedule::addDefaultDivingConfigs()
     h->setWeightFractionality(1.0);
     h->setTargetFractionality(0.5);
     h->setMaxIterations(1000);
-    h->setMaxSimplexIterations(50000);
-    h->setMaxSimplexIterationsAtRoot(100000);
+    h->setMaxSimplexIterations(COIN_INT_MAX); // bypass adjustHeuristics override
+    h->setMaxSimplexIterationsAtRoot(COIN_INT_MAX);
     h->setSeed(seed);
     h->setGuidedObjMode(guideMode);
     h->setGuidedObjWeight(1.0);
@@ -277,7 +277,7 @@ int CbcRootHeuristicSchedule::runParallel(
         status = "★ solution";
         statusWidth = 16; // 14 display + 2 extra bytes for UTF-8 ★
       } else {
-        status = "no solution";
+        status = "—";
         statusWidth = 14;
       }
       if (results[i].status > 0)

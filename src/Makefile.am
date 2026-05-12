@@ -54,6 +54,9 @@ libCbc_la_SOURCES = \
 	CbcHeuristicDINS.cpp CbcHeuristicDINS.hpp \
 	CbcHeuristicDive.cpp CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.cpp CbcHeuristicDiveCoefficient.hpp \
+	CbcHeuristicDiveConfigurable.cpp CbcHeuristicDiveConfigurable.hpp \
+	CbcDiveScheduler.cpp CbcDiveScheduler.hpp \
+	CbcRootHeuristicSchedule.cpp CbcRootHeuristicSchedule.hpp \
 	CbcHeuristicDiveFractional.cpp CbcHeuristicDiveFractional.hpp \
 	CbcHeuristicDiveGuided.cpp CbcHeuristicDiveGuided.hpp \
 	CbcHeuristicDiveLineSearch.cpp CbcHeuristicDiveLineSearch.hpp \
@@ -189,6 +192,9 @@ includecoin_HEADERS = \
 	CbcHeuristicDINS.hpp \
 	CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.hpp \
+	CbcHeuristicDiveConfigurable.hpp \
+	CbcDiveScheduler.hpp \
+	CbcRootHeuristicSchedule.hpp \
 	CbcHeuristicDiveFractional.hpp \
 	CbcHeuristicDiveGuided.hpp \
 	CbcHeuristicDiveLineSearch.hpp \

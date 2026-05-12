@@ -28,7 +28,7 @@ public:
   ~CbcRootHeuristicSchedule();
 
   /// Run the two-phase schedule. Returns number of solutions found.
-  int run();
+  int run(bool afterCuts = false);
 
   /// Add the default v5 diving schedule to the model
   void addDefaultDivingConfigs();

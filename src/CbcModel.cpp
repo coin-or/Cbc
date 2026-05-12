@@ -10478,7 +10478,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         CbcRootHeuristicSchedule schedule(*this);
         schedule.setMaxSolutionsPhase1(1);
         schedule.setNumThreads(numberThreads_);
-        int nFound = schedule.run();
+        int nFound = schedule.run(true);
         if (nFound > 0)
           found = 0;
       } else {

@@ -272,7 +272,7 @@ int CbcRootHeuristicSchedule::runParallel(
       if (!headerPrinted) {
         printf("\n  %-24s %-28s %14s %8s\n",
           "Heuristic", "Status", "Objective", "Time(s)");
-        printf("  ────────────────────────────── ────────────────────── ────────────── ────────\n");
+        printf("  ──────────────────────── ──────────────────────────── ────────────── ────────\n");
         headerPrinted = true;
       }
       char statusBuf[64];

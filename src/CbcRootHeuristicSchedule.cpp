@@ -286,14 +286,16 @@ int CbcRootHeuristicSchedule::runParallel(
         if (dive && dive->lastDiveIterations() > 0) {
           int reason = dive->lastReasonToStop();
           const char *reasonStr = "";
-          if (reason == 6) reasonStr = " (aborted)";
-          else if (reason / 100 > 0) reasonStr = " (propagation)";
-          else if (reason % 10 == 1) reasonStr = " (infeasible)";
-          else if (reason % 10 == 2) reasonStr = " (simplex lim)";
-          else if (reason % 10 == 4) reasonStr = " (iter limit)";
+          if (reason == 6) reasonStr = " (abort)";
+          else if (reason / 100 > 0) reasonStr = " (prop inf)";
+          else if (reason % 10 == 1) reasonStr = " (inf)";
+          else if (reason % 10 == 2) reasonStr = " (simp lim)";
+          else if (reason % 10 == 4) reasonStr = " (iter lim)";
           snprintf(statusBuf, sizeof(statusBuf), "%d dives, %dK lp its%s",
             dive->lastDiveIterations(), dive->lastSimplexIterations() / 1000,
             reasonStr);
+        } else if (results[i].time >= 1.0) {
+          snprintf(statusBuf, sizeof(statusBuf), "no solution");
         } else {
           snprintf(statusBuf, sizeof(statusBuf), "no solution");
         }

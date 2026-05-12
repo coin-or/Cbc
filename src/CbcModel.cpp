@@ -10473,6 +10473,15 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
     double heuristicValue = getCutoff();
     int found = -1; // no solution found
     if (feasible) {
+      if (useRootHeuristicSchedule_ && !node) {
+        // Use parallel schedule after cuts at root
+        CbcRootHeuristicSchedule schedule(*this);
+        schedule.setMaxSolutionsPhase1(1);
+        schedule.setNumThreads(numberThreads_);
+        int nFound = schedule.run();
+        if (nFound > 0)
+          found = 0;
+      } else {
       int whereFrom = node ? 3 : 2;
       for (int i = 0; i < numberHeuristics_; i++) {
         // skip if can't run here
@@ -10497,6 +10506,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           heuristicValue = saveValue;
         }
       }
+      } // end else (sequential path)
     }
     currentPassNumber_ = savePass;
     if (found >= 0) {

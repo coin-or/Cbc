@@ -289,8 +289,8 @@ int CbcRootHeuristicSchedule::runParallel(
           if (reason == 6) reasonStr = " (abort)";
           else if (reason / 100 > 0) reasonStr = " (prop inf)";
           else if (reason % 10 == 1) reasonStr = " (inf)";
-          else if (reason % 10 == 2) reasonStr = " (simp lim)";
-          else if (reason % 10 == 4) reasonStr = " (iter lim)";
+          else if (reason % 10 == 2) reasonStr = " (sx lim)";
+          else if (reason % 10 == 4) reasonStr = " (it lim)";
           snprintf(statusBuf, sizeof(statusBuf), "%d dives, %dK lp its%s",
             dive->lastDiveIterations(), dive->lastSimplexIterations() / 1000,
             reasonStr);

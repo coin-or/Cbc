@@ -607,6 +607,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::PRINTOPTIONS]->setDefault(0);
      parameters_[CbcParam::PROCESSTUNE]->setDefault(0);
      parameters_[CbcParam::RACINGLP]->setDefault(0);
+     parameters_[CbcParam::ROOTHEURSCHED]->setDefault(0);
      parameters_[CbcParam::RANDOMSEED]->setDefault(42);
      parameters_[CbcParam::STRONGSTRATEGY]->setDefault(0);
      parameters_[CbcParam::TESTOSI]->setDefault(-1);
@@ -2191,6 +2192,16 @@ void CbcParameters::addCbcSolverIntParams() {
       "wins and the others are aborted. This can significantly reduce root LP "
       "time for problems where the default method is not the fastest. A value "
       "of 3 races all three configurations. Set to 0 to disable.",
+      CoinParam::displayPriorityHigh);
+
+  parameters_[CbcParam::ROOTHEURSCHED]->setup(
+      "rootHeur!Schedule",
+      "Enable two-phase parallel root heuristic schedule", 0, 1,
+      "When set to 1, replaces the default root heuristic execution with a "
+      "two-phase parallel schedule. Phase 1 runs optimized diving configurations "
+      "in parallel (stops on first feasible solution). Phase 2 runs improvement "
+      "heuristics (RINS, etc.) on the found solution. Use with -threads to set "
+      "the number of parallel threads.",
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::RANDOMSEED]->setup(

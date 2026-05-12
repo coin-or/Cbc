@@ -252,6 +252,7 @@ public:
       PRINTOPTIONS,
       PROCESSTUNE,
       RACINGLP,
+      ROOTHEURSCHED,
       RANDOMSEED,
       STRONGSTRATEGY,
       TESTOSI,

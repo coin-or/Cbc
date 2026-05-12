@@ -10895,6 +10895,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             }
 #endif
 #endif
+            // Enable root heuristic schedule (works with or without threads)
+            if (parameters[CbcParam::ROOTHEURSCHED]->intVal() > 0)
+              babModel_->setUseRootHeuristicSchedule(true);
             int returnCode = 0;
             if (callBack != NULL)
               returnCode = callBack(babModel_, 3);

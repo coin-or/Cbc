@@ -17354,7 +17354,8 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
        heuristic.
         */
     // Modify based on size etc
-    adjustHeuristics();
+    if (!useRootHeuristicSchedule_)
+      adjustHeuristics();
 
     // Two-phase parallel root heuristic schedule
     if (useRootHeuristicSchedule_) {

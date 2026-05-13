@@ -30,6 +30,8 @@ struct CbcPartialSolution {
   CbcPartialSolution() : score(0) {}
   CbcPartialSolution(CbcPartialSolution &&) = default;
   CbcPartialSolution &operator=(CbcPartialSolution &&) = default;
+  CbcPartialSolution(const CbcPartialSolution &) = delete;
+  CbcPartialSolution &operator=(const CbcPartialSolution &) = delete;
 
   int depth() const { return static_cast<int>(fixings.size()); }
 };
@@ -47,6 +49,9 @@ class CBCLIB_EXPORT CbcPartialSolutionPool {
 public:
   /** Construct with maximum pool capacity. */
   explicit CbcPartialSolutionPool(int maxSize = 32);
+
+  CbcPartialSolutionPool(const CbcPartialSolutionPool &) = delete;
+  CbcPartialSolutionPool &operator=(const CbcPartialSolutionPool &) = delete;
 
   /** Try to add a partial solution. Returns true if accepted.
    *  Rejected if pool is full and score <= worst entry's score. */

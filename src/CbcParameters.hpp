@@ -94,6 +94,9 @@ public:
   /*! \brief Destructor */
   ~CbcParameters();
 
+  /*! \brief Assignment operator (deep-copies all owned resources) */
+  CbcParameters &operator=(const CbcParameters &rhs);
+
   //@}
 
   /*! \name Enumeration types used for Cbc keyword parameters */

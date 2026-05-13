@@ -273,6 +273,234 @@ CbcParameters::~CbcParameters() {
 //###########################################################################
 //###########################################################################
 
+CbcParameters &CbcParameters::operator=(const CbcParameters &rhs)
+{
+  if (this == &rhs)
+    return *this;
+
+  // Deep-copy the Cbc parameter vector.
+  for (int i = 0; i < (int)parameters_.size(); i++)
+    delete parameters_[i];
+  parameters_.resize(rhs.parameters_.size());
+  for (int i = 0; i < (int)rhs.parameters_.size(); i++)
+    parameters_[i] = rhs.parameters_[i] ? rhs.parameters_[i]->clone() : nullptr;
+
+  // Fix up back-pointers stored inside each CbcParam.
+  // addCbcParams() sets setParameters(this) and setModel(model_) for each
+  // parameter that cares; replicate that here after the clone.
+  for (int i = 0; i < (int)parameters_.size(); i++) {
+    if (parameters_[i]) {
+      CbcParam *p = dynamic_cast<CbcParam *>(parameters_[i]);
+      if (p) {
+        p->setParameters(this);
+        if (model_)
+          p->setModel(model_);
+      }
+    }
+  }
+
+  // Deep-copy ClpParameters (its own operator= handles the param vector).
+  clpParameters_ = rhs.clpParameters_;
+
+  // Message handler.
+  if (msgHandler_ && ourMsgHandler_)
+    delete msgHandler_;
+  if (rhs.msgHandler_ && rhs.ourMsgHandler_) {
+    msgHandler_ = rhs.msgHandler_->clone();
+    ourMsgHandler_ = true;
+  } else {
+    msgHandler_ = rhs.msgHandler_;
+    ourMsgHandler_ = false;
+  }
+
+  // Messages object.
+  if (msgs_)
+    delete msgs_;
+  msgs_ = rhs.msgs_ ? new CoinMessages(*rhs.msgs_) : nullptr;
+
+  // answerSolver.
+  if (bab_.answerSolver_)
+    delete bab_.answerSolver_;
+  bab_.answerSolver_ = rhs.bab_.answerSolver_ ? rhs.bab_.answerSolver_->clone() : nullptr;
+
+  // Proto objects for cut generators owned by this class.
+#define CLONE_PROTO(field) \
+  do { \
+    if (field.proto_) delete field.proto_; \
+    field.proto_ = rhs.field.proto_ ? static_cast<decltype(field.proto_)>(rhs.field.proto_->clone()) : nullptr; \
+  } while (0)
+
+  CLONE_PROTO(probing_);
+  CLONE_PROTO(clique_);
+  CLONE_PROTO(flow_);
+  CLONE_PROTO(gomory_);
+  CLONE_PROTO(knapsack_);
+  CLONE_PROTO(mir_);
+  CLONE_PROTO(redSplit_);
+  CLONE_PROTO(twomir_);
+
+  // Proto objects for heuristics owned by this class.
+  CLONE_PROTO(fpump_);
+  CLONE_PROTO(combine_);
+  CLONE_PROTO(greedyCover_);
+  CLONE_PROTO(greedyEquality_);
+  CLONE_PROTO(rounding_);
+
+#undef CLONE_PROTO
+
+  // Scalar / struct members (no ownership).
+  dfltDirectory_ = rhs.dfltDirectory_;
+  lastMpsIn_ = rhs.lastMpsIn_;
+  allowImportErrors_ = rhs.allowImportErrors_;
+  lastSolnOut_ = rhs.lastSolnOut_;
+  printMode_ = rhs.printMode_;
+  printOpt_ = rhs.printOpt_;
+  printMask_ = rhs.printMask_;
+  outputPrecision_ = rhs.outputPrecision_;
+  noPrinting_ = rhs.noPrinting_;
+  printWelcome_ = rhs.printWelcome_;
+  useSignalHandler_ = rhs.useSignalHandler_;
+  verbose_ = rhs.verbose_;
+  paramsProcessed_ = rhs.paramsProcessed_;
+  setByUser_ = rhs.setByUser_;
+  defaultSettings_ = rhs.defaultSettings_;
+  debugCreate_ = rhs.debugCreate_;
+  debugFile_ = rhs.debugFile_;
+  debugSol_ = rhs.debugSol_;
+  totalTime_ = rhs.totalTime_;
+  // model_ and dfltSolver_ are not owned here — just copy pointers.
+  model_ = rhs.model_;
+  dfltSolver_ = rhs.dfltSolver_;
+  goodModel_ = rhs.goodModel_;
+  bab_.majorStatus_ = rhs.bab_.majorStatus_;
+  bab_.minorStatus_ = rhs.bab_.minorStatus_;
+  bab_.where_ = rhs.bab_.where_;
+  bab_.haveAnswer_ = rhs.bab_.haveAnswer_;
+  djFix_ = rhs.djFix_;
+  artVar_ = rhs.artVar_;
+  priorityMode_ = rhs.priorityMode_;
+  chooseStrong_ = rhs.chooseStrong_;
+  preProcess_ = rhs.preProcess_;
+  cutDepth_ = rhs.cutDepth_;
+  cutLength_ = rhs.cutLength_;
+  cutPassInTree_ = rhs.cutPassInTree_;
+  clique_.starCliqueReport_ = rhs.clique_.starCliqueReport_;
+  clique_.rowCliqueReport_ = rhs.clique_.rowCliqueReport_;
+  clique_.minViolation_ = rhs.clique_.minViolation_;
+  clique_.mode_ = rhs.clique_.mode_;
+  gmi_ = rhs.gmi_;
+  laGomory_ = rhs.laGomory_;
+  landP_ = rhs.landP_;
+  laTwomir_ = rhs.laTwomir_;
+  oddWheel_ = rhs.oddWheel_;
+  residCap_ = rhs.residCap_;
+  redSplit2_ = rhs.redSplit2_;
+  zeroHalf_ = rhs.zeroHalf_;
+  twomir_.maxElements_ = rhs.twomir_.maxElements_;
+  probing_.usingObjective_ = rhs.probing_.usingObjective_;
+  probing_.maxPass_ = rhs.probing_.maxPass_;
+  probing_.maxPassRoot_ = rhs.probing_.maxPassRoot_;
+  probing_.maxProbe_ = rhs.probing_.maxProbe_;
+  probing_.maxProbeRoot_ = rhs.probing_.maxProbeRoot_;
+  probing_.maxLook_ = rhs.probing_.maxLook_;
+  probing_.maxLookRoot_ = rhs.probing_.maxLookRoot_;
+  probing_.maxElements_ = rhs.probing_.maxElements_;
+  probing_.rowCuts_ = rhs.probing_.rowCuts_;
+  probing_.mode_ = rhs.probing_.mode_;
+  doHeuristicMode_ = rhs.doHeuristicMode_;
+  combine_.trySwap_ = rhs.combine_.trySwap_;
+  combine_.mode_ = rhs.combine_.mode_;
+  crossover_ = rhs.crossover_;
+  dins_ = rhs.dins_;
+  divingc_ = rhs.divingc_;
+  divingf_ = rhs.divingf_;
+  divingg_ = rhs.divingg_;
+  divingl_ = rhs.divingl_;
+  divingp_ = rhs.divingp_;
+  divingv_ = rhs.divingv_;
+  dw_ = rhs.dw_;
+  fpump_.iters_ = rhs.fpump_.iters_;
+  fpump_.initialTune_ = rhs.fpump_.initialTune_;
+  fpump_.tune_ = rhs.fpump_.tune_;
+  fpump_.tune2_ = rhs.fpump_.tune2_;
+  fpump_.cutoff_ = rhs.fpump_.cutoff_;
+  fpump_.increment_ = rhs.fpump_.increment_;
+  fpump_.mode_ = rhs.fpump_.mode_;
+  greedyCover_.mode_ = rhs.greedyCover_.mode_;
+  greedyEquality_.mode_ = rhs.greedyEquality_.mode_;
+  naive_ = rhs.naive_;
+  pivotAndFix_ = rhs.pivotAndFix_;
+  proximity_ = rhs.proximity_;
+  randRound_ = rhs.randRound_;
+  rens_ = rhs.rens_;
+  rins_ = rhs.rins_;
+  rounding_.mode_ = rhs.rounding_.mode_;
+  vnd_ = rhs.vnd_;
+  randomDivingMode_ = rhs.randomDivingMode_;
+  localTree_ = rhs.localTree_;
+  extraDbl3_ = rhs.extraDbl3_;
+  extraDbl4_ = rhs.extraDbl4_;
+  extraDbl5_ = rhs.extraDbl5_;
+  smallBaB_ = rhs.smallBaB_;
+  tightenFactor_ = rhs.tightenFactor_;
+  mixedRoundStrategy_ = rhs.mixedRoundStrategy_;
+  bkPivotStrategy_ = rhs.bkPivotStrategy_;
+  bkMaxCalls_ = rhs.bkMaxCalls_;
+  bkClqExtMethod_ = rhs.bkClqExtMethod_;
+  cppMode_ = rhs.cppMode_;
+  depthMiniBaB_ = rhs.depthMiniBaB_;
+  diveOpt_ = rhs.diveOpt_;
+  diveOptSolves_ = rhs.diveOptSolves_;
+  experiment_ = rhs.experiment_;
+  extraInt1_ = rhs.extraInt1_;
+  extraInt2_ = rhs.extraInt2_;
+  extraInt3_ = rhs.extraInt3_;
+  extraInt4_ = rhs.extraInt4_;
+  heurOptions_ = rhs.heurOptions_;
+  maxSavedSols_ = rhs.maxSavedSols_;
+  maxSlowCuts_ = rhs.maxSlowCuts_;
+  moreMoreOptions_ = rhs.moreMoreOptions_;
+  multipleRoots_ = rhs.multipleRoots_;
+  oddWextMethod_ = rhs.oddWextMethod_;
+  options_ = rhs.options_;
+  outputFormat_ = rhs.outputFormat_;
+  processTune_ = rhs.processTune_;
+  racingLP_ = rhs.racingLP_;
+  randomSeed_ = rhs.randomSeed_;
+  strongStrategy_ = rhs.strongStrategy_;
+  testOsi_ = rhs.testOsi_;
+  threads_ = rhs.threads_;
+  userCbc_ = rhs.userCbc_;
+  vubTry_ = rhs.vubTry_;
+  commandDisplayMode_ = rhs.commandDisplayMode_;
+  clqStrMode_ = rhs.clqStrMode_;
+  branchPriority_ = rhs.branchPriority_;
+  checkTimeMode_ = rhs.checkTimeMode_;
+  cutoffMode_ = rhs.cutoffMode_;
+  intPrintMode_ = rhs.intPrintMode_;
+  nodeStrategy_ = rhs.nodeStrategy_;
+  orbitalStrategy_ = rhs.orbitalStrategy_;
+  sosStrategy_ = rhs.sosStrategy_;
+  strategyMode_ = rhs.strategyMode_;
+  clockType_ = rhs.clockType_;
+  cgraphMode_ = rhs.cgraphMode_;
+  lpMethod_ = rhs.lpMethod_;
+  CPXMode_ = rhs.CPXMode_;
+  importErrorsMode_ = rhs.importErrorsMode_;
+  messagePrefixMode_ = rhs.messagePrefixMode_;
+  preProcNamesMode_ = rhs.preProcNamesMode_;
+  SOSMode_ = rhs.SOSMode_;
+  useSolutionMode_ = rhs.useSolutionMode_;
+  cur_lang_ = rhs.cur_lang_;
+  logLvl_ = rhs.logLvl_;
+  lpLogLvl_ = rhs.lpLogLvl_;
+
+  return *this;
+}
+
+//###########################################################################
+//###########################################################################
+
 int CbcParameters::matches(std::string field, int &numberMatches){
    int firstMatch = -1;
    for (int iParam = 0; iParam < (int)parameters_.size(); iParam++) {

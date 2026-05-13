@@ -14803,13 +14803,10 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
   int callBack(CbcModel *currentSolver, int whereFrom),
   ampl_info *info)
 {
-  // Heap-allocate and intentionally leak. CbcMain0 modifies the caller's
+  // Heap-allocate and destroy after run. CbcMain0 modifies the caller's
   // model (signal handlers, parameter pointers to solver internals).
-  // Copying that model into CbcSolver and then destroying it corrupts
-  // shared state, causing the caller's model destructor to crash.
-  // The direct CbcSolver API (construct → initialize → run → destroy)
-  // works cleanly; this leak only affects the backward-compat wrapper
-  // which runs in the CLI path where the process exits immediately after.
+  // CbcParameters::operator= deep-copies all owned resources, so the inner
+  // and outer parameters are fully independent and deletion is safe.
   CbcSolver *solver = new CbcSolver(model);
   solver->parameters() = parameters;
   int rc = solver->run(inputQueue, callBack, info);
@@ -14845,8 +14842,7 @@ int CbcMain1(std::deque<std::string> inputQueue, CbcModel &model,
     }
   }
   parameters = solver->parameters();
-  // solver intentionally not deleted (see comment above)
-  // I (JJHF) strongly disapprove of intentional leaks
+  delete solver;
   return rc;
 }
 

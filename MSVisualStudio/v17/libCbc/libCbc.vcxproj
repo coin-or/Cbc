@@ -267,6 +267,7 @@
     <ClCompile Include="..\..\..\src\CbcParameters.cpp" />
     <ClCompile Include="..\..\..\src\CbcParamUtils.cpp" />
     <ClCompile Include="..\..\..\src\CbcPartialNodeInfo.cpp" />
+    <ClCompile Include="..\..\..\src\CbcPartialSolutionPool.cpp" />
     <ClCompile Include="..\..\..\src\CbcSimpleInteger.cpp" />
     <ClCompile Include="..\..\..\src\CbcSimpleIntegerDynamicPseudoCost.cpp" />
     <ClCompile Include="..\..\..\src\CbcSimpleIntegerPseudoCost.cpp" />

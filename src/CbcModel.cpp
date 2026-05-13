@@ -10486,13 +10486,16 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
           const OsiCuts &cuts = schedule.conflictCuts();
           int nTotal = cuts.sizeRowCuts();
           int maxCuts = schedule.conflictMaxCuts();
+          int nAdded = 0;
+          int totalNz = 0;
+          double objBefore = solver_->getObjValue();
           if (nTotal <= maxCuts) {
-            for (int i = 0; i < nTotal; i++)
+            for (int i = 0; i < nTotal; i++) {
               solver_->applyRowCuts(1, &cuts.rowCut(i));
-            if (messageHandler()->logLevel() >= 1)
-              printf("  Conflict cuts from diving: %d added to LP\n", nTotal);
+              totalNz += cuts.rowCut(i).row().getNumElements();
+            }
+            nAdded = nTotal;
           } else {
-            // Sort by violation/size (largest first), take top maxCuts
             std::vector<std::pair<double, int>> scored(nTotal);
             const double *sol = solver_->getColSolution();
             for (int i = 0; i < nTotal; i++) {
@@ -10500,16 +10503,20 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
               double lhs = 0.0;
               for (int k = 0; k < c.row().getNumElements(); k++)
                 lhs += c.row().getElements()[k] * sol[c.row().getIndices()[k]];
-              double viol = lhs - c.ub();
-              scored[i] = {viol / c.row().getNumElements(), i};
+              scored[i] = {(lhs - c.ub()) / c.row().getNumElements(), i};
             }
             std::sort(scored.begin(), scored.end(), [](auto &a, auto &b) { return a.first > b.first; });
-            int nAdded = std::min(nTotal, maxCuts);
-            for (int i = 0; i < nAdded; i++)
+            nAdded = std::min(nTotal, maxCuts);
+            for (int i = 0; i < nAdded; i++) {
               solver_->applyRowCuts(1, &cuts.rowCut(scored[i].second));
-            if (messageHandler()->logLevel() >= 1)
-              printf("  Conflict cuts from diving: %d added to LP (of %d found)\n", nAdded, nTotal);
+              totalNz += cuts.rowCut(scored[i].second).row().getNumElements();
+            }
           }
+          solver_->resolve();
+          double objAfter = solver_->getObjValue();
+          if (messageHandler()->logLevel() >= 1)
+            printf("  Dive conflict cuts: %d added (avg %.1f nz), bound %.6g → %.6g\n",
+              nAdded, (double)totalNz / nAdded, objBefore, objAfter);
         }
       } else {
       int whereFrom = node ? 3 : 2;
@@ -17399,11 +17406,15 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
         const OsiCuts &cuts = schedule.conflictCuts();
         int nTotal = cuts.sizeRowCuts();
         int maxCuts = schedule.conflictMaxCuts();
+        int nAdded = 0;
+        int totalNz = 0;
+        double objBefore = solver_->getObjValue();
         if (nTotal <= maxCuts) {
-          for (int i = 0; i < nTotal; i++)
+          for (int i = 0; i < nTotal; i++) {
             solver_->applyRowCuts(1, &cuts.rowCut(i));
-          if (messageHandler()->logLevel() >= 1)
-            printf("  Conflict cuts from diving: %d added to LP\n", nTotal);
+            totalNz += cuts.rowCut(i).row().getNumElements();
+          }
+          nAdded = nTotal;
         } else {
           std::vector<std::pair<double, int>> scored(nTotal);
           const double *sol = solver_->getColSolution();
@@ -17412,16 +17423,20 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
             double lhs = 0.0;
             for (int k = 0; k < c.row().getNumElements(); k++)
               lhs += c.row().getElements()[k] * sol[c.row().getIndices()[k]];
-            double viol = lhs - c.ub();
-            scored[i] = {viol / c.row().getNumElements(), i};
+            scored[i] = {(lhs - c.ub()) / c.row().getNumElements(), i};
           }
           std::sort(scored.begin(), scored.end(), [](auto &a, auto &b) { return a.first > b.first; });
-          int nAdded = std::min(nTotal, maxCuts);
-          for (int i = 0; i < nAdded; i++)
+          nAdded = std::min(nTotal, maxCuts);
+          for (int i = 0; i < nAdded; i++) {
             solver_->applyRowCuts(1, &cuts.rowCut(scored[i].second));
-          if (messageHandler()->logLevel() >= 1)
-            printf("  Conflict cuts from diving: %d added to LP (of %d found)\n", nAdded, nTotal);
+            totalNz += cuts.rowCut(scored[i].second).row().getNumElements();
+          }
         }
+        solver_->resolve();
+        double objAfter = solver_->getObjValue();
+        if (messageHandler()->logLevel() >= 1)
+          printf("  Dive conflict cuts: %d added (avg %.1f nz), bound %.6g → %.6g\n",
+            nAdded, (double)totalNz / nAdded, objBefore, objAfter);
       }
       delete[] newSolution;
       return;

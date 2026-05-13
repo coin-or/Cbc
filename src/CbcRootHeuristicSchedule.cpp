@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <mutex>
+#include <set>
 #include <thread>
 #include <vector>
 
@@ -247,15 +248,23 @@ int CbcRootHeuristicSchedule::runParallel(
     }
   }
 
-  // Clear abort flags and collect conflict cuts
+  // Clear abort flags and collect conflict cuts (deduplicated)
+  std::set<std::vector<int>> seenCuts; // sorted (col*2 + sign) for dedup
   for (auto *h : heuristics) {
     CbcHeuristicDive *dive = dynamic_cast<CbcHeuristicDive *>(h);
     if (dive) {
       dive->setAbortFlag(nullptr);
-      // Gather conflict cuts into shared pool
       const OsiCuts &cuts = dive->conflictCuts();
-      for (int i = 0; i < cuts.sizeRowCuts(); i++)
-        conflictCuts_.insert(cuts.rowCut(i));
+      for (int i = 0; i < cuts.sizeRowCuts(); i++) {
+        const OsiRowCut &c = cuts.rowCut(i);
+        // Build signature: sorted (col*2 + (coef>0 ? 1 : 0))
+        std::vector<int> sig(c.row().getNumElements());
+        for (int k = 0; k < c.row().getNumElements(); k++)
+          sig[k] = c.row().getIndices()[k] * 2 + (c.row().getElements()[k] > 0 ? 1 : 0);
+        std::sort(sig.begin(), sig.end());
+        if (seenCuts.insert(sig).second)
+          conflictCuts_.insert(c);
+      }
     }
   }
 

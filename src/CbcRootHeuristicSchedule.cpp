@@ -178,11 +178,14 @@ int CbcRootHeuristicSchedule::runParallel(
   int nCols = model_.solver()->getNumCols();
   stopFlag_.store(false);
 
-  // Set abort flag on dive heuristics
+  // Set abort flag and enable conflict collection on dive heuristics
   for (auto *h : heuristics) {
     CbcHeuristicDive *dive = dynamic_cast<CbcHeuristicDive *>(h);
-    if (dive)
+    if (dive) {
       dive->setAbortFlag(&stopFlag_);
+      dive->setCollectConflicts(true);
+      dive->clearConflictCuts();
+    }
   }
 
   // Results storage
@@ -240,11 +243,16 @@ int CbcRootHeuristicSchedule::runParallel(
     }
   }
 
-  // Clear abort flags
+  // Clear abort flags and collect conflict cuts
   for (auto *h : heuristics) {
     CbcHeuristicDive *dive = dynamic_cast<CbcHeuristicDive *>(h);
-    if (dive)
+    if (dive) {
       dive->setAbortFlag(nullptr);
+      // Gather conflict cuts into shared pool
+      const OsiCuts &cuts = dive->conflictCuts();
+      for (int i = 0; i < cuts.sizeRowCuts(); i++)
+        conflictCuts_.insert(cuts.rowCut(i));
+    }
   }
 
   // Report results table (only if logLevel >= 1)

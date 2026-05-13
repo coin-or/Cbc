@@ -8,6 +8,7 @@
 #include <atomic>
 #include <vector>
 #include "CbcConfig.h"
+#include "OsiCuts.hpp"
 
 class CbcModel;
 class CbcHeuristic;
@@ -40,6 +41,10 @@ public:
   int maxSolutionsPhase1() const { return maxSolutionsPhase1_; }
   int numThreads() const { return numThreads_; }
 
+  /// Conflict cuts collected from all diving heuristics
+  const OsiCuts &conflictCuts() const { return conflictCuts_; }
+  int numConflictCuts() const { return conflictCuts_.sizeRowCuts(); }
+
 private:
   /// Run constructive heuristics. Returns number of solutions found.
   int runPhase1(std::vector<CbcHeuristic *> &heuristics);
@@ -57,6 +62,7 @@ private:
   int maxSolutionsPhase1_;
   int numThreads_;
   int solutionsFound_;
+  OsiCuts conflictCuts_;
 };
 
 #endif

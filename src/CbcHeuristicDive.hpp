@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include "CbcHeuristic.hpp"
+#include "OsiCuts.hpp"
 class CbcSubProblem;
 class OsiRowCut;
 struct PseudoReducedCost {
@@ -212,10 +213,19 @@ protected:
   int lastSimplexIterations_;
   int lastReasonToStop_;
 
+  // Conflict cuts discovered during diving (collected when collectConflicts_ is true)
+  OsiCuts conflictCuts_;
+  bool collectConflicts_;
+  int maxConflictSize_; // max number of fixings to consider as a conflict
+
 public:
   int lastDiveIterations() const { return lastDiveIterations_; }
   int lastSimplexIterations() const { return lastSimplexIterations_; }
   int lastReasonToStop() const { return lastReasonToStop_; }
+
+  void setCollectConflicts(bool v, int maxSize = 5) { collectConflicts_ = v; maxConflictSize_ = maxSize; }
+  const OsiCuts &conflictCuts() const { return conflictCuts_; }
+  void clearConflictCuts() { conflictCuts_ = OsiCuts(); }
 
   // --- Explicit flags replacing magic number encodings ---
 

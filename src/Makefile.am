@@ -83,6 +83,7 @@ libCbc_la_SOURCES = \
 	CbcParam.cpp CbcParam.hpp \
 	CbcParamUtils.cpp CbcParamUtils.hpp \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
+	CbcPartialSolutionPool.cpp CbcPartialSolutionPool.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.cpp \
 	CbcSimpleIntegerDynamicPseudoCost.hpp \
@@ -219,6 +220,7 @@ includecoin_HEADERS = \
 	CbcObjectUpdateData.hpp \
 	CbcParam.hpp \
 	CbcPartialNodeInfo.hpp \
+	CbcPartialSolutionPool.hpp \
 	CbcParameters.hpp \
 	CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.hpp \

@@ -6223,8 +6223,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
   returnMode_ = 1;
   // statusUserFunction_ and numberUserFunctions_ are class members
   // but CbcMain1 used stack-local versions; keep a local for AMPL compat
-  int statusUserFunction_local[1];
   int numberUserFunctions_local = 1; // to allow for ampl
+  // statusUserFunction_ is allocated array so local must also be
+  int *statusUserFunction_local= new int [numberUserFunctions_local];
   // The body code uses statusUserFunction_[0] — shadow the member with local
   int *statusUserFunction_save = statusUserFunction_;
   statusUserFunction_ = statusUserFunction_local;
@@ -12966,6 +12967,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
   model_.solver()->setWarmStart(NULL);
   // Restore the member pointer (was temporarily pointed to local array)
   statusUserFunction_ = statusUserFunction_save;
+  delete [] statusUserFunction_local;
   buffer.str("");
   buffer << "Total time " << CoinCpuTime() - time0_;
   // generalMessageHandler->message(CLP_GENERAL, generalMessages)

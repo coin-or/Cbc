@@ -217,13 +217,16 @@ protected:
   OsiCuts conflictCuts_;
   bool collectConflicts_;
   int maxConflictSize_; // max number of fixings to consider as a conflict
+  double minConflictViolation_;
 
 public:
   int lastDiveIterations() const { return lastDiveIterations_; }
   int lastSimplexIterations() const { return lastSimplexIterations_; }
   int lastReasonToStop() const { return lastReasonToStop_; }
 
-  void setCollectConflicts(bool v, int maxSize = 5) { collectConflicts_ = v; maxConflictSize_ = maxSize; }
+  void setCollectConflicts(bool v, int maxSize = 10, double minViol = 0.05) {
+    collectConflicts_ = v; maxConflictSize_ = maxSize; minConflictViolation_ = minViol;
+  }
   const OsiCuts &conflictCuts() const { return conflictCuts_; }
   void clearConflictCuts() { conflictCuts_ = OsiCuts(); }
 

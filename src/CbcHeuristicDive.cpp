@@ -48,7 +48,8 @@ CbcHeuristicDive::CbcHeuristicDive()
   lastSimplexIterations_ = 0;
   lastReasonToStop_ = 0;
   collectConflicts_ = false;
-  maxConflictSize_ = 5;
+  maxConflictSize_ = 10;
+  minConflictViolation_ = 0.05;
   aggressiveMode_ = false;
   adaptiveFixing_ = false;
   fixGeneralIntegers_ = false;
@@ -92,7 +93,8 @@ CbcHeuristicDive::CbcHeuristicDive(CbcModel &model)
   lastSimplexIterations_ = 0;
   lastReasonToStop_ = 0;
   collectConflicts_ = false;
-  maxConflictSize_ = 5;
+  maxConflictSize_ = 10;
+  minConflictViolation_ = 0.05;
   aggressiveMode_ = false;
   adaptiveFixing_ = false;
   fixGeneralIntegers_ = false;
@@ -1361,7 +1363,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
       for (auto &f : binaryFixings)
         sumLiterals += f.toOne ? lpSolForConflicts[f.col] : (1.0 - lpSolForConflicts[f.col]);
       double violation = sumLiterals - ((int)binaryFixings.size() - 1);
-      if (violation > 1.0e-4) {
+      if (violation > minConflictViolation_) {
         // Build OsiRowCut: sum(x_i for toOne) - sum(x_i for toZero) <= |S|-1-nZeros
         int sz = (int)binaryFixings.size();
         std::vector<int> idxs(sz);
@@ -1428,7 +1430,8 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   lastSimplexIterations_ = 0;
   lastReasonToStop_ = 0;
   collectConflicts_ = false;
-  maxConflictSize_ = 5;
+  maxConflictSize_ = 10;
+  minConflictViolation_ = 0.05;
     } else {
       // No solution found. Treat an early exit due to LP infeasibility
       // (reasonToStop % 10 == 1 or reasonToStop >= 100) as a signal that we
@@ -1449,7 +1452,8 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   lastSimplexIterations_ = 0;
   lastReasonToStop_ = 0;
   collectConflicts_ = false;
-  maxConflictSize_ = 5; // reset streak after adapting
+  maxConflictSize_ = 10;
+  minConflictViolation_ = 0.05; // reset streak after adapting
         }
       } else {
         // Dive completed without infeasibility but found no better solution
@@ -1459,7 +1463,8 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   lastSimplexIterations_ = 0;
   lastReasonToStop_ = 0;
   collectConflicts_ = false;
-  maxConflictSize_ = 5;
+  maxConflictSize_ = 10;
+  minConflictViolation_ = 0.05;
       }
     }
   }

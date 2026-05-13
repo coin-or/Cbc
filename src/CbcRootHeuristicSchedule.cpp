@@ -20,6 +20,10 @@ CbcRootHeuristicSchedule::CbcRootHeuristicSchedule(CbcModel &model)
   , maxSolutionsPhase1_(1)
   , numThreads_(0)
   , solutionsFound_(0)
+  , conflictMinViol_(0.05)
+  , conflictMaxSize_(10)
+  , conflictMaxCuts_(128)
+  , conflictAutoAdd_(true)
 {
 }
 
@@ -183,7 +187,7 @@ int CbcRootHeuristicSchedule::runParallel(
     CbcHeuristicDive *dive = dynamic_cast<CbcHeuristicDive *>(h);
     if (dive) {
       dive->setAbortFlag(&stopFlag_);
-      dive->setCollectConflicts(true);
+      dive->setCollectConflicts(true, conflictMaxSize_, conflictMinViol_);
       dive->clearConflictCuts();
     }
   }

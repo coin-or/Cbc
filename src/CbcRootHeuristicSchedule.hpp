@@ -41,6 +41,14 @@ public:
   int maxSolutionsPhase1() const { return maxSolutionsPhase1_; }
   int numThreads() const { return numThreads_; }
 
+  /// Conflict cut parameters
+  void setConflictMinViolation(double v) { conflictMinViol_ = v; }
+  void setConflictMaxSize(int n) { conflictMaxSize_ = n; }
+  void setConflictMaxCuts(int n) { conflictMaxCuts_ = n; }
+  void setConflictAutoAdd(bool v) { conflictAutoAdd_ = v; }
+  bool conflictAutoAdd() const { return conflictAutoAdd_; }
+  int conflictMaxCuts() const { return conflictMaxCuts_; }
+
   /// Conflict cuts collected from all diving heuristics
   const OsiCuts &conflictCuts() const { return conflictCuts_; }
   int numConflictCuts() const { return conflictCuts_.sizeRowCuts(); }
@@ -63,6 +71,10 @@ private:
   int numThreads_;
   int solutionsFound_;
   OsiCuts conflictCuts_;
+  double conflictMinViol_;
+  int conflictMaxSize_;
+  int conflictMaxCuts_;
+  bool conflictAutoAdd_;
 };
 
 #endif

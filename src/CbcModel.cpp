@@ -10481,6 +10481,15 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         int nFound = schedule.run(true);
         if (nFound > 0)
           found = 0;
+        // Add conflict cuts discovered during diving to the LP
+        if (schedule.numConflictCuts() > 0) {
+          const OsiCuts &cuts = schedule.conflictCuts();
+          int nAdded = cuts.sizeRowCuts();
+          for (int i = 0; i < nAdded; i++)
+            solver_->applyRowCuts(1, &cuts.rowCut(i));
+          if (messageHandler()->logLevel() >= 1)
+            printf("  Conflict cuts from diving: %d added to LP\n", nAdded);
+        }
       } else {
       int whereFrom = node ? 3 : 2;
       for (int i = 0; i < numberHeuristics_; i++) {
@@ -17364,6 +17373,15 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
       schedule.setMaxSolutionsPhase1(1);
       schedule.setNumThreads(numberThreads_);
       schedule.run();
+      // Add conflict cuts discovered during diving to the LP
+      if (schedule.numConflictCuts() > 0) {
+        const OsiCuts &cuts = schedule.conflictCuts();
+        int nAdded = cuts.sizeRowCuts();
+        for (int i = 0; i < nAdded; i++)
+          solver_->applyRowCuts(1, &cuts.rowCut(i));
+        if (messageHandler()->logLevel() >= 1)
+          printf("  Conflict cuts from diving: %d added to LP\n", nAdded);
+      }
       delete[] newSolution;
       return;
     }

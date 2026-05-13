@@ -47,6 +47,8 @@ CbcHeuristicDive::CbcHeuristicDive()
   lastDiveIterations_ = 0;
   lastSimplexIterations_ = 0;
   lastReasonToStop_ = 0;
+  collectConflicts_ = false;
+  maxConflictSize_ = 5;
   aggressiveMode_ = false;
   adaptiveFixing_ = false;
   fixGeneralIntegers_ = false;
@@ -89,6 +91,8 @@ CbcHeuristicDive::CbcHeuristicDive(CbcModel &model)
   lastDiveIterations_ = 0;
   lastSimplexIterations_ = 0;
   lastReasonToStop_ = 0;
+  collectConflicts_ = false;
+  maxConflictSize_ = 5;
   aggressiveMode_ = false;
   adaptiveFixing_ = false;
   fixGeneralIntegers_ = false;
@@ -539,6 +543,16 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     }
   }
 
+  // Track binary fixings for conflict cut discovery
+  struct BinFix { int col; bool toOne; };
+  std::vector<BinFix> binaryFixings;
+  const double *lpSolForConflicts = collectConflicts_ ? solver->getColSolution() : nullptr;
+  std::vector<double> savedLpSol;
+  if (collectConflicts_) {
+    savedLpSol.assign(lpSolForConflicts, lpSolForConflicts + numberColumns);
+    lpSolForConflicts = savedLpSol.data();
+  }
+
   while (numberFractionalVariables) {
     iteration++;
 
@@ -928,6 +942,11 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
         }
 #endif
         whichWay = 1;
+      }
+      // Record binary fixing for conflict cut discovery
+      if (collectConflicts_ && solver->isBinary(bestColumn)) {
+        bool fixedToOne = (bestRound > 0); // bestRound > 0 means ceil (fix to 1)
+        binaryFixings.push_back({bestColumn, fixedToOne});
       }
     } else {
       break;
@@ -1332,6 +1351,36 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   // Machine-parseable dive statistics (always printed at log level >= 1)
   if (model_->messageHandler()->logLevel() >= 1) {
     double elapsed = (model_->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime()) - time1;
+
+    // Collect conflict cuts if dive ended in infeasibility
+    if (collectConflicts_ && (reasonToStop % 10 == 1 || reasonToStop / 100 > 0)
+        && !binaryFixings.empty()
+        && (int)binaryFixings.size() <= maxConflictSize_) {
+      // Check violation: sum of literals <= |S| - 1
+      double sumLiterals = 0.0;
+      for (auto &f : binaryFixings)
+        sumLiterals += f.toOne ? lpSolForConflicts[f.col] : (1.0 - lpSolForConflicts[f.col]);
+      double violation = sumLiterals - ((int)binaryFixings.size() - 1);
+      if (violation > 1.0e-4) {
+        // Build OsiRowCut: sum(x_i for toOne) - sum(x_i for toZero) <= |S|-1-nZeros
+        int sz = (int)binaryFixings.size();
+        std::vector<int> idxs(sz);
+        std::vector<double> coefs(sz);
+        int nZeros = 0;
+        for (int k = 0; k < sz; k++) {
+          idxs[k] = binaryFixings[k].col;
+          if (binaryFixings[k].toOne) coefs[k] = 1.0;
+          else { coefs[k] = -1.0; nZeros++; }
+        }
+        double rhs = (sz - 1) - nZeros;
+        OsiRowCut cut;
+        cut.setRow(sz, idxs.data(), coefs.data());
+        cut.setUb(rhs);
+        cut.setLb(-COIN_DBL_MAX);
+        conflictCuts_.insert(cut);
+      }
+    }
+
     // Store stats for external reporting
     lastDiveIterations_ = iteration;
     lastSimplexIterations_ = numberSimplexIterations;
@@ -1378,6 +1427,8 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   lastDiveIterations_ = 0;
   lastSimplexIterations_ = 0;
   lastReasonToStop_ = 0;
+  collectConflicts_ = false;
+  maxConflictSize_ = 5;
     } else {
       // No solution found. Treat an early exit due to LP infeasibility
       // (reasonToStop % 10 == 1 or reasonToStop >= 100) as a signal that we
@@ -1396,7 +1447,9 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
           numConsecutiveInfeasible_ = 0;
   lastDiveIterations_ = 0;
   lastSimplexIterations_ = 0;
-  lastReasonToStop_ = 0; // reset streak after adapting
+  lastReasonToStop_ = 0;
+  collectConflicts_ = false;
+  maxConflictSize_ = 5; // reset streak after adapting
         }
       } else {
         // Dive completed without infeasibility but found no better solution
@@ -1405,6 +1458,8 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
   lastDiveIterations_ = 0;
   lastSimplexIterations_ = 0;
   lastReasonToStop_ = 0;
+  collectConflicts_ = false;
+  maxConflictSize_ = 5;
       }
     }
   }

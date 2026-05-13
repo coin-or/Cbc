@@ -8913,12 +8913,14 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                   double percBin = 100.0 * nBin / nInt;
                   if (percBin >= rankConflictMaxPercBin) {
                     rankerEnabled = false;
+                    if (model_.messageHandler()->logLevel() >= 2) {
                     char msgBuf[128];
                     std::snprintf(msgBuf, sizeof(msgBuf),
                       "RankConflict: disabled (%.1f%% binary >= maxPercBin=%.1f%%)",
                       percBin, rankConflictMaxPercBin);
                     model_.messageHandler()->message(CBC_GENERAL,
                       *model_.messagesPointer()) << msgBuf << CoinMessageEol;
+                    }
                   }
                 }
               }

@@ -10482,13 +10482,34 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
         if (nFound > 0)
           found = 0;
         // Add conflict cuts discovered during diving to the LP
-        if (schedule.numConflictCuts() > 0) {
+        if (schedule.numConflictCuts() > 0 && schedule.conflictAutoAdd()) {
           const OsiCuts &cuts = schedule.conflictCuts();
-          int nAdded = cuts.sizeRowCuts();
-          for (int i = 0; i < nAdded; i++)
-            solver_->applyRowCuts(1, &cuts.rowCut(i));
-          if (messageHandler()->logLevel() >= 1)
-            printf("  Conflict cuts from diving: %d added to LP\n", nAdded);
+          int nTotal = cuts.sizeRowCuts();
+          int maxCuts = schedule.conflictMaxCuts();
+          if (nTotal <= maxCuts) {
+            for (int i = 0; i < nTotal; i++)
+              solver_->applyRowCuts(1, &cuts.rowCut(i));
+            if (messageHandler()->logLevel() >= 1)
+              printf("  Conflict cuts from diving: %d added to LP\n", nTotal);
+          } else {
+            // Sort by violation/size (largest first), take top maxCuts
+            std::vector<std::pair<double, int>> scored(nTotal);
+            const double *sol = solver_->getColSolution();
+            for (int i = 0; i < nTotal; i++) {
+              const OsiRowCut &c = cuts.rowCut(i);
+              double lhs = 0.0;
+              for (int k = 0; k < c.row().getNumElements(); k++)
+                lhs += c.row().getElements()[k] * sol[c.row().getIndices()[k]];
+              double viol = lhs - c.ub();
+              scored[i] = {viol / c.row().getNumElements(), i};
+            }
+            std::sort(scored.begin(), scored.end(), [](auto &a, auto &b) { return a.first > b.first; });
+            int nAdded = std::min(nTotal, maxCuts);
+            for (int i = 0; i < nAdded; i++)
+              solver_->applyRowCuts(1, &cuts.rowCut(scored[i].second));
+            if (messageHandler()->logLevel() >= 1)
+              printf("  Conflict cuts from diving: %d added to LP (of %d found)\n", nAdded, nTotal);
+          }
         }
       } else {
       int whereFrom = node ? 3 : 2;
@@ -17374,13 +17395,33 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
       schedule.setNumThreads(numberThreads_);
       schedule.run();
       // Add conflict cuts discovered during diving to the LP
-      if (schedule.numConflictCuts() > 0) {
+      if (schedule.numConflictCuts() > 0 && schedule.conflictAutoAdd()) {
         const OsiCuts &cuts = schedule.conflictCuts();
-        int nAdded = cuts.sizeRowCuts();
-        for (int i = 0; i < nAdded; i++)
-          solver_->applyRowCuts(1, &cuts.rowCut(i));
-        if (messageHandler()->logLevel() >= 1)
-          printf("  Conflict cuts from diving: %d added to LP\n", nAdded);
+        int nTotal = cuts.sizeRowCuts();
+        int maxCuts = schedule.conflictMaxCuts();
+        if (nTotal <= maxCuts) {
+          for (int i = 0; i < nTotal; i++)
+            solver_->applyRowCuts(1, &cuts.rowCut(i));
+          if (messageHandler()->logLevel() >= 1)
+            printf("  Conflict cuts from diving: %d added to LP\n", nTotal);
+        } else {
+          std::vector<std::pair<double, int>> scored(nTotal);
+          const double *sol = solver_->getColSolution();
+          for (int i = 0; i < nTotal; i++) {
+            const OsiRowCut &c = cuts.rowCut(i);
+            double lhs = 0.0;
+            for (int k = 0; k < c.row().getNumElements(); k++)
+              lhs += c.row().getElements()[k] * sol[c.row().getIndices()[k]];
+            double viol = lhs - c.ub();
+            scored[i] = {viol / c.row().getNumElements(), i};
+          }
+          std::sort(scored.begin(), scored.end(), [](auto &a, auto &b) { return a.first > b.first; });
+          int nAdded = std::min(nTotal, maxCuts);
+          for (int i = 0; i < nAdded; i++)
+            solver_->applyRowCuts(1, &cuts.rowCut(scored[i].second));
+          if (messageHandler()->logLevel() >= 1)
+            printf("  Conflict cuts from diving: %d added to LP (of %d found)\n", nAdded, nTotal);
+        }
       }
       delete[] newSolution;
       return;

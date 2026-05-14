@@ -10051,6 +10051,14 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               if (depthMiniBab != -1)
                 babModel_->setFastNodeDepth(depthMiniBab);
             }
+            babModel_->setNodePreprocess(
+              parameters[CbcParam::FASTNODEPREPROCESS]->modeVal());
+            babModel_->setFastNodePreProcessMaxDepth(
+              parameters[CbcParam::FASTNODEPREPROCESSMAXDEPTH]->intVal());
+            babModel_->setFastNodePreProcessMinDepth(
+              parameters[CbcParam::FASTNODEPREPROCESSMINDEPTH]->intVal());
+            babModel_->setFastNodePreProcessDepthInterval(
+              parameters[CbcParam::FASTNODEPREPROCESSDEPTHINTERVAL]->intVal());
             int extra4 = parameters[CbcParam::EXTRA4]->intVal();
             if (extra4 >= 0) {
               int strategy = extra4 % 10;

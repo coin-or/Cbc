@@ -10505,7 +10505,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
                 lhs += c.row().getElements()[k] * sol[c.row().getIndices()[k]];
               scored[i] = {(lhs - c.ub()) / c.row().getNumElements(), i};
             }
-            std::sort(scored.begin(), scored.end(), [](auto &a, auto &b) { return a.first > b.first; });
+            std::sort(scored.begin(), scored.end(), [](const std::pair<double,int> &a, const std::pair<double,int> &b) { return a.first > b.first; });
             nAdded = std::min(nTotal, maxCuts);
             for (int i = 0; i < nAdded; i++) {
               solver_->applyRowCuts(1, &cuts.rowCut(scored[i].second));
@@ -17425,7 +17425,7 @@ void CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
               lhs += c.row().getElements()[k] * sol[c.row().getIndices()[k]];
             scored[i] = {(lhs - c.ub()) / c.row().getNumElements(), i};
           }
-          std::sort(scored.begin(), scored.end(), [](auto &a, auto &b) { return a.first > b.first; });
+          std::sort(scored.begin(), scored.end(), [](const std::pair<double,int> &a, const std::pair<double,int> &b) { return a.first > b.first; });
           nAdded = std::min(nTotal, maxCuts);
           for (int i = 0; i < nAdded; i++) {
             solver_->applyRowCuts(1, &cuts.rowCut(scored[i].second));

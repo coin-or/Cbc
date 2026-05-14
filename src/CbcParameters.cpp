@@ -620,6 +620,7 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::PREPROCESS]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::FASTPREPROCESSLEVEL]->setTopic("MIP Preprocessing \u2014 Fast");
   parameters_[CbcParam::CLQSTRENGTHENING]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::FASTNODEPREPROCESS]->setTopic("MIP Preprocessing \u2014 Fast");
   parameters_[CbcParam::USECGRAPH]->setTopic("Conflict Graph");
   parameters_[CbcParam::STRATEGY]->setTopic("Strategy");
   parameters_[CbcParam::BRANCHPRIORITY]->setTopic("Branching");
@@ -676,6 +677,9 @@ void CbcParameters::addCbcParams() {
                     CbcParam::EXTRAVARIABLES})
     parameters_[code]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::FASTPREPROCESSMAXROUNDS]->setTopic("MIP Preprocessing \u2014 Fast");
+  parameters_[CbcParam::FASTNODEPREPROCESSMAXDEPTH]->setTopic("MIP Preprocessing \u2014 Fast");
+  parameters_[CbcParam::FASTNODEPREPROCESSMINDEPTH]->setTopic("MIP Preprocessing \u2014 Fast");
+  parameters_[CbcParam::FASTNODEPREPROCESSDEPTHINTERVAL]->setTopic("MIP Preprocessing \u2014 Fast");
 
   // Integer params — Strategy
   for (int code : {CbcParam::EXPERIMENT, CbcParam::OPTIONS,
@@ -785,7 +789,11 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::USECGRAPH]->setDefault("on");
      parameters_[CbcParam::FASTPREPROCESSLEVEL]->setDefault("milpbt");
      parameters_[CbcParam::LPMETHOD]->setDefault("dual");
+     parameters_[CbcParam::FASTNODEPREPROCESS]->setDefault("off");
      parameters_[CbcParam::FASTPREPROCESSMAXROUNDS]->setDefault(100);
+     parameters_[CbcParam::FASTNODEPREPROCESSMAXDEPTH]->setDefault(50);
+     parameters_[CbcParam::FASTNODEPREPROCESSMINDEPTH]->setDefault(5);
+     parameters_[CbcParam::FASTNODEPREPROCESSDEPTHINTERVAL]->setDefault(5);
      parameters_[CbcParam::ARTIFICIALCOST]->setDefault(getArtVarThreshold());
      parameters_[CbcParam::DEXTRA3]->setDefault(0.0);
      parameters_[CbcParam::DEXTRA4]->setDefault(0.0);
@@ -1861,6 +1869,18 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("sum", 1);
   parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("min", 0);
   parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("product", 2);
+
+  parameters_[CbcParam::FASTNODEPREPROCESS]->setup(
+    "fastNodeP!reProcess",
+    "Run fast MILP preprocessing at B&B nodes",
+    "When enabled, runs knapsack-based bound tightening after branching "
+    "decisions are applied at each node (subject to depth constraints), "
+    "before the LP is solved. "
+    "Can detect infeasibility earlier and fix additional variables. "
+    "Controlled by fastNodePreProcessMaxDepth and "
+    "fastNodePreProcessDepthInterval.");
+  parameters_[CbcParam::FASTNODEPREPROCESS]->appendKwd("off", 0);
+  parameters_[CbcParam::FASTNODEPREPROCESS]->appendKwd("on", 1);
 }
 
 //###########################################################################
@@ -2518,6 +2538,31 @@ void CbcParameters::addCbcSolverIntParams() {
       "the bounds fixed in previous rounds; the process stops early if a round "
       "produces no new fixings. Has no effect when fastPreProcessLevel is "
       "'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FASTNODEPREPROCESSMAXDEPTH]->setup(
+      "fastNodePreProcessMaxD!epth",
+      "Maximum tree depth at which node preprocessing is applied",
+      0, COIN_INT_MAX,
+      "Node preprocessing is only applied at depths up to this value. "
+      "Deeper nodes skip preprocessing to reduce overhead.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FASTNODEPREPROCESSMINDEPTH]->setup(
+      "fastNodePreProcessMinD!epth",
+      "Minimum tree depth at which node preprocessing is applied",
+      0, COIN_INT_MAX,
+      "Node preprocessing is only applied at depths at or above this value. "
+      "Shallower nodes skip preprocessing.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FASTNODEPREPROCESSDEPTHINTERVAL]->setup(
+      "fastNodePreProcessDepthI!nterval",
+      "Depth interval for node preprocessing",
+      1, COIN_INT_MAX,
+      "Node preprocessing is applied at depths that are multiples of this "
+      "interval (0, interval, 2*interval, ...). For example, with interval 3 "
+      "preprocessing runs at depths 0, 3, 6, 9, etc.",
       CoinParam::displayPriorityLow);
 }
 

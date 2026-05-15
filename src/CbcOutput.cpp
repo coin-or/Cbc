@@ -2374,10 +2374,10 @@ void CbcBnBOutput::onStopReason(const char *reason)
 
 void CbcBnBOutput::onRestartNote(int rows, int cols)
 {
-  if (!inPhase_) return;
+  // why is this here?  if (!inPhase_) return;
   const char *dash = utf8_ ? "──" : "--";
   if (rows > 0 && cols > 0)
-    fprintf(fp_, "  %s Reduced cost fixing: restarting root node (%d rows, %d cols fixed) %s\n",
+    fprintf(fp_, "  %s Reduced cost fixing: restarting root node (%d rows, %d cols) %s\n",
       dash, rows, cols, dash);
   else
     fprintf(fp_, "  %s Reduced cost fixing: restarting root node %s\n", dash, dash);

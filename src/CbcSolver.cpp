@@ -1123,10 +1123,24 @@ int CbcSolver::applyLpMethod()
   // then does a quick raw LP warm-start inside the function.  The full
   // configured LP solve happens in step 5 below.
   if (clqstrMode_ == "before") {
+    double clqTime = CoinWallclockTime();
+    int clqExtended = 0, clqDominated = 0;
     buildConflictGraphAndStrengthenCliques(solver, model_.messageHandler(),
-      clqstrMode_, 2, model_, mipStart_);
+      clqstrMode_, 2, model_, mipStart_, &clqExtended, &clqDominated);
+    clqTime = CoinWallclockTime() - clqTime;
     statistics_.cgraph_time += solver->getCGraphBuildTime();
     statistics_.cgraph_density = solver->getCGraphDensity();
+    statistics_.clqstr_extended = clqExtended;
+    statistics_.clqstr_dominated = clqDominated;
+    statistics_.clqstr_time = clqTime;
+    const int logLevel = model_.messageHandler()->logLevel();
+    if (logLevel >= 1) {
+      if (clqExtended || clqDominated)
+        printf("  Clique strengthening: %d extended, %d dominated (%.2fs)\n",
+          clqExtended, clqDominated, clqTime);
+      else
+        printf("  Clique strengthening: no changes (%.2fs)\n", clqTime);
+    }
   }
 
   // ─── 3. Model-level LP settings ──────────────────────────────────────────
@@ -5053,11 +5067,16 @@ int CbcSolver::solveInitialLp(
               statistics.clqstr_extended = clqExtended;
               statistics.clqstr_dominated = clqDominated;
               statistics.clqstr_time = clqTime;
-              if (cbcLogLevel >= 1 && (clqExtended || clqDominated)) {
+              if (cbcLogLevel >= 1) {
                 char buf[256];
-                std::snprintf(buf, sizeof(buf),
-                  "  Clique strengthening: %d extended, %d dominated (%.2fs)",
-                  clqExtended, clqDominated, clqTime);
+                if (clqExtended || clqDominated) {
+                  std::snprintf(buf, sizeof(buf),
+                    "  Clique strengthening: %d extended, %d dominated (%.2fs)",
+                    clqExtended, clqDominated, clqTime);
+                } else {
+                  std::snprintf(buf, sizeof(buf),
+                    "  Clique strengthening: no changes (%.2fs)", clqTime);
+                }
                 printGeneralMessage(model_, buf);
               }
             }

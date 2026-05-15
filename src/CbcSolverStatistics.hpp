@@ -70,6 +70,15 @@ public:
   /** Density of the conflict graph */
   double cgraph_density = 0.0;
 
+  /** Clique strengthening: constraints extended (before LP) */
+  int clqstr_extended = 0;
+
+  /** Clique strengthening: constraints dominated (before LP) */
+  int clqstr_dominated = 0;
+
+  /** Clique strengthening time (before LP) */
+  double clqstr_time = 0.0;
+
   /** Number of cut generators */
   int number_generators = 0;
 

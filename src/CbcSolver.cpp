@@ -1378,6 +1378,11 @@ int CbcSolver::applyLpMethod()
     applyClpTimeLimit(model_, model2);
   }
 
+  if (presolveType != ClpSolve::presolveOff
+      && model_.messageHandler()->logLevel() >= 1) {
+    printf("  CLP presolve on\n");
+  }
+
   model2->initialSolve(solveOptions);
   clearClpTimeLimits(model2);
 

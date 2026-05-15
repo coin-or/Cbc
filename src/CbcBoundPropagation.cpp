@@ -76,7 +76,7 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
     timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
 
     if (logLevel >= 1)
-      printf("  Bound propagation fixed %d vars in %.3f s.\n\n",
+      printf("  Bound propagation fixed %d vars in %.3f s.\n",
         nSingletonFixed_, timeUsed_);
 
     return true;
@@ -202,7 +202,7 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
 
   if (logLevel >= 1) {
     const int totalFixed = nSingletonFixed_ + nBoundPropFixed_;
-    printf("  Bound propagation fixed %d vars in %.3f s.\n\n",
+    printf("  Bound propagation fixed %d vars in %.3f s.\n",
       totalFixed, timeUsed_);
   }
 

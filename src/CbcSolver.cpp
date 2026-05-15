@@ -1045,126 +1045,351 @@ static void applyVectorMode(ClpSimplex *lpSolver, bool setMode = false)
   }
 }
 
-// Apply the -lpMethod parameter to configure the LP solver before initialSolve.
-// Runs fast MILP preprocessing (if enabled) as the first step, then sets up
-// the LP algorithm.
+// Unified LP-solve entry point: fast preprocessing → clique merging "before"
+// → model-level LP settings → racing → full ClpSolve with all user options.
 //
 // Returns:
 //   -1  infeasibility proved during preprocessing — caller should skip solve
-//    0  LP solve already done here (barrier) — caller should NOT call initialSolve
-//    1  caller should call model_.initialSolve() (dual/primal hint already set)
-static int applyLpMethod(CbcModel &model, CbcParameters &parameters)
+//    0  LP solve complete (racing winner or standard solve)
+//
+// The caller is responsible for setting up any LP-progress message handler
+// on the ClpSimplex model before calling this function.
+int CbcSolver::applyLpMethod()
 {
-  // --- Fast MILP preprocessing (bound tightening before LP solve) ---
-  const CbcParameters::FastPreProcessLevel paramLevel =
-    parameters.getFastPreProcessLevel();
+  OsiSolverInterface *solver = model_.solver();
+#ifndef CBC_OTHER_SOLVER
+  OsiClpSolverInterface *si = getClpSolver(solver);
+  ClpSimplex *clp = si ? si->getModelPtr() : nullptr;
+#else
+  OsiClpSolverInterface *si = nullptr;
+  ClpSimplex *clp = nullptr;
+#endif
 
-  CbcFastMILPPreProcess::Level fppLevel;
-  switch (paramLevel) {
-  case CbcParameters::FPPSingletons:
-    fppLevel = CbcFastMILPPreProcess::Singletons;
-    break;
-  case CbcParameters::FPPMILPbt:
-    fppLevel = CbcFastMILPPreProcess::MILPbt;
-    break;
-  case CbcParameters::FPPFixpoint:
-    fppLevel = CbcFastMILPPreProcess::Fixpoint;
-    break;
-  default:
-    fppLevel = CbcFastMILPPreProcess::Off;
-    break;
-  }
-
-  if (fppLevel != CbcFastMILPPreProcess::Off) {
-    const bool useElapsed = model.useElapsedTime();
-    const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
-    const double timeLimit = model.getDblParam(CbcModel::CbcMaximumSeconds);
-    const int maxRounds = parameters.getFastPreProcessMaxRounds();
-    const int logLevel = model.messageHandler()->logLevel();
-
-    CbcFastMILPPreProcess fpp;
-    const bool feasible = fpp.run(model.solver(),
-      model.messageHandler(), logLevel,
-      fppLevel, maxRounds,
-      useElapsed, timeLimit, startTime);
-
-    if (!feasible) {
-      if (logLevel >= 1)
-        printGeneralMessage(model,
-          "Fast preprocessing: infeasibility proved — skipping solve.");
-      return -1;
+  // ─── 1. Fast MILP preprocessing ─────────────────────────────────────────
+  // Tightens bounds using MILP-based bound propagation before building the
+  // conflict graph or solving the LP.  Must run first so that the conflict
+  // graph and clique merging (step 2) see the tightest possible bounds.
+  {
+    CbcFastMILPPreProcess::Level fppLevel;
+    switch (parameters_.getFastPreProcessLevel()) {
+    case CbcParameters::FPPSingletons:
+      fppLevel = CbcFastMILPPreProcess::Singletons; break;
+    case CbcParameters::FPPMILPbt:
+      fppLevel = CbcFastMILPPreProcess::MILPbt; break;
+    case CbcParameters::FPPFixpoint:
+      fppLevel = CbcFastMILPPreProcess::Fixpoint; break;
+    default:
+      fppLevel = CbcFastMILPPreProcess::Off; break;
     }
-  } else if (parameters[CbcParam::SINGLETONBOUNDS]->modeVal()) {
-    // Legacy fallback: singleton tightening only
-    double time1 = CoinCpuTime();
-    int nFixed = 0;
-    int nTightened = model.solver()->tightenBoundsFromSingletonRows(nFixed);
-    double timeTaken = CoinCpuTime() - time1;
-    if (nTightened && model.messageHandler()->logLevel() >= 1) {
-      char buf[256];
-      if (nFixed)
-        std::snprintf(buf, sizeof(buf),
-          "Singleton rows: %d bounds tightened, %d variables fixed (%.2fs)",
-          nTightened, nFixed, timeTaken);
-      else
-        std::snprintf(buf, sizeof(buf),
-          "Singleton rows: %d bounds tightened (%.2fs)",
-          nTightened, timeTaken);
-      printGeneralMessage(model, buf);
-    }
-  }
 
-  // --- LP method selection ---
-  OsiSolverInterface *solver = model.solver();
-  CbcParameters::LPMethod method = parameters.getLpMethod();
+    if (fppLevel != CbcFastMILPPreProcess::Off) {
+      const bool useElapsed = model_.useElapsedTime();
+      const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+      const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
+      const int maxRounds = parameters_.getFastPreProcessMaxRounds();
+      const int logLevel = model_.messageHandler()->logLevel();
 
-  // LP racing: race multiple methods on the original model
-  int racingLP = parameters[CbcParam::RACINGLP]->intVal();
-  if (racingLP > 0) {
-    OsiClpSolverInterface *si = dynamic_cast<OsiClpSolverInterface *>(solver);
-    if (si) {
-      ClpSimplex *clp = si->getModelPtr();
-      ClpRacingSolver racer(clp, racingLP);
-      racer.solve();
-      if (racer.winnerIndex() >= 0) {
-        // Ensure iteration count is visible to progress handler
-        clp->setNumberIterations(racer.winnerIterations());
-        if (model.messageHandler()->logLevel() > 0) {
-          const char *names[] = {"dual", "primal+idiot", "primal+sprint"};
-          int w = racer.winnerIndex();
-          char msg[200];
-          snprintf(msg, sizeof(msg),
-            "LP racing: winner=%s time=%.2fs iters=%d",
-            (w >= 0 && w < 3 ? names[w] : "unknown"),
-            racer.winnerTime(), racer.winnerIterations());
-          model.messageHandler()->message(0, "", msg, ' ') << CoinMessageEol;
-        }
-        return 0; // LP already solved
+      CbcFastMILPPreProcess fpp;
+      if (!fpp.run(solver, model_.messageHandler(), logLevel,
+            fppLevel, maxRounds, useElapsed, timeLimit, startTime)) {
+        if (logLevel >= 1)
+          printGeneralMessage(model_,
+            "Fast preprocessing: infeasibility proved — skipping solve.");
+        return -1;
       }
-      // All racers failed — fall through to normal LP solve
+    } else if (parameters_[CbcParam::SINGLETONBOUNDS]->modeVal()) {
+      // Legacy singleton-row tightening only
+      const double t0 = CoinCpuTime();
+      int nFixed = 0;
+      int nTightened = solver->tightenBoundsFromSingletonRows(nFixed);
+      if (nTightened && model_.messageHandler()->logLevel() >= 1) {
+        char buf[256];
+        if (nFixed)
+          std::snprintf(buf, sizeof(buf),
+            "Singleton rows: %d bounds tightened, %d variables fixed (%.2fs)",
+            nTightened, nFixed, CoinCpuTime() - t0);
+        else
+          std::snprintf(buf, sizeof(buf),
+            "Singleton rows: %d bounds tightened (%.2fs)",
+            nTightened, CoinCpuTime() - t0);
+        printGeneralMessage(model_, buf);
+      }
     }
   }
 
-  if (method == CbcParameters::LPPrimal) {
-    solver->setHintParam(OsiDoDualInInitial, false, OsiHintDo);
-    return 1;
+  // ─── 2. Clique merging "before" ──────────────────────────────────────────
+  // Strengthens set-packing/partitioning cliques using the conflict graph,
+  // then does a quick raw LP warm-start inside the function.  The full
+  // configured LP solve happens in step 5 below.
+  if (clqstrMode_ == "before") {
+    buildConflictGraphAndStrengthenCliques(solver, model_.messageHandler(),
+      clqstrMode_, 2, model_, mipStart_);
+    statistics_.cgraph_time += solver->getCGraphBuildTime();
+    statistics_.cgraph_density = solver->getCGraphDensity();
   }
-  if (method == CbcParameters::LPBarrier) {
-    OsiClpSolverInterface *si =
-      dynamic_cast<OsiClpSolverInterface *>(solver);
-    if (si) {
-      ClpSimplex *clp = si->getModelPtr();
-      ClpSolve solveOptions;
-      solveOptions.setSolveType(ClpSolve::useBarrier);
-      solveOptions.setPresolveType(ClpSolve::presolveOn);
-      clp->initialSolve(solveOptions);
-      si->setWarmStart(nullptr);
+
+  // ─── 3. Model-level LP settings ──────────────────────────────────────────
+  // PSI, objective scaling, and vector mode modify the ClpSimplex object in
+  // place.  They MUST be applied before racing (step 4) so that every racing
+  // thread clone inherits them.
+#ifndef CBC_OTHER_SOLVER
+  if (clp) {
+    // NOTE: all CLP parameters are stored in parameters_.clpParameters(), NOT in
+    // the redundant CbcSolver::clpParameters_ member (which is never populated).
+    ClpParameters &clpP = parameters_.clpParameters();
+
+    applyPositiveEdge(clp, clpP[ClpParam::PSI]->dblVal());
+
+    // Apply perturbation value.  PERTVALUE is kept in sync with the
+    // PERTURBATION mode switch (see the kwd handler for ClpParam::PERTURBATION),
+    // so reading it here is always correct: default is 100 (no perturbation),
+    // -perturbation on sets it to 50, and -pertValue X sets it to X.
+    clp->setPerturbation(clpP[ClpParam::PERTVALUE]->intVal());
+
+    const double objScale = clpP[ClpParam::OBJSCALE2]->dblVal();
+    if (objScale != 1.0) {
+      const int nCols = clp->numberColumns();
+      const int nRows = clp->numberRows();
+      double *dualColSol = clp->dualColumnSolution();
+      double *dualRowSol = clp->dualRowSolution();
+      ClpObjective *obj = clp->objectiveAsObject();
+      assert(dynamic_cast<ClpLinearObjective *>(obj));
+      double offset;
+      double *objCoeffs = obj->gradient(nullptr, nullptr, offset, true);
+      for (int j = 0; j < nCols; j++) {
+        dualColSol[j] *= objScale;
+        objCoeffs[j]  *= objScale;
+      }
+      for (int i = 0; i < nRows; i++)
+        dualRowSol[i] *= objScale;
+      clp->setObjectiveOffset(objScale * clp->objectiveOffset());
     }
+
+    if (doVector_)
+      applyVectorMode(clp);
+  }
+#endif
+
+  // ─── 4. LP racing ───────────────────────────────────────────────────────
+  // Races multiple LP strategies in parallel threads.  Thread configs are
+  // intentionally varied (dual, primal+idiot, sprint) — that is the point
+  // of racing.  Model-level settings from step 3 are already baked into the
+  // clp model, so every cloned thread inherits PSI, objScale, and vector mode.
+  const int racingLP = parameters_[CbcParam::RACINGLP]->intVal();
+  if (racingLP > 0 && clp) {
+    ClpRacingSolver racer(clp, racingLP);
+    racer.solve();
+    if (racer.winnerIndex() >= 0) {
+      clp->setNumberIterations(racer.winnerIterations());
+      if (model_.messageHandler()->logLevel() > 0) {
+        static const char *names[] = {"dual", "primal+idiot", "primal+sprint"};
+        const int w = racer.winnerIndex();
+        char msg[200];
+        std::snprintf(msg, sizeof(msg),
+          "LP racing: winner=%s time=%.2fs iters=%d",
+          (w >= 0 && w < 3 ? names[w] : "unknown"),
+          racer.winnerTime(), racer.winnerIterations());
+        model_.messageHandler()->message(0, "", msg, ' ') << CoinMessageEol;
+      }
+      basisHasValues_ = 1;
+      return 0;
+    }
+    // All racers failed — fall through to the standard single-threaded solve.
+  }
+
+  // ─── 5. Standard LP solve with full ClpSolve option set ─────────────────
+  // Replicates all option-setting logic from the CLP command handlers
+  // (DUALSIMPLEX / PRIMALSIMPLEX / BARRIER cases in run()), using member
+  // variables so the same code path is followed regardless of whether we
+  // were invoked via -initialSolve or -solve.
+#ifndef CBC_OTHER_SOLVER
+  if (!si || !clp) {
+    // Non-CLP solver: OSI-level fallback.
+    const CbcParameters::LPMethod method = parameters_.getLpMethod();
+    solver->setHintParam(OsiDoDualInInitial,
+      method != CbcParameters::LPPrimal, OsiHintDo);
+    solver->initialSolve();
+    basisHasValues_ = 1;
     return 0;
   }
-  // LPDual (default)
-  solver->setHintParam(OsiDoDualInInitial, true, OsiHintDo);
-  return 1;
+
+  if (parameters_.noPrinting())
+    clp->setLogLevel(0);
+
+  // Local copies of options that may be transiently modified below
+  // (we must not mutate member variables as side effects of a single solve).
+  int dualize  = dualize_;
+  int preSolve = preSolve_;
+  int doIdiot  = doIdiot_;
+  int doSprint = doSprint_;
+  int doCrash  = doCrash_;
+  int slpValue = slpValue_;
+
+  // Dualize: rarely activates for typical MIPLIB instances (needs
+  // numberRows >= 50000 AND 5*numberColumns <= numberRows).
+  ClpSimplex *model2 = clp;
+  if (dualize) {
+    bool tryIt = true;
+    double fractionColumn = 1.0;
+    double fractionRow    = 1.0;
+    if (dualize == 3) {
+      dualize = 1;
+      if (clp->numberRows() < 50000
+          || 5 * clp->numberColumns() > clp->numberRows()) {
+        tryIt = false;
+      } else {
+        fractionColumn = 0.1;
+        fractionRow    = 0.1;
+      }
+    }
+    if (tryIt) {
+      model2 = static_cast<ClpSimplexOther *>(model2)->dualOfModel(
+        fractionRow, fractionColumn);
+      if (model2) {
+        std::ostringstream buf;
+        buf << "Dual of model has " << model2->numberRows()
+            << " rows and "        << model2->numberColumns() << " columns";
+        printGeneralMessage(model_, buf.str());
+        model2->setOptimizationDirection(1.0);
+      } else {
+        model2  = clp;
+        dualize = 0;
+      }
+    } else {
+      dualize = 0;
+    }
+  }
+
+  // Build ClpSolve options — mirrors the CLP handler logic exactly.
+  ClpSolve solveOptions;
+  int presolveOpts = presolveOptions_;
+  if (preSolveFile_)
+    presolveOpts |= 0x40000000;
+  solveOptions.setPresolveActions(presolveOpts);
+  solveOptions.setSubstitution(substitution_);
+  solveOptions.setSpecialOption(5, printOptions_);
+
+  ClpSolve::PresolveType presolveType;
+  if (preSolve != 5 && preSolve) {
+    presolveType = ClpSolve::presolveNumber;
+    if (preSolve < 0) {
+      preSolve = -preSolve;
+      if (preSolve <= 100) {
+        presolveType = ClpSolve::presolveNumber;
+        printGeneralMessage(model_,
+          "Doing " + std::to_string(preSolve)
+          + " presolve passes - picking up non-costed slacks");
+        solveOptions.setDoSingletonColumn(true);
+      } else {
+        preSolve -= 100;
+        presolveType = ClpSolve::presolveNumberCost;
+        printGeneralMessage(model_,
+          "Doing " + std::to_string(preSolve)
+          + " presolve passes - picking up non-costed slacks");
+      }
+    }
+  } else if (preSolve) {
+    presolveType = ClpSolve::presolveOn;
+  } else {
+    presolveType = ClpSolve::presolveOff;
+  }
+  solveOptions.setPresolveType(presolveType, preSolve);
+
+  const CbcParameters::LPMethod lpMethod = parameters_.getLpMethod();
+  ClpSolve::SolveType clpMethod;
+  if (lpMethod == CbcParameters::LPPrimal) {
+    clpMethod = ClpSolve::usePrimalorSprint;
+  } else if (lpMethod == CbcParameters::LPBarrier) {
+    clpMethod = ClpSolve::useBarrier;
+    if (crossover_ == 1) {
+      clpMethod = ClpSolve::useBarrierNoCross;
+    } else if (crossover_ == 2) {
+      ClpObjective *obj = clp->objectiveAsObject();
+      if (obj->type() > 1) {
+        clpMethod      = ClpSolve::useBarrierNoCross;
+        presolveType   = ClpSolve::presolveOff;
+        solveOptions.setPresolveType(presolveType, preSolve_);
+      }
+    }
+  } else {
+    clpMethod = ClpSolve::useDual;
+  }
+  solveOptions.setSolveType(clpMethod);
+
+  if (clpMethod == ClpSolve::useDual) {
+    if (doCrash)
+      solveOptions.setSpecialOption(0, 1, doCrash);  // crash
+    else if (doIdiot)
+      solveOptions.setSpecialOption(0, 2, doIdiot);  // idiot
+  } else if (clpMethod == ClpSolve::usePrimalorSprint) {
+    if (slpValue > 0) {
+      // SLP: disables crash, sprint, and idiot
+      doCrash  = 0;
+      doSprint = 0;
+      doIdiot  = -1;
+      solveOptions.setSpecialOption(1, 10, slpValue);
+      clpMethod = ClpSolve::usePrimal;
+      solveOptions.setSolveType(clpMethod);
+    }
+    if (doCrash) {
+      solveOptions.setSpecialOption(1, 1, doCrash);
+    } else if (doSprint > 0) {
+      solveOptions.setSpecialOption(1, 3, doSprint);
+    } else if (doIdiot > 0) {
+      solveOptions.setSpecialOption(1, 2, doIdiot);
+    } else if (slpValue <= 0) {
+      if (doIdiot == 0) {
+        solveOptions.setSpecialOption(1, doSprint == 0 ? 4 : 9);
+      } else {
+        solveOptions.setSpecialOption(1, doSprint == 0 ? 8 : 7);
+      }
+    }
+    if (basisHasValues_ == -1)
+      solveOptions.setSpecialOption(1, 11);  // switch off values
+  } else {
+    // Barrier
+    int barrierOptions = choleskyType_;
+    if (scaleBarrier_)    barrierOptions |= 8;
+    if (doKKT_)           barrierOptions |= 16;
+    if (gamma_)           barrierOptions |= 32 * gamma_;
+    if (crossover_ == 3)  barrierOptions |= 256;
+    solveOptions.setSpecialOption(4, barrierOptions);
+  }
+
+  if (model_.getMaximumSeconds() < 1.0e8) {
+    if (!model_.getDblParam(CbcModel::CbcStartSeconds))
+      model_.setDblParam(CbcModel::CbcStartSeconds,
+        model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
+    applyClpTimeLimit(model_, model2);
+  }
+
+  model2->initialSolve(solveOptions);
+  clearClpTimeLimits(model2);
+
+  basisHasValues_ = 1;
+
+  if (dualize) {
+    int rc = static_cast<ClpSimplexOther *>(clp)->restoreFromDual(model2);
+    if (model2->status() == 3)
+      rc = 0;
+    delete model2;
+    if (rc && dualize != 2)
+      clp->primal(1);
+  }
+
+  if (lpMethod == CbcParameters::LPBarrier)
+    si->setWarmStart(nullptr);
+
+#else
+  // Non-CLP solver fallback (CBC_OTHER_SOLVER).
+  const CbcParameters::LPMethod method = parameters_.getLpMethod();
+  solver->setHintParam(OsiDoDualInInitial,
+    method != CbcParameters::LPPrimal, OsiHintDo);
+  solver->initialSolve();
+  basisHasValues_ = 1;
+#endif
+
+  return 0;
 }
 
 int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplib,
@@ -4698,12 +4923,6 @@ int CbcSolver::solveInitialLp(
 {
   std::ostringstream buffer;
 
-            if (!preSolve_) {
-              model_.solver()->setHintParam(OsiDoPresolveInInitial, false,
-                OsiHintTry);
-              model_.solver()->setHintParam(OsiDoPresolveInResolve, false,
-                OsiHintTry);
-            }
             double time1a = CoinCpuTime();
             OsiSolverInterface *solver = model_.solver();
 #ifndef CBC_OTHER_SOLVER
@@ -4763,7 +4982,7 @@ int CbcSolver::solveInitialLp(
               }
               numMipInts = static_cast<int>(intCols.size());
             }
-            int lpMethodResult = applyLpMethod(model_, parameters_);
+            int lpMethodResult = applyLpMethod();
             if (lpMethodResult < 0) {
               // Infeasible — clean up LP progress handler and skip BAB
 #ifndef CBC_OTHER_SOLVER
@@ -4779,9 +4998,7 @@ int CbcSolver::solveInitialLp(
 #endif
               return 2;
             }
-            if (lpMethodResult > 0) {
-              model_.initialSolve();
-            }
+            // applyLpMethod() always performs the LP solve (return 0 = done).
 #ifndef CBC_OTHER_SOLVER
             if (lpSavedMsg && si) {
               ClpSimplex *clpModel = si->getModelPtr();
@@ -7016,16 +7233,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         else
           model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
-        if (clqstrMode == "before") { // performing clique strengthening
-                                      // before initial solve
-          buildConflictGraphAndStrengthenCliques(model_.solver(),
-            model_.messageHandler(),
-            clqstrMode,
-            2,
-            model_, mipStart);
-          statistics.cgraph_time += model_.solver()->getCGraphBuildTime();
-          statistics.cgraph_density = model_.solver()->getCGraphDensity();
-        }
+        // Clique merging "before" is now handled inside applyLpMethod(),
+        // which is called from solveInitialLp() in the BAB path below.
         biLinearProblem = false;
         // check if any integers
 #ifndef CBC_OTHER_SOLVER
@@ -7399,6 +7608,12 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           substitution = iValue;
         } else if (clpParamCode == ClpParam::DUALIZE) {
           dualize = iValue;
+        } else if (clpParamCode == ClpParam::PERTVALUE) {
+          // Apply PERTVALUE immediately so both CLP-handler and applyLpMethod()
+          // paths see the user's setting.  PERTVALUE and PERTURBATION (the mode
+          // switch) share the same underlying lpSolver field; PERTVALUE always
+          // wins since it is the more specific numeric control.
+          lpSolver->setPerturbation(iValue);
         }
       } else if (cbcParam->type() == CoinParam::paramKwd) {
         if ((status = cbcParam->readValue(inputQueue, field, &message))) {
@@ -7668,8 +7883,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               lpSolver->setPerturbation(50);
           } else {
             lpSolver->setPerturbation(100);
-            clpParam->setVal(100);
           }
+          // Sync PERTVALUE so that applyLpMethod() always uses the correct value
+          // regardless of whether the user changed perturbation via -perturbation
+          // (mode switch) or via -pertValue (numeric control).
+          clpParameters[ClpParam::PERTVALUE]->setVal(lpSolver->perturbation());
           break;
         case ClpParam::KEEPNAMES:
           keepImportNames = mode;
@@ -8467,14 +8685,182 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 
         switch (cbcParamCode) {
         case CbcParam::SOLVECONTINUOUS: {
-          // Solve LP relaxation using the configured LP method
-          CbcParameters::LPMethod lpMethod = parameters.getLpMethod();
-          if (lpMethod == CbcParameters::LPPrimal)
-            inputQueue.push_front("-primalSimplex");
-          else if (lpMethod == CbcParameters::LPBarrier)
-            inputQueue.push_front("-barrier");
-          else
-            inputQueue.push_front("-dualSimplex");
+          // Solve the LP relaxation via applyLpMethod(), which handles fast
+          // preprocessing, clique merging "before", model-level LP settings,
+          // LP racing, and the full configured ClpSolve solve — all using the
+          // same member-variable state as the -solve (BAB) path.
+          if (!goodModel) {
+            printGeneralWarning(model_, "** Current model not valid\n");
+            continue;
+          }
+          integerStatus = -1;
+#ifndef CBC_OTHER_SOLVER
+          if (clpSolver)
+            clpSolver->setSpecialOptions(clpSolver->specialOptions() | 1024);
+          // ------ LP progress output (mirrors the CLP-handler setup) ------
+          // Guard entire setup: applyLpMethod() will setLogLevel(0) when
+          // noPrinting() is true, so capturing logLevel here (before that
+          // call) would incorrectly preserve a non-zero level.
+          auto lpScState = std::make_shared<ClpLpPhaseState>();
+          lpScState->fp       = model_.messageHandler()->filePointer();
+          lpScState->utf8     = CbcOutput::useUtf8();
+          lpScState->compact  = CbcOutput::useCompact();
+          lpScState->logLevel = (lpSolver && !parameters_.noPrinting())
+                                  ? lpSolver->logLevel() : 0;
+          lpScState->iterFreq = 0;
+          lpScState->timeFreq = 5.0;
+          lpScState->startTime     = CoinWallclockTime();
+          lpScState->lastPrintTime = lpScState->startTime;
+          lpScState->title = "LP solve";
+          ClpLpMsgHandler   lpScMsgH(lpScState);
+          ClpLpEventHandler lpScEvtH(lpScState);
+          bool lpScMsgOldDefault = false;
+          CoinMessageHandler *lpScSavedMsg = nullptr;
+          ClpLpEventHandler *lpScProg = nullptr;
+          if (lpSolver && !parameters_.noPrinting()) {
+            lpScSavedMsg = lpSolver->pushMessageHandler(&lpScMsgH, lpScMsgOldDefault);
+            lpSolver->passInEventHandler(&lpScEvtH);
+            lpScProg = dynamic_cast<ClpLpEventHandler *>(lpSolver->eventHandler());
+          }
+#endif
+          int lpResult = applyLpMethod();
+#ifndef CBC_OTHER_SOLVER
+          if (lpScProg)
+            lpScProg->printFinalStatus();
+          if (lpSolver && lpScSavedMsg)
+            lpSolver->popMessageHandler(lpScSavedMsg, lpScMsgOldDefault);
+          if (lpSolver) {
+            ClpEventHandler defEvt;
+            lpSolver->passInEventHandler(&defEvt);
+          }
+#endif
+          if (lpResult < 0) {
+            // Infeasibility proved by fast preprocessing — mark model.
+            model_.setProblemStatus(0);
+            model_.setSecondaryStatus(1);
+            if (babModel_) {
+              babModel_->setProblemStatus(0);
+              babModel_->setSecondaryStatus(1);
+            }
+            continue;
+          }
+          // Map ClpSimplex status codes to Cbc status (same as CLP handlers).
+          {
+#ifndef CBC_OTHER_SOLVER
+            int iStatus  = lpSolver ? lpSolver->status()          : -1;
+            int iStatus2 = lpSolver ? lpSolver->secondaryStatus() : 0;
+#else
+            int iStatus  = -1;
+            int iStatus2 = 0;
+#endif
+            if (iStatus == 0) {
+              iStatus2 = 0;
+            } else if (iStatus == 1) {
+              iStatus  = 0;
+              iStatus2 = 1; // infeasible
+            } else if (iStatus == 2) {
+              iStatus  = 0;
+              iStatus2 = 7; // unbounded
+            } else if (iStatus == 3) {
+              iStatus = 1;
+              iStatus2 = (iStatus2 == 9) ? 4 : 3;
+            } else if (iStatus == 4) {
+              iStatus  = 2; // difficulties
+              iStatus2 = 0;
+            }
+            model_.setProblemStatus(iStatus);
+            model_.setSecondaryStatus(iStatus2);
+            if ((iStatus == 2 || iStatus2 > 0) && parameters.noPrinting()) {
+              const char *statusName[] = { "", "Stopped on ", "Run abandoned",
+                                           "", "", "User ctrl-c" };
+              const char *minor[] = {
+                "Optimal solution found",
+                "Linear relaxation infeasible",
+                "Optimal solution found (within gap tolerance)",
+                "node limit", "time limit", "user ctrl-c", "solution limit",
+                "Linear relaxation unbounded", "iterations limit",
+                "Problem proven infeasible"
+              };
+              buffer.str("");
+              buffer << std::endl
+                     << "Result - " << statusName[iStatus]
+                     << minor[iStatus2] << std::endl << std::endl;
+              buffer << "Enumerated nodes:           0" << std::endl;
+              buffer << "Total iterations:           0" << std::endl;
+#if CBC_QUIET == 0
+              if (model_.useElapsedTime())
+                buffer << "Time (Wallclock seconds):   "
+                       << CoinGetTimeOfDay() - time0Elapsed << std::endl;
+              else
+                buffer << "Time (CPU seconds):         "
+                       << CoinCpuTime() - time0 << std::endl;
+#endif
+              printGeneralMessage(model_, buffer.str());
+            }
+            assert(clpSolver == model_.solver());
+            clpSolver->setWarmStart(nullptr);
+            if (babModel_) {
+              babModel_->setProblemStatus(iStatus);
+              babModel_->setSecondaryStatus(iStatus2);
+            }
+            int returnCode2 = callBack(&model_, 1);
+            if (returnCode2) {
+              delete babModel_;
+              babModel_ = nullptr;
+              return returnCode2;
+            }
+          }
+          if (statusUserFunction_[0]) {
+#ifndef CBC_OTHER_SOLVER
+            double value = lpSolver ? lpSolver->getObjValue() : 0.0;
+            char buf[300];
+            int pos = 0;
+            int iStat = lpSolver ? lpSolver->status() : -1;
+            if (iStat == 0)       pos += sprintf(buf + pos, "optimal,");
+            else if (iStat == 1)  pos += sprintf(buf + pos, "infeasible,");
+            else if (iStat == 2)  pos += sprintf(buf + pos, "unbounded,");
+            else if (iStat == 3)  pos += sprintf(buf + pos, "stopped on iterations or time,");
+            else if (iStat == 4) { iStat = 7; pos += sprintf(buf + pos, "stopped on difficulties,"); }
+            else if (iStat == 5) { iStat = 3; pos += sprintf(buf + pos, "stopped on ctrl-c,"); }
+            else                  pos += sprintf(buf + pos, "status unknown,");
+            if (info) {
+              info->problemStatus = iStat;
+              info->objValue = value;
+              pos += sprintf(buf + pos, " objective %.*g",
+                ampl_obj_prec(), value);
+              sprintf(buf + pos, "\n%d iterations",
+                lpSolver ? lpSolver->getIterationCount() : 0);
+              free(info->primalSolution);
+              int numberColumns = lpSolver ? lpSolver->numberColumns() : 0;
+              info->primalSolution = reinterpret_cast<double *>(
+                malloc(numberColumns * sizeof(double)));
+              if (lpSolver)
+                CoinCopyN(lpSolver->primalColumnSolution(), numberColumns,
+                  info->primalSolution);
+              int numberRows = lpSolver ? lpSolver->numberRows() : 0;
+              free(info->dualSolution);
+              info->dualSolution = reinterpret_cast<double *>(
+                malloc(numberRows * sizeof(double)));
+              if (lpSolver)
+                CoinCopyN(lpSolver->dualRowSolution(), numberRows,
+                  info->dualSolution);
+              CoinWarmStartBasis *basis = lpSolver ? lpSolver->getBasis() : nullptr;
+              free(info->rowStatus);
+              info->rowStatus = reinterpret_cast<int *>(malloc(numberRows * sizeof(int)));
+              free(info->columnStatus);
+              info->columnStatus = reinterpret_cast<int *>(
+                malloc(numberColumns * sizeof(int)));
+              if (basis) {
+                for (int i = 0; i < numberRows; i++)
+                  info->rowStatus[i] = basis->getArtifStatus(i);
+                for (int i = 0; i < numberColumns; i++)
+                  info->columnStatus[i] = basis->getStructStatus(i);
+                delete basis;
+              }
+              strcpy(info->buffer, buf);
+            }
+#endif
+          }
           continue;
         }
         case CbcParam::STATISTICS: {
@@ -8838,9 +9224,17 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             }
 #endif
 #endif
+            // OsiDoReducePrint reduces log level by 1 inside
+            // OsiClpSolverInterface::initialSolve() when logLevel<=1.
+            // applyLpMethod() calls ClpSimplex::initialSolve(ClpSolve&)
+            // directly, so this hint has no effect on our path.
             if (logLevel <= 1)
               si->setHintParam(OsiDoReducePrint, true, OsiHintTry);
 #ifndef CBC_OTHER_SOLVER
+            // Bit 0x40000000 is never tested in OsiClpSolverInterface;
+            // it is a harmless legacy marker with no functional effect.
+            // The functionally important bit (1024 = don't borrow model)
+            // is added with |= inside solveInitialLp().
             si->setSpecialOptions(0x40000000);
 #endif
           }

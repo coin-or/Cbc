@@ -1369,7 +1369,7 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityHigh);
 
     parameters_[CbcParam::FASTPREPROCESS]->setup(
-      "fastPreProcess",
+      "doFastPreP!rocessing",
       "Run fast MILP preprocessing on the loaded model",
       "Immediately runs the fast MILP preprocessor on the currently loaded "
       "model, applying bound tightenings to the problem in place. "

@@ -2484,6 +2484,43 @@ void CbcSolver::resetRunState()
   statistics_ = CbcSolverStatistics();
 }
 
+void CbcSolver::printParamChanges()
+{
+  if (paramChanges_.empty())
+    return;
+  const bool u8 = CbcOutput::useUtf8();
+  const char *arrow = u8 ? " \xe2\x86\x92 " : " -> ";
+  FILE *fp = stderr;
+  fprintf(fp, "\n%s\n\n",
+    CoinTable::phaseStart("Non-default parameters", u8).c_str());
+  for (const auto &msg : paramChanges_) {
+    std::string name, oldVal, newVal;
+    size_t p1 = msg.find("Option for ");
+    size_t p2 = msg.find(" changed from ");
+    size_t p3 = msg.find(" to ");
+    if (p1 != std::string::npos && p2 != std::string::npos && p3 != std::string::npos) {
+      name = msg.substr(p1 + 11, p2 - (p1 + 11));
+      oldVal = msg.substr(p2 + 14, p3 - (p2 + 14));
+      newVal = msg.substr(p3 + 4);
+    } else {
+      p2 = msg.find(" was changed from ");
+      p3 = (p2 != std::string::npos) ? msg.find(" to ", p2 + 18) : std::string::npos;
+      if (p2 != std::string::npos && p3 != std::string::npos) {
+        name = msg.substr(0, p2);
+        oldVal = msg.substr(p2 + 18, p3 - (p2 + 18));
+        newVal = msg.substr(p3 + 4);
+      }
+    }
+    while (!newVal.empty() && (newVal.back() == '\n' || newVal.back() == ' '))
+      newVal.pop_back();
+    if (!name.empty())
+      fprintf(fp, "  %s  %s%s%s\n", name.c_str(), oldVal.c_str(), arrow, newVal.c_str());
+    else
+      fprintf(fp, "  %s", msg.c_str());
+  }
+  paramChanges_.clear();
+}
+
 //###########################################################################
 //###########################################################################
 
@@ -7308,7 +7345,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           printGeneralWarning(model_, message);
           continue;
         } else {
-          printGeneralMessage(model_, message);
+          if (!message.empty()) paramChanges_.push_back(message);
         }
         // TODO: These should be moved to the push function
         switch (cbcParamCode) {
@@ -7427,13 +7464,13 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             printGeneralWarning(model_, message);
             continue;
           }
-          printGeneralMessage(model_, message);
+          if (!message.empty()) paramChanges_.push_back(message);
         } else {
           if (cbcParam->setVal(iValue, &message)) {
             printGeneralWarning(model_, message);
             continue;
           }
-          printGeneralMessage(model_, message);
+          if (!message.empty()) paramChanges_.push_back(message);
           if (cbcParamCode == CbcParam::CUTPASS) {
             cutPass = iValue;
           } else if (cbcParamCode == CbcParam::USESOLUTION) {
@@ -7619,7 +7656,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           printGeneralWarning(model_, message);
           continue;
         } else {
-          printGeneralMessage(model_, message);
+          if (!message.empty()) paramChanges_.push_back(message);
         }
         if (clpParamCode == ClpParam::PRESOLVEPASS) {
           preSolve = iValue;
@@ -7657,7 +7694,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           printGeneralWarning(model_, message);
           continue;
         }
-        printGeneralMessage(model_, message);
+        if (!message.empty()) paramChanges_.push_back(message);
         int mode = cbcParam->modeVal();
         // TODO: this should be part of the push method
         switch (cbcParamCode) {
@@ -8719,14 +8756,15 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 
         switch (cbcParamCode) {
         case CbcParam::SOLVECONTINUOUS: {
-          // Solve the LP relaxation via applyLpMethod(), which handles fast
-          // preprocessing, clique merging "before", model-level LP settings,
+          // Solve the LP relaxation via applyLpMethod(), which handles bound
+          // propagation, clique merging "before", model-level LP settings,
           // LP racing, and the full configured ClpSolve solve — all using the
           // same member-variable state as the -solve (BAB) path.
           if (!goodModel) {
             printGeneralWarning(model_, "** Current model not valid\n");
             continue;
           }
+          printParamChanges();
           integerStatus = -1;
 #ifndef CBC_OTHER_SOLVER
           if (clpSolver)
@@ -8946,6 +8984,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             printGeneralWarning(model_, "** Current model not valid\n");
             break;
           }
+          printParamChanges();
 #ifdef CBC_CLUMSY_CODING
           parameters.setModel(&model_);
           parameters.setGoodModel(true);

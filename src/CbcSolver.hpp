@@ -476,12 +476,18 @@ private:
 
   // --- Input queue copies ---
   std::deque<std::string> saveInputQueue_;
+
+  /// Collected parameter-change messages (printed as a section before solve)
+  std::vector<std::string> paramChanges_;
   //@}
 
   ///@name Private helpers
   //@{
   /// Reset cross-phase state to defaults (called by initialize)
   void resetRunState();
+
+  /// Print collected parameter changes as a formatted section, then clear.
+  void printParamChanges();
 
   /** Handle the IMPORT action: read an MPS/LP/GMPL file into the model.
       Called from run() when the IMPORT command is encountered.

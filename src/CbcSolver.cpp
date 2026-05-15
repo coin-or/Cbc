@@ -28,7 +28,7 @@
 #include <vector>
 #include "CbcSolverStatistics.hpp"
 #include "CbcInstanceFeatures.hpp"
-#include "CbcFastMILPPreProcess.hpp"
+#include "CbcBoundPropagation.hpp"
 
 #if defined(NEW_DEBUG_AND_FILL) || defined(CLP_MALLOC_STATISTICS)
 #include <exception>
@@ -1046,7 +1046,7 @@ static void applyVectorMode(ClpSimplex *lpSolver, bool setMode = false)
   }
 }
 
-// Unified LP-solve entry point: fast preprocessing → clique merging "before"
+// Unified LP-solve entry point: bound propagation → clique merging "before"
 // → model-level LP settings → racing → full ClpSolve with all user options.
 //
 // Returns:
@@ -1066,36 +1066,36 @@ int CbcSolver::applyLpMethod()
   ClpSimplex *clp = nullptr;
 #endif
 
-  // ─── 1. Fast MILP preprocessing ─────────────────────────────────────────
+  // ─── 1. Bound propagation ────────────────────────────────────────────────
   // Tightens bounds using MILP-based bound propagation before building the
   // conflict graph or solving the LP.  Must run first so that the conflict
   // graph and clique merging (step 2) see the tightest possible bounds.
   {
-    CbcFastMILPPreProcess::Level fppLevel;
-    switch (parameters_.getFastPreProcessLevel()) {
-    case CbcParameters::FPPSingletons:
-      fppLevel = CbcFastMILPPreProcess::Singletons; break;
-    case CbcParameters::FPPMILPbt:
-      fppLevel = CbcFastMILPPreProcess::MILPbt; break;
-    case CbcParameters::FPPFixpoint:
-      fppLevel = CbcFastMILPPreProcess::Fixpoint; break;
+    CbcBoundPropagation::Level bpLevel;
+    switch (parameters_.getBoundPropLevel()) {
+    case CbcParameters::BndPropSingletons:
+      bpLevel = CbcBoundPropagation::Singletons; break;
+    case CbcParameters::BndPropMILPbt:
+      bpLevel = CbcBoundPropagation::MILPbt; break;
+    case CbcParameters::BndPropFixpoint:
+      bpLevel = CbcBoundPropagation::Fixpoint; break;
     default:
-      fppLevel = CbcFastMILPPreProcess::Off; break;
+      bpLevel = CbcBoundPropagation::Off; break;
     }
 
-    if (fppLevel != CbcFastMILPPreProcess::Off) {
+    if (bpLevel != CbcBoundPropagation::Off) {
       const bool useElapsed = model_.useElapsedTime();
       const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
       const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
-      const int maxRounds = parameters_.getFastPreProcessMaxRounds();
+      const int maxRounds = parameters_.getBoundPropMaxRounds();
       const int logLevel = model_.messageHandler()->logLevel();
 
-      CbcFastMILPPreProcess fpp;
-      if (!fpp.run(solver, model_.messageHandler(), logLevel,
-            fppLevel, maxRounds, useElapsed, timeLimit, startTime)) {
+      CbcBoundPropagation bp;
+      if (!bp.run(solver, model_.messageHandler(), logLevel,
+            bpLevel, maxRounds, useElapsed, timeLimit, startTime)) {
         if (logLevel >= 1)
           printGeneralMessage(model_,
-            "Fast preprocessing: infeasibility proved — skipping solve.");
+            "Bound propagation: infeasibility proved — skipping solve.");
         return -1;
       }
     } else if (parameters_[CbcParam::SINGLETONBOUNDS]->modeVal()) {
@@ -4955,7 +4955,7 @@ int CbcSolver::solveInitialLp(
               lpState->startTime = CoinWallclockTime();
               lpState->lastPrintTime = lpState->startTime;
               lpState->title = "Root LP relaxation";
-              // Print the section title now so that fast preprocessing
+              // Print the section title now so that bound propagation
               // messages (from applyLpMethod) appear inside this section.
               // Clear title so lpPhaseOpenTable prints only the table header.
               fprintf(lpState->fp, "\n%s\n\n",
@@ -5000,7 +5000,7 @@ int CbcSolver::solveInitialLp(
 #endif
               return 2;
             }
-            // --- Clique strengthening "before" (after fast preprocessing) ---
+            // --- Clique strengthening "before" (after bound propagation) ---
             if (clqstrMode_ == "before" && lpMethodResult > 0) {
               double clqTime = CoinWallclockTime();
               int clqExtended = 0, clqDominated = 0;
@@ -8769,7 +8769,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
 #endif
           if (lpResult < 0) {
-            // Infeasibility proved by fast preprocessing — mark model.
+            // Infeasibility proved by bound propagation — mark model.
             model_.setProblemStatus(0);
             model_.setSecondaryStatus(1);
             if (babModel_) {
@@ -10085,14 +10085,14 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               if (depthMiniBab != -1)
                 babModel_->setFastNodeDepth(depthMiniBab);
             }
-            babModel_->setNodePreprocess(
-              parameters[CbcParam::FASTNODEPREPROCESS]->modeVal());
-            babModel_->setFastNodePreProcessMaxDepth(
-              parameters[CbcParam::FASTNODEPREPROCESSMAXDEPTH]->intVal());
-            babModel_->setFastNodePreProcessMinDepth(
-              parameters[CbcParam::FASTNODEPREPROCESSMINDEPTH]->intVal());
-            babModel_->setFastNodePreProcessDepthInterval(
-              parameters[CbcParam::FASTNODEPREPROCESSDEPTHINTERVAL]->intVal());
+            babModel_->setNodeBoundProp(
+              parameters[CbcParam::NODEBOUNDPROP]->modeVal());
+            babModel_->setNodeBoundPropMaxDepth(
+              parameters[CbcParam::NODEBOUNDPROPMAXDEPTH]->intVal());
+            babModel_->setNodeBoundPropMinDepth(
+              parameters[CbcParam::NODEBOUNDPROPMINDEPTH]->intVal());
+            babModel_->setNodeBoundPropDepthInterval(
+              parameters[CbcParam::NODEBOUNDPROPDEPTHINTERVAL]->intVal());
             int extra4 = parameters[CbcParam::EXTRA4]->intVal();
             if (extra4 >= 0) {
               int strategy = extra4 % 10;
@@ -13226,30 +13226,30 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 << featTime << fileName.c_str() << CoinMessageEol;
           }
         } break;
-        case CbcParam::FASTPREPROCESS: {
+        case CbcParam::BOUNDPROP: {
           if (!goodModel) {
             printGeneralWarning(model_, "** Current model not valid\n");
             continue;
           }
           {
-            const CbcParameters::FastPreProcessLevel paramLevel =
-              parameters.getFastPreProcessLevel();
-            if (paramLevel == CbcParameters::FPPOff) {
+            const CbcParameters::BoundPropLevel paramLevel =
+              parameters.getBoundPropLevel();
+            if (paramLevel == CbcParameters::BndPropOff) {
               printGeneralMessage(model_,
-                "Fast preprocessing is disabled (fastPreProcessLevel=off); "
+                "Bound propagation is disabled (boundPropLevel=off); "
                 "nothing to do.");
               continue;
             }
-            CbcFastMILPPreProcess::Level fppLevel;
+            CbcBoundPropagation::Level bpLevel;
             switch (paramLevel) {
-            case CbcParameters::FPPSingletons:
-              fppLevel = CbcFastMILPPreProcess::Singletons;
+            case CbcParameters::BndPropSingletons:
+              bpLevel = CbcBoundPropagation::Singletons;
               break;
-            case CbcParameters::FPPFixpoint:
-              fppLevel = CbcFastMILPPreProcess::Fixpoint;
+            case CbcParameters::BndPropFixpoint:
+              bpLevel = CbcBoundPropagation::Fixpoint;
               break;
-            default: // FPPMILPbt
-              fppLevel = CbcFastMILPPreProcess::MILPbt;
+            default: // BndPropMILPbt
+              bpLevel = CbcBoundPropagation::MILPbt;
               break;
             }
             const bool useElapsed = model_.useElapsedTime();
@@ -13257,12 +13257,12 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
             // Use a generous time limit for the standalone action
             const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
-            CbcFastMILPPreProcess fpp;
-            const int maxRounds = parameters.getFastPreProcessMaxRounds();
+            CbcBoundPropagation bp;
+            const int maxRounds = parameters.getBoundPropMaxRounds();
             const int logLevel = model_.messageHandler()->logLevel();
-            const bool feasible = fpp.run(model_.solver(),
+            const bool feasible = bp.run(model_.solver(),
               model_.messageHandler(), logLevel,
-              fppLevel, maxRounds, useElapsed, timeLimit, startTime);
+              bpLevel, maxRounds, useElapsed, timeLimit, startTime);
             if (!feasible) {
               // run() already logged the infeasibility details at level >= 1.
               // Mark model bad so downstream commands know.

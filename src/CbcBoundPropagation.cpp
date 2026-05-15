@@ -2,9 +2,9 @@
 // Authors: Cbc development team
 // This code is licensed under the terms of the Eclipse Public License (EPL)
 
-#include "CbcFastMILPPreProcess.hpp"
+#include "CbcBoundPropagation.hpp"
 
-#include "CoinMILPBoundTightening.hpp"
+#include "CoinBoundPropagation.hpp"
 #include "CoinMessageHandler.hpp"
 #include "CoinTime.hpp"
 #include "OsiSolverInterface.hpp"
@@ -15,10 +15,10 @@
 #include <string>
 #include <vector>
 
-CbcFastMILPPreProcess::CbcFastMILPPreProcess()
+CbcBoundPropagation::CbcBoundPropagation()
   : nSingletonTightened_(0)
   , nSingletonFixed_(0)
-  , nMILPbtFixed_(0)
+  , nBoundPropFixed_(0)
   , nRoundsRun_(0)
   , stopReason_(NotRun)
   , timeUsed_(0.0)
@@ -27,7 +27,7 @@ CbcFastMILPPreProcess::CbcFastMILPPreProcess()
 {
 }
 
-bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
+bool CbcBoundPropagation::run(OsiSolverInterface *solver,
   CoinMessageHandler * /*handler*/,
   int logLevel,
   Level level,
@@ -56,7 +56,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
       timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
 
       if (logLevel >= 1)
-        printf("  Fast preprocessing: INFEASIBLE (singleton tightening), "
+        printf("  Bound propagation: INFEASIBLE (singleton tightening), "
                "%.3f s.\n",
           timeUsed_);
 
@@ -67,7 +67,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
     nSingletonTightened_ = nTightened - nFixed;
 
     if (logLevel >= 2 && nTightened > 0)
-      printf("  Fast preprocessing (singletons): %d tightened, %d fixed.\n",
+      printf("  Bound propagation (singletons): %d tightened, %d fixed.\n",
         nSingletonTightened_, nSingletonFixed_);
   }
 
@@ -76,14 +76,14 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
     timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
 
     if (logLevel >= 1)
-      printf("  Fast preprocessing fixed %d vars in %.3f s.\n\n",
+      printf("  Bound propagation fixed %d vars in %.3f s.\n\n",
         nSingletonFixed_, timeUsed_);
 
     return true;
   }
 
   // ---------------------------------------------------------------
-  // Phase 2: CoinMILPBoundTightening — iterate until fixpoint or limits
+  // Phase 2: CoinBoundPropagation — iterate until fixpoint or limits
   // ---------------------------------------------------------------
   const int roundLimit = (level == Fixpoint) ? INT_MAX : maxRounds;
 
@@ -112,16 +112,16 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
       timeUsed_ = tNow - t0;
 
       if (logLevel >= 1)
-        printf("  Fast preprocessing: fixed %d (%d singleton + %d MILPbt, "
+        printf("  Bound propagation: fixed %d (%d singleton + %d propagation, "
                "%d round(s), TIME LIMIT), %.3f s.\n",
-          nSingletonFixed_ + nMILPbtFixed_, nSingletonFixed_, nMILPbtFixed_,
+          nSingletonFixed_ + nBoundPropFixed_, nSingletonFixed_, nBoundPropFixed_,
           nRoundsRun_, timeUsed_);
 
       return true;
     }
 
     // Construction runs the algorithm; results are immediately available.
-    CoinMILPBoundTightening bt(nCols, colType,
+    CoinBoundPropagation bt(nCols, colType,
       curLB.data(), curUB.data(),
       matByRow, rowSense, rhs, range,
       primalTol, infinity);
@@ -142,7 +142,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
           const std::string colName = (infeasibleCol_ < solver->getNumCols())
             ? solver->getColName(infeasibleCol_)
             : "(unknown)";
-          printf("  Fast preprocessing: INFEASIBLE in round %d — "
+          printf("  Bound propagation: INFEASIBLE in round %d — "
                  "row %d (%s), col %d (%s), %.3f s.\n",
             nRoundsRun_, infeasibleRow_, rowName.c_str(),
             infeasibleCol_, colName.c_str(), timeUsed_);
@@ -150,11 +150,11 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
           const std::string rowName = (infeasibleRow_ < solver->getNumRows())
             ? solver->getRowName(infeasibleRow_)
             : "(unknown)";
-          printf("  Fast preprocessing: INFEASIBLE in round %d — "
+          printf("  Bound propagation: INFEASIBLE in round %d — "
                  "row %d (%s), %.3f s.\n",
             nRoundsRun_, infeasibleRow_, rowName.c_str(), timeUsed_);
         } else {
-          printf("  Fast preprocessing: INFEASIBLE in round %d, %.3f s.\n",
+          printf("  Bound propagation: INFEASIBLE in round %d, %.3f s.\n",
             nRoundsRun_, timeUsed_);
         }
       }
@@ -171,7 +171,7 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
       timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
 
       if (logLevel >= 2)
-        printf("  Fast preprocessing (MILPbt): fixpoint reached after %d "
+        printf("  Bound propagation: fixpoint reached after %d "
                "round(s).\n",
           nRoundsRun_);
 
@@ -186,12 +186,12 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
       solver->setColUpper(col, p.second.second);
     }
 
-    nMILPbtFixed_ += nNew;
+    nBoundPropFixed_ += nNew;
 
     if (logLevel >= 2)
-      printf("  Fast preprocessing (MILPbt): round %d fixed %d variables "
+      printf("  Bound propagation: round %d fixed %d variables "
              "(total %d).\n",
-        nRoundsRun_, nNew, nMILPbtFixed_);
+        nRoundsRun_, nNew, nBoundPropFixed_);
   }
 
   if (stopReason_ == NotRun) {
@@ -201,8 +201,8 @@ bool CbcFastMILPPreProcess::run(OsiSolverInterface *solver,
   timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
 
   if (logLevel >= 1) {
-    const int totalFixed = nSingletonFixed_ + nMILPbtFixed_;
-    printf("  Fast preprocessing fixed %d vars in %.3f s.\n\n",
+    const int totalFixed = nSingletonFixed_ + nBoundPropFixed_;
+    printf("  Bound propagation fixed %d vars in %.3f s.\n\n",
       totalFixed, timeUsed_);
   }
 

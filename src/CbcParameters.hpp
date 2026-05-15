@@ -284,22 +284,22 @@ public:
 
   enum CGraphMode { CGraphOff = 0, CGraphOn, CGraphClique, CGraphEndMarker };
 
-  /*! \brief Aggression level for fast MILP preprocessing
+  /*! \brief Aggression level for bound propagation
 
-    - FPPOff:       disabled; falls back to the singletonBounds on/off setting.
-    - FPPSingletons: singleton rows only (same as singletonBounds on).
-    - FPPMILPbt:    singletons followed by CoinMILPBoundTightening for up to
-                    fastPreProcessMaxRounds rounds (default 100, effectively
+    - BndPropOff:        disabled; falls back to the singletonBounds on/off setting.
+    - BndPropSingletons: singleton rows only (same as singletonBounds on).
+    - BndPropMILPbt:     singletons followed by CoinBoundPropagation for up to
+                    boundPropMaxRounds rounds (default 100, effectively
                     fixpoint for all practical instances).
-    - FPPFixpoint:  singletons followed by CoinMILPBoundTightening until no
+    - BndPropFixpoint:   singletons followed by CoinBoundPropagation until no
                     new fixings are found (ignores maxRounds).
   */
-  enum FastPreProcessLevel {
-    FPPOff = 0,
-    FPPSingletons,
-    FPPMILPbt,
-    FPPFixpoint,
-    FPPEndMarker
+  enum BoundPropLevel {
+    BndPropOff = 0,
+    BndPropSingletons,
+    BndPropMILPbt,
+    BndPropFixpoint,
+    BndPropEndMarker
   };
 
   /*! \brief Which LP algorithm to use for initialSolve in -solve and
@@ -316,17 +316,17 @@ public:
     LPEndMarker
   };
 
-  /*! \brief Get fast preprocessing level */
-  inline FastPreProcessLevel getFastPreProcessLevel() const
+  /*! \brief Get bound propagation level */
+  inline BoundPropLevel getBoundPropLevel() const
   {
-    return static_cast< FastPreProcessLevel >(
-      parameters_[CbcParam::FASTPREPROCESSLEVEL]->modeVal());
+    return static_cast< BoundPropLevel >(
+      parameters_[CbcParam::BOUNDPROPLEVEL]->modeVal());
   }
 
-  /*! \brief Get fast preprocessing max rounds */
-  inline int getFastPreProcessMaxRounds() const
+  /*! \brief Get bound propagation max rounds */
+  inline int getBoundPropMaxRounds() const
   {
-    return parameters_[CbcParam::FASTPREPROCESSMAXROUNDS]->intVal();
+    return parameters_[CbcParam::BOUNDPROPMAXROUNDS]->intVal();
   }
 
   /*

@@ -2820,45 +2820,45 @@ public:
   {
     return fastNodeDepth_;
   }
-  /// Set whether to run fast MILP preprocessing at each node
-  inline void setNodePreprocess(int value)
+  /// Set whether to run bound propagation at each node
+  inline void setNodeBoundProp(int value)
   {
-    nodePreprocess_ = value;
+    nodeBoundProp_ = value;
   }
-  /// Get whether to run fast MILP preprocessing at each node
-  inline int nodePreprocess() const
+  /// Get whether to run bound propagation at each node
+  inline int nodeBoundProp() const
   {
-    return nodePreprocess_;
+    return nodeBoundProp_;
   }
-  /// Set maximum depth for node preprocessing
-  inline void setFastNodePreProcessMaxDepth(int value)
+  /// Set maximum depth for node bound propagation
+  inline void setNodeBoundPropMaxDepth(int value)
   {
-    fastNodePreProcessMaxDepth_ = value;
+    nodeBoundPropMaxDepth_ = value;
   }
-  /// Get maximum depth for node preprocessing
-  inline int fastNodePreProcessMaxDepth() const
+  /// Get maximum depth for node bound propagation
+  inline int nodeBoundPropMaxDepth() const
   {
-    return fastNodePreProcessMaxDepth_;
+    return nodeBoundPropMaxDepth_;
   }
-  /// Set minimum depth for node preprocessing
-  inline void setFastNodePreProcessMinDepth(int value)
+  /// Set minimum depth for node bound propagation
+  inline void setNodeBoundPropMinDepth(int value)
   {
-    fastNodePreProcessMinDepth_ = value;
+    nodeBoundPropMinDepth_ = value;
   }
-  /// Get minimum depth for node preprocessing
-  inline int fastNodePreProcessMinDepth() const
+  /// Get minimum depth for node bound propagation
+  inline int nodeBoundPropMinDepth() const
   {
-    return fastNodePreProcessMinDepth_;
+    return nodeBoundPropMinDepth_;
   }
-  /// Set depth interval for node preprocessing
-  inline void setFastNodePreProcessDepthInterval(int value)
+  /// Set depth interval for node bound propagation
+  inline void setNodeBoundPropDepthInterval(int value)
   {
-    fastNodePreProcessDepthInterval_ = value;
+    nodeBoundPropDepthInterval_ = value;
   }
-  /// Get depth interval for node preprocessing
-  inline int fastNodePreProcessDepthInterval() const
+  /// Get depth interval for node bound propagation
+  inline int nodeBoundPropDepthInterval() const
   {
-    return fastNodePreProcessDepthInterval_;
+    return nodeBoundPropDepthInterval_;
   }
   /// Get anything with priority >= this can be treated as continuous
   inline int continuousPriority() const
@@ -3362,14 +3362,14 @@ private:
   bool useRootHeuristicSchedule_ = false;
   /// Depth for fast nodes
   int fastNodeDepth_;
-  /// Whether to run fast MILP preprocessing at B&B nodes (0=off, 1=on)
-  int nodePreprocess_;
-  /// Maximum depth at which node preprocessing is applied
-  int fastNodePreProcessMaxDepth_;
-  /// Minimum depth at which node preprocessing is applied
-  int fastNodePreProcessMinDepth_;
-  /// Depth interval for node preprocessing (apply at depth 0, interval, 2*interval, ...)
-  int fastNodePreProcessDepthInterval_;
+  /// Whether to run bound propagation at B&B nodes (0=off, 1=on)
+  int nodeBoundProp_;
+  /// Maximum depth at which node bound propagation is applied
+  int nodeBoundPropMaxDepth_;
+  /// Minimum depth at which node bound propagation is applied
+  int nodeBoundPropMinDepth_;
+  /// Depth interval for node bound propagation (apply at depth 0, interval, 2*interval, ...)
+  int nodeBoundPropDepthInterval_;
   /*! Pointer to the event handler */
 #ifdef CBC_ONLY_CLP
   ClpEventHandler *eventHandler_;

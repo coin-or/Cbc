@@ -15,7 +15,7 @@
 #include "CoinTime.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "CbcHeuristicDive.hpp"
-#include "CoinMILPBoundTightening.hpp"
+#include "CoinBoundPropagation.hpp"
 #include "ClpAbortHandler.hpp"
 #include <vector>
 
@@ -968,7 +968,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
         double pTol = primalTolerance;
         double inf = solver->getInfinity();
 
-        CoinMILPBoundTightening bt(nCols, colType,
+        CoinBoundPropagation bt(nCols, colType,
           lower, upper, matByRow, rowSense, rowRHS, rowRange,
           pTol, inf);
 

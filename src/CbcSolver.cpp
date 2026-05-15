@@ -1378,13 +1378,15 @@ int CbcSolver::applyLpMethod()
     applyClpTimeLimit(model_, model2);
   }
 
-  if (presolveType != ClpSolve::presolveOff
-      && model_.messageHandler()->logLevel() >= 1) {
-    printf("  CLP presolve on\n");
-  }
-
   model2->initialSolve(solveOptions);
   clearClpTimeLimits(model2);
+
+  if (model2->presolveRows() >= 0
+      && model_.messageHandler()->logLevel() >= 1) {
+    printf("  CLP presolve: %d rows, %d cols (%.2fs)\n",
+      model2->presolveRows(), model2->presolveCols(),
+      model2->presolveTime());
+  }
 
   basisHasValues_ = 1;
 

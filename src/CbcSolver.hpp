@@ -515,6 +515,25 @@ private:
     std::deque<std::string> &inputQueue,
     OsiClpSolverInterface *clpSolver, ClpSimplex *lpSolver);
 
+  /** Apply the LP method to solve the current LP relaxation.
+      Unified LP-solve entry point called from both the BAB path
+      (via solveInitialLp()) and from the SOLVECONTINUOUS (-initialSolve)
+      action.  The function runs, in order:
+        1. Fast MILP preprocessing (bound tightening, if enabled)
+        2. Clique merging "before" (if clqstrMode_ == "before")
+        3. Model-level LP settings: PSI positive-edge, objective scaling,
+           vector mode — applied before racing so thread clones inherit them
+        4. LP racing (if enabled; threads use intentionally varied configs)
+        5. Full ClpSolve LP solve with all user-settable options:
+           presolve, crash/idiot/sprint, SLP, barrier options, dualize,
+           print options, time limits.
+      The caller is responsible for setting up any LP-progress message
+      handler on the ClpSimplex model before calling this function.
+      \return -1 if infeasibility proved during preprocessing (skip solve),
+               0 on success (LP solve performed or racing winner found).
+  */
+  int applyLpMethod();
+
   /** Solve the root LP relaxation.
       Called from the BAB action when !miplib.
       \return 0=success, 1=break BAB, 2=continue loop, 3=return from run()

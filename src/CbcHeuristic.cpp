@@ -32,7 +32,7 @@
 #include "CbcBranchActual.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CoinMpsIO.hpp"
-#include "CbcFastMILPPreProcess.hpp"
+#include "CbcBoundPropagation.hpp"
 #include "CbcOutput.hpp"
 //==============================================================================
 
@@ -787,25 +787,25 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   int saveModelOptions = model_->specialOptions();
   //assert ((saveModelOptions&2048) == 0);
   model_->setSpecialOptions(saveModelOptions | 2048);
-  // Fast MILP preprocessing: singleton tightening + knapsack bound tightening.
+  // Bound propagation: singleton tightening + knapsack bound propagation.
   // Runs before the LP solve — purely combinatorial, no basis needed.
   {
-    CbcFastMILPPreProcess fpp;
+    CbcBoundPropagation bp;
     const bool useElapsed = model_->useElapsedTime();
     const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
     const double timeLimit = model_->getMaximumSeconds();
 #ifdef RINS_CLOSE_DEBUG
-    int nFixedPreFPP = 0;
+    int nFixedPreBP = 0;
     {
       const double *lb = solver->getColLower();
       const double *ub = solver->getColUpper();
       for (int j = 0; j < numberColumns; j++)
-        if (lb[j] == ub[j]) nFixedPreFPP++;
-      printf("RINS SBB pre-FPP:  fixed=%d / %d cols\n", nFixedPreFPP, numberColumns);
+        if (lb[j] == ub[j]) nFixedPreBP++;
+      printf("RINS SBB pre-BP:  fixed=%d / %d cols\n", nFixedPreBP, numberColumns);
     }
 #endif
-    const bool feasible = fpp.run(solver, model_->messageHandler(), 0,
-      CbcFastMILPPreProcess::MILPbt, 100,
+    const bool feasible = bp.run(solver, model_->messageHandler(), 0,
+      CbcBoundPropagation::MILPbt, 100,
       useElapsed, timeLimit, startTime);
     if (!feasible) {
       model_->setSpecialOptions(saveModelOptions);
@@ -813,13 +813,13 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     }
 #ifdef RINS_CLOSE_DEBUG
     {
-      int nFixedPostFPP = 0;
+      int nFixedPostBP = 0;
       const double *lb = solver->getColLower();
       const double *ub = solver->getColUpper();
       for (int j = 0; j < numberColumns; j++)
-        if (lb[j] == ub[j]) nFixedPostFPP++;
-      printf("RINS SBB post-FPP: fixed=%d / %d cols  (implied by FPP=%d)\n",
-        nFixedPostFPP, numberColumns, nFixedPostFPP - nFixedPreFPP);
+        if (lb[j] == ub[j]) nFixedPostBP++;
+      printf("RINS SBB post-BP: fixed=%d / %d cols  (implied by BP=%d)\n",
+        nFixedPostBP, numberColumns, nFixedPostBP - nFixedPreBP);
     }
 #endif
   }

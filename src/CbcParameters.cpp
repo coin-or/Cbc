@@ -610,7 +610,7 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::STRENGTHEN]->setTopic("Solving");
 
   // Action params — preprocessing
-  parameters_[CbcParam::FASTPREPROCESS]->setTopic("MIP Preprocessing \u2014 Fast");
+  parameters_[CbcParam::BOUNDPROP]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
 
   // Action params — other
   parameters_[CbcParam::STATISTICS]->setTopic("Output");
@@ -618,9 +618,9 @@ void CbcParameters::addCbcParams() {
 
   // Keyword params
   parameters_[CbcParam::PREPROCESS]->setTopic("MIP Preprocessing");
-  parameters_[CbcParam::FASTPREPROCESSLEVEL]->setTopic("MIP Preprocessing \u2014 Fast");
+  parameters_[CbcParam::BOUNDPROPLEVEL]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
   parameters_[CbcParam::CLQSTRENGTHENING]->setTopic("MIP Preprocessing");
-  parameters_[CbcParam::FASTNODEPREPROCESS]->setTopic("MIP Preprocessing \u2014 Fast");
+  parameters_[CbcParam::NODEBOUNDPROP]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
   parameters_[CbcParam::USECGRAPH]->setTopic("Conflict Graph");
   parameters_[CbcParam::STRATEGY]->setTopic("Strategy");
   parameters_[CbcParam::BRANCHPRIORITY]->setTopic("Branching");
@@ -676,10 +676,10 @@ void CbcParameters::addCbcParams() {
   for (int code : {CbcParam::PROCESSTUNE, CbcParam::CPP,
                     CbcParam::EXTRAVARIABLES})
     parameters_[code]->setTopic("MIP Preprocessing");
-  parameters_[CbcParam::FASTPREPROCESSMAXROUNDS]->setTopic("MIP Preprocessing \u2014 Fast");
-  parameters_[CbcParam::FASTNODEPREPROCESSMAXDEPTH]->setTopic("MIP Preprocessing \u2014 Fast");
-  parameters_[CbcParam::FASTNODEPREPROCESSMINDEPTH]->setTopic("MIP Preprocessing \u2014 Fast");
-  parameters_[CbcParam::FASTNODEPREPROCESSDEPTHINTERVAL]->setTopic("MIP Preprocessing \u2014 Fast");
+  parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
+  parameters_[CbcParam::NODEBOUNDPROPMAXDEPTH]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
+  parameters_[CbcParam::NODEBOUNDPROPMINDEPTH]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
+  parameters_[CbcParam::NODEBOUNDPROPDEPTHINTERVAL]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
 
   // Integer params — Strategy
   for (int code : {CbcParam::EXPERIMENT, CbcParam::OPTIONS,
@@ -701,7 +701,7 @@ void CbcParameters::addCbcParams() {
 
   // Bool params
   parameters_[CbcParam::SOS]->setTopic("MIP Preprocessing");
-  parameters_[CbcParam::SINGLETONBOUNDS]->setTopic("MIP Preprocessing \u2014 Fast");
+  parameters_[CbcParam::SINGLETONBOUNDS]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
   parameters_[CbcParam::PREPROCNAMES]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::DOHEURISTIC]->setTopic("Heuristics");
   parameters_[CbcParam::USESOLUTION]->setTopic("Heuristics");
@@ -787,13 +787,13 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::STRATEGY]->setDefault("default");
      parameters_[CbcParam::TIMEMODE]->setDefault("elapsed");
      parameters_[CbcParam::USECGRAPH]->setDefault("on");
-     parameters_[CbcParam::FASTPREPROCESSLEVEL]->setDefault("milpbt");
+     parameters_[CbcParam::BOUNDPROPLEVEL]->setDefault("milpbt");
      parameters_[CbcParam::LPMETHOD]->setDefault("dual");
-     parameters_[CbcParam::FASTNODEPREPROCESS]->setDefault("off");
-     parameters_[CbcParam::FASTPREPROCESSMAXROUNDS]->setDefault(100);
-     parameters_[CbcParam::FASTNODEPREPROCESSMAXDEPTH]->setDefault(50);
-     parameters_[CbcParam::FASTNODEPREPROCESSMINDEPTH]->setDefault(5);
-     parameters_[CbcParam::FASTNODEPREPROCESSDEPTHINTERVAL]->setDefault(5);
+     parameters_[CbcParam::NODEBOUNDPROP]->setDefault("off");
+     parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setDefault(100);
+     parameters_[CbcParam::NODEBOUNDPROPMAXDEPTH]->setDefault(50);
+     parameters_[CbcParam::NODEBOUNDPROPMINDEPTH]->setDefault(5);
+     parameters_[CbcParam::NODEBOUNDPROPDEPTHINTERVAL]->setDefault(5);
      parameters_[CbcParam::ARTIFICIALCOST]->setDefault(getArtVarThreshold());
      parameters_[CbcParam::DEXTRA3]->setDefault(0.0);
      parameters_[CbcParam::DEXTRA4]->setDefault(0.0);
@@ -1376,12 +1376,12 @@ void CbcParameters::addCbcSolverActionParams() {
       "All features are computed in O(nz) time.",
       CoinParam::displayPriorityHigh);
 
-    parameters_[CbcParam::FASTPREPROCESS]->setup(
-      "doFastPreP!rocessing",
-      "Run fast MILP preprocessing on the loaded model",
-      "Immediately runs the fast MILP preprocessor on the currently loaded "
+    parameters_[CbcParam::BOUNDPROP]->setup(
+      "doBoundProp!agation",
+      "Run bound propagation on the loaded model",
+      "Immediately runs bound propagation on the currently loaded "
       "model, applying bound tightenings to the problem in place. "
-      "The aggression level is controlled by fastPreProcessLevel. "
+      "The aggression level is controlled by boundPropLevel. "
       "After running, use writeModel to save the tightened problem.",
       CoinParam::displayPriorityHigh);
 
@@ -1824,25 +1824,25 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::USECGRAPH]->appendKwd("off", CbcParameters::CGraphOff);
   parameters_[CbcParam::USECGRAPH]->appendKwd("clq", CbcParameters::CGraphClique);
 
-  parameters_[CbcParam::FASTPREPROCESSLEVEL]->setup(
-    "fastPreProcessL!evel",
-    "Aggression level for fast MILP preprocessing before solve",
-    "Controls how aggressively fast preprocessing tightens variable bounds "
+  parameters_[CbcParam::BOUNDPROPLEVEL]->setup(
+    "boundPropL!evel",
+    "Aggression level for bound propagation before solve",
+    "Controls how aggressively bound propagation tightens variable bounds "
     "before the initial LP solve.\n"
     "  off:       disabled (falls back to singletonBounds setting).\n"
     "  singletons: singleton rows only — same as singletonBounds on.\n"
-    "  milpbt:    singletons then knapsack-based bound tightening for up to "
-    "fastPreProcessMaxRounds rounds (default 100, effectively fixpoint).\n"
-    "  fixpoint:  singletons then bound tightening until no new fixings are "
-    "found, regardless of fastPreProcessMaxRounds.");
-  parameters_[CbcParam::FASTPREPROCESSLEVEL]->appendKwd(
-    "off", CbcParameters::FPPOff);
-  parameters_[CbcParam::FASTPREPROCESSLEVEL]->appendKwd(
-    "singletons", CbcParameters::FPPSingletons);
-  parameters_[CbcParam::FASTPREPROCESSLEVEL]->appendKwd(
-    "milpbt", CbcParameters::FPPMILPbt);
-  parameters_[CbcParam::FASTPREPROCESSLEVEL]->appendKwd(
-    "fixpoint", CbcParameters::FPPFixpoint);
+    "  milpbt:    singletons then knapsack-based bound propagation for up to "
+    "boundPropMaxRounds rounds (default 100, effectively fixpoint).\n"
+    "  fixpoint:  singletons then bound propagation until no new fixings are "
+    "found, regardless of boundPropMaxRounds.");
+  parameters_[CbcParam::BOUNDPROPLEVEL]->appendKwd(
+    "off", CbcParameters::BndPropOff);
+  parameters_[CbcParam::BOUNDPROPLEVEL]->appendKwd(
+    "singletons", CbcParameters::BndPropSingletons);
+  parameters_[CbcParam::BOUNDPROPLEVEL]->appendKwd(
+    "milpbt", CbcParameters::BndPropMILPbt);
+  parameters_[CbcParam::BOUNDPROPLEVEL]->appendKwd(
+    "fixpoint", CbcParameters::BndPropFixpoint);
 
   parameters_[CbcParam::LPMETHOD]->setup(
     "lpM!ethod",
@@ -1870,17 +1870,17 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("min", 0);
   parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("product", 2);
 
-  parameters_[CbcParam::FASTNODEPREPROCESS]->setup(
-    "fastNodeP!reProcess",
-    "Run fast MILP preprocessing at B&B nodes",
-    "When enabled, runs knapsack-based bound tightening after branching "
+  parameters_[CbcParam::NODEBOUNDPROP]->setup(
+    "nodeBoundP!rop",
+    "Run bound propagation at B&B nodes",
+    "When enabled, runs knapsack-based bound propagation after branching "
     "decisions are applied at each node (subject to depth constraints), "
     "before the LP is solved. "
     "Can detect infeasibility earlier and fix additional variables. "
-    "Controlled by fastNodePreProcessMaxDepth and "
-    "fastNodePreProcessDepthInterval.");
-  parameters_[CbcParam::FASTNODEPREPROCESS]->appendKwd("off", 0);
-  parameters_[CbcParam::FASTNODEPREPROCESS]->appendKwd("on", 1);
+    "Controlled by nodeBoundPropMaxDepth and "
+    "nodeBoundPropDepthInterval.");
+  parameters_[CbcParam::NODEBOUNDPROP]->appendKwd("off", 0);
+  parameters_[CbcParam::NODEBOUNDPROP]->appendKwd("on", 1);
 }
 
 //###########################################################################
@@ -2529,40 +2529,40 @@ void CbcParameters::addCbcSolverIntParams() {
       "when the dense graph would be unsafe.",
       CoinParam::displayPriorityLow);
 
-  parameters_[CbcParam::FASTPREPROCESSMAXROUNDS]->setup(
-      "fastPreProcessM!axRounds",
-      "Maximum number of bound-tightening rounds in fast preprocessing",
+  parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setup(
+      "boundPropM!axRounds",
+      "Maximum number of bound propagation rounds",
       1, COIN_INT_MAX,
-      "Maximum number of CoinMILPBoundTightening rounds when "
-      "fastPreProcessLevel is 'milpbt'. Each round re-examines all rows using "
+      "Maximum number of CoinBoundPropagation rounds when "
+      "boundPropLevel is 'milpbt'. Each round re-examines all rows using "
       "the bounds fixed in previous rounds; the process stops early if a round "
-      "produces no new fixings. Has no effect when fastPreProcessLevel is "
+      "produces no new fixings. Has no effect when boundPropLevel is "
       "'fixpoint' (runs until fixpoint regardless) or 'off'/'singletons'.",
       CoinParam::displayPriorityLow);
 
-  parameters_[CbcParam::FASTNODEPREPROCESSMAXDEPTH]->setup(
-      "fastNodePreProcessMaxD!epth",
-      "Maximum tree depth at which node preprocessing is applied",
+  parameters_[CbcParam::NODEBOUNDPROPMAXDEPTH]->setup(
+      "nodeBoundPropMaxD!epth",
+      "Maximum tree depth at which node bound propagation is applied",
       0, COIN_INT_MAX,
-      "Node preprocessing is only applied at depths up to this value. "
-      "Deeper nodes skip preprocessing to reduce overhead.",
+      "Node bound propagation is only applied at depths up to this value. "
+      "Deeper nodes skip bound propagation to reduce overhead.",
       CoinParam::displayPriorityLow);
 
-  parameters_[CbcParam::FASTNODEPREPROCESSMINDEPTH]->setup(
-      "fastNodePreProcessMinD!epth",
-      "Minimum tree depth at which node preprocessing is applied",
+  parameters_[CbcParam::NODEBOUNDPROPMINDEPTH]->setup(
+      "nodeBoundPropMinD!epth",
+      "Minimum tree depth at which node bound propagation is applied",
       0, COIN_INT_MAX,
-      "Node preprocessing is only applied at depths at or above this value. "
-      "Shallower nodes skip preprocessing.",
+      "Node bound propagation is only applied at depths at or above this value. "
+      "Shallower nodes skip bound propagation.",
       CoinParam::displayPriorityLow);
 
-  parameters_[CbcParam::FASTNODEPREPROCESSDEPTHINTERVAL]->setup(
-      "fastNodePreProcessDepthI!nterval",
-      "Depth interval for node preprocessing",
+  parameters_[CbcParam::NODEBOUNDPROPDEPTHINTERVAL]->setup(
+      "nodeBoundPropDepthI!nterval",
+      "Depth interval for node bound propagation",
       1, COIN_INT_MAX,
-      "Node preprocessing is applied at depths that are multiples of this "
+      "Node bound propagation is applied at depths that are multiples of this "
       "interval (0, interval, 2*interval, ...). For example, with interval 3 "
-      "preprocessing runs at depths 0, 3, 6, 9, etc.",
+      "bound propagation runs at depths 0, 3, 6, 9, etc.",
       CoinParam::displayPriorityLow);
 }
 

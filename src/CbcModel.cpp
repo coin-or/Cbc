@@ -59,7 +59,7 @@ extern int gomory_try;
 #include "CbcCountRowCut.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CbcFathom.hpp"
-#include "CbcFastMILPPreProcess.hpp"
+#include "CbcBoundPropagation.hpp"
 #include "CbcFeasibilityBase.hpp"
 #include "CbcFullNodeInfo.hpp"
 #include "CbcHeuristic.hpp"
@@ -6594,10 +6594,10 @@ CbcModel::CbcModel()
   , heuristic_(NULL)
   , lastHeuristic_(NULL)
   , fastNodeDepth_(-1)
-  , nodePreprocess_(0)
-  , fastNodePreProcessMaxDepth_(50)
-  , fastNodePreProcessMinDepth_(5)
-  , fastNodePreProcessDepthInterval_(5)
+  , nodeBoundProp_(0)
+  , nodeBoundPropMaxDepth_(50)
+  , nodeBoundPropMinDepth_(5)
+  , nodeBoundPropDepthInterval_(5)
   , eventHandler_(NULL)
 #ifdef CBC_HAS_NAUTY
   , symmetryInfo_(NULL)
@@ -6783,10 +6783,10 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , heuristic_(NULL)
   , lastHeuristic_(NULL)
   , fastNodeDepth_(-1)
-  , nodePreprocess_(0)
-  , fastNodePreProcessMaxDepth_(50)
-  , fastNodePreProcessMinDepth_(5)
-  , fastNodePreProcessDepthInterval_(5)
+  , nodeBoundProp_(0)
+  , nodeBoundPropMaxDepth_(50)
+  , nodeBoundPropMinDepth_(5)
+  , nodeBoundPropDepthInterval_(5)
   , eventHandler_(NULL)
   ,
 #ifdef CBC_HAS_NAUTY
@@ -7123,10 +7123,10 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , secsPrintFrequency_(rhs.secsPrintFrequency_)
   , lastSecPrintProgress_(rhs.lastSecPrintProgress_)
   , fastNodeDepth_(rhs.fastNodeDepth_)
-  , nodePreprocess_(rhs.nodePreprocess_)
-  , fastNodePreProcessMaxDepth_(rhs.fastNodePreProcessMaxDepth_)
-  , fastNodePreProcessMinDepth_(rhs.fastNodePreProcessMinDepth_)
-  , fastNodePreProcessDepthInterval_(rhs.fastNodePreProcessDepthInterval_)
+  , nodeBoundProp_(rhs.nodeBoundProp_)
+  , nodeBoundPropMaxDepth_(rhs.nodeBoundPropMaxDepth_)
+  , nodeBoundPropMinDepth_(rhs.nodeBoundPropMinDepth_)
+  , nodeBoundPropDepthInterval_(rhs.nodeBoundPropDepthInterval_)
   , howOftenGlobalScan_(rhs.howOftenGlobalScan_)
   , numberGlobalViolations_(rhs.numberGlobalViolations_)
   , numberExtraIterations_(rhs.numberExtraIterations_)
@@ -7642,10 +7642,10 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
       eventHandler_ = NULL;
     }
     fastNodeDepth_ = rhs.fastNodeDepth_;
-    nodePreprocess_ = rhs.nodePreprocess_;
-    fastNodePreProcessMaxDepth_ = rhs.fastNodePreProcessMaxDepth_;
-    fastNodePreProcessMinDepth_ = rhs.fastNodePreProcessMinDepth_;
-    fastNodePreProcessDepthInterval_ = rhs.fastNodePreProcessDepthInterval_;
+    nodeBoundProp_ = rhs.nodeBoundProp_;
+    nodeBoundPropMaxDepth_ = rhs.nodeBoundPropMaxDepth_;
+    nodeBoundPropMinDepth_ = rhs.nodeBoundPropMinDepth_;
+    nodeBoundPropDepthInterval_ = rhs.nodeBoundPropDepthInterval_;
     if (ownObjects_) {
       for (i = 0; i < numberObjects_; i++)
         delete object_[i];
@@ -8032,10 +8032,10 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   printFrequency_ = rhs.printFrequency_;
   secsPrintFrequency_ = rhs.secsPrintFrequency_;
   fastNodeDepth_ = rhs.fastNodeDepth_;
-  nodePreprocess_ = rhs.nodePreprocess_;
-  fastNodePreProcessMaxDepth_ = rhs.fastNodePreProcessMaxDepth_;
-  fastNodePreProcessMinDepth_ = rhs.fastNodePreProcessMinDepth_;
-  fastNodePreProcessDepthInterval_ = rhs.fastNodePreProcessDepthInterval_;
+  nodeBoundProp_ = rhs.nodeBoundProp_;
+  nodeBoundPropMaxDepth_ = rhs.nodeBoundPropMaxDepth_;
+  nodeBoundPropMinDepth_ = rhs.nodeBoundPropMinDepth_;
+  nodeBoundPropDepthInterval_ = rhs.nodeBoundPropDepthInterval_;
   howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
   maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
   maximumCutPasses_ = rhs.maximumCutPasses_;
@@ -18199,16 +18199,16 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
       }
     }
 
-    // Node-level fast MILP preprocessing: propagate bound changes from
+    // Node-level bound propagation: propagate bound changes from
     // branching to detect infeasibility or fix additional variables.
-    if (nodePreprocess_ && feasible) {
+    if (nodeBoundProp_ && feasible) {
       int depth = node->depth();
-      if (depth >= fastNodePreProcessMinDepth_
-        && depth <= fastNodePreProcessMaxDepth_
-        && (depth % fastNodePreProcessDepthInterval_) == 0) {
-        CbcFastMILPPreProcess fpp;
-        feasible = fpp.run(solver_, NULL, 0,
-          CbcFastMILPPreProcess::Fixpoint, 0,
+      if (depth >= nodeBoundPropMinDepth_
+        && depth <= nodeBoundPropMaxDepth_
+        && (depth % nodeBoundPropDepthInterval_) == 0) {
+        CbcBoundPropagation bp;
+        feasible = bp.run(solver_, NULL, 0,
+          CbcBoundPropagation::Fixpoint, 0,
           true, 1.0e100, 0.0);
       }
     }

@@ -2,51 +2,51 @@
 // Authors: Cbc development team
 // This code is licensed under the terms of the Eclipse Public License (EPL)
 
-#ifndef CbcFastMILPPreProcess_hpp
-#define CbcFastMILPPreProcess_hpp
+#ifndef CbcBoundPropagation_hpp
+#define CbcBoundPropagation_hpp
 
 #include "CbcConfig.h"
 
 class OsiSolverInterface;
 class CoinMessageHandler;
 
-/*! \brief Fast MILP preprocessing: singleton tightening + knapsack-based
- *         bound tightening.
+/*! \brief Bound propagation: singleton tightening + knapsack-based
+ *         bound propagation.
  *
- * This class orchestrates a two-phase fast preprocessing pipeline that runs
+ * This class orchestrates a two-phase bound propagation pipeline that runs
  * before the initial LP relaxation solve:
  *
  *  1. **Singleton tightening** (via OsiSolverInterface::tightenBoundsFromSingletonRows)
  *     — detects rows with a single binary/integer variable and fixes it when
  *     the constraint forces a unique value. Very fast: O(rows + cols).
  *
- *  2. **CoinMILPBoundTightening** — knapsack-based bound propagation over all
+ *  2. **CoinBoundPropagation** — knapsack-based bound propagation over all
  *     ≤-type binary rows. Can cascade: after each round, newly fixed variables
  *     tighten other rows, enabling further fixings.
  *
  * ### Usage
  * \code
- *   CbcFastMILPPreProcess fpp;
- *   bool feasible = fpp.run(solver, handler, logLevel,
- *                           CbcFastMILPPreProcess::MILPbt,
- *                           100, useElapsed, timeLimit, startTime);
+ *   CbcBoundPropagation bp;
+ *   bool feasible = bp.run(solver, handler, logLevel,
+ *                          CbcBoundPropagation::MILPbt,
+ *                          100, useElapsed, timeLimit, startTime);
  *   if (!feasible) {
  *     // instance proved infeasible
- *     int row = fpp.infeasibleRow();   // -1 if unknown
- *     int col = fpp.infeasibleCol();   // -1 if unknown
+ *     int row = bp.infeasibleRow();   // -1 if unknown
+ *     int col = bp.infeasibleCol();   // -1 if unknown
  *   }
  *   // tightenings already applied to solver in place
- *   std::cout << "Fixed " << fpp.nFixed() << " variables\n";
+ *   std::cout << "Fixed " << bp.nFixed() << " variables\n";
  * \endcode
  */
-class CBCLIB_EXPORT CbcFastMILPPreProcess {
+class CBCLIB_EXPORT CbcBoundPropagation {
 public:
-  /*! \brief Aggression level for preprocessing.
+  /*! \brief Aggression level for bound propagation.
    *
    *  - Off:       nothing is done (caller should not call run()).
    *  - Singletons: singleton rows only.
-   *  - MILPbt:   singletons then up to maxRounds of CoinMILPBoundTightening.
-   *  - Fixpoint:  singletons then CoinMILPBoundTightening until fixpoint
+   *  - MILPbt:   singletons then up to maxRounds of CoinBoundPropagation.
+   *  - Fixpoint:  singletons then CoinBoundPropagation until fixpoint
    *               (ignores maxRounds).
    */
   enum Level {
@@ -56,7 +56,7 @@ public:
     Fixpoint
   };
 
-  /*! \brief Reason why the preprocessing loop stopped. */
+  /*! \brief Reason why the bound propagation loop stopped. */
   enum StopReason {
     NotRun = 0,
     ReachedFixpoint, ///< No new fixings in last round
@@ -65,9 +65,9 @@ public:
     InfeasibleDetected ///< Proved infeasible
   };
 
-  CbcFastMILPPreProcess();
+  CbcBoundPropagation();
 
-  /*! \brief Run fast preprocessing.
+  /*! \brief Run bound propagation.
    *
    * Tightenings are applied in-place to \p solver.
    *
@@ -82,7 +82,7 @@ public:
    *                   measured BEFORE calling run().
    *
    * \return true if the problem is (still) feasible, false if infeasibility
-   *         was proved during preprocessing.
+   *         was proved during bound propagation.
    */
   bool run(OsiSolverInterface *solver,
     CoinMessageHandler *handler,
@@ -99,13 +99,13 @@ public:
   /// Number of variables fully fixed by singleton step.
   int nSingletonFixed() const { return nSingletonFixed_; }
 
-  /// Number of variables fixed by CoinMILPBoundTightening across all rounds.
-  int nMILPbtFixed() const { return nMILPbtFixed_; }
+  /// Number of variables fixed by CoinBoundPropagation across all rounds.
+  int nBoundPropFixed() const { return nBoundPropFixed_; }
 
   /// Total fixings from all phases.
-  int nFixed() const { return nSingletonFixed_ + nMILPbtFixed_; }
+  int nFixed() const { return nSingletonFixed_ + nBoundPropFixed_; }
 
-  /// Number of CoinMILPBoundTightening rounds executed.
+  /// Number of CoinBoundPropagation rounds executed.
   int nRoundsRun() const { return nRoundsRun_; }
 
   /// Reason the loop stopped (NotRun if run() was never called).
@@ -123,7 +123,7 @@ public:
 private:
   int nSingletonTightened_;
   int nSingletonFixed_;
-  int nMILPbtFixed_;
+  int nBoundPropFixed_;
   int nRoundsRun_;
   StopReason stopReason_;
   double timeUsed_;
@@ -131,4 +131,4 @@ private:
   int infeasibleCol_;
 };
 
-#endif // CbcFastMILPPreProcess_hpp
+#endif // CbcBoundPropagation_hpp

@@ -3178,7 +3178,7 @@ void CbcParameters::addCbcModelParams()
   parameters_[CbcParam::MAXIMIZE]->setType(CoinParam::paramAct);
 
   parameters_[CbcParam::MAXNODES]->setup(
-      "maxN!odes", "Maximum number of nodes to evaluate", 1, COIN_INT_MAX,
+      "maxN!odes", "Maximum number of nodes to evaluate", 0, COIN_INT_MAX,
       "This is a repeatable way to limit search.  Normally using time is "
       "easier but then the results may not be repeatable.");
 

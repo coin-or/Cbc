@@ -456,7 +456,8 @@ static bool buildConflictGraphAndStrengthenCliques(OsiSolverInterface *solver,
     return false;
 
   if (mode == "before") {
-    solver->initialSolve();
+    // Do NOT call initialSolve() here — the caller (solveInitialLp) will
+    // handle it with the LP progress handler active.
   } else {
     bool takeHint;
     OsiHintStrength strength;
@@ -4959,6 +4960,7 @@ int CbcSolver::solveInitialLp(
               // Clear title so lpPhaseOpenTable prints only the table header.
               fprintf(lpState->fp, "\n%s\n\n",
                 CoinTable::phaseStart(lpState->title, lpState->utf8).c_str());
+              // Print clique strengthening summary after it runs (below)
               lpState->title.clear();
               lpMsgHandler = new ClpLpMsgHandler(lpState);
               ClpLpEventHandler tmpEvt(lpState);
@@ -4998,7 +5000,33 @@ int CbcSolver::solveInitialLp(
 #endif
               return 2;
             }
-            // applyLpMethod() always performs the LP solve (return 0 = done).
+            // --- Clique strengthening "before" (after fast preprocessing) ---
+            if (clqstrMode_ == "before" && lpMethodResult > 0) {
+              double clqTime = CoinWallclockTime();
+              int clqExtended = 0, clqDominated = 0;
+              buildConflictGraphAndStrengthenCliques(model_.solver(),
+                model_.messageHandler(),
+                clqstrMode_,
+                2,
+                model_, mipStart_,
+                &clqExtended, &clqDominated);
+              clqTime = CoinWallclockTime() - clqTime;
+              statistics.cgraph_time += model_.solver()->getCGraphBuildTime();
+              statistics.cgraph_density = model_.solver()->getCGraphDensity();
+              statistics.clqstr_extended = clqExtended;
+              statistics.clqstr_dominated = clqDominated;
+              statistics.clqstr_time = clqTime;
+              if (cbcLogLevel >= 1 && (clqExtended || clqDominated)) {
+                char buf[256];
+                std::snprintf(buf, sizeof(buf),
+                  "  Clique strengthening: %d extended, %d dominated (%.2fs)",
+                  clqExtended, clqDominated, clqTime);
+                printGeneralMessage(model_, buf);
+              }
+            }
+            if (lpMethodResult > 0) {
+              model_.initialSolve();
+            }
 #ifndef CBC_OTHER_SOLVER
             if (lpSavedMsg && si) {
               ClpSimplex *clpModel = si->getModelPtr();
@@ -7233,8 +7261,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         else
           model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
-        // Clique merging "before" is now handled inside applyLpMethod(),
-        // which is called from solveInitialLp() in the BAB path below.
+
         biLinearProblem = false;
         // check if any integers
 #ifndef CBC_OTHER_SOLVER
@@ -7278,10 +7305,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           continue;
         }
         if (cbcParam->setVal(dValue, &message)) {
-          printGeneralMessage(model_, message);
+          printGeneralWarning(model_, message);
           continue;
         } else {
-          printGeneralMessage(model_, message, CBC_GENERAL2);
+          printGeneralMessage(model_, message);
         }
         // TODO: These should be moved to the push function
         switch (cbcParamCode) {
@@ -7396,11 +7423,17 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         if (cbcParamCode == CbcParam::LPLOGLEVEL) {
           clpSolver->messageHandler()->setLogLevel(iValue); // as well
           clpParameters[ClpParam::LOGLEVEL]->setVal(iValue, &message);
-          cbcParam->setVal(iValue, &message);
-          printGeneralMessage(model_, message, CBC_GENERAL2);
+          if (cbcParam->setVal(iValue, &message)) {
+            printGeneralWarning(model_, message);
+            continue;
+          }
+          printGeneralMessage(model_, message);
         } else {
-          cbcParam->setVal(iValue, &message);
-          printGeneralMessage(model_, message, CBC_GENERAL2);
+          if (cbcParam->setVal(iValue, &message)) {
+            printGeneralWarning(model_, message);
+            continue;
+          }
+          printGeneralMessage(model_, message);
           if (cbcParamCode == CbcParam::CUTPASS) {
             cutPass = iValue;
           } else if (cbcParamCode == CbcParam::USESOLUTION) {
@@ -7583,10 +7616,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           continue;
         }
         if (clpParam->setVal(iValue, &message)) {
-          printGeneralMessage(model_, message);
+          printGeneralWarning(model_, message);
           continue;
         } else {
-          printGeneralMessage(model_, message, CBC_GENERAL2);
+          printGeneralMessage(model_, message);
         }
         if (clpParamCode == ClpParam::PRESOLVEPASS) {
           preSolve = iValue;
@@ -7621,9 +7654,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           continue;
         }
         if (cbcParam->setVal(field, &message)) {
-          printGeneralMessage(model_, message);
+          printGeneralWarning(model_, message);
           continue;
         }
+        printGeneralMessage(model_, message);
         int mode = cbcParam->modeVal();
         // TODO: this should be part of the push method
         switch (cbcParamCode) {

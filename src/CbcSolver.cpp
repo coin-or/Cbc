@@ -1122,11 +1122,11 @@ int CbcSolver::applyLpMethod()
   // Strengthens set-packing/partitioning cliques using the conflict graph,
   // then does a quick raw LP warm-start inside the function.  The full
   // configured LP solve happens in step 5 below.
-  if (clqstrMode_ == "before") {
+  if (clqstrMode_ == "before" || clqstrMode_ == "both") {
     double clqTime = CoinWallclockTime();
     int clqExtended = 0, clqDominated = 0;
     buildConflictGraphAndStrengthenCliques(solver, model_.messageHandler(),
-      clqstrMode_, 2, model_, mipStart_, &clqExtended, &clqDominated);
+      "before", 2, model_, mipStart_, &clqExtended, &clqDominated);
     clqTime = CoinWallclockTime() - clqTime;
     statistics_.cgraph_time += solver->getCGraphBuildTime();
     statistics_.cgraph_density = solver->getCGraphDensity();
@@ -1866,7 +1866,7 @@ CbcSolver::CbcSolver()
       landpMode_(CbcParameters::CGOff),
       residualCapacityMode_(CbcParameters::CGOff),
       zerohalfMode_(CbcParameters::CGIfMove), cgraphMode_("on"),
-      clqstrMode_("after"), bkPivotingStrategy_(3), maxCallsBK_(1000),
+      clqstrMode_("before"), bkPivotingStrategy_(3), maxCallsBK_(1000),
       bkClqExtMethod_(4), oddWExtMethod_(2), priorities_(nullptr),
       branchDirection_(nullptr), pseudoDown_(nullptr), pseudoUp_(nullptr),
       solutionIn_(nullptr), prioritiesIn_(nullptr), numberSOS_(0),
@@ -2480,9 +2480,7 @@ void CbcSolver::resetRunState()
   residualCapacityMode_ = CbcParameters::CGOff;
   zerohalfMode_ = CbcParameters::CGIfMove;
   cgraphMode_ = "on";
-  clqstrMode_ = "after";
-  bkPivotingStrategy_ = 3;
-  maxCallsBK_ = 1000;
+  clqstrMode_ = "before";
   bkClqExtMethod_ = 4;
   oddWExtMethod_ = 2;
   numberSOS_ = 0;
@@ -2611,8 +2609,7 @@ void CbcSolver::initialize()
 #endif
   parameters_[CbcParam::CLIQUECUTS]->setVal("ifmove");
   parameters_[CbcParam::ODDWHEELCUTS]->setVal("off");
-  parameters_[CbcParam::CLQSTRENGTHENING]->setVal("after");
-  parameters_[CbcParam::USECGRAPH]->setVal("on");
+  parameters_[CbcParam::CLQSTRENGTHENING]->setVal("before");
   parameters_[CbcParam::AGGREGATEMIXED]->setVal(1);
   parameters_[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
   parameters_[CbcParam::BKMAXCALLS]->setVal(1000);
@@ -5059,12 +5056,12 @@ int CbcSolver::solveInitialLp(
               return 2;
             }
             // --- Clique strengthening "before" (after bound propagation) ---
-            if (clqstrMode_ == "before" && lpMethodResult > 0) {
+            if ((clqstrMode_ == "before" || clqstrMode_ == "both") && lpMethodResult > 0) {
               double clqTime = CoinWallclockTime();
               int clqExtended = 0, clqDominated = 0;
               buildConflictGraphAndStrengthenCliques(model_.solver(),
                 model_.messageHandler(),
-                clqstrMode_,
+                "before",
                 2,
                 model_, mipStart_,
                 &clqExtended, &clqDominated);
@@ -6268,7 +6265,7 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   // Set up likely cut generators and defaults
   parameters[CbcParam::CLIQUECUTS]->setVal("ifmove");
   parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
-  parameters[CbcParam::CLQSTRENGTHENING]->setVal("after");
+  parameters[CbcParam::CLQSTRENGTHENING]->setVal("before");
   parameters[CbcParam::USECGRAPH]->setVal("on");
   parameters[CbcParam::AGGREGATEMIXED]->setVal(1);
   parameters[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
@@ -6910,10 +6907,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     int &GMIMode = GMIMode_;
 
     cgraphMode_ = "on";
-    clqstrMode_ = "after";
+    clqstrMode_ = "before";
     std::string &cgraphMode = cgraphMode_;
     std::string &clqstrMode = clqstrMode_;
-    // Conflict-graph branching ranker configuration (collected from params,
     // applied to model_ before babModel_ is constructed).
     double rankConflictWeight = 0.2;
     std::string rankConflictType = "sum";
@@ -9762,7 +9758,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
             clqstrMode = "off";
           }
-          if (clqstrMode == "after") {
+          if (clqstrMode == "after" || clqstrMode == "both") {
             if (!babModel_->maximumSecondsReached()) {
               int clqExtended = 0, clqDominated = 0;
               // Use preprocHandler when available so that Coin0011I and Cgl0015I
@@ -9773,7 +9769,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 : babModel_->messageHandler();
               buildConflictGraphAndStrengthenCliques(babModel_->solver(),
                 clqHandler,
-                clqstrMode,
+                "after",
                 4,
                 model_, mipStart,
                 &clqExtended, &clqDominated);

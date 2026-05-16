@@ -775,7 +775,7 @@ void CbcParameters::setDefaults(int strategy) {
   // Now set up  parameters according to overall strategies
   switch (strategy) {
    case CbcParameters::DefaultStrategy:
-     parameters_[CbcParam::CLQSTRENGTHENING]->setDefault("after");
+     parameters_[CbcParam::CLQSTRENGTHENING]->setDefault("before");
      parameters_[CbcParam::BRANCHPRIORITY]->setDefault("off");
      parameters_[CbcParam::CHECKTIMEFREQ]->setDefault("often");
      parameters_[CbcParam::CUTOFFCONSTRAINT]->setDefault("off");
@@ -1634,6 +1634,7 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("after", CbcParameters::ClqStrAfter);
   parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("off", CbcParameters::ClqStrOff);
   parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("before", CbcParameters::ClqStrBefore);
+  parameters_[CbcParam::CLQSTRENGTHENING]->appendKwd("both", CbcParameters::ClqStrBoth);
 
   parameters_[CbcParam::BRANCHPRIORITY]->setup(
       "branch!Priorities", "What rule (if any) to use in prioritizing variables for branching",

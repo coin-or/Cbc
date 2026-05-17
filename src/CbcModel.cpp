@@ -3671,17 +3671,6 @@ void CbcModel::branchAndBound(int doStatistics)
   // User event
   if (eventHappened_)
     feasible = false;
-#ifdef CBC_TRY_SCIP
-  if (feasible && (specialOptions_ & 16384) != 0 && !parentModel_) {
-    int tryScip(CbcModel * model, int type);
-    // Use Scip to do search!
-    // if 27 bit (134217728) - use continuousSolver
-    int useCurrent = (specialOptions_ & 134217728) ? 0 : 1;
-    lastHeuristic_ = NULL;
-    status_ = tryScip(this, useCurrent);
-    feasible = false;
-  }
-#endif
   if (!parentModel_ && (moreSpecialOptions_ & 268435456) != 0) {
     // try idiotic idea
     CbcObject *obj = new CbcIdiotBranch(this);

@@ -766,13 +766,6 @@ int CbcHeuristicDW::solution(double &solutionValue,
       CbcCutGenerator * generator = modelX.cutGenerator(i);
       generator->refreshModel(&modelX);
     }
-#ifdef CBC_HAS_NAUTY
-    if (modelX.symmetryInfo()||modelX.rootSymmetryInfo()) {
-      modelX.zapSymmetry();
-      int options2 = modelX.moreSpecialOptions2();
-      modelX.setMoreSpecialOptions2(options2|128|256);
-    }
-#endif
     // replace heuristics
     int numberHeuristics = modelX.numberHeuristics();
     for (int i=0;i<numberHeuristics;i++) {

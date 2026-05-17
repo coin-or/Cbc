@@ -702,12 +702,8 @@ COIN_HAS_OSITESTS_TRUE
 CBCUNITTEST_PCFILES
 CBCUNITTEST_CFLAGS
 CBCUNITTEST_LFLAGS
-COIN_HAS_NAUTY_FALSE
-COIN_HAS_NAUTY_TRUE
 COIN_HAS_ASL_FALSE
 COIN_HAS_ASL_TRUE
-COIN_HAS_READLINE_FALSE
-COIN_HAS_READLINE_TRUE
 COIN_HAS_OSICLP_FALSE
 COIN_HAS_OSICLP_TRUE
 COIN_HAS_CLP_FALSE
@@ -901,13 +897,9 @@ with_clp_cflags
 with_osiclp
 with_osiclp_lflags
 with_osiclp_cflags
-enable_readline
 with_asl
 with_asl_lflags
 with_asl_cflags
-with_nauty
-with_nauty_lflags
-with_nauty_cflags
 with_ositests
 with_ositests_lflags
 with_ositests_cflags
@@ -1593,7 +1585,6 @@ Optional Features:
                           shared library versioning (aka "SONAME") variant to
                           provide on AIX, [default=aix].
   --disable-libtool-lock  avoid locking (might break parallel builds)
-  --disable-readline      do not compile with readline library
   --disable-cbc-parallel  disables compilation of the SMP version of Cbc
 
 Optional Packages:
@@ -1660,16 +1651,6 @@ Optional Packages:
   --with-asl-lflags       Linker flags for ASL appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-asl-cflags       Compiler flags for ASL appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
-  --without-nauty         Do not use Nauty. If an argument is given to
-                          --with-nauty, then 'yes' is equivalent
-                          to --with-nauty, 'no' is equivalent to
-                          --without-nauty and any other argument is applied as
-                          for --with-nauty-lflags.
-  --with-nauty-lflags     Linker flags for Nauty appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-nauty-cflags     Compiler flags for Nauty appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
   --without-ositests      Do not use OsiTests. If an argument is given to
@@ -20734,180 +20715,6 @@ fi
 
 # Optional package for command line edit support
 
-
-
-
-
-  coin_has_readline=no
-
-  # Check whether --enable-readline was given.
-if test ${enable_readline+y}
-then :
-  enableval=$enable_readline; coin_enable_readline=$enableval
-else case e in #(
-  e) coin_enable_readline=yes ;;
-esac
-fi
-
-
-  if test $coin_enable_readline = yes ; then
-    ac_fn_c_check_header_compile "$LINENO" "readline/readline.h" "ac_cv_header_readline_readline_h" "#include <stdio.h>
-"
-if test "x$ac_cv_header_readline_readline_h" = xyes
-then :
-  coin_has_readline=yes
-fi
-
-    coin_save_LIBS="$LIBS"
-    LIBS=
-    if test $coin_has_readline = yes ; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing tputs" >&5
-printf %s "checking for library containing tputs... " >&6; }
-if test ${ac_cv_search_tputs+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.
-   The 'extern "C"' is for builds by C++ compilers;
-   although this is not generally supported in C code supporting it here
-   has little cost and some practical benefit (sr 110532).  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char tputs (void);
-int
-main (void)
-{
-return tputs ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ncurses termcap curses
-do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_search_tputs=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext
-  if test ${ac_cv_search_tputs+y}
-then :
-  break
-fi
-done
-if test ${ac_cv_search_tputs+y}
-then :
-
-else case e in #(
-  e) ac_cv_search_tputs=no ;;
-esac
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_tputs" >&5
-printf "%s\n" "$ac_cv_search_tputs" >&6; }
-ac_res=$ac_cv_search_tputs
-if test "$ac_res" != no
-then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-else case e in #(
-  e) coin_has_readline=no ;;
-esac
-fi
-
-    fi
-    if test $coin_has_readline = yes ; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for readline in -lreadline" >&5
-printf %s "checking for readline in -lreadline... " >&6; }
-if test ${ac_cv_lib_readline_readline+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_check_lib_save_LIBS=$LIBS
-LIBS="-lreadline  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.
-   The 'extern "C"' is for builds by C++ compilers;
-   although this is not generally supported in C code supporting it here
-   has little cost and some practical benefit (sr 110532).  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char readline (void);
-int
-main (void)
-{
-return readline ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_readline_readline=yes
-else case e in #(
-  e) ac_cv_lib_readline_readline=no ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_readline_readline" >&5
-printf "%s\n" "$ac_cv_lib_readline_readline" >&6; }
-if test "x$ac_cv_lib_readline_readline" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBREADLINE 1" >>confdefs.h
-
-  LIBS="-lreadline $LIBS"
-
-else case e in #(
-  e) coin_has_readline=no ;;
-esac
-fi
-
-    fi
-    if test $coin_has_readline = yes ; then
-      CBCLIB_LFLAGS="$LIBS $CBCLIB_LFLAGS"
-
-
-printf "%s\n" "#define CBC_HAS_READLINE 1" >>confdefs.h
-
-    fi
-    LIBS="$coin_save_LIBS"
-  fi
-
-   if test x$coin_has_readline = xyes; then
-  COIN_HAS_READLINE_TRUE=
-  COIN_HAS_READLINE_FALSE='#'
-else
-  COIN_HAS_READLINE_TRUE='#'
-  COIN_HAS_READLINE_FALSE=
-fi
-
-
-
 #############################################################################
 #                       Other third party software                          #
 #############################################################################
@@ -21157,248 +20964,6 @@ printf "%s\n" "#define CBC_HAS_ASL 1" >>confdefs.h
 
 
 # Nauty library (for symmetry detection).
-
-
-
-
-
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Nauty" >&5
-printf %s "checking for package Nauty... " >&6; }
-
-
-
-
-
-
-
-
-  coin_has_nauty=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "nauty" ; then
-        coin_has_nauty=skipping
-      fi
-    done
-  fi
-
-
-  if test "$coin_has_nauty" != skipping ; then
-
-
-
-
-# Check whether --with-nauty was given.
-if test ${with_nauty+y}
-then :
-  withval=$with_nauty;
-fi
-
-
-
-# Check whether --with-nauty-lflags was given.
-if test ${with_nauty_lflags+y}
-then :
-  withval=$with_nauty_lflags;
-fi
-
-
-
-# Check whether --with-nauty-cflags was given.
-if test ${with_nauty_cflags+y}
-then :
-  withval=$with_nauty_cflags;
-fi
-
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_nauty=requested
-
-  nauty_lflags=
-  nauty_cflags=
-  nauty_data=
-  nauty_pcfiles="nauty"
-
-
-  withval="$with_nauty"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_nauty=skipping
-        nauty_failmode='command line'
-        ;;
-      yes )
-        coin_has_nauty=requested
-        nauty_failmode=''
-        ;;
-      build )
-        coin_has_nauty=requested
-        nauty_build=yes
-        nauty_failmode=''
-        ;;
-      * )
-        coin_has_nauty=requested
-        nauty_failmode=''
-        nauty_lflags="$withval"
-        nauty_pcfiles=''
-        ;;
-    esac
-  else
-    if test -n "$with_nauty_lflags" ||
-       test -n "$with_nauty_cflags" ||
-       test -n "$with_nauty_data" ; then
-      coin_has_nauty=requested
-      nauty_failmode=''
-      nauty_pcfiles=''
-    fi
-  fi
-
-
-  if test "$coin_has_nauty" != skipping ; then
-       withval="$with_nauty_lflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify link flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_nauty=yes
-             nauty_lflags="$withval"
-             nauty_pcfiles=''
-             ;;
-         esac
-       fi
-
-       withval="$with_nauty_cflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify compile flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_nauty=yes
-             nauty_cflags="$withval"
-             nauty_pcfiles=''
-             ;;
-         esac
-       fi
-     fi
-
-
-
-
-
-  if test $coin_has_nauty = requested ; then
-    if test -n "$PKG_CONFIG" ; then
-      if test x"$nauty_build" = xyes ; then
-        pcfile="coin$nauty_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      NAUTY_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_nauty=yes
-    else
-      NAUTY_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_nauty=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module nauty without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if ! test $coin_has_nauty = yes ; then
-        pcfile="$nauty_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      NAUTY_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_nauty=yes
-    else
-      NAUTY_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_nauty=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module nauty without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if test $coin_has_nauty = yes ; then
-        nauty_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-        nauty_pcfiles="$pcfile"
-      fi
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Check for nauty via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-nauty-lflags and --with-nauty-cflags." >&5
-printf "%s\n" "$as_me: WARNING: Check for nauty via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-nauty-lflags and --with-nauty-cflags." >&2;}
-      coin_has_nauty=no
-    fi
-  fi
-
-
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for nauty: \"$coin_has_nauty\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_PKG result for nauty: \"$coin_has_nauty\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'nauty'" >&5
-printf "%s\n" "$as_me: Collected values for package 'nauty'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: nauty_lflags is \"$nauty_lflags\"" >&5
-printf "%s\n" "$as_me: nauty_lflags is \"$nauty_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: nauty_cflags is \"$nauty_cflags\"" >&5
-printf "%s\n" "$as_me: nauty_cflags is \"$nauty_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: nauty_data is \"$nauty_data\"" >&5
-printf "%s\n" "$as_me: nauty_data is \"$nauty_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: nauty_pcfiles is \"$nauty_pcfiles\"" >&5
-printf "%s\n" "$as_me: nauty_pcfiles is \"$nauty_pcfiles\"" >&6;}
-  fi
-
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_nauty" >&5
-printf "%s\n" "$coin_has_nauty" >&6; }
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_nauty (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_nauty (COIN_SKIP_PROJECTS)" >&6; }
-  fi
-
-
-  if test "$coin_has_nauty" != yes ; then
-    coin_has_nauty=no
-  fi
-
-
-   if test $coin_has_nauty = yes; then
-  COIN_HAS_NAUTY_TRUE=
-  COIN_HAS_NAUTY_FALSE='#'
-else
-  COIN_HAS_NAUTY_TRUE='#'
-  COIN_HAS_NAUTY_FALSE=
-fi
-
-
-
-  if test $coin_has_nauty = yes ; then
-
-printf "%s\n" "#define CBC_HAS_NAUTY 1" >>confdefs.h
-
-    CBCLIB_PCFILES="$nauty_pcfiles $CBCLIB_PCFILES"
-       CBCLIB_LFLAGS="$nauty_lflags $CBCLIB_LFLAGS"
-       CBCLIB_CFLAGS="$nauty_cflags $CBCLIB_CFLAGS"
-
-
-
-  fi
-
 
 #############################################################################
 
@@ -23594,16 +23159,8 @@ if test -z "${COIN_HAS_OSICLP_TRUE}" && test -z "${COIN_HAS_OSICLP_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_OSICLP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${COIN_HAS_READLINE_TRUE}" && test -z "${COIN_HAS_READLINE_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_READLINE\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${COIN_HAS_ASL_TRUE}" && test -z "${COIN_HAS_ASL_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_ASL\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COIN_HAS_NAUTY_TRUE}" && test -z "${COIN_HAS_NAUTY_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_NAUTY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_OSITESTS_TRUE}" && test -z "${COIN_HAS_OSITESTS_FALSE}"; then

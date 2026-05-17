@@ -69,7 +69,6 @@ if test $coin_has_osiclp != yes ; then
 fi
 
 # Optional package for command line edit support
-AC_COIN_CHK_GNU_READLINE([CbcLib])
 
 #############################################################################
 #                       Other third party software                          #
@@ -79,7 +78,6 @@ AC_COIN_CHK_GNU_READLINE([CbcLib])
 AC_COIN_CHK_PKG(ASL,[CbcLib],[coinasl])
 
 # Nauty library (for symmetry detection).
-AC_COIN_CHK_PKG([Nauty],[CbcLib],[nauty])
 
 #############################################################################
 

@@ -203,11 +203,10 @@ am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcStatistics.lo libCbc_la-CbcSolverStatistics.lo \
 	libCbc_la-CbcInstanceFeatures.lo \
 	libCbc_la-CbcBoundPropagation.lo libCbc_la-CbcStrategy.lo \
-	libCbc_la-CbcSubProblem.lo libCbc_la-CbcSymmetry.lo \
-	libCbc_la-CbcThread.lo libCbc_la-CbcTree.lo \
-	libCbc_la-CbcTreeLocal.lo libCbc_la-Cbc_C_Interface.lo \
-	libCbc_la-CbcLinked.lo libCbc_la-CbcLinkedUtils.lo \
-	libCbc_la-unitTestClp.lo
+	libCbc_la-CbcSubProblem.lo libCbc_la-CbcThread.lo \
+	libCbc_la-CbcTree.lo libCbc_la-CbcTreeLocal.lo \
+	libCbc_la-Cbc_C_Interface.lo libCbc_la-CbcLinked.lo \
+	libCbc_la-CbcLinkedUtils.lo libCbc_la-unitTestClp.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -315,7 +314,6 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcStatistics.Plo \
 	./$(DEPDIR)/libCbc_la-CbcStrategy.Plo \
 	./$(DEPDIR)/libCbc_la-CbcSubProblem.Plo \
-	./$(DEPDIR)/libCbc_la-CbcSymmetry.Plo \
 	./$(DEPDIR)/libCbc_la-CbcThread.Plo \
 	./$(DEPDIR)/libCbc_la-CbcTree.Plo \
 	./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo \
@@ -643,7 +641,6 @@ libCbc_la_SOURCES = \
 	CbcBoundPropagation.cpp CbcBoundPropagation.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
-	CbcSymmetry.cpp CbcSymmetry.hpp \
 	CbcThread.cpp CbcThread.hpp \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp \
@@ -999,7 +996,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcStatistics.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcStrategy.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSubProblem.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcSymmetry.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcThread.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcTree.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo@am__quote@ # am--include-marker
@@ -1603,13 +1599,6 @@ libCbc_la-CbcSubProblem.lo: CbcSubProblem.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcSubProblem.lo `test -f 'CbcSubProblem.cpp' || echo '$(srcdir)/'`CbcSubProblem.cpp
 
-libCbc_la-CbcSymmetry.lo: CbcSymmetry.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcSymmetry.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcSymmetry.Tpo -c -o libCbc_la-CbcSymmetry.lo `test -f 'CbcSymmetry.cpp' || echo '$(srcdir)/'`CbcSymmetry.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcSymmetry.Tpo $(DEPDIR)/libCbc_la-CbcSymmetry.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcSymmetry.cpp' object='libCbc_la-CbcSymmetry.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-CbcSymmetry.lo `test -f 'CbcSymmetry.cpp' || echo '$(srcdir)/'`CbcSymmetry.cpp
-
 libCbc_la-CbcThread.lo: CbcThread.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libCbc_la-CbcThread.lo -MD -MP -MF $(DEPDIR)/libCbc_la-CbcThread.Tpo -c -o libCbc_la-CbcThread.lo `test -f 'CbcThread.cpp' || echo '$(srcdir)/'`CbcThread.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libCbc_la-CbcThread.Tpo $(DEPDIR)/libCbc_la-CbcThread.Plo
@@ -1881,7 +1870,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStatistics.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStrategy.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSubProblem.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-CbcSymmetry.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcThread.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTree.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo
@@ -2017,7 +2005,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStatistics.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcStrategy.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcSubProblem.Plo
-	-rm -f ./$(DEPDIR)/libCbc_la-CbcSymmetry.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcThread.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTree.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo

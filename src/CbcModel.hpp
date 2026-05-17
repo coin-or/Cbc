@@ -16,7 +16,6 @@
 // COIN_FAST_CODE
 // COIN_USE_RESTRICT
 // COIN_PREFETCH
-// CBC_HAS_NAUTY // may not be needed if nauty well installed
 // CBC_LAGRANGEAN_SOLVERS=1
 // USE_MEMCPY
 // COIN_NOTEST_DUPLICATE
@@ -2782,32 +2781,6 @@ public:
   {
     maximumNumberIterations_ = value;
   }
-#ifdef CBC_HAS_NAUTY
-  /// Symmetry information
-  inline CbcSymmetry *symmetryInfo() const
-  {
-    return symmetryInfo_;
-  }
-  /// Set symmetry information
-  inline void setSymmetryInfo(CbcSymmetry * info)
-  {
-    symmetryInfo_ = info;
-  }
-  /// get rid of all
-  void zapSymmetry();
-  /// Root symmetry information
-  inline CbcSymmetry *rootSymmetryInfo() const
-  {
-    return rootSymmetryInfo_;
-  }
-  /// Set root symmetry information
-  inline void setRootSymmetryInfo(CbcSymmetry *info)
-  {
-    rootSymmetryInfo_ = info;
-  }
-  /// get rid of all
-  void zapRootSymmetry();
-#endif
   /// Set depth for fast nodes
   inline void setFastNodeDepth(int value)
   {
@@ -2953,7 +2926,6 @@ public:
   /** may be safer to use this overload method: c++ string libraries 
      * implementation may not be binary compatible */
   void setMIPStart(int count, const char **colNames, const double colValues[]);
-
 
   const std::vector< std::pair< std::string, double > > &getMIPStart()
   {
@@ -3373,12 +3345,6 @@ private:
   ClpEventHandler *eventHandler_;
 #else
   CbcEventHandler *eventHandler_;
-#endif
-#ifdef CBC_HAS_NAUTY
-  /// Symmetry information
-  CbcSymmetry *symmetryInfo_;
-  /// Root symmetry information
-  CbcSymmetry *rootSymmetryInfo_;
 #endif
 #ifdef CBC_PROBE_10 
   /// Pointer for depth 10 probing etc

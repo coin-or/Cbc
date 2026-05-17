@@ -146,16 +146,12 @@ void CbcCrashHandler(int sig);
 #include "CbcSolverHeuristics.hpp"
 #include "CbcStrategy.hpp"
 #include "CbcTreeLocal.hpp"
-#ifdef CBC_HAS_NAUTY
-#include "CbcSymmetry.hpp"
-#endif
 //#define CBC_USE_OPENMP
 #ifdef CBC_USE_OPENMP
 #include "omp.h"
 #endif
 
 #define CGRAPH_INFEASIBLE_IMPLICATION_WARNING_LIMIT 5
-
 
 void printGeneralMessage(CbcModel &model, std::string message, int type)
 {
@@ -951,10 +947,6 @@ static void clpStatistics(ClpSimplex *originalModel, ClpSimplex *model);
 static bool maskMatches(const int *starts, char **masks, std::string &check);
 static void generateCode(CbcModel *model, const char *fileName, int type,
                          int preProcess);
-#ifdef CBC_HAS_NAUTY
-// returns number of constraints added
-static int nautiedConstraints(CbcModel &model, int maxPass);
-#endif
 
 // dummy fake main programs for UserClp and UserCbc
 void fakeMain(ClpSimplex &model, OsiSolverInterface &osiSolver,
@@ -1374,7 +1366,6 @@ int CbcSolver::applyLpMethod()
 
   if (lpMethod == CbcParameters::LPBarrier)
     si->setWarmStart(nullptr);
-
 
   return 0;
 }
@@ -2571,13 +2562,6 @@ void CbcSolver::initialize()
   parameters_[CbcParam::RINS]->setVal("on");
   parameters_[CbcParam::COMBINE]->setVal("off");
   parameters_[CbcParam::CROSSOVER]->setVal("off");
-#ifdef CBC_HAS_NAUTY
-#ifndef CBC_LIGHTWEIGHT_NAUTY
-  parameters_[CbcParam::ORBITAL]->setVal("on");
-#else
-  parameters_[CbcParam::ORBITAL]->setVal("lightweight");
-#endif
-#endif
   parameters_[CbcParam::PIVOTANDFIX]->setVal("off");
   parameters_[CbcParam::RANDROUND]->setVal("off");
   parameters_[CbcParam::NAIVE]->setVal("off");
@@ -6007,13 +5991,6 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   parameters[CbcParam::RINS]->setVal("on");
   parameters[CbcParam::COMBINE]->setVal("off");
   parameters[CbcParam::CROSSOVER]->setVal("off");
-#ifdef CBC_HAS_NAUTY
-#ifndef CBC_LIGHTWEIGHT_NAUTY
-  parameters[CbcParam::ORBITAL]->setVal("on");
-#else
-  parameters[CbcParam::ORBITAL]->setVal("lightweight");
-#endif
-#endif
   //parameters[CbcParam::PIVOTANDCOMPLEMENT]->setVal("off");
   parameters[CbcParam::PIVOTANDFIX]->setVal("off");
   parameters[CbcParam::RANDROUND]->setVal("off");
@@ -6095,9 +6072,6 @@ public:
         || rootHeurOut_ != nullptr
         || cutGenOut_ != nullptr
         || bnbOut_ != nullptr
-#ifdef CBC_HAS_NAUTY
-        || (babModel_.moreSpecialOptions2() & (128 | 256)) != 0
-#endif
         )) {
       FILE *outfp = babModel_.messageHandler()->filePointer();
       if (!outfp)
@@ -11262,11 +11236,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               babModel_->branchAndBound(doStatistics);
             }
 #else
-#ifdef ORBITAL
-            CbcOrbital orbit(babModel_);
-            orbit.morph();
-            exit(1);
-#endif
             int hOp1 = parameters[CbcParam::HEUROPTIONS]->intVal() / 100000;
             if (hOp1 % 10) {
               CbcCompareDefault compare;
@@ -11525,38 +11494,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               babModel_->setSpecialOptions(babModel_->specialOptions() & (~(512 | 32768)));
             babModel_->setMoreSpecialOptions2(
               parameters[CbcParam::MOREMOREMIPOPTIONS]->intVal());
-#ifdef CBC_HAS_NAUTY
-            int nautyAdded = 0;
-            {
-              if (parameters[CbcParam::ORBITAL]->modeVal()) {
-                int k = parameters[CbcParam::ORBITAL]->modeVal();
-                if (k < 4) {
-                  babModel_->setMoreSpecialOptions2(
-                    babModel_->moreSpecialOptions2() | (k * 128));
-                } else if (k == 4) {
-#define MAX_NAUTY_PASS 2000
-                  nautyAdded = nautiedConstraints(*babModel_, MAX_NAUTY_PASS);
-                } else {
-                  assert(k >= 5 && k <= 9);
-                  if (k == 5)
-                    babModel_->setMoreSpecialOptions2(
-                      babModel_->moreSpecialOptions2() | 128 | 256 | 131072);
-                  else if (k == 6)
-                    babModel_->setMoreSpecialOptions2(
-                      babModel_->moreSpecialOptions2() | 128 | 256 | 262144);
-                  else if (k == 7)
-                    babModel_->setMoreSpecialOptions2(
-                      babModel_->moreSpecialOptions2() | 128 | 256 | 131072 | 262144);
-                  else if (k == 8)
-                    babModel_->setMoreSpecialOptions2(
-                      babModel_->moreSpecialOptions2() | 131072 | 1073741824);
-                  else
-                    babModel_->setMoreSpecialOptions2(
-                      babModel_->moreSpecialOptions2() | 262144 | 1073741824);
-                }
-              }
-            }
-#endif
             // preProcessPointer removed — was always NULL (dead code)
             {
               OsiClpSolverInterface *solver = getClpSolver(babModel_->solver());
@@ -11620,17 +11557,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               BabHandlerGuard handlerGuard(*babModel_, model_, parameters, cbcLogLevel);
               babModel_->branchAndBound(doStatistics);
             }
-#ifdef CBC_HAS_NAUTY
-            if (nautyAdded) {
-              int *which = new int[nautyAdded];
-              int numberOldRows = babModel_->solver()->getNumRows() - nautyAdded;
-              for (int i = 0; i < nautyAdded; i++)
-                which[i] = i + numberOldRows;
-              babModel_->solver()->deleteRows(nautyAdded, which);
-              delete[] which;
-              babModel_->solver()->resolve();
-            }
-#endif
             if (truncateColumns < babModel_->solver()->getNumCols()) {
               OsiSolverInterface *solverX = babModel_->solver();
               int numberColumns = solverX->getNumCols();
@@ -14948,210 +14874,6 @@ static void printGeneralMessage(CbcModel &model, const char *message) {
       << message << CoinMessageEol;
 #endif
 }
-#ifdef CBC_HAS_NAUTY
-#include "CbcSymmetry.hpp"
-// returns number of constraints added
-static int nautiedConstraints(CbcModel &model, int maxPass) {
-  bool changed = true;
-  int numberAdded = 0;
-  int numberPasses = 0;
-  int changeType = 0; //(more2&(128|256))>>7;
-  OsiSolverInterface *solverOriginal = model.solver();
-  //#define REALLY_CHANGE
-#ifdef REALLY_CHANGE
-  OsiSolverInterface *solver = solverOriginal;
-#else
-  int numberOriginalRows = solverOriginal->getNumRows();
-  OsiSolverInterface *solver = solverOriginal->clone();
-  model.swapSolver(solver);
-#endif
-  while (changed) {
-    changed = false;
-    CbcSymmetry symmetryInfo;
-    // symmetryInfo.setModel(&model);
-    // for now strong is just on counts - use user option
-    // int maxN=5000000;
-    // OsiSolverInterface * solver = model.solver();
-    symmetryInfo.setupSymmetry(&model);
-    int numberGenerators;
-    if (!numberPasses) {
-      numberGenerators = symmetryInfo.statsOrbits(&model, 0);
-    } else {
-      numberGenerators = symmetryInfo.getNtyInfo()->getNumGenerators();
-    }
-    if (numberGenerators) {
-      const double * solution = solver->getColSolution();
-      // symmetryInfo.Print_Orbits();
-      int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();
-      if (numberUsefulOrbits) {
-        symmetryInfo.Compute_Symmetry();
-        symmetryInfo.fillOrbits(/*true*/);
-        const int *orbits = symmetryInfo.whichOrbit();
-        int numberUsefulOrbits = symmetryInfo.numberUsefulOrbits();
-        int *counts = new int[2*numberUsefulOrbits];
-	int *active = counts+numberUsefulOrbits;
-        memset(counts, 0, 2*numberUsefulOrbits * sizeof(int));
-        int numberColumns = solver->getNumCols();
-        int numberUseful = 0;
-        if (changeType == 1) {
-          // just 0-1
-          for (int i = 0; i < numberColumns; i++) {
-            int iOrbit = orbits[i];
-            if (iOrbit >= 0) {
-              if (solver->isBinary(i)) {
-                counts[iOrbit]++;
-                numberUseful++;
-		double value = solution[i];
-		if (fabs(value-floor(value+0.5))>1.0e-5)
-		  active[iOrbit]++;
-              }
-            }
-          }
-        } else if (changeType == 2) {
-          // just integer
-          for (int i = 0; i < numberColumns; i++) {
-            int iOrbit = orbits[i];
-            if (iOrbit >= 0) {
-              if (solver->isInteger(i)) {
-                counts[iOrbit]++;
-                numberUseful++;
-		double value = solution[i];
-		if (fabs(value-floor(value+0.5))>1.0e-5)
-		  active[iOrbit]++;
-              }
-            }
-          }
-        } else {
-          // all
-          for (int i = 0; i < numberColumns; i++) {
-            int iOrbit = orbits[i];
-            if (iOrbit >= 0) {
-              counts[iOrbit]++;
-              numberUseful++;
-	      double value = solution[i];
-	      if (fabs(value-floor(value+0.5))>1.0e-5)
-		active[iOrbit]++;
-            }
-          }
-        }
-        int iOrbit = -1;
-#define LONGEST 1
-#if LONGEST
-        // choose longest (and most active)
-        int maxOrbit = 0;
-	int maxActive = 0;
-        for (int i = 0; i < numberUsefulOrbits; i++) {
-          if (counts[i] > maxOrbit) {
-            maxOrbit = counts[i];
-	    maxActive = active[i];
-            iOrbit = i;
-          } else if (counts[i] == maxOrbit && active[i] > maxActive) {
-	    maxActive = active[i];
-            iOrbit = i;
-          }
-        }
-#else
-        // choose closest to 2
-        int minOrbit = numberColumns + 1;
-        for (int i = 0; i < numberUsefulOrbits; i++) {
-          if (counts[i] > 1 && counts[i] < minOrbit) {
-            minOrbit = counts[i];
-            iOrbit = i;
-          }
-        }
-#endif
-        delete[] counts;
-        if (!numberUseful)
-          break;
-        // take largest
-        const double *solution = solver->getColSolution();
-        double *size = new double[numberColumns];
-        int *which = new int[numberColumns];
-        int nIn = 0;
-        for (int i = 0; i < numberColumns; i++) {
-          if (orbits[i] == iOrbit) {
-            size[nIn] = -solution[i];
-            which[nIn++] = i;
-          }
-        }
-        if (nIn > 1) {
-          // printf("Using orbit length %d\n",nIn);
-          CoinSort_2(size, size + nIn, which);
-          size[0] = 1.0;
-          size[1] = -1.0;
-#if LONGEST == 0
-          solver->addRow(2, which, size, 0.0, COIN_DBL_MAX);
-          numberAdded++;
-#elif LONGEST == 1
-          for (int i = 0; i < nIn - 1; i++) {
-            solver->addRow(2, which + i, size, 0.0, COIN_DBL_MAX);
-            numberAdded++;
-          }
-#else
-          for (int i = 0; i < nIn - 1; i++) {
-            solver->addRow(2, which, size, 0.0, COIN_DBL_MAX);
-            which[1] = which[2 + i];
-            numberAdded++;
-          }
-#endif
-          numberPasses++;
-          if (numberPasses < maxPass)
-            changed = true;
-        }
-        delete[] size;
-        delete[] which;
-      }
-    }
-  }
-  if (numberAdded) {
-    char general[100];
-    if (numberPasses < maxPass)
-      sprintf(general, "%d constraints added in %d passes", numberAdded,
-              numberPasses);
-    else
-      sprintf(
-          general,
-          "%d constraints added in %d passes (maximum) - must be better way",
-          numberAdded, numberPasses);
-    model.messageHandler()->message(CBC_GENERAL, model.messages())
-        << general << CoinMessageEol;
-#ifdef SAVE_NAUTY
-    OsiClpSolverInterface *clpSolver =
-        getClpSolver(solver);
-    ClpSimplex *lpSolver = clpSolver->getModelPtr();
-    char name[100];
-    strcpy(name, lpSolver->problemName().c_str());
-    strcat(name, "_nauty");
-    printf("saving model on %s\n", name);
-    solver->writeMps(name);
-#endif
-  }
-#ifndef REALLY_CHANGE
-  CbcRowCuts *globalCuts = model.globalCuts();
-  int numberRows = solver->getNumRows();
-  if (numberRows > numberOriginalRows) {
-    const CoinPackedMatrix *rowCopy = solver->getMatrixByRow();
-    const int *column = rowCopy->getIndices();
-    const int *rowLength = rowCopy->getVectorLengths();
-    const CoinBigIndex *rowStart = rowCopy->getVectorStarts();
-    const double *elements = rowCopy->getElements();
-    const double *rowLower = solver->getRowLower();
-    const double *rowUpper = solver->getRowUpper();
-    for (int iRow = numberOriginalRows; iRow < numberRows; iRow++) {
-      OsiRowCut rc;
-      rc.setLb(rowLower[iRow]);
-      rc.setUb(rowUpper[iRow]);
-      CoinBigIndex start = rowStart[iRow];
-      rc.setRow(rowLength[iRow], column + start, elements + start, false);
-      globalCuts->addCutIfNotDuplicate(rc);
-    }
-  }
-  model.swapSolver(solverOriginal);
-  delete solver;
-#endif
-  return numberAdded;
-}
-#endif
 
 /*
   Version 1.00.00 November 16 2005.

@@ -116,7 +116,6 @@ enum OptimizationTask {
   IntegerOptimization    = 2
 };
 
-
 // To allow call backs
 class Cbc_MessageHandler
   : public CoinMessageHandler {
@@ -176,8 +175,6 @@ protected:
 //static int nCmcLpOptions = 12;
 
 static char cbc_annouced = 0;
-
-
 
 struct Cbc_Model {
   /**
@@ -604,7 +601,6 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
 
   return noAction;
 }
-
 
 //-------------------------------------------------------------------
 // Default Constructor
@@ -1162,7 +1158,6 @@ static void synchronizeParams( CbcModel *model, CbcParameters *parameters ) {
   parameters->setParamVal(CbcParam::MAXSECONDSNOTIMPROVING, doubleValue);
 }
 
-
 /* Default Cbc_Model constructor */
 Cbc_Model *CBC_LINKAGE
 Cbc_newModel()
@@ -1504,7 +1499,6 @@ Cbc_setInitialSolution(Cbc_Model *model, const double *sol)
   model->iniObj = objval;
 }
 
-
 void CBC_LINKAGE
 Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val) {
   assert(which < N_INT_PARAMS);
@@ -1600,7 +1594,6 @@ int CBC_LINKAGE Cbc_status(Cbc_Model *model) {
 
   return INT_MAX;
 }
-
 
 int CBC_LINKAGE Cbc_secondaryStatus(Cbc_Model *model) {
   switch (model->lastOptimization) {
@@ -2235,7 +2228,6 @@ void Cbc_updateSlack( Cbc_Model *model, const double *ractivity ) {
   }
 }
 
-
 void CBC_LINKAGE Cbc_strengthenPacking(Cbc_Model *model) {
   Cbc_flush(model);
   OsiClpSolverInterface *solver = model->solver_;
@@ -2718,7 +2710,6 @@ Cbc_getNumRows(Cbc_Model *model)
   return model->solver_->getNumRows() + model->nRows;
 }
 
-
 int CBC_LINKAGE
 Cbc_getIterationCount(Cbc_Model *model) {
   return model->mipIterationCount;
@@ -3147,7 +3138,6 @@ Cbc_isContinuousUnbounded(Cbc_Model *model) {
   return false;
 }
 
-
 int CBC_LINKAGE
 Cbc_isNodeLimitReached(Cbc_Model *model) {
   switch (model->lastOptimization) {
@@ -3165,7 +3155,6 @@ Cbc_isNodeLimitReached(Cbc_Model *model) {
 
   return false;
 }
-
 
 int CBC_LINKAGE
 Cbc_isSecondsLimitReached(Cbc_Model *model) {
@@ -3238,7 +3227,6 @@ Cbc_isInitialSolveProvenOptimal(Cbc_Model *model) {
 
   return false;
 }
-
 
 int CBC_LINKAGE
 Cbc_isInitialSolveProvenPrimalInfeasible(Cbc_Model *model) {
@@ -3342,7 +3330,6 @@ Cbc_getRowUpper(Cbc_Model *model)
   return solver->getRowUpper();
 }
 
-
 const double *CBC_LINKAGE
 Cbc_getRowActivity(Cbc_Model *model) {
   if ( model->lastOptimization == ModelNotOptimized ) {
@@ -3352,7 +3339,6 @@ Cbc_getRowActivity(Cbc_Model *model) {
 
   return model->rActv;
 }
-
 
 const double *CBC_LINKAGE
 Cbc_getRowSlack(Cbc_Model *model) {
@@ -3459,7 +3445,6 @@ Cbc_setColUpper(Cbc_Model *model, int index, double value)
   model->solver_->setColUpper( index, value );
 }
 
-
 const double *CBC_LINKAGE
 Cbc_bestSolution(Cbc_Model *model)
 {
@@ -3505,7 +3490,6 @@ Cbc_getNodeCount(Cbc_Model *model) {
 
   return false;
 }
-
 
 /** Return a copy of this model */
 Cbc_Model *CBC_LINKAGE
@@ -3679,7 +3663,6 @@ OsiClpSolverInterface* Cbc_cloneSolver(OsiClpSolverInterface *solver) {
   return newSolver;
 }
 
-
 /** Discards the current solution, putting the model to an unsolved state */
 void CBC_LINKAGE
 Cbc_reset(Cbc_Model *model)
@@ -3804,7 +3787,6 @@ Cbc_addRow(Cbc_Model *model, const char *name, int nz,
     rowNameIndex[std::string(name)] = Cbc_getNumRows(model)-1;
   }
 }
-
 
 void CBC_LINKAGE
 Cbc_addLazyConstraint(Cbc_Model *model, int nz,
@@ -3979,7 +3961,6 @@ Cbc_Column CBC_LINKAGE Cbc_getColumn(Cbc_Model *model, int colIdx ) {
   return result;
 }
 
-
 Cbc_Row CBC_LINKAGE Cbc_getRow( Cbc_Model *model, int rowIdx ) {
   Cbc_Row result;
 
@@ -3993,8 +3974,6 @@ Cbc_Row CBC_LINKAGE Cbc_getRow( Cbc_Model *model, int rowIdx ) {
 
   return result;
 }
-
-
 
 /** Add SOS constraints to the model using row-order matrix */
 void CBC_LINKAGE
@@ -4043,7 +4022,6 @@ Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
   model->sosElSize += newEl;
 }
 
-
 /** @brief Queries the number os SOS objects */
 int CBC_LINKAGE Cbc_numberSOS(Cbc_Model *model) {
   return model->nSos;
@@ -4071,7 +4049,6 @@ Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double
   model->colNamesMS = (char **) xmalloc( sizeof(char*)*count );
   model->charSpaceMS = sizeof(char)*nameSpace;
   model->colNamesMS[0] = (char *) xmalloc( model->charSpaceMS );
-
 
   for ( int i=1 ; (i<count) ; ++i )
     model->colNamesMS[i] = model->colNamesMS[i-1] + 1 + strlen(colNames[i-1]);
@@ -4119,7 +4096,6 @@ Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double 
   memcpy(model->colValuesMS, colValues, sizeof(double)*count );
   model->nColsMS = count;
 }
-
 
 /** @brief Creates a new OsiClpSolverInterface and returns a pointer to an OsiSolverInterface object */
 void * CBC_LINKAGE
@@ -4218,7 +4194,6 @@ Osi_isIterationLimitReached(void *osi)
   return (char)osis->isIterationLimitReached();
 }
 
-
 int CBC_LINKAGE
 Osi_getNumCols( void *osi )
 {
@@ -4238,7 +4213,6 @@ int CBC_LINKAGE Osi_n_features() {
 
 /** @brief Name of feature i */
 const char * CBC_LINKAGE Osi_feature_name(int i);
-
 
 /** @brief Creates (it not yet) the conflict graph  */
 void CBC_LINKAGE
@@ -4269,7 +4243,6 @@ double CBC_LINKAGE CG_density( void *cgraph ) {
   const CoinStaticConflictGraph *cg = (CoinStaticConflictGraph *)cgraph;
   return cg->density();
 }
-
 
 CGNeighbors CBC_LINKAGE CG_conflictingNodes(Cbc_Model *model, void *cgraph, size_t node) {
   CGNeighbors result;
@@ -4303,10 +4276,6 @@ CGNeighbors CBC_LINKAGE CG_conflictingNodes(Cbc_Model *model, void *cgraph, size
 
   return result;
 }
-
-
-
-
 
 /** @brief Returns column name in OsiSolverInterface object */
 void CBC_LINKAGE
@@ -4633,7 +4602,6 @@ OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx, const double *coef, ch
   OsiRowCut orc;
   orc.setRow( nz, idx, coef );
 
-
   orc.setLb(-DBL_MAX);
   orc.setUb(DBL_MAX);
 
@@ -4676,7 +4644,6 @@ OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *co
   OsiRowCut orc;
   orc.setRow( nz, idx, coef );
 
-
   orc.setLb(-DBL_MAX);
   orc.setUb(DBL_MAX);
 
@@ -4709,7 +4676,6 @@ OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx, const double *co
   orc.setGloballyValid(true);
   oc->insert(orc);
 }
-
 
 /** @brief Sets a variable to integer */
 void CBC_LINKAGE
@@ -4994,7 +4960,6 @@ Cbc_setDualReductionsType(Cbc_Model *model, enum LPReductions red) {
   model->red_type = red;
 }
 
-
 void * CBC_LINKAGE
 Cbc_getSolverPtr(Cbc_Model *model) {
   return model->solver_;
@@ -5089,7 +5054,6 @@ static void *xmalloc( const size_t size )
 
    return result;
 }
-
 
 static void *xrealloc( void *ptr, const size_t newSize ) {
   void *res = realloc( ptr, newSize );
@@ -5196,11 +5160,6 @@ void CBC_LINKAGE Cbc_getBuildInfo(char *str) {
   strcat(str, s);
 #endif
   strcat(str, "Components:\n");
-#ifdef CBC_HAS_NAUTY
-  strcat(str, "  nauty: yes\n");
-#else
-  strcat(str, "  nauty: no\n");
-#endif
 #ifdef CBC_THREAD
   strcat(str, "  threads: yes\n");
 #else

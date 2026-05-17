@@ -443,17 +443,6 @@ public:
    */
   static void printImportErrors(FILE *fp, const CbcImportHandler &ih);
 
-#ifdef CBC_HAS_NAUTY
-  /** Print a clean symmetry-detection (nauty) section.
-   *  Called from CbcSolver.cpp after running setupSymmetry/statsOrbits silently.
-   *  errorCode == 0 means no error; non-zero prints an error message.
-   */
-  static void printNautySection(FILE *fp, bool utf8,
-    int numUsefulOrbits, int numUsefulObjects,
-    int totalOrbits, int numGenerators, double groupSize,
-    double nautyTime, int errorCode = 0);
-#endif
-
 private:
   static bool utf8_;
   static bool utf8Set_;
@@ -630,8 +619,7 @@ private:
 
 /** Message handler temporarily installed on CbcModel before branchAndBound().
  *  Reformats cut generation, B&B progress and heuristic output into clean
- *  structured sections.  When built with CBC_HAS_NAUTY it also intercepts
- *  Nauty CBC_GENERAL messages and renders them as a symmetry-detection section.
+ *  structured sections.
  *  All other messages are forwarded through the normal CoinMessageHandler::print()
  *  path.
  *
@@ -696,18 +684,6 @@ private:
   CbcCutGenOutput *cutGenOut_ = nullptr; // for root cut generation output
   CbcBnBOutput *bnbOut_ = nullptr;       // for B&B progress table
 
-#ifdef CBC_HAS_NAUTY
-  void printSection();
-  // Stats accumulated from the "Nauty: N orbits ..." message
-  int totalOrbits_ = 0;
-  int usefulOrbits_ = 0;
-  int usefulVars_ = 0;
-  int numGens_ = 0;
-  double groupSize_ = 0.0;
-  double nautyTime_ = 0.0;
-  bool hasError_ = false;
-  int errorCode_ = 0;
-#endif
 };
 
 #endif /* CbcOutput_H */

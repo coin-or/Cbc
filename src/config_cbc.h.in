@@ -19,7 +19,6 @@
 #undef CBC_VERSION_RELEASE
 
 /* Define to 1 if Nauty is available. */
-#undef CBC_HAS_NAUTY
 
 /* Git hash at configure time */
 #undef CBC_GIT_HASH

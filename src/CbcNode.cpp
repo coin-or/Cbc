@@ -15,9 +15,6 @@
 #endif
 
 #include "CbcConfig.h"
-#ifdef CBC_HAS_NAUTY
-#include "CbcSymmetry.hpp"
-#endif
 #include "CbcBranchingRanker.hpp"
 #include "CoinConflictGraph.hpp"
 //#define DEBUG_SOLUTION
@@ -1836,13 +1833,7 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
   //int xMark = 0;
   // Get arrays to sort
   double *sort = new double[numberObjects];
-#ifndef CBC_HAS_NAUTY
   int *whichObject = new int[numberObjects];
-#else
-  int *whichObject = new int[2*numberObjects];
-  int *symmetryType = whichObject+numberObjects;
-  //memset(symmetryType,0,numberObjects*sizeof(int));
-#endif
 #ifdef CBC_RANGING
   int xPen = 0;
   int *objectMark = new int[2 * numberObjects + 1];
@@ -2049,10 +2040,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
        2 - always go to end
      */
   int goToEndInStrongBranching = (model->moreSpecialOptions2() & (3 * 8192)) >> 13;
-#ifdef CBC_HAS_NAUTY
-  // 1 after, 2 strong, 3 until depth 5
-  int orbitOption = (model->moreSpecialOptions2() & (128 | 256)) >> 7;
-#endif
   //#define DEBUG_SOLUTION
 #ifdef DEBUG_SOLUTION
   bool onOptimalPath = false;
@@ -2085,9 +2072,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     int *which = objectMark + numberObjects + 1;
     int neededPenalties;
     int optionalPenalties;
-#endif
-#ifdef CBC_HAS_NAUTY
-    int numberOfInterest; 
 #endif
     // Conflict-graph ranker: fetch once per chooseDynamicBranch call.
     // cgraph is only retrieved when the ranker has a non-zero conflict weight,
@@ -2204,9 +2188,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 
             */
       numberToDo = 0;
-#ifdef CBC_HAS_NAUTY
-      numberOfInterest = 0; 
-#endif
 #ifdef CBC_RANGING
       neededPenalties = 0;
       optionalPenalties = numberObjects;
@@ -2346,9 +2327,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
           // Better priority? Flush choices.
           if (priorityLevel < bestPriority) {
             numberToDo = 0;
-#ifdef CBC_HAS_NAUTY
-	    numberOfInterest = 0;
-#endif
             bestPriority = priorityLevel;
             iBestGot = -1;
             best = 0.0;
@@ -2404,25 +2382,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
               i, iColumn, numberThisDown, object->downEstimate(), numberThisUp, object->upEstimate(),
               infeasibility, sort[numberToDo], saveSolution[iColumn]);
           }
-#ifdef CBC_HAS_NAUTY
-	  symmetryType[numberToDo]=0;
-	  if (infeasibility && model->rootSymmetryInfo() && iColumn<numberColumns) {
-	    int numberCouldFix;
-	    CbcSymmetry * info = model->rootSymmetryInfo();
-	    int nOrbits =
-	      info->worthBranching(saveLower,saveUpper,
-				   iColumn,numberCouldFix);
-	    if (nOrbits && numberCouldFix) {
-#ifdef PRINT_CBCAUTO
-	      printf("Column %d - %d orbits - could fix %d\n",
-		     iColumn,nOrbits,numberCouldFix);
-#endif
-	      // could tune
-	      symmetryType[numberToDo] = (nOrbits<<16) | numberCouldFix;
-	      numberOfInterest++;
-	    }
-	  }
-#endif
           // Conflict-graph degree boost: only for binary variables (the conflict
           // graph is defined over binary assignments x=0 and x=1).
           // trusted flag mirrors the existing (gotDown && gotUp) condition so that
@@ -2836,63 +2795,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
     // skip if solution
     if (!numberUnsatisfied_)
       break;
-#ifdef CBC_HAS_NAUTY
-    // clean
-    if (numberOfInterest) {
-      int n = numberToDo;
-      numberToDo = 0;
-      double best=0.0;
-      // leave as is iBestGot = -1;
-      int loN = 999999;
-      int hiN = 0;
-      for (int i=0;i<n;i++) {
-	int iObject = whichObject[i];
-	if (symmetryType[i]) {
-	  double infeas = sort[i];
-	  int nOrbits = symmetryType[i]>>16;
-	  int nFix = symmetryType[i]|0xffff;
-	  loN = std::min(nOrbits,loN); 
-	  hiN = std::max(nOrbits,hiN); 
-	  if (nOrbits==1)
-	    infeas *= 100.0;
-	  infeas *= nFix;
-#ifdef PRINT_CBCAUTO
-	  printf("changing infeas for %d from %g to %g\n",
-		 dynamic_cast< const CbcSimpleInteger * >(model->object(whichObject[i]))->columnNumber(),
-		 sort[i],infeas);
-#endif
-	  if (infeas>best) {
-	    best = infeas;
-	    iBestGot = i;
-	  }
-	  sort[numberToDo] = infeas;
-	  symmetryType[numberToDo] = symmetryType[i];
-	  whichObject[numberToDo++] = iObject;
-	}
-      }
-      if (loN!=hiN) {
-	// take out some
-	n = numberToDo;
-	numberToDo = 0;
-	double best=0.0;
-	// leave as is iBestGot = -1;
-	for (int i=0;i<n;i++) {
-	  int iObject = whichObject[i];
-	  int nOrbits = symmetryType[i]>>16;
-	  double infeas = sort[i];
-	  if (nOrbits==loN) {
-	    if (infeas>best) {
-	      best = infeas;
-	      iBestGot = i;
-	    }
-	    sort[numberToDo] = infeas;
-	    symmetryType[numberToDo] = symmetryType[i];
-	    whichObject[numberToDo++] = iObject;
-	  }
-	}
-      }
-    }
-#endif
     int skipAll = (numberNotTrusted == 0 || numberToDo == 1) ? 1 : 0;
 #ifdef CBC_CHECK_INTEGER_TOLEREANCE
     if (smallInfeasColumn>=0) {
@@ -3355,126 +3257,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 	}
       }
 #endif
-#ifdef CBC_HAS_NAUTY
-      const int *orbits = NULL;
-#endif
-#ifdef CBC_HAS_NAUTY
-      if (orbitOption == 2 /* was >1*/) {
-        CbcSymmetry *symmetryInfo = model->symmetryInfo();
-        CbcNodeInfo *infoX = lastNode ? lastNode->nodeInfo() : NULL;
-        bool worthTrying = false;
-        if (infoX) {
-          CbcNodeInfo *info = infoX;
-          for (int i = 0; i < NTY_BAD_DEPTH; i++) {
-            if (!info->parent()) {
-              worthTrying = true;
-              break;
-            }
-            info = info->parent();
-            if (info->symmetryWorked()) {
-              worthTrying = true;
-              break;
-            }
-          }
-        } else {
-          worthTrying = true;
-        }
-        if (symmetryInfo && worthTrying) {
-          symmetryInfo->ChangeBounds(solver->getColLower(),
-            solver->getColUpper(),
-            solver->getNumCols(), false);
-          symmetryInfo->Compute_Symmetry();
-          symmetryInfo->fillOrbits();
-          orbits = symmetryInfo->whichOrbit();
-          int iColumn = -1;
-          if (orbits && symmetryInfo->numberUsefulOrbits()) {
-            bool doBranch = true;
-            int numberUsefulOrbits = symmetryInfo->numberUsefulOrbits();
-            if (numberUsefulOrbits < 2) {
-              assert(numberUsefulOrbits);
-              double largest = -1.0;
-              for (int i = 0; i < numberColumns; i++) {
-                if (orbits[i] >= 0) {
-                  if (saveSolution[i] > largest) {
-                    largest = saveSolution[i];
-                    iColumn = i;
-                  }
-                }
-              }
-            } else {
-#if CBC_HAS_NAUTY2 == 1
-              // take largest
-              int iOrbit = symmetryInfo->largestOrbit(solver->getColLower(),
-                solver->getColUpper());
-              double largest = -1.0;
-              for (int i = 0; i < numberColumns; i++) {
-                if (orbits[i] == iOrbit) {
-                  if (saveSolution[i] > largest) {
-                    largest = saveSolution[i];
-                    iColumn = i;
-                  }
-                }
-              }
-#endif
-              if (orbitOption == 2) {
-                // strong
-                int nDo = 0;
-                const double *lower = solver->getColLower();
-                const double *upper = solver->getColUpper();
-                const int *integerVariable = model->integerVariable();
-                for (int iOrbit = 0; iOrbit < numberUsefulOrbits; iOrbit++) {
-                  double distance = 1.0;
-                  int iColumn = -1;
-                  int numberIntegers = model->numberIntegers();
-                  for (int j = 0; j < numberIntegers; j++) {
-                    int i = integerVariable[j];
-                    if (orbits[i] == iOrbit && lower[i] == 0.0 && upper[i] == 1.0) {
-                      double away = fabs(saveSolution[i] - 0.5);
-                      if (away < distance && away < 0.4999) {
-                        distance = away;
-                        iColumn = j;
-                      }
-                    }
-                  }
-                  if (iColumn >= 0)
-                    whichObject[nDo++] = iColumn;
-                }
-                if (nDo)
-                  numberToDo = nDo;
-                doBranch = false;
-              } else if (orbitOption == 3) {
-                // subset
-                int nDo = 0;
-                for (int iDo = 0; iDo < numberToDo; iDo++) {
-                  int iObject = whichObject[iDo];
-                  OsiObject *object = model->modifiableObject(iObject);
-                  CbcSimpleIntegerDynamicPseudoCost *dynamicObject = dynamic_cast< CbcSimpleIntegerDynamicPseudoCost * >(object);
-                  int iColumn = dynamicObject ? dynamicObject->columnNumber() : -1;
-                  if (iColumn < 0 || orbits[iColumn] >= 0)
-                    whichObject[nDo++] = whichObject[iDo];
-                }
-                assert(nDo);
-                //printf("nDo %d\n",nDo);
-                numberToDo = nDo;
-                doBranch = false;
-                /* need NULL as if two in same orbit and strong branching fixes
-			 then we may be in trouble.
-			 Strong option should be OK as only one in set done.
-		       */
-                orbits = NULL;
-              }
-            }
-            if (doBranch) {
-              orbitOption = 0;
-              branch_ = new CbcOrbitalBranchingObject(model, iColumn, 1, 0, NULL);
-              if (infoX)
-                infoX->setSymmetryWorked();
-              numberToDo = 0;
-            }
-          }
-        }
-      }
-#endif
 #ifdef CBC_RANGING
       if (numberToDo) {
 	int numberBoth = 0;
@@ -3624,38 +3406,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
                     */
           choice.possibleBranch->way(-1);
           predictedChange = choice.possibleBranch->branch();
-#ifdef CBC_HAS_NAUTY
-          if (orbits) {
-            // can fix all in orbit
-            int fixOrbit = orbits[iObject];
-            if (fixOrbit >= 0) {
-              //printf("fixing all in orbit %d for column %d\n",fixOrbit,iObject);
-	      int n=-1;
-              for (int i = 0; i < numberColumns; i++) {
-                if (orbits[i] == fixOrbit) {
-                  solver->setColUpper(i, 0.0);
-		  n++;
-		}
-              }
-#ifdef PRINT_CBCAUTO
-	      if (n)
-		printf("%d fixed on down strong for %d (depth %d)\n",
-		       n,iColumn,depth_);
-#endif
-            }
-	  } else if (model->rootSymmetryInfo()) {
-	    if (iColumn<numberColumns) {
-		int n = model->rootSymmetryInfo()->changeBounds(iColumn,
-							saveLower,saveUpper,
-							solver,0);
-#ifdef PRINT_CBCAUTO
-		if (n)
-		  printf("%d fixed on down strong for %d (depth %d)\n",
-			 n,iColumn,depth_);
-#endif
-	    }
-          }
-#endif
 	  /*
 	    1 look at variables that can change > 1 **
 	    2 look at variables that can change > 2
@@ -3961,17 +3711,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
 
           // repeat the whole exercise, forcing the variable up
           predictedChange = choice.possibleBranch->branch();
-#ifdef CBC_HAS_NAUTY
-	  if (model->rootSymmetryInfo() && false) {
-	    if (iColumn<numberColumns) {
-	      //int n=
-		  model->rootSymmetryInfo()->changeBounds(iColumn,
-							saveLower,saveUpper,
-							solver,0);
-		//if (n) printf("%d fixed on up!!! strong for %d\n",n,iColumn);
-	    }
-	  }
-#endif
 #if TRY_NODE_DOUBLE>0
 	  doubleTry = 0;
 	  if (model->allDynamic()&&(model->specialOptions()&2048)==0) {
@@ -4888,78 +4627,6 @@ int CbcNode::chooseDynamicBranch(CbcModel *model, CbcNode *lastNode,
       kColumn = branchObj->columnNumber();
     }
   }
-#ifdef CBC_HAS_NAUTY
-  if (orbitOption && kColumn >= 0) {
-    CbcSymmetry *symmetryInfo = model->symmetryInfo();
-    CbcNodeInfo *infoX = lastNode ? lastNode->nodeInfo() : NULL;
-    bool worthTrying = false;
-    if (infoX) {
-      CbcNodeInfo *info = infoX;
-      for (int i = 0; i < NTY_BAD_DEPTH; i++) {
-        if (!info->parent()) {
-          worthTrying = true;
-          break;
-        }
-        info = info->parent();
-        if (info->symmetryWorked()) {
-          worthTrying = true;
-          break;
-        }
-      }
-    } else {
-      worthTrying = true;
-    }
-    if (orbitOption == 3 && depth_ > 5)
-      worthTrying = false;
-    if (symmetryInfo && worthTrying) {
-      if ((orbitOption & 1) == 1) {
-        symmetryInfo->ChangeBounds(solver->getColLower(),
-          solver->getColUpper(),
-          solver->getNumCols(), false);
-        symmetryInfo->Compute_Symmetry();
-        symmetryInfo->fillOrbits();
-      }
-      const int *orbits = symmetryInfo->whichOrbit();
-      if (orbits && orbits[kColumn] >= 0) {
-        int numberUsefulOrbits = symmetryInfo->numberUsefulOrbits();
-#ifndef PRINT_CBCAUTO
-        if (solver->messageHandler()->logLevel() > 1)
-#endif
-          printf("Orbital Branching on %d - way %d n %d\n", kColumn, way(), numberUsefulOrbits);
-        if (numberUsefulOrbits < 1000 || orbitOption == 3) {
-          delete branch_;
-          branch_ = new CbcOrbitalBranchingObject(model, kColumn, 1, 0, NULL);
-          if (infoX)
-            infoX->setSymmetryWorked();
-        }
-      }
-    }
-  } else if (model->rootSymmetryInfo() && kColumn >=0) {
-    CbcObject *obj = (dynamic_cast< CbcBranchingObject * >(branch_))->object();
-    int returnCode =
-      model->rootSymmetryInfo()->changeBounds(kColumn,
-					      saveLower,saveUpper,
-					      solver,1);
-    if (returnCode>0) {
-#ifdef PRINT_CBCAUTO
-      printf("Orbital branching on %d - %d fixed depth %d\n",kColumn,returnCode,depth_);
-#endif
-      // saved orbit OK
-      delete branch_;
-      // use saved list
-#if 0
-      printf("Could use %d saved orbital\n",returnCode);
-      model->setSymmetryInfo(model->rootSymmetryInfo());
-      branch_ = new CbcOrbitalBranchingObject(model, kColumn, 1, 0, NULL);
-      model->setSymmetryInfo(NULL);
-#else
-      branch_ = new CbcOrbitalBranchingObject(model, kColumn, returnCode);
-#endif
-    } else if (returnCode == -1) {
-      // switch off from here on
-    }
-  }
-#endif
   if (model->logLevel() > 1)
     printf("Node %d depth %d unsatisfied %d sum %g obj %g guess %g branching on %d\n",
       model->getNodeCount(), depth_, numberUnsatisfied_,

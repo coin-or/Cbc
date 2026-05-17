@@ -30,9 +30,6 @@
 /* Define to 1 if Miplib3 is available. */
 #undef CBC_HAS_MIPLIB3
 
-/* Define to 1 if Nauty is available. */
-#undef CBC_HAS_NAUTY
-
 /* Define to 1 if Netlib is available. */
 #undef CBC_HAS_NETLIB
 
@@ -47,9 +44,6 @@
 
 /* Define to 1 if the pthreadsw32 package is available */
 #undef CBC_HAS_PTHREADSW32
-
-/* Define to 1 if readline is available */
-#undef CBC_HAS_READLINE
 
 /* Define to 1 if Sample is available. */
 #undef CBC_HAS_SAMPLE
@@ -98,9 +92,6 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
-
-/* Define to 1 if you have the 'readline' library (-lreadline). */
-#undef HAVE_LIBREADLINE
 
 /* Define to 1 if you have the <math.h> header file. */
 #undef HAVE_MATH_H

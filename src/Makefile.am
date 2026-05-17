@@ -102,7 +102,6 @@ libCbc_la_SOURCES = \
 	CbcBoundPropagation.cpp CbcBoundPropagation.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
-	CbcSymmetry.cpp CbcSymmetry.hpp \
 	CbcThread.cpp CbcThread.hpp \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp \

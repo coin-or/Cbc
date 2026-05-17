@@ -465,11 +465,6 @@ int pushCbcSolverKwdParam(CoinParam &param) {
         static_cast<CbcParameters::NodeStrategy>(mode));
     break;
   }
-  case CbcParam::ORBITAL: {
-    parameters->setOrbitalStrategy(
-        static_cast<CbcParameters::OrbitalStrategy>(mode));
-    break;
-  }
   case CbcParam::PREPROCESS: {
     parameters->setIPPMode(static_cast<CbcParameters::IPPMode>(mode));
     break;

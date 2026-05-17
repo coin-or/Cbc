@@ -1323,12 +1323,6 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
               model.setLogLevel(0);
             }
           }
-#ifdef CBC_HAS_NAUTY
-	  if ((model.moreSpecialOptions2()&131072) != 0) {
-	    // need new copy of symmetry
-	    model.setMoreSpecialOptions2(model.moreSpecialOptions2()|128 | 256);
-	  }
-#endif
 #ifdef CGL_DEBUG
           if ((model_->specialOptions() & 1) != 0) {
             const OsiRowCutDebugger *debugger = model.solver()->getRowCutDebugger();

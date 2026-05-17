@@ -11,9 +11,6 @@
 #include "ClpSimplex.hpp"
 #include "CoinTable.hpp"
 #include "CoinTime.hpp"
-#ifdef CBC_HAS_NAUTY
-#include "CbcSymmetry.hpp"
-#endif
 
 #include <algorithm>
 #include <climits>
@@ -1059,48 +1056,6 @@ void CbcOutput::printImportErrors(FILE *fp, const CbcImportHandler &ih)
 // ===========================================================================
 // CbcOutput::printNautySection — formatted symmetry detection output (static)
 // ===========================================================================
-#ifdef CBC_HAS_NAUTY
-
-void CbcOutput::printNautySection(FILE *fp, bool utf8,
-  int numUsefulOrbits, int numUsefulObjects,
-  int totalOrbits, int numGenerators, double groupSize,
-  double nautyTime, int errorCode)
-{
-  if (!fp) fp = stdout;
-
-  fprintf(fp, "\n%s\n\n", CoinTable::phaseStart("Symmetry detection (nauty)", utf8).c_str());
-
-  char endSummary[256];
-  const std::string nStr = fmtTime(nautyTime);
-  if (errorCode != 0) {
-    fprintf(fp, "  Error (code %d)   Time: %ss\n", errorCode, nStr.c_str());
-    std::snprintf(endSummary, sizeof(endSummary),
-      "Symmetry detection complete%sError (code %d)   Time: %ss",
-      CoinTable::dashSep(utf8), errorCode, nStr.c_str());
-  } else if (numUsefulOrbits > 0) {
-    char groupStr[32];
-    if (groupSize >= 1e15)
-      std::snprintf(groupStr, sizeof(groupStr), "%s", utf8 ? "\xe2\x88\x9e" : "inf");
-    else if (groupSize >= 1e9)
-      std::snprintf(groupStr, sizeof(groupStr), "%.3g", groupSize);
-    else
-      std::snprintf(groupStr, sizeof(groupStr), "%.6g", groupSize);
-    fprintf(fp, "  Orbits: %d (%d useful, %d vars)   Generators: %d   Group size: %s   Time: %ss\n",
-      totalOrbits, numUsefulOrbits, numUsefulObjects, numGenerators, groupStr, nStr.c_str());
-    std::snprintf(endSummary, sizeof(endSummary),
-      "Symmetry detection complete%s%d orbits (%d useful)   Time: %ss",
-      CoinTable::dashSep(utf8), totalOrbits, numUsefulOrbits, nStr.c_str());
-  } else {
-    fprintf(fp, "  No useful orbits found   Time: %ss\n", nStr.c_str());
-    std::snprintf(endSummary, sizeof(endSummary),
-      "Symmetry detection complete%sno useful orbits   Time: %ss",
-      CoinTable::dashSep(utf8), nStr.c_str());
-  }
-  fprintf(fp, "\n%s\n", CoinTable::phaseEnd(endSummary, utf8).c_str());
-  fflush(fp);
-}
-
-#endif /* CBC_HAS_NAUTY — printNautySection */
 
 // ===========================================================================
 // CbcOutputHandler — message handler installed during branchAndBound()
@@ -1487,49 +1442,6 @@ int CbcOutputHandler::print()
 
   // ── Nauty messages ───────────────────────────────────────────────────────
   // We only intercept CBC_GENERAL messages from "Cbc" that contain "Nauty"
-#ifdef CBC_HAS_NAUTY
-  if (currentSource() == "Cbc" && std::strstr(buf, "Nauty")) {
-    sectionStarted_ = true;
-
-    // Find the actual "Nauty " start (skip any "CbcNNNNI " prefix)
-    const char *p = std::strstr(buf, "Nauty");
-    if (!p) p = buf;
-
-    // "Nauty: N orbits (U useful covering V variables), G generators, group size: S - sparse size X - took T seconds"
-    if (std::sscanf(p,
-          "Nauty: %d orbits (%d useful covering %d variables), %d generators, group size: %lf",
-          &totalOrbits_, &usefulOrbits_, &usefulVars_, &numGens_, &groupSize_) >= 5) {
-      const char *tookPtr = std::strstr(p, "took ");
-      if (tookPtr) std::sscanf(tookPtr, "took %lf", &nautyTime_);
-      printSection();
-      return 0;
-    }
-
-    // "Nauty did not find any useful orbits in time T"
-    if (std::strstr(p, "did not find any useful orbits")) {
-      const char *tp = std::strstr(p, "in time ");
-      if (tp) std::sscanf(tp, "in time %lf", &nautyTime_);
-      printSection();
-      return 0;
-    }
-
-    // "Nauty failed with error code N (T seconds)"
-    if (std::strstr(p, "failed with error code")) {
-      hasError_ = true;
-      std::sscanf(p, "Nauty failed with error code %d (%lf", &errorCode_, &nautyTime_);
-      printSection();
-      return 0;
-    }
-
-    // "Nauty sparseSpace ..." or "Nauty - initial level N - will probably take too long"
-    // or any other Nauty informational prefix — suppress silently
-    if (std::strstr(p, "sparseSpace") || std::strstr(p, "initial level"))
-      return 0;
-
-    // Unknown Nauty message — suppress to avoid raw prefix output
-    return 0;
-  } // end Nauty block
-#endif /* CBC_HAS_NAUTY */
 
   // If cut gen generators are accumulated and a non-cut-gen message has arrived,
   // flush the generator table now (before B&B tree output begins).
@@ -1637,16 +1549,6 @@ void CbcOutputHandler::beginRestartMode()
   if (cutGenOut_) cutGenOut_->resetForRestart();
   restartMode_ = true;
 }
-
-#ifdef CBC_HAS_NAUTY
-void CbcOutputHandler::printSection()
-{
-  CbcOutput::printNautySection(fp_, utf8_,
-    usefulOrbits_, usefulVars_, totalOrbits_,
-    numGens_, groupSize_, nautyTime_,
-    hasError_ ? errorCode_ : 0);
-}
-#endif /* CBC_HAS_NAUTY */
 
 // ===========================================================================
 // CbcFPumpOutput — tabular output for the feasibility pump heuristic

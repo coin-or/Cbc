@@ -200,35 +200,6 @@ public:
     NSDownDepth
   };
 
-  /*! \brief What orbital branching strategy to use
-
-    - OBOff:
-    - OBSlowish:
-    - OBStrong:
-    - OBForce:
-    - OBSimple:
-    - OBOn:
-    - OBLightweight:
-    - OBMorePrinting:
-    - OBCuts:
-    - OBCutsLight:
-    - OBEndMarker
-   */
-
-  enum OrbitalStrategy {
-    OBOff = 0,
-    OBSlowish,
-    OBStrong,
-    OBForce,
-    OBSimple,
-    OBOn,
-    OBLightweight,
-    OBMorePrinting,
-    OBCuts,
-    OBCutsLight,
-    OBEndMarker
-  };
-
   /*! \brief What SOS prioritization strategy to use
 
     - SOSOff:
@@ -1710,15 +1681,6 @@ public:
   inline void setNodeStrategy(CbcParameters::NodeStrategy mode) { nodeStrategy_ = mode;
   }
 
-  /*! \brief Get strategy for orbital branching */
-  inline CbcParameters::OrbitalStrategy getOrbitalStrategy() { return (orbitalStrategy_);
-  }
-
-  /*! \brief Set  strategy for orbital branching */
-  inline void setOrbitalStrategy(CbcParameters::OrbitalStrategy mode) {
-     orbitalStrategy_ = mode;
-  }
-
   /*! \brief Get mode for use of integer preprocessing */
   inline CbcParameters::IPPMode getIPPMode() { return (preProcess_); }
 
@@ -2575,7 +2537,6 @@ private:
   CbcParameters::CutoffMode cutoffMode_;
   CbcParameters::IntPrintMode intPrintMode_;
   CbcParameters::NodeStrategy nodeStrategy_;
-  CbcParameters::OrbitalStrategy orbitalStrategy_;
   CbcParameters::SOSStrategy sosStrategy_;
   CbcParameters::StrategyMode strategyMode_;
   CbcParameters::ClockType clockType_;

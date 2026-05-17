@@ -520,10 +520,6 @@ int pushCbcSolverBoolParam(CoinParam &param) {
   int retval = 0;
 
   switch (cbcParamCode) {
-  case CbcParam::CPX: {
-    parameters->setCPXMode(mode);
-    break;
-  }
   case CbcParam::DOHEURISTIC: {
     parameters->setDoHeuristicMode(mode);
     break;

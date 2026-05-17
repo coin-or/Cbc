@@ -676,20 +676,6 @@ coin_doxy_tagname
 coin_doxy_usedot
 coin_have_latex
 coin_have_doxygen
-OSICBC_DFLT_SOLVER_SYM_FALSE
-OSICBC_DFLT_SOLVER_SYM_TRUE
-OSICBC_DFLT_SOLVER_SPX_FALSE
-OSICBC_DFLT_SOLVER_SPX_TRUE
-OSICBC_DFLT_SOLVER_MSK_FALSE
-OSICBC_DFLT_SOLVER_MSK_TRUE
-OSICBC_DFLT_SOLVER_HIGHS_FALSE
-OSICBC_DFLT_SOLVER_HIGHS_TRUE
-OSICBC_DFLT_SOLVER_GLPK_FALSE
-OSICBC_DFLT_SOLVER_GLPK_TRUE
-OSICBC_DFLT_SOLVER_DYLP_FALSE
-OSICBC_DFLT_SOLVER_DYLP_TRUE
-OSICBC_DFLT_SOLVER_CPX_FALSE
-OSICBC_DFLT_SOLVER_CPX_TRUE
 OSICBC_DFLT_SOLVER_CLP_FALSE
 OSICBC_DFLT_SOLVER_CLP_TRUE
 COIN_HAS_PTHREADSW32_FALSE
@@ -702,8 +688,6 @@ OSICBCLIB_CFLAGS_NOPC
 OSICBCLIB_LFLAGS_NOPC
 CBCLIB_CFLAGS_NOPC
 CBCLIB_LFLAGS_NOPC
-COIN_HAS_CPLEX_FALSE
-COIN_HAS_CPLEX_TRUE
 MIPLIB3_DATA
 COIN_HAS_MIPLIB3_FALSE
 COIN_HAS_MIPLIB3_TRUE
@@ -933,9 +917,6 @@ with_netlib
 with_netlib_data
 with_miplib3
 with_miplib3_data
-with_cplex
-with_cplex_lflags
-with_cplex_cflags
 enable_cbc_parallel
 with_pthreadsw32
 with_pthreadsw32_lflags
@@ -1722,16 +1703,6 @@ Optional Packages:
                           as for --with-miplib3-data.
   --with-miplib3-data     A data directory specification for Miplib3
                           appropriate for your environment.
-  --without-cplex         Do not use Cplex. If an argument is given to
-                          --with-cplex, then 'yes' is equivalent
-                          to --with-cplex, 'no' is equivalent to
-                          --without-cplex and any other argument is applied as
-                          for --with-cplex-lflags.
-  --with-cplex-lflags     Linker flags for Cplex appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-cplex-cflags     Compiler flags for Cplex appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
   --without-pthreadsw32   Do not use pthreadsw32. If an argument is given to
                           --with-pthreadsw32, then 'yes' is
                           equivalent to --with-pthreadsw32, 'no'
@@ -22321,243 +22292,6 @@ printf "%s\n" "#define CBC_HAS_MIPLIB3 1" >>confdefs.h
 #AC_COIN_CHK_PKG(OsiXpr,,[osi-xpress])
 
 
-
-
-
-
-
-
-
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library Cplex with link check" >&5
-printf %s "checking for library Cplex with link check... " >&6; }
-
-
-
-
-
-
-
-  coin_has_cplex=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "cplex" ; then
-        coin_has_cplex=skipping
-      fi
-    done
-  fi
-
-
-  if test "$coin_has_cplex" != skipping ; then
-
-
-
-
-# Check whether --with-cplex was given.
-if test ${with_cplex+y}
-then :
-  withval=$with_cplex;
-fi
-
-
-
-# Check whether --with-cplex-lflags was given.
-if test ${with_cplex_lflags+y}
-then :
-  withval=$with_cplex_lflags;
-fi
-
-
-
-# Check whether --with-cplex-cflags was given.
-if test ${with_cplex_cflags+y}
-then :
-  withval=$with_cplex_cflags;
-fi
-
-
-
-
-
-
-
-
-
-
-  cplex_lflags="-lcplex -lpthread -lm -ldl"
-  cplex_cflags=""
-  cplex_data=""
-  coin_has_cplex=requested
-  cplex_userflags='no'
-
-
-  withval="$with_cplex"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_cplex=skipping
-        cplex_failmode='command line'
-        ;;
-      yes )
-        coin_has_cplex=requested
-        cplex_failmode=''
-        ;;
-      * )
-        coin_has_cplex=requested
-        cplex_failmode=''
-        cplex_lflags="$withval"
-        cplex_userflags='yes'
-        ;;
-    esac
-  else
-    if test -n "$with_cplex_lflags" ||
-       test -n "$with_cplex_cflags" ||
-       test -n "$with_cplex_data" ; then
-      coin_has_cplex=requested
-      cplex_failmode=''
-      cplex_userflags='yes'
-    fi
-  fi
-
-
-  if test "$coin_has_cplex" != skipping ; then
-       withval="$with_cplex_lflags"
-       if test -n "$withval" ; then
-         coin_has_cplex=requested
-         cplex_lflags="$withval"
-         cplex_userflags='yes'
-       fi
-
-       withval="$with_cplex_cflags"
-       if test -n "$withval" ; then
-         coin_has_cplex=requested
-         cplex_cflags="$withval"
-         cplex_userflags='yes'
-       fi
-     fi
-
-
-
-
-
-
-
-
-
-  if test "$coin_has_cplex" != skipping ; then
-       ac_save_LIBS=$LIBS
-       ac_save_CPPFLAGS=$CPPFLAGS
-       LIBS="$cplex_lflags"
-       CPPFLAGS="$cplex_cflags"
-       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#ifdef __cplusplus
-  extern "C"
-#endif
-  void CPXgetstat() ;
-  int main () { CPXgetstat() ; return (0) ; }
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-
-else case e in #(
-  e) coin_has_cplex='no'
-            if test -n "$cplex_failmode" ; then
-              cplex_failmode="$cplex_failmode, bare link"
-            else
-              cplex_failmode="bare link"
-            fi ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-       LIBS=$ac_save_LIBS
-       CPPFLAGS=$ac_save_CPPFLAGS
-     fi
-
-
-  if test $coin_has_cplex = requested ; then
-    coin_has_cplex=yes
-  fi
-
-
-  # Define BUILDTOOLS_DEBUG to enable debugging output
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_LIB result for cplex: \"$coin_has_cplex\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_LIB result for cplex: \"$coin_has_cplex\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'cplex'" >&5
-printf "%s\n" "$as_me: Collected values for package 'cplex'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: cplex_lflags is \"$cplex_lflags\"" >&5
-printf "%s\n" "$as_me: cplex_lflags is \"$cplex_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: cplex_cflags is \"$cplex_cflags\"" >&5
-printf "%s\n" "$as_me: cplex_cflags is \"$cplex_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: cplex_data is \"$cplex_data\"" >&5
-printf "%s\n" "$as_me: cplex_data is \"$cplex_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: cplex_pcfiles is \"$cplex_pcfiles\"" >&5
-printf "%s\n" "$as_me: cplex_pcfiles is \"$cplex_pcfiles\"" >&6;}
-  fi
-
-    if test -n "$cplex_failmode" ; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_cplex ($cplex_failmode)" >&5
-printf "%s\n" "$coin_has_cplex ($cplex_failmode)" >&6; }
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_cplex" >&5
-printf "%s\n" "$coin_has_cplex" >&6; }
-    fi
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_cplex (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_cplex (COIN_SKIP_PROJECTS)" >&6; }
-  fi
-
-
-  if test "$coin_has_cplex" = 'no' ; then
-    if expr "$cplex_failmode" : '.*header.*' &>/dev/null ; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Compiler flags were \"$cplex_cflags\". Use --with-cplex-cflags to overwrite. Check config.log for details of failed compile attempt." >&5
-printf "%s\n" "$as_me: Compiler flags were \"$cplex_cflags\". Use --with-cplex-cflags to overwrite. Check config.log for details of failed compile attempt." >&6;}
-    fi
-    if expr "$cplex_failmode" : '.*link.*' &>/dev/null ; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Linker flags are \"$cplex_lflags\". Use --with-cplex-lflags to overwrite. Check config.log for details of failed link attempt." >&5
-printf "%s\n" "$as_me: Linker flags are \"$cplex_lflags\". Use --with-cplex-lflags to overwrite. Check config.log for details of failed link attempt." >&6;}
-    fi
-    if test "$cplex_userflags" = 'yes' ; then
-      as_fn_error $? "user-specified flags for Cplex do not work." "$LINENO" 5
-    fi
-  fi
-
-
-  if test "$coin_has_cplex" != yes ; then
-    coin_has_cplex=no
-  fi
-
-
-   if test $coin_has_cplex = yes; then
-  COIN_HAS_CPLEX_TRUE=
-  COIN_HAS_CPLEX_FALSE='#'
-else
-  COIN_HAS_CPLEX_TRUE='#'
-  COIN_HAS_CPLEX_FALSE=
-fi
-
-
-
-  if test $coin_has_cplex = yes ; then
-
-printf "%s\n" "#define CBC_HAS_CPLEX 1" >>confdefs.h
-
-    CBCLIB_LFLAGS="$cplex_lflags $CBCLIB_LFLAGS"
-       CBCLIB_CFLAGS="$cplex_cflags $CBCLIB_CFLAGS"
-
-
-
-
-  fi
-
-
-
-
-
    if test "$BUILDTOOLS_DEBUG" = 1 ; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcLib:" >&5
 printf "%s\n" "$as_me: FINALIZE_FLAGS for CbcLib:" >&6;}
@@ -23164,67 +22898,13 @@ case "${osicbc_with_solver}" in
     osi_uc_solver=CLP ;
     osi_exists_solver=${coin_has_osiclp-"unavailable"}
     ;;
-  [Dd][Yy][Ll][Pp]*)
-    osi_lc_solver=dylp ;
-    osi_mc_solver=Dylp
-    osi_uc_solver=DYLP
-    osi_exists_solver=${coin_has_osidylp-"unavailable"}
-    ;;
-  [Cc][Pp][Xx]*)
-    osi_lc_solver=cpx ;
-    osi_mc_solver=Cpx
-    osi_uc_solver=CPX
-    osi_exists_solver=${coin_has_osicpx-"unavailable"}
-    ;;
-  [Gg][Ll][Pp][Kk]*)
-    osi_lc_solver=glpk ;
-    osi_mc_solver=Glpk
-    osi_uc_solver=GLPK
-    osi_exists_solver=${coin_has_osiglpk-"unavailable"}
-    ;;
-  [Gg][Rr][Bb]*)
-    osi_lc_solver=grb ;
-    osi_mc_solver=Grb ;
-    osi_uc_solver=GRB ;
-    osi_exists_solver=${coin_has_osigrb-"unavailable"}
-    ;;
-  [H][i][g][h][s]*)
-    osi_lc_solver=highs ;
-    osi_mc_solver=HiGHS ;
-    osi_uc_solver=HIGHS ;
-    osi_exists_solver=${coin_has_highs-"unavailable"}
-    ;;
-  [Mm][Ss][Kk]*)
-    osi_lc_solver=msk ;
-    osi_mc_solver=Msk
-    osi_uc_solver=MSK
-    osi_exists_solver=${coin_has_osimsk-"unavailable"}
-    ;;
-  [Ss][Pp][Xx]*)
-    osi_lc_solver=spx ;
-    osi_mc_solver=Spx
-    osi_uc_solver=SPX
-    osi_exists_solver=${coin_has_osispx-"unavailable"}
-    ;;
-  [Ss][Yy][Mm]*)
-    osi_lc_solver=sym ;
-    osi_mc_solver=Sym
-    osi_uc_solver=SYM
-    osi_exists_solver=${coin_has_osisym-"unavailable"}
-    ;;
-  [Xx][Pp][Rr]*)
-    osi_lc_solver=xpr ;
-    osi_mc_solver=Xpr
-    osi_uc_solver=XPR
-    osi_exists_solver=${coin_has_osixpr-"unavailable"}
-    ;;
   *)
     osi_lc_solver=clp ;
     osi_mc_solver=Clp ;
     osi_uc_solver=CLP ;
     osi_exists_solver=${coin_has_osiclp-"unavailable"}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Unrecognised solver $1; defaulting to $osi_lc_solver." >&5
-printf "%s\n" "$as_me: WARNING: Unrecognised solver $1; defaulting to $osi_lc_solver." >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Only Clp is supported for OsiCbc; defaulting to $osi_lc_solver." >&5
+printf "%s\n" "$as_me: WARNING: Only Clp is supported for OsiCbc; defaulting to $osi_lc_solver." >&2;}
     ;;
 esac
 
@@ -23258,63 +22938,6 @@ fi
 else
   OSICBC_DFLT_SOLVER_CLP_TRUE='#'
   OSICBC_DFLT_SOLVER_CLP_FALSE=
-fi
-
- if test $osi_mc_solver = Cpx; then
-  OSICBC_DFLT_SOLVER_CPX_TRUE=
-  OSICBC_DFLT_SOLVER_CPX_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_CPX_TRUE='#'
-  OSICBC_DFLT_SOLVER_CPX_FALSE=
-fi
-
- if test $osi_mc_solver = Dylp; then
-  OSICBC_DFLT_SOLVER_DYLP_TRUE=
-  OSICBC_DFLT_SOLVER_DYLP_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_DYLP_TRUE='#'
-  OSICBC_DFLT_SOLVER_DYLP_FALSE=
-fi
-
- if test $osi_mc_solver = Glpk; then
-  OSICBC_DFLT_SOLVER_GLPK_TRUE=
-  OSICBC_DFLT_SOLVER_GLPK_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_GLPK_TRUE='#'
-  OSICBC_DFLT_SOLVER_GLPK_FALSE=
-fi
-
-#AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GRB],[test $osi_mc_solver = Grb])
- if test $osi_mc_solver = HiGHS; then
-  OSICBC_DFLT_SOLVER_HIGHS_TRUE=
-  OSICBC_DFLT_SOLVER_HIGHS_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_HIGHS_TRUE='#'
-  OSICBC_DFLT_SOLVER_HIGHS_FALSE=
-fi
-
- if test $osi_mc_solver = Msk; then
-  OSICBC_DFLT_SOLVER_MSK_TRUE=
-  OSICBC_DFLT_SOLVER_MSK_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_MSK_TRUE='#'
-  OSICBC_DFLT_SOLVER_MSK_FALSE=
-fi
-
- if test $osi_mc_solver = Spx; then
-  OSICBC_DFLT_SOLVER_SPX_TRUE=
-  OSICBC_DFLT_SOLVER_SPX_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_SPX_TRUE='#'
-  OSICBC_DFLT_SOLVER_SPX_FALSE=
-fi
-
- if test $osi_mc_solver = Sym; then
-  OSICBC_DFLT_SOLVER_SYM_TRUE=
-  OSICBC_DFLT_SOLVER_SYM_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_SYM_TRUE='#'
-  OSICBC_DFLT_SOLVER_SYM_FALSE=
 fi
 
 #AM_CONDITIONAL([OSICBC_DFLT_SOLVER_XPR],[test $osi_mc_solver = Xpr])
@@ -23999,10 +23622,6 @@ if test -z "${COIN_HAS_MIPLIB3_TRUE}" && test -z "${COIN_HAS_MIPLIB3_FALSE}"; th
   as_fn_error $? "conditional \"COIN_HAS_MIPLIB3\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${COIN_HAS_CPLEX_TRUE}" && test -z "${COIN_HAS_CPLEX_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_CPLEX\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${COIN_HAS_PTHREADSW32_TRUE}" && test -z "${COIN_HAS_PTHREADSW32_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_PTHREADSW32\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -24017,34 +23636,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OSICBC_DFLT_SOLVER_CLP_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_CLP_FALSE}"; then
   as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_CLP\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OSICBC_DFLT_SOLVER_CPX_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_CPX_FALSE}"; then
-  as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_CPX\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OSICBC_DFLT_SOLVER_DYLP_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_DYLP_FALSE}"; then
-  as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_DYLP\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OSICBC_DFLT_SOLVER_GLPK_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_GLPK_FALSE}"; then
-  as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_GLPK\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OSICBC_DFLT_SOLVER_HIGHS_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_HIGHS_FALSE}"; then
-  as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_HIGHS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OSICBC_DFLT_SOLVER_MSK_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_MSK_FALSE}"; then
-  as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_MSK\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OSICBC_DFLT_SOLVER_SPX_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_SPX_FALSE}"; then
-  as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_SPX\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OSICBC_DFLT_SOLVER_SYM_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_SYM_FALSE}"; then
-  as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_SYM\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_DOXYGEN_TRUE}" && test -z "${COIN_HAS_DOXYGEN_FALSE}"; then

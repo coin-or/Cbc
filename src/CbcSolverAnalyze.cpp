@@ -22,8 +22,6 @@
 
 #include "CbcModel.hpp"
 
-#ifndef CBC_OTHER_SOLVER
-
 int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
   double &increment, bool changeInt,
   CoinMessageHandler *generalMessageHandler, bool noPrinting)
@@ -328,5 +326,4 @@ int *analyze(OsiClpSolverInterface *solverMod, int &numberChanged,
     return NULL;
   }
 }
-#endif // ifndef CBC_OTHER_SOLVER
 

@@ -39,9 +39,7 @@
 #include "CbcMessage.hpp"
 #include "CbcEventHandler.hpp"
 #include "ClpDualRowPivot.hpp"
-#ifndef CBC_OTHER_SOLVER
 #include "OsiClpSolverInterface.hpp"
-#endif
 class CbcCutGenerator;
 class CbcBaseModel;
 class OsiRowCut;
@@ -3553,17 +3551,12 @@ class OsiClpSolverInterface;
 CBCLIB_EXPORT
 void setCutAndHeuristicOptions(CbcModel &model);
   /// Deal with preprocessing mode
-#ifndef CBC_OTHER_SOLVER
   inline void setPreProcessingMode(OsiSolverInterface * solver,int processMode)
   {
     OsiClpSolverInterface *osiclp = getClpSolver(solver);
     assert (osiclp);
     osiclp->setPreProcessingMode(processMode);
   }
-#else
-  inline void setPreProcessingMode(OsiSolverInterface * solver,int processMode)
-  {}
-#endif
 /**
    A terse way of doing common types of solves.
    Set any extra options in cbcModel e.g. maximum nodes.

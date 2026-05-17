@@ -105,15 +105,6 @@ host_triplet = @host@
 # Plus the appropriate library for the default solver.
 # (adding OSICBCLIB_LFLAGS to libOsiCbc_la_LIBADD would link against all available solvers)
 @OSICBC_DFLT_SOLVER_CLP_TRUE@am__append_1 = $(OSICLP_LFLAGS)
-@OSICBC_DFLT_SOLVER_CPX_TRUE@am__append_2 = $(OSICPX_LFLAGS)
-@OSICBC_DFLT_SOLVER_DYLP_TRUE@am__append_3 = $(OSIDYLP_LFLAGS)
-@OSICBC_DFLT_SOLVER_GLPK_TRUE@am__append_4 = $(OSIGLPK_LFLAGS)
-
-#if OSICBC_DFLT_SOLVER_GRB
-#endif
-@OSICBC_DFLT_SOLVER_MSK_TRUE@am__append_5 = $(OSIMSK_LFLAGS)
-@OSICBC_DFLT_SOLVER_HIGHS_TRUE@am__append_6 = $(HIGHS_LFLAGS)
-@OSICBC_DFLT_SOLVER_SYM_TRUE@am__append_7 = $(OSISYM_LFLAGS)
 subdir = src/OsiCbc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -154,10 +145,7 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includecoindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libOsiCbc_la_DEPENDENCIES = ../libCbc.la $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+libOsiCbc_la_DEPENDENCIES = ../libCbc.la $(am__DEPENDENCIES_1)
 am_libOsiCbc_la_OBJECTS = OsiCbcSolverInterface.lo
 libOsiCbc_la_OBJECTS = $(am_libOsiCbc_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -418,18 +406,13 @@ lib_LTLIBRARIES = libOsiCbc.la
 libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
 
 # List all additionally required libraries
-libOsiCbc_la_LIBADD = ../libCbc.la $(am__append_1) $(am__append_2) \
-	$(am__append_3) $(am__append_4) $(am__append_5) \
-	$(am__append_6) $(am__append_7)
+libOsiCbc_la_LIBADD = ../libCbc.la $(am__append_1)
 
 # This is for libtool
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Here list all include flags, relative to this "srcdir" directory.
 AM_CPPFLAGS = -I$(srcdir)/.. $(OSICBCLIB_CFLAGS)
-
-#if OSICBC_DFLT_SOLVER_XPR
-#endif
 
 ########################################################################
 #                Headers that need to be installed                     #

@@ -485,7 +485,6 @@ CbcParameters &CbcParameters::operator=(const CbcParameters &rhs)
   clockType_ = rhs.clockType_;
   cgraphMode_ = rhs.cgraphMode_;
   lpMethod_ = rhs.lpMethod_;
-  CPXMode_ = rhs.CPXMode_;
   importErrorsMode_ = rhs.importErrorsMode_;
   messagePrefixMode_ = rhs.messagePrefixMode_;
   preProcNamesMode_ = rhs.preProcNamesMode_;
@@ -854,7 +853,6 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::ZEROHALFROWMAXFRACTIONALCOUNT]->setDefault(-1);
      parameters_[CbcParam::ZEROHALFROWMAXPAIRCOUNT]->setDefault(150000);
      parameters_[CbcParam::ZEROHALFSPARSETHRESH]->setDefault(8000);
-     parameters_[CbcParam::CPX]->setDefault("off");
      parameters_[CbcParam::DOHEURISTIC]->setDefault("off");
      parameters_[CbcParam::ERRORSALLOWED]->setDefault("off");
      parameters_[CbcParam::MESSAGES]->setDefault("off");
@@ -2159,8 +2157,8 @@ void CbcParameters::addCbcSolverIntParams() {
       "depth!MiniBab", "Depth at which to try mini branch-and-bound",
       -COIN_INT_MAX, COIN_INT_MAX,
       "Rather a complicated parameter but can be useful. -1 means off for "
-      "large problems but on as if -12 for problems where rows+columns<500, -2 "
-      "means use Cplex if it is linked in.  Otherwise if negative then go into "
+      "large problems but on as if -12 for problems where rows+columns<500. "
+      "If negative then go into "
       "depth first complete search fast branch and bound when depth>= -value-2 "
       "(so -3 will use this at depth>=1).  This mode is only switched on after "
       "500 nodes.  If you really want to switch it off for small problems then "
@@ -2551,16 +2549,6 @@ void CbcParameters::addCbcSolverBoolParams() {
     getParam(code)->appendKwd("on", CbcParameters::ParamOn);
     getParam(code)->setPushFunc(CbcParamUtils::pushCbcSolverKwdParam);
   }
-
-  parameters_[CbcParam::CPX]->setup(
-      "cplex!Use", "Whether to use Cplex!",
-      "If the user has Cplex, but wants to use some of Cbc's heuristics then "
-      "you can!  If this is on, then Cbc will get to the root node and then "
-      "hand over to Cplex.  If heuristics find a solution this can be "
-      "significantly quicker.  You will probably want to switch off Cbc's cuts "
-      "as Cplex thinks they are genuine constraints.  It is also probable that "
-      "you want to switch off preprocessing, although for difficult problems "
-      "it is worth trying both.");
 
   parameters_[CbcParam::DOHEURISTIC]->setup(
       "doH!euristic", "Do heuristics before any preprocessing",

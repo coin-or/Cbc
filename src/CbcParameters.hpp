@@ -1807,12 +1807,6 @@ public:
 
   //@{
 
-  /*! \brief Get CPX mode */
-  inline CbcParameters::OnOffMode getCpxMode() { return (CPXMode_); }
-
-  /*! \brief Set CPX mode */
-  inline void setCPXMode(CbcParameters::OnOffMode mode) { CPXMode_ = mode; }
-
   /*! \brief Get import errors mode */
   inline CbcParameters::OnOffMode getImportErrorsMode() {
     return (importErrorsMode_);
@@ -2595,7 +2589,6 @@ private:
   */
   //@{
 
-  CbcParameters::OnOffMode CPXMode_;
   CbcParameters::OnOffMode importErrorsMode_;
   CbcParameters::OnOffMode messagePrefixMode_;
   CbcParameters::OnOffMode preProcNamesMode_;

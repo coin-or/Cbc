@@ -27,9 +27,6 @@
 /* Define to 1 if CoinUtils is available. */
 #undef CBC_HAS_COINUTILS
 
-/* Define to 1 if the Cplex package is available */
-#undef CBC_HAS_CPLEX
-
 /* Define to 1 if Miplib3 is available. */
 #undef CBC_HAS_MIPLIB3
 

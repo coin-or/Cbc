@@ -1872,10 +1872,6 @@ static double lengthConflictCuts = 0.0;
   by the current state of the model,  of the solver, and of the constraint
   system held by the solver.
 */
-#if defined(CBC_HAS_OSICPX) && defined(CBC_HAS_CPLEX)
-#include "OsiCpxSolverInterface.hpp"
-#include "cplex.h"
-#endif
 #ifdef GET_ALL_SOLUTIONS
 int nget_All_solutions;
 int maxget_All_solutions;
@@ -4048,123 +4044,6 @@ void CbcModel::branchAndBound(int doStatistics)
   // User event
   if (eventHappened_)
     feasible = false;
-#if defined(CBC_HAS_OSICLP) && defined(CBC_HAS_OSICPX) && defined(CBC_HAS_CPLEX)
-  /*
-      This is the notion of using Cbc stuff to get going, then calling cplex to
-      finish off.
-    */
-  if (feasible && (specialOptions_ & 16384) != 0 && fastNodeDepth_ == -2 && !parentModel_) {
-    // Use Cplex to do search!
-    double time1 = CoinCpuTime();
-    OsiClpSolverInterface *clpSolver = dynamic_cast< OsiClpSolverInterface * >(solver_);
-    OsiCpxSolverInterface cpxSolver;
-    double direction = clpSolver->getObjSenseInCbc();
-    cpxSolver.setObjSense(direction);
-    // load up cplex
-    const CoinPackedMatrix *matrix = continuousSolver_->getMatrixByCol();
-    const double *rowLower = continuousSolver_->getRowLower();
-    const double *rowUpper = continuousSolver_->getRowUpper();
-    const double *columnLower = continuousSolver_->getColLower();
-    const double *columnUpper = continuousSolver_->getColUpper();
-    const double *objective = continuousSolver_->getObjCoefficients();
-    cpxSolver.loadProblem(*matrix, columnLower, columnUpper, objective,
-      rowLower, rowUpper);
-    double *setSol = new double[numberIntegers_];
-    int *setVar = new int[numberIntegers_];
-    // cplex doesn't know about objective offset
-    double offset = clpSolver->getModelPtr()->objectiveOffset();
-    for (int i = 0; i < numberIntegers_; i++) {
-      int iColumn = integerVariable_[i];
-      cpxSolver.setInteger(iColumn);
-      if (bestSolution_) {
-        setSol[i] = bestSolution_[iColumn];
-        setVar[i] = iColumn;
-      }
-    }
-    CPXENVptr env = cpxSolver.getEnvironmentPtr();
-    CPXLPptr lpPtr = cpxSolver.getLpPtr(OsiCpxSolverInterface::KEEPCACHED_ALL);
-    cpxSolver.switchToMIP();
-    if (bestSolution_) {
-#if 0
-            CPXcopymipstart(env, lpPtr, numberIntegers_, setVar, setSol);
-#else
-      int zero = 0;
-      CPXaddmipstarts(env, lpPtr, 1, numberIntegers_, &zero, setVar, setSol,
-        NULL, NULL);
-#endif
-    }
-    if (clpSolver->getNumRows() > continuousSolver_->getNumRows() && false) {
-      // add cuts
-      const CoinPackedMatrix *matrix = clpSolver->getMatrixByRow();
-      const double *rhs = clpSolver->getRightHandSide();
-      const char *rowSense = clpSolver->getRowSense();
-      const double *elementByRow = matrix->getElements();
-      const int *column = matrix->getIndices();
-      const CoinBigIndex *rowStart = matrix->getVectorStarts();
-      const int *rowLength = matrix->getVectorLengths();
-      int nStart = continuousSolver_->getNumRows();
-      int nRows = clpSolver->getNumRows();
-      int size = rowStart[nRows - 1] + rowLength[nRows - 1] - rowStart[nStart];
-      int nAdd = 0;
-      double *rmatval = new double[size];
-      int *rmatind = new int[size];
-      int *rmatbeg = new int[nRows - nStart + 1];
-      size = 0;
-      rmatbeg[0] = 0;
-      for (int i = nStart; i < nRows; i++) {
-        for (int k = rowStart[i]; k < rowStart[i] + rowLength[i]; k++) {
-          rmatind[size] = column[k];
-          rmatval[size++] = elementByRow[k];
-        }
-        nAdd++;
-        rmatbeg[nAdd] = size;
-      }
-      CPXaddlazyconstraints(env, lpPtr, nAdd, size, rhs, rowSense, rmatbeg,
-        rmatind, rmatval, NULL);
-      CPXsetintparam(env, CPX_PARAM_REDUCE,
-        // CPX_PREREDUCE_NOPRIMALORDUAL (0)
-        CPX_PREREDUCE_PRIMALONLY);
-    }
-    if (getCutoff() < 1.0e50) {
-      double useCutoff = getCutoff() + offset;
-      if (bestObjective_ < 1.0e50)
-        useCutoff = bestObjective_ + offset + 1.0e-7;
-      cpxSolver.setDblParam(OsiDualObjectiveLimit, useCutoff * direction);
-      if (direction > 0.0)
-        CPXsetdblparam(env, CPX_PARAM_CUTUP, useCutoff); // min
-      else
-        CPXsetdblparam(env, CPX_PARAM_CUTLO, useCutoff); // max
-    }
-    CPXsetdblparam(env, CPX_PARAM_EPGAP, dblParam_[CbcAllowableFractionGap]);
-    delete[] setSol;
-    delete[] setVar;
-    char printBuffer[200];
-    if (offset) {
-      sprintf(printBuffer, "Add %g to all Cplex messages for true objective",
-        -offset);
-      messageHandler()->message(CBC_GENERAL, messages())
-        << printBuffer << CoinMessageEol;
-      cpxSolver.setDblParam(OsiObjOffset, offset);
-    }
-    cpxSolver.branchAndBound();
-    double timeTaken = CoinCpuTime() - time1;
-    sprintf(printBuffer, "Cplex took %g seconds", timeTaken);
-    messageHandler()->message(CBC_GENERAL, messages())
-      << printBuffer << CoinMessageEol;
-    numberExtraNodes_ = CPXgetnodecnt(env, lpPtr);
-    numberExtraIterations_ = CPXgetmipitcnt(env, lpPtr);
-    double value = cpxSolver.getObjValue() * direction;
-    if (cpxSolver.isProvenOptimal() && value <= getCutoff()) {
-      feasible = true;
-      clpSolver->setWarmStart(NULL);
-      // try and do solution
-      double *newSolution = CoinCopyOfArray(cpxSolver.getColSolution(), getNumCols());
-      setBestSolution(CBC_STRONGSOL, value, newSolution);
-      delete[] newSolution;
-    }
-    feasible = false;
-  }
-#endif
 #ifdef CBC_TRY_SCIP
   if (feasible && (specialOptions_ & 16384) != 0 && !parentModel_) {
     int tryScip(CbcModel * model, int type);
@@ -18297,9 +18176,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         if (node->depth() >= go_fathom && (specialOptions_ & 2048) == 0
           // if (node->depth()>=FATHOM_BIAS-fastNodeDepth_&&!parentModel_
           && numberNodes_ >= numberNodesBeforeFathom && !hotstartSolution_) {
-#ifndef CBC_HAS_OSICPX
           specialOptions_ &= ~16384;
-#endif
           if ((specialOptions_ & 16384) == 0) {
             info->integerTolerance_ = getIntegerTolerance();
             info->integerIncrement_ = getCutoffIncrement();
@@ -18529,82 +18406,6 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
             delete[] saveLower;
             delete[] saveUpper;
             simplex->setLogLevel(saveLevel);
-#if defined(CBC_HAS_OSICPX) && defined(CBC_HAS_CPLEX)
-          } else {
-            // try cplex
-            OsiCpxSolverInterface cpxSolver;
-            double direction = clpSolver->getObjSense();
-            cpxSolver.setObjSense(direction);
-            // load up cplex
-            const CoinPackedMatrix *matrix = clpSolver->getMatrixByCol();
-            const double *rowLower = clpSolver->getRowLower();
-            const double *rowUpper = clpSolver->getRowUpper();
-            const double *columnLower = clpSolver->getColLower();
-            const double *columnUpper = clpSolver->getColUpper();
-            const double *objective = clpSolver->getObjCoefficients();
-            cpxSolver.loadProblem(*matrix, columnLower, columnUpper, objective,
-              rowLower, rowUpper);
-            double *setSol = new double[numberIntegers_];
-            int *setVar = new int[numberIntegers_];
-            // cplex doesn't know about objective offset
-            double offset = clpSolver->getModelPtr()->objectiveOffset();
-            for (int i = 0; i < numberIntegers_; i++) {
-              int iColumn = integerVariable_[i];
-              cpxSolver.setInteger(iColumn);
-              if (bestSolution_) {
-                setSol[i] = bestSolution_[iColumn];
-                setVar[i] = iColumn;
-              }
-            }
-            CPXENVptr env = cpxSolver.getEnvironmentPtr();
-            CPXLPptr lpPtr = cpxSolver.getLpPtr(OsiCpxSolverInterface::KEEPCACHED_ALL);
-            cpxSolver.switchToMIP();
-            if (bestSolution_) {
-#if 0
-                            CPXcopymipstart(env, lpPtr, numberIntegers_, setVar, setSol);
-#else
-              int zero = 0;
-              CPXaddmipstarts(env, lpPtr, 1, numberIntegers_, &zero, setVar,
-                setSol, NULL, NULL);
-#endif
-            }
-            if (getCutoff() < 1.0e50) {
-              double useCutoff = getCutoff() + offset;
-              if (bestObjective_ < 1.0e50)
-                useCutoff = bestObjective_ + offset + 1.0e-7;
-              cpxSolver.setDblParam(OsiDualObjectiveLimit,
-                useCutoff * direction);
-              if (direction > 0.0)
-                CPXsetdblparam(env, CPX_PARAM_CUTUP, useCutoff); // min
-              else
-                CPXsetdblparam(env, CPX_PARAM_CUTLO, useCutoff); // max
-            }
-            CPXsetdblparam(env, CPX_PARAM_EPGAP,
-              dblParam_[CbcAllowableFractionGap]);
-            delete[] setSol;
-            delete[] setVar;
-            if (offset) {
-              char printBuffer[200];
-              sprintf(printBuffer,
-                "Add %g to all Cplex messages for true objective",
-                -offset);
-              messageHandler()->message(CBC_GENERAL, messages())
-                << printBuffer << CoinMessageEol;
-              cpxSolver.setDblParam(OsiObjOffset, offset);
-            }
-            cpxSolver.branchAndBound();
-            numberExtraNodes_ += CPXgetnodecnt(env, lpPtr);
-            numberExtraIterations_ += CPXgetmipitcnt(env, lpPtr);
-            double value = cpxSolver.getObjValue() * direction;
-            if (cpxSolver.isProvenOptimal() && value <= getCutoff()) {
-              feasible = true;
-              clpSolver->setWarmStart(NULL);
-              // try and do solution
-              double *newSolution = CoinCopyOfArray(cpxSolver.getColSolution(), getNumCols());
-              setBestSolution(CBC_STRONGSOL, value, newSolution);
-              delete[] newSolution;
-            }
-#endif
           }
         }
       }

@@ -393,7 +393,6 @@ int CbcSolver::preprocess(int preProcess, int cbcParamCode,
       delete[] prohibited;
     }
     int numberPasses = 10;
-#ifndef CBC_OTHER_SOLVER
     if (doSprint_ > 0) {
       // Sprint for primal solves
       ClpSolve::SolveType method = ClpSolve::usePrimalorSprint;
@@ -415,8 +414,6 @@ int CbcSolver::preprocess(int preProcess, int cbcParamCode,
         osiclp->getModelPtr()->specialOptions() | 256);
       osiclp->getModelPtr()->setInfeasibilityCost(1.0e11);
     }
-#endif
-#ifndef CBC_OTHER_SOLVER
     {
       OsiClpSolverInterface *osiclp = getClpSolver(saveSolver);
       osiclp->setSpecialOptions(osiclp->specialOptions() | 1024);
@@ -594,15 +591,6 @@ int CbcSolver::preprocess(int preProcess, int cbcParamCode,
         }
       }
     }
-#elif CBC_OTHER_SOLVER == 1
-    // cbcPreProcessPointer removed (dead code)
-    redoSOS = true;
-    if (model_.getKeepNamesPreproc())
-      process.setKeepColumnNames(true);
-    solver2 = process.preProcessNonDefault(
-      *saveSolver, translate[preProcess], numberPasses,
-      tunePreProcess_);
-#endif
     integersOK = false; // We need to redo if CbcObjects exist
     // Tell solver we are not in Branch and Cut
     saveSolver->setHintParam(OsiDoInBranchAndCut, false,

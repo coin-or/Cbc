@@ -25,16 +25,6 @@
 /*
   We have the following compile-time symbols.
 
-  CBC_OTHER_SOLVER	CoinSolve.cpp, CbcSolver.[cpp,hpp], CbcModel.cpp
-
-    A value of 1 says `cplex'. Other values not defined. The intent with
-    cplex is to apply all of cbc's smarts at the root, then hand the problem
-    over to cplex to finish. Cplex is not used as an alternate lp solver
-    under cbc control.
-
-    Usage in CbcModel is a fake; a small bit of code that's now `#if 0'.
-
-
   CLP_DEBUG_MALLOC
 
     This ties in with the functions clp_malloc, clp_free, and clp_memory,
@@ -52,13 +42,6 @@
     not escape from this file.
 */
 
-#if CBC_OTHER_SOLVER == 1
-#ifndef CBC_HAS_OSICPX
-#error "Configuration did not detect OsiCpx installation."
-#else
-#include "OsiCpxSolverInterface.hpp"
-#endif
-#endif
 
 /*
   Hooks for a debugging wrapper for malloc/free. This bit of definition hooks
@@ -209,13 +192,9 @@ int main(int argc, const char *argv[])
 #ifdef CLP_DEBUG_MALLOC
   clp_memory(0);
 #endif
-#ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface solver1;
 #if !defined(_WIN32) || defined(CLP_USE_OPENBLAS)
   set_openblas_threads(1);
-#endif
-#elif CBC_OTHER_SOLVER == 1
-  OsiCpxSolverInterface solver1;
 #endif
   CbcModel model(solver1);
   

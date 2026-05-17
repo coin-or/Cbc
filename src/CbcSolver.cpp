@@ -88,14 +88,6 @@ void CbcCrashHandler(int sig);
 #include "OsiRowCut.hpp"
 #include "OsiRowCutDebugger.hpp"
 #include "OsiSolverInterface.hpp"
-/* CBC_OTHER_SOLVER == 1 is cplex. */
-#if CBC_OTHER_SOLVER == 1
-#ifndef CBC_HAS_OSICPX
-#error "Configuration did not detect OsiCpx installation."
-#else
-#include "OsiCpxSolverInterface.hpp"
-#endif
-#endif
 
 #include "CglBKClique.hpp"
 #include "CglClique.hpp"
@@ -1047,13 +1039,8 @@ static void applyVectorMode(ClpSimplex *lpSolver, bool setMode = false)
 int CbcSolver::applyLpMethod()
 {
   OsiSolverInterface *solver = model_.solver();
-#ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface *si = getClpSolver(solver);
   ClpSimplex *clp = si ? si->getModelPtr() : nullptr;
-#else
-  OsiClpSolverInterface *si = nullptr;
-  ClpSimplex *clp = nullptr;
-#endif
 
   // ─── 1. Bound propagation ────────────────────────────────────────────────
   // Tightens bounds using MILP-based bound propagation before building the
@@ -1136,7 +1123,6 @@ int CbcSolver::applyLpMethod()
   // PSI, objective scaling, and vector mode modify the ClpSimplex object in
   // place.  They MUST be applied before racing (step 4) so that every racing
   // thread clone inherits them.
-#ifndef CBC_OTHER_SOLVER
   if (clp) {
     // NOTE: all CLP parameters are stored in parameters_.clpParameters(), NOT in
     // the redundant CbcSolver::clpParameters_ member (which is never populated).
@@ -1172,7 +1158,6 @@ int CbcSolver::applyLpMethod()
     if (doVector_)
       applyVectorMode(clp);
   }
-#endif
 
   // ─── 4. LP racing ───────────────────────────────────────────────────────
   // Races multiple LP strategies in parallel threads.  Thread configs are
@@ -1206,7 +1191,6 @@ int CbcSolver::applyLpMethod()
   // (DUALSIMPLEX / PRIMALSIMPLEX / BARRIER cases in run()), using member
   // variables so the same code path is followed regardless of whether we
   // were invoked via -initialSolve or -solve.
-#ifndef CBC_OTHER_SOLVER
   if (!si || !clp) {
     // Non-CLP solver: OSI-level fallback.
     const CbcParameters::LPMethod method = parameters_.getLpMethod();
@@ -1391,14 +1375,6 @@ int CbcSolver::applyLpMethod()
   if (lpMethod == CbcParameters::LPBarrier)
     si->setWarmStart(nullptr);
 
-#else
-  // Non-CLP solver fallback (CBC_OTHER_SOLVER).
-  const CbcParameters::LPMethod method = parameters_.getLpMethod();
-  solver->setHintParam(OsiDoDualInInitial,
-    method != CbcParameters::LPPrimal, OsiHintDo);
-  solver->initialSolve();
-  basisHasValues_ = 1;
-#endif
 
   return 0;
 }
@@ -2516,26 +2492,16 @@ void CbcSolver::initialize()
 
   ClpParameters &clpParameters = parameters_.clpParameters();
 
-#ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface *origSolver = getClpSolver(model_.solver());
-#elif CBC_OTHER_SOLVER == 1
-  OsiCpxSolverInterface *origSolver =
-      dynamic_cast<OsiCpxSolverInterface *>(model_.solver());
-  OsiClpSolverInterface dummySolver;
-  ClpSimplex *lpSolver = dummySolver.getModelPtr();
-  OsiCpxSolverInterface *clpSolver = origSolver;
-#endif
   assert(origSolver);
   CoinMessageHandler *generalMessageHandler = origSolver->messageHandler();
   generalMessageHandler->setPrefix(false);
-#ifndef CBC_OTHER_SOLVER
   OsiSolverInterface *solver = model_.solver();
   OsiClpSolverInterface *clpSolver = getClpSolver(solver);
   ClpSimplex *lpSolver = clpSolver->getModelPtr();
   lpSolver->setPerturbation(50);
   lpSolver->messageHandler()->setPrefix(false);
   clpParameters.setModel(lpSolver);
-#endif
   int doIdiot = -1;
   int outputFormat = 2;
   int substitution = 3;
@@ -2839,7 +2805,6 @@ void CbcSolver::importModel(std::deque<std::string> &inputQueue,
   numberLotSizing_ = 0;
   delete[] lotsize_;
   lotsize_ = NULL;
-#ifndef CBC_OTHER_SOLVER
   lpSolver = clpSolver->getModelPtr();
   CbcImportHandler importHandler;
   bool origDefault;
@@ -2857,12 +2822,7 @@ void CbcSolver::importModel(std::deque<std::string> &inputQueue,
 #endif
   }
   lpSolver->popMessageHandler(origLpHandler, origDefault);
-#else
-  status = clpSolver->readMps(fileName.c_str(), "");
-  CbcImportHandler importHandler;
-#endif
   if (!status || (status > 0 && allowImportErrors_)) {
-#ifndef CBC_OTHER_SOLVER
     if (keepImportNames_) {
       lengthName_ = lpSolver->lengthNames();
       rowNames_ = *(lpSolver->rowNames());
@@ -2971,11 +2931,6 @@ void CbcSolver::importModel(std::deque<std::string> &inputQueue,
         }
       }
     }
-#else
-    lengthName_ = 0;
-    goodModel_ = true;
-    CbcOutput::printProblemSummary(model_, *model_.solver());
-#endif
     double time2 = CoinCpuTime();
     totalTime += time2 - time1;
     time1 = time2;
@@ -3377,7 +3332,6 @@ int CbcSolver::preprocess(
       delete[] prohibited;
     }
     int numberPasses = 10;
-#ifndef CBC_OTHER_SOLVER
     if (doSprint_ > 0) {
       // Sprint for primal solves
       ClpSolve::SolveType method = ClpSolve::usePrimalorSprint;
@@ -3399,8 +3353,6 @@ int CbcSolver::preprocess(
         osiclp->getModelPtr()->specialOptions() | 256);
       osiclp->getModelPtr()->setInfeasibilityCost(1.0e11);
     }
-#endif
-#ifndef CBC_OTHER_SOLVER
     {
       OsiClpSolverInterface *osiclp = getClpSolver(saveSolver_);
       osiclp->setSpecialOptions(osiclp->specialOptions() | 1024);
@@ -3576,14 +3528,6 @@ int CbcSolver::preprocess(
         }
       }
     }
-#elif CBC_OTHER_SOLVER == 1
-    redoSOS = true;
-    if (model.getKeepNamesPreproc())
-      process.setKeepColumnNames(true);
-    solver2 = process.preProcessNonDefault(
-      *saveSolver_, translate[preProcess_], numberPasses,
-      tunePreProcess_);
-#endif
     integersOK = false; // We need to redo if CbcObjects exist
     // Tell solver we are not in Branch and Cut
     saveSolver_->setHintParam(OsiDoInBranchAndCut, false,
@@ -4365,12 +4309,7 @@ int CbcSolver::postprocess(
     if (preProcess_) {
       n = saveSolver_->getNumCols();
       bestSolution = new double[n];
-#ifndef CBC_OTHER_SOLVER
       OsiClpSolverInterface *clpSolver = getClpSolver(babModel_->solver());
-#else
-      OsiCpxSolverInterface *clpSolver = dynamic_cast< OsiCpxSolverInterface * >(
-        babModel_->solver());
-#endif
       // Save bounds on processed model
       const int *originalColumns = process.originalColumns();
       int numberColumns2 = clpSolver->getNumCols();
@@ -4389,12 +4328,10 @@ int CbcSolver::postprocess(
           upper2[jColumn] = columnUpper[i];
         }
       }
-#ifndef CBC_OTHER_SOLVER
       ClpSimplex *lpSolver = clpSolver->getModelPtr();
       lpSolver->setSpecialOptions(
         lpSolver->specialOptions() | IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and
                                                            // bound)
-#endif
       // put back any saved solutions
       putBackOtherSolutions(babModel_, &model_, &process);
       setPreProcessingMode(babModel_->solver(), 2);
@@ -4516,7 +4453,6 @@ int CbcSolver::postprocess(
           osiclp->getModelPtr()->checkUnscaledSolution();
       }
       // assert(saveSolver_->isProvenOptimal());
-#ifndef CBC_OTHER_SOLVER
       // and original solver
       originalSolver->setDblParam(OsiDualObjectiveLimit,
         COIN_DBL_MAX);
@@ -4542,7 +4478,6 @@ int CbcSolver::postprocess(
           osiclp->getModelPtr()->checkUnscaledSolution();
       }
       // assert(originalSolver->isProvenOptimal());
-#endif
       babModel_->assignSolver(saveSolver_);
       memcpy(bestSolution, originalSolver->getColSolution(),
         n * sizeof(double));
@@ -4553,7 +4488,6 @@ int CbcSolver::postprocess(
       memcpy(bestSolution, babModel_->solver()->getColSolution(),
         n * sizeof(double));
       babModel_->setObjValue(babModel_->solver()->getObjValue());
-#ifndef CBC_OTHER_SOLVER
       // and put back bounds in very original solver
       ClpSimplex *original = originalSolver->getModelPtr();
       double *lower = original->columnLower();
@@ -4564,7 +4498,6 @@ int CbcSolver::postprocess(
       memcpy(upper, babModel_->solver()->getColUpper(),
         n2 * sizeof(double));
       originalSolver->resolve();
-#endif
     }
     if (returnMode_ == 1 && model_.numberSavedSolutions() < 2) {
       model_.deleteSolutions();
@@ -4574,7 +4507,6 @@ int CbcSolver::postprocess(
     babModel_->deleteSolutions();
     babModel_->setBestSolution(
       bestSolution, n, babModel_->getMinimizationObjValue());
-#ifndef CBC_OTHER_SOLVER
     // and put back in very original solver
     {
       ClpSimplex *original = originalSolver->getModelPtr();
@@ -4631,7 +4563,6 @@ int CbcSolver::postprocess(
       }
       // assert(originalSolver->isProvenOptimal());
     }
-#endif
     checkSOS(babModel_, babModel_->solver());
   } else if (model_.bestSolution() && cbcParamCode == CbcParam::BAB && model_.getMinimizationObjValue() < 1.0e50 && preProcess_) {
     buffer.str("");
@@ -4648,7 +4579,6 @@ int CbcSolver::postprocess(
       model_.getMinimizationObjValue());
     memcpy(bestSolution, babModel_->solver()->getColSolution(),
       n * sizeof(double));
-#ifndef CBC_OTHER_SOLVER
     // and put back in very original solver
     {
       ClpSimplex *original = originalSolver->getModelPtr();
@@ -4670,9 +4600,7 @@ int CbcSolver::postprocess(
       originalSolver->setBasis(*basis);
       delete basis;
     }
-#endif
   }
-#ifndef CBC_OTHER_SOLVER
   // if (type==STRENGTHEN&&strengthenedModel)
   // clpSolver = dynamic_cast< OsiClpSolverInterface*>
   // (strengthenedModel);
@@ -4692,9 +4620,7 @@ int CbcSolver::postprocess(
     delete[] changed;
   }
 #endif
-#endif
   if (cbcParamCode == CbcParam::BAB) {
-#ifndef CBC_OTHER_SOLVER
     // move best solution (should be there -- but ..)
     int n = lpSolver->getNumCols();
     if (bestSolution) {
@@ -4710,11 +4636,6 @@ int CbcSolver::postprocess(
     if (parameters_[CbcParam::DEBUGFILE]->fileName() == "create" && bestSolution) {
       ClpParamUtils::saveSolution(lpSolver, "debug.file");
     }
-#else
-    if (bestSolution) {
-      model_.solver()->setColSolution(bestSolution);
-    }
-#endif
     delete saveSolver_;
     saveSolver_ = nullptr;
     delete[] bestSolution;
@@ -4908,13 +4829,10 @@ int CbcSolver::solveInitialLp(
 
             double time1a = CoinCpuTime();
             OsiSolverInterface *solver = model_.solver();
-#ifndef CBC_OTHER_SOLVER
             OsiClpSolverInterface *si = getClpSolver(solver);
             if (CBC_SKIP_CLP_TEST||si)
               si->setSpecialOptions(si->specialOptions() | 1024);
-#endif
             // ------ root LP progress output ------
-#ifndef CBC_OTHER_SOLVER
             int lpIterFreq = parameters_[CbcParam::LPITERFREQ]->intVal();
             double lpTimeFreq = parameters_[CbcParam::LPTIMEFREQ]->dblVal();
             ClpLpEventHandler *lpProgressHandler = nullptr;
@@ -4954,7 +4872,6 @@ int CbcSolver::solveInitialLp(
               clpModel->passInEventHandler(&tmpEvt);
               lpProgressHandler = dynamic_cast<ClpLpEventHandler *>(clpModel->eventHandler());
             }
-#endif
             // Capture integer variable info before solve (solver may relax types internally)
             int numMipInts = 0;
             std::vector<int> intCols;
@@ -4969,7 +4886,6 @@ int CbcSolver::solveInitialLp(
             int lpMethodResult = applyLpMethod();
             if (lpMethodResult < 0) {
               // Infeasible — clean up LP progress handler and skip BAB
-#ifndef CBC_OTHER_SOLVER
               if (lpSavedMsg && si) {
                 ClpSimplex *clpModel = si->getModelPtr();
                 clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
@@ -4979,7 +4895,6 @@ int CbcSolver::solveInitialLp(
                 ClpEventHandler defaultHandler;
                 clpModel->passInEventHandler(&defaultHandler);
               }
-#endif
               return 2;
             }
             // --- Clique strengthening "before" (after bound propagation) ---
@@ -5014,7 +4929,6 @@ int CbcSolver::solveInitialLp(
             if (lpMethodResult > 0) {
               model_.initialSolve();
             }
-#ifndef CBC_OTHER_SOLVER
             if (lpSavedMsg && si) {
               ClpSimplex *clpModel = si->getModelPtr();
               if (lpProgressHandler) {
@@ -5040,9 +4954,7 @@ int CbcSolver::solveInitialLp(
               ClpEventHandler defaultHandler;
               clpModel->passInEventHandler(&defaultHandler);
             }
-#endif
             // ------ end root LP progress output ------
-#ifndef CBC_OTHER_SOLVER
             ClpSimplex *clpSolver = si->getModelPtr();
             int iStatus = clpSolver->status();
             int iStatus2 = clpSolver->secondaryStatus();
@@ -5097,8 +5009,6 @@ int CbcSolver::solveInitialLp(
             clpSolver->setSpecialOptions(
               clpSolver->specialOptions() | IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and
                                                                   // bound)
-#elif CBC_OTHER_SOLVER == 1
-#endif
             buffer.str("");
             statistics.lp_seconds = CoinCpuTime() - time1a;
             // "Continuous objective value is ..." suppressed: shown by LP progress table footer.
@@ -5147,7 +5057,6 @@ int CbcSolver::solveInitialLp(
                 }
               }
             }
-#ifndef CBC_OTHER_SOLVER
             if (!complicatedInteger_ && preProcess_ == 0 && clpSolver->tightenPrimalBounds(0.0, 0, true) != 0) {
               printGeneralMessage(model_,
                 "Problem is infeasible - tightenPrimalBounds!");
@@ -5262,7 +5171,6 @@ int CbcSolver::solveInitialLp(
               if (siClp)
                 clearClpTimeLimits(siClp->getModelPtr());
             }
-#endif
   return 0;
 }
 void CbcSolver::writeSolution(int cbcParamCode,
@@ -5336,7 +5244,6 @@ void CbcSolver::writeSolution(int cbcParamCode,
     }
   }
 
-#ifndef CBC_OTHER_SOLVER
   bool printingAllAsCsv = false;
   if (printMode_ == 14) {
     // when allcsv then set printMode_ to all and
@@ -5446,7 +5353,6 @@ void CbcSolver::writeSolution(int cbcParamCode,
     }
     fprintf(fp, " - objective value %.8f\n", objValue);
   }
-#endif
   // make fancy later on
   int iRow;
   int numberRows = clpSolver->getNumRows();
@@ -6018,21 +5924,11 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
 
   ClpParameters &clpParameters = parameters.clpParameters();
 
-#ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface *originalSolver =
       getClpSolver(model.solver());
-#elif CBC_OTHER_SOLVER == 1
-  OsiCpxSolverInterface *originalSolver =
-      dynamic_cast<OsiCpxSolverInterface *>(model.solver());
-  // Dummy solvers
-  OsiClpSolverInterface dummySolver;
-  ClpSimplex *lpSolver = dummySolver.getModelPtr();
-  OsiCpxSolverInterface *clpSolver = originalSolver;
-#endif
   assert(originalSolver);
   CoinMessageHandler *generalMessageHandler = originalSolver->messageHandler();
   generalMessageHandler->setPrefix(false);
-#ifndef CBC_OTHER_SOLVER
   OsiSolverInterface *solver = model.solver();
   OsiClpSolverInterface *clpSolver =
       getClpSolver(solver);
@@ -6040,7 +5936,6 @@ void CbcMain0(CbcModel &model, CbcParameters &parameters) {
   lpSolver->setPerturbation(50);
   lpSolver->messageHandler()->setPrefix(false);
   clpParameters.setModel(lpSolver);
-#endif
   // establishParams(numberParameters, parameters) ;
   int doIdiot = -1;
   int outputFormat = 2;
@@ -6370,7 +6265,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     int numberLotSizing;
   } lotStruct2;
   lotStruct2 passSCtopreprocess;
-#ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface *originalSolver = getClpSolver(model_.solver());
   assert(originalSolver);
   // Move handler across if not default
@@ -6382,21 +6276,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     generalMessageHandler->setLogLevel(0);
     parameters.disableWelcomePrinting();
   }
-#elif CBC_OTHER_SOLVER == 1
-  /*
-    The only other solver that's ever been used is cplex, and the use is
-    limited -- do the root with clp and all the cbc smarts, then give the
-    problem over to cplex to finish. Although the defines can be read in some
-    places to allow other options, nothing's been tested and success is
-    unlikely.
-  */
-  OsiCpxSolverInterface *originalSolver = dynamic_cast< OsiCpxSolverInterface * >(model_.solver());
-  assert(originalSolver);
-  OsiClpSolverInterface dummySolver;
-  OsiCpxSolverInterface *clpSolver = originalSolver;
-  CoinMessages generalMessages = dummySolver.getModelPtr()->messages();
-  parameters.enablePrinting();
-#endif
   // Say not in integer
   integerStatus_ = -1;
   // Say no resolve after cuts
@@ -6426,15 +6305,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     // 0 normal, 1 from ampl or MIQP etc (2 allows cuts)
     complicatedInteger_ = 0;
     OsiSolverInterface *solver = model_.solver();
-#ifndef CBC_OTHER_SOLVER
     OsiClpSolverInterface *clpSolver = getClpSolver(solver);
     ClpSimplex *lpSolver = clpSolver->getModelPtr();
     if (parameters.noPrinting()) {
       lpSolver->setLogLevel(0);
     }
-#else
-    ClpSimplex *lpSolver = NULL;
-#endif
     // For priorities etc — use member pointers
     priorities_ = NULL;
     branchDirection_ = NULL;
@@ -6598,10 +6473,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     debugValues_ = NULL;
     numberDebugValues_ = -1;
     basisHasValues_ = 0;
-#ifndef CBC_OTHER_SOLVER
     normalIncrement_ = model_.getCutoffIncrement();
     ;
-#endif
     if (testOsiParameters_ >= 0) {
       // trying nonlinear - switch off some stuff
       preProcess_ = 0;
@@ -7127,7 +7000,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 
         biLinearProblem = false;
         // check if any integers
-#ifndef CBC_OTHER_SOLVER
         if (info && info->numberSos && doSOS && statusUserFunction_[0]) {
           // SOS
           numberSOS = info->numberSos;
@@ -7148,7 +7020,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
 #endif
         }
-#endif
       }
       if (cbcParamCode == CbcParam::GENERALQUERY || cbcParamCode == CbcParam::FULLGENERALQUERY) {
         // TODO This should be made more transparent
@@ -7177,7 +7048,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         switch (cbcParamCode) {
         case CbcParam::DJFIX:
           djFix = dValue;
-#ifndef CBC_OTHER_SOLVER
           if (goodModel && djFix < 1.0e20) {
             // do some fixing
             clpSolver = getClpSolver(model_.solver());
@@ -7216,7 +7086,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             buffer << numberFixed << " columns fixed" << std::endl;
             printGeneralMessage(model_, buffer.str());
           }
-#endif
           break;
         case CbcParam::TIGHTENFACTOR:
           tightenFactor = dValue;
@@ -7407,12 +7276,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               // >2 experimental preprocessing
               // 4 try ranging before strong branching
               model_.setSpecialOptions(model_.specialOptions() | (512 | 32768));
-#ifndef CBC_OTHER_SOLVER
               if (iValue > 1) {
                 OsiClpSolverInterface *osiclp = getClpSolver(model_.solver());
                 osiclp->setSpecialOptions(osiclp->specialOptions() & ~32);
               }
-#endif
               if (iValue > 2)
                 tunePreProcess |= 8198; // was 8199;
               if (iValue == 4) {
@@ -7672,7 +7539,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         case CbcParam::RANDROUND:
         case CbcParam::LOCALTREE:
         case CbcParam::NAIVE:
-        case CbcParam::CPX:
           defaultSettings = false; // user knows what she is doing
           break;
         case CbcParam::BRANCHPRIORITY:
@@ -8054,7 +7920,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             applyClpTimeLimit(model_, model2);
           }
           // ------ LP action progress output (Idiot/Sprint/LP unified table) ------
-#ifndef CBC_OTHER_SOLVER
           auto lpActState = std::make_shared<ClpLpPhaseState>();
           lpActState->fp       = model_.messageHandler()->filePointer();
           lpActState->utf8     = CbcOutput::useUtf8();
@@ -8073,7 +7938,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           model2->passInEventHandler(&lpActEvtH);
           ClpLpEventHandler *lpActProg =
             dynamic_cast<ClpLpEventHandler *>(model2->eventHandler());
-#endif
 #ifdef COIN_HAS_LINK
           OsiSolverInterface *coinSolver = model_.solver();
           OsiSolverLink *linkSolver = dynamic_cast< OsiSolverLink * >(coinSolver);
@@ -8114,12 +7978,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           // Clear time limits from LP solver to avoid leaking into later solves.
           clearClpTimeLimits(model2);
           // ------ LP action progress teardown ------
-#ifndef CBC_OTHER_SOLVER
           if (lpActProg)
             lpActProg->printFinalStatus();
           model2->popMessageHandler(lpActSavedMsg, lpActMsgOldDefault);
           { ClpEventHandler defEvt; model2->passInEventHandler(&defEvt); }
-#endif
           {
             // map states
             /* clp status
@@ -8414,7 +8276,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           } else {
             clpParameters[ClpParam::BASISFILE]->setFileName(fileName);
           }
-#ifndef CBC_OTHER_SOLVER
           int values = lpSolver->readBasis(fileName.c_str());
           if (values == 0)
             basisHasValues = -1;
@@ -8422,7 +8283,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             basisHasValues = 1;
           assert(lpSolver == clpSolver->getModelPtr());
           clpSolver->setWarmStart(NULL);
-#endif
         } break;
         case ClpParam::BASISOUT: {
           if (!goodModel) {
@@ -8592,7 +8452,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
           printParamChanges();
           integerStatus = -1;
-#ifndef CBC_OTHER_SOLVER
           if (clpSolver)
             clpSolver->setSpecialOptions(clpSolver->specialOptions() | 1024);
           // ------ LP progress output (mirrors the CLP-handler setup) ------
@@ -8620,9 +8479,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             lpSolver->passInEventHandler(&lpScEvtH);
             lpScProg = dynamic_cast<ClpLpEventHandler *>(lpSolver->eventHandler());
           }
-#endif
           int lpResult = applyLpMethod();
-#ifndef CBC_OTHER_SOLVER
           if (lpScProg)
             lpScProg->printFinalStatus();
           if (lpSolver && lpScSavedMsg)
@@ -8631,7 +8488,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             ClpEventHandler defEvt;
             lpSolver->passInEventHandler(&defEvt);
           }
-#endif
           if (lpResult < 0) {
             // Infeasibility proved by bound propagation — mark model.
             model_.setProblemStatus(0);
@@ -8644,13 +8500,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
           // Map ClpSimplex status codes to Cbc status (same as CLP handlers).
           {
-#ifndef CBC_OTHER_SOLVER
             int iStatus  = lpSolver ? lpSolver->status()          : -1;
             int iStatus2 = lpSolver ? lpSolver->secondaryStatus() : 0;
-#else
-            int iStatus  = -1;
-            int iStatus2 = 0;
-#endif
             if (iStatus == 0) {
               iStatus2 = 0;
             } else if (iStatus == 1) {
@@ -8709,7 +8560,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             }
           }
           if (statusUserFunction_[0]) {
-#ifndef CBC_OTHER_SOLVER
             double value = lpSolver ? lpSolver->getObjValue() : 0.0;
             char buf[300];
             int pos = 0;
@@ -8757,7 +8607,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               }
               strcpy(info->buffer, buf);
             }
-#endif
           }
           continue;
         }
@@ -8843,7 +8692,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
           {
             OsiSolverInterface *solver = model_.solver();
-#ifndef CBC_OTHER_SOLVER
             OsiClpSolverInterface *si = getClpSolver(solver);
             assert(si != NULL);
             si->getModelPtr()->scaling(doScaling);
@@ -8852,16 +8700,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             if (doVector) {
               applyVectorMode(lpSolver);
             }
-#elif CBC_OTHER_SOLVER == 1
-            OsiCpxSolverInterface *si = dynamic_cast< OsiCpxSolverInterface * >(solver);
-            assert(si != NULL);
-#endif
             statistics.nrows = si->getNumRows();
             statistics.ncols = si->getNumCols();
             statistics.nprocessedrows = si->getNumRows();
             statistics.nprocessedcols = si->getNumCols();
             // See if quadratic
-#ifndef CBC_OTHER_SOLVER
 #ifdef COIN_HAS_LINK
             if (!complicatedInteger) {
               ClpQuadraticObjective *obj = (dynamic_cast< ClpQuadraticObjective * >(
@@ -9013,11 +8856,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                       "greedy equality");
                     cbcModel->addHeuristic(&heuristicGreedyEquality);
 #ifdef CBC_EXPERIMENT_JJF
-#ifndef CBC_OTHER_SOLVER
                     CbcHeuristicRandRound heuristicRandRound(*cbcModel);
                     heuristicRandRound.setHeuristicName("random rounding");
                     cbcModel->addHeuristic(&heuristicRandRound);
-#endif
 #endif
                   }
                   CbcCompareDefault compare;
@@ -9122,20 +8963,17 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               }
             }
 #endif
-#endif
             // OsiDoReducePrint reduces log level by 1 inside
             // OsiClpSolverInterface::initialSolve() when logLevel<=1.
             // applyLpMethod() calls ClpSimplex::initialSolve(ClpSolve&)
             // directly, so this hint has no effect on our path.
             if (logLevel <= 1)
               si->setHintParam(OsiDoReducePrint, true, OsiHintTry);
-#ifndef CBC_OTHER_SOLVER
             // Bit 0x40000000 is never tested in OsiClpSolverInterface;
             // it is a harmless legacy marker with no functional effect.
             // The functionally important bit (1024 = don't borrow model)
             // is added with |= inside solveInitialLp().
             si->setSpecialOptions(0x40000000);
-#endif
           }
           if (!miplib) {
             int returnCode = 0;
@@ -9149,7 +8987,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             OsiSolverInterface *solver = model_.solver();
             if (!doScaling)
               solver->setHintParam(OsiDoScale, false, OsiHintTry);
-#ifndef CBC_OTHER_SOLVER
             OsiClpSolverInterface *si = getClpSolver(solver);
             assert(si != NULL);
             // get clp itself
@@ -9172,7 +9009,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 break;
               }
             }
-#endif
           }
 
           // See if we want preprocessing
@@ -9244,7 +9080,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
           delete babModel_;
           babModel_ = new CbcModel(model_);
-#ifndef CBC_OTHER_SOLVER
           int numberChanged = 0;
           OsiSolverInterface *solver3 = clpSolver->clone();
           babModel_->assignSolver(solver3);
@@ -9274,10 +9109,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             lpSolver->setFactorizationFrequency(
               std::min(maximum, frequency));
           }
-#elif CBC_OTHER_SOLVER == 1
-          OsiSolverInterface *solver3 = model_.solver()->clone();
-          babModel_->assignSolver(solver3);
-#endif
           time2 = CoinCpuTime();
           totalTime += time2 - time1;
           // time1 = time2;
@@ -9602,7 +9433,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 
           // now tighten bounds
           if (!miplib) {
-#ifndef CBC_OTHER_SOLVER
             OsiClpSolverInterface *si =getClpSolver(babModel_->solver());
             assert(si != NULL);
             // get clp itself
@@ -9631,8 +9461,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               si->resolve();
               clearClpTimeLimits(modelC);
             }
-#elif CBC_OTHER_SOLVER == 1
-#endif
           }
           if (debugValues) {
             // for debug
@@ -9679,11 +9507,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                     knapsackRow, numberKnapsack, storedAmpl, logLevel,
                     extra1, extra2, saveTightenedModel);
                   if (solver) {
-#ifndef CBC_OTHER_SOLVER
                     clpSolver = getClpSolver(solver);
                     assert(clpSolver);
                     lpSolver = clpSolver->getModelPtr();
-#endif
                     babModel_->assignSolver(solver);
                     testOsiOptions = 0;
                     // allow gomory
@@ -9835,7 +9661,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           babModel_->solver()->setIntParam(
             OsiMaxNumIterationHotStart,
             parameters[CbcParam::MAXHOTITS]->intVal());
-#ifndef CBC_OTHER_SOLVER
           OsiClpSolverInterface *osiclp = getClpSolver(babModel_->solver());
           // go faster stripes
           if ((osiclp->getNumRows() < 300 && osiclp->getNumCols() < 500)) {
@@ -9860,10 +9685,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           if (!miplib && increment == normalIncrement)
             changed = analyze(osiclp, numberChanged, increment, false,
               generalMessageHandler, parameters.noPrinting());
-#endif
-#elif CBC_OTHER_SOLVER == 1
-          double increment = babModel_->getCutoffIncrement();
-          ;
 #endif
           if (debugValues) {
             int numberColumns = babModel_->solver()->getNumCols();
@@ -9924,10 +9745,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             buffer << "mip options " << mipOptions;
             printGeneralMessage(model_, buffer.str());
           }
-#ifndef CBC_OTHER_SOLVER
           osiclp->setSpecialOptions(mipOptions);
-#elif CBC_OTHER_SOLVER == 1
-#endif
           // probably faster to use a basis to get integer solutions
           babModel_->setSpecialOptions(babModel_->specialOptions() | 2);
           currentBranchModel = babModel_;
@@ -11050,13 +10868,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             malloc_stats();
             malloc_stats2();
 #endif
-#ifndef CBC_OTHER_SOLVER
             if (outputFormat == 5) {
               osiclp = getClpSolver(babModel_->solver());
               lpSolver = osiclp->getModelPtr();
               lpSolver->setPersistenceFlag(1);
             }
-#endif
             // add in lotsizing
             if (info && statusUserFunction_[0] && info->special) {
               int numberColumns = babModel_->getNumCols();
@@ -11211,7 +11027,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               babModel_ = NULL;
               return returnCode;
             }
-#ifndef CBC_OTHER_SOLVER
             osiclp = getClpSolver(babModel_->solver());
             lpSolver = osiclp->getModelPtr();
             int hotits = parameters[CbcParam::MAXHOTITS]->intVal();
@@ -11221,8 +11036,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             } else {
               osiclp->setIntParam(OsiMaxNumIterationHotStart, hotits);
             }
-#elif CBC_OTHER_SOLVER == 1
-#endif
             if ((experimentFlag >= 1 || strategyFlag >= 1) && abs(babModel_->fastNodeDepth()) == 1) {
               int iType = babModel_->fastNodeDepth();
               int iDepth = iType < 0 ? -12 : 5;
@@ -11242,7 +11055,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             if (heurOptions > 100)
               babModel_->setSpecialOptions(babModel_->specialOptions() | 8192);
 
-#ifndef CBC_OTHER_SOLVER
 #ifdef CLP_MULTIPLE_FACTORIZATIONS
             int denseCode = clpParameters[ClpParam::DENSE]->intVal();
             int smallCode = clpParameters[ClpParam::SMALLFACT]->intVal();
@@ -11285,7 +11097,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 }
               }
             }
-#endif
 #endif
 #ifdef CLIQUE_ANALYSIS
             if (!storedAmpl.sizeRowCuts()) {
@@ -11464,15 +11275,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             } else if (hOp1 == 10) {
               CbcCompareObjective compare;
               babModel_->setNodeComparison(compare);
-            }
-#if CBC_OTHER_SOLVER == 1
-            if (dynamic_cast< OsiCpxSolverInterface * >(babModel_->solver()))
-              babModel_->solver()->messageHandler()->setLogLevel(0);
-#endif
-            if (parameters[CbcParam::CPX]->modeVal()) {
-              babModel_->setSpecialOptions(babModel_->specialOptions() | 16384);
-              // if (babModel_->fastNodeDepth()==-1)
-              babModel_->setFastNodeDepth(-2); // Use Cplex at root
             }
             int hOp2 = parameters[CbcParam::HEUROPTIONS]->intVal() / 10000;
             if (hOp2 % 10) {
@@ -11676,13 +11478,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 for (int i = 0; i < tempModel.numberHeuristics(); i++)
                   tempModel.heuristic(i)->setSeed(
                     tempModel.heuristic(i)->getSeed() + 100000000 * iGo);
-#ifndef CBC_OTHER_SOLVER
                 OsiClpSolverInterface *solver = getClpSolver(
                   tempModel.solver());
                 ClpSimplex *simplex = solver->getModelPtr();
                 int solverSeed = simplex->randomNumberGenerator()->getSeed();
                 simplex->setRandomSeed(solverSeed + 100000000 * (iGo + 1));
-#endif
                 tempModel.branchAndBound();
                 if (tempModel.bestSolution()) {
                   bestSolutions[numberSolutions] = CoinCopyOfArray(
@@ -11758,7 +11558,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             }
 #endif
             // preProcessPointer removed — was always NULL (dead code)
-#ifndef CBC_OTHER_SOLVER
             {
               OsiClpSolverInterface *solver = getClpSolver(babModel_->solver());
               ClpSimplex *simplex = solver->getModelPtr();
@@ -11787,7 +11586,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               }
 #endif
             }
-#endif
             // if (callBack != NULL)
             // returnCode = callBack(babModel_, 13);
             if (returnCode) {
@@ -11802,13 +11600,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               int options = babModel_->specialOptions();
               babModel_->setSpecialOptions(options | addOptions);
             }
-#ifndef CBC_OTHER_SOLVER
             if (doVector) {
               OsiClpSolverInterface *solver = getClpSolver(babModel_->solver());
               ClpSimplex *lpSolver = solver->getModelPtr();
               applyVectorMode(lpSolver, true);
             }
-#endif
 	    // Try and reduce timing calls
 	    if (!parameters[CbcParam::CHECKTIMEFREQ]->modeVal()) {
               OsiClpSolverInterface *solver = getClpSolver(babModel_->solver());
@@ -11938,13 +11734,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             babModel_->setNumberThreads(numberThreads % 100);
             babModel_->setThreadMode((numberThreads % 1000) / 100);
 #endif
-#ifndef CBC_OTHER_SOLVER
             if (outputFormat == 5) {
               osiclp = getClpSolver(babModel_->solver());
               lpSolver = osiclp->getModelPtr();
               lpSolver->setPersistenceFlag(1);
             }
-#endif
             if (testOsiOptions >= 0) {
               printf("Testing OsiObject options %d\n", testOsiOptions);
               CbcBranchDefaultDecision decision;
@@ -11957,7 +11751,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               babModel_->setBranchingMethod(decision);
             }
             model_ = *babModel_;
-#ifndef CBC_OTHER_SOLVER
             {
               osiclp = getClpSolver(model_.solver());
               lpSolver = osiclp->getModelPtr();
@@ -11976,7 +11769,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 }
               }
             }
-#endif
             /* LL: this was done in CoinSolve.cpp: main(argc, argv).
                                I have moved it here so that the miplib
                directory location could be passed to CbcClpUnitTest. */
@@ -11998,11 +11790,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             stuff[10] = clpParameters[ClpParam::SMALLFACT]->intVal();
             if (dominatedCuts) {
               model_.setSpecialOptions(model_.specialOptions() | 64);
-            }
-            if (parameters[CbcParam::CPX]->modeVal()) {
-              model_.setSpecialOptions(model_.specialOptions() | 16384);
-              // if (model_.fastNodeDepth()==-1)
-              model_.setFastNodeDepth(-2); // Use Cplex at root
             }
             int hOp2 = parameters[CbcParam::HEUROPTIONS]->intVal() / 10000;
             if (hOp2 % 10) {
@@ -12033,7 +11820,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 }
               }
             }
-#ifndef CBC_OTHER_SOLVER
             {
               OsiClpSolverInterface *solver = getClpSolver(model_.solver());
               ClpSimplex *simplex = solver->getModelPtr();
@@ -12048,7 +11834,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 model_.setSecsPrintFrequency(value);
               }
             }
-#endif
             std::string dirMiplib = parameters[CbcParam::DIRMIPLIB]->dirName();
             if (dirMiplib != "") {
               int returnCode = CbcClpUnitTest(model_, dirMiplib, extra2, stuff,
@@ -12061,7 +11846,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             // strengthenedModel = babModel_->strengthenedModel();
           }
           currentBranchModel = NULL;
-#ifndef CBC_OTHER_SOLVER
           osiclp = getClpSolver(babModel_->solver());
           if (parameters[CbcParam::DEBUGFILE]->fileName() == "createAfterPre" && babModel_->bestSolution()) {
             lpSolver = osiclp->getModelPtr();
@@ -12071,7 +11855,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               babModel_->bestSolution(), n * sizeof(double));
             ClpParamUtils::saveSolution(osiclp->getModelPtr(), "debug.file");
           }
-#endif
           statistics.cut_time = 0.0;
           double direction = babModel_->solver()->getObjSense();
           // "Cuts at root node..." and per-generator "was tried..." lines are
@@ -12203,7 +11986,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             printGeneralMessage(model_, buffer.str());
             model2->setOptimizationDirection(1.0);
           }
-#ifndef CBC_OTHER_SOLVER
           if (info && info->numberSos && doSOS && statusUserFunction_[0]) {
             // SOS
             numberSOS = info->numberSos;
@@ -12216,7 +11998,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           numberSOS = clpSolver->numberSOS();
           if (numberSOS || lotsize)
             preSolve = false;
-#endif
           if (preSolve) {
             ClpPresolve pinfo;
             int presolveOptions2 = presolveOptions & ~0x40000000;
@@ -13241,7 +13022,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
 #endif
   if (babModel_) {
     model_.moveInfo(*babModel_);
-#ifndef CBC_OTHER_SOLVER
     OsiClpSolverInterface *clpSolver0 = getClpSolver(babModel_->solver());
     ClpSimplex *lpSolver0 = clpSolver0->getModelPtr();
     OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
@@ -13249,7 +13029,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     if (lpSolver0 != lpSolver && lpSolver != originalSolver->getModelPtr())
       lpSolver->moveInfo(*lpSolver0);
     // babModel_->setModelOwnsSolver(false);
-#endif
   }
 
   delete babModel_;

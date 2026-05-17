@@ -29,32 +29,6 @@ if OSICBC_DFLT_SOLVER_CLP
   libOsiCbc_la_LIBADD += $(OSICLP_LFLAGS)
 endif
 
-if OSICBC_DFLT_SOLVER_CPX
-  libOsiCbc_la_LIBADD += $(OSICPX_LFLAGS)
-endif
-
-if OSICBC_DFLT_SOLVER_DYLP
-  libOsiCbc_la_LIBADD += $(OSIDYLP_LFLAGS)
-endif
-
-#if OSICBC_DFLT_SOLVER_GRB
-#endif
-
-if OSICBC_DFLT_SOLVER_MSK
-  libOsiCbc_la_LIBADD += $(OSIMSK_LFLAGS)
-endif
-
-if OSICBC_DFLT_SOLVER_HIGHS
-  libOsiCbc_la_LIBADD += $(HIGHS_LFLAGS)
-endif
-
-if OSICBC_DFLT_SOLVER_SYM
-  libOsiCbc_la_LIBADD += $(OSISYM_LFLAGS)
-endif
-
-#if OSICBC_DFLT_SOLVER_XPR
-#endif
-
 ########################################################################
 #                Headers that need to be installed                     #
 ########################################################################

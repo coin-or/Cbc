@@ -32,46 +32,9 @@
 	solver parameter.
 */
 
-#ifdef CBC_HAS_OSICLP
 #include "OsiClpSolverInterface.hpp"
 #ifndef CBC_DEFAULT_SOLVER
 #define CBC_DEFAULT_SOLVER "clp"
-#endif
-#endif
-
-#ifdef CBC_HAS_OSICPX
-#include "OsiCpxSolverInterface.hpp"
-#ifndef CBC_DEFAULT_SOLVER
-#define CBC_DEFAULT_SOLVER "cpx"
-#endif
-#endif
-
-#ifdef CBC_HAS_OSIDYLP
-#include "OsiDylpSolverInterface.hpp"
-#ifndef CBC_DEFAULT_SOLVER
-#define CBC_DEFAULT_SOLVER "dylp"
-#endif
-#endif
-
-#ifdef CBC_HAS_OSIMSK
-#include "OsiMskSolverInterface.hpp"
-#ifndef CBC_DEFAULT_SOLVER
-#define CBC_DEFAULT_SOLVER "msk"
-#endif
-#endif
-
-#ifdef CBC_HAS_HIGHS
-#include "OsiHiGHSSolverInterface.hpp"
-#ifndef CBC_DEFAULT_SOLVER
-#define CBC_DEFAULT_SOLVER "highs"
-#endif
-#endif
-
-#ifdef CBC_HAS_OSISPX
-#include "OsiSpxSolverInterface.hpp"
-#ifndef CBC_DEFAULT_SOLVER
-#define CBC_DEFAULT_SOLVER "spx"
-#endif
 #endif
 
 #include "CoinParam.hpp"
@@ -129,24 +92,7 @@ OsiSolverInterface *setupSolvers()
   /*
       Populate the vector of OsiSolverInterface objects.
     */
-#ifdef CBC_HAS_OSICLP
   solvers["clp"] = new OsiClpSolverInterface;
-#endif
-#ifdef CBC_HAS_OSICPX
-  solvers["cpx"] = new OsiCpxSolverInterface;
-#endif
-#ifdef CBC_HAS_OSIDYLP
-  solvers["dylp"] = new OsiDylpSolverInterface;
-#endif
-#ifdef CBC_HAS_HIGHS
-  solvers["highs"] = new OsiHiGHSSolverInterface;
-#endif
-#ifdef CBC_HAS_OSIMSK
-  solvers["msk"] = new OsiMskSolverInterface;
-#endif
-#ifdef CBC_HAS_OSISPX
-  solvers["spx"] = new OsiSpxSolverInterface;
-#endif
   /*
       Set the standard default values in each solver.
     */

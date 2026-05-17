@@ -177,7 +177,6 @@ public:
 
       // On/Off Parameters
       FIRSTBOOLPARAM,
-      CPX,
       DOHEURISTIC,
       ERRORSALLOWED,
       MESSAGES,

@@ -26,9 +26,6 @@
 #include "CoinModel.hpp"
 
 #include "OsiClpSolverInterface.hpp"
-#if CBC_OTHER_SOLVER == 1
-#include "OsiCpxSolverInterface.hpp"
-#endif
 
 #include "ClpParameters.hpp"
 

@@ -57,7 +57,7 @@ AC_CHECK_HEADERS([signal.h])
 #                            COIN-OR components                             #
 #############################################################################
 
-m4_foreach_w([myvar],[CoinUtils Cgl Clp],
+m4_foreach_w([myvar],[CoinUtils Clp],
   [ AC_COIN_CHK_PKG(myvar,[CbcLib OsiCbcLib])
     if test $coin_has_[]m4_tolower(myvar) != yes ; then
       AC_MSG_ERROR([Required package myvar is not available.])
@@ -276,7 +276,7 @@ AC_COIN_VPATH_LINK(examples/sudoku_sample.csv)
 #                  Check for doxygen                                        #
 #############################################################################
 
-AC_COIN_DOXYGEN([CoinUtils Clp DyLP Cgl])
+AC_COIN_DOXYGEN([CoinUtils Clp])
 
 ##############################################################################
 #                   Finishing up by writing all the output                   #
@@ -286,6 +286,7 @@ AC_COIN_DOXYGEN([CoinUtils Clp DyLP Cgl])
 # configuration header file)
 AC_CONFIG_FILES([Makefile
                  examples/Makefile
+                 src/Cgl/Makefile
                  src/Makefile
                  src/OsiCbc/Makefile
                  test/Makefile

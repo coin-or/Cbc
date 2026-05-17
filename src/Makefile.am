@@ -110,10 +110,10 @@ libCbc_la_SOURCES = \
 	unitTestClp.cpp
 
 # List all additionally required libraries
-libCbc_la_LIBADD = $(CBCLIB_LFLAGS)
+libCbc_la_LIBADD = Cgl/libCgl.la $(CBCLIB_LFLAGS)
 
 # Some common setup for cbc and cbc-generic.
-libCbc_la_CPPFLAGS = $(CBCLIB_CFLAGS)
+libCbc_la_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/Cgl
 
 ########################################################################
 #                            cbc program                               #
@@ -134,7 +134,7 @@ cbc_SOURCES = CoinSolve.cpp
 cbc_LDADD = libCbc.la
 
 # not really accurate to use these CFLAGS, but they should have everything
-cbc_CPPFLAGS = $(CBCLIB_CFLAGS)
+cbc_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/Cgl
 
 endif
 

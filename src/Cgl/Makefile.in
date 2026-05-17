@@ -14,14 +14,12 @@
 
 @SET_MAKE@
 
-# Copyright (C) 2006 International Business Machines and others.
-# All Rights Reserved.
-# This file is distributed under the Eclipse Public License.
-#
-# Author:  Andreas Waechter           IBM    2006-04-13
+# Makefile.am for Cgl — merged into Cbc build tree.
+# All Cgl cut generators compiled as a single non-installed library
+# that is linked into libCbc.la.
 
 ########################################################################
-#                             libOsiCbc                                #
+#                              libCgl                                  #
 ########################################################################
 
 
@@ -101,11 +99,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-
-# Plus the appropriate library for the default solver.
-# (adding OSICBCLIB_LFLAGS to libOsiCbc_la_LIBADD would link against all available solvers)
-@OSICBC_DFLT_SOLVER_CLP_TRUE@am__append_1 = $(OSICLP_LFLAGS)
-subdir = src/OsiCbc
+subdir = src/Cgl
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -113,48 +107,29 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 DIST_COMMON = $(srcdir)/Makefile.am $(includecoin_HEADERS)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h \
-	$(top_builddir)/src/config_cbc.h config_osicbc.h
+	$(top_builddir)/src/config_cbc.h \
+	$(top_builddir)/src/OsiCbc/config_osicbc.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
-am__vpath_adj = case $$p in \
-    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
-    *) f=$$p;; \
-  esac;
-am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
-am__install_max = 40
-am__nobase_strip_setup = \
-  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
-am__nobase_strip = \
-  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
-am__nobase_list = $(am__nobase_strip_setup); \
-  for p in $$list; do echo "$$p $$p"; done | \
-  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
-  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
-    if (++n[$$2] == $(am__install_max)) \
-      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
-    END { for (dir in files) print dir, files[dir] }'
-am__base_list = \
-  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
-  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__uninstall_files_from_dir = { \
-  { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
-  || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
-       $(am__cd) "$$dir" && echo $$files | $(am__xargs_n) 40 $(am__rm_f); }; \
-  }
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includecoindir)"
-LTLIBRARIES = $(lib_LTLIBRARIES)
-am__DEPENDENCIES_1 =
-libOsiCbc_la_DEPENDENCIES = ../libCbc.la $(am__DEPENDENCIES_1)
-am_libOsiCbc_la_OBJECTS = OsiCbcSolverInterface.lo
-libOsiCbc_la_OBJECTS = $(am_libOsiCbc_la_OBJECTS)
+LTLIBRARIES = $(noinst_LTLIBRARIES)
+libCgl_la_LIBADD =
+am_libCgl_la_OBJECTS = Cgl012cut.lo CglAllDifferent.lo CglBKClique.lo \
+	CglClique.lo CglCliqueHelper.lo CglCliqueStrengthening.lo \
+	CglCutGenerator.lo CglDuplicateRow.lo CglFlowCover.lo \
+	CglGMI.lo CglGMIParam.lo CglGomory.lo CglKnapsackCover.lo \
+	CglLandP.lo CglLandPMessages.lo CglLandPSimplex.lo \
+	CglLandPTabRow.lo CglLandPUtils.lo CglLandPValidator.lo \
+	CglLiftAndProject.lo CglMessage.lo CglMixedIntegerRounding.lo \
+	CglMixedIntegerRounding2.lo CglOddHole.lo CglOddWheel.lo \
+	CglParam.lo CglPreProcess.lo CglProbing.lo CglRedSplit.lo \
+	CglRedSplitParam.lo CglRedSplit2.lo CglRedSplit2Param.lo \
+	CglResidualCapacity.lo CglSimpleRounding.lo CglStored.lo \
+	CglTreeInfo.lo CglTwomir.lo CglZeroHalf.lo
+libCgl_la_OBJECTS = $(am_libCgl_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libOsiCbc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(libOsiCbc_la_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -167,10 +142,33 @@ AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
 am__v_at_1 = 
-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
+DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src -I$(top_builddir)/src/OsiCbc
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/OsiCbcSolverInterface.Plo
+am__depfiles_remade = ./$(DEPDIR)/Cgl012cut.Plo \
+	./$(DEPDIR)/CglAllDifferent.Plo ./$(DEPDIR)/CglBKClique.Plo \
+	./$(DEPDIR)/CglClique.Plo ./$(DEPDIR)/CglCliqueHelper.Plo \
+	./$(DEPDIR)/CglCliqueStrengthening.Plo \
+	./$(DEPDIR)/CglCutGenerator.Plo \
+	./$(DEPDIR)/CglDuplicateRow.Plo ./$(DEPDIR)/CglFlowCover.Plo \
+	./$(DEPDIR)/CglGMI.Plo ./$(DEPDIR)/CglGMIParam.Plo \
+	./$(DEPDIR)/CglGomory.Plo ./$(DEPDIR)/CglKnapsackCover.Plo \
+	./$(DEPDIR)/CglLandP.Plo ./$(DEPDIR)/CglLandPMessages.Plo \
+	./$(DEPDIR)/CglLandPSimplex.Plo ./$(DEPDIR)/CglLandPTabRow.Plo \
+	./$(DEPDIR)/CglLandPUtils.Plo \
+	./$(DEPDIR)/CglLandPValidator.Plo \
+	./$(DEPDIR)/CglLiftAndProject.Plo ./$(DEPDIR)/CglMessage.Plo \
+	./$(DEPDIR)/CglMixedIntegerRounding.Plo \
+	./$(DEPDIR)/CglMixedIntegerRounding2.Plo \
+	./$(DEPDIR)/CglOddHole.Plo ./$(DEPDIR)/CglOddWheel.Plo \
+	./$(DEPDIR)/CglParam.Plo ./$(DEPDIR)/CglPreProcess.Plo \
+	./$(DEPDIR)/CglProbing.Plo ./$(DEPDIR)/CglRedSplit.Plo \
+	./$(DEPDIR)/CglRedSplit2.Plo ./$(DEPDIR)/CglRedSplit2Param.Plo \
+	./$(DEPDIR)/CglRedSplitParam.Plo \
+	./$(DEPDIR)/CglResidualCapacity.Plo \
+	./$(DEPDIR)/CglSimpleRounding.Plo ./$(DEPDIR)/CglStored.Plo \
+	./$(DEPDIR)/CglTreeInfo.Plo ./$(DEPDIR)/CglTwomir.Plo \
+	./$(DEPDIR)/CglZeroHalf.Plo
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -208,15 +206,41 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libOsiCbc_la_SOURCES)
+SOURCES = $(libCgl_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+am__uninstall_files_from_dir = { \
+  { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
+  || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
+       $(am__cd) "$$dir" && echo $$files | $(am__xargs_n) 40 $(am__rm_f); }; \
+  }
+am__installdirs = "$(DESTDIR)$(includecoindir)"
 HEADERS = $(includecoin_HEADERS)
-am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP) \
-	config_osicbc.h.in
+am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
 # *not* preserved.
@@ -398,32 +422,93 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+noinst_LTLIBRARIES = libCgl.la
+libCgl_la_SOURCES = \
+	CglConfig.h \
+	Cgl012cut.cpp Cgl012cut.hpp \
+	CglAllDifferent.cpp CglAllDifferent.hpp \
+	CglBKClique.cpp CglBKClique.hpp \
+	CglClique.cpp CglCliqueHelper.cpp CglClique.hpp \
+	CglCliqueStrengthening.cpp CglCliqueStrengthening.hpp \
+	CglCutGenerator.cpp CglCutGenerator.hpp \
+	CglDuplicateRow.cpp CglDuplicateRow.hpp \
+	CglFlowCover.cpp CglFlowCover.hpp \
+	CglGMI.cpp CglGMI.hpp \
+	CglGMIParam.cpp CglGMIParam.hpp \
+	CglGomory.cpp CglGomory.hpp \
+	CglKnapsackCover.cpp CglKnapsackCover.hpp \
+	CglLandP.cpp CglLandP.hpp \
+	CglLandPMessages.cpp CglLandPMessages.hpp \
+	CglLandPSimplex.cpp CglLandPSimplex.hpp \
+	CglLandPTabRow.cpp CglLandPTabRow.hpp \
+	CglLandPUtils.cpp CglLandPUtils.hpp \
+	CglLandPValidator.cpp CglLandPValidator.hpp \
+	CglLiftAndProject.cpp CglLiftAndProject.hpp \
+	CglMessage.cpp CglMessage.hpp \
+	CglMixedIntegerRounding.cpp CglMixedIntegerRounding.hpp \
+	CglMixedIntegerRounding2.cpp CglMixedIntegerRounding2.hpp \
+	CglOddHole.cpp CglOddHole.hpp \
+	CglOddWheel.cpp CglOddWheel.hpp \
+	CglParam.cpp CglParam.hpp \
+	CglPreProcess.cpp CglPreProcess.hpp \
+	CglProbing.cpp CglProbing.hpp \
+	CglRedSplit.cpp CglRedSplit.hpp \
+	CglRedSplitParam.cpp CglRedSplitParam.hpp \
+	CglRedSplit2.cpp CglRedSplit2.hpp \
+	CglRedSplit2Param.cpp CglRedSplit2Param.hpp \
+	CglResidualCapacity.cpp CglResidualCapacity.hpp \
+	CglSimpleRounding.cpp CglSimpleRounding.hpp \
+	CglStored.cpp CglStored.hpp \
+	CglTreeInfo.cpp CglTreeInfo.hpp \
+	CglTwomir.cpp CglTwomir.hpp \
+	CglZeroHalf.cpp CglZeroHalf.hpp
 
-# Name of the library compiled in this directory.
-lib_LTLIBRARIES = libOsiCbc.la
 
-# List all source files for this library, including headers
-libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
-
-# List all additionally required libraries
-libOsiCbc_la_LIBADD = ../libCbc.la $(am__append_1)
-
-# This is for libtool
-libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
-
-# Here list all include flags, relative to this "srcdir" directory.
-AM_CPPFLAGS = -I$(srcdir)/.. $(OSICBCLIB_CFLAGS)
+# Use same flags as the rest of the Cbc build (includes CoinUtils, Clp, OsiClp)
+AM_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)
+AM_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################
-#                Headers that need to be installed                     #
+#              Headers installed into $(includedir)/coin-or            #
 ########################################################################
-
-# Here list all the header files that are required by a user of the library,
-# and that therefore should be installed in 'include/coin-or'
 includecoindir = $(includedir)/coin-or
-includecoin_HEADERS = OsiCbcSolverInterface.hpp
-all: config_osicbc.h
-	$(MAKE) $(AM_MAKEFLAGS) all-am
+includecoin_HEADERS = \
+	CglConfig.h \
+	Cgl012cut.hpp \
+	CglAllDifferent.hpp \
+	CglBKClique.hpp \
+	CglClique.hpp \
+	CglCliqueStrengthening.hpp \
+	CglCutGenerator.hpp \
+	CglDuplicateRow.hpp \
+	CglFlowCover.hpp \
+	CglGMI.hpp \
+	CglGMIParam.hpp \
+	CglGomory.hpp \
+	CglKnapsackCover.hpp \
+	CglLandP.hpp \
+	CglLandPValidator.hpp \
+	CglLiftAndProject.hpp \
+	CglMessage.hpp \
+	CglMixedIntegerRounding.hpp \
+	CglMixedIntegerRounding2.hpp \
+	CglOddHole.hpp \
+	CglOddWheel.hpp \
+	CglParam.hpp \
+	CglPreProcess.hpp \
+	CglProbing.hpp \
+	CglRedSplit.hpp \
+	CglRedSplitParam.hpp \
+	CglRedSplit2.hpp \
+	CglRedSplit2Param.hpp \
+	CglResidualCapacity.hpp \
+	CglSimpleRounding.hpp \
+	CglStored.hpp \
+	CglTreeInfo.hpp \
+	CglTwomir.hpp \
+	CglZeroHalf.hpp
+
+all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .cpp .lo .o .obj
@@ -436,9 +521,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/OsiCbc/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/Cgl/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/OsiCbc/Makefile
+	  $(AUTOMAKE) --foreign src/Cgl/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -457,52 +542,17 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 
-config_osicbc.h: stamp-h3
-	@test -f $@ || rm -f stamp-h3
-	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) stamp-h3
-
-stamp-h3: $(srcdir)/config_osicbc.h.in $(top_builddir)/config.status
-	$(AM_V_at)rm -f stamp-h3
-	$(AM_V_GEN)cd $(top_builddir) && $(SHELL) ./config.status src/OsiCbc/config_osicbc.h
-
-distclean-hdr:
-	-rm -f config_osicbc.h stamp-h3
-
-install-libLTLIBRARIES: $(lib_LTLIBRARIES)
-	@$(NORMAL_INSTALL)
-	@list='$(lib_LTLIBRARIES)'; test -n "$(libdir)" || list=; \
-	list2=; for p in $$list; do \
-	  if test -f $$p; then \
-	    list2="$$list2 $$p"; \
-	  else :; fi; \
-	done; \
-	test -z "$$list2" || { \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(libdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(libdir)" || exit 1; \
-	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(libdir)'"; \
-	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(libdir)"; \
-	}
-
-uninstall-libLTLIBRARIES:
-	@$(NORMAL_UNINSTALL)
-	@list='$(lib_LTLIBRARIES)'; test -n "$(libdir)" || list=; \
-	for p in $$list; do \
-	  $(am__strip_dir) \
-	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(libdir)/$$f'"; \
-	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(libdir)/$$f"; \
-	done
-
-clean-libLTLIBRARIES:
-	-$(am__rm_f) $(lib_LTLIBRARIES)
-	@list='$(lib_LTLIBRARIES)'; \
+clean-noinstLTLIBRARIES:
+	-$(am__rm_f) $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; \
 	locs=`for p in $$list; do echo $$p; done | \
 	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
 	      sort -u`; \
 	echo rm -f $${locs}; \
 	$(am__rm_f) $${locs}
 
-libOsiCbc.la: $(libOsiCbc_la_OBJECTS) $(libOsiCbc_la_DEPENDENCIES) $(EXTRA_libOsiCbc_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(libOsiCbc_la_LINK) -rpath $(libdir) $(libOsiCbc_la_OBJECTS) $(libOsiCbc_la_LIBADD) $(LIBS)
+libCgl.la: $(libCgl_la_OBJECTS) $(libCgl_la_DEPENDENCIES) $(EXTRA_libCgl_la_DEPENDENCIES) 
+	$(AM_V_CXXLD)$(CXXLINK)  $(libCgl_la_OBJECTS) $(libCgl_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -510,7 +560,44 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OsiCbcSolverInterface.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cgl012cut.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglAllDifferent.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglBKClique.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglClique.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglCliqueHelper.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglCliqueStrengthening.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglCutGenerator.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglDuplicateRow.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglFlowCover.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglGMI.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglGMIParam.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglGomory.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglKnapsackCover.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglLandP.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglLandPMessages.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglLandPSimplex.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglLandPTabRow.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglLandPUtils.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglLandPValidator.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglLiftAndProject.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglMessage.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglMixedIntegerRounding.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglMixedIntegerRounding2.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglOddHole.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglOddWheel.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglParam.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglPreProcess.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglProbing.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglRedSplit.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglRedSplit2.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglRedSplit2Param.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglRedSplitParam.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglResidualCapacity.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglSimpleRounding.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglStored.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglTreeInfo.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglTwomir.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CglZeroHalf.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -622,9 +709,9 @@ distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES) $(HEADERS) config_osicbc.h
+all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includecoindir)"; do \
+	for dir in "$(DESTDIR)$(includecoindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -659,14 +746,51 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -f ./$(DEPDIR)/OsiCbcSolverInterface.Plo
+	-rm -f ./$(DEPDIR)/Cgl012cut.Plo
+	-rm -f ./$(DEPDIR)/CglAllDifferent.Plo
+	-rm -f ./$(DEPDIR)/CglBKClique.Plo
+	-rm -f ./$(DEPDIR)/CglClique.Plo
+	-rm -f ./$(DEPDIR)/CglCliqueHelper.Plo
+	-rm -f ./$(DEPDIR)/CglCliqueStrengthening.Plo
+	-rm -f ./$(DEPDIR)/CglCutGenerator.Plo
+	-rm -f ./$(DEPDIR)/CglDuplicateRow.Plo
+	-rm -f ./$(DEPDIR)/CglFlowCover.Plo
+	-rm -f ./$(DEPDIR)/CglGMI.Plo
+	-rm -f ./$(DEPDIR)/CglGMIParam.Plo
+	-rm -f ./$(DEPDIR)/CglGomory.Plo
+	-rm -f ./$(DEPDIR)/CglKnapsackCover.Plo
+	-rm -f ./$(DEPDIR)/CglLandP.Plo
+	-rm -f ./$(DEPDIR)/CglLandPMessages.Plo
+	-rm -f ./$(DEPDIR)/CglLandPSimplex.Plo
+	-rm -f ./$(DEPDIR)/CglLandPTabRow.Plo
+	-rm -f ./$(DEPDIR)/CglLandPUtils.Plo
+	-rm -f ./$(DEPDIR)/CglLandPValidator.Plo
+	-rm -f ./$(DEPDIR)/CglLiftAndProject.Plo
+	-rm -f ./$(DEPDIR)/CglMessage.Plo
+	-rm -f ./$(DEPDIR)/CglMixedIntegerRounding.Plo
+	-rm -f ./$(DEPDIR)/CglMixedIntegerRounding2.Plo
+	-rm -f ./$(DEPDIR)/CglOddHole.Plo
+	-rm -f ./$(DEPDIR)/CglOddWheel.Plo
+	-rm -f ./$(DEPDIR)/CglParam.Plo
+	-rm -f ./$(DEPDIR)/CglPreProcess.Plo
+	-rm -f ./$(DEPDIR)/CglProbing.Plo
+	-rm -f ./$(DEPDIR)/CglRedSplit.Plo
+	-rm -f ./$(DEPDIR)/CglRedSplit2.Plo
+	-rm -f ./$(DEPDIR)/CglRedSplit2Param.Plo
+	-rm -f ./$(DEPDIR)/CglRedSplitParam.Plo
+	-rm -f ./$(DEPDIR)/CglResidualCapacity.Plo
+	-rm -f ./$(DEPDIR)/CglSimpleRounding.Plo
+	-rm -f ./$(DEPDIR)/CglStored.Plo
+	-rm -f ./$(DEPDIR)/CglTreeInfo.Plo
+	-rm -f ./$(DEPDIR)/CglTwomir.Plo
+	-rm -f ./$(DEPDIR)/CglZeroHalf.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-hdr distclean-tags
+	distclean-tags
 
 dvi: dvi-am
 
@@ -686,7 +810,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-exec-local install-libLTLIBRARIES
+install-exec-am: install-exec-local
 
 install-html: install-html-am
 
@@ -709,7 +833,44 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -f ./$(DEPDIR)/OsiCbcSolverInterface.Plo
+	-rm -f ./$(DEPDIR)/Cgl012cut.Plo
+	-rm -f ./$(DEPDIR)/CglAllDifferent.Plo
+	-rm -f ./$(DEPDIR)/CglBKClique.Plo
+	-rm -f ./$(DEPDIR)/CglClique.Plo
+	-rm -f ./$(DEPDIR)/CglCliqueHelper.Plo
+	-rm -f ./$(DEPDIR)/CglCliqueStrengthening.Plo
+	-rm -f ./$(DEPDIR)/CglCutGenerator.Plo
+	-rm -f ./$(DEPDIR)/CglDuplicateRow.Plo
+	-rm -f ./$(DEPDIR)/CglFlowCover.Plo
+	-rm -f ./$(DEPDIR)/CglGMI.Plo
+	-rm -f ./$(DEPDIR)/CglGMIParam.Plo
+	-rm -f ./$(DEPDIR)/CglGomory.Plo
+	-rm -f ./$(DEPDIR)/CglKnapsackCover.Plo
+	-rm -f ./$(DEPDIR)/CglLandP.Plo
+	-rm -f ./$(DEPDIR)/CglLandPMessages.Plo
+	-rm -f ./$(DEPDIR)/CglLandPSimplex.Plo
+	-rm -f ./$(DEPDIR)/CglLandPTabRow.Plo
+	-rm -f ./$(DEPDIR)/CglLandPUtils.Plo
+	-rm -f ./$(DEPDIR)/CglLandPValidator.Plo
+	-rm -f ./$(DEPDIR)/CglLiftAndProject.Plo
+	-rm -f ./$(DEPDIR)/CglMessage.Plo
+	-rm -f ./$(DEPDIR)/CglMixedIntegerRounding.Plo
+	-rm -f ./$(DEPDIR)/CglMixedIntegerRounding2.Plo
+	-rm -f ./$(DEPDIR)/CglOddHole.Plo
+	-rm -f ./$(DEPDIR)/CglOddWheel.Plo
+	-rm -f ./$(DEPDIR)/CglParam.Plo
+	-rm -f ./$(DEPDIR)/CglPreProcess.Plo
+	-rm -f ./$(DEPDIR)/CglProbing.Plo
+	-rm -f ./$(DEPDIR)/CglRedSplit.Plo
+	-rm -f ./$(DEPDIR)/CglRedSplit2.Plo
+	-rm -f ./$(DEPDIR)/CglRedSplit2Param.Plo
+	-rm -f ./$(DEPDIR)/CglRedSplitParam.Plo
+	-rm -f ./$(DEPDIR)/CglResidualCapacity.Plo
+	-rm -f ./$(DEPDIR)/CglSimpleRounding.Plo
+	-rm -f ./$(DEPDIR)/CglStored.Plo
+	-rm -f ./$(DEPDIR)/CglTreeInfo.Plo
+	-rm -f ./$(DEPDIR)/CglTwomir.Plo
+	-rm -f ./$(DEPDIR)/CglZeroHalf.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -726,36 +887,31 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-includecoinHEADERS uninstall-libLTLIBRARIES \
-	uninstall-local
+uninstall-am: uninstall-includecoinHEADERS
 
-.MAKE: all install-am install-strip
+.MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-generic clean-libLTLIBRARIES clean-libtool cscopelist-am \
-	ctags ctags-am distclean distclean-compile distclean-generic \
-	distclean-hdr distclean-libtool distclean-tags dvi dvi-am html \
-	html-am info info-am install install-am install-data \
+	clean-generic clean-libtool clean-noinstLTLIBRARIES \
+	cscopelist-am ctags ctags-am distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags dvi dvi-am \
+	html html-am info info-am install install-am install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
 	install-exec-am install-exec-local install-html \
 	install-html-am install-includecoinHEADERS install-info \
-	install-info-am install-libLTLIBRARIES install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags tags-am uninstall uninstall-am \
-	uninstall-includecoinHEADERS uninstall-libLTLIBRARIES \
-	uninstall-local
+	uninstall-includecoinHEADERS
 
 .PRECIOUS: Makefile
 
 
 install-exec-local:
-	$(install_sh_DATA) config_osicbc.h $(DESTDIR)$(includecoindir)/OsiCbcConfig.h
-
-uninstall-local:
-	rm -f $(DESTDIR)$(includecoindir)/OsiCbcConfig.h
+	$(install_sh_DATA) config_cgl.h $(DESTDIR)$(includecoindir)/CglConfig.h
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

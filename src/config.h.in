@@ -18,9 +18,6 @@
 /* Define to 1 if ASL is available. */
 #undef CBC_HAS_ASL
 
-/* Define to 1 if Cgl is available. */
-#undef CBC_HAS_CGL
-
 /* Define to 1 if Clp is available. */
 #undef CBC_HAS_CLP
 

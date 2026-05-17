@@ -33,9 +33,6 @@
 /* Define to 1 if Netlib is available. */
 #undef CBC_HAS_NETLIB
 
-/* Define to 1 if Osi is available. */
-#undef CBC_HAS_OSI
-
 /* Define to 1 if OsiClp is available. */
 #undef CBC_HAS_OSICLP
 

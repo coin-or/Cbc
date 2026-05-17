@@ -710,8 +710,6 @@ COIN_HAS_CLP_FALSE
 COIN_HAS_CLP_TRUE
 COIN_HAS_CGL_FALSE
 COIN_HAS_CGL_TRUE
-COIN_HAS_OSI_FALSE
-COIN_HAS_OSI_TRUE
 COIN_HAS_COINUTILS_FALSE
 COIN_HAS_COINUTILS_TRUE
 OSICBCLIB_PCFILES
@@ -885,9 +883,6 @@ enable_libtool_lock
 with_coinutils
 with_coinutils_lflags
 with_coinutils_cflags
-with_osi
-with_osi_lflags
-with_osi_cflags
 with_cgl
 with_cgl_lflags
 with_cgl_cflags
@@ -1601,16 +1596,6 @@ Optional Packages:
   --with-coinutils-lflags Linker flags for CoinUtils appropriate for your
                           environment. (Most often, -l specs for libraries.)
   --with-coinutils-cflags Compiler flags for CoinUtils appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
-  --without-osi           Do not use Osi. If an argument is given to
-                          --with-osi, then 'yes' is equivalent to
-                          --with-osi, 'no' is equivalent to
-                          --without-osi and any other argument is applied as
-                          for --with-osi-lflags.
-  --with-osi-lflags       Linker flags for Osi appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-osi-cflags       Compiler flags for Osi appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
   --without-cgl           Do not use Cgl. If an argument is given to
@@ -19713,257 +19698,6 @@ printf "%s\n" "#define CBC_HAS_COINUTILS 1" >>confdefs.h
 
 
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Osi" >&5
-printf %s "checking for package Osi... " >&6; }
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osi=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "osi" ; then
-        coin_has_osi=skipping
-      fi
-    done
-  fi
-
-
-  if test "$coin_has_osi" != skipping ; then
-
-
-
-
-# Check whether --with-osi was given.
-if test ${with_osi+y}
-then :
-  withval=$with_osi;
-fi
-
-
-
-# Check whether --with-osi-lflags was given.
-if test ${with_osi_lflags+y}
-then :
-  withval=$with_osi_lflags;
-fi
-
-
-
-# Check whether --with-osi-cflags was given.
-if test ${with_osi_cflags+y}
-then :
-  withval=$with_osi_cflags;
-fi
-
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osi=requested
-
-  osi_lflags=
-  osi_cflags=
-  osi_data=
-  osi_pcfiles="osi"
-
-
-  withval="$with_osi"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_osi=skipping
-        osi_failmode='command line'
-        ;;
-      yes )
-        coin_has_osi=requested
-        osi_failmode=''
-        ;;
-      build )
-        coin_has_osi=requested
-        osi_build=yes
-        osi_failmode=''
-        ;;
-      * )
-        coin_has_osi=requested
-        osi_failmode=''
-        osi_lflags="$withval"
-        osi_pcfiles=''
-        ;;
-    esac
-  else
-    if test -n "$with_osi_lflags" ||
-       test -n "$with_osi_cflags" ||
-       test -n "$with_osi_data" ; then
-      coin_has_osi=requested
-      osi_failmode=''
-      osi_pcfiles=''
-    fi
-  fi
-
-
-  if test "$coin_has_osi" != skipping ; then
-       withval="$with_osi_lflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify link flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osi=yes
-             osi_lflags="$withval"
-             osi_pcfiles=''
-             ;;
-         esac
-       fi
-
-       withval="$with_osi_cflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify compile flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osi=yes
-             osi_cflags="$withval"
-             osi_pcfiles=''
-             ;;
-         esac
-       fi
-     fi
-
-
-
-
-
-  if test $coin_has_osi = requested ; then
-    if test -n "$PKG_CONFIG" ; then
-      if test x"$osi_build" = xyes ; then
-        pcfile="coin$osi_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSI_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osi=yes
-    else
-      OSI_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osi=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osi without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if ! test $coin_has_osi = yes ; then
-        pcfile="$osi_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSI_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osi=yes
-    else
-      OSI_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osi=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osi without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if test $coin_has_osi = yes ; then
-        osi_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-        osi_pcfiles="$pcfile"
-      fi
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Check for osi via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osi-lflags and --with-osi-cflags." >&5
-printf "%s\n" "$as_me: WARNING: Check for osi via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osi-lflags and --with-osi-cflags." >&2;}
-      coin_has_osi=no
-    fi
-  fi
-
-
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for osi: \"$coin_has_osi\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_PKG result for osi: \"$coin_has_osi\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'osi'" >&5
-printf "%s\n" "$as_me: Collected values for package 'osi'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osi_lflags is \"$osi_lflags\"" >&5
-printf "%s\n" "$as_me: osi_lflags is \"$osi_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osi_cflags is \"$osi_cflags\"" >&5
-printf "%s\n" "$as_me: osi_cflags is \"$osi_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osi_data is \"$osi_data\"" >&5
-printf "%s\n" "$as_me: osi_data is \"$osi_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osi_pcfiles is \"$osi_pcfiles\"" >&5
-printf "%s\n" "$as_me: osi_pcfiles is \"$osi_pcfiles\"" >&6;}
-  fi
-
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osi" >&5
-printf "%s\n" "$coin_has_osi" >&6; }
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osi (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_osi (COIN_SKIP_PROJECTS)" >&6; }
-  fi
-
-
-  if test "$coin_has_osi" != yes ; then
-    coin_has_osi=no
-  fi
-
-
-   if test $coin_has_osi = yes; then
-  COIN_HAS_OSI_TRUE=
-  COIN_HAS_OSI_FALSE='#'
-else
-  COIN_HAS_OSI_TRUE='#'
-  COIN_HAS_OSI_FALSE=
-fi
-
-
-
-  if test $coin_has_osi = yes ; then
-
-printf "%s\n" "#define CBC_HAS_OSI 1" >>confdefs.h
-
-    CBCLIB_PCFILES="$osi_pcfiles $CBCLIB_PCFILES"
-       CBCLIB_LFLAGS="$osi_lflags $CBCLIB_LFLAGS"
-       CBCLIB_CFLAGS="$osi_cflags $CBCLIB_CFLAGS"
-      OSICBCLIB_PCFILES="$osi_pcfiles $OSICBCLIB_PCFILES"
-       OSICBCLIB_LFLAGS="$osi_lflags $OSICBCLIB_LFLAGS"
-       OSICBCLIB_CFLAGS="$osi_cflags $OSICBCLIB_CFLAGS"
-
-
-
-  fi
-
-    if test $coin_has_osi != yes ; then
-      as_fn_error $? "Required package Osi is not available." "$LINENO" 5
-    fi
-
-
-
-
-
-
-
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Cgl" >&5
 printf %s "checking for package Cgl... " >&6; }
 
@@ -22704,7 +22438,7 @@ else
 fi
 
 
-  coin_doxy_tagfiles="@baredocdir_nosub@/coin-or-coinutils/doxydoc/coinutils_doxy.tag=@baredocdir_nosub@/coin-or-coinutils/doxydoc/html @baredocdir_nosub@/coin-or-osi/doxydoc/osi_doxy.tag=@baredocdir_nosub@/coin-or-osi/doxydoc/html @baredocdir_nosub@/coin-or-clp/doxydoc/clp_doxy.tag=@baredocdir_nosub@/coin-or-clp/doxydoc/html @baredocdir_nosub@/coin-or-dylp/doxydoc/dylp_doxy.tag=@baredocdir_nosub@/coin-or-dylp/doxydoc/html @baredocdir_nosub@/coin-or-cgl/doxydoc/cgl_doxy.tag=@baredocdir_nosub@/coin-or-cgl/doxydoc/html "
+  coin_doxy_tagfiles="@baredocdir_nosub@/coin-or-coinutils/doxydoc/coinutils_doxy.tag=@baredocdir_nosub@/coin-or-coinutils/doxydoc/html @baredocdir_nosub@/coin-or-clp/doxydoc/clp_doxy.tag=@baredocdir_nosub@/coin-or-clp/doxydoc/html @baredocdir_nosub@/coin-or-dylp/doxydoc/dylp_doxy.tag=@baredocdir_nosub@/coin-or-dylp/doxydoc/html @baredocdir_nosub@/coin-or-cgl/doxydoc/cgl_doxy.tag=@baredocdir_nosub@/coin-or-cgl/doxydoc/html "
 
 
 
@@ -23141,10 +22875,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_COINUTILS_TRUE}" && test -z "${COIN_HAS_COINUTILS_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_COINUTILS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COIN_HAS_OSI_TRUE}" && test -z "${COIN_HAS_OSI_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_OSI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_CGL_TRUE}" && test -z "${COIN_HAS_CGL_FALSE}"; then

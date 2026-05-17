@@ -1273,17 +1273,6 @@ void CbcParameters::addCbcSolverActionParams() {
       "(and unscaled).",
       CoinParam::displayPriorityHigh);
 
-#if 0
-  // Need to figure out what to do here. Same parameter can't have two names...
-  parameters_[CbcParam::STDIN]->setup( "-", "Switch to interactive command line mode", ""
-                            CoinParam::displayPriorityNone);
-  parameters_[CbcParam::STDIN]->setPushFunc(CbcParamUtils::doNothingParam);
-#endif
-
-  parameters_[CbcParam::STDIN]->setup(
-      "stdin", "Switch to interactive command line mode", "",
-      CoinParam::displayPriorityNone);
-
   parameters_[CbcParam::STRENGTHEN]->setup(
       "strengthen", "Create strengthened problem",
       "This creates a new problem by applying the root node cuts. All tight "

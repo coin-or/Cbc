@@ -274,8 +274,6 @@ private:
   // --- Solve control flags ---
   /// Whether a valid model is loaded
   bool goodModel_;
-  /// Whether in interactive mode
-  bool interactiveMode_;
   /// False if user changed any cut/heuristic settings
   bool defaultSettings_;
   /// Presolve level (0=off, 5=default)

@@ -694,10 +694,7 @@ static void printGeneralQueryHelp(int verbose,
               << "When specifying multiple commands on one command line,\n"
               << "parameter/action names should be prepended with a '-',\n"
               << "followed by a value (some actions don't accept values as\n"
-              << "arguments). Specifying -stdin at anytime switches to stdin.\n"
-              << std::endl
-              << "In interactive mode, specify one command per line and\n"
-              << "don't prepend command names with '-'.\n"
+              << "arguments).\n"
               << std::endl
               << "Some actions take file names as arguments. If no file name\n"
               << "is provided, then the previous name (or initial default)\n"
@@ -1795,7 +1792,7 @@ CbcSolver::CbcSolver()
       numberCutGenerators_(0), callBack_(new CbcStopNow()),
       startTime_(CoinCpuTime()), doMiplib_(false), noPrinting_(false),
       readMode_(1), saveSolver_(nullptr), goodModel_(false),
-      interactiveMode_(false), defaultSettings_(true), preSolve_(5),
+      defaultSettings_(true), preSolve_(5),
       preProcess_(4), useStrategy_(false), preSolveFile_(false),
       strongChanged_(false), pumpChanged_(false), cutPass_(-1234567),
       cutPassInTree_(-1234567), tunePreProcess_(0), testOsiParameters_(-1),
@@ -1913,7 +1910,6 @@ CbcSolver::CbcSolver(const CbcSolver &rhs)
       startTime_(CoinCpuTime()), doMiplib_(rhs.doMiplib_),
       noPrinting_(rhs.noPrinting_), readMode_(rhs.readMode_),
       saveSolver_(nullptr), goodModel_(rhs.goodModel_),
-      interactiveMode_(rhs.interactiveMode_),
       defaultSettings_(rhs.defaultSettings_), preSolve_(rhs.preSolve_),
       preProcess_(rhs.preProcess_), useStrategy_(rhs.useStrategy_),
       preSolveFile_(rhs.preSolveFile_), strongChanged_(rhs.strongChanged_),
@@ -2081,7 +2077,6 @@ CbcSolver &CbcSolver::operator=(const CbcSolver &rhs)
 
     // Copy scalar cross-phase state
     goodModel_ = rhs.goodModel_;
-    interactiveMode_ = rhs.interactiveMode_;
     defaultSettings_ = rhs.defaultSettings_;
     preSolve_ = rhs.preSolve_;
     preProcess_ = rhs.preProcess_;
@@ -2347,7 +2342,6 @@ void CbcSolver::resetRunState()
 
   // Reset scalars to defaults
   goodModel_ = false;
-  interactiveMode_ = false;
   defaultSettings_ = true;
   preSolve_ = 5;
   preProcess_ = 4;
@@ -6486,7 +6480,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     int &numberGoodCommands = numberGoodCommands_;
     bool &defaultSettings = defaultSettings_;
     bool &goodModel = goodModel_;
-    bool &interactiveMode = interactiveMode_;
     double &time0 = time0_;
     double &time0Elapsed = time0Elapsed_;
     int *&priorities = priorities_;
@@ -6705,7 +6698,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
       // probingMode = 8;
     }
 
-    interactiveMode = false;
     bool canOpen;
 
     int status, iValue;
@@ -6757,16 +6749,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     }
 #endif
 
-    // If no arguments, just go into interactive mode
+    // If no arguments, print help and exit (unless called from AMPL)
     if (!inputQueue.size()) {
-      // see if AMPL
       if (!info) {
-        interactiveMode = true;
-        // let's give the sucker a hint
-        std::cout
-          << "Cbc takes input from arguments ( - switches to stdin)"
-          << std::endl
-          << "Enter ? for list of commands or help" << std::endl;
+        printHelp(parameters, clpParameters);
+        return 0;
       } else {
         numberGoodCommands = 1;
       }
@@ -6777,7 +6764,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
       time1 = CoinCpuTime();
       time1Elapsed = CoinGetTimeOfDay();
 
-      field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
+      field = CoinParamUtils::getNextField(inputQueue);
 
       // exit if null or similar
       if (!field.length()) {
@@ -6795,42 +6782,36 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         }
       }
 
-      // These are some special case we deal with separately
-      // (only in non-interactive mode)
-      if (!interactiveMode) {
-        if (field == "-") {
-          std::cout << "Switching to line mode" << std::endl;
-          interactiveMode = true;
-          while (!inputQueue.empty())
-            inputQueue.pop_front();
-          field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
-        } else if (field[0] != '-') {
-          // special dispensation - taken as -import name, put name back on queue
-          inputQueue.push_front(field);
-          field = "import";
-        } else {
-          if (field != "--") {
-            // take off leading '-' (or '--' for GNU-style long options)
+      // Handle field prefix stripping and special tokens
+      if (field == "-") {
+        // '-' alone is no longer valid; ignore and continue
+        continue;
+      } else if (field[0] != '-') {
+        // special dispensation - taken as -import name, put name back on queue
+        inputQueue.push_front(field);
+        field = "import";
+      } else {
+        if (field != "--") {
+          // take off leading '-' (or '--' for GNU-style long options)
+          field = field.substr(1);
+          if (!field.empty() && field[0] == '-')
             field = field.substr(1);
-            if (!field.empty() && field[0] == '-')
-              field = field.substr(1);
-            if (field == "optionfile") {
-              if (!inputQueue.empty()) {
-                field = CoinParamUtils::getNextField(inputQueue, interactiveMode, prompt);
-                partInputQueue = inputQueue;
-                if (loadOptionFileIntoQueue(field, inputQueue, partInputQueue)) {
-                  continue;
-                }
-                continue;
-              } else if (partInputQueue.size()) {
-                inputQueue = partInputQueue;
+          if (field == "optionfile") {
+            if (!inputQueue.empty()) {
+              field = CoinParamUtils::getNextField(inputQueue);
+              partInputQueue = inputQueue;
+              if (loadOptionFileIntoQueue(field, inputQueue, partInputQueue)) {
                 continue;
               }
+              continue;
+            } else if (partInputQueue.size()) {
+              inputQueue = partInputQueue;
+              continue;
             }
-          } else {
-            // special dispensation - taken as -import --
-            field = "import";
           }
+        } else {
+          // special dispensation - taken as -import --
+          field = "import";
         }
       }
 
@@ -6860,17 +6841,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         continue;
       }
       if (!numberMatches) {
-        if (!interactiveMode) {
-          std::cout << "Unrecognized parameter - " << field
-                    << ", exiting..."
-                    << std::endl;
-          cbcParamCode = CbcParam::EXIT;
-        } else {
-          std::cout << "Unrecognized parameter - " << field
-                    << " - enter valid command or end to exit"
-                    << std::endl;
-          continue;
-        }
+        std::cout << "Unrecognized parameter - " << field
+                  << ", exiting..."
+                  << std::endl;
+        cbcParamCode = CbcParam::EXIT;
       }
 
       // Do some translation for backwards compatibility
@@ -12645,11 +12619,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           for (iRow = 0; iRow < numberRows; iRow++)
             dualRowSolution[iRow] = dualRowSolution[iRow];
         } break;
-        case CbcParam::STDIN:
-          interactiveMode = true;
-          while (!inputQueue.empty())
-            inputQueue.pop_front();
-          break;
         case CbcParam::UNITTEST: {
           int returnCode = -1;
           std::string dirMiplib = parameters[CbcParam::DIRMIPLIB]->dirName();

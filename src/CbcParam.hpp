@@ -79,7 +79,6 @@ public:
       SHOWUNIMP,
       SOLVECONTINUOUS,
       STATISTICS,
-      STDIN,
       STRENGTHEN,
       UNITTEST,
       WRITEMODEL,

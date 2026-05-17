@@ -82,8 +82,6 @@ public:
       STDIN,
       STRENGTHEN,
       UNITTEST,
-      WRITEGMPLSOL,
-      WRITEGMPLSOL_OLD, // For backward compatibility
       WRITEMODEL,
       WRITEMODEL_OLD, // For backward compatibility
       WRITENEXTSOL,
@@ -105,7 +103,6 @@ public:
       DEBUGFILE,
       EXPORTFILE,
       IMPORTFILE,
-      GMPLSOLFILE,
       MIPSTARTFILE,
       MODELFILE,
       NEXTSOLFILE,

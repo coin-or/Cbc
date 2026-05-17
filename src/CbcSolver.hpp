@@ -40,10 +40,6 @@
 #include "CbcMessage.hpp"
 #include "CbcSolverStatistics.hpp"
 
-#ifdef COINUTILS_HAS_GLPK
-#include "glpk.h"
-#endif
-
 class CbcUser;
 class CbcStopNow;
 
@@ -118,14 +114,14 @@ public:
   //@{
   /** Import a model file and solve it with current parameters.
       Convenience method that chains initialize() + import + run(-solve -quit).
-      \param filename  Path to MPS/LP/GMPL file (supports .gz/.bz2)
+      \param filename  Path to MPS/LP file (supports .gz/.bz2)
       \return 0 on success
   */
   int solve(const std::string &filename);
 
   /** Import a model from a file.
       Calls initialize() if not already done, then reads the file.
-      \param filename  Path to MPS/LP/GMPL file (supports .gz/.bz2)
+      \param filename  Path to MPS/LP file (supports .gz/.bz2)
       \return 0 on success
   */
   int importModel(const std::string &filename);
@@ -457,12 +453,6 @@ private:
   LotStruct *lotsize_;
   int numberLotSizing_;
 
-  // --- GLPK state ---
-#ifdef COINUTILS_HAS_GLPK
-  glp_tran *coin_glp_tran_;
-  glp_prob *coin_glp_prob_;
-#endif
-
   // --- Timing ---
   double totalTime_;
   double time0_;
@@ -489,7 +479,7 @@ private:
   /// Print collected parameter changes as a formatted section, then clear.
   void printParamChanges();
 
-  /** Handle the IMPORT action: read an MPS/LP/GMPL file into the model.
+  /** Handle the IMPORT action: read an MPS/LP file into the model.
       Called from run() when the IMPORT command is encountered.
       \param inputQueue  Command queue (for reading filename and .par file)
       \param clpSolver   Current OsiClp solver interface
@@ -510,7 +500,7 @@ private:
     CglPreProcess &process, CbcSolverStatistics &statistics,
     int &returnCode, ampl_info *info);
 
-  /** Handle the WRITESOL/PRINTSOL/WRITEGMPLSOL/WRITENEXTSOL action.
+  /** Handle the WRITESOL/PRINTSOL/WRITENEXTSOL action.
       Called from run() when a solution-writing command is encountered.
       \param cbcParamCode  Which solution-write variant was requested
       \param inputQueue    Command queue (for reading filename)

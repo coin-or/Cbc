@@ -41,9 +41,6 @@
 void CbcCrashHandler(int sig);
 #endif
 
-#ifdef COINUTILS_HAS_GLPK
-#include "glpk.h"
-#endif
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
@@ -914,14 +911,6 @@ static void printGeneralQueryHelp(int verbose,
 
 #define CLP_QUOTE(s) CLP_STRING(s)
 #define CLP_STRING(s) #s
-
-#ifndef COINUTILS_HAS_GLPK
-#define GLP_UNDEF 1
-#define GLP_FEAS 2
-#define GLP_INFEAS 3
-#define GLP_NOFEAS 4
-#define GLP_OPT 5
-#endif
 
 #ifndef CBC_QUIET
 #define CBC_QUIET 0
@@ -1875,10 +1864,7 @@ CbcSolver::CbcSolver()
       whichColumn_(nullptr), knapsackStart_(nullptr), knapsackRow_(nullptr),
       numberKnapsack_(0), allowImportErrors_(0), keepImportNames_(1),
       lengthName_(0), debugValues_(nullptr), numberDebugValues_(-1),
-      basisHasValues_(0), lotsize_(nullptr), numberLotSizing_(0),
-#ifdef COINUTILS_HAS_GLPK
-      coin_glp_tran_(nullptr), coin_glp_prob_(nullptr),
-#endif
+      basisHasValues_(0), lotsize_(nullptr),       numberLotSizing_(0),
       totalTime_(0.0), time0_(0.0), time0Elapsed_(0.0)
 {
 }
@@ -1944,13 +1930,6 @@ CbcSolver::~CbcSolver()
   delete[] lotsize_;
   delete[] statistics_.number_cuts;
   delete[] statistics_.name_generators;
-#ifdef COINUTILS_HAS_GLPK
-  if (coin_glp_prob_) {
-    glp_free(coin_glp_prob_);
-    glp_mpl_free_wksp(coin_glp_tran_);
-    glp_free_env();
-  }
-#endif
 }
 
 //###########################################################################
@@ -2024,9 +2003,6 @@ CbcSolver::CbcSolver(const CbcSolver &rhs)
       debugValues_(nullptr), numberDebugValues_(rhs.numberDebugValues_),
       basisHasValues_(rhs.basisHasValues_), lotsize_(nullptr),
       numberLotSizing_(0),
-#ifdef COINUTILS_HAS_GLPK
-      coin_glp_tran_(nullptr), coin_glp_prob_(nullptr),
-#endif
       totalTime_(rhs.totalTime_), time0_(rhs.time0_),
       time0Elapsed_(rhs.time0Elapsed_),
       mipStart_(rhs.mipStart_), mipStartBefore_(rhs.mipStartBefore_),
@@ -2242,10 +2218,6 @@ CbcSolver &CbcSolver::operator=(const CbcSolver &rhs)
     debugValues_ = nullptr;
     lotsize_ = nullptr;
     numberLotSizing_ = 0;
-#ifdef COINUTILS_HAS_GLPK
-    coin_glp_tran_ = nullptr;
-    coin_glp_prob_ = nullptr;
-#endif
   }
   return *this;
 }
@@ -2405,15 +2377,6 @@ void CbcSolver::resetRunState()
   statistics_.number_cuts = nullptr;
   delete[] statistics_.name_generators;
   statistics_.name_generators = nullptr;
-#ifdef COINUTILS_HAS_GLPK
-  if (coin_glp_prob_) {
-    glp_free(coin_glp_prob_);
-    glp_mpl_free_wksp(coin_glp_tran_);
-    glp_free_env();
-    coin_glp_prob_ = nullptr;
-    coin_glp_tran_ = nullptr;
-  }
-#endif
 
   // Reset scalars to defaults
   goodModel_ = false;
@@ -2837,7 +2800,6 @@ void CbcSolver::importModel(std::deque<std::string> &inputQueue,
   CbcParam *cbcParam = parameters[CbcParam::IMPORT];
   cbcParam->readValue(inputQueue, fileName, &message);
   bool canOpen = false;
-  bool absolutePath = true;
   CoinParamUtils::processFile(fileName,
     parameters[CbcParam::DIRECTORY]->dirName());
   if (fileName == "") {
@@ -2845,56 +2807,27 @@ void CbcSolver::importModel(std::deque<std::string> &inputQueue,
   } else {
     parameters[CbcParam::IMPORTFILE]->setFileName(fileName);
   }
-  if (fileName[0] != '/' && fileName[0] != '\\' && !strchr(fileName.c_str(), ':')) {
-    absolutePath = false;
-  }
-  // See if gmpl file
-  int gmpl = 0;
-  std::string gmplData;
+  // isLp: true if file is in LP format, false for MPS format
+  bool isLp = false;
   if (fileName == "-") {
     canOpen = true;
   } else if (fileName == "-lp") {
     canOpen = true;
     fileName = "-";
-    gmpl = -1;
+    isLp = true;
   } else {
     const char *c_name = fileName.c_str();
     size_t length = strlen(c_name);
     if ((length > 3 && !strncmp(c_name + length - 3, ".lp", 3)) || (length > 6 && !strncmp(c_name + length - 6, ".lp.gz", 6)) || (length > 7 && !strncmp(c_name + length - 7, ".lp.bz2", 7))) {
-      gmpl = -1;
+      isLp = true;
     }
-    length = fileName.size();
     size_t percent = fileName.find('%');
-    if (percent < length && percent > 0) {
-#ifdef COINUTILS_HAS_GLPK
-      gmpl = 1;
-      fileName = fileName.substr(0, percent);
-      gmplData = fileName.substr(percent + 1);
-      if (!absolutePath) {
-        fileName = parameters[CbcParam::DIRECTORY]->dirName() + fileName;
-        gmplData = parameters[CbcParam::DIRECTORY]->dirName() + fileName;
-      }
-      gmpl = (percent < length - 1) ? 2 : 1;
-      printf("GMPL model file %s and data file %s\n",
-        fileName.c_str(), gmplData.c_str());
-#else
-      printf("Cbc was not built with GMPL support. Exiting.\n");
+    if (percent < fileName.size() && percent > 0) {
+      printf("GMPL format is not supported. Exiting.\n");
       abort();
-#endif
     }
     if (fileCoinReadable(fileName)) {
       canOpen = true;
-      if (gmpl == 2) {
-        fp = fopen(gmplData.c_str(), "r");
-        if (fp) {
-          fclose(fp);
-        } else {
-          buffer.str("");
-          buffer << "Unable to open file " << gmplData.c_str();
-          printGeneralMessage(model_, buffer.str());
-          return;
-        }
-      }
     } else {
       buffer.str("");
       buffer << "Unable to open file " << fileName.c_str();
@@ -2912,15 +2845,9 @@ void CbcSolver::importModel(std::deque<std::string> &inputQueue,
   bool origDefault;
   CoinMessageHandler *origLpHandler = lpSolver->pushMessageHandler(
     &importHandler, origDefault);
-  if (!gmpl) {
+  if (!isLp) {
     status = clpSolver->readMps(fileName.c_str(), keepImportNames_ != 0,
       allowImportErrors_ != 0);
-  } else if (gmpl > 0) {
-#if defined(CLP_HAS_GLPK) && defined(COINUTILS_HAS_GLPK)
-    status = lpSolver->readGMPL(
-      fileName.c_str(), (gmpl == 2) ? gmplData.c_str() : NULL,
-      keepImportNames_ != 0, &coin_glp_tran_, &coin_glp_prob_);
-#endif
   } else {
 #ifdef KILL_ZERO_READLP
     status = clpSolver->readLp(fileName.c_str(),
@@ -5368,9 +5295,6 @@ void CbcSolver::writeSolution(int cbcParamCode,
       case CbcParam::WRITENEXTSOL:
         fileName = parameters_[CbcParam::NEXTSOLFILE]->fileName();
         break;
-      case CbcParam::WRITEGMPLSOL:
-        fileName = parameters_[CbcParam::SOLUTIONFILE]->fileName();
-        break;
       }
       CoinParamUtils::processFile(fileName,
         parameters_[CbcParam::DIRECTORY]->dirName(),
@@ -5398,14 +5322,6 @@ void CbcSolver::writeSolution(int cbcParamCode,
       } else {
         parameters_[CbcParam::NEXTSOLFILE]->setFileName(fileName);
       }
-    } else if (cbcParamCode == CbcParam::WRITEGMPLSOL) {
-      CoinParamUtils::processFile(fileName,
-        parameters_[CbcParam::DIRECTORY]->dirName());
-      if (fileName == "") {
-        fileName = parameters_[CbcParam::GMPLSOLFILE]->fileName();
-      } else {
-        parameters_[CbcParam::GMPLSOLFILE]->setFileName(fileName);
-      }
     }
     if (!append) {
       fp = fopen(fileName.c_str(), "w");
@@ -5421,109 +5337,6 @@ void CbcSolver::writeSolution(int cbcParamCode,
   }
 
 #ifndef CBC_OTHER_SOLVER
-  // See if Glpk
-  if (cbcParamCode == CbcParam::WRITEGMPLSOL) {
-    int numberRows = lpSolver->getNumRows();
-    int numberColumns = lpSolver->getNumCols();
-    int numberGlpkRows = numberRows + 1;
-#ifdef COINUTILS_HAS_GLPK
-    if (coin_glp_prob_) {
-      // from gmpl
-      numberGlpkRows = glp_get_num_rows(coin_glp_prob_);
-      if (numberGlpkRows != numberRows)
-        printf("Mismatch - cbc %d rows, glpk %d\n", numberRows,
-          numberGlpkRows);
-    }
-#endif
-    fprintf(fp, "%d %d\n", numberGlpkRows, numberColumns);
-    int iStat = lpSolver->status();
-    int iStat2 = GLP_UNDEF;
-    bool integerProblem = false;
-    if (integerStatus_ >= 0) {
-      iStat = integerStatus_;
-      integerProblem = true;
-    }
-    if (iStat == 0) {
-      // optimal
-      if (integerProblem)
-        iStat2 = GLP_OPT;
-      else
-        iStat2 = GLP_FEAS;
-    } else if (iStat == 1) {
-      // infeasible
-      iStat2 = GLP_NOFEAS;
-    } else if (iStat == 2) {
-      // unbounded
-      // leave as 1
-    } else if (iStat >= 3 && iStat <= 5) {
-      if (babModel_ && !babModel_->bestSolution())
-        iStat2 = GLP_NOFEAS;
-      else
-        iStat2 = GLP_FEAS;
-    } else if (iStat == 6) {
-      // bab infeasible
-      iStat2 = GLP_NOFEAS;
-    }
-    lpSolver->computeObjectiveValue(false);
-    double objValue = clpSolver->getObjValue();
-    if (integerProblem)
-      fprintf(fp, "%d %g\n", iStat2, objValue);
-    else
-      fprintf(fp, "%d 2 %g\n", iStat2, objValue);
-    if (numberGlpkRows > numberRows) {
-      // objective as row
-      if (integerProblem) {
-        fprintf(fp, "%g\n", objValue);
-      } else {
-        fprintf(fp, "4 %g 1.0\n", objValue);
-      }
-    }
-    int lookup[6] = { 4, 1, 3, 2, 4, 5 };
-    const double *primalRowSolution = lpSolver->primalRowSolution();
-    const double *dualRowSolution = lpSolver->dualRowSolution();
-    for (int i = 0; i < numberRows; i++) {
-      if (integerProblem) {
-        fprintf(fp, "%g\n", primalRowSolution[i]);
-      } else {
-        fprintf(fp, "%d %g %g\n",
-          lookup[lpSolver->getRowStatus(i)],
-          primalRowSolution[i], dualRowSolution[i]);
-      }
-    }
-    const double *primalColumnSolution = lpSolver->primalColumnSolution();
-    const double *dualColumnSolution = lpSolver->dualColumnSolution();
-    for (int i = 0; i < numberColumns; i++) {
-      if (integerProblem) {
-        fprintf(fp, "%g\n", primalColumnSolution[i]);
-      } else {
-        fprintf(fp, "%d %g %g\n",
-          lookup[lpSolver->getColumnStatus(i)],
-          primalColumnSolution[i], dualColumnSolution[i]);
-      }
-    }
-    fclose(fp);
-#ifdef COINUTILS_HAS_GLPK
-    if (coin_glp_prob_) {
-      if (integerProblem) {
-        glp_read_mip(coin_glp_prob_, fileName.c_str());
-        glp_mpl_postsolve(coin_glp_tran_, coin_glp_prob_, GLP_MIP);
-      } else {
-        glp_read_sol(coin_glp_prob_, fileName.c_str());
-        glp_mpl_postsolve(coin_glp_tran_, coin_glp_prob_, GLP_SOL);
-      }
-      // free up as much as possible
-      glp_free(coin_glp_prob_);
-      glp_mpl_free_wksp(coin_glp_tran_);
-      coin_glp_prob_ = NULL;
-      coin_glp_tran_ = NULL;
-      // gmp_free_mem();
-      /* check that no memory blocks are still allocated */
-      glp_free_env();
-    }
-#endif
-    return;
-  }
-
   bool printingAllAsCsv = false;
   if (printMode_ == 14) {
     // when allcsv then set printMode_ to all and
@@ -6519,12 +6332,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
   babModel_ = NULL;
-#ifdef COINUTILS_HAS_GLPK
-  coin_glp_tran_ = NULL;
-  coin_glp_prob_ = NULL;
-  glp_tran *&coin_glp_tran = coin_glp_tran_;
-  glp_prob *&coin_glp_prob = coin_glp_prob_;
-#endif
   returnMode_ = 1;
   // statusUserFunction_ and numberUserFunctions_ are class members
   // but CbcMain1 used stack-local versions; keep a local for AMPL compat
@@ -7223,9 +7030,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
       switch (cbcParamCode) {
       case CbcParam::READMODEL_OLD:
         cbcParamCode = CbcParam::READMODEL;
-        break;
-      case CbcParam::WRITEGMPLSOL_OLD:
-        cbcParamCode = CbcParam::WRITEGMPLSOL;
         break;
       case CbcParam::WRITEMODEL_OLD:
         cbcParamCode = CbcParam::WRITEMODEL;
@@ -13364,9 +13168,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         } break;
         case CbcParam::PRINTSOL:
         case CbcParam::WRITESOL:
-        case CbcParam::WRITENEXTSOL:
-
-        case CbcParam::WRITEGMPLSOL: {
+        case CbcParam::WRITENEXTSOL: {
           writeSolution(cbcParamCode, inputQueue, clpSolver, lpSolver);
         } break;
         case CbcParam::WRITESOLBINARY:
@@ -13422,16 +13224,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     buffer << "Total time (CPU seconds):       " << CoinCpuTime() - time0_
            << "   (Wallclock seconds):       " << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
   printGeneralMessage(model_, buffer.str());
-#endif
-#ifdef COINUTILS_HAS_GLPK
-  if (coin_glp_prob_) {
-    // free up as much as possible
-    glp_free(coin_glp_prob_);
-    glp_mpl_free_wksp(coin_glp_tran_);
-    glp_free_env();
-    coin_glp_prob_ = NULL;
-    coin_glp_tran_ = NULL;
-  }
 #endif
   delete[] lotsize_;
   lotsize_ = NULL;

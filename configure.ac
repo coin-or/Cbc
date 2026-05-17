@@ -246,12 +246,6 @@ case "${osicbc_with_solver}" in
     osi_uc_solver=CPX                               
     osi_exists_solver=${coin_has_osicpx-"unavailable"} 
     ;;
-  @<:@Gg@:>@@<:@Ll@:>@@<:@Pp@:>@@<:@Kk@:>@*)        
-    osi_lc_solver=glpk ;                            
-    osi_mc_solver=Glpk                              
-    osi_uc_solver=GLPK                              
-    osi_exists_solver=${coin_has_osiglpk-"unavailable"}
-    ;;
   @<:@Gg@:>@@<:@Rr@:>@@<:@Bb@:>@*)
     osi_lc_solver=grb ;
     osi_mc_solver=Grb ;           
@@ -321,8 +315,6 @@ fi
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_CLP],[test $osi_mc_solver = Clp])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_CPX],[test $osi_mc_solver = Cpx])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_DYLP],[test $osi_mc_solver = Dylp])
-AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GLPK],[test $osi_mc_solver = Glpk])
-#AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GRB],[test $osi_mc_solver = Grb])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_HIGHS],[test $osi_mc_solver = HiGHS])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_MSK],[test $osi_mc_solver = Msk])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_SPX],[test $osi_mc_solver = Spx])

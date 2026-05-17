@@ -25,9 +25,6 @@
 #ifdef CBC_HAS_OSIDYLP
 #include "OsiDylpSolverInterface.hpp"
 #endif
-#ifdef CBC_HAS_OSIGLPK
-#include "OsiGlpkSolverInterface.hpp"
-#endif
 #ifdef CBC_HAS_OSICLP
 #include "OsiClpSolverInterface.hpp"
 #endif
@@ -375,11 +372,6 @@ int mainTest(int argc, const char *argv[])
     OsiSolverInterface *dylpSi = new OsiDylpSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(dylpSi, &strategy));
 #endif
-#if CBC_HAS_OSIGLPK
-    OsiSolverInterface *glpkSi = new OsiGlpkSolverInterface;
-    vecSi.push_back(new OsiCbcSolverInterface(glpkSi, &strategy));
-#endif
-
     testingMessage("Testing some miplib stuff\n");
     CbcMiplibTest(vecSi, miplibDir);
 

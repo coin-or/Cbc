@@ -53,13 +53,6 @@
 #endif
 #endif
 
-#ifdef CBC_HAS_OSIGLPK
-#include "OsiGlpkSolverInterface.hpp"
-#ifndef CBC_DEFAULT_SOLVER
-#define CBC_DEFAULT_SOLVER "glpk"
-#endif
-#endif
-
 #ifdef CBC_HAS_OSIMSK
 #include "OsiMskSolverInterface.hpp"
 #ifndef CBC_DEFAULT_SOLVER
@@ -144,9 +137,6 @@ OsiSolverInterface *setupSolvers()
 #endif
 #ifdef CBC_HAS_OSIDYLP
   solvers["dylp"] = new OsiDylpSolverInterface;
-#endif
-#ifdef CBC_HAS_OSIGLPK
-  solvers["glpk"] = new OsiGlpkSolverInterface;
 #endif
 #ifdef CBC_HAS_HIGHS
   solvers["highs"] = new OsiHiGHSSolverInterface;

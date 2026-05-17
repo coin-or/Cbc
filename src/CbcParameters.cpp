@@ -597,7 +597,6 @@ void CbcParameters::addCbcParams() {
                     CbcParam::WRITESOL_OLD, CbcParam::WRITESOLBINARY,
                     CbcParam::WRITESOLBINARY_OLD,
                     CbcParam::WRITENEXTSOL,
-                    CbcParam::WRITEGMPLSOL, CbcParam::WRITEGMPLSOL_OLD,
                     CbcParam::WRITESTATS, CbcParam::WRITEFEATURES,
                     CbcParam::CHECKSOLUTION})
     parameters_[code]->setTopic("I/O");
@@ -761,7 +760,6 @@ void CbcParameters::setDefaults(int strategy) {
   parameters_[CbcParam::CSVFEATURESFILE]->setDefault(std::string("features.csv"));
   parameters_[CbcParam::EXPORTFILE]->setDefault(std::string("export.mps"));
   parameters_[CbcParam::IMPORTFILE]->setDefault(std::string("import.mps"));
-  parameters_[CbcParam::GMPLSOLFILE]->setDefault(std::string("gmpl.sol"));
   parameters_[CbcParam::MIPSTARTFILE]->setDefault(std::string("mipstart.sol"));
   parameters_[CbcParam::MODELFILE]->setDefault(std::string("prob.mod"));
   parameters_[CbcParam::NEXTSOLFILE]->setDefault(std::string("next.sol"));
@@ -1302,25 +1300,6 @@ void CbcParameters::addCbcSolverActionParams() {
       "unitTest", "Do unit test", "This exercises the unit test.",
       CoinParam::displayPriorityHigh);
 
-  parameters_[CbcParam::WRITEGMPLSOL]->setup(
-      "writeGSolu!tion", "Puts glpk solution to file",
-      "Will write a glpk solution file to the given file name.  It will use "
-      "the default directory given by 'directory'.  A name of '$' will use the "
-      "previous value for the name.  This is initialized to 'stdout' (this "
-      "defaults to ordinary solution if stdout). If problem created from gmpl "
-      "model - will do any reports.",
-      CoinParam::displayPriorityHigh);
-
-  // For backward compatibility
-  parameters_[CbcParam::WRITEGMPLSOL_OLD]->setup(
-      "gsolu!tion", "Puts glpk solution to file (synonym for writeGSolu!tion)",
-      "Will write a glpk solution file to the given file name.  It will use "
-      "the default directory given by 'directory'.  A name of '$' will use the "
-      "previous value for the name.  This is initialized to 'stdout' (this "
-      "defaults to ordinary solution if stdout). If problem created from gmpl "
-      "model - will do any reports.",
-      CoinParam::displayPriorityNone);
-
   parameters_[CbcParam::WRITEMODEL]->setup(
       "writeM!odel", "save model to binary file",
       "This will write the problem in binary foramt to the file name set by "
@@ -1533,12 +1512,6 @@ void CbcParameters::addCbcSolverFileParams() {
       "importF!ile", "sets name for file to import model from",
       "This will set the name of the model to be read in with the import "
       "command. This is initialized to 'import.mps'",
-      CoinParam::displayPriorityHigh);
-
-  parameters_[CbcParam::GMPLSOLFILE]->setup(
-      "gmplSolutionF!ile", "sets name for file to store GMPL solution in",
-      "This will set the name the GMPL solution will be written to and read from. "
-      "This is initialized to 'gmpl.sol'. ",
       CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::MIPSTARTFILE]->setup(

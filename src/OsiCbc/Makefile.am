@@ -37,10 +37,6 @@ if OSICBC_DFLT_SOLVER_DYLP
   libOsiCbc_la_LIBADD += $(OSIDYLP_LFLAGS)
 endif
 
-if OSICBC_DFLT_SOLVER_GLPK
-  libOsiCbc_la_LIBADD += $(OSIGLPK_LFLAGS)
-endif
-
 #if OSICBC_DFLT_SOLVER_GRB
 #endif
 

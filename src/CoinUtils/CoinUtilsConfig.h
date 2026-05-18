@@ -13,9 +13,6 @@
 #define COINUTILS_C_ISNAN std::isnan
 
 #define COINUTILS_HAS_ZLIB 1
-#define COINUTILS_HAS_LAPACK 1
-#define COINUTILS_LAPACK_FUNC(name,NAME) name ## _
-#define COINUTILS_LAPACK_FUNC_(name,NAME) name ## _
 
 #define COINUTILS_INT64_T long long
 #define COINUTILS_INTPTR_T intptr_t

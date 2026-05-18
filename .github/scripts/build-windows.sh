@@ -195,16 +195,19 @@ find "${INSTALL_DIR}/bin" -name 'libmipster*-generic.dll' | head -1 | xargs objd
 echo ""
 echo "==> Building NSIS installer..."
 
-# Determine version (from configure.ac or a fallback)
+# Determine version (from configure.ac or a fallback).
+# AC_INIT([Name],[version],...) — version is the second bracketed argument.
 VERSION=$(grep '^AC_INIT' "${SRC_DIR}/configure.ac" 2>/dev/null \
-  | sed 's/.*\[\([0-9][^]]*\)\].*/\1/' | head -1)
+  | sed 's/AC_INIT(\[[^]]*\],\[\([^]]*\)\].*/\1/' | head -1)
 VERSION=${VERSION:-devel}
 echo "    Version: ${VERSION}"
 
-# Substitute placeholders in the .nsi template
+# Substitute placeholders in the .nsi template.
 NSIS_SCRIPT="/tmp/mipster-installer.nsi"
-# Convert Unix path to Windows path for NSIS (it runs natively)
-DIST_WIN=$(cygpath -w "${SRC_DIR}/dist" 2>/dev/null || echo "${SRC_DIR}/dist")
+# cygpath -m gives Windows-style paths with forward slashes (e.g. D:/a/foo/dist).
+# Forward slashes are safe in sed replacements (no backslash escaping needed)
+# and NSIS accepts them in File/SetOutPath commands.
+DIST_WIN=$(cygpath -m "${SRC_DIR}/dist" 2>/dev/null || echo "${SRC_DIR}/dist")
 
 sed \
   -e "s|@VERSION@|${VERSION}|g" \

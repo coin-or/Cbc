@@ -2638,14 +2638,18 @@ Cbc_solve(Cbc_Model *model)
             inputQueue.push_back("-lpMethod=dual"); break;
         }
 
-        // Bound propagation level before LP solve
-        {
+        // Bound propagation level before LP solve.
+        // Only override CbcSolver's default (milpbt) when the user has
+        // explicitly set a non-zero INT_PARAM_LP_FAST_PREPROCESS value.
+        // When the param is 0 (the default), leave CbcSolver's own default
+        // in effect rather than forcing it off.
+        if (model->int_param[INT_PARAM_LP_FAST_PREPROCESS] > 0) {
           const char *bpKwd;
           switch (model->int_param[INT_PARAM_LP_FAST_PREPROCESS]) {
             case 1:  bpKwd = "singletons"; break;
             case 2:  bpKwd = "milpbt";     break;
             case 3:  bpKwd = "fixpoint";   break;
-            default: bpKwd = "off";        break;
+            default: bpKwd = "milpbt";     break;
           }
           inputQueue.push_back(std::string("-boundPropLevel=") + bpKwd);
         }

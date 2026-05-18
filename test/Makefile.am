@@ -39,7 +39,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CbcSolverLpTest
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CbcSolverLpTest
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -113,7 +113,25 @@ nodist_EXTRA_CInterfaceTest_graphdraw_SOURCES = dummy.cpp
 CInterfaceTest_graphdraw_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_graphdraw_LDADD = ../src/libCbc.la
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CbcSolverLpTest$(EXEEXT)
+########################################################################
+#                   trdta5581 tests (integer infeasibility via BP)     #
+########################################################################
+
+CInterfaceTest_trdta5581_SOURCES = CInterfaceTest_trdta5581.c
+nodist_EXTRA_CInterfaceTest_trdta5581_SOURCES = dummy.cpp
+CInterfaceTest_trdta5581_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_trdta5581_LDADD = ../src/libCbc.la
+
+########################################################################
+#                   trd445c tests (LP reopt, MIP optimal)             #
+########################################################################
+
+CInterfaceTest_trd445c_SOURCES = CInterfaceTest_trd445c.c
+nodist_EXTRA_CInterfaceTest_trd445c_SOURCES = dummy.cpp
+CInterfaceTest_trd445c_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_trd445c_LDADD = ../src/libCbc.la
+
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CbcSolverLpTest$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 	export RUNNING_TEST="CInterfaceTest_tsp_random" ; ./CInterfaceTest_tsp_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_fl_random" ; ./CInterfaceTest_fl_random$(EXEEXT)
@@ -121,4 +139,6 @@ ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTes
 	export RUNNING_TEST="CInterfaceTest_nursesched" ; ./CInterfaceTest_nursesched$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_a1" ; ./CInterfaceTest_a1$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_graphdraw" ; ./CInterfaceTest_graphdraw$(EXEEXT)
+	export RUNNING_TEST="CInterfaceTest_trdta5581" ; ./CInterfaceTest_trdta5581$(EXEEXT)
+	export RUNNING_TEST="CInterfaceTest_trd445c" ; ./CInterfaceTest_trd445c$(EXEEXT)
 	export RUNNING_TEST="CbcSolverLpTest" ; ./CbcSolverLpTest$(EXEEXT)

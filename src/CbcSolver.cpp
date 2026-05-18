@@ -4901,7 +4901,11 @@ int CbcSolver::solveInitialLp(
             }
             int lpMethodResult = applyLpMethod();
             if (lpMethodResult < 0) {
-              // Infeasible — clean up LP progress handler and skip BAB
+              // Infeasibility proved by bound propagation — mark model status
+              // so callers can query isProvenInfeasible() reliably.
+              model_.setProblemStatus(0);
+              model_.setSecondaryStatus(1);
+              // clean up LP progress handler and skip BAB
               if (lpSavedMsg && si) {
                 ClpSimplex *clpModel = si->getModelPtr();
                 clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);

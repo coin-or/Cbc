@@ -111,7 +111,10 @@ jobs:
       - name: Build + test
         run: |
           export PATH="/mingw64/bin:/usr/bin:$PATH"
-          bash .github/scripts/build-windows.sh
+          # MSYS2 login shell may start in a different cwd; use cygpath to get a
+          # reliable POSIX path to the workspace and invoke the script absolutely.
+          SRC="$(cygpath -u "${GITHUB_WORKSPACE}")"
+          bash "${SRC}/.github/scripts/build-windows.sh"
 
       - uses: actions/upload-artifact@v4
         with:

@@ -39,7 +39,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -50,5 +50,14 @@ nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
 
 CInterfaceTest_LDADD = ../src/libCbc.la
 
-ctests: CInterfaceTest$(EXEEXT)
+########################################################################
+#                   TSP random-instance tests                           #
+########################################################################
+
+CInterfaceTest_tsp_random_SOURCES = CInterfaceTest_tsp_random.c
+nodist_EXTRA_CInterfaceTest_tsp_random_SOURCES = dummy.cpp
+CInterfaceTest_tsp_random_LDADD = ../src/libCbc.la
+
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
+	export RUNNING_TEST="CInterfaceTest_tsp_random" ; ./CInterfaceTest_tsp_random$(EXEEXT)

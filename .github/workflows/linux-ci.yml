@@ -102,7 +102,7 @@ jobs:
           pacman -S --needed --noconfirm \
             mingw-w64-x86_64-gcc \
             make \
-            autoconf automake libtool pkg-config zip nsis
+            autoconf automake libtool pkg-config zip mingw-w64-x86_64-nsis
 
       - name: Build + test
         run: |

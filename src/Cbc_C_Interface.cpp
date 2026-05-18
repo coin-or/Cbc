@@ -3108,7 +3108,7 @@ char CBC_LINKAGE Cbc_checkFeasibility(Cbc_Model *model, const double x[],
       double intviol = fabs(x[j]-vint);
       if (intviol > intTol)
         feasible = 0;
-      viol = std::max(viol, intTol);
+      viol = std::max(viol, intviol);
     }
 
     if ( viol > *maxViolCol ) {

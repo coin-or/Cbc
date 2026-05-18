@@ -55,11 +55,23 @@ static int check_ufl_solution(Cbc_Model *m, const UflInstance *inst,
     printf("    FAIL [%s]: solver did not prove optimality\n", label);
     return 0;
   }
-  int mm = inst->m, n = inst->n;
+
+  /* Structural check: row feasibility, column bounds, integrality (uses solver tolerances) */
   const double *sol = Cbc_getColSolution(m);
+  double maxViolRow, maxViolCol;
+  int rowIdx, colIdx;
+  if (!Cbc_checkFeasibility(m, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+    printf("    FAIL [%s]: Cbc_checkFeasibility failed — "
+           "maxRowViol=%.2e (row %d)  maxColViol=%.2e (col %d)\n",
+           label, maxViolRow, rowIdx, maxViolCol, colIdx);
+    return 0;
+  }
+
+  int mm = inst->m, n = inst->n;
   int ncols = Cbc_getNumCols(m);
 
-  /* Build y[i] and x[i][j] from named columns */
+  /* Semantic check: parse solution by name, verify each customer
+     is assigned to exactly one open facility */
   double y[MAX_M] = {0}, x[MAX_M][MAX_N] = {{0}};
   for (int k = 0; k < ncols; k++) {
     char name[32]; Cbc_getColName(m, k, name, sizeof(name));
@@ -70,7 +82,6 @@ static int check_ufl_solution(Cbc_Model *m, const UflInstance *inst,
       x[a][b] = sol[k];
   }
 
-  /* Each customer served by exactly one open facility */
   for (int j = 0; j < n; j++) {
     double served = 0;
     for (int i = 0; i < mm; i++) {
@@ -102,10 +113,21 @@ static int check_cflp_solution(Cbc_Model *m, const CflpInstance *inst,
     printf("    FAIL [%s]: solver did not prove optimality\n", label);
     return 0;
   }
-  int mm = inst->m, n = inst->n;
+
   const double *sol = Cbc_getColSolution(m);
+  double maxViolRow, maxViolCol;
+  int rowIdx, colIdx;
+  if (!Cbc_checkFeasibility(m, sol, &maxViolRow, &rowIdx, &maxViolCol, &colIdx)) {
+    printf("    FAIL [%s]: Cbc_checkFeasibility failed — "
+           "maxRowViol=%.2e (row %d)  maxColViol=%.2e (col %d)\n",
+           label, maxViolRow, rowIdx, maxViolCol, colIdx);
+    return 0;
+  }
+
+  int mm = inst->m, n = inst->n;
   int ncols = Cbc_getNumCols(m);
 
+  /* Parse solution by name into y[i] and x[i][j] */
   double y[MAX_M] = {0}, x[MAX_M][MAX_N] = {{0}};
   for (int k = 0; k < ncols; k++) {
     char name[32]; Cbc_getColName(m, k, name, sizeof(name));

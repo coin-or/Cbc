@@ -91,6 +91,15 @@ static void test_mtz(const TspInstance *inst)
 
   Cbc_solve(m);
   assert(Cbc_isProvenOptimal(m));
+  {
+    double maxViolRow, maxViolCol; int rowIdx, colIdx;
+    int feas = Cbc_checkFeasibility(m, Cbc_getColSolution(m),
+                                    &maxViolRow, &rowIdx, &maxViolCol, &colIdx);
+    if (!feas)
+      printf("    WARN: Cbc_checkFeasibility failed — rowViol=%.2e col=%.2e\n",
+             maxViolRow, maxViolCol);
+    assert(feas);
+  }
   int obj = (int)round(Cbc_getObjValue(m));
   printf("    -> MTZ obj=%d %s\n", obj, obj == inst->opt ? "OK" : "FAIL");
   assert(obj == inst->opt);
@@ -276,6 +285,15 @@ static void test_subtour(const TspInstance *inst)
 
   Cbc_solve(m);
   assert(Cbc_isProvenOptimal(m));
+  {
+    double maxViolRow, maxViolCol; int rowIdx, colIdx;
+    int feas = Cbc_checkFeasibility(m, Cbc_getColSolution(m),
+                                    &maxViolRow, &rowIdx, &maxViolCol, &colIdx);
+    if (!feas)
+      printf("    WARN: Cbc_checkFeasibility failed — rowViol=%.2e col=%.2e\n",
+             maxViolRow, maxViolCol);
+    assert(feas);
+  }
   int obj = (int)round(Cbc_getObjValue(m));
   printf("    -> Subtour obj=%d %s\n", obj, obj == inst->opt ? "OK" : "FAIL");
   assert(obj == inst->opt);

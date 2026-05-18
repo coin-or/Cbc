@@ -238,8 +238,8 @@ includecoin_HEADERS = \
 	OsiClpSolverInterface.hpp
 
 install-exec-local:
-	$(install_sh_DATA) config_clp.h $(DESTDIR)$(includecoindir)/ClpConfig.h
-	$(install_sh_DATA) config_osiclp.h $(DESTDIR)$(includecoindir)/OsiClpConfig.h
+	$(install_sh_DATA) $(srcdir)/config_clp.h $(DESTDIR)$(includecoindir)/ClpConfig.h
+	$(install_sh_DATA) $(srcdir)/config_osiclp.h $(DESTDIR)$(includecoindir)/OsiClpConfig.h
 
 uninstall-local:
 	rm -f $(DESTDIR)$(includecoindir)/ClpConfig.h $(DESTDIR)$(includecoindir)/OsiClpConfig.h

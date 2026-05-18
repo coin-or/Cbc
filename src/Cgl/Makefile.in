@@ -107,8 +107,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 DIST_COMMON = $(srcdir)/Makefile.am $(includecoin_HEADERS)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h \
-	$(top_builddir)/src/config_cbc.h \
-	$(top_builddir)/src/OsiCbc/config_osicbc.h
+	$(top_builddir)/src/config_cbc.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
@@ -142,7 +141,7 @@ AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
 am__v_at_1 = 
-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src -I$(top_builddir)/src/OsiCbc
+DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/Cgl012cut.Plo \
@@ -335,8 +334,6 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
-OSICBCLIB_CFLAGS_NOPC = @OSICBCLIB_CFLAGS_NOPC@
-OSICBCLIB_LFLAGS_NOPC = @OSICBCLIB_LFLAGS_NOPC@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -909,7 +906,7 @@ uninstall-am: uninstall-includecoinHEADERS
 
 
 install-exec-local:
-	$(install_sh_DATA) config_cgl.h $(DESTDIR)$(includecoindir)/CglConfig.h
+	$(install_sh_DATA) $(srcdir)/config_cgl.h $(DESTDIR)$(includecoindir)/CglConfig.h
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

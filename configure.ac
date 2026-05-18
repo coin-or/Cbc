@@ -104,7 +104,7 @@ AC_COIN_CHK_PKG(Miplib3,,[coindatamiplib3],,dataonly)
 #AC_COIN_CHK_PKG(OsiSpx,[CbcGeneric OsiCbcLib],[osi-soplex])
 #AC_COIN_CHK_PKG(OsiXpr,,[osi-xpress])
 
-AC_COIN_FINALIZE_FLAGS([CbcLib OsiCbcLib CbcUnitTest])
+AC_COIN_FINALIZE_FLAGS([CbcLib CbcUnitTest])
 
 #############################################################################
 #                       CbcGeneric configuration                            #
@@ -194,78 +194,6 @@ if test "$enable_cbc_parallel" = yes ; then
 fi
 
 ##############################################################################
-#                            OsiCbc configuration                            #
-##############################################################################
-
-# Handles configuration of the underlying default solver in OsiCbc. The issue
-# is that OsiCbc defines a default solver, used when the client does not     
-# specify a solver in the constructor. The default solver must, therefore,   
-# be present in the build. This macro checks that this is true, and sets the 
-# compile-time symbols OSICBC_DFLT_SOLVER, OSICBC_CLP_DFLT_SOLVER, and
-# OSICBC_DFLT_SOLVER_HPP that control the build. The parameter default_solver
-# should normally be clp, unless you're working on some other solver.
-
-# Ideally, this macro would not require enumeration of solvers, but the
-# effort required to avoid it is just not justified at present. One enumeration
-# is hidden in AC_OSI_CANONICAL. The other is visible, the AM_CONDITIONAL
-# list at the end.                                                             
-
-# In an ideal world this macro would do absolutely nothing if Cbc is not
-# present, but autotools is not an ideal world and we have to satisfy its
-# requirements. In particular, the AM_CONDITIONAL macros need to execute or
-# automake will complain. Really the only thing we need to suppress is the 
-# check that the default solver exists. All the rest is irrelevant when Cbc
-# isn't present (hence OsiCbc will be configured but not actually compiled).
-
-# Process the with-osicbc-default-solver option.
-
-AC_ARG_WITH([osicbc-default-solver],
-  AS_HELP_STRING([--with-osicbc-default-solver],
-     [specify underlying solver for OsiCbc (default clp)]),
-     [osicbc_with_solver=$withval],
-     [osicbc_with_solver=clp])
-
-case "${osicbc_with_solver}" in
-  @<:@Cc@:>@@<:@Ll@:>@@<:@Pp@:>@*)
-    osi_lc_solver=clp ;
-    osi_mc_solver=Clp ;
-    osi_uc_solver=CLP ;
-    osi_exists_solver=yes
-    ;;
-  *)
-    osi_lc_solver=clp ;
-    osi_mc_solver=Clp ;
-    osi_uc_solver=CLP ;
-    osi_exists_solver=yes
-    AC_MSG_WARN([Only Clp is supported for OsiCbc; defaulting to $osi_lc_solver.])
-    ;;
-esac
-
-# Check that the requested solver is available.
-if test $osi_exists_solver = no; then
-  AC_MSG_ERROR([selected default solver $osicbc_with_solver is unavailable.
-  Please select an available solver using the --with-osicbc-default-solver option.])
-fi
-
-# State the result.
-AC_MSG_NOTICE([OsiCbc default solver is $osi_lc_solver])
-
-# And set the configuration variables.
-AC_DEFINE_UNQUOTED([OSICBC_DFLT_SOLVER],
-  [Osi${osi_mc_solver}SolverInterface],
-  [define to the name of the default solver interface class, e.g., OsiClpSolverInterface])
-AC_DEFINE_UNQUOTED([OSICBC_DFLT_SOLVER_HPP],
-  ["Osi${osi_mc_solver}SolverInterface.hpp"],
-  [define to the name of the .hpp file for the default solver interface class, e.g., "OsiClpSolverInterface.hpp" (include quotes)])
-if test $osi_mc_solver = "Clp"; then
-  AC_DEFINE([OSICBC_DFLT_SOLVER_CLP],[1],[define this symbol if clp is the default solver])
-fi
-
-# Last but not least, we need automake conditionals.
-AM_CONDITIONAL([OSICBC_DFLT_SOLVER_CLP],[test $osi_mc_solver = Clp])
-#AM_CONDITIONAL([OSICBC_DFLT_SOLVER_XPR],[test $osi_mc_solver = Xpr])
-
-##############################################################################
 #                   VPATH links for example input files                      #
 ##############################################################################
 
@@ -291,16 +219,14 @@ AC_CONFIG_FILES([Makefile
                  src/Clp/Makefile
                  src/Cgl/Makefile
                  src/Makefile
-                 src/OsiCbc/Makefile
                  test/Makefile
-                 cbc.pc
-                 osi-cbc.pc])
+                 cbc.pc])
 AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Here put the location and name of the configuration header file
-AC_CONFIG_HEADERS([src/config.h src/config_cbc.h src/OsiCbc/config_osicbc.h])
+AC_CONFIG_HEADERS([src/config.h src/config_cbc.h])
 
-AC_COIN_FINALIZE_FLAGS([CbcLib CbcSolverLib CbcGeneric OsiCbcLib CbcUnitTest])
+AC_COIN_FINALIZE_FLAGS([CbcLib CbcSolverLib CbcGeneric CbcUnitTest])
 
 # Capture git hash for development builds (records state at configure time)
 AC_MSG_CHECKING([git revision])

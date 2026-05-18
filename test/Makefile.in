@@ -97,11 +97,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 #  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_SAMPLE_TRUE@am__append_1 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_MIPLIB3_TRUE@am__append_2 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
-#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-@COIN_HAS_NETLIB_TRUE@am__append_3 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
-bin_PROGRAMS = osiUnitTest$(EXEEXT) CInterfaceTest$(EXEEXT)
+@COIN_HAS_MIPLIB3_TRUE@am__append_1 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
+bin_PROGRAMS = CInterfaceTest$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -110,8 +107,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 DIST_COMMON = $(srcdir)/Makefile.am
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h \
-	$(top_builddir)/src/config_cbc.h \
-	$(top_builddir)/src/OsiCbc/config_osicbc.h
+	$(top_builddir)/src/config_cbc.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
@@ -123,12 +119,6 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_osiUnitTest_OBJECTS = osiUnitTest.$(OBJEXT) \
-	OsiCbcSolverInterfaceTest.$(OBJEXT)
-osiUnitTest_OBJECTS = $(am_osiUnitTest_OBJECTS)
-am__DEPENDENCIES_1 =
-osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -141,12 +131,11 @@ AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
 am__v_at_1 = 
-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src -I$(top_builddir)/src/OsiCbc
+DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
-	./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po ./$(DEPDIR)/dummy.Po \
-	./$(DEPDIR)/osiUnitTest.Po
+	./$(DEPDIR)/dummy.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -185,7 +174,7 @@ am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
 SOURCES = $(CInterfaceTest_SOURCES) \
-	$(nodist_EXTRA_CInterfaceTest_SOURCES) $(osiUnitTest_SOURCES)
+	$(nodist_EXTRA_CInterfaceTest_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -286,8 +275,6 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
-OSICBCLIB_CFLAGS_NOPC = @OSICBCLIB_CFLAGS_NOPC@
-OSICBCLIB_LFLAGS_NOPC = @OSICBCLIB_LFLAGS_NOPC@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -370,21 +357,14 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/CoinUtils -I$(srcdir)/../src/Clp -I$(srcdir)/../src/Cgl -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/CoinUtils -I$(srcdir)/../src/Clp -I$(srcdir)/../src/Cgl $(CBCUNITTEST_CFLAGS)
 AM_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################
 #                         unitTest for Cbc                             #
 ########################################################################
-CBC_TEST_TGTS = ositests test_cbc ctests
-cbcflags = $(am__append_2)
-ositestsflags = $(am__append_1) $(am__append_3)
-
-########################################################################
-#                         unitTest for OsiCbc                          #
-########################################################################
-osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
-osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la $(CBCUNITTEST_LFLAGS)
+CBC_TEST_TGTS = test_cbc ctests
+cbcflags = $(am__append_1)
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -474,10 +454,6 @@ CInterfaceTest$(EXEEXT): $(CInterfaceTest_OBJECTS) $(CInterfaceTest_DEPENDENCIES
 	@rm -f CInterfaceTest$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_OBJECTS) $(CInterfaceTest_LDADD) $(LIBS)
 
-osiUnitTest$(EXEEXT): $(osiUnitTest_OBJECTS) $(osiUnitTest_DEPENDENCIES) $(EXTRA_osiUnitTest_DEPENDENCIES) 
-	@rm -f osiUnitTest$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(osiUnitTest_OBJECTS) $(osiUnitTest_LDADD) $(LIBS)
-
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -485,9 +461,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osiUnitTest.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -643,9 +617,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest.Po
-	-rm -f ./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po
 	-rm -f ./$(DEPDIR)/dummy.Po
-	-rm -f ./$(DEPDIR)/osiUnitTest.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -692,9 +664,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest.Po
-	-rm -f ./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po
 	-rm -f ./$(DEPDIR)/dummy.Po
-	-rm -f ./$(DEPDIR)/osiUnitTest.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -731,6 +701,7 @@ uninstall-am: uninstall-binPROGRAMS
 
 .PRECIOUS: Makefile
 
+#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
 
 # We are using the solver executables to do the unit test
 
@@ -744,9 +715,6 @@ test_cbc: ../src/cbc$(EXEEXT)
 @COIN_HAS_SAMPLE_TRUE@	RUNNING_TEST="cbc-generic" ../src/cbc-generic$(EXEEXT) -directory `$(CYGPATH_W) $(SAMPLE_DATA)` -import p0033.mps -branch
 
 .PHONY: test
-
-ositests: osiUnitTest$(EXEEXT)
-	export RUNNING_TEST="osiUnitTest" ; ./osiUnitTest$(EXEEXT) $(ositestsflags)
 
 ctests: CInterfaceTest$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)

@@ -96,4 +96,4 @@ includecoin_HEADERS = \
 	CglZeroHalf.hpp
 
 install-exec-local:
-	$(install_sh_DATA) config_cgl.h $(DESTDIR)$(includecoindir)/CglConfig.h
+	$(install_sh_DATA) $(srcdir)/config_cgl.h $(DESTDIR)$(includecoindir)/CglConfig.h

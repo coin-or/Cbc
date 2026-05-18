@@ -16,10 +16,20 @@ INSTALL_DIR="/project/dist/${DIST_NAME}"
 BUILD_BASE="/tmp/mipster-build"
 
 echo "==> MIPster manylinux_2_34 build"
+# Activate GCC toolset runtime (needed for linker and libraries)
+source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
 echo "    GCC: $(gcc --version | head -1)"
 
 # ── Build-time deps ───────────────────────────────────────────────────────────
-dnf install -y bzip2-devel zlib-devel patchelf > /dev/null
+dnf install -y bzip2-devel zlib-devel patchelf rsync openblas-static > /dev/null
+
+echo "==> Copying source (excluding build artifacts)..."
+rsync -a \
+  --exclude='*.la' --exclude='*.lo' --exclude='*.o' \
+  --exclude='.libs/' --exclude='config.status' --exclude='config.cache' \
+  --exclude='dist/' \
+  /project/ /tmp/mipster-src/
+SRC_DIR=/tmp/mipster-src
 
 mkdir -p "${INSTALL_DIR}/bin" "${INSTALL_DIR}/include"
 
@@ -37,17 +47,27 @@ build_variant() {
   mkdir -p "${build_dir}"
   cd "${build_dir}"
 
-  /project/Cbc/configure \
+  /tmp/mipster-src/configure \
     --prefix="${build_dir}/install" \
     --enable-shared \
     --enable-static \
+    --without-amd \
+    '--with-lapack-lflags=-lopenblas -lgfortran' \
     CXXFLAGS="${cxxflags}" \
-    LDFLAGS="-static-libstdc++ -static-libgcc" \
-    LIBS="-Wl,-Bstatic,-lz,-lbz2,-Bdynamic" \
+    LDFLAGS="-static-libstdc++ -static-libgcc -Wl,-Bstatic,-lgfortran,-Bdynamic" \
     2>&1 | tail -3
+
+  # Hide libopenblas.so so the linker falls back to libopenblas.a (static).
+  # This avoids a dynamic dependency on OpenBLAS in the installed binaries.
+  local openblas_so
+  openblas_so=$(ldconfig -p 2>/dev/null | awk '/libopenblas\.so /{print $NF}' | head -1)
+  [ -n "$openblas_so" ] && mv "$openblas_so" "${openblas_so}.bak"
 
   make -j"$(nproc)" 2>&1 | tail -3
   make install 2>&1 | tail -2
+
+  # Restore libopenblas.so
+  [ -n "$openblas_so" ] && mv "${openblas_so}.bak" "$openblas_so"
   echo "    Build: OK"
 
   # ── Test ────────────────────────────────────────────────────────────────────
@@ -57,8 +77,8 @@ build_variant() {
   echo "    CInterfaceTest: PASSED"
 
   # ── Static binary ───────────────────────────────────────────────────────────
-  strip "${build_dir}/src/mipster"
-  cp "${build_dir}/src/mipster" "${INSTALL_DIR}/bin/mipster-${name}"
+  strip "${build_dir}/src/.libs/mipster"
+  cp "${build_dir}/src/.libs/mipster" "${INSTALL_DIR}/bin/mipster-${name}"
   echo "    bin/mipster-${name}: $(du -sh "${INSTALL_DIR}/bin/mipster-${name}" | cut -f1)"
 
   # ── Shared library ──────────────────────────────────────────────────────────
@@ -68,22 +88,22 @@ build_variant() {
   cp -P "${build_dir}/install/lib"/libCbc.so* "${libdir}/"
 
   # Strip the real .so (not symlinks)
-  find "${libdir}" -name 'libCbc.so.*.*' -not -L | xargs strip --strip-unneeded
+  find "${libdir}" -name 'libCbc.so.*.*' ! -type l | xargs strip --strip-unneeded
 
   # Set RPATH to $ORIGIN so bundled deps (if any) are found next to the .so
-  find "${libdir}" -name 'libCbc.so.*.*' -not -L | \
+  find "${libdir}" -name 'libCbc.so.*.*' ! -type l | \
     xargs -I{} patchelf --set-rpath '$ORIGIN' {}
 
   # Verify no unexpected external deps (glibc + libm + libpthread are fine)
   echo "    Shared lib deps:"
-  find "${libdir}" -name 'libCbc.so.*.*' -not -L | \
+  find "${libdir}" -name 'libCbc.so.*.*' ! -type l | \
     xargs ldd | grep -v "linux-vdso\|libm\|libc\.so\|libpthread\|libdl\|/lib64/ld\|=>" | \
     grep "=>" || echo "      (none — fully self-contained)"
 
   # ── Headers (only need to do this once) ─────────────────────────────────────
   if [ "${name}" = "generic" ]; then
-    cp -r "${build_dir}/install/include/coin" "${INSTALL_DIR}/include/"
-    echo "    include/coin: copied"
+    cp -r "${build_dir}/install/include/coin-or" "${INSTALL_DIR}/include/"
+    echo "    include/coin-or: copied"
   fi
 }
 
@@ -141,8 +161,8 @@ int main(int argc, char *argv[])
 }
 EOF
 
-gcc -O2 -static -o "${INSTALL_DIR}/bin/mipster" /tmp/mipster-launcher.c
-echo "    bin/mipster (launcher): $(du -sh "${INSTALL_DIR}/bin/mipster" | cut -f1), static"
+gcc -O2 -o "${INSTALL_DIR}/bin/mipster" /tmp/mipster-launcher.c
+echo "    bin/mipster (launcher): $(du -sh "${INSTALL_DIR}/bin/mipster" | cut -f1)"
 
 # ── Smoke test launcher ───────────────────────────────────────────────────────
 echo ""

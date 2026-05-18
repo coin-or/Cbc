@@ -139,20 +139,6 @@
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
-/* Library Visibility Attribute */
-#undef OSICBCLIB_EXPORT
-
-/* define to the name of the default solver interface class, e.g.,
-   OsiClpSolverInterface */
-#undef OSICBC_DFLT_SOLVER
-
-/* define this symbol if clp is the default solver */
-#undef OSICBC_DFLT_SOLVER_CLP
-
-/* define to the name of the .hpp file for the default solver interface class,
-   e.g., "OsiClpSolverInterface.hpp" (include quotes) */
-#undef OSICBC_DFLT_SOLVER_HPP
-
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 

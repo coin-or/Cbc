@@ -4,7 +4,7 @@
 #
 # Author:  Andreas Waechter           IBM    2006-04-13
 
-AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/CoinUtils -I$(srcdir)/../src/Clp -I$(srcdir)/../src/Cgl -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/CoinUtils -I$(srcdir)/../src/Clp -I$(srcdir)/../src/Cgl $(CBCUNITTEST_CFLAGS)
 
 AM_LDFLAGS = $(LT_LDFLAGS)
 
@@ -12,20 +12,15 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 #                         unitTest for Cbc                             #
 ########################################################################
 
-CBC_TEST_TGTS = ositests test_cbc ctests
+CBC_TEST_TGTS = test_cbc ctests
 
 cbcflags =
-ositestsflags =
 if COIN_HAS_SAMPLE
 #  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-  ositestsflags += -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
 endif
 if COIN_HAS_MIPLIB3
   cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
 #  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-endif
-if COIN_HAS_NETLIB
-  ositestsflags += -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
 endif
 
 # We are using the solver executables to do the unit test
@@ -44,18 +39,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = osiUnitTest CInterfaceTest
-
-########################################################################
-#                         unitTest for OsiCbc                          #
-########################################################################
-
-osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
-
-osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la $(CBCUNITTEST_LFLAGS)
-
-ositests: osiUnitTest$(EXEEXT)
-	export RUNNING_TEST="osiUnitTest" ; ./osiUnitTest$(EXEEXT) $(ositestsflags)
+bin_PROGRAMS = CInterfaceTest
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #

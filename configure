@@ -676,16 +676,12 @@ coin_doxy_tagname
 coin_doxy_usedot
 coin_have_latex
 coin_have_doxygen
-OSICBC_DFLT_SOLVER_CLP_FALSE
-OSICBC_DFLT_SOLVER_CLP_TRUE
 COIN_HAS_PTHREADSW32_FALSE
 COIN_HAS_PTHREADSW32_TRUE
 CBCSOLVERLIB_CFLAGS
 CBCSOLVERLIB_LFLAGS
 CBCUNITTEST_CFLAGS_NOPC
 CBCUNITTEST_LFLAGS_NOPC
-OSICBCLIB_CFLAGS_NOPC
-OSICBCLIB_LFLAGS_NOPC
 CBCLIB_CFLAGS_NOPC
 CBCLIB_LFLAGS_NOPC
 MIPLIB3_DATA
@@ -900,7 +896,6 @@ enable_cbc_parallel
 with_pthreadsw32
 with_pthreadsw32_lflags
 with_pthreadsw32_cflags
-with_osicbc_default_solver
 with_dot
 '
       ac_precious_vars='build_alias
@@ -1653,8 +1648,6 @@ Optional Packages:
                           Compiler flags for pthreadsw32 appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --with-osicbc-default-solver
-                          specify underlying solver for OsiCbc (default clp)
   --with-dot              use dot (from graphviz) when creating documentation
                           with doxygen if available; --without-dot to disable
 
@@ -21963,53 +21956,6 @@ printf "%s\n" "$as_me: CBCLIB_LFLAGS: \"${CBCLIB_LFLAGS}\"" >&6;}
 printf "%s\n" "$as_me: CBCLIB_CFLAGS: \"${CBCLIB_CFLAGS}\"" >&6;}
       fi
      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for OsiCbcLib:" >&5
-printf "%s\n" "$as_me: FINALIZE_FLAGS for OsiCbcLib:" >&6;}
-      fi
-      OSICBCLIB_LFLAGS_NOPC=$OSICBCLIB_LFLAGS
-
-      OSICBCLIB_CFLAGS_NOPC=$OSICBCLIB_CFLAGS
-
-      if test -n "${OSICBCLIB_PCFILES}" ; then
-        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${OSICBCLIB_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${OSICBCLIB_PCFILES}`
-        OSICBCLIB_CFLAGS="$temp_CFLAGS ${OSICBCLIB_CFLAGS}"
-        OSICBCLIB_LFLAGS="$temp_LFLAGS ${OSICBCLIB_LFLAGS}"
-      fi
-
-      # setup XYZ_EXPORT symbol for library users
-      libexport_attribute=
-      if test "$enable_shared" = yes ; then
-        case $build_os in
-          cygwin* | mingw* | msys* | cegcc* )
-            libexport_attribute="__declspec(dllimport)"
-            if test "$enable_static" = yes ; then
-              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
-            fi
-          ;;
-        esac
-      fi
-
-printf "%s\n" "#define OSICBCLIB_EXPORT $libexport_attribute" >>confdefs.h
-
-
-      # add -DXYZ_BUILD to XYZ_CFLAGS
-      OSICBCLIB_CFLAGS="${OSICBCLIB_CFLAGS} -DOSICBCLIB_BUILD"
-
-      # Define BUILDTOOLS_DEBUG to enable debugging output
-      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&5
-printf "%s\n" "$as_me: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_CFLAGS_NOPC: \"${OSICBCLIB_CFLAGS_NOPC}\"" >&5
-printf "%s\n" "$as_me: OSICBCLIB_CFLAGS_NOPC: \"${OSICBCLIB_CFLAGS_NOPC}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: adding \"${OSICBCLIB_PCFILES}\"" >&5
-printf "%s\n" "$as_me: adding \"${OSICBCLIB_PCFILES}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_LFLAGS: \"${OSICBCLIB_LFLAGS}\"" >&5
-printf "%s\n" "$as_me: OSICBCLIB_LFLAGS: \"${OSICBCLIB_LFLAGS}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_CFLAGS: \"${OSICBCLIB_CFLAGS}\"" >&5
-printf "%s\n" "$as_me: OSICBCLIB_CFLAGS: \"${OSICBCLIB_CFLAGS}\"" >&6;}
-      fi
-     if test "$BUILDTOOLS_DEBUG" = 1 ; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcUnitTest:" >&5
 printf "%s\n" "$as_me: FINALIZE_FLAGS for CbcUnitTest:" >&6;}
       fi
@@ -22478,94 +22424,6 @@ printf "%s\n" "$as_me: Cbc multithreading enabled" >&6;};
 fi
 
 ##############################################################################
-#                            OsiCbc configuration                            #
-##############################################################################
-
-# Handles configuration of the underlying default solver in OsiCbc. The issue
-# is that OsiCbc defines a default solver, used when the client does not
-# specify a solver in the constructor. The default solver must, therefore,
-# be present in the build. This macro checks that this is true, and sets the
-# compile-time symbols OSICBC_DFLT_SOLVER, OSICBC_CLP_DFLT_SOLVER, and
-# OSICBC_DFLT_SOLVER_HPP that control the build. The parameter default_solver
-# should normally be clp, unless you're working on some other solver.
-
-# Ideally, this macro would not require enumeration of solvers, but the
-# effort required to avoid it is just not justified at present. One enumeration
-# is hidden in AC_OSI_CANONICAL. The other is visible, the AM_CONDITIONAL
-# list at the end.
-
-# In an ideal world this macro would do absolutely nothing if Cbc is not
-# present, but autotools is not an ideal world and we have to satisfy its
-# requirements. In particular, the AM_CONDITIONAL macros need to execute or
-# automake will complain. Really the only thing we need to suppress is the
-# check that the default solver exists. All the rest is irrelevant when Cbc
-# isn't present (hence OsiCbc will be configured but not actually compiled).
-
-# Process the with-osicbc-default-solver option.
-
-
-# Check whether --with-osicbc-default-solver was given.
-if test ${with_osicbc_default_solver+y}
-then :
-  withval=$with_osicbc_default_solver; osicbc_with_solver=$withval
-else case e in #(
-  e) osicbc_with_solver=clp ;;
-esac
-fi
-
-
-case "${osicbc_with_solver}" in
-  [Cc][Ll][Pp]*)
-    osi_lc_solver=clp ;
-    osi_mc_solver=Clp ;
-    osi_uc_solver=CLP ;
-    osi_exists_solver=yes
-    ;;
-  *)
-    osi_lc_solver=clp ;
-    osi_mc_solver=Clp ;
-    osi_uc_solver=CLP ;
-    osi_exists_solver=yes
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Only Clp is supported for OsiCbc; defaulting to $osi_lc_solver." >&5
-printf "%s\n" "$as_me: WARNING: Only Clp is supported for OsiCbc; defaulting to $osi_lc_solver." >&2;}
-    ;;
-esac
-
-# Check that the requested solver is available.
-if test $osi_exists_solver = no; then
-  as_fn_error $? "selected default solver $osicbc_with_solver is unavailable.
-  Please select an available solver using the --with-osicbc-default-solver option." "$LINENO" 5
-fi
-
-# State the result.
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: OsiCbc default solver is $osi_lc_solver" >&5
-printf "%s\n" "$as_me: OsiCbc default solver is $osi_lc_solver" >&6;}
-
-# And set the configuration variables.
-
-printf "%s\n" "#define OSICBC_DFLT_SOLVER Osi${osi_mc_solver}SolverInterface" >>confdefs.h
-
-
-printf "%s\n" "#define OSICBC_DFLT_SOLVER_HPP \"Osi${osi_mc_solver}SolverInterface.hpp\"" >>confdefs.h
-
-if test $osi_mc_solver = "Clp"; then
-
-printf "%s\n" "#define OSICBC_DFLT_SOLVER_CLP 1" >>confdefs.h
-
-fi
-
-# Last but not least, we need automake conditionals.
- if test $osi_mc_solver = Clp; then
-  OSICBC_DFLT_SOLVER_CLP_TRUE=
-  OSICBC_DFLT_SOLVER_CLP_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_CLP_TRUE='#'
-  OSICBC_DFLT_SOLVER_CLP_FALSE=
-fi
-
-#AM_CONDITIONAL([OSICBC_DFLT_SOLVER_XPR],[test $osi_mc_solver = Xpr])
-
-##############################################################################
 #                   VPATH links for example input files                      #
 ##############################################################################
 
@@ -22772,13 +22630,13 @@ fi
 
 # Here list all the files that configure should create (except for the
 # configuration header file)
-ac_config_files="$ac_config_files Makefile examples/Makefile src/CoinUtils/Makefile src/Clp/Makefile src/Cgl/Makefile src/Makefile src/OsiCbc/Makefile test/Makefile cbc.pc osi-cbc.pc"
+ac_config_files="$ac_config_files Makefile examples/Makefile src/CoinUtils/Makefile src/Clp/Makefile src/Cgl/Makefile src/Makefile test/Makefile cbc.pc"
 
 ac_config_files="$ac_config_files doxydoc/doxygen.conf"
 
 
 # Here put the location and name of the configuration header file
-ac_config_headers="$ac_config_headers src/config.h src/config_cbc.h src/OsiCbc/config_osicbc.h"
+ac_config_headers="$ac_config_headers src/config.h src/config_cbc.h"
 
 
 
@@ -22922,53 +22780,6 @@ printf "%s\n" "$as_me: adding \"${CBCGENERIC_PCFILES}\"" >&6;}
 printf "%s\n" "$as_me: CBCGENERIC_LFLAGS: \"${CBCGENERIC_LFLAGS}\"" >&6;}
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: CBCGENERIC_CFLAGS: \"${CBCGENERIC_CFLAGS}\"" >&5
 printf "%s\n" "$as_me: CBCGENERIC_CFLAGS: \"${CBCGENERIC_CFLAGS}\"" >&6;}
-      fi
-     if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for OsiCbcLib:" >&5
-printf "%s\n" "$as_me: FINALIZE_FLAGS for OsiCbcLib:" >&6;}
-      fi
-      OSICBCLIB_LFLAGS_NOPC=$OSICBCLIB_LFLAGS
-
-      OSICBCLIB_CFLAGS_NOPC=$OSICBCLIB_CFLAGS
-
-      if test -n "${OSICBCLIB_PCFILES}" ; then
-        temp_CFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --cflags ${OSICBCLIB_PCFILES}`
-        temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static ${OSICBCLIB_PCFILES}`
-        OSICBCLIB_CFLAGS="$temp_CFLAGS ${OSICBCLIB_CFLAGS}"
-        OSICBCLIB_LFLAGS="$temp_LFLAGS ${OSICBCLIB_LFLAGS}"
-      fi
-
-      # setup XYZ_EXPORT symbol for library users
-      libexport_attribute=
-      if test "$enable_shared" = yes ; then
-        case $build_os in
-          cygwin* | mingw* | msys* | cegcc* )
-            libexport_attribute="__declspec(dllimport)"
-            if test "$enable_static" = yes ; then
-              as_fn_error $? "Cannot do DLL and static LIB builds simultaneously. Do not add --enable-static without --disable-shared." "$LINENO" 5
-            fi
-          ;;
-        esac
-      fi
-
-printf "%s\n" "#define OSICBCLIB_EXPORT $libexport_attribute" >>confdefs.h
-
-
-      # add -DXYZ_BUILD to XYZ_CFLAGS
-      OSICBCLIB_CFLAGS="${OSICBCLIB_CFLAGS} -DOSICBCLIB_BUILD"
-
-      # Define BUILDTOOLS_DEBUG to enable debugging output
-      if test "$BUILDTOOLS_DEBUG" = 1 ; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&5
-printf "%s\n" "$as_me: OSICBCLIB_LFLAGS_NOPC: \"${OSICBCLIB_LFLAGS_NOPC}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_CFLAGS_NOPC: \"${OSICBCLIB_CFLAGS_NOPC}\"" >&5
-printf "%s\n" "$as_me: OSICBCLIB_CFLAGS_NOPC: \"${OSICBCLIB_CFLAGS_NOPC}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: adding \"${OSICBCLIB_PCFILES}\"" >&5
-printf "%s\n" "$as_me: adding \"${OSICBCLIB_PCFILES}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_LFLAGS: \"${OSICBCLIB_LFLAGS}\"" >&5
-printf "%s\n" "$as_me: OSICBCLIB_LFLAGS: \"${OSICBCLIB_LFLAGS}\"" >&6;}
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OSICBCLIB_CFLAGS: \"${OSICBCLIB_CFLAGS}\"" >&5
-printf "%s\n" "$as_me: OSICBCLIB_CFLAGS: \"${OSICBCLIB_CFLAGS}\"" >&6;}
       fi
      if test "$BUILDTOOLS_DEBUG" = 1 ; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FINALIZE_FLAGS for CbcUnitTest:" >&5
@@ -23243,10 +23054,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_PTHREADSW32_TRUE}" && test -z "${COIN_HAS_PTHREADSW32_FALSE}"; then
   as_fn_error $? "conditional \"COIN_HAS_PTHREADSW32\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OSICBC_DFLT_SOLVER_CLP_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_CLP_FALSE}"; then
-  as_fn_error $? "conditional \"OSICBC_DFLT_SOLVER_CLP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_DOXYGEN_TRUE}" && test -z "${COIN_HAS_DOXYGEN_FALSE}"; then
@@ -24248,14 +24055,11 @@ do
     "src/Clp/Makefile") CONFIG_FILES="$CONFIG_FILES src/Clp/Makefile" ;;
     "src/Cgl/Makefile") CONFIG_FILES="$CONFIG_FILES src/Cgl/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-    "src/OsiCbc/Makefile") CONFIG_FILES="$CONFIG_FILES src/OsiCbc/Makefile" ;;
     "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
     "cbc.pc") CONFIG_FILES="$CONFIG_FILES cbc.pc" ;;
-    "osi-cbc.pc") CONFIG_FILES="$CONFIG_FILES osi-cbc.pc" ;;
     "doxydoc/doxygen.conf") CONFIG_FILES="$CONFIG_FILES doxydoc/doxygen.conf" ;;
     "src/config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config.h" ;;
     "src/config_cbc.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config_cbc.h" ;;
-    "src/OsiCbc/config_osicbc.h") CONFIG_HEADERS="$CONFIG_HEADERS src/OsiCbc/config_osicbc.h" ;;
 
   *) as_fn_error $? "invalid argument: '$ac_config_target'" "$LINENO" 5;;
   esac

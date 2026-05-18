@@ -10,9 +10,9 @@ include BuildTools/Makemain.inc
 #                          Subdirectories                              #
 ########################################################################
 
-SUBDIRS = src/CoinUtils src/Clp src/Cgl src src/OsiCbc
+SUBDIRS = src/CoinUtils src/Clp src/Cgl src
 
-pkgconfiglib_DATA = cbc.pc osi-cbc.pc
+pkgconfiglib_DATA = cbc.pc
 
 ########################################################################
 #                           Extra Targets                              #

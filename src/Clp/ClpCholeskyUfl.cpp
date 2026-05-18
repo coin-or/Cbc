@@ -4,11 +4,8 @@
 
 #include "ClpConfig.h"
 
-#ifndef CLP_HAS_AMD
-#error "Need AMD to compile ClpCholeskyUfl."
-#else
+#ifdef CLP_HAS_AMD
 #include "amd.h"
-#endif
 
 #include "CoinPragma.hpp"
 #include "ClpCholeskyUfl.hpp"
@@ -124,3 +121,5 @@ void ClpCholeskyUfl::solve(double *region)
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */
+
+#endif /* CLP_HAS_AMD */

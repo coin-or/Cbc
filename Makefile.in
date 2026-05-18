@@ -105,10 +105,8 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h \
-	$(top_builddir)/src/config_cbc.h \
-	$(top_builddir)/src/OsiCbc/config_osicbc.h
-CONFIG_CLEAN_FILES = examples/Makefile cbc.pc osi-cbc.pc \
-	doxydoc/doxygen.conf
+	$(top_builddir)/src/config_cbc.h
+CONFIG_CLEAN_FILES = examples/Makefile cbc.pc doxydoc/doxygen.conf
 CONFIG_CLEAN_VPATH_FILES = examples/sudoku_sample.csv
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -270,8 +268,6 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
-OSICBCLIB_CFLAGS_NOPC = @OSICBCLIB_CFLAGS_NOPC@
-OSICBCLIB_LFLAGS_NOPC = @OSICBCLIB_LFLAGS_NOPC@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -371,8 +367,8 @@ DOXYTAG_EDIT = sed -e 's|@baredocdir_nosub@|$(datarootdir)/doc|g'
 ########################################################################
 #                          Subdirectories                              #
 ########################################################################
-SUBDIRS = src/CoinUtils src/Clp src/Cgl src src/OsiCbc
-pkgconfiglib_DATA = cbc.pc osi-cbc.pc
+SUBDIRS = src/CoinUtils src/Clp src/Cgl src
+pkgconfiglib_DATA = cbc.pc
 all: all-recursive
 
 .SUFFIXES:
@@ -413,8 +409,6 @@ $(am__aclocal_m4_deps):
 examples/Makefile: $(top_builddir)/config.status $(top_srcdir)/examples/Makefile.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 cbc.pc: $(top_builddir)/config.status $(srcdir)/cbc.pc.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-osi-cbc.pc: $(top_builddir)/config.status $(srcdir)/osi-cbc.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 doxydoc/doxygen.conf: $(top_builddir)/config.status $(top_srcdir)/doxydoc/doxygen.conf.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@

@@ -3,7 +3,11 @@
 #
 # Run via: C:\msys64\usr\bin\bash.exe -l .github/scripts/build-windows.sh
 #
-# Produces: dist/mipster-windows-x86_64.zip
+# Produces:
+#   dist/mipster-windows-x86_64.zip              — portable archive
+#   dist/mipster-<ver>-setup-windows-x86_64.exe  — NSIS installer (updates PATH)
+#
+# Contents:
 #   bin/mipster.exe          — CPU-dispatch launcher (CPUID → generic or avx2)
 #   bin/mipster-generic.exe  — baseline x86_64 binary (static, no DLL deps)
 #   bin/mipster-avx2.exe     — AVX2/FMA binary, Haswell 2013+ / Zen2 2019+
@@ -16,7 +20,7 @@
 # linked statically so no extra DLLs need to be distributed.
 #
 # Requirements: MSYS2 with mingw-w64-x86_64-gcc, make, autoconf, automake,
-#               libtool, pkg-config (installed by the CI step before this runs).
+#               libtool, pkg-config, nsis, zip (installed by the CI step).
 
 set -euo pipefail
 
@@ -168,9 +172,42 @@ objdump -p "${INSTALL_DIR}/bin/mipster-generic.exe" 2>/dev/null \
   | grep -iv 'kernel32\|ntdll\|msvcrt\|user32\|advapi32\|ws2_32\|winpthread\|api-ms' \
   || echo "    (only system DLLs — OK)"
 
+# ── NSIS installer ────────────────────────────────────────────────────────────
+echo ""
+echo "==> Building NSIS installer..."
+
+# Determine version (from configure.ac or a fallback)
+VERSION=$(grep '^AC_INIT' "${SRC_DIR}/configure.ac" 2>/dev/null \
+  | sed 's/.*\[\([0-9][^]]*\)\].*/\1/' | head -1)
+VERSION=${VERSION:-devel}
+echo "    Version: ${VERSION}"
+
+# Substitute placeholders in the .nsi template
+NSIS_SCRIPT="/tmp/mipster-installer.nsi"
+# Convert Unix path to Windows path for NSIS (it runs natively)
+DIST_WIN=$(cygpath -w "${SRC_DIR}/dist" 2>/dev/null || echo "${SRC_DIR}/dist")
+
+sed \
+  -e "s|@VERSION@|${VERSION}|g" \
+  -e "s|@DIST_DIR@|${DIST_WIN}|g" \
+  -e "s|@DIST_SUBDIR@|${DIST_NAME}|g" \
+  "${SRC_DIR}/.github/scripts/mipster-installer.nsi" > "${NSIS_SCRIPT}"
+
+# makensis is available from the NSIS package in MSYS2
+makensis "${NSIS_SCRIPT}"
+
+INSTALLER_FILE="${SRC_DIR}/dist/mipster-${VERSION}-setup-windows-x86_64.exe"
+if [ -f "${INSTALLER_FILE}" ]; then
+  echo "    Installer: $(du -sh "${INSTALLER_FILE}" | cut -f1)"
+else
+  echo "    Warning: installer not found at expected path, searching..."
+  find "${SRC_DIR}/dist" -name '*.exe' | head -5
+fi
+
 # ── Package as zip ────────────────────────────────────────────────────────────
 echo ""
 echo "==> Packaging..."
 cd "${SRC_DIR}/dist"
 zip -r "${DIST_NAME}.zip" "${DIST_NAME}/"
 echo "==> Done: dist/${DIST_NAME}.zip  ($(du -sh "${DIST_NAME}.zip" | cut -f1))"
+echo "    Installer: dist/mipster-${VERSION}-setup-windows-x86_64.exe"

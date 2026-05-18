@@ -768,9 +768,9 @@ void CbcOutput::printSolverHeader(CoinMessageHandler *handler, int logLevel,
   const bool u8 = useUtf8();
   CbcMessage msgs;
 
-  // Version line: "CBC devel (git:abc1234) — COIN-OR Branch and Cut"
+  // Version line: "MIPster devel (git:abc1234)"
   std::ostringstream oss;
-  oss << "CBC ";
+  oss << "MIPster ";
   if (std::strcmp(CBC_VERSION, "devel") != 0)
     oss << "v" << CBC_VERSION;
   else
@@ -781,8 +781,6 @@ void CbcOutput::printSolverHeader(CoinMessageHandler *handler, int logLevel,
   if (ghash && *ghash && std::strcmp(ghash, "unknown") != 0)
     oss << " (git:" << ghash << ")";
 #endif
-
-  oss << (u8 ? " \xe2\x80\x94 " : " -- ") << "COIN-OR Branch and Cut";
 
   handler->message(CBC_HEADER, msgs) << oss.str() << CoinMessageEol;
 

@@ -102,7 +102,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = cbc$(EXEEXT)
+bin_PROGRAMS = mipster$(EXEEXT)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -208,9 +208,9 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_cbc_OBJECTS = cbc-CoinSolve.$(OBJEXT)
-cbc_OBJECTS = $(am_cbc_OBJECTS)
-cbc_DEPENDENCIES = libCbc.la
+am_mipster_OBJECTS = mipster-CoinSolve.$(OBJEXT)
+mipster_OBJECTS = $(am_mipster_OBJECTS)
+mipster_DEPENDENCIES = libCbc.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -226,8 +226,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src/OsiCbc
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
-	./$(DEPDIR)/libCbc_la-CbcBab.Plo \
+am__depfiles_remade = ./$(DEPDIR)/libCbc_la-CbcBab.Plo \
 	./$(DEPDIR)/libCbc_la-CbcBoundPropagation.Plo \
 	./$(DEPDIR)/libCbc_la-CbcBranchAllDifferent.Plo \
 	./$(DEPDIR)/libCbc_la-CbcBranchCut.Plo \
@@ -314,7 +313,8 @@ am__depfiles_remade = ./$(DEPDIR)/cbc-CoinSolve.Po \
 	./$(DEPDIR)/libCbc_la-CbcTree.Plo \
 	./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo \
 	./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo \
-	./$(DEPDIR)/libCbc_la-unitTestClp.Plo
+	./$(DEPDIR)/libCbc_la-unitTestClp.Plo \
+	./$(DEPDIR)/mipster-CoinSolve.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -352,7 +352,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libCbc_la_SOURCES) $(cbc_SOURCES)
+SOURCES = $(libCbc_la_SOURCES) $(mipster_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -649,13 +649,13 @@ libCbc_la_LIBADD = CoinUtils/libCoinUtils.la Clp/libClp.la Cgl/libCgl.la $(CBCLI
 libCbc_la_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/CoinUtils -I$(srcdir)/Clp -I$(srcdir)/Cgl
 
 # List all source files for this executable, including headers
-cbc_SOURCES = CoinSolve.cpp
+mipster_SOURCES = CoinSolve.cpp
 
 # Additional libraries
-cbc_LDADD = libCbc.la
+mipster_LDADD = libCbc.la
 
 # not really accurate to use these CFLAGS, but they should have everything
-cbc_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/CoinUtils -I$(srcdir)/Clp -I$(srcdir)/Cgl
+mipster_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/CoinUtils -I$(srcdir)/Clp -I$(srcdir)/Cgl
 
 ########################################################################
 #                            Additional flags                          #
@@ -895,9 +895,9 @@ clean-libLTLIBRARIES:
 libCbc.la: $(libCbc_la_OBJECTS) $(libCbc_la_DEPENDENCIES) $(EXTRA_libCbc_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(CXXLINK) -rpath $(libdir) $(libCbc_la_OBJECTS) $(libCbc_la_LIBADD) $(LIBS)
 
-cbc$(EXEEXT): $(cbc_OBJECTS) $(cbc_DEPENDENCIES) $(EXTRA_cbc_DEPENDENCIES) 
-	@rm -f cbc$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(cbc_OBJECTS) $(cbc_LDADD) $(LIBS)
+mipster$(EXEEXT): $(mipster_OBJECTS) $(mipster_DEPENDENCIES) $(EXTRA_mipster_DEPENDENCIES) 
+	@rm -f mipster$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(mipster_OBJECTS) $(mipster_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -905,7 +905,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbc-CoinSolve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBab.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBoundPropagation.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcBranchAllDifferent.Plo@am__quote@ # am--include-marker
@@ -994,6 +993,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libCbc_la-unitTestClp.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mipster-CoinSolve.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -1641,19 +1641,19 @@ libCbc_la-unitTestClp.lo: unitTestClp.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libCbc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libCbc_la-unitTestClp.lo `test -f 'unitTestClp.cpp' || echo '$(srcdir)/'`unitTestClp.cpp
 
-cbc-CoinSolve.o: CoinSolve.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(cbc_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT cbc-CoinSolve.o -MD -MP -MF $(DEPDIR)/cbc-CoinSolve.Tpo -c -o cbc-CoinSolve.o `test -f 'CoinSolve.cpp' || echo '$(srcdir)/'`CoinSolve.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cbc-CoinSolve.Tpo $(DEPDIR)/cbc-CoinSolve.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CoinSolve.cpp' object='cbc-CoinSolve.o' libtool=no @AMDEPBACKSLASH@
+mipster-CoinSolve.o: CoinSolve.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mipster_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT mipster-CoinSolve.o -MD -MP -MF $(DEPDIR)/mipster-CoinSolve.Tpo -c -o mipster-CoinSolve.o `test -f 'CoinSolve.cpp' || echo '$(srcdir)/'`CoinSolve.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mipster-CoinSolve.Tpo $(DEPDIR)/mipster-CoinSolve.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CoinSolve.cpp' object='mipster-CoinSolve.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(cbc_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o cbc-CoinSolve.o `test -f 'CoinSolve.cpp' || echo '$(srcdir)/'`CoinSolve.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mipster_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o mipster-CoinSolve.o `test -f 'CoinSolve.cpp' || echo '$(srcdir)/'`CoinSolve.cpp
 
-cbc-CoinSolve.obj: CoinSolve.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(cbc_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT cbc-CoinSolve.obj -MD -MP -MF $(DEPDIR)/cbc-CoinSolve.Tpo -c -o cbc-CoinSolve.obj `if test -f 'CoinSolve.cpp'; then $(CYGPATH_W) 'CoinSolve.cpp'; else $(CYGPATH_W) '$(srcdir)/CoinSolve.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cbc-CoinSolve.Tpo $(DEPDIR)/cbc-CoinSolve.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CoinSolve.cpp' object='cbc-CoinSolve.obj' libtool=no @AMDEPBACKSLASH@
+mipster-CoinSolve.obj: CoinSolve.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mipster_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT mipster-CoinSolve.obj -MD -MP -MF $(DEPDIR)/mipster-CoinSolve.Tpo -c -o mipster-CoinSolve.obj `if test -f 'CoinSolve.cpp'; then $(CYGPATH_W) 'CoinSolve.cpp'; else $(CYGPATH_W) '$(srcdir)/CoinSolve.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mipster-CoinSolve.Tpo $(DEPDIR)/mipster-CoinSolve.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CoinSolve.cpp' object='mipster-CoinSolve.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(cbc_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o cbc-CoinSolve.obj `if test -f 'CoinSolve.cpp'; then $(CYGPATH_W) 'CoinSolve.cpp'; else $(CYGPATH_W) '$(srcdir)/CoinSolve.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mipster_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o mipster-CoinSolve.obj `if test -f 'CoinSolve.cpp'; then $(CYGPATH_W) 'CoinSolve.cpp'; else $(CYGPATH_W) '$(srcdir)/CoinSolve.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1779,7 +1779,6 @@ clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
 	clean-libtool mostlyclean-am
 
 distclean: distclean-am
-	-rm -f ./$(DEPDIR)/cbc-CoinSolve.Po
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBab.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBoundPropagation.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchAllDifferent.Plo
@@ -1868,6 +1867,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-unitTestClp.Plo
+	-rm -f ./$(DEPDIR)/mipster-CoinSolve.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -1914,7 +1914,6 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -f ./$(DEPDIR)/cbc-CoinSolve.Po
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBab.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBoundPropagation.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcBranchAllDifferent.Plo
@@ -2003,6 +2002,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libCbc_la-CbcTreeLocal.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-Cbc_C_Interface.Plo
 	-rm -f ./$(DEPDIR)/libCbc_la-unitTestClp.Plo
+	-rm -f ./$(DEPDIR)/mipster-CoinSolve.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

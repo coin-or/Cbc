@@ -8,7 +8,7 @@
 #                       Names and other basic things                        #
 #############################################################################
 
-AC_INIT([Cbc],[devel],[https://github.com/coin-or/Cbc/issues/new],[coin-or-cbc],[https://github.com/coin-or/Cbc])
+AC_INIT([Cbc],[devel],[https://github.com/h-g-s/Cbc/issues/new],[mipster],[https://github.com/h-g-s/Cbc])
 
 AC_COPYRIGHT([
 Copyright 2006 International Business Machines and others.

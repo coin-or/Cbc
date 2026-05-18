@@ -514,15 +514,15 @@ static bool loadOptionFileIntoQueue(const std::string &fileName,
 static void printHelp(CbcParameters &cbcParams, ClpParameters &clpParams)
 {
   std::cout
-    << "Cbc version " << CBC_VERSION << " — COIN-OR Branch and Cut MIP solver\n"
+    << "MIPster version " << CBC_VERSION << " — Mixed-Integer Programming solver\n"
     << "\n"
     << "Usage:\n"
-    << "  cbc <model.mps[.gz]> [options] -solve\n"
-    << "  cbc [options] -import <file> -solve\n"
+    << "  mipster <model.mps[.gz]> [options] -solve\n"
+    << "  mipster [options] -import <file> -solve\n"
     << "\n"
     << "Examples:\n"
-    << "  cbc model.mps -solve                        Solve with defaults\n"
-    << "  cbc model.mps -sec 300 -solve               5-minute time limit\n"
+    << "  mipster model.mps -solve                        Solve with defaults\n"
+    << "  mipster model.mps -sec 300 -solve               5-minute time limit\n"
     << "  cbc model.mps -maxN 10000 -ratio 0.01 -solve\n"
     << "  cbc model.mps -preprocess off -solve        Disable preprocessing\n"
     << "  cbc model.mps -cuts off -solve              Disable all cuts\n"
@@ -666,7 +666,7 @@ static void dumpParametersAsJson(CbcParameters &cbcParams,
     }
   };
 
-  dump(cbcParams.paramVec(), CbcParam::FIRSTPARAM, CbcParam::LASTPARAM, "cbc");
+  dump(cbcParams.paramVec(), CbcParam::FIRSTPARAM, CbcParam::LASTPARAM, "mipster");
   dump(clpParams.paramVec(), ClpParam::FIRSTPARAM, ClpParam::LASTPARAM, "clp");
 
   out << "\n]\n";
@@ -2587,7 +2587,7 @@ int CbcSolver::run(int argc, const char *argv[],
   ampl_info *info)
 {
   std::deque<std::string> inputQueue;
-  CoinParamUtils::formInputQueue(inputQueue, "cbc", argc,
+  CoinParamUtils::formInputQueue(inputQueue, "mipster", argc,
     const_cast<char **>(argv));
   return run(inputQueue, callBack, info);
 }
@@ -12966,7 +12966,7 @@ int cbcReadAmpl(ampl_info *info, int argc, char **argv, CbcModel &model)
 
       void *voidModel;
       int returnCode = readAmpl(info, argc, const_cast<char **>(argv),
-                                &voidModel, "cbc");
+                                &voidModel, "mipster");
       if (returnCode){
          return returnCode;
       }
@@ -14820,7 +14820,7 @@ int CbcMain1(int argc, const char *argv[],
 	     ampl_info *info)
 {
   std::deque<std::string> inputQueue;
-  CoinParamUtils::formInputQueue(inputQueue, "cbc", argc, const_cast< char ** >(argv));
+  CoinParamUtils::formInputQueue(inputQueue, "mipster", argc, const_cast< char ** >(argv));
   return CbcMain1(inputQueue,model,parameterData,callBack,info);
 }
 
@@ -14830,7 +14830,7 @@ int CbcMain1(int argc, const char *argv[],
 	     CbcParameters &parameterData)
 {
   std::deque<std::string> inputQueue;
-  CoinParamUtils::formInputQueue(inputQueue, "cbc", argc, const_cast< char ** >(argv));
+  CoinParamUtils::formInputQueue(inputQueue, "mipster", argc, const_cast< char ** >(argv));
   return CbcMain1(inputQueue,model,parameterData,callBack,NULL);
 }
 //###########################################################################

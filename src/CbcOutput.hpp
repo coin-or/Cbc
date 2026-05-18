@@ -403,7 +403,7 @@ public:
   static bool useCompact();
 
   /** Print the solver banner and optional args line:
-   *    CBC devel (git:abc1234) — COIN-OR Branch and Cut
+   *    MIPster devel (git:abc1234)
    *      args: instance.mps.gz -sec 180 -solve
    *
    *  Printed at logLevel >= 1. The args line is omitted when args is empty.

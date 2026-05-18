@@ -65,7 +65,7 @@ build_variant() {
     --without-lapack \
     --disable-bzlib \
     CXXFLAGS="${cxxflags}" \
-    LDFLAGS="-static-libgcc -static-libstdc++ -Wl,-Bstatic,-lwinpthread,-Bdynamic" \
+    LDFLAGS="-static-libgcc -static-libstdc++ -Wl,-Bstatic,-lwinpthread,-Bdynamic -Wl,--export-all-symbols" \
     2>&1 | tail -3
 
   make -j"$(nproc)"

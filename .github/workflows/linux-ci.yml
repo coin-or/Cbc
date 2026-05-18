@@ -7,6 +7,10 @@ on:
     branches: [master]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # Built inside manylinux_2_34 (AlmaLinux 9, glibc 2.34, GCC 14).
 # Binaries run on any Linux from ~2022+ (Ubuntu 22.04, Fedora 35, Debian 12, RHEL 9).
 

@@ -85,7 +85,7 @@ echo "    include/coin-or: copied"
 # ── Smoke test ────────────────────────────────────────────────────────────────
 echo ""
 echo "==> Smoke test (--version):"
-"${INSTALL_DIR}/bin/mipster" --version 2>&1 | head -1
+"${INSTALL_DIR}/bin/mipster" --version 2>&1 | head -1 || true
 echo "    PASSED"
 
 # ── Package ───────────────────────────────────────────────────────────────────

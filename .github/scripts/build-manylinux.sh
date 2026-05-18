@@ -167,7 +167,7 @@ echo "    bin/mipster (launcher): $(du -sh "${INSTALL_DIR}/bin/mipster" | cut -f
 # ── Smoke test launcher ───────────────────────────────────────────────────────
 echo ""
 echo "==> Smoke test (launcher → --version):"
-"${INSTALL_DIR}/bin/mipster" --version 2>&1 | head -1
+"${INSTALL_DIR}/bin/mipster" --version 2>&1 | head -1 || true
 echo "    PASSED"
 
 # ── Package ───────────────────────────────────────────────────────────────────

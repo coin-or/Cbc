@@ -88,6 +88,20 @@ echo "==> Smoke test (--version):"
 "${INSTALL_DIR}/bin/mipster" --version 2>&1 | head -1 || true
 echo "    PASSED"
 
+# ── Documentation ─────────────────────────────────────────────────────────────
+echo ""
+echo "==> Installing documentation..."
+mkdir -p "${INSTALL_DIR}/share/doc/mipster"
+mkdir -p "${INSTALL_DIR}/share/man/man1"
+
+DOC_SRC="${SRC_DIR}/doc"
+for f in mipster-parameters.pdf mipster-parameters.md; do
+  [ -f "${DOC_SRC}/${f}" ] && cp "${DOC_SRC}/${f}" "${INSTALL_DIR}/share/doc/mipster/" && echo "    ${f}"
+done
+[ -f "${DOC_SRC}/mipster.1" ] && \
+  gzip -c "${DOC_SRC}/mipster.1" > "${INSTALL_DIR}/share/man/man1/mipster.1.gz" && \
+  echo "    mipster.1.gz"
+
 # ── Package ───────────────────────────────────────────────────────────────────
 echo ""
 echo "==> Packaging..."

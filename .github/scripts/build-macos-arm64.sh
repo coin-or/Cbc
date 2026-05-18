@@ -3,7 +3,7 @@
 #
 # Produces: dist/mipster-macos-arm64.tar.gz
 #   bin/mipster              — single ARM64 binary (all M1/M2/M3/M4)
-#   lib/libCbc.dylib         — shared library
+#   lib/libmipster.dylib     — shared library
 #   include/coin-or/         — public C API headers
 #
 # Single variant: all Apple Silicon (M1 through M4+) shares the same
@@ -64,9 +64,9 @@ cp "${BUILD_DIR}/src/.libs/mipster" "${INSTALL_DIR}/bin/mipster"
 echo "    bin/mipster: $(du -sh "${INSTALL_DIR}/bin/mipster" | cut -f1)"
 
 # ── Shared library ────────────────────────────────────────────────────────────
-cp -P "${BUILD_DIR}/install/lib"/libCbc*.dylib "${INSTALL_DIR}/lib/" 2>/dev/null || true
+cp -P "${BUILD_DIR}/install/lib"/libmipster*.dylib "${INSTALL_DIR}/lib/" 2>/dev/null || true
 
-real_dylib=$(find "${INSTALL_DIR}/lib" -name 'libCbc.*.dylib' ! -type l | head -1)
+real_dylib=$(find "${INSTALL_DIR}/lib" -name 'libmipster.*.dylib' ! -type l | head -1)
 if [ -n "${real_dylib}" ]; then
   install_name_tool -id "@loader_path/$(basename "${real_dylib}")" "${real_dylib}"
   strip -x "${real_dylib}"
@@ -74,7 +74,7 @@ fi
 
 echo "    Shared lib deps:"
 if [ -n "${real_dylib}" ]; then
-  otool -L "${real_dylib}" | grep -v "libCbc\|/usr/lib\|/System\|^${INSTALL_DIR}" \
+  otool -L "${real_dylib}" | grep -v "libmipster\|/usr/lib\|/System\|^${INSTALL_DIR}" \
     || echo "      (none — only system libs)"
 fi
 
@@ -91,7 +91,7 @@ echo "    PASSED"
 # ── Package ───────────────────────────────────────────────────────────────────
 echo ""
 echo "==> Packaging..."
-cd "$(pwd)/dist"
+cd "${SRC_DIR}/dist"
 tar -czf "${DIST_NAME}.tar.gz" "${DIST_NAME}/"
 echo "==> Done: dist/${DIST_NAME}.tar.gz  ($(du -sh "${DIST_NAME}.tar.gz" | cut -f1))"
 tar -tzf "${DIST_NAME}.tar.gz"

@@ -67,13 +67,13 @@ build_variant() {
     LDFLAGS="-static-libgcc -static-libstdc++ -Wl,-Bstatic,-lwinpthread,-Bdynamic" \
     2>&1 | tail -3
 
-  make -j"$(nproc)" 2>&1 | tail -3
+  make -j"$(nproc)"
   make install 2>&1 | tail -2
   echo "    Build: OK"
 
   # ── Test ──────────────────────────────────────────────────────────────────
   cd "${build_dir}/test"
-  make -j"$(nproc)" CInterfaceTest 2>&1 | tail -2
+  make -j"$(nproc)" CInterfaceTest
   ./CInterfaceTest.exe
   echo "    CInterfaceTest: PASSED"
 

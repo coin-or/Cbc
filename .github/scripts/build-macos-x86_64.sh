@@ -5,8 +5,8 @@
 #   bin/mipster              — CPU-dispatch launcher (generic vs haswell)
 #   bin/mipster-generic      — baseline x86_64 binary
 #   bin/mipster-haswell      — AVX2/FMA binary (Haswell 2013+)
-#   lib/generic/libCbc.dylib — shared library, baseline
-#   lib/haswell/libCbc.dylib — shared library, AVX2
+#   lib/generic/libmipster.dylib — shared library, baseline
+#   lib/haswell/libmipster.dylib — shared library, AVX2
 #   include/coin-or/         — public C API headers
 #
 # Uses Apple's Accelerate framework for BLAS/LAPACK (no Homebrew deps).
@@ -71,11 +71,11 @@ build_variant() {
   local libdir="${INSTALL_DIR}/lib/${name}"
   mkdir -p "${libdir}"
   # Copy versioned .dylib and symlinks
-  cp -P "${build_dir}/install/lib"/libCbc*.dylib "${libdir}/" 2>/dev/null || true
+  cp -P "${build_dir}/install/lib"/libmipster*.dylib "${libdir}/" 2>/dev/null || true
 
   # Fix install name and RPATH so dylib is self-contained when placed next to the binary
   local real_dylib
-  real_dylib=$(find "${libdir}" -name 'libCbc.*.dylib' ! -type l | head -1)
+  real_dylib=$(find "${libdir}" -name 'libmipster.*.dylib' ! -type l | head -1)
   if [ -n "${real_dylib}" ]; then
     install_name_tool -id "@loader_path/$(basename "${real_dylib}")" "${real_dylib}"
     strip -x "${real_dylib}"
@@ -84,7 +84,7 @@ build_variant() {
   # Verify only system deps
   echo "    Shared lib deps:"
   if [ -n "${real_dylib}" ]; then
-    otool -L "${real_dylib}" | grep -v "libCbc\|/usr/lib\|/System\|^${libdir}" \
+    otool -L "${real_dylib}" | grep -v "libmipster\|/usr/lib\|/System\|^${libdir}" \
       || echo "      (none — only system libs)"
   fi
 
@@ -164,7 +164,7 @@ echo "    PASSED"
 # ── Package ───────────────────────────────────────────────────────────────────
 echo ""
 echo "==> Packaging..."
-cd "$(pwd)/dist"
+cd "${SRC_DIR}/dist"
 tar -czf "${DIST_NAME}.tar.gz" "${DIST_NAME}/"
 echo "==> Done: dist/${DIST_NAME}.tar.gz  ($(du -sh "${DIST_NAME}.tar.gz" | cut -f1))"
 tar -tzf "${DIST_NAME}.tar.gz"

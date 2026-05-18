@@ -11,7 +11,7 @@ on:
 # Binaries run on any Linux from ~2022+ (Ubuntu 22.04, Fedora 35, Debian 12, RHEL 9).
 
 jobs:
-  build-linux:
+  build-linux-x86_64:
     name: Linux x86_64 (generic + AVX2)
     runs-on: ubuntu-latest
     steps:
@@ -33,3 +33,26 @@ jobs:
         with:
           name: mipster-linux-x86_64
           path: dist/mipster-linux-x86_64.tar.gz
+
+  build-linux-aarch64:
+    name: Linux aarch64 (generic/ARMv8-A + neon/ARMv8.2-A)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build + test inside manylinux_2_34_aarch64
+        run: |
+          for i in 1 2 3; do
+            docker pull quay.io/pypa/manylinux_2_34_aarch64 && break
+            echo "Attempt $i failed, retrying in 30s..."; sleep 30
+          done
+          docker run --rm \
+            -v "$PWD:/project" \
+            quay.io/pypa/manylinux_2_34_aarch64 \
+            bash /project/.github/scripts/build-manylinux-aarch64.sh
+          sudo chown -R "$USER:$USER" dist/ 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mipster-linux-aarch64
+          path: dist/mipster-linux-aarch64.tar.gz

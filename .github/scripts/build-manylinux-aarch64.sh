@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# build-manylinux.sh — Build MIPster inside manylinux_2_34_x86_64.
+# build-manylinux-aarch64.sh — Build MIPster inside manylinux_2_34_aarch64.
 #
-# Produces: /project/dist/mipster-linux-x86_64.tar.gz
-#   bin/mipster              — compiled CPU-dispatch launcher (static)
-#   bin/mipster-generic      — baseline x86_64 static binary
-#   bin/mipster-avx2         — AVX2/FMA static binary (Haswell 2013+ / Zen2 2019+)
+# Produces: /project/dist/mipster-linux-aarch64.tar.gz
+#   bin/mipster              — CPU-dispatch launcher (dynamic, only needs glibc)
+#   bin/mipster-generic      — baseline ARMv8-A static binary (RPi 3/4 compatible)
+#   bin/mipster-neon         — ARMv8.2-A static binary (Cortex-A76, RPi 5, Graviton 2+)
 #   lib/generic/libCbc.so*   — shared library, baseline
-#   lib/avx2/libCbc.so*      — shared library, AVX2
-#   include/coin/            — public C API headers
+#   lib/neon/libCbc.so*      — shared library, ARMv8.2-A
+#   include/coin-or/         — public C API headers
 
 set -euo pipefail
 
-DIST_NAME="mipster-linux-x86_64"
+DIST_NAME="mipster-linux-aarch64"
 INSTALL_DIR="/project/dist/${DIST_NAME}"
 BUILD_BASE="/tmp/mipster-build"
 
-echo "==> MIPster manylinux_2_34 build"
+echo "==> MIPster manylinux_2_34 aarch64 build"
 # Activate GCC toolset runtime (needed for linker and libraries)
 source /opt/rh/gcc-toolset-14/enable 2>/dev/null || true
 echo "    GCC: $(gcc --version | head -1)"
@@ -42,7 +42,6 @@ build_variant() {
   echo ""
   echo "==> Building variant: ${name}  CXXFLAGS='${cxxflags}'"
 
-  # Configure with both static (for binary) and shared (for library)
   rm -rf "${build_dir}"
   mkdir -p "${build_dir}"
   cd "${build_dir}"
@@ -58,7 +57,6 @@ build_variant() {
     2>&1 | tail -3
 
   # Hide libopenblas.so so the linker falls back to libopenblas.a (static).
-  # This avoids a dynamic dependency on OpenBLAS in the installed binaries.
   local openblas_so
   openblas_so=$(ldconfig -p 2>/dev/null | awk '/libopenblas\.so /{print $NF}' | head -1)
   [ -n "$openblas_so" ] && mv "$openblas_so" "${openblas_so}.bak"
@@ -82,7 +80,6 @@ build_variant() {
   echo "    bin/mipster-${name}: $(du -sh "${INSTALL_DIR}/bin/mipster-${name}" | cut -f1)"
 
   # ── Shared library ──────────────────────────────────────────────────────────
-  # Copy installed .so files (versioned + symlinks) to lib/<variant>/
   local libdir="${INSTALL_DIR}/lib/${name}"
   mkdir -p "${libdir}"
   cp -P "${build_dir}/install/lib"/libCbc.so* "${libdir}/"
@@ -94,10 +91,10 @@ build_variant() {
   find "${libdir}" -name 'libCbc.so.*.*' ! -type l | \
     xargs -I{} patchelf --set-rpath '$ORIGIN' {}
 
-  # Verify no unexpected external deps (glibc + libm + libpthread are fine)
+  # Verify no unexpected external deps
   echo "    Shared lib deps:"
   find "${libdir}" -name 'libCbc.so.*.*' ! -type l | \
-    xargs ldd | grep -v "linux-vdso\|libm\|libc\.so\|libpthread\|libdl\|/lib64/ld\|=>" | \
+    xargs ldd | grep -v "linux-vdso\|libm\|libc\.so\|libpthread\|libdl\|ld-linux-aarch64\|=>" | \
     grep "=>" || echo "      (none — fully self-contained)"
 
   # ── Headers (only need to do this once) ─────────────────────────────────────
@@ -107,35 +104,37 @@ build_variant() {
   fi
 }
 
-# -ffp-contract=off: prevent FMA fusion from changing LP floating-point results
-build_variant "generic" "-O3 -ffp-contract=off"
-# x86-64-v3 = AVX2 + BMI1/BMI2 + FMA (Haswell 2013+, AMD Zen2 2019+)
-build_variant "avx2" "-O3 -march=x86-64-v3 -ffp-contract=off"
+# ARMv8-A baseline: works on Raspberry Pi 3/4 (Cortex-A53/A72) and any AArch64
+build_variant "generic" "-O3 -march=armv8-a -ffp-contract=off"
+# ARMv8.2-A: Cortex-A76 (RPi 5, hal), Graviton 2+, Neoverse N1
+# Adds FP16, dot product, DCPOP and other mandatory ARMv8.2 features
+build_variant "neon" "-O3 -march=armv8.2-a -ffp-contract=off"
 
 # ── Compiled CPU-dispatch launcher ────────────────────────────────────────────
 echo ""
 echo "==> Compiling launcher..."
 cat > /tmp/mipster-launcher.c << 'EOF'
 /*
- * mipster launcher — detects AVX2 at runtime via CPUID, then exec's the
- * appropriate variant binary from the same directory.
- * Compiled as a fully static binary with no external dependencies.
+ * mipster launcher (aarch64) — detects ARMv8.2-A support at runtime via
+ * getauxval(AT_HWCAP), then exec's the appropriate variant binary.
+ *
+ * Detection: HWCAP_DCPOP (bit 16) is mandatory in ARMv8.2-A.
+ * Present on: Cortex-A55/A75/A76/A77, Neoverse N1/V1, RPi 5, Graviton 2+.
+ * Absent on:  Cortex-A53/A72 (RPi 3/4, ARMv8.0-A).
  */
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <sys/auxv.h>
 
-static int has_avx2(void)
+#ifndef HWCAP_DCPOP
+#define HWCAP_DCPOP (1UL << 16)
+#endif
+
+static int has_armv8_2(void)
 {
-    unsigned int ebx;
-    __asm__ volatile (
-        "movl $7,  %%eax\n\t"
-        "xorl %%ecx, %%ecx\n\t"
-        "cpuid"
-        : "=b"(ebx) : : "eax", "ecx", "edx"
-    );
-    return (ebx >> 5) & 1;  /* EBX bit 5 = AVX2 */
+    return (getauxval(AT_HWCAP) & HWCAP_DCPOP) != 0;
 }
 
 int main(int argc, char *argv[])
@@ -153,7 +152,7 @@ int main(int argc, char *argv[])
     *slash = '\0';   /* self is now the directory */
 
     snprintf(target, sizeof(target), "%s/mipster-%s",
-             self, has_avx2() ? "avx2" : "generic");
+             self, has_armv8_2() ? "neon" : "generic");
 
     execv(target, argv);
     perror(target);

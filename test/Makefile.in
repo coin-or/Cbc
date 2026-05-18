@@ -96,12 +96,11 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@COIN_HAS_CLP_TRUE@am__append_1 = test_cbc ctests
 #  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_SAMPLE_TRUE@am__append_2 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_MIPLIB3_TRUE@am__append_3 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
+@COIN_HAS_SAMPLE_TRUE@am__append_1 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
+@COIN_HAS_MIPLIB3_TRUE@am__append_2 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
 #  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-@COIN_HAS_NETLIB_TRUE@am__append_4 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
+@COIN_HAS_NETLIB_TRUE@am__append_3 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
 bin_PROGRAMS = gamsTest$(EXEEXT) osiUnitTest$(EXEEXT) \
 	CInterfaceTest$(EXEEXT)
 subdir = test
@@ -379,15 +378,15 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/Clp -I$(srcdir)/../src/Cgl -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
 AM_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################
 #                         unitTest for Cbc                             #
 ########################################################################
-CBC_TEST_TGTS = gamstests ositests $(am__append_1)
-cbcflags = $(am__append_3)
-ositestsflags = $(am__append_2) $(am__append_4)
+CBC_TEST_TGTS = gamstests ositests test_cbc ctests
+cbcflags = $(am__append_2)
+ositestsflags = $(am__append_1) $(am__append_3)
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbc.la
 

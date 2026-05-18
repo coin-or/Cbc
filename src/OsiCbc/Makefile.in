@@ -101,10 +101,6 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-
-# Plus the appropriate library for the default solver.
-# (adding OSICBCLIB_LFLAGS to libOsiCbc_la_LIBADD would link against all available solvers)
-@OSICBC_DFLT_SOLVER_CLP_TRUE@am__append_1 = $(OSICLP_LFLAGS)
 subdir = src/OsiCbc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -144,8 +140,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includecoindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-am__DEPENDENCIES_1 =
-libOsiCbc_la_DEPENDENCIES = ../libCbc.la $(am__DEPENDENCIES_1)
+libOsiCbc_la_DEPENDENCIES = ../libCbc.la
 am_libOsiCbc_la_OBJECTS = OsiCbcSolverInterface.lo
 libOsiCbc_la_OBJECTS = $(am_libOsiCbc_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -406,13 +401,13 @@ lib_LTLIBRARIES = libOsiCbc.la
 libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
 
 # List all additionally required libraries
-libOsiCbc_la_LIBADD = ../libCbc.la $(am__append_1)
+libOsiCbc_la_LIBADD = ../libCbc.la
 
 # This is for libtool
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Here list all include flags, relative to this "srcdir" directory.
-AM_CPPFLAGS = -I$(srcdir)/.. $(OSICBCLIB_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/.. -I$(top_builddir)/src -I$(top_srcdir)/src/Clp -I$(top_srcdir)/src/Cgl $(OSICBCLIB_CFLAGS)
 
 ########################################################################
 #                Headers that need to be installed                     #

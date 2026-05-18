@@ -102,11 +102,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = $(am__EXEEXT_1)
-
-# Name of the executable compiled in this directory.  We want it to be
-# installed in the 'bin' directory
-@COIN_HAS_CLP_TRUE@am__append_1 = cbc
+bin_PROGRAMS = cbc$(EXEEXT)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -118,7 +114,6 @@ CONFIG_HEADER = config.h config_cbc.h \
 	$(top_builddir)/src/OsiCbc/config_osicbc.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(includecoindir)"
 PROGRAMS = $(bin_PROGRAMS)
@@ -150,7 +145,8 @@ am__uninstall_files_from_dir = { \
   }
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libCbc_la_DEPENDENCIES = Cgl/libCgl.la $(am__DEPENDENCIES_1)
+libCbc_la_DEPENDENCIES = Clp/libClp.la Cgl/libCgl.la \
+	$(am__DEPENDENCIES_1)
 am_libCbc_la_OBJECTS = libCbc_la-CbcBab.lo \
 	libCbc_la-CbcBranchAllDifferent.lo libCbc_la-CbcBranchCut.lo \
 	libCbc_la-CbcBranchDecision.lo \
@@ -212,9 +208,9 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-@COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = cbc-CoinSolve.$(OBJEXT)
+am_cbc_OBJECTS = cbc-CoinSolve.$(OBJEXT)
 cbc_OBJECTS = $(am_cbc_OBJECTS)
-@COIN_HAS_CLP_TRUE@cbc_DEPENDENCIES = libCbc.la
+cbc_DEPENDENCIES = libCbc.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -650,19 +646,19 @@ libCbc_la_SOURCES = \
 
 
 # List all additionally required libraries
-libCbc_la_LIBADD = Cgl/libCgl.la $(CBCLIB_LFLAGS)
+libCbc_la_LIBADD = Clp/libClp.la Cgl/libCgl.la $(CBCLIB_LFLAGS)
 
 # Some common setup for cbc and cbc-generic.
-libCbc_la_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/Cgl
+libCbc_la_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/Clp -I$(srcdir)/Cgl
 
 # List all source files for this executable, including headers
-@COIN_HAS_CLP_TRUE@cbc_SOURCES = CoinSolve.cpp
+cbc_SOURCES = CoinSolve.cpp
 
 # Additional libraries
-@COIN_HAS_CLP_TRUE@cbc_LDADD = libCbc.la
+cbc_LDADD = libCbc.la
 
 # not really accurate to use these CFLAGS, but they should have everything
-@COIN_HAS_CLP_TRUE@cbc_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/Cgl
+cbc_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/Clp -I$(srcdir)/Cgl
 
 ########################################################################
 #                            Additional flags                          #

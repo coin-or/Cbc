@@ -57,17 +57,17 @@ AC_CHECK_HEADERS([signal.h])
 #                            COIN-OR components                             #
 #############################################################################
 
-m4_foreach_w([myvar],[CoinUtils Clp],
-  [ AC_COIN_CHK_PKG(myvar,[CbcLib OsiCbcLib])
-    if test $coin_has_[]m4_tolower(myvar) != yes ; then
-      AC_MSG_ERROR([Required package myvar is not available.])
-    fi
-  ])
-
-AC_COIN_CHK_PKG(OsiClp,[CbcLib OsiCbcLib],[osi-clp])
-if test $coin_has_osiclp != yes ; then
-  AC_MSG_ERROR("Required package OsiClp unavailable.")
+AC_COIN_CHK_PKG(CoinUtils,[CbcLib OsiCbcLib])
+if test $coin_has_coinutils != yes ; then
+  AC_MSG_ERROR([Required package CoinUtils is not available.])
 fi
+
+# AMD (Approximate Minimum Degree ordering) from SuiteSparse — BSD 3-clause license.
+# Used by merged Clp sources for the barrier (interior-point) LP solver.
+AC_COIN_CHK_LIBHDR(AMD,[CbcLib],[-lamd],[-I/usr/include/suitesparse],[],
+  [[double Control[AMD_CONTROL];
+   amd_defaults(Control);]],
+  [#include "amd.h"])
 
 # Optional package for command line edit support
 
@@ -229,13 +229,13 @@ case "${osicbc_with_solver}" in
     osi_lc_solver=clp ;
     osi_mc_solver=Clp ;
     osi_uc_solver=CLP ;
-    osi_exists_solver=${coin_has_osiclp-"unavailable"}
+    osi_exists_solver=yes
     ;;
   *)
     osi_lc_solver=clp ;
     osi_mc_solver=Clp ;
     osi_uc_solver=CLP ;
-    osi_exists_solver=${coin_has_osiclp-"unavailable"}
+    osi_exists_solver=yes
     AC_MSG_WARN([Only Clp is supported for OsiCbc; defaulting to $osi_lc_solver.])
     ;;
 esac
@@ -276,7 +276,7 @@ AC_COIN_VPATH_LINK(examples/sudoku_sample.csv)
 #                  Check for doxygen                                        #
 #############################################################################
 
-AC_COIN_DOXYGEN([CoinUtils Clp])
+AC_COIN_DOXYGEN([CoinUtils])
 
 ##############################################################################
 #                   Finishing up by writing all the output                   #
@@ -286,6 +286,7 @@ AC_COIN_DOXYGEN([CoinUtils Clp])
 # configuration header file)
 AC_CONFIG_FILES([Makefile
                  examples/Makefile
+                 src/Clp/Makefile
                  src/Cgl/Makefile
                  src/Makefile
                  src/OsiCbc/Makefile

@@ -704,10 +704,8 @@ CBCUNITTEST_CFLAGS
 CBCUNITTEST_LFLAGS
 COIN_HAS_ASL_FALSE
 COIN_HAS_ASL_TRUE
-COIN_HAS_OSICLP_FALSE
-COIN_HAS_OSICLP_TRUE
-COIN_HAS_CLP_FALSE
-COIN_HAS_CLP_TRUE
+COIN_HAS_AMD_FALSE
+COIN_HAS_AMD_TRUE
 COIN_HAS_COINUTILS_FALSE
 COIN_HAS_COINUTILS_TRUE
 OSICBCLIB_PCFILES
@@ -881,12 +879,9 @@ enable_libtool_lock
 with_coinutils
 with_coinutils_lflags
 with_coinutils_cflags
-with_clp
-with_clp_lflags
-with_clp_cflags
-with_osiclp
-with_osiclp_lflags
-with_osiclp_cflags
+with_amd
+with_amd_lflags
+with_amd_cflags
 with_asl
 with_asl_lflags
 with_asl_cflags
@@ -1593,24 +1588,14 @@ Optional Packages:
   --with-coinutils-cflags Compiler flags for CoinUtils appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
-  --without-clp           Do not use Clp. If an argument is given to
-                          --with-clp, then 'yes' is equivalent to
-                          --with-clp, 'no' is equivalent to
-                          --without-clp and any other argument is applied as
-                          for --with-clp-lflags.
-  --with-clp-lflags       Linker flags for Clp appropriate for your
+  --without-amd           Do not use AMD. If an argument is given to
+                          --with-amd, then 'yes' is equivalent to
+                          --with-amd, 'no' is equivalent to
+                          --without-amd and any other argument is applied as
+                          for --with-amd-lflags.
+  --with-amd-lflags       Linker flags for AMD appropriate for your
                           environment. (Most often, -l specs for libraries.)
-  --with-clp-cflags       Compiler flags for Clp appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
-  --without-osiclp        Do not use OsiClp. If an argument is given to
-                          --with-osiclp, then 'yes' is equivalent
-                          to --with-osiclp, 'no' is equivalent to
-                          --without-osiclp and any other argument is applied
-                          as for --with-osiclp-lflags.
-  --with-osiclp-lflags    Linker flags for OsiClp appropriate for your
-                          environment. (Most often, -l specs for libraries.)
-  --with-osiclp-cflags    Compiler flags for OsiClp appropriate for your
+  --with-amd-cflags       Compiler flags for AMD appropriate for your
                           environment. (Most often, -I specs for header file
                           directories.)
   --without-asl           Do not use ASL. If an argument is given to
@@ -19674,9 +19659,19 @@ printf "%s\n" "#define CBC_HAS_COINUTILS 1" >>confdefs.h
 
   fi
 
-    if test $coin_has_coinutils != yes ; then
-      as_fn_error $? "Required package CoinUtils is not available." "$LINENO" 5
-    fi
+if test $coin_has_coinutils != yes ; then
+  as_fn_error $? "Required package CoinUtils is not available." "$LINENO" 5
+fi
+
+# AMD (Approximate Minimum Degree ordering) from SuiteSparse — BSD 3-clause license.
+# Used by merged Clp sources for the barrier (interior-point) LP solver.
+
+
+
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library AMD with combined link and compile check" >&5
+printf %s "checking for library AMD with combined link and compile check... " >&6; }
 
 
 
@@ -19684,54 +19679,41 @@ printf "%s\n" "#define CBC_HAS_COINUTILS 1" >>confdefs.h
 
 
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package Clp" >&5
-printf %s "checking for package Clp... " >&6; }
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_clp=noInfo
+  coin_has_amd=noInfo
   if test x"$COIN_SKIP_PROJECTS" != x ; then
     for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "clp" ; then
-        coin_has_clp=skipping
+      if test "$pkg" = "amd" ; then
+        coin_has_amd=skipping
       fi
     done
   fi
 
 
-  if test "$coin_has_clp" != skipping ; then
+  if test "$coin_has_amd" != skipping ; then
 
 
 
 
-# Check whether --with-clp was given.
-if test ${with_clp+y}
+# Check whether --with-amd was given.
+if test ${with_amd+y}
 then :
-  withval=$with_clp;
+  withval=$with_amd;
 fi
 
 
 
-# Check whether --with-clp-lflags was given.
-if test ${with_clp_lflags+y}
+# Check whether --with-amd-lflags was given.
+if test ${with_amd_lflags+y}
 then :
-  withval=$with_clp_lflags;
+  withval=$with_amd_lflags;
 fi
 
 
 
-# Check whether --with-clp-cflags was given.
-if test ${with_clp_cflags+y}
+# Check whether --with-amd-cflags was given.
+if test ${with_amd_cflags+y}
 then :
-  withval=$with_clp_cflags;
+  withval=$with_amd_cflags;
 fi
 
 
@@ -19743,77 +19725,55 @@ fi
 
 
 
+  amd_lflags="-lamd"
+  amd_cflags="-I/usr/include/suitesparse"
+  amd_data=""
+  coin_has_amd=requested
+  amd_userflags='no'
 
 
-  coin_has_clp=requested
-
-  clp_lflags=
-  clp_cflags=
-  clp_data=
-  clp_pcfiles="clp"
-
-
-  withval="$with_clp"
+  withval="$with_amd"
   if test -n "$withval" ; then
     case "$withval" in
       no )
-        coin_has_clp=skipping
-        clp_failmode='command line'
+        coin_has_amd=skipping
+        amd_failmode='command line'
         ;;
       yes )
-        coin_has_clp=requested
-        clp_failmode=''
-        ;;
-      build )
-        coin_has_clp=requested
-        clp_build=yes
-        clp_failmode=''
+        coin_has_amd=requested
+        amd_failmode=''
         ;;
       * )
-        coin_has_clp=requested
-        clp_failmode=''
-        clp_lflags="$withval"
-        clp_pcfiles=''
+        coin_has_amd=requested
+        amd_failmode=''
+        amd_lflags="$withval"
+        amd_userflags='yes'
         ;;
     esac
   else
-    if test -n "$with_clp_lflags" ||
-       test -n "$with_clp_cflags" ||
-       test -n "$with_clp_data" ; then
-      coin_has_clp=requested
-      clp_failmode=''
-      clp_pcfiles=''
+    if test -n "$with_amd_lflags" ||
+       test -n "$with_amd_cflags" ||
+       test -n "$with_amd_data" ; then
+      coin_has_amd=requested
+      amd_failmode=''
+      amd_userflags='yes'
     fi
   fi
 
 
-  if test "$coin_has_clp" != skipping ; then
-       withval="$with_clp_lflags"
+  if test "$coin_has_amd" != skipping ; then
+       withval="$with_amd_lflags"
        if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify link flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_clp=yes
-             clp_lflags="$withval"
-             clp_pcfiles=''
-             ;;
-         esac
+         coin_has_amd=requested
+         amd_lflags="$withval"
+         amd_userflags='yes'
        fi
 
-       withval="$with_clp_cflags"
+       withval="$with_amd_cflags"
        if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify compile flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_clp=yes
-             clp_cflags="$withval"
-             clp_pcfiles=''
-             ;;
-         esac
+         coin_has_amd=requested
+         amd_cflags="$withval"
+         amd_userflags='yes'
        fi
      fi
 
@@ -19821,366 +19781,147 @@ fi
 
 
 
-  if test $coin_has_clp = requested ; then
-    if test -n "$PKG_CONFIG" ; then
-      if test x"$clp_build" = xyes ; then
-        pcfile="coin$clp_pcfiles"
 
+  if test $coin_has_amd != skipping ; then
+       ac_save_CPPFLAGS=$CPPFLAGS
+       CPPFLAGS="$amd_cflags"
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include "amd.h"
+int
+main (void)
+{
 
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      CLP_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_clp=yes
-    else
-      CLP_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_clp=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module clp without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if ! test $coin_has_clp = yes ; then
-        pcfile="$clp_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      CLP_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_clp=yes
-    else
-      CLP_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_clp=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module clp without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if test $coin_has_clp = yes ; then
-        clp_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-        clp_pcfiles="$pcfile"
-      fi
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Check for clp via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-clp-lflags and --with-clp-cflags." >&5
-printf "%s\n" "$as_me: WARNING: Check for clp via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-clp-lflags and --with-clp-cflags." >&2;}
-      coin_has_clp=no
-    fi
-  fi
-
-
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for clp: \"$coin_has_clp\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_PKG result for clp: \"$coin_has_clp\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'clp'" >&5
-printf "%s\n" "$as_me: Collected values for package 'clp'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: clp_lflags is \"$clp_lflags\"" >&5
-printf "%s\n" "$as_me: clp_lflags is \"$clp_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: clp_cflags is \"$clp_cflags\"" >&5
-printf "%s\n" "$as_me: clp_cflags is \"$clp_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: clp_data is \"$clp_data\"" >&5
-printf "%s\n" "$as_me: clp_data is \"$clp_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: clp_pcfiles is \"$clp_pcfiles\"" >&5
-printf "%s\n" "$as_me: clp_pcfiles is \"$clp_pcfiles\"" >&6;}
-  fi
-
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_clp" >&5
-printf "%s\n" "$coin_has_clp" >&6; }
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_clp (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_clp (COIN_SKIP_PROJECTS)" >&6; }
-  fi
-
-
-  if test "$coin_has_clp" != yes ; then
-    coin_has_clp=no
-  fi
-
-
-   if test $coin_has_clp = yes; then
-  COIN_HAS_CLP_TRUE=
-  COIN_HAS_CLP_FALSE='#'
-else
-  COIN_HAS_CLP_TRUE='#'
-  COIN_HAS_CLP_FALSE=
-fi
-
-
-
-  if test $coin_has_clp = yes ; then
-
-printf "%s\n" "#define CBC_HAS_CLP 1" >>confdefs.h
-
-    CBCLIB_PCFILES="$clp_pcfiles $CBCLIB_PCFILES"
-       CBCLIB_LFLAGS="$clp_lflags $CBCLIB_LFLAGS"
-       CBCLIB_CFLAGS="$clp_cflags $CBCLIB_CFLAGS"
-      OSICBCLIB_PCFILES="$clp_pcfiles $OSICBCLIB_PCFILES"
-       OSICBCLIB_LFLAGS="$clp_lflags $OSICBCLIB_LFLAGS"
-       OSICBCLIB_CFLAGS="$clp_cflags $OSICBCLIB_CFLAGS"
-
-
-
-  fi
-
-    if test $coin_has_clp != yes ; then
-      as_fn_error $? "Required package Clp is not available." "$LINENO" 5
-    fi
-
-
-
-
-
-
-
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package OsiClp" >&5
-printf %s "checking for package OsiClp... " >&6; }
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osiclp=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "osiclp" ; then
-        coin_has_osiclp=skipping
-      fi
-    done
-  fi
-
-
-  if test "$coin_has_osiclp" != skipping ; then
-
-
-
-
-# Check whether --with-osiclp was given.
-if test ${with_osiclp+y}
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
 then :
-  withval=$with_osiclp;
+
+else case e in #(
+  e) coin_has_amd='no'
+          amd_failmode="header compile" ;;
+esac
 fi
-
-
-
-# Check whether --with-osiclp-lflags was given.
-if test ${with_osiclp_lflags+y}
-then :
-  withval=$with_osiclp_lflags;
-fi
-
-
-
-# Check whether --with-osiclp-cflags was given.
-if test ${with_osiclp_cflags+y}
-then :
-  withval=$with_osiclp_cflags;
-fi
-
-
-
-
-
-
-
-
-
-
-
-
-  coin_has_osiclp=requested
-
-  osiclp_lflags=
-  osiclp_cflags=
-  osiclp_data=
-  osiclp_pcfiles="osi-clp"
-
-
-  withval="$with_osiclp"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_osiclp=skipping
-        osiclp_failmode='command line'
-        ;;
-      yes )
-        coin_has_osiclp=requested
-        osiclp_failmode=''
-        ;;
-      build )
-        coin_has_osiclp=requested
-        osiclp_build=yes
-        osiclp_failmode=''
-        ;;
-      * )
-        coin_has_osiclp=requested
-        osiclp_failmode=''
-        osiclp_lflags="$withval"
-        osiclp_pcfiles=''
-        ;;
-    esac
-  else
-    if test -n "$with_osiclp_lflags" ||
-       test -n "$with_osiclp_cflags" ||
-       test -n "$with_osiclp_data" ; then
-      coin_has_osiclp=requested
-      osiclp_failmode=''
-      osiclp_pcfiles=''
-    fi
-  fi
-
-
-  if test "$coin_has_osiclp" != skipping ; then
-       withval="$with_osiclp_lflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify link flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osiclp=yes
-             osiclp_lflags="$withval"
-             osiclp_pcfiles=''
-             ;;
-         esac
-       fi
-
-       withval="$with_osiclp_cflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify compile flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_osiclp=yes
-             osiclp_cflags="$withval"
-             osiclp_pcfiles=''
-             ;;
-         esac
-       fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+       CPPFLAGS=$ac_save_CPPFLAGS
      fi
 
 
+  if test "$coin_has_amd" != skipping ; then
+       ac_save_LIBS=$LIBS
+       ac_save_CPPFLAGS=$CPPFLAGS
+       LIBS="$amd_lflags"
+       CPPFLAGS="$amd_cflags"
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include "amd.h"
+int
+main (void)
+{
+double Control[AMD_CONTROL];
+   amd_defaults(Control);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+else case e in #(
+  e) coin_has_amd='no'
+            if test -n "$amd_failmode" ; then
+              amd_failmode="$amd_failmode, link with header"
+            else
+              amd_failmode="link with header"
+            fi ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+       LIBS=$ac_save_LIBS
+       CPPFLAGS=$ac_save_CPPFLAGS
+     fi
 
 
-
-  if test $coin_has_osiclp = requested ; then
-    if test -n "$PKG_CONFIG" ; then
-      if test x"$osiclp_build" = xyes ; then
-        pcfile="coin$osiclp_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSICLP_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osiclp=yes
-    else
-      OSICLP_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osiclp=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osiclp without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if ! test $coin_has_osiclp = yes ; then
-        pcfile="$osiclp_pcfiles"
-
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      OSICLP_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_osiclp=yes
-    else
-      OSICLP_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_osiclp=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module osiclp without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if test $coin_has_osiclp = yes ; then
-        osiclp_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-        osiclp_pcfiles="$pcfile"
-      fi
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Check for osiclp via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osiclp-lflags and --with-osiclp-cflags." >&5
-printf "%s\n" "$as_me: WARNING: Check for osiclp via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-osiclp-lflags and --with-osiclp-cflags." >&2;}
-      coin_has_osiclp=no
-    fi
+  if test $coin_has_amd = requested ; then
+    coin_has_amd=yes
   fi
 
 
+  # Define BUILDTOOLS_DEBUG to enable debugging output
   if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for osiclp: \"$coin_has_osiclp\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_PKG result for osiclp: \"$coin_has_osiclp\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'osiclp'" >&5
-printf "%s\n" "$as_me: Collected values for package 'osiclp'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osiclp_lflags is \"$osiclp_lflags\"" >&5
-printf "%s\n" "$as_me: osiclp_lflags is \"$osiclp_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osiclp_cflags is \"$osiclp_cflags\"" >&5
-printf "%s\n" "$as_me: osiclp_cflags is \"$osiclp_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osiclp_data is \"$osiclp_data\"" >&5
-printf "%s\n" "$as_me: osiclp_data is \"$osiclp_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: osiclp_pcfiles is \"$osiclp_pcfiles\"" >&5
-printf "%s\n" "$as_me: osiclp_pcfiles is \"$osiclp_pcfiles\"" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_LIB result for amd: \"$coin_has_amd\"" >&5
+printf "%s\n" "$as_me: FIND_PRIM_LIB result for amd: \"$coin_has_amd\"" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'amd'" >&5
+printf "%s\n" "$as_me: Collected values for package 'amd'" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: amd_lflags is \"$amd_lflags\"" >&5
+printf "%s\n" "$as_me: amd_lflags is \"$amd_lflags\"" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: amd_cflags is \"$amd_cflags\"" >&5
+printf "%s\n" "$as_me: amd_cflags is \"$amd_cflags\"" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: amd_data is \"$amd_data\"" >&5
+printf "%s\n" "$as_me: amd_data is \"$amd_data\"" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: amd_pcfiles is \"$amd_pcfiles\"" >&5
+printf "%s\n" "$as_me: amd_pcfiles is \"$amd_pcfiles\"" >&6;}
   fi
 
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osiclp" >&5
-printf "%s\n" "$coin_has_osiclp" >&6; }
+    if test -n "$amd_failmode" ; then
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_amd ($amd_failmode)" >&5
+printf "%s\n" "$coin_has_amd ($amd_failmode)" >&6; }
+    else
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_amd" >&5
+printf "%s\n" "$coin_has_amd" >&6; }
+    fi
   else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_osiclp (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_osiclp (COIN_SKIP_PROJECTS)" >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_amd (COIN_SKIP_PROJECTS)" >&5
+printf "%s\n" "$coin_has_amd (COIN_SKIP_PROJECTS)" >&6; }
   fi
 
 
-  if test "$coin_has_osiclp" != yes ; then
-    coin_has_osiclp=no
+  if test "$coin_has_amd" = 'no' ; then
+    if expr "$amd_failmode" : '.*header.*' &>/dev/null ; then
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Compiler flags were \"$amd_cflags\". Use --with-amd-cflags to overwrite. Check config.log for details of failed compile attempt." >&5
+printf "%s\n" "$as_me: Compiler flags were \"$amd_cflags\". Use --with-amd-cflags to overwrite. Check config.log for details of failed compile attempt." >&6;}
+    fi
+    if expr "$amd_failmode" : '.*link.*' &>/dev/null ; then
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Linker flags are \"$amd_lflags\". Use --with-amd-lflags to overwrite. Check config.log for details of failed link attempt." >&5
+printf "%s\n" "$as_me: Linker flags are \"$amd_lflags\". Use --with-amd-lflags to overwrite. Check config.log for details of failed link attempt." >&6;}
+    fi
+    if test "$amd_userflags" = 'yes' ; then
+      as_fn_error $? "user-specified flags for AMD do not work." "$LINENO" 5
+    fi
   fi
 
 
-   if test $coin_has_osiclp = yes; then
-  COIN_HAS_OSICLP_TRUE=
-  COIN_HAS_OSICLP_FALSE='#'
+  if test "$coin_has_amd" != yes ; then
+    coin_has_amd=no
+  fi
+
+
+   if test $coin_has_amd = yes; then
+  COIN_HAS_AMD_TRUE=
+  COIN_HAS_AMD_FALSE='#'
 else
-  COIN_HAS_OSICLP_TRUE='#'
-  COIN_HAS_OSICLP_FALSE=
+  COIN_HAS_AMD_TRUE='#'
+  COIN_HAS_AMD_FALSE=
 fi
 
 
 
-  if test $coin_has_osiclp = yes ; then
+  if test $coin_has_amd = yes ; then
 
-printf "%s\n" "#define CBC_HAS_OSICLP 1" >>confdefs.h
+printf "%s\n" "#define CBC_HAS_AMD 1" >>confdefs.h
 
-    CBCLIB_PCFILES="$osiclp_pcfiles $CBCLIB_PCFILES"
-       CBCLIB_LFLAGS="$osiclp_lflags $CBCLIB_LFLAGS"
-       CBCLIB_CFLAGS="$osiclp_cflags $CBCLIB_CFLAGS"
-      OSICBCLIB_PCFILES="$osiclp_pcfiles $OSICBCLIB_PCFILES"
-       OSICBCLIB_LFLAGS="$osiclp_lflags $OSICBCLIB_LFLAGS"
-       OSICBCLIB_CFLAGS="$osiclp_cflags $OSICBCLIB_CFLAGS"
+    CBCLIB_LFLAGS="$amd_lflags $CBCLIB_LFLAGS"
+       CBCLIB_CFLAGS="$amd_cflags $CBCLIB_CFLAGS"
+
 
 
 
   fi
 
-if test $coin_has_osiclp != yes ; then
-  as_fn_error $? "\"Required package OsiClp unavailable.\"" "$LINENO" 5
-fi
+
 
 # Optional package for command line edit support
 
@@ -21930,13 +21671,13 @@ case "${osicbc_with_solver}" in
     osi_lc_solver=clp ;
     osi_mc_solver=Clp ;
     osi_uc_solver=CLP ;
-    osi_exists_solver=${coin_has_osiclp-"unavailable"}
+    osi_exists_solver=yes
     ;;
   *)
     osi_lc_solver=clp ;
     osi_mc_solver=Clp ;
     osi_uc_solver=CLP ;
-    osi_exists_solver=${coin_has_osiclp-"unavailable"}
+    osi_exists_solver=yes
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Only Clp is supported for OsiCbc; defaulting to $osi_lc_solver." >&5
 printf "%s\n" "$as_me: WARNING: Only Clp is supported for OsiCbc; defaulting to $osi_lc_solver." >&2;}
     ;;
@@ -22173,7 +21914,7 @@ else
 fi
 
 
-  coin_doxy_tagfiles="@baredocdir_nosub@/coin-or-coinutils/doxydoc/coinutils_doxy.tag=@baredocdir_nosub@/coin-or-coinutils/doxydoc/html @baredocdir_nosub@/coin-or-clp/doxydoc/clp_doxy.tag=@baredocdir_nosub@/coin-or-clp/doxydoc/html "
+  coin_doxy_tagfiles="@baredocdir_nosub@/coin-or-coinutils/doxydoc/coinutils_doxy.tag=@baredocdir_nosub@/coin-or-coinutils/doxydoc/html "
 
 
 
@@ -22183,7 +21924,7 @@ fi
 
 # Here list all the files that configure should create (except for the
 # configuration header file)
-ac_config_files="$ac_config_files Makefile examples/Makefile src/Cgl/Makefile src/Makefile src/OsiCbc/Makefile test/Makefile cbc.pc osi-cbc.pc"
+ac_config_files="$ac_config_files Makefile examples/Makefile src/Clp/Makefile src/Cgl/Makefile src/Makefile src/OsiCbc/Makefile test/Makefile cbc.pc osi-cbc.pc"
 
 ac_config_files="$ac_config_files doxydoc/doxygen.conf"
 
@@ -22612,12 +22353,8 @@ if test -z "${COIN_HAS_COINUTILS_TRUE}" && test -z "${COIN_HAS_COINUTILS_FALSE}"
   as_fn_error $? "conditional \"COIN_HAS_COINUTILS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${COIN_HAS_CLP_TRUE}" && test -z "${COIN_HAS_CLP_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_CLP\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COIN_HAS_OSICLP_TRUE}" && test -z "${COIN_HAS_OSICLP_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_OSICLP\" was never defined.
+if test -z "${COIN_HAS_AMD_TRUE}" && test -z "${COIN_HAS_AMD_FALSE}"; then
+  as_fn_error $? "conditional \"COIN_HAS_AMD\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_ASL_TRUE}" && test -z "${COIN_HAS_ASL_FALSE}"; then
@@ -23651,6 +23388,7 @@ do
     "examples/sudoku_sample.csv") CONFIG_LINKS="$CONFIG_LINKS examples/sudoku_sample.csv:examples/sudoku_sample.csv" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "examples/Makefile") CONFIG_FILES="$CONFIG_FILES examples/Makefile" ;;
+    "src/Clp/Makefile") CONFIG_FILES="$CONFIG_FILES src/Clp/Makefile" ;;
     "src/Cgl/Makefile") CONFIG_FILES="$CONFIG_FILES src/Cgl/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/OsiCbc/Makefile") CONFIG_FILES="$CONFIG_FILES src/OsiCbc/Makefile" ;;

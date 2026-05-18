@@ -4,7 +4,7 @@
 #
 # Author:  Andreas Waechter           IBM    2006-04-13
 
-AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/Clp -I$(srcdir)/../src/Cgl -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
 
 AM_LDFLAGS = $(LT_LDFLAGS)
 
@@ -12,11 +12,7 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 #                         unitTest for Cbc                             #
 ########################################################################
 
-CBC_TEST_TGTS = gamstests ositests
-
-if COIN_HAS_CLP
-  CBC_TEST_TGTS += test_cbc ctests
-endif
+CBC_TEST_TGTS = gamstests ositests test_cbc ctests
 
 cbcflags =
 ositestsflags =

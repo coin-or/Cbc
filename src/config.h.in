@@ -15,11 +15,11 @@
 /* Git hash at configure time */
 #undef CBC_GIT_HASH
 
+/* Define to 1 if the AMD package is available */
+#undef CBC_HAS_AMD
+
 /* Define to 1 if ASL is available. */
 #undef CBC_HAS_ASL
-
-/* Define to 1 if Clp is available. */
-#undef CBC_HAS_CLP
 
 /* Define to 1 if CoinUtils is available. */
 #undef CBC_HAS_COINUTILS
@@ -29,9 +29,6 @@
 
 /* Define to 1 if Netlib is available. */
 #undef CBC_HAS_NETLIB
-
-/* Define to 1 if OsiClp is available. */
-#undef CBC_HAS_OSICLP
 
 /* Define to 1 if OsiTests is available. */
 #undef CBC_HAS_OSITESTS

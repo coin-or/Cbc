@@ -101,7 +101,7 @@ host_triplet = @host@
 bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_tsp_random$(EXEEXT) \
 	CInterfaceTest_fl_random$(EXEEXT) \
-	CInterfaceTest_mdkp_random$(EXEEXT)
+	CInterfaceTest_mdkp_random$(EXEEXT) CbcSolverLpTest$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -137,6 +137,9 @@ am_CInterfaceTest_tsp_random_OBJECTS =  \
 CInterfaceTest_tsp_random_OBJECTS =  \
 	$(am_CInterfaceTest_tsp_random_OBJECTS)
 CInterfaceTest_tsp_random_DEPENDENCIES = ../src/libCbc.la
+am_CbcSolverLpTest_OBJECTS = CbcSolverLpTest.$(OBJEXT)
+CbcSolverLpTest_OBJECTS = $(am_CbcSolverLpTest_OBJECTS)
+CbcSolverLpTest_DEPENDENCIES = ../src/libCbc.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -155,7 +158,8 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_fl_random.Po \
 	./$(DEPDIR)/CInterfaceTest_mdkp_random.Po \
-	./$(DEPDIR)/CInterfaceTest_tsp_random.Po ./$(DEPDIR)/dummy.Po
+	./$(DEPDIR)/CInterfaceTest_tsp_random.Po \
+	./$(DEPDIR)/CbcSolverLpTest.Po ./$(DEPDIR)/dummy.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -200,7 +204,8 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(CInterfaceTest_mdkp_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_mdkp_random_SOURCES) \
 	$(CInterfaceTest_tsp_random_SOURCES) \
-	$(nodist_EXTRA_CInterfaceTest_tsp_random_SOURCES)
+	$(nodist_EXTRA_CInterfaceTest_tsp_random_SOURCES) \
+	$(CbcSolverLpTest_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -419,6 +424,12 @@ CInterfaceTest_fl_random_LDADD = ../src/libCbc.la
 CInterfaceTest_mdkp_random_SOURCES = CInterfaceTest_mdkp_random.c
 nodist_EXTRA_CInterfaceTest_mdkp_random_SOURCES = dummy.cpp
 CInterfaceTest_mdkp_random_LDADD = ../src/libCbc.la
+
+########################################################################
+#                   CbcSolver LP relaxation C++ tests                  #
+########################################################################
+CbcSolverLpTest_SOURCES = CbcSolverLpTest.cpp
+CbcSolverLpTest_LDADD = ../src/libCbc.la
 all: all-am
 
 .SUFFIXES:
@@ -513,6 +524,10 @@ CInterfaceTest_tsp_random$(EXEEXT): $(CInterfaceTest_tsp_random_OBJECTS) $(CInte
 	@rm -f CInterfaceTest_tsp_random$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_tsp_random_OBJECTS) $(CInterfaceTest_tsp_random_LDADD) $(LIBS)
 
+CbcSolverLpTest$(EXEEXT): $(CbcSolverLpTest_OBJECTS) $(CbcSolverLpTest_DEPENDENCIES) $(EXTRA_CbcSolverLpTest_DEPENDENCIES) 
+	@rm -f CbcSolverLpTest$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CbcSolverLpTest_OBJECTS) $(CbcSolverLpTest_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -523,6 +538,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_fl_random.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mdkp_random.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_tsp_random.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolverLpTest.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -682,6 +698,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_random.Po
+	-rm -f ./$(DEPDIR)/CbcSolverLpTest.Po
 	-rm -f ./$(DEPDIR)/dummy.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -732,6 +749,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_random.Po
+	-rm -f ./$(DEPDIR)/CbcSolverLpTest.Po
 	-rm -f ./$(DEPDIR)/dummy.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
@@ -784,11 +802,12 @@ test_cbc: ../src/cbc$(EXEEXT)
 
 .PHONY: test
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT)
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CbcSolverLpTest$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 	export RUNNING_TEST="CInterfaceTest_tsp_random" ; ./CInterfaceTest_tsp_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_fl_random" ; ./CInterfaceTest_fl_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_mdkp_random" ; ./CInterfaceTest_mdkp_random$(EXEEXT)
+	export RUNNING_TEST="CbcSolverLpTest" ; ./CbcSolverLpTest$(EXEEXT)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

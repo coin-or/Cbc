@@ -39,7 +39,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CbcSolverLpTest
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -74,8 +74,16 @@ CInterfaceTest_mdkp_random_SOURCES = CInterfaceTest_mdkp_random.c
 nodist_EXTRA_CInterfaceTest_mdkp_random_SOURCES = dummy.cpp
 CInterfaceTest_mdkp_random_LDADD = ../src/libCbc.la
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT)
+########################################################################
+#                   CbcSolver LP relaxation C++ tests                  #
+########################################################################
+
+CbcSolverLpTest_SOURCES = CbcSolverLpTest.cpp
+CbcSolverLpTest_LDADD = ../src/libCbc.la
+
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CbcSolverLpTest$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 	export RUNNING_TEST="CInterfaceTest_tsp_random" ; ./CInterfaceTest_tsp_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_fl_random" ; ./CInterfaceTest_fl_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_mdkp_random" ; ./CInterfaceTest_mdkp_random$(EXEEXT)
+	export RUNNING_TEST="CbcSolverLpTest" ; ./CbcSolverLpTest$(EXEEXT)

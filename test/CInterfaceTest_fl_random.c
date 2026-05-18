@@ -380,6 +380,142 @@ static int test_cflp_cap_only(const CflpInstance *inst)
   return ok;
 }
 
+/* ── LP relaxation tests ──────────────────────────────────────────────────── */
+
+/* Build and solve the LP relaxation of the UFL individual-link formulation.
+   All variables continuous in [0,1].  LP obj <= MIP opt (minimisation). */
+static int test_ufl_lp(const UflInstance *inst)
+{
+  int mm = inst->m, n = inst->n;
+  printf("  UFL LP m=%d n=%d mip_opt=%d\n", mm, n, inst->opt);
+
+  Cbc_Model *m = Cbc_newModel();
+  Cbc_setObjSense(m, 1.0);
+  Cbc_setLogLevel(m, 0);
+
+  /* y[i] continuous in [0,1] */
+  for (int i = 0; i < mm; i++) {
+    char name[24]; snprintf(name, sizeof(name), "y(%d)", i);
+    Cbc_addCol(m, name, 0.0, 1.0, (double)inst->f[i], 0, 0, NULL, NULL);
+  }
+  /* x[i][j] continuous in [0,1] */
+  int xidx[MAX_M][MAX_N];
+  for (int i = 0; i < mm; i++) {
+    for (int j = 0; j < n; j++) {
+      char name[32]; snprintf(name, sizeof(name), "x(%d,%d)", i, j);
+      Cbc_addCol(m, name, 0.0, 1.0,
+                 (double)inst->c[i * n + j], 0, 0, NULL, NULL);
+      xidx[i][j] = mm + i * n + j;
+    }
+  }
+
+  /* Assignment: sum_i x[i][j] = 1 */
+  for (int j = 0; j < n; j++) {
+    int idx[MAX_M]; double coef[MAX_M];
+    for (int i = 0; i < mm; i++) { idx[i] = xidx[i][j]; coef[i] = 1.0; }
+    char name[24]; snprintf(name, sizeof(name), "asgn(%d)", j);
+    add_row(m, mm, idx, coef, 'E', 1.0, name);
+  }
+  /* Linking: x[i][j] <= y[i] */
+  for (int i = 0; i < mm; i++) {
+    for (int j = 0; j < n; j++) {
+      int idx[2] = { xidx[i][j], i };
+      double coef[2] = { 1.0, -1.0 };
+      char name[32]; snprintf(name, sizeof(name), "lnk(%d,%d)", i, j);
+      add_row(m, 2, idx, coef, 'L', 0.0, name);
+    }
+  }
+
+  Cbc_setIntParam(m, INT_PARAM_LP_FAST_PREPROCESS, 0);
+  Cbc_setIntParam(m, INT_PARAM_CGRAPH, 0);
+  Cbc_setIntParam(m, INT_PARAM_CLIQUE_MERGING, 0);
+
+  int rc = Cbc_solveLinearProgram(m);
+  int pass = 1;
+  if (rc != 0) {
+    printf("    FAIL: LP solve returned %d\n", rc);
+    Cbc_deleteModel(m); return 0;
+  }
+
+  double lpObj = Cbc_getObjValue(m);
+  if (lpObj > inst->opt + 0.5) {
+    printf("    FAIL: LP obj=%.4f > MIP opt=%d (LP must be <= MIP for min)\n",
+           lpObj, inst->opt);
+    pass = 0;
+  }
+  if (pass) printf("    PASS LP=%.4f <= MIP=%d\n", lpObj, inst->opt);
+  Cbc_deleteModel(m);
+  return pass;
+}
+
+/* Build and solve the LP relaxation of the CFLP standard formulation. */
+static int test_cflp_lp(const CflpInstance *inst)
+{
+  int mm = inst->m, n = inst->n;
+  printf("  CFLP LP m=%d n=%d mip_opt=%d\n", mm, n, inst->opt);
+
+  Cbc_Model *m = Cbc_newModel();
+  Cbc_setObjSense(m, 1.0);
+  Cbc_setLogLevel(m, 0);
+
+  for (int i = 0; i < mm; i++) {
+    char name[24]; snprintf(name, sizeof(name), "y(%d)", i);
+    Cbc_addCol(m, name, 0.0, 1.0, (double)inst->f[i], 0, 0, NULL, NULL);
+  }
+  int xidx[MAX_M][MAX_N];
+  for (int i = 0; i < mm; i++) {
+    for (int j = 0; j < n; j++) {
+      char name[32]; snprintf(name, sizeof(name), "x(%d,%d)", i, j);
+      Cbc_addCol(m, name, 0.0, 1.0,
+                 (double)inst->c[i * n + j], 0, 0, NULL, NULL);
+      xidx[i][j] = mm + i * n + j;
+    }
+  }
+  /* Assignment */
+  for (int j = 0; j < n; j++) {
+    int idx[MAX_M]; double coef[MAX_M];
+    for (int i = 0; i < mm; i++) { idx[i] = xidx[i][j]; coef[i] = 1.0; }
+    char name[24]; snprintf(name, sizeof(name), "asgn(%d)", j);
+    add_row(m, mm, idx, coef, 'E', 1.0, name);
+  }
+  /* Capacity: sum_j d[j]*x[i][j] <= Q[i]*y[i] */
+  for (int i = 0; i < mm; i++) {
+    int idx[MAX_N + 1]; double coef[MAX_N + 1];
+    for (int j = 0; j < n; j++) { idx[j] = xidx[i][j]; coef[j] = (double)inst->dem[j]; }
+    idx[n] = i; coef[n] = -(double)inst->cap[i];
+    char name[24]; snprintf(name, sizeof(name), "cap(%d)", i);
+    add_row(m, n + 1, idx, coef, 'L', 0.0, name);
+  }
+  /* Linking */
+  for (int i = 0; i < mm; i++) {
+    for (int j = 0; j < n; j++) {
+      int idx[2] = { xidx[i][j], i };
+      double coef[2] = { 1.0, -1.0 };
+      char name[32]; snprintf(name, sizeof(name), "lnk(%d,%d)", i, j);
+      add_row(m, 2, idx, coef, 'L', 0.0, name);
+    }
+  }
+
+  Cbc_setIntParam(m, INT_PARAM_LP_FAST_PREPROCESS, 0);
+  Cbc_setIntParam(m, INT_PARAM_CGRAPH, 0);
+  Cbc_setIntParam(m, INT_PARAM_CLIQUE_MERGING, 0);
+
+  int rc = Cbc_solveLinearProgram(m);
+  int pass = 1;
+  if (rc != 0) {
+    printf("    FAIL: LP solve returned %d\n", rc);
+    Cbc_deleteModel(m); return 0;
+  }
+  double lpObj = Cbc_getObjValue(m);
+  if (lpObj > inst->opt + 0.5) {
+    printf("    FAIL: LP obj=%.4f > MIP opt=%d\n", lpObj, inst->opt);
+    pass = 0;
+  }
+  if (pass) printf("    PASS LP=%.4f <= MIP=%d\n", lpObj, inst->opt);
+  Cbc_deleteModel(m);
+  return pass;
+}
+
 /* ── main ─────────────────────────────────────────────────────────────────── */
 
 int main(void)
@@ -406,6 +542,16 @@ int main(void)
            k + 1, N_CFLP_INSTANCES, inst->m, inst->n, inst->opt);
     if (!test_cflp_standard(inst))  nfail++;
     if (!test_cflp_cap_only(inst))  nfail++;
+  }
+
+  printf("\n");
+
+  printf("=== FL LP Relaxation Tests ===\n");
+  for (int k = 0; k < N_UFL_INSTANCES; k++) {
+    if (!test_ufl_lp(&UFL_INSTANCES[k])) nfail++;
+  }
+  for (int k = 0; k < N_CFLP_INSTANCES; k++) {
+    if (!test_cflp_lp(&CFLP_INSTANCES[k])) nfail++;
   }
 
   printf("\n");

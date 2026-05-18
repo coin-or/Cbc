@@ -123,12 +123,23 @@ public:
   */
   int importModel(const std::string &filename);
 
-  /** Solve the LP relaxation only (no branch-and-bound).
-      Uses the current -lpMethod setting (dual/primal/barrier).
+  /** Solve the LP relaxation from scratch (no branch-and-bound).
+      Applies the full LP machinery: lpMethod, perturbation, PSI, racing, and
+      all ClpSolve options.  Combinatorial preprocessing (bound propagation and
+      clique merging) is intentionally skipped — call applyLpMethod() via
+      solveInitialLp() if you need the complete root-LP pipeline.
       \param method  "dual", "primal", or "barrier" (empty = use current setting)
-      \return 0 on success
+      \return 0 on optimal, 1 on time/iter limit, 2 on infeasible, 3 on unbounded
   */
   int solveLp(const std::string &method = "");
+
+  /** Re-solve the LP relaxation using the current basis (warm start).
+      Applies Clp parameters (time limit, tolerances, perturbation) but skips
+      all initial-solve overhead (racing, ClpSolve presolve, clique merging,
+      bound propagation).  Falls back to solveLp() when no basis is available.
+      \return 0 on optimal, 1 on time/iter limit, 2 on infeasible, 3 on unbounded
+  */
+  int resolveLp();
   //@}
 
   ///@name Result accessors (valid after solve/run)
@@ -520,10 +531,13 @@ private:
            print options, time limits.
       The caller is responsible for setting up any LP-progress message
       handler on the ClpSimplex model before calling this function.
+      \param applyPreprocessing  When true (default) runs steps 1 and 2
+             (bound propagation and clique merging).  Pass false to get the
+             pure LP machinery (steps 3-5) without combinatorial preprocessing.
       \return -1 if infeasibility proved during preprocessing (skip solve),
                0 on success (LP solve performed or racing winner found).
   */
-  int applyLpMethod();
+  int applyLpMethod(bool applyPreprocessing = true);
 
   /** Solve the root LP relaxation.
       Called from the BAB action when !miplib.

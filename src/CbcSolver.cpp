@@ -1022,7 +1022,7 @@ static void applyVectorMode(ClpSimplex *lpSolver, bool setMode = false)
 //
 // The caller is responsible for setting up any LP-progress message handler
 // on the ClpSimplex model before calling this function.
-int CbcSolver::applyLpMethod()
+int CbcSolver::applyLpMethod(bool applyPreprocessing)
 {
   OsiSolverInterface *solver = model_.solver();
   OsiClpSolverInterface *si = getClpSolver(solver);
@@ -1032,7 +1032,7 @@ int CbcSolver::applyLpMethod()
   // Tightens bounds using MILP-based bound propagation before building the
   // conflict graph or solving the LP.  Must run first so that the conflict
   // graph and clique merging (step 2) see the tightest possible bounds.
-  {
+  if (applyPreprocessing) {
     CbcBoundPropagation::Level bpLevel;
     switch (parameters_.getBoundPropLevel()) {
     case CbcParameters::BndPropSingletons:
@@ -1077,13 +1077,13 @@ int CbcSolver::applyLpMethod()
         printGeneralMessage(model_, buf);
       }
     }
-  }
+  } // applyPreprocessing
 
   // ─── 2. Clique merging "before" ──────────────────────────────────────────
   // Strengthens set-packing/partitioning cliques using the conflict graph,
   // then does a quick raw LP warm-start inside the function.  The full
   // configured LP solve happens in step 5 below.
-  if (clqstrMode_ == "before" || clqstrMode_ == "both") {
+  if (applyPreprocessing && (clqstrMode_ == "before" || clqstrMode_ == "both")) {
     double clqTime = CoinWallclockTime();
     int clqExtended = 0, clqDominated = 0;
     buildConflictGraphAndStrengthenCliques(solver, model_.messageHandler(),
@@ -2628,26 +2628,75 @@ int CbcSolver::importModel(const std::string &filename)
 int CbcSolver::solveLp(const std::string &method)
 {
   OsiSolverInterface *solver = model_.solver();
-  if (!solver) return 1;
-  OsiClpSolverInterface *clpSolver =
-    dynamic_cast<OsiClpSolverInterface *>(solver);
-  if (!clpSolver) return 1;
-  ClpSimplex *lpSolver = clpSolver->getModelPtr();
+  if (!solver) return 2;
 
-  if (method == "primal" || method == "primalsimplex") {
-    solver->setHintParam(OsiDoDualInInitial, false, OsiHintDo);
-    solver->initialSolve();
-  } else if (method == "barrier") {
-    ClpSolve solveOptions;
-    solveOptions.setSolveType(ClpSolve::useBarrier);
-    solveOptions.setPresolveType(ClpSolve::presolveOn);
-    lpSolver->initialSolve(solveOptions);
-  } else {
-    // dual (default)
-    solver->setHintParam(OsiDoDualInInitial, true, OsiHintDo);
-    solver->initialSolve();
+  // Override lpMethod for this call if an explicit method string was given.
+  CbcParameters::LPMethod savedMethod = parameters_.getLpMethod();
+  bool methodOverridden = false;
+  if (!method.empty()) {
+    methodOverridden = true;
+    if (method == "primal" || method == "primalsimplex")
+      parameters_.setLpMethod(CbcParameters::LPPrimal);
+    else if (method == "barrier")
+      parameters_.setLpMethod(CbcParameters::LPBarrier);
+    else
+      parameters_.setLpMethod(CbcParameters::LPDual);
   }
-  return lpSolver->status();
+
+  // Full LP machinery (racing, ClpSolve options, PSI, perturbation, presolve)
+  // but without combinatorial preprocessing (bound propagation, clique merging).
+  int rc = applyLpMethod(/*applyPreprocessing=*/false);
+
+  if (methodOverridden)
+    parameters_.setLpMethod(savedMethod);
+
+  if (rc < 0) return 2;  // infeasibility proved (shouldn't happen without preprocessing)
+
+  OsiClpSolverInterface *si = dynamic_cast<OsiClpSolverInterface *>(solver);
+  ClpSimplex *clp = si ? si->getModelPtr() : nullptr;
+  if (!clp) return solver->isProvenOptimal() ? 0 : 2;
+
+  const int clpStatus = clp->status();
+  if (clpStatus == 0) return 0;               // optimal
+  if (clpStatus == 1) return 2;               // infeasible
+  if (clpStatus == 2) return 3;               // unbounded
+  return 1;                                    // time/iter limit or other
+}
+
+int CbcSolver::resolveLp()
+{
+  OsiSolverInterface *solver = model_.solver();
+  if (!solver) return 2;
+
+  // Fall back to a full initial solve when no basis is available.
+  if (!solver->basisIsAvailable())
+    return solveLp();
+
+  OsiClpSolverInterface *si = dynamic_cast<OsiClpSolverInterface *>(solver);
+  ClpSimplex *clp = si ? si->getModelPtr() : nullptr;
+
+  // Apply Clp parameters that can change between solves.
+  if (clp) {
+    ClpParameters &clpP = parameters_.clpParameters();
+    clp->setPerturbation(clpP[ClpParam::PERTVALUE]->intVal());
+    solver->setDblParam(OsiPrimalTolerance,
+      clpP[ClpParam::PRIMALTOLERANCE]->dblVal());
+    solver->setDblParam(OsiDualTolerance,
+      clpP[ClpParam::DUALTOLERANCE]->dblVal());
+    if (model_.getMaximumSeconds() < 1.0e8)
+      applyClpTimeLimit(model_, clp);
+  }
+
+  solver->resolve();
+
+  if (clp) clearClpTimeLimits(clp);
+
+  if (!clp) return solver->isProvenOptimal() ? 0 : 2;
+  const int clpStatus = clp->status();
+  if (clpStatus == 0) return 0;
+  if (clpStatus == 1) return 2;
+  if (clpStatus == 2) return 3;
+  return 1;
 }
 
 //###########################################################################
@@ -2661,8 +2710,9 @@ int CbcSolver::status() const
 double CbcSolver::objectiveValue() const
 {
   double obj = model_.getObjValue();
-  // If no MIP solve was done, get the LP objective from the solver
-  if (obj >= 1.0e50 && model_.solver())
+  // If no MIP solve was done, CbcModel returns +1e50 (min) or -1e50 (max).
+  // Fall back to the LP solver's objective in either case.
+  if (fabs(obj) >= 1.0e50 && model_.solver())
     obj = model_.solver()->getObjValue();
   return obj;
 }

@@ -106,6 +106,72 @@ static int test_mdkp(const MdkpInstance *inst)
   return pass;
 }
 
+/* Build and solve the LP relaxation of one MDKP instance.
+   All item variables are continuous in [0,1].
+   Verifies: LP is optimal, LP obj >= MIP opt (valid upper bound for max),
+             all capacity constraints satisfied. */
+static int test_mdkp_lp(const MdkpInstance *inst)
+{
+  int mm = inst->m, n = inst->n;
+
+  printf("  MDKP LP m=%d n=%d mip_opt=%d\n", mm, n, inst->opt);
+
+  Cbc_Model *m = new_model();
+
+  /* Item variables continuous in [0,1] — LP relaxation */
+  for (int j = 0; j < n; j++) {
+    char name[24]; snprintf(name, sizeof(name), "x(%d)", j);
+    Cbc_addCol(m, name, 0.0, 1.0, (double)inst->p[j], 0 /*continuous*/, 0, NULL, NULL);
+  }
+
+  for (int i = 0; i < mm; i++) {
+    int idx[MAX_N]; double coef[MAX_N];
+    for (int j = 0; j < n; j++) { idx[j] = j; coef[j] = (double)inst->w[i * n + j]; }
+    char name[24]; snprintf(name, sizeof(name), "cap(%d)", i);
+    Cbc_addRow(m, name, n, idx, coef, 'L', (double)inst->c[i]);
+  }
+
+  /* Pure LP: ensure no combinatorial preprocessing is applied */
+  Cbc_setIntParam(m, INT_PARAM_LP_FAST_PREPROCESS, 0);
+  Cbc_setIntParam(m, INT_PARAM_CGRAPH, 0);
+  Cbc_setIntParam(m, INT_PARAM_CLIQUE_MERGING, 0);
+
+  int rc = Cbc_solveLinearProgram(m);
+
+  int pass = 1;
+  if (rc != 0) {
+    printf("    FAIL: LP solve returned %d (not optimal)\n", rc);
+    Cbc_deleteModel(m);
+    return 0;
+  }
+
+  double lpObj = Cbc_getObjValue(m);
+
+  /* LP relaxation is an upper bound for maximization: LP >= MIP opt */
+  if (lpObj < inst->opt - 0.5) {
+    printf("    FAIL: LP obj=%.4f < MIP opt=%d (LP must be >= MIP)\n",
+           lpObj, inst->opt);
+    pass = 0;
+  }
+
+  /* Verify all capacity constraints are satisfied */
+  const double *sol = Cbc_getColSolution(m);
+  double primalTol = Cbc_getDblParam(m, DBL_PARAM_PRIMAL_TOL);
+  for (int i = 0; i < mm && pass; i++) {
+    double load = 0.0;
+    for (int j = 0; j < n; j++) load += inst->w[i * n + j] * sol[j];
+    if (load > inst->c[i] + primalTol) {
+      printf("    FAIL: LP capacity violated dim %d: load=%.4f cap=%d\n",
+             i, load, inst->c[i]);
+      pass = 0;
+    }
+  }
+
+  if (pass) printf("    PASS LP=%.4f >= MIP=%d\n", lpObj, inst->opt);
+  Cbc_deleteModel(m);
+  return pass;
+}
+
 /* ── main ─────────────────────────────────────────────────────────────────── */
 
 int main(void)
@@ -114,6 +180,10 @@ int main(void)
   int nfail = 0;
   for (int k = 0; k < NUM_MDKP_INSTANCES; k++) {
     if (!test_mdkp(&MDKP_INSTANCES[k])) nfail++;
+  }
+  printf("\n=== MDKP LP Relaxation Tests ===\n");
+  for (int k = 0; k < NUM_MDKP_INSTANCES; k++) {
+    if (!test_mdkp_lp(&MDKP_INSTANCES[k])) nfail++;
   }
   if (nfail == 0)
     printf("=== All MDKP tests PASSED ===\n");

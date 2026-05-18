@@ -99,7 +99,8 @@ host_triplet = @host@
 #  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
 @COIN_HAS_MIPLIB3_TRUE@am__append_1 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
 bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
-	CInterfaceTest_tsp_random$(EXEEXT)
+	CInterfaceTest_tsp_random$(EXEEXT) \
+	CInterfaceTest_fl_random$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -120,6 +121,11 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am_CInterfaceTest_fl_random_OBJECTS =  \
+	CInterfaceTest_fl_random.$(OBJEXT)
+CInterfaceTest_fl_random_OBJECTS =  \
+	$(am_CInterfaceTest_fl_random_OBJECTS)
+CInterfaceTest_fl_random_DEPENDENCIES = ../src/libCbc.la
 am_CInterfaceTest_tsp_random_OBJECTS =  \
 	CInterfaceTest_tsp_random.$(OBJEXT)
 CInterfaceTest_tsp_random_OBJECTS =  \
@@ -141,6 +147,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
+	./$(DEPDIR)/CInterfaceTest_fl_random.Po \
 	./$(DEPDIR)/CInterfaceTest_tsp_random.Po ./$(DEPDIR)/dummy.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -181,6 +188,8 @@ am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
 SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_SOURCES) \
+	$(CInterfaceTest_fl_random_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_fl_random_SOURCES) \
 	$(CInterfaceTest_tsp_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_tsp_random_SOURCES)
 am__can_run_installinfo = \
@@ -387,6 +396,13 @@ CInterfaceTest_LDADD = ../src/libCbc.la
 CInterfaceTest_tsp_random_SOURCES = CInterfaceTest_tsp_random.c
 nodist_EXTRA_CInterfaceTest_tsp_random_SOURCES = dummy.cpp
 CInterfaceTest_tsp_random_LDADD = ../src/libCbc.la
+
+########################################################################
+#                   FL random-instance tests (UFL + CFLP)              #
+########################################################################
+CInterfaceTest_fl_random_SOURCES = CInterfaceTest_fl_random.c
+nodist_EXTRA_CInterfaceTest_fl_random_SOURCES = dummy.cpp
+CInterfaceTest_fl_random_LDADD = ../src/libCbc.la
 all: all-am
 
 .SUFFIXES:
@@ -469,6 +485,10 @@ CInterfaceTest$(EXEEXT): $(CInterfaceTest_OBJECTS) $(CInterfaceTest_DEPENDENCIES
 	@rm -f CInterfaceTest$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_OBJECTS) $(CInterfaceTest_LDADD) $(LIBS)
 
+CInterfaceTest_fl_random$(EXEEXT): $(CInterfaceTest_fl_random_OBJECTS) $(CInterfaceTest_fl_random_DEPENDENCIES) $(EXTRA_CInterfaceTest_fl_random_DEPENDENCIES) 
+	@rm -f CInterfaceTest_fl_random$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_fl_random_OBJECTS) $(CInterfaceTest_fl_random_LDADD) $(LIBS)
+
 CInterfaceTest_tsp_random$(EXEEXT): $(CInterfaceTest_tsp_random_OBJECTS) $(CInterfaceTest_tsp_random_DEPENDENCIES) $(EXTRA_CInterfaceTest_tsp_random_DEPENDENCIES) 
 	@rm -f CInterfaceTest_tsp_random$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_tsp_random_OBJECTS) $(CInterfaceTest_tsp_random_LDADD) $(LIBS)
@@ -480,6 +500,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_fl_random.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_tsp_random.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Po@am__quote@ # am--include-marker
 
@@ -637,6 +658,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_random.Po
 	-rm -f ./$(DEPDIR)/dummy.Po
 	-rm -f Makefile
@@ -685,6 +707,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_random.Po
 	-rm -f ./$(DEPDIR)/dummy.Po
 	-rm -f Makefile
@@ -738,9 +761,10 @@ test_cbc: ../src/cbc$(EXEEXT)
 
 .PHONY: test
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT)
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 	export RUNNING_TEST="CInterfaceTest_tsp_random" ; ./CInterfaceTest_tsp_random$(EXEEXT)
+	export RUNNING_TEST="CInterfaceTest_fl_random" ; ./CInterfaceTest_fl_random$(EXEEXT)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

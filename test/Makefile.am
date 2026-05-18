@@ -39,7 +39,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -58,6 +58,15 @@ CInterfaceTest_tsp_random_SOURCES = CInterfaceTest_tsp_random.c
 nodist_EXTRA_CInterfaceTest_tsp_random_SOURCES = dummy.cpp
 CInterfaceTest_tsp_random_LDADD = ../src/libCbc.la
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT)
+########################################################################
+#                   FL random-instance tests (UFL + CFLP)              #
+########################################################################
+
+CInterfaceTest_fl_random_SOURCES = CInterfaceTest_fl_random.c
+nodist_EXTRA_CInterfaceTest_fl_random_SOURCES = dummy.cpp
+CInterfaceTest_fl_random_LDADD = ../src/libCbc.la
+
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 	export RUNNING_TEST="CInterfaceTest_tsp_random" ; ./CInterfaceTest_tsp_random$(EXEEXT)
+	export RUNNING_TEST="CInterfaceTest_fl_random" ; ./CInterfaceTest_fl_random$(EXEEXT)

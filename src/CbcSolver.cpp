@@ -556,6 +556,7 @@ static void printHelp(CbcParameters &cbcParams, ClpParameters &clpParams)
   const char *order[] = {
     "Stopping", "Cuts", "Heuristics",
     "LP Presolve", "MIP Preprocessing", "MIP Preprocessing \u2014 Fast",
+    "MIP Preprocessing \u2014 Bound Propagation",
     "Branching", "Tolerances", "Conflict Graph",
     "Strategy", "Solving",
     "Simplex", "Barrier", "Scaling",

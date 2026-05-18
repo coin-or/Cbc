@@ -1,4 +1,4 @@
-/* TSP tests on randomly generated instances with Gurobi-verified optima.
+/* TSP tests on randomly generated instances with cross-validated optima.
    Two formulations tested per instance:
      1. Miller-Tucker-Zemlin (MTZ) compact formulation — directed arcs
      2. Branch-and-cut with subtour elimination via Cbc_addCutCallback —

@@ -56,3 +56,31 @@ jobs:
         with:
           name: mipster-linux-aarch64
           path: dist/mipster-linux-aarch64.tar.gz
+
+  build-macos-x86_64:
+    name: macOS x86_64 (generic + haswell)
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build + test
+        run: bash .github/scripts/build-macos-x86_64.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mipster-macos-x86_64
+          path: dist/mipster-macos-x86_64.tar.gz
+
+  build-macos-arm64:
+    name: macOS arm64 (Apple Silicon, M1+)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build + test
+        run: bash .github/scripts/build-macos-arm64.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mipster-macos-arm64
+          path: dist/mipster-macos-arm64.tar.gz

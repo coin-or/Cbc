@@ -22630,7 +22630,7 @@ fi
 
 # Here list all the files that configure should create (except for the
 # configuration header file)
-ac_config_files="$ac_config_files Makefile examples/Makefile src/CoinUtils/Makefile src/Clp/Makefile src/Cgl/Makefile src/Makefile test/Makefile cbc.pc"
+ac_config_files="$ac_config_files Makefile examples/Makefile src/CoinUtils/Makefile src/Clp/Makefile src/Cgl/Makefile src/Makefile test/Makefile mipster.pc"
 
 ac_config_files="$ac_config_files doxydoc/doxygen.conf"
 
@@ -24056,7 +24056,7 @@ do
     "src/Cgl/Makefile") CONFIG_FILES="$CONFIG_FILES src/Cgl/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
-    "cbc.pc") CONFIG_FILES="$CONFIG_FILES cbc.pc" ;;
+    "mipster.pc") CONFIG_FILES="$CONFIG_FILES mipster.pc" ;;
     "doxydoc/doxygen.conf") CONFIG_FILES="$CONFIG_FILES doxydoc/doxygen.conf" ;;
     "src/config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config.h" ;;
     "src/config_cbc.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config_cbc.h" ;;

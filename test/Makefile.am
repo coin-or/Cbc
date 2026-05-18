@@ -48,7 +48,7 @@ bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random
 CInterfaceTest_SOURCES = CInterfaceTest.c
 nodist_EXTRA_CInterfaceTest_SOURCES = dummy.cpp # force using C++ linker
 
-CInterfaceTest_LDADD = ../src/libCbc.la
+CInterfaceTest_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   TSP random-instance tests                           #
@@ -56,7 +56,7 @@ CInterfaceTest_LDADD = ../src/libCbc.la
 
 CInterfaceTest_tsp_random_SOURCES = CInterfaceTest_tsp_random.c
 nodist_EXTRA_CInterfaceTest_tsp_random_SOURCES = dummy.cpp
-CInterfaceTest_tsp_random_LDADD = ../src/libCbc.la
+CInterfaceTest_tsp_random_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   FL random-instance tests (UFL + CFLP)              #
@@ -64,7 +64,7 @@ CInterfaceTest_tsp_random_LDADD = ../src/libCbc.la
 
 CInterfaceTest_fl_random_SOURCES = CInterfaceTest_fl_random.c
 nodist_EXTRA_CInterfaceTest_fl_random_SOURCES = dummy.cpp
-CInterfaceTest_fl_random_LDADD = ../src/libCbc.la
+CInterfaceTest_fl_random_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   MDKP random-instance tests                          #
@@ -72,14 +72,14 @@ CInterfaceTest_fl_random_LDADD = ../src/libCbc.la
 
 CInterfaceTest_mdkp_random_SOURCES = CInterfaceTest_mdkp_random.c
 nodist_EXTRA_CInterfaceTest_mdkp_random_SOURCES = dummy.cpp
-CInterfaceTest_mdkp_random_LDADD = ../src/libCbc.la
+CInterfaceTest_mdkp_random_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   CbcSolver LP relaxation C++ tests                  #
 ########################################################################
 
 CbcSolverLpTest_SOURCES = CbcSolverLpTest.cpp
-CbcSolverLpTest_LDADD = ../src/libCbc.la
+CbcSolverLpTest_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   Nursesched MPS-file tests (LP+BP, MIP)             #
@@ -93,7 +93,7 @@ FIXTURE_DIR_VAL = $(abs_srcdir)
 CInterfaceTest_nursesched_SOURCES = CInterfaceTest_nursesched.c
 nodist_EXTRA_CInterfaceTest_nursesched_SOURCES = dummy.cpp
 CInterfaceTest_nursesched_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
-CInterfaceTest_nursesched_LDADD = ../src/libCbc.la
+CInterfaceTest_nursesched_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   A-1 project-scheduling tests (LP reopt, MIP)       #
@@ -102,7 +102,7 @@ CInterfaceTest_nursesched_LDADD = ../src/libCbc.la
 CInterfaceTest_a1_SOURCES = CInterfaceTest_a1.c
 nodist_EXTRA_CInterfaceTest_a1_SOURCES = dummy.cpp
 CInterfaceTest_a1_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
-CInterfaceTest_a1_LDADD = ../src/libCbc.la
+CInterfaceTest_a1_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   graphdraw-domain tests (LP + node-limited MIP)     #
@@ -111,7 +111,7 @@ CInterfaceTest_a1_LDADD = ../src/libCbc.la
 CInterfaceTest_graphdraw_SOURCES = CInterfaceTest_graphdraw.c
 nodist_EXTRA_CInterfaceTest_graphdraw_SOURCES = dummy.cpp
 CInterfaceTest_graphdraw_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
-CInterfaceTest_graphdraw_LDADD = ../src/libCbc.la
+CInterfaceTest_graphdraw_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   trdta5581 tests (integer infeasibility via BP)     #
@@ -120,7 +120,7 @@ CInterfaceTest_graphdraw_LDADD = ../src/libCbc.la
 CInterfaceTest_trdta5581_SOURCES = CInterfaceTest_trdta5581.c
 nodist_EXTRA_CInterfaceTest_trdta5581_SOURCES = dummy.cpp
 CInterfaceTest_trdta5581_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
-CInterfaceTest_trdta5581_LDADD = ../src/libCbc.la
+CInterfaceTest_trdta5581_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   trd445c tests (LP reopt, MIP optimal)             #
@@ -129,7 +129,7 @@ CInterfaceTest_trdta5581_LDADD = ../src/libCbc.la
 CInterfaceTest_trd445c_SOURCES = CInterfaceTest_trd445c.c
 nodist_EXTRA_CInterfaceTest_trd445c_SOURCES = dummy.cpp
 CInterfaceTest_trd445c_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
-CInterfaceTest_trd445c_LDADD = ../src/libCbc.la
+CInterfaceTest_trd445c_LDADD = ../src/libmipster.la
 
 ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CbcSolverLpTest$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)

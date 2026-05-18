@@ -36,6 +36,8 @@ echo "==> MIPster Windows/MinGW64 build"
 echo "    GCC:    $(gcc --version | head -1)"
 echo "    Source: ${SRC_DIR}"
 
+# bin/ holds both executables AND the DLLs they depend on, so that everything
+# works from any directory on a clean Windows machine without PATH changes.
 mkdir -p "${INSTALL_DIR}/bin" "${INSTALL_DIR}/include"
 
 # ── Build one variant (exe + DLL) ─────────────────────────────────────────────
@@ -51,8 +53,10 @@ build_variant() {
   mkdir -p "${build_dir}"
   cd "${build_dir}"
 
-  # Shared build (DLL) — Windows autotools cannot do --enable-shared --enable-static together.
-  # The LDFLAGS link the MinGW runtime libs statically so no MinGW DLLs need shipping.
+  # Shared build (DLL): CoinUtils/Clp/Cgl are noinst convenience libs so libtool
+  # merges them all into libmipster.dll — one self-contained DLL.
+  # MinGW runtime (libgcc, libstdc++, libwinpthread) is embedded statically via
+  # LDFLAGS so libmipster.dll and the exe need only standard Windows system DLLs.
   "${SRC_DIR}/configure" \
     --prefix="${build_dir}/install" \
     --enable-shared \
@@ -80,14 +84,21 @@ build_variant() {
   echo "    bin/mipster-${name}.exe: $(du -sh "${INSTALL_DIR}/bin/mipster-${name}.exe" | cut -f1)"
 
   # ── Shared library (.dll) ─────────────────────────────────────────────────
-  local libdir="${INSTALL_DIR}/lib/${name}"
-  mkdir -p "${libdir}"
-  # libtool on Windows installs DLLs into bin/ (alongside the exe)
-  find "${build_dir}/install" \( -name 'libCbc*.dll' -o -name 'libCbc*.dll.a' \) | while read -r f; do
+  # libtool installs DLLs into $prefix/bin on Windows. Copy libmipster-N.dll
+  # alongside the executables so they are found without any PATH change.
+  find "${build_dir}/install/bin" -name 'libmipster*.dll' | while read -r f; do
     strip --strip-unneeded "${f}" 2>/dev/null || true
-    cp "${f}" "${libdir}/"
+    # Suffix dll with variant name to avoid collision between generic/avx2 builds
+    local base
+    base=$(basename "${f}")
+    cp "${f}" "${INSTALL_DIR}/bin/${base%.dll}-${name}.dll"
   done
-  echo "    lib/${name}/: done"
+  # Also copy the import lib (.dll.a) to lib/ for developers linking against the DLL
+  mkdir -p "${INSTALL_DIR}/lib"
+  find "${build_dir}/install/lib" -name 'libmipster*.dll.a' | while read -r f; do
+    cp "${f}" "${INSTALL_DIR}/lib/"
+  done
+  echo "    bin/libmipster-${name}.dll: done"
 }
 
 build_variant "generic" "-O3 -ffp-contract=off"
@@ -170,8 +181,14 @@ echo ""
 echo "==> DLL dependencies (mipster-generic.exe):"
 objdump -p "${INSTALL_DIR}/bin/mipster-generic.exe" 2>/dev/null \
   | grep 'DLL Name' \
-  | grep -iv 'kernel32\|ntdll\|msvcrt\|user32\|advapi32\|ws2_32\|winpthread\|api-ms' \
-  || echo "    (only system DLLs — OK)"
+  | grep -iv 'kernel32\|ntdll\|msvcrt\|user32\|advapi32\|ws2_32\|libmipster\|api-ms' \
+  || echo "    (only system DLLs + libmipster — OK)"
+echo ""
+echo "==> DLL dependencies (libmipster-N-generic.dll):"
+find "${INSTALL_DIR}/bin" -name 'libmipster*-generic.dll' | head -1 | xargs objdump -p 2>/dev/null \
+  | grep 'DLL Name' \
+  | grep -iv 'kernel32\|ntdll\|msvcrt\|user32\|advapi32\|ws2_32\|api-ms' \
+  || echo "    (only system DLLs — self-contained OK)"
 
 # ── NSIS installer ────────────────────────────────────────────────────────────
 echo ""

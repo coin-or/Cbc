@@ -5,15 +5,15 @@
 # Author:  Andreas Waechter           IBM    2006-04-13
 
 ########################################################################
-#                               libCbc                                 #
+#                             libmipster                               #
 ########################################################################
 
 # Name of the library compiled in this directory.
 # We want it to be installed in the 'lib' directory
-lib_LTLIBRARIES = libCbc.la
+lib_LTLIBRARIES = libmipster.la
 
 # List all source files for this library, including headers
-libCbc_la_SOURCES = \
+libmipster_la_SOURCES = \
 	CbcConfig.h \
 	CbcBab.cpp \
 	CbcBranchActual.hpp \
@@ -110,10 +110,10 @@ libCbc_la_SOURCES = \
 	unitTestClp.cpp
 
 # List all additionally required libraries
-libCbc_la_LIBADD = CoinUtils/libCoinUtils.la Clp/libClp.la Cgl/libCgl.la $(CBCLIB_LFLAGS)
+libmipster_la_LIBADD = CoinUtils/libCoinUtils.la Clp/libClp.la Cgl/libCgl.la $(CBCLIB_LFLAGS)
 
 # Some common setup for cbc and cbc-generic.
-libCbc_la_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/CoinUtils -I$(srcdir)/Clp -I$(srcdir)/Cgl
+libmipster_la_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/CoinUtils -I$(srcdir)/Clp -I$(srcdir)/Cgl
 
 ########################################################################
 #                            cbc program                               #
@@ -127,7 +127,7 @@ bin_PROGRAMS = mipster
 mipster_SOURCES = CoinSolve.cpp
 
 # Additional libraries
-mipster_LDADD = libCbc.la
+mipster_LDADD = libmipster.la
 
 # not really accurate to use these CFLAGS, but they should have everything
 mipster_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/CoinUtils -I$(srcdir)/Clp -I$(srcdir)/Cgl

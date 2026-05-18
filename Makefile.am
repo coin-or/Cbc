@@ -12,7 +12,7 @@ include BuildTools/Makemain.inc
 
 SUBDIRS = src/CoinUtils src/Clp src/Cgl src
 
-pkgconfiglib_DATA = cbc.pc
+pkgconfiglib_DATA = mipster.pc
 
 ########################################################################
 #                           Extra Targets                              #

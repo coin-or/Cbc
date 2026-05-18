@@ -106,7 +106,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h \
 	$(top_builddir)/src/config_cbc.h
-CONFIG_CLEAN_FILES = examples/Makefile cbc.pc doxydoc/doxygen.conf
+CONFIG_CLEAN_FILES = examples/Makefile mipster.pc doxydoc/doxygen.conf
 CONFIG_CLEAN_VPATH_FILES = examples/sudoku_sample.csv
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -368,7 +368,7 @@ DOXYTAG_EDIT = sed -e 's|@baredocdir_nosub@|$(datarootdir)/doc|g'
 #                          Subdirectories                              #
 ########################################################################
 SUBDIRS = src/CoinUtils src/Clp src/Cgl src
-pkgconfiglib_DATA = cbc.pc
+pkgconfiglib_DATA = mipster.pc
 all: all-recursive
 
 .SUFFIXES:
@@ -408,7 +408,7 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 $(am__aclocal_m4_deps):
 examples/Makefile: $(top_builddir)/config.status $(top_srcdir)/examples/Makefile.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-cbc.pc: $(top_builddir)/config.status $(srcdir)/cbc.pc.in
+mipster.pc: $(top_builddir)/config.status $(srcdir)/mipster.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 doxydoc/doxygen.conf: $(top_builddir)/config.status $(top_srcdir)/doxydoc/doxygen.conf.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@

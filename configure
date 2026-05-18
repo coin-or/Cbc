@@ -706,19 +706,20 @@ COIN_HAS_ASL_FALSE
 COIN_HAS_ASL_TRUE
 COIN_HAS_AMD_FALSE
 COIN_HAS_AMD_TRUE
-COIN_HAS_COINUTILS_FALSE
-COIN_HAS_COINUTILS_TRUE
-OSICBCLIB_PCFILES
-OSICBCLIB_CFLAGS
-OSICBCLIB_LFLAGS
-CBCLIB_PCFILES
 CBCLIB_CFLAGS
-CBCLIB_LFLAGS
+COIN_HAS_BZLIB_FALSE
+COIN_HAS_BZLIB_TRUE
+COIN_HAS_ZLIB_FALSE
+COIN_HAS_ZLIB_TRUE
+COIN_HAS_LAPACK_FALSE
+COIN_HAS_LAPACK_TRUE
 COIN_PKG_CONFIG_PATH
 COIN_HAS_PKGCONFIG_FALSE
 COIN_HAS_PKGCONFIG_TRUE
 ac_ct_PKG_CONFIG
 PKG_CONFIG
+CBCLIB_PCFILES
+CBCLIB_LFLAGS
 RPATH_FLAGS
 COIN_STATIC_BUILD_FALSE
 COIN_STATIC_BUILD_TRUE
@@ -876,9 +877,10 @@ with_aix_soname
 with_gnu_ld
 with_sysroot
 enable_libtool_lock
-with_coinutils
-with_coinutils_lflags
-with_coinutils_cflags
+with_lapack
+with_lapack_lflags
+enable_zlib
+enable_bzlib
 with_amd
 with_amd_lflags
 with_amd_cflags
@@ -1570,6 +1572,8 @@ Optional Features:
                           shared library versioning (aka "SONAME") variant to
                           provide on AIX, [default=aix].
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --disable-zlib          do not compile with compression library zlib
+  --disable-bzlib         do not compile with compression library bzlib
   --disable-cbc-parallel  disables compilation of the SMP version of Cbc
 
 Optional Packages:
@@ -1578,16 +1582,13 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
-  --without-coinutils     Do not use CoinUtils. If an argument is given to
-                          --with-coinutils, then 'yes' is
-                          equivalent to --with-coinutils, 'no' is
-                          equivalent to --without-coinutils and any other
-                          argument is applied as for --with-coinutils-lflags.
-  --with-coinutils-lflags Linker flags for CoinUtils appropriate for your
+  --without-lapack        Do not use lapack. If an argument is given to
+                          --with-lapack, then 'yes' is equivalent
+                          to --with-lapack, 'no' is equivalent to
+                          --without-lapack and any other argument is applied
+                          as for --with-lapack-lflags.
+  --with-lapack-lflags    Linker flags for lapack appropriate for your
                           environment. (Most often, -l specs for libraries.)
-  --with-coinutils-cflags Compiler flags for CoinUtils appropriate for your
-                          environment. (Most often, -I specs for header file
-                          directories.)
   --without-amd           Do not use AMD. If an argument is given to
                           --with-amd, then 'yes' is equivalent to
                           --with-amd, 'no' is equivalent to
@@ -19249,6 +19250,9 @@ fi
 #############################################################################
 
 
+printf "%s\n" "#define CBC_HAS_COINUTILS 1" >>confdefs.h
+
+
 
 
   if test -z "$PKG_CONFIG" ; then
@@ -19412,15 +19416,8 @@ printf "%s\n" "$as_me: $PKG_CONFIG path is \"$COIN_PKG_CONFIG_PATH\"" >&6;}
   fi
 
 
-
-
-
-
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for package CoinUtils" >&5
-printf %s "checking for package CoinUtils... " >&6; }
-
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for LAPACK" >&5
+printf %s "checking for LAPACK... " >&6; }
 
 
 
@@ -19430,238 +19427,1089 @@ printf %s "checking for package CoinUtils... " >&6; }
 
 
 
+# Check whether --with-lapack was given.
+if test ${with_lapack+y}
+then :
+  withval=$with_lapack;
+fi
 
-  coin_has_coinutils=noInfo
-  if test x"$COIN_SKIP_PROJECTS" != x ; then
-    for pkg in `echo $COIN_SKIP_PROJECTS | tr '[:upper:]' '[:lower:]'` ; do
-      if test "$pkg" = "coinutils" ; then
-        coin_has_coinutils=skipping
-      fi
+
+
+# Check whether --with-lapack-lflags was given.
+if test ${with_lapack_lflags+y}
+then :
+  withval=$with_lapack_lflags;
+fi
+
+
+
+
+
+
+
+  coin_has_lapack=no
+  lapack_keep_looking=yes
+
+  if test "$with_lapack" != "no" ; then
+    if test "$with_lapack" != "yes" && test -z "$with_lapack_lflags" ; then
+      with_lapack_lflags="$with_lapack"
+    fi
+    if test -n "$with_lapack_lflags" ; then
+
+  ac_save_LIBS="$LIBS"
+  LIBS="$with_lapack_lflags $LIBS"
+
+
+  dsyev_namemangling=unknown
+
+  for ac_extra in "no extra underscore" "extra underscore" ; do
+    for ac_case in "lower case" "upper case" ; do
+      for ac_trail in "underscore" "no underscore" ; do
+        case $ac_case in
+          "lower case")
+            ac_name=dsyev
+            ;;
+          "upper case")
+            ac_name=DSYEV
+            ;;
+        esac
+        if test "$ac_trail" = "underscore" ; then
+          ac_name=${ac_name}_
+        fi
+        if test "$ac_extra" = "extra underscore" ; then
+          ac_name=${ac_name}_
+        fi
+
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_name (void);
+int
+main (void)
+{
+return $ac_name ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  dsyev_namemangling="${ac_case}, ${ac_trail}, ${ac_extra}"
+           ac_success=yes
+else case e in #(
+  e) ac_success=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+        if test $ac_success = yes ; then
+          break 3
+        fi
+      done
     done
+  done
+  LIBS=$ac_save_LIBS
+
+  if test $ac_success = yes ; then
+    coin_has_lapack=yes
+         lapack_what="user-specified ($with_lapack_lflags)"
+         lapack_keep_looking=no
+         lapack_lflags=$with_lapack_lflags
+    else as_fn_error $? "Cannot link to user-specified Lapack $with_lapack_lflags." "$LINENO" 5
+  fi
+
+    fi
+  else
+    lapack_keep_looking=no
+    lapack_what="user-specified"
   fi
 
 
-  if test "$coin_has_coinutils" != skipping ; then
+  if test "$lapack_keep_looking" = yes ; then
+    case $build in
+      *-linux*)
+        case "  " in
+          *\ int64\ * ) coin_mkl="-lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lm" ;;
+          *)          coin_mkl="-lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lm" ;;
+        esac
+
+  ac_save_LIBS="$LIBS"
+  LIBS="$coin_mkl $LIBS"
 
 
+  dsyev_namemangling=unknown
 
+  for ac_extra in "no extra underscore" "extra underscore" ; do
+    for ac_case in "lower case" "upper case" ; do
+      for ac_trail in "underscore" "no underscore" ; do
+        case $ac_case in
+          "lower case")
+            ac_name=dsyev
+            ;;
+          "upper case")
+            ac_name=DSYEV
+            ;;
+        esac
+        if test "$ac_trail" = "underscore" ; then
+          ac_name=${ac_name}_
+        fi
+        if test "$ac_extra" = "extra underscore" ; then
+          ac_name=${ac_name}_
+        fi
 
-# Check whether --with-coinutils was given.
-if test ${with_coinutils+y}
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_name (void);
+int
+main (void)
+{
+return $ac_name ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
 then :
-  withval=$with_coinutils;
+  dsyev_namemangling="${ac_case}, ${ac_trail}, ${ac_extra}"
+           ac_success=yes
+else case e in #(
+  e) ac_success=no ;;
+esac
 fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+        if test $ac_success = yes ; then
+          break 3
+        fi
+      done
+    done
+  done
+  LIBS=$ac_save_LIBS
+
+  if test $ac_success = yes ; then
+    coin_has_lapack=yes
+           lapack_lflags="$coin_mkl"
+           lapack_what="Intel MKL ($lapack_lflags)"
 
 
+  fi
 
-# Check whether --with-coinutils-lflags was given.
-if test ${with_coinutils_lflags+y}
+      ;;
+
+      *-*-solaris*)
+        case "  " in
+          *\ int64\ * ) ;;
+          *)
+  ac_save_LIBS="$LIBS"
+  LIBS="-lsunperf $LIBS"
+
+
+  dsyev_namemangling=unknown
+
+  for ac_extra in "no extra underscore" "extra underscore" ; do
+    for ac_case in "lower case" "upper case" ; do
+      for ac_trail in "underscore" "no underscore" ; do
+        case $ac_case in
+          "lower case")
+            ac_name=dsyev
+            ;;
+          "upper case")
+            ac_name=DSYEV
+            ;;
+        esac
+        if test "$ac_trail" = "underscore" ; then
+          ac_name=${ac_name}_
+        fi
+        if test "$ac_extra" = "extra underscore" ; then
+          ac_name=${ac_name}_
+        fi
+
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_name (void);
+int
+main (void)
+{
+return $ac_name ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
 then :
-  withval=$with_coinutils_lflags;
+  dsyev_namemangling="${ac_case}, ${ac_trail}, ${ac_extra}"
+           ac_success=yes
+else case e in #(
+  e) ac_success=no ;;
+esac
 fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+        if test $ac_success = yes ; then
+          break 3
+        fi
+      done
+    done
+  done
+  LIBS=$ac_save_LIBS
+
+  if test $ac_success = yes ; then
+    coin_has_lapack=yes
+                lapack_lflags=-lsunperf
+                lapack_what="Sun Performance Library ($lapack_lflags)"
 
 
+  fi
+ ;;
+        esac
+      ;;
 
-# Check whether --with-coinutils-cflags was given.
-if test ${with_coinutils_cflags+y}
+      *-cygwin* | *-mingw* | *-msys*)
+        old_IFS="$IFS"
+        IFS=";"
+        coin_mkl=""
+        for d in $LIB ; do
+          # turn $d into unix-style short path (no spaces); cannot do -us,
+          # so first do -ws, then -u
+          d=`cygpath -ws "$d"`
+          d=`cygpath -u "$d"`
+          if test "$enable_shared" = yes ; then
+            if test -e "$d/mkl_core_dll.lib" ; then
+              case "  " in
+                *\ int64\ * ) coin_mkl="$d/mkl_intel_ilp64_dll.lib $d/mkl_sequential_dll.lib $d/mkl_core_dll.lib" ;;
+                *)          coin_mkl="$d/mkl_intel_lp64_dll.lib $d/mkl_sequential_dll.lib $d/mkl_core_dll.lib" ;;
+              esac
+              break
+            fi
+          else
+            if test -e "$d/mkl_core.lib" ; then
+              case "  " in
+                *\ int64\ * ) coin_mkl="$d/mkl_intel_ilp64.lib $d/mkl_sequential.lib $d/mkl_core.lib" ;;
+                *)          coin_mkl="$d/mkl_intel_lp64.lib $d/mkl_sequential.lib $d/mkl_core.lib" ;;
+              esac
+              break
+            fi
+          fi
+        done
+        IFS="$old_IFS"
+        if test -n "$coin_mkl" ; then
+
+  ac_save_LIBS="$LIBS"
+  LIBS="$coin_mkl $LIBS"
+
+
+  dsyev_namemangling=unknown
+
+  for ac_extra in "no extra underscore" "extra underscore" ; do
+    for ac_case in "lower case" "upper case" ; do
+      for ac_trail in "underscore" "no underscore" ; do
+        case $ac_case in
+          "lower case")
+            ac_name=dsyev
+            ;;
+          "upper case")
+            ac_name=DSYEV
+            ;;
+        esac
+        if test "$ac_trail" = "underscore" ; then
+          ac_name=${ac_name}_
+        fi
+        if test "$ac_extra" = "extra underscore" ; then
+          ac_name=${ac_name}_
+        fi
+
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_name (void);
+int
+main (void)
+{
+return $ac_name ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
 then :
-  withval=$with_coinutils_cflags;
+  dsyev_namemangling="${ac_case}, ${ac_trail}, ${ac_extra}"
+           ac_success=yes
+else case e in #(
+  e) ac_success=no ;;
+esac
 fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+        if test $ac_success = yes ; then
+          break 3
+        fi
+      done
+    done
+  done
+  LIBS=$ac_save_LIBS
+
+  if test $ac_success = yes ; then
+    coin_has_lapack=yes
+                lapack_lflags="$coin_mkl"
+                lapack_what="Intel MKL ($lapack_lflags)"
 
 
+  fi
+
+        fi
+      ;;
+
+      *-darwin*)
+        case "  " in
+          *\ int64\ * ) coin_mkl="-lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lm" ;;
+          *)          coin_mkl="-lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lm" ;;
+        esac
+
+  ac_save_LIBS="$LIBS"
+  LIBS="$coin_mkl $LIBS"
 
 
+  dsyev_namemangling=unknown
+
+  for ac_extra in "no extra underscore" "extra underscore" ; do
+    for ac_case in "lower case" "upper case" ; do
+      for ac_trail in "underscore" "no underscore" ; do
+        case $ac_case in
+          "lower case")
+            ac_name=dsyev
+            ;;
+          "upper case")
+            ac_name=DSYEV
+            ;;
+        esac
+        if test "$ac_trail" = "underscore" ; then
+          ac_name=${ac_name}_
+        fi
+        if test "$ac_extra" = "extra underscore" ; then
+          ac_name=${ac_name}_
+        fi
+
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_name (void);
+int
+main (void)
+{
+return $ac_name ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  dsyev_namemangling="${ac_case}, ${ac_trail}, ${ac_extra}"
+           ac_success=yes
+else case e in #(
+  e) ac_success=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+        if test $ac_success = yes ; then
+          break 3
+        fi
+      done
+    done
+  done
+  LIBS=$ac_save_LIBS
+
+  if test $ac_success = yes ; then
+    coin_has_lapack=yes
+           lapack_lflags="$coin_mkl"
+           lapack_what="Intel MKL ($lapack_lflags)"
 
 
+  fi
+
+        if test "$coin_has_lapack" = no ; then
+          case "  " in
+            *\ int64\ * ) ;;
+            *)
+  ac_save_LIBS="$LIBS"
+  LIBS="-framework Accelerate $LIBS"
 
 
+  dsyev_namemangling=unknown
+
+  for ac_extra in "no extra underscore" "extra underscore" ; do
+    for ac_case in "lower case" "upper case" ; do
+      for ac_trail in "underscore" "no underscore" ; do
+        case $ac_case in
+          "lower case")
+            ac_name=dsyev
+            ;;
+          "upper case")
+            ac_name=DSYEV
+            ;;
+        esac
+        if test "$ac_trail" = "underscore" ; then
+          ac_name=${ac_name}_
+        fi
+        if test "$ac_extra" = "extra underscore" ; then
+          ac_name=${ac_name}_
+        fi
+
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_name (void);
+int
+main (void)
+{
+return $ac_name ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  dsyev_namemangling="${ac_case}, ${ac_trail}, ${ac_extra}"
+           ac_success=yes
+else case e in #(
+  e) ac_success=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+        if test $ac_success = yes ; then
+          break 3
+        fi
+      done
+    done
+  done
+  LIBS=$ac_save_LIBS
+
+  if test $ac_success = yes ; then
+    coin_has_lapack=yes
+                  lapack_lflags="-framework Accelerate"
+                  lapack_what="Accelerate framework ($lapack_lflags)"
 
 
+  fi
 
-
-  coin_has_coinutils=requested
-
-  coinutils_lflags=
-  coinutils_cflags=
-  coinutils_data=
-  coinutils_pcfiles="coinutils"
-
-
-  withval="$with_coinutils"
-  if test -n "$withval" ; then
-    case "$withval" in
-      no )
-        coin_has_coinutils=skipping
-        coinutils_failmode='command line'
-        ;;
-      yes )
-        coin_has_coinutils=requested
-        coinutils_failmode=''
-        ;;
-      build )
-        coin_has_coinutils=requested
-        coinutils_build=yes
-        coinutils_failmode=''
-        ;;
-      * )
-        coin_has_coinutils=requested
-        coinutils_failmode=''
-        coinutils_lflags="$withval"
-        coinutils_pcfiles=''
-        ;;
+               ;;
+          esac
+        fi
+      ;;
     esac
-  else
-    if test -n "$with_coinutils_lflags" ||
-       test -n "$with_coinutils_cflags" ||
-       test -n "$with_coinutils_data" ; then
-      coin_has_coinutils=requested
-      coinutils_failmode=''
-      coinutils_pcfiles=''
+    if test "$coin_has_lapack" = yes ; then
+      lapack_keep_looking=no
     fi
   fi
 
-
-  if test "$coin_has_coinutils" != skipping ; then
-       withval="$with_coinutils_lflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify link flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_coinutils=yes
-             coinutils_lflags="$withval"
-             coinutils_pcfiles=''
-             ;;
-         esac
-       fi
-
-       withval="$with_coinutils_cflags"
-       if test -n "$withval" ; then
-         case "$withval" in
-           build | no | yes )
-             as_fn_error $? "\"$withval\" is not useful here; please specify compile flags appropriate for your environment." "$LINENO" 5
-             ;;
-           * )
-             coin_has_coinutils=yes
-             coinutils_cflags="$withval"
-             coinutils_pcfiles=''
-             ;;
-         esac
-       fi
-     fi
-
-
-
-
-
-  if test $coin_has_coinutils = requested ; then
-    if test -n "$PKG_CONFIG" ; then
-      if test x"$coinutils_build" = xyes ; then
-        pcfile="coin$coinutils_pcfiles"
-
+  if test "$lapack_keep_looking" = yes ; then
+    case "  " in
+      *\ int64\ * ) ;;
+      *)
 
 
   if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      COINUTILS_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_coinutils=yes
+    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "lapack blas" ; then
+      LAPACK_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "lapack blas" 2>/dev/null | tr '\n' ' '`
+      lapack_what="generic module (lapack.pc blas.pc)"
+
+  ac_save_LIBS="$LIBS"
+
+
+    if test -n "lapack" ; then
+      temp_LFLAGS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --libs $pkg_static lapack`
+      LIBS="$temp_LFLAGS $LIBS"
+    fi
+
+
+  dsyev_namemangling=unknown
+
+  for ac_extra in "no extra underscore" "extra underscore" ; do
+    for ac_case in "lower case" "upper case" ; do
+      for ac_trail in "underscore" "no underscore" ; do
+        case $ac_case in
+          "lower case")
+            ac_name=dsyev
+            ;;
+          "upper case")
+            ac_name=DSYEV
+            ;;
+        esac
+        if test "$ac_trail" = "underscore" ; then
+          ac_name=${ac_name}_
+        fi
+        if test "$ac_extra" = "extra underscore" ; then
+          ac_name=${ac_name}_
+        fi
+
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_name (void);
+int
+main (void)
+{
+return $ac_name ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  dsyev_namemangling="${ac_case}, ${ac_trail}, ${ac_extra}"
+           ac_success=yes
+else case e in #(
+  e) ac_success=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+        if test $ac_success = yes ; then
+          break 3
+        fi
+      done
+    done
+  done
+  LIBS=$ac_save_LIBS
+
+  if test $ac_success = yes ; then
+    coin_has_lapack=yes
+               lapack_keep_looking=no
+               lapack_pcfiles="lapack blas"
+    else { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: lapack.pc and blas.pc present, but could not find dsyev when trying to link with LAPACK." >&5
+printf "%s\n" "$as_me: WARNING: lapack.pc and blas.pc present, but could not find dsyev when trying to link with LAPACK." >&2;}
+  fi
+
+
     else
-      COINUTILS_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_coinutils=no
+      LAPACK_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "lapack blas"`
+
     fi
   else
-    as_fn_error $? "\"Cannot check for existence of module coinutils without pkgconf\"" "$LINENO" 5
+    as_fn_error $? "\"Cannot check for existence of module lapack without pkgconf\"" "$LINENO" 5
   fi
 
+         ;;
+    esac
+  fi
+
+  if test "$lapack_keep_looking" = yes ; then
+    case "  " in
+      *\ int64\ * ) coin_lapack="-llapack64 -lblas64" ;;
+      *) coin_lapack="-llapack -lblas" ;;
+    esac
+
+  ac_save_LIBS="$LIBS"
+  LIBS="$coin_lapack $LIBS"
+
+
+  dsyev_namemangling=unknown
+
+  for ac_extra in "no extra underscore" "extra underscore" ; do
+    for ac_case in "lower case" "upper case" ; do
+      for ac_trail in "underscore" "no underscore" ; do
+        case $ac_case in
+          "lower case")
+            ac_name=dsyev
+            ;;
+          "upper case")
+            ac_name=DSYEV
+            ;;
+        esac
+        if test "$ac_trail" = "underscore" ; then
+          ac_name=${ac_name}_
+        fi
+        if test "$ac_extra" = "extra underscore" ; then
+          ac_name=${ac_name}_
+        fi
+
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_name (void);
+int
+main (void)
+{
+return $ac_name ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  dsyev_namemangling="${ac_case}, ${ac_trail}, ${ac_extra}"
+           ac_success=yes
+else case e in #(
+  e) ac_success=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+        if test $ac_success = yes ; then
+          break 3
+        fi
+      done
+    done
+  done
+  LIBS=$ac_save_LIBS
+
+  if test $ac_success = yes ; then
+    coin_has_lapack=yes
+       lapack_lflags="$coin_lapack"
+       lapack_what="generic library ($lapack_lflags)"
+
+  fi
+
+  fi
+
+  case "$coin_has_lapack" in
+    yes)
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_lapack: $lapack_what" >&5
+printf "%s\n" "$coin_has_lapack: $lapack_what" >&6; }
+      ;;
+    no)
+      if test -n "$lapack_what" ; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_lapack ($lapack_what)" >&5
+printf "%s\n" "$coin_has_lapack ($lapack_what)" >&6; }
+      else
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_lapack" >&5
+printf "%s\n" "$coin_has_lapack" >&6; }
       fi
-      if ! test $coin_has_coinutils = yes ; then
-        pcfile="$coinutils_pcfiles"
+      ;;
+    *)
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: CHK_LAPACK: unexpected result '$coin_has_lapack'" >&5
+printf "%s\n" "$as_me: WARNING: CHK_LAPACK: unexpected result '$coin_has_lapack'" >&2;}
+      ;;
+  esac
 
-
-
-  if test -n "$PKG_CONFIG" ; then
-    if PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --exists "$pcfile" ; then
-      COINUTILS_VERSIONS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --modversion "$pcfile" 2>/dev/null | tr '\n' ' '`
-      coin_has_coinutils=yes
-    else
-      COINUTILS_PKG_ERRORS=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "$pcfile"`
-      coin_has_coinutils=no
-    fi
-  else
-    as_fn_error $? "\"Cannot check for existence of module coinutils without pkgconf\"" "$LINENO" 5
-  fi
-
-      fi
-      if test $coin_has_coinutils = yes ; then
-        coinutils_data=`PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" $PKG_CONFIG --variable=datadir "$pcfile" 2>/dev/null`
-        coinutils_pcfiles="$pcfile"
-      fi
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Check for coinutils via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-coinutils-lflags and --with-coinutils-cflags." >&5
-printf "%s\n" "$as_me: WARNING: Check for coinutils via pkg-config could not be performed as there is no pkg-config available. Consider installing pkg-config or provide appropriate values for --with-coinutils-lflags and --with-coinutils-cflags." >&2;}
-      coin_has_coinutils=no
-    fi
-  fi
-
-
-  if test "$BUILDTOOLS_DEBUG" = 1 ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: FIND_PRIM_PKG result for coinutils: \"$coin_has_coinutils\"" >&5
-printf "%s\n" "$as_me: FIND_PRIM_PKG result for coinutils: \"$coin_has_coinutils\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Collected values for package 'coinutils'" >&5
-printf "%s\n" "$as_me: Collected values for package 'coinutils'" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: coinutils_lflags is \"$coinutils_lflags\"" >&5
-printf "%s\n" "$as_me: coinutils_lflags is \"$coinutils_lflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: coinutils_cflags is \"$coinutils_cflags\"" >&5
-printf "%s\n" "$as_me: coinutils_cflags is \"$coinutils_cflags\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: coinutils_data is \"$coinutils_data\"" >&5
-printf "%s\n" "$as_me: coinutils_data is \"$coinutils_data\"" >&6;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: coinutils_pcfiles is \"$coinutils_pcfiles\"" >&5
-printf "%s\n" "$as_me: coinutils_pcfiles is \"$coinutils_pcfiles\"" >&6;}
-  fi
-
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_coinutils" >&5
-printf "%s\n" "$coin_has_coinutils" >&6; }
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $coin_has_coinutils (COIN_SKIP_PROJECTS)" >&5
-printf "%s\n" "$coin_has_coinutils (COIN_SKIP_PROJECTS)" >&6; }
-  fi
-
-
-  if test "$coin_has_coinutils" != yes ; then
-    coin_has_coinutils=no
-  fi
-
-
-   if test $coin_has_coinutils = yes; then
-  COIN_HAS_COINUTILS_TRUE=
-  COIN_HAS_COINUTILS_FALSE='#'
+   if test $coin_has_lapack = yes; then
+  COIN_HAS_LAPACK_TRUE=
+  COIN_HAS_LAPACK_FALSE='#'
 else
-  COIN_HAS_COINUTILS_TRUE='#'
-  COIN_HAS_COINUTILS_FALSE=
+  COIN_HAS_LAPACK_TRUE='#'
+  COIN_HAS_LAPACK_FALSE=
 fi
 
 
+  if test $coin_has_lapack = yes ; then
 
-  if test $coin_has_coinutils = yes ; then
-
-printf "%s\n" "#define CBC_HAS_COINUTILS 1" >>confdefs.h
-
-    CBCLIB_PCFILES="$coinutils_pcfiles $CBCLIB_PCFILES"
-       CBCLIB_LFLAGS="$coinutils_lflags $CBCLIB_LFLAGS"
-       CBCLIB_CFLAGS="$coinutils_cflags $CBCLIB_CFLAGS"
-      OSICBCLIB_PCFILES="$coinutils_pcfiles $OSICBCLIB_PCFILES"
-       OSICBCLIB_LFLAGS="$coinutils_lflags $OSICBCLIB_LFLAGS"
-       OSICBCLIB_CFLAGS="$coinutils_cflags $OSICBCLIB_CFLAGS"
+printf "%s\n" "#define CBC_HAS_LAPACK 1" >>confdefs.h
 
 
+
+
+  case "${dsyev_namemangling}" in
+   "lower case, no underscore, no extra underscore")
+      printf "%s\n" "#define CBC_LAPACK_FUNC(name,NAME) name" >>confdefs.h
+
+      printf "%s\n" "#define CBC_LAPACK_FUNC_(name,NAME) name" >>confdefs.h
+ ;;
+   "lower case, no underscore, extra underscore")
+      printf "%s\n" "#define CBC_LAPACK_FUNC(name,NAME) name" >>confdefs.h
+
+      printf "%s\n" "#define CBC_LAPACK_FUNC_(name,NAME) name ## _" >>confdefs.h
+ ;;
+   "lower case, underscore, no extra underscore")
+      printf "%s\n" "#define CBC_LAPACK_FUNC(name,NAME) name ## _" >>confdefs.h
+
+      printf "%s\n" "#define CBC_LAPACK_FUNC_(name,NAME) name ## _" >>confdefs.h
+ ;;
+   "lower case, underscore, extra underscore")
+      printf "%s\n" "#define CBC_LAPACK_FUNC(name,NAME) name ## _" >>confdefs.h
+
+      printf "%s\n" "#define CBC_LAPACK_FUNC_(name,NAME) name ## __" >>confdefs.h
+ ;;
+   "upper case, no underscore, no extra underscore")
+      printf "%s\n" "#define CBC_LAPACK_FUNC(name,NAME) NAME" >>confdefs.h
+
+      printf "%s\n" "#define CBC_LAPACK_FUNC_(name,NAME) NAME" >>confdefs.h
+ ;;
+   "upper case, no underscore, extra underscore")
+      printf "%s\n" "#define CBC_LAPACK_FUNC(name,NAME) NAME" >>confdefs.h
+
+      printf "%s\n" "#define CBC_LAPACK_FUNC_(name,NAME) NAME ## _" >>confdefs.h
+ ;;
+   "upper case, underscore, no extra underscore")
+      printf "%s\n" "#define CBC_LAPACK_FUNC(name,NAME) NAME ## _" >>confdefs.h
+
+      printf "%s\n" "#define CBC_LAPACK_FUNC_(name,NAME) NAME ## _" >>confdefs.h
+ ;;
+   "upper case, underscore, extra underscore")
+      printf "%s\n" "#define CBC_LAPACK_FUNC(name,NAME) NAME ## _" >>confdefs.h
+
+      printf "%s\n" "#define CBC_LAPACK_FUNC_(name,NAME) NAME ## __" >>confdefs.h
+ ;;
+   *)
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Unsupported or unknown name-mangling scheme: ${dsyev_namemangling}" >&5
+printf "%s\n" "$as_me: WARNING: Unsupported or unknown name-mangling scheme: ${dsyev_namemangling}" >&2;}
+      ;;
+  esac
+
+    if test -n "$lapack_pcfiles" ; then
+         CBCLIB_PCFILES="$lapack_pcfiles $CBCLIB_PCFILES"
+       fi
+       CBCLIB_LFLAGS="$lapack_lflags $CBCLIB_LFLAGS"
 
   fi
 
-if test $coin_has_coinutils != yes ; then
-  as_fn_error $? "Required package CoinUtils is not available." "$LINENO" 5
+
+
+
+
+
+  coin_save_LIBS="$LIBS"
+  LIBS=
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing cos" >&5
+printf %s "checking for library containing cos... " >&6; }
+if test ${ac_cv_search_cos+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cos (void);
+int
+main (void)
+{
+return cos ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' m
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_cos=$ac_res
 fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_cos+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_cos+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_cos=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_cos" >&5
+printf "%s\n" "$ac_cv_search_cos" >&6; }
+ac_res=$ac_cv_search_cos
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  if test "$ac_cv_search_cos" != 'none required' ; then
+       CBCLIB_LFLAGS="$ac_cv_search_cos $CBCLIB_LFLAGS"
+
+     fi
+fi
+
+  LIBS="$coin_save_LIBS"
+
+
+
+
+
+
+  coin_has_zlib=no
+
+  # Check whether --enable-zlib was given.
+if test ${enable_zlib+y}
+then :
+  enableval=$enable_zlib; coin_enable_zlib=$enableval
+else case e in #(
+  e) coin_enable_zlib=yes ;;
+esac
+fi
+
+
+  if test x$coin_enable_zlib = xyes ; then
+    ac_fn_c_check_header_compile "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
+if test "x$ac_cv_header_zlib_h" = xyes
+then :
+  coin_has_zlib=yes
+fi
+
+    if test x$coin_has_zlib = xyes ; then
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for gzopen in -lz" >&5
+printf %s "checking for gzopen in -lz... " >&6; }
+if test ${ac_cv_lib_z_gzopen+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_check_lib_save_LIBS=$LIBS
+LIBS="-lz  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char gzopen (void);
+int
+main (void)
+{
+return gzopen ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_z_gzopen=yes
+else case e in #(
+  e) ac_cv_lib_z_gzopen=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_gzopen" >&5
+printf "%s\n" "$ac_cv_lib_z_gzopen" >&6; }
+if test "x$ac_cv_lib_z_gzopen" = xyes
+then :
+  printf "%s\n" "#define HAVE_LIBZ 1" >>confdefs.h
+
+  LIBS="-lz $LIBS"
+
+else case e in #(
+  e) coin_has_zlib=no ;;
+esac
+fi
+
+    fi
+    if test x$coin_has_zlib = xyes ; then
+      CBCLIB_LFLAGS="-lz $CBCLIB_LFLAGS"
+
+
+printf "%s\n" "#define CBC_HAS_ZLIB 1" >>confdefs.h
+
+    fi
+  fi
+
+   if test x$coin_has_zlib = xyes; then
+  COIN_HAS_ZLIB_TRUE=
+  COIN_HAS_ZLIB_FALSE='#'
+else
+  COIN_HAS_ZLIB_TRUE='#'
+  COIN_HAS_ZLIB_FALSE=
+fi
+
+
+
+
+
+
+
+  coin_has_bzlib=no
+
+  # Check whether --enable-bzlib was given.
+if test ${enable_bzlib+y}
+then :
+  enableval=$enable_bzlib; coin_enable_bzlib=$enableval
+else case e in #(
+  e) coin_enable_bzlib=yes ;;
+esac
+fi
+
+
+  if test $coin_enable_bzlib = yes ; then
+    ac_fn_c_check_header_compile "$LINENO" "bzlib.h" "ac_cv_header_bzlib_h" "$ac_includes_default"
+if test "x$ac_cv_header_bzlib_h" = xyes
+then :
+  coin_has_bzlib=yes
+fi
+
+    if test $coin_has_bzlib = yes ; then
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for BZ2_bzReadOpen in -lbz2" >&5
+printf %s "checking for BZ2_bzReadOpen in -lbz2... " >&6; }
+if test ${ac_cv_lib_bz2_BZ2_bzReadOpen+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_check_lib_save_LIBS=$LIBS
+LIBS="-lbz2  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char BZ2_bzReadOpen (void);
+int
+main (void)
+{
+return BZ2_bzReadOpen ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_bz2_BZ2_bzReadOpen=yes
+else case e in #(
+  e) ac_cv_lib_bz2_BZ2_bzReadOpen=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bz2_BZ2_bzReadOpen" >&5
+printf "%s\n" "$ac_cv_lib_bz2_BZ2_bzReadOpen" >&6; }
+if test "x$ac_cv_lib_bz2_BZ2_bzReadOpen" = xyes
+then :
+  printf "%s\n" "#define HAVE_LIBBZ2 1" >>confdefs.h
+
+  LIBS="-lbz2 $LIBS"
+
+else case e in #(
+  e) coin_has_bzlib=no ;;
+esac
+fi
+
+    fi
+    if test $coin_has_bzlib = yes ; then
+      CBCLIB_LFLAGS="-lbz2 $CBCLIB_LFLAGS"
+
+
+printf "%s\n" "#define CBC_HAS_BZLIB 1" >>confdefs.h
+
+    fi
+  fi
+
+   if test x$coin_has_bzlib = xyes; then
+  COIN_HAS_BZLIB_TRUE=
+  COIN_HAS_BZLIB_FALSE='#'
+else
+  COIN_HAS_BZLIB_TRUE='#'
+  COIN_HAS_BZLIB_FALSE=
+fi
+
+
 
 # AMD (Approximate Minimum Degree ordering) from SuiteSparse — BSD 3-clause license.
 # Used by merged Clp sources for the barrier (interior-point) LP solver.
@@ -21924,7 +22772,7 @@ fi
 
 # Here list all the files that configure should create (except for the
 # configuration header file)
-ac_config_files="$ac_config_files Makefile examples/Makefile src/Clp/Makefile src/Cgl/Makefile src/Makefile src/OsiCbc/Makefile test/Makefile cbc.pc osi-cbc.pc"
+ac_config_files="$ac_config_files Makefile examples/Makefile src/CoinUtils/Makefile src/Clp/Makefile src/Cgl/Makefile src/Makefile src/OsiCbc/Makefile test/Makefile cbc.pc osi-cbc.pc"
 
 ac_config_files="$ac_config_files doxydoc/doxygen.conf"
 
@@ -22349,8 +23197,16 @@ if test -z "${COIN_HAS_PKGCONFIG_TRUE}" && test -z "${COIN_HAS_PKGCONFIG_FALSE}"
   as_fn_error $? "conditional \"COIN_HAS_PKGCONFIG\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${COIN_HAS_COINUTILS_TRUE}" && test -z "${COIN_HAS_COINUTILS_FALSE}"; then
-  as_fn_error $? "conditional \"COIN_HAS_COINUTILS\" was never defined.
+if test -z "${COIN_HAS_LAPACK_TRUE}" && test -z "${COIN_HAS_LAPACK_FALSE}"; then
+  as_fn_error $? "conditional \"COIN_HAS_LAPACK\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COIN_HAS_ZLIB_TRUE}" && test -z "${COIN_HAS_ZLIB_FALSE}"; then
+  as_fn_error $? "conditional \"COIN_HAS_ZLIB\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COIN_HAS_BZLIB_TRUE}" && test -z "${COIN_HAS_BZLIB_FALSE}"; then
+  as_fn_error $? "conditional \"COIN_HAS_BZLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COIN_HAS_AMD_TRUE}" && test -z "${COIN_HAS_AMD_FALSE}"; then
@@ -23388,6 +24244,7 @@ do
     "examples/sudoku_sample.csv") CONFIG_LINKS="$CONFIG_LINKS examples/sudoku_sample.csv:examples/sudoku_sample.csv" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "examples/Makefile") CONFIG_FILES="$CONFIG_FILES examples/Makefile" ;;
+    "src/CoinUtils/Makefile") CONFIG_FILES="$CONFIG_FILES src/CoinUtils/Makefile" ;;
     "src/Clp/Makefile") CONFIG_FILES="$CONFIG_FILES src/Clp/Makefile" ;;
     "src/Cgl/Makefile") CONFIG_FILES="$CONFIG_FILES src/Cgl/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;

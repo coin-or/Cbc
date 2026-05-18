@@ -155,7 +155,7 @@ libClp_la_SOURCES = \
 	OsiSolverInterface.hpp \
 	OsiSolverParameters.hpp
 
-AM_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir) -I$(top_srcdir)/src -I$(top_builddir)/src -I$(top_srcdir)/src/Cgl
+AM_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir) -I$(top_srcdir)/src -I$(top_builddir)/src -I$(top_srcdir)/src/CoinUtils -I$(top_srcdir)/src/Cgl
 
 AM_LDFLAGS = $(LT_LDFLAGS)
 

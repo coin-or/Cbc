@@ -21,7 +21,7 @@ libOsiCbc_la_LIBADD = ../libCbc.la
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Here list all include flags, relative to this "srcdir" directory.
-AM_CPPFLAGS = -I$(srcdir)/.. -I$(top_builddir)/src -I$(top_srcdir)/src/Clp -I$(top_srcdir)/src/Cgl $(OSICBCLIB_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/.. -I$(top_builddir)/src -I$(top_srcdir)/src/CoinUtils -I$(top_srcdir)/src/Clp -I$(top_srcdir)/src/Cgl $(OSICBCLIB_CFLAGS)
 
 ########################################################################
 #                Headers that need to be installed                     #

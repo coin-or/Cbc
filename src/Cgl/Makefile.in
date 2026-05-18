@@ -335,11 +335,8 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
-OSICBCLIB_CFLAGS = @OSICBCLIB_CFLAGS@
 OSICBCLIB_CFLAGS_NOPC = @OSICBCLIB_CFLAGS_NOPC@
-OSICBCLIB_LFLAGS = @OSICBCLIB_LFLAGS@
 OSICBCLIB_LFLAGS_NOPC = @OSICBCLIB_LFLAGS_NOPC@
-OSICBCLIB_PCFILES = @OSICBCLIB_PCFILES@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -466,7 +463,7 @@ libCgl_la_SOURCES = \
 
 # Use same flags as the rest of the Cbc build (includes CoinUtils plus
 # merged Clp/Osi/OsiClp headers from src/Clp).
-AM_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir) -I$(top_srcdir)/src/Clp
+AM_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir) -I$(top_srcdir)/src/CoinUtils -I$(top_srcdir)/src/Clp
 AM_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################

@@ -97,7 +97,7 @@ INCL += $(ADDINCFLAGS)
 
 # Linker flags
 @COIN_HAS_PKGCONFIG_TRUE@LIBS = `PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ @PKG_CONFIG@ --libs osi-cbc cbc`
-@COIN_HAS_PKGCONFIG_FALSE@LIBS = -L@libdir@ -lOsiCbc -lCbc -lCoinUtils
+@COIN_HAS_PKGCONFIG_FALSE@LIBS = -L@libdir@ -lOsiCbc -lCbc
 LIBS += $(ADDLIBS)
 
 # The following is necessary under cygwin, if native compilers are used

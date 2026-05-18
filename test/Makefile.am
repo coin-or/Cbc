@@ -4,7 +4,7 @@
 #
 # Author:  Andreas Waechter           IBM    2006-04-13
 
-AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/Clp -I$(srcdir)/../src/Cgl -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/CoinUtils -I$(srcdir)/../src/Clp -I$(srcdir)/../src/Cgl -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
 
 AM_LDFLAGS = $(LT_LDFLAGS)
 

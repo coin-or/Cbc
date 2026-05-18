@@ -21,8 +21,14 @@
 /* Define to 1 if ASL is available. */
 #undef CBC_HAS_ASL
 
-/* Define to 1 if CoinUtils is available. */
+/* Define to 1 if bzlib is available */
+#undef CBC_HAS_BZLIB
+
+/* Define to 1 because CoinUtils is merged into Cbc. */
 #undef CBC_HAS_COINUTILS
+
+/* Define to 1 if the LAPACK package is available */
+#undef CBC_HAS_LAPACK
 
 /* Define to 1 if Miplib3 is available. */
 #undef CBC_HAS_MIPLIB3
@@ -38,6 +44,16 @@
 
 /* Define to 1 if Sample is available. */
 #undef CBC_HAS_SAMPLE
+
+/* Define to 1 if zlib is available */
+#undef CBC_HAS_ZLIB
+
+/* Define to a macro mangling the given C identifier (in lower and upper
+   case). */
+#undef CBC_LAPACK_FUNC
+
+/* As CBC_LAPACK_FUNC, but for C identifiers containing underscores. */
+#undef CBC_LAPACK_FUNC_
 
 /* Define to 1 if the SMP version of Cbc should be compiled */
 #undef CBC_THREAD
@@ -83,6 +99,12 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the 'bz2' library (-lbz2). */
+#undef HAVE_LIBBZ2
+
+/* Define to 1 if you have the 'z' library (-lz). */
+#undef HAVE_LIBZ
 
 /* Define to 1 if you have the <math.h> header file. */
 #undef HAVE_MATH_H

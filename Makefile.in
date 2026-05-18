@@ -270,11 +270,8 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
-OSICBCLIB_CFLAGS = @OSICBCLIB_CFLAGS@
 OSICBCLIB_CFLAGS_NOPC = @OSICBCLIB_CFLAGS_NOPC@
-OSICBCLIB_LFLAGS = @OSICBCLIB_LFLAGS@
 OSICBCLIB_LFLAGS_NOPC = @OSICBCLIB_LFLAGS_NOPC@
-OSICBCLIB_PCFILES = @OSICBCLIB_PCFILES@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -374,7 +371,7 @@ DOXYTAG_EDIT = sed -e 's|@baredocdir_nosub@|$(datarootdir)/doc|g'
 ########################################################################
 #                          Subdirectories                              #
 ########################################################################
-SUBDIRS = src/Clp src/Cgl src src/OsiCbc
+SUBDIRS = src/CoinUtils src/Clp src/Cgl src src/OsiCbc
 pkgconfiglib_DATA = cbc.pc osi-cbc.pc
 all: all-recursive
 

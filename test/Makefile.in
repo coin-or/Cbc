@@ -291,11 +291,8 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
-OSICBCLIB_CFLAGS = @OSICBCLIB_CFLAGS@
 OSICBCLIB_CFLAGS_NOPC = @OSICBCLIB_CFLAGS_NOPC@
-OSICBCLIB_LFLAGS = @OSICBCLIB_LFLAGS@
 OSICBCLIB_LFLAGS_NOPC = @OSICBCLIB_LFLAGS_NOPC@
-OSICBCLIB_PCFILES = @OSICBCLIB_PCFILES@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -378,7 +375,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/Clp -I$(srcdir)/../src/Cgl -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/CoinUtils -I$(srcdir)/../src/Clp -I$(srcdir)/../src/Cgl -I$(srcdir)/../src/OsiCbc $(CBCUNITTEST_CFLAGS)
 AM_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################

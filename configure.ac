@@ -57,10 +57,11 @@ AC_CHECK_HEADERS([signal.h])
 #                            COIN-OR components                             #
 #############################################################################
 
-AC_COIN_CHK_PKG(CoinUtils,[CbcLib OsiCbcLib])
-if test $coin_has_coinutils != yes ; then
-  AC_MSG_ERROR([Required package CoinUtils is not available.])
-fi
+AC_DEFINE([CBC_HAS_COINUTILS],[1],[Define to 1 because CoinUtils is merged into Cbc.])
+AC_COIN_CHK_LAPACK(CbcLib)
+AC_COIN_CHK_LIBM(CbcLib)
+AC_COIN_CHK_ZLIB(CbcLib)
+AC_COIN_CHK_BZLIB(CbcLib)
 
 # AMD (Approximate Minimum Degree ordering) from SuiteSparse — BSD 3-clause license.
 # Used by merged Clp sources for the barrier (interior-point) LP solver.
@@ -286,6 +287,7 @@ AC_COIN_DOXYGEN([CoinUtils])
 # configuration header file)
 AC_CONFIG_FILES([Makefile
                  examples/Makefile
+                 src/CoinUtils/Makefile
                  src/Clp/Makefile
                  src/Cgl/Makefile
                  src/Makefile

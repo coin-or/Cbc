@@ -50,7 +50,7 @@ libCgl_la_SOURCES = \
 
 # Use same flags as the rest of the Cbc build (includes CoinUtils plus
 # merged Clp/Osi/OsiClp headers from src/Clp).
-AM_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir) -I$(top_srcdir)/src/Clp
+AM_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir) -I$(top_srcdir)/src/CoinUtils -I$(top_srcdir)/src/Clp
 
 AM_LDFLAGS = $(LT_LDFLAGS)
 

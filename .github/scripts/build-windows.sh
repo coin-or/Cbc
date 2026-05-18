@@ -74,7 +74,7 @@ build_variant() {
 
   # ── Test ──────────────────────────────────────────────────────────────────
   cd "${build_dir}/test"
-  make -j"$(nproc)" CInterfaceTest
+  make -j"$(nproc)" CInterfaceTest.exe
   ./CInterfaceTest.exe
   echo "    CInterfaceTest: PASSED"
 

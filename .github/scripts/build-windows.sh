@@ -51,11 +51,12 @@ build_variant() {
   mkdir -p "${build_dir}"
   cd "${build_dir}"
 
-  # Static libgcc/libstdc++/libwinpthread so binaries need no MinGW DLLs.
+  # Shared build (DLL) — Windows autotools cannot do --enable-shared --enable-static together.
+  # The LDFLAGS link the MinGW runtime libs statically so no MinGW DLLs need shipping.
   "${SRC_DIR}/configure" \
     --prefix="${build_dir}/install" \
     --enable-shared \
-    --enable-static \
+    --disable-static \
     --without-amd \
     --without-lapack \
     CXXFLAGS="${cxxflags}" \

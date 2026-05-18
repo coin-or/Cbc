@@ -2123,13 +2123,12 @@ Cbc_resolve(Cbc_Model *model)
       default: level = CbcBoundPropagation::Fixpoint;   break;
     }
     const double timeLimit = model->dbl_param[DBL_PARAM_TIME_LIMIT];
-    const bool useElapsed = (model->int_param[INT_PARAM_ELAPSED_TIME] == 1);
-    const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+    const double startTime = CoinGetTimeOfDay();
     const int logLevel = model->int_param[INT_PARAM_LOG_LEVEL];
     CbcBoundPropagation bp;
     const bool feasible = bp.run(solver, solver->messageHandler(), logLevel,
                                   level, /*maxRounds=*/100,
-                                  useElapsed, timeLimit, startTime);
+                                  timeLimit, startTime);
     if (!feasible)
       return 2;  // infeasible proved by bound propagation
   }
@@ -2645,7 +2644,6 @@ Cbc_solve(Cbc_Model *model)
 
       cbcSolver.model()->setRoundIntegerVariables( model->int_param[INT_PARAM_ROUND_INT_VARS] );
       cbcSolver.model()->setRandomSeed(model->int_param[INT_PARAM_RANDOM_SEED]);
-      cbcSolver.model()->setUseElapsedTime( (model->int_param[INT_PARAM_ELAPSED_TIME] == 1) );
 
       cbcSolver.run(inputQueue, cbc_callb);
 

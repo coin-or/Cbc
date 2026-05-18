@@ -4162,15 +4162,6 @@ activity at continuous solution",
     parameters.push_back(p);
   }
 #endif
-  {
-    CbcOrClpParam p("timeM!ode", "Whether to use CPU or elapsed time",
-      "cpu", CLP_PARAM_STR_TIME_MODE);
-    p.append("elapsed");
-    p.setLonghelp(
-      "cpu uses CPU time for stopping, while elapsed uses elapsed time. \
-(On Windows, elapsed time is always used).");
-    parameters.push_back(p);
-  }
 #ifdef COIN_HAS_CBC
   {
     CbcOrClpParam p("trust!PseudoCosts", "Number of branches before we trust pseudocosts",

@@ -481,7 +481,6 @@ CbcParameters &CbcParameters::operator=(const CbcParameters &rhs)
   nodeStrategy_ = rhs.nodeStrategy_;
   sosStrategy_ = rhs.sosStrategy_;
   strategyMode_ = rhs.strategyMode_;
-  clockType_ = rhs.clockType_;
   cgraphMode_ = rhs.cgraphMode_;
   lpMethod_ = rhs.lpMethod_;
   importErrorsMode_ = rhs.importErrorsMode_;
@@ -626,7 +625,6 @@ void CbcParameters::addCbcParams() {
   parameters_[CbcParam::CUTOFFCONSTRAINT]->setTopic("Solving");
   parameters_[CbcParam::COMMANDPRINTLEVEL]->setTopic("Output");
   parameters_[CbcParam::INTPRINT]->setTopic("Output");
-  parameters_[CbcParam::TIMEMODE]->setTopic("Output");
   parameters_[CbcParam::CHECKTIMEFREQ]->setTopic("Output");
   parameters_[CbcParam::LPMETHOD]->setTopic("Solving");
 
@@ -779,7 +777,6 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::PREPROCESS]->setDefault("off");
      parameters_[CbcParam::SOSPRIORITIZE]->setDefault("off");
      parameters_[CbcParam::STRATEGY]->setDefault("default");
-     parameters_[CbcParam::TIMEMODE]->setDefault("elapsed");
      parameters_[CbcParam::USECGRAPH]->setDefault("on");
      parameters_[CbcParam::BOUNDPROPLEVEL]->setDefault("milpbt");
      parameters_[CbcParam::LPMETHOD]->setDefault("dual");
@@ -1742,14 +1739,6 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::STRATEGY]->appendKwd("easy", CbcParameters::StrategyEasy);
   parameters_[CbcParam::STRATEGY]->appendKwd("default", CbcParameters::StrategyDefault);
   parameters_[CbcParam::STRATEGY]->appendKwd("aggressive", CbcParameters::StrategyAggressive);
-
-  parameters_[CbcParam::TIMEMODE]->setup(
-      "timeM!ode", "Whether to use CPU or elapsed time",
-      "elapsed uses elapsed (wall-clock) time for stopping, while cpu uses CPU "
-      "time. Elapsed is the default as it is more natural for users. (On "
-      "Windows, elapsed time is always used).");
-  parameters_[CbcParam::TIMEMODE]->appendKwd( "cpu", CbcParameters::ClockCpu);
-  parameters_[CbcParam::TIMEMODE]->appendKwd("elapsed", CbcParameters::ClockElapsed);
 
   parameters_[CbcParam::USECGRAPH]->setup(
       "cgraph",

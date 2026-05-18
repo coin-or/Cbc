@@ -951,15 +951,12 @@ void fakeMain(ClpSimplex &model, OsiSolverInterface &osiSolver,
 void fakeMain2(ClpSimplex &model, OsiClpSolverInterface &osiSolver,
                int options);
 
-// Set a remaining-time budget on a Clp LP, honouring the CBC time mode.
+// Set a remaining-time budget on a Clp LP using elapsed time.
 // Always pair with clearClpTimeLimits() after the solve.
 static void applyClpTimeLimit(const CbcModel &cbcModel, ClpSimplex *clp,
   double budget)
 {
-  if (cbcModel.useElapsedTime())
-    clp->setMaximumWallSeconds(budget);
-  else
-    clp->setMaximumSeconds(budget);
+  clp->setMaximumWallSeconds(budget);
 }
 // Overload: use full remaining CBC budget.
 static void applyClpTimeLimit(const CbcModel &cbcModel, ClpSimplex *clp)
@@ -1049,15 +1046,14 @@ int CbcSolver::applyLpMethod()
     }
 
     if (bpLevel != CbcBoundPropagation::Off) {
-      const bool useElapsed = model_.useElapsedTime();
-      const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+      const double startTime = CoinGetTimeOfDay();
       const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
       const int maxRounds = parameters_.getBoundPropMaxRounds();
       const int logLevel = model_.messageHandler()->logLevel();
 
       CbcBoundPropagation bp;
       if (!bp.run(solver, model_.messageHandler(), logLevel,
-            bpLevel, maxRounds, useElapsed, timeLimit, startTime)) {
+            bpLevel, maxRounds, timeLimit, startTime)) {
         if (logLevel >= 1)
           printGeneralMessage(model_,
             "Bound propagation: infeasibility proved — skipping solve.");
@@ -1336,7 +1332,7 @@ int CbcSolver::applyLpMethod()
   if (model_.getMaximumSeconds() < 1.0e8) {
     if (!model_.getDblParam(CbcModel::CbcStartSeconds))
       model_.setDblParam(CbcModel::CbcStartSeconds,
-        model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
+        CoinGetTimeOfDay());
     applyClpTimeLimit(model_, model2);
   }
 
@@ -3368,7 +3364,7 @@ int CbcSolver::preprocess(
 #endif
       process.setKeepColumnNames(keepPPN);
       process.setTimeLimit(babModel_->getMaximumSeconds() - babModel_->getCurrentSeconds(),
-        babModel_->useElapsedTime());
+        true);
       if (model.getKeepNamesPreproc())
         process.setKeepColumnNames(true);
       if (keepPPN)
@@ -4229,12 +4225,8 @@ int CbcSolver::preprocess(
   // time starts from here?
   time1Elapsed = CoinGetTimeOfDay();
   time1 = CoinCpuTime();
-  if (babModel_->useElapsedTime())
-    babModel_->setDblParam(CbcModel::CbcStartSeconds,
-      CoinGetTimeOfDay());
-  else
-    babModel_->setDblParam(CbcModel::CbcStartSeconds,
-      CoinCpuTime());
+  babModel_->setDblParam(CbcModel::CbcStartSeconds,
+    CoinGetTimeOfDay());
   // babModel_->setMaximumSeconds(timeLeft - (CoinCpuTime() -
   // time2));
 #endif
@@ -4680,12 +4672,8 @@ int CbcSolver::postprocess(
     buffer << "Total iterations:               ";
     buffer << babModel_->getIterationCount() << std::endl;
 #if CBC_QUIET == 0
-    if (babModel_->useElapsedTime())
-      buffer << "Time (B&C, Wallclock seconds):  "
-             << CoinGetTimeOfDay() - time1Elapsed << std::endl;
-    else
-      buffer << "Time (B&C, CPU seconds):        "
-             << CoinCpuTime() - time1 << std::endl;
+    buffer << "Time (B&C, Wallclock seconds):  "
+           << CoinGetTimeOfDay() - time1Elapsed << std::endl;
 #endif
     printGeneralMessage(model_, buffer.str());
     int returnCode_local = 0;
@@ -6183,16 +6171,11 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
   // Meaning 0 - start at very beginning
   // 1 start at beginning of preprocessing
   // 2 start at beginning of branch and bound
-  // Default to elapsed (wall-clock) time mode - overridable with -timeM cpu.
-  model_.setUseElapsedTime(true);
 #ifndef CBC_USE_INITIAL_TIME
 #define CBC_USE_INITIAL_TIME 1
 #endif
 #if CBC_USE_INITIAL_TIME == 0
-  if (model_.useElapsedTime())
-    model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
-  else
-    model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
+  model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
 #endif
   babModel_ = NULL;
   returnMode_ = 1;
@@ -6940,10 +6923,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
       numberGoodCommands++;
       if (cbcParamCode == CbcParam::BAB && goodModel) {
 #if CBC_USE_INITIAL_TIME == 1
-        if (model_.useElapsedTime())
-          model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
-        else
-          model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
+        model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
 #endif
 
         biLinearProblem = false;
@@ -7498,9 +7478,6 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         case CbcParam::PREPROCESS:
           preProcess = mode;
           break;
-        case CbcParam::TIMEMODE:
-          model_.setUseElapsedTime(mode != 0);
-          break;
         default:
           // abort();
           break;
@@ -7863,7 +7840,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             if (!model_.getDblParam(CbcModel::CbcStartSeconds)) {
               // Capture start time if not yet set for this solve sequence.
               model_.setDblParam(CbcModel::CbcStartSeconds,
-                model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
+                CoinGetTimeOfDay());
             }
             applyClpTimeLimit(model_, model2);
           }
@@ -8024,11 +8001,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               buffer << "Enumerated nodes:           0" << std::endl;
               buffer << "Total iterations:           0" << std::endl;
 #if CBC_QUIET == 0
-              if (model_.useElapsedTime())
-                buffer << "Time (Wallclock seconds):   " << CoinGetTimeOfDay() - time0Elapsed
-                       << std::endl;
-              else
-                buffer << "Time (CPU seconds):         " << CoinCpuTime() - time0 << std::endl;
+              buffer << "Time (Wallclock seconds):   " << CoinGetTimeOfDay() - time0Elapsed
+                     << std::endl;
 #endif
               printGeneralMessage(model_, buffer.str());
             }
@@ -8485,12 +8459,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               buffer << "Enumerated nodes:           0" << std::endl;
               buffer << "Total iterations:           0" << std::endl;
 #if CBC_QUIET == 0
-              if (model_.useElapsedTime())
-                buffer << "Time (Wallclock seconds):   "
-                       << CoinGetTimeOfDay() - time0Elapsed << std::endl;
-              else
-                buffer << "Time (CPU seconds):         "
-                       << CoinCpuTime() - time0 << std::endl;
+              buffer << "Time (Wallclock seconds):   "
+                     << CoinGetTimeOfDay() - time0Elapsed << std::endl;
 #endif
               printGeneralMessage(model_, buffer.str());
             }
@@ -9150,11 +9120,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           // Do heuristics if asked for
           if (parameters[CbcParam::DOHEURISTIC]->modeVal()) {
 #if CBC_USE_INITIAL_TIME == 1
-            if (model_.useElapsedTime())
-              model_.setDblParam(CbcModel::CbcStartSeconds,
-                CoinGetTimeOfDay());
-            else
-              model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
+            model_.setDblParam(CbcModel::CbcStartSeconds,
+              CoinGetTimeOfDay());
 #endif
             int vubMode = parameters[CbcParam::VUBTRY]->intVal();
             if (vubMode != -1) {
@@ -12793,9 +12760,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               bpLevel = CbcBoundPropagation::MILPbt;
               break;
             }
-            const bool useElapsed = model_.useElapsedTime();
-            const double startTime =
-              useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+            const double startTime = CoinGetTimeOfDay();
             // Use a generous time limit for the standalone action
             const double timeLimit = model_.getDblParam(CbcModel::CbcMaximumSeconds);
             CbcBoundPropagation bp;
@@ -12803,7 +12768,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             const int logLevel = model_.messageHandler()->logLevel();
             const bool feasible = bp.run(model_.solver(),
               model_.messageHandler(), logLevel,
-              bpLevel, maxRounds, useElapsed, timeLimit, startTime);
+              bpLevel, maxRounds, timeLimit, startTime);
             if (!feasible) {
               // run() already logged the infeasibility details at level >= 1.
               // Mark model bad so downstream commands know.
@@ -12893,12 +12858,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
   }
 #if CBC_QUIET == 0
   buffer.str("");
-  if (model_.useElapsedTime())
-    buffer << "Total time (Wallclock seconds): " << CoinGetTimeOfDay() - time0Elapsed_
-           << "   (CPU seconds):             " << CoinCpuTime() - time0_ << std::endl;
-  else
-    buffer << "Total time (CPU seconds):       " << CoinCpuTime() - time0_
-           << "   (Wallclock seconds):       " << CoinGetTimeOfDay() - time0Elapsed_ << std::endl;
+  buffer << "Total time (Wallclock seconds): " << CoinGetTimeOfDay() - time0Elapsed_
+         << "   (CPU seconds):             " << CoinCpuTime() - time0_ << std::endl;
   printGeneralMessage(model_, buffer.str());
 #endif
   delete[] lotsize_;

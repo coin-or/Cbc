@@ -32,7 +32,6 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
   int logLevel,
   Level level,
   int maxRounds,
-  bool useElapsed,
   double timeLimit,
   double startTime)
 {
@@ -41,7 +40,7 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
   if (!solver || solver->getNumCols() == 0)
     return true;
 
-  const double t0 = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+  const double t0 = CoinGetTimeOfDay();
 
   // ---------------------------------------------------------------
   // Phase 1: singleton row tightening
@@ -53,7 +52,7 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
     if (nTightened < 0) {
       // infeasibility detected — singleton API does not expose row/col source
       stopReason_ = InfeasibleDetected;
-      timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
+      timeUsed_ = (CoinGetTimeOfDay()) - t0;
 
       if (logLevel >= 1)
         printf("  Bound propagation: INFEASIBLE (singleton tightening), "
@@ -73,7 +72,7 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
 
   if (level == Singletons) {
     stopReason_ = ReachedFixpoint;
-    timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
+    timeUsed_ = (CoinGetTimeOfDay()) - t0;
 
     if (logLevel >= 1)
       printf("  Bound propagation fixed %d vars in %.3f s.\n",
@@ -106,7 +105,7 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
 
   for (int round = 0; round < roundLimit; ++round) {
     // Time-limit check before starting this round
-    const double tNow = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+    const double tNow = CoinGetTimeOfDay();
     if (tNow - startTime >= timeLimit) {
       stopReason_ = HitTimeLimit;
       timeUsed_ = tNow - t0;
@@ -132,7 +131,7 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
       infeasibleRow_ = bt.infeasibleRow();
       infeasibleCol_ = bt.infeasibleCol();
       stopReason_ = InfeasibleDetected;
-      timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
+      timeUsed_ = (CoinGetTimeOfDay()) - t0;
 
       if (logLevel >= 1) {
         if (infeasibleRow_ >= 0 && infeasibleCol_ >= 0) {
@@ -168,7 +167,7 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
 
     if (nNew == 0) {
       stopReason_ = ReachedFixpoint;
-      timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
+      timeUsed_ = (CoinGetTimeOfDay()) - t0;
 
       if (logLevel >= 2)
         printf("  Bound propagation: fixpoint reached after %d "
@@ -198,7 +197,7 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
     // Exited by roundLimit without fixpoint
     stopReason_ = HitMaxRounds;
   }
-  timeUsed_ = (useElapsed ? CoinGetTimeOfDay() : CoinCpuTime()) - t0;
+  timeUsed_ = (CoinGetTimeOfDay()) - t0;
 
   if (logLevel >= 1) {
     const int totalFixed = nSingletonFixed_ + nBoundPropFixed_;

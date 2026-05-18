@@ -453,7 +453,7 @@ int CbcSolver::preprocess(int preProcess, int cbcParamCode,
 #endif
       process.setKeepColumnNames(keepPPN);
       process.setTimeLimit(babModel_->getMaximumSeconds() - babModel_->getCurrentSeconds(),
-        babModel_->useElapsedTime());
+        true);
       if (model_.getKeepNamesPreproc())
         process.setKeepColumnNames(true);
       if (keepPPN)
@@ -1313,12 +1313,8 @@ int CbcSolver::preprocess(int preProcess, int cbcParamCode,
   // time starts from here?
   // NOTE: time1Elapsed and time1 were locals in run() — this block
   // is normally dead code (CBC_USE_INITIAL_TIME defaults to 1).
-  if (babModel_->useElapsedTime())
-    babModel_->setDblParam(CbcModel::CbcStartSeconds,
-      CoinGetTimeOfDay());
-  else
-    babModel_->setDblParam(CbcModel::CbcStartSeconds,
-      CoinCpuTime());
+  babModel_->setDblParam(CbcModel::CbcStartSeconds,
+    CoinGetTimeOfDay());
 #endif
 
   return 0; // ok

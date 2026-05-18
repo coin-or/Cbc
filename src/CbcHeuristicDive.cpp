@@ -323,8 +323,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     maxSimplexIterations_, maxSimplexIterationsAtRoot_, when());
 #endif
   int reasonToStop = 0;
-  // Use the same time function as CbcModel so the dive respects -timem elapsed.
-  double time1 = model_->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime();
+  double time1 = CoinGetTimeOfDay();
   // Compute how much time remains in the overall CBC solve and cap the dive's
   // own budget to that value (plus a small margin so we don't overshoot).
   double cbcRemaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
@@ -385,10 +384,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     // re-solve cannot run past the global deadline.
     if (model_->getMaximumSeconds() < 1.0e10) {
       double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
-      if (model_->useElapsedTime())
-        clpSimplex->setMaximumWallSeconds(remaining);
-      else
-        clpSimplex->setMaximumSeconds(remaining);
+      clpSimplex->setMaximumWallSeconds(remaining);
     }
     if (!nodes) {
       // say give up easily
@@ -1158,7 +1154,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
       reasonToStop += 2;
     } else if (model_->maximumSecondsReached()) {
       reasonToStop += 5;
-    } else if ((model_->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime()) - time1 > effectiveMaxTime) {
+    } else if (CoinGetTimeOfDay() - time1 > effectiveMaxTime) {
       reasonToStop += 3;
     } else if (numberSimplexIterations > maxSimplexIterations) {
       reasonToStop += 4;
@@ -1352,7 +1348,7 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
 
   // Machine-parseable dive statistics (always printed at log level >= 1)
   if (model_->messageHandler()->logLevel() >= 1) {
-    double elapsed = (model_->useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime()) - time1;
+    double elapsed = CoinGetTimeOfDay() - time1;
 
     // Collect conflict cuts if dive ended in infeasibility
     if (collectConflicts_ && (reasonToStop % 10 == 1 || reasonToStop / 100 > 0)

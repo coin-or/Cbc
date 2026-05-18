@@ -1792,12 +1792,8 @@ void CbcModel::branchAndBound(int doStatistics)
     /*
         Capture a time stamp before we start (unless set).
     */
-    if (!dblParam_[CbcStartSeconds]) {
-      if (!useElapsedTime())
-        dblParam_[CbcStartSeconds] = CoinCpuTime();
-      else
-        dblParam_[CbcStartSeconds] = CoinGetTimeOfDay();
-    }
+    if (!dblParam_[CbcStartSeconds])
+      dblParam_[CbcStartSeconds] = CoinGetTimeOfDay();
   }
   dblParam_[CbcSmallestChange] = COIN_DBL_MAX;
   dblParam_[CbcSumChange] = 0.0;
@@ -5907,10 +5903,7 @@ void CbcModel::initialSolve()
   if (clpSolverTL && dblParam_[CbcMaximumSeconds] < 1.0e8) {
     // Propagate remaining time limit to LP solver, respecting time mode.
     double remaining = std::max(dblParam_[CbcMaximumSeconds] - getCurrentSeconds(), 0.0);
-    if (useElapsedTime())
-      clpSolverTL->getModelPtr()->setMaximumWallSeconds(remaining);
-    else
-      clpSolverTL->getModelPtr()->setMaximumSeconds(remaining);
+    clpSolverTL->getModelPtr()->setMaximumWallSeconds(remaining);
   }
 #endif
   solver_->initialSolve();
@@ -15588,10 +15581,7 @@ int CbcModel::resolve(OsiSolverInterface *solver)
     // budget.  All node-level LP calls funnel through this function.
     if (dblParam_[CbcMaximumSeconds] < 1.0e8) {
       double remaining = std::max(dblParam_[CbcMaximumSeconds] - getCurrentSeconds(), 0.0);
-      if (useElapsedTime())
-        clpSimplex->setMaximumWallSeconds(remaining);
-      else
-        clpSimplex->setMaximumSeconds(remaining);
+      clpSimplex->setMaximumWallSeconds(remaining);
     }
     clpSolver->resolve();
     clpSimplex->setMaximumSeconds(-1.0);
@@ -15670,10 +15660,7 @@ int CbcModel::resolve(OsiSolverInterface *solver)
             clpSimplex->allSlackBasis(true);
             if (dblParam_[CbcMaximumSeconds] < 1.0e8) {
               double remaining = std::max(dblParam_[CbcMaximumSeconds] - getCurrentSeconds(), 0.0);
-              if (useElapsedTime())
-                clpSimplex->setMaximumWallSeconds(remaining);
-              else
-                clpSimplex->setMaximumSeconds(remaining);
+              clpSimplex->setMaximumWallSeconds(remaining);
             }
             clpSolver->resolve();
             clpSimplex->setMaximumSeconds(-1.0);
@@ -15685,10 +15672,7 @@ int CbcModel::resolve(OsiSolverInterface *solver)
               clpSolver->setHintParam(OsiDoDualInResolve, false, OsiHintDo);
               if (dblParam_[CbcMaximumSeconds] < 1.0e8) {
                 double remaining = std::max(dblParam_[CbcMaximumSeconds] - getCurrentSeconds(), 0.0);
-                if (useElapsedTime())
-                  clpSimplex->setMaximumWallSeconds(remaining);
-                else
-                  clpSimplex->setMaximumSeconds(remaining);
+                clpSimplex->setMaximumWallSeconds(remaining);
               }
               clpSolver->resolve();
               clpSimplex->setMaximumSeconds(-1.0);
@@ -16051,10 +16035,7 @@ void CbcModel::setObjectiveValue(CbcNode *thisNode,
 // Current time since start of branchAndbound
 double CbcModel::getCurrentSeconds() const
 {
-  if (!useElapsedTime())
-    return CoinCpuTime() - getDblParam(CbcStartSeconds);
-  else
-    return CoinGetTimeOfDay() - getDblParam(CbcStartSeconds);
+  return CoinGetTimeOfDay() - getDblParam(CbcStartSeconds);
 }
 /* Encapsulates choosing a variable -
    anyAction: -2 infeasible
@@ -17535,7 +17516,7 @@ int CbcModel::doOneNode(CbcModel *baseModel, CbcNode *&node,
         CbcBoundPropagation bp;
         feasible = bp.run(solver_, NULL, 0,
           CbcBoundPropagation::Fixpoint, 0,
-          true, 1.0e100, 0.0);
+          1.0e100, 0.0);
       }
     }
 

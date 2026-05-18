@@ -565,12 +565,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
     OsiClpSolverInterface *clpClonedSolver = getClpSolver(clonedSolver);
     if (CBC_SKIP_CLP_TEST||clpClonedSolver) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
-      if (remaining > 0.0) {
-        if (model_->useElapsedTime())
-          clpClonedSolver->getModelPtr()->setMaximumWallSeconds(remaining);
-        else
-          clpClonedSolver->getModelPtr()->setMaximumSeconds(remaining);
-      }
+      if (remaining > 0.0)
+        clpClonedSolver->getModelPtr()->setMaximumWallSeconds(remaining);
     }
   }
   while (!exitAll) {
@@ -604,12 +600,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         // checks inside the loop catch inter-solve overruns; this caps each
         // individual solve.
         double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
-        if (remaining > 0.0) {
-          if (model_->useElapsedTime())
-            lp->setMaximumWallSeconds(remaining);
-          else
-            lp->setMaximumSeconds(remaining);
-        }
+        if (remaining > 0.0)
+          lp->setMaximumWallSeconds(remaining);
       }
     }
     if (std::min(fakeCutoff_, cutoff) < 1.0e50) {
@@ -811,12 +803,8 @@ int CbcHeuristicFPump::solutionInternal(double &solutionValue,
         OsiClpSolverInterface *clpSolver = getClpSolver(solver);
         if (CBC_SKIP_CLP_TEST || clpSolver) {
           double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
-          if (remaining > 0.0) {
-            if (model_->useElapsedTime())
-              clpSolver->getModelPtr()->setMaximumWallSeconds(remaining);
-            else
-              clpSolver->getModelPtr()->setMaximumSeconds(remaining);
-          }
+          if (remaining > 0.0)
+            clpSolver->getModelPtr()->setMaximumWallSeconds(remaining);
         }
       }
       // see what changed

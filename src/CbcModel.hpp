@@ -2236,7 +2236,6 @@ public:
         16384 gomory
 	32768 more heuristics in sub trees
 	65536 no cuts in preprocessing
-        131072 Time limits elapsed
         18 bit (262144) - Perturb fathom nodes
         19 bit (524288) - No limit on fathom nodes
         20 bit (1048576) - Reduce sum of infeasibilities before cuts
@@ -2300,19 +2299,6 @@ public:
   inline void setCutoffAsConstraint(bool yesNo)
   {
     cutoffRowNumber_ = (yesNo) ? -2 : -1;
-  }
-  /// Set time method
-  inline void setUseElapsedTime(bool yesNo)
-  {
-    if (yesNo)
-      moreSpecialOptions_ |= 131072;
-    else
-      moreSpecialOptions_ &= ~131072;
-  }
-  /// Get time method
-  inline bool useElapsedTime() const
-  {
-    return (moreSpecialOptions_ & 131072) != 0;
   }
   /// Get useful temporary pointer
   inline void *temporaryPointer() const
@@ -3192,7 +3178,6 @@ private:
         16384 gomory
 	32768 more heuristics in sub trees
 	65536 no cuts in preprocessing
-        131072 Time limits elapsed
         18 bit (262144) - Perturb fathom nodes
         19 bit (524288) - No limit on fathom nodes
         20 bit (1048576) - Reduce sum of infeasibilities before cuts

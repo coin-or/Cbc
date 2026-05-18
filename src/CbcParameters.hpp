@@ -237,15 +237,6 @@ public:
 
   /*! \brief What clock type to use
 
-    - Clock Cpu: Use CPU time
-    - ClockElapsed: Use elapsed time
-
-  */
-
-  enum ClockType { ClockCpu = 0, ClockElapsed, ClockEndMarker };
-
-  /*! \brief What clock type to use
-
     - CGraphOff:
     - CGraphOn:
     - CGraphClique:
@@ -1702,13 +1693,6 @@ public:
   inline void setStrategyMode(CbcParameters::StrategyMode mode) { strategyMode_ = mode;
   }
 
-  /*! \brief Get clock type */
-  inline CbcParameters::ClockType getClockType() { return (clockType_); }
-
-  /*! \brief Set clock type */
-  inline void setClockType(CbcParameters::ClockType type) { clockType_ = type;
-  }
-
   /*! \brief Get mode for CGraph */
   inline CbcParameters::CGraphMode getCGraphMode() { return (cgraphMode_); }
 
@@ -2539,7 +2523,6 @@ private:
   CbcParameters::NodeStrategy nodeStrategy_;
   CbcParameters::SOSStrategy sosStrategy_;
   CbcParameters::StrategyMode strategyMode_;
-  CbcParameters::ClockType clockType_;
   CbcParameters::CGraphMode cgraphMode_;
   CbcParameters::LPMethod lpMethod_;
 

@@ -791,8 +791,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
   // Runs before the LP solve — purely combinatorial, no basis needed.
   {
     CbcBoundPropagation bp;
-    const bool useElapsed = model_->useElapsedTime();
-    const double startTime = useElapsed ? CoinGetTimeOfDay() : CoinCpuTime();
+    const double startTime = CoinGetTimeOfDay();
     const double timeLimit = model_->getMaximumSeconds();
 #ifdef RINS_CLOSE_DEBUG
     int nFixedPreBP = 0;
@@ -806,7 +805,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
 #endif
     const bool feasible = bp.run(solver, model_->messageHandler(), 0,
       CbcBoundPropagation::MILPbt, 100,
-      useElapsed, timeLimit, startTime);
+      timeLimit, startTime);
     if (!feasible) {
       model_->setSpecialOptions(saveModelOptions);
       return 2; // infeasible
@@ -958,10 +957,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
     OsiClpSolverInterface *clpSolverPre = getClpSolver(solver);
     if (CBC_SKIP_CLP_TEST||clpSolverPre) {
       double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
-      if (model_->useElapsedTime())
-        clpSolverPre->getModelPtr()->setMaximumWallSeconds(remaining);
-      else
-        clpSolverPre->getModelPtr()->setMaximumSeconds(remaining);
+      clpSolverPre->getModelPtr()->setMaximumWallSeconds(remaining);
     }
   }
   solver->initialSolve();
@@ -1170,10 +1166,7 @@ int CbcHeuristic::smallBranchAndBound(OsiSolverInterface *solver, int numberNode
           OsiClpSolverInterface *clpSolver2TL = getClpSolver(solver2);
           if (CBC_SKIP_CLP_TEST||clpSolver2TL) {
             double remaining = std::max(model_->getMaximumSeconds() - model_->getCurrentSeconds(), 0.0);
-            if (model_->useElapsedTime())
-              clpSolver2TL->getModelPtr()->setMaximumWallSeconds(remaining);
-            else
-              clpSolver2TL->getModelPtr()->setMaximumSeconds(remaining);
+            clpSolver2TL->getModelPtr()->setMaximumWallSeconds(remaining);
           }
         }
         solver2->resolve();

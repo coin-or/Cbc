@@ -478,10 +478,6 @@ int pushCbcSolverKwdParam(CoinParam &param) {
         static_cast<CbcParameters::StrategyMode>(mode));
     break;
   }
-  case CbcParam::TIMEMODE: {
-    parameters->setClockType(static_cast<CbcParameters::ClockType>(mode));
-    break;
-  }
   case CbcParam::USECGRAPH: {
     parameters->setCGraphMode(static_cast<CbcParameters::CGraphMode>(mode));
     break;

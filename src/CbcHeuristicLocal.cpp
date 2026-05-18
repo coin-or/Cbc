@@ -166,10 +166,7 @@ int CbcHeuristicLocal::solutionFix(double &objectiveValue,
     if (CBC_SKIP_CLP_TEST||clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
-        if (model_->useElapsedTime())
-          clp->getModelPtr()->setMaximumWallSeconds(remaining);
-        else
-          clp->getModelPtr()->setMaximumSeconds(remaining);
+        clp->getModelPtr()->setMaximumWallSeconds(remaining);
       }
     }
   }
@@ -1143,10 +1140,7 @@ int CbcHeuristicProximity::solution(double &solutionValue,
     if (CBC_SKIP_CLP_TEST||clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
-        if (model_->useElapsedTime())
-          clp->getModelPtr()->setMaximumWallSeconds(remaining);
-        else
-          clp->getModelPtr()->setMaximumSeconds(remaining);
+        clp->getModelPtr()->setMaximumWallSeconds(remaining);
       }
     }
   }
@@ -1400,10 +1394,7 @@ int CbcHeuristicNaive::solution(double &solutionValue,
     if (CBC_SKIP_CLP_TEST||clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
-        if (model_->useElapsedTime())
-          clp->getModelPtr()->setMaximumWallSeconds(remaining);
-        else
-          clp->getModelPtr()->setMaximumSeconds(remaining);
+        clp->getModelPtr()->setMaximumWallSeconds(remaining);
       }
     }
   }
@@ -1686,10 +1677,7 @@ int CbcHeuristicCrossover::solution(double &solutionValue,
     if (CBC_SKIP_CLP_TEST||clp) {
       double remaining = model_->getMaximumSeconds() - model_->getCurrentSeconds();
       if (remaining > 0.0) {
-        if (model_->useElapsedTime())
-          clp->getModelPtr()->setMaximumWallSeconds(remaining);
-        else
-          clp->getModelPtr()->setMaximumSeconds(remaining);
+        clp->getModelPtr()->setMaximumWallSeconds(remaining);
       }
     }
   }

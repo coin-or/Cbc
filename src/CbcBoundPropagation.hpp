@@ -29,7 +29,7 @@ class CoinMessageHandler;
  *   CbcBoundPropagation bp;
  *   bool feasible = bp.run(solver, handler, logLevel,
  *                          CbcBoundPropagation::MILPbt,
- *                          100, useElapsed, timeLimit, startTime);
+ *                          100, timeLimit, startTime);
  *   if (!feasible) {
  *     // instance proved infeasible
  *     int row = bp.infeasibleRow();   // -1 if unknown
@@ -76,9 +76,8 @@ public:
    * \param logLevel   CbcModel log level (0=silent, 1=normal, 2=verbose).
    * \param level      Aggression level (must not be Off).
    * \param maxRounds  Maximum MILPbt rounds (only used when level == MILPbt).
-   * \param useElapsed True to measure wall-clock time; false for CPU time.
    * \param timeLimit  Budget in seconds; use a large value to disable.
-   * \param startTime  Reference time (from CoinGetTimeOfDay or CoinCpuTime)
+   * \param startTime  Reference elapsed time measured before calling run().
    *                   measured BEFORE calling run().
    *
    * \return true if the problem is (still) feasible, false if infeasibility
@@ -89,7 +88,6 @@ public:
     int logLevel,
     Level level,
     int maxRounds,
-    bool useElapsed,
     double timeLimit,
     double startTime);
 

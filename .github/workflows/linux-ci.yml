@@ -84,3 +84,32 @@ jobs:
         with:
           name: mipster-macos-arm64
           path: dist/mipster-macos-arm64.tar.gz
+
+  build-windows-x86_64:
+    name: Windows x86_64 (generic + AVX2)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: C:\msys64\usr\bin\bash.exe -l {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MinGW64 toolchain
+        run: |
+          pacman-key --init
+          pacman-key --populate msys2
+          pacman -Sy --noconfirm
+          pacman -S --needed --noconfirm \
+            mingw-w64-x86_64-gcc \
+            make \
+            autoconf automake libtool pkg-config zip
+
+      - name: Build + test
+        run: |
+          export PATH="/mingw64/bin:/usr/bin:$PATH"
+          bash .github/scripts/build-windows.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mipster-windows-x86_64
+          path: dist/mipster-windows-x86_64.zip

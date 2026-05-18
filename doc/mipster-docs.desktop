@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=MIPster Parameters Reference
+GenericName=Solver Documentation
+Comment=MIPster solver parameters and options reference
+Exec=xdg-open /usr/share/doc/mipster/mipster-parameters.pdf
+Terminal=false
+Icon=application-pdf
+Categories=Science;Documentation;Education;
+Keywords=mip;solver;documentation;parameters;reference;
+StartupNotify=false

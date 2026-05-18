@@ -208,11 +208,13 @@ NSIS_SCRIPT="/tmp/mipster-installer.nsi"
 # Forward slashes are safe in sed replacements (no backslash escaping needed)
 # and NSIS accepts them in File/SetOutPath commands.
 DIST_WIN=$(cygpath -m "${SRC_DIR}/dist" 2>/dev/null || echo "${SRC_DIR}/dist")
+DOC_WIN=$(cygpath -m "${SRC_DIR}/doc" 2>/dev/null || echo "${SRC_DIR}/doc")
 
 sed \
   -e "s|@VERSION@|${VERSION}|g" \
   -e "s|@DIST_DIR@|${DIST_WIN}|g" \
   -e "s|@DIST_SUBDIR@|${DIST_NAME}|g" \
+  -e "s|@DOC_DIR@|${DOC_WIN}|g" \
   "${SRC_DIR}/.github/scripts/mipster-installer.nsi" > "${NSIS_SCRIPT}"
 
 # makensis is available from the NSIS package in MSYS2

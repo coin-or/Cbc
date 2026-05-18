@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=MIPster Solver
+GenericName=MIP Solver
+Comment=Interactive Mixed-Integer Programming Solver
+Exec=bash -c "mipster --help; echo; echo 'Type a command or press Ctrl+D to exit.'; mipster"
+Terminal=true
+Icon=utilities-terminal
+Categories=Science;Math;Education;
+Keywords=mip;lp;milp;solver;optimization;integer;programming;
+StartupNotify=false

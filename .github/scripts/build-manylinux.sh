@@ -170,6 +170,25 @@ echo "==> Smoke test (launcher → --version):"
 "${INSTALL_DIR}/bin/mipster" --version 2>&1 | head -1 || true
 echo "    PASSED"
 
+# ── Documentation ─────────────────────────────────────────────────────────────
+echo ""
+echo "==> Installing documentation..."
+mkdir -p "${INSTALL_DIR}/share/doc/mipster"
+mkdir -p "${INSTALL_DIR}/share/man/man1"
+mkdir -p "${INSTALL_DIR}/share/applications"
+
+# Copy committed docs from the source tree (generated from the binary)
+DOC_SRC="/project/doc"
+for f in mipster-parameters.pdf mipster-parameters.md; do
+  [ -f "${DOC_SRC}/${f}" ] && cp "${DOC_SRC}/${f}" "${INSTALL_DIR}/share/doc/mipster/" && echo "    ${f}"
+done
+[ -f "${DOC_SRC}/mipster.1" ] && \
+  gzip -c "${DOC_SRC}/mipster.1" > "${INSTALL_DIR}/share/man/man1/mipster.1.gz" && \
+  echo "    mipster.1.gz"
+for f in mipster.desktop mipster-docs.desktop; do
+  [ -f "${DOC_SRC}/${f}" ] && cp "${DOC_SRC}/${f}" "${INSTALL_DIR}/share/applications/" && echo "    ${f}"
+done
+
 # ── Package ───────────────────────────────────────────────────────────────────
 echo ""
 echo "==> Packaging..."

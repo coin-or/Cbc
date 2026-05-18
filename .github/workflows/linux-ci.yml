@@ -168,3 +168,109 @@ jobs:
             doc/mipster-parameters.pdf
             doc/mipster-parameters.md
             doc/mipster-parameters.tex
+
+  package-linux-x86_64:
+    name: Linux packages (DEB/RPM/Arch x86_64)
+    runs-on: ubuntu-latest
+    needs: [build-linux-x86_64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install fpm (DEB/RPM builder)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends ruby ruby-dev build-essential rpm
+          sudo gem install fpm --no-document
+
+      - name: Download Linux x86_64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mipster-linux-x86_64
+          path: dist/
+
+      - name: Build DEB and RPM packages
+        run: |
+          chmod +x .github/scripts/build-linux-packages.sh
+          .github/scripts/build-linux-packages.sh dist/mipster-linux-x86_64.tar.gz x86_64
+
+      - name: Upload DEB package
+        uses: actions/upload-artifact@v4
+        with:
+          name: mipster-linux-x86_64-deb
+          path: "*.deb"
+
+      - name: Upload RPM package
+        uses: actions/upload-artifact@v4
+        with:
+          name: mipster-linux-x86_64-rpm
+          path: "*.rpm"
+
+  package-linux-aarch64:
+    name: Linux packages (DEB/RPM aarch64)
+    runs-on: ubuntu-latest
+    needs: [build-linux-aarch64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install fpm (DEB/RPM builder)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends ruby ruby-dev build-essential rpm
+          sudo gem install fpm --no-document
+
+      - name: Download Linux aarch64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mipster-linux-aarch64
+          path: dist/
+
+      - name: Build DEB and RPM packages
+        run: |
+          chmod +x .github/scripts/build-linux-packages.sh
+          .github/scripts/build-linux-packages.sh dist/mipster-linux-aarch64.tar.gz aarch64
+
+      - name: Upload DEB package
+        uses: actions/upload-artifact@v4
+        with:
+          name: mipster-linux-aarch64-deb
+          path: "*.deb"
+
+      - name: Upload RPM package
+        uses: actions/upload-artifact@v4
+        with:
+          name: mipster-linux-aarch64-rpm
+          path: "*.rpm"
+
+  package-arch-x86_64:
+    name: Arch Linux package (x86_64)
+    runs-on: ubuntu-latest
+    needs: [build-linux-x86_64]
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          pacman -Sy --noconfirm base-devel
+
+      - name: Download Linux x86_64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mipster-linux-x86_64
+          path: dist/
+
+      - name: Build Arch package
+        run: |
+          # makepkg cannot run as root; create a build user
+          useradd -m builder
+          chown -R builder:builder dist/
+          chmod +x .github/scripts/build-linux-packages.sh
+          chown builder:builder .github/scripts/build-linux-packages.sh
+          sudo -u builder bash .github/scripts/build-linux-packages.sh \
+            dist/mipster-linux-x86_64.tar.gz x86_64
+
+      - name: Upload Arch package
+        uses: actions/upload-artifact@v4
+        with:
+          name: mipster-linux-arch-x86_64
+          path: "*.pkg.tar.zst"

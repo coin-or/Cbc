@@ -103,7 +103,7 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_fl_random$(EXEEXT) \
 	CInterfaceTest_mdkp_random$(EXEEXT) \
 	CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) \
-	CbcSolverLpTest$(EXEEXT)
+	CInterfaceTest_graphdraw$(EXEEXT) CbcSolverLpTest$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -133,6 +133,11 @@ am_CInterfaceTest_fl_random_OBJECTS =  \
 CInterfaceTest_fl_random_OBJECTS =  \
 	$(am_CInterfaceTest_fl_random_OBJECTS)
 CInterfaceTest_fl_random_DEPENDENCIES = ../src/libCbc.la
+am_CInterfaceTest_graphdraw_OBJECTS =  \
+	CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.$(OBJEXT)
+CInterfaceTest_graphdraw_OBJECTS =  \
+	$(am_CInterfaceTest_graphdraw_OBJECTS)
+CInterfaceTest_graphdraw_DEPENDENCIES = ../src/libCbc.la
 am_CInterfaceTest_mdkp_random_OBJECTS =  \
 	CInterfaceTest_mdkp_random.$(OBJEXT)
 CInterfaceTest_mdkp_random_OBJECTS =  \
@@ -170,6 +175,8 @@ am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_a1-CInterfaceTest_a1.Po \
 	./$(DEPDIR)/CInterfaceTest_a1-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_fl_random.Po \
+	./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po \
+	./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_mdkp_random.Po \
 	./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po \
 	./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po \
@@ -218,6 +225,8 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_a1_SOURCES) \
 	$(CInterfaceTest_fl_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_fl_random_SOURCES) \
+	$(CInterfaceTest_graphdraw_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_graphdraw_SOURCES) \
 	$(CInterfaceTest_mdkp_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_mdkp_random_SOURCES) \
 	$(CInterfaceTest_nursesched_SOURCES) \
@@ -470,6 +479,14 @@ CInterfaceTest_a1_SOURCES = CInterfaceTest_a1.c
 nodist_EXTRA_CInterfaceTest_a1_SOURCES = dummy.cpp
 CInterfaceTest_a1_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_a1_LDADD = ../src/libCbc.la
+
+########################################################################
+#                   graphdraw-domain tests (LP + node-limited MIP)     #
+########################################################################
+CInterfaceTest_graphdraw_SOURCES = CInterfaceTest_graphdraw.c
+nodist_EXTRA_CInterfaceTest_graphdraw_SOURCES = dummy.cpp
+CInterfaceTest_graphdraw_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_graphdraw_LDADD = ../src/libCbc.la
 all: all-am
 
 .SUFFIXES:
@@ -560,6 +577,10 @@ CInterfaceTest_fl_random$(EXEEXT): $(CInterfaceTest_fl_random_OBJECTS) $(CInterf
 	@rm -f CInterfaceTest_fl_random$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_fl_random_OBJECTS) $(CInterfaceTest_fl_random_LDADD) $(LIBS)
 
+CInterfaceTest_graphdraw$(EXEEXT): $(CInterfaceTest_graphdraw_OBJECTS) $(CInterfaceTest_graphdraw_DEPENDENCIES) $(EXTRA_CInterfaceTest_graphdraw_DEPENDENCIES) 
+	@rm -f CInterfaceTest_graphdraw$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_graphdraw_OBJECTS) $(CInterfaceTest_graphdraw_LDADD) $(LIBS)
+
 CInterfaceTest_mdkp_random$(EXEEXT): $(CInterfaceTest_mdkp_random_OBJECTS) $(CInterfaceTest_mdkp_random_DEPENDENCIES) $(EXTRA_CInterfaceTest_mdkp_random_DEPENDENCIES) 
 	@rm -f CInterfaceTest_mdkp_random$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_mdkp_random_OBJECTS) $(CInterfaceTest_mdkp_random_LDADD) $(LIBS)
@@ -586,6 +607,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_a1-CInterfaceTest_a1.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_a1-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_fl_random.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mdkp_random.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po@am__quote@ # am--include-marker
@@ -636,6 +659,20 @@ CInterfaceTest_a1-CInterfaceTest_a1.obj: CInterfaceTest_a1.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_a1.c' object='CInterfaceTest_a1-CInterfaceTest_a1.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_a1_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_a1-CInterfaceTest_a1.obj `if test -f 'CInterfaceTest_a1.c'; then $(CYGPATH_W) 'CInterfaceTest_a1.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_a1.c'; fi`
+
+CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.o: CInterfaceTest_graphdraw.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Tpo -c -o CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.o `test -f 'CInterfaceTest_graphdraw.c' || echo '$(srcdir)/'`CInterfaceTest_graphdraw.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Tpo $(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_graphdraw.c' object='CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.o `test -f 'CInterfaceTest_graphdraw.c' || echo '$(srcdir)/'`CInterfaceTest_graphdraw.c
+
+CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.obj: CInterfaceTest_graphdraw.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Tpo -c -o CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.obj `if test -f 'CInterfaceTest_graphdraw.c'; then $(CYGPATH_W) 'CInterfaceTest_graphdraw.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_graphdraw.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Tpo $(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='CInterfaceTest_graphdraw.c' object='CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.obj `if test -f 'CInterfaceTest_graphdraw.c'; then $(CYGPATH_W) 'CInterfaceTest_graphdraw.c'; else $(CYGPATH_W) '$(srcdir)/CInterfaceTest_graphdraw.c'; fi`
 
 CInterfaceTest_nursesched-CInterfaceTest_nursesched.o: CInterfaceTest_nursesched.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_nursesched_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT CInterfaceTest_nursesched-CInterfaceTest_nursesched.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Tpo -c -o CInterfaceTest_nursesched-CInterfaceTest_nursesched.o `test -f 'CInterfaceTest_nursesched.c' || echo '$(srcdir)/'`CInterfaceTest_nursesched.c
@@ -688,6 +725,20 @@ CInterfaceTest_a1-dummy.obj: dummy.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_a1-dummy.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_a1_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_a1-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+
+CInterfaceTest_graphdraw-dummy.o: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_graphdraw-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_graphdraw-dummy.Tpo -c -o CInterfaceTest_graphdraw-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_graphdraw-dummy.Tpo $(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_graphdraw-dummy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_graphdraw-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
+
+CInterfaceTest_graphdraw-dummy.obj: dummy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_graphdraw-dummy.obj -MD -MP -MF $(DEPDIR)/CInterfaceTest_graphdraw-dummy.Tpo -c -o CInterfaceTest_graphdraw-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CInterfaceTest_graphdraw-dummy.Tpo $(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dummy.cpp' object='CInterfaceTest_graphdraw-dummy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_graphdraw_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CInterfaceTest_graphdraw-dummy.obj `if test -f 'dummy.cpp'; then $(CYGPATH_W) 'dummy.cpp'; else $(CYGPATH_W) '$(srcdir)/dummy.cpp'; fi`
 
 CInterfaceTest_nursesched-dummy.o: dummy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CInterfaceTest_nursesched_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CInterfaceTest_nursesched-dummy.o -MD -MP -MF $(DEPDIR)/CInterfaceTest_nursesched-dummy.Tpo -c -o CInterfaceTest_nursesched-dummy.o `test -f 'dummy.cpp' || echo '$(srcdir)/'`dummy.cpp
@@ -806,6 +857,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_a1-CInterfaceTest_a1.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_a1-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po
@@ -861,6 +914,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_a1-CInterfaceTest_a1.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_a1-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po
@@ -918,13 +973,14 @@ test_cbc: ../src/cbc$(EXEEXT)
 
 .PHONY: test
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CbcSolverLpTest$(EXEEXT)
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CbcSolverLpTest$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 	export RUNNING_TEST="CInterfaceTest_tsp_random" ; ./CInterfaceTest_tsp_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_fl_random" ; ./CInterfaceTest_fl_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_mdkp_random" ; ./CInterfaceTest_mdkp_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_nursesched" ; ./CInterfaceTest_nursesched$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_a1" ; ./CInterfaceTest_a1$(EXEEXT)
+	export RUNNING_TEST="CInterfaceTest_graphdraw" ; ./CInterfaceTest_graphdraw$(EXEEXT)
 	export RUNNING_TEST="CbcSolverLpTest" ; ./CbcSolverLpTest$(EXEEXT)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

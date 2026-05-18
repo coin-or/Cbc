@@ -1907,11 +1907,43 @@ Cbc_solveLinearProgram(Cbc_Model *model)
 
   model->lastOptimization = ContinuousOptimization;
 
-  if (solver->basisIsAvailable()) {
+  // Optional bound propagation before solving (uses integer structure to
+  // tighten bounds; see INT_PARAM_LP_FAST_PREPROCESS).  When BP runs and
+  // changes bounds the current basis becomes stale, so we must cold-start.
+  bool bpChangedBounds = false;
+  const int fppLevel = model->int_param[INT_PARAM_LP_FAST_PREPROCESS];
+  if (fppLevel > 0) {
+    CbcBoundPropagation::Level level;
+    switch (fppLevel) {
+      case 1:  level = CbcBoundPropagation::Singletons; break;
+      case 2:  level = CbcBoundPropagation::MILPbt;     break;
+      default: level = CbcBoundPropagation::Fixpoint;   break;
+    }
+    const double timeLimit = model->dbl_param[DBL_PARAM_TIME_LIMIT];
+    const double startTime = CoinGetTimeOfDay();
+    const int logLevel = model->int_param[INT_PARAM_LOG_LEVEL];
+    CbcBoundPropagation bp;
+    const bool feasible = bp.run(solver, solver->messageHandler(), logLevel,
+                                  level, /*maxRounds=*/100,
+                                  timeLimit, startTime);
+    if (!feasible) {
+      clps->setMaximumSeconds(prevMaxSecs);
+      clps->setMaximumIterations(prevMaxIter);
+      return 2;  // infeasible proved by bound propagation
+    }
+    bpChangedBounds = (bp.nFixed() > 0 || bp.nTightened() > 0);
+  }
+
+  if (!bpChangedBounds && solver->basisIsAvailable()) {
     solver->resolve();
     if (solver->isProvenOptimal()) {
       clps->setMaximumSeconds(prevMaxSecs);
       clps->setMaximumIterations(prevMaxIter);
+      model->obj_value = solver->getObjValue();
+      model->x = solver->getColSolution();
+      model->rActv = solver->getRowActivity();
+      Cbc_updateSlack(model, solver->getRowActivity());
+      model->rSlk = model->slack->data();
       return 0;
     }
     if (solver->isProvenDualInfeasible()) {
@@ -1948,40 +1980,28 @@ Cbc_solveLinearProgram(Cbc_Model *model)
     }
   } // resolve
 
-  /* checking if options should be automatically tuned */
-  if (model->lp_method == LPM_Auto) {
-    // Default to dual simplex — it's the best choice for most problems.
-    // Clp's initialSolve() also auto-selects internally, so this just
-    // sets the ClpSolve type. Previously this block parsed the string
-    // output of ClpSimplexOther::guess() which was fragile.
-    model->lp_method = LPM_Dual;
-  } // auto
-
-  /* for integer or linear optimization starting with LP relaxation */
+  /* for LP relaxation solve: set up ClpSolve options */
   ClpSolve clpOptions;
-  if (model->red_type == LPR_NoDualReds){
+  if (model->red_type == LPR_NoDualReds) {
     // set special option in Clp to disable dual reductions
     clpOptions.setSpecialOption(5, 1);
   }
   switch (model->lp_method) {
     case LPM_Auto:
-      fprintf(stderr, "Method should be already configured.\n");
-      exit(1);
+    case LPM_Dual:
+      clpOptions.setSolveType(ClpSolve::useDual);
       break;
     case LPM_Primal:
       if (model->int_param[INT_PARAM_IDIOT] > 0)
         clpOptions.setSpecialOption(1, 2, model->int_param[INT_PARAM_IDIOT]);
-      clpOptions.setSolveType( ClpSolve::usePrimal );
-      break;
-    case LPM_Dual:
-      clpOptions.setSolveType( ClpSolve::useDual );
+      clpOptions.setSolveType(ClpSolve::usePrimal);
       break;
     case LPM_Barrier:
-      clpOptions.setSolveType( ClpSolve::useBarrier );
+      clpOptions.setSolveType(ClpSolve::useBarrier);
       clpOptions.setSpecialOption(4, 4);
       break;
     case LPM_BarrierNoCross:
-      clpOptions.setSolveType( ClpSolve::useBarrierNoCross );
+      clpOptions.setSolveType(ClpSolve::useBarrierNoCross);
       break;
   }
   solver->setSolveOptions(clpOptions);
@@ -2385,29 +2405,14 @@ int CBC_LINKAGE
 Cbc_solve(Cbc_Model *model)
 {
   Cbc_cleanOptResults(model);
-
-  int res = Cbc_solveLinearProgram(model);
-
-  if (res == 1)
-    return 1;
-  if (res==2 || res==3)
-    return 0;
+  Cbc_flush(model);
 
   OsiClpSolverInterface *solver = model->solver_;
 
-  if (solver->isProvenPrimalInfeasible() || solver->isProvenDualInfeasible() ||
-      solver->isAbandoned() || solver->isIterationLimitReached() || model->relax_ == 1
-      || ((solver->getNumIntegers()+model->nSos)==0)) {
-    if (solver->isProvenOptimal() || solver->isIterationLimitReached()) {
-      model->obj_value = solver->getObjValue();
-      Cbc_updateSlack(model, solver->getRowActivity() );
-      model->x = solver->getColSolution();
-      model->rSlk = model->slack->data();
-      model->rActv = solver->getRowActivity();
-    }
-
-    return 0;
-  }
+  // LP-only mode or pure LP (no integer variables or SOS): delegate entirely
+  // to Cbc_solveLinearProgram, which handles all LP settings and BP.
+  if (model->relax_ == 1 || (solver->getNumIntegers() + model->nSos) == 0)
+    return Cbc_solveLinearProgram(model);
 
   /*  MIP Optimization */
   {
@@ -2621,11 +2626,52 @@ Cbc_solve(Cbc_Model *model)
           addParam("maxSecondsBest", model->dbl_param[DBL_PARAM_MAX_SECS_NOT_IMPROV_FS]);
         if (model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS] != INT_MAX)
           addParamI("maxNodesBest", model->int_param[INT_PARAM_MAX_NODES_NOT_IMPROV_FS]);
+
+        // LP method
+        switch (model->lp_method) {
+          case LPM_Primal:
+            inputQueue.push_back("-lpMethod=primal"); break;
+          case LPM_Barrier:
+          case LPM_BarrierNoCross:
+            inputQueue.push_back("-lpMethod=barrier"); break;
+          default:  // LPM_Auto or LPM_Dual
+            inputQueue.push_back("-lpMethod=dual"); break;
+        }
+
+        // Bound propagation level before LP solve
+        {
+          const char *bpKwd;
+          switch (model->int_param[INT_PARAM_LP_FAST_PREPROCESS]) {
+            case 1:  bpKwd = "singletons"; break;
+            case 2:  bpKwd = "milpbt";     break;
+            case 3:  bpKwd = "fixpoint";   break;
+            default: bpKwd = "off";        break;
+          }
+          inputQueue.push_back(std::string("-boundPropLevel=") + bpKwd);
+        }
+
+        // Dual pivot algorithm
+        {
+          const char *dpKwd;
+          switch (model->dualp) {
+            case DP_Dantzig:    dpKwd = "dantzig";    break;
+            case DP_Partial:    dpKwd = "partial";    break;
+            case DP_Steepest:   dpKwd = "steepest";   break;
+            case DP_PESteepest: dpKwd = "PEsteepest"; break;
+            default:            dpKwd = "automatic";  break;
+          }
+          inputQueue.push_back(std::string("-dualPivot=") + dpKwd);
+        }
+
+        // Positive-Edge pricing factor
+        if (model->dbl_param[DBL_PARAM_PSI] > 0.0)
+          addParam("psi", model->dbl_param[DBL_PARAM_PSI]);
+
+        // Perturbation value (only override if non-default)
+        if (model->int_param[INT_PARAM_PERT_VALUE] != 50)
+          addParamI("pertValue", model->int_param[INT_PARAM_PERT_VALUE]);
       }
 
-      // LP progress was already printed by Cbc_solveLinearProgram(); suppress it
-      inputQueue.push_back("-lpIterFreq=0");
-      inputQueue.push_back("-lpTimeFreq=0");
       inputQueue.push_back("-solve");
       inputQueue.push_back("-quit");
 
@@ -2634,6 +2680,12 @@ Cbc_solve(Cbc_Model *model)
         defaultC.setSolverType(4);
         cbcSolver.model()->solver()->setAuxiliaryInfo(&defaultC);
         cbcSolver.model()->passInSolverCharacteristics(&defaultC);
+      }
+
+      if (!cbc_annouced) {
+        CbcOutput::printSolverHeader(cbcSolver.model()->solver()->messageHandler(),
+          model->int_param[INT_PARAM_LOG_LEVEL]);
+        cbc_annouced = 1;
       }
 
       if (!model->problemSummaryPrinted) {

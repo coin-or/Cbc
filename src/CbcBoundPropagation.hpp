@@ -103,6 +103,9 @@ public:
   /// Total fixings from all phases.
   int nFixed() const { return nSingletonFixed_ + nBoundPropFixed_; }
 
+  /// Total tightenings (singleton-tightened that were not fully fixed).
+  int nTightened() const { return nSingletonTightened_; }
+
   /// Number of CoinBoundPropagation rounds executed.
   int nRoundsRun() const { return nRoundsRun_; }
 

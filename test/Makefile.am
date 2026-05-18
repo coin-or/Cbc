@@ -39,7 +39,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CbcSolverLpTest
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CbcSolverLpTest
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -81,9 +81,34 @@ CInterfaceTest_mdkp_random_LDADD = ../src/libCbc.la
 CbcSolverLpTest_SOURCES = CbcSolverLpTest.cpp
 CbcSolverLpTest_LDADD = ../src/libCbc.la
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CbcSolverLpTest$(EXEEXT)
+########################################################################
+#                   Nursesched MPS-file tests (LP+BP, MIP)             #
+########################################################################
+
+# FIXTURE_DIR points to the directory holding the MPS fixture files so the
+# compiled binary can locate them at runtime regardless of the working directory
+# from which make runs.
+FIXTURE_DIR_VAL = $(abs_srcdir)
+
+CInterfaceTest_nursesched_SOURCES = CInterfaceTest_nursesched.c
+nodist_EXTRA_CInterfaceTest_nursesched_SOURCES = dummy.cpp
+CInterfaceTest_nursesched_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_nursesched_LDADD = ../src/libCbc.la
+
+########################################################################
+#                   A-1 project-scheduling tests (LP reopt, MIP)       #
+########################################################################
+
+CInterfaceTest_a1_SOURCES = CInterfaceTest_a1.c
+nodist_EXTRA_CInterfaceTest_a1_SOURCES = dummy.cpp
+CInterfaceTest_a1_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_a1_LDADD = ../src/libCbc.la
+
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CbcSolverLpTest$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
 	export RUNNING_TEST="CInterfaceTest_tsp_random" ; ./CInterfaceTest_tsp_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_fl_random" ; ./CInterfaceTest_fl_random$(EXEEXT)
 	export RUNNING_TEST="CInterfaceTest_mdkp_random" ; ./CInterfaceTest_mdkp_random$(EXEEXT)
+	export RUNNING_TEST="CInterfaceTest_nursesched" ; ./CInterfaceTest_nursesched$(EXEEXT)
+	export RUNNING_TEST="CInterfaceTest_a1" ; ./CInterfaceTest_a1$(EXEEXT)
 	export RUNNING_TEST="CbcSolverLpTest" ; ./CbcSolverLpTest$(EXEEXT)

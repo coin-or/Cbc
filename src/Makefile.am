@@ -144,8 +144,8 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 ########################################################################
 
 # Here list all the header files that are required by a user of the library,
-# and that therefore should be installed in 'include/coin-or'
-includecoindir = $(includedir)/coin-or
+# and that therefore should be installed in 'include/mipster'
+includecoindir = $(includedir)/mipster
 includecoin_HEADERS = \
 	Cbc_C_Interface.h \
 	CbcBranchActual.hpp \

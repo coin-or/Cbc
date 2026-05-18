@@ -7,7 +7,7 @@
 #   bin/mipster-neon         — ARMv8.2-A static binary (Cortex-A76, RPi 5, Graviton 2+)
 #   lib/generic/libmipster.so*   — shared library, baseline
 #   lib/neon/libmipster.so*      — shared library, ARMv8.2-A
-#   include/coin-or/         — public C API headers
+#   include/mipster/         — public C API headers
 
 set -euo pipefail
 
@@ -99,8 +99,8 @@ build_variant() {
 
   # ── Headers (only need to do this once) ─────────────────────────────────────
   if [ "${name}" = "generic" ]; then
-    cp -r "${build_dir}/install/include/coin-or" "${INSTALL_DIR}/include/"
-    echo "    include/coin-or: copied"
+    cp -r "${build_dir}/install/include/mipster" "${INSTALL_DIR}/include/"
+    echo "    include/mipster: copied"
   fi
 }
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generate a Markdown parameter reference from 'cbc -dumpParameters' JSON.
+"""Generate a Markdown parameter reference from 'mipster -dumpParameters' JSON.
 
 Usage:
-    python3 doc/generate_markdown_reference.py [path/to/cbc] > doc/cbc-parameters.md
+    python3 doc/generate_markdown_reference.py [path/to/mipster] > doc/mipster-parameters.md
 """
 
 import subprocess, sys, os, json, re
@@ -19,7 +19,7 @@ def load_params(cbc):
 def get_version(cbc):
     out = subprocess.run([cbc, "--version"],
                          capture_output=True, text=True, timeout=10).stdout
-    m = re.search(r"CBC\s+(\S+)", out, re.IGNORECASE)
+    m = re.search(r"(?:MIPster|CBC)\s+(\S+)", out, re.IGNORECASE)
     return m.group(1) if m else "devel"
 
 
@@ -48,10 +48,10 @@ ORDER = [
 
 def emit(version, topics, out):
     date = datetime.now().strftime("%B %Y")
-    out.write(f"# CBC Parameter Reference\n\n")
-    out.write(f"*CBC {version} — {date}*\n\n")
+    out.write(f"# MIPster Parameter Reference\n\n")
+    out.write(f"*MIPster {version} — {date}*\n\n")
     out.write("Parameters are specified on the command line **before** `-solve`:\n")
-    out.write("```\ncbc model.mps -sec 300 -cuts ifmove -solve\n```\n\n")
+    out.write("```\nmipster model.mps -sec 300 -cuts ifmove -solve\n```\n\n")
     out.write("Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.\n\n")
 
     # Table of contents
@@ -206,7 +206,7 @@ def emit_param(p, out, level="###"):
 
 
 def main():
-    cbc = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/prog/cbc/bin/cbc")
+    cbc = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/prog/cbc/bin/mipster")
     params = load_params(cbc)
     version = get_version(cbc)
     topics = group_by_topic(params)

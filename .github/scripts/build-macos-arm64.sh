@@ -4,7 +4,7 @@
 # Produces: dist/mipster-macos-arm64.tar.gz
 #   bin/mipster              — single ARM64 binary (all M1/M2/M3/M4)
 #   lib/libmipster.dylib     — shared library
-#   include/coin-or/         — public C API headers
+#   include/mipster/         — public C API headers
 #
 # Single variant: all Apple Silicon (M1 through M4+) shares the same
 # relevant ISA. Generational differences are microarchitectural, not
@@ -79,8 +79,8 @@ if [ -n "${real_dylib}" ]; then
 fi
 
 # ── Headers ───────────────────────────────────────────────────────────────────
-cp -r "${BUILD_DIR}/install/include/coin-or" "${INSTALL_DIR}/include/"
-echo "    include/coin-or: copied"
+cp -r "${BUILD_DIR}/install/include/mipster" "${INSTALL_DIR}/include/"
+echo "    include/mipster: copied"
 
 # ── Smoke test ────────────────────────────────────────────────────────────────
 echo ""

@@ -182,6 +182,7 @@ CoinParam::CoinParam(const CoinParam &orig)
   , pushFunc_(orig.pushFunc_)
   , pullFunc_(orig.pullFunc_)
   , display_(orig.display_)
+  , topic_(orig.topic_)
 {
   name_ = orig.name_;
   strValue_ = orig.strValue_;
@@ -189,7 +190,6 @@ CoinParam::CoinParam(const CoinParam &orig)
   shortHelp_ = orig.shortHelp_;
   longHelp_ = orig.longHelp_;
 }
-
 /*
   Clone
 */
@@ -226,6 +226,7 @@ CoinParam &CoinParam::operator=(const CoinParam &rhs)
     shortHelp_ = rhs.shortHelp_;
     longHelp_ = rhs.longHelp_;
     display_ = rhs.display_;
+    topic_ = rhs.topic_;
   }
 
   return *this;

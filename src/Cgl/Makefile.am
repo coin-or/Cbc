@@ -58,7 +58,7 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 #              Headers installed into $(includedir)/coin-or            #
 ########################################################################
 
-includecoindir = $(includedir)/coin-or
+includecoindir = $(includedir)/mipster
 includecoin_HEADERS = \
 	CglConfig.h \
 	Cgl012cut.hpp \

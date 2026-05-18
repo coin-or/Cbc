@@ -2,10 +2,10 @@
 @COIN_RELOCATABLE_TRUE@prefix=${pcfiledir}/../..
 exec_prefix=@exec_prefix@
 libdir=@libdir@
-includedir=@includedir@/coin-or
+includedir=@includedir@/mipster
 
 Name: @PACKAGE_NAME@
-Description: COIN-OR Branch and Cut
+Description: MIPster — open-source MIP solver
 URL: @PACKAGE_URL@
 Version: @PACKAGE_VERSION@
 Cflags: -I${includedir}

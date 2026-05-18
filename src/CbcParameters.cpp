@@ -569,8 +569,9 @@ void CbcParameters::addCbcParams() {
   // --- Assign semantic topics to every parameter ---
 
   // Bulk-set: all cut params
-  for (int i = CbcParam::FIRSTCUTPARAM + 1; i < CbcParam::LASTCUTPARAM; i++)
+  for (int i = CbcParam::FIRSTCUTPARAM + 1; i < CbcParam::LASTCUTPARAM; i++) {
     parameters_[i]->setTopic("Cuts");
+  }
 
   // Bulk-set: all heuristic params
   for (int i = CbcParam::FIRSTHEURPARAM + 1; i < CbcParam::LASTHEURPARAM; i++)

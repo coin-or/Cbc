@@ -1,49 +1,50 @@
 #!/bin/bash
-# Generate all CBC documentation from the installed binary.
+# Generate all MIPster documentation from the installed binary.
 #
 # Usage:
-#   ./doc/generate_docs.sh [path/to/cbc]
+#   ./doc/generate_docs.sh [path/to/mipster]
 #
 # Generates:
-#   doc/cbc.1              — man page
-#   doc/cbc-parameters.tex — LaTeX reference
-#   doc/cbc-parameters.pdf — PDF reference (if pdflatex available)
+#   doc/mipster.1              — man page
+#   doc/mipster-parameters.tex — LaTeX reference
+#   doc/mipster-parameters.pdf — PDF reference (if pdflatex available)
+#   doc/mipster-parameters.md  — Markdown reference
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CBC="${1:-$HOME/prog/cbc/bin/cbc}"
+MIPSTER="${1:-$HOME/prog/cbc/bin/mipster}"
 
-if [ ! -x "$CBC" ]; then
-    echo "Error: cbc binary not found at $CBC" >&2
-    echo "Usage: $0 [path/to/cbc]" >&2
+if [ ! -x "$MIPSTER" ]; then
+    echo "Error: mipster binary not found at $MIPSTER" >&2
+    echo "Usage: $0 [path/to/mipster]" >&2
     exit 1
 fi
 
-echo "Using: $CBC"
+echo "Using: $MIPSTER"
 
 echo "Generating man page..."
-python3 "$SCRIPT_DIR/generate_manpage.py" "$CBC" > "$SCRIPT_DIR/cbc.1"
+python3 "$SCRIPT_DIR/generate_manpage.py" "$MIPSTER" > "$SCRIPT_DIR/mipster.1"
 
 echo "Generating LaTeX reference..."
-python3 "$SCRIPT_DIR/generate_latex_reference.py" "$CBC" > "$SCRIPT_DIR/cbc-parameters.tex"
+python3 "$SCRIPT_DIR/generate_latex_reference.py" "$MIPSTER" > "$SCRIPT_DIR/mipster-parameters.tex"
 
 echo "Generating Markdown reference..."
-python3 "$SCRIPT_DIR/generate_markdown_reference.py" "$CBC" > "$SCRIPT_DIR/cbc-parameters.md"
+python3 "$SCRIPT_DIR/generate_markdown_reference.py" "$MIPSTER" > "$SCRIPT_DIR/mipster-parameters.md"
 
 if command -v pdflatex >/dev/null 2>&1; then
     echo "Compiling PDF..."
     TMPDIR=$(mktemp -d)
-    pdflatex -interaction=nonstopmode -output-directory="$TMPDIR" "$SCRIPT_DIR/cbc-parameters.tex" >/dev/null 2>&1
-    pdflatex -interaction=nonstopmode -output-directory="$TMPDIR" "$SCRIPT_DIR/cbc-parameters.tex" >/dev/null 2>&1
-    mv "$TMPDIR/cbc-parameters.pdf" "$SCRIPT_DIR/cbc-parameters.pdf"
+    pdflatex -interaction=nonstopmode -output-directory="$TMPDIR" "$SCRIPT_DIR/mipster-parameters.tex" >/dev/null 2>&1
+    pdflatex -interaction=nonstopmode -output-directory="$TMPDIR" "$SCRIPT_DIR/mipster-parameters.tex" >/dev/null 2>&1
+    mv "$TMPDIR/mipster-parameters.pdf" "$SCRIPT_DIR/mipster-parameters.pdf"
     rm -rf "$TMPDIR"
-    echo "Done: $SCRIPT_DIR/cbc-parameters.pdf"
+    echo "Done: $SCRIPT_DIR/mipster-parameters.pdf"
 else
     echo "pdflatex not found — skipping PDF generation."
-    echo "Compile manually: pdflatex doc/cbc-parameters.tex"
+    echo "Compile manually: pdflatex doc/mipster-parameters.tex"
 fi
 
 echo ""
 echo "Generated:"
-ls -lh "$SCRIPT_DIR/cbc.1" "$SCRIPT_DIR/cbc-parameters.tex" "$SCRIPT_DIR/cbc-parameters.md" "$SCRIPT_DIR/cbc-parameters.pdf" 2>/dev/null
+ls -lh "$SCRIPT_DIR/mipster.1" "$SCRIPT_DIR/mipster-parameters.tex" "$SCRIPT_DIR/mipster-parameters.md" "$SCRIPT_DIR/mipster-parameters.pdf" 2>/dev/null

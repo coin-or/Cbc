@@ -84,8 +84,8 @@ Section "MIPster" SecMain
   File /nonfatal "${DIST_DIR}\${DIST_SUBDIR}\lib\avx2\*.dll"
   File /nonfatal "${DIST_DIR}\${DIST_SUBDIR}\lib\avx2\*.dll.a"
 
-  SetOutPath "$INSTDIR\include\coin-or"
-  File /r "${DIST_DIR}\${DIST_SUBDIR}\include\coin-or\*.*"
+  SetOutPath "$INSTDIR\include\mipster"
+  File /r "${DIST_DIR}\${DIST_SUBDIR}\include\mipster\*.*"
 
   ; Registry: save install dir and version
   WriteRegStr HKLM "${INSTDIR_KEY}" "InstallDir" "$INSTDIR"

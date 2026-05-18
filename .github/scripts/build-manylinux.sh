@@ -102,8 +102,8 @@ build_variant() {
 
   # ── Headers (only need to do this once) ─────────────────────────────────────
   if [ "${name}" = "generic" ]; then
-    cp -r "${build_dir}/install/include/coin-or" "${INSTALL_DIR}/include/"
-    echo "    include/coin-or: copied"
+    cp -r "${build_dir}/install/include/mipster" "${INSTALL_DIR}/include/"
+    echo "    include/mipster: copied"
   fi
 }
 

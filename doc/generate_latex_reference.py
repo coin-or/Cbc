@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generate a LaTeX parameter reference from 'cbc -dumpParameters' JSON.
+"""Generate a LaTeX parameter reference from 'mipster -dumpParameters' JSON.
 
 Usage:
-    python3 doc/generate_latex_reference.py [path/to/cbc] > doc/cbc-parameters.tex
+    python3 doc/generate_latex_reference.py [path/to/mipster] > doc/mipster-parameters.tex
 """
 
 import subprocess, sys, os, json, re
@@ -20,7 +20,7 @@ def load_params(cbc):
 def get_version(cbc):
     out = subprocess.run([cbc, "--version"],
                          capture_output=True, text=True, timeout=10).stdout
-    m = re.search(r"CBC\s+(\S+)", out, re.IGNORECASE)
+    m = re.search(r"(?:MIPster|CBC)\s+(\S+)", out, re.IGNORECASE)
     return m.group(1) if m else "devel"
 
 
@@ -78,10 +78,10 @@ def emit(version, topics, out):
 
 \hypersetup{colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!60!black}
 
-\title{CBC Parameter Reference}
-\author{COIN-OR Cbc Development Team}
+\title{MIPster Parameter Reference}
+\author{MIPster Development Team}
 """)
-    out.write(f"\\date{{{date} --- CBC {tex_escape(version)}}}\n")
+    out.write(f"\\date{{{date} --- MIPster {tex_escape(version)}}}\n")
     out.write(r"""
 \begin{document}
 \maketitle
@@ -90,13 +90,13 @@ def emit(version, topics, out):
 
 \section*{Introduction}
 
-CBC (COIN-OR Branch and Cut) is an open-source mixed-integer programming
-solver.  This document provides a complete reference for all command-line
+MIPster is an open-source mixed-integer programming (MIP) solver.
+This document provides a complete reference for all command-line
 parameters, organized by functional topic.
 
 Parameters are specified on the command line \emph{before} \texttt{-solve}:
 \begin{verbatim}
-  cbc model.mps -sec 300 -cuts ifmove -solve
+  mipster model.mps -sec 300 -cuts ifmove -solve
 \end{verbatim}
 
 Both single-dash (\texttt{-sec}) and double-dash (\texttt{--sec}) styles
@@ -251,7 +251,7 @@ def emit_param(p, out, sub="subsection"):
 
 
 def main():
-    cbc = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/prog/cbc/bin/cbc")
+    cbc = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/prog/cbc/bin/mipster")
     params = load_params(cbc)
     version = get_version(cbc)
     topics = group_by_topic(params)

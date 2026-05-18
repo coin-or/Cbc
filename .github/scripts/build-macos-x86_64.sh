@@ -7,7 +7,7 @@
 #   bin/mipster-haswell      — AVX2/FMA binary (Haswell 2013+)
 #   lib/generic/libmipster.dylib — shared library, baseline
 #   lib/haswell/libmipster.dylib — shared library, AVX2
-#   include/coin-or/         — public C API headers
+#   include/mipster/         — public C API headers
 #
 # Uses Apple's Accelerate framework for BLAS/LAPACK (no Homebrew deps).
 # Requires Xcode Command Line Tools.
@@ -90,8 +90,8 @@ build_variant() {
 
   # ── Headers (once) ──────────────────────────────────────────────────────────
   if [ "${name}" = "generic" ]; then
-    cp -r "${build_dir}/install/include/coin-or" "${INSTALL_DIR}/include/"
-    echo "    include/coin-or: copied"
+    cp -r "${build_dir}/install/include/mipster" "${INSTALL_DIR}/include/"
+    echo "    include/mipster: copied"
   fi
 }
 

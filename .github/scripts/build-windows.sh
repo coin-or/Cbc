@@ -13,7 +13,7 @@
 #   bin/mipster-avx2.exe     — AVX2/FMA binary, Haswell 2013+ / Zen2 2019+
 #   lib/generic/libCbc.dll   — shared library, baseline
 #   lib/avx2/libCbc.dll      — shared library, AVX2
-#   include/coin-or/         — public C API headers
+#   include/mipster/         — public C API headers
 #
 # No OpenBLAS dependency: built without BLAS/LAPACK.
 # Binaries are fully self-contained: libgcc, libstdc++, libwinpthread are
@@ -106,8 +106,8 @@ build_variant "generic" "-O3 -ffp-contract=off"
 build_variant "avx2"    "-O3 -march=x86-64-v3 -ffp-contract=off"
 
 # ── Headers ───────────────────────────────────────────────────────────────────
-cp -r "${BUILD_BASE}-generic/install/include/coin-or" "${INSTALL_DIR}/include/"
-echo "    include/coin-or: copied"
+cp -r "${BUILD_BASE}-generic/install/include/mipster" "${INSTALL_DIR}/include/"
+echo "    include/mipster: copied"
 
 # ── Compile CPU-dispatch launcher ─────────────────────────────────────────────
 echo ""

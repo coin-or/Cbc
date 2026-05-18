@@ -12,7 +12,7 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 #                         unitTest for Cbc                             #
 ########################################################################
 
-CBC_TEST_TGTS = gamstests ositests test_cbc ctests
+CBC_TEST_TGTS = ositests test_cbc ctests
 
 cbcflags =
 ositestsflags =
@@ -41,15 +41,10 @@ test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 	RUNNING_TEST="cbc-generic" ../src/cbc-generic$(EXEEXT) -directory `$(CYGPATH_W) $(SAMPLE_DATA)` -import p0033.mps -branch
 endif
 
-gamstests: gamsTest$(EXEEXT)
-	export RUNNING_TEST="gamsTest" ; ./gamsTest$(EXEEXT)
 
 .PHONY: test
 
-bin_PROGRAMS = gamsTest osiUnitTest CInterfaceTest
-
-gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbc.la
+bin_PROGRAMS = osiUnitTest CInterfaceTest
 
 ########################################################################
 #                         unitTest for OsiCbc                          #

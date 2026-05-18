@@ -33,7 +33,7 @@ MIPster started from the CBC 3.x development branch and underwent significant co
 
 ### Code removed
 
-- **Aboca / AbcSimplex** (~35,000 lines) — experimental parallel simplex that did not provide consistent improvement.
+- **Aboca / AbcSimplex** (~35,000 lines) — experimental parallel simplex code.
 - **GLPK / GMPL support** — LP/MIP format parsing via GLPK (GPL-licensed).
 - **Multiple Cholesky solvers** — CHOLMOD (GPL), MUMPS, WSMP (proprietary), Pardiso (proprietary), Taucs; only AMD (BSD-licensed) is kept for the barrier method.
 - **ClpPdco / ClpLsqr** (~1,900 lines) — interior-point solver for regularized least-squares problems; not used in MIP solving.

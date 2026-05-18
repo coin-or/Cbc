@@ -5,8 +5,8 @@
 #   bin/mipster              — compiled CPU-dispatch launcher (static)
 #   bin/mipster-generic      — baseline x86_64 static binary
 #   bin/mipster-avx2         — AVX2/FMA static binary (Haswell 2013+ / Zen2 2019+)
-#   lib/generic/libCbc.so*   — shared library, baseline
-#   lib/avx2/libCbc.so*      — shared library, AVX2
+#   lib/generic/libmipster.so*   — shared library, baseline
+#   lib/avx2/libmipster.so*      — shared library, AVX2
 #   include/coin/            — public C API headers
 
 set -euo pipefail
@@ -85,18 +85,18 @@ build_variant() {
   # Copy installed .so files (versioned + symlinks) to lib/<variant>/
   local libdir="${INSTALL_DIR}/lib/${name}"
   mkdir -p "${libdir}"
-  cp -P "${build_dir}/install/lib"/libCbc.so* "${libdir}/"
+  cp -P "${build_dir}/install/lib"/libmipster.so* "${libdir}/"
 
   # Strip the real .so (not symlinks)
-  find "${libdir}" -name 'libCbc.so.*.*' ! -type l | xargs strip --strip-unneeded
+  find "${libdir}" -name 'libmipster.so.*.*' ! -type l | xargs strip --strip-unneeded
 
   # Set RPATH to $ORIGIN so bundled deps (if any) are found next to the .so
-  find "${libdir}" -name 'libCbc.so.*.*' ! -type l | \
+  find "${libdir}" -name 'libmipster.so.*.*' ! -type l | \
     xargs -I{} patchelf --set-rpath '$ORIGIN' {}
 
   # Verify no unexpected external deps (glibc + libm + libpthread are fine)
   echo "    Shared lib deps:"
-  find "${libdir}" -name 'libCbc.so.*.*' ! -type l | \
+  find "${libdir}" -name 'libmipster.so.*.*' ! -type l | \
     xargs ldd | grep -v "linux-vdso\|libm\|libc\.so\|libpthread\|libdl\|/lib64/ld\|=>" | \
     grep "=>" || echo "      (none — fully self-contained)"
 

@@ -5,8 +5,8 @@
 #   bin/mipster              — CPU-dispatch launcher (dynamic, only needs glibc)
 #   bin/mipster-generic      — baseline ARMv8-A static binary (RPi 3/4 compatible)
 #   bin/mipster-neon         — ARMv8.2-A static binary (Cortex-A76, RPi 5, Graviton 2+)
-#   lib/generic/libCbc.so*   — shared library, baseline
-#   lib/neon/libCbc.so*      — shared library, ARMv8.2-A
+#   lib/generic/libmipster.so*   — shared library, baseline
+#   lib/neon/libmipster.so*      — shared library, ARMv8.2-A
 #   include/coin-or/         — public C API headers
 
 set -euo pipefail
@@ -82,18 +82,18 @@ build_variant() {
   # ── Shared library ──────────────────────────────────────────────────────────
   local libdir="${INSTALL_DIR}/lib/${name}"
   mkdir -p "${libdir}"
-  cp -P "${build_dir}/install/lib"/libCbc.so* "${libdir}/"
+  cp -P "${build_dir}/install/lib"/libmipster.so* "${libdir}/"
 
   # Strip the real .so (not symlinks)
-  find "${libdir}" -name 'libCbc.so.*.*' ! -type l | xargs strip --strip-unneeded
+  find "${libdir}" -name 'libmipster.so.*.*' ! -type l | xargs strip --strip-unneeded
 
   # Set RPATH to $ORIGIN so bundled deps (if any) are found next to the .so
-  find "${libdir}" -name 'libCbc.so.*.*' ! -type l | \
+  find "${libdir}" -name 'libmipster.so.*.*' ! -type l | \
     xargs -I{} patchelf --set-rpath '$ORIGIN' {}
 
   # Verify no unexpected external deps
   echo "    Shared lib deps:"
-  find "${libdir}" -name 'libCbc.so.*.*' ! -type l | \
+  find "${libdir}" -name 'libmipster.so.*.*' ! -type l | \
     xargs ldd | grep -v "linux-vdso\|libm\|libc\.so\|libpthread\|libdl\|ld-linux-aarch64\|=>" | \
     grep "=>" || echo "      (none — fully self-contained)"
 

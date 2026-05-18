@@ -63,6 +63,7 @@ build_variant() {
     --disable-static \
     --without-amd \
     --without-lapack \
+    --disable-bzlib \
     CXXFLAGS="${cxxflags}" \
     LDFLAGS="-static-libgcc -static-libstdc++ -Wl,-Bstatic,-lwinpthread,-Bdynamic" \
     2>&1 | tail -3

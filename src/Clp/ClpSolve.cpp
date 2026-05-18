@@ -1875,31 +1875,6 @@ int ClpSimplex::initialSolve(ClpSolve &options)
         nPasses += 1000000;
       if (nPasses) {
         doCrash = 0;
-#if 0
-                    double * solution = model2->primalColumnSolution();
-                    int iColumn;
-                    double * saveLower = new double[numberColumns];
-                    CoinMemcpyN(model2->columnLower(), numberColumns, saveLower);
-                    double * saveUpper = new double[numberColumns];
-                    CoinMemcpyN(model2->columnUpper(), numberColumns, saveUpper);
-                    printf("doing tighten before idiot\n");
-                    model2->tightenPrimalBounds();
-                    // Move solution
-                    double * columnLower = model2->columnLower();
-                    double * columnUpper = model2->columnUpper();
-                    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                         if (columnLower[iColumn] > 0.0)
-                              solution[iColumn] = columnLower[iColumn];
-                         else if (columnUpper[iColumn] < 0.0)
-                              solution[iColumn] = columnUpper[iColumn];
-                         else
-                              solution[iColumn] = 0.0;
-                    }
-                    CoinMemcpyN(saveLower, numberColumns, columnLower);
-                    CoinMemcpyN(saveUpper, numberColumns, columnUpper);
-                    delete [] saveLower;
-                    delete [] saveUpper;
-#else
         // Allow for crossover
         //#define LACI_TRY
 #ifndef LACI_TRY
@@ -1926,28 +1901,17 @@ int ClpSimplex::initialSolve(ClpSolve &options)
             Idiot infoDual(info);
 	    info.setMinIntervalStatusUpdate(dualModel2->getMinIntervalProgressUpdate());
             infoDual.setModel(dualModel2);
-#if 0
-			info.setStrategy(512 | info.getStrategy());
-			// Allow for scaling
-			info.setStrategy(32 | info.getStrategy());
-			info.setStartingWeight(1.0e3);
-			info.setReduceIterations(6);
-#endif
             info.crash(nPasses, model2->messageHandler(),
               model2->messagesPointer(), false);
             infoDual.crash(nPasses, model2->messageHandler(),
               model2->messagesPointer(), false);
             // two copies of solutions
             ClpSimplex temp(*model2);
-#if 0
-			static_cast<ClpSimplexOther *> (&temp)->restoreFromDual(dualModel2);
-#else
             // move duals and just copy primal
             memcpy(temp.dualRowSolution(), dualModel2->primalColumnSolution(),
               numberRows * sizeof(double));
             memcpy(temp.primalColumnSolution(), model2->primalColumnSolution(),
               numberColumns * sizeof(double));
-#endif
             delete dualModel2;
             int numberRows = model2->numberRows();
             int numberColumns = model2->numberColumns();
@@ -1989,7 +1953,6 @@ int ClpSimplex::initialSolve(ClpSolve &options)
         info.crash(nPasses, model2->messageHandler(), model2->messagesPointer(), (objective_->type() < 2));
 #endif
         model2->scaling(saveScalingFlag);
-#endif
         time2 = clpGetTime();
         timeIdiot = time2 - timeX;
         handler_->message(CLP_INTERVAL_TIMING, messages_)
@@ -2474,15 +2437,6 @@ int ClpSimplex::initialSolve(ClpSolve &options)
       double offset = 0.0;
       for (iColumn = 0; iColumn < originalNumberColumns; iColumn++)
         offset += fullSolution[iColumn] * objective[iColumn];
-#if 0
-	       // Set artificials to zero if first time close to zero
-               for (iColumn = originalNumberColumns; iColumn < numberColumns; iColumn++) {
-		 if (fullSolution[iColumn]<primalTolerance_&&objective[iColumn]==penalty) {
-		   model2->objective()[iColumn]=2.0*penalty;
-		   fullSolution[iColumn]=0.0;
-		 }
-	       }
-#endif
       small.setDblParam(ClpObjOffset, originalOffset - offset);
       int smallMore = small.moreSpecialOptions();
       smallMore &= ~1048576; // make sure can't stop early
@@ -4224,13 +4178,6 @@ void ClpSimplexProgress::startCheck()
 int ClpSimplexProgress::cycle(int in, int out, int wayIn, int wayOut)
 {
   int i;
-#if 0
-     if (model_->numberIterations() > 206571) {
-          printf("in %d out %d\n", in, out);
-          for (i = 0; i < CLP_CYCLE; i++)
-               printf("cy %d in %d out %d\n", i, in_[i], out_[i]);
-     }
-#endif
   int matched = 0;
   // first see if in matches any out
   for (i = 1; i < CLP_CYCLE; i++) {
@@ -4240,47 +4187,6 @@ int ClpSimplexProgress::cycle(int in, int out, int wayIn, int wayOut)
       break;
     }
   }
-#if 0
-     if (!matched || in_[0] < 0) {
-          // can't be cycle
-          for (i = 0; i < CLP_CYCLE - 1; i++) {
-               //obj_[i]=obj_[i+1];
-               in_[i] = in_[i+1];
-               out_[i] = out_[i+1];
-               way_[i] = way_[i+1];
-          }
-     } else {
-          // possible cycle
-          matched = 0;
-          for (i = 0; i < CLP_CYCLE - 1; i++) {
-               int k;
-               char wayThis = way_[i];
-               int inThis = in_[i];
-               int outThis = out_[i];
-               //double objThis = obj_[i];
-               for(k = i + 1; k < CLP_CYCLE; k++) {
-                    if (inThis == in_[k] && outThis == out_[k] && wayThis == way_[k]) {
-                         int distance = k - i;
-                         if (k + distance < CLP_CYCLE) {
-                              // See if repeats
-                              int j = k + distance;
-                              if (inThis == in_[j] && outThis == out_[j] && wayThis == way_[j]) {
-                                   matched = distance;
-                                   break;
-                              }
-                         } else {
-                              matched = distance;
-                              break;
-                         }
-                    }
-               }
-               //obj_[i]=obj_[i+1];
-               in_[i] = in_[i+1];
-               out_[i] = out_[i+1];
-               way_[i] = way_[i+1];
-          }
-     }
-#else
   if (matched && in_[0] >= 0) {
     // possible cycle - only check [0] against all
     matched = 0;
@@ -4315,7 +4221,6 @@ int ClpSimplexProgress::cycle(int in, int out, int wayIn, int wayOut)
     out_[i] = out_[i + 1];
     way_[i] = way_[i + 1];
   }
-#endif
   int way = 1 - wayIn + 4 * (1 - wayOut);
   //obj_[i]=model_->objectiveValue();
   in_[CLP_CYCLE - 1] = in;
@@ -5015,14 +4920,8 @@ int ClpSimplex::solveDW(CoinStructuredModel *model, ClpSolve &options)
         sumArtificials += solution[i];
         //assert (solution[i]>-1.0e-2);
         if (solution[i] < 1.0e-6) {
-#if 0
-                         // Could take out
-                         obj[i] = 0.0;
-                         upper[i] = 0.0;
-#else
           obj[i] = 1.0e7;
           upper[i] = 1.0e-1;
-#endif
           solution[i] = 0.0;
           master.setColumnStatus(i, isFixed);
         } else {
@@ -5795,25 +5694,6 @@ int ClpSimplex::solveBenders(CoinStructuredModel *model, ClpSolve &options)
     goodModel = temp2;
     goodModel.dual();
     goodValue = goodModel.objectiveValue();
-#if 0
-       double * obj = goodModel.objective();
-       for (int i=numberMasterColumns;i<numberMasterColumns+numberBlocks;i++)
-	 obj[i]=0.5;;
-       for (int i=numberMasterColumns+numberBlocks;i<goodModel.numberColumns();i++)
-	 obj[i]*=0.5;
-       // fix solution
-       {
-	 double * lower = goodModel.columnLower();
-	 double * upper = goodModel.columnUpper();
-	 double * solution = goodModel.primalColumnSolution();
-	 for (int i=0;i<numberMasterColumns;i++) {
-	   lower[i]=solution[i];
-	   upper[i]=solution[i];
-	 }
-	 goodModel.scaling(0);
-	 goodModel.dual();
-       }
-#endif
     delete[] whichColumn;
     delete[] whichRow;
   }
@@ -5954,9 +5834,6 @@ int ClpSimplex::solveBenders(CoinStructuredModel *model, ClpSolve &options)
         if (problemState[i] == 1) {
           // ? need trust region ?
           lower[i + numberMasterColumns] = -COIN_DBL_MAX;
-#if 0 //1 //ndef UNBOUNDED
-		lower[i+numberMasterColumns]=-1.0e10;
-#endif
           //if (problemState[i]!=2) {
           numberFreed++;
           problemState[i] = 3;
@@ -6137,32 +6014,6 @@ int ClpSimplex::solveBenders(CoinStructuredModel *model, ClpSolve &options)
       handler_->message(CLP_GENERAL, messages_)
         << generalPrint
         << CoinMessageEol;
-#if 0
-	       const double * primal2 = masterModel.primalColumnSolution();
-#ifndef UNBOUNDED
-	       for (int i=0;i<numberMasterColumns;i++) {
-		 primal[i] = 1.0e-10*primal[i]+primal2[i];
-	       }
-#else
-	       double scaleFactor = innerProduct(primal,numberMasterColumns,primal);
-	       double scaleFactor2 = innerProduct(primal+numberMasterColumns,
-						  numberBlocks,primal+numberMasterColumns);
-	       if (scaleFactor&&!scaleFactor2) {
-		 scaleFactor = 1.0/sqrt(scaleFactor);
-		 for (int i=0;i<numberMasterColumns;i++) {
-		   primal[i] *= scaleFactor;
-		 }
-	       } else {
-		 // treat as feasible
-		 if (scaleFactor)
-		   scaleFactor = 1.0e10/sqrt(scaleFactor);
-		 for (int i=0;i<numberMasterColumns;i++) {
-		   primal[i] = primal[i]*scaleFactor+primal2[i];
-		 }
-		 masterStatus=0;
-	       }
-#endif
-#endif
     } else if (!masterModel.numberRows()) {
       assert(!iPass);
       primal = masterModel.primalColumnSolution();
@@ -6305,12 +6156,6 @@ int ClpSimplex::solveBenders(CoinStructuredModel *model, ClpSolve &options)
       int numberIterations = sub[0].numberIterations();
       if (sub[0].problemStatus()) {
         sub[0].primal();
-#if 0
-	      sub[0].writeMps("first.mps");
-	      sub[0].writeBasis("first.bas",true);
-	      sub[0].readBasis("first.bas");
-	      sub[0].primal();
-#endif
         numberIterations += sub[0].numberIterations();
       }
       sprintf(generalPrint, "First block - initial solve - %d iterations, objective %g",
@@ -6473,12 +6318,6 @@ int ClpSimplex::solveBenders(CoinStructuredModel *model, ClpSolve &options)
           int numberRows2 = sub[iBlock].numberRows();
           double *ray = sub[iBlock].infeasibilityRay();
           double *saveRay = CoinCopyOfArray(ray, numberRows2);
-#if 0
-		int directionOut = sub[iBlock].directionOut();
-		sub[iBlock].allSlackBasis(true);
-		sub[iBlock].dual();
-		printf("old dir %d new %d\n",directionOut,sub[iBlock].directionOut());
-#else
           double *obj = sub[iBlock].objective();
           int numberColumns2 = sub[iBlock].numberColumns();
           double *saveObj = CoinCopyOfArray(obj, numberColumns2);
@@ -6487,7 +6326,6 @@ int ClpSimplex::solveBenders(CoinStructuredModel *model, ClpSolve &options)
           sub[iBlock].primal();
           memcpy(obj, saveObj, numberColumns2 * sizeof(double));
           delete[] saveObj;
-#endif
           ray = sub[iBlock].infeasibilityRay();
           for (int i = 0; i < numberRows2; i++) {
             if (fabs(ray[i] - saveRay[i]) > 1.0e-4 + 1.0e20)

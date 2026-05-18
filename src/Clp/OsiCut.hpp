@@ -83,27 +83,6 @@ public:
   virtual void print() const {}
   //@}
 
-#if 0
-  / **@name Times used */
-  / /@{
-  / // Set times used
-  inline void setTimesUsed( int t );
-  / // Increment times used
-  inline void incrementTimesUsed();
-  / // Get times used
-  inline int timesUsed() const;
-  / /@}
-
-  / **@name Times tested */
-  / /@{
-  / // Set times tested
-  inline void setTimesTested( int t );
-  / // Increment times tested
-  inline void incrementTimesTested();
-  / // Get times tested
-  inline int timesTested() const;
-  / /@}
-#endif
 
   //----------------------------------------------------------------
 
@@ -202,12 +181,6 @@ private:
   double effectiveness_;
   /// If cut has global validity i.e. can be used anywhere in tree
   int globallyValid_;
-#if 0
-  /// Times used
-  int timesUsed_;
-  /// Times tested
-  int timesTested_;
-#endif
   //@}
 };
 
@@ -217,15 +190,6 @@ private:
 void OsiCut::setEffectiveness(double e) { effectiveness_ = e; }
 double OsiCut::effectiveness() const { return effectiveness_; }
 
-#if 0
-void OsiCut::setTimesUsed( int t ) { timesUsed_=t; }
-void OsiCut::incrementTimesUsed() { timesUsed_++; }
-int OsiCut::timesUsed() const { return timesUsed_; }
-
-void OsiCut::setTimesTested( int t ) { timesTested_=t; }
-void OsiCut::incrementTimesTested() { timesTested_++; }
-int OsiCut::timesTested() const{ return timesTested_; }
-#endif
 
 //----------------------------------------------------------------
 // == operator

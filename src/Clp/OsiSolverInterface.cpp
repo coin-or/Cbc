@@ -3147,22 +3147,6 @@ int OsiSolverInterface::solveBranches(int depth, const OsiSolverBranch *branch,
   setColUpper(upperBefore);
   delete[] lowerBefore;
   delete[] upperBefore;
-#if 0
-  static int xxxxxx=0;
-  static int yyyyyy=0;
-  static int zzzzzz=0;
-  zzzzzz += nFeas;
-  for (int j=0;j<(1<<depth);j++) {
-    xxxxxx++;
-    if ((xxxxxx%10000)==0)
-      printf("%d implicit %d feas %d sent back\n",xxxxxx,zzzzzz,yyyyyy);
-  }
-  for (int j=0;j<numberFeasible;j++) {
-    yyyyyy++;
-    if ((yyyyyy%10000)==0)
-      printf("%d implicit %d feas %d sent back\n",xxxxxx,zzzzzz,yyyyyy);
-  }
-#endif
   return numberFeasible;
 }
 #endif

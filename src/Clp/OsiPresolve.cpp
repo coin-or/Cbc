@@ -739,28 +739,6 @@ void OsiPresolve::setOriginalModel(OsiSolverInterface *model)
   originalModel_ = model;
 }
 
-#if 0
-// A lazy way to restrict which transformations are applied
-// during debugging.
-static int ATOI(const char *name)
-{
- return true;
-#if PRESOLVE_DEBUG > 0 || PRESOLVE_SUMMARY > 0
-  if (getenv(name)) {
-    int val = atoi(getenv(name));
-    printf("%s = %d\n", name, val);
-    return (val);
-  } else {
-    if (strcmp(name,"off"))
-      return (true);
-    else
-      return (false);
-  }
-#else
-  return (true);
-#endif
-}
-#endif
 
 #if PRESOLVE_DEBUG > 0
 // Anonymous namespace for debug routines
@@ -893,21 +871,6 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
   If we're feasible, set up for the main presolve transform loop.
 */
   if (!prob->status_) {
-#if 0
-/*
-  This block is used during debugging. See ATOI to see how it works. Some
-  editing will be required to turn it all on.
-*/
-    bool slackd = ATOI("SLACKD")!=0;
-    //bool forcing = ATOI("FORCING")!=0;
-    bool doubleton = ATOI("DOUBLETON")!=0;
-    bool forcing = ATOI("off")!=0;
-    bool ifree = ATOI("off")!=0;
-    bool zerocost = ATOI("off")!=0;
-    bool dupcol = ATOI("off")!=0;
-    bool duprow = ATOI("off")!=0;
-    bool dual = ATOI("off")!=0;
-#else
 #if 1
     // normal operation --- all transforms enabled
     bool slackSingleton = true;
@@ -932,7 +895,6 @@ const CoinPresolveAction *OsiPresolve::presolve(CoinPresolveMatrix *prob)
     bool dupcol = false;
     bool duprow = false;
     bool dual = false;
-#endif
 #endif
     /*
   Process OsiPresolve options. Set corresponding CoinPresolve options and
@@ -1750,24 +1712,13 @@ CoinPresolveMatrix* construct_CoinPresolveMatrix(int ncols0_in,
     delete basis;
   }
 
-#if 0
-  for (i=0; i<nrows; ++i)
-    printf("NR: %6d\n", hinrow[i]);
-  for (int i=0; i<ncols; ++i)
-    printf("NC: %6d\n", hincol[i]);
-#endif
 
 /*
   For building against CoinUtils 2.6, this #if 1 need to be changed into an
   #if 0
 */
-#if 0
-  presolve_make_memlists(cpm->mcstrt_, cpm->hincol_, cpm->clink_, cpm->ncols_);
-  presolve_make_memlists(cpm->mrstrt_, cpm->hinrow_, cpm->rlink_, cpm->nrows_);
-#else
   presolve_make_memlists(/*mcstrt_,*/ cpm->hincol_, cpm->clink_, cpm->ncols_);
   presolve_make_memlists(/*mrstrt_,*/ cpm->hinrow_, cpm->rlink_, cpm->nrows_);
-#endif
 
   // this allows last col/row to expand up to bufsize-1 (22);
   // this must come after the calls to presolve_prefix
@@ -1875,12 +1826,6 @@ CoinPostsolveMatrix* construct_CoinPostsolveMatrix(OsiSolverInterface*  si,
   int nrows1 = cpm->nrows_ ;
 
   const CoinPackedMatrix *m = si->getMatrixByCol();
-#if 0
-  if (! isGapFree(*m)) {
-    CoinPresolveAction::throwCoinError("Matrix not gap free",
-				      "CoinPostsolveMatrix");
-  }
-#endif
   const CoinBigIndex nelemsr = m->getNumElements();
 
   if (isGapFree(*m)) {

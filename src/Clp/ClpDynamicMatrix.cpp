@@ -441,17 +441,6 @@ void ClpDynamicMatrix::partialPricing(ClpSimplex *model, double startFraction, d
     //printf("iteration %d start %d end %d - wanted %d\n",model->numberIterations(),
     //     startG2,endG2,numberWanted);
     int bestSet = -1;
-#if 0
-          // make sure first available is clean (in case last iteration rejected)
-          cost[firstAvailable_] = 0.0;
-          length[firstAvailable_] = 0;
-          model->nonLinearCost()->setOne(firstAvailable_, 0.0, 0.0, COIN_DBL_MAX, 0.0);
-          model->setStatus(firstAvailable_, ClpSimplex::atLowerBound);
-          {
-               for (int i = firstAvailable_; i < lastDynamic_; i++)
-                    assert(!cost[i]);
-          }
-#endif
     int minSet = minimumObjectsScan_ < 0 ? 5 : minimumObjectsScan_;
     int minNeg = minimumGoodReducedCosts_ < 0 ? 5 : minimumGoodReducedCosts_;
     for (int iSet = startG2; iSet < endAll; iSet++) {
@@ -863,11 +852,6 @@ int ClpDynamicMatrix::updatePivot(ClpSimplex *model, double oldInValue, double o
       setStatus(iSet, ClpSimplex::atUpperBound);
     if (lowerSet_[iSet] == upperSet_[iSet])
       setStatus(iSet, ClpSimplex::isFixed);
-#if 0
-          if (getStatus(iSet) != model->getStatus(sequenceOut))
-               printf("** set %d status %d, var status %d\n", iSet,
-                      getStatus(iSet), model->getStatus(sequenceOut));
-#endif
   }
   ClpMatrixBase::updatePivot(model, oldInValue, oldOutValue);
 #ifdef CLP_DEBUG
@@ -1041,18 +1025,6 @@ void ClpDynamicMatrix::dualExpanded(ClpSimplex *model,
 int ClpDynamicMatrix::generalExpanded(ClpSimplex *model, int mode, int &number)
 {
   int returnCode = 0;
-#if 0 //ndef NDEBUG
-     {
-       int numberColumns = model->numberColumns();
-       int numberRows = model->numberRows();
-       int * pivotVariable = model->pivotVariable();
-       if (pivotVariable&&model->numberIterations()) {
-	 for (int i=numberStaticRows_+numberActiveSets_;i<numberRows;i++) {
-	   assert (pivotVariable[i]==i+numberColumns);
-	 }
-       }
-     }
-#endif
   switch (mode) {
     // Fill in pivotVariable
   case 0: {
@@ -1498,16 +1470,6 @@ int ClpDynamicMatrix::refresh(ClpSimplex *model)
     //assert (iPut == numberRows);
   }
 #ifdef CLP_DEBUG
-#if 0
-     printf("row for set 244 is %d, row status %d value %g ", toIndex_[244], status_[244],
-            keyValue(244));
-     int jj = startSet_[244];
-     while (jj >= 0) {
-          printf("var %d status %d ", jj, dynamicStatus_[jj]);
-          jj = next_[jj];
-     }
-     printf("\n");
-#endif
 #ifdef CLP_DEBUG
   {
     // debug coding to analyze set
@@ -1643,15 +1605,6 @@ ClpDynamicMatrix::keyValue(int iSet) const
         }
         j = next_[j]; //onto next in set
       }
-#if 0
-	       // slack must be feasible
-	       double oldValue=value;
-	       value = std::max(value,lowerSet_[iSet]);
-               value = std::min(value,upperSet_[iSet]);
-	       if (value!=oldValue)
-		 printf("using %g (not %g) for slack on set %d (%g,%g)\n",
-			value,oldValue,iSet,lowerSet_[iSet],upperSet_[iSet]);
-#endif
     }
   }
   return value;
@@ -2337,23 +2290,8 @@ void ClpDynamicMatrix::initialProblem()
       model_->setStatus(iSequence, ClpSimplex::basic);
       rhsOffset_[i + numberStaticRows_] = 0.0;
     }
-#if 0
-       for (int i=0;i<numberStaticRows_;i++)
-	 printf("%d offset %g\n",
-		i,rhsOffset_[i]);
-#endif
   }
   numberActiveColumns_ = firstAvailable_;
-#if 0
-     for (iSet = 0; iSet < numberSets_; iSet++) {
-       for (int j=startSet_[iSet];j<startSet_[iSet+1];j++) {
-	 if (getDynamicStatus(j)==soloKey)
-	   printf("%d in set %d is solo key\n",j,iSet);
-	 else if (getDynamicStatus(j)==inSmall)
-	   printf("%d in set %d is in small\n",j,iSet);
-       }
-     }
-#endif
   return;
 }
 // Writes out model (without names)

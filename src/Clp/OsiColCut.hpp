@@ -253,43 +253,6 @@ bool OsiColCut::consistent(const OsiSolverInterface &im) const
   return true;
 }
 
-#if 0
-bool OsiColCut::feasible(const OsiSolverInterface &im) const
-{
-  const double * oldColLb = im.getColLower();
-  const double * oldColUb = im.getColUpper();
-  const CoinPackedVector & cutLbs = lbs();
-  const CoinPackedVector & cutUbs = ubs();
-  int i;
-
-  for ( i=0; i<cutLbs.size(); i++ ) {
-    int colIndx = cutLbs.indices()[i];
-    double newLb;
-    if ( cutLbs.elements()[i] > oldColLb[colIndx] )
-      newLb = cutLbs.elements()[i];
-    else
-      newLb = oldColLb[colIndx];
-
-    double newUb = oldColUb[colIndx];
-    if ( cutUbs.indexExists(colIndx) )
-      if ( cutUbs[colIndx] < newUb ) newUb = cutUbs[colIndx];
-      if ( newLb > newUb )
-        return false;
-  }
-
-  for ( i=0; i<cutUbs.size(); i++ ) {
-    int colIndx = cutUbs.indices()[i];
-    double newUb = cutUbs.elements()[i] < oldColUb[colIndx] ? cutUbs.elements()[i] : oldColUb[colIndx];
-    double newLb = oldColLb[colIndx];
-    if ( cutLbs.indexExists(colIndx) )
-      if ( cutLbs[colIndx] > newLb ) newLb = cutLbs[colIndx];
-      if ( newUb < newLb )
-        return false;
-  }
-
-  return true;
-}
-#endif
 
 bool OsiColCut::infeasible(const OsiSolverInterface &im) const
 {

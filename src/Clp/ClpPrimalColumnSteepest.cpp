@@ -726,12 +726,6 @@ int ClpPrimalColumnSteepest::pivotColumn(CoinIndexedVector *updates,
   }
   printf("\n");
 #endif
-#if 0
-     for (int i=0;i<numberRows;i++)
-       printf("row %d weight %g infeas %g\n",i,weights_[i+numberColumns],infeas[i+numberColumns]);
-     for (int i=0;i<numberColumns;i++)
-       printf("column %d weight %g infeas %g\n",i,weights_[i],infeas[i]);
-#endif
   return bestSequence;
 }
 // Just update djs
@@ -3619,24 +3613,6 @@ void ClpPrimalColumnSteepest::updateWeights(CoinIndexedVector *input)
     const unsigned char *COIN_RESTRICT statusArray = model_->statusArray();
     for (int i = 0; i < nTotal; i++) {
       unsigned char thisStatus = statusArray[i] & 7;
-#if 0
-	if (thisStatus==3) {
-	  // lower
-	} else if ((thisStatus&1)!=0) {
-	  // basic or fixed
-	  //value=0.0;
-	} else if (thisStatus==2) {
-	  // uppervalue=-value;
-	} else {
-	  // free or superbasic
-	  //if (fabs(value) > FREE_ACCEPT * -dualTolerance) {
-	    // we are going to bias towards free (but only if reasonable)
-	    //value = -fabs(value)*FREE_BIAS;
-	  //} else {
-	  //value=0.0;
-	  //}
-	}
-#else
       if (thisStatus != 1 && thisStatus != 5) {
         double pivot = pivRow[i] * scaleFactor;
         double modification = temp[i];
@@ -3647,7 +3623,6 @@ void ClpPrimalColumnSteepest::updateWeights(CoinIndexedVector *input)
       } else {
         temp[i] = 1.0;
       }
-#endif
     }
     temp[sequenceOut] = devexA / (alpha * alpha);
     // to keep clean for debug
@@ -4394,12 +4369,7 @@ int ClpPrimalColumnSteepest::partialPricing(CoinIndexedVector *updates,
       // Columns
       double start = startC[iPassC];
       // If we put this idea back then each function needs to update endFraction **
-#if 0
-               double dchunk = (static_cast<double> chunk) / (static_cast<double> numberColumns);
-               double end = std::min(startC[iPassC+1], start + dchunk);;
-#else
       double end = startC[iPassC + 1]; // force end
-#endif
       model_->clpMatrix()->partialPricing(model_, start, end, bestSequence, numberWanted);
       numberWanted = model_->clpMatrix()->currentWanted();
       numberLook -= static_cast< int >((end - start) * numberColumns);

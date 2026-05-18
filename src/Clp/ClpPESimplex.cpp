@@ -347,15 +347,7 @@ void ClpPESimplex::identifyCompatibleCols(int number, const int *which,
   wPrimal->checkClear();
   assert(coPrimalDegenerates_ <= std::max(numberColumns_, numberRows_));
   for (int i = 0; i < coPrimalDegenerates_; i++) {
-#if 0
-    double random;
-      do
-        random = static_cast<double> ((rand() %(static_cast<int> (1.0e6)+1))) -5.0e5;
-      while (random == 0.0);
-    wPrimal->quickInsert(primalDegenerates_[i], 0.5+random);
-#else
     wPrimal->quickInsert(primalDegenerates_[i], tempRandom_[i]);
-#endif
   }
 
   // compute wTran * Binv and store it into wTran
@@ -412,12 +404,6 @@ void ClpPESimplex::identifyCompatibleCols(int number, const int *which,
         dotProduct = values[jColumn - numberColumns_];
       }
       dotProduct = fabs(dotProduct);
-#if 0
-      model_->unpack(tempColumn_, jColumn);
-      // perform the inner product <tempColumn_,wPrimal_>
-      double dotProduct2 = fabs( PEdot(*tempColumn_, *wPrimal) );
-      assert (fabs(dotProduct-dotProduct2)<1.0e-6);
-#endif
       compatibilityCol_[jColumn] = dotProduct;
 
       if (dotProduct < epsCompatibility_) {
@@ -445,14 +431,6 @@ void ClpPESimplex::identifyCompatibleRows(CoinIndexedVector *spare,
     return;
   }
   assert(coDualDegenerates_ <= std::max(numberColumns_, numberRows_));
-#if 0
-  // fill the elements of tempRandom with as many random elements as dual degenerate variables
-  for (int j = 0; j < coDualDegenerates_; j++) {
-    //do
-    tempRandom_[j] = static_cast<double> ((rand() %(static_cast<int> (1.0e7)+1))) -5.0e6;
-    //while (tempRandom_[j] == 0.0);
-  }
-#endif
 
   // compute the product A_D * tempRandom and store it into wDual
   // No longer using wDual_

@@ -632,14 +632,6 @@ void ClpNode::applyNode(ClpSimplex *model, int doBoundsEtc)
 // Choose a new variable
 void ClpNode::chooseVariable(ClpSimplex *, ClpNodeStuff * /*info*/)
 {
-#if 0
-     int way = branchState_.firstBranch;
-     if (branchState_.branch > 0)
-          way = 1 - way;
-     assert (!branchState_.branch);
-     // We need to use pseudo costs to choose a variable
-     int numberColumns = model->numberColumns();
-#endif
 }
 // Fix on reduced costs
 int ClpNode::fixOnReducedCosts(ClpSimplex *)
@@ -864,20 +856,10 @@ ClpNodeStuff::~ClpNodeStuff()
 int ClpNodeStuff::maximumNodes() const
 {
   int n = 0;
-#if 0
-     if (nDepth_ != -1) {
-          if ((solverOptions_ & 32) == 0)
-               n = (1 << nDepth_);
-          else if (nDepth_)
-               n = 1;
-     }
-     assert (n == maximumNodes_ - (1 + nDepth_) || n == 0);
-#else
   if (nDepth_ != -1) {
     n = maximumNodes_ - (1 + nDepth_);
     assert(n > 0);
   }
-#endif
   return n;
 }
 // Return maximum space for nodes

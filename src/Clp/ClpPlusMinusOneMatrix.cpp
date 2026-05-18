@@ -2577,10 +2577,6 @@ ClpPoolMatrix::reverseOrderedCopy() const
 void ClpPoolMatrix::times(double scalar,
   const double *COIN_RESTRICT x, double *COIN_RESTRICT y) const
 {
-#if 0
-  printf("CcreateMatrix at file %s line %d\n",__FILE__,__LINE__);
-  createMatrix()->times(scalar,x,y);
-#else
   for (int iColumn = 0; iColumn < numberColumns_; iColumn++) {
     CoinBigIndex j;
     double value = x[iColumn];
@@ -2594,15 +2590,10 @@ void ClpPoolMatrix::times(double scalar,
       }
     }
   }
-#endif
 }
 void ClpPoolMatrix::transposeTimes(double scalar,
   const double *COIN_RESTRICT x, double *COIN_RESTRICT y) const
 {
-#if 0
-  printf("CcreateMatrix at file %s line %d\n",__FILE__,__LINE__);
-  createMatrix()->transposeTimes(scalar,x,y);
-#else
   int iColumn;
   CoinBigIndex start = columnStart_[0];
   if (scalar == -1.0) {
@@ -2632,7 +2623,6 @@ void ClpPoolMatrix::transposeTimes(double scalar,
       y[iColumn] += value * scalar;
     }
   }
-#endif
 }
 void ClpPoolMatrix::times(double scalar,
   const double *COIN_RESTRICT x, double *COIN_RESTRICT y,
@@ -2648,10 +2638,6 @@ void ClpPoolMatrix::transposeTimes(double scalar,
   const double *columnScale,
   double *spare) const
 {
-#if 0
-  printf("CcreateMatrix at file %s line %d\n",__FILE__,__LINE__);
-  createMatrix()->transposeTimes(scalar,x,y,rowScale,columnScale,spare);
-#else
   if (rowScale) {
     int iColumn;
     if (!spare) {
@@ -2711,7 +2697,6 @@ void ClpPoolMatrix::transposeTimes(double scalar,
   } else {
     transposeTimes(scalar, x, y);
   }
-#endif
 }
 /* Return <code>x * A + y</code> in <code>z</code>.
    Squashes small elements and knows about ClpSimplex */
@@ -2720,12 +2705,6 @@ void ClpPoolMatrix::transposeTimes(const ClpSimplex *model, double scalar,
   CoinIndexedVector *y,
   CoinIndexedVector *columnArray) const
 {
-#if 0
-  bool packed = rowArray->packedMode();
-  assert (packed);
-  printf("CcreateMatrix at file %s line %d\n",__FILE__,__LINE__);
-  createMatrix()->transposeTimes(model,scalar,rowArray,y,columnArray);
-#else
   columnArray->clear();
   // do by column
   double *COIN_RESTRICT pi = rowArray->denseVector();
@@ -2829,7 +2808,6 @@ void ClpPoolMatrix::transposeTimes(const ClpSimplex *model, double scalar,
   columnArray->setNumElements(numberNonZero);
   y->setNumElements(0);
   columnArray->setPackedMode(true);
-#endif
 }
 /* Return <code>x * A + y</code> in <code>z</code>.
    Squashes small elements and knows about ClpSimplex */
@@ -2848,10 +2826,6 @@ void ClpPoolMatrix::subsetTransposeTimes(const ClpSimplex *model,
   const CoinIndexedVector *y,
   CoinIndexedVector *columnArray) const
 {
-#if 0
-  printf("CcreateMatrix at file %s line %d\n",__FILE__,__LINE__);
-  createMatrix()->subsetTransposeTimes(model,rowArray,y,columnArray);
-#else
   columnArray->clear();
   double *COIN_RESTRICT pi = rowArray->denseVector();
   double *COIN_RESTRICT array = columnArray->denseVector();
@@ -2892,7 +2866,6 @@ void ClpPoolMatrix::subsetTransposeTimes(const ClpSimplex *model,
       array[jColumn] = value * columnScale[iColumn];
     }
   }
-#endif
 }
 /// returns number of elements in column part of basis,
 int ClpPoolMatrix::countBasis(const int *whichColumn,
@@ -3029,17 +3002,12 @@ ClpPoolMatrix::getVectorStarts() const
 const int *
 ClpPoolMatrix::getVectorLengths() const
 {
-#if 0
-  printf("XcreateMatrix at file %s line %d\n",__FILE__,__LINE__);
-  return createMatrix()->getVectorLengths();
-#else
   if (!lengths_) {
     lengths_ = new int[numberColumns_];
     for (int i = 0; i < numberColumns_; i++)
       lengths_[i] = static_cast< int >(columnStart_[i + 1] - columnStart_[i]);
   }
   return lengths_;
-#endif
 }
 /* The length of a major-dimension vector. */
 int ClpPoolMatrix::getVectorLength(int index) const
@@ -3235,12 +3203,6 @@ int ClpPoolMatrix::transposeTimes2(const ClpSimplex *model,
   unsigned int *COIN_RESTRICT reference,
   double *COIN_RESTRICT weights, double scaleFactor)
 {
-#if 0
-  printf("CcreateMatrix at file %s line %d\n",__FILE__,__LINE__);
-  return createMatrix()->transposeTimes2(model,pi1,dj1,pi2,spare,
-					 infeas,reducedCost,referenceIn,devex,
-					 reference,weights,scaleFactor);
-#else
   int returnCode = 0;
   // put row of tableau in dj1
   double *COIN_RESTRICT pi = pi1->denseVector();
@@ -3514,7 +3476,6 @@ int ClpPoolMatrix::transposeTimes2(const ClpSimplex *model,
   if (packed)
     dj1->setPackedMode(true);
   return returnCode;
-#endif
 }
 // Updates second array for steepest and does devex weights
 void ClpPoolMatrix::subsetTimes2(const ClpSimplex *model,

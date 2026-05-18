@@ -1655,30 +1655,6 @@ protected:
 #define CBC_SKIP_CLP_TEST 1
 #endif
 #endif
-#if 0
-  /** Return pointer to OsiClpSolverInterface or NULL -
-      Changed to a static_cast for speed */
-  inline OsiClpSolverInterface * getClpSolver(OsiSolverInterface *solver)
-  {
-#ifndef CBC_OTHER_SOLVER
-    void * xxxxxx = solver;
-    long int yyyyyy = reinterpret_cast<long int>(xxxxxx)-0x2b0;
-    return reinterpret_cast<OsiClpSolverInterface *>(yyyyyy);
-#else
-    return dynamic_cast<OsiClpSolverInterface *>(solver);
-#endif
-  }
-  inline const OsiClpSolverInterface * getConstClpSolver(const OsiSolverInterface *solver)
-  {
-#ifndef CBC_OTHER_SOLVER
-    const void * xxxxxx = solver;
-    long int yyyyyy = reinterpret_cast<const long int>(xxxxxx)-0x2b0;
-    return reinterpret_cast<const OsiClpSolverInterface *>(yyyyyy);
-#else
-    return dynamic_cast<const OsiClpSolverInterface *>(solver);
-#endif
-  }
-#else
   /** Return pointer to OsiClpSolverInterface or NULL -
       Can be changed to a static_cast for speed */
   inline OsiClpSolverInterface * getClpSolver(OsiSolverInterface *solver)
@@ -1689,7 +1665,6 @@ protected:
   {
     return dynamic_cast<const OsiClpSolverInterface *>(solver);
   }
-#endif
 // So unit test can find out if NDEBUG set
 OSICLPLIB_EXPORT
 bool OsiClpHasNDEBUG();

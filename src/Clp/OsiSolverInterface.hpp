@@ -622,16 +622,7 @@ public:
   /// When known to be minimization
   // Put back until errors fixed
   inline double getObjSenseInCbc() const
-#if 0
-  /// Looks like weird error as compiler does not like assert
-#if defined(_MSC_VER)
-  { return 1.0;}
-#else
-  { assert (getObjSense()==1.0);return 1.0;}
-#endif
-#else
   { return getObjSense();}
-#endif
 
   /// Return true if the variable is continuous
   virtual bool isContinuous(int colIndex) const = 0;
@@ -1215,13 +1206,6 @@ public:
     */
   int addCols(CoinModel &modelObject);
 
-#if 0
-    /** */
-    virtual void addCols(const CoinPackedMatrix& matrix,
-			 const double* collb, const double* colub,
-			 const double* collb, const double* colub,
-			 const double* obj);
-#endif
 
   /** \brief Remove a set of columns (primal variables) from the
 	       problem.
@@ -1315,16 +1299,6 @@ public:
     */
   int addRows(CoinModel &modelObject);
 
-#if 0
-    /** */
-    virtual void addRows(const CoinPackedMatrix& matrix,
-			 const double* rowlb, const double* rowub);
-    /** */
-    virtual void addRows(const CoinPackedMatrix& matrix,
-			 const char* rowsen, const double* rowrhs,
-			 const char* rowsen, const double* rowrhs,
-			 const double* rowrng);
-#endif
 
   /** \brief Delete a set of rows (constraints) from the problem.
 

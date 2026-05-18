@@ -967,21 +967,6 @@ Idiot::IdiSolve(
       for (int itry = 0; itry < 2; itry++) {
         int istop;
         int istart;
-#if 0
-		    int chunk = (start[itry]+stop[itry]+FOUR_GOES-1)/FOUR_GOES;
-                    if (iPar == 0) {
-		      istart=start[itry];
-		      istop=(start[itry]+stop[itry])>>1;
-                    } else {
-		      istart=(start[itry]+stop[itry])>>1;
-		      istop = stop[itry];
-                    }
-#endif
-#if 0
-		    printf("istart %d istop %d direction %d array %d %d new %d %d\n",
-		    	   istart,istop,direction,start[itry],stop[itry],
-		    	   startsX[itry][iPar],startsX[itry][iPar+1]);
-#endif
         istart = startsX[itry][iPar];
         istop = startsX[itry][iPar + 1];
 #else

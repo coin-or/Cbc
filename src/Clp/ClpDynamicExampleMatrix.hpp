@@ -67,18 +67,6 @@ public:
     const unsigned char *status = NULL,
     const unsigned char *dynamicStatus = NULL,
     int numberIds = 0, const int *ids = NULL);
-#if 0
-     /// This constructor just takes over ownership (except for lower, upper)
-     ClpDynamicExampleMatrix(ClpSimplex * model, int numberSets,
-                             int numberColumns, int * starts,
-                             const double * lower, const double * upper,
-                             int * startColumn, int * row,
-                             double * element, double * cost,
-                             double * columnLower = NULL, double * columnUpper = NULL,
-                             const unsigned char * status = NULL,
-                             const unsigned char * dynamicStatus = NULL,
-                             int numberIds = 0, const int *ids = NULL);
-#endif
   /** Destructor */
   virtual ~ClpDynamicExampleMatrix();
   //@}

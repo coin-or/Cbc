@@ -135,20 +135,6 @@ ClpFactorization::operator=(const ClpFactorization &rhs)
 #endif
   return *this;
 }
-#if 0
-static unsigned int saveList[10000];
-int numberSave = -1;
-inline bool isDense(int i)
-{
-     return ((saveList[i>>5] >> (i & 31)) & 1) != 0;
-}
-inline void setDense(int i)
-{
-     unsigned int & value = saveList[i>>5];
-     int bit = i & 31;
-     value |= (1 << bit);
-}
-#endif
 int ClpFactorization::factorize(ClpSimplex *model,
   int solveType, bool valuesPass)
 {
@@ -165,10 +151,6 @@ int ClpFactorization::factorize(ClpSimplex *model,
     areaFactor_ *= 1.1;
   }
   //int numberPivots=numberPivots_;
-#if 0
-     if (model->algorithm() > 0)
-          numberSave = -1;
-#endif
 #ifndef SLIM_CLP
   if (!networkBasis_ || doCheck) {
 #endif
@@ -184,74 +166,6 @@ int ClpFactorization::factorize(ClpSimplex *model,
       int *COIN_RESTRICT pivotTemp = model->rowArray(0)->getIndices();
       assert(!model->rowArray(0)->getNumElements());
       if (!matrix->rhsOffset(model)) {
-#if 0
-                    if (numberSave > 0) {
-                         int nStill = 0;
-                         int nAtBound = 0;
-                         int nZeroDual = 0;
-                         CoinIndexedVector * array = model->rowArray(3);
-                         CoinIndexedVector * objArray = model->columnArray(1);
-                         array->clear();
-                         objArray->clear();
-                         double *COIN_RESTRICT  cost = model->costRegion();
-                         double tolerance = model->primalTolerance();
-                         double offset = 0.0;
-                         for (i = 0; i < numberRows; i++) {
-                              int iPivot = pivotVariable[i];
-                              if (iPivot < numberColumns && isDense(iPivot)) {
-                                   if (model->getColumnStatus(iPivot) == ClpSimplex::basic) {
-                                        nStill++;
-                                        double value = model->solutionRegion()[iPivot];
-                                        double dual = model->dualRowSolution()[i];
-                                        double lower = model->lowerRegion()[iPivot];
-                                        double upper = model->upperRegion()[iPivot];
-                                        ClpSimplex::Status status;
-                                        if (fabs(value - lower) < tolerance) {
-                                             status = ClpSimplex::atLowerBound;
-                                             nAtBound++;
-                                        } else if (fabs(value - upper) < tolerance) {
-                                             nAtBound++;
-                                             status = ClpSimplex::atUpperBound;
-                                        } else if (value > lower && value < upper) {
-                                             status = ClpSimplex::superBasic;
-                                        } else {
-                                             status = ClpSimplex::basic;
-                                        }
-                                        if (status != ClpSimplex::basic) {
-                                             if (model->getRowStatus(i) != ClpSimplex::basic) {
-                                                  model->setColumnStatus(iPivot, ClpSimplex::atLowerBound);
-                                                  model->setRowStatus(i, ClpSimplex::basic);
-                                                  pivotVariable[i] = i + numberColumns;
-                                                  model->dualRowSolution()[i] = 0.0;
-                                                  model->djRegion(0)[i] = 0.0;
-                                                  array->add(i, dual);
-                                                  offset += dual * model->solutionRegion(0)[i];
-                                             }
-                                        }
-                                        if (fabs(dual) < 1.0e-5)
-                                             nZeroDual++;
-                                   }
-                              }
-                         }
-                         printf("out of %d dense, %d still in basis, %d at bound, %d with zero dual - offset %g\n",
-                                numberSave, nStill, nAtBound, nZeroDual, offset);
-                         if (array->getNumElements()) {
-                              // modify costs
-                              model->clpMatrix()->transposeTimes(model, 1.0, array, model->columnArray(0),
-                                                                 objArray);
-                              array->clear();
-                              int n = objArray->getNumElements();
-                              int *COIN_RESTRICT  indices = objArray->getIndices();
-                              double *COIN_RESTRICT  elements = objArray->denseVector();
-                              for (i = 0; i < n; i++) {
-                                   int iColumn = indices[i];
-                                   cost[iColumn] -= elements[iColumn];
-                                   elements[iColumn] = 0.0;
-                              }
-                              objArray->setNumElements(0);
-                         }
-                    }
-#endif
         // Seems to prefer things in order so quickest
         // way is to go though like this
         for (i = 0; i < numberRows; i++) {
@@ -300,10 +214,6 @@ int ClpFactorization::factorize(ClpSimplex *model,
         }
       }
       if (numberBasic > model->maximumBasic()) {
-#if 0 // ndef NDEBUG
-                    printf("%d basic - should only be %d\n",
-                           numberBasic, numberRows);
-#endif
         // Take out some
         numberBasic = numberRowBasic;
         for (int i = 0; i < numberColumns; i++) {
@@ -356,16 +266,9 @@ int ClpFactorization::factorize(ClpSimplex *model,
         if (model->numberIterations())
           numberRowBasic = numberBasic - numberColumnBasic;
         numberElements = 3 * numberBasic + 3 * numberElements + 20000;
-#if 0
-                    // If iteration not zero then may be compressed
-                    getAreas ( !model->numberIterations() ? numberRows : numberBasic,
-                               numberRowBasic + numberColumnBasic, numberElements,
-                               2 * numberElements );
-#else
       getAreas(numberRows,
         numberRowBasic + numberColumnBasic, numberElements,
         2 * numberElements);
-#endif
         //fill
         // Fill in counts so we can skip part of preProcess
         int *COIN_RESTRICT numberInRow = numberInRow_.array();
@@ -394,14 +297,6 @@ int ClpFactorization::factorize(ClpSimplex *model,
           numberInRow,
           numberInColumn + numberRowBasic,
           elementU);
-#if 0
-                    {
-                         printf("%d row basic, %d column basic\n", numberRowBasic, numberColumnBasic);
-                         for (int i = 0; i < numberElements; i++)
-                              printf("row %d col %d value %g\n", indexRowU_.array()[i], indexColumnU_[i],
-                                     elementU_.array()[i]);
-                    }
-#endif
         // recompute number basic
         numberBasic = numberRowBasic + numberColumnBasic;
         if (numberBasic)
@@ -447,16 +342,6 @@ int ClpFactorization::factorize(ClpSimplex *model,
           // so rowIsBasic[k] would be permuteBack[back[i]]
           pivotVariable[permuteBack[back[i]]] = k;
         }
-#if 0
-                    if (numberSave >= 0) {
-                         numberSave = numberDense_;
-                         memset(saveList, 0, ((numberRows_ + 31) >> 5)*sizeof(int));
-                         for (i = numberRows_ - numberSave; i < numberRows_; i++) {
-                              int k = pivotTemp[pivotColumn_.array()[i]];
-                              setDense(k);
-                         }
-                    }
-#endif
         // Set up permutation vector
         // these arrays start off as copies of permute
         // (and we could use permute_ instead of pivotColumn (not back though))
@@ -488,17 +373,6 @@ int ClpFactorization::factorize(ClpSimplex *model,
             // but make sure numberRows_ set
             numberRows_ = model->numberRows();
             status_ = 0;
-#if 0
-                              // but put back permute arrays so odd things will work
-                              int numberRows = model->numberRows();
-                              pivotColumnBack_ = new int [numberRows];
-                              permute_ = new int [numberRows];
-                              int i;
-                              for (i = 0; i < numberRows; i++) {
-                                   pivotColumnBack_[i] = i;
-                                   permute_[i] = i;
-                              }
-#endif
           }
         } else {
 #endif
@@ -1568,12 +1442,6 @@ bool ClpFactorization::timeToRefactorize() const
         + weightNrowsIterate * numberRows;
       double variableWeight = weightIncU * totalInIncreasingU_ + weightR * totalInR_ + weightRest * rest;
       double average = constWeightIterateX + (constWeightFactor + variableWeight) / static_cast< double >(numberPivots);
-#if 0
-      if ((numberPivots%20)==0&&!ifPrint3)
-      printf("PIV %d nrow %d startU %d now %d L %d R %d dense %g average %g\n",
-      numberPivots,numberRows,effectiveStartNumberU_,
-      lengthU,lengthL,lengthR,nnd,average);
-#endif
       shortestAverage_ = std::min(shortestAverage_, average);
       if (average > increaseNeeded * shortestAverage_ && coinFactorizationA_->pivots() > 30) {
         //printf("PIVX %d nrow %d startU %d now %d L %d R %d dense %g average %g\n",
@@ -1583,27 +1451,6 @@ bool ClpFactorization::timeToRefactorize() const
       }
     }
     if (reFactor || reFactor3) {
-#if 0
-	printf("%c%cftranCountInput_ %g  ,ftranCountAfterL_ %g  ,ftranCountAfterR_ %g  ,ftranCountAfterU_ %g  ,btranCountInput_ %g  ,btranCountAfterU_ %g  ,btranCountAfterR_ %g  ,btranCountAfterL_ %g  ,numberFtranCounts_ %d  ,numberBtranCounts_ %d  ,ftranAverageAfterL_ %g  ,ftranAverageAfterR_ %g  ,ftranAverageAfterU_ %g  ,btranAverageAfterU_ %g  ,btranAverageAfterR_ %g  ,btranAverageAfterL_ %g\n"
-	       ,reFactor3 ? 'Y' : 'N'
-	       ,reFactor ? 'Y' : 'N'
-  ,coinFactorizationA_->ftranCountInput_
-  ,coinFactorizationA_->ftranCountAfterL_
-  ,coinFactorizationA_->ftranCountAfterR_
-  ,coinFactorizationA_->ftranCountAfterU_
-  ,coinFactorizationA_->btranCountInput_
-  ,coinFactorizationA_->btranCountAfterU_
-  ,coinFactorizationA_->btranCountAfterR_
-  ,coinFactorizationA_->btranCountAfterL_
-  ,coinFactorizationA_->numberFtranCounts_
-  ,coinFactorizationA_->numberBtranCounts_
-  ,coinFactorizationA_->ftranAverageAfterL_
-  ,coinFactorizationA_->ftranAverageAfterR_
-  ,coinFactorizationA_->ftranAverageAfterU_
-  ,coinFactorizationA_->btranAverageAfterU_
-  ,coinFactorizationA_->btranAverageAfterR_
-	       ,coinFactorizationA_->btranAverageAfterL_);
-#endif
       reFactor = true;
     }
     return reFactor;
@@ -2020,10 +1867,6 @@ scaledDense,scaledDense_2,scaledL,scaledR,scaledU\n");
     coinFactorizationA_->areaFactor(coinFactorizationA_->areaFactor() * 1.1);
   }
   //int numberPivots=coinFactorizationA_->pivots();
-#if 0
-     if (model->algorithm() > 0)
-          numberSave = -1;
-#endif
 #ifndef SLIM_CLP
   if (!networkBasis_ || doCheck) {
 #endif
@@ -2041,74 +1884,6 @@ scaledDense,scaledDense_2,scaledL,scaledR,scaledU\n");
       int *COIN_RESTRICT pivotTemp = model->rowArray(0)->getIndices();
       assert(!model->rowArray(0)->getNumElements());
       if (!matrix->rhsOffset(model)) {
-#if 0
-                    if (numberSave > 0) {
-                         int nStill = 0;
-                         int nAtBound = 0;
-                         int nZeroDual = 0;
-                         CoinIndexedVector * array = model->rowArray(3);
-                         CoinIndexedVector * objArray = model->columnArray(1);
-                         array->clear();
-                         objArray->clear();
-                         double *COIN_RESTRICT  cost = model->costRegion();
-                         double tolerance = model->primalTolerance();
-                         double offset = 0.0;
-                         for (i = 0; i < numberRows; i++) {
-                              int iPivot = pivotVariable[i];
-                              if (iPivot < numberColumns && isDense(iPivot)) {
-                                   if (model->getColumnStatus(iPivot) == ClpSimplex::basic) {
-                                        nStill++;
-                                        double value = model->solutionRegion()[iPivot];
-                                        double dual = model->dualRowSolution()[i];
-                                        double lower = model->lowerRegion()[iPivot];
-                                        double upper = model->upperRegion()[iPivot];
-                                        ClpSimplex::Status status;
-                                        if (fabs(value - lower) < tolerance) {
-                                             status = ClpSimplex::atLowerBound;
-                                             nAtBound++;
-                                        } else if (fabs(value - upper) < tolerance) {
-                                             nAtBound++;
-                                             status = ClpSimplex::atUpperBound;
-                                        } else if (value > lower && value < upper) {
-                                             status = ClpSimplex::superBasic;
-                                        } else {
-                                             status = ClpSimplex::basic;
-                                        }
-                                        if (status != ClpSimplex::basic) {
-                                             if (model->getRowStatus(i) != ClpSimplex::basic) {
-                                                  model->setColumnStatus(iPivot, ClpSimplex::atLowerBound);
-                                                  model->setRowStatus(i, ClpSimplex::basic);
-                                                  pivotVariable[i] = i + numberColumns;
-                                                  model->dualRowSolution()[i] = 0.0;
-                                                  model->djRegion(0)[i] = 0.0;
-                                                  array->add(i, dual);
-                                                  offset += dual * model->solutionRegion(0)[i];
-                                             }
-                                        }
-                                        if (fabs(dual) < 1.0e-5)
-                                             nZeroDual++;
-                                   }
-                              }
-                         }
-                         printf("out of %d dense, %d still in basis, %d at bound, %d with zero dual - offset %g\n",
-                                numberSave, nStill, nAtBound, nZeroDual, offset);
-                         if (array->getNumElements()) {
-                              // modify costs
-                              model->clpMatrix()->transposeTimes(model, 1.0, array, model->columnArray(0),
-                                                                 objArray);
-                              array->clear();
-                              int n = objArray->getNumElements();
-                              int *COIN_RESTRICT  indices = objArray->getIndices();
-                              double *COIN_RESTRICT  elements = objArray->denseVector();
-                              for (i = 0; i < n; i++) {
-                                   int iColumn = indices[i];
-                                   cost[iColumn] -= elements[iColumn];
-                                   elements[iColumn] = 0.0;
-                              }
-                              objArray->setNumElements(0);
-                         }
-                    }
-#endif
         // Seems to prefer things in order so quickest
         // way is to go though like this
         for (i = 0; i < numberRows; i++) {
@@ -2157,10 +1932,6 @@ scaledDense,scaledDense_2,scaledL,scaledR,scaledU\n");
         }
       }
       if (numberBasic > model->maximumBasic()) {
-#if 0 // ndef NDEBUG
-                    printf("%d basic - should only be %d\n",
-                           numberBasic, numberRows);
-#endif
         // Take out some
         numberBasic = numberRowBasic;
         for (int i = 0; i < numberColumns; i++) {
@@ -2245,14 +2016,6 @@ scaledDense,scaledDense_2,scaledL,scaledR,scaledU\n");
           numberInRow,
           numberInColumn + numberRowBasic,
           elementU);
-#if 0
-                    {
-                         printf("%d row basic, %d column basic\n", numberRowBasic, numberColumnBasic);
-                         for (int i = 0; i < numberElements; i++)
-                              printf("row %d col %d value %g\n", indexRowU[i], indexColumnU_[i],
-                                     elementU[i]);
-                    }
-#endif
         // recompute number basic
         numberBasic = numberRowBasic + numberColumnBasic;
         if (numberBasic)
@@ -2315,16 +2078,6 @@ scaledDense,scaledDense_2,scaledL,scaledR,scaledU\n");
           assert(pivotVariable[j] == -1);
           pivotVariable[j] = k;
         }
-#if 0
-                    if (numberSave >= 0) {
-                         numberSave = numberDense_;
-                         memset(saveList, 0, ((coinFactorizationA_->numberRows() + 31) >> 5)*sizeof(int));
-                         for (i = coinFactorizationA_->numberRows() - numberSave; i < coinFactorizationA_->numberRows(); i++) {
-                              int k = pivotTemp[pivotColumn_.array()[i]];
-                              setDense(k);
-                         }
-                    }
-#endif
         // Set up permutation vector
         // these arrays start off as copies of permute
         // (and we could use permute_ instead of pivotColumn (not back though))
@@ -2356,17 +2109,6 @@ scaledDense,scaledDense_2,scaledL,scaledR,scaledU\n");
             // but make sure coinFactorizationA_->numberRows() set
             coinFactorizationA_->setNumberRows(model->numberRows());
             coinFactorizationA_->setStatus(0);
-#if 0
-                              // but put back permute arrays so odd things will work
-                              int numberRows = model->numberRows();
-                              pivotColumnBack_ = new int [numberRows];
-                              permute_ = new int [numberRows];
-                              int i;
-                              for (i = 0; i < numberRows; i++) {
-                                   pivotColumnBack_[i] = i;
-                                   permute_[i] = i;
-                              }
-#endif
           }
         } else {
 #endif
@@ -2917,22 +2659,6 @@ int ClpFactorization::updateTwoColumnsFT(CoinIndexedVector *regionSparse1,
       }
       coinFactorizationA_->setCollectStatistics(false);
     } else {
-#if 0
-               CoinSimpFactorization * fact =
-                    dynamic_cast< CoinSimpFactorization*>(coinFactorizationB_);
-               if (!fact) {
-                    returnCode = coinFactorizationB_->updateColumnFT(regionSparse1,
-                                 regionSparse2);
-                    coinFactorizationB_->updateColumn(regionSparse1,
-                                                      regionSparse3,
-                                                      noPermuteRegion3);
-               } else {
-                    returnCode = fact->updateTwoColumnsFT(regionSparse1,
-                                                          regionSparse2,
-                                                          regionSparse3,
-                                                          noPermuteRegion3);
-               }
-#else
 #ifdef CLP_REUSE_ETAS
       int tempInfo[2];
       tempInfo[0] = model_->numberIterations();
@@ -2944,7 +2670,6 @@ int ClpFactorization::updateTwoColumnsFT(CoinIndexedVector *regionSparse1,
         regionSparse2,
         regionSparse3,
         noPermuteRegion3);
-#endif
     }
 #ifdef CLP_FACTORIZATION_INSTRUMENT
     factorization_instrument(9);

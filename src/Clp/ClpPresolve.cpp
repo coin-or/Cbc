@@ -377,28 +377,6 @@ void ClpPresolve::setOriginalModel(ClpSimplex *model)
 {
   originalModel_ = model;
 }
-#if 0
-// A lazy way to restrict which transformations are applied
-// during debugging.
-static int ATOI(const char *name)
-{
-     return true;
-#if PRESOLVE_DEBUG || PRESOLVE_SUMMARY
-     if (getenv(name)) {
-          int val = atoi(getenv(name));
-          printf("%s = %d\n", name, val);
-          return (val);
-     } else {
-          if (strcmp(name, "off"))
-               return (true);
-          else
-               return (false);
-     }
-#else
-     return (true);
-#endif
-}
-#endif
 #ifdef PRESOLVE_DEBUG
 #define PRESOLVE_CHECK_SOL 1
 #endif
@@ -542,19 +520,6 @@ static int tightenDoubletons2(CoinPresolveMatrix *prob)
         // free
         continue;
       }
-#if 0
-      // skip here for speed
-      // skip if no cost (should be able to get rid of)
-      if (!cost[icol]) {
-	printf("should be able to get rid of %d with no cost\n",icol);
-	continue;
-      }
-      // skip if negative cost for now
-      if (cost[icol]<0.0) {
-	printf("code for negative cost\n");
-	continue;
-      }
-#endif
       double element1 = colels[start + 1];
       double rowUpper1 = rup[row1];
       bool swapSigns1 = false;
@@ -1538,36 +1503,6 @@ void ClpPresolve::postsolve(CoinPostsolveMatrix &prob)
     paction->postsolve(&prob);
 
 #if PRESOLVE_DEBUG
-#if 0
-          /*
-	    This check fails (on exmip1 (!) in osiUnitTest) because clp
-	    enters postsolve with a solution that seems to have incorrect
-	    status for a logical. You can see similar behaviour with
-	    column status --- incorrect entering postsolve.
-	    -- lh, 111207 --
-	  */
-          {
-               int nr = 0;
-               int i;
-               for (i = 0; i < prob.nrows_; i++) {
-                    if ((prob.rowstat_[i] & 7) == 1) {
-                         nr++;
-                    } else if ((prob.rowstat_[i] & 7) == 2) {
-                         // at ub
-                         assert (prob.acts_[i] > prob.rup_[i] - 1.0e-6);
-                    } else if ((prob.rowstat_[i] & 7) == 3) {
-                         // at lb
-                         assert (prob.acts_[i] < prob.rlo_[i] + 1.0e-6);
-                    }
-               }
-               int nc = 0;
-               for (i = 0; i < prob.ncols_; i++) {
-                    if ((prob.colstat_[i] & 7) == 1)
-                         nc++;
-               }
-               printf("%d rows (%d basic), %d cols (%d basic)\n", prob.nrows_, nr, prob.ncols_, nc);
-          }
-#endif // if 0
     checkit++;
     if (prob.colstat_ && checkit > 0) {
       presolve_check_nbasic(&prob);
@@ -1914,12 +1849,6 @@ CoinPresolveMatrix* create_CoinPresolveMatrix(
   matrix_bounds_ok(cpm->clo_, cpm->cup_, cpm->ncols_);
 #endif
 
-#if 0
-     for (i = 0; i < nrows; ++i)
-          printf("NR: %6d\n", cpm->hinrow[i]);
-     for (int i = 0; i < ncols; ++i)
-          printf("NC: %6d\n", cpm->hincol[i]);
-#endif
 
   presolve_make_memlists(/*mcstrt_,*/ cpm->hincol_, cpm->clink_, cpm->ncols_);
   presolve_make_memlists(/*mrstrt_,*/ cpm->hinrow_, cpm->rlink_, cpm->nrows_);

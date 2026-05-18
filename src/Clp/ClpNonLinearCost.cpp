@@ -221,60 +221,6 @@ ClpNonLinearCost::ClpNonLinearCost(ClpSimplex * model, int method)
     }
   }
 }
-#if 0
-// Refresh - assuming regions OK
-void
-ClpNonLinearCost::refresh()
-{
-     int numberTotal = numberRows_ + numberColumns_;
-     numberInfeasibilities_ = 0;
-     sumInfeasibilities_ = 0.0;
-     largestInfeasibility_ = 0.0;
-     double infeasibilityCost = model_->infeasibilityCost();
-     double primalTolerance = model_->currentPrimalTolerance();
-     double * cost = model_->costRegion();
-     double * upper = model_->upperRegion();
-     double * lower = model_->lowerRegion();
-     double * solution = model_->solutionRegion();
-     for (int iSequence = 0; iSequence < numberTotal; iSequence++) {
-       cost2_[iSequence] = cost[iSequence];
-       double value = solution[iSequence];
-       double lowerValue = lower[iSequence];
-       double upperValue = upper[iSequence];
-       if (value - upperValue <= primalTolerance) {
-	 if (value - lowerValue >= -primalTolerance) {
-	   // feasible
-	   status_[iSequence] = static_cast<unsigned char>(CLP_FEASIBLE | (CLP_SAME << 4));
-	   bound_[iSequence] = 0.0;
-	 } else {
-	   // below
-	   double infeasibility = lowerValue - value - primalTolerance;
-	   sumInfeasibilities_ += infeasibility;
-	   largestInfeasibility_ = std::max(largestInfeasibility_, infeasibility);
-	   cost[iSequence] -= infeasibilityCost;
-	   numberInfeasibilities_++;
-	   status_[iSequence] = static_cast<unsigned char>(CLP_BELOW_LOWER | (CLP_SAME << 4));
-	   bound_[iSequence] = upperValue;
-	   upper[iSequence] = lowerValue;
-	   lower[iSequence] = -COIN_DBL_MAX;
-	 }
-       } else {
-	 // above
-	 double infeasibility = value - upperValue - primalTolerance;
-	 sumInfeasibilities_ += infeasibility;
-	 largestInfeasibility_ = std::max(largestInfeasibility_, infeasibility);
-	 cost[iSequence] += infeasibilityCost;
-	 numberInfeasibilities_++;
-	 status_[iSequence] = static_cast<unsigned char>(CLP_ABOVE_UPPER | (CLP_SAME << 4));
-	 bound_[iSequence] = lowerValue;
-	 lower[iSequence] = upperValue;
-	 upper[iSequence] = COIN_DBL_MAX;
-       }
-     }
-     //     checkInfeasibilities(model_->primalTolerance());
-
-}
-#endif
 // Refresh one- assuming regions OK
 void ClpNonLinearCost::refresh(int iSequence)
 {

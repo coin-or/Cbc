@@ -133,17 +133,16 @@ am_libClp_la_OBJECTS = CbcOrClpParam.lo ClpCholeskyBase.lo \
 	ClpPrimalColumnSteepest.lo ClpQuadraticObjective.lo \
 	ClpRacingSolver.lo ClpSimplex.lo ClpSimplexDual.lo \
 	ClpSimplexNonlinear.lo ClpSimplexOther.lo ClpSimplexPrimal.lo \
-	ClpSolve.lo ClpSolver.lo Clp_C_Interface.lo IdiSolve.lo \
-	Idiot.lo OsiAuxInfo.lo OsiBranchingObject.lo \
-	OsiChooseVariable.lo OsiClpSolverInterface.lo OsiColCut.lo \
-	OsiCut.lo OsiCuts.lo OsiFeatures.lo OsiNames.lo OsiPresolve.lo \
-	OsiRowCut.lo OsiRowCutDebugger.lo OsiSolverBranch.lo \
-	OsiSolverInterface.lo
+	ClpSolve.lo Clp_C_Interface.lo IdiSolve.lo Idiot.lo \
+	OsiAuxInfo.lo OsiBranchingObject.lo OsiChooseVariable.lo \
+	OsiClpSolverInterface.lo OsiColCut.lo OsiCut.lo OsiCuts.lo \
+	OsiFeatures.lo OsiNames.lo OsiPresolve.lo OsiRowCut.lo \
+	OsiRowCutDebugger.lo OsiSolverBranch.lo OsiSolverInterface.lo
 libClp_la_OBJECTS = $(am_libClp_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 =
+am__v_lt_1 = 
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -151,11 +150,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 =
+am__v_GEN_1 = 
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 =
+am__v_at_1 = 
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src -I$(top_builddir)/src/OsiCbc
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
@@ -200,9 +199,9 @@ am__depfiles_remade = ./$(DEPDIR)/CbcOrClpParam.Plo \
 	./$(DEPDIR)/ClpSimplexNonlinear.Plo \
 	./$(DEPDIR)/ClpSimplexOther.Plo \
 	./$(DEPDIR)/ClpSimplexPrimal.Plo ./$(DEPDIR)/ClpSolve.Plo \
-	./$(DEPDIR)/ClpSolver.Plo ./$(DEPDIR)/Clp_C_Interface.Plo \
-	./$(DEPDIR)/IdiSolve.Plo ./$(DEPDIR)/Idiot.Plo \
-	./$(DEPDIR)/OsiAuxInfo.Plo ./$(DEPDIR)/OsiBranchingObject.Plo \
+	./$(DEPDIR)/Clp_C_Interface.Plo ./$(DEPDIR)/IdiSolve.Plo \
+	./$(DEPDIR)/Idiot.Plo ./$(DEPDIR)/OsiAuxInfo.Plo \
+	./$(DEPDIR)/OsiBranchingObject.Plo \
 	./$(DEPDIR)/OsiChooseVariable.Plo \
 	./$(DEPDIR)/OsiClpSolverInterface.Plo \
 	./$(DEPDIR)/OsiColCut.Plo ./$(DEPDIR)/OsiCut.Plo \
@@ -221,7 +220,7 @@ LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 AM_V_CXX = $(am__v_CXX_@AM_V@)
 am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
 am__v_CXX_0 = @echo "  CXX     " $@;
-am__v_CXX_1 =
+am__v_CXX_1 = 
 CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
@@ -229,7 +228,7 @@ CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
-am__v_CXXLD_1 =
+am__v_CXXLD_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -239,7 +238,7 @@ LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
 am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 =
+am__v_CC_1 = 
 CCLD = $(CC)
 LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -247,7 +246,7 @@ LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 =
+am__v_CCLD_1 = 
 SOURCES = $(libClp_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -576,8 +575,6 @@ libClp_la_SOURCES = \
 	ClpSimplexPrimal.hpp \
 	ClpSolve.cpp \
 	ClpSolve.hpp \
-	ClpSolver.cpp \
-	ClpSolver.hpp \
 	Clp_C_Interface.cpp \
 	Clp_C_Interface.h \
 	IdiSolve.cpp \
@@ -737,7 +734,7 @@ clean-noinstLTLIBRARIES:
 	echo rm -f $${locs}; \
 	$(am__rm_f) $${locs}
 
-libClp.la: $(libClp_la_OBJECTS) $(libClp_la_DEPENDENCIES) $(EXTRA_libClp_la_DEPENDENCIES)
+libClp.la: $(libClp_la_OBJECTS) $(libClp_la_DEPENDENCIES) $(EXTRA_libClp_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(CXXLINK)  $(libClp_la_OBJECTS) $(libClp_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
@@ -798,7 +795,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ClpSimplexOther.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ClpSimplexPrimal.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ClpSolve.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ClpSolver.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Clp_C_Interface.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/IdiSolve.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Idiot.Plo@am__quote@ # am--include-marker
@@ -1020,7 +1016,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/ClpSimplexOther.Plo
 	-rm -f ./$(DEPDIR)/ClpSimplexPrimal.Plo
 	-rm -f ./$(DEPDIR)/ClpSolve.Plo
-	-rm -f ./$(DEPDIR)/ClpSolver.Plo
 	-rm -f ./$(DEPDIR)/Clp_C_Interface.Plo
 	-rm -f ./$(DEPDIR)/IdiSolve.Plo
 	-rm -f ./$(DEPDIR)/Idiot.Plo
@@ -1135,7 +1130,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/ClpSimplexOther.Plo
 	-rm -f ./$(DEPDIR)/ClpSimplexPrimal.Plo
 	-rm -f ./$(DEPDIR)/ClpSolve.Plo
-	-rm -f ./$(DEPDIR)/ClpSolver.Plo
 	-rm -f ./$(DEPDIR)/Clp_C_Interface.Plo
 	-rm -f ./$(DEPDIR)/IdiSolve.Plo
 	-rm -f ./$(DEPDIR)/Idiot.Plo

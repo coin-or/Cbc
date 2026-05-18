@@ -328,17 +328,6 @@ void ClpGubDynamicMatrix::partialPricing(ClpSimplex *model, double startFraction
     const int *row = matrix_->getIndices();
     const CoinBigIndex *startColumn = matrix_->getVectorStarts();
     int *length = matrix_->getMutableVectorLengths();
-#if 0
-          // make sure first available is clean (in case last iteration rejected)
-          cost[firstAvailable_] = 0.0;
-          length[firstAvailable_] = 0;
-          model->nonLinearCost()->setOne(firstAvailable_, 0.0, 0.0, COIN_DBL_MAX, 0.0);
-          model->setStatus(firstAvailable_, ClpSimplex::atLowerBound);
-          {
-               for (int i = firstAvailable_; i < lastDynamic_; i++)
-                    assert(!cost[i]);
-          }
-#endif
 #ifdef CLP_DEBUG
     {
       for (int i = firstDynamic_; i < firstAvailable_; i++) {
@@ -919,17 +908,6 @@ int ClpGubDynamicMatrix::synchronize(ClpSimplex *model, int mode)
   // return 1 if there may be changing bounds on variable (column generation)
   case 6: {
     returnNumber = (lowerColumn_ != NULL || upperColumn_ != NULL) ? 1 : 0;
-#if 0
-          if (!returnNumber) {
-               // may be gub slacks
-               for (int i = 0; i < numberSets_; i++) {
-                    if (upper_[i] > lower_[i]) {
-                         returnNumber = 1;
-                         break;
-                    }
-               }
-          }
-#endif
   } break;
   // restore firstAvailable_
   case 7: {

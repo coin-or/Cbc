@@ -119,8 +119,6 @@ libClp_la_SOURCES = \
 	ClpSimplexPrimal.hpp \
 	ClpSolve.cpp \
 	ClpSolve.hpp \
-	ClpSolver.cpp \
-	ClpSolver.hpp \
 	Clp_C_Interface.cpp \
 	Clp_C_Interface.h \
 	IdiSolve.cpp \

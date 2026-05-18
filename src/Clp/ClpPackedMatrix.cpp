@@ -609,11 +609,6 @@ void ClpPackedMatrix::transposeTimes(const ClpSimplex *model, double scalar,
   int numberInRowArray = rowArray->getNumElements();
   // maybe I need one in OsiSimplex
   double zeroTolerance = model->zeroTolerance();
-#if 0 // def COIN_DEVELOP
-     if (zeroTolerance != 1.0e-13) {
-          printf("small element in matrix - zero tolerance %g\n", zeroTolerance);
-     }
-#endif
   int numberRows = model->numberRows();
   ClpPackedMatrix *rowCopy = static_cast< ClpPackedMatrix * >(model->rowCopy());
   bool packed = rowArray->packedMode();
@@ -659,17 +654,6 @@ void ClpPackedMatrix::transposeTimes(const ClpSimplex *model, double scalar,
     const int *COIN_RESTRICT columnLength = matrix_->getVectorLengths();
     const double *COIN_RESTRICT elementByColumn = matrix_->getElements();
     const double *COIN_RESTRICT rowScale = model->rowScale();
-#if 0
-          ClpPackedMatrix * scaledMatrix = model->clpScaledMatrix();
-          if (rowScale && scaledMatrix) {
-               rowScale = NULL;
-               // get matrix data pointers
-               row = scaledMatrix->getIndices();
-               columnStart = scaledMatrix->getVectorStarts();
-               columnLength = scaledMatrix->getVectorLengths();
-               elementByColumn = scaledMatrix->getElements();
-          }
-#endif
     if (packed) {
       // need to expand pi into y
       assert(y->capacity() >= numberRows);
@@ -874,22 +858,6 @@ void ClpPackedMatrix::transposeTimesByColumn(const ClpSimplex *model, double sca
   assert(!y->getNumElements());
   assert(numberActiveColumns_ > 0);
   const ClpPackedMatrix *thisMatrix = this;
-#if 0
-     ClpPackedMatrix * scaledMatrix = model->clpScaledMatrix();
-     if (rowScale && scaledMatrix) {
-          rowScale = NULL;
-          // get matrix data pointers
-          row = scaledMatrix->getIndices();
-          columnStart = scaledMatrix->getVectorStarts();
-          elementByColumn = scaledMatrix->getElements();
-          thisMatrix = scaledMatrix;
-          //printf("scaledMatrix\n");
-     } else if (rowScale) {
-          //printf("no scaledMatrix\n");
-     } else {
-          //printf("no rowScale\n");
-     }
-#endif
   if (packed) {
     // need to expand pi into y
     assert(y->capacity() >= model->numberRows());
@@ -967,16 +935,6 @@ void ClpPackedMatrix::transposeTimesByColumn(const ClpSimplex *model, double sca
               zeroTolerance);
             model->spareDoubleArray_[0] = upperTheta;
             spareArray->setNumElements(numberRemaining);
-#if 0
-                              columnArray->setNumElements(numberNonZero);
-			      spareArray->setPackedMode(true);
-			      columnArray->setPackedMode(true);
-			      spareArray->checkClean();
-			      columnArray->checkClean();
-			      printf("col %d spare %d upper %g\n",
-				     columnArray->getNumElements(),
-				     spareArray->getNumElements(),upperTheta);
-#endif
             // signal partially done
             model->spareIntArray_[0] = -2;
           } else {
@@ -1224,16 +1182,6 @@ void ClpPackedMatrix::transposeTimesByRow(const ClpSimplex *model, double scalar
     if (packed) {
       int *COIN_RESTRICT index = columnArray->getIndices();
       double *COIN_RESTRICT array = columnArray->denseVector();
-#if 0
-	       {
-		 double  * COIN_RESTRICT array2 = y->denseVector();
-		 int numberColumns = matrix_->getNumCols();
-		 for (int i=0;i<numberColumns;i++) {
-		   assert(!array[i]);
-		   assert(!array2[i]);
-		 }
-	       }
-#endif
 #define COIN_SPARSE_MATRIX 2
       CoinBigIndex numberCovered = 0;
       int numberColumns = matrix_->getNumCols();
@@ -2768,680 +2716,6 @@ void ClpPackedMatrix::fillBasis(ClpSimplex *model,
     abort();
   }
 }
-#if 0
-int
-ClpPackedMatrix::scale2(ClpModel * model) const
-{
-     ClpSimplex * baseModel = NULL;
-#ifndef NDEBUG
-     //checkFlags();
-#endif
-     int numberRows = model->numberRows();
-     int numberColumns = matrix_->getNumCols();
-     model->setClpScaledMatrix(NULL); // get rid of any scaled matrix
-     // If empty - return as sanityCheck will trap
-     if (!numberRows || !numberColumns) {
-          model->setRowScale(NULL);
-          model->setColumnScale(NULL);
-          return 1;
-     }
-     ClpMatrixBase * rowCopyBase = model->rowCopy();
-     double *COIN_RESTRICT  rowScale;
-     double *COIN_RESTRICT  columnScale;
-     //assert (!model->rowScale());
-     bool arraysExist;
-     double *COIN_RESTRICT  inverseRowScale = NULL;
-     double *COIN_RESTRICT  inverseColumnScale = NULL;
-     if (!model->rowScale()) {
-          rowScale = new double [numberRows*2];
-          columnScale = new double [numberColumns*2];
-          inverseRowScale = rowScale + numberRows;
-          inverseColumnScale = columnScale + numberColumns;
-          arraysExist = false;
-     } else {
-          rowScale = model->mutableRowScale();
-          columnScale = model->mutableColumnScale();
-          inverseRowScale = model->mutableInverseRowScale();
-          inverseColumnScale = model->mutableInverseColumnScale();
-          arraysExist = true;
-     }
-     assert (inverseRowScale == rowScale + numberRows);
-     assert (inverseColumnScale == columnScale + numberColumns);
-     // we are going to mark bits we are interested in
-     char * usefulRow = new char [numberRows];
-     char * usefulColumn = new char [numberColumns];
-     double *COIN_RESTRICT  rowLower = model->rowLower();
-     double *COIN_RESTRICT  rowUpper = model->rowUpper();
-     double *COIN_RESTRICT  columnLower = model->columnLower();
-     double *COIN_RESTRICT  columnUpper = model->columnUpper();
-     int iColumn, iRow;
-     //#define LEAVE_FIXED
-     // mark free rows
-     for (iRow = 0; iRow < numberRows; iRow++) {
-#if 0 // ndef LEAVE_FIXED
-          if (rowUpper[iRow] < 1.0e20 ||
-                    rowLower[iRow] > -1.0e20)
-               usefulRow[iRow] = 1;
-          else
-               usefulRow[iRow] = 0;
-#else
-          usefulRow[iRow] = 1;
-#endif
-     }
-     // mark empty and fixed columns
-     // also see if worth scaling
-     assert (model->scalingFlag() <= 4);
-     //  scale_stats[model->scalingFlag()]++;
-     double largest = 0.0;
-     double smallest = 1.0e50;
-     // get matrix data pointers
-     int *COIN_RESTRICT  row = matrix_->getMutableIndices();
-     const CoinBigIndex * columnStart = matrix_->getVectorStarts();
-     int *COIN_RESTRICT  columnLength = matrix_->getMutableVectorLengths();
-     double *COIN_RESTRICT  elementByColumn = matrix_->getMutableElements();
-     bool deletedElements = false;
-     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-          CoinBigIndex j;
-          char useful = 0;
-          bool deleteSome = false;
-          int start = columnStart[iColumn];
-          int end = start + columnLength[iColumn];
-#ifndef LEAVE_FIXED
-          if (columnUpper[iColumn] >
-                    columnLower[iColumn] + 1.0e-12) {
-#endif
-               for (j = start; j < end; j++) {
-                    iRow = row[j];
-                    double value = fabs(elementByColumn[j]);
-                    if (value > 1.0e-20) {
-                         if(usefulRow[iRow]) {
-                              useful = 1;
-                              largest = std::max(largest, fabs(elementByColumn[j]));
-                              smallest = std::min(smallest, fabs(elementByColumn[j]));
-                         }
-                    } else {
-                         // small
-                         deleteSome = true;
-                    }
-               }
-#ifndef LEAVE_FIXED
-          } else {
-               // just check values
-               for (j = start; j < end; j++) {
-                    double value = fabs(elementByColumn[j]);
-                    if (value <= 1.0e-20) {
-                         // small
-                         deleteSome = true;
-                    }
-               }
-          }
-#endif
-          usefulColumn[iColumn] = useful;
-          if (deleteSome) {
-               deletedElements = true;
-               CoinBigIndex put = start;
-               for (j = start; j < end; j++) {
-                    double value = elementByColumn[j];
-                    if (fabs(value) > 1.0e-20) {
-                         row[put] = row[j];
-                         elementByColumn[put++] = value;
-                    }
-               }
-               columnLength[iColumn] = put - start;
-          }
-     }
-     model->messageHandler()->message(CLP_PACKEDSCALE_INITIAL, *model->messagesPointer())
-               << smallest << largest
-               << CoinMessageEol;
-     if (smallest >= 0.5 && largest <= 2.0 && !deletedElements) {
-          // don't bother scaling
-          model->messageHandler()->message(CLP_PACKEDSCALE_FORGET, *model->messagesPointer())
-                    << CoinMessageEol;
-          if (!arraysExist) {
-               delete [] rowScale;
-               delete [] columnScale;
-          } else {
-               model->setRowScale(NULL);
-               model->setColumnScale(NULL);
-          }
-          delete [] usefulRow;
-          delete [] usefulColumn;
-          return 1;
-     } else {
-#ifdef CLP_INVESTIGATE
-          if (deletedElements)
-               printf("DEL_ELS\n");
-#endif
-          if (!rowCopyBase) {
-               // temporary copy
-               rowCopyBase = reverseOrderedCopy();
-          } else if (deletedElements) {
-               rowCopyBase = reverseOrderedCopy();
-               model->setNewRowCopy(rowCopyBase);
-          }
-#ifndef NDEBUG
-          ClpPackedMatrix* rowCopy =
-               dynamic_cast< ClpPackedMatrix*>(rowCopyBase);
-          // Make sure it is really a ClpPackedMatrix
-          assert (rowCopy != NULL);
-#else
-          ClpPackedMatrix* rowCopy =
-               static_cast< ClpPackedMatrix*>(rowCopyBase);
-#endif
-
-          const int * column = rowCopy->getIndices();
-          const CoinBigIndex * rowStart = rowCopy->getVectorStarts();
-          const double *COIN_RESTRICT  element = rowCopy->getElements();
-          // need to scale
-          if (largest > 1.0e13 * smallest) {
-               // safer to have smaller zero tolerance
-               double ratio = smallest / largest;
-               ClpSimplex * simplex = static_cast<ClpSimplex *> (model);
-               double newTolerance = std::max(ratio * 0.5, 1.0e-18);
-               if (simplex->zeroTolerance() > newTolerance)
-                    simplex->setZeroTolerance(newTolerance);
-          }
-          int scalingMethod = model->scalingFlag();
-          if (scalingMethod == 4) {
-               // As auto
-               scalingMethod = 3;
-          }
-          // and see if there any empty rows
-          for (iRow = 0; iRow < numberRows; iRow++) {
-               if (usefulRow[iRow]) {
-                    CoinBigIndex j;
-                    int useful = 0;
-                    for (j = rowStart[iRow]; j < rowStart[iRow+1]; j++) {
-                         int iColumn = column[j];
-                         if (usefulColumn[iColumn]) {
-                              useful = 1;
-                              break;
-                         }
-                    }
-                    usefulRow[iRow] = static_cast<char>(useful);
-               }
-          }
-          double savedOverallRatio = 0.0;
-          double tolerance = 5.0 * model->primalTolerance();
-          double overallLargest = -1.0e-20;
-          double overallSmallest = 1.0e20;
-          bool finished = false;
-          // if scalingMethod 3 then may change
-          bool extraDetails = (model->logLevel() > 2);
-          while (!finished) {
-               int numberPass = 3;
-               overallLargest = -1.0e-20;
-               overallSmallest = 1.0e20;
-               if (!baseModel) {
-                    ClpFillN ( rowScale, numberRows, 1.0);
-                    ClpFillN ( columnScale, numberColumns, 1.0);
-               } else {
-                    // Copy scales and do quick scale on extra rows
-                    // Then just one? pass
-                    assert (numberColumns == baseModel->numberColumns());
-                    int numberRows2 = baseModel->numberRows();
-                    assert (numberRows >= numberRows2);
-                    assert (baseModel->rowScale());
-                    CoinMemcpyN(baseModel->rowScale(), numberRows2, rowScale);
-                    CoinMemcpyN(baseModel->columnScale(), numberColumns, columnScale);
-                    if (numberRows > numberRows2) {
-                         numberPass = 1;
-                         // do some scaling
-                         if (scalingMethod == 1 || scalingMethod == 3) {
-                              // Maximum in each row
-                              for (iRow = numberRows2; iRow < numberRows; iRow++) {
-                                   if (usefulRow[iRow]) {
-                                        CoinBigIndex j;
-                                        largest = 1.0e-10;
-                                        for (j = rowStart[iRow]; j < rowStart[iRow+1]; j++) {
-                                             int iColumn = column[j];
-                                             if (usefulColumn[iColumn]) {
-                                                  double value = fabs(element[j] * columnScale[iColumn]);
-                                                  largest = std::max(largest, value);
-                                                  assert (largest < 1.0e40);
-                                             }
-                                        }
-                                        rowScale[iRow] = 1.0 / largest;
-#ifdef COIN_DEVELOP
-                                        if (extraDetails) {
-                                             overallLargest = std::max(overallLargest, largest);
-                                             overallSmallest = std::min(overallSmallest, largest);
-                                        }
-#endif
-                                   }
-                              }
-                         } else {
-                              overallLargest = 0.0;
-                              overallSmallest = 1.0e50;
-                              // Geometric mean on row scales
-                              for (iRow = 0; iRow < numberRows; iRow++) {
-                                   if (usefulRow[iRow]) {
-                                        CoinBigIndex j;
-                                        largest = 1.0e-20;
-                                        smallest = 1.0e50;
-                                        for (j = rowStart[iRow]; j < rowStart[iRow+1]; j++) {
-                                             int iColumn = column[j];
-                                             if (usefulColumn[iColumn]) {
-                                                  double value = fabs(element[j]);
-                                                  value *= columnScale[iColumn];
-                                                  largest = std::max(largest, value);
-                                                  smallest = std::min(smallest, value);
-                                             }
-                                        }
-                                        if (iRow >= numberRows2) {
-                                             rowScale[iRow] = 1.0 / sqrt(smallest * largest);
-                                             //rowScale[iRow]=std::max(1.0e-10,std::min(1.0e10,rowScale[iRow]));
-                                        }
-#ifdef COIN_DEVELOP
-                                        if (extraDetails) {
-                                             overallLargest = std::max(largest * rowScale[iRow], overallLargest);
-                                             overallSmallest = std::min(smallest * rowScale[iRow], overallSmallest);
-                                        }
-#endif
-                                   }
-                              }
-                         }
-                    } else {
-                         // just use
-                         numberPass = 0;
-                    }
-               }
-               if (!baseModel && (scalingMethod == 1 || scalingMethod == 3)) {
-                    // Maximum in each row
-                    for (iRow = 0; iRow < numberRows; iRow++) {
-                         if (usefulRow[iRow]) {
-                              CoinBigIndex j;
-                              largest = 1.0e-10;
-                              for (j = rowStart[iRow]; j < rowStart[iRow+1]; j++) {
-                                   int iColumn = column[j];
-                                   if (usefulColumn[iColumn]) {
-                                        double value = fabs(element[j]);
-                                        largest = std::max(largest, value);
-                                        assert (largest < 1.0e40);
-                                   }
-                              }
-                              rowScale[iRow] = 1.0 / largest;
-#ifdef COIN_DEVELOP
-                              if (extraDetails) {
-                                   overallLargest = std::max(overallLargest, largest);
-                                   overallSmallest = std::min(overallSmallest, largest);
-                              }
-#endif
-                         }
-                    }
-               } else {
-#ifdef USE_OBJECTIVE
-                    // This will be used to help get scale factors
-                    double *COIN_RESTRICT  objective = new double[numberColumns];
-                    CoinMemcpyN(model->costRegion(1), numberColumns, objective);
-                    double objScale = 1.0;
-#endif
-                    while (numberPass) {
-                         overallLargest = 0.0;
-                         overallSmallest = 1.0e50;
-                         numberPass--;
-                         // Geometric mean on row scales
-                         for (iRow = 0; iRow < numberRows; iRow++) {
-                              if (usefulRow[iRow]) {
-                                   CoinBigIndex j;
-                                   largest = 1.0e-20;
-                                   smallest = 1.0e50;
-                                   for (j = rowStart[iRow]; j < rowStart[iRow+1]; j++) {
-                                        int iColumn = column[j];
-                                        if (usefulColumn[iColumn]) {
-                                             double value = fabs(element[j]);
-                                             value *= columnScale[iColumn];
-                                             largest = std::max(largest, value);
-                                             smallest = std::min(smallest, value);
-                                        }
-                                   }
-
-                                   rowScale[iRow] = 1.0 / sqrt(smallest * largest);
-                                   //rowScale[iRow]=std::max(1.0e-10,std::min(1.0e10,rowScale[iRow]));
-                                   if (extraDetails) {
-                                        overallLargest = std::max(largest * rowScale[iRow], overallLargest);
-                                        overallSmallest = std::min(smallest * rowScale[iRow], overallSmallest);
-                                   }
-                              }
-                         }
-#ifdef USE_OBJECTIVE
-                         largest = 1.0e-20;
-                         smallest = 1.0e50;
-                         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                              if (usefulColumn[iColumn]) {
-                                   double value = fabs(objective[iColumn]);
-                                   value *= columnScale[iColumn];
-                                   largest = std::max(largest, value);
-                                   smallest = std::min(smallest, value);
-                              }
-                         }
-                         objScale = 1.0 / sqrt(smallest * largest);
-#endif
-                         model->messageHandler()->message(CLP_PACKEDSCALE_WHILE, *model->messagesPointer())
-                                   << overallSmallest
-                                   << overallLargest
-                                   << CoinMessageEol;
-                         // skip last column round
-                         if (numberPass == 1)
-                              break;
-                         // Geometric mean on column scales
-                         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                              if (usefulColumn[iColumn]) {
-                                   CoinBigIndex j;
-                                   largest = 1.0e-20;
-                                   smallest = 1.0e50;
-                                   for (j = columnStart[iColumn];
-                                             j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-                                        iRow = row[j];
-                                        double value = fabs(elementByColumn[j]);
-                                        if (usefulRow[iRow]) {
-                                             value *= rowScale[iRow];
-                                             largest = std::max(largest, value);
-                                             smallest = std::min(smallest, value);
-                                        }
-                                   }
-#ifdef USE_OBJECTIVE
-                                   if (fabs(objective[iColumn]) > 1.0e-20) {
-                                        double value = fabs(objective[iColumn]) * objScale;
-                                        largest = std::max(largest, value);
-                                        smallest = std::min(smallest, value);
-                                   }
-#endif
-                                   columnScale[iColumn] = 1.0 / sqrt(smallest * largest);
-                                   //columnScale[iColumn]=std::max(1.0e-10,std::min(1.0e10,columnScale[iColumn]));
-                              }
-                         }
-                    }
-#ifdef USE_OBJECTIVE
-                    delete [] objective;
-                    printf("obj scale %g - use it if you want\n", objScale);
-#endif
-               }
-               // If ranges will make horrid then scale
-               for (iRow = 0; iRow < numberRows; iRow++) {
-                    if (usefulRow[iRow]) {
-                         double difference = rowUpper[iRow] - rowLower[iRow];
-                         double scaledDifference = difference * rowScale[iRow];
-                         if (scaledDifference > tolerance && scaledDifference < 1.0e-4) {
-                              // make gap larger
-                              rowScale[iRow] *= 1.0e-4 / scaledDifference;
-                              rowScale[iRow] = std::max(1.0e-10, std::min(1.0e10, rowScale[iRow]));
-                              //printf("Row %d difference %g scaled diff %g => %g\n",iRow,difference,
-                              // scaledDifference,difference*rowScale[iRow]);
-                         }
-                    }
-               }
-               // final pass to scale columns so largest is reasonable
-               // See what smallest will be if largest is 1.0
-               overallSmallest = 1.0e50;
-               for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                    if (usefulColumn[iColumn]) {
-                         CoinBigIndex j;
-                         largest = 1.0e-20;
-                         smallest = 1.0e50;
-                         for (j = columnStart[iColumn];
-                                   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-                              iRow = row[j];
-                              if(elementByColumn[j] && usefulRow[iRow]) {
-                                   double value = fabs(elementByColumn[j] * rowScale[iRow]);
-                                   largest = std::max(largest, value);
-                                   smallest = std::min(smallest, value);
-                              }
-                         }
-                         if (overallSmallest * largest > smallest)
-                              overallSmallest = smallest / largest;
-                    }
-               }
-               if (scalingMethod == 1 || scalingMethod == 2) {
-                    finished = true;
-               } else if (savedOverallRatio == 0.0 && scalingMethod != 4) {
-                    savedOverallRatio = overallSmallest;
-                    scalingMethod = 4;
-               } else {
-                    assert (scalingMethod == 4);
-                    if (overallSmallest > 2.0 * savedOverallRatio) {
-                         finished = true; // geometric was better
-                         if (model->scalingFlag() == 4) {
-                              // If in Branch and bound change
-                              if ((model->specialOptions() & 1024) != 0) {
-                                   model->scaling(2);
-                              }
-                         }
-                    } else {
-                         scalingMethod = 1; // redo equilibrium
-                         if (model->scalingFlag() == 4) {
-                              // If in Branch and bound change
-                              if ((model->specialOptions() & 1024) != 0) {
-                                   model->scaling(1);
-                              }
-                         }
-                    }
-#if 0
-                    if (extraDetails) {
-                         if (finished)
-                              printf("equilibrium ratio %g, geometric ratio %g , geo chosen\n",
-                                     savedOverallRatio, overallSmallest);
-                         else
-                              printf("equilibrium ratio %g, geometric ratio %g , equi chosen\n",
-                                     savedOverallRatio, overallSmallest);
-                    }
-#endif
-               }
-          }
-          //#define RANDOMIZE
-#ifdef RANDOMIZE
-          // randomize by up to 10%
-          for (iRow = 0; iRow < numberRows; iRow++) {
-               double value = 0.5 - randomNumberGenerator_.randomDouble(); //between -0.5 to + 0.5
-               rowScale[iRow] *= (1.0 + 0.1 * value);
-          }
-#endif
-          overallLargest = 1.0;
-          if (overallSmallest < 1.0e-1)
-               overallLargest = 1.0 / sqrt(overallSmallest);
-          overallLargest = std::min(100.0, overallLargest);
-          overallSmallest = 1.0e50;
-          //printf("scaling %d\n",model->scalingFlag());
-          for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-               if (columnUpper[iColumn] >
-                         columnLower[iColumn] + 1.0e-12) {
-                    //if (usefulColumn[iColumn]) {
-                    CoinBigIndex j;
-                    largest = 1.0e-20;
-                    smallest = 1.0e50;
-                    for (j = columnStart[iColumn];
-                              j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-                         iRow = row[j];
-                         if(elementByColumn[j] && usefulRow[iRow]) {
-                              double value = fabs(elementByColumn[j] * rowScale[iRow]);
-                              largest = std::max(largest, value);
-                              smallest = std::min(smallest, value);
-                         }
-                    }
-                    columnScale[iColumn] = overallLargest / largest;
-                    //columnScale[iColumn]=std::max(1.0e-10,std::min(1.0e10,columnScale[iColumn]));
-#ifdef RANDOMIZE
-                    double value = 0.5 - randomNumberGenerator_.randomDouble(); //between -0.5 to + 0.5
-                    columnScale[iColumn] *= (1.0 + 0.1 * value);
-#endif
-                    double difference = columnUpper[iColumn] - columnLower[iColumn];
-                    if (difference < 1.0e-5 * columnScale[iColumn]) {
-                         // make gap larger
-                         columnScale[iColumn] = difference / 1.0e-5;
-                         //printf("Column %d difference %g scaled diff %g => %g\n",iColumn,difference,
-                         // scaledDifference,difference*columnScale[iColumn]);
-                    }
-                    double value = smallest * columnScale[iColumn];
-                    if (overallSmallest > value)
-                         overallSmallest = value;
-                    //overallSmallest = std::min(overallSmallest,smallest*columnScale[iColumn]);
-               }
-          }
-          model->messageHandler()->message(CLP_PACKEDSCALE_FINAL, *model->messagesPointer())
-                    << overallSmallest
-                    << overallLargest
-                    << CoinMessageEol;
-          if (overallSmallest < 1.0e-13) {
-               // Change factorization zero tolerance
-               double newTolerance = std::max(1.0e-15 * (overallSmallest / 1.0e-13),
-                                             1.0e-18);
-               ClpSimplex * simplex = static_cast<ClpSimplex *> (model);
-               if (simplex->factorization()->zeroTolerance() > newTolerance)
-                    simplex->factorization()->zeroTolerance(newTolerance);
-               newTolerance = std::max(overallSmallest * 0.5, 1.0e-18);
-               simplex->setZeroTolerance(newTolerance);
-          }
-          delete [] usefulRow;
-          delete [] usefulColumn;
-#ifndef SLIM_CLP
-          // If quadratic then make symmetric
-          ClpObjective * obj = model->objectiveAsObject();
-#ifndef NO_RTTI
-          ClpQuadraticObjective * quadraticObj = (dynamic_cast< ClpQuadraticObjective*>(obj));
-#else
-          ClpQuadraticObjective * quadraticObj = NULL;
-          if (obj->type() == 2)
-               quadraticObj = (static_cast< ClpQuadraticObjective*>(obj));
-#endif
-          if (quadraticObj) {
-               if (!rowCopyBase) {
-                    // temporary copy
-                    rowCopyBase = reverseOrderedCopy();
-               }
-#ifndef NDEBUG
-               ClpPackedMatrix* rowCopy =
-                    dynamic_cast< ClpPackedMatrix*>(rowCopyBase);
-               // Make sure it is really a ClpPackedMatrix
-               assert (rowCopy != NULL);
-#else
-               ClpPackedMatrix* rowCopy =
-                    static_cast< ClpPackedMatrix*>(rowCopyBase);
-#endif
-               const int * column = rowCopy->getIndices();
-               const CoinBigIndex * rowStart = rowCopy->getVectorStarts();
-               CoinPackedMatrix * quadratic = quadraticObj->quadraticObjective();
-               int numberXColumns = quadratic->getNumCols();
-               if (numberXColumns < numberColumns) {
-                    // we assume symmetric
-                    int numberQuadraticColumns = 0;
-                    int i;
-                    //const int * columnQuadratic = quadratic->getIndices();
-                    //const int * columnQuadraticStart = quadratic->getVectorStarts();
-                    const int * columnQuadraticLength = quadratic->getVectorLengths();
-                    for (i = 0; i < numberXColumns; i++) {
-                         int length = columnQuadraticLength[i];
-#ifndef CORRECT_COLUMN_COUNTS
-                         length = 1;
-#endif
-                         if (length)
-                              numberQuadraticColumns++;
-                    }
-                    int numberXRows = numberRows - numberQuadraticColumns;
-                    numberQuadraticColumns = 0;
-                    for (i = 0; i < numberXColumns; i++) {
-                         int length = columnQuadraticLength[i];
-#ifndef CORRECT_COLUMN_COUNTS
-                         length = 1;
-#endif
-                         if (length) {
-                              rowScale[numberQuadraticColumns+numberXRows] = columnScale[i];
-                              numberQuadraticColumns++;
-                         }
-                    }
-                    int numberQuadraticRows = 0;
-                    for (i = 0; i < numberXRows; i++) {
-                         // See if any in row quadratic
-                         CoinBigIndex j;
-                         int numberQ = 0;
-                         for (j = rowStart[i]; j < rowStart[i+1]; j++) {
-                              int iColumn = column[j];
-                              if (columnQuadraticLength[iColumn])
-                                   numberQ++;
-                         }
-#ifndef CORRECT_ROW_COUNTS
-                         numberQ = 1;
-#endif
-                         if (numberQ) {
-                              columnScale[numberQuadraticRows+numberXColumns] = rowScale[i];
-                              numberQuadraticRows++;
-                         }
-                    }
-                    // and make sure Sj okay
-                    for (iColumn = numberQuadraticRows + numberXColumns; iColumn < numberColumns; iColumn++) {
-                         CoinBigIndex j = columnStart[iColumn];
-                         assert(columnLength[iColumn] == 1);
-                         int iRow = row[j];
-                         double value = fabs(elementByColumn[j] * rowScale[iRow]);
-                         columnScale[iColumn] = 1.0 / value;
-                    }
-               }
-          }
-#endif
-          // make copy (could do faster by using previous values)
-          // could just do partial
-          for (iRow = 0; iRow < numberRows; iRow++)
-               inverseRowScale[iRow] = 1.0 / rowScale[iRow] ;
-          for (iColumn = 0; iColumn < numberColumns; iColumn++)
-               inverseColumnScale[iColumn] = 1.0 / columnScale[iColumn] ;
-          if (!arraysExist) {
-               model->setRowScale(rowScale);
-               model->setColumnScale(columnScale);
-          }
-          if (model->rowCopy()) {
-               // need to replace row by row
-               ClpPackedMatrix* rowCopy =
-                    static_cast< ClpPackedMatrix*>(model->rowCopy());
-               double *COIN_RESTRICT  element = rowCopy->getMutableElements();
-               const int * column = rowCopy->getIndices();
-               const CoinBigIndex * rowStart = rowCopy->getVectorStarts();
-               // scale row copy
-               for (iRow = 0; iRow < numberRows; iRow++) {
-                    CoinBigIndex j;
-                    double scale = rowScale[iRow];
-                    double *COIN_RESTRICT  elementsInThisRow = element + rowStart[iRow];
-                    const int * columnsInThisRow = column + rowStart[iRow];
-                    int number = rowStart[iRow+1] - rowStart[iRow];
-                    assert (number <= numberColumns);
-                    for (j = 0; j < number; j++) {
-                         int iColumn = columnsInThisRow[j];
-                         elementsInThisRow[j] *= scale * columnScale[iColumn];
-                    }
-               }
-               if ((model->specialOptions() & 262144) != 0) {
-                    //if ((model->specialOptions()&(COIN_CBC_USING_CLP|16384))!=0) {
-                    //if (model->inCbcBranchAndBound()&&false) {
-                    // copy without gaps
-                    CoinPackedMatrix * scaledMatrix = new CoinPackedMatrix(*matrix_, 0, 0);
-                    ClpPackedMatrix * scaled = new ClpPackedMatrix(scaledMatrix);
-                    model->setClpScaledMatrix(scaled);
-                    // get matrix data pointers
-                    const int * row = scaledMatrix->getIndices();
-                    const CoinBigIndex * columnStart = scaledMatrix->getVectorStarts();
-#ifndef NDEBUG
-                    const int * columnLength = scaledMatrix->getVectorLengths();
-#endif
-                    double *COIN_RESTRICT  elementByColumn = scaledMatrix->getMutableElements();
-                    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                         CoinBigIndex j;
-                         double scale = columnScale[iColumn];
-                         assert (columnStart[iColumn+1] == columnStart[iColumn] + columnLength[iColumn]);
-                         for (j = columnStart[iColumn];
-                                   j < columnStart[iColumn+1]; j++) {
-                              int iRow = row[j];
-                              elementByColumn[j] *= scale * rowScale[iRow];
-                         }
-                    }
-               } else {
-                    //printf("not in b&b\n");
-               }
-          } else {
-               // no row copy
-               delete rowCopyBase;
-          }
-          return 0;
-     }
-}
-#endif
 // #define SQRT_ARRAY
 #ifdef SQRT_ARRAY
 static void doSqrts(double *array, int n)
@@ -3456,16 +2730,6 @@ int ClpPackedMatrix::scale(ClpModel *model, ClpSimplex *simplex) const
 {
   // const ClpSimplex * baseModel=NULL;
   // return scale2(model);
-#if 0
-     ClpMatrixBase * rowClone = NULL;
-     if (model->rowCopy())
-          rowClone = model->rowCopy()->clone();
-     assert (!model->rowScale());
-     assert (!model->columnScale());
-     int returnCode = scale2(model);
-     if (returnCode)
-          return returnCode;
-#endif
 #ifndef NDEBUG
   // checkFlags();
 #endif
@@ -3478,14 +2742,6 @@ int ClpPackedMatrix::scale(ClpModel *model, ClpSimplex *simplex) const
     model->setColumnScale(NULL);
     return 1;
   }
-#if 0
-     // start fake
-     double * rowScale2 = CoinCopyOfArray(model->rowScale(), numberRows);
-     double * columnScale2 = CoinCopyOfArray(model->columnScale(), numberColumns);
-     model->setRowScale(NULL);
-     model->setColumnScale(NULL);
-     model->setNewRowCopy(rowClone);
-#endif
   ClpMatrixBase *rowCopyBase = model->rowCopy();
   double *COIN_RESTRICT rowScale;
   double *COIN_RESTRICT columnScale;
@@ -3655,15 +2911,6 @@ int ClpPackedMatrix::scale(ClpModel *model, ClpSimplex *simplex) const
     bool finished = false;
     // if scalingMethod 3 then may change
     bool extraDetails = (model->logLevel() > 2);
-#if 0
-	  for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-	    if (columnUpper[iColumn] >
-		columnLower[iColumn] + 1.0e-12 && columnLength[iColumn])
-	      assert(usefulColumn[iColumn]!=0);
-	    else
-	      assert(usefulColumn[iColumn]==0);
-	  }
-#endif
     while (!finished) {
       int numberPass = 3;
       overallLargest = -1.0e-20;
@@ -3848,16 +3095,6 @@ int ClpPackedMatrix::scale(ClpModel *model, ClpSimplex *simplex) const
             }
           }
         }
-#if 0
-                    if (extraDetails) {
-                         if (finished)
-                              printf("equilibrium ratio %g, geometric ratio %g , geo chosen\n",
-                                     savedOverallRatio, overallSmallest);
-                         else
-                              printf("equilibrium ratio %g, geometric ratio %g , equi chosen\n",
-                                     savedOverallRatio, overallSmallest);
-                    }
-#endif
       }
     }
     // #define RANDOMIZE
@@ -3923,18 +3160,6 @@ int ClpPackedMatrix::scale(ClpModel *model, ClpSimplex *simplex) const
       << overallSmallest
       << overallLargest
       << CoinMessageEol;
-#if 0
-          {
-               for (iRow = 0; iRow < numberRows; iRow++) {
-                    assert (rowScale[iRow] == rowScale2[iRow]);
-               }
-               delete [] rowScale2;
-               for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-                    assert (columnScale[iColumn] == columnScale2[iColumn]);
-               }
-               delete [] columnScale2;
-          }
-#endif
     if (overallSmallest < 1.0e-13) {
       // Change factorization zero tolerance
       double newTolerance = std::max(1.0e-15 * (overallSmallest / 1.0e-13),
@@ -4300,13 +3525,9 @@ bool ClpPackedMatrix::allElementsInRange(ClpModel *model,
   if (check == 14 || check == 10) {
     if (matrix_->getNumElements() < columnStart[numberColumns]) {
       // pack down!
-#if 0
-               matrix_->removeGaps();
-#else
       checkGaps();
 #ifdef DO_CHECK_FLAGS
       checkFlags(0);
-#endif
 #endif
 #ifdef COIN_DEVELOP
       // printf("flags set to 2\n");
@@ -4856,24 +4077,6 @@ void ClpPackedMatrix::clearCopies()
 int ClpPackedMatrix::refresh(ClpSimplex *)
 {
   numberActiveColumns_ = matrix_->getNumCols();
-#if 0
-     ClpMatrixBase * rowCopyBase = reverseOrderedCopy();
-     ClpPackedMatrix* rowCopy =
-          dynamic_cast< ClpPackedMatrix*>(rowCopyBase);
-     // Make sure it is really a ClpPackedMatrix
-     assert (rowCopy != NULL);
-
-     const int * column = rowCopy->matrix_->getIndices();
-     const CoinBigIndex * rowStart = rowCopy->matrix_->getVectorStarts();
-     const int * rowLength = rowCopy->matrix_->getVectorLengths();
-     const double * element = rowCopy->matrix_->getElements();
-     int numberRows = rowCopy->matrix_->getNumRows();
-     for (int i = 0; i < numberRows; i++) {
-          if (!rowLength[i])
-               printf("zero row %d\n", i);
-     }
-     delete rowCopy;
-#endif
   checkGaps();
 #ifdef DO_CHECK_FLAGS
   checkFlags(0);
@@ -5094,21 +4297,6 @@ void ClpPackedMatrix::specialColumnCopy(ClpSimplex *model)
     if (pricing && pricing->mode() > 1)
       pricing->setMode(0);
   }
-#if 0 // seems better to decide using number elements
-#define COPY_ROWS 100
-#define COPY_COLS 500
-  if ((flags_ & 16) != 0 && model->numberRows() > COPY_ROWS && model->numberColumns() > COPY_COLS) {
-    columnCopy_ = new ClpPackedMatrix3(model, matrix_);
-    flags_ |= 8;
-  } else {
-    columnCopy_ = NULL;
-  }
-  if ((flags_ & 16) != 0) {
-    inFlags++;
-    if(model->numberRows() > COPY_ROWS && model->numberColumns() > COPY_COLS)
-      inDone++;
-  }
-#else
 #define PACK_COPY_ELEMENTS 10000
   if ((flags_ & 16) != 0 && getNumElements() > PACK_COPY_ELEMENTS) {
     columnCopy_ = new ClpPackedMatrix3(model, matrix_);
@@ -5116,7 +4304,6 @@ void ClpPackedMatrix::specialColumnCopy(ClpSimplex *model)
   } else {
     columnCopy_ = NULL;
   }
-#endif
 }
 // Say we don't want special column copy
 void ClpPackedMatrix::releaseSpecialColumnCopy()
@@ -5230,54 +4417,7 @@ ClpPackedMatrix2::ClpPackedMatrix2(ClpSimplex *, const CoinPackedMatrix *rowCopy
   int chunk = 32768; // tune
   // chunk=100;
   //  tune
-#if 0
-     int chunkY[7] = {1024, 2048, 4096, 8192, 16384, 32768, 65535};
-     int its = model->maximumIterations();
-     if (its >= 1000000 && its < 1000999) {
-          its -= 1000000;
-          its = its / 10;
-          if (its >= 7) abort();
-          chunk = chunkY[its];
-          printf("chunk size %d\n", chunk);
-#define cpuid(func, ax, bx, cx, dx)          \
-  __asm__ __volatile__("cpuid"               \
-    : "=a"(ax), "=b"(bx), "=c"(cx), "=d"(dx) \
-    : "a"(func));
-          unsigned int a, b, c, d;
-          int func = 0;
-          cpuid(func, a, b, c, d);
-          {
-               int i;
-               unsigned int value;
-               value = b;
-               for (i = 0; i < 4; i++) {
-                    printf("%c", (value & 0xff));
-                    value = value >> 8;
-               }
-               value = d;
-               for (i = 0; i < 4; i++) {
-                    printf("%c", (value & 0xff));
-                    value = value >> 8;
-               }
-               value = c;
-               for (i = 0; i < 4; i++) {
-                    printf("%c", (value & 0xff));
-                    value = value >> 8;
-               }
-               printf("\n");
-               int maxfunc = a;
-               if (maxfunc > 10) {
-                    printf("not intel?\n");
-                    abort();
-               }
-               for (func = 1; func <= maxfunc; func++) {
-                    cpuid(func, a, b, c, d);
-                    printf("func %d, %x %x %x %x\n", func, a, b, c, d);
-               }
-          }
-#else
   if (numberColumns > 10000 || chunk == 100) {
-#endif
   } else {
     // printf("no chunk\n");
     return;
@@ -6687,70 +5827,6 @@ ClpPackedMatrix3::operator=(const ClpPackedMatrix3 &rhs)
 void ClpPackedMatrix3::sortBlocks(const ClpSimplex *model)
 {
   ifActive_ = 1;
-#if 0 // def FEWER_ONES
-  for (int iBlock = 0; iBlock < numberBlocks_; iBlock++) {
-    blockStruct *block = block_ + iBlock;
-    int numberInBlock = block->numberInBlock_;
-    int nel = block->numberElements_;
-    int nelOther = nel;
-    int numberOnes = block->numberOnes_;
-#ifndef FEWER_ONES
-    numberOnes=0;
-#endif
-    nelOther -= numberOnes;
-    int *COIN_RESTRICT row = row_ + block->startRows_;
-    double *COIN_RESTRICT element = element_ + block->startElements_;
-    int *COIN_RESTRICT column = column_ + block->startIndices_;
-#define PRINT_ONE 382
-#if PRINT_ONE == 0
-    printf("Block %d - %d elements (%d ones) - %d columns\n",
-	   iBlock,nel,numberOnes,numberInBlock);
-#endif
-    for (int kColumn = 0; kColumn < numberInBlock; kColumn += COIN_AVX2) {
-      int *COIN_RESTRICT rowX = row+nel*kColumn;
-      double *COIN_RESTRICT  elementX = element+nelOther*kColumn;
-      for (int k=0;k<COIN_AVX2;k++) {
-	int kRow = k;
-	int kEl = k;
-#if PRINT_ONE
-	int kCol = column[kColumn+k];
-	if (kCol==PRINT_ONE)
-	  printf("Column %d",column[kColumn+k]);
-#else
-	printf("Column %d",column[kColumn+k]);
-#endif
-	for (int j = 0; j < numberOnes; j++) {
-#if PRINT_ONE
-	  if (kCol==PRINT_ONE)
-	    printf(" (%d,1.0)",rowX[kRow]);
-#else
-	  printf(" (%d,1.0)",rowX[kRow]);
-#endif
-	  kRow += COIN_AVX2;
-	}
-	for (int j = 0; j < nelOther; j++) {
-#if PRINT_ONE
-	  if (kCol==PRINT_ONE)
-	    printf(" (%d,%g)",rowX[kRow],elementX[kEl]);
-#else
-	  printf(" (%d,%g)",rowX[kRow],elementX[kEl]);
-#endif
-	  kRow += COIN_AVX2;
-	  kEl += COIN_AVX2;
-	}
-#if PRINT_ONE
-	if (kCol==PRINT_ONE)
-	  printf("\n");
-#else
-	printf("\n");
-#endif
-      }
-    }
-  }
-#if PRINT_ONE == 0
-  exit(0);
-#endif
-#endif
   int *COIN_RESTRICT lookup = column_ + numberColumnsWithGaps_;
   for (int iBlock = 0; iBlock < numberBlocks_ + 1; iBlock++) {
     blockStruct *block = block_ + iBlock;
@@ -7133,14 +6209,6 @@ void ClpPackedMatrix3::swapOne(const ClpSimplex *model, const ClpPackedMatrix *m
     }
     // find block
     iBlock = lookup[iColumn] >> BLOCK_SHIFT;
-#if 0
-    int jBlock = numberBlocks_ - 1;
-    while (block_[jBlock].numberElements_ != n)
-      jBlock--;
-    while (column_[block_[jBlock].startIndices_+kA] != iColumn)
-      jBlock--;
-    assert (iBlock==jBlock);
-#endif
   }
   blockStruct *block = block_ + iBlock;
 #ifndef NDEBUG
@@ -7788,22 +6856,6 @@ void ClpPackedMatrix3::transposeTimes(const ClpSimplex *model,
     numberPrice -= roundDown(numberPrice);
 #if defined(HASWELL) || defined(SKYLAKE)
     double *COIN_RESTRICT newValues = roundUpDouble((array + numberNonZero));
-#if 0
-    for (int jBlock = 0; jBlock < nBlock; jBlock++) {
-      _setzero(arrayX);
-      for (int j = 0; j < nel; j++) {
-	_loadi(rows,row);
-	_loadd(elements,element);
-	_gather(pis,pi,rows);
-	_fmadd(arrayX,pis,elements);
-        row += COIN_AVX2;
-        element += COIN_AVX2;
-      }
-      _store(newValues,arrayX);
-      newValues += COIN_AVX2;
-      assert(row == row_ + block->startRows_ + nel * COIN_AVX2 * (jBlock + 1));
-    }
-#else
     if (!numberOnes) {
       int ntwos = nel >> 1;
       if ((nel & 1) == 0) {
@@ -8039,7 +7091,6 @@ void ClpPackedMatrix3::transposeTimes(const ClpSimplex *model,
         }
       }
     }
-#endif
 #else
     double *COIN_RESTRICT newValues = array + numberNonZero;
     for (int jBlock = 0; jBlock < nBlock; jBlock++) {
@@ -9225,363 +8276,4 @@ void ClpPackedMatrix::transposeTimes(CoinWorkDouble scalar,
 #endif
 #ifdef CLP_ALL_ONE_FILE
 #undef reference
-#endif
-#if 0
-#undef ABCSTATE_LITE
-int
-ClpSimplexDual::dualColumn0(const CoinIndexedVector * rowArray,
-                            const CoinIndexedVector * columnArray,
-                            CoinIndexedVector * spareArray,
-                            double acceptablePivot,
-                            double & upperReturn, double &bestReturn, double & badFree)
-{
-     // do first pass to get possibles
-     double *COIN_RESTRICT  spare = spareArray->denseVector();
-     int *COIN_RESTRICT  index = spareArray->getIndices();
-     const double * work;
-     int number;
-     const int * which;
-     const double * reducedCost;
-     // We can also see if infeasible or pivoting on free
-     double tentativeTheta = 1.0e15;
-     double upperTheta = 1.0e31;
-     double freePivot = acceptablePivot;
-     double bestPossible = 0.0;
-     int numberRemaining = 0;
-     int i;
-     badFree = 0.0;
-     if ((moreSpecialOptions_ & 8) != 0) {
-          // No free or super basic
-       // bestPossible will re recomputed if necessary
-       bestPossible=1.0;
-       //#define COIN_AVX7
-#ifndef COIN_AVX2
-          double multiplier[] = { -1.0, 1.0};
-#else
-	  double multiplier[4]={0.0,0.0,-1.0,1.0};
-#endif
-          double dualT = - dualTolerance_;
-	  int nSections=2;
-          for (int iSection = 0; iSection < nSections; iSection++) {
-
-               int addSequence;
-               unsigned char * statusArray;
-               if (!iSection) {
-                    work = rowArray->denseVector();
-                    number = rowArray->getNumElements();
-                    which = rowArray->getIndices();
-                    reducedCost = rowReducedCost_;
-                    addSequence = numberColumns_;
-                    statusArray = status_ + numberColumns_;
-               } else {
-                    work = columnArray->denseVector();
-                    number = columnArray->getNumElements();
-                    which = columnArray->getIndices();
-                    reducedCost = reducedCostWork_;
-                    addSequence = 0;
-                    statusArray = status_;
-               }
-#ifndef COIN_AVX2
-               for (i = 0; i < number; i++) {
-                    int iSequence = which[i];
-                    double alpha;
-                    double oldValue;
-                    double value;
-
-                    assert (getStatus(iSequence + addSequence) != isFree
-                            && getStatus(iSequence + addSequence) != superBasic);
-                    int iStatus = (statusArray[iSequence] & 3) - 1;
-                    if (iStatus > 0) {
-                         double mult = multiplier[iStatus-1];
-                         alpha = work[i] * mult;
-                         if (alpha > 0.0) {
-                              oldValue = reducedCost[iSequence] * mult;
-                              value = oldValue - tentativeTheta * alpha;
-                              if (value < dualT) {
-                                   value = oldValue - upperTheta * alpha;
-                                   if (value < dualT && alpha >= acceptablePivot) {
-                                        upperTheta = (oldValue - dualT) / alpha;
-                                        //tentativeTheta = std::min(2.0*upperTheta,tentativeTheta);
-                                   }
-                                   // add to list
-                                   spare[numberRemaining] = alpha * mult;
-                                   index[numberRemaining++] = iSequence + addSequence;
-                              }
-                         }
-                    }
-               }
-	       //
-#else
-	       //#define COIN_AVX2 4 // temp
-#if COIN_AVX2 == 1
-#define COIN_AVX2_SHIFT 0
-#elif COIN_AVX2 == 2
-#define COIN_AVX2_SHIFT 1
-#elif COIN_AVX2 == 4
-#define COIN_AVX2_SHIFT 2
-#elif COIN_AVX2 == 8
-#define COIN_AVX2_SHIFT 3
-#else
-  error;
-#endif
-  //#define COIN_ALIGN 8*COIN_AVX2 // later
-  //#define COIN_ALIGN_DOUBLE COIN_AVX2
-#define CHECK_CHUNK 4
-	       // round up
-	       int *COIN_RESTRICT  whichX = const_cast<int *>(which);
-	       int nBlocks = (number+CHECK_CHUNK-1)/CHECK_CHUNK;
-	       int n=nBlocks*CHECK_CHUNK+1;
-	       for (int i=number;i<n;i++)
-		 whichX[i]=0; // alpha will be zero so not chosen
-	       bool acceptableX[CHECK_CHUNK+1];
-	       double oldValueX[CHECK_CHUNK+1];
-	       double newValueX[CHECK_CHUNK+1];
-	       double alphaX[CHECK_CHUNK+1];
-	       newValueX[CHECK_CHUNK]=0.0;
-#define USE_USE_AVX
-	       //#define CHECK_H 1
-#ifdef USE_USE_AVX
-#define NEED_AVX
-#elif CHECK_H
-#define NEED_AVX
-#endif
-#ifdef NEED_AVX
-	       double mult2[CHECK_CHUNK];
-	       CoinInt64 acceptableY[CHECK_CHUNK];
-	       CoinInt64 goodDj[CHECK_CHUNK];
-	       double oldValueY[CHECK_CHUNK];
-	       double alphaY[CHECK_CHUNK+1];
-	       memset(acceptableY,0,sizeof(acceptableY));
-	       memset(goodDj,0,sizeof(goodDj));
-	       memset(oldValueY,0,sizeof(oldValueY));
-	       memset(alphaY,0,sizeof(alphaY));
-	       __m256d tentative2 = _mm256_set1_pd(-tentativeTheta);
-	       __m256d dualT2 = _mm256_set1_pd(dualT);
-	       __m256d acceptable2 = _mm256_set1_pd(acceptablePivot);
-#endif
-	       for (int iBlock=0;iBlock<nBlocks;iBlock++) {
-		 bool store=false;
-		 double alpha=0.0;
-		 double oldValue=0.0;
-		 double newValue=0.0;
-		 double trueAlpha=0.0;
-		 int jSequence=0;
-#ifndef USE_USE_AVX
-		 for (int i = 0; i < CHECK_CHUNK+1; i++) {
-		   int iSequence = which[i];
-		   int iStatus = (statusArray[iSequence] & 3);
-		   double mult = multiplier[iStatus];
-		   double newAlpha = work[i]*mult;
-		   double oldDj = reducedCost[iSequence]*mult;
-		   newValue = (oldDj - tentativeTheta * newAlpha)-dualT;
-		   acceptableX[i]=newAlpha>= acceptablePivot;
-		   oldValueX[i]=oldDj;
-		   newValueX[i]=newValue;
-		   alphaX[i]=newAlpha;
-		 }
-#endif
-#ifdef NEED_AVX
-		 __m128i columns = _mm_load_si128(reinterpret_cast<const __m128i *>(which));
-		 // what do we get - this must be wrong
-		 // probably only 1 and 2 - can we be clever
-		 // fix
-		 //__m128i status; // = _mm256_i32gather_ps(statusArray,columns,1);
-		 //status.m128i_i32[0]=statusArray[columns.m128i_i32[0]];
-		 for (int i=0;i<CHECK_CHUNK;i++) {
-		   int iSequence = which[i];
-		   int iStatus = (statusArray[iSequence] & 3);
-		   mult2[i] = multiplier[iStatus];
-		 }
-		 //__m256d newAlpha2 = _mm256_i32gather_pd(multiplier,status,1); // mult here
-		 __m256d newAlpha2 = _mm256_load_pd(mult2);
-		 __m256d oldDj = _mm256_i32gather_pd(reducedCost,columns,8);
-		 oldDj=_mm256_mul_pd(oldDj,newAlpha2); // remember newAlpha==mult
-		 _mm256_store_pd(oldValueY,oldDj); // redo later
-		 __m256d work2 = _mm256_load_pd(work);
-		 newAlpha2=_mm256_mul_pd(newAlpha2,work2); // now really newAlpha
-		 //__m256d newValue2 = _mm256_fmadd_pd(tentative2,newAlpha2,oldDj);
-		 oldDj=_mm256_fmadd_pd(newAlpha2,tentative2,oldDj);
-		 __v4df bitsDj=_mm256_cmp_pd(oldDj,dualT2,_CMP_LT_OS);
-		 __v4df bitsAcceptable = _mm256_cmp_pd(newAlpha2,acceptable2,_CMP_GE_OS);
-		 _mm256_store_pd(reinterpret_cast<double *>(goodDj),bitsDj);
-		 _mm256_store_pd(reinterpret_cast<double *>(acceptableY),bitsAcceptable);
-		 _mm256_store_pd(alphaY,newAlpha2);
-#ifndef USE_USE_AVX
-#undef NDEBUG
-		 for (int i = 0; i < CHECK_CHUNK; i++) {
-		   assert(newValueX[i]>0.0==(goodDj[i]));
-		   //assert(acceptableX[i]==(acceptableY[i]));
-		   assert(oldValueX[i]==oldValueY[i]);
-		   assert(alphaX[i]==alphaY[i]);
-		 }
-		 for (int i = 0; i < CHECK_CHUNK; i++) {
-		   bool g1=newValueX[i]<0.0;
-		   bool g2=goodDj[i]!=0;
-		   if(g1!=g2)abort();
-		   //if(acceptableX[i]!=(acceptableY[i]))abort();
-		   if(fabs(oldValueX[i]-oldValueY[i])>1.0e-5+
-		      +(1.0e-10*fabs(oldValueX[i])))abort();
-		   if(alphaX[i]!=alphaY[i])abort();
-		 }
-#endif
-#endif
-		 for (int i = 0; i < CHECK_CHUNK+1; i++) {
-#ifndef USE_USE_AVX
-		   double newValue=newValueX[i];
-		   bool newStore = newValue < 0.0;
-		   if (store) {
-		     // add to list
-		     bool acceptable = acceptableX[i-1];
-		     spare[numberRemaining] = work[i-1];
-		     index[numberRemaining++] = which[i-1] + addSequence;
-		     double value = oldValueX[i-1] - upperTheta * alphaX[i-1];
-		     if (value < dualT && acceptable) {
-		       upperTheta = (oldValueX[i-1] - dualT) / alphaX[i-1];
-		     }
-		   }
-#else
-		   bool newStore = goodDj[i]!=0;
-		   if (store) {
-		     // add to list
-		     bool acceptable = acceptableY[i-1];
-		     spare[numberRemaining] = work[i-1];
-		     index[numberRemaining++] = which[i-1] + addSequence;
-		     double value = oldValueY[i-1] - upperTheta * alphaY[i-1];
-		     if (value < dualT && acceptable) {
-		       upperTheta = (oldValueY[i-1] - dualT) / alphaY[i-1];
-		     }
-		   }
-#endif
-		   store=newStore;
-		 }
-		 which += CHECK_CHUNK;
-		 work += CHECK_CHUNK;
-	       }
-#endif
-          }
-     } else {
-          // some free or super basic
-          for (int iSection = 0; iSection < 2; iSection++) {
-
-               int addSequence;
-
-               if (!iSection) {
-                    work = rowArray->denseVector();
-                    number = rowArray->getNumElements();
-                    which = rowArray->getIndices();
-                    reducedCost = rowReducedCost_;
-                    addSequence = numberColumns_;
-               } else {
-                    work = columnArray->denseVector();
-                    number = columnArray->getNumElements();
-                    which = columnArray->getIndices();
-                    reducedCost = reducedCostWork_;
-                    addSequence = 0;
-               }
-
-               for (i = 0; i < number; i++) {
-                    int iSequence = which[i];
-                    double alpha;
-                    double oldValue;
-                    double value;
-                    bool keep;
-
-                    switch(getStatus(iSequence + addSequence)) {
-
-                    case basic:
-                    case ClpSimplex::isFixed:
-                         break;
-                    case isFree:
-                    case superBasic:
-                         alpha = work[i];
-                         bestPossible = std::max(bestPossible, fabs(alpha));
-                         oldValue = reducedCost[iSequence];
-                         // If free has to be very large - should come in via dualRow
-                         //if (getStatus(iSequence+addSequence)==isFree&&fabs(alpha)<1.0e-3)
-                         //break;
-                         if (oldValue > dualTolerance_) {
-                              keep = true;
-                         } else if (oldValue < -dualTolerance_) {
-                              keep = true;
-                         } else {
-                              if (fabs(alpha) > std::max(10.0 * acceptablePivot, 1.0e-5)) {
-                                   keep = true;
-                              } else {
-                                   keep = false;
-                                   badFree = std::max(badFree, fabs(alpha));
-                              }
-                         }
-                         if (keep) {
-                              // free - choose largest
-                              if (fabs(alpha) > freePivot) {
-                                   freePivot = fabs(alpha);
-                                   sequenceIn_ = iSequence + addSequence;
-                                   theta_ = oldValue / alpha;
-                                   alpha_ = alpha;
-                              }
-			      // give fake bounds if possible
-			      int jSequence=iSequence+addSequence;
-			      if (2.0*fabs(solution_[jSequence])<
-				  dualBound_) {
-				FakeBound bound = getFakeBound(jSequence);
-				assert (bound == ClpSimplexDual::noFake);
-				setFakeBound(jSequence,ClpSimplexDual::bothFake);
-				numberFake_++;
-				value = oldValue - tentativeTheta * alpha;
-				if (value > dualTolerance_) {
-				  // pretend coming in from upper bound
-				  upper_[jSequence] = solution_[jSequence];
-				  lower_[jSequence] = upper_[jSequence] - dualBound_;
-				  setColumnStatus(jSequence,ClpSimplex::atUpperBound);
-				} else {
-				  // pretend coming in from lower bound
-				  lower_[jSequence] = solution_[jSequence];
-				  upper_[jSequence] = lower_[jSequence] + dualBound_;
-				  setColumnStatus(jSequence,ClpSimplex::atLowerBound);
-				}
-			      }
-                         }
-                         break;
-                    case atUpperBound:
-                         alpha = work[i];
-                         oldValue = reducedCost[iSequence];
-                         value = oldValue - tentativeTheta * alpha;
-                         //assert (oldValue<=dualTolerance_*1.0001);
-                         if (value > dualTolerance_) {
-                              bestPossible = std::max(bestPossible, -alpha);
-                              value = oldValue - upperTheta * alpha;
-                              if (value > dualTolerance_ && -alpha >= acceptablePivot) {
-                                   upperTheta = (oldValue - dualTolerance_) / alpha;
-                                   //tentativeTheta = std::min(2.0*upperTheta,tentativeTheta);
-                              }
-                              // add to list
-                              spare[numberRemaining] = alpha;
-                              index[numberRemaining++] = iSequence + addSequence;
-                         }
-                         break;
-                    case atLowerBound:
-                         alpha = work[i];
-                         oldValue = reducedCost[iSequence];
-                         value = oldValue - tentativeTheta * alpha;
-                         //assert (oldValue>=-dualTolerance_*1.0001);
-                         if (value < -dualTolerance_) {
-                              bestPossible = std::max(bestPossible, alpha);
-                              value = oldValue - upperTheta * alpha;
-                              if (value < -dualTolerance_ && alpha >= acceptablePivot) {
-                                   upperTheta = (oldValue + dualTolerance_) / alpha;
-                                   //tentativeTheta = std::min(2.0*upperTheta,tentativeTheta);
-                              }
-                              // add to list
-                              spare[numberRemaining] = alpha;
-                              index[numberRemaining++] = iSequence + addSequence;
-                         }
-                         break;
-                    }
-               }
-          }
-     }
-     upperReturn = upperTheta;
-     bestReturn = bestPossible;
-     return numberRemaining;
-}
 #endif

@@ -2782,18 +2782,6 @@ int ClpSimplexNonlinear::primalDualCuts(char *rowsIn, int startUp, int algorithm
         }
       } else {
         // presolve
-#if 0
-	ClpSolve::SolveType method;
-	ClpSolve::PresolveType presolveType = ClpSolve::presolveOn;
-	ClpSolve solveOptions;
-	solveOptions.setPresolveType(presolveType, 5);
-	if (sumPrimalInfeasibilities_>1.0e-1)
-	  method = ClpSolve::useDual;
-	else
-	  method = ClpSolve::usePrimalorSprint;
-	solveOptions.setSolveType(method);
-	small.initialSolve(solveOptions);
-#else
 #if 1
         ClpPresolve *pinfo = new ClpPresolve();
         ClpSimplex *small2 = pinfo->presolvedModel(small, 1.0e-5);
@@ -2819,7 +2807,6 @@ int ClpSimplexNonlinear::primalDualCuts(char *rowsIn, int startUp, int algorithm
 #endif
         if (small.sumPrimalInfeasibilities() > 1.0)
           small.primal(1);
-#endif
       }
       bool dualInfeasible = (small.status() == 2);
       // move solution back
@@ -3484,31 +3471,6 @@ for (iPass = 0; iPass < numberPasses; iPass++) {
   } else {
     memset(r, 0, numberColumns * sizeof(double));
   }
-#if 0
-     for (jNon = 0; jNon < numberNonLinearColumns; jNon++) {
-          iColumn = listNonLinearColumn[jNon];
-          if (statusCheck[iColumn] == 'L' && r[iColumn] < -1.0e-4) {
-               columnLower[iColumn] = std::max(solution[iColumn],
-                                              trueLower[jNon]);
-               columnUpper[iColumn] = std::min(solution[iColumn]
-                                              + trust[jNon],
-                                              trueUpper[jNon]);
-          } else if (statusCheck[iColumn] == 'U' && r[iColumn] > 1.0e-4) {
-               columnLower[iColumn] = std::max(solution[iColumn]
-                                              - trust[jNon],
-                                              trueLower[jNon]);
-               columnUpper[iColumn] = std::min(solution[iColumn],
-                                              trueUpper[jNon]);
-          } else {
-               columnLower[iColumn] = std::max(solution[iColumn]
-                                              - trust[jNon],
-                                              trueLower[jNon]);
-               columnUpper[iColumn] = std::min(solution[iColumn]
-                                              + trust[jNon],
-                                              trueUpper[jNon]);
-          }
-     }
-#endif
   if (goodMove > 0) {
     CoinMemcpyN(solution, numberColumns, saveSolution);
     CoinMemcpyN(rowActivity_, numberRows, saveRowSolution);
@@ -3910,16 +3872,8 @@ int ClpSimplexNonlinear::primalSLP(int numberConstraints, ClpConstraint **constr
       solution[iColumn] = lower;
     else if (solution[iColumn] > upper)
       solution[iColumn] = upper;
-#if 0
-          double large = std::max(1000.0, 10.0 * fabs(solution[iColumn]));
-          if (upper > 1.0e10)
-               upper = solution[iColumn] + large;
-          if (lower < -1.0e10)
-               lower = solution[iColumn] - large;
-#else
     upper = solution[iColumn] + 0.5;
     lower = solution[iColumn] - 0.5;
-#endif
     //columnUpper[iColumn]=upper;
     trust[jNon] = 0.05 * (1.0 + upper - lower);
     trueLower[jNon] = columnLower[iColumn];
@@ -4334,12 +4288,6 @@ int ClpSimplexNonlinear::primalSLP(int numberConstraints, ClpConstraint **constr
           double drop = -dj * (columnUpper[iColumn] - solution[iColumn]);
           //double upper = std::min(trueUpper[jNon],solution[iColumn]+0.1);
           //double drop2 = -dj*(upper-solution[iColumn]);
-#if 0
-                         if (drop > 1.0e8 || drop2 > 100.0 * drop || (drop > 1.0e-2 && iPass > 100))
-                              printf("Big drop %d %g %g %g %g T %g\n",
-                                     iColumn, columnLower[iColumn], solution[iColumn],
-                                     columnUpper[iColumn], dj, trueUpper[jNon]);
-#endif
           targetDrop += drop;
           if (dj < -1.0e-1 && trust[jNon] < 1.0e-3
             && trueUpper[jNon] - solution[iColumn] > 1.0e-2) {
@@ -4351,12 +4299,6 @@ int ClpSimplexNonlinear::primalSLP(int numberConstraints, ClpConstraint **constr
           double drop = -dj * (columnLower[iColumn] - solution[iColumn]);
           //double lower = std::max(trueLower[jNon],solution[iColumn]-0.1);
           //double drop2 = -dj*(lower-solution[iColumn]);
-#if 0
-                         if (drop > 1.0e8 || drop2 > 100.0 * drop || (drop > 1.0e-2))
-                              printf("Big drop %d %g %g %g %g T %g\n",
-                                     iColumn, columnLower[iColumn], solution[iColumn],
-                                     columnUpper[iColumn], dj, trueLower[jNon]);
-#endif
           targetDrop += drop;
           if (dj > 1.0e-1 && trust[jNon] < 1.0e-3
             && solution[iColumn] - trueLower[jNon] > 1.0e-2) {
@@ -4381,16 +4323,6 @@ int ClpSimplexNonlinear::primalSLP(int numberConstraints, ClpConstraint **constr
     lastObjective = objValue;
     // take out when ClpPackedMatrix changed
     //newModel.scaling(false);
-#if 0
-          CoinMpsIO writer;
-          writer.setMpsData(*newModel.matrix(), COIN_DBL_MAX,
-                            newModel.getColLower(), newModel.getColUpper(),
-                            newModel.getObjCoefficients(),
-                            (const char*) 0 /*integrality*/,
-                            newModel.getRowLower(), newModel.getRowUpper(),
-                            NULL, NULL);
-          writer.writeMps("xx.mps");
-#endif
   }
   delete[] saveSolution;
   delete[] saveStatus;

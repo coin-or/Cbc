@@ -107,22 +107,7 @@ int ClpPEDualRowSteepest::pivotRow()
     // coming in from upper bound
     isLastDegenerate2 = (model_->dualIn() > -model_->dualTolerance());
   }
-#if 0
-	if ( isLastDegenerate2 &&!isLastDegenerate)
-	  printf("PE2 thinks degenerate - theta %g dual %g - at %s bound\n",
-		 model_->theta(),model_->dualIn(),
-		 (fabs(model_->valueIn()-model_->lowerIn())<
-		  fabs(model_->valueIn()-model_->upperIn())) ? "lower" : "upper");
-	else if ( !isLastDegenerate2 &&isLastDegenerate)
-	  printf("PE2 thinks not degenerate - theta %g dual %g - at %s bound\n",
-		 model_->theta(),model_->dualIn(),
-		 (fabs(model_->valueIn()-model_->lowerIn())<
-		  fabs(model_->valueIn()-model_->upperIn())) ? "lower" : "upper");
-	//else if ( !isLastDegenerate &&thinkDegenerate)
-	//printf("PE thinks non degenerate - dualColumn says yes\n");
-#else
   isLastDegenerate = isLastDegenerate2;
-#endif
   if (isLastDegenerate) {
     modelPE_->addDegeneratePivot();
     modelPE_->addDegeneratePivotConsecutive();
@@ -210,14 +195,6 @@ int ClpPEDualRowSteepest::pivotRow()
       coConsecutiveCompatibles_ = 0;
       coDegenCompatibles_ = 0;
     } else {
-#if 0
-		  if ((iCurrent_%500)==0)
-			printf("not updating - ic,ii %d,%d degenerate pivots %d ? %d codegen since last %d\n",
-			       iCurrent_,iInterval_,
-			       modelPE_->coDegeneratePivots(),
-			       modelPE_->coDualDegenerates(),
-			       coDegenCompatibles_);
-#endif
       iInterval_++;
     }
   }
@@ -413,14 +390,6 @@ int ClpPEDualRowSteepest::pivotRow()
       // that would not have been done without positive edge
       if (largestComp < largest)
         modelPE_->addPriorityPivot();
-#if 0
-	if (largestComp < largest)
-	  printf("pivoting on row %d largestComp %g largest %g\n",
-		 chosenRowComp,largestComp,largest);
-	else if (chosenRowComp==chosenRow)
-	  printf("pivoting on row %d largestComp %g == largest %g\n",
-		 chosenRowComp,largestComp,largest);
-#endif
     }
     chosenRow = chosenRowComp;
 

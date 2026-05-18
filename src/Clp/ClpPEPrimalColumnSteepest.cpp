@@ -261,18 +261,7 @@ int ClpPEPrimalColumnSteepest::pivotColumn(CoinIndexedVector *updates,
     // going out to upper bound
     isLastDegenerate2 = (model_->upperOut() - model_->valueOut() < model_->primalTolerance());
   }
-#if 0
-	if ( isLastDegenerate2 &&!isLastDegenerate)
-	  printf("PE2 thinks degenerate - theta %g value %g - to %s bound\n",
-		 model_->theta(),model_->valueOut(),
-		 (model_->directionOut()<0) ? "lower" : "upper");
-	else if ( !isLastDegenerate2 &&isLastDegenerate)
-	  printf("PE2 thinks not degenerate - theta %g value %g - to %s bound\n",
-		 model_->theta(),model_->valueOut(),
-		 (model_->directionOut()<0) ? "lower" : "upper");
-#else
   isLastDegenerate = isLastDegenerate2;
-#endif
   if (isLastDegenerate) {
     modelPE_->addDegeneratePivot();
     modelPE_->addDegeneratePivotConsecutive();
@@ -552,14 +541,6 @@ int ClpPEPrimalColumnSteepest::pivotColumn(CoinIndexedVector *updates,
   // largest values and on the factor of preference psi_
   if (bestSequenceComp >= 0 && bestDjComp >= psiTmp * bestDj) {
 
-#if 0
-	if (bestDjComp < bestDj)
-	  printf("pivoting on column %d bestDjComp %g bestDj %g\n",
-		 bestSequenceComp,bestDjComp,bestDj);
-	else if (bestSequenceComp==bestSequence)
-	  printf("pivoting on column %d bestDjComp %g == bestDj %g\n",
-		 bestSequenceComp,bestDjComp,bestDj);
-#endif
     // record the number of pivots done on compatible variables
     // that would not have been done without positive edge
     if (modelPE_->doStatistics()) {

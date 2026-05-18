@@ -169,9 +169,6 @@ public:
       On return \c ccPtr is NULL.
     */
   inline void insert(OsiColCut *&ccPtr);
-#if 0
-    inline void insert( OsiCut    * & cPtr  );
-#endif
 
   /** \brief Insert a set of cuts */
   inline void insert(const OsiCuts &cs);
@@ -362,22 +359,6 @@ void OsiCuts::insert(OsiColCut *&ccPtr)
   colCutPtrs_.push_back(ccPtr);
   ccPtr = NULL;
 }
-#if 0
-void OsiCuts::insert( OsiCut* & cPtr )
-{
-  OsiRowCut * rcPtr = dynamic_cast<OsiRowCut*>(cPtr);
-  if ( rcPtr != NULL ) {
-    insert( rcPtr );
-    cPtr = rcPtr;
-  }
-  else {
-    OsiColCut * ccPtr = dynamic_cast<OsiColCut*>(cPtr);
-    assert( ccPtr != NULL );
-    insert( ccPtr );
-    cPtr = ccPtr;
-  }
-}
-#endif
 
 // LANNEZ SEBASTIEN added Thu May 25 01:22:51 EDT 2006
 void OsiCuts::insert(const OsiCuts &cs)

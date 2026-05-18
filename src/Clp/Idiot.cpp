@@ -1223,13 +1223,6 @@ void Idiot::solve2(CoinMessageHandler *handler, const CoinMessages *messages)
     colsol, lower, upper,
     model_->rowLower(), model_->rowUpper(),
     cost, element, fixTolerance, lastResult.objval, lastResult.infeas, maxInfeasibility);
-#if 0
-     if ((logLevel & 1) == 0 || (strategy_ & 16384) != 0) {
-          printf(
-               "%d - mu %g, infeasibility %g, objective %g, %d interior\n",
-               iteration, mu, lastResult.infeas, lastResult.objval, n);
-     }
-#endif
 #ifndef OSI_IDIOT
   model_->setSumPrimalInfeasibilities(lastResult.infeas);
 #endif
@@ -1445,21 +1438,6 @@ void Idiot::crossOver(int mode)
     }
     COIN_DETAIL_PRINT(printf("New objective after scaling %g\n", objValue));
   }
-#if 0
-     //maybe put back - but just get feasible ?
-     // If not many fixed then just exit
-     int numberFixed = 0;
-     for (i = ordStart; i < ordEnd; i++) {
-          if (colsol[i] < lower[i] + fixTolerance)
-               numberFixed++;
-          else if (colsol[i] > upper[i] - fixTolerance)
-               numberFixed++;
-     }
-     if (numberFixed < ncols / 3) {
-          addAll = 3;
-          presolve = 0;
-     }
-#endif
 #define FEB_TRY
 #ifdef FEB_TRY
   int savePerturbation = model_->perturbation();

@@ -1367,30 +1367,11 @@ bool OsiRowCutDebugger::activate(const OsiSolverInterface &si,
 
       // All integers have been fixed at optimal value.
       // Now solve to get continuous values
-#if 0
-      assert( siCopy->getNumRows()==5);
-      assert( siCopy->getNumCols()==8);
-      int r,c;
-      for ( r=0; r<siCopy->getNumRows(); r++ ) {
-        std::cerr <<"rhs[" <<r <<"]=" <<(si.rhs())[r] <<" " <<(siCopy->rhs())[r] <<std::endl;
-      }
-      for ( c=0; c<siCopy->getNumCols(); c++ ) {
-        std::cerr <<"collower[" <<c <<"]=" <<(si.collower())[c] <<" " <<(siCopy->collower())[c] <<std::endl;
-        std::cerr <<"colupper[" <<c <<"]=" <<(si.colupper())[c] <<" " <<(siCopy->colupper())[c] <<std::endl;
-      }
-#endif
       // make sure all slack basis
       //CoinWarmStartBasis allSlack;
       //siCopy->setWarmStart(&allSlack);
       siCopy->setHintParam(OsiDoScale, false);
       siCopy->initialSolve();
-#if 0
-      for ( c=0; c<siCopy->getNumCols(); c++ ) {
-        std::cerr <<"colsol[" <<c <<"]=" <<knownSolution_[c] <<" " <<(siCopy->colsol())[c] <<std::endl;
-      }
-      OsiRelFltEq eq;
-      assert( eq(siCopy->getObjValue(),3.2368421052632));
-#endif
       assert(siCopy->isProvenOptimal());
       knownValue_ = siCopy->getObjValue();
       // Save column solution
@@ -1631,14 +1612,6 @@ void OsiRowCutDebugger::redoSolution(int numberColumns, const int *originalColum
     delete[] mark;
     numberColumns_ = numberColumns;
     if (printRecalcMessage) {
-#if 0
-      FILE * fp = fopen("xx.xx","wb");
-      assert (fp);
-      fwrite(&numberColumns,sizeof(int),1,fp);
-      fwrite(knownSolution_,sizeof(double),numberColumns,fp);
-      fclose(fp);
-      exit(0);
-#endif
       printf("debug solution - recalculated\n");
     }
   }

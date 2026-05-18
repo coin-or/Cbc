@@ -1784,85 +1784,6 @@ myamlf(WSI n, WSI xadj[], WSI adjncy[], WSI dgree[], WSI varbl[],
   return;
 }
 // This code is not needed, but left in in case needed sometime
-#if 0
-/*C--------------------------------------------------------------------------*/
-void amlfdr(WSI *n, WSI xadj[], WSI adjncy[], WSI dgree[], WSI *adjln,
-            WSI *locaux, WSI varbl[], WSI snxt[], WSI perm[],
-            WSI head[], WSI invp[], WSI lsize[], WSI flag[], WSI *ispeed)
-{
-     WSI nn, nlocaux, nadjln, speed, i, j, mx, mxj, *erscore;
-
-#ifdef WSSMP_DBG
-     printf("Calling amlfdr for n, speed = %d, %d\n", *n, *ispeed);
-#endif
-
-     if ((nn = *n) == 0) return;
-
-#ifdef WSSMP_DBG
-     if (nn == 31) {
-          printf("n = %d; adjln = %d; locaux = %d; ispeed = %d\n",
-                 *n, *adjln, *locaux, *ispeed);
-     }
-#endif
-
-     if (nn < NORDTHRESH) {
-          for (i = 0; i < nn; i++) lsize[i] = i;
-          for (i = nn; i > 0; i--) {
-               mx = dgree[0];
-               mxj = 0;
-               for (j = 1; j < i; j++)
-                    if (dgree[j] > mx) {
-                         mx = dgree[j];
-                         mxj = j;
-                    }
-               invp[lsize[mxj]] = i;
-               dgree[mxj] = dgree[i-1];
-               lsize[mxj] = lsize[i-1];
-          }
-          return;
-     }
-     speed = *ispeed;
-     if (speed < 3) {
-          /*
-              erscore = (WSI *)malloc(nn * sizeof(WSI));
-              if (erscore == NULL) speed = 3;
-          */
-          wscmal (&nn, &i, &erscore);
-          if (i != 0) speed = 3;
-     }
-     if (speed > 2) erscore = dgree;
-     if (speed < 3) {
-          for (i = 0; i < nn; i++) {
-               perm[i] = 0;
-               invp[i] = 0;
-               head[i] = 0;
-               flag[i] = 1;
-               varbl[i] = 1;
-               lsize[i] = dgree[i];
-               erscore[i] = dgree[i];
-          }
-     } else {
-          for (i = 0; i < nn; i++) {
-               perm[i] = 0;
-               invp[i] = 0;
-               head[i] = 0;
-               flag[i] = 1;
-               varbl[i] = 1;
-               lsize[i] = dgree[i];
-          }
-     }
-     nlocaux = *locaux;
-     nadjln = *adjln;
-
-     myamlf(nn, xadj, adjncy, dgree, varbl, snxt, perm, invp,
-            head, lsize, flag, erscore, nlocaux, nadjln, speed);
-     /*
-       if (speed < 3) free(erscore);
-     */
-     if (speed < 3) wscfr(&erscore);
-     return;
-}
-#endif // end of taking out amlfdr
 /*C--------------------------------------------------------------------------*/
 #endif
 // Orders rows
@@ -3003,15 +2924,6 @@ int ClpCholeskyBase::factorize(const CoinWorkDouble *diagonal, int *rowsDropped)
         }
       }
       numberRowsDropped_ += newDropped;
-#if 0
-      if (numberRowsDropped_) {
-        std::cout << "Rank " << numberRows_ - numberRowsDropped_ << " ( " << numberRowsDropped_ << " dropped)";
-        if (newDropped) {
-          std::cout << " ( " << newDropped << " dropped this time)";
-        }
-        std::cout << std::endl;
-      }
-#endif
     }
   } else {
     //KKT
@@ -3928,53 +3840,6 @@ void ClpCholeskyBase::solve(CoinWorkDouble *region, int type)
   }
 #endif
 }
-#if 0 //CLP_LONG_CHOLESKY
-/* Uses factorization to solve. */
-void
-ClpCholeskyBase::solve (CoinWorkDouble * region)
-{
-     assert (!whichDense_) ;
-     CoinWorkDouble * work = reinterpret_cast<CoinWorkDouble *> (workDouble_);
-     int i;
-     int j;
-     for (i = 0; i < numberRows_; i++) {
-          int iRow = permute_[i];
-          work[i] = region[iRow];
-     }
-     for (i = 0; i < firstDense_; i++) {
-          int offset = indexStart_[i] - choleskyStart_[i];
-          CoinWorkDouble value = work[i];
-          for (j = choleskyStart_[i]; j < choleskyStart_[i+1]; j++) {
-               int iRow = choleskyRow_[j+offset];
-               work[iRow] -= sparseFactor_[j] * value;
-          }
-     }
-     if (firstDense_ < numberRows_) {
-          // do dense
-          ClpCholeskyDense dense;
-          // just borrow space
-          int nDense = numberRows_ - firstDense_;
-          dense.reserveSpace(this, nDense);
-          dense.solve(work + firstDense_);
-          for (i = numberRows_ - 1; i >= firstDense_; i--) {
-               CoinWorkDouble value = work[i];
-               int iRow = permute_[i];
-               region[iRow] = value;
-          }
-     }
-     for (i = firstDense_ - 1; i >= 0; i--) {
-          int offset = indexStart_[i] - choleskyStart_[i];
-          CoinWorkDouble value = work[i] * diagonal_[i];
-          for (j = choleskyStart_[i]; j < choleskyStart_[i+1]; j++) {
-               int iRow = choleskyRow_[j+offset];
-               value -= sparseFactor_[j] * work[iRow];
-          }
-          work[i] = value;
-          int iRow = permute_[i];
-          region[iRow] = value;
-     }
-}
-#endif
 
 /* vi: softtabstop=2 shiftwidth=2 expandtab tabstop=2
 */

@@ -362,13 +362,6 @@ int ClpDualRowSteepest::pivotRow()
 #endif
   return chosenRow;
 }
-#if 0
-static double ft_count = 0.0;
-static double up_count = 0.0;
-static double ft_count_in = 0.0;
-static double up_count_in = 0.0;
-static int xx_count = 0;
-#endif
 /* Updates weights and returns pivot alpha.
    Also does FT update */
 double
@@ -460,10 +453,6 @@ ClpDualRowSteepest::updateWeights(CoinIndexedVector *input,
     }
     spare->setNumElements(numberNonZero);
     // Do FT update
-#if 0
-          ft_count_in += updatedColumn->getNumElements();
-          up_count_in += spare->getNumElements();
-#endif
     if (permute || true) {
 #if CLP_DEBUG > 2
       printf("REGION before %d els\n", spare->getNumElements());
@@ -481,14 +470,6 @@ ClpDualRowSteepest::updateWeights(CoinIndexedVector *input,
       model_->factorization()->updateColumn(spare2, spare, false);
     }
 #undef CLP_DEBUG
-#if 0
-          ft_count += updatedColumn->getNumElements();
-          up_count += spare->getNumElements();
-          xx_count++;
-          if ((xx_count % 1000) == 0)
-               printf("zz %d ft %g up %g (in %g %g)\n", xx_count, ft_count, up_count,
-                      ft_count_in, up_count_in);
-#endif
     numberNonZero = spare->getNumElements();
     // alternateWeights_ should still be empty
     int pivotRow = model_->pivotRow();
@@ -917,14 +898,6 @@ void ClpDualRowSteepest::saveWeights(ClpSimplex *model, int mode)
           //printf("bad pivot row %d (%d->%d) iPivot %d\n",i,firstRow,lastRow,iPivot);
         }
       }
-#if 0
-	       printf("mode %d mode_ %d state_ %d\n",mode,mode_,state_);
-	       if (!model_->numberIterations()) {
-		 for (int k=0;k<numberRows;k+=10)
-		   printf("%d %g ",k,weights_[k]);
-		 printf("\n");
-	       }
-#endif
     } else {
       // mode 6 - scale back weights as primal errors
       double primalError = model_->largestPrimalError();

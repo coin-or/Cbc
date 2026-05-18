@@ -227,36 +227,6 @@ int ClpSimplexPrimal::primal(int ifValuesPass, int startFinishOptions)
   int initialIterations = numberIterations_;
   int initialNegDjs = -1;
   // initialize - maybe values pass and algorithm_ is +1
-#if 0
-     // if so - put in any superbasic costed slacks
-  if (ifValuesPass && (specialOptions_&0x03000000)==0) {
-          // Get column copy
-          const CoinPackedMatrix * columnCopy = matrix();
-          const int * row = columnCopy->getIndices();
-          const CoinBigIndex * columnStart = columnCopy->getVectorStarts();
-          const int * columnLength = columnCopy->getVectorLengths();
-          //const double * element = columnCopy->getElements();
-          int n = 0;
-          for (int iColumn = 0; iColumn < numberColumns_; iColumn++) {
-               if (columnLength[iColumn] == 1) {
-                    Status status = getColumnStatus(iColumn);
-                    if (status != basic && status != isFree) {
-                         double value = columnActivity_[iColumn];
-                         if (fabs(value - columnLower_[iColumn]) > primalTolerance_ &&
-                                   fabs(value - columnUpper_[iColumn]) > primalTolerance_) {
-                              int iRow = row[columnStart[iColumn]];
-                              if (getRowStatus(iRow) == basic) {
-                                   setRowStatus(iRow, superBasic);
-                                   setColumnStatus(iColumn, basic);
-                                   n++;
-                              }
-                         }
-                    }
-               }
-          }
-          printf("%d costed slacks put in basis\n", n);
-     }
-#endif
   // Start can skip some things in transposeTimes
   specialOptions_ |= 131072;
   if (!startup(ifValuesPass, startFinishOptions)) {
@@ -633,33 +603,6 @@ int ClpSimplexPrimal::whileIterating(int valuesOption)
         columnArray_[i]->checkClear();
       }
     }
-#endif
-#if 0
-          {
-               int iPivot;
-               double * array = rowArray_[3]->denseVector();
-               int * index = rowArray_[3]->getIndices();
-               int i;
-               for (iPivot = 0; iPivot < numberRows_; iPivot++) {
-                    int iSequence = pivotVariable_[iPivot];
-                    unpackPacked(rowArray_[3], iSequence);
-                    factorization_->updateColumn(rowArray_[2], rowArray_[3]);
-                    int number = rowArray_[3]->getNumElements();
-                    for (i = 0; i < number; i++) {
-                         int iRow = index[i];
-                         if (iRow == iPivot)
-                              assert (fabs(array[i] - 1.0) < 1.0e-4);
-                         else
-                              assert (fabs(array[i]) < 1.0e-4);
-                    }
-                    rowArray_[3]->clear();
-               }
-          }
-#endif
-#if 0
-          nonLinearCost_->checkInfeasibilities(primalTolerance_);
-          printf("suminf %g number %d\n", nonLinearCost_->sumInfeasibilities(),
-                 nonLinearCost_->numberInfeasibilities());
 #endif
 #if CLP_DEBUG > 2
     // very expensive
@@ -1591,46 +1534,9 @@ void ClpSimplexPrimal::statusOfProblemInPrimal(int &lastCleaned, int type,
               << CoinMessageEol;
           double oldTolerance = primalTolerance_;
           primalTolerance_ = dblParam_[ClpPrimalTolerance];
-#if 0
-                         double * xcost = new double[numberRows_+numberColumns_];
-                         double * xlower = new double[numberRows_+numberColumns_];
-                         double * xupper = new double[numberRows_+numberColumns_];
-                         double * xdj = new double[numberRows_+numberColumns_];
-                         double * xsolution = new double[numberRows_+numberColumns_];
-                         CoinMemcpyN(cost_, (numberRows_ + numberColumns_), xcost);
-                         CoinMemcpyN(lower_, (numberRows_ + numberColumns_), xlower);
-                         CoinMemcpyN(upper_, (numberRows_ + numberColumns_), xupper);
-                         CoinMemcpyN(dj_, (numberRows_ + numberColumns_), xdj);
-                         CoinMemcpyN(solution_, (numberRows_ + numberColumns_), xsolution);
-#endif
           // put back original costs and then check
           createRim(4);
           nonLinearCost_->checkInfeasibilities(oldTolerance);
-#if 0
-                         int i;
-                         for (i = 0; i < numberRows_ + numberColumns_; i++) {
-                              if (cost_[i] != xcost[i])
-                                   printf("** %d old cost %g new %g sol %g\n",
-                                          i, xcost[i], cost_[i], solution_[i]);
-                              if (lower_[i] != xlower[i])
-                                   printf("** %d old lower %g new %g sol %g\n",
-                                          i, xlower[i], lower_[i], solution_[i]);
-                              if (upper_[i] != xupper[i])
-                                   printf("** %d old upper %g new %g sol %g\n",
-                                          i, xupper[i], upper_[i], solution_[i]);
-                              if (dj_[i] != xdj[i])
-                                   printf("** %d old dj %g new %g sol %g\n",
-                                          i, xdj[i], dj_[i], solution_[i]);
-                              if (solution_[i] != xsolution[i])
-                                   printf("** %d old solution %g new %g sol %g\n",
-                                          i, xsolution[i], solution_[i], solution_[i]);
-                         }
-                         delete [] xcost;
-                         delete [] xupper;
-                         delete [] xlower;
-                         delete [] xdj;
-                         delete [] xsolution;
-#endif
           gutsOfSolution(NULL, NULL, ifValuesPass != 0);
           if (sumOfRelaxedDualInfeasibilities_ == 0.0 && sumOfRelaxedPrimalInfeasibilities_ == 0.0) {
             // say optimal (with these bounds etc)
@@ -2090,23 +1996,6 @@ void ClpSimplexPrimal::primalRow(CoinIndexedVector *rowArray,
         indexPoint[numberRemaining] = iIndex;
         index[numberRemaining++] = iRow;
         totalThru += alpha; // need more if dubious pricing
-#if 0 // wasdef CLP_USER_DRIVEN
-		    clpUserStruct info;
-		    info.type=1;
-		    info.row=iRow;
-		    info.sequence=pivotVariable_[iRow];
-		    info.alpha=way*work[iIndex];
-		    double tempThru=totalThruFake+alpha;
-		    info.totalThru=totalThruFake+alpha;
-		    info.rhs=oldValue;
-		    info.printing=printing;
-		    eventHandler_->eventWithInfo(ClpEventHandler::pivotRow,
-						 &info);
-		    totalThruFake=info.totalThru;
-		    if (fabs(totalThruFake-tempThru)>1.0e-4)
-		      printf("%d thru - fake %g real %g\n",nThru,totalThruFake,totalThru);
-		    nThru++;
-#endif
         setActive(iRow);
         //} else if (value<primalTolerance_*1.002) {
         // May change if is a flip
@@ -2164,23 +2053,6 @@ void ClpSimplexPrimal::primalRow(CoinIndexedVector *rowArray,
 	}
       }
     }
-#endif
-#if 0 // was def CLP_USER_DRIVEN
-	  clpUserStruct info;
-	  info.type=4;
-	  info.alpha=(upperTheta+1.0e-5)*way;
-	  eventHandler_->eventWithInfo(ClpEventHandler::pivotRow,
-				       &info);
-          if (upperTheta < maximumMovement && totalThru*infeasibilityCost_ >= 1.0001 * dualCheck) {
-	    if (totalThruFake*infeasibilityCost_ < 1.0001 * dualCheck) {
-	      printf("fake allows through - it %d - fake %g real %g - dj %g\n",
-		     numberIterations_,totalThruFake,totalThru,dualCheck);
-	    } else if (totalThruFake!=totalThru) {
-	      printf("it %d - fake %g real %g - dj %g - ratio %g\n",
-		     numberIterations_,totalThruFake,totalThru,dualCheck,
-		     dualCheck/totalThruFake);
-	    }
-	  }
 #endif
     if (upperTheta < maximumMovement && totalThru * infeasibilityCost_ >= 1.0001 * dualCheck) {
       // Can pivot here
@@ -2261,20 +2133,6 @@ void ClpSimplexPrimal::primalRow(CoinIndexedVector *rowArray,
           //if (printing)
           //jSequence += 1000000;
           totalThru += nonLinearCost_->changeInCost(jSequence, trueAlpha, rhs[iIndex]);
-#if 0 //was def CLP_USER_DRIVEN
-			 clpUserStruct info;
-			 info.type=2;
-			 info.row=iRow;
-			 info.sequence=pivotVariable_[iRow];
-			 info.alpha=trueAlpha;
-			 info.totalThru=totalThru;
-			 info.rhs=rhs[iIndex];
-			 info.printing=printing;
-			 eventHandler_->eventWithInfo(ClpEventHandler::pivotRow,
-						      &info);
-			 totalThru=info.totalThru;
-			 rhs[iIndex]=info.rhs;
-#endif
           setActive(iRow);
           if (alpha > bestPivot) {
             bestPivot = alpha;
@@ -2291,13 +2149,6 @@ void ClpSimplexPrimal::primalRow(CoinIndexedVector *rowArray,
           }
         }
       }
-#if 0 // was def CLP_USER_DRIVEN
-	       clpUserStruct info;
-	       info.type=5;
-	       info.alpha=(theta_+1.0e-5)*way;
-	       eventHandler_->eventWithInfo(ClpEventHandler::pivotRow,
-				       &info);
-#endif
       if (bestPivot < 0.1 * bestEverPivot && bestEverPivot > 1.0e-6 && bestPivot < 1.0e-3) {
         // back to previous one
         goBackOne = true;
@@ -2714,20 +2565,6 @@ int ClpSimplexPrimal::updatePrimalsInPrimal(CoinIndexedVector *rowArray,
   }
   objectiveChange += nonLinearCost_->changeInCost();
   rowArray->setPacked();
-#if 0
-     rowArray->setNumElements(newNumber);
-     rowArray->expand();
-     if (pivotRow_ >= 0) {
-          dualIn_ += (oldCost - cost_[sequenceOut_]);
-          // update change vector to include pivot
-          rowArray->add(pivotRow_, -dualIn_);
-          // and convert to packed
-          rowArray->scanAndPack();
-     } else {
-          // and convert to packed
-          rowArray->scanAndPack();
-     }
-#else
   if (pivotRow_ >= 0) {
     double dualIn = dualIn_ + (oldCost - cost_[sequenceOut_]);
     // update change vector to include pivot
@@ -2739,7 +2576,6 @@ int ClpSimplexPrimal::updatePrimalsInPrimal(CoinIndexedVector *rowArray,
     }
   }
   rowArray->setNumElements(newNumber);
-#endif
   return 0;
 }
 // Perturbs problem
@@ -2974,19 +2810,7 @@ void ClpSimplexPrimal::perturb(int type)
           } else if (upperValue - solutionValue <= primalTolerance_) {
             upper_[iSequence] += value;
           } else {
-#if 0
-                              if (iSequence >= numberColumns_) {
-                                   // may not be at bound - but still perturb (unless free)
-                                   if (upperValue > 1.0e30 && lowerValue < -1.0e30)
-                                        value = 0.0;
-                                   else
-                                        value = - value; // as -1.0 in matrix
-                              } else {
-                                   value = 0.0;
-                              }
-#else
             value = 0.0;
-#endif
           }
           if (value) {
             if (printOut)
@@ -3307,43 +3131,6 @@ int ClpSimplexPrimal::pivotResult(int ifValuesPass)
     pivotRow_ = -1;
     sequenceOut_ = -1;
     rowArray_[1]->clear();
-#if 0
-          {
-               int seq[] = {612, 643};
-               int k;
-               for (k = 0; k < sizeof(seq) / sizeof(int); k++) {
-                    int iSeq = seq[k];
-                    if (getColumnStatus(iSeq) != basic) {
-                         double djval;
-                         double * work;
-                         int number;
-                         int * which;
-
-                         int iIndex;
-                         unpack(rowArray_[1], iSeq);
-                         factorization_->updateColumn(rowArray_[2], rowArray_[1]);
-                         djval = cost_[iSeq];
-                         work = rowArray_[1]->denseVector();
-                         number = rowArray_[1]->getNumElements();
-                         which = rowArray_[1]->getIndices();
-
-                         for (iIndex = 0; iIndex < number; iIndex++) {
-
-                              int iRow = which[iIndex];
-                              double alpha = work[iRow];
-                              int iPivot = pivotVariable_[iRow];
-                              djval -= alpha * cost_[iPivot];
-                         }
-                         double comp = 1.0e-8 + 1.0e-7 * (std::max(fabs(dj_[iSeq]), fabs(djval)));
-                         if (fabs(djval - dj_[iSeq]) > comp)
-                              printf("Bad dj %g for %d - true is %g\n",
-                                     dj_[iSeq], iSeq, djval);
-                         assert (fabs(djval) < 1.0e-3 || djval * dj_[iSeq] > 0.0);
-                         rowArray_[1]->clear();
-                    }
-               }
-          }
-#endif
 
     // we found a pivot column
     // update the incoming column
@@ -3419,14 +3206,6 @@ int ClpSimplexPrimal::pivotResult(int ifValuesPass)
       checkValue = 1.0e-1;
     double test2 = dualTolerance_;
     double test1 = 1.0e-20;
-#if 0 //def FEB_TRY
-          if (factorization_->pivots() < 1) {
-               test1 = -1.0e-4;
-               if ((saveDj < 0.0 && dualIn_ < -1.0e-5 * dualTolerance_) ||
-                         (saveDj > 0.0 && dualIn_ > 1.0e-5 * dualTolerance_))
-                    test2 = 0.0; // allow through
-          }
-#endif
     if (!ifValuesPass && solveType_ == 1 && (saveDj * dualIn_ < test1 || fabs(saveDj - dualIn_) > checkValue * (1.0 + fabs(saveDj)) || fabs(dualIn_) < test2)) {
       if (!(saveDj * dualIn_ > 0.0 && std::min(fabs(saveDj), fabs(dualIn_)) > 1.0e5)) {
         char x = isColumn(sequenceIn_) ? 'C' : 'R';
@@ -3997,38 +3776,6 @@ int ClpSimplexPrimal::lexSolve()
   int initialNegDjs = -1;
   // initialize - maybe values pass and algorithm_ is +1
   int ifValuesPass = 0;
-#if 0
-     // if so - put in any superbasic costed slacks
-     // Start can skip some things in transposeTimes
-     specialOptions_ |= 131072;
-     if (ifValuesPass && (specialOptions_&0x03000000)==0) {
-          // Get column copy
-          const CoinPackedMatrix * columnCopy = matrix();
-          const int * row = columnCopy->getIndices();
-          const CoinBigIndex * columnStart = columnCopy->getVectorStarts();
-          const int * columnLength = columnCopy->getVectorLengths();
-          //const double * element = columnCopy->getElements();
-          int n = 0;
-          for (int iColumn = 0; iColumn < numberColumns_; iColumn++) {
-               if (columnLength[iColumn] == 1) {
-                    Status status = getColumnStatus(iColumn);
-                    if (status != basic && status != isFree) {
-                         double value = columnActivity_[iColumn];
-                         if (fabs(value - columnLower_[iColumn]) > primalTolerance_ &&
-                                   fabs(value - columnUpper_[iColumn]) > primalTolerance_) {
-                              int iRow = row[columnStart[iColumn]];
-                              if (getRowStatus(iRow) == basic) {
-                                   setRowStatus(iRow, superBasic);
-                                   setColumnStatus(iColumn, basic);
-                                   n++;
-                              }
-                         }
-                    }
-               }
-          }
-          printf("%d costed slacks put in basis\n", n);
-     }
-#endif
   double *originalCost = NULL;
   double *originalLower = NULL;
   double *originalUpper = NULL;

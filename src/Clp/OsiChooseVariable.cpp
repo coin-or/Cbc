@@ -736,10 +736,6 @@ int OsiChooseStrong::setupList(OsiBranchingInformation *info, bool initialize)
   double downMultiplier = (1.0 + sumDown) / (1.0 + numberDown);
   // Say feasible
   bool feasible = true;
-#if 0
-  int pri[]={10,1000,10000};
-  int priCount[]={0,0,0};
-#endif
   for (i = 0; i < numberObjects; i++) {
     int way;
     double value = object[i]->infeasibility(info, way);
@@ -751,12 +747,6 @@ int OsiChooseStrong::setupList(OsiBranchingInformation *info, bool initialize)
         break;
       }
       int priorityLevel = object[i]->priority();
-#if 0
-      for (int k=0;k<3;k++) {
-	if (priorityLevel==pri[k])
-	  priCount[k]++;
-      }
-#endif
       // Better priority? Flush choices.
       if (priorityLevel < bestPriority) {
         for (int j = maximumStrong - 1; j >= 0; j--) {
@@ -831,10 +821,6 @@ int OsiChooseStrong::setupList(OsiBranchingInformation *info, bool initialize)
       }
     }
   }
-#if 0
-  printf("%d at %d, %d at %d and %d at %d\n",priCount[0],pri[0],
-	 priCount[1],pri[1],priCount[2],pri[2]);
-#endif
   // Get list
   numberOnList_ = 0;
   if (feasible) {
@@ -1028,13 +1014,6 @@ void OsiPseudoCosts::updateInformation(const OsiBranchingInformation *info,
       upTotalChange_[index] += hotInfo->upChange() / object->upEstimate();
       upNumber_[index]++;
     } else {
-#if 0
-      // infeasible - just say expensive
-      if (info->cutoff_<1.0e50)
-	upTotalChange_[index] += 2.0*(info->cutoff_-info->objectiveValue_)/object->upEstimate();
-      else
-	upTotalChange_[index] += 2.0*fabs(info->objectiveValue_)/object->upEstimate();
-#endif
     }
   } else {
     if (hotInfo->downStatus() != 1) {
@@ -1042,13 +1021,6 @@ void OsiPseudoCosts::updateInformation(const OsiBranchingInformation *info,
       downTotalChange_[index] += hotInfo->downChange() / object->downEstimate();
       downNumber_[index]++;
     } else {
-#if 0
-      // infeasible - just say expensive
-      if (info->cutoff_<1.0e50)
-	downTotalChange_[index] += 2.0*(info->cutoff_-info->objectiveValue_)/object->downEstimate();
-      else
-	downTotalChange_[index] += 2.0*fabs(info->objectiveValue_)/object->downEstimate();
-#endif
     }
   }
 }
@@ -1204,12 +1176,6 @@ int OsiHotInfo::updateInformation(const OsiSolverInterface *solver, const OsiBra
     const double *saveUpper = info->upper_;
     info->upper_ = solver->getColUpper();
     // also need to make sure bounds OK as may not be info solver
-#if 0
-    if (saveSolver->getMatrixByCol()) {
-	const CoinBigIndex * columnStart = info->columnStart_;
-	assert (saveSolver->getMatrixByCol()->getVectorStarts()==columnStart);
-    }
-#endif
     if (choose->feasibleSolution(info, solver->getColSolution(), solver->numberObjects(),
           const_cast< const OsiObject ** >(solver->objects()))) {
       // put solution somewhere

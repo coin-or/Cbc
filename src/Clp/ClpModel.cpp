@@ -945,14 +945,6 @@ void ClpModel::copy(const ClpMatrixBase *from, ClpMatrixBase *&to)
     delete to;
     to = from->clone();
   }
-#if 0
-     delete modelPtr_->matrix_;
-     if (continuousModel_->matrix_) {
-          modelPtr_->matrix_ = continuousModel_->matrix_->clone();
-     } else {
-          modelPtr_->matrix_ = NULL;
-     }
-#endif
 }
 /* Borrow model.  This is so we dont have to copy large amounts
    of data around.  It assumes a derived class wants to overwrite
@@ -3331,18 +3323,6 @@ ClpModel::modifyByIndicators(double startBigM,
     int ninfeas =0;
     saveObjective = CoinCopyOfArray(objective,numberColumns);
     memset(objective,0,numberColumns*sizeof(double));
-#if 0
-    // free up rows
-    for (int k = 0;k<numberIndicators;k++) {
-      int jRow = rowInd[k];
-      int iRow = whichRow[jRow];
-      rowUpper[iRow] = COIN_DBL_MAX;
-      unsigned char iType = rowType[jRow];
-      if ((iType&3)==3) {
-	rowLower[iRow+1] = -COIN_DBL_MAX;
-      }
-    }
-#endif
     //#define CHECK_SOLUTION
 #ifdef CHECK_SOLUTION
     double * solution = new double[numberColumns_];

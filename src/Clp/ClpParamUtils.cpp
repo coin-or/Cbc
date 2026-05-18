@@ -174,26 +174,7 @@ int doImportParam(CoinParam &param)
     retval = -1;
   //}
 
-#if 0
-  // TODO This seems overly complicated
-  /*
-      Figure out where we're going to acquire this new model. As special cases,
-      `$' says `use the previous input source' and `-' says `use stdin'.
-    */
-  std::string field = clpParam.strVal();
-  std::string fileName;
-  if (field == "$") {
-     fileName = parameters->getLastMpsIn();
-    field = fileName;
-  } else if (field == "-") {
-    fileName = "stdin";
-    field = fileName;
-  } else {
-    fileName = field;
-  }
-#else
   std::string fileName = clpParam.strVal();
-#endif
 
   /*
       See if we can open a file. fileCoinReadable understands a fair bit about
@@ -207,19 +188,6 @@ int doImportParam(CoinParam &param)
               << clpParam.strVal() << "'." << std::endl;
     return (retval);
   }
-#if 0
-  /*
-      We can find the file. Record the name. This requires a little finesse:
-     what we want is the base file name (and extension(s), if present) but not
-     the prefix, unless it's an absolute path.
-    */
-  if (!fileAbsPath(fileName)) {
-    std::string::size_type pos = fileName.rfind(field);
-    parameters->setLastMpsIn(fileName.substr(pos));
-  } else {
-     parameters->setLastMpsIn(fileName);
-  }
-#endif
 
   /*
       Try to read the file. Standard OSI doesn't support the Clp extensions for

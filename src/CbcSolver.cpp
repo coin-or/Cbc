@@ -523,7 +523,14 @@ static bool loadOptionFileIntoQueue(const std::string &fileName,
 static void printHelp(CbcParameters &cbcParams, ClpParameters &clpParams)
 {
   std::cout
-    << "MIPster version " << CBC_VERSION << " — Mixed-Integer Programming solver\n"
+    << "    __  ___________       __                   \xe2\x97\x89\n"
+    << "   /  |/  /  _/ __ \\_____/ /____  _____       / \\\n"
+    << "  / /|_/ // // /_/ / ___/ __/ _ \\/ ___/      \xe2\x97\x89   \xe2\x97\x89\n"
+    << " / /  / // // ____(__  ) /_/  __/ /         /|   |\\\n"
+    << "/_/  /_/___/_/   /____/\\__/\\___/_/         \xe2\x97\x89 \xe2\x97\x89   \xe2\x97\x89 \xe2\x97\x89\n"
+    << "    {\xe2\x89\x88\xe2\x89\x88\xe2\x89\x88}  globally optimal \xc2\xb7 locally hip\n"
+    << "\n"
+    << "MIPster version " << CBC_VERSION << " \xe2\x80\x94 Mixed-Integer Programming solver\n"
     << "\n"
     << "Usage:\n"
     << "  mipster <model.mps[.gz]> [options] -solve\n"

@@ -1,5 +1,14 @@
 # MIPster — Mixed-Integer Programming Solver
 
+```
+    __  ___________       __                   ◉
+   /  |/  /  _/ __ \_____/ /____  _____       / \
+  / /|_/ // // /_/ / ___/ __/ _ \/ ___/      ◉   ◉
+ / /  / // // ____(__  ) /_/  __/ /         /|   |\
+/_/  /_/___/_/   /____/\__/\___/_/         ◉ ◉   ◉ ◉
+    {≈≈≈}  globally optimal · locally hip
+```
+
 **MIPster** is a high-performance open-source solver for Mixed-Integer Linear Programming (MIP/MILP) problems. It is a streamlined fork of [COIN-OR CBC](https://github.com/coin-or/Cbc), redesigned for simplicity, performance, and ease of integration.
 
 **[🌐 Project Website](https://h-g-s.github.io/mipster/) · [📦 Latest Release](https://github.com/h-g-s/mipster/releases/latest)**

@@ -155,6 +155,24 @@
     .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
     .feature-card p  { font-size: 0.88rem; color: var(--muted); }
 
+    /* ── ASCII hero ── */
+    .ascii-hero {
+      display: inline-block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      text-align: left;
+      font-family: "SF Mono", "Cascadia Code", Consolas, monospace;
+      font-size: clamp(0.6rem, 1.2vw, 0.82rem);
+      line-height: 1.45;
+      color: var(--text);
+      white-space: pre;
+    }
+    .ascii-hero .tree { color: #4ade80; }
+    .ascii-hero .tag  { color: var(--muted); }
+
     /* ── Code block ── */
     pre {
       background: var(--surface);
@@ -192,7 +210,12 @@
 <!-- Hero -->
 <div class="hero">
   <div class="badge">Open Source · EPL-2.0 · COIN-OR based</div>
-  <h1>Mixed-Integer Programming<br>with <span>MIPster</span></h1>
+  <div class="ascii-hero"><span>    __  ___________       __           </span><span class="tree">        ◉</span>
+<span>   /  |/  /  _/ __ \_____/ /____  _____</span><span class="tree">       / \</span>
+<span>  / /|_/ // // /_/ / ___/ __/ _ \/ ___/</span><span class="tree">      ◉   ◉</span>
+<span> / /  / // // ____(__  ) /_/  __/ /    </span><span class="tree">     /|   |\</span>
+<span>/_/  /_/___/_/   /____/\__/\___/_/     </span><span class="tree">    ◉ ◉   ◉ ◉</span>
+<span class="tag">    {≈≈≈}  globally optimal · locally hip</span></div>
   <p>A high-performance, single-build MIP solver — a streamlined fork of COIN-OR CBC with a clean C API and strong default performance.</p>
   <a class="btn btn-primary" href="#download">⬇ Download</a>
   &nbsp;

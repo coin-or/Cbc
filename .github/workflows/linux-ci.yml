@@ -67,12 +67,15 @@ jobs:
 
   build-macos-x86_64:
     name: macOS x86_64 (generic + haswell)
-    runs-on: macos-13
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build + test
-        run: bash .github/scripts/build-macos-x86_64.sh
+      - name: Install Rosetta 2
+        run: softwareupdate --install-rosetta --agree-to-license || true
+
+      - name: Build + test (x86_64 via Rosetta)
+        run: arch -x86_64 bash .github/scripts/build-macos-x86_64.sh
 
       - uses: actions/upload-artifact@v4
         with:

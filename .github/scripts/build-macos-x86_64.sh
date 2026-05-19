@@ -130,7 +130,7 @@ build_variant() {
     MIPSTER_FIXTURE_DIR="${SRC_DIR}/test/fixtures" \
       DYLD_LIBRARY_PATH="${build_dir}/src/.libs${DYLD_LIBRARY_PATH:+:${DYLD_LIBRARY_PATH}}" \
       bash "${SRC_DIR}/test/run-mipster-tests" \
-        --write-baseline "GitHub Actions macos-13 (Intel x86_64)" \
+        --write-baseline "GitHub Actions macos-latest Rosetta2 (x86_64)" \
         "${INSTALL_DIR}/share/mipster/test/ci-baseline-times.json"
     echo "    CI baseline times written"
   else

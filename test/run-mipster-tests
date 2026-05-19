@@ -105,6 +105,8 @@ TESTS=(
   CInterfaceTest_graphdraw
   CInterfaceTest_trdta5581
   CInterfaceTest_trd445c
+  CInterfaceTest_j3041_1
+  CInterfaceTest_yue20013
   CbcSolverLpTest
 )
 

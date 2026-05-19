@@ -17,9 +17,11 @@ pkgtestfixturedir = $(datadir)/mipster/test/fixtures
 dist_pkgtestfixture_DATA = \
   fixtures/A-1.mps.gz \
   fixtures/graphdraw-domain.mps.gz \
+  fixtures/j3041_1.mps.gz \
   fixtures/nursesched-sprint02.mps.gz \
   fixtures/trd445c.mps.gz \
-  fixtures/trdta5581.mps.gz
+  fixtures/trdta5581.mps.gz \
+  fixtures/yue20013.1.150.mps.gz
 
 # Runner script installs to $(bindir)/run-mipster-tests
 dist_bin_SCRIPTS = run-mipster-tests
@@ -59,7 +61,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CbcSolverLpTest
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CbcSolverLpTest
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -151,5 +153,23 @@ nodist_EXTRA_CInterfaceTest_trd445c_SOURCES = dummy.cpp
 CInterfaceTest_trd445c_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_trd445c_LDADD = ../src/libmipster.la
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CbcSolverLpTest$(EXEEXT)
+########################################################################
+#                   j3041_1 tests (LP reopt, MIP optimal)             #
+########################################################################
+
+CInterfaceTest_j3041_1_SOURCES = CInterfaceTest_j3041_1.c
+nodist_EXTRA_CInterfaceTest_j3041_1_SOURCES = dummy.cpp
+CInterfaceTest_j3041_1_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_j3041_1_LDADD = ../src/libmipster.la
+
+########################################################################
+#                   yue20013.1.150 tests (LP reopt, MIP optimal)      #
+########################################################################
+
+CInterfaceTest_yue20013_SOURCES = CInterfaceTest_yue20013.c
+nodist_EXTRA_CInterfaceTest_yue20013_SOURCES = dummy.cpp
+CInterfaceTest_yue20013_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_yue20013_LDADD = ../src/libmipster.la
+
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CbcSolverLpTest$(EXEEXT)
 	MIPSTER_FIXTURE_DIR=$(abs_srcdir)/fixtures $(srcdir)/run-mipster-tests

@@ -151,9 +151,12 @@ jobs:
         run: |
           ls dist/
           tar -xzf dist/mipster-linux-x86_64.tar.gz -C dist/
-          MIPSTER_BIN="$(pwd)/dist/mipster-linux-x86_64/bin/mipster-generic"
+          DIST_DIR="$(pwd)/dist/mipster-linux-x86_64"
+          MIPSTER_BIN="${DIST_DIR}/bin/mipster-generic"
           chmod +x "$MIPSTER_BIN"
           echo "MIPSTER_BIN=$MIPSTER_BIN" >> $GITHUB_ENV
+          # mipster-generic links against libmipster.so — add lib dirs to LD_LIBRARY_PATH
+          echo "LD_LIBRARY_PATH=${DIST_DIR}/lib/generic:${DIST_DIR}/lib/avx2" >> $GITHUB_ENV
 
       - name: Generate docs
         run: |

@@ -158,7 +158,8 @@ package() {
 PKGBUILD_EOF
 
   cd "${ARCH_BUILD}"
-  PKGDEST="${OUT_DIR}" makepkg --noconfirm --nodeps 2>&1
+  PKGDEST="${ARCH_BUILD}" makepkg --noconfirm --nodeps 2>&1
+  find "${ARCH_BUILD}" -maxdepth 1 -name '*.pkg.tar.zst' -exec mv {} "${OUT_DIR}/" \;
   echo "    Arch pkg written to ${OUT_DIR}"
   cd "${OUT_DIR}"
 else

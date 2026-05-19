@@ -38,6 +38,15 @@
 #if defined(HAVE_SIGNAL_H) && defined(HAVE_EXECINFO_H)
 #include <execinfo.h>
 #include <signal.h>
+#ifdef __GNUG__
+#include <cxxabi.h>
+#endif
+#ifdef __linux__
+#include <unistd.h>
+#endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 void CbcCrashHandler(int sig);
 #endif
 
@@ -1589,52 +1598,278 @@ static void signal_handler(int whichSignal) {
 //###########################################################################
 
 #if defined(HAVE_SIGNAL_H) && defined(HAVE_EXECINFO_H)
-void CbcCrashHandler(int sig) {
-  char signame[256] = "";
-  switch (sig) {
-  case SIGILL:
-    strcpy(signame, "SIGILL");
-    break;
-  case SIGSEGV:
-    strcpy(signame, "SIGSEGV");
-    break;
-  case SIGABRT:
-    strcpy(signame, "SIGABRT");
-    break;
+
+// ── Crash handler helpers ────────────────────────────────────────────────────
+
+// Demangle a C++ mangled symbol. Returns a malloc'd string on success (caller
+// must free), or NULL if the symbol is already plain C / unrecognised.
+static char *crash_demangle(const char *sym)
+{
+#ifdef __GNUG__
+  if (!sym || sym[0] == '\0')
+    return nullptr;
+  int status = -4;
+  char *d = abi::__cxa_demangle(sym, nullptr, nullptr, &status);
+  if (status == 0 && d)
+    return d;
+  if (d)
+    free(d);
+#endif
+  (void)sym;
+  return nullptr;
+}
+
+// Parse the mangled symbol name and the raw hex address out of a
+// backtrace_symbols() line.
+//
+//   Linux:  "binary(mangled+0xOFF) [0xADDR]"
+//   macOS:  "N  binary  0xADDR  mangled + offset"
+//
+static void crash_parse_bt_line(const char *line,
+                                 char *sym_out, size_t sym_sz,
+                                 char *addr_out, size_t addr_sz)
+{
+  sym_out[0] = '\0';
+  addr_out[0] = '\0';
+
+#ifdef __APPLE__
+  // Skip frame-number digits and leading spaces
+  const char *p = line;
+  while (*p == ' ' || (*p >= '0' && *p <= '9'))
+    p++;
+  // Skip binary-name token
+  while (*p && *p != ' ')
+    p++;
+  while (*p == ' ')
+    p++;
+  // Copy address token
+  const char *as = p;
+  while (*p && *p != ' ')
+    p++;
+  size_t alen = (size_t)(p - as);
+  if (alen > 0 && alen < addr_sz) {
+    memcpy(addr_out, as, alen);
+    addr_out[alen] = '\0';
+  }
+  while (*p == ' ')
+    p++;
+  // Copy symbol up to " + "
+  const char *ss = p;
+  while (*p && !(*p == ' ' && p[1] == '+'))
+    p++;
+  size_t slen = (size_t)(p - ss);
+  if (slen > 0 && slen < sym_sz) {
+    memcpy(sym_out, ss, slen);
+    sym_out[slen] = '\0';
   }
 
-  fflush(stderr);
-  fflush(stdout);
-  fprintf(
-      stderr,
-      "\n\nERROR while running Cbc. Signal %s caught. Getting stack trace.\n",
-      signame);
-  fflush(stderr);
-  {
-    char *st = getenv("RUNNING_TEST");
-    if (st) {
-      fprintf(stderr, "Error happened while running the \"%s\" test\n", st);
-      fflush(stderr);
+#else  // Linux
+  // Address is inside the final [ ] pair
+  const char *lb = strrchr(line, '[');
+  if (lb) {
+    lb++;
+    const char *rb = strchr(lb, ']');
+    size_t alen = rb ? (size_t)(rb - lb) : 0;
+    if (alen > 0 && alen < addr_sz) {
+      memcpy(addr_out, lb, alen);
+      addr_out[alen] = '\0';
     }
   }
+  // Symbol is between '(' and '+' (or ')')
+  const char *lp = strchr(line, '(');
+  if (lp) {
+    lp++;
+    const char *plus = strchr(lp, '+');
+    const char *rp   = strchr(lp, ')');
+    const char *send = plus ? plus : rp;
+    size_t slen = send ? (size_t)(send - lp) : 0;
+    if (slen > 0 && slen < sym_sz) {
+      memcpy(sym_out, lp, slen);
+      sym_out[slen] = '\0';
+    }
+  }
+#endif
+}
+
+// On Linux: return the runtime load address (ASLR base) of the main executable
+// by scanning /proc/self/maps for the first r-xp segment that matches exe_path.
+#ifdef __linux__
+static uintptr_t crash_exe_load_base(const char *exe_path)
+{
+  FILE *maps = fopen("/proc/self/maps", "r");
+  if (!maps)
+    return 0;
+  char line[512];
+  uintptr_t base = 0;
+  while (fgets(line, sizeof(line), maps)) {
+    if (strstr(line, exe_path) && strstr(line, "r-xp")) {
+      char *dash = strchr(line, '-');
+      if (dash) {
+        *dash = '\0';
+        base = (uintptr_t)strtoull(line, nullptr, 16);
+      }
+      break;
+    }
+  }
+  fclose(maps);
+  return base;
+}
+#endif
+
+// Attempt to resolve runtime addresses to "function  file:line" strings using
+// addr2line (Linux) or atos (macOS). Issues a single subprocess call for all
+// frames to minimise overhead.
+//
+// out[i] must be a caller-provided buffer of out_sz bytes; it is left empty
+// ('\0') for frames that could not be resolved.
+//
+// Returns true if at least one frame was resolved.
+static bool crash_symbolize(void *const *addrs, size_t n,
+                              char (*out)[512], size_t out_sz)
+{
+  if (n == 0)
+    return false;
+
+  // ── Locate the current executable ─────────────────────────────────────────
+  char exe[4096] = "";
+#ifdef __linux__
+  {
+    ssize_t r = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+    if (r > 0)
+      exe[r] = '\0';
+  }
+#elif defined(__APPLE__)
+  {
+    uint32_t sz = (uint32_t)sizeof(exe);
+    _NSGetExecutablePath(exe, &sz);
+  }
+#endif
+  if (exe[0] == '\0')
+    return false;
+
+  // ── Build command ──────────────────────────────────────────────────────────
+  char cmd[8192];
+  int pos = 0;
+
+#ifdef __linux__
+  // addr2line -e <exe> -f -C -p <addr1> <addr2> ...
+  // Subtract the ASLR base so addr2line sees file-relative offsets.
+  uintptr_t base = crash_exe_load_base(exe);
+  pos = snprintf(cmd, sizeof(cmd), "addr2line -e '%s' -f -C -p", exe);
+  for (size_t i = 0; i < n && pos > 0 && (size_t)pos < sizeof(cmd) - 32; i++) {
+    uintptr_t rel = base ? ((uintptr_t)addrs[i] - base) : (uintptr_t)addrs[i];
+    pos += snprintf(cmd + pos, sizeof(cmd) - (size_t)pos,
+                    " 0x%lx", (unsigned long)rel);
+  }
+
+#elif defined(__APPLE__)
+  // atos -o <exe> -l <slide_hex> <addr1> <addr2> ...
+  // _dyld_get_image_vmaddr_slide(0) gives the ASLR slide for the main image.
+  uintptr_t slide = (uintptr_t)_dyld_get_image_vmaddr_slide(0);
+  pos = snprintf(cmd, sizeof(cmd), "atos -o '%s' -l 0x%lx",
+                 exe, (unsigned long)slide);
+  for (size_t i = 0; i < n && pos > 0 && (size_t)pos < sizeof(cmd) - 32; i++) {
+    pos += snprintf(cmd + pos, sizeof(cmd) - (size_t)pos,
+                    " 0x%lx", (unsigned long)(uintptr_t)addrs[i]);
+  }
+#else
+  return false;
+#endif
+
+  if (pos <= 0 || (size_t)pos >= sizeof(cmd) - 20)
+    return false;
+  snprintf(cmd + pos, sizeof(cmd) - (size_t)pos, " 2>/dev/null");
+
+  FILE *fp = popen(cmd, "r");
+  if (!fp)
+    return false;
+
+  bool got_any = false;
+  for (size_t i = 0; i < n; i++) {
+    char buf[512] = "";
+    if (!fgets(buf, sizeof(buf), fp))
+      break;
+    char *nl = strchr(buf, '\n');
+    if (nl)
+      *nl = '\0';
+    // Discard uninformative addr2line output
+    if (buf[0] != '\0'
+        && strcmp(buf, "?? ??:0") != 0
+        && strcmp(buf, "?? at ??:0") != 0
+        && strcmp(buf, "??") != 0) {
+      strncpy(out[i], buf, out_sz - 1);
+      out[i][out_sz - 1] = '\0';
+      got_any = true;
+    }
+  }
+  pclose(fp);
+  return got_any;
+}
+
+// ── Crash handler ────────────────────────────────────────────────────────────
+
+void CbcCrashHandler(int sig) {
+  char signame[16] = "unknown";
+  switch (sig) {
+  case SIGILL:  strcpy(signame, "SIGILL");  break;
+  case SIGSEGV: strcpy(signame, "SIGSEGV"); break;
+  case SIGABRT: strcpy(signame, "SIGABRT"); break;
+  case SIGFPE:  strcpy(signame, "SIGFPE");  break;
+  }
+
+  fflush(stdout);
+  fprintf(stderr,
+          "\n\nERROR while running Cbc. Signal %s caught. Getting stack trace.\n",
+          signame);
+  {
+    const char *st = getenv("RUNNING_TEST");
+    if (st)
+      fprintf(stderr, "Error happened while running the \"%s\" test\n", st);
+  }
+  fflush(stderr);
 
 #define MAX_FRAMES 50
   void *array[MAX_FRAMES];
-  size_t size;
-  char **strings;
+  char  resolved[MAX_FRAMES][512];
   size_t i;
 
-  size = backtrace(array, MAX_FRAMES);
-  strings = backtrace_symbols(array, size);
+  for (i = 0; i < MAX_FRAMES; i++)
+    resolved[i][0] = '\0';
 
+  size_t size   = (size_t)backtrace(array, MAX_FRAMES);
+  char **strings = backtrace_symbols(array, size);
+
+  // Best-effort: try to resolve addresses to function + file:line.
+  // This works well for debug builds; for release builds demangling still helps.
+  bool have_locations = crash_symbolize(array, size, resolved,
+                                         sizeof(resolved[0]));
+
+  fprintf(stderr, "\nStack trace (%zu frames):\n", size);
   for (i = 0; i < size; i++) {
-    fprintf(stderr, "%s\n", strings[i]);
+    char sym[1024] = "", addr[64] = "";
+    if (strings)
+      crash_parse_bt_line(strings[i], sym, sizeof(sym), addr, sizeof(addr));
+
+    char *demangled  = sym[0] ? crash_demangle(sym) : nullptr;
+    const char *name = demangled ? demangled
+                     : sym[0]    ? sym
+                     : (strings  ? strings[i] : "??");
+
+    if (have_locations && resolved[i][0])
+      fprintf(stderr, "  %-3zu  %s\n       at %s\n", i, name, resolved[i]);
+    else
+      fprintf(stderr, "  %-3zu  %s  %s\n", i, name,
+              addr[0] ? addr : (strings ? strings[i] : ""));
+
     fflush(stderr);
+    if (demangled)
+      free(demangled);
   }
-  fprintf(stderr, "\n\n");
+  fprintf(stderr, "\n");
   fflush(stderr);
 
-  free(strings);
+  if (strings)
+    free(strings);
 
   if (!cbcCrashAnnounced) {
     cbcCrashAnnounced = 1;

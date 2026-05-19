@@ -22,10 +22,8 @@
 
 #include "Cbc_C_Interface.h"
 
-#ifndef FIXTURE_DIR
-#  define FIXTURE_DIR "."
-#endif
-#define GRAPHDRAW_MPS FIXTURE_DIR "/fixtures/graphdraw-domain.mps.gz"
+#include "test_utils.h"
+#define GRAPHDRAW_MPS fixture_path("graphdraw-domain.mps.gz")
 
 /* Known / reference values */
 #define GRAPHDRAW_LP_OPT  12672.0

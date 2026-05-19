@@ -29,10 +29,8 @@
 
 /* Absolute path to the fixture file — resolved relative to this source file's
    directory at compile time via the FIXTURE_DIR macro injected by Makefile.am */
-#ifndef FIXTURE_DIR
-#  define FIXTURE_DIR "."
-#endif
-#define NURSESCHED_MPS FIXTURE_DIR "/fixtures/nursesched-sprint02.mps.gz"
+#include "test_utils.h"
+#define NURSESCHED_MPS fixture_path("nursesched-sprint02.mps.gz")
 
 /* Known solution values */
 #define NURSESCHED_LP_OPT      54.416667

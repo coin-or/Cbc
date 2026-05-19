@@ -17,10 +17,8 @@
 
 #include "Cbc_C_Interface.h"
 
-#ifndef FIXTURE_DIR
-#  define FIXTURE_DIR "."
-#endif
-#define TRDTA_MPS FIXTURE_DIR "/fixtures/trdta5581.mps.gz"
+#include "test_utils.h"
+#define TRDTA_MPS fixture_path("trdta5581.mps.gz")
 
 static int tests_run    = 0;
 static int tests_passed = 0;

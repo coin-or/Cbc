@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=MIPster Tests
+Comment=Run the MIPster solver test suite
+Exec=bash -c "run-mipster-tests; echo; read -rp 'Press Enter to close...' _"
+Terminal=true
+Icon=utilities-terminal
+Categories=Development;Science;
+Keywords=MIP;solver;test;optimization;

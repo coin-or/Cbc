@@ -1,0 +1,110 @@
+#!/bin/bash
+# run-mipster-tests — run the MIPster test suite with concise pass/fail output.
+#
+# On success prints one line per test:  [N/T] TestName ... PASS (Xs)
+# On failure prints the full test output below the FAIL line so problems are
+# immediately visible without needing to re-run with --verbose.
+#
+# Fixture MPS files are located automatically:
+#   1. $MIPSTER_FIXTURE_DIR  (env override)
+#   2. <script_dir>/../share/mipster/test/fixtures   (installed FHS layout)
+#   3. <script_dir>/fixtures                          (build-tree layout)
+#
+# Exit code: 0 if all tests pass, 1 if any fail.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# ── Locate fixture directory ─────────────────────────────────────────────────
+if [ -z "${MIPSTER_FIXTURE_DIR:-}" ]; then
+  if [ -d "$SCRIPT_DIR/fixtures" ]; then
+    MIPSTER_FIXTURE_DIR="$SCRIPT_DIR/fixtures"
+  elif [ -d "$SCRIPT_DIR/../share/mipster/test/fixtures" ]; then
+    MIPSTER_FIXTURE_DIR="$(cd "$SCRIPT_DIR/../share/mipster/test/fixtures" && pwd)"
+  else
+    echo "WARNING: fixture directory not found; MPS-based tests may fail." >&2
+    MIPSTER_FIXTURE_DIR=""
+  fi
+fi
+export MIPSTER_FIXTURE_DIR
+
+# ── Test list (order matters for readability) ────────────────────────────────
+TESTS=(
+  CInterfaceTest
+  CInterfaceTest_tsp_random
+  CInterfaceTest_fl_random
+  CInterfaceTest_mdkp_random
+  CInterfaceTest_nursesched
+  CInterfaceTest_a1
+  CInterfaceTest_graphdraw
+  CInterfaceTest_trdta5581
+  CInterfaceTest_trd445c
+  CbcSolverLpTest
+)
+
+TOTAL=${#TESTS[@]}
+PASS=0
+FAIL=0
+FAILURES=()
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+# Width of the counter field (e.g. 2 for totals up to 99)
+W=${#TOTAL}
+# Fixed width for the test name column
+NAME_COL=40
+
+run_test() {
+  local idx="$1"
+  local name="$2"
+
+  # Find binary: next to this script (installed), or in cwd (build tree)
+  local bin
+  if [ -x "$SCRIPT_DIR/$name" ]; then
+    bin="$SCRIPT_DIR/$name"
+  elif command -v "$name" >/dev/null 2>&1; then
+    bin="$(command -v "$name")"
+  elif [ -x "./$name" ]; then
+    bin="./$name"
+  else
+    printf "[%*d/%d] %-*s SKIP  (not found)\n" "$W" "$idx" "$TOTAL" "$NAME_COL" "$name"
+    return
+  fi
+
+  printf "[%*d/%d] %-*s" "$W" "$idx" "$TOTAL" "$NAME_COL" "$name"
+
+  local t_start
+  t_start=$(date +%s)
+  local output rc
+  output=$("$bin" 2>&1) && rc=0 || rc=$?
+  local elapsed=$(( $(date +%s) - t_start ))
+
+  if [ "$rc" -eq 0 ]; then
+    printf " PASS  (%ds)\n" "$elapsed"
+    PASS=$(( PASS + 1 ))
+  else
+    printf " FAIL  (%ds)\n" "$elapsed"
+    FAIL=$(( FAIL + 1 ))
+    FAILURES+=("$name")
+    printf '%s\n' "$output" | sed 's/^/    | /'
+    printf '    \n'
+  fi
+}
+
+# ── Run all tests ────────────────────────────────────────────────────────────
+echo "=== MIPster Test Suite ==="
+[ -n "$MIPSTER_FIXTURE_DIR" ] && echo "    fixtures: $MIPSTER_FIXTURE_DIR"
+echo ""
+
+for i in "${!TESTS[@]}"; do
+  run_test $(( i + 1 )) "${TESTS[$i]}"
+done
+
+# ── Summary ──────────────────────────────────────────────────────────────────
+echo ""
+if [ "$FAIL" -eq 0 ]; then
+  echo "All ${PASS} tests passed."
+else
+  echo "${FAIL}/${TOTAL} test(s) FAILED: ${FAILURES[*]}"
+  exit 1
+fi

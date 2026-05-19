@@ -9,6 +9,26 @@ AM_CPPFLAGS = -I$(srcdir)/../src -I$(srcdir)/../src/CoinUtils -I$(srcdir)/../src
 AM_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################
+#                   Install paths for fixtures / runner / desktop      #
+########################################################################
+
+# Fixtures install to $(datadir)/mipster/test/fixtures/
+pkgtestfixturedir = $(datadir)/mipster/test/fixtures
+dist_pkgtestfixture_DATA = \
+  fixtures/A-1.mps.gz \
+  fixtures/graphdraw-domain.mps.gz \
+  fixtures/nursesched-sprint02.mps.gz \
+  fixtures/trd445c.mps.gz \
+  fixtures/trdta5581.mps.gz
+
+# Runner script installs to $(bindir)/run-mipster-tests
+dist_bin_SCRIPTS = run-mipster-tests
+
+# Desktop entry installs to $(datadir)/applications/
+appsdir = $(datadir)/applications
+dist_apps_DATA = mipster-tests.desktop
+
+########################################################################
 #                         unitTest for Cbc                             #
 ########################################################################
 
@@ -132,13 +152,4 @@ CInterfaceTest_trd445c_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_V
 CInterfaceTest_trd445c_LDADD = ../src/libmipster.la
 
 ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CbcSolverLpTest$(EXEEXT)
-	export RUNNING_TEST="CInterfaceTest" ; ./CInterfaceTest$(EXEEXT) $(MIPLIB3_DATA) $(SAMPLE_DATA)
-	export RUNNING_TEST="CInterfaceTest_tsp_random" ; ./CInterfaceTest_tsp_random$(EXEEXT)
-	export RUNNING_TEST="CInterfaceTest_fl_random" ; ./CInterfaceTest_fl_random$(EXEEXT)
-	export RUNNING_TEST="CInterfaceTest_mdkp_random" ; ./CInterfaceTest_mdkp_random$(EXEEXT)
-	export RUNNING_TEST="CInterfaceTest_nursesched" ; ./CInterfaceTest_nursesched$(EXEEXT)
-	export RUNNING_TEST="CInterfaceTest_a1" ; ./CInterfaceTest_a1$(EXEEXT)
-	export RUNNING_TEST="CInterfaceTest_graphdraw" ; ./CInterfaceTest_graphdraw$(EXEEXT)
-	export RUNNING_TEST="CInterfaceTest_trdta5581" ; ./CInterfaceTest_trdta5581$(EXEEXT)
-	export RUNNING_TEST="CInterfaceTest_trd445c" ; ./CInterfaceTest_trd445c$(EXEEXT)
-	export RUNNING_TEST="CbcSolverLpTest" ; ./CbcSolverLpTest$(EXEEXT)
+	MIPSTER_FIXTURE_DIR=$(abs_srcdir)/fixtures $(srcdir)/run-mipster-tests

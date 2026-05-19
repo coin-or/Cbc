@@ -22,10 +22,8 @@
 
 #include "Cbc_C_Interface.h"
 
-#ifndef FIXTURE_DIR
-#  define FIXTURE_DIR "."
-#endif
-#define A1_MPS FIXTURE_DIR "/fixtures/A-1.mps.gz"
+#include "test_utils.h"
+#define A1_MPS fixture_path("A-1.mps.gz")
 
 /* Known solution values */
 #define A1_LP_FULL         3100022.0

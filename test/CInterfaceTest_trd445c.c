@@ -29,10 +29,8 @@
 
 #include "Cbc_C_Interface.h"
 
-#ifndef FIXTURE_DIR
-#  define FIXTURE_DIR "."
-#endif
-#define TRD445C_MPS FIXTURE_DIR "/fixtures/trd445c.mps.gz"
+#include "test_utils.h"
+#define TRD445C_MPS fixture_path("trd445c.mps.gz")
 
 /* Reference values (cross-validated) */
 #define LP_FULL        -158420.57871552

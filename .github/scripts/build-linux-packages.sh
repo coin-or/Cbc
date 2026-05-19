@@ -37,9 +37,13 @@ echo "    dist dir: ${DIST_DIR}"
 
 # ── Detect version ─────────────────────────────────────────────────────────────
 VERSION="$("${DIST_DIR}/bin/mipster-generic" --version 2>&1 \
-  | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+|devel' | head -1 || echo 'devel')"
-# Debian/RPM/Arch require the version to start with a digit
-[ "${VERSION}" = "devel" ] && VERSION="0.0.0.devel"
+  | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo '')"
+if [ -z "${VERSION}" ]; then
+  # Dev build: use latest git tag + short commit hash for traceability
+  LATEST_TAG="$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo '0.0.0')"
+  GIT_HASH="$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
+  VERSION="${LATEST_TAG}+devel.${GIT_HASH}"
+fi
 echo "    version : ${VERSION}"
 
 # ── Build staging tree (FHS layout) ──────────────────────────────────────────

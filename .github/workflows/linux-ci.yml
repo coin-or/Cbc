@@ -200,6 +200,7 @@ jobs:
 
       - name: Build DEB and RPM packages
         run: |
+          git fetch --tags --quiet 2>/dev/null || true
           chmod +x .github/scripts/build-linux-packages.sh
           .github/scripts/build-linux-packages.sh dist/mipster-linux-x86_64.tar.gz x86_64
 
@@ -236,6 +237,7 @@ jobs:
 
       - name: Build DEB and RPM packages
         run: |
+          git fetch --tags --quiet 2>/dev/null || true
           chmod +x .github/scripts/build-linux-packages.sh
           .github/scripts/build-linux-packages.sh dist/mipster-linux-aarch64.tar.gz aarch64
 
@@ -261,7 +263,7 @@ jobs:
 
       - name: Install build tools
         run: |
-          pacman -Sy --noconfirm base-devel
+          pacman -Sy --noconfirm base-devel git
 
       - name: Download Linux x86_64 artifact
         uses: actions/download-artifact@v4
@@ -271,6 +273,7 @@ jobs:
 
       - name: Build Arch package
         run: |
+          git fetch --tags --quiet 2>/dev/null || true
           # makepkg cannot run as root; create a build user
           useradd -m builder
           chown -R builder:builder dist/

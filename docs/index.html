@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIPster — Open-Source MIP Solver</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #253047;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #334155;
+      --radius: 10px;
+      --win-color: #0078d4;
+      --mac-color: #555;
+      --linux-color: #e65c00;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Nav ── */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+    .nav-brand { font-weight: 700; font-size: 1.1rem; color: var(--text); }
+    .nav-links { display: flex; gap: 1.5rem; font-size: 0.9rem; }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 5rem 2rem 4rem;
+      background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 1rem;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      font-size: 1.2rem;
+      color: var(--muted);
+      max-width: 640px;
+      margin: 0 auto 2rem;
+    }
+    .badge {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.25rem 0.9rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.7rem 1.4rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: opacity .15s;
+      text-decoration: none !important;
+    }
+    .btn:hover { opacity: 0.85; text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+    /* ── Section ── */
+    section { max-width: 960px; margin: 0 auto; padding: 3rem 2rem; }
+    section h2 {
+      font-size: 1.6rem; font-weight: 700; margin-bottom: 1.5rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Download cards ── */
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .dl-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+    }
+    .dl-card-header {
+      display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.9rem;
+    }
+    .dl-icon {
+      width: 38px; height: 38px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; flex-shrink: 0;
+    }
+    .dl-icon-linux  { background: #7c2d12; }
+    .dl-icon-mac    { background: #1f2937; }
+    .dl-icon-win    { background: #1e3a5f; }
+    .dl-card-title  { font-weight: 600; font-size: 1rem; }
+    .dl-card-sub    { font-size: 0.8rem; color: var(--muted); }
+    .dl-links { display: flex; flex-direction: column; gap: 0.45rem; }
+    .dl-link {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.82rem;
+      color: var(--text);
+      text-decoration: none !important;
+      transition: border-color .15s;
+    }
+    .dl-link:hover { border-color: var(--accent); }
+    .dl-label { color: var(--muted); font-size: 0.75rem; }
+
+    /* ── Features grid ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+    }
+    .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .feature-card p  { font-size: 0.88rem; color: var(--muted); }
+
+    /* ── Code block ── */
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
+    code { font-family: "SF Mono", "Cascadia Code", Consolas, monospace; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">⚡ MIPster</span>
+  <div class="nav-links">
+    <a href="#download">Download</a>
+    <a href="#features">Features</a>
+    <a href="#quickstart">Quick Start</a>
+    <a href="https://github.com/h-g-s/mipster">GitHub</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="badge">Open Source · EPL-2.0 · COIN-OR based</div>
+  <h1>Mixed-Integer Programming<br>with <span>MIPster</span></h1>
+  <p>A high-performance, single-build MIP solver — a streamlined fork of COIN-OR CBC with a clean C API and strong default performance.</p>
+  <a class="btn btn-primary" href="#download">⬇ Download</a>
+  &nbsp;
+  <a class="btn btn-secondary" href="https://github.com/h-g-s/mipster">View on GitHub</a>
+</div>
+
+<!-- Download -->
+<section id="download">
+  <h2>⬇ Download</h2>
+  <div class="download-grid">
+
+    <!-- Linux x86_64 -->
+    <div class="dl-card">
+      <div class="dl-card-header">
+        <div class="dl-icon dl-icon-linux">🐧</div>
+        <div>
+          <div class="dl-card-title">Linux x86_64</div>
+          <div class="dl-card-sub">glibc 2.34+ · Ubuntu 22.04, Fedora 35, RHEL 9</div>
+        </div>
+      </div>
+      <div class="dl-links">
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-x86_64.tar.gz">
+          <span>📦 Tarball (.tar.gz)</span><span class="dl-label">binary + lib + headers</span>
+        </a>
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-x86_64.deb">
+          <span>📦 Debian/Ubuntu (.deb)</span><span class="dl-label">apt install</span>
+        </a>
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-x86_64.rpm">
+          <span>📦 Fedora/RHEL (.rpm)</span><span class="dl-label">dnf install</span>
+        </a>
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-x86_64-arch.pkg.tar.zst">
+          <span>📦 Arch Linux (.pkg.tar.zst)</span><span class="dl-label">pacman -U</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Linux aarch64 -->
+    <div class="dl-card">
+      <div class="dl-card-header">
+        <div class="dl-icon dl-icon-linux">🐧</div>
+        <div>
+          <div class="dl-card-title">Linux aarch64</div>
+          <div class="dl-card-sub">glibc 2.34+ · ARM64 (Raspberry Pi 5, AWS Graviton)</div>
+        </div>
+      </div>
+      <div class="dl-links">
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-aarch64.tar.gz">
+          <span>📦 Tarball (.tar.gz)</span><span class="dl-label">binary + lib + headers</span>
+        </a>
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-aarch64.deb">
+          <span>📦 Debian/Ubuntu (.deb)</span><span class="dl-label">apt install</span>
+        </a>
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-aarch64.rpm">
+          <span>📦 Fedora/RHEL (.rpm)</span><span class="dl-label">dnf install</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- macOS Apple Silicon -->
+    <div class="dl-card">
+      <div class="dl-card-header">
+        <div class="dl-icon dl-icon-mac">🍎</div>
+        <div>
+          <div class="dl-card-title">macOS Apple Silicon</div>
+          <div class="dl-card-sub">arm64 · M1, M2, M3, M4</div>
+        </div>
+      </div>
+      <div class="dl-links">
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-macos-arm64.tar.gz">
+          <span>📦 Tarball (.tar.gz)</span><span class="dl-label">binary + lib + headers</span>
+        </a>
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-macos-arm64.pkg">
+          <span>📦 Installer (.pkg)</span><span class="dl-label">double-click to install</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- macOS Intel -->
+    <div class="dl-card">
+      <div class="dl-card-header">
+        <div class="dl-icon dl-icon-mac">🍎</div>
+        <div>
+          <div class="dl-card-title">macOS Intel</div>
+          <div class="dl-card-sub">x86_64 · macOS 13 Ventura+</div>
+        </div>
+      </div>
+      <div class="dl-links">
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-macos-x86_64.tar.gz">
+          <span>📦 Tarball (.tar.gz)</span><span class="dl-label">binary + lib + headers</span>
+        </a>
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-macos-x86_64.pkg">
+          <span>📦 Installer (.pkg)</span><span class="dl-label">double-click to install</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Windows -->
+    <div class="dl-card">
+      <div class="dl-card-header">
+        <div class="dl-icon dl-icon-win">🪟</div>
+        <div>
+          <div class="dl-card-title">Windows x86_64</div>
+          <div class="dl-card-sub">Windows 10/11 · MinGW64 runtime</div>
+        </div>
+      </div>
+      <div class="dl-links">
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-windows-x86_64-setup.exe">
+          <span>📦 Installer (.exe)</span><span class="dl-label">NSIS installer, adds to PATH</span>
+        </a>
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases/latest/download/mipster-windows-x86_64.zip">
+          <span>📦 Zip archive (.zip)</span><span class="dl-label">portable, no install needed</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- All releases -->
+    <div class="dl-card" style="border-style: dashed;">
+      <div class="dl-card-header">
+        <div class="dl-icon" style="background:#1e293b; font-size:1.4rem;">🏷</div>
+        <div>
+          <div class="dl-card-title">All Releases</div>
+          <div class="dl-card-sub">Previous versions, release notes, checksums</div>
+        </div>
+      </div>
+      <div class="dl-links">
+        <a class="dl-link" href="https://github.com/h-g-s/mipster/releases">
+          <span>View all releases on GitHub</span><span class="dl-label">→</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features">
+  <h2>✨ Features</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <h3>🚀 Strong Default Performance</h3>
+      <p>Tuned for set packing, covering, and partitioning constraints — common in column-generation formulations. Advanced cut generators and conflict-graph based preprocessing.</p>
+    </div>
+    <div class="feature-card">
+      <h3>⚡ Racing LP Portfolio</h3>
+      <p>Multiple LP configurations race in parallel; the first to finish wins. Exploits all available cores on the node for LP relaxation solving.</p>
+    </div>
+    <div class="feature-card">
+      <h3>🔌 Clean C API</h3>
+      <p>A comprehensive C interface callable from Python (via CFFI/ctypes), Julia, Rust, and any language with C FFI. Binary and source compatible with COIN-OR CBC.</p>
+    </div>
+    <div class="feature-card">
+      <h3>📦 Single Build System</h3>
+      <p>Five upstream projects (CoinUtils, Osi, Clp, Cgl, Cbc) merged into one autotools build. <code>./configure &amp;&amp; make &amp;&amp; make install</code> — no orchestration needed.</p>
+    </div>
+    <div class="feature-card">
+      <h3>🛡 Debug Binaries Included</h3>
+      <p>Every release ships <code>mipster-dbg</code> with AddressSanitizer and debug symbols. Diagnose solver issues on user machines with the same binary.</p>
+    </div>
+    <div class="feature-card">
+      <h3>⚖️ EPL-2.0 License</h3>
+      <p>Same open-source license as upstream COIN-OR CBC. Use freely in academic and commercial settings. No GPL dependencies.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Start -->
+<section id="quickstart">
+  <h2>🚀 Quick Start</h2>
+
+  <p style="margin-bottom:1rem; color:var(--muted)">After installing via your platform's package above:</p>
+
+  <pre><code># Solve a MPS file
+mipster problem.mps -solve
+
+# Set a 5-minute time limit
+mipster problem.mps -sec 300 -solve
+
+# Write solution to file
+mipster problem.mps -solve -solu solution.txt
+
+# Show all parameters
+mipster --help</code></pre>
+
+  <p style="margin-top:1.5rem; margin-bottom:1rem; color:var(--muted)">Using the C API:</p>
+
+  <pre><code>#include &lt;mipster/Cbc_C_Interface.h&gt;
+
+Cbc_Model *m = Cbc_newModel();
+Cbc_readMps(m, "problem.mps");
+Cbc_solve(m);
+printf("Objective: %f\n", Cbc_getObjValue(m));
+Cbc_deleteModel(m);</code></pre>
+
+  <p style="margin-top:1.5rem; color:var(--muted)">Compile with:</p>
+  <pre><code>cc myprogram.c $(pkg-config --cflags --libs mipster) -o myprogram</code></pre>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>MIPster is a fork of <a href="https://github.com/coin-or/Cbc">COIN-OR CBC</a> · Licensed under <a href="https://github.com/h-g-s/mipster/blob/master/LICENSE">EPL-2.0</a> · <a href="https://github.com/h-g-s/mipster">GitHub</a></p>
+</footer>
+
+</body>
+</html>

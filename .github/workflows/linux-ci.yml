@@ -3,9 +3,13 @@ name: Linux CI
 on:
   push:
     branches: [master]
+    tags: ['v*']
   pull_request:
     branches: [master]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -325,3 +329,68 @@ jobs:
         with:
           name: mipster-macos-x86_64-pkg
           path: "*.pkg"
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - build-linux-x86_64
+      - build-linux-aarch64
+      - build-macos-x86_64
+      - build-macos-arm64
+      - build-windows-x86_64
+      - package-linux-x86_64
+      - package-linux-aarch64
+      - package-arch-x86_64
+      - package-macos-arm64
+      - package-macos-x86_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts/
+
+      - name: Collect and rename release assets
+        run: |
+          mkdir -p release/
+          # Tarballs / zip — predictable names for /releases/latest/download/
+          cp all-artifacts/mipster-linux-x86_64/*.tar.gz   release/mipster-linux-x86_64.tar.gz
+          cp all-artifacts/mipster-linux-aarch64/*.tar.gz  release/mipster-linux-aarch64.tar.gz
+          cp all-artifacts/mipster-macos-x86_64/*.tar.gz   release/mipster-macos-x86_64.tar.gz
+          cp all-artifacts/mipster-macos-arm64/*.tar.gz    release/mipster-macos-arm64.tar.gz
+          cp all-artifacts/mipster-windows-x86_64/*.zip    release/mipster-windows-x86_64.zip
+          # Windows installer (rename to predictable name)
+          find all-artifacts/mipster-windows-x86_64-installer/ -name '*.exe' \
+            -exec cp {} release/mipster-windows-x86_64-setup.exe \;
+          # Linux DEB/RPM (rename to predictable names)
+          find all-artifacts/mipster-linux-x86_64-deb/  -name '*.deb' \
+            -exec cp {} release/mipster-linux-x86_64.deb \;
+          find all-artifacts/mipster-linux-x86_64-rpm/  -name '*.rpm' \
+            -exec cp {} release/mipster-linux-x86_64.rpm \;
+          find all-artifacts/mipster-linux-aarch64-deb/ -name '*.deb' \
+            -exec cp {} release/mipster-linux-aarch64.deb \;
+          find all-artifacts/mipster-linux-aarch64-rpm/ -name '*.rpm' \
+            -exec cp {} release/mipster-linux-aarch64.rpm \;
+          # Arch package
+          find all-artifacts/mipster-linux-arch-x86_64/ -name '*.pkg.tar.zst' \
+            -exec cp {} release/mipster-linux-x86_64-arch.pkg.tar.zst \;
+          # macOS .pkg installers
+          find all-artifacts/mipster-macos-arm64-pkg/   -name '*.pkg' \
+            -exec cp {} release/mipster-macos-arm64.pkg \;
+          find all-artifacts/mipster-macos-x86_64-pkg/  -name '*.pkg' \
+            -exec cp {} release/mipster-macos-x86_64.pkg \; 2>/dev/null || true
+          echo "==> Release assets:"
+          ls -lh release/
+
+      - name: Create GitHub Release
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          gh release create "$TAG" \
+            --title "MIPster ${TAG}" \
+            --generate-notes \
+            release/*
+        env:
+          GH_TOKEN: ${{ github.token }}

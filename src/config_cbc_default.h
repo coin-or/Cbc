@@ -5,16 +5,16 @@
 /***************************************************************************/
 
 /* Version number of project */
-#define CBC_VERSION "trunk"
+#define CBC_VERSION "0.1.0"
 
 /* Major Version number of project */
-#define CBC_VERSION_MAJOR 9999
+#define CBC_VERSION_MAJOR 0
 
 /* Minor Version number of project */
-#define CBC_VERSION_MINOR 9999
+#define CBC_VERSION_MINOR 1
 
 /* Release Version number of project */
-#define CBC_VERSION_RELEASE 9999
+#define CBC_VERSION_RELEASE 0
 
 #ifndef CBCLIB_EXPORT
 #if defined(_WIN32) && defined(DLL_EXPORT)

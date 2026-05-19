@@ -2,6 +2,20 @@
 
 **MIPster** is a high-performance open-source solver for Mixed-Integer Linear Programming (MIP/MILP) problems. It is a streamlined fork of [COIN-OR CBC](https://github.com/coin-or/Cbc), redesigned for simplicity, performance, and ease of integration.
 
+**[🌐 Project Website](https://h-g-s.github.io/mipster/) · [📦 Latest Release](https://github.com/h-g-s/mipster/releases/latest)**
+
+---
+
+## Download
+
+| Platform | Installer / Package | Tarball |
+|---|---|---|
+| **Linux x86_64** (Ubuntu 22.04+, Fedora 35+, RHEL 9+) | [.deb](https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-x86_64.deb) · [.rpm](https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-x86_64.rpm) · [Arch](https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-x86_64-arch.pkg.tar.zst) | [.tar.gz](https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-x86_64.tar.gz) |
+| **Linux aarch64** (ARM64, Raspberry Pi 5, AWS Graviton) | [.deb](https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-aarch64.deb) · [.rpm](https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-aarch64.rpm) | [.tar.gz](https://github.com/h-g-s/mipster/releases/latest/download/mipster-linux-aarch64.tar.gz) |
+| **macOS Apple Silicon** (M1, M2, M3, M4) | [.pkg](https://github.com/h-g-s/mipster/releases/latest/download/mipster-macos-arm64.pkg) | [.tar.gz](https://github.com/h-g-s/mipster/releases/latest/download/mipster-macos-arm64.tar.gz) |
+| **macOS Intel** (x86_64, macOS 13+) | [.pkg](https://github.com/h-g-s/mipster/releases/latest/download/mipster-macos-x86_64.pkg) | [.tar.gz](https://github.com/h-g-s/mipster/releases/latest/download/mipster-macos-x86_64.tar.gz) |
+| **Windows x86_64** (Windows 10/11) | [.exe installer](https://github.com/h-g-s/mipster/releases/latest/download/mipster-windows-x86_64-setup.exe) | [.zip](https://github.com/h-g-s/mipster/releases/latest/download/mipster-windows-x86_64.zip) |
+
 ---
 
 ## Goals

@@ -197,10 +197,10 @@ build_variant() {
                 CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 \
                 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c \
                 CbcSolverLpTest; do
-      if [ -f "${build_dir}/test/${tbin}" ]; then
-        strip "${build_dir}/test/${tbin}"
-        patchelf --set-rpath '$ORIGIN/../../lib/generic' "${build_dir}/test/${tbin}"
-        cp "${build_dir}/test/${tbin}" "${test_dir}/"
+      if [ -f "${build_dir}/test/.libs/${tbin}" ]; then
+        strip "${build_dir}/test/.libs/${tbin}"
+        patchelf --set-rpath '$ORIGIN/../../lib/generic' "${build_dir}/test/.libs/${tbin}"
+        cp "${build_dir}/test/.libs/${tbin}" "${test_dir}/"
       fi
     done
     echo "    bin/test/: $(ls "${test_dir}" | wc -l) test binaries"

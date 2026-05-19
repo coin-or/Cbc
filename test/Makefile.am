@@ -26,7 +26,7 @@ dist_bin_SCRIPTS = run-mipster-tests
 
 # Desktop entry installs to $(datadir)/applications/
 appsdir = $(datadir)/applications
-dist_apps_DATA = mipster-tests.desktop
+dist_apps_DATA = mipster-tests.desktop mipster-tests-debug.desktop
 
 ########################################################################
 #                         unitTest for Cbc                             #

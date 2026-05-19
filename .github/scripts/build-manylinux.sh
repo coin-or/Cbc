@@ -3,10 +3,14 @@
 #
 # Produces: /project/dist/mipster-linux-x86_64.tar.gz
 #   bin/mipster              — compiled CPU-dispatch launcher (static)
+#   bin/mipster-dbg          — debug+ASan binary (symbols preserved)
 #   bin/mipster-generic      — baseline x86_64 static binary
 #   bin/mipster-avx2         — AVX2/FMA static binary (Haswell 2013+ / Zen2 2019+)
+#   bin/test/                — test suite binaries (generic build)
 #   lib/generic/libmipster.so*   — shared library, baseline
 #   lib/avx2/libmipster.so*      — shared library, AVX2
+#   lib/dbg/libmipster.so*   — debug+ASan shared library
+#   lib/dbg/libasan.so.*     — bundled ASan runtime (self-contained)
 #   include/coin/            — public C API headers
 
 set -euo pipefail
@@ -32,6 +36,87 @@ rsync -a \
 SRC_DIR=/tmp/mipster-src
 
 mkdir -p "${INSTALL_DIR}/bin" "${INSTALL_DIR}/include"
+
+# ── Build debug + ASan variant ────────────────────────────────────────────────
+# Runs first so test failures surface with full debug symbols and ASan checking.
+build_debug_variant() {
+  local name="dbg"
+  local cxxflags="-O1 -g -fno-omit-frame-pointer -fsanitize=address"
+  local build_dir="${BUILD_BASE}-${name}"
+
+  echo ""
+  echo "==> Building debug+ASan variant  CXXFLAGS='${cxxflags}'"
+
+  rm -rf "${build_dir}"
+  mkdir -p "${build_dir}"
+  cd "${build_dir}"
+
+  # Use --disable-static so the mipster binary links dynamically against
+  # libmipster.so (required for ASan instrumentation to be active at runtime).
+  /tmp/mipster-src/configure \
+    --prefix="${build_dir}/install" \
+    --enable-shared \
+    --disable-static \
+    --without-amd \
+    '--with-lapack-lflags=-lopenblas -lgfortran' \
+    CXXFLAGS="${cxxflags}" \
+    LDFLAGS="-fsanitize=address -static-libgcc -static-libstdc++ -Wl,-Bstatic,-lgfortran,-Bdynamic" \
+    2>&1 | tail -3
+
+  # Hide libopenblas.so so the linker falls back to libopenblas.a (static, self-contained).
+  local openblas_so
+  openblas_so=$(ldconfig -p 2>/dev/null | awk '/libopenblas\.so /{print $NF}' | head -1)
+  [ -n "$openblas_so" ] && mv "$openblas_so" "${openblas_so}.bak"
+
+  make -j"$(nproc)" 2>&1 | tail -3
+  make install 2>&1 | tail -2
+
+  [ -n "$openblas_so" ] && mv "${openblas_so}.bak" "$openblas_so"
+  echo "    Build: OK"
+
+  # ── Full test suite ────────────────────────────────────────────────────────
+  cd "${build_dir}/test"
+  make -j"$(nproc)" 2>&1 | tail -3
+  MIPSTER_FIXTURE_DIR="${SRC_DIR}/test/fixtures" \
+    LD_LIBRARY_PATH="${build_dir}/src/.libs${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+    ASAN_OPTIONS="detect_leaks=0:abort_on_error=1:fast_unwind_on_malloc=0" \
+    bash "${SRC_DIR}/test/run-mipster-tests"
+  echo "    All tests: PASSED (debug+ASan)"
+
+  # ── Debug binary ────────────────────────────────────────────────────────────
+  # Keep debug symbols — do NOT strip.
+  # The binary links against lib/dbg/libmipster.so; set RPATH accordingly.
+  local dbg_bin="${build_dir}/src/.libs/mipster"
+  patchelf --set-rpath '$ORIGIN/../lib/dbg' "${dbg_bin}"
+  cp "${dbg_bin}" "${INSTALL_DIR}/bin/mipster-dbg"
+  echo "    bin/mipster-dbg: $(du -sh "${INSTALL_DIR}/bin/mipster-dbg" | cut -f1)"
+
+  # ── Debug shared library ─────────────────────────────────────────────────────
+  local libdir="${INSTALL_DIR}/lib/dbg"
+  mkdir -p "${libdir}"
+  cp -P "${build_dir}/install/lib"/libmipster.so* "${libdir}/"
+
+  # Keep debug symbols (do NOT strip). Set RPATH so bundled libasan is found.
+  find "${libdir}" -name 'libmipster.so.*.*' ! -type l | \
+    xargs -I{} patchelf --set-rpath '$ORIGIN' {}
+
+  # ── Bundle libasan.so ────────────────────────────────────────────────────────
+  # Copy the ASan runtime from the build environment so the debug binary and
+  # library are fully self-contained (users don't need GCC dev packages).
+  local libasan
+  libasan=$(ldd "${build_dir}/src/.libs/mipster" 2>/dev/null | awk '/libasan/{print $3}' | head -1)
+  if [ -z "$libasan" ] || [ ! -f "$libasan" ]; then
+    libasan=$(ldconfig -p 2>/dev/null | awk '/libasan\.so\.[0-9]/{print $NF}' | sort -V | tail -1)
+  fi
+  if [ -n "$libasan" ] && [ -f "$libasan" ]; then
+    cp "$libasan" "${libdir}/"
+    echo "    Bundled: $(basename "$libasan")"
+  else
+    echo "    Warning: libasan.so not found; debug binary requires system libasan at runtime"
+  fi
+
+  echo "    lib/dbg: $(du -sh "${libdir}" | cut -f1)"
+}
 
 # ── Build one variant (static binary + shared lib) ────────────────────────────
 build_variant() {
@@ -76,6 +161,26 @@ build_variant() {
   ./CInterfaceTest
   echo "    CInterfaceTest: PASSED"
 
+  # ── Collect test binaries for tarball (generic/first variant only) ──────────
+  # These binaries are shipped in bin/test/ so users can run tests without
+  # building from source. RPATH is patched to find lib/<variant>/libmipster.so.
+  if [ "${name}" = "generic" ]; then
+    make -j"$(nproc)" 2>&1 | tail -2
+    local test_dir="${INSTALL_DIR}/bin/test"
+    mkdir -p "${test_dir}"
+    for tbin in CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random \
+                CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 \
+                CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c \
+                CbcSolverLpTest; do
+      if [ -f "${build_dir}/test/${tbin}" ]; then
+        strip "${build_dir}/test/${tbin}"
+        patchelf --set-rpath '$ORIGIN/../../lib/generic' "${build_dir}/test/${tbin}"
+        cp "${build_dir}/test/${tbin}" "${test_dir}/"
+      fi
+    done
+    echo "    bin/test/: $(ls "${test_dir}" | wc -l) test binaries"
+  fi
+
   # ── Static binary ───────────────────────────────────────────────────────────
   strip "${build_dir}/src/.libs/mipster"
   cp "${build_dir}/src/.libs/mipster" "${INSTALL_DIR}/bin/mipster-${name}"
@@ -107,6 +212,10 @@ build_variant() {
   fi
 }
 
+# Debug+ASan build runs first — failures surface with full debug info.
+build_debug_variant
+
+# Release builds follow.
 # -ffp-contract=off: prevent FMA fusion from changing LP floating-point results
 build_variant "generic" "-O3 -ffp-contract=off"
 # x86-64-v3 = AVX2 + BMI1/BMI2 + FMA (Haswell 2013+, AMD Zen2 2019+)
@@ -115,7 +224,7 @@ build_variant "avx2" "-O3 -march=x86-64-v3 -ffp-contract=off"
 # ── Compiled CPU-dispatch launcher ────────────────────────────────────────────
 echo ""
 echo "==> Compiling launcher..."
-cat > /tmp/mipster-launcher.c << 'EOF'
+cat > /tmp/mipster-launcher.c << 'EOF2'
 /*
  * mipster launcher — detects AVX2 at runtime via CPUID, then exec's the
  * appropriate variant binary from the same directory.
@@ -159,7 +268,7 @@ int main(int argc, char *argv[])
     perror(target);
     return 1;
 }
-EOF
+EOF2
 
 gcc -O2 -o "${INSTALL_DIR}/bin/mipster" /tmp/mipster-launcher.c
 echo "    bin/mipster (launcher): $(du -sh "${INSTALL_DIR}/bin/mipster" | cut -f1)"
@@ -187,6 +296,22 @@ done
   echo "    mipster.1.gz"
 for f in mipster.desktop mipster-docs.desktop; do
   [ -f "${DOC_SRC}/${f}" ] && cp "${DOC_SRC}/${f}" "${INSTALL_DIR}/share/applications/" && echo "    ${f}"
+done
+
+# ── Test runner, fixtures, and desktop entries ─────────────────────────────
+echo ""
+echo "==> Installing test runner and fixtures..."
+cp "${SRC_DIR}/test/run-mipster-tests" "${INSTALL_DIR}/bin/"
+chmod +x "${INSTALL_DIR}/bin/run-mipster-tests"
+
+mkdir -p "${INSTALL_DIR}/share/mipster/test/fixtures"
+find "${SRC_DIR}/test/fixtures" -name '*.mps.gz' | while read -r f; do
+  cp "$f" "${INSTALL_DIR}/share/mipster/test/fixtures/"
+done
+echo "    fixtures: $(ls "${INSTALL_DIR}/share/mipster/test/fixtures" | wc -l) files"
+
+for f in mipster-tests.desktop mipster-tests-debug.desktop; do
+  [ -f "${SRC_DIR}/test/${f}" ] && cp "${SRC_DIR}/test/${f}" "${INSTALL_DIR}/share/applications/" && echo "    ${f}"
 done
 
 # ── Package ───────────────────────────────────────────────────────────────────

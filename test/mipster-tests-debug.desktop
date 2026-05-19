@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=MIPster Tests (Debug Build)
+Comment=Run MIPster test suite using the debug/ASan build (lib/dbg/). Reveals memory errors and crashes with full symbol information.
+Exec=bash -c "run-mipster-tests --debug; echo ''; read -rp 'Press Enter to close...' _"
+Terminal=true
+Type=Application
+Categories=Development;Science;
+Icon=utilities-terminal

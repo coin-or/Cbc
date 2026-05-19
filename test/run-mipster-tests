@@ -15,6 +15,22 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DEBUG_MODE=0
+
+# Parse arguments
+for arg in "$@"; do
+  case "$arg" in
+    --debug) DEBUG_MODE=1 ;;
+    --help)
+      echo "Usage: run-mipster-tests [--debug]"
+      echo ""
+      echo "  --debug   Use lib/dbg/ library (with ASan on Linux). Sets LD_LIBRARY_PATH"
+      echo "            (and LD_PRELOAD for ASan init if libasan is bundled)."
+      exit 0
+      ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
+  esac
+done
 
 # ── Locate fixture directory ─────────────────────────────────────────────────
 if [ -z "${MIPSTER_FIXTURE_DIR:-}" ]; then
@@ -28,6 +44,31 @@ if [ -z "${MIPSTER_FIXTURE_DIR:-}" ]; then
   fi
 fi
 export MIPSTER_FIXTURE_DIR
+
+# ── Debug library setup (--debug flag) ──────────────────────────────────────
+if [ "$DEBUG_MODE" -eq 1 ]; then
+  DBG_LIB_DIR=""
+  # Look for lib/dbg/ relative to script (tarball layout: script is in bin/)
+  if [ -d "${SCRIPT_DIR}/../lib/dbg" ]; then
+    DBG_LIB_DIR="$(cd "${SCRIPT_DIR}/../lib/dbg" && pwd)"
+  elif [ -d "${SCRIPT_DIR}/lib/dbg" ]; then
+    DBG_LIB_DIR="$(cd "${SCRIPT_DIR}/lib/dbg" && pwd)"
+  fi
+
+  if [ -n "$DBG_LIB_DIR" ]; then
+    export LD_LIBRARY_PATH="${DBG_LIB_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+    export DYLD_LIBRARY_PATH="${DBG_LIB_DIR}${DYLD_LIBRARY_PATH:+:${DYLD_LIBRARY_PATH}}"
+    # If libasan is bundled, preload it so ASan runtime initialises before user code.
+    local_libasan=$(find "${DBG_LIB_DIR}" -name 'libasan.so.*' ! -type l 2>/dev/null | head -1)
+    if [ -n "$local_libasan" ]; then
+      export LD_PRELOAD="${local_libasan}${LD_PRELOAD:+:${LD_PRELOAD}}"
+    fi
+    export ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0:abort_on_error=1}"
+    echo "    debug library: $DBG_LIB_DIR"
+  else
+    echo "WARNING: --debug specified but lib/dbg/ not found; running with default library" >&2
+  fi
+fi
 
 # ── Test list (order matters for readability) ────────────────────────────────
 TESTS=(
@@ -58,10 +99,12 @@ run_test() {
   local idx="$1"
   local name="$2"
 
-  # Find binary: next to this script (installed), or in cwd (build tree)
+  # Find binary: next to this script (installed), bin/test/ (tarball), or in cwd (build tree)
   local bin
   if [ -x "$SCRIPT_DIR/$name" ]; then
     bin="$SCRIPT_DIR/$name"
+  elif [ -x "$SCRIPT_DIR/test/$name" ]; then
+    bin="$SCRIPT_DIR/test/$name"
   elif command -v "$name" >/dev/null 2>&1; then
     bin="$(command -v "$name")"
   elif [ -x "./$name" ]; then

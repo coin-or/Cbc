@@ -8,12 +8,15 @@
 #   dist/mipster-<ver>-setup-windows-x86_64.exe  — NSIS installer (updates PATH)
 #
 # Contents:
-#   bin/mipster.exe          — CPU-dispatch launcher (CPUID → generic or avx2)
-#   bin/mipster-generic.exe  — baseline x86_64 binary (static, no DLL deps)
-#   bin/mipster-avx2.exe     — AVX2/FMA binary, Haswell 2013+ / Zen2 2019+
-#   lib/generic/libCbc.dll   — shared library, baseline
-#   lib/avx2/libCbc.dll      — shared library, AVX2
-#   include/mipster/         — public C API headers
+#   bin/mipster.exe              — CPU-dispatch launcher (CPUID → generic or avx2)
+#   bin/mipster-dbg.exe          — debug binary (symbols preserved)
+#   bin/mipster-generic.exe      — baseline x86_64 binary (static, no DLL deps)
+#   bin/mipster-avx2.exe         — AVX2/FMA binary, Haswell 2013+ / Zen2 2019+
+#   bin/test/                    — test suite binaries (generic build)
+#   bin/libmipster-dbg.dll       — debug shared library
+#   lib/generic/libmipster.dll.a — import library, baseline
+#   lib/avx2/libmipster.dll.a    — import library, AVX2
+#   include/mipster/             — public C API headers
 #
 # No OpenBLAS dependency: built without BLAS/LAPACK.
 # Binaries are fully self-contained: libgcc, libstdc++, libwinpthread are
@@ -39,6 +42,56 @@ echo "    Source: ${SRC_DIR}"
 # bin/ holds both executables AND the DLLs they depend on, so that everything
 # works from any directory on a clean Windows machine without PATH changes.
 mkdir -p "${INSTALL_DIR}/bin" "${INSTALL_DIR}/include"
+
+# ── Build debug variant ────────────────────────────────────────────────────────
+# Note: ASan is not supported with MinGW. Debug binary uses -O1 -g only.
+build_debug_variant() {
+  local name="dbg"
+  local cxxflags="-O1 -g -fno-omit-frame-pointer"
+  local build_dir="${BUILD_BASE}-${name}"
+
+  echo ""
+  echo "==> Building debug variant: ${name}  CXXFLAGS='${cxxflags}'"
+
+  rm -rf "${build_dir}"
+  mkdir -p "${build_dir}"
+  cd "${build_dir}"
+
+  "${SRC_DIR}/configure" \
+    --prefix="${build_dir}/install" \
+    --enable-shared \
+    --disable-static \
+    --without-amd \
+    --without-lapack \
+    --disable-bzlib \
+    CXXFLAGS="${cxxflags}" \
+    LDFLAGS="-static-libgcc -static-libstdc++ -Wl,-Bstatic,-lwinpthread,-Bdynamic -Wl,--export-all-symbols" \
+    2>&1 | tail -3
+
+  make -j"$(nproc)" 2>&1 | tail -3
+  make install 2>&1 | tail -2
+  echo "    Build: OK"
+
+  # ── Test ──────────────────────────────────────────────────────────────────
+  cd "${build_dir}/test"
+  make -j"$(nproc)" CInterfaceTest.exe 2>&1 | tail -2
+  ./CInterfaceTest.exe
+  echo "    CInterfaceTest: PASSED (debug)"
+
+  # ── Debug executable ───────────────────────────────────────────────────────
+  # No strip — keep debug symbols.
+  cp "${build_dir}/src/.libs/mipster.exe" "${INSTALL_DIR}/bin/mipster-dbg.exe"
+  echo "    bin/mipster-dbg.exe: $(du -sh "${INSTALL_DIR}/bin/mipster-dbg.exe" | cut -f1)"
+
+  # ── Debug DLL ─────────────────────────────────────────────────────────────
+  find "${build_dir}/install/bin" -name 'libmipster*.dll' | while read -r f; do
+    # No strip — keep debug symbols.
+    local base
+    base=$(basename "${f}")
+    cp "${f}" "${INSTALL_DIR}/bin/${base%.dll}-${name}.dll"
+  done
+  echo "    bin/libmipster-${name}.dll: done"
+}
 
 # ── Build one variant (exe + DLL) ─────────────────────────────────────────────
 build_variant() {
@@ -78,6 +131,23 @@ build_variant() {
   ./CInterfaceTest.exe
   echo "    CInterfaceTest: PASSED"
 
+  # ── Collect test binaries for tarball (generic variant only) ──────────────
+  if [ "${name}" = "generic" ]; then
+    make -j"$(nproc)"
+    local test_dir="${INSTALL_DIR}/bin/test"
+    mkdir -p "${test_dir}"
+    for tbin in CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random \
+                CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 \
+                CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c \
+                CbcSolverLpTest; do
+      if [ -f "${build_dir}/test/${tbin}.exe" ]; then
+        strip "${build_dir}/test/${tbin}.exe"
+        cp "${build_dir}/test/${tbin}.exe" "${test_dir}/"
+      fi
+    done
+    echo "    bin/test/: $(ls "${test_dir}" | wc -l) test binaries"
+  fi
+
   # ── Executable ────────────────────────────────────────────────────────────
   # On Windows, libtool places the real exe at src/.libs/mipster.exe
   strip "${build_dir}/src/.libs/mipster.exe"
@@ -102,6 +172,7 @@ build_variant() {
   echo "    bin/libmipster-${name}.dll: done"
 }
 
+build_debug_variant
 build_variant "generic" "-O3 -ffp-contract=off"
 build_variant "avx2"    "-O3 -march=x86-64-v3 -ffp-contract=off"
 
@@ -112,7 +183,7 @@ echo "    include/mipster: copied"
 # ── Compile CPU-dispatch launcher ─────────────────────────────────────────────
 echo ""
 echo "==> Compiling launcher..."
-cat > /tmp/mipster_launcher.c << 'EOF'
+cat > /tmp/mipster_launcher.c << 'EOF2'
 /*
  * mipster_launcher.c — Windows CPU-dispatch launcher for MIPster.
  *
@@ -165,7 +236,7 @@ int main(int argc, char *argv[])
     fprintf(stderr, "mipster: could not exec '%s': %s\n", target, strerror(errno));
     return 1;
 }
-EOF
+EOF2
 
 gcc -O2 -o "${INSTALL_DIR}/bin/mipster.exe" /tmp/mipster_launcher.c
 strip "${INSTALL_DIR}/bin/mipster.exe"

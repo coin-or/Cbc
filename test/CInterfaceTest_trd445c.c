@@ -197,6 +197,9 @@ static void test_mip_optimal(void)
   Cbc_Model *m = load_model();
 
   Cbc_setDblParam(m, DBL_PARAM_TIME_LIMIT, 120.0);
+  /* Disable ratio gap so the solver finds the exact integer optimal,
+     regardless of platform-specific B&B ordering differences. */
+  Cbc_setDblParam(m, DBL_PARAM_GAP_RATIO, 0.0);
 
   Cbc_solve(m);
 

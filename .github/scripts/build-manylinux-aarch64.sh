@@ -41,11 +41,24 @@ mkdir -p "${INSTALL_DIR}/bin" "${INSTALL_DIR}/include"
 # Runs first so test failures surface with full debug symbols and ASan checking.
 build_debug_variant() {
   local name="dbg"
-  local cxxflags="-O1 -g -fno-omit-frame-pointer -fsanitize=address"
   local build_dir="${BUILD_BASE}-${name}"
 
+  # Detect ASan support: manylinux containers may not have libasan installed.
+  local cxxflags ldflags has_asan
+  if echo 'int main(){}' | g++ -fsanitize=address -o /tmp/asan_test_$$ -x c++ - 2>/dev/null; then
+    rm -f /tmp/asan_test_$$
+    cxxflags="-O1 -g -fno-omit-frame-pointer -fsanitize=address"
+    ldflags="-fsanitize=address -static-libgcc -static-libstdc++ -Wl,-Bstatic,-lgfortran,-Bdynamic"
+    has_asan=true
+  else
+    cxxflags="-O1 -g -fno-omit-frame-pointer"
+    ldflags="-static-libgcc -static-libstdc++ -Wl,-Bstatic,-lgfortran,-Bdynamic"
+    has_asan=false
+    echo "    Note: ASan not available in this environment; using debug-only build"
+  fi
+
   echo ""
-  echo "==> Building debug+ASan variant  CXXFLAGS='${cxxflags}'"
+  echo "==> Building debug variant  CXXFLAGS='${cxxflags}'"
 
   rm -rf "${build_dir}"
   mkdir -p "${build_dir}"
@@ -60,7 +73,7 @@ build_debug_variant() {
     --without-amd \
     '--with-lapack-lflags=-lopenblas -lgfortran' \
     CXXFLAGS="${cxxflags}" \
-    LDFLAGS="-fsanitize=address -static-libgcc -static-libstdc++ -Wl,-Bstatic,-lgfortran,-Bdynamic" \
+    LDFLAGS="${ldflags}" \
     2>&1 | tail -3
 
   # Hide libopenblas.so so the linker falls back to libopenblas.a (static, self-contained).
@@ -81,7 +94,7 @@ build_debug_variant() {
     LD_LIBRARY_PATH="${build_dir}/src/.libs${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
     ASAN_OPTIONS="detect_leaks=0:abort_on_error=1:fast_unwind_on_malloc=0" \
     bash "${SRC_DIR}/test/run-mipster-tests"
-  echo "    All tests: PASSED (debug+ASan)"
+  echo "    All tests: PASSED (debug$([ "${has_asan}" = "true" ] && echo "+ASan" || echo ""))"
 
   # ── Debug binary ────────────────────────────────────────────────────────────
   # Keep debug symbols — do NOT strip.
@@ -103,16 +116,18 @@ build_debug_variant() {
   # ── Bundle libasan.so ────────────────────────────────────────────────────────
   # Copy the ASan runtime from the build environment so the debug binary and
   # library are fully self-contained (users don't need GCC dev packages).
-  local libasan
-  libasan=$(ldd "${build_dir}/src/.libs/mipster" 2>/dev/null | awk '/libasan/{print $3}' | head -1)
-  if [ -z "$libasan" ] || [ ! -f "$libasan" ]; then
-    libasan=$(ldconfig -p 2>/dev/null | awk '/libasan\.so\.[0-9]/{print $NF}' | sort -V | tail -1)
-  fi
-  if [ -n "$libasan" ] && [ -f "$libasan" ]; then
-    cp "$libasan" "${libdir}/"
-    echo "    Bundled: $(basename "$libasan")"
-  else
-    echo "    Warning: libasan.so not found; debug binary requires system libasan at runtime"
+  if [ "${has_asan}" = "true" ]; then
+    local libasan
+    libasan=$(ldd "${build_dir}/src/.libs/mipster" 2>/dev/null | awk '/libasan/{print $3}' | head -1)
+    if [ -z "$libasan" ] || [ ! -f "$libasan" ]; then
+      libasan=$(ldconfig -p 2>/dev/null | awk '/libasan\.so\.[0-9]/{print $NF}' | sort -V | tail -1)
+    fi
+    if [ -n "$libasan" ] && [ -f "$libasan" ]; then
+      cp "$libasan" "${libdir}/"
+      echo "    Bundled: $(basename "$libasan")"
+    else
+      echo "    Warning: libasan.so not found; debug binary requires system libasan at runtime"
+    fi
   fi
 
   echo "    lib/dbg: $(du -sh "${libdir}" | cut -f1)"

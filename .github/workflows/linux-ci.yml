@@ -276,6 +276,8 @@ jobs:
           chown -R builder:builder dist/
           chmod +x .github/scripts/build-linux-packages.sh
           chown builder:builder .github/scripts/build-linux-packages.sh
+          # builder needs write access to workspace root to deposit the .pkg.tar.zst
+          chown builder:builder .
           sudo -u builder bash .github/scripts/build-linux-packages.sh \
             dist/mipster-linux-x86_64.tar.gz x86_64
 

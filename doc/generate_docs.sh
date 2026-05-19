@@ -35,11 +35,16 @@ python3 "$SCRIPT_DIR/generate_markdown_reference.py" "$MIPSTER" > "$SCRIPT_DIR/m
 if command -v pdflatex >/dev/null 2>&1; then
     echo "Compiling PDF..."
     TMPDIR=$(mktemp -d)
-    pdflatex -interaction=nonstopmode -output-directory="$TMPDIR" "$SCRIPT_DIR/mipster-parameters.tex" >/dev/null 2>&1
-    pdflatex -interaction=nonstopmode -output-directory="$TMPDIR" "$SCRIPT_DIR/mipster-parameters.tex" >/dev/null 2>&1
-    mv "$TMPDIR/mipster-parameters.pdf" "$SCRIPT_DIR/mipster-parameters.pdf"
+    PDFLOG="$TMPDIR/pdflatex.log"
+    if pdflatex -interaction=nonstopmode -output-directory="$TMPDIR" "$SCRIPT_DIR/mipster-parameters.tex" >"$PDFLOG" 2>&1 && \
+       pdflatex -interaction=nonstopmode -output-directory="$TMPDIR" "$SCRIPT_DIR/mipster-parameters.tex" >>"$PDFLOG" 2>&1; then
+        mv "$TMPDIR/mipster-parameters.pdf" "$SCRIPT_DIR/mipster-parameters.pdf"
+        echo "Done: $SCRIPT_DIR/mipster-parameters.pdf"
+    else
+        echo "Warning: pdflatex failed (non-fatal) — skipping PDF. Last 40 lines of LaTeX log:"
+        tail -40 "$PDFLOG" || true
+    fi
     rm -rf "$TMPDIR"
-    echo "Done: $SCRIPT_DIR/mipster-parameters.pdf"
 else
     echo "pdflatex not found — skipping PDF generation."
     echo "Compile manually: pdflatex doc/mipster-parameters.tex"

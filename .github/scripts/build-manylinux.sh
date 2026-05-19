@@ -157,15 +157,25 @@ build_variant() {
 
   # ── Test ────────────────────────────────────────────────────────────────────
   cd "${build_dir}/test"
-  make -j"$(nproc)" CInterfaceTest 2>&1 | tail -2
-  ./CInterfaceTest
-  echo "    CInterfaceTest: PASSED"
-
-  # ── Collect test binaries for tarball (generic/first variant only) ──────────
-  # These binaries are shipped in bin/test/ so users can run tests without
-  # building from source. RPATH is patched to find lib/<variant>/libmipster.so.
   if [ "${name}" = "generic" ]; then
+    # Full test suite for release: verifies correctness and records CI baseline times.
     make -j"$(nproc)" 2>&1 | tail -2
+    mkdir -p "${INSTALL_DIR}/share/mipster/test"
+    MIPSTER_FIXTURE_DIR="${SRC_DIR}/test/fixtures" \
+      LD_LIBRARY_PATH="${build_dir}/src/.libs${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+      bash "${SRC_DIR}/test/run-mipster-tests" \
+        --write-baseline "GitHub Actions ubuntu-latest / manylinux_2_34 x86_64" \
+        "${INSTALL_DIR}/share/mipster/test/ci-baseline-times.json"
+    echo "    CI baseline times written"
+  else
+    # Smoke test only for non-generic variants (correctness checked by debug+generic runs).
+    make -j"$(nproc)" CInterfaceTest 2>&1 | tail -2
+    ./CInterfaceTest
+    echo "    CInterfaceTest: PASSED"
+  fi
+
+  # ── Collect test binaries for tarball (generic variant only) ──────────────
+  if [ "${name}" = "generic" ]; then
     local test_dir="${INSTALL_DIR}/bin/test"
     mkdir -p "${test_dir}"
     for tbin in CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random \

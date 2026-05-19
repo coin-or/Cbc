@@ -15,21 +15,45 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Millisecond-precision epoch time. Falls back gracefully on platforms without GNU date.
+get_epoch_ms() {
+  python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null || \
+    { date +%s%3N 2>/dev/null; } || \
+    echo $(( $(date +%s) * 1000 ))
+}
+
 DEBUG_MODE=0
+WRITE_BASELINE_PLATFORM=""
+WRITE_BASELINE_FILE=""
 
 # Parse arguments
-for arg in "$@"; do
-  case "$arg" in
-    --debug) DEBUG_MODE=1 ;;
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --debug)
+      DEBUG_MODE=1
+      ;;
+    --write-baseline)
+      WRITE_BASELINE_PLATFORM="${2:-}"
+      WRITE_BASELINE_FILE="${3:-}"
+      shift 2
+      ;;
     --help)
-      echo "Usage: run-mipster-tests [--debug]"
+      echo "Usage: run-mipster-tests [--debug] [--write-baseline PLATFORM FILE]"
       echo ""
       echo "  --debug   Use lib/dbg/ library (with ASan on Linux). Sets LD_LIBRARY_PATH"
       echo "            (and LD_PRELOAD for ASan init if libasan is bundled)."
+      echo "  --write-baseline PLATFORM FILE"
+      echo "            Write CI baseline JSON to FILE after a successful run."
+      echo "            PLATFORM is a human-readable string describing the CI machine."
       exit 0
       ;;
-    *) echo "Unknown option: $arg" >&2; exit 1 ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
   esac
+  shift
 done
 
 # ── Locate fixture directory ─────────────────────────────────────────────────
@@ -88,6 +112,7 @@ TOTAL=${#TESTS[@]}
 PASS=0
 FAIL=0
 FAILURES=()
+TEST_RESULTS=()   # entries: "TestName:elapsed_ms"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 # Width of the counter field (e.g. 2 for totals up to 99)
@@ -117,18 +142,22 @@ run_test() {
   printf "[%*d/%d] %-*s" "$W" "$idx" "$TOTAL" "$NAME_COL" "$name"
 
   local t_start
-  t_start=$(date +%s)
+  t_start=$(get_epoch_ms)
   local output rc
   output=$("$bin" 2>&1) && rc=0 || rc=$?
-  local elapsed=$(( $(date +%s) - t_start ))
+  local elapsed_ms=$(( $(get_epoch_ms) - t_start ))
+  local elapsed_s
+  elapsed_s=$(awk "BEGIN { printf \"%.1f\", ${elapsed_ms}/1000 }" 2>/dev/null || echo "${elapsed_ms}")
 
   if [ "$rc" -eq 0 ]; then
-    printf " PASS  (%ds)\n" "$elapsed"
+    printf " PASS  (%ss)\n" "$elapsed_s"
     PASS=$(( PASS + 1 ))
+    TEST_RESULTS+=("${name}:${elapsed_ms}")
   else
-    printf " FAIL  (%ds)\n" "$elapsed"
+    printf " FAIL  (%ss)\n" "$elapsed_s"
     FAIL=$(( FAIL + 1 ))
     FAILURES+=("$name")
+    TEST_RESULTS+=("${name}:${elapsed_ms}")
     printf '%s\n' "$output" | sed 's/^/    | /'
     printf '    \n'
   fi
@@ -147,6 +176,84 @@ done
 echo ""
 if [ "$FAIL" -eq 0 ]; then
   echo "All ${PASS} tests passed."
+
+  # ── Write baseline (CI mode) ───────────────────────────────────────────────
+  if [ -n "${WRITE_BASELINE_FILE:-}" ] && [ -n "${WRITE_BASELINE_PLATFORM:-}" ]; then
+    mkdir -p "$(dirname "${WRITE_BASELINE_FILE}")"
+    python3 - "${WRITE_BASELINE_PLATFORM}" "${WRITE_BASELINE_FILE}" "${TEST_RESULTS[@]}" << 'PYEOF'
+import sys, json, datetime
+platform_str = sys.argv[1]
+out_file = sys.argv[2]
+times = {}
+for arg in sys.argv[3:]:
+    name, ms = arg.rsplit(":", 1)
+    times[name] = int(ms)
+data = {
+    "platform": platform_str,
+    "generated": datetime.date.today().isoformat(),
+    "times_ms": times
+}
+with open(out_file, "w") as f:
+    json.dump(data, f, indent=2, sort_keys=True)
+PYEOF
+    echo "    Baseline written: ${WRITE_BASELINE_FILE}"
+  fi
+
+  # ── Comparison vs CI baseline (user mode) ─────────────────────────────────
+  if [ -z "${WRITE_BASELINE_FILE:-}" ] && command -v python3 >/dev/null 2>&1; then
+    # Locate the bundled CI baseline: script lives in bin/, baseline in share/mipster/test/
+    BASELINE_FILE=""
+    for candidate in \
+      "${SCRIPT_DIR}/../share/mipster/test/ci-baseline-times.json" \
+      "${SCRIPT_DIR}/share/mipster/test/ci-baseline-times.json"; do
+      if [ -f "${candidate}" ]; then
+        BASELINE_FILE="${candidate}"
+        break
+      fi
+    done
+
+    if [ -n "${BASELINE_FILE}" ]; then
+      python3 - "${BASELINE_FILE}" "${TEST_RESULTS[@]}" << 'PYEOF'
+import sys, json, math
+baseline_file = sys.argv[1]
+test_results = {}
+for arg in sys.argv[2:]:
+    name, ms = arg.rsplit(":", 1)
+    test_results[name] = int(ms)
+
+try:
+    with open(baseline_file) as f:
+        baseline = json.load(f)
+    bl_times = baseline.get("times_ms", {})
+    platform = baseline.get("platform", "unknown")
+    date = baseline.get("generated", "unknown")
+except Exception as e:
+    sys.exit(0)   # silently skip if baseline can't be loaded
+
+comparable = [(name, test_results[name], bl_times[name])
+              for name in test_results if name in bl_times and test_results[name] > 0]
+if not comparable:
+    sys.exit(0)
+
+W = 42
+print(f"\n=== Performance vs CI baseline ===")
+print(f"    Baseline: {platform} ({date})")
+print(f"{'Test':<{W}} {'Yours':>8} {'CI':>8} {'Speedup':>10}")
+print("-" * (W + 30))
+ratios = []
+for name, your_ms, ci_ms in sorted(comparable):
+    ratio = ci_ms / max(your_ms, 1)
+    ratios.append(ratio)
+    sym = "↑" if ratio >= 1.0 else "↓"
+    print(f"{name:<{W}} {your_ms/1000:>7.1f}s {ci_ms/1000:>7.1f}s  {sym}{ratio:>7.2f}x")
+if len(ratios) >= 2:
+    geomean = math.exp(sum(math.log(r) for r in ratios) / len(ratios))
+    desc = "faster than" if geomean >= 1.0 else "slower than"
+    print("-" * (W + 30))
+    print(f"{'Geometric mean:':<{W}} {'':>8} {'':>8}  {geomean:>7.2f}x {desc} CI")
+PYEOF
+    fi
+  fi
 else
   echo "${FAIL}/${TOTAL} test(s) FAILED: ${FAILURES[*]}"
   exit 1

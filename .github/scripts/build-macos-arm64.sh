@@ -122,12 +122,16 @@ echo "    Build: OK"
 
 # ── Test ──────────────────────────────────────────────────────────────────────
 cd "${BUILD_DIR}/test"
-make -j"$(sysctl -n hw.logicalcpu)" CInterfaceTest 2>&1 | tail -2
-./CInterfaceTest
-echo "    CInterfaceTest: PASSED"
-
-# ── Collect test binaries ─────────────────────────────────────────────────────
 make -j"$(sysctl -n hw.logicalcpu)" 2>&1 | tail -2
+mkdir -p "${INSTALL_DIR}/share/mipster/test"
+MIPSTER_FIXTURE_DIR="${SRC_DIR}/test/fixtures" \
+  DYLD_LIBRARY_PATH="${BUILD_DIR}/src/.libs${DYLD_LIBRARY_PATH:+:${DYLD_LIBRARY_PATH}}" \
+  bash "${SRC_DIR}/test/run-mipster-tests" \
+    --write-baseline "GitHub Actions macos-latest (Apple Silicon)" \
+    "${INSTALL_DIR}/share/mipster/test/ci-baseline-times.json"
+echo "    CI baseline times written"
+
+# ── Collect test binaries for tarball ──────────────────────────────────────
 test_dir="${INSTALL_DIR}/bin/test"
 mkdir -p "${test_dir}"
 for tbin in CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random \
@@ -137,9 +141,11 @@ for tbin in CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random \
   if [ -f "${BUILD_DIR}/test/${tbin}" ]; then
     strip "${BUILD_DIR}/test/${tbin}"
     old=$(otool -L "${BUILD_DIR}/test/${tbin}" | awk '/libmipster/{print $1}' | head -1)
-    [ -n "${old}" ] && \
+    if [ -n "${old}" ]; then
+      # Fix dylib reference: test binary is in bin/test/, lib is in lib/
       install_name_tool -change "${old}" "@executable_path/../../lib/$(basename "${old}")" \
         "${BUILD_DIR}/test/${tbin}"
+    fi
     cp "${BUILD_DIR}/test/${tbin}" "${test_dir}/"
   fi
 done

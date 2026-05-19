@@ -124,13 +124,23 @@ build_variant() {
 
   # ── Test ────────────────────────────────────────────────────────────────────
   cd "${build_dir}/test"
-  make -j"$(sysctl -n hw.logicalcpu)" CInterfaceTest 2>&1 | tail -2
-  ./CInterfaceTest
-  echo "    CInterfaceTest: PASSED"
+  if [ "${name}" = "generic" ]; then
+    make -j"$(sysctl -n hw.logicalcpu)" 2>&1 | tail -2
+    mkdir -p "${INSTALL_DIR}/share/mipster/test"
+    MIPSTER_FIXTURE_DIR="${SRC_DIR}/test/fixtures" \
+      DYLD_LIBRARY_PATH="${build_dir}/src/.libs${DYLD_LIBRARY_PATH:+:${DYLD_LIBRARY_PATH}}" \
+      bash "${SRC_DIR}/test/run-mipster-tests" \
+        --write-baseline "GitHub Actions macos-13 (Intel x86_64)" \
+        "${INSTALL_DIR}/share/mipster/test/ci-baseline-times.json"
+    echo "    CI baseline times written"
+  else
+    make -j"$(sysctl -n hw.logicalcpu)" CInterfaceTest 2>&1 | tail -2
+    ./CInterfaceTest
+    echo "    CInterfaceTest: PASSED"
+  fi
 
   # ── Collect test binaries for tarball (generic variant only) ───────────────
   if [ "${name}" = "generic" ]; then
-    make -j"$(sysctl -n hw.logicalcpu)" 2>&1 | tail -2
     local test_dir="${INSTALL_DIR}/bin/test"
     mkdir -p "${test_dir}"
     for tbin in CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random \
@@ -141,9 +151,11 @@ build_variant() {
         strip "${build_dir}/test/${tbin}"
         local old
         old=$(otool -L "${build_dir}/test/${tbin}" | awk '/libmipster/{print $1}' | head -1)
-        [ -n "${old}" ] && \
+        if [ -n "${old}" ]; then
+          # Fix dylib reference: test binary is in bin/test/, lib is in lib/generic/
           install_name_tool -change "${old}" "@executable_path/../../lib/generic/$(basename "${old}")" \
             "${build_dir}/test/${tbin}"
+        fi
         cp "${build_dir}/test/${tbin}" "${test_dir}/"
       fi
     done

@@ -128,7 +128,8 @@ build_variant() {
   # ── Test ──────────────────────────────────────────────────────────────────
   cd "${build_dir}/test"
   make -j"$(nproc)" CInterfaceTest.exe
-  ./CInterfaceTest.exe
+  # Set PATH so test exe finds libmipster DLL
+  PATH="${build_dir}/src/.libs:${PATH}" ./CInterfaceTest.exe
   echo "    CInterfaceTest: PASSED"
 
   # ── Collect test binaries for tarball (generic variant only) ──────────────

@@ -38,6 +38,8 @@ echo "    dist dir: ${DIST_DIR}"
 # ── Detect version ─────────────────────────────────────────────────────────────
 VERSION="$("${DIST_DIR}/bin/mipster-generic" --version 2>&1 \
   | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+|devel' | head -1 || echo 'devel')"
+# Debian/RPM/Arch require the version to start with a digit
+[ "${VERSION}" = "devel" ] && VERSION="0.0.0.devel"
 echo "    version : ${VERSION}"
 
 # ── Build staging tree (FHS layout) ──────────────────────────────────────────

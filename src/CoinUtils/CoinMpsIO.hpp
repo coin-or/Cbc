@@ -1093,6 +1093,11 @@ protected:
 
   /// Hash tables (two sections, 0 - row names, 1 - column names)
   mutable CoinHashLink *hash_[2];
+
+  /// Fast-path for sequential "prefix+integer" names: prefix length (-1 = disabled)
+  mutable int hashPrefixLen_[2];
+  /// Fast-path: integer value of the first name's numeric part (the offset)
+  mutable int hashOffset_[2];
   //@}
 
   /** @name CoinMpsIO object parameters */

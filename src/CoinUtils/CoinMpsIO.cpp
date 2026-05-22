@@ -10,6 +10,7 @@
 #include "CoinUtilsConfig.h"
 
 #include <cassert>
+#include <cctype>
 #include <cstdlib>
 #include <cmath>
 #include <cfloat>
@@ -279,22 +280,21 @@ int CoinMpsCardReader::cleanCard()
 
   if (getit) {
     cardNumber_++;
-    unsigned char *lastNonBlank = reinterpret_cast< unsigned char * >(card_ - 1);
-    unsigned char *image = reinterpret_cast< unsigned char * >(card_);
-    bool tabs = false;
-    while (*image != '\0') {
-      if (*image != '\t' && *image < ' ') {
-        break;
-      } else if (*image != '\t' && *image != ' ') {
-        lastNonBlank = image;
-      } else if (*image == '\t') {
-        tabs = true;
-      }
-      image++;
-    }
-    *(lastNonBlank + 1) = '\0';
+    // Check for embedded tabs (rare; needed only for BOUNDS tab-expansion).
+    // Use SIMD-backed memchr — fast when no tab present (the common case).
+    size_t cardLen = strlen(card_);
+    bool tabs = (memchr(card_, '\t', cardLen) != NULL);
+
+    // Strip trailing whitespace by scanning backward from end of string.
+    // For typical fixed-format MPS lines there are 0-8 trailing spaces,
+    // so this inner loop executes very few iterations.
+    char *p = card_ + static_cast<int>(cardLen) - 1;
+    while (p >= card_ && (*p == ' ' || *p == '\t' || (*p > '\0' && *p < ' ')))
+      --p;
+    *(p + 1) = '\0';
+
     if (tabs && section_ == COIN_BOUNDS_SECTION && !freeFormat_ && eightChar_) {
-      int length = static_cast< int >(lastNonBlank + 1 - reinterpret_cast< unsigned char * >(card_));
+      int length = static_cast< int >(p + 1 - card_);
       assert(length < 81);
       memcpy(card_ + 82, card_, length);
       int pos[] = { 1, 4, 14, 24, 1000 };
@@ -467,18 +467,30 @@ CoinMpsCardReader::~CoinMpsCardReader()
 
 void CoinMpsCardReader::strcpyAndCompress(char *to, const char *from)
 {
-  int n = static_cast< int >(strlen(from));
-  int i;
-  int nto = 0;
-
-  for (i = 0; i < n; i++) {
-    if (from[i] != ' ' && from[i] != '\t') {
-      to[nto++] = from[i];
-    }
+  // Fast path: most MPS names have no spaces or tabs — just copy directly.
+  const char *p = from;
+  while (*p) {
+    if (*p == ' ' || *p == '\t') goto slow_path;
+    ++p;
   }
-  if (!nto)
-    to[nto++] = ' ';
-  to[nto] = '\0';
+  if (p == from) {
+    to[0] = ' ';
+    to[1] = '\0';
+  } else {
+    memcpy(to, from, static_cast<size_t>(p - from) + 1); // +1 for '\0'
+  }
+  return;
+slow_path:
+  {
+    int nto = 0;
+    for (p = from; *p; ++p) {
+      if (*p != ' ' && *p != '\t')
+        to[nto++] = *p;
+    }
+    if (!nto)
+      to[nto++] = ' ';
+    to[nto] = '\0';
+  }
 }
 
 //  nextField
@@ -1207,18 +1219,13 @@ const int mmult[] = {
   82183, 79939, 77587, 75307, 72959, 70793, 68447, 66103
 };
 
-int hash(const char *name, int maxsiz, int length)
+int hash(const char *name, int maxsiz)
 {
-
   int n = 0;
-  int j;
-
-  for (j = 0; j < length; ++j) {
-    int iname = name[j];
-
-    n += mmult[j % (sizeof(mmult)/sizeof(int)) ] * iname;
-  }
-  return (abs(n) % maxsiz); /* integer abs */
+  int j = 0;
+  for (; name[j]; ++j)
+    n += mmult[j % (sizeof(mmult) / sizeof(int))] * static_cast< unsigned char >(name[j]);
+  return (abs(n) % maxsiz);
 }
 } // end file-local namespace
 
@@ -1241,6 +1248,39 @@ void CoinMpsIO::startHash(int section) const
   COINColumnIndex maxhash = 4 * number;
   COINColumnIndex ipos, iput;
 
+  // Fast path: detect "fixed-prefix + sequential integer" names.
+  // If all names are like "R0001","R0002",... or "s0","s1",...
+  // we can skip the hash table and use direct index arithmetic.
+  hashPrefixLen_[section] = -1;
+  if (number > 1) {
+    const char *first = names[0];
+    int plen = 0;
+    while (first[plen] && !isdigit(static_cast<unsigned char>(first[plen])))
+      ++plen;
+    if (plen > 0 && plen < 8 && first[plen] != '\0') {
+      int offset = atoi(first + plen);
+      const char *last_name = names[number - 1];
+      if (strncmp(first, last_name, static_cast<size_t>(plen)) == 0 &&
+          atoi(last_name + plen) == offset + number - 1) {
+        // Check a sample of names to confirm the pattern
+        bool ok = true;
+        int step = number / 16;
+        if (step < 1) step = 1;
+        for (int k = 0; k < number && ok; k += step) {
+          if (strncmp(names[k], first, static_cast<size_t>(plen)) != 0 ||
+              atoi(names[k] + plen) != offset + k)
+            ok = false;
+        }
+        if (ok) {
+          hashPrefixLen_[section] = plen;
+          hashOffset_[section] = offset;
+          hash_[section] = NULL;
+          return; // skip hash table construction entirely
+        }
+      }
+    }
+  }
+
   //hash_=(CoinHashLink *) malloc(maxhash*sizeof(CoinHashLink));
   hash_[section] = new CoinHashLink[maxhash];
 
@@ -1258,9 +1298,7 @@ void CoinMpsIO::startHash(int section) const
    */
   for (i = 0; i < number; ++i) {
     char *thisName = names[i];
-    int length = static_cast< int >(strlen(thisName));
-
-    ipos = hash(thisName, maxhash, length);
+    ipos = hash(thisName, maxhash);
     if (hashThis[ipos].index == -1) {
       hashThis[ipos].index = i;
     }
@@ -1275,9 +1313,7 @@ void CoinMpsIO::startHash(int section) const
   iput = -1;
   for (i = 0; i < number; ++i) {
     char *thisName = names[i];
-    int length = static_cast< int >(strlen(thisName));
-
-    ipos = hash(thisName, maxhash, length);
+    ipos = hash(thisName, maxhash);
 
     while (1) {
       COINColumnIndex j1 = hashThis[ipos].index;
@@ -1322,12 +1358,23 @@ void CoinMpsIO::stopHash(int section)
 {
   delete[] hash_[section];
   hash_[section] = NULL;
+  hashPrefixLen_[section] = -1;
 }
 
 //  findHash.  -1 not found
 COINColumnIndex
 CoinMpsIO::findHash(const char *name, int section) const
 {
+  // Fast path: sequential "prefix+integer" names — no hash table needed
+  if (hashPrefixLen_[section] >= 0) {
+    if (strcmp(name, "OBJROW") == 0)
+      return numberHash_[section] - 1;
+    int idx = atoi(name + hashPrefixLen_[section]) - hashOffset_[section];
+    if (idx >= 0 && idx < numberHash_[section])
+      return idx;
+    return -1;
+  }
+
   COINColumnIndex found = -1;
 
   char **names = names_[section];
@@ -1338,9 +1385,8 @@ CoinMpsIO::findHash(const char *name, int section) const
   /* default if we don't find anything */
   if (!maxhash)
     return -1;
-  int length = static_cast< int >(strlen(name));
 
-  ipos = hash(name, maxhash, length);
+  ipos = hash(name, maxhash);
   while (1) {
     COINColumnIndex j1 = hashThis[ipos].index;
 
@@ -3629,6 +3675,8 @@ int CoinMpsIO::readBasis(const char *filename, const char *extension,
     delete[] hash_[1];
     hash_[0] = 0;
     hash_[1] = 0;
+    hashPrefixLen_[0] = -1;
+    hashPrefixLen_[1] = -1;
   }
   if (cardReader_->whichSection() != COIN_ENDATA_SECTION) {
     handler_->message(COIN_MPS_BADIMAGE, messages_) << cardReader_->cardNumber()
@@ -5303,9 +5351,13 @@ CoinMpsIO::CoinMpsIO()
   numberHash_[0] = 0;
   hash_[0] = NULL;
   names_[0] = NULL;
+  hashPrefixLen_[0] = -1;
+  hashOffset_[0] = 0;
   numberHash_[1] = 0;
   hash_[1] = NULL;
   names_[1] = NULL;
+  hashPrefixLen_[1] = -1;
+  hashOffset_[1] = 0;
   handler_ = new CoinMessageHandler();
   messages_ = CoinMessage();
 }
@@ -5349,9 +5401,13 @@ CoinMpsIO::CoinMpsIO(const CoinMpsIO &rhs)
   numberHash_[0] = 0;
   hash_[0] = NULL;
   names_[0] = NULL;
+  hashPrefixLen_[0] = -1;
+  hashOffset_[0] = 0;
   numberHash_[1] = 0;
   hash_[1] = NULL;
   names_[1] = NULL;
+  hashPrefixLen_[1] = -1;
+  hashOffset_[1] = 0;
   if (rhs.rowlower_ != NULL || rhs.collower_ != NULL) {
     gutsOfCopy(rhs);
     // OK and proper to leave rowsense_, rhs_, and
@@ -5529,6 +5585,8 @@ void CoinMpsIO::releaseRedundantInformation()
   delete[] hash_[1];
   hash_[0] = 0;
   hash_[1] = 0;
+  hashPrefixLen_[0] = -1;
+  hashPrefixLen_[1] = -1;
   delete matrixByRow_;
   matrixByRow_ = NULL;
 }

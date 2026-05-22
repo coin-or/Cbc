@@ -2,6 +2,7 @@
 #include <limits>
 #include <algorithm>
 #include <cmath>
+#include <vector>
 #include "OsiFeatures.hpp"
 
 int OsiFeatures::n = OFCount;
@@ -380,6 +381,22 @@ void OsiFeatures::compute(double *features, OsiSolverInterface *solver) {
     features[OFnz] = solver->getNumElements();
     features[OFdensity] = (((long double)solver->getNumElements()) / (((long double)solver->getNumCols())*((long double)solver->getNumRows()))) * ((long double) 100.0);
 
+    // Precompute per-column type to avoid O(nz) virtual calls inside the row loop.
+    // colType[j]: 0=continuous, 1=binary, 2=general integer
+    const int nCols = solver->getNumCols();
+    const double *colLBpre = solver->getColLower();
+    const double *colUBpre = solver->getColUpper();
+    std::vector<signed char> colType(nCols, 0);
+    for (int j = 0; j < nCols; ++j) {
+        if (solver->isInteger(j)) {
+            const double lb = colLBpre[j], ub = colUBpre[j];
+            if ((ub == 1.0 || ub == 0.0) && (lb == 0.0 || lb == 1.0))
+                colType[j] = 1; // binary
+            else
+                colType[j] = 2; // general integer
+        }
+    }
+
     Summary aSumm, rhsSumm, objSumm, rowNzSumm, colNzSumm;
 
     /* going though all rows */
@@ -402,14 +419,10 @@ void OsiFeatures::compute(double *features, OsiSolverInterface *solver) {
             aSumm.add(rcoef[j]);
             summRow.add(rcoef[j]);
 
-            if (solver->isBinary(ridx[j]))
-                nBinRow++;
-            else
-            {
-                if (solver->isInteger(ridx[j]))
-                    nIntRow++;
-                else
-                    nContRow++;
+            switch (colType[ridx[j]]) {
+                case 1: nBinRow++;  break;
+                case 2: nIntRow++;  break;
+                default: nContRow++; break;
             }
         }
 
@@ -657,16 +670,19 @@ void OsiFeatures::compute(double *features, OsiSolverInterface *solver) {
     for ( int j=0 ; (j<solver->getNumCols()) ; ++j ) {
         objSumm.add(obj[j]);
 
-        if (solver->isInteger(j)) {
-            if (solver->isBinary(j))
+        switch (colType[j]) {
+            case 1:
                 features[OFbin]++;
-            else
+                features[OFinteger]++;
+                break;
+            case 2:
                 features[OFgenInt]++;
-
-            features[OFinteger]++;
+                features[OFinteger]++;
+                break;
+            default:
+                features[OFcontinuous]++;
+                break;
         }
-        else
-            features[OFcontinuous]++;
 
         if (colUB[j] == COIN_DBL_MAX && colLB[j] == -COIN_DBL_MAX) {
             features[OFnUnbounded2]++;

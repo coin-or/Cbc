@@ -92,7 +92,7 @@ class CoinGetslessFileInput : public CoinFileInput {
 public:
   CoinGetslessFileInput(const std::string &fileName)
     : CoinFileInput(fileName)
-    , dataBuffer_(8 * 1024)
+    , dataBuffer_(256 * 1024)
     , dataStart_(&dataBuffer_[0])
     , dataEnd_(&dataBuffer_[0])
   {
@@ -141,47 +141,49 @@ public:
       return 0;
 
     char *dest = buffer;
-    char *destLast = dest + size - 2; // last position allowed to be written
-
+    char *destEnd = dest + size - 1; // leave one byte for NUL terminator
     bool initiallyEmpty = (dataStart_ == dataEnd_);
 
     for (;;) {
-      // refill dataBuffer if needed
+      // Refill internal buffer when empty
       if (dataStart_ == dataEnd_) {
         dataStart_ = dataEnd_ = &dataBuffer_[0];
-        int count = readRaw(dataStart_, static_cast< int >(dataBuffer_.size()));
-
-        // at EOF?
+        int count = readRaw(&dataBuffer_[0], static_cast< int >(dataBuffer_.size()));
         if (count <= 0) {
-          *dest = 0;
-          // if it was initially empty we had nothing written and should
-          // return 0, otherwise at least the buffer contents were
-          // transfered and buffer has to be returned.
+          *dest = '\0';
           return initiallyEmpty ? 0 : buffer;
-	} else {
-	  // in case image does not terminate as expected
-	  destLast = dest + count-1;
         }
-
-        dataEnd_ = dataStart_ + count;
+        dataEnd_ = &dataBuffer_[0] + count;
       }
 
-      // copy character from buffer
-      *dest = *dataStart_++;
+      int avail = static_cast< int >(dataEnd_ - dataStart_);
+      int space = static_cast< int >(destEnd - dest);
+      int scan = (avail < space) ? avail : space;
 
-      // terminate, if character was \n or bufferEnd was reached
-      if (*dest == '\n' || dest == destLast) {
-        *++dest = 0;
+      // Use memchr to find newline in the available chunk — much faster than
+      // a byte-by-byte loop for typical MPS lines.
+      char *nl = static_cast< char * >(memchr(dataStart_, '\n', scan));
+      if (nl) {
+        int len = static_cast< int >(nl - dataStart_) + 1; // include '\n'
+        memcpy(dest, dataStart_, len);
+        dest += len;
+        dataStart_ += len;
+        *dest = '\0';
         return buffer;
       }
 
-      ++dest;
-    }
+      // No newline found — copy all 'scan' bytes and continue
+      memcpy(dest, dataStart_, scan);
+      dest += scan;
+      dataStart_ += scan;
 
-    // we should never reach this place
-    throw CoinError("Reached unreachable code!",
-      "gets",
-      "CoinGetslessFileInput");
+      if (scan == space) {
+        // dest buffer is full
+        *dest = '\0';
+        return buffer;
+      }
+      // Buffer exhausted but no newline yet — loop to refill
+    }
   }
 
 protected:
@@ -218,6 +220,8 @@ public:
       throw CoinError("Could not open file for reading!",
         "CoinGzipFileInput",
         "CoinGzipFileInput");
+    // Increase zlib's internal decompression window to match our read buffer.
+    gzbuffer(gzf_, 256 * 1024);
   }
 
   virtual ~CoinGzipFileInput()

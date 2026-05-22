@@ -172,6 +172,9 @@ CbcHeuristicDive::CbcHeuristicDive(const CbcHeuristicDive &rhs)
     upLocks_ = NULL;
     priority_ = NULL;
   }
+  collectConflicts_ = rhs.collectConflicts_;
+  maxConflictSize_ = rhs.maxConflictSize_;
+  minConflictViolation_ = rhs.minConflictViolation_;
 }
 
 // Assignment operator
@@ -206,6 +209,9 @@ CbcHeuristicDive::operator=(const CbcHeuristicDive &rhs)
       priority_ = NULL;
     }
   }
+  collectConflicts_ = rhs.collectConflicts_;
+  maxConflictSize_ = rhs.maxConflictSize_;
+  minConflictViolation_ = rhs.minConflictViolation_;
   return *this;
 }
 

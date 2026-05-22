@@ -99,6 +99,7 @@ libmipster_la_SOURCES = \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcSolverStatistics.cpp CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.cpp CbcInstanceFeatures.hpp \
+	CbcLpParamScorer.cpp CbcLpParamScorer.hpp \
 	CbcBoundPropagation.cpp CbcBoundPropagation.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
@@ -229,6 +230,7 @@ includecoin_HEADERS = \
 	ClpConstraintAmpl.hpp \
 	CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.hpp \
+	CbcLpParamScorer.hpp \
 	CbcBoundPropagation.hpp \
 	ClpAmplObjective.hpp
 

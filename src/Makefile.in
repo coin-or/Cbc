@@ -223,6 +223,7 @@ am_libmipster_la_OBJECTS = libmipster_la-CbcBab.lo \
 	libmipster_la-CbcParameters.lo libmipster_la-CbcStatistics.lo \
 	libmipster_la-CbcSolverStatistics.lo \
 	libmipster_la-CbcInstanceFeatures.lo \
+	libmipster_la-CbcLpParamScorer.lo \
 	libmipster_la-CbcBoundPropagation.lo \
 	libmipster_la-CbcStrategy.lo libmipster_la-CbcSubProblem.lo \
 	libmipster_la-CbcThread.lo libmipster_la-CbcTree.lo \
@@ -305,6 +306,7 @@ am__depfiles_remade = ./$(DEPDIR)/libmipster_la-CbcBab.Plo \
 	./$(DEPDIR)/libmipster_la-CbcInstanceFeatures.Plo \
 	./$(DEPDIR)/libmipster_la-CbcLinked.Plo \
 	./$(DEPDIR)/libmipster_la-CbcLinkedUtils.Plo \
+	./$(DEPDIR)/libmipster_la-CbcLpParamScorer.Plo \
 	./$(DEPDIR)/libmipster_la-CbcMessage.Plo \
 	./$(DEPDIR)/libmipster_la-CbcMipStart.Plo \
 	./$(DEPDIR)/libmipster_la-CbcModel.Plo \
@@ -655,6 +657,7 @@ libmipster_la_SOURCES = \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcSolverStatistics.cpp CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.cpp CbcInstanceFeatures.hpp \
+	CbcLpParamScorer.cpp CbcLpParamScorer.hpp \
 	CbcBoundPropagation.cpp CbcBoundPropagation.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
@@ -778,6 +781,7 @@ includecoin_HEADERS = \
 	ClpConstraintAmpl.hpp \
 	CbcSolverStatistics.hpp \
 	CbcInstanceFeatures.hpp \
+	CbcLpParamScorer.hpp \
 	CbcBoundPropagation.hpp \
 	ClpAmplObjective.hpp
 
@@ -982,6 +986,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcInstanceFeatures.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcLinked.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcLinkedUtils.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcLpParamScorer.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcMessage.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcMipStart.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcModel.Plo@am__quote@ # am--include-marker
@@ -1595,6 +1600,13 @@ libmipster_la-CbcInstanceFeatures.lo: CbcInstanceFeatures.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libmipster_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libmipster_la-CbcInstanceFeatures.lo `test -f 'CbcInstanceFeatures.cpp' || echo '$(srcdir)/'`CbcInstanceFeatures.cpp
 
+libmipster_la-CbcLpParamScorer.lo: CbcLpParamScorer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libmipster_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libmipster_la-CbcLpParamScorer.lo -MD -MP -MF $(DEPDIR)/libmipster_la-CbcLpParamScorer.Tpo -c -o libmipster_la-CbcLpParamScorer.lo `test -f 'CbcLpParamScorer.cpp' || echo '$(srcdir)/'`CbcLpParamScorer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmipster_la-CbcLpParamScorer.Tpo $(DEPDIR)/libmipster_la-CbcLpParamScorer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcLpParamScorer.cpp' object='libmipster_la-CbcLpParamScorer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libmipster_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libmipster_la-CbcLpParamScorer.lo `test -f 'CbcLpParamScorer.cpp' || echo '$(srcdir)/'`CbcLpParamScorer.cpp
+
 libmipster_la-CbcBoundPropagation.lo: CbcBoundPropagation.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libmipster_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libmipster_la-CbcBoundPropagation.lo -MD -MP -MF $(DEPDIR)/libmipster_la-CbcBoundPropagation.Tpo -c -o libmipster_la-CbcBoundPropagation.lo `test -f 'CbcBoundPropagation.cpp' || echo '$(srcdir)/'`CbcBoundPropagation.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmipster_la-CbcBoundPropagation.Tpo $(DEPDIR)/libmipster_la-CbcBoundPropagation.Plo
@@ -1856,6 +1868,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcInstanceFeatures.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcLinked.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcLinkedUtils.Plo
+	-rm -f ./$(DEPDIR)/libmipster_la-CbcLpParamScorer.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcMessage.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcMipStart.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcModel.Plo
@@ -1991,6 +2004,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcInstanceFeatures.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcLinked.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcLinkedUtils.Plo
+	-rm -f ./$(DEPDIR)/libmipster_la-CbcLpParamScorer.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcMessage.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcMipStart.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcModel.Plo

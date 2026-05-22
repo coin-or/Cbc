@@ -87,7 +87,7 @@ std::vector<std::string> splitCsv(const std::string &s) {
 }
 
 /** Number of fixed columns before the per-generator columns. */
-static const int FIXED_COLUMNS = 18;
+static const int FIXED_COLUMNS = 19;
 
 /**
  * Read existing file contents: header line and all data lines.
@@ -176,7 +176,7 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
 
   // Build the header string.
   std::ostringstream headerStream;
-  headerStream << "Name,result,time,sys,elapsed,objective,continuous,"
+  headerStream << "Name,result,integer_feasible,time,sys,elapsed,objective,continuous,"
                << "lp_seconds,tightened,cut_time,"
                << "nodes,iterations,rows,columns,processed_rows,"
                << "processed_columns,cgraph_time,cgraph_density";
@@ -192,6 +192,7 @@ bool CbcSolverStatistics::writeCsv(CbcParameters &parameters,
 
   std::ostringstream dataStream;
   dataStream << problemName << ',' << result << ','
+             << (integer_feasible ? "1" : "0") << ','
              << formatDouble(seconds, 2, std::ios_base::fixed) << ','
              << formatDouble(sys_seconds, 2, std::ios_base::fixed) << ','
              << formatDouble(elapsed_seconds, 2, std::ios_base::fixed) << ','

@@ -22,8 +22,11 @@ public:
   /** Elapsed total time */
   double seconds = 0.0;
 
-  /** Best solution fount in the search */
+  /** Best solution found in the search */
   double obj = 0.0;
+
+  /** True if an integer feasible solution was found during the search */
+  bool integer_feasible = false;
 
   /** CPU time */
   double sys_seconds = 0.0;

@@ -2629,12 +2629,14 @@ Cbc_solve(Cbc_Model *model)
 
         // LP method
         switch (model->lp_method) {
+          case LPM_Auto:
+            inputQueue.push_back("-lpMethod=auto"); break;
           case LPM_Primal:
             inputQueue.push_back("-lpMethod=primal"); break;
           case LPM_Barrier:
           case LPM_BarrierNoCross:
             inputQueue.push_back("-lpMethod=barrier"); break;
-          default:  // LPM_Auto or LPM_Dual
+          default:  // LPM_Dual
             inputQueue.push_back("-lpMethod=dual"); break;
         }
 

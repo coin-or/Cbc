@@ -2855,6 +2855,12 @@ static void cbcSetupDefaults(CbcModel &model, CbcParameters &parameters)
   parameters[CbcParam::TIMELIMIT]->setVal(1.0e8);
   parameters[CbcParam::TESTOSI]->setVal(testOsiParameters);
   parameters[CbcParam::FPUMPTUNE]->setVal(1003);
+  parameters[CbcParam::FPFIXINGMODE]->setVal("continuousBounds");
+  parameters[CbcParam::FPOPTIONS]->setVal(0);
+  parameters[CbcParam::FPRETRIES]->setVal(1);
+  parameters[CbcParam::FPACCUMULATE]->setVal("off");
+  parameters[CbcParam::FPRUNMODE]->setVal("normal");
+  parameters[CbcParam::FPMAXPASSESWITHOUTCHANGE]->setVal(0);
   initialPumpTune = 1003;
 #ifdef CBC_THREAD
   parameters[CbcParam::THREADS]->setVal(0);
@@ -6981,6 +6987,12 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
       if (parameters[CbcParam::FPUMPITS]->intVal() == 0)
         parameters[CbcParam::FPUMPITS]->setVal(30);
       parameters[CbcParam::FPUMPTUNE]->setVal(1005043);
+      parameters[CbcParam::FPFIXINGMODE]->setVal("continuousBounds");
+      parameters[CbcParam::FPOPTIONS]->setVal(4);
+      parameters[CbcParam::FPRETRIES]->setVal(5);
+      parameters[CbcParam::FPACCUMULATE]->setVal("on");
+      parameters[CbcParam::FPRUNMODE]->setVal("normal");
+      parameters[CbcParam::FPMAXPASSESWITHOUTCHANGE]->setVal(0);
       parameters[CbcParam::PROCESSTUNE]->setVal(7);
       parameters[CbcParam::PROBINGCUTS]->setVal("ifmove");
       // parameters[iParam]->setVal("forceOnStrong");
@@ -7438,6 +7450,27 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             model_.setNumberStrong(iValue);
           } else if (cbcParamCode == CbcParam::PROCESSTUNE) {
             tunePreProcess = iValue;
+          } else if (cbcParamCode == CbcParam::PREMAJORPASSES) {
+            tunePreProcess = iValue * 1000000 + (tunePreProcess % 1000000);
+          } else if (cbcParamCode == CbcParam::PREMINORPASSES) {
+            int aa = tunePreProcess / 1000000;
+            int cccc = tunePreProcess % 10000;
+            tunePreProcess = aa * 1000000 + iValue * 10000 + cccc;
+          } else if (cbcParamCode == CbcParam::FPRETRIES) {
+            int tune = parameters[CbcParam::FPUMPTUNE]->intVal();
+            tune = (tune / 1000000) * 1000000 + iValue * 1000 + (tune % 1000);
+            parameters[CbcParam::FPUMPTUNE]->setVal(tune);
+            pumpChanged = true;
+          } else if (cbcParamCode == CbcParam::FPOPTIONS) {
+            int tune = parameters[CbcParam::FPUMPTUNE]->intVal();
+            tune = (tune / 100) * 100 + iValue * 10 + (tune % 10);
+            parameters[CbcParam::FPUMPTUNE]->setVal(tune);
+            pumpChanged = true;
+          } else if (cbcParamCode == CbcParam::FPMAXPASSESWITHOUTCHANGE) {
+            int tune2 = parameters[CbcParam::FPUMPTUNE2]->intVal();
+            tune2 = (tune2 / 100) * 100 + iValue;
+            parameters[CbcParam::FPUMPTUNE2]->setVal(tune2);
+            pumpChanged = true;
           } else if (cbcParamCode == CbcParam::PRINTOPTIONS) {
             printOptions = iValue;
           } else if (cbcParamCode == CbcParam::VERBOSE) {
@@ -7558,6 +7591,12 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
               parameters[CbcParam::DIVEOPT]->setVal(-1);
               parameters[CbcParam::FPUMPITS]->setVal(20);
               parameters[CbcParam::FPUMPTUNE]->setVal(1003);
+              parameters[CbcParam::FPFIXINGMODE]->setVal("continuousBounds");
+              parameters[CbcParam::FPOPTIONS]->setVal(0);
+              parameters[CbcParam::FPRETRIES]->setVal(1);
+              parameters[CbcParam::FPACCUMULATE]->setVal("off");
+              parameters[CbcParam::FPRUNMODE]->setVal("normal");
+              parameters[CbcParam::FPMAXPASSESWITHOUTCHANGE]->setVal(0);
               initialPumpTune_ = 1003;
               parameters[CbcParam::PROCESSTUNE]->setVal(0);
               tunePreProcess = 0;
@@ -7784,6 +7823,51 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         case CbcParam::PREPROCESS:
           preProcess = mode;
           break;
+        case CbcParam::PREPROBING:
+          tunePreProcess &= ~(1 | 512);
+          tunePreProcess |= mode;
+          break;
+        case CbcParam::PREINTEGERIZE:
+          tunePreProcess &= ~6;
+          tunePreProcess |= mode;
+          break;
+        case CbcParam::PRECLIQUES:
+          tunePreProcess &= ~128;
+          tunePreProcess |= mode;
+          break;
+        case CbcParam::PREDOMINATEDROWS:
+          tunePreProcess &= ~256;
+          tunePreProcess |= mode;
+          break;
+        case CbcParam::PRELARGEFEASTOL:
+          tunePreProcess &= ~1024;
+          tunePreProcess |= mode;
+          break;
+        case CbcParam::PREPROBINGBEFORECLIQUES:
+          tunePreProcess &= ~2048;
+          tunePreProcess |= mode;
+          break;
+        case CbcParam::FPFIXINGMODE: {
+          // mode is 0-6 (digit 0 of pumpTune)
+          int tune = parameters[CbcParam::FPUMPTUNE]->intVal();
+          parameters[CbcParam::FPUMPTUNE]->setVal((tune / 10) * 10 + mode);
+          pumpChanged = true;
+          break;
+        }
+        case CbcParam::FPACCUMULATE: {
+          // mode is 0 (off) or 1 (on) — stored in digits 6+
+          int tune = parameters[CbcParam::FPUMPTUNE]->intVal();
+          parameters[CbcParam::FPUMPTUNE]->setVal(mode * 1000000 + (tune % 1000000));
+          pumpChanged = true;
+          break;
+        }
+        case CbcParam::FPRUNMODE: {
+          // mode is 0/1/2/11 — stored in moreTune/1000
+          int tune2 = parameters[CbcParam::FPUMPTUNE2]->intVal();
+          parameters[CbcParam::FPUMPTUNE2]->setVal(mode * 1000 + (tune2 % 1000));
+          pumpChanged = true;
+          break;
+        }
         default:
           // abort();
           break;

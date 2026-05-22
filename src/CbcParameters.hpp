@@ -1078,7 +1078,7 @@ public:
   inline void setFeasPumpTune2(int tune2) { fpump_.tune2_ = tune2; }
 
   /*! \brief Get second tune mode for use of feasibility pump heuristic. */
-  inline int getFeasPumpTune2(int tune2) { return (fpump_.tune2_); }
+  inline int getFeasPumpTune2() { return (fpump_.tune2_); }
 
   /*! \brief Set fake cutoff for use of feasibility pump heuristic. */
   inline void setFeasPumpFakeCutoff(double cutoff) { fpump_.cutoff_ = cutoff; }

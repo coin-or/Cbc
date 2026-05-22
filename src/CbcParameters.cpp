@@ -615,6 +615,15 @@ void CbcParameters::addCbcParams() {
 
   // Keyword params
   parameters_[CbcParam::PREPROCESS]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::PREPROBING]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::PREINTEGERIZE]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::PRECLIQUES]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::PREDOMINATEDROWS]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::PRELARGEFEASTOL]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::PREPROBINGBEFORECLIQUES]->setTopic("MIP Preprocessing");
+  parameters_[CbcParam::FPFIXINGMODE]->setTopic("Heuristics");
+  parameters_[CbcParam::FPACCUMULATE]->setTopic("Heuristics");
+  parameters_[CbcParam::FPRUNMODE]->setTopic("Heuristics");
   parameters_[CbcParam::BOUNDPROPLEVEL]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
   parameters_[CbcParam::CLQSTRENGTHENING]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::NODEBOUNDPROP]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
@@ -656,6 +665,8 @@ void CbcParameters::addCbcParams() {
                     CbcParam::FPUMPITS, CbcParam::FPUMPTUNE,
                     CbcParam::FPUMPTUNE2, CbcParam::HEUROPTIONS,
                     CbcParam::FPUMPPASSFREQ, CbcParam::DEPTHMINIBAB,
+                    CbcParam::FPRETRIES, CbcParam::FPOPTIONS,
+                    CbcParam::FPMAXPASSESWITHOUTCHANGE,
                     CbcParam::VUBTRY})
     parameters_[code]->setTopic("Heuristics");
 
@@ -669,6 +680,7 @@ void CbcParameters::addCbcParams() {
 
   // Integer params — MIP Preprocessing
   for (int code : {CbcParam::PROCESSTUNE, CbcParam::CPP,
+                    CbcParam::PREMAJORPASSES, CbcParam::PREMINORPASSES,
                     CbcParam::EXTRAVARIABLES})
     parameters_[code]->setTopic("MIP Preprocessing");
   parameters_[CbcParam::BOUNDPROPMAXROUNDS]->setTopic("MIP Preprocessing \u2014 Bound Propagation");
@@ -776,6 +788,12 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::INTPRINT]->setDefault("normal");
      parameters_[CbcParam::NODESTRATEGY]->setDefault("hybrid");
      parameters_[CbcParam::PREPROCESS]->setDefault("off");
+     parameters_[CbcParam::PREPROBING]->setDefault("off");
+     parameters_[CbcParam::PREINTEGERIZE]->setDefault("off");
+     parameters_[CbcParam::PRECLIQUES]->setDefault("off");
+     parameters_[CbcParam::PREDOMINATEDROWS]->setDefault("off");
+     parameters_[CbcParam::PRELARGEFEASTOL]->setDefault("off");
+     parameters_[CbcParam::PREPROBINGBEFORECLIQUES]->setDefault("off");
      parameters_[CbcParam::SOSPRIORITIZE]->setDefault("off");
      parameters_[CbcParam::STRATEGY]->setDefault("default");
      parameters_[CbcParam::USECGRAPH]->setDefault("on");
@@ -817,9 +835,15 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::EXTRA4]->setDefault(-1);
      parameters_[CbcParam::EXTRAVARIABLES]->setDefault(0);
      parameters_[CbcParam::FPUMPITS]->setDefault(getFeasPumpIters());
-     parameters_[CbcParam::FPUMPTUNE]->setDefault(0);
+     parameters_[CbcParam::FPUMPTUNE]->setDefault(1003);
      parameters_[CbcParam::FPUMPTUNE2]->setDefault(0);
      parameters_[CbcParam::HEUROPTIONS]->setDefault(0);
+     parameters_[CbcParam::FPFIXINGMODE]->setDefault("continuousBounds");
+     parameters_[CbcParam::FPACCUMULATE]->setDefault("off");
+     parameters_[CbcParam::FPRUNMODE]->setDefault("normal");
+     parameters_[CbcParam::FPRETRIES]->setDefault(1);
+     parameters_[CbcParam::FPOPTIONS]->setDefault(0);
+     parameters_[CbcParam::FPMAXPASSESWITHOUTCHANGE]->setDefault(0);
      parameters_[CbcParam::LOGLEVEL]->setDefault(getLogLevel());
      parameters_[CbcParam::LPLOGLEVEL]->setDefault(getLpLogLevel());
      parameters_[CbcParam::LPITERFREQ]->setDefault(0);
@@ -834,6 +858,8 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::OPTIONS]->setDefault(0);
      parameters_[CbcParam::PRINTOPTIONS]->setDefault(0);
      parameters_[CbcParam::PROCESSTUNE]->setDefault(0);
+     parameters_[CbcParam::PREMAJORPASSES]->setDefault(0);
+     parameters_[CbcParam::PREMINORPASSES]->setDefault(0);
      parameters_[CbcParam::RACINGLP]->setDefault(0);
      parameters_[CbcParam::ROOTHEURSCHED]->setDefault(0);
      parameters_[CbcParam::RANDOMSEED]->setDefault(42);
@@ -1710,6 +1736,106 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::PREPROCESS]->appendKwd("papilostop", CbcParameters::IPPPapiloStopEnd);
   parameters_[CbcParam::PREPROCESS]->appendKwd("papilo2stop", CbcParameters::IPPPapilo2StopEnd);
 #endif
+  parameters_[CbcParam::PREPROBING]->setup(
+      "preP!robing",
+      "Probing intensity during MIP preprocessing",
+      "Controls how aggressively CglProbing is run during preprocessing.\n"
+      "  off: no preprocessing probing\n"
+      "  heavy: heavier probing (more passes, larger element limits)\n"
+      "  heavier: even heavier probing (full column exploration)");
+  parameters_[CbcParam::PREPROBING]->appendKwd("off", 0);
+  parameters_[CbcParam::PREPROBING]->appendKwd("heavy", 1);
+  parameters_[CbcParam::PREPROBING]->appendKwd("heavier", 513);
+
+  parameters_[CbcParam::PREINTEGERIZE]->setup(
+      "preI!ntegerize",
+      "Attempt to integerize continuous variables during preprocessing",
+      "When enabled, variables that behave integrally can be declared integer "
+      "during preprocessing, potentially tightening the model.\n"
+      "  off: do not integerize\n"
+      "  objective: integerize if the variable has a nonzero objective coefficient\n"
+      "  always: integerize regardless of objective coefficient");
+  parameters_[CbcParam::PREINTEGERIZE]->appendKwd("off", 0);
+  parameters_[CbcParam::PREINTEGERIZE]->appendKwd("objective", 2);
+  parameters_[CbcParam::PREINTEGERIZE]->appendKwd("always", 6);
+
+  parameters_[CbcParam::PRECLIQUES]->setup(
+      "preC!liques",
+      "Create/extract cliques during MIP preprocessing",
+      "When on, the preprocessor tries to identify and extract clique "
+      "constraints from the model. This can tighten the LP relaxation.");
+  parameters_[CbcParam::PRECLIQUES]->appendKwd("off", 0);
+  parameters_[CbcParam::PRECLIQUES]->appendKwd("on", 128);
+
+  parameters_[CbcParam::PREDOMINATEDROWS]->setup(
+      "preD!ominatedRows",
+      "Try hard to find dominated rows during preprocessing",
+      "When on and the model has all-+1 rows, the preprocessor uses "
+      "CglDuplicateRow aggressively to eliminate dominated rows.");
+  parameters_[CbcParam::PREDOMINATEDROWS]->appendKwd("off", 0);
+  parameters_[CbcParam::PREDOMINATEDROWS]->appendKwd("on", 256);
+
+  parameters_[CbcParam::PRELARGEFEASTOL]->setup(
+      "preL!argeFeasibilityTolerance",
+      "Use a larger feasibility tolerance (1e-4) in preprocessing",
+      "When on, the preprocessor uses a relaxed feasibility tolerance of 1e-4 "
+      "instead of the LP primal tolerance. Can help on numerically difficult "
+      "instances at the cost of slightly less tight preprocessing.");
+  parameters_[CbcParam::PRELARGEFEASTOL]->appendKwd("off", 0);
+  parameters_[CbcParam::PRELARGEFEASTOL]->appendKwd("on", 1024);
+
+  parameters_[CbcParam::PREPROBINGBEFORECLIQUES]->setup(
+      "preProbingB!eforeCliques",
+      "Run probing before clique extraction in preprocessing",
+      "When on, a round of CglProbing is run before cliqueIt() during "
+      "preprocessing. The clique model from probing is then used as the "
+      "starting point for clique extraction, which can find stronger cliques.");
+  parameters_[CbcParam::PREPROBINGBEFORECLIQUES]->appendKwd("off", 0);
+  parameters_[CbcParam::PREPROBINGBEFORECLIQUES]->appendKwd("on", 2048);
+
+  parameters_[CbcParam::FPFIXINGMODE]->setup(
+      "fpF!ixingMode",
+      "How feasibility pump fixes variables between passes",
+      "Controls what the feasibility pump fixes between round-trip LP passes.\n"
+      "  off: no fixing\n"
+      "  intBounds: fix integers at their current bounds\n"
+      "  allIntegral: fix all variables that are currently integral\n"
+      "  continuousBounds: fix continuous variables at bounds (default)\n"
+      "  staticContinuous: fix static continuous variables\n"
+      "  noInternalInts: as continuousBounds but skip internal integers\n"
+      "  slackBasis: as continuousBounds but restart from an all-slack basis");
+  parameters_[CbcParam::FPFIXINGMODE]->appendKwd("off", 0);
+  parameters_[CbcParam::FPFIXINGMODE]->appendKwd("intBounds", 1);
+  parameters_[CbcParam::FPFIXINGMODE]->appendKwd("allIntegral", 2);
+  parameters_[CbcParam::FPFIXINGMODE]->appendKwd("continuousBounds", 3);
+  parameters_[CbcParam::FPFIXINGMODE]->appendKwd("staticContinuous", 4);
+  parameters_[CbcParam::FPFIXINGMODE]->appendKwd("noInternalInts", 5);
+  parameters_[CbcParam::FPFIXINGMODE]->appendKwd("slackBasis", 6);
+
+  parameters_[CbcParam::FPACCUMULATE]->setup(
+      "fpA!ccumulate",
+      "Enable accumulate mode in the feasibility pump",
+      "When on, after each major pass in the feasibility pump, variables that "
+      "have not moved are fixed and a small branch-and-bound sub-search is "
+      "attempted on the remaining free variables. This can find solutions that "
+      "plain rounding misses, at the cost of more computation. "
+      "Enabled by default in the default strategy.");
+  parameters_[CbcParam::FPACCUMULATE]->appendKwd("off", 0);
+  parameters_[CbcParam::FPACCUMULATE]->appendKwd("on", 1);
+
+  parameters_[CbcParam::FPRUNMODE]->setup(
+      "fpR!unMode",
+      "Controls when and how often the feasibility pump runs",
+      "Controls the run schedule of the feasibility pump.\n"
+      "  normal: run once (default)\n"
+      "  twice: run a second time if no solution was found on the first pass\n"
+      "  afterRootCuts: run only after root cuts if no solution found\n"
+      "  alwaysTwice: run twice even if a solution was already found");
+  parameters_[CbcParam::FPRUNMODE]->appendKwd("normal", 0);
+  parameters_[CbcParam::FPRUNMODE]->appendKwd("twice", 1);
+  parameters_[CbcParam::FPRUNMODE]->appendKwd("afterRootCuts", 2);
+  parameters_[CbcParam::FPRUNMODE]->appendKwd("alwaysTwice", 11);
+
   parameters_[CbcParam::SOSPRIORITIZE]->setup(
       "sosP!rioritize", "How to deal with SOS priorities",
       "This sets priorities for SOS.  Values 'high' and 'low' just set a "
@@ -2192,15 +2318,12 @@ void CbcParameters::addCbcSolverIntParams() {
       "passes.");
 
   parameters_[CbcParam::FPUMPTUNE]->setup(
-      "pumpT!une", "Dubious ideas for feasibility pump", 0, 1000000000,
-      "This fine tunes Feasibility Pump     \n\t>=10000000 use as objective "
-      "weight switch     \n\t>=1000000 use as accumulate switch     \n\t>=1000 "
-      "use index+1 as number of large loops     \n\t==100 use objvalue "
-      "+0.05*fabs(objvalue) as cutoff OR fakeCutoff if set     \n\t%100 == "
-      "10,20 affects how each solve is done     \n\t1 == fix ints at bounds, 2 "
-      "fix all integral ints, 3 and continuous at bounds. If accumulate is on "
-      "then after a major pass, variables which have not moved are fixed and a "
-      "small branch and bound is tried.");
+      "pumpT!une", "Packed integer tuning for feasibility pump (use named params instead)", 0, 1000000000,
+      "Packed integer that fine-tunes the Feasibility Pump. "
+      "Prefer the named parameters: -fpFixingMode, -fpOptions, -fpRetries, "
+      "-fpAccumulate, -fpRunMode, -fpMaxPassesWithoutChange.\n"
+      "Encoding: digit0=fixing mode (0-6), digit1=fp options (0-9), "
+      "digit2=fake cutoff multiplier, digits3-5=retries, digits6+=accumulate flag.");
 
   parameters_[CbcParam::FPUMPTUNE2]->setup(
       "moreT!une", "Yet more dubious ideas for feasibility pump", 0, 100000000,
@@ -2355,10 +2478,29 @@ void CbcParameters::addCbcSolverIntParams() {
       "11 - 2048 Try probing before creating cliques\n 12 - 4096 Switch off "
       "duplicate column checking for integers \n 13 - 8192 Allow scaled "
       "duplicate column checking \n \n     Now aa 99 has special meaning i.e. "
-      "just one simple presolve.",
+      "just one simple presolve. \n\n"
+      "Individual bits are also accessible via the named parameters "
+      "preProbing, preIntegerize, preCliques, preDominatedRows, "
+      "preLargeFeasibilityTolerance, preProbingBeforeCliques, "
+      "preMajorPasses, and preMinorPasses.",
       CoinParam::displayPriorityLow);
   parameters_[CbcParam::PROCESSTUNE]->appendKwd("heavy!Probing#Do more probing",7);
   parameters_[CbcParam::PROCESSTUNE]->appendKwd("heavier!Probing#Do yet more probing",519);
+
+  parameters_[CbcParam::PREMAJORPASSES]->setup(
+      "preM!ajorPasses",
+      "Number of major preprocessing passes", 0, 99,
+      "Sets the number of major preprocessing passes (each involving a full "
+      "presolve cycle). 0 uses the default. "
+      "Value 99 selects a single simple presolve with no probing or cuts.");
+
+  parameters_[CbcParam::PREMINORPASSES]->setup(
+      "premi!norPasses",
+      "Number of minor preprocessing passes per major pass", 0, 99,
+      "Sets the number of minor modification passes performed within each "
+      "major preprocessing pass. 0 uses the default of 10 passes.");
+
+
 
   parameters_[CbcParam::RACINGLP]->setup(
       "racing!LP",
@@ -2406,6 +2548,30 @@ void CbcParameters::addCbcSolverIntParams() {
   parameters_[CbcParam::TESTOSI]->setup("testO!si", "Test OsiObject stuff",
                                             -1, COIN_INT_MAX, "",
                                             CoinParam::displayPriorityNone);
+
+  parameters_[CbcParam::FPRETRIES]->setup(
+      "fpR!etries",
+      "Number of additional feasibility pump retry attempts", 0, 999,
+      "How many times the feasibility pump re-runs after the first pass when "
+      "no feasible solution has been found. Each retry uses a different "
+      "perturbation strategy. The default strategy uses 5 retries (6 total "
+      "attempts).");
+
+  parameters_[CbcParam::FPOPTIONS]->setup(
+      "fpO!ptions",
+      "Feasibility pump perturbation and fixing options (0-9)", 0, 9,
+      "Controls internal perturbation and fixing behaviour of the feasibility "
+      "pump. 0 means no special options. The default strategy uses 4.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FPMAXPASSESWITHOUTCHANGE]->setup(
+      "fpMaxP!assesWithoutChange",
+      "Fix variables unchanged for this many consecutive FP passes (0=off)", 0, 99,
+      "When set to N > 0, any variable whose value has not changed for N "
+      "consecutive feasibility pump passes is fixed at its current value for "
+      "the remainder of that run. This can speed convergence on problems where "
+      "most variables settle quickly. 0 disables this fixing (default).",
+      CoinParam::displayPriorityLow);
 
 #ifdef CBC_THREAD
   parameters_[CbcParam::THREADS]->setup(

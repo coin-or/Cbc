@@ -323,6 +323,24 @@ int pushCbcSolverIntParam(CoinParam &param)
     parameters->setFeasPumpTune2(val);
     break;
   }
+  case CbcParam::FPRETRIES: {
+    int tune = parameters->getFeasPumpTune();
+    tune = (tune / 1000000) * 1000000 + val * 1000 + (tune % 1000);
+    parameters->setFeasPumpTune(tune);
+    break;
+  }
+  case CbcParam::FPOPTIONS: {
+    int tune = parameters->getFeasPumpTune();
+    tune = (tune / 100) * 100 + val * 10 + (tune % 10);
+    parameters->setFeasPumpTune(tune);
+    break;
+  }
+  case CbcParam::FPMAXPASSESWITHOUTCHANGE: {
+    int tune2 = parameters->getFeasPumpTune2();
+    tune2 = (tune2 / 100) * 100 + val;
+    parameters->setFeasPumpTune2(tune2);
+    break;
+  }
   case CbcParam::HEUROPTIONS: {
     parameters->setHeurOptions(val);
     break;
@@ -365,6 +383,20 @@ int pushCbcSolverIntParam(CoinParam &param)
   }
   case CbcParam::PROCESSTUNE: {
     parameters->setProcessTune(val);
+    break;
+  }
+  case CbcParam::PREMAJORPASSES: {
+    int tune = parameters->getProcessTune();
+    tune = val * 1000000 + (tune % 1000000);
+    parameters->setProcessTune(tune);
+    break;
+  }
+  case CbcParam::PREMINORPASSES: {
+    int tune = parameters->getProcessTune();
+    int aa = tune / 1000000;
+    int cccc = tune % 10000;
+    tune = aa * 1000000 + val * 10000 + cccc;
+    parameters->setProcessTune(tune);
     break;
   }
   case CbcParam::RACINGLP: {
@@ -467,6 +499,69 @@ int pushCbcSolverKwdParam(CoinParam &param) {
   }
   case CbcParam::PREPROCESS: {
     parameters->setIPPMode(static_cast<CbcParameters::IPPMode>(mode));
+    break;
+  }
+  case CbcParam::PREPROBING: {
+    int tune = parameters->getProcessTune();
+    tune &= ~(1 | 512);
+    tune |= mode; // mode is 0, 1, or 513
+    parameters->setProcessTune(tune);
+    break;
+  }
+  case CbcParam::PREINTEGERIZE: {
+    int tune = parameters->getProcessTune();
+    tune &= ~6;
+    tune |= mode; // mode is 0, 2, or 6
+    parameters->setProcessTune(tune);
+    break;
+  }
+  case CbcParam::PRECLIQUES: {
+    int tune = parameters->getProcessTune();
+    tune &= ~128;
+    tune |= mode; // mode is 0 or 128
+    parameters->setProcessTune(tune);
+    break;
+  }
+  case CbcParam::PREDOMINATEDROWS: {
+    int tune = parameters->getProcessTune();
+    tune &= ~256;
+    tune |= mode; // mode is 0 or 256
+    parameters->setProcessTune(tune);
+    break;
+  }
+  case CbcParam::PRELARGEFEASTOL: {
+    int tune = parameters->getProcessTune();
+    tune &= ~1024;
+    tune |= mode; // mode is 0 or 1024
+    parameters->setProcessTune(tune);
+    break;
+  }
+  case CbcParam::PREPROBINGBEFORECLIQUES: {
+    int tune = parameters->getProcessTune();
+    tune &= ~2048;
+    tune |= mode; // mode is 0 or 2048
+    parameters->setProcessTune(tune);
+    break;
+  }
+  case CbcParam::FPFIXINGMODE: {
+    // mode is 0-6 (the digit-0 value)
+    int tune = parameters->getFeasPumpTune();
+    tune = (tune / 10) * 10 + mode;
+    parameters->setFeasPumpTune(tune);
+    break;
+  }
+  case CbcParam::FPACCUMULATE: {
+    // mode is 0 (off) or 1 (on) — stored in digits 6+ of pumpTune
+    int tune = parameters->getFeasPumpTune();
+    tune = mode * 1000000 + (tune % 1000000);
+    parameters->setFeasPumpTune(tune);
+    break;
+  }
+  case CbcParam::FPRUNMODE: {
+    // mode is 0/1/2/11 — stored in moreTune/1000
+    int tune2 = parameters->getFeasPumpTune2();
+    tune2 = mode * 1000 + (tune2 % 1000);
+    parameters->setFeasPumpTune2(tune2);
     break;
   }
   case CbcParam::SOSPRIORITIZE: {

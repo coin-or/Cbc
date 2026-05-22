@@ -145,7 +145,7 @@ void ClpParameters::addClpParams() {
                     ClpParam::SOLVE, ClpParam::PARAMETRICS,
                     ClpParam::NETWORK, ClpParam::PLUSMINUS,
                     ClpParam::ALLSLACK, ClpParam::TIGHTEN,
-                    ClpParam::REALLY_SCALE, ClpParam::GUESS})
+                    ClpParam::REALLY_SCALE})
     parameters_[code]->setTopic("Solving");
 
   // Action params — I/O
@@ -579,10 +579,13 @@ void ClpParameters::addClpActionParams() {
       CoinParam::displayPriorityHigh);
 
   parameters_[ClpParam::GUESS]->setup(
-      "guess", "Guesses at good parameters",
-      "This looks at model statistics and does an initial solve setting some "
-      "parameters which may help you to think of possibilities.",
-      CoinParam::displayPriorityHigh);
+      "guess", "[DEPRECATED] Guesses at good parameters",
+      "Deprecated: use '-lpMethod=auto' instead, which uses a Random Forest "
+      "model trained on 207 instance features to automatically select the "
+      "best LP algorithm and settings.\n"
+      "This action looks at basic model statistics and heuristically sets a "
+      "few LP parameters, but is superseded by the ML-based auto selection.",
+      CoinParam::displayPriorityLow);
 
   parameters_[ClpParam::NETLIB_EITHER]->setup(
       "netlib", "Solve entire netlib test set",

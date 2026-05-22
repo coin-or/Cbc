@@ -8640,6 +8640,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           time1 = time2;
         } break;
         case ClpParam::GUESS:
+          printGeneralWarning(model_,
+            "** '-guess' is deprecated. Use '-lpMethod=auto' instead,\n"
+            "   which applies ML-based LP parameter selection automatically.\n");
           if (goodModel && model_.solver()) {
             OsiClpSolverInterface *clpSolver = getClpSolver(model_.solver());
             assert(clpSolver);
@@ -8648,7 +8651,12 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             ClpSimplexOther *model2 = static_cast< ClpSimplexOther * >(lpSolver);
             // This is an ugly hack to make this compile, but we'll be getting rid of
             // this soon anyway.
+            // Intentional call to deprecated function — this handler kept for
+            // backward compatibility but issues a deprecation warning to user.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             std::string input = model2->guess(0);
+#pragma GCC diagnostic pop
             if (input != "") {
               while (!inputQueue.empty()) {
                 inputQueue.pop_front();

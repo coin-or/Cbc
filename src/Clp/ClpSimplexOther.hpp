@@ -275,6 +275,8 @@ public:
     double *buildObj, CoinBigIndex *buildStart,
     int *buildRow, double *buildElement, int reConstruct = -1) const;
   /// Create a string of commands to guess at best strategy for model
+  /// @deprecated Use '-lpMethod=auto' (CbcLpParamScorer) instead.
+  [[deprecated("Use -lpMethod=auto for ML-based LP parameter selection")]]
   /// At present mode is ignored
   std::string guess(int mode) const;
   //@}

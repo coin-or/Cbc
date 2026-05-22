@@ -28,6 +28,7 @@
 #include <vector>
 #include "CbcSolverStatistics.hpp"
 #include "CbcInstanceFeatures.hpp"
+#include "CbcLpParamScorer.hpp"
 #include "CbcBoundPropagation.hpp"
 
 #if defined(NEW_DEBUG_AND_FILL) || defined(CLP_MALLOC_STATISTICS)
@@ -91,6 +92,7 @@ void CbcCrashHandler(int sig);
 #include "OsiAuxInfo.hpp"
 #include "OsiChooseVariable.hpp"
 #include "OsiClpSolverInterface.hpp"
+#include "Clp/OsiFeatures.hpp"
 #include "ClpRacingSolver.hpp"
 #include "OsiColCut.hpp"
 #include "OsiCuts.hpp"
@@ -1030,6 +1032,67 @@ static void applyVectorMode(ClpSimplex *lpSolver, bool setMode = false)
   }
 }
 
+// ─── LP auto-recommendation ───────────────────────────────────────────────
+// Settings decoded from an LP parameter tag (see lp_params.txt).
+struct LpAutoSettings {
+  CbcParameters::LPMethod method;  ///< LPDual or LPPrimal
+  int    idiot;      ///< idiot-crash iterations; 0 = disabled
+  int    sprint;     ///< sprint flag: -1 = auto/enabled, 0 = disabled
+  double psi;        ///< positive-edge weight; 0 = none
+  int    pertValue;  ///< perturbation value; 100 = Clp default (off)
+  bool   pesteep;    ///< use ClpDualRowSteepest(3) as dual pivot
+};
+
+// Parse a parameter tag (from lp_params.txt / CbcLpParamScorer) into
+// a LpAutoSettings struct.  Tag format examples:
+//   dual_pesteep_psineg1   primal_idiot30_pertvm1483   primal_sprint
+static LpAutoSettings
+parseLpParamTag(const char *tag)
+{
+  LpAutoSettings s;
+  s.psi       = 0.0;
+  s.pertValue = 100;
+  s.pesteep   = false;
+
+  if (strncmp(tag, "primal", 6) == 0) {
+    s.method = CbcParameters::LPPrimal;
+    s.idiot  = 0;
+    s.sprint = 0;
+    const char *p;
+    if ((p = strstr(tag, "_idiot"))) {
+      s.idiot = atoi(p + 6);
+    } else if (strstr(tag, "_sprint")) {
+      s.sprint = -1;  // -1 = enabled/auto
+    }
+    // _pertvm<N> means negative pertValue; _pertv<N> means positive
+    if ((p = strstr(tag, "_pertvm"))) {
+      s.pertValue = -atoi(p + 7);
+    } else if ((p = strstr(tag, "_pertv"))) {
+      s.pertValue = atoi(p + 6);
+    }
+  } else {
+    // dual (includes cbc_default)
+    s.method = CbcParameters::LPDual;
+    s.idiot  = 0;
+    s.sprint = 0;
+    if (strstr(tag, "pesteep"))
+      s.pesteep = true;
+    const char *p;
+    // _psineg<N> must be checked before _psi<N>
+    if ((p = strstr(tag, "_psineg"))) {
+      s.psi = -atof(p + 7);
+    } else if ((p = strstr(tag, "_psi"))) {
+      s.psi = atof(p + 4);
+    }
+    if ((p = strstr(tag, "_pertvm"))) {
+      s.pertValue = -atoi(p + 7);
+    } else if ((p = strstr(tag, "_pertv"))) {
+      s.pertValue = atoi(p + 6);
+    }
+  }
+  return s;
+}
+
 // Unified LP-solve entry point: bound propagation → clique merging "before"
 // → model-level LP settings → racing → full ClpSolve with all user options.
 //
@@ -1071,6 +1134,9 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
       CbcBoundPropagation bp;
       if (!bp.run(solver, model_.messageHandler(), logLevel,
             bpLevel, maxRounds, timeLimit, startTime)) {
+        statistics_.result = "Problem proven infeasible";
+        statistics_.seconds = CoinCpuTime();
+        statistics_.elapsed_seconds = CoinWallclockTime();
         if (logLevel >= 1)
           printGeneralMessage(model_,
             "Bound propagation: infeasibility proved — skipping solve.");
@@ -1121,6 +1187,31 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
     }
   }
 
+  // ─── 2.5 Auto LP param recommendation ────────────────────────────────────
+  // When -lpMethod=auto, extract OsiFeatures and query the ML scorer to pick
+  // the best LP parameter configuration for this specific instance.  The
+  // result is stored in `autoS` and applied in sections 3 and 5 below.
+  LpAutoSettings autoS;
+  const bool autoLpMode =
+    (parameters_.getLpMethod() == CbcParameters::LPAuto) && (clp != nullptr);
+  if (autoLpMode) {
+    double feats[OFCount];
+    OsiFeatures::compute(feats, solver);
+    const char *tag = cbcRecommendLpParam(feats);
+    if (model_.messageHandler()->logLevel() >= 1)
+      printf("  LP auto: recommended %s\n", tag);
+    autoS = parseLpParamTag(tag);
+  } else {
+    // Fill with current parameter values so section-3 code is uniform.
+    ClpParameters &clpP = parameters_.clpParameters();
+    autoS.method    = parameters_.getLpMethod();
+    autoS.idiot     = doIdiot_;
+    autoS.sprint    = doSprint_;
+    autoS.psi       = clpP[ClpParam::PSI]->dblVal();
+    autoS.pertValue = clpP[ClpParam::PERTVALUE]->intVal();
+    autoS.pesteep   = false;
+  }
+
   // ─── 3. Model-level LP settings ──────────────────────────────────────────
   // PSI, objective scaling, and vector mode modify the ClpSimplex object in
   // place.  They MUST be applied before racing (step 4) so that every racing
@@ -1130,13 +1221,18 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
     // the redundant CbcSolver::clpParameters_ member (which is never populated).
     ClpParameters &clpP = parameters_.clpParameters();
 
-    applyPositiveEdge(clp, clpP[ClpParam::PSI]->dblVal());
+    // When auto mode picked a steepest-edge pivot, install it before the PSI
+    // wrapper so that applyPositiveEdge() can wrap it correctly.
+    if (autoS.pesteep) {
+      ClpDualRowSteepest steep(3);
+      clp->setDualRowPivotAlgorithm(steep);
+    }
 
-    // Apply perturbation value.  PERTVALUE is kept in sync with the
-    // PERTURBATION mode switch (see the kwd handler for ClpParam::PERTURBATION),
-    // so reading it here is always correct: default is 100 (no perturbation),
-    // -perturbation on sets it to 50, and -pertValue X sets it to X.
-    clp->setPerturbation(clpP[ClpParam::PERTVALUE]->intVal());
+    applyPositiveEdge(clp, autoS.psi);
+
+    // Apply perturbation value.  In non-auto mode autoS.pertValue was filled
+    // from clpP[PERTVALUE] in section 2.5, so either way we use autoS here.
+    clp->setPerturbation(autoS.pertValue);
 
     const double objScale = clpP[ClpParam::OBJSCALE2]->dblVal();
     if (objScale != 1.0) {
@@ -1210,8 +1306,8 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   // (we must not mutate member variables as side effects of a single solve).
   int dualize  = dualize_;
   int preSolve = preSolve_;
-  int doIdiot  = doIdiot_;
-  int doSprint = doSprint_;
+  int doIdiot  = autoLpMode ? autoS.idiot  : doIdiot_;
+  int doSprint = autoLpMode ? autoS.sprint : doSprint_;
   int doCrash  = doCrash_;
   int slpValue = slpValue_;
 
@@ -1285,7 +1381,8 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   }
   solveOptions.setPresolveType(presolveType, preSolve);
 
-  const CbcParameters::LPMethod lpMethod = parameters_.getLpMethod();
+  const CbcParameters::LPMethod lpMethod =
+    autoLpMode ? autoS.method : parameters_.getLpMethod();
   ClpSolve::SolveType clpMethod;
   if (lpMethod == CbcParameters::LPPrimal) {
     clpMethod = ClpSolve::usePrimalorSprint;
@@ -2706,7 +2803,10 @@ void CbcSolver::printParamChanges()
 //###########################################################################
 //###########################################################################
 
-void CbcSolver::initialize()
+// Shared default-setup logic used by both CbcSolver::initialize() and
+// the legacy CbcMain0() free function. Any change to solver defaults must
+// be made here and here only.
+static void cbcSetupDefaults(CbcModel &model, CbcParameters &parameters)
 {
 #if defined(HAVE_SIGNAL_H) && defined(HAVE_EXECINFO_H)
   signal(SIGSEGV, CbcCrashHandler);
@@ -2714,13 +2814,13 @@ void CbcSolver::initialize()
   signal(SIGFPE, CbcCrashHandler);
 #endif
 
-  ClpParameters &clpParameters = parameters_.clpParameters();
+  ClpParameters &clpParameters = parameters.clpParameters();
 
-  OsiClpSolverInterface *origSolver = getClpSolver(model_.solver());
+  OsiClpSolverInterface *origSolver = getClpSolver(model.solver());
   assert(origSolver);
   CoinMessageHandler *generalMessageHandler = origSolver->messageHandler();
   generalMessageHandler->setPrefix(false);
-  OsiSolverInterface *solver = model_.solver();
+  OsiSolverInterface *solver = model.solver();
   OsiClpSolverInterface *clpSolver = getClpSolver(solver);
   ClpSimplex *lpSolver = clpSolver->getModelPtr();
   lpSolver->setPerturbation(50);
@@ -2746,75 +2846,81 @@ void CbcSolver::initialize()
   clpParameters[ClpParam::SPRINT]->setVal(doSprint);
   clpParameters[ClpParam::SUBSTITUTION]->setVal(substitution);
   clpParameters[ClpParam::DUALIZE]->setVal(dualize);
-  parameters_[CbcParam::OUTPUTFORMAT]->setVal(outputFormat);
-  parameters_[CbcParam::LOGLEVEL]->setVal(1);
-  parameters_[CbcParam::LPLOGLEVEL]->setVal(1);
+  parameters[CbcParam::OUTPUTFORMAT]->setVal(outputFormat);
+  parameters[CbcParam::LOGLEVEL]->setVal(1);
+  parameters[CbcParam::LPLOGLEVEL]->setVal(1);
   clpParameters[ClpParam::LOGLEVEL]->setType(CoinParam::paramInt);
   clpSolver->messageHandler()->setLogLevel(1);
   lpSolver->setLogLevel(1);
-  parameters_[CbcParam::TIMELIMIT]->setVal(1.0e8);
-  parameters_[CbcParam::TESTOSI]->setVal(testOsiParameters);
-  parameters_[CbcParam::FPUMPTUNE]->setVal(1003);
-  initialPumpTune_ = 1003;
-  initialPumpTune = 1003; // keep file-scope global in sync
+  parameters[CbcParam::TIMELIMIT]->setVal(1.0e8);
+  parameters[CbcParam::TESTOSI]->setVal(testOsiParameters);
+  parameters[CbcParam::FPUMPTUNE]->setVal(1003);
+  initialPumpTune = 1003;
 #ifdef CBC_THREAD
-  parameters_[CbcParam::THREADS]->setVal(0);
+  parameters[CbcParam::THREADS]->setVal(0);
 #endif
-  parameters_[CbcParam::CLIQUECUTS]->setVal("ifmove");
-  parameters_[CbcParam::ODDWHEELCUTS]->setVal("off");
-  parameters_[CbcParam::CLQSTRENGTHENING]->setVal("before");
-  parameters_[CbcParam::AGGREGATEMIXED]->setVal(1);
-  parameters_[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
-  parameters_[CbcParam::BKMAXCALLS]->setVal(1000);
-  parameters_[CbcParam::BKCLQEXTMETHOD]->setVal(4);
-  parameters_[CbcParam::ODDWEXTMETHOD]->setVal(2);
-  parameters_[CbcParam::PREPROCESS]->setVal("sos");
-  parameters_[CbcParam::MIPOPTIONS]->setVal(1057);
-  parameters_[CbcParam::CUTPASSINTREE]->setVal(10);
-  parameters_[CbcParam::MOREMIPOPTIONS]->setVal(-1);
-  parameters_[CbcParam::MAXHOTITS]->setVal(100);
-  parameters_[CbcParam::CUTSTRATEGY]->setVal("on");
-  parameters_[CbcParam::HEURISTICSTRATEGY]->setVal("on");
-  parameters_[CbcParam::NODESTRATEGY]->setVal("fewest");
-  parameters_[CbcParam::GOMORYCUTS]->setVal("ifmove");
-  parameters_[CbcParam::PROBINGCUTS]->setVal("ifmove");
-  parameters_[CbcParam::KNAPSACKCUTS]->setVal("ifmove");
-  parameters_[CbcParam::ZEROHALFCUTS]->setVal("ifmove");
-  parameters_[CbcParam::REDSPLITCUTS]->setVal("off");
-  parameters_[CbcParam::REDSPLIT2CUTS]->setVal("off");
-  parameters_[CbcParam::GMICUTS]->setVal("off");
-  parameters_[CbcParam::MIRCUTS]->setVal("ifmove");
-  parameters_[CbcParam::FLOWCUTS]->setVal("ifmove");
-  parameters_[CbcParam::TWOMIRCUTS]->setVal("ifmove");
-  parameters_[CbcParam::LANDPCUTS]->setVal("off");
-  parameters_[CbcParam::RESIDCAPCUTS]->setVal("off");
-  parameters_[CbcParam::ROUNDING]->setVal("on");
-  parameters_[CbcParam::FPUMP]->setVal("on");
-  parameters_[CbcParam::GREEDY]->setVal("on");
-  parameters_[CbcParam::DIVINGC]->setVal("on");
-  parameters_[CbcParam::RINS]->setVal("on");
-  parameters_[CbcParam::COMBINE]->setVal("off");
-  parameters_[CbcParam::CROSSOVER]->setVal("off");
-  parameters_[CbcParam::PIVOTANDFIX]->setVal("off");
-  parameters_[CbcParam::RANDROUND]->setVal("off");
-  parameters_[CbcParam::NAIVE]->setVal("off");
-  parameters_[CbcParam::DINS]->setVal("off");
-  parameters_[CbcParam::RENS]->setVal("off");
-  parameters_[CbcParam::LOCALTREE]->setVal("off");
-  parameters_[CbcParam::BRANCHPRIORITY]->setVal("off");
+  parameters[CbcParam::USECGRAPH]->setVal("on");
+  parameters[CbcParam::CLIQUECUTS]->setVal("ifmove");
+  parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
+  parameters[CbcParam::CLQSTRENGTHENING]->setVal("before");
+  parameters[CbcParam::AGGREGATEMIXED]->setVal(1);
+  parameters[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
+  parameters[CbcParam::BKMAXCALLS]->setVal(1000);
+  parameters[CbcParam::BKCLQEXTMETHOD]->setVal(4);
+  parameters[CbcParam::ODDWEXTMETHOD]->setVal(2);
+  parameters[CbcParam::PREPROCESS]->setVal("sos");
+  parameters[CbcParam::MIPOPTIONS]->setVal(1057);
+  parameters[CbcParam::CUTPASSINTREE]->setVal(10);
+  parameters[CbcParam::MOREMIPOPTIONS]->setVal(-1);
+  parameters[CbcParam::MAXHOTITS]->setVal(100);
+  parameters[CbcParam::CUTSTRATEGY]->setVal("on");
+  parameters[CbcParam::HEURISTICSTRATEGY]->setVal("on");
+  parameters[CbcParam::NODESTRATEGY]->setVal("fewest");
+  parameters[CbcParam::GOMORYCUTS]->setVal("ifmove");
+  parameters[CbcParam::PROBINGCUTS]->setVal("ifmove");
+  parameters[CbcParam::KNAPSACKCUTS]->setVal("ifmove");
+  parameters[CbcParam::ZEROHALFCUTS]->setVal("ifmove");
+  parameters[CbcParam::REDSPLITCUTS]->setVal("off");
+  parameters[CbcParam::REDSPLIT2CUTS]->setVal("off");
+  parameters[CbcParam::GMICUTS]->setVal("off");
+  parameters[CbcParam::MIRCUTS]->setVal("ifmove");
+  parameters[CbcParam::FLOWCUTS]->setVal("ifmove");
+  parameters[CbcParam::TWOMIRCUTS]->setVal("ifmove");
+  parameters[CbcParam::LANDPCUTS]->setVal("off");
+  parameters[CbcParam::RESIDCAPCUTS]->setVal("off");
+  parameters[CbcParam::ROUNDING]->setVal("on");
+  parameters[CbcParam::FPUMP]->setVal("on");
+  parameters[CbcParam::GREEDY]->setVal("on");
+  parameters[CbcParam::DIVINGC]->setVal("on");
+  parameters[CbcParam::RINS]->setVal("on");
+  parameters[CbcParam::COMBINE]->setVal("off");
+  parameters[CbcParam::CROSSOVER]->setVal("off");
+  parameters[CbcParam::PIVOTANDFIX]->setVal("off");
+  parameters[CbcParam::RANDROUND]->setVal("off");
+  parameters[CbcParam::NAIVE]->setVal("off");
+  parameters[CbcParam::DINS]->setVal("off");
+  parameters[CbcParam::RENS]->setVal("off");
+  parameters[CbcParam::LOCALTREE]->setVal("off");
+  parameters[CbcParam::BRANCHPRIORITY]->setVal("off");
 
-  model_.messageHandler()->setLogLevel(1);
-  model_.setNumberBeforeTrust(10);
-  parameters_[CbcParam::NUMBERBEFORE]->setVal(10);
-  parameters_[CbcParam::MAXNODES]->setVal(model_.getMaximumNodes());
-  model_.setNumberStrong(5);
-  parameters_[CbcParam::STRONGBRANCHING]->setVal(model_.numberStrong());
-  parameters_[CbcParam::INFEASIBILITYWEIGHT]->setVal(
-    model_.getDblParam(CbcModel::CbcInfeasibilityWeight));
-  parameters_[CbcParam::INTEGERTOLERANCE]->setVal(
-    model_.getDblParam(CbcModel::CbcIntegerTolerance));
-  parameters_[CbcParam::INCREMENT]->setVal(
-    model_.getDblParam(CbcModel::CbcCutoffIncrement));
+  model.messageHandler()->setLogLevel(1);
+  model.setNumberBeforeTrust(10);
+  parameters[CbcParam::NUMBERBEFORE]->setVal(10);
+  parameters[CbcParam::MAXNODES]->setVal(model.getMaximumNodes());
+  model.setNumberStrong(5);
+  parameters[CbcParam::STRONGBRANCHING]->setVal(model.numberStrong());
+  parameters[CbcParam::INFEASIBILITYWEIGHT]->setVal(
+    model.getDblParam(CbcModel::CbcInfeasibilityWeight));
+  parameters[CbcParam::INTEGERTOLERANCE]->setVal(
+    model.getDblParam(CbcModel::CbcIntegerTolerance));
+  parameters[CbcParam::INCREMENT]->setVal(
+    model.getDblParam(CbcModel::CbcCutoffIncrement));
+}
+
+void CbcSolver::initialize()
+{
+  cbcSetupDefaults(model_, parameters_);
+  initialPumpTune_ = 1003;
 }
 
 //###########################################################################
@@ -3855,6 +3961,9 @@ int CbcSolver::preprocess(
   }
   if (!solver2) {
     // preprocessing says infeasible — section closed by destructor below
+    statistics.result = "Problem proven infeasible";
+    statistics.seconds = CoinCpuTime();
+    statistics.elapsed_seconds = CoinWallclockTime();
     process.passInMessageHandler(model_.messageHandler());
     delete preprocHandler;
     return 1;
@@ -4925,6 +5034,7 @@ int CbcSolver::postprocess(
     statistics.seconds = time2 - time1;
     statistics.sys_seconds = CoinSysTime();
     statistics.elapsed_seconds = CoinWallclockTime();
+    statistics.integer_feasible = (babModel_->bestSolution() != nullptr);
     statistics.obj = babModel_->getObjValue();
     statistics.continuous = babModel_->getContinuousObjective();
     statistics.tighter = babModel_->rootObjectiveAfterCuts();
@@ -5266,6 +5376,14 @@ int CbcSolver::solveInitialLp(
               else
                 buffer << "Problem is " << msg[iStatus - 1];
               buffer << " - " << CoinCpuTime() - time1a << " seconds";
+              // Record LP failure in statistics so -writeStat captures the outcome.
+              switch (iStatus) {
+              case 1: statistics.result = "Linear relaxation infeasible"; break;
+              case 2: statistics.result = "Linear relaxation unbounded";  break;
+              default: statistics.result = buffer.str();                  break;
+              }
+              statistics.seconds = CoinCpuTime() - time1a;
+              statistics.elapsed_seconds = CoinWallclockTime();
               printGeneralMessage(model_, buffer.str());
               return 1;
             }
@@ -6178,116 +6296,7 @@ static bool ends_with(std::string const &value, std::string const &ending) {
 //###########################################################################
 
 void CbcMain0(CbcModel &model, CbcParameters &parameters) {
-#if defined(HAVE_SIGNAL_H) && defined(HAVE_EXECINFO_H)
-  signal(SIGSEGV, CbcCrashHandler);
-  signal(SIGABRT, CbcCrashHandler);
-  signal(SIGFPE, CbcCrashHandler);
-
-#endif
-
-  ClpParameters &clpParameters = parameters.clpParameters();
-
-  OsiClpSolverInterface *originalSolver =
-      getClpSolver(model.solver());
-  assert(originalSolver);
-  CoinMessageHandler *generalMessageHandler = originalSolver->messageHandler();
-  generalMessageHandler->setPrefix(false);
-  OsiSolverInterface *solver = model.solver();
-  OsiClpSolverInterface *clpSolver =
-      getClpSolver(solver);
-  ClpSimplex *lpSolver = clpSolver->getModelPtr();
-  lpSolver->setPerturbation(50);
-  lpSolver->messageHandler()->setPrefix(false);
-  clpParameters.setModel(lpSolver);
-  // establishParams(numberParameters, parameters) ;
-  int doIdiot = -1;
-  int outputFormat = 2;
-  int substitution = 3;
-  int dualize = 3;
-  int preSolve = 5;
-  int doSprint = -1;
-  int testOsiParameters = -1;
-  clpParameters[ClpParam::DUALBOUND]->setVal(lpSolver->dualBound());
-  clpParameters[ClpParam::DUALTOLERANCE]->setVal(lpSolver->dualTolerance());
-  clpParameters[ClpParam::IDIOT]->setVal(doIdiot);
-  clpParameters[ClpParam::PRESOLVETOLERANCE]->setVal(1.0e-8);
-  clpParameters[ClpParam::MAXFACTOR]->setVal(lpSolver->factorizationFrequency());
-  clpParameters[ClpParam::MAXITERATION]->setVal(lpSolver->maximumIterations());
-  clpParameters[ClpParam::PRESOLVEPASS]->setVal(preSolve);
-  clpParameters[ClpParam::PERTVALUE]->setVal(lpSolver->perturbation());
-  clpParameters[ClpParam::PRIMALTOLERANCE]->setVal(lpSolver->primalTolerance());
-  clpParameters[ClpParam::PRIMALWEIGHT]->setVal(lpSolver->infeasibilityCost());
-  clpParameters[ClpParam::SPRINT]->setVal(doSprint);
-  clpParameters[ClpParam::SUBSTITUTION]->setVal(substitution);
-  clpParameters[ClpParam::DUALIZE]->setVal(dualize);
-  parameters[CbcParam::OUTPUTFORMAT]->setVal(outputFormat);
-  parameters[CbcParam::LOGLEVEL]->setVal(1);
-  parameters[CbcParam::LPLOGLEVEL]->setVal(1);
-  clpParameters[ClpParam::LOGLEVEL]->setType(CoinParam::paramInt); // as can be set
-  clpSolver->messageHandler()->setLogLevel(1);
-  lpSolver->setLogLevel(1);
-  parameters[CbcParam::TIMELIMIT]->setVal(1.0e8);
-  parameters[CbcParam::TESTOSI]->setVal(testOsiParameters);
-  parameters[CbcParam::FPUMPTUNE]->setVal(1003);
-  initialPumpTune = 1003;
-#ifdef CBC_THREAD
-  parameters[CbcParam::THREADS]->setVal(0);
-#endif
-  // Set up likely cut generators and defaults
-  parameters[CbcParam::CLIQUECUTS]->setVal("ifmove");
-  parameters[CbcParam::ODDWHEELCUTS]->setVal("off");
-  parameters[CbcParam::CLQSTRENGTHENING]->setVal("before");
-  parameters[CbcParam::USECGRAPH]->setVal("on");
-  parameters[CbcParam::AGGREGATEMIXED]->setVal(1);
-  parameters[CbcParam::BKPIVOTINGSTRATEGY]->setVal(3);
-  parameters[CbcParam::BKMAXCALLS]->setVal(1000);
-  parameters[CbcParam::BKCLQEXTMETHOD]->setVal(4);
-  parameters[CbcParam::ODDWEXTMETHOD]->setVal(2);
-  parameters[CbcParam::PREPROCESS]->setVal("sos");
-  parameters[CbcParam::MIPOPTIONS]->setVal(1057);
-  parameters[CbcParam::CUTPASSINTREE]->setVal(10);
-  parameters[CbcParam::MOREMIPOPTIONS]->setVal(-1);
-  parameters[CbcParam::MAXHOTITS]->setVal(100);
-  parameters[CbcParam::CUTSTRATEGY]->setVal("on");
-  parameters[CbcParam::HEURISTICSTRATEGY]->setVal("on");
-  parameters[CbcParam::NODESTRATEGY]->setVal("fewest");
-  parameters[CbcParam::GOMORYCUTS]->setVal("ifmove");
-  parameters[CbcParam::PROBINGCUTS]->setVal("ifmove");
-  parameters[CbcParam::KNAPSACKCUTS]->setVal("ifmove");
-  parameters[CbcParam::ZEROHALFCUTS]->setVal("ifmove");
-  parameters[CbcParam::REDSPLITCUTS]->setVal("off");
-  parameters[CbcParam::REDSPLIT2CUTS]->setVal("off");
-  parameters[CbcParam::GMICUTS]->setVal("off");
-  parameters[CbcParam::MIRCUTS]->setVal("ifmove");
-  parameters[CbcParam::FLOWCUTS]->setVal("ifmove");
-  parameters[CbcParam::TWOMIRCUTS]->setVal("ifmove");
-  parameters[CbcParam::LANDPCUTS]->setVal("off");
-  parameters[CbcParam::RESIDCAPCUTS]->setVal("off");
-  parameters[CbcParam::ROUNDING]->setVal("on");
-  parameters[CbcParam::FPUMP]->setVal("on");
-  parameters[CbcParam::GREEDY]->setVal("on");
-  parameters[CbcParam::DIVINGC]->setVal("on");
-  parameters[CbcParam::RINS]->setVal("on");
-  parameters[CbcParam::COMBINE]->setVal("off");
-  parameters[CbcParam::CROSSOVER]->setVal("off");
-  //parameters[CbcParam::PIVOTANDCOMPLEMENT]->setVal("off");
-  parameters[CbcParam::PIVOTANDFIX]->setVal("off");
-  parameters[CbcParam::RANDROUND]->setVal("off");
-  parameters[CbcParam::NAIVE]->setVal("off");
-  parameters[CbcParam::DINS]->setVal("off");
-  parameters[CbcParam::RENS]->setVal("off");
-  parameters[CbcParam::LOCALTREE]->setVal("off");
-  parameters[CbcParam::BRANCHPRIORITY]->setVal("off");
-
-  model.messageHandler()->setLogLevel(1);
-  model.setNumberBeforeTrust(10);
-  parameters[CbcParam::NUMBERBEFORE]->setVal(10);
-  parameters[CbcParam::MAXNODES]->setVal(model.getMaximumNodes());
-  model.setNumberStrong(5);
-  parameters[CbcParam::STRONGBRANCHING]->setVal(model.numberStrong());
-  parameters[CbcParam::INFEASIBILITYWEIGHT]->setVal(model.getDblParam(CbcModel::CbcInfeasibilityWeight));
-  parameters[CbcParam::INTEGERTOLERANCE]->setVal(model.getDblParam(CbcModel::CbcIntegerTolerance));
-  parameters[CbcParam::INCREMENT]->setVal(model.getDblParam(CbcModel::CbcCutoffIncrement));
+  cbcSetupDefaults(model, parameters);
 }
 
 // RAII guard that installs structured B&B message handlers (FPump progress,
@@ -8738,10 +8747,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             }
             model_.setProblemStatus(iStatus);
             model_.setSecondaryStatus(iStatus2);
-            if ((iStatus == 2 || iStatus2 > 0) && parameters.noPrinting()) {
-              const char *statusName[] = { "", "Stopped on ", "Run abandoned",
-                                           "", "", "User ctrl-c" };
-              const char *minor[] = {
+            {
+              const char *_statusName[] = { "", "Stopped on ", "Run abandoned",
+                                            "", "", "User ctrl-c" };
+              const char *_minor[] = {
                 "Optimal solution found",
                 "Linear relaxation infeasible",
                 "Optimal solution found (within gap tolerance)",
@@ -8749,17 +8758,25 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 "Linear relaxation unbounded", "iterations limit",
                 "Problem proven infeasible"
               };
-              buffer.str("");
-              buffer << std::endl
-                     << "Result - " << statusName[iStatus]
-                     << minor[iStatus2] << std::endl << std::endl;
-              buffer << "Enumerated nodes:           0" << std::endl;
-              buffer << "Total iterations:           0" << std::endl;
+              // Always record the LP outcome in statistics (not just when noPrinting).
+              if (iStatus != 0 || iStatus2 != 0) {
+                statistics_.result = std::string(_statusName[iStatus]) + _minor[iStatus2];
+                statistics_.seconds = CoinCpuTime();
+                statistics_.elapsed_seconds = CoinWallclockTime();
+              }
+              if ((iStatus == 2 || iStatus2 > 0) && parameters.noPrinting()) {
+                buffer.str("");
+                buffer << std::endl
+                       << "Result - " << _statusName[iStatus]
+                       << _minor[iStatus2] << std::endl << std::endl;
+                buffer << "Enumerated nodes:           0" << std::endl;
+                buffer << "Total iterations:           0" << std::endl;
 #if CBC_QUIET == 0
-              buffer << "Time (Wallclock seconds):   "
-                     << CoinGetTimeOfDay() - time0Elapsed << std::endl;
+                buffer << "Time (Wallclock seconds):   "
+                       << CoinGetTimeOfDay() - time0Elapsed << std::endl;
 #endif
-              printGeneralMessage(model_, buffer.str());
+                printGeneralMessage(model_, buffer.str());
+              }
             }
             assert(clpSolver == model_.solver());
             clpSolver->setWarmStart(nullptr);

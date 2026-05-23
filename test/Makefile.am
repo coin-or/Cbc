@@ -16,6 +16,7 @@ AM_LDFLAGS = $(LT_LDFLAGS)
 pkgtestfixturedir = $(datadir)/mipster/test/fixtures
 dist_pkgtestfixture_DATA = \
   fixtures/A-1.mps.gz \
+  fixtures/etDecsi.mps.gz \
   fixtures/graphdraw-domain.mps.gz \
   fixtures/j3041_1.mps.gz \
   fixtures/nursesched-sprint02.mps.gz \
@@ -61,7 +62,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CbcSolverLpTest
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CbcSolverLpTest
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -171,5 +172,14 @@ nodist_EXTRA_CInterfaceTest_yue20013_SOURCES = dummy.cpp
 CInterfaceTest_yue20013_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_yue20013_LDADD = ../src/libmipster.la
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CbcSolverLpTest$(EXEEXT)
+########################################################################
+#                   etDecsi tests (MIP node-limited, all sol valid)   #
+########################################################################
+
+CInterfaceTest_etDecsi_SOURCES = CInterfaceTest_etDecsi.c
+nodist_EXTRA_CInterfaceTest_etDecsi_SOURCES = dummy.cpp
+CInterfaceTest_etDecsi_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
+CInterfaceTest_etDecsi_LDADD = ../src/libmipster.la
+
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CbcSolverLpTest$(EXEEXT)
 	MIPSTER_FIXTURE_DIR=$(abs_srcdir)/fixtures $(srcdir)/run-mipster-tests

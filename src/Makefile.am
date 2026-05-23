@@ -101,6 +101,7 @@ libmipster_la_SOURCES = \
 	CbcInstanceFeatures.cpp CbcInstanceFeatures.hpp \
 	CbcLpParamScorer.cpp CbcLpParamScorer.hpp \
 	CbcBoundPropagation.cpp CbcBoundPropagation.hpp \
+	CbcPostprocessRepair.cpp CbcPostprocessRepair.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
 	CbcThread.cpp CbcThread.hpp \
@@ -232,6 +233,7 @@ includecoin_HEADERS = \
 	CbcInstanceFeatures.hpp \
 	CbcLpParamScorer.hpp \
 	CbcBoundPropagation.hpp \
+	CbcPostprocessRepair.hpp \
 	ClpAmplObjective.hpp
 
 #######################################################################

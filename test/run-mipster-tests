@@ -107,6 +107,7 @@ TESTS=(
   CInterfaceTest_trd445c
   CInterfaceTest_j3041_1
   CInterfaceTest_yue20013
+  CInterfaceTest_etDecsi
   CbcSolverLpTest
 )
 
@@ -122,34 +123,57 @@ W=${#TOTAL}
 # Fixed width for the test name column
 NAME_COL=40
 
-run_test() {
-  local idx="$1"
-  local name="$2"
+find_bin() {
+  local name="$1"
+  if [ -x "$SCRIPT_DIR/$name" ]; then echo "$SCRIPT_DIR/$name"
+  elif [ -x "$SCRIPT_DIR/test/$name" ]; then echo "$SCRIPT_DIR/test/$name"
+  elif command -v "$name" >/dev/null 2>&1; then command -v "$name"
+  elif [ -x "./$name" ]; then echo "./$name"
+  fi
+}
 
-  # Find binary: next to this script (installed), bin/test/ (tarball), or in cwd (build tree)
-  local bin
-  if [ -x "$SCRIPT_DIR/$name" ]; then
-    bin="$SCRIPT_DIR/$name"
-  elif [ -x "$SCRIPT_DIR/test/$name" ]; then
-    bin="$SCRIPT_DIR/test/$name"
-  elif command -v "$name" >/dev/null 2>&1; then
-    bin="$(command -v "$name")"
-  elif [ -x "./$name" ]; then
-    bin="./$name"
+# ── Run all tests in parallel ────────────────────────────────────────────────
+echo "=== MIPster Test Suite ==="
+[ -n "$MIPSTER_FIXTURE_DIR" ] && echo "    fixtures: $MIPSTER_FIXTURE_DIR"
+echo ""
+
+declare -a _pids _start_ms _tmpfiles _bins
+
+# Phase 1: launch all tests in background
+for i in "${!TESTS[@]}"; do
+  name="${TESTS[$i]}"
+  bin=$(find_bin "$name")
+  tmpfile=$(mktemp)
+  _tmpfiles[$i]="$tmpfile"
+  _bins[$i]="$bin"
+  _start_ms[$i]=$(get_epoch_ms)
+  if [ -n "$bin" ]; then
+    "$bin" > "$tmpfile" 2>&1 &
+    _pids[$i]=$!
   else
+    _pids[$i]=""
+  fi
+done
+
+# Phase 2: collect results in launch order
+for i in "${!TESTS[@]}"; do
+  name="${TESTS[$i]}"
+  idx=$(( i + 1 ))
+  bin="${_bins[$i]}"
+  tmpfile="${_tmpfiles[$i]}"
+  pid="${_pids[$i]}"
+
+  if [ -z "$bin" ]; then
     printf "[%*d/%d] %-*s SKIP  (not found)\n" "$W" "$idx" "$TOTAL" "$NAME_COL" "$name"
-    return
+    rm -f "$tmpfile"
+    continue
   fi
 
-  printf "[%*d/%d] %-*s" "$W" "$idx" "$TOTAL" "$NAME_COL" "$name"
-
-  local t_start
-  t_start=$(get_epoch_ms)
-  local output rc
-  output=$("$bin" 2>&1) && rc=0 || rc=$?
-  local elapsed_ms=$(( $(get_epoch_ms) - t_start ))
-  local elapsed_s
+  wait "$pid" && rc=0 || rc=$?
+  elapsed_ms=$(( $(get_epoch_ms) - _start_ms[$i] ))
   elapsed_s=$(awk "BEGIN { printf \"%.1f\", ${elapsed_ms}/1000 }" 2>/dev/null || echo "${elapsed_ms}")
+
+  printf "[%*d/%d] %-*s" "$W" "$idx" "$TOTAL" "$NAME_COL" "$name"
 
   if [ "$rc" -eq 0 ]; then
     printf " PASS  (%ss)\n" "$elapsed_s"
@@ -160,18 +184,10 @@ run_test() {
     FAIL=$(( FAIL + 1 ))
     FAILURES+=("$name")
     TEST_RESULTS+=("${name}:${elapsed_ms}")
-    printf '%s\n' "$output" | sed 's/^/    | /'
+    sed 's/^/    | /' "$tmpfile"
     printf '    \n'
   fi
-}
-
-# ── Run all tests ────────────────────────────────────────────────────────────
-echo "=== MIPster Test Suite ==="
-[ -n "$MIPSTER_FIXTURE_DIR" ] && echo "    fixtures: $MIPSTER_FIXTURE_DIR"
-echo ""
-
-for i in "${!TESTS[@]}"; do
-  run_test $(( i + 1 )) "${TESTS[$i]}"
+  rm -f "$tmpfile"
 done
 
 # ── Summary ──────────────────────────────────────────────────────────────────

@@ -224,16 +224,10 @@ static void test_mip(void)
   CHECK(fabs(obj - A1_MIP_OPT) < MIP_TOL,
         "MIP: optimal value matches known optimum");
 
-  const double *sol = Cbc_bestSolution(m);
-  CHECK(sol != NULL, "MIP: best solution exists");
-  if (sol) {
-    double maxViolRow, maxViolCol;
-    int rowIdx, colIdx;
-    char feas = Cbc_checkFeasibility(m, sol,
-                                     &maxViolRow, &rowIdx,
-                                     &maxViolCol, &colIdx);
-    CHECK(feas == 1, "MIP: solution is integer-feasible");
-  }
+  CHECK(Cbc_bestSolution(m) != NULL, "MIP: best solution exists");
+
+  int fails = validate_all_saved_solutions(m, A1_MIP_OPT, MIP_TOL, "A-1");
+  CHECK(fails == 0, "MIP: all saved solutions are feasible with correct objective");
 
   Cbc_deleteModel(m);
 }

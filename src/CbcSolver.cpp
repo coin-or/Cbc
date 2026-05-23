@@ -6669,6 +6669,11 @@ public:
     }
     if (outputHandler_) {
       babModel_.passInMessageHandler(savedMsgHandler_);
+      // Also restore the LP solver's handler before deleting lpSilentHandler_.
+      // The solver still holds a pointer to it; leaving it dangling causes a
+      // use-after-free when postprocess() calls resolve() on babModel_.solver().
+      if (babModel_.solver())
+        babModel_.solver()->passInMessageHandler(savedMsgHandler_);
       delete outputHandler_;
       delete lpSilentHandler_;
     }

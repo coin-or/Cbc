@@ -1997,14 +1997,38 @@ static void putBackOtherSolutions(CbcModel *presolvedModel, CbcModel *model,
         CoinCopyOfArray(presolvedModel->bestSolution(), numberColumns);
     // double cutoff = presolvedModel->getCutoff();
     double objectiveValue = presolvedModel->getObjValue();
+
+    // Precompute the column mapping from preprocessed → original variable space.
+    // CglPreProcess::postProcess() back-substitutes using potentially sign-flipped
+    // constraint equations (G-rows scaled to L-rows), giving wrong 0/1 values for
+    // retained binary/integer variables.  We override those with direct mapping
+    // from the preprocessed solution whenever the column is retained.
+    OsiSolverInterface *origModel = preProcess->originalModel();
+    int nOrigCols = origModel->getNumCols();
+    const int *origCols = preProcess->originalColumns(); // origCols[i] = original col for preprocssed col i
+
     // model->createSpaceForSavedSolutions(numberSolutions-1);
     for (int iSolution = numberSolutions - 1; iSolution >= 0; iSolution--) {
       presolvedModel->setCutoff(COIN_DBL_MAX);
-      presolvedModel->solver()->setColSolution(
-          presolvedModel->savedSolution(iSolution));
-      // presolvedModel->savedSolutionObjective(iSolution));
+      const double *prepSol = presolvedModel->savedSolution(iSolution);
+      presolvedModel->solver()->setColSolution(prepSol);
       preProcess->postProcess(*presolvedModel->solver(), false);
-      model->setBestSolution(preProcess->originalModel()->getColSolution(),
+
+      // Build corrected solution: start from back-substituted values, then
+      // override retained variables with the direct mapping from prepSol.
+      const double *backSol = origModel->getColSolution();
+      std::vector<double> corrected(backSol, backSol + nOrigCols);
+      if (origCols) {
+        for (int i = 0; i < numberColumns; i++) {
+          int j = origCols[i];
+          if (j < 0 || j >= nOrigCols) continue;
+          double v = prepSol[i];
+          if (presolvedModel->solver()->isInteger(i))
+            v = floor(v + 0.5);
+          corrected[j] = v;
+        }
+      }
+      model->setBestSolution(corrected.data(),
                              model->solver()->getNumCols(),
                              presolvedModel->savedSolutionObjective(iSolution));
     }
@@ -4713,6 +4737,37 @@ int CbcSolver::postprocess(
       // put back any saved solutions
       putBackOtherSolutions(babModel_, &model_, &process);
       setPreProcessingMode(babModel_->solver(), 2);
+      // Fix all integer variable bounds in the preprocessed solver to their
+      // B&B integer solution values and re-solve before calling postProcess.
+      // After B&B, babModel_->solver() holds the LP relaxation at the last
+      // explored node, which may be fractional.  CglPreProcess::postProcess()
+      // checks isProvenOptimal() and calls resolve() internally if the solver
+      // is not optimal, which overwrites any injected solution.  By fixing
+      // integer bounds and resolving first, we ensure postProcess receives a
+      // proven-optimal LP where every integer variable is at its correct 0/1
+      // value, so the presolve back-substitution produces a clean integer
+      // solution in the original space.
+      if (babModel_->bestSolution()) {
+        OsiSolverInterface *prepSolver = babModel_->solver();
+        const double *bestSol = babModel_->bestSolution();
+        int nCols2 = prepSolver->getNumCols();
+        std::vector<double> savedLb(nCols2), savedUb(nCols2);
+        for (int i = 0; i < nCols2; i++) {
+          savedLb[i] = prepSolver->getColLower()[i];
+          savedUb[i] = prepSolver->getColUpper()[i];
+          if (prepSolver->isInteger(i)) {
+            double val = floor(bestSol[i] + 0.5);
+            prepSolver->setColLower(i, val);
+            prepSolver->setColUpper(i, val);
+          }
+        }
+        prepSolver->resolve();
+        // NOTE: We intentionally do NOT restore original bounds here.
+        // Keeping the integer bounds fixed ensures that when postProcess
+        // back-propagates the presolve substitutions, any "eliminated" binary
+        // variables computed via substitution from fixed integers will also
+        // receive clean 0/1 values in the original space.
+      }
       process.postProcess(*babModel_->solver());
       setPreProcessingMode(saveSolver_, 0);
 #ifdef COIN_DEVELOP
@@ -4815,9 +4870,205 @@ int CbcSolver::postprocess(
                << std::endl;
         printGeneralMessage(model_, buffer.str());
       }
-      // saveSolver_->resolve();
-      if (true /*!saveSolver_->isProvenOptimal()*/) {
-        // try all slack
+      // Repair pass: use original model constraints to fix incorrectly-rounded
+      // binary variables.  CglPreProcess transforms G-rows to L-rows in
+      // saveSolver_ during preprocessing (the scaling step), making bound
+      // propagation on saveSolver_ blind to the original sense of those
+      // constraints.  We check each original row using originalSolver
+      // (= model_.solver(), which preserves the unmodified constraint
+      // structure) and greedily flip binary variables to restore feasibility.
+      // Corrected binaries are locked in saveSolver_ so the subsequent LP
+      // solves keep them at their repaired values.
+      {
+        int nCols = originalSolver->getNumCols();
+        int nColsSave = saveSolver_->getNumCols();
+        // Only run the repair if saveSolver_ has at least as many columns as
+        // originalSolver (= original problem space).  nColsSave < nCols would
+        // mean postProcess changed the model unexpectedly.
+        if (nColsSave >= nCols) {
+          // Build repSol using direct column mapping from the preprocessed
+          // B&B solution wherever possible, overriding the back-substituted
+          // saveSolver_ values for retained variables.
+          //
+          // Background: process.postProcess() back-substitutes the preprocessed
+          // solution into the original variable space.  For variables that were
+          // ELIMINATED during preprocessing, the back-substitution uses the
+          // internally stored (and possibly sign-flipped) constraint equations,
+          // which gives wrong 0/1 values when a G-constraint was scaled to an
+          // L-constraint.  For RETAINED variables (those that survive into the
+          // preprocessed model), the correct values are available directly from
+          // babModel_->bestSolution() via process.originalColumns().
+          //
+          // Strategy:
+          //  1. Start from saveSolver_->getColSolution() (correct for retained).
+          //  2. Override retained-variable values with the direct B&B mapping.
+          //  3. Run a greedy repair pass only for pure-binary rows.
+          const double *proposedSol = saveSolver_->getColSolution();
+          std::vector<double> repSol(proposedSol, proposedSol + nColsSave);
+
+          if (babModel_->bestSolution()) {
+            int nPrep = babModel_->solver()->getNumCols();
+            const double *prepBest = babModel_->bestSolution();
+            const int *origCols = process.originalColumns();
+            for (int i = 0; i < nPrep; i++) {
+              int j = origCols[i]; // original-space column
+              if (j < 0 || j >= nColsSave) continue;
+              double prepVal = prepBest[i];
+              if (babModel_->solver()->isInteger(i))
+                prepVal = floor(prepVal + 0.5);
+              repSol[j] = prepVal;
+            }
+          }
+          const CoinPackedMatrix *rowMtx = originalSolver->getMatrixByRow();
+          const CoinPackedMatrix *colMtx = originalSolver->getMatrixByCol();
+          const double *rowLb = originalSolver->getRowLower();
+          const double *rowUb = originalSolver->getRowUpper();
+          const double *origColLb = originalSolver->getColLower();
+          const double *origColUb = originalSolver->getColUpper();
+          int nRows = originalSolver->getNumRows();
+          std::vector<double> lhs(nRows, 0.0);
+          for (int r = 0; r < nRows; r++) {
+            const int s = rowMtx->getVectorStarts()[r];
+            const int rl = rowMtx->getVectorLengths()[r];
+            for (int k = 0; k < rl; k++)
+              lhs[r] += rowMtx->getElements()[s + k] * repSol[rowMtx->getIndices()[s + k]];
+          }
+
+          // locked[col]: variable committed; do not change again.
+          std::vector<bool> locked(nCols, false);
+          std::vector<bool> changed(nCols, false);
+
+          // Pre-compute pureInt[r]: true if every variable in row r is integer.
+          // With retained variables correctly mapped from the B&B solution, we
+          // can trust any row where all variables are integer.  Rows with
+          // continuous variables are still excluded (LP will handle those).
+          std::vector<bool> pureInt(nRows, true);
+          for (int r = 0; r < nRows; r++) {
+            const int s = rowMtx->getVectorStarts()[r];
+            const int rl = rowMtx->getVectorLengths()[r];
+            for (int k = 0; k < rl; k++) {
+              if (!originalSolver->isInteger(rowMtx->getIndices()[s + k])) {
+                pureInt[r] = false;
+                break;
+              }
+            }
+          }
+
+          // Variable-first greedy repair (up to nCols passes).
+          // Each pass picks the unlocked binary whose flip reduces total
+          // row-violation the most, commits that flip, and repeats.
+          // Only pure-integer rows (all variables integer) are considered;
+          // rows with continuous variables are left for the LP solver.
+          for (int pass = 0; pass < nCols; pass++) {
+            // Check if any pure-integer rows are still violated.
+            bool anyViolated = false;
+            for (int r = 0; r < nRows; r++) {
+              if (!pureInt[r]) continue;
+              if (std::max(rowLb[r] - lhs[r], lhs[r] - rowUb[r]) > 1.0e-6) {
+                anyViolated = true;
+                break;
+              }
+            }
+            if (!anyViolated) break;
+
+            int bestCol = -1;
+            double bestGain = 1.0e-8; // must strictly improve
+            double bestNewVal = 0.0;
+
+            for (int col = 0; col < nCols; col++) {
+              if (locked[col]) continue;
+              if (!originalSolver->isInteger(col)) continue;
+              double range = origColUb[col] - origColLb[col];
+              // Only true binaries (range in (0, 1.5]).
+              if (range < 0.5 || range > 1.5) continue;
+              double curVal = repSol[col];
+              // Candidate new value: the OTHER endpoint.
+              double newVal = (curVal < origColLb[col] + 0.5)
+                ? (origColLb[col] + 1.0)
+                : origColLb[col];
+
+              // Evaluate total violation change across pure-integer rows only.
+              const int cs = colMtx->getVectorStarts()[col];
+              const int cl = colMtx->getVectorLengths()[col];
+              const int *cIdx = colMtx->getIndices() + cs;
+              const double *cElem = colMtx->getElements() + cs;
+              double gain = 0.0;
+              double delta = newVal - curVal;
+              for (int k = 0; k < cl; k++) {
+                int r = cIdx[k];
+                if (!pureInt[r]) continue; // skip rows with continuous variables
+                double curViol = std::max(rowLb[r] - lhs[r], lhs[r] - rowUb[r]);
+                if (curViol < 0.0) curViol = 0.0;
+                double newLhs = lhs[r] + delta * cElem[k];
+                double newViol = std::max(rowLb[r] - newLhs, newLhs - rowUb[r]);
+                if (newViol < 0.0) newViol = 0.0;
+                gain += curViol - newViol;
+              }
+              if (gain > bestGain) {
+                bestGain = gain;
+                bestCol = col;
+                bestNewVal = newVal;
+              }
+            }
+
+            if (bestCol < 0) break; // no improving flip found
+
+            // Commit the best flip: update lhs for affected rows.
+            double delta = bestNewVal - repSol[bestCol];
+            const int cs = colMtx->getVectorStarts()[bestCol];
+            const int cl = colMtx->getVectorLengths()[bestCol];
+            const int *cIdx = colMtx->getIndices() + cs;
+            const double *cElem = colMtx->getElements() + cs;
+            for (int k = 0; k < cl; k++)
+              lhs[cIdx[k]] += delta * cElem[k];
+            repSol[bestCol] = bestNewVal;
+            locked[bestCol] = true;
+            changed[bestCol] = true;
+          }
+
+          // Always inject the final repSol back into saveSolver_.
+          // This is needed because repSol may have been corrected via the
+          // column mapping (overriding wrong back-substituted values) even
+          // when no greedy repair flips occurred (anyFix=false).
+          // Additionally, fix all integer variables at their repSol values so
+          // that the subsequent LP solves do not over-write them.
+          for (int col = 0; col < nCols; col++) {
+            if (saveSolver_->isInteger(col)) {
+              double val = floor(repSol[col] + 0.5);
+              saveSolver_->setColLower(col, val);
+              saveSolver_->setColUpper(col, val);
+            } else if (changed[col]) {
+              // For non-integer changed variables (shouldn't happen in practice
+              // since we only flip binaries, but be safe).
+              saveSolver_->setColLower(col, repSol[col]);
+              saveSolver_->setColUpper(col, repSol[col]);
+            }
+          }
+          saveSolver_->setColSolution(repSol.data());
+        }
+      }
+      // saveSolver_ before LP solves.  CglPreProcess preprocessing (CglProbing,
+      // LP bound tightening) can set fractional lower bounds on binaries
+      // (e.g. lb=0.226923 on a binary meaning the variable is forced to 1).
+      // Without rounding, the LP would return a fractional optimal and
+      // bestSolution would contain fractional integers.
+      {
+        int nCols = saveSolver_->getNumCols();
+        const double *lb = saveSolver_->getColLower();
+        const double *ub = saveSolver_->getColUpper();
+        for (int i = 0; i < nCols; i++) {
+          if (saveSolver_->isInteger(i)) {
+            double intLb = std::ceil(lb[i] - 1.0e-8);
+            double intUb = std::floor(ub[i] + 1.0e-8);
+            if (intLb > lb[i] + 1.0e-10)
+              saveSolver_->setColLower(i, intLb);
+            if (intUb < ub[i] - 1.0e-10)
+              saveSolver_->setColUpper(i, intUb);
+          }
+        }
+      }
+      // try all slack (original master approach - always cold start)
+      {
         CoinWarmStartBasis *basis = dynamic_cast< CoinWarmStartBasis * >(
           babModel_->solver()->getEmptyWarmStart());
         saveSolver_->setWarmStart(basis);

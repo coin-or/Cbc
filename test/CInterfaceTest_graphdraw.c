@@ -148,6 +148,10 @@ static void test_mip_node_limited(void)
     char feas = Cbc_checkFeasibility(m, sol,
                                      &maxViolRow, &rowIdx,
                                      &maxViolCol, &colIdx);
+    if (!feas) {
+      fprintf(stderr, "FAIL checkFeasibility: maxViolRow=%g (row %d), maxViolCol=%g (col %d)\n",
+        maxViolRow, rowIdx, maxViolCol, colIdx);
+    }
     CHECK(feas == 1, "MIP: solution is integer-feasible");
 
     if (!is_opt)

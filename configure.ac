@@ -52,6 +52,7 @@ AC_COIN_CHECK_MATH_HDRS
 
 AC_CHECK_HEADERS([execinfo.h])
 AC_CHECK_HEADERS([signal.h])
+AC_CHECK_HEADERS([immintrin.h])
 
 #############################################################################
 #                            COIN-OR components                             #

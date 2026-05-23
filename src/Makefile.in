@@ -225,6 +225,7 @@ am_libmipster_la_OBJECTS = libmipster_la-CbcBab.lo \
 	libmipster_la-CbcInstanceFeatures.lo \
 	libmipster_la-CbcLpParamScorer.lo \
 	libmipster_la-CbcBoundPropagation.lo \
+	libmipster_la-CbcPostprocessRepair.lo \
 	libmipster_la-CbcStrategy.lo libmipster_la-CbcSubProblem.lo \
 	libmipster_la-CbcThread.lo libmipster_la-CbcTree.lo \
 	libmipster_la-CbcTreeLocal.lo libmipster_la-Cbc_C_Interface.lo \
@@ -321,6 +322,7 @@ am__depfiles_remade = ./$(DEPDIR)/libmipster_la-CbcBab.Plo \
 	./$(DEPDIR)/libmipster_la-CbcParameters.Plo \
 	./$(DEPDIR)/libmipster_la-CbcPartialNodeInfo.Plo \
 	./$(DEPDIR)/libmipster_la-CbcPartialSolutionPool.Plo \
+	./$(DEPDIR)/libmipster_la-CbcPostprocessRepair.Plo \
 	./$(DEPDIR)/libmipster_la-CbcRootHeuristicSchedule.Plo \
 	./$(DEPDIR)/libmipster_la-CbcSOS.Plo \
 	./$(DEPDIR)/libmipster_la-CbcSimpleInteger.Plo \
@@ -659,6 +661,7 @@ libmipster_la_SOURCES = \
 	CbcInstanceFeatures.cpp CbcInstanceFeatures.hpp \
 	CbcLpParamScorer.cpp CbcLpParamScorer.hpp \
 	CbcBoundPropagation.cpp CbcBoundPropagation.hpp \
+	CbcPostprocessRepair.cpp CbcPostprocessRepair.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
 	CbcThread.cpp CbcThread.hpp \
@@ -783,6 +786,7 @@ includecoin_HEADERS = \
 	CbcInstanceFeatures.hpp \
 	CbcLpParamScorer.hpp \
 	CbcBoundPropagation.hpp \
+	CbcPostprocessRepair.hpp \
 	ClpAmplObjective.hpp
 
 all: config.h config_cbc.h
@@ -1001,6 +1005,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcParameters.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcPartialNodeInfo.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcPartialSolutionPool.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcPostprocessRepair.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcRootHeuristicSchedule.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcSOS.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-CbcSimpleInteger.Plo@am__quote@ # am--include-marker
@@ -1614,6 +1619,13 @@ libmipster_la-CbcBoundPropagation.lo: CbcBoundPropagation.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libmipster_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libmipster_la-CbcBoundPropagation.lo `test -f 'CbcBoundPropagation.cpp' || echo '$(srcdir)/'`CbcBoundPropagation.cpp
 
+libmipster_la-CbcPostprocessRepair.lo: CbcPostprocessRepair.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libmipster_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libmipster_la-CbcPostprocessRepair.lo -MD -MP -MF $(DEPDIR)/libmipster_la-CbcPostprocessRepair.Tpo -c -o libmipster_la-CbcPostprocessRepair.lo `test -f 'CbcPostprocessRepair.cpp' || echo '$(srcdir)/'`CbcPostprocessRepair.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmipster_la-CbcPostprocessRepair.Tpo $(DEPDIR)/libmipster_la-CbcPostprocessRepair.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CbcPostprocessRepair.cpp' object='libmipster_la-CbcPostprocessRepair.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libmipster_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libmipster_la-CbcPostprocessRepair.lo `test -f 'CbcPostprocessRepair.cpp' || echo '$(srcdir)/'`CbcPostprocessRepair.cpp
+
 libmipster_la-CbcStrategy.lo: CbcStrategy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libmipster_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libmipster_la-CbcStrategy.lo -MD -MP -MF $(DEPDIR)/libmipster_la-CbcStrategy.Tpo -c -o libmipster_la-CbcStrategy.lo `test -f 'CbcStrategy.cpp' || echo '$(srcdir)/'`CbcStrategy.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmipster_la-CbcStrategy.Tpo $(DEPDIR)/libmipster_la-CbcStrategy.Plo
@@ -1883,6 +1895,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcParameters.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcPartialNodeInfo.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcPartialSolutionPool.Plo
+	-rm -f ./$(DEPDIR)/libmipster_la-CbcPostprocessRepair.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcRootHeuristicSchedule.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcSOS.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcSimpleInteger.Plo
@@ -2019,6 +2032,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcParameters.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcPartialNodeInfo.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcPartialSolutionPool.Plo
+	-rm -f ./$(DEPDIR)/libmipster_la-CbcPostprocessRepair.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcRootHeuristicSchedule.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcSOS.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-CbcSimpleInteger.Plo

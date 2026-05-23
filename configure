@@ -19419,6 +19419,13 @@ then :
 
 fi
 
+ac_fn_c_check_header_compile "$LINENO" "immintrin.h" "ac_cv_header_immintrin_h" "$ac_includes_default"
+if test "x$ac_cv_header_immintrin_h" = xyes
+then :
+  printf '%s\n' "#define HAVE_IMMINTRIN_H 1" >>confdefs.h
+
+fi
+
 
 #############################################################################
 #                            COIN-OR components                             #

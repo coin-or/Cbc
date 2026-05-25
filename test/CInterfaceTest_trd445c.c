@@ -209,6 +209,10 @@ static void test_mip_optimal(void)
   CHECK(fabs(obj - MIP_OPT) < MIP_TOL,
         "MIP obj must match reference -153419.079");
 
+  /* Validate every solution in the pool: feasibility + obj on correct side */
+  int fails = validate_all_saved_solutions(m, MIP_OPT, MIP_TOL, "trd445c");
+  CHECK(fails == 0, "all saved solutions are feasible with obj on correct side of MIP_OPT");
+
   Cbc_deleteModel(m);
 }
 

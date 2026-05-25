@@ -211,6 +211,10 @@ static void test_mip_optimal(void)
   CHECK(fabs(obj - MIP_OPT) < MIP_TOL,
         "MIP obj must match reference 3.0");
 
+  /* Validate every solution in the pool: feasibility + obj >= known optimal */
+  int fails = validate_all_saved_solutions(m, MIP_OPT, MIP_TOL, "j3041_1");
+  CHECK(fails == 0, "all saved solutions are feasible with obj >= MIP_OPT");
+
   Cbc_deleteModel(m);
 }
 

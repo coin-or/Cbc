@@ -108,8 +108,8 @@ static void test_pure_lp(void)
 /* test_mip_node_limited                                               */
 /*                                                                     */
 /* Solve with a node limit.  Optimality is not expected within this   */
-/* limit.  If a feasible integer solution is found, validate that the  */
-/* objective is consistent and the solution is feasible.              */
+/* limit.  If any integer solutions are found, every solution in the  */
+/* pool is validated for feasibility and objective >= LP lower bound. */
 /* ------------------------------------------------------------------ */
 
 static void test_mip_node_limited(void)
@@ -134,25 +134,23 @@ static void test_mip_node_limited(void)
   CHECK(best_bound >= GRAPHDRAW_LP_OPT - LP_TOL,
         "MIP: dual bound >= LP relaxation value");
 
-  const double *sol = Cbc_bestSolution(m);
-  if (sol != NULL) {
-    /* A solution was found — validate it. */
+  int nsols = Cbc_numberSavedSolutions(m);
+  printf("  Saved solutions: %d   Best bound: %g\n", nsols, best_bound);
+
+  if (nsols > 0) {
     double obj = Cbc_getObjValue(m);
     CHECK(obj >= GRAPHDRAW_LP_OPT - LP_TOL,
-          "MIP: integer solution value >= LP lower bound");
+          "MIP: best integer solution >= LP lower bound");
     CHECK(obj >= best_bound - LP_TOL,
-          "MIP: integer solution value >= dual bound");
+          "MIP: best integer solution >= dual bound");
 
-    double maxViolRow, maxViolCol;
-    int rowIdx, colIdx;
-    char feas = Cbc_checkFeasibility(m, sol,
-                                     &maxViolRow, &rowIdx,
-                                     &maxViolCol, &colIdx);
-    if (!feas) {
-      fprintf(stderr, "FAIL checkFeasibility: maxViolRow=%g (row %d), maxViolCol=%g (col %d)\n",
-        maxViolRow, rowIdx, maxViolCol, colIdx);
-    }
-    CHECK(feas == 1, "MIP: solution is integer-feasible");
+    /* Validate every solution in the pool.  No known optimal, so only
+     * feasibility is checked (pass NAN to skip objective bound check). */
+    int fails = validate_all_saved_solutions(m, NAN, 0.0, "graphdraw");
+    CHECK(fails == 0, "MIP: all saved solutions are integer-feasible");
+
+    if (fails == 0)
+      printf("  All %d saved solution(s) validated (feasible)\n", nsols);
 
     if (!is_opt)
       printf("  (note: not proven optimal — node limit reached, "

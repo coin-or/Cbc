@@ -1037,23 +1037,28 @@ static void applyVectorMode(ClpSimplex *lpSolver, bool setMode = false)
 // Settings decoded from an LP parameter tag (see lp_params.txt).
 struct LpAutoSettings {
   CbcParameters::LPMethod method;  ///< LPDual or LPPrimal
-  int    idiot;      ///< idiot-crash iterations; 0 = disabled
-  int    sprint;     ///< sprint flag: -1 = auto/enabled, 0 = disabled
-  double psi;        ///< positive-edge weight; 0 = none
-  int    pertValue;  ///< perturbation value; 100 = Clp default (off)
-  bool   pesteep;    ///< use ClpDualRowSteepest(3) as dual pivot
+  int    idiot;        ///< idiot-crash iterations; 0 = disabled
+  int    sprint;       ///< sprint flag: -1 = auto/enabled, 0 = disabled
+  double psi;          ///< positive-edge weight; 0 = none
+  int    pertValue;    ///< perturbation value; 100 = Clp default (off)
+  bool   pesteep;      ///< use ClpDualRowSteepest(3) as dual pivot
+  int    scalingMode;  ///< clp->scaling() mode; -1 = leave user setting
 };
 
 // Parse a parameter tag (from lp_params.txt / CbcLpParamScorer) into
 // a LpAutoSettings struct.  Tag format examples:
 //   dual_pesteep_psineg1   primal_idiot30_pertvm1483   primal_sprint
+//   dual_pesteep_scaling_off
+//
+// Scaling modes: 0=off, 1=equilibrium, 2=geometric, 3=automatic (Clp default)
 static LpAutoSettings
 parseLpParamTag(const char *tag)
 {
   LpAutoSettings s;
-  s.psi       = 0.0;
-  s.pertValue = 100;
-  s.pesteep   = false;
+  s.psi         = 0.0;
+  s.pertValue   = 100;
+  s.pesteep     = false;
+  s.scalingMode = -1;  // don't override user setting
 
   if (strncmp(tag, "primal", 6) == 0) {
     s.method = CbcParameters::LPPrimal;
@@ -1090,6 +1095,13 @@ parseLpParamTag(const char *tag)
     } else if ((p = strstr(tag, "_pertv"))) {
       s.pertValue = atoi(p + 6);
     }
+    // _scaling_off=0, _scaling_equi=1, _scaling_geo=2
+    if (strstr(tag, "_scaling_off"))
+      s.scalingMode = 0;
+    else if (strstr(tag, "_scaling_equi"))
+      s.scalingMode = 1;
+    else if (strstr(tag, "_scaling_geo"))
+      s.scalingMode = 2;
   }
   return s;
 }
@@ -1205,12 +1217,13 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   } else {
     // Fill with current parameter values so section-3 code is uniform.
     ClpParameters &clpP = parameters_.clpParameters();
-    autoS.method    = parameters_.getLpMethod();
-    autoS.idiot     = doIdiot_;
-    autoS.sprint    = doSprint_;
-    autoS.psi       = clpP[ClpParam::PSI]->dblVal();
-    autoS.pertValue = clpP[ClpParam::PERTVALUE]->intVal();
-    autoS.pesteep   = false;
+    autoS.method      = parameters_.getLpMethod();
+    autoS.idiot       = doIdiot_;
+    autoS.sprint      = doSprint_;
+    autoS.psi         = clpP[ClpParam::PSI]->dblVal();
+    autoS.pertValue   = clpP[ClpParam::PERTVALUE]->intVal();
+    autoS.pesteep     = false;
+    autoS.scalingMode = -1;
   }
 
   // ─── 3. Model-level LP settings ──────────────────────────────────────────
@@ -1228,6 +1241,10 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
       ClpDualRowSteepest steep(3);
       clp->setDualRowPivotAlgorithm(steep);
     }
+
+    // Auto scaling override (e.g. scaling_off from a classifier recommendation).
+    if (autoS.scalingMode >= 0)
+      clp->scaling(autoS.scalingMode);
 
     applyPositiveEdge(clp, autoS.psi);
 

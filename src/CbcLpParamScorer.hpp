@@ -5,12 +5,14 @@
 //
 // Model: RandomForest classifier (n_estimators=150, max_depth=8)
 // Training data: 380 instances x 207 OsiFeatures
-// Classes (23): cbc_default, dual_default, dual_pertv50, dual_pertv52, dual_pertv61, dual_pesteep, …
+// Classes (13): dual_default, dual_pertv58, dual_pertv72, dual_pesteep_pertv58, dual_pesteep_psi1_pertv61, dual_pesteep_psineg1_pertv61, dual_pesteep_scaling_off, primal_idiot10, primal_idiot30, primal_idiot50, primal_idiot500, primal_idiot60, primal_sprint
+// K-fold speedup vs dual_default: 1.362x (5-fold CV, timelimit=10800s)
+// Method: win-profile clustering (Jaccard, threshold=5%, k=12 clusters)
 #pragma once
 
 /// Returns the recommended LP parameter tag for the given feature vector.
 /// @param features  Array of OsiFeatures::OFCount doubles (see OsiFeatures.hpp).
 /// @return  A const C string with the recommended parameter tag, e.g.
-///          "dual_pesteep_psineg1".  The pointer is valid for the lifetime
-///          of the program (points into a static table).
+///          "dual_pesteep_psineg1_pertv61".  The pointer is valid for the
+///          lifetime of the program (points into a static table).
 const char *cbcRecommendLpParam(const double *features);

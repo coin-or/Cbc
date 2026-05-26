@@ -3,9 +3,12 @@
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
 #include "ClpRacingSolver.hpp"
+#include "ClpDualRowSteepest.hpp"
+#include "ClpPEDualRowSteepest.hpp"
 #include "ClpEventHandler.hpp"
 #include "CoinTime.hpp"
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -145,49 +148,97 @@ ClpRacingSolver::ClpRacingSolver(ClpSimplex *model, int numThreads)
 {
 }
 
-void ClpRacingSolver::addConfig(const ClpSolve &config)
+void ClpRacingSolver::addConfig(const ClpSolve &config, ConfigSetupFn setupFn)
 {
   configs_.push_back(config);
+  setupFns_.push_back(std::move(setupFn));
 }
 
-void ClpRacingSolver::addDefaultConfigs()
+void ClpRacingSolver::addDefaultConfigs(int portfolioSize)
 {
   configs_.clear();
+  setupFns_.clear();
 
-  // Config 0: Dual simplex with presolve (default)
-  {
+  int k = portfolioSize > 0 ? portfolioSize : numThreads_;
+
+  // ── Shared config builder helpers ─────────────────────────────────────────
+
+  // dual_pesteep_pertv75: dual simplex + positive-edge steepest (PSI=0.5) + pertv75.
+  // Mirrors "-dualPivot pesteep -pertValue 75 -lpMethod dual" with default PSI=-0.5
+  // (fabs(-0.5)=0.5 is passed to ClpPEDualRowSteepest, matching CbcSolver line ~8005).
+  auto makeDualPesteepPertv75 = []() -> std::pair<ClpSolve, ConfigSetupFn> {
     ClpSolve opts;
     opts.setSolveType(ClpSolve::useDual);
     opts.setPresolveType(ClpSolve::presolveOn);
-    opts.setSpecialOption(2, 1); // no signal handler (thread-safe)
-    configs_.push_back(opts);
-  }
+    opts.setSpecialOption(2, 1);
+    ConfigSetupFn fn = [](ClpSimplex *m) {
+      ClpPEDualRowSteepest pesteep(0.5);
+      m->setDualRowPivotAlgorithm(pesteep);
+      m->setPerturbation(75);
+    };
+    return {opts, fn};
+  };
 
-  // Config 1: Primal + Idiot crash (60 passes) with presolve
-  {
+  // dual_pesteep_psineg1_pertv75: dual simplex + positive-edge steepest (PSI=1.0) + pertv75.
+  // Mirrors "-dualPivot pesteep -psi -1.0 -pertValue 75 -lpMethod dual":
+  // fabs(-1.0)=1.0 passed to ClpPEDualRowSteepest — PSI=1.0 effectively disables the
+  // PE criterion, making this behave like plain steepest but with the PE infrastructure.
+  auto makeDualPesteepPsineg1Pertv75 = []() -> std::pair<ClpSolve, ConfigSetupFn> {
+    ClpSolve opts;
+    opts.setSolveType(ClpSolve::useDual);
+    opts.setPresolveType(ClpSolve::presolveOn);
+    opts.setSpecialOption(2, 1);
+    ConfigSetupFn fn = [](ClpSimplex *m) {
+      ClpPEDualRowSteepest pesteep(1.0);
+      m->setDualRowPivotAlgorithm(pesteep);
+      m->setPerturbation(75);
+    };
+    return {opts, fn};
+  };
+
+  // primal_idiot50: primal simplex with 50 idiot-crash passes
+  auto makePrimalIdiot50 = []() -> std::pair<ClpSolve, ConfigSetupFn> {
     ClpSolve opts;
     opts.setSolveType(ClpSolve::usePrimal);
     opts.setPresolveType(ClpSolve::presolveOn);
-    opts.setSpecialOption(1, 2, 60); // idiot with 60 passes
+    opts.setSpecialOption(1, 2, 50);  // idiot, 50 passes
     opts.setSpecialOption(2, 1);
-    configs_.push_back(opts);
-  }
+    return {opts, nullptr};
+  };
 
-  // Config 2: Primal + Sprint with presolve
-  {
+  // primal_sprint: primal simplex with sprint
+  auto makePrimalSprint = []() -> std::pair<ClpSolve, ConfigSetupFn> {
     ClpSolve opts;
     opts.setSolveType(ClpSolve::usePrimalorSprint);
     opts.setPresolveType(ClpSolve::presolveOn);
-    opts.setSpecialOption(1, 3); // sprint
+    opts.setSpecialOption(1, 3);
     opts.setSpecialOption(2, 1);
-    configs_.push_back(opts);
+    return {opts, nullptr};
+  };
+
+  if (k == 2) {
+    // K=2 optimal portfolio (exhaustive-verified, k-fold speedup 1.51x):
+    //   dual_pesteep_pertv75 + primal_idiot50
+    auto [o0, f0] = makeDualPesteepPertv75();
+    auto [o1, f1] = makePrimalIdiot50();
+    addConfig(o0, f0);
+    addConfig(o1, f1);
+  } else {
+    // K=3 optimal portfolio (exhaustive-verified, k-fold speedup 1.63x):
+    //   dual_pesteep_psineg1_pertv75 + primal_idiot50 + primal_sprint
+    auto [o0, f0] = makeDualPesteepPsineg1Pertv75();
+    auto [o1, f1] = makePrimalIdiot50();
+    auto [o2, f2] = makePrimalSprint();
+    addConfig(o0, f0);
+    addConfig(o1, f1);
+    addConfig(o2, f2);
   }
 }
 
 int ClpRacingSolver::solve()
 {
   if (configs_.empty())
-    addDefaultConfigs();
+    addDefaultConfigs(numThreads_);
 
   int nConfigs = static_cast<int>(configs_.size());
   int nThreads = numThreads_ > 0 ? numThreads_ : nConfigs;
@@ -207,10 +258,13 @@ int ClpRacingSolver::solve()
   std::atomic<bool> abortFlag{false};
   std::atomic<int> winner{-1};
 
-  // Clone models for each racing thread
+  // Clone models for each racing thread; apply per-config setup functions.
   std::vector<ClpSimplex *> clones(nThreads, nullptr);
-  for (int i = 0; i < nThreads; i++)
+  for (int i = 0; i < nThreads; i++) {
     clones[i] = new ClpSimplex(*model_);
+    if (i < static_cast<int>(setupFns_.size()) && setupFns_[i])
+      setupFns_[i](clones[i]);
+  }
 
   // Set up shared progress reporting
   static const char *configLabels[] = {"Dual", "Primal+Idiot", "Sprint"};

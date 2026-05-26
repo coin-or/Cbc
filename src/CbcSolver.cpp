@@ -1204,9 +1204,13 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   // When -lpMethod=auto, extract OsiFeatures and query the ML scorer to pick
   // the best LP parameter configuration for this specific instance.  The
   // result is stored in `autoS` and applied in sections 3 and 5 below.
+  // Skipped when racing is active — racing manages its own per-thread configs.
+  const int racingLP = parameters_[CbcParam::RACINGLP]->intVal();
+
   LpAutoSettings autoS;
   const bool autoLpMode =
-    (parameters_.getLpMethod() == CbcParameters::LPAuto) && (clp != nullptr);
+    (parameters_.getLpMethod() == CbcParameters::LPAuto) && (clp != nullptr)
+    && (racingLP == 0);
   if (autoLpMode) {
     double feats[OFCount];
     OsiFeatures::compute(feats, solver);
@@ -1227,30 +1231,30 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   }
 
   // ─── 3. Model-level LP settings ──────────────────────────────────────────
-  // PSI, objective scaling, and vector mode modify the ClpSimplex object in
-  // place.  They MUST be applied before racing (step 4) so that every racing
-  // thread clone inherits them.
+  // Pivot algorithm, PSI, perturbation: only applied when NOT racing.
+  // When racing, each thread clone has its own setup function that sets these.
+  // Objective scaling and vector mode are always applied — they are global
+  // model transformations that every racing clone should inherit.
   if (clp) {
-    // NOTE: all CLP parameters are stored in parameters_.clpParameters(), NOT in
-    // the redundant CbcSolver::clpParameters_ member (which is never populated).
     ClpParameters &clpP = parameters_.clpParameters();
 
-    // When auto mode picked a steepest-edge pivot, install it before the PSI
-    // wrapper so that applyPositiveEdge() can wrap it correctly.
-    if (autoS.pesteep) {
-      ClpDualRowSteepest steep(3);
-      clp->setDualRowPivotAlgorithm(steep);
+    if (racingLP == 0) {
+      // When auto mode picked a steepest-edge pivot, install it before the PSI
+      // wrapper so that applyPositiveEdge() can wrap it correctly.
+      if (autoS.pesteep) {
+        ClpDualRowSteepest steep(3);
+        clp->setDualRowPivotAlgorithm(steep);
+      }
+
+      // Auto scaling override (e.g. scaling_off from a classifier recommendation).
+      if (autoS.scalingMode >= 0)
+        clp->scaling(autoS.scalingMode);
+
+      applyPositiveEdge(clp, autoS.psi);
+
+      // Apply perturbation value.
+      clp->setPerturbation(autoS.pertValue);
     }
-
-    // Auto scaling override (e.g. scaling_off from a classifier recommendation).
-    if (autoS.scalingMode >= 0)
-      clp->scaling(autoS.scalingMode);
-
-    applyPositiveEdge(clp, autoS.psi);
-
-    // Apply perturbation value.  In non-auto mode autoS.pertValue was filled
-    // from clpP[PERTVALUE] in section 2.5, so either way we use autoS here.
-    clp->setPerturbation(autoS.pertValue);
 
     const double objScale = clpP[ClpParam::OBJSCALE2]->dblVal();
     if (objScale != 1.0) {
@@ -1276,11 +1280,10 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   }
 
   // ─── 4. LP racing ───────────────────────────────────────────────────────
-  // Races multiple LP strategies in parallel threads.  Thread configs are
-  // intentionally varied (dual, primal+idiot, sprint) — that is the point
-  // of racing.  Model-level settings from step 3 are already baked into the
-  // clp model, so every cloned thread inherits PSI, objScale, and vector mode.
-  const int racingLP = parameters_[CbcParam::RACINGLP]->intVal();
+  // Races multiple LP strategies in parallel threads.  Each clone gets its own
+  // per-config setup function (pivot algorithm, perturbation, idiot passes, etc.)
+  // applied before solving. Global model settings (objScale, vector mode) from
+  // step 3 are already baked in and inherited by all clones.
   if (racingLP > 0 && clp) {
     ClpRacingSolver racer(clp, racingLP);
     racer.solve();

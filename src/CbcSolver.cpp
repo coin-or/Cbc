@@ -1207,8 +1207,11 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   // Skipped when racing is active — racing manages its own per-thread configs.
   const bool racingLP = parameters_.getRacingLP();
   // Portfolio size for racing: 2 threads → K=2, 3+ threads → K=3.
+  // Read directly from the THREADS integer parameter (not parameters_.getThreads()
+  // which relies on a member that is only synced under #ifdef CBC_THREAD).
   // Clamp to [2,3] since only those portfolios are implemented.
-  const int racingThreads = std::min(3, std::max(2, parameters_.getThreads()));
+  const int threadsParam = parameters_[CbcParam::THREADS]->intVal();
+  const int racingThreads = std::min(3, std::max(2, threadsParam));
 
   LpAutoSettings autoS;
   const bool autoLpMode =

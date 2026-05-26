@@ -77,6 +77,10 @@ void CbcParameters::init(int strategy){
   verbose_ = 0;
   paramsProcessed_ = 0;
   defaultSettings_ = true;
+  threads_ = 0;
+  testOsi_ = -1;
+  userCbc_ = 0;
+  racingLP_ = false;
 
   debugCreate_ = "";
   debugFile_ = "";

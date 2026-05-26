@@ -1205,12 +1205,15 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   // the best LP parameter configuration for this specific instance.  The
   // result is stored in `autoS` and applied in sections 3 and 5 below.
   // Skipped when racing is active — racing manages its own per-thread configs.
-  const int racingLP = parameters_[CbcParam::RACINGLP]->intVal();
+  const bool racingLP = parameters_.getRacingLP();
+  // Portfolio size for racing: 2 threads → K=2, 3+ threads → K=3.
+  // Clamp to [2,3] since only those portfolios are implemented.
+  const int racingThreads = std::min(3, std::max(2, parameters_.getThreads()));
 
   LpAutoSettings autoS;
   const bool autoLpMode =
     (parameters_.getLpMethod() == CbcParameters::LPAuto) && (clp != nullptr)
-    && (racingLP == 0);
+    && !racingLP;
   if (autoLpMode) {
     double feats[OFCount];
     OsiFeatures::compute(feats, solver);
@@ -1238,7 +1241,7 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   if (clp) {
     ClpParameters &clpP = parameters_.clpParameters();
 
-    if (racingLP == 0) {
+    if (!racingLP) {
       // When auto mode picked a steepest-edge pivot, install it before the PSI
       // wrapper so that applyPositiveEdge() can wrap it correctly.
       if (autoS.pesteep) {
@@ -1284,8 +1287,8 @@ int CbcSolver::applyLpMethod(bool applyPreprocessing)
   // per-config setup function (pivot algorithm, perturbation, idiot passes, etc.)
   // applied before solving. Global model settings (objScale, vector mode) from
   // step 3 are already baked in and inherited by all clones.
-  if (racingLP > 0 && clp) {
-    ClpRacingSolver racer(clp, racingLP);
+  if (racingLP && clp) {
+    ClpRacingSolver racer(clp, racingThreads);
     racer.solve();
     if (racer.winnerIndex() >= 0) {
       clp->setNumberIterations(racer.winnerIterations());
@@ -7950,6 +7953,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         case CbcParam::PREPROBINGBEFORECLIQUES:
           tunePreProcess &= ~2048;
           tunePreProcess |= mode;
+          break;
+        case CbcParam::RACINGLP:
+          parameters_.setRacingLP(mode == CbcParameters::ParamOn);
           break;
         case CbcParam::FPFIXINGMODE: {
           // mode is 0-6 (digit 0 of pumpTune)

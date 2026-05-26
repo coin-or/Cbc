@@ -211,6 +211,7 @@ public:
       BOUNDPROPLEVEL,
       LPMETHOD,
       NODEBOUNDPROP,
+      RACINGLP,
       LASTKWDPARAM,
 
       // Integer Parameters
@@ -259,7 +260,6 @@ public:
       FPOPTIONS,
       FPMAXPASSESWITHOUTCHANGE,
       PROCESSTUNE,
-      RACINGLP,
       ROOTHEURSCHED,
       RANDOMSEED,
       STRONGSTRATEGY,

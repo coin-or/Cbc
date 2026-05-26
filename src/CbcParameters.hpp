@@ -1499,10 +1499,10 @@ public:
   inline void setProcessTune(int processTune) { processTune_ = processTune; }
 
   /*! \brief Get RacingLP setting */
-  inline int getRacingLP() { return racingLP_; }
+  inline bool getRacingLP() { return racingLP_; }
 
   /*! \brief Set RacingLP setting */
-  inline void setRacingLP(int racingLP) { racingLP_ = racingLP; }
+  inline void setRacingLP(bool racingLP) { racingLP_ = racingLP; }
 
   /*! \brief Get RandomSeed setting */
   inline int getRandomSeed() { return randomSeed_; }
@@ -2501,7 +2501,7 @@ private:
   int options_;
   int outputFormat_;
   int processTune_;
-  int racingLP_ = 0;
+  bool racingLP_ = false;
   int randomSeed_;
   int strongStrategy_;
   int testOsi_;

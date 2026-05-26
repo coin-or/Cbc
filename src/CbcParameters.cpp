@@ -794,6 +794,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::PREDOMINATEDROWS]->setDefault("off");
      parameters_[CbcParam::PRELARGEFEASTOL]->setDefault("off");
      parameters_[CbcParam::PREPROBINGBEFORECLIQUES]->setDefault("off");
+     parameters_[CbcParam::RACINGLP]->setDefault("off");
      parameters_[CbcParam::SOSPRIORITIZE]->setDefault("off");
      parameters_[CbcParam::STRATEGY]->setDefault("default");
      parameters_[CbcParam::USECGRAPH]->setDefault("on");
@@ -860,8 +861,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::PROCESSTUNE]->setDefault(0);
      parameters_[CbcParam::PREMAJORPASSES]->setDefault(0);
      parameters_[CbcParam::PREMINORPASSES]->setDefault(0);
-     parameters_[CbcParam::RACINGLP]->setDefault(0);
-     parameters_[CbcParam::ROOTHEURSCHED]->setDefault(0);
+
      parameters_[CbcParam::RANDOMSEED]->setDefault(42);
      parameters_[CbcParam::STRONGSTRATEGY]->setDefault(0);
      parameters_[CbcParam::TESTOSI]->setDefault(-1);
@@ -1930,6 +1930,21 @@ void CbcParameters::addCbcSolverKwdParams() {
   parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("min", 0);
   parameters_[CbcParam::RANKCONFLICTTYPE]->appendKwd("product", 2);
 
+  parameters_[CbcParam::RACINGLP]->setup(
+      "racing!LP",
+      "Enable opportunistic parallel LP racing at root node",
+      "When enabled, the root LP relaxation is solved by racing multiple LP "
+      "method configurations in parallel. The first to reach optimality wins "
+      "and the others are aborted. The number of racing threads is taken from "
+      "the -threads parameter: 2 threads uses the K=2 portfolio "
+      "(dual_pesteep_pertv75 + primal_idiot50, ~1.51x speedup); 3 or more "
+      "threads uses the K=3 portfolio (dual_pesteep_psineg1_pertv75 + "
+      "primal_idiot50 + primal_sprint, ~1.63x speedup). Portfolios are "
+      "data-driven from k-fold cross-validation on MIPLIB 2017+SPP.",
+      CoinParam::displayPriorityHigh);
+  parameters_[CbcParam::RACINGLP]->appendKwd("off", CbcParameters::ParamOff);
+  parameters_[CbcParam::RACINGLP]->appendKwd("on", CbcParameters::ParamOn);
+
   parameters_[CbcParam::NODEBOUNDPROP]->setup(
     "nodeBoundP!rop",
     "Run bound propagation at B&B nodes",
@@ -2501,18 +2516,6 @@ void CbcParameters::addCbcSolverIntParams() {
       "major preprocessing pass. 0 uses the default of 10 passes.");
 
 
-
-  parameters_[CbcParam::RACINGLP]->setup(
-      "racing!LP",
-      "Number of threads for opportunistic parallel LP racing at root node", 0,
-      8,
-      "When set to a value > 0, the root LP relaxation is solved by racing "
-      "multiple LP method configurations in parallel (dual simplex, primal "
-      "with Idiot crash, primal with Sprint). The first to reach optimality "
-      "wins and the others are aborted. This can significantly reduce root LP "
-      "time for problems where the default method is not the fastest. A value "
-      "of 3 races all three configurations. Set to 0 to disable.",
-      CoinParam::displayPriorityHigh);
 
   parameters_[CbcParam::ROOTHEURSCHED]->setup(
       "rootHeur!Schedule",

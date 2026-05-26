@@ -4,7 +4,6 @@
 
 #include "ClpRacingSolver.hpp"
 #include "ClpDualRowSteepest.hpp"
-#include "ClpPEDualRowSteepest.hpp"
 #include "ClpEventHandler.hpp"
 #include "CoinTime.hpp"
 #include <atomic>
@@ -163,35 +162,17 @@ void ClpRacingSolver::addDefaultConfigs(int portfolioSize)
 
   // ── Shared config builder helpers ─────────────────────────────────────────
 
-  // dual_pesteep_pertv75: dual simplex + positive-edge steepest (PSI=0.5) + pertv75.
-  // Mirrors "-dualPivot pesteep -pertValue 75 -lpMethod dual" with default PSI=-0.5
-  // (fabs(-0.5)=0.5 is passed to ClpPEDualRowSteepest, matching CbcSolver line ~8005).
-  auto makeDualPesteepPertv75 = []() -> std::pair<ClpSolve, ConfigSetupFn> {
+  // dual_pertv72: plain dual simplex + perturbation value 72.
+  // Mirrors "-pertValue 72 -lpMethod dual" (no PE steepest pivot).
+  // Selected as optimal dual component via exhaustive k-fold search over 12
+  // cluster reps (C(12,2)=66 pairs, C(12,3)=220 triples, 10-fold CV).
+  auto makeDualPertv72 = []() -> std::pair<ClpSolve, ConfigSetupFn> {
     ClpSolve opts;
     opts.setSolveType(ClpSolve::useDual);
     opts.setPresolveType(ClpSolve::presolveOn);
     opts.setSpecialOption(2, 1);
     ConfigSetupFn fn = [](ClpSimplex *m) {
-      ClpPEDualRowSteepest pesteep(0.5);
-      m->setDualRowPivotAlgorithm(pesteep);
-      m->setPerturbation(75);
-    };
-    return {opts, fn};
-  };
-
-  // dual_pesteep_psineg1_pertv75: dual simplex + positive-edge steepest (PSI=1.0) + pertv75.
-  // Mirrors "-dualPivot pesteep -psi -1.0 -pertValue 75 -lpMethod dual":
-  // fabs(-1.0)=1.0 passed to ClpPEDualRowSteepest — PSI=1.0 effectively disables the
-  // PE criterion, making this behave like plain steepest but with the PE infrastructure.
-  auto makeDualPesteepPsineg1Pertv75 = []() -> std::pair<ClpSolve, ConfigSetupFn> {
-    ClpSolve opts;
-    opts.setSolveType(ClpSolve::useDual);
-    opts.setPresolveType(ClpSolve::presolveOn);
-    opts.setSpecialOption(2, 1);
-    ConfigSetupFn fn = [](ClpSimplex *m) {
-      ClpPEDualRowSteepest pesteep(1.0);
-      m->setDualRowPivotAlgorithm(pesteep);
-      m->setPerturbation(75);
+      m->setPerturbation(72);
     };
     return {opts, fn};
   };
@@ -217,16 +198,16 @@ void ClpRacingSolver::addDefaultConfigs(int portfolioSize)
   };
 
   if (k == 2) {
-    // K=2 optimal portfolio (exhaustive-verified, k-fold speedup 1.51x):
-    //   dual_pesteep_pertv75 + primal_idiot50
-    auto [o0, f0] = makeDualPesteepPertv75();
+    // K=2 optimal portfolio (exhaustive k-fold search, 1.47x speedup vs baseline):
+    //   dual_pertv72 + primal_idiot50
+    auto [o0, f0] = makeDualPertv72();
     auto [o1, f1] = makePrimalIdiot50();
     addConfig(o0, f0);
     addConfig(o1, f1);
   } else {
-    // K=3 optimal portfolio (exhaustive-verified, k-fold speedup 1.63x):
-    //   dual_pesteep_psineg1_pertv75 + primal_idiot50 + primal_sprint
-    auto [o0, f0] = makeDualPesteepPsineg1Pertv75();
+    // K=3 optimal portfolio (exhaustive k-fold search, 1.59x speedup vs baseline):
+    //   dual_pertv72 + primal_idiot50 + primal_sprint
+    auto [o0, f0] = makeDualPertv72();
     auto [o1, f1] = makePrimalIdiot50();
     auto [o2, f2] = makePrimalSprint();
     addConfig(o0, f0);

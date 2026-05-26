@@ -2508,6 +2508,9 @@ Cbc_solve(Cbc_Model *model)
       CbcSolver cbcSolver(cbcModel);
       cbcSolver.initialize();
       cbcSolver.parameters().disableWelcomePrinting();
+      // Store the full original solver (before the LP solve drops redundant rows)
+      // so CbcRepairPostprocessSolution can check against all original constraints.
+      cbcSolver.setOriginalSolver(model->solver_);
 
       // adds SOSs if any
       Cbc_addAllSOS(model, *cbcSolver.model());

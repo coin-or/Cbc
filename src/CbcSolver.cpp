@@ -4900,8 +4900,14 @@ int CbcSolver::postprocess(
       }
       // Repair pass: use original model constraints to fix incorrectly-rounded
       // integer variables after CglPreProcess back-substitution.
+      // Use the full pre-LP-presolve model (originalSolver_) when available,
+      // because the LP solve drops ~460 redundant rows from model_.solver(),
+      // which can hide constraint violations in those rows (e.g. etDecsi row 6293).
       // See CbcPostprocessRepair.cpp for details.
-      CbcRepairPostprocessSolution(saveSolver_, originalSolver, babModel_, process);
+      {
+        OsiClpSolverInterface *fullModel = originalSolver_ ? originalSolver_ : getClpSolver(originalSolver);
+        CbcRepairPostprocessSolution(saveSolver_, fullModel, babModel_, process);
+      }
       // saveSolver_ before LP solves.  CglPreProcess preprocessing (CglProbing,
       // LP bound tightening) can set fractional lower bounds on binaries
       // (e.g. lb=0.226923 on a binary meaning the variable is forced to 1).

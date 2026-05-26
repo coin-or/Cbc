@@ -25,6 +25,7 @@
 #include "CbcHeuristicDW.hpp"
 #include "CbcHeuristicFPump.hpp"
 #include "CbcHeuristicGreedy.hpp"
+#include "CbcHeuristicFeasibilityJump.hpp"
 #include "CbcHeuristicRINS.hpp"
 #include "CbcHeuristicRandRound.hpp"
 #include "CbcHeuristicVND.hpp"
@@ -1203,6 +1204,7 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
   // parameters)]->modeVal();
   int usePivotF = parameters[CbcParam::PIVOTANDFIX]->modeVal();
   int useRand = parameters[CbcParam::RANDROUND]->modeVal();
+  int useFeasibilityJump = parameters[CbcParam::FEASIBILITYJUMP]->modeVal();
   int useRINS = parameters[CbcParam::RINS]->modeVal();
   int useRENS = parameters[CbcParam::RENS]->modeVal();
   int useVND = parameters[CbcParam::VND]->modeVal();
@@ -1466,6 +1468,16 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     heuristic5b.setFractionSmall(0.4);
     heuristic5b.setNumberNodes(50);
     model->addHeuristic(&heuristic5b);
+    anyToDo = true;
+  }
+  if (useFeasibilityJump >= kType && useFeasibilityJump <= kType + 1) {
+    CbcHeuristicFeasibilityJump heuristicFJ(*model);
+    heuristicFJ.setHeuristicName("FeasibilityJump");
+    heuristicFJ.setMaxEffort(parameters[CbcParam::FEASIBILITYJUMPEFFORT]->intVal());
+    heuristicFJ.setMaxSolutions(parameters[CbcParam::FEASIBILITYJUMPMAXSOL]->intVal());
+    // Run at the root and once early in the tree.
+    heuristicFJ.setWhen(1);
+    model->addHeuristic(&heuristicFJ);
     anyToDo = true;
   }
   int useDIVING = 0;

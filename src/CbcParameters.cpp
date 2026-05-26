@@ -666,6 +666,8 @@ void CbcParameters::addCbcParams() {
 
   // Integer params — Heuristics
   for (int code : {CbcParam::DIVEOPT, CbcParam::DIVEOPTSOLVES,
+                    CbcParam::FEASIBILITYJUMPEFFORT,
+                    CbcParam::FEASIBILITYJUMPMAXSOL,
                     CbcParam::FPUMPITS, CbcParam::FPUMPTUNE,
                     CbcParam::FPUMPTUNE2, CbcParam::HEUROPTIONS,
                     CbcParam::FPUMPPASSFREQ, CbcParam::DEPTHMINIBAB,
@@ -923,6 +925,9 @@ void CbcParameters::setDefaults(int strategy) {
 #endif
      parameters_[CbcParam::PROXIMITY]->setDefault("off");
      parameters_[CbcParam::RANDROUND]->setDefault("off");
+     parameters_[CbcParam::FEASIBILITYJUMP]->setDefault("on");
+     parameters_[CbcParam::FEASIBILITYJUMPEFFORT]->setDefault(10000000);
+     parameters_[CbcParam::FEASIBILITYJUMPMAXSOL]->setDefault(1);
      parameters_[CbcParam::RENS]->setDefault("off");
      parameters_[CbcParam::RINS]->setDefault("on");
      parameters_[CbcParam::ROUNDING]->setDefault("on");
@@ -3114,6 +3119,35 @@ void CbcParameters::addCbcSolverHeurParams() {
       HEURISTICS_LONGHELP " Value 'on' just does 50 nodes. 200, 1000, and "
                           "10000 does that many nodes.");
 
+  parameters_[CbcParam::FEASIBILITYJUMP]->setup(
+      "feasibilityJump", "Whether to use the Feasibility Jump heuristic",
+      "Feasibility Jump is a primal heuristic that searches for integer-feasible "
+      "solutions without LP solves. It maintains a weighted score over constraints "
+      "and iteratively flips integer variables toward feasibility. "
+      "Effective especially early in the search. " HEURISTICS_LONGHELP);
+
+  parameters_[CbcParam::FEASIBILITYJUMPEFFORT]->setup(
+      "feasibilityJumpEffort",
+      "Iteration budget for the Feasibility Jump heuristic",
+      0, COIN_INT_MAX,
+      "Maximum effort (deterministic iteration units) spent in a single "
+      "Feasibility Jump call. The internal effort counter grows by "
+      "O(problem nonzeros) per inner step, making this budget independent "
+      "of CPU speed. Default: 10000000 (~10 million units). "
+      "Increase for harder instances; decrease to limit overhead at the root node.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FEASIBILITYJUMPMAXSOL]->setup(
+      "feasibilityJumpMaxSol",
+      "Stop Feasibility Jump after finding this many solutions",
+      0, COIN_INT_MAX,
+      "The Feasibility Jump heuristic stops as soon as it has found this "
+      "many integer-feasible solutions in a single call. "
+      "Default: 1 (stop after the first solution). "
+      "Set to a large value (e.g. 1000000) to keep searching until the "
+      "effort budget or CBC global time limit is reached.",
+      CoinParam::displayPriorityLow);
+
   parameters_[CbcParam::RINS]->setup(
       "Rins", "Whether to try Relaxed Induced Neighborhood Search",
       HEURISTICS_LONGHELP);
@@ -3153,6 +3187,7 @@ void CbcParameters::addCbcSolverHeurParams() {
      case CbcParam::PIVOTANDCOMPLEMENT:
      case CbcParam::PROXIMITY:
      case CbcParam::RANDROUND:
+     case CbcParam::FEASIBILITYJUMP:
      case CbcParam::RENS:
      case CbcParam::RINS:
      case CbcParam::ROUNDING:
@@ -3487,6 +3522,20 @@ CbcParameters::CGMode CbcParameters::getTwomir(CglCutGenerator *&gen) {
   gen = dynamic_cast<CglCutGenerator *>(twomir_.proto_);
 
   return (twomir_.mode_);
+}
+
+CbcParameters::HeurMode CbcParameters::getFeasibilityJump(CbcHeuristic *&gen,
+                                                           bool alwaysCreate)
+{
+  if (feasibilityJump_.mode_ != CbcParameters::HeurOff &&
+      (feasibilityJump_.proto_ == 0 || alwaysCreate)) {
+    if (feasibilityJump_.proto_) {
+      delete feasibilityJump_.proto_;
+    }
+    feasibilityJump_.proto_ = new CbcHeuristicFeasibilityJump(*model_);
+  }
+  gen = dynamic_cast<CbcHeuristic *>(feasibilityJump_.proto_);
+  return (feasibilityJump_.mode_);
 }
 
 CbcParameters::HeurMode CbcParameters::getFeasPump(CbcHeuristic *&gen,

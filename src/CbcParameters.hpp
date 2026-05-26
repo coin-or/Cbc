@@ -52,6 +52,7 @@
 #include "CbcHeuristicGreedy.hpp"
 #include "CbcHeuristicLocal.hpp"
 #include "CbcHeuristicPivotAndFix.hpp"
+#include "CbcHeuristicFeasibilityJump.hpp"
 #include "CbcHeuristicRENS.hpp"
 #include "CbcHeuristicRINS.hpp"
 #include "CbcHeuristicRandRound.hpp"
@@ -1221,6 +1222,23 @@ public:
 
   /*! \brief Get mode for use of randomized rounding heuristic. */
   CbcParameters::HeurMode getRandRoundMode() { return (randRound_.mode_); }
+
+  /*! \brief Obtain a Feasibility Jump heuristic.
+
+      By default, any existing object is deleted and a new object is created and
+      loaded with \c model. Set alwaysCreate = false to return an existing
+      object if one exists.
+    */
+  CbcParameters::HeurMode getFeasibilityJump(CbcHeuristic *&gen,
+                                              bool alwaysCreate = true);
+
+  /*! \brief Set mode for use of Feasibility Jump heuristic. */
+  inline void setFeasibilityJumpMode(CbcParameters::HeurMode mode) {
+    feasibilityJump_.mode_ = mode;
+  }
+
+  /*! \brief Get mode for use of Feasibility Jump heuristic. */
+  CbcParameters::HeurMode getFeasibilityJumpMode() { return (feasibilityJump_.mode_); }
 
   /*! \brief Obtain a RENS heuristic.
 
@@ -2426,6 +2444,9 @@ private:
 
   /*! \brief Control variable and prototype for Randomized Rounding heuristic */
   HeuristicSettings<CbcHeuristic> randRound_;
+
+  /*! \brief Control variable and prototype for Feasibility Jump heuristic */
+  HeuristicSettings<CbcHeuristicFeasibilityJump> feasibilityJump_;
 
   /*! \brief Control variable and prototype for RENS heuristic */
   HeuristicSettings<CbcHeuristicRENS> rens_;

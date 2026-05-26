@@ -141,6 +141,7 @@ void CbcCrashHandler(int sig);
 #include "CbcHeuristicGreedy.hpp"
 #include "CbcHeuristicLocal.hpp"
 #include "CbcHeuristicPivotAndFix.hpp"
+#include "CbcHeuristicFeasibilityJump.hpp"
 #include "CbcHeuristicRINS.hpp"
 #include "CbcHeuristicRandRound.hpp"
 #include "CbcMessage.hpp"
@@ -7873,6 +7874,8 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
         case CbcParam::DINS:
           break;
         case CbcParam::RENS:
+          break;
+        case CbcParam::FEASIBILITYJUMP:
           break;
         case CbcParam::CUTSTRATEGY:
           gomoryMode = mode;

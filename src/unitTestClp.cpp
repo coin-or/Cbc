@@ -25,7 +25,9 @@
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
-
+#ifdef CLP_OLD_STYLE
+extern bool unitTestCbc; // to stop some printing
+#endif
 //#############################################################################
 
 // Display message on stdout and stderr
@@ -628,6 +630,10 @@ int CbcClpUnitTest(const CbcModel &saveModel, const std::string &dirMiplibIn,
     // take off unitTest and save extra commands
     size_t unitTestPos;
     std::string check="-unittest";
+#ifdef CLP_OLD_STYLE
+    // stop some printing to stderr
+    unitTestCbc = true;
+#endif
     for ( unitTestPos = 0; unitTestPos < inputQueue.size(); unitTestPos++) {
       if (strlen(inputQueue[unitTestPos].c_str())==9) {
 	int i;

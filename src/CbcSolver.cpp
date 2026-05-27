@@ -85,7 +85,9 @@ void CbcCrashHandler(int sig);
 #include "OsiAuxInfo.hpp"
 #include "OsiChooseVariable.hpp"
 #include "OsiClpSolverInterface.hpp"
+#ifndef CLP_OLD_STYLE
 #include "ClpRacingSolver.hpp"
+#endif
 #include "OsiColCut.hpp"
 #include "OsiCuts.hpp"
 #include "OsiRowCut.hpp"
@@ -144,7 +146,9 @@ void CbcCrashHandler(int sig);
 #include "CbcHeuristicRandRound.hpp"
 #include "CbcMessage.hpp"
 #include "CbcOutput.hpp"
+#ifndef CLP_OLD_STYLE
 #include "ClpOutput.hpp"
+#endif
 #include "CoinTable.hpp"
 #include "CbcMipStart.hpp"
 #include "CbcModel.hpp"
@@ -1184,7 +1188,7 @@ int CbcSolver::applyLpMethod()
       applyVectorMode(clp);
   }
 #endif
-
+#ifndef CLP_OLD_STYLE
   // ─── 4. LP racing ───────────────────────────────────────────────────────
   // Races multiple LP strategies in parallel threads.  Thread configs are
   // intentionally varied (dual, primal+idiot, sprint) — that is the point
@@ -1211,7 +1215,7 @@ int CbcSolver::applyLpMethod()
     }
     // All racers failed — fall through to the standard single-threaded solve.
   }
-
+#endif
   // ─── 5. Standard LP solve with full ClpSolve option set ─────────────────
   // Replicates all option-setting logic from the CLP command handlers
   // (DUALSIMPLEX / PRIMALSIMPLEX / BARRIER cases in run()), using member
@@ -1381,12 +1385,14 @@ int CbcSolver::applyLpMethod()
   model2->initialSolve(solveOptions);
   clearClpTimeLimits(model2);
 
+#ifndef CLP_OLD_STYLE
   if (model2->presolveRows() >= 0
       && model_.messageHandler()->logLevel() >= 1) {
     printf("  CLP presolve: %d rows, %d cols (%.2fs)\n",
       model2->presolveRows(), model2->presolveCols(),
       model2->presolveTime());
   }
+#endif
 
   basisHasValues_ = 1;
 
@@ -2504,14 +2510,20 @@ void CbcSolver::resetRunState()
   saveInputQueue_.clear();
   statistics_ = CbcSolverStatistics();
 }
-
+#ifdef CLP_OLD_STYLE
+bool unitTestCbc=false;
+#endif
 void CbcSolver::printParamChanges()
 {
   if (paramChanges_.empty())
     return;
   const bool u8 = CbcOutput::useUtf8();
   const char *arrow = u8 ? " \xe2\x86\x92 " : " -> ";
+#ifdef CLP_OLD_STYLE
+  FILE *fp = unitTestCbc ? stdout : stderr;
+#else
   FILE *fp = stderr;
+#endif
   fprintf(fp, "\n%s\n\n",
     CoinTable::phaseStart("Non-default parameters", u8).c_str());
   for (const auto &msg : paramChanges_) {
@@ -4970,7 +4982,81 @@ int CbcSolver::postprocess(
   // babModel_=NULL;
   return 0;
 }
-
+#ifdef CLP_OLD_STYLE
+// !!!!! next use CbcOutput
+// Format a time value (seconds) with dynamic precision:
+//   t < 1   → 3 decimal places  e.g. "0.001"
+//   t < 10  → 2 decimal places  e.g. "1.23"
+//   t < 100 → 1 decimal place   e.g. "43.2"
+//   t >= 100→ 0 decimal places  e.g. "99876"
+static std::string fmtTime(double t)
+{
+  char buf[32];
+  if (t < 1.0)        std::snprintf(buf, sizeof(buf), "%.3f", t);
+  else if (t < 10.0)  std::snprintf(buf, sizeof(buf), "%.2f", t);
+  else if (t < 100.0) std::snprintf(buf, sizeof(buf), "%.1f", t);
+  else                std::snprintf(buf, sizeof(buf), "%.0f", t);
+  return buf;
+}
+int oldStyleInitialSolve(CbcModel *model, double startTime)
+{
+  OsiClpSolverInterface *si = getClpSolver(model->solver());
+  ClpSimplex *clpModel = si->getModelPtr();
+  // Capture integer variable info before solve (solver may relax types internally)
+  int numInts = 0;
+  std::vector<int> intCols;
+  int nc = si->getNumCols();
+  for (int j = 0; j < nc; ++j) {
+    if (!si->isContinuous(j))
+      intCols.push_back(j);
+  }
+  numInts = static_cast<int>(intCols.size());
+  // say in Cbc
+  clpModel->setSpecialOptions(clpModel->specialOptions()|0x01000000);
+  si->initialSolve();
+  FILE *outfp = model->messageHandler()->filePointer();
+  if (!outfp)
+    outfp = stdout;
+  if (!si->isProvenOptimal()) {
+    fprintf(outfp, "Model infeasible or unbounded");
+    fflush(outfp);
+      return -1;
+  }
+  // Compute fractional integer variable count for status line
+  int numFrac = 0;
+  if (numInts > 0) {
+    const double *sol = si->getColSolution();
+    for (int j : intCols) {
+      double v = sol[j];
+      double frac = std::fabs(v - std::floor(v));
+      if (frac > 0.5) frac = 1.0 - frac;
+      if (frac > 1e-5) ++numFrac;
+    }
+  }
+  // very primitive for now
+  int iters = clpModel->numberIterations();
+  // Build summary line: "LP Optimal — Frac: N/M (P%)   Obj: X   Iters: N  "
+  char summary[512];
+  const bool u8 = CbcOutput::useUtf8();
+  double elapsed = CoinGetTimeOfDay()-startTime;
+  const std::string tStr = fmtTime(elapsed);
+  if (numInts > 0 && numFrac >= 0) {
+    double pct = (numInts > 0) ? 100.0 * numFrac / numInts : 0.0;
+    std::snprintf(summary, sizeof(summary),
+      "LP Optimal%sFrac: %d/%d (%.1f%%)   Obj: %g   Iters: %d   Time: %ss",
+      CoinTable::dashSep(u8),
+      numFrac, numInts, pct, clpModel->objectiveValue(), iters, tStr.c_str());
+  } else {
+    std::snprintf(summary, sizeof(summary),
+      "LP Optimal%sObj: %g   Iters: %d   Time: %ss",
+      CoinTable::dashSep(u8),
+      clpModel->objectiveValue(), iters, tStr.c_str());
+  }
+  fprintf(outfp, "\n%s\n", CoinTable::phaseEnd(summary, u8).c_str());
+  fflush(outfp);
+  return 0;
+}
+#endif
 //###########################################################################
 //###########################################################################
 
@@ -4984,8 +5070,18 @@ int CbcSolver::solveInitialLp(
 
             double time1a = CoinCpuTime();
             OsiSolverInterface *solver = model_.solver();
-#ifndef CBC_OTHER_SOLVER
             OsiClpSolverInterface *si = getClpSolver(solver);
+	    int lpMethodResult=0;
+            CoinMessageHandler *lpSavedMsg = nullptr;
+#ifdef CLP_OLD_STYLE
+	    // initial solve and report
+	    bool clpFeasible = true;
+	    double clpStartTime = CoinGetTimeOfDay();
+	    int status = oldStyleInitialSolve(&model_,clpStartTime);
+	    if (status)
+	      return 2;
+#else
+#ifndef CBC_OTHER_SOLVER
             if (CBC_SKIP_CLP_TEST||si)
               si->setSpecialOptions(si->specialOptions() | 1024);
 #endif
@@ -4997,7 +5093,6 @@ int CbcSolver::solveInitialLp(
             ClpLpMsgHandler   *lpMsgHandler = nullptr;
             bool lpMsgOldDefault = false;
             bool lpSavedOsiDefault = true;
-            CoinMessageHandler *lpSavedMsg = nullptr;
             if (cbcLogLevel >= 1 && logLevel >= 1 && si && (lpIterFreq > 0 || lpTimeFreq > 0.0)) {
               ClpSimplex *clpModel = si->getModelPtr();
               // Do NOT setLogLevel(0) — Idiot checks model log level before
@@ -5042,7 +5137,7 @@ int CbcSolver::solveInitialLp(
               }
               numMipInts = static_cast<int>(intCols.size());
             }
-            int lpMethodResult = applyLpMethod();
+            lpMethodResult = applyLpMethod();
             if (lpMethodResult < 0) {
               // Infeasible — clean up LP progress handler and skip BAB
 #ifndef CBC_OTHER_SOLVER
@@ -5058,6 +5153,7 @@ int CbcSolver::solveInitialLp(
 #endif
               return 2;
             }
+#endif
             // --- Clique strengthening "before" (after bound propagation) ---
             if (clqstrMode_ == "before" && lpMethodResult > 0) {
               double clqTime = CoinWallclockTime();
@@ -5088,11 +5184,20 @@ int CbcSolver::solveInitialLp(
               }
             }
             if (lpMethodResult > 0) {
+#ifndef CLP_OLD_STYLE
               model_.initialSolve();
+#else
+	      // initial solve and report
+	      //bool clpFeasible = true;
+	      //double clpStartTime = CoinGetTimeOfDay();
+	      int status = oldStyleInitialSolve(&model_,clpStartTime);
+	      assert(!status);
+#endif
             }
 #ifndef CBC_OTHER_SOLVER
             if (lpSavedMsg && si) {
               ClpSimplex *clpModel = si->getModelPtr();
+#ifndef CLP_OLD_STYLE
               if (lpProgressHandler) {
                 // Compute fractional integer variable count for status line
                 int numFrac = 0;
@@ -5108,6 +5213,8 @@ int CbcSolver::solveInitialLp(
                 }
                 lpProgressHandler->printFinalStatus(numMipInts, numFrac);
               }
+#endif
+#ifndef CLP_OLD_STYLE
               // Restore message handler and remove LP event handler
               clpModel->popMessageHandler(lpSavedMsg, lpMsgOldDefault);
               si->setDefaultHandler(lpSavedOsiDefault);
@@ -5115,6 +5222,7 @@ int CbcSolver::solveInitialLp(
               lpMsgHandler = nullptr;
               ClpEventHandler defaultHandler;
               clpModel->passInEventHandler(&defaultHandler);
+#endif
             }
 #endif
             // ------ end root LP progress output ------
@@ -7082,11 +7190,15 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
       }
       if (preScannedUtf8 >= 0) {
         CbcOutput::setUtf8(preScannedUtf8 != 0);
+#ifndef CLP_OLD_STYLE
         ClpOutput::setUtf8(preScannedUtf8 != 0);
+#endif
       }
       if (preScannedCompact >= 0) {
         CbcOutput::setCompact(preScannedCompact != 0);
+#ifndef CLP_OLD_STYLE
         ClpOutput::setCompact(preScannedCompact != 0);
+#endif
       }
 
       if (preScannedLogLevel >= 1) {
@@ -7522,11 +7634,15 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           } else if (cbcParamCode == CbcParam::USEUTF8) {
             if (iValue >= 0) {
               CbcOutput::setUtf8(iValue != 0);
+#ifndef CLP_OLD_STYLE
               ClpOutput::setUtf8(iValue != 0);
+#endif
             }
           } else if (cbcParamCode == CbcParam::COMPACTTABLES) {
             CbcOutput::setCompact(iValue != 0);
+#ifndef CLP_OLD_STYLE
             ClpOutput::setCompact(iValue != 0);
+#endif
           } else if (cbcParamCode == CbcParam::MAXNODES) {
             model_.setIntParam(CbcModel::CbcMaxNumNode, iValue);
           } else if (cbcParamCode == CbcParam::MAXSOLS) {
@@ -8254,6 +8370,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             applyClpTimeLimit(model_, model2);
           }
           // ------ LP action progress output (Idiot/Sprint/LP unified table) ------
+#ifndef CLP_OLD_STYLE
 #ifndef CBC_OTHER_SOLVER
           auto lpActState = std::make_shared<ClpLpPhaseState>();
           lpActState->fp       = model_.messageHandler()->filePointer();
@@ -8273,6 +8390,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           model2->passInEventHandler(&lpActEvtH);
           ClpLpEventHandler *lpActProg =
             dynamic_cast<ClpLpEventHandler *>(model2->eventHandler());
+#endif
 #endif
 #ifdef COIN_HAS_LINK
           OsiSolverInterface *coinSolver = model_.solver();
@@ -8314,11 +8432,13 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           // Clear time limits from LP solver to avoid leaking into later solves.
           clearClpTimeLimits(model2);
           // ------ LP action progress teardown ------
+#ifndef CLP_OLD_STYLE
 #ifndef CBC_OTHER_SOLVER
           if (lpActProg)
             lpActProg->printFinalStatus();
           model2->popMessageHandler(lpActSavedMsg, lpActMsgOldDefault);
           { ClpEventHandler defEvt; model2->passInEventHandler(&defEvt); }
+#endif
 #endif
           {
             // map states
@@ -8792,6 +8912,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
           }
           printParamChanges();
           integerStatus = -1;
+#ifndef CLP_OLD_STYLE
 #ifndef CBC_OTHER_SOLVER
           if (clpSolver)
             clpSolver->setSpecialOptions(clpSolver->specialOptions() | 1024);
@@ -8821,7 +8942,9 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             lpScProg = dynamic_cast<ClpLpEventHandler *>(lpSolver->eventHandler());
           }
 #endif
+#endif
           int lpResult = applyLpMethod();
+#ifndef CLP_OLD_STYLE
 #ifndef CBC_OTHER_SOLVER
           if (lpScProg)
             lpScProg->printFinalStatus();
@@ -8831,6 +8954,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
             ClpEventHandler defEvt;
             lpSolver->passInEventHandler(&defEvt);
           }
+#endif
 #endif
           if (lpResult < 0) {
             // Infeasibility proved by bound propagation — mark model.

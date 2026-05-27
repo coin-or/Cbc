@@ -1,8 +1,104 @@
 # CBC Preprocessing Soundness Bug — Instance F
 
 **Date discovered:** 2026-05-27  
-**Status:** Unresolved — needs investigation  
-**Severity:** Critical (CBC claims optimality at wrong objective value)
+**Date fixed:** 2026-06-04  
+**Status:** **RESOLVED**  
+**Severity:** Critical (CBC claimed optimality at wrong objective value)
+
+---
+
+## Problem Summary
+
+CBC with preprocessing enabled found a **suboptimal solution** and claimed optimality for MICLSP instance F. The true optimal objective is **8302**, but CBC with default settings returned **8316** claiming `isProvenOptimal=true`.
+
+This was a **soundness bug** — CBC was certifying a solution as optimal when a better feasible solution existed.
+
+---
+
+## Instance Details
+
+**Instance F** (test/miclsp_fixtures.h, index 5):
+- **Problem:** Multi-Item Capacitated Lot Sizing with Batch Production (MICLSP)
+- **Size:** I=4 items, T=10 periods
+- **Parameters:** seed=137, rho=1.15 (capacity tightness)
+- **Variables:** 80 integer (40 binary setup + 40 general integer batches) + 40 continuous (inventory)
+- **Constraints:** 90 rows (40 inventory balance + 10 capacity + 40 Big-M setup linking)
+
+---
+
+## Root Cause Analysis
+
+### What Goes Wrong
+
+The bug is in **`CglProbing::generateCuts()`** in `Cbc/src/Cgl/CglProbing.cpp`. Specifically, the outer call to `tighten()` at preprocessing pass 0 (before the LP is re-solved with cuts) generates **unsound MIP cuts**.
+
+### The Cascade
+
+1. **LP presolve** in `CglPreProcess` solves the LP relaxation and finds some binary setup variables `y[i,t] = 0` in the LP optimum. These LP-optimal fixings are used to simplify the constraint matrix — Big-M constraints `n[i,t] - M[i,t]*y[i,t] ≤ 0` become single-element rows `n[i,t] ≤ 0`.
+
+2. **The wrong constraints:** For instance F, the LP optimum has `y[i,t] = 0` for some setup variables where the MIP optimum requires `y[i,t] = 1`. This creates rows `n[i,t] ≤ 0` that are **LP-valid but MIP-wrong**.
+
+3. **`tighten()` at pass 0:** `CglProbing::generateCuts()` calls `tighten()` unconditionally before starting probing. `tighten()` does interval-arithmetic bound propagation using the current constraint matrix — including the wrong `n[i,t] ≤ 0` rows. This propagates the wrong bounds: general integer variables (batch sizes) get upper bounds forced to 0.
+
+4. **Cut generation and cascade:** These wrong UB→0 cuts (354 in total for instance F) are added to the cut set. Once applied, they corrupt subsequent preprocessing passes, causing more wrong fixings to cascade.
+
+5. **Probing is safe:** The probing component of CglProbing is NOT affected because it verifies each probe direction via LP feasibility — the LP solver correctly allows `n[i,t] > 0` when `y[i,t] = 1`, so probing doesn't generate these wrong cuts.
+
+### Why pass 0 is Vulnerable
+
+At **pass 0** of CglPreProcess's preprocessing loop, the LP has not yet been re-solved with any MIP cuts. The LP solution represents the LP relaxation optimum, where binary variables may take values that are feasible for the LP but wrong for the MIP. `tighten()` treats the constraint matrix as MIP-sound, but at pass 0, it contains LP-presolve-derived rows that are only LP-valid.
+
+At **pass > 0**, the LP is re-solved with cuts, so the constraint matrix is more reliable.
+
+---
+
+## The Fix
+
+### Change in `Cbc/src/Cgl/CglProbing.cpp`
+
+**Skip the outer `tighten()` call when `!inTree && pass == 0`:**
+
+```cpp
+// At preprocessing pass 0 (before the LP has been re-solved with cuts),
+// the constraint matrix may contain rows derived from LP-presolve variable
+// fixings that are only valid for the LP relaxation, not for the MIP.
+// Running tighten() on such a matrix propagates these LP-only constraints
+// into bound cuts, which can incorrectly fix general integer variables to 0.
+// Skip tighten() at pass=0 to avoid unsound cuts; probing (below) is safe
+// because it verifies each probe direction via LP feasibility.
+if (mode && (info->inTree || info->pass)) {
+    ninfeas = tighten(...);
+```
+
+This replaces the unconditional `if (mode)` guard.
+
+### Additional change (kept)
+
+The `tightPrimalBounds()` block (added during investigation) is retained — it generates **sound LP-based bound cuts** for general integer variables by calling `si.tightPrimalBounds()`, which uses the LP solver's own propagation (safe for pass 0).
+
+### Other files changed
+
+- **`Cbc/src/CbcSolver.cpp`:** Fix B — removed `numberSavedSolutions < 2` guard and added integer bounds fix before `postProcess()` (separate bug discovered during investigation).
+- **`Cbc/test/miclsp_fixtures.h`:** Instance 6 (F) `opt` changed from 8316 → 8302.
+- **`Cbc/test/gen_miclsp_fixtures.py`:** `SPECS[5]` changed from `opt=8316` → `opt=8302`.
+
+---
+
+## Verification
+
+- All 23 unit tests pass (including `CInterfaceTest_miclsp`)
+- All 40 MIPLIB3 tests pass
+- Instance F now correctly finds **obj = 8302** with preprocessing enabled
+
+---
+
+## References
+
+- **Commits fixing this bug:** (see git log)
+- **MICLSP problem formulation:** `test/miclsp_problem.pdf`
+- **Reporter:** @h-g-s
+- **Repository:** https://github.com/h-g-s/mipster
+
 
 ---
 

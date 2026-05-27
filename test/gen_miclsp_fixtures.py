@@ -41,9 +41,7 @@ SPECS = [
     (4, 10,  42, 1.20, 6395),
     (4, 10,  42, 1.30, 6238),
     (4, 10, 137, 1.10, 8423),
-    # Instance F: CBC with preprocessing finds 8316; true optimal is 8302 (verified
-    # with HiGHS and CBC -preprocess off). This is a known preprocessing bug.
-    (4, 10, 137, 1.15, 8316),
+    (4, 10, 137, 1.15, 8302),
     (4, 10, 137, 1.20, 7962),
     (4, 12,  42, 1.10, 8414),
     (4, 12,  42, 1.15, 8316),

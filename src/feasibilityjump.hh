@@ -338,6 +338,8 @@ public:
     template <typename F>
     void forEachVarMove(int32_t varIdx, F f)
     {
+        if (varIdx < 0 || static_cast< size_t >(varIdx) >= moves.size())
+            return;
         f(moves[varIdx]);
     }
 
@@ -592,7 +594,9 @@ private:
                 return constraint.coeffs[rng() % constraint.coeffs.size()].idx;
 
             double bestScore = -std::numeric_limits<double>::infinity();
-            uint32_t bestVarIdx = UINT_MAX;
+            // Initialise to first variable so we always return a valid index,
+            // even when all move scores are -infinity.
+            uint32_t bestVarIdx = constraint.coeffs[0].idx;
 
             for (auto &cell : constraint.coeffs)
             {

@@ -1,0 +1,85 @@
+#!/bin/bash
+# fetch-miplib3 — locate or clone the COIN-OR MIPLIB3 instance repository.
+#
+# Outputs the path to the directory containing the .gz instance files to stdout.
+# Exits 0 on success, 1 on failure.
+#
+# Search order:
+#   1. $MIPSTER_MIPLIB3_DIR        — user/CI override
+#   2. Common local install paths  — avoids a clone if already present
+#   3. Clone from GitHub           — shallow clone, ~9 MB
+#      Clone destination: $MIPSTER_MIPLIB3_CLONE_DIR  (default: ~/.cache/mipster/miplib3)
+#
+# Usage:
+#   dir=$(./fetch-miplib3)   && echo "instances at: $dir"
+
+set -euo pipefail
+
+REPO_URL="https://github.com/coin-or-tools/Data-miplib3.git"
+DEFAULT_CLONE_DIR="${HOME}/.cache/mipster/miplib3"
+SENTINEL_FILE="p0033.gz"   # must exist in a valid directory
+
+# ── Helper: check a directory looks like a valid miplib3 tree ────────────────
+is_valid_dir() {
+  [ -d "$1" ] && [ -f "$1/$SENTINEL_FILE" ]
+}
+
+# ── 1. Env override ──────────────────────────────────────────────────────────
+if [ -n "${MIPSTER_MIPLIB3_DIR:-}" ]; then
+  if is_valid_dir "$MIPSTER_MIPLIB3_DIR"; then
+    echo "$MIPSTER_MIPLIB3_DIR"
+    exit 0
+  else
+    echo "WARNING: MIPSTER_MIPLIB3_DIR='$MIPSTER_MIPLIB3_DIR' does not contain miplib3 instances" >&2
+  fi
+fi
+
+# ── 2. Well-known local paths ────────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+CANDIDATES=(
+  # installed by coinbrew / autotools into the CBC prefix
+  "${SCRIPT_DIR}/../../share/coin-or-miplib3"
+  "${SCRIPT_DIR}/../../../share/coin-or-miplib3"
+  # coinbrew side-by-side checkout
+  "${SCRIPT_DIR}/../../../Data/miplib3"
+  "${SCRIPT_DIR}/../../../../Data/miplib3"
+  # common user installs
+  "${HOME}/prog/cbc/share/coin-or-miplib3"
+  "${HOME}/.local/share/coin-or-miplib3"
+  "/usr/local/share/coin-or-miplib3"
+  "/usr/share/coin-or-miplib3"
+)
+
+for candidate in "${CANDIDATES[@]}"; do
+  resolved="$(cd "$candidate" 2>/dev/null && pwd)" || continue
+  if is_valid_dir "$resolved"; then
+    echo "$resolved"
+    exit 0
+  fi
+done
+
+# ── 3. Clone from GitHub ─────────────────────────────────────────────────────
+CLONE_DIR="${MIPSTER_MIPLIB3_CLONE_DIR:-$DEFAULT_CLONE_DIR}"
+
+if is_valid_dir "$CLONE_DIR"; then
+  echo "$CLONE_DIR"
+  exit 0
+fi
+
+if ! command -v git >/dev/null 2>&1; then
+  echo "ERROR: git not found — cannot clone miplib3 instances" >&2
+  exit 1
+fi
+
+echo "Cloning COIN-OR miplib3 instances (~9 MB)..." >&2
+mkdir -p "$(dirname "$CLONE_DIR")"
+git clone --depth=1 --quiet "$REPO_URL" "$CLONE_DIR" >&2
+
+if is_valid_dir "$CLONE_DIR"; then
+  echo "$CLONE_DIR"
+  exit 0
+else
+  echo "ERROR: clone succeeded but directory looks empty" >&2
+  exit 1
+fi

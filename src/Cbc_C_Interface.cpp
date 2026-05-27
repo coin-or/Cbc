@@ -87,7 +87,7 @@ extern "C" void openblas_set_num_threads(int num_threads);
 
 static void *xmalloc( const size_t size );
 static void *xrealloc( void *ptr, const size_t newSize );
-static void Cbc_updateSlack( Cbc_Model *model, const double *ractivity );
+static void Cbc_updateSlack( Cbc_Model *model, const double *ractivity, int nRows );
 
 #define VALIDATE_ROW_INDEX(iRow, model)  \
       if (iRow<0 || iRow >= Cbc_getNumRows(model)) { \
@@ -552,18 +552,21 @@ CbcEventHandler::CbcAction Cbc_EventHandler::event(CbcEvent whichEvent)
           size_t nNZ = sol.size();
           char **cnames = new char*[nNZ];
           double *xv = new double[nNZ];
-          cnames[0] = new char[charSize];
-          for ( int i=1 ; (i<(int)sol.size()) ; ++i )
-              cnames[i] = cnames[i-1] + sol[i-1].first.size()+1;
-          for ( int i=0 ; (i<(int)sol.size()) ; ++i )
-              strcpy( cnames[i], sol[i].first.c_str() );
-          for (int i = 0; (i < (int)nNZ); ++i)
-            xv[i] = sol[i].second;
+          if (nNZ > 0) {
+            cnames[0] = new char[charSize];
+            for ( int i=1 ; (i<(int)sol.size()) ; ++i )
+                cnames[i] = cnames[i-1] + sol[i-1].first.size()+1;
+            for ( int i=0 ; (i<(int)sol.size()) ; ++i )
+                strcpy( cnames[i], sol[i].first.c_str() );
+            for (int i = 0; (i < (int)nNZ); ++i)
+              xv[i] = sol[i].second;
+          }
 
           this->inc_callback(model_, bestCost, nNZ, cnames, xv, this->appData);
 
           delete[] xv;
-          delete[] cnames[0];
+          if (nNZ > 0)
+            delete[] cnames[0];
           delete[] cnames;
         } // incumbent callback
         if (this->progr_callback) {
@@ -1942,7 +1945,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
       model->obj_value = solver->getObjValue();
       model->x = solver->getColSolution();
       model->rActv = solver->getRowActivity();
-      Cbc_updateSlack(model, solver->getRowActivity());
+      Cbc_updateSlack(model, solver->getRowActivity(), solver->getNumRows());
       model->rSlk = model->slack->data();
       return 0;
     }
@@ -1966,7 +1969,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
       if (pFeas) {
         model->x = solver->getColSolution();
         model->rActv = solver->getRowActivity();
-        Cbc_updateSlack(model, solver->getRowActivity());
+        Cbc_updateSlack(model, solver->getRowActivity(), solver->getNumRows());
         model->rSlk = model->slack->data();
       }
       return 1;
@@ -2074,7 +2077,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
     model->obj_value = solver->getObjValue();
     model->x = solver->getColSolution();
     model->rActv = solver->getRowActivity();
-    Cbc_updateSlack(model, solver->getRowActivity());
+    Cbc_updateSlack(model, solver->getRowActivity(), solver->getNumRows());
     model->rSlk = model->slack->data();
     clps->setMaximumSeconds(prevMaxSecs);
     clps->setMaximumIterations(prevMaxIter);
@@ -2091,7 +2094,7 @@ Cbc_solveLinearProgram(Cbc_Model *model)
       if (pFeas) {
         model->x = solver->getColSolution();
         model->rActv = solver->getRowActivity();
-        Cbc_updateSlack(model, solver->getRowActivity());
+        Cbc_updateSlack(model, solver->getRowActivity(), solver->getNumRows());
         model->rSlk = model->slack->data();
       }
       clps->setMaximumSeconds(prevMaxSecs);
@@ -2187,7 +2190,7 @@ Cbc_resolve(Cbc_Model *model)
     model->obj_value = solver->getObjValue();
     model->x = solver->getColSolution();
     model->rActv = solver->getRowActivity();
-    Cbc_updateSlack(model, solver->getRowActivity());
+    Cbc_updateSlack(model, solver->getRowActivity(), solver->getNumRows());
     model->rSlk = model->slack->data();
     return 0;
   }
@@ -2202,7 +2205,7 @@ Cbc_resolve(Cbc_Model *model)
       if (pFeas) {
         model->x = solver->getColSolution();
         model->rActv = solver->getRowActivity();
-        Cbc_updateSlack(model, solver->getRowActivity());
+        Cbc_updateSlack(model, solver->getRowActivity(), solver->getNumRows());
         model->rSlk = model->slack->data();
       }
       return 1;
@@ -2215,15 +2218,14 @@ Cbc_resolve(Cbc_Model *model)
   return -1;
 }
 
-void Cbc_updateSlack( Cbc_Model *model, const double *ractivity ) {
+void Cbc_updateSlack( Cbc_Model *model, const double *ractivity, int nRows ) {
   if (model->slack == NULL) {
     model->slack = new std::vector<double>();
   }
-  model->slack->resize(Cbc_getNumRows(model));
+  model->slack->resize(nRows);
 
   double *slack_ = VEC_PTR(model->slack);
 
-  int nRows = model->solver_->getNumRows();
   const char *sense = model->solver_->getRowSense();
   const double *rrhs = model->solver_->getRightHandSide();
   for ( int i=0 ; (i<nRows) ; ++i ) {
@@ -2321,7 +2323,11 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
     model->mipRowActivity = new std::vector< double >();
   }
   int numCols = Cbc_getNumCols(model);
-  int numRows = Cbc_getNumRows(model);
+  // Use cbcModel.getNumRows() — the post-preprocessing row count — rather than
+  // model->solver_->getNumRows() (the original). After clique strengthening or
+  // preprocessing, these can differ; getRowActivity() has cbcModel.getNumRows()
+  // elements and using the wrong count causes a buffer overread.
+  int numRows = cbcModel.getNumRows();
   model->mipSavedSolution->resize( numSols );
   for ( int i=0 ; i<numSols ; ++i )
     (*(model->mipSavedSolution))[i].resize( numCols );
@@ -2354,7 +2360,7 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
     } /* round integer variables */
   } /* saving solution pool */
 
-  Cbc_updateSlack(model, cbcModel.getRowActivity() );
+  Cbc_updateSlack(model, cbcModel.getRowActivity(), numRows );
   /* storing row activity in MIP sol */
   memcpy(model->mipRowActivity->data(), cbcModel.getRowActivity(), sizeof(double)*numRows );
 
@@ -4122,6 +4128,7 @@ Cbc_setMIPStart(Cbc_Model *model, int count, const char **colNames, const double
 void CBC_LINKAGE
 Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[], const double colValues[])
 {
+  Cbc_flush(model);
   OsiSolverInterface *solver = model->solver_;
 
   if (model->nColsMS) {

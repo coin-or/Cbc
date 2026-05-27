@@ -25,7 +25,7 @@ dist_pkgtestfixture_DATA = \
   fixtures/yue20013.1.150.mps.gz
 
 # Runner script installs to $(bindir)/run-mipster-tests
-dist_bin_SCRIPTS = run-mipster-tests
+dist_bin_SCRIPTS = run-mipster-tests run-miplib3-tests fetch-miplib3
 
 # Desktop entry installs to $(datadir)/applications/
 appsdir = $(datadir)/applications
@@ -35,23 +35,16 @@ dist_apps_DATA = mipster-tests.desktop mipster-tests-debug.desktop
 #                         unitTest for Cbc                             #
 ########################################################################
 
-CBC_TEST_TGTS = test_cbc ctests
-
-cbcflags =
-if COIN_HAS_SAMPLE
-#  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-endif
-if COIN_HAS_MIPLIB3
-  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
-#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-endif
+CBC_TEST_TGTS = miplib3_tests ctests
 
 # We are using the solver executables to do the unit test
 
 test: $(CBC_TEST_TGTS)
 
-test_cbc: ../src/cbc$(EXEEXT)
-	RUNNING_TEST="test_cbc" ../src/cbc$(EXEEXT) $(cbcflags)
+# MIPLIB3 regression tests: per-instance C-interface tests run in parallel.
+# Uses fetch-miplib3 to locate or clone the instance repository.
+miplib3_tests: CInterfaceTest_miplib$(EXEEXT)
+	$(srcdir)/run-miplib3-tests
 
 if COIN_HAS_SAMPLE
 test_cbc_generic: ../src/cbc-generic$(EXEEXT)
@@ -62,7 +55,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_miplib
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -223,3 +216,7 @@ CInterfaceTest_new_LDADD = ../src/libmipster.la
 CInterfaceTest_tsp_cuts_SOURCES = CInterfaceTest_tsp_cuts.c
 nodist_EXTRA_CInterfaceTest_tsp_cuts_SOURCES = dummy.cpp
 CInterfaceTest_tsp_cuts_LDADD = ../src/libmipster.la
+
+CInterfaceTest_miplib_SOURCES = CInterfaceTest_miplib.c
+nodist_EXTRA_CInterfaceTest_miplib_SOURCES = dummy.cpp
+CInterfaceTest_miplib_LDADD = ../src/libmipster.la

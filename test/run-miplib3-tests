@@ -1,0 +1,188 @@
+#!/bin/bash
+# run-miplib3-tests — run per-instance MIPLIB3 regression tests in parallel.
+#
+# Each instance is solved via the C interface (CInterfaceTest_miplib binary):
+#   - All saved solutions are validated for feasibility
+#   - No solution is allowed to have an objective better than the known optimal
+#     (which would indicate a solver bug)
+#
+# Instances run: COIN-OR MIPLIB3 sets 0 + 1 (40 instances, all proven optimal)
+#
+# Environment variables:
+#   MIPSTER_MIPLIB3_DIR        — path to directory with .gz instance files
+#   MIPSTER_MIPLIB3_CLONE_DIR  — where to clone if not found locally
+#   MIPLIB3_TIME_LIMIT         — per-instance time limit in seconds (default: 300)
+#
+# Exit code: 0 if all tests pass, 1 if any fail.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+TIME_LIMIT="${MIPLIB3_TIME_LIMIT:-300}"
+
+get_epoch_ms() {
+  python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null || \
+    { date +%s%3N 2>/dev/null; } || \
+    echo $(( $(date +%s) * 1000 ))
+}
+
+# ── Locate CInterfaceTest_miplib binary ──────────────────────────────────────
+find_bin() {
+  local name="$1"
+  for dir in "$SCRIPT_DIR" "$SCRIPT_DIR/test" "."; do
+    [ -x "$dir/$name" ] && echo "$dir/$name" && return
+  done
+  command -v "$name" 2>/dev/null || true
+}
+
+MIPLIB_BIN=$(find_bin "CInterfaceTest_miplib")
+if [ -z "$MIPLIB_BIN" ]; then
+  echo "ERROR: CInterfaceTest_miplib binary not found" >&2
+  echo "       Build it first with: make CInterfaceTest_miplib" >&2
+  exit 1
+fi
+
+# ── Locate miplib3 instance directory ────────────────────────────────────────
+FETCH_SCRIPT=""
+for candidate in "$SCRIPT_DIR/fetch-miplib3" "$SCRIPT_DIR/../bin/fetch-miplib3"; do
+  [ -x "$candidate" ] && FETCH_SCRIPT="$candidate" && break
+done
+
+if [ -n "$FETCH_SCRIPT" ]; then
+  MIPLIB3_DIR=$(bash "$FETCH_SCRIPT") || { echo "ERROR: could not locate miplib3 instances" >&2; exit 1; }
+elif [ -n "${MIPSTER_MIPLIB3_DIR:-}" ] && [ -d "$MIPSTER_MIPLIB3_DIR" ]; then
+  MIPLIB3_DIR="$MIPSTER_MIPLIB3_DIR"
+else
+  echo "ERROR: fetch-miplib3 script not found and MIPSTER_MIPLIB3_DIR not set" >&2
+  exit 1
+fi
+
+echo "=== MIPLIB3 Test Suite ==="
+echo "    instances: $MIPLIB3_DIR"
+echo "    time limit: ${TIME_LIMIT}s per instance"
+echo ""
+
+# ── Instance list: name  expected_mip_obj ────────────────────────────────────
+# Sets 0 and 1 from unitTestClp.cpp (40 instances, all minimisation).
+# Expected values are the known optimal objective values.
+INSTANCES=(
+  # ── set 0 (fast, ~0-5s each) ────────────────────────────────────────────
+  "p0033          3089"
+  "p0201          7615"
+  "air03          340160"
+  "bell3a         878430.32"
+  "blend2         7.598985"
+  "dcmulti        188182"
+  "dsbmip         -305.19817501"
+  "egout          568.101"
+  "enigma         0.0"
+  "fiber          405935.18"
+  "flugpl         1201500"
+  "gen            112313"
+  "gesa3          27991042.648"
+  "gesa3_o        27991042.648"
+  "gt2            21166"
+  "khb05250       106940226"
+  "lseu           1120"
+  "misc03         3360"
+  "misc06         12850.8607"
+  "mod008         307"
+  "mod010         6548"
+  "p0282          258411"
+  "p0548          8691"
+  "p2756          3124"
+  "qnet1          16029.692681"
+  "qnet1_o        16029.692681"
+  "rentacar       30356761"
+  "rgn            82.1999"
+  # ── set 1 (medium, ~1-15s each) ─────────────────────────────────────────
+  "10teams        924"
+  "bell5          8966406.49"
+  "cap6000        -2451377"
+  "fixnet6        3983"
+  "gesa2          25779856.372"
+  "gesa2_o        25779856.372"
+  "l152lav        4722"
+  "misc07         2810"
+  "mitre          115155"
+  "nw04           16862"
+  "pp08a          7350.0"
+  "pp08aCUTS      7350.0"
+)
+
+TOTAL=${#INSTANCES[@]}
+PASS=0
+FAIL=0
+SKIP=0
+FAILURES=()
+
+W=${#TOTAL}
+NAME_COL=20
+
+# ── Phase 1: launch all instances in parallel ─────────────────────────────
+declare -a _pids _start_ms _tmpfiles _names _objs _missing
+
+for i in "${!INSTANCES[@]}"; do
+  read -r iname iobj <<< "${INSTANCES[$i]}"
+  _names[$i]="$iname"
+  _objs[$i]="$iobj"
+  mps_path="$MIPLIB3_DIR/${iname}.gz"
+  tmpfile=$(mktemp)
+  _tmpfiles[$i]="$tmpfile"
+  _start_ms[$i]=$(get_epoch_ms)
+
+  if [ ! -f "$mps_path" ]; then
+    _missing[$i]=1
+    _pids[$i]=""
+  else
+    _missing[$i]=0
+    "$MIPLIB_BIN" "$mps_path" "$iobj" "$TIME_LIMIT" > "$tmpfile" 2>&1 &
+    _pids[$i]=$!
+  fi
+done
+
+# ── Phase 2: collect results in order ────────────────────────────────────
+for i in "${!INSTANCES[@]}"; do
+  iname="${_names[$i]}"
+  idx=$(( i + 1 ))
+  tmpfile="${_tmpfiles[$i]}"
+  pid="${_pids[$i]:-}"
+
+  printf "[%*d/%d] %-*s" "$W" "$idx" "$TOTAL" "$NAME_COL" "$iname"
+
+  if [ "${_missing[$i]}" -eq 1 ]; then
+    printf " SKIP  (not in %s)\n" "$(basename "$MIPLIB3_DIR")"
+    SKIP=$(( SKIP + 1 ))
+    rm -f "$tmpfile"
+    continue
+  fi
+
+  wait "$pid" && rc=0 || rc=$?
+  elapsed_ms=$(( $(get_epoch_ms) - _start_ms[$i] ))
+  elapsed_s=$(awk "BEGIN { printf \"%.1f\", ${elapsed_ms}/1000 }" 2>/dev/null || echo "${elapsed_ms}")
+
+  if [ "$rc" -eq 0 ]; then
+    # Extract one-liner summary from the binary output
+    summary=$(grep -m1 "All.*solution.*validated\|no integer solution" "$tmpfile" 2>/dev/null || true)
+    printf " PASS  (%ss)  %s\n" "$elapsed_s" "$summary"
+    PASS=$(( PASS + 1 ))
+  else
+    printf " FAIL  (%ss)\n" "$elapsed_s"
+    FAIL=$(( FAIL + 1 ))
+    FAILURES+=("$iname")
+    sed 's/^/    | /' "$tmpfile"
+    printf '    \n'
+  fi
+  rm -f "$tmpfile"
+done
+
+# ── Summary ───────────────────────────────────────────────────────────────
+echo ""
+[ "$SKIP" -gt 0 ] && echo "  ($SKIP instance(s) skipped — not in local miplib3 directory)"
+if [ "$FAIL" -eq 0 ]; then
+  echo "All $PASS MIPLIB3 tests passed."
+  exit 0
+else
+  echo "${FAIL}/$TOTAL MIPLIB3 test(s) FAILED: ${FAILURES[*]}"
+  exit 1
+fi

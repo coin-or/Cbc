@@ -98,8 +98,6 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-#  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_MIPLIB3_TRUE@am__append_1 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -unitTest
 bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_tsp_random$(EXEEXT) \
 	CInterfaceTest_fl_random$(EXEEXT) \
@@ -110,7 +108,15 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_trd445c$(EXEEXT) \
 	CInterfaceTest_j3041_1$(EXEEXT) \
 	CInterfaceTest_yue20013$(EXEEXT) \
-	CInterfaceTest_etDecsi$(EXEEXT) CbcSolverLpTest$(EXEEXT)
+	CInterfaceTest_etDecsi$(EXEEXT) CbcSolverLpTest$(EXEEXT) \
+	CInterfaceTest_advanced$(EXEEXT) \
+	CInterfaceTest_colgen$(EXEEXT) \
+	CInterfaceTest_construction$(EXEEXT) \
+	CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) \
+	CInterfaceTest_kantorovich$(EXEEXT) \
+	CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) \
+	CInterfaceTest_tsp_cuts$(EXEEXT) \
+	CInterfaceTest_miplib$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/BuildTools/coin.m4 \
@@ -147,10 +153,28 @@ am_CInterfaceTest_a1_OBJECTS =  \
 	CInterfaceTest_a1-CInterfaceTest_a1.$(OBJEXT)
 CInterfaceTest_a1_OBJECTS = $(am_CInterfaceTest_a1_OBJECTS)
 CInterfaceTest_a1_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_advanced_OBJECTS =  \
+	CInterfaceTest_advanced.$(OBJEXT)
+CInterfaceTest_advanced_OBJECTS =  \
+	$(am_CInterfaceTest_advanced_OBJECTS)
+CInterfaceTest_advanced_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_colgen_OBJECTS = CInterfaceTest_colgen.$(OBJEXT)
+CInterfaceTest_colgen_OBJECTS = $(am_CInterfaceTest_colgen_OBJECTS)
+CInterfaceTest_colgen_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_construction_OBJECTS =  \
+	CInterfaceTest_construction.$(OBJEXT)
+CInterfaceTest_construction_OBJECTS =  \
+	$(am_CInterfaceTest_construction_OBJECTS)
+CInterfaceTest_construction_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_etDecsi_OBJECTS =  \
 	CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.$(OBJEXT)
 CInterfaceTest_etDecsi_OBJECTS = $(am_CInterfaceTest_etDecsi_OBJECTS)
 CInterfaceTest_etDecsi_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_facility_OBJECTS =  \
+	CInterfaceTest_facility.$(OBJEXT)
+CInterfaceTest_facility_OBJECTS =  \
+	$(am_CInterfaceTest_facility_OBJECTS)
+CInterfaceTest_facility_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_fl_random_OBJECTS =  \
 	CInterfaceTest_fl_random.$(OBJEXT)
 CInterfaceTest_fl_random_OBJECTS =  \
@@ -165,11 +189,30 @@ am_CInterfaceTest_j3041_1_OBJECTS =  \
 	CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.$(OBJEXT)
 CInterfaceTest_j3041_1_OBJECTS = $(am_CInterfaceTest_j3041_1_OBJECTS)
 CInterfaceTest_j3041_1_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_jssp_OBJECTS = CInterfaceTest_jssp.$(OBJEXT)
+CInterfaceTest_jssp_OBJECTS = $(am_CInterfaceTest_jssp_OBJECTS)
+CInterfaceTest_jssp_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_kantorovich_OBJECTS =  \
+	CInterfaceTest_kantorovich.$(OBJEXT)
+CInterfaceTest_kantorovich_OBJECTS =  \
+	$(am_CInterfaceTest_kantorovich_OBJECTS)
+CInterfaceTest_kantorovich_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_mdkp_random_OBJECTS =  \
 	CInterfaceTest_mdkp_random.$(OBJEXT)
 CInterfaceTest_mdkp_random_OBJECTS =  \
 	$(am_CInterfaceTest_mdkp_random_OBJECTS)
 CInterfaceTest_mdkp_random_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_mip_reopt_OBJECTS =  \
+	CInterfaceTest_mip_reopt.$(OBJEXT)
+CInterfaceTest_mip_reopt_OBJECTS =  \
+	$(am_CInterfaceTest_mip_reopt_OBJECTS)
+CInterfaceTest_mip_reopt_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_miplib_OBJECTS = CInterfaceTest_miplib.$(OBJEXT)
+CInterfaceTest_miplib_OBJECTS = $(am_CInterfaceTest_miplib_OBJECTS)
+CInterfaceTest_miplib_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_new_OBJECTS = CInterfaceTest_new.$(OBJEXT)
+CInterfaceTest_new_OBJECTS = $(am_CInterfaceTest_new_OBJECTS)
+CInterfaceTest_new_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_nursesched_OBJECTS =  \
 	CInterfaceTest_nursesched-CInterfaceTest_nursesched.$(OBJEXT)
 CInterfaceTest_nursesched_OBJECTS =  \
@@ -184,6 +227,11 @@ am_CInterfaceTest_trdta5581_OBJECTS =  \
 CInterfaceTest_trdta5581_OBJECTS =  \
 	$(am_CInterfaceTest_trdta5581_OBJECTS)
 CInterfaceTest_trdta5581_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_tsp_cuts_OBJECTS =  \
+	CInterfaceTest_tsp_cuts.$(OBJEXT)
+CInterfaceTest_tsp_cuts_OBJECTS =  \
+	$(am_CInterfaceTest_tsp_cuts_OBJECTS)
+CInterfaceTest_tsp_cuts_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_tsp_random_OBJECTS =  \
 	CInterfaceTest_tsp_random.$(OBJEXT)
 CInterfaceTest_tsp_random_OBJECTS =  \
@@ -242,20 +290,30 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_a1-CInterfaceTest_a1.Po \
 	./$(DEPDIR)/CInterfaceTest_a1-dummy.Po \
+	./$(DEPDIR)/CInterfaceTest_advanced.Po \
+	./$(DEPDIR)/CInterfaceTest_colgen.Po \
+	./$(DEPDIR)/CInterfaceTest_construction.Po \
 	./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po \
 	./$(DEPDIR)/CInterfaceTest_etDecsi-dummy.Po \
+	./$(DEPDIR)/CInterfaceTest_facility.Po \
 	./$(DEPDIR)/CInterfaceTest_fl_random.Po \
 	./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po \
 	./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po \
 	./$(DEPDIR)/CInterfaceTest_j3041_1-dummy.Po \
+	./$(DEPDIR)/CInterfaceTest_jssp.Po \
+	./$(DEPDIR)/CInterfaceTest_kantorovich.Po \
 	./$(DEPDIR)/CInterfaceTest_mdkp_random.Po \
+	./$(DEPDIR)/CInterfaceTest_mip_reopt.Po \
+	./$(DEPDIR)/CInterfaceTest_miplib.Po \
+	./$(DEPDIR)/CInterfaceTest_new.Po \
 	./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po \
 	./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po \
 	./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po \
 	./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po \
 	./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po \
+	./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po \
 	./$(DEPDIR)/CInterfaceTest_tsp_random.Po \
 	./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po \
 	./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po \
@@ -301,22 +359,42 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_SOURCES) \
 	$(CInterfaceTest_a1_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_a1_SOURCES) \
+	$(CInterfaceTest_advanced_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_advanced_SOURCES) \
+	$(CInterfaceTest_colgen_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_colgen_SOURCES) \
+	$(CInterfaceTest_construction_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_construction_SOURCES) \
 	$(CInterfaceTest_etDecsi_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_etDecsi_SOURCES) \
+	$(CInterfaceTest_facility_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_facility_SOURCES) \
 	$(CInterfaceTest_fl_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_fl_random_SOURCES) \
 	$(CInterfaceTest_graphdraw_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_graphdraw_SOURCES) \
 	$(CInterfaceTest_j3041_1_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_j3041_1_SOURCES) \
+	$(CInterfaceTest_jssp_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_jssp_SOURCES) \
+	$(CInterfaceTest_kantorovich_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_kantorovich_SOURCES) \
 	$(CInterfaceTest_mdkp_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_mdkp_random_SOURCES) \
+	$(CInterfaceTest_mip_reopt_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_mip_reopt_SOURCES) \
+	$(CInterfaceTest_miplib_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_miplib_SOURCES) \
+	$(CInterfaceTest_new_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_new_SOURCES) \
 	$(CInterfaceTest_nursesched_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_nursesched_SOURCES) \
 	$(CInterfaceTest_trd445c_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_trd445c_SOURCES) \
 	$(CInterfaceTest_trdta5581_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_trdta5581_SOURCES) \
+	$(CInterfaceTest_tsp_cuts_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_tsp_cuts_SOURCES) \
 	$(CInterfaceTest_tsp_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_tsp_random_SOURCES) \
 	$(CInterfaceTest_yue20013_SOURCES) \
@@ -526,7 +604,7 @@ dist_pkgtestfixture_DATA = \
 
 
 # Runner script installs to $(bindir)/run-mipster-tests
-dist_bin_SCRIPTS = run-mipster-tests
+dist_bin_SCRIPTS = run-mipster-tests run-miplib3-tests fetch-miplib3
 
 # Desktop entry installs to $(datadir)/applications/
 appsdir = $(datadir)/applications
@@ -535,8 +613,7 @@ dist_apps_DATA = mipster-tests.desktop mipster-tests-debug.desktop
 ########################################################################
 #                         unitTest for Cbc                             #
 ########################################################################
-CBC_TEST_TGTS = test_cbc ctests
-cbcflags = $(am__append_1)
+CBC_TEST_TGTS = miplib3_tests ctests
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -640,6 +717,40 @@ CInterfaceTest_etDecsi_SOURCES = CInterfaceTest_etDecsi.c
 nodist_EXTRA_CInterfaceTest_etDecsi_SOURCES = dummy.cpp
 CInterfaceTest_etDecsi_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_etDecsi_LDADD = ../src/libmipster.la
+
+########################################################################
+#                   Embedded-data tests (no fixtures needed)           #
+########################################################################
+CInterfaceTest_advanced_SOURCES = CInterfaceTest_advanced.c
+nodist_EXTRA_CInterfaceTest_advanced_SOURCES = dummy.cpp
+CInterfaceTest_advanced_LDADD = ../src/libmipster.la
+CInterfaceTest_colgen_SOURCES = CInterfaceTest_colgen.c
+nodist_EXTRA_CInterfaceTest_colgen_SOURCES = dummy.cpp
+CInterfaceTest_colgen_LDADD = ../src/libmipster.la
+CInterfaceTest_construction_SOURCES = CInterfaceTest_construction.c
+nodist_EXTRA_CInterfaceTest_construction_SOURCES = dummy.cpp
+CInterfaceTest_construction_LDADD = ../src/libmipster.la
+CInterfaceTest_facility_SOURCES = CInterfaceTest_facility.c
+nodist_EXTRA_CInterfaceTest_facility_SOURCES = dummy.cpp
+CInterfaceTest_facility_LDADD = ../src/libmipster.la
+CInterfaceTest_jssp_SOURCES = CInterfaceTest_jssp.c
+nodist_EXTRA_CInterfaceTest_jssp_SOURCES = dummy.cpp
+CInterfaceTest_jssp_LDADD = ../src/libmipster.la
+CInterfaceTest_kantorovich_SOURCES = CInterfaceTest_kantorovich.c
+nodist_EXTRA_CInterfaceTest_kantorovich_SOURCES = dummy.cpp
+CInterfaceTest_kantorovich_LDADD = ../src/libmipster.la
+CInterfaceTest_mip_reopt_SOURCES = CInterfaceTest_mip_reopt.c
+nodist_EXTRA_CInterfaceTest_mip_reopt_SOURCES = dummy.cpp
+CInterfaceTest_mip_reopt_LDADD = ../src/libmipster.la
+CInterfaceTest_new_SOURCES = CInterfaceTest_new.c
+nodist_EXTRA_CInterfaceTest_new_SOURCES = dummy.cpp
+CInterfaceTest_new_LDADD = ../src/libmipster.la
+CInterfaceTest_tsp_cuts_SOURCES = CInterfaceTest_tsp_cuts.c
+nodist_EXTRA_CInterfaceTest_tsp_cuts_SOURCES = dummy.cpp
+CInterfaceTest_tsp_cuts_LDADD = ../src/libmipster.la
+CInterfaceTest_miplib_SOURCES = CInterfaceTest_miplib.c
+nodist_EXTRA_CInterfaceTest_miplib_SOURCES = dummy.cpp
+CInterfaceTest_miplib_LDADD = ../src/libmipster.la
 all: all-am
 
 .SUFFIXES:
@@ -726,9 +837,25 @@ CInterfaceTest_a1$(EXEEXT): $(CInterfaceTest_a1_OBJECTS) $(CInterfaceTest_a1_DEP
 	@rm -f CInterfaceTest_a1$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_a1_OBJECTS) $(CInterfaceTest_a1_LDADD) $(LIBS)
 
+CInterfaceTest_advanced$(EXEEXT): $(CInterfaceTest_advanced_OBJECTS) $(CInterfaceTest_advanced_DEPENDENCIES) $(EXTRA_CInterfaceTest_advanced_DEPENDENCIES) 
+	@rm -f CInterfaceTest_advanced$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_advanced_OBJECTS) $(CInterfaceTest_advanced_LDADD) $(LIBS)
+
+CInterfaceTest_colgen$(EXEEXT): $(CInterfaceTest_colgen_OBJECTS) $(CInterfaceTest_colgen_DEPENDENCIES) $(EXTRA_CInterfaceTest_colgen_DEPENDENCIES) 
+	@rm -f CInterfaceTest_colgen$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_colgen_OBJECTS) $(CInterfaceTest_colgen_LDADD) $(LIBS)
+
+CInterfaceTest_construction$(EXEEXT): $(CInterfaceTest_construction_OBJECTS) $(CInterfaceTest_construction_DEPENDENCIES) $(EXTRA_CInterfaceTest_construction_DEPENDENCIES) 
+	@rm -f CInterfaceTest_construction$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_construction_OBJECTS) $(CInterfaceTest_construction_LDADD) $(LIBS)
+
 CInterfaceTest_etDecsi$(EXEEXT): $(CInterfaceTest_etDecsi_OBJECTS) $(CInterfaceTest_etDecsi_DEPENDENCIES) $(EXTRA_CInterfaceTest_etDecsi_DEPENDENCIES) 
 	@rm -f CInterfaceTest_etDecsi$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_etDecsi_OBJECTS) $(CInterfaceTest_etDecsi_LDADD) $(LIBS)
+
+CInterfaceTest_facility$(EXEEXT): $(CInterfaceTest_facility_OBJECTS) $(CInterfaceTest_facility_DEPENDENCIES) $(EXTRA_CInterfaceTest_facility_DEPENDENCIES) 
+	@rm -f CInterfaceTest_facility$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_facility_OBJECTS) $(CInterfaceTest_facility_LDADD) $(LIBS)
 
 CInterfaceTest_fl_random$(EXEEXT): $(CInterfaceTest_fl_random_OBJECTS) $(CInterfaceTest_fl_random_DEPENDENCIES) $(EXTRA_CInterfaceTest_fl_random_DEPENDENCIES) 
 	@rm -f CInterfaceTest_fl_random$(EXEEXT)
@@ -742,9 +869,29 @@ CInterfaceTest_j3041_1$(EXEEXT): $(CInterfaceTest_j3041_1_OBJECTS) $(CInterfaceT
 	@rm -f CInterfaceTest_j3041_1$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_j3041_1_OBJECTS) $(CInterfaceTest_j3041_1_LDADD) $(LIBS)
 
+CInterfaceTest_jssp$(EXEEXT): $(CInterfaceTest_jssp_OBJECTS) $(CInterfaceTest_jssp_DEPENDENCIES) $(EXTRA_CInterfaceTest_jssp_DEPENDENCIES) 
+	@rm -f CInterfaceTest_jssp$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_jssp_OBJECTS) $(CInterfaceTest_jssp_LDADD) $(LIBS)
+
+CInterfaceTest_kantorovich$(EXEEXT): $(CInterfaceTest_kantorovich_OBJECTS) $(CInterfaceTest_kantorovich_DEPENDENCIES) $(EXTRA_CInterfaceTest_kantorovich_DEPENDENCIES) 
+	@rm -f CInterfaceTest_kantorovich$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_kantorovich_OBJECTS) $(CInterfaceTest_kantorovich_LDADD) $(LIBS)
+
 CInterfaceTest_mdkp_random$(EXEEXT): $(CInterfaceTest_mdkp_random_OBJECTS) $(CInterfaceTest_mdkp_random_DEPENDENCIES) $(EXTRA_CInterfaceTest_mdkp_random_DEPENDENCIES) 
 	@rm -f CInterfaceTest_mdkp_random$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_mdkp_random_OBJECTS) $(CInterfaceTest_mdkp_random_LDADD) $(LIBS)
+
+CInterfaceTest_mip_reopt$(EXEEXT): $(CInterfaceTest_mip_reopt_OBJECTS) $(CInterfaceTest_mip_reopt_DEPENDENCIES) $(EXTRA_CInterfaceTest_mip_reopt_DEPENDENCIES) 
+	@rm -f CInterfaceTest_mip_reopt$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_mip_reopt_OBJECTS) $(CInterfaceTest_mip_reopt_LDADD) $(LIBS)
+
+CInterfaceTest_miplib$(EXEEXT): $(CInterfaceTest_miplib_OBJECTS) $(CInterfaceTest_miplib_DEPENDENCIES) $(EXTRA_CInterfaceTest_miplib_DEPENDENCIES) 
+	@rm -f CInterfaceTest_miplib$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_miplib_OBJECTS) $(CInterfaceTest_miplib_LDADD) $(LIBS)
+
+CInterfaceTest_new$(EXEEXT): $(CInterfaceTest_new_OBJECTS) $(CInterfaceTest_new_DEPENDENCIES) $(EXTRA_CInterfaceTest_new_DEPENDENCIES) 
+	@rm -f CInterfaceTest_new$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_new_OBJECTS) $(CInterfaceTest_new_LDADD) $(LIBS)
 
 CInterfaceTest_nursesched$(EXEEXT): $(CInterfaceTest_nursesched_OBJECTS) $(CInterfaceTest_nursesched_DEPENDENCIES) $(EXTRA_CInterfaceTest_nursesched_DEPENDENCIES) 
 	@rm -f CInterfaceTest_nursesched$(EXEEXT)
@@ -757,6 +904,10 @@ CInterfaceTest_trd445c$(EXEEXT): $(CInterfaceTest_trd445c_OBJECTS) $(CInterfaceT
 CInterfaceTest_trdta5581$(EXEEXT): $(CInterfaceTest_trdta5581_OBJECTS) $(CInterfaceTest_trdta5581_DEPENDENCIES) $(EXTRA_CInterfaceTest_trdta5581_DEPENDENCIES) 
 	@rm -f CInterfaceTest_trdta5581$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_trdta5581_OBJECTS) $(CInterfaceTest_trdta5581_LDADD) $(LIBS)
+
+CInterfaceTest_tsp_cuts$(EXEEXT): $(CInterfaceTest_tsp_cuts_OBJECTS) $(CInterfaceTest_tsp_cuts_DEPENDENCIES) $(EXTRA_CInterfaceTest_tsp_cuts_DEPENDENCIES) 
+	@rm -f CInterfaceTest_tsp_cuts$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_tsp_cuts_OBJECTS) $(CInterfaceTest_tsp_cuts_LDADD) $(LIBS)
 
 CInterfaceTest_tsp_random$(EXEEXT): $(CInterfaceTest_tsp_random_OBJECTS) $(CInterfaceTest_tsp_random_DEPENDENCIES) $(EXTRA_CInterfaceTest_tsp_random_DEPENDENCIES) 
 	@rm -f CInterfaceTest_tsp_random$(EXEEXT)
@@ -814,20 +965,30 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_a1-CInterfaceTest_a1.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_a1-dummy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_advanced.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_colgen.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_construction.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_etDecsi-dummy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_facility.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_fl_random.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_j3041_1-dummy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_jssp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_kantorovich.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mdkp_random.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mip_reopt.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_miplib.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_new.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_tsp_random.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po@am__quote@ # am--include-marker
@@ -1256,20 +1417,30 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_a1-CInterfaceTest_a1.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_a1-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_advanced.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_colgen.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_construction.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_etDecsi-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_facility.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_j3041_1-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_kantorovich.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_mip_reopt.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_miplib.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_new.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po
@@ -1323,20 +1494,30 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_a1-CInterfaceTest_a1.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_a1-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_advanced.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_colgen.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_construction.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_etDecsi-CInterfaceTest_etDecsi.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_etDecsi-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_facility.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_fl_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-CInterfaceTest_graphdraw.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_graphdraw-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_j3041_1-CInterfaceTest_j3041_1.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_j3041_1-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_kantorovich.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_mip_reopt.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_miplib.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_new.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-CInterfaceTest_nursesched.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_nursesched-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-CInterfaceTest_trd445c.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trd445c-dummy.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-CInterfaceTest_trdta5581.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_trdta5581-dummy.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_cuts.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_tsp_random.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-CInterfaceTest_yue20013.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_yue20013-dummy.Po
@@ -1382,14 +1563,15 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_appsDATA \
 
 .PRECIOUS: Makefile
 
-#  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
 
 # We are using the solver executables to do the unit test
 
 test: $(CBC_TEST_TGTS)
 
-test_cbc: ../src/cbc$(EXEEXT)
-	RUNNING_TEST="test_cbc" ../src/cbc$(EXEEXT) $(cbcflags)
+# MIPLIB3 regression tests: per-instance C-interface tests run in parallel.
+# Uses fetch-miplib3 to locate or clone the instance repository.
+miplib3_tests: CInterfaceTest_miplib$(EXEEXT)
+	$(srcdir)/run-miplib3-tests
 
 @COIN_HAS_SAMPLE_TRUE@test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 @COIN_HAS_SAMPLE_TRUE@	@echo "A minimal test is all that cbc-generic can manage just yet."
@@ -1397,7 +1579,7 @@ test_cbc: ../src/cbc$(EXEEXT)
 
 .PHONY: test
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CbcSolverLpTest$(EXEEXT)
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT)
 	MIPSTER_FIXTURE_DIR=$(abs_srcdir)/fixtures $(srcdir)/run-mipster-tests
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

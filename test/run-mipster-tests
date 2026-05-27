@@ -109,6 +109,15 @@ TESTS=(
   CInterfaceTest_yue20013
   CInterfaceTest_etDecsi
   CbcSolverLpTest
+  CInterfaceTest_advanced
+  CInterfaceTest_colgen
+  CInterfaceTest_construction
+  CInterfaceTest_facility
+  CInterfaceTest_jssp
+  CInterfaceTest_kantorovich
+  CInterfaceTest_mip_reopt
+  CInterfaceTest_new
+  CInterfaceTest_tsp_cuts
 )
 
 TOTAL=${#TESTS[@]}

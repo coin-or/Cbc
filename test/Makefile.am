@@ -62,7 +62,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CbcSolverLpTest
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -181,5 +181,45 @@ nodist_EXTRA_CInterfaceTest_etDecsi_SOURCES = dummy.cpp
 CInterfaceTest_etDecsi_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_etDecsi_LDADD = ../src/libmipster.la
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CbcSolverLpTest$(EXEEXT)
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT)
 	MIPSTER_FIXTURE_DIR=$(abs_srcdir)/fixtures $(srcdir)/run-mipster-tests
+
+########################################################################
+#                   Embedded-data tests (no fixtures needed)           #
+########################################################################
+
+CInterfaceTest_advanced_SOURCES = CInterfaceTest_advanced.c
+nodist_EXTRA_CInterfaceTest_advanced_SOURCES = dummy.cpp
+CInterfaceTest_advanced_LDADD = ../src/libmipster.la
+
+CInterfaceTest_colgen_SOURCES = CInterfaceTest_colgen.c
+nodist_EXTRA_CInterfaceTest_colgen_SOURCES = dummy.cpp
+CInterfaceTest_colgen_LDADD = ../src/libmipster.la
+
+CInterfaceTest_construction_SOURCES = CInterfaceTest_construction.c
+nodist_EXTRA_CInterfaceTest_construction_SOURCES = dummy.cpp
+CInterfaceTest_construction_LDADD = ../src/libmipster.la
+
+CInterfaceTest_facility_SOURCES = CInterfaceTest_facility.c
+nodist_EXTRA_CInterfaceTest_facility_SOURCES = dummy.cpp
+CInterfaceTest_facility_LDADD = ../src/libmipster.la
+
+CInterfaceTest_jssp_SOURCES = CInterfaceTest_jssp.c
+nodist_EXTRA_CInterfaceTest_jssp_SOURCES = dummy.cpp
+CInterfaceTest_jssp_LDADD = ../src/libmipster.la
+
+CInterfaceTest_kantorovich_SOURCES = CInterfaceTest_kantorovich.c
+nodist_EXTRA_CInterfaceTest_kantorovich_SOURCES = dummy.cpp
+CInterfaceTest_kantorovich_LDADD = ../src/libmipster.la
+
+CInterfaceTest_mip_reopt_SOURCES = CInterfaceTest_mip_reopt.c
+nodist_EXTRA_CInterfaceTest_mip_reopt_SOURCES = dummy.cpp
+CInterfaceTest_mip_reopt_LDADD = ../src/libmipster.la
+
+CInterfaceTest_new_SOURCES = CInterfaceTest_new.c
+nodist_EXTRA_CInterfaceTest_new_SOURCES = dummy.cpp
+CInterfaceTest_new_LDADD = ../src/libmipster.la
+
+CInterfaceTest_tsp_cuts_SOURCES = CInterfaceTest_tsp_cuts.c
+nodist_EXTRA_CInterfaceTest_tsp_cuts_SOURCES = dummy.cpp
+CInterfaceTest_tsp_cuts_LDADD = ../src/libmipster.la

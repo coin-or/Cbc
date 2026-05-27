@@ -2323,11 +2323,13 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
     model->mipRowActivity = new std::vector< double >();
   }
   int numCols = Cbc_getNumCols(model);
-  // Use cbcModel.getNumRows() — the post-preprocessing row count — rather than
-  // model->solver_->getNumRows() (the original). After clique strengthening or
-  // preprocessing, these can differ; getRowActivity() has cbcModel.getNumRows()
-  // elements and using the wrong count causes a buffer overread.
-  int numRows = cbcModel.getNumRows();
+  // Compute safe row count: cbcModel may have fewer rows than model->solver_
+  // (preprocessing), or more (CglCliqueStrengthening added constraints).
+  // getRowActivity() has cbcModel.getNumRows() elements; sense/rhs arrays in
+  // model->solver_ have model->solver_->getNumRows() elements.  Taking the min
+  // keeps both accesses in-bounds, while still computing slacks for every row
+  // that belongs to both models.
+  int numRows = std::min( cbcModel.getNumRows(), (int)model->solver_->getNumRows() );
   model->mipSavedSolution->resize( numSols );
   for ( int i=0 ; i<numSols ; ++i )
     (*(model->mipSavedSolution))[i].resize( numCols );

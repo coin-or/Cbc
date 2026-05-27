@@ -16,7 +16,9 @@
 #include "OsiClpSolverInterface.hpp"
 #include "CbcHeuristicDive.hpp"
 #include "CoinBoundPropagation.hpp"
+#ifndef CLP_OLD_STYLE
 #include "ClpAbortHandler.hpp"
+#endif
 #include <vector>
 
 //#define DIVE_FIX_BINARY_VARIABLES
@@ -150,6 +152,10 @@ CbcHeuristicDive::CbcHeuristicDive(const CbcHeuristicDive &rhs)
   , maxSimplexIterations_(rhs.maxSimplexIterations_)
   , maxSimplexIterationsAtRoot_(rhs.maxSimplexIterationsAtRoot_)
   , numConsecutiveInfeasible_(rhs.numConsecutiveInfeasible_)
+  , conflictCuts_(rhs.conflictCuts_)
+  , collectConflicts_(rhs.collectConflicts_)
+  , maxConflictSize_(rhs.maxConflictSize_)
+  , minConflictViolation_(rhs.minConflictViolation_)
   , aggressiveMode_(rhs.aggressiveMode_)
   , adaptiveFixing_(rhs.adaptiveFixing_)
   , fixGeneralIntegers_(rhs.fixGeneralIntegers_)
@@ -172,9 +178,6 @@ CbcHeuristicDive::CbcHeuristicDive(const CbcHeuristicDive &rhs)
     upLocks_ = NULL;
     priority_ = NULL;
   }
-  collectConflicts_ = rhs.collectConflicts_;
-  maxConflictSize_ = rhs.maxConflictSize_;
-  minConflictViolation_ = rhs.minConflictViolation_;
 }
 
 // Assignment operator
@@ -209,9 +212,6 @@ CbcHeuristicDive::operator=(const CbcHeuristicDive &rhs)
       priority_ = NULL;
     }
   }
-  collectConflicts_ = rhs.collectConflicts_;
-  maxConflictSize_ = rhs.maxConflictSize_;
-  minConflictViolation_ = rhs.minConflictViolation_;
   return *this;
 }
 
@@ -371,11 +371,13 @@ int CbcHeuristicDive::solution(double &solutionValue, int &numberNodes,
     = getClpSolver(solver);
   if (CBC_SKIP_CLP_TEST||clpSolver) {
     ClpSimplex *clpSimplex = clpSolver->getModelPtr();
+#ifndef CLP_OLD_STYLE
     // Attach abort handler for parallel cancellation
     if (abortFlag_) {
       ClpAbortHandler abortHandler(abortFlag_);
       clpSimplex->passInEventHandler(&abortHandler);
     }
+#endif
     int oneSolveIts = clpSimplex->maximumIterations();
     oneSolveIts = std::min(1000 + 2 * (clpSimplex->numberRows() + clpSimplex->numberColumns()), oneSolveIts);
     if (maxSimplexIterations >= COIN_INT_MAX / 2) {

@@ -55,7 +55,7 @@ endif
 
 .PHONY: test
 
-bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_miplib
+bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_miplib
 
 ########################################################################
 #                         unitTest for CbcCInterface                   #
@@ -81,6 +81,14 @@ CInterfaceTest_tsp_random_LDADD = ../src/libmipster.la
 CInterfaceTest_fl_random_SOURCES = CInterfaceTest_fl_random.c
 nodist_EXTRA_CInterfaceTest_fl_random_SOURCES = dummy.cpp
 CInterfaceTest_fl_random_LDADD = ../src/libmipster.la
+
+########################################################################
+#                   MICLSP tests (binary + integer + continuous + Big-M)#
+########################################################################
+
+CInterfaceTest_miclsp_SOURCES = CInterfaceTest_miclsp.c
+nodist_EXTRA_CInterfaceTest_miclsp_SOURCES = dummy.cpp
+CInterfaceTest_miclsp_LDADD = ../src/libmipster.la
 
 ########################################################################
 #                   MDKP random-instance tests                          #
@@ -174,7 +182,7 @@ nodist_EXTRA_CInterfaceTest_etDecsi_SOURCES = dummy.cpp
 CInterfaceTest_etDecsi_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 CInterfaceTest_etDecsi_LDADD = ../src/libmipster.la
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT)
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_miclsp$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT)
 	MIPSTER_FIXTURE_DIR=$(abs_srcdir)/fixtures $(srcdir)/run-mipster-tests
 
 ########################################################################

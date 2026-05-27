@@ -2345,11 +2345,18 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
 
   memcpy( VEC_PTR(model->mipBestSolution), cbcModel.bestSolution(), sizeof(double)*numCols );
   model->x = VEC_PTR(model->mipBestSolution);
-  model->obj_value = cbcModel.getObjValue();
+
+  /* Always recompute obj_value from the solution vector rather than from
+     cbcModel.getObjValue().  The latter can be stale when preprocessing or
+     postprocessing changes the incumbent (e.g. "Postprocessing changed
+     objective from X to Y"), so the dot-product is the only reliable source
+     of the true objective for the returned solution. */
+  model->obj_value = 0.0;
+  for (int j=0 ; j<numCols ; ++j )
+    model->obj_value += cbcModel.bestSolution()[j] * solver->getObjCoefficients()[j];
 
   /* solution pool */
   for ( int i=0 ; i<numSols ; ++i ) {
-    (*(model->mipSavedSolutionObj))[i] = cbcModel.savedSolutionObjective(i);
     const double *xi = cbcModel.savedSolution(i);
     double *xd = model->mipSavedSolution->operator[](i).data();
     memcpy(xd, xi, sizeof(double)*numCols );
@@ -2360,18 +2367,17 @@ static void Cbc_getMIPOptimizationResults( Cbc_Model *model, CbcModel &cbcModel 
         }
       }
     } /* round integer variables */
+    /* Recompute objective via dot-product; cbcModel.savedSolutionObjective(i)
+       can be stale when postprocessing updates the solution vector. */
+    double obj_i = 0.0;
+    for ( int j=0 ; j<numCols ; ++j )
+      obj_i += xd[j] * solver->getObjCoefficients()[j];
+    (*(model->mipSavedSolutionObj))[i] = obj_i;
   } /* saving solution pool */
 
   Cbc_updateSlack(model, cbcModel.getRowActivity(), numRows );
   /* storing row activity in MIP sol */
   memcpy(model->mipRowActivity->data(), cbcModel.getRowActivity(), sizeof(double)*numRows );
-
-  if (cbcModel.getObjSense()==-1) {
-    model->obj_value = 0.0;
-
-    for (int j=0 ; j<solver->getNumCols() ; ++j )
-      model->obj_value += cbcModel.bestSolution()[j] * solver->getObjCoefficients()[j];
-  } // circunvent CBC bug
 
   /* setting this solution as a MIPStart for possible next optimization */
   if (model->nColsMS) {

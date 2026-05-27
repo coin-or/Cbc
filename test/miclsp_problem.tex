@@ -1,0 +1,397 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{caption}
+
+\definecolor{mipblue}{RGB}{30,90,160}
+\definecolor{mipgreen}{RGB}{20,130,70}
+\definecolor{mipred}{RGB}{180,30,30}
+\definecolor{mipgray}{RGB}{80,80,80}
+\definecolor{lightblue}{RGB}{220,235,250}
+\definecolor{lightgreen}{RGB}{220,245,225}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=mipblue,
+  urlcolor=mipblue,
+  citecolor=mipblue,
+  pdftitle={MICLSP: Multi-Item Capacitated Lot Sizing with Batch Production},
+  pdfauthor={MIPster Test Suite},
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{mipgray}MIPster Test Suite}
+\fancyhead[R]{\small\color{mipgray}MICLSP Problem Description}
+\fancyfoot[C]{\small\color{mipgray}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcommand{\var}[1]{\mathit{#1}}
+\newcommand{\param}[1]{\mathit{#1}}
+
+\begin{document}
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  Title block
+%% ────────────────────────────────────────────────────────────────────────────
+\begin{center}
+  {\LARGE\bfseries\color{mipblue}
+    Multi-Item Capacitated Lot Sizing\\[4pt]
+    with Batch Production (MICLSP)}\\[0.8em]
+  {\large\color{mipgray} MIPster Test Suite --- Problem Description \& Formulation}\\[0.4em]
+  {\small\color{mipgray} All three variable types $\cdot$ Big-M constraints $\cdot$
+   Parameterisable difficulty}
+\end{center}
+
+\vspace{0.5em}
+\hrule height 1pt
+\vspace{1.5em}
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  1. Motivation
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Motivation and Problem Class}
+
+The \textbf{Multi-Item Capacitated Lot Sizing Problem with Batch Production}
+(MICLSP) is a classical production-planning problem that arises whenever a
+shared machine must produce several items in discrete batches over a finite
+planning horizon.
+
+It is an excellent benchmark for a mixed-integer programming solver because
+it \emph{naturally} contains all three variable types that challenge a B\&B
+solver, and the Big-M linking constraint appears organically from the problem
+structure rather than as a modelling artefact:
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \textbf{Binary variables} $y_{it}$: whether a costly machine setup is
+        performed for item~$i$ in period~$t$.
+  \item \textbf{General-integer variables} $n_{it}$: the number of production
+        batches of item~$i$ in period~$t$ (each batch contains a fixed number
+        of units~$B_i$).
+  \item \textbf{Continuous variables} $s_{it}$: the inventory of item~$i$ held
+        at the end of period~$t$ (fractional storage units arise from rounding
+        and cost interpolation).
+  \item \textbf{Big-M linking constraint}: a batch can only be produced if the
+        machine was set up; the tightest valid coefficient
+        $M_{it}=\lfloor C_t/B_i\rfloor$ comes directly from the machine
+        capacity in period~$t$.
+\end{itemize}
+
+The LP relaxation typically yields a fractional mix of setup and batch
+variables, so instances are rarely solved at the root node, making MICLSP
+a reliable stress test for the branching and cutting machinery of a MIP solver.
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  2. Data
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Problem Data}
+
+Let $\mathcal{I}=\{0,\ldots,I{-}1\}$ be the set of items and
+$\mathcal{T}=\{0,\ldots,T{-}1\}$ the set of time periods.
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Symbol} & \textbf{Domain} & \textbf{Meaning} \\
+\midrule
+$B_i$   & $\mathbb{Z}_{>0}$ & Batch size of item $i$ (units per batch) \\
+$d_{it}$ & $\mathbb{Z}_{\ge 0}$ & Demand for item $i$ in period $t$ \\
+$f_i$   & $\mathbb{R}_{>0}$ & Fixed setup cost for item $i$ \\
+$h_i$   & $\mathbb{R}_{>0}$ & Holding cost per unit of item $i$ per period \\
+$C_t$   & $\mathbb{Z}_{>0}$ & Machine capacity (units) in period $t$ \\
+$M_{it}$& $\mathbb{Z}_{\ge 0}$ & Big-M coefficient: $M_{it}=\lfloor C_t/B_i\rfloor$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  3. Decision variables
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Decision Variables}
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Variable} & \textbf{Type} & \textbf{Meaning} \\
+\midrule
+$y_{it}$  & Binary ($\{0,1\}$) & 1 if item $i$ is set up in period $t$ \\
+$n_{it}$  & Integer ($\mathbb{Z}_{\ge 0}$) & Number of batches of item $i$ produced in period $t$ \\
+$s_{it}$  & Continuous ($\mathbb{R}_{\ge 0}$) & Inventory of item $i$ at the end of period $t$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The convention $s_{i,-1}=0$ (no initial stock) is used throughout.
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  4. Mathematical formulation
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Mathematical Formulation}
+
+\begin{equation}\label{eq:obj}
+\min \quad \sum_{i\in\mathcal{I}}\sum_{t\in\mathcal{T}}
+  \Bigl( f_i\, y_{it} \;+\; h_i\, s_{it} \Bigr)
+\end{equation}
+
+\noindent subject to:
+
+\begin{alignat}{3}
+  &s_{i,t-1} + B_i\, n_{it} - s_{it} = d_{it}
+  &&\quad\forall\, i\in\mathcal{I},\; t\in\mathcal{T}
+  &&\quad\text{(inventory balance)}\label{eq:inv}\\[4pt]
+  &\sum_{i\in\mathcal{I}} B_i\, n_{it} \le C_t
+  &&\quad\forall\, t\in\mathcal{T}
+  &&\quad\text{(machine capacity)}\label{eq:cap}\\[4pt]
+  &n_{it} \le M_{it}\, y_{it}
+  &&\quad\forall\, i\in\mathcal{I},\; t\in\mathcal{T}
+  &&\quad\text{(Big-M setup link)}\label{eq:bigm}\\[4pt]
+  &y_{it} \in \{0,1\}
+  &&\quad\forall\, i\in\mathcal{I},\; t\in\mathcal{T}
+  &&\\[2pt]
+  &n_{it} \in \mathbb{Z}_{\ge 0}
+  &&\quad\forall\, i\in\mathcal{I},\; t\in\mathcal{T}
+  &&\\[2pt]
+  &s_{it} \ge 0
+  &&\quad\forall\, i\in\mathcal{I},\; t\in\mathcal{T}
+  &&
+\end{alignat}
+
+\paragraph{Sizes.}
+An instance with $I$ items and $T$ periods has
+$I\cdot T$ binary variables, $I\cdot T$ general-integer variables,
+and $I\cdot T$ continuous variables,
+for a total of $3\cdot I\cdot T$ variables and
+$I\cdot T + T + I\cdot T = T(2I+1)$ constraints
+(excluding variable bounds).
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  5. Big-M discussion
+%% ────────────────────────────────────────────────────────────────────────────
+\section{The Big-M Linking Constraint}
+
+Constraint~\eqref{eq:bigm} is the classic \emph{Big-M} formulation for
+linking a semi-continuous variable to a binary indicator.  Here,
+$M_{it}=\lfloor C_t/B_i\rfloor$ is the \textbf{tightest possible} coefficient:
+it equals the maximum number of batches of item~$i$ that could physically be
+produced in period~$t$ given the machine capacity~$C_t$.  Using this tight
+value (rather than an arbitrary large constant) strengthens the LP relaxation
+and reduces the integrality gap.
+
+If $y_{it}=0$, then $n_{it}\le 0$, so $n_{it}=0$ (no production without
+setup).  If $y_{it}=1$, the constraint $n_{it}\le M_{it}$ is redundant,
+since the capacity constraint~\eqref{eq:cap} already limits the total batches
+across all items.
+
+\colorbox{lightblue}{\parbox{0.96\textwidth}{%
+\textbf{Why Big-M is interesting here.}
+The LP relaxation of~\eqref{eq:bigm} sets $n_{it}\le M_{it}\,\hat{y}_{it}$
+where $\hat{y}_{it}\in[0,1]$.  A fractional setup $\hat{y}_{it}=0.4$ allows
+fractional batch counts up to $0.4\,M_{it}$, which combined with
+fractional inventory $\hat{s}_{it}$ gives the LP solver large freedom to
+reduce setup costs while satisfying demands.  This fractional exploitation is
+precisely what the B\&B solver must overcome by branching on $y_{it}$.
+}}
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  6. LP relaxation and integrality gap
+%% ────────────────────────────────────────────────────────────────────────────
+\section{LP Relaxation and Integrality Gap}
+
+The LP relaxation is obtained by replacing
+$y_{it}\in\{0,1\}$ with $0\le y_{it}\le 1$ and
+$n_{it}\in\mathbb{Z}_{\ge 0}$ with $n_{it}\ge 0$.
+Let $z^*_{\mathrm{LP}}$ and $z^*_{\mathrm{MIP}}$ denote the optimal values.
+Since this is a minimisation problem, $z^*_{\mathrm{LP}}\le z^*_{\mathrm{MIP}}$.
+
+The \textbf{relative integrality gap} is defined as
+\[
+  \Delta\% \;=\; 100\;\cdot\;
+  \frac{z^*_{\mathrm{MIP}} - z^*_{\mathrm{LP}}}{\max(1,\,z^*_{\mathrm{LP}})}.
+\]
+
+Instances selected as test fixtures satisfy $\Delta\% > 0$, confirming that
+the root-node LP bound is strictly weaker than the MIP optimum and that
+B\&B (with cuts and heuristics) is required to close the gap.
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  7. Random instance generation
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Random Instance Generation}
+
+Instances are generated deterministically from a seed using a linear
+congruential generator with the following distributions:
+
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Distribution} & \textbf{Range} & \textbf{Interpretation}\\
+\midrule
+$B_i$ & Uniform integer & $[5, 30]$ & Batch size \\
+$d_{it}$ & Uniform integer & $[1, 20]$ & Period demand \\
+$f_i$ & Uniform integer & $[100, 500]$ & Setup cost \\
+$h_i$ & Uniform integer & $[1, 10]$ & Holding cost \\
+$C_t$ & Derived & $\lceil\rho\cdot\sum_i d_{it}\rceil$ & Machine capacity \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The \textbf{capacity tightness ratio}
+$\rho = C_t \,/\, \sum_i d_{it}$
+is the key difficulty knob.  With $\rho>1$ the machine can accommodate all
+current-period demand on average, but the discrete batch structure and setup
+sequencing force careful scheduling.  Typical values used in the test suite:
+
+\begin{center}
+\begin{tabular}{@{}cll@{}}
+\toprule
+$\rho$ & \textbf{Effect} & \textbf{Typical solve} \\
+\midrule
+$\ge 2.0$ & Very loose; most instances solved at root & $< 1\,\text{s}$, $\Delta\%\approx 0$ \\
+$1.5$     & Moderate; some branching required & $1$--$10\,\text{s}$\\
+$1.25$--$1.35$ & Tight; clear LP-MIP gap, hundreds of nodes & $10\,\text{s}$--$2\,\text{min}$ \\
+$1.10$--$1.20$ & Very tight; thousands of nodes & $1$--$5\,\text{min}$ \\
+$< 1.0$   & Often infeasible & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+For the test suite we target the $\rho=1.25$--$1.35$ band: instances
+solve in $10\,\text{s}$--$2\,\text{min}$ with a non-trivial LP-MIP gap,
+exercising branching, cuts (MIR, GMI), and FeasibilityJump.
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  8. Example: small instance
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Illustrative Example ($I=2$, $T=3$)}
+
+Consider two items ($I=2$) and three periods ($T=3$) with the following data:
+
+\begin{center}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+Item $i$ & $B_i$ & $f_i$ & $h_i$ & $d_{it}$ for $t=0,1,2$ \\
+\midrule
+0 & 10 & 200 & 2 & 8, 5, 12 \\
+1 & 15 & 150 & 3 & 6, 9,  4 \\
+\bottomrule
+\end{tabular}
+\qquad
+\begin{tabular}{@{}cc@{}}
+\toprule
+$t$ & $C_t$ \\
+\midrule
+0 & 30 \\
+1 & 30 \\
+2 & 30 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Variables: $y_{it}\in\{0,1\}$, $n_{it}\in\mathbb{Z}_{\ge 0}$,
+$s_{it}\in\mathbb{R}_{\ge 0}$.  Tight Big-M values:
+$M_{i0}=\lfloor 30/B_i\rfloor$, i.e.\
+$M_{00}=3$, $M_{10}=2$ (similarly for other periods).
+
+\smallskip
+\textbf{Optimal solution.}  In $t=0$: set up both items
+($y_{00}=y_{10}=1$), produce 2 batches of item~0 (20 units) and 1 batch of
+item~1 (15 units), using capacity $10{\cdot}2+15{\cdot}1=35>30$.
+A feasible schedule might produce item~0 in $t=0,2$ and item~1 in $t=0,1$:
+
+\begin{center}
+\begin{tabular}{@{}c|ccc|ccc|ccc@{}}
+\toprule
+ & \multicolumn{3}{c|}{$t=0$} & \multicolumn{3}{c|}{$t=1$} & \multicolumn{3}{c}{$t=2$}\\
+ & $y$ & $n$ & $s$ & $y$ & $n$ & $s$ & $y$ & $n$ & $s$\\
+\midrule
+Item 0 & 1 & 2 & 12 & 0 & 0 & 7 & 1 & 1 & 5\\
+Item 1 & 1 & 1 & 9  & 1 & 1 & 1 & 0 & 0 & 0\\% example only; not verified optimal
+\bottomrule
+\end{tabular}
+\end{center}
+
+This example illustrates how the three variable types interact: the binary
+$y$ triggers a setup cost, the integer $n$ determines batch production, and
+the continuous $s$ accumulates the remaining inventory.
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  9. Solution verification
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Solution Verification in the Test Suite}
+
+After solving, the test binary verifies the following for every saved
+incumbent solution:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Inventory balance} (equality constraint): for each $(i,t)$,
+    $\lvert s_{i,t-1} + B_i\,n_{it} - s_{it} - d_{it}\rvert \le \varepsilon$.
+  \item \textbf{Machine capacity} (inequality): $\sum_i B_i\,n_{it}\le C_t+\varepsilon$.
+  \item \textbf{Big-M / no-production-without-setup}:
+    if $n_{it}>0$ then $y_{it}=1$.
+  \item \textbf{Non-negativity}: $s_{it}\ge -\varepsilon$, $n_{it}\ge -\varepsilon$.
+  \item \textbf{Integrality}: $n_{it}$ is within $\varepsilon$ of an integer;
+    $y_{it}\in\{0,1\}$ within $\varepsilon$.
+  \item \textbf{Objective match}: the reported objective matches
+    $\sum_{i,t}(f_i\,y_{it}+h_i\,s_{it})$ within $\varepsilon$.
+  \item \textbf{Known optimal}: the best solution objective matches the
+    pre-computed optimal value stored in \texttt{miclsp\_fixtures.h}.
+\end{enumerate}
+
+Here $\varepsilon = 10^{-4}$ (the solver primal feasibility tolerance).
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  10. Instance table (filled in by fixture generator)
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Test Fixture Instances}
+
+The table below lists all instances stored in \texttt{miclsp\_fixtures.h}.
+Column ``gap'' is the LP--MIP integrality gap $\Delta\%$; ``B\&B'' indicates
+whether at least one branch was performed (gap~$>0$).
+
+\begin{center}
+\begin{tabular}{@{}lcccccrl@{}}
+\toprule
+\textbf{Instance tag} & $I$ & $T$ & $\rho$ & \textbf{Vars} &
+  \textbf{Opt} & \textbf{LP bound} & \textbf{Gap}\\
+\midrule
+\emph{(generated by gen\_miclsp\_fixtures.py)} & & & & & & &\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The fixture header is regenerated by running:
+\begin{verbatim}
+  cd Cbc/test
+  python3 gen_miclsp_fixtures.py > miclsp_fixtures.h
+\end{verbatim}
+
+%% ────────────────────────────────────────────────────────────────────────────
+%%  References
+%% ────────────────────────────────────────────────────────────────────────────
+\section*{References}
+
+\begin{enumerate}[leftmargin=2em,label={[\arabic*]}]
+  \item W.~W.~Trigeiro, L.~J.~Thomas, J.~O.~McClain,
+    ``Capacitated lot sizing with setup times,''
+    \textit{Management Science} 35(3):353--366, 1989.
+  \item Y.~Pochet, L.~A.~Wolsey,
+    \textit{Production Planning by Mixed Integer Programming},
+    Springer, 2006.
+  \item C.~P.~M.~van~Hoesel, A.~P.~M.~Wagelmans,
+    ``An $O(T^3)$ algorithm for the economic lot-sizing problem
+    with constant capacities,''
+    \textit{Management Science} 42(1):142--150, 1996.
+\end{enumerate}
+
+\end{document}

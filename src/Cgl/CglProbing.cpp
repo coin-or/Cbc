@@ -1782,20 +1782,18 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
     }
   }
   if (!info->inTree && !info->pass) {
-    // Before running tighten(), propagate bounds using the solver's original
-    // bounds to generate sound LP-derived cuts for general integer variables
-    // (e.g. from capacity bigM rows).  This runs tightPrimalBounds() on the
-    // full LP without the constraint-matrix rewrite that tighten() relies on,
-    // so it is safe even when LP presolve has substituted away binary variables.
+#if CBC_PREPROCESS_EXPERIMENT > 1
     int nRows = si.getNumRows();
     double *columnLo = new double[2 * nRows + 2 * nCols];
     double *columnUp = columnLo + nCols;
     double *rowLo = columnUp + nCols;
     double *rowUp = rowLo + nRows;
+    // temp
     memcpy(columnLo, si.getColLower(), nCols * sizeof(double));
     memcpy(columnUp, si.getColUpper(), nCols * sizeof(double));
     memcpy(rowLo, si.getRowLower(), nRows * sizeof(double));
     memcpy(rowUp, si.getRowUpper(), nRows * sizeof(double));
+    // Get a row copy in standard format
     CoinPackedMatrix rowCopy = *si.getMatrixByRow();
     int columnsTightened;
     int rowsTightened;
@@ -1820,6 +1818,10 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
           ubs.insert(iColumn, columnUp[iColumn]);
       }
     }
+#ifdef LOTS_OF_PRINTING
+    printf("%d bounds changed, %d lower int, %d upper int\n",
+      nChanged, lbs.getNumElements(), ubs.getNumElements());
+#endif
     if (lbs.getNumElements()) {
       OsiColCut cc;
       cc.setLbs(lbs);
@@ -1830,7 +1832,9 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
       cc.setUbs(ubs);
       cs.insert(cc);
     }
-    if (!rowCopy_) {
+    if (rowCopy_) {
+      // printf("Can't tighten row bounds\n");
+    } else {
       nChanged = 0;
       for (int iRow = 0; iRow < nRows; iRow++) {
         if (rowLo[iRow] > rowLower[iRow]) {
@@ -1842,8 +1846,11 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
           rowUpper[iRow] = rowUp[iRow];
         }
       }
+#ifdef LOTS_OF_PRINTING
+      printf("%d row bounds changed\n", nChanged);
+#endif
     }
-    delete[] columnLo;
+#endif
     // make more integer
     // feasible = analyze(&si,intVar,colLower,colUpper);
   }
@@ -2254,14 +2261,7 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
     maxR[nRowsSafe] = COIN_DBL_MAX;
     minR[nRowsSafe] = -COIN_DBL_MAX;
   }
-  // At preprocessing pass 0 (before the LP has been re-solved with cuts),
-  // the constraint matrix may contain rows derived from LP-presolve variable
-  // fixings that are only valid for the LP relaxation, not for the MIP.
-  // Running tighten() on such a matrix propagates these LP-only constraints
-  // into bound cuts, which can incorrectly fix general integer variables to 0.
-  // Skip tighten() at pass=0 to avoid unsound cuts; probing (below) is safe
-  // because it verifies each probe direction via LP feasibility.
-  if (mode && (info->inTree || info->pass)) {
+  if (mode) {
     ninfeas = tighten(colLower, colUpper, column, rowElements,
       rowStart, rowStartPos, rowLength,
       columnCopy, rowLower, rowUpper,

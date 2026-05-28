@@ -122,7 +122,7 @@ static const int C_miclsp_i04_t10_s137_r110[10] = {
     69, 52, 53, 73, 63, 63, 57, 64, 70, 56
 };
 
-/* miclsp_i04_t10_s137_r114: I=4 T=10 seed=137 rho=1.15 opt=8302 */
+/* miclsp_i04_t10_s137_r114: I=4 T=10 seed=137 rho=1.15 opt=8316 */
 static const int B_miclsp_i04_t10_s137_r114[4] = {
     4, 5, 9, 8
 };
@@ -255,7 +255,7 @@ static const MiclspInstance MICLSP_INSTANCES[] = {
     B_miclsp_i04_t10_s042_r130, d_miclsp_i04_t10_s042_r130, f_miclsp_i04_t10_s042_r130, h_miclsp_i04_t10_s042_r130, C_miclsp_i04_t10_s042_r130 },
   { 4, 10, 1.10, 8423,
     B_miclsp_i04_t10_s137_r110, d_miclsp_i04_t10_s137_r110, f_miclsp_i04_t10_s137_r110, h_miclsp_i04_t10_s137_r110, C_miclsp_i04_t10_s137_r110 },
-  { 4, 10, 1.15, 8302,
+  { 4, 10, 1.15, 8316,
     B_miclsp_i04_t10_s137_r114, d_miclsp_i04_t10_s137_r114, f_miclsp_i04_t10_s137_r114, h_miclsp_i04_t10_s137_r114, C_miclsp_i04_t10_s137_r114 },
   { 4, 10, 1.20, 7962,
     B_miclsp_i04_t10_s137_r120, d_miclsp_i04_t10_s137_r120, f_miclsp_i04_t10_s137_r120, h_miclsp_i04_t10_s137_r120, C_miclsp_i04_t10_s137_r120 },

@@ -4989,7 +4989,7 @@ int CbcSolver::postprocess(
         n2 * sizeof(double));
       originalSolver->resolve();
     }
-    if (returnMode_ == 1 && model_.numberSavedSolutions() < 2) {
+    if (returnMode_ == 1) {
       model_.deleteSolutions();
       model_.setBestSolution(bestSolution, n,
         babModel_->getMinimizationObjValue());

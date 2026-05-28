@@ -1754,7 +1754,14 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
   int mode = mode_;
   int nCols = si.getNumCols();
 
-  // get integer variables
+  // During CglPreProcess the LP matrix may contain Big-M constraints
+  // simplified by LP presolve (e.g. "n - M*y <= 0" reduced to "n <= 0"
+  // when LP-presolve fixes y=0). tighten() then wrongly derives UB(n)=0
+  // for general integer variables. Binary-variable tightenings are sound
+  // and must be kept (they are required for correct B&B convergence).
+  // Skip column-cut generation for general integers during preprocessing.
+  // info.options bit 64 is set exclusively by CglPreProcess (all passes).
+  const bool skipGenIntColCuts = ((info->options & 64) != 0);
   const char *intVarOriginal = si.getColType(true);
   char *intVar = CoinCopyOfArray(intVarOriginal, nCols);
   int i;
@@ -1781,79 +1788,7 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
       }
     }
   }
-  if (!info->inTree && !info->pass) {
-#if CBC_PREPROCESS_EXPERIMENT > 1
-    int nRows = si.getNumRows();
-    double *columnLo = new double[2 * nRows + 2 * nCols];
-    double *columnUp = columnLo + nCols;
-    double *rowLo = columnUp + nCols;
-    double *rowUp = rowLo + nRows;
-    // temp
-    memcpy(columnLo, si.getColLower(), nCols * sizeof(double));
-    memcpy(columnUp, si.getColUpper(), nCols * sizeof(double));
-    memcpy(rowLo, si.getRowLower(), nRows * sizeof(double));
-    memcpy(rowUp, si.getRowUpper(), nRows * sizeof(double));
-    // Get a row copy in standard format
-    CoinPackedMatrix rowCopy = *si.getMatrixByRow();
-    int columnsTightened;
-    int rowsTightened;
-    int elementsChanged;
-    si.tightPrimalBounds(rowLo, rowUp, columnLo, columnUp,
-      columnsTightened, rowsTightened,
-      elementsChanged, rowCopy);
-    int nChanged = 0;
-    CoinPackedVector lbs;
-    CoinPackedVector ubs;
-    for (int iColumn = 0; iColumn < nCols; iColumn++) {
-      if (columnLo[iColumn] > colLower[iColumn]) {
-        nChanged++;
-        colLower[iColumn] = columnLo[iColumn];
-        if (intVar[iColumn])
-          lbs.insert(iColumn, columnLo[iColumn]);
-      }
-      if (columnUp[iColumn] < colUpper[iColumn]) {
-        nChanged++;
-        colUpper[iColumn] = columnUp[iColumn];
-        if (intVar[iColumn])
-          ubs.insert(iColumn, columnUp[iColumn]);
-      }
-    }
-#ifdef LOTS_OF_PRINTING
-    printf("%d bounds changed, %d lower int, %d upper int\n",
-      nChanged, lbs.getNumElements(), ubs.getNumElements());
-#endif
-    if (lbs.getNumElements()) {
-      OsiColCut cc;
-      cc.setLbs(lbs);
-      cs.insert(cc);
-    }
-    if (ubs.getNumElements()) {
-      OsiColCut cc;
-      cc.setUbs(ubs);
-      cs.insert(cc);
-    }
-    if (rowCopy_) {
-      // printf("Can't tighten row bounds\n");
-    } else {
-      nChanged = 0;
-      for (int iRow = 0; iRow < nRows; iRow++) {
-        if (rowLo[iRow] > rowLower[iRow]) {
-          nChanged++;
-          rowLower[iRow] = rowLo[iRow];
-        }
-        if (rowUp[iRow] < rowUpper[iRow]) {
-          nChanged++;
-          rowUpper[iRow] = rowUp[iRow];
-        }
-      }
-#ifdef LOTS_OF_PRINTING
-      printf("%d row bounds changed\n", nChanged);
-#endif
-    }
-#endif
-    // make more integer
-    // feasible = analyze(&si,intVar,colLower,colUpper);
-  }
+
   if (PROBING_EXTRA_STUFF) {
     // tighten bounds on djs
     // should be in CbcCutGenerator and check if basic
@@ -2261,6 +2196,39 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
     maxR[nRowsSafe] = COIN_DBL_MAX;
     minR[nRowsSafe] = -COIN_DBL_MAX;
   }
+  double *savedIntLower = nullptr;
+  double *savedIntUpper = nullptr;
+  int *intIndices = nullptr;
+  int nSavedInt = 0;
+  double *savedRowLower = nullptr;
+  double *savedRowUpper = nullptr;
+  // During CglPreProcess (info->options bit 64), tighten() may derive wrong
+  // binary and gen-integer bounds from the LP-presolved constraint matrix.
+  // For Big-M formulations (n - M*y ≤ 0), tighten() can propagate unsound
+  // bounds across multiple internal passes: a gen-int bound gets tightened,
+  // then a binary bound follows, and so on.  These tightenings feed into the
+  // minR/maxR arrays that probe() uses for its propagation, causing probe()
+  // to derive wrong global cuts for gen-int variables (FIXED_BOTH_WAYS).
+  //
+  // Fix: save ALL integer variable bounds (binary and gen-int) and row bounds
+  // before tighten(), restore them after, and recompute minR/maxR from the
+  // restored (correct) state.  This ensures probe() always starts from the
+  // true LP-relaxation state with no tighten()-introduced artefacts.
+  // info.options bit 64 is set exclusively by CglPreProcess (all passes).
+  if (skipGenIntColCuts) {
+    savedRowLower = CoinCopyOfArray(rowLower, nRowsSafe);
+    savedRowUpper = CoinCopyOfArray(rowUpper, nRowsSafe);
+    savedIntLower = new double[nCols];
+    savedIntUpper = new double[nCols];
+    intIndices = new int[nCols];
+    for (int j = 0; j < nCols; j++) {
+      if (intVar[j]) { // both binary (1) and gen-int (2)
+        savedIntLower[nSavedInt] = colLower[j];
+        savedIntUpper[nSavedInt] = colUpper[j];
+        intIndices[nSavedInt++] = j;
+      }
+    }
+  }
   if (mode) {
     ninfeas = tighten(colLower, colUpper, column, rowElements,
       rowStart, rowStartPos, rowLength,
@@ -2268,6 +2236,61 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
       nRows, nCols, intVar,
       ((info->options & 2048) == 0) ? 2 : 3,
       primalTolerance_);
+    if (skipGenIntColCuts && nSavedInt > 0) {
+      // Restore ALL integer variable bounds and row bounds, then recompute
+      // minR/maxR from scratch.  tighten() can cascade wrong bounds across
+      // binary and gen-int variables in multiple internal passes; restoring
+      // only gen-int bounds leaves stale binary fixings that infect the
+      // minR/maxR arrays and cause probe() to generate unsound cuts.
+      for (int jj = 0; jj < nSavedInt; jj++) {
+        int j = intIndices[jj];
+        colLower[j] = savedIntLower[jj];
+        colUpper[j] = savedIntUpper[jj];
+      }
+      CoinMemcpyN(savedRowLower, nRowsSafe, rowLower);
+      CoinMemcpyN(savedRowUpper, nRowsSafe, rowUpper);
+      for (int ii = 0; ii < nRowsSafe; ii++) {
+        if (rowLower[ii] > -1.0e20 || rowUpper[ii] < 1.0e20) {
+          int iflagu = 0;
+          int iflagl = 0;
+          double dmaxup = 0.0;
+          double dmaxdown = 0.0;
+          CoinBigIndex krs = rowStart[ii];
+          CoinBigIndex krs2 = rowStartPos[ii];
+          CoinBigIndex kre = rowStart[ii] + rowLength[ii];
+          for (CoinBigIndex k = krs; k < krs2; ++k) {
+            double value = rowElements[k];
+            int jj = column[k];
+            if (colUpper[jj] < 1.0e12)
+              dmaxdown += colUpper[jj] * value;
+            else
+              ++iflagl;
+            if (colLower[jj] > -1.0e12)
+              dmaxup += colLower[jj] * value;
+            else
+              ++iflagu;
+          }
+          for (CoinBigIndex k = krs2; k < kre; ++k) {
+            double value = rowElements[k];
+            int jj = column[k];
+            if (colUpper[jj] < 1.0e12)
+              dmaxup += colUpper[jj] * value;
+            else
+              ++iflagu;
+            if (colLower[jj] > -1.0e12)
+              dmaxdown += colLower[jj] * value;
+            else
+              ++iflagl;
+          }
+          if (iflagu)
+            dmaxup = 1.0e31;
+          if (iflagl)
+            dmaxdown = -1.0e31;
+          minR[ii] = dmaxdown;
+          maxR[ii] = dmaxup;
+        }
+      }
+    }
     if (!ninfeas) {
       // create column cuts where integer bounds have changed
       {
@@ -2424,9 +2447,18 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
             CoinPackedVector ubs;
             for (int iColumn = 0; iColumn < nCols; iColumn++) {
               if (colLower[iColumn] > lower[iColumn] && intVar[iColumn]) {
+                // During CglPreProcess, skip gen-int column bound cuts: probe()
+                // internally calls tighten() which can cascade wrong bounds through
+                // gen-int variables (via row propagation from LP-presolved bounds),
+                // producing MIP-unsound global cuts.  Binary variable bounds from
+                // probe() are always safe to apply.
+                if (skipGenIntColCuts && intVar[iColumn] == 2)
+                  continue;
                 lbs.insert(iColumn, colLower[iColumn]);
               }
               if (colUpper[iColumn] < upper[iColumn] && intVar[iColumn]) {
+                if (skipGenIntColCuts && intVar[iColumn] == 2)
+                  continue;
                 ubs.insert(iColumn, colUpper[iColumn]);
               }
             }
@@ -3161,6 +3193,11 @@ int CglProbing::gutsOfGenerateCuts(const OsiSolverInterface &si,
   delete[] maxR;
   minR_ = NULL;
   maxR_ = NULL;
+  delete[] savedRowLower;
+  delete[] savedRowUpper;
+  delete[] savedIntLower;
+  delete[] savedIntUpper;
+  delete[] intIndices;
   if (markRow_) {
     delete[] markRow_;
     delete[] lookColumn_;

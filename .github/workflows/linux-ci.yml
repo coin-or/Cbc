@@ -179,6 +179,39 @@ jobs:
             doc/mipster-parameters.md
             doc/mipster-parameters.tex
 
+      - name: Upload website artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mipster-website
+          path: docs/
+
+  deploy-pages:
+    name: Deploy GitHub Pages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [generate-docs]
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Download website artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mipster-website
+          path: docs/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
+
   package-linux-x86_64:
     name: Linux packages (DEB/RPM/Arch x86_64)
     runs-on: ubuntu-latest

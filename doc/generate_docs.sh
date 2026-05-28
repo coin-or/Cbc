@@ -9,6 +9,7 @@
 #   doc/mipster-parameters.tex — LaTeX reference
 #   doc/mipster-parameters.pdf — PDF reference (if pdflatex available)
 #   doc/mipster-parameters.md  — Markdown reference
+#   docs/parameters.html       — HTML reference for the website
 
 set -e
 
@@ -32,6 +33,9 @@ python3 "$SCRIPT_DIR/generate_latex_reference.py" "$MIPSTER" > "$SCRIPT_DIR/mips
 echo "Generating Markdown reference..."
 python3 "$SCRIPT_DIR/generate_markdown_reference.py" "$MIPSTER" > "$SCRIPT_DIR/mipster-parameters.md"
 
+echo "Generating HTML reference..."
+python3 "$SCRIPT_DIR/generate_html_reference.py" "$MIPSTER" > "$SCRIPT_DIR/../docs/parameters.html"
+
 if command -v pdflatex >/dev/null 2>&1; then
     echo "Compiling PDF..."
     TMPDIR=$(mktemp -d)
@@ -52,4 +56,6 @@ fi
 
 echo ""
 echo "Generated:"
-ls -lh "$SCRIPT_DIR/mipster.1" "$SCRIPT_DIR/mipster-parameters.tex" "$SCRIPT_DIR/mipster-parameters.md" "$SCRIPT_DIR/mipster-parameters.pdf" 2>/dev/null
+ls -lh "$SCRIPT_DIR/mipster.1" "$SCRIPT_DIR/mipster-parameters.tex" \
+       "$SCRIPT_DIR/mipster-parameters.md" "$SCRIPT_DIR/mipster-parameters.pdf" \
+       "$SCRIPT_DIR/../docs/parameters.html" 2>/dev/null

@@ -5197,7 +5197,7 @@ ClpPackedMatrix3::ClpPackedMatrix3()
 #include <intrin.h>
 #elif defined(HAVE_ARM_NEON_H)
 #include <arm_neon.h>
-#elif defined(HAVE_IMMINTRIN_H)
+#elif defined(HAVE_IMMINTRIN_H) || defined(__AVX__)
 #include <immintrin.h>
 #elif defined(HAVE_FMAINTRIN_H)
 #include <fmaintrin.h>

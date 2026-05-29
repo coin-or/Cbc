@@ -506,13 +506,6 @@ bool OsiCuts::insertIfNotDuplicateAndClean(OsiRowCut &rc,
       double rhs = newLb<-1.0e30 ? newUb : newLb;
       bool goodScale = scaleCutIntegral(newElements,newIndices,numberElements,
 					rhs,maxdelta);
-      if (false) {
-	// relax rhs a tiny bit
-	rhs += (newLb<-1.0e30) ? 1.0e-7 : -1.0e-7;
-	//if (numberCoefficients>=10||true) {
-	//rhs  += 1.0e-7*sumCoefficients+1.0e-8*numberCoefficients;
-	//}
-      }
       if (goodScale) {
 	if (newLb<-1.0e30)
 	  newUb = rhs;
@@ -536,6 +529,15 @@ bool OsiCuts::insertIfNotDuplicateAndClean(OsiRowCut &rc,
 	    delete newCutPtr;
 	    return false;
 	  }
+	}
+	// TwoMIR cut derivation can accumulate floating-point errors of up to ~1e-6.
+	// When integral scaling fails, relax the RHS slightly so that numerically
+	// tight cuts do not incorrectly exclude the optimal integer solution.
+	if (typeCut >= 61 && typeCut <= 63) {
+	  if (newLb < -1.0e30)
+	    newUb += 2.0e-6;
+	  else
+	    newLb -= 2.0e-6;
 	}
       }
       newCutPtr->setRow(numberElements,newIndices,newElements);

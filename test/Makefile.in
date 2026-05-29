@@ -102,6 +102,7 @@ bin_PROGRAMS = CInterfaceTest$(EXEEXT) \
 	CInterfaceTest_tsp_random$(EXEEXT) \
 	CInterfaceTest_fl_random$(EXEEXT) \
 	CInterfaceTest_mdkp_random$(EXEEXT) \
+	CInterfaceTest_miclsp$(EXEEXT) \
 	CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) \
 	CInterfaceTest_graphdraw$(EXEEXT) \
 	CInterfaceTest_trdta5581$(EXEEXT) \
@@ -202,6 +203,9 @@ am_CInterfaceTest_mdkp_random_OBJECTS =  \
 CInterfaceTest_mdkp_random_OBJECTS =  \
 	$(am_CInterfaceTest_mdkp_random_OBJECTS)
 CInterfaceTest_mdkp_random_DEPENDENCIES = ../src/libmipster.la
+am_CInterfaceTest_miclsp_OBJECTS = CInterfaceTest_miclsp.$(OBJEXT)
+CInterfaceTest_miclsp_OBJECTS = $(am_CInterfaceTest_miclsp_OBJECTS)
+CInterfaceTest_miclsp_DEPENDENCIES = ../src/libmipster.la
 am_CInterfaceTest_mip_reopt_OBJECTS =  \
 	CInterfaceTest_mip_reopt.$(OBJEXT)
 CInterfaceTest_mip_reopt_OBJECTS =  \
@@ -304,6 +308,7 @@ am__depfiles_remade = ./$(DEPDIR)/CInterfaceTest.Po \
 	./$(DEPDIR)/CInterfaceTest_jssp.Po \
 	./$(DEPDIR)/CInterfaceTest_kantorovich.Po \
 	./$(DEPDIR)/CInterfaceTest_mdkp_random.Po \
+	./$(DEPDIR)/CInterfaceTest_miclsp.Po \
 	./$(DEPDIR)/CInterfaceTest_mip_reopt.Po \
 	./$(DEPDIR)/CInterfaceTest_miplib.Po \
 	./$(DEPDIR)/CInterfaceTest_new.Po \
@@ -381,6 +386,8 @@ SOURCES = $(CInterfaceTest_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_kantorovich_SOURCES) \
 	$(CInterfaceTest_mdkp_random_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_mdkp_random_SOURCES) \
+	$(CInterfaceTest_miclsp_SOURCES) \
+	$(nodist_EXTRA_CInterfaceTest_miclsp_SOURCES) \
 	$(CInterfaceTest_mip_reopt_SOURCES) \
 	$(nodist_EXTRA_CInterfaceTest_mip_reopt_SOURCES) \
 	$(CInterfaceTest_miplib_SOURCES) \
@@ -637,6 +644,13 @@ nodist_EXTRA_CInterfaceTest_fl_random_SOURCES = dummy.cpp
 CInterfaceTest_fl_random_LDADD = ../src/libmipster.la
 
 ########################################################################
+#                   MICLSP tests (binary + integer + continuous + Big-M)#
+########################################################################
+CInterfaceTest_miclsp_SOURCES = CInterfaceTest_miclsp.c
+nodist_EXTRA_CInterfaceTest_miclsp_SOURCES = dummy.cpp
+CInterfaceTest_miclsp_LDADD = ../src/libmipster.la
+
+########################################################################
 #                   MDKP random-instance tests                          #
 ########################################################################
 CInterfaceTest_mdkp_random_SOURCES = CInterfaceTest_mdkp_random.c
@@ -881,6 +895,10 @@ CInterfaceTest_mdkp_random$(EXEEXT): $(CInterfaceTest_mdkp_random_OBJECTS) $(CIn
 	@rm -f CInterfaceTest_mdkp_random$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_mdkp_random_OBJECTS) $(CInterfaceTest_mdkp_random_LDADD) $(LIBS)
 
+CInterfaceTest_miclsp$(EXEEXT): $(CInterfaceTest_miclsp_OBJECTS) $(CInterfaceTest_miclsp_DEPENDENCIES) $(EXTRA_CInterfaceTest_miclsp_DEPENDENCIES) 
+	@rm -f CInterfaceTest_miclsp$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_miclsp_OBJECTS) $(CInterfaceTest_miclsp_LDADD) $(LIBS)
+
 CInterfaceTest_mip_reopt$(EXEEXT): $(CInterfaceTest_mip_reopt_OBJECTS) $(CInterfaceTest_mip_reopt_DEPENDENCIES) $(EXTRA_CInterfaceTest_mip_reopt_DEPENDENCIES) 
 	@rm -f CInterfaceTest_mip_reopt$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(CInterfaceTest_mip_reopt_OBJECTS) $(CInterfaceTest_mip_reopt_LDADD) $(LIBS)
@@ -979,6 +997,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_jssp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_kantorovich.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mdkp_random.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_miclsp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_mip_reopt.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_miplib.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest_new.Po@am__quote@ # am--include-marker
@@ -1431,6 +1450,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_kantorovich.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_miclsp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mip_reopt.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_miplib.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_new.Po
@@ -1508,6 +1528,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/CInterfaceTest_jssp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_kantorovich.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mdkp_random.Po
+	-rm -f ./$(DEPDIR)/CInterfaceTest_miclsp.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_mip_reopt.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_miplib.Po
 	-rm -f ./$(DEPDIR)/CInterfaceTest_new.Po
@@ -1579,7 +1600,7 @@ miplib3_tests: CInterfaceTest_miplib$(EXEEXT)
 
 .PHONY: test
 
-ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT)
+ctests: CInterfaceTest$(EXEEXT) CInterfaceTest_tsp_random$(EXEEXT) CInterfaceTest_fl_random$(EXEEXT) CInterfaceTest_mdkp_random$(EXEEXT) CInterfaceTest_miclsp$(EXEEXT) CInterfaceTest_nursesched$(EXEEXT) CInterfaceTest_a1$(EXEEXT) CInterfaceTest_graphdraw$(EXEEXT) CInterfaceTest_trdta5581$(EXEEXT) CInterfaceTest_trd445c$(EXEEXT) CInterfaceTest_j3041_1$(EXEEXT) CInterfaceTest_yue20013$(EXEEXT) CInterfaceTest_etDecsi$(EXEEXT) CbcSolverLpTest$(EXEEXT) CInterfaceTest_advanced$(EXEEXT) CInterfaceTest_colgen$(EXEEXT) CInterfaceTest_construction$(EXEEXT) CInterfaceTest_facility$(EXEEXT) CInterfaceTest_jssp$(EXEEXT) CInterfaceTest_kantorovich$(EXEEXT) CInterfaceTest_mip_reopt$(EXEEXT) CInterfaceTest_new$(EXEEXT) CInterfaceTest_tsp_cuts$(EXEEXT)
 	MIPSTER_FIXTURE_DIR=$(abs_srcdir)/fixtures $(srcdir)/run-mipster-tests
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

@@ -1,6 +1,6 @@
 # MIPster Parameter Reference
 
-*MIPster devel — May 2026*
+*MIPster v0.1.0 — May 2026*
 
 Parameters are specified on the command line **before** `-solve`:
 ```
@@ -13,12 +13,12 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 
 - [Stopping](#stopping) (9 parameters)
 - [Cuts](#cuts) (26 parameters)
-- [Heuristics](#heuristics) (34 parameters)
+- [Heuristics](#heuristics) (43 parameters)
 - [Branching](#branching) (5 parameters)
 - [Tolerances](#tolerances) (6 parameters)
 - [Conflict Graph](#conflict-graph) (5 parameters)
 - [Strategy](#strategy) (9 parameters)
-- [Solving](#solving) (26 parameters)
+- [Solving](#solving) (25 parameters)
 - [Simplex](#simplex) (19 parameters)
 - [Barrier](#barrier) (3 parameters)
 - [Scaling](#scaling) (4 parameters)
@@ -26,7 +26,7 @@ Both single-dash (`-sec`) and double-dash (`--sec`) styles are accepted.
 - [I/O](#i/o) (35 parameters)
 - [Parallelism](#parallelism) (2 parameters)
 - [MIP Preprocessing — Bound Propagation](#mip-preprocessing-—-bound-propagation) (8 parameters)
-- [MIP Preprocessing](#mip-preprocessing) (9 parameters)
+- [MIP Preprocessing](#mip-preprocessing) (17 parameters)
 - [LP Presolve](#lp-presolve) (3 parameters)
 
 ---
@@ -525,6 +525,14 @@ This can be used to switch on or off all heuristics.  Then you can set individua
 
 **Values:** `off`, `on`, `both`, `before` (default: `on`)
 
+#### `-feasibilityJump`
+
+Whether to use the Feasibility Jump heuristic
+
+Feasibility Jump is a primal heuristic that searches for integer-feasible solutions without LP solves. It maintains a weighted score over constraints and iteratively flips integer variables toward feasibility. Effective especially early in the search. Value 'on' means to use the heuristic in each node of the tree, i.e. after preprocessing. Value 'before' means use the heuristic only if option doHeuristics is used. Value 'both' means to use the heuristic if option doHeuristics is used and during solve.
+
+**Values:** `off`, `on`, `both`, `before` (default: `on`)
+
 #### `-doHeuristic`
 
 Do heuristics before any preprocessing
@@ -540,6 +548,41 @@ Whether to use given solution as crash for BAB
 If on then tries to branch to solution given by AMPL or priorities file.
 
 **Values:** `off`, `on` (default: `off`)
+
+#### `-fpFixingMode`
+
+How feasibility pump fixes variables between passes
+
+Controls what the feasibility pump fixes between round-trip LP passes.
+  off: no fixing
+  intBounds: fix integers at their current bounds
+  allIntegral: fix all variables that are currently integral
+  continuousBounds: fix continuous variables at bounds (default)
+  staticContinuous: fix static continuous variables
+  noInternalInts: as continuousBounds but skip internal integers
+  slackBasis: as continuousBounds but restart from an all-slack basis
+
+**Values:** `off`, `intBounds`, `allIntegral`, `continuousBounds`, `staticContinuous`, `noInternalInts`, `slackBasis` (default: `continuousBounds`)
+
+#### `-fpAccumulate`
+
+Enable accumulate mode in the feasibility pump
+
+When on, after each major pass in the feasibility pump, variables that have not moved are fixed and a small branch-and-bound sub-search is attempted on the remaining free variables. This can find solutions that plain rounding misses, at the cost of more computation. Enabled by default in the default strategy.
+
+**Values:** `off`, `on` (default: `on`)
+
+#### `-fpRunMode`
+
+Controls when and how often the feasibility pump runs
+
+Controls the run schedule of the feasibility pump.
+  normal: run once (default)
+  twice: run a second time if no solution was found on the first pass
+  afterRootCuts: run only after root cuts if no solution found
+  alwaysTwice: run twice even if a solution was already found
+
+**Values:** `normal`, `twice`, `afterRootCuts`, `alwaysTwice` (default: `normal`)
 
 #### `-depthMiniBab`
 
@@ -573,6 +616,22 @@ If >0 then do up to this many solves. However, the last digit is ignored and use
 
 **Range:** -1 to 200000 (default: 100)
 
+#### `-feasibilityJumpEffort`
+
+Iteration budget for the Feasibility Jump heuristic
+
+Maximum effort (deterministic iteration units) spent in a single Feasibility Jump call. The internal effort counter grows by O(problem nonzeros) per inner step, making this budget independent of CPU speed. Default: 10000000 (~10 million units). Increase for harder instances; decrease to limit overhead at the root node.
+
+**Range:** 0 to INT_MAX (default: 10000000)
+
+#### `-feasibilityJumpMaxSol`
+
+Stop Feasibility Jump after finding this many solutions
+
+The Feasibility Jump heuristic stops as soon as it has found this many integer-feasible solutions in a single call. Default: 1 (stop after the first solution). Set to a large value (e.g. 1000000) to keep searching until the effort budget or CBC global time limit is reached.
+
+**Range:** 0 to INT_MAX (default: 1)
+
 #### `-passFeasibilityPump`
 
 How many passes in feasibility pump
@@ -583,15 +642,10 @@ This fine tunes the Feasibility Pump heuristic by doing more or fewer passes.
 
 #### `-pumpTune`
 
-Dubious ideas for feasibility pump
+Packed integer tuning for feasibility pump (use named params instead)
 
-This fine tunes Feasibility Pump     
-	>=10000000 use as objective weight switch     
-	>=1000000 use as accumulate switch     
-	>=1000 use index+1 as number of large loops     
-	==100 use objvalue +0.05*fabs(objvalue) as cutoff OR fakeCutoff if set     
-	%100 == 10,20 affects how each solve is done     
-	1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds. If accumulate is on then after a major pass, variables which have not moved are fixed and a small branch and bound is tried.
+Packed integer that fine-tunes the Feasibility Pump. Prefer the named parameters: -fpFixingMode, -fpOptions, -fpRetries, -fpAccumulate, -fpRunMode, -fpMaxPassesWithoutChange.
+Encoding: digit0=fixing mode (0-6), digit1=fp options (0-9), digit2=fake cutoff multiplier, digits3-5=retries, digits6+=accumulate flag.
 
 **Range:** 0 to 1000000000 (default: 1005043)
 
@@ -608,6 +662,30 @@ Value 1 stops heuristics immediately if the allowable gap has been reached. Othe
 Print feasibility pump progress every N passes (0 = disabled).
 
 **Range:** 0 to 1000000 (default: 0)
+
+#### `-fpRetries`
+
+Number of additional feasibility pump retry attempts
+
+How many times the feasibility pump re-runs after the first pass when no feasible solution has been found. Each retry uses a different perturbation strategy. The default strategy uses 5 retries (6 total attempts).
+
+**Range:** 0 to 999 (default: 5)
+
+#### `-fpOptions`
+
+Feasibility pump perturbation and fixing options (0-9)
+
+Controls internal perturbation and fixing behaviour of the feasibility pump. 0 means no special options. The default strategy uses 4.
+
+**Range:** 0 to 9 (default: 4)
+
+#### `-fpMaxPassesWithoutChange`
+
+Fix variables unchanged for this many consecutive FP passes (0=off)
+
+When set to N > 0, any variable whose value has not changed for N consecutive feasibility pump passes is fixed at its current value for the remainder of that run. This can speed convergence on problems where most variables settle quickly. 0 disables this fixing (default).
+
+**Range:** 0 to 99 (default: 0)
 
 #### `-artificialCost`
 
@@ -871,11 +949,13 @@ For some problems, cut generators and general branching work better if the probl
 Which LP algorithm to use for the initial LP relaxation solve
 
 Controls which LP algorithm is used when -solve or -initialSolve triggers the root LP relaxation.
-  dual:    dual simplex (default).
+  auto:    ML-based automatic selection (default). Random Forest trained
+           on 380 instances; ~1.33x speedup over dual on benchmark set.
+  dual:    dual simplex.
   primal:  primal simplex.
   barrier: interior-point (barrier) method.
 
-**Values:** `dual`, `primal`, `barrier` (default: `dual`)
+**Values:** `dual`, `primal`, `barrier`, `auto` (default: `auto`)
 
 ### `-maxSavedSolutions`
 
@@ -939,12 +1019,6 @@ This command solves the continuous relaxation of the current model using the dua
 Do dual or primal simplex algorithm
 
 This command solves the continuous relaxation of the current model using the dual or primal algorithm, based on a dubious analysis of model.
-
-### `-guess`
-
-Guesses at good parameters
-
-This looks at model statistics and does an initial solve setting some parameters which may help you to think of possibilities.
 
 ### `-network`
 
@@ -1670,11 +1744,11 @@ It saves space to get rid of names so if you need to you can set this to off. Th
 
 ### `-racingLP`
 
-Number of threads for opportunistic parallel LP racing at root node
+Enable opportunistic parallel LP racing at root node
 
-When set to a value > 0, the root LP relaxation is solved by racing multiple LP method configurations in parallel (dual simplex, primal with Idiot crash, primal with Sprint). The first to reach optimality wins and the others are aborted. This can significantly reduce root LP time for problems where the default method is not the fastest. A value of 3 races all three configurations. Set to 0 to disable.
+When enabled, the root LP relaxation is solved by racing multiple LP method configurations in parallel. The first to reach optimality wins and the others are aborted. The number of racing threads is taken from the -threads parameter: 2 threads uses the K=2 portfolio (dual_pesteep_pertv75 + primal_idiot50, ~1.51x speedup); 3 or more threads uses the K=3 portfolio (dual_pesteep_psineg1_pertv75 + primal_idiot50 + primal_sprint, ~1.63x speedup). Portfolios are data-driven from k-fold cross-validation on MIPLIB 2017+SPP.
 
-**Range:** 0 to 8 (default: 0)
+**Values:** `off`, `on` (default: `off`)
 
 ### `-threads`
 
@@ -1718,7 +1792,7 @@ Run bound propagation at B&B nodes
 
 When enabled, runs knapsack-based bound propagation after branching decisions are applied at each node (subject to depth constraints), before the LP is solved. Can detect infeasibility earlier and fix additional variables. Controlled by nodeBoundPropMaxDepth and nodeBoundPropDepthInterval.
 
-**Values:** `off`, `on` (default: `off`)
+**Values:** `off`, `on` (default: `on`)
 
 ### `-boundPropMaxRounds`
 
@@ -1750,7 +1824,7 @@ Depth interval for node bound propagation
 
 Node bound propagation is applied at depths that are multiples of this interval (0, interval, 2*interval, ...). For example, with interval 3 bound propagation runs at depths 0, 3, 6, 9, etc.
 
-**Range:** 1 to INT_MAX (default: 5)
+**Range:** 1 to INT_MAX (default: 6)
 
 ## MIP Preprocessing
 
@@ -1784,6 +1858,60 @@ This tries to reduce size of the model in a similar way to presolve and it also 
 
 **Values:** `off`, `on`, `save`, `equal`, `sos`, `trysos`, `equalall`, `strategy`, `aggregate`, `forcesos`, `stop!aftersaving`, `equalallstop` (default: `sos`)
 
+### `-preProbing`
+
+Probing intensity during MIP preprocessing
+
+Controls how aggressively CglProbing is run during preprocessing.
+  off: no preprocessing probing
+  heavy: heavier probing (more passes, larger element limits)
+  heavier: even heavier probing (full column exploration)
+
+**Values:** `off`, `heavy`, `heavier` (default: `off`)
+
+### `-preIntegerize`
+
+Attempt to integerize continuous variables during preprocessing
+
+When enabled, variables that behave integrally can be declared integer during preprocessing, potentially tightening the model.
+  off: do not integerize
+  objective: integerize if the variable has a nonzero objective coefficient
+  always: integerize regardless of objective coefficient
+
+**Values:** `off`, `objective`, `always` (default: `off`)
+
+### `-preCliques`
+
+Create/extract cliques during MIP preprocessing
+
+When on, the preprocessor tries to identify and extract clique constraints from the model. This can tighten the LP relaxation.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-preDominatedRows`
+
+Try hard to find dominated rows during preprocessing
+
+When on and the model has all-+1 rows, the preprocessor uses CglDuplicateRow aggressively to eliminate dominated rows.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-preLargeFeasibilityTolerance`
+
+Use a larger feasibility tolerance (1e-4) in preprocessing
+
+When on, the preprocessor uses a relaxed feasibility tolerance of 1e-4 instead of the LP primal tolerance. Can help on numerically difficult instances at the cost of slightly less tight preprocessing.
+
+**Values:** `off`, `on` (default: `off`)
+
+### `-preProbingBeforeCliques`
+
+Run probing before clique extraction in preprocessing
+
+When on, a round of CglProbing is run before cliqueIt() during preprocessing. The clique model from probing is then used as the starting point for clique extraction, which can find stronger cliques.
+
+**Values:** `off`, `on` (default: `off`)
+
 ### `-cppGenerate`
 
 Generates C++ code
@@ -1799,6 +1927,22 @@ Allow creation of extra integer variables
 Switches on a trivial re-formulation that introduces extra integer variables to group together variables with same cost.
 
 **Range:** -INT_MAX to INT_MAX (default: 0)
+
+### `-preMajorPasses`
+
+Number of major preprocessing passes
+
+Sets the number of major preprocessing passes (each involving a full presolve cycle). 0 uses the default. Value 99 selects a single simple presolve with no probing or cuts.
+
+**Range:** 0 to 99 (default: 0)
+
+### `-preminorPasses`
+
+Number of minor preprocessing passes per major pass
+
+Sets the number of minor modification passes performed within each major preprocessing pass. 0 uses the default of 10 passes.
+
+**Range:** 0 to 99 (default: 0)
 
 ### `-tunePreProcess`
 
@@ -1819,7 +1963,9 @@ Format aabbcccc -
  12 - 4096 Switch off duplicate column checking for integers 
  13 - 8192 Allow scaled duplicate column checking 
  
-     Now aa 99 has special meaning i.e. just one simple presolve.
+     Now aa 99 has special meaning i.e. just one simple presolve. 
+
+Individual bits are also accessible via the named parameters preProbing, preIntegerize, preCliques, preDominatedRows, preLargeFeasibilityTolerance, preProbingBeforeCliques, preMajorPasses, and preMinorPasses.
 
 **Range:** 0 to INT_MAX (default: 7)
 

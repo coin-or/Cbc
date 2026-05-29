@@ -4786,37 +4786,6 @@ int CbcSolver::postprocess(
       // put back any saved solutions
       putBackOtherSolutions(babModel_, &model_, &process);
       setPreProcessingMode(babModel_->solver(), 2);
-      // Fix all integer variable bounds in the preprocessed solver to their
-      // B&B integer solution values and re-solve before calling postProcess.
-      // After B&B, babModel_->solver() holds the LP relaxation at the last
-      // explored node, which may be fractional.  CglPreProcess::postProcess()
-      // checks isProvenOptimal() and calls resolve() internally if the solver
-      // is not optimal, which overwrites any injected solution.  By fixing
-      // integer bounds and resolving first, we ensure postProcess receives a
-      // proven-optimal LP where every integer variable is at its correct 0/1
-      // value, so the presolve back-substitution produces a clean integer
-      // solution in the original space.
-      if (babModel_->bestSolution()) {
-        OsiSolverInterface *prepSolver = babModel_->solver();
-        const double *bestSol = babModel_->bestSolution();
-        int nCols2 = prepSolver->getNumCols();
-        std::vector<double> savedLb(nCols2), savedUb(nCols2);
-        for (int i = 0; i < nCols2; i++) {
-          savedLb[i] = prepSolver->getColLower()[i];
-          savedUb[i] = prepSolver->getColUpper()[i];
-          if (prepSolver->isInteger(i)) {
-            double val = floor(bestSol[i] + 0.5);
-            prepSolver->setColLower(i, val);
-            prepSolver->setColUpper(i, val);
-          }
-        }
-        prepSolver->resolve();
-        // NOTE: We intentionally do NOT restore original bounds here.
-        // Keeping the integer bounds fixed ensures that when postProcess
-        // back-propagates the presolve substitutions, any "eliminated" binary
-        // variables computed via substitution from fixed integers will also
-        // receive clean 0/1 values in the original space.
-      }
       process.postProcess(*babModel_->solver());
       setPreProcessingMode(saveSolver_, 0);
 #ifdef COIN_DEVELOP

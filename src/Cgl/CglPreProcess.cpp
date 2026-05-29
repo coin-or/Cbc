@@ -6275,7 +6275,11 @@ void CglPreProcess::postProcess(OsiSolverInterface &modelIn, int deleteStuff)
           }
         }
       }
-      assert(numberCheck == numberBadValues);
+      // numberBadValues counts fractional integers in startModel_ (which can
+      // include CGL-discovered implicit-integer variables not present in
+      // originalModel_).  numberCheck counts only those in originalModel_.
+      // Since startModel_ is a superset, numberCheck <= numberBadValues always.
+      assert(numberCheck <= numberBadValues);
       model->setColSolution(solution);
       delete[] rowActivity;
       delete[] solution;

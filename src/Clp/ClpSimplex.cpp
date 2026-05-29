@@ -12270,6 +12270,17 @@ int ClpSimplex::fathomMany(void *stuff)
       }
       if (node->sequence() < 0) {
         // solution
+        // Path A (savedToGoodNodesSlot=false, !info->large_): we must save
+        // the goodNodes slot after doubleCheck() but using the pre-doubleCheck
+        // integer-feasible solution.  doubleCheck() re-solves the LP (dual())
+        // and can leave non-integer values in columnActivity_ for free integer
+        // variables, causing gutsOfConstructor(type=2) to set sequence_>=0.
+        // Save the current integer-feasible solution before doubleCheck() changes it.
+        double *integerSolution = nullptr;
+        if (!savedToGoodNodesSlot && !info->large_) {
+          integerSolution = new double[numberColumns_];
+          CoinMemcpyN(columnActivity_, numberColumns_, integerSolution);
+        }
         double objectiveValue = doubleCheck();
         if (printing)
           printf("Solution of %g after %d nodes at depth %d\n",
@@ -12302,6 +12313,11 @@ int ClpSimplex::fathomMany(void *stuff)
             // Skip when savedToGoodNodesSlot (Path B): the node was already
             // saved before doubleCheck(), and re-saving after doubleCheck()
             // may produce sequence()>=0 due to the LP state having changed.
+            // Restore the pre-doubleCheck integer-feasible solution so that
+            // gutsOfConstructor(type=2) sees integer values and sets sequence_=-1.
+            // columnActivity_ is overwritten by fastDual2 on the next backtrack
+            // iteration, so permanently replacing it here is safe.
+            CoinMemcpyN(integerSolution, numberColumns_, columnActivity_);
             if (!node->oddArraysExist())
               node->createArrays(this);
             node->gutsOfConstructor(this, info, 2, depth);
@@ -12319,6 +12335,7 @@ int ClpSimplex::fathomMany(void *stuff)
           abort();
 #endif
         }
+        delete[] integerSolution;
         backtrack = true;
       } else {
         //if (printing)

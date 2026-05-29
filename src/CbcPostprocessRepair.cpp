@@ -48,7 +48,11 @@ void CbcRepairPostprocessSolution(
   //  3. Run a greedy repair pass only for pure-binary rows.
   const double *proposedSol = saveSolver->getColSolution();
   std::vector< double > repSol(proposedSol, proposedSol + nColsSave);
+  // Keep a copy of the postProcess back-substituted values for diagnostics.
+  std::vector< double > postProcessSol(repSol);
 
+  // Mark which original-space columns are retained in the preprocessed model.
+  std::vector< bool > isRetainedEarly(nCols, false);
   if (babModel->bestSolution()) {
     int nPrep = babModel->solver()->getNumCols();
     const double *prepBest = babModel->bestSolution();
@@ -57,6 +61,7 @@ void CbcRepairPostprocessSolution(
       int j = origCols[i]; // original-space column
       if (j < 0 || j >= nColsSave)
         continue;
+      isRetainedEarly[j] = true;
       double prepVal = prepBest[i];
       if (babModel->solver()->isInteger(i))
         prepVal = floor(prepVal + 0.5);
@@ -99,7 +104,33 @@ void CbcRepairPostprocessSolution(
     }
   }
 
-  // Phase 1: direction-aware integer rounding for eliminated variables.
+  // Diagnostic: count violations pre/post retained-variable override.
+  // This helps determine if the override is introducing violations.
+  {
+    // Count pure-int violations in postProcessSol (before override).
+    int violPre = 0, violPost = 0;
+    for (int r = 0; r < nRows; r++) {
+      if (!pureInt[r])
+        continue;
+      double lhsPre = 0.0, lhsPost = 0.0;
+      const int s = rowMtx->getVectorStarts()[r];
+      const int rl = rowMtx->getVectorLengths()[r];
+      for (int k = 0; k < rl; k++) {
+        int c = rowMtx->getIndices()[s + k];
+        double e = rowMtx->getElements()[s + k];
+        if (c < (int)postProcessSol.size())
+          lhsPre += e * postProcessSol[c];
+        lhsPost += e * repSol[c];
+      }
+      if (std::max(rowLb[r] - lhsPre, lhsPre - rowUb[r]) > 1e-6)
+        violPre++;
+      if (std::max(rowLb[r] - lhsPost, lhsPost - rowUb[r]) > 1e-6)
+        violPost++;
+    }
+    if (violPre > 0 || violPost > 0)
+      fprintf(stderr, "[CbcRepairPostprocess] violations pre-override=%d post-override=%d\n",
+        violPre, violPost);
+  }
   //
   // OsiPresolve back-substitution can leave eliminated integer variables
   // with fractional values (cascading floating-point errors through the
@@ -524,6 +555,32 @@ void CbcRepairPostprocessSolution(
         } else {
           repSol = bestRepSol;
           lhs = bestLhs;
+          // Diagnostic: print details of remaining violations so we can
+          // understand why the repair failed.
+          fprintf(stderr, "[CbcRepairPostprocess] REPAIR FAILED: %d violation(s) remain.\n", bestViol);
+          for (int r = 0; r < nRows; r++) {
+            if (!pureInt[r])
+              continue;
+            double viol = std::max(rowLb[r] - lhs[r], lhs[r] - rowUb[r]);
+            if (viol <= 1e-6)
+              continue;
+            fprintf(stderr, "  Row %d: lhs=%.10g lb=%.10g ub=%.10g viol=%.10g\n",
+              r, lhs[r], rowLb[r], rowUb[r], viol);
+            const int rs2 = rowMtx->getVectorStarts()[r];
+            const int rl2 = rowMtx->getVectorLengths()[r];
+            for (int ki2 = 0; ki2 < rl2; ki2++) {
+              int c = rowMtx->getIndices()[rs2 + ki2];
+              double coeff = rowMtx->getElements()[rs2 + ki2];
+              double ppVal = (c < (int)postProcessSol.size()) ? postProcessSol[c] : -999.0;
+              double repVal = repSol[c];
+              bool retained = (c < (int)isRetainedEarly.size()) ? isRetainedEarly[c] : false;
+              fprintf(stderr,
+                "    col %d coeff=%.6g repSol=%.6g postProcess=%.6g retained=%d"
+                " lb=%.6g ub=%.6g\n",
+                c, coeff, repVal, ppVal, (int)retained,
+                origColLb[c], origColUb[c]);
+            }
+          }
         }
       }
 

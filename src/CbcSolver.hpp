@@ -126,18 +126,35 @@ public:
   /** Solve the LP relaxation from scratch (no branch-and-bound).
       Applies the full LP machinery: lpMethod, perturbation, PSI, racing, and
       all ClpSolve options.  Combinatorial preprocessing (bound propagation and
-      clique merging) is intentionally skipped — call applyLpMethod() via
-      solveInitialLp() if you need the complete root-LP pipeline.
+      clique merging) is intentionally skipped — use solveRootLp() if you need
+      the complete root-LP pipeline.
       \param method  "dual", "primal", or "barrier" (empty = use current setting)
-      \return 0 on optimal, 1 on time/iter limit, 2 on infeasible, 3 on unbounded
+      \return 0 on optimal, 1 on stopped/other, 2 on infeasible, 3 on unbounded
   */
   int solveLp(const std::string &method = "");
+
+  /** Solve the LP relaxation with full root-node preprocessing.
+      Applies bound propagation, clique merging (if configured), LP method
+      selection (including LP racing and auto-recommender), and all ClpSolve
+      options — the complete preprocessing + LP pipeline used at the root
+      node of branch-and-bound, without running B&B itself.
+
+      After this call, model()->solver()->getColSolution() holds the LP
+      solution from the (possibly preprocessed) model.  Bounds may have
+      been tightened in place by bound propagation; integer flags are
+      preserved.
+
+      \note Preprocessing mutates the model in place.  Call this only once
+            per loaded instance, or re-import the model to get a fresh state.
+      \return 0 on optimal, 1 on stopped/other, 2 on infeasible/proved, 3 on unbounded
+  */
+  int solveRootLp();
 
   /** Re-solve the LP relaxation using the current basis (warm start).
       Applies Clp parameters (time limit, tolerances, perturbation) but skips
       all initial-solve overhead (racing, ClpSolve presolve, clique merging,
       bound propagation).  Falls back to solveLp() when no basis is available.
-      \return 0 on optimal, 1 on time/iter limit, 2 on infeasible, 3 on unbounded
+      \return 0 on optimal, 1 on stopped/other, 2 on infeasible, 3 on unbounded
   */
   int resolveLp();
   //@}

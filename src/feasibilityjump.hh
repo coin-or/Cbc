@@ -43,7 +43,7 @@ const double violationTolerance = 1.0e-5;
 const double equalityTolerance = 1.0e-5;
 
 // Measures if two doubles are equal within a tolerance of 1.0e-5.
-bool eq(double a, double b)
+inline bool eq(double a, double b)
 {
     return fabs(a - b) < equalityTolerance;
 }
@@ -311,7 +311,7 @@ struct Problem
     }
 };
 
-void modifyMove(LhsModification mod, Problem &problem, Move &move)
+inline void modifyMove(LhsModification mod, Problem &problem, Move &move)
 {
     Constraint &c = problem.constraints[mod.constraintIdx];
     auto incumbent = problem.incumbentAssignment[mod.varIdx];

@@ -3067,7 +3067,28 @@ int CbcSolver::solveLp(const std::string &method)
   if (clpStatus == 0) return 0;               // optimal
   if (clpStatus == 1) return 2;               // infeasible
   if (clpStatus == 2) return 3;               // unbounded
-  return 1;                                    // time/iter limit or other
+  return 1;                                    // stopped/other
+}
+
+int CbcSolver::solveRootLp()
+{
+  OsiSolverInterface *solver = model_.solver();
+  if (!solver) return 2;
+
+  // Full preprocessing (bound propagation + clique merging) + LP solve.
+  int rc = applyLpMethod(/*applyPreprocessing=*/true);
+
+  if (rc < 0) return 2;  // infeasibility proved during preprocessing
+
+  OsiClpSolverInterface *si = dynamic_cast<OsiClpSolverInterface *>(solver);
+  ClpSimplex *clp = si ? si->getModelPtr() : nullptr;
+  if (!clp) return solver->isProvenOptimal() ? 0 : 2;
+
+  const int clpStatus = clp->status();
+  if (clpStatus == 0) return 0;               // optimal
+  if (clpStatus == 1) return 2;               // infeasible
+  if (clpStatus == 2) return 3;               // unbounded
+  return 1;                                    // stopped/other
 }
 
 int CbcSolver::resolveLp()

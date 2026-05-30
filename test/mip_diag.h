@@ -37,9 +37,10 @@ typedef struct {
 /* Diagnostic configurations — only features that are ON by default.
  *
  * Infrastructure (default on):
- *   cgraph       : conflict graph (default "on")
- *   clqstr       : clique strengthening preprocessing (default "before")
- *   nodeBoundProp: knapsack bound propagation at B&B nodes (default "on")
+ *   cgraph        : conflict graph (default "on")
+ *   clqstr        : clique strengthening / clique merging (default "before")
+ *   boundPropLevel: bound propagation before initial LP solve (default "milpbt")
+ *   nodeBoundProp : knapsack bound propagation at B&B nodes (default "on")
  *
  * Cut families (default "ifmove"):
  *   gomory, knapsack, flow, mixed (MIR), probing, reduce2, twoMir, zeroHalf
@@ -50,6 +51,7 @@ static const MipDiagConfig MIP_DIAG_CONFIGS[] = {
   /* infrastructure */
   { "no-cgraph",        "cgraph",        "off" },
   { "no-clqstr",        "clqstr",        "off" },
+  { "no-boundproplevel","boundPropL",    "off" },
   { "no-nodeboundprop", "nodeBoundProp", "off" },
   /* all cuts combined */
   { "no-all-cuts",      "cuts",          "off" },

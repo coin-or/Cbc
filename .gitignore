@@ -30,3 +30,6 @@ dist
 **/MSVisualStudio/**/*.mps
 **/MSVisualStudio/**/*.lp
 **/MSVisualStudio/**/*.out
+
+# Personal / local-only scripts
+sync_to_machines.sh

@@ -35,7 +35,7 @@ mkdir -p "${INSTALL_DIR}/bin" "${INSTALL_DIR}/include" "${INSTALL_DIR}/lib"
 # ── Build debug variant ────────────────────────────────────────────────────────
 # Note: macOS ASan runtime is tied to Xcode version and cannot be bundled.
 # Users wanting ASan on macOS should build from source:
-#   ./cbc_configure.sh --debug --sanitizer=asan
+#   ./Cbc/scripts/configster --debug --sanitizer=asan
 build_debug_variant() {
   local build_dir="${BUILD_DIR}-dbg"
   local cxxflags="-O1 -g -fno-omit-frame-pointer"

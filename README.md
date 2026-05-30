@@ -125,6 +125,16 @@ Cbc_deleteModel(model);
 
 ---
 
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for a full guide covering environment setup, building, running benchmark experiments, and code style.
+
+Quick links:
+- **Set up your dev environment** → [Prerequisites & clone](CONTRIBUTING.md#prerequisites)
+- **Build MIPster** → [Section 3](CONTRIBUTING.md#3-build-and-install)
+- **Run benchmark experiments** → [Section 5](CONTRIBUTING.md#5-running-experiments)
+- **Submit a change** → [Section 8](CONTRIBUTING.md#8-submitting-changes)
+
 ## License
 
 MIPster is licensed under the [Eclipse Public License 2.0 (EPL-2.0)](LICENSE), the same license as COIN-OR CBC.

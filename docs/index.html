@@ -202,6 +202,7 @@
     <a href="#download">Download</a>
     <a href="#features">Features</a>
     <a href="#quickstart">Quick Start</a>
+    <a href="#contributing">Contributing</a>
     <a href="parameters.html">Parameters</a>
     <a href="https://github.com/h-g-s/mipster">GitHub</a>
   </div>
@@ -411,6 +412,41 @@ Cbc_deleteModel(m);</code></pre>
 
   <p style="margin-top:1.5rem; color:var(--muted)">Compile with:</p>
   <pre><code>cc myprogram.c $(pkg-config --cflags --libs mipster) -o myprogram</code></pre>
+</section>
+
+<!-- Contributing -->
+<section id="contributing">
+  <h2>🤝 Contributing</h2>
+  <p style="margin-bottom:1.5rem; color:var(--muted)">Contributions are welcome — from bug fixes and new cut generators to benchmark experiments and documentation. See the <a href="https://github.com/h-g-s/mipster/blob/master/CONTRIBUTING.md">full Contributing Guide</a> for step-by-step instructions.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <h3>🔧 Set Up Your Environment</h3>
+      <p>Clone the repo, set a handful of environment variables (<code>MIPSTER_PREFIX</code>, <code>MIPSTER_INSTANCES</code>, …), and build the full solver stack with a single script.</p>
+    </div>
+    <div class="feature-card">
+      <h3>📐 Build &amp; Install</h3>
+      <p>One autotools monorepo. <code>./Cbc/scripts/configster --opt --install</code> configures, builds, and installs CoinUtils → Clp → Cgl → Cbc in the right order.</p>
+    </div>
+    <div class="feature-card">
+      <h3>🧪 Run Benchmark Experiments</h3>
+      <p>Use <code>scripts/run_experiments.sh</code> with MIPLIB 2017 instances. Compare results, generate PDF reports, and profile performance — all scripted.</p>
+    </div>
+    <div class="feature-card">
+      <h3>✏️ Code Style</h3>
+      <p>WebKit-based clang-format, 2-space indent, no column limit. Run <code>./format-all-sources.sh</code> before committing. C++ with no RTTI and minimal STL in hot paths.</p>
+    </div>
+    <div class="feature-card">
+      <h3>🐛 Debug Builds</h3>
+      <p>AddressSanitizer and ThreadSanitizer builds available via <code>./Cbc/scripts/configster --debug --sanitizer=asan</code>. Every CI run tests the ASan binary against the benchmark suite.</p>
+    </div>
+    <div class="feature-card">
+      <h3>📬 Submit a PR</h3>
+      <p>Open an issue to discuss the change first, then submit a pull request against <code>master</code>. Please include a brief description of the motivation and any benchmark impact.</p>
+    </div>
+  </div>
+  <p style="margin-top:1.5rem; text-align:center">
+    <a href="https://github.com/h-g-s/mipster/blob/master/CONTRIBUTING.md" style="display:inline-block; padding:0.6rem 1.4rem; background:var(--accent); color:#fff; border-radius:6px; text-decoration:none; font-weight:600;">Read the Contributing Guide →</a>
+  </p>
 </section>
 
 <!-- Footer -->

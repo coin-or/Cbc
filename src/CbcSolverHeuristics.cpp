@@ -1475,8 +1475,6 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     heuristicFJ.setHeuristicName("FeasibilityJump");
     heuristicFJ.setMaxEffort(parameters[CbcParam::FEASIBILITYJUMPEFFORT]->intVal());
     heuristicFJ.setMaxSolutions(parameters[CbcParam::FEASIBILITYJUMPMAXSOL]->intVal());
-    // Run at the root and once early in the tree.
-    heuristicFJ.setWhen(1);
     model->addHeuristic(&heuristicFJ);
     anyToDo = true;
   }

@@ -93,6 +93,10 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
   if (!shouldHeurRun(0))
     return 0;
 
+  // Only run at the root node.
+  if (model_->getNodeCount() > 0)
+    return 0;
+
   OsiSolverInterface *solver = model_->solver();
   if (!solver)
     return 0;

@@ -926,7 +926,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::PROXIMITY]->setDefault("off");
      parameters_[CbcParam::RANDROUND]->setDefault("off");
      parameters_[CbcParam::FEASIBILITYJUMP]->setDefault("on");
-     parameters_[CbcParam::FEASIBILITYJUMPEFFORT]->setDefault(10000000);
+     parameters_[CbcParam::FEASIBILITYJUMPEFFORT]->setDefault(20000000);
      parameters_[CbcParam::FEASIBILITYJUMPMAXSOL]->setDefault(1);
      parameters_[CbcParam::RENS]->setDefault("off");
      parameters_[CbcParam::RINS]->setDefault("on");
@@ -3144,7 +3144,7 @@ void CbcParameters::addCbcSolverHeurParams() {
       "Maximum effort (deterministic iteration units) spent in a single "
       "Feasibility Jump call. The internal effort counter grows by "
       "O(problem nonzeros) per inner step, making this budget independent "
-      "of CPU speed. Default: 10000000 (~10 million units). "
+      "of CPU speed. Default: 20000000 (~20 million units). "
       "Increase for harder instances; decrease to limit overhead at the root node.",
       CoinParam::displayPriorityLow);
 

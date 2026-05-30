@@ -1169,6 +1169,17 @@ void CbcParameters::addCbcSolverActionParams() {
       CoinParam::displayPriorityNone);
   parameters_[CbcParam::DEBUG]->setPushFunc(CbcParamUtils::doDebugParam);
 
+  parameters_[CbcParam::DEBUGCUTS]->setup(
+      "debugCuts", "Check all cuts against a known optimal solution",
+      "Reads an optimal integer solution from a .sol file (the format "
+      "produced by -solu) and activates the OsiRowCutDebugger. Every cut "
+      "generated during the search is checked against the known optimal; "
+      "any cut that excludes the optimal solution is immediately reported "
+      "with its coefficients. When preprocessing is active, the solution is "
+      "automatically mapped to the preprocessed problem space. Use this to "
+      "identify cut generators that incorrectly cut off the optimal solution.",
+      CoinParam::displayPriorityNone);
+
   parameters_[CbcParam::END]->setup(
       "end", "Stops execution",
       "This stops execution; end, exit, quit and stop are synonyms.",

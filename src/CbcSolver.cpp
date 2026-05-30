@@ -2027,13 +2027,9 @@ static void putBackOtherSolutions(CbcModel *presolvedModel, CbcModel *model,
     double objectiveValue = presolvedModel->getObjValue();
 
     // Precompute the column mapping from preprocessed → original variable space.
-    // CglPreProcess::postProcess() back-substitutes using potentially sign-flipped
-    // constraint equations (G-rows scaled to L-rows), giving wrong 0/1 values for
-    // retained binary/integer variables.  We override those with direct mapping
-    // from the preprocessed solution whenever the column is retained.
+    // Used only to identify which original columns are retained.
     OsiSolverInterface *origModel = preProcess->originalModel();
     int nOrigCols = origModel->getNumCols();
-    const int *origCols = preProcess->originalColumns(); // origCols[i] = original col for preprocssed col i
 
     // model->createSpaceForSavedSolutions(numberSolutions-1);
     for (int iSolution = numberSolutions - 1; iSolution >= 0; iSolution--) {
@@ -2042,21 +2038,11 @@ static void putBackOtherSolutions(CbcModel *presolvedModel, CbcModel *model,
       presolvedModel->solver()->setColSolution(prepSol);
       preProcess->postProcess(*presolvedModel->solver(), false);
 
-      // Build corrected solution: start from back-substituted values, then
-      // override retained variables with the direct mapping from prepSol.
+      // Use the postProcess back-substituted solution directly.
+      // postProcess correctly handles all preprocessing transformations
+      // including variable sign-flips (complementing); do not override it.
       const double *backSol = origModel->getColSolution();
-      std::vector<double> corrected(backSol, backSol + nOrigCols);
-      if (origCols) {
-        for (int i = 0; i < numberColumns; i++) {
-          int j = origCols[i];
-          if (j < 0 || j >= nOrigCols) continue;
-          double v = prepSol[i];
-          if (presolvedModel->solver()->isInteger(i))
-            v = floor(v + 0.5);
-          corrected[j] = v;
-        }
-      }
-      model->setBestSolution(corrected.data(),
+      model->setBestSolution(backSol,
                              model->solver()->getNumCols(),
                              presolvedModel->savedSolutionObjective(iSolution));
     }
@@ -4785,8 +4771,41 @@ int CbcSolver::postprocess(
                                                            // bound)
       // put back any saved solutions
       putBackOtherSolutions(babModel_, &model_, &process);
+      // Ensure the best integer solution is loaded into the solver before
+      // postProcess, with integer variables FIXED to their B&B values.
+      // Without this, postProcess calls resolve() on the input solver which
+      // moves the solution to the LP optimal at the terminal B&B node —
+      // a fractional solution that back-substitutes with 400+ fractional
+      // integers in the original model.  Fixing integer bounds forces the
+      // LP re-solve to return the B&B solution (continuous variables become
+      // LP-optimal given fixed integers).  We restore bounds afterward.
+      std::vector<double> babLbSave, babUbSave;
+      if (babModel_->bestSolution()) {
+        const double *bs = babModel_->bestSolution();
+        int nBabCols = babModel_->getNumCols();
+        const double *bsLb = babModel_->solver()->getColLower();
+        const double *bsUb = babModel_->solver()->getColUpper();
+        babLbSave.assign(bsLb, bsLb + nBabCols);
+        babUbSave.assign(bsUb, bsUb + nBabCols);
+        for (int j = 0; j < nBabCols; j++) {
+          if (babModel_->isInteger(j)) {
+            double v = floor(bs[j] + 0.5);
+            babModel_->solver()->setColLower(j, v);
+            babModel_->solver()->setColUpper(j, v);
+          }
+        }
+        babModel_->solver()->setColSolution(bs);
+      }
       setPreProcessingMode(babModel_->solver(), 2);
       process.postProcess(*babModel_->solver());
+      // Restore B&B solver bounds after postProcess.
+      if (!babLbSave.empty()) {
+        int nBabCols = (int)babLbSave.size();
+        for (int j = 0; j < nBabCols; j++) {
+          babModel_->solver()->setColLower(j, babLbSave[j]);
+          babModel_->solver()->setColUpper(j, babUbSave[j]);
+        }
+      }
       setPreProcessingMode(saveSolver_, 0);
 #ifdef COIN_DEVELOP
       if (model_.bestSolution() && fabs(model_.getMinimizationObjValue() - babModel_->getMinimizationObjValue()) < 1.0e-8) {
@@ -12979,6 +12998,54 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                 printf("%d %g\n", i, debugValues[i]);
             }
           }
+        } break;
+        case CbcParam::DEBUGCUTS: {
+          if (!goodModel) {
+            printGeneralWarning(model_, "** Current model not valid\n");
+            continue;
+          }
+          cbcParam->readValue(inputQueue, fileName, &message);
+          CoinParamUtils::processFile(fileName,
+            parameters[CbcParam::DIRECTORY]->dirName(),
+            &canOpen);
+          if (!canOpen) {
+            buffer.str("");
+            buffer << "Unable to open file " << fileName.c_str();
+            printGeneralMessage(model_, buffer.str());
+            continue;
+          }
+          // Parse the .sol file using the mipstart reader
+          std::vector<std::pair<std::string, double>> dbgColValues;
+          double dbgObj = COIN_DBL_MAX;
+          CbcMipStart::read(model_.solver(), fileName.c_str(), dbgColValues,
+            dbgObj, model_.messageHandler(), model_.messagesPointer());
+          if (dbgColValues.empty()) {
+            printGeneralWarning(model_,
+              "debugCuts: no solution values read — check file format\n");
+            continue;
+          }
+          // Build name → column-index map from the current (original) solver
+          int nOrigCols = model_.solver()->getNumCols();
+          std::map<std::string, int> colNameMap;
+          for (int i = 0; i < nOrigCols; i++)
+            colNameMap[model_.solver()->getColName(i)] = i;
+          // Populate debugValues (zero = variable at zero, not in file)
+          delete[] debugValues;
+          debugValues = new double[nOrigCols]();
+          numberDebugValues = nOrigCols;
+          int matched = 0;
+          for (const auto &cv : dbgColValues) {
+            auto it = colNameMap.find(cv.first);
+            if (it != colNameMap.end()) {
+              debugValues[it->second] = cv.second;
+              ++matched;
+            }
+          }
+          buffer.str("");
+          buffer << "debugCuts: loaded " << matched << " of "
+                 << static_cast<int>(dbgColValues.size())
+                 << " values from " << fileName;
+          printGeneralMessage(model_, buffer.str());
         } break;
         case CbcParam::PRINTMASK:
           if ((status = cbcParam->readValue(inputQueue, field, &message))) {

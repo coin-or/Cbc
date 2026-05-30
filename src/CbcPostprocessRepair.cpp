@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <vector>
 
 #include "CbcModel.hpp"
@@ -29,45 +30,11 @@ void CbcRepairPostprocessSolution(
   if (nColsSave < nCols)
     return;
 
-  // Build repSol using direct column mapping from the preprocessed
-  // B&B solution wherever possible, overriding the back-substituted
-  // saveSolver values for retained variables.
-  //
-  // Background: process.postProcess() back-substitutes the preprocessed
-  // solution into the original variable space.  For variables that were
-  // ELIMINATED during preprocessing, the back-substitution uses the
-  // internally stored (and possibly sign-flipped) constraint equations,
-  // which gives wrong 0/1 values when a G-constraint was scaled to an
-  // L-constraint.  For RETAINED variables (those that survive into the
-  // preprocessed model), the correct values are available directly from
-  // babModel->bestSolution() via process.originalColumns().
-  //
-  // Strategy:
-  //  1. Start from saveSolver->getColSolution() (correct for retained).
-  //  2. Override retained-variable values with the direct B&B mapping.
-  //  3. Run a greedy repair pass only for pure-binary rows.
+  // Start from the postProcess back-substituted solution.
+  // postProcess correctly handles ALL preprocessing transformations including
+  // variable sign-flips (complementing), so we trust it for all variables.
   const double *proposedSol = saveSolver->getColSolution();
   std::vector< double > repSol(proposedSol, proposedSol + nColsSave);
-  // Keep a copy of the postProcess back-substituted values for diagnostics.
-  std::vector< double > postProcessSol(repSol);
-
-  // Mark which original-space columns are retained in the preprocessed model.
-  std::vector< bool > isRetainedEarly(nCols, false);
-  if (babModel->bestSolution()) {
-    int nPrep = babModel->solver()->getNumCols();
-    const double *prepBest = babModel->bestSolution();
-    const int *origCols = process.originalColumns();
-    for (int i = 0; i < nPrep; i++) {
-      int j = origCols[i]; // original-space column
-      if (j < 0 || j >= nColsSave)
-        continue;
-      isRetainedEarly[j] = true;
-      double prepVal = prepBest[i];
-      if (babModel->solver()->isInteger(i))
-        prepVal = floor(prepVal + 0.5);
-      repSol[j] = prepVal;
-    }
-  }
 
   const CoinPackedMatrix *rowMtx = originalSolver->getMatrixByRow();
   const CoinPackedMatrix *colMtx = originalSolver->getMatrixByCol();
@@ -89,9 +56,8 @@ void CbcRepairPostprocessSolution(
   std::vector< bool > changed(nCols, false);
 
   // Pre-compute pureInt[r]: true if every variable in row r is integer.
-  // With retained variables correctly mapped from the B&B solution, we
-  // can trust any row where all variables are integer.  Rows with
-  // continuous variables are still excluded (LP will handle those).
+  // Only pure-integer rows are repaired; rows with continuous variables
+  // are handled by the subsequent LP re-solve.
   std::vector< bool > pureInt(nRows, true);
   for (int r = 0; r < nRows; r++) {
     const int s = rowMtx->getVectorStarts()[r];
@@ -104,115 +70,312 @@ void CbcRepairPostprocessSolution(
     }
   }
 
-  // Diagnostic: count violations pre/post retained-variable override.
-  // This helps determine if the override is introducing violations.
-  {
-    // Count pure-int violations in postProcessSol (before override).
-    int violPre = 0, violPost = 0;
-    for (int r = 0; r < nRows; r++) {
-      if (!pureInt[r])
-        continue;
-      double lhsPre = 0.0, lhsPost = 0.0;
-      const int s = rowMtx->getVectorStarts()[r];
-      const int rl = rowMtx->getVectorLengths()[r];
-      for (int k = 0; k < rl; k++) {
-        int c = rowMtx->getIndices()[s + k];
-        double e = rowMtx->getElements()[s + k];
-        if (c < (int)postProcessSol.size())
-          lhsPre += e * postProcessSol[c];
-        lhsPost += e * repSol[c];
-      }
-      if (std::max(rowLb[r] - lhsPre, lhsPre - rowUb[r]) > 1e-6)
-        violPre++;
-      if (std::max(rowLb[r] - lhsPost, lhsPost - rowUb[r]) > 1e-6)
-        violPost++;
+  // Pre-compute forced values from singleton rows in the original model.
+  // A singleton row (exactly 1 variable, coefficient != 0) with a tight RHS
+  // uniquely determines that variable's value from the constraint alone.
+  // These forced values take priority over oracle values, because OsiPresolve
+  // may have COMPLEMENTED variables (transforming x → 1-x or x → ub-x) so
+  // that babBest[pre] is the VALUE OF THE COMPLEMENT, not the original variable.
+  // Singleton rows always encode the original-model constraint faithfully.
+  std::vector< double > singletonForced(nCols, std::numeric_limits< double >::quiet_NaN());
+  for (int r = 0; r < nRows; r++) {
+    const int rs = rowMtx->getVectorStarts()[r];
+    const int rl = rowMtx->getVectorLengths()[r];
+    if (rl != 1)
+      continue;
+    int col = rowMtx->getIndices()[rs];
+    if (!originalSolver->isInteger(col))
+      continue;
+    double coeff = rowMtx->getElements()[rs];
+    if (fabs(coeff) < 1e-12)
+      continue;
+    double rLb = rowLb[r], rUb = rowUb[r];
+    // Range for col value implied by the row constraint
+    double colRangeMin = (coeff > 0) ? rLb / coeff : rUb / coeff;
+    double colRangeMax = (coeff > 0) ? rUb / coeff : rLb / coeff;
+    // Intersect with variable bounds
+    colRangeMin = std::max(colRangeMin, origColLb[col]);
+    colRangeMax = std::min(colRangeMax, origColUb[col]);
+    double lo = ceil(colRangeMin - 1e-8);
+    double hi = floor(colRangeMax + 1e-8);
+    if (lo > hi + 0.5)
+      continue; // infeasible singleton — skip
+    if (hi - lo < 0.5) { // unique integer forced
+      singletonForced[col] = lo;
     }
-    if (violPre > 0 || violPost > 0)
-      fprintf(stderr, "[CbcRepairPostprocess] violations pre-override=%d post-override=%d\n",
-        violPre, violPost);
   }
-  //
-  // OsiPresolve back-substitution can leave eliminated integer variables
-  // with fractional values (cascading floating-point errors through the
-  // multi-pass postsolve chain).  Rounding each such variable in the
-  // direction that most reduces the total violation across all rows it
-  // appears in fixes the vast majority of violations without any search.
-  // Retained variables (from origCols) already have exact B&B values
-  // and are skipped.
-  {
-    // Mark retained variables.
-    std::vector< bool > isRetained(nCols, false);
-    if (babModel->bestSolution()) {
-      int nPrep = babModel->solver()->getNumCols();
-      const int *origCols = process.originalColumns();
-      for (int i = 0; i < nPrep; i++) {
-        int j = origCols[i];
-        if (j >= 0 && j < nCols)
-          isRetained[j] = true;
-      }
-    }
 
+  // Build an oracle: for each original-model integer column, the correct
+  // integer value as determined by the B&B best solution.
+  // CglPreProcess::originalColumns() maps preprocessed-model column index →
+  // original-model column index, so we invert it here.
+  // babModel->bestSolution() is in the presolved (OsiPresolve) variable space.
+  // We apply oracle to ALL presolved-mapped variables — not just fractional ones —
+  // because the LP re-solves in postProcess can also leave non-fractional integer
+  // variables at LP-optimal values that differ from the B&B optimal.  Applying
+  // all 1100 oracle anchors before propagation gives the correct starting point
+  // for reconstructing the full original-space B&B solution.
+  // NOTE: if a singleton row forces a different value than the oracle, the singleton
+  // wins (oracle can be incorrect for OsiPresolve-complemented variables).
+  std::vector< double > oracle(nCols, std::numeric_limits< double >::quiet_NaN());
+  if (babModel && babModel->bestSolution()) {
+    const double *babBest = babModel->bestSolution();
+    int nBabCols = babModel->getNumCols();
+    const int *origColsMap = process.originalColumns(); // preprocessed → original
+    for (int pre = 0; pre < nBabCols; pre++) {
+      int orig = origColsMap ? origColsMap[pre] : pre;
+      if (orig >= 0 && orig < nCols && originalSolver->isInteger(orig))
+        oracle[orig] = floor(babBest[pre] + 0.5);
+    }
+  }
+
+  // anchored[col]: variable has been set to a trusted integer value (either
+  // directly from the B&B oracle, fixed by variable bounds lb==ub, or forced
+  // by a singleton row constraint).
+  // Anchored variables are used as the base for constraint propagation to
+  // reconstruct the values of variables that were eliminated by OsiPresolve.
+  std::vector< bool > anchored(nCols, false);
+
+  // Phase 1: set integer variables to their B&B optimal or constraint-forced
+  // values. Priority order:
+  //   1. Bounds-fixed (lb == ub): variable is fixed regardless.
+  //   2. Singleton-forced: a single-variable row uniquely determines the value.
+  //      This OVERRIDES oracle because OsiPresolve may have complemented the
+  //      variable (oracle gives the complement value, not the original).
+  //   3. Oracle: B&B solution value from presolved space.
+  // Variables with none of the above are left for Phase 1b propagation.
+  {
     for (int col = 0; col < nCols; col++) {
-      if (isRetained[col])
-        continue;
       if (!originalSolver->isInteger(col))
         continue;
-      double fl = floor(repSol[col]);
-      double ce = fl + 1.0;
-      // Skip if already integer.
-      if (fabs(repSol[col] - fl) < 1e-10 || fabs(repSol[col] - ce) < 1e-10)
+      double lb = origColLb[col];
+      double ub = origColUb[col];
+      if (ub - lb < 0.5) {
+        // Bounds-fixed variable: anchor at midpoint.
+        double fixedVal = floor(lb + 0.5);
+        double delta = fixedVal - repSol[col];
+        if (fabs(delta) > 1e-10) {
+          const int cs = colMtx->getVectorStarts()[col];
+          const int cl = colMtx->getVectorLengths()[col];
+          for (int k = 0; k < cl; k++)
+            lhs[colMtx->getIndices()[cs + k]] += delta * colMtx->getElements()[cs + k];
+          repSol[col] = fixedVal;
+          changed[col] = true;
+        }
+        anchored[col] = true;
         continue;
+      }
+      // Determine the value to anchor: singleton-forced takes priority over oracle.
+      double anchorVal = std::numeric_limits< double >::quiet_NaN();
+      bool lockIt = false;
+      if (!std::isnan(singletonForced[col])) {
+        anchorVal = singletonForced[col]; // constraint-forced value
+        lockIt = true; // singleton-pinned: Phase 2 must not move this variable
+      } else if (!std::isnan(oracle[col])) {
+        anchorVal = floor(oracle[col] + 0.5);
+        anchorVal = std::max(lb, std::min(ub, anchorVal));
+      }
+      if (std::isnan(anchorVal))
+        continue; // no oracle and no singleton force — handle in Phase 1b
+      double delta = anchorVal - repSol[col];
+      if (fabs(delta) > 1e-10) {
+        const int cs = colMtx->getVectorStarts()[col];
+        const int cl = colMtx->getVectorLengths()[col];
+        for (int k = 0; k < cl; k++)
+          lhs[colMtx->getIndices()[cs + k]] += delta * colMtx->getElements()[cs + k];
+        repSol[col] = anchorVal;
+        changed[col] = true;
+      }
+      anchored[col] = true;
+      if (lockIt)
+        locked[col] = true;
+    }
+  }
 
+  // Phase 1.5: Conflict propagation from locked (singleton-constrained) variables.
+  // Oracle values from the presolved space may be wrong for OsiPresolve-complemented
+  // variables.  When a locked variable forces a row constraint to be infeasible
+  // (because the oracle set another variable to the wrong value), we adjust the
+  // non-locked variable to restore feasibility.
+  // This is the "bound propagation" step the user described: if fixing locked vars
+  // + oracle vars creates an infeasibility, it definitely means some oracle value
+  // is wrong, so we correct it here.
+  // Iterates until no more corrections are possible.
+  {
+    bool progress = true;
+    while (progress) {
+      progress = false;
+      for (int r = 0; r < nRows; r++) {
+        if (!pureInt[r])
+          continue;
+        double viol_lo = rowLb[r] - lhs[r]; // positive: lhs too low
+        double viol_hi = lhs[r] - rowUb[r]; // positive: lhs too high
+        if (viol_lo <= 1e-6 && viol_hi <= 1e-6)
+          continue; // row satisfied
+
+        const int rs = rowMtx->getVectorStarts()[r];
+        const int rl = rowMtx->getVectorLengths()[r];
+
+        // Only adjust if row contains at least one locked variable
+        // (i.e., the violation is caused by a locked var constraining others).
+        bool hasLocked = false;
+        for (int k = 0; k < rl; k++)
+          if (locked[rowMtx->getIndices()[rs + k]]) {
+            hasLocked = true;
+            break;
+          }
+        if (!hasLocked)
+          continue;
+
+        // Correct non-locked integer variables that contribute to the violation.
+        for (int k = 0; k < rl; k++) {
+          int c = rowMtx->getIndices()[rs + k];
+          if (locked[c])
+            continue;
+          if (!originalSolver->isInteger(c))
+            continue;
+          double coeff = rowMtx->getElements()[rs + k];
+          if (fabs(coeff) < 1e-12)
+            continue;
+
+          double cur = repSol[c];
+          double cLb = origColLb[c];
+          double cUb = origColUb[c];
+          double newVal = cur;
+
+          if (viol_hi > 1e-6 && coeff > 0 && cur > cLb + 1e-8) {
+            // lhs too high: decrease this variable toward its lower bound.
+            double decrease = std::min(viol_hi / coeff, cur - cLb);
+            newVal = std::max(cLb, floor(cur - decrease + 1e-8));
+          } else if (viol_lo > 1e-6 && coeff > 0 && cur < cUb - 1e-8) {
+            // lhs too low: increase this variable toward its upper bound.
+            double increase = std::min(viol_lo / coeff, cUb - cur);
+            newVal = std::min(cUb, ceil(cur + increase - 1e-8));
+          } else if (viol_hi > 1e-6 && coeff < 0 && cur < cUb - 1e-8) {
+            // lhs too high: increase negative-coeff var to decrease lhs.
+            double increase = std::min(viol_hi / (-coeff), cUb - cur);
+            newVal = std::min(cUb, ceil(cur + increase - 1e-8));
+          } else if (viol_lo > 1e-6 && coeff < 0 && cur > cLb + 1e-8) {
+            // lhs too low: decrease negative-coeff var to increase lhs.
+            double decrease = std::min(viol_lo / (-coeff), cur - cLb);
+            newVal = std::max(cLb, floor(cur - decrease + 1e-8));
+          } else {
+            continue;
+          }
+
+          double delta = newVal - cur;
+          if (fabs(delta) < 1e-10)
+            continue;
+          const int cs = colMtx->getVectorStarts()[c];
+          const int cl = colMtx->getVectorLengths()[c];
+          for (int kk = 0; kk < cl; kk++)
+            lhs[colMtx->getIndices()[cs + kk]] += delta * colMtx->getElements()[cs + kk];
+          repSol[c] = newVal;
+          changed[c] = true;
+          anchored[c] = true; // re-anchor at corrected value
+          // Recompute violations for this row after change
+          viol_lo = rowLb[r] - lhs[r];
+          viol_hi = lhs[r] - rowUb[r];
+          progress = true;
+        }
+      }
+    }
+  }
+
+  // Phase 1b: constraint propagation for non-anchored integer variables.
+  // Variables eliminated by OsiPresolve have no oracle.  Many appear in
+  // pure-integer rows where all OTHER variables are now anchored.  Scan
+  // iteratively for such "singleton" rows and fix the remaining variable.
+  // This reconstructs the back-substitution that OsiPresolve would perform,
+  // without needing access to the presolve chain.
+  // Handles set-partitioning/covering patterns: sum(x_i)=1, where oracle
+  // anchored k-1 variables and the remaining one is uniquely determined.
+  {
+    bool progress = true;
+    while (progress) {
+      progress = false;
+      for (int r = 0; r < nRows; r++) {
+        if (!pureInt[r])
+          continue;
+        const int rs = rowMtx->getVectorStarts()[r];
+        const int rl = rowMtx->getVectorLengths()[r];
+        // Find the single non-anchored variable in this row.
+        int freeCol = -1;
+        int freeCount = 0;
+        double residual = 0.0;
+        for (int k = 0; k < rl; k++) {
+          int col = rowMtx->getIndices()[rs + k];
+          if (!anchored[col]) {
+            freeCount++;
+            freeCol = col;
+          } else {
+            residual += rowMtx->getElements()[rs + k] * repSol[col];
+          }
+        }
+        if (freeCount != 1)
+          continue;
+
+        double coeff = 0.0;
+        for (int k = 0; k < rl; k++)
+          if (rowMtx->getIndices()[rs + k] == freeCol)
+            coeff = rowMtx->getElements()[rs + k];
+        if (fabs(coeff) < 1e-12)
+          continue;
+
+        double lb2 = origColLb[freeCol];
+        double ub2 = origColUb[freeCol];
+        double requiredLo = (rowLb[r] - residual) / coeff;
+        double requiredHi = (rowUb[r] - residual) / coeff;
+        if (coeff < 0)
+          std::swap(requiredLo, requiredHi);
+        requiredLo = std::max(lb2, ceil(requiredLo - 1e-8));
+        requiredHi = std::min(ub2, floor(requiredHi + 1e-8));
+        if (requiredLo > requiredHi + 0.5)
+          continue;
+
+        double nearest = floor(repSol[freeCol] + 0.5);
+        double chosen = std::max(requiredLo, std::min(requiredHi, nearest));
+        double delta = chosen - repSol[freeCol];
+        if (fabs(delta) > 1e-10) {
+          const int cs = colMtx->getVectorStarts()[freeCol];
+          const int cl = colMtx->getVectorLengths()[freeCol];
+          for (int k = 0; k < cl; k++)
+            lhs[colMtx->getIndices()[cs + k]] += delta * colMtx->getElements()[cs + k];
+          repSol[freeCol] = chosen;
+          changed[freeCol] = true;
+        }
+        anchored[freeCol] = true;
+        progress = true;
+      }
+    }
+  }
+
+  // Phase 1c: nearest-integer fallback for any remaining non-anchored integer
+  // variables that constraint propagation could not determine.  Phase 2/3 will
+  // repair any constraint violations introduced by this rounding.
+  {
+    for (int col = 0; col < nCols; col++) {
+      if (!originalSolver->isInteger(col) || anchored[col])
+        continue;
+      double v = repSol[col];
+      double fl = floor(v);
+      double ce = fl + 1.0;
       double lb = origColLb[col];
       double ub = origColUb[col];
       if (ub - lb < 0.5)
-        continue; // fixed variable
-
-      const int cs = colMtx->getVectorStarts()[col];
-      const int cl = colMtx->getVectorLengths()[col];
-      const int *cIdx = colMtx->getIndices() + cs;
-      const double *cElem = colMtx->getElements() + cs;
-      double deltaDown = fl - repSol[col]; // < 0
-      double deltaUp = ce - repSol[col]; // > 0
-
-      // Compute net violation change for rounding down vs up.
-      double gainDown = 0.0, gainUp = 0.0;
-      for (int k = 0; k < cl; k++) {
-        int r = cIdx[k];
-        if (!pureInt[r])
-          continue;
-        double curViol = std::max(rowLb[r] - lhs[r], lhs[r] - rowUb[r]);
-        if (curViol <= 0.0)
-          continue;
-        double adr = deltaDown * cElem[k];
-        double aur = deltaUp * cElem[k];
-        double newLhsD = lhs[r] + adr;
-        double newLhsU = lhs[r] + aur;
-        gainDown += curViol - std::max(0.0, std::max(rowLb[r] - newLhsD, newLhsD - rowUb[r]));
-        gainUp += curViol - std::max(0.0, std::max(rowLb[r] - newLhsU, newLhsU - rowUb[r]));
-      }
-
-      double bestRound;
-      if (gainDown >= gainUp && fl >= lb)
-        bestRound = fl;
-      else if (ce <= ub)
-        bestRound = ce;
-      else if (fl >= lb)
-        bestRound = fl;
-      else
-        continue; // out of bounds both directions — skip
-
-      // Clamp to bounds.
-      bestRound = std::max(lb, std::min(ub, bestRound));
-      double delta = bestRound - repSol[col];
+        continue;
+      double rounded = (v - fl >= 0.5) ? ce : fl;
+      rounded = std::max(lb, std::min(ub, rounded));
+      double delta = rounded - v;
       if (fabs(delta) < 1e-10)
         continue;
-
-      // Commit the rounding.
+      const int cs = colMtx->getVectorStarts()[col];
+      const int cl = colMtx->getVectorLengths()[col];
       for (int k = 0; k < cl; k++)
-        lhs[cIdx[k]] += delta * cElem[k];
-      repSol[col] = bestRound;
+        lhs[colMtx->getIndices()[cs + k]] += delta * colMtx->getElements()[cs + k];
+      repSol[col] = rounded;
       changed[col] = true;
+      anchored[col] = true;
     }
   }
 
@@ -401,6 +564,8 @@ void CbcRepairPostprocessSolution(
             seen[c] = true;
             if (!originalSolver->isInteger(c))
               continue;
+            if (locked[c])
+              continue;
 
             for (int dir : { -1, 1 }) {
               double nv = repSol[c] + dir;
@@ -508,12 +673,14 @@ void CbcRepairPostprocessSolution(
 
         const int dfsMaxDepth = 8;
         const int dfsMaxViol = bestViol + 2;
+        const int dfsNodeLimit = 50000;
+        int dfsNodes = 0;
         bool solved3b = false;
 
         std::function< bool(int, int, int, int) > dfs3b = [&](int depth, int curV, int prevC, int prevD) -> bool {
           if (curV == 0)
             return true;
-          if (depth >= dfsMaxDepth)
+          if (depth >= dfsMaxDepth || dfsNodes >= dfsNodeLimit)
             return false;
           // Collect candidate (col,dir) pairs from violated rows.
           std::vector< int > cCols;
@@ -522,7 +689,7 @@ void CbcRepairPostprocessSolution(
             const int rl3 = rowMtx->getVectorLengths()[r];
             for (int ki3 = 0; ki3 < rl3; ki3++) {
               int cc = rowMtx->getIndices()[rs3 + ki3];
-              if (originalSolver->isInteger(cc))
+              if (originalSolver->isInteger(cc) && !locked[cc])
                 cCols.push_back(cc);
             }
           }
@@ -535,6 +702,7 @@ void CbcRepairPostprocessSolution(
               double nval = repSol[c] + d;
               if (nval < origColLb[c] - 1e-10 || nval > origColUb[c] + 1e-10)
                 continue;
+              ++dfsNodes;
               int delta = apply3b(c, d);
               int newV = curV + delta;
               if (newV <= dfsMaxViol && dfs3b(depth + 1, newV, c, d)) {
@@ -555,32 +723,6 @@ void CbcRepairPostprocessSolution(
         } else {
           repSol = bestRepSol;
           lhs = bestLhs;
-          // Diagnostic: print details of remaining violations so we can
-          // understand why the repair failed.
-          fprintf(stderr, "[CbcRepairPostprocess] REPAIR FAILED: %d violation(s) remain.\n", bestViol);
-          for (int r = 0; r < nRows; r++) {
-            if (!pureInt[r])
-              continue;
-            double viol = std::max(rowLb[r] - lhs[r], lhs[r] - rowUb[r]);
-            if (viol <= 1e-6)
-              continue;
-            fprintf(stderr, "  Row %d: lhs=%.10g lb=%.10g ub=%.10g viol=%.10g\n",
-              r, lhs[r], rowLb[r], rowUb[r], viol);
-            const int rs2 = rowMtx->getVectorStarts()[r];
-            const int rl2 = rowMtx->getVectorLengths()[r];
-            for (int ki2 = 0; ki2 < rl2; ki2++) {
-              int c = rowMtx->getIndices()[rs2 + ki2];
-              double coeff = rowMtx->getElements()[rs2 + ki2];
-              double ppVal = (c < (int)postProcessSol.size()) ? postProcessSol[c] : -999.0;
-              double repVal = repSol[c];
-              bool retained = (c < (int)isRetainedEarly.size()) ? isRetainedEarly[c] : false;
-              fprintf(stderr,
-                "    col %d coeff=%.6g repSol=%.6g postProcess=%.6g retained=%d"
-                " lb=%.6g ub=%.6g\n",
-                c, coeff, repVal, ppVal, (int)retained,
-                origColLb[c], origColUb[c]);
-            }
-          }
         }
       }
 
@@ -592,12 +734,8 @@ void CbcRepairPostprocessSolution(
     }
   }
 
-  // Inject the final repSol back into saveSolver.
-  // This is needed because repSol may have been corrected via the
-  // column mapping (overriding wrong back-substituted values) even
-  // when no greedy repair flips occurred.
-  // Additionally, fix all integer variables at their repSol values so
-  // that the subsequent LP solves do not overwrite them.
+  // Inject the final repSol back into saveSolver and fix integer variable
+  // bounds so that subsequent LP solves preserve the repaired values.
   for (int col = 0; col < nCols; col++) {
     if (saveSolver->isInteger(col)) {
       double val = floor(repSol[col] + 0.5);

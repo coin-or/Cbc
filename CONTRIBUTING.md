@@ -119,7 +119,7 @@ Debug builds install automatically to `$MIPSTER_PREFIX-dbg` (AddressSanitizer) a
 
 ```sh
 # Configure, build, and install the full stack in one command:
-./Cbc/scripts/configster --opt --install
+./configster --opt --install
 
 # Verify:
 $MIPSTER_PREFIX/bin/mipster --help
@@ -127,7 +127,7 @@ $MIPSTER_PREFIX/bin/mipster --help
 
 For a debug build with AddressSanitizer:
 ```sh
-./Cbc/scripts/configster --debug --sanitizer=asan --install
+./configster --debug --sanitizer=asan --install
 ```
 
 See [`AGENTS.md`](AGENTS.md) for the full build reference including incremental rebuilds, adding new source files, and sanitizer options.

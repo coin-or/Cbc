@@ -1,0 +1,1198 @@
+#!/usr/bin/env bash
+# ══════════════════════════════════════════════════════════════════════════════
+#  configster  ─  Unified configure / build / install for MIPster
+#
+#  Usage (non-interactive):
+#    ./cbc_configure.sh [OPTIONS]
+#
+#  Usage (interactive TUI – run with no arguments on a terminal):
+#    ./cbc_configure.sh
+#    ./cbc_configure.sh --interactive
+#
+#  Options:
+#   Build mode:
+#     --opt                    Optimised build (-O3)          [default]
+#     --debug                  Debug build (-O1 -g)
+#
+#   Sanitiser (debug only):
+#     --sanitizer=none         No sanitiser                   [default]
+#     --sanitizer=asan         AddressSanitizer
+#     --sanitizer=tsan         ThreadSanitizer
+#     --sanitizer=valgrind     Valgrind-friendly (no ASan/TSan, keeps frame ptrs)
+#
+#   Compiler optimisations:
+#     --march-native           -march=native -mtune=native -ffp-contract=off  [default: ON]
+#     --no-march-native        Disable arch-specific opts
+#     --avx2                   -DCOIN_AVX2=4 (x86_64 only)   [default: OFF]
+#     --no-avx2                Omit -DCOIN_AVX2=4 (default)
+#     --neon                   -DCOIN_NEON   (aarch64 only)  [default: OFF]
+#     --no-neon                Omit -DCOIN_NEON (default)
+#
+#   Note: -march=native already enables AVX2/FMA/NEON instruction generation
+#   for auto-vectorisation on capable CPUs.  --avx2/--neon only control the
+#   hand-written SIMD code paths in ClpSimplexDual::dualColumn0().  Keeping
+#   them separate from --march-native allows clean A/B experiments.
+#
+#   -ffp-contract=off is always added on aarch64 (FMADD is in the base ISA
+#   so GCC may emit FMA with -O3 alone), and on x86_64 only when --march-native
+#   is active (FMA3 is not in the x86-64 baseline).
+#
+#   Library type:
+#     --static                 Static libs only               [default]
+#     --shared                 Shared libs only
+#     --both                   Both static and shared
+#
+#   External libraries:
+#     --openblas               Link OpenBLAS (LAPACK/BLAS for dense LU)    [default: ON]
+#     --no-openblas            Disable OpenBLAS; pure sparse factorisation only
+#                              Impact: slightly slower dense subproblems; eliminates
+#                              BLAS thread-count issues in parallel experiments.
+#     --amd                    Link AMD/CHOLMOD (UFL barrier Cholesky)      [default: ON]
+#     --no-amd                 Disable AMD/CHOLMOD; barrier uses native Cholesky
+#                              Impact: -barrier -cholesky UniversityOfFlorida unavailable.
+#     --mumps                  Link MUMPS (sparse direct solver for barrier) [default: OFF]
+#     --no-mumps               Disable MUMPS                                 [default]
+#                              Impact when ON: enables -barrier -cholesky Mumps;
+#                              multi-frontal factorisation for large barrier problems.
+#                              Requires: sudo apt install libmumps-dev
+#     --aboca=N                Aboca parallel simplex: 0=off, 1=serial AbcSimplex,  [default: 0]
+#                              2=serial+inherit (routes all LP solves through AbcSimplex)
+#                              Impact: can accelerate LP relaxations on large problems;
+#                              Cilk levels (3,4) require Intel ICC or patched GCC.
+#
+#   Build options:
+#     --prefix=PATH            Install prefix                 [default: ~/prog/mipster or variant]
+#     --jobs=N                 Parallel make jobs             [default: nproc]
+#     --no-parallel-cbc        Disable --enable-cbc-parallel  [default: ON]
+#
+#   Post-configure:
+#     --build                  Run build after configure
+#     --install                Run install after build (implies --build)
+#
+#   Other:
+#     --interactive, -i        Force TUI even when arguments are given
+#     --dry-run                Show what would be run without executing
+#     --help, -h               Show this help
+# ══════════════════════════════════════════════════════════════════════════════
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
+# REPO_DIR: the Cbc monorepo root (parent of scripts/)
+# WORKSPACE_DIR: workspace root containing sibling scripts (cbc_build.sh, etc.)
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
+WORKSPACE_DIR="$(dirname "$REPO_DIR")"
+WORKSPACE_NAME="$(basename "$WORKSPACE_DIR")"
+ARCH="$(uname -m)"
+NPROC="$(nproc 2>/dev/null || echo 4)"
+PROJECTS=(Cbc)
+
+# ── ANSI colours (auto-disabled when not a terminal) ─────────────────────────
+if [[ -t 1 ]]; then
+  BOLD=$'\e[1m';  RESET=$'\e[0m';   DIM=$'\e[2m'
+  RED=$'\e[31m';  GREEN=$'\e[32m';  YELLOW=$'\e[33m'
+  CYAN=$'\e[36m'; MAGENTA=$'\e[35m'; BLUE=$'\e[34m'
+else
+  BOLD=''; RESET=''; DIM=''; RED=''; GREEN=''
+  YELLOW=''; CYAN=''; MAGENTA=''; BLUE=''
+fi
+
+# ── Defaults ─────────────────────────────────────────────────────────────────
+OPT_BUILD_MODE="opt"       # opt | debug
+OPT_SANITIZER="none"       # none | asan | tsan | valgrind
+OPT_MARCH_NATIVE=1         # 1=on 0=off
+OPT_AVX2=0                 # 1=on 0=off  (only applies on x86_64; adds -DCOIN_AVX2=4)
+OPT_NEON=0                 # 1=on 0=off  (only applies on aarch64; adds -DCOIN_NEON)
+OPT_LIB_TYPE="static"      # static | shared | both
+OPT_PREFIX=""              # auto-derived if empty
+OPT_JOBS="$NPROC"
+OPT_CBC_PARALLEL=1         # 1=on 0=off
+OPT_OPENBLAS=1             # 1=on 0=off
+OPT_AMD=1                  # 1=on 0=off
+OPT_MUMPS=0                # 1=on 0=off
+OPT_ABOCA=0                # 0=off 1=serial 2=serial+inherit 3=Cilk 4=Cilk+inherit
+OPT_DO_BUILD=0
+OPT_DO_INSTALL=0
+OPT_DRY_RUN=0
+OPT_INTERACTIVE=0
+_ARGS_GIVEN=0              # track whether any CLI args were provided
+
+# ── Usage ─────────────────────────────────────────────────────────────────────
+usage() {
+  grep '^#  ' "${BASH_SOURCE[0]}" | sed 's/^#  //'
+}
+
+# ── Parse CLI arguments ───────────────────────────────────────────────────────
+parse_args() {
+  local -a unknown=()
+  for arg in "$@"; do
+    _ARGS_GIVEN=1
+    case "$arg" in
+      --opt)               OPT_BUILD_MODE="opt"  ;;
+      --debug)             OPT_BUILD_MODE="debug" ;;
+      --sanitizer=*)       OPT_SANITIZER="${arg#--sanitizer=}" ;;
+      --march-native)      OPT_MARCH_NATIVE=1 ;;
+      --no-march-native)   OPT_MARCH_NATIVE=0 ;;
+      --avx2)              OPT_AVX2=1 ;;
+      --no-avx2)           OPT_AVX2=0 ;;
+      --neon)              OPT_NEON=1 ;;
+      --no-neon)           OPT_NEON=0 ;;
+      --static)            OPT_LIB_TYPE="static" ;;
+      --shared)            OPT_LIB_TYPE="shared" ;;
+      --both)              OPT_LIB_TYPE="both"   ;;
+      --prefix=*)          OPT_PREFIX="${arg#--prefix=}" ;;
+      --jobs=*)            OPT_JOBS="${arg#--jobs=}" ;;
+      --no-parallel-cbc)   OPT_CBC_PARALLEL=0 ;;
+      --openblas)          OPT_OPENBLAS=1 ;;
+      --no-openblas)       OPT_OPENBLAS=0 ;;
+      --amd)               OPT_AMD=1 ;;
+      --no-amd)            OPT_AMD=0 ;;
+      --mumps)             OPT_MUMPS=1 ;;
+      --no-mumps)          OPT_MUMPS=0 ;;
+      --aboca=*)           OPT_ABOCA="${arg#--aboca=}" ;;
+      --build)             OPT_DO_BUILD=1 ;;
+      --install)           OPT_DO_BUILD=1; OPT_DO_INSTALL=1 ;;
+      --interactive|-i)    OPT_INTERACTIVE=1 ;;
+      --dry-run)           OPT_DRY_RUN=1 ;;
+      --help|-h)           usage; exit 0 ;;
+      *) unknown+=("$arg") ;;
+    esac
+  done
+  if [[ ${#unknown[@]} -gt 0 ]]; then
+    echo "${RED}Unknown arguments: ${unknown[*]}${RESET}" >&2
+    echo "Run '$SCRIPT_NAME --help' for usage." >&2
+    exit 1
+  fi
+}
+
+# ── Validation ────────────────────────────────────────────────────────────────
+validate_opts() {
+  case "$OPT_SANITIZER" in
+    none|asan|tsan|msan|valgrind) ;;
+    *) echo "${RED}Invalid sanitizer '${OPT_SANITIZER}'. Use: none asan tsan msan valgrind${RESET}" >&2; exit 1 ;;
+  esac
+  case "$OPT_LIB_TYPE" in
+    static|shared|both) ;;
+    *) echo "${RED}Invalid library type '${OPT_LIB_TYPE}'. Use: static shared both${RESET}" >&2; exit 1 ;;
+  esac
+  if [[ ! "$OPT_JOBS" =~ ^[1-9][0-9]*$ ]]; then
+    echo "${RED}Invalid jobs value '${OPT_JOBS}'. Must be a positive integer.${RESET}" >&2; exit 1
+  fi
+  # AVX2 is x86_64-only; NEON is aarch64-only — silently disable on other arches.
+  # Use || form (not &&) so the expression always returns 0, avoiding a set -e
+  # exit when the condition is false and the assignment is short-circuited.
+  [[ "$ARCH" == "x86_64"  ]] || OPT_AVX2=0
+  [[ "$ARCH" == "aarch64" ]] || OPT_NEON=0
+  if [[ ! "$OPT_ABOCA" =~ ^[0-4]$ ]]; then
+    echo "${RED}Invalid aboca value '${OPT_ABOCA}'. Use: 0 1 2 3 4${RESET}" >&2; exit 1
+  fi
+}
+
+# ── Derive install prefix if not set by user ──────────────────────────────────
+derive_prefix() {
+  [[ -n "$OPT_PREFIX" ]] && return
+  local base="$HOME/prog/mipster"
+  # Sanitizer suffix takes priority; build-mode suffix is a fallback for non-opt debug builds
+  case "$OPT_SANITIZER" in
+    asan)     OPT_PREFIX="${base}-asan"  ;;
+    tsan)     OPT_PREFIX="${base}-tsan" ;;
+    valgrind) OPT_PREFIX="${base}-vg"   ;;
+    msan)     OPT_PREFIX="${base}-msan" ;;
+    *)
+      if [[ "$OPT_BUILD_MODE" == "opt" ]]; then
+        OPT_PREFIX="$base"
+      else
+        OPT_PREFIX="${base}-dbg"
+      fi ;;
+  esac
+}
+
+# Some stable release tags keep the real package in <repo>/<repo>/ and expose an
+# outer wrapper configure.ac at <repo>/configure.ac.  Use the nested package dir
+# when present so package-specific options (AMD, etc.) stay available.
+# When the monorepo root (REPO_DIR) is itself the project directory (e.g. the
+# repo is named "mipster" but the project is "Cbc"), fall back to REPO_DIR.
+_project_dir() {
+  local project="$1"
+  local root="${WORKSPACE_DIR}/${project}"
+  local nested="${root}/${project}"
+  if [[ -f "${root}/configure.ac" && -f "${nested}/configure.ac" ]] \
+     && grep -q 'AC_COIN_MAIN_PACKAGEDIR' "${root}/configure.ac"; then
+    echo "$nested"
+  elif [[ ! -d "$root" && -f "${REPO_DIR}/configure.ac" ]]; then
+    echo "$REPO_DIR"
+  else
+    echo "$root"
+  fi
+}
+
+_project_configure() {
+  echo "$(_project_dir "$1")/configure"
+}
+
+_project_supports_opt() {
+  local project="$1" opt="$2"
+  grep -q -- "$opt" "$(_project_configure "$project")"
+}
+
+_first_include_dir() {
+  local tok
+  for tok in $1; do
+    case "$tok" in
+      -I*) echo "${tok#-I}"; return ;;
+    esac
+  done
+}
+
+_append_with_lib_opt() {
+  local project="$1" pkg="$2" libs="$3"
+  if _project_supports_opt "$project" "--with-${pkg}-lflags"; then
+    _EXTRA_OPTS+=("--with-${pkg}-lflags=${libs}")
+  else
+    _EXTRA_OPTS+=("--with-${pkg}-lib=${libs}")
+  fi
+}
+
+_append_with_inc_lib_opts() {
+  local project="$1" pkg="$2" inc_flags="$3" libs="$4"
+  if _project_supports_opt "$project" "--with-${pkg}-cflags"; then
+    _EXTRA_OPTS+=(
+      "--with-${pkg}-cflags=${inc_flags}"
+      "--with-${pkg}-lflags=${libs}"
+    )
+    return
+  fi
+
+  local incdir
+  incdir="$(_first_include_dir "$inc_flags")"
+  if [[ -n "$incdir" ]]; then
+    _EXTRA_OPTS+=("--with-${pkg}-incdir=${incdir}")
+  fi
+  _EXTRA_OPTS+=("--with-${pkg}-lib=${libs}")
+}
+
+# ── Detect architecture-specific library paths ───────────────────────────────
+detect_lib_paths() {
+  # Locate brew; also probe its bin directory directly so the script works
+  # even when brew bin is appended to PATH (after /usr/bin) or absent entirely.
+  # Declared without `local` so run_configure/_find_compiler can reuse it.
+  BREW_PREFIX=""
+  if command -v brew &>/dev/null; then
+    BREW_PREFIX="$(brew --prefix 2>/dev/null || true)"
+  else
+    for _bp in /home/linuxbrew/.linuxbrew /opt/homebrew /usr/local; do
+      if [[ -x "${_bp}/bin/brew" ]]; then
+        BREW_PREFIX="$_bp"
+        break
+      fi
+    done
+  fi
+
+  # Helper: try pkg-config with a given pkgconfig search path.
+  # Returns 1 (empty output) if pkg-config is not installed — callers fall
+  # back to their hardcoded system paths in that case.
+  _pkgcfg() {
+    command -v pkg-config &>/dev/null || return 1
+    local pcpath="$1" flag="$2" pkg="$3"
+    PKG_CONFIG_PATH="${pcpath}${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}" \
+      pkg-config "$flag" "$pkg" 2>/dev/null
+  }
+
+  # ── OpenBLAS ──────────────────────────────────────────────────────────────
+  # Prefer brew (0.3.32) over system apt (0.3.26); brew pkg-config is reliable.
+  if [[ -n "$BREW_PREFIX" && -d "${BREW_PREFIX}/opt/openblas" ]]; then
+    local ob_pc="${BREW_PREFIX}/opt/openblas/lib/pkgconfig"
+    local _ob_cflags _ob_libs
+    _ob_cflags="$(_pkgcfg "$ob_pc" --cflags openblas)"
+    _ob_libs="$(_pkgcfg "$ob_pc" --libs openblas)"
+    # Many OpenBLAS builds emit -fopenmp in their pkg-config flags because
+    # OpenBLAS uses OpenMP internally.  We must strip it completely from both
+    # CXXFLAGS and LDFLAGS:
+    #   • In CXXFLAGS: -fopenmp defines _OPENMP, making SuiteSparse_config.h
+    #     pull in omp.h inside an extern "C" block.  GCC's omp.h has C++
+    #     templates that are illegal in that context → configure error.
+    #   • In LDFLAGS: -fopenmp is also a compiler flag, so even the combined
+    #     compile+link configure test fails for the same reason.
+    # OpenBLAS's own RPATH already embeds the path to libgomp.so.1, so the
+    # OpenMP runtime is resolved automatically at load time — no explicit flag needed.
+    OPENBLAS_INC="${_ob_cflags//-fopenmp/}"
+    OPENBLAS_INC="${OPENBLAS_INC//  / }"   # collapse double-space left by strip
+    OPENBLAS_LIB="${_ob_libs//-fopenmp/}"
+    OPENBLAS_LIB="${OPENBLAS_LIB//  / }"
+  else
+    # System fallback: try Ubuntu multiarch pkgconfig path first, then
+    # system-wide pkg-config (Arch, Fedora, etc.), then hardcoded last resort.
+    local _ob_pc="/usr/lib/${ARCH}-linux-gnu/openblas-pthread/pkgconfig"
+    local _ob_cflags _ob_libs
+    _ob_cflags="$(_pkgcfg "$_ob_pc" --cflags openblas \
+                  || pkg-config --cflags openblas 2>/dev/null \
+                  || echo "-I/usr/include/${ARCH}-linux-gnu/openblas-pthread")"
+    _ob_libs="$(_pkgcfg "$_ob_pc" --libs openblas \
+                || pkg-config --libs openblas 2>/dev/null \
+                || echo "-L/usr/lib/${ARCH}-linux-gnu/openblas-pthread -lopenblas")"
+    # Strip -fopenmp — same issue as with brew (see comment above).
+    OPENBLAS_INC="${_ob_cflags//-fopenmp/}"
+    OPENBLAS_INC="${OPENBLAS_INC//  / }"
+    OPENBLAS_LIB="${_ob_libs//-fopenmp/}"
+    OPENBLAS_LIB="${OPENBLAS_LIB//  / }"
+  fi
+
+  # ── AMD / SuiteSparse ─────────────────────────────────────────────────────
+  # No Homebrew formula for AMD standalone; always system.
+  # Ubuntu ships 'amd' (lowercase) in a multiarch pkgconfig subdir.
+  # Arch/Fedora/etc. ship 'AMD' (uppercase) in the system pkgconfig path.
+  # Try each in order; fall back to hardcoded headers + bare -lamd.
+  local _sys_arch_lib="/usr/lib/${ARCH}-linux-gnu"
+  local _amd_pc="${_sys_arch_lib}/pkgconfig"
+  if _pkgcfg "$_amd_pc" --exists amd 2>/dev/null; then
+    # Ubuntu multiarch path
+    AMD_INC="$(_pkgcfg "$_amd_pc" --cflags-only-I amd)"
+    AMD_LIB="$(_pkgcfg "$_amd_pc" --libs amd) $(_pkgcfg "$_amd_pc" --libs suitesparseconfig 2>/dev/null || true)"
+  elif pkg-config --exists AMD 2>/dev/null; then
+    # Arch / Fedora (uppercase package name)
+    AMD_INC="$(pkg-config --cflags-only-I AMD 2>/dev/null)"
+    AMD_LIB="$(pkg-config --libs AMD 2>/dev/null)"
+  elif pkg-config --exists amd 2>/dev/null; then
+    # Other distros with lowercase amd.pc in standard path
+    AMD_INC="$(pkg-config --cflags-only-I amd 2>/dev/null)"
+    AMD_LIB="$(pkg-config --libs amd 2>/dev/null)"
+  else
+    # Last resort: headers are almost universally here; let the linker search -lamd
+    AMD_INC="-I/usr/include/suitesparse"
+    AMD_LIB="-lamd -lsuitesparseconfig"
+  fi
+
+  # ── Homebrew binutils (aarch64 only) ─────────────────────────────────────
+  # GCC-15 emits DWARF5 .base64 directives; system binutils 2.42 can't assemble
+  # them. Use the brew binutils 2.46+ assembler via -B<path>.
+  HOMEBREW_BINUTILS=""
+  if [[ "$ARCH" == "aarch64" && -n "$BREW_PREFIX" ]]; then
+    HOMEBREW_BINUTILS="$(ls -d "${BREW_PREFIX}/Cellar/binutils"/*/bin \
+                         2>/dev/null | sort -V | tail -1 || true)"
+  fi
+
+  # ── Unconditional availability probes (used by TUI before OPT_* are set) ──
+  # These are always run so run_tui() can show feasible defaults.
+  if [[ -n "$BREW_PREFIX" && -d "${BREW_PREFIX}/opt/openblas" ]]; then
+    OPENBLAS_AVAIL=1
+  elif ldconfig -p 2>/dev/null | grep -q 'libopenblas\.so'; then
+    OPENBLAS_AVAIL=1
+  else
+    OPENBLAS_AVAIL=0
+  fi
+
+  if [[ -f "/usr/include/suitesparse/amd.h" ]] \
+     || { [[ -n "$BREW_PREFIX" ]] && [[ -d "${BREW_PREFIX}/opt/suite-sparse" ]]; }; then
+    AMD_AVAIL=1
+  else
+    AMD_AVAIL=0
+  fi
+
+  MUMPS_INC="" MUMPS_LIB="" MUMPS_AVAIL=0
+  local _mumps_inc_dir="/usr/include/MUMPS"
+  if [[ -f "${_mumps_inc_dir}/dmumps_c.h" ]]; then
+    MUMPS_AVAIL=1
+    MUMPS_INC="-I${_mumps_inc_dir}"
+    MUMPS_LIB="-ldmumps -lmumps_common -lpord -lscalapack -llapack -lblas -lpthread -lm"
+  elif [[ -n "$BREW_PREFIX" && -d "${BREW_PREFIX}/opt/mumps" ]]; then
+    MUMPS_AVAIL=1
+    MUMPS_INC="-I${BREW_PREFIX}/opt/mumps/include"
+    MUMPS_LIB="-L${BREW_PREFIX}/opt/mumps/lib -ldmumps -lmumps_common -lpord"
+  fi
+
+  # ── Warn about any enabled-but-missing libraries ───────────────────────────
+  # Warn early with actionable install commands rather than letting configure
+  # fail with a cryptic linker error.  Show commands for the detected package
+  # manager, falling back to a multi-distro hint.
+  local _pm_ob _pm_ss _pm_mumps
+  if command -v pacman &>/dev/null; then
+    _pm_ob="pacman -S openblas"
+    _pm_ss="pacman -S suitesparse"
+    _pm_mumps="pacman -S mumps"
+  elif command -v apt &>/dev/null; then
+    _pm_ob="apt install libopenblas-dev"
+    _pm_ss="apt install libsuitesparse-dev"
+    _pm_mumps="apt install libmumps-dev"
+  elif command -v dnf &>/dev/null; then
+    _pm_ob="dnf install openblas-devel"
+    _pm_ss="dnf install suitesparse-devel"
+    _pm_mumps="dnf install MUMPS-devel"
+  else
+    _pm_ob="apt: libopenblas-dev | pacman: openblas | dnf: openblas-devel | brew: openblas"
+    _pm_ss="apt: libsuitesparse-dev | pacman: suitesparse | dnf: suitesparse-devel"
+    _pm_mumps="apt: libmumps-dev | pacman: mumps | dnf: MUMPS-devel"
+  fi
+  local _miss=()
+
+  if (( OPT_OPENBLAS && ! OPENBLAS_AVAIL )); then
+    _miss+=("OpenBLAS    → ${_pm_ob}${BREW_PREFIX:+   # or: brew install openblas}")
+  fi
+
+  if (( OPT_AMD && ! AMD_AVAIL )); then
+    _miss+=("SuiteSparse → ${_pm_ss}")
+  fi
+
+  if (( OPT_MUMPS && ! MUMPS_AVAIL )); then
+    _miss+=("MUMPS       → ${_pm_mumps}")
+  fi
+
+  if (( ${#_miss[@]} > 0 )); then
+    echo "" >&2
+    echo "${YELLOW}  ⚠  Missing required libraries — configure will fail without them:${RESET}" >&2
+    for m in "${_miss[@]}"; do
+      echo "${YELLOW}     • ${m}${RESET}" >&2
+    done
+    echo "" >&2
+  fi
+}
+
+# ── Build CXXFLAGS and LDFLAGS from options ───────────────────────────────────
+build_flags() {
+  local cxx="" ld=""
+
+  # Optimisation level
+  if [[ "$OPT_BUILD_MODE" == "opt" ]]; then
+    cxx="-O3"
+  else
+    cxx="-O1 -g"
+  fi
+
+  # Architecture optimisations.
+  (( OPT_MARCH_NATIVE )) && cxx+=" -march=native -mtune=native"
+
+  # -ffp-contract=off prevents the compiler from emitting FMA (fused multiply-
+  # add) instructions that collapse a*b+c into a single op with one rounding,
+  # subtly changing LP solver arithmetic and causing correctness bugs (wrong
+  # objectives, false infeasibility proofs) in Clp/Cbc.
+  #
+  # x86_64:  FMA3 is not in the x86-64 baseline ISA (SSE2 only); GCC only
+  #           emits it when -march=native or -mfma unlocks the instruction,
+  #           so the guard is only needed alongside -march=native.
+  # aarch64: FMADD is in the base AArch64 ISA; GCC (-ffp-contract=fast by
+  #           default) may emit it with -O3 alone, so the guard is always
+  #           needed regardless of -march=native.
+  if (( OPT_MARCH_NATIVE )) || [[ "$ARCH" == "aarch64" ]]; then
+    cxx+=" -ffp-contract=off"
+  fi
+
+  # Hand-written SIMD code paths (independent of -march=native which already
+  # enables the underlying instructions for auto-vectorisation)
+  if (( OPT_AVX2 )) && [[ "$ARCH" == "x86_64" ]]; then
+    cxx+=" -DCOIN_AVX2=4"
+  fi
+  if (( OPT_NEON )) && [[ "$ARCH" == "aarch64" ]]; then
+    cxx+=" -DCOIN_NEON"
+  fi
+
+  # Sanitisers
+  case "$OPT_SANITIZER" in
+    asan)
+      cxx+=" -fsanitize=address -fno-omit-frame-pointer"
+      ld+="-fsanitize=address " ;;
+    tsan)
+      cxx+=" -fsanitize=thread -fno-omit-frame-pointer"
+      ld+="-fsanitize=thread " ;;
+    msan)
+      # MemorySanitizer: requires clang; detects use of uninitialised memory.
+      # Note: libstdc++ is not MSAN-instrumented → expect some false positives from
+      # standard library internals. Filter MSAN reports by CBC source paths.
+      # (-stdlib=libc++ would eliminate false positives but breaks autoconf tests
+      # due to stricter implicit-declaration rules, so we don't use it here.)
+      cxx+=" -fsanitize=memory -fno-omit-frame-pointer -fsanitize-memory-track-origins=2"
+      ld+="-fsanitize=memory " ;;
+    valgrind)
+      cxx+=" -fno-omit-frame-pointer" ;;
+  esac
+
+  # Homebrew binutils for DWARF5 (aarch64)
+  [[ -n "${HOMEBREW_BINUTILS:-}" ]] && cxx+=" -B${HOMEBREW_BINUTILS}"
+
+  # OpenBLAS: include path + define go into ADD_CXXFLAGS for all projects
+  # (harmless for those that don't use it); the linker flag goes ONLY to Clp
+  # via --with-lapack-lflags in _project_extra_opts — NOT into global LDFLAGS,
+  # which would cause every project's configure link test to require libopenblas.
+  if (( OPT_OPENBLAS )); then
+    cxx+=" -DCLP_USE_OPENBLAS=1 ${OPENBLAS_INC}"
+  fi
+
+  FINAL_CXXFLAGS="$cxx"
+  FINAL_LDFLAGS="$ld"
+}
+
+# ── Build the configure options array ────────────────────────────────────────
+build_configure_opts() {
+  CONFIGURE_OPTS=("--prefix=${OPT_PREFIX}")
+
+  [[ "$OPT_BUILD_MODE" == "debug" ]] && CONFIGURE_OPTS+=("--enable-debug")
+
+  case "$OPT_LIB_TYPE" in
+    static) CONFIGURE_OPTS+=("--enable-static" "--disable-shared") ;;
+    shared) CONFIGURE_OPTS+=("--disable-static" "--enable-shared") ;;
+    both)   CONFIGURE_OPTS+=("--enable-static"  "--enable-shared") ;;
+  esac
+
+  if (( OPT_CBC_PARALLEL )); then CONFIGURE_OPTS+=("--enable-cbc-parallel"); fi
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  TUI  (dialog-based)
+# ══════════════════════════════════════════════════════════════════════════════
+
+DIALOG_BIN=""
+
+_find_dialog() {
+  if   command -v dialog   &>/dev/null; then DIALOG_BIN="dialog"
+  elif command -v whiptail &>/dev/null; then DIALOG_BIN="whiptail"
+  else
+    echo "${YELLOW}Warning: neither 'dialog' nor 'whiptail' found; " \
+         "falling back to plain prompts.${RESET}" >&2
+    DIALOG_BIN="plain"
+  fi
+}
+
+# Wrapper: captures dialog selection into $REPLY; returns dialog exit code.
+# Usage: _dlg <dialog-args...>
+_dlg() {
+  REPLY=$("$DIALOG_BIN" "$@" 2>&1 >/dev/tty)
+}
+
+# Strip surrounding double-quotes that dialog sometimes emits
+_strip_quotes() { echo "${1//\"/}"; }
+
+run_tui() {
+  _find_dialog
+
+  if [[ "$DIALOG_BIN" == "plain" ]]; then
+    run_tui_plain
+    return
+  fi
+
+  local BT="  ◆  MIPster  ─  Build Configurator  ◆"
+
+  # ── 1. Build mode ────────────────────────────────────────────────────────
+  _dlg --backtitle "$BT" \
+       --title "  Build Mode  " \
+       --radiolist $'\nSelect the build mode:\n' 11 54 2 \
+       "opt"   "Optimised  (-O3, release build)"   ON  \
+       "debug" "Debug  (-O1 -g, enable assertions)" OFF \
+    || { echo "${YELLOW}Cancelled.${RESET}"; exit 0; }
+  OPT_BUILD_MODE="$(_strip_quotes "$REPLY")"
+
+  # ── 2. Sanitiser (debug only) ────────────────────────────────────────────
+  if [[ "$OPT_BUILD_MODE" == "debug" ]]; then
+    _dlg --backtitle "$BT" \
+         --title "  Runtime Sanitiser  " \
+         --radiolist $'\nSelect runtime instrumentation:\n' 14 62 4 \
+         "none"     "None  (plain debug build)"               ON  \
+         "asan"     "AddressSanitizer  (memory errors)"       OFF \
+         "tsan"     "ThreadSanitizer  (data races)"           OFF \
+         "msan"     "MemorySanitizer  (uninit memory, clang only)"  OFF \
+         "valgrind" "Valgrind-friendly  (no sanitiser, full frames)" OFF \
+      || { echo "${YELLOW}Cancelled.${RESET}"; exit 0; }
+    OPT_SANITIZER="$(_strip_quotes "$REPLY")"
+  fi
+
+  # ── 3. Compiler feature flags (checklist) ────────────────────────────────
+  # Use availability flags (set by detect_lib_paths, called before run_tui)
+  # to reflect what is actually installed: default ON only if available,
+  # and append "[not installed]" to labels for missing libraries.
+  local _ob_lbl="OpenBLAS: dense LU fallback; cap BLAS threads"
+  local _ob_def="on"
+  if (( ! OPENBLAS_AVAIL )); then _ob_lbl+="  [not installed]"; _ob_def="off"; fi
+
+  local _amd_lbl="AMD/CHOLMOD: UFL barrier Cholesky (-barrier -cholesky UniFL)"
+  local _amd_def="on"
+  if (( ! AMD_AVAIL )); then _amd_lbl+="  [not installed]"; _amd_def="off"; fi
+
+  local _mumps_lbl="MUMPS: multi-frontal barrier Cholesky (-cholesky Mumps)"
+  local _mumps_def="off"
+  if (( ! MUMPS_AVAIL )); then _mumps_lbl+="  [not installed]"; fi
+
+  local cl_items=()
+  cl_items+=("march"    "-march=native  -mtune=native  -ffp-contract=off"     "on")
+  [[ "$ARCH" == "x86_64" ]]  && \
+  cl_items+=("avx2"     "-DCOIN_AVX2=4  hand-written SIMD  (x86_64)"         "off")
+  [[ "$ARCH" == "aarch64" ]] && \
+  cl_items+=("neon"     "-DCOIN_NEON    hand-written SIMD  (aarch64)"         "off")
+  cl_items+=("cbcpar"   "--enable-cbc-parallel"                               "on")
+  cl_items+=("openblas" "$_ob_lbl"    "$_ob_def")
+  cl_items+=("amd"      "$_amd_lbl"   "$_amd_def")
+  cl_items+=("mumps"    "$_mumps_lbl" "$_mumps_def")
+  cl_items+=("aboca1"   "Aboca serial: build AbcSimplex (experimental)"       "off")
+  cl_items+=("aboca2"   "Aboca+inherit: route LP solves through AbcSimplex"   "off")
+
+  local cl_args=()
+  local i
+  for (( i=0; i<${#cl_items[@]}; i+=3 )); do
+    cl_args+=("${cl_items[i]}" "${cl_items[i+1]}" "${cl_items[i+2]}")
+  done
+  local n_items=$(( ${#cl_items[@]} / 3 ))
+  local dlg_h=$(( n_items + 8 ))
+
+  _dlg --backtitle "$BT" \
+       --title "  Compiler & Feature Flags  " \
+       --checklist $'\nToggle features (Space = toggle, Enter = confirm):\n' \
+       "$dlg_h" 70 "$n_items" "${cl_args[@]}" \
+    || { echo "${YELLOW}Cancelled.${RESET}"; exit 0; }
+  local selected="$(_strip_quotes "$REPLY")"
+
+  OPT_MARCH_NATIVE=0; OPT_AVX2=0; OPT_NEON=0; OPT_CBC_PARALLEL=0
+  OPT_OPENBLAS=0; OPT_AMD=0; OPT_MUMPS=0; OPT_ABOCA=0
+  for tok in $selected; do
+    case "$tok" in
+      march)    OPT_MARCH_NATIVE=1 ;;
+      avx2)     OPT_AVX2=1         ;;
+      neon)     OPT_NEON=1         ;;
+      cbcpar)   OPT_CBC_PARALLEL=1 ;;
+      openblas) OPT_OPENBLAS=1     ;;
+      amd)      OPT_AMD=1          ;;
+      mumps)    OPT_MUMPS=1        ;;
+      aboca1)   [[ $OPT_ABOCA -lt 1 ]] && OPT_ABOCA=1 ;;
+      aboca2)   OPT_ABOCA=2        ;;
+    esac
+  done
+
+  # ── 4. Library type ───────────────────────────────────────────────────────
+  _dlg --backtitle "$BT" \
+       --title "  Library Type  " \
+       --radiolist $'\nSelect which library types to build:\n' 12 60 3 \
+       "static" "Static only   (--enable-static --disable-shared)"  ON  \
+       "shared" "Shared only   (--enable-shared --disable-static)"   OFF \
+       "both"   "Both static and shared"                              OFF \
+    || { echo "${YELLOW}Cancelled.${RESET}"; exit 0; }
+  OPT_LIB_TYPE="$(_strip_quotes "$REPLY")"
+
+  # ── 5. Install prefix ─────────────────────────────────────────────────────
+  derive_prefix   # populate default before asking
+  _dlg --backtitle "$BT" \
+       --title "  Install Prefix  " \
+       --inputbox $'\nInstallation prefix:\n' 9 64 "$OPT_PREFIX" \
+    || { echo "${YELLOW}Cancelled.${RESET}"; exit 0; }
+  OPT_PREFIX="${REPLY/#\~/$HOME}"
+
+  # ── 6. Parallel jobs ──────────────────────────────────────────────────────
+  _dlg --backtitle "$BT" \
+       --title "  Parallel Jobs  " \
+       --inputbox $'\nNumber of parallel make jobs:\n' 9 40 "$OPT_JOBS" \
+    || { echo "${YELLOW}Cancelled.${RESET}"; exit 0; }
+  OPT_JOBS="$REPLY"
+
+  # ── 7. Post-configure actions ─────────────────────────────────────────────
+  if "$DIALOG_BIN" --backtitle "$BT" \
+       --title "  Post-Configure  " \
+       --yesno $'\nRun build automatically after configure?\n' 8 54 \
+       2>/dev/null >/dev/tty; then
+    OPT_DO_BUILD=1
+    if "$DIALOG_BIN" --backtitle "$BT" \
+         --title "  Post-Build  " \
+         --yesno $'\nRun install automatically after build?\n' 8 54 \
+         2>/dev/null >/dev/tty; then
+      OPT_DO_INSTALL=1
+    fi
+  fi
+
+  # ── Summary ───────────────────────────────────────────────────────────────
+  local san_lbl="$OPT_SANITIZER"
+  [[ "$OPT_BUILD_MODE" == "opt" && "$OPT_SANITIZER" == "none" ]] && san_lbl="n/a"
+  local avx2_lbl="n/a (aarch64)"
+  local neon_lbl="n/a (x86_64)"
+  [[ "$ARCH" == "x86_64" ]]  && avx2_lbl="$( (( OPT_AVX2 )) && echo yes || echo no )"
+  [[ "$ARCH" == "aarch64" ]] && neon_lbl="$( (( OPT_NEON )) && echo yes || echo no )"
+
+  local summary
+  summary=$(printf "%-18s %s\n" \
+    "Build mode:"    "$OPT_BUILD_MODE" \
+    "Sanitiser:"     "$san_lbl" \
+    "march-native:"  "$( (( OPT_MARCH_NATIVE )) && echo yes || echo no )" \
+    "AVX2 (SIMD):"   "$avx2_lbl" \
+    "NEON (SIMD):"   "$neon_lbl" \
+    "CBC parallel:"  "$( (( OPT_CBC_PARALLEL )) && echo yes || echo no )" \
+    "OpenBLAS:"      "$( (( OPT_OPENBLAS ))     && echo yes || echo no )" \
+    "AMD/SuiteSparse:" "$( (( OPT_AMD ))         && echo yes || echo no )" \
+    "MUMPS:"         "$( (( OPT_MUMPS ))         && echo yes || echo no )" \
+    "Aboca:"         "$( (( OPT_ABOCA > 0 ))     && echo "level ${OPT_ABOCA}" || echo no )" \
+    "Library type:"  "$OPT_LIB_TYPE" \
+    "Install prefix:" "$OPT_PREFIX" \
+    "Jobs:"          "$OPT_JOBS" \
+    "Build after:"   "$( (( OPT_DO_BUILD   )) && echo yes || echo no )" \
+    "Install after:" "$( (( OPT_DO_INSTALL )) && echo yes || echo no )")
+
+  "$DIALOG_BIN" --backtitle "$BT" \
+    --title "  Configuration Summary  " \
+    --yesno "$(printf '\n%s\n\nProceed?' "$summary")" 20 62 \
+    2>/dev/null >/dev/tty \
+    || { echo "${YELLOW}Aborted by user.${RESET}"; exit 0; }
+}
+
+# ── Plain interactive fallback (no dialog) ────────────────────────────────────
+run_tui_plain() {
+  local yn
+  echo ""
+  echo "${BOLD}${CYAN}── MIPster Build Configurator ───────────────────────────────${RESET}"
+  echo ""
+
+  read -rp "  Build mode [opt/debug] (default: opt): " yn
+  [[ -n "$yn" ]] && OPT_BUILD_MODE="$yn"
+
+  if [[ "$OPT_BUILD_MODE" == "debug" ]]; then
+    read -rp "  Sanitiser [none/asan/tsan/msan/valgrind] (default: none): " yn
+    [[ -n "$yn" ]] && OPT_SANITIZER="$yn"
+  fi
+
+  read -rp "  Enable -march=native / -mtune=native? [Y/n]: " yn
+  [[ "${yn,,}" == "n" ]] && OPT_MARCH_NATIVE=0
+
+  if [[ "$ARCH" == "x86_64" ]]; then
+    read -rp "  Enable -DCOIN_AVX2=4 hand-written SIMD? [y/N]: " yn
+    [[ "${yn,,}" == "y" ]] && OPT_AVX2=1
+  fi
+
+  if [[ "$ARCH" == "aarch64" ]]; then
+    read -rp "  Enable -DCOIN_NEON hand-written SIMD? [y/N]: " yn
+    [[ "${yn,,}" == "y" ]] && OPT_NEON=1
+  fi
+
+  read -rp "  Library type [static/shared/both] (default: static): " yn
+  [[ -n "$yn" ]] && OPT_LIB_TYPE="$yn"
+
+  derive_prefix
+  read -rp "  Install prefix (default: $OPT_PREFIX): " yn
+  [[ -n "$yn" ]] && OPT_PREFIX="${yn/#\~/$HOME}"
+
+  read -rp "  Parallel jobs (default: $OPT_JOBS): " yn
+  [[ -n "$yn" ]] && OPT_JOBS="$yn"
+
+  read -rp "  Enable --enable-cbc-parallel? [Y/n]: " yn
+  [[ "${yn,,}" == "n" ]] && OPT_CBC_PARALLEL=0
+
+  read -rp "  Link OpenBLAS (LAPACK/BLAS)? [Y/n]: " yn
+  [[ "${yn,,}" == "n" ]] && OPT_OPENBLAS=0
+
+  read -rp "  Link AMD/SuiteSparse (sparse ordering)? [Y/n]: " yn
+  [[ "${yn,,}" == "n" ]] && OPT_AMD=0
+
+  read -rp "  Link MUMPS (sparse Cholesky for barrier LP, needs libmumps-dev)? [y/N]: " yn
+  [[ "${yn,,}" == "y" ]] && OPT_MUMPS=1
+
+  read -rp "  Aboca parallel simplex [0=off/1=serial/2=inherit] (default: 0): " yn
+  [[ "$yn" =~ ^[0-4]$ ]] && OPT_ABOCA="$yn"
+
+  read -rp "  Run build after configure? [y/N]: " yn
+  [[ "${yn,,}" == "y" ]] && OPT_DO_BUILD=1
+
+  if (( OPT_DO_BUILD )); then
+    read -rp "  Run install after build? [y/N]: " yn
+    [[ "${yn,,}" == "y" ]] && OPT_DO_INSTALL=1
+  fi
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Progress & output helpers
+# ══════════════════════════════════════════════════════════════════════════════
+
+_banner() {
+  echo ""
+  echo "${BOLD}${CYAN}╔══════════════════════════════════════════════════════════════╗${RESET}"
+  echo "${BOLD}${CYAN}║       MIPster  ─  Unified Build Configurator                 ║${RESET}"
+  echo "${BOLD}${CYAN}╚══════════════════════════════════════════════════════════════╝${RESET}"
+}
+
+_section() {
+  echo ""
+  echo "${BOLD}${BLUE}┌─ $1${RESET}"
+}
+
+_STEP=0; _TOTAL=0
+
+_step() {
+  local project="$1" action="$2"
+  _STEP=$(( _STEP + 1 ))
+  printf "${BOLD}${YELLOW}  [%d/%d] %s: ${MAGENTA}%s${RESET}\n" \
+    "$_STEP" "$_TOTAL" "$action" "$project"
+}
+
+_ok()   { echo "${GREEN}        ✓  done${RESET}"; }
+_fail() { echo "${RED}        ✗  FAILED${RESET}"; }
+
+_print_cmdline() {
+  local args=()
+
+  args+=("--${OPT_BUILD_MODE}")
+
+  if [[ "$OPT_BUILD_MODE" == "debug" && "$OPT_SANITIZER" != "none" ]]; then
+    args+=("--sanitizer=${OPT_SANITIZER}")
+  fi
+
+  (( OPT_MARCH_NATIVE )) && args+=("--march-native") || args+=("--no-march-native")
+  [[ "$ARCH" == "x86_64"  ]] && { (( OPT_AVX2 )) && args+=("--avx2")  || args+=("--no-avx2");  }
+  [[ "$ARCH" == "aarch64" ]] && { (( OPT_NEON )) && args+=("--neon")  || args+=("--no-neon");  }
+
+  (( OPT_CBC_PARALLEL )) || args+=("--no-parallel-cbc")
+  (( OPT_OPENBLAS ))     && args+=("--openblas")    || args+=("--no-openblas")
+  (( OPT_AMD ))          && args+=("--amd")         || args+=("--no-amd")
+  (( OPT_MUMPS ))        && args+=("--mumps")
+  (( OPT_ABOCA > 0 ))    && args+=("--aboca=${OPT_ABOCA}")
+
+  args+=("--${OPT_LIB_TYPE}")
+  args+=("--prefix=${OPT_PREFIX}")
+  args+=("--jobs=${OPT_JOBS}")
+
+  if (( OPT_DO_INSTALL )); then
+    args+=("--install")
+  elif (( OPT_DO_BUILD )); then
+    args+=("--build")
+  fi
+  (( OPT_DRY_RUN )) && args+=("--dry-run")
+
+  _section "Equivalent command line"
+  local i last=$(( ${#args[@]} - 1 ))
+  printf "  ${DIM}./$SCRIPT_NAME"
+  for (( i=0; i<${#args[@]}; i++ )); do
+    if (( i == 0 )); then
+      printf " ${CYAN}%s${RESET}" "${args[$i]}"
+    elif (( i == last )); then
+      printf " \\\\\n    ${CYAN}%s${RESET}" "${args[$i]}"
+    else
+      printf " \\\\\n    ${CYAN}%s${RESET}" "${args[$i]}"
+    fi
+  done
+  echo ""
+  echo ""
+}
+
+_print_summary() {
+  local san_lbl="$OPT_SANITIZER"
+  [[ "$OPT_BUILD_MODE" == "opt" && "$OPT_SANITIZER" == "none" ]] && san_lbl="n/a"
+  local avx2_lbl="n/a (aarch64)"
+  local neon_lbl="n/a (x86_64)"
+  [[ "$ARCH" == "x86_64" ]]  && avx2_lbl="$( (( OPT_AVX2 )) && echo on || echo off )"
+  [[ "$ARCH" == "aarch64" ]] && neon_lbl="$( (( OPT_NEON )) && echo on || echo off )"
+
+  _section "Configuration"
+  printf "  ${BOLD}%-22s${RESET}${CYAN}%s${RESET}\n" \
+    "Architecture:"    "$ARCH" \
+    "Build mode:"      "$OPT_BUILD_MODE" \
+    "Sanitiser:"       "$san_lbl" \
+    "march-native:"    "$( (( OPT_MARCH_NATIVE )) && echo on || echo off )" \
+    "AVX2 (SIMD):"     "$avx2_lbl" \
+    "NEON (SIMD):"     "$neon_lbl" \
+    "CBC parallel:"    "$( (( OPT_CBC_PARALLEL )) && echo on || echo off )" \
+    "OpenBLAS:"        "$( (( OPT_OPENBLAS ))     && echo on || echo off )" \
+    "AMD/SuiteSparse:" "$( (( OPT_AMD ))           && echo on || echo off )" \
+    "MUMPS:"           "$( (( OPT_MUMPS ))         && echo on || echo off )" \
+    "Aboca:"           "$( (( OPT_ABOCA > 0 ))     && echo "level ${OPT_ABOCA}" || echo off )" \
+    "Library type:"    "$OPT_LIB_TYPE" \
+    "Install prefix:"  "$OPT_PREFIX" \
+    "Parallel jobs:"   "$OPT_JOBS" \
+    "Build after:"     "$( (( OPT_DO_BUILD   )) && echo yes || echo no )" \
+    "Install after:"   "$( (( OPT_DO_INSTALL )) && echo yes || echo no )"
+  echo ""
+  printf "  ${BOLD}%-22s${RESET}${DIM}%s${RESET}\n" \
+    "ADD_CXXFLAGS:" "$FINAL_CXXFLAGS" \
+    "LDFLAGS:"      "${FINAL_LDFLAGS:-(none)}"
+  if (( OPT_OPENBLAS )); then
+    printf "  ${BOLD}%-22s${RESET}${DIM}%s${RESET}\n" \
+      "Clp LAPACK:"   "$OPENBLAS_LIB"
+  fi
+  echo ""
+  _print_cmdline
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Configure / build / install workers
+# ══════════════════════════════════════════════════════════════════════════════
+
+configure_one() {
+  local project="$1"; shift
+  local extra_opts=("$@")
+
+  _step "$project" "Configuring"
+
+  if (( OPT_DRY_RUN )); then
+    echo "    ${DIM}[dry-run] ADD_CXXFLAGS='${FINAL_CXXFLAGS}' \\"
+    echo "              LDFLAGS='${FINAL_LDFLAGS}' \\"
+    echo "              ./configure ${CONFIGURE_OPTS[*]} ${extra_opts[*]:-}${RESET}"
+    _ok; return
+  fi
+
+  local rc=0
+  (
+    cd "$(_project_dir "$project")"
+    ADD_CXXFLAGS="$FINAL_CXXFLAGS" \
+    LDFLAGS="$FINAL_LDFLAGS" \
+      ./configure "${CONFIGURE_OPTS[@]}" "${extra_opts[@]}"
+  ) || rc=$?
+
+  if (( rc )); then
+    _fail
+    echo "${RED}  ✗ configure failed for ${project} (exit ${rc}).${RESET}" >&2
+    exit "$rc"
+  fi
+  _ok
+}
+
+# Return the project-specific extra configure options in the array _EXTRA_OPTS.
+_project_extra_opts() {
+  local project="$1"
+  _EXTRA_OPTS=()
+  case "$project" in
+    CoinUtils|Cbc)
+      # CoinUtils is now built inside Cbc, but older setups may still configure
+      # CoinUtils directly. In both cases, route LAPACK detection to OpenBLAS
+      # explicitly so the final static library links against -lopenblas.
+      if (( OPT_OPENBLAS )); then
+        _append_with_lib_opt "$project" "lapack" "$OPENBLAS_LIB"
+      else
+        _EXTRA_OPTS+=("--without-lapack")
+      fi
+      if [[ "$project" == "Cbc" ]] && (( OPT_AMD )); then
+        _append_with_inc_lib_opts "$project" "amd" "$AMD_INC" "$AMD_LIB"
+      fi
+      ;;
+  esac
+}
+
+# Build a single project (used by interleaved mode).
+_colorize_make() {
+  while IFS= read -r line; do
+    if [[ "$line" == *": error:"* || "$line" == *": fatal error:"* ]]; then
+      echo "    ${RED}${line}${RESET}"
+    elif [[ "$line" == *": warning:"* ]]; then
+      echo "    ${YELLOW}${line}${RESET}"
+    else
+      echo "    ${DIM}${line}${RESET}"
+    fi
+  done
+}
+
+_build_one() {
+  local project="$1"
+  printf "        ${DIM}▸ building ...${RESET}"
+  if (( OPT_DRY_RUN )); then
+    echo "  ${DIM}[dry-run]${RESET}"; return
+  fi
+  # Always clean before building in the interleaved (configure+build+install) mode.
+  # Autotools does not invalidate stale .la files when the prefix or CXXFLAGS change,
+  # so a previous opt build's libFoo.la dependency_libs (pointing to the old prefix)
+  # will silently pollute a fresh debug/asan build.  make clean removes those files.
+  local dir
+  dir="$(_project_dir "$project")"
+  make -C "$dir" clean -j"${OPT_JOBS}" >/dev/null 2>&1 || true
+  local rc=0
+  local tmplog
+  tmplog="$(mktemp)"
+  make -C "$dir" -j"${OPT_JOBS}" >"$tmplog" 2>&1 || rc=$?
+  if (( rc )); then
+    echo ""
+    echo "${RED}        ✗  build failed (exit ${rc})${RESET}"
+    echo ""
+    echo "${RED}  ── Build output ──────────────────────────────────────────────${RESET}"
+    _colorize_make < "$tmplog"
+    echo "${RED}  ──────────────────────────────────────────────────────────────${RESET}"
+    rm -f "$tmplog"
+    echo "${RED}  ✗ Build failed for ${project}.${RESET}" >&2
+    exit "$rc"
+  fi
+  rm -f "$tmplog"
+  echo "  ${GREEN}✓${RESET}"
+}
+
+# Install a single project (used by interleaved mode).
+_install_one() {
+  local project="$1"
+  printf "        ${DIM}▸ installing ...${RESET}"
+  if (( OPT_DRY_RUN )); then
+    echo "  ${DIM}[dry-run]${RESET}"; return
+  fi
+  local dir
+  dir="$(_project_dir "$project")"
+  local rc=0
+  local tmplog
+  tmplog="$(mktemp)"
+  make -C "$dir" install -j"${OPT_JOBS}" >"$tmplog" 2>&1 || rc=$?
+  if (( rc )); then
+    echo ""
+    echo "${RED}        ✗  install failed (exit ${rc})${RESET}"
+    echo ""
+    echo "${RED}  ── Install output ─────────────────────────────────────────────${RESET}"
+    _colorize_make < "$tmplog"
+    echo "${RED}  ──────────────────────────────────────────────────────────────${RESET}"
+    rm -f "$tmplog"
+    echo "${RED}  ✗ Install failed for ${project}.${RESET}" >&2
+    exit "$rc"
+  fi
+  rm -f "$tmplog"
+  echo "  ${GREEN}✓${RESET}"
+}
+
+run_configure() {
+  # Pick the first available compiler from the preference list.
+  # Searches both $PATH and, if brew is installed but its bin is not yet on
+  # $PATH (e.g. appended and shadowed by a wrapper), the brew bin directory
+  # directly.  Falls back to the bare last name so configure can emit a clear
+  # "not found" error rather than silently misconfiguring.
+  _find_compiler() {
+    for c in "$@"; do
+      command -v "$c" &>/dev/null && { echo "$c"; return; }
+      # Also probe the brew bin dir directly in case brew is not on $PATH.
+      if [[ -n "${BREW_PREFIX:-}" && -x "${BREW_PREFIX}/bin/${c}" ]]; then
+        echo "${BREW_PREFIX}/bin/${c}"; return
+      fi
+    done
+    echo "${*: -1}"
+  }
+  # MemorySanitizer is clang-only; override compiler selection
+  if [[ "${OPT_SANITIZER}" == "msan" ]]; then
+    export CC="${CC:-$(_find_compiler clang-20 clang-19 clang-18 clang-17 clang)}"
+    export CXX="${CXX:-$(_find_compiler clang++-20 clang++-19 clang++-18 clang++-17 clang++)}"
+  else
+    export CC="${CC:-$(_find_compiler gcc-15 gcc-14 gcc-13 gcc)}"
+    export CXX="${CXX:-$(_find_compiler g++-15 g++-14 g++-13 g++)}"
+  fi
+  export PKG_CONFIG_PATH="${PKG_CONFIG_PATH:-${OPT_PREFIX}/lib/pkgconfig}"
+
+  _STEP=0
+  _TOTAL=${#PROJECTS[@]}
+
+  # When building or installing, each project must be installed before the next
+  # can be configured (Cbc needs CoinUtils' .pc file in PREFIX, etc.).
+  # Use interleaved mode: configure → build → install per project.
+  if (( OPT_DO_BUILD || OPT_DO_INSTALL )); then
+    local mode_lbl="configure"
+    (( OPT_DO_BUILD   )) && mode_lbl+=" + build"
+    (( OPT_DO_INSTALL )) && mode_lbl+=" + install"
+    _section "${mode_lbl}  (prefix: ${CYAN}${OPT_PREFIX}${RESET}${BLUE}, jobs: ${CYAN}${OPT_JOBS}${RESET}${BLUE})"
+
+    local _START=$SECONDS
+    for project in "${PROJECTS[@]}"; do
+      _project_extra_opts "$project"
+      _step "$project" "Configure+Build+Install"
+      printf "        ${DIM}▸ configuring ...${RESET}"
+
+      if (( OPT_DRY_RUN )); then
+        echo "  ${DIM}[dry-run]${RESET}"
+      else
+        local rc=0
+        local tmplog
+        tmplog="$(mktemp)"
+        (
+          cd "$(_project_dir "$project")"
+          ADD_CXXFLAGS="$FINAL_CXXFLAGS" LDFLAGS="$FINAL_LDFLAGS" \
+            ./configure "${CONFIGURE_OPTS[@]}" "${_EXTRA_OPTS[@]}"
+        ) >"$tmplog" 2>&1 || rc=$?
+        if (( rc )); then
+          echo ""
+          _fail
+          echo ""
+          echo "${RED}  ── Configure output ───────────────────────────────────────────${RESET}"
+          while IFS= read -r line; do echo "    ${DIM}${line}${RESET}"; done < "$tmplog"
+          echo "${RED}  ──────────────────────────────────────────────────────────────${RESET}"
+          rm -f "$tmplog"
+          echo "${RED}  ✗ configure failed for ${project} (exit ${rc}).${RESET}" >&2
+          exit "$rc"
+        fi
+        rm -f "$tmplog"
+        echo "  ${GREEN}✓${RESET}"
+      fi
+
+      (( OPT_DO_BUILD   )) && _build_one   "$project"
+      (( OPT_DO_INSTALL )) && _install_one "$project"
+      echo ""
+    done
+
+    local elapsed=$(( SECONDS - _START ))
+    printf "${BOLD}${GREEN}  ✓  All projects configured"
+    (( OPT_DO_BUILD   )) && printf ", built"
+    (( OPT_DO_INSTALL )) && printf ", installed"
+    printf ".  Elapsed: %dm%02ds${RESET}\n" $(( elapsed / 60 )) $(( elapsed % 60 ))
+    (( OPT_DO_BUILD )) && _show_features
+    return
+  fi
+
+  # Configure-only mode (prefix must already contain .pc files from a prior install).
+  _section "Configuring  (prefix: ${CYAN}${OPT_PREFIX}${RESET}${BLUE})"
+  echo "  ${YELLOW}Note: prefix must already contain installed .pc files from a prior build.${RESET}"
+  echo "  ${YELLOW}      If starting fresh, use --build --install to interleave configure+build+install.${RESET}"
+  echo ""
+
+  for project in "${PROJECTS[@]}"; do
+    _project_extra_opts "$project"
+    configure_one "$project" "${_EXTRA_OPTS[@]}"
+  done
+
+  echo ""
+  echo "${BOLD}${GREEN}  ✓  All projects configured.${RESET}"
+}
+
+# Print which third-party features were actually compiled in, by inspecting
+# the generated config headers after a successful build/install.
+_show_features() {
+  local clp_cfg="$(_project_dir Cbc)/src/Clp/config_clp.h"
+  local cbc_cfg="$(_project_dir Cbc)/src/config.h"
+  [[ -f "$clp_cfg" || -f "$cbc_cfg" ]] || return
+
+  _section "Features compiled in"
+
+  _feat_line() {
+    local label="$1" guard="$2" cfg="$3"
+    local val
+    if grep -q "#define ${guard} 1" "$cfg" 2>/dev/null; then
+      val="${GREEN}✓ yes${RESET}"
+    else
+      val="${DIM}✗ no${RESET}"
+    fi
+    printf "  ${BOLD}%-26s${RESET}%b\n" "${label}:" "$val"
+  }
+
+  if [[ -f "$clp_cfg" ]]; then
+    echo "  ${DIM}Clp (${clp_cfg}):${RESET}"
+    _feat_line "  AMD"                   "CLP_HAS_AMD"     "$clp_cfg"
+    _feat_line "  CHOLMOD"               "CLP_HAS_CHOLMOD" "$clp_cfg"
+    _feat_line "  MUMPS"                 "CLP_HAS_MUMPS"   "$clp_cfg"
+    _feat_line "  Aboca (AbcSimplex)"    "CLP_HAS_ABC"     "$clp_cfg"
+  fi
+  echo ""
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Main
+# ══════════════════════════════════════════════════════════════════════════════
+main() {
+  parse_args "$@"
+
+  # Probe library availability unconditionally so the TUI can show smart
+  # defaults (available → ON, not installed → OFF + label).
+  validate_opts
+  derive_prefix
+  detect_lib_paths
+
+  # Launch TUI when: no args given on a TTY, or --interactive was passed
+  if (( ! _ARGS_GIVEN && $([ -t 0 ] && [ -t 1 ]; echo $?) == 0 )) \
+     || (( OPT_INTERACTIVE )); then
+    run_tui
+    printf '\n\n'   # ensure output starts below TUI dialog residue
+    # Re-run detect_lib_paths after TUI in case OPT_* flags changed the
+    # set of requested libraries (updates MUMPS_INC/LIB etc.).
+    detect_lib_paths
+  fi
+
+  build_flags
+  build_configure_opts
+
+  _banner
+  _print_summary
+
+  [[ "$OPT_DRY_RUN" == "1" ]] && echo "${YELLOW}  ── DRY RUN: no commands will be executed ──${RESET}"
+
+  # run_configure interleaves configure+build+install per project when
+  # --build or --install is set, so no separate phase is needed.
+  run_configure
+
+  echo ""
+  echo "${BOLD}${GREEN}╔════════════════════════════════════╗${RESET}"
+  echo "${BOLD}${GREEN}║  All done!                         ║${RESET}"
+  echo "${BOLD}${GREEN}╚════════════════════════════════════╝${RESET}"
+  echo ""
+}
+
+main "$@"

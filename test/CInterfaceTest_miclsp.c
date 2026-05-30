@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "miclsp_fixtures.h"
+#include "mip_diag.h"
 
 /* Maximum dimensions used for stack-allocated arrays */
 #define MAX_I  8
@@ -231,6 +232,13 @@ static int check_miclsp_incumbent(Cbc_Model *m, const MiclspInstance *inst,
   return check_miclsp_sol(sol, Cbc_getObjValue(m), inst, label);
 }
 
+/* ── diagnostic adapter ───────────────────────────────────────────────────── */
+
+static Cbc_Model *build_miclsp_for_diag(void *userdata)
+{
+  return build_miclsp((const MiclspInstance *)userdata);
+}
+
 /* ── MIP test ─────────────────────────────────────────────────────────────── */
 
 static int test_miclsp_mip(const MiclspInstance *inst, int k)
@@ -284,6 +292,8 @@ static int test_miclsp_mip(const MiclspInstance *inst, int k)
       printf("       -> FAIL: claimed optimal obj=%.0f != certified opt=%d\n",
              obj, inst->opt);
       ok = 0;
+      mip_diag_wrong_optimal(build_miclsp_for_diag, (void *)inst,
+                             inst->opt, 900, 10000);
     } else {
       printf("       -> obj=%.0f  optimal, matches certified=%d"
              "  %d solution(s) validated  OK\n", obj, inst->opt, nsaved);

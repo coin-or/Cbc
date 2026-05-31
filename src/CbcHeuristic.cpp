@@ -398,7 +398,10 @@ bool CbcHeuristic::shouldHeurRun_randomChoice()
         break;
       case 6:
         if (depth >= 3) {
-          if ((numCouldRun_ % howOften_) == 0 && numberSolutionsFound_ * howOften_ < numCouldRun_) {
+          // Decay: increase howOften_ if heuristic isn't finding solutions.
+          // Skip decay if model has heurDecay disabled (moreSpecialOptions2_ bit 30).
+          bool doDecay = (model_->moreSpecialOptions2() & (1 << 30)) != 0;
+          if (doDecay && (numCouldRun_ % howOften_) == 0 && numberSolutionsFound_ * howOften_ < numCouldRun_) {
             //#define COIN_DEVELOP
 #ifdef COIN_DEVELOP
             int old = howOften_;

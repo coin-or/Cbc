@@ -672,6 +672,7 @@ void CbcParameters::addCbcParams() {
                     CbcParam::FEASIBILITYJUMPSTALL,
                     CbcParam::FEASIBILITYJUMPDEPTH,
                     CbcParam::TREECUTDEPTH,
+                    CbcParam::HEURDECAY,
                     CbcParam::FPUMPITS, CbcParam::FPUMPTUNE,
                     CbcParam::FPUMPTUNE2, CbcParam::HEUROPTIONS,
                     CbcParam::FPUMPPASSFREQ, CbcParam::DEPTHMINIBAB,
@@ -936,6 +937,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::FEASIBILITYJUMPSTALL]->setDefault(256);
      parameters_[CbcParam::FEASIBILITYJUMPDEPTH]->setDefault(0);
      parameters_[CbcParam::TREECUTDEPTH]->setDefault(6);
+     parameters_[CbcParam::HEURDECAY]->setDefault(0);
      parameters_[CbcParam::RENS]->setDefault("off");
      parameters_[CbcParam::RINS]->setDefault("on");
      parameters_[CbcParam::ROUNDING]->setDefault("on");
@@ -1096,6 +1098,13 @@ void CbcParameters::synchronizeModel() {
 #endif
     if (fabs(doubleValue)<1.0e40)
       model_->setCutoff(doubleValue);
+
+    // heurDecay: set bit 30 of moreSpecialOptions2 to enable decay
+    if (parameters_[CbcParam::HEURDECAY]->intVal() != 0) {
+      model_->setMoreSpecialOptions2(model_->moreSpecialOptions2() | (1 << 30));
+    } else {
+      model_->setMoreSpecialOptions2(model_->moreSpecialOptions2() & ~(1 << 30));
+    }
 
     if (clpParameters_.getModel())
       clpParameters_.synchronizeModel();
@@ -3204,6 +3213,17 @@ void CbcParameters::addCbcSolverHeurParams() {
       "Heuristics that opt into tree execution (RINS, FJ, rounding) still "
       "run at all depths via the post-loop call. "
       "Default: 6. Set higher to generate cuts deeper in the tree.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::HEURDECAY]->setup(
+      "heurDecay",
+      "Throttle heuristics that don't find solutions (0=off, 1=on)",
+      0, 1,
+      "When 1, heuristics that fail to find solutions are called less and "
+      "less frequently (up to 1M nodes between calls). This can permanently "
+      "disable useful heuristics that only succeed deeper in the tree. "
+      "When 0 (default), all heuristics maintain their original call "
+      "frequency throughout the solve.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::RINS]->setup(

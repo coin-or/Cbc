@@ -3197,12 +3197,12 @@ void CbcParameters::addCbcSolverHeurParams() {
       "feasibilityJumpDepth",
       "Run FJ every N levels in the tree (0 = root only)",
       0, 1000,
-      "When set to 0 (default), FJ runs only at the root node. "
+      "Controls how often FJ runs during branch-and-bound. Default: 6. "
+      "When set to 0, FJ runs only at the root node. "
       "When set to N > 0, FJ also runs at tree nodes whose depth is a "
       "multiple of N (e.g. 6 means depth 6, 12, 18...). This ensures FJ "
       "runs periodically as more variables get fixed by branching. "
-      "Uses 1/4 of the root effort budget per tree node call. "
-      "Recommended: 6 (similar to bound propagation frequency).",
+      "Uses 1/4 of the root effort budget per tree node call.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::TREECUTDEPTH]->setup(

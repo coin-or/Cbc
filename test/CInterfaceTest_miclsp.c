@@ -182,9 +182,17 @@ static int test_miclsp_mip(const MiclspInstance *inst, int k)
       ok = 0;
       mip_diag_wrong_optimal(build_miclsp_for_diag, (void *)inst,
                              inst->opt, 900);
+      /* default debugCuts: catches row cuts invalid regardless of config */
       mip_diag_debug_cuts(build_miclsp_for_diag, (void *)inst,
                           inst->opt, 900,
-                          solution_path(MICLSP_NAMES[k]));
+                          solution_path(MICLSP_NAMES[k]), NULL, NULL);
+      /* explicit nodeBoundProp=on: isolates cuts generated under tightened
+       * node bounds — if no bad row here, row-cut generators are sound and
+       * the bug lies in bound propagation logic itself */
+      mip_diag_debug_cuts(build_miclsp_for_diag, (void *)inst,
+                          inst->opt, 900,
+                          solution_path(MICLSP_NAMES[k]),
+                          "nodeBoundProp", "on");
     } else {
       printf("       -> obj=%.0f  optimal, matches certified=%d"
              "  %d solution(s) validated  OK\n", obj, inst->opt, nsaved);

@@ -14,7 +14,12 @@
  *   }
  *
  *   if (is_proven && fabs(obj - certified_opt) > 1.0) {
- *     mip_diag_wrong_optimal(my_builder, data, certified_opt, 900, 10000);
+ *     mip_diag_wrong_optimal(my_builder, data, certified_opt, 900);
+ *     // default debugCuts run (all features at default settings)
+ *     mip_diag_debug_cuts(my_builder, data, certified_opt, 900, sol, NULL, NULL);
+ *     // explicit nodeBoundProp=on run to isolate cut-generator soundness
+ *     mip_diag_debug_cuts(my_builder, data, certified_opt, 900, sol,
+ *                         "nodeBoundProp", "on");
  *   }
  *
  * Each diagnostic run applies both the time limit and the node limit;
@@ -142,8 +147,8 @@ static void mip_diag_wrong_optimal(
          "  [DIAG] LEAD = found correct obj (not proven): this feature is suspect.\n");
 }
 
-/* Run an additional solve with OsiRowCutDebugger active to identify exactly
- * which cut incorrectly excludes the certified optimal solution.
+/* Run a solve with OsiRowCutDebugger active to identify exactly which cut
+ * incorrectly excludes the certified optimal solution.
  *
  * ref_sol_path  : path to a .sol file containing the certified optimal
  *                 solution (in mipster -writeSolution format or in the
@@ -152,15 +157,21 @@ static void mip_diag_wrong_optimal(
  *                 against this solution; any cut that excludes it prints a
  *                 diagnostic message to stdout.
  *
- * The function applies the same time_limit_sec and node_limit as the
- * diagnostic loop so that CI runs stay bounded.
+ * extra_param / extra_value : optional extra parameter to set before solving
+ *                 (e.g. "nodeBoundProp", "on").  Pass NULL for default config.
+ *
+ * If no "bad row" lines appear in the output the row-cut generators are NOT
+ * the source of the bug; the problem likely lies in bound propagation
+ * (column-bound changes / node pruning) rather than in row cuts.
  */
 static void mip_diag_debug_cuts(
     Cbc_Model *(*builder)(void *userdata),
     void *userdata,
     int certified_opt,
     int time_limit_sec,
-    const char *ref_sol_path)
+    const char *ref_sol_path,
+    const char *extra_param,
+    const char *extra_value)
 {
   if (!ref_sol_path) {
     printf("\n  [DIAG] debugCuts: no reference solution path provided,"
@@ -168,9 +179,16 @@ static void mip_diag_debug_cuts(
     return;
   }
 
-  printf("\n  [DIAG] debugCuts pass — reference solution: %s\n", ref_sol_path);
+  if (extra_param)
+    printf("\n  [DIAG] debugCuts pass (%s=%s) — reference solution: %s\n",
+           extra_param, extra_value, ref_sol_path);
+  else
+    printf("\n  [DIAG] debugCuts pass (default config) — reference solution:"
+           " %s\n", ref_sol_path);
   printf("  [DIAG] time_limit=%ds  no node limit"
-         " — any invalid cut will be flagged below.\n\n", time_limit_sec);
+         " — any invalid cut will be flagged below.\n", time_limit_sec);
+  printf("  [DIAG] If no 'bad row' lines appear: row-cut generators are NOT"
+         " the source of the bug.\n\n");
   fflush(stdout);
 
   Cbc_Model *m = builder(userdata);
@@ -179,6 +197,9 @@ static void mip_diag_debug_cuts(
 
   if (time_limit_sec > 0)
     Cbc_setDblParam(m, DBL_PARAM_TIME_LIMIT, (double)time_limit_sec);
+
+  if (extra_param)
+    Cbc_setParameter(m, extra_param, extra_value);
 
   /* Activate the row-cut debugger for the given solution file. */
   Cbc_setParameter(m, "debugCuts", ref_sol_path);

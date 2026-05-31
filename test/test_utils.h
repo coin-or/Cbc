@@ -25,6 +25,7 @@
 #endif
 
 static char _fp_buf[4096];
+static char _sp_buf[4096];
 
 /* Returns a path to the fixture file <fname> (e.g. "nursesched-sprint02.mps.gz").
  * Uses a static buffer — consume before calling again. */
@@ -36,6 +37,25 @@ static const char *fixture_path(const char *fname)
   else
     snprintf(_fp_buf, sizeof(_fp_buf), FIXTURE_DIR "/fixtures/%s", fname);
   return _fp_buf;
+}
+
+/* Returns the path to a reference solution file for <base> (e.g. "j3041_1"),
+ * or NULL if the file does not exist.  Solutions live in fixtures/solutions/.
+ * Uses $MIPSTER_SOLUTIONS_DIR if set, otherwise FIXTURE_DIR/fixtures/solutions/.
+ * Uses a static buffer — consume before calling again. */
+static const char *solution_path(const char *base)
+{
+  const char *env = getenv("MIPSTER_SOLUTIONS_DIR");
+  if (env && env[0])
+    snprintf(_sp_buf, sizeof(_sp_buf), "%s/%s.sol", env, base);
+  else
+    snprintf(_sp_buf, sizeof(_sp_buf), FIXTURE_DIR "/fixtures/solutions/%s.sol", base);
+
+  FILE *f = fopen(_sp_buf, "r");
+  if (!f)
+    return NULL;
+  fclose(f);
+  return _sp_buf;
 }
 
 /* validate_all_saved_solutions — check every solution in CBC's pool.

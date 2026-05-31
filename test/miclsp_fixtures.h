@@ -244,6 +244,21 @@ static const int C_miclsp_i04_t12_s137_r114[12] = {
 
 #define N_MICLSP_INSTANCES 11
 
+/* Canonical name for each fixture — used to locate reference .sol files. */
+static const char *MICLSP_NAMES[N_MICLSP_INSTANCES] = {
+  "miclsp_i04_t10_s042_r110",
+  "miclsp_i04_t10_s042_r114",
+  "miclsp_i04_t10_s042_r120",
+  "miclsp_i04_t10_s042_r130",
+  "miclsp_i04_t10_s137_r110",
+  "miclsp_i04_t10_s137_r114",
+  "miclsp_i04_t10_s137_r120",
+  "miclsp_i04_t12_s042_r110",
+  "miclsp_i04_t12_s042_r114",
+  "miclsp_i04_t12_s042_r120",
+  "miclsp_i04_t12_s137_r114",
+};
+
 static const MiclspInstance MICLSP_INSTANCES[] = {
   { 4, 10, 1.10, 6538,
     B_miclsp_i04_t10_s042_r110, d_miclsp_i04_t10_s042_r110, f_miclsp_i04_t10_s042_r110, h_miclsp_i04_t10_s042_r110, C_miclsp_i04_t10_s042_r110 },

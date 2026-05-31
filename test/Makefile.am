@@ -58,6 +58,8 @@ endif
 
 bin_PROGRAMS = CInterfaceTest CInterfaceTest_tsp_random CInterfaceTest_fl_random CInterfaceTest_mdkp_random CInterfaceTest_miclsp CInterfaceTest_nursesched CInterfaceTest_a1 CInterfaceTest_graphdraw CInterfaceTest_trdta5581 CInterfaceTest_trd445c CInterfaceTest_j3041_1 CInterfaceTest_yue20013 CInterfaceTest_etDecsi CInterfaceTest_attfInst1 CbcSolverLpTest CInterfaceTest_advanced CInterfaceTest_colgen CInterfaceTest_construction CInterfaceTest_facility CInterfaceTest_jssp CInterfaceTest_kantorovich CInterfaceTest_mip_reopt CInterfaceTest_new CInterfaceTest_tsp_cuts CInterfaceTest_miplib
 
+noinst_PROGRAMS = gen_miclsp_solutions
+
 ########################################################################
 #                         unitTest for CbcCInterface                   #
 ########################################################################
@@ -238,3 +240,11 @@ CInterfaceTest_tsp_cuts_LDADD = ../src/libmipster.la
 CInterfaceTest_miplib_SOURCES = CInterfaceTest_miplib.c
 nodist_EXTRA_CInterfaceTest_miplib_SOURCES = dummy.cpp
 CInterfaceTest_miplib_LDADD = ../src/libmipster.la
+
+########################################################################
+#             gen_miclsp_solutions — reference solution generator      #
+########################################################################
+
+gen_miclsp_solutions_SOURCES = gen_miclsp_solutions.c
+nodist_EXTRA_gen_miclsp_solutions_SOURCES = dummy.cpp
+gen_miclsp_solutions_LDADD = ../src/libmipster.la

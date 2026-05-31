@@ -137,4 +137,59 @@ static void mip_diag_wrong_optimal(
          "  [DIAG] If a run returns WRONG, that feature is not responsible.\n");
 }
 
+/* Run an additional solve with OsiRowCutDebugger active to identify exactly
+ * which cut incorrectly excludes the certified optimal solution.
+ *
+ * ref_sol_path  : path to a .sol file containing the certified optimal
+ *                 solution (in mipster -writeSolution format or in the
+ *                 "idx colname value" format used by gen_miclsp_solutions).
+ *                 Every cut generated during the solve will be checked
+ *                 against this solution; any cut that excludes it prints a
+ *                 diagnostic message to stdout.
+ *
+ * The function applies the same time_limit_sec and node_limit as the
+ * diagnostic loop so that CI runs stay bounded.
+ */
+static void mip_diag_debug_cuts(
+    Cbc_Model *(*builder)(void *userdata),
+    void *userdata,
+    int certified_opt,
+    int time_limit_sec,
+    int node_limit,
+    const char *ref_sol_path)
+{
+  if (!ref_sol_path) {
+    printf("\n  [DIAG] debugCuts: no reference solution path provided,"
+           " skipping.\n");
+    return;
+  }
+
+  printf("\n  [DIAG] debugCuts pass — reference solution: %s\n", ref_sol_path);
+  printf("  [DIAG] Any cut that excludes the optimal solution will be"
+         " flagged below.\n\n");
+  fflush(stdout);
+
+  Cbc_Model *m = builder(userdata);
+  /* Keep log level 1 so OsiRowCutDebugger messages reach stdout. */
+  Cbc_setLogLevel(m, 1);
+
+  if (time_limit_sec > 0)
+    Cbc_setDblParam(m, DBL_PARAM_TIME_LIMIT, (double)time_limit_sec);
+  if (node_limit > 0)
+    Cbc_setIntParam(m, INT_PARAM_MAX_NODES, node_limit);
+
+  /* Activate the row-cut debugger for the given solution file. */
+  Cbc_setParameter(m, "debugCuts", ref_sol_path);
+
+  Cbc_solve(m);
+
+  int is_proven = Cbc_isProvenOptimal(m);
+  double obj    = Cbc_getObjValue(m);
+
+  printf("\n  [DIAG] debugCuts result: %s  obj=%.0f  (certified=%d)\n",
+         is_proven ? "proven" : "not proven", obj, certified_opt);
+
+  Cbc_deleteModel(m);
+}
+
 #endif /* MIP_DIAG_H */

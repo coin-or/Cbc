@@ -6,13 +6,13 @@
 
 This is a development workspace for **MIPster** (`github.com/h-g-s/mipster`) — an open-source mixed-integer linear programming (MIP) solver written in C++, forked from COIN-OR Cbc. The fork diverges from upstream in several important ways (see *What was removed* below) and is rebranded as MIPster.
 
-The `Cbc/` directory is the main **monorepo** — it embeds CoinUtils, Clp, and Cgl sources directly under `src/` and builds everything in a single autotools project. The sibling directories (`CoinUtils/`, `Clp/`, `Cgl/`) are the original separate subprojects kept for reference and for the stable cbc-2.x build at `$MIPSTER_CBC_2X`.
+The **repository root is the monorepo** — it embeds CoinUtils, Clp, and Cgl sources directly under `src/` and builds everything in a single autotools project.
 
-**Build target:** just `Cbc` (the monorepo). `configster` and `cbc_build.sh` only operate on `Cbc/`.
+**Build target:** the repo root. `configster` operates directly on the repo root.
 
 **Dependency order within the monorepo:** `CoinUtils → Clp (includes Osi) → Cgl → Cbc`
 
-> **Note:** Osi sources (`OsiSolverInterface`, `OsiBranchingObject`, `OsiFeatures`, etc.) are compiled as part of the monorepo under `Cbc/src/Osi/`. They are not a separate project.
+> **Note:** Osi sources (`OsiSolverInterface`, `OsiBranchingObject`, `OsiFeatures`, etc.) are compiled as part of the monorepo under `src/OsiCbc/`. They are not a separate project.
 
 ### What was removed from upstream Cbc
 
@@ -24,13 +24,11 @@ The `Cbc/` directory is the main **monorepo** — it embeds CoinUtils, Clp, and 
 
 ### CI & Packaging
 
-GitHub Actions workflows live in `.github/workflows/` and build/package for three platforms:
+GitHub Actions workflows live in `.github/workflows/`. There is a single workflow file:
 
-| Workflow | Produces |
-|---|---|
-| `linux-ci.yml` | Manylinux (x86-64 + aarch64) shared library `.tar.gz`, then `.deb`, `.rpm`, `.pkg.tar.zst` packages |
-| `macos-ci.yml` | macOS `.pkg` installer with headers, library, binary, and man page |
-| `windows-ci.yml` | Windows NSIS installer with DLL, headers, and binary |
+| Workflow | Platforms | Produces |
+|---|---|---|
+| `linux-ci.yml` | Linux x86_64, Linux aarch64, macOS x86_64, macOS arm64, Windows | Shared library `.tar.gz` for each platform; `.deb`, `.rpm`, `.pkg.tar.zst` packages on Linux |
 
 On push to `main` and on tags, CI also uploads release assets. The library is named **`libmipster`** and headers install to `include/mipster/`.
 
@@ -101,47 +99,43 @@ Key options:
 
 ```sh
 # Rebuild and reinstall (no reconfigure needed):
-./cbc_build.sh --install
+make -j$(nproc) && make install
 
-# Rebuild only (no install):
-./cbc_build.sh
-
-# Rebuild the monorepo directly:
-cd Cbc && make V=1 -j$(nproc) && make install
+# Or with verbose output:
+make V=1 -j$(nproc) && make install
 ```
 
-> **Note:** Since everything is a single monorepo (`Cbc/`), any source change is picked up by a plain `make` in `Cbc/` — there is no inter-project cascade to worry about. `./cbc_build.sh --install` is always the safest option.
+> **Note:** Since everything is a single monorepo, any source change is picked up by a plain `make` in the repo root — there is no inter-project cascade to worry about.
 
 ### Adding new source files
 
-When adding new `.cpp`/`.hpp` files to the monorepo, edit `Cbc/src/Makefile.am`:
+When adding new `.cpp`/`.hpp` files to the monorepo, edit `src/Makefile.am`:
 
-1. **Edit `Cbc/src/Makefile.am`** — add the `.cpp` to the appropriate `lib*_la_SOURCES` and the `.hpp` to `includecoin_HEADERS`.
+1. **Edit `src/Makefile.am`** — add the `.cpp` to the appropriate `lib*_la_SOURCES` and the `.hpp` to `includecoin_HEADERS`.
 2. **Regenerate `Makefile.in`** using system autotools:
    ```sh
-   cd Cbc
    autoreconf --install -I BuildTools
    ```
 3. **Reconfigure + build + install** with `./configster --opt --install`.
 
-> **System autotools are sufficient.** `Cbc/` has a `BuildTools` symlink and `AC_CONFIG_MACRO_DIRS([BuildTools])` so `aclocal` finds all COIN-OR m4 macros automatically.
+> **System autotools are sufficient.** The repo root has a `BuildTools` symlink (pointing to `../BuildTools`) and `AC_CONFIG_MACRO_DIRS([BuildTools])` so `aclocal` finds all COIN-OR m4 macros automatically. If the symlink is broken (e.g. after a fresh clone), verify that `../BuildTools` exists relative to the repo root.
 
 ### Clean
 ```sh
-./cbc_clean.sh                  # make clean + distclean in each project
-./cbc_clean.sh --distclean-only # distclean only (removes Makefiles too)
+make clean        # remove build objects (keeps Makefiles)
+make distclean    # full clean (removes Makefiles too; requires reconfigure)
 ```
 
 ### Run tests
 
-The monorepo test suite lives in `Cbc/test/`:
+The monorepo test suite lives in `test/`:
 
 ```sh
 # Run the monorepo test suite:
-cd Cbc/test && make -j$(nproc) test
+cd test && make -j$(nproc) test
 ```
 
-Individual test binaries: `Cbc/test/CInterfaceTest`, `Cbc/test/cbc_unittest`, etc. They can be run directly.
+Individual test binaries: `test/CInterfaceTest`, `test/CbcSolverLpTest`, etc. They can be run directly.
 
 ## Code Formatting
 
@@ -149,7 +143,7 @@ All C++ source files use **clang-format** with the project's `.clang-format` con
 
 ```sh
 # Format all sources in a project:
-cd Cbc && ./format-all-sources.sh
+./format-all-sources.sh
 
 # Format a single file:
 clang-format -i path/to/file.cpp
@@ -163,11 +157,8 @@ Key style rules: 2-space indent, no tabs, `PointerAlignment: Right`, `BreakBefor
 
 - **CoinUtils** — Utility types and data structures (`CoinPackedMatrix`, `CoinMessage`, `CoinBronKerbosch`, adjacency vectors, clique utilities)
 - **Clp** — LP solver (simplex). Also contains the merged Osi layer:
-  - `src/Osi/` — Abstract LP solver interface (`OsiSolverInterface`, `OsiBranchingObject`, `OsiFeatures`, etc.) compiled into `libOsi.la`
-  - `src/OsiClp/` — Clp implementation of the Osi interface (`OsiClpSolverInterface`), compiled into `libOsiClp.la`
-  - `src/OsiCommonTest/` — Shared unit test helpers (`libOsiCommonTest.la`)
-  - `ClpSimplex` (stable) and `AbcSimplex` (experimental parallel version)
-- **Cgl** — Cut generators. Each cut type is in its own subdirectory under `Cgl/src/` (e.g. `CglBKClique`, `CglGomory`, `CglOddWheel`, `CglCliqueStrengthening`)
+  - `src/OsiCbc/` — Abstract LP solver interface implementation (`OsiSolverInterface`, `OsiBranchingObject`, `OsiFeatures`, etc.)
+- **Cgl** — Cut generators. Each cut type is in its own subdirectory under `src/Cgl/` (e.g. `CglBKClique`, `CglGomory`, `CglOddWheel`, `CglCliqueStrengthening`)
 - **Cbc** — MIP solver. Orchestrates B&B using Clp as LP relaxation solver and Cgl cut generators
 
 ### Key Cbc Source Files
@@ -199,10 +190,10 @@ Controlled via `-cgraph`, `-clqstr`, `-clique`, `-oddwheel` parameters.
 $MIPSTER_PREFIX/bin/mipster problem.mps -solve
 
 # Debug launch example (see .vscode/launch.json):
-./Cbc/src/mipster inf1.lp -preprocess off -clqstr before -solve -solu a.sol
+./src/mipster inf1.lp -preprocess off -clqstr before -solve -solu a.sol
 
 # Performance profiling:
-./run_perf.sh   # wraps perf record on an MIPLIB instance
+./scripts/run_perf.sh   # wraps perf record on an MIPLIB instance
 ```
 
 > ⚠️ **IMPORTANT — Parameters order:** only parameters added **before** `-solve` influence the solver behavior. With a few exceptions (e.g. `-solu` action) all parameter settings should be added _before_ `-solve`.
@@ -228,6 +219,59 @@ $MIPSTER_PREFIX/bin/mipster problem.mps -debugCuts /tmp/known.sol -solve 2>&1 | 
 
 **Full workflow, cut type codes, tolerance details, and the TwoMIR bug analysis are documented in:**
 `doc/cut-debugging-howto.md`
+
+### Investigating Wrong-Optimal Failures from CI
+
+When a CI test claims optimal at a wrong objective value (e.g. `CInterfaceTest_miclsp` prints
+`FAIL: claimed optimal obj=X != certified opt=Y`), the test automatically runs two diagnostic
+passes defined in `test/mip_diag.h`:
+
+1. **`mip_diag_wrong_optimal`** — re-solves with 13 configurations, each disabling one cut family
+   or feature. Runs are time-limited (no node limit), so even bugs that only manifest deep in
+   the tree can reproduce.
+2. **`mip_diag_debug_cuts`** — re-solves with `OsiRowCutDebugger` active against the reference
+   solution file, printing any cut that would exclude it.
+
+#### Reading the diagnostic output from CI logs
+
+Fetch the log for the failing job and grep for `DIAG`:
+
+```sh
+gh run view <RUN_ID> --log | grep -E "DIAG|LEAD|bad row"
+```
+
+Each diagnostic result is printed on its own labeled line:
+
+```
+[DIAG  1/13] no-cgraph    → not proven  obj=8235  bound=7620  gap=7.5%  (time limit)
+[DIAG  8/13] no-flow      → not proven  obj=8181  bound=8050  gap=1.6%  (time limit)  *** LEAD ***
+[DIAG 12/13] no-twomir    → WRONG       obj=8204  (same wrong result)
+```
+
+**Interpretation:**
+- `OK` — disabling this feature fixed the bug (it was the cause).
+- `WRONG` — same wrong result persists; this feature is not the cause.
+- `not proven` — ran out of time without proving optimality; obj value still informative.
+- `*** LEAD ***` — this config found the **certified optimal obj** even if not proven; strong
+  signal that the disabled feature contains the faulty cut. Prioritise these for follow-up.
+
+#### Follow-up steps
+
+1. **Identify LEADs** — the feature(s) marked `LEAD` are the prime suspects.
+2. **Reproduce locally** with that feature disabled to confirm: add `-<feature> off` before `-solve`.
+3. **Run debugCuts** to find the exact invalid cut (requires the reference `.sol` file):
+   ```sh
+   $MIPSTER_PREFIX/bin/mipster problem.mps -debugCuts /path/to/known.sol -solve 2>&1 | grep "bad row"
+   ```
+4. **Cross-reference** the cut type code from `bad row` output with `doc/cut-debugging-howto.md`
+   to identify the generator responsible.
+
+#### Benign CI cancellations
+
+When a newer push arrives while a CI run is in flight, GitHub Actions cancels it with
+*"Canceling since a higher priority waiting request exists"* — this shows as a failure but
+is **not a real problem**. Always check `gh run list` to confirm whether a more recent
+successful run superseded the cancelled one.
 
 ## Hardware & Parallelism
 

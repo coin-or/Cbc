@@ -28,20 +28,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-/* Instance names matching the comments in miclsp_fixtures.h */
-static const char *MICLSP_NAMES[N_MICLSP_INSTANCES] = {
-  "miclsp_i04_t10_s042_r110",
-  "miclsp_i04_t10_s042_r114",
-  "miclsp_i04_t10_s042_r120",
-  "miclsp_i04_t10_s042_r130",
-  "miclsp_i04_t10_s137_r110",
-  "miclsp_i04_t10_s137_r114",
-  "miclsp_i04_t10_s137_r120",
-  "miclsp_i04_t12_s042_r110",
-  "miclsp_i04_t12_s042_r114",
-  "miclsp_i04_t12_s042_r120",
-  "miclsp_i04_t12_s137_r114",
-};
 
 static int write_solution(Cbc_Model *m, const char *outpath)
 {

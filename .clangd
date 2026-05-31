@@ -1,0 +1,8 @@
+CompileFlags:
+  # Remove machine-specific flags that clangd cannot handle portably.
+  # These are injected by configster and vary per machine.
+  Remove:
+    - -march=native
+    - -mtune=native
+    - -ffp-contract=off
+    - -DCOIN_AVX2=*

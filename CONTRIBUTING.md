@@ -14,6 +14,8 @@ This guide walks you through setting up a complete development and benchmarking 
 | GCC 7+ or Clang 6+ | C++14 compiler |
 | `automake`, `autoconf`, `libtool`, `m4` | Build system |
 | `clang-format` | Code formatting |
+| `clangd` | Language server (jump-to-definition, completions) |
+| `bear` | Generate `compile_commands.json` for clangd |
 | `pkg-config` | Dependency discovery |
 | `GNU parallel` | Parallel benchmark runs |
 | `python3` | Experiment analysis scripts |
@@ -22,13 +24,19 @@ This guide walks you through setting up a complete development and benchmarking 
 On Ubuntu/Debian:
 ```sh
 sudo apt install git gh build-essential automake autoconf libtool \
-     pkg-config clang-format parallel python3 wget
+     pkg-config clang-format clangd bear parallel python3 wget
 ```
 
 On macOS (Homebrew):
 ```sh
 brew install gh automake autoconf libtool pkg-config clang-format \
-     parallel python3 wget
+     llvm bear parallel python3 wget
+```
+
+On Arch / CachyOS:
+```sh
+sudo pacman -S git github-cli base-devel automake autoconf libtool \
+     pkg-config clang bear parallel python wget
 ```
 
 ---
@@ -306,28 +314,82 @@ perf report
 All C++ source files must be formatted with `clang-format` using the project's config:
 
 ```sh
-cd Cbc && ./format-all-sources.sh
+./format-all-sources.sh
 ```
 
 Or for a single file:
 ```sh
-clang-format -i Cbc/src/MyNewFile.cpp
+clang-format -i src/MyNewFile.cpp
 ```
 
 Style: WebKit-based, 2-space indent, no tabs, no column limit.
 
 ---
 
-## 7. Running Tests
+## 7. IDE / Editor Setup (clangd)
+
+The repository includes a `.clangd` config file that handles machine-specific compiler
+flags, so any editor with clangd support (Neovim, VSCode, CLion, …) works
+out of the box once you generate a compilation database.
+
+### Generate `compile_commands.json`
+
+Install `bear`:
 
 ```sh
-cd Cbc/test && make -j$(nproc) test
+# Arch / CachyOS
+sudo pacman -S bear
+
+# Ubuntu / Debian
+sudo apt install bear
+
+# macOS (Homebrew)
+brew install bear
+```
+
+Then generate the database from the repo root (force a full rebuild so bear can intercept every compilation):
+
+```sh
+cd ~/dev/mipster
+bear -- make -j$(nproc) -B
+```
+
+This writes `compile_commands.json` to the repo root. It is gitignored because it contains
+absolute paths specific to your machine — regenerate it after any `./configster` run that
+changes compiler flags or adds new source files.
+
+### Neovim
+
+Enable the `clangd` LSP server in your config (e.g. `lua/configs/lspconfig.lua`):
+
+```lua
+vim.lsp.enable("clangd")
+```
+
+Install the C++ Treesitter parser for syntax highlighting:
+
+```viml
+:TSInstall cpp
+```
+
+### VSCode
+
+Install the [clangd extension](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
+and disable the built-in IntelliSense (`C_Cpp.intelliSenseEngine: "disabled"` in
+`settings.json`) to avoid conflicts.
+
+---
+
+## 8. Running Tests
+
+```sh
+cd test && make -j$(nproc) test
 ```
 
 Run a quick smoke test before submitting a PR:
 ```sh
-./cbc_build.sh --install
-cd Cbc/test && make -j$(nproc) test
+make -j$(nproc) && make install
+cd test && make -j$(nproc) test
 ```
 
 ---
@@ -336,8 +398,8 @@ cd Cbc/test && make -j$(nproc) test
 
 1. **Fork** the repository and create a branch from `main`.
 2. **Make your changes** — keep commits focused and atomic.
-3. **Format code**: `cd Cbc && ./format-all-sources.sh`
-4. **Run tests**: `cd Cbc/test && make -j$(nproc) test`
+3. **Format code**: `./format-all-sources.sh`
+4. **Run tests**: `cd test && make -j$(nproc) test`
 5. **Open a Pull Request** against `main` with a clear description.
 
 ### Commit messages

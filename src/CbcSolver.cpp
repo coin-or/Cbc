@@ -1381,11 +1381,12 @@ int CbcSolver::applyLpMethod()
         model_.useElapsedTime() ? CoinGetTimeOfDay() : CoinCpuTime());
     applyClpTimeLimit(model_, model2);
   }
-
+  // say in Cbc
+  model2->setSpecialOptions(model2->specialOptions()|COIN_CBC_USING_CLP);
   model2->initialSolve(solveOptions);
   clearClpTimeLimits(model2);
 
-#ifndef CLP_OLD_STYLE
+#if 0 // not worth doing in Cbc ndef CLP_OLD_STYLE
   if (model2->presolveRows() >= 0
       && model_.messageHandler()->logLevel() >= 1) {
     printf("  CLP presolve: %d rows, %d cols (%.2fs)\n",

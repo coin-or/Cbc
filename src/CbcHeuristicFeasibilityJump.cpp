@@ -49,7 +49,11 @@ CbcHeuristicFeasibilityJump::CbcHeuristicFeasibilityJump(const CbcHeuristicFeasi
   , seed_(rhs.seed_)
   , weightUpdateDecay_(rhs.weightUpdateDecay_)
   , maxEffort_(rhs.maxEffort_)
+  , effortMultiplier_(rhs.effortMultiplier_)
+  , stallMultiplier_(rhs.stallMultiplier_)
   , maxSolutions_(rhs.maxSolutions_)
+  , feasibilityTolerance_(rhs.feasibilityTolerance_)
+  , integerTolerance_(rhs.integerTolerance_)
 {
 }
 
@@ -68,7 +72,11 @@ CbcHeuristicFeasibilityJump &CbcHeuristicFeasibilityJump::operator=(const CbcHeu
     seed_ = rhs.seed_;
     weightUpdateDecay_ = rhs.weightUpdateDecay_;
     maxEffort_ = rhs.maxEffort_;
+    effortMultiplier_ = rhs.effortMultiplier_;
+    stallMultiplier_ = rhs.stallMultiplier_;
     maxSolutions_ = rhs.maxSolutions_;
+    feasibilityTolerance_ = rhs.feasibilityTolerance_;
+    integerTolerance_ = rhs.integerTolerance_;
   }
   return *this;
 }
@@ -120,7 +128,8 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
   // ------------------------------------------------------------------
   // Build FeasibilityJumpSolver from the current LP data.
   // ------------------------------------------------------------------
-  FeasibilityJumpSolver fj(seed_, 0, weightUpdateDecay_);
+  FeasibilityJumpSolver fj(seed_, 0, weightUpdateDecay_,
+    feasibilityTolerance_, feasibilityTolerance_);
 
   const double *colLower = solver->getColLower();
   const double *colUpper = solver->getColUpper();
@@ -187,11 +196,26 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
     return 0;
 
   // ------------------------------------------------------------------
+  // Compute effective effort budget and stall limit.
+  // ------------------------------------------------------------------
+  const int64_t nnz = matrixByRow->getNumElements();
+  int64_t effectiveMaxEffort = maxEffort_;
+  if (effectiveMaxEffort <= 0) {
+    // NNZ-scaled: nnz * effortMultiplier_
+    effectiveMaxEffort = nnz * static_cast<int64_t>(effortMultiplier_);
+  }
+  int64_t stallLimit = 0;
+  if (stallMultiplier_ > 0) {
+    stallLimit = nnz * static_cast<int64_t>(stallMultiplier_);
+  }
+
+  // ------------------------------------------------------------------
   // Run FeasibilityJump; collect best feasible solution via callback.
   // Termination conditions (whichever fires first):
-  //   1. status.totalEffort >= maxEffort_  (deterministic iteration budget)
-  //   2. solutionsFound >= maxSolutions_   (enough solutions found)
-  //   3. CBC global time limit exceeded    (hard wall)
+  //   1. status.totalEffort >= effectiveMaxEffort (iteration budget)
+  //   2. status.effortSinceLastImprovement > stallLimit (stall)
+  //   3. solutionsFound >= maxSolutions_   (enough solutions found)
+  //   4. CBC global time limit exceeded    (hard wall)
   // ------------------------------------------------------------------
   std::vector< double > bestSol;
   double bestObj = DBL_MAX;
@@ -246,7 +270,11 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
       return CallbackControlFlow::Terminate;
 
     // Deterministic iteration budget.
-    if (status.totalEffort >= maxEffort_)
+    if (status.totalEffort >= effectiveMaxEffort)
+      return CallbackControlFlow::Terminate;
+
+    // Stall-based early termination.
+    if (stallLimit > 0 && status.effortSinceLastImprovement > stallLimit)
       return CallbackControlFlow::Terminate;
 
     ++callbackCount;

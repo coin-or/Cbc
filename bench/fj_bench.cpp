@@ -13,6 +13,7 @@
  *   --maxsol N          Stop after N solutions (default: 5)
  *   --seed N            PRNG seed (default: 0)
  *   --timelimit S       Wall-clock limit in seconds (default: 300)
+ *   --stall N           Stall limit (effort since last improvement; 0=off, default: 0)
  *   --relax-continuous  Relax continuous variable constraints (default: off)
  *   --loglevel N        0=silent 1=FJ progress 2=verbose (default: 1)
  *   --header            Print TSV header line then exit
@@ -96,6 +97,7 @@ static FJResult runFJ(
   int maxSol,
   int seed,
   double timelimit,
+  int64_t stallLimit,
   bool relaxContinuous,
   int loglevel)
 {
@@ -164,6 +166,9 @@ static FJResult runFJ(
     if (status.totalEffort >= maxEffort)
       return CallbackControlFlow::Terminate;
 
+    if (stallLimit > 0 && (int64_t)status.effortSinceLastImprovement > stallLimit)
+      return CallbackControlFlow::Terminate;
+
     result.totalEffort = status.totalEffort;
 
     if (status.solution != nullptr) {
@@ -219,6 +224,7 @@ int main(int argc, char *argv[])
   double timelimit = 300.0;
   bool relaxContinuous = false;
   int loglevel = 1;
+  int64_t stallLimit = 0; // 0 = no stall limit (benchmark default)
   const char *mpsFile = nullptr;
 
   for (int i = 1; i < argc; ++i) {
@@ -233,6 +239,8 @@ int main(int argc, char *argv[])
       seed = atoi(argv[++i]);
     } else if (strcmp(argv[i], "--timelimit") == 0 && i + 1 < argc) {
       timelimit = atof(argv[++i]);
+    } else if (strcmp(argv[i], "--stall") == 0 && i + 1 < argc) {
+      stallLimit = (int64_t)atoll(argv[++i]);
     } else if (strcmp(argv[i], "--relax-continuous") == 0) {
       relaxContinuous = true;
     } else if (strcmp(argv[i], "--loglevel") == 0 && i + 1 < argc) {
@@ -252,6 +260,7 @@ int main(int argc, char *argv[])
       "  --maxsol N          stop after N solutions (default: 5)\n"
       "  --seed N            PRNG seed (default: 0)\n"
       "  --timelimit S       wall-clock limit in seconds (default: 300)\n"
+      "  --stall N           stall limit (effort since last improvement; 0=off, default: 0)\n"
       "  --relax-continuous  relax continuous constraints\n"
       "  --loglevel N        0=silent 1=solutions 2=verbose (default: 1)\n"
       "  --header            print TSV header and exit\n");
@@ -294,6 +303,13 @@ int main(int argc, char *argv[])
   }
 
   double lpStart = now_secs();
+  // Constrain LP solving to leave time for FJ; use at most half the budget.
+  double lpTimeLimit = timelimit > 0.0 ? timelimit * 0.5 : -1.0;
+  if (lpTimeLimit > 0.0)
+    cbcSolver.model()->solver()->setDblParam(OsiDualObjectiveLimit, 1e50); // no cutoff
+  if (lpTimeLimit > 0.0)
+    dynamic_cast<OsiClpSolverInterface *>(cbcSolver.model()->solver())
+      ->getModelPtr()->setMaximumSeconds(lpTimeLimit);
   int lpRc = cbcSolver.solveRootLp(); // 0=optimal, 1=stopped, 2=infeasible, 3=unbounded
   double lpTime = now_secs() - lpStart;
 
@@ -315,8 +331,17 @@ int main(int argc, char *argv[])
     fflush(stdout);
   }
 
-  FJResult r = runFJ(*preparedOsi, maxEffort, maxSol, seed, timelimit,
-                     relaxContinuous, loglevel);
+  double fjTimelimit = timelimit > 0.0 ? timelimit - lpTime : 0.0;
+  if (fjTimelimit <= 0.0 && timelimit > 0.0) {
+    // LP consumed all the time
+    printf("%s\tNOTFOUND\tNA\t%.4f\t0.0000\t-1.0000\t-1\t0\t0\t%lld\t%.0f\t%d\n",
+      instName.c_str(), lpTime,
+      (long long)maxEffort, timelimit, seed);
+    return 2;
+  }
+
+  FJResult r = runFJ(*preparedOsi, maxEffort, maxSol, seed, fjTimelimit,
+                     stallLimit, relaxContinuous, loglevel);
 
   // TSV output line
   printf("%s\t%s\t%s\t%.4f\t%.4f\t%.4f\t%lld\t%lld\t%d\t%lld\t%.0f\t%d\n",

@@ -667,7 +667,9 @@ void CbcParameters::addCbcParams() {
   // Integer params — Heuristics
   for (int code : {CbcParam::DIVEOPT, CbcParam::DIVEOPTSOLVES,
                     CbcParam::FEASIBILITYJUMPEFFORT,
+                    CbcParam::FEASIBILITYJUMPEFFORTMULT,
                     CbcParam::FEASIBILITYJUMPMAXSOL,
+                    CbcParam::FEASIBILITYJUMPSTALL,
                     CbcParam::FPUMPITS, CbcParam::FPUMPTUNE,
                     CbcParam::FPUMPTUNE2, CbcParam::HEUROPTIONS,
                     CbcParam::FPUMPPASSFREQ, CbcParam::DEPTHMINIBAB,
@@ -926,8 +928,10 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::PROXIMITY]->setDefault("off");
      parameters_[CbcParam::RANDROUND]->setDefault("off");
      parameters_[CbcParam::FEASIBILITYJUMP]->setDefault("on");
-     parameters_[CbcParam::FEASIBILITYJUMPEFFORT]->setDefault(20000000);
+     parameters_[CbcParam::FEASIBILITYJUMPEFFORT]->setDefault(0);
+     parameters_[CbcParam::FEASIBILITYJUMPEFFORTMULT]->setDefault(1024);
      parameters_[CbcParam::FEASIBILITYJUMPMAXSOL]->setDefault(1);
+     parameters_[CbcParam::FEASIBILITYJUMPSTALL]->setDefault(256);
      parameters_[CbcParam::RENS]->setDefault("off");
      parameters_[CbcParam::RINS]->setDefault("on");
      parameters_[CbcParam::ROUNDING]->setDefault("on");
@@ -3139,13 +3143,21 @@ void CbcParameters::addCbcSolverHeurParams() {
 
   parameters_[CbcParam::FEASIBILITYJUMPEFFORT]->setup(
       "feasibilityJumpEffort",
-      "Iteration budget for the Feasibility Jump heuristic",
+      "Fixed iteration budget for Feasibility Jump (0 = use NNZ-scaled)",
       0, COIN_INT_MAX,
-      "Maximum effort (deterministic iteration units) spent in a single "
-      "Feasibility Jump call. The internal effort counter grows by "
-      "O(problem nonzeros) per inner step, making this budget independent "
-      "of CPU speed. Default: 20000000 (~20 million units). "
-      "Increase for harder instances; decrease to limit overhead at the root node.",
+      "Fixed effort budget (deterministic iteration units) for a single "
+      "Feasibility Jump call. When set to 0 (default), the budget is "
+      "computed as NNZ * effortMultiplier, scaling with problem size. "
+      "Set to a positive value to use a fixed budget (useful for benchmarks).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FEASIBILITYJUMPEFFORTMULT]->setup(
+      "feasibilityJumpEffortMult",
+      "NNZ multiplier for Feasibility Jump effort budget",
+      0, 100000,
+      "When feasibilityJumpEffort is 0, the effort budget is computed as "
+      "NNZ * this multiplier. Default: 1024 (same as HiGHS). "
+      "Larger values give FJ more time on harder instances.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::FEASIBILITYJUMPMAXSOL]->setup(
@@ -3154,9 +3166,17 @@ void CbcParameters::addCbcSolverHeurParams() {
       0, COIN_INT_MAX,
       "The Feasibility Jump heuristic stops as soon as it has found this "
       "many integer-feasible solutions in a single call. "
-      "Default: 1 (stop after the first solution). "
-      "Set to a large value (e.g. 1000000) to keep searching until the "
-      "effort budget or CBC global time limit is reached.",
+      "Default: 1 (stop after the first solution).",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::FEASIBILITYJUMPSTALL]->setup(
+      "feasibilityJumpStall",
+      "NNZ multiplier for stall-based early termination (0 = disable)",
+      0, 100000,
+      "Terminate Feasibility Jump when effort since last improvement exceeds "
+      "NNZ * this multiplier. Default: 256 (same as HiGHS). "
+      "Prevents wasting time when FJ is stuck in a local minimum. "
+      "Set to 0 to disable stall-based termination.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::RINS]->setup(

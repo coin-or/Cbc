@@ -51,22 +51,44 @@ public:
   inline double weightUpdateDecay() const { return weightUpdateDecay_; }
 
   /// Maximum effort (deterministic iteration budget) for one heuristic call.
-  /// The effort counter in FJStatus::totalEffort grows by O(problem nonzeros)
-  /// per inner step, so this is a machine-independent proxy for iterations.
-  /// Default: 10,000,000.
+  /// If positive, used as a fixed budget. If zero (default), the budget is
+  /// computed as NNZ * effortMultiplier_, scaling with problem size.
+  /// Default: 0 (use NNZ-scaled effort).
   inline void setMaxEffort(int64_t e) { maxEffort_ = e; }
   inline int64_t maxEffort() const { return maxEffort_; }
+
+  /// Multiplier for NNZ-scaled effort budget (default 1024, like HiGHS).
+  /// Only used when maxEffort_ == 0.
+  inline void setEffortMultiplier(int m) { effortMultiplier_ = m; }
+  inline int effortMultiplier() const { return effortMultiplier_; }
+
+  /// Stall limit: terminate when effortSinceLastImprovement exceeds
+  /// NNZ * stallMultiplier_. Default 256 (like HiGHS). Set to 0 to disable.
+  inline void setStallMultiplier(int m) { stallMultiplier_ = m; }
+  inline int stallMultiplier() const { return stallMultiplier_; }
 
   /// Stop after finding this many feasible solutions. Default: 1.
   inline void setMaxSolutions(int n) { maxSolutions_ = n; }
   inline int maxSolutions() const { return maxSolutions_; }
 
+  /// Feasibility tolerance for constraint violation (default: use solver's).
+  inline void setFeasibilityTolerance(double t) { feasibilityTolerance_ = t; }
+  inline double feasibilityTolerance() const { return feasibilityTolerance_; }
+
+  /// Integer tolerance (default: use solver's).
+  inline void setIntegerTolerance(double t) { integerTolerance_ = t; }
+  inline double integerTolerance() const { return integerTolerance_; }
+
 protected:
   bool relaxContinuous_ = false;
   int seed_ = 0;
   double weightUpdateDecay_ = 1.0;
-  int64_t maxEffort_ = 10000000;
+  int64_t maxEffort_ = 0; // 0 = use NNZ-scaled
+  int effortMultiplier_ = 1024;
+  int stallMultiplier_ = 256;
   int maxSolutions_ = 1;
+  double feasibilityTolerance_ = 1.0e-6;
+  double integerTolerance_ = 1.0e-6;
 };
 
 #endif // CbcHeuristicFeasibilityJump_H

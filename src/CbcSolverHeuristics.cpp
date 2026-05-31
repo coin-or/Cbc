@@ -1474,7 +1474,13 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
     CbcHeuristicFeasibilityJump heuristicFJ(*model);
     heuristicFJ.setHeuristicName("FeasibilityJump");
     heuristicFJ.setMaxEffort(parameters[CbcParam::FEASIBILITYJUMPEFFORT]->intVal());
+    heuristicFJ.setEffortMultiplier(parameters[CbcParam::FEASIBILITYJUMPEFFORTMULT]->intVal());
+    heuristicFJ.setStallMultiplier(parameters[CbcParam::FEASIBILITYJUMPSTALL]->intVal());
     heuristicFJ.setMaxSolutions(parameters[CbcParam::FEASIBILITYJUMPMAXSOL]->intVal());
+    heuristicFJ.setFeasibilityTolerance(
+      parameters[CbcParam::INTEGERTOLERANCE]->dblVal());
+    heuristicFJ.setIntegerTolerance(
+      parameters[CbcParam::INTEGERTOLERANCE]->dblVal());
     model->addHeuristic(&heuristicFJ);
     anyToDo = true;
   }

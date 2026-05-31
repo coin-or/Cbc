@@ -39,13 +39,13 @@ struct FJStatus
     double *solution;
 };
 
-const double violationTolerance = 1.0e-5;
-const double equalityTolerance = 1.0e-5;
+const double defaultViolationTolerance = 1.0e-5;
+const double defaultEqualityTolerance = 1.0e-5;
 
-// Measures if two doubles are equal within a tolerance of 1.0e-5.
-inline bool eq(double a, double b)
+// Measures if two doubles are equal within a tolerance.
+inline bool eq(double a, double b, double tol = defaultEqualityTolerance)
 {
-    return fabs(a - b) < equalityTolerance;
+    return fabs(a - b) < tol;
 }
 
 struct IdxCoeff
@@ -125,6 +125,9 @@ struct Problem
     std::vector<double> incumbentAssignment;
     std::vector<uint32_t> violatedConstraints;
     bool usedRelaxContinuous = false;
+
+    double equalityTolerance = defaultEqualityTolerance;
+    double violationTolerance = defaultViolationTolerance;
 
     size_t nNonzeros = 0;
     double incumbentObjective = NAN;
@@ -382,8 +385,8 @@ public:
 
                 if (problem.vars[varIdx].vartype == VarType::Integer)
                     validRange = {
-                        std::ceil(validRange.first - equalityTolerance),
-                        std::floor(validRange.second + equalityTolerance),
+                        std::ceil(validRange.first - problem.equalityTolerance),
+                        std::floor(validRange.second + problem.equalityTolerance),
                     };
 
                 if (validRange.first > validRange.second)
@@ -479,11 +482,15 @@ class FeasibilityJumpSolver
     const size_t maxMovesToEvaluate = 25;
 
 public:
-    FeasibilityJumpSolver(int seed = 0, int _verbosity = 0, double _weightUpdateDecay = 1.0)
+    FeasibilityJumpSolver(int seed = 0, int _verbosity = 0, double _weightUpdateDecay = 1.0,
+                          double _equalityTolerance = defaultEqualityTolerance,
+                          double _violationTolerance = defaultViolationTolerance)
     {
         verbosity = _verbosity;
         weightUpdateDecay = _weightUpdateDecay;
         rng = std::mt19937(seed);
+        problem.equalityTolerance = _equalityTolerance;
+        problem.violationTolerance = _violationTolerance;
     }
 
     int addVar(VarType vartype, double lb, double ub, double objCoeff)

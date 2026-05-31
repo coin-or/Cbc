@@ -1,0 +1,66 @@
+{
+  "name": "mipster",
+  "description": "MIPster MIP solver development agent — C++ development, building, testing, experiments, and performance analysis",
+  "prompt": "file://mipster.prompt.md",
+  "tools": [
+    "read",
+    "write",
+    "shell",
+    "grep",
+    "glob",
+    "code",
+    "web_search",
+    "web_fetch",
+    "subagent",
+    "todo_list"
+  ],
+  "allowedTools": [
+    "read",
+    "grep",
+    "glob",
+    "code"
+  ],
+  "toolsSettings": {
+    "write": {
+      "allowedPaths": [
+        "src/**",
+        "test/**",
+        "examples/**",
+        "scripts/**",
+        "doc/**",
+        "bench/**",
+        "*.sh",
+        "*.py",
+        "*.cpp",
+        "*.txt",
+        "*.tsv",
+        "*.csv",
+        ".kiro/**"
+      ],
+      "deniedPaths": [
+        "**/configure",
+        "**/configure~",
+        "**/Makefile.in",
+        "**/aclocal.m4",
+        "**/.git/**"
+      ]
+    },
+    "shell": {
+      "autoAllowReadonly": true
+    }
+  },
+  "resources": [
+    "file://AGENTS.md",
+    "file://solvable_instances.tsv"
+  ],
+  "hooks": {
+    "agentSpawn": [
+      {
+        "command": "echo '=== MIPster Dev Environment ===' && echo \"Optimized build: ~/prog/cbc/bin/mipster\" && test -x ~/prog/cbc/bin/mipster && echo 'Status: installed' || echo 'Status: not found — run ./configster --opt --install'",
+        "timeout_ms": 5000
+      }
+    ]
+  },
+  "keyboardShortcut": "ctrl+shift+c",
+  "welcomeMessage": "    __  ___________       __                   ◉\n   /  |/  /  _/ __ \\_____/ /____  _____       / \\\n  / /|_/ // // /_/ / ___/ __/ _ \\/ ___/      ◉   ◉\n / /  / // // ____(__  ) /_/  __/ /         /|   |\\\n/_/  /_/___/_/   /____/\\__/\\___/_/         ◉ ◉   ◉ ◉\n    {≈≈≈}  globally optimal · locally hip\n\nMIPster dev agent ready. C++ development, building, testing, experiments, and performance analysis."
+}

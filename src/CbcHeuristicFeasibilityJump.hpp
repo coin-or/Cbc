@@ -33,6 +33,9 @@ public:
   virtual void resetModel(CbcModel *model) override;
   virtual void setModel(CbcModel *model) override;
 
+  /// Override to enable tree execution when minDepth > 0.
+  virtual bool shouldHeurRun(int whereFrom) override;
+
   /** Run the heuristic.  Returns 1 and fills newSolution/objectiveValue if a
    *  feasible integer solution is found; 0 otherwise. */
   using CbcHeuristic::solution;
@@ -67,6 +70,11 @@ public:
   inline void setStallMultiplier(int m) { stallMultiplier_ = m; }
   inline int stallMultiplier() const { return stallMultiplier_; }
 
+  /// Minimum tree depth to run FJ at non-root nodes. Default: 0 (root only).
+  /// Set to e.g. 5 to run FJ at nodes with depth >= 5 (more variables fixed).
+  inline void setMinDepth(int d) { minDepth_ = d; }
+  inline int minDepth() const { return minDepth_; }
+
   /// Stop after finding this many feasible solutions. Default: 1.
   inline void setMaxSolutions(int n) { maxSolutions_ = n; }
   inline int maxSolutions() const { return maxSolutions_; }
@@ -86,6 +94,7 @@ protected:
   int64_t maxEffort_ = 0; // 0 = use NNZ-scaled
   int effortMultiplier_ = 1024;
   int stallMultiplier_ = 256;
+  int minDepth_ = 0; // 0 = root only
   int maxSolutions_ = 1;
   double feasibilityTolerance_ = 1.0e-6;
   double integerTolerance_ = 1.0e-6;

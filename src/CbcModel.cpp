@@ -9808,6 +9808,40 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   } while ((numberTries > 0 || keepGoing) && (!this->maximumSecondsReached()) && !eventHappened_);
   /*
       End cut generation loop.
+
+      Run heuristics at tree nodes even when cuts were skipped (depth >= 6).
+      The cut loop above only runs heuristics when numberTries > 0, but
+      heuristics should not be tied to cut generation.
+    */
+  if (node && feasible && !this->maximumSecondsReached() && !eventHappened_) {
+    // Run heuristics at tree nodes where the cut loop skipped them
+    // (depth >= STOP_CUTS_NOW sets numberTries=0, bypassing the in-loop call).
+    if (currentDepth_ >= STOP_CUTS_NOW) {
+      double *newSolution = new double[numberColumns];
+      double heuristicValue = getCutoff();
+      int found = -1;
+      int whereFrom = 4; // tree node
+      for (int i = 0; i < numberHeuristics_; i++) {
+        if (!heuristic_[i]->shouldHeurRun(whereFrom))
+          continue;
+        double saveValue = heuristicValue;
+        int ifSol = heuristic_[i]->solution(heuristicValue, newSolution);
+        if (ifSol > 0) {
+          heuristic_[i]->incrementNumberSolutionsFound();
+          found = i;
+          incrementUsed(newSolution);
+          lastHeuristic_ = heuristic_[found];
+          setBestSolution(CBC_ROUNDING, heuristicValue, newSolution);
+          whereFrom |= 8; // say solution found
+        } else if (ifSol < 0) {
+          heuristicValue = saveValue;
+        }
+      }
+      delete[] newSolution;
+    }
+  }
+  /*
+      End cut generation loop.
     */
   {
     // switch on

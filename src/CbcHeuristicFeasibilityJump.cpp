@@ -5,6 +5,7 @@
 // Reference: Leitner, Fischetti, Toth (2023), "Feasibility Jump"
 //   https://link.springer.com/article/10.1007/s12532-023-00234-8
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cfloat>
@@ -51,6 +52,7 @@ CbcHeuristicFeasibilityJump::CbcHeuristicFeasibilityJump(const CbcHeuristicFeasi
   , maxEffort_(rhs.maxEffort_)
   , effortMultiplier_(rhs.effortMultiplier_)
   , stallMultiplier_(rhs.stallMultiplier_)
+  , minDepth_(rhs.minDepth_)
   , maxSolutions_(rhs.maxSolutions_)
   , feasibilityTolerance_(rhs.feasibilityTolerance_)
   , integerTolerance_(rhs.integerTolerance_)
@@ -74,11 +76,22 @@ CbcHeuristicFeasibilityJump &CbcHeuristicFeasibilityJump::operator=(const CbcHeu
     maxEffort_ = rhs.maxEffort_;
     effortMultiplier_ = rhs.effortMultiplier_;
     stallMultiplier_ = rhs.stallMultiplier_;
+    minDepth_ = rhs.minDepth_;
     maxSolutions_ = rhs.maxSolutions_;
     feasibilityTolerance_ = rhs.feasibilityTolerance_;
     integerTolerance_ = rhs.integerTolerance_;
   }
   return *this;
+}
+
+bool CbcHeuristicFeasibilityJump::shouldHeurRun(int whereFrom)
+{
+  if (whereFrom == 4 && minDepth_ > 0) {
+    // Tree call: allow if deep enough (bypass complex distance/frequency logic)
+    numCouldRun_++;
+    return true;
+  }
+  return CbcHeuristic::shouldHeurRun(whereFrom);
 }
 
 void CbcHeuristicFeasibilityJump::resetModel(CbcModel *model)
@@ -98,12 +111,23 @@ void CbcHeuristicFeasibilityJump::setModel(CbcModel *model)
 int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
   double *newSolution)
 {
-  if (!shouldHeurRun(0))
-    return 0;
+  // Depth-based control: run at root (depth 0) always, and at tree nodes
+  // only when current depth >= minDepth_ (more variables fixed by branching).
+  int depth = model_->currentDepth();
+  int nodeCount = model_->getNodeCount();
 
-  // Only run at the root node.
-  if (model_->getNodeCount() > 0)
-    return 0;
+  if (nodeCount == 0) {
+    // Root node: use standard shouldHeurRun check
+    if (!shouldHeurRun(0))
+      return 0;
+  } else {
+    // Tree node: the external shouldHeurRun(4) already passed.
+    // Just check our depth requirement.
+    if (minDepth_ <= 0)
+      return 0; // disabled in tree
+    if (depth < minDepth_)
+      return 0; // not deep enough
+  }
 
   OsiSolverInterface *solver = model_->solver();
   if (!solver)
@@ -197,6 +221,8 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
 
   // ------------------------------------------------------------------
   // Compute effective effort budget and stall limit.
+  // In the tree (depth > 0), use a fraction of the root budget to keep
+  // per-node overhead low.
   // ------------------------------------------------------------------
   const int64_t nnz = matrixByRow->getNumElements();
   int64_t effectiveMaxEffort = maxEffort_;
@@ -204,6 +230,9 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
     // NNZ-scaled: nnz * effortMultiplier_
     effectiveMaxEffort = nnz * static_cast<int64_t>(effortMultiplier_);
   }
+  // In tree: use 1/4 of root effort (tighter bounds → fewer iterations needed)
+  if (depth > 0)
+    effectiveMaxEffort = std::max(int64_t(1000000), effectiveMaxEffort / 4);
   int64_t stallLimit = 0;
   if (stallMultiplier_ > 0) {
     stallLimit = nnz * static_cast<int64_t>(stallMultiplier_);

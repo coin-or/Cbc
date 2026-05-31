@@ -25,6 +25,27 @@ dist_pkgtestfixture_DATA = \
   fixtures/yue20013.1.150.mps.gz \
   fixtures/attfInst1.mps.gz
 
+# Reference optimal solution files (for -debugCuts diagnostic pass)
+pkgtestsoldir = $(datadir)/mipster/test/fixtures/solutions
+dist_pkgtestsol_DATA = \
+  fixtures/solutions/A-1.sol \
+  fixtures/solutions/etDecsi.sol \
+  fixtures/solutions/j3041_1.sol \
+  fixtures/solutions/nursesched-sprint02.sol \
+  fixtures/solutions/trd445c.sol \
+  fixtures/solutions/yue20013.1.150.sol \
+  fixtures/solutions/miclsp_i04_t10_s042_r110.sol \
+  fixtures/solutions/miclsp_i04_t10_s042_r114.sol \
+  fixtures/solutions/miclsp_i04_t10_s042_r120.sol \
+  fixtures/solutions/miclsp_i04_t10_s042_r130.sol \
+  fixtures/solutions/miclsp_i04_t10_s137_r110.sol \
+  fixtures/solutions/miclsp_i04_t10_s137_r114.sol \
+  fixtures/solutions/miclsp_i04_t10_s137_r120.sol \
+  fixtures/solutions/miclsp_i04_t12_s042_r110.sol \
+  fixtures/solutions/miclsp_i04_t12_s042_r114.sol \
+  fixtures/solutions/miclsp_i04_t12_s042_r120.sol \
+  fixtures/solutions/miclsp_i04_t12_s137_r114.sol
+
 # Runner script installs to $(bindir)/run-mipster-tests
 dist_bin_SCRIPTS = run-mipster-tests run-miplib3-tests fetch-miplib3
 
@@ -92,6 +113,7 @@ CInterfaceTest_fl_random_LDADD = ../src/libmipster.la
 CInterfaceTest_miclsp_SOURCES = CInterfaceTest_miclsp.c
 nodist_EXTRA_CInterfaceTest_miclsp_SOURCES = dummy.cpp
 CInterfaceTest_miclsp_LDADD = ../src/libmipster.la
+CInterfaceTest_miclsp_CPPFLAGS = $(AM_CPPFLAGS) -DFIXTURE_DIR=\"$(FIXTURE_DIR_VAL)\"
 
 ########################################################################
 #                   MDKP random-instance tests                          #

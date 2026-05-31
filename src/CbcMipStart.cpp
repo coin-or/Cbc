@@ -133,32 +133,27 @@ int CbcMipStart::read(OsiSolverInterface *solver, const char *fileName,
     while (fgets(line, STR_SIZE, f)) {
       ++nLine;
       char col[4][STR_SIZE] = { "", "", "", "" };
-#ifndef MIPLIB2017_FORMAT
       int nread = sscanf(line, "%s %s %s %s", col[0], col[1], col[2], col[3]);
-      if (!nread)
+      if (nread <= 0 || col[0][0] == '#')
         continue;
-      /* line with variable value */
-      if (strlen(col[0]) && isdigit(col[0][0]) && (nread >= 3)) {
-        if (!isNumericStr(col[0])) {
-          messHandler->message(CBC_MIPSTART_INVALID_COLUMN, messages) << fileName << nLine << "first" << CoinMessageEol;
-          continue;
-        }
-#else
-      int nread = sscanf(line, "%s %s", col[1], col[2]);
-      if (nread <= 0)
+      if (isNumericStr(col[0]) && nread >= 3) {
+        // CBC .sol format: index name value [lb]
+        // col[1]=name, col[2]=value — already in the right slots
+      } else if (nread >= 2) {
+        // name-value format (Gurobi/HiGHS output): shift to col[1]/col[2]
+        strcpy(col[2], col[1]);
+        strcpy(col[1], col[0]);
+        col[0][0] = '\0';
+      } else {
         continue;
-      if (true) {
-#endif
-        if (!isNumericStr(col[2])) {
-          messHandler->message(CBC_MIPSTART_INVALID_COLUMN, messages) << fileName << nLine << "third" << CoinMessageEol;
-          continue;
-        }
-
-        char *name = col[1];
-        double value = atof(col[2]);
-
-        colValues.push_back(std::pair< std::string, double >(std::string(name), value));
       }
+      if (!isNumericStr(col[2])) {
+        messHandler->message(CBC_MIPSTART_INVALID_COLUMN, messages) << fileName << nLine << "third" << CoinMessageEol;
+        continue;
+      }
+      char *name = col[1];
+      double value = atof(col[2]);
+      colValues.push_back(std::pair< std::string, double >(std::string(name), value));
     }
   } else {
     // csv or psv

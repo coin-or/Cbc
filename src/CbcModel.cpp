@@ -10719,6 +10719,45 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
 }
 
 // Generate one round of cuts - serial mode
+
+#ifdef CHECK_KNOWN_SOLUTION
+// Print details of an invalid cut for debugging.
+// Shows bounds, activity of the known-optimal solution, and the first
+// maxVars cut elements (index, name, coeff, type, bounds, sol value).
+static void printInvalidCutDetails(const OsiRowCut &cut,
+  OsiSolverInterface *solver, const OsiRowCutDebugger *debugger,
+  int maxVars = 10)
+{
+  const CoinPackedVector &row = cut.row();
+  const int n = row.getNumElements();
+  const int *cols = row.getIndices();
+  const double *elems = row.getElements();
+  const double *knownSol = debugger->optimalSolution();
+  const double *colLower = solver->getColLower();
+  const double *colUpper = solver->getColUpper();
+  const std::vector< std::string > colNames = solver->getColNames();
+
+  double activity = 0.0;
+  for (int j = 0; j < n; j++)
+    activity += elems[j] * knownSol[cols[j]];
+
+  printf("  Cut bounds: %.10g <= %.10g (activity) <= %.10g\n",
+    cut.lb(), activity, cut.ub());
+
+  const int show = std::min(n, maxVars);
+  printf("  Cut row (%d of %d elements shown):\n", show, n);
+  for (int j = 0; j < show; j++) {
+    const int c = cols[j];
+    const char *type = solver->isBinary(c) ? "BIN" : (solver->isInteger(c) ? "INT" : "CON");
+    const char *name = (!colNames.empty() && c < (int)colNames.size())
+      ? colNames[c].c_str()
+      : "?";
+    printf("    col[%5d] %-24s coeff=%+.6g  type=%s  bounds=[%g,%g]  sol=%g\n",
+      c, name, elems[j], type, colLower[c], colUpper[c], knownSol[c]);
+  }
+}
+#endif
+
 int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
   int lastNumberCuts)
 {
@@ -10901,6 +10940,12 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
     numberRowCutsAfter = theseCuts.sizeRowCuts();
     numberColumnCutsAfter = theseCuts.sizeColCuts();
 #ifdef CHECK_KNOWN_SOLUTION
+    // Always refresh debugger state here so the per-cut check works even
+    // when mustResolve was false (the common case).
+    if ((specialOptions_ & 1) != 0) {
+      debugger = solver_->getRowCutDebugger();
+      onOptimalPath = (debugger != nullptr);
+    }
     if ((specialOptions_ & 1) != 0) {
       if (onOptimalPath) {
         int k;
@@ -10909,17 +10954,11 @@ int CbcModel::serialCuts(OsiCuts &theseCuts, CbcNode *node, OsiCuts &slackCuts,
           if (debugger->invalidCut(thisCut)) {
             solver_->getRowCutDebuggerAlways()->printOptimalSolution(*solver_);
             solver_->writeMpsNative("badCut.mps", NULL, NULL, 2);
-            printf("Cut generator %d (%s) produced invalid cut (%dth in this "
-                   "go)\n",
+            printf("debugCuts: Cut generator %d (%s) produced invalid cut"
+                   " (%dth in this pass)\n",
               i, generator_[i]->cutGeneratorName(),
               k - numberRowCutsBefore);
-            const double *lower = getColLower();
-            const double *upper = getColUpper();
-            int numberColumns = solver_->getNumCols();
-            if (numberColumns < 200) {
-              for (int i = 0; i < numberColumns; i++)
-                printf("%d bounds %g,%g\n", i, lower[i], upper[i]);
-            }
+            printInvalidCutDetails(thisCut, solver_, debugger);
             abort();
           }
           assert(!debugger->invalidCut(thisCut));

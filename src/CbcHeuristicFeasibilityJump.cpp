@@ -112,7 +112,8 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
   double *newSolution)
 {
   // Depth-based control: run at root (depth 0) always, and at tree nodes
-  // only when current depth >= minDepth_ (more variables fixed by branching).
+  // every minDepth_ levels (e.g. depth 6, 12, 18...) so that FJ runs when
+  // enough new variables have been fixed by branching.
   int depth = model_->currentDepth();
   int nodeCount = model_->getNodeCount();
 
@@ -121,11 +122,11 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
     if (!shouldHeurRun(0))
       return 0;
   } else {
-    // Tree node: the external shouldHeurRun(4) already passed.
-    // Just check our depth requirement.
+    // Tree node: run every minDepth_ levels.
     if (minDepth_ <= 0)
       return 0; // disabled in tree
-    if (depth < minDepth_)
+    if (depth < minDepth_ || (depth % minDepth_) != 0)
+      return 0;
       return 0; // not deep enough
   }
 

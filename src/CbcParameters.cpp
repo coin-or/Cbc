@@ -935,7 +935,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::FEASIBILITYJUMPEFFORTMULT]->setDefault(1024);
      parameters_[CbcParam::FEASIBILITYJUMPMAXSOL]->setDefault(1);
      parameters_[CbcParam::FEASIBILITYJUMPSTALL]->setDefault(256);
-     parameters_[CbcParam::FEASIBILITYJUMPDEPTH]->setDefault(0);
+     parameters_[CbcParam::FEASIBILITYJUMPDEPTH]->setDefault(6);
      parameters_[CbcParam::TREECUTDEPTH]->setDefault(6);
      parameters_[CbcParam::HEURDECAY]->setDefault(0);
      parameters_[CbcParam::RENS]->setDefault("off");
@@ -3195,13 +3195,14 @@ void CbcParameters::addCbcSolverHeurParams() {
 
   parameters_[CbcParam::FEASIBILITYJUMPDEPTH]->setup(
       "feasibilityJumpDepth",
-      "Minimum tree depth to run FJ at non-root nodes (0 = root only)",
+      "Run FJ every N levels in the tree (0 = root only)",
       0, 1000,
       "When set to 0 (default), FJ runs only at the root node. "
-      "When set to N > 0, FJ also runs at tree nodes with depth >= N, "
-      "where more variables are fixed by branching, giving FJ tighter "
-      "bounds and better chances of finding feasible solutions. "
-      "Uses 1/4 of the root effort budget per tree node.",
+      "When set to N > 0, FJ also runs at tree nodes whose depth is a "
+      "multiple of N (e.g. 6 means depth 6, 12, 18...). This ensures FJ "
+      "runs periodically as more variables get fixed by branching. "
+      "Uses 1/4 of the root effort budget per tree node call. "
+      "Recommended: 6 (similar to bound propagation frequency).",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::TREECUTDEPTH]->setup(

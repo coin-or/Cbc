@@ -70,8 +70,8 @@ public:
   inline void setStallMultiplier(int m) { stallMultiplier_ = m; }
   inline int stallMultiplier() const { return stallMultiplier_; }
 
-  /// Minimum tree depth to run FJ at non-root nodes. Default: 0 (root only).
-  /// Set to e.g. 5 to run FJ at nodes with depth >= 5 (more variables fixed).
+  /// Run FJ every N levels in the tree. Default: 0 (root only).
+  /// Set to e.g. 6 to run FJ at depths 6, 12, 18... (like bound propagation).
   inline void setMinDepth(int d) { minDepth_ = d; }
   inline int minDepth() const { return minDepth_; }
 

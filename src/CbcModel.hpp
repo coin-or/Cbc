@@ -917,6 +917,17 @@ public:
   {
     return maximumCutPasses_;
   }
+  /** Set maximum depth for cut generation at tree nodes (default 6).
+      At deeper nodes, cuts are skipped but heuristics still run. */
+  inline void setTreeCutDepth(int value)
+  {
+    treeCutDepth_ = value;
+  }
+  /** Get maximum depth for cut generation at tree nodes */
+  inline int getTreeCutDepth() const
+  {
+    return treeCutDepth_;
+  }
   /** Get current cut pass number in this round of cuts.
         (1 is first pass) */
   inline int getCurrentPassNumber() const
@@ -3378,6 +3389,8 @@ private:
   int maximumCutPassesAtRoot_;
   /// Maximum number of cut passes
   int maximumCutPasses_;
+  /// Maximum depth at which cuts run at tree nodes (replaces STOP_CUTS_NOW)
+  int treeCutDepth_;
   /// Preferred way of branching
   int preferredWay_;
   /// Current cut pass number

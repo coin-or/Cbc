@@ -6086,6 +6086,7 @@ CbcModel::CbcModel()
   , continuousInfeasibilities_(COIN_INT_MAX)
   , maximumCutPassesAtRoot_(20)
   , maximumCutPasses_(10)
+  , treeCutDepth_(6)
   , preferredWay_(0)
   , currentPassNumber_(0)
   , maximumWhich_(INITIAL_MAXIMUM_WHICH)
@@ -6273,6 +6274,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   , continuousInfeasibilities_(COIN_INT_MAX)
   , maximumCutPassesAtRoot_(20)
   , maximumCutPasses_(10)
+  , treeCutDepth_(6)
   , preferredWay_(0)
   , currentPassNumber_(0)
   , maximumWhich_(INITIAL_MAXIMUM_WHICH)
@@ -6598,6 +6600,7 @@ CbcModel::CbcModel(const CbcModel &rhs, bool cloneHandler)
   , continuousInfeasibilities_(rhs.continuousInfeasibilities_)
   , maximumCutPassesAtRoot_(rhs.maximumCutPassesAtRoot_)
   , maximumCutPasses_(rhs.maximumCutPasses_)
+  , treeCutDepth_(rhs.treeCutDepth_)
   , preferredWay_(rhs.preferredWay_)
   , currentPassNumber_(rhs.currentPassNumber_)
   , maximumWhich_(rhs.maximumWhich_)
@@ -6991,6 +6994,7 @@ CbcModel &CbcModel::operator=(const CbcModel &rhs)
     continuousInfeasibilities_ = rhs.continuousInfeasibilities_;
     maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
     maximumCutPasses_ = rhs.maximumCutPasses_;
+    treeCutDepth_ = rhs.treeCutDepth_;
     randomSeed_ = rhs.randomSeed_;
     multipleRootTries_ = rhs.multipleRootTries_;
     preferredWay_ = rhs.preferredWay_;
@@ -7474,6 +7478,7 @@ void CbcModel::gutsOfCopy(const CbcModel &rhs, int mode)
   howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
   maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
   maximumCutPasses_ = rhs.maximumCutPasses_;
+    treeCutDepth_ = rhs.treeCutDepth_;
   randomSeed_ = rhs.randomSeed_;
   multipleRootTries_ = rhs.multipleRootTries_;
   preferredWay_ = rhs.preferredWay_;
@@ -8345,19 +8350,16 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
       numberTries *= 2; // boost
   }
 #endif
-#define STOP_CUTS_NOW 6
 #define START_FATHOM 6
 #if 0
   numberTries=0;
 #else
-  if ((specialOptions_ & 2048) == 0 && STOP_CUTS_NOW > 0) {
+  if ((specialOptions_ & 2048) == 0 && treeCutDepth_ > 0) {
     if (node && numberTries > 1) {
       // in main model
       if (currentDepth_ == 0) {
-      } else if (currentDepth_ < STOP_CUTS_NOW) {
-        numberTries = 1; // std::min(numberTries,4);
-        //} else if ((currentDepth_%2)==0) {
-        // numberTries = 1;
+      } else if (currentDepth_ < treeCutDepth_) {
+        numberTries = 1;
       } else {
         numberTries = 0;
       }
@@ -9816,7 +9818,7 @@ bool CbcModel::solveWithCuts(OsiCuts &cuts, int numberTries, CbcNode *node)
   if (node && feasible && !this->maximumSecondsReached() && !eventHappened_) {
     // Run heuristics at tree nodes where the cut loop skipped them
     // (depth >= STOP_CUTS_NOW sets numberTries=0, bypassing the in-loop call).
-    if (currentDepth_ >= STOP_CUTS_NOW) {
+    if (currentDepth_ >= treeCutDepth_) {
       double *newSolution = new double[numberColumns];
       double heuristicValue = getCutoff();
       int found = -1;

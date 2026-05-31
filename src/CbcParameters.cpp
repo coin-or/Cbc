@@ -671,6 +671,7 @@ void CbcParameters::addCbcParams() {
                     CbcParam::FEASIBILITYJUMPMAXSOL,
                     CbcParam::FEASIBILITYJUMPSTALL,
                     CbcParam::FEASIBILITYJUMPDEPTH,
+                    CbcParam::TREECUTDEPTH,
                     CbcParam::FPUMPITS, CbcParam::FPUMPTUNE,
                     CbcParam::FPUMPTUNE2, CbcParam::HEUROPTIONS,
                     CbcParam::FPUMPPASSFREQ, CbcParam::DEPTHMINIBAB,
@@ -934,6 +935,7 @@ void CbcParameters::setDefaults(int strategy) {
      parameters_[CbcParam::FEASIBILITYJUMPMAXSOL]->setDefault(1);
      parameters_[CbcParam::FEASIBILITYJUMPSTALL]->setDefault(256);
      parameters_[CbcParam::FEASIBILITYJUMPDEPTH]->setDefault(0);
+     parameters_[CbcParam::TREECUTDEPTH]->setDefault(6);
      parameters_[CbcParam::RENS]->setDefault("off");
      parameters_[CbcParam::RINS]->setDefault("on");
      parameters_[CbcParam::ROUNDING]->setDefault("on");
@@ -1055,6 +1057,7 @@ void CbcParameters::synchronizeModel() {
         { CbcParam::NUMBERANALYZE, &CbcModel::setNumberAnalyzeIterations, &CbcModel::numberAnalyzeIterations },
         { CbcParam::CUTPASSINTREE, &CbcModel::setMaximumCutPasses, &CbcModel::getMaximumCutPasses },
         { CbcParam::CUTPASS, &CbcModel::setMaximumCutPassesAtRoot, &CbcModel::getMaximumCutPassesAtRoot },
+        { CbcParam::TREECUTDEPTH, &CbcModel::setTreeCutDepth, &CbcModel::getTreeCutDepth },
 #ifdef CBC_THREAD
         { CbcParam::THREADS, &CbcModel::setNumberThreads, &CbcModel::getNumberThreads },
 #endif
@@ -3190,6 +3193,17 @@ void CbcParameters::addCbcSolverHeurParams() {
       "where more variables are fixed by branching, giving FJ tighter "
       "bounds and better chances of finding feasible solutions. "
       "Uses 1/4 of the root effort budget per tree node.",
+      CoinParam::displayPriorityLow);
+
+  parameters_[CbcParam::TREECUTDEPTH]->setup(
+      "treeCutDepth",
+      "Maximum depth at which cuts (and in-loop heuristics) run at tree nodes",
+      0, 1000,
+      "Controls the depth limit for cut generation at tree nodes. "
+      "At nodes deeper than this, the cut generation loop is skipped. "
+      "Heuristics that opt into tree execution (RINS, FJ, rounding) still "
+      "run at all depths via the post-loop call. "
+      "Default: 6. Set higher to generate cuts deeper in the tree.",
       CoinParam::displayPriorityLow);
 
   parameters_[CbcParam::RINS]->setup(

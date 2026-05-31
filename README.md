@@ -50,7 +50,7 @@ MIPster started from the CBC 3.x development branch and underwent significant co
 | | Upstream (5 projects) | MIPster |
 |---|---|---|
 | Projects / build systems | 5 (CoinUtils, Osi, Clp, Cgl, Cbc) | **1** |
-| Source lines (C++/headers) | ~572,000 | **~509,000** |
+| Source lines (C++/headers) | ~660,000 | **~551,000** |
 | External dependencies | ~10 optional | **1 optional (AMD)** |
 | Solver binary | `cbc` | **`mipster`** |
 
@@ -78,7 +78,7 @@ make -j$(nproc)
 sudo make install
 ```
 
-This produces the `mipster` binary and the `libCbc` library.
+This produces the `mipster` binary and the `libmipster` library.
 
 ### Optional: AMD (barrier solver Cholesky)
 
@@ -99,7 +99,7 @@ mipster problem.mps -solve
 mipster problem.mps -sec 300 -solve
 
 # Write solution to file
-mipster problem.mps -solve -solu solution.txt
+mipster problem.mps -solve -writeSolution solution.txt
 
 # Interactive help
 mipster --help
@@ -111,16 +111,22 @@ MIPster reads `.mps`, `.lp`, `.mps.gz`, and `.lp.gz` files directly.
 
 ## C API
 
-MIPster exposes the same C API as CBC, making it a drop-in replacement:
+MIPster exposes the same C API symbols as CBC (`Cbc_newModel`, `Cbc_solve`, etc.), so porting existing CBC C code requires only a change to the include path and link flags:
 
 ```c
-#include "Cbc_C_Interface.h"
+#include <mipster/Cbc_C_Interface.h>
 
 Cbc_Model *model = Cbc_newModel();
 Cbc_readMps(model, "problem.mps");
 Cbc_solve(model);
 printf("Objective: %f\n", Cbc_getObjValue(model));
 Cbc_deleteModel(model);
+```
+
+Compile with pkg-config:
+
+```sh
+cc myapp.c $(pkg-config --cflags --libs mipster) -o myapp
 ```
 
 ---

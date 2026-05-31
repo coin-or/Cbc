@@ -82,17 +82,16 @@ static void mip_diag_wrong_optimal(
     Cbc_Model *(*builder)(void *userdata),
     void *userdata,
     int certified_opt,
-    int time_limit_sec,
-    int node_limit)
+    int time_limit_sec)
 {
   printf("\n  [DIAG] Wrong optimal — running %d diagnostic configurations\n",
          MIP_N_DIAG_CONFIGS);
-  printf("  [DIAG] certified_opt=%d  time_limit=%ds  node_limit=%d\n\n",
-         certified_opt, time_limit_sec, node_limit);
+  printf("  [DIAG] certified_opt=%d  time_limit=%ds  (no node limit)\n\n",
+         certified_opt, time_limit_sec);
 
   for (int k = 0; k < MIP_N_DIAG_CONFIGS; k++) {
     const MipDiagConfig *cfg = &MIP_DIAG_CONFIGS[k];
-    printf("  [DIAG %2d/%d] %-22s  (%s=%s) ... ",
+    printf("  [DIAG %2d/%d] %-22s  (%s=%s)\n",
            k + 1, MIP_N_DIAG_CONFIGS, cfg->label, cfg->param, cfg->value);
     fflush(stdout);
 
@@ -101,8 +100,6 @@ static void mip_diag_wrong_optimal(
 
     if (time_limit_sec > 0)
       Cbc_setDblParam(m, DBL_PARAM_TIME_LIMIT, (double)time_limit_sec);
-    if (node_limit > 0)
-      Cbc_setIntParam(m, INT_PARAM_MAX_NODES, node_limit);
 
     Cbc_setParameter(m, cfg->param, cfg->value);
     Cbc_solve(m);
@@ -116,25 +113,33 @@ static void mip_diag_wrong_optimal(
 
     if (is_proven) {
       if (fabs(obj - (double)certified_opt) > 1.0)
-        printf("WRONG opt=%.0f (expected %d) — BUG ALSO PRESENT\n",
-               obj, certified_opt);
+        printf("  [DIAG %2d/%d] %-22s  → WRONG opt=%.0f (expected %d)"
+               " — BUG ALSO PRESENT\n",
+               k + 1, MIP_N_DIAG_CONFIGS, cfg->label, obj, certified_opt);
       else
-        printf("OK  obj=%.0f matches certified=%d\n", obj, certified_opt);
+        printf("  [DIAG %2d/%d] %-22s  → OK  obj=%.0f certified=%d\n",
+               k + 1, MIP_N_DIAG_CONFIGS, cfg->label, obj, certified_opt);
     } else if (nsaved > 0) {
       double gap = (obj > 1e-10) ? 100.0 * (obj - bound) / obj : 0.0;
-      printf("not proven  obj=%.0f  bound=%.0f  gap=%.1f%%  (%s)\n",
-             obj, bound, gap,
-             time_hit ? "time limit" : node_hit ? "node limit" : "stopped");
+      int correct = (fabs(obj - (double)certified_opt) <= 1.0);
+      printf("  [DIAG %2d/%d] %-22s  → not proven  obj=%.0f  bound=%.0f"
+             "  gap=%.1f%%  (%s)%s\n",
+             k + 1, MIP_N_DIAG_CONFIGS, cfg->label, obj, bound, gap,
+             time_hit ? "time limit" : node_hit ? "node limit" : "stopped",
+             correct ? "  *** LEAD: found correct obj — this feature is SUSPECT ***" : "");
     } else {
-      printf("no solution found (%s)\n",
+      printf("  [DIAG %2d/%d] %-22s  → no solution found (%s)\n",
+             k + 1, MIP_N_DIAG_CONFIGS, cfg->label,
              time_hit ? "time limit" : node_hit ? "node limit" : "stopped");
     }
+    fflush(stdout);
 
     Cbc_deleteModel(m);
   }
 
-  printf("\n  [DIAG] Configurations reporting OK narrow down the culprit.\n"
-         "  [DIAG] If a run returns WRONG, that feature is not responsible.\n");
+  printf("\n  [DIAG] OK = feature not responsible for the bug.\n"
+         "  [DIAG] WRONG = bug present without this feature too.\n"
+         "  [DIAG] LEAD = found correct obj (not proven): this feature is suspect.\n");
 }
 
 /* Run an additional solve with OsiRowCutDebugger active to identify exactly
@@ -155,7 +160,6 @@ static void mip_diag_debug_cuts(
     void *userdata,
     int certified_opt,
     int time_limit_sec,
-    int node_limit,
     const char *ref_sol_path)
 {
   if (!ref_sol_path) {
@@ -165,8 +169,8 @@ static void mip_diag_debug_cuts(
   }
 
   printf("\n  [DIAG] debugCuts pass — reference solution: %s\n", ref_sol_path);
-  printf("  [DIAG] Any cut that excludes the optimal solution will be"
-         " flagged below.\n\n");
+  printf("  [DIAG] time_limit=%ds  no node limit"
+         " — any invalid cut will be flagged below.\n\n", time_limit_sec);
   fflush(stdout);
 
   Cbc_Model *m = builder(userdata);
@@ -175,8 +179,6 @@ static void mip_diag_debug_cuts(
 
   if (time_limit_sec > 0)
     Cbc_setDblParam(m, DBL_PARAM_TIME_LIMIT, (double)time_limit_sec);
-  if (node_limit > 0)
-    Cbc_setIntParam(m, INT_PARAM_MAX_NODES, node_limit);
 
   /* Activate the row-cut debugger for the given solution file. */
   Cbc_setParameter(m, "debugCuts", ref_sol_path);
@@ -188,6 +190,7 @@ static void mip_diag_debug_cuts(
 
   printf("\n  [DIAG] debugCuts result: %s  obj=%.0f  (certified=%d)\n",
          is_proven ? "proven" : "not proven", obj, certified_opt);
+  fflush(stdout);
 
   Cbc_deleteModel(m);
 }

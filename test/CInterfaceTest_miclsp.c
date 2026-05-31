@@ -181,9 +181,9 @@ static int test_miclsp_mip(const MiclspInstance *inst, int k)
              obj, inst->opt);
       ok = 0;
       mip_diag_wrong_optimal(build_miclsp_for_diag, (void *)inst,
-                             inst->opt, 900, 10000);
+                             inst->opt, 900);
       mip_diag_debug_cuts(build_miclsp_for_diag, (void *)inst,
-                          inst->opt, 900, 10000,
+                          inst->opt, 900,
                           solution_path(MICLSP_NAMES[k]));
     } else {
       printf("       -> obj=%.0f  optimal, matches certified=%d"

@@ -6812,7 +6812,7 @@ int CglProbing::probe(const OsiSolverInterface &si,
       }
     }
   }
-  if (!ninfeas && (info->strengthenRow || !rowCut.numberCuts()) && rowCuts) {
+  if (!ninfeas && !info->inTree && (info->strengthenRow || !rowCut.numberCuts()) && rowCuts) {
     // Try and find ALL big M's
     for (int i = 0; i < nRowsSafe; ++i) {
       if ((rowLower[i] > -1.0e20 || rowUpper[i] < 1.0e20) && (!info->strengthenRow || !info->strengthenRow[i])) {

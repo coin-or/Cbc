@@ -4490,7 +4490,7 @@ void CBC_LINKAGE Cbc_generateCuts( Cbc_Model *cbcModel, enum CutType ct, void *o
         // Only look at rows with fewer than this number of elements
         probingGen->setMaxElements(200);
         probingGen->setMaxElementsRoot(300);
-        probingGen->setRowCuts(3);
+        probingGen->setRowCuts(-3);
       }
       break;
     case CT_Gomory:

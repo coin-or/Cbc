@@ -6949,7 +6949,10 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
     // Only look at rows with fewer than this number of elements
     probingGen.setMaxElements(200);
     probingGen.setMaxElementsRoot(300);
-    probingGen.setRowCuts(3);
+    // -3: do both row-cut types at root; in tree, column-bound fixes only.
+    // Using +3 allows in-tree row strengthening cuts derived from locally-tightened
+    // bounds, which are node-local and can cut off the global optimal solution.
+    probingGen.setRowCuts(-3);
     // set default action (0=off,1=on,2=root,3=ifmove)
     probingMode_ = CbcParameters::CGIfMove;
     int &probingMode = probingMode_;
@@ -9224,7 +9227,7 @@ int CbcSolver::run(std::deque< std::string > inputQueue,
                   probing.setMaxElements(200);
                   probing.setMaxProbeRoot(50);
                   probing.setMaxLookRoot(10);
-                  probing.setRowCuts(3);
+                  probing.setRowCuts(-3);
                   probing.setUsingObjective(true);
                   cbcModel->addCutGenerator(&probing, -1, "Probing", true,
                     false, false, -100, -1, -1);

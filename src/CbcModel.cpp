@@ -1774,7 +1774,7 @@ void CbcModel::branchAndBound(int doStatistics)
       probe10Depth->setMaxPass(1);
       probe10Depth->setMaxPassRoot(0);
       probe10Depth->setMaxLook(100);
-      probe10Depth->setRowCuts(3);
+      probe10Depth->setRowCuts(-3);
       probe10Depth->setMaxElements(300);
       info10->probe10Depth = probe10Depth;
       // probe10Depth->setMaxProbeRoot(solver_->getNumCols());

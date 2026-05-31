@@ -99,7 +99,7 @@ void installCutGenerators(
     probingGen.setMaxLookRoot(10);
     probingGen.setMaxElements(200);
     probingGen.setMaxElementsRoot(300);
-    probingGen.setRowCuts(3);
+    probingGen.setRowCuts(-3);
     int numberColumns = babModel.solver()->getNumCols();
     if (probingMode > CbcParameters::CGForceOnBut) {
       probingGen.setMaxElements(numberColumns);

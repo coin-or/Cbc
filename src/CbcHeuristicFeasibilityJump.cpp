@@ -252,8 +252,9 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
   double cutoff = model_->getCutoff();
   int solutionsFound = 0;
 
-  // Progress reporting: print a row every printInterval seconds (wall-clock,
-  // used only for display — the stopping criterion remains iteration-based).
+  // Progress reporting: only print the detailed FJ progress table at the root.
+  // In the tree, solutions are reported via the B&B progress table (★ line).
+  const bool printProgress = (depth == 0);
   const double printInterval = 1.0; // seconds
   double lastPrintTime = model_->getCurrentSeconds();
   double fjStartTime = lastPrintTime;
@@ -264,7 +265,7 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
     fp = stdout;
 
   auto printHeader = [&]() {
-    if (!headerPrinted && logLevel >= 1) {
+    if (!headerPrinted && printProgress && logLevel >= 1) {
       fprintf(fp, "\n  FeasibilityJump progress:\n");
       fprintf(fp, "  %-9s  %-9s  %-9s  %11s\n",
         "Effort(M)", "Stall(M)", "Solutions", "BestObj");
@@ -316,11 +317,11 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
         bestSol.assign(status.solution, status.solution + status.numVars);
       }
       ++solutionsFound;
-      if (logLevel >= 1)
+      if (printProgress && logLevel >= 1)
         printProgressRow(status, true);
       if (solutionsFound >= maxSolutions_)
         return CallbackControlFlow::Terminate;
-    } else if (logLevel >= 1 && (now - lastPrintTime) >= printInterval) {
+    } else if (printProgress && logLevel >= 1 && (now - lastPrintTime) >= printInterval) {
       printProgressRow(status, false);
     }
 
@@ -329,8 +330,8 @@ int CbcHeuristicFeasibilityJump::solution(double &objectiveValue,
 
   fj.solve(initialValues.data(), callback);
 
-  // Print final summary row if header was printed.
-  if (headerPrinted && logLevel >= 1) {
+  // Print final summary row if header was printed (root only).
+  if (headerPrinted && printProgress && logLevel >= 1) {
     fprintf(fp, "  (done — %lld callbacks, %.2fs)\n",
       (long long)callbackCount, model_->getCurrentSeconds() - fjStartTime);
     fflush(fp);

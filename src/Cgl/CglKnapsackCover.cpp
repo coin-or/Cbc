@@ -827,7 +827,7 @@ CglKnapsackCover::liftAndUncomplementAndAdd(
   CoinPackedVector cut;
   double cutRhs = cover.getNumElements() - 1.0;
   int goodCut=1;
-  
+
   if (remainder.getNumElements() > 0){
     // Construct lifted cover cut 
     if (!liftCoverCut( 
@@ -882,17 +882,6 @@ CglKnapsackCover::liftAndUncomplementAndAdd(
     // Todo: put in a more useful measure such as  the violation. 
     
     // Add row cut to the cut set  
-#ifdef PRINT_DEBUG
-    {
-      int k;
-      printf("cutrhs %g %d elements\n",cutRhs,cut.getNumElements());
-      double * elements = cut.getElements();
-      int * indices = cut.getIndices();
-      for (k=0; k<cut.getNumElements(); k++){
-	printf("%d %g\n",indices[k],elements[k]);
-      }
-    }
-#endif
     cs.insertIfNotDuplicate(rc);
     
     return 1;
@@ -1535,6 +1524,21 @@ CglKnapsackCover::findExactMostViolatedMinCover(
 		       cover.getElements()[cover.getNumElements()-1]);
       cover.truncate(cover.getNumElements()-1);
       oneLessCoverElementSum -= cover.getElements()[cover.getNumElements()-1];
+    }
+
+    // Temporary diagnostic: report if minimality reduction produced a singleton
+    // A valid cover inequality requires cover.sum() > b (strictly).
+    // The exact knapsack IP uses capacity = elementSum - b - epsilon_; floating-point
+    // arithmetic can yield a "cover" where sum == b (not violated), most commonly as a
+    // singleton {a_j} with a_j == b.  Such covers produce unsound cuts and must be
+    // discarded.  This guard mirrors the analogous checks in findLPMostViolatedMinCover
+    // (nCover < 2) and findGreedyCover (nCover < 2).
+    if (cover.getNumElements() < 2 || cover.sum() <= b + epsilon_) {
+      delete [] exactOptSol;
+      delete [] p;
+      delete [] w;
+      delete [] ratio;
+      return -1;
     }
 
 #ifdef PRINT_DEBUG
@@ -2217,23 +2221,15 @@ CglKnapsackCover::liftUpDownAndUncomplementAndAdd(
   }
   unsatRhs=b-sumAtOne;
 
-#ifdef PRINT_DEBUG
-  int firstFrac = fracCover.getIndices()[0];
-  if (unsatRhs<=0.0&&fabs(xstar[firstFrac])>epsilon2_) {
-    printf("At one %d\n",atOne.getNumElements());
-    for (i=0; i<atOne.getNumElements(); i++){
-      int iColumn = atOne.getIndices()[i];
-      printf("%d %g %g\n",atOne.getIndices()[i],atOne.getElements()[i],
-	     xstar[iColumn]);
-    }
-    printf("frac %d\n",fracCover.getNumElements());
-    for (i=0; i<fracCover.getNumElements(); i++){
-      int iColumn = fracCover.getIndices()[i];
-      printf("%d %g %g\n",fracCover.getIndices()[i],fracCover.getElements()[i],
-	     xstar[iColumn]);
-    }
-  }
-#endif
+  // When the atOnes variables alone already saturate the knapsack
+  // (unsatRhs <= 0), the lifting block below is skipped.  With a singleton
+  // fracCover the unlifted base cut degenerates to "x_j <= 0", which is only
+  // valid when a_j > b — but deriveAKnapsack guarantees a_j <= b for all
+  // elements.  Skip to avoid generating an unsound cut.
+  // (The commented-out assert below was the original invariant; it does not
+  // hold in practice.)
+  if (unsatRhs <= 0.0 && fracCover.getNumElements() < 2)
+    return;
 
   //assert ( unsatRhs > 0 );
 
@@ -2943,17 +2939,6 @@ CglKnapsackCover::liftUpDownAndUncomplementAndAdd(
     // ToDo: what's the default effectiveness?
     //  rc.setEffectiveness(1.0);
     // Add row cut to the cut set  
-#ifdef PRINT_DEBUG
-    {
-      int k;
-      printf("cutrhs %g %d elements\n",cutRhs,cut.getNumElements());
-      double * elements = cut.getElements();
-      int * indices = cut.getIndices();
-      for (k=0; k<cut.getNumElements(); k++){
-	printf("%d %g\n",indices[k],elements[k]);
-      }
-    }
-#endif
     cs.insertIfNotDuplicate(rc);
   }
 }
@@ -3137,17 +3122,6 @@ CglKnapsackCover::seqLiftAndUncomplementAndAdd(
     rc.setUb(cutRhs);
     // ToDo: what's a meaningful effectivity?
     //  rc.setEffectiveness(1.0);
-#ifdef PRINT_DEBUG
-    {
-      int k;
-      printf("cutrhs %g\n",cutRhs);
-      double * elements = cut.getElements();
-      int * indices = cut.getIndices();
-      for (k=0; k<cut.getNumElements(); k++){
-	printf("%d %g\n",indices[k],elements[k]);
-      }
-    }
-#endif
     cs.insertIfNotDuplicate(rc);
   }
 }

@@ -1690,6 +1690,8 @@ int doHeuristics(CbcModel *model, int type, CbcParameters &parameters,
       heuristic5.setDecayFactor(1.5);
     }
     heuristic5.setFixCloseMaxDist(parameters[CbcParam::RINSCLOSEMAXDIST]->dblVal());
+    // Enable at deep tree nodes (bit 4 of whereFrom)
+    heuristic5.setWhereFrom(heuristic5.whereFrom() | (1 << 4));
     model->addHeuristic(&heuristic5);
     anyToDo = true;
   }

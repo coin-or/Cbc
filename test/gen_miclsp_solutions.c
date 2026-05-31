@@ -27,6 +27,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#  include <direct.h>
+#endif
 
 
 static int write_solution(Cbc_Model *m, const char *outpath)

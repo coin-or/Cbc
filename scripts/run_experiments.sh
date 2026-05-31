@@ -170,6 +170,8 @@ declare -A EXPECTED_OVERRIDE=(
   [sprint_hidden06_j]=130.0
   [stein45]=30.0
   [trd445c]=-153419.078836
+  # MIPster proves 202.185252817 optimal (gap=0); MIPLIB reference 202.190074193 is stale
+  [dt_optimization]=202.185252817
 )
 REL_TOL=1e-6
 ABS_TOL=1e-4

@@ -90,17 +90,11 @@ set -euo pipefail
 trap '' HUP
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
+# Flat monorepo — project dir is always the repo root.
 _project_dir() {
-  local project="$1"
-  local root="${SCRIPT_DIR}/${project}"
-  local nested="${root}/${project}"
-  if [[ -f "${root}/configure.ac" && -f "${nested}/configure.ac" ]] \
-     && grep -q 'AC_COIN_MAIN_PACKAGEDIR' "${root}/configure.ac"; then
-    echo "$nested"
-  else
-    echo "$root"
-  fi
+  echo "$REPO_DIR"
 }
 
 _project_config_status() {
@@ -1038,20 +1032,20 @@ print_env_info() {
   printf "  %-18s %s\n" "Source dir:" "$src_dir"
   echo ""
 
-  # Per-project configure invocation (best-effort extraction from config.status).
-  for proj in CoinUtils Clp Cgl Cbc; do
-    local cs
-    cs="$(_project_config_status "$proj")"
-    [[ -f "$cs" ]] || continue
+  # Configure invocation (best-effort extraction from config.status).
+  local cs
+  cs="$(_project_config_status Cbc)"
+  if [[ -f "$cs" ]]; then
     local cfg
     cfg=$(_configure_invocation_from_status "$cs")
-    [[ -n "$cfg" ]] || continue
-    printf "  %s configure:\n" "$proj"
-    # Indent + soft-wrap at 96 chars; continuation lines get 4-space indent
-    printf "    %s\n" "$cfg" \
-      | fold -s -w 96 | awk 'NR==1{print} NR>1{print "    " $0}'
-    echo ""
-  done
+    if [[ -n "$cfg" ]]; then
+      printf "  configure:\n"
+      # Indent + soft-wrap at 96 chars; continuation lines get 4-space indent
+      printf "    %s\n" "$cfg" \
+        | fold -s -w 96 | awk 'NR==1{print} NR>1{print "    " $0}'
+      echo ""
+    fi
+  fi
 
   # Compiler identity (CC / CXX resolved from Cbc's config.status)
   local cbc_cs
@@ -1273,22 +1267,20 @@ write_setup_md() {
     echo "**Source dir:** \`$src_dir\`"
     echo ""
 
-    echo "### Configure Invocations"
+    echo "### Configure Invocation"
     echo ""
-    for proj in CoinUtils Clp Cgl Cbc; do
-      local cs
-      cs="$(_project_config_status "$proj")"
-      [[ -f "$cs" ]] || continue
+    local cs
+    cs="$(_project_config_status Cbc)"
+    if [[ -f "$cs" ]]; then
       local cfg
       cfg=$(_configure_invocation_from_status "$cs")
-      [[ -n "$cfg" ]] || continue
-      echo "#### $proj"
-      echo ""
-      echo '```'
-      echo "$cfg"
-      echo '```'
-      echo ""
-    done
+      if [[ -n "$cfg" ]]; then
+        echo '```'
+        echo "$cfg"
+        echo '```'
+        echo ""
+      fi
+    fi
 
     echo "### Compilers"
     echo ""

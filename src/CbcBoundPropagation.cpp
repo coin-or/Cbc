@@ -7,6 +7,7 @@
 #include "CoinBoundPropagation.hpp"
 #include "CoinMessageHandler.hpp"
 #include "CoinTime.hpp"
+#include "OsiRowCutDebugger.hpp"
 #include "OsiSolverInterface.hpp"
 
 #include <cassert>
@@ -42,6 +43,29 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
 
   const double t0 = CoinGetTimeOfDay();
 
+  // If a debugCuts reference solution is loaded AND we are currently on the
+  // optimal path (getRowCutDebugger returns non-NULL), check every bound
+  // fixing we apply against that solution.  getRowCutDebugger (without
+  // "Always") returns NULL at subtree nodes whose branching decisions have
+  // already excluded the reference solution — correct behaviour there is to
+  // fix variables differently from the global optimal, so we must NOT flag
+  // those.  Only on the optimal path is a contradictory fixing a bug.
+  const OsiRowCutDebugger *debugger = solver->getRowCutDebugger();
+  const double *optSol = debugger ? debugger->optimalSolution() : nullptr;
+
+  auto checkFixing = [&](int col, double lb, double ub,
+                         const char *phase) {
+    if (!optSol || !solver->isInteger(col))
+      return;
+    const double sv = optSol[col];
+    if (lb > sv + 0.5 || ub < sv - 0.5) {
+      const std::string name = solver->getColName(col);
+      printf("nodeBoundProp BAD FIXING (%s): col %d (%s)"
+             " fixed to [%g, %g] but optimal solution has %g\n",
+             phase, col, name.c_str(), lb, ub, sv);
+    }
+  };
+
   // ---------------------------------------------------------------
   // Phase 1: singleton row tightening
   // ---------------------------------------------------------------
@@ -64,6 +88,14 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
 
     nSingletonFixed_ = nFixed;
     nSingletonTightened_ = nTightened - nFixed;
+
+    // Check singleton fixings against the reference solution (optimal path only).
+    if (optSol) {
+      const double *lb = solver->getColLower();
+      const double *ub = solver->getColUpper();
+      for (int j = 0; j < solver->getNumCols(); j++)
+        checkFixing(j, lb[j], ub[j], "singleton");
+    }
 
     if (logLevel >= 2 && nTightened > 0)
       printf("  Bound propagation (singletons): %d tightened, %d fixed.\n",
@@ -183,6 +215,7 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
       curUB[col] = p.second.second;
       solver->setColLower(col, p.second.first);
       solver->setColUpper(col, p.second.second);
+      checkFixing(col, p.second.first, p.second.second, "propagation");
     }
 
     nBoundPropFixed_ += nNew;

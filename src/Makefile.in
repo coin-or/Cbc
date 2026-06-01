@@ -102,7 +102,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = mipster$(EXEEXT)
+bin_PROGRAMS = mipster$(EXEEXT) mipster_diag$(EXEEXT)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/BuildTools/coin.m4 \
@@ -240,6 +240,9 @@ am__v_lt_1 =
 am_mipster_OBJECTS = mipster-CoinSolve.$(OBJEXT)
 mipster_OBJECTS = $(am_mipster_OBJECTS)
 mipster_DEPENDENCIES = libmipster.la
+am_mipster_diag_OBJECTS = mipster_diag-mipster_diag.$(OBJEXT)
+mipster_diag_OBJECTS = $(am_mipster_diag_OBJECTS)
+mipster_diag_DEPENDENCIES = libmipster.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -346,7 +349,8 @@ am__depfiles_remade = ./$(DEPDIR)/libmipster_la-CbcBab.Plo \
 	./$(DEPDIR)/libmipster_la-CbcTreeLocal.Plo \
 	./$(DEPDIR)/libmipster_la-Cbc_C_Interface.Plo \
 	./$(DEPDIR)/libmipster_la-unitTestClp.Plo \
-	./$(DEPDIR)/mipster-CoinSolve.Po
+	./$(DEPDIR)/mipster-CoinSolve.Po \
+	./$(DEPDIR)/mipster_diag-mipster_diag.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -384,7 +388,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libmipster_la_SOURCES) $(mipster_SOURCES)
+SOURCES = $(libmipster_la_SOURCES) $(mipster_SOURCES) \
+	$(mipster_diag_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -689,6 +694,9 @@ mipster_LDADD = libmipster.la
 
 # not really accurate to use these CFLAGS, but they should have everything
 mipster_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/CoinUtils -I$(srcdir)/Clp -I$(srcdir)/Cgl
+mipster_diag_SOURCES = mipster_diag.cpp
+mipster_diag_LDADD = libmipster.la
+mipster_diag_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/CoinUtils -I$(srcdir)/Clp -I$(srcdir)/Cgl
 
 ########################################################################
 #                            Additional flags                          #
@@ -936,6 +944,10 @@ mipster$(EXEEXT): $(mipster_OBJECTS) $(mipster_DEPENDENCIES) $(EXTRA_mipster_DEP
 	@rm -f mipster$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(mipster_OBJECTS) $(mipster_LDADD) $(LIBS)
 
+mipster_diag$(EXEEXT): $(mipster_diag_OBJECTS) $(mipster_diag_DEPENDENCIES) $(EXTRA_mipster_diag_DEPENDENCIES) 
+	@rm -f mipster_diag$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(mipster_diag_OBJECTS) $(mipster_diag_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -1034,6 +1046,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-Cbc_C_Interface.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmipster_la-unitTestClp.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mipster-CoinSolve.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mipster_diag-mipster_diag.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -1716,6 +1729,20 @@ mipster-CoinSolve.obj: CoinSolve.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mipster_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o mipster-CoinSolve.obj `if test -f 'CoinSolve.cpp'; then $(CYGPATH_W) 'CoinSolve.cpp'; else $(CYGPATH_W) '$(srcdir)/CoinSolve.cpp'; fi`
 
+mipster_diag-mipster_diag.o: mipster_diag.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mipster_diag_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT mipster_diag-mipster_diag.o -MD -MP -MF $(DEPDIR)/mipster_diag-mipster_diag.Tpo -c -o mipster_diag-mipster_diag.o `test -f 'mipster_diag.cpp' || echo '$(srcdir)/'`mipster_diag.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mipster_diag-mipster_diag.Tpo $(DEPDIR)/mipster_diag-mipster_diag.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='mipster_diag.cpp' object='mipster_diag-mipster_diag.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mipster_diag_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o mipster_diag-mipster_diag.o `test -f 'mipster_diag.cpp' || echo '$(srcdir)/'`mipster_diag.cpp
+
+mipster_diag-mipster_diag.obj: mipster_diag.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mipster_diag_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT mipster_diag-mipster_diag.obj -MD -MP -MF $(DEPDIR)/mipster_diag-mipster_diag.Tpo -c -o mipster_diag-mipster_diag.obj `if test -f 'mipster_diag.cpp'; then $(CYGPATH_W) 'mipster_diag.cpp'; else $(CYGPATH_W) '$(srcdir)/mipster_diag.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mipster_diag-mipster_diag.Tpo $(DEPDIR)/mipster_diag-mipster_diag.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='mipster_diag.cpp' object='mipster_diag-mipster_diag.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mipster_diag_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o mipster_diag-mipster_diag.obj `if test -f 'mipster_diag.cpp'; then $(CYGPATH_W) 'mipster_diag.cpp'; else $(CYGPATH_W) '$(srcdir)/mipster_diag.cpp'; fi`
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
@@ -1932,6 +1959,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libmipster_la-Cbc_C_Interface.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-unitTestClp.Plo
 	-rm -f ./$(DEPDIR)/mipster-CoinSolve.Po
+	-rm -f ./$(DEPDIR)/mipster_diag-mipster_diag.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -2070,6 +2098,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libmipster_la-Cbc_C_Interface.Plo
 	-rm -f ./$(DEPDIR)/libmipster_la-unitTestClp.Plo
 	-rm -f ./$(DEPDIR)/mipster-CoinSolve.Po
+	-rm -f ./$(DEPDIR)/mipster_diag-mipster_diag.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

@@ -124,7 +124,7 @@ libmipster_la_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/CoinUtils -I$(srcdir)/Clp 
 
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
-bin_PROGRAMS = mipster
+bin_PROGRAMS = mipster mipster_diag
 
 # List all source files for this executable, including headers
 mipster_SOURCES = CoinSolve.cpp
@@ -134,6 +134,10 @@ mipster_LDADD = libmipster.la
 
 # not really accurate to use these CFLAGS, but they should have everything
 mipster_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/CoinUtils -I$(srcdir)/Clp -I$(srcdir)/Cgl
+
+mipster_diag_SOURCES = mipster_diag.cpp
+mipster_diag_LDADD = libmipster.la
+mipster_diag_CPPFLAGS = $(CBCLIB_CFLAGS) -I$(srcdir)/CoinUtils -I$(srcdir)/Clp -I$(srcdir)/Cgl
 
 ########################################################################
 #                            Additional flags                          #

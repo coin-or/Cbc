@@ -56,7 +56,10 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
   // Declare these early so they are in scope for the checkFixing lambda.
   // colType and curLB/curUB are set to their real values before phase 2.
   const int nCols = solver->getNumCols();
-  const char *colType = nullptr;       // initialised before phase-2 loop
+  // Local owned copy — not a pointer into the solver's internal cache.
+  // Refreshed before each propagation round from current bounds.
+  std::vector< char > colTypeBuf;
+  const char *colType = nullptr;       // points to colTypeBuf.data() after phase-2 init
   std::vector< double > curLB, curUB;  // initialised before phase-2 loop
 
   // diagRound == -1: singleton phase;  >= 0: CoinBoundPropagation round.
@@ -142,7 +145,16 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
   const int roundLimit = (level == Fixpoint) ? INT_MAX : maxRounds;
 
   // Initialise phase-2 data (after singleton tightening so bounds are current).
-  colType = solver->getColType(false);
+  // Copy colType into a local buffer so we own the data (not a pointer into
+  // the solver's internal cache which may be stale from a prior invocation).
+  // Use refresh=true to force recomputation from current bounds — a stale
+  // cached value can misclassify GeneralInteger variables as Binary, causing
+  // wrong fixings (root cause of the miclsp arm64 soundness bug).
+  {
+    const char *ct = solver->getColType(true);
+    colTypeBuf.assign(ct, ct + nCols);
+  }
+  colType = colTypeBuf.data();
   const CoinPackedMatrix *matByRow = solver->getMatrixByRow();
   const char *rowSense = solver->getRowSense();
   const double *rhs = solver->getRightHandSide();
@@ -155,8 +167,21 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
   curLB.assign(solver->getColLower(), solver->getColLower() + nCols);
   curUB.assign(solver->getColUpper(), solver->getColUpper() + nCols);
 
+  // Refresh colTypeBuf from current bounds before each round.
+  // Cheaper than calling solver->getColType() and avoids stale-cache issues.
+  // A GeneralInteger whose bounds have been tightened to [0,1] is reclassified
+  // as Binary, enabling stronger propagation in later rounds.
+  auto refreshColType = [&]() {
+    for (int j = 0; j < nCols; ++j) {
+      if (colTypeBuf[j] == 0)
+        continue; // continuous: never changes
+      colTypeBuf[j] = (curLB[j] >= 0.0 && curUB[j] <= 1.0) ? 1 : 2;
+    }
+  };
+
   for (int round = 0; round < roundLimit; ++round) {
     diagRound = round;
+    refreshColType(); // update binary/general-integer from current curLB/curUB
     // Time-limit check before starting this round
     const double tNow = CoinGetTimeOfDay();
     if (tNow - startTime >= timeLimit) {

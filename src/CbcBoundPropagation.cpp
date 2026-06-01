@@ -53,16 +53,38 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
   const OsiRowCutDebugger *debugger = solver->getRowCutDebugger();
   const double *optSol = debugger ? debugger->optimalSolution() : nullptr;
 
-  auto checkFixing = [&](int col, double lb, double ub,
+  // Declare these early so they are in scope for the checkFixing lambda.
+  // colType and curLB/curUB are set to their real values before phase 2.
+  const int nCols = solver->getNumCols();
+  const char *colType = nullptr;       // initialised before phase-2 loop
+  std::vector< double > curLB, curUB;  // initialised before phase-2 loop
+
+  // diagRound == -1: singleton phase;  >= 0: CoinBoundPropagation round.
+  int diagRound = -1;
+
+  // Check one fixing against the reference solution (optimal path only).
+  // Called with the new bounds; curLB/curUB must still hold OLD bounds when
+  // called from the propagation loop (call before updating curLB/curUB).
+  auto checkFixing = [&](int col, double newLB, double newUB,
                          const char *phase) {
     if (!optSol || !solver->isInteger(col))
       return;
     const double sv = optSol[col];
-    if (lb > sv + 0.5 || ub < sv - 0.5) {
+    if (newLB > sv + 0.5 || newUB < sv - 0.5) {
       const std::string name = solver->getColName(col);
-      printf("nodeBoundProp BAD FIXING (%s): col %d (%s)"
-             " fixed to [%g, %g] but optimal solution has %g\n",
-             phase, col, name.c_str(), lb, ub, sv);
+      const char ct = colType ? colType[col] : char(-1);
+      const char *ctName = (ct == 1) ? "binary"
+                         : (ct == 2) ? "general-integer"
+                         : (ct == 0) ? "continuous" : "?";
+      // curLB/curUB contain old bounds when called from propagation loop.
+      const double oldLB = (col < static_cast< int >(curLB.size()))
+                             ? curLB[col] : newLB;
+      const double oldUB = (col < static_cast< int >(curUB.size()))
+                             ? curUB[col] : newUB;
+      printf("nodeBoundProp BAD FIXING (%s, round %d): col %d (%s)"
+             " type=%s old=[%g,%g] new=[%g,%g] but optimal has %g\n",
+             phase, diagRound, col, name.c_str(), ctName,
+             oldLB, oldUB, newLB, newUB, sv);
     }
   };
 
@@ -90,10 +112,11 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
     nSingletonTightened_ = nTightened - nFixed;
 
     // Check singleton fixings against the reference solution (optimal path only).
+    // curLB/curUB are not yet populated; oldLB/oldUB will show newLB/newUB.
     if (optSol) {
       const double *lb = solver->getColLower();
       const double *ub = solver->getColUpper();
-      for (int j = 0; j < solver->getNumCols(); j++)
+      for (int j = 0; j < nCols; j++)
         checkFixing(j, lb[j], ub[j], "singleton");
     }
 
@@ -118,9 +141,8 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
   // ---------------------------------------------------------------
   const int roundLimit = (level == Fixpoint) ? INT_MAX : maxRounds;
 
-  // Extract solver data once; bounds are updated in the loop.
-  const int nCols = solver->getNumCols();
-  const char *colType = solver->getColType(false);
+  // Initialise phase-2 data (after singleton tightening so bounds are current).
+  colType = solver->getColType(false);
   const CoinPackedMatrix *matByRow = solver->getMatrixByRow();
   const char *rowSense = solver->getRowSense();
   const double *rhs = solver->getRightHandSide();
@@ -130,12 +152,11 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
   const double infinity = solver->getInfinity();
 
   // Working copies of bounds (updated after each round).
-  std::vector< double > curLB(solver->getColLower(),
-    solver->getColLower() + nCols);
-  std::vector< double > curUB(solver->getColUpper(),
-    solver->getColUpper() + nCols);
+  curLB.assign(solver->getColLower(), solver->getColLower() + nCols);
+  curUB.assign(solver->getColUpper(), solver->getColUpper() + nCols);
 
   for (int round = 0; round < roundLimit; ++round) {
+    diagRound = round;
     // Time-limit check before starting this round
     const double tNow = CoinGetTimeOfDay();
     if (tNow - startTime >= timeLimit) {
@@ -211,11 +232,12 @@ bool CbcBoundPropagation::run(OsiSolverInterface *solver,
 
     for (const auto &p : bounds) {
       const int col = static_cast< int >(p.first);
+      // Check BEFORE updating curLB/curUB so the lambda sees the old bounds.
+      checkFixing(col, p.second.first, p.second.second, "propagation");
       curLB[col] = p.second.first;
       curUB[col] = p.second.second;
       solver->setColLower(col, p.second.first);
       solver->setColUpper(col, p.second.second);
-      checkFixing(col, p.second.first, p.second.second, "propagation");
     }
 
     nBoundPropFixed_ += nNew;
